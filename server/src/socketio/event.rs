@@ -54,15 +54,15 @@ pub trait EventData: Sized + Send + Clone + Sync + Serialize {
             let message_type = Self::to_message_type(message.clone());
 
             // for every room
-            let mut socketio_buffer_guard = APP_STATE.socketio_buffer.write().await;
+            let mut socketio_rooms_guard = APP_STATE.socketio_rooms.write().await;
             for single_room in room.clone().into_room_iter() {
                 // buffer in room
-                socketio_buffer_guard
+                socketio_rooms_guard
                     .room(single_room.to_string())
                     .buffer(message_type.clone());
 
                 // emit to sockets
-                socketio_buffer_guard
+                socketio_rooms_guard
                     .room(single_room.to_string())
                     .emit(message.name.clone(), &message);
             }

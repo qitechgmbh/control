@@ -39,9 +39,9 @@ fn on_disconnect(socket: SocketRef) {
     // remove from every room
     let socket_clone = socket.clone();
     spawn(async move {
-        let mut socketio_buffer = APP_STATE.socketio_buffer.write().await;
+        let mut socketio_rooms_guard = APP_STATE.socketio_rooms.write().await;
         for room in socket.rooms() {
-            socketio_buffer
+            socketio_rooms_guard
                 .room(room.to_string())
                 .leave(socket_clone.clone());
         }
