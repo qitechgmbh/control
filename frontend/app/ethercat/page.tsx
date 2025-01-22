@@ -1,23 +1,27 @@
 "use client";
 
 import { Page } from "@/components/Page";
-import { GetEthercat, useClient } from "@/hooks/useClient";
-import { useState, useEffect } from "react";
+import {
+  useSocketioEthercatDevicesEvent,
+  useSocketioRoom,
+} from "@/hooks/useSocketio";
 
 export default function EthercatPage() {
-  const client = useClient();
-  const [devices, setDevices] = useState<GetEthercat["devices"]>([]);
-  useEffect(() => {
-    client.getEthercat().then((data) => setDevices(data.devices));
-  }, [client]);
+  const deviceMessage = useSocketioEthercatDevicesEvent();
+  // const socket = useSocketioRoom("main");
+  // socket?.on("EthercatDevicesEvent", (res) => {
+  //   console.log(res);
+  // });
 
   return (
     <Page title="EtherCAT">
-      <ul>
-        {devices.map((device) => (
-          <li key={device.address}>{device.name}</li>
-        ))}
-      </ul>
+      {deviceMessage.data?.devices.map((device) => (
+        <div key={device.adress}>
+          <div>{device.adress}</div>
+          <div>{device.name}</div>
+        </div>
+      ))}
+      {deviceMessage.error && <div>{deviceMessage.error}</div>}
     </Page>
   );
 }

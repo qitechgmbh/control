@@ -1,59 +1,21 @@
 use std::{sync::Arc, time::Duration};
 
-use ethercrab::{
-    std::{ethercat_now, tx_rx_task},
-    MainDevice, MainDeviceConfig, PduStorage, Timeouts,
+use ethercrab::{std::tx_rx_task, MainDevice, MainDeviceConfig, PduStorage, Timeouts};
+
+use crate::app_state::AppState;
+
+use super::{
+    config::{MAX_FRAMES, MAX_PDU_DATA},
+    hotplugging::hotplugging_task,
 };
-use tokio::time::sleep;
-
-use crate::{
-    app_state::AppState,
-    ethercat::config::{MAX_SUBDEVICES, PDI_LEN},
-};
-
-use super::config::{MAX_FRAMES, MAX_PDU_DATA};
-
-async fn scan_etehrcat_task(app_state: Arc<AppState>) {
-    loop {
-        // get main device
-        let maindevice_guard = app_state.maindevice.read().await;
-        let maindevice = match maindevice_guard.as_ref() {
-            Some(device) => device,
-            None => {
-                log::error!("MainDevice not initialized");
-                continue;
-            }
-        };
-
-        // discover subdevices
-        let group = maindevice
-            .init_single_group::<MAX_SUBDEVICES, PDI_LEN>(ethercat_now)
-            .await
-            .expect("Init");
-
-        log::info!("Discovered {} SubDevices", group.len());
-
-        // replace the group in the app state
-        let mut group_guard = app_state.group.write().await;
-        group_guard.replace(group);
-
-        sleep(Duration::from_secs(1)).await;
-    }
-}
-
-pub static PDU_STORAGE: PduStorage<MAX_FRAMES, MAX_PDU_DATA> = PduStorage::new();
 
 pub async fn init_ethercat(app_state: Arc<AppState>) {
-    // check interface input
     let interface = "en10";
+    let pdu_storage = Box::new(PduStorage::<MAX_FRAMES, MAX_PDU_DATA>::new());
+    let pdu_storage = Box::leak(pdu_storage);
+    let (tx, rx, pdu_loop) = pdu_storage.try_split().expect("can only split once");
 
-    let (tx, rx, pdu_loop) = PDU_STORAGE.try_split().expect("can only split once");
-
-    tokio::spawn(tx_rx_task(interface, tx, rx).expect("spawn TX/RX task"));
-
-    // sca
-    tokio::spawn(scan_etehrcat_task(app_state.clone()));
-
+    // build main device
     let maindevice = MainDevice::new(
         pdu_loop,
         Timeouts {
@@ -64,11 +26,14 @@ pub async fn init_ethercat(app_state: Arc<AppState>) {
         MainDeviceConfig::default(),
     );
 
-    // add main device to app state
-    app_state
-        .clone()
-        .maindevice
-        .write()
-        .await
-        .replace(maindevice);
+    // replace maindevice in app state
+    let mut maindevice_guard = app_state.ethercat_master.write().await;
+    maindevice_guard.replace(maindevice);
+    drop(maindevice_guard);
+
+    // check interface input
+    tokio::spawn(tx_rx_task(&interface, tx, rx).expect("spawn TX/RX task"));
+
+    // scan ethercat task
+    tokio::spawn(hotplugging_task(app_state.clone()));
 }

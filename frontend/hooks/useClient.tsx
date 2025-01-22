@@ -5,7 +5,7 @@ const GetEthercat = z.object({
   devices: z.array(
     z.object({
       name: z.string(),
-      address: z.string(),
+      address: z.number(),
     })
   ),
 });
