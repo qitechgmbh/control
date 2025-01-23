@@ -1,4 +1,4 @@
-use std::{sync::Arc, time::Duration};
+use std::{sync::Arc, thread::spawn, time::Duration};
 
 use ethercrab::std::ethercat_now;
 use tokio::time::sleep;
@@ -36,6 +36,13 @@ pub async fn hotplugging_task(app_state: Arc<AppState>) {
             .expect("count subdevices");
 
         if online_devices_count as i32 != group_size as i32 {
+            // notify client via socketio
+            tokio::spawn(async {
+                EthercatDevicesEvent::build_warning("Configuring Devices...".to_string())
+                    .emit("main")
+                    .await
+            });
+
             // set group none
             let mut group_guard = app_state.ethercat_devices.write().await;
             group_guard.take();
@@ -70,7 +77,7 @@ pub async fn hotplugging_task(app_state: Arc<AppState>) {
             drop(group_guard);
 
             // notify client via socketio
-            EthercatDevicesEvent::emit("main")
+            tokio::spawn(async { EthercatDevicesEvent::build().await.emit("main").await });
         }
 
         sleep(Duration::from_millis(100)).await;

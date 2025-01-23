@@ -57,6 +57,8 @@ export type MessageResponse<T> = {
   event: string;
   data: T | undefined;
   error: string | undefined;
+  warning: string | undefined;
+  status: "no_data" | "error" | "warning" | "success";
   ts: number;
 };
 
@@ -68,7 +70,9 @@ export function useSockerioEvent<T>(
   const [res, setRes] = useState<MessageResponse<T>>({
     event,
     data: undefined,
-    error: "No Data",
+    error: undefined,
+    warning: undefined,
+    status: "no_data",
     ts: Date.now(),
   });
 
@@ -85,8 +89,16 @@ export function useSockerioEvent<T>(
 
 export type EthercatDevicesEvent = {
   devices: {
-    adress: number;
+    address: number;
     name: string;
+    alias_address: number;
+    configured_address: number;
+    dc_support: boolean;
+    propagation_delay: number;
+    product_id: number;
+    revision: number;
+    serial: number;
+    vendor_id: number;
   }[];
 };
 
