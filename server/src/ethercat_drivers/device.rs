@@ -1,4 +1,4 @@
-use super::devices::{el2008::EL2008, el2809::EL2809};
+use super::devices::{el2008::EL2008, el2634::EL2634, el2809::EL2809};
 use crate::ethercat::config::{MAX_SUBDEVICES, PDI_LEN};
 use anyhow::anyhow;
 use ethercrab::{subdevice_group::Op, MainDevice, SubDeviceGroup, SubDevicePdi, SubDeviceRef};
@@ -94,6 +94,7 @@ fn device_from_name(value: &str) -> Result<Arc<RwLock<dyn Device>>, anyhow::Erro
     match value {
         "EL2008" => Ok(Arc::new(RwLock::new(EL2008::new()))),
         "EL2809" => Ok(Arc::new(RwLock::new(EL2809::new()))),
+        "EL2634" => Ok(Arc::new(RwLock::new(EL2634::new()))),
         _ => Err(anyhow::anyhow!("No Driver: {}", value)),
     }
 }
