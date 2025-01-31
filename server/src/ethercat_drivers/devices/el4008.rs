@@ -25,7 +25,9 @@ impl EL4008 {
         }
     }
 }
-fn fn32_to_i16(value: f32) -> i16 {
+
+/// transform a float from 0-1 to a 12bit integer
+fn f32_to_i16(value: f32) -> i16 {
     // Clamp the value between -1.0 and 1.0
     let clamped_value = value.clamp(-1.0, 1.0);
     // Scale to the 16-bit range and round
@@ -37,7 +39,7 @@ fn fn32_to_i16(value: f32) -> i16 {
 impl AnalogOutputDevice<EL4008Port> for EL4008 {
     fn analog_output_write(&mut self, port: EL4008Port, value: f32) {
         let pdu_index = port.to_le_pdu_index();
-        let value = fn32_to_i16(value);
+        let value = f32_to_i16(value);
         let bytes = value.to_be_bytes();
         self.output_pdus[pdu_index + 1] = bytes[0];
         self.output_pdus[pdu_index + 0] = bytes[1];

@@ -11,7 +11,7 @@ use crate::{
             el1008::{EL1008Port, EL1008},
             el2008::{EL2008Port, EL2008},
         },
-        drivers::{
+        actors::{
             digital_input_logger::DigitalInputLogger, digital_output_blinker::DigitalOutputBlinker,
         },
         io::{digital_input::DigitalInputDevice, digital_output::DigitalOutputDevice},
