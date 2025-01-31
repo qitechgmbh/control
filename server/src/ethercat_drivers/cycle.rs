@@ -30,9 +30,11 @@ pub async fn cycle<'maindevice>(
             Some(device) => device.write().await,
             None => continue,
         };
-        let input = subdevice.inputs_raw();
         let input_ts = input_ts + propagation_delays_guard[i] as u64;
-        device.input_checked(input_ts, input.as_ref())?;
+        let output_ts = output_ts + propagation_delays_guard[i] as u64;
+        device.ts(input_ts, output_ts);
+        let input = subdevice.inputs_raw();
+        device.input_checked(input.as_ref())?;
     }
 
     // execute actors
@@ -41,7 +43,6 @@ pub async fn cycle<'maindevice>(
         let mut actor = actor.write().await;
         Box::pin(actor.act(now_ts)).await;
     }
-    drop(actors_guard);
 
     // copy outputs from devices
     for (i, subdevice) in group_guard.iter(&maindevice_guard).enumerate() {
@@ -50,13 +51,12 @@ pub async fn cycle<'maindevice>(
             None => continue,
         };
         let mut output = subdevice.outputs_raw_mut();
-        let output_ts = output_ts + propagation_delays_guard[i] as u64;
-        device.output_checked(output_ts, output.as_mut())?;
+        device.output_checked(output.as_mut())?;
     }
 
     // calculate the time it took to execute the tick processors
     let calc_end_ts = ethercat_now();
-    log::debug!(
+    log::trace!(
         "Calculation took {} us",
         calc_end_ts.saturating_sub(calc_start_ts) / 1000
     );

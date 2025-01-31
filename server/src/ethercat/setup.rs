@@ -1,6 +1,9 @@
 use crate::{
     app_state::AppState,
-    ethercat::config::{MAX_SUBDEVICES, PDI_LEN},
+    ethercat::{
+        config::{MAX_SUBDEVICES, PDI_LEN},
+        mainloop::cycle_task,
+    },
     ethercat_drivers::{
         actor::Actor,
         device::{devices_from_subdevice_group, get_device, Device},
@@ -77,7 +80,8 @@ pub async fn setup(app_state: Arc<AppState>) -> Result<(), Error> {
     let mut ethercat_propagation_delays_guard = app_state.ethercat_propagation_delays.write().await;
     *ethercat_propagation_delays_guard = Some(propagation_delays);
 
-    // spawn 
+    // spawn
+    tokio::spawn(cycle_task(app_state.clone()));
 
     // notify client via socketio
     tokio::spawn(async { EthercatDevicesEvent::build().await.emit("main").await });

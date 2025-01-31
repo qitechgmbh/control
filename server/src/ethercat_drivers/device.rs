@@ -8,7 +8,7 @@ use tokio::sync::RwLock;
 pub trait Device: Any + Send + Sync {
     /// Input data from the last cycle
     /// `ts` is the timestamp when the input data was sent by the device
-    fn input(&mut self, _ts: u64, _input: &[u8]) {
+    fn input(&mut self, _input: &[u8]) {
         ()
     }
 
@@ -18,7 +18,7 @@ pub trait Device: Any + Send + Sync {
     }
 
     /// automatically validate input length, then calls input
-    fn input_checked(&mut self, input_ts: u64, input: &[u8]) -> Result<(), anyhow::Error> {
+    fn input_checked(&mut self, input: &[u8]) -> Result<(), anyhow::Error> {
         // validate input has correct length
         let input_len = self.input_len();
         if input.len() != input_len {
@@ -29,14 +29,14 @@ pub trait Device: Any + Send + Sync {
             ));
         }
 
-        self.input(input_ts, input);
+        self.input(input);
 
         Ok(())
     }
 
     /// Output data for the next cycle
     /// `ts` is the timestamp when the output data is predicted to be received by the device
-    fn output(&self, _output_ts: u64, _output: &mut [u8]) {
+    fn output(&self, _output: &mut [u8]) {
         ()
     }
 
@@ -45,7 +45,7 @@ pub trait Device: Any + Send + Sync {
         0
     }
 
-    fn output_checked(&self, output_ts: u64, output: &mut [u8]) -> Result<(), anyhow::Error> {
+    fn output_checked(&self, output: &mut [u8]) -> Result<(), anyhow::Error> {
         // validate input has correct length
         let output_len = self.output_len();
         if output.len() != output_len {
@@ -56,9 +56,14 @@ pub trait Device: Any + Send + Sync {
             ));
         }
 
-        self.output(output_ts, output);
+        self.output(output);
 
         Ok(())
+    }
+
+    /// Write timestamps for current cycle
+    fn ts(&mut self, _input_ts: u64, _output_ts: u64) {
+        ()
     }
 
     fn as_any(&self) -> &dyn Any;

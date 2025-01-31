@@ -1,4 +1,5 @@
 use std::{future::Future, pin::Pin, sync::Arc};
+use tokio::sync::RwLock;
 
 pub struct DigitalOutput {
     pub write: Box<dyn Fn(bool) -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>,
@@ -6,6 +7,7 @@ pub struct DigitalOutput {
         Box<dyn Fn() -> Pin<Box<dyn Future<Output = DigitalOutputState> + Send>> + Send + Sync>,
 }
 
+#[derive(Debug, Clone)]
 pub struct DigitalOutputState {
     pub output_ts: u64,
     pub value: bool,
@@ -14,7 +16,7 @@ pub struct DigitalOutputState {
 pub trait DigitalOutputDevice<PORTS> {
     fn digital_output_write(&mut self, port: PORTS, value: bool);
     fn digital_output_state(&self, port: PORTS) -> DigitalOutputState;
-    fn digital_output(device: Arc<tokio::sync::RwLock<Self>>, port: PORTS) -> DigitalOutput
+    fn digital_output(device: Arc<RwLock<Self>>, port: PORTS) -> DigitalOutput
     where
         Self: Send + Sync + 'static,
         PORTS: Clone + Send + Sync + 'static,

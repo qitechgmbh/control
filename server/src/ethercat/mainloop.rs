@@ -6,7 +6,7 @@ use tokio::time::MissedTickBehavior;
 
 use crate::app_state::AppState;
 
-pub async fn cycle_task(app_state: Arc<AppState>) -> Result<(), anyhow::Error> {
+async fn cycle_task_failing(app_state: Arc<AppState>) -> Result<(), anyhow::Error> {
     let interval = Duration::from_millis(1);
 
     let mut tokio_interval = tokio::time::interval(Duration::from_millis(5));
@@ -48,5 +48,13 @@ pub async fn cycle_task(app_state: Arc<AppState>) -> Result<(), anyhow::Error> {
         }
 
         tokio_interval.tick().await;
+    }
+}
+
+pub async fn cycle_task(app_state: Arc<AppState>) {
+    loop {
+        if let Err(e) = cycle_task_failing(app_state.clone()).await {
+            log::error!("Error in cycle task: {:?}", e);
+        }
     }
 }

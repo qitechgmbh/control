@@ -45,8 +45,11 @@ impl Device for EL2809 {
     fn output_len(&self) -> usize {
         OUTPUT_PDU_LEN
     }
-    fn output(&self, _output_ts: u64, output: &mut [u8]) {
+    fn output(&self, output: &mut [u8]) {
         output.copy_from_slice(&self.output_pdus);
+    }
+    fn ts(&mut self, _input_ts: u64, output_ts: u64) {
+        self.output_ts = output_ts;
     }
     fn as_any(&self) -> &dyn Any {
         self

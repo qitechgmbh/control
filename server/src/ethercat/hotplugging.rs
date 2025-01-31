@@ -35,6 +35,8 @@ pub async fn hotplugging_task(app_state: Arc<AppState>) {
             let group_size = group_size as u32;
 
             if online_devices_count as i32 != group_size as i32 {
+                drop(maindevice_guard);
+                drop(group_guard);
                 let _ = setup(app_state.clone()).await.or_else(|e| {
                     log::error!("Error configuring devices: {:?}", e);
                     Err(e)

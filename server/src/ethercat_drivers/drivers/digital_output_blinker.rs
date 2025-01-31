@@ -1,4 +1,4 @@
-use crate::ethercat_drivers::{io::digital_output::DigitalOutput, actor::Actor};
+use crate::ethercat_drivers::{actor::Actor, io::digital_output::DigitalOutput};
 use std::{future::Future, pin::Pin, time::Duration};
 
 pub struct DigitalOutputBlinker {
