@@ -1,16 +1,12 @@
-use std::collections::HashMap;
-
-use socketioxide::extract::{Data, SocketRef};
-
-use serde::{Deserialize, Serialize};
-use tokio::spawn;
-
-use crate::app_state::APP_STATE;
-
 use super::{
     event::{Event, EventType},
     messages::ethercat_devices_event::EthercatDevicesEvent,
 };
+use crate::app_state::APP_STATE;
+use serde::{Deserialize, Serialize};
+use socketioxide::extract::{Data, SocketRef};
+use std::collections::HashMap;
+use tokio::spawn;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct RoomJoinEvent {
@@ -135,7 +131,7 @@ impl Room {
 
         // emit the event
         for socket in self.sockets.iter() {
-            socket.emit(name.clone(), &event);
+            let _ = socket.emit(name.clone(), &event);
         }
     }
 }

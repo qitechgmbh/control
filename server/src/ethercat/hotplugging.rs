@@ -1,13 +1,7 @@
-use std::{sync::Arc, thread::spawn, time::Duration};
-
-use ethercrab::std::ethercat_now;
+use std::{sync::Arc, time::Duration};
 use tokio::time::sleep;
-
-use crate::{
-    app_state::AppState,
-    ethercat::config::{MAX_SUBDEVICES, PDI_LEN},
-    socketio::{event::EventData, messages::ethercat_devices_event::EthercatDevicesEvent},
-};
+use crate::app_state::AppState;
+use super::setup::setup;
 
 pub async fn hotplugging_task(app_state: Arc<AppState>) {
     loop {
@@ -21,63 +15,27 @@ pub async fn hotplugging_task(app_state: Arc<AppState>) {
             }
         };
 
+        // check how many devices are online
+        let online_devices_count = maindevice
+            .count_subdevices()
+            .await
+            .expect("count subdevices");
+        drop(maindevice_guard);
+
         // get current group
         let group_guard = app_state.ethercat_devices.read().await;
         let group_size = match group_guard.as_ref() {
             Some(group) => group.len(),
             None => 0,
         };
+        let group_size = group_size as u32;
         drop(group_guard);
 
-        // check how many devices are online
-        let online_devices_count = maindevice
-            .count_subdevices()
-            .await
-            .expect("count subdevices");
-
         if online_devices_count as i32 != group_size as i32 {
-            // notify client via socketio
-            tokio::spawn(async {
-                EthercatDevicesEvent::build_warning("Configuring Devices...".to_string())
-                    .emit("main")
-                    .await
+            let _ = setup(app_state.clone()).await.or_else(|e| {
+                log::error!("Error configuring devices: {:?}", e);
+                Err(e)
             });
-
-            // set group none
-            let mut group_guard = app_state.ethercat_devices.write().await;
-            group_guard.take();
-            drop(group_guard);
-
-            // log difference
-            let diff = online_devices_count as i32 - group_size as i32;
-            match diff {
-                x if x > 0 => log::info!("Detected added Device"),
-                x if x < 0 => log::info!("Detected removed Device"),
-                _ => log::debug!("Detected nothing!"),
-            };
-
-            // initialize all subdevices
-            // Fails if DC setup detects a mispatching working copunter, then just try again in loop
-            let mut group = None;
-            while group.is_none() {
-                match maindevice
-                    .init_single_group::<MAX_SUBDEVICES, PDI_LEN>(ethercat_now)
-                    .await
-                {
-                    Ok(g) => group = Some(g),
-                    _ => {}
-                }
-            }
-            let group = group.unwrap();
-            log::info!("Initialized {} subdevices", group.len());
-
-            // replace the group in the app state
-            let mut group_guard = app_state.ethercat_devices.write().await;
-            group_guard.replace(group);
-            drop(group_guard);
-
-            // notify client via socketio
-            tokio::spawn(async { EthercatDevicesEvent::build().await.emit("main").await });
         }
 
         sleep(Duration::from_millis(100)).await;

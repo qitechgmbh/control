@@ -5,12 +5,10 @@ use ethercat::init::init_ethercat;
 use rest::init::init_api;
 use socketio::init::init_socketio;
 
-pub mod rest;
-
 pub mod app_state;
-
 pub mod ethercat;
-
+pub mod ethercat_drivers;
+pub mod rest;
 pub mod socketio;
 
 #[tokio::main]

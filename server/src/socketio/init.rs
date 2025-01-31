@@ -1,6 +1,6 @@
 use crate::app_state::APP_STATE;
 use crate::socketio::room::{on_room_join, on_room_leave};
-use socketioxide::extract::{Data, SocketRef};
+use socketioxide::extract::SocketRef;
 use socketioxide::layer::SocketIoLayer;
 use tokio::spawn;
 

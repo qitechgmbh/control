@@ -1,9 +1,8 @@
-use serde::{Deserialize, Serialize};
-
 use crate::{
     app_state::APP_STATE,
     socketio::event::{Event, EventData, EventType},
 };
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct EthercatDevicesEvent {
@@ -51,17 +50,20 @@ impl EventData for EthercatDevicesEvent {
             EthercatDevicesEvent {
                 devices: (*group)
                     .iter(&maindevice)
-                    .map(|subdevice| Device {
-                        address: subdevice.configured_address(),
-                        name: subdevice.name().to_string(),
-                        alias_address: subdevice.alias_address(),
-                        configured_address: subdevice.configured_address(),
-                        dc_support: subdevice.dc_support().any(),
-                        propagation_delay: subdevice.propagation_delay(),
-                        product_id: subdevice.identity().product_id,
-                        revision: subdevice.identity().revision,
-                        serial: subdevice.identity().serial,
-                        vendor_id: subdevice.identity().vendor_id,
+                    .map(|subdevice| {
+                        log::info!("Subdevice: {:?}", subdevice.identity());
+                        return Device {
+                            address: subdevice.configured_address(),
+                            name: subdevice.name().to_string(),
+                            alias_address: subdevice.alias_address(),
+                            configured_address: subdevice.configured_address(),
+                            dc_support: subdevice.dc_support().any(),
+                            propagation_delay: subdevice.propagation_delay(),
+                            product_id: subdevice.identity().product_id,
+                            revision: subdevice.identity().revision,
+                            serial: subdevice.identity().serial,
+                            vendor_id: subdevice.identity().vendor_id,
+                        };
                     })
                     .collect::<Vec<_>>(),
             },
