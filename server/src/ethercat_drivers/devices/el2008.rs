@@ -57,27 +57,27 @@ impl Device for EL2008 {
 
 #[derive(Debug, Clone, Copy)]
 pub enum EL2008Port {
-    Pin1,
-    Pin2,
-    Pin3,
-    Pin4,
-    Pin5,
-    Pin6,
-    Pin7,
-    Pin8,
+    DO1,
+    DO2,
+    DO3,
+    DO4,
+    DO5,
+    DO6,
+    DO7,
+    DO8,
 }
 
 impl EL2008Port {
     pub fn to_bit_index(&self) -> usize {
         match self {
-            EL2008Port::Pin1 => 0,
-            EL2008Port::Pin2 => 1,
-            EL2008Port::Pin3 => 2,
-            EL2008Port::Pin4 => 3,
-            EL2008Port::Pin5 => 4,
-            EL2008Port::Pin6 => 5,
-            EL2008Port::Pin7 => 6,
-            EL2008Port::Pin8 => 7,
+            EL2008Port::DO1 => 0,
+            EL2008Port::DO2 => 1,
+            EL2008Port::DO3 => 2,
+            EL2008Port::DO4 => 3,
+            EL2008Port::DO5 => 4,
+            EL2008Port::DO6 => 5,
+            EL2008Port::DO7 => 6,
+            EL2008Port::DO8 => 7,
         }
     }
 }

@@ -7,9 +7,9 @@ use tokio::time::MissedTickBehavior;
 use crate::app_state::AppState;
 
 async fn cycle_task_failing(app_state: Arc<AppState>) -> Result<(), anyhow::Error> {
-    let interval = Duration::from_millis(1);
+    let interval = Duration::from_nanos(1_000);
 
-    let mut tokio_interval = tokio::time::interval(Duration::from_millis(5));
+    let mut tokio_interval = tokio::time::interval(interval);
     tokio_interval.set_missed_tick_behavior(MissedTickBehavior::Skip);
 
     loop {

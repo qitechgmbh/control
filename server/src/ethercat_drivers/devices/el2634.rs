@@ -57,19 +57,19 @@ impl Device for EL2634 {
 
 #[derive(Debug, Clone, Copy)]
 pub enum EL2634Port {
-    Pin1,
-    Pin2,
-    Pin3,
-    Pin4,
+    R1,
+    R2,
+    R3,
+    R4,
 }
 
 impl EL2634Port {
     pub fn to_bit_index(&self) -> usize {
         match self {
-            EL2634Port::Pin1 => 0,
-            EL2634Port::Pin2 => 1,
-            EL2634Port::Pin3 => 2,
-            EL2634Port::Pin4 => 3,
+            EL2634Port::R1 => 0,
+            EL2634Port::R2 => 1,
+            EL2634Port::R3 => 2,
+            EL2634Port::R4 => 3,
         }
     }
 }

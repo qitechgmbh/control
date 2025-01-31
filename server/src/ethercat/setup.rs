@@ -8,15 +8,14 @@ use crate::{
         actor::Actor,
         device::{devices_from_subdevice_group, get_device, Device},
         devices::{
+            el1008::{EL1008Port, EL1008},
             el2008::{EL2008Port, EL2008},
-            el2634::{EL2634Port, EL2634},
-            el2809::{EL2809Port, EL2809},
         },
         drivers::{
-            digital_output_blinker::DigitalOutputBlinker,
-            digital_output_blinkers::DigitalOutputBlinkers,
+            digital_input_logger::DigitalInputLogger, digital_output_blinker::DigitalOutputBlinker,
         },
-        io::digital_output::DigitalOutputDevice,
+        io::{digital_input::DigitalInputDevice, digital_output::DigitalOutputDevice},
+        utils::traits::ArcRwLock,
     },
     socketio::{event::EventData, messages::ethercat_devices_event::EthercatDevicesEvent},
 };
@@ -72,100 +71,16 @@ pub async fn setup(app_state: Arc<AppState>) -> Result<(), Error> {
         devices_from_subdevice_group(&group_op, maindevice);
 
     let actors: Vec<Arc<RwLock<dyn Actor>>> = vec![
-        DigitalOutputBlinkers::new_arc_rwlock(
-            vec![
-                Some(EL2809::digital_output(
-                    get_device::<EL2809>(&devices, 1).await?,
-                    EL2809Port::Pin1,
-                )),
-                Some(EL2809::digital_output(
-                    get_device::<EL2809>(&devices, 1).await?,
-                    EL2809Port::Pin2,
-                )),
-                Some(EL2809::digital_output(
-                    get_device::<EL2809>(&devices, 1).await?,
-                    EL2809Port::Pin3,
-                )),
-                Some(EL2809::digital_output(
-                    get_device::<EL2809>(&devices, 1).await?,
-                    EL2809Port::Pin4,
-                )),
-                Some(EL2809::digital_output(
-                    get_device::<EL2809>(&devices, 1).await?,
-                    EL2809Port::Pin5,
-                )),
-                Some(EL2809::digital_output(
-                    get_device::<EL2809>(&devices, 1).await?,
-                    EL2809Port::Pin6,
-                )),
-                Some(EL2809::digital_output(
-                    get_device::<EL2809>(&devices, 1).await?,
-                    EL2809Port::Pin7,
-                )),
-                Some(EL2809::digital_output(
-                    get_device::<EL2809>(&devices, 1).await?,
-                    EL2809Port::Pin8,
-                )),
-                Some(EL2809::digital_output(
-                    get_device::<EL2809>(&devices, 1).await?,
-                    EL2809Port::Pin16,
-                )),
-                Some(EL2809::digital_output(
-                    get_device::<EL2809>(&devices, 1).await?,
-                    EL2809Port::Pin15,
-                )),
-                Some(EL2809::digital_output(
-                    get_device::<EL2809>(&devices, 1).await?,
-                    EL2809Port::Pin14,
-                )),
-                Some(EL2809::digital_output(
-                    get_device::<EL2809>(&devices, 1).await?,
-                    EL2809Port::Pin13,
-                )),
-                Some(EL2809::digital_output(
-                    get_device::<EL2809>(&devices, 1).await?,
-                    EL2809Port::Pin12,
-                )),
-                None,
-                None,
-                Some(EL2008::digital_output(
-                    get_device::<EL2008>(&devices, 2).await?,
-                    EL2008Port::Pin7,
-                )),
-                Some(EL2008::digital_output(
-                    get_device::<EL2008>(&devices, 2).await?,
-                    EL2008Port::Pin8,
-                )),
-                Some(EL2008::digital_output(
-                    get_device::<EL2008>(&devices, 2).await?,
-                    EL2008Port::Pin6,
-                )),
-                Some(EL2008::digital_output(
-                    get_device::<EL2008>(&devices, 2).await?,
-                    EL2008Port::Pin4,
-                )),
-                Some(EL2008::digital_output(
-                    get_device::<EL2008>(&devices, 2).await?,
-                    EL2008Port::Pin2,
-                )),
-                Some(EL2008::digital_output(
-                    get_device::<EL2008>(&devices, 2).await?,
-                    EL2008Port::Pin1,
-                )),
-                None,
-                None,
-                Some(EL2809::digital_output(
-                    get_device::<EL2809>(&devices, 1).await?,
-                    EL2809Port::Pin9,
-                )),
-            ],
-            Duration::from_millis(25),
-            6,
-        ),
-        DigitalOutputBlinker::new_arc_rwlock(
-            EL2634::digital_output(get_device::<EL2634>(&devices, 3).await?, EL2634Port::Pin3),
+        DigitalOutputBlinker::new(
+            EL2008::digital_output(get_device::<EL2008>(&devices, 2).await?, EL2008Port::DO1),
             Duration::from_millis(500),
-        ),
+        )
+        .to_arc_rwlock(),
+        DigitalInputLogger::new(EL1008::digital_input(
+            get_device::<EL1008>(&devices, 1).await?,
+            EL1008Port::DI2,
+        ))
+        .to_arc_rwlock(),
     ];
 
     // set all setup data

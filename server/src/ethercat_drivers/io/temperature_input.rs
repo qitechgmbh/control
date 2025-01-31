@@ -4,7 +4,6 @@ use tokio::sync::RwLock;
 type Value = f32;
 
 pub struct TemperatureInput {
-    // pub write: Box<dyn Fn(Value) -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>,
     pub state:
         Box<dyn Fn() -> Pin<Box<dyn Future<Output = TemperatureInputState> + Send>> + Send + Sync>,
 }
@@ -59,7 +58,6 @@ impl TemperatureInputValid {
 }
 
 pub trait TemperatureInputDevice<PORTS> {
-    // fn digital_input_write(&mut self, port: PORTS, value: Value);
     fn temperature_input_state(&self, port: PORTS) -> TemperatureInputState;
     fn temparature_input(device: Arc<RwLock<Self>>, port: PORTS) -> TemperatureInput
     where

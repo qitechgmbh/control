@@ -81,19 +81,19 @@ impl Device for EL3204 {
 
 #[derive(Debug, Clone, Copy)]
 pub enum EL3204Port {
-    Input1,
-    Input2,
-    Input3,
-    Input4,
+    T1,
+    T2,
+    T3,
+    T4,
 }
 
 impl EL3204Port {
     pub fn to_byte_offset(&self) -> usize {
         match self {
-            EL3204Port::Input1 => 0,
-            EL3204Port::Input2 => 4,
-            EL3204Port::Input3 => 8,
-            EL3204Port::Input4 => 12,
+            EL3204Port::T1 => 0,
+            EL3204Port::T2 => 4,
+            EL3204Port::T3 => 8,
+            EL3204Port::T4 => 12,
         }
     }
 }

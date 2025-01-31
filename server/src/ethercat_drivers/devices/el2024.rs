@@ -57,19 +57,19 @@ impl Device for EL2024 {
 
 #[derive(Debug, Clone, Copy)]
 pub enum EL2024Port {
-    Pin1,
-    Pin2,
-    Pin3,
-    Pin4,
+    DO1,
+    DO2,
+    DO3,
+    DO4,
 }
 
 impl EL2024Port {
     pub fn to_bit_index(&self) -> usize {
         match self {
-            EL2024Port::Pin1 => 0,
-            EL2024Port::Pin2 => 1,
-            EL2024Port::Pin3 => 2,
-            EL2024Port::Pin4 => 3,
+            EL2024Port::DO1 => 0,
+            EL2024Port::DO2 => 1,
+            EL2024Port::DO3 => 2,
+            EL2024Port::DO4 => 3,
         }
     }
 }
