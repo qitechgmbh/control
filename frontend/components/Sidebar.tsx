@@ -7,15 +7,24 @@ import { OutsideCorner } from "./OutsideCorner";
 type SidbarButton = {
   icon: React.ReactNode;
   children: React.ReactNode;
+  // used for active state detection
+  parentLink?: string;
+  // actual navigation link
   link?: string;
   isFirst?: boolean;
 };
 
-function SidbarButton({ icon, children, link, isFirst }: SidbarButton) {
+function SidbarButton({
+  icon,
+  children,
+  link,
+  parentLink,
+  isFirst,
+}: SidbarButton) {
   const router = useRouter();
   // get current route
   const pathname = usePathname();
-  const isActive = link ? pathname.startsWith(link) : false;
+  const isActive = parentLink ? pathname.startsWith(parentLink) : false;
 
   return (
     <div
@@ -38,18 +47,22 @@ function SidbarButton({ icon, children, link, isFirst }: SidbarButton) {
 export function AppSidebar() {
   return (
     <>
-      <div className="w-44"></div>
-      <div className="flex flex-col h-full fixed w-44 bg-neutral-200">
+      <div className="w-40"></div>
+      <div className="flex flex-col h-full fixed w-40 z-10 bg-neutral-200">
         <div className="h-20">QiTech Control</div>
         <div className="flex flex-col gap-2">
-          <SidbarButton icon={<RotateCcw size={20} />} isFirst>
+          <SidbarButton icon={<RotateCcw size={22} />} isFirst>
             Winder
           </SidbarButton>
-          <SidbarButton icon={<Flame size={20} />}>Extruder</SidbarButton>
-          <SidbarButton icon={<Droplet size={20} />}>
+          <SidbarButton icon={<Flame size={22} />}>Extruder</SidbarButton>
+          <SidbarButton icon={<Droplet size={22} />}>
             Wasserkühlung
           </SidbarButton>
-          <SidbarButton icon={<Wrench size={20} />} link="/configuration">
+          <SidbarButton
+            icon={<Wrench size={22} />}
+            parentLink="/configuration"
+            link="/configuration/ethercat"
+          >
             Konfiguration
           </SidbarButton>
         </div>

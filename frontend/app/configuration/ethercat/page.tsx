@@ -2,14 +2,10 @@
 
 import { Page } from "@/components/Page";
 import { RefreshIndicator } from "@/components/RefreshIndicator";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { SectionTitle } from "@/components/SectionTitle";
+import { MyTable } from "@/components/Table";
+import { Button } from "@/components/ui/button";
+
 import { Bool, EthercatVendorId, Hex, Unit } from "@/components/Value";
 import {
   EthercatDevicesEvent,
@@ -18,16 +14,21 @@ import {
 
 import {
   ColumnDef,
-  flexRender,
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
+import Link from "next/link";
 
 export const columns: ColumnDef<EthercatDevicesEvent["devices"][0]>[] = [
   {
     accessorKey: "address",
     header: "Adresse",
     cell: (row) => <Hex value={row.row.original.address} />,
+  },
+  {
+    accessorKey: "alias_address",
+    header: "Alias Adresse",
+    cell: (row) => <Hex value={row.row.original.alias_address} />,
   },
   {
     accessorKey: "name",
@@ -67,6 +68,17 @@ export const columns: ColumnDef<EthercatDevicesEvent["devices"][0]>[] = [
       <Unit value={row.row.original.propagation_delay} unit="ns" />
     ),
   },
+  {
+    accessorKey: "details",
+    header: "Details",
+    cell: (row) => (
+      <Button>
+        <Link href={`ethercat/${row.row.original.address.toString(16)}`}>
+          Details
+        </Link>
+      </Button>
+    ),
+  },
 ];
 
 export default function EthercatPage() {
@@ -82,49 +94,10 @@ export default function EthercatPage() {
 
   return (
     <Page title="EtherCAT">
-      <RefreshIndicator messageResponse={deviceMessage} />
-      <Table className="w-full">
-        <TableHeader>
-          {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id}>
-              {headerGroup.headers.map((header) => {
-                return (
-                  <TableHead key={header.id}>
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
-                  </TableHead>
-                );
-              })}
-            </TableRow>
-          ))}
-        </TableHeader>
-        <TableBody>
-          {table.getRowModel().rows?.length ? (
-            table.getRowModel().rows.map((row) => (
-              <TableRow
-                key={row.id}
-                data-state={row.getIsSelected() && "selected"}
-              >
-                {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id}>
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))
-          ) : (
-            <TableRow>
-              <TableCell colSpan={columns.length} className="h-24 text-center">
-                No results.
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
+      <SectionTitle title="Geräte">
+        <RefreshIndicator messageResponse={deviceMessage} />
+      </SectionTitle>
+      <MyTable table={table} />
     </Page>
   );
 }

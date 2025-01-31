@@ -1,29 +1,36 @@
 import { useState } from "react";
 import { z } from "zod";
 
-const GetEthercat = z.object({
-  devices: z.array(
-    z.object({
-      name: z.string(),
-      address: z.number(),
-    })
-  ),
+const xRequestSchema = z.object({
+  address: z.number(),
 });
 
-export type GetEthercat = z.infer<typeof GetEthercat>;
+const xResponseSchema = z.object({
+  x2000: z.number(),
+});
+
+export type XResponse = z.infer<typeof xResponseSchema>;
+
+export type XRequest = z.infer<typeof xRequestSchema>;
 
 type Client = {
-  getEthercat: () => Promise<GetEthercat>;
+  x: (req: XRequest) => Promise<XResponse>;
 };
 
 const baseUrl = "http://localhost:3001";
 
 export const getClient = () => {
   const client: Client = {
-    getEthercat: async () => {
-      const response = await fetch(`${baseUrl}/api/v1/ethercat`);
+    x: async (req: XRequest) => {
+      const response = await fetch(`${baseUrl}/api/v1/x`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(xRequestSchema.parse(req)),
+      });
       const data = await response.json();
-      return GetEthercat.parse(data);
+      return xResponseSchema.parse(data);
     },
   };
   return client;

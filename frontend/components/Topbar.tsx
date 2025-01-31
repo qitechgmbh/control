@@ -2,6 +2,7 @@
 import { usePathname, useRouter } from "next/navigation";
 import React from "react";
 import { OutsideCorner } from "./OutsideCorner";
+import { BackButton } from "./BackButton";
 
 type Item = {
   icon?: React.ReactNode;
@@ -14,7 +15,7 @@ type Props = {
   items: Item[];
 };
 
-function TopbarItem({ icon, title, isFirst, link }: Item) {
+function TopbarItem({ icon, title, link }: Item) {
   const router = useRouter();
   const pathname = usePathname();
   const isActive = link ? pathname.startsWith(link) : false;
@@ -32,7 +33,7 @@ function TopbarItem({ icon, title, isFirst, link }: Item) {
         {icon}
         {title}
       </div>
-      <OutsideCorner bottomLeft={isActive && !isFirst} bottomRight={isActive} />
+      <OutsideCorner bottomLeft={isActive} bottomRight={isActive} />
     </div>
   );
 }
@@ -44,6 +45,9 @@ export function Topbar({ items }: Props) {
         className="h-20 w-full bg-neutral-200 fixed flex gap-2 pt-2"
         style={{ zIndex: 1000 }}
       >
+        <div className="h-full flex flex-col justify-end pb-2 z-10">
+          <BackButton />
+        </div>
         {items.map((item, index) => (
           <TopbarItem key={index} {...item} isFirst={index == 0} />
         ))}

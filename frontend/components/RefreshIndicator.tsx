@@ -44,7 +44,7 @@ export function RefreshIndicator({ messageResponse }: Props) {
   }, []);
 
   return (
-    <div className="flex items-center gap-1.5 px-2 p-1 bg-neutral-100 rounded-full w-fit">
+    <div className="flex items-center gap-1.5 px-3 p-0.5 bg-neutral-100 rounded-full w-fit">
       <div
         className={`w-2.5 h-2.5 rounded-full ${
           messageResponse.status === "no_data"

@@ -11,7 +11,7 @@ export default function Layout({ children }: Props) {
       <Topbar
         items={[
           {
-            icon: <EthernetPort size={20} />,
+            icon: <EthernetPort size={22} />,
             title: "Ethercat",
             link: "/configuration/ethercat",
           },
