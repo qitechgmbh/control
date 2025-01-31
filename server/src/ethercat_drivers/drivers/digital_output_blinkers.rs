@@ -1,6 +1,7 @@
-use crate::ethercat_drivers::{actor::Actor, io::digital_output::DigitalOutput};
+use crate::ethercat_drivers::{
+    actor::Actor, io::digital_output::DigitalOutput, utils::traits::ArcRwLock,
+};
 use std::{future::Future, pin::Pin, time::Duration};
-use tokio::sync::RwLock;
 
 pub struct DigitalOutputBlinkers {
     last_toggle: u64,
@@ -21,14 +22,6 @@ impl DigitalOutputBlinkers {
             index: 0,
             amount,
         }
-    }
-
-    pub fn new_arc_rwlock(
-        outputs: Vec<Option<DigitalOutput>>,
-        interval: Duration,
-        amount: usize,
-    ) -> std::sync::Arc<RwLock<Self>> {
-        std::sync::Arc::new(RwLock::new(Self::new(outputs, interval, amount)))
     }
 
     pub fn set_interval(&mut self, interval: Duration) {
@@ -60,3 +53,5 @@ impl Actor for DigitalOutputBlinkers {
         })
     }
 }
+
+impl ArcRwLock for DigitalOutputBlinkers {}
