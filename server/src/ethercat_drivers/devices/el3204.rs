@@ -8,6 +8,9 @@ use std::any::Any;
 
 const INPUT_PDU_LEN: usize = 16;
 
+/// EL3204 4-channel temperature input device
+///
+/// PT100 / Ni100 (RTD) / (2 wire)
 #[derive(Debug)]
 pub struct EL3204 {
     input_pdu: [u8; INPUT_PDU_LEN],
@@ -51,7 +54,7 @@ impl TemperatureInputDevice<EL3204Port> for EL3204 {
         let temperature = (value as f32) / 10.0;
 
         TemperatureInputState {
-            output_ts: self.inputs_ts,
+            input_ts: self.inputs_ts,
             value: temperature,
             status_undervoltage,
             status_overvoltage,

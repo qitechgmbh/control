@@ -3,6 +3,7 @@ use crate::ethercat_drivers::{
 };
 use std::{future::Future, pin::Pin, time::Duration};
 
+/// Set a digital output high and low with a given interval
 pub struct DigitalOutputBlinker {
     last_toggle: u64,
     output: DigitalOutput,

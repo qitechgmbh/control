@@ -7,6 +7,8 @@ use crate::ethercat_drivers::{
 
 const OUTPUT_PDU_LEN: usize = 2;
 
+/// EL2809 16-channel digital output device
+/// 24V DC, 0.5A per channel
 #[derive(Debug)]
 pub struct EL2809 {
     output_pdus: [u8; OUTPUT_PDU_LEN],

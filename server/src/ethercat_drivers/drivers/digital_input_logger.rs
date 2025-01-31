@@ -3,6 +3,7 @@ use crate::ethercat_drivers::{
 };
 use std::{future::Future, pin::Pin};
 
+/// Log the state of a digital input
 pub struct DigitalInputLogger {
     input: DigitalInput,
 }

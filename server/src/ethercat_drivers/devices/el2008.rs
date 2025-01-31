@@ -6,6 +6,9 @@ use std::any::Any;
 
 const OUTPUT_PDU_LEN: usize = 1;
 
+/// EL2008 8-channel digital output device
+/// 
+/// 24V DC, 0.5A per channel
 #[derive(Debug)]
 pub struct EL2008 {
     output_pdus: [u8; OUTPUT_PDU_LEN],

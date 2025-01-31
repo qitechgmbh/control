@@ -10,14 +10,23 @@ pub struct TemperatureInput {
 
 #[derive(Debug, Clone)]
 pub struct TemperatureInputState {
-    pub output_ts: u64,
+    /// Nanosecond timestamp
+    pub input_ts: u64,
+    /// Temperature in degrees Celsius (°C) with a resolution of 0.1°C
     pub value: Value,
+    /// Under-voltage error
     pub status_undervoltage: bool,
+    /// Over-voltage error
     pub status_overvoltage: bool,
+    /// Configured limit 1
     pub limit_1: TemperatureInputLimit,
+    /// Configured limit 2
     pub limit_2: TemperatureInputLimit,
+    /// Error flag
     pub error: bool,
+    /// if the TxPdu sstate is valid
     pub valid: TemperatureInputValid,
+    /// if the TxPdu is toggled
     pub toggle: bool,
 }
 

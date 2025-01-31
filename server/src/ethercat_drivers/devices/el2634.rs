@@ -6,6 +6,9 @@ use std::any::Any;
 
 const OUTPUT_PDU_LEN: usize = 1;
 
+/// EL2634 4-channel relay device
+/// 
+/// 250V AC / 30V DC / 4A per channel
 #[derive(Debug)]
 pub struct EL2634 {
     output_pdus: [u8; OUTPUT_PDU_LEN],

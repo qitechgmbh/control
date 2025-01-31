@@ -6,6 +6,9 @@ use std::any::Any;
 
 const OUTPUT_PDU_LEN: usize = 1;
 
+/// EL2024 4-channel digital output device
+/// 
+/// 24V DC, 0.5A per channel
 #[derive(Debug)]
 pub struct EL2024 {
     output_pdus: [u8; OUTPUT_PDU_LEN],

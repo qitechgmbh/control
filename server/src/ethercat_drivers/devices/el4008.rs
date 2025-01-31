@@ -6,6 +6,11 @@ use std::any::Any;
 
 const OUTPUT_PDU_LEN: usize = 16;
 
+/// EL4008 8-channel analog output device
+///
+/// 12-bit resolution, 0-10V
+///
+/// load > 5kOhm
 #[derive(Debug)]
 pub struct EL4008 {
     output_pdus: [u8; OUTPUT_PDU_LEN],

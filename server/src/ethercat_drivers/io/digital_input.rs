@@ -10,7 +10,11 @@ pub struct DigitalInput {
 
 #[derive(Debug, Clone)]
 pub struct DigitalInputState {
-    pub output_ts: u64,
+    /// Nanosecond timestamp
+    pub input_ts: u64,
+    /// Input value
+    /// true: high
+    /// false: low
     pub value: Value,
 }
 

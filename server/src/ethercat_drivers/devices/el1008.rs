@@ -6,6 +6,9 @@ use std::any::Any;
 
 const INPUT_PDU_LEN: usize = 1;
 
+/// EL1008 8-channel digital input device
+/// 
+/// 24V DC, 3ms filter
 #[derive(Debug)]
 pub struct EL1008 {
     input_pdu: [u8; INPUT_PDU_LEN],
@@ -25,7 +28,7 @@ impl DigitalInputDevice<EL1008Port> for EL1008 {
     fn digital_input_state(&self, port: EL1008Port) -> DigitalInputState {
         let bit_index = port.to_bit_index();
         DigitalInputState {
-            output_ts: self.inputs_ts,
+            input_ts: self.inputs_ts,
             value: self.input_pdu[0] & (1 << bit_index) != 0,
         }
     }

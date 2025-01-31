@@ -8,6 +8,7 @@ use uom::si::{angle::radian, f32::Angle, ratio::ratio};
 
 pub type AnalogFunction = Box<dyn Fn(u64) -> f32 + Send + Sync>;
 
+/// Can module analog output with a function
 pub struct AnalogFunctionGenerator {
     output: AnalogOutput,
     function: AnalogFunction,
