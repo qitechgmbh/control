@@ -1,4 +1,4 @@
-use super::devices::el2008::EL2008;
+use super::devices::{el2008::EL2008, el2809::EL2809};
 use crate::ethercat::config::{MAX_SUBDEVICES, PDI_LEN};
 use anyhow::anyhow;
 use ethercrab::{subdevice_group::Op, MainDevice, SubDeviceGroup, SubDevicePdi, SubDeviceRef};
@@ -93,6 +93,7 @@ pub async fn downcast_device<T: Device>(
 fn device_from_name(value: &str) -> Result<Arc<RwLock<dyn Device>>, anyhow::Error> {
     match value {
         "EL2008" => Ok(Arc::new(RwLock::new(EL2008::new()))),
+        "EL2809" => Ok(Arc::new(RwLock::new(EL2809::new()))),
         _ => Err(anyhow::anyhow!("No Driver: {}", value)),
     }
 }
@@ -117,6 +118,12 @@ pub async fn get_device<DEVICE: Device>(
     devices: &Vec<Option<Arc<RwLock<dyn Device>>>>,
     index: usize,
 ) -> Result<Arc<RwLock<DEVICE>>, anyhow::Error> {
-    let x = downcast_device::<DEVICE>(devices[index].as_ref().unwrap().clone()).await;
+    let x = downcast_device::<DEVICE>(
+        devices[index]
+            .as_ref()
+            .ok_or_else(|| anyhow!("Couldnt find device with macthing type at {}", index))?
+            .clone(),
+    )
+    .await;
     x
 }

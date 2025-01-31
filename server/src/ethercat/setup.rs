@@ -7,8 +7,11 @@ use crate::{
     ethercat_drivers::{
         actor::Actor,
         device::{devices_from_subdevice_group, get_device, Device},
-        devices::el2008::{EL2008Port, EL2008},
-        drivers::digital_output_blinker::DigitalOutputBlinker,
+        devices::{
+            el2008::{EL2008Port, EL2008},
+            el2809::{EL2809Port, EL2809},
+        },
+        drivers::digital_output_blinkers::DigitalOutputBlinkers,
         io::digital_output::DigitalOutputDevice,
     },
     socketio::{event::EventData, messages::ethercat_devices_event::EthercatDevicesEvent},
@@ -64,11 +67,96 @@ pub async fn setup(app_state: Arc<AppState>) -> Result<(), Error> {
     let devices: Vec<Option<Arc<RwLock<dyn Device>>>> =
         devices_from_subdevice_group(&group_op, maindevice);
 
-    let actors: Vec<Arc<RwLock<dyn Actor>>> =
-        vec![Arc::new(RwLock::new(DigitalOutputBlinker::new(
-            EL2008::digital_output(get_device::<EL2008>(&devices, 2).await?, EL2008Port::Pin1),
-            Duration::from_millis(500),
-        )))];
+    let actors: Vec<Arc<RwLock<dyn Actor>>> = vec![DigitalOutputBlinkers::new_arc_rwlock(
+        vec![
+            Some(EL2809::digital_output(
+                get_device::<EL2809>(&devices, 1).await?,
+                EL2809Port::Pin1,
+            )),
+            Some(EL2809::digital_output(
+                get_device::<EL2809>(&devices, 1).await?,
+                EL2809Port::Pin2,
+            )),
+            Some(EL2809::digital_output(
+                get_device::<EL2809>(&devices, 1).await?,
+                EL2809Port::Pin3,
+            )),
+            Some(EL2809::digital_output(
+                get_device::<EL2809>(&devices, 1).await?,
+                EL2809Port::Pin4,
+            )),
+            Some(EL2809::digital_output(
+                get_device::<EL2809>(&devices, 1).await?,
+                EL2809Port::Pin5,
+            )),
+            Some(EL2809::digital_output(
+                get_device::<EL2809>(&devices, 1).await?,
+                EL2809Port::Pin6,
+            )),
+            Some(EL2809::digital_output(
+                get_device::<EL2809>(&devices, 1).await?,
+                EL2809Port::Pin7,
+            )),
+            Some(EL2809::digital_output(
+                get_device::<EL2809>(&devices, 1).await?,
+                EL2809Port::Pin8,
+            )),
+            Some(EL2809::digital_output(
+                get_device::<EL2809>(&devices, 1).await?,
+                EL2809Port::Pin16,
+            )),
+            Some(EL2809::digital_output(
+                get_device::<EL2809>(&devices, 1).await?,
+                EL2809Port::Pin15,
+            )),
+            Some(EL2809::digital_output(
+                get_device::<EL2809>(&devices, 1).await?,
+                EL2809Port::Pin14,
+            )),
+            Some(EL2809::digital_output(
+                get_device::<EL2809>(&devices, 1).await?,
+                EL2809Port::Pin13,
+            )),
+            Some(EL2809::digital_output(
+                get_device::<EL2809>(&devices, 1).await?,
+                EL2809Port::Pin12,
+            )),
+            None,
+            None,
+            Some(EL2008::digital_output(
+                get_device::<EL2008>(&devices, 2).await?,
+                EL2008Port::Pin7,
+            )),
+            Some(EL2008::digital_output(
+                get_device::<EL2008>(&devices, 2).await?,
+                EL2008Port::Pin8,
+            )),
+            Some(EL2008::digital_output(
+                get_device::<EL2008>(&devices, 2).await?,
+                EL2008Port::Pin6,
+            )),
+            Some(EL2008::digital_output(
+                get_device::<EL2008>(&devices, 2).await?,
+                EL2008Port::Pin4,
+            )),
+            Some(EL2008::digital_output(
+                get_device::<EL2008>(&devices, 2).await?,
+                EL2008Port::Pin2,
+            )),
+            Some(EL2008::digital_output(
+                get_device::<EL2008>(&devices, 2).await?,
+                EL2008Port::Pin1,
+            )),
+            None,
+            None,
+            Some(EL2809::digital_output(
+                get_device::<EL2809>(&devices, 1).await?,
+                EL2809Port::Pin9,
+            )),
+        ],
+        Duration::from_millis(25),
+        6,
+    )];
 
     // set all setup data
     let mut ethercat_group_guard = app_state.ethercat_group.write().await;
