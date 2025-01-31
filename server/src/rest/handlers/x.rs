@@ -24,13 +24,13 @@ pub async fn post_x(
         None => return QuickResponse::error("MainDevice not initialized"),
     };
 
-    let mut devices_guard = app_state.ethercat_devices.write().await;
-    let devices = match devices_guard.as_mut() {
+    let mut ethercat_group_guard = app_state.ethercat_group.write().await;
+    let group = match ethercat_group_guard.as_mut() {
         Some(group) => group,
         None => return QuickResponse::error("SubDeviceGroup not initialized"),
     };
 
-    let device = match find_device(devices, master, payload.address).await {
+    let device = match find_device(group, master, payload.address).await {
         Some(device) => device,
         None => return QuickResponse::error("Device not found"),
     };

@@ -34,8 +34,8 @@ impl EventData for EthercatDevicesEvent {
             }
         };
 
-        let mut group_guard = APP_STATE.ethercat_devices.write().await;
-        let group = match group_guard.as_mut() {
+        let mut ethercat_group_guard = APP_STATE.ethercat_group.write().await;
+        let group = match ethercat_group_guard.as_mut() {
             Some(group) => group,
             None => {
                 return Event::error(

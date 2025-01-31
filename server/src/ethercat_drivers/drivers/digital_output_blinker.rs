@@ -1,4 +1,4 @@
-use crate::ethercat_drivers::{io::digital_output::DigitalOutput, tick::Tick};
+use crate::ethercat_drivers::{io::digital_output::DigitalOutput, actor::Actor};
 use std::{future::Future, pin::Pin, time::Duration};
 
 pub struct DigitalOutputBlinker {
@@ -27,17 +27,17 @@ impl DigitalOutputBlinker {
     }
 }
 
-impl Tick for DigitalOutputBlinker {
-    fn tick(&mut self, now_ts: u64) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
+impl Actor for DigitalOutputBlinker {
+    fn act(&mut self, _now_ts: u64) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
         Box::pin(async move {
             let toggle_duration = self.interval.as_nanos() as u64;
-            let signal = (self.output.get)().await;
-            if now_ts - self.last_toggle > toggle_duration {
-                match signal.value {
+            let state = (self.output.state)().await;
+            if state.output_ts - self.last_toggle > toggle_duration {
+                match state.value {
                     true => (self.output.write)(false).await,
                     false => (self.output.write)(true).await,
                 }
-                self.last_toggle = now_ts;
+                self.last_toggle = state.output_ts;
             }
         })
     }
