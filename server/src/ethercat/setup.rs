@@ -6,15 +6,24 @@ use crate::{
     },
     ethercat_drivers::{
         actor::Actor,
+        actors::{
+            analog_function_generator::{analog_multiply, analog_sine, AnalogFunctionGenerator},
+            digital_input_logger::DigitalInputLogger,
+            digital_output_blinker::DigitalOutputBlinker,
+            stepper_driver_2::StepperDriverMaxSpeed,
+            temperature_input_logger::TemperatureInputLogger,
+        },
         device::{devices_from_subdevice_group, get_device, Device},
         devices::{
             el1008::{EL1008Port, EL1008},
             el2008::{EL2008Port, EL2008},
+            el3204::{EL3204Port, EL3204},
+            el4008::{EL4008Port, EL4008},
         },
-        actors::{
-            digital_input_logger::DigitalInputLogger, digital_output_blinker::DigitalOutputBlinker,
+        io::{
+            analog_output::AnalogOutputDevice, digital_input::DigitalInputDevice,
+            digital_output::DigitalOutputDevice, temperature_input::TemperatureInputDevice,
         },
-        io::{digital_input::DigitalInputDevice, digital_output::DigitalOutputDevice},
         utils::traits::ArcRwLock,
     },
     socketio::{event::EventData, messages::ethercat_devices_event::EthercatDevicesEvent},
@@ -71,14 +80,26 @@ pub async fn setup(app_state: Arc<AppState>) -> Result<(), Error> {
         devices_from_subdevice_group(&group_op, maindevice);
 
     let actors: Vec<Arc<RwLock<dyn Actor>>> = vec![
-        DigitalOutputBlinker::new(
-            EL2008::digital_output(get_device::<EL2008>(&devices, 2).await?, EL2008Port::DO1),
-            Duration::from_millis(500),
+        StepperDriverMaxSpeed::new(
+            EL2008::digital_output(get_device::<EL2008>(&devices, 2).await?, EL2008Port::DO2),
         )
         .to_arc_rwlock(),
         DigitalInputLogger::new(EL1008::digital_input(
             get_device::<EL1008>(&devices, 1).await?,
             EL1008Port::DI2,
+        ))
+        .to_arc_rwlock(),
+        AnalogFunctionGenerator::new(
+            EL4008::analog_output(get_device::<EL4008>(&devices, 3).await?, EL4008Port::AO1),
+            analog_multiply([
+                analog_sine(1.0, 0.0, Duration::from_secs(1).as_nanos() as u64),
+                analog_sine(1.0, 0.0, Duration::from_millis(50).as_nanos() as u64),
+            ]),
+        )
+        .to_arc_rwlock(),
+        TemperatureInputLogger::new(EL3204::temparature_input(
+            get_device::<EL3204>(&devices, 4).await?,
+            EL3204Port::T1,
         ))
         .to_arc_rwlock(),
     ];

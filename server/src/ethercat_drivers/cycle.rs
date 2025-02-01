@@ -2,7 +2,6 @@ use super::{actor::Actor, device::Device};
 use crate::ethercat::config::{MAX_SUBDEVICES, PDI_LEN};
 use ethercrab::{std::ethercat_now, subdevice_group::Op, MainDevice, SubDeviceGroup};
 use std::{sync::Arc, time::Duration};
-use tokio::sync::RwLock;
 
 pub async fn cycle<'maindevice>(
     group_guard: &SubDeviceGroup<MAX_SUBDEVICES, PDI_LEN, Op>,
@@ -21,10 +20,9 @@ pub async fn cycle<'maindevice>(
     // Prediction when the next TX/RX cycle starts
     let output_ts = input_ts + interval.as_nanos() as u64;
 
-    // Debug timestamp
-    let calc_start_ts = ethercat_now();
-
     // copy inputs to devices
+    let ts_1 = ethercat_now();
+
     for (i, subdevice) in group_guard.iter(&maindevice_guard).enumerate() {
         let mut device = match devices_guard[i].as_ref() {
             Some(device) => device.write().await,
@@ -36,6 +34,8 @@ pub async fn cycle<'maindevice>(
         let input = subdevice.inputs_raw();
         device.input_checked(input.as_ref())?;
     }
+    // let ts_2 = ethercat_now();
+    // log::info!("-> Copy inputs took {} ns", ts_2 - ts_1);
 
     // execute actors
     let now_ts = ethercat_now();
@@ -43,6 +43,8 @@ pub async fn cycle<'maindevice>(
         let mut actor = actor.write().await;
         Box::pin(actor.act(now_ts)).await;
     }
+    // let ts_3 = ethercat_now();
+    // log::info!("-> Actors took {} ns", ts_3 - ts_2);
 
     // copy outputs from devices
     for (i, subdevice) in group_guard.iter(&maindevice_guard).enumerate() {
@@ -55,12 +57,8 @@ pub async fn cycle<'maindevice>(
     }
 
     // calculate the time it took to execute the tick processors
-    let calc_end_ts = ethercat_now();
-    log::trace!(
-        "Calculation took {} us",
-        calc_end_ts.saturating_sub(calc_start_ts) / 1000
-    );
-
+    let ts_4 = ethercat_now();
+    log::info!("-> Cycle function took {} ns", ts_4 - ts_1);
     // tokio_interval.tick().await;
     Ok(())
 }
