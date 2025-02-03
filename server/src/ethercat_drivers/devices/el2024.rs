@@ -1,5 +1,5 @@
 use crate::ethercat_drivers::{
-    device::Device,
+    device::EthercatDevice,
     io::digital_output::{DigitalOutputDevice, DigitalOutputState},
 };
 use std::any::Any;
@@ -7,7 +7,7 @@ use std::any::Any;
 const OUTPUT_PDU_LEN: usize = 1;
 
 /// EL2024 4-channel digital output device
-/// 
+///
 /// 24V DC, 0.5A per channel
 #[derive(Debug)]
 pub struct EL2024 {
@@ -43,7 +43,7 @@ impl DigitalOutputDevice<EL2024Port> for EL2024 {
     }
 }
 
-impl Device for EL2024 {
+impl EthercatDevice for EL2024 {
     fn output(&self, output: &mut [u8]) {
         output.copy_from_slice(&self.output_pdus);
     }

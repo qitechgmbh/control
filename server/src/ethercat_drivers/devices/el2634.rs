@@ -1,5 +1,5 @@
 use crate::ethercat_drivers::{
-    device::Device,
+    device::EthercatDevice,
     io::digital_output::{DigitalOutputDevice, DigitalOutputState},
 };
 use std::any::Any;
@@ -43,7 +43,7 @@ impl DigitalOutputDevice<EL2634Port> for EL2634 {
     }
 }
 
-impl Device for EL2634 {
+impl EthercatDevice for EL2634 {
     fn output(&self, output: &mut [u8]) {
         output.copy_from_slice(&self.output_pdus);
     }

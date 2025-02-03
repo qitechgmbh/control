@@ -45,7 +45,7 @@ impl<M: EventData> Event<M> {
         let message_type = M::to_event_type(self.clone());
 
         // for every room
-        let mut socketio_rooms_guard = APP_STATE.socketio_rooms.write().await;
+        let mut socketio_rooms_guard = APP_STATE.socketio_rooms.write();
         for single_room in room.clone().into_room_iter() {
             // buffer in room
             socketio_rooms_guard

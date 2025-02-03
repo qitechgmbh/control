@@ -1,5 +1,5 @@
 use crate::ethercat_drivers::{
-    device::Device,
+    device::EthercatDevice,
     io::digital_input::{DigitalInputDevice, DigitalInputState},
 };
 use std::any::Any;
@@ -7,9 +7,9 @@ use std::any::Any;
 const INPUT_PDU_LEN: usize = 1;
 
 /// EL1008 8-channel digital input device
-/// 
+///
 /// 24V DC, 3ms filter
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct EL1008 {
     input_pdu: [u8; INPUT_PDU_LEN],
     pub inputs_ts: u64,
@@ -34,7 +34,7 @@ impl DigitalInputDevice<EL1008Port> for EL1008 {
     }
 }
 
-impl Device for EL1008 {
+impl EthercatDevice for EL1008 {
     fn input(&mut self, input: &[u8]) {
         self.input_pdu.copy_from_slice(input);
     }

@@ -1,5 +1,5 @@
 use crate::ethercat_drivers::{
-    device::Device,
+    device::EthercatDevice,
     io::temperature_input::{
         TemperatureInputDevice, TemperatureInputLimit, TemperatureInputState, TemperatureInputValid,
     },
@@ -67,7 +67,7 @@ impl TemperatureInputDevice<EL3204Port> for EL3204 {
     }
 }
 
-impl Device for EL3204 {
+impl EthercatDevice for EL3204 {
     fn input(&mut self, input: &[u8]) {
         self.input_pdu.copy_from_slice(input);
     }

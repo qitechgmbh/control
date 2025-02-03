@@ -1,13 +1,12 @@
 use std::io::Error;
 use std::sync::Arc;
 
-use axum::routing::post;
 use socketioxide::layer::SocketIoLayer;
 use tower_http::cors::CorsLayer;
 
 use crate::app_state::AppState;
 
-use super::handlers::x::post_x;
+// use super::handlers::x::post_x;
 use tower_http::trace::TraceLayer;
 
 pub async fn init_api(
@@ -25,7 +24,7 @@ pub async fn init_api(
 
     // make axum server to serve the data on /ethercat
     let app = axum::Router::new()
-        .route("/api/v1/x", post(post_x))
+        // .route("/api/v1/x", post(post_x))
         .layer(socketio_layer)
         .layer(cors)
         .layer(TraceLayer::new_for_http())

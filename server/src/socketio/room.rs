@@ -26,7 +26,7 @@ pub fn on_room_join(socket: SocketRef, Data(data): Data<RoomJoinEvent>) {
     let room = data.room.clone();
     let socket_clone = socket.clone();
     spawn(async move {
-        let mut socketio_rooms_guard = APP_STATE.socketio_rooms.write().await;
+        let mut socketio_rooms_guard = APP_STATE.socketio_rooms.write();
         socketio_rooms_guard.room(room).join(socket_clone);
     });
 
@@ -42,7 +42,7 @@ pub fn on_room_leave(socket: SocketRef, Data(data): Data<RoomLeaveEvent>) {
     let room = data.room.clone();
     let socket_clone = socket.clone();
     spawn(async move {
-        let mut socketio_rooms_guard = APP_STATE.socketio_rooms.write().await;
+        let mut socketio_rooms_guard = APP_STATE.socketio_rooms.write();
         socketio_rooms_guard.room(room).leave(socket_clone);
     });
 

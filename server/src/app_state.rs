@@ -1,36 +1,52 @@
 use crate::{
     ethercat::config::{MAX_SUBDEVICES, PDI_LEN},
-    ethercat_drivers::{actor::Actor, device::Device},
+    ethercat_drivers::{actor::Actor, device::EthercatDevice},
     socketio::room::Rooms,
 };
 use ethercrab::{subdevice_group::Op, MainDevice, SubDeviceGroup};
+use parking_lot::RwLock;
 use socketioxide::SocketIo;
 use std::sync::Arc;
 use std::sync::LazyLock;
-use tokio::sync::RwLock;
 
 pub struct AppState {
     pub socketio_rooms: RwLock<Rooms>,
     pub socketio: RwLock<Option<SocketIo>>,
-    pub ethercat_master: Arc<RwLock<Option<MainDevice<'static>>>>,
-    pub ethercat_group: Arc<RwLock<Option<SubDeviceGroup<MAX_SUBDEVICES, PDI_LEN, Op>>>>,
-    pub ethercat_devices: Arc<RwLock<Option<Vec<Option<Arc<RwLock<dyn Device>>>>>>>,
-    pub ethercat_actors: Arc<RwLock<Option<Vec<Arc<RwLock<dyn Actor>>>>>>,
-    pub ethercat_propagation_delays: Arc<RwLock<Option<Vec<u32>>>>,
+    pub ethercat_setup: Arc<RwLock<Option<EthercatSetup>>>,
 }
 
-pub struct EthercatSetup {}
+pub struct EthercatSetup {
+    pub maindevice: MainDevice<'static>,
+    pub group: SubDeviceGroup<MAX_SUBDEVICES, PDI_LEN, Op>,
+    pub devices: Vec<Option<Arc<RwLock<dyn EthercatDevice>>>>,
+    pub actors: Vec<Arc<RwLock<dyn Actor>>>,
+    pub delays: Vec<Option<u32>>,
+}
+
+impl EthercatSetup {
+    pub fn new(
+        ethercat_master: MainDevice<'static>,
+        ethercat_group: SubDeviceGroup<MAX_SUBDEVICES, PDI_LEN, Op>,
+        ethercat_devices: Vec<Option<Arc<RwLock<dyn EthercatDevice>>>>,
+        ethercat_actors: Vec<Arc<RwLock<dyn Actor>>>,
+        ethercat_propagation_delays: Vec<Option<u32>>,
+    ) -> Self {
+        Self {
+            maindevice: ethercat_master,
+            group: ethercat_group,
+            devices: ethercat_devices,
+            actors: ethercat_actors,
+            delays: ethercat_propagation_delays,
+        }
+    }
+}
 
 impl AppState {
     pub fn new() -> Self {
         Self {
             socketio_rooms: RwLock::new(Rooms::new()),
             socketio: RwLock::new(None),
-            ethercat_master: Arc::new(RwLock::new(None)),
-            ethercat_group: Arc::new(RwLock::new(None)),
-            ethercat_devices: Arc::new(RwLock::new(None)),
-            ethercat_actors: Arc::new(RwLock::new(None)),
-            ethercat_propagation_delays: Arc::new(RwLock::new(None)),
+            ethercat_setup: Arc::new(RwLock::new(None)),
         }
     }
 }

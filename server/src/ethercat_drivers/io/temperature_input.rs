@@ -1,11 +1,30 @@
-use std::{future::Future, pin::Pin, sync::Arc};
-use tokio::sync::RwLock;
+use parking_lot::RwLock;
+use std::sync::Arc;
 
 type Value = f32;
 
 pub struct TemperatureInput {
-    pub state:
-        Box<dyn Fn() -> Pin<Box<dyn Future<Output = TemperatureInputState> + Send>> + Send + Sync>,
+    pub state: Box<dyn Fn() -> TemperatureInputState + Send + Sync>,
+}
+
+impl TemperatureInput {
+    pub fn new<PORTS>(
+        device: Arc<RwLock<dyn TemperatureInputDevice<PORTS>>>,
+        port: PORTS,
+    ) -> TemperatureInput
+    where
+        PORTS: Clone + Send + Sync + 'static,
+    {
+        // build async get closure
+        let device2 = device.clone();
+        let port2 = port.clone();
+        let state = Box::new(move || {
+            let device2_guard = device2.read();
+            device2_guard.temperature_input_state(port2.clone())
+        });
+
+        TemperatureInput { state }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -66,28 +85,6 @@ impl TemperatureInputValid {
     }
 }
 
-pub trait TemperatureInputDevice<PORTS> {
+pub trait TemperatureInputDevice<PORTS>: Send + Sync {
     fn temperature_input_state(&self, port: PORTS) -> TemperatureInputState;
-    fn temparature_input(device: Arc<RwLock<Self>>, port: PORTS) -> TemperatureInput
-    where
-        Self: Send + Sync + 'static,
-        PORTS: Clone + Send + Sync + 'static,
-    {
-        // build async get closure
-        let device2 = device.clone();
-        let port2 = port.clone();
-        let state = Box::new(move || {
-            let device2 = device2.clone();
-            let port2 = port2.clone();
-            Box::pin(async move {
-                let device2_guard = device2.read().await;
-                device2_guard.temperature_input_state(port2.clone())
-            }) as Pin<Box<dyn Future<Output = TemperatureInputState> + Send + 'static>>
-        });
-
-        TemperatureInput {
-            // write,
-            state,
-        }
-    }
 }

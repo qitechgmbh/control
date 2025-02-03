@@ -5,10 +5,10 @@ use super::devices::{
 use crate::ethercat::config::{MAX_SUBDEVICES, PDI_LEN};
 use anyhow::anyhow;
 use ethercrab::{subdevice_group::Op, MainDevice, SubDeviceGroup, SubDevicePdi, SubDeviceRef};
+use parking_lot::RwLock;
 use std::{any::Any, sync::Arc};
-use tokio::sync::RwLock;
 
-pub trait Device: Any + Send + Sync {
+pub trait EthercatDevice: Any + Send + Sync {
     /// Input data from the last cycle
     /// `ts` is the timestamp when the input data was sent by the device
     fn input(&mut self, _input: &[u8]) {
@@ -72,11 +72,11 @@ pub trait Device: Any + Send + Sync {
     fn as_any(&self) -> &dyn Any;
 }
 
-pub async fn downcast_device<T: Device>(
-    device: Arc<RwLock<dyn Device>>,
+pub async fn downcast_device<T: EthercatDevice>(
+    device: Arc<RwLock<dyn EthercatDevice>>,
 ) -> Result<Arc<RwLock<T>>, anyhow::Error> {
     // Acquire a read lock on the RwLock
-    let read_lock = device.read().await;
+    let read_lock = device.read();
 
     // Check if the inner type can be downcasted to T
     if read_lock.as_any().is::<T>() {
@@ -89,12 +89,15 @@ pub async fn downcast_device<T: Device>(
             ))
         }
     } else {
-        Err(anyhow!("Couln't downcast device to desired type"))
+        Err(anyhow!("Downcast failed"))
     }
 }
 
-fn device_from_name(value: &str) -> Result<Arc<RwLock<dyn Device>>, anyhow::Error> {
-    match value {
+fn device_from_subdevice<'maindevice>(
+    subdevice: &SubDeviceRef<'maindevice, SubDevicePdi<PDI_LEN>>,
+) -> Result<Arc<RwLock<dyn EthercatDevice>>, anyhow::Error> {
+    let name = subdevice.name();
+    match name {
         "EL2008" => Ok(Arc::new(RwLock::new(EL2008::new()))),
         "EL2809" => Ok(Arc::new(RwLock::new(EL2809::new()))),
         "EL2634" => Ok(Arc::new(RwLock::new(EL2634::new()))),
@@ -102,28 +105,22 @@ fn device_from_name(value: &str) -> Result<Arc<RwLock<dyn Device>>, anyhow::Erro
         "EL1008" => Ok(Arc::new(RwLock::new(EL1008::new()))),
         "EL3204" => Ok(Arc::new(RwLock::new(EL3204::new()))),
         "EL2024" => Ok(Arc::new(RwLock::new(EL2024::new()))),
-        _ => Err(anyhow::anyhow!("No Driver: {}", value)),
+        _ => Err(anyhow::anyhow!("No Driver: {}", name)),
     }
-}
-
-fn device_from_subdevice<'maindevice, 'group>(
-    subdevice: &SubDeviceRef<'maindevice, SubDevicePdi<PDI_LEN>>,
-) -> Result<Arc<RwLock<dyn Device>>, anyhow::Error> {
-    device_from_name(subdevice.name())
 }
 
 pub fn devices_from_subdevice_group<'maindevice, 'group>(
     group: &SubDeviceGroup<MAX_SUBDEVICES, PDI_LEN, Op>,
     maindevice: &MainDevice,
-) -> Vec<Option<Arc<RwLock<dyn Device>>>> {
+) -> Vec<Option<Arc<RwLock<dyn EthercatDevice>>>> {
     group
         .iter(maindevice)
         .map(|subdevice| device_from_subdevice(&subdevice).ok())
         .collect()
 }
 
-pub async fn get_device<DEVICE: Device>(
-    devices: &Vec<Option<Arc<RwLock<dyn Device>>>>,
+pub async fn get_device<DEVICE: EthercatDevice>(
+    devices: &Vec<Option<Arc<RwLock<dyn EthercatDevice>>>>,
     index: usize,
 ) -> Result<Arc<RwLock<DEVICE>>, anyhow::Error> {
     let x = downcast_device::<DEVICE>(

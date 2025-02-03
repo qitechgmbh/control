@@ -1,5 +1,5 @@
 use crate::ethercat_drivers::{
-    device::Device,
+    device::EthercatDevice,
     io::digital_output::{DigitalOutputDevice, DigitalOutputState},
 };
 use std::any::Any;
@@ -7,7 +7,7 @@ use std::any::Any;
 const OUTPUT_PDU_LEN: usize = 1;
 
 /// EL2008 8-channel digital output device
-/// 
+///
 /// 24V DC, 0.5A per channel
 #[derive(Debug)]
 pub struct EL2008 {
@@ -43,7 +43,7 @@ impl DigitalOutputDevice<EL2008Port> for EL2008 {
     }
 }
 
-impl Device for EL2008 {
+impl EthercatDevice for EL2008 {
     fn output(&self, output: &mut [u8]) {
         output.copy_from_slice(&self.output_pdus);
     }
@@ -58,7 +58,7 @@ impl Device for EL2008 {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub enum EL2008Port {
     DO1,
     DO2,
@@ -71,7 +71,7 @@ pub enum EL2008Port {
 }
 
 impl EL2008Port {
-    pub fn to_bit_index(&self) -> usize {
+    fn to_bit_index(&self) -> usize {
         match self {
             EL2008Port::DO1 => 0,
             EL2008Port::DO2 => 1,

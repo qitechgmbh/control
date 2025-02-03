@@ -1,64 +1,61 @@
-use super::{actor::Actor, device::Device};
-use crate::ethercat::config::{MAX_SUBDEVICES, PDI_LEN};
-use ethercrab::{std::ethercat_now, subdevice_group::Op, MainDevice, SubDeviceGroup};
-use std::{sync::Arc, time::Duration};
+use crate::app_state::EthercatSetup;
+use ethercrab::std::ethercat_now;
+use std::time::Duration;
 
-pub async fn cycle<'maindevice>(
-    group_guard: &SubDeviceGroup<MAX_SUBDEVICES, PDI_LEN, Op>,
-    maindevice_guard: &MainDevice<'maindevice>,
-    devices_guard: &Vec<Option<Arc<RwLock<dyn Device>>>>,
-    actors_guard: &Vec<Arc<RwLock<dyn Actor>>>,
-    propagation_delays_guard: &Vec<u32>,
+pub fn pdu_once<'maindevice>(
+    setup: &EthercatSetup,
     interval: Duration,
+    rt: &tokio::runtime::Runtime,
 ) -> Result<(), anyhow::Error> {
     // TS when the TX/RX cycle starts
     let input_ts = ethercat_now();
 
-    // Send/Receive
-    group_guard.tx_rx(&maindevice_guard).await?;
-
     // Prediction when the next TX/RX cycle starts
     let output_ts = input_ts + interval.as_nanos() as u64;
 
-    // copy inputs to devices
-    let ts_1 = ethercat_now();
+    let ts1 = ethercat_now();
+    rt.block_on(async { setup.group.tx_rx(&setup.maindevice).await })?;
+    let ts2 = ethercat_now();
+    log::info!("TX/RX took {} ns", ts2 - ts1);
 
-    for (i, subdevice) in group_guard.iter(&maindevice_guard).enumerate() {
-        let mut device = match devices_guard[i].as_ref() {
-            Some(device) => device.write().await,
+    // copy inputs to devices
+    for (i, subdevice) in setup.group.iter(&setup.maindevice).enumerate() {
+        let mut device = match setup.devices[i].as_ref() {
+            Some(device) => device.write(),
             None => continue,
         };
-        let input_ts = input_ts + propagation_delays_guard[i] as u64;
-        let output_ts = output_ts + propagation_delays_guard[i] as u64;
+        let input_ts = input_ts;
+        let output_ts = output_ts;
         device.ts(input_ts, output_ts);
         let input = subdevice.inputs_raw();
         device.input_checked(input.as_ref())?;
     }
-    // let ts_2 = ethercat_now();
-    // log::info!("-> Copy inputs took {} ns", ts_2 - ts_1);
+    let ts3 = ethercat_now();
+    log::info!("Input took {} ns", ts3 - ts2);
 
     // execute actors
-    let now_ts = ethercat_now();
-    for actor in actors_guard.iter() {
-        let mut actor = actor.write().await;
-        Box::pin(actor.act(now_ts)).await;
+    for actor in setup.actors.iter() {
+        let mut actor = actor.write();
+        actor.act(output_ts);
     }
-    // let ts_3 = ethercat_now();
-    // log::info!("-> Actors took {} ns", ts_3 - ts_2);
+    let ts4 = ethercat_now();
+    log::info!("Actors took {} ns", ts4 - ts3);
 
     // copy outputs from devices
-    for (i, subdevice) in group_guard.iter(&maindevice_guard).enumerate() {
-        let device = match devices_guard[i].as_ref() {
-            Some(device) => device.read().await,
+    for (i, subdevice) in setup.group.iter(&setup.maindevice).enumerate() {
+        let device = match setup.devices[i].as_ref() {
+            Some(device) => device.read(),
             None => continue,
         };
         let mut output = subdevice.outputs_raw_mut();
         device.output_checked(output.as_mut())?;
     }
+    let ts5 = ethercat_now();
+    log::info!(
+        "Output took {} ns and total PDU cycle took {} ns",
+        ts5 - ts4,
+        ts5 - ts1
+    );
 
-    // calculate the time it took to execute the tick processors
-    let ts_4 = ethercat_now();
-    log::info!("-> Cycle function took {} ns", ts_4 - ts_1);
-    // tokio_interval.tick().await;
     Ok(())
 }

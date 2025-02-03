@@ -3,7 +3,6 @@ use crate::ethercat_drivers::{
 };
 use ethercrab::std::ethercat_now;
 use std::f32::consts::PI;
-use std::{future::Future, pin::Pin};
 use uom::si::{angle::radian, f32::Angle, ratio::ratio};
 
 pub type AnalogFunction = Box<dyn Fn(u64) -> f32 + Send + Sync>;
@@ -26,13 +25,11 @@ impl AnalogFunctionGenerator {
 }
 
 impl Actor for AnalogFunctionGenerator {
-    fn act(&mut self, _now_ts: u64) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
-        Box::pin(async move {
-            let state = (self.output.state)().await;
-            let diff_ns = state.output_ts - self.offset_ts;
-            let value = (self.function)(diff_ns);
-            (self.output.write)(value as f32).await;
-        })
+    fn act(&mut self, _now_ts: u64) {
+        let state = (self.output.state)();
+        let diff_ns = state.output_ts - self.offset_ts;
+        let value = (self.function)(diff_ns);
+        (self.output.write)(value as f32);
     }
 }
 

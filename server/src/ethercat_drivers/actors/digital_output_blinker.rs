@@ -1,7 +1,7 @@
 use crate::ethercat_drivers::{
     actor::Actor, io::digital_output::DigitalOutput, utils::traits::ArcRwLock,
 };
-use std::{future::Future, pin::Pin, time::Duration};
+use std::time::Duration;
 
 /// Set a digital output high and low with a given interval
 pub struct DigitalOutputBlinker {
@@ -30,18 +30,16 @@ impl DigitalOutputBlinker {
 }
 
 impl Actor for DigitalOutputBlinker {
-    fn act(&mut self, _now_ts: u64) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
-        Box::pin(async move {
-            let toggle_duration = self.interval.as_nanos() as u64;
-            let state = (self.output.state)().await;
-            if state.output_ts - self.last_toggle > toggle_duration {
-                match state.value {
-                    true => (self.output.write)(false).await,
-                    false => (self.output.write)(true).await,
-                }
-                self.last_toggle = state.output_ts;
+    fn act(&mut self, _now_ts: u64) {
+        let toggle_duration = self.interval.as_nanos() as u64;
+        let state = (self.output.state)();
+        if state.output_ts - self.last_toggle > toggle_duration {
+            match state.value {
+                true => (self.output.write)(false),
+                false => (self.output.write)(true),
             }
-        })
+            self.last_toggle = state.output_ts;
+        }
     }
 }
 

@@ -26,21 +26,13 @@ const EVENT: &str = "EthercatDevicesEvent";
 
 impl EventData for EthercatDevicesEvent {
     async fn build() -> Event<Self> {
-        let maindevice_guard = APP_STATE.as_ref().ethercat_master.read().await;
-        let maindevice = match maindevice_guard.as_ref() {
+        let ethercat_setup_guard = APP_STATE.as_ref().ethercat_setup.read();
+        let ethercat_setup = match ethercat_setup_guard.as_ref() {
             Some(device) => device,
-            None => {
-                return Event::error(EVENT.to_string(), "MainDevice not initialized".to_string());
-            }
-        };
-
-        let mut ethercat_group_guard = APP_STATE.ethercat_group.write().await;
-        let group = match ethercat_group_guard.as_mut() {
-            Some(group) => group,
             None => {
                 return Event::error(
                     EVENT.to_string(),
-                    "SubDeviceGroup not initialized".to_string(),
+                    "EthercatSetup not initialized".to_string(),
                 );
             }
         };
@@ -48,8 +40,8 @@ impl EventData for EthercatDevicesEvent {
         Event::data(
             EVENT.to_string(),
             EthercatDevicesEvent {
-                devices: (*group)
-                    .iter(&maindevice)
+                devices: (ethercat_setup.group)
+                    .iter(&ethercat_setup.maindevice)
                     .map(|subdevice| {
                         log::info!("Subdevice: {:?}", subdevice.identity());
                         return Device {
