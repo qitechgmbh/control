@@ -28,7 +28,7 @@ pub fn pdu_loop(ethercat_setup: Arc<RwLock<Option<EthercatSetup>>>) -> Result<()
 
             pdu_once(setup, interval, &rt)?;
             let ts_2 = ethercat_now();
-            log::info!("PDU once took {} ns", ts_2 - ts_1);
+            log::trace!("PDU once took {} ns", ts_2 - ts_1);
         }
     }
 }

@@ -16,7 +16,7 @@ pub fn pdu_once<'maindevice>(
     let ts1 = ethercat_now();
     rt.block_on(async { setup.group.tx_rx(&setup.maindevice).await })?;
     let ts2 = ethercat_now();
-    log::info!("TX/RX took {} ns", ts2 - ts1);
+    log::debug!("TX/RX took {} ns", ts2 - ts1);
 
     // copy inputs to devices
     for (i, subdevice) in setup.group.iter(&setup.maindevice).enumerate() {
@@ -31,7 +31,7 @@ pub fn pdu_once<'maindevice>(
         device.input_checked(input.as_ref())?;
     }
     let ts3 = ethercat_now();
-    log::info!("Input took {} ns", ts3 - ts2);
+    log::debug!("Input took {} ns", ts3 - ts2);
 
     // execute actors
     for actor in setup.actors.iter() {
@@ -39,7 +39,7 @@ pub fn pdu_once<'maindevice>(
         actor.act(output_ts);
     }
     let ts4 = ethercat_now();
-    log::info!("Actors took {} ns", ts4 - ts3);
+    log::debug!("Actors took {} ns", ts4 - ts3);
 
     // copy outputs from devices
     for (i, subdevice) in setup.group.iter(&setup.maindevice).enumerate() {
@@ -51,7 +51,7 @@ pub fn pdu_once<'maindevice>(
         device.output_checked(output.as_mut())?;
     }
     let ts5 = ethercat_now();
-    log::info!(
+    log::debug!(
         "Output took {} ns and total PDU cycle took {} ns",
         ts5 - ts4,
         ts5 - ts1

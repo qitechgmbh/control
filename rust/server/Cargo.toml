@@ -7,7 +7,7 @@ rust-version = "1.84"
 [dependencies]
 tokio = { version = "1.43.0", features = ["rt-multi-thread"] }
 axum = { version = "0.8.1", features = ["macros"] }
-ethercrab = { path = "../ethercrab" }
+ethercrab = { path = "../../ethercrab" }
 env_logger = "0.11.6"
 log = "0.4.25"
 signal-hook = "0.3.17"

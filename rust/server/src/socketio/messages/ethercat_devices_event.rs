@@ -43,8 +43,7 @@ impl EventData for EthercatDevicesEvent {
                 devices: (ethercat_setup.group)
                     .iter(&ethercat_setup.maindevice)
                     .map(|subdevice| {
-                        log::info!("Subdevice: {:?}", subdevice.identity());
-                        return Device {
+                        let device = Device {
                             address: subdevice.configured_address(),
                             name: subdevice.name().to_string(),
                             alias_address: subdevice.alias_address(),
@@ -56,6 +55,8 @@ impl EventData for EthercatDevicesEvent {
                             serial: subdevice.identity().serial,
                             vendor_id: subdevice.identity().vendor_id,
                         };
+                        log::info!("Subdevice: {:?}", device);
+                        device
                     })
                     .collect::<Vec<_>>(),
             },
