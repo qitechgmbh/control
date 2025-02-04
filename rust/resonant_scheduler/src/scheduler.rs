@@ -3,10 +3,7 @@ use std::sync::{
     Arc,
 };
 use std::time::{Duration, Instant};
-use tokio::{
-    sync::{RwLock, TryLockError},
-    task::JoinSet,
-};
+use tokio::{sync::TryLockError, task::JoinSet};
 
 use crate::{signal::Signal, state::State};
 
@@ -31,17 +28,20 @@ impl ResonantScheduler {
         F: Fn() -> Fut + Send + Sync + 'static,
         Fut: std::future::Future<Output = Signal> + Send,
     {
-        let join_set = Arc::new(RwLock::new(JoinSet::new()));
+        println!("run");
+        let mut join_set = JoinSet::new();
         let task_fn = Arc::new(task_fn);
 
         // Pre-spawn concurrent tasks.
         let available = self.state.semaphore.available_permits();
         for _ in 0..available {
             let task_fn = task_fn.clone();
-            let mut join_set_guard = join_set.write().await;
             let state = self.state.clone();
-            join_set_guard.spawn(async move {
+            join_set.spawn(async move {
                 loop {
+                    if state.exit.load(Ordering::Relaxed) {
+                        break;
+                    }
                     let _permit = state.semaphore.acquire().await.unwrap();
                     let start = Instant::now();
                     let feedback = (task_fn)().await;
@@ -53,10 +53,8 @@ impl ResonantScheduler {
             });
         }
 
-        let mut join_set_guard = join_set.write().await;
-        join_set_guard.spawn({
+        join_set.spawn({
             let state = self.state.clone();
-            let join_set = join_set.clone();
             async move {
                 let rx = state.rx.clone();
                 loop {
@@ -64,15 +62,20 @@ impl ResonantScheduler {
                     let task_interval = avg_duration / state.max_concurrent_tasks as u32;
                     // react to the different feedbacks
                     match rx.lock().await.recv().await {
-                        Ok(Signal::Exit) => break,
+                        Ok(Signal::Exit) => {
+                            state.exit.store(true, Ordering::Relaxed);
+                        }
                         Ok(Signal::Continue) => tokio::time::sleep(task_interval).await,
                         Err(_) => {}
                     }
                 }
-                let mut join_set_guard = join_set.write().await;
-                join_set_guard.abort_all();
             }
         });
+
+        println!("ResonantScheduler started");
+
+        // join all
+        join_set.join_all().await;
 
         Ok(())
     }
@@ -84,6 +87,7 @@ impl ResonantScheduler {
         loop {
             let new_avg =
                 ((ema_alpha * elapsed as f64) + (1.0 - ema_alpha) * prev_avg as f64) as u64;
+            println!("new_avg: {}", new_avg);
             match avg_time.compare_exchange_weak(
                 prev_avg,
                 new_avg,

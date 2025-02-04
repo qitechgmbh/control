@@ -16,7 +16,7 @@ async fn main() -> Result<(), Error> {
     env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
 
     let socketio_layer = init_socketio().await;
-    init_ethercat(APP_STATE.clone()).await;
+    init_ethercat(APP_STATE.clone());
     init_api(APP_STATE.clone(), socketio_layer).await?;
 
     Ok(())

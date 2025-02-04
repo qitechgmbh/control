@@ -1,10 +1,11 @@
-use std::sync::Arc;
+use std::{future::Future, pin::Pin, sync::Arc};
 
-use parking_lot::RwLock;
+use tokio::sync::RwLock;
 
 pub struct DigitalOutput {
-    pub write: Box<dyn Fn(bool) -> () + Send + Sync>,
-    pub state: Box<dyn Fn() -> DigitalOutputState + Send + Sync>,
+    pub write: Box<dyn Fn(bool) -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>,
+    pub state:
+        Box<dyn Fn() -> Pin<Box<dyn Future<Output = DigitalOutputState> + Send>> + Send + Sync>,
 }
 
 impl DigitalOutput {
@@ -18,19 +19,30 @@ impl DigitalOutput {
         // build async write closure
         let port1 = port.clone();
         let device1 = device.clone();
-        let write = Box::new(move |value| {
-            let mut device = device1.write();
-            device.digital_output_write(port1.clone(), value)
-        });
+        let write = Box::new(
+            move |value: bool| -> Pin<Box<dyn Future<Output = ()> + Send>> {
+                let device_clone = device1.clone();
+                let port_clone = port1.clone();
+                Box::pin(async move {
+                    let mut device = device_clone.write().await;
+                    device.digital_output_write(port_clone, value);
+                })
+            },
+        );
 
         // build async get closure
         let port2 = port.clone();
         let device2 = device.clone();
-        let state = Box::new(move || {
-            let device = device2.read();
-            device.digital_output_state(port2.clone())
-        });
-
+        let state = Box::new(
+            move || -> Pin<Box<dyn Future<Output = DigitalOutputState> + Send>> {
+                let device2 = device2.clone();
+                let port_clone = port2.clone();
+                Box::pin(async move {
+                    let device = device2.read().await;
+                    device.digital_output_state(port_clone)
+                })
+            },
+        );
         DigitalOutput { write, state }
     }
 }

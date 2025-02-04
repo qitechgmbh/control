@@ -1,3 +1,5 @@
+use std::{future::Future, pin::Pin};
+
 use crate::ethercat_drivers::{
     actor::Actor, io::digital_output::DigitalOutput, utils::traits::ArcRwLock,
 };
@@ -14,12 +16,14 @@ impl StepperDriverMaxSpeed {
 }
 
 impl Actor for StepperDriverMaxSpeed {
-    fn act(&mut self, _now_ts: u64) {
-        let state = (self.pulse.state)();
-        match state.value {
-            true => (self.pulse.write)(false),
-            false => (self.pulse.write)(true),
-        }
+    fn act(&mut self, _now_ts: u64) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
+        Box::pin(async move {
+            let state = (self.pulse.state)().await;
+            match state.value {
+                true => (self.pulse.write)(false).await,
+                false => (self.pulse.write)(true).await,
+            }
+        })
     }
 }
 

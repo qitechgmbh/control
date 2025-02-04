@@ -26,7 +26,7 @@ const EVENT: &str = "EthercatDevicesEvent";
 
 impl EventData for EthercatDevicesEvent {
     async fn build() -> Event<Self> {
-        let ethercat_setup_guard = APP_STATE.as_ref().ethercat_setup.read();
+        let ethercat_setup_guard = APP_STATE.as_ref().ethercat_setup.read().await;
         let ethercat_setup = match ethercat_setup_guard.as_ref() {
             Some(device) => device,
             None => {

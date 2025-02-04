@@ -1,10 +1,11 @@
-use parking_lot::RwLock;
-use std::sync::Arc;
+use std::{future::Future, pin::Pin, sync::Arc};
+use tokio::sync::RwLock;
 
 type Value = f32;
 
 pub struct TemperatureInput {
-    pub state: Box<dyn Fn() -> TemperatureInputState + Send + Sync>,
+    pub state:
+        Box<dyn Fn() -> Pin<Box<dyn Future<Output = TemperatureInputState> + Send>> + Send + Sync>,
 }
 
 impl TemperatureInput {
@@ -16,13 +17,18 @@ impl TemperatureInput {
         PORTS: Clone + Send + Sync + 'static,
     {
         // build async get closure
-        let device2 = device.clone();
         let port2 = port.clone();
-        let state = Box::new(move || {
-            let device2_guard = device2.read();
-            device2_guard.temperature_input_state(port2.clone())
-        });
-
+        let device2 = device.clone();
+        let state = Box::new(
+            move || -> Pin<Box<dyn Future<Output = TemperatureInputState> + Send>> {
+                let device2 = device2.clone();
+                let port_clone = port2.clone();
+                Box::pin(async move {
+                    let device = device2.read().await;
+                    device.temperature_input_state(port_clone)
+                })
+            },
+        );
         TemperatureInput { state }
     }
 }

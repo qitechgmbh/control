@@ -102,7 +102,7 @@ impl StepperDriver {
 }
 
 impl Actor for StepperDriver {
-    fn act(&mut self, now_ts: u64) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
+    async fn act(&mut self, now_ts: u64) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
         Box::pin(async move {
             let pulse = (self.pulse.state)().await;
             match pulse.value {

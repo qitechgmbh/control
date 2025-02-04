@@ -1,6 +1,6 @@
 use std::{
     sync::{
-        atomic::{AtomicU64, AtomicUsize},
+        atomic::{AtomicBool, AtomicU64, AtomicUsize},
         Arc,
     },
     time::Duration,
@@ -22,6 +22,7 @@ pub struct State {
     pub count: Arc<AtomicUsize>,
     pub max_concurrent_tasks: usize,
     pub ema_alpha: f64,
+    pub exit: AtomicBool,
 }
 
 impl State {
@@ -35,6 +36,7 @@ impl State {
             count: Arc::new(AtomicUsize::new(0)),
             max_concurrent_tasks,
             ema_alpha,
+            exit: AtomicBool::new(false),
         }
     }
 }

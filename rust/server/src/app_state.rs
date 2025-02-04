@@ -4,8 +4,8 @@ use crate::{
     socketio::room::Rooms,
 };
 use ethercrab::{subdevice_group::Op, MainDevice, SubDeviceGroup};
-use parking_lot::RwLock;
 use socketioxide::SocketIo;
+use tokio::sync::RwLock;
 use std::sync::Arc;
 use std::sync::LazyLock;
 

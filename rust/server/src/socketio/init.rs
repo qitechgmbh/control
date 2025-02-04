@@ -12,7 +12,7 @@ pub async fn init_socketio() -> SocketIoLayer {
     io.ns("/", on_connect);
 
     // set the io to the app state
-    let mut socketio_guard = APP_STATE.socketio.write();
+    let mut socketio_guard = APP_STATE.socketio.write().await;
     socketio_guard.replace(io);
     drop(socketio_guard);
 
@@ -39,7 +39,7 @@ fn on_disconnect(socket: SocketRef) {
     // remove from every room
     let socket_clone = socket.clone();
     spawn(async move {
-        let mut socketio_rooms_guard = APP_STATE.socketio_rooms.write();
+        let mut socketio_rooms_guard = APP_STATE.socketio_rooms.write().await;
         for room in socket.rooms() {
             socketio_rooms_guard
                 .room(room.to_string())

@@ -1604,11 +1604,13 @@ dependencies = [
  "log",
  "network-interface",
  "parking_lot",
+ "resonant_scheduler",
  "serde",
  "serde_json",
  "signal-hook",
  "socketioxide",
  "socketioxide-core",
+ "thread-priority",
  "tokio",
  "tower-http",
  "tracing",
@@ -1840,6 +1842,20 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.98",
+]
+
+[[package]]
+name = "thread-priority"
+version = "1.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cfe075d7053dae61ac5413a34ea7d4913b6e6207844fd726bdd858b37ff72bf5"
+dependencies = [
+ "bitflags 2.8.0",
+ "cfg-if",
+ "libc",
+ "log",
+ "rustversion",
+ "winapi",
 ]
 
 [[package]]

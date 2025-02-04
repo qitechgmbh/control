@@ -1,9 +1,13 @@
-use parking_lot::RwLock;
 use std::sync::Arc;
+use tokio::sync::RwLock;
+
+use std::future::Future;
+use std::pin::Pin;
 
 pub struct AnalogOutput {
-    pub write: Box<dyn Fn(f32) -> () + Send + Sync>,
-    pub state: Box<dyn Fn() -> AnalogOutputState + Send + Sync>,
+    pub write: Box<dyn Fn(f32) -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>,
+    pub state:
+        Box<dyn Fn() -> Pin<Box<dyn Future<Output = AnalogOutputState> + Send>> + Send + Sync>,
 }
 
 impl AnalogOutput {
@@ -14,19 +18,30 @@ impl AnalogOutput {
         // build async write closure
         let port1 = port.clone();
         let device1 = device.clone();
-        let write = Box::new(move |value| {
-            let mut device = device1.write();
-            device.analog_output_write(port1.clone(), value)
-        });
+        let write = Box::new(
+            move |value: f32| -> Pin<Box<dyn Future<Output = ()> + Send>> {
+                let device_clone = device1.clone();
+                let port_clone = port1.clone();
+                Box::pin(async move {
+                    let mut device = device_clone.write().await;
+                    device.analog_output_write(port_clone, value);
+                })
+            },
+        );
 
         // build async get closure
         let port2 = port.clone();
         let device2 = device.clone();
-        let state = Box::new(move || {
-            let device = device2.read();
-            device.analog_output_state(port2.clone())
-        });
-
+        let state = Box::new(
+            move || -> Pin<Box<dyn Future<Output = AnalogOutputState> + Send>> {
+                let device2 = device2.clone();
+                let port_clone = port2.clone();
+                Box::pin(async move {
+                    let device = device2.read().await;
+                    device.analog_output_state(port_clone)
+                })
+            },
+        );
         AnalogOutput { write, state }
     }
 }

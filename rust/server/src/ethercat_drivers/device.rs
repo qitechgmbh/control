@@ -5,8 +5,8 @@ use super::devices::{
 use crate::ethercat::config::{MAX_SUBDEVICES, PDI_LEN};
 use anyhow::anyhow;
 use ethercrab::{subdevice_group::Op, MainDevice, SubDeviceGroup, SubDevicePdi, SubDeviceRef};
-use parking_lot::RwLock;
 use std::{any::Any, sync::Arc};
+use tokio::sync::RwLock;
 
 pub trait EthercatDevice: Any + Send + Sync {
     /// Input data from the last cycle
@@ -76,7 +76,7 @@ pub async fn downcast_device<T: EthercatDevice>(
     device: Arc<RwLock<dyn EthercatDevice>>,
 ) -> Result<Arc<RwLock<T>>, anyhow::Error> {
     // Acquire a read lock on the RwLock
-    let read_lock = device.read();
+    let read_lock = device.read().await;
 
     // Check if the inner type can be downcasted to T
     if read_lock.as_any().is::<T>() {
