@@ -1,0 +1,138 @@
+use super::devices::{
+    el1008::EL1008, el2008::EL2008, el2024::EL2024, el2634::EL2634, el2809::EL2809, el3204::EL3204,
+    el4008::EL4008,
+};
+use anyhow::anyhow;
+use ethercrab::{subdevice_group::Op, MainDevice, SubDeviceGroup, SubDevicePdi, SubDeviceRef};
+use std::{any::Any, sync::Arc};
+use tokio::sync::RwLock;
+
+pub trait EthercatDevice: Any + Send + Sync {
+    /// Input data from the last cycle
+    /// `ts` is the timestamp when the input data was sent by the device
+    fn input(&mut self, _input: &[u8]) {
+        ()
+    }
+
+    /// The accepted length of the input data
+    fn input_len(&self) -> usize {
+        0
+    }
+
+    /// automatically validate input length, then calls input
+    fn input_checked(&mut self, input: &[u8]) -> Result<(), anyhow::Error> {
+        // validate input has correct length
+        let input_len = self.input_len();
+        if input.len() != input_len {
+            return Err(anyhow::anyhow!(
+                "Input length is {} and must be {} bytes",
+                input.len(),
+                input_len
+            ));
+        }
+
+        self.input(input);
+
+        Ok(())
+    }
+
+    /// Output data for the next cycle
+    /// `ts` is the timestamp when the output data is predicted to be received by the device
+    fn output(&self, _output: &mut [u8]) {
+        ()
+    }
+
+    /// The accepted length of the output data
+    fn output_len(&self) -> usize {
+        0
+    }
+
+    fn output_checked(&self, output: &mut [u8]) -> Result<(), anyhow::Error> {
+        // validate input has correct length
+        let output_len = self.output_len();
+        if output.len() != output_len {
+            return Err(anyhow::anyhow!(
+                "Output length is {} and must be {} bytes",
+                output.len(),
+                output_len
+            ));
+        }
+
+        self.output(output);
+
+        Ok(())
+    }
+
+    /// Write timestamps for current cycle
+    fn ts(&mut self, _input_ts: u64, _output_ts: u64) {
+        ()
+    }
+
+    fn as_any(&self) -> &dyn Any;
+}
+
+pub async fn downcast_device<T: EthercatDevice>(
+    device: Arc<RwLock<dyn EthercatDevice>>,
+) -> Result<Arc<RwLock<T>>, anyhow::Error> {
+    // Acquire a read lock on the RwLock
+    let read_lock = device.read().await;
+
+    // Check if the inner type can be downcasted to T
+    if read_lock.as_any().is::<T>() {
+        // Clone the Arc and return it as the desired type
+        let cloned_device = Arc::clone(&device);
+        // Transmute the Arc to the desired type
+        unsafe {
+            Ok(Arc::from_raw(
+                Arc::into_raw(cloned_device) as *const RwLock<T>
+            ))
+        }
+    } else {
+        Err(anyhow!("Downcast failed"))
+    }
+}
+
+fn device_from_subdevice<'maindevice, 'group, const PDI_LEN: usize>(
+    subdevice: &SubDeviceRef<'maindevice, SubDevicePdi<'group, PDI_LEN>>,
+) -> Result<Arc<RwLock<dyn EthercatDevice>>, anyhow::Error> {
+    let name = subdevice.name();
+    match name {
+        "EL2008" => Ok(Arc::new(RwLock::new(EL2008::new()))),
+        "EL2809" => Ok(Arc::new(RwLock::new(EL2809::new()))),
+        "EL2634" => Ok(Arc::new(RwLock::new(EL2634::new()))),
+        "EL4008" => Ok(Arc::new(RwLock::new(EL4008::new()))),
+        "EL1008" => Ok(Arc::new(RwLock::new(EL1008::new()))),
+        "EL3204" => Ok(Arc::new(RwLock::new(EL3204::new()))),
+        "EL2024" => Ok(Arc::new(RwLock::new(EL2024::new()))),
+        _ => Err(anyhow::anyhow!("No Driver: {}", name)),
+    }
+}
+
+pub fn devices_from_subdevice_group<
+    'maindevice,
+    'group,
+    const MAX_SUBDEVICES: usize,
+    const PDI_LEN: usize,
+>(
+    group: &mut SubDeviceGroup<MAX_SUBDEVICES, PDI_LEN, Op>,
+    maindevice: &MainDevice,
+) -> Vec<Option<Arc<RwLock<dyn EthercatDevice>>>> {
+    group
+        .iter(maindevice)
+        .map(|subdevice| device_from_subdevice(&subdevice).ok())
+        .collect()
+}
+
+pub async fn get_device<DEVICE: EthercatDevice>(
+    devices: &Vec<Option<Arc<RwLock<dyn EthercatDevice>>>>,
+    index: usize,
+) -> Result<Arc<RwLock<DEVICE>>, anyhow::Error> {
+    let x = downcast_device::<DEVICE>(
+        devices[index]
+            .as_ref()
+            .ok_or_else(|| anyhow!("Couldnt find device with macthing type at {}", index))?
+            .clone(),
+    )
+    .await;
+    x
+}

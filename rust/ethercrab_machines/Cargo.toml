@@ -1,0 +1,12 @@
+[package]
+name = "ethercrab_machines"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.95"
+ethercrab = { path = "../../ethercrab" }
+log = "0.4.25"
+stepper_driver = { version = "0.1.0", path = "../stepper_driver" }
+tokio = { version = "1.43.0", features = ["full"] }
+uom = "0.36.0"
