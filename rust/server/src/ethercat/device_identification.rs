@@ -1,8 +1,8 @@
 use anyhow::anyhow;
 use anyhow::Error;
+use ethercrab::{SubDevice, SubDeviceRef};
 use futures::executor::block_on;
 
-use super::hexdump::u16dump;
 use super::types::EthercrabSubDevice;
 
 #[derive(Debug, PartialEq, Default)]
@@ -22,8 +22,8 @@ pub struct DeviceGroupDevice {
 ///
 /// Return 0: Vec<DeviceGroupDevice> - a vector of devices grouped by machine identification
 /// Return 1: Vec<(usize, MachineDeviceIdentification)> - a vector of devices that could not be identified
-pub async fn group_devices(
-    subdevices: &[EthercrabSubDevice<'_>],
+pub async fn group_devices<'maindevice>(
+    subdevices: &'maindevice [EthercrabSubDevice<'maindevice>],
 ) -> Result<
     (
         Vec<DeviceGroupDevice>,
@@ -69,8 +69,8 @@ pub struct MachineDeviceIdentification {
 }
 
 /// Reads the machine device identification from the EEPROM
-pub async fn machine_device_identification(
-    subdevice: &EthercrabSubDevice<'_>,
+pub async fn machine_device_identification<'maindevice>(
+    subdevice: &'maindevice EthercrabSubDevice<'maindevice>,
 ) -> Result<MachineDeviceIdentification, Error> {
     let eeprom = subdevice.eeprom();
     let addresses = get_identification_addresses(subdevice)?;
@@ -97,8 +97,8 @@ pub async fn machine_device_identification(
 }
 
 /// Writes the machine device identification to the EEPROM
-pub async fn write_machine_device_identification(
-    subdevice: &EthercrabSubDevice<'_>,
+pub async fn write_machine_device_identification<'maindevice>(
+    subdevice: &'maindevice EthercrabSubDevice<'maindevice>,
     identification: MachineDeviceIdentification,
 ) -> Result<(), Error> {
     let eeprom = subdevice.eeprom();
@@ -226,3 +226,55 @@ const EL1008: u32 = 0x03f03052;
 const EL2008: u32 = 0x07d83052;
 const EL4008: u32 = 0x0fa83052;
 const EL3204: u32 = 0x0c843052;
+
+async fn u16dump<'maindevice, 'group>(
+    subdevice: &SubDeviceRef<'maindevice, &SubDevice>,
+    start_word: u16,
+    end_word: u16,
+) -> Result<(), Error> {
+    let eeprom = subdevice.eeprom();
+    let mut words: Vec<u16> = Vec::new();
+    for word in start_word..end_word {
+        words.push(eeprom.read(word).await?);
+    }
+
+    u16print(start_word, end_word, words);
+
+    Ok(())
+}
+
+fn u16print(start_word: u16, end_word: u16, data: Vec<u16>) {
+    let table_start_word = start_word & 0xfff0;
+    let table_end_word = (end_word & 0xfff0_u16) + 0x10_u16;
+
+    let rows = table_end_word - table_start_word >> 4;
+
+    for row in 0..rows {
+        print!("0x{:04x} | ", (table_start_word + row * 0x10) / 2);
+        for word in 0..8 {
+            let word_address = row * 8 + word;
+            if word_address < start_word {
+                print!("     ");
+            } else {
+                let i = (word_address - start_word) as usize;
+                if i > data.len() - 1 {
+                    print!("     ");
+                } else {
+                    print!("{:04x} ", data[i]);
+                }
+            }
+        }
+        print!("\n");
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_hexprint() {
+        let data = vec![0x0000, 0x1ced];
+        u16print(0x01, 0x40, data);
+    }
+}

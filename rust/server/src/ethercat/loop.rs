@@ -29,25 +29,27 @@ use crate::{
 };
 use anyhow::Ok;
 use ethercrab::std::{ethercat_now, tx_rx_task};
+use resonant_scheduler::scheduler::ResonantScheduler;
+use resonant_scheduler::signal::Signal;
 use std::{sync::Arc, time::Duration};
+use tokio::sync::Mutex;
 use tokio::sync::RwLock;
 
 use ethercrab::{MainDevice, MainDeviceConfig, PduStorage, RetryBehaviour, Timeouts};
 
 pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(), anyhow::Error> {
-    log::info!("Launching PDU loop");
+    log::info!("Setting up Ethercat network");
+
     // erase all all setup data
     {
         let mut ethercat_setup_guard = app_state.ethercat_setup.write().await;
         *ethercat_setup_guard = None;
     }
 
-    // setup ethercrab
+    // setup ethercrab tx/rx task
     let pdu_storage = Box::leak(Box::new(PduStorage::<MAX_FRAMES, MAX_PDU_DATA>::new()));
     let (tx, rx, pdu) = pdu_storage.try_split().expect("can only split once");
-
     let interface = interface.to_string();
-
     std::thread::spawn(move || {
         let rt = tokio::runtime::Runtime::new().expect("Failed to create runtime");
         let _ = rt.block_on(async move {
@@ -57,8 +59,7 @@ pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(),
         });
     });
 
-    log::info!("Ethercat setup started");
-
+    // create maindevice
     let maindevice = MainDevice::new(
         pdu,
         Timeouts {
@@ -79,8 +80,6 @@ pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(),
             .await
     });
 
-    log::info!("Main device created");
-
     // initialize all subdevices
     // Fails if DC setup detects a mispatching working copunter, then just try again in loop
     let group = loop {
@@ -95,8 +94,8 @@ pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(),
 
     log::info!("Initialized {} subdevices", group.len());
 
-    // let subdevice = group.subdevice(&maindevice, 2)?;
-    // subdevice.write_alias_address(0x1ced).await?;
+    let subdevice = group.subdevice(&maindevice, 2)?;
+    subdevice.eeprom().write(0x0028, 0x5678).await?;
 
     // for subdevice in group.iter(&maindevice) {
     //     log::info!(
@@ -146,7 +145,6 @@ pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(),
     ];
 
     // set all setup data
-    log::info!("Setting up EthercatSetup");
     {
         let mut ethercat_setup_guard = app_state.ethercat_setup.write().await;
         *ethercat_setup_guard = Some(EthercatSetup {
@@ -157,84 +155,40 @@ pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(),
             delays: propagation_delays.into_iter().map(Some).collect(),
         });
     }
-    log::info!("EthercatSetup set");
 
     // notify client via socketio
-    // tokio::spawn(async { EthercatDevicesEvent::build().await.emit("main").await });
+    tokio::spawn(async { EthercatDevicesEvent::build().await.emit("main").await });
 
-    let pdu_handle =
-        tokio::spawn(async move { multi_loop(app_state.ethercat_setup.clone()).await });
+    log::info!("Starting contorl loop");
+    let pdu_handle = tokio::spawn(async move {
+        let mut average_nanos = Duration::from_micros(250).as_nanos() as u64;
+        loop {
+            let _ = loop_once(app_state.ethercat_setup.clone(), &mut average_nanos).await;
+        }
+    });
     // Await the pdu_loop task so that it executes fully
     pdu_handle.await.expect("pdu_loop task failed");
 
     Ok(())
 }
 
-use resonant_scheduler::scheduler::ResonantScheduler;
-use resonant_scheduler::signal::Signal;
-use tokio::sync::Mutex;
-
-pub async fn multi_loop(ethercat_setup: Arc<RwLock<Option<EthercatSetup>>>) {
-    let interval = Duration::from_nanos(1);
-    let mutex = Arc::new(Mutex::new(()));
-    let setup = ethercat_setup.clone();
-
-    let cycle_fn = move || {
-        let mutex = mutex.clone();
-        let interval = interval.clone();
-        let setup = setup.clone();
-        async move {
-            log::info!("cycle_fn");
-            let mutex = mutex.clone();
-            let interval = interval.clone();
-            let setup = setup.clone();
-
-            // let ts_1 = ethercat_now();
-            // up to 16 of these can run in parallel
-            {
-                let setup = setup.read().await;
-                let _ = match setup.as_ref() {
-                    None => {
-                        log::warn!("No Ethercat setup available, waiting for setup");
-                        return Signal::Continue;
-                    }
-                    Some(setup) => {
-                        log::info!("before txrx");
-                        let _ = setup.group.tx_rx(&setup.maindevice).await;
-                        log::info!("after txrx");
-                    }
-                };
-            }
-            // one of these can run at a time
-            {
-                let _guard = mutex.lock().await;
-                let guard = setup.read().await;
-                let setup = match guard.as_ref() {
-                    None => return Signal::Continue,
-                    Some(setup) => setup,
-                };
-                let _ = loop_once(setup, interval).await;
-            }
-            // let ts_2 = ethercat_now();
-            // log::trace!("PDU cycle took {} ns", ts_2 - ts_1);
-            Signal::Continue
-        }
-    };
-
-    let runner = ResonantScheduler::new(1, Duration::from_micros(250), 0.1);
-    log::info!("running runner.run(cycle_fn).await;");
-    runner.run(cycle_fn).await.unwrap();
-}
-
 pub async fn loop_once<'maindevice>(
-    setup: &EthercatSetup,
-    interval: Duration,
+    setup: Arc<RwLock<Option<EthercatSetup>>>,
+    average_nanos: &mut u64,
 ) -> Result<(), anyhow::Error> {
+    let setup_guard = setup.read().await;
+    let setup = setup_guard
+        .as_ref()
+        .ok_or_else(|| anyhow::anyhow!("No setup"))?;
+
     // TS when the TX/RX cycle starts
     let input_ts = ethercat_now();
 
+    // TX/RX cycle
+    setup.group.tx_rx(&setup.maindevice).await?;
+
     // Prediction when the next TX/RX cycle starts
-    let output_ts = input_ts + interval.as_nanos() as u64;
+    let output_ts = input_ts + *average_nanos;
 
     // copy inputs to devices
     for (i, subdevice) in setup.group.iter(&setup.maindevice).enumerate() {
