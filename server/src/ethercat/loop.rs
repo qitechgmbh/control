@@ -29,8 +29,6 @@ use crate::{
 };
 use anyhow::Ok;
 use ethercrab::std::{ethercat_now, tx_rx_task};
-use resonant_scheduler::scheduler::ResonantScheduler;
-use resonant_scheduler::signal::Signal;
 use std::{sync::Arc, time::Duration};
 use tokio::sync::Mutex;
 use tokio::sync::RwLock;

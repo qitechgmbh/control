@@ -1,0 +1,3 @@
+[workspace]
+members = ["server", "ethercrab_machines", "stepper_driver"]
+exclude = ["ethercrab"]
