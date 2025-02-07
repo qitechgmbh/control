@@ -70,7 +70,7 @@ export const columns: ColumnDef<EthercatDevicesEvent["devices"][0]>[] = [
   {
     accessorKey: "details",
     header: "Details",
-    cell: (row) => (
+    cell: (_) => (
       <Button>
         {/* <Link href={`ethercat/${row.row.original.address.toString(16)}`}>
           Details

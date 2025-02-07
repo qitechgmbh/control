@@ -5,6 +5,7 @@ import EthercatPage from "./Ethercat";
 export function ConfigurationPage() {
   return (
     <Topbar
+      initialActiveIndex={0}
       items={[
         {
           button: (props) => (

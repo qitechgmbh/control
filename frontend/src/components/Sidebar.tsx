@@ -75,7 +75,7 @@ export function Sidebar({ items, initialActiveIndex }: SidebarProps) {
           ))}
         </div>
       </div>
-      {items.find((item, index) => activeIndex === index)?.children}
+      {items.find((_, index) => activeIndex === index)?.children}
     </div>
   );
 }

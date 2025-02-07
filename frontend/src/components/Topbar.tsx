@@ -43,10 +43,13 @@ type TopbarProps = {
     button: (props: SidebarButtonBuilderProps) => React.ReactNode;
     children: React.ReactNode;
   }[];
+  initialActiveIndex: number;
 };
 
-export function Topbar({ items }: TopbarProps) {
-  const [activeIndex, setActiveIndex] = React.useState<number | null>(null);
+export function Topbar({ items, initialActiveIndex }: TopbarProps) {
+  const [activeIndex, setActiveIndex] = React.useState<number | null>(
+    initialActiveIndex
+  );
 
   return (
     <div className="flex flex-col h-full">
@@ -71,7 +74,7 @@ export function Topbar({ items }: TopbarProps) {
           </Fragment>
         ))}
       </div>
-      {items.find((item, index) => activeIndex === index)?.children}
+      {items.find((_, index) => activeIndex === index)?.children}
     </div>
   );
 }

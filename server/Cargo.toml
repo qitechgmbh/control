@@ -5,23 +5,35 @@ edition = "2021"
 rust-version = "1.84"
 
 [dependencies]
-tokio = { version = "1.43.0", features = ["rt-multi-thread"] }
-axum = { version = "0.8.1", features = ["macros"] }
-ethercrab = { path = "../ethercrab" }
-env_logger = "0.11.6"
-log = "0.4.25"
-signal-hook = "0.3.17"
+
+# etehrcat
 network-interface = "2.0.0"
-serde_json = "1.0.137"
-anyhow = "1.0.95"
-tower-http = { version = "0.6.2", features = ["cors", "trace"] }
-socketioxide = "0.16.0"
-serde = "1.0.217"
+ethercrab = { path = "../ethercrab" }
+
+# concurrency
+thread-priority = "1.2.0"
+futures = "0.3.31"
+parking_lot = "0.12.3"
+
+# web
+tower-livereload = "0.9.6"
 socketioxide-core = "0.16.0"
+socketioxide = "0.16.0"
+tower-http = { version = "0.6.2", features = ["cors", "trace", "fs"] }
+axum = { version = "0.8.1", features = ["macros"] }
+
+# utility
+uom = "0.36.0"
 chrono = "0.4.39"
 tracing = "0.1.41"
 tracing-subscriber = "0.3.19"
-uom = "0.36.0"
-parking_lot = "0.12.3"
-thread-priority = "1.2.0"
-futures = "0.3.31"
+serde = "1.0.217"
+anyhow = "1.0.95"
+serde_json = "1.0.137"
+signal-hook = "0.3.17"
+log = "0.4.25"
+env_logger = "0.11.6"
+tokio = { version = "1.43.0", features = ["rt-multi-thread"] }
+include_dir = "0.7.4"
+mime_guess = "2.0.5"
+open = "5.3.2"
