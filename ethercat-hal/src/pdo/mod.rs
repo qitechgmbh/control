@@ -1,3 +1,5 @@
+use crate::coe::Configuration;
+
 #[allow(non_snake_case)]
 pub mod EL252X;
 
@@ -26,7 +28,7 @@ where
     fn rxpdo_assignment(&self) -> RXPDOA;
 }
 
-pub trait RxPdo {
+pub trait RxPdo: Configuration {
     fn get_objects(&self) -> &[Option<&dyn RxPdoObject>];
 
     fn size(&self) -> usize {
@@ -49,11 +51,13 @@ pub trait RxPdo {
     }
 }
 
-pub trait TxPdo {
+pub trait TxPdo: Configuration {
+    fn get_objects(&self) -> &[Option<&dyn TxPdoObject>];
+
     fn get_objects_mut(&mut self) -> &mut [Option<&mut dyn TxPdoObject>];
 
-    fn size(&mut self) -> usize {
-        self.get_objects_mut()
+    fn size(&self) -> usize {
+        self.get_objects()
             .iter()
             .map(|o| o.as_ref().map(|o| o.size()).unwrap_or(0))
             .sum::<usize>()

@@ -1,84 +1,142 @@
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, Data, DeriveInput, Fields, GenericArgument, PathArguments, Type};
+use syn::{Data, DeriveInput};
 
-// Import the necessary type for procedural macros.
-// Import the macro quoting utility to easily generate code.
-// Import parsing utilities and types from syn.
+#[derive(deluxe::ExtractAttributes)]
+#[deluxe(attributes(pdo_map_register))]
+struct PdoMapIndex(u16);
 
-// Define a derive procedural macro named PdoAssignmentDerive.
-#[proc_macro_derive(PdoAssignmentDerive)]
-pub fn derive_pdo_assignment(input: TokenStream) -> TokenStream {
-    // Parse the input tokens into a DeriveInput syntax tree.
-    let input = parse_macro_input!(input as DeriveInput);
+fn extract_metedata_field_attributes(
+    ast: &mut DeriveInput,
+) -> deluxe::Result<(Vec<syn::Ident>, Vec<u16>)> {
+    let mut field_names = Vec::new();
+    let mut pdo_indices = Vec::new();
+    if let Data::Struct(s) = &mut ast.data {
+        for field in s.fields.iter_mut() {
+            let field_name = field
+                .ident
+                .as_ref()
+                .cloned()
+                .expect("Field must have a name");
+            let attrs: PdoMapIndex = deluxe::extract_attributes(field)?;
+            field_names.push(field_name);
+            pdo_indices.push(attrs.0);
+        }
+    }
+    Ok((field_names, pdo_indices))
+}
 
-    // Extract the identifier (name) of the struct.
-    let name = input.ident;
-    // Split the generics into parts needed for the impl block.
-    let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
+fn rxpdo_derive2(item: proc_macro2::TokenStream) -> deluxe::Result<proc_macro2::TokenStream> {
+    let mut ast: DeriveInput = syn::parse2(item)?;
 
-    // Match on the data inside the input to ensure it's a struct with named fields.
-    let fields = match input.data {
-        // Match specifically for a struct.
-        Data::Struct(data) => match data.fields {
-            // Accept only named fields in the struct.
-            Fields::Named(fields) => fields.named,
-            // Panic if the struct fields are not named.
-            _ => panic!("Only named fields are supported"),
-        },
-        // Panic if the derive is applied to anything but a struct.
-        _ => panic!("PdoAssignment can only be derived for structs"),
-    };
+    // let MetaDataStructAttributes { author } = deluxe::extract_attributes(&mut ast)?;
 
-    // Filter and collect the fields that are of type Option<T> into a vector.
-    let pdo_fields = fields
-        .iter() // Iterate over each field.
-        .filter_map(|field| {
-            // Get the name (identifier) of the field.
-            let field_name = field.ident.as_ref()?;
+    // extract field attributes
+    let (field_name, pdo_index): (Vec<syn::Ident>, Vec<u16>) =
+        extract_metedata_field_attributes(&mut ast)?;
 
-            // Check if the type of the field is a path (like Option<T>).
-            if let Type::Path(type_path) = &field.ty {
-                // Get the last segment of the type path.
-                if let Some(segment) = type_path.path.segments.last() {
-                    // Check if the type is 'Option'.
-                    if segment.ident == "Option" {
-                        // Ensure that the generic arguments are enclosed in angle brackets.
-                        if let PathArguments::AngleBracketed(args) = &segment.arguments {
-                            // Check that there is a type inside the Option.
-                            if let Some(GenericArgument::Type(_)) = args.args.first() {
-                                // Return the field name if all conditions are met.
-                                return Some(field_name);
-                            }
-                        }
-                    }
-                }
-            }
-            // Otherwise, skip this field.
-            None
-        })
-        // Collect the resulting field names into a vector.
-        .collect::<Vec<_>>();
+    let ident = &ast.ident;
+    let (impl_generics, ty_generics, where_clause) = ast.generics.split_for_impl();
 
-    // Generate the implementation of the PdoAssignment trait for the struct.
     let expanded = quote! {
-        use crate::pdo::PdoObject;
+        impl #impl_generics Configuration for #ident #ty_generics #where_clause {
+                async fn write_config<'a>(
+                &self,
+                device: &'a EthercrabSubDevice<'a>,
+            ) -> Result<(), anyhow::Error> {
+                device.sdo_write(0x1C12, 0, 0u8).await?;
+                let mut len = 0;
 
-        impl #impl_generics PdoAssignment for #name #ty_generics #where_clause {
+                #(
+                     if let Some(_) = &self.#field_name {
+                     len += 1;
+                     device.sdo_write(0x1C12, len, #pdo_index).await?;
+                 }
+                )*
 
-            // Define the get_objects method.
-            fn get_objects(&self) -> &[Option<&dyn PdoObject>] {
-                // Leak a boxed vector converted into a slice.
-                Box::leak(Box::new(vec![
-                    // For each relevant field, convert its Option value to an Option reference to a PdoObject trait.
+                device.sdo_write(0x1C12, 0, len).await?;
+                Ok(())
+            }
+        }
+
+        impl #impl_generics RxPdo for #ident #ty_generics #where_clause {
+            fn get_objects(&self) -> &[Option<&dyn RxPdoObject>] {
+                let objs = vec![
                     #(
-                        self.#pdo_fields.as_ref().map(|obj| obj as &dyn PdoObject),
+                        self.#field_name.as_ref().map(|o| o as &dyn RxPdoObject),
                     )*
-                ]))
+                ];
+                Box::leak(objs.into_boxed_slice())
             }
         }
     };
 
-    // Convert the generated code back into a TokenStream.
-    TokenStream::from(expanded)
+    Ok(expanded)
+}
+
+#[proc_macro_derive(RxPdoDerive, attributes(pdo_map_register))]
+pub fn rxpdo_derive(item: TokenStream) -> TokenStream {
+    rxpdo_derive2(item.into()).unwrap().into()
+}
+
+fn txpdo_derive2(item: proc_macro2::TokenStream) -> deluxe::Result<proc_macro2::TokenStream> {
+    let mut ast: DeriveInput = syn::parse2(item)?;
+
+    // let MetaDataStructAttributes { author } = deluxe::extract_attributes(&mut ast)?;
+
+    // extract field attributes
+    let (field_name, pdo_index): (Vec<syn::Ident>, Vec<u16>) =
+        extract_metedata_field_attributes(&mut ast)?;
+
+    let ident = &ast.ident;
+    let (impl_generics, ty_generics, where_clause) = ast.generics.split_for_impl();
+
+    let expanded = quote! {
+        impl #impl_generics Configuration for #ident #ty_generics #where_clause {
+                async fn write_config<'a>(
+                &self,
+                device: &'a EthercrabSubDevice<'a>,
+            ) -> Result<(), anyhow::Error> {
+                device.sdo_write(0x1C13, 0, 0u8).await?;
+                let mut len = 0;
+
+                #(
+                     if let Some(_) = &self.#field_name {
+                     len += 1;
+                     device.sdo_write(0x1C13, len, #pdo_index).await?;
+                 }
+                )*
+
+                device.sdo_write(0x1C13, 0, len).await?;
+                Ok(())
+            }
+        }
+
+        impl #impl_generics TxPdo for #ident #ty_generics #where_clause {
+            fn get_objects(&self) -> &[Option<&dyn TxPdoObject>] {
+                let objs = vec![
+                    #(
+                        self.#field_name.as_ref().map(|o| o as &dyn TxPdoObject),
+                    )*
+                ];
+                Box::leak(objs.into_boxed_slice())
+            }
+
+            fn get_objects_mut(&mut self) -> &mut [Option<&mut dyn TxPdoObject>] {
+                let objs = vec![
+                    #(
+                        self.#field_name.as_mut().map(|o| o as &mut dyn TxPdoObject),
+                    )*
+                ];
+                Box::leak(objs.into_boxed_slice())
+            }
+        }
+    };
+
+    Ok(expanded)
+}
+
+#[proc_macro_derive(TxPdoDerive, attributes(pdo_map_register))]
+pub fn txpdo_derive(item: TokenStream) -> TokenStream {
+    txpdo_derive2(item.into()).unwrap().into()
 }

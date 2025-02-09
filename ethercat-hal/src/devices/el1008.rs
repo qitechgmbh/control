@@ -36,7 +36,7 @@ impl Device for EL1008 {
     fn input(&mut self, input: &[u8]) {
         self.input_pdu.copy_from_slice(input);
     }
-    fn input_len(&mut self) -> usize {
+    fn input_len(&self) -> usize {
         INPUT_PDU_LEN
     }
     fn ts(&mut self, _input_ts: u64, output_ts: u64) {

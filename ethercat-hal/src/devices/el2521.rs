@@ -1,17 +1,18 @@
 use super::Device;
 use crate::{
-    coe::Configuration,
+    coe::{Configuration, RX_PDO_ASSIGNMENT_REG, TX_PDO_ASSIGNMENT_REG},
     io::pulse_train_output::{
         PulseTrainOutputDevice, PulseTrainOutputState, PulseTrainOutputWrite,
     },
     pdo::{
-        PdoPreset, RxPdo, RxPdoObject, TxPdo, TxPdoObject,
+        PdoObject, PdoPreset, RxPdo, RxPdoObject, TxPdo, TxPdoObject,
         EL252X::{EncControl, EncStatus, PtoControl, PtoStatus, PtoTarget},
     },
     types::EthercrabSubDevice,
 };
 use anyhow::Ok;
-use std::any::Any;
+use ethercat_hal_derive::{RxPdoDerive, TxPdoDerive};
+use std::{any::Any, collections::HashMap};
 
 /// EL2521 8-channel digital output device
 ///   
@@ -57,7 +58,7 @@ impl Device for EL2521 {
         log::info!("EL2521 input {:?}", _input);
         self.txpdo.read(_input);
     }
-    fn input_len(&mut self) -> usize {
+    fn input_len(&self) -> usize {
         self.txpdo.size()
     }
     fn ts(&mut self, _input_ts: u64, output_ts: u64) {
@@ -270,7 +271,10 @@ impl From<EL2521OperatingMode> for u8 {
 }
 
 impl Configuration for EL2521Configuration {
-    async fn write_config(&self, device: &EthercrabSubDevice<'_>) -> Result<(), anyhow::Error> {
+    async fn write_config<'a>(
+        &self,
+        device: &'a EthercrabSubDevice<'a>,
+    ) -> Result<(), anyhow::Error> {
         device
             .sdo_write(0x8010, 0x02, self.emergency_ramp_active)
             .await?;
@@ -323,12 +327,14 @@ impl Configuration for EL2521Configuration {
         device
             .sdo_write(0x8010, 0x18, self.ramp_time_constant_emergency)
             .await?;
-        // device
-        //     .sdo_write_array(TX_PDO_ASSIGNMENT_REG, self.pdo_assignment.txpdo_mapping())
-        //     .await?;
-        // device
-        //     .sdo_write_array(RX_PDO_ASSIGNMENT_REG, &self.pdo_assignment.rxpdo_mapping())
-        //     .await?;
+        self.pdo_assignment
+            .txpdo_assignment()
+            .write_config(device)
+            .await?;
+        self.pdo_assignment
+            .rxpdo_assignment()
+            .write_config(device)
+            .await?;
         Ok(())
     }
 }
@@ -359,7 +365,7 @@ impl PdoPreset<EL2521TxPdo, EL2521RxPdo> for EL2521PdoPreset {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, TxPdoDerive)]
 struct EL2521TxPdo {
     /// # `0x1A00` Legacy Inputs
     ///
@@ -367,43 +373,25 @@ struct EL2521TxPdo {
     // pub inputs: Option<()>,
 
     /// # `0x1A01` PTO Status
+    #[pdo_map_register(0x1A01)]
     pub pto_status: Option<PtoStatus>,
 
     /// # `0x1A02` Encoder Status
+    #[pdo_map_register(0x1A02)]
     pub enc_status: Option<EncStatus>,
 }
 
-impl TxPdo for EL2521TxPdo {
-    fn get_objects_mut(&mut self) -> &mut [Option<&mut dyn TxPdoObject>] {
-        let objs = vec![
-            None,
-            self.pto_status.as_mut().map(|o| o as &mut dyn TxPdoObject),
-            self.enc_status.as_mut().map(|o| o as &mut dyn TxPdoObject),
-        ];
-        Box::leak(objs.into_boxed_slice())
-    }
-}
-
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, RxPdoDerive)]
 struct EL2521RxPdo {
     /// # `0x1601` PTO Control
+    #[pdo_map_register(0x1601)]
     pub pto_control: Option<PtoControl>,
 
     /// # `0x1607` PTO Target
+    #[pdo_map_register(0x1607)]
     pub pto_target: Option<PtoTarget>,
 
     /// # `0x1605` Encoder Control
+    #[pdo_map_register(0x1605)]
     pub enc_control: Option<EncControl>,
-}
-
-impl RxPdo for EL2521RxPdo {
-    fn get_objects(&self) -> &[Option<&dyn RxPdoObject>] {
-        let objs = vec![
-            None,
-            self.pto_control.as_ref().map(|o| o as &dyn RxPdoObject),
-            self.pto_target.as_ref().map(|o| o as &dyn RxPdoObject),
-            self.enc_control.as_ref().map(|o| o as &dyn RxPdoObject),
-        ];
-        Box::leak(objs.into_boxed_slice())
-    }
 }

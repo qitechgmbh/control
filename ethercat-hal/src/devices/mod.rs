@@ -26,7 +26,7 @@ pub trait Device: Any + Send + Sync {
     }
 
     /// The accepted length of the input data
-    fn input_len(&mut self) -> usize {
+    fn input_len(&self) -> usize {
         0
     }
 
