@@ -1,19 +1,23 @@
-use std::{future::Future, pin::Pin};
+use std::{
+    future::Future,
+    pin::Pin,
+    sync::{Arc, RwLock},
+};
 
-use crate::{actor::Actor, io::digital_output::DigitalOutput, utils::traits::ArcRwLock};
+use crate::{actor::Actor, io::digital_output::DigitalOutput};
 
 /// Set a digital output high and low with a given interval
-pub struct StepperDriverPulseTrain {
+pub struct StepperDriverMaxSpeed {
     pulse: DigitalOutput,
 }
 
-impl StepperDriverPulseTrain {
+impl StepperDriverMaxSpeed {
     pub fn new(output: DigitalOutput) -> Self {
         Self { pulse: output }
     }
 }
 
-impl Actor for StepperDriverPulseTrain {
+impl Actor for StepperDriverMaxSpeed {
     fn act(&mut self, _now_ts: u64) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
         Box::pin(async move {
             let state = (self.pulse.state)().await;
@@ -25,4 +29,8 @@ impl Actor for StepperDriverPulseTrain {
     }
 }
 
-impl ArcRwLock for StepperDriverPulseTrain {}
+impl From<StepperDriverMaxSpeed> for Arc<RwLock<StepperDriverMaxSpeed>> {
+    fn from(actor: StepperDriverMaxSpeed) -> Self {
+        Arc::new(RwLock::new(actor))
+    }
+}

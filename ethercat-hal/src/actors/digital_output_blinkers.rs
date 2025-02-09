@@ -1,7 +1,7 @@
-use crate::{
-    actor::Actor, io::digital_output::DigitalOutput, utils::traits::ArcRwLock,
-};
-use std::{future::Future, pin::Pin, time::Duration};
+use tokio::sync::RwLock;
+
+use crate::{actor::Actor, io::digital_output::DigitalOutput};
+use std::{future::Future, pin::Pin, sync::Arc, time::Duration};
 
 /// Set a series of digital outputs high in sequence with a given interval
 pub struct DigitalOutputBlinkers {
@@ -55,4 +55,8 @@ impl Actor for DigitalOutputBlinkers {
     }
 }
 
-impl ArcRwLock for DigitalOutputBlinkers {}
+impl From<DigitalOutputBlinkers> for Arc<RwLock<DigitalOutputBlinkers>> {
+    fn from(actor: DigitalOutputBlinkers) -> Self {
+        Arc::new(RwLock::new(actor))
+    }
+}

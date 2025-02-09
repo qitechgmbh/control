@@ -2,8 +2,8 @@ use crate::{
     ethercat::config::{MAX_SUBDEVICES, PDI_LEN},
     socketio::room::Rooms,
 };
+use ethercat_hal::{actor::Actor, device::EthercatDevice};
 use ethercrab::{subdevice_group::Op, MainDevice, SubDeviceGroup};
-use ethercrab_machines::{actor::Actor, device::EthercatDevice};
 use socketioxide::SocketIo;
 use std::sync::Arc;
 use std::sync::LazyLock;

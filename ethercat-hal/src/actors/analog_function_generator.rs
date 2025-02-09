@@ -1,6 +1,7 @@
-use crate::{actor::Actor, io::analog_output::AnalogOutput, utils::traits::ArcRwLock};
+use crate::{actor::Actor, io::analog_output::AnalogOutput};
 use ethercrab::std::ethercat_now;
-use std::{f32::consts::PI, future::Future, pin::Pin};
+use std::{f32::consts::PI, future::Future, pin::Pin, sync::Arc};
+use tokio::sync::RwLock;
 use uom::si::{angle::radian, f32::Angle, ratio::ratio};
 
 pub type AnalogFunction = Box<dyn Fn(u64) -> f32 + Send + Sync>;
@@ -33,7 +34,11 @@ impl Actor for AnalogFunctionGenerator {
     }
 }
 
-impl ArcRwLock for AnalogFunctionGenerator {}
+impl From<AnalogFunctionGenerator> for Arc<RwLock<AnalogFunctionGenerator>> {
+    fn from(actor: AnalogFunctionGenerator) -> Self {
+        Arc::new(RwLock::new(actor))
+    }
+}
 
 pub fn analog_sine(amplitude: f32, normal: f32, period_ns: u64) -> AnalogFunction {
     Box::new(move |time_ns: u64| {

@@ -1,3 +1,5 @@
+#![allow(unused_imports)]
+
 use crate::app_state::EthercatSetup;
 use crate::ethercat::config::{MAX_FRAMES, MAX_PDU_DATA};
 // use crate::ethercat::device_identification::group_devices;
@@ -7,28 +9,25 @@ use crate::{
     socketio::{event::EventData, messages::ethercat_devices_event::EthercatDevicesEvent},
 };
 use anyhow::Ok;
-use ethercrab::std::{ethercat_now, tx_rx_task};
-use ethercrab_machines::actor::Actor;
-use ethercrab_machines::actors::analog_function_generator::{
+use ethercat_hal::actor::Actor;
+use ethercat_hal::actors::analog_function_generator::{
     analog_multiply, analog_sine, AnalogFunctionGenerator,
 };
-use ethercrab_machines::actors::digital_input_logger::DigitalInputLogger;
-use ethercrab_machines::actors::stepper_driver_max_speed::StepperDriverMaxSpeed;
-use ethercrab_machines::actors::temperature_input_logger::TemperatureInputLogger;
-use ethercrab_machines::coe::Configuration;
-use ethercrab_machines::device::{devices_from_subdevice_group, get_device, EthercatDevice};
-use ethercrab_machines::devices::el1008::{EL1008Port, EL1008};
-use ethercrab_machines::devices::el2008::{EL2008Port, EL2008};
-use ethercrab_machines::devices::el2521::{
-    EL2521Configuration, EL2521OperatingMode, EL2521PdoAssignment,
-};
-use ethercrab_machines::devices::el3204::{EL3204Port, EL3204};
-use ethercrab_machines::devices::el4008::{EL4008Port, EL4008};
-use ethercrab_machines::io::analog_output::AnalogOutput;
-use ethercrab_machines::io::digital_input::DigitalInput;
-use ethercrab_machines::io::digital_output::DigitalOutput;
-use ethercrab_machines::io::temperature_input::TemperatureInput;
-use ethercrab_machines::utils::traits::ArcRwLock;
+use ethercat_hal::actors::digital_input_logger::DigitalInputLogger;
+use ethercat_hal::actors::stepper_driver_max_speed::StepperDriverMaxSpeed;
+use ethercat_hal::actors::temperature_input_logger::TemperatureInputLogger;
+use ethercat_hal::coe::Configuration;
+use ethercat_hal::device::{devices_from_subdevice_group, get_device, EthercatDevice};
+use ethercat_hal::devices::el1008::{EL1008Port, EL1008};
+use ethercat_hal::devices::el2008::{EL2008Port, EL2008};
+use ethercat_hal::devices::el2521::{EL2521Configuration, EL2521OperatingMode};
+use ethercat_hal::devices::el3204::{EL3204Port, EL3204};
+use ethercat_hal::devices::el4008::{EL4008Port, EL4008};
+use ethercat_hal::io::analog_output::AnalogOutput;
+use ethercat_hal::io::digital_input::DigitalInput;
+use ethercat_hal::io::digital_output::DigitalOutput;
+use ethercat_hal::io::temperature_input::TemperatureInput;
+use ethercrab::std::{ethercat_now, tx_rx_task};
 use std::{sync::Arc, time::Duration};
 use tokio::sync::RwLock;
 
@@ -128,7 +127,7 @@ pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(),
         ..EL2521Configuration::default()
     };
 
-    config.write_to(&subdevice_el2521).await?;
+    config.write_config(&subdevice_el2521).await?;
 
     // for subdevice in group.iter(&maindevice) {
     //     log::info!(

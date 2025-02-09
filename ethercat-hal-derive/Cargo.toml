@@ -1,5 +1,5 @@
 [package]
-name = "ethercrab_machines_derive"
+name = "ethercat_hal_derive"
 version = "0.1.0"
 edition = "2021"
 

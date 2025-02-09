@@ -688,6 +688,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "ethercat_hal"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "crossbeam-utils",
+ "ethercat_hal_derive",
+ "ethercrab",
+ "log",
+ "stepper_driver",
+ "tokio",
+ "uom",
+]
+
+[[package]]
+name = "ethercat_hal_derive"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.98",
+]
+
+[[package]]
 name = "ethercrab"
 version = "0.5.0"
 dependencies = [
@@ -728,29 +751,6 @@ name = "ethercrab-wire-derive"
 version = "0.2.0"
 dependencies = [
  "criterion",
- "proc-macro2",
- "quote",
- "syn 2.0.98",
-]
-
-[[package]]
-name = "ethercrab_machines"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "crossbeam-utils",
- "ethercrab",
- "ethercrab_machines_derive",
- "log",
- "stepper_driver",
- "tokio",
- "uom",
-]
-
-[[package]]
-name = "ethercrab_machines_derive"
-version = "0.1.0"
-dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.98",
@@ -1729,8 +1729,8 @@ dependencies = [
  "axum",
  "chrono",
  "env_logger",
+ "ethercat_hal",
  "ethercrab",
- "ethercrab_machines",
  "futures",
  "include_dir",
  "log",

@@ -2,8 +2,8 @@ use std::fmt::Display;
 
 use anyhow::anyhow;
 use anyhow::Error;
+use ethercat_hal::types::EthercrabSubDevice;
 use ethercrab::{SubDevice, SubDeviceRef};
-use ethercrab_machines::types::EthercrabSubDevice;
 use futures::executor::block_on;
 
 #[derive(Debug, PartialEq, Default)]

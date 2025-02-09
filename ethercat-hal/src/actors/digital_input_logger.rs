@@ -1,8 +1,8 @@
-use std::{future::Future, pin::Pin};
+use std::{future::Future, pin::Pin, sync::Arc};
 
-use crate::{
-    actor::Actor, io::digital_input::DigitalInput, utils::traits::ArcRwLock,
-};
+use tokio::sync::RwLock;
+
+use crate::{actor::Actor, io::digital_input::DigitalInput};
 /// Log the state of a digital input
 pub struct DigitalInputLogger {
     input: DigitalInput,
@@ -23,4 +23,8 @@ impl Actor for DigitalInputLogger {
     }
 }
 
-impl ArcRwLock for DigitalInputLogger {}
+impl From<DigitalInputLogger> for Arc<RwLock<DigitalInputLogger>> {
+    fn from(actor: DigitalInputLogger) -> Self {
+        Arc::new(RwLock::new(actor))
+    }
+}

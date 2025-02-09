@@ -271,7 +271,7 @@ impl From<EL2521OperatingMode> for u8 {
 }
 
 impl Configuration for EL2521Configuration {
-    async fn write_to(&self, device: &EthercrabSubDevice<'_>) -> Result<(), anyhow::Error> {
+    async fn write_config(&self, device: &EthercrabSubDevice<'_>) -> Result<(), anyhow::Error> {
         device
             .sdo_write(0x8010, 0x02, self.emergency_ramp_active)
             .await?;

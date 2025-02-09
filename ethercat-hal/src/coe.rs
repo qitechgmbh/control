@@ -1,7 +1,8 @@
 use crate::types::EthercrabSubDevice;
 
 pub trait Configuration {
-    async fn write_to(&self, device: &EthercrabSubDevice<'_>) -> Result<(), anyhow::Error>;
+    #[allow(async_fn_in_trait)]
+    async fn write_config(&self, device: &EthercrabSubDevice<'_>) -> Result<(), anyhow::Error>;
 }
 
 pub trait TxPDOAssignment {

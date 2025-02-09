@@ -1,7 +1,10 @@
-use crate::{actor::Actor, io::digital_output::DigitalOutput, utils::traits::ArcRwLock};
+use tokio::sync::RwLock;
+
+use crate::{actor::Actor, io::digital_output::DigitalOutput};
 use std::{
     future::Future,
     pin::Pin,
+    sync::Arc,
     time::{Duration, SystemTime},
 };
 
@@ -48,4 +51,8 @@ impl Actor for StepperDriver {
     }
 }
 
-impl ArcRwLock for StepperDriver {}
+impl From<StepperDriver> for Arc<RwLock<StepperDriver>> {
+    fn from(actor: StepperDriver) -> Self {
+        Arc::new(RwLock::new(actor))
+    }
+}

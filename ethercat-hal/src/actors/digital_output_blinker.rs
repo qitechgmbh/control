@@ -1,7 +1,7 @@
-use crate::{
-    actor::Actor, io::digital_output::DigitalOutput, utils::traits::ArcRwLock,
-};
-use std::{future::Future, pin::Pin, time::Duration};
+use tokio::sync::RwLock;
+
+use crate::{actor::Actor, io::digital_output::DigitalOutput};
+use std::{future::Future, pin::Pin, sync::Arc, time::Duration};
 
 /// Set a digital output high and low with a given interval
 pub struct DigitalOutputBlinker {
@@ -47,4 +47,8 @@ impl Actor for DigitalOutputBlinker {
     }
 }
 
-impl ArcRwLock for DigitalOutputBlinker {}
+impl From<DigitalOutputBlinker> for Arc<RwLock<DigitalOutputBlinker>> {
+    fn from(actor: DigitalOutputBlinker) -> Self {
+        Arc::new(RwLock::new(actor))
+    }
+}

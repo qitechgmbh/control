@@ -1,5 +1,5 @@
 [package]
-name = "ethercrab_machines"
+name = "ethercat_hal"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,8 +7,8 @@ edition = "2021"
 anyhow = "1.0.95"
 crossbeam-utils = "0.8.21"
 ethercrab = { path = "../ethercrab" }
-ethercrab_machines_derive = { version = "0.1.0", path = "../ethercrab_machines_derive" }
+ethercat_hal_derive = { version = "0.1.0", path = "../ethercat-hal-derive" }
 log = "0.4.25"
-stepper_driver = { version = "0.1.0", path = "../stepper_driver" }
+stepper_driver = { version = "0.1.0", path = "../stepper-driver" }
 tokio = { version = "1.43.0", features = ["full"] }
 uom = "0.36.0"

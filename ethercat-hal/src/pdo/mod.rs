@@ -1,3 +1,4 @@
+#[allow(non_snake_case)]
 pub mod EL252X;
 
 pub trait PdoObject {

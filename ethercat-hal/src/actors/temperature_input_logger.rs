@@ -1,6 +1,8 @@
-use std::{future::Future, pin::Pin};
+use std::{future::Future, pin::Pin, sync::Arc};
 
-use crate::{actor::Actor, io::temperature_input::TemperatureInput, utils::traits::ArcRwLock};
+use tokio::sync::RwLock;
+
+use crate::{actor::Actor, io::temperature_input::TemperatureInput};
 
 /// Log the state of a temperature input
 pub struct TemperatureInputLogger {
@@ -22,4 +24,8 @@ impl Actor for TemperatureInputLogger {
     }
 }
 
-impl ArcRwLock for TemperatureInputLogger {}
+impl From<TemperatureInputLogger> for Arc<RwLock<TemperatureInputLogger>> {
+    fn from(actor: TemperatureInputLogger) -> Self {
+        Arc::new(RwLock::new(actor))
+    }
+}

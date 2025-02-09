@@ -1,17 +1,20 @@
-use crate::{app_state::AppState, ethercat::util::find_device, rest::util::QuickResponse};
-use axum::{body::Body, extract::State, http::Response, Json};
-use serde::{Deserialize, Serialize};
-use std::sync::Arc;
+// use crate::{app_state::AppState, ethercat::util::find_device, rest::util::QuickResponse};
+// use axum::{body::Body, extract::State, http::Response, Json};
+use serde::{
+    Deserialize,
+    // Serialize
+};
+// use std::sync::Arc;
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct XRequest {
     pub address: u16,
 }
 
-#[derive(Debug, Serialize, Clone)]
-struct XResponse {
-    pub x2000: u8,
-}
+// #[derive(Debug, Serialize, Clone)]
+// struct XResponse {
+//     pub x2000: u8,
+// }
 
 // #[axum::debug_handler]
 // pub async fn post_x(
