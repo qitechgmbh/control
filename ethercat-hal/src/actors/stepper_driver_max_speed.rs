@@ -1,10 +1,10 @@
+use super::Actor;
+use crate::io::digital_output::DigitalOutput;
 use std::{
     future::Future,
     pin::Pin,
     sync::{Arc, RwLock},
 };
-
-use crate::{actor::Actor, io::digital_output::DigitalOutput};
 
 /// Set a digital output high and low with a given interval
 pub struct StepperDriverMaxSpeed {

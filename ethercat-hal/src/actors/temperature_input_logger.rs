@@ -1,8 +1,7 @@
+use super::Actor;
+use crate::io::temperature_input::TemperatureInput;
 use std::{future::Future, pin::Pin, sync::Arc};
-
 use tokio::sync::RwLock;
-
-use crate::{actor::Actor, io::temperature_input::TemperatureInput};
 
 /// Log the state of a temperature input
 pub struct TemperatureInputLogger {

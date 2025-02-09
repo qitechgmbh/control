@@ -2,7 +2,7 @@ use crate::{
     ethercat::config::{MAX_SUBDEVICES, PDI_LEN},
     socketio::room::Rooms,
 };
-use ethercat_hal::{actor::Actor, device::EthercatDevice};
+use ethercat_hal::{actors::Actor, devices::Device};
 use ethercrab::{subdevice_group::Op, MainDevice, SubDeviceGroup};
 use socketioxide::SocketIo;
 use std::sync::Arc;
@@ -18,7 +18,7 @@ pub struct AppState {
 pub struct EthercatSetup {
     pub maindevice: MainDevice<'static>,
     pub group: SubDeviceGroup<MAX_SUBDEVICES, PDI_LEN, Op>,
-    pub devices: Vec<Option<Arc<RwLock<dyn EthercatDevice>>>>,
+    pub devices: Vec<Option<Arc<RwLock<dyn Device>>>>,
     pub actors: Vec<Arc<RwLock<dyn Actor>>>,
     pub delays: Vec<Option<u32>>,
 }
@@ -27,7 +27,7 @@ impl EthercatSetup {
     pub fn new(
         ethercat_master: MainDevice<'static>,
         ethercat_group: SubDeviceGroup<MAX_SUBDEVICES, PDI_LEN, Op>,
-        ethercat_devices: Vec<Option<Arc<RwLock<dyn EthercatDevice>>>>,
+        ethercat_devices: Vec<Option<Arc<RwLock<dyn Device>>>>,
         ethercat_actors: Vec<Arc<RwLock<dyn Actor>>>,
         ethercat_propagation_delays: Vec<Option<u32>>,
     ) -> Self {

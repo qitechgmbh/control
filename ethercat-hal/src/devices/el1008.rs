@@ -1,7 +1,5 @@
-use crate::{
-    device::EthercatDevice,
-    io::digital_input::{DigitalInputDevice, DigitalInputState},
-};
+use super::Device;
+use crate::io::digital_input::{DigitalInputDevice, DigitalInputState};
 use std::any::Any;
 
 const INPUT_PDU_LEN: usize = 1;
@@ -34,7 +32,7 @@ impl DigitalInputDevice<EL1008Port> for EL1008 {
     }
 }
 
-impl EthercatDevice for EL1008 {
+impl Device for EL1008 {
     fn input(&mut self, input: &[u8]) {
         self.input_pdu.copy_from_slice(input);
     }

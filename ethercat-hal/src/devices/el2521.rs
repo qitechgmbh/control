@@ -1,8 +1,6 @@
-use anyhow::Ok;
-
+use super::Device;
 use crate::{
     coe::Configuration,
-    device::EthercatDevice,
     io::pulse_train_output::{
         PulseTrainOutputDevice, PulseTrainOutputState, PulseTrainOutputWrite,
     },
@@ -12,6 +10,7 @@ use crate::{
     },
     types::EthercrabSubDevice,
 };
+use anyhow::Ok;
 use std::any::Any;
 
 /// EL2521 8-channel digital output device
@@ -46,7 +45,7 @@ impl EL2521 {
     }
 }
 
-impl EthercatDevice for EL2521 {
+impl Device for EL2521 {
     fn output(&self, output: &mut [u8]) {
         // log::info!("EL2521 output {:?}", self.output_pdus);
         self.rxpdo.write(output);

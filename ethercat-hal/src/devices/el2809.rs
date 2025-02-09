@@ -1,9 +1,6 @@
+use super::Device;
+use crate::io::digital_output::{DigitalOutputDevice, DigitalOutputState};
 use std::any::Any;
-
-use crate::{
-    device::EthercatDevice,
-    io::digital_output::{DigitalOutputDevice, DigitalOutputState},
-};
 
 const OUTPUT_PDU_LEN: usize = 2;
 
@@ -44,7 +41,7 @@ impl DigitalOutputDevice<EL2809Port> for EL2809 {
     }
 }
 
-impl EthercatDevice for EL2809 {
+impl Device for EL2809 {
     fn output_len(&self) -> usize {
         OUTPUT_PDU_LEN
     }

@@ -1,9 +1,9 @@
-use crate::{actor::Actor, io::analog_output::AnalogOutput};
+use super::Actor;
+use crate::io::analog_output::AnalogOutput;
 use ethercrab::std::ethercat_now;
 use std::{f32::consts::PI, future::Future, pin::Pin, sync::Arc};
 use tokio::sync::RwLock;
 use uom::si::{angle::radian, f32::Angle, ratio::ratio};
-
 pub type AnalogFunction = Box<dyn Fn(u64) -> f32 + Send + Sync>;
 
 /// Can module analog output with a function

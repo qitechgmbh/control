@@ -1,6 +1,7 @@
 use tokio::sync::RwLock;
 
-use crate::{actor::Actor, io::digital_output::DigitalOutput};
+use super::Actor;
+use crate::io::digital_output::DigitalOutput;
 use std::{
     future::Future,
     pin::Pin,

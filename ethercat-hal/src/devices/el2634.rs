@@ -1,13 +1,11 @@
-use crate::{
-    device::EthercatDevice,
-    io::digital_output::{DigitalOutputDevice, DigitalOutputState},
-};
+use super::Device;
+use crate::io::digital_output::{DigitalOutputDevice, DigitalOutputState};
 use std::any::Any;
 
 const OUTPUT_PDU_LEN: usize = 1;
 
 /// EL2634 4-channel relay device
-/// 
+///
 /// 250V AC / 30V DC / 4A per channel
 #[derive(Debug)]
 pub struct EL2634 {
@@ -43,7 +41,7 @@ impl DigitalOutputDevice<EL2634Port> for EL2634 {
     }
 }
 
-impl EthercatDevice for EL2634 {
+impl Device for EL2634 {
     fn output(&self, output: &mut [u8]) {
         output.copy_from_slice(&self.output_pdus);
     }

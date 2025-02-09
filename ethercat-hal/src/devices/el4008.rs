@@ -1,7 +1,5 @@
-use crate::{
-    device::EthercatDevice,
-    io::analog_output::{AnalogOutputDevice, AnalogOutputState},
-};
+use super::Device;
+use crate::io::analog_output::{AnalogOutputDevice, AnalogOutputState};
 use std::any::Any;
 
 const OUTPUT_PDU_LEN: usize = 16;
@@ -61,7 +59,7 @@ impl AnalogOutputDevice<EL4008Port> for EL4008 {
     }
 }
 
-impl EthercatDevice for EL4008 {
+impl Device for EL4008 {
     fn output(&self, output: &mut [u8]) {
         output.copy_from_slice(&self.output_pdus);
     }

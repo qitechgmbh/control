@@ -9,20 +9,20 @@ use crate::{
     socketio::{event::EventData, messages::ethercat_devices_event::EthercatDevicesEvent},
 };
 use anyhow::Ok;
-use ethercat_hal::actor::Actor;
 use ethercat_hal::actors::analog_function_generator::{
     analog_multiply, analog_sine, AnalogFunctionGenerator,
 };
 use ethercat_hal::actors::digital_input_logger::DigitalInputLogger;
 use ethercat_hal::actors::stepper_driver_max_speed::StepperDriverMaxSpeed;
 use ethercat_hal::actors::temperature_input_logger::TemperatureInputLogger;
+use ethercat_hal::actors::Actor;
 use ethercat_hal::coe::Configuration;
-use ethercat_hal::device::{devices_from_subdevice_group, get_device, EthercatDevice};
 use ethercat_hal::devices::el1008::{EL1008Port, EL1008};
 use ethercat_hal::devices::el2008::{EL2008Port, EL2008};
 use ethercat_hal::devices::el2521::{EL2521Configuration, EL2521OperatingMode};
 use ethercat_hal::devices::el3204::{EL3204Port, EL3204};
 use ethercat_hal::devices::el4008::{EL4008Port, EL4008};
+use ethercat_hal::devices::{devices_from_subdevice_group, Device};
 use ethercat_hal::io::analog_output::AnalogOutput;
 use ethercat_hal::io::digital_input::DigitalInput;
 use ethercat_hal::io::digital_output::DigitalOutput;
@@ -150,7 +150,7 @@ pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(),
         .collect();
 
     // create devices
-    let devices: Vec<Option<Arc<RwLock<dyn EthercatDevice>>>> =
+    let devices: Vec<Option<Arc<RwLock<dyn Device>>>> =
         devices_from_subdevice_group(&mut group_op, &maindevice);
 
     let actors: Vec<Arc<RwLock<dyn Actor>>> = vec![

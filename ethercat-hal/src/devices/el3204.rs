@@ -1,8 +1,6 @@
-use crate::{
-    device::EthercatDevice,
-    io::temperature_input::{
-        TemperatureInputDevice, TemperatureInputLimit, TemperatureInputState, TemperatureInputValid,
-    },
+use super::Device;
+use crate::io::temperature_input::{
+    TemperatureInputDevice, TemperatureInputLimit, TemperatureInputState, TemperatureInputValid,
 };
 use std::any::Any;
 
@@ -67,7 +65,7 @@ impl TemperatureInputDevice<EL3204Port> for EL3204 {
     }
 }
 
-impl EthercatDevice for EL3204 {
+impl Device for EL3204 {
     fn input(&mut self, input: &[u8]) {
         self.input_pdu.copy_from_slice(input);
     }

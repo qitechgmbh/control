@@ -1,7 +1,5 @@
-use crate::{
-    device::EthercatDevice,
-    io::digital_output::{DigitalOutputDevice, DigitalOutputState},
-};
+use super::Device;
+use crate::io::digital_output::{DigitalOutputDevice, DigitalOutputState};
 use std::any::Any;
 
 const OUTPUT_PDU_LEN: usize = 1;
@@ -43,7 +41,7 @@ impl DigitalOutputDevice<EL2024Port> for EL2024 {
     }
 }
 
-impl EthercatDevice for EL2024 {
+impl Device for EL2024 {
     fn output(&self, output: &mut [u8]) {
         output.copy_from_slice(&self.output_pdus);
     }

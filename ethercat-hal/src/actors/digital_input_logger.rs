@@ -1,8 +1,7 @@
+use super::Actor;
+use crate::io::digital_input::DigitalInput;
 use std::{future::Future, pin::Pin, sync::Arc};
-
 use tokio::sync::RwLock;
-
-use crate::{actor::Actor, io::digital_input::DigitalInput};
 /// Log the state of a digital input
 pub struct DigitalInputLogger {
     input: DigitalInput,
