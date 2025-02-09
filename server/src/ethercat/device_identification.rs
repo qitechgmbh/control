@@ -1,9 +1,10 @@
+use std::fmt::Display;
+
 use anyhow::anyhow;
 use anyhow::Error;
 use ethercrab::{SubDevice, SubDeviceRef};
+use ethercrab_machines::types::EthercrabSubDevice;
 use futures::executor::block_on;
-
-use super::types::EthercrabSubDevice;
 
 #[derive(Debug, PartialEq, Default)]
 pub struct DeviceGroup {
@@ -12,10 +13,31 @@ pub struct DeviceGroup {
     pub machine: u32,
 }
 
+impl Display for DeviceGroup {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{:08x}-{:08x}-{:08x}",
+            self.vendor, self.serial, self.machine
+        )
+    }
+}
+
 #[derive(Debug)]
 pub struct DeviceGroupDevice {
     pub machine_identification: DeviceGroup,
     pub devices: Vec<(usize, u32)>,
+}
+
+impl Display for DeviceGroupDevice {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{:?} - {} devices",
+            self.machine_identification,
+            self.devices.len()
+        )
+    }
 }
 
 /// reads the EEPROM of all subdevices and groups them by machine identification
@@ -204,7 +226,15 @@ pub fn get_identification_addresses(
         (BECKHOFF, EL2008, 0x00110000) => MachineDeviceIdentificationAddresses::default(),
         (BECKHOFF, EL4008, 0x00140000) => MachineDeviceIdentificationAddresses::default(),
         (BECKHOFF, EL3204, 0x00150000) => MachineDeviceIdentificationAddresses::default(),
+        (BECKHOFF, EL2521, 0x03fe0000) => MachineDeviceIdentificationAddresses::default(),
         _ => {
+            log::error!(
+                "Unknown MDI addresses for device {:?} vendor: 0x{:08x} product: 0x{:08x} revision: 0x{:08x}",
+                subdevice.name(),
+                identity.vendor_id,
+                identity.product_id,
+                identity.revision
+            );
             block_on(u16dump(&subdevice, 0x00, 0xff))?;
             Err(anyhow!(
             "Unknown MDI addresses for device {:?} vendor: 0x{:08x} product: 0x{:08x} revision: 0x{:08x}",
@@ -226,6 +256,7 @@ const EL1008: u32 = 0x03f03052;
 const EL2008: u32 = 0x07d83052;
 const EL4008: u32 = 0x0fa83052;
 const EL3204: u32 = 0x0c843052;
+const EL2521: u32 = 0x09d93052;
 
 async fn u16dump<'maindevice, 'group>(
     subdevice: &SubDeviceRef<'maindevice, &SubDevice>,

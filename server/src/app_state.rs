@@ -1,13 +1,13 @@
 use crate::{
     ethercat::config::{MAX_SUBDEVICES, PDI_LEN},
-    ethercat_drivers::{actor::Actor, device::EthercatDevice},
     socketio::room::Rooms,
 };
 use ethercrab::{subdevice_group::Op, MainDevice, SubDeviceGroup};
+use ethercrab_machines::{actor::Actor, device::EthercatDevice};
 use socketioxide::SocketIo;
-use tokio::sync::RwLock;
 use std::sync::Arc;
 use std::sync::LazyLock;
+use tokio::sync::RwLock;
 
 pub struct AppState {
     pub socketio_rooms: RwLock<Rooms>,

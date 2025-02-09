@@ -44,15 +44,15 @@ pub struct TemperatureInputState {
     /// Over-voltage error
     pub status_overvoltage: bool,
     /// Configured limit 1
-    pub limit_1: TemperatureInputLimit,
+    pub status_limit_1: TemperatureInputLimit,
     /// Configured limit 2
-    pub limit_2: TemperatureInputLimit,
+    pub status_limit_2: TemperatureInputLimit,
     /// Error flag
-    pub error: bool,
+    pub status_error: bool,
     /// if the TxPdu sstate is valid
-    pub valid: TemperatureInputValid,
+    pub status_valid: TemperatureInputValid,
     /// if the TxPdu is toggled
-    pub toggle: bool,
+    pub status_toggle: bool,
 }
 
 #[derive(Debug, Clone)]

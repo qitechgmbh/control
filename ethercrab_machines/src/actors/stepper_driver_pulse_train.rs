@@ -1,21 +1,19 @@
 use std::{future::Future, pin::Pin};
 
-use crate::ethercat_drivers::{
-    actor::Actor, io::digital_output::DigitalOutput, utils::traits::ArcRwLock,
-};
+use crate::{actor::Actor, io::digital_output::DigitalOutput, utils::traits::ArcRwLock};
 
 /// Set a digital output high and low with a given interval
-pub struct StepperDriverMaxSpeed {
+pub struct StepperDriverPulseTrain {
     pulse: DigitalOutput,
 }
 
-impl StepperDriverMaxSpeed {
+impl StepperDriverPulseTrain {
     pub fn new(output: DigitalOutput) -> Self {
         Self { pulse: output }
     }
 }
 
-impl Actor for StepperDriverMaxSpeed {
+impl Actor for StepperDriverPulseTrain {
     fn act(&mut self, _now_ts: u64) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
         Box::pin(async move {
             let state = (self.pulse.state)().await;
@@ -27,4 +25,4 @@ impl Actor for StepperDriverMaxSpeed {
     }
 }
 
-impl ArcRwLock for StepperDriverMaxSpeed {}
+impl ArcRwLock for StepperDriverPulseTrain {}

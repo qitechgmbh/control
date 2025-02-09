@@ -286,12 +286,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "buf_read_write"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6671045754074d51164bc15a5563b63cfb9581dfda7bfb81d73fbf9a43bb04c9"
-
-[[package]]
 name = "bumpalo"
 version = "3.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -702,7 +696,6 @@ dependencies = [
  "atomic-waker",
  "atomic_enum",
  "bitflags 2.8.0",
- "buf_read_write",
  "embassy-time",
  "embedded-io-async",
  "ethercrab-wire",
@@ -745,11 +738,22 @@ name = "ethercrab_machines"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "crossbeam-utils",
  "ethercrab",
+ "ethercrab_machines_derive",
  "log",
  "stepper_driver",
  "tokio",
  "uom",
+]
+
+[[package]]
+name = "ethercrab_machines_derive"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.98",
 ]
 
 [[package]]
@@ -1726,6 +1730,7 @@ dependencies = [
  "chrono",
  "env_logger",
  "ethercrab",
+ "ethercrab_machines",
  "futures",
  "include_dir",
  "log",

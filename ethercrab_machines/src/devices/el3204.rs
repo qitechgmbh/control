@@ -41,16 +41,16 @@ impl TemperatureInputDevice<EL3204Port> for EL3204 {
         //subindex 02
         let status_overvoltage = byte_0 & 0b0000_0010 != 0;
         // subindex 03/04
-        let limit_1 = TemperatureInputLimit::new((byte_0 & 0b0000_1100) >> 2 as u8);
+        let status_limit_1 = TemperatureInputLimit::new((byte_0 & 0b0000_1100) >> 2 as u8);
         // subindex 05/06
-        let limit_2: TemperatureInputLimit =
+        let status_limit_2: TemperatureInputLimit =
             TemperatureInputLimit::new((byte_0 & 0b0011_0000) >> 4 as u8);
         // subindex 07
-        let error = byte_0 & 0b1000_0000 != 0;
+        let status_error = byte_0 & 0b1000_0000 != 0;
         // subindex 0F 0b0100_0000
-        let valid = TemperatureInputValid::new(byte_1 & 0b0100_0000 >> 6);
+        let status_valid = TemperatureInputValid::new(byte_1 & 0b0100_0000 >> 6);
         // subindex 10 0b1000_0000
-        let toggle = byte_1 & 0b1000_0000 != 0;
+        let status_toggle = byte_1 & 0b1000_0000 != 0;
         let temperature = (value as f32) / 10.0;
 
         TemperatureInputState {
@@ -58,11 +58,11 @@ impl TemperatureInputDevice<EL3204Port> for EL3204 {
             value: temperature,
             status_undervoltage,
             status_overvoltage,
-            limit_1,
-            limit_2,
-            error,
-            valid,
-            toggle,
+            status_limit_1,
+            status_limit_2,
+            status_error,
+            status_valid,
+            status_toggle,
         }
     }
 }
@@ -71,7 +71,7 @@ impl EthercatDevice for EL3204 {
     fn input(&mut self, input: &[u8]) {
         self.input_pdu.copy_from_slice(input);
     }
-    fn input_len(&self) -> usize {
+    fn input_len(&mut self) -> usize {
         INPUT_PDU_LEN
     }
     fn ts(&mut self, _input_ts: u64, output_ts: u64) {
