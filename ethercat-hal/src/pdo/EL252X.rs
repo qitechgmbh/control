@@ -1,6 +1,9 @@
+use ethercat_hal_derive::PdoObject;
+
 use super::{PdoObject, RxPdoObject, TxPdoObject};
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PdoObject)]
+#[pdo_object(bits = 16)]
 pub struct PtoStatus {
     pub status_select_end_counter: bool,
     pub status_ramp_active: bool,
@@ -9,16 +12,6 @@ pub struct PtoStatus {
     pub status_error: bool,
     pub status_sync_error: bool,
     pub status_txpdo_toggle: bool,
-}
-
-impl PdoObject for PtoStatus {
-    fn get_sdo_index(&self) -> u16 {
-        0x1A01
-    }
-
-    fn size(&self) -> usize {
-        16
-    }
 }
 
 impl TxPdoObject for PtoStatus {
@@ -34,7 +27,8 @@ impl TxPdoObject for PtoStatus {
     }
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PdoObject)]
+#[pdo_object(bits = 64)]
 pub struct EncStatus {
     pub status_set_counter_done: bool,
     pub status_counter_underflow: bool,
@@ -42,16 +36,6 @@ pub struct EncStatus {
     pub status_sync_error: bool,
     pub status_txpdo_toggle: bool,
     pub counter_value: u32,
-}
-
-impl PdoObject for EncStatus {
-    fn get_sdo_index(&self) -> u16 {
-        0x1A05
-    }
-
-    fn size(&self) -> usize {
-        64
-    }
 }
 
 impl TxPdoObject for EncStatus {
@@ -67,22 +51,13 @@ impl TxPdoObject for EncStatus {
     }
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PdoObject)]
+#[pdo_object(bits = 32)]
 pub struct PtoControl {
     pub control_frequency_select: bool,
     pub control_disble_ramp: bool,
     pub control_go_counter: bool,
     pub frequency_value: u32,
-}
-
-impl PdoObject for PtoControl {
-    fn get_sdo_index(&self) -> u16 {
-        0x1601
-    }
-
-    fn size(&self) -> usize {
-        32
-    }
 }
 
 impl RxPdoObject for PtoControl {
@@ -96,19 +71,10 @@ impl RxPdoObject for PtoControl {
     }
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PdoObject)]
+#[pdo_object(bits = 32)]
 pub struct PtoTarget {
     pub target_counter_value: u32,
-}
-
-impl PdoObject for PtoTarget {
-    fn get_sdo_index(&self) -> u16 {
-        0x1607
-    }
-
-    fn size(&self) -> usize {
-        32
-    }
 }
 
 impl RxPdoObject for PtoTarget {
@@ -117,20 +83,11 @@ impl RxPdoObject for PtoTarget {
     }
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PdoObject)]
+#[pdo_object(bits = 32)]
 pub struct EncControl {
     pub control_set_counter: bool,
     pub set_counter_value: u32,
-}
-
-impl PdoObject for EncControl {
-    fn get_sdo_index(&self) -> u16 {
-        0x1605
-    }
-
-    fn size(&self) -> usize {
-        32
-    }
 }
 
 impl RxPdoObject for EncControl {

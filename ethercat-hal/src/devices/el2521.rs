@@ -11,8 +11,8 @@ use crate::{
     types::EthercrabSubDevice,
 };
 use anyhow::Ok;
-use ethercat_hal_derive::{RxPdoDerive, TxPdoDerive};
-use std::{any::Any, collections::HashMap};
+use ethercat_hal_derive::{RxPdo, TxPdo};
+use std::any::Any;
 
 /// EL2521 8-channel digital output device
 ///   
@@ -365,33 +365,28 @@ impl PdoPreset<EL2521TxPdo, EL2521RxPdo> for EL2521PdoPreset {
     }
 }
 
-#[derive(Debug, Clone, TxPdoDerive)]
+#[derive(Debug, Clone, TxPdo)]
 struct EL2521TxPdo {
-    /// # `0x1A00` Legacy Inputs
-    ///
-    /// unimplemented
-    // pub inputs: Option<()>,
-
     /// # `0x1A01` PTO Status
-    #[pdo_map_register(0x1A01)]
+    #[pdo_object_index(0x1A01)]
     pub pto_status: Option<PtoStatus>,
 
     /// # `0x1A02` Encoder Status
-    #[pdo_map_register(0x1A02)]
+    #[pdo_object_index(0x1A02)]
     pub enc_status: Option<EncStatus>,
 }
 
-#[derive(Debug, Clone, RxPdoDerive)]
+#[derive(Debug, Clone, RxPdo)]
 struct EL2521RxPdo {
     /// # `0x1601` PTO Control
-    #[pdo_map_register(0x1601)]
+    #[pdo_object_index(0x1601)]
     pub pto_control: Option<PtoControl>,
 
     /// # `0x1607` PTO Target
-    #[pdo_map_register(0x1607)]
+    #[pdo_object_index(0x1607)]
     pub pto_target: Option<PtoTarget>,
 
     /// # `0x1605` Encoder Control
-    #[pdo_map_register(0x1605)]
+    #[pdo_object_index(0x1605)]
     pub enc_control: Option<EncControl>,
 }

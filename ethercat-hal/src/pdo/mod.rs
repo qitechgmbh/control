@@ -4,9 +4,6 @@ use crate::coe::Configuration;
 pub mod EL252X;
 
 pub trait PdoObject {
-    /// index in the object dictionary
-    fn get_sdo_index(&self) -> u16;
-
     /// size in bits
     fn size(&self) -> usize;
 }

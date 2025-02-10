@@ -3,8 +3,8 @@ use quote::quote;
 use syn::{Data, DeriveInput};
 
 #[derive(deluxe::ExtractAttributes)]
-#[deluxe(attributes(pdo_map_register))]
-struct PdoMapIndex(u16);
+#[deluxe(attributes(pdo_object_index))]
+struct PdoObjectIndexAttribute(u16);
 
 fn extract_metedata_field_attributes(
     ast: &mut DeriveInput,
@@ -18,7 +18,7 @@ fn extract_metedata_field_attributes(
                 .as_ref()
                 .cloned()
                 .expect("Field must have a name");
-            let attrs: PdoMapIndex = deluxe::extract_attributes(field)?;
+            let attrs: PdoObjectIndexAttribute = deluxe::extract_attributes(field)?;
             field_names.push(field_name);
             pdo_indices.push(attrs.0);
         }
@@ -29,9 +29,6 @@ fn extract_metedata_field_attributes(
 fn rxpdo_derive2(item: proc_macro2::TokenStream) -> deluxe::Result<proc_macro2::TokenStream> {
     let mut ast: DeriveInput = syn::parse2(item)?;
 
-    // let MetaDataStructAttributes { author } = deluxe::extract_attributes(&mut ast)?;
-
-    // extract field attributes
     let (field_name, pdo_index): (Vec<syn::Ident>, Vec<u16>) =
         extract_metedata_field_attributes(&mut ast)?;
 
@@ -74,7 +71,7 @@ fn rxpdo_derive2(item: proc_macro2::TokenStream) -> deluxe::Result<proc_macro2::
     Ok(expanded)
 }
 
-#[proc_macro_derive(RxPdoDerive, attributes(pdo_map_register))]
+#[proc_macro_derive(RxPdo, attributes(pdo_object_index))]
 pub fn rxpdo_derive(item: TokenStream) -> TokenStream {
     rxpdo_derive2(item.into()).unwrap().into()
 }
@@ -82,9 +79,6 @@ pub fn rxpdo_derive(item: TokenStream) -> TokenStream {
 fn txpdo_derive2(item: proc_macro2::TokenStream) -> deluxe::Result<proc_macro2::TokenStream> {
     let mut ast: DeriveInput = syn::parse2(item)?;
 
-    // let MetaDataStructAttributes { author } = deluxe::extract_attributes(&mut ast)?;
-
-    // extract field attributes
     let (field_name, pdo_index): (Vec<syn::Ident>, Vec<u16>) =
         extract_metedata_field_attributes(&mut ast)?;
 
@@ -136,7 +130,37 @@ fn txpdo_derive2(item: proc_macro2::TokenStream) -> deluxe::Result<proc_macro2::
     Ok(expanded)
 }
 
-#[proc_macro_derive(TxPdoDerive, attributes(pdo_map_register))]
+#[proc_macro_derive(TxPdo, attributes(pdo_object_index))]
 pub fn txpdo_derive(item: TokenStream) -> TokenStream {
     txpdo_derive2(item.into()).unwrap().into()
+}
+
+#[derive(deluxe::ExtractAttributes)]
+#[deluxe(attributes(pdo_object))]
+struct PdoObjectAttribute {
+    pub bits: usize,
+}
+
+fn pdo_object_derive2(item: proc_macro2::TokenStream) -> deluxe::Result<proc_macro2::TokenStream> {
+    let mut ast: DeriveInput = syn::parse2(item)?;
+
+    let PdoObjectAttribute { bits } = deluxe::extract_attributes(&mut ast)?;
+
+    let ident = &ast.ident;
+    let (impl_generics, ty_generics, where_clause) = ast.generics.split_for_impl();
+
+    let expanded = quote! {
+        impl #impl_generics PdoObject for #ident #ty_generics #where_clause {
+            fn size(&self) -> usize {
+                #bits
+            }
+        }
+    };
+
+    Ok(expanded)
+}
+
+#[proc_macro_derive(PdoObject, attributes(pdo_object))]
+pub fn pdo_object_derive(item: TokenStream) -> TokenStream {
+    pdo_object_derive2(item.into()).unwrap().into()
 }
