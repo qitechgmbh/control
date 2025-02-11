@@ -1,28 +1,30 @@
 use super::Device;
 use crate::{
-    coe::{Configuration, RX_PDO_ASSIGNMENT_REG, TX_PDO_ASSIGNMENT_REG},
+    coe::Configuration,
     io::pulse_train_output::{
-        PulseTrainOutputDevice, PulseTrainOutputState, PulseTrainOutputWrite,
+        PulseTrainOutputDevice, PulseTrainOutputInput, PulseTrainOutputOutput,
+        PulseTrainOutputState,
     },
     pdo::{
-        PdoObject, PdoPreset, RxPdo, RxPdoObject, TxPdo, TxPdoObject,
-        EL252X::{EncControl, EncStatus, PtoControl, PtoStatus, PtoTarget},
+        el252x::{EncControl, EncStatus, PtoControl, PtoStatus, PtoTarget},
+        PdoPreset, RxPdo, RxPdoObject, TxPdo, TxPdoObject,
     },
     types::EthercrabSubDevice,
 };
 use anyhow::Ok;
-use ethercat_hal_derive::{RxPdo, TxPdo};
-use std::any::Any;
+use bitvec::prelude::*;
+use ethercat_hal_derive::{Device, RxPdo, TxPdo};
 
 /// EL2521 8-channel digital output device
 ///   
 /// 24V DC, 0.5A per channel
-#[derive(Debug)]
+#[derive(Debug, Device)]
 pub struct EL2521 {
     pub configuration: EL2521Configuration,
     pub txpdo: EL2521TxPdo,
     pub rxpdo: EL2521RxPdo,
     pub output_ts: u64,
+    pub input_ts: u64,
 }
 
 impl EL2521 {
@@ -36,6 +38,7 @@ impl EL2521 {
             txpdo,
             rxpdo,
             output_ts: 0,
+            input_ts: 0,
         }
     }
 
@@ -46,48 +49,38 @@ impl EL2521 {
     }
 }
 
-impl Device for EL2521 {
-    fn output(&self, output: &mut [u8]) {
-        // log::info!("EL2521 output {:?}", self.output_pdus);
-        self.rxpdo.write(output);
-    }
-    fn output_len(&self) -> usize {
-        self.rxpdo.size()
-    }
-    fn input(&mut self, _input: &[u8]) {
-        log::info!("EL2521 input {:?}", _input);
-        self.txpdo.read(_input);
-    }
-    fn input_len(&self) -> usize {
-        self.txpdo.size()
-    }
-    fn ts(&mut self, _input_ts: u64, output_ts: u64) {
-        self.output_ts = output_ts;
-    }
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
-}
-
 impl PulseTrainOutputDevice<EL2521Port> for EL2521 {
-    fn pulse_train_output_write(&mut self, port: EL2521Port, value: PulseTrainOutputWrite) {
-        match self.configuration.pdo_assignment {
-            EL2521PdoPreset::EnhancedOperatingMode32Bit => {}
-            _ => {
-                panic!("Only EnhancedOperatingMode32Bit is supported");
-            }
-        }
+    fn pulse_train_output_write(&mut self, port: EL2521Port, value: PulseTrainOutputOutput) {
+        self.rxpdo.pto_control.as_mut().unwrap().disble_ramp = value.disble_ramp;
+        self.rxpdo.pto_control.as_mut().unwrap().frequency_value = value.frequency_value;
+        self.rxpdo.pto_target.as_mut().unwrap().target_counter_value = value.target_counter_value;
+        self.rxpdo.enc_control.as_mut().unwrap().set_counter = value.set_counter;
+        self.rxpdo.enc_control.as_mut().unwrap().set_counter_value = value.set_counter_value;
     }
 
     fn pulse_train_output_state(&self, port: EL2521Port) -> PulseTrainOutputState {
-        match self.configuration.pdo_assignment {
-            EL2521PdoPreset::EnhancedOperatingMode32Bit => {}
-            _ => {
-                panic!("Only EnhancedOperatingMode32Bit is supported");
-            }
+        PulseTrainOutputState {
+            output_ts: self.output_ts,
+            input: PulseTrainOutputInput {
+                select_end_counter: self.txpdo.pto_status.as_ref().unwrap().select_end_counter,
+                ramp_active: self.txpdo.pto_status.as_ref().unwrap().ramp_active,
+                input_t: self.txpdo.pto_status.as_ref().unwrap().input_t,
+                input_z: self.txpdo.pto_status.as_ref().unwrap().input_z,
+                error: self.txpdo.pto_status.as_ref().unwrap().error,
+                sync_error: self.txpdo.pto_status.as_ref().unwrap().sync_error,
+                counter_underflow: self.txpdo.enc_status.as_ref().unwrap().counter_underflow,
+                counter_overflow: self.txpdo.enc_status.as_ref().unwrap().counter_overflow,
+                counter_value: self.txpdo.enc_status.as_ref().unwrap().counter_value,
+                set_counter_done: self.txpdo.enc_status.as_ref().unwrap().set_counter_done,
+            },
+            output: PulseTrainOutputOutput {
+                disble_ramp: self.rxpdo.pto_control.as_ref().unwrap().disble_ramp,
+                frequency_value: self.rxpdo.pto_control.as_ref().unwrap().frequency_value,
+                target_counter_value: self.rxpdo.pto_target.as_ref().unwrap().target_counter_value,
+                set_counter: self.rxpdo.enc_control.as_ref().unwrap().set_counter,
+                set_counter_value: self.rxpdo.enc_control.as_ref().unwrap().set_counter_value,
+            },
         }
-
-        unimplemented!()
     }
 }
 
@@ -365,28 +358,96 @@ impl PdoPreset<EL2521TxPdo, EL2521RxPdo> for EL2521PdoPreset {
     }
 }
 
-#[derive(Debug, Clone, TxPdo)]
+#[derive(Debug, Clone, TxPdo, Default)]
 struct EL2521TxPdo {
-    /// # `0x1A01` PTO Status
     #[pdo_object_index(0x1A01)]
     pub pto_status: Option<PtoStatus>,
 
-    /// # `0x1A02` Encoder Status
-    #[pdo_object_index(0x1A02)]
+    #[pdo_object_index(0x1A05)]
     pub enc_status: Option<EncStatus>,
 }
 
-#[derive(Debug, Clone, RxPdo)]
+#[derive(Debug, Clone, RxPdo, Default)]
 struct EL2521RxPdo {
-    /// # `0x1601` PTO Control
     #[pdo_object_index(0x1601)]
     pub pto_control: Option<PtoControl>,
 
-    /// # `0x1607` PTO Target
     #[pdo_object_index(0x1607)]
     pub pto_target: Option<PtoTarget>,
 
-    /// # `0x1605` Encoder Control
     #[pdo_object_index(0x1605)]
     pub enc_control: Option<EncControl>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use bitvec::prelude::*;
+
+    #[test]
+    fn test_rx_pdo() {
+        let mut buffer = [0u8; 14];
+        let rxpdo = EL2521RxPdo {
+            pto_control: Some(PtoControl {
+                frequency_select: true,
+                disble_ramp: true,
+                go_counter: true,
+                frequency_value: 1000,
+            }),
+            pto_target: Some(PtoTarget {
+                target_counter_value: 1000000,
+            }),
+            enc_control: Some(EncControl {
+                set_counter: true,
+                set_counter_value: 1000000,
+            }),
+        };
+        let bits = buffer.view_bits_mut::<Lsb0>();
+        rxpdo.write(bits);
+        assert_eq!(buffer[0], 0b0000_0111);
+        assert_eq!(u16::from_be_bytes([buffer[2], buffer[3]]), 1000);
+        assert_eq!(
+            u32::from_be_bytes([buffer[4], buffer[5], buffer[6], buffer[7]]),
+            1000000
+        );
+        assert_eq!(buffer[8], 0b0000_0100,);
+        assert_eq!(
+            u32::from_be_bytes([buffer[10], buffer[11], buffer[12], buffer[13]]),
+            1000000
+        );
+    }
+
+    #[test]
+    fn text_tx_pdo() {
+        let buffer = [
+            0b0000_0111,
+            0,
+            0b0000_0100,
+            0,
+            0,
+            3,
+            232,
+            0,
+            0,
+            0,
+            0,
+            3,
+            232,
+            0,
+        ];
+        let bits = buffer.view_bits::<Lsb0>();
+        let mut txpdo = EL2521PdoPreset::EnhancedOperatingMode32Bit.txpdo_assignment();
+        txpdo.read(bits);
+        assert_eq!(txpdo.pto_status.as_ref().unwrap().select_end_counter, true);
+        // assert_eq!(txpdo.pto_status.as_ref().unwrap().ramp_active, true);
+        // assert_eq!(txpdo.pto_status.as_ref().unwrap().input_t, true);
+        // assert_eq!(txpdo.pto_status.as_ref().unwrap().input_z, false);
+        // assert_eq!(txpdo.pto_status.as_ref().unwrap().error, false);
+        // assert_eq!(txpdo.pto_status.as_ref().unwrap().sync_error, false);
+        // assert_eq!(txpdo.pto_status.as_ref().unwrap().txpdo_toggle, false);
+        // assert_eq!(txpdo.enc_status.as_ref().unwrap().counter_underflow, false);
+        // assert_eq!(txpdo.enc_status.as_ref().unwrap().counter_overflow, true);
+        // assert_eq!(txpdo.enc_status.as_ref().unwrap().counter_value, 1000);
+        // assert_eq!(txpdo.enc_status.as_ref().unwrap().set_counter_done, false);
+    }
 }

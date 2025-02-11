@@ -1,19 +1,20 @@
 // pub mod el1008;
-pub mod el1008;
-pub mod el2008;
-pub mod el2024;
+// pub mod el1008;
+// pub mod el2008;
+// pub mod el2024;
 pub mod el2521;
-pub mod el2634;
-pub mod el2809;
-pub mod el3204;
-pub mod el4008;
+// pub mod el2634;
+// pub mod el2809;
+// pub mod el3204;
+// pub mod el4008;
 
-use super::devices::{
-    el1008::EL1008, el2008::EL2008, el2024::EL2024, el2634::EL2634, el2809::EL2809, el3204::EL3204,
-    el4008::EL4008,
-};
+// use super::devices::{
+//     el1008::EL1008, el2008::EL2008, el2024::EL2024, el2634::EL2634, el2809::EL2809, el3204::EL3204,
+//     el4008::EL4008,
+// };
 use crate::devices::el2521::EL2521;
 use anyhow::anyhow;
+use bitvec::{order::Lsb0, slice::BitSlice};
 use ethercrab::{subdevice_group::Op, MainDevice, SubDeviceGroup, SubDevicePdi, SubDeviceRef};
 use std::{any::Any, sync::Arc};
 use tokio::sync::RwLock;
@@ -21,7 +22,7 @@ use tokio::sync::RwLock;
 pub trait Device: Any + Send + Sync {
     /// Input data from the last cycle
     /// `ts` is the timestamp when the input data was sent by the device
-    fn input(&mut self, _input: &[u8]) {
+    fn input(&mut self, _input: &BitSlice<u8, Lsb0>) {
         ()
     }
 
@@ -31,7 +32,7 @@ pub trait Device: Any + Send + Sync {
     }
 
     /// automatically validate input length, then calls input
-    fn input_checked(&mut self, input: &[u8]) -> Result<(), anyhow::Error> {
+    fn input_checked(&mut self, input: &BitSlice<u8, Lsb0>) -> Result<(), anyhow::Error> {
         // validate input has correct length
         let input_len = self.input_len();
         if input.len() != input_len {
@@ -49,7 +50,7 @@ pub trait Device: Any + Send + Sync {
 
     /// Output data for the next cycle
     /// `ts` is the timestamp when the output data is predicted to be received by the device
-    fn output(&self, _output: &mut [u8]) {
+    fn output(&self, _output: &mut BitSlice<u8, Lsb0>) {
         ()
     }
 
@@ -58,7 +59,7 @@ pub trait Device: Any + Send + Sync {
         0
     }
 
-    fn output_checked(&self, output: &mut [u8]) -> Result<(), anyhow::Error> {
+    fn output_checked(&self, output: &mut BitSlice<u8, Lsb0>) -> Result<(), anyhow::Error> {
         self.output(output);
 
         // validate input has correct length
@@ -108,13 +109,13 @@ fn device_from_subdevice<'maindevice, 'group, const PDI_LEN: usize>(
 ) -> Result<Arc<RwLock<dyn Device>>, anyhow::Error> {
     let name = subdevice.name();
     match name {
-        "EL2008" => Ok(Arc::new(RwLock::new(EL2008::new()))),
-        "EL2809" => Ok(Arc::new(RwLock::new(EL2809::new()))),
-        "EL2634" => Ok(Arc::new(RwLock::new(EL2634::new()))),
-        "EL4008" => Ok(Arc::new(RwLock::new(EL4008::new()))),
-        "EL1008" => Ok(Arc::new(RwLock::new(EL1008::new()))),
-        "EL3204" => Ok(Arc::new(RwLock::new(EL3204::new()))),
-        "EL2024" => Ok(Arc::new(RwLock::new(EL2024::new()))),
+        // "EL2008" => Ok(Arc::new(RwLock::new(EL2008::new()))),
+        // "EL2809" => Ok(Arc::new(RwLock::new(EL2809::new()))),
+        // "EL2634" => Ok(Arc::new(RwLock::new(EL2634::new()))),
+        // "EL4008" => Ok(Arc::new(RwLock::new(EL4008::new()))),
+        // "EL1008" => Ok(Arc::new(RwLock::new(EL1008::new()))),
+        // "EL3204" => Ok(Arc::new(RwLock::new(EL3204::new()))),
+        // "EL2024" => Ok(Arc::new(RwLock::new(EL2024::new()))),
         "EL2521" => Ok(Arc::new(RwLock::new(EL2521::new()))),
         _ => Err(anyhow::anyhow!("No Driver: {}", name)),
     }

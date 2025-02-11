@@ -35,32 +35,32 @@ impl TemperatureInputDevice<EL3204Port> for EL3204 {
         let byte_1 = self.input_pdu[byte_offset + 1];
 
         // subindex 01
-        let status_undervoltage = byte_0 & 0b0000_0001 != 0;
+        let undervoltage = byte_0 & 0b0000_0001 != 0;
         //subindex 02
-        let status_overvoltage = byte_0 & 0b0000_0010 != 0;
+        let overvoltage = byte_0 & 0b0000_0010 != 0;
         // subindex 03/04
-        let status_limit_1 = TemperatureInputLimit::new((byte_0 & 0b0000_1100) >> 2 as u8);
+        let limit_1 = TemperatureInputLimit::new((byte_0 & 0b0000_1100) >> 2 as u8);
         // subindex 05/06
-        let status_limit_2: TemperatureInputLimit =
+        let limit_2: TemperatureInputLimit =
             TemperatureInputLimit::new((byte_0 & 0b0011_0000) >> 4 as u8);
         // subindex 07
-        let status_error = byte_0 & 0b1000_0000 != 0;
+        let error = byte_0 & 0b1000_0000 != 0;
         // subindex 0F 0b0100_0000
-        let status_valid = TemperatureInputValid::new(byte_1 & 0b0100_0000 >> 6);
+        let valid = TemperatureInputValid::new(byte_1 & 0b0100_0000 >> 6);
         // subindex 10 0b1000_0000
-        let status_toggle = byte_1 & 0b1000_0000 != 0;
+        let toggle = byte_1 & 0b1000_0000 != 0;
         let temperature = (value as f32) / 10.0;
 
         TemperatureInputState {
             input_ts: self.inputs_ts,
             value: temperature,
-            status_undervoltage,
-            status_overvoltage,
-            status_limit_1,
-            status_limit_2,
-            status_error,
-            status_valid,
-            status_toggle,
+            undervoltage,
+            overvoltage,
+            limit_1,
+            limit_2,
+            error,
+            valid,
+            toggle,
         }
     }
 }

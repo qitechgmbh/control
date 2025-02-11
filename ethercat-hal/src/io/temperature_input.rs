@@ -40,19 +40,19 @@ pub struct TemperatureInputState {
     /// Temperature in degrees Celsius (°C) with a resolution of 0.1°C
     pub value: Value,
     /// Under-voltage error
-    pub status_undervoltage: bool,
+    pub undervoltage: bool,
     /// Over-voltage error
-    pub status_overvoltage: bool,
+    pub overvoltage: bool,
     /// Configured limit 1
-    pub status_limit_1: TemperatureInputLimit,
+    pub limit_1: TemperatureInputLimit,
     /// Configured limit 2
-    pub status_limit_2: TemperatureInputLimit,
+    pub limit_2: TemperatureInputLimit,
     /// Error flag
-    pub status_error: bool,
+    pub error: bool,
     /// if the TxPdu sstate is valid
-    pub status_valid: TemperatureInputValid,
+    pub valid: TemperatureInputValid,
     /// if the TxPdu is toggled
-    pub status_toggle: bool,
+    pub toggle: bool,
 }
 
 #[derive(Debug, Clone)]

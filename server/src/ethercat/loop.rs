@@ -14,18 +14,21 @@ use ethercat_hal::actors::analog_function_generator::{
 };
 use ethercat_hal::actors::digital_input_logger::DigitalInputLogger;
 use ethercat_hal::actors::stepper_driver_max_speed::StepperDriverMaxSpeed;
+use ethercat_hal::actors::stepper_driver_pulse_train::StepperDriverPulseTrain;
 use ethercat_hal::actors::temperature_input_logger::TemperatureInputLogger;
 use ethercat_hal::actors::Actor;
 use ethercat_hal::coe::Configuration;
-use ethercat_hal::devices::el1008::{EL1008Port, EL1008};
-use ethercat_hal::devices::el2008::{EL2008Port, EL2008};
-use ethercat_hal::devices::el2521::{EL2521Configuration, EL2521OperatingMode};
-use ethercat_hal::devices::el3204::{EL3204Port, EL3204};
-use ethercat_hal::devices::el4008::{EL4008Port, EL4008};
-use ethercat_hal::devices::{devices_from_subdevice_group, Device};
+// use ethercat_hal::devices::el1008::{EL1008Port, EL1008};
+// use ethercat_hal::devices::el2008::{EL2008Port, EL2008};
+use ethercat_hal::devices::el2521::{EL2521Configuration, EL2521OperatingMode, EL2521Port, EL2521};
+// use ethercat_hal::devices::el3204::{EL3204Port, EL3204};
+// use ethercat_hal::devices::el4008::{EL4008Port, EL4008};
+use bitvec::prelude::*;
+use ethercat_hal::devices::{devices_from_subdevice_group, get_device, Device};
 use ethercat_hal::io::analog_output::AnalogOutput;
 use ethercat_hal::io::digital_input::DigitalInput;
 use ethercat_hal::io::digital_output::DigitalOutput;
+use ethercat_hal::io::pulse_train_output::PulseTrainOutput;
 use ethercat_hal::io::temperature_input::TemperatureInput;
 use ethercrab::std::{ethercat_now, tx_rx_task};
 use std::{sync::Arc, time::Duration};
@@ -124,10 +127,17 @@ pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(),
     let config = EL2521Configuration {
         operating_mode: EL2521OperatingMode::PulseDirectionSpecification,
         direct_input_mode: true,
+        ramp_function_active: false,
         ..EL2521Configuration::default()
     };
 
     config.write_config(&subdevice_el2521).await?;
+
+    let rxpdo_mapping = subdevice_el2521.sdo_read_array::<u16, 8>(0x1C12).await?;
+    log::info!("RXPDO mapping: {:?}", rxpdo_mapping);
+
+    let txpdo_mapping = subdevice_el2521.sdo_read_array::<u16, 8>(0x1C13).await?;
+    log::info!("TXPDO mapping: {:?}", txpdo_mapping);
 
     // for subdevice in group.iter(&maindevice) {
     //     log::info!(
@@ -177,6 +187,9 @@ pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(),
         //     TemperatureInput::new(get_device::<EL3204>(&devices, 4).await?, EL3204Port::T1),
         // )
         // .to_arc_rwlock(),
+        Arc::new(RwLock::new(StepperDriverPulseTrain::new(
+            PulseTrainOutput::new(get_device::<EL2521>(&devices, 5).await?, EL2521Port::PTO1),
+        ))),
     ];
 
     // set all setup data
@@ -223,9 +236,7 @@ pub async fn loop_once<'maindevice>(
     let input_ts = ethercat_now();
 
     // TX/RX cycle
-    log::info!("TX/RX cycle");
     setup.group.tx_rx(&setup.maindevice).await?;
-    log::info!("TX/RX cycle done");
 
     // Prediction when the next TX/RX cycle starts
     let output_ts = input_ts + *average_nanos;
@@ -238,7 +249,8 @@ pub async fn loop_once<'maindevice>(
         };
         device.ts(input_ts, output_ts);
         let input = subdevice.inputs_raw();
-        device.input_checked(input.as_ref())?;
+        let input_bits = input.view_bits::<Lsb0>();
+        device.input_checked(input_bits)?;
     }
 
     // execute actors
@@ -254,10 +266,8 @@ pub async fn loop_once<'maindevice>(
             None => continue,
         };
         let mut output = subdevice.outputs_raw_mut();
-        device.output_checked(output.as_mut())?;
+        let output_bits = output.view_bits_mut::<Lsb0>();
+        device.output_checked(output_bits)?;
     }
-
-    tokio::time::sleep(Duration::from_secs(1)).await;
-
     Ok(())
 }
