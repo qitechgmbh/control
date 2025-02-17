@@ -1,7 +1,4 @@
-use bitvec::{
-    order::{Lsb0, Msb0},
-    slice::BitSlice,
-};
+use bitvec::{order::Lsb0, slice::BitSlice};
 use ethercat_hal_derive::PdoObject;
 
 use super::{RxPdoObject, TxPdoObject};

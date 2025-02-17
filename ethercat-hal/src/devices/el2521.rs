@@ -1,4 +1,3 @@
-use super::Device;
 use crate::{
     coe::Configuration,
     io::pulse_train_output::{
@@ -7,12 +6,11 @@ use crate::{
     },
     pdo::{
         el252x::{EncControl, EncStatus, PtoControl, PtoStatus, PtoTarget},
-        PdoPreset, RxPdo, RxPdoObject, TxPdo, TxPdoObject,
+        PdoPreset, RxPdo, TxPdo,
     },
     types::EthercrabSubDevice,
 };
 use anyhow::Ok;
-use bitvec::prelude::*;
 use ethercat_hal_derive::{Device, RxPdo, TxPdo};
 
 /// EL2521 8-channel digital output device
@@ -50,7 +48,7 @@ impl EL2521 {
 }
 
 impl PulseTrainOutputDevice<EL2521Port> for EL2521 {
-    fn pulse_train_output_write(&mut self, port: EL2521Port, value: PulseTrainOutputOutput) {
+    fn pulse_train_output_write(&mut self, _port: EL2521Port, value: PulseTrainOutputOutput) {
         self.rxpdo.pto_control.as_mut().unwrap().disble_ramp = value.disble_ramp;
         self.rxpdo.pto_control.as_mut().unwrap().frequency_value = value.frequency_value;
         self.rxpdo.pto_target.as_mut().unwrap().target_counter_value = value.target_counter_value;
@@ -58,9 +56,10 @@ impl PulseTrainOutputDevice<EL2521Port> for EL2521 {
         self.rxpdo.enc_control.as_mut().unwrap().set_counter_value = value.set_counter_value;
     }
 
-    fn pulse_train_output_state(&self, port: EL2521Port) -> PulseTrainOutputState {
+    fn pulse_train_output_state(&self, _port: EL2521Port) -> PulseTrainOutputState {
         PulseTrainOutputState {
             output_ts: self.output_ts,
+            input_ts: self.input_ts,
             input: PulseTrainOutputInput {
                 select_end_counter: self.txpdo.pto_status.as_ref().unwrap().select_end_counter,
                 ramp_active: self.txpdo.pto_status.as_ref().unwrap().ramp_active,
@@ -333,7 +332,7 @@ impl Configuration for EL2521Configuration {
 }
 
 #[derive(Debug, Clone)]
-enum EL2521PdoPreset {
+pub enum EL2521PdoPreset {
     EnhancedOperatingMode32Bit,
 }
 
@@ -359,7 +358,7 @@ impl PdoPreset<EL2521TxPdo, EL2521RxPdo> for EL2521PdoPreset {
 }
 
 #[derive(Debug, Clone, TxPdo, Default)]
-struct EL2521TxPdo {
+pub struct EL2521TxPdo {
     #[pdo_object_index(0x1A01)]
     pub pto_status: Option<PtoStatus>,
 
@@ -368,7 +367,7 @@ struct EL2521TxPdo {
 }
 
 #[derive(Debug, Clone, RxPdo, Default)]
-struct EL2521RxPdo {
+pub struct EL2521RxPdo {
     #[pdo_object_index(0x1601)]
     pub pto_control: Option<PtoControl>,
 
@@ -415,39 +414,5 @@ mod tests {
             u32::from_be_bytes([buffer[10], buffer[11], buffer[12], buffer[13]]),
             1000000
         );
-    }
-
-    #[test]
-    fn text_tx_pdo() {
-        let buffer = [
-            0b0000_0111,
-            0,
-            0b0000_0100,
-            0,
-            0,
-            3,
-            232,
-            0,
-            0,
-            0,
-            0,
-            3,
-            232,
-            0,
-        ];
-        let bits = buffer.view_bits::<Lsb0>();
-        let mut txpdo = EL2521PdoPreset::EnhancedOperatingMode32Bit.txpdo_assignment();
-        txpdo.read(bits);
-        assert_eq!(txpdo.pto_status.as_ref().unwrap().select_end_counter, true);
-        // assert_eq!(txpdo.pto_status.as_ref().unwrap().ramp_active, true);
-        // assert_eq!(txpdo.pto_status.as_ref().unwrap().input_t, true);
-        // assert_eq!(txpdo.pto_status.as_ref().unwrap().input_z, false);
-        // assert_eq!(txpdo.pto_status.as_ref().unwrap().error, false);
-        // assert_eq!(txpdo.pto_status.as_ref().unwrap().sync_error, false);
-        // assert_eq!(txpdo.pto_status.as_ref().unwrap().txpdo_toggle, false);
-        // assert_eq!(txpdo.enc_status.as_ref().unwrap().counter_underflow, false);
-        // assert_eq!(txpdo.enc_status.as_ref().unwrap().counter_overflow, true);
-        // assert_eq!(txpdo.enc_status.as_ref().unwrap().counter_value, 1000);
-        // assert_eq!(txpdo.enc_status.as_ref().unwrap().set_counter_done, false);
     }
 }

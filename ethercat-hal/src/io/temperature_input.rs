@@ -1,7 +1,7 @@
 use std::{future::Future, pin::Pin, sync::Arc};
 use tokio::sync::RwLock;
 
-type Value = f32;
+use crate::pdo::el32xx::TemperatureInputLimit;
 
 pub struct TemperatureInput {
     pub state:
@@ -37,45 +37,31 @@ impl TemperatureInput {
 pub struct TemperatureInputState {
     /// Nanosecond timestamp
     pub input_ts: u64,
+    /// Input value
+    pub input: TemperatureInputInput,
+}
+
+#[derive(Debug, Clone)]
+pub struct TemperatureInputInput {
     /// Temperature in degrees Celsius (°C) with a resolution of 0.1°C
-    pub value: Value,
+    pub temperature: f32,
     /// Under-voltage error
     pub undervoltage: bool,
     /// Over-voltage error
     pub overvoltage: bool,
     /// Configured limit 1
-    pub limit_1: TemperatureInputLimit,
+    pub limit1: TemperatureInputLimit,
     /// Configured limit 2
-    pub limit_2: TemperatureInputLimit,
+    pub limit2: TemperatureInputLimit,
     /// Error flag
     pub error: bool,
     /// if the TxPdu sstate is valid
-    pub valid: TemperatureInputValid,
+    pub txpdo_state: bool,
     /// if the TxPdu is toggled
-    pub toggle: bool,
+    pub txpdo_toggle: bool,
 }
 
-#[derive(Debug, Clone)]
-pub enum TemperatureInputLimit {
-    NotActive,
-    Greater,
-    Smaller,
-    Equal,
-}
-
-impl TemperatureInputLimit {
-    pub fn new(value: u8) -> Self {
-        match value {
-            0b00 => TemperatureInputLimit::NotActive,
-            0b01 => TemperatureInputLimit::Greater,
-            0b10 => TemperatureInputLimit::Smaller,
-            0b11 => TemperatureInputLimit::Equal,
-            _ => unreachable!(),
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub enum TemperatureInputValid {
     Valid,
     Invalid,

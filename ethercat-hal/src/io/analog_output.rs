@@ -52,6 +52,11 @@ pub struct AnalogOutputState {
     pub output_ts: u64,
     /// Output value from 0.0 to 1.0
     /// Voltage depends on the device
+    pub output: AnalogOutputOutput,
+}
+
+#[derive(Debug, Clone)]
+pub struct AnalogOutputOutput {
     pub value: f32,
 }
 

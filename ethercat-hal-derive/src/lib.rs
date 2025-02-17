@@ -1,6 +1,7 @@
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::{parse_macro_input, Data, DeriveInput};
+extern crate proc_macro;
 
 #[derive(deluxe::ExtractAttributes)]
 #[deluxe(attributes(pdo_object_index))]
@@ -24,6 +25,11 @@ fn extract_metedata_field_attributes(
         }
     }
     Ok((field_names, pdo_indices))
+}
+
+#[proc_macro_derive(RxPdo, attributes(pdo_object_index))]
+pub fn rxpdo_derive(item: TokenStream) -> TokenStream {
+    rxpdo_derive2(item.into()).unwrap().into()
 }
 
 fn rxpdo_derive2(item: proc_macro2::TokenStream) -> deluxe::Result<proc_macro2::TokenStream> {
@@ -56,7 +62,7 @@ fn rxpdo_derive2(item: proc_macro2::TokenStream) -> deluxe::Result<proc_macro2::
             }
         }
 
-        impl #impl_generics RxPdo for #ident #ty_generics #where_clause {
+        impl #impl_generics crate::pdo::RxPdo for #ident #ty_generics #where_clause {
             fn get_objects(&self) -> &[Option<&dyn crate::pdo::RxPdoObject>] {
                 let objs = vec![
                     #(
@@ -71,9 +77,9 @@ fn rxpdo_derive2(item: proc_macro2::TokenStream) -> deluxe::Result<proc_macro2::
     Ok(expanded)
 }
 
-#[proc_macro_derive(RxPdo, attributes(pdo_object_index))]
-pub fn rxpdo_derive(item: TokenStream) -> TokenStream {
-    rxpdo_derive2(item.into()).unwrap().into()
+#[proc_macro_derive(TxPdo, attributes(pdo_object_index))]
+pub fn txpdo_derive(item: TokenStream) -> TokenStream {
+    txpdo_derive2(item.into()).unwrap().into()
 }
 
 fn txpdo_derive2(item: proc_macro2::TokenStream) -> deluxe::Result<proc_macro2::TokenStream> {
@@ -130,11 +136,6 @@ fn txpdo_derive2(item: proc_macro2::TokenStream) -> deluxe::Result<proc_macro2::
     Ok(expanded)
 }
 
-#[proc_macro_derive(TxPdo, attributes(pdo_object_index))]
-pub fn txpdo_derive(item: TokenStream) -> TokenStream {
-    txpdo_derive2(item.into()).unwrap().into()
-}
-
 #[derive(deluxe::ExtractAttributes)]
 #[deluxe(attributes(pdo_object))]
 struct PdoObjectAttribute {
@@ -164,8 +165,6 @@ fn pdo_object_derive2(item: proc_macro2::TokenStream) -> deluxe::Result<proc_mac
 pub fn pdo_object_derive(item: TokenStream) -> TokenStream {
     pdo_object_derive2(item.into()).unwrap().into()
 }
-
-extern crate proc_macro;
 
 #[proc_macro_derive(Device)]
 pub fn device_derive(input: TokenStream) -> TokenStream {

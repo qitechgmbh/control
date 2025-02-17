@@ -54,6 +54,11 @@ pub struct DigitalOutputState {
     /// Output value
     /// true: high
     /// false: low
+    pub output: DigitalOutputOutput,
+}
+
+#[derive(Debug, Clone)]
+pub struct DigitalOutputOutput {
     pub value: bool,
 }
 

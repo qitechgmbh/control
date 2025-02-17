@@ -2,9 +2,9 @@ use bitvec::prelude::*;
 
 use crate::coe::Configuration;
 
-mod EL252X;
 pub mod basic;
 pub mod el252x;
+pub mod el32xx;
 
 pub trait PdoObject {
     /// size in bits
@@ -47,7 +47,7 @@ pub trait RxPdo: Configuration {
                 bit_offset += object.size();
             }
         }
-    }
+    }   
 }
 
 pub trait TxPdo: Configuration {

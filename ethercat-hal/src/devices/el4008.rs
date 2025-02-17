@@ -59,21 +59,6 @@ impl AnalogOutputDevice<EL4008Port> for EL4008 {
     }
 }
 
-impl Device for EL4008 {
-    fn output(&self, output: &mut [u8]) {
-        output.copy_from_slice(&self.output_pdus);
-    }
-    fn output_len(&self) -> usize {
-        OUTPUT_PDU_LEN
-    }
-    fn ts(&mut self, _input_ts: u64, output_ts: u64) {
-        self.output_ts = output_ts;
-    }
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
-}
-
 #[derive(Debug, Clone, Copy)]
 pub enum EL4008Port {
     AO1,

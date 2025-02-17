@@ -22,7 +22,6 @@ use ethercat_hal::coe::Configuration;
 // use ethercat_hal::devices::el2008::{EL2008Port, EL2008};
 use ethercat_hal::devices::el2521::{EL2521Configuration, EL2521OperatingMode, EL2521Port, EL2521};
 // use ethercat_hal::devices::el3204::{EL3204Port, EL3204};
-// use ethercat_hal::devices::el4008::{EL4008Port, EL4008};
 use bitvec::prelude::*;
 use ethercat_hal::devices::{devices_from_subdevice_group, get_device, Device};
 use ethercat_hal::io::analog_output::AnalogOutput;

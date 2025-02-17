@@ -1,58 +1,54 @@
-use super::Device;
-use crate::io::digital_output::{DigitalOutputDevice, DigitalOutputState};
-use std::any::Any;
+use ethercat_hal_derive::{Device, RxPdo, TxPdo};
 
-const OUTPUT_PDU_LEN: usize = 1;
+use crate::io::digital_output::{DigitalOutputDevice, DigitalOutputOutput, DigitalOutputState};
+use crate::pdo::basic::BoolPdoObject;
+use crate::types::EthercrabSubDevice;
 
 /// EL2008 8-channel digital output device
 ///
 /// 24V DC, 0.5A per channel
-#[derive(Debug)]
+#[derive(Debug, Device)]
 pub struct EL2008 {
-    output_pdus: [u8; OUTPUT_PDU_LEN],
     pub output_ts: u64,
+    rxpdu: EL2008RxPdu,
 }
 
 impl EL2008 {
     pub fn new() -> Self {
         Self {
-            output_pdus: [0; OUTPUT_PDU_LEN],
             output_ts: 0,
+            rxpdu: EL2008RxPdu::default(),
         }
     }
 }
 
 impl DigitalOutputDevice<EL2008Port> for EL2008 {
-    fn digital_output_write(&mut self, port: EL2008Port, value: bool) {
-        let pdu = match value {
+    fn digital_output_write(&mut self, _port: EL2008Port, value: bool) {
+        let _pdu = match value {
             true => 0b1,
             false => 0b0,
         };
-        let bit_index = port.to_bit_index();
-        self.output_pdus[0] = (self.output_pdus[0] & !(1 << bit_index)) | (pdu << bit_index);
+        todo!();
+        // let bit_index = port.to_bit_index();
+        // self.output_pdus[0] = (self.output_pdus[0] & !(1 << bit_index)) | (pdu << bit_index);
     }
 
     fn digital_output_state(&self, port: EL2008Port) -> DigitalOutputState {
-        let bit_index = port.to_bit_index();
         DigitalOutputState {
             output_ts: self.output_ts,
-            value: self.output_pdus[0] & (1 << bit_index) != 0,
+            output: DigitalOutputOutput {
+                value: match port {
+                    EL2008Port::DO1 => self.rxpdu.channel1.as_ref().unwrap().value,
+                    EL2008Port::DO2 => self.rxpdu.channel2.as_ref().unwrap().value,
+                    EL2008Port::DO3 => self.rxpdu.channel3.as_ref().unwrap().value,
+                    EL2008Port::DO4 => self.rxpdu.channel4.as_ref().unwrap().value,
+                    EL2008Port::DO5 => self.rxpdu.channel5.as_ref().unwrap().value,
+                    EL2008Port::DO6 => self.rxpdu.channel6.as_ref().unwrap().value,
+                    EL2008Port::DO7 => self.rxpdu.channel7.as_ref().unwrap().value,
+                    EL2008Port::DO8 => self.rxpdu.channel8.as_ref().unwrap().value,
+                },
+            },
         }
-    }
-}
-
-impl Device for EL2008 {
-    fn output(&self, output: &mut [u8]) {
-        output.copy_from_slice(&self.output_pdus);
-    }
-    fn output_len(&self) -> usize {
-        OUTPUT_PDU_LEN
-    }
-    fn ts(&mut self, _input_ts: u64, output_ts: u64) {
-        self.output_ts = output_ts;
-    }
-    fn as_any(&self) -> &dyn Any {
-        self
     }
 }
 
@@ -68,17 +64,25 @@ pub enum EL2008Port {
     DO8,
 }
 
-impl EL2008Port {
-    fn to_bit_index(&self) -> usize {
-        match self {
-            EL2008Port::DO1 => 0,
-            EL2008Port::DO2 => 1,
-            EL2008Port::DO3 => 2,
-            EL2008Port::DO4 => 3,
-            EL2008Port::DO5 => 4,
-            EL2008Port::DO6 => 5,
-            EL2008Port::DO7 => 6,
-            EL2008Port::DO8 => 7,
-        }
-    }
+#[derive(Debug, Clone, RxPdo, Default)]
+struct EL2008RxPdu {
+    #[pdo_object_index(0x1600)]
+    pub channel1: Option<BoolPdoObject>,
+    #[pdo_object_index(0x1601)]
+    pub channel2: Option<BoolPdoObject>,
+    #[pdo_object_index(0x1602)]
+    pub channel3: Option<BoolPdoObject>,
+    #[pdo_object_index(0x1603)]
+    pub channel4: Option<BoolPdoObject>,
+    #[pdo_object_index(0x1604)]
+    pub channel5: Option<BoolPdoObject>,
+    #[pdo_object_index(0x1605)]
+    pub channel6: Option<BoolPdoObject>,
+    #[pdo_object_index(0x1606)]
+    pub channel7: Option<BoolPdoObject>,
+    #[pdo_object_index(0x1607)]
+    pub channel8: Option<BoolPdoObject>,
 }
+
+#[derive(Debug, Clone, TxPdo, Default)]
+pub struct EL2008TxPdu {}

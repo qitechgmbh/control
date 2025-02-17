@@ -18,7 +18,7 @@ impl Actor for TemperatureInputLogger {
     fn act(&mut self, _now_ts: u64) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
         Box::pin(async move {
             let state = (self.input.state)().await;
-            log::debug!("TemperatureInputLogger: {:?}C", state.value);
+            log::debug!("TemperatureInputLogger: {:?}C", state.input.temperature);
         })
     }
 }

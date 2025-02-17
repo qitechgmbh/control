@@ -10,38 +10,32 @@ pub struct PulseTrainOutput {
         Box<dyn Fn() -> Pin<Box<dyn Future<Output = PulseTrainOutputState> + Send>> + Send + Sync>,
 }
 
-impl PulseTrainOutput {
-    pub fn new<PORT>(
-        device: Arc<RwLock<dyn PulseTrainOutputDevice<PORT>>>,
-        port: PORT,
-    ) -> PulseTrainOutput
+impl<'device> PulseTrainOutput {
+    pub fn new<PORT, DEVICE>(device: Arc<RwLock<DEVICE>>, port: PORT) -> PulseTrainOutput
     where
-        PORT: Clone + Send + Sync + 'static,
+        PORT: Clone + Copy + Send + Sync + 'static,
+        DEVICE: PulseTrainOutputDevice<PORT> + Send + Sync + 'static,
     {
         // build async write closure
-        let port1 = port.clone();
         let device1 = device.clone();
         let write = Box::new(
             move |value: PulseTrainOutputOutput| -> Pin<Box<dyn Future<Output = ()> + Send>> {
                 let device_clone = device1.clone();
-                let port_clone = port1.clone();
                 Box::pin(async move {
                     let mut device = device_clone.write().await;
-                    device.pulse_train_output_write(port_clone, value);
+                    device.pulse_train_output_write(port, value);
                 })
             },
         );
 
         // build async get closure
-        let port2 = port.clone();
         let device2 = device.clone();
         let state = Box::new(
             move || -> Pin<Box<dyn Future<Output = PulseTrainOutputState> + Send>> {
                 let device2 = device2.clone();
-                let port_clone = port2.clone();
                 Box::pin(async move {
                     let device = device2.read().await;
-                    device.pulse_train_output_state(port_clone)
+                    device.pulse_train_output_state(port)
                 })
             },
         );
@@ -52,8 +46,8 @@ impl PulseTrainOutput {
 
 #[derive(Debug, Clone)]
 pub struct PulseTrainOutputState {
-    /// Nanosecond timestamp
     pub output_ts: u64,
+    pub input_ts: u64,
     pub input: PulseTrainOutputInput,
     pub output: PulseTrainOutputOutput,
 }

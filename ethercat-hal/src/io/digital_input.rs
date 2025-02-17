@@ -1,8 +1,6 @@
 use std::{future::Future, pin::Pin, sync::Arc};
 use tokio::sync::RwLock;
 
-type Value = bool;
-
 pub struct DigitalInput {
     pub state:
         Box<dyn Fn() -> Pin<Box<dyn Future<Output = DigitalInputState> + Send>> + Send + Sync>,
@@ -38,7 +36,12 @@ pub struct DigitalInputState {
     /// Input value
     /// true: high
     /// false: low
-    pub value: Value,
+    pub input: DigitalInputInput,
+}
+
+#[derive(Debug, Clone)]
+pub struct DigitalInputInput {
+    pub value: bool,
 }
 
 pub trait DigitalInputDevice<PORTS>: Send + Sync

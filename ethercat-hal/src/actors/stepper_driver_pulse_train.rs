@@ -15,7 +15,7 @@ pub struct StepperDriverPulseTrain {
     position: i64,
 }
 
-impl StepperDriverPulseTrain {
+impl<'ptodevice> StepperDriverPulseTrain {
     pub fn new(output: PulseTrainOutput) -> Self {
         Self {
             pulse: output,
@@ -26,7 +26,7 @@ impl StepperDriverPulseTrain {
     }
 }
 
-impl Actor for StepperDriverPulseTrain {
+impl<'ptodevice> Actor for StepperDriverPulseTrain {
     fn act(&mut self, _now_ts: u64) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
         Box::pin(async move {
             let state = (self.pulse.state)().await;
@@ -43,7 +43,7 @@ impl Actor for StepperDriverPulseTrain {
     }
 }
 
-impl StepperDriverPulseTrain {
+impl<'ptodevice> StepperDriverPulseTrain {
     /// since the internal counter of 32bit is a bit small, we use this counter instead
     fn counter_to_position(
         &mut self,
@@ -66,7 +66,7 @@ impl StepperDriverPulseTrain {
     }
 }
 
-impl From<StepperDriverPulseTrain> for Arc<RwLock<StepperDriverPulseTrain>> {
+impl<'ptodevice> From<StepperDriverPulseTrain> for Arc<RwLock<StepperDriverPulseTrain>> {
     fn from(actor: StepperDriverPulseTrain) -> Self {
         Arc::new(RwLock::new(actor))
     }

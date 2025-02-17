@@ -1,49 +1,45 @@
-use super::Device;
-use crate::io::digital_input::{DigitalInputDevice, DigitalInputState};
-use std::any::Any;
+use ethercat_hal_derive::{Device, RxPdo, TxPdo};
 
-const INPUT_PDU_LEN: usize = 1;
+use crate::io::digital_input::{DigitalInputDevice, DigitalInputInput, DigitalInputState};
+use crate::pdo::basic::BoolPdoObject;
+use crate::pdo::PdoPreset;
+use crate::types::EthercrabSubDevice;
 
 /// EL1008 8-channel digital input device
 ///
 /// 24V DC, 3ms filter
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Device)]
 pub struct EL1008 {
-    input_pdu: [u8; INPUT_PDU_LEN],
     pub inputs_ts: u64,
+    txpdu: EL1008TxPdu,
 }
 
 impl EL1008 {
     pub fn new() -> Self {
         Self {
-            input_pdu: [0; INPUT_PDU_LEN],
             inputs_ts: 0,
+            txpdu: EL1008TxPdu::default(),
         }
     }
 }
 
 impl DigitalInputDevice<EL1008Port> for EL1008 {
     fn digital_input_state(&self, port: EL1008Port) -> DigitalInputState {
-        let bit_index = port.to_bit_index();
         DigitalInputState {
             input_ts: self.inputs_ts,
-            value: self.input_pdu[0] & (1 << bit_index) != 0,
+            input: DigitalInputInput {
+                value: match port {
+                    EL1008Port::DI1 => self.txpdu.channel1.as_ref().unwrap().value,
+                    EL1008Port::DI2 => self.txpdu.channel2.as_ref().unwrap().value,
+                    EL1008Port::DI3 => self.txpdu.channel3.as_ref().unwrap().value,
+                    EL1008Port::DI4 => self.txpdu.channel4.as_ref().unwrap().value,
+                    EL1008Port::DI5 => self.txpdu.channel5.as_ref().unwrap().value,
+                    EL1008Port::DI6 => self.txpdu.channel6.as_ref().unwrap().value,
+                    EL1008Port::DI7 => self.txpdu.channel7.as_ref().unwrap().value,
+                    EL1008Port::DI8 => self.txpdu.channel8.as_ref().unwrap().value,
+                },
+            },
         }
-    }
-}
-
-impl Device for EL1008 {
-    fn input(&mut self, input: &[u8]) {
-        self.input_pdu.copy_from_slice(input);
-    }
-    fn input_len(&self) -> usize {
-        INPUT_PDU_LEN
-    }
-    fn ts(&mut self, _input_ts: u64, output_ts: u64) {
-        self.inputs_ts = output_ts;
-    }
-    fn as_any(&self) -> &dyn Any {
-        self
     }
 }
 
@@ -71,5 +67,54 @@ impl EL1008Port {
             EL1008Port::DI7 => 6,
             EL1008Port::DI8 => 7,
         }
+    }
+}
+
+#[derive(Debug, Clone, TxPdo, Default)]
+struct EL1008TxPdu {
+    #[pdo_object_index(0x1A00)]
+    pub channel1: Option<BoolPdoObject>,
+    #[pdo_object_index(0x1A01)]
+    pub channel2: Option<BoolPdoObject>,
+    #[pdo_object_index(0x1A02)]
+    pub channel3: Option<BoolPdoObject>,
+    #[pdo_object_index(0x1A03)]
+    pub channel4: Option<BoolPdoObject>,
+    #[pdo_object_index(0x1A04)]
+    pub channel5: Option<BoolPdoObject>,
+    #[pdo_object_index(0x1A05)]
+    pub channel6: Option<BoolPdoObject>,
+    #[pdo_object_index(0x1A06)]
+    pub channel7: Option<BoolPdoObject>,
+    #[pdo_object_index(0x1A07)]
+    pub channel8: Option<BoolPdoObject>,
+}
+
+#[derive(Debug, Clone, RxPdo, Default)]
+struct EL1008RxPdu {}
+
+#[derive(Debug, Clone)]
+pub enum EL1008PdoPreset {
+    All,
+}
+
+impl PdoPreset<EL1008TxPdu, EL1008RxPdu> for EL1008PdoPreset {
+    fn txpdo_assignment(&self) -> EL1008TxPdu {
+        match self {
+            EL1008PdoPreset::All => EL1008TxPdu {
+                channel1: Some(BoolPdoObject::default()),
+                channel2: Some(BoolPdoObject::default()),
+                channel3: Some(BoolPdoObject::default()),
+                channel4: Some(BoolPdoObject::default()),
+                channel5: Some(BoolPdoObject::default()),
+                channel6: Some(BoolPdoObject::default()),
+                channel7: Some(BoolPdoObject::default()),
+                channel8: Some(BoolPdoObject::default()),
+            },
+        }
+    }
+
+    fn rxpdo_assignment(&self) -> EL1008RxPdu {
+        unreachable!()
     }
 }
