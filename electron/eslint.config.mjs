@@ -1,31 +1,32 @@
-import tseslint from '@electron-toolkit/eslint-config-ts'
-import eslintConfigPrettier from '@electron-toolkit/eslint-config-prettier'
-import eslintPluginReact from 'eslint-plugin-react'
-import eslintPluginReactHooks from 'eslint-plugin-react-hooks'
-import eslintPluginReactRefresh from 'eslint-plugin-react-refresh'
+import globals from "globals";
+import pluginJs from "@eslint/js";
+import tseslint from "typescript-eslint";
+import pluginReact from "eslint-plugin-react";
+import eslintPluginPrettierRecommended from "eslint-config-prettier";
+import reactCompiler from "eslint-plugin-react-compiler";
+import path from "node:path";
+import { includeIgnoreFile } from "@eslint/compat";
+import { fileURLToPath } from "node:url";
 
-export default tseslint.config(
-  { ignores: ['**/node_modules', '**/dist', '**/out'] },
-  tseslint.configs.recommended,
-  eslintPluginReact.configs.flat.recommended,
-  eslintPluginReact.configs.flat['jsx-runtime'],
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const prettierIgnorePath = path.resolve(__dirname, ".prettierignore");
+
+/** @type {import('eslint').Linter.Config[]} */
+export default [
+  includeIgnoreFile(prettierIgnorePath),
   {
-    settings: {
-      react: {
-        version: 'detect'
-      }
-    }
-  },
-  {
-    files: ['**/*.{ts,tsx}'],
+    files: ["**/*.{js,mjs,cjs,ts,jsx,tsx}"],
     plugins: {
-      'react-hooks': eslintPluginReactHooks,
-      'react-refresh': eslintPluginReactRefresh
+      "react-compiler": reactCompiler,
     },
     rules: {
-      ...eslintPluginReactHooks.configs.recommended.rules,
-      ...eslintPluginReactRefresh.configs.vite.rules
-    }
+      "react-compiler/react-compiler": "error",
+    },
   },
-  eslintConfigPrettier
-)
+  { languageOptions: { globals: globals.browser } },
+  pluginJs.configs.recommended,
+  pluginReact.configs.flat.recommended,
+  eslintPluginPrettierRecommended,
+  ...tseslint.configs.recommended,
+];
