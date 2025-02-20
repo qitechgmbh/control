@@ -11,6 +11,7 @@ const config: ForgeConfig = {
   packagerConfig: {
     executableName: "electron-shadcn",
     asar: true,
+    icon: "src/assets/icon",
   },
   rebuildConfig: {},
   makers: [

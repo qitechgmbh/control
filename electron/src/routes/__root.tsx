@@ -1,6 +1,6 @@
 import React from "react";
-import BaseLayout from "@/layouts/BaseLayout";
 import { Outlet, createRootRoute } from "@tanstack/react-router";
+import DragWindowRegion from "@/components/DragWindowRegion";
 
 export const RootRoute = createRootRoute({
   component: Root,
@@ -8,8 +8,11 @@ export const RootRoute = createRootRoute({
 
 function Root() {
   return (
-    <BaseLayout>
-      <Outlet />
-    </BaseLayout>
+    <>
+      <DragWindowRegion />
+      <main className="h-screen pb-20">
+        <Outlet />
+      </main>
+    </>
   );
 }

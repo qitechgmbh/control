@@ -3,22 +3,14 @@ import {
   maximizeWindow,
   minimizeWindow,
 } from "@/helpers/window_helpers";
-import React, { type ReactNode } from "react";
+import { useRouterState } from "@tanstack/react-router";
+import React from "react";
 
-interface DragWindowRegionProps {
-  title?: ReactNode;
-}
-
-export default function DragWindowRegion({ title }: DragWindowRegionProps) {
+export default function DragWindowRegion() {
+  const { location } = useRouterState();
   return (
-    <div className="flex w-screen items-stretch justify-between">
-      <div className="draglayer w-full">
-        {title && (
-          <div className="flex flex-1 select-none whitespace-nowrap p-2 text-xs text-gray-400">
-            {title}
-          </div>
-        )}
-      </div>
+    <div className="draglayer flex w-screen items-center justify-between bg-neutral-200 pl-20">
+      <div className="text-xs text-neutral-400">{location.pathname}</div>
       <WindowButtons />
     </div>
   );
@@ -30,7 +22,7 @@ function WindowButtons() {
       <button
         title="Minimize"
         type="button"
-        className="p-2 hover:bg-slate-300"
+        className="p-2 hover:bg-neutral-400"
         onClick={minimizeWindow}
       >
         <svg
@@ -46,7 +38,7 @@ function WindowButtons() {
       <button
         title="Maximize"
         type="button"
-        className="p-2 hover:bg-slate-300"
+        className="p-2 hover:bg-neutral-400"
         onClick={maximizeWindow}
       >
         <svg

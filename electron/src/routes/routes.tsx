@@ -1,37 +1,62 @@
 import { createRoute } from "@tanstack/react-router";
 import { RootRoute } from "./__root";
-import HomePage from "../pages/HomePage";
-import SecondPage from "@/pages/SecondPage";
+import React from "react";
+import { SidebarLayout } from "@/components/SidebarLayout";
+import { Winder1Page } from "@/machines/winder1/Winder1Page";
+import { ConfigurationPage } from "@/configuration/ConfigurationPage";
+import { DevicesPage } from "@/configuration/DevicesPage";
 
-// TODO: Steps to add a new route:
-// 1. Create a new page component in the '../pages/' directory (e.g., NewPage.tsx)
-// 2. Import the new page component at the top of this file
-// 3. Define a new route for the page using createRoute()
-// 4. Add the new route to the routeTree in RootRoute.addChildren([...])
-// 5. Add a new Link in the navigation section of RootRoute if needed
+// make a route tree like this
+// _mainNavigation/machines/$machineSerial/winder1/general
+// _mainNavigation/machines/$machineSerial/winder1/handbook
+// _mainNavigation/machines/$machineSerial/winder2/general
+// _mainNavigation/machines/$machineSerial/winder2/handbook
+// _mainNavigation/configuration/a
+// _mainNavigation/configuration/b
+// the mainNavigation has a custom layout
+// the winder1 winder2 and configuration also have a custom layout
+// the leaf routes are just pages
 
-// Example of adding a new route:
-// 1. Create '../pages/NewPage.tsx'
-// 2. Import: import NewPage from '../pages/NewPage';
-// 3. Define route:
-//    const NewRoute = createRoute({
-//      getParentRoute: () => RootRoute,
-//      path: '/new',
-//      component: NewPage,
-//    });
-// 4. Add to routeTree: RootRoute.addChildren([HomeRoute, NewRoute, ...])
-// 5. Add Link: <Link to="/new">New Page</Link>
-
-export const HomeRoute = createRoute({
+export const sidebarRoute = createRoute({
   getParentRoute: () => RootRoute,
-  path: "/",
-  component: HomePage,
+  path: "_sidebar",
+  component: () => <SidebarLayout />,
 });
 
-export const SecondPageRoute = createRoute({
-  getParentRoute: () => RootRoute,
-  path: "/second-page",
-  component: SecondPage,
+export const machinesRoute = createRoute({
+  getParentRoute: () => sidebarRoute,
+  path: "machines/$machineSerial",
 });
 
-export const rootTree = RootRoute.addChildren([HomeRoute, SecondPageRoute]);
+export const winder1Route = createRoute({
+  getParentRoute: () => machinesRoute,
+  path: "winder1",
+  component: () => <Winder1Page />,
+});
+
+export const winder1GeneralRoute = createRoute({
+  getParentRoute: () => winder1Route,
+  path: "general",
+  component: () => <div>winder1 general</div>,
+});
+
+export const configurationRoute = createRoute({
+  getParentRoute: () => sidebarRoute,
+  path: "configuration",
+  component: () => <ConfigurationPage />,
+});
+
+export const devicesRoute = createRoute({
+  getParentRoute: () => configurationRoute,
+  path: "devices",
+  component: () => <DevicesPage />,
+});
+
+export const rootTree = RootRoute.addChildren([
+  sidebarRoute.addChildren([
+    machinesRoute.addChildren([
+      winder1Route.addChildren([winder1GeneralRoute]),
+    ]),
+    configurationRoute.addChildren([devicesRoute]),
+  ]),
+]);
