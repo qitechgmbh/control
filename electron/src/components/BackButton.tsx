@@ -12,7 +12,8 @@ export function BackButton() {
       onClick={() => {
         router.history.back();
       }}
-      className="bg-neutral-100 text-black"
+      className="h-full bg-neutral-100 text-black"
+      variant="ghost"
     >
       <ChevronLeft size={24} />
       Zurück

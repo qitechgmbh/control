@@ -42,10 +42,6 @@ export function SidebarLayout() {
       title: "Winder 123",
     },
     {
-      link: "/_sidebar/machines/124",
-      title: "Winder 124",
-    },
-    {
       link: "/_sidebar/configuration/devices",
       title: "Ethercat",
       icon: <EthernetPort size={20} />,
@@ -56,7 +52,9 @@ export function SidebarLayout() {
     <div className="flex h-full flex-row">
       <div className="w-40" />
       <div className="fixed flex h-full w-40 flex-col bg-neutral-200">
-        <div className="h-20">QiTech Control</div>
+        <div className="flex h-20 flex-col items-center justify-center gap-0 pt-2">
+          <div className="font-qitech line-clamp-none text-3xl">QiTech</div>
+        </div>
         <div className="flex flex-col gap-2">
           {items.map((item, index) => (
             <Fragment key={item.link}>

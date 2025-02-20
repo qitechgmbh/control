@@ -53,7 +53,7 @@ export function Topbar({ items, pathname }: TopbarProps) {
         className="fixed flex h-20 w-full gap-2 bg-neutral-200 pt-2"
         style={{ zIndex: 1000 }}
       >
-        <div className="z-10 flex h-full flex-col justify-end pb-2">
+        <div className="flexflex-col z-10 pb-2">
           <BackButton />
         </div>
         {items.map((item, index) => {

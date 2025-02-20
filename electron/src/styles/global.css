@@ -32,9 +32,9 @@
   --color-card: hsl(var(--card));
   --color-card-foreground: hsl(var(--card-foreground));
 
-  --font-sans: Geist, sans-serif;
+  --font-sans: Sora, sans-serif;
   --font-mono: Geist Mono, monospace;
-  --font-tomorrow: Tomorrow, sans-serif;
+  --font-qitech: Consequences, sans-serif;
 
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
@@ -74,44 +74,22 @@
 
 @layer base {
   @font-face {
-    font-family: "Geist";
-
-    src: url("../assets/fonts/geist/geist.ttf") format("truetype");
-  }
-  @font-face {
     font-family: "Geist Mono";
     font-display: swap;
 
     src: url("../assets/fonts/geist-mono/geist-mono.ttf") format("truetype");
   }
-
   @font-face {
-    font-family: "Tomorrow";
-    font-weight: 400;
-    font-style: normal;
-
-    src: url("../assets/fonts/tomorrow/tomorrow-regular.ttf") format("truetype");
+    font-family: "Sora";
+    src: url(
+        "../assets/fonts/Sora/Sora.ttf"
+    );
   }
   @font-face {
-    font-family: "Tomorrow";
-    font-weight: 400;
-    font-style: italic;
-
-    src: url("../assets/fonts/tomorrow/tomorrow-italic.ttf") format("truetype");
-  }
-  @font-face {
-    font-family: "Tomorrow";
-    font-weight: 700;
-    font-style: normal;
-
-    src: url("../assets/fonts/tomorrow/tomorrow-bold.ttf") format("truetype");
-  }
-  @font-face {
-    font-family: "Tomorrow";
-    font-weight: 700;
-    font-style: italic;
-
-    src: url("../assets/fonts/tomorrow/tomorrow-bold-italic.ttf") format("truetype");
+    font-family: "Consequences";
+    src: url(
+        "../assets/fonts/Consequences/Consequences.ttf"
+    );
   }
 }
 
