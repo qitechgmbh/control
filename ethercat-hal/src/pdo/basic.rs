@@ -92,7 +92,7 @@ mod tests {
         let bits = BitSlice::<_, Lsb0>::from_slice_mut(&mut buffer);
         object.write(bits);
 
-        assert_eq!(buffer, [0xdb, 0x0f, 0x49, 0x40]);
+        assert_eq!(buffer, 3.14f32.to_le_bytes());
     }
 
     #[test]

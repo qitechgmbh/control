@@ -13,9 +13,7 @@ use crate::{
 use anyhow::Ok;
 use ethercat_hal_derive::{Device, RxPdo, TxPdo};
 
-/// EL2521 8-channel digital output device
-///   
-/// 24V DC, 0.5A per channel
+/// EL2521 1-channel pulse train output terminal
 #[derive(Debug, Device)]
 pub struct EL2521 {
     pub configuration: EL2521Configuration,
@@ -404,14 +402,14 @@ mod tests {
         let bits = buffer.view_bits_mut::<Lsb0>();
         rxpdo.write(bits);
         assert_eq!(buffer[0], 0b0000_0111);
-        assert_eq!(u16::from_be_bytes([buffer[2], buffer[3]]), 1000);
+        assert_eq!(u16::from_le_bytes([buffer[2], buffer[3]]), 1000);
         assert_eq!(
-            u32::from_be_bytes([buffer[4], buffer[5], buffer[6], buffer[7]]),
+            u32::from_le_bytes([buffer[4], buffer[5], buffer[6], buffer[7]]),
             1000000
         );
-        assert_eq!(buffer[8], 0b0000_0100,);
+        assert_eq!(buffer[8], 0b0000_0100);
         assert_eq!(
-            u32::from_be_bytes([buffer[10], buffer[11], buffer[12], buffer[13]]),
+            u32::from_le_bytes([buffer[10], buffer[11], buffer[12], buffer[13]]),
             1000000
         );
     }

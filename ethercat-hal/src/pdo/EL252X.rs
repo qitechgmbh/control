@@ -125,7 +125,7 @@ mod tests {
     fn test_enc_status() {
         // set all flags
         // set counter value to 0x12345678
-        let buffer = vec![0b0001_1100u8, 0b1010_0000u8, 0x12u8, 0x34u8, 0x56u8, 0x78u8];
+        let buffer = vec![0b0001_1100u8, 0b1010_0000u8, 0x78u8, 0x56u8, 0x34u8, 0x12u8];
         let bits = buffer.view_bits::<Lsb0>();
         let mut enc_status = EncStatus::default();
         enc_status.read(&bits);
@@ -156,7 +156,7 @@ mod tests {
             frequency_value: 0x1234,
         };
         pto_control.write(&mut bits);
-        assert_eq!(buffer, vec![0b0000_0111u8, 0u8, 0x12u8, 0x34u8])
+        assert_eq!(buffer, vec![0b0000_0111u8, 0u8, 0x34u8, 0x12u8])
     }
 
     #[test]
@@ -168,7 +168,7 @@ mod tests {
             target_counter_value: 0x12345678,
         };
         pto_target.write(&mut bits);
-        assert_eq!(buffer, vec![0x12u8, 0x34u8, 0x56u8, 0x78u8])
+        assert_eq!(buffer, vec![0x78u8, 0x56u8, 0x34u8, 0x12u8])
     }
 
     #[test]
@@ -184,7 +184,7 @@ mod tests {
         enc_control.write(&mut bits);
         assert_eq!(
             buffer,
-            vec![0b0000_0100u8, 0u8, 0x12u8, 0x34u8, 0x56u8, 0x78u8]
+            vec![0b0000_0100u8, 0u8, 0x78u8, 0x56u8, 0x34u8, 0x12u8]
         )
     }
 }

@@ -2,6 +2,7 @@ pub mod el1008;
 pub mod el2008;
 pub mod el2024;
 pub mod el2521;
+pub mod el2522;
 pub mod el2634;
 pub mod el2809;
 pub mod el3001;
@@ -14,6 +15,7 @@ use anyhow::anyhow;
 use bitvec::{order::Lsb0, slice::BitSlice};
 use el2008::EL2008;
 use el2024::EL2024;
+use el2522::EL2522;
 use el2634::EL2634;
 use el2809::EL2809;
 use ethercrab::{subdevice_group::Op, MainDevice, SubDeviceGroup, SubDevicePdi, SubDeviceRef};
@@ -115,8 +117,10 @@ fn device_from_subdevice<'maindevice, 'group, const PDI_LEN: usize>(
         "EL2024" => Ok(Arc::new(RwLock::new(EL2024::new()))),
         "EL2521" => Ok(Arc::new(RwLock::new(EL2521::new()))),
         "EL2521-0024" => Ok(Arc::new(RwLock::new(EL2521::new()))),
+        "EL2522" => Ok(Arc::new(RwLock::new(EL2522::new()))),
         "EL2634" => Ok(Arc::new(RwLock::new(EL2634::new()))),
         "EL2809" => Ok(Arc::new(RwLock::new(EL2809::new()))),
+        "EL3001" => Ok(Arc::new(RwLock::new(el3001::EL3001::new()))),
         // "EL4008" => Ok(Arc::new(RwLock::new(EL4008::new()))),
         "EL3204" => Ok(Arc::new(RwLock::new(EL3204::new()))),
         _ => Err(anyhow::anyhow!("No Driver: {}", name)),

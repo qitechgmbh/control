@@ -13,6 +13,7 @@ use crate::{
 pub struct EL3001 {
     pub input_ts: u64,
     pub txpdo: EL3001TxPdo,
+    pub configuration: EL3001Configuration,
 }
 
 impl EL3001 {
@@ -20,6 +21,7 @@ impl EL3001 {
         Self {
             input_ts: 0,
             txpdo: EL3001TxPdo::default(),
+            configuration: EL3001Configuration::default(),
         }
     }
 }
@@ -204,6 +206,30 @@ impl Configuration for EL3001Configuration {
             .write_config(device)
             .await?;
         Ok(())
+    }
+}
+
+impl Default for EL3001Configuration {
+    fn default() -> Self {
+        Self {
+            enable_user_scale: false,
+            presentation: EL3001Presentation::Signed,
+            siemens_bits: false,
+            enable_filter: true,
+            enable_limit_1: false,
+            enable_limit_2: false,
+            enable_user_calibration: false,
+            enable_vendor_calibration: true,
+            swap_limit_bits: false,
+            user_scale_offset: 0,
+            user_scale_gain: 65536,
+            limit_1: 0,
+            limit_2: 0,
+            filter_settings: EL3001FilterSettings::FIR50Hz,
+            user_calibration_offset: 0,
+            user_calibration_gain: 16384,
+            pdo_assignment: EL3001PdoPreset::Standard,
+        }
     }
 }
 
