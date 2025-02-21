@@ -1,7 +1,7 @@
 use std::{future::Future, pin::Pin, sync::Arc};
 use tokio::sync::RwLock;
 
-use crate::pdo::el32xx::TemperatureInputLimit;
+use crate::pdo::basic::Limit;
 
 pub struct TemperatureInput {
     pub state:
@@ -50,9 +50,9 @@ pub struct TemperatureInputInput {
     /// Over-voltage error
     pub overvoltage: bool,
     /// Configured limit 1
-    pub limit1: TemperatureInputLimit,
+    pub limit1: Limit,
     /// Configured limit 2
-    pub limit2: TemperatureInputLimit,
+    pub limit2: Limit,
     /// Error flag
     pub error: bool,
     /// if the TxPdu sstate is valid

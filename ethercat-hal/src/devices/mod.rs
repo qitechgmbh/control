@@ -4,6 +4,7 @@ pub mod el2024;
 pub mod el2521;
 pub mod el2634;
 pub mod el2809;
+pub mod el3001;
 pub mod el3204;
 // pub mod el4008;
 
@@ -113,6 +114,7 @@ fn device_from_subdevice<'maindevice, 'group, const PDI_LEN: usize>(
         "EL2008" => Ok(Arc::new(RwLock::new(EL2008::new()))),
         "EL2024" => Ok(Arc::new(RwLock::new(EL2024::new()))),
         "EL2521" => Ok(Arc::new(RwLock::new(EL2521::new()))),
+        "EL2521-0024" => Ok(Arc::new(RwLock::new(EL2521::new()))),
         "EL2634" => Ok(Arc::new(RwLock::new(EL2634::new()))),
         "EL2809" => Ok(Arc::new(RwLock::new(EL2809::new()))),
         // "EL4008" => Ok(Arc::new(RwLock::new(EL4008::new()))),

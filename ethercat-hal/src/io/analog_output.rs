@@ -1,8 +1,7 @@
-use std::sync::Arc;
-use tokio::sync::RwLock;
-
 use std::future::Future;
 use std::pin::Pin;
+use std::sync::Arc;
+use tokio::sync::RwLock;
 
 pub struct AnalogOutput {
     pub write: Box<dyn Fn(f32) -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>,

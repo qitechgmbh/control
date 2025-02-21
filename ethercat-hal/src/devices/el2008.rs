@@ -2,7 +2,6 @@ use ethercat_hal_derive::{Device, RxPdo, TxPdo};
 
 use crate::io::digital_output::{DigitalOutputDevice, DigitalOutputOutput, DigitalOutputState};
 use crate::pdo::basic::BoolPdoObject;
-use crate::pdo::RxPdoObject;
 use crate::types::EthercrabSubDevice;
 
 /// EL2008 8-channel digital output device

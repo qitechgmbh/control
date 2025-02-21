@@ -4,6 +4,7 @@ use crate::coe::Configuration;
 
 pub mod basic;
 pub mod el252x;
+pub mod el30xx;
 pub mod el32xx;
 
 pub trait PdoObject {
@@ -47,7 +48,7 @@ pub trait RxPdo: Configuration {
                 bit_offset += object.size();
             }
         }
-    }   
+    }
 }
 
 pub trait TxPdo: Configuration {

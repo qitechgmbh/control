@@ -1,0 +1,276 @@
+use crate::{
+    coe::Configuration,
+    pdo::{el30xx::AiStandard, PdoPreset, TxPdo},
+};
+use ethercat_hal_derive::{Device, RxPdo, TxPdo};
+
+use crate::{
+    io::analog_input::{AnalogInputDevice, AnalogInputInput, AnalogInputState},
+    types::EthercrabSubDevice,
+};
+
+#[derive(Debug, Device)]
+pub struct EL3001 {
+    pub input_ts: u64,
+    pub txpdo: EL3001TxPdo,
+}
+
+impl EL3001 {
+    pub fn new() -> Self {
+        Self {
+            input_ts: 0,
+            txpdo: EL3001TxPdo::default(),
+        }
+    }
+}
+
+impl AnalogInputDevice<EL3001Port> for EL3001 {
+    fn analog_output_state(&self, port: EL3001Port) -> AnalogInputState {
+        let value = match port {
+            EL3001Port::AI1 => self.txpdo.ai_standard.as_ref().unwrap().value,
+        };
+        let normalized = f32::from(value) / f32::from(i16::MAX);
+        let volts = normalized * 10.0;
+        AnalogInputState {
+            input_ts: self.input_ts,
+            input: AnalogInputInput {
+                normalized,
+                absolute: volts,
+            },
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum EL3001Port {
+    AI1,
+}
+
+#[derive(Debug, Clone, TxPdo, Default)]
+pub struct EL3001TxPdo {
+    #[pdo_object_index(0x1A00)]
+    pub ai_standard: Option<AiStandard>,
+}
+
+#[derive(Debug, Clone, RxPdo, Default)]
+pub struct EL3001RxPdo {}
+
+/// 0x8000 CoE
+#[derive(Debug, Clone)]
+pub struct EL3001Configuration {
+    /// # 0x8000:01
+    /// Enable user scale
+    ///
+    /// default: `false`
+    pub enable_user_scale: bool,
+
+    /// # 0x8000:02
+    /// Presentation
+    ///
+    /// default: `Signed`
+    pub presentation: EL3001Presentation,
+
+    /// # 0x8000:05
+    /// Siemens bits
+    ///
+    /// default: `false`
+    pub siemens_bits: bool,
+
+    /// # 0x8000:06
+    /// Enable filter
+    ///
+    /// default: `true`
+    pub enable_filter: bool,
+
+    /// # 0x8000:07
+    /// Enable limit 1
+    ///
+    /// default: `false`
+    pub enable_limit_1: bool,
+
+    /// # 0x8000:08
+    /// Enable limit 2
+    ///
+    /// default: `false`
+    pub enable_limit_2: bool,
+
+    /// # 0x8000:0A
+    /// Enable user calibration
+    ///
+    /// default: `false`
+    pub enable_user_calibration: bool,
+
+    /// # 0x8000:0B
+    /// Enable vendor calibration
+    ///
+    /// default: `true`
+    pub enable_vendor_calibration: bool,
+
+    /// # 0x8000:0E
+    /// Swap limit bits
+    ///
+    /// default: `false`
+    pub swap_limit_bits: bool,
+
+    /// # 0x8000:11
+    /// User scale offset
+    ///
+    /// default: `0`
+    pub user_scale_offset: i32,
+
+    /// # 0x8000:12
+    /// User scale gain
+    ///
+    /// default: `65536`
+    pub user_scale_gain: i32,
+
+    /// # 0x8000:13
+    /// Limit 1
+    ///
+    /// default: `0`
+    pub limit_1: i32,
+
+    /// # 0x8000:14
+    /// Limit 2
+    ///
+    /// default: `0`
+    pub limit_2: i32,
+
+    /// # 0x8000:15
+    /// Filter settings
+    ///
+    /// default: `50 Hz FIR`
+    pub filter_settings: EL3001FilterSettings,
+
+    /// # 0x8000:17
+    /// User calibration offset
+    ///
+    /// default: `0`
+    pub user_calibration_offset: i32,
+
+    /// # 0x8000:18
+    /// User calibration gain
+    ///
+    /// default: `16384`
+    pub user_calibration_gain: i32,
+
+    /// # 0x1400 & 0x1600
+    pub pdo_assignment: EL3001PdoPreset,
+}
+
+impl Configuration for EL3001Configuration {
+    async fn write_config<'a>(
+        &self,
+        device: &'a EthercrabSubDevice<'a>,
+    ) -> Result<(), anyhow::Error> {
+        device
+            .sdo_write(0x8000, 0x01, self.enable_user_scale)
+            .await?;
+        device
+            .sdo_write(0x8000, 0x02, u8::from(self.presentation))
+            .await?;
+        device.sdo_write(0x8000, 0x05, self.siemens_bits).await?;
+        device.sdo_write(0x8000, 0x06, self.enable_filter).await?;
+        device.sdo_write(0x8000, 0x07, self.enable_limit_1).await?;
+        device.sdo_write(0x8000, 0x08, self.enable_limit_2).await?;
+        device
+            .sdo_write(0x8000, 0x0A, self.enable_user_calibration)
+            .await?;
+        device
+            .sdo_write(0x8000, 0x0B, self.enable_vendor_calibration)
+            .await?;
+        device.sdo_write(0x8000, 0x0E, self.swap_limit_bits).await?;
+        device
+            .sdo_write(0x8000, 0x11, self.user_scale_offset)
+            .await?;
+        device.sdo_write(0x8000, 0x12, self.user_scale_gain).await?;
+        device.sdo_write(0x8000, 0x13, self.limit_1).await?;
+        device.sdo_write(0x8000, 0x14, self.limit_2).await?;
+        device
+            .sdo_write(0x8000, 0x15, u16::from(self.filter_settings))
+            .await?;
+        device
+            .sdo_write(0x8000, 0x17, self.user_calibration_offset)
+            .await?;
+        device
+            .sdo_write(0x8000, 0x18, self.user_calibration_gain)
+            .await?;
+        self.pdo_assignment
+            .txpdo_assignment()
+            .write_config(device)
+            .await?;
+        self.pdo_assignment
+            .rxpdo_assignment()
+            .write_config(device)
+            .await?;
+        Ok(())
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum EL3001PdoPreset {
+    Standard,
+    // Compact,
+}
+
+impl PdoPreset<EL3001TxPdo, EL3001RxPdo> for EL3001PdoPreset {
+    fn txpdo_assignment(&self) -> EL3001TxPdo {
+        match self {
+            EL3001PdoPreset::Standard => EL3001TxPdo::default(),
+        }
+    }
+
+    fn rxpdo_assignment(&self) -> EL3001RxPdo {
+        match self {
+            EL3001PdoPreset::Standard => EL3001RxPdo::default(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum EL3001Presentation {
+    Signed,
+    Unsigned,
+    SignedMagnitude,
+}
+
+impl From<EL3001Presentation> for u8 {
+    fn from(presentation: EL3001Presentation) -> Self {
+        match presentation {
+            EL3001Presentation::Signed => 0,
+            EL3001Presentation::Unsigned => 1,
+            EL3001Presentation::SignedMagnitude => 2,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum EL3001FilterSettings {
+    FIR50Hz,
+    FIR60Hz,
+    IIR1,
+    IIR2,
+    IIR3,
+    IIR4,
+    IIR5,
+    IIR6,
+    IIR7,
+    IIR8,
+}
+
+impl From<EL3001FilterSettings> for u16 {
+    fn from(filter_settings: EL3001FilterSettings) -> Self {
+        match filter_settings {
+            EL3001FilterSettings::FIR50Hz => 0,
+            EL3001FilterSettings::FIR60Hz => 1,
+            EL3001FilterSettings::IIR1 => 2,
+            EL3001FilterSettings::IIR2 => 3,
+            EL3001FilterSettings::IIR3 => 4,
+            EL3001FilterSettings::IIR4 => 5,
+            EL3001FilterSettings::IIR5 => 6,
+            EL3001FilterSettings::IIR6 => 7,
+            EL3001FilterSettings::IIR7 => 8,
+            EL3001FilterSettings::IIR8 => 9,
+        }
+    }
+}

@@ -5,7 +5,7 @@ use super::{basic::Limit, TxPdoObject};
 
 #[derive(Debug, Clone, Default, PdoObject, PartialEq)]
 #[pdo_object(bits = 32)]
-pub struct RtdInput {
+pub struct AiStandard {
     pub undervoltage: bool,
     pub overvoltage: bool,
     pub limit1: Limit,
@@ -13,12 +13,11 @@ pub struct RtdInput {
     pub error: bool,
     pub txpdo_state: bool,
     pub txpdo_toggle: bool,
-    pub temperature: f32,
+    pub value: i16,
 }
 
-impl TxPdoObject for RtdInput {
+impl TxPdoObject for AiStandard {
     fn read(&mut self, bits: &BitSlice<u8, Lsb0>) {
-        self.temperature = (bits[16..16 + 16].load_le::<i16>() as f32) / 10.0;
         self.undervoltage = bits[0];
         self.overvoltage = bits[1];
         self.limit1 = bits[2..4].load_le::<u8>().into();
@@ -26,5 +25,6 @@ impl TxPdoObject for RtdInput {
         self.error = bits[7];
         self.txpdo_state = bits[8 + 6];
         self.txpdo_toggle = bits[8 + 7];
+        self.value = bits[16..16 + 16].load_le::<i16>();
     }
 }
