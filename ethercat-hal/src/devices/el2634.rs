@@ -23,14 +23,13 @@ impl EL2634 {
 }
 
 impl DigitalOutputDevice<EL2634Port> for EL2634 {
-    fn digital_output_write(&mut self, _port: EL2634Port, value: bool) {
-        let _pdu = match value {
-            true => 0b1,
-            false => 0b0,
-        };
-        todo!();
-        // let bit_index = port.to_bit_index();
-        // self.output_pdus[0] = (self.output_pdus[0] & !(1 << bit_index)) | (pdu << bit_index);
+    fn digital_output_write(&mut self, port: EL2634Port, value: bool) {
+        match port {
+            EL2634Port::R1 => self.rxpdu.channel1.as_mut().unwrap().value = value,
+            EL2634Port::R2 => self.rxpdu.channel2.as_mut().unwrap().value = value,
+            EL2634Port::R3 => self.rxpdu.channel3.as_mut().unwrap().value = value,
+            EL2634Port::R4 => self.rxpdu.channel4.as_mut().unwrap().value = value,
+        }
     }
 
     fn digital_output_state(&self, port: EL2634Port) -> DigitalOutputState {

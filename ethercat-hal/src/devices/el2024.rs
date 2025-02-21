@@ -23,14 +23,13 @@ impl EL2024 {
 }
 
 impl DigitalOutputDevice<EL2024Port> for EL2024 {
-    fn digital_output_write(&mut self, _port: EL2024Port, value: bool) {
-        let _pdu = match value {
-            true => 0b1,
-            false => 0b0,
-        };
-        todo!();
-        // let bit_index = port.to_bit_index();
-        // self.output_pdus[0] = (self.output_pdus[0] & !(1 << bit_index)) | (pdu << bit_index);
+    fn digital_output_write(&mut self, port: EL2024Port, value: bool) {
+        match port {
+            EL2024Port::DO1 => self.rxpdu.channel1.as_mut().unwrap().value = value,
+            EL2024Port::DO2 => self.rxpdu.channel2.as_mut().unwrap().value = value,
+            EL2024Port::DO3 => self.rxpdu.channel3.as_mut().unwrap().value = value,
+            EL2024Port::DO4 => self.rxpdu.channel4.as_mut().unwrap().value = value,
+        }
     }
 
     fn digital_output_state(&self, port: EL2024Port) -> DigitalOutputState {

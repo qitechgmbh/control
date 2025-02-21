@@ -2,6 +2,7 @@ use ethercat_hal_derive::{Device, RxPdo, TxPdo};
 
 use crate::io::digital_output::{DigitalOutputDevice, DigitalOutputOutput, DigitalOutputState};
 use crate::pdo::basic::BoolPdoObject;
+use crate::pdo::RxPdoObject;
 use crate::types::EthercrabSubDevice;
 
 /// EL2008 8-channel digital output device
@@ -23,14 +24,17 @@ impl EL2008 {
 }
 
 impl DigitalOutputDevice<EL2008Port> for EL2008 {
-    fn digital_output_write(&mut self, _port: EL2008Port, value: bool) {
-        let _pdu = match value {
-            true => 0b1,
-            false => 0b0,
-        };
-        todo!();
-        // let bit_index = port.to_bit_index();
-        // self.output_pdus[0] = (self.output_pdus[0] & !(1 << bit_index)) | (pdu << bit_index);
+    fn digital_output_write(&mut self, port: EL2008Port, value: bool) {
+        match port {
+            EL2008Port::DO1 => self.rxpdu.channel1.as_mut().unwrap().value = value,
+            EL2008Port::DO2 => self.rxpdu.channel2.as_mut().unwrap().value = value,
+            EL2008Port::DO3 => self.rxpdu.channel3.as_mut().unwrap().value = value,
+            EL2008Port::DO4 => self.rxpdu.channel4.as_mut().unwrap().value = value,
+            EL2008Port::DO5 => self.rxpdu.channel5.as_mut().unwrap().value = value,
+            EL2008Port::DO6 => self.rxpdu.channel6.as_mut().unwrap().value = value,
+            EL2008Port::DO7 => self.rxpdu.channel7.as_mut().unwrap().value = value,
+            EL2008Port::DO8 => self.rxpdu.channel8.as_mut().unwrap().value = value,
+        }
     }
 
     fn digital_output_state(&self, port: EL2008Port) -> DigitalOutputState {

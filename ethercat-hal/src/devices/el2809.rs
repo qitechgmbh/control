@@ -23,14 +23,25 @@ impl EL2809 {
 }
 
 impl DigitalOutputDevice<EL2809Port> for EL2809 {
-    fn digital_output_write(&mut self, _port: EL2809Port, value: bool) {
-        let _pdu = match value {
-            true => 0b1,
-            false => 0b0,
-        };
-        todo!();
-        // let bit_index = port.to_bit_index();
-        // self.output_pdus[0] = (self.output_pdus[0] & !(1 << bit_index)) | (pdu << bit_index);
+    fn digital_output_write(&mut self, port: EL2809Port, value: bool) {
+        match port {
+            EL2809Port::DO1 => self.rxpdu.channel1.as_mut().unwrap().value = value,
+            EL2809Port::DO2 => self.rxpdu.channel2.as_mut().unwrap().value = value,
+            EL2809Port::DO3 => self.rxpdu.channel3.as_mut().unwrap().value = value,
+            EL2809Port::DO4 => self.rxpdu.channel4.as_mut().unwrap().value = value,
+            EL2809Port::DO5 => self.rxpdu.channel5.as_mut().unwrap().value = value,
+            EL2809Port::DO6 => self.rxpdu.channel6.as_mut().unwrap().value = value,
+            EL2809Port::DO7 => self.rxpdu.channel7.as_mut().unwrap().value = value,
+            EL2809Port::DO8 => self.rxpdu.channel8.as_mut().unwrap().value = value,
+            EL2809Port::DO9 => self.rxpdu.channel9.as_mut().unwrap().value = value,
+            EL2809Port::DO10 => self.rxpdu.channel10.as_mut().unwrap().value = value,
+            EL2809Port::DO11 => self.rxpdu.channel11.as_mut().unwrap().value = value,
+            EL2809Port::DO12 => self.rxpdu.channel12.as_mut().unwrap().value = value,
+            EL2809Port::DO13 => self.rxpdu.channel13.as_mut().unwrap().value = value,
+            EL2809Port::DO14 => self.rxpdu.channel14.as_mut().unwrap().value = value,
+            EL2809Port::DO15 => self.rxpdu.channel15.as_mut().unwrap().value = value,
+            EL2809Port::DO16 => self.rxpdu.channel16.as_mut().unwrap().value = value,
+        }
     }
 
     fn digital_output_state(&self, port: EL2809Port) -> DigitalOutputState {

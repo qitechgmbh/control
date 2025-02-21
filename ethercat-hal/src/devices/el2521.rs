@@ -83,7 +83,7 @@ impl PulseTrainOutputDevice<EL2521Port> for EL2521 {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub enum EL2521Port {
     PTO1,
 }
