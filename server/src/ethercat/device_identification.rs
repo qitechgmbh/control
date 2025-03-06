@@ -3,187 +3,56 @@ use std::fmt::Display;
 use anyhow::anyhow;
 use anyhow::Error;
 use ethercat_hal::types::EthercrabSubDevice;
-use ethercrab::{SubDevice, SubDeviceRef};
+use ethercat_hal::types::EthercrabSubDeviceOperational;
+use ethercat_hal::types::EthercrabSubDevicePreoperational;
+use ethercrab::MainDevice;
 use futures::executor::block_on;
+use serde::Deserialize;
+use serde::Serialize;
 
-#[derive(Debug, PartialEq, Default)]
-pub struct DeviceGroup {
+use super::config::PDI_LEN;
+
+/// Identifies a machine
+#[derive(Debug, PartialEq, Default, Clone, Serialize, Deserialize)]
+pub struct MachineIdentification {
     pub vendor: u32,
     pub serial: u32,
     pub machine: u32,
 }
 
-impl Display for DeviceGroup {
+impl Display for MachineIdentification {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "{:08x}-{:08x}-{:08x}",
+            "vendor: 0x{:08x}, serial: 0x{:08x}, machine: 0x{:08x}",
             self.vendor, self.serial, self.machine
         )
     }
 }
 
-#[derive(Debug)]
-pub struct DeviceGroupDevice {
-    pub machine_identification: DeviceGroup,
-    pub devices: Vec<(usize, u32)>,
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MachineDeviceIdentification {
+    pub machine_identification: MachineIdentification,
+    pub role: u32,
+    pub subdevice_index: usize,
 }
 
-impl Display for DeviceGroupDevice {
+impl Display for MachineDeviceIdentification {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "{:?} - {} devices",
-            self.machine_identification,
-            self.devices.len()
+            "{} role: 0x{:08x} subdevice_index: {}",
+            self.machine_identification, self.role, self.subdevice_index
         )
     }
-}
-
-/// reads the EEPROM of all subdevices and groups them by machine identification
-///
-/// Return 0: Vec<DeviceGroupDevice> - a vector of devices grouped by machine identification
-/// Return 1: Vec<(usize, MachineDeviceIdentification)> - a vector of devices that could not be identified
-pub async fn group_devices<'maindevice>(
-    subdevices: &'maindevice [EthercrabSubDevice<'maindevice>],
-) -> Result<
-    (
-        Vec<DeviceGroupDevice>,
-        Vec<(usize, MachineDeviceIdentification)>,
-    ),
-    Error,
-> {
-    let mut device_groups: Vec<DeviceGroupDevice> = Vec::new();
-    let mut unidentified_devices: Vec<(usize, MachineDeviceIdentification)> = Vec::new();
-
-    for (i, subdevice) in subdevices.iter().enumerate() {
-        let mdid = machine_device_identification(subdevice).await?;
-
-        // if vendor or serial or machine is 0, it is not a valid machine device
-        if mdid.machine_identification == DeviceGroup::default() {
-            unidentified_devices.push((i, mdid));
-            continue;
-        }
-
-        let mut found = false;
-        for machine in device_groups.iter_mut() {
-            if machine.machine_identification == mdid.machine_identification {
-                machine.devices.push((i, mdid.device));
-                found = true;
-                break;
-            }
-        }
-        if !found {
-            device_groups.push(DeviceGroupDevice {
-                machine_identification: mdid.machine_identification,
-                devices: vec![(i, mdid.device)],
-            });
-        }
-    }
-
-    Ok((device_groups, unidentified_devices))
-}
-
-#[derive(Debug)]
-pub struct MachineDeviceIdentification {
-    machine_identification: DeviceGroup,
-    device: u32,
-}
-
-/// Reads the machine device identification from the EEPROM
-pub async fn machine_device_identification<'maindevice>(
-    subdevice: &'maindevice EthercrabSubDevice<'maindevice>,
-) -> Result<MachineDeviceIdentification, Error> {
-    let eeprom = subdevice.eeprom();
-    let addresses = get_identification_addresses(subdevice)?;
-    Ok(MachineDeviceIdentification {
-        machine_identification: DeviceGroup {
-            vendor: words_to_u32be(
-                eeprom.read(addresses.vendor_word).await.unwrap(),
-                eeprom.read(addresses.vendor_word + 1).await.unwrap(),
-            ),
-            serial: words_to_u32be(
-                eeprom.read(addresses.serial_word).await.unwrap(),
-                eeprom.read(addresses.serial_word + 1).await.unwrap(),
-            ),
-            machine: words_to_u32be(
-                eeprom.read(addresses.machine_word).await.unwrap(),
-                eeprom.read(addresses.machine_word + 1).await.unwrap(),
-            ),
-        },
-        device: words_to_u32be(
-            eeprom.read(addresses.device_word).await.unwrap(),
-            eeprom.read(addresses.device_word + 1).await.unwrap(),
-        ),
-    })
-}
-
-/// Writes the machine device identification to the EEPROM
-pub async fn write_machine_device_identification<'maindevice>(
-    subdevice: &'maindevice EthercrabSubDevice<'maindevice>,
-    identification: MachineDeviceIdentification,
-) -> Result<(), Error> {
-    let eeprom = subdevice.eeprom();
-    let addresses = get_identification_addresses(subdevice)?;
-    eeprom
-        .write(
-            addresses.vendor_word,
-            identification.machine_identification.vendor as u16,
-        )
-        .await?;
-    eeprom
-        .write(
-            addresses.vendor_word + 1,
-            (identification.machine_identification.vendor >> 16) as u16,
-        )
-        .await?;
-    eeprom
-        .write(
-            addresses.serial_word,
-            identification.machine_identification.serial as u16,
-        )
-        .await?;
-    eeprom
-        .write(
-            addresses.serial_word + 1,
-            (identification.machine_identification.serial >> 16) as u16,
-        )
-        .await?;
-    eeprom
-        .write(
-            addresses.machine_word,
-            identification.machine_identification.machine as u16,
-        )
-        .await?;
-    eeprom
-        .write(
-            addresses.machine_word + 1,
-            (identification.machine_identification.machine >> 16) as u16,
-        )
-        .await?;
-    eeprom
-        .write(addresses.device_word, identification.device as u16)
-        .await?;
-    eeprom
-        .write(
-            addresses.device_word + 1,
-            (identification.device >> 16) as u16,
-        )
-        .await?;
-    Ok(())
-}
-
-/// Converts two u16 words to a u32 big endian
-fn words_to_u32be(word_low: u16, word_high: u16) -> u32 {
-    ((word_high as u32) << 16) | word_low as u32
 }
 
 #[derive(Debug)]
 pub struct MachineDeviceIdentificationAddresses {
-    vendor_word: u16,
-    serial_word: u16,
-    machine_word: u16,
-    device_word: u16,
+    pub vendor_word: u16,
+    pub serial_word: u16,
+    pub machine_word: u16,
+    pub role_word: u16,
 }
 
 impl MachineDeviceIdentificationAddresses {
@@ -192,7 +61,7 @@ impl MachineDeviceIdentificationAddresses {
             vendor_word,
             serial_word,
             machine_word,
-            device_word,
+            role_word: device_word,
         }
     }
 }
@@ -207,15 +76,188 @@ impl Default for MachineDeviceIdentificationAddresses {
             // 0x002c to 0x002d BE
             machine_word: 0x002c,
             // 0x002e to 0x002f BE
-            device_word: 0x002e,
+            role_word: 0x002e,
         }
     }
 }
 
+/// reads the EEPROM of all subdevices and groups them by machine identification
+///
+/// Return 0: Vec<DeviceGroupDevice> - a vector of devices grouped by machine identification
+/// Return 1: Vec<(usize, MachineDeviceIdentification)> - a vector of devices that could not be identified
+pub async fn group_devices<'maindevice, 'subdevice>(
+    subdevices: &'maindevice [EthercrabSubDevicePreoperational<'maindevice>],
+    maindevice: &MainDevice<'_>,
+) -> Result<
+    (
+        Vec<Vec<MachineDeviceIdentification>>,
+        Vec<MachineDeviceIdentification>,
+    ),
+    Error,
+> {
+    let mut device_groups: Vec<Vec<MachineDeviceIdentification>> = Vec::new();
+    // 0: subdevice index 1: machine device identification
+    let mut unidentified_devices: Vec<MachineDeviceIdentification> = Vec::new();
+
+    for (subdevice_index, subdevice) in subdevices.iter().enumerate() {
+        let mdid = machine_device_identification(
+            &EthercrabSubDevice::Preoperational(subdevice),
+            subdevice_index,
+            maindevice,
+        )
+        .await?;
+
+        // if vendor or serial or machine is 0, it is not a valid machine device
+        if mdid.machine_identification == MachineIdentification::default() {
+            unidentified_devices.push(mdid);
+            continue;
+        }
+
+        let mut found = false;
+        for device_group in device_groups.iter_mut() {
+            if device_group.first().map(|d| &d.machine_identification)
+                == Some(&mdid.machine_identification)
+            {
+                device_group.push(mdid.clone());
+                found = true;
+                break;
+            }
+        }
+        if !found {
+            device_groups.push(vec![mdid]);
+        }
+    }
+
+    Ok((device_groups, unidentified_devices))
+}
+
+/// Reads the machine device identification from the EEPROM
+pub async fn machine_device_identification<'maindevice, 'subdevice>(
+    subdevice: &'maindevice EthercrabSubDevice<'maindevice, 'subdevice, PDI_LEN>,
+    subdevice_index: usize,
+    maindevice: &MainDevice<'_>,
+) -> Result<MachineDeviceIdentification, Error> {
+    let addresses = get_identification_addresses(subdevice, maindevice)?;
+    Ok(MachineDeviceIdentification {
+        machine_identification: MachineIdentification {
+            vendor: words_to_u32be(
+                subdevice
+                    .eeprom_read(maindevice, addresses.vendor_word)
+                    .await
+                    .unwrap(),
+                subdevice
+                    .eeprom_read(maindevice, addresses.vendor_word + 1)
+                    .await
+                    .unwrap(),
+            ),
+            serial: words_to_u32be(
+                subdevice
+                    .eeprom_read(maindevice, addresses.serial_word)
+                    .await
+                    .unwrap(),
+                subdevice
+                    .eeprom_read(maindevice, addresses.serial_word + 1)
+                    .await
+                    .unwrap(),
+            ),
+            machine: words_to_u32be(
+                subdevice
+                    .eeprom_read(maindevice, addresses.machine_word)
+                    .await
+                    .unwrap(),
+                subdevice
+                    .eeprom_read(maindevice, addresses.machine_word + 1)
+                    .await
+                    .unwrap(),
+            ),
+        },
+        role: words_to_u32be(
+            subdevice
+                .eeprom_read(maindevice, addresses.role_word)
+                .await
+                .unwrap(),
+            subdevice
+                .eeprom_read(maindevice, addresses.role_word + 1)
+                .await
+                .unwrap(),
+        ),
+        subdevice_index: subdevice_index,
+    })
+}
+
+/// Writes the machine device identification to the EEPROM
+pub async fn write_machine_device_identification<'maindevice>(
+    subdevice: &'maindevice EthercrabSubDeviceOperational<'maindevice, PDI_LEN>,
+    maindevice: &MainDevice<'_>,
+    identification: &MachineDeviceIdentification,
+) -> Result<(), Error> {
+    let addresses =
+        get_identification_addresses(&EthercrabSubDevice::Operational(subdevice), maindevice)?;
+    subdevice
+        .eeprom_write_dangerously(
+            maindevice,
+            addresses.vendor_word,
+            identification.machine_identification.vendor as u16,
+        )
+        .await?;
+    subdevice
+        .eeprom_write_dangerously(
+            maindevice,
+            addresses.vendor_word + 1,
+            (identification.machine_identification.vendor >> 16) as u16,
+        )
+        .await?;
+    subdevice
+        .eeprom_write_dangerously(
+            maindevice,
+            addresses.serial_word,
+            identification.machine_identification.serial as u16,
+        )
+        .await?;
+    subdevice
+        .eeprom_write_dangerously(
+            maindevice,
+            addresses.serial_word + 1,
+            (identification.machine_identification.serial >> 16) as u16,
+        )
+        .await?;
+    subdevice
+        .eeprom_write_dangerously(
+            maindevice,
+            addresses.machine_word,
+            identification.machine_identification.machine as u16,
+        )
+        .await?;
+    subdevice
+        .eeprom_write_dangerously(
+            maindevice,
+            addresses.machine_word + 1,
+            (identification.machine_identification.machine >> 16) as u16,
+        )
+        .await?;
+    subdevice
+        .eeprom_write_dangerously(maindevice, addresses.role_word, identification.role as u16)
+        .await?;
+    subdevice
+        .eeprom_write_dangerously(
+            maindevice,
+            addresses.role_word + 1,
+            (identification.role >> 16) as u16,
+        )
+        .await?;
+    Ok(())
+}
+
+/// Converts two u16 words to a u32 big endian
+fn words_to_u32be(word_low: u16, word_high: u16) -> u32 {
+    ((word_high as u32) << 16) | word_low as u32
+}
+
 /// Returns the EEPROM addresses for the machine device identification
 /// based on the subdevice's identity
-pub fn get_identification_addresses(
-    subdevice: &EthercrabSubDevice,
+pub fn get_identification_addresses<'subdevice>(
+    subdevice: &EthercrabSubDevice<'_, 'subdevice, PDI_LEN>,
+    maindevice: &MainDevice<'_>,
 ) -> Result<MachineDeviceIdentificationAddresses, Error> {
     let identity = subdevice.identity();
     let identity_tuple = (identity.vendor_id, identity.product_id, identity.revision);
@@ -223,10 +265,15 @@ pub fn get_identification_addresses(
     Ok(match identity_tuple {
         (BECKHOFF, EK1100, 0x00120000) => MachineDeviceIdentificationAddresses::default(),
         (BECKHOFF, EL1008, 0x00110000) => MachineDeviceIdentificationAddresses::default(),
+        (BECKHOFF, EL2002, 0x00110000) => MachineDeviceIdentificationAddresses::default(),
         (BECKHOFF, EL2008, 0x00110000) => MachineDeviceIdentificationAddresses::default(),
+        (BECKHOFF, EL3001, 0x00160000) => MachineDeviceIdentificationAddresses::default(),
         (BECKHOFF, EL4008, 0x00140000) => MachineDeviceIdentificationAddresses::default(),
         (BECKHOFF, EL3204, 0x00150000) => MachineDeviceIdentificationAddresses::default(),
-        (BECKHOFF, EL2521, 0x03fe0000) => MachineDeviceIdentificationAddresses::default(),
+        (BECKHOFF, EL2521, 0x03fe0000 | 0x03f90000 | 0x03f80018) => {
+            MachineDeviceIdentificationAddresses::default()
+        }
+        (BECKHOFF, EL2522, 0x00160000) => MachineDeviceIdentificationAddresses::default(),
         _ => {
             log::error!(
                 "Unknown MDI addresses for device {:?} vendor: 0x{:08x} product: 0x{:08x} revision: 0x{:08x}",
@@ -235,7 +282,7 @@ pub fn get_identification_addresses(
                 identity.product_id,
                 identity.revision
             );
-            block_on(u16dump(&subdevice, 0x00, 0xff))?;
+            block_on(u16dump(&subdevice, maindevice, 0x00, 0xff))?;
             Err(anyhow!(
             "Unknown MDI addresses for device {:?} vendor: 0x{:08x} product: 0x{:08x} revision: 0x{:08x}",
             subdevice.name(),
@@ -253,20 +300,23 @@ const BECKHOFF: u32 = 0x00000002;
 // === PRODUCTS ===
 const EK1100: u32 = 0x044c2c52;
 const EL1008: u32 = 0x03f03052;
+const EL2002: u32 = 0x07d23052;
 const EL2008: u32 = 0x07d83052;
+const EL3001: u32 = 0x0bb93052;
 const EL4008: u32 = 0x0fa83052;
 const EL3204: u32 = 0x0c843052;
 const EL2521: u32 = 0x09d93052;
+const EL2522: u32 = 0x09da3052;
 
-async fn u16dump<'maindevice, 'group>(
-    subdevice: &SubDeviceRef<'maindevice, &SubDevice>,
+async fn u16dump<'maindevice, 'grou, 'subdevice>(
+    subdevice: &EthercrabSubDevice<'maindevice, 'subdevice, PDI_LEN>,
+    maindevice: &MainDevice<'_>,
     start_word: u16,
     end_word: u16,
 ) -> Result<(), Error> {
-    let eeprom = subdevice.eeprom();
     let mut words: Vec<u16> = Vec::new();
     for word in start_word..end_word {
-        words.push(eeprom.read(word).await?);
+        words.push(subdevice.eeprom_read(maindevice, word).await?);
     }
 
     u16print(start_word, end_word, words);

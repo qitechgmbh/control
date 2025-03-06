@@ -3,7 +3,7 @@ use ethercat_hal_derive::{Device, RxPdo, TxPdo};
 use crate::io::digital_input::{DigitalInputDevice, DigitalInputInput, DigitalInputState};
 use crate::pdo::basic::BoolPdoObject;
 use crate::pdo::PdoPreset;
-use crate::types::EthercrabSubDevice;
+use crate::types::EthercrabSubDevicePreoperational;
 
 /// EL1008 8-channel digital input device
 ///

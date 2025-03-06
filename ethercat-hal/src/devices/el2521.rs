@@ -8,7 +8,7 @@ use crate::{
         el252x::{EncControl, EncStatus, PtoControl, PtoStatus, PtoTarget},
         PdoPreset, RxPdo, TxPdo,
     },
-    types::EthercrabSubDevice,
+    types::EthercrabSubDevicePreoperational,
 };
 use anyhow::Ok;
 use ethercat_hal_derive::{Device, RxPdo, TxPdo};
@@ -263,7 +263,7 @@ impl From<EL2521OperatingMode> for u8 {
 impl Configuration for EL2521Configuration {
     async fn write_config<'a>(
         &self,
-        device: &'a EthercrabSubDevice<'a>,
+        device: &'a EthercrabSubDevicePreoperational<'a>,
     ) -> Result<(), anyhow::Error> {
         device
             .sdo_write(0x8010, 0x02, self.emergency_ramp_active)

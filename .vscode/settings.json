@@ -1,3 +1,5 @@
 {
-    "typescript.inlayHints.enumMemberValues.enabled": false
+    "typescript.inlayHints.enumMemberValues.enabled": false,
+     "git.detectSubmodules": true,
+     "git.detectSubmodulesLimit": 10,
 }

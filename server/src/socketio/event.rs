@@ -5,7 +5,7 @@ use socketioxide_core::adapter::RoomParam;
 
 use crate::app_state::APP_STATE;
 
-use super::messages::ethercat_devices_event::EthercatDevicesEvent;
+use super::events::ethercat_devices_event::EthercatDevicesEvent;
 
 #[derive(Debug, Clone)]
 pub enum EventType {

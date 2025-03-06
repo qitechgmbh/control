@@ -1,6 +1,5 @@
-"use client";
-
 import { MessageResponse } from "@/hooks/useSocketio";
+import React from "react";
 import { useEffect, useState } from "react";
 
 type Props = {
@@ -8,7 +7,6 @@ type Props = {
 };
 
 function formatMilliseconds(milliseconds: number) {
-  console.log("ms", milliseconds);
   if (milliseconds < 1000) {
     return `Now`;
   } else if (milliseconds < 60000) {
@@ -44,20 +42,20 @@ export function RefreshIndicator({ messageResponse }: Props) {
   }, []);
 
   return (
-    <div className="flex items-center gap-1.5 px-3 p-0.5 bg-neutral-100 rounded-full w-fit">
+    <div className="flex w-fit items-center gap-1.5 rounded-full bg-neutral-100 p-0.5 px-3">
       <div
-        className={`w-2.5 h-2.5 rounded-full ${
+        className={`h-2.5 w-2.5 rounded-full ${
           messageResponse.status === "no_data"
             ? "bg-neutral-400"
             : messageResponse.status === "error"
-            ? "bg-red-500"
-            : messageResponse.status === "warning"
-            ? "bg-yellow-500"
-            : "bg-green-500 animate-[pulse_500ms_ease-in-out]"
+              ? "bg-red-500"
+              : messageResponse.status === "warning"
+                ? "bg-yellow-500"
+                : "animate-[pulse_500ms_ease-in-out] bg-green-500"
         }`}
       />
       <span
-        className={`text-neutral-500 text-xs ${
+        className={`text-xs text-neutral-500 ${
           messageResponse.status !== "no_data" &&
           "animate-[colorFadeToGray_250ms_ease-in-out_forwards]"
         }`}
@@ -65,10 +63,10 @@ export function RefreshIndicator({ messageResponse }: Props) {
         {messageResponse.status === "no_data"
           ? "Loading"
           : messageResponse.status === "error"
-          ? messageResponse.error
-          : messageResponse.status === "warning"
-          ? messageResponse.warning
-          : formatMilliseconds(now - messageResponse.ts)}
+            ? messageResponse.error
+            : messageResponse.status === "warning"
+              ? messageResponse.warning
+              : formatMilliseconds(now - messageResponse.ts)}
       </span>
     </div>
   );

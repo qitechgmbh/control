@@ -2,8 +2,7 @@ import { Page } from "@/components/Page";
 import { RefreshIndicator } from "@/components/RefreshIndicator";
 import { SectionTitle } from "@/components/SectionTitle";
 import { MyTable } from "@/components/Table";
-import { Button } from "@/components/ui/button";
-import { Bool, EthercatVendorId, Hex, Unit } from "@/components/Value";
+import { EthercatVendorId, Hex, Value } from "@/components/Value";
 import {
   EthercatDevicesEvent,
   useSocketioEthercatDevicesEvent,
@@ -13,66 +12,90 @@ import {
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import React from "react";
+import React, { useMemo } from "react";
+import { DeviceEepromDialog } from "./DeviceEepromDialog";
+import { getMachinePreset } from "@/machines/types";
+import { DeviceRoleComponent } from "@/components/DeviceRole";
 
 export const columns: ColumnDef<EthercatDevicesEvent["devices"][0]>[] = [
   {
-    accessorKey: "address",
+    accessorKey: "configured_address",
     header: "Adresse",
-    cell: (row) => <Hex value={row.row.original.address} />,
-  },
-  {
-    accessorKey: "alias_address",
-    header: "Alias Adresse",
-    cell: (row) => <Hex value={row.row.original.alias_address} />,
+    cell: (row) => <Hex value={row.row.original.configured_address} />,
   },
   {
     accessorKey: "name",
-    header: "Name",
+    header: "Gerät",
     cell: (row) => <div>{row.row.original.name}</div>,
   },
-
   {
     accessorKey: "vendor_id",
-    header: "Vendor",
+    header: "Hersteller",
     cell: (row) => <EthercatVendorId value={row.row.original.vendor_id} />,
   },
   {
-    accessorKey: "vendor_product_id",
-    header: "Product ID",
+    accessorKey: "product_id",
+    header: "Produkt ID",
     cell: (row) => <Hex value={row.row.original.product_id} />,
   },
   {
-    accessorKey: "vendor_revision",
-    header: "product Revision",
+    accessorKey: "revision",
+    header: "Revision",
     cell: (row) => <Hex value={row.row.original.revision} />,
   },
   {
-    accessorKey: "vendor_serial",
-    header: "Serial",
-    cell: (row) => <Hex value={row.row.original.serial} />,
+    accessorKey: "qitech_machine",
+    header: "Maschine",
+    cell: (row) => {
+      const machine_identification =
+        row.row.original.machine_device_identification?.machine_identification;
+      if (!machine_identification) {
+        return "—";
+      }
+      return getMachinePreset(machine_identification)?.name ?? "UNKNOWN";
+    },
   },
   {
-    accessorKey: "dc_support",
-    header: "Distributed Clocks",
-    cell: (row) => <Bool value={row.row.original.dc_support} />,
+    accessorKey: "qitech_serial",
+    header: "Seriennummer",
+    cell: (row) => {
+      const serial =
+        row.row.original.machine_device_identification?.machine_identification
+          .serial;
+      if (!serial) {
+        return "—";
+      }
+      return <Value value={serial} />;
+    },
   },
   {
-    accessorKey: "propagation_delay",
-    header: "Delay",
+    accessorKey: "qitech_role",
+    header: "Rolle",
+    cell: (row) => {
+      const role = row.row.original.machine_device_identification?.role;
+      const machine_identification =
+        row.row.original.machine_device_identification?.machine_identification;
+      if (!machine_identification) {
+        return "—";
+      }
+      const machinePreset = getMachinePreset(machine_identification);
+      const deviceRole = machinePreset?.device_roles.find(
+        (device_role) => device_role.role === role,
+      );
+      if (!deviceRole) {
+        return "UNKNOWN " + role;
+      }
+
+      return <DeviceRoleComponent device_role={deviceRole} />;
+    },
+  },
+  {
+    accessorKey: "eeprom",
+    header: "Maschinenzuweisung",
     cell: (row) => (
-      <Unit value={row.row.original.propagation_delay} unit="ns" />
-    ),
-  },
-  {
-    accessorKey: "details",
-    header: "Details",
-    cell: (_) => (
-      <Button>
-        {/* <Link href={`ethercat/${row.row.original.address.toString(16)}`}>
-          Details
-        </Link> */}
-      </Button>
+      <>
+        <DeviceEepromDialog device={row.row.original} />
+      </>
     ),
   },
 ];
@@ -80,7 +103,9 @@ export const columns: ColumnDef<EthercatDevicesEvent["devices"][0]>[] = [
 export function DevicesPage() {
   const deviceMessage = useSocketioEthercatDevicesEvent();
 
-  const data = deviceMessage.data?.devices || [];
+  const data = useMemo(() => {
+    return deviceMessage.data?.devices || [];
+  }, [deviceMessage]);
 
   const table = useReactTable({
     data,
@@ -90,10 +115,15 @@ export function DevicesPage() {
 
   return (
     <Page title="EtherCAT">
+      <p>
+        Maschine, Maschinen Seriennummer, Rolle sind QiTech spezifische Werte
+        die in den EEPROM geschrieben werden um Maschinen als Einheit zu
+        identifizieren.
+      </p>
       <SectionTitle title="Geräte">
         <RefreshIndicator messageResponse={deviceMessage} />
       </SectionTitle>
-      <MyTable table={table} />
+      <MyTable table={table} key={data.toString()} />
     </Page>
   );
 }

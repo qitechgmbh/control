@@ -1,3 +1,3 @@
 [submodule "ethercrab"]
-	path = other/ethercrab
+	path = ethercrab
 	url = https://github.com/qitechgmbh/ethercrab.git

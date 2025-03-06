@@ -6,7 +6,7 @@ use ethercat_hal_derive::{Device, RxPdo, TxPdo};
 
 use crate::{
     io::analog_input::{AnalogInputDevice, AnalogInputInput, AnalogInputState},
-    types::EthercrabSubDevice,
+    types::EthercrabSubDevicePreoperational,
 };
 
 #[derive(Debug, Device)]
@@ -163,7 +163,7 @@ pub struct EL3001Configuration {
 impl Configuration for EL3001Configuration {
     async fn write_config<'a>(
         &self,
-        device: &'a EthercrabSubDevice<'a>,
+        device: &'a EthercrabSubDevicePreoperational<'a>,
     ) -> Result<(), anyhow::Error> {
         device
             .sdo_write(0x8000, 0x01, self.enable_user_scale)

@@ -1,10 +1,10 @@
-use crate::types::EthercrabSubDevice;
+use crate::types::EthercrabSubDevicePreoperational;
 
 pub trait Configuration {
     #[allow(async_fn_in_trait)]
     async fn write_config<'a>(
         &self,
-        device: &'a EthercrabSubDevice<'a>,
+        device: &'a EthercrabSubDevicePreoperational<'a>,
     ) -> Result<(), anyhow::Error>;
 }
 

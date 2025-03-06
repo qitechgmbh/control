@@ -8,7 +8,7 @@ use crate::{
         el252x::{EncControl, EncStatus, PtoControl, PtoStatus, PtoTarget},
         PdoPreset, RxPdo, TxPdo,
     },
-    types::EthercrabSubDevice,
+    types::EthercrabSubDevicePreoperational,
 };
 use anyhow::Ok;
 use ethercat_hal_derive::{Device, RxPdo, TxPdo};
@@ -322,7 +322,7 @@ impl Default for EL2522Configuration {
 impl Configuration for EL2522Configuration {
     async fn write_config<'a>(
         &self,
-        device: &'a EthercrabSubDevice<'a>,
+        device: &'a EthercrabSubDevicePreoperational<'a>,
     ) -> Result<(), anyhow::Error> {
         // Write configuration for Channel 1
         self.write_channel_config(device, 0x8000, 0x8020, &self.channel1_configuration)
@@ -349,7 +349,7 @@ impl Configuration for EL2522Configuration {
 impl EL2522Configuration {
     async fn write_channel_config<'a>(
         &self,
-        device: &'a EthercrabSubDevice<'a>,
+        device: &'a EthercrabSubDevicePreoperational<'a>,
         pto_base_index: u16,
         enc_base_index: u16,
         config: &EL2522ChannelConfiguration,

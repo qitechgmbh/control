@@ -1,6 +1,6 @@
 use super::{
     event::{Event, EventType},
-    messages::ethercat_devices_event::EthercatDevicesEvent,
+    events::ethercat_devices_event::EthercatDevicesEvent,
 };
 use crate::app_state::APP_STATE;
 use serde::{Deserialize, Serialize};

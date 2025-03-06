@@ -45,7 +45,7 @@ fn rxpdo_derive2(item: proc_macro2::TokenStream) -> deluxe::Result<proc_macro2::
         impl #impl_generics crate::coe::Configuration for #ident #ty_generics #where_clause {
                 async fn write_config<'a>(
                 &self,
-                device: &'a EthercrabSubDevice<'a>,
+                device: &'a EthercrabSubDevicePreoperational<'a>,
             ) -> Result<(), anyhow::Error> {
                 device.sdo_write(0x1C12, 0, 0u8).await?;
                 let mut len = 0;
@@ -95,7 +95,7 @@ fn txpdo_derive2(item: proc_macro2::TokenStream) -> deluxe::Result<proc_macro2::
         impl #impl_generics crate::coe::Configuration for #ident #ty_generics #where_clause {
                 async fn write_config<'a>(
                 &self,
-                device: &'a EthercrabSubDevice<'a>,
+                device: &'a EthercrabSubDevicePreoperational<'a>,
             ) -> Result<(), anyhow::Error> {
                 device.sdo_write(0x1C13, 0, 0u8).await?;
                 let mut len = 0;

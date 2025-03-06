@@ -2,11 +2,12 @@
 
 use crate::app_state::EthercatSetup;
 use crate::ethercat::config::{MAX_FRAMES, MAX_PDU_DATA};
+use crate::ethercat::device_identification::group_devices;
 // use crate::ethercat::device_identification::group_devices;
 use crate::{
     app_state::AppState,
     ethercat::config::{MAX_SUBDEVICES, PDI_LEN},
-    socketio::{event::EventData, messages::ethercat_devices_event::EthercatDevicesEvent},
+    socketio::{event::EventData, events::ethercat_devices_event::EthercatDevicesEvent},
 };
 use anyhow::Ok;
 use ethercat_hal::actors::analog_function_generator::{
@@ -95,8 +96,8 @@ pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(),
     // let subdevice = group.subdevice(&maindevice, 2)?;
     // subdevice.eeprom().write(0x0028, 0x5678).await?;
 
-    // let group_vec: Vec<_> = group.iter(&maindevice).collect();
-    // let groups = group_devices(&group_vec).await?;
+    let group_vec: Vec<_> = group.iter(&maindevice).collect();
+    let groups = group_devices(&group_vec, &maindevice).await?;
 
     // for machine in groups.0 {
     //     log::info!("Machine: {}", machine.machine_identification);
@@ -115,36 +116,29 @@ pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(),
     //     );
     // }
 
-    let subdevice_el2521 = group.subdevice(&maindevice, 5)?;
-    log::info!(
-        "Subdevice: config: {:x}, alias: {} name: {}",
-        subdevice_el2521.configured_address(),
-        subdevice_el2521.alias_address(),
-        subdevice_el2521.name()
-    );
+    // let subdevice_el2521 = group.subdevice(&maindevice, 1)?;
+    // log::info!(
+    //     "Subdevice: config: {:x}, alias: {} name: {}",
+    //     subdevice_el2521.configured_address(),
+    //     subdevice_el2521.alias_address(),
+    //     subdevice_el2521.name()
+    // );
 
-    let config = EL2521Configuration {
-        operating_mode: EL2521OperatingMode::PulseDirectionSpecification,
-        direct_input_mode: true,
-        ramp_function_active: false,
-        ..EL2521Configuration::default()
-    };
+    // let config = EL2521Configuration {
+    //     operating_mode: EL2521OperatingMode::PulseDirectionSpecification,
+    //     direct_input_mode: true,
+    //     ramp_function_active: false,
+    //     ..EL2521Configuration::default()
+    // };
 
-    config.write_config(&subdevice_el2521).await?;
+    // config.write_config(&subdevice_el2521).await?;
 
-    let rxpdo_mapping = subdevice_el2521.sdo_read_array::<u16, 8>(0x1C12).await?;
-    log::info!("RXPDO mapping: {:?}", rxpdo_mapping);
+    // let rxpdo_mapping = subdevice_el2521.sdo_read_array::<u16, 8>(0x1C12).await?;
+    // log::info!("RXPDO mapping: {:?}", rxpdo_mapping);
 
-    let txpdo_mapping = subdevice_el2521.sdo_read_array::<u16, 8>(0x1C13).await?;
-    log::info!("TXPDO mapping: {:?}", txpdo_mapping);
+    // let txpdo_mapping = subdevice_el2521.sdo_read_array::<u16, 8>(0x1C13).await?;
+    // log::info!("TXPDO mapping: {:?}", txpdo_mapping);
 
-    // for subdevice in group.iter(&maindevice) {
-    //     log::info!(
-    //         "Subdevice: config: {}, alias: {}",
-    //         subdevice.configured_address(),
-    //         subdevice.alias_address()
-    //     );
-    // }
     // seleep a million seconds
 
     // put group in op state
@@ -152,6 +146,7 @@ pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(),
         .into_op(&maindevice)
         .await
         .expect("Failed to put group in OP state");
+    log::info!("Group in OP state");
 
     let propagation_delays: Vec<u32> = group_op
         .iter(&maindevice)
@@ -161,6 +156,7 @@ pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(),
     // create devices
     let devices: Vec<Option<Arc<RwLock<dyn Device>>>> =
         devices_from_subdevice_group(&mut group_op, &maindevice);
+    log::info!("Group in OP state");
 
     let actors: Vec<Arc<RwLock<dyn Actor>>> = vec![
         // StepperDriverMaxSpeed::new(DigitalOutput::new(
@@ -186,10 +182,11 @@ pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(),
         //     TemperatureInput::new(get_device::<EL3204>(&devices, 4).await?, EL3204Port::T1),
         // )
         // .to_arc_rwlock(),
-        Arc::new(RwLock::new(StepperDriverPulseTrain::new(
-            PulseTrainOutput::new(get_device::<EL2521>(&devices, 5).await?, EL2521Port::PTO1),
-        ))),
+        // Arc::new(RwLock::new(StepperDriverPulseTrain::new(
+        //     PulseTrainOutput::new(get_device::<EL2521>(&devices, 1).await?, EL2521Port::PTO1),
+        // ))),
     ];
+    log::info!("Group in OP state");
 
     // set all setup data
     {
@@ -198,13 +195,16 @@ pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(),
             maindevice,
             group: group_op,
             devices,
+            device_groups: groups.0,
+            undetected_devices: groups.1,
             actors,
             delays: propagation_delays.into_iter().map(Some).collect(),
         });
     }
+    log::info!("Group in OP state");
 
     // notify client via socketio
-    // tokio::spawn(async { EthercatDevicesEvent::build().await.emit("main").await });
+    tokio::spawn(async { EthercatDevicesEvent::build().await.emit("main").await });
 
     log::info!("Starting contorl loop");
     let pdu_handle = tokio::spawn(async move {

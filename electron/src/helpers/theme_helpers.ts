@@ -18,21 +18,23 @@ export async function getCurrentTheme(): Promise<ThemePreferences> {
 }
 
 export async function setTheme(newTheme: ThemeMode) {
-  switch (newTheme) {
-    case "dark":
-      await window.themeMode.dark();
-      updateDocumentTheme(true);
-      break;
-    case "light":
-      await window.themeMode.light();
-      updateDocumentTheme(false);
-      break;
-    case "system": {
-      const isDarkMode = await window.themeMode.system();
-      updateDocumentTheme(isDarkMode);
-      break;
-    }
-  }
+  //always set light theme
+  await window.themeMode.light();
+  // switch (newTheme) {
+  //   case "dark":
+  //     await window.themeMode.dark();
+  //     updateDocumentTheme(true);
+  //     break;
+  //   case "light":
+  //     await window.themeMode.light();
+  //     updateDocumentTheme(false);
+  //     break;
+  //   case "system": {
+  //     const isDarkMode = await window.themeMode.system();
+  //     updateDocumentTheme(isDarkMode);
+  //     break;
+  //   }
+  // }
 
   localStorage.setItem(THEME_KEY, newTheme);
 }

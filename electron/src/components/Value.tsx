@@ -16,7 +16,7 @@ export function Value({
   suffix,
 }: Props) {
   return (
-    <span className="p-1 px-2 bg-neutral-50 rounded-full font-mono">
+    <span className="rounded-full bg-neutral-100 p-1 px-2 font-mono">
       {prefix}
       {prefixSpace && <span className="font-sans">&thinsp;</span>}
       {value}
@@ -59,10 +59,10 @@ export function Bool({ value }: BoolProps) {
     boolValue === undefined
       ? "undefined"
       : boolValue === null
-      ? "null"
-      : boolValue
-      ? "true"
-      : "false";
+        ? "null"
+        : boolValue
+          ? "true"
+          : "false";
   return <Value value={valueString} />;
 }
 

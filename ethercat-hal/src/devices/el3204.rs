@@ -1,7 +1,7 @@
 use crate::pdo::TxPdo;
 use ethercat_hal_derive::{Device, TxPdo};
 
-use crate::types::EthercrabSubDevice;
+use crate::types::EthercrabSubDevicePreoperational;
 use crate::{
     io::temperature_input::{TemperatureInputDevice, TemperatureInputInput, TemperatureInputState},
     pdo::el32xx::RtdInput,
