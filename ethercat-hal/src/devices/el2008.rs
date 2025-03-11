@@ -1,8 +1,8 @@
-use ethercat_hal_derive::{Device, RxPdo, TxPdo};
-
+use super::SubDeviceIdentityTuple;
 use crate::io::digital_output::{DigitalOutputDevice, DigitalOutputOutput, DigitalOutputState};
 use crate::pdo::basic::BoolPdoObject;
 use crate::types::EthercrabSubDevicePreoperational;
+use ethercat_hal_derive::{Device, RxPdo, TxPdo};
 
 /// EL2008 8-channel digital output device
 ///
@@ -89,3 +89,9 @@ struct EL2008RxPdu {
 
 #[derive(Debug, Clone, TxPdo, Default)]
 pub struct EL2008TxPdu {}
+
+pub const EL2008_VENDOR_ID: u32 = 0x2;
+pub const EL2008_PRODUCT_ID: u32 = 0x07d83052;
+pub const EL2008_REVISION_A: u32 = 0x00110000;
+pub const EL2008_IDENTITY_A: SubDeviceIdentityTuple =
+    (EL2008_VENDOR_ID, EL2008_PRODUCT_ID, EL2008_REVISION_A);

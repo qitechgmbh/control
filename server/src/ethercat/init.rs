@@ -1,10 +1,7 @@
-use std::sync::Arc;
-
-use thread_priority::{ThreadBuilderExt, ThreadPriority};
-
-use crate::app_state::AppState;
-
 use super::r#loop::setup_loop;
+use crate::app_state::AppState;
+use std::sync::Arc;
+use thread_priority::{ThreadBuilderExt, ThreadPriority};
 
 pub fn init_ethercat(app_state: Arc<AppState>) {
     let interface = "en10";

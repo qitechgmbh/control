@@ -1,9 +1,9 @@
-use ethercat_hal_derive::{Device, RxPdo, TxPdo};
-
+use super::SubDeviceIdentityTuple;
 use crate::io::digital_input::{DigitalInputDevice, DigitalInputInput, DigitalInputState};
 use crate::pdo::basic::BoolPdoObject;
 use crate::pdo::PdoPreset;
 use crate::types::EthercrabSubDevicePreoperational;
+use ethercat_hal_derive::{Device, RxPdo, TxPdo};
 
 /// EL1008 8-channel digital input device
 ///
@@ -118,3 +118,9 @@ impl PdoPreset<EL1008TxPdu, EL1008RxPdu> for EL1008PdoPreset {
         unreachable!()
     }
 }
+
+pub const EL1008_VENDOR_ID: u32 = 0x2;
+pub const EL1008_PRODUCT_ID: u32 = 0x03f03052;
+pub const EL1008_REVISION_A: u32 = 0x00120000;
+pub const EL1008_IDENTITY_A: SubDeviceIdentityTuple =
+    (EL1008_VENDOR_ID, EL1008_PRODUCT_ID, EL1008_REVISION_A);

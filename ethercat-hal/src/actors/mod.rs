@@ -1,5 +1,7 @@
 pub mod analog_function_generator;
+pub mod analog_input_logger;
 pub mod digital_input_logger;
+pub mod digital_output_setter;
 pub mod digital_output_blinker;
 pub mod digital_output_blinkers;
 pub mod stepper_driver;

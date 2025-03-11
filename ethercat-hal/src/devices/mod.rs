@@ -1,4 +1,6 @@
+pub mod ek1100;
 pub mod el1008;
+pub mod el2002;
 pub mod el2008;
 pub mod el2024;
 pub mod el2521;
@@ -10,7 +12,10 @@ pub mod el3204;
 // pub mod el4008;
 
 use super::devices::{el1008::EL1008, el3204::EL3204};
-use crate::devices::el2521::EL2521;
+use crate::{
+    devices::el2521::EL2521,
+    types::{EthercrabSubDeviceGroupPreoperational, EthercrabSubDevicePreoperational},
+};
 use anyhow::anyhow;
 use bitvec::{order::Lsb0, slice::BitSlice};
 use el2008::EL2008;
@@ -18,7 +23,7 @@ use el2024::EL2024;
 use el2522::EL2522;
 use el2634::EL2634;
 use el2809::EL2809;
-use ethercrab::{subdevice_group::Op, MainDevice, SubDeviceGroup, SubDevicePdi, SubDeviceRef};
+use ethercrab::{MainDevice, SubDeviceIdentity};
 use std::{any::Any, sync::Arc};
 use tokio::sync::RwLock;
 
@@ -107,11 +112,10 @@ pub async fn downcast_device<T: Device>(
     }
 }
 
-fn device_from_subdevice<'maindevice, 'group, const PDI_LEN: usize>(
-    subdevice: &SubDeviceRef<'maindevice, SubDevicePdi<'group, PDI_LEN>>,
+pub fn device_from_subdevice(
+    subdevice_name: &str,
 ) -> Result<Arc<RwLock<dyn Device>>, anyhow::Error> {
-    let name = subdevice.name();
-    match name {
+    match subdevice_name {
         "EL1008" => Ok(Arc::new(RwLock::new(EL1008::new()))),
         "EL2008" => Ok(Arc::new(RwLock::new(EL2008::new()))),
         "EL2024" => Ok(Arc::new(RwLock::new(EL2024::new()))),
@@ -123,35 +127,42 @@ fn device_from_subdevice<'maindevice, 'group, const PDI_LEN: usize>(
         "EL3001" => Ok(Arc::new(RwLock::new(el3001::EL3001::new()))),
         // "EL4008" => Ok(Arc::new(RwLock::new(EL4008::new()))),
         "EL3204" => Ok(Arc::new(RwLock::new(EL3204::new()))),
-        _ => Err(anyhow::anyhow!("No Driver: {}", name)),
+        _ => Err(anyhow::anyhow!("No Driver: {}", subdevice_name)),
     }
 }
 
-pub fn devices_from_subdevice_group<
-    'maindevice,
-    'group,
-    const MAX_SUBDEVICES: usize,
-    const PDI_LEN: usize,
->(
-    group: &mut SubDeviceGroup<MAX_SUBDEVICES, PDI_LEN, Op>,
+pub fn devices_from_subdevices<'maindevice, const MAX_SUBDEVICES: usize, const PDI_LEN: usize>(
+    group: &mut EthercrabSubDeviceGroupPreoperational<MAX_SUBDEVICES, PDI_LEN>,
     maindevice: &MainDevice,
 ) -> Vec<Option<Arc<RwLock<dyn Device>>>> {
     group
         .iter(maindevice)
-        .map(|subdevice| device_from_subdevice(&subdevice).ok())
+        .map(|subdevice| device_from_subdevice(subdevice.name()).ok())
         .collect()
 }
 
-pub async fn get_device<DEVICE: Device>(
+/// gets a device by index and transmutes it to the desired type
+pub async fn specific_device_from_devices<DEVICE: Device>(
     devices: &Vec<Option<Arc<RwLock<dyn Device>>>>,
     index: usize,
 ) -> Result<Arc<RwLock<DEVICE>>, anyhow::Error> {
-    let x = downcast_device::<DEVICE>(
+    downcast_device::<DEVICE>(
         devices[index]
             .as_ref()
             .ok_or_else(|| anyhow!("Couldnt find device with macthing type at {}", index))?
             .clone(),
     )
-    .await;
-    x
+    .await
+}
+
+pub async fn specifc_device_from_subdevice<'maindevice, DEVICE: Device>(
+    subdevice: &EthercrabSubDevicePreoperational<'maindevice>,
+) -> Result<Arc<RwLock<DEVICE>>, anyhow::Error> {
+    downcast_device::<DEVICE>(device_from_subdevice(&subdevice.name())?).await
+}
+
+pub type SubDeviceIdentityTuple = (u32, u32, u32);
+/// function that converts SubDeviceIdentity to tuple
+pub fn subdevice_identity_to_tuple(identity: &SubDeviceIdentity) -> SubDeviceIdentityTuple {
+    (identity.vendor_id, identity.product_id, identity.revision)
 }

@@ -1,3 +1,4 @@
+use super::SubDeviceIdentityTuple;
 use crate::{
     coe::Configuration,
     io::pulse_train_output::{
@@ -263,7 +264,7 @@ impl From<EL2521OperatingMode> for u8 {
 impl Configuration for EL2521Configuration {
     async fn write_config<'a>(
         &self,
-        device: &'a EthercrabSubDevicePreoperational<'a>,
+        device: &EthercrabSubDevicePreoperational<'a>,
     ) -> Result<(), anyhow::Error> {
         device
             .sdo_write(0x8010, 0x02, self.emergency_ramp_active)
@@ -414,3 +415,15 @@ mod tests {
         );
     }
 }
+
+pub const EL2521_VENDOR_ID: u32 = 0x2;
+pub const EL2521_PRODUCT_ID: u32 = 0x09d93052;
+pub const EL2521_REVISION_0000_A: u32 = 0x03fe0000;
+pub const EL2521_REVISION_0000_B: u32 = 0x03f90000;
+pub const EL2521_REVISION_0024_A: u32 = 0x03f80018;
+pub const EL2521_IDENTITY_0000_A: SubDeviceIdentityTuple =
+    (EL2521_VENDOR_ID, EL2521_PRODUCT_ID, EL2521_REVISION_0000_A);
+pub const EL2521_IDENTITY_0000_B: SubDeviceIdentityTuple =
+    (EL2521_VENDOR_ID, EL2521_PRODUCT_ID, EL2521_REVISION_0000_B);
+pub const EL2521_IDENTITY_0024_A: SubDeviceIdentityTuple =
+    (EL2521_VENDOR_ID, EL2521_PRODUCT_ID, EL2521_REVISION_0024_A);

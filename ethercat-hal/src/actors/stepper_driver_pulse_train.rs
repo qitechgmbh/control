@@ -6,6 +6,7 @@ use std::{future::Future, pin::Pin, sync::Arc};
 use tokio::sync::RwLock;
 
 /// Set a digital output high and low with a given interval
+#[derive(Debug)]
 pub struct StepperDriverPulseTrain {
     pulse: PulseTrainOutput,
 

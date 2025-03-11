@@ -1,3 +1,4 @@
+use std::fmt;
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
@@ -6,6 +7,12 @@ use tokio::sync::RwLock;
 pub struct AnalogInput {
     pub state:
         Box<dyn Fn() -> Pin<Box<dyn Future<Output = AnalogInputState> + Send>> + Send + Sync>,
+}
+
+impl fmt::Debug for AnalogInput {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "AnalogInput")
+    }
 }
 
 impl AnalogInput {

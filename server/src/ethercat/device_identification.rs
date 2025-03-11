@@ -2,15 +2,23 @@ use std::fmt::Display;
 
 use anyhow::anyhow;
 use anyhow::Error;
-use ethercat_hal::types::EthercrabSubDevice;
+use ethercat_hal::devices::ek1100::EK1100_IDENTITY_A;
+use ethercat_hal::devices::el1008::EL1008_IDENTITY_A;
+use ethercat_hal::devices::el2002::EL2002_IDENTITY_A;
+use ethercat_hal::devices::el2008::EL2008_IDENTITY_A;
+use ethercat_hal::devices::el2521::{
+    EL2521_IDENTITY_0000_A, EL2521_IDENTITY_0000_B, EL2521_IDENTITY_0024_A,
+};
+use ethercat_hal::devices::el2522::EL2522_IDENTITY_A;
+use ethercat_hal::devices::el3001::EL3001_IDENTITY_A;
+use ethercat_hal::devices::subdevice_identity_to_tuple;
+use ethercat_hal::types::EthercrabSubDeviceGroupPreoperational;
 use ethercat_hal::types::EthercrabSubDeviceOperational;
 use ethercat_hal::types::EthercrabSubDevicePreoperational;
 use ethercrab::MainDevice;
-use futures::executor::block_on;
+use ethercrab::SubDeviceIdentity;
 use serde::Deserialize;
 use serde::Serialize;
-
-use super::config::PDI_LEN;
 
 /// Identifies a machine
 #[derive(Debug, PartialEq, Default, Clone, Serialize, Deserialize)]
@@ -85,9 +93,13 @@ impl Default for MachineDeviceIdentificationAddresses {
 ///
 /// Return 0: Vec<DeviceGroupDevice> - a vector of devices grouped by machine identification
 /// Return 1: Vec<(usize, MachineDeviceIdentification)> - a vector of devices that could not be identified
-pub async fn group_devices<'maindevice, 'subdevice>(
-    subdevices: &'maindevice [EthercrabSubDevicePreoperational<'maindevice>],
-    maindevice: &MainDevice<'_>,
+pub async fn identify_device_groups<
+    'maindevice,
+    const MAX_SUBDEVICES: usize,
+    const MAX_PDI: usize,
+>(
+    subdevices: &EthercrabSubDeviceGroupPreoperational<MAX_SUBDEVICES, MAX_PDI>,
+    maindevice: &MainDevice<'maindevice>,
 ) -> Result<
     (
         Vec<Vec<MachineDeviceIdentification>>,
@@ -99,13 +111,8 @@ pub async fn group_devices<'maindevice, 'subdevice>(
     // 0: subdevice index 1: machine device identification
     let mut unidentified_devices: Vec<MachineDeviceIdentification> = Vec::new();
 
-    for (subdevice_index, subdevice) in subdevices.iter().enumerate() {
-        let mdid = machine_device_identification(
-            &EthercrabSubDevice::Preoperational(subdevice),
-            subdevice_index,
-            maindevice,
-        )
-        .await?;
+    for (subdevice_index, subdevice) in subdevices.iter(maindevice).enumerate() {
+        let mdid = machine_device_identification(&subdevice, subdevice_index, maindevice).await?;
 
         // if vendor or serial or machine is 0, it is not a valid machine device
         if mdid.machine_identification == MachineIdentification::default() {
@@ -132,12 +139,12 @@ pub async fn group_devices<'maindevice, 'subdevice>(
 }
 
 /// Reads the machine device identification from the EEPROM
-pub async fn machine_device_identification<'maindevice, 'subdevice>(
-    subdevice: &'maindevice EthercrabSubDevice<'maindevice, 'subdevice, PDI_LEN>,
+pub async fn machine_device_identification<'maindevice>(
+    subdevice: &'maindevice EthercrabSubDevicePreoperational<'maindevice>,
     subdevice_index: usize,
     maindevice: &MainDevice<'_>,
 ) -> Result<MachineDeviceIdentification, Error> {
-    let addresses = get_identification_addresses(subdevice, maindevice)?;
+    let addresses = get_identification_addresses(&subdevice.identity(), subdevice.name())?;
     Ok(MachineDeviceIdentification {
         machine_identification: MachineIdentification {
             vendor: words_to_u32be(
@@ -186,13 +193,13 @@ pub async fn machine_device_identification<'maindevice, 'subdevice>(
 }
 
 /// Writes the machine device identification to the EEPROM
-pub async fn write_machine_device_identification<'maindevice>(
-    subdevice: &'maindevice EthercrabSubDeviceOperational<'maindevice, PDI_LEN>,
+pub async fn write_machine_device_identification<'maindevice, const MAX_PDI: usize>(
+    subdevice: &EthercrabSubDeviceOperational<'maindevice, MAX_PDI>,
     maindevice: &MainDevice<'_>,
     identification: &MachineDeviceIdentification,
 ) -> Result<(), Error> {
-    let addresses =
-        get_identification_addresses(&EthercrabSubDevice::Operational(subdevice), maindevice)?;
+    let addresses = get_identification_addresses(&subdevice.identity(), subdevice.name())?;
+
     subdevice
         .eeprom_write_dangerously(
             maindevice,
@@ -255,62 +262,45 @@ fn words_to_u32be(word_low: u16, word_high: u16) -> u32 {
 
 /// Returns the EEPROM addresses for the machine device identification
 /// based on the subdevice's identity
-pub fn get_identification_addresses<'subdevice>(
-    subdevice: &EthercrabSubDevice<'_, 'subdevice, PDI_LEN>,
-    maindevice: &MainDevice<'_>,
+pub fn get_identification_addresses<'maindevice>(
+    subdevice_identity: &SubDeviceIdentity,
+    subdevice_name: &str,
 ) -> Result<MachineDeviceIdentificationAddresses, Error> {
-    let identity = subdevice.identity();
-    let identity_tuple = (identity.vendor_id, identity.product_id, identity.revision);
+    let identity_tuple = subdevice_identity_to_tuple(&subdevice_identity);
 
     Ok(match identity_tuple {
-        (BECKHOFF, EK1100, 0x00120000) => MachineDeviceIdentificationAddresses::default(),
-        (BECKHOFF, EL1008, 0x00110000) => MachineDeviceIdentificationAddresses::default(),
-        (BECKHOFF, EL2002, 0x00110000) => MachineDeviceIdentificationAddresses::default(),
-        (BECKHOFF, EL2008, 0x00110000) => MachineDeviceIdentificationAddresses::default(),
-        (BECKHOFF, EL3001, 0x00160000) => MachineDeviceIdentificationAddresses::default(),
-        (BECKHOFF, EL4008, 0x00140000) => MachineDeviceIdentificationAddresses::default(),
-        (BECKHOFF, EL3204, 0x00150000) => MachineDeviceIdentificationAddresses::default(),
-        (BECKHOFF, EL2521, 0x03fe0000 | 0x03f90000 | 0x03f80018) => {
+        EK1100_IDENTITY_A => MachineDeviceIdentificationAddresses::default(),
+        EL1008_IDENTITY_A => MachineDeviceIdentificationAddresses::default(),
+        EL2002_IDENTITY_A => MachineDeviceIdentificationAddresses::default(),
+        EL2008_IDENTITY_A => MachineDeviceIdentificationAddresses::default(),
+        EL3001_IDENTITY_A => MachineDeviceIdentificationAddresses::default(),
+        EL2521_IDENTITY_0000_A | EL2521_IDENTITY_0000_B | EL2521_IDENTITY_0024_A => {
             MachineDeviceIdentificationAddresses::default()
         }
-        (BECKHOFF, EL2522, 0x00160000) => MachineDeviceIdentificationAddresses::default(),
+        EL2522_IDENTITY_A => MachineDeviceIdentificationAddresses::default(),
         _ => {
             log::error!(
                 "Unknown MDI addresses for device {:?} vendor: 0x{:08x} product: 0x{:08x} revision: 0x{:08x}",
-                subdevice.name(),
-                identity.vendor_id,
-                identity.product_id,
-                identity.revision
+                subdevice_name,
+                subdevice_identity.vendor_id,
+                subdevice_identity.product_id,
+                subdevice_identity.revision
             );
-            block_on(u16dump(&subdevice, maindevice, 0x00, 0xff))?;
+            // block_on(u16dump(&subdevice, maindevice, 0x00, 0xff))?;
             Err(anyhow!(
             "Unknown MDI addresses for device {:?} vendor: 0x{:08x} product: 0x{:08x} revision: 0x{:08x}",
-            subdevice.name(),
-            identity.vendor_id,
-            identity.product_id,
-            identity.revision
+            subdevice_name,
+            subdevice_identity.vendor_id,
+            subdevice_identity.product_id,
+            subdevice_identity.revision
         ))?
         }
     })
 }
 
-// === VENDOR IDS ===
-const BECKHOFF: u32 = 0x00000002;
-
-// === PRODUCTS ===
-const EK1100: u32 = 0x044c2c52;
-const EL1008: u32 = 0x03f03052;
-const EL2002: u32 = 0x07d23052;
-const EL2008: u32 = 0x07d83052;
-const EL3001: u32 = 0x0bb93052;
-const EL4008: u32 = 0x0fa83052;
-const EL3204: u32 = 0x0c843052;
-const EL2521: u32 = 0x09d93052;
-const EL2522: u32 = 0x09da3052;
-
-async fn u16dump<'maindevice, 'grou, 'subdevice>(
-    subdevice: &EthercrabSubDevice<'maindevice, 'subdevice, PDI_LEN>,
-    maindevice: &MainDevice<'_>,
+async fn u16dump<'maindevice, const MAX_PDI: usize>(
+    subdevice: &EthercrabSubDeviceOperational<'maindevice, MAX_PDI>,
+    maindevice: &MainDevice<'maindevice>,
     start_word: u16,
     end_word: u16,
 ) -> Result<(), Error> {

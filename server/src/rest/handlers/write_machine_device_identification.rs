@@ -1,3 +1,4 @@
+use super::MutationResponse;
 use crate::{
     app_state::AppState,
     ethercat::device_identification::{
@@ -7,8 +8,6 @@ use crate::{
 };
 use axum::{body::Body, extract::State, http::Response, Json};
 use std::sync::Arc;
-
-use super::MutationResponse;
 
 #[axum::debug_handler]
 pub async fn post_write_machine_device_identification(

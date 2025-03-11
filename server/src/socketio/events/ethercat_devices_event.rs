@@ -57,9 +57,9 @@ impl EventData for EthercatDevicesEvent {
         let mut devices: Vec<_> = vec![];
 
         // add identified devices
-        for device_group in ethercat_setup.device_groups.iter() {
-            log::info!("Device Group: {:?}", device_group);
-            for (i, device) in device_group.iter().enumerate() {
+        for identified_device_group in ethercat_setup.identified_device_groups.iter() {
+            log::info!("Device Group: {:?}", identified_device_group);
+            for (i, device) in identified_device_group.iter().enumerate() {
                 log::info!("Device: {:?}", device);
                 let subdevice = &ethercat_setup
                     .group
@@ -67,7 +67,7 @@ impl EventData for EthercatDevicesEvent {
                     .expect("Subdevice not found");
                 let mut device = Device::from_subdevice(subdevice, device.subdevice_index);
                 device.machine_device_identification = Some(
-                    device_group
+                    identified_device_group
                         .get(i)
                         .expect(&format!("Device {} not found", i))
                         .clone(),
@@ -78,7 +78,7 @@ impl EventData for EthercatDevicesEvent {
         }
 
         // add unidentified devices
-        for device in ethercat_setup.undetected_devices.iter() {
+        for device in ethercat_setup.unidentified_devices.iter() {
             let subdevice = &ethercat_setup
                 .group
                 .subdevice(&ethercat_setup.maindevice, device.subdevice_index)

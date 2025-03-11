@@ -1,13 +1,13 @@
+use super::SubDeviceIdentityTuple;
 use crate::{
     coe::Configuration,
     pdo::{el30xx::AiStandard, PdoPreset, TxPdo},
 };
-use ethercat_hal_derive::{Device, RxPdo, TxPdo};
-
 use crate::{
     io::analog_input::{AnalogInputDevice, AnalogInputInput, AnalogInputState},
     types::EthercrabSubDevicePreoperational,
 };
+use ethercat_hal_derive::{Device, RxPdo, TxPdo};
 
 #[derive(Debug, Device)]
 pub struct EL3001 {
@@ -163,7 +163,7 @@ pub struct EL3001Configuration {
 impl Configuration for EL3001Configuration {
     async fn write_config<'a>(
         &self,
-        device: &'a EthercrabSubDevicePreoperational<'a>,
+        device: &EthercrabSubDevicePreoperational<'a>,
     ) -> Result<(), anyhow::Error> {
         device
             .sdo_write(0x8000, 0x01, self.enable_user_scale)
@@ -300,3 +300,9 @@ impl From<EL3001FilterSettings> for u16 {
         }
     }
 }
+
+pub const EL3001_VENDOR_ID: u32 = 0x2;
+pub const EL3001_PRODUCT_ID: u32 = 0x0bb93052;
+pub const EL3001_REVISION_A: u32 = 0x00160000;
+pub const EL3001_IDENTITY_A: SubDeviceIdentityTuple =
+    (EL3001_VENDOR_ID, EL3001_PRODUCT_ID, EL3001_REVISION_A);

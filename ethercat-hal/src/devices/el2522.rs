@@ -1,3 +1,4 @@
+use super::SubDeviceIdentityTuple;
 use crate::{
     coe::Configuration,
     io::pulse_train_output::{
@@ -322,7 +323,7 @@ impl Default for EL2522Configuration {
 impl Configuration for EL2522Configuration {
     async fn write_config<'a>(
         &self,
-        device: &'a EthercrabSubDevicePreoperational<'a>,
+        device: &EthercrabSubDevicePreoperational<'a>,
     ) -> Result<(), anyhow::Error> {
         // Write configuration for Channel 1
         self.write_channel_config(device, 0x8000, 0x8020, &self.channel1_configuration)
@@ -349,7 +350,7 @@ impl Configuration for EL2522Configuration {
 impl EL2522Configuration {
     async fn write_channel_config<'a>(
         &self,
-        device: &'a EthercrabSubDevicePreoperational<'a>,
+        device: &EthercrabSubDevicePreoperational<'a>,
         pto_base_index: u16,
         enc_base_index: u16,
         config: &EL2522ChannelConfiguration,
@@ -591,3 +592,9 @@ mod tests {
         );
     }
 }
+
+pub const EL2522_VENDOR_ID: u32 = 0x2;
+pub const EL2522_PRODUCT_ID: u32 = 0x09da3052;
+pub const EL2522_REVISION_A: u32 = 0x00160000;
+pub const EL2522_IDENTITY_A: SubDeviceIdentityTuple =
+    (EL2522_VENDOR_ID, EL2522_PRODUCT_ID, EL2522_REVISION_A);

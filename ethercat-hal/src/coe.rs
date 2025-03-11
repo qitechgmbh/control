@@ -4,7 +4,7 @@ pub trait Configuration {
     #[allow(async_fn_in_trait)]
     async fn write_config<'a>(
         &self,
-        device: &'a EthercrabSubDevicePreoperational<'a>,
+        device: &EthercrabSubDevicePreoperational<'a>,
     ) -> Result<(), anyhow::Error>;
 }
 

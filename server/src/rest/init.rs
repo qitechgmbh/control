@@ -1,14 +1,11 @@
-use std::io::Error;
-use std::sync::Arc;
-
+use super::handlers::write_machine_device_identification::post_write_machine_device_identification;
 use crate::app_state::AppState;
 use axum::routing::post;
 use socketioxide::layer::SocketIoLayer;
+use std::io::Error;
+use std::sync::Arc;
 use tower_http::cors::CorsLayer;
-
 use tower_http::trace::TraceLayer;
-
-use super::handlers::write_machine_device_identification::post_write_machine_device_identification;
 
 pub async fn init_api(
     app_state: Arc<AppState>,

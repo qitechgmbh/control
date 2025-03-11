@@ -1,4 +1,4 @@
-use std::{future::Future, pin::Pin, sync::Arc};
+use std::{fmt, future::Future, pin::Pin, sync::Arc};
 use tokio::sync::RwLock;
 
 use crate::pdo::basic::Limit;
@@ -6,6 +6,12 @@ use crate::pdo::basic::Limit;
 pub struct TemperatureInput {
     pub state:
         Box<dyn Fn() -> Pin<Box<dyn Future<Output = TemperatureInputState> + Send>> + Send + Sync>,
+}
+
+impl fmt::Debug for TemperatureInput {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "DigitalInput")
+    }
 }
 
 impl TemperatureInput {

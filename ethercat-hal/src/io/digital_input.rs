@@ -1,9 +1,15 @@
-use std::{future::Future, pin::Pin, sync::Arc};
+use std::{fmt, future::Future, pin::Pin, sync::Arc};
 use tokio::sync::RwLock;
 
 pub struct DigitalInput {
     pub state:
         Box<dyn Fn() -> Pin<Box<dyn Future<Output = DigitalInputState> + Send>> + Send + Sync>,
+}
+
+impl fmt::Debug for DigitalInput {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "DigitalInput")
+    }
 }
 
 impl DigitalInput {

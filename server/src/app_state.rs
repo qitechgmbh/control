@@ -19,33 +19,49 @@ pub struct AppState {
 }
 
 pub struct EthercatSetup {
-    pub maindevice: MainDevice<'static>,
-    pub group: SubDeviceGroup<MAX_SUBDEVICES, PDI_LEN, Op>,
-    pub devices: Vec<Option<Arc<RwLock<dyn Device>>>>,
-    pub device_groups: Vec<Vec<MachineDeviceIdentification>>,
-    pub undetected_devices: Vec<MachineDeviceIdentification>,
+    /// High level logical drivers
+    /// They read & write to the `devices` / nested actors
     pub actors: Vec<Arc<RwLock<dyn Actor>>>,
+    /// Metadata about a device groups
+    /// Used for the device table in the UI
+    pub identified_device_groups: Vec<Vec<MachineDeviceIdentification>>,
+    /// Metadata about unidentified devices
+    /// Used for the device table in the UI
+    pub unidentified_devices: Vec<MachineDeviceIdentification>,
+    /// All Ethercat devices
+    /// Device-Specific interface for all devices
+    /// Same length and order as SubDevices inside `group`
+    pub devices: Vec<Option<Arc<RwLock<dyn Device>>>>,
+    /// All Ethercat devices
+    /// Generic interface for all devices
+    /// Needed to interface with the devices on an Ethercat level
+    pub group: SubDeviceGroup<MAX_SUBDEVICES, PDI_LEN, Op>,
     pub delays: Vec<Option<u32>>,
+    /// The Ethercat main device
+    /// Needed to interface with the devices
+    pub maindevice: MainDevice<'static>,
 }
 
 impl EthercatSetup {
     pub fn new(
-        ethercat_master: MainDevice<'static>,
-        ethercat_group: SubDeviceGroup<MAX_SUBDEVICES, PDI_LEN, Op>,
-        ethercat_devices: Vec<Option<Arc<RwLock<dyn Device>>>>,
-        ethercat_device_groups: Vec<Vec<MachineDeviceIdentification>>,
-        ethercat_undetected_devices: Vec<MachineDeviceIdentification>,
-        ethercat_actors: Vec<Arc<RwLock<dyn Actor>>>,
-        ethercat_propagation_delays: Vec<Option<u32>>,
+        actors: Vec<Arc<RwLock<dyn Actor>>>,
+        identified_device_groups: Vec<Vec<MachineDeviceIdentification>>,
+        undetected_devices: Vec<MachineDeviceIdentification>,
+        devices: Vec<Option<Arc<RwLock<dyn Device>>>>,
+        group: SubDeviceGroup<MAX_SUBDEVICES, PDI_LEN, Op>,
+        delays: Vec<Option<u32>>,
+        maindevice: MainDevice<'static>,
     ) -> Self {
         Self {
-            maindevice: ethercat_master,
-            group: ethercat_group,
-            devices: ethercat_devices,
-            device_groups: ethercat_device_groups,
-            undetected_devices: ethercat_undetected_devices,
-            actors: ethercat_actors,
-            delays: ethercat_propagation_delays,
+            actors,
+            identified_device_groups,
+            unidentified_devices: undetected_devices,
+            devices,
+
+            group,
+
+            delays,
+            maindevice,
         }
     }
 }

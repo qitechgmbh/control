@@ -1,11 +1,8 @@
-use std::future::Future;
-
+use super::events::ethercat_devices_event::EthercatDevicesEvent;
+use crate::app_state::APP_STATE;
 use serde::{Deserialize, Serialize};
 use socketioxide_core::adapter::RoomParam;
-
-use crate::app_state::APP_STATE;
-
-use super::events::ethercat_devices_event::EthercatDevicesEvent;
+use std::future::Future;
 
 #[derive(Debug, Clone)]
 pub enum EventType {

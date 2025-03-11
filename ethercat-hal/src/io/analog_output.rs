@@ -1,3 +1,4 @@
+use std::fmt;
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
@@ -7,6 +8,12 @@ pub struct AnalogOutput {
     pub write: Box<dyn Fn(f32) -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>,
     pub state:
         Box<dyn Fn() -> Pin<Box<dyn Future<Output = AnalogOutputState> + Send>> + Send + Sync>,
+}
+
+impl fmt::Debug for AnalogOutput {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "AnalogOutput")
+    }
 }
 
 impl AnalogOutput {

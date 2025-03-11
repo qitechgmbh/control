@@ -7,6 +7,7 @@ use socketio::init::init_socketio;
 
 pub mod app_state;
 pub mod ethercat;
+pub mod machines;
 pub mod rest;
 pub mod socketio;
 
