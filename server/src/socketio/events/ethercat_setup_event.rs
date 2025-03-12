@@ -1,5 +1,5 @@
 use crate::{
-    app_state::APP_STATE,
+    app_state::{MachineInfo, APP_STATE},
     ethercat::{config::PDI_LEN, device_identification::MachineDeviceIdentification},
     socketio::event::{Event, EventData, EventType},
 };
@@ -7,12 +7,13 @@ use ethercrab::{SubDevicePdi, SubDeviceRef};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct EthercatDevicesEvent {
-    pub devices: Vec<Device>,
+pub struct EthercatSetupEvent {
+    pub devices: Vec<DeviceObj>,
+    pub machine_infos: Vec<MachineInfo>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct Device {
+pub struct DeviceObj {
     pub configured_address: u16,
     pub name: String,
     pub vendor_id: u32,
@@ -22,12 +23,12 @@ pub struct Device {
     pub subdevice_index: usize,
 }
 
-impl Device {
+impl DeviceObj {
     fn from_subdevice(
         subdevice: &SubDeviceRef<'_, SubDevicePdi<'_, PDI_LEN>>,
         index: usize,
     ) -> Self {
-        Device {
+        DeviceObj {
             name: subdevice.name().to_string(),
             configured_address: subdevice.configured_address(),
             product_id: subdevice.identity().product_id,
@@ -39,9 +40,9 @@ impl Device {
     }
 }
 
-const EVENT: &str = "EthercatDevicesEvent";
+const EVENT: &str = "EthercatSetupEvent";
 
-impl EventData for EthercatDevicesEvent {
+impl EventData for EthercatSetupEvent {
     async fn build() -> Event<Self> {
         let ethercat_setup_guard = APP_STATE.as_ref().ethercat_setup.read().await;
         let ethercat_setup = match ethercat_setup_guard.as_ref() {
@@ -54,27 +55,45 @@ impl EventData for EthercatDevicesEvent {
             }
         };
 
-        let mut devices: Vec<_> = vec![];
+        let mut device_objs: Vec<_> = vec![];
+        let mut machine_infos: Vec<_> = vec![];
 
         // add identified devices
-        for identified_device_group in ethercat_setup.identified_device_groups.iter() {
+        for (i, identified_device_group) in
+            ethercat_setup.identified_device_groups.iter().enumerate()
+        {
             log::info!("Device Group: {:?}", identified_device_group);
-            for (i, device) in identified_device_group.iter().enumerate() {
+            for (j, device) in identified_device_group.iter().enumerate() {
                 log::info!("Device: {:?}", device);
-                let subdevice = &ethercat_setup
+                let subdevice = match ethercat_setup
                     .group
                     .subdevice(&ethercat_setup.maindevice, device.subdevice_index)
-                    .expect("Subdevice not found");
-                let mut device = Device::from_subdevice(subdevice, device.subdevice_index);
-                device.machine_device_identification = Some(
-                    identified_device_group
-                        .get(i)
-                        .expect(&format!("Device {} not found", i))
-                        .clone(),
-                );
-                log::info!("Device: {:?}", device);
-                devices.push(device);
+                {
+                    Ok(subdevice) => subdevice,
+                    Err(_) => {
+                        return Event::error(EVENT.to_string(), "Subdevice not found".to_string());
+                    }
+                };
+                let mut device_obj = DeviceObj::from_subdevice(&subdevice, device.subdevice_index);
+                device_obj.machine_device_identification = match identified_device_group.get(j) {
+                    Some(identification) => Some(identification.clone()),
+                    None => {
+                        return Event::error(EVENT.to_string(), format!("Device {} not found", j));
+                    }
+                };
+                log::info!("Device: {:?}", device_obj);
+                device_objs.push(device_obj);
             }
+
+            // add machine
+
+            let machine_info = match ethercat_setup.machine_infos.get(i) {
+                Some(machine) => machine,
+                None => {
+                    return Event::error(EVENT.to_string(), "Machine not found".to_string());
+                }
+            };
+            machine_infos.push(machine_info.clone());
         }
 
         // add unidentified devices
@@ -83,11 +102,17 @@ impl EventData for EthercatDevicesEvent {
                 .group
                 .subdevice(&ethercat_setup.maindevice, device.subdevice_index)
                 .expect("Subdevice not found");
-            let device = Device::from_subdevice(subdevice, device.subdevice_index);
-            devices.push(device);
+            let device = DeviceObj::from_subdevice(subdevice, device.subdevice_index);
+            device_objs.push(device);
         }
 
-        Event::data(EVENT.to_string(), EthercatDevicesEvent { devices: devices })
+        Event::data(
+            EVENT.to_string(),
+            EthercatSetupEvent {
+                devices: device_objs,
+                machine_infos: machine_infos,
+            },
+        )
     }
 
     fn build_warning(warning: String) -> Event<Self> {
@@ -95,6 +120,6 @@ impl EventData for EthercatDevicesEvent {
     }
 
     fn to_event_type(message: Event<Self>) -> EventType {
-        EventType::EthercatDevicesEvent(message)
+        EventType::EthercatSetupEvent(message)
     }
 }

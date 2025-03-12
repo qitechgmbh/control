@@ -1,1 +1,1 @@
-pub mod ethercat_devices_event;
+pub mod ethercat_setup_event;

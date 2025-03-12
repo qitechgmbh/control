@@ -1,6 +1,10 @@
 "use strict";
 
-import { MachineDeviceIdentification, Option } from "@/lib/types";
+import {
+  MachineDeviceIdentification,
+  MachineIdentification,
+  Option,
+} from "@/lib/types";
 import { useEffect, useState } from "react";
 import { io } from "socket.io-client";
 
@@ -89,7 +93,7 @@ export function useSockerioEvent<T>(
   return res;
 }
 
-export type EthercatDevicesEvent = {
+export type EthercatSetupEvent = {
   devices: {
     configured_address: number;
     name: string;
@@ -99,10 +103,16 @@ export type EthercatDevicesEvent = {
     machine_device_identification: Option<MachineDeviceIdentification>;
     subdevice_index: number;
   }[];
+  machine_infos: {
+    machine_identification: MachineIdentification;
+    error: Option<string>;
+  }[];
 };
 
-export type EthercatDevicesEventDevice = EthercatDevicesEvent["devices"][0];
+export type EthercatSetupEventDevice = EthercatSetupEvent["devices"][0];
+export type EthercatSetupEventMachineInfo =
+  EthercatSetupEvent["machine_infos"][0];
 
-export function useSocketioEthercatDevicesEvent(): MessageResponse<EthercatDevicesEvent> {
-  return useSockerioEvent<EthercatDevicesEvent>("main", "EthercatDevicesEvent");
+export function useSocketioEthercatSetupEvent(): MessageResponse<EthercatSetupEvent> {
+  return useSockerioEvent<EthercatSetupEvent>("main", "EthercatSetupEvent");
 }

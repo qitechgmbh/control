@@ -1,6 +1,6 @@
 use super::{
     event::{Event, EventType},
-    events::ethercat_devices_event::EthercatDevicesEvent,
+    events::ethercat_setup_event::EthercatSetupEvent,
 };
 use crate::app_state::APP_STATE;
 use serde::{Deserialize, Serialize};
@@ -80,7 +80,7 @@ impl Rooms {
 pub struct Room {
     room: String,
     sockets: Vec<SocketRef>,
-    last_ethercat_device_event: Option<Event<EthercatDevicesEvent>>,
+    last_ethercat_device_event: Option<Event<EthercatSetupEvent>>,
 }
 
 impl Room {
@@ -109,7 +109,7 @@ impl Room {
 
         // remember the event
         match event {
-            EventType::EthercatDevicesEvent(devices_message) => {
+            EventType::EthercatSetupEvent(devices_message) => {
                 self.last_ethercat_device_event = Some(devices_message);
             }
         }

@@ -4,8 +4,8 @@ import { SectionTitle } from "@/components/SectionTitle";
 import { MyTable } from "@/components/Table";
 import { EthercatVendorId, Hex, Value } from "@/components/Value";
 import {
-  EthercatDevicesEvent,
-  useSocketioEthercatDevicesEvent,
+  EthercatSetupEvent,
+  useSocketioEthercatSetupEvent,
 } from "@/hooks/useSocketio";
 import {
   ColumnDef,
@@ -17,7 +17,7 @@ import { DeviceEepromDialog } from "./DeviceEepromDialog";
 import { getMachinePreset } from "@/machines/types";
 import { DeviceRoleComponent } from "@/components/DeviceRole";
 
-export const columns: ColumnDef<EthercatDevicesEvent["devices"][0]>[] = [
+export const columns: ColumnDef<EthercatSetupEvent["devices"][0]>[] = [
   {
     accessorKey: "configured_address",
     header: "Adresse",
@@ -101,7 +101,7 @@ export const columns: ColumnDef<EthercatDevicesEvent["devices"][0]>[] = [
 ];
 
 export function DevicesPage() {
-  const deviceMessage = useSocketioEthercatDevicesEvent();
+  const deviceMessage = useSocketioEthercatSetupEvent();
 
   const data = useMemo(() => {
     return deviceMessage.data?.devices || [];

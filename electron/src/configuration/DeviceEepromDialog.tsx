@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { Hex } from "@/components/Value";
 import { useClient } from "@/hooks/useClient";
-import { EthercatDevicesEventDevice } from "@/hooks/useSocketio";
+import { EthercatSetupEventDevice } from "@/hooks/useSocketio";
 import {
   filterAllowedDevices,
   getMachinePreset,
@@ -47,7 +47,7 @@ import { toast } from "sonner";
 import { Toast } from "@/components/Toast";
 
 type Props = {
-  device: EthercatDevicesEventDevice;
+  device: EthercatSetupEventDevice;
 };
 
 const formSchema = z.object({
@@ -65,7 +65,7 @@ export function DeviceEepromDialog({ device }: Props) {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="outline">
-          <Icon name="lu:Pen" />
+          <Icon name="lu:Pencil" />
           Bearbeiten
         </Button>
       </DialogTrigger>
@@ -75,7 +75,7 @@ export function DeviceEepromDialog({ device }: Props) {
 }
 
 type ContentProps = {
-  device: EthercatDevicesEventDevice;
+  device: EthercatSetupEventDevice;
   setOpen: (open: boolean) => void;
 };
 

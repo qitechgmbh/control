@@ -1,33 +1,14 @@
-#![allow(unused_imports)]
-
-use crate::app_state::EthercatSetup;
+use crate::app_state::{EthercatSetup, MachineInfo};
 use crate::ethercat::device_identification::identify_device_groups;
 use crate::machines::Machines;
 use crate::{
     app_state::AppState,
     ethercat::config::{MAX_FRAMES, MAX_PDU_DATA, MAX_SUBDEVICES, PDI_LEN},
-    socketio::{event::EventData, events::ethercat_devices_event::EthercatDevicesEvent},
+    socketio::{event::EventData, events::ethercat_setup_event::EthercatSetupEvent},
 };
 use bitvec::prelude::*;
-use ethercat_hal::actors::analog_function_generator::{
-    analog_multiply, analog_sine, AnalogFunctionGenerator,
-};
-use ethercat_hal::actors::digital_input_logger::DigitalInputLogger;
-use ethercat_hal::actors::stepper_driver_max_speed::StepperDriverMaxSpeed;
-use ethercat_hal::actors::stepper_driver_pulse_train::StepperDriverPulseTrain;
-use ethercat_hal::actors::temperature_input_logger::TemperatureInputLogger;
 use ethercat_hal::actors::Actor;
-use ethercat_hal::coe::Configuration;
-use ethercat_hal::devices::el2521::{EL2521Configuration, EL2521OperatingMode, EL2521Port, EL2521};
-use ethercat_hal::devices::{devices_from_subdevices, specific_device_from_devices, Device};
-use ethercat_hal::io::analog_output::AnalogOutput;
-use ethercat_hal::io::digital_input::DigitalInput;
-use ethercat_hal::io::digital_output::DigitalOutput;
-use ethercat_hal::io::pulse_train_output::PulseTrainOutput;
-use ethercat_hal::io::temperature_input::TemperatureInput;
-use ethercat_hal::types::{
-    EthercrabSubDeviceGroupOperational, EthercrabSubDeviceGroupPreoperational,
-};
+use ethercat_hal::devices::{devices_from_subdevices, Device};
 use ethercrab::std::{ethercat_now, tx_rx_task};
 use ethercrab::{MainDevice, MainDeviceConfig, PduStorage, RetryBehaviour, Timeouts};
 use std::{sync::Arc, time::Duration};
@@ -70,7 +51,7 @@ pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(),
 
     // Notify client via socketio
     tokio::spawn(async {
-        EthercatDevicesEvent::build_warning("Configuring Devices...".to_string())
+        EthercatSetupEvent::build_warning("Configuring Devices...".to_string())
             .emit("main")
             .await
     });
@@ -126,10 +107,29 @@ pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(),
         .map(|subdevice| subdevice.propagation_delay())
         .collect();
 
+    // Create machine infos
+    let mut machine_infos = Vec::new();
+    for (i, machine) in machines.iter().enumerate() {
+        // add machine info
+        let first_device = match identified_device_groups[i].first() {
+            Some(first_device) => first_device,
+            None => Err(anyhow::anyhow!("No first device"))?,
+        };
+        let machine_info = MachineInfo {
+            machine_identification: first_device.machine_identification.clone(),
+            error: match &machine {
+                Ok(_) => Ok(()),
+                Err(e) => Err(e.to_string()),
+            },
+        };
+        machine_infos.push(machine_info);
+    }
+
     // create actors
     // push all machines into the actors vector
     let mut actors: Vec<Arc<RwLock<dyn Actor>>> = Vec::new();
-    for machine in machines {
+    for machine in machines.into_iter() {
+        // add actor
         if let Ok(machine) = machine {
             actors.push(Arc::new(RwLock::new(machine)));
         }
@@ -139,18 +139,19 @@ pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(),
     {
         let mut ethercat_setup_guard = app_state.ethercat_setup.write().await;
         *ethercat_setup_guard = Some(EthercatSetup {
-            maindevice,
-            group: group_op,
-            devices,
+            actors,
+            machine_infos,
             identified_device_groups,
             unidentified_devices,
-            actors,
+            devices,
             delays: propagation_delays.into_iter().map(Some).collect(),
+            group: group_op,
+            maindevice,
         });
     }
 
     // Notify client via socketio
-    tokio::spawn(async { EthercatDevicesEvent::build().await.emit("main").await });
+    tokio::spawn(async { EthercatSetupEvent::build().await.emit("main").await });
 
     // Start control loop
     let pdu_handle = tokio::spawn(async move {
