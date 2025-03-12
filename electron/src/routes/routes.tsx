@@ -2,16 +2,14 @@ import { createRoute } from "@tanstack/react-router";
 import { RootRoute } from "./__root";
 import React from "react";
 import { SidebarLayout } from "@/components/SidebarLayout";
-import { Winder1Page } from "@/machines/winder1/Winder1Page";
 import { SetupPage } from "@/setup/SetupPage";
 import { EthercatPage } from "@/setup/EthercatPage";
 import { MachinesPage } from "@/setup/MachinesPage";
+import { Winder1Page } from "@/machines/winder1/Winder1Page";
+import { Winder1ControlPage } from "@/machines/winder1/Winder1ControlPage";
 
 // make a route tree like this
-// _mainNavigation/machines/$machineSerial/winder1/general
-// _mainNavigation/machines/$machineSerial/winder1/handbook
-// _mainNavigation/machines/$machineSerial/winder2/general
-// _mainNavigation/machines/$machineSerial/winder2/handbook
+// _mainNavigation/machines/winder1/$serial/control
 // _mainNavigation/configuration/a
 // _mainNavigation/configuration/b
 // the mainNavigation has a custom layout
@@ -24,21 +22,21 @@ export const sidebarRoute = createRoute({
   component: () => <SidebarLayout />,
 });
 
-export const machineRoute = createRoute({
+export const machinesRoute = createRoute({
   getParentRoute: () => sidebarRoute,
-  path: "machines/$machineSerial",
+  path: "machines",
 });
 
-export const winder1Route = createRoute({
+export const winder1SerialRoute = createRoute({
   getParentRoute: () => machinesRoute,
-  path: "winder1",
+  path: "winder1/$serial",
   component: () => <Winder1Page />,
 });
 
 export const winder1GeneralRoute = createRoute({
-  getParentRoute: () => winder1Route,
-  path: "general",
-  component: () => <div>winder1 general</div>,
+  getParentRoute: () => winder1SerialRoute,
+  path: "control",
+  component: () => <Winder1ControlPage />,
 });
 
 export const setupRoute = createRoute({
@@ -53,7 +51,7 @@ export const ethercatRoute = createRoute({
   component: () => <EthercatPage />,
 });
 
-export const machinesRoute = createRoute({
+export const setupMachinesRoute = createRoute({
   getParentRoute: () => setupRoute,
   path: "machines",
   component: () => <MachinesPage />,
@@ -61,7 +59,9 @@ export const machinesRoute = createRoute({
 
 export const rootTree = RootRoute.addChildren([
   sidebarRoute.addChildren([
-    machineRoute.addChildren([winder1Route.addChildren([winder1GeneralRoute])]),
-    setupRoute.addChildren([ethercatRoute, machinesRoute]),
+    setupRoute.addChildren([ethercatRoute, setupMachinesRoute]),
+    machinesRoute.addChildren([
+      winder1SerialRoute.addChildren([winder1GeneralRoute]),
+    ]),
   ]),
 ]);

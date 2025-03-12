@@ -13,7 +13,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import React, { useMemo } from "react";
-import { get_vendor_name, getMachinePreset } from "@/machines/types";
+import { getVendorPreset, getMachinePreset } from "@/machines/types";
 import { IconText } from "@/components/IconText";
 
 export const columns: ColumnDef<EthercatSetupEventMachineInfo>[] = [
@@ -25,7 +25,8 @@ export const columns: ColumnDef<EthercatSetupEventMachineInfo>[] = [
       if (!machine_identification) {
         return "—";
       }
-      return getMachinePreset(machine_identification)?.name ?? "UNKNOWN";
+      const machinePreset = getMachinePreset(machine_identification);
+      return machinePreset?.name + " " + machinePreset?.version;
     },
   },
   {
@@ -36,7 +37,7 @@ export const columns: ColumnDef<EthercatSetupEventMachineInfo>[] = [
       if (!machine_identification) {
         return "—";
       }
-      return get_vendor_name(machine_identification.vendor)?.name ?? "UNKNOWN";
+      return getVendorPreset(machine_identification.vendor)?.name ?? "UNKNOWN";
     },
   },
   {
@@ -81,7 +82,7 @@ export function MachinesPage() {
   });
 
   return (
-    <Page title="EtherCAT">
+    <Page>
       <SectionTitle title="Maschinen">
         <RefreshIndicator messageResponse={deviceMessage} />
       </SectionTitle>

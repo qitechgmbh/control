@@ -52,7 +52,8 @@ export const columns: ColumnDef<EthercatSetupEvent["devices"][0]>[] = [
       if (!machine_identification) {
         return "—";
       }
-      return getMachinePreset(machine_identification)?.name ?? "UNKNOWN";
+      const machinePreset = getMachinePreset(machine_identification);
+      return machinePreset?.name + " " + machinePreset?.version;
     },
   },
   {
@@ -114,7 +115,7 @@ export function EthercatPage() {
   });
 
   return (
-    <Page title="EtherCAT">
+    <Page>
       <p>
         Maschine, Maschinen Seriennummer, Rolle sind QiTech spezifische Werte
         die in den EEPROM geschrieben werden um Maschinen als Einheit zu

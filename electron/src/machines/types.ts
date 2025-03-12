@@ -1,9 +1,18 @@
+// every device has multiple roles to indentify the function of a subdevice
+// each role can only be given once
+
+import { IconName } from "@/components/Icon";
+
+// EK1100 should have role 0
 export type DeviceRole = {
   role: number;
+  // UI purpose
   role_label: string;
+  // what kind of subdevices can be assigned to this role
   allowed_devices: EthercatDevice[];
 };
 
+// data to identify subdevices
 type EthercatDevice = {
   product_id: number;
   revision: number;
@@ -16,33 +25,45 @@ export type MachineIdentification = {
 };
 
 export type MachinePreset = {
+  // displayable name
   name: string;
+  // displayable version
+  version: string;
+  // path for IO routes
+  slug: string;
+  icon: IconName;
+  // needs to be same as in the backend
   vendor_id: 0x0001;
+  // needs to be same as in the backend
   machine_id: number;
+  // roles and thair allowed devices
   device_roles: DeviceRole[];
 };
 
 export const VENDOR_QITECH = 0x0001;
 
-export type Vendor = {
+export type VendorPreset = {
   id: number;
   name: string;
 };
 
-export const vendors: Vendor[] = [
+export const vendorPresets: VendorPreset[] = [
   {
     id: VENDOR_QITECH,
     name: "QiTech Industries GmbH",
   },
 ];
 
-export function get_vendor_name(vendor_id: number): Vendor | undefined {
-  return vendors.find((v) => v.id === vendor_id);
+export function getVendorPreset(vendor_id: number): VendorPreset | undefined {
+  return vendorPresets.find((v) => v.id === vendor_id);
 }
 
 export const machinePresets: MachinePreset[] = [
   {
-    name: "Winder V1",
+    name: "Winder",
+    version: "V1",
+    slug: "winder1",
+    icon: "lu:Shell",
     vendor_id: VENDOR_QITECH,
     machine_id: 0x0001,
     device_roles: [

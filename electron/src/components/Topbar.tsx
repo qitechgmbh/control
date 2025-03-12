@@ -4,21 +4,11 @@ import { OutsideCorner } from "./OutsideCorner";
 import { BackButton } from "./BackButton";
 import { Link, Outlet } from "@tanstack/react-router";
 import { useOnSubpath } from "@/hooks/useOnSubpath";
-
-// type TopbarItemProps = {
-//   icon?: React.ReactNode;
-//   title: string;
-// } & SidebarButtonBuilderProps;
-
-// export type SidebarButtonBuilderProps = {
-//   isActive: boolean;
-//   isFirst: boolean;
-//   onClick: () => void;
-// };
+import { Icon, IconName } from "./Icon";
 
 type TopbarItemContent = {
   link: string;
-  icon?: React.ReactNode;
+  icon?: IconName;
   title: string;
 };
 
@@ -32,7 +22,7 @@ export function TopbarItem({ icon, title, link }: TopbarItemProps) {
           isActive ? "rounded-t-lg bg-white pb-2" : "rounded-lg bg-neutral-100"
         }`}
       >
-        {icon}
+        {icon && <Icon name={icon} />}
         {title}
       </div>
       <OutsideCorner bottomLeft={isActive} bottomRight={isActive} />

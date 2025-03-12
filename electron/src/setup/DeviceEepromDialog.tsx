@@ -190,7 +190,7 @@ export function DeviceEeepromDialogContent({ device, setOpen }: ContentProps) {
                           key={machine.machine_id}
                           value={machine.machine_id.toString()}
                         >
-                          {machine.name}
+                          {machine.name} {machine.version}
                         </SelectItem>
                       ))}
                     </SelectContent>
