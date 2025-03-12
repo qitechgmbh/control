@@ -63,7 +63,7 @@ export const machinePresets: MachinePreset[] = [
     name: "Winder",
     version: "V1",
     slug: "winder1",
-    icon: "lu:Shell",
+    icon: "lu:Disc3",
     vendor_id: VENDOR_QITECH,
     machine_id: 0x0001,
     device_roles: [
