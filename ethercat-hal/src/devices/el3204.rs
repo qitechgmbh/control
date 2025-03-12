@@ -9,10 +9,16 @@ use crate::{
 /// EL3204 4-channel temperature input device
 ///
 /// PT100 / Ni100 (RTD) / (2 wire)
-#[derive(Debug, Device)]
+#[derive(Device)]
 pub struct EL3204 {
     pub txpdo: EL3204TxPdo,
     pub input_ts: u64,
+}
+
+impl std::fmt::Debug for EL3204 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "EL3204")
+    }
 }
 
 impl EL3204 {

@@ -8,10 +8,16 @@ use ethercat_hal_derive::{Device, RxPdo, TxPdo};
 /// EL1008 8-channel digital input device
 ///
 /// 24V DC, 3ms filter
-#[derive(Debug, Clone, Device)]
+#[derive(Clone, Device)]
 pub struct EL1008 {
     pub inputs_ts: u64,
     txpdu: EL1008TxPdu,
+}
+
+impl std::fmt::Debug for EL1008 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "EL1008")
+    }
 }
 
 impl EL1008 {

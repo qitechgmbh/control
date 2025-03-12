@@ -7,10 +7,16 @@ use crate::types::EthercrabSubDevicePreoperational;
 /// EL2634 4-channel relay device
 ///
 /// 250V AC / 30V DC / 4A per channel
-#[derive(Debug, Device)]
+#[derive(Device)]
 pub struct EL2634 {
     pub output_ts: u64,
     rxpdu: EL2634RxPdu,
+}
+
+impl std::fmt::Debug for EL2634 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "EL2634")
+    }
 }
 
 impl EL2634 {

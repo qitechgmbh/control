@@ -24,6 +24,22 @@ export type MachinePreset = {
 
 export const VENDOR_QITECH = 0x0001;
 
+export type Vendor = {
+  id: number;
+  name: string;
+};
+
+export const vendors: Vendor[] = [
+  {
+    id: VENDOR_QITECH,
+    name: "QiTech Industries GmbH",
+  },
+];
+
+export function get_vendor_name(vendor_id: number): Vendor | undefined {
+  return vendors.find((v) => v.id === vendor_id);
+}
+
 export const machinePresets: MachinePreset[] = [
   {
     name: "Winder V1",

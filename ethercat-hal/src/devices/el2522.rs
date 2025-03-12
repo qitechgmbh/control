@@ -15,13 +15,19 @@ use anyhow::Ok;
 use ethercat_hal_derive::{Device, RxPdo, TxPdo};
 
 /// EL2521 2-channel pulse train output terminal
-#[derive(Debug, Device)]
+#[derive(Device)]
 pub struct EL2522 {
     pub configuration: EL2522Configuration,
     pub txpdo: EL2522TxPdo,
     pub rxpdo: EL2522RxPdo,
     pub output_ts: u64,
     pub input_ts: u64,
+}
+
+impl std::fmt::Debug for EL2522 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "EL2522")
+    }
 }
 
 impl EL2522 {
@@ -260,7 +266,7 @@ pub struct EL2522ChannelConfiguration {
     /// # 0x8020:18 (Ch.1) / 0x8030:18 (Ch.2)
     /// If 0x8pp0:0A is enabled: Number of micro increment bits
     /// Default: 0x0008 (8)
-    pub micro_increment_bits: u8,
+    pub micro_increment_bits: u16,
 
     /// # 0x8020:19 (Ch.1) / 0x8030:19 (Ch.2)
     /// If C-reset active: Number of increments "per revolution". At 1024 the counter counts

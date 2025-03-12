@@ -100,7 +100,7 @@ export const columns: ColumnDef<EthercatSetupEvent["devices"][0]>[] = [
   },
 ];
 
-export function DevicesPage() {
+export function EthercatPage() {
   const deviceMessage = useSocketioEthercatSetupEvent();
 
   const data = useMemo(() => {

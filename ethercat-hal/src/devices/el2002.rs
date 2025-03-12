@@ -7,10 +7,16 @@ use ethercat_hal_derive::{Device, RxPdo, TxPdo};
 /// EL2002 8-channel digital output device
 ///
 /// 24V DC, 0.5A per channel
-#[derive(Debug, Device)]
+#[derive(Device)]
 pub struct EL2002 {
     pub output_ts: u64,
     rxpdu: EL2002RxPdu,
+}
+
+impl std::fmt::Debug for EL2002 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "EL2002")
+    }
 }
 
 impl EL2002 {

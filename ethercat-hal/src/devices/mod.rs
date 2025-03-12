@@ -18,16 +18,18 @@ use crate::{
 };
 use anyhow::anyhow;
 use bitvec::{order::Lsb0, slice::BitSlice};
+use ek1100::EK1100;
+use el2002::EL2002;
 use el2008::EL2008;
 use el2024::EL2024;
 use el2522::EL2522;
 use el2634::EL2634;
 use el2809::EL2809;
 use ethercrab::{MainDevice, SubDeviceIdentity};
-use std::{any::Any, sync::Arc};
+use std::{any::Any, fmt::Debug, sync::Arc};
 use tokio::sync::RwLock;
 
-pub trait Device: Any + Send + Sync {
+pub trait Device: Any + Send + Sync + Debug {
     /// Input data from the last cycle
     /// `ts` is the timestamp when the input data was sent by the device
     fn input(&mut self, _input: &BitSlice<u8, Lsb0>) {
@@ -45,7 +47,8 @@ pub trait Device: Any + Send + Sync {
         let input_len = self.input_len();
         if input.len() != input_len {
             return Err(anyhow::anyhow!(
-                "Input length is {} and must be {} bytes",
+                "[{}::Device::input_checked] Input length is {} and must be {} bytes",
+                module_path!(),
                 input.len(),
                 input_len
             ));
@@ -74,7 +77,8 @@ pub trait Device: Any + Send + Sync {
         let output_len = self.output_len();
         if output.len() != output_len {
             return Err(anyhow::anyhow!(
-                "Output length is {} and must be {} bytes",
+                "[{}::Device::output_checked] Output length is {} and must be {} bytes",
+                module_path!(),
                 output.len(),
                 output_len
             ));
@@ -108,7 +112,10 @@ pub async fn downcast_device<T: Device>(
             ))
         }
     } else {
-        Err(anyhow!("Downcast failed"))
+        Err(anyhow!(
+            "[{}::downcast_device] Downcast failed",
+            module_path!()
+        ))
     }
 }
 
@@ -116,7 +123,9 @@ pub fn device_from_subdevice(
     subdevice_name: &str,
 ) -> Result<Arc<RwLock<dyn Device>>, anyhow::Error> {
     match subdevice_name {
+        "EK1100" => Ok(Arc::new(RwLock::new(EK1100::new()))),
         "EL1008" => Ok(Arc::new(RwLock::new(EL1008::new()))),
+        "EL2002" => Ok(Arc::new(RwLock::new(EL2002::new()))),
         "EL2008" => Ok(Arc::new(RwLock::new(EL2008::new()))),
         "EL2024" => Ok(Arc::new(RwLock::new(EL2024::new()))),
         "EL2521" => Ok(Arc::new(RwLock::new(EL2521::new()))),
@@ -127,31 +136,36 @@ pub fn device_from_subdevice(
         "EL3001" => Ok(Arc::new(RwLock::new(el3001::EL3001::new()))),
         // "EL4008" => Ok(Arc::new(RwLock::new(EL4008::new()))),
         "EL3204" => Ok(Arc::new(RwLock::new(EL3204::new()))),
-        _ => Err(anyhow::anyhow!("No Driver: {}", subdevice_name)),
+        _ => Err(anyhow::anyhow!(
+            "[{}::device_from_subdevice] No Driver: {}",
+            module_path!(),
+            subdevice_name
+        )),
     }
 }
 
 pub fn devices_from_subdevices<'maindevice, const MAX_SUBDEVICES: usize, const PDI_LEN: usize>(
     group: &mut EthercrabSubDeviceGroupPreoperational<MAX_SUBDEVICES, PDI_LEN>,
     maindevice: &MainDevice,
-) -> Vec<Option<Arc<RwLock<dyn Device>>>> {
+) -> Result<Vec<Arc<RwLock<dyn Device>>>, anyhow::Error> {
     group
         .iter(maindevice)
-        .map(|subdevice| device_from_subdevice(subdevice.name()).ok())
-        .collect()
+        .map(|subdevice| device_from_subdevice(subdevice.name()))
+        .collect::<Result<Vec<_>, anyhow::Error>>()
 }
 
 /// gets a device by index and transmutes it to the desired type
 pub async fn specific_device_from_devices<DEVICE: Device>(
-    devices: &Vec<Option<Arc<RwLock<dyn Device>>>>,
+    devices: &Vec<Arc<RwLock<dyn Device>>>,
     index: usize,
 ) -> Result<Arc<RwLock<DEVICE>>, anyhow::Error> {
-    downcast_device::<DEVICE>(
-        devices[index]
-            .as_ref()
-            .ok_or_else(|| anyhow!("Couldnt find device with macthing type at {}", index))?
-            .clone(),
-    )
+    downcast_device::<DEVICE>(devices.get(index).cloned().ok_or({
+        anyhow!(
+            "[{}::specific_device_from_devices] Couldnt find device with matching type at {}",
+            module_path!(),
+            index
+        )
+    })?)
     .await
 }
 

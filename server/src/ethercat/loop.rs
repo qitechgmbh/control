@@ -1,6 +1,6 @@
 use crate::app_state::{EthercatSetup, MachineInfo};
 use crate::ethercat::device_identification::identify_device_groups;
-use crate::machines::Machines;
+use crate::machines::{MachineNew, Machines};
 use crate::{
     app_state::AppState,
     ethercat::config::{MAX_FRAMES, MAX_PDU_DATA, MAX_SUBDEVICES, PDI_LEN},
@@ -8,7 +8,7 @@ use crate::{
 };
 use bitvec::prelude::*;
 use ethercat_hal::actors::Actor;
-use ethercat_hal::devices::{devices_from_subdevices, Device};
+use ethercat_hal::devices::devices_from_subdevices;
 use ethercrab::std::{ethercat_now, tx_rx_task};
 use ethercrab::{MainDevice, MainDeviceConfig, PduStorage, RetryBehaviour, Timeouts};
 use std::{sync::Arc, time::Duration};
@@ -67,14 +67,15 @@ pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(),
             group
         }
         Err(err) => Err(anyhow::anyhow!(
-            "Failed to initialize subdevices: {:?}",
+            "[{}::setup_loop] Failed to initialize subdevices: {:?}",
+            module_path!(),
             err
         ))?,
     };
 
     // create devices
-    let devices: Vec<Option<Arc<RwLock<dyn Device>>>> =
-        devices_from_subdevices::<MAX_SUBDEVICES, PDI_LEN>(&mut group_preop, &maindevice);
+    let devices =
+        devices_from_subdevices::<MAX_SUBDEVICES, PDI_LEN>(&mut group_preop, &maindevice)?;
 
     // Identify machines
     // - Read identification values from devices
@@ -96,7 +97,8 @@ pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(),
             group_op
         }
         Err(err) => Err(anyhow::anyhow!(
-            "Failed to put group in OP state: {:?}",
+            "[{}::setup_loop] Failed to put group in OP state: {:?}",
+            module_path!(),
             err
         ))?,
     };
@@ -113,13 +115,16 @@ pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(),
         // add machine info
         let first_device = match identified_device_groups[i].first() {
             Some(first_device) => first_device,
-            None => Err(anyhow::anyhow!("No first device"))?,
+            None => Err(anyhow::anyhow!(
+                "[{}::setup_loop] No first device",
+                module_path!()
+            ))?,
         };
         let machine_info = MachineInfo {
             machine_identification: first_device.machine_identification.clone(),
             error: match &machine {
-                Ok(_) => Ok(()),
-                Err(e) => Err(e.to_string()),
+                Ok(_) => None,
+                Err(e) => Some(e.to_string()),
             },
         };
         machine_infos.push(machine_info);
@@ -177,7 +182,7 @@ pub async fn loop_once<'maindevice>(
     let setup_guard = setup.read().await;
     let setup = setup_guard
         .as_ref()
-        .ok_or_else(|| anyhow::anyhow!("No setup"))?;
+        .ok_or_else(|| anyhow::anyhow!("[{}::loop_once] No setup", module_path!()))?;
 
     // TS when the TX/RX cycle starts
     let input_ts = ethercat_now();
@@ -190,10 +195,7 @@ pub async fn loop_once<'maindevice>(
 
     // copy inputs to devices
     for (i, subdevice) in setup.group.iter(&setup.maindevice).enumerate() {
-        let mut device = match setup.devices[i].as_ref() {
-            Some(device) => device.write().await,
-            None => continue,
-        };
+        let mut device = setup.devices[i].as_ref().write().await;
         device.ts(input_ts, output_ts);
         let input = subdevice.inputs_raw();
         let input_bits = input.view_bits::<Lsb0>();
@@ -208,10 +210,7 @@ pub async fn loop_once<'maindevice>(
 
     // copy outputs from devices
     for (i, subdevice) in setup.group.iter(&setup.maindevice).enumerate() {
-        let device = match setup.devices[i].as_ref() {
-            Some(device) => device.read().await,
-            None => continue,
-        };
+        let device = setup.devices[i].as_ref().read().await;
         let mut output = subdevice.outputs_raw_mut();
         let output_bits = output.view_bits_mut::<Lsb0>();
         device.output_checked(output_bits)?;

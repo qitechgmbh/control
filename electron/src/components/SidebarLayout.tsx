@@ -1,12 +1,13 @@
 import { OutsideCorner } from "@/components/OutsideCorner";
 import { useOnSubpath } from "@/hooks/useOnSubpath";
 import { Link, Outlet } from "@tanstack/react-router";
-import { EthernetPort } from "lucide-react";
+import { Wrench } from "lucide-react";
 import { Fragment } from "react";
 import React from "react";
 
 type SidebarItemContent = {
   link: string;
+  activeLink: string;
   icon?: React.ReactNode;
   title: string;
 };
@@ -15,8 +16,14 @@ type SidebarItemProps = SidebarItemContent & {
   isFirst: boolean;
 };
 
-export function SidebarItem({ link, icon, title, isFirst }: SidebarItemProps) {
-  const isActive = useOnSubpath(link);
+export function SidebarItem({
+  link,
+  icon,
+  title,
+  isFirst,
+  activeLink,
+}: SidebarItemProps) {
+  const isActive = useOnSubpath(activeLink);
   return (
     <Link
       to={link}
@@ -39,12 +46,14 @@ export function SidebarLayout() {
   const items: SidebarItemContent[] = [
     {
       link: "/_sidebar/machines/123",
+      activeLink: "/_sidebar/machines/123",
       title: "Winder 123",
     },
     {
-      link: "/_sidebar/configuration/devices",
-      title: "Ethercat",
-      icon: <EthernetPort size={20} />,
+      link: "/_sidebar/setup/ethercat",
+      activeLink: "/_sidebar/setup",
+      title: "Setup",
+      icon: <Wrench size={20} />,
     },
   ];
 

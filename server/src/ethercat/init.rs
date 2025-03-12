@@ -17,7 +17,12 @@ pub fn init_ethercat(app_state: Arc<AppState>) {
 
                 runtime.block_on(async {
                     log::info!("Starting Ethercat PDU loop");
-                    setup_loop(interface, app_state.clone()).await
+                    let result = setup_loop(interface, app_state.clone()).await;
+                    if let Err(e) = result {
+                        panic!("Failed to setup Ethercat: {:?}", e);
+                    } else {
+                        log::info!("Ethercat loop exited");
+                    }
                 })
             })
             .unwrap();

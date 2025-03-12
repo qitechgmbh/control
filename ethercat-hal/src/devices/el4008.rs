@@ -9,10 +9,15 @@ const OUTPUT_PDU_LEN: usize = 16;
 /// 12-bit resolution, 0-10V
 ///
 /// load > 5kOhm
-#[derive(Debug)]
 pub struct EL4008 {
     output_pdus: [u8; OUTPUT_PDU_LEN],
     pub output_ts: u64,
+}
+
+impl std::fmt::Debug for EL4008 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "EL4008")
+    }
 }
 
 impl EL4008 {

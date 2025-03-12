@@ -43,7 +43,7 @@ pub struct EthercatSetup {
     /// All Ethercat devices
     /// Device-Specific interface for all devices
     /// Same length and order as SubDevices inside `group`
-    pub devices: Vec<Option<Arc<RwLock<dyn Device>>>>,
+    pub devices: Vec<Arc<RwLock<dyn Device>>>,
     /// All Ethercat devices
     /// Generic interface for all devices
     /// Needed to interface with the devices on an Ethercat level
@@ -60,7 +60,7 @@ impl EthercatSetup {
         machine_infos: Vec<MachineInfo>,
         identified_device_groups: Vec<Vec<MachineDeviceIdentification>>,
         undetected_devices: Vec<MachineDeviceIdentification>,
-        devices: Vec<Option<Arc<RwLock<dyn Device>>>>,
+        devices: Vec<Arc<RwLock<dyn Device>>>,
         group: SubDeviceGroup<MAX_SUBDEVICES, PDI_LEN, Op>,
         delays: Vec<Option<u32>>,
         maindevice: MainDevice<'static>,

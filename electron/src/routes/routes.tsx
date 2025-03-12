@@ -3,8 +3,9 @@ import { RootRoute } from "./__root";
 import React from "react";
 import { SidebarLayout } from "@/components/SidebarLayout";
 import { Winder1Page } from "@/machines/winder1/Winder1Page";
-import { ConfigurationPage } from "@/configuration/ConfigurationPage";
-import { DevicesPage } from "@/configuration/DevicesPage";
+import { SetupPage } from "@/setup/SetupPage";
+import { EthercatPage } from "@/setup/EthercatPage";
+import { MachinesPage } from "@/setup/MachinesPage";
 
 // make a route tree like this
 // _mainNavigation/machines/$machineSerial/winder1/general
@@ -23,7 +24,7 @@ export const sidebarRoute = createRoute({
   component: () => <SidebarLayout />,
 });
 
-export const machinesRoute = createRoute({
+export const machineRoute = createRoute({
   getParentRoute: () => sidebarRoute,
   path: "machines/$machineSerial",
 });
@@ -40,23 +41,27 @@ export const winder1GeneralRoute = createRoute({
   component: () => <div>winder1 general</div>,
 });
 
-export const configurationRoute = createRoute({
+export const setupRoute = createRoute({
   getParentRoute: () => sidebarRoute,
-  path: "configuration",
-  component: () => <ConfigurationPage />,
+  path: "setup",
+  component: () => <SetupPage />,
 });
 
-export const devicesRoute = createRoute({
-  getParentRoute: () => configurationRoute,
-  path: "devices",
-  component: () => <DevicesPage />,
+export const ethercatRoute = createRoute({
+  getParentRoute: () => setupRoute,
+  path: "ethercat",
+  component: () => <EthercatPage />,
+});
+
+export const machinesRoute = createRoute({
+  getParentRoute: () => setupRoute,
+  path: "machines",
+  component: () => <MachinesPage />,
 });
 
 export const rootTree = RootRoute.addChildren([
   sidebarRoute.addChildren([
-    machinesRoute.addChildren([
-      winder1Route.addChildren([winder1GeneralRoute]),
-    ]),
-    configurationRoute.addChildren([devicesRoute]),
+    machineRoute.addChildren([winder1Route.addChildren([winder1GeneralRoute])]),
+    setupRoute.addChildren([ethercatRoute, machinesRoute]),
   ]),
 ]);

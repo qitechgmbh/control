@@ -10,16 +10,26 @@ use winder1::WinderV1;
 
 pub enum Machines
 where
-    Self: Actor,
+    Self: Actor + MachineNew,
 {
     WinderV1(WinderV1),
 }
 
-impl Machines {
-    pub fn new<'maindevice, 'subdevices>(
+pub trait MachineNew {
+    fn new<'maindevice, 'subdevices>(
         identified_device_group: &Vec<MachineDeviceIdentification>,
         subdevices: &'subdevices Vec<SubDeviceRef<'maindevice, &SubDevice>>,
-        devices: &Vec<Option<Arc<RwLock<dyn Device>>>>,
+        devices: &Vec<Arc<RwLock<dyn Device>>>,
+    ) -> Result<Self, Error>
+    where
+        Self: Sized;
+}
+
+impl MachineNew for Machines {
+    fn new<'maindevice, 'subdevices>(
+        identified_device_group: &Vec<MachineDeviceIdentification>,
+        subdevices: &'subdevices Vec<SubDeviceRef<'maindevice, &SubDevice>>,
+        devices: &Vec<Arc<RwLock<dyn Device>>>,
     ) -> Result<Machines, Error> {
         let machine_identification = &identified_device_group
             .first()
@@ -35,7 +45,10 @@ impl Machines {
                 &subdevices,
                 devices,
             )?)),
-            _ => Err(anyhow::anyhow!("Unknown machine")),
+            _ => Err(anyhow::anyhow!(
+                "[{}::Machines::new] Unknown machine",
+                module_path!()
+            )),
         }
     }
 }
@@ -64,7 +77,10 @@ fn validate_same_machine_identification(
         .machine_identification;
     for device in identified_device_group.iter() {
         if device.machine_identification != *machine_identification {
-            return Err(anyhow::anyhow!("Different machine identifications"));
+            return Err(anyhow::anyhow!(
+                "[{}::validate_same_machine_identification] Different machine identifications",
+                module_path!()
+            ));
         }
     }
     Ok(())
@@ -77,7 +93,10 @@ fn validate_no_role_dublicates(
     let mut roles = vec![];
     for device in identified_device_group.iter() {
         if roles.contains(&device.role) {
-            return Err(anyhow::anyhow!("Role dublicate"));
+            return Err(anyhow::anyhow!(
+                "[{}::validate_no_role_dublicates] Role dublicate",
+                module_path!(),
+            ));
         }
         roles.push(device.role);
     }
@@ -85,33 +104,33 @@ fn validate_no_role_dublicates(
 }
 
 /// get a device with a device group
-fn get_device_by_role(
+fn get_mdi_by_role(
     identified_device_group: &Vec<MachineDeviceIdentification>,
     role: u32,
-) -> Result<(usize, &MachineDeviceIdentification), Error> {
-    for (i, device) in identified_device_group.iter().enumerate() {
+) -> Result<&MachineDeviceIdentification, Error> {
+    for device in identified_device_group.iter() {
         if device.role == role {
-            return Ok((i, device));
+            return Ok(device);
         }
     }
-    Err(anyhow::anyhow!("Device not found"))
+    Err(anyhow::anyhow!(
+        "[{}::get_mdi_by_role] Device not found",
+        module_path!(),
+    ))
 }
 
 pub fn get_device_by_index<'maindevice>(
-    devices: &Vec<Option<Arc<RwLock<dyn Device>>>>,
+    devices: &Vec<Arc<RwLock<dyn Device>>>,
     subdevice_index: usize,
 ) -> Result<Arc<RwLock<dyn Device>>, Error> {
     Ok(devices
         .get(subdevice_index)
         .ok_or(anyhow::anyhow!(
-            "Index {} out of bounds for devices",
+            "[{}::get_device_by_index] Index {} out of bounds for devices",
+            module_path!(),
             subdevice_index
         ))?
-        .clone()
-        .ok_or(anyhow::anyhow!(
-            "No device driver with index {} is None",
-            subdevice_index
-        ))?)
+        .clone())
 }
 
 pub fn get_subdevice_by_index<'subdevices, 'maindevice>(

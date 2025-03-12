@@ -7,10 +7,16 @@ use crate::types::EthercrabSubDevicePreoperational;
 /// EL2024 4-channel digital output device
 ///
 /// 24V DC, 0.5A per channel
-#[derive(Debug, Device)]
+#[derive(Device)]
 pub struct EL2024 {
     pub output_ts: u64,
     rxpdu: EL2024RxPdu,
+}
+
+impl std::fmt::Debug for EL2024 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "EL2024")
+    }
 }
 
 impl EL2024 {

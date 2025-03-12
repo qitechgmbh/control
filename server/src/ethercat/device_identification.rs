@@ -280,7 +280,8 @@ pub fn get_identification_addresses<'maindevice>(
         EL2522_IDENTITY_A => MachineDeviceIdentificationAddresses::default(),
         _ => {
             log::error!(
-                "Unknown MDI addresses for device {:?} vendor: 0x{:08x} product: 0x{:08x} revision: 0x{:08x}",
+                "[{}::get_identification_addresses] Unknown MDI addresses for device {:?} vendor: 0x{:08x} product: 0x{:08x} revision: 0x{:08x}",
+                module_path!(),
                 subdevice_name,
                 subdevice_identity.vendor_id,
                 subdevice_identity.product_id,
@@ -288,7 +289,8 @@ pub fn get_identification_addresses<'maindevice>(
             );
             // block_on(u16dump(&subdevice, maindevice, 0x00, 0xff))?;
             Err(anyhow!(
-            "Unknown MDI addresses for device {:?} vendor: 0x{:08x} product: 0x{:08x} revision: 0x{:08x}",
+            "[{}::get_identification_addresses] Unknown MDI addresses for device {:?} vendor: 0x{:08x} product: 0x{:08x} revision: 0x{:08x}",
+            module_path!(),
             subdevice_name,
             subdevice_identity.vendor_id,
             subdevice_identity.product_id,

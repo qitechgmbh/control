@@ -9,11 +9,17 @@ use crate::{
 };
 use ethercat_hal_derive::{Device, RxPdo, TxPdo};
 
-#[derive(Debug, Device)]
+#[derive(Device)]
 pub struct EL3001 {
     pub input_ts: u64,
     pub txpdo: EL3001TxPdo,
     pub configuration: EL3001Configuration,
+}
+
+impl std::fmt::Debug for EL3001 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "EL3001")
+    }
 }
 
 impl EL3001 {

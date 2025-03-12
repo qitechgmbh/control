@@ -15,13 +15,19 @@ use anyhow::Ok;
 use ethercat_hal_derive::{Device, RxPdo, TxPdo};
 
 /// EL2521 1-channel pulse train output terminal
-#[derive(Debug, Device)]
+#[derive(Device)]
 pub struct EL2521 {
     pub configuration: EL2521Configuration,
     pub txpdo: EL2521TxPdo,
     pub rxpdo: EL2521RxPdo,
     pub output_ts: u64,
     pub input_ts: u64,
+}
+
+impl std::fmt::Debug for EL2521 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "EL2521")
+    }
 }
 
 impl EL2521 {
