@@ -10,6 +10,10 @@ export function getUnitIcon(unit: Unit): IconName {
       return "lu:Ruler";
     case "rpm":
       return "lu:Gauge";
+    case "C":
+      return "lu:Thermometer";
+    case "bar":
+      return "lu:Expand";
     case "deg":
       return "lu:TriangleRight";
     default:
@@ -17,6 +21,6 @@ export function getUnitIcon(unit: Unit): IconName {
   }
 }
 
-export const units = ["m/s", "mm", "rpm", "deg", "m"] as const;
+export const units = ["m/s", "mm", "rpm", "deg", "m", "C", "bar"] as const;
 
 export type Unit = (typeof units)[number];

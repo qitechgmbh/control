@@ -2,7 +2,7 @@ import { ControlCard } from "@/control/ControlCard";
 import { Page } from "@/components/Page";
 import React from "react";
 import { ControlGrid } from "@/control/ControlGrid";
-import { ControlValue } from "@/control/ControlValue";
+import { ControlValueNumeric } from "@/control/ControlValue";
 import { TraverseBar } from "../TraverseBar";
 import {
   SelectionGroup,
@@ -19,13 +19,12 @@ export function Winder1ControlPage() {
     <Page>
       <ControlGrid>
         <ControlCard className="bg-red" height={2} title="Traverse">
-          <Label label="Position">
-            <ControlValue
-              unit="mm"
-              value={55}
-              renderValue={(value) => value.toFixed(0)}
-            />
-          </Label>
+          <ControlValueNumeric
+            label="Position"
+            unit="mm"
+            value={55}
+            renderValue={(value) => value.toFixed(0)}
+          />
           <TraverseBar
             inside={0}
             outside={100}
@@ -75,13 +74,12 @@ export function Winder1ControlPage() {
           </Label>
         </ControlCard>
         <ControlCard className="bg-red" title="Puller">
-          <Label label="Geschwindigkeit">
-            <ControlValue
-              unit="m/s"
-              value={16}
-              renderValue={(value) => value.toFixed(0)}
-            />
-          </Label>
+          <ControlValueNumeric
+            label="Geschwindigkeit"
+            unit="m/s"
+            value={16}
+            renderValue={(value) => value.toFixed(0)}
+          />
           <Label label="Konstant">
             <SelectionGroupBoolean
               value={false}
@@ -122,7 +120,8 @@ export function Winder1ControlPage() {
           />
         </ControlCard>
         <ControlCard className="bg-red" title="Auto Stop">
-          <ControlValue
+          <ControlValueNumeric
+            label="Gewickelt"
             unit="m"
             value={14}
             renderValue={(value) => value.toFixed(0)}
@@ -164,15 +163,17 @@ export function Winder1ControlPage() {
           </div>
         </ControlCard>
         <ControlCard className="bg-red" title="Messwerte">
-          <ControlValue
+          <ControlValueNumeric
+            label="Winder Drehzahl"
             unit="rpm"
             value={55}
             renderValue={(value) => value.toFixed(0)}
           />
-          <ControlValue
+          <ControlValueNumeric
+            label="Winkel Lastarm"
             unit="deg"
-            value={55}
-            renderValue={(value) => value.toFixed(0)}
+            value={5}
+            renderValue={(value) => value.toFixed(0) + "°"}
           />
         </ControlCard>
       </ControlGrid>
