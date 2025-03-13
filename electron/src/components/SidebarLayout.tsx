@@ -61,8 +61,7 @@ export function SidebarLayout() {
   ];
 
   return (
-    <div className="flex h-full flex-row">
-      <div className="w-48 min-w-48" />
+    <>
       <div className="fixed flex h-full w-48 flex-col bg-neutral-200">
         <div className="flex h-20 flex-col items-center justify-center gap-0 pt-2">
           <div className="font-qitech line-clamp-none text-3xl">QITECH</div>
@@ -75,7 +74,9 @@ export function SidebarLayout() {
           ))}
         </div>
       </div>
-      <Outlet />
-    </div>
+      <div className="pl-48">
+        <Outlet />
+      </div>
+    </>
   );
 }

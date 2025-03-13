@@ -5,11 +5,11 @@ import { SidebarLayout } from "@/components/SidebarLayout";
 import { SetupPage } from "@/setup/SetupPage";
 import { EthercatPage } from "@/setup/EthercatPage";
 import { MachinesPage } from "@/setup/MachinesPage";
-import { Winder1Page } from "@/machines/winder1/Winder1Page";
-import { Winder1ControlPage } from "@/machines/winder1/Winder1ControlPage";
-import { Winder1ManualPage } from "@/machines/winder1/Winder1Manual";
-import { Winder1SettingPage } from "@/machines/winder1/Winder1Settings";
-import { Winder1GraphsPage } from "@/machines/winder1/Winder1Graphs";
+import { Winder1Page } from "@/machines/winder/winder1/Winder1Page";
+import { Winder1ControlPage } from "@/machines/winder/winder1/Winder1ControlPage";
+import { Winder1ManualPage } from "@/machines/winder/winder1/Winder1Manual";
+import { Winder1SettingPage } from "@/machines/winder/winder1/Winder1Settings";
+import { Winder1GraphsPage } from "@/machines/winder/winder1/Winder1Graphs";
 
 // make a route tree like this
 // _mainNavigation/machines/winder1/$serial/control

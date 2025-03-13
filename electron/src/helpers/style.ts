@@ -14,19 +14,19 @@ type VariableCombinations<V extends Variables> = ({
   className: string;
 })[];
 
-type DefaultVariables<V extends Variables> = {
-  [K in keyof V]: keyof V[K];
-};
+// type DefaultVariables<V extends Variables> = {
+//   [K in keyof V]: keyof V[K];
+// };
 
 export type Props<V extends Variables> = {
   base?: string;
   variables?: V;
   variableCombinations?: VariableCombinations<V>;
-  defaultVariables?: DefaultVariables<V>;
+  // defaultVariables?: DefaultVariables<V>;
 };
 
 type VariablesInput<V extends Variables> = {
-  [K in keyof V]: keyof V[K];
+  [K in keyof V]: keyof V[K] | undefined;
 } & {
   className?: string;
 };
@@ -52,8 +52,9 @@ export function classNameBuilder<V extends Variables>(
       // get valueKey
       const valueKey = variables[variableKey] as string | number;
       // get variable value
-      const value = (props.variables?.[variableKey]?.[valueKey] ||
-        props.defaultVariables?.[variableKey]) as string;
+      // const value = (props.variables?.[variableKey]?.[valueKey] ||
+      //   props.defaultVariables?.[variableKey]) as string;
+      const value = props.variables?.[variableKey]?.[valueKey] as string;
       if (value) {
         classNames.push(value);
       }
