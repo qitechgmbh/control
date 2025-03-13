@@ -1,8 +1,8 @@
 use super::SubDeviceIdentityTuple;
 use crate::io::digital_output::{DigitalOutputDevice, DigitalOutputOutput, DigitalOutputState};
-use crate::pdo::basic::BoolPdoObject;
+use crate::pdo::{basic::BoolPdoObject, RxPdo};
 use crate::types::EthercrabSubDevicePreoperational;
-use ethercat_hal_derive::{Device, RxPdo, TxPdo};
+use ethercat_hal_derive::{Device, RxPdo};
 
 /// EL2008 8-channel digital output device
 ///
@@ -10,7 +10,7 @@ use ethercat_hal_derive::{Device, RxPdo, TxPdo};
 #[derive(Device)]
 pub struct EL2008 {
     pub output_ts: u64,
-    rxpdu: EL2008RxPdu,
+    pub rxpdo: EL2008RxPdo,
 }
 
 impl std::fmt::Debug for EL2008 {
@@ -23,7 +23,7 @@ impl EL2008 {
     pub fn new() -> Self {
         Self {
             output_ts: 0,
-            rxpdu: EL2008RxPdu::default(),
+            rxpdo: EL2008RxPdo::default(),
         }
     }
 }
@@ -31,14 +31,14 @@ impl EL2008 {
 impl DigitalOutputDevice<EL2008Port> for EL2008 {
     fn digital_output_write(&mut self, port: EL2008Port, value: bool) {
         match port {
-            EL2008Port::DO1 => self.rxpdu.channel1.as_mut().unwrap().value = value,
-            EL2008Port::DO2 => self.rxpdu.channel2.as_mut().unwrap().value = value,
-            EL2008Port::DO3 => self.rxpdu.channel3.as_mut().unwrap().value = value,
-            EL2008Port::DO4 => self.rxpdu.channel4.as_mut().unwrap().value = value,
-            EL2008Port::DO5 => self.rxpdu.channel5.as_mut().unwrap().value = value,
-            EL2008Port::DO6 => self.rxpdu.channel6.as_mut().unwrap().value = value,
-            EL2008Port::DO7 => self.rxpdu.channel7.as_mut().unwrap().value = value,
-            EL2008Port::DO8 => self.rxpdu.channel8.as_mut().unwrap().value = value,
+            EL2008Port::DO1 => self.rxpdo.channel1.as_mut().unwrap().value = value,
+            EL2008Port::DO2 => self.rxpdo.channel2.as_mut().unwrap().value = value,
+            EL2008Port::DO3 => self.rxpdo.channel3.as_mut().unwrap().value = value,
+            EL2008Port::DO4 => self.rxpdo.channel4.as_mut().unwrap().value = value,
+            EL2008Port::DO5 => self.rxpdo.channel5.as_mut().unwrap().value = value,
+            EL2008Port::DO6 => self.rxpdo.channel6.as_mut().unwrap().value = value,
+            EL2008Port::DO7 => self.rxpdo.channel7.as_mut().unwrap().value = value,
+            EL2008Port::DO8 => self.rxpdo.channel8.as_mut().unwrap().value = value,
         }
     }
 
@@ -47,14 +47,14 @@ impl DigitalOutputDevice<EL2008Port> for EL2008 {
             output_ts: self.output_ts,
             output: DigitalOutputOutput {
                 value: match port {
-                    EL2008Port::DO1 => self.rxpdu.channel1.as_ref().unwrap().value,
-                    EL2008Port::DO2 => self.rxpdu.channel2.as_ref().unwrap().value,
-                    EL2008Port::DO3 => self.rxpdu.channel3.as_ref().unwrap().value,
-                    EL2008Port::DO4 => self.rxpdu.channel4.as_ref().unwrap().value,
-                    EL2008Port::DO5 => self.rxpdu.channel5.as_ref().unwrap().value,
-                    EL2008Port::DO6 => self.rxpdu.channel6.as_ref().unwrap().value,
-                    EL2008Port::DO7 => self.rxpdu.channel7.as_ref().unwrap().value,
-                    EL2008Port::DO8 => self.rxpdu.channel8.as_ref().unwrap().value,
+                    EL2008Port::DO1 => self.rxpdo.channel1.as_ref().unwrap().value,
+                    EL2008Port::DO2 => self.rxpdo.channel2.as_ref().unwrap().value,
+                    EL2008Port::DO3 => self.rxpdo.channel3.as_ref().unwrap().value,
+                    EL2008Port::DO4 => self.rxpdo.channel4.as_ref().unwrap().value,
+                    EL2008Port::DO5 => self.rxpdo.channel5.as_ref().unwrap().value,
+                    EL2008Port::DO6 => self.rxpdo.channel6.as_ref().unwrap().value,
+                    EL2008Port::DO7 => self.rxpdo.channel7.as_ref().unwrap().value,
+                    EL2008Port::DO8 => self.rxpdo.channel8.as_ref().unwrap().value,
                 },
             },
         }
@@ -73,8 +73,8 @@ pub enum EL2008Port {
     DO8,
 }
 
-#[derive(Debug, Clone, RxPdo, Default)]
-struct EL2008RxPdu {
+#[derive(Debug, Clone, RxPdo)]
+pub struct EL2008RxPdo {
     #[pdo_object_index(0x1600)]
     pub channel1: Option<BoolPdoObject>,
     #[pdo_object_index(0x1601)]
@@ -93,8 +93,20 @@ struct EL2008RxPdu {
     pub channel8: Option<BoolPdoObject>,
 }
 
-#[derive(Debug, Clone, TxPdo, Default)]
-pub struct EL2008TxPdu {}
+impl Default for EL2008RxPdo {
+    fn default() -> Self {
+        Self {
+            channel1: Some(BoolPdoObject::default()),
+            channel2: Some(BoolPdoObject::default()),
+            channel3: Some(BoolPdoObject::default()),
+            channel4: Some(BoolPdoObject::default()),
+            channel5: Some(BoolPdoObject::default()),
+            channel6: Some(BoolPdoObject::default()),
+            channel7: Some(BoolPdoObject::default()),
+            channel8: Some(BoolPdoObject::default()),
+        }
+    }
+}
 
 pub const EL2008_VENDOR_ID: u32 = 0x2;
 pub const EL2008_PRODUCT_ID: u32 = 0x07d83052;

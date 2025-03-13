@@ -1,8 +1,7 @@
-use ethercat_hal_derive::{Device, RxPdo, TxPdo};
-
 use crate::io::digital_output::{DigitalOutputDevice, DigitalOutputOutput, DigitalOutputState};
-use crate::pdo::basic::BoolPdoObject;
+use crate::pdo::{basic::BoolPdoObject, RxPdo};
 use crate::types::EthercrabSubDevicePreoperational;
+use ethercat_hal_derive::{Device, RxPdo};
 
 /// EL2809 16-channel digital output device
 ///
@@ -10,7 +9,7 @@ use crate::types::EthercrabSubDevicePreoperational;
 #[derive(Device)]
 pub struct EL2809 {
     pub output_ts: u64,
-    rxpdu: EL2809RxPdu,
+    pub rxpdo: EL2809RxPdo,
 }
 
 impl std::fmt::Debug for EL2809 {
@@ -23,7 +22,7 @@ impl EL2809 {
     pub fn new() -> Self {
         Self {
             output_ts: 0,
-            rxpdu: EL2809RxPdu::default(),
+            rxpdo: EL2809RxPdo::default(),
         }
     }
 }
@@ -31,22 +30,22 @@ impl EL2809 {
 impl DigitalOutputDevice<EL2809Port> for EL2809 {
     fn digital_output_write(&mut self, port: EL2809Port, value: bool) {
         match port {
-            EL2809Port::DO1 => self.rxpdu.channel1.as_mut().unwrap().value = value,
-            EL2809Port::DO2 => self.rxpdu.channel2.as_mut().unwrap().value = value,
-            EL2809Port::DO3 => self.rxpdu.channel3.as_mut().unwrap().value = value,
-            EL2809Port::DO4 => self.rxpdu.channel4.as_mut().unwrap().value = value,
-            EL2809Port::DO5 => self.rxpdu.channel5.as_mut().unwrap().value = value,
-            EL2809Port::DO6 => self.rxpdu.channel6.as_mut().unwrap().value = value,
-            EL2809Port::DO7 => self.rxpdu.channel7.as_mut().unwrap().value = value,
-            EL2809Port::DO8 => self.rxpdu.channel8.as_mut().unwrap().value = value,
-            EL2809Port::DO9 => self.rxpdu.channel9.as_mut().unwrap().value = value,
-            EL2809Port::DO10 => self.rxpdu.channel10.as_mut().unwrap().value = value,
-            EL2809Port::DO11 => self.rxpdu.channel11.as_mut().unwrap().value = value,
-            EL2809Port::DO12 => self.rxpdu.channel12.as_mut().unwrap().value = value,
-            EL2809Port::DO13 => self.rxpdu.channel13.as_mut().unwrap().value = value,
-            EL2809Port::DO14 => self.rxpdu.channel14.as_mut().unwrap().value = value,
-            EL2809Port::DO15 => self.rxpdu.channel15.as_mut().unwrap().value = value,
-            EL2809Port::DO16 => self.rxpdu.channel16.as_mut().unwrap().value = value,
+            EL2809Port::DO1 => self.rxpdo.channel1.as_mut().unwrap().value = value,
+            EL2809Port::DO2 => self.rxpdo.channel2.as_mut().unwrap().value = value,
+            EL2809Port::DO3 => self.rxpdo.channel3.as_mut().unwrap().value = value,
+            EL2809Port::DO4 => self.rxpdo.channel4.as_mut().unwrap().value = value,
+            EL2809Port::DO5 => self.rxpdo.channel5.as_mut().unwrap().value = value,
+            EL2809Port::DO6 => self.rxpdo.channel6.as_mut().unwrap().value = value,
+            EL2809Port::DO7 => self.rxpdo.channel7.as_mut().unwrap().value = value,
+            EL2809Port::DO8 => self.rxpdo.channel8.as_mut().unwrap().value = value,
+            EL2809Port::DO9 => self.rxpdo.channel9.as_mut().unwrap().value = value,
+            EL2809Port::DO10 => self.rxpdo.channel10.as_mut().unwrap().value = value,
+            EL2809Port::DO11 => self.rxpdo.channel11.as_mut().unwrap().value = value,
+            EL2809Port::DO12 => self.rxpdo.channel12.as_mut().unwrap().value = value,
+            EL2809Port::DO13 => self.rxpdo.channel13.as_mut().unwrap().value = value,
+            EL2809Port::DO14 => self.rxpdo.channel14.as_mut().unwrap().value = value,
+            EL2809Port::DO15 => self.rxpdo.channel15.as_mut().unwrap().value = value,
+            EL2809Port::DO16 => self.rxpdo.channel16.as_mut().unwrap().value = value,
         }
     }
 
@@ -55,22 +54,22 @@ impl DigitalOutputDevice<EL2809Port> for EL2809 {
             output_ts: self.output_ts,
             output: DigitalOutputOutput {
                 value: match port {
-                    EL2809Port::DO1 => self.rxpdu.channel1.as_ref().unwrap().value,
-                    EL2809Port::DO2 => self.rxpdu.channel2.as_ref().unwrap().value,
-                    EL2809Port::DO3 => self.rxpdu.channel3.as_ref().unwrap().value,
-                    EL2809Port::DO4 => self.rxpdu.channel4.as_ref().unwrap().value,
-                    EL2809Port::DO5 => self.rxpdu.channel5.as_ref().unwrap().value,
-                    EL2809Port::DO6 => self.rxpdu.channel6.as_ref().unwrap().value,
-                    EL2809Port::DO7 => self.rxpdu.channel7.as_ref().unwrap().value,
-                    EL2809Port::DO8 => self.rxpdu.channel8.as_ref().unwrap().value,
-                    EL2809Port::DO9 => self.rxpdu.channel9.as_ref().unwrap().value,
-                    EL2809Port::DO10 => self.rxpdu.channel10.as_ref().unwrap().value,
-                    EL2809Port::DO11 => self.rxpdu.channel11.as_ref().unwrap().value,
-                    EL2809Port::DO12 => self.rxpdu.channel12.as_ref().unwrap().value,
-                    EL2809Port::DO13 => self.rxpdu.channel13.as_ref().unwrap().value,
-                    EL2809Port::DO14 => self.rxpdu.channel14.as_ref().unwrap().value,
-                    EL2809Port::DO15 => self.rxpdu.channel15.as_ref().unwrap().value,
-                    EL2809Port::DO16 => self.rxpdu.channel16.as_ref().unwrap().value,
+                    EL2809Port::DO1 => self.rxpdo.channel1.as_ref().unwrap().value,
+                    EL2809Port::DO2 => self.rxpdo.channel2.as_ref().unwrap().value,
+                    EL2809Port::DO3 => self.rxpdo.channel3.as_ref().unwrap().value,
+                    EL2809Port::DO4 => self.rxpdo.channel4.as_ref().unwrap().value,
+                    EL2809Port::DO5 => self.rxpdo.channel5.as_ref().unwrap().value,
+                    EL2809Port::DO6 => self.rxpdo.channel6.as_ref().unwrap().value,
+                    EL2809Port::DO7 => self.rxpdo.channel7.as_ref().unwrap().value,
+                    EL2809Port::DO8 => self.rxpdo.channel8.as_ref().unwrap().value,
+                    EL2809Port::DO9 => self.rxpdo.channel9.as_ref().unwrap().value,
+                    EL2809Port::DO10 => self.rxpdo.channel10.as_ref().unwrap().value,
+                    EL2809Port::DO11 => self.rxpdo.channel11.as_ref().unwrap().value,
+                    EL2809Port::DO12 => self.rxpdo.channel12.as_ref().unwrap().value,
+                    EL2809Port::DO13 => self.rxpdo.channel13.as_ref().unwrap().value,
+                    EL2809Port::DO14 => self.rxpdo.channel14.as_ref().unwrap().value,
+                    EL2809Port::DO15 => self.rxpdo.channel15.as_ref().unwrap().value,
+                    EL2809Port::DO16 => self.rxpdo.channel16.as_ref().unwrap().value,
                 },
             },
         }
@@ -97,8 +96,8 @@ pub enum EL2809Port {
     DO16,
 }
 
-#[derive(Debug, Clone, RxPdo, Default)]
-struct EL2809RxPdu {
+#[derive(Debug, Clone, RxPdo)]
+pub struct EL2809RxPdo {
     #[pdo_object_index(0x1600)]
     pub channel1: Option<BoolPdoObject>,
     #[pdo_object_index(0x1601)]
@@ -133,5 +132,25 @@ struct EL2809RxPdu {
     pub channel16: Option<BoolPdoObject>,
 }
 
-#[derive(Debug, Clone, TxPdo, Default)]
-pub struct EL2809TxPdu {}
+impl Default for EL2809RxPdo {
+    fn default() -> Self {
+        Self {
+            channel1: Some(BoolPdoObject::default()),
+            channel2: Some(BoolPdoObject::default()),
+            channel3: Some(BoolPdoObject::default()),
+            channel4: Some(BoolPdoObject::default()),
+            channel5: Some(BoolPdoObject::default()),
+            channel6: Some(BoolPdoObject::default()),
+            channel7: Some(BoolPdoObject::default()),
+            channel8: Some(BoolPdoObject::default()),
+            channel9: Some(BoolPdoObject::default()),
+            channel10: Some(BoolPdoObject::default()),
+            channel11: Some(BoolPdoObject::default()),
+            channel12: Some(BoolPdoObject::default()),
+            channel13: Some(BoolPdoObject::default()),
+            channel14: Some(BoolPdoObject::default()),
+            channel15: Some(BoolPdoObject::default()),
+            channel16: Some(BoolPdoObject::default()),
+        }
+    }
+}

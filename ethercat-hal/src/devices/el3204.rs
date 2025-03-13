@@ -1,11 +1,11 @@
 use crate::pdo::TxPdo;
-use ethercat_hal_derive::{Device, TxPdo};
-
 use crate::types::EthercrabSubDevicePreoperational;
 use crate::{
     io::temperature_input::{TemperatureInputDevice, TemperatureInputInput, TemperatureInputState},
     pdo::el32xx::RtdInput,
 };
+use ethercat_hal_derive::{Device, TxPdo};
+
 /// EL3204 4-channel temperature input device
 ///
 /// PT100 / Ni100 (RTD) / (2 wire)
@@ -73,7 +73,7 @@ impl EL3204Port {
     }
 }
 
-#[derive(Debug, Clone, TxPdo, Default)]
+#[derive(Debug, Clone, TxPdo)]
 pub struct EL3204TxPdo {
     #[pdo_object_index(0x1A00)]
     channel1: Option<RtdInput>,
@@ -83,4 +83,15 @@ pub struct EL3204TxPdo {
     channel3: Option<RtdInput>,
     #[pdo_object_index(0x1A03)]
     channel4: Option<RtdInput>,
+}
+
+impl Default for EL3204TxPdo {
+    fn default() -> Self {
+        Self {
+            channel1: Some(RtdInput::default()),
+            channel2: Some(RtdInput::default()),
+            channel3: Some(RtdInput::default()),
+            channel4: Some(RtdInput::default()),
+        }
+    }
 }

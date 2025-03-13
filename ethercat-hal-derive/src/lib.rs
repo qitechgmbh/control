@@ -43,7 +43,8 @@ fn rxpdo_derive2(item: proc_macro2::TokenStream) -> deluxe::Result<proc_macro2::
 
     let expanded = quote! {
         impl #impl_generics crate::coe::Configuration for #ident #ty_generics #where_clause {
-                async fn write_config<'a>(
+            #[doc="Implemented by the ethercat_hal_derive::RxPdo derive macro"]
+            async fn write_config<'a>(
                 &self,
                 device: &EthercrabSubDevicePreoperational<'a>,
             ) -> Result<(), anyhow::Error> {
@@ -63,6 +64,7 @@ fn rxpdo_derive2(item: proc_macro2::TokenStream) -> deluxe::Result<proc_macro2::
         }
 
         impl #impl_generics crate::pdo::RxPdo for #ident #ty_generics #where_clause {
+            #[doc="Implemented by the ethercat_hal_derive::RxPdo derive macro"]
             fn get_objects(&self) -> &[Option<&dyn crate::pdo::RxPdoObject>] {
                 let objs = vec![
                     #(
@@ -93,7 +95,8 @@ fn txpdo_derive2(item: proc_macro2::TokenStream) -> deluxe::Result<proc_macro2::
 
     let expanded = quote! {
         impl #impl_generics crate::coe::Configuration for #ident #ty_generics #where_clause {
-                async fn write_config<'a>(
+            #[doc="Implemented by the ethercat_hal_derive::TxPdo derive macro"]
+            async fn write_config<'a>(
                 &self,
                 device: &EthercrabSubDevicePreoperational<'a>,
             ) -> Result<(), anyhow::Error> {
@@ -113,6 +116,7 @@ fn txpdo_derive2(item: proc_macro2::TokenStream) -> deluxe::Result<proc_macro2::
         }
 
         impl #impl_generics crate::pdo::TxPdo for #ident #ty_generics #where_clause {
+            #[doc="Implemented by the ethercat_hal_derive::TxPdo derive macro"]
             fn get_objects(&self) -> &[Option<&dyn crate::pdo::TxPdoObject>] {
                 let objs = vec![
                     #(
@@ -122,6 +126,7 @@ fn txpdo_derive2(item: proc_macro2::TokenStream) -> deluxe::Result<proc_macro2::
                 Box::leak(objs.into_boxed_slice())
             }
 
+            #[doc="Implemented by the ethercat_hal_derive::TxPdo derive macro"]
             fn get_objects_mut(&mut self) -> &mut [Option<&mut dyn crate::pdo::TxPdoObject>] {
                 let objs = vec![
                     #(
@@ -152,6 +157,7 @@ fn pdo_object_derive2(item: proc_macro2::TokenStream) -> deluxe::Result<proc_mac
 
     let expanded = quote! {
         impl #impl_generics crate::pdo::PdoObject for #ident #ty_generics #where_clause {
+            #[doc="Implemented by the ethercat_hal_derive::PdoObject macro"]
             fn size(&self) -> usize {
                 #bits
             }
@@ -194,9 +200,11 @@ pub fn device_derive(input: TokenStream) -> TokenStream {
 
     if has_rxpdo {
         output_impl = quote! {
+            #[doc="Implemented by the ethercat_hal_derive::Device derive macro"]
             fn output(&self, output: &mut bitvec::prelude::BitSlice<u8, bitvec::prelude::Lsb0>) {
                 self.rxpdo.write(output);
             }
+            #[doc="Implemented by the ethercat_hal_derive::Device derive macro"]
             fn output_len(&self) -> usize {
                 self.rxpdo.size()
             }
@@ -204,13 +212,24 @@ pub fn device_derive(input: TokenStream) -> TokenStream {
         self_output_ts = quote! {
             self.output_ts = output_ts;
         }
+    } else {
+        output_impl = quote! {
+            #[doc="Implemented by the ethercat_hal_derive::Device derive macro"]
+            fn output(&self, _output: &mut bitvec::prelude::BitSlice<u8, bitvec::prelude::Lsb0>) {()}
+            #[doc="Implemented by the ethercat_hal_derive::Device derive macro"]
+            fn output_len(&self) -> usize {
+                0
+            }
+        };
     }
 
     if has_txpdo {
         input_impl = quote! {
+            #[doc="Implemented by the ethercat_hal_derive::Device derive macro"]
             fn input(&mut self, input: & bitvec::prelude::BitSlice<u8, bitvec::prelude::Lsb0>) {
                 self.txpdo.read(input);
             }
+            #[doc="Implemented by the ethercat_hal_derive::Device derive macro"]
             fn input_len(&self) -> usize {
                 self.txpdo.size()
             }
@@ -218,13 +237,24 @@ pub fn device_derive(input: TokenStream) -> TokenStream {
         self_input_ts = quote! {
             self.input_ts = input_ts;
         }
+    } else {
+        input_impl = quote! {
+            #[doc="Implemented by the ethercat_hal_derive::Device derive macro"]
+            fn input(&mut self, _input: & bitvec::prelude::BitSlice<u8, bitvec::prelude::Lsb0>) {()}
+            #[doc="Implemented by the ethercat_hal_derive::Device derive macro"]
+            fn input_len(&self) -> usize {
+                0
+            }
+        };
     }
 
     // Generate the ts function based on the presence of rxpdo and txpdo
     ts_impl = quote! {
+        #[doc="Implemented by the ethercat_hal_derive::Device derive macro"]
         fn ts(&mut self, input_ts: u64, output_ts: u64) {
             #self_output_ts
             #self_input_ts
+            ()
         }
     };
 
@@ -234,6 +264,7 @@ pub fn device_derive(input: TokenStream) -> TokenStream {
             #input_impl
             #ts_impl
 
+            #[doc="Implemented by the ethercat_hal_derive::Device derive macro"]
             fn as_any(&self) -> &dyn std::any::Any {
                 self
             }

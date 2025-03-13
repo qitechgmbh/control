@@ -165,7 +165,7 @@ pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(),
         loop {
             let res = loop_once(app_state.ethercat_setup.clone(), &mut average_nanos).await;
             if let Err(err) = res {
-                log::error!("Loop failed: {:?}", err);
+                log::error!("Loop failed\n{:?}", err);
             }
         }
     });
@@ -199,7 +199,14 @@ pub async fn loop_once<'maindevice>(
         device.ts(input_ts, output_ts);
         let input = subdevice.inputs_raw();
         let input_bits = input.view_bits::<Lsb0>();
-        device.input_checked(input_bits)?;
+        device.input_checked(input_bits).or_else(|e| {
+            Err(anyhow::anyhow!(
+                "[{}::loop_once] SubDevice with index {} failed to copy inputs\n{:?}",
+                module_path!(),
+                i,
+                e
+            ))
+        })?;
     }
 
     // execute actors
@@ -213,7 +220,14 @@ pub async fn loop_once<'maindevice>(
         let device = setup.devices[i].as_ref().read().await;
         let mut output = subdevice.outputs_raw_mut();
         let output_bits = output.view_bits_mut::<Lsb0>();
-        device.output_checked(output_bits)?;
+        device.output_checked(output_bits).or_else(|e| {
+            Err(anyhow::anyhow!(
+                "[{}::loop_once] SubDevice with index {} failed to copy outputs\n{:?}",
+                module_path!(),
+                i,
+                e
+            ))
+        })?;
     }
     Ok(())
 }

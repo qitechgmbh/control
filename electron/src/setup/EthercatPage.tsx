@@ -19,6 +19,11 @@ import { DeviceRoleComponent } from "@/components/DeviceRole";
 
 export const columns: ColumnDef<EthercatSetupEvent["devices"][0]>[] = [
   {
+    accessorKey: "subdevice_index",
+    header: "Index",
+    cell: (row) => <Value value={row.row.original.subdevice_index} />,
+  },
+  {
     accessorKey: "configured_address",
     header: "Adresse",
     cell: (row) => <Hex value={row.row.original.configured_address} />,

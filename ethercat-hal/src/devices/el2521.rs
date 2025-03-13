@@ -362,7 +362,7 @@ impl PdoPreset<EL2521TxPdo, EL2521RxPdo> for EL2521PdoPreset {
     }
 }
 
-#[derive(Debug, Clone, TxPdo, Default)]
+#[derive(Debug, Clone, TxPdo)]
 pub struct EL2521TxPdo {
     #[pdo_object_index(0x1A01)]
     pub pto_status: Option<PtoStatus>,
@@ -371,7 +371,7 @@ pub struct EL2521TxPdo {
     pub enc_status: Option<EncStatus>,
 }
 
-#[derive(Debug, Clone, RxPdo, Default)]
+#[derive(Debug, Clone, RxPdo)]
 pub struct EL2521RxPdo {
     #[pdo_object_index(0x1601)]
     pub pto_control: Option<PtoControl>,

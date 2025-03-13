@@ -1,17 +1,16 @@
 use super::SubDeviceIdentityTuple;
 use crate::io::digital_input::{DigitalInputDevice, DigitalInputInput, DigitalInputState};
-use crate::pdo::basic::BoolPdoObject;
-use crate::pdo::PdoPreset;
+use crate::pdo::{basic::BoolPdoObject, PdoPreset, TxPdo};
 use crate::types::EthercrabSubDevicePreoperational;
-use ethercat_hal_derive::{Device, RxPdo, TxPdo};
+use ethercat_hal_derive::{Device, TxPdo};
 
 /// EL1008 8-channel digital input device
 ///
 /// 24V DC, 3ms filter
 #[derive(Clone, Device)]
 pub struct EL1008 {
-    pub inputs_ts: u64,
-    txpdu: EL1008TxPdu,
+    pub input_ts: u64,
+    pub txpdo: EL1008TxPdo,
 }
 
 impl std::fmt::Debug for EL1008 {
@@ -23,8 +22,8 @@ impl std::fmt::Debug for EL1008 {
 impl EL1008 {
     pub fn new() -> Self {
         Self {
-            inputs_ts: 0,
-            txpdu: EL1008TxPdu::default(),
+            input_ts: 0,
+            txpdo: EL1008TxPdo::default(),
         }
     }
 }
@@ -32,17 +31,17 @@ impl EL1008 {
 impl DigitalInputDevice<EL1008Port> for EL1008 {
     fn digital_input_state(&self, port: EL1008Port) -> DigitalInputState {
         DigitalInputState {
-            input_ts: self.inputs_ts,
+            input_ts: self.input_ts,
             input: DigitalInputInput {
                 value: match port {
-                    EL1008Port::DI1 => self.txpdu.channel1.as_ref().unwrap().value,
-                    EL1008Port::DI2 => self.txpdu.channel2.as_ref().unwrap().value,
-                    EL1008Port::DI3 => self.txpdu.channel3.as_ref().unwrap().value,
-                    EL1008Port::DI4 => self.txpdu.channel4.as_ref().unwrap().value,
-                    EL1008Port::DI5 => self.txpdu.channel5.as_ref().unwrap().value,
-                    EL1008Port::DI6 => self.txpdu.channel6.as_ref().unwrap().value,
-                    EL1008Port::DI7 => self.txpdu.channel7.as_ref().unwrap().value,
-                    EL1008Port::DI8 => self.txpdu.channel8.as_ref().unwrap().value,
+                    EL1008Port::DI1 => self.txpdo.channel1.as_ref().unwrap().value,
+                    EL1008Port::DI2 => self.txpdo.channel2.as_ref().unwrap().value,
+                    EL1008Port::DI3 => self.txpdo.channel3.as_ref().unwrap().value,
+                    EL1008Port::DI4 => self.txpdo.channel4.as_ref().unwrap().value,
+                    EL1008Port::DI5 => self.txpdo.channel5.as_ref().unwrap().value,
+                    EL1008Port::DI6 => self.txpdo.channel6.as_ref().unwrap().value,
+                    EL1008Port::DI7 => self.txpdo.channel7.as_ref().unwrap().value,
+                    EL1008Port::DI8 => self.txpdo.channel8.as_ref().unwrap().value,
                 },
             },
         }
@@ -76,8 +75,8 @@ impl EL1008Port {
     }
 }
 
-#[derive(Debug, Clone, TxPdo, Default)]
-struct EL1008TxPdu {
+#[derive(Debug, Clone, TxPdo)]
+pub struct EL1008TxPdo {
     #[pdo_object_index(0x1A00)]
     pub channel1: Option<BoolPdoObject>,
     #[pdo_object_index(0x1A01)]
@@ -96,18 +95,30 @@ struct EL1008TxPdu {
     pub channel8: Option<BoolPdoObject>,
 }
 
-#[derive(Debug, Clone, RxPdo, Default)]
-struct EL1008RxPdu {}
+impl Default for EL1008TxPdo {
+    fn default() -> Self {
+        Self {
+            channel1: Some(BoolPdoObject::default()),
+            channel2: Some(BoolPdoObject::default()),
+            channel3: Some(BoolPdoObject::default()),
+            channel4: Some(BoolPdoObject::default()),
+            channel5: Some(BoolPdoObject::default()),
+            channel6: Some(BoolPdoObject::default()),
+            channel7: Some(BoolPdoObject::default()),
+            channel8: Some(BoolPdoObject::default()),
+        }
+    }
+}
 
 #[derive(Debug, Clone)]
 pub enum EL1008PdoPreset {
     All,
 }
 
-impl PdoPreset<EL1008TxPdu, EL1008RxPdu> for EL1008PdoPreset {
-    fn txpdo_assignment(&self) -> EL1008TxPdu {
+impl PdoPreset<EL1008TxPdo, ()> for EL1008PdoPreset {
+    fn txpdo_assignment(&self) -> EL1008TxPdo {
         match self {
-            EL1008PdoPreset::All => EL1008TxPdu {
+            EL1008PdoPreset::All => EL1008TxPdo {
                 channel1: Some(BoolPdoObject::default()),
                 channel2: Some(BoolPdoObject::default()),
                 channel3: Some(BoolPdoObject::default()),
@@ -120,7 +131,7 @@ impl PdoPreset<EL1008TxPdu, EL1008RxPdu> for EL1008PdoPreset {
         }
     }
 
-    fn rxpdo_assignment(&self) -> EL1008RxPdu {
+    fn rxpdo_assignment(&self) -> () {
         unreachable!()
     }
 }

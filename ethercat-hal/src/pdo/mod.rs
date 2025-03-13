@@ -33,10 +33,16 @@ pub trait RxPdo: Configuration {
     fn get_objects(&self) -> &[Option<&dyn RxPdoObject>];
 
     fn size(&self) -> usize {
-        self.get_objects()
+        let used_bits = self
+            .get_objects()
             .iter()
-            .map(|o| o.as_ref().map(|o| o.size()).unwrap_or(0))
-            .sum::<usize>()
+            .map(|objects| objects.map(|object| object.size()).unwrap_or(0))
+            .sum::<usize>();
+        let padding = match used_bits % 8 {
+            0 => 0,
+            _ => 8 - used_bits % 8,
+        };
+        return used_bits + padding;
     }
 
     fn write(&self, buffer: &mut BitSlice<u8, Lsb0>) {
@@ -57,10 +63,16 @@ pub trait TxPdo: Configuration {
     fn get_objects_mut(&mut self) -> &mut [Option<&mut dyn TxPdoObject>];
 
     fn size(&self) -> usize {
-        self.get_objects()
+        let used_bits = self
+            .get_objects()
             .iter()
-            .map(|o| o.as_ref().map(|o| o.size()).unwrap_or(0))
-            .sum::<usize>()
+            .map(|objects| objects.map(|object| object.size()).unwrap_or(0))
+            .sum::<usize>();
+        let padding = match used_bits % 8 {
+            0 => 0,
+            _ => 8 - used_bits % 8,
+        };
+        return used_bits + padding;
     }
 
     fn read(&mut self, buffer: &BitSlice<u8, Lsb0>) {

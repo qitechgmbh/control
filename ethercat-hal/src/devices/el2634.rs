@@ -1,8 +1,7 @@
-use ethercat_hal_derive::{Device, RxPdo, TxPdo};
-
 use crate::io::digital_output::{DigitalOutputDevice, DigitalOutputOutput, DigitalOutputState};
-use crate::pdo::basic::BoolPdoObject;
+use crate::pdo::{basic::BoolPdoObject, RxPdo};
 use crate::types::EthercrabSubDevicePreoperational;
+use ethercat_hal_derive::{Device, RxPdo};
 
 /// EL2634 4-channel relay device
 ///
@@ -10,7 +9,7 @@ use crate::types::EthercrabSubDevicePreoperational;
 #[derive(Device)]
 pub struct EL2634 {
     pub output_ts: u64,
-    rxpdu: EL2634RxPdu,
+    pub rxpdo: EL2634RxPdo,
 }
 
 impl std::fmt::Debug for EL2634 {
@@ -23,7 +22,7 @@ impl EL2634 {
     pub fn new() -> Self {
         Self {
             output_ts: 0,
-            rxpdu: EL2634RxPdu::default(),
+            rxpdo: EL2634RxPdo::default(),
         }
     }
 }
@@ -31,10 +30,10 @@ impl EL2634 {
 impl DigitalOutputDevice<EL2634Port> for EL2634 {
     fn digital_output_write(&mut self, port: EL2634Port, value: bool) {
         match port {
-            EL2634Port::R1 => self.rxpdu.channel1.as_mut().unwrap().value = value,
-            EL2634Port::R2 => self.rxpdu.channel2.as_mut().unwrap().value = value,
-            EL2634Port::R3 => self.rxpdu.channel3.as_mut().unwrap().value = value,
-            EL2634Port::R4 => self.rxpdu.channel4.as_mut().unwrap().value = value,
+            EL2634Port::R1 => self.rxpdo.channel1.as_mut().unwrap().value = value,
+            EL2634Port::R2 => self.rxpdo.channel2.as_mut().unwrap().value = value,
+            EL2634Port::R3 => self.rxpdo.channel3.as_mut().unwrap().value = value,
+            EL2634Port::R4 => self.rxpdo.channel4.as_mut().unwrap().value = value,
         }
     }
 
@@ -43,10 +42,10 @@ impl DigitalOutputDevice<EL2634Port> for EL2634 {
             output_ts: self.output_ts,
             output: DigitalOutputOutput {
                 value: match port {
-                    EL2634Port::R1 => self.rxpdu.channel1.as_ref().unwrap().value,
-                    EL2634Port::R2 => self.rxpdu.channel2.as_ref().unwrap().value,
-                    EL2634Port::R3 => self.rxpdu.channel3.as_ref().unwrap().value,
-                    EL2634Port::R4 => self.rxpdu.channel4.as_ref().unwrap().value,
+                    EL2634Port::R1 => self.rxpdo.channel1.as_ref().unwrap().value,
+                    EL2634Port::R2 => self.rxpdo.channel2.as_ref().unwrap().value,
+                    EL2634Port::R3 => self.rxpdo.channel3.as_ref().unwrap().value,
+                    EL2634Port::R4 => self.rxpdo.channel4.as_ref().unwrap().value,
                 },
             },
         }
@@ -61,8 +60,8 @@ pub enum EL2634Port {
     R4,
 }
 
-#[derive(Debug, Clone, RxPdo, Default)]
-struct EL2634RxPdu {
+#[derive(Debug, Clone, RxPdo)]
+pub struct EL2634RxPdo {
     #[pdo_object_index(0x1600)]
     pub channel1: Option<BoolPdoObject>,
     #[pdo_object_index(0x1601)]
@@ -73,5 +72,13 @@ struct EL2634RxPdu {
     pub channel4: Option<BoolPdoObject>,
 }
 
-#[derive(Debug, Clone, TxPdo, Default)]
-pub struct EL2634TxPdu {}
+impl Default for EL2634RxPdo {
+    fn default() -> Self {
+        Self {
+            channel1: Some(BoolPdoObject::default()),
+            channel2: Some(BoolPdoObject::default()),
+            channel3: Some(BoolPdoObject::default()),
+            channel4: Some(BoolPdoObject::default()),
+        }
+    }
+}

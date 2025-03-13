@@ -24,10 +24,11 @@ impl std::fmt::Debug for EL3001 {
 
 impl EL3001 {
     pub fn new() -> Self {
+        let configuration = EL3001Configuration::default();
         Self {
             input_ts: 0,
-            txpdo: EL3001TxPdo::default(),
-            configuration: EL3001Configuration::default(),
+            txpdo: configuration.pdo_assignment.txpdo_assignment(),
+            configuration,
         }
     }
 }
@@ -54,13 +55,13 @@ pub enum EL3001Port {
     AI1,
 }
 
-#[derive(Debug, Clone, TxPdo, Default)]
+#[derive(Debug, Clone, TxPdo)]
 pub struct EL3001TxPdo {
     #[pdo_object_index(0x1A00)]
     pub ai_standard: Option<AiStandard>,
 }
 
-#[derive(Debug, Clone, RxPdo, Default)]
+#[derive(Debug, Clone, RxPdo)]
 pub struct EL3001RxPdo {}
 
 /// 0x8000 CoE
@@ -248,13 +249,15 @@ pub enum EL3001PdoPreset {
 impl PdoPreset<EL3001TxPdo, EL3001RxPdo> for EL3001PdoPreset {
     fn txpdo_assignment(&self) -> EL3001TxPdo {
         match self {
-            EL3001PdoPreset::Standard => EL3001TxPdo::default(),
+            EL3001PdoPreset::Standard => EL3001TxPdo {
+                ai_standard: Some(AiStandard::default()),
+            },
         }
     }
 
     fn rxpdo_assignment(&self) -> EL3001RxPdo {
         match self {
-            EL3001PdoPreset::Standard => EL3001RxPdo::default(),
+            EL3001PdoPreset::Standard => EL3001RxPdo {},
         }
     }
 }

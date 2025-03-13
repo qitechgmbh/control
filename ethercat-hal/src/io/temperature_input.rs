@@ -61,9 +61,9 @@ pub struct TemperatureInputInput {
     pub limit2: Limit,
     /// Error flag
     pub error: bool,
-    /// if the TxPdu sstate is valid
+    /// if the TxPdo state is valid
     pub txpdo_state: bool,
-    /// if the TxPdu is toggled
+    /// if the TxPdo is toggled
     pub txpdo_toggle: bool,
 }
 

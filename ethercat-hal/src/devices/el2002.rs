@@ -1,8 +1,8 @@
 use super::SubDeviceIdentityTuple;
 use crate::io::digital_output::{DigitalOutputDevice, DigitalOutputOutput, DigitalOutputState};
-use crate::pdo::basic::BoolPdoObject;
+use crate::pdo::{basic::BoolPdoObject, RxPdo};
 use crate::types::EthercrabSubDevicePreoperational;
-use ethercat_hal_derive::{Device, RxPdo, TxPdo};
+use ethercat_hal_derive::{Device, RxPdo};
 
 /// EL2002 8-channel digital output device
 ///
@@ -10,7 +10,7 @@ use ethercat_hal_derive::{Device, RxPdo, TxPdo};
 #[derive(Device)]
 pub struct EL2002 {
     pub output_ts: u64,
-    rxpdu: EL2002RxPdu,
+    pub rxpdo: EL2002RxPdo,
 }
 
 impl std::fmt::Debug for EL2002 {
@@ -23,7 +23,7 @@ impl EL2002 {
     pub fn new() -> Self {
         Self {
             output_ts: 0,
-            rxpdu: EL2002RxPdu::default(),
+            rxpdo: EL2002RxPdo::default(),
         }
     }
 }
@@ -31,8 +31,8 @@ impl EL2002 {
 impl DigitalOutputDevice<EL2002Port> for EL2002 {
     fn digital_output_write(&mut self, port: EL2002Port, value: bool) {
         match port {
-            EL2002Port::DO1 => self.rxpdu.channel1.as_mut().unwrap().value = value,
-            EL2002Port::DO2 => self.rxpdu.channel2.as_mut().unwrap().value = value,
+            EL2002Port::DO1 => self.rxpdo.channel1.as_mut().unwrap().value = value,
+            EL2002Port::DO2 => self.rxpdo.channel2.as_mut().unwrap().value = value,
         }
     }
 
@@ -41,8 +41,8 @@ impl DigitalOutputDevice<EL2002Port> for EL2002 {
             output_ts: self.output_ts,
             output: DigitalOutputOutput {
                 value: match port {
-                    EL2002Port::DO1 => self.rxpdu.channel1.as_ref().unwrap().value,
-                    EL2002Port::DO2 => self.rxpdu.channel2.as_ref().unwrap().value,
+                    EL2002Port::DO1 => self.rxpdo.channel1.as_ref().unwrap().value,
+                    EL2002Port::DO2 => self.rxpdo.channel2.as_ref().unwrap().value,
                 },
             },
         }
@@ -55,16 +55,22 @@ pub enum EL2002Port {
     DO2,
 }
 
-#[derive(Debug, Clone, RxPdo, Default)]
-struct EL2002RxPdu {
+#[derive(Debug, Clone, RxPdo)]
+pub struct EL2002RxPdo {
     #[pdo_object_index(0x1600)]
     pub channel1: Option<BoolPdoObject>,
     #[pdo_object_index(0x1601)]
     pub channel2: Option<BoolPdoObject>,
 }
 
-#[derive(Debug, Clone, TxPdo, Default)]
-pub struct EL2002TxPdu {}
+impl Default for EL2002RxPdo {
+    fn default() -> Self {
+        Self {
+            channel1: Some(BoolPdoObject::default()),
+            channel2: Some(BoolPdoObject::default()),
+        }
+    }
+}
 
 pub const EL2002_VENDOR_ID: u32 = 0x2;
 pub const EL2002_PRODUCT_ID: u32 = 0x07d23052;

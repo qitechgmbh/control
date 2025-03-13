@@ -32,14 +32,10 @@ use tokio::sync::RwLock;
 pub trait Device: Any + Send + Sync + Debug {
     /// Input data from the last cycle
     /// `ts` is the timestamp when the input data was sent by the device
-    fn input(&mut self, _input: &BitSlice<u8, Lsb0>) {
-        ()
-    }
+    fn input(&mut self, _input: &BitSlice<u8, Lsb0>);
 
     /// The accepted length of the input data
-    fn input_len(&self) -> usize {
-        0
-    }
+    fn input_len(&self) -> usize;
 
     /// automatically validate input length, then calls input
     fn input_checked(&mut self, input: &BitSlice<u8, Lsb0>) -> Result<(), anyhow::Error> {
@@ -47,7 +43,7 @@ pub trait Device: Any + Send + Sync + Debug {
         let input_len = self.input_len();
         if input.len() != input_len {
             return Err(anyhow::anyhow!(
-                "[{}::Device::input_checked] Input length is {} and must be {} bytes",
+                "[{}::Device::input_checked] Input length is {} and must be {} bits",
                 module_path!(),
                 input.len(),
                 input_len
@@ -61,14 +57,10 @@ pub trait Device: Any + Send + Sync + Debug {
 
     /// Output data for the next cycle
     /// `ts` is the timestamp when the output data is predicted to be received by the device
-    fn output(&self, _output: &mut BitSlice<u8, Lsb0>) {
-        ()
-    }
+    fn output(&self, _output: &mut BitSlice<u8, Lsb0>);
 
     /// The accepted length of the output data
-    fn output_len(&self) -> usize {
-        0
-    }
+    fn output_len(&self) -> usize;
 
     fn output_checked(&self, output: &mut BitSlice<u8, Lsb0>) -> Result<(), anyhow::Error> {
         self.output(output);
@@ -77,7 +69,7 @@ pub trait Device: Any + Send + Sync + Debug {
         let output_len = self.output_len();
         if output.len() != output_len {
             return Err(anyhow::anyhow!(
-                "[{}::Device::output_checked] Output length is {} and must be {} bytes",
+                "[{}::Device::output_checked] Output length is {} and must be {} bits",
                 module_path!(),
                 output.len(),
                 output_len
@@ -88,9 +80,7 @@ pub trait Device: Any + Send + Sync + Debug {
     }
 
     /// Write timestamps for current cycle
-    fn ts(&mut self, _input_ts: u64, _output_ts: u64) {
-        ()
-    }
+    fn ts(&mut self, _input_ts: u64, _output_ts: u64);
 
     fn as_any(&self) -> &dyn Any;
 }

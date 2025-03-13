@@ -493,7 +493,7 @@ impl PdoPreset<EL2522TxPdo, EL2522RxPdo> for EL2522PdoPreset {
     }
 }
 
-#[derive(Debug, Clone, TxPdo, Default)]
+#[derive(Debug, Clone, TxPdo)]
 pub struct EL2522TxPdo {
     #[pdo_object_index(0x1A00)]
     pub pto_status_channel1: Option<PtoStatus>,
@@ -508,7 +508,7 @@ pub struct EL2522TxPdo {
     pub enc_status_channel2: Option<EncStatus>,
 }
 
-#[derive(Debug, Clone, RxPdo, Default)]
+#[derive(Debug, Clone, RxPdo)]
 pub struct EL2522RxPdo {
     #[pdo_object_index(0x1600)]
     pub pto_control_channel1: Option<PtoControl>,
