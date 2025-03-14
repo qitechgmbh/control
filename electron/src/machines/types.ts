@@ -69,7 +69,7 @@ export const machinePresets: MachinePreset[] = [
     device_roles: [
       {
         role: 0,
-        role_label: "Buskoppler",
+        role_label: "Bus Coupler",
         allowed_devices: [
           {
             product_id: 0x44c2c52,
@@ -79,7 +79,7 @@ export const machinePresets: MachinePreset[] = [
       },
       {
         role: 1,
-        role_label: "2x Digitalausgang",
+        role_label: "2x Digital Output",
         allowed_devices: [
           {
             product_id: 0x7d23052,
@@ -89,7 +89,7 @@ export const machinePresets: MachinePreset[] = [
       },
       {
         role: 2,
-        role_label: "1x Analogeingang",
+        role_label: "1x Analog Input",
         allowed_devices: [
           {
             product_id: 0xbb93052,
@@ -99,7 +99,7 @@ export const machinePresets: MachinePreset[] = [
       },
       {
         role: 3,
-        role_label: "1x Pulszug Traverse",
+        role_label: "1x Pulsetrain Traverse",
         allowed_devices: [
           {
             product_id: 0x9d93052,
@@ -109,7 +109,7 @@ export const machinePresets: MachinePreset[] = [
       },
       {
         role: 4,
-        role_label: "2x Pulszug",
+        role_label: "2x Pulsetrain",
         allowed_devices: [
           {
             product_id: 0x9da3052,

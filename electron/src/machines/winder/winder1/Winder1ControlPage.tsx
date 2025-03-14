@@ -10,9 +10,8 @@ import {
 } from "@/control/SelectionGroup";
 import { EditValue } from "@/control/EditValue";
 import { Label } from "@/control/Label";
-import { TouchButton } from "@/components/TouchButton";
-import { Badge } from "@/components/ui/badge";
-import { Icon } from "@/components/Icon";
+import { TouchButton } from "@/components/touch/TouchButton";
+import { StatusBadge } from "@/control/StatusBadge";
 
 export function Winder1ControlPage() {
   return (
@@ -33,30 +32,42 @@ export function Winder1ControlPage() {
             current={55}
           />
           <div className="flex flex-row flex-wrap gap-4">
-            <Label label="Limit Aussen">
+            <Label label="Outer Limit">
               <EditValue
                 value={16}
                 unit="mm"
-                title="Edit"
+                title="Outer Limit"
+                defaultValue={16}
+                min={0}
+                minLabel="IN"
+                maxLabel="OUT"
+                max={80}
                 renderValue={(value) => value.toFixed(0)}
+                inverted
               />
-              <TouchButton variant="outline" icon="lu:ChevronsLeft">
-                Fahre nach Aussen
+              <TouchButton variant="outline" icon="lu:ArrowLeftToLine">
+                Go to Outer Limit
               </TouchButton>
             </Label>
-            <Label label="Limit Innen">
+            <Label label="Inner Limit">
               <EditValue
                 value={72}
                 unit="mm"
-                title="Edit"
+                title="Limit Innen"
+                min={0}
+                max={80}
+                defaultValue={72}
+                minLabel="IN"
+                maxLabel="OUT"
                 renderValue={(value) => value.toFixed(0)}
+                inverted
               />
-              <TouchButton variant="outline" icon="lu:ChevronsRight">
-                Fahre nach Innen
+              <TouchButton variant="outline" icon="lu:ArrowRightToLine">
+                Go to Inner Limit
               </TouchButton>
             </Label>
           </div>
-          <Label label="Laser">
+          <Label label="Laserpointer">
             <SelectionGroupBoolean
               value={false}
               optionFalse={{ children: "Off", icon: "lu:LightbulbOff" }}
@@ -65,38 +76,42 @@ export function Winder1ControlPage() {
           </Label>
           <Label label="Home">
             <TouchButton variant="outline" icon="lu:House" isLoading>
-              Fahre nach Home
+              Go to Home
             </TouchButton>
-            <Badge variant="destructive" className="text-md">
-              <Icon name="lu:TriangleAlert" />
-              Nicht gehomed
-            </Badge>
+            <StatusBadge variant="error">Not Homed</StatusBadge>
           </Label>
         </ControlCard>
         <ControlCard className="bg-red" title="Puller">
           <ControlValueNumeric
-            label="Geschwindigkeit"
+            label="Speed"
             unit="m/s"
             value={16}
             renderValue={(value) => value.toFixed(0)}
           />
-          <Label label="Konstant">
+          <Label label="Regulation">
             <SelectionGroupBoolean
               value={false}
-              optionFalse={{ children: "Konstant" }}
-              optionTrue={{ children: "Synchronisiert mit DRE" }}
+              optionFalse={{ children: "Speed", icon: "lu:Gauge" }}
+              optionTrue={{
+                children: "Diameter (Sync to DRE™)",
+                icon: "lu:Diameter",
+              }}
             />
           </Label>
-          <Label label="Zielgeschwindigkeit">
+          <Label label="Target Speed">
             <EditValue
               value={16}
               unit="m/s"
-              title="Zielgeschwindigkeit"
+              title="Target Speed"
+              defaultValue={0}
+              min={0}
+              max={100}
+              step={1}
               renderValue={(value) => value.toFixed(0)}
             />
           </Label>
         </ControlCard>
-        <ControlCard className="bg-red" title="Modus">
+        <ControlCard className="bg-red" title="Mode">
           <SelectionGroup<"standby" | "pull" | "wind">
             value="standby"
             orientation="vertical"
@@ -121,13 +136,13 @@ export function Winder1ControlPage() {
         </ControlCard>
         <ControlCard className="bg-red" title="Auto Stop">
           <ControlValueNumeric
-            label="Gewickelt"
+            label="Wounded Length"
             unit="m"
             value={14}
             renderValue={(value) => value.toFixed(0)}
           />
           <div className="flex flex-row flex-wrap gap-4">
-            <Label label="Aktiv">
+            <Label label="Enable">
               <SelectionGroupBoolean
                 value={false}
                 optionFalse={{ children: "Off" }}
@@ -137,6 +152,9 @@ export function Winder1ControlPage() {
             <Label label="Limit">
               <EditValue
                 value={72}
+                defaultValue={200}
+                min={0}
+                max={1000}
                 unit="m"
                 title="Edit"
                 renderValue={(value) => value.toFixed(0)}
@@ -144,14 +162,14 @@ export function Winder1ControlPage() {
             </Label>
           </div>
           <div className="flex flex-row flex-wrap gap-4">
-            <Label label="Alarmton">
+            <Label label="Alarm Signal">
               <SelectionGroupBoolean
                 value={false}
                 optionFalse={{ children: "Off" }}
                 optionTrue={{ children: "On" }}
               />
             </Label>
-            <Label label="Modus danach">
+            <Label label="After Stop Transition Into">
               <SelectionGroup<"standby" | "pull">
                 value="standby"
                 options={{
@@ -162,18 +180,18 @@ export function Winder1ControlPage() {
             </Label>
           </div>
         </ControlCard>
-        <ControlCard className="bg-red" title="Messwerte">
+        <ControlCard className="bg-red" title="Measurements">
           <ControlValueNumeric
-            label="Winder Drehzahl"
+            label="Winding RPM"
             unit="rpm"
             value={55}
             renderValue={(value) => value.toFixed(0)}
           />
           <ControlValueNumeric
-            label="Winkel Lastarm"
+            label="Tension Arm"
             unit="deg"
             value={5}
-            renderValue={(value) => value.toFixed(0) + "°"}
+            renderValue={(value) => value.toFixed(0)}
           />
         </ControlCard>
       </ControlGrid>

@@ -15,17 +15,17 @@ export function Winder1Page() {
         },
         {
           link: "graphs",
-          title: "Graphen",
+          title: "Graphs",
           icon: "lu:ChartSpline",
         },
         {
           link: "settings",
-          title: "Einstellungen",
+          title: "Config",
           icon: "lu:Settings",
         },
         {
           link: "manual",
-          title: "Handbuch",
+          title: "Manual",
           icon: "lu:BookOpen",
         },
       ]}

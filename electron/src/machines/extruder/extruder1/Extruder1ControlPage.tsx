@@ -16,66 +16,68 @@ export function Extruder1ControlPage() {
     <Page>
       <ControlGrid>
         <HeatingZone
-          title={"Heizzone Vorne"}
+          title={"Heating Front"}
           temperature={150}
           heating={true}
           targetTemperature={155}
         />
         <HeatingZone
-          title={"Heizzone Mitte"}
+          title={"Heating Middle"}
           temperature={150}
           heating={true}
           targetTemperature={155}
         />
         <HeatingZone
-          title={"Heizzone Hinten"}
+          title={"Headting Back"}
           temperature={150}
           heating={true}
           targetTemperature={155}
         />
-        <ControlCard className="bg-red" title="Antrieb">
+        <ControlCard className="bg-red" title="Screw Drive">
           <ControlValueNumeric
             label="Drehzahl"
             unit="rpm"
             value={11}
             renderValue={(value) => value.toFixed(0)}
           />
-          <Label label="Regelung">
+          <Label label="Regulation">
             <SelectionGroupBoolean
               value={false}
-              optionFalse={{ children: "Drehzahl" }}
-              optionTrue={{ children: "Massedruck" }}
+              optionFalse={{ children: "RPM" }}
+              optionTrue={{ children: "Pressure" }}
             />
           </Label>
           <div className="flex flex-row flex-wrap gap-4">
-            <Label label="Zieldrehzahl">
+            <Label label="Target RPM">
               <EditValue
                 value={16}
+                defaultValue={0}
                 unit="rpm"
-                title="Zieldrehzahl"
+                title="Target RPM"
                 renderValue={(value) => value.toFixed(0)}
               />
             </Label>
-            <Label label="Zieldruck">
+            <Label label="Target Pressure">
               <EditValue
                 value={300}
+                defaultValue={200}
                 unit="bar"
-                title="Zieldruck"
+                title="Target Pressure"
                 renderValue={(value) => value.toFixed(0)}
               />
             </Label>
           </div>
         </ControlCard>
 
-        <ControlCard className="bg-red" title="Messwerte">
+        <ControlCard className="bg-red" title="Measurements">
           <ControlValueNumeric
-            label="Massedruck"
+            label="Nozzle Pressure"
             unit="bar"
             value={55}
             renderValue={(value) => value.toFixed(0)}
           />
         </ControlCard>
-        <ControlCard className="bg-red" title="Modus">
+        <ControlCard className="bg-red" title="Mode">
           <SelectionGroup<"standby" | "heating" | "extrude">
             value="standby"
             orientation="vertical"
@@ -86,12 +88,12 @@ export function Extruder1ControlPage() {
                 isActiveClassName: "bg-green-600",
               },
               heating: {
-                children: "Heizen",
+                children: "Heat",
                 icon: "lu:Flame",
                 isActiveClassName: "bg-green-600",
               },
               extrude: {
-                children: "Extrudieren",
+                children: "Extrude",
                 icon: "lu:ArrowBigLeftDash",
                 isActiveClassName: "bg-green-600",
               },

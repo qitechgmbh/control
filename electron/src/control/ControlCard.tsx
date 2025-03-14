@@ -17,7 +17,7 @@ export function ControlCard({
   title,
 }: Props) {
   const cardStyle = useClassNameBuilder({
-    base: "bg-neutral-50 border border-gray-300 rounded-3xl p-6 flex-1 win-w-1/3 flex flex-col gap-4",
+    base: "bg-white border border-gray-200 rounded-3xl p-6 pt-4 flex-1 win-w-1/3 flex flex-col gap-4 shadow",
     variables: {
       height: {
         1: "row-span-1",

@@ -19,7 +19,7 @@ import { IconText } from "@/components/IconText";
 export const columns: ColumnDef<EthercatSetupEventMachineInfo>[] = [
   {
     accessorKey: "qitech_machine",
-    header: "Maschine",
+    header: "Machine",
     cell: (row) => {
       const machine_identification = row.row.original?.machine_identification;
       if (!machine_identification) {
@@ -31,7 +31,7 @@ export const columns: ColumnDef<EthercatSetupEventMachineInfo>[] = [
   },
   {
     accessorKey: "qitech_vendor",
-    header: "Hersteller",
+    header: "Vendor",
     cell: (row) => {
       const machine_identification = row.row.original?.machine_identification;
       if (!machine_identification) {
@@ -42,7 +42,7 @@ export const columns: ColumnDef<EthercatSetupEventMachineInfo>[] = [
   },
   {
     accessorKey: "qitech_serial",
-    header: "Seriennummer",
+    header: "Serial",
     cell: (row) => {
       const serial = row.row.original?.machine_identification.serial;
       if (!serial) {
@@ -53,7 +53,7 @@ export const columns: ColumnDef<EthercatSetupEventMachineInfo>[] = [
   },
   {
     accessorKey: "error",
-    header: "Fehler",
+    header: "Error",
     cell: (row) => {
       const error = row.row.original.error;
       if (!error) {
@@ -83,7 +83,7 @@ export function MachinesPage() {
 
   return (
     <Page>
-      <SectionTitle title="Maschinen">
+      <SectionTitle title="Machines">
         <RefreshIndicator messageResponse={deviceMessage} />
       </SectionTitle>
       <MyTable table={table} key={data.toString()} />

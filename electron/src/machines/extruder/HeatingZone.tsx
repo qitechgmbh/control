@@ -23,24 +23,27 @@ export function HeatingZone({
   return (
     <ControlCard className="bg-red" title={title}>
       <ControlValueBoolean
-        label="Heizen"
+        label="Heating"
         icon="lu:Flame"
         value={heating}
         renderValue={(value) => (value === true ? "ON" : "OFF")}
       />
       <ControlValueNumeric
-        label="Temperatur"
+        label="Temperature"
         unit="C"
         value={temperature}
-        renderValue={(value) => value.toFixed(0) + "°"}
+        renderValue={(value) => value.toFixed(0)}
       />
 
-      <Label label="Zieltemperatur">
+      <Label label="Target Temperature">
         <EditValue
           value={targetTemperature}
+          defaultValue={150}
+          min={50}
+          max={330}
           unit="C"
-          title="Zielgeschwindigkeit"
-          renderValue={(value) => value.toFixed(0) + "°"}
+          title="Target Temperature"
+          renderValue={(value) => value.toFixed(0)}
         />
       </Label>
     </ControlCard>

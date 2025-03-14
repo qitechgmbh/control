@@ -16,7 +16,7 @@ export function BackButton() {
       variant="ghost"
     >
       <ChevronLeft size={24} />
-      Zurück
+      Back
     </Button>
   );
 }

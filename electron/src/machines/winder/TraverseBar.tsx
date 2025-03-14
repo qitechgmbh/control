@@ -50,9 +50,9 @@ export function TraverseBar({
       </div>
 
       {/* Labels */}
-      <div className="flex justify-between text-sm text-gray-400">
-        <span>AUSSEN</span>
-        <span>INNEN</span>
+      <div className="flex justify-between text-xs text-gray-400">
+        <span>OUT</span>
+        <span>IN</span>
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 import React, { ComponentProps } from "react";
-import { TouchButton } from "@/components/TouchButton";
+import { TouchButton } from "@/components/touch/TouchButton";
 
 export type Props<KEY extends string> = {
   value?: KEY | undefined;

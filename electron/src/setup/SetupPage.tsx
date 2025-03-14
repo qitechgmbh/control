@@ -8,12 +8,12 @@ export function SetupPage() {
       items={[
         {
           link: "ethercat",
-          title: "Ethercat",
+          title: "EtherCat",
           icon: "lu:EthernetPort",
         },
         {
           link: "machines",
-          title: "Maschinen",
+          title: "Machines",
           icon: "lu:Factory",
         },
       ]}

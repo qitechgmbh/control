@@ -66,7 +66,7 @@ export function DeviceEepromDialog({ device }: Props) {
       <DialogTrigger asChild>
         <Button variant="outline">
           <Icon name="lu:Pencil" />
-          Bearbeiten
+          Assign
         </Button>
       </DialogTrigger>
       <DeviceEeepromDialogContent device={device} key={key} setOpen={setOpen} />
@@ -112,7 +112,7 @@ export function DeviceEeepromDialogContent({ device, setOpen }: ContentProps) {
       .then((res) => {
         toast(
           <Toast title={"Gespeichert"} icon="lu:CircleCheck">
-            Maschinenzuweisung erfolgreich gespeichert.
+            Machine assignment written successfully.
           </Toast>,
         );
         if (res.success) {
@@ -159,14 +159,14 @@ export function DeviceEeepromDialogContent({ device, setOpen }: ContentProps) {
   return (
     <DialogContent>
       <DialogHeader>
-        <DialogTitle>Maschinenzuweisung</DialogTitle>
+        <DialogTitle>Machine Assignment</DialogTitle>
         <p>
-          für {device.name}
+          for {device.name}
           <Hex value={device.configured_address} />
         </p>
         <DialogDescription>
-          Um das Gerät einer Maschine zuzuweisen, wählen Sie die Maschine,
-          Seriennummer & Geräterolle aus.
+          To assign the device to a machine, select the machine, serial number &
+          device role.
         </DialogDescription>
       </DialogHeader>
       <Separator />
@@ -182,7 +182,7 @@ export function DeviceEeepromDialogContent({ device, setOpen }: ContentProps) {
                 <FormControl>
                   <Select {...field} onValueChange={field.onChange}>
                     <SelectTrigger className="w-min">
-                      <SelectValue placeholder="Maschine" />
+                      <SelectValue placeholder="Machine" />
                     </SelectTrigger>
                     <SelectContent>
                       {machinePresets.map((machine) => (
@@ -206,11 +206,11 @@ export function DeviceEeepromDialogContent({ device, setOpen }: ContentProps) {
             name="serial"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Seriennummer</FormLabel>
+                <FormLabel>Serial</FormLabel>
                 <FormControl>
                   <Input placeholder="1234" {...field} />
                 </FormControl>
-                <FormDescription>Seriennummer der Maschine.</FormDescription>
+                <FormDescription>Serial number of the machine.</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -222,11 +222,11 @@ export function DeviceEeepromDialogContent({ device, setOpen }: ContentProps) {
             disabled={!machinePreset}
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Rolle</FormLabel>
+                <FormLabel>Device Role</FormLabel>
                 <FormControl>
                   <Select {...field}>
                     <SelectTrigger className="w-min">
-                      <SelectValue placeholder="Rolle" />
+                      <SelectValue placeholder="Device Role" />
                     </SelectTrigger>
                     <SelectContent>
                       {machinePreset?.device_roles.map((device_role, i) => (
@@ -247,11 +247,10 @@ export function DeviceEeepromDialogContent({ device, setOpen }: ContentProps) {
           />
           <Separator />
           <Button type="submit" disabled={!form.formState.isValid}>
-            <Icon name="lu:Save" /> Schreiben
+            <Icon name="lu:Save" /> Write
           </Button>
-          <Alert title="Neustart erforderlich" variant="info">
-            Damit die Aenderungen wirksam werden, muss das Gerät neu gestartet
-            werden
+          <Alert title="Restart mandatory" variant="info">
+            The device must be restarted for the changes to take effect
           </Alert>
         </form>
       </Form>

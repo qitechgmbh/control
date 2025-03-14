@@ -72,9 +72,9 @@ function HttpErrorToast({ res }: { res: Response }) {
   return (
     <Toast title="API Fehler" icon="lu:TriangleAlert">
       <div>
-        API hat Status <Value value={status} />{" "}
+        API responded with <Value value={status} />{" "}
         {description ? `(${description}) ` : " "}
-        zurückgegeben. {body}
+        {body}
       </div>
     </Toast>
   );

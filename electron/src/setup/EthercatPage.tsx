@@ -25,22 +25,22 @@ export const columns: ColumnDef<EthercatSetupEvent["devices"][0]>[] = [
   },
   {
     accessorKey: "configured_address",
-    header: "Adresse",
+    header: "Adress",
     cell: (row) => <Hex value={row.row.original.configured_address} />,
   },
   {
     accessorKey: "name",
-    header: "Gerät",
+    header: "Device Name",
     cell: (row) => <div>{row.row.original.name}</div>,
   },
   {
     accessorKey: "vendor_id",
-    header: "Hersteller",
+    header: "Vendor",
     cell: (row) => <EthercatVendorId value={row.row.original.vendor_id} />,
   },
   {
     accessorKey: "product_id",
-    header: "Produkt ID",
+    header: "Product ID",
     cell: (row) => <Hex value={row.row.original.product_id} />,
   },
   {
@@ -50,7 +50,7 @@ export const columns: ColumnDef<EthercatSetupEvent["devices"][0]>[] = [
   },
   {
     accessorKey: "qitech_machine",
-    header: "Maschine",
+    header: "Assigned Machine",
     cell: (row) => {
       const machine_identification =
         row.row.original.machine_device_identification?.machine_identification;
@@ -63,7 +63,7 @@ export const columns: ColumnDef<EthercatSetupEvent["devices"][0]>[] = [
   },
   {
     accessorKey: "qitech_serial",
-    header: "Seriennummer",
+    header: "Assigned Serial",
     cell: (row) => {
       const serial =
         row.row.original.machine_device_identification?.machine_identification
@@ -76,7 +76,7 @@ export const columns: ColumnDef<EthercatSetupEvent["devices"][0]>[] = [
   },
   {
     accessorKey: "qitech_role",
-    header: "Rolle",
+    header: "Assigned Device Role",
     cell: (row) => {
       const role = row.row.original.machine_device_identification?.role;
       const machine_identification =
@@ -97,7 +97,7 @@ export const columns: ColumnDef<EthercatSetupEvent["devices"][0]>[] = [
   },
   {
     accessorKey: "eeprom",
-    header: "Maschinenzuweisung",
+    header: "Edit Assignment",
     cell: (row) => (
       <>
         <DeviceEepromDialog device={row.row.original} />
@@ -122,11 +122,10 @@ export function EthercatPage() {
   return (
     <Page>
       <p>
-        Maschine, Maschinen Seriennummer, Rolle sind QiTech spezifische Werte
-        die in den EEPROM geschrieben werden um Maschinen als Einheit zu
-        identifizieren.
+        Machine, Machine Serial Number, Role are QiTech specific values that are
+        written to the EEPROM to identify machines as a unit.
       </p>
-      <SectionTitle title="Geräte">
+      <SectionTitle title="SubDevices">
         <RefreshIndicator messageResponse={deviceMessage} />
       </SectionTitle>
       <MyTable table={table} key={data.toString()} />

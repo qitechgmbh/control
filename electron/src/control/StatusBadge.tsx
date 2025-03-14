@@ -5,9 +5,10 @@ import React from "react";
 
 type Props = {
   variant: "error" | "success";
+  children: React.ReactNode;
 };
 
-export function StatusBadge({ variant }: Props) {
+export function StatusBadge({ variant, children }: Props) {
   const badgeStyle = useClassNameBuilder({
     base: "text-md",
     variables: {
@@ -24,8 +25,8 @@ export function StatusBadge({ variant }: Props) {
         variant,
       })}
     >
-      <Icon name={icon} />
-      {variant}
+      <Icon name={icon} className="size-6" />
+      {children}
     </Badge>
   );
 }

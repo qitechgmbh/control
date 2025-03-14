@@ -5,12 +5,11 @@ import React from "react";
 export type IconName = `lu:${keyof typeof lucideIcons}`;
 
 type Props = {
-  size?: number;
   name?: IconName;
   className?: string;
 };
 
-export const Icon = ({ name, size, className }: Props) => {
+export const Icon = ({ name, className }: Props) => {
   if (!name) {
     return null;
   }
@@ -19,7 +18,7 @@ export const Icon = ({ name, size, className }: Props) => {
 
   if (library === "lu" && rawIcon in lucideIcons) {
     const LucideIcon = lucideIcons[rawIcon as keyof typeof lucideIcons];
-    return <LucideIcon size={size} className={className} />;
+    return <LucideIcon className={className} />;
   }
 
   console.error(`Icon ${name} not found`, library, rawIcon, lucideIcons);

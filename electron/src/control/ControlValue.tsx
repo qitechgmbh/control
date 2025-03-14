@@ -1,6 +1,6 @@
 import { Icon, IconName } from "@/components/Icon";
 import React from "react";
-import { getUnitIcon, Unit } from "./units";
+import { getUnitIcon, renderUnitSymbol, renderUnitSyntax, Unit } from "./units";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Label } from "./Label";
 
@@ -25,12 +25,17 @@ function _ControlValue<T extends AllowedT>({
     <div className="bg-red flex flex-row items-center gap-4">
       <Label label={label}>
         <div className="flex flex-row items-center gap-4">
-          <Icon name={icon ?? (unit ? getUnitIcon(unit) : undefined)} />
+          <Icon
+            name={icon ?? (unit ? getUnitIcon(unit) : undefined)}
+            className="size-7"
+          />
           <div className="flex flex-row items-center gap-2">
             <span className="font-mono text-4xl font-bold">
-              {renderValue ? renderValue(value) : value.toString()}
+              {renderValue
+                ? renderUnitSyntax(renderValue(value), unit)
+                : value.toString()}
             </span>
-            <span>{unit}</span>
+            <span>{renderUnitSymbol(unit)}</span>
           </div>
         </div>
       </Label>
