@@ -1,16 +1,16 @@
 use crate::{
     ethercat::{
         config::{MAX_SUBDEVICES, PDI_LEN},
-        device_identification::{MachineDeviceIdentification, MachineIdentification},
+        device_identification::{MachineDeviceIdentification, MachineIdentificationUnique},
     },
+    machines::Machine,
     socketio::room::Rooms,
 };
 use ethercat_hal::{actors::Actor, devices::Device};
 use ethercrab::{subdevice_group::Op, MainDevice, SubDeviceGroup};
-use serde::{Deserialize, Serialize};
 use socketioxide::SocketIo;
 use std::sync::Arc;
-use std::sync::LazyLock;
+use std::{collections::HashMap, sync::LazyLock};
 use tokio::sync::RwLock;
 
 pub struct AppState {
@@ -19,21 +19,14 @@ pub struct AppState {
     pub ethercat_setup: Arc<RwLock<Option<EthercatSetup>>>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct MachineInfo {
-    pub machine_identification: MachineIdentification,
-    pub error: Option<String>,
-}
-
 pub struct EthercatSetup {
     /// High level logical drivers
     /// They read & write to the `devices` / nested actors
     pub actors: Vec<Arc<RwLock<dyn Actor>>>,
-    /// Machine Infos
-    /// Same length and order as `identified_device_groups`
-    /// Validated device groups are machines
-    /// If a machine is not valid/complete its an [anyhow::Error]
-    pub machine_infos: Vec<MachineInfo>,
+    /// Machines
+    /// Actual machine interfaces
+    pub machines:
+        HashMap<MachineIdentificationUnique, Result<Arc<RwLock<dyn Machine>>, anyhow::Error>>,
     /// Metadata about a device groups
     /// Used for the device table in the UI
     pub identified_device_groups: Vec<Vec<MachineDeviceIdentification>>,
@@ -57,7 +50,10 @@ pub struct EthercatSetup {
 impl EthercatSetup {
     pub fn new(
         actors: Vec<Arc<RwLock<dyn Actor>>>,
-        machine_infos: Vec<MachineInfo>,
+        machines: HashMap<
+            MachineIdentificationUnique,
+            Result<Arc<RwLock<dyn Machine>>, anyhow::Error>,
+        >,
         identified_device_groups: Vec<Vec<MachineDeviceIdentification>>,
         undetected_devices: Vec<MachineDeviceIdentification>,
         devices: Vec<Arc<RwLock<dyn Device>>>,
@@ -67,7 +63,7 @@ impl EthercatSetup {
     ) -> Self {
         Self {
             actors,
-            machine_infos,
+            machines,
             identified_device_groups,
             unidentified_devices: undetected_devices,
             devices,

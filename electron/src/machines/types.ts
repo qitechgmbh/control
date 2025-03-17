@@ -18,9 +18,14 @@ type EthercatDevice = {
   revision: number;
 };
 
-export type MachineIdentification = {
+export type MachineIdentificationUnique = {
   vendor: number;
   serial: number;
+  machine: number;
+};
+
+export type MachineIdentification = {
+  vendor: number;
   machine: number;
 };
 
@@ -32,10 +37,8 @@ export type MachinePreset = {
   // path for IO routes
   slug: string;
   icon: IconName;
-  // needs to be same as in the backend
-  vendor_id: 0x0001;
-  // needs to be same as in the backend
-  machine_id: number;
+  // machine identification
+  machine_identification: MachineIdentification;
   // roles and thair allowed devices
   device_roles: DeviceRole[];
 };
@@ -54,8 +57,8 @@ export const vendorPresets: VendorPreset[] = [
   },
 ];
 
-export function getVendorPreset(vendor_id: number): VendorPreset | undefined {
-  return vendorPresets.find((v) => v.id === vendor_id);
+export function getVendorPreset(vendor: number): VendorPreset | undefined {
+  return vendorPresets.find((v) => v.id === vendor);
 }
 
 export const machinePresets: MachinePreset[] = [
@@ -64,8 +67,10 @@ export const machinePresets: MachinePreset[] = [
     version: "V1",
     slug: "winder1",
     icon: "lu:Disc3",
-    vendor_id: VENDOR_QITECH,
-    machine_id: 0x0001,
+    machine_identification: {
+      vendor: VENDOR_QITECH,
+      machine: 0x0001,
+    },
     device_roles: [
       {
         role: 0,
@@ -122,12 +127,14 @@ export const machinePresets: MachinePreset[] = [
 ];
 
 export const getMachinePreset = (
-  machine_identification: MachineIdentification,
+  machine_identification_unique: MachineIdentificationUnique,
 ) => {
   return machinePresets.find(
     (m) =>
-      m.vendor_id === machine_identification.vendor &&
-      m.machine_id === machine_identification.machine,
+      m.machine_identification.vendor ===
+        machine_identification_unique.vendor &&
+      m.machine_identification.machine ===
+        machine_identification_unique.machine,
   );
 };
 

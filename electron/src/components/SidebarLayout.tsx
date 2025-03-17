@@ -28,7 +28,7 @@ export function SidebarItem({
   return (
     <Link
       to={link}
-      className={`relative h-20 w-full ${isActive ? "pl-2" : "px-2"}`}
+      className={`relative h-18 w-full ${isActive ? "pl-2" : "px-2"}`}
     >
       <div
         className={`text-md relative z-10 flex h-full w-full items-center justify-center gap-2 ${
@@ -47,8 +47,8 @@ export function SidebarLayout() {
   const machines = useMachines();
   const items: SidebarItemContent[] = [
     ...machines.map((machine) => ({
-      link: `/_sidebar/machines/${machine.slug}/${machine.machine_identification.serial}/control`,
-      activeLink: `/_sidebar/machines/${machine.slug}/${machine.machine_identification.serial}`,
+      link: `/_sidebar/machines/${machine.slug}/${machine.machine_identification_unique.serial}/control`,
+      activeLink: `/_sidebar/machines/${machine.slug}/${machine.machine_identification_unique.serial}`,
       title: machine.name,
       icon: machine.icon,
     })),
@@ -63,7 +63,7 @@ export function SidebarLayout() {
   return (
     <>
       <div className="fixed flex h-full w-48 flex-col bg-neutral-200">
-        <div className="flex h-20 flex-col items-center justify-center gap-0 pt-2">
+        <div className="flex h-18 flex-col items-center justify-center gap-0 pt-2">
           <div className="font-qitech line-clamp-none text-3xl">QITECH</div>
         </div>
         <div className="flex flex-col gap-2">

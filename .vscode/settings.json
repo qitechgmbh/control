@@ -2,4 +2,6 @@
     "typescript.inlayHints.enumMemberValues.enabled": false,
      "git.detectSubmodules": true,
      "git.detectSubmodulesLimit": 10,
+    "rust-analyzer.server.path": "~/.rustup/toolchains/beta-aarch64-apple-darwin/bin/rust-analyzer"
+
 }

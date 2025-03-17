@@ -4,7 +4,7 @@ use crate::pdo::{basic::BoolPdoObject, RxPdo};
 use crate::types::EthercrabSubDevicePreoperational;
 use ethercat_hal_derive::{Device, RxPdo};
 
-/// EL2002 8-channel digital output device
+/// EL2002 2-channel digital output device
 ///
 /// 24V DC, 0.5A per channel
 #[derive(Device)]

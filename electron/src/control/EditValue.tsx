@@ -110,7 +110,7 @@ export function EditValue({
         <TouchButton className={buttonStyle({ open })} variant="outline">
           <div className="flex flex-row items-center gap-2">
             <span className="font-mono text-4xl font-bold">
-              {renderValue(value)}
+              {renderUnitSyntax(renderValue(value), unit)}
             </span>
             <span>{renderUnitSymbol(unit)}</span>
           </div>

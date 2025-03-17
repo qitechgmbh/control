@@ -18,7 +18,7 @@ export function TopbarItem({ icon, title, link }: TopbarItemProps) {
   return (
     <Link className={`relative h-full ${isActive ? "" : "pb-2"}`} to={link}>
       <div
-        className={`text-md relative z-10 flex h-full items-center justify-center gap-2 px-4 ${
+        className={`text-md relative z-10 flex h-full items-center justify-center gap-2 px-6 ${
           isActive ? "rounded-t-lg bg-white pb-2" : "rounded-lg bg-neutral-100"
         }`}
       >
@@ -38,9 +38,9 @@ type TopbarProps = {
 export function Topbar({ items, pathname }: TopbarProps) {
   return (
     <div className="flex h-full flex-col">
-      <div className="h-20"></div>
+      <div className="h-18"></div>
       <div
-        className="fixed flex h-20 w-full gap-2 bg-neutral-200 pt-2"
+        className="fixed flex h-18 w-full gap-2 bg-neutral-200 pt-2"
         // 50 is below popup dialogs
         style={{ zIndex: 50 }}
       >

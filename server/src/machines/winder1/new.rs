@@ -1,8 +1,9 @@
 use crate::ethercat::device_identification::MachineDeviceIdentification;
-use crate::machines::{
+use crate::machines::new::{
     get_device_by_index, get_mdi_by_role, get_subdevice_by_index, validate_no_role_dublicates,
-    validate_same_machine_identification, MachineNew,
+    validate_same_machine_identification,
 };
+use crate::machines::MachineNewTrait;
 use anyhow::Error;
 use ethercat_hal::actors::analog_input_logger::AnalogInputLogger;
 use ethercat_hal::actors::digital_output_setter::DigitalOutputSetter;
@@ -34,7 +35,7 @@ use tokio::sync::RwLock;
 
 use super::WinderV1;
 
-impl MachineNew for WinderV1 {
+impl MachineNewTrait for WinderV1 {
     fn new<'maindevice>(
         identified_device_group: &Vec<MachineDeviceIdentification>,
         subdevices: &Vec<EthercrabSubDevicePreoperational<'maindevice>>,

@@ -1,6 +1,9 @@
 use crate::{
-    app_state::{MachineInfo, APP_STATE},
-    ethercat::{config::PDI_LEN, device_identification::MachineDeviceIdentification},
+    app_state::APP_STATE,
+    ethercat::{
+        config::PDI_LEN,
+        device_identification::{MachineDeviceIdentification, MachineIdentificationUnique},
+    },
     socketio::event::{Event, EventData, EventType},
 };
 use ethercrab::{SubDevicePdi, SubDeviceRef};
@@ -9,7 +12,13 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct EthercatSetupEvent {
     pub devices: Vec<DeviceObj>,
-    pub machine_infos: Vec<MachineInfo>,
+    pub machines: Vec<MachineObj>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct MachineObj {
+    pub machine_identification_unique: MachineIdentificationUnique,
+    pub error: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -56,12 +65,10 @@ impl EventData for EthercatSetupEvent {
         };
 
         let mut device_objs: Vec<_> = vec![];
-        let mut machine_infos: Vec<_> = vec![];
+        let mut machine_objs: Vec<_> = vec![];
 
         // add identified devices
-        for (i, identified_device_group) in
-            ethercat_setup.identified_device_groups.iter().enumerate()
-        {
+        for identified_device_group in ethercat_setup.identified_device_groups.iter() {
             log::info!("Device Group: {:?}", identified_device_group);
             for (j, device) in identified_device_group.iter().enumerate() {
                 log::info!("Device: {:?}", device);
@@ -84,16 +91,17 @@ impl EventData for EthercatSetupEvent {
                 log::info!("Device: {:?}", device_obj);
                 device_objs.push(device_obj);
             }
+        }
 
-            // add machine
-
-            let machine_info = match ethercat_setup.machine_infos.get(i) {
-                Some(machine) => machine,
-                None => {
-                    return Event::error(EVENT.to_string(), "Machine not found".to_string());
-                }
-            };
-            machine_infos.push(machine_info.clone());
+        // add machines
+        for machine in ethercat_setup.machines.iter() {
+            machine_objs.push(MachineObj {
+                machine_identification_unique: machine.0.clone(),
+                error: match machine.1 {
+                    Ok(e) => None,
+                    Err(e) => Some(e.to_string()),
+                },
+            });
         }
 
         // add unidentified devices
@@ -110,7 +118,7 @@ impl EventData for EthercatSetupEvent {
             EVENT.to_string(),
             EthercatSetupEvent {
                 devices: device_objs,
-                machine_infos: machine_infos,
+                machines: machine_objs,
             },
         )
     }

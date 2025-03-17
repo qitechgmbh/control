@@ -56,7 +56,7 @@ export function renderUnitSyntax(
   }
   switch (unit) {
     case "C":
-      return `${valueString}°`;
+      return `${valueString}`;
     case "deg":
       return `${valueString}°`;
     default:

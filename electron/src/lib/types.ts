@@ -1,4 +1,4 @@
-export type MachineIdentification = {
+export type MachineIdentificationUnique = {
   vendor: number;
   serial: number;
   machine: number;
@@ -15,7 +15,7 @@ export type Result<T, E> =
     };
 
 export type MachineDeviceIdentification = {
-  machine_identification: MachineIdentification;
+  machine_identification_unique: MachineIdentificationUnique;
   role: number;
   subdevice_index: number;
 };

@@ -20,27 +20,55 @@ use ethercrab::SubDeviceIdentity;
 use serde::Deserialize;
 use serde::Serialize;
 
-/// Identifies a machine
-#[derive(Debug, PartialEq, Default, Clone, Serialize, Deserialize)]
-pub struct MachineIdentification {
+/// Identifies a spacifi machine
+#[derive(Debug, PartialEq, Default, Clone, Serialize, Deserialize, Eq, Hash)]
+pub struct MachineIdentificationUnique {
     pub vendor: u32,
     pub serial: u32,
     pub machine: u32,
 }
 
-impl Display for MachineIdentification {
+impl Display for MachineIdentificationUnique {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "vendor: 0x{:08x}, serial: 0x{:08x}, machine: 0x{:08x}",
+            "vendor: {}, serial: {}, machine: {}",
             self.vendor, self.serial, self.machine
         )
     }
 }
 
+/// Identifies a machine
+#[derive(Debug, PartialEq, Default, Clone, Serialize, Deserialize)]
+pub struct MachineIdentification {
+    pub vendor: u32,
+    pub machine: u32,
+}
+
+impl MachineIdentification {
+    pub fn new(vendor: u32, machine: u32) -> Self {
+        Self { vendor, machine }
+    }
+}
+
+impl Display for MachineIdentification {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "vendor: {}, machine: {}", self.vendor, self.machine)
+    }
+}
+
+impl From<&MachineIdentificationUnique> for MachineIdentification {
+    fn from(mdi: &MachineIdentificationUnique) -> Self {
+        Self {
+            vendor: mdi.vendor,
+            machine: mdi.machine,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MachineDeviceIdentification {
-    pub machine_identification: MachineIdentification,
+    pub machine_identification_unique: MachineIdentificationUnique,
     pub role: u32,
     pub subdevice_index: usize,
 }
@@ -50,7 +78,7 @@ impl Display for MachineDeviceIdentification {
         write!(
             f,
             "{} role: 0x{:08x} subdevice_index: {}",
-            self.machine_identification, self.role, self.subdevice_index
+            self.machine_identification_unique, self.role, self.subdevice_index
         )
     }
 }
@@ -115,15 +143,17 @@ pub async fn identify_device_groups<
         let mdid = machine_device_identification(&subdevice, subdevice_index, maindevice).await?;
 
         // if vendor or serial or machine is 0, it is not a valid machine device
-        if mdid.machine_identification == MachineIdentification::default() {
+        if mdid.machine_identification_unique == MachineIdentificationUnique::default() {
             unidentified_devices.push(mdid);
             continue;
         }
 
         let mut found = false;
         for device_group in device_groups.iter_mut() {
-            if device_group.first().map(|d| &d.machine_identification)
-                == Some(&mdid.machine_identification)
+            if device_group
+                .first()
+                .map(|d| &d.machine_identification_unique)
+                == Some(&mdid.machine_identification_unique)
             {
                 device_group.push(mdid.clone());
                 found = true;
@@ -146,7 +176,7 @@ pub async fn machine_device_identification<'maindevice>(
 ) -> Result<MachineDeviceIdentification, Error> {
     let addresses = get_identification_addresses(&subdevice.identity(), subdevice.name())?;
     Ok(MachineDeviceIdentification {
-        machine_identification: MachineIdentification {
+        machine_identification_unique: MachineIdentificationUnique {
             vendor: words_to_u32be(
                 subdevice
                     .eeprom_read(maindevice, addresses.vendor_word)
@@ -204,42 +234,42 @@ pub async fn write_machine_device_identification<'maindevice, const MAX_PDI: usi
         .eeprom_write_dangerously(
             maindevice,
             addresses.vendor_word,
-            identification.machine_identification.vendor as u16,
+            identification.machine_identification_unique.vendor as u16,
         )
         .await?;
     subdevice
         .eeprom_write_dangerously(
             maindevice,
             addresses.vendor_word + 1,
-            (identification.machine_identification.vendor >> 16) as u16,
+            (identification.machine_identification_unique.vendor >> 16) as u16,
         )
         .await?;
     subdevice
         .eeprom_write_dangerously(
             maindevice,
             addresses.serial_word,
-            identification.machine_identification.serial as u16,
+            identification.machine_identification_unique.serial as u16,
         )
         .await?;
     subdevice
         .eeprom_write_dangerously(
             maindevice,
             addresses.serial_word + 1,
-            (identification.machine_identification.serial >> 16) as u16,
+            (identification.machine_identification_unique.serial >> 16) as u16,
         )
         .await?;
     subdevice
         .eeprom_write_dangerously(
             maindevice,
             addresses.machine_word,
-            identification.machine_identification.machine as u16,
+            identification.machine_identification_unique.machine as u16,
         )
         .await?;
     subdevice
         .eeprom_write_dangerously(
             maindevice,
             addresses.machine_word + 1,
-            (identification.machine_identification.machine >> 16) as u16,
+            (identification.machine_identification_unique.machine >> 16) as u16,
         )
         .await?;
     subdevice

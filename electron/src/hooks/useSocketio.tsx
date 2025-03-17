@@ -2,7 +2,7 @@
 
 import {
   MachineDeviceIdentification,
-  MachineIdentification,
+  MachineIdentificationUnique,
   Option,
 } from "@/lib/types";
 import { useEffect, useState } from "react";
@@ -103,15 +103,14 @@ export type EthercatSetupEvent = {
     machine_device_identification: Option<MachineDeviceIdentification>;
     subdevice_index: number;
   }[];
-  machine_infos: {
-    machine_identification: MachineIdentification;
+  machines: {
+    machine_identification_unique: MachineIdentificationUnique;
     error: Option<string>;
   }[];
 };
 
 export type EthercatSetupEventDevice = EthercatSetupEvent["devices"][0];
-export type EthercatSetupEventMachineInfo =
-  EthercatSetupEvent["machine_infos"][0];
+export type EthercatSetupEventMachine = EthercatSetupEvent["machines"][0];
 
 export function useSocketioEthercatSetupEvent(): MessageResponse<EthercatSetupEvent> {
   return useSockerioEvent<EthercatSetupEvent>("main", "EthercatSetupEvent");
