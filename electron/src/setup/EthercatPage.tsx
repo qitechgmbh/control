@@ -52,12 +52,13 @@ export const columns: ColumnDef<EthercatSetupEvent["devices"][0]>[] = [
     accessorKey: "qitech_machine",
     header: "Assigned Machine",
     cell: (row) => {
-      const machine_identification =
-        row.row.original.machine_device_identification?.machine_identification;
-      if (!machine_identification) {
+      const machine_identification_unique =
+        row.row.original.machine_device_identification
+          ?.machine_identification_unique;
+      if (!machine_identification_unique) {
         return "—";
       }
-      const machinePreset = getMachinePreset(machine_identification);
+      const machinePreset = getMachinePreset(machine_identification_unique);
       return machinePreset?.name + " " + machinePreset?.version;
     },
   },
@@ -66,8 +67,8 @@ export const columns: ColumnDef<EthercatSetupEvent["devices"][0]>[] = [
     header: "Assigned Serial",
     cell: (row) => {
       const serial =
-        row.row.original.machine_device_identification?.machine_identification
-          .serial;
+        row.row.original.machine_device_identification
+          ?.machine_identification_unique.serial;
       if (!serial) {
         return "—";
       }
@@ -79,12 +80,13 @@ export const columns: ColumnDef<EthercatSetupEvent["devices"][0]>[] = [
     header: "Assigned Device Role",
     cell: (row) => {
       const role = row.row.original.machine_device_identification?.role;
-      const machine_identification =
-        row.row.original.machine_device_identification?.machine_identification;
-      if (!machine_identification) {
+      const machine_identification_unique =
+        row.row.original.machine_device_identification
+          ?.machine_identification_unique;
+      if (!machine_identification_unique) {
         return "—";
       }
-      const machinePreset = getMachinePreset(machine_identification);
+      const machinePreset = getMachinePreset(machine_identification_unique);
       const deviceRole = machinePreset?.device_roles.find(
         (device_role) => device_role.role === role,
       );

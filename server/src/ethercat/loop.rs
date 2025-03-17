@@ -1,6 +1,6 @@
-use crate::app_state::{EthercatSetup, MachineInfo};
+use crate::app_state::EthercatSetup;
 use crate::ethercat::device_identification::identify_device_groups;
-use crate::machines::{MachineNew, Machines};
+use crate::machines::registry::MACHINE_REGISTRY;
 use crate::{
     app_state::AppState,
     ethercat::config::{MAX_FRAMES, MAX_PDU_DATA, MAX_SUBDEVICES, PDI_LEN},
@@ -11,6 +11,7 @@ use ethercat_hal::actors::Actor;
 use ethercat_hal::devices::devices_from_subdevices;
 use ethercrab::std::{ethercat_now, tx_rx_task};
 use ethercrab::{MainDevice, MainDeviceConfig, PduStorage, RetryBehaviour, Timeouts};
+use std::collections::HashMap;
 use std::{sync::Arc, time::Duration};
 use tokio::sync::RwLock;
 
@@ -83,12 +84,23 @@ pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(),
         identify_device_groups(&group_preop, &maindevice).await?;
     // - Create Machines
     let subdevices = group_preop.iter(&maindevice).collect::<Vec<_>>();
-    let machines = identified_device_groups
-        .iter()
-        .map(|identified_device_group| {
-            Machines::new(identified_device_group, &subdevices, &devices)
-        })
-        .collect::<Vec<_>>();
+    let mut machines: HashMap<_, _> = HashMap::new();
+    for identified_device_group in identified_device_groups.iter() {
+        let machine = MACHINE_REGISTRY.new_machine(identified_device_group, &subdevices, &devices);
+        machines.insert(
+            identified_device_group
+                .first()
+                .unwrap()
+                .machine_identification_unique
+                .clone(),
+            machine,
+        );
+    }
+
+    //log machines
+    for (k, v) in machines.iter() {
+        log::info!("Machine: {:?} {:?}", k, v);
+    }
 
     // Put group in operational state
     let group_op = match group_preop.into_op(&maindevice).await {
@@ -109,34 +121,13 @@ pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(),
         .map(|subdevice| subdevice.propagation_delay())
         .collect();
 
-    // Create machine infos
-    let mut machine_infos = Vec::new();
-    for (i, machine) in machines.iter().enumerate() {
-        // add machine info
-        let first_device = match identified_device_groups[i].first() {
-            Some(first_device) => first_device,
-            None => Err(anyhow::anyhow!(
-                "[{}::setup_loop] No first device",
-                module_path!()
-            ))?,
-        };
-        let machine_info = MachineInfo {
-            machine_identification: first_device.machine_identification.clone(),
-            error: match &machine {
-                Ok(_) => None,
-                Err(e) => Some(e.to_string()),
-            },
-        };
-        machine_infos.push(machine_info);
-    }
-
     // create actors
     // push all machines into the actors vector
     let mut actors: Vec<Arc<RwLock<dyn Actor>>> = Vec::new();
-    for machine in machines.into_iter() {
-        // add actor
-        if let Ok(machine) = machine {
-            actors.push(Arc::new(RwLock::new(machine)));
+    for (_, machine) in machines.iter() {
+        match machine {
+            Ok(machine) => actors.push(machine.clone() as Arc<RwLock<dyn Actor>>),
+            Err(_) => {}
         }
     }
 
@@ -145,7 +136,7 @@ pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(),
         let mut ethercat_setup_guard = app_state.ethercat_setup.write().await;
         *ethercat_setup_guard = Some(EthercatSetup {
             actors,
-            machine_infos,
+            machines,
             identified_device_groups,
             unidentified_devices,
             devices,

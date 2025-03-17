@@ -4,11 +4,11 @@ use std::sync::Arc;
 use thread_priority::{ThreadBuilderExt, ThreadPriority};
 
 pub fn init_ethercat(app_state: Arc<AppState>) {
-    let interface = "en10";
+    let interface = "en6";
 
     tokio::spawn(async move {
         std::thread::Builder::new()
-            .name("MyNewThread".to_owned())
+            .name("EthercatThread".to_owned())
             .spawn_with_priority(ThreadPriority::Max, move |_| {
                 let runtime = tokio::runtime::Builder::new_current_thread()
                     .enable_all()

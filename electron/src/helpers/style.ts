@@ -77,8 +77,6 @@ export function classNameBuilder<V extends Variables>(
       classNames.push(variables.className);
     }
 
-    console.log("classNames", classNames);
-
     return classNames.join(" ");
   };
 }

@@ -1,8 +1,7 @@
 import { z } from "zod";
 import { Icon, IconName } from "./Icon";
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { toast } from "sonner";
-import { Value } from "./Value";
 import { fromError } from "zod-validation-error";
 
 type Props = {
@@ -49,39 +48,40 @@ export function toastZodError(error: z.ZodError, title: string) {
   toast(<ZodErrorToast error={error} title={title} />);
 }
 
-function HttpErrorToast({ res }: { res: Response }) {
-  const { status } = res;
+function HttpErrorToast({
+  status,
+  error,
+}: {
+  status: number;
+  error: string | undefined;
+}) {
   const description =
     friendlyHttpStatus[status.toString() as keyof typeof friendlyHttpStatus];
 
-  const [body, setBody] = useState<string | null>(null);
-  useEffect(() => {
-    if (res.status !== 422) {
-      return;
-    }
-    try {
-      res.text().then((text) => {
-        console.log(text);
-        setBody(text);
-      });
-    } catch (e) {
-      console.error(e);
-    }
-  }, [res]);
-
   return (
-    <Toast title="API Fehler" icon="lu:TriangleAlert">
-      <div>
-        API responded with <Value value={status} />{" "}
-        {description ? `(${description}) ` : " "}
-        {body}
-      </div>
+    <Toast
+      title={`API Fehler ${status} ${description ? `(${description}) ` : ""}`}
+      icon="lu:TriangleAlert"
+    >
+      <div className="text-zinc-500">{error}</div>
     </Toast>
   );
 }
 
-export function toastHttpNotOk(res: Response) {
-  toast(<HttpErrorToast res={res} />);
+export function toastHttpNotOk(status: number, error: string | undefined) {
+  toast(<HttpErrorToast status={status} error={error} />);
+}
+
+export function ErrorToast({ title, error }: Props & { error: string }) {
+  return (
+    <Toast title={title} icon="lu:TriangleAlert">
+      <div className="text-zinc-500">{error}</div>
+    </Toast>
+  );
+}
+
+export function toastError(title: string, error: string) {
+  toast(<ErrorToast title={title} error={error} />);
 }
 
 const friendlyHttpStatus = {

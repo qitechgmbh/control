@@ -86,9 +86,9 @@ export function DeviceEeepromDialogContent({ device, setOpen }: ContentProps) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       machine:
-        device.machine_device_identification?.machine_identification.machine.toString(),
+        device.machine_device_identification?.machine_identification_unique.machine.toString(),
       serial:
-        device.machine_device_identification?.machine_identification.serial.toString(),
+        device.machine_device_identification?.machine_identification_unique.serial.toString(),
       role: device.machine_device_identification?.role.toString(),
     },
     mode: "all",
@@ -102,7 +102,7 @@ export function DeviceEeepromDialogContent({ device, setOpen }: ContentProps) {
     client
       .writeMachineDeviceIdentification({
         subdevice_index: device.subdevice_index,
-        machine_identification: {
+        machine_identification_unique: {
           vendor: VENDOR_QITECH,
           serial: parseInt(values.serial!),
           machine: parseInt(values.machine!),

@@ -1,3 +1,4 @@
+use super::handlers::machine_mutation::post_machine_mutate;
 use super::handlers::write_machine_device_identification::post_write_machine_device_identification;
 use crate::app_state::AppState;
 use axum::routing::post;
@@ -26,6 +27,7 @@ pub async fn init_api(
             "/api/v1/write_machine_device_identification",
             post(post_write_machine_device_identification),
         )
+        .route("/api/v1/machine/mutate", post(post_machine_mutate))
         .layer(socketio_layer)
         .layer(cors)
         .layer(TraceLayer::new_for_http())

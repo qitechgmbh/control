@@ -1853,6 +1853,7 @@ dependencies = [
  "ethercrab",
  "futures",
  "include_dir",
+ "lazy_static",
  "log",
  "mime_guess",
  "network-interface",

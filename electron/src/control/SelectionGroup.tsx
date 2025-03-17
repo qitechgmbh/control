@@ -4,6 +4,8 @@ import { TouchButton } from "@/components/touch/TouchButton";
 export type Props<KEY extends string> = {
   value?: KEY | undefined;
   onChange?: (value: KEY) => void;
+  disabled?: boolean;
+  loading?: boolean;
   options: {
     [K in KEY]: Option;
   };
@@ -17,6 +19,8 @@ type Option = ComponentProps<typeof TouchButton> & {
 export function SelectionGroup<KEY extends string>({
   options,
   onChange,
+  disabled,
+  loading,
   value,
 }: Props<KEY>) {
   return (
@@ -26,8 +30,10 @@ export function SelectionGroup<KEY extends string>({
           <TouchButton
             key={key}
             icon={icon}
+            disabled={disabled}
             onClick={() => onChange?.(key as KEY)}
             variant={key === value ? "default" : "outline"}
+            isLoading={key === value && loading}
             className={
               className + (key === value ? ` ${isActiveClassName}` : "")
             }
@@ -43,6 +49,8 @@ export function SelectionGroup<KEY extends string>({
 type SelectionGroupBooleanProps = {
   value?: boolean;
   onChange?: (value: boolean) => void;
+  disabled?: boolean;
+  loading?: boolean;
   optionTrue: Option;
   optionFalse: Option;
 };
@@ -50,12 +58,16 @@ type SelectionGroupBooleanProps = {
 export function SelectionGroupBoolean({
   value,
   onChange,
+  disabled,
+  loading,
   optionTrue,
   optionFalse,
 }: SelectionGroupBooleanProps) {
   return (
     <SelectionGroup<"on" | "off">
       value={value ? "on" : "off"}
+      disabled={disabled}
+      loading={loading}
       options={{
         off: optionFalse,
         on: optionTrue,

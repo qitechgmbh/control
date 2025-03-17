@@ -4,9 +4,9 @@ use axum::{
 };
 use serde_json::json;
 
-pub struct QuickResponse {}
+pub struct ResponseUtil {}
 
-impl QuickResponse {
+impl ResponseUtil {
     pub fn error(message: &str) -> Response<Body> {
         Response::builder()
             .status(StatusCode::INTERNAL_SERVER_ERROR)
@@ -33,5 +33,19 @@ impl QuickResponse {
                 serde_json::to_string(&json!({ "error": message })).unwrap(),
             ))
             .unwrap()
+    }
+}
+
+pub enum ResponseUtilError {
+    Error(anyhow::Error),
+    NotFound(anyhow::Error),
+}
+
+impl From<ResponseUtilError> for Response<Body> {
+    fn from(error: ResponseUtilError) -> Self {
+        match error {
+            ResponseUtilError::Error(e) => ResponseUtil::error(&e.to_string()),
+            ResponseUtilError::NotFound(e) => ResponseUtil::not_found(&e.to_string()),
+        }
     }
 }

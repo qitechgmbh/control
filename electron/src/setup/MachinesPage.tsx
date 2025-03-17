@@ -4,7 +4,7 @@ import { SectionTitle } from "@/components/SectionTitle";
 import { MyTable } from "@/components/Table";
 import { Value } from "@/components/Value";
 import {
-  EthercatSetupEventMachineInfo,
+  EthercatSetupEventMachine,
   useSocketioEthercatSetupEvent,
 } from "@/hooks/useSocketio";
 import {
@@ -16,16 +16,17 @@ import React, { useMemo } from "react";
 import { getVendorPreset, getMachinePreset } from "@/machines/types";
 import { IconText } from "@/components/IconText";
 
-export const columns: ColumnDef<EthercatSetupEventMachineInfo>[] = [
+export const columns: ColumnDef<EthercatSetupEventMachine>[] = [
   {
     accessorKey: "qitech_machine",
     header: "Machine",
     cell: (row) => {
-      const machine_identification = row.row.original?.machine_identification;
-      if (!machine_identification) {
+      const machine_identification_unique =
+        row.row.original?.machine_identification_unique;
+      if (!machine_identification_unique) {
         return "—";
       }
-      const machinePreset = getMachinePreset(machine_identification);
+      const machinePreset = getMachinePreset(machine_identification_unique);
       return machinePreset?.name + " " + machinePreset?.version;
     },
   },
@@ -33,18 +34,21 @@ export const columns: ColumnDef<EthercatSetupEventMachineInfo>[] = [
     accessorKey: "qitech_vendor",
     header: "Vendor",
     cell: (row) => {
-      const machine_identification = row.row.original?.machine_identification;
-      if (!machine_identification) {
+      const machine_identification_unique =
+        row.row.original?.machine_identification_unique;
+      if (!machine_identification_unique) {
         return "—";
       }
-      return getVendorPreset(machine_identification.vendor)?.name ?? "UNKNOWN";
+      return (
+        getVendorPreset(machine_identification_unique.vendor)?.name ?? "UNKNOWN"
+      );
     },
   },
   {
     accessorKey: "qitech_serial",
     header: "Serial",
     cell: (row) => {
-      const serial = row.row.original?.machine_identification.serial;
+      const serial = row.row.original?.machine_identification_unique.serial;
       if (!serial) {
         return "—";
       }
@@ -72,7 +76,7 @@ export function MachinesPage() {
   const deviceMessage = useSocketioEthercatSetupEvent();
 
   const data = useMemo(() => {
-    return deviceMessage.data?.machine_infos || [];
+    return deviceMessage.data?.machines || [];
   }, [deviceMessage]);
 
   const table = useReactTable({

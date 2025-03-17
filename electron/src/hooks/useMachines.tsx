@@ -5,12 +5,12 @@ import {
   VendorPreset,
 } from "@/machines/types";
 import {
-  EthercatSetupEventMachineInfo,
+  EthercatSetupEventMachine,
   useSocketioEthercatSetupEvent,
 } from "./useSocketio";
 
 type UseMachine = {
-  machine_identification: EthercatSetupEventMachineInfo["machine_identification"];
+  machine_identification_unique: EthercatSetupEventMachine["machine_identification_unique"];
   name: MachinePreset["name"];
   version: MachinePreset["version"];
   slug: MachinePreset["slug"];
@@ -22,16 +22,20 @@ type UseMachine = {
 export function useMachines(): UseMachine[] {
   const event = useSocketioEthercatSetupEvent();
   return (
-    event.data?.machine_infos
+    event.data?.machines
       .filter((machine) => machine.error === null)
       .map((machine) => {
-        const machinePreset = getMachinePreset(machine.machine_identification);
-        const vendorPreset = getVendorPreset(machinePreset!.vendor_id);
+        const machinePreset = getMachinePreset(
+          machine.machine_identification_unique,
+        );
+        const vendorPreset = getVendorPreset(
+          machinePreset!.machine_identification.vendor,
+        );
         if (!machinePreset || !vendorPreset) {
           return undefined;
         }
         return {
-          machine_identification: machine.machine_identification,
+          machine_identification_unique: machine.machine_identification_unique,
           name: machinePreset.name,
           version: machinePreset.version,
           slug: machinePreset.slug,

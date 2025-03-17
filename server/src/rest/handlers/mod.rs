@@ -1,5 +1,7 @@
+use axum::body::Body;
 use serde::Serialize;
 
+pub mod machine_mutation;
 pub mod write_machine_device_identification;
 
 #[derive(Debug, Serialize, Clone)]
@@ -20,5 +22,12 @@ impl MutationResponse {
             success: false,
             error: Some(error),
         }
+    }
+}
+
+impl From<MutationResponse> for Body {
+    fn from(mutation_response: MutationResponse) -> Self {
+        let body = serde_json::to_string(&mutation_response).unwrap();
+        Body::from(body)
     }
 }

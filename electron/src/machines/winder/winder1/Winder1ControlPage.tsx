@@ -12,8 +12,17 @@ import { EditValue } from "@/control/EditValue";
 import { Label } from "@/control/Label";
 import { TouchButton } from "@/components/touch/TouchButton";
 import { StatusBadge } from "@/control/StatusBadge";
+import { useWinder1 } from "./hooks";
 
 export function Winder1ControlPage() {
+  // use optimistic state
+  const {
+    laserpointer,
+    setLaserpointer,
+    laserpointerIsLoading,
+    laserpointerIsDisabled,
+  } = useWinder1();
+
   return (
     <Page>
       <ControlGrid>
@@ -69,9 +78,12 @@ export function Winder1ControlPage() {
           </div>
           <Label label="Laserpointer">
             <SelectionGroupBoolean
-              value={false}
+              value={laserpointer}
+              disabled={laserpointerIsLoading}
+              loading={laserpointerIsDisabled}
               optionFalse={{ children: "Off", icon: "lu:LightbulbOff" }}
               optionTrue={{ children: "On", icon: "lu:Lightbulb" }}
+              onChange={setLaserpointer}
             />
           </Label>
           <Label label="Home">

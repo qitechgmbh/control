@@ -4,7 +4,7 @@ use crate::{
     ethercat::device_identification::{
         write_machine_device_identification, MachineDeviceIdentification,
     },
-    rest::util::QuickResponse,
+    rest::util::ResponseUtil,
 };
 use axum::{body::Body, extract::State, http::Response, Json};
 use std::sync::Arc;
@@ -17,7 +17,7 @@ pub async fn post_write_machine_device_identification(
     let ethercat_setup_guard = app_state.ethercat_setup.read().await;
     let ethercat_setup = match ethercat_setup_guard.as_ref() {
         Some(setup) => setup,
-        None => return QuickResponse::error("EthercatSetup not initialized"),
+        None => return ResponseUtil::error("EthercatSetup not initialized"),
     };
 
     let subdevice = match ethercat_setup
@@ -25,13 +25,13 @@ pub async fn post_write_machine_device_identification(
         .subdevice(&ethercat_setup.maindevice, body.subdevice_index)
     {
         Ok(subdevice) => subdevice,
-        Err(_) => return QuickResponse::not_found("SubDevice not found"),
+        Err(_) => return ResponseUtil::not_found("SubDevice not found"),
     };
 
     match write_machine_device_identification(&subdevice, &ethercat_setup.maindevice, &body).await {
         Ok(_) => {}
-        Err(e) => return QuickResponse::error(e.to_string().as_str()),
+        Err(e) => return ResponseUtil::error(e.to_string().as_str()),
     }
 
-    QuickResponse::ok(MutationResponse::success())
+    ResponseUtil::ok(MutationResponse::success())
 }

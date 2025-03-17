@@ -10,7 +10,6 @@ import { Winder1ControlPage } from "@/machines/winder/winder1/Winder1ControlPage
 import { Winder1ManualPage } from "@/machines/winder/winder1/Winder1Manual";
 import { Winder1SettingPage } from "@/machines/winder/winder1/Winder1Settings";
 import { Winder1GraphsPage } from "@/machines/winder/winder1/Winder1Graphs";
-import { Extruder1ControlPage } from "@/machines/extruder/extruder1/Extruder1ControlPage";
 
 // make a route tree like this
 // _mainNavigation/machines/winder1/$serial/control
@@ -40,7 +39,7 @@ export const winder1SerialRoute = createRoute({
 export const winder1ControlRoute = createRoute({
   getParentRoute: () => winder1SerialRoute,
   path: "control",
-  component: () => <Extruder1ControlPage />,
+  component: () => <Winder1ControlPage />,
 });
 
 export const winder1ManualRoute = createRoute({

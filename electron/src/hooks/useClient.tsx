@@ -15,13 +15,28 @@ const mutationResponseSchema = z.discriminatedUnion("success", [
 
 const writeMachineIdentification = z.object({
   subdevice_index: z.number(),
-  machine_identification: z.object({
+  machine_identification_unique: z.object({
     vendor: z.number(),
     serial: z.number(),
     machine: z.number(),
   }),
   role: z.number(),
 });
+
+function machineMutateRequestSchema<T extends z.ZodTypeAny>(dataSchema: T) {
+  return z.object({
+    machine_identification_unique: z.object({
+      vendor: z.number(),
+      serial: z.number(),
+      machine: z.number(),
+    }),
+    data: dataSchema,
+  });
+}
+
+export type MachineMutateRequestSchema<T extends z.ZodTypeAny> = z.infer<
+  ReturnType<typeof machineMutateRequestSchema<T>>
+>;
 
 export type MutationResponseSchema = z.infer<typeof mutationResponseSchema>;
 
@@ -32,6 +47,10 @@ export type WriteMachineIdentificationRequest = z.infer<
 type Client = {
   writeMachineDeviceIdentification: (
     req: WriteMachineIdentificationRequest,
+  ) => Promise<MutationResponseSchema>;
+  machineMutate: <T extends z.ZodTypeAny>(
+    req: MachineMutateRequestSchema<T>,
+    dataSchema: T,
   ) => Promise<MutationResponseSchema>;
   _request: (options: {
     path: string;
@@ -55,6 +74,16 @@ export const getClient = () => {
         bodySchema: writeMachineIdentification,
       });
     },
+    machineMutate: async <T extends z.ZodTypeAny>(
+      req: MachineMutateRequestSchema<T>,
+      dataSchema: T,
+    ) => {
+      return client._request({
+        path: "/api/v1/machine/mutate",
+        body: req,
+        bodySchema: machineMutateRequestSchema(dataSchema),
+      });
+    },
     _request: async ({
       path,
       method = "POST",
@@ -62,6 +91,7 @@ export const getClient = () => {
       body = {},
       bodySchema = z.object({}),
     }) => {
+      // check request body
       const bodyParsed = bodySchema.safeParse(body);
       if (!bodyParsed.success) {
         toastZodError(bodyParsed.error, "API Anfrage falsch formatiert");
@@ -70,6 +100,8 @@ export const getClient = () => {
           error: "Invalid request body",
         };
       }
+
+      // send request
       const response = await fetch(`${baseUrl}${path}`, {
         method,
         headers: {
@@ -78,14 +110,29 @@ export const getClient = () => {
         },
         body: JSON.stringify(bodyParsed.data),
       });
-      if (!response.ok) {
-        toastHttpNotOk(response);
+
+      // check response content type
+      if (!response.headers.get("content-type")?.includes("application/json")) {
+        const error = await response.text();
+        toastHttpNotOk(response.status, error);
         return {
           success: false,
-          error: "API Fehler",
+          error,
         };
       }
+
+      // check i response has error
       const data = await response.json();
+      if (!response.ok) {
+        const error = extractError(response.status, data);
+        toastHttpNotOk(response.status, error);
+        return {
+          success: false,
+          error: error,
+        };
+      }
+
+      // check response body
       const dataParsed = mutationResponseSchema.safeParse(data);
       if (!dataParsed.success) {
         toastZodError(dataParsed.error, "API Antwort falsch formatiert");
@@ -94,6 +141,8 @@ export const getClient = () => {
           error: dataParsed.error.message,
         };
       }
+
+      // yay, success
       return dataParsed.data;
     },
   };
@@ -104,3 +153,44 @@ export const useClient = () => {
   const [client] = useState<Client>(getClient());
   return client;
 };
+
+export const useMachineMutate = <T extends z.ZodTypeAny>(
+  dataSchema: T,
+): {
+  request: (
+    req: MachineMutateRequestSchema<T>,
+  ) => Promise<MutationResponseSchema>;
+  isLoading: boolean;
+  response: MutationResponseSchema | undefined;
+} => {
+  const client = useClient();
+  const [res, setRes] = useState<MutationResponseSchema | undefined>(undefined);
+  const [loading, setLoading] = useState(false);
+  return {
+    request: async (req: MachineMutateRequestSchema<T>) => {
+      setLoading(true);
+      const res = await client.machineMutate(req, dataSchema);
+      setRes(res);
+      setLoading(false);
+      return res;
+    },
+    isLoading: loading,
+    response: res,
+  };
+};
+
+export function extractError(status: number, body: any): string {
+  // if body is an object,
+  if (typeof body === "object") {
+    if (body.error) {
+      return body.error;
+    }
+    return JSON.stringify(body);
+  }
+  // if body is a string
+  if (typeof body === "string") {
+    return body;
+  }
+
+  return JSON.stringify(body);
+}
