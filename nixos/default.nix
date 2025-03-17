@@ -5,11 +5,30 @@
   }
 }:
 
-{
-  packages = {
-    server = pkgs.callPackage ./packages/server.nix {};
-    electron = pkgs.callPackage ./packages/electron.nix {};
+let
+  rust = pkgs.rust-bin.beta.latest.default.override {
+    extensions = [ "rust-src" "rust-analyzer" ];
+    targets = [ "x86_64-unknown-linux-gnu" ];
   };
+in {
+  server = pkgs.callPackage ./nixos/packages/server.nix { inherit rust; };
+  electron = pkgs.callPackage ./nixos/packages/electron.nix { };
 
-  nixosModules.qitech = import ./modules/qitech.nix;
+  # Package for quick development testing without a flake
+  shell = pkgs.mkShell {
+    buildInputs = with pkgs; [
+      rust
+      pkg-config
+      libudev-zero
+      libpcap
+      nodejs
+      nodePackages.npm
+    ];
+    
+    shellHook = ''
+      echo "QiTech Industries Control Software Development Environment"
+      echo "Rust version: $(${rust}/bin/rustc --version)"
+      echo "Node version: $(${pkgs.nodejs}/bin/node --version)"
+    '';
+  };
 }

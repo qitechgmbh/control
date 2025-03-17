@@ -1,7 +1,6 @@
 { lib
 , stdenv
 , makeWrapper
-, fetchFromGitHub
 , nodejs
 , electron
 , nodePackages
@@ -20,92 +19,77 @@ stdenv.mkDerivation rec {
     nodePackages.npm
     git
     makeWrapper
-    cacert  # Add SSL certificates
+    cacert
   ];
 
-  # Fix the SSL certificate issues
+  # Environment variables for the build
   SSL_CERT_FILE = "${cacert}/etc/ssl/certs/ca-bundle.crt";
   GIT_SSL_CAINFO = "${cacert}/etc/ssl/certs/ca-bundle.crt";
-  NODE_TLS_REJECT_UNAUTHORIZED = "0";  # Allow npm to proceed even with certificate issues
-  
-  # Avoid update notifications
   npm_config_update_notifier = false;
-  npm_config_loglevel = "verbose";
-  
+  npm_config_cache = "$TMPDIR/npm-cache";
+
   buildPhase = ''
     export HOME=$TMPDIR
     
-    # Configure git for npm
-    git config --global user.email "nixbuild@localhost"
-    git config --global user.name "Nix Builder"
+    # Ensure git directories exist
+    mkdir -p $HOME
     
-    # Show available scripts
-    echo "Available npm scripts:"
-    npm run || true
+    # Setup git for npm with explicit config path
+    ${git}/bin/git config --global --add safe.directory '*'
+    ${git}/bin/git config --global user.email "nixbuild@localhost"
+    ${git}/bin/git config --global user.name "Nix Builder"
     
     # Install dependencies
-    echo "Installing dependencies... (this may take a while)"
-    npm install --no-audit --no-fund || npm install --no-audit --no-fund --unsafe-perm || {
-      echo "Normal installation failed. Trying with legacy peer deps..."
-      npm install --legacy-peer-deps --no-audit --no-fund --unsafe-perm
-    }
+    echo "Installing dependencies..."
+    npm ci --no-audit --no-fund || npm install --no-audit --no-fund --legacy-peer-deps
     
-    # Run the package command
+    # Build the application
+    echo "Building application..."
+    npm run build || true
+    
+    # Package the application
     echo "Packaging application..."
-    npm run package || {
-      echo "Packaging failed. Trying with start script..."
-      npm run start -- --no-sandbox
-    }
-    
-    # Create distributable if package succeeded
-    if [ -d "out" ]; then
-      echo "Creating distributable..."
-      npm run make || true
-    fi
+    npm run package || true
   '';
 
   installPhase = ''
-    mkdir -p $out/share/qitech
+    mkdir -p $out/share/qitech-electron $out/bin
     
-    # Check for various output directories that electron-forge might create
+    # Install the app - check various output directories
     if [ -d "out" ]; then
-      echo "Found 'out' directory, copying contents"
-      cp -r out/* $out/share/qitech/ || true
-    fi
-    
-    if [ -d "dist" ]; then
-      echo "Found 'dist' directory, copying contents"
-      cp -r dist/* $out/share/qitech/ || true
-    fi
-    
-    if [ -d "make" ]; then
-      echo "Found 'make' directory, copying contents" 
-      cp -r make/* $out/share/qitech/ || true
-    fi
-    
-    # If no build output was found, copy the source
-    if [ ! "$(ls -A $out/share/qitech)" ]; then
-      echo "No build output found. Copying the source itself."
-      cp -r * $out/share/qitech/
+      cp -r out/* $out/share/qitech-electron/ || true
+    elif [ -d "dist" ]; then
+      cp -r dist/* $out/share/qitech-electron/ || true
+    else
+      # Fallback - copy the source and node_modules
+      echo "No build output found - using source files"
+      cp -r src package.json $out/share/qitech-electron/ || true
+      if [ -d "node_modules" ]; then
+        cp -r node_modules $out/share/qitech-electron/ || true
+      fi
     fi
     
     # Create desktop entry
     mkdir -p $out/share/applications
-    cat > $out/share/applications/qitech.desktop << EOF
+    cat > $out/share/applications/qitech-electron.desktop << EOF
     [Desktop Entry]
     Name=QiTech Control
     Comment=QiTech Industries Control Software
     Exec=qitech-electron
+    Icon=$out/share/qitech-electron/icon.png
     Terminal=false
     Type=Application
     Categories=Development;Engineering;
     EOF
     
+    # Find an icon if it exists
+    if [ -f "build/icon.png" ]; then
+      cp build/icon.png $out/share/qitech-electron/ || true
+    fi
+    
     # Create wrapper script
-    mkdir -p $out/bin
     makeWrapper ${electron}/bin/electron $out/bin/qitech-electron \
-      --add-flags "$out/share/qitech" \
-      --set NODE_PATH "$out/lib/node_modules" \
+      --add-flags "$out/share/qitech-electron" \
       --add-flags "--no-sandbox"
   '';
 
@@ -113,7 +97,6 @@ stdenv.mkDerivation rec {
     description = "QiTech Industries Control Software - Electron Frontend";
     homepage = "https://qitech.com";
     license = licenses.mit;
-    maintainers = [];
     platforms = platforms.linux;
   };
 }

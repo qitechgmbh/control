@@ -4,7 +4,6 @@ with lib;
 
 let
   cfg = config.services.qitech;
-  qitechPackages = (import ../. { inherit pkgs; }).packages;
 in {
   options.services.qitech = {
     enable = mkEnableOption "QiTech Industries Control Software";
@@ -32,23 +31,34 @@ in {
       default = 8000;
       description = "Port on which the QiTech server listens";
     };
+    
+    package = mkOption {
+      type = types.package;
+      default = pkgs.qitech-server or null;
+      description = "The QiTech server package to use";
+    };
   };
 
   config = mkIf cfg.enable {
-    # Always create a dedicated system user
+    assertions = [
+      {
+        assertion = cfg.package != null;
+        message = "No QiTech server package available. Please add it to your pkgs or explicitly set services.qitech.package.";
+      }
+    ];
+
     users.users.${cfg.user} = {
       isSystemUser = true;
       group = cfg.group;
       description = "QiTech service user";
-      # Add to groups needed for hardware access
       extraGroups = [ "realtime" "plugdev" "dialout" "uucp" ];
     };
     
     users.groups.${cfg.group} = {};
     
-    # Install the packages
-    environment.systemPackages = [
-      qitechPackages.electron
+    # Install the Electron app system-wide
+    environment.systemPackages = with pkgs; [
+      qitech-electron
     ];
     
     # Configure udev rules for EtherCAT device access
@@ -70,14 +80,14 @@ in {
         Type = "simple";
         User = cfg.user;
         Group = cfg.group;
-        ExecStart = "${qitechPackages.server}/bin/server";
+        ExecStart = "${cfg.package}/bin/qitech-server";
         Restart = "on-failure";
         
         # Grant specific capabilities needed for EtherCAT
         CapabilityBoundingSet = "CAP_NET_RAW CAP_NET_ADMIN CAP_SYS_NICE";
         AmbientCapabilities = "CAP_NET_RAW CAP_NET_ADMIN CAP_SYS_NICE";
         
-        # Hardening that's still compatible with hardware access
+        # Hardening options
         NoNewPrivileges = true;
         ProtectSystem = "strict";
         ProtectHome = true;
@@ -88,7 +98,7 @@ in {
         RestrictAddressFamilies = "AF_UNIX AF_INET AF_INET6 AF_NETLINK AF_PACKET";
         RestrictNamespaces = true;
         LockPersonality = true;
-        MemoryDenyWriteExecute = false;  # May need JIT compilation
+        MemoryDenyWriteExecute = false;
       };
       
       environment = {

@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.95"
 crossbeam-utils = "0.8.21"
-ethercrab = { path = "../ethercrab" }
+ethercrab = { git = "https://github.com/qitechgmbh/ethercrab.git", branch = "master" }
 ethercat_hal_derive = { version = "0.1.0", path = "../ethercat-hal-derive" }
 log = "0.4.25"
 stepper_driver = { version = "0.1.0", path = "../stepper-driver" }
