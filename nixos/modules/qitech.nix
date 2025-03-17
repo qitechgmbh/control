@@ -17,29 +17,31 @@ in {
     
     user = mkOption {
       type = types.str;
-      default = "qitech";
+      default = "qitech-service";
       description = "User account under which the service runs";
     };
     
     group = mkOption {
       type = types.str;
-      default = "qitech";
+      default = "qitech-service";
       description = "Group under which the service runs";
     };
     
     port = mkOption {
       type = types.port;
-      default = 8000;  # Adjust to the actual default port
+      default = 8000;
       description = "Port on which the QiTech server listens";
     };
   };
 
   config = mkIf cfg.enable {
-    # Create user and group
+    # Always create a dedicated system user
     users.users.${cfg.user} = {
       isSystemUser = true;
       group = cfg.group;
       description = "QiTech service user";
+      # Add to groups needed for hardware access
+      extraGroups = [ "realtime" "plugdev" "dialout" "uucp" ];
     };
     
     users.groups.${cfg.group} = {};
@@ -48,6 +50,15 @@ in {
     environment.systemPackages = [
       qitechPackages.electron
     ];
+    
+    # Configure udev rules for EtherCAT device access
+    services.udev.extraRules = ''
+      # Allow access to network devices for ethercrab
+      SUBSYSTEM=="net", ACTION=="add", ATTR{address}=="*", TAG+="uaccess", TAG+="udev-acl", GROUP="${cfg.group}"
+      
+      # USB device access if needed
+      SUBSYSTEM=="usb", ATTRS{idVendor}=="*", ATTRS{idProduct}=="*", MODE="0660", GROUP="${cfg.group}"
+    '';
     
     # Configure the systemd service
     systemd.services.qitech-server = {
@@ -62,25 +73,50 @@ in {
         ExecStart = "${qitechPackages.server}/bin/server";
         Restart = "on-failure";
         
-        # Hardening
+        # Grant specific capabilities needed for EtherCAT
+        CapabilityBoundingSet = "CAP_NET_RAW CAP_NET_ADMIN CAP_SYS_NICE";
+        AmbientCapabilities = "CAP_NET_RAW CAP_NET_ADMIN CAP_SYS_NICE";
+        
+        # Hardening that's still compatible with hardware access
         NoNewPrivileges = true;
         ProtectSystem = "strict";
         ProtectHome = true;
         PrivateTmp = true;
-        PrivateDevices = false;  # Likely needs access to EtherCAT devices
+        PrivateDevices = false;  # Need access to devices
         ProtectKernelTunables = true;
         ProtectControlGroups = true;
-        RestrictAddressFamilies = "AF_UNIX AF_INET AF_INET6 AF_NETLINK";
+        RestrictAddressFamilies = "AF_UNIX AF_INET AF_INET6 AF_NETLINK AF_PACKET";
         RestrictNamespaces = true;
         LockPersonality = true;
         MemoryDenyWriteExecute = false;  # May need JIT compilation
-        CapabilityBoundingSet = "CAP_NET_RAW";  # Needed for raw socket access for EtherCAT
       };
       
       environment = {
         PORT = toString cfg.port;
       };
     };
+    
+    # Add real-time privileges
+    security.pam.loginLimits = [
+      {
+        domain = cfg.user;
+        type = "-";
+        item = "rtprio";
+        value = "99";
+      }
+      {
+        domain = cfg.user;
+        type = "-";
+        item = "memlock";
+        value = "unlimited";
+      }
+      {
+        domain = cfg.user;
+        type = "-";
+        item = "nice";
+        value = "-20";
+      }
+    ];
     
     # Open firewall if requested
     networking.firewall = mkIf cfg.openFirewall {
