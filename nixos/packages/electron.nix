@@ -31,10 +31,8 @@ stdenv.mkDerivation rec {
   buildPhase = ''
     export HOME=$TMPDIR
     
-    # Ensure git directories exist
+    # Setup git
     mkdir -p $HOME
-    
-    # Setup git for npm with explicit config path
     ${git}/bin/git config --global --add safe.directory '*'
     ${git}/bin/git config --global user.email "nixbuild@localhost"
     ${git}/bin/git config --global user.name "Nix Builder"
@@ -43,35 +41,47 @@ stdenv.mkDerivation rec {
     echo "Installing dependencies..."
     npm ci --no-audit --no-fund || npm install --no-audit --no-fund --legacy-peer-deps
     
-    # Build the application
-    echo "Building application..."
-    npm run build || true
+    # Build the Vite application first (important step!)
+    echo "Building Vite app..."
+    NODE_ENV=production npx vite build
     
-    # Package the application
+    # Now package the app with the built files
     echo "Packaging application..."
-    npm run package || true
+    npm run package
+    
+    # Make distributables
+    echo "Creating distributables..."
+    npm run make || true
   '';
 
   installPhase = ''
     mkdir -p $out/share/qitech-electron $out/bin
     
-    # Find out what's actually built
-    echo "Listing directory contents:"
-    ls -la
+    # Find packaged app
+    PACKAGED_APP=$(find out -type d -name "*linux-x64" | head -n 1)
     
-    # Copy the built electron app
-    if [ -d "electron-shadcn Template-linux-x64" ]; then
-      echo "Found packaged electron app, copying..."
-      cp -r "electron-shadcn Template-linux-x64"/* $out/share/qitech-electron/
-    elif [ -d "out" ]; then
-      echo "Found 'out' directory, checking for packaged app..."
-      find out -type d -name "*-linux-x64" -exec cp -r {}/* $out/share/qitech-electron/ \;
-    elif [ -d "dist" ]; then
-      echo "Copying dist directory..."
-      cp -r dist/* $out/share/qitech-electron/
+    if [ -n "$PACKAGED_APP" ]; then
+      echo "Found packaged app at $PACKAGED_APP"
+      cp -r $PACKAGED_APP/* $out/share/qitech-electron/
     else
-      echo "No build artifacts found, copying source files..."
-      cp -r * $out/share/qitech-electron/
+      echo "No packaged app found, using build directory"
+      # Copy the core built files
+      mkdir -p $out/share/qitech-electron/.vite
+      if [ -d ".vite/build" ]; then
+        cp -r .vite/build $out/share/qitech-electron/.vite/
+      fi
+      
+      # Copy other necessary files
+      cp -r node_modules $out/share/qitech-electron/
+      cp package.json $out/share/qitech-electron/
+      
+      # Copy assets and dist folder if they exist
+      if [ -d "dist" ]; then
+        cp -r dist $out/share/qitech-electron/
+      fi
+      if [ -d "assets" ]; then
+        cp -r assets $out/share/qitech-electron/
+      fi
     fi
     
     # Create desktop entry
@@ -87,9 +97,10 @@ stdenv.mkDerivation rec {
     EOF
     
     # Create wrapper script
-    echo '#!/bin/sh
-    exec ${electron}/bin/electron "$@"' > $out/bin/qitech-electron
-    chmod +x $out/bin/qitech-electron
+    makeWrapper ${electron}/bin/electron $out/bin/qitech-electron \
+      --add-flags "$out/share/qitech-electron" \
+      --add-flags "--no-sandbox" \
+      --set ELECTRON_ENABLE_LOGGING true
   '';
 
   meta = with lib; {
