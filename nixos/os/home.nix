@@ -35,25 +35,31 @@
 
     # Disable screen blanking/timeout
     "org/gnome/desktop/session" = {
-      idle-delay = 0;  # 0 seconds = never
+      idle-delay = "uint32 0";  # Use uint32 format to ensure proper type
     };
     
-    # Disable automatic suspend
+    # Disable automatic suspend and screen dimming
     "org/gnome/settings-daemon/plugins/power" = {
       sleep-inactive-ac-type = "nothing";
       sleep-inactive-battery-type = "nothing";
       power-button-action = "nothing";
+      idle-dim = false;
+      sleep-inactive-ac-timeout = "uint32 0";
+      sleep-inactive-battery-timeout = "uint32 0";
+      ambient-enabled = false;
     };
     
     # Disable screen lock
     "org/gnome/desktop/screensaver" = {
       lock-enabled = false;
       idle-activation-enabled = false;
+      lock-delay = "uint32 0";
     };
-    
-    # Disable screen dimming
-    "org/gnome/settings-daemon/plugins/power" = {
-      idle-dim = false;
+
+    # Add display settings to prevent blanking
+    "org/gnome/desktop/interface" = {
+      enable-animations = true;
+      show-battery-percentage = true;
     };
 
     # Show dock on all monitors and always visible
@@ -88,6 +94,8 @@
         "org.gnome.Settings.desktop"
         "org.gnome.Terminal.desktop"
       ];
+      disable-user-extensions = false;
+      enable-hot-corners = false;
     };
   };
 }

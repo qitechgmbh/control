@@ -82,12 +82,13 @@
   # Enable the X11 windowing system.
   services.xserver.enable = true;
 
-  # Enable the GNOME Desktop Environment.
-  services.xserver.displayManager.gdm.enable = true;
+  services.xserver.displayManager.gdm = {
+    enable = true;
+    autoSuspend = false;
+    wayland = false;
+  };
+  
   services.xserver.desktopManager.gnome.enable = true;
-
-  # Disable screen locking
-  services.xserver.displayManager.gdm.autoSuspend = false;
 
   # Disable sleep/suspend
   systemd.targets.sleep.enable = false;
@@ -97,6 +98,18 @@
 
   # Additional power management settings
   powerManagement.enable = false;
+
+  # Ensure all power management is disabled
+  services.logind = {
+    lidSwitch = "ignore";
+    extraConfig = ''
+      HandlePowerKey=ignore
+      HandleSuspendKey=ignore
+      HandleHibernateKey=ignore
+      HandleLidSwitch=ignore
+      IdleAction=ignore
+    '';
+  };
 
   # Configure keymap in X11
   services.xserver.xkb = {
