@@ -1,0 +1,9 @@
+[package]
+name = "dre-usb-driver"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+tokio = { version = "1", features = ["full"] }
+tokio-modbus = { version = "0.8", features = ["rtu"] }
+tokio-serial = "5.4"
