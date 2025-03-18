@@ -47,12 +47,9 @@ function createWindow() {
     // Set window class explicitly for Linux/GNOME integration
     title: "QiTech Control",
     titleBarStyle: "hidden",
-    className: "de.qitech.control-electron",
-    name: "de.qitech.control-electron"
   });
   
   mainWindow.setTitle("QiTech Control");
-  mainWindow.setWindowClassName("de.qitech.control-electron");
   
   registerListeners(mainWindow);
 

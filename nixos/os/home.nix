@@ -10,7 +10,7 @@
     Exec=qitech-control-electron
     Icon=de.qitech.control-electron
     Terminal=false
-    StartupWMClass=de.qitech.control-electron
+    StartupWMClass=QiTech Control
     X-GNOME-Autostart-enabled=true
     X-GNOME-Autostart-Phase=Applications
   '';
