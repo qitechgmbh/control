@@ -280,6 +280,48 @@ The QiTech Electron application is:
 - Pinned to the dock for easy access
 - Configured with a custom desktop entry and icon
 
+### Environment Variables
+
+The QiTech Control software on NixOS systems includes special environment variables that allow the application to detect it's running in a NixOS environment. These variables can be used in the Electron/React code to enable NixOS-specific features or behaviors.
+
+- **QITECH_BUILD_ENV**: Set to "control-os" to identify NixOS deployments
+- **QITECH_DEPLOYMENT_TYPE**: Indicates the deployment type (e.g., "production")
+
+These variables are set in the `configuration.nix`, `electron.nix` and `home.nix` files and can be accessed from both the server and Electron frontend:
+
+```bash
+# Add to configuration.nix to set system-wide environment variables
+environment.variables = {
+  QITECH_BUILD_ENV = "control-os";
+  QITECH_DEPLOYMENT_TYPE = "production";
+};
+
+# Or add to the QiTech service specifically
+services.qitech = {
+  # existing configuration...
+  environment = {
+    QITECH_BUILD_ENV = "control-os";
+    QITECH_DEPLOYMENT_TYPE = "production";
+  };
+};
+
+# For desktop entry in electron.nix
+cat > $out/share/applications/de.qitech.control-electron.desktop << EOF
+[Desktop Entry]
+# existing configuration...
+Exec=env QITECH_BUILD_ENV=control-os QITECH_DEPLOYMENT_TYPE=production qitech-control-electron
+# rest of the desktop entry...
+EOF
+
+# For autostart entry in home.nix
+xdg.configFile."autostart/de.qitech.control-electron.desktop".text = ''
+  [Desktop Entry]
+  # existing configuration...
+  Exec=env QITECH_BUILD_ENV=control-os QITECH_DEPLOYMENT_TYPE=production qitech-control-electron
+  # rest of the desktop entry...
+'';
+```
+
 ### Common Operations
 
 #### Restarting the QiTech Service
