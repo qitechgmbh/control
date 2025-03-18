@@ -20,6 +20,7 @@ stdenv.mkDerivation rec {
     git
     makeWrapper
     cacert
+    imagemagick
   ];
 
   # Environment variables for the build
@@ -79,6 +80,14 @@ stdenv.mkDerivation rec {
       cp -r . $out/share/qitech-electron/
     fi
     
+    if [ -f "src/assets/icon.png" ]; then
+      for size in 16 32 48 64 128 256; do
+        mkdir -p $out/share/icons/hicolor/''${size}x''${size}/apps
+        ${imagemagick}/bin/convert src/assets/icon.png -resize ''${size}x''${size} \
+          $out/share/icons/hicolor/''${size}x''${size}/apps/qitech-electron.png
+      done
+    fi
+
     # Create the executable wrapper
     cat > $out/bin/qitech-electron << EOF
     #!/bin/sh
@@ -87,12 +96,13 @@ stdenv.mkDerivation rec {
     EOF
     chmod +x $out/bin/qitech-electron
     
-    # Create desktop entry
+    # Create desktop entry with the icon
     cat > $out/share/applications/qitech-electron.desktop << EOF
     [Desktop Entry]
     Name=QiTech Control
     Comment=QiTech Industries Control Software
     Exec=qitech-electron
+    Icon=qitech-electron
     Terminal=false
     Type=Application
     Categories=Development;Engineering;
