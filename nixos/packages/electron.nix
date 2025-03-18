@@ -86,24 +86,24 @@ stdenv.mkDerivation rec {
     fi
 
     # Create the executable wrapper with proper app ID
-    cat > $out/bin/qitech-electron << EOF
+    cat > $out/bin/qitech-control-electron << EOF
     #!/bin/sh
-    cd $out/share/qitech-electron
-    exec ${electron}/bin/electron "$out/share/qitech-electron" \
+    cd $out/share/qitech-control-electron
+    exec ${electron}/bin/electron "$out/share/qitech-control-electron" \
       --no-sandbox \
       --class=com.qitech.control \
       --name="QiTech Control" \
       --single-instance \
       "\$@"
     EOF
-    chmod +x $out/bin/qitech-electron
+    chmod +x $out/bin/qitech-control-electron
     
     # Create desktop entry with consistent application ID
     cat > $out/share/applications/com.qitech.control.desktop << EOF
     [Desktop Entry]
     Name=QiTech Control
     Comment=QiTech Industries Control Software
-    Exec=qitech-electron %U
+    Exec=qitech-control-electron %U
     Icon=com.qitech.control
     Terminal=false
     Type=Application
@@ -113,7 +113,7 @@ stdenv.mkDerivation rec {
     EOF
     
     # Create a symbolic link for backward compatibility
-    ln -sf $out/share/applications/com.qitech.control.desktop $out/share/applications/qitech-electron.desktop
+    ln -sf $out/share/applications/com.qitech.control.desktop $out/share/applications/qitech-control-electron.desktop
   '';
 
   meta = with lib; {
