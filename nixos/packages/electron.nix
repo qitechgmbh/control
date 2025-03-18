@@ -82,7 +82,7 @@ stdenv.mkDerivation rec {
     # Copy the icon
     if [ -f "src/assets/icon.png" ]; then
       echo "Copying icon from src/assets/icon.png"
-      cp src/assets/icon.png $out/share/icons/hicolor/256x256/apps/com.qitech.control.png
+      cp src/assets/icon.png $out/share/icons/hicolor/256x256/apps/de.qitech.control-electron.png
     fi
 
     # Create the executable wrapper with proper app ID
@@ -114,12 +114,6 @@ stdenv.mkDerivation rec {
 
     # Create a symbolic link for backward compatibility
     ln -sf $out/share/applications/de.qitech.control-electron.desktop $out/share/applications/qitech-control-electron.desktop
-
-    # Copy the icon with the correct ID-based name
-    if [ -f "src/assets/icon.png" ]; then
-      echo "Copying icon from src/assets/icon.png"
-      cp src/assets/icon.png $out/share/icons/hicolor/256x256/apps/de.qitech.control-electron.png
-    fi
   '';
 
   meta = with lib; {
