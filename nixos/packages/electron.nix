@@ -27,6 +27,10 @@ stdenv.mkDerivation rec {
   GIT_SSL_CAINFO = "${cacert}/etc/ssl/certs/ca-bundle.crt";
   npm_config_update_notifier = false;
   npm_config_cache = "$TMPDIR/npm-cache";
+  
+  # Let Electron Forge see more output
+  ELECTRON_ENABLE_LOGGING = "true";
+  DEBUG = "*";
 
   buildPhase = ''
     export HOME=$TMPDIR
@@ -41,51 +45,49 @@ stdenv.mkDerivation rec {
     echo "Installing dependencies..."
     npm ci --no-audit --no-fund || npm install --no-audit --no-fund --legacy-peer-deps
     
-    # Build the Vite application first (important step!)
-    echo "Building Vite app..."
-    NODE_ENV=production npx vite build
+    # First try the 'make' command which does a full build + package
+    echo "Creating distributable..."
+    NODE_ENV=production npm run make || {
+      echo "Make failed, trying package instead..."
+      NODE_ENV=production npm run package
+    }
     
-    # Now package the app with the built files
-    echo "Packaging application..."
-    npm run package
-    
-    # Make distributables
-    echo "Creating distributables..."
-    npm run make || true
+    # List the output directories to see what we got
+    echo "Created artifacts:"
+    find out -type d | sort
+    find out -type f -name "*.js" | sort
   '';
 
   installPhase = ''
-    mkdir -p $out/share/qitech-electron $out/bin
+    mkdir -p $out/share/qitech-electron $out/bin $out/share/applications
     
-    # Find packaged app
-    PACKAGED_APP=$(find out -type d -name "*linux-x64" | head -n 1)
-    
-    if [ -n "$PACKAGED_APP" ]; then
-      echo "Found packaged app at $PACKAGED_APP"
-      cp -r $PACKAGED_APP/* $out/share/qitech-electron/
-    else
-      echo "No packaged app found, using build directory"
-      # Copy the core built files
-      mkdir -p $out/share/qitech-electron/.vite
-      if [ -d ".vite/build" ]; then
-        cp -r .vite/build $out/share/qitech-electron/.vite/
-      fi
-      
-      # Copy other necessary files
-      cp -r node_modules $out/share/qitech-electron/
-      cp package.json $out/share/qitech-electron/
-      
-      # Copy assets and dist folder if they exist
-      if [ -d "dist" ]; then
-        cp -r dist $out/share/qitech-electron/
-      fi
-      if [ -d "assets" ]; then
-        cp -r assets $out/share/qitech-electron/
-      fi
+    # First check for a full distribution in the 'out/make' directory
+    if [ -d "out/make" ]; then
+      echo "Using distribution from 'out/make'"
+      find out/make -type d -name "*linux*" -exec cp -r {} $out/share/qitech-electron \; || true
     fi
     
+    # If no distribution was found, use the packaged version
+    if [ ! "$(ls -A $out/share/qitech-electron)" ]; then
+      echo "Using packaged app from 'out'"
+      find out -maxdepth 1 -type d -name "*linux-x64" -exec cp -r {}/* $out/share/qitech-electron \; || true
+    fi
+    
+    # If still nothing, try the Electron Forge template approach
+    if [ ! "$(ls -A $out/share/qitech-electron)" ]; then
+      echo "No packaged app found, using source + .vite directory"
+      cp -r . $out/share/qitech-electron/
+    fi
+    
+    # Create the executable wrapper
+    cat > $out/bin/qitech-electron << EOF
+    #!/bin/sh
+    cd $out/share/qitech-electron
+    exec ${electron}/bin/electron "$out/share/qitech-electron" --no-sandbox "\$@"
+    EOF
+    chmod +x $out/bin/qitech-electron
+    
     # Create desktop entry
-    mkdir -p $out/share/applications
     cat > $out/share/applications/qitech-electron.desktop << EOF
     [Desktop Entry]
     Name=QiTech Control
@@ -95,12 +97,6 @@ stdenv.mkDerivation rec {
     Type=Application
     Categories=Development;Engineering;
     EOF
-    
-    # Create wrapper script
-    makeWrapper ${electron}/bin/electron $out/bin/qitech-electron \
-      --add-flags "$out/share/qitech-electron" \
-      --add-flags "--no-sandbox" \
-      --set ELECTRON_ENABLE_LOGGING true
   '';
 
   meta = with lib; {
