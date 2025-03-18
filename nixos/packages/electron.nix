@@ -91,29 +91,35 @@ stdenv.mkDerivation rec {
     cd $out/share/qitech-control-electron
     exec ${electron}/bin/electron "$out/share/qitech-control-electron" \
       --no-sandbox \
-      --class=com.qitech.control \
+      --class=de.qitech.control-electron \
       --name="QiTech Control" \
       --single-instance \
       "\$@"
     EOF
     chmod +x $out/bin/qitech-control-electron
-    
+
     # Create desktop entry with consistent application ID
-    cat > $out/share/applications/com.qitech.control.desktop << EOF
+    cat > $out/share/applications/de.qitech.control-electron.desktop << EOF
     [Desktop Entry]
     Name=QiTech Control
     Comment=QiTech Industries Control Software
     Exec=qitech-control-electron %U
-    Icon=com.qitech.control
+    Icon=de.qitech.control-electron
     Terminal=false
     Type=Application
-    StartupWMClass=com.qitech.control
+    StartupWMClass=de.qitech.control-electron
     Categories=Development;Engineering;
     X-GNOME-UsesNotifications=true
     EOF
-    
+
     # Create a symbolic link for backward compatibility
-    ln -sf $out/share/applications/com.qitech.control.desktop $out/share/applications/qitech-control-electron.desktop
+    ln -sf $out/share/applications/de.qitech.control-electron.desktop $out/share/applications/qitech-control-electron.desktop
+
+    # Copy the icon with the correct ID-based name
+    if [ -f "src/assets/icon.png" ]; then
+      echo "Copying icon from src/assets/icon.png"
+      cp src/assets/icon.png $out/share/icons/hicolor/256x256/apps/de.qitech.control-electron.png
+    fi
   '';
 
   meta = with lib; {
