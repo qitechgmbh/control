@@ -34,7 +34,7 @@ in {
     
     package = mkOption {
       type = types.package;
-      default = pkgs.qitech-server or null;
+      default = pkgs.qitech-control-server or null;
       description = "The QiTech server package to use";
     };
   };
@@ -58,7 +58,7 @@ in {
     
     # Install the Electron app system-wide
     environment.systemPackages = with pkgs; [
-      qitech-electron
+      qitech-control-electron
     ];
     
     # Configure udev rules for EtherCAT device access
@@ -71,7 +71,7 @@ in {
     '';
     
     # Configure the systemd service
-    systemd.services.qitech-server = {
+    systemd.services.qitech-control-server = {
       description = "QiTech Industries Control Software Server";
       wantedBy = [ "multi-user.target" ];
       after = [ "network.target" ];
@@ -80,7 +80,7 @@ in {
         Type = "simple";
         User = cfg.user;
         Group = cfg.group;
-        ExecStart = "${cfg.package}/bin/qitech-server";
+        ExecStart = "${cfg.package}/bin/qitech-control-server";
         Restart = "on-failure";
         
         # Grant specific capabilities needed for EtherCAT

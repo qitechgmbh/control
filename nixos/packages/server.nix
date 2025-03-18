@@ -7,7 +7,7 @@
 }:
 
 stdenv.mkDerivation rec {
-  pname = "qitech-server";
+  pname = "qitech-control-server";
   version = "0.1.0";
 
   src = lib.cleanSource ../..;
@@ -43,7 +43,7 @@ stdenv.mkDerivation rec {
 
   installPhase = ''
     mkdir -p $out/bin
-    cp target/release/server $out/bin/qitech-server
+    cp target/release/server $out/bin/qitech-control-server
   '';
 
   meta = with lib; {

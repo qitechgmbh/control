@@ -1,8 +1,8 @@
 {
-  "name": "electron-shadcn",
-  "productName": "electron-shadcn Template",
+  "name": "qitech-control-electron",
+  "productName": "QiTech Control",
   "version": "1.0.0",
-  "description": "Electron Forge with shadcn-ui (Vite + Typescript)",
+  "description": "",
   "main": ".vite/build/main.js",
   "private": true,
   "scripts": {
@@ -19,7 +19,7 @@
     "test:e2e": "playwright test",
     "test:all": "vitest run && playwright test"
   },
-  "author": "ROG <luan.roger.2003@gmail.com>",
+  "author": "",
   "license": "MIT",
   "devDependencies": {
     "@electron-forge/cli": "^7.6.1",

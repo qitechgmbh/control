@@ -9,7 +9,7 @@
 }:
 
 stdenv.mkDerivation rec {
-  pname = "qitech-electron";
+  pname = "qitech-control-electron";
   version = "0.1.0";
 
   src = lib.cleanSource ../../electron;
@@ -59,47 +59,47 @@ stdenv.mkDerivation rec {
   '';
 
   installPhase = ''
-    mkdir -p $out/share/qitech-electron $out/bin $out/share/applications $out/share/icons/hicolor/256x256/apps
+    mkdir -p $out/share/qitech-control-electron $out/bin $out/share/applications $out/share/icons/hicolor/256x256/apps
     
     # First check for a full distribution in the 'out/make' directory
     if [ -d "out/make" ]; then
       echo "Using distribution from 'out/make'"
-      find out/make -type d -name "*linux*" -exec cp -r {} $out/share/qitech-electron \; || true
+      find out/make -type d -name "*linux*" -exec cp -r {} $out/share/qitech-control-electron \; || true
     fi
     
     # If no distribution was found, use the packaged version
-    if [ ! "$(ls -A $out/share/qitech-electron)" ]; then
+    if [ ! "$(ls -A $out/share/qitech-control-electron)" ]; then
       echo "Using packaged app from 'out'"
-      find out -maxdepth 1 -type d -name "*linux-x64" -exec cp -r {}/* $out/share/qitech-electron \; || true
+      find out -maxdepth 1 -type d -name "*linux-x64" -exec cp -r {}/* $out/share/qitech-control-electron \; || true
     fi
     
     # If still nothing, try the Electron Forge template approach
-    if [ ! "$(ls -A $out/share/qitech-electron)" ]; then
+    if [ ! "$(ls -A $out/share/qitech-control-electron)" ]; then
       echo "No packaged app found, using source + .vite directory"
-      cp -r . $out/share/qitech-electron/
+      cp -r . $out/share/qitech-control-electron/
     fi
     
     # Copy the icon to the standard locations
     if [ -f "src/assets/icon.png" ]; then
       echo "Copying icon from src/assets/icon.png"
-      cp src/assets/icon.png $out/share/icons/hicolor/256x256/apps/qitech-electron.png
+      cp src/assets/icon.png $out/share/icons/hicolor/256x256/apps/qitech-control-electron.png
     fi
 
     # Create the executable wrapper
-    cat > $out/bin/qitech-electron << EOF
+    cat > $out/bin/qitech-control-electron << EOF
     #!/bin/sh
-    cd $out/share/qitech-electron
-    exec ${electron}/bin/electron "$out/share/qitech-electron" --no-sandbox "\$@"
+    cd $out/share/qitech-control-electron
+    exec ${electron}/bin/electron "$out/share/qitech-control-electron" --no-sandbox "\$@"
     EOF
-    chmod +x $out/bin/qitech-electron
+    chmod +x $out/bin/qitech-control-electron
     
     # Create desktop entry with the icon
-    cat > $out/share/applications/qitech-electron.desktop << EOF
+    cat > $out/share/applications/qitech-control-electron.desktop << EOF
     [Desktop Entry]
     Name=QiTech Control
     Comment=QiTech Industries Control Software
-    Exec=qitech-electron
-    Icon=qitech-electron
+    Exec=qitech-control-electron
+    Icon=qitech-control-electron
     Terminal=false
     Type=Application
     Categories=Development;Engineering;
