@@ -12,13 +12,28 @@ interface ThemeModeContext {
   system: () => Promise<boolean>;
   current: () => Promise<"dark" | "light" | "system">;
 }
+
 interface ElectronWindow {
   minimize: () => Promise<void>;
   maximize: () => Promise<void>;
   close: () => Promise<void>;
 }
 
+interface EnvironmentInfo {
+  deploymentType: string;
+  buildEnv: string;
+}
+
+interface EnvironmentContext {
+  getInfo: () => Promise<EnvironmentInfo>;
+}
+
+interface EnvironmentContext {
+  getInfo: () => Promise<EnvironmentInfo>;
+}
+
 declare interface Window {
   themeMode: ThemeModeContext;
   electronWindow: ElectronWindow;
+  environment: EnvironmentContext;
 }

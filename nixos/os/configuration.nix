@@ -152,8 +152,11 @@
     user = "qitech-service";
     group = "qitech-service"; 
     port = 3001;
-    # Specify the correct package
     package = qitech-control.packages.${pkgs.system}.server;
+    environment = {
+      QITECH_BUILD_ENV = "control-os";
+      QITECH_DEPLOYMENT_TYPE = "production";
+    };
   };
 
   # Keep the normal qitech user for login
@@ -213,6 +216,11 @@
     totem # video player
     seahorse # password manager
   ]);
+
+  environment.variables = {
+    QITECH_BUILD_ENV = "control-os";
+    QITECH_DEPLOYMENT_TYPE = "production";
+  };
   
   # Some programs need SUID wrappers, can be configured further or are
   # started in user sessions.
