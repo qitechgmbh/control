@@ -94,6 +94,7 @@ stdenv.mkDerivation rec {
       --class=de.qitech.control-electron \
       --name="QiTech Control" \
       --single-instance \
+      --winrm-class="de.qitech.control-electron" \
       "\$@"
     EOF
     chmod +x $out/bin/qitech-control-electron
@@ -101,12 +102,12 @@ stdenv.mkDerivation rec {
     # Create desktop entry with consistent application ID
     cat > $out/share/applications/de.qitech.control-electron.desktop << EOF
     [Desktop Entry]
+    Type=Application
     Name=QiTech Control
     Comment=QiTech Industries Control Software
     Exec=qitech-control-electron %U
     Icon=de.qitech.control-electron
     Terminal=false
-    Type=Application
     StartupWMClass=de.qitech.control-electron
     Categories=Development;Engineering;
     X-GNOME-UsesNotifications=true
