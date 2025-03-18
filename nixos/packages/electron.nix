@@ -20,7 +20,6 @@ stdenv.mkDerivation rec {
     git
     makeWrapper
     cacert
-    imagemagick
   ];
 
   # Environment variables for the build
@@ -60,7 +59,7 @@ stdenv.mkDerivation rec {
   '';
 
   installPhase = ''
-    mkdir -p $out/share/qitech-electron $out/bin $out/share/applications
+    mkdir -p $out/share/qitech-electron $out/bin $out/share/applications $out/share/icons/hicolor/256x256/apps
     
     # First check for a full distribution in the 'out/make' directory
     if [ -d "out/make" ]; then
@@ -80,12 +79,10 @@ stdenv.mkDerivation rec {
       cp -r . $out/share/qitech-electron/
     fi
     
+    # Copy the icon to the standard locations
     if [ -f "src/assets/icon.png" ]; then
-      for size in 16 32 48 64 128 256; do
-        mkdir -p $out/share/icons/hicolor/''${size}x''${size}/apps
-        ${imagemagick}/bin/convert src/assets/icon.png -resize ''${size}x''${size} \
-          $out/share/icons/hicolor/''${size}x''${size}/apps/qitech-electron.png
-      done
+      echo "Copying icon from src/assets/icon.png"
+      cp src/assets/icon.png $out/share/icons/hicolor/256x256/apps/qitech-electron.png
     fi
 
     # Create the executable wrapper
