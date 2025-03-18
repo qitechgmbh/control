@@ -79,31 +79,41 @@ stdenv.mkDerivation rec {
       cp -r . $out/share/qitech-control-electron/
     fi
     
-    # Copy the icon to the standard locations
+    # Copy the icon
     if [ -f "src/assets/icon.png" ]; then
       echo "Copying icon from src/assets/icon.png"
-      cp src/assets/icon.png $out/share/icons/hicolor/256x256/apps/qitech-control-electron.png
+      cp src/assets/icon.png $out/share/icons/hicolor/256x256/apps/com.qitech.control.png
     fi
 
-    # Create the executable wrapper
-    cat > $out/bin/qitech-control-electron << EOF
+    # Create the executable wrapper with proper app ID
+    cat > $out/bin/qitech-electron << EOF
     #!/bin/sh
-    cd $out/share/qitech-control-electron
-    exec ${electron}/bin/electron "$out/share/qitech-control-electron" --no-sandbox "\$@"
+    cd $out/share/qitech-electron
+    exec ${electron}/bin/electron "$out/share/qitech-electron" \
+      --no-sandbox \
+      --class=com.qitech.control \
+      --name="QiTech Control" \
+      --single-instance \
+      "\$@"
     EOF
-    chmod +x $out/bin/qitech-control-electron
+    chmod +x $out/bin/qitech-electron
     
-    # Create desktop entry with the icon
-    cat > $out/share/applications/qitech-control-electron.desktop << EOF
+    # Create desktop entry with consistent application ID
+    cat > $out/share/applications/com.qitech.control.desktop << EOF
     [Desktop Entry]
     Name=QiTech Control
     Comment=QiTech Industries Control Software
-    Exec=qitech-control-electron
-    Icon=qitech-control-electron
+    Exec=qitech-electron %U
+    Icon=com.qitech.control
     Terminal=false
     Type=Application
+    StartupWMClass=com.qitech.control
     Categories=Development;Engineering;
+    X-GNOME-UsesNotifications=true
     EOF
+    
+    # Create a symbolic link for backward compatibility
+    ln -sf $out/share/applications/com.qitech.control.desktop $out/share/applications/qitech-electron.desktop
   '';
 
   meta = with lib; {
