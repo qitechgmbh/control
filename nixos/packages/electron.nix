@@ -55,18 +55,23 @@ stdenv.mkDerivation rec {
   installPhase = ''
     mkdir -p $out/share/qitech-electron $out/bin
     
-    # Install the app - check various output directories
-    if [ -d "out" ]; then
-      cp -r out/* $out/share/qitech-electron/ || true
+    # Find out what's actually built
+    echo "Listing directory contents:"
+    ls -la
+    
+    # Copy the built electron app
+    if [ -d "electron-shadcn Template-linux-x64" ]; then
+      echo "Found packaged electron app, copying..."
+      cp -r "electron-shadcn Template-linux-x64"/* $out/share/qitech-electron/
+    elif [ -d "out" ]; then
+      echo "Found 'out' directory, checking for packaged app..."
+      find out -type d -name "*-linux-x64" -exec cp -r {}/* $out/share/qitech-electron/ \;
     elif [ -d "dist" ]; then
-      cp -r dist/* $out/share/qitech-electron/ || true
+      echo "Copying dist directory..."
+      cp -r dist/* $out/share/qitech-electron/
     else
-      # Fallback - copy the source and node_modules
-      echo "No build output found - using source files"
-      cp -r src package.json $out/share/qitech-electron/ || true
-      if [ -d "node_modules" ]; then
-        cp -r node_modules $out/share/qitech-electron/ || true
-      fi
+      echo "No build artifacts found, copying source files..."
+      cp -r * $out/share/qitech-electron/
     fi
     
     # Create desktop entry
@@ -76,21 +81,15 @@ stdenv.mkDerivation rec {
     Name=QiTech Control
     Comment=QiTech Industries Control Software
     Exec=qitech-electron
-    Icon=$out/share/qitech-electron/icon.png
     Terminal=false
     Type=Application
     Categories=Development;Engineering;
     EOF
     
-    # Find an icon if it exists
-    if [ -f "build/icon.png" ]; then
-      cp build/icon.png $out/share/qitech-electron/ || true
-    fi
-    
     # Create wrapper script
-    makeWrapper ${electron}/bin/electron $out/bin/qitech-electron \
-      --add-flags "$out/share/qitech-electron" \
-      --add-flags "--no-sandbox"
+    echo '#!/bin/sh
+    exec ${electron}/bin/electron "$@"' > $out/bin/qitech-electron
+    chmod +x $out/bin/qitech-electron
   '';
 
   meta = with lib; {
