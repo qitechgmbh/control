@@ -11,10 +11,10 @@
     Type=Application
     Name=QiTech Control
     Comment=QiTech Industries Control Software
-    Exec=QITECH_BUILD_ENV=control-os QITECH_DEPLOYMENT_TYPE=production qitech-control-electron
+    Exec=env QITECH_BUILD_ENV=control-os QITECH_DEPLOYMENT_TYPE=production qitech-control-electron
     Icon=de.qitech.control-electron
     Terminal=false
-    StartupWMClass=QiTech Control
+    StartupWMClass=qitech-control-electron
     X-GNOME-Autostart-enabled=true
     X-GNOME-Autostart-Phase=Applications
   '';
@@ -22,8 +22,8 @@
   dconf.settings = {
     # Set GNOME wallpaper
     "org/gnome/desktop/background" = {
-      picture-uri = "https://i.postimg.cc/0N61BwSp/qitech-industries-wallpaper.jpg";
-      picture-uri-dark = "https://i.postimg.cc/0N61BwSp/qitech-industries-wallpaper.jpg";
+      picture-uri = "https://i.postimg.cc/Z5XJtNMW/qitech-industries-wallpaper.jpg";
+      picture-uri-dark = "https://i.postimg.cc/Z5XJtNMW/qitech-industries-wallpaper.jpg";
       picture-options = "zoom";
     };
 
@@ -96,7 +96,6 @@
       favorite-apps = [
         "de.qitech.control-electron.desktop"  # The desktop entry from the QiTech app
         "org.gnome.Settings.desktop"
-        "org.gnome.Terminal.desktop"
       ];
       disable-user-extensions = false;
       enable-hot-corners = false;

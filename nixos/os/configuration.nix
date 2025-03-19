@@ -191,8 +191,11 @@
     gnome-extension-manager
     gnomeExtensions.dash-to-dock
     git
-    qitech-control-electron
+    qitech-control.packages.${pkgs.system}.electron
   ];
+
+  xdg.portal.enable = true;
+  xdg.portal.extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
 
   environment.gnome.excludePackages = (with pkgs; [
     atomix # puzzle game

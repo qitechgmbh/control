@@ -84,9 +84,9 @@ stdenv.mkDerivation rec {
       echo "Copying icon from src/assets/icon.png"
       cp src/assets/icon.png $out/share/icons/hicolor/256x256/apps/de.qitech.control-electron.png
       
-      # Also install at alternative paths that might be checked
+      # Also create a symlink with the application name for compatibility
       mkdir -p $out/share/pixmaps
-      cp src/assets/icon.png $out/share/pixmaps/de.qitech.control-electron.png
+      ln -sf $out/share/icons/hicolor/256x256/apps/de.qitech.control-electron.png $out/share/pixmaps/qitech-control-electron.png
     fi
 
     # Create the executable wrapper with proper app ID
@@ -109,10 +109,10 @@ stdenv.mkDerivation rec {
     Type=Application
     Name=QiTech Control
     Comment=QiTech Industries Control Software
-    Exec=QITECH_BUILD_ENV=control-os QITECH_DEPLOYMENT_TYPE=production qitech-control-electron %U
+    Exec=env QITECH_BUILD_ENV=control-os QITECH_DEPLOYMENT_TYPE=production qitech-control-electron %U
     Icon=de.qitech.control-electron
     Terminal=false
-    StartupWMClass=QiTech Control
+    StartupWMClass=qitech-control-electron
     Categories=Development;Engineering;
     X-GNOME-UsesNotifications=true
     EOF
