@@ -112,7 +112,7 @@ stdenv.mkDerivation rec {
     Exec=env QITECH_BUILD_ENV=control-os QITECH_DEPLOYMENT_TYPE=production qitech-control-electron %U
     Icon=de.qitech.control-electron
     Terminal=false
-    StartupWMClass=qitech-control-electron
+    StartupWMClass=QiTech Control
     Categories=Development;Engineering;
     X-GNOME-UsesNotifications=true
     EOF
