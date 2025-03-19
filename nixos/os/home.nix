@@ -5,22 +5,7 @@
     qitech-control-electron
   ];
 
-  xdg.desktopEntries.qitech-control = {
-    name = "QiTech Control";
-    exec = "QITECH_BUILD_ENV=control-os QITECH_DEPLOYMENT_TYPE=production qitech-control-electron %U";
-    icon = "de.qitech.control-electron";
-    terminal = false;
-    categories = [ "Development" "Engineering" ];
-    comment = "QiTech Industries Control Software";
-    startupWMClass = "QiTech Control";
-    genericName = "QiTech Control";
-    desktopName = "de.qitech.control-electron";
-    mimeType = [];
-    settings = {
-      "X-GNOME-UsesNotifications" = "true";
-    };
-  };
-
+  # Add autostart entry for the QiTech electron app
   xdg.configFile."autostart/de.qitech.control-electron.desktop".text = ''
     [Desktop Entry]
     Type=Application
@@ -109,7 +94,7 @@
         "dash-to-dock@micxgx.gmail.com"
       ];
       favorite-apps = [
-        "de.qitech.control-electron.desktop"
+        "de.qitech.control-electron.desktop"  # The desktop entry from the QiTech app
         "org.gnome.Settings.desktop"
         "org.gnome.Terminal.desktop"
       ];
