@@ -191,7 +191,7 @@
     gnome-extension-manager
     gnomeExtensions.dash-to-dock
     git
-    qitech-control.packages.${pkgs.system}.electron
+    qitech-control-electron
   ];
 
   environment.gnome.excludePackages = (with pkgs; [
