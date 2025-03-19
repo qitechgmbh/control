@@ -1,19 +1,39 @@
 { config, pkgs, ... }: {
   home.stateVersion = "24.11";
 
-  # Add autostart entry for the QiTech electron app
-  xdg.configFile."autostart/de.qitech.control-electron.desktop".text = ''
-    [Desktop Entry]
-    Type=Application
-    Name=QiTech Control
-    Comment=QiTech Industries Control Software
-    Exec=QITECH_BUILD_ENV=control-os QITECH_DEPLOYMENT_TYPE=production qitech-control-electron
-    Icon=de.qitech.control-electron
-    Terminal=false
-    StartupWMClass=QiTech Control
-    X-GNOME-Autostart-enabled=true
-    X-GNOME-Autostart-Phase=Applications
-  '';
+  home.packages = with pkgs; [
+    qitech-control-electron
+  ];
+
+  xdg.desktopEntries.qitech-control = {
+    name = "QiTech Control";
+    exec = "QITECH_BUILD_ENV=control-os QITECH_DEPLOYMENT_TYPE=production qitech-control-electron %U";
+    icon = "de.qitech.control-electron";
+    terminal = false;
+    categories = [ "Development" "Engineering" ];
+    comment = "QiTech Industries Control Software";
+    startupWMClass = "QiTech Control";
+    genericName = "QiTech Control";
+    desktopName = "de.qitech.control-electron";
+    mimeType = [];
+    settings = {
+      "X-GNOME-UsesNotifications" = "true";
+    };
+  };
+
+  xdg.autostart.enable = true;
+  xdg.autostart.entries = {
+    qitech-control = {
+      name = "QiTech Control";
+      exec = "QITECH_BUILD_ENV=control-os QITECH_DEPLOYMENT_TYPE=production qitech-control-electron";
+      icon = "de.qitech.control-electron";
+      comment = "QiTech Industries Control Software";
+      settings = {
+        "X-GNOME-Autostart-enabled" = "true";
+        "X-GNOME-Autostart-Phase" = "Applications";
+      };
+    };
+  };
   
   dconf.settings = {
     # Set GNOME wallpaper
@@ -90,7 +110,7 @@
         "dash-to-dock@micxgx.gmail.com"
       ];
       favorite-apps = [
-        "de.qitech.control-electron.desktop"  # The desktop entry from the QiTech app
+        "de.qitech.control-electron.desktop"
         "org.gnome.Settings.desktop"
         "org.gnome.Terminal.desktop"
       ];

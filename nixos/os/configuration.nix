@@ -153,19 +153,23 @@
     group = "qitech-service"; 
     port = 3001;
     package = qitech-control.packages.${pkgs.system}.server;
+  };
+
+  systemd.services.qitech = {
     environment = {
       QITECH_BUILD_ENV = "control-os";
       QITECH_DEPLOYMENT_TYPE = "production";
     };
   };
 
-  # Keep the normal qitech user for login
   users.users.qitech = {
     isNormalUser = true;
     description = "QiTech Industries";
     extraGroups = [ "networkmanager" "wheel" "realtime" ];
     packages = with pkgs; [ ];
   };
+
+  security.sudo.wheelNeedsPassword = false;
 
   # Enable automatic login for the user.
   services.displayManager.autoLogin.enable = true;

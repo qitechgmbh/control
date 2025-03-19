@@ -131,6 +131,14 @@ The NixOS system is configured through three main files:
 - `configuration.nix` - The main NixOS system configuration
 - `home.nix` - The Home Manager configuration for the qitech user
 
+After initial setup, it is necessary to add Home Manager to the system using:
+
+```bash
+sudo nix-channel --add https://github.com/nix-community/home-manager/archive/master.tar.gz home-manager
+
+sudo nix-channel --update
+```
+
 ### File Details
 
 #### flake.nix
@@ -297,8 +305,7 @@ environment.variables = {
 };
 
 # Or add to the QiTech service specifically
-services.qitech = {
-  # existing configuration...
+systemd.services.qitech = {
   environment = {
     QITECH_BUILD_ENV = "control-os";
     QITECH_DEPLOYMENT_TYPE = "production";

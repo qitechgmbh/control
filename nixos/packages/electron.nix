@@ -83,6 +83,10 @@ stdenv.mkDerivation rec {
     if [ -f "src/assets/icon.png" ]; then
       echo "Copying icon from src/assets/icon.png"
       cp src/assets/icon.png $out/share/icons/hicolor/256x256/apps/de.qitech.control-electron.png
+      
+      # Also install at alternative paths that might be checked
+      mkdir -p $out/share/pixmaps
+      cp src/assets/icon.png $out/share/pixmaps/de.qitech.control-electron.png
     fi
 
     # Create the executable wrapper with proper app ID
@@ -112,9 +116,6 @@ stdenv.mkDerivation rec {
     Categories=Development;Engineering;
     X-GNOME-UsesNotifications=true
     EOF
-
-    # Create a symbolic link for backward compatibility
-    ln -sf $out/share/applications/de.qitech.control-electron.desktop $out/share/applications/qitech-control-electron.desktop
   '';
 
   meta = with lib; {
