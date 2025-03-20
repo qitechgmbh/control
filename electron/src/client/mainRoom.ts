@@ -109,6 +109,6 @@ const useMainRoomImplementation = createRoomImplementation<MainRoomStore>({
 });
 
 export function useMainRoom(): RoomImplementationResult<MainRoomStore> {
-  const roomName = useRef("main");
-  return useMainRoomImplementation(roomName.current);
+  const roomId = useRef({ Main: true });
+  return useMainRoomImplementation(roomId.current);
 }

@@ -20,11 +20,6 @@ where
     MainRoomEvents: CacheableEvents,
 {
     fn emit_cached(&mut self, events: MainRoomEvents) {
-        log::info!(
-            "[{}] Emitting cached event: {:?}",
-            module_path!(),
-            events.event_cache_key()
-        );
         let event = events.event_value();
         let cache_key = events.event_cache_key();
         let buffer_fn = events.event_cache_fn(&cache_key);

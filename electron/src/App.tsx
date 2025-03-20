@@ -20,7 +20,6 @@ export default function App() {
 
   // connect socketio
   const { connect } = useSocketStore();
-  console.log("Connecting to socket.io server...");
   useEffect(() => {
     connect("http://localhost:3001/");
   }, [connect]);

@@ -42,15 +42,15 @@ impl StepperDriver {
     }
 }
 
-impl Actor for StepperDriver {
-    fn act(&mut self, _now_ts: u64) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
-        Box::pin(async move {
-            let output = self.controller.output(&SystemTime::now());
-            (self.pulse.write)(output.pulse).await;
-            (self.direction.write)(output.direction).await;
-        })
-    }
-}
+// impl Actor for StepperDriver {
+//     fn act(&mut self, _now_ts: u64) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
+//         Box::pin(async move {
+//             let output = self.controller.output(&SystemTime::now());
+//             (self.pulse.write)(output.pulse).await;
+//             (self.direction.write)(output.direction).await;
+//         })
+//     }
+// }
 
 impl From<StepperDriver> for Arc<RwLock<StepperDriver>> {
     fn from(actor: StepperDriver) -> Self {

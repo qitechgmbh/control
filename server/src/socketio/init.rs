@@ -28,10 +28,10 @@ fn on_connect(socket: SocketRef) {
     socket.on_disconnect(on_disconnect);
 
     // if joined room
-    socket.on("join", on_room_join);
+    socket.on("subscribe", on_room_subscribe);
 
     // if left room
-    socket.on("leave", on_room_leave);
+    socket.on("unsibscribe", on_room_unsubscribe);
 }
 
 fn on_disconnect(socket: SocketRef) {
@@ -40,68 +40,37 @@ fn on_disconnect(socket: SocketRef) {
 
     // remove from every room
     let socket_clone = socket.clone();
+
+    // iterate all rooms
     spawn(async move {
         let mut socketio_rooms_guard = APP_STATE.socketio_setup.rooms.write().await;
-        let mut ethercat_setup_guard = APP_STATE.ethercat_setup.write().await;
-        let ethercat_setup_guard = match ethercat_setup_guard.as_mut() {
-            Some(ethercat_setup_guard) => ethercat_setup_guard,
-            None => {
-                log::error!(
-                    "[{}::on_disconnect] Ethercat setup not found",
-                    module_path!()
-                );
-                return;
-            }
-        };
-        for room in socket.rooms() {
-            socketio_rooms_guard
-                .use_mut(
-                    ethercat_setup_guard,
-                    room.to_string().into(),
-                    |room_interface| {
-                        if let Ok(room_interface) = room_interface {
-                            room_interface.leave(socket_clone.clone());
-                        } else {
-                            log::error!(
-                                "[{}::on_disconnect] Room {} not found",
-                                module_path!(),
-                                room
-                            );
-                        }
-                    },
-                )
-                .await;
-        }
+        socketio_rooms_guard
+            .for_each_mut(|_, room_interface| {
+                if let Ok(room_interface) = room_interface {
+                    room_interface.unsubscribe(socket_clone.clone());
+                }
+            })
+            .await;
     });
 }
 
-pub fn on_room_join(socket: SocketRef, Data(data): Data<RoomJoinEvent>) {
+pub fn on_room_subscribe(socket: SocketRef, Data(data): Data<RoomSubscribeEvent>) {
     // log
-    log::info!("Socket {} joined room {}", socket.id, data.room_id);
+    log::info!("Socket {} subscribed room {:?}", socket.id, data.room_id);
 
     // add socket to the room buffer
     let room_id = data.room_id.clone();
     let socket_clone = socket.clone();
     spawn(async move {
         let mut socketio_rooms_guard = APP_STATE.socketio_setup.rooms.write().await;
-        let mut ethercat_setup_guard = APP_STATE.ethercat_setup.write().await;
-        let ethercat_setup_guard = match ethercat_setup_guard.as_mut() {
-            Some(ethercat_setup_guard) => ethercat_setup_guard,
-            None => {
-                log::error!(
-                    "[{}::on_room_join] Ethercat setup not found",
-                    module_path!()
-                );
-                return;
-            }
-        };
         socketio_rooms_guard
-            .use_mut(ethercat_setup_guard, room_id.clone(), |room_interface| {
+            .apply_mut(room_id.clone(), |room_interface| {
                 if let Ok(room_interface) = room_interface {
-                    room_interface.join(socket_clone);
+                    room_interface.subscribe(socket_clone.clone());
+                    room_interface.reemit(socket_clone);
                 } else {
                     log::error!(
-                        "[{}::on_room_join] Room {} not found",
+                        "[{}::on_room_subscribe] Room {:?} not found",
                         module_path!(),
                         room_id
                     );
@@ -109,38 +78,24 @@ pub fn on_room_join(socket: SocketRef, Data(data): Data<RoomJoinEvent>) {
             })
             .await;
     });
-
-    // join the room
-    socket.join(data.room_id);
 }
 
-pub fn on_room_leave(socket: SocketRef, Data(data): Data<RoomLeaveEvent>) {
+pub fn on_room_unsubscribe(socket: SocketRef, Data(data): Data<RoomUnsubscribeEvent>) {
     // log
-    log::info!("Socket {} left room {}", socket.id, data.room_id);
+    log::info!("Socket {} unsubscribed room {:?}", socket.id, data.room_id);
 
     // remove socket from the room buffer
     let room_id = data.room_id.clone();
     let socket_clone = socket.clone();
     spawn(async move {
         let mut socketio_rooms_guard = APP_STATE.socketio_setup.rooms.write().await;
-        let mut ethercat_setup_guard = APP_STATE.ethercat_setup.write().await;
-        let ethercat_setup_guard = match ethercat_setup_guard.as_mut() {
-            Some(ethercat_setup_guard) => ethercat_setup_guard,
-            None => {
-                log::error!(
-                    "[{}::on_room_leave] Ethercat setup not found",
-                    module_path!()
-                );
-                return;
-            }
-        };
         socketio_rooms_guard
-            .use_mut(ethercat_setup_guard, room_id.clone(), |room_interface| {
+            .apply_mut(room_id.clone(), |room_interface| {
                 if let Ok(room_interface) = room_interface {
-                    room_interface.leave(socket_clone);
+                    room_interface.unsubscribe(socket_clone);
                 } else {
                     log::error!(
-                        "[{}::on_room_leave] Room {} not found",
+                        "[{}::on_room_unsubscribe] Room {:?} not found",
                         module_path!(),
                         room_id
                     );
@@ -148,17 +103,14 @@ pub fn on_room_leave(socket: SocketRef, Data(data): Data<RoomLeaveEvent>) {
             })
             .await;
     });
-
-    // leave the room
-    socket.leave(data.room_id);
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct RoomJoinEvent {
+pub struct RoomSubscribeEvent {
     pub room_id: RoomId,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct RoomLeaveEvent {
+pub struct RoomUnsubscribeEvent {
     pub room_id: RoomId,
 }

@@ -9,14 +9,14 @@ pub trait RoomInterface {
     /// # Arguments
     ///
     /// * `socket` - A reference to the socket to be added
-    fn join(&mut self, socket: SocketRef);
+    fn subscribe(&mut self, socket: SocketRef);
 
     /// Removes a socket from the room.
     ///
     /// # Arguments
     ///
     /// * `socket` - A reference to the socket to be removed
-    fn leave(&mut self, socket: SocketRef);
+    fn unsubscribe(&mut self, socket: SocketRef);
 
     /// Re-emits cached events to a specific socket.
     ///
@@ -65,6 +65,8 @@ pub trait RoomInterface {
         cache_key: &str,
         buffer_fn: Box<dyn Fn(&mut Vec<GenericEvent>, &GenericEvent) -> ()>,
     );
+
+    fn room_id(&self) -> &RoomId;
 }
 
 #[derive(Debug)]
@@ -85,35 +87,31 @@ impl Room {
 }
 
 impl RoomInterface for Room {
-    fn join(&mut self, socket: SocketRef) {
-        // add the socket to the list
-        self.sockets.push(socket.clone());
-
-        // reemit cached events to the socket
-        self.reemit(socket.clone());
+    fn room_id(&self) -> &RoomId {
+        &self.room_id
     }
 
-    fn leave(&mut self, socket: SocketRef) {
+    fn subscribe(&mut self, socket: SocketRef) {
+        // add the socket to the list
+        self.sockets.push(socket.clone());
+    }
+
+    fn unsubscribe(&mut self, socket: SocketRef) {
         // remove the socket from the list
         self.sockets.retain(|s| s.id != socket.id);
     }
 
     fn reemit(&mut self, socket: SocketRef) {
-        log::debug!(
-            "[{}] Re-emitting cached events to socket {}",
-            self.room_id,
-            socket.id
-        );
         for (_, events) in self.events.iter() {
             for event in events.iter() {
-                let _ = socket.emit("event", &event);
+                let _ = socket.emit("event", &event.include_room_id(&self.room_id));
             }
         }
     }
 
     fn emit(&mut self, event: &GenericEvent) {
         for socket in self.sockets.iter() {
-            let _ = socket.emit("event", &event);
+            let _ = socket.emit("event", &event.include_room_id(&self.room_id));
         }
     }
 

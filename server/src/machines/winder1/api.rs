@@ -268,7 +268,7 @@ enum Winder1EventCacheKeys {
     PullerStateEvent,
     AutostopWoundedLengthEvent,
     AutostopStateEvent,
-    ModeEvent,
+    ModeStateEvent,
     MeasurementsWindingRpmEvent,
     MeasurementsTensionArmEvent,
 }
@@ -284,7 +284,7 @@ impl From<Winder1EventCacheKeys> for String {
                 "AutostopWoundedlengthEvent".to_string()
             }
             Winder1EventCacheKeys::AutostopStateEvent => "AutostopStatEvente".to_string(),
-            Winder1EventCacheKeys::ModeEvent => "ModeEvent".to_string(),
+            Winder1EventCacheKeys::ModeStateEvent => "ModeStateEvent".to_string(),
             Winder1EventCacheKeys::MeasurementsWindingRpmEvent => {
                 "MeasurementsWindingRpmEvent".to_string()
             }
@@ -304,7 +304,7 @@ impl From<&str> for Winder1EventCacheKeys {
             "PullerStateEvent" => Winder1EventCacheKeys::PullerStateEvent,
             "AutostopWoundedlengthEvent" => Winder1EventCacheKeys::AutostopWoundedLengthEvent,
             "AutostopStateEvent" => Winder1EventCacheKeys::AutostopStateEvent,
-            "Mode" => Winder1EventCacheKeys::ModeEvent,
+            "ModeStateEvent" => Winder1EventCacheKeys::ModeStateEvent,
             "MeasurementsWindingRpmEvent" => Winder1EventCacheKeys::MeasurementsWindingRpmEvent,
             "MeasurementsTensionArmEvent" => Winder1EventCacheKeys::MeasurementsTensionArmEvent,
             _ => unreachable!("[{}] Unknown cache key: {}", module_path!(), cache_key),
@@ -325,7 +325,7 @@ impl CacheableEvents for Winder1Events {
                 Winder1EventCacheKeys::AutostopWoundedLengthEvent.into()
             }
             Winder1Events::AutostopState(_) => Winder1EventCacheKeys::AutostopStateEvent.into(),
-            Winder1Events::Mode(_) => Winder1EventCacheKeys::ModeEvent.into(),
+            Winder1Events::Mode(_) => Winder1EventCacheKeys::ModeStateEvent.into(),
             Winder1Events::MeasurementsWindingRpm(_) => {
                 Winder1EventCacheKeys::MeasurementsWindingRpmEvent.into()
             }
@@ -360,7 +360,7 @@ impl CacheableEvents for Winder1Events {
             Winder1EventCacheKeys::PullerStateEvent => cache_one,
             Winder1EventCacheKeys::AutostopWoundedLengthEvent => cache_one_hour,
             Winder1EventCacheKeys::AutostopStateEvent => cache_one,
-            Winder1EventCacheKeys::ModeEvent => cache_one,
+            Winder1EventCacheKeys::ModeStateEvent => cache_one,
             Winder1EventCacheKeys::MeasurementsWindingRpmEvent => cache_one_hour,
             Winder1EventCacheKeys::MeasurementsTensionArmEvent => cache_one_hour,
         }

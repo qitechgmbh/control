@@ -16,15 +16,17 @@ import {
   handleEventValidationError,
   handleUnhandledEventError,
   RoomImplementationResult,
+  RoomId,
 } from "../../../client/socketioStore";
 import { MachineIdentificationUnique } from "@/machines/types";
+import { useRef } from "react";
 
 // ========== Event Schema Definitions ==========
 
 /**
  * Traverse position event schema
  */
-export const TraversePositionEventDataSchema = z.object({
+export const traversePositionEventDataSchema = z.object({
   position: z.number(),
 });
 
@@ -118,7 +120,7 @@ export const measurementsTensionArmEventDataSchema = z.object({
 // ========== Event Schemas with Wrappers ==========
 
 export const traversePositionEventSchema = eventSchema(
-  TraversePositionEventDataSchema,
+  traversePositionEventDataSchema,
 );
 export const traverseStateEventSchema = eventSchema(
   traverseStateEventDataSchema,
@@ -142,7 +144,7 @@ export const measurementsTensionArmEventSchema = eventSchema(
 // ========== Type Inferences ==========
 
 export type TraversePositionEvent = z.infer<
-  typeof TraversePositionEventDataSchema
+  typeof traversePositionEventDataSchema
 >;
 export type TraverseStateEvent = z.infer<typeof traverseStateEventDataSchema>;
 export type PullerRegulation = z.infer<typeof pullerRegulationSchema>;
@@ -221,6 +223,7 @@ export function winder1MessageHandler(
 
   return (event: Event<any>) => {
     const eventName = event.name;
+    console.log("Received event:", eventName, event);
 
     try {
       // Apply appropriate caching strategy based on event type
@@ -229,37 +232,25 @@ export function winder1MessageHandler(
         console.log("TraverseStateEvent", event);
         store.setState(
           produce((state) => {
-            state.traverseState = EventCache.latest(
-              state.traverseState,
-              traversePositionEventSchema.parse(event),
-            );
+            state.traverseState = traverseStateEventSchema.parse(event);
           }),
         );
       } else if (eventName === "PullerStateEvent") {
         store.setState(
           produce((state) => {
-            state.pullerState = EventCache.latest(
-              state.pullerState,
-              pullerStateEventSchema.parse(event),
-            );
+            state.pullerState = pullerStateEventSchema.parse(event);
           }),
         );
       } else if (eventName === "AutostopStateEvent") {
         store.setState(
           produce((state) => {
-            state.autostopState = EventCache.latest(
-              state.autostopState,
-              autostopStateEventSchema.parse(event),
-            );
+            state.autostopState = autostopStateEventSchema.parse(event);
           }),
         );
-      } else if (eventName === "ModeEvent") {
+      } else if (eventName === "ModeStateEvent") {
         store.setState(
           produce((state) => {
-            state.modeState = EventCache.latest(
-              state.modeState,
-              modeStateEventSchema.parse(event),
-            );
+            state.modeState = modeStateEventSchema.parse(event);
           }),
         );
       }
@@ -366,8 +357,8 @@ export function useWinder1Room(
   machine_identification_unique: MachineIdentificationUnique,
 ): RoomImplementationResult<Winder1RoomStore> {
   // Generate room name from validated machine ID
-  const roomName = `machine-${machine_identification_unique.vendor}-${machine_identification_unique.machine}-${machine_identification_unique.serial}`;
+  const roomName = useRef({ Machine: machine_identification_unique });
 
   // Use the implementation with validated room name
-  return useWinder1RoomImplementation(roomName);
+  return useWinder1RoomImplementation(roomName.current);
 }

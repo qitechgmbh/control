@@ -11,6 +11,7 @@ import { useSyncExternalStore } from "react";
 import { z } from "zod";
 import { rustEnumSchema } from "@/lib/types";
 import { toastError, toastZodError } from "@/components/Toast";
+import { machineIdentificationUnique } from "@/machines/types";
 
 /**
  * Generic event schema builder
@@ -21,15 +22,23 @@ import { toastError, toastZodError } from "@/components/Toast";
  * @returns Zod schema for an Event with the specified data type
  */
 export function eventSchema<T extends z.ZodTypeAny>(dataSchema: T) {
-  return z.object({
-    name: z.string(),
-    content: rustEnumSchema({
-      Warning: z.string().optional(),
-      Error: z.string().optional(),
-      Data: dataSchema.optional(),
-    }),
-    ts: z.number().int().positive(),
-  });
+  return z
+    .object({
+      room_id: rustEnumSchema({
+        Main: z.boolean(),
+        Machine: machineIdentificationUnique,
+      }),
+      name: z.string(),
+      content: rustEnumSchema({
+        Warning: z.string().optional(),
+        Error: z.string().optional(),
+        Data: dataSchema.optional(),
+      }),
+      ts: z.number().int().positive(),
+    })
+    .refine((val) => (val.room_id.Main ? true : true), {
+      message: "Main must be true when specified",
+    });
 }
 
 /**
@@ -38,6 +47,8 @@ export function eventSchema<T extends z.ZodTypeAny>(dataSchema: T) {
 export type Event<T extends z.ZodTypeAny> = z.infer<
   ReturnType<typeof eventSchema<T>>
 >;
+
+export type RoomId = Event<any>["room_id"];
 
 /**
  * Event validation error handler
@@ -88,6 +99,38 @@ export interface Room<S> {
 }
 
 /**
+ * Utility function to serialize RoomId to string for use as map keys
+ */
+const serializeRoomId = (roomId: RoomId): string => {
+  if ("Main" in roomId) {
+    return "Main";
+  } else if ("Machine" in roomId) {
+    const machine = roomId.Machine;
+    return `Machine:${machine?.vendor}:${machine?.serial}:${machine?.machine}`;
+  }
+  throw new Error("Invalid RoomId format");
+};
+
+/**
+ * Utility function to deserialize string back to RoomId
+ */
+const deserializeRoomId = (serialized: string): RoomId => {
+  if (serialized === "Main") {
+    return { Main: true };
+  } else if (serialized.startsWith("Machine:")) {
+    const [, vendor, serial, machine] = serialized.split(":");
+    return {
+      Machine: {
+        vendor: Number(vendor),
+        serial: Number(serial),
+        machine: Number(machine),
+      },
+    };
+  }
+  throw new Error(`Invalid serialized RoomId: ${serialized}`);
+};
+
+/**
  * Core socket management state and operations
  */
 export const SocketStateSchema = z.object({
@@ -101,17 +144,17 @@ export type SocketState = z.infer<typeof SocketStateSchema> & {
   disconnect: () => void;
 
   // Room management methods
-  hasRoom: (roomName: string) => boolean;
+  hasRoom: (roomId: RoomId) => boolean;
   initRoom: <S>(
-    roomName: string,
+    roomId: RoomId,
     createStore: () => StoreApi<S>,
     onMessageCallback: MessageCallback,
   ) => void;
-  joinRoom: (roomName: string) => void;
-  leaveRoom: (roomName: string) => void;
-  incrementSubscribers: (roomName: string) => void;
-  decrementSubscribers: (roomName: string) => void;
-  getRoom: <S>(roomName: string) => Room<S> | undefined;
+  joinRoom: (roomId: RoomId) => void;
+  leaveRoom: (roomId: RoomId) => void;
+  incrementSubscribers: (roomId: RoomId) => void;
+  decrementSubscribers: (roomId: RoomId) => void;
+  getRoom: <S>(roomId: RoomId) => Room<S> | undefined;
 };
 
 /**
@@ -123,10 +166,7 @@ export const useSocketStore = create<SocketState>((set, get) => ({
 
   connect: (url: string) => {
     if (get().socket) {
-      console.warn("Socket already connected. Disconnect first.");
       return;
-    } else {
-      console.log("No socket connected, creating a new one");
     }
 
     const socket = io(url, {
@@ -135,7 +175,20 @@ export const useSocketStore = create<SocketState>((set, get) => ({
       reconnectionDelay: 1000,
     });
 
-    console.log("Connected to socket.io server:", url);
+    // Set up a single global event handler that routes to appropriate rooms
+    socket.on("event", (event: Event<any>) => {
+      try {
+        const eventRoomId = serializeRoomId(event.room_id);
+        const room = get().rooms.get(eventRoomId);
+
+        if (room) {
+          // Route the event to the appropriate room handler
+          room.onMessageCallback(event);
+        }
+      } catch (error) {
+        console.error("Error routing socket event:", error);
+      }
+    });
 
     set(
       produce((state) => {
@@ -155,8 +208,9 @@ export const useSocketStore = create<SocketState>((set, get) => ({
     const { socket, rooms } = get();
     if (socket) {
       // Clean up all rooms before disconnecting
-      Array.from(rooms.keys()).forEach((roomName) => {
-        get().leaveRoom(roomName);
+      Array.from(rooms.keys()).forEach((serializedRoomId) => {
+        const roomId = deserializeRoomId(serializedRoomId);
+        get().leaveRoom(roomId);
       });
 
       socket.disconnect();
@@ -168,77 +222,86 @@ export const useSocketStore = create<SocketState>((set, get) => ({
     }
   },
 
-  hasRoom: (roomName: string) => get().rooms.has(roomName),
+  hasRoom: (roomId: RoomId) => {
+    const serializedRoomId = serializeRoomId(roomId);
+    return get().rooms.has(serializedRoomId);
+  },
 
   initRoom: <S>(
-    roomName: string,
+    roomId: RoomId,
     createStore: () => StoreApi<S>,
     onMessageCallback: MessageCallback,
   ) => {
     const { socket, rooms } = get();
+    const serializedRoomId = serializeRoomId(roomId);
 
     if (!socket) {
-      throw new Error("Cannot initialize room: Socket not connected");
+      console.error(
+        `Cannot initialize room ${serializedRoomId}: Socket not connected`,
+      );
+      return;
     }
 
-    if (rooms.has(roomName)) {
-      throw new Error(`Room '${roomName}' already exists`);
+    if (rooms.has(serializedRoomId)) {
+      console.error(
+        `Room ${serializedRoomId} already exists, cannot initialize again`,
+      );
+      return;
     }
-
-    // Set up the event handler
-    socket.on("event", onMessageCallback);
 
     // Join the room on the server
-    socket.emit("join", {
-      room_id: roomName,
+    socket.emit("subscribe", {
+      room_id: roomId,
     });
 
-    // Create the room entry
+    // Create the room entry - the global handler will route events
     set(
       produce((state) => {
         const newRoom: Room<S> = {
           subscribers: 0,
           store: createStore(),
-          onMessageCallback,
+          onMessageCallback, // Store the original callback
         };
         (state.rooms as Map<string, Room<unknown>>).set(
-          roomName,
+          serializedRoomId,
           newRoom as Room<unknown>,
         );
       }),
     );
   },
 
-  joinRoom: (roomName: string) => {
+  joinRoom: (roomId: RoomId) => {
     const { socket } = get();
     if (!socket) {
       throw new Error("Cannot join room: Socket not connected");
     }
-    socket.emit("join", {
-      room_id: roomName,
+    socket.emit("subscribe", {
+      room_id: roomId,
     });
   },
 
-  leaveRoom: (roomName: string) => {
+  leaveRoom: (roomId: RoomId) => {
     const { socket, rooms } = get();
-    const room = rooms.get(roomName);
+    const serializedRoomId = serializeRoomId(roomId);
+    const room = rooms.get(serializedRoomId);
 
     if (socket && room) {
       // Remove the message handler to prevent memory leaks
-      socket.off(roomName, room.onMessageCallback);
+      socket.off("event", room.onMessageCallback);
 
       // Leave the room on the server
-      socket.emit("leave", {
-        room_id: roomName,
+      socket.emit("unsubscribe", {
+        room_id: roomId,
       });
     }
   },
 
-  incrementSubscribers: (roomName: string) => {
-    const room = get().rooms.get(roomName);
+  incrementSubscribers: (roomId: RoomId) => {
+    const serializedRoomId = serializeRoomId(roomId);
+    const room = get().rooms.get(serializedRoomId);
     if (!room) {
       throw new Error(
-        `Cannot increment subscribers: Room '${roomName}' not found. Available rooms: ${Array.from(
+        `Cannot increment subscribers: Room '${serializedRoomId}' not found. Available rooms: ${Array.from(
           get().rooms.keys(),
         ).join(", ")}`,
       );
@@ -246,7 +309,9 @@ export const useSocketStore = create<SocketState>((set, get) => ({
 
     set(
       produce((state) => {
-        const room = (state.rooms as Map<string, Room<unknown>>).get(roomName);
+        const room = (state.rooms as Map<string, Room<unknown>>).get(
+          serializedRoomId,
+        );
         if (room) {
           room.subscribers += 1;
         }
@@ -254,10 +319,14 @@ export const useSocketStore = create<SocketState>((set, get) => ({
     );
   },
 
-  decrementSubscribers: (roomName: string) => {
+  decrementSubscribers: (roomId: RoomId) => {
+    const serializedRoomId = serializeRoomId(roomId);
+
     set(
       produce((state) => {
-        const room = (state.rooms as Map<string, Room<unknown>>).get(roomName);
+        const room = (state.rooms as Map<string, Room<unknown>>).get(
+          serializedRoomId,
+        );
         if (room) {
           room.subscribers -= 1;
 
@@ -267,12 +336,14 @@ export const useSocketStore = create<SocketState>((set, get) => ({
             // Use a small timeout to prevent immediate leave during React render cycles
             setTimeout(() => {
               // Double check that subscribers is still 0 before cleanup
-              const currentRoom = get().rooms.get(roomName);
+              const currentRoom = get().rooms.get(serializedRoomId);
               if (currentRoom && currentRoom.subscribers <= 0) {
-                get().leaveRoom(roomName);
+                get().leaveRoom(roomId);
                 set(
                   produce((s) => {
-                    (s.rooms as Map<string, Room<unknown>>).delete(roomName);
+                    (s.rooms as Map<string, Room<unknown>>).delete(
+                      serializedRoomId,
+                    );
                   }),
                 );
               }
@@ -283,8 +354,9 @@ export const useSocketStore = create<SocketState>((set, get) => ({
     );
   },
 
-  getRoom: <S>(roomName: string) => {
-    return get().rooms.get(roomName) as Room<S> | undefined;
+  getRoom: <S>(roomId: RoomId) => {
+    const serializedRoomId = serializeRoomId(roomId);
+    return get().rooms.get(serializedRoomId) as Room<S> | undefined;
   },
 }));
 
@@ -408,14 +480,6 @@ export const EventCache = {
   },
 
   /**
-   * Gets recent events efficiently using binary search
-   * Does not modify the array, just returns a slice of recent events
-   *
-   * @template T The event data Zod schema
-   * @param events Existing events array (must be in ascending timestamp order)
-   * @param duration Duration in milliseconds for the time window
-   * @returns Slice of the array with events within the time window
-   */
   getRecent: <T extends z.ZodTypeAny>(
     events: ReadonlyArray<Event<T>>,
     duration: number,
@@ -507,7 +571,7 @@ export function createRoomImplementation<S>({
   createMessageHandler,
 }: RoomImplementationConfig<S>) {
   return function useRoomImplementation(
-    roomName: string,
+    roomId: RoomId,
   ): RoomImplementationResult<S> {
     const {
       hasRoom,
@@ -531,6 +595,9 @@ export function createRoomImplementation<S>({
       socket !== null && socket.connected,
     );
 
+    // For debugging purposes
+    const serializedRoomId = useMemo(() => serializeRoomId(roomId), [roomId]);
+
     // Set up a listener for socket connection changes
     useEffect(() => {
       if (!socket) {
@@ -542,7 +609,6 @@ export function createRoomImplementation<S>({
       setIsSocketConnected(socket.connected);
 
       const handleConnect = () => {
-        console.log("Socket connected");
         setIsSocketConnected(true);
       };
 
@@ -562,17 +628,13 @@ export function createRoomImplementation<S>({
 
     // Room initialization effect
     useEffect(() => {
-      console.log(
-        `useEffect for room ${roomName}, connected: ${isSocketConnected}`,
-      );
-
       // Start out as not connected until we confirm
       setIsConnected(false);
 
       // Don't try to initialize rooms if socket isn't connected
       if (!isSocketConnected) {
         console.warn(
-          `Cannot initialize room ${roomName}: Socket not connected. Will retry when connected.`,
+          `Cannot initialize room ${serializedRoomId}: Socket not connected. Will retry when connected.`,
         );
         return;
       }
@@ -582,16 +644,17 @@ export function createRoomImplementation<S>({
 
       try {
         // Check if room already exists (this handles remounting in Strict Mode)
-        if (hasRoom(roomName)) {
-          console.log(`Room ${roomName} already exists, reusing store`);
-          roomRef.current = getRoom<S>(roomName);
+        if (hasRoom(roomId)) {
+          roomRef.current = getRoom<S>(roomId);
 
           // Make sure we have a valid room before incrementing
           if (roomRef.current) {
             needsIncrement = true;
             setIsConnected(true);
           } else {
-            console.error(`Room ${roomName} exists but couldn't be retrieved`);
+            console.error(
+              `Room ${serializedRoomId} exists but couldn't be retrieved`,
+            );
             // Force re-initialization on next render
             isInitializedRef.current = false;
           }
@@ -607,23 +670,23 @@ export function createRoomImplementation<S>({
           const messageHandler = createMessageHandler(store);
 
           // Initialize the room
-          initRoom<S>(roomName, () => store, messageHandler);
+          initRoom<S>(roomId, () => store, messageHandler);
 
           // Verify room was successfully created
-          if (!hasRoom(roomName)) {
-            console.error(`Failed to initialize room ${roomName}`);
+          if (!hasRoom(roomId)) {
+            console.error(`Failed to initialize room ${serializedRoomId}`);
             isInitializedRef.current = false;
             return;
           }
 
           // Room created successfully
           isInitializedRef.current = true;
-          roomRef.current = getRoom<S>(roomName);
+          roomRef.current = getRoom<S>(roomId);
 
           // Double-check that we got a valid room
           if (!roomRef.current) {
             console.error(
-              `Room ${roomName} was created but couldn't be retrieved`,
+              `Room ${serializedRoomId} was created but couldn't be retrieved`,
             );
             isInitializedRef.current = false;
             return;
@@ -635,26 +698,21 @@ export function createRoomImplementation<S>({
 
         // Now it's safe to increment subscribers, but only if we determined we need to
         if (needsIncrement) {
-          incrementSubscribers(roomName);
+          incrementSubscribers(roomId);
         }
       } catch (err) {
-        console.error(`Error initializing room ${roomName}:`, err);
+        console.error(`Error initializing room ${serializedRoomId}:`, err);
         isInitializedRef.current = false;
         setIsConnected(false);
       }
 
       // Return cleanup function
       return () => {
-        // Use a timeout to delay cleanup, allowing for Strict Mode remounting
-        setTimeout(() => {
-          // Check if the room still exists before decrementing
-          if (hasRoom(roomName)) {
-            decrementSubscribers(roomName);
-          }
-        }, 1000 * 10); // Short delay to survive React Strict Mode's unmount/remount cycle
+        decrementSubscribers(roomId);
       };
     }, [
-      roomName,
+      roomId,
+      serializedRoomId,
       isSocketConnected,
       hasRoom,
       initRoom,

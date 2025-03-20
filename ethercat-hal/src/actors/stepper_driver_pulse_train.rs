@@ -32,8 +32,8 @@ impl<'ptodevice> Actor for StepperDriverPulseTrain {
         Box::pin(async move {
             let state = (self.pulse.state)().await;
             let mut output = state.output.clone();
-            log::info!("state: {:#?}", state);
-            log::info!("position: {:#?}", self.position);
+            // log::info!("state: {:#?}", state);
+            // log::info!("position: {:#?}", self.position);
 
             // self.counter_to_position(&state.input, &mut output);
 
