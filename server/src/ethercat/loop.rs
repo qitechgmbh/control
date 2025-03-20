@@ -1,10 +1,13 @@
-use crate::app_state::EthercatSetup;
+use crate::app_state::{EthercatSetup, APP_STATE};
 use crate::ethercat::device_identification::identify_device_groups;
 use crate::machines::registry::MACHINE_REGISTRY;
+use crate::socketio::event::EventBuilder;
+use crate::socketio::room::main::ethercat_setup_event::EthercatSetupEventBuilder;
+use crate::socketio::room::main::MainRoomEvents;
+use crate::socketio::room::room::RoomCacheingLogic;
 use crate::{
     app_state::AppState,
     ethercat::config::{MAX_FRAMES, MAX_PDU_DATA, MAX_SUBDEVICES, PDI_LEN},
-    socketio::{event::EventData, events::ethercat_setup_event::EthercatSetupEvent},
 };
 use bitvec::prelude::*;
 use ethercat_hal::actors::Actor;
@@ -50,11 +53,10 @@ pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(),
         },
     );
 
-    // Notify client via socketio
-    tokio::spawn(async {
-        EthercatSetupEvent::build_warning("Configuring Devices...".to_string())
-            .emit("main")
-            .await
+    tokio::spawn(async move {
+        let main_room = &mut APP_STATE.socketio_setup.rooms.write().await.main_room;
+        let event = EthercatSetupEventBuilder().warning("Configuring Ethercat Network...");
+        main_room.emit_cached(MainRoomEvents::EthercatSetupEvent(event));
     });
 
     // Initalize subdevices
@@ -147,7 +149,11 @@ pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(),
     }
 
     // Notify client via socketio
-    tokio::spawn(async { EthercatSetupEvent::build().await.emit("main").await });
+    tokio::spawn(async move {
+        let main_room = &mut APP_STATE.socketio_setup.rooms.write().await.main_room;
+        let event = EthercatSetupEventBuilder().build();
+        main_room.emit_cached(MainRoomEvents::EthercatSetupEvent(event));
+    });
 
     // Start control loop
     let pdu_handle = tokio::spawn(async move {

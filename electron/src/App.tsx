@@ -7,6 +7,8 @@ import { updateAppLanguage } from "./helpers/language_helpers";
 import { router } from "./routes/router";
 import { RouterProvider } from "@tanstack/react-router";
 import { Toaster } from "./components/ui/sonner";
+import { useSocketStore } from "./client/socketioStore";
+import { enableMapSet } from "immer";
 
 export default function App() {
   const { i18n } = useTranslation();
@@ -16,8 +18,18 @@ export default function App() {
     updateAppLanguage(i18n);
   }, [i18n]);
 
+  // connect socketio
+  const { connect } = useSocketStore();
+  console.log("Connecting to socket.io server...");
+  useEffect(() => {
+    connect("http://localhost:3001/");
+  }, [connect]);
+
   return <RouterProvider router={router} />;
 }
+
+// enable immer MapSet plugin
+enableMapSet();
 
 const root = createRoot(document.getElementById("app")!);
 root.render(

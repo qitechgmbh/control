@@ -1,3 +1,5 @@
+use super::api::Winder1Room;
+use super::WinderV1;
 use crate::ethercat::device_identification::MachineDeviceIdentification;
 use crate::machines::new::{
     get_device_by_index, get_mdi_by_role, get_subdevice_by_index, validate_no_role_dublicates,
@@ -33,14 +35,24 @@ use futures::executor::block_on;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
-use super::WinderV1;
-
 impl MachineNewTrait for WinderV1 {
     fn new<'maindevice>(
         identified_device_group: &Vec<MachineDeviceIdentification>,
         subdevices: &Vec<EthercrabSubDevicePreoperational<'maindevice>>,
         devices: &Vec<Arc<RwLock<dyn Device>>>,
     ) -> Result<Self, Error> {
+        // get machine identification unique
+        let machine_identification_unique = identified_device_group
+            .first()
+            .ok_or_else(|| {
+                anyhow::anyhow!(
+                    "[{}::MachineNewTrait/WinderV1::new] No machine identification",
+                    module_path!()
+                )
+            })?
+            .machine_identification_unique
+            .clone();
+
         // validate general stuff
         validate_same_machine_identification(identified_device_group)?;
         validate_no_role_dublicates(identified_device_group)?;
@@ -53,7 +65,7 @@ impl MachineNewTrait for WinderV1 {
             // Buscoupler
             // EK1100
             let mdi = get_mdi_by_role(identified_device_group, 0).or(Err(anyhow::anyhow!(
-                "[{}::WinderV1::new] No device with role 0",
+                "[{}::MachineNewTrait/WinderV1::new] No device with role 0",
                 module_path!()
             )))?;
             let subdevice = get_subdevice_by_index(subdevices, mdi.subdevice_index)?;
@@ -62,7 +74,7 @@ impl MachineNewTrait for WinderV1 {
                 EK1100_IDENTITY_A => (),
                 _ => {
                     return Err(anyhow::anyhow!(
-                        "[{}::WinderV1::new] Device with role 0 is not an EK1100",
+                        "[{}::MachineNewTrait/WinderV1::new] Device with role 0 is not an EK1100",
                         module_path!()
                     ))
                 }
@@ -72,7 +84,7 @@ impl MachineNewTrait for WinderV1 {
             // 2x Digitalausgang
             // EL2002
             let mdi = get_mdi_by_role(identified_device_group, 1).or(Err(anyhow::anyhow!(
-                "[{}::WinderV1::new] No device with role 1",
+                "[{}::MachineNewTrait/WinderV1::new] No device with role 1",
                 module_path!()
             )))?;
             let subdevice = get_subdevice_by_index(subdevices, mdi.subdevice_index)?;
@@ -81,7 +93,7 @@ impl MachineNewTrait for WinderV1 {
             let el2002 = match subdevice_identity_to_tuple(&subdevice_identity) {
                 EL2002_IDENTITY_A => downcast_device::<EL2002>(device.clone()).await?,
                 _ => Err(anyhow::anyhow!(
-                    "[{}::WinderV1::new] Device with role 1 is not an EL2002",
+                    "[{}::MachineNewTrait/WinderV1::new] Device with role 1 is not an EL2002",
                     module_path!()
                 ))?,
             };
@@ -89,7 +101,7 @@ impl MachineNewTrait for WinderV1 {
             // Role 2
             // 1x Analogeingang Lastarm
             let mdi = get_mdi_by_role(identified_device_group, 2).or(Err(anyhow::anyhow!(
-                "[{}::WinderV1::new] No device with role 2",
+                "[{}::MachineNewTrait/WinderV1::new] No device with role 2",
                 module_path!()
             )))?;
             let subdevice = get_subdevice_by_index(subdevices, mdi.subdevice_index)?;
@@ -98,7 +110,7 @@ impl MachineNewTrait for WinderV1 {
                 EL3001_IDENTITY_A => specifc_device_from_subdevice::<EL3001>(subdevice).await?,
                 _ => {
                     return Err(anyhow::anyhow!(
-                        "[{}::WinderV1::new] Device with role 2 is not an EL3001",
+                        "[{}::MachineNewTrait/WinderV1::new] Device with role 2 is not an EL3001",
                         module_path!()
                     ))
                 }
@@ -107,7 +119,7 @@ impl MachineNewTrait for WinderV1 {
             // Role 3
             // 1x Pulszug Traverse
             let mdi = get_mdi_by_role(identified_device_group, 3).or(Err(anyhow::anyhow!(
-                "[{}::WinderV1::new] No device with role 3",
+                "[{}::MachineNewTrait/WinderV1::new] No device with role 3",
                 module_path!()
             )))?;
             let subdevice = get_subdevice_by_index(subdevices, mdi.subdevice_index)?;
@@ -119,7 +131,7 @@ impl MachineNewTrait for WinderV1 {
                 }
                 _ => {
                     return Err(anyhow::anyhow!(
-                        "[{}::WinderV1::new] Device with role 3 is not an EL2521",
+                        "[{}::MachineNewTrait/WinderV1::new] Device with role 3 is not an EL2521",
                         module_path!()
                     ))
                 }
@@ -137,7 +149,7 @@ impl MachineNewTrait for WinderV1 {
             // Role 4
             // 2x Pulszuf Puller & Winder
             let mdi = get_mdi_by_role(identified_device_group, 4).or(Err(anyhow::anyhow!(
-                "[{}::WinderV1::new] No device with role 4",
+                "[{}::MachineNewTrait/WinderV1::new] No device with role 4",
                 module_path!()
             )))?;
             let subdevice = get_subdevice_by_index(subdevices, mdi.subdevice_index)?;
@@ -147,7 +159,7 @@ impl MachineNewTrait for WinderV1 {
                 EL2522_IDENTITY_A => downcast_device::<EL2522>(device.clone()).await?,
                 _ => {
                     return Err(anyhow::anyhow!(
-                        "[{}::WinderV1::new] Device with role 4 is not an EL2522",
+                        "[{}::MachineNewTrait/WinderV1::new] Device with role 4 is not an EL2522",
                         module_path!()
                     ))
                 }
@@ -169,7 +181,7 @@ impl MachineNewTrait for WinderV1 {
                 .await
                 .set_configuration(&el2522_configuration);
 
-            Ok(Self {
+            let mut new = Self {
                 traverse_driver: StepperDriverPulseTrain::new(PulseTrainOutput::new(
                     el2521,
                     EL2521Port::PTO1,
@@ -187,7 +199,13 @@ impl MachineNewTrait for WinderV1 {
                     EL3001Port::AI1,
                 )),
                 laser_driver: DigitalOutputSetter::new(DigitalOutput::new(el2002, EL2002Port::DO1)),
-            })
+                room: Winder1Room::new(machine_identification_unique),
+            };
+
+            // initalize events
+            new.emit_traverse_state();
+
+            Ok(new)
         })
     }
 }

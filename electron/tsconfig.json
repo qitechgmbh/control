@@ -10,7 +10,7 @@
     "forceConsistentCasingInFileNames": true,
     "allowJs": false,
     "esModuleInterop": true,
-    "noImplicitAny": true,
+    "noImplicitAny": false,
     "sourceMap": true,
     "strict": true,
     "baseUrl": ".",

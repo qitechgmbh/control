@@ -2,6 +2,7 @@
 // each role can only be given once
 
 import { IconName } from "@/components/Icon";
+import { z } from "zod";
 
 // EK1100 should have role 0
 export type DeviceRole = {
@@ -18,16 +19,30 @@ type EthercatDevice = {
   revision: number;
 };
 
-export type MachineIdentificationUnique = {
-  vendor: number;
-  serial: number;
-  machine: number;
-};
+export const machineIdentificaiton = z.object({
+  vendor: z.number(),
+  machine: z.number(),
+});
 
-export type MachineIdentification = {
-  vendor: number;
-  machine: number;
-};
+export type MachineIdentification = z.infer<typeof machineIdentificaiton>;
+
+export const machineIdentificationUnique = machineIdentificaiton.extend({
+  serial: z.number(),
+});
+
+export type MachineIdentificationUnique = z.infer<
+  typeof machineIdentificationUnique
+>;
+
+export const machineDeviceIdentification = z.object({
+  machine_identification_unique: machineIdentificationUnique,
+  role: z.number(),
+  subdevice_index: z.number(),
+});
+
+export type MachineDeviceIdentification = z.infer<
+  typeof machineDeviceIdentification
+>;
 
 export type MachinePreset = {
   // displayable name

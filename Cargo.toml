@@ -1,3 +1,4 @@
 [workspace]
 members = ["server", "ethercat-hal", "stepper-driver", "ethercat-hal-derive"]
 exclude = ["ethercrab"]
+resolver = "2"

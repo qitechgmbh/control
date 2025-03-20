@@ -3,7 +3,7 @@ import React, { Fragment } from "react";
 import { OutsideCorner } from "./OutsideCorner";
 import { BackButton } from "./BackButton";
 import { Link, Outlet } from "@tanstack/react-router";
-import { useOnSubpath } from "@/hooks/useOnSubpath";
+import { useOnSubpath } from "@/lib/useOnSubpath";
 import { Icon, IconName } from "./Icon";
 
 type TopbarItemContent = {

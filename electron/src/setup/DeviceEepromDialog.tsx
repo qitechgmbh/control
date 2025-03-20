@@ -8,8 +8,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Hex } from "@/components/Value";
-import { useClient } from "@/hooks/useClient";
-import { EthercatSetupEventDevice } from "@/hooks/useSocketio";
+import { useClient } from "@/client/useClient";
 import {
   filterAllowedDevices,
   getMachinePreset,
@@ -37,7 +36,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useFormValues } from "@/hooks/useFormValues";
+import { useFormValues } from "@/lib/useFormValues";
 import { validateU16 } from "@/lib/validation";
 import { DeviceRoleComponent } from "@/components/DeviceRole";
 import { Alert } from "@/components/Alert";
@@ -45,9 +44,10 @@ import { Separator } from "@/components/ui/separator";
 import { Icon } from "@/components/Icon";
 import { toast } from "sonner";
 import { Toast } from "@/components/Toast";
+import { EthercatSetupEventData } from "@/client/mainRoom";
 
 type Props = {
-  device: EthercatSetupEventDevice;
+  device: EthercatSetupEventData["devices"][number];
 };
 
 const formSchema = z.object({
@@ -75,7 +75,7 @@ export function DeviceEepromDialog({ device }: Props) {
 }
 
 type ContentProps = {
-  device: EthercatSetupEventDevice;
+  device: EthercatSetupEventData["devices"][number];
   setOpen: (open: boolean) => void;
 };
 
@@ -94,9 +94,6 @@ export function DeviceEeepromDialogContent({ device, setOpen }: ContentProps) {
     mode: "all",
   });
   const values = useFormValues(form);
-  useEffect(() => {
-    console.log("values", values);
-  }, [values]);
 
   const onSubmit = (values: FormSchema) => {
     client

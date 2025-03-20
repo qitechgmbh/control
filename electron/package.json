@@ -87,6 +87,7 @@
     "clsx": "^2.1.1",
     "electron-squirrel-startup": "^1.0.1",
     "i18next": "^24.2.2",
+    "immer": "^10.1.1",
     "lucide-react": "^0.475.0",
     "next-themes": "^0.4.4",
     "react": "^19.0.0",
@@ -98,6 +99,7 @@
     "tailwind-merge": "^3.0.1",
     "tailwindcss-animate": "^1.0.7",
     "zod": "^3.24.2",
-    "zod-validation-error": "^3.4.0"
+    "zod-validation-error": "^3.4.0",
+    "zustand": "^5.0.3"
   }
 }

@@ -19,7 +19,7 @@ impl Actor for AnalogInputLogger {
     fn act(&mut self, _now_ts: u64) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
         Box::pin(async move {
             let state = (self.input.state)().await;
-            log::debug!(
+            log::info!(
                 "AnalogInputLogger: {} (normalized) {} (absolute)",
                 state.input.normalized,
                 state.input.absolute

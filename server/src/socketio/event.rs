@@ -1,101 +1,109 @@
-use super::events::ethercat_setup_event::EthercatSetupEvent;
-use crate::app_state::APP_STATE;
 use serde::{Deserialize, Serialize};
-use socketioxide_core::adapter::RoomParam;
-use std::future::Future;
-
-#[derive(Debug, Clone)]
-pub enum EventType {
-    EthercatSetupEvent(Event<EthercatSetupEvent>),
-}
+use serde_json::Value;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum EventStatus {
-    #[serde(rename = "no_data")]
-    NoData, // Frontend only
-    #[serde(rename = "success")]
-    Success,
-    #[serde(rename = "warning")]
-    Warning,
-    #[serde(rename = "error")]
-    Error,
+pub enum EventContentType<T> {
+    Data(T),
+    Error(String),
+    Warning(String),
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct Event<M: EventData> {
-    #[serde(skip_serializing)]
+#[derive(Debug, Clone, Serialize)]
+pub struct GenericEvent {
     pub name: String,
-    pub data: Option<M>,
-    pub error: Option<String>,
-    pub warning: Option<String>,
-    pub status: EventStatus,
+    pub content: EventContentType<Value>,
+    /// Timestamp in milliseconds
     pub ts: i64,
 }
 
-impl<M: EventData> Event<M> {
-    /**
-     * Normal emit. Either emits data or error.
-     */
-    pub async fn emit(&self, room: impl RoomParam + Clone) {
-        let room = room.clone();
-        // tokio::spawn(async move {
-        let message_type = M::to_event_type(self.clone());
+#[derive(Debug, Clone, Serialize)]
+pub struct Event<Data>
+where
+    Data: Serialize,
+{
+    pub name: String,
+    pub content: EventContentType<Data>,
+    /// Timestamp in milliseconds
+    pub ts: i64,
+}
 
-        // for every room
-        let mut socketio_rooms_guard = APP_STATE.socketio_rooms.write().await;
-        for single_room in room.clone().into_room_iter() {
-            // buffer in room
-            socketio_rooms_guard
-                .room(single_room.to_string())
-                .buffer(message_type.clone());
-
-            // emit to sockets
-            socketio_rooms_guard
-                .room(single_room.to_string())
-                .emit(self.name.clone(), &self);
+impl<Data> From<Event<Data>> for GenericEvent
+where
+    Data: Serialize,
+{
+    fn from(event: Event<Data>) -> Self {
+        Self {
+            name: event.name,
+            content: match event.content {
+                EventContentType::Data(data) => {
+                    EventContentType::Data(serde_json::to_value(data).unwrap())
+                }
+                EventContentType::Error(error) => EventContentType::Error(error),
+                EventContentType::Warning(warning) => EventContentType::Warning(warning),
+            },
+            ts: event.ts,
         }
     }
 }
 
-impl<M: EventData> Event<M> {
-    pub fn data(event: String, data: M) -> Self {
+impl<Data> From<&Event<Data>> for GenericEvent
+where
+    Data: Serialize,
+{
+    fn from(event: &Event<Data>) -> Self {
         Self {
-            name: event,
-            data: Some(data),
-            error: None,
-            warning: None,
-            status: EventStatus::Success,
+            name: event.name.clone(),
+            content: match &event.content {
+                EventContentType::Data(data) => {
+                    EventContentType::Data(serde_json::to_value(data).unwrap())
+                }
+                EventContentType::Error(error) => EventContentType::Error(error.clone()),
+                EventContentType::Warning(warning) => EventContentType::Warning(warning.clone()),
+            },
+            ts: event.ts,
+        }
+    }
+}
+
+impl<Data> Event<Data>
+where
+    Data: Serialize + Clone,
+{
+    pub fn data(event: &str, data: Data) -> Self {
+        Self {
+            name: event.to_string(),
+            content: EventContentType::Data(data),
             ts: chrono::Utc::now().timestamp_millis(),
         }
     }
 
-    pub fn error(event: String, error: String) -> Self {
+    pub fn error(event: &str, error: &str) -> Self {
         Self {
-            name: event,
-            data: None,
-            error: Some(error),
-            warning: None,
-            status: EventStatus::Error,
+            name: event.to_string(),
+            content: EventContentType::Error(error.to_string()),
             ts: chrono::Utc::now().timestamp_millis(),
         }
     }
 
-    pub fn warning(event: String, warning: String) -> Self {
+    pub fn warning(event: &str, warning: &str) -> Self {
         Self {
-            name: event,
-            data: None,
-            error: None,
-            warning: Some(warning),
-            status: EventStatus::Warning,
+            name: event.to_string(),
+            content: EventContentType::Warning(warning.to_string()),
             ts: chrono::Utc::now().timestamp_millis(),
         }
     }
 }
 
-pub trait EventData: Sized + Send + Clone + Sync + Serialize {
-    fn build() -> impl Future<Output = Event<Self>> + Send
-    where
-        Self: Send + Sync;
-    fn build_warning(warning: String) -> Event<Self>;
-    fn to_event_type(message: Event<Self>) -> EventType;
+pub trait EventBuilder<Data>
+where
+    Data: Serialize + Clone,
+{
+    fn name(&self) -> String;
+    fn build(&self) -> Event<Data>;
+    fn warning(&self, warning: &str) -> Event<Data> {
+        Event::warning(&self.name(), warning)
+    }
+    fn error(&self, error: &str) -> Event<Data> {
+        Event::error(&self.name(), error)
+    }
 }

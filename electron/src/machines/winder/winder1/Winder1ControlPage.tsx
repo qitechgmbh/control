@@ -1,6 +1,6 @@
 import { ControlCard } from "@/control/ControlCard";
 import { Page } from "@/components/Page";
-import React from "react";
+import React, { useEffect } from "react";
 import { ControlGrid } from "@/control/ControlGrid";
 import { ControlValueNumeric } from "@/control/ControlValue";
 import { TraverseBar } from "../TraverseBar";
@@ -13,6 +13,7 @@ import { Label } from "@/control/Label";
 import { TouchButton } from "@/components/touch/TouchButton";
 import { StatusBadge } from "@/control/StatusBadge";
 import { useWinder1 } from "./hooks";
+import { useWinder1Room } from "./winder1Room";
 
 export function Winder1ControlPage() {
   // use optimistic state
@@ -21,7 +22,15 @@ export function Winder1ControlPage() {
     setLaserpointer,
     laserpointerIsLoading,
     laserpointerIsDisabled,
+    state,
   } = useWinder1();
+
+  const { traverseState } = state;
+
+  // log changes in traverseState with useEffect
+  useEffect(() => {
+    console.log("Traverse State changed", traverseState);
+  }, [traverseState]);
 
   return (
     <Page>

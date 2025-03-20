@@ -1,9 +1,9 @@
-import { MessageResponse } from "@/hooks/useSocketio";
+import { Event } from "@/client/socketioStore";
 import React from "react";
 import { useEffect, useState } from "react";
 
 type Props = {
-  messageResponse: MessageResponse<unknown>;
+  event: Event<any> | null;
 };
 
 function formatMilliseconds(milliseconds: number) {
@@ -30,7 +30,7 @@ function formatMilliseconds(milliseconds: number) {
   }
 }
 
-export function RefreshIndicator({ messageResponse }: Props) {
+export function RefreshIndicator({ event: event }: Props) {
   const [now, setNow] = useState<number>(Date.now());
 
   // every 100ms update the time
@@ -41,32 +41,33 @@ export function RefreshIndicator({ messageResponse }: Props) {
     return () => clearInterval(interval);
   }, []);
 
+  const noData = event === null;
+
   return (
     <div className="flex w-fit items-center gap-1.5 rounded-full bg-neutral-100 p-0.5 px-3">
       <div
         className={`h-2.5 w-2.5 rounded-full ${
-          messageResponse.status === "no_data"
+          noData
             ? "bg-neutral-400"
-            : messageResponse.status === "error"
+            : event!.content.Error !== undefined
               ? "bg-red-500"
-              : messageResponse.status === "warning"
+              : event!.content.Warning !== undefined
                 ? "bg-yellow-500"
                 : "animate-[pulse_500ms_ease-in-out] bg-green-500"
         }`}
       />
       <span
         className={`text-xs text-neutral-500 ${
-          messageResponse.status !== "no_data" &&
-          "animate-[colorFadeToGray_250ms_ease-in-out_forwards]"
+          noData && "animate-[colorFadeToGray_250ms_ease-in-out_forwards]"
         }`}
       >
-        {messageResponse.status === "no_data"
+        {noData
           ? "Loading"
-          : messageResponse.status === "error"
-            ? messageResponse.error
-            : messageResponse.status === "warning"
-              ? messageResponse.warning
-              : formatMilliseconds(now - messageResponse.ts)}
+          : event.content.Error !== undefined
+            ? event.content.Error
+            : event.content.Warning !== undefined
+              ? event.content.Warning
+              : formatMilliseconds(now - event.ts)}
       </span>
     </div>
   );

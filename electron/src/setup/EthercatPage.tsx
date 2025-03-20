@@ -4,10 +4,6 @@ import { SectionTitle } from "@/components/SectionTitle";
 import { MyTable } from "@/components/Table";
 import { EthercatVendorId, Hex, Value } from "@/components/Value";
 import {
-  EthercatSetupEvent,
-  useSocketioEthercatSetupEvent,
-} from "@/hooks/useSocketio";
-import {
   ColumnDef,
   getCoreRowModel,
   useReactTable,
@@ -16,8 +12,9 @@ import React, { useMemo } from "react";
 import { DeviceEepromDialog } from "./DeviceEepromDialog";
 import { getMachinePreset } from "@/machines/types";
 import { DeviceRoleComponent } from "@/components/DeviceRole";
+import { EthercatSetupEventData, useMainRoom } from "@/client/mainRoom";
 
-export const columns: ColumnDef<EthercatSetupEvent["devices"][0]>[] = [
+export const columns: ColumnDef<EthercatSetupEventData["devices"][number]>[] = [
   {
     accessorKey: "subdevice_index",
     header: "Index",
@@ -109,11 +106,13 @@ export const columns: ColumnDef<EthercatSetupEvent["devices"][0]>[] = [
 ];
 
 export function EthercatPage() {
-  const deviceMessage = useSocketioEthercatSetupEvent();
+  const {
+    state: { ethercatSetup },
+  } = useMainRoom();
 
   const data = useMemo(() => {
-    return deviceMessage.data?.devices || [];
-  }, [deviceMessage]);
+    return ethercatSetup?.content.Data?.devices || [];
+  }, [ethercatSetup]);
 
   const table = useReactTable({
     data,
@@ -123,13 +122,13 @@ export function EthercatPage() {
 
   return (
     <Page>
+      <SectionTitle title="SubDevices">
+        <RefreshIndicator event={ethercatSetup} />
+      </SectionTitle>
       <p>
         Machine, Machine Serial Number, Role are QiTech specific values that are
         written to the EEPROM to identify machines as a unit.
       </p>
-      <SectionTitle title="SubDevices">
-        <RefreshIndicator messageResponse={deviceMessage} />
-      </SectionTitle>
       <MyTable table={table} key={data.toString()} />
     </Page>
   );

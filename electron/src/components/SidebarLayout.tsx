@@ -1,6 +1,6 @@
 import { OutsideCorner } from "@/components/OutsideCorner";
-import { useMachines } from "@/hooks/useMachines";
-import { useOnSubpath } from "@/hooks/useOnSubpath";
+import { useMachines } from "@/client/useMachines";
+import { useOnSubpath } from "@/lib/useOnSubpath";
 import { Link, Outlet } from "@tanstack/react-router";
 import { Fragment } from "react";
 import React from "react";

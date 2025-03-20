@@ -14,7 +14,7 @@ import { PopoverTrigger } from "@radix-ui/react-popover";
 import { TouchSlider } from "@/components/touch/TouchSlider";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useFormValues } from "@/hooks/useFormValues";
+import { useFormValues } from "@/lib/useFormValues";
 import { TouchInput } from "@/components/touch/TouchInput";
 import { IconText } from "@/components/IconText";
 import { cva } from "class-variance-authority";
