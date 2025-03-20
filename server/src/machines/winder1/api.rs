@@ -248,9 +248,8 @@ pub struct Winder1Room(Room);
 impl RoomCacheingLogic<Winder1Events> for Winder1Room {
     fn emit_cached(&mut self, events: Winder1Events) {
         let event = events.event_value();
-        let cache_key = events.event_cache_key();
-        let buffer_fn = events.event_cache_fn(&cache_key);
-        self.0.emit_cached(&event, &cache_key, buffer_fn);
+        let buffer_fn = events.event_cache_fn();
+        self.0.emit_cached(&event, buffer_fn);
     }
 }
 
@@ -260,81 +259,7 @@ impl Winder1Room {
     }
 }
 
-#[derive(Clone, Hash, Eq, PartialEq, Debug)]
-enum Winder1EventCacheKeys {
-    TraversePositionEvent,
-    TraverseStateEvent,
-    PullerSpeedEvent,
-    PullerStateEvent,
-    AutostopWoundedLengthEvent,
-    AutostopStateEvent,
-    ModeStateEvent,
-    MeasurementsWindingRpmEvent,
-    MeasurementsTensionArmEvent,
-}
-
-impl From<Winder1EventCacheKeys> for String {
-    fn from(cache_key: Winder1EventCacheKeys) -> Self {
-        match cache_key {
-            Winder1EventCacheKeys::TraversePositionEvent => "TraversePositionEvent".to_string(),
-            Winder1EventCacheKeys::TraverseStateEvent => "TraverseStateEvent".to_string(),
-            Winder1EventCacheKeys::PullerSpeedEvent => "PullerSpeedEvent".to_string(),
-            Winder1EventCacheKeys::PullerStateEvent => "PullerStateEvent".to_string(),
-            Winder1EventCacheKeys::AutostopWoundedLengthEvent => {
-                "AutostopWoundedlengthEvent".to_string()
-            }
-            Winder1EventCacheKeys::AutostopStateEvent => "AutostopStatEvente".to_string(),
-            Winder1EventCacheKeys::ModeStateEvent => "ModeStateEvent".to_string(),
-            Winder1EventCacheKeys::MeasurementsWindingRpmEvent => {
-                "MeasurementsWindingRpmEvent".to_string()
-            }
-            Winder1EventCacheKeys::MeasurementsTensionArmEvent => {
-                "MeasurementsTensionArmEvent".to_string()
-            }
-        }
-    }
-}
-
-impl From<&str> for Winder1EventCacheKeys {
-    fn from(cache_key: &str) -> Self {
-        match cache_key {
-            "TraversePositionEvent" => Winder1EventCacheKeys::TraversePositionEvent,
-            "TraverseStateEvent" => Winder1EventCacheKeys::TraverseStateEvent,
-            "PullerSpeedEvent" => Winder1EventCacheKeys::PullerSpeedEvent,
-            "PullerStateEvent" => Winder1EventCacheKeys::PullerStateEvent,
-            "AutostopWoundedlengthEvent" => Winder1EventCacheKeys::AutostopWoundedLengthEvent,
-            "AutostopStateEvent" => Winder1EventCacheKeys::AutostopStateEvent,
-            "ModeStateEvent" => Winder1EventCacheKeys::ModeStateEvent,
-            "MeasurementsWindingRpmEvent" => Winder1EventCacheKeys::MeasurementsWindingRpmEvent,
-            "MeasurementsTensionArmEvent" => Winder1EventCacheKeys::MeasurementsTensionArmEvent,
-            _ => unreachable!("[{}] Unknown cache key: {}", module_path!(), cache_key),
-        }
-    }
-}
-
-impl CacheableEvents for Winder1Events {
-    fn event_cache_key(&self) -> String {
-        match self {
-            Winder1Events::TraversePosition(_) => {
-                Winder1EventCacheKeys::TraversePositionEvent.into()
-            }
-            Winder1Events::TraverseState(_) => Winder1EventCacheKeys::TraverseStateEvent.into(),
-            Winder1Events::PullerSpeed(_) => Winder1EventCacheKeys::PullerSpeedEvent.into(),
-            Winder1Events::PullerState(_) => Winder1EventCacheKeys::PullerStateEvent.into(),
-            Winder1Events::AutostopWoundedlength(_) => {
-                Winder1EventCacheKeys::AutostopWoundedLengthEvent.into()
-            }
-            Winder1Events::AutostopState(_) => Winder1EventCacheKeys::AutostopStateEvent.into(),
-            Winder1Events::Mode(_) => Winder1EventCacheKeys::ModeStateEvent.into(),
-            Winder1Events::MeasurementsWindingRpm(_) => {
-                Winder1EventCacheKeys::MeasurementsWindingRpmEvent.into()
-            }
-            Winder1Events::MeasurementsTensionArm(_) => {
-                Winder1EventCacheKeys::MeasurementsTensionArmEvent.into()
-            }
-        }
-    }
-
+impl CacheableEvents<Winder1Events> for Winder1Events {
     fn event_value(&self) -> GenericEvent {
         match self {
             Winder1Events::TraversePosition(event) => event.into(),
@@ -349,20 +274,20 @@ impl CacheableEvents for Winder1Events {
         }
     }
 
-    fn event_cache_fn(&self, cache_key: &str) -> CacheFn {
-        let cache_key = Winder1EventCacheKeys::from(cache_key);
+    fn event_cache_fn(&self) -> CacheFn {
         let cache_one_hour = cache_duration(Duration::from_secs(60 * 60));
         let cache_one = cache_one_event();
-        match cache_key {
-            Winder1EventCacheKeys::TraversePositionEvent => cache_one_hour,
-            Winder1EventCacheKeys::TraverseStateEvent => cache_one,
-            Winder1EventCacheKeys::PullerSpeedEvent => cache_one_hour,
-            Winder1EventCacheKeys::PullerStateEvent => cache_one,
-            Winder1EventCacheKeys::AutostopWoundedLengthEvent => cache_one_hour,
-            Winder1EventCacheKeys::AutostopStateEvent => cache_one,
-            Winder1EventCacheKeys::ModeStateEvent => cache_one,
-            Winder1EventCacheKeys::MeasurementsWindingRpmEvent => cache_one_hour,
-            Winder1EventCacheKeys::MeasurementsTensionArmEvent => cache_one_hour,
+
+        match self {
+            Winder1Events::TraversePosition(_) => cache_one_hour,
+            Winder1Events::TraverseState(_) => cache_one,
+            Winder1Events::PullerSpeed(_) => cache_one_hour,
+            Winder1Events::PullerState(_) => cache_one,
+            Winder1Events::AutostopWoundedlength(_) => cache_one_hour,
+            Winder1Events::AutostopState(_) => cache_one,
+            Winder1Events::Mode(_) => cache_one,
+            Winder1Events::MeasurementsWindingRpm(_) => cache_one_hour,
+            Winder1Events::MeasurementsTensionArm(_) => cache_one_hour,
         }
     }
 }

@@ -17,13 +17,12 @@ impl MainRoom {
 
 impl RoomCacheingLogic<MainRoomEvents> for MainRoom
 where
-    MainRoomEvents: CacheableEvents,
+    MainRoomEvents: CacheableEvents<MainRoomEvents>,
 {
     fn emit_cached(&mut self, events: MainRoomEvents) {
+        let buffer_fn = events.event_cache_fn();
         let event = events.event_value();
-        let cache_key = events.event_cache_key();
-        let buffer_fn = events.event_cache_fn(&cache_key);
-        self.0.emit_cached(&event, &cache_key, buffer_fn);
+        self.0.emit_cached(&event, buffer_fn);
     }
 }
 
@@ -45,25 +44,16 @@ impl From<MainRoomEventCacheKeys> for String {
     }
 }
 
-impl CacheableEvents for MainRoomEvents {
-    fn event_cache_key(&self) -> String {
-        match self {
-            MainRoomEvents::EthercatSetupEvent(_) => {
-                MainRoomEventCacheKeys::EthercatSetupEvent.into()
-            }
-        }
-    }
-
+impl CacheableEvents<MainRoomEvents> for MainRoomEvents {
     fn event_value(&self) -> GenericEvent {
         match self {
             MainRoomEvents::EthercatSetupEvent(event) => event.clone().into(),
         }
     }
 
-    fn event_cache_fn(&self, cache_key: &str) -> CacheFn {
-        match cache_key {
-            "EthercatSetupEvent" => cache_one_event(),
-            _ => unreachable!("[{}] Unknown cache key: {}", module_path!(), cache_key),
+    fn event_cache_fn(&self) -> CacheFn {
+        match self {
+            MainRoomEvents::EthercatSetupEvent(_) => cache_one_event(),
         }
     }
 }

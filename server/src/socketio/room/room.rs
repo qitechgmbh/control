@@ -44,7 +44,6 @@ pub trait RoomInterface {
     /// * `buffer_fn` - A function that defines how the event should be added to the cache buffer
     fn cache(
         &mut self,
-        cache_key: &str,
         event: &GenericEvent,
         buffer_fn: Box<dyn Fn(&mut Vec<GenericEvent>, &GenericEvent) -> ()>,
     );
@@ -62,7 +61,6 @@ pub trait RoomInterface {
     fn emit_cached(
         &mut self,
         event: &GenericEvent,
-        cache_key: &str,
         buffer_fn: Box<dyn Fn(&mut Vec<GenericEvent>, &GenericEvent) -> ()>,
     );
 
@@ -117,23 +115,23 @@ impl RoomInterface for Room {
 
     fn cache(
         &mut self,
-        cache_key: &str,
         event: &GenericEvent,
         buffer_fn: Box<dyn Fn(&mut Vec<GenericEvent>, &GenericEvent) -> ()>,
     ) {
-        let mut cached_events_for_key =
-            self.events.entry(cache_key.into()).or_insert_with(Vec::new);
+        let mut cached_events_for_key = self
+            .events
+            .entry(event.name.clone())
+            .or_insert_with(Vec::new);
         buffer_fn(&mut cached_events_for_key, event);
     }
 
     fn emit_cached(
         &mut self,
         event: &GenericEvent,
-        cache_key: &str,
         buffer_fn: Box<dyn Fn(&mut Vec<GenericEvent>, &GenericEvent) -> ()>,
     ) {
         // cache the event
-        self.cache(cache_key.into(), event, buffer_fn);
+        self.cache(event, buffer_fn);
 
         // emit the event
         self.emit(event);
@@ -146,15 +144,14 @@ pub trait RoomBufferCacheKey {
 
 pub trait RoomCacheingLogic<V>
 where
-    V: CacheableEvents,
+    V: CacheableEvents<V>,
 {
     fn emit_cached(&mut self, event: V);
 }
 
-pub trait CacheableEvents {
-    fn event_cache_key(&self) -> String;
+pub trait CacheableEvents<Events> {
     fn event_value(&self) -> GenericEvent;
-    fn event_cache_fn(&self, cache_key: &str) -> CacheFn;
+    fn event_cache_fn(&self) -> CacheFn;
 }
 
 pub type CacheFn = Box<dyn Fn(&mut Vec<GenericEvent>, &GenericEvent) -> ()>;
