@@ -223,13 +223,11 @@ export function winder1MessageHandler(
 
   return (event: Event<any>) => {
     const eventName = event.name;
-    console.log("Received event:", eventName, event);
 
     try {
       // Apply appropriate caching strategy based on event type
       // State events (keep only the latest)
       if (eventName === "TraverseStateEvent") {
-        console.log("TraverseStateEvent", event);
         store.setState(
           produce((state) => {
             state.traverseState = traverseStateEventSchema.parse(event);

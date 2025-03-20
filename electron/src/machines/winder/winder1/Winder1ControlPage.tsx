@@ -12,7 +12,7 @@ import { EditValue } from "@/control/EditValue";
 import { Label } from "@/control/Label";
 import { TouchButton } from "@/components/touch/TouchButton";
 import { StatusBadge } from "@/control/StatusBadge";
-import { useWinder1 } from "./hooks";
+import { useWinder1 } from "./useWinder";
 import { useWinder1Room } from "./winder1Room";
 
 export function Winder1ControlPage() {
@@ -24,13 +24,6 @@ export function Winder1ControlPage() {
     laserpointerIsDisabled,
     state,
   } = useWinder1();
-
-  const { traverseState } = state;
-
-  // log changes in traverseState with useEffect
-  useEffect(() => {
-    console.log("Traverse State changed", traverseState);
-  }, [traverseState]);
 
   return (
     <Page>

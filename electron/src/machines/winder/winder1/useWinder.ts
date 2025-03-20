@@ -5,7 +5,7 @@ import { MachineIdentificationUnique } from "@/machines/types";
 import { winder1SerialRoute } from "@/routes/routes";
 import { z } from "zod";
 import { useWinder1Room } from "./winder1Room";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 
 export function useLaserpointer(
   machine_identification_unique: MachineIdentificationUnique,
@@ -16,27 +16,37 @@ export function useLaserpointer(
   laserpointerIsDisabled: boolean;
 } {
   const state = useStateOptimistic<boolean>();
-  const schema = z.object({ laserpointer: z.boolean() });
+
+  // Write path
+  const schema = z.object({ TraverseEnableLaserpointer: z.boolean() });
   const { request } = useMachineMutation(schema);
+  const setLaserpointer = async (value: boolean) => {
+    state.setOptimistic(value);
+    request({
+      machine_identification_unique,
+      data: { TraverseEnableLaserpointer: value },
+    })
+      .then((response) => {
+        if (!response.success) state.resetToReal();
+      })
+      .catch(() => state.resetToReal());
+  };
+
+  // Read path
+  const {
+    state: { traverseState },
+  } = useWinder1Room(machine_identification_unique);
+  useEffect(() => {
+    if (traverseState?.content.Data) {
+      state.setReal(traverseState.content.Data.laserpointer);
+    }
+  }, [traverseState]);
 
   return {
     laserpointer: state.value,
-    setLaserpointer: async (value) => {
-      state.setOptimistic(value);
-      request({
-        machine_identification_unique,
-        data: { laserpointer: value },
-      })
-        .then((response) => {
-          if (!response.success) state.resetToReal();
-        })
-        .catch(() => state.resetToReal());
-    },
-    // TODO read path
-    // laserpointerIsLoading: state.isOptimistic || !state.isInitialized,
-    // laserpointerIsDisabled: state.isOptimistic || !state.isInitialized,
-    laserpointerIsLoading: false,
-    laserpointerIsDisabled: false,
+    setLaserpointer,
+    laserpointerIsLoading: state.isOptimistic || !state.isInitialized,
+    laserpointerIsDisabled: state.isOptimistic || !state.isInitialized,
   };
 }
 
@@ -67,11 +77,9 @@ export function useWinder1() {
     };
   }, [serialString]); // Only recreate when serialString changes
 
-  const room = useWinder1Room(machineIdentification);
   const laserpointerControls = useLaserpointer(machineIdentification);
 
   return {
     ...laserpointerControls,
-    ...room,
   };
 }
