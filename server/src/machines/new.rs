@@ -1,5 +1,6 @@
 use crate::ethercat::device_identification::MachineDeviceIdentification;
 use anyhow::Error;
+use atomic_refcell::AtomicRefMut;
 use ethercat_hal::{devices::Device, types::EthercrabSubDevicePreoperational};
 use ethercrab::{SubDevice, SubDeviceRef};
 use std::sync::Arc;
@@ -10,7 +11,7 @@ use super::Machine;
 pub trait MachineNewTrait {
     fn new<'maindevice, 'subdevices>(
         identified_device_group: &Vec<MachineDeviceIdentification>,
-        subdevices: &'subdevices Vec<SubDeviceRef<'maindevice, &SubDevice>>,
+        subdevices: &'subdevices Vec<EthercrabSubDevicePreoperational<'maindevice>>,
         devices: &Vec<Arc<RwLock<dyn Device>>>,
     ) -> Result<Self, Error>
     where
@@ -20,7 +21,7 @@ pub trait MachineNewTrait {
 pub type MachineNewFn = Box<
     dyn Fn(
             &Vec<MachineDeviceIdentification>,
-            &'_ Vec<SubDeviceRef<'_, &SubDevice>>,
+            &'_ Vec<SubDeviceRef<'_, AtomicRefMut<SubDevice>>>,
             &Vec<Arc<RwLock<dyn Device>>>,
         ) -> Result<Arc<RwLock<dyn Machine>>, Error>
         + Send

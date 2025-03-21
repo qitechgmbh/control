@@ -1,9 +1,6 @@
 use crate::{
     app_state::APP_STATE,
-    ethercat::{
-        config::PDI_LEN,
-        device_identification::{MachineDeviceIdentification, MachineIdentificationUnique},
-    },
+    ethercat::device_identification::{MachineDeviceIdentification, MachineIdentificationUnique},
     socketio::event::{Event, EventBuilder},
 };
 use ethercrab::{SubDevicePdi, SubDeviceRef};
@@ -34,10 +31,7 @@ pub struct DeviceObj {
 }
 
 impl DeviceObj {
-    fn from_subdevice(
-        subdevice: &SubDeviceRef<'_, SubDevicePdi<'_, PDI_LEN>>,
-        index: usize,
-    ) -> Self {
+    fn from_subdevice(subdevice: &SubDeviceRef<'_, SubDevicePdi<'_>>, index: usize) -> Self {
         DeviceObj {
             name: subdevice.name().to_string(),
             configured_address: subdevice.configured_address(),

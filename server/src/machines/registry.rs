@@ -4,6 +4,7 @@ use crate::{
     machines::new::{MACHINE_WINDER_V1, VENDOR_QITECH},
 };
 use anyhow::Error;
+use atomic_refcell::AtomicRefMut;
 use ethercat_hal::devices::Device;
 use ethercrab::{SubDevice, SubDeviceRef};
 use lazy_static::lazy_static;
@@ -47,7 +48,7 @@ impl MachineRegistry {
     pub fn new_machine(
         &self,
         identified_device_group: &Vec<MachineDeviceIdentification>,
-        subdevices: &'_ Vec<SubDeviceRef<'_, &SubDevice>>,
+        subdevices: &'_ Vec<SubDeviceRef<'_, AtomicRefMut<SubDevice>>>,
         devices: &Vec<Arc<RwLock<dyn Device>>>,
     ) -> Result<Arc<RwLock<dyn Machine>>, anyhow::Error> {
         // get machiine identification

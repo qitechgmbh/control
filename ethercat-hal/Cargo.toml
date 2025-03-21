@@ -6,10 +6,12 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.95"
 crossbeam-utils = "0.8.21"
-ethercrab = { git = "https://github.com/qitechgmbh/ethercrab.git", branch = "master" }
+# ethercrab = { git = "https://github.com/qitechgmbh/ethercrab.git", branch = "master" }
+ethercrab = "0.5.5"
 ethercat_hal_derive = { version = "0.1.0", path = "../ethercat-hal-derive" }
 log = "0.4.25"
 stepper_driver = { version = "0.1.0", path = "../stepper-driver" }
 tokio = { version = "1.43.0", features = ["full"] }
 uom = "0.36.0"
 bitvec = { version = "1.0.1", features = ["alloc"] }
+atomic_refcell = "0.1.13"

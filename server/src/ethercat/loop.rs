@@ -83,21 +83,25 @@ pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(),
     // Identify machines
     // - Read identification values from devices
     let (identified_device_groups, unidentified_devices) =
-        identify_device_groups(&group_preop, &maindevice).await?;
+        identify_device_groups(&mut group_preop, &maindevice).await?;
     // - Create Machines
-    let subdevices = group_preop.iter(&maindevice).collect::<Vec<_>>();
-    let mut machines: HashMap<_, _> = HashMap::new();
-    for identified_device_group in identified_device_groups.iter() {
-        let machine = MACHINE_REGISTRY.new_machine(identified_device_group, &subdevices, &devices);
-        machines.insert(
-            identified_device_group
-                .first()
-                .unwrap()
-                .machine_identification_unique
-                .clone(),
-            machine,
-        );
-    }
+    let machines = {
+        let subdevices = group_preop.iter(&maindevice).collect::<Vec<_>>();
+        let mut machines: HashMap<_, _> = HashMap::new();
+        for identified_device_group in identified_device_groups.iter() {
+            let machine =
+                MACHINE_REGISTRY.new_machine(identified_device_group, &subdevices, &devices);
+            machines.insert(
+                identified_device_group
+                    .first()
+                    .unwrap()
+                    .machine_identification_unique
+                    .clone(),
+                machine,
+            );
+        }
+        machines
+    };
 
     //log machines
     for (k, v) in machines.iter() {
@@ -105,7 +109,7 @@ pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(),
     }
 
     // Put group in operational state
-    let group_op = match group_preop.into_op(&maindevice).await {
+    let mut group_op = match group_preop.into_op(&maindevice).await {
         Ok(group_op) => {
             log::info!("Group in OP state");
             group_op
@@ -176,9 +180,9 @@ pub async fn loop_once<'maindevice>(
     setup: Arc<RwLock<Option<EthercatSetup>>>,
     average_nanos: &mut u64,
 ) -> Result<(), anyhow::Error> {
-    let setup_guard = setup.read().await;
+    let mut setup_guard = setup.write().await;
     let setup = setup_guard
-        .as_ref()
+        .as_mut()
         .ok_or_else(|| anyhow::anyhow!("[{}::loop_once] No setup", module_path!()))?;
 
     // TS when the TX/RX cycle starts
@@ -213,9 +217,9 @@ pub async fn loop_once<'maindevice>(
     }
 
     // copy outputs from devices
-    for (i, subdevice) in setup.group.iter(&setup.maindevice).enumerate() {
+    for (i, mut subdevice) in setup.group.iter(&setup.maindevice).enumerate() {
         let device = setup.devices[i].as_ref().read().await;
-        let mut output = subdevice.outputs_raw_mut();
+        let output = subdevice.outputs_raw_mut();
         let output_bits = output.view_bits_mut::<Lsb0>();
         device.output_checked(output_bits).or_else(|e| {
             Err(anyhow::anyhow!(
