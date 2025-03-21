@@ -1,4 +1,5 @@
 use super::api::Winder1Room;
+use super::tension_arm::TensionArm;
 use super::WinderV1;
 use crate::ethercat::device_identification::MachineDeviceIdentification;
 use crate::machines::new::{
@@ -7,19 +8,17 @@ use crate::machines::new::{
 };
 use crate::machines::MachineNewTrait;
 use anyhow::Error;
-use ethercat_hal::actors::analog_input_logger::AnalogInputLogger;
+use ethercat_hal::actors::analog_input_getter::{AnalogInputDevice, AnalogInputGetter};
 use ethercat_hal::actors::digital_output_setter::DigitalOutputSetter;
 use ethercat_hal::actors::stepper_driver_pulse_train::StepperDriverPulseTrain;
-use ethercat_hal::coe::Configuration;
+use ethercat_hal::coe::ConfigurableDevice;
 use ethercat_hal::devices::el2002::{EL2002Port, EL2002};
 use ethercat_hal::devices::el2521::{EL2521Configuration, EL2521Port, EL2521};
 use ethercat_hal::devices::el2522::{
     EL2522ChannelConfiguration, EL2522Configuration, EL2522Port, EL2522,
 };
-use ethercat_hal::devices::el3001::{EL3001Port, EL3001};
-use ethercat_hal::devices::{
-    downcast_device, specifc_device_from_subdevice, subdevice_identity_to_tuple, Device,
-};
+use ethercat_hal::devices::el3001::{EL3001Configuration, EL3001PdoPreset, EL3001Port, EL3001};
+use ethercat_hal::devices::{downcast_device, subdevice_identity_to_tuple, Device};
 use ethercat_hal::devices::{
     ek1100::EK1100_IDENTITY_A,
     el2002::EL2002_IDENTITY_A,
@@ -105,9 +104,10 @@ impl MachineNewTrait for WinderV1 {
                 module_path!()
             )))?;
             let subdevice = get_subdevice_by_index(subdevices, mdi.subdevice_index)?;
+            let device = get_device_by_index(devices, mdi.subdevice_index)?;
             let subdevice_identity = subdevice.identity();
             let el3001 = match subdevice_identity_to_tuple(&subdevice_identity) {
-                EL3001_IDENTITY_A => specifc_device_from_subdevice::<EL3001>(subdevice).await?,
+                EL3001_IDENTITY_A => downcast_device::<EL3001>(device.clone()).await?,
                 _ => {
                     return Err(anyhow::anyhow!(
                         "[{}::MachineNewTrait/WinderV1::new] Device with role 2 is not an EL3001",
@@ -115,6 +115,17 @@ impl MachineNewTrait for WinderV1 {
                     ))
                 }
             };
+            el3001
+                .write()
+                .await
+                .write_config(
+                    &subdevice,
+                    &EL3001Configuration {
+                        pdo_assignment: EL3001PdoPreset::Compact,
+                        ..Default::default()
+                    },
+                )
+                .await?;
 
             // Role 3
             // 1x Pulszug Traverse
@@ -136,15 +147,17 @@ impl MachineNewTrait for WinderV1 {
                     ))
                 }
             };
-            let el2521_configuration = EL2521Configuration {
-                direct_input_mode: true,
-                ..EL2521Configuration::default()
-            };
-            el2521_configuration.write_config(&subdevice).await?;
             el2521
                 .write()
                 .await
-                .set_configuration(&el2521_configuration);
+                .write_config(
+                    &subdevice,
+                    &EL2521Configuration {
+                        direct_input_mode: true,
+                        ..EL2521Configuration::default()
+                    },
+                )
+                .await?;
 
             // Role 4
             // 2x Pulszuf Puller & Winder
@@ -164,22 +177,24 @@ impl MachineNewTrait for WinderV1 {
                     ))
                 }
             };
-            let el2522_configuration = EL2522Configuration {
-                channel1_configuration: EL2522ChannelConfiguration {
-                    direct_input_mode: true,
-                    ..EL2522ChannelConfiguration::default()
-                },
-                channel2_configuration: EL2522ChannelConfiguration {
-                    direct_input_mode: true,
-                    ..EL2522ChannelConfiguration::default()
-                },
-                ..EL2522Configuration::default()
-            };
-            el2522_configuration.write_config(&subdevice).await?;
             el2522
                 .write()
                 .await
-                .set_configuration(&el2522_configuration);
+                .write_config(
+                    &subdevice,
+                    &EL2522Configuration {
+                        channel1_configuration: EL2522ChannelConfiguration {
+                            direct_input_mode: true,
+                            ..EL2522ChannelConfiguration::default()
+                        },
+                        channel2_configuration: EL2522ChannelConfiguration {
+                            direct_input_mode: true,
+                            ..EL2522ChannelConfiguration::default()
+                        },
+                        ..EL2522Configuration::default()
+                    },
+                )
+                .await?;
 
             let mut new = Self {
                 traverse_driver: StepperDriverPulseTrain::new(PulseTrainOutput::new(
@@ -194,12 +209,13 @@ impl MachineNewTrait for WinderV1 {
                     el2522,
                     EL2522Port::PTO2,
                 )),
-                tension_arm_driver: AnalogInputLogger::new(AnalogInput::new(
-                    el3001,
-                    EL3001Port::AI1,
+                tension_arm: TensionArm::new(AnalogInputGetter::new(
+                    AnalogInput::new(el3001, EL3001Port::AI1),
+                    AnalogInputDevice::EL300x.into(),
                 )),
                 laser_driver: DigitalOutputSetter::new(DigitalOutput::new(el2002, EL2002Port::DO1)),
                 room: Winder1Room::new(machine_identification_unique),
+                last_measurement_emit: chrono::Utc::now(),
             };
 
             // initalize events

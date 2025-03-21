@@ -1,5 +1,5 @@
 pub mod analog_function_generator;
-pub mod analog_input_logger;
+pub mod analog_input_getter;
 pub mod digital_input_logger;
 pub mod digital_output_setter;
 pub mod digital_output_blinker;

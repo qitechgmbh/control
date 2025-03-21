@@ -1,3 +1,4 @@
+use super::{new::MachineNewFn, winder1::WinderV1, Machine};
 use crate::{
     ethercat::device_identification::{MachineDeviceIdentification, MachineIdentification},
     machines::new::{MACHINE_WINDER_V1, VENDOR_QITECH},
@@ -5,15 +6,13 @@ use crate::{
 use anyhow::Error;
 use ethercat_hal::devices::Device;
 use ethercrab::{SubDevice, SubDeviceRef};
+use lazy_static::lazy_static;
 use std::{
     any::{Any, TypeId},
     collections::HashMap,
     sync::Arc,
 };
 use tokio::sync::RwLock;
-
-use super::{new::MachineNewFn, winder1::WinderV1, Machine};
-use lazy_static::lazy_static;
 
 pub struct MachineRegistry {
     type_map: HashMap<TypeId, (MachineIdentification, MachineNewFn)>,
@@ -37,7 +36,7 @@ impl MachineRegistry {
                 Box::new(|identified_device_group, subdevices, devices| {
                     Ok(Arc::new(RwLock::new(T::new(
                         identified_device_group,
-                        &subdevices,
+                        subdevices,
                         devices,
                     )?)))
                 }),

@@ -1,14 +1,17 @@
 pub mod act;
 pub mod api;
 pub mod new;
+pub mod tension_arm;
 
 use super::Machine;
 use crate::socketio::event::EventBuilder;
 use crate::socketio::room::room::RoomCacheingLogic;
-use api::{TraverseStateEvent, Winder1Events, Winder1Room};
-use ethercat_hal::actors::analog_input_logger::AnalogInputLogger;
+use api::{MeasurementsTensionArmEvent, TraverseStateEvent, Winder1Events, Winder1Room};
+use chrono::DateTime;
 use ethercat_hal::actors::digital_output_setter::DigitalOutputSetter;
 use ethercat_hal::actors::stepper_driver_pulse_train::StepperDriverPulseTrain;
+use tension_arm::TensionArm;
+use uom::si::angle::degree;
 
 #[derive(Debug)]
 pub struct WinderV1 {
@@ -16,11 +19,12 @@ pub struct WinderV1 {
     pub traverse_driver: StepperDriverPulseTrain,
     pub puller_driver: StepperDriverPulseTrain,
     pub winder_driver: StepperDriverPulseTrain,
-    pub tension_arm_driver: AnalogInputLogger,
+    pub tension_arm: TensionArm,
     pub laser_driver: DigitalOutputSetter,
 
     // socketio
     room: Winder1Room,
+    last_measurement_emit: DateTime<chrono::Utc>,
 }
 
 impl Machine for WinderV1 {}
@@ -38,6 +42,15 @@ impl WinderV1 {
         }
         .build();
         self.room.emit_cached(Winder1Events::TraverseState(event));
+    }
+
+    pub fn emit_measurement_tension_arm(&mut self) {
+        let event = MeasurementsTensionArmEvent {
+            degree: self.tension_arm.get_angle().get::<degree>(),
+        }
+        .build();
+        self.room
+            .emit_cached(Winder1Events::MeasurementsTensionArm(event));
     }
 }
 

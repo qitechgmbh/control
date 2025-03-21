@@ -1,6 +1,6 @@
 use super::SubDeviceIdentityTuple;
 use crate::{
-    coe::Configuration,
+    coe::{ConfigurableDevice, Configuration},
     io::pulse_train_output::{
         PulseTrainOutputDevice, PulseTrainOutputInput, PulseTrainOutputOutput,
         PulseTrainOutputState,
@@ -44,12 +44,6 @@ impl EL2521 {
             input_ts: 0,
         }
     }
-
-    pub fn set_configuration(&mut self, configuration: &EL2521Configuration) {
-        self.configuration = configuration.clone();
-        self.txpdo = configuration.pdo_assignment.txpdo_assignment();
-        self.rxpdo = configuration.pdo_assignment.rxpdo_assignment();
-    }
 }
 
 impl PulseTrainOutputDevice<EL2521Port> for EL2521 {
@@ -85,6 +79,24 @@ impl PulseTrainOutputDevice<EL2521Port> for EL2521 {
                 set_counter_value: self.rxpdo.enc_control.as_ref().unwrap().set_counter_value,
             },
         }
+    }
+}
+
+impl ConfigurableDevice<EL2521Configuration> for EL2521 {
+    async fn write_config<'maindevice>(
+        &mut self,
+        device: &EthercrabSubDevicePreoperational<'maindevice>,
+        config: &EL2521Configuration,
+    ) -> Result<(), anyhow::Error> {
+        config.write_config(device).await?;
+        self.configuration = config.clone();
+        self.txpdo = config.pdo_assignment.txpdo_assignment();
+        self.rxpdo = config.pdo_assignment.rxpdo_assignment();
+        Ok(())
+    }
+
+    fn get_config(&self) -> EL2521Configuration {
+        self.configuration.clone()
     }
 }
 

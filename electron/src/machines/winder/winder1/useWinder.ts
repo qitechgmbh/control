@@ -5,9 +5,9 @@ import { MachineIdentificationUnique } from "@/machines/types";
 import { winder1SerialRoute } from "@/routes/routes";
 import { z } from "zod";
 import { useWinder1Room } from "./winder1Room";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 
-export function useLaserpointer(
+function useLaserpointer(
   machine_identification_unique: MachineIdentificationUnique,
 ): {
   laserpointer: boolean | undefined;
@@ -50,6 +50,27 @@ export function useLaserpointer(
   };
 }
 
+function useMeasurementTensionArm(
+  machine_identification_unique: MachineIdentificationUnique,
+): {
+  measurementTensionArm: number;
+  measurementTensionArmIsLoading: boolean;
+} {
+  const isLoading = useState(false);
+
+  // Read Path
+  const {
+    state: { measurementsTensionArms },
+  } = useWinder1Room(machine_identification_unique);
+
+  return {
+    // set last
+    measurementTensionArm:
+      measurementsTensionArms.at(-1)?.content.Data?.degree ?? 0,
+    measurementTensionArmIsLoading: measurementsTensionArms.length === 0,
+  };
+}
+
 export function useWinder1() {
   const { serial: serialString } = winder1SerialRoute.useParams();
 
@@ -78,8 +99,10 @@ export function useWinder1() {
   }, [serialString]); // Only recreate when serialString changes
 
   const laserpointerControls = useLaserpointer(machineIdentification);
+  const measurementTensionArm = useMeasurementTensionArm(machineIdentification);
 
   return {
     ...laserpointerControls,
+    ...measurementTensionArm,
   };
 }

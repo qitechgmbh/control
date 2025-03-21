@@ -10,8 +10,15 @@ impl Actor for WinderV1 {
             self.traverse_driver.act(now_ts).await;
             self.puller_driver.act(now_ts).await;
             self.winder_driver.act(now_ts).await;
-            self.tension_arm_driver.act(now_ts).await;
+            self.tension_arm.analog_input_getter.act(now_ts).await;
             self.laser_driver.act(now_ts).await;
+
+            // if last measurement emit is older than 1 second, emit a new measurement
+            let now = chrono::Utc::now();
+            if (now - self.last_measurement_emit).num_milliseconds() > 500 {
+                self.emit_measurement_tension_arm();
+                self.last_measurement_emit = now;
+            }
         })
     }
 }

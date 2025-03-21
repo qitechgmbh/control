@@ -1,6 +1,6 @@
 use super::SubDeviceIdentityTuple;
 use crate::{
-    coe::Configuration,
+    coe::{ConfigurableDevice, Configuration},
     io::pulse_train_output::{
         PulseTrainOutputDevice, PulseTrainOutputInput, PulseTrainOutputOutput,
         PulseTrainOutputState,
@@ -44,11 +44,23 @@ impl EL2522 {
             input_ts: 0,
         }
     }
+}
 
-    pub fn set_configuration(&mut self, configuration: &EL2522Configuration) {
-        self.configuration = configuration.clone();
-        self.txpdo = configuration.pdo_assignment.txpdo_assignment();
-        self.rxpdo = configuration.pdo_assignment.rxpdo_assignment();
+impl ConfigurableDevice<EL2522Configuration> for EL2522 {
+    async fn write_config<'maindevice>(
+        &mut self,
+        device: &EthercrabSubDevicePreoperational<'maindevice>,
+        config: &EL2522Configuration,
+    ) -> Result<(), anyhow::Error> {
+        config.write_config(device).await?;
+        self.configuration = config.clone();
+        self.txpdo = config.pdo_assignment.txpdo_assignment();
+        self.rxpdo = config.pdo_assignment.rxpdo_assignment();
+        Ok(())
+    }
+
+    fn get_config(&self) -> EL2522Configuration {
+        self.configuration.clone()
     }
 }
 

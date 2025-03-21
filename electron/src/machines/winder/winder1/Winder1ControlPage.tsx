@@ -1,6 +1,6 @@
 import { ControlCard } from "@/control/ControlCard";
 import { Page } from "@/components/Page";
-import React, { useEffect } from "react";
+import React from "react";
 import { ControlGrid } from "@/control/ControlGrid";
 import { ControlValueNumeric } from "@/control/ControlValue";
 import { TraverseBar } from "../TraverseBar";
@@ -13,7 +13,6 @@ import { Label } from "@/control/Label";
 import { TouchButton } from "@/components/touch/TouchButton";
 import { StatusBadge } from "@/control/StatusBadge";
 import { useWinder1 } from "./useWinder";
-import { useWinder1Room } from "./winder1Room";
 
 export function Winder1ControlPage() {
   // use optimistic state
@@ -22,7 +21,8 @@ export function Winder1ControlPage() {
     setLaserpointer,
     laserpointerIsLoading,
     laserpointerIsDisabled,
-    state,
+    measurementTensionArm,
+    measurementTensionArmIsLoading,
   } = useWinder1();
 
   return (
@@ -204,7 +204,7 @@ export function Winder1ControlPage() {
           <ControlValueNumeric
             label="Tension Arm"
             unit="deg"
-            value={5}
+            value={measurementTensionArm}
             renderValue={(value) => value.toFixed(0)}
           />
         </ControlCard>

@@ -1,7 +1,11 @@
 use super::SubDeviceIdentityTuple;
 use crate::{
-    coe::Configuration,
-    pdo::{el30xx::AiStandard, PdoPreset, TxPdo},
+    coe::{ConfigurableDevice, Configuration},
+    pdo::{
+        el30xx::{AiCompact, AiStandard},
+        PdoPreset, TxPdo,
+    },
+    signing::Integer16,
 };
 use crate::{
     io::analog_input::{AnalogInputDevice, AnalogInputInput, AnalogInputState},
@@ -35,18 +39,47 @@ impl EL3001 {
 
 impl AnalogInputDevice<EL3001Port> for EL3001 {
     fn analog_output_state(&self, port: EL3001Port) -> AnalogInputState {
-        let value = match port {
-            EL3001Port::AI1 => self.txpdo.ai_standard.as_ref().unwrap().value,
+        let raw_value = match port {
+            EL3001Port::AI1 => match &self.txpdo {
+                EL3001TxPdo {
+                    ai_standard: Some(ai_standard),
+                    ..
+                } => ai_standard.value,
+                EL3001TxPdo {
+                    ai_compact: Some(ai_compact),
+                    ..
+                } => ai_compact.value,
+                _ => panic!("Invalid TxPdo assignment"),
+            },
+        };
+        let raw_value = Integer16::from(raw_value);
+        let value: i16 = match self.configuration.presentation {
+            EL3001Presentation::Unsigned => raw_value.into_unsigned() as i16,
+            EL3001Presentation::Signed => raw_value.into_signed(),
+            EL3001Presentation::SignedMagnitude => raw_value.into_signed_magnitude(),
         };
         let normalized = f32::from(value) / f32::from(i16::MAX);
-        let volts = normalized * 10.0;
         AnalogInputState {
             input_ts: self.input_ts,
-            input: AnalogInputInput {
-                normalized,
-                absolute: volts,
-            },
+            input: AnalogInputInput { normalized },
         }
+    }
+}
+
+impl ConfigurableDevice<EL3001Configuration> for EL3001 {
+    async fn write_config<'maindevice>(
+        &mut self,
+        device: &EthercrabSubDevicePreoperational<'maindevice>,
+        config: &EL3001Configuration,
+    ) -> Result<(), anyhow::Error> {
+        config.write_config(device).await?;
+        self.configuration = config.clone();
+        self.txpdo = config.pdo_assignment.txpdo_assignment();
+        Ok(())
+    }
+
+    fn get_config(&self) -> EL3001Configuration {
+        self.configuration.clone()
     }
 }
 
@@ -59,6 +92,8 @@ pub enum EL3001Port {
 pub struct EL3001TxPdo {
     #[pdo_object_index(0x1A00)]
     pub ai_standard: Option<AiStandard>,
+    #[pdo_object_index(0x1A01)]
+    pub ai_compact: Option<AiCompact>,
 }
 
 #[derive(Debug, Clone, RxPdo)]
@@ -125,7 +160,7 @@ pub struct EL3001Configuration {
     /// User scale offset
     ///
     /// default: `0`
-    pub user_scale_offset: i32,
+    pub user_scale_offset: i16,
 
     /// # 0x8000:12
     /// User scale gain
@@ -137,13 +172,13 @@ pub struct EL3001Configuration {
     /// Limit 1
     ///
     /// default: `0`
-    pub limit_1: i32,
+    pub limit_1: i16,
 
     /// # 0x8000:14
     /// Limit 2
     ///
     /// default: `0`
-    pub limit_2: i32,
+    pub limit_2: i16,
 
     /// # 0x8000:15
     /// Filter settings
@@ -155,13 +190,13 @@ pub struct EL3001Configuration {
     /// User calibration offset
     ///
     /// default: `0`
-    pub user_calibration_offset: i32,
+    pub user_calibration_offset: i16,
 
     /// # 0x8000:18
     /// User calibration gain
     ///
     /// default: `16384`
-    pub user_calibration_gain: i32,
+    pub user_calibration_gain: i16,
 
     /// # 0x1400 & 0x1600
     pub pdo_assignment: EL3001PdoPreset,
@@ -243,7 +278,7 @@ impl Default for EL3001Configuration {
 #[derive(Debug, Clone)]
 pub enum EL3001PdoPreset {
     Standard,
-    // Compact,
+    Compact,
 }
 
 impl PdoPreset<EL3001TxPdo, EL3001RxPdo> for EL3001PdoPreset {
@@ -251,6 +286,11 @@ impl PdoPreset<EL3001TxPdo, EL3001RxPdo> for EL3001PdoPreset {
         match self {
             EL3001PdoPreset::Standard => EL3001TxPdo {
                 ai_standard: Some(AiStandard::default()),
+                ai_compact: None,
+            },
+            EL3001PdoPreset::Compact => EL3001TxPdo {
+                ai_standard: None,
+                ai_compact: Some(AiCompact::default()),
             },
         }
     }
@@ -258,6 +298,7 @@ impl PdoPreset<EL3001TxPdo, EL3001RxPdo> for EL3001PdoPreset {
     fn rxpdo_assignment(&self) -> EL3001RxPdo {
         match self {
             EL3001PdoPreset::Standard => EL3001RxPdo {},
+            EL3001PdoPreset::Compact => EL3001RxPdo {},
         }
     }
 }
@@ -267,6 +308,12 @@ pub enum EL3001Presentation {
     Signed,
     Unsigned,
     SignedMagnitude,
+}
+
+pub enum EL3001Value {
+    Signed(i16),
+    Unsigned(u16),
+    SignedMagnitude(i16),
 }
 
 impl From<EL3001Presentation> for u8 {

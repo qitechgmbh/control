@@ -218,7 +218,7 @@ impl EventBuilder<MeasurementsWindingRpmEvent> for MeasurementsWindingRpmEvent {
 #[derive(Serialize, Debug, Clone)]
 pub struct MeasurementsTensionArmEvent {
     /// degree
-    pub degree: f64,
+    pub degree: f32,
 }
 
 impl EventBuilder<MeasurementsTensionArmEvent> for MeasurementsTensionArmEvent {
@@ -276,6 +276,7 @@ impl CacheableEvents<Winder1Events> for Winder1Events {
 
     fn event_cache_fn(&self) -> CacheFn {
         let cache_one_hour = cache_duration(Duration::from_secs(60 * 60));
+        let cache_ten_secs = cache_duration(Duration::from_secs(10));
         let cache_one = cache_one_event();
 
         match self {
@@ -286,7 +287,7 @@ impl CacheableEvents<Winder1Events> for Winder1Events {
             Winder1Events::AutostopWoundedlength(_) => cache_one_hour,
             Winder1Events::AutostopState(_) => cache_one,
             Winder1Events::Mode(_) => cache_one,
-            Winder1Events::MeasurementsWindingRpm(_) => cache_one_hour,
+            Winder1Events::MeasurementsWindingRpm(_) => cache_ten_secs,
             Winder1Events::MeasurementsTensionArm(_) => cache_one_hour,
         }
     }

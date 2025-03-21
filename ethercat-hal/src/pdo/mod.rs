@@ -20,11 +20,7 @@ pub trait RxPdoObject: PdoObject {
     fn write(&self, buffer: &mut BitSlice<u8, Lsb0>);
 }
 
-pub trait PdoPreset<TXPDOA, RXPDOA>
-where
-    TXPDOA: Clone,
-    RXPDOA: Clone,
-{
+pub trait PdoPreset<TXPDOA, RXPDOA> {
     fn txpdo_assignment(&self) -> TXPDOA;
     fn rxpdo_assignment(&self) -> RXPDOA;
 }

@@ -184,8 +184,8 @@ export function DeviceEeepromDialogContent({ device, setOpen }: ContentProps) {
                     <SelectContent>
                       {machinePresets.map((machine) => (
                         <SelectItem
-                          key={machine.machine_id}
-                          value={machine.machine_id.toString()}
+                          key={machine.machine_identification.machine}
+                          value={machine.machine_identification.machine.toString()}
                         >
                           {machine.name} {machine.version}
                         </SelectItem>
