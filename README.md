@@ -1,18 +1,18 @@
-![](./docs/github-banner.png)
+![](./docs/assets/github-banner.png)
 # QiTech Control
 QiTech Control is an industrial control panel software for the next generation of QiTech recycling machines built on top of Beckhoff Automation hardware.
 
 # Repo Structure
 
 Frontend
-- `/electron`: Frontend code for the control software build with React and Electron.
+- `/electron`: Frontend code for the control software built with React and Electron.
 
 Backend
-- `/server`: Glue between Backhoff and Electron. Implements machine logic.
+- `/server`: Glue between Beckhoff and Electron. Implements machine logic.
 - `/stepper-driver`: Generic stepper driver for absolute, relative & speed movements with PID controllers.
 - `/ethercat-hal`: Hardware abstraction layer for Beckhoff (and possibly other EtherCat) devices and protocols.
 - `/ethercat-hal-derive`: Macros for `ethercat-hal`
-- `/ethercrab`: Fork of `ethercrab` for ad-hoch changes.
+- `/ethercrab`: Fork of `ethercrab` for ad-hoc changes.
 
 Operating System
 - `/nixos`: Custom Linux with realtime kernel & preconfigured for touchscreens.
@@ -27,7 +27,7 @@ Other
 
 # Machines
 
-| Machine Type | Version | Release Date | Description                 | Change to Previous Version                             | Vendor ID                  | Macine ID | Implemented | Docs                            |
+| Machine Type | Version | Release Date | Description                 | Change to Previous Version                             | Vendor ID                  | Machine ID | Implemented | Docs                            |
 | ------------ | ------- | ------------ | --------------------------- | ------------------------------------------------------ | -------------------------- | --------- | ----------- | ------------------------------- |
 | Winder       | V1      | ???          | Winding Filaments & Similar | -                                                      | 1 (Qitech Industries GmbH) | 1         | Reserved    | -                               |
 | Winder       | V2      | 2025         | Winding Filaments & Similar | Reengineered Traverse                                  | 1 (Qitech Industries GmbH) | 2         | In Progress | [](./docs/machines/winder-1.md) |
@@ -38,34 +38,39 @@ Other
 # More Docs
 
 - [X] [Architecture & Data Flow](./docs/architecture-overview.md)
-    - [X] Example Winder V2
+  - [X] Example Winder V2
 
-- [ ] Machines
-  - [ ] Table
-  - [ ] Winder V2
-    - [ ] Devices
-    - [ ] Functionality
-    - [ ] Logic
-  - [ ] Extruder V2
+- [ ] Machine Implementation Guide
+  - [ ] Link: How to create a Device
+  - [ ] Link: How to create an Actor
+  - [ ] Link: How to create a Machine
+    - [ ] API (SocketIO + REST)
+    - [ ] Creation/Validation Logic
+      - [ ] Optional/Mandatory Devices
+      - [ ] Validate Devices
+    - [ ] Business Logic
+  - [ ] Link: How to create Machine Abstraction (Like Traverse/Puller/...)
+  - [ ] Forward `act` in winder.
 
 - [ ] Electron
   - [ ] Folder Structure 
   - [ ] Routing with TanStack Router
-  - [ ] Seign with Tailwind & Shadcn 
+  - [ ] Design with Tailwind & Shadcn 
 
 - [ ] Interfacing with Electron/Server
-    - [ ] SocketIO
-      - [ ] Rooms & Cacheing
-        - [ ] Joining leaving rooms
-        - [ ] Our rooms vs native socketIo rooms
-        - [ ] Cacheing
-          - [ ] Serverside Cacheing
-          - [ ] Clientside Cacheing
-      - [ ] Machine Room
-      - [ ] Main Room
-    - [ ] REST
-      - [ ] Machine Mutations
-      - [ ] Write Device Identification
+  - [ ] SocketIO
+    - [ ] Rooms & Caching
+    - [ ] Joining leaving rooms
+    - [ ] RoomId
+    - [ ] Our rooms vs native socketIO rooms
+    - [ ] Caching
+      - [ ] Serverside Caching
+      - [ ] Clientside Caching
+    - [ ] Machine Room
+    - [ ] Main Room
+  - [ ] REST
+    - [ ] Machine Mutations
+    - [ ] Write Device Identification
 
 - [ ] Server
   - [ ] Control Loop Setup
@@ -89,48 +94,60 @@ Other
     - [ ] Device Identification with EEPROM
     - [ ] Grouping Devices
     - [ ] Validating Device Groups to Machines
+    - [ ] How to: Identify a New Device
+      - [ ] Find free EEPROM words
+      - [ ] Get identity values and add them to pattern matching
   - [ ] Machines
     - [ ] When to create a new Machine?
-    - [ ] Creatine/Validating a Machine
+    - [ ] Creating/Validating a Machine
       - [ ] Validation
       - [ ] Configuration
 
 - [ ] Ethercat HAL
   - [ ] Devices/PDO
-    - [ ] CoE Theory
-      - [ ] Parameters
-      - [ ] Pdo Assignment
-    - [ ] PDO Theory
-      - [ ] Pdo Objects
-      - [ ] Tx / Rx Meaning
-      - [ ] Presets
-      - [ ] Mapping
-    - [ ] How To: Implementing an EL2521
+  - [ ] CoE Theory
+    - [ ] Parameters
+    - [ ] PDO Assignment
+  - [ ] PDO Theory
+    - [ ] PDO Objects
+    - [ ] PDO "Primitives"
+      - [ ] Limit
+    - [ ] Tx / Rx Meaning
+    - [ ] Presets
+    - [ ] Mapping
   - [ ] IO
-    - [ ] How to: Implementing a Pulse Train Output
+  - [ ] How to: Full Device Implementation Guide
+    - [ ] Create Port
+    - [ ] implement IO Device Trait
+    - [ ] Create IO
+    - [ ] Create Tx/RxPDO
+    - [ ] Create PDO Assignment
+    - [ ] Create CoE
+    - [ ] Implement ConfigurableDevice
 
-- [ ] Ethercat Basics
-  - [ ] State Machine
-  - [ ] Network Topology Packets
-  - [ ] Master / Slave
-  - [ ] Terms of Communication
-    - [ ] SDO 
-    - [ ] PDO 
-    - [ ] Mailbox
-    - [ ] CoE 
-    - [ ] Commands
-  - [ ] EEPROM
+- [X] Ethercat Basics
+  - [X] State Machine
+  - [X] Network Topology Packets
+  - [X] Master / Slave
+  - [X] Terms of Communication
+    - [X] SDO 
+    - [X] PDO 
+    - [X] Mailbox
+    - [X] CoE 
+    - [X] Commands
+  - [X] EEPROM
 
 - [ ] Ethercat HAL
 - [ ] Ethercat Devices
   - [ ] Buscoupler
   - [ ] Digital Input
-    - [ ] EL2000er
+  - [ ] EL2000er
   - [ ] Digital Output
-    - [ ] EL1000er
+  - [ ] EL1000er
   - [ ] Analog Input
-    - [ ] EL3000er
-    - [ ] Temperature Input
+  - [ ] EL3000er
+  - [ ] Temperature Input
+- [X] [PDO](./docs/pdo.md)
 
 - [ ] Operating System
   - [ ] Why
