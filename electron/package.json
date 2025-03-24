@@ -20,7 +20,6 @@
     "test:all": "vitest run && playwright test"
   },
   "author": "",
-  "license": "MIT",
   "devDependencies": {
     "@electron-forge/cli": "^7.6.1",
     "@electron-forge/maker-deb": "^7.6.1",

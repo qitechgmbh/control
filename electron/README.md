@@ -141,7 +141,3 @@ npm run start
 - [eletric-drizzle](https://github.com/LuanRoger/electric-drizzle) - shadcn-ui and Drizzle ORM with Electron.
 
 > Does you've used this template in your project? Add it here and open a PR.
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](https://github.com/LuanRoger/electron-shadcn/blob/main/LICENSE) file for details.
