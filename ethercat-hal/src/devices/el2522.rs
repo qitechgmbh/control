@@ -329,7 +329,7 @@ impl Default for EL2522ChannelConfiguration {
 impl Default for EL2522Configuration {
     fn default() -> Self {
         Self {
-            pdo_assignment: EL2522PdoPreset::EnhancedOperatingMode32Bit,
+            pdo_assignment: EL2522PdoPreset::Standart32Bit,
             channel1_configuration: EL2522ChannelConfiguration::default(),
             channel2_configuration: EL2522ChannelConfiguration::default(),
         }
@@ -476,13 +476,13 @@ impl From<EL2522OperatingMode> for u8 {
 
 #[derive(Debug, Clone)]
 pub enum EL2522PdoPreset {
-    EnhancedOperatingMode32Bit,
+    Standart32Bit,
 }
 
 impl PdoPreset<EL2522TxPdo, EL2522RxPdo> for EL2522PdoPreset {
     fn txpdo_assignment(&self) -> EL2522TxPdo {
         match self {
-            EL2522PdoPreset::EnhancedOperatingMode32Bit => EL2522TxPdo {
+            EL2522PdoPreset::Standart32Bit => EL2522TxPdo {
                 pto_status_channel1: Some(PtoStatus::default()),
                 pto_status_channel2: Some(PtoStatus::default()),
                 enc_status_channel1: Some(EncStatus::default()),
@@ -493,7 +493,7 @@ impl PdoPreset<EL2522TxPdo, EL2522RxPdo> for EL2522PdoPreset {
 
     fn rxpdo_assignment(&self) -> EL2522RxPdo {
         match self {
-            EL2522PdoPreset::EnhancedOperatingMode32Bit => EL2522RxPdo {
+            EL2522PdoPreset::Standart32Bit => EL2522RxPdo {
                 pto_control_channel1: Some(PtoControl::default()),
                 pto_target_channel1: Some(PtoTarget::default()),
                 enc_control_channel1: Some(EncControl::default()),
