@@ -28,12 +28,12 @@ Other
 # Machines
 
 | Machine Type | Version | Release Date | Description                 | Change to Previous Version                             | Vendor ID                  | Machine ID | Implemented | Docs                            |
-| ------------ | ------- | ------------ | --------------------------- | ------------------------------------------------------ | -------------------------- | --------- | ----------- | ------------------------------- |
-| Winder       | V1      | ???          | Winding Filaments & Similar | -                                                      | 1 (Qitech Industries GmbH) | 1         | Reserved    | -                               |
-| Winder       | V2      | 2025         | Winding Filaments & Similar | Reengineered Traverse                                  | 1 (Qitech Industries GmbH) | 2         | In Progress | [](./docs/machines/winder-1.md) |
-| Extruder     | V1      | ???          | Single Screw Extruder       | -                                                      | 1 (Qitech Industries GmbH) | 3         | Reserved    | -                               |
-| Extruder     | V2      | 2025         | Single Screw Extruder       | PT100 Thermometers, Optional Additional Heating Zone 4 | 1 (Qitech Industries GmbH) | 4         | Not Yet     | [                               |
-| Waterway     | V1      | 2025         | Filament Water Cooling      | -                                                      | 1 (Qitech Industries GmbH) | 5         | Not Yet     |                                 |
+| ------------ | ------- | ------------ | --------------------------- | ------------------------------------------------------ | -------------------------- | ---------- | ----------- | ------------------------------- |
+| Winder       | V1      | ???          | Winding Filaments & Similar | -                                                      | 1 (Qitech Industries GmbH) | 1          | Reserved    | -                               |
+| Winder       | V2      | 2025         | Winding Filaments & Similar | Reengineered Traverse                                  | 1 (Qitech Industries GmbH) | 2          | In Progress | [](./docs/machines/winder-1.md) |
+| Extruder     | V1      | ???          | Single Screw Extruder       | -                                                      | 1 (Qitech Industries GmbH) | 3          | Reserved    | -                               |
+| Extruder     | V2      | 2025         | Single Screw Extruder       | PT100 Thermometers, Optional Additional Heating Zone 4 | 1 (Qitech Industries GmbH) | 4          | Not Yet     | [                               |
+| Waterway     | V1      | 2025         | Filament Water Cooling      | -                                                      | 1 (Qitech Industries GmbH) | 5          | Not Yet     |                                 |
 
 # More Docs
 
@@ -125,7 +125,7 @@ Other
     - [ ] Create CoE
     - [ ] Implement ConfigurableDevice
 
-- [X] Ethercat Basics
+- [X] [Ethercat Basics](./docs/ethercat-basics.md)
   - [X] State Machine
   - [X] Network Topology Packets
   - [X] Master / Slave

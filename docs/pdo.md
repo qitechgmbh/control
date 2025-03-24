@@ -55,7 +55,9 @@ It has 2 PDO objects:
 
 #### Rust Implementation
 We can define the TxPdo and RxPdo structs like this. The PDO objects always have to be inside an `Option` even if the device does not support custom assignments.
-```rust:title=ethercat-hal::devices::el3001
+
+*ethercat_hal::devices::el3001*
+```rust
 #[derive(Debug, Clone, TxPdo)]
 pub struct EL3001TxPdo {
     #[pdo_object_index(0x1A00)]
@@ -74,7 +76,8 @@ The decoding can be reverse engineered by looking at the TwinCAT screenshot.
 The derive macro `PdoObject`, `TxPdoObject` and the tags `pdo_object_index` and `pdo_object` allow us to know the combined minimum bit size of the assigned PDO objects at runtime.
 It also allows us to derive an implementation to write this PDO assignment via SDO to the device.
 
-```rust:title=ethercat-hal::dpdo::el3xx
+*ethercat_hal::pdo::el3xx*
+```rust
 #[derive(Debug, Clone, Default, PdoObject, PartialEq)]
 #[pdo_object(bits = 32)]
 pub struct AiStandard {
@@ -123,7 +126,8 @@ impl TxPdoObject for AiCompact {
 
 Now we can implement the predefined PDO assignment as an `enum`.
 
-```rust:title=ethercat-hal::devices::el3001
+*ethercat_hal::devices::el3001*
+```rust
 #[derive(Debug, Clone)]
 pub enum EL3001PdoPreset {
     Standard,
@@ -169,7 +173,8 @@ Each PDO object represents a channel output with 1 bit.
 
 #### Rust Implementation
 
-```rust:title=ethercat-hal::devices::el2024
+*ethercat_hal::devices::el2024*
+```rust
 #[derive(Debug, Clone, RxPdo)]
 pub struct EL2024RxPdo {
     #[pdo_object_index(0x1600)]
@@ -194,7 +199,8 @@ impl Default for EL2024RxPdo {
 }
 ```
 
-```rust:title=ethercat-hal::pdo::basic
+*ethercat_hal::devices::el2024*
+```rust
 #[derive(Debug, Clone, Default, PdoObject)]
 #[pdo_object(bits = 1)]
 pub struct BoolPdoObject {
@@ -225,7 +231,8 @@ The only predefined PDO assignment we implement here is "Standard 32Bit", since 
 
 #### Rust Implementation
 
-```rust:title=ethercat-hal::devices::el2521
+*ethercat_hal::devices::el2521*
+```rust
 #[derive(Debug, Clone, TxPdo)]
 pub struct EL2521TxPdo {
     #[pdo_object_index(0x1A01)]
@@ -248,7 +255,8 @@ pub struct EL2521RxPdo {
 }
 ```
 
-```rust:title=ethercat-hal::devices::el2521
+*ethercat_hal::devices::el2521*
+```rust
 #[derive(Debug, Clone)]
 pub enum EL2521PdoPreset {
     EnhancedOperatingMode32Bit,
@@ -276,7 +284,8 @@ impl PdoPreset<EL2521TxPdo, EL2521RxPdo> for EL2521PdoPreset {
 }
 ```
 
-```rust:title=ethercat-hal::pdo::el252x
+*ethercat_hal::devices::el2521*
+```rust
 #[derive(Debug, Clone, Default, PdoObject, PartialEq)]
 #[pdo_object(bits = 16)]
 pub struct PtoStatus {
