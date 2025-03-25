@@ -32,7 +32,7 @@ impl Actor for DigitalOutputSetter {
     fn act(&mut self, _now_ts: u64) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
         Box::pin(async move {
             {
-                (self.output.write)(self.enabled).await;
+                (self.output.write)(self.enabled.into()).await;
             }
         })
     }

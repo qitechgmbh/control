@@ -4,8 +4,16 @@ use std::pin::Pin;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
+/// Analog Output (AO) device
+///
+/// We can write values in clip space (0 to 1) to the device. The voltage output depends on the
+/// device and its range.
 pub struct AnalogOutput {
-    pub write: Box<dyn Fn(f32) -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>,
+    /// Write a value to the analog output
+    pub write:
+        Box<dyn Fn(AnalogOutputOutput) -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>,
+
+    /// Read the state of the analog output
     pub state:
         Box<dyn Fn() -> Pin<Box<dyn Future<Output = AnalogOutputState> + Send>> + Send + Sync>,
 }
@@ -16,6 +24,7 @@ impl fmt::Debug for AnalogOutput {
     }
 }
 
+/// Implement on device that have analog outputs
 impl AnalogOutput {
     pub fn new<PORT>(device: Arc<RwLock<dyn AnalogOutputDevice<PORT>>>, port: PORT) -> AnalogOutput
     where
@@ -25,7 +34,7 @@ impl AnalogOutput {
         let port1 = port.clone();
         let device1 = device.clone();
         let write = Box::new(
-            move |value: f32| -> Pin<Box<dyn Future<Output = ()> + Send>> {
+            move |value: AnalogOutputOutput| -> Pin<Box<dyn Future<Output = ()> + Send>> {
                 let device_clone = device1.clone();
                 let port_clone = port1.clone();
                 Box::pin(async move {
@@ -62,11 +71,21 @@ pub struct AnalogOutputState {
 }
 
 #[derive(Debug, Clone)]
-pub struct AnalogOutputOutput {
-    pub value: f32,
+pub struct AnalogOutputOutput(pub f32);
+
+impl From<f32> for AnalogOutputOutput {
+    fn from(value: f32) -> Self {
+        AnalogOutputOutput(value)
+    }
+}
+
+impl From<AnalogOutputOutput> for f32 {
+    fn from(value: AnalogOutputOutput) -> Self {
+        value.0
+    }
 }
 
 pub trait AnalogOutputDevice<PORTS>: Send + Sync {
-    fn analog_output_write(&mut self, port: PORTS, value: f32);
+    fn analog_output_write(&mut self, port: PORTS, value: AnalogOutputOutput);
     fn analog_output_state(&self, port: PORTS) -> AnalogOutputState;
 }

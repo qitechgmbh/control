@@ -41,12 +41,12 @@ impl Actor for DigitalOutputBlinkers {
             let state = (self.outputs[0].as_ref().unwrap().state)().await;
             if state.output_ts - self.last_toggle > toggle_duration {
                 if let Some(output) = &self.outputs[self.index] {
-                    (output.write)(true).await;
+                    (output.write)(true.into()).await;
                 }
                 let index_end =
                     (self.index + self.outputs.len() - self.amount) % self.outputs.len();
                 if let Some(output) = &self.outputs[index_end] {
-                    (output.write)(false).await;
+                    (output.write)(false.into()).await;
                 }
                 self.last_toggle = state.output_ts;
                 self.index = (self.index + 1) % self.outputs.len();

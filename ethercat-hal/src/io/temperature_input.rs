@@ -1,9 +1,12 @@
+use crate::pdo::basic::Limit;
 use std::{fmt, future::Future, pin::Pin, sync::Arc};
 use tokio::sync::RwLock;
 
-use crate::pdo::basic::Limit;
-
+/// Temperature Input (TI) device
+///
+/// Reads temperature values from the device.
 pub struct TemperatureInput {
+    /// Read the state of the temperature input
     pub state:
         Box<dyn Fn() -> Pin<Box<dyn Future<Output = TemperatureInputState> + Send>> + Send + Sync>,
 }
@@ -51,36 +54,27 @@ pub struct TemperatureInputState {
 pub struct TemperatureInputInput {
     /// Temperature in degrees Celsius (°C) with a resolution of 0.1°C
     pub temperature: f32,
+
     /// Under-voltage error
     pub undervoltage: bool,
+
     /// Over-voltage error
     pub overvoltage: bool,
+
     /// Configured limit 1
     pub limit1: Limit,
+
     /// Configured limit 2
     pub limit2: Limit,
+
     /// Error flag
     pub error: bool,
+
     /// if the TxPdo state is valid
     pub txpdo_state: bool,
+
     /// if the TxPdo is toggled
     pub txpdo_toggle: bool,
-}
-
-#[derive(Debug, Clone, Copy)]
-pub enum TemperatureInputValid {
-    Valid,
-    Invalid,
-}
-
-impl TemperatureInputValid {
-    pub fn new(value: u8) -> Self {
-        match value {
-            0 => TemperatureInputValid::Valid,
-            1 => TemperatureInputValid::Invalid,
-            _ => unreachable!(),
-        }
-    }
 }
 
 pub trait TemperatureInputDevice<PORTS>: Send + Sync {

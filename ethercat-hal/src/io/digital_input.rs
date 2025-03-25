@@ -1,7 +1,11 @@
 use std::{fmt, future::Future, pin::Pin, sync::Arc};
 use tokio::sync::RwLock;
 
+/// Digital Input (DI) device
+///
+/// Reads digital values (true or false) from the device.
 pub struct DigitalInput {
+    /// Read the state of the digital input
     pub state:
         Box<dyn Fn() -> Pin<Box<dyn Future<Output = DigitalInputState> + Send>> + Send + Sync>,
 }
@@ -12,6 +16,7 @@ impl fmt::Debug for DigitalInput {
     }
 }
 
+/// Implement on device that have digital inputs
 impl DigitalInput {
     pub fn new<PORT>(device: Arc<RwLock<dyn DigitalInputDevice<PORT>>>, port: PORT) -> DigitalInput
     where

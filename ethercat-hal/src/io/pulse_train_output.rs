@@ -1,11 +1,15 @@
 use std::{fmt, future::Future, pin::Pin, sync::Arc};
-
 use tokio::sync::RwLock;
 
+/// Pulse Train Output (PTO) device
+///
+/// Generates digital puleses with a given frequency (not PWM) and counts them.
 pub struct PulseTrainOutput {
+    /// Write to the pulse train output
     pub write: Box<
         dyn Fn(PulseTrainOutputOutput) -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync,
     >,
+    /// Read the state of the pulse train output
     pub state:
         Box<dyn Fn() -> Pin<Box<dyn Future<Output = PulseTrainOutputState> + Send>> + Send + Sync>,
 }

@@ -36,9 +36,9 @@ impl Actor for DigitalOutputBlinker {
                 let toggle_duration = self.interval.as_nanos() as u64;
                 let state = (self.output.state)().await;
                 if state.output_ts - self.last_toggle > toggle_duration {
-                    match state.output.value {
-                        true => (self.output.write)(false).await,
-                        false => (self.output.write)(true).await,
+                    match state.output.into() {
+                        true => (self.output.write)(false.into()).await,
+                        false => (self.output.write)(true.into()).await,
                     }
                     self.last_toggle = state.output_ts;
                 }

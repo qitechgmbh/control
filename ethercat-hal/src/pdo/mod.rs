@@ -1,10 +1,10 @@
-use crate::coe::Configuration;
-use bitvec::prelude::*;
-
 pub mod basic;
 pub mod el252x;
 pub mod el30xx;
 pub mod el32xx;
+
+use crate::coe::Configuration;
+use bitvec::prelude::*;
 
 /// This trait allows to know the size of a PDO object in bits.
 ///
@@ -105,35 +105,28 @@ pub trait PredefinedPdoAssignment<TXPDOA, RXPDOA> {
 ///
 /// Since the different PDO object can be enabled/disable with the PDO assignments they are wrapped in an `Option`.
 ///
-/// Can be derived using the [`ethercat_hal_derive::TxPdo`] macro with the `#[pdo_object_index]` attribute.
+/// Can be derived using the [`ethercat_hal_derive::RxPdo`] macro with the `#[pdo_object_index]` attribute.
 ///
 /// ```rust,no_run
-/// #[derive(Debug, Clone, TxPdo)]
-/// pub struct EL1002TxPdo {
+/// #[derive(Debug, Clone, RxPdo)]
+/// pub struct EL2002RxPdo {
 ///     #[pdo_object_index(0x1600)]
 ///     pub channel1: Option<BoolPdoObject>,
 ///     #[pdo_object_index(0x1601)]
 ///     pub channel2: Option<BoolPdoObject>,
 /// }
 /// ```
-///
-/// Since it bounds to `Configuration` it can read the PDO assignment from the device using the [`TxPdo::read`] method.
-pub trait TxPdo: Configuration {
-    /// Get objects return an array of optional references to the PDO objects
+pub trait RxPdo: Configuration {
+    /// Get objects return an array of optinal references to the PDO objects
     ///
-    /// This method is commonly derived using the [`ethercat_hal_derive::TxPdo`] macro.
-    fn get_objects(&self) -> &[Option<&dyn TxPdoObject>];
-
-    /// Get mutable objects return an array of optional mutable references to the PDO objects
-    ///
-    /// This method is commonly derived using the [`ethercat_hal_derive::TxPdo`] macro.
-    fn get_objects_mut(&mut self) -> &mut [Option<&mut dyn TxPdoObject>];
+    /// This method is commonly derived using the [`ethercat_hal_derive::RxPdo`] macro.
+    fn get_objects(&self) -> &[Option<&dyn RxPdoObject>];
 
     /// Calculating the size of the PDO assignment in bits
     ///
     /// Only the PDO objects that are Some(_) are counted.
     ///
-    /// Will always be rounded to the next byte since not all bits are always used but space in the PDU is reserved on byte basis.
+    /// Will always be rouneded to the next byte since not all bits are always used but space in the PDU is reserved on byte basis.
     fn size(&self) -> usize {
         let used_bits = self
             .get_objects()
@@ -147,7 +140,64 @@ pub trait TxPdo: Configuration {
         return used_bits + padding;
     }
 
-    /// Reading the PDO assignment from the device
+    /// Will give the mutable PDU bit array to the PDO objects to encode the data
+    fn write(&self, buffer: &mut BitSlice<u8, Lsb0>) {
+        let mut bit_offset = 0;
+        for object in self.get_objects() {
+            if let Some(object) = object {
+                let end_bit_index = bit_offset + object.size();
+                object.write(&mut buffer[bit_offset..end_bit_index]);
+                bit_offset += object.size();
+            }
+        }
+    }
+}
+
+/// This trait is used on struct that hold all the possible PDO objects
+///
+/// Since the different PDO object can be enabled/disable with the PDO assignments they are wrapped in an `Option`.
+///
+/// Can be derived using the [`ethercat_hal_derive::RxPdo`] macro with the `#[pdo_object_index]` attribute.
+///
+/// ```rust,no_run
+/// #[derive(Debug, Clone, RxPdo)]
+/// pub struct EL1002TxPdo {
+///     #[pdo_object_index(0x1A00)]
+///     pub channel1: Option<BoolPdoObject>,
+///     #[pdo_object_index(0x1A01)]
+///     pub channel2: Option<BoolPdoObject>,
+/// }
+/// ```
+pub trait TxPdo: Configuration {
+    /// Get objects return an array of optinal references to the PDO objects
+    ///
+    /// This method is commonly derived using the [`ethercat_hal_derive::TxPdo`] macro.
+    fn get_objects(&self) -> &[Option<&dyn TxPdoObject>];
+
+    /// Get objects return an array of optinal mutable references to the PDO objects
+    ///
+    /// This method is commonly derived using the [`ethercat_hal_derive::TxPdo`] macro.
+    fn get_objects_mut(&mut self) -> &mut [Option<&mut dyn TxPdoObject>];
+
+    /// Calculating the size of the PDO assignment in bits
+    ///
+    /// Only the PDO objects that are Some(_) are counted.
+    ///
+    /// Will always be rouneded to the next byte since not all bits are always used but space in the PDU is reserved on byte basis.
+    fn size(&self) -> usize {
+        let used_bits = self
+            .get_objects()
+            .iter()
+            .map(|objects| objects.map(|object| object.size()).unwrap_or(0))
+            .sum::<usize>();
+        let padding = match used_bits % 8 {
+            0 => 0,
+            _ => 8 - used_bits % 8,
+        };
+        return used_bits + padding;
+    }
+
+    /// Will give the PDU bit array to the PDO objects to decode the data
     fn read(&mut self, buffer: &BitSlice<u8, Lsb0>) {
         let mut bit_offset = 0;
         for object in self.get_objects_mut().iter_mut() {

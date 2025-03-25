@@ -21,9 +21,9 @@ impl Actor for StepperDriverMaxSpeed {
     fn act(&mut self, _now_ts: u64) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
         Box::pin(async move {
             let state = (self.pulse.state)().await;
-            match state.output.value {
-                true => (self.pulse.write)(false).await,
-                false => (self.pulse.write)(true).await,
+            match state.output.into() {
+                true => (self.pulse.write)(false.into()).await,
+                false => (self.pulse.write)(true.into()).await,
             }
         })
     }

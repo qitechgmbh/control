@@ -1,9 +1,15 @@
 use std::{fmt, future::Future, pin::Pin, sync::Arc};
-
 use tokio::sync::RwLock;
 
+/// Digital Output (DO) device
+///
+/// Writes digital values (true or false) to the device.
 pub struct DigitalOutput {
-    pub write: Box<dyn Fn(bool) -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>,
+    /// Write a value to the digital output
+    pub write:
+        Box<dyn Fn(DigitalOutputOutput) -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>,
+
+    /// Read the state of the digital output
     pub state:
         Box<dyn Fn() -> Pin<Box<dyn Future<Output = DigitalOutputState> + Send>> + Send + Sync>,
 }
@@ -26,7 +32,7 @@ impl DigitalOutput {
         let port1 = port.clone();
         let device1 = device.clone();
         let write = Box::new(
-            move |value: bool| -> Pin<Box<dyn Future<Output = ()> + Send>> {
+            move |value: DigitalOutputOutput| -> Pin<Box<dyn Future<Output = ()> + Send>> {
                 let device_clone = device1.clone();
                 let port_clone = port1.clone();
                 Box::pin(async move {
@@ -57,21 +63,32 @@ impl DigitalOutput {
 pub struct DigitalOutputState {
     /// Nanosecond timestamp
     pub output_ts: u64,
-    /// Output value
-    /// true: high
-    /// false: low
+
     pub output: DigitalOutputOutput,
 }
 
+/// Output value
+/// true: high
+/// false: low
 #[derive(Debug, Clone)]
-pub struct DigitalOutputOutput {
-    pub value: bool,
+pub struct DigitalOutputOutput(pub bool);
+
+impl From<bool> for DigitalOutputOutput {
+    fn from(value: bool) -> Self {
+        DigitalOutputOutput(value)
+    }
+}
+
+impl From<DigitalOutputOutput> for bool {
+    fn from(value: DigitalOutputOutput) -> Self {
+        value.0
+    }
 }
 
 pub trait DigitalOutputDevice<PORT>: Send + Sync
 where
     PORT: Clone,
 {
-    fn digital_output_write(&mut self, port: PORT, value: bool);
+    fn digital_output_write(&mut self, port: PORT, value: DigitalOutputOutput);
     fn digital_output_state(&self, port: PORT) -> DigitalOutputState;
 }

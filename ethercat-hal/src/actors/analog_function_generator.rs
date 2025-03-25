@@ -29,7 +29,7 @@ impl Actor for AnalogFunctionGenerator {
             let state = (self.output.state)().await;
             let diff_ns = state.output_ts - self.offset_ts;
             let value = (self.function)(diff_ns);
-            (self.output.write)(value as f32).await;
+            (self.output.write)(value.into()).await;
         })
     }
 }

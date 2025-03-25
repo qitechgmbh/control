@@ -4,7 +4,12 @@ use std::pin::Pin;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
+/// Analog Input (AI) device
+///
+/// Reads normalized (-1.0 to 1.0) values from the device. These values con be converted to a moltage or mA
+/// depending on the type of device and its range.
 pub struct AnalogInput {
+    /// Read the state of the analog input
     pub state:
         Box<dyn Fn() -> Pin<Box<dyn Future<Output = AnalogInputState> + Send>> + Send + Sync>,
 }
@@ -15,6 +20,7 @@ impl fmt::Debug for AnalogInput {
     }
 }
 
+/// Implement on device that have analog inputs
 impl AnalogInput {
     pub fn new<PORT>(device: Arc<RwLock<dyn AnalogInputDevice<PORT>>>, port: PORT) -> AnalogInput
     where
@@ -39,14 +45,13 @@ impl AnalogInput {
 pub struct AnalogInputState {
     /// Nanosecond timestamp
     pub input_ts: u64,
-    /// Output value from 0.0 to 1.0
-    /// Voltage depends on the device
     pub input: AnalogInputInput,
 }
 
 #[derive(Debug, Clone)]
 pub struct AnalogInputInput {
     /// from -1.0 to 1.0
+    /// Can be converted to voltage or mA knowning the type and range of the device
     pub normalized: f32,
 }
 
