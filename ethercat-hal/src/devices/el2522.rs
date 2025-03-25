@@ -336,8 +336,6 @@ impl Default for EL2522Configuration {
     }
 }
 
-// ... (keep the rest of the code as is, including EL2522OperatingMode enum and Configuration trait implementation)
-
 impl Configuration for EL2522Configuration {
     async fn write_config<'a>(
         &self,

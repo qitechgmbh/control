@@ -69,4 +69,6 @@ There are mainly three different addressing modes but they have multiple names:
 
 **Further Reading**: [Addressing](https://infosys.beckhoff.com/english.php?content=../content/1033/ethercatsystem/2469080715.html&id=)
 
-## PDO
+## Device Configuration (CoE)
+Some device support can be configured before operational. We can configure the process data schema, metedata about connected sensors, operation modes, limits, and more.
+[Read how to configure devices with Ethercat HAL](./docs/coe.md)

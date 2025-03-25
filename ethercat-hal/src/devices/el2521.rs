@@ -119,7 +119,7 @@ pub struct EL2521Configuration {
     /// - `true` = The watchdog timer is deactivated
     ///
     /// The watchdog timer is activated in the delivery state.
-    /// Either the manufacturer's of the user's switch-on value
+    /// Either the manufacturer's or the user's switch-on value
     /// is output if the watchdog overflows
     ///
     /// default: `false`

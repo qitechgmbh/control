@@ -136,7 +136,9 @@ Other
     - [ ] Analog Input
     - [ ] EL3000er
     - [ ] Temperature Input
-  - [ ] Configuration (CoE) 
+  - [X] [Configuration (CoE)](./docs/coe.md)
+    - [X] Device Parameters
+    - [X] PDO Assignment
   - [X] [IO](./docs/io.md)
     - [X] Types
       - [X] Digital Input
