@@ -3,6 +3,8 @@ use crate::pdo::{basic::BoolPdoObject, RxPdo};
 use crate::types::EthercrabSubDevicePreoperational;
 use ethercat_hal_derive::{Device, RxPdo};
 
+use super::NewDevice;
+
 /// EL2634 4-channel relay device
 ///
 /// 250V AC / 30V DC / 4A per channel
@@ -18,8 +20,8 @@ impl std::fmt::Debug for EL2634 {
     }
 }
 
-impl EL2634 {
-    pub fn new() -> Self {
+impl NewDevice for EL2634 {
+    fn new() -> Self {
         Self {
             output_ts: 0,
             rxpdo: EL2634RxPdo::default(),

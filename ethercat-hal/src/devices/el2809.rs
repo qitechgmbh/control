@@ -3,6 +3,8 @@ use crate::pdo::{basic::BoolPdoObject, RxPdo};
 use crate::types::EthercrabSubDevicePreoperational;
 use ethercat_hal_derive::{Device, RxPdo};
 
+use super::NewDevice;
+
 /// EL2809 16-channel digital output device
 ///
 /// 24V DC, 0.5A per channel
@@ -18,8 +20,8 @@ impl std::fmt::Debug for EL2809 {
     }
 }
 
-impl EL2809 {
-    pub fn new() -> Self {
+impl NewDevice for EL2809 {
+    fn new() -> Self {
         Self {
             output_ts: 0,
             rxpdo: EL2809RxPdo::default(),

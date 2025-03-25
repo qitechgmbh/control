@@ -1,4 +1,4 @@
-use super::SubDeviceIdentityTuple;
+use super::{NewDevice, SubDeviceIdentityTuple};
 use crate::{
     coe::{ConfigurableDevice, Configuration},
     pdo::{
@@ -26,8 +26,8 @@ impl std::fmt::Debug for EL3001 {
     }
 }
 
-impl EL3001 {
-    pub fn new() -> Self {
+impl NewDevice for EL3001 {
+    fn new() -> Self {
         let configuration = EL3001Configuration::default();
         Self {
             input_ts: 0,

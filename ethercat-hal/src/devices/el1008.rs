@@ -1,4 +1,4 @@
-use super::SubDeviceIdentityTuple;
+use super::{NewDevice, SubDeviceIdentityTuple};
 use crate::io::digital_input::{DigitalInputDevice, DigitalInputInput, DigitalInputState};
 use crate::pdo::{basic::BoolPdoObject, PredefinedPdoAssignment, TxPdo};
 use crate::types::EthercrabSubDevicePreoperational;
@@ -19,8 +19,8 @@ impl std::fmt::Debug for EL1008 {
     }
 }
 
-impl EL1008 {
-    pub fn new() -> Self {
+impl NewDevice for EL1008 {
+    fn new() -> Self {
         Self {
             input_ts: 0,
             txpdo: EL1008TxPdo::default(),

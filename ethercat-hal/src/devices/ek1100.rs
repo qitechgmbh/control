@@ -1,9 +1,15 @@
-use super::SubDeviceIdentityTuple;
+use super::{NewDevice, SubDeviceIdentityTuple};
 use ethercat_hal_derive::Device;
 
 /// EK1100 bus coupler
 #[derive(Clone, Device)]
 pub struct EK1100 {}
+
+impl NewDevice for EK1100 {
+    fn new() -> Self {
+        Self {}
+    }
+}
 
 impl std::fmt::Debug for EK1100 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

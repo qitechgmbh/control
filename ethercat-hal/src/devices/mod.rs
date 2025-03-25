@@ -29,7 +29,7 @@ use ethercrab::{MainDevice, SubDeviceIdentity};
 use std::{any::Any, fmt::Debug, sync::Arc};
 use tokio::sync::RwLock;
 
-pub trait Device: Any + Send + Sync + Debug {
+pub trait Device: NewDevice + Any + Send + Sync + Debug {
     /// Input data from the last cycle
     /// `ts` is the timestamp when the input data was sent by the device
     fn input(&mut self, _input: &BitSlice<u8, Lsb0>);
@@ -83,6 +83,13 @@ pub trait Device: Any + Send + Sync + Debug {
     fn ts(&mut self, _input_ts: u64, _output_ts: u64);
 
     fn as_any(&self) -> &dyn Any;
+}
+
+pub trait NewDevice {
+    /// Create a new device
+    fn new() -> Self
+    where
+        Self: Sized;
 }
 
 pub async fn downcast_device<T: Device>(

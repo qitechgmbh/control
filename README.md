@@ -40,122 +40,80 @@ Other
 - [X] [Architecture & Data Flow](./docs/architecture-overview.md)
   - [X] Example Winder V2
 
-- [ ] Machine Implementation Guide
-  - [ ] Link: How to create a Device
-  - [ ] Link: How to create an Actor
-  - [ ] Link: How to create a Machine
-    - [ ] API (SocketIO + REST)
-    - [ ] Creation/Validation Logic
-      - [ ] Optional/Mandatory Devices
-      - [ ] Validate Devices
-    - [ ] Business Logic
-  - [ ] Link: How to create Machine Abstraction (Like Traverse/Puller/...)
-  - [ ] Forward `act` in winder.
-
 - [ ] Electron
-  - [ ] Folder Structure 
-  - [ ] Routing with TanStack Router
-  - [ ] Design with Tailwind & Shadcn 
+  - Folder Structure 
+  - Routing with TanStack Router
+  - Design with Tailwind & Shadcn 
+  - ...
 
 - [ ] Interfacing with Electron/Server
   - [ ] SocketIO
-    - [ ] Rooms & Caching
-    - [ ] Joining leaving rooms
-    - [ ] RoomId
-    - [ ] Our rooms vs native socketIO rooms
-    - [ ] Caching
-      - [ ] Serverside Caching
-      - [ ] Clientside Caching
-    - [ ] Machine Room
-    - [ ] Main Room
+    - Rooms & Caching
+    - Joining leaving rooms
+    - RoomId
+    - Our rooms vs native socketIO rooms
+    - Caching
+      - Serverside Caching
+      - Clientside Caching
+    - Machine Room
+    - Main Room
   - [ ] REST
-    - [ ] Machine Mutations
-    - [ ] Write Device Identification
+    - Machine Mutations
+    - Write Device Identification
 
-- [ ] Server
+- Server
   - [ ] Control Loop Setup
-    - [ ] Control Loop Thread
-      - [ ] Realtime
-    - [ ] Maindevice
-    - [ ] Group
-    - [ ] Extracting Device Identifications
-    - [ ] Identifying Groups
-    - [ ] Validating Machines
-    - [ ] Run Control Loop
+    - Control Loop Thread
+      - [ealtime
+    - Maindevice
+    - Group
+    - Extracting Device Identifications
+    - Identifying Groups
+    - Validating Machines
+    - Run Control Loop
   - [ ] Control Loop
-    - [ ] Ethercat TX/RX
-    - [ ] Reading Inputs
-    - [ ] Calling Actors
-    - [ ] Writing Outputs
+    - Ethercat TX/RX
+    - Reading Inputs
+    - Calling Actors
+    - Writing Outputs
   - [ ] Machine/Device Identification
-    - [ ] SubDevice Identity
-    - [ ] Identification design choices
-    - [ ] Machine/Device Identification Values
-    - [ ] Device Identification with EEPROM
-    - [ ] Grouping Devices
-    - [ ] Validating Device Groups to Machines
-    - [ ] How to: Identify a New Device
-      - [ ] Find free EEPROM words
-      - [ ] Get identity values and add them to pattern matching
+    - SubDevice Identity
+    - Identification design choices
+    - Machine/Device Identification Values
+    - Device Identification with EEPROM
+    - Grouping Devices
+    - Validating Device Groups to Machines
+    - How to: Identify a New Device
+      - Find free EEPROM words
+      - Get identity values and add them to pattern matching
   - [ ] Machines
-    - [ ] When to create a new Machine?
-    - [ ] Creating/Validating a Machine
-      - [ ] Validation
-      - [ ] Configuration
-
-
-  - [ ] IO
-  - [ ] How to: Full Device Implementation Guide
-    - [ ] Create Port
-    - [ ] implement IO Device Trait
-    - [ ] Create IO
-    - [ ] Create Tx/RxPDO
-    - [ ] Create PDO Assignment
-    - [ ] Create CoE
-    - [ ] Implement ConfigurableDevice
-
-- [X] [Ethercat Basics](./docs/ethercat-basics.md)
-  - [X] State Machine
-  - [X] Network Topology Packets
-  - [X] Master / Slave
-  - [X] Terms of Communication
-    - [X] SDO 
-    - [X] PDO 
-    - [X] Mailbox
-    - [X] CoE 
-    - [X] Commands
-  - [X] EEPROM
+    - When to create a new Machine?
+      - Versioning
+      - Code sharing
+    - Creating/Validating a Machine
+      - Validation
+      - Configuration
+  - [ ] Machine Implementation Guide
+    - Link: How to create a Device
+    - Link: How to create an Actor
+    - Link: How to create a Machine
+      - API (SocketIO + REST)
+      - Creation/Validation Logic
+        - Optional/Mandatory Devices
+        - Validate Devices
+      - Business Logic
+    - Link: How to create Machine Abstraction (Like Traverse/Puller/...)
+    - Forward `act` in winder.
 
 - [ ] Ethercat HAL
-  - [ ] Ethercat Devices
-    - [ ] Buscoupler
-    - [ ] Digital Input
-    - [ ] EL2000er
-    - [ ] Digital Output
-    - [ ] EL1000er
-    - [ ] Analog Input
-    - [ ] EL3000er
-    - [ ] Temperature Input
+  - [ ] Actors
+  - [X] [Devices](./docs/devices.md)
   - [X] [Configuration (CoE)](./docs/coe.md)
-    - [X] Device Parameters
-    - [X] PDO Assignment
   - [X] [IO](./docs/io.md)
-    - [X] Types
-      - [X] Digital Input
-      - [X] Digital Output
-      - [X] Analog Input
-      - [X] Temperature Input
-      - [X] Pulse Train Output
-    - [X] How to Use
-    - [X] How to Implement
   - [X] [PDO](./docs/pdo.md)
-    - [X] PDO Objects
-    - [ ] PDO "Primitives"
-      - [ ] Limit
-    - [X] Tx / Rx Meaning
-    - [X] Presets
-    - [X] PDO Assignment
+
+- [X] [Ethercat Basics](./docs/ethercat-basics.md)
 
 - [ ] Operating System
-  - [ ] Why
-  - [ ] How
+  - Why
+  - How

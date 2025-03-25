@@ -1,4 +1,4 @@
-use super::SubDeviceIdentityTuple;
+use super::{NewDevice, SubDeviceIdentityTuple};
 use crate::io::digital_output::{DigitalOutputDevice, DigitalOutputOutput, DigitalOutputState};
 use crate::pdo::{basic::BoolPdoObject, RxPdo};
 use crate::types::EthercrabSubDevicePreoperational;
@@ -19,8 +19,8 @@ impl std::fmt::Debug for EL2008 {
     }
 }
 
-impl EL2008 {
-    pub fn new() -> Self {
+impl NewDevice for EL2008 {
+    fn new() -> Self {
         Self {
             output_ts: 0,
             rxpdo: EL2008RxPdo::default(),

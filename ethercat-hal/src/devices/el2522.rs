@@ -1,4 +1,4 @@
-use super::SubDeviceIdentityTuple;
+use super::{NewDevice, SubDeviceIdentityTuple};
 use crate::{
     coe::{ConfigurableDevice, Configuration},
     io::pulse_train_output::{
@@ -30,9 +30,9 @@ impl std::fmt::Debug for EL2522 {
     }
 }
 
-impl EL2522 {
+impl NewDevice for EL2522 {
     /// Create a new EL2522 device with default configuration
-    pub fn new() -> Self {
+    fn new() -> Self {
         let configuration = EL2522Configuration::default();
         let txpdo = configuration.pdo_assignment.txpdo_assignment();
         let rxpdo = configuration.pdo_assignment.rxpdo_assignment();
