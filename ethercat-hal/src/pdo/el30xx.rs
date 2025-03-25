@@ -3,16 +3,33 @@ use ethercat_hal_derive::PdoObject;
 
 use super::{basic::Limit, TxPdoObject};
 
+/// PDO Object for EL30xx devices
+///
+/// The value is accompanied by some metadata.
 #[derive(Debug, Clone, Default, PdoObject, PartialEq)]
 #[pdo_object(bits = 32)]
 pub struct AiStandard {
+    /// The signal voltage is over the defined operating range of the device
     pub undervoltage: bool,
+
+    /// The signal volatge is under the defined operating range of the device
     pub overvoltage: bool,
+
+    /// Configurable limit 1
     pub limit1: Limit,
+
+    /// Configurable limit 2
     pub limit2: Limit,
+
     pub error: bool,
+
     pub txpdo_state: bool,
+
+    /// If the PDO objects data has changed since the last read
     pub txpdo_toggle: bool,
+
+    /// The 16bit analog value is unsigned here but devices could write signed value with different signing strategies.
+    /// This depends on the configuration of the device and the value has to be converted to i16 with custom logic.
     pub value: u16,
 }
 
@@ -36,9 +53,14 @@ impl TxPdoObject for AiStandard {
     }
 }
 
+/// PDO Object for EL30xx devices
+///
+/// The value without metadata.
 #[derive(Debug, Clone, Default, PdoObject, PartialEq)]
 #[pdo_object(bits = 16)]
 pub struct AiCompact {
+    /// The 16bit analog value is unsigned here but devices could write signed value with different signing strategies.
+    /// This depends on the configuration of the device and the value has to be converted to i16 with custom logic.
     pub value: u16,
 }
 

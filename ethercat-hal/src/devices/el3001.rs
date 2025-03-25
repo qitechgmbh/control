@@ -3,7 +3,7 @@ use crate::{
     coe::{ConfigurableDevice, Configuration},
     pdo::{
         el30xx::{AiCompact, AiStandard},
-        PdoPreset, TxPdo,
+        PredefinedPdoAssignment, TxPdo,
     },
     signing::Integer16,
 };
@@ -281,7 +281,7 @@ pub enum EL3001PdoPreset {
     Compact,
 }
 
-impl PdoPreset<EL3001TxPdo, EL3001RxPdo> for EL3001PdoPreset {
+impl PredefinedPdoAssignment<EL3001TxPdo, EL3001RxPdo> for EL3001PdoPreset {
     fn txpdo_assignment(&self) -> EL3001TxPdo {
         match self {
             EL3001PdoPreset::Standard => EL3001TxPdo {

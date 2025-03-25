@@ -3,6 +3,9 @@ use ethercat_hal_derive::PdoObject;
 
 use super::{RxPdoObject, TxPdoObject};
 
+/// PDO Object that is just a bool
+///
+/// Commonly sued in EL20xx devices
 #[derive(Debug, Clone, Default, PdoObject)]
 #[pdo_object(bits = 1)]
 pub struct BoolPdoObject {
@@ -21,6 +24,9 @@ impl RxPdoObject for BoolPdoObject {
     }
 }
 
+/// PDO Object that is just a f32
+///
+/// Commonly used in EL30xx devices
 #[derive(Debug, Clone, Default, PdoObject)]
 #[pdo_object(bits = 32)]
 pub struct F32PdoObject {
@@ -39,6 +45,11 @@ impl RxPdoObject for F32PdoObject {
     }
 }
 
+/// Not a PDO object, but a commonly used value in PDO objects.
+///
+/// A u8 is used to map represent 4 states of a configured limit.
+/// The type of limit depends on the device.
+/// The threshhold value is configured via CoE and is commonly deactivated in the base configuration.
 #[derive(Debug, Clone, PartialEq, Copy)]
 pub enum Limit {
     NotActive,

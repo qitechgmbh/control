@@ -1,6 +1,6 @@
 use super::SubDeviceIdentityTuple;
 use crate::io::digital_input::{DigitalInputDevice, DigitalInputInput, DigitalInputState};
-use crate::pdo::{basic::BoolPdoObject, PdoPreset, TxPdo};
+use crate::pdo::{basic::BoolPdoObject, PredefinedPdoAssignment, TxPdo};
 use crate::types::EthercrabSubDevicePreoperational;
 use ethercat_hal_derive::{Device, TxPdo};
 
@@ -115,7 +115,7 @@ pub enum EL1008PdoPreset {
     All,
 }
 
-impl PdoPreset<EL1008TxPdo, ()> for EL1008PdoPreset {
+impl PredefinedPdoAssignment<EL1008TxPdo, ()> for EL1008PdoPreset {
     fn txpdo_assignment(&self) -> EL1008TxPdo {
         match self {
             EL1008PdoPreset::All => EL1008TxPdo {

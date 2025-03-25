@@ -7,7 +7,7 @@ use crate::{
     },
     pdo::{
         el252x::{EncControl, EncStatus, PtoControl, PtoStatus, PtoTarget},
-        PdoPreset, RxPdo, TxPdo,
+        PredefinedPdoAssignment, RxPdo, TxPdo,
     },
     types::EthercrabSubDevicePreoperational,
 };
@@ -353,7 +353,7 @@ pub enum EL2521PdoPreset {
     EnhancedOperatingMode32Bit,
 }
 
-impl PdoPreset<EL2521TxPdo, EL2521RxPdo> for EL2521PdoPreset {
+impl PredefinedPdoAssignment<EL2521TxPdo, EL2521RxPdo> for EL2521PdoPreset {
     fn txpdo_assignment(&self) -> EL2521TxPdo {
         match self {
             EL2521PdoPreset::EnhancedOperatingMode32Bit => EL2521TxPdo {

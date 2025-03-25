@@ -3,16 +3,34 @@ use ethercat_hal_derive::PdoObject;
 
 use super::{basic::Limit, TxPdoObject};
 
+/// PDO Object for EL32xx (temperature sensing) devices
+///
+/// The "RTD Input" holds the value of a temperature sensor accompanied by some metadata.
 #[derive(Debug, Clone, Default, PdoObject, PartialEq)]
 #[pdo_object(bits = 32)]
 pub struct RtdInput {
+    /// The signal voltage is over the defined operating range of the device
     pub undervoltage: bool,
+
+    /// The signal voltage is under the defined operating range of the device
     pub overvoltage: bool,
+
+    /// Configurable limit 1
     pub limit1: Limit,
+
+    /// Configurable limit 2
     pub limit2: Limit,
+
     pub error: bool,
+
     pub txpdo_state: bool,
+
+    /// If the PDO objects data has changed since the last read
     pub txpdo_toggle: bool,
+
+    /// Temperature in degrees celsius
+    ///
+    /// The temperature is accurate to 0.1 degrees celsius.
     pub temperature: f32,
 }
 

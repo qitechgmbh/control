@@ -7,7 +7,7 @@ use crate::{
     },
     pdo::{
         el252x::{EncControl, EncStatus, PtoControl, PtoStatus, PtoTarget},
-        PdoPreset, RxPdo, TxPdo,
+        PredefinedPdoAssignment, RxPdo, TxPdo,
     },
     types::EthercrabSubDevicePreoperational,
 };
@@ -479,7 +479,7 @@ pub enum EL2522PdoPreset {
     Standart32Bit,
 }
 
-impl PdoPreset<EL2522TxPdo, EL2522RxPdo> for EL2522PdoPreset {
+impl PredefinedPdoAssignment<EL2522TxPdo, EL2522RxPdo> for EL2522PdoPreset {
     fn txpdo_assignment(&self) -> EL2522TxPdo {
         match self {
             EL2522PdoPreset::Standart32Bit => EL2522TxPdo {

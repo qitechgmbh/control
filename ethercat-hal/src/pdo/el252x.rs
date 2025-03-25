@@ -2,15 +2,28 @@ use super::{RxPdoObject, TxPdoObject};
 use bitvec::{field::BitField, order::Lsb0, slice::BitSlice};
 use ethercat_hal_derive::PdoObject;
 
+/// PDO Object for EL252x devices
+/// 
+/// "PTO Status" contains status information about the pulse train output.
 #[derive(Debug, Clone, Default, PdoObject, PartialEq)]
 #[pdo_object(bits = 16)]
 pub struct PtoStatus {
     pub select_end_counter: bool,
+
+    /// Device is currenly ramping (accelerating/decelerating)
     pub ramp_active: bool,
+
+    /// The input pin T is high
     pub input_t: bool,
+
+    /// The input pin Z is high
     pub input_z: bool,
+
     pub error: bool,
+    
     pub sync_error: bool,
+    
+    /// If the PDO objects data has changed since the last read
     pub txpdo_toggle: bool,
 }
 
@@ -27,14 +40,28 @@ impl TxPdoObject for PtoStatus {
     }
 }
 
+
+/// PDO Object for EL252x devices
+/// 
+/// "Encoder Status" contains the encoder status information.
 #[derive(Debug, Clone, Default, PdoObject, PartialEq)]
 #[pdo_object(bits = 48)]
 pub struct EncStatus {
+    /// Acknowedges the set counter command of the last cycle
     pub set_counter_done: bool,
+
+    /// If the real positon is less than the u32 position and the counter underflowed
     pub counter_underflow: bool,
+
+    /// If the real positon is greater than the u32 position and the counter overflowed
     pub counter_overflow: bool,
+
     pub sync_error: bool,
+
+    /// If the PDO objects data has changed since the last read
     pub txpdo_toggle: bool,
+
+    /// The counted position/pulses by the encoder
     pub counter_value: u32,
 }
 
@@ -49,12 +76,20 @@ impl TxPdoObject for EncStatus {
     }
 }
 
+/// PDO Object for EL252x devices
+/// 
+/// "PTO Control" is used to control the pulse train output.
 #[derive(Debug, Clone, Default, PdoObject)]
 #[pdo_object(bits = 32)]
 pub struct PtoControl {
     pub frequency_select: bool,
+    
+    /// Disable ramping (acceleration/deceleration algorithm by the device)
     pub disble_ramp: bool,
+    
     pub go_counter: bool,
+    
+    /// Pulse frequency value in Hz
     pub frequency_value: i32,
 }
 
@@ -68,9 +103,16 @@ impl RxPdoObject for PtoControl {
     }
 }
 
+
+/// PDO Object for EL252x devices
+/// 
+/// "PTO Target" is used to set the target position of the pulse train output.
 #[derive(Debug, Clone, Default, PdoObject)]
 #[pdo_object(bits = 32)]
 pub struct PtoTarget {
+    /// Target position in pulses
+    /// 
+    /// Target of the [`EncStatus::counter_value`] field
     pub target_counter_value: u32,
 }
 
@@ -80,10 +122,15 @@ impl RxPdoObject for PtoTarget {
     }
 }
 
+/// PDO Object for EL252x devices
+/// 
+/// "Encoder Control" is used to control the encoder.
 #[derive(Debug, Clone, Default, PdoObject)]
 #[pdo_object(bits = 48)]
 pub struct EncControl {
+    /// Set to `true` when wanting to override the encoder position
     pub set_counter: bool,
+    /// Value to set the encoder to
     pub set_counter_value: u32,
 }
 
