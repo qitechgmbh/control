@@ -103,18 +103,7 @@ Other
       - [ ] Validation
       - [ ] Configuration
 
-- [ ] Ethercat HAL
-  - [ ] Devices/PDO
-  - [ ] CoE Theory
-    - [ ] Parameters
-    - [ ] PDO Assignment
-  - [ ] PDO Theory
-    - [ ] PDO Objects
-    - [ ] PDO "Primitives"
-      - [ ] Limit
-    - [ ] Tx / Rx Meaning
-    - [ ] Presets
-    - [ ] Mapping
+
   - [ ] IO
   - [ ] How to: Full Device Implementation Guide
     - [ ] Create Port
@@ -138,16 +127,32 @@ Other
   - [X] EEPROM
 
 - [ ] Ethercat HAL
-- [ ] Ethercat Devices
-  - [ ] Buscoupler
-  - [ ] Digital Input
-  - [ ] EL2000er
-  - [ ] Digital Output
-  - [ ] EL1000er
-  - [ ] Analog Input
-  - [ ] EL3000er
-  - [ ] Temperature Input
-- [X] [PDO](./docs/pdo.md)
+  - [ ] Ethercat Devices
+    - [ ] Buscoupler
+    - [ ] Digital Input
+    - [ ] EL2000er
+    - [ ] Digital Output
+    - [ ] EL1000er
+    - [ ] Analog Input
+    - [ ] EL3000er
+    - [ ] Temperature Input
+  - [ ] Configuration (CoE) 
+  - [X] [IO](./docs/io.md)
+    - [X] Types
+      - [X] Digital Input
+      - [X] Digital Output
+      - [X] Analog Input
+      - [X] Temperature Input
+      - [X] Pulse Train Output
+    - [X] How to Use
+    - [X] How to Implement
+  - [X] [PDO](./docs/pdo.md)
+    - [X] PDO Objects
+    - [ ] PDO "Primitives"
+      - [ ] Limit
+    - [X] Tx / Rx Meaning
+    - [X] Presets
+    - [X] PDO Assignment
 
 - [ ] Operating System
   - [ ] Why

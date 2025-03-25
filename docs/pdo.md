@@ -21,9 +21,11 @@ There is a **RxPdo Assignment** and a **TxPdo Assignment**.
 
 ### PDO Object
 
-The PDO objects describe the encoding of the data. The content of the **PDO Object** are pointers to variables.
-Each variable has a type, name and length.
+The PDO objects describe the encoding of the data. The content of the **PDO Object** are pointers to variables, but we can ignore this deeper logic since we only need the index (like `0x1A..` for inputs and `0x16..` for outputs) for the PDO assignment. Based on the selected PDO objects we cen implement bitwise encoding and decoding of the data.
 
+There PDO object contents use variables with common variable types which are also available in Rust like `u8`, `u16`, `u32`, `bool`, `f32`, ect. Somtimes class-like data is represented by an `u8` where it makes sense to write a wrapper enum. For example the common `Limit` type which encode four different states (`0x00`, `0x01`, `0x10`, `0x11`) in an `u8`.
+
+Sometimes its also possible to configure the integer signing type of an integer value. Here it makes sense to implement a wrapper and store the value as a raw `u16` wether it unsigned or signed.
 
 ### Predefined PDO Assignments
 
