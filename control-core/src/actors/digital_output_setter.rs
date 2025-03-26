@@ -1,7 +1,6 @@
 use super::Actor;
-use crate::io::digital_output::DigitalOutput;
-use std::{future::Future, pin::Pin, sync::Arc};
-use tokio::sync::RwLock;
+use ethercat_hal::io::digital_output::DigitalOutput;
+use std::{future::Future, pin::Pin};
 
 /// Set a digital output high and low with a given interval
 #[derive(Debug)]
@@ -35,11 +34,5 @@ impl Actor for DigitalOutputSetter {
                 (self.output.write)(self.enabled.into()).await;
             }
         })
-    }
-}
-
-impl From<DigitalOutputSetter> for Arc<RwLock<DigitalOutputSetter>> {
-    fn from(actor: DigitalOutputSetter) -> Self {
-        Arc::new(RwLock::new(actor))
     }
 }

@@ -7,10 +7,11 @@ rust-version = "1.86"
 
 [dependencies]
 
-# etehrcat
+# ethercat
 network-interface = "2.0.0"
 ethercrab = { git = "https://github.com/jamwaffles/ethercrab.git", rev = "1ced48a65165665cef6fb6b2b40464be085f338b" }
-ethercat_hal = { version = "0.1.0", path = "../ethercat-hal" }
+ethercat_hal = { path = "../ethercat-hal" }
+control_core = { path = "../control-core" }
 
 # concurrency
 thread-priority = "1.2.0"

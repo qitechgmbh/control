@@ -1,5 +1,5 @@
 use super::WinderV1;
-use ethercat_hal::actors::Actor;
+use control_core::actors::Actor;
 
 impl Actor for WinderV1 {
     fn act(

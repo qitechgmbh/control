@@ -1,8 +1,6 @@
 use super::Actor;
-use crate::io::analog_output::AnalogOutput;
-use ethercrab::std::ethercat_now;
-use std::{f32::consts::PI, future::Future, pin::Pin, sync::Arc};
-use tokio::sync::RwLock;
+use ethercat_hal::io::analog_output::AnalogOutput;
+use std::{f32::consts::PI, future::Future, pin::Pin};
 use uom::si::{angle::radian, f32::Angle, ratio::ratio};
 pub type AnalogFunction = Box<dyn Fn(u64) -> f32 + Send + Sync>;
 
@@ -18,7 +16,7 @@ impl AnalogFunctionGenerator {
         Self {
             output,
             function,
-            offset_ts: ethercat_now(),
+            offset_ts: 0,
         }
     }
 }
@@ -31,12 +29,6 @@ impl Actor for AnalogFunctionGenerator {
             let value = (self.function)(diff_ns);
             (self.output.write)(value.into()).await;
         })
-    }
-}
-
-impl From<AnalogFunctionGenerator> for Arc<RwLock<AnalogFunctionGenerator>> {
-    fn from(actor: AnalogFunctionGenerator) -> Self {
-        Arc::new(RwLock::new(actor))
     }
 }
 

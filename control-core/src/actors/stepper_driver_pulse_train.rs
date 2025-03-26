@@ -1,9 +1,8 @@
 use super::Actor;
-use crate::io::pulse_train_output::{
+use ethercat_hal::io::pulse_train_output::{
     PulseTrainOutput, PulseTrainOutputInput, PulseTrainOutputOutput,
 };
-use std::{future::Future, pin::Pin, sync::Arc};
-use tokio::sync::RwLock;
+use std::{future::Future, pin::Pin};
 
 /// Set a digital output high and low with a given interval
 #[derive(Debug)]
@@ -64,11 +63,5 @@ impl<'ptodevice> StepperDriverPulseTrain {
                 self.counter_cleared_last = true;
             }
         }
-    }
-}
-
-impl<'ptodevice> From<StepperDriverPulseTrain> for Arc<RwLock<StepperDriverPulseTrain>> {
-    fn from(actor: StepperDriverPulseTrain) -> Self {
-        Arc::new(RwLock::new(actor))
     }
 }

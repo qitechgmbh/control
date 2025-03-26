@@ -8,8 +8,9 @@ use crate::socketio::event::EventBuilder;
 use crate::socketio::room::room::RoomCacheingLogic;
 use api::{MeasurementsTensionArmEvent, TraverseStateEvent, Winder1Events, Winder1Room};
 use chrono::DateTime;
-use ethercat_hal::actors::digital_output_setter::DigitalOutputSetter;
-use ethercat_hal::actors::stepper_driver_pulse_train::StepperDriverPulseTrain;
+use control_core::actors::{
+    digital_output_setter::DigitalOutputSetter, stepper_driver_pulse_train::StepperDriverPulseTrain,
+};
 use tension_arm::TensionArm;
 use uom::si::angle::degree;
 

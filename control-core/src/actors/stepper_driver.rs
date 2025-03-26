@@ -1,11 +1,8 @@
-use tokio::sync::RwLock;
-
 use super::Actor;
-use crate::io::digital_output::DigitalOutput;
+use ethercat_hal::io::digital_output::DigitalOutput;
 use std::{
     future::Future,
     pin::Pin,
-    sync::Arc,
     time::{Duration, SystemTime},
 };
 
@@ -51,9 +48,3 @@ impl StepperDriver {
 //         })
 //     }
 // }
-
-impl From<StepperDriver> for Arc<RwLock<StepperDriver>> {
-    fn from(actor: StepperDriver) -> Self {
-        Arc::new(RwLock::new(actor))
-    }
-}

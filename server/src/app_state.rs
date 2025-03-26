@@ -6,7 +6,8 @@ use crate::{
     machines::Machine,
     socketio::rooms::Rooms,
 };
-use ethercat_hal::{actors::Actor, devices::Device};
+use control_core::actors::Actor;
+use ethercat_hal::devices::Device;
 use ethercrab::{subdevice_group::Op, MainDevice, SubDeviceGroup};
 use socketioxide::SocketIo;
 use std::sync::Arc;

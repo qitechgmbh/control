@@ -3,7 +3,7 @@ pub mod registry;
 pub mod winder1;
 
 use crate::socketio::room::room::RoomInterface;
-use ethercat_hal::actors::Actor;
+use control_core::actors::Actor;
 use new::MachineNewTrait;
 use serde_json::Value;
 use std::{any::Any, fmt::Debug};

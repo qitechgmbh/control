@@ -1,7 +1,6 @@
 use super::Actor;
-use crate::io::digital_output::DigitalOutput;
-use std::{future::Future, pin::Pin, sync::Arc, time::Duration};
-use tokio::sync::RwLock;
+use ethercat_hal::io::digital_output::DigitalOutput;
+use std::{future::Future, pin::Pin, time::Duration};
 
 /// Set a series of digital outputs high in sequence with a given interval
 pub struct DigitalOutputBlinkers {
@@ -52,11 +51,5 @@ impl Actor for DigitalOutputBlinkers {
                 self.index = (self.index + 1) % self.outputs.len();
             }
         })
-    }
-}
-
-impl From<DigitalOutputBlinkers> for Arc<RwLock<DigitalOutputBlinkers>> {
-    fn from(actor: DigitalOutputBlinkers) -> Self {
-        Arc::new(RwLock::new(actor))
     }
 }

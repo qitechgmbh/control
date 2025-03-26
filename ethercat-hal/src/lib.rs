@@ -1,4 +1,3 @@
-pub mod actors;
 pub mod coe;
 pub mod devices;
 pub mod io;

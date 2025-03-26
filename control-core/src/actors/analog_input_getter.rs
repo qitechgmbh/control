@@ -1,7 +1,6 @@
 use super::Actor;
-use crate::io::analog_input::AnalogInput;
+use ethercat_hal::io::analog_input::AnalogInput;
 use std::{future::Future, pin::Pin, sync::Arc};
-use tokio::sync::RwLock;
 use uom::si::{
     electric_current::milliampere,
     electric_potential::volt,
@@ -104,11 +103,5 @@ impl Actor for AnalogInputGetter {
             let state = (self.input.state)().await;
             self.normalized = Some(state.input.normalized);
         })
-    }
-}
-
-impl From<AnalogInputGetter> for Arc<RwLock<AnalogInputGetter>> {
-    fn from(actor: AnalogInputGetter) -> Self {
-        Arc::new(RwLock::new(actor))
     }
 }

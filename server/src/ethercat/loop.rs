@@ -10,7 +10,7 @@ use crate::{
     ethercat::config::{MAX_FRAMES, MAX_PDU_DATA, MAX_SUBDEVICES, PDI_LEN},
 };
 use bitvec::prelude::*;
-use ethercat_hal::actors::Actor;
+use control_core::actors::Actor;
 use ethercat_hal::devices::devices_from_subdevices;
 use ethercrab::std::{ethercat_now, tx_rx_task};
 use ethercrab::{MainDevice, MainDeviceConfig, PduStorage, RetryBehaviour, Timeouts};

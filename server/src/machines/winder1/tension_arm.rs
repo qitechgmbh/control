@@ -1,4 +1,4 @@
-use ethercat_hal::actors::analog_input_getter::AnalogInputGetter;
+use control_core::actors::analog_input_getter::AnalogInputGetter;
 use uom::si::{angle::revolution, f32::Angle};
 
 #[derive(Debug)]

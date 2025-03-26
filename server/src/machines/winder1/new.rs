@@ -8,9 +8,9 @@ use crate::machines::new::{
 };
 use crate::machines::MachineNewTrait;
 use anyhow::Error;
-use ethercat_hal::actors::analog_input_getter::{AnalogInputDevice, AnalogInputGetter};
-use ethercat_hal::actors::digital_output_setter::DigitalOutputSetter;
-use ethercat_hal::actors::stepper_driver_pulse_train::StepperDriverPulseTrain;
+use control_core::actors::analog_input_getter::{AnalogInputDevice, AnalogInputGetter};
+use control_core::actors::digital_output_setter::DigitalOutputSetter;
+use control_core::actors::stepper_driver_pulse_train::StepperDriverPulseTrain;
 use ethercat_hal::coe::ConfigurableDevice;
 use ethercat_hal::devices::el2002::{EL2002Port, EL2002};
 use ethercat_hal::devices::el2521::{EL2521Configuration, EL2521Port, EL2521};

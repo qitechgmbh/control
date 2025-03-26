@@ -433,6 +433,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "control_core"
+version = "0.1.0"
+dependencies = [
+ "ethercat_hal",
+ "stepper_driver",
+ "uom",
+]
+
+[[package]]
 name = "core-foundation-sys"
 version = "0.8.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1932,6 +1941,7 @@ dependencies = [
  "axum",
  "bitvec",
  "chrono",
+ "control_core",
  "env_logger",
  "ethercat_hal",
  "ethercrab",

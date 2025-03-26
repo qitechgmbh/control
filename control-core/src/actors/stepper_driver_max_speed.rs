@@ -1,5 +1,5 @@
 use super::Actor;
-use crate::io::digital_output::DigitalOutput;
+use ethercat_hal::io::digital_output::DigitalOutput;
 use std::{
     future::Future,
     pin::Pin,

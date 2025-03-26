@@ -12,7 +12,7 @@ Backend
 - `/stepper-driver`: Generic stepper driver for absolute, relative & speed movements with PID controllers.
 - `/ethercat-hal`: Hardware abstraction layer for Beckhoff (and possibly other EtherCat) devices and protocols.
 - `/ethercat-hal-derive`: Macros for `ethercat-hal`
-- `/ethercrab`: Fork of `ethercrab` for ad-hoc changes.
+- `/control-core`: Core control logic for the server.
 
 Operating System
 - `/nixos`: Custom Linux with realtime kernel & preconfigured for touchscreens.
@@ -64,7 +64,7 @@ Other
 - Server
   - [ ] Control Loop Setup
     - Control Loop Thread
-      - [ealtime
+      - [ ] realtime
     - Maindevice
     - Group
     - Extracting Device Identifications
@@ -105,8 +105,10 @@ Other
     - Link: How to create Machine Abstraction (Like Traverse/Puller/...)
     - Forward `act` in winder.
 
-- [ ] Ethercat HAL
+- [ ] Control Core
   - [ ] Actors
+
+- [X] Ethercat HAL
   - [X] [Devices](./docs/devices.md)
   - [X] [Configuration (CoE)](./docs/coe.md)
   - [X] [IO](./docs/io.md)
