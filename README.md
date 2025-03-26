@@ -48,13 +48,6 @@ Other
 
 - [ ] Interfacing with Electron/Server
   - [ ] SocketIO
-    - Rooms & Caching
-    - Joining leaving rooms
-    - RoomId
-    - Our rooms vs native socketIO rooms
-    - Caching
-      - Serverside Caching
-      - Clientside Caching
     - Machine Room
     - Main Room
   - [ ] REST
@@ -106,7 +99,16 @@ Other
     - Forward `act` in winder.
 
 - [ ] Control Core
-  - [ ] Actors
+  - [X] [Actors](./docs/actors.md)
+  - [ ] SocketIO
+    - Rooms & Caching
+    - Joining leaving rooms
+    - RoomId
+    - Our rooms vs native socketIO rooms
+    - Caching
+      - Serverside Caching
+      - Clientside Caching
+  - [ ] REST
 
 - [X] Ethercat HAL
   - [X] [Devices](./docs/devices.md)
