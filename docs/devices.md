@@ -59,28 +59,26 @@ There can be multiple revisions for one product ID which should be supported by 
 
 For each revision, we need a tuple combining all three values. This makes pattern matching easier.
 ```rust
-pub const EL2008_VENDOR_ID: u32 = 0x2;
-pub const EL2008_PRODUCT_ID: u32 = 0x07d83052;
-pub const EL2008_REVISION_A: u32 = 0x00110000;
+pub const EL0000_VENDOR_ID: u32 = 0x2;
+pub const EL0000_PRODUCT_ID: u32 = 0x07d83052;
+pub const EL0000_REVISION_A: u32 = 0x00110000;
 
-pub const EL2008_IDENTITY_A: SubDeviceIdentityTuple =
-        (EL2008_VENDOR_ID, EL2008_PRODUCT_ID, EL2008_REVISION_A);
+pub const EL0000_IDENTITY_A: SubDeviceIdentityTuple =
+        (EL0000_VENDOR_ID, EL0000_PRODUCT_ID, EL0000_REVISION_A);
 ```
 
-## Link constructor in `server` crate
+## Creation
 
 Add the device constructor to the `device_from_subdevice` function in the `server` crate.
 This function is used to create the device at runtime.
 
 ```rust
-pub fn device_from_subdevice(
-    subdevice_name: &str,
+pub fn (
+    subdevice_identity_tuple: SubDeviceIdentityTuple,
 ) -> Result<Arc<RwLock<dyn Device>>, anyhow::Error> {
-    match subdevice_name {
-        "EL0000" => Ok(Arc::new(RwLock::new(EL0000::new()))),
+    match subdevice_identity_tuple {
+        EK0000_IDENTITY_A => Ok(Arc::new(RwLock::new(EL0000::new()))),
         // ...
     }
 }
 ```
-
-TODO: Refactor code to use identity tuple instead of subdevice name.
