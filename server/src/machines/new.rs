@@ -2,8 +2,8 @@ use crate::ethercat::device_identification::MachineDeviceIdentification;
 use anyhow::Error;
 use ethercat_hal::{devices::Device, types::EthercrabSubDevicePreoperational};
 use ethercrab::{SubDevice, SubDeviceRef};
+use smol::lock::RwLock;
 use std::sync::Arc;
-use tokio::sync::RwLock;
 
 use super::Machine;
 

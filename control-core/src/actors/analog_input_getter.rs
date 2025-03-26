@@ -1,6 +1,6 @@
 use super::Actor;
 use ethercat_hal::io::analog_input::AnalogInput;
-use std::{future::Future, pin::Pin, sync::Arc};
+use std::{future::Future, pin::Pin};
 use uom::si::{
     electric_current::milliampere,
     electric_potential::volt,

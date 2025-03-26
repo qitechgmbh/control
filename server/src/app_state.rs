@@ -12,7 +12,7 @@ use ethercrab::{subdevice_group::Op, MainDevice, SubDeviceGroup};
 use socketioxide::SocketIo;
 use std::sync::Arc;
 use std::{collections::HashMap, sync::LazyLock};
-use tokio::sync::RwLock;
+use smol::lock::RwLock;
 
 pub struct SocketioSetup {
     pub socketio: RwLock<Option<SocketIo>>,

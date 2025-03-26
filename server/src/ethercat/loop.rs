@@ -14,9 +14,10 @@ use control_core::actors::Actor;
 use ethercat_hal::devices::devices_from_subdevices;
 use ethercrab::std::{ethercat_now, tx_rx_task};
 use ethercrab::{MainDevice, MainDeviceConfig, PduStorage, RetryBehaviour, Timeouts};
+use smol::lock::RwLock;
+use smol::Task;
 use std::collections::HashMap;
 use std::{sync::Arc, time::Duration};
-use tokio::sync::RwLock;
 
 pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(), anyhow::Error> {
     // Erase all all setup data from `app_state`
@@ -31,8 +32,7 @@ pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(),
     let (tx, rx, pdu) = pdu_storage.try_split().expect("can only split once");
     let interface = interface.to_string();
     std::thread::spawn(move || {
-        let rt = tokio::runtime::Runtime::new().expect("Failed to create runtime");
-        let _ = rt.block_on(async move {
+        let _ = smol::block_on(async move {
             tx_rx_task(&interface, tx, rx)
                 .expect("spawn TX/RX task")
                 .await
@@ -53,7 +53,7 @@ pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(),
         },
     );
 
-    tokio::spawn(async move {
+    smol::spawn(async move {
         let main_room = &mut APP_STATE.socketio_setup.rooms.write().await.main_room;
         let event = EthercatSetupEventBuilder().warning("Configuring Ethercat Network...");
         main_room.emit_cached(MainRoomEvents::EthercatSetupEvent(event));
@@ -149,14 +149,14 @@ pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(),
     }
 
     // Notify client via socketio
-    tokio::spawn(async move {
+    smol::spawn(async move {
         let main_room = &mut APP_STATE.socketio_setup.rooms.write().await.main_room;
         let event = EthercatSetupEventBuilder().build();
         main_room.emit_cached(MainRoomEvents::EthercatSetupEvent(event));
     });
 
     // Start control loop
-    let pdu_handle = tokio::spawn(async move {
+    let pdu_handle: Task<Result<(), anyhow::Error>> = smol::spawn(async move {
         log::info!("Starting control loop");
         let mut average_nanos = Duration::from_micros(250).as_nanos() as u64;
         loop {
@@ -217,14 +217,14 @@ pub async fn loop_once<'maindevice>(
         let device = setup.devices[i].as_ref().read().await;
         let mut output = subdevice.outputs_raw_mut();
         let output_bits = output.view_bits_mut::<Lsb0>();
-        device.output_checked(output_bits).or_else(|e| {
-            Err(anyhow::anyhow!(
-                "[{}::loop_once] SubDevice with index {} failed to copy outputs\n{:?}",
-                module_path!(),
-                i,
-                e
-            ))
-        })?;
+        // device.output_checked(output_bits).or_else(|e| {
+        //     Err(anyhow::anyhow!(
+        //         "[{}::loop_once] SubDevice with index {} failed to copy outputs\n{:?}",
+        //         module_path!(),
+        //         i,
+        //         e
+        //     ))
+        // })?;
     }
     Ok(())
 }

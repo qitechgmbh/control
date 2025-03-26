@@ -6,16 +6,11 @@ use thread_priority::{ThreadBuilderExt, ThreadPriority};
 pub fn init_ethercat(app_state: Arc<AppState>) {
     let interface = "en6";
 
-    tokio::spawn(async move {
+    smol::spawn(async move {
         std::thread::Builder::new()
             .name("EthercatThread".to_owned())
             .spawn_with_priority(ThreadPriority::Max, move |_| {
-                let runtime = tokio::runtime::Builder::new_current_thread()
-                    .enable_all()
-                    .build()
-                    .unwrap();
-
-                runtime.block_on(async {
+                smol::block_on(async {
                     log::info!("Starting Ethercat PDU loop");
                     let result = setup_loop(interface, app_state.clone()).await;
                     if let Err(e) = result {

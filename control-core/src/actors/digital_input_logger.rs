@@ -1,7 +1,6 @@
 use super::Actor;
 use ethercat_hal::io::digital_input::DigitalInput;
 use std::{future::Future, pin::Pin};
-
 /// Log the state of a digital input
 pub struct DigitalInputLogger {
     input: DigitalInput,

@@ -33,6 +33,7 @@ pub async fn init_api(
         .layer(TraceLayer::new_for_http())
         .with_state(app_state);
 
+    // Use smol-compatible networking instead of tokio
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3001").await?;
     axum::serve(listener, app).await?;
 

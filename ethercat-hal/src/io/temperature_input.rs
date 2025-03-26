@@ -1,6 +1,6 @@
 use crate::pdo::basic::Limit;
 use std::{fmt, future::Future, pin::Pin, sync::Arc};
-use tokio::sync::RwLock;
+use smol::lock::RwLock;
 
 /// Temperature Input (TI) device
 ///

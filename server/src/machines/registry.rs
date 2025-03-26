@@ -12,7 +12,7 @@ use std::{
     collections::HashMap,
     sync::Arc,
 };
-use tokio::sync::RwLock;
+use smol::lock::RwLock;
 
 pub struct MachineRegistry {
     type_map: HashMap<TypeId, (MachineIdentification, MachineNewFn)>,

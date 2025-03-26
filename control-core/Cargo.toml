@@ -5,5 +5,6 @@ edition = "2024"
 
 [dependencies]
 ethercat_hal = { path = "../ethercat-hal" }
+smol = "2.0.2"
 stepper_driver = { path = "../stepper-driver" }
 uom = "0.36.0"

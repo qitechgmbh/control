@@ -1,5 +1,5 @@
+use smol::lock::RwLock;
 use std::{fmt, future::Future, pin::Pin, sync::Arc};
-use tokio::sync::RwLock;
 
 /// Digital Output (DO) device
 ///

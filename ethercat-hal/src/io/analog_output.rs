@@ -1,8 +1,8 @@
+use smol::lock::RwLock;
 use std::fmt;
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
-use tokio::sync::RwLock;
 
 /// Analog Output (AO) device
 ///

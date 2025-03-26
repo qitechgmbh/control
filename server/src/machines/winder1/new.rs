@@ -32,7 +32,7 @@ use ethercat_hal::io::pulse_train_output::PulseTrainOutput;
 use ethercat_hal::types::EthercrabSubDevicePreoperational;
 use futures::executor::block_on;
 use std::sync::Arc;
-use tokio::sync::RwLock;
+use smol::lock::RwLock;
 
 impl MachineNewTrait for WinderV1 {
     fn new<'maindevice>(
