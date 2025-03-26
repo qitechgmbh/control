@@ -1,11 +1,10 @@
-use crate::ethercat::device_identification::MachineDeviceIdentification;
+use super::Machine;
+use crate::identification::MachineDeviceIdentification;
 use anyhow::Error;
 use ethercat_hal::{devices::Device, types::EthercrabSubDevicePreoperational};
 use ethercrab::{SubDevice, SubDeviceRef};
+use smol::lock::RwLock;
 use std::sync::Arc;
-use tokio::sync::RwLock;
-
-use super::Machine;
 
 pub trait MachineNewTrait {
     fn new<'maindevice, 'subdevices>(
@@ -27,8 +26,7 @@ pub type MachineNewFn = Box<
         + Sync,
 >;
 
-pub const VENDOR_QITECH: u32 = 0x1;
-pub const MACHINE_WINDER_V1: u32 = 0x1;
+
 
 // validates that all devices in the group have the same machine identification
 pub fn validate_same_machine_identification(

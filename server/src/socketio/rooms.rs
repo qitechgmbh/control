@@ -1,6 +1,8 @@
+use control_core::socketio::{room::RoomInterface, room_id::RoomId};
+
 use crate::app_state::APP_STATE;
 
-use super::room::{main::MainRoom, room::RoomInterface, room_id::RoomId};
+use super::main_room::MainRoom;
 
 pub struct Rooms {
     pub main_room: MainRoom,

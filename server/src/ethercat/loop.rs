@@ -1,22 +1,22 @@
 use crate::app_state::{EthercatSetup, APP_STATE};
-use crate::ethercat::device_identification::identify_device_groups;
 use crate::machines::registry::MACHINE_REGISTRY;
-use crate::socketio::event::EventBuilder;
-use crate::socketio::room::main::ethercat_setup_event::EthercatSetupEventBuilder;
-use crate::socketio::room::main::MainRoomEvents;
-use crate::socketio::room::room::RoomCacheingLogic;
+use crate::socketio::main_room::ethercat_setup_event::EthercatSetupEventBuilder;
+use crate::socketio::main_room::MainRoomEvents;
 use crate::{
     app_state::AppState,
     ethercat::config::{MAX_FRAMES, MAX_PDU_DATA, MAX_SUBDEVICES, PDI_LEN},
 };
 use bitvec::prelude::*;
 use control_core::actors::Actor;
+use control_core::identification::identify_device_groups;
+use control_core::socketio::event::EventBuilder;
+use control_core::socketio::room::RoomCacheingLogic;
 use ethercat_hal::devices::devices_from_subdevices;
 use ethercrab::std::{ethercat_now, tx_rx_task};
 use ethercrab::{MainDevice, MainDeviceConfig, PduStorage, RetryBehaviour, Timeouts};
+use smol::lock::RwLock;
 use std::collections::HashMap;
 use std::{sync::Arc, time::Duration};
-use tokio::sync::RwLock;
 
 pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(), anyhow::Error> {
     // Erase all all setup data from `app_state`

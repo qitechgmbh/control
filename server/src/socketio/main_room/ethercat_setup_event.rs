@@ -1,9 +1,6 @@
-use crate::{
-    app_state::APP_STATE,
-    ethercat::{
-        config::PDI_LEN,
-        device_identification::{MachineDeviceIdentification, MachineIdentificationUnique},
-    },
+use crate::{app_state::APP_STATE, ethercat::config::PDI_LEN};
+use control_core::{
+    identification::{MachineDeviceIdentification, MachineIdentificationUnique},
     socketio::event::{Event, EventBuilder},
 };
 use ethercrab::{SubDevicePdi, SubDeviceRef};

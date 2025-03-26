@@ -13,3 +13,4 @@ stepper_driver = { version = "0.1.0", path = "../stepper-driver" }
 tokio = { version = "1.43.0", features = ["full"] }
 uom = "0.36.0"
 bitvec = { version = "1.0.1", features = ["alloc"] }
+smol = "2.0.2"

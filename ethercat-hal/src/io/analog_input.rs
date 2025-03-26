@@ -2,7 +2,8 @@ use std::fmt;
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
-use tokio::sync::RwLock;
+
+use smol::lock::RwLock;
 
 /// Analog Input (AI) device
 ///

@@ -1,11 +1,11 @@
-pub mod ethercat_setup_event;
-
-use super::{
+use control_core::socketio::{
+    event::{Event, GenericEvent},
     room::{cache_one_event, CacheFn, CacheableEvents, Room, RoomCacheingLogic, RoomInterface},
     room_id::RoomId,
 };
-use crate::socketio::event::{Event, GenericEvent};
 use ethercat_setup_event::EthercatSetupEvent;
+
+pub mod ethercat_setup_event;
 
 pub struct MainRoom(pub Room);
 

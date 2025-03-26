@@ -1,4 +1,4 @@
-use crate::ethercat::device_identification::MachineIdentificationUnique;
+use crate::identification::MachineIdentificationUnique;
 use serde::{Deserialize, Serialize};
 use std::hash::Hash;
 

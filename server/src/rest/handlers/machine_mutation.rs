@@ -1,23 +1,16 @@
-use super::MutationResponse;
 use crate::{
     app_state::AppState,
-    ethercat::device_identification::MachineIdentificationUnique,
     rest::util::{ResponseUtil, ResponseUtilError},
 };
 use axum::{body::Body, extract::State, http::Response, Json};
+use control_core::rest::mutation::{MachineMutationBody, MutationResponse};
 use serde_json::Value;
 use std::sync::Arc;
-
-#[derive(Debug, serde::Deserialize)]
-pub struct WriteMachineBody<T> {
-    pub machine_identification_unique: MachineIdentificationUnique,
-    pub data: T,
-}
 
 #[axum::debug_handler]
 pub async fn post_machine_mutate(
     State(app_state): State<Arc<AppState>>,
-    Json(body): Json<WriteMachineBody<Value>>,
+    Json(body): Json<MachineMutationBody<Value>>,
 ) -> Response<Body> {
     let result = _post_machine_mutate(State(app_state), Json(body)).await;
     match result {
@@ -28,7 +21,7 @@ pub async fn post_machine_mutate(
 
 async fn _post_machine_mutate(
     State(app_state): State<Arc<AppState>>,
-    Json(body): Json<WriteMachineBody<Value>>,
+    Json(body): Json<MachineMutationBody<Value>>,
 ) -> Result<(), anyhow::Error> {
     let ethercat_setup_guard = app_state.ethercat_setup.read().await;
     let ethercat_setup = ethercat_setup_guard.as_ref().ok_or(anyhow::anyhow!(

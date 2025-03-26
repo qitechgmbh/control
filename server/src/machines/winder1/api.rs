@@ -1,18 +1,16 @@
 use std::time::Duration;
 
 use super::WinderV1;
-use crate::{
-    ethercat::device_identification::MachineIdentificationUnique,
-    machines::MachineApi,
+use control_core::{
+    identification::MachineIdentificationUnique,
+    machines::api::MachineApi,
     socketio::{
         event::{Event, EventBuilder, GenericEvent},
         room::{
-            room::{
-                cache_duration, cache_one_event, CacheFn, CacheableEvents, Room, RoomCacheingLogic,
-                RoomInterface,
-            },
-            room_id::RoomId,
+            cache_duration, cache_one_event, CacheFn, CacheableEvents, Room, RoomCacheingLogic,
+            RoomInterface,
         },
+        room_id::RoomId,
     },
 };
 use serde::{Deserialize, Serialize};

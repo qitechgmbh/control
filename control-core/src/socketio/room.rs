@@ -1,5 +1,6 @@
 use super::room_id::RoomId;
 use crate::socketio::event::GenericEvent;
+use serde::{Deserialize, Serialize};
 use socketioxide::extract::SocketRef;
 use std::{collections::HashMap, time::Duration};
 
@@ -189,4 +190,14 @@ pub fn cache_duration(duration: Duration) -> CacheFn {
 
         events.push(event.clone());
     })
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct RoomSubscribeEvent {
+    pub room_id: RoomId,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct RoomUnsubscribeEvent {
+    pub room_id: RoomId,
 }

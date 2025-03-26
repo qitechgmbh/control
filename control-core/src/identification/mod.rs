@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
-use anyhow::anyhow;
 use anyhow::Error;
+use anyhow::anyhow;
 use ethercat_hal::devices::ek1100::EK1100_IDENTITY_A;
 use ethercat_hal::devices::el1008::EL1008_IDENTITY_A;
 use ethercat_hal::devices::el2002::EL2002_IDENTITY_A;
@@ -309,23 +309,15 @@ pub fn get_identification_addresses<'maindevice>(
         }
         EL2522_IDENTITY_A => MachineDeviceIdentificationAddresses::default(),
         _ => {
-            log::error!(
+            // block_on(u16dump(&subdevice, maindevice, 0x00, 0xff))?;
+            Err(anyhow!(
                 "[{}::get_identification_addresses] Unknown MDI addresses for device {:?} vendor: 0x{:08x} product: 0x{:08x} revision: 0x{:08x}",
                 module_path!(),
                 subdevice_name,
                 subdevice_identity.vendor_id,
                 subdevice_identity.product_id,
                 subdevice_identity.revision
-            );
-            // block_on(u16dump(&subdevice, maindevice, 0x00, 0xff))?;
-            Err(anyhow!(
-            "[{}::get_identification_addresses] Unknown MDI addresses for device {:?} vendor: 0x{:08x} product: 0x{:08x} revision: 0x{:08x}",
-            module_path!(),
-            subdevice_name,
-            subdevice_identity.vendor_id,
-            subdevice_identity.product_id,
-            subdevice_identity.revision
-        ))?
+            ))?
         }
     })
 }

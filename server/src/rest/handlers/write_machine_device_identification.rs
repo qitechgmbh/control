@@ -1,12 +1,9 @@
-use super::MutationResponse;
-use crate::{
-    app_state::AppState,
-    ethercat::device_identification::{
-        write_machine_device_identification, MachineDeviceIdentification,
-    },
-    rest::util::ResponseUtil,
-};
+use crate::{app_state::AppState, rest::util::ResponseUtil};
 use axum::{body::Body, extract::State, http::Response, Json};
+use control_core::{
+    identification::{write_machine_device_identification, MachineDeviceIdentification},
+    rest::mutation::MutationResponse,
+};
 use std::sync::Arc;
 
 #[axum::debug_handler]

@@ -1,18 +1,14 @@
-use crate::{
-    ethercat::{
-        config::{MAX_SUBDEVICES, PDI_LEN},
-        device_identification::{MachineDeviceIdentification, MachineIdentificationUnique},
-    },
-    machines::Machine,
-    socketio::rooms::Rooms,
-};
+use crate::ethercat::config::{MAX_SUBDEVICES, PDI_LEN};
+use crate::socketio::rooms::Rooms;
 use control_core::actors::Actor;
+use control_core::identification::{MachineDeviceIdentification, MachineIdentificationUnique};
+use control_core::machines::Machine;
 use ethercat_hal::devices::Device;
 use ethercrab::{subdevice_group::Op, MainDevice, SubDeviceGroup};
+use smol::lock::RwLock;
 use socketioxide::SocketIo;
 use std::sync::Arc;
 use std::{collections::HashMap, sync::LazyLock};
-use tokio::sync::RwLock;
 
 pub struct SocketioSetup {
     pub socketio: RwLock<Option<SocketIo>>,

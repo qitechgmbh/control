@@ -1,6 +1,5 @@
-use super::room::room_id::RoomId;
 use crate::app_state::APP_STATE;
-use serde::{Deserialize, Serialize};
+use control_core::socketio::room::{RoomSubscribeEvent, RoomUnsubscribeEvent};
 use socketioxide::extract::{Data, SocketRef};
 use socketioxide::layer::SocketIoLayer;
 use tokio::spawn;
@@ -103,14 +102,4 @@ pub fn on_room_unsubscribe(socket: SocketRef, Data(data): Data<RoomUnsubscribeEv
             })
             .await;
     });
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct RoomSubscribeEvent {
-    pub room_id: RoomId,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct RoomUnsubscribeEvent {
-    pub room_id: RoomId,
 }

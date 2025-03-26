@@ -23,8 +23,8 @@ use el2521::{EL2521_IDENTITY_0000_A, EL2521_IDENTITY_0000_B, EL2521_IDENTITY_002
 use el2522::{EL2522, EL2522_IDENTITY_A};
 use el3001::EL3001_IDENTITY_A;
 use ethercrab::{MainDevice, SubDeviceIdentity};
+use smol::lock::RwLock;
 use std::{any::Any, fmt::Debug, sync::Arc};
-use tokio::sync::RwLock;
 
 /// A trait for all devices
 ///

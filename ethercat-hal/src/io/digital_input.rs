@@ -1,5 +1,6 @@
 use std::{fmt, future::Future, pin::Pin, sync::Arc};
-use tokio::sync::RwLock;
+
+use smol::lock::RwLock;
 
 /// Digital Input (DI) device
 ///

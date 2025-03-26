@@ -1,16 +1,15 @@
 use super::api::Winder1Room;
 use super::tension_arm::TensionArm;
 use super::WinderV1;
-use crate::ethercat::device_identification::MachineDeviceIdentification;
-use crate::machines::new::{
-    get_device_by_index, get_mdi_by_role, get_subdevice_by_index, validate_no_role_dublicates,
-    validate_same_machine_identification,
-};
-use crate::machines::MachineNewTrait;
 use anyhow::Error;
 use control_core::actors::analog_input_getter::{AnalogInputDevice, AnalogInputGetter};
 use control_core::actors::digital_output_setter::DigitalOutputSetter;
 use control_core::actors::stepper_driver_pulse_train::StepperDriverPulseTrain;
+use control_core::identification::MachineDeviceIdentification;
+use control_core::machines::new::{
+    get_device_by_index, get_mdi_by_role, get_subdevice_by_index, validate_no_role_dublicates,
+    validate_same_machine_identification, MachineNewTrait,
+};
 use ethercat_hal::coe::ConfigurableDevice;
 use ethercat_hal::devices::el2002::{EL2002Port, EL2002};
 use ethercat_hal::devices::el2521::{EL2521Configuration, EL2521Port, EL2521};
@@ -31,8 +30,8 @@ use ethercat_hal::io::digital_output::DigitalOutput;
 use ethercat_hal::io::pulse_train_output::PulseTrainOutput;
 use ethercat_hal::types::EthercrabSubDevicePreoperational;
 use futures::executor::block_on;
+use smol::lock::RwLock;
 use std::sync::Arc;
-use tokio::sync::RwLock;
 
 impl MachineNewTrait for WinderV1 {
     fn new<'maindevice>(

@@ -4,6 +4,14 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+anyhow = "1.0.97"
+axum = "0.8.1"
+chrono = "0.4.40"
 ethercat_hal = { path = "../ethercat-hal" }
+ethercrab = { git = "https://github.com/jamwaffles/ethercrab.git", rev = "1ced48a65165665cef6fb6b2b40464be085f338b" }
+serde = "1.0.219"
+serde_json = "1.0.140"
+smol = "2.0.2"
+socketioxide = "0.16.2"
 stepper_driver = { path = "../stepper-driver" }
 uom = "0.36.0"

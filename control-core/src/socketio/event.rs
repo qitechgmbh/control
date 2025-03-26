@@ -1,7 +1,6 @@
+use super::room_id::RoomId;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-
-use super::room::room_id::RoomId;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum EventContentType<T> {
