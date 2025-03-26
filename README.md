@@ -64,11 +64,7 @@ Other
     - Identifying Groups
     - Validating Machines
     - Run Control Loop
-  - [ ] Control Loop
-    - Ethercat TX/RX
-    - Reading Inputs
-    - Calling Actors
-    - Writing Outputs
+  - [X] [Control Loop](./docs/control-loop.md)
   - [ ] Machine/Device Identification
     - SubDevice Identity
     - Identification design choices
