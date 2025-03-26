@@ -36,6 +36,7 @@ Here is a checklist of what we need to implement:
   - implement `Configuration` trait
   - field `pdo_assignment` of type `EL0000PdoPreset`
   - fields for the configuration parameters
+- [Device Identification Adresses](./identification.md)
 
 These are helpful resources:
 - Other implementations of similar devices

@@ -85,16 +85,7 @@ We could combine the code of the frontend and backend using [Doxius](https://dio
     - Validating Machines
     - Run Control Loop
   - [X] [Control Loop](./docs/control-loop.md)
-  - [ ] Machine/Device Identification
-    - SubDevice Identity
-    - Identification design choices
-    - Machine/Device Identification Values
-    - Device Identification with EEPROM
-    - Grouping Devices
-    - Validating Device Groups to Machines
-    - How to: Identify a New Device
-      - Find free EEPROM words
-      - Get identity values and add them to pattern matching
+  - [X] [Machine/Device Identification](./docs/identification.md)
   - [ ] Machines
     - When to create a new Machine?
       - Versioning
