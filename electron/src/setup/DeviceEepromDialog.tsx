@@ -107,12 +107,12 @@ export function DeviceEeepromDialogContent({ device, setOpen }: ContentProps) {
         role: parseInt(values.role!),
       })
       .then((res) => {
-        toast(
-          <Toast title={"Gespeichert"} icon="lu:CircleCheck">
-            Machine assignment written successfully.
-          </Toast>,
-        );
         if (res.success) {
+          toast(
+            <Toast title={"Gespeichert"} icon="lu:CircleCheck">
+              Machine assignment written successfully.
+            </Toast>,
+          );
           setOpen(false);
         }
       });
