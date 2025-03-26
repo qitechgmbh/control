@@ -19,11 +19,16 @@
     - API Interface Serverside
     - Machine Discovery
     - Machine Logic
-    - Device Configuration
   - Technology
     - Programming Language: Rust
     - Framework: Axum
     - Async: Smol
+- **Control Core**
+  - Dependency of the Server 
+  - Tasks
+    - Generic Logic
+    - Device Identification
+    - Actors
 - **Ethercat HAL**
   - Dependency of the Server
   - Tasks
@@ -46,6 +51,9 @@ It also implements a series of hooks to bundle all getters and setters for the U
 
 ## Server
 The server holds the control logic for the machines and splits it into several parts. The Winder V2 is divided by its attached hardware functionality like traverse, puller, winder (which are motors), the tension arm which is an analog input & some digital outputs.
+
+# Control Core
+The control core holds the generic code of the server which could be reused for ther servers.
 
 ## Ethercat HAL
 Ethercat HAL implements a couple of abstraction layers for minimal code duplication and different levels of data. The lowest level is the PDO level which interprets the bit vector that contains the input and outputs of each cycle. The PDO implementations convert these bits to variables of type bool, u16, f32 or more. Many devices have the same or similar PDOs like the digital Output devices with different amount of channels: EL2002 (2 Channels), EL2004 (4 Channels), EL2008 (8 Channels).
