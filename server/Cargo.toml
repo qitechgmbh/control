@@ -8,7 +8,6 @@ rust-version = "1.86"
 [dependencies]
 
 # ethercat
-network-interface = "2.0.0"
 ethercrab = { git = "https://github.com/jamwaffles/ethercrab.git", rev = "1ced48a65165665cef6fb6b2b40464be085f338b" }
 ethercat_hal = { path = "../ethercat-hal" }
 control_core = { path = "../control-core" }
@@ -16,11 +15,8 @@ control_core = { path = "../control-core" }
 # concurrency
 thread-priority = "1.2.0"
 futures = "0.3.31"
-parking_lot = "0.12.3"
 
 # web
-tower-livereload = "0.9.6"
-socketioxide-core = "0.16.0"
 socketioxide = "0.16.0"
 tower-http = { version = "0.6.2", features = ["cors", "trace", "fs"] }
 axum = { version = "0.8.1", features = ["macros"] }
@@ -28,17 +24,12 @@ axum = { version = "0.8.1", features = ["macros"] }
 # utility
 uom = "0.36.0"
 chrono = "0.4.39"
-tracing = "0.1.41"
-tracing-subscriber = "0.3.19"
 serde = "1.0.217"
 anyhow = "1.0.95"
 serde_json = "1.0.137"
-signal-hook = "0.3.17"
 log = "0.4.25"
 env_logger = "0.11.6"
 tokio = { version = "1.43.0", features = ["rt-multi-thread"] }
-include_dir = "0.7.4"
-mime_guess = "2.0.5"
 open = "5.3.2"
 bitvec = "1.0.1"
 lazy_static = "1.5.0"

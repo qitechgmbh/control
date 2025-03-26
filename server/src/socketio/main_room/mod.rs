@@ -31,19 +31,6 @@ pub enum MainRoomEvents {
     EthercatSetupEvent(Event<EthercatSetupEvent>),
 }
 
-#[derive(Clone, Hash, Eq, PartialEq, Debug)]
-enum MainRoomEventCacheKeys {
-    EthercatSetupEvent,
-}
-
-impl From<MainRoomEventCacheKeys> for String {
-    fn from(cache_key: MainRoomEventCacheKeys) -> Self {
-        match cache_key {
-            MainRoomEventCacheKeys::EthercatSetupEvent => "EthercatSetupEvent".to_string(),
-        }
-    }
-}
-
 impl CacheableEvents<MainRoomEvents> for MainRoomEvents {
     fn event_value(&self) -> GenericEvent {
         match self {
