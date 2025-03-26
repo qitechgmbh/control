@@ -787,7 +787,7 @@ dependencies = [
 [[package]]
 name = "ethercrab"
 version = "0.5.0"
-source = "git+https://github.com/qitechgmbh/ethercrab.git?branch=master#a71a509233ad4474343da8804dd49cb0b1bd75d1"
+source = "git+https://github.com/jamwaffles/ethercrab.git?rev=1ced48a65165665cef6fb6b2b40464be085f338b#1ced48a65165665cef6fb6b2b40464be085f338b"
 dependencies = [
  "async-channel",
  "async-io",
@@ -817,7 +817,7 @@ dependencies = [
 [[package]]
 name = "ethercrab-wire"
 version = "0.2.0"
-source = "git+https://github.com/qitechgmbh/ethercrab.git?branch=master#a71a509233ad4474343da8804dd49cb0b1bd75d1"
+source = "git+https://github.com/jamwaffles/ethercrab.git?rev=1ced48a65165665cef6fb6b2b40464be085f338b#1ced48a65165665cef6fb6b2b40464be085f338b"
 dependencies = [
  "ethercrab-wire-derive",
  "heapless",
@@ -826,7 +826,7 @@ dependencies = [
 [[package]]
 name = "ethercrab-wire-derive"
 version = "0.2.0"
-source = "git+https://github.com/qitechgmbh/ethercrab.git?branch=master#a71a509233ad4474343da8804dd49cb0b1bd75d1"
+source = "git+https://github.com/jamwaffles/ethercrab.git?rev=1ced48a65165665cef6fb6b2b40464be085f338b#1ced48a65165665cef6fb6b2b40464be085f338b"
 dependencies = [
  "criterion",
  "proc-macro2",

@@ -9,7 +9,7 @@ rust-version = "1.86"
 
 # etehrcat
 network-interface = "2.0.0"
-ethercrab = { git = "https://github.com/qitechgmbh/ethercrab.git", branch = "master" }
+ethercrab = { git = "https://github.com/jamwaffles/ethercrab.git", rev = "1ced48a65165665cef6fb6b2b40464be085f338b" }
 ethercat_hal = { version = "0.1.0", path = "../ethercat-hal" }
 
 # concurrency
