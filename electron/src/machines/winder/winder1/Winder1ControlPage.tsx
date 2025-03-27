@@ -13,6 +13,7 @@ import { Label } from "@/control/Label";
 import { TouchButton } from "@/components/touch/TouchButton";
 import { StatusBadge } from "@/control/StatusBadge";
 import { useWinder1 } from "./useWinder";
+import { Mode } from "./winder1Room";
 
 export function Winder1ControlPage() {
   // use optimistic state
@@ -23,6 +24,10 @@ export function Winder1ControlPage() {
     laserpointerIsDisabled,
     measurementTensionArm,
     measurementTensionArmIsLoading,
+    mode,
+    setMode,
+    modeIsLoading,
+    modeIsDisabled,
   } = useWinder1();
 
   return (
@@ -126,21 +131,29 @@ export function Winder1ControlPage() {
           </Label>
         </ControlCard>
         <ControlCard className="bg-red" title="Mode">
-          <SelectionGroup<"standby" | "pull" | "wind">
-            value="standby"
+          <SelectionGroup<Mode>
+            value={mode}
+            disabled={modeIsDisabled}
+            loading={modeIsLoading}
+            onChange={setMode}
             orientation="vertical"
             options={{
-              standby: {
+              Standby: {
                 children: "Standby",
+                icon: "lu:Power",
+                isActiveClassName: "bg-green-600",
+              },
+              Hold: {
+                children: "Hold",
                 icon: "lu:CirclePause",
                 isActiveClassName: "bg-green-600",
               },
-              pull: {
+              Pull: {
                 children: "Pull",
                 icon: "lu:ChevronsLeft",
                 isActiveClassName: "bg-green-600",
               },
-              wind: {
+              Wind: {
                 children: "Wind",
                 icon: "lu:RefreshCcw",
                 isActiveClassName: "bg-green-600",
