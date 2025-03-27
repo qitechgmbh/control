@@ -4,7 +4,7 @@ import { useStateOptimistic } from "@/lib/useStateOptimistic";
 import { MachineIdentificationUnique } from "@/machines/types";
 import { winder1SerialRoute } from "@/routes/routes";
 import { z } from "zod";
-import { useWinder1Room } from "./winder1Room";
+import { Mode, ModeStateEvent, useWinder1Room } from "./winder1Room";
 import { useEffect, useMemo, useState } from "react";
 
 function useLaserpointer(
@@ -71,6 +71,49 @@ function useMeasurementTensionArm(
   };
 }
 
+function useMode(machine_identification_unique: MachineIdentificationUnique): {
+  mode: Mode | undefined;
+  setMode: (value: Mode) => void;
+  modeIsLoading: boolean;
+  modeIsDisabled: boolean;
+} {
+  const state = useStateOptimistic<Mode>();
+
+  // Write path
+  const schema = z.object({
+    ModeSet: z.enum(["Standby", "Hold", "Pull", "Wind"]),
+  });
+  const { request } = useMachineMutation(schema);
+  const setMode = async (value: Mode) => {
+    state.setOptimistic(value);
+    request({
+      machine_identification_unique,
+      data: { ModeSet: value },
+    })
+      .then((response) => {
+        if (!response.success) state.resetToReal();
+      })
+      .catch(() => state.resetToReal());
+  };
+
+  // Read path
+  const {
+    state: { modeState },
+  } = useWinder1Room(machine_identification_unique);
+  useEffect(() => {
+    if (modeState?.content.Data) {
+      state.setReal(modeState.content.Data.mode);
+    }
+  }, [modeState]);
+
+  return {
+    mode: state.value,
+    setMode,
+    modeIsLoading: state.isOptimistic || !state.isInitialized,
+    modeIsDisabled: state.isOptimistic || !state.isInitialized,
+  };
+}
+
 export function useWinder1() {
   const { serial: serialString } = winder1SerialRoute.useParams();
 
@@ -100,9 +143,11 @@ export function useWinder1() {
 
   const laserpointerControls = useLaserpointer(machineIdentification);
   const measurementTensionArm = useMeasurementTensionArm(machineIdentification);
+  const mode = useMode(machineIdentification);
 
   return {
     ...laserpointerControls,
     ...measurementTensionArm,
+    ...mode,
   };
 }

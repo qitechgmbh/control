@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use super::WinderV1;
+use super::{WinderV1, WinderV1Mode};
 use control_core::{
     identification::MachineIdentificationUnique,
     machines::api::MachineApi,
@@ -31,8 +31,31 @@ pub enum AutostopTransition {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum Mode {
     Standby,
+    Hold,
     Pull,
     Wind,
+}
+
+impl From<WinderV1Mode> for Mode {
+    fn from(mode: WinderV1Mode) -> Self {
+        match mode {
+            WinderV1Mode::Standby => Mode::Standby,
+            WinderV1Mode::Hold => Mode::Hold,
+            WinderV1Mode::Pull => Mode::Pull,
+            WinderV1Mode::Wind => Mode::Wind,
+        }
+    }
+}
+
+impl From<Mode> for WinderV1Mode {
+    fn from(mode: Mode) -> Self {
+        match mode {
+            Mode::Standby => WinderV1Mode::Standby,
+            Mode::Hold => WinderV1Mode::Hold,
+            Mode::Pull => WinderV1Mode::Pull,
+            Mode::Wind => WinderV1Mode::Wind,
+        }
+    }
 }
 
 #[derive(Deserialize, Serialize)]
@@ -296,6 +319,7 @@ impl MachineApi for WinderV1 {
         let mutation: Mutation = serde_json::from_value(request_body)?;
         match mutation {
             Mutation::TraverseEnableLaserpointer(enable) => self.set_laser(enable),
+            Mutation::ModeSet(mode) => self.set_mode(&mode.into()),
             _ => anyhow::bail!(
                 "[{}::MachineApi/WinderV1::api_mutate] Mutation {} not implemented",
                 module_path!(),

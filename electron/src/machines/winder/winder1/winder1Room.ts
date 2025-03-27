@@ -94,7 +94,7 @@ export const autostopStateEventDataSchema = z.object({
 /**
  * Machine operation mode enum
  */
-export const modeSchema = z.enum(["Stopped", "Manual", "Auto"]);
+export const modeSchema = z.enum(["Standby", "Hold", "Pull", "Wind"]);
 
 /**
  * Mode state event schema

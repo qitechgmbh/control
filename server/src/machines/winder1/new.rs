@@ -1,6 +1,6 @@
 use super::api::Winder1Room;
 use super::tension_arm::TensionArm;
-use super::WinderV1;
+use super::{WinderV1, WinderV1Mode};
 use anyhow::Error;
 use control_core::actors::analog_input_getter::{AnalogInputDevice, AnalogInputGetter};
 use control_core::actors::digital_output_setter::DigitalOutputSetter;
@@ -216,10 +216,12 @@ impl MachineNewTrait for WinderV1 {
                 laser_driver: DigitalOutputSetter::new(DigitalOutput::new(el2002, EL2002Port::DO1)),
                 room: Winder1Room::new(machine_identification_unique),
                 last_measurement_emit: chrono::Utc::now(),
+                mode: WinderV1Mode::Standby,
             };
 
             // initalize events
             new.emit_traverse_state();
+            new.emit_mode_state();
 
             Ok(new)
         })
