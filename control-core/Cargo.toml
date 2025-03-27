@@ -15,3 +15,6 @@ smol = "2.0.2"
 socketioxide = "0.16.2"
 stepper_driver = { path = "../stepper-driver" }
 uom = "0.36.0"
+
+[dev-dependencies]
+approx = "0.5.1"
