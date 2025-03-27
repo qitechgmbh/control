@@ -9,6 +9,7 @@ pub mod el2634;
 pub mod el2809;
 pub mod el3001;
 pub mod el3204;
+pub mod el3024;
 // pub mod el4008;
 
 use super::devices::el1008::EL1008;
@@ -22,6 +23,7 @@ use el2008::{EL2008, EL2008_IDENTITY_A};
 use el2521::{EL2521_IDENTITY_0000_A, EL2521_IDENTITY_0000_B, EL2521_IDENTITY_0024_A};
 use el2522::{EL2522, EL2522_IDENTITY_A};
 use el3001::EL3001_IDENTITY_A;
+use el3024::EL3024_IDENTITY_A;
 use ethercrab::{MainDevice, SubDeviceIdentity};
 use smol::lock::RwLock;
 use std::{any::Any, fmt::Debug, sync::Arc};
@@ -138,15 +140,16 @@ pub fn device_from_subdevice(
         // TODO: implement EL2809 identity
         // "EL2809" => Ok(Arc::new(RwLock::new(EL2809::new()))),
         EL3001_IDENTITY_A => Ok(Arc::new(RwLock::new(el3001::EL3001::new()))),
+        EL3024_IDENTITY_A => Ok(Arc::new( RwLock::new(el3024::EL3024::new()))),
         // "EL4008" => Ok(Arc::new(RwLock::new(EL4008::new()))),
         // TODO: implement EL3204 identity
         // "EL3204" => Ok(Arc::new(RwLock::new(EL3204::new()))),
         _ => Err(anyhow::anyhow!(
             "[{}::device_from_subdevice] No Driver: vendor_id: {:?}, product_id: {:?}, revision: {:?}",
             module_path!(),
-            {},
-            {},
-            {},
+            subdevice_identity_tuple.0,
+            subdevice_identity_tuple.1,
+            subdevice_identity_tuple.2,
         )),
     }
 }
