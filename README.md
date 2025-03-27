@@ -1,13 +1,17 @@
 ![](./docs/assets/github-banner.png)
+
 # QiTech Control
+
 QiTech Control is an industrial control panel software for the next generation of QiTech recycling machines built on top of Beckhoff Automation hardware.
 
 # Repo Structure
 
 Frontend
+
 - `/electron`: Frontend code for the control software built with React and Electron.
 
 Backend
+
 - `/server`: Glue between Beckhoff and Electron. Implements machine logic.
 - `/stepper-driver`: Generic stepper driver for absolute, relative & speed movements with PID controllers.
 - `/ethercat-hal`: Hardware abstraction layer for Beckhoff (and possibly other EtherCat) devices and protocols.
@@ -15,14 +19,17 @@ Backend
 - `/control-core`: Core control logic for the server.
 
 Operating System
+
 - `/nixos`: Custom Linux with realtime kernel & preconfigured for touchscreens.
 
 Other
+
 - `/docs`: Documentation for the project.
 
-
 # Technology Choices
+
 ## Backend
+
 To interface with Beckhoff and other EtherCAT devices we need an EtherCAY master stoftware. Possibilities are [PySOEM](https://github.com/bnjmnp/pysoem) (Python), [SOEM](https://github.com/OpenEtherCATsociety/SOEM) (C) and [Ethercrab](https://github.com/ethercrab-rs/ethercrab) (Rust). For realtime operation only C and Rust are suitable. We chose Rust because of safety and confidence in the written code.
 
 [SocketIO](https://socket.io/) was chosen for performant event driven communication from the backend to the server. But we still use REST with [axum](https://docs.rs/axum/latest/axum/) for the communication thet benefits from the request/response model.
@@ -30,11 +37,13 @@ To interface with Beckhoff and other EtherCAT devices we need an EtherCAY master
 We use [Smol](https://github.com/smol-rs/smol) for EtherCAT IO in the control loop for it's performance and [Tokio](https://tokio.rs/) for server IO because of it's ecosystem and maturity.
 
 ## Frontend
+
 We could combine the code of the frontend and backend using [Doxius](https://dioxuslabs.com/) but it lacks good Linux support. We chose [Electron](https://www.electronjs.org/) with [React](https://react.dev/) for it's maturity and ecosystem. For the UI we use [Shadcn](https://ui.shadcn.com/) components and [Tailwind](https://tailwindcss.com/) for styling. For routing we use [TanStack Router](https://tanstack.com/router/v1).
 
 # Dev Setup
 
 ## Backend
+
 - Rust beta toolchain (install via [rustup](https://rustup.rs/))
 - `rust-analyzer` extension for VSCode
 - Set your interface in `server/src/ethercat/init.rs` like `en10`
@@ -42,8 +51,9 @@ We could combine the code of the frontend and backend using [Doxius](https://dio
 - run `cd server && cargo +beta run` to start the server (localhost:3001)
 
 ## Frontend
+
 - nodejs and npm installed
-- run `cd electron && npm run i && npm run start` to start the frontend
+- run `cd electron && npm i && npm run start` to start the frontend
 
 # Machines
 
@@ -57,16 +67,19 @@ We could combine the code of the frontend and backend using [Doxius](https://dio
 
 # More Docs
 
-- [X] [Architecture & Data Flow](./docs/architecture-overview.md)
-  - [X] Example Winder V2
+- [x] [Architecture & Data Flow](./docs/architecture-overview.md)
+
+  - [x] Example Winder V2
 
 - [ ] Electron
-  - Folder Structure 
+
+  - Folder Structure
   - Routing with TanStack Router
-  - Design with Tailwind & Shadcn 
+  - Design with Tailwind & Shadcn
   - ...
 
 - [ ] Interfacing with Electron/Server
+
   - [ ] SocketIO
     - Machine Room
     - Main Room
@@ -75,6 +88,7 @@ We could combine the code of the frontend and backend using [Doxius](https://dio
     - Write Device Identification
 
 - Server
+
   - [ ] Control Loop Setup
     - Control Loop Thread
       - [ ] realtime
@@ -84,8 +98,8 @@ We could combine the code of the frontend and backend using [Doxius](https://dio
     - Identifying Groups
     - Validating Machines
     - Run Control Loop
-  - [X] [Control Loop](./docs/control-loop.md)
-  - [X] [Machine/Device Identification](./docs/identification.md)
+  - [x] [Control Loop](./docs/control-loop.md)
+  - [x] [Machine/Device Identification](./docs/identification.md)
   - [ ] Machines
     - When to create a new Machine?
       - Versioning
@@ -106,7 +120,8 @@ We could combine the code of the frontend and backend using [Doxius](https://dio
     - Forward `act` in winder.
 
 - [ ] Control Core
-  - [X] [Actors](./docs/actors.md)
+
+  - [x] [Actors](./docs/actors.md)
   - [ ] SocketIO
     - Rooms & Caching
     - Joining leaving rooms
@@ -117,13 +132,14 @@ We could combine the code of the frontend and backend using [Doxius](https://dio
       - Clientside Caching
   - [ ] REST
 
-- [X] Ethercat HAL
-  - [X] [Devices](./docs/devices.md)
-  - [X] [Configuration (CoE)](./docs/coe.md)
-  - [X] [IO](./docs/io.md)
-  - [X] [PDO](./docs/pdo.md)
+- [x] Ethercat HAL
 
-- [X] [Ethercat Basics](./docs/ethercat-basics.md)
+  - [x] [Devices](./docs/devices.md)
+  - [x] [Configuration (CoE)](./docs/coe.md)
+  - [x] [IO](./docs/io.md)
+  - [x] [PDO](./docs/pdo.md)
+
+- [x] [Ethercat Basics](./docs/ethercat-basics.md)
 
 - [ ] Operating System
   - Why
