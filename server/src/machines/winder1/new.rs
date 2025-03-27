@@ -197,15 +197,15 @@ impl MachineNewTrait for WinderV1 {
                 .await?;
 
             let mut new = Self {
+                winder_driver: StepperDriverPulseTrain::new(PulseTrainOutput::new(
+                    el2522.clone(),
+                    EL2522Port::PTO1,
+                )),
                 traverse_driver: StepperDriverPulseTrain::new(PulseTrainOutput::new(
                     el2521,
                     EL2521Port::PTO1,
                 )),
                 puller_driver: StepperDriverPulseTrain::new(PulseTrainOutput::new(
-                    el2522.clone(),
-                    EL2522Port::PTO1,
-                )),
-                winder_driver: StepperDriverPulseTrain::new(PulseTrainOutput::new(
                     el2522,
                     EL2522Port::PTO2,
                 )),
