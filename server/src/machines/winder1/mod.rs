@@ -38,9 +38,29 @@ pub struct WinderV1 {
 impl Machine for WinderV1 {}
 
 impl WinderV1 {
-    pub fn set_mode(&mut self, state: &WinderV1Mode) {
+    pub fn set_mode(&mut self, mode: &WinderV1Mode) {
         // all transitions are allowed
-        self.mode = state.clone();
+        self.mode = mode.clone();
+
+        // transiotion actions
+        match mode {
+            WinderV1Mode::Standby => {
+                self.puller_driver.set_frequency(0);
+                self.winder_driver.set_frequency(0);
+            }
+            WinderV1Mode::Hold => {
+                self.puller_driver.set_frequency(0);
+                self.winder_driver.set_frequency(0);
+            }
+            WinderV1Mode::Pull => {
+                self.winder_driver.set_frequency(2000);
+                self.puller_driver.set_frequency(200);
+            }
+            WinderV1Mode::Wind => {
+                self.winder_driver.set_frequency(20000);
+                self.puller_driver.set_frequency(1000);
+            }
+        }
         self.emit_mode_state();
     }
 

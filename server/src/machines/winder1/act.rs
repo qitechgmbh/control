@@ -15,7 +15,7 @@ impl Actor for WinderV1 {
 
             // if last measurement emit is older than 1 second, emit a new measurement
             let now = chrono::Utc::now();
-            if (now - self.last_measurement_emit).num_milliseconds() > 500 {
+            if (now - self.last_measurement_emit).num_milliseconds() > 100 {
                 self.emit_measurement_tension_arm();
                 self.last_measurement_emit = now;
             }
