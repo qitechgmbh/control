@@ -1,23 +1,40 @@
 use crate::{
     coe::{ConfigurableDevice, Configuration}, pdo::{
         el30xx::{AiCompact, AiStandard},
-        PredefinedPdoAssignment, TxPdo,
-    }, shared_config::el30xx::{EL30XXConfiguration, EL30XXPresentation}, signing::Integer16
+        PredefinedPdoAssignment,
+    }, shared_config::el30xx::{EL30XXChannelConfiguration, EL30XXPresentation}, signing::Integer16
 };
 use crate::{
     io::analog_input::{AnalogInputDevice, AnalogInputInput, AnalogInputState},
     types::EthercrabSubDevicePreoperational,
 };
 use ethercat_hal_derive::{Device, RxPdo, TxPdo};
-
 use super::{NewDevice, SubDeviceIdentityTuple};
+use crate::pdo::RxPdo;
+use crate::pdo::TxPdo;
+
+#[derive(Debug, Clone)]
+pub struct EL3024Configuration {
+    pub pdo_assignment: EL3024PdoPreset,
+    // Input1+ and Input1-
+    pub channel1 : EL30XXChannelConfiguration,
+    // Input2+ and Input2-
+    pub channel2 : EL30XXChannelConfiguration,
+    // Input3+ and Input3-
+    pub channel3 : EL30XXChannelConfiguration,
+    // Input4+ and Input4-
+    pub channel4 : EL30XXChannelConfiguration
+}
 
 
 #[derive(Device)]
 pub struct EL3024 {
-    pub input_ts: u64,
+    pub configuration: EL3024Configuration,
     pub txpdo: EL3024TxPdo,
-    pub configuration: EL30XXConfiguration<EL3024PdoPreset,EL3024TxPdo,EL3024RxPdo>,
+    pub rxpdo: EL3024RxPdo,
+    pub output_ts: u64,
+    pub input_ts: u64,
+
 }
 
 impl std::fmt::Debug for EL3024 {
@@ -32,13 +49,27 @@ impl Default for EL3024PdoPreset {
     }
 }
 
+impl Default for EL3024Configuration {
+    fn default() -> Self {
+        Self {
+            pdo_assignment: EL3024PdoPreset::Standard,
+            channel1: EL30XXChannelConfiguration::default(),
+            channel2: EL30XXChannelConfiguration::default(),
+            channel3: EL30XXChannelConfiguration::default(),
+            channel4: EL30XXChannelConfiguration::default(),
+        }
+    }
+}
+
 impl NewDevice for EL3024 {
     fn new() -> Self {
-        let configuration: EL30XXConfiguration<EL3024PdoPreset,EL3024TxPdo,EL3024RxPdo> = EL30XXConfiguration::default();
+        let configuration = EL3024Configuration::default(); // Initialize first
         Self {
-            input_ts: 0,
+            configuration: configuration.clone(),
             txpdo: configuration.pdo_assignment.txpdo_assignment(),
-            configuration,
+            rxpdo: configuration.pdo_assignment.rxpdo_assignment(),
+            output_ts: 0,
+            input_ts: 0,
         }
     }
 }
@@ -92,11 +123,22 @@ impl AnalogInputDevice<EL3024Port> for EL3024 {
             },
         };
         let raw_value = Integer16::from(raw_value);
-        let value: i16 = match self.configuration.presentation {
+        println!("{}",raw_value);
+
+        let presentation = match port {
+            EL3024Port::AI1  => self.configuration.channel1.presentation,
+            EL3024Port::AI2  => self.configuration.channel2.presentation,
+            EL3024Port::AI3  => self.configuration.channel3.presentation,
+            EL3024Port::AI4  => self.configuration.channel4.presentation
+
+        };
+      
+        let value: i16 = match presentation {
             EL30XXPresentation::Unsigned => raw_value.into_unsigned() as i16,
             EL30XXPresentation::Signed => raw_value.into_signed(),
             EL30XXPresentation::SignedMagnitude => raw_value.into_signed_magnitude(),
         };
+      
         let normalized = f32::from(value) / f32::from(i16::MAX);
         AnalogInputState {
             input_ts: self.input_ts,
@@ -105,11 +147,11 @@ impl AnalogInputDevice<EL3024Port> for EL3024 {
     }
 }
 
-impl ConfigurableDevice<EL30XXConfiguration<EL3024PdoPreset,EL3024TxPdo,EL3024RxPdo>> for EL3024 {
+impl ConfigurableDevice<EL3024Configuration> for EL3024 {
     async fn write_config<'maindevice>(
         &mut self,
         device: &EthercrabSubDevicePreoperational<'maindevice>,
-        config: &EL30XXConfiguration<EL3024PdoPreset,EL3024TxPdo,EL3024RxPdo>,
+        config: &EL3024Configuration,
     ) -> Result<(), anyhow::Error> {
         config.write_config(device).await?;
         self.configuration = config.clone();
@@ -117,7 +159,7 @@ impl ConfigurableDevice<EL30XXConfiguration<EL3024PdoPreset,EL3024TxPdo,EL3024Rx
         Ok(())
     }
 
-    fn get_config(&self) -> EL30XXConfiguration<EL3024PdoPreset,EL3024TxPdo,EL3024RxPdo> {
+    fn get_config(&self) -> EL3024Configuration {
         self.configuration.clone()
     }
 }
@@ -156,12 +198,26 @@ pub struct EL3024TxPdo {
 #[derive(Debug, Clone, RxPdo)]
 pub struct EL3024RxPdo {}
 
-
-impl Configuration for EL30XXConfiguration<EL3024PdoPreset,EL3024TxPdo,EL3024RxPdo> {
+impl Configuration for EL3024Configuration {
     async fn write_config<'a>(
         &self,
         device: &EthercrabSubDevicePreoperational<'a>,
     ) -> Result<(), anyhow::Error> {
+
+                // Write configuration for Channel 1
+            self.channel1.write_channel_config(device, 0x8000)
+                .await?;
+    
+            // Write configuration for Channel 2
+            self.channel2.write_channel_config(device, 0x8010)
+                .await?;
+             // Write configuration for Channel 3
+            self.channel3.write_channel_config(device, 0x8020)
+                .await?;
+                
+                // Write configuration for Channel 4
+            self.channel4.write_channel_config(device, 0x8030)
+                .await?;
         self.pdo_assignment
             .txpdo_assignment()
             .write_config(device)
