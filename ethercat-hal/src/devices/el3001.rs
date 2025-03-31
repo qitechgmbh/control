@@ -1,9 +1,12 @@
 use super::{NewDevice, SubDeviceIdentityTuple};
 use crate::{
-    coe::{ConfigurableDevice, Configuration}, pdo::{
+    coe::{ConfigurableDevice, Configuration},
+    pdo::{
         el30xx::{AiCompact, AiStandard},
         PredefinedPdoAssignment, TxPdo,
-    }, shared_config::el30xx::{EL30XXConfiguration, EL30XXFilterSettings, EL30XXPresentation}, signing::Integer16
+    },
+    shared_config::el30xx::{EL30XXChannelConfiguration, EL30XXPresentation},
+    signing::Integer16,
 };
 use crate::{
     io::analog_input::{AnalogInputDevice, AnalogInputInput, AnalogInputState},
@@ -15,7 +18,7 @@ use ethercat_hal_derive::{Device, RxPdo, TxPdo};
 pub struct EL3001 {
     pub input_ts: u64,
     pub txpdo: EL3001TxPdo,
-    pub configuration: EL30XXConfiguration<EL3001PdoPreset,EL3001TxPdo,EL3001RxPdo>,
+    pub configuration: EL3001Configuration,
 }
 
 impl std::fmt::Debug for EL3001 {
@@ -24,17 +27,15 @@ impl std::fmt::Debug for EL3001 {
     }
 }
 
-
-
 impl Default for EL3001PdoPreset {
     fn default() -> Self {
-       Self::Standard
+        Self::Standard
     }
 }
 
 impl NewDevice for EL3001 {
     fn new() -> Self {
-        let configuration:EL30XXConfiguration<EL3001PdoPreset,EL3001TxPdo,EL3001RxPdo> = EL30XXConfiguration::default();
+        let configuration: EL3001Configuration = EL3001Configuration::default();
         Self {
             input_ts: 0,
             txpdo: configuration.pdo_assignment.txpdo_assignment(),
@@ -58,8 +59,11 @@ impl AnalogInputDevice<EL3001Port> for EL3001 {
                 _ => panic!("Invalid TxPdo assignment"),
             },
         };
+        let channel_config = match port {
+            EL3001Port::AI1 => &self.configuration.channel_1,
+        };
         let raw_value = Integer16::from(raw_value);
-        let value: i16 = match self.configuration.presentation {
+        let value: i16 = match channel_config.presentation {
             EL30XXPresentation::Unsigned => raw_value.into_unsigned() as i16,
             EL30XXPresentation::Signed => raw_value.into_signed(),
             EL30XXPresentation::SignedMagnitude => raw_value.into_signed_magnitude(),
@@ -72,11 +76,11 @@ impl AnalogInputDevice<EL3001Port> for EL3001 {
     }
 }
 
-impl ConfigurableDevice<EL30XXConfiguration<EL3001PdoPreset,EL3001TxPdo,EL3001RxPdo>> for EL3001 {
+impl ConfigurableDevice<EL3001Configuration> for EL3001 {
     async fn write_config<'maindevice>(
         &mut self,
         device: &EthercrabSubDevicePreoperational<'maindevice>,
-        config: &EL30XXConfiguration<EL3001PdoPreset,EL3001TxPdo,EL3001RxPdo>,
+        config: &EL3001Configuration,
     ) -> Result<(), anyhow::Error> {
         config.write_config(device).await?;
         self.configuration = config.clone();
@@ -84,7 +88,7 @@ impl ConfigurableDevice<EL30XXConfiguration<EL3001PdoPreset,EL3001TxPdo,EL3001Rx
         Ok(())
     }
 
-    fn get_config(&self) -> EL30XXConfiguration<EL3001PdoPreset,EL3001TxPdo,EL3001RxPdo> {
+    fn get_config(&self) -> EL3001Configuration {
         self.configuration.clone()
     }
 }
@@ -105,43 +109,18 @@ pub struct EL3001TxPdo {
 #[derive(Debug, Clone, RxPdo)]
 pub struct EL3001RxPdo {}
 
-impl Configuration for EL30XXConfiguration<EL3001PdoPreset,EL3001TxPdo,EL3001RxPdo> {
+#[derive(Debug, Clone, Default)]
+pub struct EL3001Configuration {
+    pub pdo_assignment: EL3001PdoPreset,
+    pub channel_1: EL30XXChannelConfiguration,
+}
+
+impl Configuration for EL3001Configuration {
     async fn write_config<'a>(
         &self,
         device: &EthercrabSubDevicePreoperational<'a>,
     ) -> Result<(), anyhow::Error> {
-        device
-            .sdo_write(0x8000, 0x01, self.enable_user_scale)
-            .await?;
-        device
-            .sdo_write(0x8000, 0x02, u8::from(self.presentation))
-            .await?;
-        device.sdo_write(0x8000, 0x05, self.siemens_bits).await?;
-        device.sdo_write(0x8000, 0x06, self.enable_filter).await?;
-        device.sdo_write(0x8000, 0x07, self.enable_limit_1).await?;
-        device.sdo_write(0x8000, 0x08, self.enable_limit_2).await?;
-        device
-            .sdo_write(0x8000, 0x0A, self.enable_user_calibration)
-            .await?;
-        device
-            .sdo_write(0x8000, 0x0B, self.enable_vendor_calibration)
-            .await?;
-        device.sdo_write(0x8000, 0x0E, self.swap_limit_bits).await?;
-        device
-            .sdo_write(0x8000, 0x11, self.user_scale_offset)
-            .await?;
-        device.sdo_write(0x8000, 0x12, self.user_scale_gain).await?;
-        device.sdo_write(0x8000, 0x13, self.limit_1).await?;
-        device.sdo_write(0x8000, 0x14, self.limit_2).await?;
-        device
-            .sdo_write(0x8000, 0x15, u16::from(self.filter_settings))
-            .await?;
-        device
-            .sdo_write(0x8000, 0x17, self.user_calibration_offset)
-            .await?;
-        device
-            .sdo_write(0x8000, 0x18, self.user_calibration_gain)
-            .await?;
+        self.channel_1.write_channel_config(device, 0x8000).await?;
         self.pdo_assignment
             .txpdo_assignment()
             .write_config(device)
@@ -153,7 +132,6 @@ impl Configuration for EL30XXConfiguration<EL3001PdoPreset,EL3001TxPdo,EL3001RxP
         Ok(())
     }
 }
-
 
 #[derive(Debug, Clone)]
 pub enum EL3001PdoPreset {
@@ -182,8 +160,6 @@ impl PredefinedPdoAssignment<EL3001TxPdo, EL3001RxPdo> for EL3001PdoPreset {
         }
     }
 }
-
-
 
 pub const EL3001_VENDOR_ID: u32 = 0x2;
 pub const EL3001_PRODUCT_ID: u32 = 0x0bb93052;
