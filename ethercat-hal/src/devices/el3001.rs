@@ -27,7 +27,7 @@ impl std::fmt::Debug for EL3001 {
     }
 }
 
-impl Default for EL3001PdoPreset {
+impl Default for EL3001PredefinedPdoAssignment {
     fn default() -> Self {
         Self::Standard
     }
@@ -111,7 +111,7 @@ pub struct EL3001RxPdo {}
 
 #[derive(Debug, Clone, Default)]
 pub struct EL3001Configuration {
-    pub pdo_assignment: EL3001PdoPreset,
+    pub pdo_assignment: EL3001PredefinedPdoAssignment,
     pub channel_1: EL30XXChannelConfiguration,
 }
 
@@ -134,19 +134,19 @@ impl Configuration for EL3001Configuration {
 }
 
 #[derive(Debug, Clone)]
-pub enum EL3001PdoPreset {
+pub enum EL3001PredefinedPdoAssignment {
     Standard,
     Compact,
 }
 
-impl PredefinedPdoAssignment<EL3001TxPdo, EL3001RxPdo> for EL3001PdoPreset {
+impl PredefinedPdoAssignment<EL3001TxPdo, EL3001RxPdo> for EL3001PredefinedPdoAssignment {
     fn txpdo_assignment(&self) -> EL3001TxPdo {
         match self {
-            EL3001PdoPreset::Standard => EL3001TxPdo {
+            EL3001PredefinedPdoAssignment::Standard => EL3001TxPdo {
                 ai_standard: Some(AiStandard::default()),
                 ai_compact: None,
             },
-            EL3001PdoPreset::Compact => EL3001TxPdo {
+            EL3001PredefinedPdoAssignment::Compact => EL3001TxPdo {
                 ai_standard: None,
                 ai_compact: Some(AiCompact::default()),
             },
@@ -155,8 +155,8 @@ impl PredefinedPdoAssignment<EL3001TxPdo, EL3001RxPdo> for EL3001PdoPreset {
 
     fn rxpdo_assignment(&self) -> EL3001RxPdo {
         match self {
-            EL3001PdoPreset::Standard => EL3001RxPdo {},
-            EL3001PdoPreset::Compact => EL3001RxPdo {},
+            EL3001PredefinedPdoAssignment::Standard => EL3001RxPdo {},
+            EL3001PredefinedPdoAssignment::Compact => EL3001RxPdo {},
         }
     }
 }

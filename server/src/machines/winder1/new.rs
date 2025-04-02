@@ -16,7 +16,9 @@ use ethercat_hal::devices::el2521::{EL2521Configuration, EL2521Port, EL2521};
 use ethercat_hal::devices::el2522::{
     EL2522ChannelConfiguration, EL2522Configuration, EL2522Port, EL2522,
 };
-use ethercat_hal::devices::el3001::{EL3001Configuration, EL3001PdoPreset, EL3001Port, EL3001};
+use ethercat_hal::devices::el3001::{
+    EL3001Configuration, EL3001Port, EL3001PredefinedPdoAssignment, EL3001,
+};
 use ethercat_hal::devices::{downcast_device, subdevice_identity_to_tuple, Device};
 use ethercat_hal::devices::{
     ek1100::EK1100_IDENTITY_A,
@@ -120,7 +122,7 @@ impl MachineNewTrait for WinderV1 {
                 .write_config(
                     &subdevice,
                     &EL3001Configuration {
-                        pdo_assignment: EL3001PdoPreset::Compact,
+                        pdo_assignment: EL3001PredefinedPdoAssignment::Compact,
                         ..Default::default()
                     },
                 )

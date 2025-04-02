@@ -140,7 +140,7 @@ pub struct EL2521Configuration {
     
     // ...
 
-    pub pdo_assignment: EL2521PdoPreset,
+    pub pdo_assignment: EL2521PredefinedPdoAssignment,
 }
 ```
 

@@ -160,7 +160,7 @@ pub enum EL2522Port {
 
 #[derive(Debug, Clone)]
 pub struct EL2522Configuration {
-    pub pdo_assignment: EL2522PdoPreset,
+    pub pdo_assignment: EL2522PredefinedPdoAssignment,
     pub channel1_configuration: EL2522ChannelConfiguration,
     pub channel2_configuration: EL2522ChannelConfiguration,
 }
@@ -329,7 +329,7 @@ impl Default for EL2522ChannelConfiguration {
 impl Default for EL2522Configuration {
     fn default() -> Self {
         Self {
-            pdo_assignment: EL2522PdoPreset::Standart32Bit,
+            pdo_assignment: EL2522PredefinedPdoAssignment::Standart32Bit,
             channel1_configuration: EL2522ChannelConfiguration::default(),
             channel2_configuration: EL2522ChannelConfiguration::default(),
         }
@@ -473,14 +473,14 @@ impl From<EL2522OperatingMode> for u8 {
 }
 
 #[derive(Debug, Clone)]
-pub enum EL2522PdoPreset {
+pub enum EL2522PredefinedPdoAssignment {
     Standart32Bit,
 }
 
-impl PredefinedPdoAssignment<EL2522TxPdo, EL2522RxPdo> for EL2522PdoPreset {
+impl PredefinedPdoAssignment<EL2522TxPdo, EL2522RxPdo> for EL2522PredefinedPdoAssignment {
     fn txpdo_assignment(&self) -> EL2522TxPdo {
         match self {
-            EL2522PdoPreset::Standart32Bit => EL2522TxPdo {
+            EL2522PredefinedPdoAssignment::Standart32Bit => EL2522TxPdo {
                 pto_status_channel1: Some(PtoStatus::default()),
                 pto_status_channel2: Some(PtoStatus::default()),
                 enc_status_channel1: Some(EncStatus::default()),
@@ -491,7 +491,7 @@ impl PredefinedPdoAssignment<EL2522TxPdo, EL2522RxPdo> for EL2522PdoPreset {
 
     fn rxpdo_assignment(&self) -> EL2522RxPdo {
         match self {
-            EL2522PdoPreset::Standart32Bit => EL2522RxPdo {
+            EL2522PredefinedPdoAssignment::Standart32Bit => EL2522RxPdo {
                 pto_control_channel1: Some(PtoControl::default()),
                 pto_target_channel1: Some(PtoTarget::default()),
                 enc_control_channel1: Some(EncControl::default()),

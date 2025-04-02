@@ -28,13 +28,13 @@ Here is a checklist of what we need to implement:
   - derive `#[derive(PdoObject)]`
   - tag with `#[pdo_object(bits = 16)]` for the size of the object
   - implement `TxPdoObject` and/or `RxPdoObject` traits
-- Predefined PDO Assignment `enum EL0000PdoPreset` (if supported)
+- Predefined PDO Assignment `enum EL0000PredefinedPdoAssignment` (if supported)
   - derive `#[derive(Debug, Clone)]`
   - implement `PredefinedPdoAssignment<EL0000TxPdo, EL0000RxPdo>`
 - Configuration `struct EL0000Configuration` (if supported)
   - derive `#[derive(Debug, Clone)]`
   - implement `Configuration` trait
-  - field `pdo_assignment` of type `EL0000PdoPreset`
+  - field `pdo_assignment` of type `EL0000PredefinedPdoAssignment`
   - fields for the configuration parameters
 - [Device Identification Adresses](./identification.md)
 

@@ -1,31 +1,33 @@
+use super::{NewDevice, SubDeviceIdentityTuple};
+use crate::pdo::RxPdo;
+use crate::pdo::TxPdo;
 use crate::{
-    coe::{ConfigurableDevice, Configuration}, pdo::{
+    coe::{ConfigurableDevice, Configuration},
+    pdo::{
         el30xx::{AiCompact, AiStandard},
         PredefinedPdoAssignment,
-    }, shared_config::el30xx::{EL30XXChannelConfiguration, EL30XXPresentation}, signing::Integer16
+    },
+    shared_config::el30xx::{EL30XXChannelConfiguration, EL30XXPresentation},
+    signing::Integer16,
 };
 use crate::{
     io::analog_input::{AnalogInputDevice, AnalogInputInput, AnalogInputState},
     types::EthercrabSubDevicePreoperational,
 };
 use ethercat_hal_derive::{Device, RxPdo, TxPdo};
-use super::{NewDevice, SubDeviceIdentityTuple};
-use crate::pdo::RxPdo;
-use crate::pdo::TxPdo;
 
 #[derive(Debug, Clone)]
 pub struct EL3024Configuration {
-    pub pdo_assignment: EL3024PdoPreset,
+    pub pdo_assignment: EL3024PredefinedPdoAssignment,
     // Input1+ and Input1-
-    pub channel1 : EL30XXChannelConfiguration,
+    pub channel1: EL30XXChannelConfiguration,
     // Input2+ and Input2-
-    pub channel2 : EL30XXChannelConfiguration,
+    pub channel2: EL30XXChannelConfiguration,
     // Input3+ and Input3-
-    pub channel3 : EL30XXChannelConfiguration,
+    pub channel3: EL30XXChannelConfiguration,
     // Input4+ and Input4-
-    pub channel4 : EL30XXChannelConfiguration
+    pub channel4: EL30XXChannelConfiguration,
 }
-
 
 #[derive(Device)]
 pub struct EL3024 {
@@ -34,7 +36,6 @@ pub struct EL3024 {
     pub rxpdo: EL3024RxPdo,
     pub output_ts: u64,
     pub input_ts: u64,
-
 }
 
 impl std::fmt::Debug for EL3024 {
@@ -43,16 +44,16 @@ impl std::fmt::Debug for EL3024 {
     }
 }
 
-impl Default for EL3024PdoPreset {
+impl Default for EL3024PredefinedPdoAssignment {
     fn default() -> Self {
-       Self::Standard
+        Self::Standard
     }
 }
 
 impl Default for EL3024Configuration {
     fn default() -> Self {
         Self {
-            pdo_assignment: EL3024PdoPreset::Standard,
+            pdo_assignment: EL3024PredefinedPdoAssignment::Standard,
             channel1: EL30XXChannelConfiguration::default(),
             channel2: EL30XXChannelConfiguration::default(),
             channel3: EL30XXChannelConfiguration::default(),
@@ -123,22 +124,21 @@ impl AnalogInputDevice<EL3024Port> for EL3024 {
             },
         };
         let raw_value = Integer16::from(raw_value);
-        println!("{}",raw_value);
+        println!("{}", raw_value);
 
         let presentation = match port {
-            EL3024Port::AI1  => self.configuration.channel1.presentation,
-            EL3024Port::AI2  => self.configuration.channel2.presentation,
-            EL3024Port::AI3  => self.configuration.channel3.presentation,
-            EL3024Port::AI4  => self.configuration.channel4.presentation
-
+            EL3024Port::AI1 => self.configuration.channel1.presentation,
+            EL3024Port::AI2 => self.configuration.channel2.presentation,
+            EL3024Port::AI3 => self.configuration.channel3.presentation,
+            EL3024Port::AI4 => self.configuration.channel4.presentation,
         };
-      
+
         let value: i16 = match presentation {
             EL30XXPresentation::Unsigned => raw_value.into_unsigned() as i16,
             EL30XXPresentation::Signed => raw_value.into_signed(),
             EL30XXPresentation::SignedMagnitude => raw_value.into_signed_magnitude(),
         };
-      
+
         let normalized = f32::from(value) / f32::from(i16::MAX);
         AnalogInputState {
             input_ts: self.input_ts,
@@ -169,7 +169,7 @@ pub enum EL3024Port {
     AI1,
     AI2,
     AI3,
-    AI4
+    AI4,
 }
 
 #[derive(Debug, Clone, TxPdo)]
@@ -203,21 +203,16 @@ impl Configuration for EL3024Configuration {
         &self,
         device: &EthercrabSubDevicePreoperational<'a>,
     ) -> Result<(), anyhow::Error> {
+        // Write configuration for Channel 1
+        self.channel1.write_channel_config(device, 0x8000).await?;
 
-                // Write configuration for Channel 1
-            self.channel1.write_channel_config(device, 0x8000)
-                .await?;
-    
-            // Write configuration for Channel 2
-            self.channel2.write_channel_config(device, 0x8010)
-                .await?;
-             // Write configuration for Channel 3
-            self.channel3.write_channel_config(device, 0x8020)
-                .await?;
-                
-                // Write configuration for Channel 4
-            self.channel4.write_channel_config(device, 0x8030)
-                .await?;
+        // Write configuration for Channel 2
+        self.channel2.write_channel_config(device, 0x8010).await?;
+        // Write configuration for Channel 3
+        self.channel3.write_channel_config(device, 0x8020).await?;
+
+        // Write configuration for Channel 4
+        self.channel4.write_channel_config(device, 0x8030).await?;
         self.pdo_assignment
             .txpdo_assignment()
             .write_config(device)
@@ -230,20 +225,16 @@ impl Configuration for EL3024Configuration {
     }
 }
 
-
-
 #[derive(Debug, Clone)]
-pub enum EL3024PdoPreset {
+pub enum EL3024PredefinedPdoAssignment {
     Standard,
     Compact,
 }
 
-
-
-impl PredefinedPdoAssignment<EL3024TxPdo, EL3024RxPdo> for EL3024PdoPreset {
+impl PredefinedPdoAssignment<EL3024TxPdo, EL3024RxPdo> for EL3024PredefinedPdoAssignment {
     fn txpdo_assignment(&self) -> EL3024TxPdo {
         match self {
-            EL3024PdoPreset::Standard => EL3024TxPdo {
+            EL3024PredefinedPdoAssignment::Standard => EL3024TxPdo {
                 ai_standard_channel1: Some(AiStandard::default()),
                 ai_compact_channel1: None,
                 ai_standard_channel2: Some(AiStandard::default()),
@@ -253,27 +244,26 @@ impl PredefinedPdoAssignment<EL3024TxPdo, EL3024RxPdo> for EL3024PdoPreset {
                 ai_standard_channel4: Some(AiStandard::default()),
                 ai_compact_channel4: None,
             },
-            EL3024PdoPreset::Compact => EL3024TxPdo {
+            EL3024PredefinedPdoAssignment::Compact => EL3024TxPdo {
                 ai_standard_channel1: None,
-                ai_compact_channel1:  Some(AiCompact::default()),
+                ai_compact_channel1: Some(AiCompact::default()),
                 ai_standard_channel2: None,
-                ai_compact_channel2:  Some(AiCompact::default()),
+                ai_compact_channel2: Some(AiCompact::default()),
                 ai_standard_channel3: None,
-                ai_compact_channel3:  Some(AiCompact::default()),
+                ai_compact_channel3: Some(AiCompact::default()),
                 ai_standard_channel4: None,
-                ai_compact_channel4:  Some(AiCompact::default())
+                ai_compact_channel4: Some(AiCompact::default()),
             },
         }
     }
 
     fn rxpdo_assignment(&self) -> EL3024RxPdo {
         match self {
-            EL3024PdoPreset::Standard => EL3024RxPdo {},
-            EL3024PdoPreset::Compact => EL3024RxPdo {},
+            EL3024PredefinedPdoAssignment::Standard => EL3024RxPdo {},
+            EL3024PredefinedPdoAssignment::Compact => EL3024RxPdo {},
         }
     }
 }
-
 
 pub const EL3024_VENDOR_ID: u32 = 2;
 pub const EL3024_PRODUCT_ID: u32 = 198193234;

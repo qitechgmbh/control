@@ -18,7 +18,7 @@ use ethercat_hal_derive::{Device, RxPdo, TxPdo};
 
 #[derive(Debug, Clone)]
 pub struct EL3021Configuration {
-    pub pdo_assignment: EL3021PdoPreset,
+    pub pdo_assignment: EL3021PredefinedPdoAssignment,
     // Input1+ and Input1-
     pub channel1: EL30XXChannelConfiguration,
 }
@@ -38,7 +38,7 @@ impl std::fmt::Debug for EL3021 {
     }
 }
 
-impl Default for EL3021PdoPreset {
+impl Default for EL3021PredefinedPdoAssignment {
     fn default() -> Self {
         Self::Standard
     }
@@ -47,7 +47,7 @@ impl Default for EL3021PdoPreset {
 impl Default for EL3021Configuration {
     fn default() -> Self {
         Self {
-            pdo_assignment: EL3021PdoPreset::Standard,
+            pdo_assignment: EL3021PredefinedPdoAssignment::Standard,
             channel1: EL30XXChannelConfiguration::default(),
         }
     }
@@ -155,19 +155,19 @@ impl Configuration for EL3021Configuration {
 }
 
 #[derive(Debug, Clone)]
-pub enum EL3021PdoPreset {
+pub enum EL3021PredefinedPdoAssignment {
     Standard,
     Compact,
 }
 
-impl PredefinedPdoAssignment<EL3021TxPdo, EL3021RxPdo> for EL3021PdoPreset {
+impl PredefinedPdoAssignment<EL3021TxPdo, EL3021RxPdo> for EL3021PredefinedPdoAssignment {
     fn txpdo_assignment(&self) -> EL3021TxPdo {
         match self {
-            EL3021PdoPreset::Standard => EL3021TxPdo {
+            EL3021PredefinedPdoAssignment::Standard => EL3021TxPdo {
                 ai_standard_channel1: Some(AiStandard::default()),
                 ai_compact_channel1: None,
             },
-            EL3021PdoPreset::Compact => EL3021TxPdo {
+            EL3021PredefinedPdoAssignment::Compact => EL3021TxPdo {
                 ai_standard_channel1: None,
                 ai_compact_channel1: Some(AiCompact::default()),
             },
@@ -176,8 +176,8 @@ impl PredefinedPdoAssignment<EL3021TxPdo, EL3021RxPdo> for EL3021PdoPreset {
 
     fn rxpdo_assignment(&self) -> EL3021RxPdo {
         match self {
-            EL3021PdoPreset::Standard => EL3021RxPdo {},
-            EL3021PdoPreset::Compact => EL3021RxPdo {},
+            EL3021PredefinedPdoAssignment::Standard => EL3021RxPdo {},
+            EL3021PredefinedPdoAssignment::Compact => EL3021RxPdo {},
         }
     }
 }

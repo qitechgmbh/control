@@ -129,19 +129,19 @@ Now we can implement the predefined PDO assignment as an `enum`.
 *ethercat_hal::devices::el3001*
 ```rust
 #[derive(Debug, Clone)]
-pub enum EL3001PdoPreset {
+pub enum EL3001PredefinedPdoAssignment {
     Standard,
     Compact,
 }
 
-impl PdoPreset<EL3001TxPdo, EL3001RxPdo> for EL3001PdoPreset {
+impl PdoPreset<EL3001TxPdo, EL3001RxPdo> for EL3001PredefinedPdoAssignment {
     fn txpdo_assignment(&self) -> EL3001TxPdo {
         match self {
-            EL3001PdoPreset::Standard => EL3001TxPdo {
+            EL3001PredefinedPdoAssignment::Standard => EL3001TxPdo {
                 ai_standard: Some(AiStandard::default()),
                 ai_compact: None,
             },
-            EL3001PdoPreset::Compact => EL3001TxPdo {
+            EL3001PredefinedPdoAssignment::Compact => EL3001TxPdo {
                 ai_standard: None,
                 ai_compact: Some(AiCompact::default()),
             },
@@ -150,8 +150,8 @@ impl PdoPreset<EL3001TxPdo, EL3001RxPdo> for EL3001PdoPreset {
 
     fn rxpdo_assignment(&self) -> EL3001RxPdo {
         match self {
-            EL3001PdoPreset::Standard => EL3001RxPdo {},
-            EL3001PdoPreset::Compact => EL3001RxPdo {},
+            EL3001PredefinedPdoAssignment::Standard => EL3001RxPdo {},
+            EL3001PredefinedPdoAssignment::Compact => EL3001RxPdo {},
         }
     }
 }
@@ -258,14 +258,14 @@ pub struct EL2521RxPdo {
 *ethercat_hal::devices::el2521*
 ```rust
 #[derive(Debug, Clone)]
-pub enum EL2521PdoPreset {
+pub enum EL2521PredefinedPdoAssignment {
     EnhancedOperatingMode32Bit,
 }
 
-impl PdoPreset<EL2521TxPdo, EL2521RxPdo> for EL2521PdoPreset {
+impl PdoPreset<EL2521TxPdo, EL2521RxPdo> for EL2521PredefinedPdoAssignment {
     fn txpdo_assignment(&self) -> EL2521TxPdo {
         match self {
-            EL2521PdoPreset::EnhancedOperatingMode32Bit => EL2521TxPdo {
+            EL2521PredefinedPdoAssignment::EnhancedOperatingMode32Bit => EL2521TxPdo {
                 pto_status: Some(PtoStatus::default()),
                 enc_status: Some(EncStatus::default()),
             },
@@ -274,7 +274,7 @@ impl PdoPreset<EL2521TxPdo, EL2521RxPdo> for EL2521PdoPreset {
 
     fn rxpdo_assignment(&self) -> EL2521RxPdo {
         match self {
-            EL2521PdoPreset::EnhancedOperatingMode32Bit => EL2521RxPdo {
+            EL2521PredefinedPdoAssignment::EnhancedOperatingMode32Bit => EL2521RxPdo {
                 pto_control: Some(PtoControl::default()),
                 pto_target: Some(PtoTarget::default()),
                 enc_control: Some(EncControl::default()),

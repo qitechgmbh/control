@@ -69,19 +69,19 @@ pub trait RxPdoObject: PdoObject {
 /// Example:
 /// ```rust,no_run
 /// #[derive(Debug, Clone)]
-/// pub enum EL3001PdoPreset {
+/// pub enum EL3001PredefinedPdoAssignment {
 ///     Standard,
 ///     Compact,
 /// }
 ///
-/// impl PredefinedPdoAssignment<EL3001TxPdo, EL3001RxPdo> for EL3001PdoPreset {
+/// impl PredefinedPdoAssignment<EL3001TxPdo, EL3001RxPdo> for EL3001PredefinedPdoAssignment {
 ///     fn txpdo_assignment(&self) -> EL3001TxPdo {
 ///         match self {
-///             EL3001PdoPreset::Standard => EL3001TxPdo {
+///             EL3001PredefinedPdoAssignment::Standard => EL3001TxPdo {
 ///                 ai_standard: Some(AiStandard::default()),
 ///                 ai_compact: None,
 ///             },
-///             EL3001PdoPreset::Compact => EL3001TxPdo {
+///             EL3001PredefinedPdoAssignment::Compact => EL3001TxPdo {
 ///                 ai_standard: None,
 ///                 ai_compact: Some(AiCompact::default()),
 ///             },
@@ -90,8 +90,8 @@ pub trait RxPdoObject: PdoObject {
 ///
 ///     fn rxpdo_assignment(&self) -> EL3001RxPdo {///
 ///        match self {
-///            EL3001PdoPreset::Standard => EL3001RxPdo {},
-///            EL3001PdoPreset::Compact => EL3001RxPdo {},
+///            EL3001PredefinedPdoAssignment::Standard => EL3001RxPdo {},
+///            EL3001PredefinedPdoAssignment::Compact => EL3001RxPdo {},
 ///        }
 ///    }
 /// }

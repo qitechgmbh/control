@@ -111,14 +111,14 @@ impl Default for EL1008TxPdo {
 }
 
 #[derive(Debug, Clone)]
-pub enum EL1008PdoPreset {
+pub enum EL1008PredefinedPdoAssignment {
     All,
 }
 
-impl PredefinedPdoAssignment<EL1008TxPdo, ()> for EL1008PdoPreset {
+impl PredefinedPdoAssignment<EL1008TxPdo, ()> for EL1008PredefinedPdoAssignment {
     fn txpdo_assignment(&self) -> EL1008TxPdo {
         match self {
-            EL1008PdoPreset::All => EL1008TxPdo {
+            EL1008PredefinedPdoAssignment::All => EL1008TxPdo {
                 channel1: Some(BoolPdoObject::default()),
                 channel2: Some(BoolPdoObject::default()),
                 channel3: Some(BoolPdoObject::default()),

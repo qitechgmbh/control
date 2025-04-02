@@ -230,7 +230,7 @@ pub struct EL2521Configuration {
     pub ramp_time_constant_emergency: u16,
 
     /// # 0x1400 & 0x1600
-    pub pdo_assignment: EL2521PdoPreset,
+    pub pdo_assignment: EL2521PredefinedPdoAssignment,
 }
 
 impl Default for EL2521Configuration {
@@ -257,7 +257,7 @@ impl Default for EL2521Configuration {
             frequency_factor: 0x0064,             // 100
             slowing_down_frequency: 0x0032,       // 50
             ramp_time_constant_emergency: 0x03E8, // 1000
-            pdo_assignment: EL2521PdoPreset::EnhancedOperatingMode32Bit,
+            pdo_assignment: EL2521PredefinedPdoAssignment::EnhancedOperatingMode32Bit,
         }
     }
 }
@@ -349,14 +349,14 @@ impl Configuration for EL2521Configuration {
 }
 
 #[derive(Debug, Clone)]
-pub enum EL2521PdoPreset {
+pub enum EL2521PredefinedPdoAssignment {
     EnhancedOperatingMode32Bit,
 }
 
-impl PredefinedPdoAssignment<EL2521TxPdo, EL2521RxPdo> for EL2521PdoPreset {
+impl PredefinedPdoAssignment<EL2521TxPdo, EL2521RxPdo> for EL2521PredefinedPdoAssignment {
     fn txpdo_assignment(&self) -> EL2521TxPdo {
         match self {
-            EL2521PdoPreset::EnhancedOperatingMode32Bit => EL2521TxPdo {
+            EL2521PredefinedPdoAssignment::EnhancedOperatingMode32Bit => EL2521TxPdo {
                 pto_status: Some(PtoStatus::default()),
                 enc_status: Some(EncStatus::default()),
             },
@@ -365,7 +365,7 @@ impl PredefinedPdoAssignment<EL2521TxPdo, EL2521RxPdo> for EL2521PdoPreset {
 
     fn rxpdo_assignment(&self) -> EL2521RxPdo {
         match self {
-            EL2521PdoPreset::EnhancedOperatingMode32Bit => EL2521RxPdo {
+            EL2521PredefinedPdoAssignment::EnhancedOperatingMode32Bit => EL2521RxPdo {
                 pto_control: Some(PtoControl::default()),
                 pto_target: Some(PtoTarget::default()),
                 enc_control: Some(EncControl::default()),
