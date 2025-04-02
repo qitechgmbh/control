@@ -9,7 +9,9 @@ pub mod el2634;
 pub mod el2809;
 pub mod el3001;
 pub mod el3204;
+pub mod el3021;
 pub mod el3024;
+
 // pub mod el4008;
 
 use super::devices::el1008::EL1008;
@@ -23,6 +25,7 @@ use el2008::{EL2008, EL2008_IDENTITY_A};
 use el2521::{EL2521_IDENTITY_0000_A, EL2521_IDENTITY_0000_B, EL2521_IDENTITY_0024_A};
 use el2522::{EL2522, EL2522_IDENTITY_A};
 use el3001::EL3001_IDENTITY_A;
+use el3021::EL3021_IDENTITY_A;
 use el3024::EL3024_IDENTITY_A;
 use ethercrab::{MainDevice, SubDeviceIdentity};
 use smol::lock::RwLock;
@@ -140,6 +143,7 @@ pub fn device_from_subdevice(
         // TODO: implement EL2809 identity
         // "EL2809" => Ok(Arc::new(RwLock::new(EL2809::new()))),
         EL3001_IDENTITY_A => Ok(Arc::new(RwLock::new(el3001::EL3001::new()))),
+        EL3021_IDENTITY_A => Ok(Arc::new(RwLock::new(el3021::EL3021::new()))),
         EL3024_IDENTITY_A => Ok(Arc::new( RwLock::new(el3024::EL3024::new()))),
         // "EL4008" => Ok(Arc::new(RwLock::new(EL4008::new()))),
         // TODO: implement EL3204 identity

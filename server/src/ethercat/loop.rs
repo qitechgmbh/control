@@ -7,14 +7,11 @@ use crate::{
     ethercat::config::{MAX_FRAMES, MAX_PDU_DATA, MAX_SUBDEVICES, PDI_LEN},
 };
 use bitvec::prelude::*;
-use control_core::actors::analog_input_getter::{AnalogInputDevice, AnalogInputGetter};
 use control_core::actors::Actor;
 use control_core::identification::identify_device_groups;
 use control_core::socketio::event::EventBuilder;
 use control_core::socketio::room::RoomCacheingLogic;
-use ethercat_hal::devices::el3024::{EL3024Port, EL3024};
 use ethercat_hal::devices::{devices_from_subdevices, downcast_device};
-use ethercat_hal::io::analog_input::AnalogInput;
 use ethercrab::std::{ethercat_now, tx_rx_task};
 use ethercrab::{MainDevice, MainDeviceConfig, PduStorage, RetryBehaviour, Timeouts};
 use smol::lock::RwLock;
@@ -135,12 +132,6 @@ pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(),
             Err(_) => {}
         }
     }
-
-    let el3024 = downcast_device::<EL3024>(devices.get(1).unwrap().clone()).await.unwrap();
-    let analog_input = AnalogInput::new(el3024, EL3024Port::AI1);
-    let analog_input_getter = AnalogInputGetter::new(analog_input, AnalogInputDevice::EL305x.into());
-    actors.push(Arc::new(RwLock::new(analog_input_getter)));
-
     // Write all this stuff to `app_state`
     {
         let mut ethercat_setup_guard = app_state.ethercat_setup.write().await;
