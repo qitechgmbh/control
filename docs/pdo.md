@@ -96,10 +96,8 @@ pub struct AiStandard {
 impl TxPdoObject for AiStandard {
     fn read(&mut self, bits: &BitSlice<u8, Lsb0>) {
         // only read other values if txpdo_toggle is true
-        if bits[8 + 7] {
-            self.txpdo_toggle = true;
-        } else {
-            self.txpdo_toggle = false;
+        self.txpdo_toggle = bits[8 + 7];
+        if !self.txpdo_toggle {
             return;
         }
 
@@ -302,6 +300,12 @@ pub struct PtoStatus {
 
 impl TxPdoObject for PtoStatus {
     fn read(&mut self, buffer: &BitSlice<u8, Lsb0>) {
+        // only read other values if txpdo_toggle is true
+        self.txpdo_toggle = bits[8 + 7];
+        if !self.txpdo_toggle {
+            return;
+        }
+
         self.select_end_counter = buffer[0];
         self.ramp_active = buffer[1];
         self.input_t = buffer[4];
@@ -309,7 +313,6 @@ impl TxPdoObject for PtoStatus {
         self.error = buffer[6];
 
         self.sync_error = buffer[8 + 5];
-        self.txpdo_toggle = buffer[8 + 7];
     }
 }
 
@@ -326,11 +329,16 @@ pub struct EncStatus {
 
 impl TxPdoObject for EncStatus {
     fn read(&mut self, bits: &BitSlice<u8, Lsb0>) {
+        // only read other values if txpdo_toggle is true
+        self.txpdo_toggle = bits[8 + 7];
+        if !self.txpdo_toggle {
+            return;
+        }
+
         self.set_counter_done = bits[2];
         self.counter_underflow = bits[3];
         self.counter_overflow = bits[4];
         self.sync_error = bits[8 + 5];
-        self.txpdo_toggle = bits[8 + 7];
         self.counter_value = bits[16..16 + 32].load_le();
     }
 }

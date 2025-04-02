@@ -36,10 +36,8 @@ pub struct AiStandard {
 impl TxPdoObject for AiStandard {
     fn read(&mut self, bits: &BitSlice<u8, Lsb0>) {
         // only read other values if txpdo_toggle is true
-        if bits[8 + 7] {
-            self.txpdo_toggle = true;
-        } else {
-            self.txpdo_toggle = false;
+        self.txpdo_toggle = bits[8 + 7];
+        if !self.txpdo_toggle {
             return;
         }
 

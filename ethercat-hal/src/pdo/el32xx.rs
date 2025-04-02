@@ -36,6 +36,12 @@ pub struct RtdInput {
 
 impl TxPdoObject for RtdInput {
     fn read(&mut self, bits: &BitSlice<u8, Lsb0>) {
+        // only read other values if txpdo_toggle is true
+        self.txpdo_toggle = bits[8 + 7];
+        if !self.txpdo_toggle {
+            return;
+        }
+
         self.temperature = (bits[16..16 + 16].load_le::<i16>() as f32) / 10.0;
         self.undervoltage = bits[0];
         self.overvoltage = bits[1];
@@ -43,6 +49,5 @@ impl TxPdoObject for RtdInput {
         self.limit2 = bits[4..6].load_le::<u8>().into();
         self.error = bits[7];
         self.txpdo_state = bits[8 + 6];
-        self.txpdo_toggle = bits[8 + 7];
     }
 }
