@@ -913,10 +913,10 @@ dependencies = [
 
 [[package]]
 name = "ethercrab"
-version = "0.5.0"
-source = "git+https://github.com/jamwaffles/ethercrab.git?rev=1ced48a65165665cef6fb6b2b40464be085f338b#1ced48a65165665cef6fb6b2b40464be085f338b"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fbb13becfa15713adb09b27fdb74468b827cdc78aa99aea638a89c1b0db3ce94"
 dependencies = [
- "async-channel",
  "async-io",
  "atomic-waker",
  "atomic_enum",
@@ -944,7 +944,8 @@ dependencies = [
 [[package]]
 name = "ethercrab-wire"
 version = "0.2.0"
-source = "git+https://github.com/jamwaffles/ethercrab.git?rev=1ced48a65165665cef6fb6b2b40464be085f338b#1ced48a65165665cef6fb6b2b40464be085f338b"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d15828cb020fb44c92ca67e1ee3c122c9621c2e00d383d066e488f0619023ba2"
 dependencies = [
  "ethercrab-wire-derive",
  "heapless",
@@ -953,7 +954,8 @@ dependencies = [
 [[package]]
 name = "ethercrab-wire-derive"
 version = "0.2.0"
-source = "git+https://github.com/jamwaffles/ethercrab.git?rev=1ced48a65165665cef6fb6b2b40464be085f338b#1ced48a65165665cef6fb6b2b40464be085f338b"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0e790b8011211ed70babfcacbd4277b91ee21402ad5ba6a2c293db02e2f12919"
 dependencies = [
  "criterion",
  "proc-macro2",
@@ -1459,9 +1461,9 @@ checksum = "b4ce301924b7887e9d637144fdade93f9dfff9b60981d4ac161db09720d39aa5"
 
 [[package]]
 name = "log"
-version = "0.4.26"
+version = "0.4.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "30bde2b3dc3671ae49d8e2e9f044c7c005836e7a023ee57cffa25ab82764bb9e"
+checksum = "13dc2df351e3202783a1fe0d44375f7295ffb4049267b0f3018346dc122a1d94"
 
 [[package]]
 name = "matchit"
@@ -2100,9 +2102,9 @@ dependencies = [
 
 [[package]]
 name = "spin"
-version = "0.9.8"
+version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6980e8d7511241f8acf4aebddbb1ff938df5eebe98691418c4468d0b72a96a67"
+checksum = "d5fe4ccb98d9c292d56fec89a5e07da7fc4cf0dc11e156b41793132775d3e591"
 
 [[package]]
 name = "stable_deref_trait"

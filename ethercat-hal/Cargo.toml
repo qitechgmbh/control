@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.95"
-ethercrab = { git = "https://github.com/jamwaffles/ethercrab.git", rev = "1ced48a65165665cef6fb6b2b40464be085f338b" }
+ethercrab = "0.6"
 ethercat_hal_derive = { version = "0.1.0", path = "../ethercat-hal-derive" }
 stepper_driver = { version = "0.1.0", path = "../stepper-driver" }
 bitvec = { version = "1.0.1", features = ["alloc"] }

@@ -8,7 +8,7 @@ rust-version = "1.86"
 [dependencies]
 
 # ethercat
-ethercrab = { git = "https://github.com/jamwaffles/ethercrab.git", rev = "1ced48a65165665cef6fb6b2b40464be085f338b" }
+ethercrab = "0.6"
 ethercat_hal = { path = "../ethercat-hal" }
 control_core = { path = "../control-core" }
 
