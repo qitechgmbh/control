@@ -130,6 +130,7 @@ export function DeviceEeepromDialogContent({ device, setOpen }: ContentProps) {
   const filteredAllowedDevices = useMemo(
     () =>
       filterAllowedDevices(
+        device.vendor_id,
         device.product_id,
         device.revision,
         machinePreset?.device_roles,
