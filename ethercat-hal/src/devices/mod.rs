@@ -37,7 +37,7 @@ use std::{any::Any, fmt::Debug, sync::Arc};
 pub trait Device: NewDevice + Any + Send + Sync + Debug {
     /// Input data from the last cycle
     /// `ts` is the timestamp when the input data was sent by the device
-    fn input(&mut self, _input: &BitSlice<u8, Lsb0>);
+    fn input(&mut self, _input: &BitSlice<u8, Lsb0>) -> Result<(), anyhow::Error>;
 
     /// The accepted length of the input data
     fn input_len(&self) -> usize;
@@ -55,20 +55,20 @@ pub trait Device: NewDevice + Any + Send + Sync + Debug {
             ));
         }
 
-        self.input(input);
+        self.input(input)?;
 
         Ok(())
     }
 
     /// Output data for the next cycle
     /// `ts` is the timestamp when the output data is predicted to be received by the device
-    fn output(&self, _output: &mut BitSlice<u8, Lsb0>);
+    fn output(&self, _output: &mut BitSlice<u8, Lsb0>) -> Result<(), anyhow::Error>;
 
     /// The accepted length of the output data
     fn output_len(&self) -> usize;
 
     fn output_checked(&self, output: &mut BitSlice<u8, Lsb0>) -> Result<(), anyhow::Error> {
-        self.output(output);
+        self.output(output)?;
 
         // validate input has correct length
         let output_len = self.output_len();

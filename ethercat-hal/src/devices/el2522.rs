@@ -577,7 +577,7 @@ mod tests {
             }),
         };
         let bits = buffer.view_bits_mut::<Lsb0>();
-        rxpdo.write(bits);
+        rxpdo.write(bits).unwrap();
         // pto_control_channel1
         assert_eq!(buffer[0], 0b0000_0111);
         assert_eq!(u16::from_le_bytes([buffer[2], buffer[3]]), 1000);
