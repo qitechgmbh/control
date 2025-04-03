@@ -5,7 +5,7 @@ if [ $1 == "release" ]; then
     cargo build --release
 else
     echo "building Debug Code"
-    cargo +beta build
+    cargo build
 fi
 # set cap for server executable
 sudo setcap cap_net_raw=eip ./target/debug/server

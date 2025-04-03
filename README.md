@@ -44,11 +44,11 @@ We could combine the code of the frontend and backend using [Doxius](https://dio
 
 ## Backend
 
-- Rust beta toolchain (install via [rustup](https://rustup.rs/))
+- Rust stable 1.86^ toolchain (install via [rustup](https://rustup.rs/))
 - `rust-analyzer` extension for VSCode
 - Set your interface in `server/src/ethercat/init.rs` like `en10`
 - Connect a Beckhoff EK1100 to your interface
-- run `cd server && cargo +beta run` to start the server (localhost:3001)
+- run `cd server && cargo run` to start the server (localhost:3001)
 
 ## Frontend
 
