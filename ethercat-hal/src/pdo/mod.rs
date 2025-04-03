@@ -151,9 +151,11 @@ pub trait RxPdo: Configuration {
                 // check if end_bit_index is out of bounds
                 if end_bit_index > buffer.len() {
                     return Err(anyhow::anyhow!(
-                        "[{}::RxPdo::write] Buffer is too small, end_bit_index is {} and buffer length is {}",
+                        "[{}::RxPdo::write] Range {}..{} ({}bits) is out of bounds for buffer with length {}",
                         module_path!(),
+                        bit_offset,
                         end_bit_index,
+                        object.size(),
                         buffer.len()
                     ));
                 }
@@ -220,9 +222,11 @@ pub trait TxPdo: Configuration {
                 // check if end_bit_index is out of bounds
                 if end_bit_index > buffer.len() {
                     return Err(anyhow::anyhow!(
-                        "[{}::TxPdo::read] Buffer is too small, end_bit_index is {} and buffer length is {}",
+                        "[{}::RxPdo::write] Range {}..{} ({}bits) is out of bounds for buffer with length {}",
                         module_path!(),
+                        bit_offset,
                         end_bit_index,
+                        object.size(),
                         buffer.len()
                     ));
                 }
