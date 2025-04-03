@@ -201,8 +201,8 @@ pub fn device_derive(input: TokenStream) -> TokenStream {
     if has_rxpdo {
         output_impl = quote! {
             #[doc="Implemented by the ethercat_hal_derive::Device derive macro"]
-            fn output(&self, output: &mut bitvec::prelude::BitSlice<u8, bitvec::prelude::Lsb0>) {
-                self.rxpdo.write(output);
+            fn output(&self, output: &mut bitvec::prelude::BitSlice<u8, bitvec::prelude::Lsb0>) -> Result<(), anyhow::Error> {
+                self.rxpdo.write(output)
             }
             #[doc="Implemented by the ethercat_hal_derive::Device derive macro"]
             fn output_len(&self) -> usize {
@@ -215,7 +215,9 @@ pub fn device_derive(input: TokenStream) -> TokenStream {
     } else {
         output_impl = quote! {
             #[doc="Implemented by the ethercat_hal_derive::Device derive macro"]
-            fn output(&self, _output: &mut bitvec::prelude::BitSlice<u8, bitvec::prelude::Lsb0>) {()}
+            fn output(&self, _output: &mut bitvec::prelude::BitSlice<u8, bitvec::prelude::Lsb0>) -> Result<(), anyhow::Error> {
+                Ok(())
+            }
             #[doc="Implemented by the ethercat_hal_derive::Device derive macro"]
             fn output_len(&self) -> usize {
                 0
@@ -226,8 +228,8 @@ pub fn device_derive(input: TokenStream) -> TokenStream {
     if has_txpdo {
         input_impl = quote! {
             #[doc="Implemented by the ethercat_hal_derive::Device derive macro"]
-            fn input(&mut self, input: & bitvec::prelude::BitSlice<u8, bitvec::prelude::Lsb0>) {
-                self.txpdo.read(input);
+            fn input(&mut self, input: & bitvec::prelude::BitSlice<u8, bitvec::prelude::Lsb0>) -> Result<(), anyhow::Error> {
+                self.txpdo.read(input)
             }
             #[doc="Implemented by the ethercat_hal_derive::Device derive macro"]
             fn input_len(&self) -> usize {
@@ -240,7 +242,9 @@ pub fn device_derive(input: TokenStream) -> TokenStream {
     } else {
         input_impl = quote! {
             #[doc="Implemented by the ethercat_hal_derive::Device derive macro"]
-            fn input(&mut self, _input: & bitvec::prelude::BitSlice<u8, bitvec::prelude::Lsb0>) {()}
+            fn input(&mut self, _input: & bitvec::prelude::BitSlice<u8, bitvec::prelude::Lsb0>) -> Result<(), anyhow::Error> {
+                Ok(())
+            }
             #[doc="Implemented by the ethercat_hal_derive::Device derive macro"]
             fn input_len(&self) -> usize {
                 0

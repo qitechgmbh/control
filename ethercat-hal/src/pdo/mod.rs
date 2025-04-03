@@ -2,6 +2,7 @@ pub mod basic;
 pub mod el252x;
 pub mod el30xx;
 pub mod el32xx;
+pub mod el7031;
 
 use crate::coe::Configuration;
 use bitvec::prelude::*;
@@ -141,15 +142,27 @@ pub trait RxPdo: Configuration {
     }
 
     /// Will give the mutable PDU bit array to the PDO objects to encode the data
-    fn write(&self, buffer: &mut BitSlice<u8, Lsb0>) {
+    fn write(&self, buffer: &mut BitSlice<u8, Lsb0>) -> Result<(), anyhow::Error> {
         let mut bit_offset = 0;
         for object in self.get_objects() {
             if let Some(object) = object {
                 let end_bit_index = bit_offset + object.size();
+
+                // check if end_bit_index is out of bounds
+                if end_bit_index > buffer.len() {
+                    return Err(anyhow::anyhow!(
+                        "[{}::RxPdo::write] Buffer is too small, end_bit_index is {} and buffer length is {}",
+                        module_path!(),
+                        end_bit_index,
+                        buffer.len()
+                    ));
+                }
+
                 object.write(&mut buffer[bit_offset..end_bit_index]);
                 bit_offset += object.size();
             }
         }
+        Ok(())
     }
 }
 
@@ -198,14 +211,26 @@ pub trait TxPdo: Configuration {
     }
 
     /// Will give the PDU bit array to the PDO objects to decode the data
-    fn read(&mut self, buffer: &BitSlice<u8, Lsb0>) {
+    fn read(&mut self, buffer: &BitSlice<u8, Lsb0>) -> Result<(), anyhow::Error> {
         let mut bit_offset = 0;
         for object in self.get_objects_mut().iter_mut() {
             if let Some(object) = object {
                 let end_bit_index = bit_offset + object.size();
+
+                // check if end_bit_index is out of bounds
+                if end_bit_index > buffer.len() {
+                    return Err(anyhow::anyhow!(
+                        "[{}::TxPdo::read] Buffer is too small, end_bit_index is {} and buffer length is {}",
+                        module_path!(),
+                        end_bit_index,
+                        buffer.len()
+                    ));
+                }
+
                 object.read(&buffer[bit_offset..end_bit_index]);
                 bit_offset += object.size();
             }
         }
+        Ok(())
     }
 }
