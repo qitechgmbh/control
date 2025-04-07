@@ -64,21 +64,17 @@ pub trait RoomInterface {
         event: &GenericEvent,
         buffer_fn: Box<dyn Fn(&mut Vec<GenericEvent>, &GenericEvent) -> ()>,
     );
-
-    fn room_id(&self) -> &RoomId;
 }
 
 #[derive(Debug)]
 pub struct Room {
-    pub room_id: RoomId,
     sockets: Vec<SocketRef>,
     events: HashMap<String, Vec<GenericEvent>>,
 }
 
 impl Room {
-    pub fn new(room_id: RoomId) -> Self {
+    pub fn new() -> Self {
         Self {
-            room_id,
             sockets: vec![],
             events: HashMap::new(),
         }
@@ -86,10 +82,6 @@ impl Room {
 }
 
 impl RoomInterface for Room {
-    fn room_id(&self) -> &RoomId {
-        &self.room_id
-    }
-
     fn subscribe(&mut self, socket: SocketRef) {
         // add the socket to the list
         self.sockets.push(socket.clone());
@@ -103,14 +95,14 @@ impl RoomInterface for Room {
     fn reemit(&mut self, socket: SocketRef) {
         for (_, events) in self.events.iter() {
             for event in events.iter() {
-                let _ = socket.emit("event", &event.include_room_id(&self.room_id));
+                let _ = socket.emit("event", &event);
             }
         }
     }
 
     fn emit(&mut self, event: &GenericEvent) {
         for socket in self.sockets.iter() {
-            let _ = socket.emit("event", &event.include_room_id(&self.room_id));
+            let _ = socket.emit("event", &event);
         }
     }
 

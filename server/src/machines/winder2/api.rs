@@ -2,7 +2,6 @@ use std::time::Duration;
 
 use super::{Winder2, Winder2Mode};
 use control_core::{
-    identification::MachineIdentificationUnique,
     machines::api::MachineApi,
     socketio::{
         event::{Event, EventBuilder, GenericEvent},
@@ -10,7 +9,6 @@ use control_core::{
             cache_duration, cache_one_event, CacheFn, CacheableEvents, Room, RoomCacheingLogic,
             RoomInterface,
         },
-        room_id::RoomId,
     },
 };
 use serde::{Deserialize, Serialize};
@@ -275,8 +273,8 @@ impl RoomCacheingLogic<Winder1Events> for Winder1Room {
 }
 
 impl Winder1Room {
-    pub fn new(machine_identification_unique: MachineIdentificationUnique) -> Self {
-        Self(Room::new(RoomId::Machine(machine_identification_unique)))
+    pub fn new() -> Self {
+        Self(Room::new())
     }
 }
 

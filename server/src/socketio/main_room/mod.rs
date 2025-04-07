@@ -1,7 +1,6 @@
 use control_core::socketio::{
     event::{Event, GenericEvent},
     room::{cache_one_event, CacheFn, CacheableEvents, Room, RoomCacheingLogic, RoomInterface},
-    room_id::RoomId,
 };
 use ethercat_setup_event::EthercatSetupEvent;
 
@@ -11,7 +10,7 @@ pub struct MainRoom(pub Room);
 
 impl MainRoom {
     pub fn new() -> Self {
-        Self(Room::new(RoomId::Main))
+        Self(Room::new())
     }
 }
 

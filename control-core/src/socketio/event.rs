@@ -1,4 +1,3 @@
-use super::room_id::RoomId;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -15,22 +14,6 @@ pub struct GenericEvent {
     pub content: EventContentType<Value>,
     /// Timestamp in milliseconds
     pub ts: i64,
-}
-
-impl GenericEvent {
-    pub fn include_room_id(&self, room_id: &RoomId) -> GenericRoomEvent {
-        GenericRoomEvent {
-            room_id: room_id.clone(),
-            event: self.clone(),
-        }
-    }
-}
-
-#[derive(Debug, Clone, Serialize)]
-pub struct GenericRoomEvent {
-    pub room_id: RoomId,
-    #[serde(flatten)]
-    pub event: GenericEvent,
 }
 
 #[derive(Debug, Clone, Serialize)]

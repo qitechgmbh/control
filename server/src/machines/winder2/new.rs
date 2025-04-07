@@ -40,18 +40,6 @@ impl MachineNewTrait for Winder2 {
         subdevices: &Vec<EthercrabSubDevicePreoperational<'maindevice>>,
         devices: &Vec<Arc<RwLock<dyn Device>>>,
     ) -> Result<Self, Error> {
-        // get machine identification unique
-        let machine_identification_unique = identified_device_group
-            .first()
-            .ok_or_else(|| {
-                anyhow::anyhow!(
-                    "[{}::MachineNewTrait/Winder2::new] No machine identification",
-                    module_path!()
-                )
-            })?
-            .machine_identification_unique
-            .clone();
-
         // validate general stuff
         validate_same_machine_identification(identified_device_group)?;
         validate_no_role_dublicates(identified_device_group)?;
@@ -212,7 +200,7 @@ impl MachineNewTrait for Winder2 {
                     },
                 )),
                 laser: DigitalOutputSetter::new(DigitalOutput::new(el2002, EL2002Port::DO1)),
-                room: Winder1Room::new(machine_identification_unique),
+                room: Winder1Room::new(),
                 last_measurement_emit: chrono::Utc::now(),
                 mode: Winder2Mode::Standby,
             };
