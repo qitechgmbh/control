@@ -185,6 +185,11 @@ pub fn device_derive(input: TokenStream) -> TokenStream {
     let mut self_output_ts = quote! {};
     let mut self_input_ts = quote! {};
 
+    // remove warnings for variables never read
+    let _ = &output_impl;
+    let _ = &input_impl;
+    let _ = &ts_impl;
+
     if let Data::Struct(data_struct) = input.data {
         for field in data_struct.fields.iter() {
             if let Some(ident) = &field.ident {

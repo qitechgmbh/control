@@ -2,9 +2,9 @@ use super::api::Winder1Room;
 use super::tension_arm::TensionArm;
 use super::{WinderV1, WinderV1Mode};
 use anyhow::Error;
-use control_core::actors::analog_input_getter::{AnalogInputDevice, AnalogInputGetter};
+use control_core::actors::analog_input_getter::{AnalogInputGetter, AnalogInputRange};
 use control_core::actors::digital_output_setter::DigitalOutputSetter;
-use control_core::actors::stepper_driver_pulse_train::StepperDriverPulseTrain;
+use control_core::actors::stepper_driver_el70x1::StepperDriverEL70x1;
 use control_core::identification::MachineDeviceIdentification;
 use control_core::machines::new::{
     get_device_by_index, get_mdi_by_role, get_subdevice_by_index, validate_no_role_dublicates,
@@ -12,28 +12,27 @@ use control_core::machines::new::{
 };
 use ethercat_hal::coe::ConfigurableDevice;
 use ethercat_hal::devices::el2002::{EL2002Port, EL2002};
-use ethercat_hal::devices::el2521::{EL2521Configuration, EL2521Port, EL2521};
-use ethercat_hal::devices::el2522::{
-    EL2522ChannelConfiguration, EL2522Configuration, EL2522Port, EL2522,
-};
 use ethercat_hal::devices::el3001::{
     EL3001Configuration, EL3001Port, EL3001PredefinedPdoAssignment, EL3001,
 };
+use ethercat_hal::devices::el7041_0052::coe::EL7041_0052Configuration;
+use ethercat_hal::devices::el7041_0052::{EL7041_0052Port, EL7041_0052, EL7041_0052_IDENTITY_A};
 use ethercat_hal::devices::{downcast_device, subdevice_identity_to_tuple, Device};
 use ethercat_hal::devices::{
-    ek1100::EK1100_IDENTITY_A,
-    el2002::EL2002_IDENTITY_A,
-    el2521::{EL2521_IDENTITY_0000_A, EL2521_IDENTITY_0000_B, EL2521_IDENTITY_0024_A},
-    el2522::EL2522_IDENTITY_A,
-    el3001::EL3001_IDENTITY_A,
+    ek1100::EK1100_IDENTITY_A, el2002::EL2002_IDENTITY_A, el3001::EL3001_IDENTITY_A,
 };
 use ethercat_hal::io::analog_input::AnalogInput;
 use ethercat_hal::io::digital_output::DigitalOutput;
-use ethercat_hal::io::pulse_train_output::PulseTrainOutput;
+use ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1;
+use ethercat_hal::shared_config::el70x1::{
+    EL70x1OperationMode, StmFeatures, StmMotorConfiguration,
+};
 use ethercat_hal::types::EthercrabSubDevicePreoperational;
 use futures::executor::block_on;
 use smol::lock::RwLock;
 use std::sync::Arc;
+use uom::si::electric_potential::volt;
+use uom::si::f32::ElectricPotential;
 
 impl MachineNewTrait for WinderV1 {
     fn new<'maindevice>(
@@ -129,96 +128,67 @@ impl MachineNewTrait for WinderV1 {
                 .await?;
 
             // Role 3
-            // 1x Pulszug Traverse
+            // 1x Stepper Winder
+            // EL7041-0052
             let mdi = get_mdi_by_role(identified_device_group, 3).or(Err(anyhow::anyhow!(
                 "[{}::MachineNewTrait/WinderV1::new] No device with role 3",
                 module_path!()
             )))?;
             let subdevice = get_subdevice_by_index(subdevices, mdi.subdevice_index)?;
-            let subdevice_identity = subdevice.identity();
             let device = get_device_by_index(devices, mdi.subdevice_index)?;
-            let el2521 = match subdevice_identity_to_tuple(&subdevice_identity) {
-                EL2521_IDENTITY_0000_A | EL2521_IDENTITY_0000_B | EL2521_IDENTITY_0024_A => {
-                    downcast_device::<EL2521>(device.clone()).await?
-                }
+            let subdevice_identity = subdevice.identity();
+            let el7041 = match subdevice_identity_to_tuple(&subdevice_identity) {
+                EL7041_0052_IDENTITY_A => downcast_device::<EL7041_0052>(device.clone()).await?,
                 _ => {
                     return Err(anyhow::anyhow!(
-                        "[{}::MachineNewTrait/WinderV1::new] Device with role 3 is not an EL2521",
-                        module_path!()
-                    ))
+                    "[{}::MachineNewTrait/WinderV1::new] Device with role 3 is not an EL7041-0052",
+                    module_path!()
+                ))
                 }
             };
-            el2521
+            let el7041_config = EL7041_0052Configuration {
+                stm_features: StmFeatures {
+                    operation_mode: EL70x1OperationMode::DirectVelocity,
+                    ..Default::default()
+                },
+                stm_motor: StmMotorConfiguration {
+                    max_current: 6000,
+                    ..Default::default()
+                },
+                ..Default::default()
+            };
+            el7041
                 .write()
                 .await
-                .write_config(
-                    &subdevice,
-                    &EL2521Configuration {
-                        direct_input_mode: true,
-                        ..EL2521Configuration::default()
-                    },
-                )
+                .write_config(&subdevice, &el7041_config)
                 .await?;
 
             // Role 4
-            // 2x Pulszuf Puller & Winder
-            let mdi = get_mdi_by_role(identified_device_group, 4).or(Err(anyhow::anyhow!(
-                "[{}::MachineNewTrait/WinderV1::new] No device with role 4",
-                module_path!()
-            )))?;
-            let subdevice = get_subdevice_by_index(subdevices, mdi.subdevice_index)?;
-            let subdevice_identity = subdevice.identity();
-            let device = get_device_by_index(devices, mdi.subdevice_index)?;
-            let el2522 = match subdevice_identity_to_tuple(&subdevice_identity) {
-                EL2522_IDENTITY_A => downcast_device::<EL2522>(device.clone()).await?,
-                _ => {
-                    return Err(anyhow::anyhow!(
-                        "[{}::MachineNewTrait/WinderV1::new] Device with role 4 is not an EL2522",
-                        module_path!()
-                    ))
-                }
-            };
-            el2522
-                .write()
-                .await
-                .write_config(
-                    &subdevice,
-                    &EL2522Configuration {
-                        channel1_configuration: EL2522ChannelConfiguration {
-                            direct_input_mode: true,
-                            ..EL2522ChannelConfiguration::default()
-                        },
-                        channel2_configuration: EL2522ChannelConfiguration {
-                            direct_input_mode: true,
-                            ..EL2522ChannelConfiguration::default()
-                        },
-                        ..EL2522Configuration::default()
-                    },
-                )
-                .await?;
+            // 1x Stepper Traverse
+            // EL7031
 
             let mut new = Self {
-                winder_driver: StepperDriverPulseTrain::new(PulseTrainOutput::new(
-                    el2522.clone(),
-                    EL2522Port::PTO1,
-                )),
-                traverse_driver: StepperDriverPulseTrain::new(PulseTrainOutput::new(
-                    el2521,
-                    EL2521Port::PTO1,
-                )),
-                puller_driver: StepperDriverPulseTrain::new(PulseTrainOutput::new(
-                    el2522,
-                    EL2522Port::PTO2,
-                )),
+                winder: StepperDriverEL70x1::new(
+                    StepperVelocityEL70x1::new(el7041, EL7041_0052Port::STM1),
+                    &el7041_config.stm_features.speed_range,
+                ),
                 tension_arm: TensionArm::new(AnalogInputGetter::new(
                     AnalogInput::new(el3001, EL3001Port::AI1),
-                    AnalogInputDevice::EL300x.into(),
+                    AnalogInputRange::Potential {
+                        min: ElectricPotential::new::<volt>(-10.0),
+                        max: ElectricPotential::new::<volt>(10.0),
+                    },
                 )),
-                laser_driver: DigitalOutputSetter::new(DigitalOutput::new(el2002, EL2002Port::DO1)),
+                laser: DigitalOutputSetter::new(DigitalOutput::new(el2002, EL2002Port::DO1)),
                 room: Winder1Room::new(machine_identification_unique),
                 last_measurement_emit: chrono::Utc::now(),
                 mode: WinderV1Mode::Standby,
             };
+
+            // Role 5
+            // 1x Stepper Puller
+            // EL7031
+            // TODO
 
             // initalize events
             new.emit_traverse_state();

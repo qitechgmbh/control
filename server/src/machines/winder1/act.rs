@@ -7,11 +7,11 @@ impl Actor for WinderV1 {
         now_ts: u64,
     ) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send + '_>> {
         Box::pin(async move {
-            self.traverse_driver.act(now_ts).await;
-            self.puller_driver.act(now_ts).await;
-            self.winder_driver.act(now_ts).await;
+            // self.traverse_driver.act(now_ts).await;
+            // self.puller_driver.act(now_ts).await;
+            self.winder.act(now_ts).await;
             self.tension_arm.analog_input_getter.act(now_ts).await;
-            self.laser_driver.act(now_ts).await;
+            self.laser.act(now_ts).await;
 
             // if last measurement emit is older than 1 second, emit a new measurement
             let now = chrono::Utc::now();

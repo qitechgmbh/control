@@ -9,8 +9,7 @@ use api::{
 use chrono::DateTime;
 use control_core::{
     actors::{
-        digital_output_setter::DigitalOutputSetter,
-        stepper_driver_pulse_train::StepperDriverPulseTrain,
+        digital_output_setter::DigitalOutputSetter, stepper_driver_el70x1::StepperDriverEL70x1,
     },
     machines::Machine,
     socketio::{event::EventBuilder, room::RoomCacheingLogic},
@@ -21,11 +20,11 @@ use uom::si::angle::degree;
 #[derive(Debug)]
 pub struct WinderV1 {
     // drivers
-    pub traverse_driver: StepperDriverPulseTrain,
-    pub puller_driver: StepperDriverPulseTrain,
-    pub winder_driver: StepperDriverPulseTrain,
+    // pub traverse_driver: StepperDriverPulseTrain,
+    // pub puller_driver: StepperDriverPulseTrain,
+    pub winder: StepperDriverEL70x1,
     pub tension_arm: TensionArm,
-    pub laser_driver: DigitalOutputSetter,
+    pub laser: DigitalOutputSetter,
 
     // socketio
     room: Winder1Room,
@@ -45,20 +44,14 @@ impl WinderV1 {
         // transiotion actions
         match mode {
             WinderV1Mode::Standby => {
-                self.puller_driver.set_frequency(0);
-                self.winder_driver.set_frequency(0);
+                self.winder.set_speed(0);
+                self.winder.set_enabled(false);
             }
-            WinderV1Mode::Hold => {
-                self.puller_driver.set_frequency(0);
-                self.winder_driver.set_frequency(0);
-            }
-            WinderV1Mode::Pull => {
-                self.winder_driver.set_frequency(2000);
-                self.puller_driver.set_frequency(200);
-            }
+            WinderV1Mode::Hold => {}
+            WinderV1Mode::Pull => {}
             WinderV1Mode::Wind => {
-                self.winder_driver.set_frequency(20000);
-                self.puller_driver.set_frequency(1000);
+                self.winder.set_enabled(true);
+                self.winder.set_speed(1000);
             }
         }
         self.emit_mode_state();
@@ -73,13 +66,13 @@ impl WinderV1 {
     }
 
     pub fn set_laser(&mut self, value: bool) {
-        self.laser_driver.set(value);
+        self.laser.set(value);
         self.emit_traverse_state();
     }
 
     pub fn emit_traverse_state(&mut self) {
         let event = TraverseStateEvent {
-            laserpointer: self.laser_driver.get(),
+            laserpointer: self.laser.get(),
             ..Default::default()
         }
         .build();

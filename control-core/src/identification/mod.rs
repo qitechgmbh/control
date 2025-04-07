@@ -13,6 +13,8 @@ use ethercat_hal::devices::el2522::EL2522_IDENTITY_A;
 use ethercat_hal::devices::el3001::EL3001_IDENTITY_A;
 use ethercat_hal::devices::el3021::EL3021_IDENTITY_A;
 use ethercat_hal::devices::el3024::EL3024_IDENTITY_A;
+use ethercat_hal::devices::el7031::EL7031_IDENTITY_A;
+use ethercat_hal::devices::el7041_0052::EL7041_0052_IDENTITY_A;
 use ethercat_hal::devices::subdevice_identity_to_tuple;
 use ethercat_hal::types::EthercrabSubDeviceGroupPreoperational;
 use ethercat_hal::types::EthercrabSubDeviceOperational;
@@ -319,6 +321,8 @@ pub fn get_identification_addresses<'maindevice>(
         EL2522_IDENTITY_A => MachineDeviceIdentificationAddresses::default(),
         EL3024_IDENTITY_A => MachineDeviceIdentificationAddresses::default(),
         EL3021_IDENTITY_A => MachineDeviceIdentificationAddresses::default(),
+        EL7031_IDENTITY_A => MachineDeviceIdentificationAddresses::default(),
+        EL7041_0052_IDENTITY_A => MachineDeviceIdentificationAddresses::default(),
         _ => {
             // block_on(u16dump(&subdevice, maindevice, 0x00, 0xff))?;
             Err(anyhow!(

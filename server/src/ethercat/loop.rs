@@ -11,7 +11,7 @@ use control_core::actors::Actor;
 use control_core::identification::identify_device_groups;
 use control_core::socketio::event::EventBuilder;
 use control_core::socketio::room::RoomCacheingLogic;
-use ethercat_hal::devices::{devices_from_subdevices, downcast_device};
+use ethercat_hal::devices::devices_from_subdevices;
 use ethercrab::std::{ethercat_now, tx_rx_task};
 use ethercrab::{MainDevice, MainDeviceConfig, PduStorage, RetryBehaviour, Timeouts};
 use smol::lock::RwLock;
