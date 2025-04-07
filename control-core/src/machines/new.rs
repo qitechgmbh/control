@@ -26,8 +26,6 @@ pub type MachineNewFn = Box<
         + Sync,
 >;
 
-
-
 // validates that all devices in the group have the same machine identification
 pub fn validate_same_machine_identification(
     identified_device_group: &Vec<MachineDeviceIdentification>,
@@ -67,7 +65,7 @@ pub fn validate_no_role_dublicates(
 /// get a device with a device group
 pub fn get_mdi_by_role(
     identified_device_group: &Vec<MachineDeviceIdentification>,
-    role: u32,
+    role: u16,
 ) -> Result<&MachineDeviceIdentification, Error> {
     for device in identified_device_group.iter() {
         if device.role == role {

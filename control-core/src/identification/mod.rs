@@ -27,9 +27,9 @@ use serde::Serialize;
 /// Identifies a spacifi machine
 #[derive(Debug, PartialEq, Default, Clone, Serialize, Deserialize, Eq, Hash)]
 pub struct MachineIdentificationUnique {
-    pub vendor: u32,
-    pub serial: u32,
-    pub machine: u32,
+    pub vendor: u16,
+    pub serial: u16,
+    pub machine: u16,
 }
 
 impl Display for MachineIdentificationUnique {
@@ -45,12 +45,12 @@ impl Display for MachineIdentificationUnique {
 /// Identifies a machine
 #[derive(Debug, PartialEq, Default, Clone, Serialize, Deserialize)]
 pub struct MachineIdentification {
-    pub vendor: u32,
-    pub machine: u32,
+    pub vendor: u16,
+    pub machine: u16,
 }
 
 impl MachineIdentification {
-    pub fn new(vendor: u32, machine: u32) -> Self {
+    pub fn new(vendor: u16, machine: u16) -> Self {
         Self { vendor, machine }
     }
 }
@@ -73,7 +73,7 @@ impl From<&MachineIdentificationUnique> for MachineIdentification {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MachineDeviceIdentification {
     pub machine_identification_unique: MachineIdentificationUnique,
-    pub role: u32,
+    pub role: u16,
     pub subdevice_index: usize,
 }
 
@@ -109,14 +109,10 @@ impl MachineDeviceIdentificationAddresses {
 impl Default for MachineDeviceIdentificationAddresses {
     fn default() -> Self {
         Self {
-            // 0x0028 to 0x0029 BE
             vendor_word: 0x0028,
-            // 0x002a to 0x002b BE
-            serial_word: 0x002a,
-            // 0x002c to 0x002d BE
-            machine_word: 0x002c,
-            // 0x002e to 0x002f BE
-            role_word: 0x002e,
+            serial_word: 0x0029,
+            machine_word: 0x002a,
+            role_word: 0x002b,
         }
     }
 }
@@ -188,47 +184,23 @@ pub async fn machine_device_identification<'maindevice>(
 
     let mdi = MachineDeviceIdentification {
         machine_identification_unique: MachineIdentificationUnique {
-            vendor: words_to_u32be(
-                subdevice
-                    .eeprom_read(maindevice, addresses.vendor_word)
-                    .await
-                    .unwrap(),
-                subdevice
-                    .eeprom_read(maindevice, addresses.vendor_word + 1)
-                    .await
-                    .unwrap(),
-            ),
-            serial: words_to_u32be(
-                subdevice
-                    .eeprom_read(maindevice, addresses.serial_word)
-                    .await
-                    .unwrap(),
-                subdevice
-                    .eeprom_read(maindevice, addresses.serial_word + 1)
-                    .await
-                    .unwrap(),
-            ),
-            machine: words_to_u32be(
-                subdevice
-                    .eeprom_read(maindevice, addresses.machine_word)
-                    .await
-                    .unwrap(),
-                subdevice
-                    .eeprom_read(maindevice, addresses.machine_word + 1)
-                    .await
-                    .unwrap(),
-            ),
+            vendor: subdevice
+                .eeprom_read::<u16>(maindevice, addresses.vendor_word)
+                .await
+                .unwrap(),
+            serial: subdevice
+                .eeprom_read::<u16>(maindevice, addresses.serial_word)
+                .await
+                .unwrap(),
+            machine: subdevice
+                .eeprom_read::<u16>(maindevice, addresses.machine_word)
+                .await
+                .unwrap(),
         },
-        role: words_to_u32be(
-            subdevice
-                .eeprom_read(maindevice, addresses.role_word)
-                .await
-                .unwrap(),
-            subdevice
-                .eeprom_read(maindevice, addresses.role_word + 1)
-                .await
-                .unwrap(),
-        ),
+        role: subdevice
+            .eeprom_read::<u16>(maindevice, addresses.role_word)
+            .await
+            .unwrap(),
         subdevice_index: subdevice_index,
     };
 
@@ -282,60 +254,27 @@ pub async fn write_machine_device_identification<'maindevice, const MAX_PDI: usi
         .eeprom_write_dangerously(
             maindevice,
             addresses.vendor_word,
-            identification.machine_identification_unique.vendor as u16,
-        )
-        .await?;
-    subdevice
-        .eeprom_write_dangerously(
-            maindevice,
-            addresses.vendor_word + 1,
-            (identification.machine_identification_unique.vendor >> 16) as u16,
+            identification.machine_identification_unique.vendor,
         )
         .await?;
     subdevice
         .eeprom_write_dangerously(
             maindevice,
             addresses.serial_word,
-            identification.machine_identification_unique.serial as u16,
-        )
-        .await?;
-    subdevice
-        .eeprom_write_dangerously(
-            maindevice,
-            addresses.serial_word + 1,
-            (identification.machine_identification_unique.serial >> 16) as u16,
+            identification.machine_identification_unique.serial,
         )
         .await?;
     subdevice
         .eeprom_write_dangerously(
             maindevice,
             addresses.machine_word,
-            identification.machine_identification_unique.machine as u16,
+            identification.machine_identification_unique.machine,
         )
         .await?;
     subdevice
-        .eeprom_write_dangerously(
-            maindevice,
-            addresses.machine_word + 1,
-            (identification.machine_identification_unique.machine >> 16) as u16,
-        )
-        .await?;
-    subdevice
-        .eeprom_write_dangerously(maindevice, addresses.role_word, identification.role as u16)
-        .await?;
-    subdevice
-        .eeprom_write_dangerously(
-            maindevice,
-            addresses.role_word + 1,
-            (identification.role >> 16) as u16,
-        )
+        .eeprom_write_dangerously(maindevice, addresses.role_word, identification.role)
         .await?;
     Ok(())
-}
-
-/// Converts two u16 words to a u32 big endian
-fn words_to_u32be(word_low: u16, word_high: u16) -> u32 {
-    ((word_high as u32) << 16) | word_low as u32
 }
 
 /// Returns the EEPROM addresses for the machine device identification
