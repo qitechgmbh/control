@@ -215,7 +215,7 @@ export const createWinder1RoomStore = (): StoreApi<Winder1RoomStore> =>
  * @param store The store to update when messages are received
  * @returns A message handler function
  */
-export function winder1MessageHandler(
+export function winder2MessageHandler(
   store: StoreApi<Winder1RoomStore>,
 ): MessageCallback {
   // Constants for time durations
@@ -323,7 +323,7 @@ export function winder1MessageHandler(
 const useWinder1RoomImplementation = createRoomImplementation<Winder1RoomStore>(
   {
     createStore: createWinder1RoomStore,
-    createMessageHandler: winder1MessageHandler,
+    createMessageHandler: winder2MessageHandler,
   },
 );
 

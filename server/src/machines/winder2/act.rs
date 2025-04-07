@@ -1,7 +1,7 @@
-use super::WinderV1;
+use super::Winder2;
 use control_core::actors::Actor;
 
-impl Actor for WinderV1 {
+impl Actor for Winder2 {
     fn act(
         &mut self,
         now_ts: u64,

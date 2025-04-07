@@ -2,9 +2,9 @@ import { toastError } from "@/components/Toast";
 import { useMachineMutate as useMachineMutation } from "@/client/useClient";
 import { useStateOptimistic } from "@/lib/useStateOptimistic";
 import { MachineIdentificationUnique } from "@/machines/types";
-import { winder1SerialRoute } from "@/routes/routes";
+import { winder2SerialRoute } from "@/routes/routes";
 import { z } from "zod";
-import { Mode, ModeStateEvent, useWinder1Room } from "./winder1Room";
+import { Mode, useWinder1Room } from "./winder2Room";
 import { useEffect, useMemo, useState } from "react";
 
 function useLaserpointer(
@@ -115,7 +115,7 @@ function useMode(machine_identification_unique: MachineIdentificationUnique): {
 }
 
 export function useWinder1() {
-  const { serial: serialString } = winder1SerialRoute.useParams();
+  const { serial: serialString } = winder2SerialRoute.useParams();
 
   // Memoize the machine identification to keep it stable between renders
   const machineIdentification = useMemo(() => {

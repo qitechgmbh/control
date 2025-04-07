@@ -542,6 +542,7 @@ dependencies = [
  "chrono",
  "ethercat_hal",
  "ethercrab",
+ "log",
  "serde",
  "serde_json",
  "smol",

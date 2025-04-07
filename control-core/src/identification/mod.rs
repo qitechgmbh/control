@@ -186,7 +186,7 @@ pub async fn machine_device_identification<'maindevice>(
         }
     };
 
-    Ok(MachineDeviceIdentification {
+    let mdi = MachineDeviceIdentification {
         machine_identification_unique: MachineIdentificationUnique {
             vendor: words_to_u32be(
                 subdevice
@@ -230,7 +230,27 @@ pub async fn machine_device_identification<'maindevice>(
                 .unwrap(),
         ),
         subdevice_index: subdevice_index,
-    })
+    };
+
+    log::debug!(
+        "[{}::machine_device_identification] Read MDI from EEPROM for device {}\nVendor:  0x{:08x} at 0x{:04x}-0x{:04x}\nSerial:  0x{:08x} at 0x{:04x}-0x{:04x}\nMachine: 0x{:08x} at 0x{:04x}-0x{:04x}\nRole:    0x{:08x} at 0x{:04x}-0x{:04x}",
+        module_path!(),
+        subdevice.name(),
+        mdi.machine_identification_unique.vendor,
+        addresses.vendor_word,
+        addresses.vendor_word + 1,
+        mdi.machine_identification_unique.serial,
+        addresses.serial_word,
+        addresses.serial_word + 1,
+        mdi.machine_identification_unique.machine,
+        addresses.machine_word,
+        addresses.machine_word + 1,
+        mdi.role,
+        addresses.role_word,
+        addresses.role_word + 1,
+    );
+
+    Ok(mdi)
 }
 
 /// Writes the machine device identification to the EEPROM
@@ -240,6 +260,23 @@ pub async fn write_machine_device_identification<'maindevice, const MAX_PDI: usi
     identification: &MachineDeviceIdentification,
 ) -> Result<(), Error> {
     let addresses = get_identification_addresses(&subdevice.identity(), subdevice.name())?;
+    log::debug!(
+        "[{}::write_machine_device_identification] Writing MDI to EEPROM for device {}\nVendor:  0x{:08x} at 0x{:04x}-0x{:04x}\nSerial:  0x{:08x} at 0x{:04x}-0x{:04x}\nMachine: 0x{:08x} at 0x{:04x}-0x{:04x}\nRole:    0x{:08x} at 0x{:04x}-0x{:04x}",
+        module_path!(),
+        subdevice.name(),
+        identification.machine_identification_unique.vendor,
+        addresses.vendor_word,
+        addresses.vendor_word + 1,
+        identification.machine_identification_unique.serial,
+        addresses.serial_word,
+        addresses.serial_word + 1,
+        identification.machine_identification_unique.machine,
+        addresses.machine_word,
+        addresses.machine_word + 1,
+        identification.role,
+        addresses.role_word,
+        addresses.role_word + 1,
+    );
 
     subdevice
         .eeprom_write_dangerously(

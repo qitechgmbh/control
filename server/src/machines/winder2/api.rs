@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use super::{WinderV1, WinderV1Mode};
+use super::{Winder2, Winder2Mode};
 use control_core::{
     identification::MachineIdentificationUnique,
     machines::api::MachineApi,
@@ -36,24 +36,24 @@ pub enum Mode {
     Wind,
 }
 
-impl From<WinderV1Mode> for Mode {
-    fn from(mode: WinderV1Mode) -> Self {
+impl From<Winder2Mode> for Mode {
+    fn from(mode: Winder2Mode) -> Self {
         match mode {
-            WinderV1Mode::Standby => Mode::Standby,
-            WinderV1Mode::Hold => Mode::Hold,
-            WinderV1Mode::Pull => Mode::Pull,
-            WinderV1Mode::Wind => Mode::Wind,
+            Winder2Mode::Standby => Mode::Standby,
+            Winder2Mode::Hold => Mode::Hold,
+            Winder2Mode::Pull => Mode::Pull,
+            Winder2Mode::Wind => Mode::Wind,
         }
     }
 }
 
-impl From<Mode> for WinderV1Mode {
+impl From<Mode> for Winder2Mode {
     fn from(mode: Mode) -> Self {
         match mode {
-            Mode::Standby => WinderV1Mode::Standby,
-            Mode::Hold => WinderV1Mode::Hold,
-            Mode::Pull => WinderV1Mode::Pull,
-            Mode::Wind => WinderV1Mode::Wind,
+            Mode::Standby => Winder2Mode::Standby,
+            Mode::Hold => Winder2Mode::Hold,
+            Mode::Pull => Winder2Mode::Pull,
+            Mode::Wind => Winder2Mode::Wind,
         }
     }
 }
@@ -314,14 +314,14 @@ impl CacheableEvents<Winder1Events> for Winder1Events {
     }
 }
 
-impl MachineApi for WinderV1 {
+impl MachineApi for Winder2 {
     fn api_mutate(&mut self, request_body: Value) -> Result<(), anyhow::Error> {
         let mutation: Mutation = serde_json::from_value(request_body)?;
         match mutation {
             Mutation::TraverseEnableLaserpointer(enable) => self.set_laser(enable),
             Mutation::ModeSet(mode) => self.set_mode(&mode.into()),
             _ => anyhow::bail!(
-                "[{}::MachineApi/WinderV1::api_mutate] Mutation {} not implemented",
+                "[{}::MachineApi/Winder2::api_mutate] Mutation {} not implemented",
                 module_path!(),
                 serde_json::to_string(&mutation)?
             ),

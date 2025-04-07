@@ -80,12 +80,12 @@ export function getVendorPreset(vendor: number): VendorPreset | undefined {
 export const machinePresets: MachinePreset[] = [
   {
     name: "Winder",
-    version: "V1",
-    slug: "winder1",
+    version: "V2",
+    slug: "winder2",
     icon: "lu:Disc3",
     machine_identification: {
       vendor: VENDOR_QITECH,
-      machine: 0x0001,
+      machine: 0x0002,
     },
     device_roles: [
       {

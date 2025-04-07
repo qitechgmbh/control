@@ -5,18 +5,18 @@ import { SidebarLayout } from "@/components/SidebarLayout";
 import { SetupPage } from "@/setup/SetupPage";
 import { EthercatPage } from "@/setup/EthercatPage";
 import { MachinesPage } from "@/setup/MachinesPage";
-import { Winder1Page } from "@/machines/winder/winder1/Winder1Page";
-import { Winder1ControlPage } from "@/machines/winder/winder1/Winder1ControlPage";
-import { Winder1ManualPage } from "@/machines/winder/winder1/Winder1Manual";
-import { Winder1SettingPage } from "@/machines/winder/winder1/Winder1Settings";
-import { Winder1GraphsPage } from "@/machines/winder/winder1/Winder1Graphs";
+import { Winder1Page } from "@/machines/winder/winder2/Winder2Page";
+import { Winder1ControlPage } from "@/machines/winder/winder2/Winder2ControlPage";
+import { Winder1ManualPage } from "@/machines/winder/winder2/Winder2Manual";
+import { Winder1SettingPage } from "@/machines/winder/winder2/Winder2Settings";
+import { Winder1GraphsPage } from "@/machines/winder/winder2/Winder2Graphs";
 
 // make a route tree like this
-// _mainNavigation/machines/winder1/$serial/control
+// _mainNavigation/machines/winder2/$serial/control
 // _mainNavigation/configuration/a
 // _mainNavigation/configuration/b
 // the mainNavigation has a custom layout
-// the winder1 winder2 and configuration also have a custom layout
+// the winder2 winder2 and configuration also have a custom layout
 // the leaf routes are just pages
 
 export const sidebarRoute = createRoute({
@@ -30,32 +30,32 @@ export const machinesRoute = createRoute({
   path: "machines",
 });
 
-export const winder1SerialRoute = createRoute({
+export const winder2SerialRoute = createRoute({
   getParentRoute: () => machinesRoute,
-  path: "winder1/$serial",
+  path: "winder2/$serial",
   component: () => <Winder1Page />,
 });
 
-export const winder1ControlRoute = createRoute({
-  getParentRoute: () => winder1SerialRoute,
+export const winder2ControlRoute = createRoute({
+  getParentRoute: () => winder2SerialRoute,
   path: "control",
   component: () => <Winder1ControlPage />,
 });
 
-export const winder1ManualRoute = createRoute({
-  getParentRoute: () => winder1SerialRoute,
+export const winder2ManualRoute = createRoute({
+  getParentRoute: () => winder2SerialRoute,
   path: "manual",
   component: () => <Winder1ManualPage />,
 });
 
-export const winder1SettingsRoute = createRoute({
-  getParentRoute: () => winder1SerialRoute,
+export const winder2SettingsRoute = createRoute({
+  getParentRoute: () => winder2SerialRoute,
   path: "settings",
   component: () => <Winder1SettingPage />,
 });
 
-export const winder1GraphsRoute = createRoute({
-  getParentRoute: () => winder1SerialRoute,
+export const winder2GraphsRoute = createRoute({
+  getParentRoute: () => winder2SerialRoute,
   path: "graphs",
   component: () => <Winder1GraphsPage />,
 });
@@ -82,11 +82,11 @@ export const rootTree = RootRoute.addChildren([
   sidebarRoute.addChildren([
     setupRoute.addChildren([ethercatRoute, setupMachinesRoute]),
     machinesRoute.addChildren([
-      winder1SerialRoute.addChildren([
-        winder1ControlRoute,
-        winder1ManualRoute,
-        winder1SettingsRoute,
-        winder1GraphsRoute,
+      winder2SerialRoute.addChildren([
+        winder2ControlRoute,
+        winder2ManualRoute,
+        winder2SettingsRoute,
+        winder2GraphsRoute,
       ]),
     ]),
   ]),

@@ -1,6 +1,6 @@
 use super::api::Winder1Room;
 use super::tension_arm::TensionArm;
-use super::{WinderV1, WinderV1Mode};
+use super::{Winder2, Winder2Mode};
 use anyhow::Error;
 use control_core::actors::analog_input_getter::{AnalogInputGetter, AnalogInputRange};
 use control_core::actors::digital_output_setter::DigitalOutputSetter;
@@ -34,7 +34,7 @@ use std::sync::Arc;
 use uom::si::electric_potential::volt;
 use uom::si::f32::ElectricPotential;
 
-impl MachineNewTrait for WinderV1 {
+impl MachineNewTrait for Winder2 {
     fn new<'maindevice>(
         identified_device_group: &Vec<MachineDeviceIdentification>,
         subdevices: &Vec<EthercrabSubDevicePreoperational<'maindevice>>,
@@ -45,7 +45,7 @@ impl MachineNewTrait for WinderV1 {
             .first()
             .ok_or_else(|| {
                 anyhow::anyhow!(
-                    "[{}::MachineNewTrait/WinderV1::new] No machine identification",
+                    "[{}::MachineNewTrait/Winder2::new] No machine identification",
                     module_path!()
                 )
             })?
@@ -64,7 +64,7 @@ impl MachineNewTrait for WinderV1 {
             // Buscoupler
             // EK1100
             let mdi = get_mdi_by_role(identified_device_group, 0).or(Err(anyhow::anyhow!(
-                "[{}::MachineNewTrait/WinderV1::new] No device with role 0",
+                "[{}::MachineNewTrait/Winder2::new] No device with role 0",
                 module_path!()
             )))?;
             let subdevice = get_subdevice_by_index(subdevices, mdi.subdevice_index)?;
@@ -73,7 +73,7 @@ impl MachineNewTrait for WinderV1 {
                 EK1100_IDENTITY_A => (),
                 _ => {
                     return Err(anyhow::anyhow!(
-                        "[{}::MachineNewTrait/WinderV1::new] Device with role 0 is not an EK1100",
+                        "[{}::MachineNewTrait/Winder2::new] Device with role 0 is not an EK1100",
                         module_path!()
                     ))
                 }
@@ -83,7 +83,7 @@ impl MachineNewTrait for WinderV1 {
             // 2x Digitalausgang
             // EL2002
             let mdi = get_mdi_by_role(identified_device_group, 1).or(Err(anyhow::anyhow!(
-                "[{}::MachineNewTrait/WinderV1::new] No device with role 1",
+                "[{}::MachineNewTrait/Winder2::new] No device with role 1",
                 module_path!()
             )))?;
             let subdevice = get_subdevice_by_index(subdevices, mdi.subdevice_index)?;
@@ -92,7 +92,7 @@ impl MachineNewTrait for WinderV1 {
             let el2002 = match subdevice_identity_to_tuple(&subdevice_identity) {
                 EL2002_IDENTITY_A => downcast_device::<EL2002>(device.clone()).await?,
                 _ => Err(anyhow::anyhow!(
-                    "[{}::MachineNewTrait/WinderV1::new] Device with role 1 is not an EL2002",
+                    "[{}::MachineNewTrait/Winder2::new] Device with role 1 is not an EL2002",
                     module_path!()
                 ))?,
             };
@@ -100,7 +100,7 @@ impl MachineNewTrait for WinderV1 {
             // Role 2
             // 1x Analogeingang Lastarm
             let mdi = get_mdi_by_role(identified_device_group, 2).or(Err(anyhow::anyhow!(
-                "[{}::MachineNewTrait/WinderV1::new] No device with role 2",
+                "[{}::MachineNewTrait/Winder2::new] No device with role 2",
                 module_path!()
             )))?;
             let subdevice = get_subdevice_by_index(subdevices, mdi.subdevice_index)?;
@@ -110,7 +110,7 @@ impl MachineNewTrait for WinderV1 {
                 EL3001_IDENTITY_A => downcast_device::<EL3001>(device.clone()).await?,
                 _ => {
                     return Err(anyhow::anyhow!(
-                        "[{}::MachineNewTrait/WinderV1::new] Device with role 2 is not an EL3001",
+                        "[{}::MachineNewTrait/Winder2::new] Device with role 2 is not an EL3001",
                         module_path!()
                     ))
                 }
@@ -131,7 +131,7 @@ impl MachineNewTrait for WinderV1 {
             // 1x Stepper Winder
             // EL7041-0052
             let mdi = get_mdi_by_role(identified_device_group, 3).or(Err(anyhow::anyhow!(
-                "[{}::MachineNewTrait/WinderV1::new] No device with role 3",
+                "[{}::MachineNewTrait/Winder2::new] No device with role 3",
                 module_path!()
             )))?;
             let subdevice = get_subdevice_by_index(subdevices, mdi.subdevice_index)?;
@@ -141,7 +141,7 @@ impl MachineNewTrait for WinderV1 {
                 EL7041_0052_IDENTITY_A => downcast_device::<EL7041_0052>(device.clone()).await?,
                 _ => {
                     return Err(anyhow::anyhow!(
-                    "[{}::MachineNewTrait/WinderV1::new] Device with role 3 is not an EL7041-0052",
+                    "[{}::MachineNewTrait/Winder2::new] Device with role 3 is not an EL7041-0052",
                     module_path!()
                 ))
                 }
@@ -166,6 +166,38 @@ impl MachineNewTrait for WinderV1 {
             // Role 4
             // 1x Stepper Traverse
             // EL7031
+            let mdi = get_mdi_by_role(identified_device_group, 4).or(Err(anyhow::anyhow!(
+                "[{}::MachineNewTrait/Winder2::new] No device with role 4",
+                module_path!()
+            )))?;
+            let subdevice = get_subdevice_by_index(subdevices, mdi.subdevice_index)?;
+            let device = get_device_by_index(devices, mdi.subdevice_index)?;
+            let subdevice_identity = subdevice.identity();
+            let el7031 = match subdevice_identity_to_tuple(&subdevice_identity) {
+                EL7041_0052_IDENTITY_A => downcast_device::<EL7041_0052>(device.clone()).await?,
+                _ => {
+                    return Err(anyhow::anyhow!(
+                        "[{}::MachineNewTrait/Winder2::new] Device with role 4 is not an EL7031",
+                        module_path!()
+                    ))
+                }
+            };
+            let el7031_config = EL7041_0052Configuration {
+                stm_features: StmFeatures {
+                    operation_mode: EL70x1OperationMode::DirectVelocity,
+                    ..Default::default()
+                },
+                stm_motor: StmMotorConfiguration {
+                    max_current: 1500,
+                    ..Default::default()
+                },
+                ..Default::default()
+            };
+            el7031
+                .write()
+                .await
+                .write_config(&subdevice, &el7031_config)
+                .await?;
 
             let mut new = Self {
                 winder: StepperDriverEL70x1::new(
@@ -182,7 +214,7 @@ impl MachineNewTrait for WinderV1 {
                 laser: DigitalOutputSetter::new(DigitalOutput::new(el2002, EL2002Port::DO1)),
                 room: Winder1Room::new(machine_identification_unique),
                 last_measurement_emit: chrono::Utc::now(),
-                mode: WinderV1Mode::Standby,
+                mode: Winder2Mode::Standby,
             };
 
             // Role 5

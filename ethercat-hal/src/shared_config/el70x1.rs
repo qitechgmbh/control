@@ -1,10 +1,6 @@
 use anyhow;
 
-use crate::{
-    coe::{ConfigurableDevice, Configuration},
-    pdo::PredefinedPdoAssignment,
-    types::EthercrabSubDevicePreoperational,
-};
+use crate::types::EthercrabSubDevicePreoperational;
 
 #[derive(Debug, Clone)]
 pub struct EncConfiguration {

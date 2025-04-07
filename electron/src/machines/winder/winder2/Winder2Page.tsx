@@ -1,12 +1,12 @@
 import { Topbar } from "@/components/Topbar";
-import { winder1SerialRoute } from "@/routes/routes";
+import { winder2SerialRoute } from "@/routes/routes";
 import React from "react";
 
 export function Winder1Page() {
-  const { serial } = winder1SerialRoute.useParams();
+  const { serial } = winder2SerialRoute.useParams();
   return (
     <Topbar
-      pathname={`/_sidebar/machines/winder1/${serial}`}
+      pathname={`/_sidebar/machines/winder2/${serial}`}
       items={[
         {
           link: "control",

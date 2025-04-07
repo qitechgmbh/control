@@ -18,7 +18,7 @@ use tension_arm::TensionArm;
 use uom::si::angle::degree;
 
 #[derive(Debug)]
-pub struct WinderV1 {
+pub struct Winder2 {
     // drivers
     // pub traverse_driver: StepperDriverPulseTrain,
     // pub puller_driver: StepperDriverPulseTrain,
@@ -31,25 +31,25 @@ pub struct WinderV1 {
     last_measurement_emit: DateTime<chrono::Utc>,
 
     // mode
-    pub mode: WinderV1Mode,
+    pub mode: Winder2Mode,
 }
 
-impl Machine for WinderV1 {}
+impl Machine for Winder2 {}
 
-impl WinderV1 {
-    pub fn set_mode(&mut self, mode: &WinderV1Mode) {
+impl Winder2 {
+    pub fn set_mode(&mut self, mode: &Winder2Mode) {
         // all transitions are allowed
         self.mode = mode.clone();
 
         // transiotion actions
         match mode {
-            WinderV1Mode::Standby => {
+            Winder2Mode::Standby => {
                 self.winder.set_speed(0);
                 self.winder.set_enabled(false);
             }
-            WinderV1Mode::Hold => {}
-            WinderV1Mode::Pull => {}
-            WinderV1Mode::Wind => {
+            Winder2Mode::Hold => {}
+            Winder2Mode::Pull => {}
+            Winder2Mode::Wind => {
                 self.winder.set_enabled(true);
                 self.winder.set_speed(1000);
             }
@@ -90,15 +90,15 @@ impl WinderV1 {
 }
 
 #[derive(Debug, Clone)]
-pub enum WinderV1Mode {
+pub enum Winder2Mode {
     Standby,
     Hold,
     Pull,
     Wind,
 }
 
-impl std::fmt::Display for WinderV1 {
+impl std::fmt::Display for Winder2 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "WinderV1")
+        write!(f, "Winder2")
     }
 }
