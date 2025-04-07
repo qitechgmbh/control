@@ -127,8 +127,8 @@ export const machinePresets: MachinePreset[] = [
         allowed_devices: [
           {
             vendor_id: 2,
-            product_id: 0x1b773052, // TODO change to EL7041
-            revision: 0x1a0000, // TODO change to EL7041
+            product_id: 0x1b813052,
+            revision: 0x100034,
           },
         ],
       },
@@ -138,8 +138,8 @@ export const machinePresets: MachinePreset[] = [
         allowed_devices: [
           {
             vendor_id: 2,
-            product_id: 0, // TODO
-            revision: 0, // TODO
+            product_id: 0x1b773052,
+            revision: 0x1a0000,
           },
         ],
       },

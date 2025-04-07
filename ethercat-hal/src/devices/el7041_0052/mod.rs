@@ -1,11 +1,7 @@
-pub mod coe;
-pub mod pdo;
-
-use anyhow::anyhow;
-use coe::EL7031Configuration;
+use coe::EL7041_0052Configuration;
 use ethercat_hal_derive::Device;
-use pdo::{EL7031RxPdo, EL7031TxPdo};
 
+use super::{NewDevice, SubDeviceIdentityTuple};
 use crate::{
     io::stepper_velocity_el70x1::{
         StepperVelocityEL70x1Device, StepperVelocityEL70x1Input, StepperVelocityEL70x1Output,
@@ -14,35 +10,37 @@ use crate::{
     pdo::{PredefinedPdoAssignment, RxPdo, TxPdo},
     shared_config::el70x1::EL70x1OperationMode,
 };
+use anyhow::anyhow;
 
-use super::{NewDevice, SubDeviceIdentityTuple};
+pub mod coe;
+pub mod pdo;
 
-#[derive(Debug, Device)]
-pub struct EL7031 {
-    pub txpdo: EL7031TxPdo,
+#[derive(Device, Debug)]
+pub struct EL7041_0052 {
+    pub txpdo: pdo::EL7041_0052TxPdo,
+    pub rxpdo: pdo::EL7041_0052RxPdo,
     pub output_ts: u64,
     pub input_ts: u64,
-    pub rxpdo: EL7031RxPdo,
-    pub configuration: EL7031Configuration,
+    pub configuration: EL7041_0052Configuration,
 }
 
-impl NewDevice for EL7031 {
+impl NewDevice for EL7041_0052 {
     fn new() -> Self {
-        let configuration: EL7031Configuration = EL7031Configuration::default();
-        Self {
+        let configuration = EL7041_0052Configuration::default();
+        EL7041_0052 {
             txpdo: configuration.pdo_assignment.txpdo_assignment(),
             rxpdo: configuration.pdo_assignment.rxpdo_assignment(),
-            input_ts: 0,
             output_ts: 0,
+            input_ts: 0,
             configuration,
         }
     }
 }
 
-impl StepperVelocityEL70x1Device<EL7031Port> for EL7031 {
+impl StepperVelocityEL70x1Device<EL7041_0052Port> for EL7041_0052 {
     fn stepper_velocity_write(
         &mut self,
-        port: EL7031Port,
+        port: EL7041_0052Port,
         value: StepperVelocityEL70x1Output,
     ) -> Result<(), anyhow::Error> {
         // check if operating mode is velocity
@@ -54,7 +52,7 @@ impl StepperVelocityEL70x1Device<EL7031Port> for EL7031 {
         }
 
         match port {
-            EL7031Port::STM1 => {
+            EL7041_0052Port::STM1 => {
                 match &mut self.rxpdo.enc_control_compact {
                     Some(before) => *before = value.enc_control_compact,
                     None => {
@@ -80,7 +78,7 @@ impl StepperVelocityEL70x1Device<EL7031Port> for EL7031 {
 
     fn stepper_velocity_state(
         &self,
-        port: EL7031Port,
+        port: EL7041_0052Port,
     ) -> Result<StepperVelocityEL70x1State, anyhow::Error> {
         // check if operating mode is velocity
         if self.configuration.stm_features.operation_mode != EL70x1OperationMode::DirectVelocity {
@@ -91,7 +89,7 @@ impl StepperVelocityEL70x1Device<EL7031Port> for EL7031 {
         }
 
         match port {
-            EL7031Port::STM1 => Ok(StepperVelocityEL70x1State {
+            EL7041_0052Port::STM1 => Ok(StepperVelocityEL70x1State {
                 output_ts: self.output_ts,
                 input_ts: self.input_ts,
                 input: StepperVelocityEL70x1Input {
@@ -124,12 +122,15 @@ impl StepperVelocityEL70x1Device<EL7031Port> for EL7031 {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub enum EL7031Port {
+pub enum EL7041_0052Port {
     STM1,
 }
 
-pub const EL7031_VENDOR_ID: u32 = 0x2;
-pub const EL7031_PRODUCT_ID: u32 = 460795986;
-pub const EL7031_REVISION_A: u32 = 1703936;
-pub const EL7031_IDENTITY_A: SubDeviceIdentityTuple =
-    (EL7031_VENDOR_ID, EL7031_PRODUCT_ID, EL7031_REVISION_A);
+pub const EL7041_0052_VENDOR_ID: u32 = 0x2;
+pub const EL7041_0052_PRODUCT_ID: u32 = 461451346;
+pub const EL7041_0052_REVISION_A: u32 = 1048628;
+pub const EL7041_0052_IDENTITY_A: SubDeviceIdentityTuple = (
+    EL7041_0052_VENDOR_ID,
+    EL7041_0052_PRODUCT_ID,
+    EL7041_0052_REVISION_A,
+);

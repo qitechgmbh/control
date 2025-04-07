@@ -1,8 +1,8 @@
 use super::Actor;
 use core::panic;
-use el70xx_velocity_converter::EL7031VelocityCalculator;
+use el70xx_velocity_converter::EL70x1VelocityCalculator;
 use ethercat_hal::{
-    devices::el7031::coe::EL7031SpeedRange, io::stepper_velocity_el7031::StepperVelocityEL7031,
+    io::stepper_velocity_el70x1::StepperVelocityEL70x1, shared_config::el70x1::EL70x1SpeedRange,
 };
 use std::{future::Future, pin::Pin};
 
@@ -10,20 +10,20 @@ pub mod el70xx_velocity_converter;
 
 /// Set a digital output high and low with a given interval
 #[derive(Debug)]
-pub struct StepperDriverEl7031 {
-    stepper: StepperVelocityEL7031,
+pub struct StepperDriverEL70x1 {
+    stepper: StepperVelocityEL70x1,
     enabled: bool,
     velocity: i16,
-    converter: EL7031VelocityCalculator,
+    converter: EL70x1VelocityCalculator,
 }
 
-impl StepperDriverEl7031 {
-    pub fn new(stepper: StepperVelocityEL7031, speed_range: &EL7031SpeedRange) -> Self {
+impl StepperDriverEL70x1 {
+    pub fn new(stepper: StepperVelocityEL70x1, speed_range: &EL70x1SpeedRange) -> Self {
         Self {
             stepper,
             enabled: false,
             velocity: 0,
-            converter: EL7031VelocityCalculator::new(speed_range),
+            converter: EL70x1VelocityCalculator::new(speed_range),
         }
     }
     pub fn set_speed(&mut self, steps_per_second: i32) {
@@ -40,7 +40,7 @@ impl StepperDriverEl7031 {
     }
 }
 
-impl Actor for StepperDriverEl7031 {
+impl Actor for StepperDriverEL70x1 {
     fn act(&mut self, _now_ts: u64) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
         Box::pin(async move {
             let state = match (self.stepper.state)().await {

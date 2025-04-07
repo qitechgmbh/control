@@ -8,11 +8,11 @@ use crate::{
     types::EthercrabSubDevicePreoperational,
 };
 
-use super::{pdo::EL7031PredefinedPdoAssignment, EL7031};
+use super::{pdo::EL7041_0052PredefinedPdoAssignment, EL7041_0052};
 
-/// Configuration for EL7031 Stepper Motor Terminal
+/// Configuration for EL7041_0052 Stepper Motor Terminal
 #[derive(Debug, Clone)]
-pub struct EL7031Configuration {
+pub struct EL7041_0052Configuration {
     /// Encoder configuration
     pub encoder: EncConfiguration,
 
@@ -34,10 +34,10 @@ pub struct EL7031Configuration {
     /// POS features
     pub pos_features: PosFeatures,
 
-    pub pdo_assignment: EL7031PredefinedPdoAssignment,
+    pub pdo_assignment: EL7041_0052PredefinedPdoAssignment,
 }
 
-impl Default for EL7031Configuration {
+impl Default for EL7041_0052Configuration {
     /// Defaults according to the datasheet
     fn default() -> Self {
         Self {
@@ -48,12 +48,12 @@ impl Default for EL7031Configuration {
             stm_features: StmFeatures::default(),
             pos_configuration: PosConfiguration::default(),
             pos_features: PosFeatures::default(),
-            pdo_assignment: EL7031PredefinedPdoAssignment::default(),
+            pdo_assignment: EL7041_0052PredefinedPdoAssignment::default(),
         }
     }
 }
 
-impl Configuration for EL7031Configuration {
+impl Configuration for EL7041_0052Configuration {
     async fn write_config<'a>(
         &self,
         device: &EthercrabSubDevicePreoperational<'a>,
@@ -77,11 +77,11 @@ impl Configuration for EL7031Configuration {
     }
 }
 
-impl ConfigurableDevice<EL7031Configuration> for EL7031 {
+impl ConfigurableDevice<EL7041_0052Configuration> for EL7041_0052 {
     async fn write_config<'maindevice>(
         &mut self,
         device: &EthercrabSubDevicePreoperational<'maindevice>,
-        config: &EL7031Configuration,
+        config: &EL7041_0052Configuration,
     ) -> Result<(), anyhow::Error> {
         self.configuration = config.clone();
         self.txpdo.write_config(device).await?;
@@ -90,7 +90,7 @@ impl ConfigurableDevice<EL7031Configuration> for EL7031 {
         Ok(())
     }
 
-    fn get_config(&self) -> EL7031Configuration {
+    fn get_config(&self) -> EL7041_0052Configuration {
         self.configuration.clone()
     }
 }
