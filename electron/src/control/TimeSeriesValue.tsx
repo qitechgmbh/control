@@ -3,24 +3,36 @@ import React from "react";
 import { getUnitIcon, renderUnitSymbol, renderUnitSyntax, Unit } from "./units";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Label } from "./Label";
+import { TimeSeries } from "@/lib/timeseries";
 
-type Props<T> = {
+type Props = {
   label: string;
   unit?: Unit;
-  value: T;
+  timeseries: TimeSeries;
   icon?: IconName;
-  renderValue?: (value: T) => string;
+  renderValue?: (value: number) => string;
 };
 
 type AllowedT = number | boolean;
 
-function _ControlValue<T extends AllowedT>({
+function _TimeSeriesValue({
   unit,
-  value,
+  timeseries,
   icon,
   label,
   renderValue,
-}: Props<T>) {
+}: Props) {
+  const value = timeseries.current?.value;
+  const _renderValue = (value: number | undefined) => {
+    if (value === undefined) {
+      return "n/a";
+    }
+    if (renderValue) {
+      return renderValue(value);
+    }
+    return value.toString();
+  };
+
   return (
     <div className="bg-red flex flex-row items-center gap-4">
       <Label label={label}>
@@ -31,9 +43,7 @@ function _ControlValue<T extends AllowedT>({
           />
           <div className="flex flex-row items-center gap-2">
             <span className="font-mono text-4xl font-bold">
-              {renderValue
-                ? renderUnitSyntax(renderValue(value), unit)
-                : value.toString()}
+              {renderUnitSyntax(_renderValue(value), unit)}
             </span>
             <span>{renderUnitSymbol(unit)}</span>
           </div>
@@ -44,10 +54,6 @@ function _ControlValue<T extends AllowedT>({
   );
 }
 
-export function ControlValueNumeric(props: Props<number>) {
-  return <_ControlValue {...props} />;
-}
-
-export function ControlValueBoolean(props: Omit<Props<boolean>, "unit">) {
-  return <_ControlValue {...props} />;
+export function TimeSeriesValueNumeric(props: Props) {
+  return <_TimeSeriesValue {...props} />;
 }

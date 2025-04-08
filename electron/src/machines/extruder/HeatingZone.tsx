@@ -1,8 +1,4 @@
 import { ControlCard } from "@/control/ControlCard";
-import {
-  ControlValueNumeric,
-  ControlValueBoolean,
-} from "@/control/ControlValue";
 import { EditValue } from "@/control/EditValue";
 import { Label } from "@/control/Label";
 import React from "react";
@@ -22,18 +18,18 @@ export function HeatingZone({
 }: Props) {
   return (
     <ControlCard className="bg-red" title={title}>
-      <ControlValueBoolean
+      {/* <ControlValueBoolean
         label="Heating"
         icon="lu:Flame"
         value={heating}
         renderValue={(value) => (value === true ? "ON" : "OFF")}
-      />
-      <ControlValueNumeric
+      /> */}
+      {/* <TimeSeriesValueNumeric
         label="Temperature"
         unit="C"
         value={temperature}
         renderValue={(value) => value.toFixed(0)}
-      />
+      /> */}
 
       <Label label="Target Temperature">
         <EditValue

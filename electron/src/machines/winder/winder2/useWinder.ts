@@ -6,6 +6,7 @@ import { winder2SerialRoute } from "@/routes/routes";
 import { z } from "zod";
 import { Mode, useWinder2Namespace } from "./winder2Namespace";
 import { useEffect, useMemo, useState } from "react";
+import { TimeSeries } from "@/lib/timeseries";
 
 function useLaserpointer(
   machine_identification_unique: MachineIdentificationUnique,
@@ -50,23 +51,15 @@ function useLaserpointer(
 
 function useMeasurementTensionArm(
   machine_identification_unique: MachineIdentificationUnique,
-): {
-  measurementTensionArm: number;
-  measurementTensionArmIsLoading: boolean;
-} {
+): TimeSeries {
   const isLoading = useState(false);
 
   // Read Path
-  const { measurementsTensionArms } = useWinder2Namespace(
+  const { measurementsTensionArm } = useWinder2Namespace(
     machine_identification_unique,
   );
 
-  return {
-    // set last
-    measurementTensionArm:
-      measurementsTensionArms.at(-1)?.content.Data?.degree ?? 0,
-    measurementTensionArmIsLoading: measurementsTensionArms.length === 0,
-  };
+  return measurementsTensionArm;
 }
 
 function useMode(machine_identification_unique: MachineIdentificationUnique): {
@@ -142,7 +135,7 @@ export function useWinder2() {
 
   return {
     ...laserpointerControls,
-    ...measurementTensionArm,
     ...mode,
+    measurementTensionArm,
   };
 }

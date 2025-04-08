@@ -2,7 +2,7 @@ import { ControlCard } from "@/control/ControlCard";
 import { Page } from "@/components/Page";
 import React from "react";
 import { ControlGrid } from "@/control/ControlGrid";
-import { ControlValueNumeric } from "@/control/ControlValue";
+import { TimeSeriesValueNumeric } from "@/control/TimeSeriesValue";
 import { TraverseBar } from "../TraverseBar";
 import {
   SelectionGroup,
@@ -23,7 +23,6 @@ export function Winder1ControlPage() {
     laserpointerIsLoading,
     laserpointerIsDisabled,
     measurementTensionArm,
-    measurementTensionArmIsLoading,
     mode,
     setMode,
     modeIsLoading,
@@ -34,12 +33,12 @@ export function Winder1ControlPage() {
     <Page>
       <ControlGrid>
         <ControlCard className="bg-red" height={2} title="Traverse">
-          <ControlValueNumeric
+          {/* <TimeSeriesValueNumeric
             label="Position"
             unit="mm"
             value={55}
             renderValue={(value) => value.toFixed(0)}
-          />
+          /> */}
           <TraverseBar
             inside={0}
             outside={100}
@@ -101,12 +100,12 @@ export function Winder1ControlPage() {
           </Label>
         </ControlCard>
         <ControlCard className="bg-red" title="Puller">
-          <ControlValueNumeric
+          {/* <TimeSeriesValueNumeric
             label="Speed"
             unit="m/s"
             value={16}
             renderValue={(value) => value.toFixed(0)}
-          />
+          /> */}
           <Label label="Regulation">
             <SelectionGroupBoolean
               value={false}
@@ -162,12 +161,12 @@ export function Winder1ControlPage() {
           />
         </ControlCard>
         <ControlCard className="bg-red" title="Auto Stop">
-          <ControlValueNumeric
+          {/* <TimeSeriesValueNumeric
             label="Wounded Length"
             unit="m"
             value={14}
             renderValue={(value) => value.toFixed(0)}
-          />
+          /> */}
           <div className="flex flex-row flex-wrap gap-4">
             <Label label="Enable">
               <SelectionGroupBoolean
@@ -208,16 +207,16 @@ export function Winder1ControlPage() {
           </div>
         </ControlCard>
         <ControlCard className="bg-red" title="Measurements">
-          <ControlValueNumeric
+          {/* <TimeSeriesValueNumeric
             label="Winding RPM"
             unit="rpm"
             value={55}
             renderValue={(value) => value.toFixed(0)}
-          />
-          <ControlValueNumeric
+          /> */}
+          <TimeSeriesValueNumeric
             label="Tension Arm"
             unit="deg"
-            value={measurementTensionArm}
+            timeseries={measurementTensionArm}
             renderValue={(value) => value.toFixed(0)}
           />
         </ControlCard>
