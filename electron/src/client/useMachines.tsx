@@ -20,9 +20,9 @@ type UseMachine = {
 export function useMachines(): UseMachine[] {
   const { ethercatSetup } = useMainNamespace();
 
-  if (ethercatSetup?.content.Data)
+  if (ethercatSetup?.data)
     return (
-      ethercatSetup.content.Data.machines
+      ethercatSetup.data.Done?.machines
         .filter((machine) => machine.error === null)
         .map((machine) => {
           const machinePreset = getMachinePreset(

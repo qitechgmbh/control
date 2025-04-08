@@ -1,9 +1,9 @@
-import { Event } from "@/client/socketioStore";
 import React from "react";
 import { useEffect, useState } from "react";
 
 type Props = {
-  event: Event<any> | null;
+  // if ts is null, it means that the data is still loading
+  ts: number | undefined;
 };
 
 function formatMilliseconds(milliseconds: number) {
@@ -30,7 +30,7 @@ function formatMilliseconds(milliseconds: number) {
   }
 }
 
-export function RefreshIndicator({ event: event }: Props) {
+export function RefreshIndicator({ ts }: Props) {
   const [now, setNow] = useState<number>(Date.now());
 
   // every 100ms update the time
@@ -47,13 +47,9 @@ export function RefreshIndicator({ event: event }: Props) {
     <div className="flex w-fit items-center gap-1.5 rounded-full bg-neutral-100 p-0.5 px-3">
       <div
         className={`h-2.5 w-2.5 rounded-full ${
-          noData
+          !ts
             ? "bg-neutral-400"
-            : event!.content.Error !== undefined
-              ? "bg-red-500"
-              : event!.content.Warning !== undefined
-                ? "bg-yellow-500"
-                : "animate-[pulse_500ms_ease-in-out] bg-green-500"
+            : "animate-[pulse_500ms_ease-in-out] bg-green-500"
         }`}
       />
       <span
@@ -61,13 +57,7 @@ export function RefreshIndicator({ event: event }: Props) {
           noData && "animate-[colorFadeToGray_250ms_ease-in-out_forwards]"
         }`}
       >
-        {noData
-          ? "Loading"
-          : event.content.Error !== undefined
-            ? event.content.Error
-            : event.content.Warning !== undefined
-              ? event.content.Warning
-              : formatMilliseconds(now - event.ts)}
+        {!ts ? "No Data" : formatMilliseconds(now - ts)}
       </span>
     </div>
   );

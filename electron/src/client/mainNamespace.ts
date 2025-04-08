@@ -17,25 +17,30 @@ import {
   machineIdentificationUnique,
 } from "@/machines/types";
 import { useRef } from "react";
+import { rustEnumSchema } from "@/lib/types";
 
-export const ethercatSetupEventDataSchema = z.object({
-  devices: z.array(
-    z.object({
-      configured_address: z.number().int(),
-      name: z.string(),
-      vendor_id: z.number().int(),
-      product_id: z.number().int(),
-      revision: z.number().int(),
-      machine_device_identification: machineDeviceIdentification.nullable(),
-      subdevice_index: z.number().int(),
-    }),
-  ),
-  machines: z.array(
-    z.object({
-      machine_identification_unique: machineIdentificationUnique,
-      error: z.string().nullable(),
-    }),
-  ),
+export const ethercatSetupEventDataSchema = rustEnumSchema({
+  Initializing: z.boolean(),
+  Done: z.object({
+    devices: z.array(
+      z.object({
+        configured_address: z.number().int(),
+        name: z.string(),
+        vendor_id: z.number().int(),
+        product_id: z.number().int(),
+        revision: z.number().int(),
+        machine_device_identification: machineDeviceIdentification.nullable(),
+        subdevice_index: z.number().int(),
+      }),
+    ),
+    machines: z.array(
+      z.object({
+        machine_identification_unique: machineIdentificationUnique,
+        error: z.string().nullable(),
+      }),
+    ),
+  }),
+  Error: z.string(),
 });
 
 export type EthercatSetupEventData = z.infer<

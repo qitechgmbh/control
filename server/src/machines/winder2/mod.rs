@@ -13,7 +13,7 @@ use control_core::{
         digital_output_setter::DigitalOutputSetter, stepper_driver_el70x1::StepperDriverEL70x1,
     },
     machines::Machine,
-    socketio::{event::EventBuilder, namespace::NamespaceCacheingLogic},
+    socketio::namespace::NamespaceCacheingLogic,
 };
 use tension_arm::TensionArm;
 use uom::si::angle::degree;

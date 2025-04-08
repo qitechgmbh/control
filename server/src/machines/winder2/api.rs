@@ -4,7 +4,7 @@ use super::{Winder2, Winder2Mode};
 use control_core::{
     machines::api::MachineApi,
     socketio::{
-        event::{Event, EventBuilder, GenericEvent},
+        event::{Event, GenericEvent},
         namespace::{
             cache_duration, cache_one_event, CacheFn, CacheableEvents, Namespace,
             NamespaceCacheingLogic, NamespaceInterface,
@@ -88,12 +88,9 @@ pub struct TraversePositionEvent {
     pub position: f64,
 }
 
-impl EventBuilder<TraversePositionEvent> for TraversePositionEvent {
-    fn name(&self) -> String {
-        "TraversePositionEvent".to_string()
-    }
-    fn build(&self) -> Event<Self> {
-        Event::data(&self.name(), self.clone())
+impl TraversePositionEvent {
+    pub fn build(&self) -> Event<Self> {
+        Event::new("TraversePositionEvent", self.clone())
     }
 }
 
@@ -123,12 +120,9 @@ pub struct TraverseStateEvent {
     pub laserpointer: bool,
 }
 
-impl EventBuilder<TraverseStateEvent> for TraverseStateEvent {
-    fn name(&self) -> String {
-        "TraverseStateEvent".to_string()
-    }
-    fn build(&self) -> Event<Self> {
-        Event::data(&self.name(), self.clone())
+impl TraverseStateEvent {
+    pub fn build(&self) -> Event<Self> {
+        Event::new("TraverseStateEvent", self.clone())
     }
 }
 
@@ -144,12 +138,9 @@ pub struct PullerStateEvent {
     pub target_diameter: f64,
 }
 
-impl EventBuilder<PullerStateEvent> for PullerStateEvent {
-    fn name(&self) -> String {
-        "PullerStateEvent".to_string()
-    }
-    fn build(&self) -> Event<Self> {
-        Event::data(&self.name(), self.clone())
+impl PullerStateEvent {
+    pub fn build(&self) -> Event<Self> {
+        Event::new("PullerStateEvent", self.clone())
     }
 }
 
@@ -159,12 +150,9 @@ pub struct PullerSpeedEvent {
     pub speed: f64,
 }
 
-impl EventBuilder<PullerSpeedEvent> for PullerSpeedEvent {
-    fn name(&self) -> String {
-        "PullerSpeedEvent".to_string()
-    }
-    fn build(&self) -> Event<Self> {
-        Event::data(&self.name(), self.clone())
+impl PullerSpeedEvent {
+    pub fn build(&self) -> Event<Self> {
+        Event::new("PullerSpeedEvent", self.clone())
     }
 }
 
@@ -174,12 +162,9 @@ pub struct AutostopWoundedLengthEvent {
     pub wounded_length: f64,
 }
 
-impl EventBuilder<AutostopWoundedLengthEvent> for AutostopWoundedLengthEvent {
-    fn name(&self) -> String {
-        "AutostopWoundedLengthEvent".to_string()
-    }
-    fn build(&self) -> Event<Self> {
-        Event::data(&self.name(), self.clone())
+impl AutostopWoundedLengthEvent {
+    pub fn build(&self) -> Event<Self> {
+        Event::new("AutostopWoundedLengthEvent", self.clone())
     }
 }
 
@@ -195,12 +180,9 @@ pub struct AutostopStateEvent {
     pub transition: AutostopTransition,
 }
 
-impl EventBuilder<AutostopStateEvent> for AutostopStateEvent {
-    fn name(&self) -> String {
-        "AutostopStateEvent".to_string()
-    }
-    fn build(&self) -> Event<Self> {
-        Event::data(&self.name(), self.clone())
+impl AutostopStateEvent {
+    pub fn build(&self) -> Event<Self> {
+        Event::new("AutostopStateEvent", self.clone())
     }
 }
 
@@ -210,12 +192,9 @@ pub struct ModeStateEvent {
     pub mode: Mode,
 }
 
-impl EventBuilder<ModeStateEvent> for ModeStateEvent {
-    fn name(&self) -> String {
-        "ModeStateEvent".to_string()
-    }
-    fn build(&self) -> Event<Self> {
-        Event::data(&self.name(), self.clone())
+impl ModeStateEvent {
+    pub fn build(&self) -> Event<Self> {
+        Event::new("ModeStateEvent", self.clone())
     }
 }
 
@@ -225,12 +204,9 @@ pub struct MeasurementsWindingRpmEvent {
     pub rpm: f64,
 }
 
-impl EventBuilder<MeasurementsWindingRpmEvent> for MeasurementsWindingRpmEvent {
-    fn name(&self) -> String {
-        "MeasurementsWindingRpmEvent".to_string()
-    }
-    fn build(&self) -> Event<Self> {
-        Event::data(&self.name(), self.clone())
+impl MeasurementsWindingRpmEvent {
+    pub fn build(&self) -> Event<Self> {
+        Event::new("MeasurementsWindingRpmEvent", self.clone())
     }
 }
 
@@ -240,12 +216,9 @@ pub struct MeasurementsTensionArmEvent {
     pub degree: f32,
 }
 
-impl EventBuilder<MeasurementsTensionArmEvent> for MeasurementsTensionArmEvent {
-    fn name(&self) -> String {
-        "MeasurementsTensionArmEvent".to_string()
-    }
-    fn build(&self) -> Event<Self> {
-        Event::data(&self.name(), self.clone())
+impl MeasurementsTensionArmEvent {
+    pub fn build(&self) -> Event<Self> {
+        Event::new("MeasurementsTensionArmEvent", self.clone())
     }
 }
 

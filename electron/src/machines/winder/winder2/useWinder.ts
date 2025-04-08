@@ -36,8 +36,8 @@ function useLaserpointer(
   // Read path
   const { traverseState } = useWinder2Namespace(machine_identification_unique);
   useEffect(() => {
-    if (traverseState?.content.Data) {
-      state.setReal(traverseState.content.Data.laserpointer);
+    if (traverseState?.data) {
+      state.setReal(traverseState.data.laserpointer);
     }
   }, [traverseState]);
 
@@ -90,8 +90,8 @@ function useMode(machine_identification_unique: MachineIdentificationUnique): {
   // Read path
   const { modeState } = useWinder2Namespace(machine_identification_unique);
   useEffect(() => {
-    if (modeState?.content.Data) {
-      state.setReal(modeState.content.Data.mode);
+    if (modeState?.data) {
+      state.setReal(modeState.data.mode);
     }
   }, [modeState]);
 

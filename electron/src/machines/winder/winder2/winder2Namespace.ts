@@ -270,13 +270,8 @@ export function winder2MessageHandler(
       // Metric events (keep for 1 hour)
       else if (eventName === "TraversePositionEvent") {
         let parsed = traversePositionEventSchema.parse(event);
-        if (!parsed.content.Data) {
-          console.error(
-            `TraversePositionEvent has no Data field: ${JSON.stringify(event)}`,
-          );
-        }
         let timeseriesValue: TimeSeriesValue = {
-          value: parsed.content.Data!.position,
+          value: parsed.data.position,
           timestamp: event.ts,
         };
         store.setState(
@@ -289,13 +284,8 @@ export function winder2MessageHandler(
         );
       } else if (eventName === "PullerSpeedEvent") {
         let parsed = pullerSpeedEventSchema.parse(event);
-        if (!parsed.content.Data) {
-          console.error(
-            `PullerSpeedEvent has no Data field: ${JSON.stringify(event)}`,
-          );
-        }
         let timeseriesValue: TimeSeriesValue = {
-          value: parsed.content.Data!.speed,
+          value: parsed.data.speed,
           timestamp: event.ts,
         };
         store.setState(
@@ -308,15 +298,8 @@ export function winder2MessageHandler(
         );
       } else if (eventName === "AutostopWoundedlengthEvent") {
         let parsed = autostopWoundedLengthEventSchema.parse(event);
-        if (!parsed.content.Data) {
-          console.error(
-            `AutostopWoundedlengthEvent has no Data field: ${JSON.stringify(
-              event,
-            )}`,
-          );
-        }
         let timeseriesValue: TimeSeriesValue = {
-          value: parsed.content.Data!.wounded_length,
+          value: parsed.data.wounded_length,
           timestamp: event.ts,
         };
         store.setState(
@@ -329,15 +312,8 @@ export function winder2MessageHandler(
         );
       } else if (eventName === "MeasurementsWindingRpmEvent") {
         let parsed = measurementsWindingRpmEventSchema.parse(event);
-        if (!parsed.content.Data) {
-          console.error(
-            `MeasurementsWindingRpmEvent has no Data field: ${JSON.stringify(
-              event,
-            )}`,
-          );
-        }
         let timeseriesValue: TimeSeriesValue = {
-          value: parsed.content.Data!.rpm,
+          value: parsed.data.rpm,
           timestamp: event.ts,
         };
         store.setState(
@@ -350,15 +326,8 @@ export function winder2MessageHandler(
         );
       } else if (eventName === "MeasurementsTensionArmEvent") {
         let parsed = measurementsTensionArmEventSchema.parse(event);
-        if (!parsed.content.Data) {
-          console.error(
-            `MeasurementsTensionArmEvent has no Data field: ${JSON.stringify(
-              event,
-            )}`,
-          );
-        }
         let timeseriesValue: TimeSeriesValue = {
-          value: parsed.content.Data!.degree,
+          value: parsed.data.degree,
           timestamp: event.ts,
         };
         store.setState(

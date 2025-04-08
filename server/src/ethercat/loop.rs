@@ -9,7 +9,6 @@ use crate::{
 use bitvec::prelude::*;
 use control_core::actors::Actor;
 use control_core::identification::identify_device_groups;
-use control_core::socketio::event::EventBuilder;
 use control_core::socketio::namespace::NamespaceCacheingLogic;
 use ethercat_hal::devices::devices_from_subdevices;
 use ethercrab::std::{ethercat_now, tx_rx_task};
@@ -43,9 +42,12 @@ pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(),
     let maindevice = MainDevice::new(
         pdu,
         Timeouts {
-            wait_loop_delay: Duration::from_millis(1),
-            mailbox_response: Duration::from_millis(100000000),
-            ..Default::default()
+            wait_loop_delay: Duration::from_millis(0),
+            mailbox_response: Duration::from_millis(1000 * 10),
+            state_transition: Duration::from_millis(1000 * 10),
+            pdu: Duration::from_millis(1000 * 1),
+            eeprom: Duration::from_millis(1000 * 1),
+            mailbox_echo: Duration::from_millis(1000 * 1),
         },
         MainDeviceConfig {
             retry_behaviour: RetryBehaviour::Forever,
@@ -60,7 +62,7 @@ pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(),
             .write()
             .await
             .main_namespace;
-        let event = EthercatSetupEventBuilder().warning("Configuring Ethercat Network...");
+        let event = EthercatSetupEventBuilder().initializing();
         main_namespace.emit_cached(MainNamespaceEvents::EthercatSetupEvent(event));
     });
 

@@ -17,7 +17,9 @@ import {
   useMainNamespace,
 } from "@/client/mainNamespace";
 
-export const columns: ColumnDef<EthercatSetupEventData["devices"][number]>[] = [
+export const columns: ColumnDef<
+  NonNullable<EthercatSetupEventData["Done"]>["devices"][number]
+>[] = [
   {
     accessorKey: "subdevice_index",
     header: "Index",
@@ -112,7 +114,7 @@ export function EthercatPage() {
   const { ethercatSetup } = useMainNamespace();
 
   const data = useMemo(() => {
-    return ethercatSetup?.content.Data?.devices || [];
+    return ethercatSetup?.data?.Done?.devices || [];
   }, [ethercatSetup]);
 
   const table = useReactTable({
@@ -124,7 +126,7 @@ export function EthercatPage() {
   return (
     <Page>
       <SectionTitle title="SubDevices">
-        <RefreshIndicator event={ethercatSetup} />
+        <RefreshIndicator ts={ethercatSetup?.ts} />
       </SectionTitle>
       <p>
         Machine, Machine Serial Number, Role are QiTech specific values that are

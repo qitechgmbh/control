@@ -4,7 +4,6 @@ import { produce } from "immer";
 import { io, Socket } from "socket.io-client";
 import { useSyncExternalStore } from "react";
 import { z } from "zod";
-import { rustEnumSchema } from "@/lib/types";
 import { toastError, toastZodError } from "@/components/Toast";
 
 /**
@@ -18,11 +17,7 @@ import { toastError, toastZodError } from "@/components/Toast";
 export function eventSchema<T extends z.ZodTypeAny>(dataSchema: T) {
   return z.object({
     name: z.string(),
-    content: rustEnumSchema({
-      Warning: z.string().optional(),
-      Error: z.string().optional(),
-      Data: dataSchema.optional(),
-    }),
+    data: dataSchema,
     ts: z.number().int().positive(),
   });
 }
