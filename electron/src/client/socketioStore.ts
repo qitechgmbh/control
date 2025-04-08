@@ -240,13 +240,28 @@ const useSocketioStore = create<SocketioStore>()((set, get) => ({
           // decrement the count
           state.namespaces[namespace_path].count--;
 
-          // if the count is zero, disconnect the socket and delete it
-          // but not if the namespace is the main namespace
-          if (namespaceId.type !== "main") {
-            if (state.namespaces[namespace_path].count <= 0) {
-              state.namespaces[namespace_path].socket.disconnect();
-              delete state.namespaces[namespace_path];
-            }
+          // if the count is zero and it's not the main namespace,
+          // set a timeout to check again after 10 seconds
+          if (
+            namespaceId.type !== "main" &&
+            state.namespaces[namespace_path].count <= 0
+          ) {
+            // Create a timeout to check if the namespace is still unused after 10 seconds
+            // In an edge case ther could be a use inside the 10 seconds and the again 0 but we will still disconnect (simplicity)
+            const timeout = setTimeout(() => {
+              set(
+                produce((state: SocketioStore) => {
+                  const ns = state.namespaces[namespace_path];
+                  if (ns && ns.count <= 0) {
+                    ns.socket.disconnect();
+                    delete state.namespaces[namespace_path];
+                    console.log(
+                      `Namespace ${namespace_path} disconnected after 10s of inactivity`,
+                    );
+                  }
+                }),
+              );
+            }, 10000);
           }
         }),
       );
