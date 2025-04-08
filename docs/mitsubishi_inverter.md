@@ -140,6 +140,18 @@ You need to put the Mitsubishi Inverter into PU Mode
 Protocol Selection: set Pr 549 to 1 (RTU)
 set 551 to a non zero value (9999)
 Operation mode selection: set Pr 79 to 1
+PU communication station number: set Pr 117 to a value of 1-32 (this is also the slave address)
+PU communication speed: set Pr 118 the same baudrate as the Beckhoff terminal. For example Terminal has 9600 then you need to set 96
+PU communication stop bit: set Pr 119 according to Beckhoff terminal setting
+PU communication parity check: set Pr 120 according to Beckhoff terminal setting
+
+# el6021 settings needed for Modbus RTU
+
+Continuous is needed for Modbus RTU
+8000:04 Enable send fifo data continouus TRUE
+8000:06 Enable half duplex
+8000:11 Enable Baud rate 9600 Baud
+8000:15 Data Frame 8N1
 
 # TODO
 

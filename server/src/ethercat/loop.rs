@@ -7,16 +7,22 @@ use crate::{
     ethercat::config::{MAX_FRAMES, MAX_PDU_DATA, MAX_SUBDEVICES, PDI_LEN},
 };
 use bitvec::prelude::*;
-use control_core::actors::Actor;
+use control_core::actors::{mitsubishi_inverter_rs485, Actor};
 use control_core::identification::identify_device_groups;
 use control_core::socketio::event::EventBuilder;
 use control_core::socketio::room::RoomCacheingLogic;
-use ethercat_hal::devices::{devices_from_subdevices, downcast_device};
+use ethercat_hal::devices::el6021::{EL6021Port, EL6021};
+use ethercat_hal::devices::{device_from_subdevice, devices_from_subdevices, downcast_device, Device, NewDevice};
+use ethercat_hal::io::serial_interface::SerialInterface;
 use ethercrab::std::{ethercat_now, tx_rx_task};
 use ethercrab::{MainDevice, MainDeviceConfig, PduStorage, RetryBehaviour, Timeouts};
 use smol::lock::RwLock;
 use std::collections::HashMap;
 use std::{sync::Arc, time::Duration};
+
+use control_core::actors::mitsubishi_inverter_rs485::MitsubishiInverterRS485Actor;
+
+
 
 pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(), anyhow::Error> {
     // Erase all all setup data from `app_state`
@@ -132,6 +138,15 @@ pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(),
             Err(_) => {}
         }
     }
+
+    println!("{:?}",devices);
+    
+    let el6021 = downcast_device::<EL6021>(devices.get(2).unwrap().clone()).await.unwrap();
+    let serial_interface = SerialInterface::new(el6021,EL6021Port::SI1);
+    let mitsubishi_inverter_rs485 = MitsubishiInverterRS485Actor::new(false,serial_interface);
+    actors.push(   Arc::new(RwLock::new(mitsubishi_inverter_rs485)));
+    
+    
     // Write all this stuff to `app_state`
     {
         let mut ethercat_setup_guard = app_state.ethercat_setup.write().await;
@@ -195,9 +210,19 @@ pub async fn loop_once<'maindevice>(
         device.ts(input_ts, output_ts);
         let input = subdevice.inputs_raw();
         let input_bits = input.view_bits::<Lsb0>();
+
         device.input_checked(input_bits).or_else(|e| {
             Err(anyhow::anyhow!(
                 "[{}::loop_once] SubDevice with index {} failed to copy inputs\n{:?}",
+                module_path!(),
+                i,
+                e
+            ))
+        })?;
+
+        device.input_post_process().or_else(|e| {
+            Err(anyhow::anyhow!(
+                "[{}::loop_once] SubDevice with index {} failed to copy post_process\n{:?}",
                 module_path!(),
                 i,
                 e
@@ -213,9 +238,19 @@ pub async fn loop_once<'maindevice>(
 
     // copy outputs from devices
     for (i, subdevice) in setup.group.iter(&setup.maindevice).enumerate() {
-        let device = setup.devices[i].as_ref().read().await;
+        let mut device = setup.devices[i].as_ref().write().await;
         let mut output = subdevice.outputs_raw_mut();
         let output_bits = output.view_bits_mut::<Lsb0>();
+
+        device.output_pre_process().or_else(|e| {
+            Err(anyhow::anyhow!(
+                "[{}::loop_once] SubDevice with index {} failed to pre process outputs \n{:?}",
+                module_path!(),
+                i,
+                e
+            ))
+        })?;
+
         device.output_checked(output_bits).or_else(|e| {
             Err(anyhow::anyhow!(
                 "[{}::loop_once] SubDevice with index {} failed to copy outputs\n{:?}",
