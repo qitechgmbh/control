@@ -241,9 +241,12 @@ const useSocketioStore = create<SocketioStore>()((set, get) => ({
           state.namespaces[namespace_path].count--;
 
           // if the count is zero, disconnect the socket and delete it
-          if (state.namespaces[namespace_path].count <= 0) {
-            state.namespaces[namespace_path].socket.disconnect();
-            delete state.namespaces[namespace_path];
+          // but not if the namespace is the main namespace
+          if (namespaceId.type !== "main") {
+            if (state.namespaces[namespace_path].count <= 0) {
+              state.namespaces[namespace_path].socket.disconnect();
+              delete state.namespaces[namespace_path];
+            }
           }
         }),
       );
