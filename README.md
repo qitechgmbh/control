@@ -81,8 +81,8 @@ We could combine the code of the frontend and backend using [Doxius](https://dio
 - [ ] Interfacing with Electron/Server
 
   - [ ] SocketIO
-    - Machine Room
-    - Main Room
+    - Machine Namespace
+    - Main Namespace
   - [ ] REST
     - Machine Mutations
     - Write Device Identification
@@ -123,10 +123,9 @@ We could combine the code of the frontend and backend using [Doxius](https://dio
 
   - [x] [Actors](./docs/actors.md)
   - [ ] SocketIO
-    - Rooms & Caching
-    - Joining leaving rooms
-    - RoomId
-    - Our rooms vs native socketIO rooms
+    - Namespaces & Caching
+    - Joining leaving namespaces
+    - NamespaceId
     - Caching
       - Serverside Caching
       - Clientside Caching

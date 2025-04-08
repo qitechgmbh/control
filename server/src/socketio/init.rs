@@ -1,6 +1,8 @@
+use std::str::FromStr;
+
 use crate::app_state::APP_STATE;
-use control_core::socketio::room::{RoomSubscribeEvent, RoomUnsubscribeEvent};
-use socketioxide::extract::{Data, SocketRef};
+use control_core::socketio::namespace_id::NamespaceId;
+use socketioxide::extract::SocketRef;
 use socketioxide::layer::SocketIoLayer;
 use tokio::spawn;
 
@@ -9,97 +11,101 @@ pub async fn init_socketio() -> SocketIoLayer {
     let (socketio_layer, io) = socketioxide::SocketIo::new_layer();
 
     // set the on connect handler for main namespace
-    io.ns("/", on_connect);
+    io.ns("/main", setup_namespace);
+
+    match io.dyn_ns("/machine/{vendor}/{machine}/{serial}", setup_namespace) {
+        Ok(_) => {
+            // log
+            log::info!("Machine namespace created");
+        }
+        Err(err) => {
+            // log
+            log::error!(
+                "[{}::init_socketio] Failed to parse machine namespace: {}",
+                module_path!(),
+                err
+            );
+        }
+    }
 
     // set the io to the app state
     let mut socketio_guard = APP_STATE.socketio_setup.socketio.write().await;
     socketio_guard.replace(io);
-    drop(socketio_guard);
 
     return socketio_layer;
 }
 
-fn on_connect(socket: SocketRef) {
-    // log
+fn setup_namespace(socket: SocketRef) {
+    let namespace_id = match NamespaceId::from_str(socket.ns()) {
+        Ok(namespace_id) => namespace_id,
+        Err(err) => {
+            log::error!(
+                "[{}::setup_namespace] Failed to parse namespace id: {}",
+                module_path!(),
+                err
+            );
+            return;
+        }
+    };
+
+    // Set up disconnect handler
+    setup_disconnection(&socket, namespace_id.clone());
+
+    // Set up connection
+    spawn(async move {
+        setup_connection(socket, namespace_id).await;
+    });
+}
+
+fn setup_disconnection(socket: &SocketRef, namepsace_id: NamespaceId) {
+    socket.on_disconnect(|socket: SocketRef| {
+        spawn(async move {
+            log::debug!("Socket disconnected {}", socket.id);
+            let mut socketio_namespaces_guard = APP_STATE.socketio_setup.namespaces.write().await;
+
+            // remove from machine namespace
+            socketio_namespaces_guard
+                .apply_mut(
+                    namepsace_id.clone(),
+                    |namespace_interface| match namespace_interface {
+                        Ok(namespace_interface) => {
+                            namespace_interface.unsubscribe(socket.clone());
+                        }
+                        Err(err) => {
+                            log::error!(
+                                "[{}::on_disconnect_machine_ns] Namespace {:?} not found: {}",
+                                module_path!(),
+                                namepsace_id,
+                                err
+                            );
+                        }
+                    },
+                )
+                .await;
+        });
+    });
+}
+
+async fn setup_connection(socket: SocketRef, namespace_id: NamespaceId) {
     log::info!("Socket connected {}", socket.id);
-
-    // set the on disconnect handler
-    socket.on_disconnect(on_disconnect);
-
-    // if joined room
-    socket.on("subscribe", on_room_subscribe);
-
-    // if left room
-    socket.on("unsibscribe", on_room_unsubscribe);
-}
-
-fn on_disconnect(socket: SocketRef) {
-    // log
-    log::debug!("Socket disconnected {}", socket.id);
-
-    // remove from every room
-    let socket_clone = socket.clone();
-
-    // iterate all rooms
-    spawn(async move {
-        let mut socketio_rooms_guard = APP_STATE.socketio_setup.rooms.write().await;
-        socketio_rooms_guard
-            .for_each_mut(|_, room_interface| {
-                if let Ok(room_interface) = room_interface {
-                    room_interface.unsubscribe(socket_clone.clone());
+    let mut socketio_namespaces_guard = APP_STATE.socketio_setup.namespaces.write().await;
+    socketio_namespaces_guard
+        .apply_mut(
+            namespace_id.clone(),
+            |namespace_interface| match namespace_interface {
+                Ok(namespace_interface) => {
+                    namespace_interface.subscribe(socket.clone());
+                    namespace_interface.reemit(socket);
                 }
-            })
-            .await;
-    });
-}
-
-pub fn on_room_subscribe(socket: SocketRef, Data(data): Data<RoomSubscribeEvent>) {
-    // log
-    log::info!("Socket {} subscribed room {:?}", socket.id, data.room_id);
-
-    // add socket to the room buffer
-    let room_id = data.room_id.clone();
-    let socket_clone = socket.clone();
-    spawn(async move {
-        let mut socketio_rooms_guard = APP_STATE.socketio_setup.rooms.write().await;
-        socketio_rooms_guard
-            .apply_mut(room_id.clone(), |room_interface| {
-                if let Ok(room_interface) = room_interface {
-                    room_interface.subscribe(socket_clone.clone());
-                    room_interface.reemit(socket_clone);
-                } else {
+                Err(err) => {
                     log::error!(
-                        "[{}::on_room_subscribe] Room {:?} not found",
+                        "[{}::on_connect_machine_ns] Namespace {:?} not found: {}",
                         module_path!(),
-                        room_id
+                        namespace_id,
+                        err
                     );
                 }
-            })
-            .await;
-    });
-}
-
-pub fn on_room_unsubscribe(socket: SocketRef, Data(data): Data<RoomUnsubscribeEvent>) {
-    // log
-    log::info!("Socket {} unsubscribed room {:?}", socket.id, data.room_id);
-
-    // remove socket from the room buffer
-    let room_id = data.room_id.clone();
-    let socket_clone = socket.clone();
-    spawn(async move {
-        let mut socketio_rooms_guard = APP_STATE.socketio_setup.rooms.write().await;
-        socketio_rooms_guard
-            .apply_mut(room_id.clone(), |room_interface| {
-                if let Ok(room_interface) = room_interface {
-                    room_interface.unsubscribe(socket_clone);
-                } else {
-                    log::error!(
-                        "[{}::on_room_unsubscribe] Room {:?} not found",
-                        module_path!(),
-                        room_id
-                    );
-                }
-            })
-            .await;
-    });
+            },
+        )
+        .await;
 }

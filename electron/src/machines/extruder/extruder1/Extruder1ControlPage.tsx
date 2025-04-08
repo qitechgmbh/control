@@ -2,8 +2,7 @@ import { ControlCard } from "@/control/ControlCard";
 import { Page } from "@/components/Page";
 import React from "react";
 import { ControlGrid } from "@/control/ControlGrid";
-import { ControlValueNumeric } from "@/control/ControlValue";
-import {
+          import {
   SelectionGroup,
   SelectionGroupBoolean,
 } from "@/control/SelectionGroup";
@@ -34,12 +33,12 @@ export function Extruder1ControlPage() {
           targetTemperature={155}
         />
         <ControlCard className="bg-red" title="Screw Drive">
-          <ControlValueNumeric
+          {/* <TimeSeriesValueNumeric
             label="Drehzahl"
             unit="rpm"
-            value={11}
-            renderValue={(value) => value.toFixed(0)}
-          />
+            timeseries={null}
+            renderValue={(value) => value?.toFixed(0) || "N/A"}
+          /> */}
           <Label label="Regulation">
             <SelectionGroupBoolean
               value={false}
@@ -70,12 +69,12 @@ export function Extruder1ControlPage() {
         </ControlCard>
 
         <ControlCard className="bg-red" title="Measurements">
-          <ControlValueNumeric
+          {/* <TimeSeriesValueNumeric
             label="Nozzle Pressure"
             unit="bar"
             value={55}
             renderValue={(value) => value.toFixed(0)}
-          />
+          /> */}
         </ControlCard>
         <ControlCard className="bg-red" title="Mode">
           <SelectionGroup<"standby" | "heating" | "extrude">

@@ -1,3 +1,3 @@
 pub mod init;
-pub mod main_room;
-pub mod rooms;
+pub mod main_namespace;
+pub mod namespaces;

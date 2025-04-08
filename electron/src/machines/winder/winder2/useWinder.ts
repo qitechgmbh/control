@@ -1,11 +1,12 @@
 import { toastError } from "@/components/Toast";
 import { useMachineMutate as useMachineMutation } from "@/client/useClient";
 import { useStateOptimistic } from "@/lib/useStateOptimistic";
-import { MachineIdentificationUnique } from "@/machines/types";
+import { MachineIdentificationUnique, winder2 } from "@/machines/types";
 import { winder2SerialRoute } from "@/routes/routes";
 import { z } from "zod";
-import { Mode, useWinder1Room } from "./winder2Room";
+import { Mode, useWinder2Namespace } from "./winder2Namespace";
 import { useEffect, useMemo, useState } from "react";
+import { TimeSeries } from "@/lib/timeseries";
 
 function useLaserpointer(
   machine_identification_unique: MachineIdentificationUnique,
@@ -33,12 +34,10 @@ function useLaserpointer(
   };
 
   // Read path
-  const {
-    state: { traverseState },
-  } = useWinder1Room(machine_identification_unique);
+  const { traverseState } = useWinder2Namespace(machine_identification_unique);
   useEffect(() => {
-    if (traverseState?.content.Data) {
-      state.setReal(traverseState.content.Data.laserpointer);
+    if (traverseState?.data) {
+      state.setReal(traverseState.data.laserpointer);
     }
   }, [traverseState]);
 
@@ -52,23 +51,15 @@ function useLaserpointer(
 
 function useMeasurementTensionArm(
   machine_identification_unique: MachineIdentificationUnique,
-): {
-  measurementTensionArm: number;
-  measurementTensionArmIsLoading: boolean;
-} {
+): TimeSeries {
   const isLoading = useState(false);
 
   // Read Path
-  const {
-    state: { measurementsTensionArms },
-  } = useWinder1Room(machine_identification_unique);
+  const { measurementsTensionArm } = useWinder2Namespace(
+    machine_identification_unique,
+  );
 
-  return {
-    // set last
-    measurementTensionArm:
-      measurementsTensionArms.at(-1)?.content.Data?.degree ?? 0,
-    measurementTensionArmIsLoading: measurementsTensionArms.length === 0,
-  };
+  return measurementsTensionArm;
 }
 
 function useMode(machine_identification_unique: MachineIdentificationUnique): {
@@ -97,12 +88,10 @@ function useMode(machine_identification_unique: MachineIdentificationUnique): {
   };
 
   // Read path
-  const {
-    state: { modeState },
-  } = useWinder1Room(machine_identification_unique);
+  const { modeState } = useWinder2Namespace(machine_identification_unique);
   useEffect(() => {
-    if (modeState?.content.Data) {
-      state.setReal(modeState.content.Data.mode);
+    if (modeState?.data) {
+      state.setReal(modeState.data.mode);
     }
   }, [modeState]);
 
@@ -114,7 +103,7 @@ function useMode(machine_identification_unique: MachineIdentificationUnique): {
   };
 }
 
-export function useWinder1() {
+export function useWinder2() {
   const { serial: serialString } = winder2SerialRoute.useParams();
 
   // Memoize the machine identification to keep it stable between renders
@@ -135,8 +124,7 @@ export function useWinder1() {
     }
 
     return {
-      vendor: 1,
-      machine: 1,
+      ...winder2.machine_identification,
       serial,
     };
   }, [serialString]); // Only recreate when serialString changes
@@ -147,7 +135,7 @@ export function useWinder1() {
 
   return {
     ...laserpointerControls,
-    ...measurementTensionArm,
     ...mode,
+    measurementTensionArm,
   };
 }

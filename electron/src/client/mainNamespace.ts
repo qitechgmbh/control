@@ -3,39 +3,44 @@ import { create } from "zustand";
 import { produce } from "immer";
 import { z } from "zod";
 import {
-  MessageCallback,
-  createRoomImplementation,
+  EventHandler,
+  createNamespaceHookImplementation,
   eventSchema,
   Event,
   handleEventValidationError,
   handleUnknownEventError,
   handleUnhandledEventError,
-  RoomImplementationResult,
+  NamespaceId,
 } from "./socketioStore";
 import {
   machineDeviceIdentification,
   machineIdentificationUnique,
 } from "@/machines/types";
 import { useRef } from "react";
+import { rustEnumSchema } from "@/lib/types";
 
-export const ethercatSetupEventDataSchema = z.object({
-  devices: z.array(
-    z.object({
-      configured_address: z.number().int(),
-      name: z.string(),
-      vendor_id: z.number().int(),
-      product_id: z.number().int(),
-      revision: z.number().int(),
-      machine_device_identification: machineDeviceIdentification.nullable(),
-      subdevice_index: z.number().int(),
-    }),
-  ),
-  machines: z.array(
-    z.object({
-      machine_identification_unique: machineIdentificationUnique,
-      error: z.string().nullable(),
-    }),
-  ),
+export const ethercatSetupEventDataSchema = rustEnumSchema({
+  Initializing: z.boolean(),
+  Done: z.object({
+    devices: z.array(
+      z.object({
+        configured_address: z.number().int(),
+        name: z.string(),
+        vendor_id: z.number().int(),
+        product_id: z.number().int(),
+        revision: z.number().int(),
+        machine_device_identification: machineDeviceIdentification.nullable(),
+        subdevice_index: z.number().int(),
+      }),
+    ),
+    machines: z.array(
+      z.object({
+        machine_identification_unique: machineIdentificationUnique,
+        error: z.string().nullable(),
+      }),
+    ),
+  }),
+  Error: z.string(),
 });
 
 export type EthercatSetupEventData = z.infer<
@@ -48,14 +53,14 @@ export const ethercatSetupEventSchema = eventSchema(
 
 export type EthercatSetupEvent = z.infer<typeof ethercatSetupEventSchema>;
 
-export const mainRoomStoreSchema = z.object({
+export const mainNamespaceStoreSchema = z.object({
   ethercatSetup: ethercatSetupEventSchema.nullable(),
 });
 
-export type MainRoomStore = z.infer<typeof mainRoomStoreSchema>;
+export type MainNamespaceStore = z.infer<typeof mainNamespaceStoreSchema>;
 
-export const createMainRoomStore = (): StoreApi<MainRoomStore> => {
-  return create<MainRoomStore>()(() => ({
+export const createMainNamespaceStore = (): StoreApi<MainNamespaceStore> => {
+  return create<MainNamespaceStore>()(() => ({
     ethercatSetup: null,
   }));
 };
@@ -65,8 +70,8 @@ export const eventSchemaMap = {
 };
 
 export function mainMessageHandler(
-  store: StoreApi<MainRoomStore>,
-): MessageCallback {
+  store: StoreApi<MainNamespaceStore>,
+): EventHandler {
   return (event: Event<any>) => {
     const eventName = event.name;
 
@@ -103,12 +108,12 @@ export function mainMessageHandler(
   };
 }
 
-const useMainRoomImplementation = createRoomImplementation<MainRoomStore>({
-  createStore: createMainRoomStore,
-  createMessageHandler: mainMessageHandler,
+const mainRoomImplementation = createNamespaceHookImplementation({
+  createStore: createMainNamespaceStore,
+  createEventHandler: mainMessageHandler,
 });
 
-export function useMainRoom(): RoomImplementationResult<MainRoomStore> {
-  const roomId = useRef({ Main: true });
-  return useMainRoomImplementation(roomId.current);
+export function useMainNamespace(): MainNamespaceStore {
+  const namespaceId = useRef({ type: "main" } satisfies NamespaceId);
+  return mainRoomImplementation(namespaceId.current);
 }

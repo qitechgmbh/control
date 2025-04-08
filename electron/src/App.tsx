@@ -7,7 +7,6 @@ import { updateAppLanguage } from "./helpers/language_helpers";
 import { router } from "./routes/router";
 import { RouterProvider } from "@tanstack/react-router";
 import { Toaster } from "./components/ui/sonner";
-import { useSocketStore } from "./client/socketioStore";
 import { enableMapSet } from "immer";
 
 export default function App() {
@@ -17,12 +16,6 @@ export default function App() {
     syncThemeWithLocal();
     updateAppLanguage(i18n);
   }, [i18n]);
-
-  // connect socketio
-  const { connect } = useSocketStore();
-  useEffect(() => {
-    connect("http://localhost:3001/");
-  }, [connect]);
 
   return <RouterProvider router={router} />;
 }

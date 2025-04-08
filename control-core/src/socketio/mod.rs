@@ -1,3 +1,3 @@
 pub mod event;
-pub mod room;
-pub mod room_id;
+pub mod namespace;
+pub mod namespace_id;

@@ -1,25 +1,28 @@
 /**
  * @file Winder1Room.ts
- * @description TypeScript implementation of Winder1Room with Zod schema validation.
+ * @description TypeScript implementation of Winder1 namespace with Zod schema validation.
  */
 
 import { StoreApi } from "zustand";
 import { create } from "zustand";
 import { produce } from "immer";
-import { z } from "zod";
+import { number, z } from "zod";
 import {
-  EventCache,
-  MessageCallback,
-  createRoomImplementation,
+  EventHandler,
   eventSchema,
   Event,
   handleEventValidationError,
   handleUnhandledEventError,
-  RoomImplementationResult,
-  RoomId,
+  NamespaceId,
+  createNamespaceHookImplementation,
 } from "../../../client/socketioStore";
 import { MachineIdentificationUnique } from "@/machines/types";
 import { useRef } from "react";
+import {
+  createTimeSeries,
+  TimeSeries,
+  TimeSeriesValue,
+} from "@/lib/timeseries";
 
 // ========== Event Schema Definitions ==========
 
@@ -146,17 +149,16 @@ export const measurementsTensionArmEventSchema = eventSchema(
 export type TraversePositionEvent = z.infer<
   typeof traversePositionEventDataSchema
 >;
-export type TraverseStateEvent = z.infer<typeof traverseStateEventDataSchema>;
-export type PullerRegulation = z.infer<typeof pullerRegulationSchema>;
-export type PullerStateEvent = z.infer<typeof pullerStateEventDataSchema>;
-export type PullerSpeedEvent = z.infer<typeof pullerSpeedEventDataSchema>;
+export type TraverseStateEvent = z.infer<typeof traverseStateEventSchema>;
+export type PullerStateEvent = z.infer<typeof pullerStateEventSchema>;
+export type PullerSpeedEvent = z.infer<typeof pullerSpeedEventSchema>;
 export type AutostopWoundedLengthEvent = z.infer<
   typeof autostopWoundedLengthEventDataSchema
 >;
 export type AutostopTransition = z.infer<typeof autostopTransitionSchema>;
-export type AutostopStateEvent = z.infer<typeof autostopStateEventDataSchema>;
+export type AutostopStateEvent = z.infer<typeof autostopStateEventSchema>;
 export type Mode = z.infer<typeof modeSchema>;
-export type ModeStateEvent = z.infer<typeof modeStateEventDataSchema>;
+export type ModeStateEvent = z.infer<typeof modeStateEventSchema>;
 export type MeasurementsWindingRpmEvent = z.infer<
   typeof measurementsWindingRpmEventDataSchema
 >;
@@ -164,63 +166,76 @@ export type MeasurementsTensionArmEvent = z.infer<
   typeof measurementsTensionArmEventDataSchema
 >;
 
-// ========== Store Schema Definition ==========
-
-/**
- * Winder1 room store schema
- */
-export const Winder1RoomStoreSchema = z.object({
+export type Winder1NamespaceStore = {
   // State events (latest only)
-  traverseState: traverseStateEventSchema.nullable(),
-  pullerState: pullerStateEventSchema.nullable(),
-  autostopState: autostopStateEventSchema.nullable(),
-  modeState: modeStateEventSchema.nullable(),
+  traverseState: TraverseStateEvent | null;
+  pullerState: PullerStateEvent | null;
+  autostopState: AutostopStateEvent | null;
+  modeState: ModeStateEvent | null;
 
   // Metric events (cached for 1 hour)
-  traversePositions: z.array(traversePositionEventSchema),
-  pullerSpeeds: z.array(pullerSpeedEventSchema),
-  autostopWoundedLengths: z.array(autostopWoundedLengthEventSchema),
-  measurementsWindingRpms: z.array(measurementsWindingRpmEventSchema),
-  measurementsTensionArms: z.array(measurementsTensionArmEventSchema),
-});
+  traversePosition: TimeSeries;
+  pullerSpeed: TimeSeries;
+  autostopWoundedLength: TimeSeries;
+  measurementsWindingRpm: TimeSeries;
+  measurementsTensionArm: TimeSeries;
+};
 
-export type Winder1RoomStore = z.infer<typeof Winder1RoomStoreSchema>;
+// Constants for time durations
+const ONE_SECOND = 1000;
+const ONE_HOUR = 60 * 60 * ONE_SECOND;
+
+const { initialTimeSeries: traversePosition, insert: addTraversePosition } =
+  createTimeSeries(ONE_SECOND, ONE_HOUR);
+const {
+  initialTimeSeries: autostopWoundedLength,
+  insert: addAutostopWoundedLength,
+} = createTimeSeries(ONE_SECOND, ONE_HOUR);
+const { initialTimeSeries: pullerSpeed, insert: addPullerSpeed } =
+  createTimeSeries(ONE_SECOND, ONE_HOUR);
+const {
+  initialTimeSeries: measurementsWindingRpm,
+  insert: addMeasurementsWindingRpm,
+} = createTimeSeries(ONE_SECOND, ONE_HOUR);
+const {
+  initialTimeSeries: measurementsTensionArm,
+  insert: addMeasurementsTensionArm,
+} = createTimeSeries(ONE_SECOND, ONE_HOUR);
 
 /**
- * Factory function to create a new Winder1 room store
- * @returns A new Zustand store instance for Winder1 room
+ * Factory function to create a new Winder1 namespace store
+ * @returns A new Zustand store instance for Winder1 namespace
  */
-export const createWinder1RoomStore = (): StoreApi<Winder1RoomStore> =>
-  create<Winder1RoomStore>(() => ({
-    // State events (latest only)
-    traverseState: null,
-    pullerState: null,
-    autostopState: null,
-    modeState: null,
+export const createWinder1NamespaceStore =
+  (): StoreApi<Winder1NamespaceStore> =>
+    create<Winder1NamespaceStore>((set) => {
+      return {
+        // State events (latest only)
+        traverseState: null,
+        pullerState: null,
+        autostopState: null,
+        modeState: null,
 
-    // Metric events (cached for 1 hour)
-    traversePositions: [],
-    pullerSpeeds: [],
-    autostopWoundedLengths: [],
-    measurementsWindingRpms: [],
-    measurementsTensionArms: [],
-  }));
-
+        // Metric events (cached for 1 hour)
+        traversePosition,
+        pullerSpeed,
+        autostopWoundedLength,
+        measurementsWindingRpm,
+        measurementsTensionArm,
+      };
+    });
 /**
  * @file Winder1Room.ts (continued)
  */
 
 /**
- * Creates a message handler for Winder1 room events with validation and appropriate caching strategies
+ * Creates a message handler for Winder1 namespace events with validation and appropriate caching strategies
  * @param store The store to update when messages are received
  * @returns A message handler function
  */
 export function winder2MessageHandler(
-  store: StoreApi<Winder1RoomStore>,
-): MessageCallback {
-  // Constants for time durations
-  const ONE_HOUR = 60 * 60 * 1000;
-
+  store: StoreApi<Winder1NamespaceStore>,
+): EventHandler {
   return (event: Event<any>) => {
     const eventName = event.name;
 
@@ -254,52 +269,72 @@ export function winder2MessageHandler(
       }
       // Metric events (keep for 1 hour)
       else if (eventName === "TraversePositionEvent") {
+        let parsed = traversePositionEventSchema.parse(event);
+        let timeseriesValue: TimeSeriesValue = {
+          value: parsed.data.position,
+          timestamp: event.ts,
+        };
         store.setState(
           produce((state) => {
-            state.traversePositions = EventCache.timeWindow(
-              state.traversePositions,
-              traversePositionEventSchema.parse(event),
-              ONE_HOUR,
+            state.traversePosition = addTraversePosition(
+              state.traversePosition,
+              timeseriesValue,
             );
           }),
         );
       } else if (eventName === "PullerSpeedEvent") {
+        let parsed = pullerSpeedEventSchema.parse(event);
+        let timeseriesValue: TimeSeriesValue = {
+          value: parsed.data.speed,
+          timestamp: event.ts,
+        };
         store.setState(
           produce((state) => {
-            state.pullerSpeeds = EventCache.timeWindow(
-              state.pullerSpeeds,
-              pullerSpeedEventSchema.parse(event),
-              ONE_HOUR,
+            state.pullerSpeed = addPullerSpeed(
+              state.pullerSpeed,
+              timeseriesValue,
             );
           }),
         );
       } else if (eventName === "AutostopWoundedlengthEvent") {
+        let parsed = autostopWoundedLengthEventSchema.parse(event);
+        let timeseriesValue: TimeSeriesValue = {
+          value: parsed.data.wounded_length,
+          timestamp: event.ts,
+        };
         store.setState(
           produce((state) => {
-            state.autostopWoundedLengths = EventCache.timeWindow(
-              state.autostopWoundedLengths,
-              autostopWoundedLengthEventSchema.parse(event),
-              ONE_HOUR,
+            state.autostopWoundedLength = addAutostopWoundedLength(
+              state.autostopWoundedLength,
+              timeseriesValue,
             );
           }),
         );
       } else if (eventName === "MeasurementsWindingRpmEvent") {
+        let parsed = measurementsWindingRpmEventSchema.parse(event);
+        let timeseriesValue: TimeSeriesValue = {
+          value: parsed.data.rpm,
+          timestamp: event.ts,
+        };
         store.setState(
           produce((state) => {
-            state.measurementsWindingRpms = EventCache.timeWindow(
-              state.measurementsWindingRpms,
-              measurementsWindingRpmEventSchema.parse(event),
-              ONE_HOUR,
+            state.measurementsWindingRpm = addMeasurementsWindingRpm(
+              state.measurementsWindingRpm,
+              timeseriesValue,
             );
           }),
         );
       } else if (eventName === "MeasurementsTensionArmEvent") {
+        let parsed = measurementsTensionArmEventSchema.parse(event);
+        let timeseriesValue: TimeSeriesValue = {
+          value: parsed.data.degree,
+          timestamp: event.ts,
+        };
         store.setState(
           produce((state) => {
-            state.measurementsTensionArms = EventCache.timeWindow(
-              state.measurementsTensionArms,
-              measurementsTensionArmEventSchema.parse(event),
-              ONE_HOUR,
+            state.measurementsTensionArm = addMeasurementsTensionArm(
+              state.measurementsTensionArm,
+              timeseriesValue,
             );
           }),
         );
@@ -318,22 +353,21 @@ export function winder2MessageHandler(
 }
 
 /**
- * Create the Winder1 room implementation
+ * Create the Winder1 namespace implementation
  */
-const useWinder1RoomImplementation = createRoomImplementation<Winder1RoomStore>(
-  {
-    createStore: createWinder1RoomStore,
-    createMessageHandler: winder2MessageHandler,
-  },
-);
+const useWinder2NamespaceImplementation =
+  createNamespaceHookImplementation<Winder1NamespaceStore>({
+    createStore: createWinder1NamespaceStore,
+    createEventHandler: winder2MessageHandler,
+  });
 
 /**
- * Hook for a machine-specific Winder1 room
+ * Hook for a machine-specific Winder1 namespace
  *
  * @example
  * ```tsx
  * function WinderStatus({ machine }) {
- *   const { traverseState, pullerSpeeds } = useWinder1Room(machine);
+ *   const { traverseState, pullerSpeeds } = useWinder1Namespace(machine);
  *
  *   return (
  *     <div>
@@ -351,12 +385,17 @@ const useWinder1RoomImplementation = createRoomImplementation<Winder1RoomStore>(
  * }
  * ```
  */
-export function useWinder1Room(
+export function useWinder2Namespace(
   machine_identification_unique: MachineIdentificationUnique,
-): RoomImplementationResult<Winder1RoomStore> {
-  // Generate room name from validated machine ID
-  const roomName = useRef({ Machine: machine_identification_unique });
+): Winder1NamespaceStore {
+  // Generate namespace ID from validated machine ID
+  const namespaceId = useRef<NamespaceId>({
+    type: "machine",
+    vendor: machine_identification_unique.vendor,
+    serial: machine_identification_unique.serial,
+    machine: machine_identification_unique.machine,
+  });
 
-  // Use the implementation with validated room name
-  return useWinder1RoomImplementation(roomName.current);
+  // Use the implementation with validated namespace ID
+  return useWinder2NamespaceImplementation(namespaceId.current);
 }

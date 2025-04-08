@@ -1,18 +1,16 @@
-use super::room_id::RoomId;
 use crate::socketio::event::GenericEvent;
-use serde::{Deserialize, Serialize};
 use socketioxide::extract::SocketRef;
 use std::{collections::HashMap, time::Duration};
 
-pub trait RoomInterface {
-    /// Adds a socket to the room.
+pub trait NamespaceInterface {
+    /// Adds a socket to the namespace.
     ///
     /// # Arguments
     ///
     /// * `socket` - A reference to the socket to be added
     fn subscribe(&mut self, socket: SocketRef);
 
-    /// Removes a socket from the room.
+    /// Removes a socket from the namespace.
     ///
     /// # Arguments
     ///
@@ -21,7 +19,7 @@ pub trait RoomInterface {
 
     /// Re-emits cached events to a specific socket.
     ///
-    /// This is typically used when a socket reconnects or joins an existing room
+    /// This is typically used when a socket reconnects or joins an existing namespace
     /// to bring it up to date with the current state.
     ///
     /// # Arguments
@@ -29,7 +27,7 @@ pub trait RoomInterface {
     /// * `socket` - A reference to the socket that will receive the cached events
     fn reemit(&mut self, socket: SocketRef);
 
-    /// Emits an event to all sockets in the room.
+    /// Emits an event to all sockets in the namespace.
     ///
     /// # Arguments
     ///
@@ -49,10 +47,10 @@ pub trait RoomInterface {
         buffer_fn: Box<dyn Fn(&mut Vec<GenericEvent>, &GenericEvent) -> ()>,
     );
 
-    /// Emits an event to all sockets in the room and caches it.
+    /// Emits an event to all sockets in the namespace and caches it.
     ///
     /// This is a convenience method that combines the functionality of
-    /// [`Room::emit`] and [`Room::cache`].
+    /// [`Namespace::emit`] and [`Namespace::cache`].
     ///
     /// # Arguments
     ///
@@ -64,32 +62,24 @@ pub trait RoomInterface {
         event: &GenericEvent,
         buffer_fn: Box<dyn Fn(&mut Vec<GenericEvent>, &GenericEvent) -> ()>,
     );
-
-    fn room_id(&self) -> &RoomId;
 }
 
 #[derive(Debug)]
-pub struct Room {
-    pub room_id: RoomId,
+pub struct Namespace {
     sockets: Vec<SocketRef>,
     events: HashMap<String, Vec<GenericEvent>>,
 }
 
-impl Room {
-    pub fn new(room_id: RoomId) -> Self {
+impl Namespace {
+    pub fn new() -> Self {
         Self {
-            room_id,
             sockets: vec![],
             events: HashMap::new(),
         }
     }
 }
 
-impl RoomInterface for Room {
-    fn room_id(&self) -> &RoomId {
-        &self.room_id
-    }
-
+impl NamespaceInterface for Namespace {
     fn subscribe(&mut self, socket: SocketRef) {
         // add the socket to the list
         self.sockets.push(socket.clone());
@@ -103,14 +93,14 @@ impl RoomInterface for Room {
     fn reemit(&mut self, socket: SocketRef) {
         for (_, events) in self.events.iter() {
             for event in events.iter() {
-                let _ = socket.emit("event", &event.include_room_id(&self.room_id));
+                let _ = socket.emit("event", &event);
             }
         }
     }
 
     fn emit(&mut self, event: &GenericEvent) {
         for socket in self.sockets.iter() {
-            let _ = socket.emit("event", &event.include_room_id(&self.room_id));
+            let _ = socket.emit("event", &event);
         }
     }
 
@@ -139,11 +129,11 @@ impl RoomInterface for Room {
     }
 }
 
-pub trait RoomBufferCacheKey {
+pub trait NamespaceBufferCacheKey {
     fn to_key(&self) -> String;
 }
 
-pub trait RoomCacheingLogic<V>
+pub trait NamespaceCacheingLogic<V>
 where
     V: CacheableEvents<V>,
 {
@@ -190,14 +180,4 @@ pub fn cache_duration(duration: Duration) -> CacheFn {
 
         events.push(event.clone());
     })
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct RoomSubscribeEvent {
-    pub room_id: RoomId,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct RoomUnsubscribeEvent {
-    pub room_id: RoomId,
 }
