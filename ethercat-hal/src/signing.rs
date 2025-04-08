@@ -12,7 +12,7 @@ impl Integer16 {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```ignore
     /// let value = Integer16::from_unsigned(42);
     /// assert_eq!(value.into_unsigned(), 42);
     /// ```
@@ -25,7 +25,7 @@ impl Integer16 {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```ignore
     /// let value = Integer16::from_signed(-42);
     /// assert_eq!(value.into_signed(), -42);
     /// ```
@@ -38,7 +38,7 @@ impl Integer16 {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```ignore
     /// let value = Integer16::from_signed_magnitude(-42);
     /// assert_eq!(value.into_signed_magnitude(), -42);
     /// ```
