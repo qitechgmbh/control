@@ -81,12 +81,12 @@ export type EventHandler = (event: Event<any>) => void;
  * @template S The store state type
  */
 type Namespace<S> = {
-  /** Number of active subscribers to this namespace */
+  /** Number of active subscribers to this room */
   count: number;
   socket: Socket;
-  /** Callback function handling incoming socket messages for this namespace */
+  /** Callback function handling incoming socket messages for this room */
   handler: EventHandler;
-  /** Zustand store holding the namespace state */
+  /** Zustand store holding the room state */
   store: StoreApi<S>;
 };
 
@@ -130,10 +130,10 @@ type SocketioStore = {
   namespaces: Record<string, Namespace<unknown>>;
   getNamespace: (namespaceId: NamespaceId) => Namespace<unknown> | undefined;
   hasNamespace: (namespaceId: NamespaceId) => boolean;
-  initNamespace: (
+  initNamespace: <S>(
     namespaceId: NamespaceId,
-    store: StoreApi<unknown>,
-    handler: EventHandler,
+    createStore: () => StoreApi<S>,
+    createEventHandler: (store: StoreApi<S>) => EventHandler,
   ) => void;
   incrementNamespace: (namespaceId: NamespaceId) => void;
   decrementNamespace: (namespaceId: NamespaceId) => void;
@@ -153,7 +153,7 @@ const useSocketioStore = create<SocketioStore>()((set, get) => ({
     const namespace_path = serializeNamespaceId(namespaceId);
     return !!get().namespaces[namespace_path];
   },
-  initNamespace: (namespaceId, store, eventHandler) => {
+  initNamespace: <S>(namespaceId, createStore, createEventHandler) => {
     const namespace_path = serializeNamespaceId(namespaceId);
 
     // check if the namespace already exists
@@ -164,27 +164,33 @@ const useSocketioStore = create<SocketioStore>()((set, get) => ({
     // create a new socket
     const socket = io(get().baseUrl + namespace_path, { autoConnect: false });
 
-    // default event handler if none provided
-    const handler =
-      eventHandler ||
-      ((event: Event<any>) => {
-        console.log(`Received event from ${namespace_path}:`, event);
-      });
+    // create function to reset the store
+    // creating a new store and a new event handler
+    const resetStore = (set) => {
+      set(
+        produce((state: SocketioStore) => {
+          const store = createStore();
+          const eventHandler = createEventHandler(store);
+          state.namespaces[namespace_path].store = store;
+          state.namespaces[namespace_path].handler = eventHandler;
+        }),
+      );
+    };
 
     // add handlers
     socket.on("connect", () => {
       console.log(`Connected to ${namespace_path}`);
+
+      // reset the store
+      resetStore(set);
     });
     socket.on("disconnect", () => {
       console.warn(`Disconnected from ${namespace_path}`);
 
-      // clear the store
-      set(
-        produce((state: SocketioStore) => {
-          state.namespaces[namespace_path].store.setState({});
-        }),
-      );
+      // reset the store
+      resetStore(set);
     });
+
     socket.on("event", (event: unknown) => {
       // validate the event
       let event_parsed = eventSchema(z.any()).safeParse(event);
@@ -193,12 +199,14 @@ const useSocketioStore = create<SocketioStore>()((set, get) => ({
         return;
       }
       // handle the event
-      handler(event_parsed.data);
+      get().namespaces[namespace_path].handler(event_parsed.data);
     });
 
-    // store the namespace
+    // store the namespace initally
     set(
       produce((state: SocketioStore) => {
+        const store = createStore();
+        const handler = createEventHandler(store);
         state.namespaces[namespace_path] = {
           count: 0,
           socket,
@@ -286,9 +294,7 @@ export function createNamespaceHookImplementation<S>({
     // namespace initialization/incrementation/decrementation
     useEffect(() => {
       if (!hasNamespace(namespaceId)) {
-        const store = createStore();
-        const eventHandler = createEventHandler(store);
-        initNamespace(namespaceId, store, eventHandler);
+        initNamespace(namespaceId, createStore, createEventHandler);
       } else {
         incrementNamespace(namespaceId);
       }
