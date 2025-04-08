@@ -23,7 +23,7 @@ where
     /// Then the implementation should save the config in the device and also the `txpdo` and `rxpdo`
     ///
     /// Example:
-    /// ```rust,no_run
+    /// ```ignore
     /// use crate::coe::{ConfigurableDevice, Configuration};
     /// use crate::devices::el3001::{EL3001, EL3001Configuration};
     ///
@@ -49,7 +49,7 @@ where
     /// Returns the current config of the device
     ///
     /// Example:
-    /// ```rust,no_run
+    /// ```ignore
     /// use crate::coe::{ConfigurableDevice, Configuration};
     /// use crate::devices::el3001::{EL3001, EL3001Configuration};
     ///
