@@ -2,7 +2,8 @@ name: Rust
 
 on:
   push:
-    branches: ["master", "bugfix/22"]
+    branches:
+      - "**"
   pull_request:
     branches: "*"
 
@@ -33,5 +34,6 @@ jobs:
 
       - name: Build
         run: cargo build --verbose
+
       - name: Run tests
         run: cargo test --verbose
