@@ -11,7 +11,7 @@ import {
 import React, { useMemo } from "react";
 import { getVendorPreset, getMachinePreset } from "@/machines/types";
 import { IconText } from "@/components/IconText";
-import { EthercatSetupEventData, useMainRoom } from "@/client/mainRoom";
+import { EthercatSetupEventData, useMainNamespace } from "@/client/mainRoom";
 
 export const columns: ColumnDef<EthercatSetupEventData["machines"][number]>[] =
   [
@@ -72,9 +72,7 @@ export const columns: ColumnDef<EthercatSetupEventData["machines"][number]>[] =
   ];
 
 export function MachinesPage() {
-  const {
-    state: { ethercatSetup },
-  } = useMainRoom();
+  const { ethercatSetup } = useMainNamespace();
 
   const data = useMemo(() => {
     return ethercatSetup?.content.Data?.machines || [];

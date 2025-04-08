@@ -4,7 +4,7 @@ import { useStateOptimistic } from "@/lib/useStateOptimistic";
 import { MachineIdentificationUnique } from "@/machines/types";
 import { winder2SerialRoute } from "@/routes/routes";
 import { z } from "zod";
-import { Mode, useWinder1Room } from "./winder2Room";
+import { Mode, useWinder1Namespace } from "./winder2Room";
 import { useEffect, useMemo, useState } from "react";
 
 function useLaserpointer(
@@ -33,9 +33,7 @@ function useLaserpointer(
   };
 
   // Read path
-  const {
-    state: { traverseState },
-  } = useWinder1Room(machine_identification_unique);
+  const { traverseState } = useWinder1Namespace(machine_identification_unique);
   useEffect(() => {
     if (traverseState?.content.Data) {
       state.setReal(traverseState.content.Data.laserpointer);
@@ -59,9 +57,9 @@ function useMeasurementTensionArm(
   const isLoading = useState(false);
 
   // Read Path
-  const {
-    state: { measurementsTensionArms },
-  } = useWinder1Room(machine_identification_unique);
+  const { measurementsTensionArms } = useWinder1Namespace(
+    machine_identification_unique,
+  );
 
   return {
     // set last
@@ -97,9 +95,7 @@ function useMode(machine_identification_unique: MachineIdentificationUnique): {
   };
 
   // Read path
-  const {
-    state: { modeState },
-  } = useWinder1Room(machine_identification_unique);
+  const { modeState } = useWinder1Namespace(machine_identification_unique);
   useEffect(() => {
     if (modeState?.content.Data) {
       state.setReal(modeState.content.Data.mode);

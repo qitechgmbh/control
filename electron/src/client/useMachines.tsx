@@ -5,7 +5,7 @@ import {
   VendorPreset,
   MachineIdentificationUnique,
 } from "@/machines/types";
-import { useMainRoom } from "./mainRoom";
+import { useMainNamespace } from "./mainRoom";
 
 type UseMachine = {
   machine_identification_unique: MachineIdentificationUnique;
@@ -18,9 +18,7 @@ type UseMachine = {
 
 // returns only valid mahcines
 export function useMachines(): UseMachine[] {
-  const {
-    state: { ethercatSetup },
-  } = useMainRoom();
+  const { ethercatSetup } = useMainNamespace();
 
   if (ethercatSetup?.content.Data)
     return (

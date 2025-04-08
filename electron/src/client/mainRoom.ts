@@ -3,14 +3,14 @@ import { create } from "zustand";
 import { produce } from "immer";
 import { z } from "zod";
 import {
-  MessageCallback,
-  createRoomImplementation,
+  EventHandler,
+  createNamespaceHookImplementation,
   eventSchema,
   Event,
   handleEventValidationError,
   handleUnknownEventError,
   handleUnhandledEventError,
-  RoomImplementationResult,
+  NamespaceId,
 } from "./socketioStore";
 import {
   machineDeviceIdentification,
@@ -48,14 +48,14 @@ export const ethercatSetupEventSchema = eventSchema(
 
 export type EthercatSetupEvent = z.infer<typeof ethercatSetupEventSchema>;
 
-export const mainRoomStoreSchema = z.object({
+export const mainNamespaceStoreSchema = z.object({
   ethercatSetup: ethercatSetupEventSchema.nullable(),
 });
 
-export type MainRoomStore = z.infer<typeof mainRoomStoreSchema>;
+export type MainNamespaceStore = z.infer<typeof mainNamespaceStoreSchema>;
 
-export const createMainRoomStore = (): StoreApi<MainRoomStore> => {
-  return create<MainRoomStore>()(() => ({
+export const createMainNamespaceStore = (): StoreApi<MainNamespaceStore> => {
+  return create<MainNamespaceStore>()(() => ({
     ethercatSetup: null,
   }));
 };
@@ -65,8 +65,8 @@ export const eventSchemaMap = {
 };
 
 export function mainMessageHandler(
-  store: StoreApi<MainRoomStore>,
-): MessageCallback {
+  store: StoreApi<MainNamespaceStore>,
+): EventHandler {
   return (event: Event<any>) => {
     const eventName = event.name;
 
@@ -103,12 +103,12 @@ export function mainMessageHandler(
   };
 }
 
-const useMainRoomImplementation = createRoomImplementation<MainRoomStore>({
-  createStore: createMainRoomStore,
-  createMessageHandler: mainMessageHandler,
+const mainRoomImplementation = createNamespaceHookImplementation({
+  createStore: createMainNamespaceStore,
+  createEventHandler: mainMessageHandler,
 });
 
-export function useMainRoom(): RoomImplementationResult<MainRoomStore> {
-  const roomId = useRef({ Main: true });
-  return useMainRoomImplementation(roomId.current);
+export function useMainNamespace(): MainNamespaceStore {
+  const namespaceId = useRef({ type: "main" } satisfies NamespaceId);
+  return mainRoomImplementation(namespaceId.current);
 }

@@ -12,7 +12,7 @@ import React, { useMemo } from "react";
 import { DeviceEepromDialog } from "./DeviceEepromDialog";
 import { getMachinePreset } from "@/machines/types";
 import { DeviceRoleComponent } from "@/components/DeviceRole";
-import { EthercatSetupEventData, useMainRoom } from "@/client/mainRoom";
+import { EthercatSetupEventData, useMainNamespace } from "@/client/mainRoom";
 
 export const columns: ColumnDef<EthercatSetupEventData["devices"][number]>[] = [
   {
@@ -106,9 +106,7 @@ export const columns: ColumnDef<EthercatSetupEventData["devices"][number]>[] = [
 ];
 
 export function EthercatPage() {
-  const {
-    state: { ethercatSetup },
-  } = useMainRoom();
+  const { ethercatSetup } = useMainNamespace();
 
   const data = useMemo(() => {
     return ethercatSetup?.content.Data?.devices || [];
