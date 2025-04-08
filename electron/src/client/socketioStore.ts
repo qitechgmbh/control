@@ -97,7 +97,7 @@ export function serializeNamespaceId(namespaceId: NamespaceId): string {
   if (namespaceId.type === "main") {
     return "/main";
   } else if (namespaceId.type === "machine") {
-    return `/machine/${namespaceId.vendor}/${namespaceId.serial}/${namespaceId.machine}`;
+    return `/machine/${namespaceId.vendor}/${namespaceId.machine}/${namespaceId.serial}`;
   } else {
     throw new Error("Invalid namespaceId");
   }
@@ -114,12 +114,12 @@ export function deserializeNamespaceId(namespaceId: string): NamespaceId {
   } else if (parts.length === 5 && parts[0] === "machine") {
     // /machine/0/0/0
     const vendor = parseInt(parts[1]);
-    const serial = parseInt(parts[2]);
-    const machine = parseInt(parts[3]);
+    const machine = parseInt(parts[2]);
+    const serial = parseInt(parts[3]);
     if (isNaN(vendor) || isNaN(serial) || isNaN(machine)) {
       throw new Error("Invalid namespaceId");
     }
-    return { type: "machine", vendor, serial, machine };
+    return { type: "machine", vendor, machine, serial };
   } else {
     throw new Error("Invalid namespaceId");
   }

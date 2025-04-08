@@ -1,10 +1,10 @@
 import { toastError } from "@/components/Toast";
 import { useMachineMutate as useMachineMutation } from "@/client/useClient";
 import { useStateOptimistic } from "@/lib/useStateOptimistic";
-import { MachineIdentificationUnique } from "@/machines/types";
+import { MachineIdentificationUnique, winder2 } from "@/machines/types";
 import { winder2SerialRoute } from "@/routes/routes";
 import { z } from "zod";
-import { Mode, useWinder1Namespace } from "./winder2Namespace";
+import { Mode, useWinder2Namespace } from "./winder2Namespace";
 import { useEffect, useMemo, useState } from "react";
 
 function useLaserpointer(
@@ -33,7 +33,7 @@ function useLaserpointer(
   };
 
   // Read path
-  const { traverseState } = useWinder1Namespace(machine_identification_unique);
+  const { traverseState } = useWinder2Namespace(machine_identification_unique);
   useEffect(() => {
     if (traverseState?.content.Data) {
       state.setReal(traverseState.content.Data.laserpointer);
@@ -57,7 +57,7 @@ function useMeasurementTensionArm(
   const isLoading = useState(false);
 
   // Read Path
-  const { measurementsTensionArms } = useWinder1Namespace(
+  const { measurementsTensionArms } = useWinder2Namespace(
     machine_identification_unique,
   );
 
@@ -95,7 +95,7 @@ function useMode(machine_identification_unique: MachineIdentificationUnique): {
   };
 
   // Read path
-  const { modeState } = useWinder1Namespace(machine_identification_unique);
+  const { modeState } = useWinder2Namespace(machine_identification_unique);
   useEffect(() => {
     if (modeState?.content.Data) {
       state.setReal(modeState.content.Data.mode);
@@ -110,7 +110,7 @@ function useMode(machine_identification_unique: MachineIdentificationUnique): {
   };
 }
 
-export function useWinder1() {
+export function useWinder2() {
   const { serial: serialString } = winder2SerialRoute.useParams();
 
   // Memoize the machine identification to keep it stable between renders
@@ -131,8 +131,7 @@ export function useWinder1() {
     }
 
     return {
-      vendor: 1,
-      machine: 1,
+      ...winder2.machine_identification,
       serial,
     };
   }, [serialString]); // Only recreate when serialString changes

@@ -320,7 +320,7 @@ export function winder2MessageHandler(
 /**
  * Create the Winder1 namespace implementation
  */
-const useWinder1NamespaceImplementation =
+const useWinder2NamespaceImplementation =
   createNamespaceHookImplementation<Winder1NamespaceStore>({
     createStore: createWinder1NamespaceStore,
     createEventHandler: winder2MessageHandler,
@@ -350,7 +350,7 @@ const useWinder1NamespaceImplementation =
  * }
  * ```
  */
-export function useWinder1Namespace(
+export function useWinder2Namespace(
   machine_identification_unique: MachineIdentificationUnique,
 ): Winder1NamespaceStore {
   // Generate namespace ID from validated machine ID
@@ -362,5 +362,5 @@ export function useWinder1Namespace(
   });
 
   // Use the implementation with validated namespace ID
-  return useWinder1NamespaceImplementation(namespaceId.current);
+  return useWinder2NamespaceImplementation(namespaceId.current);
 }

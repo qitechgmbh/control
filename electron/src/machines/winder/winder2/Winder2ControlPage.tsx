@@ -12,7 +12,7 @@ import { EditValue } from "@/control/EditValue";
 import { Label } from "@/control/Label";
 import { TouchButton } from "@/components/touch/TouchButton";
 import { StatusBadge } from "@/control/StatusBadge";
-import { useWinder1 } from "./useWinder";
+import { useWinder2 } from "./useWinder";
 import { Mode } from "./winder2Namespace";
 
 export function Winder1ControlPage() {
@@ -28,7 +28,7 @@ export function Winder1ControlPage() {
     setMode,
     modeIsLoading,
     modeIsDisabled,
-  } = useWinder1();
+  } = useWinder2();
 
   return (
     <Page>
