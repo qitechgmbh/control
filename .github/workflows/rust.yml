@@ -8,6 +8,7 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  RUST_VERSION: "1.86"
 
 jobs:
   build:
@@ -15,16 +16,21 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      - name: Cache
-        uses: actions/cache@v4
+      - name: Set Rust version
+        run: rustup override set ${{ env.RUST_VERSION }}
+      - name: Cache Rust dependencies
+        uses: actions/cache@v3
         with:
           path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-      - name: Set Rust version
-        run: rustup override set 1.86
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-${{ env.RUST_VERSION }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ env.RUST_VERSION }}-cargo-
+
       - name: Build
         run: cargo build --verbose
       - name: Run tests
