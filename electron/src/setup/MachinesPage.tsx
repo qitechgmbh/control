@@ -11,7 +11,10 @@ import {
 import React, { useMemo } from "react";
 import { getVendorPreset, getMachinePreset } from "@/machines/types";
 import { IconText } from "@/components/IconText";
-import { EthercatSetupEventData, useMainNamespace } from "@/client/mainRoom";
+import {
+  EthercatSetupEventData,
+  useMainNamespace,
+} from "@/client/mainNamespace";
 
 export const columns: ColumnDef<EthercatSetupEventData["machines"][number]>[] =
   [

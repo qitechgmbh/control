@@ -12,7 +12,10 @@ import React, { useMemo } from "react";
 import { DeviceEepromDialog } from "./DeviceEepromDialog";
 import { getMachinePreset } from "@/machines/types";
 import { DeviceRoleComponent } from "@/components/DeviceRole";
-import { EthercatSetupEventData, useMainNamespace } from "@/client/mainRoom";
+import {
+  EthercatSetupEventData,
+  useMainNamespace,
+} from "@/client/mainNamespace";
 
 export const columns: ColumnDef<EthercatSetupEventData["devices"][number]>[] = [
   {

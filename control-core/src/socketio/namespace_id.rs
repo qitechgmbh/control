@@ -6,19 +6,19 @@ use std::str::FromStr;
 use crate::identification::MachineIdentificationUnique;
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
-pub enum RoomId {
+pub enum NamespaceId {
     Main,
     Machine(MachineIdentificationUnique),
 }
 
-impl Serialize for RoomId {
+impl Serialize for NamespaceId {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
         match self {
-            RoomId::Main => serializer.serialize_str("/main"),
-            RoomId::Machine(id) => {
+            NamespaceId::Main => serializer.serialize_str("/main"),
+            NamespaceId::Machine(id) => {
                 let path = format!("/machine/{}/{}/{}", id.vendor, id.machine, id.serial);
                 serializer.serialize_str(&path)
             }
@@ -26,26 +26,26 @@ impl Serialize for RoomId {
     }
 }
 
-impl<'de> Deserialize<'de> for RoomId {
+impl<'de> Deserialize<'de> for NamespaceId {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
     {
-        struct RoomIdVisitor;
+        struct NamespaceIdVisitor;
 
-        impl<'de> Visitor<'de> for RoomIdVisitor {
-            type Value = RoomId;
+        impl<'de> Visitor<'de> for NamespaceIdVisitor {
+            type Value = NamespaceId;
 
             fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-                formatter.write_str("a string representing a room path")
+                formatter.write_str("a string representing a namespace path")
             }
 
-            fn visit_str<E>(self, value: &str) -> Result<RoomId, E>
+            fn visit_str<E>(self, value: &str) -> Result<NamespaceId, E>
             where
                 E: de::Error,
             {
                 if value == "/main" {
-                    return Ok(RoomId::Main);
+                    return Ok(NamespaceId::Main);
                 }
 
                 if let Some(machine_path) = value.strip_prefix("/machine/") {
@@ -61,7 +61,7 @@ impl<'de> Deserialize<'de> for RoomId {
                             .parse::<u16>()
                             .map_err(|_| E::custom("Invalid serial id"))?;
 
-                        return Ok(RoomId::Machine(MachineIdentificationUnique {
+                        return Ok(NamespaceId::Machine(MachineIdentificationUnique {
                             vendor,
                             machine,
                             serial,
@@ -69,21 +69,21 @@ impl<'de> Deserialize<'de> for RoomId {
                     }
                 }
 
-                Err(E::custom(format!("Invalid room path: {}", value)))
+                Err(E::custom(format!("Invalid namespace path: {}", value)))
             }
         }
 
-        deserializer.deserialize_str(RoomIdVisitor)
+        deserializer.deserialize_str(NamespaceIdVisitor)
     }
 }
 
 // Implement FromStr for convenience
-impl FromStr for RoomId {
+impl FromStr for NamespaceId {
     type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if s == "/main" {
-            return Ok(RoomId::Main);
+            return Ok(NamespaceId::Main);
         }
 
         if let Some(machine_path) = s.strip_prefix("/machine/") {
@@ -99,7 +99,7 @@ impl FromStr for RoomId {
                     .parse::<u16>()
                     .map_err(|_| "Invalid serial id".to_string())?;
 
-                return Ok(RoomId::Machine(MachineIdentificationUnique {
+                return Ok(NamespaceId::Machine(MachineIdentificationUnique {
                     vendor,
                     machine,
                     serial,
@@ -107,16 +107,18 @@ impl FromStr for RoomId {
             }
         }
 
-        Err(format!("Invalid room path: {}", s))
+        Err(format!("Invalid namespace path: {}", s))
     }
 }
 
 // Implement Display for convenience
-impl fmt::Display for RoomId {
+impl fmt::Display for NamespaceId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            RoomId::Main => write!(f, "/main"),
-            RoomId::Machine(id) => write!(f, "/machine/{}/{}/{}", id.vendor, id.machine, id.serial),
+            NamespaceId::Main => write!(f, "/main"),
+            NamespaceId::Machine(id) => {
+                write!(f, "/machine/{}/{}/{}", id.vendor, id.machine, id.serial)
+            }
         }
     }
 }
@@ -129,8 +131,8 @@ mod tests {
 
     #[test]
     fn test_serialize_main() {
-        let room_id = RoomId::Main;
-        let serialized = to_string(&room_id).unwrap();
+        let namespace_id = NamespaceId::Main;
+        let serialized = to_string(&namespace_id).unwrap();
         assert_eq!(serialized, "\"/main\"");
     }
 
@@ -141,84 +143,84 @@ mod tests {
             machine: 456,
             serial: 789,
         };
-        let room_id = RoomId::Machine(machine_id);
-        let serialized = to_string(&room_id).unwrap();
+        let namespace_id = NamespaceId::Machine(machine_id);
+        let serialized = to_string(&namespace_id).unwrap();
         assert_eq!(serialized, "\"/machine/123/456/789\"");
     }
 
     #[test]
     fn test_deserialize_main() {
         let json = "\"/main\"";
-        let room_id: RoomId = from_str(json).unwrap();
-        assert!(matches!(room_id, RoomId::Main));
+        let namespace_id: NamespaceId = from_str(json).unwrap();
+        assert!(matches!(namespace_id, NamespaceId::Main));
     }
 
     #[test]
     fn test_deserialize_machine() {
         let json = "\"/machine/123/456/789\"";
-        let room_id: RoomId = from_str(json).unwrap();
+        let namespace_id: NamespaceId = from_str(json).unwrap();
 
-        match room_id {
-            RoomId::Machine(id) => {
+        match namespace_id {
+            NamespaceId::Machine(id) => {
                 assert_eq!(id.vendor, 123);
                 assert_eq!(id.machine, 456);
                 assert_eq!(id.serial, 789);
             }
-            _ => panic!("Expected RoomId::Machine"),
+            _ => panic!("Expected NamespaceId::Machine"),
         }
     }
 
     #[test]
     fn test_deserialize_invalid_path() {
         let json = "\"/invalid/path\"";
-        let result: Result<RoomId, _> = from_str(json);
+        let result: Result<NamespaceId, _> = from_str(json);
         assert!(result.is_err());
     }
 
     #[test]
     fn test_deserialize_invalid_machine_format() {
         let json = "\"/machine/not-a-number/456/789\"";
-        let result: Result<RoomId, _> = from_str(json);
+        let result: Result<NamespaceId, _> = from_str(json);
         assert!(result.is_err());
     }
 
     #[test]
     fn test_deserialize_incomplete_machine_path() {
         let json = "\"/machine/123/456\"";
-        let result: Result<RoomId, _> = from_str(json);
+        let result: Result<NamespaceId, _> = from_str(json);
         assert!(result.is_err());
     }
 
     #[test]
     fn test_from_str_main() {
-        let room_id = RoomId::from_str("/main").unwrap();
-        assert!(matches!(room_id, RoomId::Main));
+        let namespace_id = NamespaceId::from_str("/main").unwrap();
+        assert!(matches!(namespace_id, NamespaceId::Main));
     }
 
     #[test]
     fn test_from_str_machine() {
-        let room_id = RoomId::from_str("/machine/123/456/789").unwrap();
+        let namespace_id = NamespaceId::from_str("/machine/123/456/789").unwrap();
 
-        match room_id {
-            RoomId::Machine(id) => {
+        match namespace_id {
+            NamespaceId::Machine(id) => {
                 assert_eq!(id.vendor, 123);
                 assert_eq!(id.machine, 456);
                 assert_eq!(id.serial, 789);
             }
-            _ => panic!("Expected RoomId::Machine"),
+            _ => panic!("Expected NamespaceId::Machine"),
         }
     }
 
     #[test]
     fn test_from_str_invalid() {
-        let result = RoomId::from_str("/invalid/path");
+        let result = NamespaceId::from_str("/invalid/path");
         assert!(result.is_err());
     }
 
     #[test]
     fn test_display_main() {
-        let room_id = RoomId::Main;
-        assert_eq!(format!("{}", room_id), "/main");
+        let namespace_id = NamespaceId::Main;
+        assert_eq!(format!("{}", namespace_id), "/main");
     }
 
     #[test]
@@ -228,16 +230,16 @@ mod tests {
             machine: 456,
             serial: 789,
         };
-        let room_id = RoomId::Machine(machine_id);
-        assert_eq!(format!("{}", room_id), "/machine/123/456/789");
+        let namespace_id = NamespaceId::Machine(machine_id);
+        assert_eq!(format!("{}", namespace_id), "/machine/123/456/789");
     }
 
     #[test]
     fn test_roundtrip_main() {
-        let original = RoomId::Main;
+        let original = NamespaceId::Main;
         let serialized = to_string(&original).unwrap();
-        let deserialized: RoomId = from_str(&serialized).unwrap();
-        assert!(matches!(deserialized, RoomId::Main));
+        let deserialized: NamespaceId = from_str(&serialized).unwrap();
+        assert!(matches!(deserialized, NamespaceId::Main));
     }
 
     #[test]
@@ -247,39 +249,39 @@ mod tests {
             machine: 456,
             serial: 789,
         };
-        let original = RoomId::Machine(machine_id);
+        let original = NamespaceId::Machine(machine_id);
         let serialized = to_string(&original).unwrap();
-        let deserialized: RoomId = from_str(&serialized).unwrap();
+        let deserialized: NamespaceId = from_str(&serialized).unwrap();
 
         match deserialized {
-            RoomId::Machine(id) => {
+            NamespaceId::Machine(id) => {
                 assert_eq!(id.vendor, 123);
                 assert_eq!(id.machine, 456);
                 assert_eq!(id.serial, 789);
             }
-            _ => panic!("Expected RoomId::Machine"),
+            _ => panic!("Expected NamespaceId::Machine"),
         }
     }
 
     #[test]
     fn test_string_roundtrip() {
         // Test using Display and FromStr
-        let original = RoomId::Machine(MachineIdentificationUnique {
+        let original = NamespaceId::Machine(MachineIdentificationUnique {
             vendor: 123,
             machine: 456,
             serial: 789,
         });
 
         let string_repr = format!("{}", original);
-        let parsed = RoomId::from_str(&string_repr).unwrap();
+        let parsed = NamespaceId::from_str(&string_repr).unwrap();
 
         match parsed {
-            RoomId::Machine(id) => {
+            NamespaceId::Machine(id) => {
                 assert_eq!(id.vendor, 123);
                 assert_eq!(id.machine, 456);
                 assert_eq!(id.serial, 789);
             }
-            _ => panic!("Expected RoomId::Machine"),
+            _ => panic!("Expected NamespaceId::Machine"),
         }
     }
 }

@@ -5,9 +5,9 @@ use control_core::{
     machines::api::MachineApi,
     socketio::{
         event::{Event, EventBuilder, GenericEvent},
-        room::{
-            cache_duration, cache_one_event, CacheFn, CacheableEvents, Room, RoomCacheingLogic,
-            RoomInterface,
+        namespace::{
+            cache_duration, cache_one_event, CacheFn, CacheableEvents, Namespace,
+            NamespaceCacheingLogic, NamespaceInterface,
         },
     },
 };
@@ -262,9 +262,9 @@ pub enum Winder1Events {
 }
 
 #[derive(Debug)]
-pub struct Winder1Room(Room);
+pub struct Winder1Namespace(Namespace);
 
-impl RoomCacheingLogic<Winder1Events> for Winder1Room {
+impl NamespaceCacheingLogic<Winder1Events> for Winder1Namespace {
     fn emit_cached(&mut self, events: Winder1Events) {
         let event = events.event_value();
         let buffer_fn = events.event_cache_fn();
@@ -272,9 +272,9 @@ impl RoomCacheingLogic<Winder1Events> for Winder1Room {
     }
 }
 
-impl Winder1Room {
+impl Winder1Namespace {
     pub fn new() -> Self {
-        Self(Room::new())
+        Self(Namespace::new())
     }
 }
 
@@ -327,7 +327,7 @@ impl MachineApi for Winder2 {
         Ok(())
     }
 
-    fn api_event_room(&mut self) -> &mut dyn RoomInterface {
-        &mut self.room.0
+    fn api_event_namespace(&mut self) -> &mut dyn NamespaceInterface {
+        &mut self.namespace.0
     }
 }

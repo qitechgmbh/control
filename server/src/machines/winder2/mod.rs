@@ -4,7 +4,8 @@ pub mod new;
 pub mod tension_arm;
 
 use api::{
-    MeasurementsTensionArmEvent, ModeStateEvent, TraverseStateEvent, Winder1Events, Winder1Room,
+    MeasurementsTensionArmEvent, ModeStateEvent, TraverseStateEvent, Winder1Events,
+    Winder1Namespace,
 };
 use chrono::DateTime;
 use control_core::{
@@ -12,7 +13,7 @@ use control_core::{
         digital_output_setter::DigitalOutputSetter, stepper_driver_el70x1::StepperDriverEL70x1,
     },
     machines::Machine,
-    socketio::{event::EventBuilder, room::RoomCacheingLogic},
+    socketio::{event::EventBuilder, namespace::NamespaceCacheingLogic},
 };
 use tension_arm::TensionArm;
 use uom::si::angle::degree;
@@ -27,7 +28,7 @@ pub struct Winder2 {
     pub laser: DigitalOutputSetter,
 
     // socketio
-    room: Winder1Room,
+    namespace: Winder1Namespace,
     last_measurement_emit: DateTime<chrono::Utc>,
 
     // mode
@@ -62,7 +63,7 @@ impl Winder2 {
             mode: self.mode.clone().into(),
         }
         .build();
-        self.room.emit_cached(Winder1Events::Mode(event));
+        self.namespace.emit_cached(Winder1Events::Mode(event));
     }
 
     pub fn set_laser(&mut self, value: bool) {
@@ -76,7 +77,8 @@ impl Winder2 {
             ..Default::default()
         }
         .build();
-        self.room.emit_cached(Winder1Events::TraverseState(event));
+        self.namespace
+            .emit_cached(Winder1Events::TraverseState(event));
     }
 
     pub fn emit_measurement_tension_arm(&mut self) {
@@ -84,7 +86,7 @@ impl Winder2 {
             degree: self.tension_arm.get_angle().get::<degree>(),
         }
         .build();
-        self.room
+        self.namespace
             .emit_cached(Winder1Events::MeasurementsTensionArm(event));
     }
 }

@@ -1,5 +1,5 @@
 use crate::ethercat::config::{MAX_SUBDEVICES, PDI_LEN};
-use crate::socketio::rooms::Rooms;
+use crate::socketio::namespaces::Namespaces;
 use control_core::actors::Actor;
 use control_core::identification::{MachineDeviceIdentification, MachineIdentificationUnique};
 use control_core::machines::Machine;
@@ -12,7 +12,7 @@ use std::{collections::HashMap, sync::LazyLock};
 
 pub struct SocketioSetup {
     pub socketio: RwLock<Option<SocketIo>>,
-    pub rooms: RwLock<Rooms>,
+    pub namespaces: RwLock<Namespaces>,
 }
 
 pub struct AppState {
@@ -80,7 +80,7 @@ impl AppState {
         Self {
             socketio_setup: SocketioSetup {
                 socketio: RwLock::new(None),
-                rooms: RwLock::new(Rooms::new()),
+                namespaces: RwLock::new(Namespaces::new()),
             },
             ethercat_setup: Arc::new(RwLock::new(None)),
         }

@@ -4,7 +4,7 @@ import { useStateOptimistic } from "@/lib/useStateOptimistic";
 import { MachineIdentificationUnique } from "@/machines/types";
 import { winder2SerialRoute } from "@/routes/routes";
 import { z } from "zod";
-import { Mode, useWinder1Namespace } from "./winder2Room";
+import { Mode, useWinder1Namespace } from "./winder2Namespace";
 import { useEffect, useMemo, useState } from "react";
 
 function useLaserpointer(

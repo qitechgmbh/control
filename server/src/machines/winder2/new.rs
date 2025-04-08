@@ -1,4 +1,4 @@
-use super::api::Winder1Room;
+use super::api::Winder1Namespace;
 use super::tension_arm::TensionArm;
 use super::{Winder2, Winder2Mode};
 use anyhow::Error;
@@ -200,7 +200,7 @@ impl MachineNewTrait for Winder2 {
                     },
                 )),
                 laser: DigitalOutputSetter::new(DigitalOutput::new(el2002, EL2002Port::DO1)),
-                room: Winder1Room::new(),
+                namespace: Winder1Namespace::new(),
                 last_measurement_emit: chrono::Utc::now(),
                 mode: Winder2Mode::Standby,
             };

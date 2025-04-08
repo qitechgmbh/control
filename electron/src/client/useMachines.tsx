@@ -5,7 +5,7 @@ import {
   VendorPreset,
   MachineIdentificationUnique,
 } from "@/machines/types";
-import { useMainNamespace } from "./mainRoom";
+import { useMainNamespace } from "./mainNamespace";
 
 type UseMachine = {
   machine_identification_unique: MachineIdentificationUnique;

@@ -58,7 +58,7 @@ export const handleEventValidationError = (
 export const handleUnknownEventError = (eventName: string) => {
   toastError(
     `Unknown Event`,
-    `Room can't find schema for event "${eventName}"`,
+    `Namespace can't find schema for event "${eventName}"`,
   );
   throw new Error(`Unknown Event '${eventName}'`);
 };
@@ -67,7 +67,7 @@ export const handleUnknownEventError = (eventName: string) => {
  * Unhandled event error handler
  */
 export const handleUnhandledEventError = (eventName: string) => {
-  toastError(`Unhandled Event`, `Room can't handle event "${eventName}"`);
+  toastError(`Unhandled Event`, `Namespace can't handle event "${eventName}"`);
   throw new Error(`Unhandled Event '${eventName}'`);
 };
 
@@ -81,12 +81,12 @@ export type EventHandler = (event: Event<any>) => void;
  * @template S The store state type
  */
 type Namespace<S> = {
-  /** Number of active subscribers to this room */
+  /** Number of active subscribers to this namespace */
   count: number;
   socket: Socket;
-  /** Callback function handling incoming socket messages for this room */
+  /** Callback function handling incoming socket messages for this namespace */
   handler: EventHandler;
-  /** Zustand store holding the room state */
+  /** Zustand store holding the namespace state */
   store: StoreApi<S>;
 };
 

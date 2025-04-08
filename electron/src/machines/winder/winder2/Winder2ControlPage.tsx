@@ -13,7 +13,7 @@ import { Label } from "@/control/Label";
 import { TouchButton } from "@/components/touch/TouchButton";
 import { StatusBadge } from "@/control/StatusBadge";
 import { useWinder1 } from "./useWinder";
-import { Mode } from "./winder2Room";
+import { Mode } from "./winder2Namespace";
 
 export function Winder1ControlPage() {
   // use optimistic state

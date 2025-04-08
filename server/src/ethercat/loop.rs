@@ -1,7 +1,7 @@
 use crate::app_state::{EthercatSetup, APP_STATE};
 use crate::machines::registry::MACHINE_REGISTRY;
-use crate::socketio::main_room::ethercat_setup_event::EthercatSetupEventBuilder;
-use crate::socketio::main_room::MainRoomEvents;
+use crate::socketio::main_namespace::ethercat_setup_event::EthercatSetupEventBuilder;
+use crate::socketio::main_namespace::MainNamespaceEvents;
 use crate::{
     app_state::AppState,
     ethercat::config::{MAX_FRAMES, MAX_PDU_DATA, MAX_SUBDEVICES, PDI_LEN},
@@ -10,7 +10,7 @@ use bitvec::prelude::*;
 use control_core::actors::Actor;
 use control_core::identification::identify_device_groups;
 use control_core::socketio::event::EventBuilder;
-use control_core::socketio::room::RoomCacheingLogic;
+use control_core::socketio::namespace::NamespaceCacheingLogic;
 use ethercat_hal::devices::devices_from_subdevices;
 use ethercrab::std::{ethercat_now, tx_rx_task};
 use ethercrab::{MainDevice, MainDeviceConfig, PduStorage, RetryBehaviour, Timeouts};
@@ -54,9 +54,14 @@ pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(),
     );
 
     tokio::spawn(async move {
-        let main_room = &mut APP_STATE.socketio_setup.rooms.write().await.main_room;
+        let main_namespace = &mut APP_STATE
+            .socketio_setup
+            .namespaces
+            .write()
+            .await
+            .main_namespace;
         let event = EthercatSetupEventBuilder().warning("Configuring Ethercat Network...");
-        main_room.emit_cached(MainRoomEvents::EthercatSetupEvent(event));
+        main_namespace.emit_cached(MainNamespaceEvents::EthercatSetupEvent(event));
     });
 
     // Initalize subdevices
@@ -149,9 +154,14 @@ pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(),
 
     // Notify client via socketio
     tokio::spawn(async move {
-        let main_room = &mut APP_STATE.socketio_setup.rooms.write().await.main_room;
+        let main_namespace = &mut APP_STATE
+            .socketio_setup
+            .namespaces
+            .write()
+            .await
+            .main_namespace;
         let event = EthercatSetupEventBuilder().build();
-        main_room.emit_cached(MainRoomEvents::EthercatSetupEvent(event));
+        main_namespace.emit_cached(MainNamespaceEvents::EthercatSetupEvent(event));
     });
 
     // Start control loop

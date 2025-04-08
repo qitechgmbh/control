@@ -1,28 +1,28 @@
-use control_core::socketio::{room::RoomInterface, room_id::RoomId};
+use control_core::socketio::{namespace::NamespaceInterface, namespace_id::NamespaceId};
 
 use crate::app_state::APP_STATE;
 
-use super::main_room::MainRoom;
+use super::main_namespace::MainRoom;
 
-pub struct Rooms {
-    pub main_room: MainRoom,
+pub struct Namespaces {
+    pub main_namespace: MainRoom,
 }
 
-impl Rooms {
+impl Namespaces {
     pub fn new() -> Self {
         Self {
-            main_room: MainRoom::new(),
+            main_namespace: MainRoom::new(),
         }
     }
 
     pub async fn apply_mut(
         &mut self,
-        room_id: RoomId,
-        callback: impl FnOnce(Result<&mut dyn RoomInterface, anyhow::Error>),
+        namespace_id: NamespaceId,
+        callback: impl FnOnce(Result<&mut dyn NamespaceInterface, anyhow::Error>),
     ) {
-        match room_id {
-            RoomId::Main => callback(Ok(&mut self.main_room.0)),
-            RoomId::Machine(machine_identification_unique) => {
+        match namespace_id {
+            NamespaceId::Main => callback(Ok(&mut self.main_namespace.0)),
+            NamespaceId::Machine(machine_identification_unique) => {
                 let ethercat_setup_guard = APP_STATE.ethercat_setup.read().await;
                 let ethercat_setup_guard = match ethercat_setup_guard.as_ref() {
                     Some(ethercat_setup_guard) => ethercat_setup_guard,
@@ -61,8 +61,8 @@ impl Rooms {
                 };
 
                 let mut machine_guard = machine.write().await;
-                let room = machine_guard.api_event_room();
-                callback(Ok(room));
+                let namespace = machine_guard.api_event_namespace();
+                callback(Ok(namespace));
             }
         }
     }
