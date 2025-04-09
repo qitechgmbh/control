@@ -14,6 +14,8 @@ import { TouchButton } from "@/components/touch/TouchButton";
 import { StatusBadge } from "@/control/StatusBadge";
 import { useWinder2 } from "./useWinder";
 import { Mode } from "./winder2Namespace";
+import { TensionArm } from "../TensionArm";
+import { roundDegreesToDecimals, roundToDecimals } from "@/lib/decimal";
 
 export function Winder1ControlPage() {
   // use optimistic state
@@ -22,7 +24,8 @@ export function Winder1ControlPage() {
     setLaserpointer,
     laserpointerIsLoading,
     laserpointerIsDisabled,
-    measurementTensionArm,
+    tensionArmAngle,
+    tensionArmAngleZero,
     mode,
     setMode,
     modeIsLoading,
@@ -37,7 +40,7 @@ export function Winder1ControlPage() {
             label="Position"
             unit="mm"
             value={55}
-            renderValue={(value) => value.toFixed(0)}
+            renderValue={(value) => roundToDecimals(value, 0)}
           /> */}
           <TraverseBar
             inside={0}
@@ -57,7 +60,7 @@ export function Winder1ControlPage() {
                 minLabel="IN"
                 maxLabel="OUT"
                 max={80}
-                renderValue={(value) => value.toFixed(0)}
+                renderValue={(value) => roundToDecimals(value, 0)}
                 inverted
               />
               <TouchButton variant="outline" icon="lu:ArrowLeftToLine">
@@ -74,7 +77,7 @@ export function Winder1ControlPage() {
                 defaultValue={72}
                 minLabel="IN"
                 maxLabel="OUT"
-                renderValue={(value) => value.toFixed(0)}
+                renderValue={(value) => roundToDecimals(value, 0)}
                 inverted
               />
               <TouchButton variant="outline" icon="lu:ArrowRightToLine">
@@ -104,7 +107,7 @@ export function Winder1ControlPage() {
             label="Speed"
             unit="m/s"
             value={16}
-            renderValue={(value) => value.toFixed(0)}
+            renderValue={(value) => roundToDecimals(value, 0)}
           /> */}
           <Label label="Regulation">
             <SelectionGroupBoolean
@@ -125,7 +128,7 @@ export function Winder1ControlPage() {
               min={0}
               max={100}
               step={1}
-              renderValue={(value) => value.toFixed(0)}
+              renderValue={(value) => roundToDecimals(value, 0)}
             />
           </Label>
         </ControlCard>
@@ -160,12 +163,28 @@ export function Winder1ControlPage() {
             }}
           />
         </ControlCard>
+        <ControlCard title="Tension Arm">
+          <TensionArm degrees={tensionArmAngle.current?.value} />
+          <TimeSeriesValueNumeric
+            label="Tension Arm"
+            unit="deg"
+            timeseries={tensionArmAngle}
+            renderValue={(value) => roundDegreesToDecimals(value, 0)}
+          />
+          <TouchButton
+            variant="outline"
+            icon="lu:House"
+            onClick={tensionArmAngleZero}
+          >
+            Set Zero Point
+          </TouchButton>
+        </ControlCard>
         <ControlCard className="bg-red" title="Auto Stop">
           {/* <TimeSeriesValueNumeric
             label="Wounded Length"
             unit="m"
             value={14}
-            renderValue={(value) => value.toFixed(0)}
+            renderValue={(value) => roundToDecimals(value, 0)}
           /> */}
           <div className="flex flex-row flex-wrap gap-4">
             <Label label="Enable">
@@ -183,7 +202,7 @@ export function Winder1ControlPage() {
                 max={1000}
                 unit="m"
                 title="Edit"
-                renderValue={(value) => value.toFixed(0)}
+                renderValue={(value) => roundToDecimals(value, 0)}
               />
             </Label>
           </div>
@@ -205,20 +224,6 @@ export function Winder1ControlPage() {
               />
             </Label>
           </div>
-        </ControlCard>
-        <ControlCard className="bg-red" title="Measurements">
-          {/* <TimeSeriesValueNumeric
-            label="Winding RPM"
-            unit="rpm"
-            value={55}
-            renderValue={(value) => value.toFixed(0)}
-          /> */}
-          <TimeSeriesValueNumeric
-            label="Tension Arm"
-            unit="deg"
-            timeseries={measurementTensionArm}
-            renderValue={(value) => value.toFixed(0)}
-          />
         </ControlCard>
       </ControlGrid>
     </Page>

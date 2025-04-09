@@ -2,13 +2,14 @@ import { ControlCard } from "@/control/ControlCard";
 import { Page } from "@/components/Page";
 import React from "react";
 import { ControlGrid } from "@/control/ControlGrid";
-          import {
+import {
   SelectionGroup,
   SelectionGroupBoolean,
 } from "@/control/SelectionGroup";
 import { HeatingZone } from "../HeatingZone";
 import { Label } from "@/control/Label";
 import { EditValue } from "@/control/EditValue";
+import { roundToDecimals } from "@/lib/decimal";
 
 export function Extruder1ControlPage() {
   return (
@@ -37,7 +38,7 @@ export function Extruder1ControlPage() {
             label="Drehzahl"
             unit="rpm"
             timeseries={null}
-            renderValue={(value) => value?.toFixed(0) || "N/A"}
+            renderValue={(value) => roundToDecimals(value, 0) || "N/A"}
           /> */}
           <Label label="Regulation">
             <SelectionGroupBoolean
@@ -53,7 +54,7 @@ export function Extruder1ControlPage() {
                 defaultValue={0}
                 unit="rpm"
                 title="Target RPM"
-                renderValue={(value) => value.toFixed(0)}
+                renderValue={(value) => roundToDecimals(value, 0)}
               />
             </Label>
             <Label label="Target Pressure">
@@ -62,7 +63,7 @@ export function Extruder1ControlPage() {
                 defaultValue={200}
                 unit="bar"
                 title="Target Pressure"
-                renderValue={(value) => value.toFixed(0)}
+                renderValue={(value) => roundToDecimals(value, 0)}
               />
             </Label>
           </div>
@@ -73,7 +74,7 @@ export function Extruder1ControlPage() {
             label="Nozzle Pressure"
             unit="bar"
             value={55}
-            renderValue={(value) => value.toFixed(0)}
+            renderValue={(value) => roundToDecimals(value, 0)}
           /> */}
         </ControlCard>
         <ControlCard className="bg-red" title="Mode">

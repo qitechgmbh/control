@@ -109,14 +109,14 @@ export const modeStateEventDataSchema = z.object({
 /**
  * Measurements winding RPM event schema
  */
-export const measurementsWindingRpmEventDataSchema = z.object({
+export const tensionArmSpoolRpmEventDataSchema = z.object({
   rpm: z.number(),
 });
 
 /**
  * Measurements tension arm event schema
  */
-export const measurementsTensionArmEventDataSchema = z.object({
+export const tensionArmAngleEventDataSchema = z.object({
   degree: z.number(),
 });
 
@@ -137,11 +137,11 @@ export const autostopStateEventSchema = eventSchema(
   autostopStateEventDataSchema,
 );
 export const modeStateEventSchema = eventSchema(modeStateEventDataSchema);
-export const measurementsWindingRpmEventSchema = eventSchema(
-  measurementsWindingRpmEventDataSchema,
+export const tensionArmSpoolRpmEventSchema = eventSchema(
+  tensionArmSpoolRpmEventDataSchema,
 );
-export const measurementsTensionArmEventSchema = eventSchema(
-  measurementsTensionArmEventDataSchema,
+export const tensionArmAngleEventSchema = eventSchema(
+  tensionArmAngleEventDataSchema,
 );
 
 // ========== Type Inferences ==========
@@ -160,10 +160,10 @@ export type AutostopStateEvent = z.infer<typeof autostopStateEventSchema>;
 export type Mode = z.infer<typeof modeSchema>;
 export type ModeStateEvent = z.infer<typeof modeStateEventSchema>;
 export type MeasurementsWindingRpmEvent = z.infer<
-  typeof measurementsWindingRpmEventDataSchema
+  typeof tensionArmSpoolRpmEventDataSchema
 >;
 export type MeasurementsTensionArmEvent = z.infer<
-  typeof measurementsTensionArmEventDataSchema
+  typeof tensionArmAngleEventDataSchema
 >;
 
 export type Winder1NamespaceStore = {
@@ -177,8 +177,8 @@ export type Winder1NamespaceStore = {
   traversePosition: TimeSeries;
   pullerSpeed: TimeSeries;
   autostopWoundedLength: TimeSeries;
-  measurementsWindingRpm: TimeSeries;
-  measurementsTensionArm: TimeSeries;
+  tensionArmSpoolRpm: TimeSeries;
+  tensionArmAngle: TimeSeries;
 };
 
 // Constants for time durations
@@ -193,14 +193,10 @@ const {
 } = createTimeSeries(ONE_SECOND, ONE_HOUR);
 const { initialTimeSeries: pullerSpeed, insert: addPullerSpeed } =
   createTimeSeries(ONE_SECOND, ONE_HOUR);
-const {
-  initialTimeSeries: measurementsWindingRpm,
-  insert: addMeasurementsWindingRpm,
-} = createTimeSeries(ONE_SECOND, ONE_HOUR);
-const {
-  initialTimeSeries: measurementsTensionArm,
-  insert: addMeasurementsTensionArm,
-} = createTimeSeries(ONE_SECOND, ONE_HOUR);
+const { initialTimeSeries: tensionArmSpoolRpm, insert: addTensionArmSpoolRpm } =
+  createTimeSeries(ONE_SECOND, ONE_HOUR);
+const { initialTimeSeries: tensionArmAngle, insert: addTensionArmAngle } =
+  createTimeSeries(ONE_SECOND, ONE_HOUR);
 
 /**
  * Factory function to create a new Winder1 namespace store
@@ -220,8 +216,8 @@ export const createWinder1NamespaceStore =
         traversePosition,
         pullerSpeed,
         autostopWoundedLength,
-        measurementsWindingRpm,
-        measurementsTensionArm,
+        tensionArmSpoolRpm,
+        tensionArmAngle,
       };
     });
 /**
@@ -244,25 +240,25 @@ export function winder2MessageHandler(
       // State events (keep only the latest)
       if (eventName === "TraverseStateEvent") {
         store.setState(
-          produce((state) => {
+          produce(store.getState(), (state) => {
             state.traverseState = traverseStateEventSchema.parse(event);
           }),
         );
       } else if (eventName === "PullerStateEvent") {
         store.setState(
-          produce((state) => {
+          produce(store.getState(), (state) => {
             state.pullerState = pullerStateEventSchema.parse(event);
           }),
         );
       } else if (eventName === "AutostopStateEvent") {
         store.setState(
-          produce((state) => {
+          produce(store.getState(), (state) => {
             state.autostopState = autostopStateEventSchema.parse(event);
           }),
         );
       } else if (eventName === "ModeStateEvent") {
         store.setState(
-          produce((state) => {
+          produce(store.getState(), (state) => {
             state.modeState = modeStateEventSchema.parse(event);
           }),
         );
@@ -275,7 +271,7 @@ export function winder2MessageHandler(
           timestamp: event.ts,
         };
         store.setState(
-          produce((state) => {
+          produce(store.getState(), (state) => {
             state.traversePosition = addTraversePosition(
               state.traversePosition,
               timeseriesValue,
@@ -289,7 +285,7 @@ export function winder2MessageHandler(
           timestamp: event.ts,
         };
         store.setState(
-          produce((state) => {
+          produce(store.getState(), (state) => {
             state.pullerSpeed = addPullerSpeed(
               state.pullerSpeed,
               timeseriesValue,
@@ -303,37 +299,40 @@ export function winder2MessageHandler(
           timestamp: event.ts,
         };
         store.setState(
-          produce((state) => {
+          produce(store.getState(), (state) => {
             state.autostopWoundedLength = addAutostopWoundedLength(
               state.autostopWoundedLength,
               timeseriesValue,
             );
           }),
         );
-      } else if (eventName === "MeasurementsWindingRpmEvent") {
-        let parsed = measurementsWindingRpmEventSchema.parse(event);
+      } else if (eventName === "TensionArmSpoolRpmEvent") {
+        let parsed = tensionArmSpoolRpmEventSchema.parse(event);
         let timeseriesValue: TimeSeriesValue = {
           value: parsed.data.rpm,
           timestamp: event.ts,
         };
         store.setState(
-          produce((state) => {
-            state.measurementsWindingRpm = addMeasurementsWindingRpm(
-              state.measurementsWindingRpm,
+          produce(store.getState(), (state) => {
+            state.tensionArmSpoolRpm = addTensionArmSpoolRpm(
+              state.tensionArmSpoolRpm,
               timeseriesValue,
             );
           }),
         );
-      } else if (eventName === "MeasurementsTensionArmEvent") {
-        let parsed = measurementsTensionArmEventSchema.parse(event);
+      } else if (eventName === "TensionArmAngleEvent") {
+        let parsed = tensionArmAngleEventSchema.parse(event);
         let timeseriesValue: TimeSeriesValue = {
           value: parsed.data.degree,
           timestamp: event.ts,
         };
+        console.log(
+          `Tension arm angle event: ${parsed.data.degree} at ${event.ts}`,
+        );
         store.setState(
-          produce((state) => {
-            state.measurementsTensionArm = addMeasurementsTensionArm(
-              state.measurementsTensionArm,
+          produce(store.getState(), (state) => {
+            state.tensionArmAngle = addTensionArmAngle(
+              state.tensionArmAngle,
               timeseriesValue,
             );
           }),

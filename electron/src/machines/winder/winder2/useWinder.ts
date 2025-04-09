@@ -49,17 +49,25 @@ function useLaserpointer(
   };
 }
 
-function useMeasurementTensionArm(
+function useTensionArm(
   machine_identification_unique: MachineIdentificationUnique,
-): TimeSeries {
-  const isLoading = useState(false);
+) {
+  // Write Path
+  const schema = z.literal("TensionArmAngleZero");
+  const { request } = useMachineMutation(schema);
+  const tensionArmAngleZero = async () => {
+    request({
+      machine_identification_unique,
+      data: "TensionArmAngleZero",
+    });
+  };
 
   // Read Path
-  const { measurementsTensionArm } = useWinder2Namespace(
+  const { tensionArmAngle } = useWinder2Namespace(
     machine_identification_unique,
   );
 
-  return measurementsTensionArm;
+  return { tensionArmAngle, tensionArmAngleZero };
 }
 
 function useMode(machine_identification_unique: MachineIdentificationUnique): {
@@ -130,12 +138,12 @@ export function useWinder2() {
   }, [serialString]); // Only recreate when serialString changes
 
   const laserpointerControls = useLaserpointer(machineIdentification);
-  const measurementTensionArm = useMeasurementTensionArm(machineIdentification);
+  const tensionArm = useTensionArm(machineIdentification);
   const mode = useMode(machineIdentification);
 
   return {
     ...laserpointerControls,
     ...mode,
-    measurementTensionArm,
+    ...tensionArm,
   };
 }

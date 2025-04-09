@@ -54,8 +54,14 @@ impl TensionArm {
         // revolution is maping -1/1 to 0/1
         let raw = self.raw_angle();
 
-        // modulo 1 revolution
-        (raw - self.zero) % Angle::new::<revolution>(1.0)
+        // Handle the wraparound case
+        if raw < self.zero {
+            // We've wrapped around, so add a full revolution
+            (raw + Angle::new::<revolution>(1.0)) - self.zero
+        } else {
+            // Normal case
+            raw - self.zero
+        }
     }
 
     pub fn zero(&mut self) {

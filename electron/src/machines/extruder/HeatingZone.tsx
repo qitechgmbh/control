@@ -1,6 +1,7 @@
 import { ControlCard } from "@/control/ControlCard";
 import { EditValue } from "@/control/EditValue";
 import { Label } from "@/control/Label";
+import { roundToDecimals } from "@/lib/decimal";
 import React from "react";
 
 type Props = {
@@ -28,7 +29,7 @@ export function HeatingZone({
         label="Temperature"
         unit="C"
         value={temperature}
-        renderValue={(value) => value.toFixed(0)}
+        renderValue={(value) => roundToDecimals(value, 0)}
       /> */}
 
       <Label label="Target Temperature">
@@ -39,7 +40,7 @@ export function HeatingZone({
           max={330}
           unit="C"
           title="Target Temperature"
-          renderValue={(value) => value.toFixed(0)}
+          renderValue={(value) => roundToDecimals(value, 0)}
         />
       </Label>
     </ControlCard>

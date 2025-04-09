@@ -1,3 +1,4 @@
+import { roundToDecimals } from "@/lib/decimal";
 import React from "react";
 import { useEffect, useState } from "react";
 
@@ -10,23 +11,23 @@ function formatMilliseconds(milliseconds: number) {
   if (milliseconds < 1000) {
     return `Now`;
   } else if (milliseconds < 60000) {
-    return `${(milliseconds / 1000).toFixed(0)}s ago`;
+    return `${roundToDecimals(milliseconds / 1000, 0)}s ago`;
   } else if (milliseconds < 3600000) {
-    return `${(milliseconds / 60000).toFixed(0)}:${(
+    return `${roundToDecimals(milliseconds / 60000, 0)}:${(
       (milliseconds % 60000) /
       1000
     )
       .toFixed(0)
       .padStart(2, "0")}m ago`;
   } else if (milliseconds < 86400000) {
-    return `${(milliseconds / 3600000).toFixed(0)}:${(
+    return `${roundToDecimals(milliseconds / 3600000, 0)}:${(
       (milliseconds % 3600000) /
       60000
     )
       .toFixed(0)
       .padStart(2, "0")}h ago`;
   } else {
-    return `${(milliseconds / 86400000).toFixed(1)}d ago`;
+    return `${roundToDecimals(milliseconds / 86400000, 1)}d ago`;
   }
 }
 
