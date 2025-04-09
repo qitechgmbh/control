@@ -4,8 +4,7 @@ pub mod new;
 pub mod tension_arm;
 
 use api::{
-    MeasurementsTensionArmEvent, ModeStateEvent, TraverseStateEvent, Winder1Events,
-    Winder1Namespace,
+    ModeStateEvent, TensionArmAngleEvent, TraverseStateEvent, Winder1Events, Winder1Namespace,
 };
 use chrono::DateTime;
 use control_core::{
@@ -37,8 +36,27 @@ pub struct Winder2 {
 
 impl Machine for Winder2 {}
 
+/// Implement Traverse
 impl Winder2 {
-    pub fn set_mode(&mut self, mode: &Winder2Mode) {
+    fn set_laser(&mut self, value: bool) {
+        self.laser.set(value);
+        self.emit_traverse_state();
+    }
+
+    fn emit_traverse_state(&mut self) {
+        let event = TraverseStateEvent {
+            laserpointer: self.laser.get(),
+            ..Default::default()
+        }
+        .build();
+        self.namespace
+            .emit_cached(Winder1Events::TraverseState(event));
+    }
+}
+
+/// Implement Mode
+impl Winder2 {
+    fn set_mode(&mut self, mode: &Winder2Mode) {
         // all transitions are allowed
         self.mode = mode.clone();
 
@@ -58,36 +76,29 @@ impl Winder2 {
         self.emit_mode_state();
     }
 
-    pub fn emit_mode_state(&mut self) {
+    fn emit_mode_state(&mut self) {
         let event = ModeStateEvent {
             mode: self.mode.clone().into(),
         }
         .build();
         self.namespace.emit_cached(Winder1Events::Mode(event));
     }
+}
 
-    pub fn set_laser(&mut self, value: bool) {
-        self.laser.set(value);
-        self.emit_traverse_state();
+/// Implement Tension Arm
+impl Winder2 {
+    fn tension_arm_zero(&mut self) {
+        self.tension_arm.zero();
+        self.emit_tension_arm();
     }
 
-    pub fn emit_traverse_state(&mut self) {
-        let event = TraverseStateEvent {
-            laserpointer: self.laser.get(),
-            ..Default::default()
-        }
-        .build();
-        self.namespace
-            .emit_cached(Winder1Events::TraverseState(event));
-    }
-
-    pub fn emit_measurement_tension_arm(&mut self) {
-        let event = MeasurementsTensionArmEvent {
+    fn emit_tension_arm(&mut self) {
+        let event = TensionArmAngleEvent {
             degree: self.tension_arm.get_angle().get::<degree>(),
         }
         .build();
         self.namespace
-            .emit_cached(Winder1Events::MeasurementsTensionArm(event));
+            .emit_cached(Winder1Events::TensionArmAngleEvent(event));
     }
 }
 

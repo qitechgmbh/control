@@ -78,6 +78,9 @@ enum Mutation {
     AutostopSetLimit(f64),
     AutostopSetTransition(AutostopTransition),
 
+    // Tension Arm
+    TensionArmAngleZero,
+
     // Mode
     ModeSet(Mode),
 }
@@ -199,26 +202,26 @@ impl ModeStateEvent {
 }
 
 #[derive(Serialize, Debug, Clone)]
-pub struct MeasurementsWindingRpmEvent {
+pub struct TensionArmSpoolRpmEvent {
     /// rpm
     pub rpm: f64,
 }
 
-impl MeasurementsWindingRpmEvent {
+impl TensionArmSpoolRpmEvent {
     pub fn build(&self) -> Event<Self> {
-        Event::new("MeasurementsWindingRpmEvent", self.clone())
+        Event::new("TensionArmSpoolRpmEvent", self.clone())
     }
 }
 
 #[derive(Serialize, Debug, Clone)]
-pub struct MeasurementsTensionArmEvent {
+pub struct TensionArmAngleEvent {
     /// degree
     pub degree: f32,
 }
 
-impl MeasurementsTensionArmEvent {
+impl TensionArmAngleEvent {
     pub fn build(&self) -> Event<Self> {
-        Event::new("MeasurementsTensionArmEvent", self.clone())
+        Event::new("TensionArmAngleEvent", self.clone())
     }
 }
 
@@ -230,8 +233,8 @@ pub enum Winder1Events {
     AutostopWoundedlength(Event<AutostopWoundedLengthEvent>),
     AutostopState(Event<AutostopStateEvent>),
     Mode(Event<ModeStateEvent>),
-    MeasurementsWindingRpm(Event<MeasurementsWindingRpmEvent>),
-    MeasurementsTensionArm(Event<MeasurementsTensionArmEvent>),
+    TensionArmSpoolRpm(Event<TensionArmSpoolRpmEvent>),
+    TensionArmAngleEvent(Event<TensionArmAngleEvent>),
 }
 
 #[derive(Debug)]
@@ -261,8 +264,8 @@ impl CacheableEvents<Winder1Events> for Winder1Events {
             Winder1Events::AutostopWoundedlength(event) => event.into(),
             Winder1Events::AutostopState(event) => event.into(),
             Winder1Events::Mode(event) => event.into(),
-            Winder1Events::MeasurementsWindingRpm(event) => event.into(),
-            Winder1Events::MeasurementsTensionArm(event) => event.into(),
+            Winder1Events::TensionArmSpoolRpm(event) => event.into(),
+            Winder1Events::TensionArmAngleEvent(event) => event.into(),
         }
     }
 
@@ -279,8 +282,8 @@ impl CacheableEvents<Winder1Events> for Winder1Events {
             Winder1Events::AutostopWoundedlength(_) => cache_one_hour,
             Winder1Events::AutostopState(_) => cache_one,
             Winder1Events::Mode(_) => cache_one,
-            Winder1Events::MeasurementsWindingRpm(_) => cache_ten_secs,
-            Winder1Events::MeasurementsTensionArm(_) => cache_one_hour,
+            Winder1Events::TensionArmSpoolRpm(_) => cache_ten_secs,
+            Winder1Events::TensionArmAngleEvent(_) => cache_one_hour,
         }
     }
 }
@@ -291,11 +294,19 @@ impl MachineApi for Winder2 {
         match mutation {
             Mutation::TraverseEnableLaserpointer(enable) => self.set_laser(enable),
             Mutation::ModeSet(mode) => self.set_mode(&mode.into()),
-            _ => anyhow::bail!(
-                "[{}::MachineApi/Winder2::api_mutate] Mutation {} not implemented",
-                module_path!(),
-                serde_json::to_string(&mutation)?
-            ),
+            Mutation::TraverseSetLimitOuter(_) => todo!(),
+            Mutation::TraverseSetLimitInner(_) => todo!(),
+            Mutation::TraverseGotoLimitOuter => todo!(),
+            Mutation::TraverseGotoLimitInner => todo!(),
+            Mutation::TraverseGotoHome(_) => todo!(),
+            Mutation::PullerSetRegulation(_) => todo!(),
+            Mutation::PullerSetTargetSpeed(_) => todo!(),
+            Mutation::PullerSetTargetDiameter(_) => todo!(),
+            Mutation::AutostopEnable(_) => todo!(),
+            Mutation::AutostopEnableAlarm(_) => todo!(),
+            Mutation::AutostopSetLimit(_) => todo!(),
+            Mutation::AutostopSetTransition(_) => todo!(),
+            Mutation::TensionArmAngleZero => self.tension_arm_zero(),
         }
         Ok(())
     }

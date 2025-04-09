@@ -14,7 +14,8 @@ import { TouchButton } from "@/components/touch/TouchButton";
 import { StatusBadge } from "@/control/StatusBadge";
 import { useWinder2 } from "./useWinder";
 import { Mode } from "./winder2Namespace";
-import { roundToDecimals } from "@/lib/decimal";
+import { TensionArm } from "../TensionArm";
+import { roundDegreesToDecimals, roundToDecimals } from "@/lib/decimal";
 
 export function Winder1ControlPage() {
   // use optimistic state
@@ -23,7 +24,8 @@ export function Winder1ControlPage() {
     setLaserpointer,
     laserpointerIsLoading,
     laserpointerIsDisabled,
-    measurementTensionArm,
+    tensionArmAngle,
+    tensionArmAngleZero,
     mode,
     setMode,
     modeIsLoading,
@@ -161,6 +163,22 @@ export function Winder1ControlPage() {
             }}
           />
         </ControlCard>
+        <ControlCard title="Tension Arm">
+          <TensionArm degrees={tensionArmAngle.current?.value} />
+          <TimeSeriesValueNumeric
+            label="Tension Arm"
+            unit="deg"
+            timeseries={tensionArmAngle}
+            renderValue={(value) => roundDegreesToDecimals(value, 0)}
+          />
+          <TouchButton
+            variant="outline"
+            icon="lu:House"
+            onClick={tensionArmAngleZero}
+          >
+            Set Zero Point
+          </TouchButton>
+        </ControlCard>
         <ControlCard className="bg-red" title="Auto Stop">
           {/* <TimeSeriesValueNumeric
             label="Wounded Length"
@@ -206,20 +224,6 @@ export function Winder1ControlPage() {
               />
             </Label>
           </div>
-        </ControlCard>
-        <ControlCard className="bg-red" title="Measurements">
-          {/* <TimeSeriesValueNumeric
-            label="Winding RPM"
-            unit="rpm"
-            value={55}
-            renderValue={(value) => value.toFixed(0)}
-          /> */}
-          <TimeSeriesValueNumeric
-            label="Tension Arm"
-            unit="deg"
-            timeseries={measurementTensionArm}
-            renderValue={(value) => value.toFixed(0)}
-          />
         </ControlCard>
       </ControlGrid>
     </Page>

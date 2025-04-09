@@ -55,8 +55,6 @@ impl Actor for StepperDriverEL70x1 {
             output.stm_control.enable = self.enabled;
             output.stm_velocity.velocity = self.velocity;
 
-            println!("StepperDriverEl7031: {:?}", output);
-
             // write the output
             match (self.stepper.write)(output).await {
                 Ok(_) => {}
