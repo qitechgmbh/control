@@ -1,5 +1,5 @@
 import { Icon, IconName } from "@/components/Icon";
-import React from "react";
+import React, { useEffect } from "react";
 import { getUnitIcon, renderUnitSymbol, renderUnitSyntax, Unit } from "./units";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Label } from "./Label";
@@ -35,20 +35,22 @@ function _TimeSeriesValue({
 
   return (
     <div className="bg-red flex flex-row items-center gap-4">
-      <Label label={label}>
-        <div className="flex flex-row items-center gap-4">
-          <Icon
-            name={icon ?? (unit ? getUnitIcon(unit) : undefined)}
-            className="size-7"
-          />
-          <div className="flex flex-row items-center gap-2">
-            <span className="font-mono text-4xl font-bold">
-              {renderUnitSyntax(_renderValue(value), unit)}
-            </span>
-            <span>{renderUnitSymbol(unit)}</span>
+      <div className="flex-1">
+        <Label label={label}>
+          <div className="flex flex-row items-center gap-4">
+            <Icon
+              name={icon ?? (unit ? getUnitIcon(unit) : undefined)}
+              className="size-7"
+            />
+            <div className="flex flex-row items-center gap-2">
+              <span className="font-mono text-4xl font-bold">
+                {renderUnitSyntax(_renderValue(value), unit)}
+              </span>
+              <span>{renderUnitSymbol(unit)}</span>
+            </div>
           </div>
-        </div>
-      </Label>
+        </Label>
+      </div>
       <Skeleton className="h-16 flex-1 bg-neutral-100"></Skeleton>
     </div>
   );

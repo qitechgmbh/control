@@ -107,7 +107,10 @@ export function EditValue({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger className="w-min" asChild>
-        <TouchButton className={buttonStyle({ open })} variant="outline">
+        <TouchButton
+          className={buttonStyle({ open, class: "py-4" })}
+          variant="outline"
+        >
           <div className="flex flex-row items-center gap-2">
             <span className="font-mono text-4xl font-bold">
               {renderUnitSyntax(renderValue(value), unit)}
