@@ -42,9 +42,9 @@ impl LinearSpoolSpeedController {
         // calculate filament tension
         let tension_arm_min_degree: f32 = Angle::new::<degree>(10.0).get::<revolution>();
         let tension_arm_max_degree: f32 = Angle::new::<degree>(80.0).get::<revolution>();
-        let tensoin_arm_angle = tension_arm.get_angle();
+        let tension_arm_angle = tension_arm.get_angle();
         let tension_arm_revolution = clamp_revolution(
-            tensoin_arm_angle.get::<revolution>(),
+            tension_arm_angle.get::<revolution>(),
             tension_arm_min_degree,
             tension_arm_max_degree,
         );
