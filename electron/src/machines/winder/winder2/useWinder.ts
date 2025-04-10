@@ -70,6 +70,15 @@ function useTensionArm(
   return { tensionArmAngle, tensionArmAngleZero };
 }
 
+function useSpool(machine_identification_unique: MachineIdentificationUnique): {
+  spoolRpm: TimeSeries;
+} {
+  // Read Path
+  const { spoolRpm } = useWinder2Namespace(machine_identification_unique);
+
+  return { spoolRpm };
+}
+
 function useMode(machine_identification_unique: MachineIdentificationUnique): {
   mode: Mode | undefined;
   setMode: (value: Mode) => void;
@@ -139,11 +148,13 @@ export function useWinder2() {
 
   const laserpointerControls = useLaserpointer(machineIdentification);
   const tensionArm = useTensionArm(machineIdentification);
+  const spool = useSpool(machineIdentification);
   const mode = useMode(machineIdentification);
 
   return {
     ...laserpointerControls,
     ...mode,
     ...tensionArm,
+    ...spool,
   };
 }

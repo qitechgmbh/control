@@ -1,5 +1,5 @@
 use super::api::Winder1Namespace;
-use super::spool_speed_controller::LinearSpoolSpeedController;
+use super::linear_spool_speed_controller::LinearSpoolSpeedController;
 use super::tension_arm::TensionArm;
 use super::{Winder2, Winder2Mode};
 use anyhow::Error;
@@ -194,7 +194,6 @@ impl MachineNewTrait for Winder2 {
                     StepperVelocityEL70x1::new(el7041, EL7041_0052Port::STM1),
                     &el7041_config.stm_features.speed_range,
                 ),
-                spool_step_converter: StepConverter::new(200),
                 tension_arm: TensionArm::new(AnalogInputGetter::new(
                     AnalogInput::new(el3001, EL3001Port::AI1),
                     AnalogInputRange::Potential {
@@ -206,8 +205,8 @@ impl MachineNewTrait for Winder2 {
                 namespace: Winder1Namespace::new(),
                 last_measurement_emit: chrono::Utc::now(),
                 mode: Winder2Mode::Standby,
-                spool_speed_controller: Box::new(LinearSpoolSpeedController::new(4000.0)),
-                spool_speed: 0.0,
+                spool_step_converter: StepConverter::new(200),
+                spool_speed_controller: Box::new(LinearSpoolSpeedController::new(200.0, 4000.0)),
             };
 
             // Role 5

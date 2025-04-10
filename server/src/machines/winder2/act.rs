@@ -1,4 +1,4 @@
-use super::Winder2;
+use super::{Winder2, Winder2Mode};
 use control_core::actors::Actor;
 
 impl Actor for Winder2 {
@@ -20,6 +20,8 @@ impl Actor for Winder2 {
             let now = chrono::Utc::now();
             if (now - self.last_measurement_emit).num_milliseconds() > 16 {
                 self.emit_tension_arm();
+                self.emit_spool_rpm();
+                self.emit_mode_state();
                 self.last_measurement_emit = now;
             }
         })

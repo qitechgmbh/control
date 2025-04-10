@@ -1,6 +1,7 @@
 pub mod act;
 pub mod api;
 pub mod clamp_revolution;
+pub mod linear_spool_speed_controller;
 pub mod new;
 pub mod spool_speed_controller;
 pub mod tension_arm;
@@ -21,7 +22,7 @@ use control_core::{
 };
 use spool_speed_controller::SpoolSpeedControllerTrait;
 use tension_arm::TensionArm;
-use uom::si::angle::degree;
+use uom::si::{angle::degree, angular_velocity::revolution_per_minute};
 
 #[derive(Debug)]
 pub struct Winder2 {
@@ -42,8 +43,6 @@ pub struct Winder2 {
     // control circuit arm/spool
     pub spool_speed_controller: Box<dyn SpoolSpeedControllerTrait + Send + Sync>,
     pub spool_step_converter: StepConverter,
-    // steps per second
-    pub spool_speed: f32,
 }
 
 impl Machine for Winder2 {}
@@ -75,14 +74,28 @@ impl Winder2 {
         // transiotion actions
         match mode {
             Winder2Mode::Standby => {
+                // Spool
                 self.spool.set_speed(0);
                 self.spool.set_enabled(false);
+                self.spool_speed_controller.set_enabled(false);
             }
-            Winder2Mode::Hold => {}
-            Winder2Mode::Pull => {}
+            Winder2Mode::Hold => {
+                // Spool
+                self.spool.set_speed(0);
+                self.spool.set_enabled(true);
+                self.spool_speed_controller.set_enabled(false);
+            }
+            Winder2Mode::Pull => {
+                // Spool
+                self.spool.set_speed(0);
+                self.spool.set_enabled(true);
+                self.spool_speed_controller.set_enabled(false);
+            }
             Winder2Mode::Wind => {
+                // Spool
                 self.spool.set_enabled(true);
                 self.spool_speed_controller.reset();
+                self.spool_speed_controller.set_enabled(true);
             }
         }
         self.emit_mode_state();
@@ -122,7 +135,38 @@ impl Winder2 {
     }
 }
 
-#[derive(Debug, Clone)]
+/// Implement Spool
+impl Winder2 {
+    pub fn set_spool_speed_max(&mut self, max_speed: f32) {
+        self.spool_speed_controller.set_max_speed(max_speed);
+        self.emit_spool_state();
+    }
+
+    pub fn set_spool_speed_min(&mut self, min_speed: f32) {
+        self.spool_speed_controller.set_min_speed(min_speed);
+        self.emit_spool_state();
+    }
+
+    fn emit_spool_rpm(&mut self) {
+        let rpm = self
+            .spool_step_converter
+            .steps_to_angular_velocity(self.spool.get_speed() as f32)
+            .get::<revolution_per_minute>();
+        let event = api::SpoolRpmEvent { rpm }.build();
+        self.namespace.emit_cached(Winder1Events::SpoolRpm(event));
+    }
+
+    fn emit_spool_state(&mut self) {
+        let event = api::SpoolStateEvent {
+            speed_min: self.spool_speed_controller.get_min_speed(),
+            speed_max: self.spool_speed_controller.get_max_speed(),
+        }
+        .build();
+        self.namespace.emit_cached(Winder1Events::SpoolState(event));
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub enum Winder2Mode {
     Standby,
     Hold,

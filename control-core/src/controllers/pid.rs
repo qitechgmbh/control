@@ -52,8 +52,14 @@ impl PidController {
             }
             // Subsequent updates
             Some(last_nanoseconds) => {
-                // Calculate the time delta in seconds
-                let dt = (nanoseconds - last_nanoseconds) as f32 / 1_000_000_000.0;
+                // Calculate the time delta in seconds, handling potential overflow
+                let dt = if nanoseconds > last_nanoseconds {
+                    (nanoseconds - last_nanoseconds) as f32 / 1_000_000_000.0
+                } else {
+                    // default to 1 ns
+                    // This is a fallback to prevent division by zero or negative time
+                    1e-9
+                };
 
                 // Calculate errors
                 let ep = error;

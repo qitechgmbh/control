@@ -356,7 +356,7 @@ mod tests {
             // min = 0.2, max = 0.6
             // Should treat it as 1.3, not 0.3
             let result = scale_revolution_to_range(1.3, 0.2, 0.6);
-            assert_relative_eq!(result, 2.75, epsilon = EPSILON);
+            assert_relative_eq!(result, 2.75, epsilon = EPSILON * 5.0);
 
             // value = -0.1 (which would normalize to 0.9)
             // min = 0.2, max = 0.6

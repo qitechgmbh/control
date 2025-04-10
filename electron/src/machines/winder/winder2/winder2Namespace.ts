@@ -109,8 +109,13 @@ export const modeStateEventDataSchema = z.object({
 /**
  * Measurements winding RPM event schema
  */
-export const tensionArmSpoolRpmEventDataSchema = z.object({
+export const spoolRpmEventDataSchema = z.object({
   rpm: z.number(),
+});
+
+export const spoolStateEventDataSchema = z.object({
+  speed_min: z.number(),
+  speed_max: z.number(),
 });
 
 /**
@@ -137,9 +142,8 @@ export const autostopStateEventSchema = eventSchema(
   autostopStateEventDataSchema,
 );
 export const modeStateEventSchema = eventSchema(modeStateEventDataSchema);
-export const tensionArmSpoolRpmEventSchema = eventSchema(
-  tensionArmSpoolRpmEventDataSchema,
-);
+export const spoolRpmEventSchema = eventSchema(spoolRpmEventDataSchema);
+export const spoolStateEventSchema = eventSchema(spoolStateEventDataSchema);
 export const tensionArmAngleEventSchema = eventSchema(
   tensionArmAngleEventDataSchema,
 );
@@ -160,7 +164,7 @@ export type AutostopStateEvent = z.infer<typeof autostopStateEventSchema>;
 export type Mode = z.infer<typeof modeSchema>;
 export type ModeStateEvent = z.infer<typeof modeStateEventSchema>;
 export type MeasurementsWindingRpmEvent = z.infer<
-  typeof tensionArmSpoolRpmEventDataSchema
+  typeof spoolRpmEventDataSchema
 >;
 export type MeasurementsTensionArmEvent = z.infer<
   typeof tensionArmAngleEventDataSchema
@@ -177,7 +181,7 @@ export type Winder1NamespaceStore = {
   traversePosition: TimeSeries;
   pullerSpeed: TimeSeries;
   autostopWoundedLength: TimeSeries;
-  tensionArmSpoolRpm: TimeSeries;
+  spoolRpm: TimeSeries;
   tensionArmAngle: TimeSeries;
 };
 
@@ -193,8 +197,10 @@ const {
 } = createTimeSeries(ONE_SECOND, ONE_HOUR);
 const { initialTimeSeries: pullerSpeed, insert: addPullerSpeed } =
   createTimeSeries(ONE_SECOND, ONE_HOUR);
-const { initialTimeSeries: tensionArmSpoolRpm, insert: addTensionArmSpoolRpm } =
-  createTimeSeries(ONE_SECOND, ONE_HOUR);
+const { initialTimeSeries: spoolRpm, insert: addSpoolRpm } = createTimeSeries(
+  ONE_SECOND,
+  ONE_HOUR,
+);
 const { initialTimeSeries: tensionArmAngle, insert: addTensionArmAngle } =
   createTimeSeries(ONE_SECOND, ONE_HOUR);
 
@@ -216,7 +222,7 @@ export const createWinder1NamespaceStore =
         traversePosition,
         pullerSpeed,
         autostopWoundedLength,
-        tensionArmSpoolRpm,
+        spoolRpm,
         tensionArmAngle,
       };
     });
@@ -306,18 +312,25 @@ export function winder2MessageHandler(
             );
           }),
         );
-      } else if (eventName === "TensionArmSpoolRpmEvent") {
-        let parsed = tensionArmSpoolRpmEventSchema.parse(event);
+      } else if (eventName === "SpoolRpmEvent") {
+        let parsed = spoolRpmEventSchema.parse(event);
         let timeseriesValue: TimeSeriesValue = {
           value: parsed.data.rpm,
           timestamp: event.ts,
         };
         store.setState(
           produce(store.getState(), (state) => {
-            state.tensionArmSpoolRpm = addTensionArmSpoolRpm(
-              state.tensionArmSpoolRpm,
-              timeseriesValue,
-            );
+            state.spoolRpm = addSpoolRpm(state.spoolRpm, timeseriesValue);
+          }),
+        );
+      } else if (eventName === "SpoolStateEvent") {
+        let parsed = spoolStateEventSchema.parse(event);
+        store.setState(
+          produce(store.getState(), (state) => {
+            state.spoolRpm = addSpoolRpm(state.spoolRpm, {
+              value: parsed.data.speed_max,
+              timestamp: event.ts,
+            });
           }),
         );
       } else if (eventName === "TensionArmAngleEvent") {
