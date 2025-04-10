@@ -9,9 +9,12 @@ impl Actor for Winder2 {
         Box::pin(async move {
             // self.traverse_driver.act(now_ts).await;
             // self.puller_driver.act(now_ts).await;
-            self.winder.act(now_ts).await;
+            self.spool.act(now_ts).await;
             self.tension_arm.analog_input_getter.act(now_ts).await;
             self.laser.act(now_ts).await;
+
+            // sync the spool speed
+            self.sync_spool_speed(now_ts);
 
             // if last measurement emit is older than 1 second, emit a new measurement
             let now = chrono::Utc::now();

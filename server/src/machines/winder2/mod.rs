@@ -1,7 +1,11 @@
 pub mod act;
 pub mod api;
+pub mod clamp_revolution;
 pub mod new;
+pub mod spool_speed_controller;
 pub mod tension_arm;
+
+use std::fmt::Debug;
 
 use api::{
     ModeStateEvent, TensionArmAngleEvent, TraverseStateEvent, Winder1Events, Winder1Namespace,
@@ -11,9 +15,11 @@ use control_core::{
     actors::{
         digital_output_setter::DigitalOutputSetter, stepper_driver_el70x1::StepperDriverEL70x1,
     },
+    converters::step_converter::StepConverter,
     machines::Machine,
     socketio::namespace::NamespaceCacheingLogic,
 };
+use spool_speed_controller::SpoolSpeedControllerTrait;
 use tension_arm::TensionArm;
 use uom::si::angle::degree;
 
@@ -22,7 +28,7 @@ pub struct Winder2 {
     // drivers
     // pub traverse_driver: StepperDriverPulseTrain,
     // pub puller_driver: StepperDriverPulseTrain,
-    pub winder: StepperDriverEL70x1,
+    pub spool: StepperDriverEL70x1,
     pub tension_arm: TensionArm,
     pub laser: DigitalOutputSetter,
 
@@ -32,6 +38,12 @@ pub struct Winder2 {
 
     // mode
     pub mode: Winder2Mode,
+
+    // control circuit arm/spool
+    pub spool_speed_controller: Box<dyn SpoolSpeedControllerTrait + Send + Sync>,
+    pub spool_step_converter: StepConverter,
+    // steps per second
+    pub spool_speed: f32,
 }
 
 impl Machine for Winder2 {}
@@ -63,14 +75,14 @@ impl Winder2 {
         // transiotion actions
         match mode {
             Winder2Mode::Standby => {
-                self.winder.set_speed(0);
-                self.winder.set_enabled(false);
+                self.spool.set_speed(0);
+                self.spool.set_enabled(false);
             }
             Winder2Mode::Hold => {}
             Winder2Mode::Pull => {}
             Winder2Mode::Wind => {
-                self.winder.set_enabled(true);
-                self.winder.set_speed(1000);
+                self.spool.set_enabled(true);
+                self.spool_speed_controller.reset();
             }
         }
         self.emit_mode_state();
@@ -90,6 +102,14 @@ impl Winder2 {
     fn tension_arm_zero(&mut self) {
         self.tension_arm.zero();
         self.emit_tension_arm();
+    }
+
+    /// called by `act`
+    pub fn sync_spool_speed(&mut self, nanoseconds: u64) {
+        let speed = self
+            .spool_speed_controller
+            .get_speed(nanoseconds, &self.tension_arm);
+        self.spool.set_speed(speed);
     }
 
     fn emit_tension_arm(&mut self) {

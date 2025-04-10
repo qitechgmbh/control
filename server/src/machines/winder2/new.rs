@@ -1,10 +1,12 @@
 use super::api::Winder1Namespace;
+use super::spool_speed_controller::LinearSpoolSpeedController;
 use super::tension_arm::TensionArm;
 use super::{Winder2, Winder2Mode};
 use anyhow::Error;
 use control_core::actors::analog_input_getter::{AnalogInputGetter, AnalogInputRange};
 use control_core::actors::digital_output_setter::DigitalOutputSetter;
 use control_core::actors::stepper_driver_el70x1::StepperDriverEL70x1;
+use control_core::converters::step_converter::StepConverter;
 use control_core::identification::MachineDeviceIdentification;
 use control_core::machines::new::{
     get_device_by_index, get_mdi_by_role, get_subdevice_by_index, validate_no_role_dublicates,
@@ -154,44 +156,45 @@ impl MachineNewTrait for Winder2 {
             // Role 4
             // 1x Stepper Traverse
             // EL7031
-            let mdi = get_mdi_by_role(identified_device_group, 4).or(Err(anyhow::anyhow!(
-                "[{}::MachineNewTrait/Winder2::new] No device with role 4",
-                module_path!()
-            )))?;
-            let subdevice = get_subdevice_by_index(subdevices, mdi.subdevice_index)?;
-            let device = get_device_by_index(devices, mdi.subdevice_index)?;
-            let subdevice_identity = subdevice.identity();
-            let el7031 = match subdevice_identity_to_tuple(&subdevice_identity) {
-                EL7041_0052_IDENTITY_A => downcast_device::<EL7041_0052>(device.clone()).await?,
-                _ => {
-                    return Err(anyhow::anyhow!(
-                        "[{}::MachineNewTrait/Winder2::new] Device with role 4 is not an EL7031",
-                        module_path!()
-                    ))
-                }
-            };
-            let el7031_config = EL7041_0052Configuration {
-                stm_features: StmFeatures {
-                    operation_mode: EL70x1OperationMode::DirectVelocity,
-                    ..Default::default()
-                },
-                stm_motor: StmMotorConfiguration {
-                    max_current: 1500,
-                    ..Default::default()
-                },
-                ..Default::default()
-            };
-            el7031
-                .write()
-                .await
-                .write_config(&subdevice, &el7031_config)
-                .await?;
+            // let mdi = get_mdi_by_role(identified_device_group, 4).or(Err(anyhow::anyhow!(
+            //     "[{}::MachineNewTrait/Winder2::new] No device with role 4",
+            //     module_path!()
+            // )))?;
+            // let subdevice = get_subdevice_by_index(subdevices, mdi.subdevice_index)?;
+            // let device = get_device_by_index(devices, mdi.subdevice_index)?;
+            // let subdevice_identity = subdevice.identity();
+            // let el7031 = match subdevice_identity_to_tuple(&subdevice_identity) {
+            //     EL7041_0052_IDENTITY_A => downcast_device::<EL7041_0052>(device.clone()).await?,
+            //     _ => {
+            //         return Err(anyhow::anyhow!(
+            //             "[{}::MachineNewTrait/Winder2::new] Device with role 4 is not an EL7031",
+            //             module_path!()
+            //         ))
+            //     }
+            // };
+            // let el7031_config = EL7041_0052Configuration {
+            //     stm_features: StmFeatures {
+            //         operation_mode: EL70x1OperationMode::DirectVelocity,
+            //         ..Default::default()
+            //     },
+            //     stm_motor: StmMotorConfiguration {
+            //         max_current: 1500,
+            //         ..Default::default()
+            //     },
+            //     ..Default::default()
+            // };
+            // el7031
+            //     .write()
+            //     .await
+            //     .write_config(&subdevice, &el7031_config)
+            //     .await?;
 
             let mut new = Self {
-                winder: StepperDriverEL70x1::new(
+                spool: StepperDriverEL70x1::new(
                     StepperVelocityEL70x1::new(el7041, EL7041_0052Port::STM1),
                     &el7041_config.stm_features.speed_range,
                 ),
+                spool_step_converter: StepConverter::new(200),
                 tension_arm: TensionArm::new(AnalogInputGetter::new(
                     AnalogInput::new(el3001, EL3001Port::AI1),
                     AnalogInputRange::Potential {
@@ -203,6 +206,8 @@ impl MachineNewTrait for Winder2 {
                 namespace: Winder1Namespace::new(),
                 last_measurement_emit: chrono::Utc::now(),
                 mode: Winder2Mode::Standby,
+                spool_speed_controller: Box::new(LinearSpoolSpeedController::new(4000.0)),
+                spool_speed: 0.0,
             };
 
             // Role 5
