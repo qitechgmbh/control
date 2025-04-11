@@ -19,7 +19,7 @@ impl StepConverter {
 
     /// Convert steps to angle
     pub fn steps_to_angle(&self, steps: f64) -> Angle {
-        let revolutions = steps as f64 / self.steps_per_revolution as f64;
+        let revolutions = steps / self.steps_per_revolution as f64;
         Angle::new::<revolution>(revolutions)
     }
 
@@ -31,7 +31,7 @@ impl StepConverter {
 
     /// Convert steps/second to angular velocity
     pub fn steps_to_angular_velocity(&self, steps: f64) -> AngularVelocity {
-        let revolutions_per_second = steps as f64 / self.steps_per_revolution as f64;
+        let revolutions_per_second = steps / self.steps_per_revolution as f64;
         AngularVelocity::new::<revolution_per_second>(revolutions_per_second)
     }
 
@@ -43,7 +43,7 @@ impl StepConverter {
 
     /// Convert steps/second^2 to angular acceleration
     pub fn steps_to_angular_acceleration(&self, steps: f64) -> AngularAcceleration {
-        let revolutions_per_second_squared = steps as f64 / self.steps_per_revolution as f64;
+        let revolutions_per_second_squared = steps / self.steps_per_revolution as f64;
         let radians_per_second_squared =
             revolutions_per_second_squared * 2.0 * std::f64::consts::PI;
         AngularAcceleration::new::<radian_per_second_squared>(radians_per_second_squared)

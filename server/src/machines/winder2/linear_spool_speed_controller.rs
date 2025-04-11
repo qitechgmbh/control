@@ -114,18 +114,18 @@ impl SpoolSpeedControllerTrait for LinearSpoolSpeedController {
     }
 
     fn set_max_speed(&mut self, max_speed: f64) {
-        self.max_speed = max_speed as f64;
+        self.max_speed = max_speed;
     }
 
     fn set_min_speed(&mut self, min_speed: f64) {
-        self.min_speed = min_speed as f64;
+        self.min_speed = min_speed;
     }
 
     fn get_max_speed(&self) -> f64 {
-        self.max_speed as f64
+        self.max_speed
     }
 
     fn get_min_speed(&self) -> f64 {
-        self.min_speed as f64
+        self.min_speed
     }
 }
