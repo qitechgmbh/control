@@ -13,7 +13,6 @@ Frontend
 Backend
 
 - `/server`: Glue between Beckhoff and Electron. Implements machine logic.
-- `/stepper-driver`: Generic stepper driver for absolute, relative & speed movements with PID controllers.
 - `/ethercat-hal`: Hardware abstraction layer for Beckhoff (and possibly other EtherCat) devices and protocols.
 - `/ethercat-hal-derive`: Macros for `ethercat-hal`
 - `/control-core`: Core control logic for the server.
