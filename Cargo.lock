@@ -528,6 +528,7 @@ dependencies = [
  "log",
  "serde",
  "serde_json",
+ "serial",
  "serialport",
  "smol",
  "socketioxide",
@@ -2139,6 +2140,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "approx",
+ "async-channel",
  "axum",
  "bitvec",
  "control_core",
