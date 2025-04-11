@@ -205,7 +205,7 @@ impl MachineNewTrait for Winder2 {
                 namespace: Winder1Namespace::new(),
                 mode: Winder2Mode::Standby,
                 spool_step_converter: StepConverter::new(200),
-                spool_speed_controller: Box::new(LinearSpoolSpeedController::new(200.0, 4000.0)),
+                spool_speed_controller: Box::new(LinearSpoolSpeedController::new(200.0, 1250.0)),
                 last_measurement_emit: chrono::Utc::now(),
             };
 
