@@ -144,7 +144,7 @@
 
   # Enable touchpad support (enabled default in most desktopManager).
   services.libinput.enable = true;
-  services.xserver.libinput.tapping = true;
+  services.libinput.touchpad.tapping = true;
   services.touchegg.enable = true;
 
   # Enable the QiTech Control server
