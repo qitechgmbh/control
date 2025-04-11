@@ -169,9 +169,8 @@ pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(),
     // Start control loop
     let pdu_handle = tokio::spawn(async move {
         log::info!("Starting control loop");
-        let mut average_nanos = Duration::from_micros(250).as_nanos() as u64;
         loop {
-            let res = loop_once(app_state.ethercat_setup.clone(), &mut average_nanos).await;
+            let res = loop_once(app_state.ethercat_setup.clone()).await;
             if let Err(err) = res {
                 log::error!("Loop failed\n{:?}", err);
             }
@@ -185,7 +184,6 @@ pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(),
 
 pub async fn loop_once<'maindevice>(
     setup: Arc<RwLock<Option<EthercatSetup>>>,
-    average_nanos: &mut u64,
 ) -> Result<(), anyhow::Error> {
     let setup_guard = setup.read().await;
     let setup = setup_guard
