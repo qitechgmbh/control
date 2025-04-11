@@ -46,7 +46,6 @@ function createWindow() {
     icon: path.join(__dirname, '../assets/icon.png'),
     // Set window class explicitly for Linux/GNOME integration
     title: "QiTech Control",
-    titleBarStyle: "hidden",
   });
   
   mainWindow.setTitle("QiTech Control");
