@@ -6,7 +6,7 @@ import React, { useEffect } from "react";
 
 // This PAT only has access to public qitechgmbh repos
 export const authToken =
-  "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";
+  "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";
 const fetchOptions = {
   headers: {
     ...(authToken && { Authorization: `token ${authToken}` }),
