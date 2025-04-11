@@ -125,6 +125,10 @@ export const tensionArmAngleEventDataSchema = z.object({
   degree: z.number(),
 });
 
+export const tensionArmStateEventDataSchema = z.object({
+  zeroed: z.boolean(),
+});
+
 // ========== Event Schemas with Wrappers ==========
 
 export const traversePositionEventSchema = eventSchema(
@@ -146,6 +150,9 @@ export const spoolRpmEventSchema = eventSchema(spoolRpmEventDataSchema);
 export const spoolStateEventSchema = eventSchema(spoolStateEventDataSchema);
 export const tensionArmAngleEventSchema = eventSchema(
   tensionArmAngleEventDataSchema,
+);
+export const tensionArmStateEventSchema = eventSchema(
+  tensionArmStateEventDataSchema,
 );
 
 // ========== Type Inferences ==========
@@ -170,6 +177,7 @@ export type MeasurementsWindingRpmEvent = z.infer<
 export type MeasurementsTensionArmEvent = z.infer<
   typeof tensionArmAngleEventDataSchema
 >;
+export type TensionArmStateEvent = z.infer<typeof tensionArmStateEventSchema>;
 
 export type Winder1NamespaceStore = {
   // State events (latest only)
@@ -178,6 +186,7 @@ export type Winder1NamespaceStore = {
   autostopState: AutostopStateEvent | null;
   modeState: ModeStateEvent | null;
   spoolState: SpoolStateEvent | null;
+  tensionArmState: TensionArmStateEvent | null;
 
   // Metric events (cached for 1 hour)
   traversePosition: TimeSeries;
@@ -220,6 +229,7 @@ export const createWinder1NamespaceStore =
         autostopState: null,
         modeState: null,
         spoolState: null,
+        tensionArmState: null,
 
         // Metric events (cached for 1 hour)
         traversePosition,
@@ -275,6 +285,12 @@ export function winder2MessageHandler(
         store.setState(
           produce(store.getState(), (state) => {
             state.spoolState = spoolStateEventSchema.parse(event);
+          }),
+        );
+      } else if (eventName === "TensionArmStateEvent") {
+        store.setState(
+          produce(store.getState(), (state) => {
+            state.tensionArmState = tensionArmStateEventSchema.parse(event);
           }),
         );
       }

@@ -63,11 +63,11 @@ function useTensionArm(
   };
 
   // Read Path
-  const { tensionArmAngle } = useWinder2Namespace(
+  const { tensionArmAngle, tensionArmState } = useWinder2Namespace(
     machine_identification_unique,
   );
 
-  return { tensionArmAngle, tensionArmAngleZero };
+  return { tensionArmAngle, tensionArmState, tensionArmAngleZero };
 }
 
 function useSpool(machine_identification_unique: MachineIdentificationUnique) {

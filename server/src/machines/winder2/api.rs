@@ -241,6 +241,18 @@ impl TensionArmAngleEvent {
     }
 }
 
+#[derive(Serialize, Debug, Clone)]
+pub struct TensionArmStateEvent {
+    /// degree
+    pub zeroed: bool,
+}
+
+impl TensionArmStateEvent {
+    pub fn build(&self) -> Event<Self> {
+        Event::new("TensionArmStateEvent", self.clone())
+    }
+}
+
 pub enum Winder1Events {
     TraversePosition(Event<TraversePositionEvent>),
     TraverseState(Event<TraverseStateEvent>),
@@ -252,6 +264,7 @@ pub enum Winder1Events {
     SpoolRpm(Event<SpoolRpmEvent>),
     SpoolState(Event<SpoolStateEvent>),
     TensionArmAngleEvent(Event<TensionArmAngleEvent>),
+    TensionArmStateEvent(Event<TensionArmStateEvent>),
 }
 
 #[derive(Debug)]
@@ -284,6 +297,7 @@ impl CacheableEvents<Winder1Events> for Winder1Events {
             Winder1Events::SpoolRpm(event) => event.into(),
             Winder1Events::SpoolState(event) => event.into(),
             Winder1Events::TensionArmAngleEvent(event) => event.into(),
+            Winder1Events::TensionArmStateEvent(event) => event.into(),
         }
     }
 
@@ -303,6 +317,7 @@ impl CacheableEvents<Winder1Events> for Winder1Events {
             Winder1Events::SpoolRpm(_) => cache_ten_secs,
             Winder1Events::SpoolState(_) => cache_one,
             Winder1Events::TensionArmAngleEvent(_) => cache_one_hour,
+            Winder1Events::TensionArmStateEvent(_) => cache_one,
         }
     }
 }

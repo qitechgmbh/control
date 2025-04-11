@@ -9,7 +9,8 @@ pub mod tension_arm;
 use std::fmt::Debug;
 
 use api::{
-    ModeStateEvent, TensionArmAngleEvent, TraverseStateEvent, Winder1Events, Winder1Namespace,
+    ModeStateEvent, TensionArmAngleEvent, TensionArmStateEvent, TraverseStateEvent, Winder1Events,
+    Winder1Namespace,
 };
 use chrono::DateTime;
 use control_core::{
@@ -114,7 +115,8 @@ impl Winder2 {
 impl Winder2 {
     fn tension_arm_zero(&mut self) {
         self.tension_arm.zero();
-        self.emit_tension_arm();
+        self.emit_tension_arm_angle();
+        self.emit_tension_arm_state();
     }
 
     /// called by `act`
@@ -125,13 +127,22 @@ impl Winder2 {
         self.spool.set_speed(speed);
     }
 
-    fn emit_tension_arm(&mut self) {
+    fn emit_tension_arm_angle(&mut self) {
         let event = TensionArmAngleEvent {
             degree: self.tension_arm.get_angle().get::<degree>(),
         }
         .build();
         self.namespace
             .emit_cached(Winder1Events::TensionArmAngleEvent(event));
+    }
+
+    fn emit_tension_arm_state(&mut self) {
+        let event = TensionArmStateEvent {
+            zeroed: self.tension_arm.zeroed,
+        }
+        .build();
+        self.namespace
+            .emit_cached(Winder1Events::TensionArmStateEvent(event));
     }
 }
 

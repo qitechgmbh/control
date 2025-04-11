@@ -27,6 +27,7 @@ export function Winder1ControlPage() {
     laserpointerIsDisabled,
     tensionArmAngle,
     tensionArmAngleZero,
+    tensionArmState,
     spoolRpm,
     mode,
     setMode,
@@ -130,6 +131,9 @@ export function Winder1ControlPage() {
           >
             Set Zero Point
           </TouchButton>
+          {!tensionArmState?.data.zeroed && (
+            <StatusBadge variant="error">Not Zeroed</StatusBadge>
+          )}
         </ControlCard>
 
         <ControlCard className="bg-red" title="Mode">

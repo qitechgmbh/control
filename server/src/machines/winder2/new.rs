@@ -218,6 +218,7 @@ impl MachineNewTrait for Winder2 {
             new.emit_traverse_state();
             new.emit_mode_state();
             new.emit_spool_state();
+            new.emit_tension_arm_state();
 
             Ok(new)
         })
