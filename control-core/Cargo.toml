@@ -5,7 +5,7 @@ edition = "2024"
 
 [dependencies]
 anyhow = "1.0.97"
-axum = "0.8.1"
+axum = "0.8.3"
 chrono = "0.4.40"
 ethercat_hal = { path = "../ethercat-hal" }
 ethercrab = "0.6"
