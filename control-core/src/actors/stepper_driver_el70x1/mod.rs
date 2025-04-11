@@ -4,7 +4,7 @@ use el70xx_velocity_converter::EL70x1VelocityCalculator;
 use ethercat_hal::{
     io::stepper_velocity_el70x1::StepperVelocityEL70x1, shared_config::el70x1::EL70x1SpeedRange,
 };
-use std::{future::Future, pin::Pin};
+use std::{future::Future, pin::Pin, time::Instant};
 
 pub mod el70xx_velocity_converter;
 
@@ -49,7 +49,7 @@ impl StepperDriverEL70x1 {
 }
 
 impl Actor for StepperDriverEL70x1 {
-    fn act(&mut self, _now_ts: u64) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
+    fn act(&mut self, _now: Instant) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
         Box::pin(async move {
             let state = match (self.stepper.state)().await {
                 Ok(state) => state,

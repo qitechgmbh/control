@@ -211,10 +211,10 @@ pub async fn loop_once<'maindevice>(
     }
 
     // execute actors
-    let now_ts = chrono::Utc::now().timestamp_nanos() as u64;
+    let now = std::time::Instant::now();
     for actor in setup.actors.iter() {
         let mut actor = actor.write().await;
-        actor.act(now_ts).await;
+        actor.act(now).await;
     }
 
     // copy outputs from devices

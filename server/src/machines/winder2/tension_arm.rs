@@ -83,7 +83,7 @@ mod tests {
     };
     use core::f32;
     use ethercat_hal::io::{analog_input::AnalogInputInput, analog_input_dummy::AnalogInputDummy};
-    use ethercrab::std::ethercat_now;
+    use std::time::Instant;
 
     #[test]
     fn volts_to_angle() {
@@ -138,7 +138,7 @@ mod tests {
             normalized: (5.0 / 10.0), // 5V of 10V in positive range
         });
         smol::block_on(async {
-            tension_arm.analog_input_getter.act(ethercat_now()).await;
+            tension_arm.analog_input_getter.act(Instant::now()).await;
         });
         let physical = tension_arm.analog_input_getter.get_physical();
         match physical {
@@ -171,7 +171,7 @@ mod tests {
             normalized: (1.25 / 10.0),
         });
         smol::block_on(async {
-            tension_arm.analog_input_getter.act(ethercat_now()).await;
+            tension_arm.analog_input_getter.act(Instant::now()).await;
         });
         let angle = tension_arm.raw_angle();
         assert_relative_eq!(angle.get::<revolution>(), 0.25, epsilon = f32::EPSILON);
@@ -181,7 +181,7 @@ mod tests {
             normalized: (2.5 / 10.0),
         });
         smol::block_on(async {
-            tension_arm.analog_input_getter.act(ethercat_now()).await;
+            tension_arm.analog_input_getter.act(Instant::now()).await;
         });
         let angle = tension_arm.raw_angle();
         assert_relative_eq!(angle.get::<revolution>(), 0.5, epsilon = f32::EPSILON);
@@ -191,7 +191,7 @@ mod tests {
             normalized: (3.75 / 10.0),
         });
         smol::block_on(async {
-            tension_arm.analog_input_getter.act(ethercat_now()).await;
+            tension_arm.analog_input_getter.act(Instant::now()).await;
         });
         let angle = tension_arm.raw_angle();
         assert_relative_eq!(angle.get::<revolution>(), 0.75, epsilon = f32::EPSILON);
@@ -201,7 +201,7 @@ mod tests {
             normalized: (5.0 / 10.0),
         });
         smol::block_on(async {
-            tension_arm.analog_input_getter.act(ethercat_now()).await;
+            tension_arm.analog_input_getter.act(Instant::now()).await;
         });
         let angle = tension_arm.raw_angle();
         assert_relative_eq!(angle.get::<revolution>(), 0.0, epsilon = f32::EPSILON);
@@ -211,7 +211,7 @@ mod tests {
             normalized: (6.25 / 10.0),
         });
         smol::block_on(async {
-            tension_arm.analog_input_getter.act(ethercat_now()).await;
+            tension_arm.analog_input_getter.act(Instant::now()).await;
         });
         let angle = tension_arm.raw_angle();
         assert_relative_eq!(angle.get::<revolution>(), 0.25, epsilon = f32::EPSILON);

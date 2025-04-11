@@ -1,26 +1,28 @@
+use std::time::Instant;
+
 #[derive(Debug)]
 pub struct PidController {
     // Params
     /// Proportional gain
-    kp: f32,
+    kp: f64,
     /// Integral gain
-    ki: f32,
+    ki: f64,
     /// Derivative gain
-    kd: f32,
+    kd: f64,
 
     // State
     /// Proportional error
-    ep: f32,
+    ep: f64,
     /// Integral error
-    ei: f32,
+    ei: f64,
     /// Derivative error
-    ed: f32,
+    ed: f64,
 
-    last_nanoseconds: Option<u64>,
+    last: Option<Instant>,
 }
 
 impl PidController {
-    pub fn new(kp: f32, ki: f32, kd: f32) -> Self {
+    pub fn new(kp: f64, ki: f64, kd: f64) -> Self {
         Self {
             kp,
             ki,
@@ -28,12 +30,12 @@ impl PidController {
             ep: 0.0,
             ei: 0.0,
             ed: 0.0,
-            last_nanoseconds: None,
+            last: None,
         }
     }
 
-    pub fn update(&mut self, error: f32, nanoseconds: u64) -> f32 {
-        let signal = match self.last_nanoseconds {
+    pub fn update(&mut self, error: f64, t: Instant) -> f64 {
+        let signal = match self.last {
             // First update
             None => {
                 // Calculate error
@@ -46,15 +48,14 @@ impl PidController {
                 self.ep = ep;
                 self.ei = 0.0;
                 self.ed = 0.0;
-                self.last_nanoseconds = Some(nanoseconds);
+                self.last = Some(t);
 
                 signal
             }
             // Subsequent updates
-            Some(last_nanoseconds) => {
+            Some(last) => {
                 // Calculate the time delta in seconds
-                let dt =
-                    nanoseconds.checked_sub(last_nanoseconds).unwrap_or(1) as f32 / 1_000_000_000.0;
+                let dt = t.duration_since(last).as_secs_f64();
 
                 // Calculate errors
                 let ep = error;
@@ -68,7 +69,7 @@ impl PidController {
                 self.ep = ep;
                 self.ei = ei;
                 self.ed = ed;
-                self.last_nanoseconds = Some(nanoseconds);
+                self.last = Some(t);
 
                 signal
             }
@@ -81,6 +82,6 @@ impl PidController {
         self.ep = 0.0;
         self.ei = 0.0;
         self.ed = 0.0;
-        self.last_nanoseconds = None;
+        self.last = None;
     }
 }

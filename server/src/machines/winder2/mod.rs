@@ -6,7 +6,7 @@ pub mod new;
 pub mod spool_speed_controller;
 pub mod tension_arm;
 
-use std::fmt::Debug;
+use std::{fmt::Debug, time::Instant};
 
 use api::{
     ModeStateEvent, TensionArmAngleEvent, TensionArmStateEvent, TraverseStateEvent, Winder1Events,
@@ -120,10 +120,8 @@ impl Winder2 {
     }
 
     /// called by `act`
-    pub fn sync_spool_speed(&mut self, nanoseconds: u64) {
-        let speed = self
-            .spool_speed_controller
-            .get_speed(nanoseconds, &self.tension_arm);
+    pub fn sync_spool_speed(&mut self, t: Instant) {
+        let speed = self.spool_speed_controller.get_speed(t, &self.tension_arm);
         self.spool.set_speed(speed);
     }
 

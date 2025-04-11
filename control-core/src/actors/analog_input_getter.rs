@@ -1,6 +1,6 @@
 use super::Actor;
 use ethercat_hal::io::analog_input::AnalogInput;
-use std::{future::Future, pin::Pin};
+use std::{future::Future, pin::Pin, time::Instant};
 use uom::si::{
     electric_current::milliampere,
     electric_potential::volt,
@@ -109,7 +109,7 @@ impl AnalogInputGetter {
 }
 
 impl Actor for AnalogInputGetter {
-    fn act(&mut self, _now_ts: u64) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
+    fn act(&mut self, _now: Instant) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
         Box::pin(async move {
             let state = (self.input.state)().await;
             self.normalized = Some(state.input.normalized);
