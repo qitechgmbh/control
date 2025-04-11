@@ -13,16 +13,16 @@ export function Markdown({ text }: MarkdownProps) {
         remarkPlugins={[remarkGfm]}
         components={{
           h1: ({ node, ...props }) => (
-            <h1 className="pt-4 pb-2 text-2xl" {...props} />
+            <h1 className="pt-4 pb-1 text-2xl" {...props} />
           ),
           h2: ({ node, ...props }) => (
-            <h2 className="pt-4 pb-2 text-xl" {...props} />
+            <h2 className="pt-4 pb-1 text-xl" {...props} />
           ),
           h3: ({ node, ...props }) => (
-            <h3 className="pt-4 pb-2 text-lg" {...props} />
+            <h3 className="pt-4 pb-1 text-lg" {...props} />
           ),
           h4: ({ node, ...props }) => (
-            <h4 className="pt-4 pb-2 text-lg" {...props} />
+            <h4 className="pt-4 pb-1 text-lg" {...props} />
           ),
           ul: ({ node, ...props }) => (
             <ul className="markdown-list list-inside list-disc" {...props} />

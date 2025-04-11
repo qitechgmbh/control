@@ -8,13 +8,14 @@ import { Icon, IconName } from "./Icon";
 
 type TopbarItemContent = {
   link: string;
+  activeLink: string;
   icon?: IconName;
   title: string;
 };
 
 type TopbarItemProps = TopbarItemContent;
-export function TopbarItem({ icon, title, link }: TopbarItemProps) {
-  const isActive = useOnSubpath(link);
+export function TopbarItem({ icon, title, link, activeLink }: TopbarItemProps) {
+  const isActive = useOnSubpath(activeLink);
   return (
     <Link className={`relative h-full ${isActive ? "" : "pb-2"}`} to={link}>
       <div
@@ -52,9 +53,13 @@ export function Topbar({ items, pathname }: TopbarProps) {
           if (!item.link.startsWith("/")) {
             link = pathname + "/" + item.link;
           }
+          let activelink = item.activeLink;
+          if (!item.activeLink.startsWith("/")) {
+            activelink = pathname + "/" + item.activeLink;
+          }
           return (
             <Fragment key={index}>
-              <TopbarItem {...item} link={link} />
+              <TopbarItem {...item} link={link} activeLink={activelink} />
             </Fragment>
           );
         })}

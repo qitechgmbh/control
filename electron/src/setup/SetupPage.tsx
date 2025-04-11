@@ -8,16 +8,19 @@ export function SetupPage() {
       items={[
         {
           link: "ethercat",
+          activeLink: "ethercat",
           title: "EtherCat",
           icon: "lu:EthernetPort",
         },
         {
           link: "machines",
+          activeLink: "machines",
           title: "Machines",
           icon: "lu:Factory",
         },
         {
-          link: "update",
+          link: "update/choose-version",
+          activeLink: "update",
           title: "Update",
           icon: "lu:CircleFadingArrowUp",
         },

@@ -1,4 +1,4 @@
-import { createRoute } from "@tanstack/react-router";
+import { createRoute, Outlet } from "@tanstack/react-router";
 import { RootRoute } from "./__root";
 import React from "react";
 import { SidebarLayout } from "@/components/SidebarLayout";
@@ -10,7 +10,7 @@ import { Winder1ControlPage } from "@/machines/winder/winder2/Winder2ControlPage
 import { Winder1ManualPage } from "@/machines/winder/winder2/Winder2Manual";
 import { Winder1SettingPage } from "@/machines/winder/winder2/Winder2Settings";
 import { Winder1GraphsPage } from "@/machines/winder/winder2/Winder2Graphs";
-import { UpdatePage } from "@/setup/UpdatePage";
+import { ChooseVersionPage } from "@/setup/ChooseVersionPage";
 
 // make a route tree like this
 // _mainNavigation/machines/winder2/$serial/control
@@ -82,12 +82,22 @@ export const setupMachinesRoute = createRoute({
 export const updateRoute = createRoute({
   getParentRoute: () => setupRoute,
   path: "update",
-  component: () => <UpdatePage />,
+  component: () => <Outlet />,
+});
+
+export const updateChooseVersionRoute = createRoute({
+  getParentRoute: () => updateRoute,
+  path: "choose-version",
+  component: () => <ChooseVersionPage />,
 });
 
 export const rootTree = RootRoute.addChildren([
   sidebarRoute.addChildren([
-    setupRoute.addChildren([ethercatRoute, setupMachinesRoute, updateRoute]),
+    setupRoute.addChildren([
+      ethercatRoute,
+      setupMachinesRoute,
+      updateRoute.addChildren([updateChooseVersionRoute]),
+    ]),
     machinesRoute.addChildren([
       winder2SerialRoute.addChildren([
         winder2ControlRoute,
