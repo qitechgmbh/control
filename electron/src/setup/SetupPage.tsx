@@ -16,6 +16,11 @@ export function SetupPage() {
           title: "Machines",
           icon: "lu:Factory",
         },
+        {
+          link: "update",
+          title: "Update",
+          icon: "lu:CircleFadingArrowUp",
+        },
       ]}
     />
   );
