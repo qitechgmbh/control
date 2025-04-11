@@ -1,4 +1,4 @@
-use uom::si::{angle::revolution, f32::Angle};
+use uom::si::{angle::revolution, f64::Angle};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Clamping {
@@ -24,7 +24,7 @@ pub enum Clamping {
 /// # Examples
 ///
 /// ```ignore
-/// use uom::si::{angle::revolution, f32::Angle};
+/// use uom::si::{angle::revolution, f64::Angle};
 ///
 /// let value = Angle::new::<revolution>(0.15);
 /// let min = Angle::new::<revolution>(0.1);
@@ -34,7 +34,6 @@ pub enum Clamping {
 /// assert_eq!(clamped.get::<revolution>(), 0.15); // Value within range stays the same
 /// ```
 pub fn clamp_revolution_uom(value: Angle, min: Angle, max: Angle) -> (Angle, Clamping) {
-    // convert to f32
     let value = value.get::<revolution>();
     let min = min.get::<revolution>();
     let max = max.get::<revolution>();
@@ -75,7 +74,7 @@ pub fn clamp_revolution_uom(value: Angle, min: Angle, max: Angle) -> (Angle, Cla
 /// assert_eq!(scale_revolution_to_range(0.5, 0.4, 0.6), 0.5);  // Midpoint
 /// assert_eq!(scale_revolution_to_range(0.1, 0.2, 0.6), -0.25); // Value below min
 /// ```
-pub fn scale_revolution_to_range(value: f32, min: f32, max: f32) -> f32 {
+pub fn scale_revolution_to_range(value: f64, min: f64, max: f64) -> f64 {
     // we calculate the distance between min and max
     let distance = revolution_distance(min, max);
 
@@ -118,7 +117,7 @@ pub fn scale_revolution_to_range(value: f32, min: f32, max: f32) -> f32 {
 /// // With a range that crosses zero
 /// assert_eq!(clamp_revolution(0.5, 0.9, 0.1), 0.9);   // Clamped to min
 /// ```
-pub fn clamp_revolution(value: f32, min: f32, max: f32) -> (f32, Clamping) {
+pub fn clamp_revolution(value: f64, min: f64, max: f64) -> (f64, Clamping) {
     // normalize value from 0..1
     let value = wrap_revolution(value);
     let min = wrap_revolution(min);
@@ -163,7 +162,7 @@ pub fn clamp_revolution(value: f32, min: f32, max: f32) -> (f32, Clamping) {
 ///
 /// The clamping strategy divides the out-of-range space into two regions:
 /// values closer to min are clamped to min, and values closer to max are clamped to max.
-fn clamping_ranges(min: f32, max: f32) -> (f32, f32, f32, f32) {
+fn clamping_ranges(min: f64, max: f64) -> (f64, f64, f64, f64) {
     // normalize min and max
     let min = wrap_revolution(min);
     let max = wrap_revolution(max);
@@ -206,7 +205,7 @@ fn clamping_ranges(min: f32, max: f32) -> (f32, f32, f32, f32) {
 /// // Distance that crosses the 0/1 boundary
 /// assert_eq!(revolution_distance(0.9, 0.1), 0.2); // The shortest path crosses zero
 /// ```
-fn revolution_distance(min: f32, max: f32) -> f32 {
+fn revolution_distance(min: f64, max: f64) -> f64 {
     // Normalize the values to ensure they're in the [0, 1) range
     let normalized_min = wrap_revolution(min);
     let normalized_max = wrap_revolution(max);
@@ -236,7 +235,7 @@ fn revolution_distance(min: f32, max: f32) -> f32 {
 /// assert_eq!(wrap_revolution(-0.25), 0.75); // -0.25 revolutions = 0.75 of a revolution
 /// assert_eq!(wrap_revolution(1.0), 1.0);    // Exactly 1.0 stays as 1.0
 /// ```
-fn wrap_revolution(value: f32) -> f32 {
+fn wrap_revolution(value: f64) -> f64 {
     let mut normalized = value % 1.0;
     if normalized == 0.0 && value >= 1.0 {
         return 1.0;
@@ -273,7 +272,7 @@ fn wrap_revolution(value: f32) -> f32 {
 /// assert_eq!(revolution_in_range(0.05, 0.9, 0.1), true);
 /// assert_eq!(revolution_in_range(0.5, 0.9, 0.1), false);
 /// ```
-fn revolution_in_range(value: f32, min: f32, max: f32) -> bool {
+fn revolution_in_range(value: f64, min: f64, max: f64) -> bool {
     // check if cross 0 boundary
     let cross_zero = min > max;
 
@@ -295,7 +294,7 @@ fn revolution_in_range(value: f32, min: f32, max: f32) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use core::f32;
+    use core::f64;
 
     use approx::assert_relative_eq;
 
@@ -304,7 +303,7 @@ mod tests {
     #[test]
     fn test_scale_revolution_to_range() {
         use approx::assert_relative_eq;
-        const EPSILON: f32 = f32::EPSILON;
+        const EPSILON: f64 = f64::EPSILON;
 
         // Basic test cases
         {
@@ -392,7 +391,7 @@ mod tests {
 
     #[test]
     fn test_clamp_revolution() {
-        const EPSILON: f32 = f32::EPSILON;
+        const EPSILON: f64 = f64::EPSILON;
 
         // ===== Test 1: Zero in acceptable range, value in range =====
         {
@@ -542,51 +541,51 @@ mod tests {
     fn test_wrap_revolution() {
         // Test normalize to 0
         // 0 -> 0
-        assert_relative_eq!(wrap_revolution(0.0), 0.0, epsilon = f32::EPSILON);
+        assert_relative_eq!(wrap_revolution(0.0), 0.0, epsilon = f64::EPSILON);
         // 1 -> 1
-        assert_relative_eq!(wrap_revolution(1.0), 1.0, epsilon = f32::EPSILON);
+        assert_relative_eq!(wrap_revolution(1.0), 1.0, epsilon = f64::EPSILON);
         // 2 -> 1
-        assert_relative_eq!(wrap_revolution(2.0), 1.0, epsilon = f32::EPSILON);
+        assert_relative_eq!(wrap_revolution(2.0), 1.0, epsilon = f64::EPSILON);
         // -1 -> 0
-        assert_relative_eq!(wrap_revolution(-1.0), 0.0, epsilon = f32::EPSILON);
+        assert_relative_eq!(wrap_revolution(-1.0), 0.0, epsilon = f64::EPSILON);
         // -2 -> 0
-        assert_relative_eq!(wrap_revolution(-2.0), 0.0, epsilon = f32::EPSILON);
+        assert_relative_eq!(wrap_revolution(-2.0), 0.0, epsilon = f64::EPSILON);
 
         // Test just under 1
         // 0.999 -> 0.999
-        assert_relative_eq!(wrap_revolution(0.999), 0.999, epsilon = f32::EPSILON);
+        assert_relative_eq!(wrap_revolution(0.999), 0.999, epsilon = f64::EPSILON);
         // 1.999 -> 0.999
-        assert_relative_eq!(wrap_revolution(1.999), 0.999, epsilon = f32::EPSILON);
+        assert_relative_eq!(wrap_revolution(1.999), 0.999, epsilon = f64::EPSILON);
         // -0.001 -> 0.999
-        assert_relative_eq!(wrap_revolution(-0.001), 0.999, epsilon = f32::EPSILON);
+        assert_relative_eq!(wrap_revolution(-0.001), 0.999, epsilon = f64::EPSILON);
         // -1.001 -> 0.999
-        assert_relative_eq!(wrap_revolution(-1.001), 0.999, epsilon = f32::EPSILON);
+        assert_relative_eq!(wrap_revolution(-1.001), 0.999, epsilon = f64::EPSILON);
 
         // Test just over 0
         // 0.001 -> 0.001
-        assert_relative_eq!(wrap_revolution(0.001), 0.001, epsilon = f32::EPSILON);
+        assert_relative_eq!(wrap_revolution(0.001), 0.001, epsilon = f64::EPSILON);
         // 1.001 -> 0.001
-        assert_relative_eq!(wrap_revolution(1.001), 0.001, epsilon = f32::EPSILON);
+        assert_relative_eq!(wrap_revolution(1.001), 0.001, epsilon = f64::EPSILON);
         // -0.999 -> 0.001
-        assert_relative_eq!(wrap_revolution(-0.999), 0.001, epsilon = f32::EPSILON);
+        assert_relative_eq!(wrap_revolution(-0.999), 0.001, epsilon = f64::EPSILON);
         // -1.999 -> 0.001
-        assert_relative_eq!(wrap_revolution(-1.999), 0.001, epsilon = f32::EPSILON);
+        assert_relative_eq!(wrap_revolution(-1.999), 0.001, epsilon = f64::EPSILON);
     }
 
     #[test]
     fn test_revolution_distance() {
         // Standard ranges
-        assert_relative_eq!(revolution_distance(0.2, 0.7), 0.5, epsilon = f32::EPSILON);
-        assert_relative_eq!(revolution_distance(0.0, 0.5), 0.5, epsilon = f32::EPSILON);
+        assert_relative_eq!(revolution_distance(0.2, 0.7), 0.5, epsilon = f64::EPSILON);
+        assert_relative_eq!(revolution_distance(0.0, 0.5), 0.5, epsilon = f64::EPSILON);
 
         // Ranges that cross zero
-        assert_relative_eq!(revolution_distance(0.9, 0.1), 0.2, epsilon = f32::EPSILON);
-        assert_relative_eq!(revolution_distance(0.75, 0.25), 0.5, epsilon = f32::EPSILON);
+        assert_relative_eq!(revolution_distance(0.9, 0.1), 0.2, epsilon = f64::EPSILON);
+        assert_relative_eq!(revolution_distance(0.75, 0.25), 0.5, epsilon = f64::EPSILON);
 
         // Edge cases
-        assert_relative_eq!(revolution_distance(0.5, 0.5), 0.0, epsilon = f32::EPSILON);
-        assert_relative_eq!(revolution_distance(0.0, 1.0), 1.0, epsilon = f32::EPSILON);
-        assert_relative_eq!(revolution_distance(0.0, 0.0), 0.0, epsilon = f32::EPSILON);
+        assert_relative_eq!(revolution_distance(0.5, 0.5), 0.0, epsilon = f64::EPSILON);
+        assert_relative_eq!(revolution_distance(0.0, 1.0), 1.0, epsilon = f64::EPSILON);
+        assert_relative_eq!(revolution_distance(0.0, 0.0), 0.0, epsilon = f64::EPSILON);
     }
 
     #[test]
@@ -606,10 +605,10 @@ mod tests {
             // clamp to max to = max + clamping distance = 0.4 + 0.35 = 0.75
             let (clamp_to_min_min, clamp_to_min_max, clamp_to_max_min, clamp_to_max_max) =
                 clamping_ranges(0.1, 0.4);
-            assert_relative_eq!(clamp_to_min_min, 0.75, epsilon = f32::EPSILON);
-            assert_relative_eq!(clamp_to_min_max, 0.1, epsilon = f32::EPSILON);
-            assert_relative_eq!(clamp_to_max_min, 0.4, epsilon = f32::EPSILON);
-            assert_relative_eq!(clamp_to_max_max, 0.75, epsilon = f32::EPSILON);
+            assert_relative_eq!(clamp_to_min_min, 0.75, epsilon = f64::EPSILON);
+            assert_relative_eq!(clamp_to_min_max, 0.1, epsilon = f64::EPSILON);
+            assert_relative_eq!(clamp_to_max_min, 0.4, epsilon = f64::EPSILON);
+            assert_relative_eq!(clamp_to_max_max, 0.75, epsilon = f64::EPSILON);
         }
 
         // Test with min and max close to each other
@@ -625,10 +624,10 @@ mod tests {
             // clamp to max to = max + clamping distance = 0.25 + 0.475 = 0.725
             let (clamp_to_min_min, clamp_to_min_max, clamp_to_max_min, clamp_to_max_max) =
                 clamping_ranges(0.2, 0.25);
-            assert_relative_eq!(clamp_to_min_min, 0.725, epsilon = f32::EPSILON);
-            assert_relative_eq!(clamp_to_min_max, 0.2, epsilon = f32::EPSILON);
-            assert_relative_eq!(clamp_to_max_min, 0.25, epsilon = f32::EPSILON);
-            assert_relative_eq!(clamp_to_max_max, 0.725, epsilon = f32::EPSILON);
+            assert_relative_eq!(clamp_to_min_min, 0.725, epsilon = f64::EPSILON);
+            assert_relative_eq!(clamp_to_min_max, 0.2, epsilon = f64::EPSILON);
+            assert_relative_eq!(clamp_to_max_min, 0.25, epsilon = f64::EPSILON);
+            assert_relative_eq!(clamp_to_max_max, 0.725, epsilon = f64::EPSILON);
         }
 
         // Test with min and max far apart (almost full circle)
@@ -647,9 +646,9 @@ mod tests {
 
             // The implementation returns a value very close to 0.0 (floating point imprecision)
             // So we'll check if it's close to 0.0 instead of exactly 1.0
-            assert_relative_eq!(clamp_to_min_min, 1.0, epsilon = f32::EPSILON);
-            assert_relative_eq!(clamp_to_min_max, 0.1, epsilon = f32::EPSILON);
-            assert_relative_eq!(clamp_to_max_min, 0.9, epsilon = f32::EPSILON);
+            assert_relative_eq!(clamp_to_min_min, 0.0, epsilon = f64::EPSILON);
+            assert_relative_eq!(clamp_to_min_max, 0.1, epsilon = f64::EPSILON);
+            assert_relative_eq!(clamp_to_max_min, 0.9, epsilon = f64::EPSILON);
 
             // For the max clamping max, we should also expect a value near 0.0 or 1.0
             assert!(
@@ -672,10 +671,10 @@ mod tests {
             // clamp to max to = max + clamping distance = 0.5 + 0.25 = 0.75
             let (clamp_to_min_min, clamp_to_min_max, clamp_to_max_min, clamp_to_max_max) =
                 clamping_ranges(0.0, 0.5);
-            assert_relative_eq!(clamp_to_min_min, 0.75, epsilon = f32::EPSILON);
-            assert_relative_eq!(clamp_to_min_max, 0.0, epsilon = f32::EPSILON);
-            assert_relative_eq!(clamp_to_max_min, 0.5, epsilon = f32::EPSILON);
-            assert_relative_eq!(clamp_to_max_max, 0.75, epsilon = f32::EPSILON);
+            assert_relative_eq!(clamp_to_min_min, 0.75, epsilon = f64::EPSILON);
+            assert_relative_eq!(clamp_to_min_max, 0.0, epsilon = f64::EPSILON);
+            assert_relative_eq!(clamp_to_max_min, 0.5, epsilon = f64::EPSILON);
+            assert_relative_eq!(clamp_to_max_max, 0.75, epsilon = f64::EPSILON);
         }
 
         // Test with min and max at the same point (zero width)
@@ -691,10 +690,10 @@ mod tests {
             // clamp to max to = max + clamping distance = 0.3 + 0.5 = 0.8
             let (clamp_to_min_min, clamp_to_min_max, clamp_to_max_min, clamp_to_max_max) =
                 clamping_ranges(0.3, 0.3);
-            assert_relative_eq!(clamp_to_min_min, 0.8, epsilon = f32::EPSILON);
-            assert_relative_eq!(clamp_to_min_max, 0.3, epsilon = f32::EPSILON);
-            assert_relative_eq!(clamp_to_max_min, 0.3, epsilon = f32::EPSILON);
-            assert_relative_eq!(clamp_to_max_max, 0.8, epsilon = f32::EPSILON);
+            assert_relative_eq!(clamp_to_min_min, 0.8, epsilon = f64::EPSILON);
+            assert_relative_eq!(clamp_to_min_max, 0.3, epsilon = f64::EPSILON);
+            assert_relative_eq!(clamp_to_max_min, 0.3, epsilon = f64::EPSILON);
+            assert_relative_eq!(clamp_to_max_max, 0.8, epsilon = f64::EPSILON);
         }
 
         // Test with min > max (should normalize correctly)
@@ -712,10 +711,10 @@ mod tests {
             // clamp to max to = max + clamping distance = 0.2 + 0.3 = 0.5
             let (clamp_to_min_min, clamp_to_min_max, clamp_to_max_min, clamp_to_max_max) =
                 clamping_ranges(0.8, 0.2);
-            assert_relative_eq!(clamp_to_min_min, 0.5, epsilon = f32::EPSILON);
-            assert_relative_eq!(clamp_to_min_max, 0.8, epsilon = f32::EPSILON);
-            assert_relative_eq!(clamp_to_max_min, 0.2, epsilon = f32::EPSILON);
-            assert_relative_eq!(clamp_to_max_max, 0.5, epsilon = f32::EPSILON);
+            assert_relative_eq!(clamp_to_min_min, 0.5, epsilon = f64::EPSILON);
+            assert_relative_eq!(clamp_to_min_max, 0.8, epsilon = f64::EPSILON);
+            assert_relative_eq!(clamp_to_max_min, 0.2, epsilon = f64::EPSILON);
+            assert_relative_eq!(clamp_to_max_max, 0.5, epsilon = f64::EPSILON);
         }
 
         // Test with boundary values 0.0 and 1.0
@@ -733,22 +732,22 @@ mod tests {
             assert_relative_eq!(
                 clamp_to_min_min,
                 actual_clamp_to_min_min,
-                epsilon = f32::EPSILON
+                epsilon = f64::EPSILON
             );
             assert_relative_eq!(
                 clamp_to_min_max,
                 actual_clamp_to_min_max,
-                epsilon = f32::EPSILON
+                epsilon = f64::EPSILON
             );
             assert_relative_eq!(
                 clamp_to_max_min,
                 actual_clamp_to_max_min,
-                epsilon = f32::EPSILON
+                epsilon = f64::EPSILON
             );
             assert_relative_eq!(
                 clamp_to_max_max,
                 actual_clamp_to_max_max,
-                epsilon = f32::EPSILON
+                epsilon = f64::EPSILON
             );
         }
     }

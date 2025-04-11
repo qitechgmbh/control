@@ -2,7 +2,7 @@ use control_core::actors::analog_input_getter::{AnalogInputGetter, AnalogInputVa
 use uom::si::{
     angle::revolution,
     electric_potential::{volt, ElectricPotential},
-    f32::Angle,
+    f64::Angle,
 };
 
 #[derive(Debug)]
@@ -22,13 +22,13 @@ impl TensionArm {
         }
     }
 
-    fn volts_to_angle(&self, volts: f32) -> Angle {
+    fn volts_to_angle(&self, volts: f64) -> Angle {
         // 0V = 0deg 5V = 3600deg
         // always wrap into 0..1 revolution
         Angle::new::<revolution>(volts / 5.0) % Angle::new::<revolution>(1.0)
     }
 
-    fn get_volts(&self) -> f32 {
+    fn get_volts(&self) -> f64 {
         // get the normalized value from the analog input
         let value = self
             .analog_input_getter
@@ -81,7 +81,7 @@ mod tests {
         analog_input_getter::{AnalogInputGetter, AnalogInputRange},
         Actor,
     };
-    use core::f32;
+    use core::f64;
     use ethercat_hal::io::{analog_input::AnalogInputInput, analog_input_dummy::AnalogInputDummy};
     use std::time::Instant;
 
@@ -99,21 +99,21 @@ mod tests {
         assert_relative_eq!(
             tension_arm.volts_to_angle(0.0).get::<revolution>(),
             0.0,
-            epsilon = f32::EPSILON
+            epsilon = f64::EPSILON
         );
 
         // 5V = 1 revolution
         assert_relative_eq!(
             tension_arm.volts_to_angle(5.0).get::<revolution>(),
             0.0,
-            epsilon = f32::EPSILON
+            epsilon = f64::EPSILON
         );
 
         // 10V = 2 revolution
         assert_relative_eq!(
             tension_arm.volts_to_angle(10.0).get::<revolution>(),
             0.0,
-            epsilon = f32::EPSILON
+            epsilon = f64::EPSILON
         );
     }
 
@@ -131,7 +131,7 @@ mod tests {
 
         // 0.0 normalized = 0V
         let volts = tension_arm.get_volts();
-        assert_relative_eq!(volts, 0.0, epsilon = f32::EPSILON);
+        assert_relative_eq!(volts, 0.0, epsilon = f64::EPSILON);
 
         //  0.5 normalized = 5V
         analog_input_dummy.set_input(AnalogInputInput {
@@ -143,7 +143,7 @@ mod tests {
         let physical = tension_arm.analog_input_getter.get_physical();
         match physical {
             Some(AnalogInputValue::Potential(v)) => {
-                assert_relative_eq!(v.get::<volt>(), 5.0, epsilon = f32::EPSILON);
+                assert_relative_eq!(v.get::<volt>(), 5.0, epsilon = f64::EPSILON);
             }
             _ => panic!("Expected a potential value"),
         }
@@ -164,7 +164,7 @@ mod tests {
 
         // 0V = 0.25 = 0 revolution
         let angle = tension_arm.get_angle();
-        assert_relative_eq!(angle.get::<revolution>(), 0.0, epsilon = f32::EPSILON);
+        assert_relative_eq!(angle.get::<revolution>(), 0.0, epsilon = f64::EPSILON);
 
         // 1.25V = 0.25 revolution
         analog_input_dummy.set_input(AnalogInputInput {
@@ -174,7 +174,7 @@ mod tests {
             tension_arm.analog_input_getter.act(Instant::now()).await;
         });
         let angle = tension_arm.raw_angle();
-        assert_relative_eq!(angle.get::<revolution>(), 0.25, epsilon = f32::EPSILON);
+        assert_relative_eq!(angle.get::<revolution>(), 0.25, epsilon = f64::EPSILON);
 
         // 2.5V = 0.5 revolution
         analog_input_dummy.set_input(AnalogInputInput {
@@ -184,7 +184,7 @@ mod tests {
             tension_arm.analog_input_getter.act(Instant::now()).await;
         });
         let angle = tension_arm.raw_angle();
-        assert_relative_eq!(angle.get::<revolution>(), 0.5, epsilon = f32::EPSILON);
+        assert_relative_eq!(angle.get::<revolution>(), 0.5, epsilon = f64::EPSILON);
 
         // 3.75V = 0.75 revolution
         analog_input_dummy.set_input(AnalogInputInput {
@@ -194,7 +194,7 @@ mod tests {
             tension_arm.analog_input_getter.act(Instant::now()).await;
         });
         let angle = tension_arm.raw_angle();
-        assert_relative_eq!(angle.get::<revolution>(), 0.75, epsilon = f32::EPSILON);
+        assert_relative_eq!(angle.get::<revolution>(), 0.75, epsilon = f64::EPSILON);
 
         // 5V = 1 revolution
         analog_input_dummy.set_input(AnalogInputInput {
@@ -204,7 +204,7 @@ mod tests {
             tension_arm.analog_input_getter.act(Instant::now()).await;
         });
         let angle = tension_arm.raw_angle();
-        assert_relative_eq!(angle.get::<revolution>(), 0.0, epsilon = f32::EPSILON);
+        assert_relative_eq!(angle.get::<revolution>(), 0.0, epsilon = f64::EPSILON);
 
         // 6.25V = 0.25 revolution
         analog_input_dummy.set_input(AnalogInputInput {
@@ -214,6 +214,6 @@ mod tests {
             tension_arm.analog_input_getter.act(Instant::now()).await;
         });
         let angle = tension_arm.raw_angle();
-        assert_relative_eq!(angle.get::<revolution>(), 0.25, epsilon = f32::EPSILON);
+        assert_relative_eq!(angle.get::<revolution>(), 0.25, epsilon = f64::EPSILON);
     }
 }

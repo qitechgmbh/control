@@ -208,7 +208,7 @@ impl ModeStateEvent {
 #[derive(Serialize, Debug, Clone)]
 pub struct SpoolRpmEvent {
     /// rpm
-    pub rpm: f32,
+    pub rpm: f64,
 }
 
 impl SpoolRpmEvent {
@@ -219,8 +219,8 @@ impl SpoolRpmEvent {
 
 #[derive(Serialize, Debug, Clone)]
 pub struct SpoolStateEvent {
-    pub speed_min: f32,
-    pub speed_max: f32,
+    pub speed_min: f64,
+    pub speed_max: f64,
 }
 
 impl SpoolStateEvent {
@@ -232,7 +232,7 @@ impl SpoolStateEvent {
 #[derive(Serialize, Debug, Clone)]
 pub struct TensionArmAngleEvent {
     /// degree
-    pub degree: f32,
+    pub degree: f64,
 }
 
 impl TensionArmAngleEvent {
@@ -341,8 +341,8 @@ impl MachineApi for Winder2 {
             Mutation::AutostopSetLimit(_) => todo!(),
             Mutation::AutostopSetTransition(_) => todo!(),
             Mutation::TensionArmAngleZero => self.tension_arm_zero(),
-            Mutation::SpoolSetSpeedMax(value) => self.spool_set_speed_max(value as f32),
-            Mutation::SpoolSetSpeedMin(value) => self.spool_set_speed_min(value as f32),
+            Mutation::SpoolSetSpeedMax(value) => self.spool_set_speed_max(value),
+            Mutation::SpoolSetSpeedMin(value) => self.spool_set_speed_min(value),
         }
         Ok(())
     }

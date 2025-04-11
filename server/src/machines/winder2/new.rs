@@ -34,7 +34,7 @@ use futures::executor::block_on;
 use smol::lock::RwLock;
 use std::sync::Arc;
 use uom::si::electric_potential::volt;
-use uom::si::f32::ElectricPotential;
+use uom::si::f64::ElectricPotential;
 
 impl MachineNewTrait for Winder2 {
     fn new<'maindevice>(
