@@ -19,8 +19,6 @@ pub mod pdo;
 pub struct EL7041_0052 {
     pub txpdo: pdo::EL7041_0052TxPdo,
     pub rxpdo: pdo::EL7041_0052RxPdo,
-    pub output_ts: u64,
-    pub input_ts: u64,
     pub configuration: EL7041_0052Configuration,
 }
 
@@ -30,8 +28,6 @@ impl NewDevice for EL7041_0052 {
         EL7041_0052 {
             txpdo: configuration.pdo_assignment.txpdo_assignment(),
             rxpdo: configuration.pdo_assignment.rxpdo_assignment(),
-            output_ts: 0,
-            input_ts: 0,
             configuration,
         }
     }
@@ -90,8 +86,6 @@ impl StepperVelocityEL70x1Device<EL7041_0052Port> for EL7041_0052 {
 
         match port {
             EL7041_0052Port::STM1 => Ok(StepperVelocityEL70x1State {
-                output_ts: self.output_ts,
-                input_ts: self.input_ts,
                 input: StepperVelocityEL70x1Input {
                     enc_status_compact: match &self.txpdo.enc_status_compact {
                         Some(value) => value.clone(),

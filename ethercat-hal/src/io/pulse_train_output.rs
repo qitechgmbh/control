@@ -57,8 +57,6 @@ impl<'device> PulseTrainOutput {
 
 #[derive(Debug, Clone)]
 pub struct PulseTrainOutputState {
-    pub output_ts: u64,
-    pub input_ts: u64,
     pub input: PulseTrainOutputInput,
     pub output: PulseTrainOutputOutput,
 }

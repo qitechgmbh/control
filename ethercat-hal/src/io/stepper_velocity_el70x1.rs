@@ -67,8 +67,6 @@ impl<'device> StepperVelocityEL70x1 {
 
 #[derive(Debug, Clone)]
 pub struct StepperVelocityEL70x1State {
-    pub output_ts: u64,
-    pub input_ts: u64,
     pub input: StepperVelocityEL70x1Input,
     pub output: StepperVelocityEL70x1Output,
 }

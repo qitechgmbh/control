@@ -179,16 +179,12 @@ pub fn device_derive(input: TokenStream) -> TokenStream {
 
     let mut output_impl = quote! {};
     let mut input_impl = quote! {};
-    let mut ts_impl = quote! {};
     let mut has_rxpdo = false;
     let mut has_txpdo = false;
-    let mut self_output_ts = quote! {};
-    let mut self_input_ts = quote! {};
 
     // remove warnings for variables never read
     let _ = &output_impl;
     let _ = &input_impl;
-    let _ = &ts_impl;
 
     if let Data::Struct(data_struct) = input.data {
         for field in data_struct.fields.iter() {
@@ -214,9 +210,6 @@ pub fn device_derive(input: TokenStream) -> TokenStream {
                 self.rxpdo.size()
             }
         };
-        self_output_ts = quote! {
-            self.output_ts = output_ts;
-        }
     } else {
         output_impl = quote! {
             #[doc="Implemented by the ethercat_hal_derive::Device derive macro"]
@@ -241,9 +234,6 @@ pub fn device_derive(input: TokenStream) -> TokenStream {
                 self.txpdo.size()
             }
         };
-        self_input_ts = quote! {
-            self.input_ts = input_ts;
-        }
     } else {
         input_impl = quote! {
             #[doc="Implemented by the ethercat_hal_derive::Device derive macro"]
@@ -257,21 +247,10 @@ pub fn device_derive(input: TokenStream) -> TokenStream {
         };
     }
 
-    // Generate the ts function based on the presence of rxpdo and txpdo
-    ts_impl = quote! {
-        #[doc="Implemented by the ethercat_hal_derive::Device derive macro"]
-        fn ts(&mut self, input_ts: u64, output_ts: u64) {
-            #self_output_ts
-            #self_input_ts
-            ()
-        }
-    };
-
     let expanded = quote! {
         impl crate::devices::Device for #name {
             #output_impl
             #input_impl
-            #ts_impl
 
             #[doc="Implemented by the ethercat_hal_derive::Device derive macro"]
             fn as_any(&self) -> &dyn std::any::Any {

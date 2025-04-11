@@ -11,8 +11,6 @@ Here is a checklist of what we need to implement:
 - Device Struct `struct EL0000`
   - derive `#[derive(Device)]` derives `Device` trait
   - derive or implement `Debug` trait
-  - field `output_ts` Timestamp for the output data (only if the device has outputs)
-  - field `input_ts` Timestamp for the input data (only if the device has inputs)
   - field `txpdo` instance of `EL0000TxPdo` (only if the device has inputs)
   - field `rxpdo` instance of `EL0000RxPdo` (only if the device has outputs)
   - field `configuration` instance of `EL0000Configuration` (only if configurable)

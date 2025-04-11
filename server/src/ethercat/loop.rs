@@ -192,19 +192,12 @@ pub async fn loop_once<'maindevice>(
         .as_ref()
         .ok_or_else(|| anyhow::anyhow!("[{}::loop_once] No setup", module_path!()))?;
 
-    // TS when the TX/RX cycle starts
-    let input_ts = ethercat_now();
-
     // TX/RX cycle
     setup.group.tx_rx(&setup.maindevice).await?;
-
-    // Prediction when the next TX/RX cycle starts
-    let output_ts = input_ts + *average_nanos;
 
     // copy inputs to devices
     for (i, subdevice) in setup.group.iter(&setup.maindevice).enumerate() {
         let mut device = setup.devices[i].as_ref().write().await;
-        device.ts(input_ts, output_ts);
         let input = subdevice.inputs_raw();
         let input_bits = input.view_bits::<Lsb0>();
         device.input_checked(input_bits).or_else(|e| {
@@ -218,9 +211,10 @@ pub async fn loop_once<'maindevice>(
     }
 
     // execute actors
+    let now_ts = chrono::Utc::now().timestamp_nanos() as u64;
     for actor in setup.actors.iter() {
         let mut actor = actor.write().await;
-        actor.act(output_ts).await;
+        actor.act(now_ts).await;
     }
 
     // copy outputs from devices

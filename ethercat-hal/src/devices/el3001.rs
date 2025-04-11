@@ -16,7 +16,6 @@ use ethercat_hal_derive::{Device, RxPdo, TxPdo};
 
 #[derive(Device)]
 pub struct EL3001 {
-    pub input_ts: u64,
     pub txpdo: EL3001TxPdo,
     pub configuration: EL3001Configuration,
 }
@@ -37,7 +36,6 @@ impl NewDevice for EL3001 {
     fn new() -> Self {
         let configuration: EL3001Configuration = EL3001Configuration::default();
         Self {
-            input_ts: 0,
             txpdo: configuration.pdo_assignment.txpdo_assignment(),
             configuration,
         }
@@ -70,7 +68,6 @@ impl AnalogInputDevice<EL3001Port> for EL3001 {
         };
         let normalized = f32::from(value) / f32::from(i16::MAX);
         AnalogInputState {
-            input_ts: self.input_ts,
             input: AnalogInputInput { normalized },
         }
     }

@@ -43,8 +43,6 @@ impl DigitalInput {
 
 #[derive(Debug, Clone)]
 pub struct DigitalInputState {
-    /// Nanosecond timestamp
-    pub input_ts: u64,
     /// Input value
     /// true: high
     /// false: low

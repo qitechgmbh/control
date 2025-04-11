@@ -29,17 +29,17 @@ impl DigitalOutputBlinker {
 }
 
 impl Actor for DigitalOutputBlinker {
-    fn act(&mut self, _now_ts: u64) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
+    fn act(&mut self, now_ts: u64) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
         Box::pin(async move {
             {
                 let toggle_duration = self.interval.as_nanos() as u64;
                 let state = (self.output.state)().await;
-                if state.output_ts - self.last_toggle > toggle_duration {
+                if now_ts - self.last_toggle > toggle_duration {
                     match state.output.into() {
                         true => (self.output.write)(false.into()).await,
                         false => (self.output.write)(true.into()).await,
                     }
-                    self.last_toggle = state.output_ts;
+                    self.last_toggle = now_ts;
                 }
             }
         })
