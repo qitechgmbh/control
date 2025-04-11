@@ -162,7 +162,7 @@
     @apply m-0 border-border p-0;
   }
   body {
-    @apply overflow-hidden bg-background text-foreground;
+    @apply overflow-x-hidden bg-background text-foreground;
   }
   .draglayer {
     @apply bg-background;
