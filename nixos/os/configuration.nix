@@ -85,7 +85,7 @@
   services.xserver.displayManager.gdm = {
     enable = true;
     autoSuspend = false;
-    wayland = false;
+    wayland = true;
   };
   
   services.xserver.desktopManager.gnome.enable = true;
