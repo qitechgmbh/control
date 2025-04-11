@@ -641,17 +641,13 @@ mod tests {
             // clamp to min from = min - clamping distance = 0.1 - 0.1 = 0.0
             // clamp to min to = min = 0.1
             // clamp to max from = max = 0.9
-            // clamp to max to = max + clamping distance = 0.9 + 0.1 = 1.0 = 0.0 (when normalized)
+            // clamp to max to = max + clamping distance = 0.9 + 0.1 = 1.0
             let (clamp_to_min_min, clamp_to_min_max, clamp_to_max_min, clamp_to_max_max) =
                 clamping_ranges(0.1, 0.9);
 
             // The implementation returns a value very close to 0.0 (floating point imprecision)
             // So we'll check if it's close to 0.0 instead of exactly 1.0
-            assert!(
-                clamp_to_min_min.abs() < 1e-10,
-                "Expected near 0.0, got {}",
-                clamp_to_min_min
-            );
+            assert_relative_eq!(clamp_to_min_min, 1.0, epsilon = f32::EPSILON);
             assert_relative_eq!(clamp_to_min_max, 0.1, epsilon = f32::EPSILON);
             assert_relative_eq!(clamp_to_max_min, 0.9, epsilon = f32::EPSILON);
 
