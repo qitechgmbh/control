@@ -70,13 +70,36 @@ function useTensionArm(
   return { tensionArmAngle, tensionArmAngleZero };
 }
 
-function useSpool(machine_identification_unique: MachineIdentificationUnique): {
-  spoolRpm: TimeSeries;
-} {
-  // Read Path
-  const { spoolRpm } = useWinder2Namespace(machine_identification_unique);
+function useSpool(machine_identification_unique: MachineIdentificationUnique) {
+  // Write Path
+  const schemaMin = z.object({ SpoolSetSpeedMin: z.number() });
+  const { request: requestMin } = useMachineMutation(schemaMin);
+  const spoolSetSpeedMin = async (speedMin: number) => {
+    requestMin({
+      machine_identification_unique,
+      data: {
+        SpoolSetSpeedMin: speedMin,
+      },
+    });
+  };
 
-  return { spoolRpm };
+  const schemaMax = z.object({ SpoolSetSpeedMax: z.number() });
+  const { request: requestMax } = useMachineMutation(schemaMax);
+  const spoolSetSpeedMax = async (speedMax: number) => {
+    requestMax({
+      machine_identification_unique,
+      data: {
+        SpoolSetSpeedMax: speedMax,
+      },
+    });
+  };
+
+  // Read Path
+  const { spoolRpm, spoolState } = useWinder2Namespace(
+    machine_identification_unique,
+  );
+
+  return { spoolRpm, spoolState, spoolSetSpeedMin, spoolSetSpeedMax };
 }
 
 function useMode(machine_identification_unique: MachineIdentificationUnique): {

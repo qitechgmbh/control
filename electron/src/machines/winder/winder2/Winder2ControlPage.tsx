@@ -64,7 +64,7 @@ export function Winder1ControlPage() {
           <div className="flex flex-row flex-wrap gap-4">
             <Label label="Outer Limit">
               <EditValue
-                value={16}
+                value={undefined}
                 unit="mm"
                 title="Outer Limit"
                 defaultValue={16}
@@ -81,7 +81,7 @@ export function Winder1ControlPage() {
             </Label>
             <Label label="Inner Limit">
               <EditValue
-                value={72}
+                value={undefined}
                 unit="mm"
                 title="Limit Innen"
                 min={0}
@@ -183,7 +183,7 @@ export function Winder1ControlPage() {
           </Label>
           <Label label="Target Speed">
             <EditValue
-              value={16}
+              value={undefined}
               unit="m/s"
               title="Target Speed"
               defaultValue={0}

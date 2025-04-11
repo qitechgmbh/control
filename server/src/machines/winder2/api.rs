@@ -326,8 +326,8 @@ impl MachineApi for Winder2 {
             Mutation::AutostopSetLimit(_) => todo!(),
             Mutation::AutostopSetTransition(_) => todo!(),
             Mutation::TensionArmAngleZero => self.tension_arm_zero(),
-            Mutation::SpoolSetSpeedMax(_) => todo!(),
-            Mutation::SpoolSetSpeedMin(_) => todo!(),
+            Mutation::SpoolSetSpeedMax(value) => self.spool_set_speed_max(value as f32),
+            Mutation::SpoolSetSpeedMin(value) => self.spool_set_speed_min(value as f32),
         }
         Ok(())
     }

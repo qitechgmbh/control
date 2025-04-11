@@ -1,6 +1,11 @@
 import { Icon, IconName } from "@/components/Icon";
 import React, { useEffect } from "react";
-import { getUnitIcon, renderUnitSymbol, renderUnitSyntax, Unit } from "./units";
+import {
+  getUnitIcon,
+  renderUndefinedValue,
+  renderUnitSymbol,
+  Unit,
+} from "./units";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Label } from "./Label";
 import { TimeSeries } from "@/lib/timeseries";
@@ -23,15 +28,6 @@ function _TimeSeriesValue({
   renderValue,
 }: Props) {
   const value = timeseries.current?.value;
-  const _renderValue = (value: number | undefined) => {
-    if (value === undefined) {
-      return "n/a";
-    }
-    if (renderValue) {
-      return renderValue(value);
-    }
-    return value.toString();
-  };
 
   return (
     <div className="bg-red flex flex-row items-center gap-4">
@@ -44,7 +40,7 @@ function _TimeSeriesValue({
             />
             <div className="flex flex-row items-center gap-2">
               <span className="font-mono text-4xl font-bold">
-                {renderUnitSyntax(_renderValue(value), unit)}
+                {renderUndefinedValue(value, unit, renderValue)}
               </span>
               <span>{renderUnitSymbol(unit)}</span>
             </div>

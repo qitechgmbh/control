@@ -137,12 +137,12 @@ impl Winder2 {
 
 /// Implement Spool
 impl Winder2 {
-    pub fn set_spool_speed_max(&mut self, max_speed: f32) {
+    pub fn spool_set_speed_max(&mut self, max_speed: f32) {
         self.spool_speed_controller.set_max_speed(max_speed);
         self.emit_spool_state();
     }
 
-    pub fn set_spool_speed_min(&mut self, min_speed: f32) {
+    pub fn spool_set_speed_min(&mut self, min_speed: f32) {
         self.spool_speed_controller.set_min_speed(min_speed);
         self.emit_spool_state();
     }

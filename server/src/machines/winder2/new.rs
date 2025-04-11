@@ -203,10 +203,10 @@ impl MachineNewTrait for Winder2 {
                 )),
                 laser: DigitalOutputSetter::new(DigitalOutput::new(el2002, EL2002Port::DO1)),
                 namespace: Winder1Namespace::new(),
-                last_measurement_emit: chrono::Utc::now(),
                 mode: Winder2Mode::Standby,
                 spool_step_converter: StepConverter::new(200),
                 spool_speed_controller: Box::new(LinearSpoolSpeedController::new(200.0, 4000.0)),
+                last_measurement_emit: chrono::Utc::now(),
             };
 
             // Role 5
@@ -217,6 +217,7 @@ impl MachineNewTrait for Winder2 {
             // initalize events
             new.emit_traverse_state();
             new.emit_mode_state();
+            new.emit_spool_state();
 
             Ok(new)
         })
