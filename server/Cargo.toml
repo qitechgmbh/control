@@ -19,7 +19,7 @@ futures = "0.3.31"
 # web
 socketioxide = "0.16.0"
 tower-http = { version = "0.6.2", features = ["cors", "trace", "fs"] }
-axum = { version = "0.8.1", features = ["macros"] }
+axum = { version = "0.8.3", features = ["macros"] }
 
 # utility
 uom = "0.36.0"
