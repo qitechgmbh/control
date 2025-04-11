@@ -146,12 +146,12 @@ impl Winder2 {
 
 /// Implement Spool
 impl Winder2 {
-    pub fn spool_set_speed_max(&mut self, max_speed: f32) {
+    pub fn spool_set_speed_max(&mut self, max_speed: f64) {
         self.spool_speed_controller.set_max_speed(max_speed);
         self.emit_spool_state();
     }
 
-    pub fn spool_set_speed_min(&mut self, min_speed: f32) {
+    pub fn spool_set_speed_min(&mut self, min_speed: f64) {
         self.spool_speed_controller.set_min_speed(min_speed);
         self.emit_spool_state();
     }
@@ -159,7 +159,7 @@ impl Winder2 {
     fn emit_spool_rpm(&mut self) {
         let rpm = self
             .spool_step_converter
-            .steps_to_angular_velocity(self.spool.get_speed() as f32)
+            .steps_to_angular_velocity(self.spool.get_speed() as f64)
             .get::<revolution_per_minute>();
         let event = api::SpoolRpmEvent { rpm }.build();
         self.namespace.emit_cached(Winder1Events::SpoolRpm(event));

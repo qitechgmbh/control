@@ -4,7 +4,7 @@ use std::{future::Future, pin::Pin, time::Instant};
 use uom::si::{
     electric_current::milliampere,
     electric_potential::volt,
-    f32::{ElectricCurrent, ElectricPotential},
+    f64::{ElectricCurrent, ElectricPotential},
 };
 
 #[derive(Debug)]
@@ -84,7 +84,7 @@ impl AnalogInputGetter {
 
     fn normalized_to_physical(&self, normalized: f32) -> Option<AnalogInputValue> {
         // map -1/1 to 0/1
-        let clipped = normalized / 2.0 + 0.5;
+        let clipped = normalized as f64 / 2.0 + 0.5;
 
         match self.range {
             AnalogInputRange::Potential { min, max } => {
@@ -119,7 +119,7 @@ impl Actor for AnalogInputGetter {
 
 #[cfg(test)]
 mod tests {
-    use core::f32;
+    use core::f64;
 
     use super::*;
     use approx::assert_relative_eq;
@@ -139,7 +139,7 @@ mod tests {
         let value = analog_input_getter.normalized_to_physical(-1.0).unwrap();
         match value {
             AnalogInputValue::Potential(v) => {
-                assert_relative_eq!(v.get::<volt>(), -10.0, epsilon = f32::EPSILON);
+                assert_relative_eq!(v.get::<volt>(), -10.0, epsilon = f64::EPSILON);
             }
             _ => panic!("Expected a potential value"),
         }
@@ -148,7 +148,7 @@ mod tests {
         let value = analog_input_getter.normalized_to_physical(0.0).unwrap();
         match value {
             AnalogInputValue::Potential(v) => {
-                assert_relative_eq!(v.get::<volt>(), 0.0, epsilon = f32::EPSILON);
+                assert_relative_eq!(v.get::<volt>(), 0.0, epsilon = f64::EPSILON);
             }
             _ => panic!("Expected a potential value"),
         }
@@ -157,7 +157,7 @@ mod tests {
         let value = analog_input_getter.normalized_to_physical(0.5).unwrap();
         match value {
             AnalogInputValue::Potential(v) => {
-                assert_relative_eq!(v.get::<volt>(), 5.0, epsilon = f32::EPSILON);
+                assert_relative_eq!(v.get::<volt>(), 5.0, epsilon = f64::EPSILON);
             }
             _ => panic!("Expected a potential value"),
         }
@@ -166,7 +166,7 @@ mod tests {
         let value = analog_input_getter.normalized_to_physical(1.0).unwrap();
         match value {
             AnalogInputValue::Potential(v) => {
-                assert_relative_eq!(v.get::<volt>(), 10.0, epsilon = f32::EPSILON);
+                assert_relative_eq!(v.get::<volt>(), 10.0, epsilon = f64::EPSILON);
             }
             _ => panic!("Expected a potential value"),
         }
@@ -187,7 +187,7 @@ mod tests {
         let value = analog_input_getter.normalized_to_physical(-1.0).unwrap();
         match value {
             AnalogInputValue::Current(v) => {
-                assert_relative_eq!(v.get::<milliampere>(), 4.0, epsilon = f32::EPSILON);
+                assert_relative_eq!(v.get::<milliampere>(), 4.0, epsilon = f64::EPSILON);
             }
             _ => panic!("Expected a current value"),
         }
@@ -196,7 +196,7 @@ mod tests {
         let value = analog_input_getter.normalized_to_physical(0.0).unwrap();
         match value {
             AnalogInputValue::Current(v) => {
-                assert_relative_eq!(v.get::<milliampere>(), 12.0, epsilon = f32::EPSILON);
+                assert_relative_eq!(v.get::<milliampere>(), 12.0, epsilon = f64::EPSILON);
             }
             _ => panic!("Expected a current value"),
         }
@@ -205,7 +205,7 @@ mod tests {
         let value = analog_input_getter.normalized_to_physical(0.5).unwrap();
         match value {
             AnalogInputValue::Current(v) => {
-                assert_relative_eq!(v.get::<milliampere>(), 16.0, epsilon = f32::EPSILON);
+                assert_relative_eq!(v.get::<milliampere>(), 16.0, epsilon = f64::EPSILON);
             }
             _ => panic!("Expected a current value"),
         }
@@ -214,7 +214,7 @@ mod tests {
         let value = analog_input_getter.normalized_to_physical(1.0).unwrap();
         match value {
             AnalogInputValue::Current(v) => {
-                assert_relative_eq!(v.get::<milliampere>(), 20.0, epsilon = f32::EPSILON);
+                assert_relative_eq!(v.get::<milliampere>(), 20.0, epsilon = f64::EPSILON);
             }
             _ => panic!("Expected a current value"),
         }

@@ -2,7 +2,7 @@ use uom::si::{
     angle::revolution,
     angular_acceleration::radian_per_second_squared,
     angular_velocity::revolution_per_second,
-    f32::{Angle, AngularAcceleration, AngularVelocity},
+    f64::{Angle, AngularAcceleration, AngularVelocity},
 };
 
 #[derive(Debug, Clone)]
@@ -18,43 +18,43 @@ impl StepConverter {
     }
 
     /// Convert steps to angle
-    pub fn steps_to_angle(&self, steps: f32) -> Angle {
-        let revolutions = steps as f32 / self.steps_per_revolution as f32;
+    pub fn steps_to_angle(&self, steps: f64) -> Angle {
+        let revolutions = steps as f64 / self.steps_per_revolution as f64;
         Angle::new::<revolution>(revolutions)
     }
 
     /// Convert angle to steps
-    pub fn angle_to_steps(&self, angle: Angle) -> f32 {
+    pub fn angle_to_steps(&self, angle: Angle) -> f64 {
         let revolutions = angle.get::<revolution>();
-        revolutions * self.steps_per_revolution as f32
+        revolutions * self.steps_per_revolution as f64
     }
 
     /// Convert steps/second to angular velocity
-    pub fn steps_to_angular_velocity(&self, steps: f32) -> AngularVelocity {
-        let revolutions_per_second = steps as f32 / self.steps_per_revolution as f32;
+    pub fn steps_to_angular_velocity(&self, steps: f64) -> AngularVelocity {
+        let revolutions_per_second = steps as f64 / self.steps_per_revolution as f64;
         AngularVelocity::new::<revolution_per_second>(revolutions_per_second)
     }
 
     /// Convert angular velocity to steps/second
-    pub fn angular_velocity_to_steps(&self, angular_velocity: AngularVelocity) -> f32 {
+    pub fn angular_velocity_to_steps(&self, angular_velocity: AngularVelocity) -> f64 {
         let revolutions_per_second = angular_velocity.get::<revolution_per_second>();
-        revolutions_per_second * self.steps_per_revolution as f32
+        revolutions_per_second * self.steps_per_revolution as f64
     }
 
     /// Convert steps/second^2 to angular acceleration
-    pub fn steps_to_angular_acceleration(&self, steps: f32) -> AngularAcceleration {
-        let revolutions_per_second_squared = steps as f32 / self.steps_per_revolution as f32;
+    pub fn steps_to_angular_acceleration(&self, steps: f64) -> AngularAcceleration {
+        let revolutions_per_second_squared = steps as f64 / self.steps_per_revolution as f64;
         let radians_per_second_squared =
-            revolutions_per_second_squared * 2.0 * std::f32::consts::PI;
+            revolutions_per_second_squared * 2.0 * std::f64::consts::PI;
         AngularAcceleration::new::<radian_per_second_squared>(radians_per_second_squared)
     }
 
     /// Convert angular acceleration to steps/second^2
-    pub fn angular_acceleration_to_steps(&self, angular_acceleration: AngularAcceleration) -> f32 {
+    pub fn angular_acceleration_to_steps(&self, angular_acceleration: AngularAcceleration) -> f64 {
         let radians_per_second_squared = angular_acceleration.get::<radian_per_second_squared>();
         let revolutions_per_second_squared =
-            radians_per_second_squared / (2.0 * std::f32::consts::PI);
-        revolutions_per_second_squared * self.steps_per_revolution as f32
+            radians_per_second_squared / (2.0 * std::f64::consts::PI);
+        revolutions_per_second_squared * self.steps_per_revolution as f64
     }
 }
 
@@ -62,7 +62,7 @@ impl StepConverter {
 mod tests {
     use super::*;
     use approx::assert_relative_eq;
-    use std::f32::EPSILON;
+    use std::f64::EPSILON;
     use uom::si::{
         angle::degree, angular_acceleration::degree_per_second_squared,
         angular_velocity::degree_per_second,
@@ -183,7 +183,7 @@ mod tests {
 
         // Test one revolution per second squared
         let angular_acceleration = converter.steps_to_angular_acceleration(200.0);
-        let expected_rps2 = 2.0 * std::f32::consts::PI; // 1 rev/s² = 2π rad/s²
+        let expected_rps2 = 2.0 * std::f64::consts::PI; // 1 rev/s² = 2π rad/s²
         assert_relative_eq!(
             angular_acceleration.get::<radian_per_second_squared>(),
             expected_rps2,
@@ -213,7 +213,7 @@ mod tests {
         let converter = StepConverter::new(200);
 
         // Test one revolution per second squared (2π rad/s²)
-        let rps2 = 2.0 * std::f32::consts::PI;
+        let rps2 = 2.0 * std::f64::consts::PI;
         let steps = converter.angular_acceleration_to_steps(AngularAcceleration::new::<
             radian_per_second_squared,
         >(rps2));

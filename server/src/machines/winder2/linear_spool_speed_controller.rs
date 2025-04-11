@@ -29,7 +29,7 @@ impl LinearSpoolSpeedController {
             max_speed,
             speed: 0.0,
             enabled: false,
-            dampening_controller: PidController::new((max_speed * 3e-8) as f64, 0.0, 0.0),
+            dampening_controller: PidController::new(max_speed * 3e-8, 0.0, 0.0),
         }
     }
 }
@@ -44,9 +44,9 @@ impl LinearSpoolSpeedController {
         let tension_arm_max_degree: f64 = Angle::new::<degree>(90.0).get::<revolution>();
         let tension_arm_angle = tension_arm.get_angle();
         let tension_arm_revolution = clamp_revolution(
-            tension_arm_angle.get::<revolution>() as f32,
-            tension_arm_min_degree as f32,
-            tension_arm_max_degree as f32,
+            tension_arm_angle.get::<revolution>(),
+            tension_arm_min_degree,
+            tension_arm_max_degree,
         );
 
         match tension_arm_revolution.1 {
@@ -56,24 +56,23 @@ impl LinearSpoolSpeedController {
         };
 
         let filament_tension = scale_revolution_to_range(
-            tension_arm_revolution.0 as f32,
-            tension_arm_min_degree as f32,
-            tension_arm_max_degree as f32,
+            tension_arm_revolution.0,
+            tension_arm_min_degree,
+            tension_arm_max_degree,
         );
 
         let filament_tension_inverted = 1.0 - filament_tension;
 
         // interpolate speed
-        let speed =
-            filament_tension_inverted * (max_speed as f32 - min_speed as f32) + min_speed as f32;
+        let speed = filament_tension_inverted * (max_speed - min_speed) + min_speed;
 
         // save speed
-        return speed as f64;
+        return speed;
     }
 
     fn dampen_speed(&mut self, t: Instant, speed: f64) -> f64 {
         let error = speed - self.speed;
-        let acceleration = self.dampening_controller.update(error as f64, t);
+        let acceleration = self.dampening_controller.update(error, t);
         let new_speed = self.speed + acceleration;
         return new_speed;
     }
@@ -114,19 +113,19 @@ impl SpoolSpeedControllerTrait for LinearSpoolSpeedController {
         self.dampening_controller.reset();
     }
 
-    fn set_max_speed(&mut self, max_speed: f32) {
+    fn set_max_speed(&mut self, max_speed: f64) {
         self.max_speed = max_speed as f64;
     }
 
-    fn set_min_speed(&mut self, min_speed: f32) {
+    fn set_min_speed(&mut self, min_speed: f64) {
         self.min_speed = min_speed as f64;
     }
 
-    fn get_max_speed(&self) -> f32 {
-        self.max_speed as f32
+    fn get_max_speed(&self) -> f64 {
+        self.max_speed as f64
     }
 
-    fn get_min_speed(&self) -> f32 {
-        self.min_speed as f32
+    fn get_min_speed(&self) -> f64 {
+        self.min_speed as f64
     }
 }
