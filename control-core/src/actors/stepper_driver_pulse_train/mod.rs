@@ -1,7 +1,7 @@
 use super::Actor;
 use encoder::Encoder;
 use ethercat_hal::io::pulse_train_output::PulseTrainOutput;
-use std::{future::Future, pin::Pin};
+use std::{future::Future, pin::Pin, time::Instant};
 
 pub mod encoder;
 
@@ -24,7 +24,7 @@ impl<'ptodevice> StepperDriverPulseTrain {
 }
 
 impl<'ptodevice> Actor for StepperDriverPulseTrain {
-    fn act(&mut self, _now_ts: u64) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
+    fn act(&mut self, _now: Instant) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
         Box::pin(async move {
             let state = (self.pulse.state)().await;
             let mut output = state.output.clone();

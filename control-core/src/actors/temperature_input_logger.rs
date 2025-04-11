@@ -1,6 +1,6 @@
 use super::Actor;
 use ethercat_hal::io::temperature_input::TemperatureInput;
-use std::{future::Future, pin::Pin};
+use std::{future::Future, pin::Pin, time::Instant};
 
 /// Log the state of a temperature input
 pub struct TemperatureInputLogger {
@@ -14,7 +14,7 @@ impl TemperatureInputLogger {
 }
 
 impl Actor for TemperatureInputLogger {
-    fn act(&mut self, _now_ts: u64) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
+    fn act(&mut self, _now: Instant) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
         Box::pin(async move {
             let state = (self.input.state)().await;
             println!("TemperatureInputLogger: {:?}C", state.input.temperature);

@@ -4,6 +4,7 @@ use std::{
     future::Future,
     pin::Pin,
     sync::{Arc, RwLock},
+    time::Instant,
 };
 
 /// Set a digital output high and low with a given interval
@@ -18,7 +19,7 @@ impl StepperDriverMaxSpeed {
 }
 
 impl Actor for StepperDriverMaxSpeed {
-    fn act(&mut self, _now_ts: u64) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
+    fn act(&mut self, _now: Instant) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
         Box::pin(async move {
             let state = (self.pulse.state)().await;
             match state.output.into() {

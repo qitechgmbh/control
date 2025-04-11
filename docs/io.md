@@ -76,7 +76,7 @@ Implementing the `act` function which will toggle the output every cycle.
 
 The `state` and `write` values are callbacks and must be wrapped with parentheses to be called.
 ```rust
-fn act(&mut self, _now_ts: u64) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
+fn act(&mut self, _now: Instant) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
     Box::pin(async move {
         {
             let state = (self.output.state)().await;
