@@ -50,7 +50,6 @@ impl DigitalOutputDevice<EL2002Port> for EL2002 {
 
     fn digital_output_state(&self, port: EL2002Port) -> DigitalOutputState {
         DigitalOutputState {
-            output_ts: self.output_ts,
             output: DigitalOutputOutput(match port {
                 EL2002Port::DO1 => self.rxpdo.channel1.as_ref().unwrap().value,
                 EL2002Port::DO2 => self.rxpdo.channel2.as_ref().unwrap().value,
@@ -123,9 +122,6 @@ The `DigitalOutputOutput` is both contained in the `DigitalOutputState` and is t
 ```rust
 #[derive(Debug, Clone)]
 pub struct DigitalOutputState {
-    /// Nanosecond timestamp
-    pub output_ts: u64,
-
     pub output: DigitalOutputOutput,
 }
 

@@ -20,8 +20,6 @@ pub struct EL2522 {
     pub configuration: EL2522Configuration,
     pub txpdo: EL2522TxPdo,
     pub rxpdo: EL2522RxPdo,
-    pub output_ts: u64,
-    pub input_ts: u64,
 }
 
 impl std::fmt::Debug for EL2522 {
@@ -40,8 +38,6 @@ impl NewDevice for EL2522 {
             configuration: configuration,
             txpdo,
             rxpdo,
-            output_ts: 0,
-            input_ts: 0,
         }
     }
 }
@@ -80,8 +76,6 @@ impl PulseTrainOutputDevice<EL2522Port> for EL2522 {
         let (pto_control, pto_target, enc_control) = self.get_rxpdo(port);
 
         PulseTrainOutputState {
-            output_ts: self.output_ts,
-            input_ts: self.input_ts,
             input: PulseTrainOutputInput {
                 select_end_counter: pto_status.select_end_counter,
                 ramp_active: pto_status.ramp_active,

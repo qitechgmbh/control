@@ -10,7 +10,6 @@ pub struct AnalogInputDummy {
 impl AnalogInputDummy {
     pub fn new() -> Self {
         let state = Arc::new(Mutex::new(AnalogInputState {
-            input_ts: 0,
             input: AnalogInputInput { normalized: 0.0 },
         }));
         Self { state }
@@ -39,19 +38,9 @@ impl AnalogInputDummy {
         }
     }
 
-    pub fn set_input_ts(&mut self, input_ts: u64) {
-        let mut guard = self.state.lock().unwrap();
-        guard.input_ts = input_ts;
-    }
-
     pub fn get_input(&self) -> AnalogInputInput {
         let guard = self.state.lock().unwrap();
         guard.input.clone()
-    }
-
-    pub fn get_input_ts(&self) -> u64 {
-        let guard = self.state.lock().unwrap();
-        guard.input_ts
     }
 
     pub fn get_state(&self) -> AnalogInputState {
@@ -68,19 +57,12 @@ mod tests {
     fn test_analog_input_dummy() {
         let mut dummy = AnalogInputDummy::new();
         let state = AnalogInputState {
-            input_ts: 123456789,
             input: AnalogInputInput { normalized: 0.5 },
         };
         dummy.set_input(state.input.clone());
-        dummy.set_input_ts(state.input_ts);
 
         let analog_input = dummy.analog_input();
         let state = smol::block_on(async { (analog_input.state)().await });
-        assert_eq!(state.input_ts, 123456789);
         assert_eq!(state.input.normalized, 0.5);
-
-        dummy.set_state(state.clone());
-        let new_state = dummy.get_state();
-        assert_eq!(new_state.input_ts, 123456789);
     }
 }

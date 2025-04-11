@@ -8,7 +8,10 @@ pub type AnalogFunction = Box<dyn Fn(u64) -> f32 + Send + Sync>;
 pub struct AnalogFunctionGenerator {
     output: AnalogOutput,
     function: AnalogFunction,
-    offset_ts: u64,
+    /// Timestamp when the function started (in ns)
+    start_ts: u64,
+    /// Timestamp when the function was last executed (in ns)
+    last_ts: u64,
 }
 
 impl AnalogFunctionGenerator {
@@ -16,7 +19,8 @@ impl AnalogFunctionGenerator {
         Self {
             output,
             function,
-            offset_ts: 0,
+            start_ts: 0,
+            last_ts: 0,
         }
     }
 }
@@ -25,7 +29,7 @@ impl Actor for AnalogFunctionGenerator {
     fn act(&mut self, _now_ts: u64) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
         Box::pin(async move {
             let state = (self.output.state)().await;
-            let diff_ns = state.output_ts - self.offset_ts;
+            let diff_ns = self.last_ts - self.start_ts;
             let value = (self.function)(diff_ns);
             (self.output.write)(value.into()).await;
         })

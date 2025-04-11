@@ -64,8 +64,6 @@ impl AnalogOutput {
 
 #[derive(Debug, Clone)]
 pub struct AnalogOutputState {
-    /// Nanosecond timestamp
-    pub output_ts: u64,
     /// Output value from 0.0 to 1.0
     /// Voltage depends on the device
     pub output: AnalogOutputOutput,

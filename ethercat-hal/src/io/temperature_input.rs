@@ -45,8 +45,6 @@ impl TemperatureInput {
 
 #[derive(Debug, Clone)]
 pub struct TemperatureInputState {
-    /// Nanosecond timestamp
-    pub input_ts: u64,
     /// Input value
     pub input: TemperatureInputInput,
 }

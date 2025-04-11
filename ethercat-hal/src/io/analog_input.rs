@@ -44,8 +44,6 @@ impl AnalogInput {
 
 #[derive(Debug, Clone)]
 pub struct AnalogInputState {
-    /// Nanosecond timestamp
-    pub input_ts: u64,
     pub input: AnalogInputInput,
 }
 

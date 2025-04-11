@@ -10,7 +10,6 @@ use super::NewDevice;
 /// 24V DC, 0.5A per channel
 #[derive(Device)]
 pub struct EL2809 {
-    pub output_ts: u64,
     pub rxpdo: EL2809RxPdo,
 }
 
@@ -23,7 +22,6 @@ impl std::fmt::Debug for EL2809 {
 impl NewDevice for EL2809 {
     fn new() -> Self {
         Self {
-            output_ts: 0,
             rxpdo: EL2809RxPdo::default(),
         }
     }
@@ -53,7 +51,6 @@ impl DigitalOutputDevice<EL2809Port> for EL2809 {
 
     fn digital_output_state(&self, port: EL2809Port) -> DigitalOutputState {
         DigitalOutputState {
-            output_ts: self.output_ts,
             output: DigitalOutputOutput(match port {
                 EL2809Port::DO1 => self.rxpdo.channel1.as_ref().unwrap().value,
                 EL2809Port::DO2 => self.rxpdo.channel2.as_ref().unwrap().value,

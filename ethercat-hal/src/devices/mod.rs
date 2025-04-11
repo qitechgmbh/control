@@ -87,9 +87,6 @@ pub trait Device: NewDevice + Any + Send + Sync + Debug {
         Ok(())
     }
 
-    /// Write timestamps for current cycle
-    fn ts(&mut self, _input_ts: u64, _output_ts: u64);
-
     fn as_any(&self) -> &dyn Any;
 }
 

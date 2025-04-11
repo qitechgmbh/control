@@ -14,7 +14,6 @@ use super::NewDevice;
 #[derive(Device)]
 pub struct EL3204 {
     pub txpdo: EL3204TxPdo,
-    pub input_ts: u64,
 }
 
 impl std::fmt::Debug for EL3204 {
@@ -27,7 +26,6 @@ impl NewDevice for EL3204 {
     fn new() -> Self {
         Self {
             txpdo: EL3204TxPdo::default(),
-            input_ts: 0,
         }
     }
 }
@@ -41,7 +39,6 @@ impl TemperatureInputDevice<EL3204Port> for EL3204 {
             EL3204Port::T4 => self.txpdo.channel4.as_ref().unwrap(),
         };
         TemperatureInputState {
-            input_ts: self.input_ts,
             input: TemperatureInputInput {
                 temperature: channel.temperature,
                 undervoltage: channel.undervoltage,

@@ -20,8 +20,6 @@ use super::{NewDevice, SubDeviceIdentityTuple};
 #[derive(Debug, Device)]
 pub struct EL7031 {
     pub txpdo: EL7031TxPdo,
-    pub output_ts: u64,
-    pub input_ts: u64,
     pub rxpdo: EL7031RxPdo,
     pub configuration: EL7031Configuration,
 }
@@ -32,8 +30,6 @@ impl NewDevice for EL7031 {
         Self {
             txpdo: configuration.pdo_assignment.txpdo_assignment(),
             rxpdo: configuration.pdo_assignment.rxpdo_assignment(),
-            input_ts: 0,
-            output_ts: 0,
             configuration,
         }
     }
@@ -92,8 +88,6 @@ impl StepperVelocityEL70x1Device<EL7031Port> for EL7031 {
 
         match port {
             EL7031Port::STM1 => Ok(StepperVelocityEL70x1State {
-                output_ts: self.output_ts,
-                input_ts: self.input_ts,
                 input: StepperVelocityEL70x1Input {
                     enc_status_compact: match &self.txpdo.enc_status_compact {
                         Some(value) => value.clone(),
