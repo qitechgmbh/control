@@ -63,11 +63,43 @@ function useTensionArm(
   };
 
   // Read Path
-  const { tensionArmAngle } = useWinder2Namespace(
+  const { tensionArmAngle, tensionArmState } = useWinder2Namespace(
     machine_identification_unique,
   );
 
-  return { tensionArmAngle, tensionArmAngleZero };
+  return { tensionArmAngle, tensionArmState, tensionArmAngleZero };
+}
+
+function useSpool(machine_identification_unique: MachineIdentificationUnique) {
+  // Write Path
+  const schemaMin = z.object({ SpoolSetSpeedMin: z.number() });
+  const { request: requestMin } = useMachineMutation(schemaMin);
+  const spoolSetSpeedMin = async (speedMin: number) => {
+    requestMin({
+      machine_identification_unique,
+      data: {
+        SpoolSetSpeedMin: speedMin,
+      },
+    });
+  };
+
+  const schemaMax = z.object({ SpoolSetSpeedMax: z.number() });
+  const { request: requestMax } = useMachineMutation(schemaMax);
+  const spoolSetSpeedMax = async (speedMax: number) => {
+    requestMax({
+      machine_identification_unique,
+      data: {
+        SpoolSetSpeedMax: speedMax,
+      },
+    });
+  };
+
+  // Read Path
+  const { spoolRpm, spoolState } = useWinder2Namespace(
+    machine_identification_unique,
+  );
+
+  return { spoolRpm, spoolState, spoolSetSpeedMin, spoolSetSpeedMax };
 }
 
 function useMode(machine_identification_unique: MachineIdentificationUnique): {
@@ -139,11 +171,13 @@ export function useWinder2() {
 
   const laserpointerControls = useLaserpointer(machineIdentification);
   const tensionArm = useTensionArm(machineIdentification);
+  const spool = useSpool(machineIdentification);
   const mode = useMode(machineIdentification);
 
   return {
     ...laserpointerControls,
     ...mode,
     ...tensionArm,
+    ...spool,
   };
 }

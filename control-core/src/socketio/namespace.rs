@@ -92,6 +92,12 @@ impl NamespaceInterface for Namespace {
 
     fn reemit(&mut self, socket: SocketRef) {
         for (_, events) in self.events.iter() {
+            log::debug!(
+                "Re-emitting {} {} events to socket {}",
+                events.len(),
+                events[0].name,
+                socket.id
+            );
             for event in events.iter() {
                 let _ = socket.emit("event", &event);
             }

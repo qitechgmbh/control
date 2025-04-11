@@ -50,7 +50,7 @@ export function Extruder1ControlPage() {
           <div className="flex flex-row flex-wrap gap-4">
             <Label label="Target RPM">
               <EditValue
-                value={16}
+                value={undefined}
                 defaultValue={0}
                 unit="rpm"
                 title="Target RPM"
@@ -59,7 +59,7 @@ export function Extruder1ControlPage() {
             </Label>
             <Label label="Target Pressure">
               <EditValue
-                value={300}
+                value={undefined}
                 defaultValue={200}
                 unit="bar"
                 title="Target Pressure"

@@ -81,6 +81,10 @@ enum Mutation {
     // Tension Arm
     TensionArmAngleZero,
 
+    // Spool
+    SpoolSetSpeedMax(f64),
+    SpoolSetSpeedMin(f64),
+
     // Mode
     ModeSet(Mode),
 }
@@ -202,14 +206,26 @@ impl ModeStateEvent {
 }
 
 #[derive(Serialize, Debug, Clone)]
-pub struct TensionArmSpoolRpmEvent {
+pub struct SpoolRpmEvent {
     /// rpm
-    pub rpm: f64,
+    pub rpm: f32,
 }
 
-impl TensionArmSpoolRpmEvent {
+impl SpoolRpmEvent {
     pub fn build(&self) -> Event<Self> {
-        Event::new("TensionArmSpoolRpmEvent", self.clone())
+        Event::new("SpoolRpmEvent", self.clone())
+    }
+}
+
+#[derive(Serialize, Debug, Clone)]
+pub struct SpoolStateEvent {
+    pub speed_min: f32,
+    pub speed_max: f32,
+}
+
+impl SpoolStateEvent {
+    pub fn build(&self) -> Event<Self> {
+        Event::new("SpoolStateEvent", self.clone())
     }
 }
 
@@ -225,6 +241,18 @@ impl TensionArmAngleEvent {
     }
 }
 
+#[derive(Serialize, Debug, Clone)]
+pub struct TensionArmStateEvent {
+    /// degree
+    pub zeroed: bool,
+}
+
+impl TensionArmStateEvent {
+    pub fn build(&self) -> Event<Self> {
+        Event::new("TensionArmStateEvent", self.clone())
+    }
+}
+
 pub enum Winder1Events {
     TraversePosition(Event<TraversePositionEvent>),
     TraverseState(Event<TraverseStateEvent>),
@@ -233,8 +261,10 @@ pub enum Winder1Events {
     AutostopWoundedlength(Event<AutostopWoundedLengthEvent>),
     AutostopState(Event<AutostopStateEvent>),
     Mode(Event<ModeStateEvent>),
-    TensionArmSpoolRpm(Event<TensionArmSpoolRpmEvent>),
+    SpoolRpm(Event<SpoolRpmEvent>),
+    SpoolState(Event<SpoolStateEvent>),
     TensionArmAngleEvent(Event<TensionArmAngleEvent>),
+    TensionArmStateEvent(Event<TensionArmStateEvent>),
 }
 
 #[derive(Debug)]
@@ -264,8 +294,10 @@ impl CacheableEvents<Winder1Events> for Winder1Events {
             Winder1Events::AutostopWoundedlength(event) => event.into(),
             Winder1Events::AutostopState(event) => event.into(),
             Winder1Events::Mode(event) => event.into(),
-            Winder1Events::TensionArmSpoolRpm(event) => event.into(),
+            Winder1Events::SpoolRpm(event) => event.into(),
+            Winder1Events::SpoolState(event) => event.into(),
             Winder1Events::TensionArmAngleEvent(event) => event.into(),
+            Winder1Events::TensionArmStateEvent(event) => event.into(),
         }
     }
 
@@ -282,8 +314,10 @@ impl CacheableEvents<Winder1Events> for Winder1Events {
             Winder1Events::AutostopWoundedlength(_) => cache_one_hour,
             Winder1Events::AutostopState(_) => cache_one,
             Winder1Events::Mode(_) => cache_one,
-            Winder1Events::TensionArmSpoolRpm(_) => cache_ten_secs,
+            Winder1Events::SpoolRpm(_) => cache_ten_secs,
+            Winder1Events::SpoolState(_) => cache_one,
             Winder1Events::TensionArmAngleEvent(_) => cache_one_hour,
+            Winder1Events::TensionArmStateEvent(_) => cache_one,
         }
     }
 }
@@ -307,6 +341,8 @@ impl MachineApi for Winder2 {
             Mutation::AutostopSetLimit(_) => todo!(),
             Mutation::AutostopSetTransition(_) => todo!(),
             Mutation::TensionArmAngleZero => self.tension_arm_zero(),
+            Mutation::SpoolSetSpeedMax(value) => self.spool_set_speed_max(value as f32),
+            Mutation::SpoolSetSpeedMin(value) => self.spool_set_speed_min(value as f32),
         }
         Ok(())
     }

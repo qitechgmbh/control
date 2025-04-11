@@ -9,6 +9,8 @@ use uom::si::{
 pub struct TensionArm {
     pub analog_input_getter: AnalogInputGetter,
     pub zero: Angle,
+    /// was zeroed at least once
+    pub zeroed: bool,
 }
 
 impl TensionArm {
@@ -16,6 +18,7 @@ impl TensionArm {
         Self {
             analog_input_getter,
             zero: Angle::new::<revolution>(0.0),
+            zeroed: false,
         }
     }
 
@@ -66,6 +69,7 @@ impl TensionArm {
 
     pub fn zero(&mut self) {
         self.zero = self.raw_angle();
+        self.zeroed = true;
     }
 }
 

@@ -16,6 +16,7 @@ import { useWinder2 } from "./useWinder";
 import { Mode } from "./winder2Namespace";
 import { TensionArm } from "../TensionArm";
 import { roundDegreesToDecimals, roundToDecimals } from "@/lib/decimal";
+import { Spool } from "../Spool";
 
 export function Winder1ControlPage() {
   // use optimistic state
@@ -26,6 +27,8 @@ export function Winder1ControlPage() {
     laserpointerIsDisabled,
     tensionArmAngle,
     tensionArmAngleZero,
+    tensionArmState,
+    spoolRpm,
     mode,
     setMode,
     modeIsLoading,
@@ -35,6 +38,16 @@ export function Winder1ControlPage() {
   return (
     <Page>
       <ControlGrid>
+        <ControlCard title="Spool">
+          <Spool rpm={spoolRpm.current?.value} />
+          <TimeSeriesValueNumeric
+            label="Spool Speed"
+            unit="rpm"
+            timeseries={spoolRpm}
+            renderValue={(value) => roundToDecimals(value, 0)}
+          />
+        </ControlCard>
+
         <ControlCard className="bg-red" height={2} title="Traverse">
           {/* <TimeSeriesValueNumeric
             label="Position"
@@ -52,7 +65,7 @@ export function Winder1ControlPage() {
           <div className="flex flex-row flex-wrap gap-4">
             <Label label="Outer Limit">
               <EditValue
-                value={16}
+                value={undefined}
                 unit="mm"
                 title="Outer Limit"
                 defaultValue={16}
@@ -69,7 +82,7 @@ export function Winder1ControlPage() {
             </Label>
             <Label label="Inner Limit">
               <EditValue
-                value={72}
+                value={undefined}
                 unit="mm"
                 title="Limit Innen"
                 min={0}
@@ -102,36 +115,27 @@ export function Winder1ControlPage() {
             <StatusBadge variant="error">Not Homed</StatusBadge>
           </Label>
         </ControlCard>
-        <ControlCard className="bg-red" title="Puller">
-          {/* <TimeSeriesValueNumeric
-            label="Speed"
-            unit="m/s"
-            value={16}
-            renderValue={(value) => roundToDecimals(value, 0)}
-          /> */}
-          <Label label="Regulation">
-            <SelectionGroupBoolean
-              value={false}
-              optionFalse={{ children: "Speed", icon: "lu:Gauge" }}
-              optionTrue={{
-                children: "Diameter (Sync to DRE™)",
-                icon: "lu:Diameter",
-              }}
-            />
-          </Label>
-          <Label label="Target Speed">
-            <EditValue
-              value={16}
-              unit="m/s"
-              title="Target Speed"
-              defaultValue={0}
-              min={0}
-              max={100}
-              step={1}
-              renderValue={(value) => roundToDecimals(value, 0)}
-            />
-          </Label>
+
+        <ControlCard title="Tension Arm">
+          <TensionArm degrees={tensionArmAngle.current?.value} />
+          <TimeSeriesValueNumeric
+            label="Tension Arm"
+            unit="deg"
+            timeseries={tensionArmAngle}
+            renderValue={(value) => roundDegreesToDecimals(value, 0)}
+          />
+          <TouchButton
+            variant="outline"
+            icon="lu:House"
+            onClick={tensionArmAngleZero}
+          >
+            Set Zero Point
+          </TouchButton>
+          {!tensionArmState?.data.zeroed && (
+            <StatusBadge variant="error">Not Zeroed</StatusBadge>
+          )}
         </ControlCard>
+
         <ControlCard className="bg-red" title="Mode">
           <SelectionGroup<Mode>
             value={mode}
@@ -163,67 +167,36 @@ export function Winder1ControlPage() {
             }}
           />
         </ControlCard>
-        <ControlCard title="Tension Arm">
-          <TensionArm degrees={tensionArmAngle.current?.value} />
-          <TimeSeriesValueNumeric
-            label="Tension Arm"
-            unit="deg"
-            timeseries={tensionArmAngle}
-            renderValue={(value) => roundDegreesToDecimals(value, 0)}
-          />
-          <TouchButton
-            variant="outline"
-            icon="lu:House"
-            onClick={tensionArmAngleZero}
-          >
-            Set Zero Point
-          </TouchButton>
-        </ControlCard>
-        <ControlCard className="bg-red" title="Auto Stop">
+
+        <ControlCard className="bg-red" title="Puller">
           {/* <TimeSeriesValueNumeric
-            label="Wounded Length"
-            unit="m"
-            value={14}
+            label="Speed"
+            unit="m/s"
+            value={16}
             renderValue={(value) => roundToDecimals(value, 0)}
           /> */}
-          <div className="flex flex-row flex-wrap gap-4">
-            <Label label="Enable">
-              <SelectionGroupBoolean
-                value={false}
-                optionFalse={{ children: "Off" }}
-                optionTrue={{ children: "On" }}
-              />
-            </Label>
-            <Label label="Limit">
-              <EditValue
-                value={72}
-                defaultValue={200}
-                min={0}
-                max={1000}
-                unit="m"
-                title="Edit"
-                renderValue={(value) => roundToDecimals(value, 0)}
-              />
-            </Label>
-          </div>
-          <div className="flex flex-row flex-wrap gap-4">
-            <Label label="Alarm Signal">
-              <SelectionGroupBoolean
-                value={false}
-                optionFalse={{ children: "Off" }}
-                optionTrue={{ children: "On" }}
-              />
-            </Label>
-            <Label label="After Stop Transition Into">
-              <SelectionGroup<"standby" | "pull">
-                value="standby"
-                options={{
-                  standby: { children: "Standby", icon: "lu:CirclePause" },
-                  pull: { children: "Pull", icon: "lu:ChevronsLeft" },
-                }}
-              />
-            </Label>
-          </div>
+          <Label label="Regulation">
+            <SelectionGroupBoolean
+              value={false}
+              optionFalse={{ children: "Speed", icon: "lu:Gauge" }}
+              optionTrue={{
+                children: "Diameter (Sync to DRE™)",
+                icon: "lu:Diameter",
+              }}
+            />
+          </Label>
+          <Label label="Target Speed">
+            <EditValue
+              value={undefined}
+              unit="m/s"
+              title="Target Speed"
+              defaultValue={0}
+              min={0}
+              max={100}
+              step={1}
+              renderValue={(value) => roundToDecimals(value, 0)}
+            />
+          </Label>
         </ControlCard>
       </ControlGrid>
     </Page>
