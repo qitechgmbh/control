@@ -111,6 +111,5 @@ sudo nixos-rebuild switch --flake .#nixos --rollback
 The system uses special environment variables:
 
 - `QITECH_BUILD_ENV`: Set to "control-os" for NixOS deployments
-- `QITECH_DEPLOYMENT_TYPE`: Indicates deployment type (e.g., "production")
 
 These are configured in `configuration.nix`, `electron.nix`, and `home.nix`.

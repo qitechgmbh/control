@@ -160,7 +160,6 @@
   systemd.services.qitech = {
     environment = {
       QITECH_BUILD_ENV = "control-os";
-      QITECH_DEPLOYMENT_TYPE = "production";
     };
   };
 
@@ -228,7 +227,6 @@
 
   environment.variables = {
     QITECH_BUILD_ENV = "control-os";
-    QITECH_DEPLOYMENT_TYPE = "production";
   };
   
   # Some programs need SUID wrappers, can be configured further or are
