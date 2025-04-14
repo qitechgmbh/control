@@ -3,8 +3,23 @@
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-24.11";
-    rust-overlay.url = "github:oxalica/rust-overlay";
-    flake-utils.url = "github:numtide/flake-utils";
+    
+    home-manager = {
+      url = "github:nix-community/home-manager/release-24.11";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    
+    # Add the QiTech Control repository
+    qitech-control = {
+      url = "github:qitechgmbh/control";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    
+    # Add the Rust overlay as an input
+    rust-overlay = {
+      url = "github:oxalica/rust-overlay";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = { self, nixpkgs, rust-overlay, flake-utils, ... }:
@@ -27,6 +42,28 @@
           electron = pkgs.callPackage ./nixos/packages/electron.nix {};
           
           default = self.packages.${system}.server;
+        };
+
+        nixosConfigurations.nixos = nixpkgs.lib.nixosSystem {
+          inherit system;
+          specialArgs = { inherit qitech-control pkgs; }; 
+          modules = [
+            # Apply the overlay to the system
+            { nixpkgs.overlays = overlays; }
+            
+            ./configuration.nix
+            
+            # QiTech Control module
+            qitech-control.nixosModules.qitech
+            
+            # Home Manager module
+            home-manager.nixosModules.home-manager
+            {
+              home-manager.useGlobalPkgs = true;
+              home-manager.useUserPackages = true;
+              home-manager.users.qitech = import ./nixos/os/home.nix;
+            }
+          ];
         };
       }
     ) // {
