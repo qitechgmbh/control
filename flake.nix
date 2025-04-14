@@ -63,7 +63,7 @@
             # Apply the overlay to the system
             { nixpkgs.overlays = [ (import rust-overlay) ]; }
             
-            ./configuration.nix
+            ./nixos/os/configuration.nix
             
             # QiTech Control module
             qitech-control.nixosModules.qitech
