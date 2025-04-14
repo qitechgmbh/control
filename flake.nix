@@ -20,6 +20,11 @@
       url = "github:oxalica/rust-overlay";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    
+    # Add flake-utils which was missing
+    flake-utils = {
+      url = "github:numtide/flake-utils";
+    };
   };
 
   outputs = { self, nixpkgs, rust-overlay, flake-utils, qitech-control, home-manager, ... }:
@@ -43,13 +48,20 @@
           
           default = self.packages.${system}.server;
         };
-
-        nixosConfigurations.nixos = nixpkgs.lib.nixosSystem {
-          inherit system;
-          specialArgs = { inherit qitech-control pkgs; }; 
+      }
+    ) // {
+      nixosModules.qitech = import ./nixos/modules/qitech.nix;
+      nixosModules.default = self.nixosModules.qitech;
+      
+      # Define nixosConfigurations outside of eachDefaultSystem
+      nixosConfigurations = {
+        # Replace "nixos" with your actual hostname
+        nixos = nixpkgs.lib.nixosSystem {
+          system = "x86_64-linux"; # Specify the correct system
+          specialArgs = { inherit qitech-control; }; 
           modules = [
             # Apply the overlay to the system
-            { nixpkgs.overlays = overlays; }
+            { nixpkgs.overlays = [ (import rust-overlay) ]; }
             
             ./configuration.nix
             
@@ -65,9 +77,6 @@
             }
           ];
         };
-      }
-    ) // {
-      nixosModules.qitech = import ./nixos/modules/qitech.nix;
-      nixosModules.default = self.nixosModules.qitech;
+      };
     };
 }
