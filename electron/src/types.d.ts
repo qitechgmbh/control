@@ -28,12 +28,24 @@ interface EnvironmentContext {
   getInfo: () => Promise<EnvironmentInfo>;
 }
 
-interface EnvironmentContext {
-  getInfo: () => Promise<EnvironmentInfo>;
+interface UpdateContext {
+  execute: (params: {
+    githubRepoOwner: string;
+    githubRepoName: string;
+    githubToken?: string;
+    tag?: string;
+    branch?: string;
+    commit?: string;
+  }) => Promise<void>;
+  onLog: (callback: (log: string) => void) => void;
+  onEnd: (
+    callback: (params: { success: boolean; error?: string }) => void,
+  ) => void;
 }
 
 declare interface Window {
   themeMode: ThemeModeContext;
   electronWindow: ElectronWindow;
   environment: EnvironmentContext;
+  update: UpdateContext;
 }

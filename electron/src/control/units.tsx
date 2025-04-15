@@ -1,6 +1,7 @@
 import { ReactNode } from "@tanstack/react-router";
-import { Icon, IconName } from "@/components/Icon";
+import { IconName } from "@/components/Icon";
 import React from "react";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
 
 export function getUnitIcon(unit: Unit): IconName {
   switch (unit) {
@@ -101,7 +102,7 @@ export function renderUndefinedValue<T>(
       // We use an invisible `1` to mock the height if a character was there
       <span className="relative inline-flex items-center justify-center">
         <span className="opacity-0">1</span>
-        <Icon name="lu:Loader" className="absolute size-6 animate-spin" />
+        <LoadingSpinner />
       </span>
     );
   }

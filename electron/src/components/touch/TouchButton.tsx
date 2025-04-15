@@ -2,6 +2,7 @@ import { Button } from "../ui/button";
 import React, { ComponentProps } from "react";
 import { Icon, IconName } from "../Icon";
 import { cva } from "class-variance-authority";
+import { LoadingSpinner } from "../LoadingSpinner";
 
 type Props = {
   icon?: IconName;
@@ -25,7 +26,7 @@ export function TouchButton({
     >
       <div className="flex flex-row items-center gap-2 text-wrap">
         {icon && !isLoading && <Icon name={icon} className="size-6" />}
-        {isLoading && <Icon name="lu:Loader" className="size-6 animate-spin" />}
+        {isLoading && <LoadingSpinner />}
         {children}
       </div>
     </Button>

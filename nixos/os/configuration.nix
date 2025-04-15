@@ -160,7 +160,6 @@
   systemd.services.qitech = {
     environment = {
       QITECH_BUILD_ENV = "control-os";
-      QITECH_DEPLOYMENT_TYPE = "production";
     };
   };
 
@@ -182,7 +181,7 @@
   systemd.services."autovt@tty1".enable = false;
 
   # Install firefox.
-  programs.firefox.enable = false;
+  programs.firefox.enable = true;
 
   # List packages installed in system profile. To search, run:
   # $ nix search wget
@@ -228,7 +227,6 @@
 
   environment.variables = {
     QITECH_BUILD_ENV = "control-os";
-    QITECH_DEPLOYMENT_TYPE = "production";
   };
   
   # Some programs need SUID wrappers, can be configured further or are
