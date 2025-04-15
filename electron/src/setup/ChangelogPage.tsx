@@ -1,13 +1,15 @@
 import { Page } from "@/components/Page";
 import { SectionTitle } from "@/components/SectionTitle";
 import React, { useEffect } from "react";
-import { useSearch } from "@tanstack/react-router";
+import { useNavigate, useSearch } from "@tanstack/react-router";
 import { L } from "vitest/dist/chunks/reporters.DTtkbAtP";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Alert } from "@/components/Alert";
 import { Markdown } from "@/components/Markdown";
+import { TouchButton } from "@/components/touch/TouchButton";
 
 export function ChangelogPage() {
+  const navigate = useNavigate();
   const search = useSearch({
     from: "/_sidebar/setup/update/changelog",
   });
@@ -64,12 +66,28 @@ export function ChangelogPage() {
       ></SectionTitle>
       {changelog === undefined ? (
         <LoadingSpinner />
-      ) : changelog === null ? (
-        <Alert title="Changelog not found" variant="warning">
-          The changelog file could not be found in the selected version.
-        </Alert>
       ) : (
-        <Markdown text={changelog} />
+        <>
+          <TouchButton
+            className="w-max"
+            icon="lu:Check"
+            onClick={() => {
+              navigate({
+                to: "/_sidebar/setup/update/execute",
+                search,
+              });
+            }}
+          >
+            Continue
+          </TouchButton>
+          {changelog === null ? (
+            <Alert title="Changelog not found" variant="warning">
+              The changelog file could not be found in the selected version.
+            </Alert>
+          ) : (
+            <Markdown text={changelog} />
+          )}
+        </>
       )}
     </Page>
   );

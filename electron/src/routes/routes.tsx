@@ -21,6 +21,7 @@ import {
 import { z } from "zod";
 import { error } from "console";
 import { ChangelogPage } from "@/setup/ChangelogPage";
+import { UpdateExecutePage } from "@/setup/UpdateExecutePage";
 
 // make a route tree like this
 // _mainNavigation/machines/winder2/$serial/control
@@ -130,12 +131,23 @@ export const updateChangelogRoute = createRoute({
   validateSearch: zodValidator(versionSearchSchema),
 });
 
+export const updateExecuteRoute = createRoute({
+  getParentRoute: () => updateRoute,
+  path: "execute",
+  component: () => <UpdateExecutePage />,
+  validateSearch: zodValidator(versionSearchSchema),
+});
+
 export const rootTree = RootRoute.addChildren([
   sidebarRoute.addChildren([
     setupRoute.addChildren([
       ethercatRoute,
       setupMachinesRoute,
-      updateRoute.addChildren([updateChooseVersionRoute, updateChangelogRoute]),
+      updateRoute.addChildren([
+        updateChooseVersionRoute,
+        updateChangelogRoute,
+        updateExecuteRoute,
+      ]),
     ]),
     machinesRoute.addChildren([
       winder2SerialRoute.addChildren([
