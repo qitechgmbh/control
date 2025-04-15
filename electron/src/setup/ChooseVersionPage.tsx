@@ -2,47 +2,55 @@ import { Icon } from "@/components/Icon";
 import { Page } from "@/components/Page";
 import { SectionTitle } from "@/components/SectionTitle";
 import { TouchButton } from "@/components/touch/TouchButton";
-import React, { useEffect } from "react";
-
-// This PAT only has read-only access to public qitechgmbh repos
-// It's split into 3 parts to avoid being detected by secret scanning
-export const authToken =
-  "github_pat_" +
-  "11AG6Q4KQ0cfgyVayexvpp_" +
-  "XuYqnT8DHTiq0tN0VdWpKxhunrBPwydGlfPm7qUMEfM4V6T2YXRXuJ8AfDA";
-const fetchOptions = {
-  headers: {
-    ...(authToken && { Authorization: `token ${authToken}` }),
-    Accept: "application/vnd.github.v3+json",
-  },
-};
+import React, { useEffect, useState } from "react";
+import {
+  defaultGithubSource,
+  GithubSource,
+  GithubSourceDialog,
+} from "./GithubSourceDialog";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { Alert } from "@/components/Alert";
 
 export function ChooseVersionPage() {
-  const [commits, setCommits] = React.useState<any[]>([]);
-  const [branches, setBranches] = React.useState<any[]>([]);
-  const [tags, setTags] = React.useState<any[]>([]);
+  const [commits, setCommits] = useState<any[] | undefined>(undefined);
+  const [branches, setBranches] = useState<any[] | undefined>(undefined);
+  const [tags, setTags] = useState<any[] | undefined>(undefined);
+
+  const [githubSource, setGithubSource] =
+    useState<GithubSource>(defaultGithubSource);
+
+  const githubApiUrl = `https://api.github.com/repos/${githubSource.githubRepoOwner}/${githubSource.githubRepoName}`;
+
+  const fetchOptions = {
+    headers: {
+      ...(githubSource.githubToken && {
+        Authorization: `token ${githubSource.githubToken}`,
+      }),
+      Accept: "application/vnd.github.v3+json",
+    },
+  };
+
   useEffect(() => {
-    fetch(
-      `https://api.github.com/repos/qitechgmbh/control/commits`,
-      fetchOptions,
-    )
-      .then((res) => res.json())
-      .then((data) => {
-        setCommits(data);
+    setCommits(undefined);
+    fetch(githubApiUrl + `/commits`, fetchOptions)
+      .then(async (res) => {
+        const json = await res.json();
+        setCommits(json);
+      })
+      .catch(() => {
+        setCommits([]);
       });
-  }, []);
+  }, [githubSource]);
   useEffect(() => {
-    fetch(
-      `https://api.github.com/repos/qitechgmbh/control/branches`,
-      fetchOptions,
-    )
-      .then((res) => res.json())
-      .then((data) => {
+    setBranches(undefined);
+    fetch(githubApiUrl + `/branches`, fetchOptions)
+      .then(async (res) => {
+        const json = await res.json();
         setBranches(
-          data
+          json
             .map((branch) => {
               // find commit for branch
-              const commit = commits.find(
+              const commit = commits?.find(
                 (commit) => commit.sha === branch.commit.sha,
               );
               if (commit) {
@@ -54,15 +62,19 @@ export function ChooseVersionPage() {
               return new Date(b.date).getTime() - new Date(a.date).getTime();
             }),
         );
+      })
+      .catch(() => {
+        setBranches([]);
       });
-    fetch(`https://api.github.com/repos/qitechgmbh/control/tags`, fetchOptions)
-      .then((res) => res.json())
-      .then((data) => {
+    setTags(undefined);
+    fetch(githubApiUrl + `/tags`, fetchOptions)
+      .then(async (res) => {
+        const json = await res.json();
         setTags(
-          data
+          json
             .map((tag) => {
               // find commit for tag
-              const commit = commits.find(
+              const commit = commits?.find(
                 (commit) => commit.sha === tag.commit.sha,
               );
               if (commit) {
@@ -74,8 +86,11 @@ export function ChooseVersionPage() {
               return new Date(b.date).getTime() - new Date(a.date).getTime();
             }),
         );
+      })
+      .catch(() => {
+        setTags([]);
       });
-  }, [commits]);
+  }, [commits, githubSource]);
 
   // useEffect(() => {
   //   fetch(
@@ -95,47 +110,79 @@ export function ChooseVersionPage() {
   return (
     <Page>
       <SectionTitle title="Update"></SectionTitle>
+      <div className="flex flex-row items-center gap-4">
+        <div className="flex flex-col">
+          Update source:
+          <a className="font-mono text-blue-500">
+            {`https://github.com/${githubSource.githubRepoOwner}/${
+              githubSource.githubRepoName
+            }`}
+          </a>
+        </div>
+        <GithubSourceDialog value={githubSource} onChange={setGithubSource} />
+      </div>
+      <span className="w-max">
+        <Alert title="Internet Access Needed" variant="info">
+          You must connect to the internet to fetch the latest versions and
+          update the system.
+        </Alert>
+      </span>
       <span className="text-xl">Choose a Version</span>
-      {tags.map((tag) => (
-        <UpdateButton
-          time={tag.date ? new Date(tag.date) : undefined}
-          key={tag.name}
-          title={tag.name}
-          kind="tag"
-          onClick={() => {
-            setRev(tag.name);
-          }}
-        />
-      ))}
-      {commits.length == 0 && <>No Version</>}
+      {tags !== undefined && tags.length > 0 ? (
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {tags.map((tag) => (
+            <UpdateButton
+              time={tag.date ? new Date(tag.date) : undefined}
+              key={tag.name}
+              title={tag.name}
+              kind="tag"
+              onClick={() => {
+                // setRev(tag.name);
+              }}
+            />
+          ))}
+        </div>
+      ) : null}
+      {tags === undefined && <LoadingSpinner />}
+      {tags?.length == 0 && <>No Versions</>}
+
       <span className="text-xl">Choose a Branch</span>
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {branches.map((branch) => (
-          <UpdateButton
-            time={branch.date ? new Date(branch.date) : undefined}
-            key={branch.name}
-            title={branch.name}
-            kind="branch"
-            onClick={() => {
-              setRev(branch.name);
-            }}
-          />
-        ))}
-      </div>
+      {branches !== undefined && branches.length > 0 ? (
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {branches.map((branch) => (
+            <UpdateButton
+              time={branch.date ? new Date(branch.date) : undefined}
+              key={branch.name}
+              title={branch.name}
+              kind="branch"
+              onClick={() => {
+                // setRev(branch.name);
+              }}
+            />
+          ))}
+        </div>
+      ) : null}
+      {branches === undefined && <LoadingSpinner />}
+      {branches?.length == 0 && <>No Branches</>}
+
       <span className="text-xl">Choose a Commit</span>
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {commits.map((commit) => (
-          <UpdateButton
-            time={new Date(commit.commit.author.date)}
-            key={commit.sha}
-            title={commit.commit.message}
-            kind="commit"
-            onClick={() => {
-              setRev(commit.sha);
-            }}
-          />
-        ))}
-      </div>
+      {commits !== undefined && commits.length > 0 ? (
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {commits.map((commit) => (
+            <UpdateButton
+              time={new Date(commit.commit.author.date)}
+              key={commit.sha}
+              title={commit.commit.message}
+              kind="commit"
+              onClick={() => {
+                // setRev(commit.sha);
+              }}
+            />
+          ))}
+        </div>
+      ) : null}
+      {commits === undefined && <LoadingSpinner />}
+      {commits?.length == 0 && <>No Commits</>}
     </Page>
   );
 }
