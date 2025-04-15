@@ -1,10 +1,26 @@
 use super::r#loop::setup_loop;
 use crate::app_state::AppState;
+use control_core::ethercat::interface_discovery::discover_ethercat_interface;
 use std::sync::Arc;
 use thread_priority::{ThreadBuilderExt, ThreadPriority};
 
 pub fn init_ethercat(app_state: Arc<AppState>) {
-    let interface = "en6";
+    // tries to find a suitable interface in a loop
+    let interface = smol::block_on(async {
+        loop {
+            match discover_ethercat_interface().await {
+                Ok(interface) => {
+                    log::info!("Found working interface: {}", interface);
+                    break interface;
+                }
+                Err(_) => {
+                    log::warn!("No working interface found, retrying...");
+                    // wait 5 seconds before retrying
+                    smol::Timer::after(std::time::Duration::from_secs(1)).await;
+                }
+            }
+        }
+    });
 
     tokio::spawn(async move {
         std::thread::Builder::new()
@@ -17,7 +33,7 @@ pub fn init_ethercat(app_state: Arc<AppState>) {
 
                 runtime.block_on(async {
                     log::info!("Starting Ethercat PDU loop");
-                    let result = setup_loop(interface, app_state.clone()).await;
+                    let result = setup_loop(&interface, app_state.clone()).await;
                     if let Err(e) = result {
                         panic!("Failed to setup Ethercat: {:?}", e);
                     } else {
