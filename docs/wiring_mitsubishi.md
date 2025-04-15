@@ -18,3 +18,13 @@ Green and Blue, White/Green and White/Blue
 Gnd von usb Chip zu SG und SG von Inverter
 A goes to greend and blue pair
 B goes to green/white and blue/white
+
+el6021 wiring
+Txd+ together with rxd+ A pin 1 and 2
+txd- together with txd- B pin 5 and 6
+ground together with ground C
+
+mitsubishi
+RDA und SDA -> A
+RDB und SDB -> B
+sg und sg zu C

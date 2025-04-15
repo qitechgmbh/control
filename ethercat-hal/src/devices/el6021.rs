@@ -1,5 +1,5 @@
 use super::{NewDevice, SubDeviceIdentityTuple};
-use crate::coe::Configuration;
+use crate::coe::{ConfigurableDevice, Configuration};
 use crate::io::serial_interface::{self, SerialInterfaceDevice};
 use crate::pdo::{PredefinedPdoAssignment, RxPdo, RxPdoObject, TxPdo, TxPdoObject};
 use crate::types::EthercrabSubDevicePreoperational;
@@ -13,6 +13,16 @@ use smol::lock::Mutex;
 use std::collections::VecDeque;
 use std::io::Read;
 use std::sync::Arc;
+
+
+
+fn print_bits(byte: u8) {
+    println!("Bit positions and values for: 0b{:08b}", byte);
+    for i in 0..8 {
+        let bit = (byte >> i) & 1;
+        println!("Bit {:>2}: {}", i, bit);
+    }
+}
 
 impl std::fmt::Debug for EL6021 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -96,13 +106,39 @@ impl Default for EL6021Configuration {
             fifo_continuous_send_enabled: false,
             half_duplex_enabled: true,
             point_to_point_connection_enabled: false,
-            baud_rate: EL6021Baudrate::B9600.into(),
-            data_frame: 0x03,
+            baud_rate: EL6021Baudrate::B19200.into(),
+            /*
+            
+                Bits 0-2: Data bits (5-8)
+                Bit 3: Stop bits (1 or 2)
+                Bits 4-5: Parity (None, Even, Odd) 
+                default: 0x03 (8N1 format)
+             */
+            data_frame: 0x4,
             rx_buffer_full_notification: 0x0360,
-            explicit_baudrate: 9600,
+            explicit_baudrate: 19200,
             pdo_assignment: EL6021PdoPreset::Standard22ByteMdp600,
-            extended_data_frame: 0x0003,
+            extended_data_frame: 0x4,
         }
+    }
+}
+
+
+impl ConfigurableDevice<EL6021Configuration> for EL6021 {
+    async fn write_config<'maindevice>(
+        &mut self,
+        device: &EthercrabSubDevicePreoperational<'maindevice>,
+        config: &EL6021Configuration,
+    ) -> Result<(), anyhow::Error> {
+        config.write_config(device).await?;
+        self.configuration = config.clone();
+        self.txpdo = config.pdo_assignment.txpdo_assignment();
+        self.rxpdo = config.pdo_assignment.rxpdo_assignment();
+        Ok(())
+    }
+
+    fn get_config(&self) -> EL6021Configuration {
+        self.configuration.clone()
     }
 }
 
@@ -149,6 +185,7 @@ pub struct EL6021Configuration {
 
     /// # 0x8000:11 - Sets the baud rate (e.g., 9600, 115200).
     /// This value is typically an index referencing predefined baud rates.
+
     /// default: `0x06`
     pub baud_rate: u8,
 
@@ -183,48 +220,83 @@ impl Configuration for EL6021Configuration {
         &self,
         device: &EthercrabSubDevicePreoperational<'a>,
     ) -> Result<(), anyhow::Error> {
-        device.sdo_write(0x8000, 0x1, self.rts_enabled).await?;
+
+
+
+     //   device.sdo_write(0x8000, 0x1, self.rts_enabled).await?;
 
         device
-            .sdo_write(0x8000, 0x2, self.xon_on_supported_tx)
-            .await?;
+             .sdo_write(0x8000, 0x2, self.xon_on_supported_tx)
+             .await?;
 
         device
-            .sdo_write(0x8000, 0x3, self.xon_off_supported_rx)
-            .await?;
+             .sdo_write(0x8000, 0x3, self.xon_off_supported_rx)
+             .await?;
 
         device
-            .sdo_write(0x8000, 0x4, self.fifo_continuous_send_enabled)
-            .await?;
+             .sdo_write(0x8000, 0x4, self.fifo_continuous_send_enabled)
+             .await?;
 
         device
-            .sdo_write(0x8000, 0x5, self.enable_transfer_rate_optimization)
-            .await?;
+             .sdo_write(0x8000, 0x5, self.enable_transfer_rate_optimization)
+             .await?;
 
         device
-            .sdo_write(0x8000, 0x6, self.half_duplex_enabled)
-            .await?;
+             .sdo_write(0x8000, 0x6, self.half_duplex_enabled)
+             .await?;
 
         device
-            .sdo_write(0x8000, 0x7, self.point_to_point_connection_enabled)
-            .await?;
+             .sdo_write(0x8000, 0x7, self.point_to_point_connection_enabled)
+             .await?;
 
         // baud rate and data frame are only 4 BITs maybe this causes a problem?
-        device.sdo_write(0x8000, 0x11, self.baud_rate).await?;
-        device.sdo_write(0x8000, 0x15, self.data_frame).await?;
+        device.sdo_write(0x8000, 0x11, self.baud_rate as u8).await?;
+
+        device.sdo_write(0x8000, 0x15, self.data_frame as u8).await?;
+
+        let res = device.sdo_read::<bool>(0x8000, 0x2).await;
+        println!("xon supp tx: {:?}",res);
+        
+        let res1 = device.sdo_read::<bool>(0x8000, 0x3).await;
+        println!("xon_off_supported_rx: {:?}",res1);
+        
+        let res2 = device.sdo_read::<bool>(0x8000, 0x4).await;
+        println!("fifo_continuous_send_enabled: {:?}",res2);
+        
+        let res3 = device.sdo_read::<bool>(0x8000, 0x5).await;
+        println!("enable_transfer_rate_optimization: {:?}",res3);
+        
+        let res4 = device.sdo_read::<bool>(0x8000, 0x6).await;
+        println!("half_duplex_enabled: {:?}",res4);
+        
+        let res5 = device.sdo_read::<bool>(0x8000, 0x7).await;
+        println!("point_to_point_connection_enabled: {:?}",res5);
+
+        let res6 = device.sdo_read::<u8>(0x8000, 0x11).await;
+        println!("baudrate: {:?}",res6);
+        let res7 = device.sdo_read::<u8>(0x8000, 0x15).await;
+        println!("dataframe: {:?}",res7);
+        let res8 = device.sdo_read::<u32>(0x8000, 0x1b).await;
+        /*println!("baudrate: {:?}",res8);
+        let res9 = device.sdo_read::<u32>(0x8000, 0x1b).await;
+        println!("baudrate: {:?}",res9);
+        */
+
+
+
+
 
         device
-            .sdo_write(0x8000, 0x1a, self.rx_buffer_full_notification)
-            .await?;
+              .sdo_write(0x8000, 0x1a, self.rx_buffer_full_notification)
+              .await?;
 
         device
-            .sdo_write(0x8000, 0x1b, self.explicit_baudrate)
-            .await?;
+              .sdo_write(0x8000, 0x1b, self.explicit_baudrate)
+              .await?;
 
         device
-            .sdo_write(0x8000, 0x1c, self.point_to_point_connection_enabled)
-            .await?;
-
+              .sdo_write(0x8000, 0x1c, self.extended_data_frame)
+              .await?;
         Ok(())
     }
 }
@@ -236,10 +308,6 @@ pub struct Standard22ByteMdp600 {
     /// 1A02 size 2 Offset 0
     pub status : u8, // For Standard22ByteMdp600 Output same size as input, but status is ctrl instead
     pub length : u8,
-    
-    
-    
-    
     /// 1A02:01
     pub data: [u8; 22],
 }
@@ -260,7 +328,6 @@ impl TxPdoObject for Standard22ByteMdp600 {
         self.status = bits[0..0 + 8].load_le::<u8>();
         self.length = bits[8..8 + 8].load_le::<u8>();
         let serial_bytes = bits[16..(16 + 22 * 8 as usize)].chunks_exact(8);
-     //   println!("{:?}",serial_bytes);
         for (i, val) in serial_bytes.enumerate() {
             self.data[i] = val.load_le();
         }
@@ -349,36 +416,68 @@ pub enum EL6021Port {
     SI1, // Serial
 }
 
+pub enum ControlToggle {
+    TransmitRequest,
+    ReceiveAccepted,
+    InitRequest,
+}
+
+pub enum StatusToggle {
+    TransmitAccepted,
+    ReceiveRequest,
+    InitAccepted,
+}
+
+
+
 impl SerialInterfaceDevice<EL6021Port> for EL6021 {
 
 
     fn serial_init_request(&mut self, _port: EL6021Port) -> () {
-        // Set Init request bit in control word (bit 2)
-        
-
+        if let Some(rx_pdo) = &mut self.rxpdo.com_rx_pdo_map_22_byte {
+            println!("Initializing EL6021 with new settings...");
+            rx_pdo.status |= 0x0004;
+            std::thread::sleep(std::time::Duration::from_millis(50));
+            if let Some(tx_pdo) = &self.txpdo.com_tx_pdo_map_22_byte {
+                if (tx_pdo.status & 0x0004) != 0 {
+                    println!("init Accepted {}", tx_pdo.status);
+                    rx_pdo.status = 0;
+                    std::thread::sleep(std::time::Duration::from_millis(50));
+                }
+            }
+        }
     }
 
 
     fn serial_interface_read_message(&mut self, _port: EL6021Port) -> Vec<u8> {
     // Access the TxPDO (data coming from the device to the controller)
     if let Some(tx_pdo) = &mut self.txpdo.com_tx_pdo_map_22_byte {
-        // Check if the ReceiveRequest bit (bit 1) is set
-        // This indicates new data is available
+       
+        //println!("{}", tx_pdo.status );
+
+        if(tx_pdo.status & 0x1) == 1{
+
+        }
+
         if (tx_pdo.status & 0x2) != 0 {
             // Get the actual length of valid data from the status word (bits 8-15)
             let valid_length = tx_pdo.length as usize;
             
             // Make a copy of the data before acknowledging receipt
             let received_data = tx_pdo.data[..valid_length.min(22)].to_vec();
-            
+            /*
             // Toggle the ReceiveAccepted bit (bit 1) in the RxPDO control word
             // to acknowledge receipt of the data
+            tx_pdo.status ^= 0x1;
+            */
             if let Some(rx_pdo) = &mut self.rxpdo.com_rx_pdo_map_22_byte {
                 rx_pdo.status ^= 0x2;
             }
             
+            tx_pdo.data.fill(0);
+
             // Debug output
-            println!("Received {} bytes of data", valid_length);
+            //println!("Received {} bytes of data", valid_length);
             println!("{:?}",received_data);
             // Return the received data
             received_data
@@ -409,46 +508,29 @@ impl SerialInterfaceDevice<EL6021Port> for EL6021 {
     }
 
     fn serial_interface_write_message(&mut self, _port: EL6021Port, message: Vec<u8>) {
-      // Access the RxPDO (data going from the controller to the device)
-    if let Some(rx_pdo) = &mut self.rxpdo.com_rx_pdo_map_22_byte {
-        // Check if message is within valid length
-        if message.len() > 22 {
-            println!("Error: Message too long (max 22 bytes)");
-            return;
-        }
-        
-        // Copy message data to the output buffer
-        let mut data_buffer = [0u8; 22];
-        let bytes = message.as_slice();
-        data_buffer[..message.len()].copy_from_slice(&bytes[..message.len()]);
-        
-        // Set the message length in the control word (bits 8-15)
-        rx_pdo.length = message.len() as u8;
-        
-        // Copy the data to the PDO
-        rx_pdo.data = data_buffer;
-        
-        // Toggle the TransmitRequest bit (bit 0) to initiate transmission
-        rx_pdo.status ^= 0x1;
-        
-        // Debug output
-        println!("Sent {} bytes of data", message.len());
-    } else {
-        println!("Error: RxPDO not available");
-    }
+      
         
       
-      /*  if let Some(rx_pdo) = &mut self.rxpdo.com_rx_pdo_map_22_byte {
-            if message.len() > 255 {
+        if let Some(rx_pdo) = &mut self.rxpdo.com_rx_pdo_map_22_byte {
+        //    print_bits(rx_pdo.status);
+            if message.len() > 128 {
                 return;
             }
+
             let mut data_buffer = [0u8; 22];
             let bytes = message.as_slice();
+            
             data_buffer[..message.len()].copy_from_slice(&bytes[..message.len()]);
             rx_pdo.length = message.len() as u8;
             rx_pdo.data = data_buffer;
-            rx_pdo.status ^= 0x1; // Toggle Transmit Request
-        } */
+         
+            if rx_pdo.status == 0 {
+                println!("rx status: {}",rx_pdo.status);
+                println!("sending {:?}",rx_pdo.data);
+                rx_pdo.status ^= 0x1; // Toggle Transmit Request
+            }
+
+        } 
     }
 
     /// TODO: Detect Stop / End

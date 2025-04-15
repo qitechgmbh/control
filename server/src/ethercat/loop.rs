@@ -9,9 +9,11 @@ use crate::{
 use bitvec::prelude::*;
 use control_core::actors::{mitsubishi_inverter_rs485, Actor};
 use control_core::identification::identify_device_groups;
+use control_core::machines::new::get_subdevice_by_index;
 use control_core::socketio::event::EventBuilder;
 use control_core::socketio::room::RoomCacheingLogic;
-use ethercat_hal::devices::el6021::{EL6021Port, EL6021};
+use ethercat_hal::coe::Configuration;
+use ethercat_hal::devices::el6021::{self, EL6021Port, EL6021};
 use ethercat_hal::devices::{device_from_subdevice, devices_from_subdevices, downcast_device, Device, NewDevice};
 use ethercat_hal::io::serial_interface::SerialInterface;
 use ethercrab::std::{ethercat_now, tx_rx_task};
@@ -105,10 +107,28 @@ pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(),
         );
     }
 
+    println!("{:?}",&subdevices);
+
+
     //log machines
     for (k, v) in machines.iter() {
         log::info!("Machine: {:?} {:?}", k, v);
     }
+
+
+    
+    let el6021 = downcast_device::<EL6021>(devices.get(2).unwrap().clone()).await.unwrap();
+    let subdevice = get_subdevice_by_index(&subdevices,2)?;
+    println!("{}",subdevice.name());
+    //get_subdevice_by_index
+
+    println!("{:?}",el6021.write().await.configuration);
+
+    el6021.write()
+        .await
+        .configuration.
+        write_config(subdevice).await?;
+    
 
     // Put group in operational state
     let group_op = match group_preop.into_op(&maindevice).await {
@@ -139,9 +159,8 @@ pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(),
         }
     }
 
-    println!("{:?}",devices);
-    
-    let el6021 = downcast_device::<EL6021>(devices.get(2).unwrap().clone()).await.unwrap();
+
+
     let serial_interface = SerialInterface::new(el6021,EL6021Port::SI1);
     let mitsubishi_inverter_rs485 = MitsubishiInverterRS485Actor::new(false,serial_interface);
     actors.push(   Arc::new(RwLock::new(mitsubishi_inverter_rs485)));

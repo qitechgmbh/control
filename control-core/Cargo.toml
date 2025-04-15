@@ -15,6 +15,7 @@ smol = "2.0.2"
 socketioxide = "0.16.2"
 stepper_driver = { path = "../stepper-driver" }
 uom = "0.36.0"
-
+bitvec = { version = "1.0.1", features = ["alloc"] }
+crc = "3.2.1"
 [dev-dependencies]
 approx = "0.5.1"
