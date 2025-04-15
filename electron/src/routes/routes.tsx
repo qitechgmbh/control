@@ -11,6 +11,16 @@ import { Winder1ManualPage } from "@/machines/winder/winder2/Winder2Manual";
 import { Winder1SettingPage } from "@/machines/winder/winder2/Winder2Settings";
 import { Winder1GraphsPage } from "@/machines/winder/winder2/Winder2Graphs";
 import { ChooseVersionPage } from "@/setup/ChooseVersionPage";
+import { fallback, zodValidator } from "@tanstack/zod-adapter";
+import {
+  defaultGithubSource,
+  GithubSource,
+  GithubSourceDialog,
+  githubSourceSchema,
+} from "@/setup/GithubSourceDialog";
+import { z } from "zod";
+import { error } from "console";
+import { ChangelogPage } from "@/setup/ChangelogPage";
 
 // make a route tree like this
 // _mainNavigation/machines/winder2/$serial/control
@@ -91,12 +101,41 @@ export const updateChooseVersionRoute = createRoute({
   component: () => <ChooseVersionPage />,
 });
 
+export const versionSearchSchema = z
+  .object({
+    branch: fallback(z.string().optional(), undefined),
+    commit: fallback(z.string().optional(), undefined),
+    tag: fallback(z.string().optional(), undefined),
+  })
+  .merge(githubSourceSchema)
+  .refine(
+    (data) => {
+      const definedCount = [data.branch, data.commit, data.tag].filter(
+        Boolean,
+      ).length;
+      return definedCount === 1;
+    },
+    {
+      message: "Exactly one of branch, commit, or tag must be defined",
+      path: ["error"],
+    },
+  );
+
+export type VersionSearch = z.infer<typeof versionSearchSchema>;
+
+export const updateChangelogRoute = createRoute({
+  getParentRoute: () => updateRoute,
+  path: "changelog",
+  component: () => <ChangelogPage />,
+  validateSearch: zodValidator(versionSearchSchema),
+});
+
 export const rootTree = RootRoute.addChildren([
   sidebarRoute.addChildren([
     setupRoute.addChildren([
       ethercatRoute,
       setupMachinesRoute,
-      updateRoute.addChildren([updateChooseVersionRoute]),
+      updateRoute.addChildren([updateChooseVersionRoute, updateChangelogRoute]),
     ]),
     machinesRoute.addChildren([
       winder2SerialRoute.addChildren([

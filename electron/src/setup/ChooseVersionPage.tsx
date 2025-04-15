@@ -10,8 +10,11 @@ import {
 } from "./GithubSourceDialog";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Alert } from "@/components/Alert";
+import { useNavigate } from "@tanstack/react-router";
 
 export function ChooseVersionPage() {
+  const navigate = useNavigate();
+
   const [commits, setCommits] = useState<any[] | undefined>(undefined);
   const [branches, setBranches] = useState<any[] | undefined>(undefined);
   const [tags, setTags] = useState<any[] | undefined>(undefined);
@@ -41,6 +44,7 @@ export function ChooseVersionPage() {
         setCommits([]);
       });
   }, [githubSource]);
+
   useEffect(() => {
     setBranches(undefined);
     fetch(githubApiUrl + `/branches`, fetchOptions)
@@ -92,21 +96,6 @@ export function ChooseVersionPage() {
       });
   }, [commits, githubSource]);
 
-  // useEffect(() => {
-  //   fetch(
-  //     `https://api.github.com/repos/qitechgmbh/control/contents/CHANGELOG.md?ref=${ref}`,
-  //     fetchOptions,
-  //   )
-  //     .then((res) => res.json())
-  //     .then((data) => {
-  //       if (data.content) {
-  //         const decodedContent = atob(data.content);
-  //         setReadme(decodedContent);
-  //       }
-  //     })
-  //     .catch((err) => console.error(err));
-  // }, [ref]);
-
   return (
     <Page>
       <SectionTitle title="Update"></SectionTitle>
@@ -137,7 +126,13 @@ export function ChooseVersionPage() {
               title={tag.name}
               kind="tag"
               onClick={() => {
-                // setRev(tag.name);
+                navigate({
+                  to: "/_sidebar/setup/update/changelog",
+                  search: {
+                    tag: tag.name,
+                    ...githubSource,
+                  },
+                });
               }}
             />
           ))}
@@ -156,7 +151,13 @@ export function ChooseVersionPage() {
               title={branch.name}
               kind="branch"
               onClick={() => {
-                // setRev(branch.name);
+                navigate({
+                  to: "/_sidebar/setup/update/changelog",
+                  search: {
+                    branch: branch.name,
+                    ...githubSource,
+                  },
+                });
               }}
             />
           ))}
@@ -175,7 +176,13 @@ export function ChooseVersionPage() {
               title={commit.commit.message}
               kind="commit"
               onClick={() => {
-                // setRev(commit.sha);
+                navigate({
+                  to: "/_sidebar/setup/update/changelog",
+                  search: {
+                    commit: commit.sha,
+                    ...githubSource,
+                  },
+                });
               }}
             />
           ))}

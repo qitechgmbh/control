@@ -25,16 +25,17 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Icon } from "@/components/Icon";
 import { TouchButton } from "@/components/touch/TouchButton";
+import { fallback } from "@tanstack/zod-adapter";
 
 type Props = {
   value: GithubSource;
   onChange: (value: GithubSource) => void;
 };
 
-const githubSourceSchema = z.object({
-  githubRepoOwner: z.string(),
-  githubRepoName: z.string(),
-  githubToken: z.string().optional().nullable(),
+export const githubSourceSchema = z.object({
+  githubRepoOwner: fallback(z.string(), "qitechgmbh"),
+  githubRepoName: fallback(z.string(), "control"),
+  githubToken: fallback(z.string().optional().nullable(), undefined),
 });
 
 export type GithubSource = z.infer<typeof githubSourceSchema>;
