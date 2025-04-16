@@ -1,6 +1,5 @@
 # Threads & Async
-We utilize differet threads and mix `smol` with `tokio`.
-
+We utilize different threads and mix `smol` with `tokio`.
 Mid-term we want to get rid of `tokio` for the ethercat part but keep it for `axum` (REST) and `socketioxide` (SocketIO).
 
 ## Threads
