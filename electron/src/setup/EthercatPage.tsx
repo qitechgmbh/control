@@ -16,6 +16,7 @@ import {
   EthercatSetupEventData,
   useMainNamespace,
 } from "@/client/mainNamespace";
+import { Icon } from "@/components/Icon";
 
 export const columns: ColumnDef<
   NonNullable<EthercatSetupEventData["Done"]>["devices"][number]
@@ -111,7 +112,7 @@ export const columns: ColumnDef<
 ];
 
 export function EthercatPage() {
-  const { ethercatSetup } = useMainNamespace();
+  const { ethercatSetup, ethercatInterfaceDiscovery } = useMainNamespace();
 
   const data = useMemo(() => {
     return ethercatSetup?.data?.Done?.devices || [];
@@ -125,6 +126,17 @@ export function EthercatPage() {
 
   return (
     <Page>
+      <SectionTitle title="Interface"></SectionTitle>
+      <p>
+        Ethernet Interface{" "}
+        {ethercatInterfaceDiscovery?.data.Discovering ? (
+          <span>Discovering...</span>
+        ) : ethercatInterfaceDiscovery?.data.Done ? (
+          <Value value={ethercatInterfaceDiscovery?.data.Done} />
+        ) : (
+          <span>Not Discovering</span>
+        )}
+      </p>
       <SectionTitle title="SubDevices">
         <RefreshIndicator ts={ethercatSetup?.ts} />
       </SectionTitle>
@@ -132,6 +144,7 @@ export function EthercatPage() {
         Machine, Machine Serial Number, Role are QiTech specific values that are
         written to the EEPROM to identify machines as a unit.
       </p>
+
       <MyTable table={table} key={data.toString()} />
     </Page>
   );

@@ -14,7 +14,6 @@ control_core = { path = "../control-core" }
 
 # concurrency
 thread-priority = "1.2.0"
-futures = "0.3.31"
 
 # web
 socketioxide = "0.16.0"
@@ -37,3 +36,6 @@ smol = "2.0.2"
 
 [dev-dependencies]
 approx = "0.5.1"
+
+[features]
+never_type = []

@@ -8,7 +8,6 @@ import {
   eventSchema,
   Event,
   handleEventValidationError,
-  handleUnknownEventError,
   handleUnhandledEventError,
   NamespaceId,
 } from "./socketioStore";
@@ -53,8 +52,26 @@ export const ethercatSetupEventSchema = eventSchema(
 
 export type EthercatSetupEvent = z.infer<typeof ethercatSetupEventSchema>;
 
+export const ethercatInterfaceDiscoveryEventDataSchema = rustEnumSchema({
+  Discovering: z.boolean(),
+  Done: z.string(),
+});
+
+export type EthercatInterfaceDiscoveryEventData = z.infer<
+  typeof ethercatInterfaceDiscoveryEventDataSchema
+>;
+
+export const ethercatInterfaceDiscoveryEventSchema = eventSchema(
+  ethercatInterfaceDiscoveryEventDataSchema,
+);
+
+export type EthercatInterfaceDiscoveryEvent = z.infer<
+  typeof ethercatInterfaceDiscoveryEventSchema
+>;
+
 export const mainNamespaceStoreSchema = z.object({
   ethercatSetup: ethercatSetupEventSchema.nullable(),
+  ethercatInterfaceDiscovery: ethercatInterfaceDiscoveryEventSchema.nullable(),
 });
 
 export type MainNamespaceStore = z.infer<typeof mainNamespaceStoreSchema>;
@@ -62,6 +79,7 @@ export type MainNamespaceStore = z.infer<typeof mainNamespaceStoreSchema>;
 export const createMainNamespaceStore = (): StoreApi<MainNamespaceStore> => {
   return create<MainNamespaceStore>()(() => ({
     ethercatSetup: null,
+    ethercatInterfaceDiscovery: null,
   }));
 };
 
@@ -75,23 +93,24 @@ export function mainMessageHandler(
   return (event: Event<any>) => {
     const eventName = event.name;
 
-    // Validate that this is an event type we know about
-    if (!(eventName in eventSchemaMap)) {
-      handleUnknownEventError(eventName);
-    }
-
-    const schema = eventSchemaMap[eventName as keyof typeof eventSchemaMap];
-
     try {
-      // Validate the event against its schema
-      const validatedEvent = schema.parse(event);
-
       // Apply appropriate caching strategy based on event type
       // State events (keep only the latest)
       if (eventName === "EthercatSetupEvent") {
+        const validatedEvent = ethercatSetupEventSchema.parse(event);
+        console.log("EthercatSetupEvent", validatedEvent);
         store.setState(
           produce((state) => {
             state.ethercatSetup = validatedEvent;
+          }),
+        );
+      } else if (eventName === "EthercatInterfaceDiscoveryEvent") {
+        const validatedEvent =
+          ethercatInterfaceDiscoveryEventSchema.parse(event);
+        console.log("EthercatInterfaceDiscoveryEvent", validatedEvent);
+        store.setState(
+          produce((state) => {
+            state.ethercatInterfaceDiscovery = validatedEvent;
           }),
         );
       } else {

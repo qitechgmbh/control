@@ -48,17 +48,6 @@ export const handleEventValidationError = (
 };
 
 /**
- * Unknown event error handler
- */
-export const handleUnknownEventError = (eventName: string) => {
-  toastError(
-    `Unknown Event`,
-    `Namespace can't find schema for event "${eventName}"`,
-  );
-  throw new Error(`Unknown Event '${eventName}'`);
-};
-
-/**
  * Unhandled event error handler
  */
 export const handleUnhandledEventError = (eventName: string) => {
