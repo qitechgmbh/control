@@ -16,8 +16,8 @@ const IFACE_DISCOVERY_MAX_PDI_LEN: usize = 128;
 ///
 /// ```ignore
 /// match discover_ethercat_interface().await {
-///         Ok(interface) => println!("Found working interface: {}", interface),
-///         Err(_) => println!("No working interface found"),
+///     Ok(interface) => println!("Found working interface: {}", interface),
+///     Err(_) => println!("No working interface found"),
 /// }
 /// ```
 pub async fn discover_ethercat_interface() -> Result<String, anyhow::Error> {
@@ -109,8 +109,10 @@ fn test_interface(interface: &str) -> Result<(), anyhow::Error> {
         .try_split()
         .map_err(|e| anyhow::anyhow!("Failed to split PDU storage: {:?}", e))?;
 
-    let result = smol::block_on(async {
-        let tx_rx_handle = smol::spawn(
+    let rt = smol::LocalExecutor::new();
+
+    let result = rt.run(async {
+        let tx_rx_handle = rt.spawn(
             tx_rx_task(interface, tx, rx)
                 .map_err(|e| anyhow::anyhow!("Failed to spawn TX/RX task: {}", e))?,
         );
@@ -137,6 +139,9 @@ fn test_interface(interface: &str) -> Result<(), anyhow::Error> {
 
         result
     });
+
+    // await the result of the async block
+    let result = smol::block_on(result);
 
     if let Err(e) = result {
         return Err(anyhow::anyhow!(

@@ -1,10 +1,30 @@
 use super::r#loop::setup_loop;
-use crate::app_state::AppState;
-use control_core::ethercat::interface_discovery::discover_ethercat_interface;
+use crate::{
+    app_state::{AppState, APP_STATE},
+    socketio::main_namespace::{
+        ethercat_interface_discovery_event::EthercatInterfaceDiscoveryEvent, MainNamespaceEvents,
+    },
+};
+use control_core::{
+    ethercat::interface_discovery::discover_ethercat_interface,
+    socketio::namespace::NamespaceCacheingLogic,
+};
 use std::sync::Arc;
 use thread_priority::{ThreadBuilderExt, ThreadPriority};
 
 pub fn init_ethercat(app_state: Arc<AppState>) {
+    // Notify client via socketio
+    let _ = smol::block_on(async move {
+        let main_namespace = &mut APP_STATE
+            .socketio_setup
+            .namespaces
+            .write()
+            .await
+            .main_namespace;
+        let event = EthercatInterfaceDiscoveryEvent::Discovering(true).build();
+        main_namespace.emit_cached(MainNamespaceEvents::EthercatInterfaceDiscoveryEvent(event));
+    });
+
     // tries to find a suitable interface in a loop
     let interface = smol::block_on(async {
         loop {
@@ -22,6 +42,20 @@ pub fn init_ethercat(app_state: Arc<AppState>) {
         }
     });
 
+    // Notify client via socketio
+    let interface_clone = interface.clone();
+    let _ = smol::block_on(async move {
+        let main_namespace = &mut APP_STATE
+            .socketio_setup
+            .namespaces
+            .write()
+            .await
+            .main_namespace;
+        let event = EthercatInterfaceDiscoveryEvent::Done(interface_clone).build();
+        main_namespace.emit_cached(MainNamespaceEvents::EthercatInterfaceDiscoveryEvent(event));
+    });
+
+    // start the event loop
     tokio::spawn(async move {
         std::thread::Builder::new()
             .name("EthercatThread".to_owned())

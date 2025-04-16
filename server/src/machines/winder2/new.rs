@@ -30,7 +30,6 @@ use ethercat_hal::shared_config::el70x1::{
     EL70x1OperationMode, StmFeatures, StmMotorConfiguration,
 };
 use ethercat_hal::types::EthercrabSubDevicePreoperational;
-use futures::executor::block_on;
 use smol::lock::RwLock;
 use std::sync::Arc;
 use uom::si::electric_potential::volt;
@@ -49,7 +48,7 @@ impl MachineNewTrait for Winder2 {
         // using block_on because making this funciton async creates a lifetime issue
         // if its async the compiler thinks &subdevices is persisted in the future which might never execute
         // so we can't drop subdevices unless this machine is dropped, which is bad
-        block_on(async {
+        smol::block_on(async {
             // Role 0
             // Buscoupler
             // EK1100
