@@ -36,3 +36,6 @@ smol = "2.0.2"
 
 [dev-dependencies]
 approx = "0.5.1"
+
+[features]
+never_type = []

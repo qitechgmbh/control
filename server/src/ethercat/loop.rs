@@ -15,9 +15,15 @@ use ethercrab::std::{ethercat_now, tx_rx_task};
 use ethercrab::{MainDevice, MainDeviceConfig, PduStorage, RetryBehaviour, Timeouts};
 use smol::lock::RwLock;
 use std::collections::HashMap;
+use std::convert::Infallible;
 use std::{sync::Arc, time::Duration};
 
-pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(), anyhow::Error> {
+pub async fn setup_loop(
+    interface: &str,
+    app_state: Arc<AppState>,
+) -> Result<Infallible, anyhow::Error> {
+    log::info!("Starting Ethercat PDU loop");
+
     // Erase all all setup data from `app_state`
     {
         log::info!("Setting up Ethercat network");
@@ -167,19 +173,12 @@ pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(),
     });
 
     // Start control loop
-    let pdu_handle = tokio::spawn(async move {
-        log::info!("Starting control loop");
-        loop {
-            let res = loop_once(app_state.ethercat_setup.clone()).await;
-            if let Err(err) = res {
-                log::error!("Loop failed\n{:?}", err);
-            }
+    loop {
+        let res = loop_once(app_state.ethercat_setup.clone()).await;
+        if let Err(err) = res {
+            log::error!("Loop failed\n{:?}", err);
         }
-    });
-    // Await the pdu_loop task so that it executes fully
-    pdu_handle.await.expect("pdu_loop task failed");
-
-    Ok(())
+    }
 }
 
 pub async fn loop_once<'maindevice>(

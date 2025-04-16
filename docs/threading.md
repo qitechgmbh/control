@@ -14,7 +14,7 @@ Starts threads for testing different interfaces in parallel.
 
 Uses Smol `LocalExecutor`.
 
-### `EthercatThread` from `server::ethercat::init::init_ethercat`
+### `EthercatSetupLoopThread` from `server::ethercat::init::init_ethercat`
 Uses thread-local `tokio` runtime.
 
 Starts the Ethercrab TX/RX thread.
