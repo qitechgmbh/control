@@ -87,7 +87,7 @@ We could combine the code of the frontend and backend using [Doxius](https://dio
     - Write Device Identification
 
 - Server
-
+  - [X] [Threading](./docs/control-loop.md)
   - [ ] Control Loop Setup
     - Control Loop Thread
       - [ ] realtime
