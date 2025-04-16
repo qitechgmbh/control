@@ -18,7 +18,7 @@ export const Icon = ({ name, className }: Props) => {
 
   if (library === "lu" && rawIcon in lucideIcons) {
     const LucideIcon = lucideIcons[rawIcon as keyof typeof lucideIcons];
-    return <LucideIcon className={className} />;
+    return <LucideIcon className={"size-6 " + className} />;
   }
 
   console.error(`Icon ${name} not found`, library, rawIcon, lucideIcons);

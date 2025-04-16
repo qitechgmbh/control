@@ -23,7 +23,7 @@ export function Alert({
   icon,
 }: Props) {
   const alertStyle = useClassNameBuilder({
-    base: "p-4 flex flex-col gap-2",
+    base: "p-4 flex flex-col gap-2 justify-center",
     variables: {
       variant: {
         info: "border-blue-300  bg-blue-50",
@@ -34,6 +34,7 @@ export function Alert({
   });
 
   const iconStyle = useClassNameBuilder({
+    base: "size-4",
     variables: {
       variant: {
         info: "text-blue-500",
@@ -44,7 +45,7 @@ export function Alert({
   });
 
   const headerStyle = useClassNameBuilder({
-    base: "flex flex-row gap-2",
+    base: "flex flex-row gap-2 items-center",
     variables: {
       variant: {
         info: "text-blue-500",
@@ -69,7 +70,7 @@ export function Alert({
           variant,
         })}
       >
-        <Icon name={_icon} size={20} className={iconStyle({ variant })} />
+        <Icon name={_icon} className={iconStyle({ variant })} />
         {title}
       </AlertTitle>
       <AlertDescription>{children}</AlertDescription>
