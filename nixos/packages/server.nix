@@ -24,20 +24,20 @@ stdenv.mkDerivation rec {
     
     # Create a swap file if building on a memory-constrained system
     if [ ! -f /swapfile ] && [ $(free -m | grep Mem | awk '{print $2}') -lt 8000 ]; then
-      mkdir -p $TMPDIR/swap
-      dd if=/dev/zero of=$TMPDIR/swap/swapfile bs=1M count=4096
-      chmod 600 $TMPDIR/swap/swapfile
-      mkswap $TMPDIR/swap/swapfile
-      swapon $TMPDIR/swap/swapfile
+      mkdir -p $HOME/swap
+      dd if=/dev/zero of=$HOME/swap/swapfile bs=1M count=4096
+      chmod 600 $HOME/swap/swapfile
+      mkswap $HOME/swap/swapfile
+      swapon $HOME/swap/swapfile
     fi
     
     # Build with fewer parallel jobs
     ${rust}/bin/cargo build --release --package server
     
     # Cleanup swap if we created it
-    if [ -f $TMPDIR/swap/swapfile ]; then
-      swapoff $TMPDIR/swap/swapfile
-      rm $TMPDIR/swap/swapfile
+    if [ -f $HOME/swap/swapfile ]; then
+      swapoff $HOME/swap/swapfile
+      rm $HOME/swap/swapfile
     fi
   '';
 
