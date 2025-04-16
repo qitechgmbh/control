@@ -2,8 +2,8 @@
 
 import React from "react";
 import { Button } from "./ui/button";
-import { ChevronLeft } from "lucide-react";
 import { useRouter } from "@tanstack/react-router";
+import { Icon } from "./Icon";
 
 export function BackButton() {
   const router = useRouter();
@@ -15,7 +15,7 @@ export function BackButton() {
       className="h-full bg-neutral-100 text-black"
       variant="ghost"
     >
-      <ChevronLeft size={24} />
+      <Icon name="lu:ChevronLeft" />
       Back
     </Button>
   );
