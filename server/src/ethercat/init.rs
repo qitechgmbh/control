@@ -5,14 +5,15 @@ use crate::{
         ethercat_interface_discovery_event::EthercatInterfaceDiscoveryEvent, MainNamespaceEvents,
     },
 };
+use anyhow::anyhow;
 use control_core::{
     ethercat::interface_discovery::discover_ethercat_interface,
     socketio::namespace::NamespaceCacheingLogic,
 };
-use std::sync::Arc;
+use std::{convert::Infallible, sync::Arc};
 use thread_priority::{ThreadBuilderExt, ThreadPriority};
 
-pub fn init_ethercat(app_state: Arc<AppState>) {
+pub fn init_ethercat(app_state: Arc<AppState>) -> Result<Infallible, anyhow::Error> {
     // Notify client via socketio
     let _ = smol::block_on(async move {
         let main_namespace = &mut APP_STATE
@@ -56,19 +57,30 @@ pub fn init_ethercat(app_state: Arc<AppState>) {
     });
 
     // start the event loop
-    std::thread::Builder::new()
+    let loop_thread_handle = std::thread::Builder::new()
         .name("EthercatSetupLoopThread".to_owned())
         .spawn_with_priority(ThreadPriority::Max, move |_| {
-            let runtime = tokio::runtime::Builder::new_current_thread()
-                .enable_all()
-                .build()
-                .unwrap();
-
-            runtime.block_on(async {
+            let rt = smol::LocalExecutor::new();
+            smol::block_on(rt.run(async move {
                 log::info!("Starting Ethercat PDU loop");
-                let error = setup_loop(&interface, app_state.clone()).await.unwrap_err();
-                panic!("Ethercat PDU loop error: {}", error);
-            })
-        })
-        .unwrap();
+                let error = setup_loop(&interface, app_state.clone()).await;
+                log::error!("Ethercat PDU loop error: {}", error.unwrap_err());
+            }));
+        });
+
+    let loop_thread_handle = match loop_thread_handle {
+        Ok(loop_thread_handle) => loop_thread_handle,
+        Err(err) => {
+            return Err(anyhow!("Ethercat loop thread couldn't be created: {}", err));
+        }
+    };
+
+    match loop_thread_handle.join() {
+        Ok(_) => {
+            return Err(anyhow!("Ethercat loop thread exited unexpectedly"));
+        }
+        Err(err) => {
+            return Err(anyhow!("Ethercat loop thread error: {:?}", err));
+        }
+    }
 }

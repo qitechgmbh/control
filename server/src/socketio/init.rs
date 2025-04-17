@@ -4,7 +4,6 @@ use crate::app_state::APP_STATE;
 use control_core::socketio::namespace_id::NamespaceId;
 use socketioxide::extract::SocketRef;
 use socketioxide::layer::SocketIoLayer;
-use tokio::spawn;
 
 pub async fn init_socketio() -> SocketIoLayer {
     // create
@@ -52,14 +51,12 @@ fn setup_namespace(socket: SocketRef) {
     setup_disconnection(&socket, namespace_id.clone());
 
     // Set up connection
-    spawn(async move {
-        setup_connection(socket, namespace_id).await;
-    });
+    smol::block_on(setup_connection(socket, namespace_id));
 }
 
 fn setup_disconnection(socket: &SocketRef, namepsace_id: NamespaceId) {
     socket.on_disconnect(|socket: SocketRef| {
-        spawn(async move {
+        smol::block_on(async move {
             log::debug!("Socket disconnected {}", socket.id);
             let mut socketio_namespaces_guard = APP_STATE.socketio_setup.namespaces.write().await;
 
