@@ -8,7 +8,7 @@ use crate::{
         PredefinedPdoAssignment,
     },
     shared_config::el30xx::{EL30XXChannelConfiguration, EL30XXPresentation},
-    signing::Integer16,
+    signing::U16SigningConverter,
 };
 use crate::{
     io::analog_input::{AnalogInputDevice, AnalogInputInput, AnalogInputState},
@@ -119,7 +119,7 @@ impl AnalogInputDevice<EL3024Port> for EL3024 {
                 _ => panic!("Invalid TxPdo assignment"),
             },
         };
-        let raw_value = Integer16::from(raw_value);
+        let raw_value = U16SigningConverter::load_raw(raw_value);
         println!("{}", raw_value);
 
         let presentation = match port {
@@ -130,9 +130,9 @@ impl AnalogInputDevice<EL3024Port> for EL3024 {
         };
 
         let value: i16 = match presentation {
-            EL30XXPresentation::Unsigned => raw_value.into_unsigned() as i16,
-            EL30XXPresentation::Signed => raw_value.into_signed(),
-            EL30XXPresentation::SignedMagnitude => raw_value.into_signed_magnitude(),
+            EL30XXPresentation::Unsigned => raw_value.as_unsigned() as i16,
+            EL30XXPresentation::Signed => raw_value.as_signed(),
+            EL30XXPresentation::SignedMagnitude => raw_value.as_signed_magnitude(),
         };
 
         let normalized = f32::from(value) / f32::from(i16::MAX);
