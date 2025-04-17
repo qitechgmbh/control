@@ -61,7 +61,7 @@ pub async fn setup_loop(
         },
     );
 
-    let _ = smol::spawn(async move {
+    let _ = smol::block_on(async move {
         let main_namespace = &mut APP_STATE
             .socketio_setup
             .namespaces
@@ -161,7 +161,7 @@ pub async fn setup_loop(
     }
 
     // Notify client via socketio
-    let _ = smol::spawn(async move {
+    let _ = smol::block_on(async move {
         let main_namespace = &mut APP_STATE
             .socketio_setup
             .namespaces
