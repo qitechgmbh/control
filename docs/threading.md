@@ -5,7 +5,7 @@ Mid-term we want to get rid of `tokio` for the ethercat part but keep it for `ax
 ## Threads
 ### Main Thread from `server::main::main`
 
-Creates to tokio runtime for the `init_api` funciton which starts the `axum` & `socketoxide` servers.
+Creates a tokio runtime for the `init_api` function which starts the `axum` & `socketoxide` servers.
 
 ### Ethercat Interface Test Threads from `server::ethercat::init::init_ethercat`  
 Starts threads for testing different interfaces in parallel.
