@@ -4,10 +4,8 @@ Mid-term we want to get rid of `tokio` for the ethercat part but keep it for `ax
 
 ## Threads
 ### Main Thread from `server::main::main`
-starts the main thread.
 
-Has Tokio runtime which can spawn more threads on it's own.
-
+Creates a tokio runtime for the `init_api` function which starts the `axum` & `socketoxide` servers.
 
 ### Ethercat Interface Test Threads from `server::ethercat::init::init_ethercat`  
 Starts threads for testing different interfaces in parallel.
@@ -15,7 +13,7 @@ Starts threads for testing different interfaces in parallel.
 Uses Smol `LocalExecutor`.
 
 ### `EthercatSetupLoopThread` from `server::ethercat::init::init_ethercat`
-Uses thread-local `tokio` runtime.
+Uses thread-local `smol` runtime.
 
 Starts the Ethercrab TX/RX thread.
 

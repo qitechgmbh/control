@@ -5,6 +5,7 @@ use crate::{
         ethercat_interface_discovery_event::EthercatInterfaceDiscoveryEvent, MainNamespaceEvents,
     },
 };
+use anyhow::anyhow;
 use control_core::{
     ethercat::interface_discovery::discover_ethercat_interface,
     socketio::namespace::NamespaceCacheingLogic,
@@ -12,7 +13,7 @@ use control_core::{
 use std::sync::Arc;
 use thread_priority::{ThreadBuilderExt, ThreadPriority};
 
-pub fn init_ethercat(app_state: Arc<AppState>) {
+pub async fn init_ethercat(app_state: Arc<AppState>) -> Result<(), anyhow::Error> {
     // Notify client via socketio
     let _ = smol::block_on(async move {
         let main_namespace = &mut APP_STATE
@@ -26,21 +27,19 @@ pub fn init_ethercat(app_state: Arc<AppState>) {
     });
 
     // tries to find a suitable interface in a loop
-    let interface = smol::block_on(async {
-        loop {
-            match discover_ethercat_interface().await {
-                Ok(interface) => {
-                    log::info!("Found working interface: {}", interface);
-                    break interface;
-                }
-                Err(_) => {
-                    log::warn!("No working interface found, retrying...");
-                    // wait 5 seconds before retrying
-                    smol::Timer::after(std::time::Duration::from_secs(1)).await;
-                }
+    let interface = loop {
+        match discover_ethercat_interface().await {
+            Ok(interface) => {
+                log::info!("Found working interface: {}", interface);
+                break interface;
+            }
+            Err(_) => {
+                log::warn!("No working interface found, retrying...");
+                // wait 1 seconds before retrying
+                smol::Timer::after(std::time::Duration::from_secs(1)).await;
             }
         }
-    });
+    };
 
     // Notify client via socketio
     let interface_clone = interface.clone();
@@ -56,19 +55,23 @@ pub fn init_ethercat(app_state: Arc<AppState>) {
     });
 
     // start the event loop
-    std::thread::Builder::new()
+    let loop_thread_handle = std::thread::Builder::new()
         .name("EthercatSetupLoopThread".to_owned())
         .spawn_with_priority(ThreadPriority::Max, move |_| {
-            let runtime = tokio::runtime::Builder::new_current_thread()
-                .enable_all()
-                .build()
-                .unwrap();
-
-            runtime.block_on(async {
+            let rt = smol::LocalExecutor::new();
+            smol::block_on(rt.run(async move {
                 log::info!("Starting Ethercat PDU loop");
-                let error = setup_loop(&interface, app_state.clone()).await.unwrap_err();
-                panic!("Ethercat PDU loop error: {}", error);
-            })
-        })
-        .unwrap();
+                let error = setup_loop(&interface, app_state.clone()).await;
+                log::error!("Ethercat PDU loop error: {}", error.unwrap_err());
+            }));
+        });
+
+    match loop_thread_handle {
+        Ok(_) => {}
+        Err(err) => {
+            return Err(anyhow!("Ethercat loop thread couldn't be created: {}", err));
+        }
+    };
+
+    Ok(())
 }

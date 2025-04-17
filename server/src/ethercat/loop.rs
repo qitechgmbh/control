@@ -36,12 +36,12 @@ pub async fn setup_loop(
     let (tx, rx, pdu) = pdu_storage.try_split().expect("can only split once");
     let interface = interface.to_string();
     std::thread::spawn(move || {
-        let rt = tokio::runtime::Runtime::new().expect("Failed to create runtime");
-        let _ = rt.block_on(async move {
+        let rt = smol::LocalExecutor::new();
+        let _ = smol::block_on(rt.run(async move {
             tx_rx_task(&interface, tx, rx)
                 .expect("spawn TX/RX task")
                 .await
-        });
+        }));
     });
 
     // Create maindevice
@@ -61,7 +61,7 @@ pub async fn setup_loop(
         },
     );
 
-    tokio::spawn(async move {
+    let _ = smol::block_on(async move {
         let main_namespace = &mut APP_STATE
             .socketio_setup
             .namespaces
@@ -161,7 +161,7 @@ pub async fn setup_loop(
     }
 
     // Notify client via socketio
-    tokio::spawn(async move {
+    let _ = smol::block_on(async move {
         let main_namespace = &mut APP_STATE
             .socketio_setup
             .namespaces
