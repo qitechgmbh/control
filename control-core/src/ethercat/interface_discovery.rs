@@ -81,13 +81,13 @@ pub async fn discover_ethercat_interface() -> Result<String, anyhow::Error> {
         .collect::<Vec<_>>();
 
     // Return first successful interface
-    let result = tasks.into_iter().find_map(|task| {
-        if let Ok(Some(name)) = task.join() {
-            Some(name)
-        } else {
-            None
-        }
-    });
+    let result =
+        tasks
+            .into_iter()
+            .find_map(|task| match task.join().expect("Should join thread") {
+                Some(name) => Some(name),
+                None => None,
+            });
 
     // Restore the default panic hook
     std::panic::set_hook(default_hook);

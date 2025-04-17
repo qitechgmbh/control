@@ -1,42 +1,60 @@
 use super::handlers::machine_mutation::post_machine_mutate;
 use super::handlers::write_machine_device_identification::post_write_machine_device_identification;
 use crate::app_state::AppState;
+use crate::panic::{send_panic, PanicDetails};
+use crate::socketio::init::init_socketio;
+use anyhow::anyhow;
 use axum::routing::post;
-use socketioxide::layer::SocketIoLayer;
-use std::io::Error;
+use smol::channel::Sender;
 use std::sync::Arc;
+use std::thread::JoinHandle;
 use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 
-pub async fn init_api(
+pub fn init_api(
+    thread_panic_tx: Sender<PanicDetails>,
     app_state: Arc<AppState>,
-    socketio_layer: SocketIoLayer,
-) -> Result<(), Error> {
-    // allow all CORS requests
-    let cors = CorsLayer::permissive();
+) -> Result<JoinHandle<()>, anyhow::Error> {
+    std::thread::Builder::new()
+        .name("ApiThread".to_string())
+        .spawn(|| {
+            send_panic("ApiThread", thread_panic_tx);
 
-    //setup logging
-    // TODO: this codes makes etehrcrab crash
-    // tracing_subscriber::fmt()
-    //     .with_max_level(tracing::Level::DEBUG)
-    //     .init();
+            let rt = tokio::runtime::Runtime::new().expect("Failed to create runtime");
+            rt.spawn(async {
+                // allow all CORS requests
+                let cors = CorsLayer::permissive();
 
-    // make axum server to serve the data on /ethercat
-    let app = axum::Router::new()
-        .route(
-            "/api/v1/write_machine_device_identification",
-            post(post_write_machine_device_identification),
-        )
-        .route("/api/v1/machine/mutate", post(post_machine_mutate))
-        .layer(socketio_layer)
-        .layer(cors)
-        .layer(TraceLayer::new_for_http())
-        .with_state(app_state);
+                //setup logging
+                // TODO: this codes makes etehrcrab crash
+                // tracing_subscriber::fmt()
+                //     .with_max_level(tracing::Level::DEBUG)
+                //     .init();
 
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3001").await?;
-    axum::serve(listener, app).await?;
+                // creat socketio layer
+                let socketio_layer = init_socketio().await;
 
-    open::that("http://localhost:3001")?;
+                // make axum server to serve the data on /ethercat
+                let app = axum::Router::new()
+                    .route(
+                        "/api/v1/write_machine_device_identification",
+                        post(post_write_machine_device_identification),
+                    )
+                    .route("/api/v1/machine/mutate", post(post_machine_mutate))
+                    .layer(socketio_layer)
+                    .layer(cors)
+                    .layer(TraceLayer::new_for_http())
+                    .with_state(app_state);
 
-    Ok(())
+                let listener = tokio::net::TcpListener::bind("0.0.0.0:3001")
+                    .await
+                    .expect("Failed to bind to port 3001");
+                axum::serve(listener, app).await.expect("Failed to serve");
+            });
+
+            loop {
+                std::thread::park();
+            }
+        })
+        .map_err(|e| anyhow!("Failed to spawn API thread: {}", e))
 }
