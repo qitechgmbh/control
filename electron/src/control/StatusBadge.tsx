@@ -1,6 +1,6 @@
 import { Icon, IconName } from "@/components/Icon";
 import { Badge } from "@/components/ui/badge";
-import { useClassNameBuilder } from "@/helpers/style";
+import { cva } from "class-variance-authority";
 import React from "react";
 
 type Props = {
@@ -9,9 +9,8 @@ type Props = {
 };
 
 export function StatusBadge({ variant, children }: Props) {
-  const badgeStyle = useClassNameBuilder({
-    base: "text-md",
-    variables: {
+  const badgeStyle = cva(["text-md"], {
+    variants: {
       variant: {
         error: "bg-red-500",
         success: "bg-green-600",
