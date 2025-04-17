@@ -187,20 +187,36 @@ pub async fn machine_device_identification<'maindevice>(
             vendor: subdevice
                 .eeprom_read::<u16>(maindevice, addresses.vendor_word)
                 .await
-                .unwrap(),
+                .or(Err(anyhow!(
+                    "[{}::machine_device_identification] Failed to read vendor from EEPROM for device {}",
+                    module_path!(),
+                    subdevice.name()
+                )))?,
             serial: subdevice
                 .eeprom_read::<u16>(maindevice, addresses.serial_word)
                 .await
-                .unwrap(),
+                .or(Err(anyhow!(
+                    "[{}::machine_device_identification] Failed to read serial from EEPROM for device {}",
+                    module_path!(),
+                    subdevice.name()
+                )))?,
             machine: subdevice
                 .eeprom_read::<u16>(maindevice, addresses.machine_word)
                 .await
-                .unwrap(),
+                .or(Err(anyhow!(
+                    "[{}::machine_device_identification] Failed to read machine from EEPROM for device {}",
+                    module_path!(),
+                    subdevice.name()
+                )))?,
         },
         role: subdevice
             .eeprom_read::<u16>(maindevice, addresses.role_word)
             .await
-            .unwrap(),
+            .or(Err(anyhow!(
+                "[{}::machine_device_identification] Failed to read role from EEPROM for device {}",
+                module_path!(),
+                subdevice.name()
+            )))?,
         subdevice_index: subdevice_index,
     };
 

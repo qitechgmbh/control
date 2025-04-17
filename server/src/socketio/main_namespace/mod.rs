@@ -26,7 +26,17 @@ where
     fn emit_cached(&mut self, event: MainNamespaceEvents) {
         println!("Emitting event: {:?}", event);
         let buffer_fn = event.event_cache_fn();
-        let generic_event = event.event_value();
+        let generic_event = match event.event_value() {
+            Ok(event) => event,
+            Err(err) => {
+                log::error!(
+                    "[{}::emit_cached] Failed to event.event_value(): {:?}",
+                    module_path!(),
+                    err
+                );
+                return;
+            }
+        };
         self.0.emit_cached(&generic_event, buffer_fn);
     }
 }
@@ -38,10 +48,10 @@ pub enum MainNamespaceEvents {
 }
 
 impl CacheableEvents<MainNamespaceEvents> for MainNamespaceEvents {
-    fn event_value(&self) -> GenericEvent {
+    fn event_value(&self) -> Result<GenericEvent, serde_json::Error> {
         match self {
-            MainNamespaceEvents::EthercatSetupEvent(event) => event.clone().into(),
-            MainNamespaceEvents::EthercatInterfaceDiscoveryEvent(event) => event.clone().into(),
+            MainNamespaceEvents::EthercatSetupEvent(event) => event.clone().try_into(),
+            MainNamespaceEvents::EthercatInterfaceDiscoveryEvent(event) => event.clone().try_into(),
         }
     }
 

@@ -105,7 +105,7 @@ pub async fn setup_loop(
         machines.insert(
             identified_device_group
                 .first()
-                .unwrap()
+                .expect("There should always be a first device")
                 .machine_identification_unique
                 .clone(),
             machine,

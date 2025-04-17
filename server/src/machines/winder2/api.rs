@@ -272,7 +272,17 @@ pub struct Winder1Namespace(Namespace);
 
 impl NamespaceCacheingLogic<Winder1Events> for Winder1Namespace {
     fn emit_cached(&mut self, events: Winder1Events) {
-        let event = events.event_value();
+        let event = match events.event_value() {
+            Ok(event) => event,
+            Err(err) => {
+                log::error!(
+                    "[{}::emit_cached] Failed to event.event_value(): {:?}",
+                    module_path!(),
+                    err
+                );
+                return;
+            }
+        };
         let buffer_fn = events.event_cache_fn();
         self.0.emit_cached(&event, buffer_fn);
     }
@@ -285,19 +295,19 @@ impl Winder1Namespace {
 }
 
 impl CacheableEvents<Winder1Events> for Winder1Events {
-    fn event_value(&self) -> GenericEvent {
+    fn event_value(&self) -> Result<GenericEvent, serde_json::Error> {
         match self {
-            Winder1Events::TraversePosition(event) => event.into(),
-            Winder1Events::TraverseState(event) => event.into(),
-            Winder1Events::PullerSpeed(event) => event.into(),
-            Winder1Events::PullerState(event) => event.into(),
-            Winder1Events::AutostopWoundedlength(event) => event.into(),
-            Winder1Events::AutostopState(event) => event.into(),
-            Winder1Events::Mode(event) => event.into(),
-            Winder1Events::SpoolRpm(event) => event.into(),
-            Winder1Events::SpoolState(event) => event.into(),
-            Winder1Events::TensionArmAngleEvent(event) => event.into(),
-            Winder1Events::TensionArmStateEvent(event) => event.into(),
+            Winder1Events::TraversePosition(event) => event.try_into(),
+            Winder1Events::TraverseState(event) => event.try_into(),
+            Winder1Events::PullerSpeed(event) => event.try_into(),
+            Winder1Events::PullerState(event) => event.try_into(),
+            Winder1Events::AutostopWoundedlength(event) => event.try_into(),
+            Winder1Events::AutostopState(event) => event.try_into(),
+            Winder1Events::Mode(event) => event.try_into(),
+            Winder1Events::SpoolRpm(event) => event.try_into(),
+            Winder1Events::SpoolState(event) => event.try_into(),
+            Winder1Events::TensionArmAngleEvent(event) => event.try_into(),
+            Winder1Events::TensionArmStateEvent(event) => event.try_into(),
         }
     }
 

@@ -28,17 +28,18 @@ impl NewDevice for EL1008 {
 
 impl DigitalInputDevice<EL1008Port> for EL1008 {
     fn digital_input_state(&self, port: EL1008Port) -> DigitalInputState {
+        let expect_text = "All channels should be Some(_)";
         DigitalInputState {
             input: DigitalInputInput {
                 value: match port {
-                    EL1008Port::DI1 => self.txpdo.channel1.as_ref().unwrap().value,
-                    EL1008Port::DI2 => self.txpdo.channel2.as_ref().unwrap().value,
-                    EL1008Port::DI3 => self.txpdo.channel3.as_ref().unwrap().value,
-                    EL1008Port::DI4 => self.txpdo.channel4.as_ref().unwrap().value,
-                    EL1008Port::DI5 => self.txpdo.channel5.as_ref().unwrap().value,
-                    EL1008Port::DI6 => self.txpdo.channel6.as_ref().unwrap().value,
-                    EL1008Port::DI7 => self.txpdo.channel7.as_ref().unwrap().value,
-                    EL1008Port::DI8 => self.txpdo.channel8.as_ref().unwrap().value,
+                    EL1008Port::DI1 => self.txpdo.channel1.as_ref().expect(&expect_text).value,
+                    EL1008Port::DI2 => self.txpdo.channel2.as_ref().expect(&expect_text).value,
+                    EL1008Port::DI3 => self.txpdo.channel3.as_ref().expect(&expect_text).value,
+                    EL1008Port::DI4 => self.txpdo.channel4.as_ref().expect(&expect_text).value,
+                    EL1008Port::DI5 => self.txpdo.channel5.as_ref().expect(&expect_text).value,
+                    EL1008Port::DI6 => self.txpdo.channel6.as_ref().expect(&expect_text).value,
+                    EL1008Port::DI7 => self.txpdo.channel7.as_ref().expect(&expect_text).value,
+                    EL1008Port::DI8 => self.txpdo.channel8.as_ref().expect(&expect_text).value,
                 },
             },
         }
