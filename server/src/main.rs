@@ -1,31 +1,54 @@
+use std::{panic::catch_unwind, process::exit};
+
 use app_state::APP_STATE;
 use env_logger::Env;
 use ethercat::init::init_ethercat;
+use panic::PanicDetails;
 use rest::init::init_api;
-use socketio::init::init_socketio;
+use smol::channel::unbounded;
 
 pub mod app_state;
 pub mod ethercat;
 pub mod machines;
+pub mod panic;
 pub mod rest;
 pub mod socketio;
 
 fn main() {
+    // if the program panics we restart all of it
+    match catch_unwind(|| main2()) {
+        Ok(_) => {
+            log::info!("[{}::main] Program ended normally", module_path!());
+            exit(0);
+        }
+        Err(err) => {
+            log::error!("[{}::main] Program panicked: {:?}", module_path!(), err);
+            exit(1);
+        }
+    }
+}
+
+fn main2() {
     env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
 
-    let rt = tokio::runtime::Runtime::new().expect("Failed to create runtime");
-    let socketio_layer = rt.block_on(init_socketio());
-    rt.spawn(async {
-        init_api(APP_STATE.clone(), socketio_layer)
-            .await
-            .expect("Failed to run init_api()");
-    });
+    let (thread_panic_tx, thread_panic_rx) = unbounded::<PanicDetails>();
 
-    let init_ethercat_result = smol::block_on(init_ethercat(APP_STATE.clone()));
-    init_ethercat_result.expect("Failed to run init_ethercat()");
+    init_api(thread_panic_tx.clone(), APP_STATE.clone()).expect("Failed to initialize API");
+    init_ethercat(thread_panic_tx, APP_STATE.clone()).expect("Failed to initialize EtherCAT");
 
-    // run tokio forever
-    loop {
-        std::thread::park();
-    }
+    smol::block_on(async {
+        loop {
+            match thread_panic_rx.try_recv() {
+                Ok(panic_details) => {
+                    log::error!(
+                        "[{}::main] Thread panicked: {:?}",
+                        module_path!(),
+                        panic_details
+                    );
+                    exit(1);
+                }
+                Err(_) => {}
+            }
+        }
+    })
 }

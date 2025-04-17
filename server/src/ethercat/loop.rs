@@ -1,5 +1,6 @@
 use crate::app_state::{EthercatSetup, APP_STATE};
 use crate::machines::registry::MACHINE_REGISTRY;
+use crate::panic::{send_panic, PanicDetails};
 use crate::socketio::main_namespace::ethercat_setup_event::EthercatSetupEventBuilder;
 use crate::socketio::main_namespace::MainNamespaceEvents;
 use crate::{
@@ -13,15 +14,16 @@ use control_core::socketio::namespace::NamespaceCacheingLogic;
 use ethercat_hal::devices::devices_from_subdevices;
 use ethercrab::std::{ethercat_now, tx_rx_task};
 use ethercrab::{MainDevice, MainDeviceConfig, PduStorage, RetryBehaviour, Timeouts};
+use smol::channel::Sender;
 use smol::lock::RwLock;
 use std::collections::HashMap;
-use std::convert::Infallible;
 use std::{sync::Arc, time::Duration};
 
 pub async fn setup_loop(
+    thread_panic_tx: Sender<PanicDetails>,
     interface: &str,
     app_state: Arc<AppState>,
-) -> Result<Infallible, anyhow::Error> {
+) -> Result<(), anyhow::Error> {
     log::info!("Starting Ethercat PDU loop");
 
     // Erase all all setup data from `app_state`
@@ -35,14 +37,19 @@ pub async fn setup_loop(
     let pdu_storage = Box::leak(Box::new(PduStorage::<MAX_FRAMES, MAX_PDU_DATA>::new()));
     let (tx, rx, pdu) = pdu_storage.try_split().expect("can only split once");
     let interface = interface.to_string();
-    std::thread::spawn(move || {
-        let rt = smol::LocalExecutor::new();
-        let _ = smol::block_on(rt.run(async move {
-            tx_rx_task(&interface, tx, rx)
-                .expect("spawn TX/RX task")
-                .await
-        }));
-    });
+    let thread_panic_tx_clone = thread_panic_tx.clone();
+    std::thread::Builder::new()
+        .name("EthercatTxRxThread".to_owned())
+        .spawn(move || {
+            send_panic("EthercatTxRxThread", thread_panic_tx_clone);
+            let rt = smol::LocalExecutor::new();
+            let _ = smol::block_on(rt.run(async {
+                tx_rx_task(&interface, tx, rx)
+                    .expect("spawn TX/RX task")
+                    .await
+            }));
+        })
+        .expect("Building thread");
 
     // Create maindevice
     let maindevice = MainDevice::new(
@@ -173,12 +180,20 @@ pub async fn setup_loop(
     });
 
     // Start control loop
-    loop {
-        let res = loop_once(app_state.ethercat_setup.clone()).await;
-        if let Err(err) = res {
-            log::error!("Loop failed\n{:?}", err);
-        }
-    }
+    std::thread::Builder::new()
+        .name("EthercatLoopThread".to_owned())
+        .spawn(move || loop {
+            send_panic("EthercatLoopThread", thread_panic_tx.clone());
+            let rt = smol::LocalExecutor::new();
+            let res =
+                smol::block_on(rt.run(async { loop_once(app_state.ethercat_setup.clone()).await }));
+            if let Err(err) = res {
+                log::error!("Loop failed\n{:?}", err);
+            }
+        })
+        .expect("Building thread");
+
+    Ok(())
 }
 
 pub async fn loop_once<'maindevice>(
