@@ -39,3 +39,7 @@ approx = "0.5.1"
 
 [features]
 never_type = []
+
+[profile.release]
+codegen-units = 1
+lto = "fat"
