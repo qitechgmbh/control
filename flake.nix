@@ -30,23 +30,50 @@
   outputs = { self, nixpkgs, rust-overlay, flake-utils, qitech-control, home-manager, ... }:
     flake-utils.lib.eachDefaultSystem (system:
       let
-        overlays = [ (import rust-overlay) ];
+        overlays = [ 
+          (import rust-overlay)
+          # Add our own overlay for QiTech packages
+          (final: prev: {
+            qitechPackages = {
+              server = final.callPackage ./nixos/packages/server.nix { 
+                rust-bin = final.rust-bin;
+                commitHash = builtins.getEnv "QITECH_COMMIT_HASH";
+              };
+              electron = final.callPackage ./nixos/packages/electron.nix { 
+                commitHash = builtins.getEnv "QITECH_COMMIT_HASH";
+              };
+            };
+          })
+        ];
         pkgs = import nixpkgs { inherit system overlays; };
         
-        # Use Rust beta as required
-        rust = pkgs.rust-bin.beta.latest.default.override {
+        # Use Rust nightly for edition 2024 support
+        rust = pkgs.rust-bin.nightly.latest.default.override {
           extensions = [ "rust-src" "rust-analyzer" ];
           targets = [ "x86_64-unknown-linux-gnu" ];
         };
       in {
         packages = {
-          server = pkgs.callPackage ./nixos/packages/server.nix { 
-            inherit rust;
-          };
-          
-          electron = pkgs.callPackage ./nixos/packages/electron.nix {};
-          
+          server = pkgs.qitechPackages.server;
+          electron = pkgs.qitechPackages.electron;
           default = self.packages.${system}.server;
+        };
+        
+        devShells.default = pkgs.mkShell {
+          buildInputs = with pkgs; [
+            rust
+            pkg-config
+            libudev-zero
+            libpcap
+            nodejs
+            nodePackages.npm
+          ];
+          
+          shellHook = ''
+            echo "QiTech Industries Control Software Development Environment"
+            echo "Rust version: $(${rust}/bin/rustc --version)"
+            echo "Node version: $(${pkgs.nodejs}/bin/node --version)"
+          '';
         };
       }
     ) // {
@@ -58,10 +85,26 @@
         # Replace "nixos" with your actual hostname
         nixos = nixpkgs.lib.nixosSystem {
           system = "x86_64-linux"; # Specify the correct system
-          specialArgs = { inherit qitech-control; }; 
           modules = [
-            # Apply the overlay to the system
-            { nixpkgs.overlays = [ (import rust-overlay) ]; }
+            # Apply the overlays to the system
+            { nixpkgs.overlays = [
+                (import rust-overlay)
+                # Add our own overlay for QiTech packages with commit hash support
+                (final: prev: {
+                  qitechPackages = {
+                    server = final.callPackage ./nixos/packages/server.nix { 
+                      rust-bin = final.rust-bin;
+                      # Get commit hash from environment or use default
+                      commitHash = builtins.getEnv "QITECH_COMMIT_HASH";
+                    };
+                    electron = final.callPackage ./nixos/packages/electron.nix {
+                      # Get commit hash from environment or use default
+                      commitHash = builtins.getEnv "QITECH_COMMIT_HASH";
+                    };
+                  };
+                })
+              ];
+            }
             
             ./nixos/os/configuration.nix
             
