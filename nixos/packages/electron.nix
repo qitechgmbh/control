@@ -6,13 +6,24 @@
 , nodePackages
 , git
 , cacert
+, fetchFromGitHub
+, commitHash ? ""
 }:
 
 stdenv.mkDerivation rec {
   pname = "qitech-control-electron";
-  version = "0.1.0";
+  version = "0.1.0${if commitHash != "" then "-${builtins.substring 0 7 commitHash}" else ""}";
 
-  src = lib.cleanSource ../../electron;
+  src = if commitHash != "" then
+    fetchFromGitHub {
+      owner = "qitechgmbh";
+      repo = "control";
+      rev = commitHash;
+      sha256 = lib.fakeSha256; # Replace with actual hash after first build attempt
+      # sha256 = ""; # You'll need to replace this with the actual hash
+    }
+  else
+    lib.cleanSource ../../electron;
 
   nativeBuildInputs = [
     nodejs
