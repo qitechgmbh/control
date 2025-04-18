@@ -2,10 +2,10 @@
   description = "QiTech Industries Control Software";
 
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-24.11";
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     
     home-manager = {
-      url = "github:nix-community/home-manager/release-24.11";
+      url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     
@@ -48,7 +48,7 @@
         pkgs = import nixpkgs { inherit system overlays; };
         
         # Use Rust nightly for edition 2024 support
-        rust = pkgs.rust-bin.nightly.latest.default.override {
+        rust = pkgs.rust-bin.stable.latest.default.override {
           extensions = [ "rust-src" "rust-analyzer" ];
           targets = [ "x86_64-unknown-linux-gnu" ];
         };

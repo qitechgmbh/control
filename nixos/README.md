@@ -146,7 +146,7 @@ sudo nix-channel --update
 This file defines the Nix flake structure and imports for the QiTech Control system:
 
 - **Inputs**:
-  - `nixpkgs` - The NixOS package repository (version 24.11)
+  - `nixpkgs` - The NixOS package repository
   - `home-manager` - For managing user environment configuration
   - `qitech-control` - The QiTech Control software repository
   - `rust-overlay` - For Rust toolchain management

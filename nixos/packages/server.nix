@@ -9,20 +9,19 @@
 }:
 
 let
-  # Use nightly Rust to support edition 2024
-  rustNightly = if rust-bin != null then
-    rust-bin.nightly.latest.default.override {
+  rustStable = if rust-bin != null then
+    rust-bin.stable.latest.default.override {
       extensions = [ "rust-src" "rust-analyzer" ];
       targets = [ "x86_64-unknown-linux-gnu" ];
     }
   else
     rustPlatform.rust.rustc;
     
-  # Create a custom rustPlatform with nightly
+  # Create a custom rustPlatform with stable
   customRustPlatform = rustPlatform // {
     rust = rustPlatform.rust // {
-      rustc = rustNightly;
-      cargo = rustNightly;
+      rustc = rustStable;
+      cargo = rustStable;
     };
   };
 in
@@ -48,18 +47,6 @@ customRustPlatform.buildRustPackage rec {
       # You might need to add dependency hashes here if they're not in the registry
     };
   };
-
-  # Add cargo-features = ["edition2024"] to the top of Cargo.toml files
-  postPatch = ''
-    for toml in $(find . -name "Cargo.toml"); do
-      if grep -q 'edition = "2024"' $toml; then
-        # Only add if not already present
-        if ! grep -q 'cargo-features = \["edition2024"\]' $toml; then
-          sed -i '1s/^/cargo-features = ["edition2024"]\n\n/' $toml
-        fi
-      fi
-    done
-  '';
 
   nativeBuildInputs = [ pkg-config ];
   buildInputs = [ libpcap libudev-zero ];
