@@ -5,6 +5,7 @@ members = [
     "stepper-driver",
     "ethercat-hal-derive",
     "control-core",
+    "common",
 ]
 exclude = []
 resolver = "2"

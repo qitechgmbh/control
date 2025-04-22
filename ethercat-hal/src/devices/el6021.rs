@@ -3,6 +3,7 @@ use crate::coe::{ConfigurableDevice, Configuration};
 use crate::io::serial_interface::SerialInterfaceDevice;
 use crate::pdo::{PredefinedPdoAssignment, RxPdo, RxPdoObject, TxPdo, TxPdoObject};
 use crate::types::EthercrabSubDevicePreoperational;
+use anyhow::anyhow;
 use bitvec::field::BitField;
 use bitvec::order::Lsb0;
 use bitvec::slice::BitSlice;
@@ -54,7 +55,7 @@ impl EL6021Baudrate {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum EL6021FrameCoding {
+pub enum EL6021FrameCoding {
     Coding7E1 = 1,
     Coding7O1 = 2,
     Coding8N1 = 3,
@@ -69,8 +70,31 @@ enum EL6021FrameCoding {
     Coding8M1 = 19,
 }
 
+impl EL6021FrameCoding {
+    pub fn from(value: u8) -> Option<Self> {
+        match value {
+            1 => Some(Self::Coding7E1),
+            2 => Some(Self::Coding7O1),
+            3 => Some(Self::Coding8N1),
+            4 => Some(Self::Coding8E1),
+            5 => Some(Self::Coding8O1),
+            9 => Some(Self::Coding7E2),
+            10 => Some(Self::Coding7O2),
+            11 => Some(Self::Coding8N2),
+            12 => Some(Self::Coding8E2),
+            13 => Some(Self::Coding8O2),
+            18 => Some(Self::Coding8S1),
+            19 => Some(Self::Coding8M1),
+            _ => None,
+        }
+    }
+
+    pub fn into(self) -> u8 {
+        self as u8
+    }
+}
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum EL6021Baudrate {
+pub enum EL6021Baudrate {
     /// 2400 baud (CoE Value: 4)
     B2400 = 4,
     /// 4800 baud (CoE Value: 5)
@@ -87,122 +111,6 @@ enum EL6021Baudrate {
     B115200 = 10,
 }
 
-/// Contains Valid BaudRate and Coding Combinations
-/// Only certain combinations of Baudrate and Coding are valid, others cause errors
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum BaudRateCodingCombination {
-    B2400_7E1(EL6021Baudrate, EL6021FrameCoding),
-    B4800_7O1(EL6021Baudrate, EL6021FrameCoding),
-    B9600_8N1(EL6021Baudrate, EL6021FrameCoding),
-    B19200_8E2(EL6021Baudrate, EL6021FrameCoding),
-    B38400_8O1(EL6021Baudrate, EL6021FrameCoding),
-    B57600_8N1(EL6021Baudrate, EL6021FrameCoding),
-    B115200_8N1(EL6021Baudrate, EL6021FrameCoding),
-}
-
-impl BaudRateCodingCombination {
-    pub fn new(baudrate: EL6021Baudrate, coding: EL6021FrameCoding) -> Option<Self> {
-        match (baudrate, coding) {
-            (EL6021Baudrate::B2400, EL6021FrameCoding::Coding7E1) => {
-                Some(Self::B2400_7E1(baudrate, coding))
-            }
-            (EL6021Baudrate::B4800, EL6021FrameCoding::Coding7O1) => {
-                Some(Self::B4800_7O1(baudrate, coding))
-            }
-            (EL6021Baudrate::B9600, EL6021FrameCoding::Coding8N1) => {
-                Some(Self::B9600_8N1(baudrate, coding))
-            }
-            (EL6021Baudrate::B19200, EL6021FrameCoding::Coding8E2) => {
-                Some(Self::B19200_8E2(baudrate, coding))
-            }
-            (EL6021Baudrate::B38400, EL6021FrameCoding::Coding8O1) => {
-                Some(Self::B38400_8O1(baudrate, coding))
-            }
-            (EL6021Baudrate::B57600, EL6021FrameCoding::Coding7E2) => {
-                Some(Self::B57600_8N1(baudrate, coding))
-            }
-            (EL6021Baudrate::B115200, EL6021FrameCoding::Coding7O2) => {
-                Some(Self::B115200_8N1(baudrate, coding))
-            }
-            _ => None,
-        }
-    }
-
-    pub fn baudrate(&self) -> EL6021Baudrate {
-        match self {
-            Self::B2400_7E1(b, _)
-            | Self::B4800_7O1(b, _)
-            | Self::B9600_8N1(b, _)
-            | Self::B19200_8E2(b, _)
-            | Self::B38400_8O1(b, _)
-            | Self::B57600_8N1(b, _)
-            | Self::B115200_8N1(b, _) => *b,
-        }
-    }
-
-    pub fn coding(&self) -> EL6021FrameCoding {
-        match self {
-            Self::B2400_7E1(_, c)
-            | Self::B4800_7O1(_, c)
-            | Self::B9600_8N1(_, c)
-            | Self::B19200_8E2(_, c)
-            | Self::B38400_8O1(_, c)
-            | Self::B57600_8N1(_, c)
-            | Self::B115200_8N1(_, c) => *c,
-        }
-    }
-
-    pub fn from_coe_values(baudrate_value: u8, coding_value: u8) -> Option<Self> {
-        let baudrate = match baudrate_value {
-            4 => Some(EL6021Baudrate::B2400),
-            5 => Some(EL6021Baudrate::B4800),
-            6 => Some(EL6021Baudrate::B9600),
-            7 => Some(EL6021Baudrate::B19200),
-            8 => Some(EL6021Baudrate::B38400),
-            9 => Some(EL6021Baudrate::B57600),
-            10 => Some(EL6021Baudrate::B115200),
-            _ => None,
-        }?;
-
-        let coding = match coding_value {
-            1 => Some(EL6021FrameCoding::Coding7E1),
-            2 => Some(EL6021FrameCoding::Coding7O1),
-            3 => Some(EL6021FrameCoding::Coding8N1),
-            4 => Some(EL6021FrameCoding::Coding8E1),
-            5 => Some(EL6021FrameCoding::Coding8O1),
-            9 => Some(EL6021FrameCoding::Coding7E2),
-            10 => Some(EL6021FrameCoding::Coding7O2),
-            11 => Some(EL6021FrameCoding::Coding8N2),
-            12 => Some(EL6021FrameCoding::Coding8E2),
-            13 => Some(EL6021FrameCoding::Coding8O2),
-            18 => Some(EL6021FrameCoding::Coding8S1),
-            19 => Some(EL6021FrameCoding::Coding8M1),
-            _ => None,
-        }?;
-
-        Self::new(baudrate, coding)
-    }
-
-    pub fn to_coe_values(&self) -> (u8, u8) {
-        (self.baudrate() as u8, self.coding() as u8)
-    }
-
-    pub const DEFAULT: Self = Self::B9600_8N1(EL6021Baudrate::B9600, EL6021FrameCoding::Coding8N1);
-
-    pub fn all() -> [Self; 7] {
-        [
-            Self::B2400_7E1(EL6021Baudrate::B2400, EL6021FrameCoding::Coding7E1),
-            Self::B4800_7O1(EL6021Baudrate::B4800, EL6021FrameCoding::Coding7O1),
-            Self::B9600_8N1(EL6021Baudrate::B9600, EL6021FrameCoding::Coding8N1),
-            Self::B19200_8E2(EL6021Baudrate::B19200, EL6021FrameCoding::Coding8E1),
-            Self::B38400_8O1(EL6021Baudrate::B38400, EL6021FrameCoding::Coding8O1),
-            Self::B57600_8N1(EL6021Baudrate::B57600, EL6021FrameCoding::Coding7E2),
-            Self::B115200_8N1(EL6021Baudrate::B115200, EL6021FrameCoding::Coding7O2),
-        ]
-    }
-}
-
-// TODO: make conversion function for enum to baudrate
 impl Default for EL6021Configuration {
     fn default() -> Self {
         Self {
@@ -213,8 +121,8 @@ impl Default for EL6021Configuration {
             fifo_continuous_send_enabled: false,
             half_duplex_enabled: true,
             point_to_point_connection_enabled: false,
-            baud_rate: EL6021Baudrate::B19200.into(),
-            data_frame: 0x4,
+            baud_rate: EL6021Baudrate::B19200,
+            data_frame: EL6021FrameCoding::Coding8E1,
             rx_buffer_full_notification: 0x0360,
             explicit_baudrate: 19200,
             pdo_assignment: EL6021PdoPreset::Standard22ByteMdp600,
@@ -286,7 +194,7 @@ pub struct EL6021Configuration {
     /// This value is typically an index referencing predefined baud rates.
 
     /// default: `0x06`
-    pub baud_rate: u8,
+    pub baud_rate: EL6021Baudrate,
 
     /// # 0x8000:15 - Defines the data frame format.
     /// This is usually a bitfield representing settings like:
@@ -294,7 +202,7 @@ pub struct EL6021Configuration {
     /// - Bit 3: Stop bits (1 or 2)
     /// - Bits 4-5: Parity (None, Even, Odd)
     /// default: `0x03` (8N1 format)
-    pub data_frame: u8,
+    pub data_frame: EL6021FrameCoding,
 
     /// # 0x8000:1A - Notification threshold for the RX buffer (in bytes).
     /// Determines when the terminal signals the controller that the receive buffer is full.
@@ -318,6 +226,21 @@ impl Configuration for EL6021Configuration {
         &self,
         device: &EthercrabSubDevicePreoperational<'a>,
     ) -> Result<(), anyhow::Error> {
+        match (self.baud_rate, self.data_frame) {
+            (EL6021Baudrate::B2400, EL6021FrameCoding::Coding7E1)
+            | (EL6021Baudrate::B4800, EL6021FrameCoding::Coding7O1)
+            | (EL6021Baudrate::B9600, EL6021FrameCoding::Coding8N1)
+            | (EL6021Baudrate::B19200, EL6021FrameCoding::Coding8E1)
+            | (EL6021Baudrate::B38400, EL6021FrameCoding::Coding8O1)
+            | (EL6021Baudrate::B57600, EL6021FrameCoding::Coding7E2)
+            | (EL6021Baudrate::B115200, EL6021FrameCoding::Coding7O2) => {}
+            _ => {
+                return Err(anyhow!(
+                "ERROR: EL6021Configuration::write_config Baudrate and Coding is not compatible!"
+            ))
+            }
+        }
+
         //   device.sdo_write(0x8000, 0x1, self.rts_enabled).await?;
         device
             .sdo_write(0x8000, 0x2, self.xon_on_supported_tx)
@@ -343,10 +266,12 @@ impl Configuration for EL6021Configuration {
             .sdo_write(0x8000, 0x7, self.point_to_point_connection_enabled)
             .await?;
         // baud rate and data frame are only 4 BITs maybe this causes a problem?
-        device.sdo_write(0x8000, 0x11, self.baud_rate as u8).await?;
+        device
+            .sdo_write(0x8000, 0x11, self.baud_rate.into())
+            .await?;
 
         device
-            .sdo_write(0x8000, 0x15, self.data_frame as u8)
+            .sdo_write(0x8000, 0x15, self.data_frame.into())
             .await?;
         device
             .sdo_write(0x8000, 0x1a, self.rx_buffer_full_notification)
@@ -525,6 +450,7 @@ impl SerialInterfaceDevice<EL6021Port> for EL6021 {
             println!("has no messages");
             return vec![];
         }
+
         if let Some(tx_pdo) = &mut self.txpdo.com_tx_pdo_map_22_byte {
             let valid_length = tx_pdo.length as usize;
             let received_data = tx_pdo.data[..valid_length.min(22)].to_vec();
