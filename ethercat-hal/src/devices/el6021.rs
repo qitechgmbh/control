@@ -7,6 +7,7 @@ use anyhow::anyhow;
 use bitvec::field::BitField;
 use bitvec::order::Lsb0;
 use bitvec::slice::BitSlice;
+use common::modbus::modbus::SerialEncoding;
 use ethercat_hal_derive::{Device, PdoObject};
 use ethercat_hal_derive::{RxPdo, TxPdo};
 
@@ -55,45 +56,6 @@ impl EL6021Baudrate {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum EL6021FrameCoding {
-    Coding7E1 = 1,
-    Coding7O1 = 2,
-    Coding8N1 = 3,
-    Coding8E1 = 4,
-    Coding8O1 = 5,
-    Coding7E2 = 9,
-    Coding7O2 = 10,
-    Coding8N2 = 11,
-    Coding8E2 = 12,
-    Coding8O2 = 13,
-    Coding8S1 = 18,
-    Coding8M1 = 19,
-}
-
-impl EL6021FrameCoding {
-    pub fn from(value: u8) -> Option<Self> {
-        match value {
-            1 => Some(Self::Coding7E1),
-            2 => Some(Self::Coding7O1),
-            3 => Some(Self::Coding8N1),
-            4 => Some(Self::Coding8E1),
-            5 => Some(Self::Coding8O1),
-            9 => Some(Self::Coding7E2),
-            10 => Some(Self::Coding7O2),
-            11 => Some(Self::Coding8N2),
-            12 => Some(Self::Coding8E2),
-            13 => Some(Self::Coding8O2),
-            18 => Some(Self::Coding8S1),
-            19 => Some(Self::Coding8M1),
-            _ => None,
-        }
-    }
-
-    pub fn into(self) -> u8 {
-        self as u8
-    }
-}
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum EL6021Baudrate {
     /// 2400 baud (CoE Value: 4)
     B2400 = 4,
@@ -122,7 +84,7 @@ impl Default for EL6021Configuration {
             half_duplex_enabled: true,
             point_to_point_connection_enabled: false,
             baud_rate: EL6021Baudrate::B19200,
-            data_frame: EL6021FrameCoding::Coding8E1,
+            data_frame: SerialEncoding::Coding8E1,
             rx_buffer_full_notification: 0x0360,
             explicit_baudrate: 19200,
             pdo_assignment: EL6021PdoPreset::Standard22ByteMdp600,
@@ -202,7 +164,7 @@ pub struct EL6021Configuration {
     /// - Bit 3: Stop bits (1 or 2)
     /// - Bits 4-5: Parity (None, Even, Odd)
     /// default: `0x03` (8N1 format)
-    pub data_frame: EL6021FrameCoding,
+    pub data_frame: SerialEncoding,
 
     /// # 0x8000:1A - Notification threshold for the RX buffer (in bytes).
     /// Determines when the terminal signals the controller that the receive buffer is full.
@@ -221,19 +183,38 @@ pub struct EL6021Configuration {
     pub pdo_assignment: EL6021PdoPreset,
 }
 
+// TODO: find a better way than using a pure function to convert
+// maybe use a Trait ?
+fn convert_serial_encoding(encoding: SerialEncoding) -> u8 {
+    match encoding {
+        SerialEncoding::Coding7E1 => 1,
+        SerialEncoding::Coding7O1 => 2,
+        SerialEncoding::Coding7E2 => 9,
+        SerialEncoding::Coding7O2 => 10,
+        SerialEncoding::Coding8N1 => 3,
+        SerialEncoding::Coding8E1 => 4,
+        SerialEncoding::Coding8O1 => 5,
+        SerialEncoding::Coding8N2 => 11,
+        SerialEncoding::Coding8E2 => 12,
+        SerialEncoding::Coding8O2 => 13,
+        SerialEncoding::Coding8S1 => 18,
+        SerialEncoding::Coding8M1 => 19,
+    }
+}
+
 impl Configuration for EL6021Configuration {
     async fn write_config<'a>(
         &self,
         device: &EthercrabSubDevicePreoperational<'a>,
     ) -> Result<(), anyhow::Error> {
         match (self.baud_rate, self.data_frame) {
-            (EL6021Baudrate::B2400, EL6021FrameCoding::Coding7E1)
-            | (EL6021Baudrate::B4800, EL6021FrameCoding::Coding7O1)
-            | (EL6021Baudrate::B9600, EL6021FrameCoding::Coding8N1)
-            | (EL6021Baudrate::B19200, EL6021FrameCoding::Coding8E1)
-            | (EL6021Baudrate::B38400, EL6021FrameCoding::Coding8O1)
-            | (EL6021Baudrate::B57600, EL6021FrameCoding::Coding7E2)
-            | (EL6021Baudrate::B115200, EL6021FrameCoding::Coding7O2) => {}
+            (EL6021Baudrate::B2400, SerialEncoding::Coding7E1)
+            | (EL6021Baudrate::B4800, SerialEncoding::Coding7O1)
+            | (EL6021Baudrate::B9600, SerialEncoding::Coding8N1)
+            | (EL6021Baudrate::B19200, SerialEncoding::Coding8E1)
+            | (EL6021Baudrate::B38400, SerialEncoding::Coding8O1)
+            | (EL6021Baudrate::B57600, SerialEncoding::Coding7E2)
+            | (EL6021Baudrate::B115200, SerialEncoding::Coding7O2) => {}
             _ => {
                 return Err(anyhow!(
                 "ERROR: EL6021Configuration::write_config Baudrate and Coding is not compatible!"
@@ -271,7 +252,7 @@ impl Configuration for EL6021Configuration {
             .await?;
 
         device
-            .sdo_write(0x8000, 0x15, self.data_frame.into())
+            .sdo_write(0x8000, 0x15, convert_serial_encoding(self.data_frame))
             .await?;
         device
             .sdo_write(0x8000, 0x1a, self.rx_buffer_full_notification)
