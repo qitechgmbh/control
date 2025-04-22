@@ -134,14 +134,13 @@ A slave recognizes message data as one message when a **3.5 character long no-da
 
 ---
 
-# Mitsubishi Inverter settings
+# Mitsubishi Inverter settings for Modbus RTU
 
-You need to put the Mitsubishi Inverter into PU Mode
-Protocol Selection: set Pr 549 to 1 (RTU)
+Protocol Selection: set Pr 549 to 1 (Modbus RTU)
 set 551 to a non zero value (9999)
-Operation mode selection: set Pr 79 to 1
+Operation mode selection: set Pr 79 to 0
 PU communication station number: set Pr 117 to a value of 1-32 (this is also the slave address)
-PU communication speed: set Pr 118 the same baudrate as the Beckhoff terminal. For example Terminal has 9600 then you need to set 96
+PU communication speed: set Pr 118 the same baudrate as the Beckhoff terminal. For example Terminal has 19200 then you need to set 192
 PU communication stop bit: set Pr 119 according to Beckhoff terminal setting
 PU communication parity check: set Pr 120 according to Beckhoff terminal setting
 
@@ -150,10 +149,31 @@ PU communication parity check: set Pr 120 according to Beckhoff terminal setting
 Continuous is needed for Modbus RTU
 8000:04 Enable send fifo data continouus TRUE
 8000:06 Enable half duplex
-8000:11 Enable Baud rate 9600 Baud
-8000:15 Data Frame 8N1
+8000:11 Enable Baud rate 19200 Baud
+8000:15 Data Frame 8N2
 
-# TODO
+# Inverter settings relevant for Motor
 
-- write functions that use tokio_modbus to generate the raw bytes for Modbus and to read the responses
-- write a function that implements the wait times for Modbus RTU (3.5x the amount of bytes sent)
+## Motor Constant
+
+The following is a table that shows which Registers need to be set for the safe operation of the Motor.
+
+| Parameter number (Pr) | Name                         | Value         |
+| --------------------- | ---------------------------- | ------------- |
+| 71                    | Applied Motor                | 0             |
+| 80                    | Motor Capacity               | 15 (1.5 kw)   |
+| 96                    | Auto tuning setting/status   | 1             |
+| 1                     | Max Frequency                | 5000          |
+| 2                     | Min Frequency                | 0             |
+| 9                     | Electronic Thermal O/L Relay | 3.30 (Ampere) |
+| 3                     | Base frequency               | 5000 (50 Hz)  |
+| 19                    | Base frequency voltage       | 400 (Volt)    |
+
+## Settings relevant for Communication/Control
+
+| Parameter number (Pr) | Name                                 | Value |
+| --------------------- | ------------------------------------ | ----- |
+| 79                    | Operation Mode                       | 0     |
+| 340                   | Communication startup mode selection | 1     |
+
+The Combination of 79 = 0 and 340 = 1 starts the inverter in the NET operation Mode, which enables us to start/stop the motor.

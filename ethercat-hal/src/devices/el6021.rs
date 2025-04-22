@@ -1,6 +1,6 @@
 use super::{NewDevice, SubDeviceIdentityTuple};
 use crate::coe::{ConfigurableDevice, Configuration};
-use crate::io::serial_interface::{self, SerialInterfaceDevice};
+use crate::io::serial_interface::SerialInterfaceDevice;
 use crate::pdo::{PredefinedPdoAssignment, RxPdo, RxPdoObject, TxPdo, TxPdoObject};
 use crate::types::EthercrabSubDevicePreoperational;
 use bitvec::field::BitField;
@@ -8,21 +8,6 @@ use bitvec::order::Lsb0;
 use bitvec::slice::BitSlice;
 use ethercat_hal_derive::{Device, PdoObject};
 use ethercat_hal_derive::{RxPdo, TxPdo};
-use smol::channel::{unbounded, Receiver, Sender};
-use smol::lock::Mutex;
-use std::collections::VecDeque;
-use std::io::Read;
-use std::sync::Arc;
-
-
-
-fn print_bits(byte: u8) {
-    println!("Bit positions and values for: 0b{:08b}", byte);
-    for i in 0..8 {
-        let bit = (byte >> i) & 1;
-        println!("Bit {:>2}: {}", i, bit);
-    }
-}
 
 impl std::fmt::Debug for EL6021 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -68,14 +53,20 @@ impl EL6021Baudrate {
     }
 }
 
-/// TODO: Restrict FrameCodings to specific Baudrates like specified in the datasheet
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum EL6021FrameCoding {
     Coding7E1 = 1,
     Coding7O1 = 2,
     Coding8N1 = 3,
     Coding8E1 = 4,
     Coding8O1 = 5,
-    Coding7E2 = 6,
+    Coding7E2 = 9,
+    Coding7O2 = 10,
+    Coding8N2 = 11,
+    Coding8E2 = 12,
+    Coding8O2 = 13,
+    Coding8S1 = 18,
+    Coding8M1 = 19,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -95,6 +86,122 @@ enum EL6021Baudrate {
     /// 115200 baud (CoE Value: 10)
     B115200 = 10,
 }
+
+/// Contains Valid BaudRate and Coding Combinations
+/// Only certain combinations of Baudrate and Coding are valid, others cause errors
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum BaudRateCodingCombination {
+    B2400_7E1(EL6021Baudrate, EL6021FrameCoding),
+    B4800_7O1(EL6021Baudrate, EL6021FrameCoding),
+    B9600_8N1(EL6021Baudrate, EL6021FrameCoding),
+    B19200_8E2(EL6021Baudrate, EL6021FrameCoding),
+    B38400_8O1(EL6021Baudrate, EL6021FrameCoding),
+    B57600_8N1(EL6021Baudrate, EL6021FrameCoding),
+    B115200_8N1(EL6021Baudrate, EL6021FrameCoding),
+}
+
+impl BaudRateCodingCombination {
+    pub fn new(baudrate: EL6021Baudrate, coding: EL6021FrameCoding) -> Option<Self> {
+        match (baudrate, coding) {
+            (EL6021Baudrate::B2400, EL6021FrameCoding::Coding7E1) => {
+                Some(Self::B2400_7E1(baudrate, coding))
+            }
+            (EL6021Baudrate::B4800, EL6021FrameCoding::Coding7O1) => {
+                Some(Self::B4800_7O1(baudrate, coding))
+            }
+            (EL6021Baudrate::B9600, EL6021FrameCoding::Coding8N1) => {
+                Some(Self::B9600_8N1(baudrate, coding))
+            }
+            (EL6021Baudrate::B19200, EL6021FrameCoding::Coding8E2) => {
+                Some(Self::B19200_8E2(baudrate, coding))
+            }
+            (EL6021Baudrate::B38400, EL6021FrameCoding::Coding8O1) => {
+                Some(Self::B38400_8O1(baudrate, coding))
+            }
+            (EL6021Baudrate::B57600, EL6021FrameCoding::Coding7E2) => {
+                Some(Self::B57600_8N1(baudrate, coding))
+            }
+            (EL6021Baudrate::B115200, EL6021FrameCoding::Coding7O2) => {
+                Some(Self::B115200_8N1(baudrate, coding))
+            }
+            _ => None,
+        }
+    }
+
+    pub fn baudrate(&self) -> EL6021Baudrate {
+        match self {
+            Self::B2400_7E1(b, _)
+            | Self::B4800_7O1(b, _)
+            | Self::B9600_8N1(b, _)
+            | Self::B19200_8E2(b, _)
+            | Self::B38400_8O1(b, _)
+            | Self::B57600_8N1(b, _)
+            | Self::B115200_8N1(b, _) => *b,
+        }
+    }
+
+    pub fn coding(&self) -> EL6021FrameCoding {
+        match self {
+            Self::B2400_7E1(_, c)
+            | Self::B4800_7O1(_, c)
+            | Self::B9600_8N1(_, c)
+            | Self::B19200_8E2(_, c)
+            | Self::B38400_8O1(_, c)
+            | Self::B57600_8N1(_, c)
+            | Self::B115200_8N1(_, c) => *c,
+        }
+    }
+
+    pub fn from_coe_values(baudrate_value: u8, coding_value: u8) -> Option<Self> {
+        let baudrate = match baudrate_value {
+            4 => Some(EL6021Baudrate::B2400),
+            5 => Some(EL6021Baudrate::B4800),
+            6 => Some(EL6021Baudrate::B9600),
+            7 => Some(EL6021Baudrate::B19200),
+            8 => Some(EL6021Baudrate::B38400),
+            9 => Some(EL6021Baudrate::B57600),
+            10 => Some(EL6021Baudrate::B115200),
+            _ => None,
+        }?;
+
+        let coding = match coding_value {
+            1 => Some(EL6021FrameCoding::Coding7E1),
+            2 => Some(EL6021FrameCoding::Coding7O1),
+            3 => Some(EL6021FrameCoding::Coding8N1),
+            4 => Some(EL6021FrameCoding::Coding8E1),
+            5 => Some(EL6021FrameCoding::Coding8O1),
+            9 => Some(EL6021FrameCoding::Coding7E2),
+            10 => Some(EL6021FrameCoding::Coding7O2),
+            11 => Some(EL6021FrameCoding::Coding8N2),
+            12 => Some(EL6021FrameCoding::Coding8E2),
+            13 => Some(EL6021FrameCoding::Coding8O2),
+            18 => Some(EL6021FrameCoding::Coding8S1),
+            19 => Some(EL6021FrameCoding::Coding8M1),
+            _ => None,
+        }?;
+
+        Self::new(baudrate, coding)
+    }
+
+    pub fn to_coe_values(&self) -> (u8, u8) {
+        (self.baudrate() as u8, self.coding() as u8)
+    }
+
+    pub const DEFAULT: Self = Self::B9600_8N1(EL6021Baudrate::B9600, EL6021FrameCoding::Coding8N1);
+
+    pub fn all() -> [Self; 7] {
+        [
+            Self::B2400_7E1(EL6021Baudrate::B2400, EL6021FrameCoding::Coding7E1),
+            Self::B4800_7O1(EL6021Baudrate::B4800, EL6021FrameCoding::Coding7O1),
+            Self::B9600_8N1(EL6021Baudrate::B9600, EL6021FrameCoding::Coding8N1),
+            Self::B19200_8E2(EL6021Baudrate::B19200, EL6021FrameCoding::Coding8E1),
+            Self::B38400_8O1(EL6021Baudrate::B38400, EL6021FrameCoding::Coding8O1),
+            Self::B57600_8N1(EL6021Baudrate::B57600, EL6021FrameCoding::Coding7E2),
+            Self::B115200_8N1(EL6021Baudrate::B115200, EL6021FrameCoding::Coding7O2),
+        ]
+    }
+}
+
 // TODO: make conversion function for enum to baudrate
 impl Default for EL6021Configuration {
     fn default() -> Self {
@@ -107,13 +214,6 @@ impl Default for EL6021Configuration {
             half_duplex_enabled: true,
             point_to_point_connection_enabled: false,
             baud_rate: EL6021Baudrate::B19200.into(),
-            /*
-            
-                Bits 0-2: Data bits (5-8)
-                Bit 3: Stop bits (1 or 2)
-                Bits 4-5: Parity (None, Even, Odd) 
-                default: 0x03 (8N1 format)
-             */
             data_frame: 0x4,
             rx_buffer_full_notification: 0x0360,
             explicit_baudrate: 19200,
@@ -122,7 +222,6 @@ impl Default for EL6021Configuration {
         }
     }
 }
-
 
 impl ConfigurableDevice<EL6021Configuration> for EL6021 {
     async fn write_config<'maindevice>(
@@ -210,8 +309,7 @@ pub struct EL6021Configuration {
     /// In this object special formats can also be selected in addition
     /// to the usual data frames (e.g. 9N1). Changes to this object
     /// are also adopted in the objects 0x8000:15 and 0x4074.
-    pub extended_data_frame: u16, // ENUM16
-
+    pub extended_data_frame: u16,
     pub pdo_assignment: EL6021PdoPreset,
 }
 
@@ -220,83 +318,47 @@ impl Configuration for EL6021Configuration {
         &self,
         device: &EthercrabSubDevicePreoperational<'a>,
     ) -> Result<(), anyhow::Error> {
-
-
-
-     //   device.sdo_write(0x8000, 0x1, self.rts_enabled).await?;
+        //   device.sdo_write(0x8000, 0x1, self.rts_enabled).await?;
+        device
+            .sdo_write(0x8000, 0x2, self.xon_on_supported_tx)
+            .await?;
 
         device
-             .sdo_write(0x8000, 0x2, self.xon_on_supported_tx)
-             .await?;
+            .sdo_write(0x8000, 0x3, self.xon_off_supported_rx)
+            .await?;
 
         device
-             .sdo_write(0x8000, 0x3, self.xon_off_supported_rx)
-             .await?;
+            .sdo_write(0x8000, 0x4, self.fifo_continuous_send_enabled)
+            .await?;
 
         device
-             .sdo_write(0x8000, 0x4, self.fifo_continuous_send_enabled)
-             .await?;
+            .sdo_write(0x8000, 0x5, self.enable_transfer_rate_optimization)
+            .await?;
 
         device
-             .sdo_write(0x8000, 0x5, self.enable_transfer_rate_optimization)
-             .await?;
+            .sdo_write(0x8000, 0x6, self.half_duplex_enabled)
+            .await?;
 
         device
-             .sdo_write(0x8000, 0x6, self.half_duplex_enabled)
-             .await?;
-
-        device
-             .sdo_write(0x8000, 0x7, self.point_to_point_connection_enabled)
-             .await?;
-
+            .sdo_write(0x8000, 0x7, self.point_to_point_connection_enabled)
+            .await?;
         // baud rate and data frame are only 4 BITs maybe this causes a problem?
         device.sdo_write(0x8000, 0x11, self.baud_rate as u8).await?;
 
-        device.sdo_write(0x8000, 0x15, self.data_frame as u8).await?;
-
-        let res = device.sdo_read::<bool>(0x8000, 0x2).await;
-        println!("xon supp tx: {:?}",res);
-        
-        let res1 = device.sdo_read::<bool>(0x8000, 0x3).await;
-        println!("xon_off_supported_rx: {:?}",res1);
-        
-        let res2 = device.sdo_read::<bool>(0x8000, 0x4).await;
-        println!("fifo_continuous_send_enabled: {:?}",res2);
-        
-        let res3 = device.sdo_read::<bool>(0x8000, 0x5).await;
-        println!("enable_transfer_rate_optimization: {:?}",res3);
-        
-        let res4 = device.sdo_read::<bool>(0x8000, 0x6).await;
-        println!("half_duplex_enabled: {:?}",res4);
-        
-        let res5 = device.sdo_read::<bool>(0x8000, 0x7).await;
-        println!("point_to_point_connection_enabled: {:?}",res5);
-
-        let res6 = device.sdo_read::<u8>(0x8000, 0x11).await;
-        println!("baudrate: {:?}",res6);
-        let res7 = device.sdo_read::<u8>(0x8000, 0x15).await;
-        println!("dataframe: {:?}",res7);
-        let res8 = device.sdo_read::<u32>(0x8000, 0x1b).await;
-        /*println!("baudrate: {:?}",res8);
-        let res9 = device.sdo_read::<u32>(0x8000, 0x1b).await;
-        println!("baudrate: {:?}",res9);
-        */
-
-
-
-
+        device
+            .sdo_write(0x8000, 0x15, self.data_frame as u8)
+            .await?;
+        device
+            .sdo_write(0x8000, 0x1a, self.rx_buffer_full_notification)
+            .await?;
 
         device
-              .sdo_write(0x8000, 0x1a, self.rx_buffer_full_notification)
-              .await?;
+            .sdo_write(0x8000, 0x1b, self.explicit_baudrate)
+            .await?;
 
         device
-              .sdo_write(0x8000, 0x1b, self.explicit_baudrate)
-              .await?;
-
-        device
-              .sdo_write(0x8000, 0x1c, self.extended_data_frame)
-              .await?;
+            .sdo_write(0x8000, 0x1c, self.extended_data_frame)
+            .await?;
         Ok(())
     }
 }
@@ -304,16 +366,22 @@ impl Configuration for EL6021Configuration {
 /// The value is accompanied by some metadata.
 #[derive(Debug, Clone, PdoObject, PartialEq)]
 #[pdo_object(bits = 192)]
-pub struct Standard22ByteMdp600 {
-    /// 1A02 size 2 Offset 0
-    pub status : u8, // For Standard22ByteMdp600 Output same size as input, but status is ctrl instead
-    pub length : u8,
-    /// 1A02:01
+pub struct Standard22ByteMdp600Output {
+    pub control: u8, // For Standard22ByteMdp600 Output same size as input, but status is ctrl instead
+    pub length: u8,
     pub data: [u8; 22],
 }
 
+/// The value is accompanied by some metadata.
+#[derive(Debug, Clone, PdoObject, PartialEq)]
+#[pdo_object(bits = 192)]
+pub struct Standard22ByteMdp600Input {
+    pub status: u8, // For Standard22ByteMdp600 Output same size as input, but status is ctrl instead
+    pub length: u8,
+    pub data: [u8; 22],
+}
 
-impl Default for Standard22ByteMdp600 {
+impl Default for Standard22ByteMdp600Input {
     fn default() -> Self {
         Self {
             status: 0,
@@ -323,7 +391,17 @@ impl Default for Standard22ByteMdp600 {
     }
 }
 
-impl TxPdoObject for Standard22ByteMdp600 {
+impl Default for Standard22ByteMdp600Output {
+    fn default() -> Self {
+        Self {
+            control: 0,
+            length: 0,
+            data: [0u8; 22],
+        }
+    }
+}
+
+impl TxPdoObject for Standard22ByteMdp600Input {
     fn read(&mut self, bits: &BitSlice<u8, Lsb0>) {
         self.status = bits[0..0 + 8].load_le::<u8>();
         self.length = bits[8..8 + 8].load_le::<u8>();
@@ -331,13 +409,12 @@ impl TxPdoObject for Standard22ByteMdp600 {
         for (i, val) in serial_bytes.enumerate() {
             self.data[i] = val.load_le();
         }
-
     }
 }
 
-impl RxPdoObject for Standard22ByteMdp600 {
+impl RxPdoObject for Standard22ByteMdp600Output {
     fn write(&self, buffer: &mut BitSlice<u8, Lsb0>) {
-        buffer[0..8].store_le(self.status);
+        buffer[0..8].store_le(self.control);
         buffer[8..16].store_le(self.length);
         for (i, &byte) in self.data.iter().take(22).enumerate() {
             buffer[(16 + i * 8)..(16 + (i + 1) * 8)].store_le(byte);
@@ -350,7 +427,7 @@ impl RxPdoObject for Standard22ByteMdp600 {
 pub struct EL6021TxPdo {
     // 0x1A02
     #[pdo_object_index(0x1A02)]
-    pub com_tx_pdo_map_22_byte: Option<Standard22ByteMdp600>,
+    pub com_tx_pdo_map_22_byte: Option<Standard22ByteMdp600Input>,
 }
 
 // COM RxPDO Map 22Byte
@@ -358,15 +435,8 @@ pub struct EL6021TxPdo {
 pub struct EL6021RxPdo {
     // 0x1602
     #[pdo_object_index(0x1602)]
-    pub com_rx_pdo_map_22_byte: Option<Standard22ByteMdp600>,
+    pub com_rx_pdo_map_22_byte: Option<Standard22ByteMdp600Output>,
 }
-
-impl ModbusQueue {}
-
-// Define a message queue with shared access
-// TODO: Test
-#[derive(Clone)]
-struct ModbusQueue {}
 
 #[derive(Device)]
 pub struct EL6021 {
@@ -381,7 +451,7 @@ impl PredefinedPdoAssignment<EL6021TxPdo, EL6021RxPdo> for EL6021PdoPreset {
     fn txpdo_assignment(&self) -> EL6021TxPdo {
         match self {
             EL6021PdoPreset::Standard22ByteMdp600 => EL6021TxPdo {
-                com_tx_pdo_map_22_byte: Some(Standard22ByteMdp600::default()),
+                com_tx_pdo_map_22_byte: Some(Standard22ByteMdp600Input::default()),
             },
             _ => todo!(),
         }
@@ -390,7 +460,7 @@ impl PredefinedPdoAssignment<EL6021TxPdo, EL6021RxPdo> for EL6021PdoPreset {
     fn rxpdo_assignment(&self) -> EL6021RxPdo {
         match self {
             EL6021PdoPreset::Standard22ByteMdp600 => EL6021RxPdo {
-                com_rx_pdo_map_22_byte: Some(Standard22ByteMdp600::default()),
+                com_rx_pdo_map_22_byte: Some(Standard22ByteMdp600Output::default()),
             },
             _ => todo!(),
         }
@@ -398,7 +468,6 @@ impl PredefinedPdoAssignment<EL6021TxPdo, EL6021RxPdo> for EL6021PdoPreset {
 }
 
 impl NewDevice for EL6021 {
-    /// Create a new EL2522 device with default configuration
     fn new() -> Self {
         let configuration: EL6021Configuration = EL6021Configuration::default();
         Self {
@@ -428,118 +497,62 @@ pub enum StatusToggle {
     InitAccepted,
 }
 
-
-
 impl SerialInterfaceDevice<EL6021Port> for EL6021 {
-
-
     fn serial_init_request(&mut self, _port: EL6021Port) -> () {
         if let Some(rx_pdo) = &mut self.rxpdo.com_rx_pdo_map_22_byte {
             println!("Initializing EL6021 with new settings...");
-            rx_pdo.status |= 0x0004;
+            rx_pdo.control |= 0x0004;
             std::thread::sleep(std::time::Duration::from_millis(50));
             if let Some(tx_pdo) = &self.txpdo.com_tx_pdo_map_22_byte {
                 if (tx_pdo.status & 0x0004) != 0 {
                     println!("init Accepted {}", tx_pdo.status);
-                    rx_pdo.status = 0;
+                    rx_pdo.control = 0;
                     std::thread::sleep(std::time::Duration::from_millis(50));
                 }
             }
         }
     }
 
+    fn serial_interface_has_messages(&mut self, _port: EL6021Port) -> bool {
+        if let Some(tx_pdo) = &self.txpdo.com_tx_pdo_map_22_byte {
+            return (tx_pdo.status & 0x2) != 0;
+        }
+        return false;
+    }
 
     fn serial_interface_read_message(&mut self, _port: EL6021Port) -> Vec<u8> {
-    // Access the TxPDO (data coming from the device to the controller)
-    if let Some(tx_pdo) = &mut self.txpdo.com_tx_pdo_map_22_byte {
-       
-        //println!("{}", tx_pdo.status );
-
-        if(tx_pdo.status & 0x1) == 1{
-
+        if !self.serial_interface_has_messages(_port) {
+            println!("has no messages");
+            return vec![];
         }
-
-        if (tx_pdo.status & 0x2) != 0 {
-            // Get the actual length of valid data from the status word (bits 8-15)
+        if let Some(tx_pdo) = &mut self.txpdo.com_tx_pdo_map_22_byte {
             let valid_length = tx_pdo.length as usize;
-            
-            // Make a copy of the data before acknowledging receipt
             let received_data = tx_pdo.data[..valid_length.min(22)].to_vec();
-            /*
-            // Toggle the ReceiveAccepted bit (bit 1) in the RxPDO control word
-            // to acknowledge receipt of the data
-            tx_pdo.status ^= 0x1;
-            */
             if let Some(rx_pdo) = &mut self.rxpdo.com_rx_pdo_map_22_byte {
-                rx_pdo.status ^= 0x2;
+                rx_pdo.control ^= 0x2;
             }
-            
             tx_pdo.data.fill(0);
-
-            // Debug output
-            //println!("Received {} bytes of data", valid_length);
-            println!("{:?}",received_data);
-            // Return the received data
-            received_data
+            return received_data;
         } else {
-            // No new data available, return empty vector
+            println!("Error: TxPDO not available");
             vec![]
         }
-    } else {
-        println!("Error: TxPDO not available");
-        vec![]
-    }
-/* 
-
-        if let Some(tx_pdo) = &mut self.txpdo.com_tx_pdo_map_22_byte {
-            if(tx_pdo.status == 2 ) {
-           //     println!("Receiving new Data");
-            }
-  
-            let valid_length = 22 as usize;
-            //tx_pdo.status ^= 0x2;
-            println!("{} {} {:?}",tx_pdo.status,tx_pdo.length,tx_pdo.data);
-            tx_pdo.data[..valid_length.min(22)].to_vec()
-
-        } else {
-            println!("error");
-            vec!()
-        }*/
     }
 
     fn serial_interface_write_message(&mut self, _port: EL6021Port, message: Vec<u8>) {
-      
-        
-      
         if let Some(rx_pdo) = &mut self.rxpdo.com_rx_pdo_map_22_byte {
-        //    print_bits(rx_pdo.status);
-            if message.len() > 128 {
+            if message.len() > 22 {
                 return;
             }
-
             let mut data_buffer = [0u8; 22];
             let bytes = message.as_slice();
-            
             data_buffer[..message.len()].copy_from_slice(&bytes[..message.len()]);
             rx_pdo.length = message.len() as u8;
             rx_pdo.data = data_buffer;
-         
-            if rx_pdo.status == 0 {
-                println!("rx status: {}",rx_pdo.status);
-                println!("sending {:?}",rx_pdo.data);
-                rx_pdo.status ^= 0x1; // Toggle Transmit Request
+            if rx_pdo.control == 0 {
+                rx_pdo.control ^= 0x1; // Toggle Transmit Request
             }
-
-        } 
-    }
-
-    /// TODO: Detect Stop / End
-    fn serial_interface_has_messages(&self, _port: EL6021Port) -> bool {
-        self.rxpdo
-            .com_rx_pdo_map_22_byte
-            .as_ref()
-            .map(|rx_pdo| rx_pdo.status > 0)
-            .unwrap_or(false)
+        }
     }
 }
 

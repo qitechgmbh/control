@@ -68,7 +68,7 @@ impl SerialInterface {
             let port_clone = port2.clone();
 
             Box::pin(async move {
-                let device = device2.read().await;
+                let mut device = device2.write().await;
                 device.serial_interface_has_messages(port_clone)
             })
         });
@@ -104,5 +104,5 @@ where
     fn serial_interface_read_message(&mut self, port: PORTS) -> Vec<u8>;
     fn serial_interface_write_message(&mut self, port: PORTS, message: Vec<u8>) -> ();
     fn serial_init_request(&mut self, port: PORTS) -> ();
-    fn serial_interface_has_messages(&self, port: PORTS) -> bool;
+    fn serial_interface_has_messages(&mut self, port: PORTS) -> bool;
 }
