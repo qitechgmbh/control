@@ -11,7 +11,7 @@ pub struct DigitalOutputToggler {
 }
 
 impl Actor for DigitalOutputToggler {
-    fn act(&mut self, _now_ts: u64) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
+    fn act(&mut self, _now: Instant) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
     Box::pin(async move {
         {
             let state = (self.output.state)().await;
@@ -34,10 +34,10 @@ struct Machine1 {
 }
 
 impl Actor for Machine1 {
-    fn act(&mut self, now_ts: u64) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
+    fn act(&mut self, now: Instant) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
         Box::pin(async move {
-            self.toggler1.act(now_ts).await;
-            self.toggler2.act(now_ts).await;
+            self.toggler1.act(now).await;
+            self.toggler2.act(now).await;
         })
     }
 }

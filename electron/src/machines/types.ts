@@ -15,6 +15,7 @@ export type DeviceRole = {
 
 // data to identify subdevices
 type EthercatDevice = {
+  vendor_id: number;
   product_id: number;
   revision: number;
 };
@@ -76,70 +77,86 @@ export function getVendorPreset(vendor: number): VendorPreset | undefined {
   return vendorPresets.find((v) => v.id === vendor);
 }
 
-export const machinePresets: MachinePreset[] = [
-  {
-    name: "Winder",
-    version: "V1",
-    slug: "winder1",
-    icon: "lu:Disc3",
-    machine_identification: {
-      vendor: VENDOR_QITECH,
-      machine: 0x0001,
-    },
-    device_roles: [
-      {
-        role: 0,
-        role_label: "Bus Coupler",
-        allowed_devices: [
-          {
-            product_id: 0x44c2c52,
-            revision: 0x120000,
-          },
-        ],
-      },
-      {
-        role: 1,
-        role_label: "2x Digital Output",
-        allowed_devices: [
-          {
-            product_id: 0x7d23052,
-            revision: 0x110000,
-          },
-        ],
-      },
-      {
-        role: 2,
-        role_label: "1x Analog Input",
-        allowed_devices: [
-          {
-            product_id: 0xbb93052,
-            revision: 0x160000,
-          },
-        ],
-      },
-      {
-        role: 3,
-        role_label: "1x Pulsetrain Traverse",
-        allowed_devices: [
-          {
-            product_id: 0x9d93052,
-            revision: 0x3f80018,
-          },
-        ],
-      },
-      {
-        role: 4,
-        role_label: "2x Pulsetrain",
-        allowed_devices: [
-          {
-            product_id: 0x9da3052,
-            revision: 0x160000,
-          },
-        ],
-      },
-    ],
+export const winder2: MachinePreset = {
+  name: "Winder",
+  version: "V2",
+  slug: "winder2",
+  icon: "lu:Disc3",
+  machine_identification: {
+    vendor: VENDOR_QITECH,
+    machine: 0x0002,
   },
-];
+  device_roles: [
+    {
+      role: 0,
+      role_label: "Bus Coupler",
+      allowed_devices: [
+        {
+          vendor_id: 2,
+          product_id: 0x44c2c52,
+          revision: 0x120000,
+        },
+      ],
+    },
+    {
+      role: 1,
+      role_label: "2x Digital Output",
+      allowed_devices: [
+        {
+          vendor_id: 2,
+          product_id: 0x7d23052,
+          revision: 0x110000,
+        },
+      ],
+    },
+    {
+      role: 2,
+      role_label: "1x Analog Input",
+      allowed_devices: [
+        {
+          vendor_id: 2,
+          product_id: 0xbb93052,
+          revision: 0x160000,
+        },
+      ],
+    },
+    {
+      role: 3,
+      role_label: "1x Stepper Winder",
+      allowed_devices: [
+        {
+          vendor_id: 2,
+          product_id: 0x1b813052,
+          revision: 0x100034,
+        },
+      ],
+    },
+    {
+      role: 4,
+      role_label: "1x Stepper Traverse",
+      allowed_devices: [
+        {
+          vendor_id: 2,
+          product_id: 0x1b773052,
+          revision: 0x1a0000,
+        },
+      ],
+    },
+    {
+      role: 5,
+      role_label: "1x Stepper Puller",
+      allowed_devices: [
+        {
+          vendor_id: 2,
+          product_id: 0, // TODO
+          revision: 0, // TODO
+        },
+      ],
+    },
+  ],
+};
+
+export const machinePresets: MachinePreset[] = [winder2];
 
 export const getMachinePreset = (
   machine_identification_unique: MachineIdentificationUnique,
@@ -154,6 +171,7 @@ export const getMachinePreset = (
 };
 
 export function filterAllowedDevices(
+  vendor_id: number,
   product_id: number,
   revision: number,
   allowed_devices: DeviceRole[] | undefined,
@@ -164,7 +182,9 @@ export function filterAllowedDevices(
   return allowed_devices.map((role) =>
     role.allowed_devices.some(
       (device) =>
-        device.product_id === product_id && device.revision === revision,
+        device.product_id === product_id &&
+        device.revision === revision &&
+        device.vendor_id === vendor_id,
     ),
   );
 }

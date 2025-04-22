@@ -2,7 +2,7 @@ pub mod basic;
 pub mod el252x;
 pub mod el30xx;
 pub mod el32xx;
-//pub mod el7031;
+pub mod el70x1;
 
 use crate::coe::Configuration;
 use bitvec::prelude::*;
@@ -12,7 +12,7 @@ use bitvec::prelude::*;
 /// Can be derived with the [`ethercat_hal_derive::PdoObject`] macro.
 ///
 /// Example:
-/// ```rust,no_run
+/// ```ignore
 /// #[derive(PdoObject)]
 /// #[pdo_object(bits = 1)]
 /// struct BoolPdoObject {
@@ -21,7 +21,7 @@ use bitvec::prelude::*;
 /// ````
 ///
 /// Equivalent:
-/// ```rust,no_run
+/// ```ignore
 /// struct BoolPdoObject {
 ///   pub value: bool,
 /// }
@@ -40,7 +40,7 @@ pub trait PdoObject {
 /// This trait adds the [`TxPdoObject::read`] method which is used to decode the PDO bit array
 ///
 /// Example:
-/// ```rust,no_run
+/// ```ignore
 /// impl TxPdoObject for BoolPdoObject {
 ///     fn read(&mut self, buffer: &BitSlice<u8, Lsb0>) {
 ///         self.value = buffer[0].into();
@@ -54,7 +54,7 @@ pub trait TxPdoObject: PdoObject {
 /// This trait adds the [`RxPdoObject::write`] method which is used to encode the PDO bit array
 ///
 /// Example:
-/// ```rust,no_run
+/// ```ignore
 /// impl RxPdoObject for BoolPdoObject {
 ///     fn write(&self, buffer: &mut BitSlice<u8, Lsb0>) {
 ///         buffer.set(0, self.value);
@@ -68,7 +68,7 @@ pub trait RxPdoObject: PdoObject {
 /// This trait should be implemented on enums that represet an specific PDO assignment.
 ///
 /// Example:
-/// ```rust,no_run
+/// ```ignore
 /// #[derive(Debug, Clone)]
 /// pub enum EL3001PredefinedPdoAssignment {
 ///     Standard,
@@ -108,7 +108,7 @@ pub trait PredefinedPdoAssignment<TXPDOA, RXPDOA> {
 ///
 /// Can be derived using the [`ethercat_hal_derive::RxPdo`] macro with the `#[pdo_object_index]` attribute.
 ///
-/// ```rust,no_run
+/// ```ignore
 /// #[derive(Debug, Clone, RxPdo)]
 /// pub struct EL2002RxPdo {
 ///     #[pdo_object_index(0x1600)]
@@ -151,9 +151,11 @@ pub trait RxPdo: Configuration {
                 // check if end_bit_index is out of bounds
                 if end_bit_index > buffer.len() {
                     return Err(anyhow::anyhow!(
-                        "[{}::RxPdo::write] Buffer is too small, end_bit_index is {} and buffer length is {}",
+                        "[{}::RxPdo::write] Range {}..{} ({}bits) is out of bounds for buffer with length {}",
                         module_path!(),
+                        bit_offset,
                         end_bit_index,
+                        object.size(),
                         buffer.len()
                     ));
                 }
@@ -172,7 +174,7 @@ pub trait RxPdo: Configuration {
 ///
 /// Can be derived using the [`ethercat_hal_derive::RxPdo`] macro with the `#[pdo_object_index]` attribute.
 ///
-/// ```rust,no_run
+/// ```ignore
 /// #[derive(Debug, Clone, RxPdo)]
 /// pub struct EL1002TxPdo {
 ///     #[pdo_object_index(0x1A00)]
@@ -220,9 +222,11 @@ pub trait TxPdo: Configuration {
                 // check if end_bit_index is out of bounds
                 if end_bit_index > buffer.len() {
                     return Err(anyhow::anyhow!(
-                        "[{}::TxPdo::read] Buffer is too small, end_bit_index is {} and buffer length is {}",
+                        "[{}::RxPdo::write] Range {}..{} ({}bits) is out of bounds for buffer with length {}",
                         module_path!(),
+                        bit_offset,
                         end_bit_index,
+                        object.size(),
                         buffer.len()
                     ));
                 }

@@ -44,7 +44,7 @@ import { Separator } from "@/components/ui/separator";
 import { Icon } from "@/components/Icon";
 import { toast } from "sonner";
 import { Toast } from "@/components/Toast";
-import { EthercatSetupEventData } from "@/client/mainRoom";
+import { EthercatSetupEventData } from "@/client/mainNamespace";
 
 type Props = {
   device: EthercatSetupEventData["devices"][number];
@@ -130,6 +130,7 @@ export function DeviceEeepromDialogContent({ device, setOpen }: ContentProps) {
   const filteredAllowedDevices = useMemo(
     () =>
       filterAllowedDevices(
+        device.vendor_id,
         device.product_id,
         device.revision,
         machinePreset?.device_roles,

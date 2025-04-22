@@ -42,18 +42,19 @@ The `digital_output_state` is used to read the current state of the output of a 
 ```rust
 impl DigitalOutputDevice<EL2002Port> for EL2002 {
     fn digital_output_write(&mut self, port: EL2002Port, value: DigitalOutputOutput) {
+        let expect_text = "All channels should be Some(_)";
         match port {
-            EL2002Port::DO1 => self.rxpdo.channel1.as_mut().unwrap().value = value.into(),
-            EL2002Port::DO2 => self.rxpdo.channel2.as_mut().unwrap().value = value.into(),
+            EL2002Port::DO1 => self.rxpdo.channel1.as_mut().expect(&expect_text).value = value.into(),
+            EL2002Port::DO2 => self.rxpdo.channel2.as_mut().expect(&expect_text).value = value.into(),
         }
     }
 
     fn digital_output_state(&self, port: EL2002Port) -> DigitalOutputState {
+        let expect_text = "All channels should be Some(_)";
         DigitalOutputState {
-            output_ts: self.output_ts,
             output: DigitalOutputOutput(match port {
-                EL2002Port::DO1 => self.rxpdo.channel1.as_ref().unwrap().value,
-                EL2002Port::DO2 => self.rxpdo.channel2.as_ref().unwrap().value,
+                EL2002Port::DO1 => self.rxpdo.channel1.as_ref().expect(&expect_text).value,
+                EL2002Port::DO2 => self.rxpdo.channel2.as_ref().expect(&expect_text).value,
             }),
         }
     }
@@ -77,7 +78,7 @@ Implementing the `act` function which will toggle the output every cycle.
 
 The `state` and `write` values are callbacks and must be wrapped with parentheses to be called.
 ```rust
-fn act(&mut self, _now_ts: u64) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
+fn act(&mut self, _now: Instant) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
     Box::pin(async move {
         {
             let state = (self.output.state)().await;
@@ -123,9 +124,6 @@ The `DigitalOutputOutput` is both contained in the `DigitalOutputState` and is t
 ```rust
 #[derive(Debug, Clone)]
 pub struct DigitalOutputState {
-    /// Nanosecond timestamp
-    pub output_ts: u64,
-
     pub output: DigitalOutputOutput,
 }
 

@@ -13,7 +13,6 @@ Frontend
 Backend
 
 - `/server`: Glue between Beckhoff and Electron. Implements machine logic.
-- `/stepper-driver`: Generic stepper driver for absolute, relative & speed movements with PID controllers.
 - `/ethercat-hal`: Hardware abstraction layer for Beckhoff (and possibly other EtherCat) devices and protocols.
 - `/ethercat-hal-derive`: Macros for `ethercat-hal`
 - `/control-core`: Core control logic for the server.
@@ -81,14 +80,14 @@ We could combine the code of the frontend and backend using [Doxius](https://dio
 - [ ] Interfacing with Electron/Server
 
   - [ ] SocketIO
-    - Machine Room
-    - Main Room
+    - Machine Namespace
+    - Main Namespace
   - [ ] REST
     - Machine Mutations
     - Write Device Identification
 
 - Server
-
+  - [X] [Threading](./docs/control-loop.md)
   - [ ] Control Loop Setup
     - Control Loop Thread
       - [ ] realtime
@@ -123,10 +122,9 @@ We could combine the code of the frontend and backend using [Doxius](https://dio
 
   - [x] [Actors](./docs/actors.md)
   - [ ] SocketIO
-    - Rooms & Caching
-    - Joining leaving rooms
-    - RoomId
-    - Our rooms vs native socketIO rooms
+    - Namespaces & Caching
+    - Joining leaving namespaces
+    - NamespaceId
     - Caching
       - Serverside Caching
       - Clientside Caching

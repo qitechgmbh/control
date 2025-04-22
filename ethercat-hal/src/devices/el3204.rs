@@ -14,7 +14,6 @@ use super::NewDevice;
 #[derive(Device)]
 pub struct EL3204 {
     pub txpdo: EL3204TxPdo,
-    pub input_ts: u64,
 }
 
 impl std::fmt::Debug for EL3204 {
@@ -27,21 +26,20 @@ impl NewDevice for EL3204 {
     fn new() -> Self {
         Self {
             txpdo: EL3204TxPdo::default(),
-            input_ts: 0,
         }
     }
 }
 
 impl TemperatureInputDevice<EL3204Port> for EL3204 {
     fn temperature_input_state(&self, port: EL3204Port) -> TemperatureInputState {
+        let expect_text = "All channels should be Some(_)";
         let channel = match port {
-            EL3204Port::T1 => self.txpdo.channel1.as_ref().unwrap(),
-            EL3204Port::T2 => self.txpdo.channel2.as_ref().unwrap(),
-            EL3204Port::T3 => self.txpdo.channel3.as_ref().unwrap(),
-            EL3204Port::T4 => self.txpdo.channel4.as_ref().unwrap(),
+            EL3204Port::T1 => self.txpdo.channel1.as_ref().expect(&expect_text),
+            EL3204Port::T2 => self.txpdo.channel2.as_ref().expect(&expect_text),
+            EL3204Port::T3 => self.txpdo.channel3.as_ref().expect(&expect_text),
+            EL3204Port::T4 => self.txpdo.channel4.as_ref().expect(&expect_text),
         };
         TemperatureInputState {
-            input_ts: self.input_ts,
             input: TemperatureInputInput {
                 temperature: channel.temperature,
                 undervoltage: channel.undervoltage,

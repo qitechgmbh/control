@@ -11,7 +11,6 @@ const OUTPUT_PDU_LEN: usize = 16;
 /// load > 5kOhm
 pub struct EL4008 {
     output_pdus: [u8; OUTPUT_PDU_LEN],
-    pub output_ts: u64,
 }
 
 impl std::fmt::Debug for EL4008 {
@@ -24,7 +23,6 @@ impl EL4008 {
     pub fn new() -> Self {
         Self {
             output_pdus: [0; OUTPUT_PDU_LEN],
-            output_ts: 0,
         }
     }
 }
@@ -57,10 +55,7 @@ impl AnalogOutputDevice<EL4008Port> for EL4008 {
             self.output_pdus[pdu_index + 1],
             self.output_pdus[pdu_index],
         ]);
-        AnalogOutputState {
-            output_ts: self.output_ts,
-            value,
-        }
+        AnalogOutputState { value }
     }
 }
 

@@ -12,9 +12,15 @@ import React, { useMemo } from "react";
 import { DeviceEepromDialog } from "./DeviceEepromDialog";
 import { getMachinePreset } from "@/machines/types";
 import { DeviceRoleComponent } from "@/components/DeviceRole";
-import { EthercatSetupEventData, useMainRoom } from "@/client/mainRoom";
+import {
+  EthercatSetupEventData,
+  useMainNamespace,
+} from "@/client/mainNamespace";
+import { Icon } from "@/components/Icon";
 
-export const columns: ColumnDef<EthercatSetupEventData["devices"][number]>[] = [
+export const columns: ColumnDef<
+  NonNullable<EthercatSetupEventData["Done"]>["devices"][number]
+>[] = [
   {
     accessorKey: "subdevice_index",
     header: "Index",
@@ -106,12 +112,10 @@ export const columns: ColumnDef<EthercatSetupEventData["devices"][number]>[] = [
 ];
 
 export function EthercatPage() {
-  const {
-    state: { ethercatSetup },
-  } = useMainRoom();
+  const { ethercatSetup, ethercatInterfaceDiscovery } = useMainNamespace();
 
   const data = useMemo(() => {
-    return ethercatSetup?.content.Data?.devices || [];
+    return ethercatSetup?.data?.Done?.devices || [];
   }, [ethercatSetup]);
 
   const table = useReactTable({
@@ -122,13 +126,25 @@ export function EthercatPage() {
 
   return (
     <Page>
+      <SectionTitle title="Interface"></SectionTitle>
+      <p>
+        Ethernet Interface{" "}
+        {ethercatInterfaceDiscovery?.data.Discovering ? (
+          <span>Discovering...</span>
+        ) : ethercatInterfaceDiscovery?.data.Done ? (
+          <Value value={ethercatInterfaceDiscovery?.data.Done} />
+        ) : (
+          <span>Not Discovering</span>
+        )}
+      </p>
       <SectionTitle title="SubDevices">
-        <RefreshIndicator event={ethercatSetup} />
+        <RefreshIndicator ts={ethercatSetup?.ts} />
       </SectionTitle>
       <p>
         Machine, Machine Serial Number, Role are QiTech specific values that are
         written to the EEPROM to identify machines as a unit.
       </p>
+
       <MyTable table={table} key={data.toString()} />
     </Page>
   );

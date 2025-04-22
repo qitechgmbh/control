@@ -9,7 +9,6 @@ use ethercat_hal_derive::{Device, TxPdo};
 /// 24V DC, 3ms filter
 #[derive(Clone, Device)]
 pub struct EL1008 {
-    pub input_ts: u64,
     pub txpdo: EL1008TxPdo,
 }
 
@@ -22,7 +21,6 @@ impl std::fmt::Debug for EL1008 {
 impl NewDevice for EL1008 {
     fn new() -> Self {
         Self {
-            input_ts: 0,
             txpdo: EL1008TxPdo::default(),
         }
     }
@@ -30,18 +28,18 @@ impl NewDevice for EL1008 {
 
 impl DigitalInputDevice<EL1008Port> for EL1008 {
     fn digital_input_state(&self, port: EL1008Port) -> DigitalInputState {
+        let expect_text = "All channels should be Some(_)";
         DigitalInputState {
-            input_ts: self.input_ts,
             input: DigitalInputInput {
                 value: match port {
-                    EL1008Port::DI1 => self.txpdo.channel1.as_ref().unwrap().value,
-                    EL1008Port::DI2 => self.txpdo.channel2.as_ref().unwrap().value,
-                    EL1008Port::DI3 => self.txpdo.channel3.as_ref().unwrap().value,
-                    EL1008Port::DI4 => self.txpdo.channel4.as_ref().unwrap().value,
-                    EL1008Port::DI5 => self.txpdo.channel5.as_ref().unwrap().value,
-                    EL1008Port::DI6 => self.txpdo.channel6.as_ref().unwrap().value,
-                    EL1008Port::DI7 => self.txpdo.channel7.as_ref().unwrap().value,
-                    EL1008Port::DI8 => self.txpdo.channel8.as_ref().unwrap().value,
+                    EL1008Port::DI1 => self.txpdo.channel1.as_ref().expect(&expect_text).value,
+                    EL1008Port::DI2 => self.txpdo.channel2.as_ref().expect(&expect_text).value,
+                    EL1008Port::DI3 => self.txpdo.channel3.as_ref().expect(&expect_text).value,
+                    EL1008Port::DI4 => self.txpdo.channel4.as_ref().expect(&expect_text).value,
+                    EL1008Port::DI5 => self.txpdo.channel5.as_ref().expect(&expect_text).value,
+                    EL1008Port::DI6 => self.txpdo.channel6.as_ref().expect(&expect_text).value,
+                    EL1008Port::DI7 => self.txpdo.channel7.as_ref().expect(&expect_text).value,
+                    EL1008Port::DI8 => self.txpdo.channel8.as_ref().expect(&expect_text).value,
                 },
             },
         }

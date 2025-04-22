@@ -16,14 +16,14 @@ export function TouchButton({
   disabled,
   ...props
 }: Props) {
-  const buttonStyle = cva("px-6 py-8 text-md");
+  const buttonStyle = cva("px-6 py-6 text-md h-max");
   return (
     <Button
       className={buttonStyle({ className })}
       disabled={isLoading || disabled}
       {...props}
     >
-      <div className="flex flex-row items-center gap-2">
+      <div className="flex flex-row items-center gap-2 text-wrap">
         {icon && !isLoading && <Icon name={icon} className="size-6" />}
         {isLoading && <Icon name="lu:Loader" className="size-6 animate-spin" />}
         {children}

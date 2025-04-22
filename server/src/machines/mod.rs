@@ -1,5 +1,5 @@
 pub mod registry;
-pub mod winder1;
+pub mod winder2;
 
-pub const VENDOR_QITECH: u32 = 0x1;
-pub const MACHINE_WINDER_V1: u32 = 0x1;
+pub const VENDOR_QITECH: u16 = 0x0001;
+pub const MACHINE_WINDER_V1: u16 = 0x0002;

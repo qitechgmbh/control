@@ -5,4 +5,5 @@ pub mod digital_input;
 pub mod digital_output;
 pub mod pulse_train_output;
 pub mod serial_interface;
+pub mod stepper_velocity_el70x1;
 pub mod temperature_input;

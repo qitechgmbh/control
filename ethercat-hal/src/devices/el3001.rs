@@ -6,7 +6,7 @@ use crate::{
         PredefinedPdoAssignment, TxPdo,
     },
     shared_config::el30xx::{EL30XXChannelConfiguration, EL30XXPresentation},
-    signing::Integer16,
+    signing::U16SigningConverter,
 };
 use crate::{
     io::analog_input::{AnalogInputDevice, AnalogInputInput, AnalogInputState},
@@ -16,7 +16,6 @@ use ethercat_hal_derive::{Device, RxPdo, TxPdo};
 
 #[derive(Device)]
 pub struct EL3001 {
-    pub input_ts: u64,
     pub txpdo: EL3001TxPdo,
     pub configuration: EL3001Configuration,
 }
@@ -37,7 +36,6 @@ impl NewDevice for EL3001 {
     fn new() -> Self {
         let configuration: EL3001Configuration = EL3001Configuration::default();
         Self {
-            input_ts: 0,
             txpdo: configuration.pdo_assignment.txpdo_assignment(),
             configuration,
         }
@@ -62,15 +60,14 @@ impl AnalogInputDevice<EL3001Port> for EL3001 {
         let channel_config = match port {
             EL3001Port::AI1 => &self.configuration.channel_1,
         };
-        let raw_value = Integer16::from(raw_value);
+        let raw_value = U16SigningConverter::load_raw(raw_value);
         let value: i16 = match channel_config.presentation {
-            EL30XXPresentation::Unsigned => raw_value.into_unsigned() as i16,
-            EL30XXPresentation::Signed => raw_value.into_signed(),
-            EL30XXPresentation::SignedMagnitude => raw_value.into_signed_magnitude(),
+            EL30XXPresentation::Unsigned => raw_value.as_unsigned() as i16,
+            EL30XXPresentation::Signed => raw_value.as_signed(),
+            EL30XXPresentation::SignedMagnitude => raw_value.as_signed_magnitude(),
         };
         let normalized = f32::from(value) / f32::from(i16::MAX);
         AnalogInputState {
-            input_ts: self.input_ts,
             input: AnalogInputInput { normalized },
         }
     }

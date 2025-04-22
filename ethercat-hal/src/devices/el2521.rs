@@ -20,8 +20,6 @@ pub struct EL2521 {
     pub configuration: EL2521Configuration,
     pub txpdo: EL2521TxPdo,
     pub rxpdo: EL2521RxPdo,
-    pub output_ts: u64,
-    pub input_ts: u64,
 }
 
 impl std::fmt::Debug for EL2521 {
@@ -40,8 +38,6 @@ impl NewDevice for EL2521 {
             configuration: configuration,
             txpdo,
             rxpdo,
-            output_ts: 0,
-            input_ts: 0,
         }
     }
 }
@@ -57,8 +53,6 @@ impl PulseTrainOutputDevice<EL2521Port> for EL2521 {
 
     fn pulse_train_output_state(&self, _port: EL2521Port) -> PulseTrainOutputState {
         PulseTrainOutputState {
-            output_ts: self.output_ts,
-            input_ts: self.input_ts,
             input: PulseTrainOutputInput {
                 select_end_counter: self.txpdo.pto_status.as_ref().unwrap().select_end_counter,
                 ramp_active: self.txpdo.pto_status.as_ref().unwrap().ramp_active,

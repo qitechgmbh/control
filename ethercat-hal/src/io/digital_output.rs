@@ -62,9 +62,6 @@ impl DigitalOutput {
 
 #[derive(Debug, Clone)]
 pub struct DigitalOutputState {
-    /// Nanosecond timestamp
-    pub output_ts: u64,
-
     pub output: DigitalOutputOutput,
 }
 

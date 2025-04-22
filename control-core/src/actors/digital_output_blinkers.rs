@@ -1,10 +1,14 @@
 use super::Actor;
 use ethercat_hal::io::digital_output::DigitalOutput;
-use std::{future::Future, pin::Pin, time::Duration};
+use std::{
+    future::Future,
+    pin::Pin,
+    time::{Duration, Instant},
+};
 
 /// Set a series of digital outputs high in sequence with a given interval
 pub struct DigitalOutputBlinkers {
-    last_toggle: u64,
+    last_toggle: Instant,
     outputs: Vec<Option<DigitalOutput>>,
     index: usize,
     interval: Duration,
@@ -15,7 +19,7 @@ pub struct DigitalOutputBlinkers {
 impl DigitalOutputBlinkers {
     pub fn new(outputs: Vec<Option<DigitalOutput>>, interval: Duration, amount: usize) -> Self {
         Self {
-            last_toggle: 0,
+            last_toggle: Instant::now(),
             outputs,
             interval,
             enabled: true,
@@ -34,11 +38,9 @@ impl DigitalOutputBlinkers {
 }
 
 impl Actor for DigitalOutputBlinkers {
-    fn act(&mut self, _now_ts: u64) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
+    fn act(&mut self, now: Instant) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
         Box::pin(async move {
-            let toggle_duration = self.interval.as_nanos() as u64;
-            let state = (self.outputs[0].as_ref().unwrap().state)().await;
-            if state.output_ts - self.last_toggle > toggle_duration {
+            if now - self.last_toggle > self.interval {
                 if let Some(output) = &self.outputs[self.index] {
                     (output.write)(true.into()).await;
                 }
@@ -47,7 +49,7 @@ impl Actor for DigitalOutputBlinkers {
                 if let Some(output) = &self.outputs[index_end] {
                     (output.write)(false.into()).await;
                 }
-                self.last_toggle = state.output_ts;
+                self.last_toggle = now;
                 self.index = (self.index + 1) % self.outputs.len();
             }
         })

@@ -1,23 +1,54 @@
-use anyhow::{Error, Result};
+use std::{panic::catch_unwind, process::exit};
+
 use app_state::APP_STATE;
 use env_logger::Env;
 use ethercat::init::init_ethercat;
+use panic::PanicDetails;
 use rest::init::init_api;
-use socketio::init::init_socketio;
+use smol::channel::unbounded;
 
 pub mod app_state;
 pub mod ethercat;
 pub mod machines;
+pub mod panic;
 pub mod rest;
 pub mod socketio;
 
-#[tokio::main]
-async fn main() -> Result<(), Error> {
+fn main() {
+    // if the program panics we restart all of it
+    match catch_unwind(|| main2()) {
+        Ok(_) => {
+            log::info!("[{}::main] Program ended normally", module_path!());
+            exit(0);
+        }
+        Err(err) => {
+            log::error!("[{}::main] Program panicked: {:?}", module_path!(), err);
+            exit(1);
+        }
+    }
+}
+
+fn main2() {
     env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
 
-    let socketio_layer = init_socketio().await;
-    init_ethercat(APP_STATE.clone());
-    init_api(APP_STATE.clone(), socketio_layer).await?;
+    let (thread_panic_tx, thread_panic_rx) = unbounded::<PanicDetails>();
 
-    Ok(())
+    init_api(thread_panic_tx.clone(), APP_STATE.clone()).expect("Failed to initialize API");
+    init_ethercat(thread_panic_tx, APP_STATE.clone()).expect("Failed to initialize EtherCAT");
+
+    smol::block_on(async {
+        loop {
+            match thread_panic_rx.try_recv() {
+                Ok(panic_details) => {
+                    log::error!(
+                        "[{}::main] Thread panicked: {:?}",
+                        module_path!(),
+                        panic_details
+                    );
+                    exit(1);
+                }
+                Err(_) => {}
+            }
+        }
+    })
 }

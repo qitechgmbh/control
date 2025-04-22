@@ -9,7 +9,6 @@ use ethercat_hal_derive::{Device, RxPdo};
 /// 24V DC, 0.5A per channel
 #[derive(Device)]
 pub struct EL2002 {
-    pub output_ts: u64,
     pub rxpdo: EL2002RxPdo,
 }
 
@@ -22,7 +21,6 @@ impl std::fmt::Debug for EL2002 {
 impl NewDevice for EL2002 {
     fn new() -> Self {
         Self {
-            output_ts: 0,
             rxpdo: EL2002RxPdo::default(),
         }
     }
@@ -30,18 +28,23 @@ impl NewDevice for EL2002 {
 
 impl DigitalOutputDevice<EL2002Port> for EL2002 {
     fn digital_output_write(&mut self, port: EL2002Port, value: DigitalOutputOutput) {
+        let expect_text = "All channels should be Some(_)";
         match port {
-            EL2002Port::DO1 => self.rxpdo.channel1.as_mut().unwrap().value = value.into(),
-            EL2002Port::DO2 => self.rxpdo.channel2.as_mut().unwrap().value = value.into(),
+            EL2002Port::DO1 => {
+                self.rxpdo.channel1.as_mut().expect(&expect_text).value = value.into()
+            }
+            EL2002Port::DO2 => {
+                self.rxpdo.channel2.as_mut().expect(&expect_text).value = value.into()
+            }
         }
     }
 
     fn digital_output_state(&self, port: EL2002Port) -> DigitalOutputState {
+        let expect_text = "All channels should be Some(_)";
         DigitalOutputState {
-            output_ts: self.output_ts,
             output: DigitalOutputOutput(match port {
-                EL2002Port::DO1 => self.rxpdo.channel1.as_ref().unwrap().value,
-                EL2002Port::DO2 => self.rxpdo.channel2.as_ref().unwrap().value,
+                EL2002Port::DO1 => self.rxpdo.channel1.as_ref().expect(&expect_text).value,
+                EL2002Port::DO2 => self.rxpdo.channel2.as_ref().expect(&expect_text).value,
             }),
         }
     }

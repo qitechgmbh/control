@@ -10,7 +10,6 @@ use super::NewDevice;
 /// 24V DC, 0.5A per channel
 #[derive(Device)]
 pub struct EL2809 {
-    pub output_ts: u64,
     pub rxpdo: EL2809RxPdo,
 }
 
@@ -23,7 +22,6 @@ impl std::fmt::Debug for EL2809 {
 impl NewDevice for EL2809 {
     fn new() -> Self {
         Self {
-            output_ts: 0,
             rxpdo: EL2809RxPdo::default(),
         }
     }
@@ -31,46 +29,79 @@ impl NewDevice for EL2809 {
 
 impl DigitalOutputDevice<EL2809Port> for EL2809 {
     fn digital_output_write(&mut self, port: EL2809Port, value: DigitalOutputOutput) {
+        let expect_text = "All channels should be Some(_)";
         match port {
-            EL2809Port::DO1 => self.rxpdo.channel1.as_mut().unwrap().value = value.into(),
-            EL2809Port::DO2 => self.rxpdo.channel2.as_mut().unwrap().value = value.into(),
-            EL2809Port::DO3 => self.rxpdo.channel3.as_mut().unwrap().value = value.into(),
-            EL2809Port::DO4 => self.rxpdo.channel4.as_mut().unwrap().value = value.into(),
-            EL2809Port::DO5 => self.rxpdo.channel5.as_mut().unwrap().value = value.into(),
-            EL2809Port::DO6 => self.rxpdo.channel6.as_mut().unwrap().value = value.into(),
-            EL2809Port::DO7 => self.rxpdo.channel7.as_mut().unwrap().value = value.into(),
-            EL2809Port::DO8 => self.rxpdo.channel8.as_mut().unwrap().value = value.into(),
-            EL2809Port::DO9 => self.rxpdo.channel9.as_mut().unwrap().value = value.into(),
-            EL2809Port::DO10 => self.rxpdo.channel10.as_mut().unwrap().value = value.into(),
-            EL2809Port::DO11 => self.rxpdo.channel11.as_mut().unwrap().value = value.into(),
-            EL2809Port::DO12 => self.rxpdo.channel12.as_mut().unwrap().value = value.into(),
-            EL2809Port::DO13 => self.rxpdo.channel13.as_mut().unwrap().value = value.into(),
-            EL2809Port::DO14 => self.rxpdo.channel14.as_mut().unwrap().value = value.into(),
-            EL2809Port::DO15 => self.rxpdo.channel15.as_mut().unwrap().value = value.into(),
-            EL2809Port::DO16 => self.rxpdo.channel16.as_mut().unwrap().value = value.into(),
+            EL2809Port::DO1 => {
+                self.rxpdo.channel1.as_mut().expect(&expect_text).value = value.into()
+            }
+            EL2809Port::DO2 => {
+                self.rxpdo.channel2.as_mut().expect(&expect_text).value = value.into()
+            }
+            EL2809Port::DO3 => {
+                self.rxpdo.channel3.as_mut().expect(&expect_text).value = value.into()
+            }
+            EL2809Port::DO4 => {
+                self.rxpdo.channel4.as_mut().expect(&expect_text).value = value.into()
+            }
+            EL2809Port::DO5 => {
+                self.rxpdo.channel5.as_mut().expect(&expect_text).value = value.into()
+            }
+            EL2809Port::DO6 => {
+                self.rxpdo.channel6.as_mut().expect(&expect_text).value = value.into()
+            }
+            EL2809Port::DO7 => {
+                self.rxpdo.channel7.as_mut().expect(&expect_text).value = value.into()
+            }
+            EL2809Port::DO8 => {
+                self.rxpdo.channel8.as_mut().expect(&expect_text).value = value.into()
+            }
+            EL2809Port::DO9 => {
+                self.rxpdo.channel9.as_mut().expect(&expect_text).value = value.into()
+            }
+            EL2809Port::DO10 => {
+                self.rxpdo.channel10.as_mut().expect(&expect_text).value = value.into()
+            }
+            EL2809Port::DO11 => {
+                self.rxpdo.channel11.as_mut().expect(&expect_text).value = value.into()
+            }
+            EL2809Port::DO12 => {
+                self.rxpdo.channel12.as_mut().expect(&expect_text).value = value.into()
+            }
+            EL2809Port::DO13 => {
+                self.rxpdo.channel13.as_mut().expect(&expect_text).value = value.into()
+            }
+            EL2809Port::DO14 => {
+                self.rxpdo.channel14.as_mut().expect(&expect_text).value = value.into()
+            }
+            EL2809Port::DO15 => {
+                self.rxpdo.channel15.as_mut().expect(&expect_text).value = value.into()
+            }
+            EL2809Port::DO16 => {
+                self.rxpdo.channel16.as_mut().expect(&expect_text).value = value.into()
+            }
         }
     }
 
     fn digital_output_state(&self, port: EL2809Port) -> DigitalOutputState {
+        let expect_text = "All channels should be Some(_)";
         DigitalOutputState {
-            output_ts: self.output_ts,
             output: DigitalOutputOutput(match port {
-                EL2809Port::DO1 => self.rxpdo.channel1.as_ref().unwrap().value,
-                EL2809Port::DO2 => self.rxpdo.channel2.as_ref().unwrap().value,
-                EL2809Port::DO3 => self.rxpdo.channel3.as_ref().unwrap().value,
-                EL2809Port::DO4 => self.rxpdo.channel4.as_ref().unwrap().value,
-                EL2809Port::DO5 => self.rxpdo.channel5.as_ref().unwrap().value,
-                EL2809Port::DO6 => self.rxpdo.channel6.as_ref().unwrap().value,
-                EL2809Port::DO7 => self.rxpdo.channel7.as_ref().unwrap().value,
-                EL2809Port::DO8 => self.rxpdo.channel8.as_ref().unwrap().value,
-                EL2809Port::DO9 => self.rxpdo.channel9.as_ref().unwrap().value,
-                EL2809Port::DO10 => self.rxpdo.channel10.as_ref().unwrap().value,
-                EL2809Port::DO11 => self.rxpdo.channel11.as_ref().unwrap().value,
-                EL2809Port::DO12 => self.rxpdo.channel12.as_ref().unwrap().value,
-                EL2809Port::DO13 => self.rxpdo.channel13.as_ref().unwrap().value,
-                EL2809Port::DO14 => self.rxpdo.channel14.as_ref().unwrap().value,
-                EL2809Port::DO15 => self.rxpdo.channel15.as_ref().unwrap().value,
-                EL2809Port::DO16 => self.rxpdo.channel16.as_ref().unwrap().value,
+                EL2809Port::DO1 => self.rxpdo.channel1.as_ref().expect(&expect_text).value,
+                EL2809Port::DO2 => self.rxpdo.channel2.as_ref().expect(&expect_text).value,
+                EL2809Port::DO3 => self.rxpdo.channel3.as_ref().expect(&expect_text).value,
+                EL2809Port::DO4 => self.rxpdo.channel4.as_ref().expect(&expect_text).value,
+                EL2809Port::DO5 => self.rxpdo.channel5.as_ref().expect(&expect_text).value,
+                EL2809Port::DO6 => self.rxpdo.channel6.as_ref().expect(&expect_text).value,
+                EL2809Port::DO7 => self.rxpdo.channel7.as_ref().expect(&expect_text).value,
+                EL2809Port::DO8 => self.rxpdo.channel8.as_ref().expect(&expect_text).value,
+                EL2809Port::DO9 => self.rxpdo.channel9.as_ref().expect(&expect_text).value,
+                EL2809Port::DO10 => self.rxpdo.channel10.as_ref().expect(&expect_text).value,
+                EL2809Port::DO11 => self.rxpdo.channel11.as_ref().expect(&expect_text).value,
+                EL2809Port::DO12 => self.rxpdo.channel12.as_ref().expect(&expect_text).value,
+                EL2809Port::DO13 => self.rxpdo.channel13.as_ref().expect(&expect_text).value,
+                EL2809Port::DO14 => self.rxpdo.channel14.as_ref().expect(&expect_text).value,
+                EL2809Port::DO15 => self.rxpdo.channel15.as_ref().expect(&expect_text).value,
+                EL2809Port::DO16 => self.rxpdo.channel16.as_ref().expect(&expect_text).value,
             }),
         }
     }

@@ -10,7 +10,6 @@ use super::NewDevice;
 /// 250V AC / 30V DC / 4A per channel
 #[derive(Device)]
 pub struct EL2634 {
-    pub output_ts: u64,
     pub rxpdo: EL2634RxPdo,
 }
 
@@ -23,7 +22,6 @@ impl std::fmt::Debug for EL2634 {
 impl NewDevice for EL2634 {
     fn new() -> Self {
         Self {
-            output_ts: 0,
             rxpdo: EL2634RxPdo::default(),
         }
     }
@@ -31,22 +29,31 @@ impl NewDevice for EL2634 {
 
 impl DigitalOutputDevice<EL2634Port> for EL2634 {
     fn digital_output_write(&mut self, port: EL2634Port, value: DigitalOutputOutput) {
+        let expect_text = "All channels should be Some(_)";
         match port {
-            EL2634Port::R1 => self.rxpdo.channel1.as_mut().unwrap().value = value.into(),
-            EL2634Port::R2 => self.rxpdo.channel2.as_mut().unwrap().value = value.into(),
-            EL2634Port::R3 => self.rxpdo.channel3.as_mut().unwrap().value = value.into(),
-            EL2634Port::R4 => self.rxpdo.channel4.as_mut().unwrap().value = value.into(),
+            EL2634Port::R1 => {
+                self.rxpdo.channel1.as_mut().expect(&expect_text).value = value.into()
+            }
+            EL2634Port::R2 => {
+                self.rxpdo.channel2.as_mut().expect(&expect_text).value = value.into()
+            }
+            EL2634Port::R3 => {
+                self.rxpdo.channel3.as_mut().expect(&expect_text).value = value.into()
+            }
+            EL2634Port::R4 => {
+                self.rxpdo.channel4.as_mut().expect(&expect_text).value = value.into()
+            }
         }
     }
 
     fn digital_output_state(&self, port: EL2634Port) -> DigitalOutputState {
+        let expect_text = "All channels should be Some(_)";
         DigitalOutputState {
-            output_ts: self.output_ts,
             output: DigitalOutputOutput(match port {
-                EL2634Port::R1 => self.rxpdo.channel1.as_ref().unwrap().value,
-                EL2634Port::R2 => self.rxpdo.channel2.as_ref().unwrap().value,
-                EL2634Port::R3 => self.rxpdo.channel3.as_ref().unwrap().value,
-                EL2634Port::R4 => self.rxpdo.channel4.as_ref().unwrap().value,
+                EL2634Port::R1 => self.rxpdo.channel1.as_ref().expect(&expect_text).value,
+                EL2634Port::R2 => self.rxpdo.channel2.as_ref().expect(&expect_text).value,
+                EL2634Port::R3 => self.rxpdo.channel3.as_ref().expect(&expect_text).value,
+                EL2634Port::R4 => self.rxpdo.channel4.as_ref().expect(&expect_text).value,
             }),
         }
     }

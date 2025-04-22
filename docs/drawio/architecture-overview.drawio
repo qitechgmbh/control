@@ -1,10 +1,10 @@
 <mxfile host="65bd71144e">
     <diagram name="Page-1" id="TPjBxsTrKfkMUETpgSOp">
-        <mxGraphModel dx="678" dy="984" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+        <mxGraphModel dx="1266" dy="1329" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
-                <mxCell id="13" value="" style="swimlane;startSize=0;swimlaneFillColor=default;strokeColor=none;" vertex="1" parent="1">
+                <mxCell id="13" value="" style="swimlane;startSize=0;swimlaneFillColor=default;strokeColor=none;" parent="1" vertex="1">
                     <mxGeometry x="380" y="30" width="940" height="2200" as="geometry"/>
                 </mxCell>
                 <mxCell id="PiR0quXcLcdD8ighfNz7-60" value="actors" style="swimlane;horizontal=0;whiteSpace=wrap;html=1;gradientColor=none;rounded=1;shadow=0;strokeColor=#808080;" parent="13" vertex="1">
@@ -166,7 +166,7 @@
                 <mxCell id="PiR0quXcLcdD8ighfNz7-227" value="Winder V2 Mutations" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" parent="PiR0quXcLcdD8ighfNz7-118" vertex="1">
                     <mxGeometry x="440" y="100" width="120" height="60" as="geometry"/>
                 </mxCell>
-                <mxCell id="PiR0quXcLcdD8ighfNz7-228" value="Winder V2 Event Cache (Serverside)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" parent="PiR0quXcLcdD8ighfNz7-118" vertex="1">
+                <mxCell id="PiR0quXcLcdD8ighfNz7-228" value="Winder V2 Namespace Cache (Serverside)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" parent="PiR0quXcLcdD8ighfNz7-118" vertex="1">
                     <mxGeometry x="310" y="20" width="120" height="60" as="geometry"/>
                 </mxCell>
                 <mxCell id="PiR0quXcLcdD8ighfNz7-45" value="Laserpointer" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" parent="PiR0quXcLcdD8ighfNz7-112" vertex="1">
@@ -410,7 +410,7 @@
                         </Array>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="PiR0quXcLcdD8ighfNz7-214" value="Winder V1 Room Cache (Clientside)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" parent="13" vertex="1">
+                <mxCell id="PiR0quXcLcdD8ighfNz7-214" value="Winder 2 Namespace Cache (Clientside)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" parent="13" vertex="1">
                     <mxGeometry x="360" y="490" width="120" height="60" as="geometry"/>
                 </mxCell>
                 <mxCell id="PiR0quXcLcdD8ighfNz7-230" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.55;exitY=0.95;exitDx=0;exitDy=0;exitPerimeter=0;" parent="13" source="PiR0quXcLcdD8ighfNz7-192" target="PiR0quXcLcdD8ighfNz7-227" edge="1">
@@ -431,7 +431,7 @@
                 <mxCell id="PiR0quXcLcdD8ighfNz7-234" value="electron" style="swimlane;horizontal=0;whiteSpace=wrap;html=1;gradientColor=none;rounded=1;shadow=0;strokeColor=#808080;" parent="13" vertex="1">
                     <mxGeometry x="20" y="20" width="900" height="650" as="geometry"/>
                 </mxCell>
-                <mxCell id="9" value="useEnable Steppers" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="PiR0quXcLcdD8ighfNz7-234">
+                <mxCell id="9" value="useEnable Steppers" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" parent="PiR0quXcLcdD8ighfNz7-234" vertex="1">
                     <mxGeometry x="90" y="370" width="120" height="60" as="geometry"/>
                 </mxCell>
                 <mxCell id="PiR0quXcLcdD8ighfNz7-204" value="useLaserpointer" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" parent="PiR0quXcLcdD8ighfNz7-234" vertex="1">
@@ -440,13 +440,13 @@
                 <mxCell id="PiR0quXcLcdD8ighfNz7-205" value="useTraverse" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" parent="PiR0quXcLcdD8ighfNz7-234" vertex="1">
                     <mxGeometry x="350" y="370" width="120" height="60" as="geometry"/>
                 </mxCell>
-                <mxCell id="10" value="usePuller" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="PiR0quXcLcdD8ighfNz7-234">
+                <mxCell id="10" value="usePuller" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" parent="PiR0quXcLcdD8ighfNz7-234" vertex="1">
                     <mxGeometry x="480" y="370" width="120" height="60" as="geometry"/>
                 </mxCell>
-                <mxCell id="11" value="useWinder" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="PiR0quXcLcdD8ighfNz7-234">
+                <mxCell id="11" value="useWinder" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" parent="PiR0quXcLcdD8ighfNz7-234" vertex="1">
                     <mxGeometry x="610" y="370" width="120" height="60" as="geometry"/>
                 </mxCell>
-                <mxCell id="12" value="useTensionArm" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="PiR0quXcLcdD8ighfNz7-234">
+                <mxCell id="12" value="useTensionArm" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" parent="PiR0quXcLcdD8ighfNz7-234" vertex="1">
                     <mxGeometry x="740" y="370" width="120" height="60" as="geometry"/>
                 </mxCell>
                 <mxCell id="PiR0quXcLcdD8ighfNz7-263" value="components" style="swimlane;horizontal=0;whiteSpace=wrap;html=1;gradientColor=none;rounded=1;shadow=0;strokeColor=#808080;" parent="13" vertex="1">
@@ -500,7 +500,7 @@
                 <mxCell id="PiR0quXcLcdD8ighfNz7-281" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.4;entryY=0.1;entryDx=0;entryDy=0;entryPerimeter=0;" parent="13" source="PiR0quXcLcdD8ighfNz7-203" target="PiR0quXcLcdD8ighfNz7-192" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="2" value="control-core" style="swimlane;horizontal=0;whiteSpace=wrap;html=1;gradientColor=none;rounded=1;shadow=0;strokeColor=#808080;" vertex="1" parent="13">
+                <mxCell id="2" value="control-core" style="swimlane;horizontal=0;whiteSpace=wrap;html=1;gradientColor=none;rounded=1;shadow=0;strokeColor=#808080;" parent="13" vertex="1">
                     <mxGeometry x="20" y="1170" width="900" height="140" as="geometry"/>
                 </mxCell>
             </root>

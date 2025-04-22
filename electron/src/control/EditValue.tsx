@@ -2,6 +2,7 @@ import { Icon, IconName } from "@/components/Icon";
 import React, { useEffect } from "react";
 import {
   getUnitIcon,
+  renderUndefinedValue,
   renderUnitSymbol,
   renderUnitSymbolLong,
   renderUnitSyntax,
@@ -19,10 +20,11 @@ import { TouchInput } from "@/components/touch/TouchInput";
 import { IconText } from "@/components/IconText";
 import { cva } from "class-variance-authority";
 import { z } from "zod";
+import { use } from "chai";
 
 type Props = {
   unit?: Unit;
-  value: number;
+  value?: number;
   title: string;
   description?: string;
   icon?: IconName;
@@ -35,6 +37,7 @@ type Props = {
   valueSchema?: z.ZodType<number>;
   inverted?: boolean;
   renderValue: (value: number) => string;
+  onChange?: (value: number) => void;
 };
 
 const inputRowStyle = cva(
@@ -70,6 +73,7 @@ export function EditValue({
   max,
   minLabel,
   maxLabel,
+  onChange,
 }: Props) {
   const formSchema = z.object({
     value: schema ?? z.number(),
@@ -77,7 +81,7 @@ export function EditValue({
   type FormSchema = z.infer<typeof formSchema>;
   const form = useForm<FormSchema>({
     resolver: zodResolver<FormSchema>(formSchema),
-    values: { value },
+    values: { value: value ?? defaultValue },
     defaultValues: {
       value: defaultValue,
     },
@@ -86,6 +90,15 @@ export function EditValue({
   const formValues = useFormValues(form);
   const { value: formValue } = formValues;
 
+  // if external value changes
+  // for example from undefined to defined
+  // we reset the form
+  useEffect(() => {
+    form.reset({
+      value: value ?? defaultValue,
+    });
+  }, [value, defaultValue]);
+
   const handleAbort = () => {
     form.reset();
     setOpen(false);
@@ -93,9 +106,9 @@ export function EditValue({
 
   const handleSubmit = () => {
     form.handleSubmit((data) => {
-      console.log(data);
+      onChange?.(data.value);
+      setOpen(false);
     })();
-    setOpen(false);
   };
 
   const [open, setOpen] = React.useState(false);
@@ -104,13 +117,20 @@ export function EditValue({
     form.setValue("value", value);
   };
 
+  const valueIsDefined = value !== undefined && value !== null;
+  console.log("valueIsDefined", valueIsDefined);
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger className="w-min" asChild>
-        <TouchButton className={buttonStyle({ open })} variant="outline">
+        <TouchButton
+          className={buttonStyle({ open, class: "py-4" })}
+          variant="outline"
+          disabled={!valueIsDefined}
+        >
           <div className="flex flex-row items-center gap-2">
             <span className="font-mono text-4xl font-bold">
-              {renderUnitSyntax(renderValue(value), unit)}
+              {renderUndefinedValue(value, unit, renderValue)}
             </span>
             <span>{renderUnitSymbol(unit)}</span>
           </div>
@@ -118,111 +138,116 @@ export function EditValue({
           <Icon name="lu:Pencil" className="size-6" />
         </TouchButton>
       </PopoverTrigger>
-      <PopoverContent className="mx-8 flex w-min flex-col gap-6 rounded-2xl p-6 shadow-2xl">
-        <div className="text-l flex flex-row items-center gap-2">
-          <Icon
-            name={unit ? getUnitIcon(unit) : "lu:Pencil"}
-            className="size-6"
-          />
-          <span>{title}</span>
-        </div>
-        {description && <span>{description}</span>}
-        <Separator />
+      {valueIsDefined && (
+        <PopoverContent className="mx-8 flex w-min flex-col gap-6 rounded-2xl p-6 shadow-2xl">
+          <div className="text-l flex flex-row items-center gap-2">
+            <Icon
+              name={unit ? getUnitIcon(unit) : "lu:Pencil"}
+              className="size-6"
+            />
+            <span>{title}</span>
+          </div>
+          {description && <span>{description}</span>}
+          <Separator />
 
-        <div className={inputRowStyle({ inverted })}>
-          <TouchButton
-            icon="lu:Minus"
-            variant="outline"
-            onClick={() =>
-              setValue(
-                min !== undefined
-                  ? Math.max(min, formValue - step)
-                  : formValue - step,
-              )
-            }
-          />
-          <div className="flex flex-col items-center gap-2">
-            <EditValueText
-              formValue={formValue}
-              setFormValue={(value) => setValue(value)}
-              valueSchema={schema}
+          <div className={inputRowStyle({ inverted })}>
+            <TouchButton
+              icon="lu:Minus"
+              variant="outline"
+              onClick={() =>
+                setValue(
+                  min !== undefined
+                    ? Math.max(min, formValue - step)
+                    : formValue - step,
+                )
+              }
+            />
+            <div className="flex flex-col items-center gap-2">
+              <EditValueText
+                formValue={formValue}
+                setFormValue={(value) => setValue(value)}
+                valueSchema={schema}
+                min={min}
+                max={max}
+              />
+              {unit && (
+                <span className="text-gray-400 uppercase">
+                  {renderUnitSymbolLong(unit)}
+                </span>
+              )}
+            </div>
+            <TouchButton
+              icon="lu:Plus"
+              variant="outline"
+              onClick={() =>
+                setValue(
+                  max !== undefined
+                    ? Math.min(max, formValue + step)
+                    : formValue + step,
+                )
+              }
+            />
+          </div>
+          <div className="py-0">
+            <TouchSlider
+              className="w-[48rem]"
+              value={formValue ? [formValue] : undefined}
+              onValueChange={(x) => setValue(x[0])}
               min={min}
               max={max}
+              step={step}
+              inverted={inverted}
+              unit={unit}
+              minLabel={minLabel}
+              maxLabel={maxLabel}
+              renderValue={renderValue}
             />
-            {unit && (
-              <span className="text-gray-400 uppercase">
-                {renderUnitSymbolLong(unit)}
-              </span>
-            )}
           </div>
-          <TouchButton
-            icon="lu:Plus"
-            variant="outline"
-            onClick={() =>
-              setValue(
-                max !== undefined
-                  ? Math.min(max, formValue + step)
-                  : formValue + step,
-              )
-            }
-          />
-        </div>
-        <div className="py-0">
-          <TouchSlider
-            className="w-[48rem]"
-            value={formValue ? [formValue] : undefined}
-            onValueChange={(x) => setValue(x[0])}
-            min={min}
-            max={max}
-            step={step}
-            inverted={inverted}
-            unit={unit}
-            minLabel={minLabel}
-            maxLabel={maxLabel}
-            renderValue={renderValue}
-          />
-        </div>
-        <Separator />
-        <div className="flex flex-row gap-4">
-          <TouchButton
-            variant="outline"
-            icon="lu:X"
-            className="flex-1"
-            onClick={handleAbort}
-          >
-            Abort
-          </TouchButton>
-          <div className="flex flex-1 flex-col gap-2">
-            <TouchButton
-              variant="default"
-              icon="lu:Save"
-              className="w-full"
-              onClick={handleSubmit}
-            >
-              Save
-            </TouchButton>
-            {!form.formState.isValid && (
-              <IconText variant="error" icon={"lu:TriangleAlert"}>
-                {form.formState.errors.value?.message}
-              </IconText>
-            )}
-          </div>
-
-          {defaultValue !== undefined && (
+          <Separator />
+          <div className="flex flex-row gap-4">
             <TouchButton
               variant="outline"
-              icon="lu:Undo2"
+              icon="lu:X"
               className="flex-1"
               onClick={handleAbort}
             >
-              <span className="font-mono">
-                {renderUnitSyntax(renderValue(defaultValue), unit)}
-              </span>
-              {unit ? " " + renderUnitSymbol(unit) : ""} Default
+              Abort
             </TouchButton>
-          )}
-        </div>
-      </PopoverContent>
+            <div className="flex flex-1 flex-col gap-2">
+              <TouchButton
+                variant="default"
+                icon="lu:Save"
+                className="w-full"
+                onClick={handleSubmit}
+              >
+                Save
+              </TouchButton>
+              {!form.formState.isValid && (
+                <IconText variant="error" icon={"lu:TriangleAlert"}>
+                  {form.formState.errors.value?.message}
+                </IconText>
+              )}
+            </div>
+
+            {defaultValue !== undefined && (
+              <TouchButton
+                variant="outline"
+                icon="lu:Undo2"
+                className="flex-1"
+                onClick={() => {
+                  setValue(defaultValue);
+                  handleSubmit();
+                }}
+              >
+                <span className="font-mono">
+                  {renderUnitSyntax(renderValue(defaultValue), unit)}
+                </span>
+                {unit ? " " + renderUnitSymbol(unit) : ""} Default
+              </TouchButton>
+            )}
+          </div>
+        </PopoverContent>
+      )}
     </Popover>
   );
 }

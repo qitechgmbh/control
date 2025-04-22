@@ -1,7 +1,8 @@
 use crate::app_state::{EthercatSetup, APP_STATE};
 use crate::machines::registry::MACHINE_REGISTRY;
-use crate::socketio::main_room::ethercat_setup_event::EthercatSetupEventBuilder;
-use crate::socketio::main_room::MainRoomEvents;
+use crate::panic::{send_panic, PanicDetails};
+use crate::socketio::main_namespace::ethercat_setup_event::EthercatSetupEventBuilder;
+use crate::socketio::main_namespace::MainNamespaceEvents;
 use crate::{
     app_state::AppState,
     ethercat::config::{MAX_FRAMES, MAX_PDU_DATA, MAX_SUBDEVICES, PDI_LEN},
@@ -9,24 +10,24 @@ use crate::{
 use bitvec::prelude::*;
 use control_core::actors::{mitsubishi_inverter_rs485, Actor};
 use control_core::identification::identify_device_groups;
-use control_core::machines::new::get_subdevice_by_index;
-use control_core::socketio::event::EventBuilder;
-use control_core::socketio::room::RoomCacheingLogic;
-use ethercat_hal::coe::Configuration;
-use ethercat_hal::devices::el6021::{self, EL6021Port, EL6021};
-use ethercat_hal::devices::{device_from_subdevice, devices_from_subdevices, downcast_device, Device, NewDevice};
-use ethercat_hal::io::serial_interface::SerialInterface;
+use control_core::socketio::namespace::NamespaceCacheingLogic;
+use ethercat_hal::devices::devices_from_subdevices;
 use ethercrab::std::{ethercat_now, tx_rx_task};
 use ethercrab::{MainDevice, MainDeviceConfig, PduStorage, RetryBehaviour, Timeouts};
+use smol::channel::Sender;
 use smol::lock::RwLock;
 use std::collections::HashMap;
 use std::{sync::Arc, time::Duration};
 
 use control_core::actors::mitsubishi_inverter_rs485::MitsubishiInverterRS485Actor;
 
+pub async fn setup_loop(
+    thread_panic_tx: Sender<PanicDetails>,
+    interface: &str,
+    app_state: Arc<AppState>,
+) -> Result<(), anyhow::Error> {
+    log::info!("Starting Ethercat PDU loop");
 
-
-pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(), anyhow::Error> {
     // Erase all all setup data from `app_state`
     {
         log::info!("Setting up Ethercat network");
@@ -38,22 +39,30 @@ pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(),
     let pdu_storage = Box::leak(Box::new(PduStorage::<MAX_FRAMES, MAX_PDU_DATA>::new()));
     let (tx, rx, pdu) = pdu_storage.try_split().expect("can only split once");
     let interface = interface.to_string();
-    std::thread::spawn(move || {
-        let rt = tokio::runtime::Runtime::new().expect("Failed to create runtime");
-        let _ = rt.block_on(async move {
-            tx_rx_task(&interface, tx, rx)
-                .expect("spawn TX/RX task")
-                .await
-        });
-    });
+    let thread_panic_tx_clone = thread_panic_tx.clone();
+    std::thread::Builder::new()
+        .name("EthercatTxRxThread".to_owned())
+        .spawn(move || {
+            send_panic("EthercatTxRxThread", thread_panic_tx_clone);
+            let rt = smol::LocalExecutor::new();
+            let _ = smol::block_on(rt.run(async {
+                tx_rx_task(&interface, tx, rx)
+                    .expect("spawn TX/RX task")
+                    .await
+            }));
+        })
+        .expect("Building thread");
 
     // Create maindevice
     let maindevice = MainDevice::new(
         pdu,
         Timeouts {
-            wait_loop_delay: Duration::from_millis(1),
-            mailbox_response: Duration::from_millis(100000000),
-            ..Default::default()
+            wait_loop_delay: Duration::from_millis(0),
+            mailbox_response: Duration::from_millis(1000 * 10),
+            state_transition: Duration::from_millis(1000 * 10),
+            pdu: Duration::from_millis(1000 * 1),
+            eeprom: Duration::from_millis(1000 * 1),
+            mailbox_echo: Duration::from_millis(1000 * 1),
         },
         MainDeviceConfig {
             retry_behaviour: RetryBehaviour::Forever,
@@ -61,10 +70,15 @@ pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(),
         },
     );
 
-    tokio::spawn(async move {
-        let main_room = &mut APP_STATE.socketio_setup.rooms.write().await.main_room;
-        let event = EthercatSetupEventBuilder().warning("Configuring Ethercat Network...");
-        main_room.emit_cached(MainRoomEvents::EthercatSetupEvent(event));
+    let _ = smol::block_on(async move {
+        let main_namespace = &mut APP_STATE
+            .socketio_setup
+            .namespaces
+            .write()
+            .await
+            .main_namespace;
+        let event = EthercatSetupEventBuilder().initializing();
+        main_namespace.emit_cached(MainNamespaceEvents::EthercatSetupEvent(event));
     });
 
     // Initalize subdevices
@@ -100,35 +114,35 @@ pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(),
         machines.insert(
             identified_device_group
                 .first()
-                .unwrap()
+                .expect("There should always be a first device")
                 .machine_identification_unique
                 .clone(),
             machine,
         );
     }
 
-    println!("{:?}",&subdevices);
-
+    println!("{:?}", &subdevices);
 
     //log machines
     for (k, v) in machines.iter() {
         log::info!("Machine: {:?} {:?}", k, v);
     }
 
-
-    
-    let el6021 = downcast_device::<EL6021>(devices.get(2).unwrap().clone()).await.unwrap();
-    let subdevice = get_subdevice_by_index(&subdevices,2)?;
-    println!("{}",subdevice.name());
+    let el6021 = downcast_device::<EL6021>(devices.get(2).unwrap().clone())
+        .await
+        .unwrap();
+    let subdevice = get_subdevice_by_index(&subdevices, 2)?;
+    println!("{}", subdevice.name());
     //get_subdevice_by_index
 
-    println!("{:?}",el6021.write().await.configuration);
+    println!("{:?}", el6021.write().await.configuration);
 
-    el6021.write()
+    el6021
+        .write()
         .await
-        .configuration.
-        write_config(subdevice).await?;
-    
+        .configuration
+        .write_config(subdevice)
+        .await?;
 
     // Put group in operational state
     let group_op = match group_preop.into_op(&maindevice).await {
@@ -159,13 +173,10 @@ pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(),
         }
     }
 
+    let serial_interface = SerialInterface::new(el6021, EL6021Port::SI1);
+    let mitsubishi_inverter_rs485 = MitsubishiInverterRS485Actor::new(false, serial_interface);
+    actors.push(Arc::new(RwLock::new(mitsubishi_inverter_rs485)));
 
-
-    let serial_interface = SerialInterface::new(el6021,EL6021Port::SI1);
-    let mitsubishi_inverter_rs485 = MitsubishiInverterRS485Actor::new(false,serial_interface);
-    actors.push(   Arc::new(RwLock::new(mitsubishi_inverter_rs485)));
-    
-    
     // Write all this stuff to `app_state`
     {
         let mut ethercat_setup_guard = app_state.ethercat_setup.write().await;
@@ -182,51 +193,48 @@ pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(),
     }
 
     // Notify client via socketio
-    tokio::spawn(async move {
-        let main_room = &mut APP_STATE.socketio_setup.rooms.write().await.main_room;
+    let _ = smol::block_on(async move {
+        let main_namespace = &mut APP_STATE
+            .socketio_setup
+            .namespaces
+            .write()
+            .await
+            .main_namespace;
         let event = EthercatSetupEventBuilder().build();
-        main_room.emit_cached(MainRoomEvents::EthercatSetupEvent(event));
+        main_namespace.emit_cached(MainNamespaceEvents::EthercatSetupEvent(event));
     });
 
     // Start control loop
-    let pdu_handle = tokio::spawn(async move {
-        log::info!("Starting control loop");
-        let mut average_nanos = Duration::from_micros(250).as_nanos() as u64;
-        loop {
-            let res = loop_once(app_state.ethercat_setup.clone(), &mut average_nanos).await;
+    std::thread::Builder::new()
+        .name("EthercatLoopThread".to_owned())
+        .spawn(move || loop {
+            send_panic("EthercatLoopThread", thread_panic_tx.clone());
+            let rt = smol::LocalExecutor::new();
+            let res =
+                smol::block_on(rt.run(async { loop_once(app_state.ethercat_setup.clone()).await }));
             if let Err(err) = res {
                 log::error!("Loop failed\n{:?}", err);
             }
-        }
-    });
-    // Await the pdu_loop task so that it executes fully
-    pdu_handle.await.expect("pdu_loop task failed");
+        })
+        .expect("Building thread");
 
     Ok(())
 }
 
 pub async fn loop_once<'maindevice>(
     setup: Arc<RwLock<Option<EthercatSetup>>>,
-    average_nanos: &mut u64,
 ) -> Result<(), anyhow::Error> {
     let setup_guard = setup.read().await;
     let setup = setup_guard
         .as_ref()
         .ok_or_else(|| anyhow::anyhow!("[{}::loop_once] No setup", module_path!()))?;
 
-    // TS when the TX/RX cycle starts
-    let input_ts = ethercat_now();
-
     // TX/RX cycle
     setup.group.tx_rx(&setup.maindevice).await?;
-
-    // Prediction when the next TX/RX cycle starts
-    let output_ts = input_ts + *average_nanos;
 
     // copy inputs to devices
     for (i, subdevice) in setup.group.iter(&setup.maindevice).enumerate() {
         let mut device = setup.devices[i].as_ref().write().await;
-        device.ts(input_ts, output_ts);
         let input = subdevice.inputs_raw();
         let input_bits = input.view_bits::<Lsb0>();
 
@@ -250,9 +258,10 @@ pub async fn loop_once<'maindevice>(
     }
 
     // execute actors
+    let now = std::time::Instant::now();
     for actor in setup.actors.iter() {
         let mut actor = actor.write().await;
-        actor.act(output_ts).await;
+        actor.act(now).await;
     }
 
     // copy outputs from devices

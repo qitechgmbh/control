@@ -1,10 +1,7 @@
 import { ControlCard } from "@/control/ControlCard";
-import {
-  ControlValueNumeric,
-  ControlValueBoolean,
-} from "@/control/ControlValue";
 import { EditValue } from "@/control/EditValue";
 import { Label } from "@/control/Label";
+import { roundToDecimals } from "@/lib/decimal";
 import React from "react";
 
 type Props = {
@@ -22,18 +19,18 @@ export function HeatingZone({
 }: Props) {
   return (
     <ControlCard className="bg-red" title={title}>
-      <ControlValueBoolean
+      {/* <ControlValueBoolean
         label="Heating"
         icon="lu:Flame"
         value={heating}
         renderValue={(value) => (value === true ? "ON" : "OFF")}
-      />
-      <ControlValueNumeric
+      /> */}
+      {/* <TimeSeriesValueNumeric
         label="Temperature"
         unit="C"
         value={temperature}
-        renderValue={(value) => value.toFixed(0)}
-      />
+        renderValue={(value) => roundToDecimals(value, 0)}
+      /> */}
 
       <Label label="Target Temperature">
         <EditValue
@@ -43,7 +40,7 @@ export function HeatingZone({
           max={330}
           unit="C"
           title="Target Temperature"
-          renderValue={(value) => value.toFixed(0)}
+          renderValue={(value) => roundToDecimals(value, 0)}
         />
       </Label>
     </ControlCard>

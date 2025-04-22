@@ -85,7 +85,7 @@
   services.xserver.displayManager.gdm = {
     enable = true;
     autoSuspend = false;
-    wayland = false;
+    wayland = true;
   };
   
   services.xserver.desktopManager.gnome.enable = true;
@@ -144,6 +144,8 @@
 
   # Enable touchpad support (enabled default in most desktopManager).
   services.libinput.enable = true;
+  services.libinput.touchpad.tapping = true;
+  services.touchegg.enable = true;
 
   # Enable the QiTech Control server
   services.qitech = {

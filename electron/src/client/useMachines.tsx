@@ -5,7 +5,7 @@ import {
   VendorPreset,
   MachineIdentificationUnique,
 } from "@/machines/types";
-import { useMainRoom } from "./mainRoom";
+import { useMainNamespace } from "./mainNamespace";
 
 type UseMachine = {
   machine_identification_unique: MachineIdentificationUnique;
@@ -18,13 +18,11 @@ type UseMachine = {
 
 // returns only valid mahcines
 export function useMachines(): UseMachine[] {
-  const {
-    state: { ethercatSetup },
-  } = useMainRoom();
+  const { ethercatSetup } = useMainNamespace();
 
-  if (ethercatSetup?.content.Data)
+  if (ethercatSetup?.data)
     return (
-      ethercatSetup.content.Data.machines
+      ethercatSetup.data.Done?.machines
         .filter((machine) => machine.error === null)
         .map((machine) => {
           const machinePreset = getMachinePreset(

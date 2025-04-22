@@ -14,6 +14,8 @@ use ethercat_hal::devices::el3001::EL3001_IDENTITY_A;
 use ethercat_hal::devices::el3021::EL3021_IDENTITY_A;
 use ethercat_hal::devices::el3024::EL3024_IDENTITY_A;
 use ethercat_hal::devices::el6021::EL6021_IDENTITY_A;
+use ethercat_hal::devices::el7031::EL7031_IDENTITY_A;
+use ethercat_hal::devices::el7041_0052::EL7041_0052_IDENTITY_A;
 use ethercat_hal::devices::subdevice_identity_to_tuple;
 use ethercat_hal::types::EthercrabSubDeviceGroupPreoperational;
 use ethercat_hal::types::EthercrabSubDeviceOperational;
@@ -26,9 +28,9 @@ use serde::Serialize;
 /// Identifies a spacifi machine
 #[derive(Debug, PartialEq, Default, Clone, Serialize, Deserialize, Eq, Hash)]
 pub struct MachineIdentificationUnique {
-    pub vendor: u32,
-    pub serial: u32,
-    pub machine: u32,
+    pub vendor: u16,
+    pub serial: u16,
+    pub machine: u16,
 }
 
 impl Display for MachineIdentificationUnique {
@@ -44,12 +46,12 @@ impl Display for MachineIdentificationUnique {
 /// Identifies a machine
 #[derive(Debug, PartialEq, Default, Clone, Serialize, Deserialize)]
 pub struct MachineIdentification {
-    pub vendor: u32,
-    pub machine: u32,
+    pub vendor: u16,
+    pub machine: u16,
 }
 
 impl MachineIdentification {
-    pub fn new(vendor: u32, machine: u32) -> Self {
+    pub fn new(vendor: u16, machine: u16) -> Self {
         Self { vendor, machine }
     }
 }
@@ -72,7 +74,7 @@ impl From<&MachineIdentificationUnique> for MachineIdentification {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MachineDeviceIdentification {
     pub machine_identification_unique: MachineIdentificationUnique,
-    pub role: u32,
+    pub role: u16,
     pub subdevice_index: usize,
 }
 
@@ -108,14 +110,10 @@ impl MachineDeviceIdentificationAddresses {
 impl Default for MachineDeviceIdentificationAddresses {
     fn default() -> Self {
         Self {
-            // 0x0028 to 0x0029 BE
             vendor_word: 0x0028,
-            // 0x002a to 0x002b BE
-            serial_word: 0x002a,
-            // 0x002c to 0x002d BE
-            machine_word: 0x002c,
-            // 0x002e to 0x002f BE
-            role_word: 0x002e,
+            serial_word: 0x0029,
+            machine_word: 0x002a,
+            role_word: 0x002b,
         }
     }
 }
@@ -185,51 +183,63 @@ pub async fn machine_device_identification<'maindevice>(
         }
     };
 
-    Ok(MachineDeviceIdentification {
+    let mdi = MachineDeviceIdentification {
         machine_identification_unique: MachineIdentificationUnique {
-            vendor: words_to_u32be(
-                subdevice
-                    .eeprom_read(maindevice, addresses.vendor_word)
-                    .await
-                    .unwrap(),
-                subdevice
-                    .eeprom_read(maindevice, addresses.vendor_word + 1)
-                    .await
-                    .unwrap(),
-            ),
-            serial: words_to_u32be(
-                subdevice
-                    .eeprom_read(maindevice, addresses.serial_word)
-                    .await
-                    .unwrap(),
-                subdevice
-                    .eeprom_read(maindevice, addresses.serial_word + 1)
-                    .await
-                    .unwrap(),
-            ),
-            machine: words_to_u32be(
-                subdevice
-                    .eeprom_read(maindevice, addresses.machine_word)
-                    .await
-                    .unwrap(),
-                subdevice
-                    .eeprom_read(maindevice, addresses.machine_word + 1)
-                    .await
-                    .unwrap(),
-            ),
+            vendor: subdevice
+                .eeprom_read::<u16>(maindevice, addresses.vendor_word)
+                .await
+                .or(Err(anyhow!(
+                    "[{}::machine_device_identification] Failed to read vendor from EEPROM for device {}",
+                    module_path!(),
+                    subdevice.name()
+                )))?,
+            serial: subdevice
+                .eeprom_read::<u16>(maindevice, addresses.serial_word)
+                .await
+                .or(Err(anyhow!(
+                    "[{}::machine_device_identification] Failed to read serial from EEPROM for device {}",
+                    module_path!(),
+                    subdevice.name()
+                )))?,
+            machine: subdevice
+                .eeprom_read::<u16>(maindevice, addresses.machine_word)
+                .await
+                .or(Err(anyhow!(
+                    "[{}::machine_device_identification] Failed to read machine from EEPROM for device {}",
+                    module_path!(),
+                    subdevice.name()
+                )))?,
         },
-        role: words_to_u32be(
-            subdevice
-                .eeprom_read(maindevice, addresses.role_word)
-                .await
-                .unwrap(),
-            subdevice
-                .eeprom_read(maindevice, addresses.role_word + 1)
-                .await
-                .unwrap(),
-        ),
+        role: subdevice
+            .eeprom_read::<u16>(maindevice, addresses.role_word)
+            .await
+            .or(Err(anyhow!(
+                "[{}::machine_device_identification] Failed to read role from EEPROM for device {}",
+                module_path!(),
+                subdevice.name()
+            )))?,
         subdevice_index: subdevice_index,
-    })
+    };
+
+    log::debug!(
+        "[{}::machine_device_identification] Read MDI from EEPROM for device {}\nVendor:  0x{:08x} at 0x{:04x}-0x{:04x}\nSerial:  0x{:08x} at 0x{:04x}-0x{:04x}\nMachine: 0x{:08x} at 0x{:04x}-0x{:04x}\nRole:    0x{:08x} at 0x{:04x}-0x{:04x}",
+        module_path!(),
+        subdevice.name(),
+        mdi.machine_identification_unique.vendor,
+        addresses.vendor_word,
+        addresses.vendor_word + 1,
+        mdi.machine_identification_unique.serial,
+        addresses.serial_word,
+        addresses.serial_word + 1,
+        mdi.machine_identification_unique.machine,
+        addresses.machine_word,
+        addresses.machine_word + 1,
+        mdi.role,
+        addresses.role_word,
+        addresses.role_word + 1,
+    );
+
+    Ok(mdi)
 }
 
 /// Writes the machine device identification to the EEPROM
@@ -239,65 +249,49 @@ pub async fn write_machine_device_identification<'maindevice, const MAX_PDI: usi
     identification: &MachineDeviceIdentification,
 ) -> Result<(), Error> {
     let addresses = get_identification_addresses(&subdevice.identity(), subdevice.name())?;
+    log::debug!(
+        "[{}::write_machine_device_identification] Writing MDI to EEPROM for device {}\nVendor:  0x{:08x} at 0x{:04x}-0x{:04x}\nSerial:  0x{:08x} at 0x{:04x}-0x{:04x}\nMachine: 0x{:08x} at 0x{:04x}-0x{:04x}\nRole:    0x{:08x} at 0x{:04x}-0x{:04x}",
+        module_path!(),
+        subdevice.name(),
+        identification.machine_identification_unique.vendor,
+        addresses.vendor_word,
+        addresses.vendor_word + 1,
+        identification.machine_identification_unique.serial,
+        addresses.serial_word,
+        addresses.serial_word + 1,
+        identification.machine_identification_unique.machine,
+        addresses.machine_word,
+        addresses.machine_word + 1,
+        identification.role,
+        addresses.role_word,
+        addresses.role_word + 1,
+    );
 
     subdevice
         .eeprom_write_dangerously(
             maindevice,
             addresses.vendor_word,
-            identification.machine_identification_unique.vendor as u16,
-        )
-        .await?;
-    subdevice
-        .eeprom_write_dangerously(
-            maindevice,
-            addresses.vendor_word + 1,
-            (identification.machine_identification_unique.vendor >> 16) as u16,
+            identification.machine_identification_unique.vendor,
         )
         .await?;
     subdevice
         .eeprom_write_dangerously(
             maindevice,
             addresses.serial_word,
-            identification.machine_identification_unique.serial as u16,
-        )
-        .await?;
-    subdevice
-        .eeprom_write_dangerously(
-            maindevice,
-            addresses.serial_word + 1,
-            (identification.machine_identification_unique.serial >> 16) as u16,
+            identification.machine_identification_unique.serial,
         )
         .await?;
     subdevice
         .eeprom_write_dangerously(
             maindevice,
             addresses.machine_word,
-            identification.machine_identification_unique.machine as u16,
+            identification.machine_identification_unique.machine,
         )
         .await?;
     subdevice
-        .eeprom_write_dangerously(
-            maindevice,
-            addresses.machine_word + 1,
-            (identification.machine_identification_unique.machine >> 16) as u16,
-        )
-        .await?;
-    subdevice
-        .eeprom_write_dangerously(maindevice, addresses.role_word, identification.role as u16)
-        .await?;
-    subdevice
-        .eeprom_write_dangerously(
-            maindevice,
-            addresses.role_word + 1,
-            (identification.role >> 16) as u16,
-        )
+        .eeprom_write_dangerously(maindevice, addresses.role_word, identification.role)
         .await?;
     Ok(())
-}
-
-/// Converts two u16 words to a u32 big endian
-fn words_to_u32be(word_low: u16, word_high: u16) -> u32 {
-    ((word_high as u32) << 16) | word_low as u32
 }
 
 /// Returns the EEPROM addresses for the machine device identification
@@ -320,6 +314,8 @@ pub fn get_identification_addresses<'maindevice>(
         EL2522_IDENTITY_A => MachineDeviceIdentificationAddresses::default(),
         EL3024_IDENTITY_A => MachineDeviceIdentificationAddresses::default(),
         EL3021_IDENTITY_A => MachineDeviceIdentificationAddresses::default(),
+        EL7031_IDENTITY_A => MachineDeviceIdentificationAddresses::default(),
+        EL7041_0052_IDENTITY_A => MachineDeviceIdentificationAddresses::default(),
         EL6021_IDENTITY_A => MachineDeviceIdentificationAddresses::default(),
         _ => {
             // block_on(u16dump(&subdevice, maindevice, 0x00, 0xff))?;

@@ -9,7 +9,6 @@ use ethercat_hal_derive::{Device, RxPdo};
 /// 24V DC, 0.5A per channel
 #[derive(Device)]
 pub struct EL2008 {
-    pub output_ts: u64,
     pub rxpdo: EL2008RxPdo,
 }
 
@@ -22,7 +21,6 @@ impl std::fmt::Debug for EL2008 {
 impl NewDevice for EL2008 {
     fn new() -> Self {
         Self {
-            output_ts: 0,
             rxpdo: EL2008RxPdo::default(),
         }
     }
@@ -30,30 +28,47 @@ impl NewDevice for EL2008 {
 
 impl DigitalOutputDevice<EL2008Port> for EL2008 {
     fn digital_output_write(&mut self, port: EL2008Port, value: DigitalOutputOutput) {
+        let expect_text = "All channels should be Some(_)";
         match port {
-            EL2008Port::DO1 => self.rxpdo.channel1.as_mut().unwrap().value = value.into(),
-            EL2008Port::DO2 => self.rxpdo.channel2.as_mut().unwrap().value = value.into(),
-            EL2008Port::DO3 => self.rxpdo.channel3.as_mut().unwrap().value = value.into(),
-            EL2008Port::DO4 => self.rxpdo.channel4.as_mut().unwrap().value = value.into(),
-            EL2008Port::DO5 => self.rxpdo.channel5.as_mut().unwrap().value = value.into(),
-            EL2008Port::DO6 => self.rxpdo.channel6.as_mut().unwrap().value = value.into(),
-            EL2008Port::DO7 => self.rxpdo.channel7.as_mut().unwrap().value = value.into(),
-            EL2008Port::DO8 => self.rxpdo.channel8.as_mut().unwrap().value = value.into(),
+            EL2008Port::DO1 => {
+                self.rxpdo.channel1.as_mut().expect(&expect_text).value = value.into()
+            }
+            EL2008Port::DO2 => {
+                self.rxpdo.channel2.as_mut().expect(&expect_text).value = value.into()
+            }
+            EL2008Port::DO3 => {
+                self.rxpdo.channel3.as_mut().expect(&expect_text).value = value.into()
+            }
+            EL2008Port::DO4 => {
+                self.rxpdo.channel4.as_mut().expect(&expect_text).value = value.into()
+            }
+            EL2008Port::DO5 => {
+                self.rxpdo.channel5.as_mut().expect(&expect_text).value = value.into()
+            }
+            EL2008Port::DO6 => {
+                self.rxpdo.channel6.as_mut().expect(&expect_text).value = value.into()
+            }
+            EL2008Port::DO7 => {
+                self.rxpdo.channel7.as_mut().expect(&expect_text).value = value.into()
+            }
+            EL2008Port::DO8 => {
+                self.rxpdo.channel8.as_mut().expect(&expect_text).value = value.into()
+            }
         }
     }
 
     fn digital_output_state(&self, port: EL2008Port) -> DigitalOutputState {
+        let expect_text = "All channels should be Some(_)";
         DigitalOutputState {
-            output_ts: self.output_ts,
             output: DigitalOutputOutput(match port {
-                EL2008Port::DO1 => self.rxpdo.channel1.as_ref().unwrap().value,
-                EL2008Port::DO2 => self.rxpdo.channel2.as_ref().unwrap().value,
-                EL2008Port::DO3 => self.rxpdo.channel3.as_ref().unwrap().value,
-                EL2008Port::DO4 => self.rxpdo.channel4.as_ref().unwrap().value,
-                EL2008Port::DO5 => self.rxpdo.channel5.as_ref().unwrap().value,
-                EL2008Port::DO6 => self.rxpdo.channel6.as_ref().unwrap().value,
-                EL2008Port::DO7 => self.rxpdo.channel7.as_ref().unwrap().value,
-                EL2008Port::DO8 => self.rxpdo.channel8.as_ref().unwrap().value,
+                EL2008Port::DO1 => self.rxpdo.channel1.as_ref().expect(&expect_text).value,
+                EL2008Port::DO2 => self.rxpdo.channel2.as_ref().expect(&expect_text).value,
+                EL2008Port::DO3 => self.rxpdo.channel3.as_ref().expect(&expect_text).value,
+                EL2008Port::DO4 => self.rxpdo.channel4.as_ref().expect(&expect_text).value,
+                EL2008Port::DO5 => self.rxpdo.channel5.as_ref().expect(&expect_text).value,
+                EL2008Port::DO6 => self.rxpdo.channel6.as_ref().expect(&expect_text).value,
+                EL2008Port::DO7 => self.rxpdo.channel7.as_ref().expect(&expect_text).value,
+                EL2008Port::DO8 => self.rxpdo.channel8.as_ref().expect(&expect_text).value,
             }),
         }
     }

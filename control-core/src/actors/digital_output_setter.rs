@@ -1,6 +1,6 @@
 use super::Actor;
 use ethercat_hal::io::digital_output::DigitalOutput;
-use std::{future::Future, pin::Pin};
+use std::{future::Future, pin::Pin, time::Instant};
 
 /// Set a digital output high and low with a given interval
 #[derive(Debug)]
@@ -28,7 +28,7 @@ impl DigitalOutputSetter {
 }
 
 impl Actor for DigitalOutputSetter {
-    fn act(&mut self, _now_ts: u64) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
+    fn act(&mut self, _now: Instant) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
         Box::pin(async move {
             {
                 (self.output.write)(self.enabled.into()).await;
