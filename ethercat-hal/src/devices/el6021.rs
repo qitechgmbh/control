@@ -265,12 +265,13 @@ impl Configuration for EL6021Configuration {
         device
             .sdo_write(0x8000, 0x1c, self.extended_data_frame)
             .await?;
+
         Ok(())
     }
 }
 
 /// The value is accompanied by some metadata.
-#[derive(Debug, Clone, PdoObject, PartialEq)]
+#[derive(Default, Debug, Clone, PdoObject, PartialEq)]
 #[pdo_object(bits = 192)]
 pub struct Standard22ByteMdp600Output {
     pub control: u8, // For Standard22ByteMdp600 Output same size as input, but status is ctrl instead
@@ -279,32 +280,12 @@ pub struct Standard22ByteMdp600Output {
 }
 
 /// The value is accompanied by some metadata.
-#[derive(Debug, Clone, PdoObject, PartialEq)]
+#[derive(Default, Debug, Clone, PdoObject, PartialEq)]
 #[pdo_object(bits = 192)]
 pub struct Standard22ByteMdp600Input {
     pub status: u8, // For Standard22ByteMdp600 Output same size as input, but status is ctrl instead
     pub length: u8,
     pub data: [u8; 22],
-}
-
-impl Default for Standard22ByteMdp600Input {
-    fn default() -> Self {
-        Self {
-            status: 0,
-            length: 0,
-            data: [0u8; 22],
-        }
-    }
-}
-
-impl Default for Standard22ByteMdp600Output {
-    fn default() -> Self {
-        Self {
-            control: 0,
-            length: 0,
-            data: [0u8; 22],
-        }
-    }
 }
 
 impl TxPdoObject for Standard22ByteMdp600Input {
