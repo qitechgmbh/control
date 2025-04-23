@@ -121,7 +121,7 @@ pub async fn setup_loop(
         );
     }
 
-    println!("{:?}", &subdevices);
+    log::debug!("{:?}", &subdevices);
 
     //log machines
     for (k, v) in machines.iter() {
