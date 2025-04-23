@@ -1,4 +1,10 @@
-use std::time::{Duration, Instant};
+use core::error;
+use std::{
+    os::linux::raw,
+    time::{Duration, Instant},
+};
+
+use anyhow::Error;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SerialEncoding {
@@ -113,6 +119,7 @@ fn convert_milliseconds_to_nanoseconds(milliseconds: u64) -> u128 {
     return duration.as_nanos();
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ModbusFunctionCode {
     ReadHoldingRegister,   // Read one or more Registers
     PresetHoldingRegister, // write one Register Value
@@ -120,16 +127,31 @@ pub enum ModbusFunctionCode {
     Unknown(u8),           //possibly an exception or a user defined Function
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ModbusRequest {
     pub slave_id: u8,
     pub function_code: ModbusFunctionCode,
     pub data: Vec<u8>,
 }
+
 // could just make a ModbusFrame instead?
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ModbusResponse {
     pub slave_id: u8,
     pub function_code: ModbusFunctionCode, // needs to be u8 because of exceptions
     pub data: Vec<u8>,
+    pub crc: u16,
+}
+
+impl From<u8> for ModbusFunctionCode {
+    fn from(value: u8) -> Self {
+        match value {
+            0x03 => ModbusFunctionCode::ReadHoldingRegister,
+            0x06 => ModbusFunctionCode::PresetHoldingRegister,
+            0x08 => ModbusFunctionCode::DiagnoseFunction,
+            _ => ModbusFunctionCode::Unknown(value),
+        }
+    }
 }
 
 impl From<ModbusFunctionCode> for u8 {
@@ -152,11 +174,63 @@ impl From<ModbusRequest> for Vec<u8> {
         buffer.extend_from_slice(&request.data);
         let length = buffer.len();
         let result = crc16_modbus.checksum(&buffer[..length]);
-        let high_byte = (result >> 8) as u8; // upper 8 bits
         let low_byte = (result & 0xFF) as u8; // lower 8 bits
+        let high_byte = (result >> 8) as u8; // upper 8 bits
         buffer.push(low_byte);
         buffer.push(high_byte);
         return buffer;
+    }
+}
+
+fn validate_modbus_response(raw_data: Vec<u8>) -> Result<(), Error> {
+    if raw_data.len() == 0 {
+        return Err(anyhow::anyhow!("Error: Response is Empty!"));
+    }
+
+    // 5 is the smallest possible Response Size
+    if raw_data.len() < 5 {
+        return Err(anyhow::anyhow!(
+            "Error: Response is invalid, its less than 5 bytes"
+        ));
+    }
+
+    if raw_data[0] < 1 || raw_data[0] > 247 {
+        return Err(anyhow::anyhow!(
+            "Error: Response is invalid, slave_id is outside of the valid range 1-247"
+        ));
+    }
+    return Ok(());
+}
+
+// TODO: Test this and write a crc validation function, to be 1000000% sure that our response is valid
+// expects to be given the entire raw message
+fn extract_crc(raw_data: &Vec<u8>) -> Result<u16, Error> {
+    let raw_data1 = raw_data.clone();
+    let result = validate_modbus_response(raw_data1);
+    if let Err(error) = result {
+        return Err(error);
+    }
+    let low_byte = raw_data[raw_data.len() - 2];
+    let high_byte = raw_data[raw_data.len() - 1];
+
+    let crc = u16::from_le_bytes([low_byte, high_byte]);
+    Ok(crc)
+}
+
+impl TryFrom<Vec<u8>> for ModbusResponse {
+    type Error = anyhow::Error;
+    fn try_from(value: Vec<u8>) -> Result<ModbusResponse, Error> {
+        let crc = match extract_crc(&value) {
+            Ok(crc_value) => crc_value,
+            Err(err) => return Err(err),
+        };
+
+        Ok(ModbusResponse {
+            slave_id: value[0],
+            function_code: ModbusFunctionCode::from(ModbusFunctionCode::from(value[1])),
+            data: value[2..value.len() - 2].to_vec(), // get data without the crc
+            crc: crc,
+        })
     }
 }
 
@@ -184,6 +258,40 @@ pub fn calculate_modbus_timeout(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_modbus_vec_to_response() {
+        // slave_id 0x11
+        // func code 0x03
+        // 6 bytes 0x06
+        // the next 6 bytes are frequencies from an Mitsubishi Inverter -> 3 u16 values
+        // crc 0x2c , 0xe6
+        let response_raw = vec![
+            0x11, 0x03, 0x06, 0x17, 0x70, 0x0b, 0xb8, 0x03, 0xe8, 0x2c, 0xe6,
+        ];
+
+        let response = ModbusResponse::try_from(response_raw.clone());
+
+        // Expected result based on provided test data
+        let expected = ModbusResponse {
+            slave_id: 0x11,
+            function_code: ModbusFunctionCode::ReadHoldingRegister,
+            data: vec![0x06, 0x17, 0x70, 0x0b, 0xb8, 0x03, 0xe8],
+            crc: u16::from_le_bytes([0x2c, 0xe6]),
+        };
+
+        let crc_expected: u16 = 58924;
+
+        match &response {
+            Ok(res) => assert_eq!(res.crc, crc_expected),
+            Err(_) => todo!(),
+        }
+
+        match response {
+            Ok(res) => assert_eq!(res, expected),
+            Err(_) => todo!(),
+        }
+    }
 
     #[test]
     fn test_modbus_request_to_vec() {
