@@ -66,7 +66,8 @@ impl SerialEncoding {
         }
     }
 
-    /// Get the total number of bits per byte (including start bit)
+    /// Get the total number of bits sent per byte according to the SerialEncoding (including start bit)
+    /// For Example: With 8n1 transferring 1 byte over Serial actually transfers 10 bits -> 8 data bits, 0 parity, 1 start bit and 1 stop bit
     pub fn total_bits(&self) -> u8 {
         // Start bit is always 1
         1 + self.data_bits() + self.parity_bits() + self.stop_bits()
