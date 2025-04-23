@@ -45,18 +45,14 @@ pub fn response_is_exception(response: ModbusResponse) -> bool {
 pub fn response_function_code_is_exception(function_code: u8) -> bool {
     return (function_code & 0b10000000) > 0; // 0x80 is set when an exception happens
 }
-/*
-    Monitoring, operation command, frequency
-    setting (RAM)Less than 12 ms
-    Parameter read/write, frequency setting
-    (EEPROM)Less than 30 ms
-    Parameter clear / All parameter clearLess than 5 s
-    Reset commandNo reply
-*/
+
 enum RequestType {
     OperationCommand,
+    /// Monitoring, Operation (start,stop etc) command, frequency setting (RAM), less than 12 milliseconds timeout
     ReadWrite,
+    /// Parameter Read/Write and Frequency (EEPROM), Less than 30 milliseconds timeout
     ParamClear,
+    /// Less than 5 seconds timeout
     Reset,
 }
 
@@ -124,6 +120,7 @@ impl Actor for MitsubishiInverterRS485Actor {
             let start_motor: Vec<u8> = ModbusRequest {
                 slave_id: 1,
                 function_code: ModbusFunctionCode::PresetHoldingRegister,
+                // This is the data for the Function, 0x0 0x8 is the address and 00 02 is the value, which in this case sets a bit to rotate the motor forwards
                 data: vec![0x0, 0x8, 00, 02],
             }
             .into();
@@ -134,7 +131,7 @@ impl Actor for MitsubishiInverterRS485Actor {
             let timeout = calculate_modbus_rtu_timeout(
                 SerialEncoding::Coding8E1.total_bits(),
                 request_timeout,
-                19200,
+                19200, // baudrate
                 start_motor.len(),
             );
 
@@ -143,7 +140,7 @@ impl Actor for MitsubishiInverterRS485Actor {
                 return;
             }
 
-            self.last_ts = Instant::now();
+            self.last_ts = _now_ts;
 
             if let Operation::Send = self.last_op {
                 let res = (self.serial_interface.read_message)().await;
@@ -162,7 +159,7 @@ impl Actor for MitsubishiInverterRS485Actor {
             }
             if self.init_done == false {
                 println!("write");
-                (self.serial_interface.write_message)(start_motor.clone()).await; // keep sending to test   
+                let _ = (self.serial_interface.write_message)(start_motor.clone()).await;
                 self.last_op = Operation::Send;
                 self.init_done = true;
             }
