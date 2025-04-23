@@ -134,7 +134,6 @@ pub struct ModbusRequest {
     pub data: Vec<u8>,
 }
 
-// could just make a ModbusFrame instead?
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ModbusResponse {
     pub slave_id: u8,
