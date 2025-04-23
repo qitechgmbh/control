@@ -280,6 +280,15 @@ impl Configuration for EL6021Configuration {
             .sdo_write(0x8000, 0x1c, self.extended_data_frame)
             .await?;
 
+        self.pdo_assignment
+            .txpdo_assignment()
+            .write_config(device)
+            .await?;
+        self.pdo_assignment
+            .rxpdo_assignment()
+            .write_config(device)
+            .await?;
+
         Ok(())
     }
 }
