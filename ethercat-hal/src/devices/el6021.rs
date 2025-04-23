@@ -37,21 +37,28 @@ pub enum EL6021PdoPreset {
     None,
 }
 
-impl EL6021Baudrate {
-    pub fn from(value: u8) -> Option<Self> {
+// Implement From<u8> for EL6021Baudrate
+impl TryFrom<u8> for EL6021Baudrate {
+    type Error = ();
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
         match value {
-            4 => Some(EL6021Baudrate::B2400),
-            5 => Some(EL6021Baudrate::B4800),
-            6 => Some(EL6021Baudrate::B9600),
-            7 => Some(EL6021Baudrate::B19200),
-            8 => Some(EL6021Baudrate::B38400),
-            9 => Some(EL6021Baudrate::B57600),
-            10 => Some(EL6021Baudrate::B115200),
-            _ => None,
+            4 => Ok(EL6021Baudrate::B2400),
+            5 => Ok(EL6021Baudrate::B4800),
+            6 => Ok(EL6021Baudrate::B9600),
+            7 => Ok(EL6021Baudrate::B19200),
+            8 => Ok(EL6021Baudrate::B38400),
+            9 => Ok(EL6021Baudrate::B57600),
+            10 => Ok(EL6021Baudrate::B115200),
+            _ => Err(()),
         }
     }
-    pub fn into(self) -> u8 {
-        self as u8
+}
+
+// Implement From<EL6021Baudrate> for u8
+impl From<EL6021Baudrate> for u8 {
+    fn from(baudrate: EL6021Baudrate) -> Self {
+        baudrate as u8
     }
 }
 
@@ -247,9 +254,16 @@ impl Configuration for EL6021Configuration {
             .sdo_write(0x8000, 0x7, self.point_to_point_connection_enabled)
             .await?;
         // baud rate and data frame are only 4 BITs maybe this causes a problem?
-        device
-            .sdo_write(0x8000, 0x11, self.baud_rate.into())
-            .await?;
+        let baudrate = match EL6021Baudrate::try_from(self.baud_rate) {
+            Ok(baudrate) => baudrate,
+            Err(_) => {
+                println!("Invalid baudrate value: {:?}", self.baud_rate);
+                EL6021Baudrate::B9600 // Default value
+            }
+        };
+        let baudrate_coe_value = u8::from(baudrate);
+
+        device.sdo_write(0x8000, 0x11, baudrate_coe_value).await?;
 
         device
             .sdo_write(0x8000, 0x15, convert_serial_encoding(self.data_frame))
@@ -273,7 +287,7 @@ impl Configuration for EL6021Configuration {
 #[derive(Default, Debug, Clone, PdoObject, PartialEq)]
 #[pdo_object(bits = 192)]
 pub struct Standard22ByteMdp600Output {
-    pub control: u8, // For Standard22ByteMdp600 Output same size as input, but status is ctrl instead
+    pub control: u8,
     pub length: u8,
     pub data: [u8; 22],
 }
@@ -282,7 +296,7 @@ pub struct Standard22ByteMdp600Output {
 #[derive(Default, Debug, Clone, PdoObject, PartialEq)]
 #[pdo_object(bits = 192)]
 pub struct Standard22ByteMdp600Input {
-    pub status: u8, // For Standard22ByteMdp600 Output same size as input, but status is ctrl instead
+    pub status: u8,
     pub length: u8,
     pub data: [u8; 22],
 }
