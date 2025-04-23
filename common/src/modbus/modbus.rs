@@ -1,3 +1,5 @@
+use std::time::{Duration, Instant};
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SerialEncoding {
     Coding7E1, // 7 data, even parity, 1 stop
@@ -100,12 +102,16 @@ pub enum ParityType {
     Mark,
 }
 
-fn convert_nanoseconds_to_milliseconds(nanoseconds: u64) -> u64 {
-    if nanoseconds == 0 {
-        return 0;
-    }
-    return nanoseconds / 1000000;
+fn convert_nanoseconds_to_milliseconds(nanoseconds: u64) -> u128 {
+    let duration: Duration = Duration::from_nanos(nanoseconds);
+    return duration.as_millis();
 }
+
+fn convert_milliseconds_to_nanoseconds(milliseconds: u64) -> u128 {
+    let duration: Duration = Duration::from_millis(milliseconds);
+    return duration.as_nanos();
+}
+
 pub enum ModbusFunctionCode {
     ReadHoldingRegister,
     PresetHoldingRegister,
