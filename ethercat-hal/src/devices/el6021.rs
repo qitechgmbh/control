@@ -39,7 +39,7 @@ pub enum EL6021PdoPreset {
 
 // Implement From<u8> for EL6021Baudrate
 impl TryFrom<u8> for EL6021Baudrate {
-    type Error = ();
+    type Error = anyhow::Error;
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         match value {
@@ -50,7 +50,9 @@ impl TryFrom<u8> for EL6021Baudrate {
             8 => Ok(EL6021Baudrate::B38400),
             9 => Ok(EL6021Baudrate::B57600),
             10 => Ok(EL6021Baudrate::B115200),
-            _ => Err(()),
+            _ => Err(anyhow::anyhow!(
+                "Error: specified Baudrate is not supported!"
+            )),
         }
     }
 }
