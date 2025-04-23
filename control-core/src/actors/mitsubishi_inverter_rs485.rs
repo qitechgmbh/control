@@ -135,8 +135,7 @@ impl Actor for MitsubishiInverterRS485Actor {
                 start_motor.len(),
             );
 
-            // rust-analyzer shows error but it compiles?
-            if elapsed.as_nanos() < timeout.as_nanos() {
+            if elapsed < timeout {
                 return;
             }
 
