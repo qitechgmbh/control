@@ -1,7 +1,7 @@
 use super::Actor;
 use common::modbus::modbus::{
     self, ModbusFunctionCode, ModbusRequest, ModbusResponse, SerialEncoding,
-    calculate_modbus_timeout,
+    calculate_modbus_rtu_timeout,
 };
 use ethercat_hal::io::serial_interface::SerialInterface;
 use std::{
@@ -131,7 +131,7 @@ impl Actor for MitsubishiInverterRS485Actor {
             // Maybe encapsulate ModbusRequest inside of MitsubishiRequest, since the timeouts and operations are specific to mitsubishi
             let request_timeout = RequestType::OperationCommand.timeout_nanoseconds();
 
-            let timeout = calculate_modbus_timeout(
+            let timeout = calculate_modbus_rtu_timeout(
                 SerialEncoding::Coding8E1.total_bits(),
                 request_timeout,
                 19200,
