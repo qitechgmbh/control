@@ -44,7 +44,7 @@ pub fn response_is_exception(response: ModbusResponse) -> bool {
     return (code & 0b10000000) > 0; // 0x80 is set when an exception happens
 }
 
-pub fn response_functioncode_is_exception(function_code: u8) -> bool {
+pub fn response_function_code_is_exception(function_code: u8) -> bool {
     return (function_code & 0b10000000) > 0; // 0x80 is set when an exception happens
 }
 /*
@@ -156,7 +156,7 @@ impl Actor for MitsubishiInverterRS485Actor {
                 println!("read result: {:x?}", res);
 
                 if res.len() > 2 {
-                    let is_exception = response_functioncode_is_exception(res[1]);
+                    let is_exception = response_function_code_is_exception(res[1]);
                     let exception_code = MitsubishiModbusExceptionCode::from(res[2]);
                     if is_exception {
                         println!("Mitsubishi Modbus Exception: {}", exception_code.display());
