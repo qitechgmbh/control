@@ -169,7 +169,7 @@ pub fn calculate_modbus_timeout(
     machine_operation_delay_nano: u64,
     baudrate: u32,
     message_size: u32,
-) -> u64 {
+) -> Duration {
     let nanoseconds_per_bit: u64 = (1000000 / baudrate) as u64;
     let nanoseconds_per_byte: u64 = bits as u64 * nanoseconds_per_bit as u64;
     let transmission_timeout: u64 = nanoseconds_per_byte * message_size as u64;
@@ -177,7 +177,8 @@ pub fn calculate_modbus_timeout(
     let mut full_timeout: u64 = transmission_timeout as u64;
     full_timeout += machine_operation_delay_nano;
     full_timeout += silent_time;
-    return full_timeout as u64;
+    let full_timeout_duration = Duration::from_nanos(full_timeout);
+    return full_timeout_duration;
 }
 
 #[cfg(test)]

@@ -23,7 +23,7 @@ pub struct MitsubishiInverterRS485Actor {
     pub received_response: bool,
     pub init_done: bool,
     pub serial_interface: SerialInterface,
-    pub last_ts: i64,
+    pub last_ts: Instant,
     pub last_op: Operation,
 }
 
@@ -33,7 +33,7 @@ impl MitsubishiInverterRS485Actor {
             received_response,
             serial_interface,
             init_done: false,
-            last_ts: 0,
+            last_ts: Instant::now(),
             last_op: Operation::None,
         }
     }
@@ -120,11 +120,7 @@ impl From<u8> for MitsubishiModbusExceptionCode {
 impl Actor for MitsubishiInverterRS485Actor {
     fn act(&mut self, _now_ts: Instant) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
         Box::pin(async move {
-            let now = Utc::now();
-            if self.last_ts == 0 {
-                self.last_ts = now.timestamp_nanos_opt().unwrap();
-            }
-            let diff: i64 = now.timestamp_nanos_opt().unwrap() - self.last_ts;
+            let elapsed: Duration = self.last_ts.elapsed();
 
             // TODO: implement a message queue for the messages coming from machine api AND a response message queue maybe ?
             let start_motor: Vec<u8> = ModbusRequest {
@@ -142,13 +138,14 @@ impl Actor for MitsubishiInverterRS485Actor {
                 request_timeout,
                 19200,
                 start_motor.len() as u32,
-            ) as i64
-                * 3;
+            );
 
-            if diff < timeout {
+            // rust-analyzer shows error but it compiles?
+            if elapsed.as_nanos() < timeout.as_nanos() {
                 return;
             }
-            self.last_ts = now.timestamp_nanos_opt().unwrap();
+
+            self.last_ts = Instant::now();
 
             if let Operation::Send = self.last_op {
                 let res = (self.serial_interface.read_message)().await;
