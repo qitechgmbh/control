@@ -168,16 +168,18 @@ impl From<ModbusFunctionCode> for u8 {
 impl From<ModbusRequest> for Vec<u8> {
     fn from(request: ModbusRequest) -> Self {
         let mut buffer = Vec::new();
-        let crc16_modbus: crc::Crc<u16> = crc::Crc::<u16>::new(&crc::CRC_16_MODBUS);
+
         buffer.push(request.slave_id);
-        buffer.push(request.function_code.into());
-        buffer.extend_from_slice(&request.data);
+        buffer.push(request.function_code.into()); // convert functioncode into u8 and push it
+        buffer.extend_from_slice(&request.data); // this is the function specific data
+
         let length = buffer.len();
-        let result = crc16_modbus.checksum(&buffer[..length]);
-        let low_byte = (result & 0xFF) as u8; // lower 8 bits
-        let high_byte = (result >> 8) as u8; // upper 8 bits
-        buffer.push(low_byte);
-        buffer.push(high_byte);
+        let crc16_modbus: crc::Crc<u16> = crc::Crc::<u16>::new(&crc::CRC_16_MODBUS);
+        let result_crc = crc16_modbus.checksum(&buffer[..length]);
+
+        // convert u16 value to le_bytes and add it to the end of the frame
+        buffer.extend_from_slice(&result_crc.to_le_bytes());
+
         return buffer;
     }
 }
@@ -186,7 +188,6 @@ fn validate_modbus_response(raw_data: Vec<u8>) -> Result<(), Error> {
     if raw_data.len() == 0 {
         return Err(anyhow::anyhow!("Error: Response is Empty!"));
     }
-
     // 5 is the smallest possible Response Size
     if raw_data.len() < 5 {
         return Err(anyhow::anyhow!(
