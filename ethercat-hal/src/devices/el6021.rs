@@ -270,7 +270,6 @@ impl Configuration for EL6021Configuration {
     }
 }
 
-/// The value is accompanied by some metadata.
 #[derive(Default, Debug, Clone, PdoObject, PartialEq)]
 #[pdo_object(bits = 192)]
 pub struct Standard22ByteMdp600Output {
