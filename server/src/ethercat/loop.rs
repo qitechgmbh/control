@@ -8,7 +8,7 @@ use crate::{
     ethercat::config::{MAX_FRAMES, MAX_PDU_DATA, MAX_SUBDEVICES, PDI_LEN},
 };
 use bitvec::prelude::*;
-use control_core::actors::{mitsubishi_inverter_rs485, Actor};
+use control_core::actors::Actor;
 use control_core::identification::identify_device_groups;
 use control_core::socketio::namespace::NamespaceCacheingLogic;
 use ethercat_hal::devices::devices_from_subdevices;
@@ -18,8 +18,6 @@ use smol::channel::Sender;
 use smol::lock::RwLock;
 use std::collections::HashMap;
 use std::{sync::Arc, time::Duration};
-
-use control_core::actors::mitsubishi_inverter_rs485::MitsubishiInverterRS485Actor;
 
 pub async fn setup_loop(
     thread_panic_tx: Sender<PanicDetails>,
@@ -128,22 +126,6 @@ pub async fn setup_loop(
         log::info!("Machine: {:?} {:?}", k, v);
     }
 
-    let el6021 = downcast_device::<EL6021>(devices.get(2).unwrap().clone())
-        .await
-        .unwrap();
-    let subdevice = get_subdevice_by_index(&subdevices, 2)?;
-    println!("{}", subdevice.name());
-    //get_subdevice_by_index
-
-    println!("{:?}", el6021.write().await.configuration);
-
-    el6021
-        .write()
-        .await
-        .configuration
-        .write_config(subdevice)
-        .await?;
-
     // Put group in operational state
     let group_op = match group_preop.into_op(&maindevice).await {
         Ok(group_op) => {
@@ -172,10 +154,6 @@ pub async fn setup_loop(
             Err(_) => {}
         }
     }
-
-    let serial_interface = SerialInterface::new(el6021, EL6021Port::SI1);
-    let mitsubishi_inverter_rs485 = MitsubishiInverterRS485Actor::new(false, serial_interface);
-    actors.push(Arc::new(RwLock::new(mitsubishi_inverter_rs485)));
 
     // Write all this stuff to `app_state`
     {
