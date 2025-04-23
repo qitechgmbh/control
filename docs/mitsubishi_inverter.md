@@ -147,7 +147,7 @@ PU communication parity check: set Pr 120 according to Beckhoff terminal setting
 # el6021 settings needed for Modbus RTU
 
 Continuous is needed for Modbus RTU
-8000:04 Enable send fifo data continouus TRUE
+8000:04 Enable send fifo data continuous TRUE
 8000:06 Enable half duplex
 8000:11 Enable Baud rate 19200 Baud
 8000:15 Data Frame 8N2
