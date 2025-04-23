@@ -5,7 +5,11 @@ use common::modbus::modbus::{
     calculate_modbus_timeout,
 };
 use ethercat_hal::io::serial_interface::SerialInterface;
-use std::{pin::Pin, thread, time::Duration};
+use std::{
+    pin::Pin,
+    thread,
+    time::{Duration, Instant},
+};
 
 #[derive(Debug)]
 pub enum Operation {
@@ -36,7 +40,8 @@ impl MitsubishiInverterRS485Actor {
 }
 
 pub fn response_is_exception(response: ModbusResponse) -> bool {
-    return (response.function_code & 0b10000000) > 0; // 0x80 is set when an exception happens
+    let code: u8 = response.function_code.into();
+    return (code & 0b10000000) > 0; // 0x80 is set when an exception happens
 }
 
 pub fn response_functioncode_is_exception(function_code: u8) -> bool {
@@ -113,7 +118,7 @@ impl From<u8> for MitsubishiModbusExceptionCode {
 }
 
 impl Actor for MitsubishiInverterRS485Actor {
-    fn act(&mut self, _now_ts: u64) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
+    fn act(&mut self, _now_ts: Instant) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
         Box::pin(async move {
             let now = Utc::now();
             if self.last_ts == 0 {

@@ -114,9 +114,10 @@ fn convert_milliseconds_to_nanoseconds(milliseconds: u64) -> u128 {
 }
 
 pub enum ModbusFunctionCode {
-    ReadHoldingRegister,
-    PresetHoldingRegister,
-    DiagnoseFunction,
+    ReadHoldingRegister,   // Read one or more Registers
+    PresetHoldingRegister, // write one Register Value
+    DiagnoseFunction,      // The response should echo back your request
+    Unknown(u8),           //possibly an exception or a user defined Function
 }
 
 pub struct ModbusRequest {
@@ -124,10 +125,10 @@ pub struct ModbusRequest {
     pub function_code: ModbusFunctionCode,
     pub data: Vec<u8>,
 }
-
+// could just make a ModbusFrame instead?
 pub struct ModbusResponse {
     pub slave_id: u8,
-    pub function_code: u8, // needs to be u8 because of exceptions
+    pub function_code: ModbusFunctionCode, // needs to be u8 because of exceptions
     pub data: Vec<u8>,
 }
 
@@ -135,8 +136,9 @@ impl From<ModbusFunctionCode> for u8 {
     fn from(value: ModbusFunctionCode) -> Self {
         match value {
             ModbusFunctionCode::ReadHoldingRegister => 0x03,
-            ModbusFunctionCode::PresetHoldingRegister => 0x06, // Preset basically just means write
+            ModbusFunctionCode::PresetHoldingRegister => 0x06,
             ModbusFunctionCode::DiagnoseFunction => 0x08,
+            ModbusFunctionCode::Unknown(value) => value,
         }
     }
 }
