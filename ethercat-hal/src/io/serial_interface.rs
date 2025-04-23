@@ -7,10 +7,9 @@ use smol::lock::RwLock;
 /// Reads digital values (true or false) from the device.
 pub struct SerialInterface {
     pub has_message: Box<dyn Fn() -> Pin<Box<dyn Future<Output = bool> + Send>> + Send + Sync>,
-    pub write_message: Box<dyn Fn( Vec<u8> ) -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>,
+    pub write_message:
+        Box<dyn Fn(Vec<u8>) -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>,
     pub read_message: Box<dyn Fn() -> Pin<Box<dyn Future<Output = Vec<u8>> + Send>> + Send + Sync>,
-    pub initialize_serial: Box<dyn Fn() -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>,
-
 }
 
 impl fmt::Debug for SerialInterface {
@@ -54,7 +53,7 @@ impl SerialInterface {
 
                 Box::pin(async move {
                     let mut device = device2.write().await;
-                
+
                     device.serial_interface_write_message(port_clone, message2)
                 })
             },
@@ -73,26 +72,10 @@ impl SerialInterface {
             })
         });
 
-
-        port2 = port.clone();
-        device2 = device.clone();
-
-        let initialize_serial = Box::new(move || -> Pin<Box<dyn Future<Output = ()> + Send>> {
-            let device2 = device2.clone();
-            let port_clone = port2.clone();
-
-            Box::pin(async move {
-                let mut device = device2.write().await;
-                device.serial_init_request(port_clone)
-            })
-        });
-
-
         SerialInterface {
             has_message,
             write_message,
             read_message,
-            initialize_serial
         }
     }
 }
@@ -103,6 +86,5 @@ where
 {
     fn serial_interface_read_message(&mut self, port: PORTS) -> Vec<u8>;
     fn serial_interface_write_message(&mut self, port: PORTS, message: Vec<u8>) -> ();
-    fn serial_init_request(&mut self, port: PORTS) -> ();
     fn serial_interface_has_messages(&mut self, port: PORTS) -> bool;
 }

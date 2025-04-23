@@ -398,21 +398,6 @@ pub enum StatusToggle {
 }
 
 impl SerialInterfaceDevice<EL6021Port> for EL6021 {
-    fn serial_init_request(&mut self, _port: EL6021Port) -> () {
-        if let Some(rx_pdo) = &mut self.rxpdo.com_rx_pdo_map_22_byte {
-            println!("Initializing EL6021 with new settings...");
-            rx_pdo.control |= 0x0004;
-            std::thread::sleep(std::time::Duration::from_millis(50));
-            if let Some(tx_pdo) = &self.txpdo.com_tx_pdo_map_22_byte {
-                if (tx_pdo.status & 0x0004) != 0 {
-                    println!("init Accepted {}", tx_pdo.status);
-                    rx_pdo.control = 0;
-                    std::thread::sleep(std::time::Duration::from_millis(50));
-                }
-            }
-        }
-    }
-
     fn serial_interface_has_messages(&mut self, _port: EL6021Port) -> bool {
         if let Some(tx_pdo) = &self.txpdo.com_tx_pdo_map_22_byte {
             return (tx_pdo.status & 0x2) != 0;

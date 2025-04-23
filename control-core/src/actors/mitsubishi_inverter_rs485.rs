@@ -1,5 +1,4 @@
 use super::Actor;
-use chrono::prelude::*;
 use common::modbus::modbus::{
     self, ModbusFunctionCode, ModbusRequest, ModbusResponse, SerialEncoding,
     calculate_modbus_timeout,
@@ -7,7 +6,6 @@ use common::modbus::modbus::{
 use ethercat_hal::io::serial_interface::SerialInterface;
 use std::{
     pin::Pin,
-    thread,
     time::{Duration, Instant},
 };
 
