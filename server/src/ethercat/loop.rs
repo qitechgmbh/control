@@ -107,7 +107,7 @@ pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(),
         );
     }
 
-    println!("{:?}",&subdevices);
+    log::debug!("{:?}", &subdevices);
 
 
     //log machines
