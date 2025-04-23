@@ -3,7 +3,7 @@ use crate::coe::{ConfigurableDevice, Configuration};
 use crate::io::serial_interface::SerialInterfaceDevice;
 use crate::pdo::{PredefinedPdoAssignment, RxPdo, RxPdoObject, TxPdo, TxPdoObject};
 use crate::types::EthercrabSubDevicePreoperational;
-use anyhow::anyhow;
+use anyhow::{anyhow, Error};
 use bitvec::field::BitField;
 use bitvec::order::Lsb0;
 use bitvec::slice::BitSlice;
@@ -405,10 +405,10 @@ impl SerialInterfaceDevice<EL6021Port> for EL6021 {
         return false;
     }
 
-    fn serial_interface_read_message(&mut self, _port: EL6021Port) -> Vec<u8> {
+    fn serial_interface_read_message(&mut self, _port: EL6021Port) -> Option<Vec<u8>> {
         if !self.serial_interface_has_messages(_port) {
             println!("has no messages");
-            return vec![];
+            return None;
         }
 
         if let Some(tx_pdo) = &mut self.txpdo.com_tx_pdo_map_22_byte {
@@ -418,26 +418,38 @@ impl SerialInterfaceDevice<EL6021Port> for EL6021 {
                 rx_pdo.control ^= 0x2;
             }
             tx_pdo.data.fill(0);
-            return received_data;
+            return Some(received_data);
         } else {
             println!("Error: TxPDO not available");
-            vec![]
+            return None;
         }
     }
 
-    fn serial_interface_write_message(&mut self, _port: EL6021Port, message: Vec<u8>) {
+    fn serial_interface_write_message(
+        &mut self,
+        _port: EL6021Port,
+        message: Vec<u8>,
+    ) -> Result<(), Error> {
         if let Some(rx_pdo) = &mut self.rxpdo.com_rx_pdo_map_22_byte {
+            // perhaps the 22 could be a constant
             if message.len() > 22 {
-                return;
+                return Err(anyhow::anyhow!(
+                    "Message is too long for RxPdo Buffer of 22 bytes!"
+                ));
             }
             let mut data_buffer = [0u8; 22];
             let bytes = message.as_slice();
             data_buffer[..message.len()].copy_from_slice(&bytes[..message.len()]);
             rx_pdo.length = message.len() as u8;
             rx_pdo.data = data_buffer;
+
             if rx_pdo.control == 0 {
                 rx_pdo.control ^= 0x1; // Toggle Transmit Request
             }
+
+            return Ok(());
+        } else {
+            return Err(anyhow::anyhow!("Error: RxPdo is not available"));
         }
     }
 }

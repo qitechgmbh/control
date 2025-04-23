@@ -148,15 +148,16 @@ impl Actor for MitsubishiInverterRS485Actor {
             if let Operation::Send = self.last_op {
                 let res = (self.serial_interface.read_message)().await;
 
-                println!("read result: {:x?}", res);
-
-                if res.len() > 2 {
-                    let is_exception = response_function_code_is_exception(res[1]);
-                    let exception_code = MitsubishiModbusExceptionCode::from(res[2]);
-                    if is_exception {
-                        println!("Mitsubishi Modbus Exception: {}", exception_code.display());
+                if let Some(result) = res {
+                    if result.len() > 2 {
+                        let is_exception = response_function_code_is_exception(result[1]);
+                        let exception_code = MitsubishiModbusExceptionCode::from(result[2]);
+                        if is_exception {
+                            println!("Mitsubishi Modbus Exception: {}", exception_code.display());
+                        }
                     }
                 }
+
                 // self.last_op = Operation::Receive;
             }
             if self.init_done == false {
