@@ -135,7 +135,7 @@ impl Actor for MitsubishiInverterRS485Actor {
                 SerialEncoding::Coding8E1.total_bits(),
                 request_timeout,
                 19200,
-                start_motor.len() as u32,
+                start_motor.len(),
             );
 
             // rust-analyzer shows error but it compiles?
