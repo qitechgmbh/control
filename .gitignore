@@ -2,3 +2,7 @@ target/
 dist/
 .DS_Store
 Cargo.lock
+<<<<<<< HEAD
+=======
+server/src/usbdre/dre.rs
+>>>>>>> 8f758dc (1)
