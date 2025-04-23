@@ -15,7 +15,7 @@ pub mod machines;
 pub mod panic;
 pub mod rest;
 pub mod socketio;
-
+pub mod usbdre;
 fn main() {
     // if the program panics we restart all of it
     match catch_unwind(|| main2()) {

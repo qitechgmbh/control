@@ -31,7 +31,8 @@ pub async fn update()-> Option<Vec<SerialPortInfo>>{
 *
 *@description: validate list of given ports and returns list of ports that satisfies given parameters
 */
-pub async fn validate(list: Option<Vec<SerialPortInfo>>,serial_code: &str, name_pat: &str, vid: u16, pid:u16) -> Vec<SerialPortInfo>{
+pub async fn validate(list: Option<Vec<SerialPortInfo>>,serial_code: &str, name_pat: &str, vid: u16, pid:u16) 
+                                                    -> Vec<SerialPortInfo>{
     let mut result:Vec<SerialPortInfo> = Vec::new();
     match list {
         None => {},
