@@ -81,6 +81,19 @@ pub enum EL6021Baudrate {
     /// 115200 baud (CoE Value: 10)
     B115200 = 10,
 }
+impl From<EL6021Baudrate> for u32 {
+    fn from(value: EL6021Baudrate) -> Self {
+        match value {
+            EL6021Baudrate::B2400 => 2400,
+            EL6021Baudrate::B4800 => 4800,
+            EL6021Baudrate::B9600 => 9600,
+            EL6021Baudrate::B19200 => 19200,
+            EL6021Baudrate::B38400 => 38400,
+            EL6021Baudrate::B57600 => 57600,
+            EL6021Baudrate::B115200 => 115200,
+        }
+    }
+}
 
 impl Default for EL6021Configuration {
     fn default() -> Self {
@@ -462,6 +475,15 @@ impl SerialInterfaceDevice<EL6021Port> for EL6021 {
         } else {
             return Err(anyhow::anyhow!("Error: RxPdo is not available"));
         }
+    }
+
+    fn serial_get_baudrate(&self, port: EL6021Port) -> Option<u32> {
+        let baudrate: u32 = self.configuration.baud_rate.into();
+        return Some(baudrate);
+    }
+
+    fn serial_get_coding(&self, port: EL6021Port) -> Option<SerialEncoding> {
+        return Some(self.configuration.data_frame);
     }
 }
 
