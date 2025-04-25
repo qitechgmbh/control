@@ -293,7 +293,7 @@ impl From<u8> for MitsubishiModbusExceptionCode {
 }
 
 impl Actor for MitsubishiInverterRS485Actor {
-    fn act(&mut self, _now_ts: Instant) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
+    fn act(&mut self, now_ts: Instant) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
         Box::pin(async move {
             let elapsed: Duration = self.last_ts.elapsed();
             let baudrate = (self.serial_interface.get_baudrate)().await.unwrap();
@@ -308,7 +308,7 @@ impl Actor for MitsubishiInverterRS485Actor {
             if elapsed < timeout {
                 return;
             }
-            self.last_ts = _now_ts;
+            self.last_ts = now_ts;
             if let Operation::Send = self.last_op {
                 self.read_modbus_response().await;
             }
