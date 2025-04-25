@@ -162,7 +162,9 @@ pub enum MitsubishiControlRequests {
 pub struct MitsubishiInverterRS485Actor {
     pub serial_interface: SerialInterface,
     pub last_ts: Instant,
+    pub last_message_size: usize,
     pub state: State,
+
     // do we need an Async Queue? Like a smol::channel or something like that ?
     pub request_queue: VecDeque<ModbusRequest>,
     pub response_queue: VecDeque<ModbusResponse>,
@@ -176,6 +178,7 @@ impl MitsubishiInverterRS485Actor {
             state: State::ReadyToSend,
             request_queue: VecDeque::new(),
             response_queue: VecDeque::new(),
+            last_message_size: 0,
         }
     }
 
@@ -193,16 +196,20 @@ impl MitsubishiInverterRS485Actor {
     /// This is used internally to read the receive buffer of the el6021 or similiar
     fn read_modbus_response(&mut self) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
         Box::pin(async move {
-            let res = (self.serial_interface.read_message)()
+            let res: Result<ModbusResponse, _> = (self.serial_interface.read_message)()
                 .await
                 .unwrap()
                 .try_into();
 
             match res {
-                Ok(result) => self.response_queue.push_front(result),
+                Ok(result) => {
+                    self.response_queue.push_front(result.clone());
+                    // TODO: make conversion function for ModbusResponse to Vec<u8> or make a len() or size() function or something
+                    self.last_message_size = result.clone().data.len() + 4;
+                    self.state = State::ReadyToSend;
+                }
                 Err(e) => println!("Error Parsing ModbusResponse! {}", e),
             };
-            self.state = State::ReadyToSend;
         })
     }
 
@@ -215,6 +222,7 @@ impl MitsubishiInverterRS485Actor {
             let request: Vec<u8> = self.request_queue.pop_back().unwrap().into();
             let _ = (self.serial_interface.write_message)(request.clone()).await;
             self.state = State::WaitingForResponse;
+            self.last_message_size = request.len();
         })
     }
 }
@@ -300,7 +308,7 @@ impl Actor for MitsubishiInverterRS485Actor {
                 coding.total_bits(),
                 RequestType::OperationCommand.timeout_duration(),
                 baudrate,
-                8,
+                self.last_message_size,
             );
 
             if elapsed < timeout {
