@@ -247,7 +247,7 @@ impl TryFrom<Vec<u8>> for ModbusResponse {
 /// message_size: size of original message in bytes
 pub fn calculate_modbus_rtu_timeout(
     bits: u8,
-    machine_operation_delay_nano: u64,
+    machine_operation_delay_nano: Duration,
     baudrate: u32,
     message_size: usize,
 ) -> Duration {
@@ -257,8 +257,8 @@ pub fn calculate_modbus_rtu_timeout(
     let transmission_timeout: u64 = nanoseconds_per_byte * message_size as u64;
     let silent_time: u64 = (nanoseconds_per_byte * (35)) / 10 as u64; // silent_time is 3.5x of character length,which is 11 bit for 8E1
 
-    let mut full_timeout: u64 = transmission_timeout as u64;
-    full_timeout += machine_operation_delay_nano;
+    let mut full_timeout: u64 = transmission_timeout;
+    full_timeout += machine_operation_delay_nano.as_nanos() as u64;
     full_timeout += silent_time;
 
     return Duration::from_nanos(full_timeout);
@@ -335,14 +335,14 @@ mod tests {
 
     #[test]
     fn test_basic_timeout_calculation() {
-        let res = calculate_modbus_rtu_timeout(10, 0, 9600, 10);
+        let res = calculate_modbus_rtu_timeout(10, Duration::from_nanos(0), 9600, 10);
         let nanoseconds = res.as_nanos();
         assert_eq!(nanoseconds, 14040);
     }
 
     #[test]
     fn test_machine_op_timeout_calculation() {
-        let res = calculate_modbus_rtu_timeout(10, 1200000, 9600, 10);
+        let res = calculate_modbus_rtu_timeout(10, Duration::from_nanos(1200000), 9600, 10);
         let nanoseconds = res.as_nanos();
         let machine_delay = 1200000;
         assert_eq!(nanoseconds, 14040 + machine_delay);
@@ -350,14 +350,14 @@ mod tests {
 
     #[test]
     fn test_bits_timeout_calculation() {
-        let result_11_bits = calculate_modbus_rtu_timeout(11, 0, 9600, 10);
+        let result_11_bits = calculate_modbus_rtu_timeout(11, Duration::from_nanos(0), 9600, 10);
         // nanoseconds_per_byte = 11 * 104 = 1144 ns
         // transmission_timeout = 1144 * 10 = 11440 ns
         // silent_time = (1144 * 35) / 10 = 4004 ns
         // full_timeout = 11440 + 0 + 4004 = 15444
         assert_eq!(result_11_bits.as_nanos(), 15444);
 
-        let result_9_bits = calculate_modbus_rtu_timeout(9, 0, 9600, 10);
+        let result_9_bits = calculate_modbus_rtu_timeout(9, Duration::from_nanos(0), 9600, 10);
         // nanoseconds_per_byte = 9 * 104 = 936 ns
         // transmission_timeout = 936 * 10 = 9360 ns
         // silent_time = (936 * 35) / 10 = 3276 ns
@@ -368,21 +368,23 @@ mod tests {
     #[test]
     fn test_edge_cases() {
         // Test with zero message size
-        let result_zero_size = calculate_modbus_rtu_timeout(10, 0, 9600, 0);
+        let result_zero_size = calculate_modbus_rtu_timeout(10, Duration::from_nanos(0), 9600, 0);
         // transmission_timeout = 1040 * 0 = 0 ns
         // silent_time = 3640 ns
         // full_timeout = 0 + 0 + 3640 = 3640 ns
         assert_eq!(result_zero_size.as_nanos(), 3640);
 
         // Test with very high baudrate (edge case, not realistic)
-        let result_high_baud = calculate_modbus_rtu_timeout(10, 0, 10_000_000, 10);
+        let result_high_baud =
+            calculate_modbus_rtu_timeout(10, Duration::from_nanos(0), 10_000_000, 10);
         // nanoseconds_per_bit = 1000000 / 10_000_000 = 0 ns (integer division truncates)
         // This will result in zero timeout which might not be realistic
         // The function should handle this gracefully
         assert_eq!(result_high_baud.as_nanos(), 0);
 
         // Test with very large message (edge case)
-        let result_large_msg = calculate_modbus_rtu_timeout(10, 0, 9600, 1_000_000);
+        let result_large_msg =
+            calculate_modbus_rtu_timeout(10, Duration::from_nanos(0), 9600, 1_000_000);
         // transmission_timeout = 1040 * 1_000_000 = 1,040,000,000 ns
         // silent_time = 3640 ns
         // full_timeout = 1,040,000,000 + 0 + 3640 = 1,040,003,640 ns

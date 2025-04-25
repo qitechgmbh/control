@@ -242,17 +242,13 @@ enum RequestType {
 }
 
 impl RequestType {
-    fn timeout_milliseconds(self) -> u64 {
+    fn timeout_duration(self) -> Duration {
         match self {
-            RequestType::OperationCommand => 12,
-            RequestType::ReadWrite => 30,
-            RequestType::ParamClear => 5000,
-            RequestType::Reset => 0,
+            RequestType::OperationCommand => Duration::from_millis(12),
+            RequestType::ReadWrite => Duration::from_millis(30),
+            RequestType::ParamClear => Duration::from_millis(5000),
+            RequestType::Reset => Duration::from_millis(0),
         }
-    }
-
-    fn timeout_nanoseconds(self) -> u64 {
-        self.timeout_milliseconds() * 1000000
     }
 }
 
@@ -304,7 +300,7 @@ impl Actor for MitsubishiInverterRS485Actor {
             let coding = (self.serial_interface.get_serial_coding)().await.unwrap();
             let timeout = calculate_modbus_rtu_timeout(
                 coding.total_bits(),
-                RequestType::OperationCommand.timeout_nanoseconds(),
+                RequestType::OperationCommand.timeout_duration(),
                 baudrate,
                 8,
             );
