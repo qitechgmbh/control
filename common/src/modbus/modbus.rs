@@ -121,10 +121,14 @@ fn convert_milliseconds_to_nanoseconds(milliseconds: u64) -> u128 {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ModbusFunctionCode {
-    ReadHoldingRegister,   // Read one or more Registers
-    PresetHoldingRegister, // write one Register Value
-    DiagnoseFunction,      // The response should echo back your request
-    Unknown(u8),           //possibly an exception or a user defined Function
+    /// Read one or more Registers
+    ReadHoldingRegister,
+    /// write one Register Value
+    PresetHoldingRegister,
+    /// The response should echo back your request
+    DiagnoseFunction,
+    /// possibly an exception or a user defined Function
+    Unknown(u8),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
