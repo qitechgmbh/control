@@ -12,10 +12,11 @@ use std::{
 };
 
 #[derive(Debug)]
-pub enum Operation {
-    Send,
-    Receive,
-    None,
+pub enum State {
+    /// WaitingForResponse is set after sending a request through the serial_interface
+    WaitingForResponse,
+    /// ReadyToSend is set after receiving the response from the serial_interface
+    ReadyToSend,
 }
 
 /// specifies all System environmet Variables
@@ -159,24 +160,20 @@ pub enum MitsubishiControlRequests {
 
 #[derive(Debug)]
 pub struct MitsubishiInverterRS485Actor {
-    pub received_response: bool,
-    pub init_done: bool,
     pub serial_interface: SerialInterface,
     pub last_ts: Instant,
-    pub last_op: Operation,
+    pub state: State,
     // do we need an Async Queue? Like a smol::channel or something like that ?
     pub request_queue: VecDeque<ModbusRequest>,
     pub response_queue: VecDeque<ModbusResponse>,
 }
 
 impl MitsubishiInverterRS485Actor {
-    pub fn new(received_response: bool, serial_interface: SerialInterface) -> Self {
+    pub fn new(serial_interface: SerialInterface) -> Self {
         Self {
-            received_response: false,
             serial_interface,
-            init_done: false,
             last_ts: Instant::now(),
-            last_op: Operation::None,
+            state: State::ReadyToSend,
             request_queue: VecDeque::new(),
             response_queue: VecDeque::new(),
         }
@@ -205,7 +202,7 @@ impl MitsubishiInverterRS485Actor {
                 Ok(result) => self.response_queue.push_front(result),
                 Err(e) => println!("Error Parsing ModbusResponse! {}", e),
             };
-            self.last_op = Operation::Receive;
+            self.state = State::ReadyToSend;
         })
     }
 
@@ -217,6 +214,7 @@ impl MitsubishiInverterRS485Actor {
             }
             let request: Vec<u8> = self.request_queue.pop_back().unwrap().into();
             let _ = (self.serial_interface.write_message)(request.clone()).await;
+            self.state = State::WaitingForResponse;
         })
     }
 }
@@ -309,11 +307,11 @@ impl Actor for MitsubishiInverterRS485Actor {
                 return;
             }
             self.last_ts = now_ts;
-            if let Operation::Send = self.last_op {
+            if let State::WaitingForResponse = self.state {
                 self.read_modbus_response().await;
             }
 
-            if let Operation::Receive = self.last_op {
+            if let State::ReadyToSend = self.state {
                 self.send_modbus_request().await;
             }
         })
