@@ -160,6 +160,14 @@ pub struct EL6021Configuration {
     /// default: `false`
     pub fifo_continuous_send_enabled: bool,
 
+    /// 0x8000:05 - Enable Transfer Rate optimization
+    /// Transfer rate optimization switched on:
+    /// The content of the input buffer is automatically
+    /// transferred into the process image if
+    /// • no further byte was received for approx. 16
+    /// bit times (i.e. the time it would have taken to
+    /// receive 2 bytes) after data were received;
+    /// • the process image is filled
     pub enable_transfer_rate_optimization: bool,
 
     /// # 0x8000:06 - Enables half-duplex mode (only applicable to EL6021).
@@ -176,12 +184,11 @@ pub struct EL6021Configuration {
 
     /// # 0x8000:11 - Sets the baud rate (e.g., 9600, 115200).
     /// This value is typically an index referencing predefined baud rates.
-
     /// default: `0x06`
     pub baud_rate: EL6021Baudrate,
 
     /// # 0x8000:15 - Defines the data frame format.
-    /// This is usually a bitfield representing settings like:
+    /// This is usually a bitfield representing settings like this:
     /// - Bits 0-2: Data bits (5-8)
     /// - Bit 3: Stop bits (1 or 2)
     /// - Bits 4-5: Parity (None, Even, Odd)
@@ -197,16 +204,15 @@ pub struct EL6021Configuration {
     /// default: `9600` 0x00000384 0x00002580
     pub explicit_baudrate: u32,
 
-    /// # 8000:1C**
+    /// # 8000:1C
     /// In this object special formats can also be selected in addition
     /// to the usual data frames (e.g. 9N1). Changes to this object
     /// are also adopted in the objects 0x8000:15 and 0x4074.
     pub extended_data_frame: u16,
+
     pub pdo_assignment: EL6021PdoPreset,
 }
 
-// TODO: find a better way than using a pure function to convert
-// maybe use a Trait ?
 fn convert_serial_encoding(encoding: SerialEncoding) -> u8 {
     match encoding {
         SerialEncoding::Coding7E1 => 1,
@@ -244,7 +250,6 @@ impl Configuration for EL6021Configuration {
             }
         }
 
-        //   device.sdo_write(0x8000, 0x1, self.rts_enabled).await?;
         device
             .sdo_write(0x8000, 0x2, self.xon_on_supported_tx)
             .await?;

@@ -72,7 +72,7 @@ pub trait Device: NewDevice + Any + Send + Sync + Debug {
     /// Devices can override this function if they want to pre processs the output data
     /// This might be the case if the pdo is not what is needed in the io layer
     fn output_pre_process(&mut self) -> Result<(), anyhow::Error> {
-        return Ok(());
+        Ok(())
     }
 
     /// Output data for the next cycle
