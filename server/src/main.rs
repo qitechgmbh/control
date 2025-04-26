@@ -4,6 +4,7 @@ use app_state::APP_STATE;
 use env_logger::Env;
 use ethercat::init::init_ethercat;
 use panic::PanicDetails;
+use process::init_process;
 use rest::init::init_api;
 use smol::channel::unbounded;
 
@@ -11,6 +12,7 @@ pub mod app_state;
 pub mod ethercat;
 pub mod machines;
 pub mod panic;
+pub mod process;
 pub mod rest;
 pub mod socketio;
 
@@ -33,6 +35,7 @@ fn main2() {
 
     let (thread_panic_tx, thread_panic_rx) = unbounded::<PanicDetails>();
 
+    init_process();
     init_api(thread_panic_tx.clone(), APP_STATE.clone()).expect("Failed to initialize API");
     init_ethercat(thread_panic_tx, APP_STATE.clone()).expect("Failed to initialize EtherCAT");
 
