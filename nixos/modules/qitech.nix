@@ -58,7 +58,7 @@ in {
     
     # Install the Electron app system-wide
     environment.systemPackages = with pkgs; [
-      qitech-control-electron
+      qitechPackages.electron
     ];
     
     # Configure udev rules for EtherCAT device access
