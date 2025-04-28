@@ -291,8 +291,6 @@ impl Actor for MitsubishiInverterRS485Actor {
     fn act(&mut self, now_ts: Instant) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
         Box::pin(async move {
             if let State::Uninitialized = self.state {
-                self.add_request(MitsubishiControlRequests::StartForwardRotation.into());
-                self.add_request(MitsubishiControlRequests::StopMotor.into());
                 self.state = State::ReadyToSend;
                 self.baudrate = (self.serial_interface.get_baudrate)().await;
                 self.encoding = (self.serial_interface.get_serial_encoding)().await;
