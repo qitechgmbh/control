@@ -106,9 +106,7 @@ impl Default for EL6021Configuration {
             baud_rate: EL6021Baudrate::B19200,
             data_frame: SerialEncoding::Coding8E1,
             rx_buffer_full_notification: 0x0360,
-            explicit_baudrate: 19200,
             pdo_assignment: EL6021PdoPreset::Standard22ByteMdp600,
-            extended_data_frame: 0x4,
         }
     }
 }
@@ -197,16 +195,6 @@ pub struct EL6021Configuration {
     /// Determines when the terminal signals the controller that the receive buffer is full.
     /// default: `0x0360`
     pub rx_buffer_full_notification: u16,
-
-    /// # 0x8000:1B - Explicitly sets a custom baud rate (only supported from firmware version FW09).
-    /// default: `9600` 0x00000384 0x00002580
-    pub explicit_baudrate: u32,
-
-    /// # 8000:1C
-    /// In this object special formats can also be selected in addition
-    /// to the usual data frames (e.g. 9N1). Changes to this object
-    /// are also adopted in the objects 0x8000:15 and 0x4074.
-    pub extended_data_frame: u16,
     pub pdo_assignment: EL6021PdoPreset,
 }
 
@@ -279,14 +267,6 @@ impl Configuration for EL6021Configuration {
             .await?;
         device
             .sdo_write(0x8000, 0x1a, self.rx_buffer_full_notification)
-            .await?;
-
-        device
-            .sdo_write(0x8000, 0x1b, self.explicit_baudrate)
-            .await?;
-
-        device
-            .sdo_write(0x8000, 0x1c, self.extended_data_frame)
             .await?;
 
         self.pdo_assignment
