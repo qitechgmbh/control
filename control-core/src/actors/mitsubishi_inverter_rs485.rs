@@ -206,7 +206,7 @@ impl MitsubishiInverterRS485Actor {
                     self.last_message_size = result.clone().data.len() + 4;
                     self.state = State::ReadyToSend;
                 }
-                Err(e) => println!("Error Parsing ModbusResponse! {}", e),
+                Err(_) => log::error!("Error Parsing ModbusResponse!"),
             };
         })
     }
@@ -219,7 +219,6 @@ impl MitsubishiInverterRS485Actor {
             }
             let request: Vec<u8> = self.request_queue.pop_back().unwrap().into();
             let _ = (self.serial_interface.write_message)(request.clone()).await;
-            println!("send_modbus_request {:?}", request);
             self.state = State::WaitingForResponse;
             self.last_message_size = request.len();
         })
