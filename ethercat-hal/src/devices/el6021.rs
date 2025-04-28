@@ -17,6 +17,24 @@ impl std::fmt::Debug for EL6021 {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum EL6021Baudrate {
+    /// 2400 baud (CoE Value: 4)
+    B2400 = 4,
+    /// 4800 baud (CoE Value: 5)
+    B4800 = 5,
+    /// 9600 baud (CoE Value: 6) DEFAULT
+    B9600 = 6,
+    /// 19200 baud (CoE Value: 7)
+    B19200 = 7,
+    /// 38400 baud (CoE Value: 8)
+    B38400 = 8,
+    /// 57600 baud (CoE Value: 9)
+    B57600 = 9,
+    /// 115200 baud (CoE Value: 10)
+    B115200 = 10,
+}
+
 // Every Preset has 2 bytes at the beginning
 // Standard98ByteMdp600 for example is 100bytes big  but has 98 bytes of data
 #[derive(Debug, Clone, PartialEq)]
@@ -59,24 +77,6 @@ impl From<EL6021Baudrate> for u8 {
     fn from(baudrate: EL6021Baudrate) -> Self {
         baudrate as u8
     }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum EL6021Baudrate {
-    /// 2400 baud (CoE Value: 4)
-    B2400 = 4,
-    /// 4800 baud (CoE Value: 5)
-    B4800 = 5,
-    /// 9600 baud (CoE Value: 6) DEFAULT
-    B9600 = 6,
-    /// 19200 baud (CoE Value: 7)
-    B19200 = 7,
-    /// 38400 baud (CoE Value: 8)
-    B38400 = 8,
-    /// 57600 baud (CoE Value: 9)
-    B57600 = 9,
-    /// 115200 baud (CoE Value: 10)
-    B115200 = 10,
 }
 
 impl From<EL6021Baudrate> for u32 {
