@@ -528,7 +528,6 @@ dependencies = [
  "log",
  "serde",
  "serde_json",
- "serial",
  "serialport",
  "smol",
  "socketioxide",
@@ -1336,12 +1335,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ieee754"
-version = "0.2.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9007da9cacbd3e6343da136e98b0d2df013f553d35bdec8b518f07bea768e19c"
-
-[[package]]
 name = "if_chain"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2041,15 +2034,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2b15c43186be67a4fd63bee50d0303afffcef381492ebe2c5d87f324e1b8815c"
 
 [[package]]
-name = "rmodbus"
-version = "0.10.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5ea2267bd0caf786f0d6111f64559bab47d4086b63e40f46d23e0c1550df5f57"
-dependencies = [
- "ieee754",
-]
-
-[[package]]
 name = "rustc-demangle"
 version = "0.1.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2293,6 +2277,7 @@ name = "server"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "approx",
  "axum",
  "bitvec",
  "control_core",
@@ -2302,9 +2287,7 @@ dependencies = [
  "ethercrab",
  "lazy_static",
  "log",
- "once_cell",
  "open",
- "rmodbus",
  "serde",
  "serde_json",
  "serial",
