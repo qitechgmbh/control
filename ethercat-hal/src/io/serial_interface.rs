@@ -208,28 +208,7 @@ impl SerialEncoding {
     /// Get the total number of bits sent per byte according to the SerialEncoding (including start bit)
     /// For Example: With 8n1 transferring 1 byte over Serial actually transfers 10 bits -> 8 data bits, 0 parity, 1 start bit and 1 stop bit
     pub fn total_bits(&self) -> u8 {
-        // Start bit is always 1
+        // We always have 1 start bit
         1 + self.data_bits() + self.parity_bits() + self.stop_bits()
-    }
-
-    /// Get a human-readable description
-    pub fn description(&self) -> String {
-        let data = self.data_bits();
-        let parity = match self.parity_type() {
-            Some(ParityType::Even) => "E",
-            Some(ParityType::Odd) => "O",
-            Some(ParityType::Space) => "S",
-            Some(ParityType::Mark) => "M",
-            None => "N",
-        };
-        let stop = self.stop_bits();
-
-        format!(
-            "{}{}{}({} bits total)",
-            data,
-            parity,
-            stop,
-            self.total_bits()
-        )
     }
 }
