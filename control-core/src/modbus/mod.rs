@@ -22,8 +22,6 @@ pub enum ModbusFunctionCode {
     PresetHoldingRegister,
     /// The response should echo back your request
     DiagnoseFunction,
-    /// possibly an exception or a user defined Function
-    Unknown(u8),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -59,13 +57,15 @@ impl ModbusResponse {
     }
 }
 
-impl From<u8> for ModbusFunctionCode {
-    fn from(value: u8) -> Self {
+impl TryFrom<u8> for ModbusFunctionCode {
+    type Error = anyhow::Error;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
         match value {
-            0x03 => ModbusFunctionCode::ReadHoldingRegister,
-            0x06 => ModbusFunctionCode::PresetHoldingRegister,
-            0x08 => ModbusFunctionCode::DiagnoseFunction,
-            _ => ModbusFunctionCode::Unknown(value),
+            0x03 => Ok(ModbusFunctionCode::ReadHoldingRegister),
+            0x06 => Ok(ModbusFunctionCode::PresetHoldingRegister),
+            0x08 => Ok(ModbusFunctionCode::DiagnoseFunction),
+            _ => Err(anyhow::anyhow!("Error: Modbus Function Code doesnt exist!")),
         }
     }
 }
@@ -76,7 +76,6 @@ impl From<ModbusFunctionCode> for u8 {
             ModbusFunctionCode::ReadHoldingRegister => 0x03,
             ModbusFunctionCode::PresetHoldingRegister => 0x06,
             ModbusFunctionCode::DiagnoseFunction => 0x08,
-            ModbusFunctionCode::Unknown(value) => value,
         }
     }
 }
@@ -142,9 +141,15 @@ impl TryFrom<Vec<u8>> for ModbusResponse {
             Err(err) => return Err(err),
         };
 
+        let function_code_res = ModbusFunctionCode::try_from(value[1]);
+        let function_code = match function_code_res {
+            Ok(code) => code,
+            Err(err) => return Err(err),
+        };
+
         Ok(ModbusResponse {
             slave_id: value[0],
-            function_code: ModbusFunctionCode::from(ModbusFunctionCode::from(value[1])),
+            function_code: function_code,
             data: value[2..value.len() - 2].to_vec(), // get data without the crc
             crc: crc,
         })
