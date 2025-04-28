@@ -2,7 +2,7 @@ use super::Actor;
 use crate::modbus::{
     self, ModbusFunctionCode, ModbusRequest, ModbusResponse, calculate_modbus_rtu_timeout,
 };
-use ethercat_hal::io::serial_interface::SerialInterface;
+use ethercat_hal::io::serial_interface::{SerialEncoding, SerialInterface};
 use std::{
     collections::VecDeque,
     pin::Pin,
@@ -157,6 +157,10 @@ pub struct MitsubishiInverterRS485Actor {
     pub last_ts: Instant,
     pub last_message_size: usize,
     pub state: State,
+
+    pub baudrate: Option<u32>,
+    pub encoding: Option<SerialEncoding>,
+
     pub request_queue: VecDeque<ModbusRequest>,
     pub response_queue: VecDeque<ModbusResponse>,
 }
@@ -170,6 +174,8 @@ impl MitsubishiInverterRS485Actor {
             request_queue: VecDeque::new(),
             response_queue: VecDeque::new(),
             last_message_size: 0,
+            baudrate: None,
+            encoding: None,
         }
     }
 
@@ -293,15 +299,29 @@ impl Actor for MitsubishiInverterRS485Actor {
                 self.add_request(MitsubishiControlRequests::StartForwardRotation.get());
                 self.add_request(MitsubishiControlRequests::StopMotor.get());
                 self.state = State::ReadyToSend;
+                self.baudrate = (self.serial_interface.get_baudrate)().await;
+                self.encoding = (self.serial_interface.get_serial_encoding)().await;
             }
 
             let elapsed: Duration = self.last_ts.duration_since(now_ts);
-            let baudrate = (self.serial_interface.get_baudrate)().await.unwrap();
-            let coding = (self.serial_interface.get_serial_encoding)().await.unwrap();
+            let mut bits: u8 = 0;
+
+            if let None = self.encoding {
+                return;
+            }
+
+            if let None = self.baudrate {
+                return;
+            }
+
+            if let Some(encoding) = self.encoding {
+                bits = encoding.total_bits();
+            }
+
             let timeout = calculate_modbus_rtu_timeout(
-                coding.total_bits(),
+                bits,
                 RequestType::OperationCommand.timeout_duration(),
-                baudrate,
+                self.baudrate.unwrap(),
                 self.last_message_size,
             );
 
