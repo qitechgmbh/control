@@ -13,7 +13,7 @@ pub struct SerialInterface {
     pub get_baudrate:
         Box<dyn Fn() -> Pin<Box<dyn Future<Output = Option<u32>> + Send>> + Send + Sync>,
 
-    pub get_serial_coding:
+    pub get_serial_encoding:
         Box<dyn Fn() -> Pin<Box<dyn Future<Output = Option<SerialEncoding>> + Send>> + Send + Sync>,
 }
 
@@ -86,7 +86,7 @@ impl SerialInterface {
 
                 Box::pin(async move {
                     let device = device2.write().await;
-                    device.serial_get_baudrate(port_clone)
+                    device.get_baudrate(port_clone)
                 })
             },
         );
@@ -94,14 +94,14 @@ impl SerialInterface {
         port2 = port.clone();
         device2 = device.clone();
 
-        let get_serial_coding = Box::new(
+        let get_serial_encoding = Box::new(
             move || -> Pin<Box<dyn Future<Output = Option<SerialEncoding>> + Send>> {
                 let device2 = device2.clone();
                 let port_clone = port2.clone();
 
                 Box::pin(async move {
                     let device = device2.write().await;
-                    device.serial_get_coding(port_clone)
+                    device.get_serial_encoding(port_clone)
                 })
             },
         );
@@ -111,7 +111,7 @@ impl SerialInterface {
             write_message,
             read_message,
             get_baudrate,
-            get_serial_coding,
+            get_serial_encoding,
         }
     }
 }
@@ -127,8 +127,8 @@ where
         message: Vec<u8>,
     ) -> Result<(), Error>;
     fn serial_interface_has_messages(&mut self, port: PORTS) -> bool;
-    fn serial_get_coding(&self, port: PORTS) -> Option<SerialEncoding>;
-    fn serial_get_baudrate(&self, port: PORTS) -> Option<u32>;
+    fn get_serial_encoding(&self, port: PORTS) -> Option<SerialEncoding>;
+    fn get_baudrate(&self, port: PORTS) -> Option<u32>;
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

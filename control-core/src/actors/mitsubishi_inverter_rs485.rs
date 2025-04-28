@@ -297,7 +297,7 @@ impl Actor for MitsubishiInverterRS485Actor {
 
             let elapsed: Duration = self.last_ts.duration_since(now_ts);
             let baudrate = (self.serial_interface.get_baudrate)().await.unwrap();
-            let coding = (self.serial_interface.get_serial_coding)().await.unwrap();
+            let coding = (self.serial_interface.get_serial_encoding)().await.unwrap();
             let timeout = calculate_modbus_rtu_timeout(
                 coding.total_bits(),
                 RequestType::OperationCommand.timeout_duration(),
