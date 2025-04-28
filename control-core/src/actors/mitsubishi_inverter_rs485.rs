@@ -48,85 +48,71 @@ impl From<MitsubishiSystemRegister> for u16 {
     }
 }
 
-impl MitsubishiControlRequests {
-    fn get(&self) -> ModbusRequest {
-        match self {
-            MitsubishiControlRequests::ResetInverter => {
-                let reg: u16 = MitsubishiSystemRegister::InverterReset.into();
+impl From<MitsubishiControlRequests> for ModbusRequest {
+    fn from(request: MitsubishiControlRequests) -> Self {
+        match request {
+            MitsubishiControlRequests::WriteRunningFrequency => {
+                let reg: u16 = MitsubishiSystemRegister::RunningFrequencyRAM.into();
+                let reg_bytes = reg.to_be_bytes();
                 ModbusRequest {
                     slave_id: 1,
                     function_code: ModbusFunctionCode::PresetHoldingRegister,
-                    data: vec![reg.to_be_bytes()[0], reg.to_be_bytes()[1], 0x00, 0x01], // Any Value
-                }
-            }
-            MitsubishiControlRequests::ClearAllParameters => {
-                let reg: u16 = MitsubishiSystemRegister::AllParameterClear.into();
-                ModbusRequest {
-                    slave_id: 1,
-                    function_code: ModbusFunctionCode::PresetHoldingRegister,
-                    data: vec![reg.to_be_bytes()[0], reg.to_be_bytes()[1], 0x96, 0x96], // Special value 0x9696
-                }
-            }
-            MitsubishiControlRequests::ClearNonCommunicationParameter => {
-                let reg: u16 = MitsubishiSystemRegister::ParamClearNonCommunication.into();
-                ModbusRequest {
-                    slave_id: 1,
-                    function_code: ModbusFunctionCode::PresetHoldingRegister,
-                    data: vec![reg.to_be_bytes()[0], reg.to_be_bytes()[1], 0x96, 0x96], // Special value 0x9696
-                }
-            }
-            MitsubishiControlRequests::ClearNonCommunicationParameters => {
-                let reg: u16 = MitsubishiSystemRegister::AllParameterClearNonCommunication.into();
-                ModbusRequest {
-                    slave_id: 1,
-                    function_code: ModbusFunctionCode::PresetHoldingRegister,
-                    data: vec![reg.to_be_bytes()[0], reg.to_be_bytes()[1], 0x96, 0x96], // Special value 0x9696
+                    data: vec![reg_bytes[0], reg_bytes[1], 0x96, 0x96], // Special value 0x9696
                 }
             }
             MitsubishiControlRequests::ReadInverterStatus => {
                 let reg: u16 = MitsubishiSystemRegister::InverterStatusAndControl.into();
+                let reg_bytes = reg.to_be_bytes();
                 ModbusRequest {
                     slave_id: 1,
                     function_code: ModbusFunctionCode::ReadHoldingRegister,
-                    data: vec![reg.to_be_bytes()[0], reg.to_be_bytes()[1], 0x00, 0x01], // Read 1 register
+                    data: vec![reg_bytes[0], reg_bytes[1], 0x00, 0x01], // Read 1 register
                 }
             }
             MitsubishiControlRequests::StopMotor => {
                 let reg: u16 = MitsubishiSystemRegister::InverterStatusAndControl.into();
+                let reg_bytes = reg.to_be_bytes();
                 ModbusRequest {
                     slave_id: 1,
                     function_code: ModbusFunctionCode::PresetHoldingRegister,
-                    data: vec![reg.to_be_bytes()[0], reg.to_be_bytes()[1], 0x00, 0x01], // Value 1 to stop
+                    data: vec![reg_bytes[0], reg_bytes[1], 0x00, 0x01], // Value 1 to stop
                 }
             }
             MitsubishiControlRequests::StartForwardRotation => {
                 let reg: u16 = MitsubishiSystemRegister::InverterStatusAndControl.into();
+                let reg_bytes = reg.to_be_bytes();
                 ModbusRequest {
                     slave_id: 1,
                     function_code: ModbusFunctionCode::PresetHoldingRegister,
-                    data: vec![reg.to_be_bytes()[0], reg.to_be_bytes()[1], 0, 0b00000010], // Value 2 for forward rotation
+                    data: vec![reg_bytes[0], reg_bytes[1], 0, 0b00000010], // Value 2 for forward rotation
                 }
             }
             MitsubishiControlRequests::StartReverseRotation => {
                 let reg: u16 = MitsubishiSystemRegister::InverterStatusAndControl.into();
+                let reg_bytes = reg.to_be_bytes();
                 ModbusRequest {
                     slave_id: 1,
                     function_code: ModbusFunctionCode::PresetHoldingRegister,
-                    data: vec![reg.to_be_bytes()[0], reg.to_be_bytes()[1], 0, 0b00000100], // Value 4 for reverse rotation
+                    data: vec![reg_bytes[0], reg_bytes[1], 0, 0b00000100], // Value 4 for reverse rotation
                 }
             }
             MitsubishiControlRequests::ReadRunningFrequency => {
                 let reg: u16 = MitsubishiSystemRegister::RunningFrequencyRAM.into();
+                let reg_bytes = reg.to_be_bytes();
                 ModbusRequest {
                     slave_id: 1,
                     function_code: ModbusFunctionCode::ReadHoldingRegister,
-                    data: vec![reg.to_be_bytes()[0], reg.to_be_bytes()[1], 0x00, 0x01], // Read 1 register
+                    data: vec![reg_bytes[0], reg_bytes[1], 0x00, 0x01], // Read 1 register
                 }
             }
-            MitsubishiControlRequests::WriteRunningFrequency => todo!(),
+            MitsubishiControlRequests::ResetInverter => todo!(),
+            MitsubishiControlRequests::ClearAllParameters => todo!(),
+            MitsubishiControlRequests::ClearNonCommunicationParameter => todo!(),
+            MitsubishiControlRequests::ClearNonCommunicationParameters => todo!(),
         }
     }
 }
+
 /// These Requests Serve as Templates for controling the inverter
 pub enum MitsubishiControlRequests {
     /// Register 40002, Reset/Restart the Inverter
@@ -296,13 +282,12 @@ impl Actor for MitsubishiInverterRS485Actor {
     fn act(&mut self, now_ts: Instant) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
         Box::pin(async move {
             if let State::Uninitialized = self.state {
-                self.add_request(MitsubishiControlRequests::StartForwardRotation.get());
-                self.add_request(MitsubishiControlRequests::StopMotor.get());
+                self.add_request(MitsubishiControlRequests::StartForwardRotation.into());
+                self.add_request(MitsubishiControlRequests::StopMotor.into());
                 self.state = State::ReadyToSend;
                 self.baudrate = (self.serial_interface.get_baudrate)().await;
                 self.encoding = (self.serial_interface.get_serial_encoding)().await;
             }
-
             let elapsed: Duration = self.last_ts.duration_since(now_ts);
             let mut bits: u8 = 0;
 
