@@ -32,8 +32,8 @@ enum MitsubishiSystemRegister {
     RunningFrequencyEEPROM,            // Register 40015
 }
 
-impl From<MitsubishiSystemRegister> for u16 {
-    fn from(value: MitsubishiSystemRegister) -> Self {
+impl MitsubishiControlRequests {
+    fn get_system_register(value: MitsubishiSystemRegister) -> u16 {
         match value {
             MitsubishiSystemRegister::InverterReset => 0x1,
             MitsubishiSystemRegister::ParameterClear => 0x2,
@@ -52,7 +52,9 @@ impl From<MitsubishiControlRequests> for ModbusRequest {
     fn from(request: MitsubishiControlRequests) -> Self {
         match request {
             MitsubishiControlRequests::WriteRunningFrequency => {
-                let reg: u16 = MitsubishiSystemRegister::RunningFrequencyRAM.into();
+                let reg: u16 = MitsubishiControlRequests::get_system_register(
+                    MitsubishiSystemRegister::RunningFrequencyRAM,
+                );
                 let reg_bytes = reg.to_be_bytes();
                 ModbusRequest {
                     slave_id: 1,
@@ -61,7 +63,9 @@ impl From<MitsubishiControlRequests> for ModbusRequest {
                 }
             }
             MitsubishiControlRequests::ReadInverterStatus => {
-                let reg: u16 = MitsubishiSystemRegister::InverterStatusAndControl.into();
+                let reg: u16 = MitsubishiControlRequests::get_system_register(
+                    MitsubishiSystemRegister::InverterStatusAndControl,
+                );
                 let reg_bytes = reg.to_be_bytes();
                 ModbusRequest {
                     slave_id: 1,
@@ -70,7 +74,9 @@ impl From<MitsubishiControlRequests> for ModbusRequest {
                 }
             }
             MitsubishiControlRequests::StopMotor => {
-                let reg: u16 = MitsubishiSystemRegister::InverterStatusAndControl.into();
+                let reg: u16 = MitsubishiControlRequests::get_system_register(
+                    MitsubishiSystemRegister::InverterStatusAndControl,
+                );
                 let reg_bytes = reg.to_be_bytes();
                 ModbusRequest {
                     slave_id: 1,
@@ -79,7 +85,9 @@ impl From<MitsubishiControlRequests> for ModbusRequest {
                 }
             }
             MitsubishiControlRequests::StartForwardRotation => {
-                let reg: u16 = MitsubishiSystemRegister::InverterStatusAndControl.into();
+                let reg: u16 = MitsubishiControlRequests::get_system_register(
+                    MitsubishiSystemRegister::InverterStatusAndControl,
+                );
                 let reg_bytes = reg.to_be_bytes();
                 ModbusRequest {
                     slave_id: 1,
@@ -88,7 +96,9 @@ impl From<MitsubishiControlRequests> for ModbusRequest {
                 }
             }
             MitsubishiControlRequests::StartReverseRotation => {
-                let reg: u16 = MitsubishiSystemRegister::InverterStatusAndControl.into();
+                let reg: u16 = MitsubishiControlRequests::get_system_register(
+                    MitsubishiSystemRegister::InverterStatusAndControl,
+                );
                 let reg_bytes = reg.to_be_bytes();
                 ModbusRequest {
                     slave_id: 1,
@@ -97,7 +107,9 @@ impl From<MitsubishiControlRequests> for ModbusRequest {
                 }
             }
             MitsubishiControlRequests::ReadRunningFrequency => {
-                let reg: u16 = MitsubishiSystemRegister::RunningFrequencyRAM.into();
+                let reg: u16 = MitsubishiControlRequests::get_system_register(
+                    MitsubishiSystemRegister::RunningFrequencyRAM,
+                );
                 let reg_bytes = reg.to_be_bytes();
                 ModbusRequest {
                     slave_id: 1,
