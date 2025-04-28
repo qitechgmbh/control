@@ -59,8 +59,7 @@ pub trait Device: NewDevice + Any + Send + Sync + Debug {
                 input_len
             ));
         }
-        self.input(input);
-        Ok(())
+        self.input(input)
     }
 
     /// Devices can override this function if they want to post processs the input data
