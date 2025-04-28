@@ -8,7 +8,6 @@
 
 use serialport::{SerialPortInfo,SerialPortType};
 use std::{
-    any::TypeId,
     collections::HashMap,
     sync::{Arc, Mutex},
 };
@@ -17,11 +16,11 @@ use std::hash::{Hash, Hasher};
 
 
 
-pub struct MachineRegistry{
-    serial_map: Arc<Mutex<HashMap<TypeId, SerialPortInfo>>>,
+pub struct SerialDeviceRegistry{
+    serial_map: Arc<Mutex<HashMap<u64, SerialPortInfo>>>,
 }
 
-impl MachineRegistry {
+impl SerialDeviceRegistry {
     pub fn new() -> Self {
         Self {
             serial_map: Arc::new(Mutex::new(HashMap::new())),
@@ -55,6 +54,8 @@ impl MachineRegistry {
             .filter(|port| validator(port))
             .collect()
     }
+
+
     /*  
     *@param: `validator` - Closure that defines whether a port should be selected.
     *
@@ -79,7 +80,7 @@ impl MachineRegistry {
 
         // Add new ports if they are not already in the map
         for port in valid_ports {
-            let key = Self::calculate_type_id(&port);
+            let key = Self::calculate_port_hash(&port);
 
             if !map.contains_key(&key) {
                 map.insert(key, port.clone());
