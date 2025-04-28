@@ -171,7 +171,6 @@ impl MitsubishiInverterRS485Actor {
     }
 
     /// This is used by the Api to pop off the Response of our Request
-    /// Perhaps we need a transactionId to make sure that the response we got is the correct one ?
     pub fn get_response(&mut self) -> Option<ModbusResponse> {
         if self.response_queue.len() == 0 {
             return None;
