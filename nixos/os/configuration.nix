@@ -193,6 +193,7 @@
     gnomeExtensions.dash-to-dock
     git
     pkgs.qitechPackages.electron
+    htop
   ];
 
   xdg.portal.enable = true;
