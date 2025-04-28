@@ -1,5 +1,4 @@
 use anyhow::Error;
-use common::modbus::modbus::SerialEncoding;
 use smol::lock::RwLock;
 use std::{fmt, future::Future, pin::Pin, sync::Arc};
 
@@ -24,7 +23,6 @@ impl fmt::Debug for SerialInterface {
     }
 }
 
-/// Implement on device that have digital inputs
 impl SerialInterface {
     pub fn new<PORT>(
         device: Arc<RwLock<dyn SerialInterfaceDevice<PORT>>>,
@@ -131,4 +129,107 @@ where
     fn serial_interface_has_messages(&mut self, port: PORTS) -> bool;
     fn serial_get_coding(&self, port: PORTS) -> Option<SerialEncoding>;
     fn serial_get_baudrate(&self, port: PORTS) -> Option<u32>;
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ParityType {
+    Even,
+    Odd,
+    Space,
+    Mark,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SerialEncoding {
+    Coding7E1, // 7 data, even parity, 1 stop
+    Coding7O1, // 7 data, odd parity, 1 stop
+    Coding7E2, // 7 data, even parity, 2 stop
+    Coding7O2, // 7 data, odd parity, 2 stop
+    Coding8N1, // 8 data, no parity, 1 stop
+    Coding8E1, // 8 data, even parity, 1 stop
+    Coding8O1, // 8 data, odd parity, 1 stop
+    Coding8N2, // 8 data, no parity, 2 stop
+    Coding8E2, // 8 data, even parity, 2 stop
+    Coding8O2, // 8 data, odd parity, 2 stop
+    Coding8S1, // 8 data, space parity, 1 stop
+    Coding8M1, // 8 data, mark parity, 1 stop
+}
+
+impl SerialEncoding {
+    /// Get the number of data bits
+    pub fn data_bits(&self) -> u8 {
+        match self {
+            Self::Coding7E1 | Self::Coding7O1 | Self::Coding7E2 | Self::Coding7O2 => 7,
+            _ => 8,
+        }
+    }
+
+    /// Get the number of parity bits (0 or 1)
+    pub fn parity_bits(&self) -> u8 {
+        match self {
+            Self::Coding8N1 | Self::Coding8N2 => 0,
+            _ => 1,
+        }
+    }
+
+    /// Get the parity type
+    pub fn parity_type(&self) -> Option<ParityType> {
+        match self {
+            Self::Coding7E1 | Self::Coding7E2 | Self::Coding8E1 | Self::Coding8E2 => {
+                Some(ParityType::Even)
+            }
+            Self::Coding7O1 | Self::Coding7O2 | Self::Coding8O1 | Self::Coding8O2 => {
+                Some(ParityType::Odd)
+            }
+            Self::Coding8S1 => Some(ParityType::Space),
+            Self::Coding8M1 => Some(ParityType::Mark),
+            Self::Coding8N1 | Self::Coding8N2 => None,
+        }
+    }
+
+    /// Get the number of stop bits
+    pub fn stop_bits(&self) -> u8 {
+        match self {
+            Self::Coding7E1
+            | Self::Coding7O1
+            | Self::Coding8N1
+            | Self::Coding8E1
+            | Self::Coding8O1
+            | Self::Coding8S1
+            | Self::Coding8M1 => 1,
+            Self::Coding7E2
+            | Self::Coding7O2
+            | Self::Coding8N2
+            | Self::Coding8E2
+            | Self::Coding8O2 => 2,
+        }
+    }
+
+    /// Get the total number of bits sent per byte according to the SerialEncoding (including start bit)
+    /// For Example: With 8n1 transferring 1 byte over Serial actually transfers 10 bits -> 8 data bits, 0 parity, 1 start bit and 1 stop bit
+    pub fn total_bits(&self) -> u8 {
+        // Start bit is always 1
+        1 + self.data_bits() + self.parity_bits() + self.stop_bits()
+    }
+
+    /// Get a human-readable description
+    pub fn description(&self) -> String {
+        let data = self.data_bits();
+        let parity = match self.parity_type() {
+            Some(ParityType::Even) => "E",
+            Some(ParityType::Odd) => "O",
+            Some(ParityType::Space) => "S",
+            Some(ParityType::Mark) => "M",
+            None => "N",
+        };
+        let stop = self.stop_bits();
+
+        format!(
+            "{}{}{}({} bits total)",
+            data,
+            parity,
+            stop,
+            self.total_bits()
+        )
+    }
 }

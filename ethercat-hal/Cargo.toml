@@ -7,6 +7,5 @@ edition = "2021"
 anyhow = "1.0.98"
 ethercrab = "0.6"
 ethercat_hal_derive = { version = "0.1.0", path = "../ethercat-hal-derive" }
-common = {path="../common"}
 bitvec = { version = "1.0.1", features = ["alloc"] }
 smol = "2.0.2"

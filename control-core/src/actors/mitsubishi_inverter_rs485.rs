@@ -1,8 +1,6 @@
 use super::Actor;
-use axum::http::request;
-use common::modbus::modbus::{
-    self, ModbusFunctionCode, ModbusRequest, ModbusResponse, SerialEncoding,
-    calculate_modbus_rtu_timeout,
+use crate::modbus::{
+    self, ModbusFunctionCode, ModbusRequest, ModbusResponse, calculate_modbus_rtu_timeout,
 };
 use ethercat_hal::io::serial_interface::SerialInterface;
 use std::{
@@ -17,9 +15,10 @@ pub enum State {
     WaitingForResponse,
     /// ReadyToSend is set after receiving the response from the serial_interface
     ReadyToSend,
+    Uninitialized,
 }
 
-/// specifies all System environmet Variables
+/// Specifies all System environmet Variables
 /// Register addresses are calculated as follows: Register-value 40002 -> address: 40002-40001 -> address:0x1
 enum MitsubishiSystemRegister {
     InverterReset,                     // Register 40002
@@ -32,6 +31,7 @@ enum MitsubishiSystemRegister {
     RunningFrequencyRAM,               // Register 40014
     RunningFrequencyEEPROM,            // Register 40015
 }
+
 impl From<MitsubishiSystemRegister> for u16 {
     fn from(value: MitsubishiSystemRegister) -> Self {
         match value {
@@ -48,8 +48,6 @@ impl From<MitsubishiSystemRegister> for u16 {
     }
 }
 
-// TODO: Clean this up
-// Cant do constant structs in rust with allocations ...
 impl MitsubishiControlRequests {
     fn get(&self) -> ModbusRequest {
         match self {
@@ -61,7 +59,6 @@ impl MitsubishiControlRequests {
                     data: vec![reg.to_be_bytes()[0], reg.to_be_bytes()[1], 0x00, 0x01], // Any Value
                 }
             }
-
             MitsubishiControlRequests::ClearAllParameters => {
                 let reg: u16 = MitsubishiSystemRegister::AllParameterClear.into();
                 ModbusRequest {
@@ -70,7 +67,6 @@ impl MitsubishiControlRequests {
                     data: vec![reg.to_be_bytes()[0], reg.to_be_bytes()[1], 0x96, 0x96], // Special value 0x9696
                 }
             }
-
             MitsubishiControlRequests::ClearNonCommunicationParameter => {
                 let reg: u16 = MitsubishiSystemRegister::ParamClearNonCommunication.into();
                 ModbusRequest {
@@ -79,7 +75,6 @@ impl MitsubishiControlRequests {
                     data: vec![reg.to_be_bytes()[0], reg.to_be_bytes()[1], 0x96, 0x96], // Special value 0x9696
                 }
             }
-
             MitsubishiControlRequests::ClearNonCommunicationParameters => {
                 let reg: u16 = MitsubishiSystemRegister::AllParameterClearNonCommunication.into();
                 ModbusRequest {
@@ -88,7 +83,6 @@ impl MitsubishiControlRequests {
                     data: vec![reg.to_be_bytes()[0], reg.to_be_bytes()[1], 0x96, 0x96], // Special value 0x9696
                 }
             }
-
             MitsubishiControlRequests::ReadInverterStatus => {
                 let reg: u16 = MitsubishiSystemRegister::InverterStatusAndControl.into();
                 ModbusRequest {
@@ -97,7 +91,6 @@ impl MitsubishiControlRequests {
                     data: vec![reg.to_be_bytes()[0], reg.to_be_bytes()[1], 0x00, 0x01], // Read 1 register
                 }
             }
-
             MitsubishiControlRequests::StopMotor => {
                 let reg: u16 = MitsubishiSystemRegister::InverterStatusAndControl.into();
                 ModbusRequest {
@@ -106,7 +99,6 @@ impl MitsubishiControlRequests {
                     data: vec![reg.to_be_bytes()[0], reg.to_be_bytes()[1], 0x00, 0x01], // Value 1 to stop
                 }
             }
-
             MitsubishiControlRequests::StartForwardRotation => {
                 let reg: u16 = MitsubishiSystemRegister::InverterStatusAndControl.into();
                 ModbusRequest {
@@ -115,7 +107,6 @@ impl MitsubishiControlRequests {
                     data: vec![reg.to_be_bytes()[0], reg.to_be_bytes()[1], 0, 0b00000010], // Value 2 for forward rotation
                 }
             }
-
             MitsubishiControlRequests::StartReverseRotation => {
                 let reg: u16 = MitsubishiSystemRegister::InverterStatusAndControl.into();
                 ModbusRequest {
@@ -124,7 +115,6 @@ impl MitsubishiControlRequests {
                     data: vec![reg.to_be_bytes()[0], reg.to_be_bytes()[1], 0, 0b00000100], // Value 4 for reverse rotation
                 }
             }
-
             MitsubishiControlRequests::ReadRunningFrequency => {
                 let reg: u16 = MitsubishiSystemRegister::RunningFrequencyRAM.into();
                 ModbusRequest {
@@ -133,6 +123,7 @@ impl MitsubishiControlRequests {
                     data: vec![reg.to_be_bytes()[0], reg.to_be_bytes()[1], 0x00, 0x01], // Read 1 register
                 }
             }
+            MitsubishiControlRequests::WriteRunningFrequency => todo!(),
         }
     }
 }
@@ -156,6 +147,8 @@ pub enum MitsubishiControlRequests {
     StartReverseRotation,
     /// Register 40014, Read the current frequency the motor runs at (RAM)
     ReadRunningFrequency,
+    /// Register 40014, Write the frequency
+    WriteRunningFrequency,
 }
 
 #[derive(Debug)]
@@ -164,8 +157,6 @@ pub struct MitsubishiInverterRS485Actor {
     pub last_ts: Instant,
     pub last_message_size: usize,
     pub state: State,
-
-    // do we need an Async Queue? Like a smol::channel or something like that ?
     pub request_queue: VecDeque<ModbusRequest>,
     pub response_queue: VecDeque<ModbusResponse>,
 }
@@ -175,7 +166,7 @@ impl MitsubishiInverterRS485Actor {
         Self {
             serial_interface,
             last_ts: Instant::now(),
-            state: State::ReadyToSend,
+            state: State::Uninitialized,
             request_queue: VecDeque::new(),
             response_queue: VecDeque::new(),
             last_message_size: 0,
@@ -190,12 +181,19 @@ impl MitsubishiInverterRS485Actor {
     /// This is used by the Api to pop off the Response of our Request
     /// Perhaps we need a transactionId to make sure that the response we got is the correct one ?
     pub fn get_response(&mut self) -> Option<ModbusResponse> {
+        if self.response_queue.len() == 0 {
+            return None;
+        }
         self.response_queue.pop_back()
     }
 
     /// This is used internally to read the receive buffer of the el6021 or similiar
     fn read_modbus_response(&mut self) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
         Box::pin(async move {
+            if !(self.serial_interface.has_message)().await {
+                return;
+            }
+
             let res: Result<ModbusResponse, _> = (self.serial_interface.read_message)()
                 .await
                 .unwrap()
@@ -221,19 +219,11 @@ impl MitsubishiInverterRS485Actor {
             }
             let request: Vec<u8> = self.request_queue.pop_back().unwrap().into();
             let _ = (self.serial_interface.write_message)(request.clone()).await;
+            println!("send_modbus_request {:?}", request);
             self.state = State::WaitingForResponse;
             self.last_message_size = request.len();
         })
     }
-}
-
-pub fn response_is_exception(response: ModbusResponse) -> bool {
-    let code: u8 = response.function_code.into();
-    return (code & 0b10000000) > 0; // 0x80 is set when an exception happens
-}
-
-pub fn response_function_code_is_exception(function_code: u8) -> bool {
-    return (function_code & 0b10000000) > 0; // 0x80 is set when an exception happens
 }
 
 enum RequestType {
@@ -301,7 +291,13 @@ impl From<u8> for MitsubishiModbusExceptionCode {
 impl Actor for MitsubishiInverterRS485Actor {
     fn act(&mut self, now_ts: Instant) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
         Box::pin(async move {
-            let elapsed: Duration = self.last_ts.elapsed();
+            if let State::Uninitialized = self.state {
+                self.add_request(MitsubishiControlRequests::StartForwardRotation.get());
+                self.add_request(MitsubishiControlRequests::StopMotor.get());
+                self.state = State::ReadyToSend;
+            }
+
+            let elapsed: Duration = self.last_ts.duration_since(now_ts);
             let baudrate = (self.serial_interface.get_baudrate)().await.unwrap();
             let coding = (self.serial_interface.get_serial_coding)().await.unwrap();
             let timeout = calculate_modbus_rtu_timeout(
@@ -314,6 +310,7 @@ impl Actor for MitsubishiInverterRS485Actor {
             if elapsed < timeout {
                 return;
             }
+
             self.last_ts = now_ts;
             if let State::WaitingForResponse = self.state {
                 self.read_modbus_response().await;
