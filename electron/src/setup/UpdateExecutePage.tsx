@@ -24,6 +24,7 @@ export function UpdateExecutePage() {
         icon="lu:CircleFadingArrowUp"
         onClick={async () => {
           setIsUpdating(true);
+          setTerminalLines([]);
           const res = await updatExecute(
             {
               ...search,
@@ -46,7 +47,7 @@ export function UpdateExecutePage() {
         Apply Update Now
       </TouchButton>
       <SectionTitle title="Log" />
-      <Terminal lines={terminalLines} className="h-128" />
+      <Terminal lines={terminalLines} className="h-200" />
     </Page>
   );
 }
