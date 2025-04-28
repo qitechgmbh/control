@@ -118,7 +118,6 @@ fn validate_modbus_response(raw_data: Vec<u8>) -> Result<(), Error> {
     return Ok(());
 }
 
-// TODO: Test this and write a crc validation function, to be 1000000% sure that our response is valid
 // expects to be given the entire raw message
 fn extract_crc(raw_data: &Vec<u8>) -> Result<u16, Error> {
     let raw_data1 = raw_data.clone();

@@ -202,7 +202,6 @@ impl MitsubishiInverterRS485Actor {
             match res {
                 Ok(result) => {
                     self.response_queue.push_front(result.clone());
-                    // TODO: make conversion function for ModbusResponse to Vec<u8> or make a len() or size() function or something
                     self.last_message_size = result.clone().data.len() + 4;
                     self.state = State::ReadyToSend;
                 }
