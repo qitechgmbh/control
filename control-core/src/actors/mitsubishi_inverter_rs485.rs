@@ -1,6 +1,6 @@
 use super::Actor;
 use crate::modbus::{
-    self, ModbusFunctionCode, ModbusRequest, ModbusResponse, calculate_modbus_rtu_timeout,
+    ModbusFunctionCode, ModbusRequest, ModbusResponse, calculate_modbus_rtu_timeout,
 };
 use ethercat_hal::io::serial_interface::{SerialEncoding, SerialInterface};
 use std::{
@@ -21,15 +21,24 @@ pub enum State {
 /// Specifies all System environmet Variables
 /// Register addresses are calculated as follows: Register-value 40002 -> address: 40002-40001 -> address:0x1
 enum MitsubishiSystemRegister {
-    InverterReset,                     // Register 40002
-    ParameterClear,                    // Register 40003
-    AllParameterClear,                 // Register 40004
-    ParamClearNonCommunication,        // Register 40006
-    AllParameterClearNonCommunication, // Register 40007
-    InverterStatusAndControl,          // Register 40009
-    OperationModeAndSetting,           // Register 40010
-    RunningFrequencyRAM,               // Register 40014
-    RunningFrequencyEEPROM,            // Register 40015
+    /// Register 40002
+    InverterReset,
+    /// Register 40003
+    ParameterClear,
+    /// Register 40004
+    AllParameterClear,
+    /// Register 40006
+    ParamClearNonCommunication,
+    /// Register 40007
+    AllParameterClearNonCommunication,
+    /// Register 40009
+    InverterStatusAndControl,
+    /// Register 40010
+    OperationModeAndSetting,
+    /// Register 40014
+    RunningFrequencyRAM,
+    /// Register 40015
+    RunningFrequencyEEPROM,
 }
 
 impl MitsubishiControlRequests {

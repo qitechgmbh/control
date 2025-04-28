@@ -475,12 +475,12 @@ impl SerialInterfaceDevice<EL6021Port> for EL6021 {
         }
     }
 
-    fn get_baudrate(&self, port: EL6021Port) -> Option<u32> {
+    fn get_baudrate(&self, _port: EL6021Port) -> Option<u32> {
         let baudrate: u32 = self.configuration.baud_rate.into();
         return Some(baudrate);
     }
 
-    fn get_serial_encoding(&self, port: EL6021Port) -> Option<SerialEncoding> {
+    fn get_serial_encoding(&self, _port: EL6021Port) -> Option<SerialEncoding> {
         return Some(self.configuration.data_frame);
     }
 }
