@@ -308,14 +308,12 @@ impl Actor for MitsubishiInverterRS485Actor {
             if elapsed < timeout {
                 return;
             }
-
             self.last_ts = now_ts;
-            if let State::WaitingForResponse = self.state {
-                self.read_modbus_response().await;
-            }
 
-            if let State::ReadyToSend = self.state {
-                self.send_modbus_request().await;
+            match self.state {
+                State::WaitingForResponse => self.read_modbus_response().await,
+                State::ReadyToSend => self.send_modbus_request().await,
+                _ => (),
             }
         })
     }
