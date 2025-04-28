@@ -242,7 +242,7 @@ impl Configuration for EL6021Configuration {
             | (EL6021Baudrate::B115200, SerialEncoding::Coding7O2) => {}
             _ => {
                 return Err(anyhow!(
-                "ERROR: EL6021Configuration::write_config Baudrate and Coding is not compatible!"
+                "ERROR: EL6021Configuration::write_config Baudrate and Encoding is not compatible!"
             ))
             }
         }
@@ -272,7 +272,6 @@ impl Configuration for EL6021Configuration {
             .await?;
 
         let baudrate_coe_value = u8::from(self.baud_rate);
-
         device.sdo_write(0x8000, 0x11, baudrate_coe_value).await?;
 
         device
@@ -312,21 +311,21 @@ pub struct Standard22ByteMdp600Output {
 }
 
 #[derive(Default, Debug, PartialEq, Clone)]
-struct EL6021Status {
-    transmit_accepted: bool,
-    receive_request: bool,
-    init_accepted: bool,
-    buffer_full: bool,
-    parity_error: bool,
-    framing_error: bool,
-    overrun_error: bool,
+pub struct EL6021Status {
+    pub transmit_accepted: bool,
+    pub receive_request: bool,
+    pub init_accepted: bool,
+    pub buffer_full: bool,
+    pub parity_error: bool,
+    pub framing_error: bool,
+    pub overrun_error: bool,
 }
 
 #[derive(Default, Debug, PartialEq, Clone)]
-struct EL6021Control {
-    transmit_request: bool,
-    received_acepted: bool,
-    init_request: bool,
+pub struct EL6021Control {
+    pub transmit_request: bool,
+    pub received_acepted: bool,
+    pub init_request: bool,
 }
 
 /// The value is accompanied by some metadata.
@@ -507,7 +506,65 @@ impl SerialInterfaceDevice<EL6021Port> for EL6021 {
 }
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+    use super::*;
+    use bitvec::prelude::*;
+
+    #[test]
+    fn test_standard_22_byte_mdp600_input_read() {
+        let mut bits: BitVec<u8, Lsb0> = BitVec::with_capacity(192);
+        bits.resize(192, false);
+        bits[0..8].store_le(0xAAu8); // status
+        bits[8..16].store_le(0x16u8); // length (22)
+        for i in 0..22 {
+            bits[(16 + i * 8)..(16 + (i + 1) * 8)].store_le((i + 1) as u8); // data
+        }
+
+        let mut input = Standard22ByteMdp600Input::default();
+
+        input.read(bits.as_bitslice());
+        assert_eq!(input.status.transmit_accepted, true);
+        assert_eq!(input.status.receive_request, false);
+        assert_eq!(input.status.init_accepted, true);
+        assert_eq!(input.status.buffer_full, false);
+        assert_eq!(input.status.parity_error, true);
+        assert_eq!(input.status.receive_request, false);
+        assert_eq!(input.length, 0x16);
+        for i in 0..22 {
+            assert_eq!(input.data[i], (i + 1) as u8);
+        }
+    }
+
+    #[test]
+    fn test_standard_22_byte_mdp600_output_write() {
+        let control = EL6021Control {
+            transmit_request: true,
+            received_acepted: false,
+            init_request: true,
+        };
+
+        let output = Standard22ByteMdp600Output {
+            control: control,
+            length: 0x16,
+            data: [
+                1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22,
+            ],
+        };
+        let mut buffer: BitVec<u8, Lsb0> = BitVec::with_capacity(192);
+        buffer.resize(192, false);
+
+        output.write(buffer.as_mut_bitslice());
+
+        assert_eq!(buffer[0..8].load_le::<u8>(), 0b101);
+        assert_eq!(buffer[8..16].load_le::<u8>(), 0x16);
+        for i in 0..22 {
+            assert_eq!(
+                buffer[(16 + i * 8)..(16 + (i + 1) * 8)].load_le::<u8>(),
+                (i + 1) as u8
+            );
+        }
+    }
+}
 
 pub const EL6021_VENDOR_ID: u32 = 2;
 pub const EL6021_PRODUCT_ID: u32 = 394604626;
