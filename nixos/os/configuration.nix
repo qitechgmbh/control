@@ -2,12 +2,12 @@
 # your system.  Help is available in the configuration.nix(5) man page
 # and in the NixOS manual (accessible by running ‘nixos-help’).
 
-{ config, pkgs, qitech-control, ... }:
+{ config, pkgs, ... }:
 
 {
   imports =
     [ # Include the results of the hardware scan.
-      ./hardware-configuration.nix
+      /etc/nixos/hardware-configuration.nix
     ];
 
   # Bootloader.
@@ -124,7 +124,7 @@
   services.printing.enable = false;
 
   # Enable sound with pipewire.
-  hardware.pulseaudio.enable = false;
+  services.pulseaudio.enable = false;
   security.rtkit.enable = true;
   services.pipewire = {
     enable = true;
@@ -154,7 +154,7 @@
     user = "qitech-service";
     group = "qitech-service"; 
     port = 3001;
-    package = qitech-control.packages.${pkgs.system}.server;
+    package = pkgs.qitechPackages.server;
   };
 
   systemd.services.qitech = {
@@ -192,7 +192,8 @@
     gnome-extension-manager
     gnomeExtensions.dash-to-dock
     git
-    qitech-control.packages.${pkgs.system}.electron
+    pkgs.qitechPackages.electron
+    htop
   ];
 
   xdg.portal.enable = true;

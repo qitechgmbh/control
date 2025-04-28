@@ -2,7 +2,7 @@
   home.stateVersion = "24.11";
 
   home.packages = with pkgs; [
-    qitech-control-electron
+    pkgs.qitechPackages.electron
   ];
 
   # Add autostart entry for the QiTech electron app
