@@ -13,6 +13,7 @@ use ethercat_hal::devices::el2522::EL2522_IDENTITY_A;
 use ethercat_hal::devices::el3001::EL3001_IDENTITY_A;
 use ethercat_hal::devices::el3021::EL3021_IDENTITY_A;
 use ethercat_hal::devices::el3024::EL3024_IDENTITY_A;
+use ethercat_hal::devices::el6021::EL6021_IDENTITY_A;
 use ethercat_hal::devices::el7031::EL7031_IDENTITY_A;
 use ethercat_hal::devices::el7041_0052::EL7041_0052_IDENTITY_A;
 use ethercat_hal::devices::subdevice_identity_to_tuple;
@@ -187,20 +188,36 @@ pub async fn machine_device_identification<'maindevice>(
             vendor: subdevice
                 .eeprom_read::<u16>(maindevice, addresses.vendor_word)
                 .await
-                .unwrap(),
+                .or(Err(anyhow!(
+                    "[{}::machine_device_identification] Failed to read vendor from EEPROM for device {}",
+                    module_path!(),
+                    subdevice.name()
+                )))?,
             serial: subdevice
                 .eeprom_read::<u16>(maindevice, addresses.serial_word)
                 .await
-                .unwrap(),
+                .or(Err(anyhow!(
+                    "[{}::machine_device_identification] Failed to read serial from EEPROM for device {}",
+                    module_path!(),
+                    subdevice.name()
+                )))?,
             machine: subdevice
                 .eeprom_read::<u16>(maindevice, addresses.machine_word)
                 .await
-                .unwrap(),
+                .or(Err(anyhow!(
+                    "[{}::machine_device_identification] Failed to read machine from EEPROM for device {}",
+                    module_path!(),
+                    subdevice.name()
+                )))?,
         },
         role: subdevice
             .eeprom_read::<u16>(maindevice, addresses.role_word)
             .await
-            .unwrap(),
+            .or(Err(anyhow!(
+                "[{}::machine_device_identification] Failed to read role from EEPROM for device {}",
+                module_path!(),
+                subdevice.name()
+            )))?,
         subdevice_index: subdevice_index,
     };
 
@@ -299,6 +316,7 @@ pub fn get_identification_addresses<'maindevice>(
         EL3021_IDENTITY_A => MachineDeviceIdentificationAddresses::default(),
         EL7031_IDENTITY_A => MachineDeviceIdentificationAddresses::default(),
         EL7041_0052_IDENTITY_A => MachineDeviceIdentificationAddresses::default(),
+        EL6021_IDENTITY_A => MachineDeviceIdentificationAddresses::default(),
         _ => {
             // block_on(u16dump(&subdevice, maindevice, 0x00, 0xff))?;
             Err(anyhow!(

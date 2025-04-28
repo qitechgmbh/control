@@ -1,5 +1,6 @@
 use crate::app_state::{EthercatSetup, APP_STATE};
 use crate::machines::registry::MACHINE_REGISTRY;
+use crate::panic::{send_panic, PanicDetails};
 use crate::socketio::main_namespace::ethercat_setup_event::EthercatSetupEventBuilder;
 use crate::socketio::main_namespace::MainNamespaceEvents;
 use crate::{
@@ -13,11 +14,18 @@ use control_core::socketio::namespace::NamespaceCacheingLogic;
 use ethercat_hal::devices::devices_from_subdevices;
 use ethercrab::std::{ethercat_now, tx_rx_task};
 use ethercrab::{MainDevice, MainDeviceConfig, PduStorage, RetryBehaviour, Timeouts};
+use smol::channel::Sender;
 use smol::lock::RwLock;
 use std::collections::HashMap;
 use std::{sync::Arc, time::Duration};
 
-pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(), anyhow::Error> {
+pub async fn setup_loop(
+    thread_panic_tx: Sender<PanicDetails>,
+    interface: &str,
+    app_state: Arc<AppState>,
+) -> Result<(), anyhow::Error> {
+    log::info!("Starting Ethercat PDU loop");
+
     // Erase all all setup data from `app_state`
     {
         log::info!("Setting up Ethercat network");
@@ -29,14 +37,19 @@ pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(),
     let pdu_storage = Box::leak(Box::new(PduStorage::<MAX_FRAMES, MAX_PDU_DATA>::new()));
     let (tx, rx, pdu) = pdu_storage.try_split().expect("can only split once");
     let interface = interface.to_string();
-    std::thread::spawn(move || {
-        let rt = tokio::runtime::Runtime::new().expect("Failed to create runtime");
-        let _ = rt.block_on(async move {
-            tx_rx_task(&interface, tx, rx)
-                .expect("spawn TX/RX task")
-                .await
-        });
-    });
+    let thread_panic_tx_clone = thread_panic_tx.clone();
+    std::thread::Builder::new()
+        .name("EthercatTxRxThread".to_owned())
+        .spawn(move || {
+            send_panic("EthercatTxRxThread", thread_panic_tx_clone);
+            let rt = smol::LocalExecutor::new();
+            let _ = smol::block_on(rt.run(async {
+                tx_rx_task(&interface, tx, rx)
+                    .expect("spawn TX/RX task")
+                    .await
+            }));
+        })
+        .expect("Building thread");
 
     // Create maindevice
     let maindevice = MainDevice::new(
@@ -55,7 +68,7 @@ pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(),
         },
     );
 
-    tokio::spawn(async move {
+    let _ = smol::block_on(async move {
         let main_namespace = &mut APP_STATE
             .socketio_setup
             .namespaces
@@ -99,12 +112,14 @@ pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(),
         machines.insert(
             identified_device_group
                 .first()
-                .unwrap()
+                .expect("There should always be a first device")
                 .machine_identification_unique
                 .clone(),
             machine,
         );
     }
+
+    log::debug!("{:?}", &subdevices);
 
     //log machines
     for (k, v) in machines.iter() {
@@ -139,6 +154,7 @@ pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(),
             Err(_) => {}
         }
     }
+
     // Write all this stuff to `app_state`
     {
         let mut ethercat_setup_guard = app_state.ethercat_setup.write().await;
@@ -155,7 +171,7 @@ pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(),
     }
 
     // Notify client via socketio
-    tokio::spawn(async move {
+    let _ = smol::block_on(async move {
         let main_namespace = &mut APP_STATE
             .socketio_setup
             .namespaces
@@ -167,25 +183,24 @@ pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(),
     });
 
     // Start control loop
-    let pdu_handle = tokio::spawn(async move {
-        log::info!("Starting control loop");
-        let mut average_nanos = Duration::from_micros(250).as_nanos() as u64;
-        loop {
-            let res = loop_once(app_state.ethercat_setup.clone(), &mut average_nanos).await;
+    std::thread::Builder::new()
+        .name("EthercatLoopThread".to_owned())
+        .spawn(move || loop {
+            send_panic("EthercatLoopThread", thread_panic_tx.clone());
+            let rt = smol::LocalExecutor::new();
+            let res =
+                smol::block_on(rt.run(async { loop_once(app_state.ethercat_setup.clone()).await }));
             if let Err(err) = res {
                 log::error!("Loop failed\n{:?}", err);
             }
-        }
-    });
-    // Await the pdu_loop task so that it executes fully
-    pdu_handle.await.expect("pdu_loop task failed");
+        })
+        .expect("Building thread");
 
     Ok(())
 }
 
 pub async fn loop_once<'maindevice>(
     setup: Arc<RwLock<Option<EthercatSetup>>>,
-    average_nanos: &mut u64,
 ) -> Result<(), anyhow::Error> {
     let setup_guard = setup.read().await;
     let setup = setup_guard
@@ -200,9 +215,19 @@ pub async fn loop_once<'maindevice>(
         let mut device = setup.devices[i].as_ref().write().await;
         let input = subdevice.inputs_raw();
         let input_bits = input.view_bits::<Lsb0>();
+
         device.input_checked(input_bits).or_else(|e| {
             Err(anyhow::anyhow!(
                 "[{}::loop_once] SubDevice with index {} failed to copy inputs\n{:?}",
+                module_path!(),
+                i,
+                e
+            ))
+        })?;
+
+        device.input_post_process().or_else(|e| {
+            Err(anyhow::anyhow!(
+                "[{}::loop_once] SubDevice with index {} failed to copy post_process\n{:?}",
                 module_path!(),
                 i,
                 e
@@ -219,9 +244,19 @@ pub async fn loop_once<'maindevice>(
 
     // copy outputs from devices
     for (i, subdevice) in setup.group.iter(&setup.maindevice).enumerate() {
-        let device = setup.devices[i].as_ref().read().await;
+        let mut device = setup.devices[i].as_ref().write().await;
         let mut output = subdevice.outputs_raw_mut();
         let output_bits = output.view_bits_mut::<Lsb0>();
+
+        device.output_pre_process().or_else(|e| {
+            Err(anyhow::anyhow!(
+                "[{}::loop_once] SubDevice with index {} failed to pre process outputs \n{:?}",
+                module_path!(),
+                i,
+                e
+            ))
+        })?;
+
         device.output_checked(output_bits).or_else(|e| {
             Err(anyhow::anyhow!(
                 "[{}::loop_once] SubDevice with index {} failed to copy outputs\n{:?}",

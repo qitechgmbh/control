@@ -32,7 +32,12 @@ pub fn validate_same_machine_identification(
 ) -> Result<(), Error> {
     let machine_identification_unique = &identified_device_group
         .first()
-        .unwrap()
+        .ok_or_else(|| {
+            anyhow::anyhow!(
+                "[{}::validate_same_machine_identification] No devices in group",
+                module_path!()
+            )
+        })?
         .machine_identification_unique;
     for device in identified_device_group.iter() {
         if device.machine_identification_unique != *machine_identification_unique {

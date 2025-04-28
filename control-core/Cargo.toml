@@ -4,17 +4,19 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-anyhow = "1.0.97"
-axum = "0.8.1"
+anyhow = "1.0.98"
+axum = "0.8.3"
 chrono = "0.4.40"
 ethercat_hal = { path = "../ethercat-hal" }
 ethercrab = "0.6"
+interfaces = "0.0.9"
 log = "0.4.27"
 serde = "1.0.219"
 serde_json = "1.0.140"
 smol = "2.0.2"
 socketioxide = "0.16.2"
 uom = "0.36.0"
-
+bitvec = { version = "1.0.1", features = ["alloc"] }
+crc = "3.2.1"
 [dev-dependencies]
 approx = "0.5.1"

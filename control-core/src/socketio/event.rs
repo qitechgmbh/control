@@ -20,29 +20,33 @@ where
     pub ts: i64,
 }
 
-impl<T> From<Event<T>> for GenericEvent
+impl<T> TryFrom<Event<T>> for GenericEvent
 where
     T: Serialize,
 {
-    fn from(event: Event<T>) -> Self {
-        Self {
+    type Error = serde_json::Error;
+
+    fn try_from(event: Event<T>) -> Result<Self, Self::Error> {
+        Ok(Self {
             name: event.name,
-            data: serde_json::to_value(event.data).unwrap(),
+            data: serde_json::to_value(event.data)?,
             ts: event.ts,
-        }
+        })
     }
 }
 
-impl<T> From<&Event<T>> for GenericEvent
+impl<T> TryFrom<&Event<T>> for GenericEvent
 where
     T: Serialize,
 {
-    fn from(event: &Event<T>) -> Self {
-        Self {
+    type Error = serde_json::Error;
+
+    fn try_from(event: &Event<T>) -> Result<Self, Self::Error> {
+        Ok(Self {
             name: event.name.clone(),
-            data: serde_json::to_value(&event.data).unwrap(),
+            data: serde_json::to_value(&event.data)?,
             ts: event.ts,
-        }
+        })
     }
 }
 

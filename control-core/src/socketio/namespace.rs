@@ -147,7 +147,7 @@ where
 }
 
 pub trait CacheableEvents<Events> {
-    fn event_value(&self) -> GenericEvent;
+    fn event_value(&self) -> Result<GenericEvent, serde_json::Error>;
     fn event_cache_fn(&self) -> CacheFn;
 }
 

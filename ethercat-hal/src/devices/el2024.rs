@@ -29,21 +29,31 @@ impl NewDevice for EL2024 {
 
 impl DigitalOutputDevice<EL2024Port> for EL2024 {
     fn digital_output_write(&mut self, port: EL2024Port, value: DigitalOutputOutput) {
+        let expect_text = "All channels should be Some(_)";
         match port {
-            EL2024Port::DO1 => self.rxpdo.channel1.as_mut().unwrap().value = value.into(),
-            EL2024Port::DO2 => self.rxpdo.channel2.as_mut().unwrap().value = value.into(),
-            EL2024Port::DO3 => self.rxpdo.channel3.as_mut().unwrap().value = value.into(),
-            EL2024Port::DO4 => self.rxpdo.channel4.as_mut().unwrap().value = value.into(),
+            EL2024Port::DO1 => {
+                self.rxpdo.channel1.as_mut().expect(&expect_text).value = value.into()
+            }
+            EL2024Port::DO2 => {
+                self.rxpdo.channel2.as_mut().expect(&expect_text).value = value.into()
+            }
+            EL2024Port::DO3 => {
+                self.rxpdo.channel3.as_mut().expect(&expect_text).value = value.into()
+            }
+            EL2024Port::DO4 => {
+                self.rxpdo.channel4.as_mut().expect(&expect_text).value = value.into()
+            }
         }
     }
 
     fn digital_output_state(&self, port: EL2024Port) -> DigitalOutputState {
+        let expect_text = "All channels should be Some(_)";
         DigitalOutputState {
             output: DigitalOutputOutput(match port {
-                EL2024Port::DO1 => self.rxpdo.channel1.as_ref().unwrap().value,
-                EL2024Port::DO2 => self.rxpdo.channel2.as_ref().unwrap().value,
-                EL2024Port::DO3 => self.rxpdo.channel3.as_ref().unwrap().value,
-                EL2024Port::DO4 => self.rxpdo.channel4.as_ref().unwrap().value,
+                EL2024Port::DO1 => self.rxpdo.channel1.as_ref().expect(&expect_text).value,
+                EL2024Port::DO2 => self.rxpdo.channel2.as_ref().expect(&expect_text).value,
+                EL2024Port::DO3 => self.rxpdo.channel3.as_ref().expect(&expect_text).value,
+                EL2024Port::DO4 => self.rxpdo.channel4.as_ref().expect(&expect_text).value,
             }),
         }
     }

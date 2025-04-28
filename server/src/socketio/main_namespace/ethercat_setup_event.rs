@@ -4,7 +4,6 @@ use control_core::{
     socketio::event::Event,
 };
 use ethercrab::{SubDevicePdi, SubDeviceRef};
-use futures::executor::block_on;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -60,7 +59,7 @@ impl EthercatSetupEventBuilder {
     const NAME: &'static str = "EthercatSetupEvent";
 
     pub fn build(&self) -> Event<EthercatSetupEvent> {
-        let ethercat_setup_guard = block_on(async {
+        let ethercat_setup_guard = smol::block_on(async {
             return APP_STATE.as_ref().ethercat_setup.read().await;
         });
 

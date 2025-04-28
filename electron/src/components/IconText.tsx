@@ -1,6 +1,6 @@
 import React from "react";
 import { Icon, IconName } from "./Icon";
-import { useClassNameBuilder } from "@/helpers/style";
+import { cva } from "class-variance-authority";
 
 export type Props = {
   icon: IconName;
@@ -9,9 +9,8 @@ export type Props = {
 };
 
 export function IconText({ icon, children, variant = "info" }: Props) {
-  const divStyle = useClassNameBuilder({
-    base: "flex flex-row items-center gap-2",
-    variables: {
+  const divStyle = cva(["flex", "flex-row", "items-center", "gap-2"], {
+    variants: {
       variant: {
         info: "text-blue-500",
         warning: "text-amber-500",

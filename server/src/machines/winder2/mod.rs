@@ -62,7 +62,7 @@ impl Winder2 {
         }
         .build();
         self.namespace
-            .emit_cached(Winder1Events::TraverseState(event));
+            .emit_cached(Winder1Events::TraverseState(event))
     }
 }
 
@@ -107,7 +107,7 @@ impl Winder2 {
             mode: self.mode.clone().into(),
         }
         .build();
-        self.namespace.emit_cached(Winder1Events::Mode(event));
+        self.namespace.emit_cached(Winder1Events::Mode(event))
     }
 }
 
@@ -131,7 +131,7 @@ impl Winder2 {
         }
         .build();
         self.namespace
-            .emit_cached(Winder1Events::TensionArmAngleEvent(event));
+            .emit_cached(Winder1Events::TensionArmAngleEvent(event))
     }
 
     fn emit_tension_arm_state(&mut self) {
@@ -140,7 +140,7 @@ impl Winder2 {
         }
         .build();
         self.namespace
-            .emit_cached(Winder1Events::TensionArmStateEvent(event));
+            .emit_cached(Winder1Events::TensionArmStateEvent(event))
     }
 }
 
@@ -162,7 +162,7 @@ impl Winder2 {
             .steps_to_angular_velocity(self.spool.get_speed() as f64)
             .get::<revolution_per_minute>();
         let event = api::SpoolRpmEvent { rpm }.build();
-        self.namespace.emit_cached(Winder1Events::SpoolRpm(event));
+        self.namespace.emit_cached(Winder1Events::SpoolRpm(event))
     }
 
     fn emit_spool_state(&mut self) {
@@ -171,7 +171,7 @@ impl Winder2 {
             speed_max: self.spool_speed_controller.get_max_speed(),
         }
         .build();
-        self.namespace.emit_cached(Winder1Events::SpoolState(event));
+        self.namespace.emit_cached(Winder1Events::SpoolState(event))
     }
 }
 

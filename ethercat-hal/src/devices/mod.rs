@@ -11,6 +11,7 @@ pub mod el3001;
 pub mod el3021;
 pub mod el3024;
 pub mod el3204;
+pub mod el6021;
 pub mod el7031;
 pub mod el7041_0052;
 // pub mod el4008;
@@ -28,6 +29,7 @@ use el2522::{EL2522, EL2522_IDENTITY_A};
 use el3001::EL3001_IDENTITY_A;
 use el3021::EL3021_IDENTITY_A;
 use el3024::EL3024_IDENTITY_A;
+use el6021::EL6021_IDENTITY_A;
 use el7031::EL7031_IDENTITY_A;
 use el7041_0052::EL7041_0052_IDENTITY_A;
 use ethercrab::{MainDevice, SubDeviceIdentity};
@@ -57,9 +59,18 @@ pub trait Device: NewDevice + Any + Send + Sync + Debug {
                 input_len
             ));
         }
+        self.input(input)
+    }
 
-        self.input(input)?;
+    /// Devices can override this function if they want to post process the input data
+    /// This might be the case if the pdo is not what is needed in the io layer
+    fn input_post_process(&mut self) -> Result<(), anyhow::Error> {
+        Ok(())
+    }
 
+    /// Devices can override this function if they want to pre process the output data
+    /// This might be the case if the pdo is not what is needed in the io layer
+    fn output_pre_process(&mut self) -> Result<(), anyhow::Error> {
         Ok(())
     }
 
@@ -145,6 +156,7 @@ pub fn device_from_subdevice(
         EL3001_IDENTITY_A => Ok(Arc::new(RwLock::new(el3001::EL3001::new()))),
         EL3021_IDENTITY_A => Ok(Arc::new(RwLock::new(el3021::EL3021::new()))),
         EL3024_IDENTITY_A => Ok(Arc::new( RwLock::new(el3024::EL3024::new()))),
+        EL6021_IDENTITY_A => Ok(Arc::new(RwLock::new(el6021::EL6021::new()))),
         // "EL4008" => Ok(Arc::new(RwLock::new(EL4008::new()))),
         // TODO: implement EL3204 identity
         // "EL3204" => Ok(Arc::new(RwLock::new(EL3204::new()))),
