@@ -6,3 +6,4 @@ pub mod machines;
 pub mod modbus;
 pub mod rest;
 pub mod socketio;
+pub mod serial;
