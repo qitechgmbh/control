@@ -313,11 +313,10 @@ impl Actor for MitsubishiInverterRS485Actor {
                 self.last_message_size,
             );
 
-            let elapsed: Duration = self.last_ts.duration_since(now_ts);
+            let elapsed: Duration = now_ts.duration_since(self.last_ts);
             if elapsed < timeout {
                 return;
             }
-
             self.last_ts = now_ts;
 
             match self.state {
