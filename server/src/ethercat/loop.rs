@@ -119,6 +119,8 @@ pub async fn setup_loop(
         );
     }
 
+    log::debug!("{:?}", &subdevices);
+
     //log machines
     for (k, v) in machines.iter() {
         log::info!("Machine: {:?} {:?}", k, v);
@@ -152,6 +154,7 @@ pub async fn setup_loop(
             Err(_) => {}
         }
     }
+
     // Write all this stuff to `app_state`
     {
         let mut ethercat_setup_guard = app_state.ethercat_setup.write().await;
@@ -212,9 +215,19 @@ pub async fn loop_once<'maindevice>(
         let mut device = setup.devices[i].as_ref().write().await;
         let input = subdevice.inputs_raw();
         let input_bits = input.view_bits::<Lsb0>();
+
         device.input_checked(input_bits).or_else(|e| {
             Err(anyhow::anyhow!(
                 "[{}::loop_once] SubDevice with index {} failed to copy inputs\n{:?}",
+                module_path!(),
+                i,
+                e
+            ))
+        })?;
+
+        device.input_post_process().or_else(|e| {
+            Err(anyhow::anyhow!(
+                "[{}::loop_once] SubDevice with index {} failed to copy post_process\n{:?}",
                 module_path!(),
                 i,
                 e
@@ -231,9 +244,19 @@ pub async fn loop_once<'maindevice>(
 
     // copy outputs from devices
     for (i, subdevice) in setup.group.iter(&setup.maindevice).enumerate() {
-        let device = setup.devices[i].as_ref().read().await;
+        let mut device = setup.devices[i].as_ref().write().await;
         let mut output = subdevice.outputs_raw_mut();
         let output_bits = output.view_bits_mut::<Lsb0>();
+
+        device.output_pre_process().or_else(|e| {
+            Err(anyhow::anyhow!(
+                "[{}::loop_once] SubDevice with index {} failed to pre process outputs \n{:?}",
+                module_path!(),
+                i,
+                e
+            ))
+        })?;
+
         device.output_checked(output_bits).or_else(|e| {
             Err(anyhow::anyhow!(
                 "[{}::loop_once] SubDevice with index {} failed to copy outputs\n{:?}",
