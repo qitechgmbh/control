@@ -1,1 +1,1 @@
-sudo nixos-rebuild switch --flake .#nixos
+sudo nixos-rebuild switch --flake .#nixos --show-trace --impure --option eval-cache false

@@ -109,7 +109,7 @@
             ./nixos/os/configuration.nix
             
             # QiTech Control module
-            qitech-control.nixosModules.qitech
+            self.nixosModules.qitech
             
             # Home Manager module
             home-manager.nixosModules.home-manager
