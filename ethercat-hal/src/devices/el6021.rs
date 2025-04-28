@@ -487,7 +487,7 @@ impl SerialInterfaceDevice<EL6021Port> for EL6021 {
             rx_pdo.length = message.len() as u8;
             rx_pdo.data = data_buffer;
 
-            rx_pdo.control.transmit_request = true; // Transmit Request
+            rx_pdo.control.transmit_request = true;
 
             return Ok(());
         } else {
@@ -514,7 +514,7 @@ mod tests {
     fn test_standard_22_byte_mdp600_input_read() {
         let mut bits: BitVec<u8, Lsb0> = BitVec::with_capacity(192);
         bits.resize(192, false);
-        bits[0..8].store_le(0xAAu8); // status
+        bits[0..8].store_le(0b101010101); // status
         bits[8..16].store_le(0x16u8); // length (22)
         for i in 0..22 {
             bits[(16 + i * 8)..(16 + (i + 1) * 8)].store_le((i + 1) as u8); // data
