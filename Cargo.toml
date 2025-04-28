@@ -1,5 +1,5 @@
 [workspace]
-members = ["server", "ethercat-hal", "ethercat-hal-derive", "control-core",
+members = ["server", "ethercat-hal", "ethercat-hal-derive", "control-core"
 ]
 exclude = []
 resolver = "2"
