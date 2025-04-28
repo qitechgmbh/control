@@ -256,17 +256,6 @@ enum MitsubishiModbusExceptionCode {
     None,
 }
 
-impl MitsubishiModbusExceptionCode {
-    fn display(self) -> String {
-        match self {
-            MitsubishiModbusExceptionCode::IllegalFunction => "Illegal Function".to_string(),
-            MitsubishiModbusExceptionCode::IllegalDataAddress => "Illegal Data Address".to_string(),
-            MitsubishiModbusExceptionCode::IllegalDataValue => "Illegal Data Value".to_string(),
-            MitsubishiModbusExceptionCode::None => "No Exceptions".to_string(),
-        }
-    }
-}
-
 impl From<MitsubishiModbusExceptionCode> for u8 {
     fn from(value: MitsubishiModbusExceptionCode) -> Self {
         match value {
