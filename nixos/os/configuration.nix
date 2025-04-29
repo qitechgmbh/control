@@ -162,7 +162,7 @@
       QITECH_OS = "control-os";
       QITECH_OS_GIT_TIMESTAMP = gitInfo.timestamp;
       QITECH_OS_GIT_COMMIT = gitInfo.commit;
-      QITECH_OS_GIT_ABBREVIATION = gitInfo.abbreviation;
+      QITECH_OS_GIT_ABBREVIATION = gitInfo.abbrevation;
       QITECH_OS_GIT_URL = gitInfo.url;
     };
   };
