@@ -5,6 +5,8 @@ import { BackButton } from "./BackButton";
 import { Link, Outlet } from "@tanstack/react-router";
 import { useOnSubpath } from "@/lib/useOnSubpath";
 import { Icon, IconName } from "./Icon";
+import { FullscreenButton } from "./FullscreenButton";
+import { useSidebarlessWidth } from "./SidebarLayout";
 
 type TopbarItemContent = {
   link: string;
@@ -36,13 +38,14 @@ type TopbarProps = {
 };
 
 export function Topbar({ items, pathname }: TopbarProps) {
+  const sidebarlessWidth = useSidebarlessWidth();
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full w-full flex-col">
       <div className="h-18"></div>
       <div
-        className="fixed flex h-18 w-full gap-2 bg-neutral-200 pt-2"
+        className="fixed flex h-18 gap-2 bg-neutral-200 pt-2 pr-2"
         // 50 is below popup dialogs
-        style={{ zIndex: 50 }}
+        style={{ zIndex: 50, width: sidebarlessWidth }}
       >
         <div className="flexflex-col z-10 pb-2">
           <BackButton />
@@ -58,7 +61,10 @@ export function Topbar({ items, pathname }: TopbarProps) {
             </Fragment>
           );
         })}
+        <div className="flex-grow" />
+        <FullscreenButton />
       </div>
+
       <Outlet />
     </div>
   );
