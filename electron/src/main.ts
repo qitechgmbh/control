@@ -13,12 +13,14 @@ const inDevelopment = process.env.NODE_ENV === "development";
 // Set consistent app ID for Windows taskbar and GNOME dock integration
 app.setAppUserModelId("de.qitech.control-electron");
 app.setAppUserModelId("de.qitech.control-electron");
+app.setAppUserModelId("de.qitech.control-electron");
 
 // Ensure single instance
 const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock) {
   app.quit();
 } else {
+  app.on("second-instance", (event, commandLine, workingDirectory) => {
   app.on("second-instance", (event, commandLine, workingDirectory) => {
   app.on("second-instance", (event, commandLine, workingDirectory) => {
     // Someone tried to run a second instance, focus our window instead
@@ -48,13 +50,16 @@ function createWindow() {
     // Add icon path for better integration
     icon: path.join(__dirname, "../assets/icon.png"),
     icon: path.join(__dirname, "../assets/icon.png"),
+    icon: path.join(__dirname, "../assets/icon.png"),
     // Set window class explicitly for Linux/GNOME integration
     title: "QiTech Control",
   });
 
 
+
   mainWindow.setTitle("QiTech Control");
   mainWindow.setFullScreen(process.env.QITECH_OS === "true");
+
 
 
   registerListeners(mainWindow);
