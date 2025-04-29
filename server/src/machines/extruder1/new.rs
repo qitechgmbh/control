@@ -13,6 +13,8 @@ use control_core::{
 use ethercat_hal::{
     devices::{
         downcast_device,
+        ek1100::EK1100_IDENTITY_A,
+        el3021::{EL3021, EL3021_IDENTITY_A},
         el6021::{self, EL6021, EL6021_IDENTITY_A},
         subdevice_identity_to_tuple, Device,
     },
@@ -27,17 +29,6 @@ impl MachineNewTrait for ExtruderV2 {
         subdevices: &Vec<EthercrabSubDevicePreoperational<'maindevice>>,
         devices: &Vec<Arc<RwLock<dyn Device>>>,
     ) -> Result<Self, Error> {
-        let machine_identification_unique = identified_device_group
-            .first()
-            .ok_or_else(|| {
-                anyhow::anyhow!(
-                    "[{}::MachineNewTrait/ExtruderV2::new] No machine identification",
-                    module_path!()
-                )
-            })?
-            .machine_identification_unique
-            .clone();
-
         // validate general stuff
         validate_same_machine_identification(identified_device_group)?;
         validate_no_role_dublicates(identified_device_group)?;
@@ -83,13 +74,31 @@ impl MachineNewTrait for ExtruderV2 {
                 ))?,
             };
 
-            let mut extruder: ExtruderV2 = Self {
+            let mdi = get_mdi_by_role(identified_device_group, 2).or(Err(anyhow::anyhow!(
+                "[{}::MachineNewTrait/Extruder2::new] No device with role 2",
+                module_path!()
+            )))?;
+
+            let subdevice = get_subdevice_by_index(subdevices, mdi.subdevice_index)?;
+            let device = get_device_by_index(devices, mdi.subdevice_index)?;
+            let subdevice_identity = subdevice.identity();
+
+            let el3021 = match subdevice_identity_to_tuple(&subdevice_identity) {
+                EL3021_IDENTITY_A => downcast_device::<EL3021>(device.clone()).await?,
+                _ => Err(anyhow::anyhow!(
+                    "[{}::MachineNewTrait/Extruder2::new] Device with role 2 is not an EL3021",
+                    module_path!()
+                ))?,
+            };
+
+            let extruder: ExtruderV2 = Self {
                 inverter: MitsubishiInverterRS485Actor::new(SerialInterface::new(
                     el6021,
                     el6021::EL6021Port::SI1,
                 )),
                 namespace: ExtruderV2Namespace::new(),
                 last_response_emit: chrono::Utc::now(),
+                el3021: el3021,
             };
             Ok(extruder)
         })

@@ -1,7 +1,5 @@
 use crate::machines::{
-    extruder1::{api::ExtruderV2Events, ExtruderV2},
-    winder2::Winder2,
-    MACHINE_EXTRUDER_V1, MACHINE_WINDER_V1, VENDOR_QITECH,
+    extruder1::ExtruderV2, winder2::Winder2, MACHINE_EXTRUDER_V1, MACHINE_WINDER_V1, VENDOR_QITECH,
 };
 use control_core::{identification::MachineIdentification, machines::registry::MachineRegistry};
 use lazy_static::lazy_static;

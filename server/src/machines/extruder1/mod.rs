@@ -3,6 +3,9 @@ use chrono::DateTime;
 use control_core::{
     actors::mitsubishi_inverter_rs485::MitsubishiInverterRS485Actor, machines::Machine,
 };
+use ethercat_hal::devices::el3021::EL3021;
+use smol::lock::RwLock;
+use std::sync::Arc;
 pub mod act;
 pub mod api;
 pub mod new;
@@ -12,11 +15,12 @@ pub struct ExtruderV2 {
     inverter: MitsubishiInverterRS485Actor,
     namespace: ExtruderV2Namespace,
     last_response_emit: DateTime<chrono::Utc>,
+    el3021: Arc<RwLock<EL3021>>,
 }
 
 impl std::fmt::Display for ExtruderV2 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "ExtruderV1")
+        write!(f, "ExtruderV2")
     }
 }
 
