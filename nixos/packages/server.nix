@@ -4,7 +4,7 @@
 , pkg-config
 , libudev-zero
 , libpcap
-, commitHash ? ""
+, commitHash
 , rust-bin ? null
 }:
 
@@ -28,18 +28,9 @@ in
 
 customRustPlatform.buildRustPackage rec {
   pname = "qitech-control-server";
-  version = "0.1.0${if commitHash != "" then "-${builtins.substring 0 7 commitHash}" else ""}";
+  version = commitHash;
 
-  src = if commitHash != "" then
-    fetchFromGitHub {
-      owner = "qitechgmbh";
-      repo = "control";
-      rev = commitHash;
-      sha256 = lib.fakeSha256; # Replace with actual hash after first build attempt
-      # sha256 = ""; # You'll need to replace this with the actual hash
-    }
-  else
-    lib.cleanSource ../..;
+  src = lib.cleanSource ../..;
 
   cargoLock = {
     lockFile = "${src}/Cargo.lock";
