@@ -12,6 +12,8 @@ import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Alert } from "@/components/Alert";
 import { useNavigate } from "@tanstack/react-router";
 import { useEffectAsync } from "@/lib/useEffectAsync";
+import { Collapsible, CollapsibleTrigger } from "@radix-ui/react-collapsible";
+import { CollapsibleContent } from "@/components/ui/collapsible";
 
 export function ChooseVersionPage() {
   const navigate = useNavigate();
@@ -184,6 +186,7 @@ export function ChooseVersionPage() {
           update the system.
         </Alert>
       </span>
+
       <span className="text-xl">Choose a Version</span>
       {tags !== undefined && tags.length > 0 ? (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -210,57 +213,75 @@ export function ChooseVersionPage() {
       {tags === undefined && <LoadingSpinner />}
       {tags?.length == 0 && <>No Versions</>}
 
-      <span className="text-xl">Choose a Branch</span>
-      {branches !== undefined && branches.length > 0 ? (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {branches.map((branch) => (
-            <UpdateButton
-              time={branch.date ? new Date(branch.date) : undefined}
-              key={branch.name}
-              title={branch.name}
-              kind="branch"
-              isOlder={isOlderThanCurrent(branch.date)}
-              onClick={() => {
-                navigate({
-                  to: "/_sidebar/setup/update/changelog",
-                  search: {
-                    branch: branch.name,
-                    ...githubSource,
-                  },
-                });
-              }}
-            />
-          ))}
-        </div>
-      ) : null}
-      {branches === undefined && <LoadingSpinner />}
-      {branches?.length == 0 && <>No Branches</>}
+      <Collapsible>
+        <CollapsibleTrigger>
+          <div className="flex flex-row items-center gap-2">
+            <span className="text-xl">Choose a Branch</span>
+            <Icon name="lu:ChevronsUpDown" />
+          </div>
+        </CollapsibleTrigger>
+        <CollapsibleContent className="pt-6">
+          {branches !== undefined && branches.length > 0 ? (
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {branches.map((branch) => (
+                <UpdateButton
+                  time={branch.date ? new Date(branch.date) : undefined}
+                  key={branch.name}
+                  title={branch.name}
+                  kind="branch"
+                  isOlder={isOlderThanCurrent(branch.date)}
+                  onClick={() => {
+                    navigate({
+                      to: "/_sidebar/setup/update/changelog",
+                      search: {
+                        branch: branch.name,
+                        ...githubSource,
+                      },
+                    });
+                  }}
+                />
+              ))}
+            </div>
+          ) : null}
+          {branches === undefined && <LoadingSpinner />}
+          {branches?.length == 0 && <>No Branches</>}
+        </CollapsibleContent>
+      </Collapsible>
 
-      <span className="text-xl">Choose a Master Commit</span>
-      {masterCommits !== undefined && masterCommits.length > 0 ? (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {masterCommits.map((commit) => (
-            <UpdateButton
-              time={new Date(commit.commit.author.date)}
-              key={commit.sha}
-              title={commit.commit.message}
-              kind="commit"
-              isOlder={isOlderThanCurrent(commit.commit.author.date)}
-              onClick={() => {
-                navigate({
-                  to: "/_sidebar/setup/update/changelog",
-                  search: {
-                    commit: commit.sha,
-                    ...githubSource,
-                  },
-                });
-              }}
-            />
-          ))}
-        </div>
-      ) : null}
-      {masterCommits === undefined && <LoadingSpinner />}
-      {masterCommits?.length == 0 && <>No Master Commits</>}
+      <Collapsible>
+        <CollapsibleTrigger>
+          <div className="flex flex-row items-center gap-2">
+            <span className="text-xl">Choose a Master Commit</span>
+            <Icon name="lu:ChevronsUpDown" />
+          </div>
+        </CollapsibleTrigger>
+        <CollapsibleContent className="pt-6">
+          {masterCommits !== undefined && masterCommits.length > 0 ? (
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {masterCommits.map((commit) => (
+                <UpdateButton
+                  time={new Date(commit.commit.author.date)}
+                  key={commit.sha}
+                  title={commit.commit.message}
+                  kind="commit"
+                  isOlder={isOlderThanCurrent(commit.commit.author.date)}
+                  onClick={() => {
+                    navigate({
+                      to: "/_sidebar/setup/update/changelog",
+                      search: {
+                        commit: commit.sha,
+                        ...githubSource,
+                      },
+                    });
+                  }}
+                />
+              ))}
+            </div>
+          ) : null}
+          {masterCommits === undefined && <LoadingSpinner />}
+          {masterCommits?.length == 0 && <>No Master Commits</>}
+        </CollapsibleContent>
+      </Collapsible>
     </Page>
   );
 }
