@@ -131,8 +131,7 @@ stdenv.mkDerivation rec {
 
   meta = with lib; {
     description = "QiTech Industries Control Software - Electron Frontend";
-    homepage = "https://qitech.com";
-    license = licenses.mit;
+    homepage = "https://qitech.de";
     platforms = platforms.linux;
   };
 }
