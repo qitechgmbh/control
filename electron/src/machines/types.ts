@@ -188,6 +188,17 @@ export const extruder2: MachinePreset = {
         },
       ],
     },
+    {
+      role: 2,
+      role_label: "1X Analog Channel",
+      allowed_devices: [
+        {
+          vendor_id: 2,
+          product_id: 197996626,
+          revision: 1310720,
+        },
+      ],
+    },
   ],
 };
 
