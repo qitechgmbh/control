@@ -10,9 +10,22 @@
       /etc/nixos/hardware-configuration.nix
     ];
 
-  # Bootloader.
-  boot.loader.systemd-boot.enable = true;
-  boot.loader.efi.canTouchEfiVariables = true;
+# Bootloader.
+boot.loader.grub = {
+  enable = true;
+  efiSupport = true;
+  device = "nodev";  # For EFI systems
+  
+  # Graphics settings for 1920x1080 resolution
+  gfxmodeEfi = "1920x1080x32,1920x1080,auto";  # Try with and without color depth
+  gfxpayloadEfi = "keep";  # Maintain the resolution for booting
+  
+  # Optional: uncomment if you want a larger font for better readability
+  # font = "${pkgs.hack-font}/share/fonts/hack/Hack-Regular.ttf";
+  # fontSize = 24;
+};
+boot.loader.efi.canTouchEfiVariables = true;
+
 
   boot.kernelPackages = pkgs.linuxPackages_latest;
 
@@ -235,6 +248,7 @@
     seahorse # password manager
   ]);
 
+  # Set system wide env variables
   environment.variables = {
     QITECH_OS = "true";
     QITECH_OS_GIT_TIMESTAMP = gitInfo.timestamp;
@@ -242,6 +256,9 @@
     QITECH_OS_GIT_ABBREVIATION = gitInfo.abbreviation;
     QITECH_OS_GIT_URL = gitInfo.url;
   };
+
+  # Set revision labe;
+  system.nixos.label = "${gitInfo.abbreviationEscaped}_${gitInfo.commit}";
   
   # Some programs need SUID wrappers, can be configured further or are
   # started in user sessions.

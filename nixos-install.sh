@@ -6,6 +6,8 @@ sudo sh -c 'echo "{
   commit = \"$(git rev-parse HEAD)\";
   abbreviation = \"$(git rev-parse --abbrev-ref HEAD)\";
   url = \"$(git config --get remote.origin.url)\";
+  # Like abbreviation but can be used in system.nixos.label
+  abbreviationEscaped = \"$(git rev-parse --abbrev-ref HEAD | sed -e "s/[^a-zA-Z0-9:_\.-]//g")\";
 }" > ./nixos/os/git.nix'
 
 # make sure the git.nix file is tracked by git
