@@ -371,6 +371,8 @@ pub struct EL6021 {
     pub rxpdo: EL6021RxPdo,
     pub output_ts: u64,
     pub input_ts: u64,
+    pub has_messages_last_toggle: bool,
+    pub initialized: bool,
 }
 
 impl PredefinedPdoAssignment<EL6021TxPdo, EL6021RxPdo> for EL6021PdoPreset {
@@ -402,6 +404,8 @@ impl NewDevice for EL6021 {
             rxpdo: configuration.pdo_assignment.rxpdo_assignment(),
             output_ts: 0,
             input_ts: 0,
+            has_messages_last_toggle: false,
+            initialized: false,
         }
     }
 }
@@ -409,18 +413,6 @@ impl NewDevice for EL6021 {
 #[derive(Clone)]
 pub enum EL6021Port {
     SI1, // Serial
-}
-
-pub enum ControlToggle {
-    TransmitRequest,
-    ReceiveAccepted,
-    InitRequest,
-}
-
-pub enum StatusToggle {
-    TransmitAccepted,
-    ReceiveRequest,
-    InitAccepted,
 }
 
 impl SerialInterfaceDevice<EL6021Port> for EL6021 {
@@ -433,15 +425,14 @@ impl SerialInterfaceDevice<EL6021Port> for EL6021 {
 
     fn serial_interface_read_message(&mut self, _port: EL6021Port) -> Option<Vec<u8>> {
         if !self.serial_interface_has_messages(_port) {
-            return None;
+            //return None;
         }
 
         if let Some(tx_pdo) = &mut self.txpdo.com_tx_pdo_map_22_byte {
             let valid_length = tx_pdo.length as usize;
             let received_data = tx_pdo.data[..valid_length.min(22)].to_vec();
-
             if let Some(rx_pdo) = &mut self.rxpdo.com_rx_pdo_map_22_byte {
-                rx_pdo.control.received_acepted = true;
+                rx_pdo.control.received_acepted = !rx_pdo.control.received_acepted;
             }
             return Some(received_data);
         } else {
@@ -461,13 +452,13 @@ impl SerialInterfaceDevice<EL6021Port> for EL6021 {
                     "Message is too long for RxPdo Buffer of 22 bytes!"
                 ));
             }
+
             let mut data_buffer = [0u8; 22];
             let bytes = message.as_slice();
             data_buffer[..message.len()].copy_from_slice(&bytes[..message.len()]);
             rx_pdo.length = message.len() as u8;
             rx_pdo.data = data_buffer;
-
-            rx_pdo.control.transmit_request = true;
+            rx_pdo.control.transmit_request = !rx_pdo.control.transmit_request;
 
             return Ok(());
         } else {
@@ -482,6 +473,49 @@ impl SerialInterfaceDevice<EL6021Port> for EL6021 {
 
     fn get_serial_encoding(&self, _port: EL6021Port) -> Option<SerialEncoding> {
         return Some(self.configuration.data_frame);
+    }
+    /// For el6021 this returns false for as long as the Initialization takes
+    /// When its finished it returns true    
+    fn serial_interface_initialize(&mut self, port: EL6021Port) -> bool {
+        let rxpdo_opt = &mut self.rxpdo.com_rx_pdo_map_22_byte;
+        let txpdo_opt = &mut self.txpdo.com_tx_pdo_map_22_byte;
+
+        let rxpdo = match rxpdo_opt {
+            Some(rxpdo_opt) => rxpdo_opt,
+            None => return false,
+        };
+
+        let txpdo = match txpdo_opt {
+            Some(txpdo_opt) => txpdo_opt,
+            None => return false,
+        };
+
+        if rxpdo.control.init_request && txpdo.status.init_accepted {
+            rxpdo.control.init_request = false;
+            return false;
+        }
+
+        if rxpdo.control.init_request == false
+            && txpdo.status.init_accepted == false
+            && self.initialized == false
+        {
+            rxpdo.control.init_request = true;
+            self.initialized = true;
+            return false;
+        }
+
+        if rxpdo.control.init_request == false && txpdo.status.init_accepted == true {
+            return false;
+        }
+
+        if rxpdo.control.init_request == false
+            && txpdo.status.init_accepted == false
+            && self.initialized == true
+        {
+            return true;
+        }
+
+        return false;
     }
 }
 
