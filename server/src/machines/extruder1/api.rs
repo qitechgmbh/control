@@ -2,11 +2,8 @@ use super::ExtruderV2;
 use control_core::{
     machines::api::MachineApi,
     socketio::{
-        event::{Event, GenericEvent},
-        namespace::{
-            cache_duration, cache_one_event, CacheFn, CacheableEvents, Namespace,
-            NamespaceCacheingLogic, NamespaceInterface,
-        },
+        event::Event,
+        namespace::{Namespace, NamespaceInterface},
     },
 };
 use serde::{Deserialize, Serialize};
@@ -115,23 +112,7 @@ impl MachineApi for ExtruderV2 {
         // there are multiple Modbus Frames that are "prebuilt"
         let control: Mutation = serde_json::from_value(request_body)?;
         match control {
-            Mutation::SetRunningFrequency(frequency) => todo!(),
-            Mutation::SetEepromFrequency(frequency) => todo!(),
-            Mutation::SetMinimumFrequency(frequency) => todo!(),
-            Mutation::SetMaximumFrequency(frequency) => todo!(),
-            Mutation::SetRotation(forward) => todo!(),
-            Mutation::StopMotor() => todo!(),
-            Mutation::SetOperationMode(operation_mode) => todo!(),
-            Mutation::WriteParameter(register, value) => todo!(),
-            Mutation::ReadParameter(register) => todo!(),
-            Mutation::ClearAllParameters() => todo!(),
-            Mutation::ClearParameter() => todo!(),
-            Mutation::ClearNonCommunicationParameter() => todo!(),
-            Mutation::ClearNonCommunicationParameters() => todo!(),
-            Mutation::GetRunningFrequency() => todo!(),
-            Mutation::GetEepromFrequency() => todo!(),
-            Mutation::GetMaximumFrequency() => todo!(),
-            Mutation::GetMinimumFrequency() => todo!(),
+            _ => (),
         }
         Ok(())
     }
