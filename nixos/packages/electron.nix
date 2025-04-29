@@ -120,7 +120,7 @@ stdenv.mkDerivation rec {
     Type=Application
     Name=QiTech Control
     Comment=QiTech Industries Control Software
-    Exec=env QITECH_BUILD_ENV=control-os qitech-control-electron %U
+    Exec=qitech-control-electron %U
     Icon=de.qitech.control-electron
     Terminal=false
     StartupWMClass=QiTech Control

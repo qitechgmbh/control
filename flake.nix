@@ -46,7 +46,7 @@
           })
         ];
         pkgs = import nixpkgs { inherit system overlays; };
-        
+
         # Use Rust nightly for edition 2024 support
         rust = pkgs.rust-bin.stable.latest.default.override {
           extensions = [ "rust-src" "rust-analyzer" ];
@@ -85,6 +85,9 @@
         # Replace "nixos" with your actual hostname
         nixos = nixpkgs.lib.nixosSystem {
           system = "x86_64-linux"; # Specify the correct system
+          specialArgs = {
+            gitInfo = import ./nixos/os/git.nix;
+          };
           modules = [
             # Apply the overlays to the system
             { nixpkgs.overlays = [

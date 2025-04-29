@@ -47,7 +47,7 @@ export function UpdateExecutePage() {
         Apply Update Now
       </TouchButton>
       <SectionTitle title="Log" />
-      <Terminal lines={terminalLines} className="h-200" />
+      <Terminal lines={terminalLines} className="h-160" />
     </Page>
   );
 }

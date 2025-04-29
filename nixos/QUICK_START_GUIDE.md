@@ -110,6 +110,6 @@ sudo nixos-rebuild switch --flake .#nixos --rollback
 
 The system uses special environment variables:
 
-- `QITECH_BUILD_ENV`: Set to "control-os" for NixOS deployments
+- `QITECH_OS`: Set to "true" for NixOS deployments
 
 These are configured in `configuration.nix`, `electron.nix`, and `home.nix`.

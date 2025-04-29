@@ -11,9 +11,19 @@ import {
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Alert } from "@/components/Alert";
 import { useNavigate } from "@tanstack/react-router";
+import { useEffectAsync } from "@/lib/useEffectAsync";
 
 export function ChooseVersionPage() {
   const navigate = useNavigate();
+
+  // load environment info
+  const [environmentInfo, setEnvironmentInfo] = useState<
+    EnvironmentInfo | undefined
+  >();
+  useEffectAsync(async () => {
+    const _environmentInfo = await window.environment.getInfo();
+    setEnvironmentInfo(_environmentInfo);
+  }, []);
 
   const [commits, setCommits] = useState<any[] | undefined>(undefined);
   const [branches, setBranches] = useState<any[] | undefined>(undefined);
@@ -98,6 +108,8 @@ export function ChooseVersionPage() {
 
   return (
     <Page>
+      <SectionTitle title="Current Version"></SectionTitle>
+      <CurrentVersionCard />
       <SectionTitle title="Update"></SectionTitle>
       <div className="flex flex-row items-center gap-4">
         <div className="flex flex-col">
@@ -198,6 +210,7 @@ type UpdateButtonProps = {
   time?: Date;
   title: string;
   kind: "tag" | "commit" | "branch";
+  isTooOld?: boolean;
   onClick: () => void;
 };
 
@@ -206,6 +219,7 @@ export function UpdateButton({
   title,
   kind,
   onClick,
+  isTooOld = false,
 }: UpdateButtonProps) {
   return (
     <div
@@ -229,7 +243,76 @@ export function UpdateButton({
           {time ? time.toLocaleString() : "N/A"}
         </span>
       </div>
-      <TouchButton className="flex-shrink-0">Select</TouchButton>
+      <TouchButton className="flex-shrink-0" disabled={isTooOld}>
+        Select
+      </TouchButton>
+    </div>
+  );
+}
+
+export function CurrentVersionCard() {
+  const navigate = useNavigate();
+
+  const [environmentInfo, setEnvironmentInfo] = useState<
+    EnvironmentInfo | undefined
+  >({
+    qitechOs: false,
+    qitechOsGitTimestamp: new Date(),
+    qitechOsGitCommit: "alksndlasdnoqweidn",
+    qitechOsGitAbbrevation: "fix/45",
+  });
+
+  const githubRegex = /https:\/\/.+github\.com\/([^\/^\.]+)\/([^\/^\.]+)(?:.+)/;
+  const match = githubRegex.exec(environmentInfo?.qitechOsGitUrl ?? "");
+
+  useEffectAsync(async () => {
+    const _environmentInfo = await window.environment.getInfo();
+    setEnvironmentInfo(_environmentInfo);
+  }, []);
+
+  if (!environmentInfo) {
+    return <LoadingSpinner />;
+  }
+
+  return (
+    <div className="flex w-max items-center gap-2 gap-4 rounded-3xl border border-gray-200 bg-white p-4 shadow">
+      <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex items-center gap-2">
+          <Icon name="lu:Tag" />
+          <span className="flex-1 truncate">
+            {environmentInfo?.qitechOsGitAbbrevation}
+          </span>
+        </div>
+        <span className="font-mono text-sm text-gray-700">
+          {environmentInfo?.qitechOsGitTimestamp
+            ? environmentInfo?.qitechOsGitTimestamp.toLocaleString()
+            : "N/A"}
+        </span>
+        <span className="font-mono text-sm text-gray-700">
+          {environmentInfo?.qitechOsGitCommit ?? "N/A"}
+        </span>
+        <span className="font-mono text-sm text-gray-700">
+          {environmentInfo?.qitechOsGitUrl ?? "N/A"}
+        </span>
+      </div>
+      <TouchButton
+        className="flex-shrink-0"
+        onClick={() => {
+          navigate({
+            to: "/_sidebar/setup/update/changelog",
+            search: {
+              commit: environmentInfo?.qitechOsGitCommit,
+              tag: undefined,
+              branch: undefined,
+              githubRepoOwner: match?.[1]!,
+              githubRepoName: match?.[2]!,
+              githubToken: undefined,
+            },
+          });
+        }}
+      >
+        Changelog
+      </TouchButton>
     </div>
   );
 }

@@ -20,8 +20,11 @@ interface ElectronWindow {
 }
 
 interface EnvironmentInfo {
-  deploymentType: string;
-  buildEnv: string;
+  qitechOs: boolean;
+  qitechOsGitTimestamp?: Date;
+  qitechOsGitCommit?: string;
+  qitechOsGitAbbrevation?: string;
+  qitechOsGitUrl?: string;
 }
 
 interface EnvironmentContext {

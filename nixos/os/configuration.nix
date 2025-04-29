@@ -2,7 +2,7 @@
 # your system.  Help is available in the configuration.nix(5) man page
 # and in the NixOS manual (accessible by running ‘nixos-help’).
 
-{ config, pkgs, ... }:
+{ config, pkgs, gitInfo, ... }:
 
 {
   imports =
@@ -159,7 +159,11 @@
 
   systemd.services.qitech = {
     environment = {
-      QITECH_BUILD_ENV = "control-os";
+      QITECH_OS = "control-os";
+      QITECH_OS_GIT_TIMESTAMP = gitInfo.timestamp;
+      QITECH_OS_GIT_COMMIT = gitInfo.commit;
+      QITECH_OS_GIT_ABBREVIATION = gitInfo.abbreviation;
+      QITECH_OS_GIT_URL = gitInfo.url;
     };
   };
 
@@ -227,7 +231,7 @@
   ]);
 
   environment.variables = {
-    QITECH_BUILD_ENV = "control-os";
+    QITECH_OS = "control-os";
   };
   
   # Some programs need SUID wrappers, can be configured further or are
