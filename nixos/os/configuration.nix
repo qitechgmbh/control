@@ -157,6 +157,15 @@
     package = pkgs.qitechPackages.server;
   };
 
+  systemd.services.qitech = {
+    serviceConfig = {
+      StandardOutput = "journal";
+      StandardError = "journal";
+      Restart = "always";
+      SyslogIdentifier = "qitech-control-server";
+    };
+  };
+
   users.users.qitech = {
     isNormalUser = true;
     description = "QiTech Industries";
