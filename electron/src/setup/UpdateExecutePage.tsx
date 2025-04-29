@@ -1,3 +1,4 @@
+import { Alert } from "@/components/Alert";
 import { Page } from "@/components/Page";
 import { SectionTitle } from "@/components/SectionTitle";
 import { Terminal } from "@/components/Terminal";
@@ -16,37 +17,42 @@ export function UpdateExecutePage() {
 
   const [terminalLines, setTerminalLines] = useState<string[]>([]);
 
+  const handleClick = async () => {
+    setIsUpdating(true);
+    setTerminalLines([]);
+    const res = await updatExecute(
+      {
+        ...search,
+        githubToken: search.githubToken || undefined,
+      },
+      (log: string) => {
+        setTerminalLines((prev) => [...prev, log]);
+      },
+    );
+    setIsUpdating(false);
+    if (res.success) {
+      toast.success("Update applied successfully");
+    } else {
+      toast.error("Update failed: " + res.error);
+    }
+  };
+
   return (
     <Page>
       <SectionTitle title="Apply Update" />
       <TouchButton
         className="w-max"
         icon="lu:CircleFadingArrowUp"
-        onClick={async () => {
-          setIsUpdating(true);
-          setTerminalLines([]);
-          const res = await updatExecute(
-            {
-              ...search,
-              githubToken: search.githubToken || undefined,
-            },
-            (log: string) => {
-              setTerminalLines((prev) => [...prev, log]);
-            },
-          );
-          setIsUpdating(false);
-          if (res.success) {
-            toast.success("Update applied successfully");
-          } else {
-            toast.error("Update failed: " + res.error);
-          }
-        }}
+        onClick={handleClick}
         disabled={isUpdating}
         isLoading={isUpdating}
       >
-        Apply Update Now
+        Apply Update
       </TouchButton>
-      <SectionTitle title="Log" />
+      <Alert title="Update Procedure Info" variant="info">
+        Please stay connected to the internet and leave the power on. The update
+        procuedure takes a couple of minutes and reboots the machine afterwards.
+      </Alert>
       <Terminal lines={terminalLines} className="h-160" />
     </Page>
   );

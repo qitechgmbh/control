@@ -2,7 +2,7 @@ import { ipcMain } from "electron";
 import { ENVIRONMENT_INFO } from "./environment-channels";
 
 // Environment information
-const environmentInfo = {
+export const environmentInfo = {
   qitechOs: process.env.QITECH_OS === "true",
   qitechOsGitTimestamp: process.env.QITECH_OS_GIT_TIMESTAMP
     ? isNaN(Date.parse(process.env.QITECH_OS_GIT_TIMESTAMP))

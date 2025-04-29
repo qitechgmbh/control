@@ -6,7 +6,7 @@ import { Link, Outlet } from "@tanstack/react-router";
 import { useOnSubpath } from "@/lib/useOnSubpath";
 import { Icon, IconName } from "./Icon";
 
-type TopbarItemContent = {
+export type TopbarItemContent = {
   link: string;
   activeLink: string;
   icon?: IconName;

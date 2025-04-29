@@ -61,9 +61,9 @@ export function ChangelogPage() {
 
   return (
     <Page>
-      <SectionTitle
-        title={`Changelog of ${versionType} ${versionName}`}
-      ></SectionTitle>
+      <SectionTitle title={`Changelog of ${versionType}`}>
+        <span className="font-mono text-2xl">{versionName}</span>
+      </SectionTitle>
       {changelog === undefined ? (
         <LoadingSpinner />
       ) : (
@@ -78,7 +78,7 @@ export function ChangelogPage() {
               });
             }}
           >
-            Continue
+            Update to This Version
           </TouchButton>
           {changelog === null ? (
             <Alert title="Changelog not found" variant="warning">
