@@ -19,13 +19,19 @@ export function ChooseVersionPage() {
   // load environment info
   const [environmentInfo, setEnvironmentInfo] = useState<
     EnvironmentInfo | undefined
-  >();
+  >(undefined);
   useEffectAsync(async () => {
     const _environmentInfo = await window.environment.getInfo();
     setEnvironmentInfo(_environmentInfo);
   }, []);
 
-  const [commits, setCommits] = useState<any[] | undefined>(undefined);
+  const currentTimestamp = environmentInfo?.qitechOsGitTimestamp
+    ? new Date(environmentInfo.qitechOsGitTimestamp).getTime()
+    : 0;
+
+  const [masterCommits, setMasterCommits] = useState<any[] | undefined>(
+    undefined,
+  );
   const [branches, setBranches] = useState<any[] | undefined>(undefined);
   const [tags, setTags] = useState<any[] | undefined>(undefined);
 
@@ -43,68 +49,118 @@ export function ChooseVersionPage() {
     },
   };
 
+  // Fetch master commits
   useEffect(() => {
-    setCommits(undefined);
+    setMasterCommits(undefined);
     fetch(githubApiUrl + `/commits`, fetchOptions)
       .then(async (res) => {
         const json = await res.json();
-        setCommits(json);
+        setMasterCommits(json);
       })
       .catch(() => {
-        setCommits([]);
+        setMasterCommits([]);
       });
   }, [githubSource]);
 
+  // Fetch branches with their commit data
   useEffect(() => {
     setBranches(undefined);
     fetch(githubApiUrl + `/branches`, fetchOptions)
       .then(async (res) => {
         const json = await res.json();
-        setBranches(
-          json
-            .map((branch) => {
-              // find commit for branch
-              const commit = commits?.find(
-                (commit) => commit.sha === branch.commit.sha,
+
+        // Fetch commit data for each branch
+        const branchesWithCommitData = await Promise.all(
+          json.map(async (branch) => {
+            try {
+              // Fetch the commit data for this branch
+              const commitRes = await fetch(
+                `${githubApiUrl}/commits/${branch.commit.sha}`,
+                fetchOptions,
               );
-              if (commit) {
-                branch.date = commit.commit.author.date;
+              const commitData = await commitRes.json();
+
+              // Add the date to the branch object
+              if (commitData && commitData.commit) {
+                branch.date = commitData.commit.author.date;
               }
-              return branch;
-            })
-            .sort((a, b) => {
-              return new Date(b.date).getTime() - new Date(a.date).getTime();
-            }),
+            } catch (error) {
+              console.error(
+                `Error fetching commit for branch ${branch.name}:`,
+                error,
+              );
+            }
+            return branch;
+          }),
+        );
+
+        // Sort branches by date
+        setBranches(
+          branchesWithCommitData.sort((a, b) => {
+            return (
+              new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime()
+            );
+          }),
         );
       })
-      .catch(() => {
+      .catch((error) => {
+        console.error("Error fetching branches:", error);
         setBranches([]);
       });
+  }, [githubSource]);
+
+  // Fetch tags with their commit data
+  useEffect(() => {
     setTags(undefined);
     fetch(githubApiUrl + `/tags`, fetchOptions)
       .then(async (res) => {
         const json = await res.json();
-        setTags(
-          json
-            .map((tag) => {
-              // find commit for tag
-              const commit = commits?.find(
-                (commit) => commit.sha === tag.commit.sha,
+
+        // Fetch commit data for each tag
+        const tagsWithCommitData = await Promise.all(
+          json.map(async (tag) => {
+            try {
+              // Fetch the commit data for this tag
+              const commitRes = await fetch(
+                `${githubApiUrl}/commits/${tag.commit.sha}`,
+                fetchOptions,
               );
-              if (commit) {
-                tag.date = commit.commit.author.date;
+              const commitData = await commitRes.json();
+
+              // Add the date to the tag object
+              if (commitData && commitData.commit) {
+                tag.date = commitData.commit.author.date;
               }
-              return tag;
-            })
-            .sort((a, b) => {
-              return new Date(b.date).getTime() - new Date(a.date).getTime();
-            }),
+            } catch (error) {
+              console.error(
+                `Error fetching commit for tag ${tag.name}:`,
+                error,
+              );
+            }
+            return tag;
+          }),
+        );
+
+        // Sort tags by date
+        setTags(
+          tagsWithCommitData.sort((a, b) => {
+            return (
+              new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime()
+            );
+          }),
         );
       })
-      .catch(() => {
+      .catch((error) => {
+        console.error("Error fetching tags:", error);
         setTags([]);
       });
-  }, [commits, githubSource]);
+  }, [githubSource]);
+
+  const isOlderThanCurrent = (date?: string | Date) => {
+    if (!date || !currentTimestamp) return false;
+    const timestamp = new Date(date).getTime();
+    return timestamp <= currentTimestamp;
+  };
 
   return (
     <Page>
@@ -137,6 +193,7 @@ export function ChooseVersionPage() {
               key={tag.name}
               title={tag.name}
               kind="tag"
+              isOlder={isOlderThanCurrent(tag.date)}
               onClick={() => {
                 navigate({
                   to: "/_sidebar/setup/update/changelog",
@@ -162,6 +219,7 @@ export function ChooseVersionPage() {
               key={branch.name}
               title={branch.name}
               kind="branch"
+              isOlder={isOlderThanCurrent(branch.date)}
               onClick={() => {
                 navigate({
                   to: "/_sidebar/setup/update/changelog",
@@ -178,15 +236,16 @@ export function ChooseVersionPage() {
       {branches === undefined && <LoadingSpinner />}
       {branches?.length == 0 && <>No Branches</>}
 
-      <span className="text-xl">Choose a Commit</span>
-      {commits !== undefined && commits.length > 0 ? (
+      <span className="text-xl">Choose a Master Commit</span>
+      {masterCommits !== undefined && masterCommits.length > 0 ? (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {commits.map((commit) => (
+          {masterCommits.map((commit) => (
             <UpdateButton
               time={new Date(commit.commit.author.date)}
               key={commit.sha}
               title={commit.commit.message}
               kind="commit"
+              isOlder={isOlderThanCurrent(commit.commit.author.date)}
               onClick={() => {
                 navigate({
                   to: "/_sidebar/setup/update/changelog",
@@ -200,8 +259,8 @@ export function ChooseVersionPage() {
           ))}
         </div>
       ) : null}
-      {commits === undefined && <LoadingSpinner />}
-      {commits?.length == 0 && <>No Commits</>}
+      {masterCommits === undefined && <LoadingSpinner />}
+      {masterCommits?.length == 0 && <>No Master Commits</>}
     </Page>
   );
 }
@@ -210,7 +269,7 @@ type UpdateButtonProps = {
   time?: Date;
   title: string;
   kind: "tag" | "commit" | "branch";
-  isTooOld?: boolean;
+  isOlder?: boolean;
   onClick: () => void;
 };
 
@@ -219,12 +278,15 @@ export function UpdateButton({
   title,
   kind,
   onClick,
-  isTooOld = false,
+  isOlder = false,
 }: UpdateButtonProps) {
   return (
     <div
-      className="flex flex-row items-center gap-2 rounded-3xl border border-gray-200 bg-white p-4 shadow"
-      onClick={onClick}
+      className={`flex flex-row items-center gap-2 rounded-3xl border border-gray-200 ${
+        isOlder ? "bg-gray-100" : "bg-white"
+      } p-4 shadow`}
+      onClick={isOlder ? undefined : onClick}
+      style={{ cursor: isOlder ? "not-allowed" : "pointer" }}
     >
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
@@ -236,14 +298,23 @@ export function UpdateButton({
                   ? "lu:GitBranch"
                   : "lu:GitCommitVertical"
             }
+            className={isOlder ? "text-gray-400" : ""}
           />
-          <span className="flex-1 truncate">{title}</span>
+          <span className={`flex-1 truncate ${isOlder ? "text-gray-400" : ""}`}>
+            {title}
+            {isOlder && " (older)"}
+          </span>
         </div>
-        <span className="font-mono text-sm text-gray-700">
+        <span
+          className={`font-mono text-sm ${isOlder ? "text-gray-400" : "text-gray-700"}`}
+        >
           {time ? time.toLocaleString() : "N/A"}
         </span>
       </div>
-      <TouchButton className="flex-shrink-0" disabled={isTooOld}>
+      <TouchButton
+        className="flex-shrink-0"
+        variant={isOlder ? "outline" : "default"}
+      >
         Select
       </TouchButton>
     </div>
@@ -287,7 +358,7 @@ export function CurrentVersionCard() {
         </div>
         <span className="font-mono text-sm text-gray-700">
           {environmentInfo?.qitechOsGitTimestamp
-            ? environmentInfo?.qitechOsGitTimestamp.toLocaleString()
+            ? new Date(environmentInfo?.qitechOsGitTimestamp).toLocaleString()
             : "N/A"}
         </span>
         <span className="font-mono text-sm text-gray-700">
