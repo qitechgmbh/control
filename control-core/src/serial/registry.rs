@@ -2,6 +2,7 @@
 *@author: Alisher Darmenov
 *@company: QiTech
 *@created: 20.04.2025
+*@last_update: 28.04.2025
 *
 *@description: This module is responsible for serial devices detection and validation, specially made with serialport to avoid complexity and size of tokio_serial
 */
