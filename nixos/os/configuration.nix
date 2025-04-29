@@ -157,16 +157,6 @@
     package = pkgs.qitechPackages.server;
   };
 
-  systemd.services.qitech = {
-    environment = {
-      QITECH_OS = "control-os";
-      QITECH_OS_GIT_TIMESTAMP = gitInfo.timestamp;
-      QITECH_OS_GIT_COMMIT = gitInfo.commit;
-      QITECH_OS_GIT_ABBREVIATION = gitInfo.abbrevation;
-      QITECH_OS_GIT_URL = gitInfo.url;
-    };
-  };
-
   users.users.qitech = {
     isNormalUser = true;
     description = "QiTech Industries";
@@ -231,7 +221,11 @@
   ]);
 
   environment.variables = {
-    QITECH_OS = "control-os";
+    QITECH_OS = "true";
+    QITECH_OS_GIT_TIMESTAMP = gitInfo.timestamp;
+    QITECH_OS_GIT_COMMIT = gitInfo.commit;
+    QITECH_OS_GIT_ABBREVIATION = gitInfo.abbrevation;
+    QITECH_OS_GIT_URL = gitInfo.url;
   };
   
   # Some programs need SUID wrappers, can be configured further or are
