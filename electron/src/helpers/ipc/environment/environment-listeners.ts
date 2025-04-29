@@ -10,7 +10,7 @@ const environmentInfo = {
       : new Date(process.env.QITECH_OS_GIT_TIMESTAMP)
     : undefined,
   qitechOsGitCommit: process.env.QITECH_OS_GIT_COMMIT,
-  qitechOsGitAbbrevation: process.env.QITECH_OS_GIT_ABBREVATION,
+  qitechOsGitAbbreviation: process.env.QITECH_OS_GIT_ABBREVIATION,
   qitechOsGitUrl: process.env.QITECH_OS_GIT_URL,
 };
 

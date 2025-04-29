@@ -255,32 +255,34 @@ export function CurrentVersionCard() {
 
   const [environmentInfo, setEnvironmentInfo] = useState<
     EnvironmentInfo | undefined
-  >({
-    qitechOs: false,
-    qitechOsGitTimestamp: new Date(),
-    qitechOsGitCommit: "alksndlasdnoqweidn",
-    qitechOsGitAbbrevation: "fix/45",
-  });
-
-  const githubRegex = /https:\/\/.+github\.com\/([^\/^\.]+)\/([^\/^\.]+)(?:.+)/;
-  const match = githubRegex.exec(environmentInfo?.qitechOsGitUrl ?? "");
-
+  >(undefined);
   useEffectAsync(async () => {
     const _environmentInfo = await window.environment.getInfo();
     setEnvironmentInfo(_environmentInfo);
   }, []);
+
+  const githubRegex =
+    /https:\/\/(?<token>[^@.]+)@?github\.com\/(?<username>[^\/^\.]+)\/(?<repository>[^\/^\.]+)(?:.+)/;
+  const match = environmentInfo?.qitechOsGitUrl?.match(githubRegex);
+  const githubRepoOwner = match?.groups?.username;
+  const githubRepoName = match?.groups?.repository;
+
+  const urlWithCensoredToken = environmentInfo?.qitechOsGitUrl?.replace(
+    githubRegex,
+    `https://github.com/${githubRepoOwner}/${githubRepoName}`,
+  );
 
   if (!environmentInfo) {
     return <LoadingSpinner />;
   }
 
   return (
-    <div className="flex w-max items-center gap-2 gap-4 rounded-3xl border border-gray-200 bg-white p-4 shadow">
+    <div className="flex w-max items-center gap-4 rounded-3xl border border-gray-200 bg-white p-4 shadow">
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="flex items-center gap-2">
           <Icon name="lu:Tag" />
           <span className="flex-1 truncate">
-            {environmentInfo?.qitechOsGitAbbrevation}
+            {environmentInfo?.qitechOsGitAbbreviation}
           </span>
         </div>
         <span className="font-mono text-sm text-gray-700">
@@ -292,20 +294,23 @@ export function CurrentVersionCard() {
           {environmentInfo?.qitechOsGitCommit ?? "N/A"}
         </span>
         <span className="font-mono text-sm text-gray-700">
-          {environmentInfo?.qitechOsGitUrl ?? "N/A"}
+          {urlWithCensoredToken ?? "N/A"}
         </span>
       </div>
       <TouchButton
         className="flex-shrink-0"
         onClick={() => {
+          if (!githubRepoOwner || !githubRepoName) {
+            return;
+          }
           navigate({
             to: "/_sidebar/setup/update/changelog",
             search: {
               commit: environmentInfo?.qitechOsGitCommit,
               tag: undefined,
               branch: undefined,
-              githubRepoOwner: match?.[1]!,
-              githubRepoName: match?.[2]!,
+              githubRepoOwner: githubRepoOwner,
+              githubRepoName: githubRepoName,
               githubToken: undefined,
             },
           });

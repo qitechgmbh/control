@@ -23,7 +23,7 @@ interface EnvironmentInfo {
   qitechOs: boolean;
   qitechOsGitTimestamp?: Date;
   qitechOsGitCommit?: string;
-  qitechOsGitAbbrevation?: string;
+  qitechOsGitAbbreviation?: string;
   qitechOsGitUrl?: string;
 }
 
