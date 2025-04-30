@@ -30,7 +30,7 @@
   outputs = { self, nixpkgs, rust-overlay, flake-utils, qitech-control, home-manager, ... }:
     let
       # Import git info at the top level so it's available everywhere
-      gitInfo = import ./nixos/os/git.nix;
+      installInfo = import ./nixos/os/installInfo.nix;
     in
     flake-utils.lib.eachDefaultSystem (system:
       let
@@ -90,7 +90,7 @@
         nixos = nixpkgs.lib.nixosSystem {
           system = "x86_64-linux"; # Specify the correct system
           specialArgs = {
-            gitInfo = gitInfo; # Pass gitInfo to modules
+            installInfo = installInfo; # Pass installInfo to modules
           };
           modules = [
             # Apply the overlays to the system
@@ -101,10 +101,10 @@
                   qitechPackages = {
                     server = final.callPackage ./nixos/packages/server.nix { 
                       rust-bin = final.rust-bin;
-                      commitHash = gitInfo.commit;
+                      commitHash = installInfo.gitCommit;
                     };
                     electron = final.callPackage ./nixos/packages/electron.nix {
-                      commitHash = gitInfo.commit;
+                      commitHash = installInfo.gitCommit;
                     };
                   };
                 })

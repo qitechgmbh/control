@@ -2,7 +2,7 @@
 # your system.  Help is available in the configuration.nix(5) man page
 # and in the NixOS manual (accessible by running ‘nixos-help’).
 
-{ config, pkgs, gitInfo, ... }:
+{ config, pkgs, installInfo, ... }:
 
 {
   imports =
@@ -251,14 +251,14 @@ boot.loader.efi.canTouchEfiVariables = true;
   # Set system wide env variables
   environment.variables = {
     QITECH_OS = "true";
-    QITECH_OS_GIT_TIMESTAMP = gitInfo.timestamp;
-    QITECH_OS_GIT_COMMIT = gitInfo.commit;
-    QITECH_OS_GIT_ABBREVIATION = gitInfo.abbreviation;
-    QITECH_OS_GIT_URL = gitInfo.url;
+    QITECH_OS_GIT_TIMESTAMP = installInfo.gitTimestamp;
+    QITECH_OS_GIT_COMMIT = installInfo.gitCommit;
+    QITECH_OS_GIT_ABBREVIATION = installInfo.gitAbbreviation;
+    QITECH_OS_GIT_URL = installInfo.gitUrl;
   };
 
   # Set revision labe;
-  system.nixos.label = "${gitInfo.abbreviationEscaped}_${gitInfo.commit}_installed_at_${gitInfo.currentTimestampEscaped}";
+  system.nixos.label = "${installInfo.gitAbbreviationEscaped}_${installInfo.gitCommit}_installed_at_${installInfo.currentTimestampEscaped}";
   
   # Some programs need SUID wrappers, can be configured further or are
   # started in user sessions.
