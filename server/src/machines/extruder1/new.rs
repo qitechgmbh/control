@@ -1,9 +1,12 @@
 use std::sync::Arc;
 
-use super::{api::ExtruderV2Namespace, ExtruderV2};
+use super::{api::ExtruderV2Namespace, ExtruderV2, ExtruderV2Mode};
 use anyhow::Error;
 use control_core::{
-    actors::mitsubishi_inverter_rs485::MitsubishiInverterRS485Actor,
+    actors::{
+        analog_input_getter::{AnalogInputGetter, AnalogInputRange},
+        mitsubishi_inverter_rs485::MitsubishiInverterRS485Actor,
+    },
     identification::MachineDeviceIdentification,
     machines::new::{
         get_device_by_index, get_mdi_by_role, get_subdevice_by_index, validate_no_role_dublicates,
@@ -14,14 +17,18 @@ use ethercat_hal::{
     devices::{
         downcast_device,
         ek1100::EK1100_IDENTITY_A,
-        el3021::{EL3021, EL3021_IDENTITY_A},
+        el3021::{EL3021Port, EL3021, EL3021_IDENTITY_A},
         el6021::{self, EL6021, EL6021_IDENTITY_A},
         subdevice_identity_to_tuple, Device,
     },
-    io::serial_interface::SerialInterface,
+    io::{analog_input::AnalogInput, serial_interface::SerialInterface},
     types::EthercrabSubDevicePreoperational,
 };
 use smol::lock::RwLock;
+use uom::si::{
+    electric_current::{milliampere, ElectricCurrent},
+    f64::ElectricPotential,
+};
 
 impl MachineNewTrait for ExtruderV2 {
     fn new<'maindevice>(
@@ -91,6 +98,14 @@ impl MachineNewTrait for ExtruderV2 {
                 ))?,
             };
 
+            let pressure_sensor = AnalogInputGetter::new(
+                AnalogInput::new(el3021, EL3021Port::AI1),
+                AnalogInputRange::Current {
+                    min: ElectricCurrent::new::<milliampere>(4.0),
+                    max: ElectricCurrent::new::<milliampere>(20.0),
+                },
+            );
+
             let extruder: ExtruderV2 = Self {
                 inverter: MitsubishiInverterRS485Actor::new(SerialInterface::new(
                     el6021,
@@ -98,7 +113,8 @@ impl MachineNewTrait for ExtruderV2 {
                 )),
                 namespace: ExtruderV2Namespace::new(),
                 last_response_emit: chrono::Utc::now(),
-                el3021: el3021,
+                pressure_sensor: pressure_sensor,
+                mode: ExtruderV2Mode::Standby,
             };
             Ok(extruder)
         })

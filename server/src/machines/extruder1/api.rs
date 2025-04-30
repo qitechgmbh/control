@@ -1,9 +1,14 @@
-use super::ExtruderV2;
+use std::time::Duration;
+
+use super::{ExtruderV2, ExtruderV2Mode};
 use control_core::{
     machines::api::MachineApi,
     socketio::{
-        event::Event,
-        namespace::{Namespace, NamespaceInterface},
+        event::{Event, GenericEvent},
+        namespace::{
+            cache_duration, cache_one_event, CacheFn, CacheableEvents, Namespace,
+            NamespaceCacheingLogic, NamespaceInterface,
+        },
     },
 };
 use serde::{Deserialize, Serialize};
@@ -23,9 +28,25 @@ pub struct MotorStateEvent {
 }
 
 #[derive(Serialize, Debug, Clone)]
+pub struct RotationStateEvent {
+    pub forward: bool,
+}
+
+impl RotationStateEvent {
+    pub fn build(&self) -> Event<Self> {
+        Event::new("RotationStateEvent", self.clone())
+    }
+}
+
+#[derive(Serialize, Debug, Clone)]
 pub struct OperationModeEvent {
     operation_mode: u8,
     mode_name: String,
+}
+
+#[derive(Serialize, Debug, Clone)]
+pub struct ModeEvent {
+    pub mode: ExtruderV2Mode,
 }
 
 /// Inverter status Register 40009
@@ -58,16 +79,25 @@ pub struct InverterSuccessEvent {
     success: bool,
 }
 
+#[derive(Serialize, Debug, Clone)]
+pub struct ErrorEvent {
+    message: String,
+    fault_code: u16,
+}
+
 pub enum ExtruderV2Events {
     InverterStateEvent(Event<InverterStatusEvent>),
     InverterModeEvent(Event<OperationModeEvent>),
-    InverterErrorEvent(),
+    InverterErrorEvent(Event<ErrorEvent>),
     InverterFrequencyEvent(Event<FrequencyEvent>),
-    InverterSuccessEvent(),
+    InverterSuccessEvent(Event<InverterSuccessEvent>),
+    RotationStateEvent(Event<RotationStateEvent>),
+    ModeEvent(Event<ModeEvent>),
 }
 
 #[derive(Deserialize, Serialize)]
 enum Mutation {
+    /// INVERTER
     /// Frequency Control
     /// Set
     SetRunningFrequency(f32),
@@ -96,14 +126,65 @@ enum Mutation {
     ClearParameter(),
     ClearNonCommunicationParameter(),
     ClearNonCommunicationParameters(),
+    // Extruder Control
+    //Mode
+    //SetMode(ExtruderV2Mode),
 }
 
 #[derive(Debug)]
 pub struct ExtruderV2Namespace(Namespace);
 
+impl NamespaceCacheingLogic<ExtruderV2Events> for ExtruderV2Namespace {
+    fn emit_cached(&mut self, events: ExtruderV2Events) {
+        let event = match events.event_value() {
+            Ok(event) => event,
+            Err(err) => {
+                log::error!(
+                    "[{}::emit_cached] Failed to event.event_value(): {:?}",
+                    module_path!(),
+                    err
+                );
+                return;
+            }
+        };
+        let buffer_fn = events.event_cache_fn();
+        self.0.emit_cached(&event, buffer_fn);
+    }
+}
+
 impl ExtruderV2Namespace {
     pub fn new() -> Self {
         Self(Namespace::new())
+    }
+}
+
+impl CacheableEvents<ExtruderV2Events> for ExtruderV2Events {
+    fn event_value(&self) -> Result<GenericEvent, serde_json::Error> {
+        match self {
+            ExtruderV2Events::InverterStateEvent(event) => event.try_into(),
+            ExtruderV2Events::InverterModeEvent(event) => event.try_into(),
+            ExtruderV2Events::InverterErrorEvent(event) => event.try_into(),
+            ExtruderV2Events::InverterFrequencyEvent(event) => event.try_into(),
+            ExtruderV2Events::InverterSuccessEvent(event) => event.try_into(),
+            ExtruderV2Events::RotationStateEvent(event) => event.try_into(),
+            ExtruderV2Events::ModeEvent(event) => event.try_into(),
+        }
+    }
+
+    fn event_cache_fn(&self) -> CacheFn {
+        let cache_one_hour = cache_duration(Duration::from_secs(60 * 60));
+        let cache_ten_secs = cache_duration(Duration::from_secs(10));
+        let cache_one = cache_one_event();
+
+        match self {
+            ExtruderV2Events::InverterStateEvent(_) => todo!(),
+            ExtruderV2Events::InverterModeEvent(_) => todo!(),
+            ExtruderV2Events::InverterErrorEvent(_) => todo!(),
+            ExtruderV2Events::InverterFrequencyEvent(_) => todo!(),
+            ExtruderV2Events::InverterSuccessEvent(_) => todo!(),
+            ExtruderV2Events::RotationStateEvent(_) => cache_one,
+            ExtruderV2Events::ModeEvent(event) => cache_one,
+        }
     }
 }
 
@@ -112,7 +193,23 @@ impl MachineApi for ExtruderV2 {
         // there are multiple Modbus Frames that are "prebuilt"
         let control: Mutation = serde_json::from_value(request_body)?;
         match control {
-            _ => (),
+            Mutation::SetRunningFrequency(_) => todo!(),
+            Mutation::SetEepromFrequency(_) => todo!(),
+            Mutation::SetMinimumFrequency(_) => todo!(),
+            Mutation::SetMaximumFrequency(_) => todo!(),
+            Mutation::GetRunningFrequency() => todo!(),
+            Mutation::GetEepromFrequency() => todo!(),
+            Mutation::GetMaximumFrequency() => todo!(),
+            Mutation::GetMinimumFrequency() => todo!(),
+            Mutation::SetRotation(forward) => self.set_rotation_state(forward),
+            Mutation::StopMotor() => todo!(),
+            Mutation::SetOperationMode(_) => todo!(),
+            Mutation::WriteParameter(_, _) => todo!(),
+            Mutation::ReadParameter(_) => todo!(),
+            Mutation::ClearAllParameters() => todo!(),
+            Mutation::ClearParameter() => todo!(),
+            Mutation::ClearNonCommunicationParameter() => todo!(),
+            Mutation::ClearNonCommunicationParameters() => todo!(),
         }
         Ok(())
     }

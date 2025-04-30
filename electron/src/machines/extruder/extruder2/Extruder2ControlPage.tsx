@@ -11,7 +11,7 @@ import { Label } from "@/control/Label";
 import { EditValue } from "@/control/EditValue";
 import { roundToDecimals } from "@/lib/decimal";
 
-export function Extruder1ControlPage() {
+export function Extruder2ControlPage() {
   return (
     <Page>
       <ControlGrid>
