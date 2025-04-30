@@ -15,6 +15,8 @@ pub struct SerialInterface {
 
     pub get_serial_encoding:
         Box<dyn Fn() -> Pin<Box<dyn Future<Output = Option<SerialEncoding>> + Send>> + Send + Sync>,
+
+    pub initialize: Box<dyn Fn() -> Pin<Box<dyn Future<Output = bool> + Send>> + Send + Sync>,
 }
 
 impl fmt::Debug for SerialInterface {
@@ -106,12 +108,25 @@ impl SerialInterface {
             },
         );
 
+        port2 = port.clone();
+        device2 = device.clone();
+
+        let initialize = Box::new(move || -> Pin<Box<dyn Future<Output = bool> + Send>> {
+            let device2 = device2.clone();
+            let port_clone = port2.clone();
+
+            Box::pin(async move {
+                let mut device = device2.write().await;
+                device.serial_interface_initialize(port_clone)
+            })
+        });
         SerialInterface {
             has_message,
             write_message,
             read_message,
             get_baudrate,
             get_serial_encoding,
+            initialize,
         }
     }
 }
@@ -129,6 +144,7 @@ where
     fn serial_interface_has_messages(&mut self, port: PORTS) -> bool;
     fn get_serial_encoding(&self, port: PORTS) -> Option<SerialEncoding>;
     fn get_baudrate(&self, port: PORTS) -> Option<u32>;
+    fn serial_interface_initialize(&mut self, port: PORTS) -> bool;
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

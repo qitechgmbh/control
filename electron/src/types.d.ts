@@ -16,6 +16,7 @@ interface ThemeModeContext {
 interface ElectronWindow {
   minimize: () => Promise<void>;
   maximize: () => Promise<void>;
+  fullscreen: (value: boolean) => Promise<void>;
   close: () => Promise<void>;
 }
 

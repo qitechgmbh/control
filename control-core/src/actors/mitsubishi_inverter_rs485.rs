@@ -13,8 +13,16 @@ use std::{
 pub enum State {
     /// WaitingForResponse is set after sending a request through the serial_interface
     WaitingForResponse,
+    /// After Sending a Resuest we need to wait atleast one ethercat cycle
+    /// After one Cycle we check if el6021 status has transmit accepted toggled
+    /// Then we can set state = ReadyToSend
+    WaitingForRequestAccept,
+    /// After Receiving a Response we need to wait atleast one ethercat cycle
+    /// After one Cycle we check if el6021 status has received accepted toggled
+    WaitingForReceiveAccept,
     /// ReadyToSend is set after receiving the response from the serial_interface
     ReadyToSend,
+    /// Initial State
     Uninitialized,
 }
 
@@ -199,22 +207,28 @@ impl MitsubishiInverterRS485Actor {
         self.response_queue.pop_back()
     }
 
-    /// This is used internally to read the receive buffer of the el6021 or similiar
+    /// This is used internally to read the receive buffer of the el6021
     fn read_modbus_response(&mut self) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
         Box::pin(async move {
             if !(self.serial_interface.has_message)().await {
-                return;
+                //   return;
             }
 
-            let res: Result<ModbusResponse, _> = (self.serial_interface.read_message)()
-                .await
-                .unwrap()
-                .try_into();
+            let res: Option<Vec<u8>> = (self.serial_interface.read_message)().await;
+            let raw_response = match res {
+                Some(res) => res,
+                None => {
+                    log::error!("ERROR: No Modbus Response");
+                    return;
+                }
+            };
+            let response: Result<ModbusResponse, _> = ModbusResponse::try_from(raw_response);
 
-            match res {
+            match &response {
                 Ok(result) => {
-                    self.response_queue.push_front(result.clone());
+                    //self.response_queue.push_front(result.clone());
                     self.last_message_size = result.clone().data.len() + 4;
+                    // wait one ethercat cycle
                     self.state = State::ReadyToSend;
                 }
                 Err(_) => log::error!("Error Parsing ModbusResponse!"),
@@ -229,8 +243,12 @@ impl MitsubishiInverterRS485Actor {
                 return;
             }
             let request: Vec<u8> = self.request_queue.pop_back().unwrap().into();
-            let _ = (self.serial_interface.write_message)(request.clone()).await;
-            self.state = State::WaitingForResponse;
+            let res = (self.serial_interface.write_message)(request.clone()).await;
+            match res {
+                Ok(_) => (),
+                Err(_) => log::error!("ERROR: serial_interface.write_message has failed"),
+            }
+            self.state = State::WaitingForRequestAccept;
             self.last_message_size = request.len();
         })
     }
@@ -290,10 +308,16 @@ impl From<u8> for MitsubishiModbusExceptionCode {
 impl Actor for MitsubishiInverterRS485Actor {
     fn act(&mut self, now_ts: Instant) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
         Box::pin(async move {
+            let elapsed: Duration = now_ts.duration_since(self.last_ts);
+            // State is uninitialized until serial interface init returns true, which takes a few cycles on the el6021
             if let State::Uninitialized = self.state {
-                self.state = State::ReadyToSend;
-                self.baudrate = (self.serial_interface.get_baudrate)().await;
-                self.encoding = (self.serial_interface.get_serial_encoding)().await;
+                let res = (self.serial_interface.initialize)().await;
+                if res == true {
+                    self.state = State::ReadyToSend;
+                    self.baudrate = (self.serial_interface.get_baudrate)().await;
+                    self.encoding = (self.serial_interface.get_serial_encoding)().await;
+                }
+                return;
             }
 
             let encoding = match self.encoding {
@@ -313,15 +337,17 @@ impl Actor for MitsubishiInverterRS485Actor {
                 self.last_message_size,
             );
 
-            let elapsed: Duration = now_ts.duration_since(self.last_ts);
             if elapsed < timeout {
                 return;
             }
-            self.last_ts = now_ts;
 
+            self.last_ts = now_ts;
             match self.state {
                 State::WaitingForResponse => self.read_modbus_response().await,
                 State::ReadyToSend => self.send_modbus_request().await,
+                // Wait one cycle
+                State::WaitingForReceiveAccept => self.state = State::ReadyToSend,
+                State::WaitingForRequestAccept => self.state = State::WaitingForResponse,
                 _ => (),
             }
         })

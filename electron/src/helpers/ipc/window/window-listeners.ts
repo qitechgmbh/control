@@ -1,6 +1,7 @@
 import { BrowserWindow, ipcMain } from "electron";
 import {
   WIN_CLOSE_CHANNEL,
+  WIN_FULLSCREEN_CHANNEL,
   WIN_MAXIMIZE_CHANNEL,
   WIN_MINIMIZE_CHANNEL,
 } from "./window-channels";
@@ -15,6 +16,9 @@ export function addWindowEventListeners(mainWindow: BrowserWindow) {
     } else {
       mainWindow.maximize();
     }
+  });
+  ipcMain.handle(WIN_FULLSCREEN_CHANNEL, (event, value: boolean) => {
+    mainWindow.setFullScreen(value);
   });
   ipcMain.handle(WIN_CLOSE_CHANNEL, () => {
     mainWindow.close();
