@@ -292,16 +292,11 @@ The QiTech Electron application is:
 
 The QiTech Control software on NixOS systems includes special environment variables that allow the application to detect it's running in a NixOS environment. These variables can be used in the Electron/React code to enable NixOS-specific features or behaviors.
 
-- **QITECH_OS**: Set to "control-os" to identify NixOS deployments
-
-These variables are set in the `configuration.nix`, `electron.nix` and `home.nix` files and can be accessed from both the server and Electron frontend:
-
-```bash
-# Add to configuration.nix to set system-wide environment variables
-environment.variables = {
-  QITECH_OS = "true";
-};
-
+- **QITECH_OS**: Set to "true" to identify NixOS deployments
+- **QITECH_OS_GIT_TIMESTAMP**: Contains an ISO timestamp of the commit the system was built from
+- **QITECH_OS_GIT_COMMIT**: Contains the commit hash of the system build
+- **QITECH_OS_GIT_ABBREVIATION**: Contains the branch/tag/commit of the system build
+- **QITECH_OS_GIT_URL**: Contains the URL of the repository the system was built from
 
 ### Common Operations
 
