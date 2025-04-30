@@ -20,3 +20,9 @@ el6021 Differential Pairs
 - Pin 5 and 6 of el6021 connect with Pair B
 - Pin 1 and 2 of el6021 connect with Pair A
 - Pin 3 and 7 of el6021 connect with Pair C
+
+
+What needs to be bridged?
+- pin 5 and 6 of el6021 need to be bridged with Ethernet pin 4 and 6
+- pin 1 and 2 of el6021 need to be bridged with Ethernet pin 3 and 5
+- pin 3 and 7 of el6021 need to be bridged with Ethernet pin 1 and 7
