@@ -2,16 +2,19 @@
 # your system.  Help is available in the configuration.nix(5) man page
 # and in the NixOS manual (accessible by running ‘nixos-help’).
 
-{ config, pkgs, qitech-control, ... }:
+{ config, pkgs, installInfo, ... }:
 
 {
   imports =
     [ # Include the results of the hardware scan.
-      ./hardware-configuration.nix
+      /etc/nixos/hardware-configuration.nix
     ];
 
   # Bootloader.
-  boot.loader.systemd-boot.enable = true;
+  boot.loader.systemd-boot = {
+    enable = true;
+    consoleMode = "max";  # Use the highest available resolution
+  };
   boot.loader.efi.canTouchEfiVariables = true;
 
   boot.kernelPackages = pkgs.linuxPackages_latest;
@@ -62,21 +65,22 @@
   networking.networkmanager.enable = true;
 
   # Set your time zone.
-  time.timeZone = "Europe/Berlin";
+  time.timeZone = "UTC";
 
   # Select internationalisation properties.
-  i18n.defaultLocale = "en_US.UTF-8";
+  # we use en_DK for english texts but metric units and 24h time
+  i18n.defaultLocale = "en_DK.UTF-8";
 
   i18n.extraLocaleSettings = {
-    LC_ADDRESS = "de_DE.UTF-8";
-    LC_IDENTIFICATION = "de_DE.UTF-8";
-    LC_MEASUREMENT = "de_DE.UTF-8";
-    LC_MONETARY = "de_DE.UTF-8";
-    LC_NAME = "de_DE.UTF-8";
-    LC_NUMERIC = "de_DE.UTF-8";
-    LC_PAPER = "de_DE.UTF-8";
-    LC_TELEPHONE = "de_DE.UTF-8";
-    LC_TIME = "de_DE.UTF-8";
+    LC_ADDRESS = "en_DK.UTF-8";
+    LC_IDENTIFICATION = "en_DK.UTF-8";
+    LC_MEASUREMENT = "en_DK.UTF-8";
+    LC_MONETARY = "en_DK.UTF-8";
+    LC_NAME = "en_DK.UTF-8";
+    LC_NUMERIC = "en_DK.UTF-8";
+    LC_PAPER = "en_DK.UTF-8";
+    LC_TELEPHONE = "en_DK.UTF-8";
+    LC_TIME = "en_DK.UTF-8";
   };
 
   # Enable the X11 windowing system.
@@ -124,7 +128,7 @@
   services.printing.enable = false;
 
   # Enable sound with pipewire.
-  hardware.pulseaudio.enable = false;
+  services.pulseaudio.enable = false;
   security.rtkit.enable = true;
   services.pipewire = {
     enable = true;
@@ -154,13 +158,20 @@
     user = "qitech-service";
     group = "qitech-service"; 
     port = 3001;
-    package = qitech-control.packages.${pkgs.system}.server;
+    package = pkgs.qitechPackages.server;
   };
 
+  # Enable logging with journald for the QiTech Control server service
   systemd.services.qitech = {
+    serviceConfig = {
+      StandardOutput = "journal";
+      StandardError = "journal";
+      Restart = "always";
+      SyslogIdentifier = "qitech-control-server";
+    };
     environment = {
-      QITECH_BUILD_ENV = "control-os";
-      QITECH_DEPLOYMENT_TYPE = "production";
+      RUST_BACKTRACE = "1";
+      RUST_LOG = "debug";
     };
   };
 
@@ -182,7 +193,7 @@
   systemd.services."autovt@tty1".enable = false;
 
   # Install firefox.
-  programs.firefox.enable = false;
+  programs.firefox.enable = true;
 
   # List packages installed in system profile. To search, run:
   # $ nix search wget
@@ -193,7 +204,8 @@
     gnome-extension-manager
     gnomeExtensions.dash-to-dock
     git
-    qitech-control.packages.${pkgs.system}.electron
+    pkgs.qitechPackages.electron
+    htop
   ];
 
   xdg.portal.enable = true;
@@ -226,10 +238,17 @@
     seahorse # password manager
   ]);
 
+  # Set system wide env variables
   environment.variables = {
-    QITECH_BUILD_ENV = "control-os";
-    QITECH_DEPLOYMENT_TYPE = "production";
+    QITECH_OS = "true";
+    QITECH_OS_GIT_TIMESTAMP = installInfo.gitTimestamp;
+    QITECH_OS_GIT_COMMIT = installInfo.gitCommit;
+    QITECH_OS_GIT_ABBREVIATION = installInfo.gitAbbreviation;
+    QITECH_OS_GIT_URL = installInfo.gitUrl;
   };
+
+  # Set revision labe;
+  system.nixos.label = "${installInfo.gitAbbreviationEscaped}_${installInfo.gitCommit}";
   
   # Some programs need SUID wrappers, can be configured further or are
   # started in user sessions.

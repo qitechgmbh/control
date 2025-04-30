@@ -2,7 +2,7 @@
   home.stateVersion = "24.11";
 
   home.packages = with pkgs; [
-    qitech-control-electron
+    pkgs.qitechPackages.electron
   ];
 
   # Add autostart entry for the QiTech electron app
@@ -11,7 +11,7 @@
     Type=Application
     Name=QiTech Control
     Comment=QiTech Industries Control Software
-    Exec=env QITECH_BUILD_ENV=control-os QITECH_DEPLOYMENT_TYPE=production qitech-control-electron
+    Exec=qitech-control-electron
     Icon=de.qitech.control-electron
     Terminal=false
     StartupWMClass=QiTech Control

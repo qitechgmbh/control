@@ -6,11 +6,13 @@
 , nodePackages
 , git
 , cacert
+, fetchFromGitHub
+, commitHash
 }:
 
 stdenv.mkDerivation rec {
   pname = "qitech-control-electron";
-  version = "0.1.0";
+  version = commitHash;
 
   src = lib.cleanSource ../../electron;
 
@@ -109,7 +111,7 @@ stdenv.mkDerivation rec {
     Type=Application
     Name=QiTech Control
     Comment=QiTech Industries Control Software
-    Exec=env QITECH_BUILD_ENV=control-os QITECH_DEPLOYMENT_TYPE=production qitech-control-electron %U
+    Exec=qitech-control-electron %U
     Icon=de.qitech.control-electron
     Terminal=false
     StartupWMClass=QiTech Control
@@ -120,8 +122,7 @@ stdenv.mkDerivation rec {
 
   meta = with lib; {
     description = "QiTech Industries Control Software - Electron Frontend";
-    homepage = "https://qitech.com";
-    license = licenses.mit;
+    homepage = "https://qitech.de";
     platforms = platforms.linux;
   };
 }

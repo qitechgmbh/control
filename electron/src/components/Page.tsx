@@ -5,5 +5,5 @@ type Props = {
 };
 
 export function Page({ children }: Props) {
-  return <div className="flex w-full flex-col gap-2 p-6">{children}</div>;
+  return <div className="flex w-full flex-col gap-6 p-6">{children}</div>;
 }
