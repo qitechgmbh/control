@@ -306,7 +306,6 @@ export function UpdateButton({
       className={`flex flex-row items-center gap-2 rounded-3xl border border-gray-200 ${
         isOlder ? "bg-gray-100" : "bg-white"
       } p-4 shadow`}
-      onClick={isOlder ? undefined : onClick}
     >
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
@@ -334,6 +333,7 @@ export function UpdateButton({
       <TouchButton
         className="flex-shrink-0"
         variant={isOlder ? "outline" : "default"}
+        onClick={onClick}
       >
         Select
       </TouchButton>
