@@ -9,7 +9,7 @@ export async function updatExecute(
   },
   onLog: (log: string) => void,
 ): Promise<{ success: boolean; error?: string }> {
-  return new Promise(async (resolve) => {
+  return new Promise((resolve) => {
     window.update.onLog(onLog);
     window.update.execute(source);
     window.update.onEnd((params) => {
