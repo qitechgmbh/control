@@ -248,7 +248,7 @@
   };
 
   # Set revision labe;
-  system.nixos.label = "${installInfo.gitAbbreviationEscaped}_${installInfo.gitCommit}_installed_at_${installInfo.currentTimestampEscaped}";
+  system.nixos.label = "${installInfo.gitAbbreviationEscaped}_${installInfo.gitCommit}";
   
   # Some programs need SUID wrappers, can be configured further or are
   # started in user sessions.
