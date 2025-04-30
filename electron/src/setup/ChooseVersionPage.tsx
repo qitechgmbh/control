@@ -229,7 +229,7 @@ export function ChooseVersionPage() {
                   key={branch.name}
                   title={branch.name}
                   kind="branch"
-                  isOlder={isOlderThanCurrent(branch.date)}
+                  isOlder={true}
                   onClick={() => {
                     navigate({
                       to: "/_sidebar/setup/update/changelog",
@@ -307,7 +307,6 @@ export function UpdateButton({
         isOlder ? "bg-gray-100" : "bg-white"
       } p-4 shadow`}
       onClick={isOlder ? undefined : onClick}
-      style={{ cursor: isOlder ? "not-allowed" : "pointer" }}
     >
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
@@ -393,6 +392,9 @@ export function CurrentVersionCard() {
         className="flex-shrink-0"
         onClick={() => {
           if (!githubRepoOwner || !githubRepoName) {
+            console.error(
+              "GitHub repo owner or name not found in environment info.",
+            );
             return;
           }
           navigate({
