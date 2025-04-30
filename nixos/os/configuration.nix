@@ -258,7 +258,7 @@ boot.loader.efi.canTouchEfiVariables = true;
   };
 
   # Set revision labe;
-  system.nixos.label = "${gitInfo.abbreviationEscaped}_${gitInfo.commit}";
+  system.nixos.label = "${gitInfo.abbreviationEscaped}_${gitInfo.commit}_installed_at_${gitInfo.currentTimestampEscaped}";
   
   # Some programs need SUID wrappers, can be configured further or are
   # started in user sessions.
