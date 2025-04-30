@@ -10,22 +10,12 @@
       /etc/nixos/hardware-configuration.nix
     ];
 
-# Bootloader.
-boot.loader.grub = {
-  enable = true;
-  efiSupport = true;
-  device = "nodev";  # For EFI systems
-  
-  # Graphics settings for 1920x1080 resolution
-  gfxmodeEfi = "1920x1080x32,1920x1080,auto";  # Try with and without color depth
-  gfxpayloadEfi = "keep";  # Maintain the resolution for booting
-  
-  # Optional: uncomment if you want a larger font for better readability
-  # font = "${pkgs.hack-font}/share/fonts/hack/Hack-Regular.ttf";
-  # fontSize = 24;
-};
-boot.loader.efi.canTouchEfiVariables = true;
-
+  # Bootloader.
+  boot.loader.systemd-boot = {
+    enable = true;
+    consoleMode = "max";  # Use the highest available resolution
+  };
+  boot.loader.efi.canTouchEfiVariables = true;
 
   boot.kernelPackages = pkgs.linuxPackages_latest;
 
