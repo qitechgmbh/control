@@ -1,4 +1,4 @@
-export async function updatExecute(
+export async function updateExecute(
   source: {
     githubRepoOwner: string;
     githubRepoName: string;

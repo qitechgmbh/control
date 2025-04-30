@@ -3,7 +3,7 @@ import { Page } from "@/components/Page";
 import { SectionTitle } from "@/components/SectionTitle";
 import { Terminal } from "@/components/Terminal";
 import { TouchButton } from "@/components/touch/TouchButton";
-import { updatExecute } from "@/helpers/update_helpers";
+import { updateExecute } from "@/helpers/update_helpers";
 import { useSearch } from "@tanstack/react-router";
 import React, { useState } from "react";
 import { toast } from "sonner";
@@ -20,7 +20,7 @@ export function UpdateExecutePage() {
   const handleClick = async () => {
     setIsUpdating(true);
     setTerminalLines([]);
-    const res = await updatExecute(
+    const res = await updateExecute(
       {
         ...search,
         githubToken: search.githubToken || undefined,
