@@ -1,6 +1,6 @@
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, Data, DeriveInput};
+use syn::{Data, DeriveInput, parse_macro_input};
 extern crate proc_macro;
 
 #[derive(deluxe::ExtractAttributes)]
@@ -172,8 +172,8 @@ pub fn pdo_object_derive(item: TokenStream) -> TokenStream {
     pdo_object_derive2(item.into()).unwrap().into()
 }
 
-#[proc_macro_derive(Device)]
-pub fn device_derive(input: TokenStream) -> TokenStream {
+#[proc_macro_derive(EthercatDevice)]
+pub fn ethercat_device_derive(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     let name = &input.ident;
 
@@ -201,22 +201,22 @@ pub fn device_derive(input: TokenStream) -> TokenStream {
 
     if has_rxpdo {
         output_impl = quote! {
-            #[doc="Implemented by the ethercat_hal_derive::Device derive macro"]
+            #[doc="Implemented by the ethercat_hal_derive::EthercatDevice derive macro"]
             fn output(&self, output: &mut bitvec::prelude::BitSlice<u8, bitvec::prelude::Lsb0>) -> Result<(), anyhow::Error> {
                 self.rxpdo.write(output)
             }
-            #[doc="Implemented by the ethercat_hal_derive::Device derive macro"]
+            #[doc="Implemented by the ethercat_hal_derive::EthercatDevice derive macro"]
             fn output_len(&self) -> usize {
                 self.rxpdo.size()
             }
         };
     } else {
         output_impl = quote! {
-            #[doc="Implemented by the ethercat_hal_derive::Device derive macro"]
+            #[doc="Implemented by the ethercat_hal_derive::EthercatDevice derive macro"]
             fn output(&self, _output: &mut bitvec::prelude::BitSlice<u8, bitvec::prelude::Lsb0>) -> Result<(), anyhow::Error> {
                 Ok(())
             }
-            #[doc="Implemented by the ethercat_hal_derive::Device derive macro"]
+            #[doc="Implemented by the ethercat_hal_derive::EthercatDevice derive macro"]
             fn output_len(&self) -> usize {
                 0
             }
@@ -225,22 +225,22 @@ pub fn device_derive(input: TokenStream) -> TokenStream {
 
     if has_txpdo {
         input_impl = quote! {
-            #[doc="Implemented by the ethercat_hal_derive::Device derive macro"]
+            #[doc="Implemented by the ethercat_hal_derive::EthercatDevice derive macro"]
             fn input(&mut self, input: & bitvec::prelude::BitSlice<u8, bitvec::prelude::Lsb0>) -> Result<(), anyhow::Error> {
                 self.txpdo.read(input)
             }
-            #[doc="Implemented by the ethercat_hal_derive::Device derive macro"]
+            #[doc="Implemented by the ethercat_hal_derive::EthercatDevice derive macro"]
             fn input_len(&self) -> usize {
                 self.txpdo.size()
             }
         };
     } else {
         input_impl = quote! {
-            #[doc="Implemented by the ethercat_hal_derive::Device derive macro"]
+            #[doc="Implemented by the ethercat_hal_derive::EthercatDevice derive macro"]
             fn input(&mut self, _input: & bitvec::prelude::BitSlice<u8, bitvec::prelude::Lsb0>) -> Result<(), anyhow::Error> {
                 Ok(())
             }
-            #[doc="Implemented by the ethercat_hal_derive::Device derive macro"]
+            #[doc="Implemented by the ethercat_hal_derive::EthercatDevice derive macro"]
             fn input_len(&self) -> usize {
                 0
             }
@@ -248,11 +248,11 @@ pub fn device_derive(input: TokenStream) -> TokenStream {
     }
 
     let expanded = quote! {
-        impl crate::devices::Device for #name {
+        impl crate::devices::EthercatDevice for #name {
             #output_impl
             #input_impl
 
-            #[doc="Implemented by the ethercat_hal_derive::Device derive macro"]
+            #[doc="Implemented by the ethercat_hal_derive::EthercatDevice derive macro"]
             fn as_any(&self) -> &dyn std::any::Any {
                 self
             }

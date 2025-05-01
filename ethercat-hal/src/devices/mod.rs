@@ -39,7 +39,7 @@ use std::{any::Any, fmt::Debug, sync::Arc};
 /// A trait for all devices
 ///
 /// provides interface to read and write the PDO data
-pub trait Device: NewDevice + Any + Send + Sync + Debug {
+pub trait EthercatDevice: NewEthercatDevice + Any + Send + Sync + Debug {
     /// Input data from the last cycle
     /// `ts` is the timestamp when the input data was sent by the device
     fn input(&mut self, _input: &BitSlice<u8, Lsb0>) -> Result<(), anyhow::Error>;
@@ -104,7 +104,7 @@ pub trait Device: NewDevice + Any + Send + Sync + Debug {
 /// A constructor trait for devices
 ///
 /// The [`NewDevice::new`] function cannot have params because of it's usage in [`device_from_subdevice`]
-pub trait NewDevice {
+pub trait NewEthercatDevice {
     /// Create a new device
     fn new() -> Self
     where
@@ -112,8 +112,8 @@ pub trait NewDevice {
 }
 
 /// Casts a `dyn Device` to a specific device type
-pub async fn downcast_device<T: Device>(
-    device: Arc<RwLock<dyn Device>>,
+pub async fn downcast_device<T: EthercatDevice>(
+    device: Arc<RwLock<dyn EthercatDevice>>,
 ) -> Result<Arc<RwLock<T>>, anyhow::Error> {
     // Acquire a read lock on the RwLock
     let read_lock = device.read().await;
@@ -139,7 +139,7 @@ pub async fn downcast_device<T: Device>(
 /// Construct a device from a subdevice name
 pub fn device_from_subdevice(
     subdevice_identity_tuple: SubDeviceIdentityTuple,
-) -> Result<Arc<RwLock<dyn Device>>, anyhow::Error> {
+) -> Result<Arc<RwLock<dyn EthercatDevice>>, anyhow::Error> {
     match subdevice_identity_tuple {
         EK1100_IDENTITY_A => Ok(Arc::new(RwLock::new(EK1100::new()))),
         EL1008_IDENTITY_A => Ok(Arc::new(RwLock::new(EL1008::new()))),
@@ -147,7 +147,9 @@ pub fn device_from_subdevice(
         EL2008_IDENTITY_A => Ok(Arc::new(RwLock::new(EL2008::new()))),
         // TODO: implement EL2024 identity
         // EL2024 => Ok(Arc::new(RwLock::new(EL2024::new()))),
-        EL2521_IDENTITY_0000_A | EL2521_IDENTITY_0000_B | EL2521_IDENTITY_0024_A => Ok(Arc::new(RwLock::new(EL2521::new()))),
+        EL2521_IDENTITY_0000_A | EL2521_IDENTITY_0000_B | EL2521_IDENTITY_0024_A => {
+            Ok(Arc::new(RwLock::new(EL2521::new())))
+        }
         EL2522_IDENTITY_A => Ok(Arc::new(RwLock::new(EL2522::new()))),
         // TODO: implement EL2634 identity
         // "EL2634" => Ok(Arc::new(RwLock::new(EL2634::new()))),
@@ -155,7 +157,7 @@ pub fn device_from_subdevice(
         // "EL2809" => Ok(Arc::new(RwLock::new(EL2809::new()))),
         EL3001_IDENTITY_A => Ok(Arc::new(RwLock::new(el3001::EL3001::new()))),
         EL3021_IDENTITY_A => Ok(Arc::new(RwLock::new(el3021::EL3021::new()))),
-        EL3024_IDENTITY_A => Ok(Arc::new( RwLock::new(el3024::EL3024::new()))),
+        EL3024_IDENTITY_A => Ok(Arc::new(RwLock::new(el3024::EL3024::new()))),
         EL6021_IDENTITY_A => Ok(Arc::new(RwLock::new(el6021::EL6021::new()))),
         // "EL4008" => Ok(Arc::new(RwLock::new(EL4008::new()))),
         // TODO: implement EL3204 identity
@@ -176,7 +178,7 @@ pub fn device_from_subdevice(
 pub fn devices_from_subdevices<'maindevice, const MAX_SUBDEVICES: usize, const PDI_LEN: usize>(
     group: &mut EthercrabSubDeviceGroupPreoperational<MAX_SUBDEVICES, PDI_LEN>,
     maindevice: &MainDevice,
-) -> Result<Vec<Arc<RwLock<dyn Device>>>, anyhow::Error> {
+) -> Result<Vec<Arc<RwLock<dyn EthercatDevice>>>, anyhow::Error> {
     group
         .iter(maindevice)
         .map(|subdevice| subdevice.identity())
@@ -186,8 +188,8 @@ pub fn devices_from_subdevices<'maindevice, const MAX_SUBDEVICES: usize, const P
 }
 
 /// Casts a `dyn Device` from an array into a specific device type using [`downcast_device`]
-pub async fn specific_device_from_devices<DEVICE: Device>(
-    devices: &Vec<Arc<RwLock<dyn Device>>>,
+pub async fn specific_device_from_devices<DEVICE: EthercatDevice>(
+    devices: &Vec<Arc<RwLock<dyn EthercatDevice>>>,
     index: usize,
 ) -> Result<Arc<RwLock<DEVICE>>, anyhow::Error> {
     downcast_device::<DEVICE>(devices.get(index).cloned().ok_or({

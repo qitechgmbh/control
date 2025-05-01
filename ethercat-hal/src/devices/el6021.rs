@@ -1,14 +1,14 @@
-use super::{NewDevice, SubDeviceIdentityTuple};
+use super::{NewEthercatDevice, SubDeviceIdentityTuple};
 use crate::coe::{ConfigurableDevice, Configuration};
 use crate::io::serial_interface::{SerialEncoding, SerialInterfaceDevice};
 use crate::pdo::{PredefinedPdoAssignment, RxPdo, RxPdoObject, TxPdo, TxPdoObject};
 use crate::types::EthercrabSubDevicePreoperational;
-use anyhow::{anyhow, Error};
+use anyhow::{Error, anyhow};
 use bitvec::field::BitField;
 use bitvec::order::Lsb0;
 use bitvec::slice::BitSlice;
 
-use ethercat_hal_derive::{Device, PdoObject};
+use ethercat_hal_derive::{EthercatDevice, PdoObject};
 use ethercat_hal_derive::{RxPdo, TxPdo};
 
 impl std::fmt::Debug for EL6021 {
@@ -230,8 +230,8 @@ impl Configuration for EL6021Configuration {
             | (EL6021Baudrate::B115200, SerialEncoding::Coding7O2) => {}
             _ => {
                 return Err(anyhow!(
-                "ERROR: EL6021Configuration::write_config Baudrate and Encoding is not compatible!"
-            ))
+                    "ERROR: EL6021Configuration::write_config Baudrate and Encoding is not compatible!"
+                ));
             }
         }
 
@@ -364,7 +364,7 @@ pub struct EL6021RxPdo {
     pub com_rx_pdo_map_22_byte: Option<Standard22ByteMdp600Output>,
 }
 
-#[derive(Device)]
+#[derive(EthercatDevice)]
 pub struct EL6021 {
     pub configuration: EL6021Configuration,
     pub txpdo: EL6021TxPdo,
@@ -395,7 +395,7 @@ impl PredefinedPdoAssignment<EL6021TxPdo, EL6021RxPdo> for EL6021PdoPreset {
     }
 }
 
-impl NewDevice for EL6021 {
+impl NewEthercatDevice for EL6021 {
     fn new() -> Self {
         let configuration: EL6021Configuration = EL6021Configuration::default();
         Self {
@@ -477,45 +477,49 @@ impl SerialInterfaceDevice<EL6021Port> for EL6021 {
     /// For el6021 this returns false for as long as the Initialization takes
     /// When its finished it returns true    
     fn serial_interface_initialize(&mut self, port: EL6021Port) -> bool {
-        let rxpdo_opt = &mut self.rxpdo.com_rx_pdo_map_22_byte;
-        let txpdo_opt = &mut self.txpdo.com_tx_pdo_map_22_byte;
+        match port {
+            EL6021Port::SI1 => {
+                let rxpdo_opt = &mut self.rxpdo.com_rx_pdo_map_22_byte;
+                let txpdo_opt = &mut self.txpdo.com_tx_pdo_map_22_byte;
 
-        let rxpdo = match rxpdo_opt {
-            Some(rxpdo_opt) => rxpdo_opt,
-            None => return false,
-        };
+                let rxpdo = match rxpdo_opt {
+                    Some(rxpdo_opt) => rxpdo_opt,
+                    None => return false,
+                };
 
-        let txpdo = match txpdo_opt {
-            Some(txpdo_opt) => txpdo_opt,
-            None => return false,
-        };
+                let txpdo = match txpdo_opt {
+                    Some(txpdo_opt) => txpdo_opt,
+                    None => return false,
+                };
 
-        if rxpdo.control.init_request && txpdo.status.init_accepted {
-            rxpdo.control.init_request = false;
-            return false;
+                if rxpdo.control.init_request && txpdo.status.init_accepted {
+                    rxpdo.control.init_request = false;
+                    return false;
+                }
+
+                if rxpdo.control.init_request == false
+                    && txpdo.status.init_accepted == false
+                    && self.initialized == false
+                {
+                    rxpdo.control.init_request = true;
+                    self.initialized = true;
+                    return false;
+                }
+
+                if rxpdo.control.init_request == false && txpdo.status.init_accepted == true {
+                    return false;
+                }
+
+                if rxpdo.control.init_request == false
+                    && txpdo.status.init_accepted == false
+                    && self.initialized == true
+                {
+                    return true;
+                }
+
+                return false;
+            }
         }
-
-        if rxpdo.control.init_request == false
-            && txpdo.status.init_accepted == false
-            && self.initialized == false
-        {
-            rxpdo.control.init_request = true;
-            self.initialized = true;
-            return false;
-        }
-
-        if rxpdo.control.init_request == false && txpdo.status.init_accepted == true {
-            return false;
-        }
-
-        if rxpdo.control.init_request == false
-            && txpdo.status.init_accepted == false
-            && self.initialized == true
-        {
-            return true;
-        }
-
-        return false;
     }
 }
 

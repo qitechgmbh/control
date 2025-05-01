@@ -2,7 +2,7 @@ use crate::ethercat::config::{MAX_SUBDEVICES, PDI_LEN};
 use crate::socketio::namespaces::Namespaces;
 use control_core::identification::{MachineDeviceIdentification, MachineIdentificationUnique};
 use control_core::machines::Machine;
-use ethercat_hal::devices::Device;
+use ethercat_hal::devices::EthercatDevice;
 use ethercrab::{MainDevice, SubDeviceGroup, subdevice_group::Op};
 use smol::lock::RwLock;
 use socketioxide::SocketIo;
@@ -34,7 +34,7 @@ pub struct EthercatSetup {
     /// All Ethercat devices
     /// Device-Specific interface for all devices
     /// Same length and order as SubDevices inside `group`
-    pub devices: Vec<Arc<RwLock<dyn Device>>>,
+    pub devices: Vec<Arc<RwLock<dyn EthercatDevice>>>,
     /// All Ethercat devices
     /// Generic interface for all devices
     /// Needed to interface with the devices on an Ethercat level
@@ -47,9 +47,7 @@ pub struct EthercatSetup {
 
 impl EthercatSetup {
     pub fn new(
-        identified_device_groups: Vec<Vec<MachineDeviceIdentification>>,
-        undetected_devices: Vec<MachineDeviceIdentification>,
-        devices: Vec<Arc<RwLock<dyn Device>>>,
+        devices: Vec<Arc<RwLock<dyn EthercatDevice>>>,
         group: SubDeviceGroup<MAX_SUBDEVICES, PDI_LEN, Op>,
         delays: Vec<Option<u32>>,
         maindevice: MainDevice<'static>,
