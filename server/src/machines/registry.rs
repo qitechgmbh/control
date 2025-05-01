@@ -1,5 +1,5 @@
-use crate::machines::{winder2::Winder2, MACHINE_WINDER_V1, VENDOR_QITECH};
-use control_core::{identification::MachineIdentification, machines::registry::MachineRegistry};
+use crate::machines::{MACHINE_WINDER_V1, VENDOR_QITECH, winder2::Winder2};
+use control_core::machines::{identification::MachineIdentification, registry::MachineRegistry};
 use lazy_static::lazy_static;
 
 lazy_static! {

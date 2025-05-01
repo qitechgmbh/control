@@ -1,30 +1,23 @@
-use super::Machine;
-use crate::identification::MachineDeviceIdentification;
+use super::identification::MachineDeviceIdentification;
 use anyhow::Error;
-use ethercat_hal::{devices::Device, types::EthercrabSubDevicePreoperational};
+use ethercat_hal::{devices::EthercatDevice, types::EthercrabSubDevicePreoperational};
 use ethercrab::{SubDevice, SubDeviceRef};
 use smol::lock::RwLock;
 use std::sync::Arc;
 
 pub trait MachineNewTrait {
     fn new<'maindevice, 'subdevices>(
-        identified_device_group: &Vec<MachineDeviceIdentification>,
-        subdevices: &'subdevices Vec<SubDeviceRef<'maindevice, &SubDevice>>,
-        devices: &Vec<Arc<RwLock<dyn Device>>>,
+        params: &MachineNewParams<'maindevice, 'subdevices, '_, '_>,
     ) -> Result<Self, Error>
     where
         Self: Sized;
 }
 
-pub type MachineNewFn = Box<
-    dyn Fn(
-            &Vec<MachineDeviceIdentification>,
-            &'_ Vec<SubDeviceRef<'_, &SubDevice>>,
-            &Vec<Arc<RwLock<dyn Device>>>,
-        ) -> Result<Arc<RwLock<dyn Machine>>, Error>
-        + Send
-        + Sync,
->;
+pub struct MachineNewParams<'maindevice, 'subdevices, 'devices, 'machinedeviceidentifications> {
+    pub identified_device_group: &'machinedeviceidentifications Vec<MachineDeviceIdentification>,
+    pub subdevices: &'subdevices Vec<SubDeviceRef<'maindevice, &'subdevices SubDevice>>,
+    pub devices: &'devices Vec<Arc<RwLock<dyn EthercatDevice>>>,
+}
 
 // validates that all devices in the group have the same machine identification
 pub fn validate_same_machine_identification(
@@ -84,9 +77,9 @@ pub fn get_mdi_by_role(
 }
 
 pub fn get_device_by_index<'maindevice>(
-    devices: &Vec<Arc<RwLock<dyn Device>>>,
+    devices: &Vec<Arc<RwLock<dyn EthercatDevice>>>,
     subdevice_index: usize,
-) -> Result<Arc<RwLock<dyn Device>>, Error> {
+) -> Result<Arc<RwLock<dyn EthercatDevice>>, Error> {
     Ok(devices
         .get(subdevice_index)
         .ok_or(anyhow::anyhow!(
