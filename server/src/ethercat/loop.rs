@@ -1,14 +1,13 @@
-use crate::app_state::{EthercatSetup, APP_STATE};
+use crate::app_state::{APP_STATE, EthercatSetup, Machines};
 use crate::machines::registry::MACHINE_REGISTRY;
-use crate::panic::{send_panic, PanicDetails};
-use crate::socketio::main_namespace::ethercat_setup_event::EthercatSetupEventBuilder;
+use crate::panic::{PanicDetails, send_panic};
 use crate::socketio::main_namespace::MainNamespaceEvents;
+use crate::socketio::main_namespace::ethercat_setup_event::EthercatSetupEventBuilder;
 use crate::{
     app_state::AppState,
     ethercat::config::{MAX_FRAMES, MAX_PDU_DATA, MAX_SUBDEVICES, PDI_LEN},
 };
 use bitvec::prelude::*;
-use control_core::actors::Actor;
 use control_core::identification::identify_device_groups;
 use control_core::socketio::namespace::NamespaceCacheingLogic;
 use ethercat_hal::devices::devices_from_subdevices;
@@ -145,22 +144,10 @@ pub async fn setup_loop(
         .map(|subdevice| subdevice.propagation_delay())
         .collect();
 
-    // create actors
-    // push all machines into the actors vector
-    let mut actors: Vec<Arc<RwLock<dyn Actor>>> = Vec::new();
-    for (_, machine) in machines.iter() {
-        match machine {
-            Ok(machine) => actors.push(machine.clone() as Arc<RwLock<dyn Actor>>),
-            Err(_) => {}
-        }
-    }
-
     // Write all this stuff to `app_state`
     {
         let mut ethercat_setup_guard = app_state.ethercat_setup.write().await;
         *ethercat_setup_guard = Some(EthercatSetup {
-            actors,
-            machines,
             identified_device_groups,
             unidentified_devices,
             devices,
@@ -185,13 +172,16 @@ pub async fn setup_loop(
     // Start control loop
     std::thread::Builder::new()
         .name("EthercatLoopThread".to_owned())
-        .spawn(move || loop {
-            send_panic("EthercatLoopThread", thread_panic_tx.clone());
-            let rt = smol::LocalExecutor::new();
-            let res =
-                smol::block_on(rt.run(async { loop_once(app_state.ethercat_setup.clone()).await }));
-            if let Err(err) = res {
-                log::error!("Loop failed\n{:?}", err);
+        .spawn(move || {
+            loop {
+                send_panic("EthercatLoopThread", thread_panic_tx.clone());
+                let rt = smol::LocalExecutor::new();
+                let res = smol::block_on(rt.run(async {
+                    loop_once(app_state.ethercat_setup.clone(), app_state.machines.clone()).await
+                }));
+                if let Err(err) = res {
+                    log::error!("Loop failed\n{:?}", err);
+                }
             }
         })
         .expect("Building thread");
@@ -201,6 +191,7 @@ pub async fn setup_loop(
 
 pub async fn loop_once<'maindevice>(
     setup: Arc<RwLock<Option<EthercatSetup>>>,
+    machines: Arc<RwLock<Machines>>,
 ) -> Result<(), anyhow::Error> {
     let setup_guard = setup.read().await;
     let setup = setup_guard
@@ -235,11 +226,13 @@ pub async fn loop_once<'maindevice>(
         })?;
     }
 
-    // execute actors
+    // execute machines
+    let mut machines_guard = machines.write().await;
     let now = std::time::Instant::now();
-    for actor in setup.actors.iter() {
-        let mut actor = actor.write().await;
-        actor.act(now).await;
+    for machine_result in machines_guard.values_mut() {
+        if let Ok(machine) = machine_result {
+            machine.act(now);
+        }
     }
 
     // copy outputs from devices

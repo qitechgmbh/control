@@ -62,6 +62,9 @@ impl EthercatSetupEventBuilder {
         let ethercat_setup_guard = smol::block_on(async {
             return APP_STATE.as_ref().ethercat_setup.read().await;
         });
+        let machines_guard = smol::block_on(async {
+            return APP_STATE.as_ref().machines.read().await;
+        });
 
         let ethercat_setup = match ethercat_setup_guard.as_ref() {
             Some(device) => device,
@@ -106,7 +109,7 @@ impl EthercatSetupEventBuilder {
         }
 
         // add machines
-        for machine in ethercat_setup.machines.iter() {
+        for machine in machines_guard.iter() {
             machine_objs.push(MachineObj {
                 machine_identification_unique: machine.0.clone(),
                 error: match machine.1 {

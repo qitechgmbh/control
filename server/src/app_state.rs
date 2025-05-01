@@ -1,10 +1,9 @@
 use crate::ethercat::config::{MAX_SUBDEVICES, PDI_LEN};
 use crate::socketio::namespaces::Namespaces;
-use control_core::actors::Actor;
 use control_core::identification::{MachineDeviceIdentification, MachineIdentificationUnique};
 use control_core::machines::Machine;
 use ethercat_hal::devices::Device;
-use ethercrab::{subdevice_group::Op, MainDevice, SubDeviceGroup};
+use ethercrab::{MainDevice, SubDeviceGroup, subdevice_group::Op};
 use smol::lock::RwLock;
 use socketioxide::SocketIo;
 use std::sync::Arc;
@@ -18,16 +17,14 @@ pub struct SocketioSetup {
 pub struct AppState {
     pub socketio_setup: SocketioSetup,
     pub ethercat_setup: Arc<RwLock<Option<EthercatSetup>>>,
-}
-
-pub struct EthercatSetup {
-    /// High level logical drivers
-    /// They read & write to the `devices` / nested actors
-    pub actors: Vec<Arc<RwLock<dyn Actor>>>,
     /// Machines
     /// Actual machine interfaces
-    pub machines:
-        HashMap<MachineIdentificationUnique, Result<Arc<RwLock<dyn Machine>>, anyhow::Error>>,
+    pub machines: Arc<RwLock<Machines>>,
+}
+
+pub type Machines = HashMap<MachineIdentificationUnique, Result<Box<dyn Machine>, anyhow::Error>>;
+
+pub struct EthercatSetup {
     /// Metadata about a device groups
     /// Used for the device table in the UI
     pub identified_device_groups: Vec<Vec<MachineDeviceIdentification>>,
@@ -50,11 +47,6 @@ pub struct EthercatSetup {
 
 impl EthercatSetup {
     pub fn new(
-        actors: Vec<Arc<RwLock<dyn Actor>>>,
-        machines: HashMap<
-            MachineIdentificationUnique,
-            Result<Arc<RwLock<dyn Machine>>, anyhow::Error>,
-        >,
         identified_device_groups: Vec<Vec<MachineDeviceIdentification>>,
         undetected_devices: Vec<MachineDeviceIdentification>,
         devices: Vec<Arc<RwLock<dyn Device>>>,
@@ -63,8 +55,6 @@ impl EthercatSetup {
         maindevice: MainDevice<'static>,
     ) -> Self {
         Self {
-            actors,
-            machines,
             identified_device_groups,
             unidentified_devices: undetected_devices,
             devices,
@@ -83,6 +73,7 @@ impl AppState {
                 namespaces: RwLock::new(Namespaces::new()),
             },
             ethercat_setup: Arc::new(RwLock::new(None)),
+            machines: Arc::new(RwLock::new(HashMap::new())),
         }
     }
 }
