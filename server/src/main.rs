@@ -16,7 +16,8 @@ pub mod machines;
 pub mod panic;
 pub mod rest;
 pub mod socketio;
-pub mod usbdre;
+pub mod serial;
+
 fn main() {
     // if the program panics we restart all of it
     match catch_unwind(|| main2()) {
@@ -51,6 +52,7 @@ fn main2() {
     init_ethercat(thread_panic_tx.clone(), app_state.clone()).expect("Failed to initialize EtherCAT");
     init_loop(thread_panic_tx, app_state).expect("Failed to initialize loop");
 
+    
     smol::block_on(async {
         loop {
             match thread_panic_rx.try_recv() {
