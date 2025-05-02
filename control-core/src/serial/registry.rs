@@ -11,16 +11,31 @@ use crate::serial::{
     Serial,
 };
 
-pub type SerialNewFn = Box<
-    dyn Fn(
-            &str
-        ) -> Result<Arc<RwLock<dyn Serial>>, Error>
-        + Send
-        + Sync,
->;
 
+#[derive(Clone)]
+pub struct CloneableFn(
+    Arc<dyn Fn(&str) -> Result<Arc<RwLock<dyn Serial>>, Error> + Send + Sync>,
+);
+
+impl CloneableFn {
+    pub fn new<F>(f: F) -> Self
+    where
+        F: Fn(&str) -> Result<Arc<RwLock<dyn Serial>>, Error> + Send + Sync + 'static,
+    {
+        CloneableFn(Arc::new(f))
+    }
+}
+
+impl std::ops::Deref for CloneableFn {
+    type Target = dyn Fn(&str) -> Result<Arc<RwLock<dyn Serial>>, Error> + Send + Sync;
+    fn deref(&self) -> &Self::Target {
+        &*self.0
+    }
+}
+pub type SerialNewFn = CloneableFn;
+#[derive(Clone)]
 pub struct SerialRegistry {
-    type_map: HashMap<TypeId, (ProductConfig, SerialNewFn)>,
+    pub type_map: HashMap<TypeId, (ProductConfig, SerialNewFn)>,
 }
 
 impl SerialRegistry {
@@ -38,10 +53,8 @@ impl SerialRegistry {
             TypeId::of::<T>(),
             (
                 machine_identficiation,
-                Box::new(|path| {
-                    Ok(Arc::new(RwLock::new(T::new(
-                        path
-                    )?)))
+                CloneableFn::new(|path| {
+                    Ok(Arc::new(RwLock::new(T::new(path)?)))
                 }),
             ),
         );
@@ -71,9 +84,16 @@ impl SerialRegistry {
         &self,
         machine: Arc<RwLock<dyn Serial>>,
     ) -> Result<Arc<RwLock<T>>, Error> {
-        if TypeId::of::<T>() == machine.type_id() {
-            // transmute Arc
-            let arc = unsafe { Arc::from_raw(Arc::into_raw(machine) as *const RwLock<T>) };
+        let ok = {
+            let guard = machine.read().unwrap();
+            guard.as_any().is::<T>()
+        };
+    
+        if ok {
+            // SAFETY: We have checked that it's the correct type
+            let arc = unsafe {
+                Arc::from_raw(Arc::into_raw(machine) as *const RwLock<T>)
+            };
             Ok(arc)
         } else {
             Err(anyhow::anyhow!(
@@ -82,6 +102,7 @@ impl SerialRegistry {
                 std::any::type_name::<T>()
             ))
         }
-    }    
+    }
+    
 
 }

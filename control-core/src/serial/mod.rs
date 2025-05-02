@@ -1,8 +1,11 @@
 pub mod registry;
-pub mod serial_identification;
 
+use std::any::Any;
 
-pub trait Serial: SerialNew {}
+pub trait Serial: Any + Send + Sync + SerialNew {
+    fn as_any(&self) -> &dyn Any;
+    fn as_any_mut(&mut self) -> &mut dyn Any;
+}
 
 pub trait SerialNew {
     fn new(path: &str) -> Result<Self, anyhow::Error>
@@ -10,7 +13,7 @@ pub trait SerialNew {
         Self: Sized;
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq,Clone,Debug)]
 pub struct ProductConfig{
     pub vendor_id: u16,
     pub product_id: u16,
