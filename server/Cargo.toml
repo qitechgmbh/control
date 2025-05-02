@@ -70,13 +70,10 @@ never_type = []
 [profile.release]
 codegen-units = 1
 lto = "fat"
-=======
 rmodbus = "0.10.0"
 serial = "0.4.0"
 once_cell = "1.21.3"
 serialport = "4.7.1"
-<<<<<<< HEAD
->>>>>>> 8f758dc (1)
-=======
+
 smol = "2.0.2"
 >>>>>>> 12088b8 (Add dre-usb-driver)
