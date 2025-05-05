@@ -18,7 +18,7 @@ thread-priority = "1.2.0"
 # web
 socketioxide = "0.17.0"
 tower-http = { version = "0.6.2", features = ["cors", "trace", "fs"] }
-axum = { version = "0.8.3", features = ["macros"] }
+axum = { version = "0.8.4", features = ["macros"] }
 
 # utility
 uom = "0.36.0"
