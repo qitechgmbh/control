@@ -1,6 +1,7 @@
 use crate::app_state::AppState;
 use crate::panic::{PanicDetails, send_panic};
 use bitvec::prelude::*;
+use control_core::realtime::set_realtime_priority;
 use smol::channel::Sender;
 use std::sync::Arc;
 
@@ -12,6 +13,20 @@ pub fn init_loop(
     std::thread::Builder::new()
         .name("LoopThread".to_owned())
         .spawn(move || {
+            // Set the thread to real-time priority
+            if let Err(e) = set_realtime_priority() {
+                log::error!(
+                    "[{}::init_loop] Failed to set real-time priority \n{:?}",
+                    module_path!(),
+                    e
+                );
+            } else {
+                log::info!(
+                    "[{}::init_loop] Real-time priority set successfully",
+                    module_path!()
+                );
+            }
+
             loop {
                 send_panic("LoopThread", thread_panic_tx.clone());
                 let rt = smol::LocalExecutor::new();

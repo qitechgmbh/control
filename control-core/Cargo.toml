@@ -17,5 +17,9 @@ socketioxide = "0.17.0"
 uom = "0.36.0"
 bitvec = { version = "1.0.1", features = ["alloc"] }
 crc = "3.2.1"
+
+[target.'cfg(unix)'.dependencies]
+libc = "0.2.172"
+
 [dev-dependencies]
 approx = "0.5.1"
