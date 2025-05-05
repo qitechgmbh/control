@@ -1,3 +1,5 @@
+use std::time::{SystemTime, UNIX_EPOCH};
+
 use serde::Serialize;
 use serde_json::Value;
 
@@ -6,7 +8,7 @@ pub struct GenericEvent {
     pub name: String,
     pub data: Value,
     /// Timestamp in milliseconds
-    pub ts: i64,
+    pub ts: u64,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -17,7 +19,7 @@ where
     pub name: String,
     pub data: T,
     /// Timestamp in milliseconds
-    pub ts: i64,
+    pub ts: u64,
 }
 
 impl<T> TryFrom<Event<T>> for GenericEvent
@@ -58,7 +60,10 @@ where
         Self {
             name: event.to_string(),
             data,
-            ts: chrono::Utc::now().timestamp_millis(),
+            ts: SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_millis() as u64,
         }
     }
 }
