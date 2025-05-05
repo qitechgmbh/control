@@ -137,7 +137,7 @@ pub async fn downcast_device<T: EthercatDevice>(
 }
 
 /// Construct a device from a subdevice name
-pub fn device_from_subdevice(
+pub fn device_from_subdevice_identity_tuple(
     subdevice_identity_tuple: SubDeviceIdentityTuple,
 ) -> Result<Arc<RwLock<dyn EthercatDevice>>, anyhow::Error> {
     match subdevice_identity_tuple {
@@ -174,6 +174,15 @@ pub fn device_from_subdevice(
     }
 }
 
+/// Construct a device from a subdevice
+/// Combines [`subdevice_identity_to_tuple`] and [`device_from_subdevice_identity_tuple`]
+pub fn device_from_subdevice_identity(
+    subdevice: &SubDeviceIdentity,
+) -> Result<Arc<RwLock<dyn EthercatDevice>>, anyhow::Error> {
+    let subdevice_identity_tuple = subdevice_identity_to_tuple(subdevice);
+    device_from_subdevice_identity_tuple(subdevice_identity_tuple)
+}
+
 /// Array equivalent of [`device_from_subdevice`]
 pub fn devices_from_subdevices<'maindevice, const MAX_SUBDEVICES: usize, const PDI_LEN: usize>(
     group: &mut EthercrabSubDeviceGroupPreoperational<MAX_SUBDEVICES, PDI_LEN>,
@@ -182,8 +191,7 @@ pub fn devices_from_subdevices<'maindevice, const MAX_SUBDEVICES: usize, const P
     group
         .iter(maindevice)
         .map(|subdevice| subdevice.identity())
-        .map(|subdevice_identity| subdevice_identity_to_tuple(&subdevice_identity))
-        .map(|subdevice_identity_tuple| device_from_subdevice(subdevice_identity_tuple))
+        .map(|subdevice_identity| device_from_subdevice_identity(&subdevice_identity))
         .collect::<Result<Vec<_>, anyhow::Error>>()
 }
 

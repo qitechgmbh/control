@@ -1,7 +1,7 @@
 use super::handlers::machine_mutation::post_machine_mutate;
 use super::handlers::write_machine_device_identification::post_write_machine_device_identification;
 use crate::app_state::AppState;
-use crate::panic::{send_panic, PanicDetails};
+use crate::panic::{PanicDetails, send_panic};
 use crate::socketio::init::init_socketio;
 use anyhow::anyhow;
 use axum::routing::post;
@@ -32,7 +32,7 @@ pub fn init_api(
                 //     .init();
 
                 // creat socketio layer
-                let socketio_layer = init_socketio().await;
+                let socketio_layer = init_socketio(&app_state).await;
 
                 // make axum server to serve the data on /ethercat
                 let app = axum::Router::new()

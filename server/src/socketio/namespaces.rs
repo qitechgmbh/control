@@ -1,6 +1,8 @@
+use std::sync::Arc;
+
 use control_core::socketio::{namespace::NamespaceInterface, namespace_id::NamespaceId};
 
-use crate::app_state::APP_STATE;
+use crate::app_state;
 
 use super::main_namespace::MainRoom;
 
@@ -18,19 +20,22 @@ impl Namespaces {
     pub async fn apply_mut(
         &mut self,
         namespace_id: NamespaceId,
+        app_state: &Arc<app_state::AppState>,
         callback: impl FnOnce(Result<&mut dyn NamespaceInterface, anyhow::Error>),
     ) {
         match namespace_id {
             NamespaceId::Main => callback(Ok(&mut self.main_namespace.0)),
             NamespaceId::Machine(machine_identification_unique) => {
-                let mut machines_guard = APP_STATE.machines.write().await;
+                // lock machines
+                let machines_guard = app_state.machines.read().await;
 
                 // get machine
-                let machine = match machines_guard.get_mut(&machine_identification_unique) {
+                let machine = match machines_guard.get(&machine_identification_unique) {
                     Some(machine) => machine,
                     None => {
                         callback(Err(anyhow::anyhow!(
-                            "Machine {} not found",
+                            "[{}::Namespaces::appply_mut] Machine {:?} not found",
+                            module_path!(),
                             machine_identification_unique
                         )));
                         return;
@@ -42,7 +47,8 @@ impl Namespaces {
                     Ok(machine) => machine,
                     Err(err) => {
                         callback(Err(anyhow::anyhow!(
-                            "Machine {} has error: {}",
+                            "[{}::Namespaces::appply_mut] Machine {:?} has error: {}",
+                            module_path!(),
                             machine_identification_unique,
                             err
                         )));
@@ -50,7 +56,9 @@ impl Namespaces {
                     }
                 };
 
-                let namespace = machine.api_event_namespace();
+                let mut machines_guard = machine.lock().await;
+
+                let namespace = machines_guard.api_event_namespace();
                 callback(Ok(namespace));
             }
         }

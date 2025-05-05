@@ -1,6 +1,8 @@
+use std::fmt::Debug;
+
 use serde::Serialize;
 
-use crate::identification::MachineIdentificationUnique;
+use crate::machines::identification::MachineIdentificationUnique;
 
 #[derive(Debug, Serialize, Clone)]
 pub struct MutationResponse {
@@ -24,7 +26,10 @@ impl MutationResponse {
 }
 
 #[derive(Debug, serde::Deserialize)]
-pub struct MachineMutationBody<T> {
+pub struct MachineMutationBody<T>
+where
+    T: Debug,
+{
     pub machine_identification_unique: MachineIdentificationUnique,
     pub data: T,
 }

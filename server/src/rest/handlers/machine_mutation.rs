@@ -23,25 +23,35 @@ async fn _post_machine_mutate(
     State(app_state): State<Arc<AppState>>,
     Json(body): Json<MachineMutationBody<Value>>,
 ) -> Result<(), anyhow::Error> {
-    let mut machines_guard = app_state.machines.write().await;
+    // lock machines
+    let machines_guard = app_state.machines.read().await;
 
     // find machine with given identification in hashmap
     let machine = machines_guard
-        .get_mut(&body.machine_identification_unique)
+        .get(&body.machine_identification_unique)
         .ok_or(anyhow::anyhow!(
-            "[{}::_post_machine_mutate] Machine not found {}",
+            "[{}::_post_machine_mutate] Machine not found {:?}",
             module_path!(),
             body.machine_identification_unique,
         ))?;
 
-    // check if machine has error
-    let machine = machine.as_mut().or(Err(anyhow::anyhow!(
-        "[{}::_post_machine_mutate] Machine has error",
-        module_path!()
-    )))?;
+    // check machine for error
+    let machine = match machine {
+        Ok(m) => m,
+        Err(e) => {
+            return Err(anyhow::anyhow!(
+                "[{}::_post_machine_mutate] Machine has error: {}",
+                module_path!(),
+                e
+            ));
+        }
+    };
+
+    // lock machine
+    let mut machine_guard = machine.lock().await;
 
     // write data to machine
-    machine.api_mutate(body.data).or_else(|e| {
+    machine_guard.api_mutate(body.data).or_else(|e| {
         Err(anyhow::anyhow!(
             "[{}::_post_machine_mutate] Machine api_mutate error: {}",
             module_path!(),

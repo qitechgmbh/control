@@ -1,15 +1,17 @@
 use control_core::socketio::{
     event::{Event, GenericEvent},
     namespace::{
-        cache_one_event, CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic,
-        NamespaceInterface,
+        CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, NamespaceInterface,
+        cache_one_event,
     },
 };
+use ethercat_devices_event::EthercatDevicesEvent;
 use ethercat_interface_discovery_event::EthercatInterfaceDiscoveryEvent;
-use ethercat_setup_event::EthercatSetupEvent;
+use machines_event::MachinesEvent;
 
+pub mod ethercat_devices_event;
 pub mod ethercat_interface_discovery_event;
-pub mod ethercat_setup_event;
+pub mod machines_event;
 
 pub struct MainRoom(pub Namespace);
 
@@ -43,22 +45,25 @@ where
 
 #[derive(Debug, Clone)]
 pub enum MainNamespaceEvents {
-    EthercatSetupEvent(Event<EthercatSetupEvent>),
+    MachinesEvent(Event<MachinesEvent>),
+    EthercatDevicesEvent(Event<EthercatDevicesEvent>),
     EthercatInterfaceDiscoveryEvent(Event<EthercatInterfaceDiscoveryEvent>),
 }
 
 impl CacheableEvents<MainNamespaceEvents> for MainNamespaceEvents {
     fn event_value(&self) -> Result<GenericEvent, serde_json::Error> {
         match self {
-            MainNamespaceEvents::EthercatSetupEvent(event) => event.clone().try_into(),
+            MainNamespaceEvents::EthercatDevicesEvent(event) => event.clone().try_into(),
             MainNamespaceEvents::EthercatInterfaceDiscoveryEvent(event) => event.clone().try_into(),
+            MainNamespaceEvents::MachinesEvent(event) => event.clone().try_into(),
         }
     }
 
     fn event_cache_fn(&self) -> CacheFn {
         match self {
-            MainNamespaceEvents::EthercatSetupEvent(_) => cache_one_event(),
+            MainNamespaceEvents::EthercatDevicesEvent(_) => cache_one_event(),
             MainNamespaceEvents::EthercatInterfaceDiscoveryEvent(_) => cache_one_event(),
+            MainNamespaceEvents::MachinesEvent(_) => cache_one_event(),
         }
     }
 }

@@ -12,13 +12,14 @@ import {
   NamespaceId,
 } from "./socketioStore";
 import {
-  machineDeviceIdentification,
+  deviceIdentification,
   machineIdentificationUnique,
 } from "@/machines/types";
 import { useRef } from "react";
 import { rustEnumSchema } from "@/lib/types";
 
-export const ethercatSetupEventDataSchema = rustEnumSchema({
+// Update the EthercatDevicesEventData schema
+export const ethercatDevicesEventDataSchema = rustEnumSchema({
   Initializing: z.boolean(),
   Done: z.object({
     devices: z.array(
@@ -28,30 +29,40 @@ export const ethercatSetupEventDataSchema = rustEnumSchema({
         vendor_id: z.number().int(),
         product_id: z.number().int(),
         revision: z.number().int(),
-        machine_device_identification: machineDeviceIdentification.nullable(),
-        subdevice_index: z.number().int(),
-      }),
-    ),
-    machines: z.array(
-      z.object({
-        machine_identification_unique: machineIdentificationUnique,
-        error: z.string().nullable(),
+        device_identification: deviceIdentification,
       }),
     ),
   }),
   Error: z.string(),
 });
 
-export type EthercatSetupEventData = z.infer<
-  typeof ethercatSetupEventDataSchema
+export type EthercatDevicesEventData = z.infer<
+  typeof ethercatDevicesEventDataSchema
 >;
 
-export const ethercatSetupEventSchema = eventSchema(
-  ethercatSetupEventDataSchema,
+export const ethercatDevicesEventSchema = eventSchema(
+  ethercatDevicesEventDataSchema,
 );
 
-export type EthercatSetupEvent = z.infer<typeof ethercatSetupEventSchema>;
+export type EthercatDevicesEvent = z.infer<typeof ethercatDevicesEventSchema>;
 
+// Create a new schema for MachinesEvent
+export const machinesEventDataSchema = z.object({
+  machines: z.array(
+    z.object({
+      machine_identification_unique: machineIdentificationUnique,
+      error: z.string().nullable(),
+    }),
+  ),
+});
+
+export type MachinesEventData = z.infer<typeof machinesEventDataSchema>;
+
+export const machinesEventSchema = eventSchema(machinesEventDataSchema);
+
+export type MachinesEvent = z.infer<typeof machinesEventSchema>;
+
+// Keep the EthercatInterfaceDiscovery event
 export const ethercatInterfaceDiscoveryEventDataSchema = rustEnumSchema({
   Discovering: z.boolean(),
   Done: z.string(),
@@ -69,8 +80,10 @@ export type EthercatInterfaceDiscoveryEvent = z.infer<
   typeof ethercatInterfaceDiscoveryEventSchema
 >;
 
+// Update the main namespace store schema
 export const mainNamespaceStoreSchema = z.object({
-  ethercatSetup: ethercatSetupEventSchema.nullable(),
+  ethercatDevices: ethercatDevicesEventSchema.nullable(),
+  machines: machinesEventSchema.nullable(),
   ethercatInterfaceDiscovery: ethercatInterfaceDiscoveryEventSchema.nullable(),
 });
 
@@ -78,13 +91,15 @@ export type MainNamespaceStore = z.infer<typeof mainNamespaceStoreSchema>;
 
 export const createMainNamespaceStore = (): StoreApi<MainNamespaceStore> => {
   return create<MainNamespaceStore>()(() => ({
-    ethercatSetup: null,
+    ethercatDevices: null,
+    machines: null,
     ethercatInterfaceDiscovery: null,
   }));
 };
 
 export const eventSchemaMap = {
-  EthercatSetupEvent: ethercatSetupEventSchema,
+  EthercatDevicesEvent: ethercatDevicesEventSchema,
+  MachinesEvent: machinesEventSchema,
 };
 
 export function mainMessageHandler(
@@ -95,13 +110,20 @@ export function mainMessageHandler(
 
     try {
       // Apply appropriate caching strategy based on event type
-      // State events (keep only the latest)
-      if (eventName === "EthercatSetupEvent") {
-        const validatedEvent = ethercatSetupEventSchema.parse(event);
-        console.log("EthercatSetupEvent", validatedEvent);
+      if (eventName === "EthercatDevicesEvent") {
+        const validatedEvent = ethercatDevicesEventSchema.parse(event);
+        console.log("EthercatDevicesEvent", validatedEvent);
         store.setState(
           produce((state) => {
-            state.ethercatSetup = validatedEvent;
+            state.ethercatDevices = validatedEvent;
+          }),
+        );
+      } else if (eventName === "MachinesEvent") {
+        const validatedEvent = machinesEventSchema.parse(event);
+        console.log("MachinesEvent", validatedEvent);
+        store.setState(
+          produce((state) => {
+            state.machines = validatedEvent;
           }),
         );
       } else if (eventName === "EthercatInterfaceDiscoveryEvent") {

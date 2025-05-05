@@ -13,18 +13,24 @@ import { DeviceEepromDialog } from "./DeviceEepromDialog";
 import { getMachinePreset } from "@/machines/types";
 import { DeviceRoleComponent } from "@/components/DeviceRole";
 import {
-  EthercatSetupEventData,
+  EthercatDevicesEventData,
   useMainNamespace,
 } from "@/client/mainNamespace";
-import { Icon } from "@/components/Icon";
 
 export const columns: ColumnDef<
-  NonNullable<EthercatSetupEventData["Done"]>["devices"][number]
+  NonNullable<EthercatDevicesEventData["Done"]>["devices"][number]
 >[] = [
   {
     accessorKey: "subdevice_index",
     header: "Index",
-    cell: (row) => <Value value={row.row.original.subdevice_index} />,
+    cell: (row) => (
+      <Value
+        value={
+          row.row.original.device_identification.device_hardware_identification
+            .Ethercat?.subdevice_index
+        }
+      />
+    ),
   },
   {
     accessorKey: "configured_address",
@@ -55,13 +61,13 @@ export const columns: ColumnDef<
     accessorKey: "qitech_machine",
     header: "Assigned Machine",
     cell: (row) => {
-      const machine_identification_unique =
-        row.row.original.machine_device_identification
-          ?.machine_identification_unique;
-      if (!machine_identification_unique) {
+      const machine_identification =
+        row.row.original.device_identification.device_machine_identification
+          ?.machine_identification_unique.machine_identification;
+      if (!machine_identification) {
         return "—";
       }
-      const machinePreset = getMachinePreset(machine_identification_unique);
+      const machinePreset = getMachinePreset(machine_identification);
       return machinePreset?.name + " " + machinePreset?.version;
     },
   },
@@ -70,7 +76,7 @@ export const columns: ColumnDef<
     header: "Assigned Serial",
     cell: (row) => {
       const serial =
-        row.row.original.machine_device_identification
+        row.row.original.device_identification.device_machine_identification
           ?.machine_identification_unique.serial;
       if (!serial) {
         return "—";
@@ -82,19 +88,21 @@ export const columns: ColumnDef<
     accessorKey: "qitech_role",
     header: "Assigned Device Role",
     cell: (row) => {
-      const role = row.row.original.machine_device_identification?.role;
-      const machine_identification_unique =
-        row.row.original.machine_device_identification
-          ?.machine_identification_unique;
-      if (!machine_identification_unique) {
+      const device_machine_identification =
+        row.row.original.device_identification.device_machine_identification;
+      const machine_identification =
+        device_machine_identification?.machine_identification_unique
+          .machine_identification;
+      if (!machine_identification) {
         return "—";
       }
-      const machinePreset = getMachinePreset(machine_identification_unique);
+      const machinePreset = getMachinePreset(machine_identification);
       const deviceRole = machinePreset?.device_roles.find(
-        (device_role) => device_role.role === role,
+        (device_role) =>
+          device_role.role === device_machine_identification.role,
       );
       if (!deviceRole) {
-        return "UNKNOWN " + role;
+        return "UNKNOWN " + device_machine_identification.role;
       }
 
       return <DeviceRoleComponent device_role={deviceRole} />;
@@ -112,11 +120,11 @@ export const columns: ColumnDef<
 ];
 
 export function EthercatPage() {
-  const { ethercatSetup, ethercatInterfaceDiscovery } = useMainNamespace();
+  const { ethercatDevices, ethercatInterfaceDiscovery } = useMainNamespace();
 
   const data = useMemo(() => {
-    return ethercatSetup?.data?.Done?.devices || [];
-  }, [ethercatSetup]);
+    return ethercatDevices?.data?.Done?.devices || [];
+  }, [ethercatDevices]);
 
   const table = useReactTable({
     data,
@@ -138,7 +146,7 @@ export function EthercatPage() {
         )}
       </p>
       <SectionTitle title="SubDevices">
-        <RefreshIndicator ts={ethercatSetup?.ts} />
+        <RefreshIndicator ts={ethercatDevices?.ts} />
       </SectionTitle>
       <p>
         Machine, Machine Serial Number, Role are QiTech specific values that are

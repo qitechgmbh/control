@@ -5,7 +5,10 @@ use lazy_static::lazy_static;
 lazy_static! {
     pub static ref MACHINE_REGISTRY: MachineRegistry = {
         let mut mc = MachineRegistry::new();
-        mc.register::<Winder2>(MachineIdentification::new(VENDOR_QITECH, MACHINE_WINDER_V1));
+        mc.register::<Winder2>(MachineIdentification {
+            vendor: VENDOR_QITECH,
+            machine: MACHINE_WINDER_V1,
+        });
         mc
     };
 }
