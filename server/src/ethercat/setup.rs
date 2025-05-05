@@ -56,12 +56,18 @@ pub async fn setup_loop(
     let maindevice = MainDevice::new(
         pdu,
         Timeouts {
+            // Default 5000ms
+            state_transition: Duration::from_millis(10 * 1000),
+            // Default 30_000us
+            pdu: Duration::from_millis(1000),
+            // Default 10ms
+            eeprom: Duration::from_millis(10),
+            // Default 0ms
             wait_loop_delay: Duration::from_millis(0),
-            mailbox_response: Duration::from_millis(1000 * 10),
-            state_transition: Duration::from_millis(1000 * 10),
-            pdu: Duration::from_millis(1000 * 1),
-            eeprom: Duration::from_millis(1000 * 1),
-            mailbox_echo: Duration::from_millis(1000 * 1),
+            // Default 100ms
+            mailbox_echo: Duration::from_millis(100),
+            // Default 1000ms
+            mailbox_response: Duration::from_millis(1000),
         },
         MainDeviceConfig {
             retry_behaviour: RetryBehaviour::Forever,
