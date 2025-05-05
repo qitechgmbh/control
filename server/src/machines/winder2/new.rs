@@ -9,7 +9,7 @@ use control_core::actors::stepper_driver_el70x1::StepperDriverEL70x1;
 use control_core::converters::step_converter::StepConverter;
 use control_core::machines::identification::DeviceHardwareIdentification;
 use control_core::machines::new::{
-    MachineNewHardware, MachineNewParams, MachineNewTrait, get_device_indentification_by_role,
+    MachineNewHardware, MachineNewParams, MachineNewTrait, get_device_identification_by_role,
     get_ethercat_device_by_index, get_subdevice_by_index, validate_no_role_dublicates,
     validate_same_machine_identification_unique,
 };
@@ -39,7 +39,7 @@ impl MachineNewTrait for Winder2 {
         let device_identification = params
             .device_group
             .iter()
-            .map(|device_indentification| device_indentification.clone())
+            .map(|device_identification| device_identification.clone())
             .collect::<Vec<_>>();
 
         validate_same_machine_identification_unique(&device_identification)?;
@@ -71,7 +71,7 @@ impl MachineNewTrait for Winder2 {
             // EK1100
             {
                 let device_identification =
-                    get_device_indentification_by_role(params.device_group, 0)?;
+                    get_device_identification_by_role(params.device_group, 0)?;
                 let device_hardware_identification_ethercat =
                     match &device_identification.device_hardware_identification {
                         DeviceHardwareIdentification::Ethercat(
@@ -101,7 +101,7 @@ impl MachineNewTrait for Winder2 {
             // EL2002
             let el2002 = {
                 let device_identification =
-                    get_device_indentification_by_role(params.device_group, 1)?;
+                    get_device_identification_by_role(params.device_group, 1)?;
                 let device_hardware_identification_ethercat =
                     match &device_identification.device_hardware_identification {
                         DeviceHardwareIdentification::Ethercat(
@@ -134,7 +134,7 @@ impl MachineNewTrait for Winder2 {
             // 1x Analogeingang Lastarm
             let el3001 = {
                 let device_identification =
-                    get_device_indentification_by_role(params.device_group, 2)?;
+                    get_device_identification_by_role(params.device_group, 2)?;
                 let device_hardware_identification_ethercat =
                     match &device_identification.device_hardware_identification {
                         DeviceHardwareIdentification::Ethercat(
@@ -180,7 +180,7 @@ impl MachineNewTrait for Winder2 {
             // EL7041-0052
             let (el7041, el7041_config) = {
                 let device_identification =
-                    get_device_indentification_by_role(params.device_group, 3)?;
+                    get_device_identification_by_role(params.device_group, 3)?;
                 let device_hardware_identification_ethercat =
                     match &device_identification.device_hardware_identification {
                         DeviceHardwareIdentification::Ethercat(
@@ -232,7 +232,7 @@ impl MachineNewTrait for Winder2 {
             // Role 4
             // 1x Stepper Traverse
             // EL7031
-            // let device_identification = get_device_indentity_by_role(params.device_group, 4)?;
+            // let device_identification = get_device_identity_by_role(params.device_group, 4)?;
             // let device_hardware_identification_ethercat =
             //     match device_identification.device_hardware_identification {
             //         DeviceHardwareIdentification::Ethercat(

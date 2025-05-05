@@ -107,7 +107,7 @@ pub fn validate_no_role_dublicates(
 }
 
 // Inside control_core::machines::new module:
-pub fn get_device_indentification_by_role(
+pub fn get_device_identification_by_role(
     identified_device_group: &Vec<DeviceIdentificationIdentified>,
     role: u16,
 ) -> Result<&DeviceIdentificationIdentified, Error> {
@@ -117,7 +117,7 @@ pub fn get_device_indentification_by_role(
         }
     }
     Err(anyhow::anyhow!(
-        "[{}::get_device_indentification_by_role] Role {} not found",
+        "[{}::get_device_identification_by_role] Role {} not found",
         module_path!(),
         role
     ))
@@ -171,7 +171,7 @@ mod tests {
     pub use super::*;
 
     #[test]
-    fn test_get_device_indentification_by_role() {
+    fn test_get_device_identification_by_role() {
         let device_identifications = vec![
             // role 0
             DeviceIdentificationIdentified {
@@ -224,14 +224,14 @@ mod tests {
         ];
 
         // search for role 0
-        let result = get_device_indentification_by_role(&device_identifications, 0);
+        let result = get_device_identification_by_role(&device_identifications, 0);
         assert_eq!(result.unwrap().device_machine_identification.role, 0,);
 
         // search for role 1
-        let result = get_device_indentification_by_role(&device_identifications, 1);
+        let result = get_device_identification_by_role(&device_identifications, 1);
         assert_eq!(result.unwrap().device_machine_identification.role, 1,);
         // search for role 2
-        let result = get_device_indentification_by_role(&device_identifications, 2);
+        let result = get_device_identification_by_role(&device_identifications, 2);
         assert_eq!(result.unwrap().device_machine_identification.role, 2,);
     }
 }
