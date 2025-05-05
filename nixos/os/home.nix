@@ -60,10 +60,11 @@
       lock-delay = "uint32 0";
     };
 
-    # Add display settings to prevent blanking
+    # Interface settings with hot-corners disabled
     "org/gnome/desktop/interface" = {
       enable-animations = true;
       show-battery-percentage = true;
+      enable-hot-corners = false;  # Prevent activities from opening with hot corners
     };
 
     # Show dock on all monitors and always visible
@@ -82,6 +83,7 @@
     "org/gnome/mutter" = {
       workspaces-only-on-primary = false;  # Show workspaces on all monitors
       dynamic-workspaces = false;  # Disable dynamic workspaces
+      overlay-key = "";  # Disables the Super key from opening Activities
     };
     
     "org/gnome/desktop/wm/preferences" = {
@@ -98,7 +100,14 @@
         "org.gnome.Settings.desktop"
       ];
       disable-user-extensions = false;
-      enable-hot-corners = false;
+      disable-extension-version-validation = true;
+      welcome-dialog-last-shown-version = "999.999.999";  # Prevents welcome screen
+      looking-glass-history = [];
+    };
+    
+    # Disable automatic Activities overview on startup
+    "org/gnome/shell/extensions/ding" = {
+      start-corner = "top-left";  # This can help with preventing Activities from opening
     };
   };
 }
