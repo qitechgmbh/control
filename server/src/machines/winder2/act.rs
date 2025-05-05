@@ -1,4 +1,4 @@
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use super::Winder2;
 use control_core::actors::Actor;
@@ -19,8 +19,8 @@ impl Actor for Winder2 {
             self.sync_spool_speed(now);
 
             // if last measurement emit is older than 1 second, emit a new measurement
-            let now = chrono::Utc::now();
-            if (now - self.last_measurement_emit).num_milliseconds() > 16 {
+            let now = Instant::now();
+            if now.duration_since(self.last_measurement_emit) > Duration::from_millis(16) {
                 self.emit_tension_arm_angle();
                 self.emit_spool_rpm();
                 self.last_measurement_emit = now;

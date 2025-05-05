@@ -12,7 +12,6 @@ use api::{
     ModeStateEvent, TensionArmAngleEvent, TensionArmStateEvent, TraverseStateEvent, Winder1Events,
     Winder1Namespace,
 };
-use chrono::DateTime;
 use control_core::{
     actors::{
         digital_output_setter::DigitalOutputSetter, stepper_driver_el70x1::StepperDriverEL70x1,
@@ -36,7 +35,7 @@ pub struct Winder2 {
 
     // socketio
     namespace: Winder1Namespace,
-    last_measurement_emit: DateTime<chrono::Utc>,
+    last_measurement_emit: Instant,
 
     // mode
     pub mode: Winder2Mode,

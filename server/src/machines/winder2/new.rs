@@ -1,3 +1,5 @@
+use std::time::Instant;
+
 use super::api::Winder1Namespace;
 use super::linear_spool_speed_controller::LinearSpoolSpeedController;
 use super::tension_arm::TensionArm;
@@ -296,7 +298,7 @@ impl MachineNewTrait for Winder2 {
                 mode: Winder2Mode::Standby,
                 spool_step_converter: StepConverter::new(200),
                 spool_speed_controller: Box::new(LinearSpoolSpeedController::new(200.0, 1250.0)),
-                last_measurement_emit: chrono::Utc::now(),
+                last_measurement_emit: Instant::now(),
             };
 
             // Role 5
