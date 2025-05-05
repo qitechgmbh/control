@@ -1,14 +1,14 @@
 use crate::io::digital_output::{DigitalOutputDevice, DigitalOutputOutput, DigitalOutputState};
-use crate::pdo::{basic::BoolPdoObject, RxPdo};
+use crate::pdo::{RxPdo, basic::BoolPdoObject};
 use crate::types::EthercrabSubDevicePreoperational;
-use ethercat_hal_derive::{Device, RxPdo};
+use ethercat_hal_derive::{EthercatDevice, RxPdo};
 
-use super::NewDevice;
+use super::NewEthercatDevice;
 
 /// EL2024 4-channel digital output device
 ///
 /// 24V DC, 0.5A per channel
-#[derive(Device)]
+#[derive(EthercatDevice)]
 pub struct EL2024 {
     pub rxpdo: EL2024RxPdo,
 }
@@ -19,7 +19,7 @@ impl std::fmt::Debug for EL2024 {
     }
 }
 
-impl NewDevice for EL2024 {
+impl NewEthercatDevice for EL2024 {
     fn new() -> Self {
         Self {
             rxpdo: EL2024RxPdo::default(),

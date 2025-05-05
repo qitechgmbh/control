@@ -5,7 +5,6 @@ import { Link, Outlet } from "@tanstack/react-router";
 import { Fragment } from "react";
 import React from "react";
 import { Icon, IconName } from "./Icon";
-import { FullscreenButton } from "./FullscreenButton";
 
 type SidebarItemContent = {
   link: string;

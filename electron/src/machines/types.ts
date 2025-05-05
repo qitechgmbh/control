@@ -1,7 +1,8 @@
-// every device has multiple roles to indentify the function of a subdevice
+// every device has multiple roles to identify the function of a subdevice
 // each role can only be given once
 
 import { IconName } from "@/components/Icon";
+import { rustEnumSchema } from "@/lib/types";
 import { z } from "zod";
 
 // EK1100 should have role 0
@@ -27,7 +28,8 @@ export const machineIdentificaiton = z.object({
 
 export type MachineIdentification = z.infer<typeof machineIdentificaiton>;
 
-export const machineIdentificationUnique = machineIdentificaiton.extend({
+export const machineIdentificationUnique = z.object({
+  machine_identification: machineIdentificaiton,
   serial: z.number(),
 });
 
@@ -35,14 +37,30 @@ export type MachineIdentificationUnique = z.infer<
   typeof machineIdentificationUnique
 >;
 
-export const machineDeviceIdentification = z.object({
+export const deviceMachineIdentification = z.object({
   machine_identification_unique: machineIdentificationUnique,
   role: z.number(),
-  subdevice_index: z.number(),
 });
 
-export type MachineDeviceIdentification = z.infer<
-  typeof machineDeviceIdentification
+export type DeviceMachineIdentification = z.infer<
+  typeof deviceMachineIdentification
+>;
+
+// Define hardware identification schemas
+export const deviceHardwareIdentificationEthercatSchema = z.object({
+  subdevice_index: z.number().int(),
+});
+
+export type DeviceHardwareIdentificationEthercat = z.infer<
+  typeof deviceHardwareIdentificationEthercatSchema
+>;
+
+export const deviceHardwareIdentificationSchema = rustEnumSchema({
+  Ethercat: deviceHardwareIdentificationEthercatSchema,
+});
+
+export type DeviceHardwareIdentification = z.infer<
+  typeof deviceHardwareIdentificationSchema
 >;
 
 export type MachinePreset = {
@@ -58,6 +76,13 @@ export type MachinePreset = {
   // roles and thair allowed devices
   device_roles: DeviceRole[];
 };
+
+export const deviceIdentification = z.object({
+  device_machine_identification: deviceMachineIdentification.nullable(),
+  device_hardware_identification: deviceHardwareIdentificationSchema,
+});
+
+export type DeviceIdentification = z.infer<typeof deviceIdentification>;
 
 export const VENDOR_QITECH = 0x0001;
 
@@ -159,14 +184,12 @@ export const winder2: MachinePreset = {
 export const machinePresets: MachinePreset[] = [winder2];
 
 export const getMachinePreset = (
-  machine_identification_unique: MachineIdentificationUnique,
+  machine_identification: MachineIdentification,
 ) => {
   return machinePresets.find(
     (m) =>
-      m.machine_identification.vendor ===
-        machine_identification_unique.vendor &&
-      m.machine_identification.machine ===
-        machine_identification_unique.machine,
+      m.machine_identification.vendor === machine_identification.vendor &&
+      m.machine_identification.machine === machine_identification.machine,
   );
 };
 

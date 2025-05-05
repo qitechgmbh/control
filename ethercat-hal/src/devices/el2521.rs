@@ -1,4 +1,4 @@
-use super::{NewDevice, SubDeviceIdentityTuple};
+use super::{NewEthercatDevice, SubDeviceIdentityTuple};
 use crate::{
     coe::{ConfigurableDevice, Configuration},
     io::pulse_train_output::{
@@ -12,10 +12,10 @@ use crate::{
     types::EthercrabSubDevicePreoperational,
 };
 use anyhow::Ok;
-use ethercat_hal_derive::{Device, RxPdo, TxPdo};
+use ethercat_hal_derive::{EthercatDevice, RxPdo, TxPdo};
 
 /// EL2521 1-channel pulse train output terminal
-#[derive(Device)]
+#[derive(EthercatDevice)]
 pub struct EL2521 {
     pub configuration: EL2521Configuration,
     pub txpdo: EL2521TxPdo,
@@ -28,7 +28,7 @@ impl std::fmt::Debug for EL2521 {
     }
 }
 
-impl NewDevice for EL2521 {
+impl NewEthercatDevice for EL2521 {
     /// Create a new EL2521 device with default configuration
     fn new() -> Self {
         let configuration = EL2521Configuration::default();

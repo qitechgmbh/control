@@ -18,15 +18,15 @@ type UseMachine = {
 
 // returns only valid mahcines
 export function useMachines(): UseMachine[] {
-  const { ethercatSetup } = useMainNamespace();
+  const { machines } = useMainNamespace();
 
-  if (ethercatSetup?.data)
+  if (machines?.data)
     return (
-      ethercatSetup.data.Done?.machines
+      machines.data.machines
         .filter((machine) => machine.error === null)
         .map((machine) => {
           const machinePreset = getMachinePreset(
-            machine.machine_identification_unique,
+            machine.machine_identification_unique.machine_identification,
           );
           const vendorPreset = getVendorPreset(
             machinePreset!.machine_identification.vendor,

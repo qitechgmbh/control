@@ -5,6 +5,7 @@ import { io, Socket } from "socket.io-client";
 import { useSyncExternalStore } from "react";
 import { z } from "zod";
 import { toastError, toastZodError } from "@/components/Toast";
+import { MachineIdentificationUnique } from "@/machines/types";
 
 /**
  * Generic event schema builder
@@ -34,7 +35,10 @@ export type Event<T extends z.ZodTypeAny> = z.infer<
  */
 export type NamespaceId =
   | { type: "main" }
-  | { type: "machine"; vendor: number; serial: number; machine: number };
+  | {
+      type: "machine";
+      machine_identification_unique: MachineIdentificationUnique;
+    };
 
 /**
  * Event validation error handler
@@ -81,7 +85,7 @@ export function serializeNamespaceId(namespaceId: NamespaceId): string {
   if (namespaceId.type === "main") {
     return "/main";
   } else if (namespaceId.type === "machine") {
-    return `/machine/${namespaceId.vendor}/${namespaceId.machine}/${namespaceId.serial}`;
+    return `/machine/${namespaceId.machine_identification_unique.machine_identification.vendor}/${namespaceId.machine_identification_unique.machine_identification.machine}/${namespaceId.machine_identification_unique.serial}`;
   } else {
     throw new Error("Invalid namespaceId");
   }
@@ -103,7 +107,16 @@ export function deserializeNamespaceId(namespaceId: string): NamespaceId {
     if (isNaN(vendor) || isNaN(serial) || isNaN(machine)) {
       throw new Error("Invalid namespaceId");
     }
-    return { type: "machine", vendor, machine, serial };
+    return {
+      type: "machine",
+      machine_identification_unique: {
+        machine_identification: {
+          vendor,
+          machine,
+        },
+        serial,
+      },
+    };
   } else {
     throw new Error("Invalid namespaceId");
   }

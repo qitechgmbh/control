@@ -1,7 +1,7 @@
 use coe::EL7041_0052Configuration;
-use ethercat_hal_derive::Device;
+use ethercat_hal_derive::EthercatDevice;
 
-use super::{NewDevice, SubDeviceIdentityTuple};
+use super::{NewEthercatDevice, SubDeviceIdentityTuple};
 use crate::{
     io::stepper_velocity_el70x1::{
         StepperVelocityEL70x1Device, StepperVelocityEL70x1Input, StepperVelocityEL70x1Output,
@@ -15,14 +15,14 @@ use anyhow::anyhow;
 pub mod coe;
 pub mod pdo;
 
-#[derive(Device, Debug)]
+#[derive(EthercatDevice, Debug)]
 pub struct EL7041_0052 {
     pub txpdo: pdo::EL7041_0052TxPdo,
     pub rxpdo: pdo::EL7041_0052RxPdo,
     pub configuration: EL7041_0052Configuration,
 }
 
-impl NewDevice for EL7041_0052 {
+impl NewEthercatDevice for EL7041_0052 {
     fn new() -> Self {
         let configuration = EL7041_0052Configuration::default();
         EL7041_0052 {

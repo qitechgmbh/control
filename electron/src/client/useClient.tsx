@@ -1,4 +1,6 @@
 import { toastHttpNotOk, toastZodError } from "@/components/Toast";
+import { machineIdentificationUnique } from "@/machines/types";
+import { machine } from "os";
 import { useState } from "react";
 import { z } from "zod";
 
@@ -25,11 +27,7 @@ const writeMachineIdentification = z.object({
 
 function machineMutateRequestSchema<T extends z.ZodTypeAny>(dataSchema: T) {
   return z.object({
-    machine_identification_unique: z.object({
-      vendor: z.number(),
-      serial: z.number(),
-      machine: z.number(),
-    }),
+    machine_identification_unique: machineIdentificationUnique,
     data: dataSchema,
   });
 }

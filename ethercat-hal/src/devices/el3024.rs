@@ -1,4 +1,4 @@
-use super::{NewDevice, SubDeviceIdentityTuple};
+use super::{NewEthercatDevice, SubDeviceIdentityTuple};
 use crate::pdo::RxPdo;
 use crate::pdo::TxPdo;
 use crate::{
@@ -14,7 +14,7 @@ use crate::{
     io::analog_input::{AnalogInputDevice, AnalogInputInput, AnalogInputState},
     types::EthercrabSubDevicePreoperational,
 };
-use ethercat_hal_derive::{Device, RxPdo, TxPdo};
+use ethercat_hal_derive::{EthercatDevice, RxPdo, TxPdo};
 
 #[derive(Debug, Clone)]
 pub struct EL3024Configuration {
@@ -29,7 +29,7 @@ pub struct EL3024Configuration {
     pub channel4: EL30XXChannelConfiguration,
 }
 
-#[derive(Device)]
+#[derive(EthercatDevice)]
 pub struct EL3024 {
     pub configuration: EL3024Configuration,
     pub txpdo: EL3024TxPdo,
@@ -60,7 +60,7 @@ impl Default for EL3024Configuration {
     }
 }
 
-impl NewDevice for EL3024 {
+impl NewEthercatDevice for EL3024 {
     fn new() -> Self {
         let configuration = EL3024Configuration::default(); // Initialize first
         Self {

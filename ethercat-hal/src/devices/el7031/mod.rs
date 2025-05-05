@@ -3,7 +3,7 @@ pub mod pdo;
 
 use anyhow::anyhow;
 use coe::EL7031Configuration;
-use ethercat_hal_derive::Device;
+use ethercat_hal_derive::EthercatDevice;
 use pdo::{EL7031RxPdo, EL7031TxPdo};
 
 use crate::{
@@ -15,16 +15,16 @@ use crate::{
     shared_config::el70x1::EL70x1OperationMode,
 };
 
-use super::{NewDevice, SubDeviceIdentityTuple};
+use super::{NewEthercatDevice, SubDeviceIdentityTuple};
 
-#[derive(Debug, Device)]
+#[derive(Debug, EthercatDevice)]
 pub struct EL7031 {
     pub txpdo: EL7031TxPdo,
     pub rxpdo: EL7031RxPdo,
     pub configuration: EL7031Configuration,
 }
 
-impl NewDevice for EL7031 {
+impl NewEthercatDevice for EL7031 {
     fn new() -> Self {
         let configuration: EL7031Configuration = EL7031Configuration::default();
         Self {
