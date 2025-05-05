@@ -48,32 +48,3 @@ never_type = []
 [profile.release]
 codegen-units = 1
 lto = "fat"
-rmodbus = "0.10.0"
-serial = "0.4.0"
-once_cell = "1.21.3"
-serialport = "4.7.1"
-smol = "2.0.2"
-
-
-# dre usb
-serial = "0.4.0"
-crc = "3.2.1"
-serialport = "4.7.1"
-async-channel = "2.3.1"
-
-[dev-dependencies]
-approx = "0.5.1"
-
-[features]
-never_type = []
-
-[profile.release]
-codegen-units = 1
-lto = "fat"
-rmodbus = "0.10.0"
-serial = "0.4.0"
-once_cell = "1.21.3"
-serialport = "4.7.1"
-
-smol = "2.0.2"
-
