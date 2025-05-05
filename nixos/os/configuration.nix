@@ -157,22 +157,7 @@
     openFirewall = true;
     user = "qitech-service";
     group = "qitech-service"; 
-    port = 3001;
     package = pkgs.qitechPackages.server;
-  };
-
-  # Enable logging with journald for the QiTech Control server service
-  systemd.services.qitech = {
-    serviceConfig = {
-      StandardOutput = "journal";
-      StandardError = "journal";
-      Restart = "always";
-      SyslogIdentifier = "qitech-control-server";
-    };
-    environment = {
-      RUST_BACKTRACE = "1";
-      RUST_LOG = "debug";
-    };
   };
 
   users.users.qitech = {

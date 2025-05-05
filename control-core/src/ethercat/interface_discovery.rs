@@ -120,9 +120,18 @@ fn test_interface(interface: &str) -> Result<(), anyhow::Error> {
         let maindevice = Arc::new(MainDevice::new(
             pdu_loop,
             Timeouts {
-                wait_loop_delay: Duration::from_millis(2),
+                // Default 5000ms
+                state_transition: Duration::from_millis(5000),
+                // Default 30_000us
+                pdu: Duration::from_micros(30_000),
+                // Default 10ms
+                eeprom: Duration::from_millis(10),
+                // Default 0ms
+                wait_loop_delay: Duration::from_millis(0),
+                // Default 100ms
+                mailbox_echo: Duration::from_millis(100),
+                // Default 1000ms
                 mailbox_response: Duration::from_millis(1000),
-                ..Default::default()
             },
             MainDeviceConfig::default(),
         ));

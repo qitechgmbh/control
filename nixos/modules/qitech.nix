@@ -26,12 +26,6 @@ in {
       description = "Group under which the service runs";
     };
     
-    port = mkOption {
-      type = types.port;
-      default = 8000;
-      description = "Port on which the QiTech server listens";
-    };
-    
     package = mkOption {
       type = types.package;
       default = pkgs.qitech-control-server or null;
@@ -80,8 +74,9 @@ in {
         Type = "simple";
         User = cfg.user;
         Group = cfg.group;
-        ExecStart = "${cfg.package}/bin/qitech-control-server";
-        Restart = "on-failure";
+        ExecStart = "${cfg.package}/bin/server";
+        Restart = "always";
+        RestartSec = "10s";
         
         # Grant specific capabilities needed for EtherCAT
         CapabilityBoundingSet = "CAP_NET_RAW CAP_NET_ADMIN CAP_SYS_NICE";
@@ -99,10 +94,16 @@ in {
         RestrictNamespaces = true;
         LockPersonality = true;
         MemoryDenyWriteExecute = false;
+
+        # Logging
+        StandardOutput = "journal";
+        StandardError = "journal";
+        SyslogIdentifier = "qitech-control-server";
       };
       
       environment = {
-        PORT = toString cfg.port;
+        RUST_BACKTRACE = "1";
+        RUST_LOG = "debug";
       };
     };
     
@@ -130,7 +131,7 @@ in {
     
     # Open firewall if requested
     networking.firewall = mkIf cfg.openFirewall {
-      allowedTCPPorts = [ cfg.port ];
+      allowedTCPPorts = [ 3001 ];
     };
     
     # Desktop integration
