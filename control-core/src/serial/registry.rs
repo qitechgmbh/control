@@ -1,9 +1,9 @@
 use std::{
     any::{Any, TypeId},
     collections::HashMap,
-    sync::{Arc, RwLock},
+    sync::Arc,
 };
-
+use smol::lock::RwLock;
 use anyhow::{Error, Result};
 
 use crate::serial::{
@@ -80,12 +80,12 @@ impl SerialRegistry {
         (serial_new_fn)(path)
     }
 
-    pub fn downcast<T: Serial + 'static>(
+    pub async fn downcast<T: Serial + 'static>(
         &self,
         machine: Arc<RwLock<dyn Serial>>,
     ) -> Result<Arc<RwLock<T>>, Error> {
         let ok = {
-            let guard = machine.read().unwrap();
+            let guard = machine.read().await;
             guard.as_any().is::<T>()
         };
     

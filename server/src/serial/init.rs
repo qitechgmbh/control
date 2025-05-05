@@ -49,9 +49,9 @@ pub fn init_serial(
                             for (key, value) in connected_devices {
                                 match value {
                                     Ok(device) => {
-                                        match registry.downcast::<Dre>(device.clone()) {
+                                        match registry.downcast::<Dre>(device.clone()).await {
                                             Ok(dre) => {
-                                                let mut dre_locked = dre.write().unwrap();
+                                                let mut dre_locked = dre.write().await;
                                                 match dre_locked.diameter_request() {
                                                     Ok(diam) => {
                                                         println!("diameter from {} = {}", key, diam);

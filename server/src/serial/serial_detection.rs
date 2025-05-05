@@ -12,8 +12,8 @@ use serialport::{SerialPortInfo,SerialPortType,UsbPortInfo};
 use std::{
     collections::HashMap,
     sync::Arc,
-    sync::RwLock,
 };
+use smol::lock::RwLock;
 
 use control_core::serial::{registry::SerialRegistry, ProductConfig, Serial};
 #[derive(Debug)]

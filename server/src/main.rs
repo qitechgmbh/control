@@ -1,6 +1,8 @@
 use std::{panic::catch_unwind, process::exit, sync::Arc};
 use app_state::AppState;
 use control_core::serial::{registry::SerialRegistry, ProductConfig};
+
+use app_state::AppState;
 use env_logger::Env;
 use ethercat::init::init_ethercat;
 use r#loop::init_loop;

@@ -76,4 +76,4 @@ once_cell = "1.21.3"
 serialport = "4.7.1"
 
 smol = "2.0.2"
->>>>>>> 12088b8 (Add dre-usb-driver)
+
