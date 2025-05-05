@@ -76,6 +76,7 @@ in {
         Group = cfg.group;
         ExecStart = "${cfg.package}/bin/server";
         Restart = "always";
+        RestartSec = "10s";
         
         # Grant specific capabilities needed for EtherCAT
         CapabilityBoundingSet = "CAP_NET_RAW CAP_NET_ADMIN CAP_SYS_NICE";
