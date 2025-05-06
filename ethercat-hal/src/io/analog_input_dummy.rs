@@ -1,3 +1,4 @@
+use super::analog_input::physical::AnalogInputRange;
 use super::analog_input::{AnalogInput, AnalogInputInput, AnalogInputState};
 use std::{future::Future, pin::Pin, sync::Arc};
 
@@ -5,14 +6,15 @@ use std::sync::Mutex;
 
 pub struct AnalogInputDummy {
     state: Arc<Mutex<AnalogInputState>>,
+    range: AnalogInputRange,
 }
 
 impl AnalogInputDummy {
-    pub fn new() -> Self {
+    pub fn new(range: AnalogInputRange) -> Self {
         let state = Arc::new(Mutex::new(AnalogInputState {
             input: AnalogInputInput { normalized: 0.0 },
         }));
-        Self { state }
+        Self { state, range }
     }
 
     pub fn analog_input(&mut self) -> AnalogInput {
@@ -23,7 +25,10 @@ impl AnalogInputDummy {
                 Box::pin(async move { state_arc.lock().unwrap().clone() })
             },
         );
-        AnalogInput { state }
+        AnalogInput {
+            state,
+            range: self.range.clone(),
+        }
     }
 
     pub fn set_state(&mut self, state: AnalogInputState) {
@@ -51,11 +56,16 @@ impl AnalogInputDummy {
 
 #[cfg(test)]
 mod tests {
+    use uom::si::{electric_potential::volt, f64::ElectricPotential};
+
     use super::*;
 
     #[test]
     fn test_analog_input_dummy() {
-        let mut dummy = AnalogInputDummy::new();
+        let mut dummy = AnalogInputDummy::new(AnalogInputRange::Potential {
+            min: ElectricPotential::new::<volt>(0.0),
+            max: ElectricPotential::new::<volt>(10.0),
+        });
         let state = AnalogInputState {
             input: AnalogInputInput { normalized: 0.5 },
         };

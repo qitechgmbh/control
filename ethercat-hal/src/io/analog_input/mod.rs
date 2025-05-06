@@ -3,7 +3,10 @@ use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
 
+use physical::{AnalogInputRange, AnalogInputValue};
 use smol::lock::RwLock;
+
+pub mod physical;
 
 /// Analog Input (AI) device
 ///
@@ -13,6 +16,7 @@ pub struct AnalogInput {
     /// Read the state of the analog input
     pub state:
         Box<dyn Fn() -> Pin<Box<dyn Future<Output = AnalogInputState> + Send>> + Send + Sync>,
+    pub range: AnalogInputRange,
 }
 
 impl fmt::Debug for AnalogInput {
@@ -27,6 +31,13 @@ impl AnalogInput {
     where
         PORT: Clone + Send + Sync + 'static,
     {
+        // Get `AnalogInputRange` from device
+        let device_for_range = Arc::clone(&device);
+        let range = smol::block_on(async {
+            let device = device_for_range.read().await;
+            device.analog_input_range()
+        });
+
         // build async get closure
         let state = Box::new(
             move || -> Pin<Box<dyn Future<Output = AnalogInputState> + Send>> {
@@ -38,7 +49,8 @@ impl AnalogInput {
                 })
             },
         );
-        AnalogInput { state }
+
+        AnalogInput { state, range }
     }
 }
 
@@ -54,6 +66,14 @@ pub struct AnalogInputInput {
     pub normalized: f32,
 }
 
+impl AnalogInputInput {
+    /// Convert to physical value
+    pub fn get_physical(&self, range: &AnalogInputRange) -> AnalogInputValue {
+        range.normalized_to_physical(self.normalized)
+    }
+}
+
 pub trait AnalogInputDevice<PORTS>: Send + Sync {
     fn analog_output_state(&self, port: PORTS) -> AnalogInputState;
+    fn analog_input_range(&self) -> AnalogInputRange;
 }

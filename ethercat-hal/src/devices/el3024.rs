@@ -1,11 +1,12 @@
 use super::{NewEthercatDevice, SubDeviceIdentityTuple};
+use crate::io::analog_input::physical::AnalogInputRange;
 use crate::pdo::RxPdo;
 use crate::pdo::TxPdo;
 use crate::{
     coe::{ConfigurableDevice, Configuration},
     pdo::{
-        el30xx::{AiCompact, AiStandard},
         PredefinedPdoAssignment,
+        el30xx::{AiCompact, AiStandard},
     },
     shared_config::el30xx::{EL30XXChannelConfiguration, EL30XXPresentation},
     signing::U16SigningConverter,
@@ -15,6 +16,8 @@ use crate::{
     types::EthercrabSubDevicePreoperational,
 };
 use ethercat_hal_derive::{EthercatDevice, RxPdo, TxPdo};
+use uom::si::electric_current::milliampere;
+use uom::si::f64::ElectricCurrent;
 
 #[derive(Debug, Clone)]
 pub struct EL3024Configuration {
@@ -138,6 +141,13 @@ impl AnalogInputDevice<EL3024Port> for EL3024 {
         let normalized = f32::from(value) / f32::from(i16::MAX);
         AnalogInputState {
             input: AnalogInputInput { normalized },
+        }
+    }
+
+    fn analog_input_range(&self) -> AnalogInputRange {
+        AnalogInputRange::Current {
+            min: ElectricCurrent::new::<milliampere>(4.0),
+            max: ElectricCurrent::new::<milliampere>(20.0),
         }
     }
 }
