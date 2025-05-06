@@ -110,7 +110,7 @@ stdenv.mkDerivation rec {
     [Desktop Entry]
     Type=Application
     Name=QiTech Control
-    Comment=QiTech Industries Control Software
+    Comment=QiTech Control
     Exec=qitech-control-electron %U
     Icon=de.qitech.control-electron
     Terminal=false
@@ -121,7 +121,7 @@ stdenv.mkDerivation rec {
   '';
 
   meta = with lib; {
-    description = "QiTech Industries Control Software - Electron Frontend";
+    description = "QiTech Control Electron";
     homepage = "https://qitech.de";
     platforms = platforms.linux;
   };

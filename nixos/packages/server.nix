@@ -67,7 +67,7 @@ customRustPlatform.buildRustPackage rec {
   '';
 
   meta = with lib; {
-    description = "QiTech Industries Control Software - Server Component";
+    description = "QiTech Control Server";
     homepage = "https://qitech.de";
     platforms = platforms.linux;
   };

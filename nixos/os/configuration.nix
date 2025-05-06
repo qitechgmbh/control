@@ -162,7 +162,7 @@
 
   users.users.qitech = {
     isNormalUser = true;
-    description = "QiTech Industries";
+    description = "QiTech HMI";
     extraGroups = [ "networkmanager" "wheel" "realtime" ];
     packages = with pkgs; [ ];
   };
@@ -183,11 +183,13 @@
   # List packages installed in system profile. To search, run:
   # $ nix search wget
   environment.systemPackages = with pkgs; [
-  #  vim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
-  #  wget
+    #  vim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
+    #  wget
     gnome-tweaks
     gnome-extension-manager
     gnomeExtensions.dash-to-dock
+    # Extension to disable activities overview on login
+    gnomeExtensions.no-overview
     git
     pkgs.qitechPackages.electron
     htop
@@ -204,7 +206,6 @@
     epiphany # web browser
     evince # document viewer
     geary # email reader
-    gedit # text editor
     simple-scan # document scanner
     gnome-characters
     gnome-music

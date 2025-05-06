@@ -1,8 +1,8 @@
-# QiTech Industries Control Software
+# QiTech Control
 
 ## Nix Configuration
 
-This document explains the Nix configuration for the QiTech Industries Control Software, covering how packages are built, how to use the NixOS module, and local development workflows.
+This document explains the Nix configuration for the QiTech Control, covering how packages are built, how to use the NixOS module, and local development workflows.
 
 ### Project Structure
 
@@ -121,7 +121,7 @@ nix build .#electron
 
 ## NixOS System Configuration
 
-This documentation covers the NixOS system configuration for QiTech Industries Control Software, including system integration, user environment, and system management procedures.
+This documentation covers the NixOS system configuration for QiTech Control, including system integration, user environment, and system management procedures.
 
 ### Configuration Files Overview
 

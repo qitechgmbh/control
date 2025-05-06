@@ -22,7 +22,8 @@ git commit -m "Add installInfo.nix file with current commit information"
 # Now we can install the system
 
 # Now we install the new system
-sudo nixos-rebuild boot --flake .#nixos --show-trace --impure --option eval-cache false
-
-# Reboot afterwards
-reboot
+if sudo nixos-rebuild boot --flake .#nixos --show-trace --impure --option eval-cache false; then
+  reboot
+else
+  exit 1
+fi
