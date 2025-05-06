@@ -7,9 +7,12 @@ use ethercat_hal_derive::EthercatDevice;
 use pdo::{EL7031RxPdo, EL7031TxPdo};
 
 use crate::{
-    io::stepper_velocity_el70x1::{
-        StepperVelocityEL70x1Device, StepperVelocityEL70x1Input, StepperVelocityEL70x1Output,
-        StepperVelocityEL70x1State,
+    io::{
+        digital_input::{DigitalInputDevice, DigitalInputInput, DigitalInputState},
+        stepper_velocity_el70x1::{
+            StepperVelocityEL70x1Device, StepperVelocityEL70x1Input, StepperVelocityEL70x1Output,
+            StepperVelocityEL70x1State,
+        },
     },
     pdo::{PredefinedPdoAssignment, RxPdo, TxPdo},
     shared_config::el70x1::EL70x1OperationMode,
@@ -173,7 +176,10 @@ pub enum EL7031Port {
 }
 
 pub const EL7031_VENDOR_ID: u32 = 0x2;
-pub const EL7031_PRODUCT_ID: u32 = 460795986;
-pub const EL7031_REVISION_A: u32 = 1703936;
+pub const EL7031_PRODUCT_ID: u32 = 0x1b773052;
+pub const EL7031_REVISION_A: u32 = 0x1A0000;
+pub const EL7031_REVISION_B: u32 = 0x190000;
 pub const EL7031_IDENTITY_A: SubDeviceIdentityTuple =
     (EL7031_VENDOR_ID, EL7031_PRODUCT_ID, EL7031_REVISION_A);
+pub const EL7031_IDENTITY_B: SubDeviceIdentityTuple =
+    (EL7031_VENDOR_ID, EL7031_PRODUCT_ID, EL7031_REVISION_B);
