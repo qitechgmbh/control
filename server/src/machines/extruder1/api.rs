@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use super::{ExtruderV2, ExtruderV2Mode};
+use super::{ExtruderV2, ExtruderV2Mode, Heating, HeatingType};
 use control_core::{
     machines::api::MachineApi,
     socketio::{
@@ -28,6 +28,24 @@ pub struct MotorStateEvent {
 }
 
 #[derive(Serialize, Debug, Clone)]
+pub struct HeatingStateEvent {
+    pub temperature: f32,
+    pub heating: bool,
+    pub target_temperature: f32,
+}
+
+impl HeatingStateEvent {
+    pub fn build(&self, heating_type: HeatingType) -> Event<Self> {
+        let event = match heating_type {
+            HeatingType::Front => Event::new("FrontHeatingStateEvent", self.clone()),
+            HeatingType::Back => Event::new("BackHeatingStateEvent", self.clone()),
+            HeatingType::Middle => Event::new("MiddleHeatingStateEvent", self.clone()),
+        };
+        return event;
+    }
+}
+
+#[derive(Serialize, Debug, Clone)]
 pub struct RotationStateEvent {
     pub forward: bool,
 }
@@ -47,6 +65,23 @@ pub struct OperationModeEvent {
 #[derive(Serialize, Debug, Clone)]
 pub struct ModeEvent {
     pub mode: ExtruderV2Mode,
+}
+
+impl ModeEvent {
+    pub fn build(&self) -> Event<Self> {
+        Event::new("ModeEvent", self.clone())
+    }
+}
+
+#[derive(Serialize, Debug, Clone)]
+pub struct RegulationStateEvent {
+    pub uses_rpm: bool,
+}
+
+impl RegulationStateEvent {
+    pub fn build(&self) -> Event<Self> {
+        Event::new("RegulationStateEvent", self.clone())
+    }
 }
 
 /// Inverter status Register 40009
@@ -93,6 +128,7 @@ pub enum ExtruderV2Events {
     InverterSuccessEvent(Event<InverterSuccessEvent>),
     RotationStateEvent(Event<RotationStateEvent>),
     ModeEvent(Event<ModeEvent>),
+    RegulationStateEvent(Event<RegulationStateEvent>),
 }
 
 #[derive(Deserialize, Serialize)]
@@ -115,6 +151,7 @@ enum Mutation {
     // Set Rotation also starts the motor
     SetRotation(bool),
     StopMotor(),
+    SetRegulation(bool),
 
     /// Inverter Control
     SetOperationMode(u8),
@@ -128,7 +165,12 @@ enum Mutation {
     ClearNonCommunicationParameters(),
     // Extruder Control
     //Mode
-    //SetMode(ExtruderV2Mode),
+    SetMode(ExtruderV2Mode),
+
+    //Heating
+    SetHeatingFront(Heating),
+    SetHeatingBack(Heating),
+    SetHeatingMiddle(Heating),
 }
 
 #[derive(Debug)]
@@ -168,6 +210,7 @@ impl CacheableEvents<ExtruderV2Events> for ExtruderV2Events {
             ExtruderV2Events::InverterSuccessEvent(event) => event.try_into(),
             ExtruderV2Events::RotationStateEvent(event) => event.try_into(),
             ExtruderV2Events::ModeEvent(event) => event.try_into(),
+            ExtruderV2Events::RegulationStateEvent(event) => event.try_into(),
         }
     }
 
@@ -184,6 +227,7 @@ impl CacheableEvents<ExtruderV2Events> for ExtruderV2Events {
             ExtruderV2Events::InverterSuccessEvent(_) => todo!(),
             ExtruderV2Events::RotationStateEvent(_) => cache_one,
             ExtruderV2Events::ModeEvent(event) => cache_one,
+            ExtruderV2Events::RegulationStateEvent(event) => cache_one,
         }
     }
 }
@@ -201,7 +245,6 @@ impl MachineApi for ExtruderV2 {
             Mutation::GetEepromFrequency() => todo!(),
             Mutation::GetMaximumFrequency() => todo!(),
             Mutation::GetMinimumFrequency() => todo!(),
-            Mutation::SetRotation(forward) => self.set_rotation_state(forward),
             Mutation::StopMotor() => todo!(),
             Mutation::SetOperationMode(_) => todo!(),
             Mutation::WriteParameter(_, _) => todo!(),
@@ -210,6 +253,15 @@ impl MachineApi for ExtruderV2 {
             Mutation::ClearParameter() => todo!(),
             Mutation::ClearNonCommunicationParameter() => todo!(),
             Mutation::ClearNonCommunicationParameters() => todo!(),
+
+            Mutation::SetMode(mode) => self.set_mode_state(mode),
+            Mutation::SetRotation(forward) => self.set_rotation_state(forward),
+            // Heating
+            Mutation::SetHeatingFront(heating) => self.set_heating_back(heating),
+            Mutation::SetHeatingMiddle(heating) => self.set_heating_middle(heating),
+            Mutation::SetHeatingBack(heating) => self.set_heating_back(heating),
+
+            Mutation::SetRegulation(uses_rpm) => self.set_regulation(uses_rpm),
         }
         Ok(())
     }

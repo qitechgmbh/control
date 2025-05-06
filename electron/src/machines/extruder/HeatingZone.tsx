@@ -19,19 +19,6 @@ export function HeatingZone({
 }: Props) {
   return (
     <ControlCard className="bg-red" title={title}>
-      {/* <ControlValueBoolean
-        label="Heating"
-        icon="lu:Flame"
-        value={heating}
-        renderValue={(value) => (value === true ? "ON" : "OFF")}
-      /> */}
-      {/* <TimeSeriesValueNumeric
-        label="Temperature"
-        unit="C"
-        value={temperature}
-        renderValue={(value) => roundToDecimals(value, 0)}
-      /> */}
-
       <Label label="Target Temperature">
         <EditValue
           value={targetTemperature}

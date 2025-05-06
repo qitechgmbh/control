@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use super::{api::ExtruderV2Namespace, ExtruderV2, ExtruderV2Mode};
+use super::{api::ExtruderV2Namespace, ExtruderV2, ExtruderV2Mode, Heating};
 use anyhow::Error;
 use control_core::{
     actors::{
@@ -115,6 +115,22 @@ impl MachineNewTrait for ExtruderV2 {
                 last_response_emit: chrono::Utc::now(),
                 pressure_sensor: pressure_sensor,
                 mode: ExtruderV2Mode::Standby,
+                heating_front: Heating {
+                    temperature: 150.0,
+                    heating: false,
+                    target_temperature: 150.0,
+                },
+                heating_back: Heating {
+                    temperature: 150.0,
+                    heating: false,
+                    target_temperature: 150.0,
+                },
+                heating_middle: Heating {
+                    temperature: 150.0,
+                    heating: false,
+                    target_temperature: 150.0,
+                },
+                uses_rpm: true,
             };
             Ok(extruder)
         })
