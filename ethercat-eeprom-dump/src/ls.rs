@@ -20,6 +20,7 @@ pub fn ls(
         "Name".to_string(),
         "Vendor (EC)".to_string(),
         "Product (EC)".to_string(),
+        "Revision (EC)".to_string(),
         "Serial (EC)".to_string(),
         "ethercat-hal".to_string(),
         "Vendor (MID)".to_string(),
@@ -41,6 +42,7 @@ pub fn ls(
             device.name().to_string(),
             format!("0x{:x}", identity.vendor_id),
             format!("0x{:x}", identity.product_id),
+            format!("0x{:x}", identity.revision),
             format!("0x{:x}", identity.serial),
             match driver {
                 Ok(_) => "Yes".to_string(),

@@ -3,9 +3,12 @@ use ethercat_hal_derive::EthercatDevice;
 
 use super::{NewEthercatDevice, SubDeviceIdentityTuple};
 use crate::{
-    io::stepper_velocity_el70x1::{
-        StepperVelocityEL70x1Device, StepperVelocityEL70x1Input, StepperVelocityEL70x1Output,
-        StepperVelocityEL70x1State,
+    io::{
+        digital_input::{DigitalInputDevice, DigitalInputInput, DigitalInputState},
+        stepper_velocity_el70x1::{
+            StepperVelocityEL70x1Device, StepperVelocityEL70x1Input, StepperVelocityEL70x1Output,
+            StepperVelocityEL70x1State,
+        },
     },
     pdo::{PredefinedPdoAssignment, RxPdo, TxPdo},
     shared_config::el70x1::EL70x1OperationMode,
@@ -69,6 +72,12 @@ impl StepperVelocityEL70x1Device<EL7041_0052Port> for EL7041_0052 {
                 }
                 Ok(())
             }
+            _ => {
+                return Err(anyhow!(
+                    "Port {:?} is not supported for stepper velocity",
+                    port
+                ));
+            }
         }
     }
 
@@ -111,13 +120,60 @@ impl StepperVelocityEL70x1Device<EL7041_0052Port> for EL7041_0052 {
                     },
                 },
             }),
+            _ => {
+                return Err(anyhow!(
+                    "Port {:?} is not supported for stepper velocity",
+                    port
+                ));
+            }
         }
+    }
+}
+
+impl DigitalInputDevice<EL7041_0052Port> for EL7041_0052 {
+    fn digital_input_state(
+        &self,
+        port: EL7041_0052Port,
+    ) -> Result<DigitalInputState, anyhow::Error> {
+        let error1 = anyhow::anyhow!(
+            "[{}::Device::digital_input_state] Port {:?} is not available",
+            module_path!(),
+            port
+        );
+        Ok(DigitalInputState {
+            input: DigitalInputInput {
+                value: match port {
+                    EL7041_0052Port::DI1 => {
+                        self.txpdo
+                            .stm_status
+                            .as_ref()
+                            .ok_or(error1)?
+                            .digital_input_1
+                    }
+                    EL7041_0052Port::DI2 => {
+                        self.txpdo
+                            .stm_status
+                            .as_ref()
+                            .ok_or(error1)?
+                            .digital_input_2
+                    }
+                    _ => {
+                        return Err(anyhow!(
+                            "Port {:?} is not supported for digital input",
+                            port
+                        ));
+                    }
+                },
+            },
+        })
     }
 }
 
 #[derive(Debug, Clone, Copy)]
 pub enum EL7041_0052Port {
     STM1,
+    DI1,
+    DI2,
 }
 
 pub const EL7041_0052_VENDOR_ID: u32 = 0x2;

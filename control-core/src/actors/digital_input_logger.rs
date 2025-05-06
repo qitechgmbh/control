@@ -16,7 +16,9 @@ impl DigitalInputLogger {
 impl Actor for DigitalInputLogger {
     fn act(&mut self, _now: Instant) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
         Box::pin(async move {
-            let state = (self.input.state)().await;
+            let state = (self.input.state)()
+                .await
+                .expect("Failed to get digital input state");
             println!("DigitalInputLogger: {}", state.input.value);
         })
     }

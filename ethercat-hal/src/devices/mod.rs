@@ -30,7 +30,7 @@ use el3001::EL3001_IDENTITY_A;
 use el3021::EL3021_IDENTITY_A;
 use el3024::EL3024_IDENTITY_A;
 use el6021::EL6021_IDENTITY_A;
-use el7031::EL7031_IDENTITY_A;
+use el7031::{EL7031_IDENTITY_A, EL7031_IDENTITY_B};
 use el7041_0052::EL7041_0052_IDENTITY_A;
 use ethercrab::{MainDevice, SubDeviceIdentity};
 use smol::lock::RwLock;
@@ -162,7 +162,9 @@ pub fn device_from_subdevice_identity_tuple(
         // "EL4008" => Ok(Arc::new(RwLock::new(EL4008::new()))),
         // TODO: implement EL3204 identity
         // "EL3204" => Ok(Arc::new(RwLock::new(EL3204::new()))),
-        EL7031_IDENTITY_A => Ok(Arc::new(RwLock::new(el7031::EL7031::new()))),
+        EL7031_IDENTITY_A | EL7031_IDENTITY_B => {
+            Ok(Arc::new(RwLock::new(el7031::EL7031::new())))
+        }
         EL7041_0052_IDENTITY_A => Ok(Arc::new(RwLock::new(el7041_0052::EL7041_0052::new()))),
         _ => Err(anyhow::anyhow!(
             "[{}::device_from_subdevice] No Driver: vendor_id: {:?}, product_id: {:?}, revision: {:?}",
