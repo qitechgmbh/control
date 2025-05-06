@@ -83,7 +83,6 @@
     "org/gnome/mutter" = {
       workspaces-only-on-primary = false;  # Show workspaces on all monitors
       dynamic-workspaces = false;  # Disable dynamic workspaces
-      overlay-key = "";  # Disables the Super key from opening Activities
     };
     
     "org/gnome/desktop/wm/preferences" = {
