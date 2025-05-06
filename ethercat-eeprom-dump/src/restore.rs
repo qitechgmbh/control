@@ -13,8 +13,7 @@ pub async fn restore_eeoprom(
 ) -> Result<(), anyhow::Error> {
     println!("Uploading EEPROM to subdevice {}...", subdevice_index);
     let subdevice = group.subdevice(maindevice, subdevice_index)?;
-    // let size = subdevice.eeprom_size(maindevice).await?;
-    let size = 2048; // TODO: get size from subdevice
+    let size = subdevice.eeprom_size(maindevice).await?;
 
     println!("Uploading {} bytes to EEPROM", size);
 
