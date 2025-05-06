@@ -30,7 +30,6 @@ export function extruder2MessageHandler(
 ): EventHandler {
   return (event: Event<any>) => {
     const eventName = event.name;
-    console.log(event);
     try {
       if (eventName == "InverterStatusEvent") {
       } else if (eventName == "RotationStateEvent") {

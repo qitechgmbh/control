@@ -45,7 +45,7 @@ export function useExtruder2() {
 
 export function useInverter(
   machine_identification_unique: MachineIdentificationUnique,
-) {
+): { inverterSetRotation: (forward: boolean) => void; rotationState } {
   const state = useStateOptimistic<boolean>();
 
   const schema = z.object({ SetRotation: z.boolean() });
@@ -57,7 +57,17 @@ export function useInverter(
       data: { SetRotation: forward },
     });
   };
-  return { inverterSetRotation };
+
+  const { rotationState } = useExtruder2Namespace(
+    machine_identification_unique,
+  );
+  useEffect(() => {
+    if (rotationState?.data) {
+      state.setReal(rotationState.data.forward);
+    }
+  });
+
+  return { inverterSetRotation, rotationState };
 }
 
 export function useMode(
