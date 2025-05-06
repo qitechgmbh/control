@@ -10,7 +10,7 @@
     [Desktop Entry]
     Type=Application
     Name=QiTech Control
-    Comment=QiTech Industries Control Software
+    Comment=QiTech Control
     Exec=qitech-control-electron
     Icon=de.qitech.control-electron
     Terminal=false
@@ -83,17 +83,25 @@
     "org/gnome/mutter" = {
       workspaces-only-on-primary = false;  # Show workspaces on all monitors
       dynamic-workspaces = false;  # Disable dynamic workspaces
-      overlay-key = "";  # Disables the Super key from opening Activities
     };
     
     "org/gnome/desktop/wm/preferences" = {
       num-workspaces = 1;  # Set a fixed number of workspaces (default: 4)
+    };
+
+    "org/gnome/desktop/lockdown" = {
+      disable-lock-screen = true;  # Disable lock screen
+      disable-log-out = false;  # Enable logout option (To be able to reboot manually)
+      disable-user-switching = true;  # Disable user switching
+      disable-screensaver = true;  # Disable screensaver
+      user-adminstration-disabled = true;  # Disable user administration
     };
     
     "org/gnome/shell" = {
       always-show-log-out = true;
       enabled-extensions = [
         "dash-to-dock@micxgx.gmail.com"
+        "no-overview@fthx"
       ];
       favorite-apps = [
         "de.qitech.control-electron.desktop"  # The desktop entry from the QiTech app

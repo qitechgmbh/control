@@ -1,8 +1,8 @@
-# QiTech Industries Control Software - NixOS Quick Start Guide
+# QiTech Control - NixOS Quick Start Guide
 
 ## Introduction
 
-This guide will help you set up a NixOS system with QiTech Industries Control Software and manage updates.
+This guide will help you set up a NixOS system with QiTech Control and manage updates.
 
 ## Initial Setup
 

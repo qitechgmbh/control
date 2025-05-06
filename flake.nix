@@ -1,5 +1,5 @@
 {
-  description = "QiTech Industries Control Software";
+  description = "QiTech Control";
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
@@ -74,7 +74,7 @@
           ];
           
           shellHook = ''
-            echo "QiTech Industries Control Software Development Environment"
+            echo "QiTech Control Development Environment"
             echo "Rust version: $(${rust}/bin/rustc --version)"
             echo "Node version: $(${pkgs.nodejs}/bin/node --version)"
           '';

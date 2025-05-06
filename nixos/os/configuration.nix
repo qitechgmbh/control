@@ -19,6 +19,51 @@
 
   boot.kernelPackages = pkgs.linuxPackages_latest;
 
+  boot.kernelParams = [
+    # Graphical
+    "logo.nologo" # Remove kernel logo during boot
+
+    # Performance 
+    
+    # Specific Vulnerabilities Addressed by Mitigations:
+    # - Spectre variants (V1, V2, V4, SWAPGS, SpectreRSB, etc.)
+    # - Meltdown (Rogue Data Cache Load)
+    # - Foreshadow/L1TF (L1 Terminal Fault)
+    # - Microarchitectural Data Sampling (MDS, RIDL, Fallout, ZombieLoad)
+    # - SRBDS (Special Register Buffer Data Sampling)
+    # - TSX Asynchronous Abort (TAA)
+    # - iTLB Multihit
+    # - And others as they're discovered and mitigated
+    # 
+    # With mitigations=off
+    # - PROS: Maximum performance, equivalent to pre-2018 behavior
+    # - CONS: Vulnerable to Spectre, Meltdown, Foreshadow, ZombieLoad, etc.
+    #         Should ONLY be used in completely trusted environments
+    # - Improves performance by 7-43%
+    "mitigation=off"
+    "intel_pstate=performance"    # Intel CPU-specific performance mode (if applicable)
+
+    # Memory Management
+    "transparent_hugepage=always" # Use larger memory pages for memory intense applications
+    "nmi_watchdog=0"              # Disable NMI watchdog for reduced CPU overhead and realtime execution
+    
+    # High-throughput ethernet parameters
+    "pcie_aspm=off"         # Disable PCIe power management for NICs
+    "intel_iommu=off"       # Disable IOMMU (performance gain)
+
+    # Reliability
+    "panic=10"              # Auto-reboot 10 seconds after kernel panic
+    "oops=panic"            # Treat kernel oops as panic for auto-recovery
+  ];
+
+  # Add these system settings for a more comprehensive kiosk setup
+  boot.kernel.sysctl = {
+    "kernel.panic_on_oops" = 1;          # Reboot on kernel oops
+    "kernel.panic" = 10;                 # Reboot after 10 seconds on panic
+    "vm.swappiness" = 10;                # Reduce swap usage
+    "kernel.sysrq" = 1;                  # Enable SysRq for emergency control
+  };
+
   nix = {
     package = pkgs.nixVersions.stable;
     extraOptions = ''
@@ -101,7 +146,12 @@
   systemd.targets.hybrid-sleep.enable = false;
 
   # Additional power management settings
-  powerManagement.enable = false;
+  powerManagement = {
+    enable = true;
+    cpuFreqGovernor = "performance";
+    # Disable power throttling for peripheral devices
+    powertop.enable = false;
+  };
 
   # Ensure all power management is disabled
   services.logind = {
@@ -162,7 +212,7 @@
 
   users.users.qitech = {
     isNormalUser = true;
-    description = "QiTech Industries";
+    description = "QiTech HMI";
     extraGroups = [ "networkmanager" "wheel" "realtime" ];
     packages = with pkgs; [ ];
   };
@@ -183,11 +233,13 @@
   # List packages installed in system profile. To search, run:
   # $ nix search wget
   environment.systemPackages = with pkgs; [
-  #  vim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
-  #  wget
+    #  vim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
+    #  wget
     gnome-tweaks
     gnome-extension-manager
     gnomeExtensions.dash-to-dock
+    # Extension to disable activities overview on login
+    gnomeExtensions.no-overview
     git
     pkgs.qitechPackages.electron
     htop
@@ -204,7 +256,6 @@
     epiphany # web browser
     evince # document viewer
     geary # email reader
-    gedit # text editor
     simple-scan # document scanner
     gnome-characters
     gnome-music

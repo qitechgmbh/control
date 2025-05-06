@@ -6,7 +6,7 @@ let
   cfg = config.services.qitech;
 in {
   options.services.qitech = {
-    enable = mkEnableOption "QiTech Industries Control Software";
+    enable = mkEnableOption "QiTech Control";
     
     openFirewall = mkOption {
       type = types.bool;
@@ -66,7 +66,7 @@ in {
     
     # Configure the systemd service
     systemd.services.qitech-control-server = {
-      description = "QiTech Industries Control Software Server";
+      description = "QiTech Control Server";
       wantedBy = [ "multi-user.target" ];
       after = [ "network.target" ];
       
