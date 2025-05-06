@@ -5,7 +5,7 @@ use super::linear_spool_speed_controller::LinearSpoolSpeedController;
 use super::tension_arm::TensionArm;
 use super::{Winder2, Winder2Mode};
 use anyhow::Error;
-use control_core::actors::analog_input_getter::{AnalogInputGetter, AnalogInputRange};
+use control_core::actors::analog_input_getter::AnalogInputGetter;
 use control_core::actors::digital_output_setter::DigitalOutputSetter;
 use control_core::actors::stepper_driver_el70x1::StepperDriverEL70x1;
 use control_core::converters::step_converter::StepConverter;
@@ -32,8 +32,6 @@ use ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1;
 use ethercat_hal::shared_config::el70x1::{
     EL70x1OperationMode, StmFeatures, StmMotorConfiguration,
 };
-use uom::si::electric_potential::volt;
-use uom::si::f64::ElectricPotential;
 
 impl MachineNewTrait for Winder2 {
     fn new<'maindevice>(params: &MachineNewParams) -> Result<Self, Error> {
@@ -286,13 +284,10 @@ impl MachineNewTrait for Winder2 {
                     StepperVelocityEL70x1::new(el7041, EL7041_0052Port::STM1),
                     &el7041_config.stm_features.speed_range,
                 ),
-                tension_arm: TensionArm::new(AnalogInputGetter::new(
-                    AnalogInput::new(el3001, EL3001Port::AI1),
-                    AnalogInputRange::Potential {
-                        min: ElectricPotential::new::<volt>(-10.0),
-                        max: ElectricPotential::new::<volt>(10.0),
-                    },
-                )),
+                tension_arm: TensionArm::new(AnalogInputGetter::new(AnalogInput::new(
+                    el3001,
+                    EL3001Port::AI1,
+                ))),
                 laser: DigitalOutputSetter::new(DigitalOutput::new(el2002, EL2002Port::DO1)),
                 namespace: Winder1Namespace::new(),
                 mode: Winder2Mode::Standby,

@@ -884,10 +884,12 @@ name = "ethercat_hal"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "approx",
  "bitvec",
  "ethercat_hal_derive",
  "ethercrab",
  "smol",
+ "uom",
 ]
 
 [[package]]

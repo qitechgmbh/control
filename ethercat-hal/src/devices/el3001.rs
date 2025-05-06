@@ -1,9 +1,10 @@
 use super::{NewEthercatDevice, SubDeviceIdentityTuple};
 use crate::{
     coe::{ConfigurableDevice, Configuration},
+    io::analog_input::physical::AnalogInputRange,
     pdo::{
-        el30xx::{AiCompact, AiStandard},
         PredefinedPdoAssignment, TxPdo,
+        el30xx::{AiCompact, AiStandard},
     },
     shared_config::el30xx::{EL30XXChannelConfiguration, EL30XXPresentation},
     signing::U16SigningConverter,
@@ -13,6 +14,7 @@ use crate::{
     types::EthercrabSubDevicePreoperational,
 };
 use ethercat_hal_derive::{EthercatDevice, RxPdo, TxPdo};
+use uom::si::{electric_potential::volt, f64::ElectricPotential};
 
 #[derive(EthercatDevice)]
 pub struct EL3001 {
@@ -69,6 +71,13 @@ impl AnalogInputDevice<EL3001Port> for EL3001 {
         let normalized = f32::from(value) / f32::from(i16::MAX);
         AnalogInputState {
             input: AnalogInputInput { normalized },
+        }
+    }
+
+    fn analog_input_range(&self) -> AnalogInputRange {
+        AnalogInputRange::Potential {
+            min: ElectricPotential::new::<volt>(-10.0),
+            max: ElectricPotential::new::<volt>(10.0),
         }
     }
 }
