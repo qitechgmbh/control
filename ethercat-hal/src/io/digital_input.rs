@@ -7,8 +7,11 @@ use smol::lock::RwLock;
 /// Reads digital values (true or false) from the device.
 pub struct DigitalInput {
     /// Read the state of the digital input
-    pub state:
-        Box<dyn Fn() -> Pin<Box<dyn Future<Output = DigitalInputState> + Send>> + Send + Sync>,
+    pub state: Box<
+        dyn Fn() -> Pin<Box<dyn Future<Output = Result<DigitalInputState, anyhow::Error>> + Send>>
+            + Send
+            + Sync,
+    >,
 }
 
 impl fmt::Debug for DigitalInput {
@@ -27,7 +30,7 @@ impl DigitalInput {
         let port2 = port.clone();
         let device2 = device.clone();
         let state = Box::new(
-            move || -> Pin<Box<dyn Future<Output = DigitalInputState> + Send>> {
+            move || -> Pin<Box<dyn Future<Output = Result<DigitalInputState, anyhow::Error>> + Send>> {
                 let device2 = device2.clone();
                 let port_clone = port2.clone();
                 Box::pin(async move {
@@ -58,5 +61,5 @@ pub trait DigitalInputDevice<PORTS>: Send + Sync
 where
     PORTS: Clone,
 {
-    fn digital_input_state(&self, port: PORTS) -> DigitalInputState;
+    fn digital_input_state(&self, port: PORTS) -> Result<DigitalInputState, anyhow::Error>;
 }

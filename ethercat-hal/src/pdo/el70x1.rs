@@ -157,47 +157,47 @@ impl TxPdoObject for EncTimestampCompact {
 pub struct StmStatus {
     /// # 6010:01
     /// Driver stage is ready for enabling.
-    ready_to_enable: bool,
+    pub ready_to_enable: bool,
 
     /// # 6010:02
     /// Driver stage is ready for operation.
-    ready: bool,
+    pub ready: bool,
 
     /// # 6010:03
     /// A warning has occurred.
-    warning: bool,
+    pub warning: bool,
 
     /// # 6010:04
     /// An error has occurred (see index 0xA010).
-    error: bool,
+    pub error: bool,
 
     /// # 6010:05
     /// Motor turns in positive direction.
-    moving_positive: bool,
+    pub moving_positive: bool,
 
     /// # 6010:06
     /// Motor turns in negative direction.
-    moving_negative: bool,
+    pub moving_negative: bool,
 
     /// # 6010:07
     /// Reduced torque is active.
-    torque_reduced: bool,
+    pub torque_reduced: bool,
 
     /// # 6010:0C
     /// Digital input 1.
-    digital_input_1: bool,
+    pub digital_input_1: bool,
 
     /// # 6010:0D
     /// Digital input 2.
-    digital_input_2: bool,
+    pub digital_input_2: bool,
 
     /// # 6010:0E
     /// The Sync error bit is only required for DC mode. It indicates whether a synchronization error has occurred during the previous cycle.
-    sync_error: bool,
+    pub sync_error: bool,
 
     /// # 6010:10
     /// The TxPDO toggle is toggled by the slave when the data of the associated TxPDO is updated.
-    txpdo_toggle: bool,
+    pub txpdo_toggle: bool,
 }
 
 impl TxPdoObject for StmStatus {

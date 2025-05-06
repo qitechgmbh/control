@@ -71,6 +71,12 @@ impl StepperVelocityEL70x1Device<EL7031Port> for EL7031 {
                 }
                 Ok(())
             }
+            _ => {
+                return Err(anyhow!(
+                    "Port {:?} is not supported for stepper velocity",
+                    port
+                ));
+            }
         }
     }
 
@@ -113,13 +119,57 @@ impl StepperVelocityEL70x1Device<EL7031Port> for EL7031 {
                     },
                 },
             }),
+            _ => {
+                return Err(anyhow!(
+                    "Port {:?} is not supported for stepper velocity",
+                    port
+                ));
+            }
         }
+    }
+}
+
+impl DigitalInputDevice<EL7031Port> for EL7031 {
+    fn digital_input_state(&self, port: EL7031Port) -> Result<DigitalInputState, anyhow::Error> {
+        let error1 = anyhow::anyhow!(
+            "[{}::Device::digital_input_state] Port {:?} is not available",
+            module_path!(),
+            port
+        );
+        Ok(DigitalInputState {
+            input: DigitalInputInput {
+                value: match port {
+                    EL7031Port::DI1 => {
+                        self.txpdo
+                            .stm_status
+                            .as_ref()
+                            .ok_or(error1)?
+                            .digital_input_1
+                    }
+                    EL7031Port::DI2 => {
+                        self.txpdo
+                            .stm_status
+                            .as_ref()
+                            .ok_or(error1)?
+                            .digital_input_2
+                    }
+                    _ => {
+                        return Err(anyhow!(
+                            "Port {:?} is not supported for digital input",
+                            port
+                        ));
+                    }
+                },
+            },
+        })
     }
 }
 
 #[derive(Debug, Clone, Copy)]
 pub enum EL7031Port {
     STM1,
+    DI1,
+    DI2,
 }
 
 pub const EL7031_VENDOR_ID: u32 = 0x2;
