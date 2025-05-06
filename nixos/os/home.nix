@@ -92,7 +92,7 @@
 
     "org/gnome/desktop/lockdown" = {
       disable-lock-screen = true;  # Disable lock screen
-      disable-log-out = true;  # Disable logout option
+      disable-log-out = false;  # Enable logout option (To be able to reboot manually)
       disable-user-switching = true;  # Disable user switching
       disable-screensaver = true;  # Disable screensaver
       user-adminstration-disabled = true;  # Disable user administration
