@@ -120,7 +120,7 @@ impl From<MitsubishiControlRequests> for ModbusRequest {
                 ModbusRequest {
                     slave_id: 1,
                     function_code: ModbusFunctionCode::PresetHoldingRegister,
-                    data: vec![reg_bytes[0], reg_bytes[1], 0, 0b00000100], // Value 4 for reverse rotation
+                    data: vec![reg_bytes[0], reg_bytes[1], 0, 0b00000001], // Value 4 for reverse rotation
                 }
             }
             MitsubishiControlRequests::ReadRunningFrequency => {
@@ -350,8 +350,14 @@ impl Actor for MitsubishiInverterRS485Actor {
             if elapsed < timeout {
                 return;
             }
-
             self.last_ts = now_ts;
+
+            // quick and dirty fix
+            // if we dont continuously send some sort of request the inverters output will be shut off completely
+            if self.request_queue.is_empty() {
+                self.add_request(MitsubishiControlRequests::ReadInverterStatus.into());
+            }
+
             match self.state {
                 State::WaitingForResponse => self.read_modbus_response().await,
                 State::ReadyToSend => self.send_modbus_request().await,
