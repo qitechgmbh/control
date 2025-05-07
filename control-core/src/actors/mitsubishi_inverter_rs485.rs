@@ -167,6 +167,13 @@ pub enum MitsubishiControlRequests {
 }
 
 #[derive(Debug)]
+pub enum RotationDirection {
+    Forward,
+    Backwards,
+    Stopped,
+}
+
+#[derive(Debug)]
 pub struct MitsubishiInverterRS485Actor {
     pub serial_interface: SerialInterface,
     pub last_ts: Instant,
@@ -178,6 +185,8 @@ pub struct MitsubishiInverterRS485Actor {
 
     pub request_queue: VecDeque<ModbusRequest>,
     pub response_queue: VecDeque<ModbusResponse>,
+
+    pub forward_rotation: bool,
 }
 
 impl MitsubishiInverterRS485Actor {
@@ -191,6 +200,7 @@ impl MitsubishiInverterRS485Actor {
             last_message_size: 0,
             baudrate: None,
             encoding: None,
+            forward_rotation: true,
         }
     }
 

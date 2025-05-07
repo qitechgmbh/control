@@ -112,7 +112,7 @@ impl MachineNewTrait for ExtruderV2 {
                     el6021::EL6021Port::SI1,
                 )),
                 namespace: ExtruderV2Namespace::new(),
-                last_response_emit: chrono::Utc::now(),
+                last_measurement_emit: chrono::Utc::now(),
                 pressure_sensor: pressure_sensor,
                 mode: ExtruderV2Mode::Standby,
                 heating_front: Heating {
@@ -131,6 +131,10 @@ impl MachineNewTrait for ExtruderV2 {
                     target_temperature: 150.0,
                 },
                 uses_rpm: true,
+                rpm: 0.0,
+                bar: 0.0,
+                target_rpm: 0.0,
+                target_bar: 0.0,
             };
             Ok(extruder)
         })

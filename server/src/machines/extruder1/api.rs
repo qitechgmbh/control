@@ -69,7 +69,7 @@ pub struct ModeEvent {
 
 impl ModeEvent {
     pub fn build(&self) -> Event<Self> {
-        Event::new("ModeEvent", self.clone())
+        Event::new("ModeStateEvent", self.clone())
     }
 }
 
@@ -119,6 +119,31 @@ pub struct ErrorEvent {
     message: String,
     fault_code: u16,
 }
+#[derive(Serialize, Debug, Clone)]
+
+pub struct PressureStateEvent {
+    pub bar: f32,
+    pub target_bar: f32,
+}
+
+impl PressureStateEvent {
+    pub fn build(&self) -> Event<Self> {
+        Event::new("PressureStateEvent", self.clone())
+    }
+}
+
+#[derive(Serialize, Debug, Clone)]
+
+pub struct RpmStateEvent {
+    pub rpm: f32,
+    pub target_rpm: f32,
+}
+
+impl RpmStateEvent {
+    pub fn build(&self) -> Event<Self> {
+        Event::new("RpmStateEvent", self.clone())
+    }
+}
 
 pub enum ExtruderV2Events {
     InverterStateEvent(Event<InverterStatusEvent>),
@@ -129,6 +154,9 @@ pub enum ExtruderV2Events {
     RotationStateEvent(Event<RotationStateEvent>),
     ModeEvent(Event<ModeEvent>),
     RegulationStateEvent(Event<RegulationStateEvent>),
+    PressureStateEvent(Event<PressureStateEvent>),
+    RpmStateEvent(Event<RpmStateEvent>),
+    HeatingStateEvent(Event<HeatingStateEvent>),
 }
 
 #[derive(Deserialize, Serialize)]
@@ -151,6 +179,8 @@ enum Mutation {
     // Set Rotation also starts the motor
     SetRotation(bool),
     StopMotor(),
+    SetTargetPressure(f32),
+    SetTargetRpm(f32),
     SetRegulation(bool),
 
     /// Inverter Control
@@ -171,6 +201,10 @@ enum Mutation {
     SetHeatingFront(Heating),
     SetHeatingBack(Heating),
     SetHeatingMiddle(Heating),
+
+    SetFrontHeatingTemperature(f32),
+    SetBackHeatingTemperature(f32),
+    SetMiddleHeatingTemperature(f32),
 }
 
 #[derive(Debug)]
@@ -211,6 +245,9 @@ impl CacheableEvents<ExtruderV2Events> for ExtruderV2Events {
             ExtruderV2Events::RotationStateEvent(event) => event.try_into(),
             ExtruderV2Events::ModeEvent(event) => event.try_into(),
             ExtruderV2Events::RegulationStateEvent(event) => event.try_into(),
+            ExtruderV2Events::PressureStateEvent(event) => event.try_into(),
+            ExtruderV2Events::RpmStateEvent(event) => event.try_into(),
+            ExtruderV2Events::HeatingStateEvent(event) => event.try_into(),
         }
     }
 
@@ -223,11 +260,16 @@ impl CacheableEvents<ExtruderV2Events> for ExtruderV2Events {
             ExtruderV2Events::InverterStateEvent(_) => todo!(),
             ExtruderV2Events::InverterModeEvent(_) => todo!(),
             ExtruderV2Events::InverterErrorEvent(_) => todo!(),
-            ExtruderV2Events::InverterFrequencyEvent(_) => todo!(),
+            ExtruderV2Events::InverterFrequencyEvent(_) => {
+                todo!()
+            }
             ExtruderV2Events::InverterSuccessEvent(_) => todo!(),
             ExtruderV2Events::RotationStateEvent(_) => cache_one,
             ExtruderV2Events::ModeEvent(event) => cache_one,
             ExtruderV2Events::RegulationStateEvent(event) => cache_one,
+            ExtruderV2Events::PressureStateEvent(event) => cache_one,
+            ExtruderV2Events::RpmStateEvent(event) => cache_one,
+            ExtruderV2Events::HeatingStateEvent(event) => cache_one,
         }
     }
 }
@@ -256,12 +298,23 @@ impl MachineApi for ExtruderV2 {
 
             Mutation::SetMode(mode) => self.set_mode_state(mode),
             Mutation::SetRotation(forward) => self.set_rotation_state(forward),
-            // Heating
-            Mutation::SetHeatingFront(heating) => self.set_heating_back(heating),
+            Mutation::SetHeatingFront(heating) => self.set_heating_front(heating),
             Mutation::SetHeatingMiddle(heating) => self.set_heating_middle(heating),
             Mutation::SetHeatingBack(heating) => self.set_heating_back(heating),
-
             Mutation::SetRegulation(uses_rpm) => self.set_regulation(uses_rpm),
+            Mutation::SetTargetPressure(bar) => self.set_target_pressure(bar),
+            Mutation::SetTargetRpm(rpm) => self.set_target_rpm(rpm),
+
+            // ... existing arms
+            Mutation::SetFrontHeatingTemperature(temp) => {
+                self.set_target_temperature(temp, HeatingType::Front)
+            }
+            Mutation::SetMiddleHeatingTemperature(temp) => {
+                self.set_target_temperature(temp, HeatingType::Middle)
+            }
+            Mutation::SetBackHeatingTemperature(temp) => {
+                self.set_target_temperature(temp, HeatingType::Back)
+            }
         }
         Ok(())
     }

@@ -11,6 +11,7 @@ import { Label } from "@/control/Label";
 import { EditValue } from "@/control/EditValue";
 import { roundToDecimals } from "@/lib/decimal";
 import { useExtruder2 } from "./useExtruder";
+import { ReadOnlyValue } from "@/control/ReadonlyValue";
 
 export function Extruder2ControlPage() {
   const {
@@ -20,13 +21,23 @@ export function Extruder2ControlPage() {
     modeIsDisabled,
     inverterSetRotation,
     rotationState,
+    frontHeatingTarget,
+    backHeatingTarget,
+    middleHeatingTarget,
     frontHeatingState,
     backHeatingState,
     middleHeatingState,
+    SetHeatingFrontTemp,
+    SetHeatingBackTemp,
+    SetHeatingMiddleTemp,
     SetRegulation,
     uses_rpm,
     rpm,
     bar,
+    targetBar,
+    targetRpm,
+    SetTargetPressure,
+    SetTargetRpm,
   } = useExtruder2();
 
   return (
@@ -34,29 +45,20 @@ export function Extruder2ControlPage() {
       <ControlGrid>
         <HeatingZone
           title={"Heating Front"}
-          temperature={150}
-          heating={true}
-          targetTemperature={155}
+          heatingState={frontHeatingState}
+          onChangeTargetTemp={SetHeatingFrontTemp}
         />
         <HeatingZone
           title={"Heating Middle"}
-          temperature={150}
-          heating={true}
-          targetTemperature={155}
+          heatingState={middleHeatingState}
+          onChangeTargetTemp={SetHeatingMiddleTemp}
         />
         <HeatingZone
           title={"Heating Back"}
-          temperature={150}
-          heating={true}
-          targetTemperature={155}
+          heatingState={backHeatingState}
+          onChangeTargetTemp={SetHeatingBackTemp}
         />
         <ControlCard className="bg-red" title="Screw Drive">
-          {/* <TimeSeriesValueNumeric
-            label="Drehzahl"
-            unit="rpm"
-            timeseries={null}
-            renderValue={(value) => roundToDecimals(value, 0) || "N/A"}
-          /> */}
           <Label label="Regulation">
             <SelectionGroupBoolean
               value={uses_rpm}
@@ -68,19 +70,38 @@ export function Extruder2ControlPage() {
           <div className="flex flex-row flex-wrap gap-4">
             <Label label="Target RPM">
               <EditValue
-                value={rpm}
+                value={targetRpm}
                 defaultValue={0}
                 unit="rpm"
                 title="Target RPM"
                 renderValue={(value) => roundToDecimals(value, 0)}
+                onChange={SetTargetRpm}
               />
             </Label>
             <Label label="Target Pressure">
               <EditValue
-                value={bar}
+                value={targetBar}
                 defaultValue={200}
                 unit="bar"
                 title="Target Pressure"
+                renderValue={(value) => roundToDecimals(value, 0)}
+                onChange={SetTargetPressure}
+              />
+            </Label>
+          </div>
+          <div className="flex flex-row flex-wrap gap-4">
+            <Label label="Actual RPM">
+              <ReadOnlyValue
+                value={rpm}
+                unit="rpm"
+                renderValue={(value) => roundToDecimals(value, 0)}
+              />
+            </Label>
+
+            <Label label="Actual Pressure">
+              <ReadOnlyValue
+                value={bar}
+                unit="bar"
                 renderValue={(value) => roundToDecimals(value, 0)}
               />
             </Label>

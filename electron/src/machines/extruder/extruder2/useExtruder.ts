@@ -7,6 +7,7 @@ import { z } from "zod";
 import {
   Heating,
   Mode,
+  MotorPressure,
   heatingStateDataSchema,
   useExtruder2Namespace,
 } from "./extruder2Namespace";
@@ -42,7 +43,7 @@ export function useExtruder2() {
   const inverter = useInverter(machineIdentification);
   const mode = useMode(machineIdentification);
   const motor = useMotor(machineIdentification);
-  const heating = useHeating(machineIdentification);
+  const heating = useHeatingTemperature(machineIdentification);
 
   return {
     ...inverter,
@@ -69,14 +70,17 @@ export function useInverter(
       data: { SetRotation: forward },
     });
   };
+
   const { rotationState } = useExtruder2Namespace(
     machine_identification_unique,
   );
+
   useEffect(() => {
     if (rotationState?.data) {
       state.setReal(rotationState.data.forward);
     }
   }, [rotationState?.data.forward]);
+
   return { inverterSetRotation, rotationState: rotationState?.data.forward };
 }
 
@@ -130,13 +134,13 @@ export function useMotor(
 ): {
   rpm: number | undefined;
   bar: number | undefined;
+  targetBar: number | undefined;
+  targetRpm: number | undefined;
   uses_rpm: boolean | undefined;
   SetTargetRpm: (rpm: number) => void;
   SetRegulation: (usesRpm: boolean) => void;
-  // SetTargetPressure: (bar: number) => void;
-  // SetRegulation: (usesRpm: boolean) => void;
+  SetTargetPressure: (bar: number) => void;
 } {
-  const state = useStateOptimistic<number>();
   const SetTargetRpmSchema = z.object({
     SetTargetRpm: z.number(),
   });
@@ -144,21 +148,16 @@ export function useMotor(
   const SetRegulationSchema = z.object({
     SetRegulation: z.boolean(),
   });
-  const { motorRpmState } = useExtruder2Namespace(
-    machine_identification_unique,
-  );
-  const { request: reqestTargetRpm } = useMachineMutation(SetTargetRpmSchema);
-  const SetTargetRpm = async (value: number) => {
-    state.setOptimistic(value);
-    reqestTargetRpm({
-      machine_identification_unique,
-      data: { SetTargetRpm: value },
-    })
-      .then((response) => {
-        if (!response.success) state.resetToReal();
-      })
-      .catch(() => state.resetToReal());
-  };
+
+  const SetTargetPressureSchema = z.object({
+    SetTargetPressure: z.number(),
+  });
+
+  const { motorRpmState, motorBarState, motorRegulationState } =
+    useExtruder2Namespace(machine_identification_unique);
+
+  const rpmState = useStateOptimistic<number>();
+  const rpmTargetState = useStateOptimistic<number>();
 
   const regulationState = useStateOptimistic<boolean>();
   const { request: regulationRequest } =
@@ -171,100 +170,146 @@ export function useMotor(
       data: { SetRegulation: value },
     })
       .then((response) => {
-        if (!response.success) state.resetToReal();
+        if (!response.success) regulationState.resetToReal();
       })
-      .catch(() => state.resetToReal());
+      .catch(() => regulationState.resetToReal());
+  };
+
+  const { request: reqestTargetRpm } = useMachineMutation(SetTargetRpmSchema);
+  const SetTargetRpm = async (value: number) => {
+    rpmTargetState.setOptimistic(value);
+    reqestTargetRpm({
+      machine_identification_unique,
+      data: { SetTargetRpm: value },
+    })
+      .then((response) => {
+        if (!response.success) rpmTargetState.resetToReal();
+      })
+      .catch(() => rpmTargetState.resetToReal());
+  };
+
+  const pressureState = useStateOptimistic<number>();
+  const targetPressureState = useStateOptimistic<number>();
+
+  const { request: targetPressureRequest } = useMachineMutation(
+    SetTargetPressureSchema,
+  );
+
+  const SetTargetPressure = async (value: number) => {
+    targetPressureState.setOptimistic(value);
+    targetPressureRequest({
+      machine_identification_unique,
+      data: { SetTargetPressure: value },
+    })
+      .then((response) => {
+        if (!response.success) targetPressureState.resetToReal();
+      })
+      .catch(() => targetPressureState.resetToReal());
   };
 
   useEffect(() => {
     if (motorRpmState?.data) {
-      state.setReal(motorRpmState.data.rpm);
+      rpmState.setReal(motorRpmState.data.rpm);
+      rpmTargetState.setReal(motorRpmState.data.target_rpm);
     }
-  }, [motorRpmState]);
+
+    if (motorBarState?.data) {
+      pressureState.setReal(motorBarState.data.bar);
+      targetPressureState.setReal(motorBarState.data.target_bar);
+    }
+
+    if (motorRegulationState?.data) {
+      regulationState.setReal(motorRegulationState.data.uses_rpm);
+    }
+  }, [motorRpmState, motorBarState, motorRegulationState]);
 
   return {
     uses_rpm: regulationState.value,
-    bar: 0,
-    rpm: state.value,
+    rpm: rpmState.value,
+    bar: pressureState.value,
+    targetBar: targetPressureState.value,
+    targetRpm: rpmTargetState.value,
     SetTargetRpm,
     SetRegulation,
+    SetTargetPressure,
   };
 }
 
-export function useHeating(
+export function useHeatingTemperature(
   machine_identification_unique: MachineIdentificationUnique,
 ): {
-  SetHeatingFront: (value: Heating) => void;
-  SetHeatingBack: (value: Heating) => void;
-  SetHeatingMiddle: (value: Heating) => void;
+  SetHeatingFrontTemp: (value: number) => void;
+  SetHeatingBackTemp: (value: number) => void;
+  SetHeatingMiddleTemp: (value: number) => void;
+
+  frontHeatingTarget: number | undefined;
+  backHeatingTarget: number | undefined;
+  middleHeatingTarget: number | undefined;
+
   frontHeatingState: Heating | undefined;
   backHeatingState: Heating | undefined;
   middleHeatingState: Heating | undefined;
 } {
-  const frontHeatingState = useStateOptimistic<Heating>();
-  const backHeatingState = useStateOptimistic<Heating>();
-  const middleHeatingState = useStateOptimistic<Heating>();
+  const frontHeatingTargetState = useStateOptimistic<number>();
+  const backHeatingTargetState = useStateOptimistic<number>();
+  const middleHeatingTargetState = useStateOptimistic<number>();
 
   const SetFrontHeatingSchema = z.object({
-    SetFrontHeating: z.object({
-      temperature: z.number(),
-      heating: z.boolean(),
-      target_temperature: z.number(),
-    }),
+    SetFrontHeatingTemperature: z.number(),
   });
 
   const SetBackHeatingSchema = z.object({
-    SetBackHeating: z.object({
-      temperature: z.number(),
-      heating: z.boolean(),
-      target_temperature: z.number(),
-    }),
+    SetBackHeatingTemperature: z.number(),
   });
 
   const SetMiddleHeatingSchema = z.object({
-    SetMiddleHeating: z.object({
-      temperature: z.number(),
-      heating: z.boolean(),
-      target_temperature: z.number(),
-    }),
+    SetMiddleHeatingTemperature: z.number(),
   });
-  const SetHeatingFront = async (value: Heating) => {
-    const { request } = useMachineMutation(SetFrontHeatingSchema);
-    frontHeatingState.setOptimistic(value);
-    request({
+
+  const { request: HeatiingFrontRequest } = useMachineMutation(
+    SetFrontHeatingSchema,
+  );
+  const SetHeatingFrontTemp = async (value: number) => {
+    frontHeatingTargetState.setOptimistic(value);
+    HeatiingFrontRequest({
       machine_identification_unique,
-      data: { SetFrontHeating: value },
+      data: { SetFrontHeatingTemperature: value },
     })
       .then((response) => {
-        if (!response.success) frontHeatingState.resetToReal();
+        if (!response.success) frontHeatingTargetState.resetToReal();
       })
-      .catch(() => frontHeatingState.resetToReal());
+      .catch(() => frontHeatingTargetState.resetToReal());
   };
 
-  const SetHeatingBack = async (value: Heating) => {
-    const { request } = useMachineMutation(SetBackHeatingSchema);
-    backHeatingState.setOptimistic(value);
-    request({
+  const { request: HeatingBackRequest } =
+    useMachineMutation(SetBackHeatingSchema);
+
+  const SetHeatingBackTemp = async (value: number) => {
+    backHeatingTargetState.setOptimistic(value);
+    HeatingBackRequest({
       machine_identification_unique,
-      data: { SetBackHeating: value },
+      data: { SetBackHeatingTemperature: value },
     })
       .then((response) => {
-        if (!response.success) backHeatingState.resetToReal();
+        if (!response.success) backHeatingTargetState.resetToReal();
       })
-      .catch(() => backHeatingState.resetToReal());
+      .catch(() => backHeatingTargetState.resetToReal());
   };
 
-  const SetHeatingMiddle = async (value: Heating) => {
-    const { request } = useMachineMutation(SetMiddleHeatingSchema);
-    frontHeatingState.setOptimistic(value);
-    request({
+  const { request: HeatingMiddleRequest } = useMachineMutation(
+    SetMiddleHeatingSchema,
+  );
+
+  const SetHeatingMiddleTemp = async (value: number) => {
+    middleHeatingTargetState.setOptimistic(value);
+    HeatingMiddleRequest({
       machine_identification_unique,
-      data: { SetMiddleHeating: value },
+      data: { SetMiddleHeatingTemperature: value },
     })
       .then((response) => {
-        if (!response.success) middleHeatingState.resetToReal();
+        if (!response.success) middleHeatingTargetState.resetToReal();
       })
-      .catch(() => middleHeatingState.resetToReal());
+      .catch(() => middleHeatingTargetState.resetToReal());
   };
 
   // Read path
@@ -273,22 +318,35 @@ export function useHeating(
 
   useEffect(() => {
     if (heatingFrontState?.data) {
-      frontHeatingState.setReal(heatingFrontState.data);
+      frontHeatingTargetState.setReal(
+        heatingFrontState.data.target_temperature,
+      );
     }
     if (heatingBackState?.data) {
-      backHeatingState.setReal(heatingBackState.data);
+      backHeatingTargetState.setReal(heatingBackState.data.target_temperature);
     }
     if (heatingMiddleState?.data) {
-      middleHeatingState.setReal(heatingMiddleState.data);
+      middleHeatingTargetState.setReal(
+        heatingMiddleState.data.target_temperature,
+      );
     }
-  }, [frontHeatingState, backHeatingState, middleHeatingState]);
+  }, [
+    frontHeatingTargetState,
+    backHeatingTargetState,
+    middleHeatingTargetState,
+  ]);
 
   return {
-    SetHeatingFront,
-    SetHeatingBack,
-    SetHeatingMiddle,
-    frontHeatingState: frontHeatingState.value,
-    backHeatingState: backHeatingState.value,
-    middleHeatingState: middleHeatingState.value,
+    SetHeatingFrontTemp,
+    SetHeatingBackTemp,
+    SetHeatingMiddleTemp,
+
+    frontHeatingTarget: frontHeatingTargetState.value,
+    backHeatingTarget: backHeatingTargetState.value,
+    middleHeatingTarget: middleHeatingTargetState.value,
+
+    frontHeatingState: heatingFrontState?.data,
+    backHeatingState: heatingBackState?.data,
+    middleHeatingState: heatingMiddleState?.data,
   };
 }

@@ -23,10 +23,13 @@ export type Extruder2NamespaceStore = {
   modeState: ModeStateEvent | null;
   inverterState: InverterStatusEvent | null;
   rotationState: InverterRotationEvent | null;
+
   heatingFrontState: HeatingStateEvent | null;
   heatingBackState: HeatingStateEvent | null;
   heatingMiddleState: HeatingStateEvent | null;
+
   motorRpmState: MotorRpmStateEvent | null;
+  motorBarState: MotorPressureStateEvent | null;
   motorRegulationState: MotorRegulationStateEvent | null;
 };
 
@@ -44,6 +47,48 @@ export function extruder2MessageHandler(
           }),
         );
       } else if (eventName == "ModeStateEvent") {
+        store.setState(
+          produce(store.getState(), (state) => {
+            state.modeState = modeStateEventSchema.parse(event);
+          }),
+        );
+      } else if (eventName == "FrontHeatingStateEvent") {
+        store.setState(
+          produce(store.getState(), (state) => {
+            state.heatingFrontState = heatingStateEventSchema.parse(event);
+          }),
+        );
+      } else if (eventName == "BackHeatingStateEvent") {
+        store.setState(
+          produce(store.getState(), (state) => {
+            state.heatingBackState = heatingStateEventSchema.parse(event);
+          }),
+        );
+      } else if (eventName == "MiddleHeatingStateEvent") {
+        store.setState(
+          produce(store.getState(), (state) => {
+            state.heatingMiddleState = heatingStateEventSchema.parse(event);
+          }),
+        );
+      } else if (eventName == "RegulationStateEvent") {
+        store.setState(
+          produce(store.getState(), (state) => {
+            state.motorRegulationState =
+              motorRegulationEventSchema.parse(event);
+          }),
+        );
+      } else if (eventName == "PressureStateEvent") {
+        store.setState(
+          produce(store.getState(), (state) => {
+            state.motorBarState = motorPressureStateEventSchema.parse(event);
+          }),
+        );
+      } else if (eventName == "RpmStateEvent") {
+        store.setState(
+          produce(store.getState(), (state) => {
+            state.motorRpmState = motorRpmStateEventSchema.parse(event);
+          }),
+        );
       }
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -68,6 +113,7 @@ export const createExtruder2NamespaceStore =
         heatingMiddleState: null,
         motorRpmState: null,
         motorRegulationState: null,
+        motorBarState: null,
       };
     });
 
@@ -118,8 +164,18 @@ export const heatingStateDataSchema = z.object({
   target_temperature: z.number(),
 });
 
+export const heatingTargetTemperatureDataSchema = z.object({
+  target_temperature: z.number(),
+});
+
 export const motorRpmStateEventDataSchema = z.object({
   rpm: z.number(),
+  target_rpm: z.number(),
+});
+
+export const motorBarStateEventDataSchema = z.object({
+  bar: z.number(),
+  target_bar: z.number(),
 });
 
 export const motorRegulationEventDataSchema = z.object({
@@ -127,8 +183,16 @@ export const motorRegulationEventDataSchema = z.object({
 });
 
 // Event Schemas
+export const heatingTargetEventSchema = eventSchema(
+  heatingTargetTemperatureDataSchema,
+);
+
 export const motorRpmStateEventSchema = eventSchema(
   motorRpmStateEventDataSchema,
+);
+
+export const motorPressureStateEventSchema = eventSchema(
+  motorBarStateEventDataSchema,
 );
 
 export const inverterRotationEventSchema = eventSchema(
@@ -143,17 +207,22 @@ export const modeStateEventSchema = eventSchema(modeStateEventDataSchema);
 
 // type defs
 export type MotorRpmStateEvent = z.infer<typeof motorRpmStateEventSchema>;
-
-export type HeatingType = z.infer<typeof heatingTypeSchema>;
-export type Heating = z.infer<typeof heatingStateDataSchema>;
-export type HeatingStateEvent = z.infer<typeof heatingStateEventSchema>;
-
-export type Mode = z.infer<typeof modeSchema>;
-export type ModeStateEvent = z.infer<typeof modeStateEventSchema>;
-
+export type MotorPressureStateEvent = z.infer<
+  typeof motorPressureStateEventSchema
+>;
 export type InverterStatusEvent = z.infer<typeof inverterStatusEventSchema>;
 export type InverterRotationEvent = z.infer<typeof inverterRotationEventSchema>;
 
 export type MotorRegulationStateEvent = z.infer<
   typeof motorRegulationEventSchema
 >;
+export type ModeStateEvent = z.infer<typeof modeStateEventSchema>;
+export type HeatingStateEvent = z.infer<typeof heatingStateEventSchema>;
+
+export type HeatingType = z.infer<typeof heatingTypeSchema>;
+export type Heating = z.infer<typeof heatingStateDataSchema>;
+
+export type MotorPressure = z.infer<typeof motorBarStateEventDataSchema>;
+export type MotorRpm = z.infer<typeof motorRpmStateEventDataSchema>;
+
+export type Mode = z.infer<typeof modeSchema>;
