@@ -1,5 +1,4 @@
 use api::{ExtruderV2Events, ExtruderV2Namespace};
-use chrono::DateTime;
 use control_core::{
     actors::{
         analog_input_getter::AnalogInputGetter,
@@ -9,10 +8,8 @@ use control_core::{
     modbus::ModbusRequest,
     socketio::namespace::NamespaceCacheingLogic,
 };
-use ethercat_hal::{devices::el3021::EL3021, io::analog_input::AnalogInput};
 use serde::{Deserialize, Serialize};
-use smol::lock::RwLock;
-use std::sync::Arc;
+use std::time::Instant;
 pub mod act;
 pub mod api;
 pub mod new;
@@ -45,7 +42,7 @@ pub struct ExtruderV2 {
     heating_front: Heating,
     heating_back: Heating,
     heating_middle: Heating,
-    last_measurement_emit: DateTime<chrono::Utc>,
+    last_measurement_emit: Instant,
     pressure_sensor: AnalogInputGetter,
     uses_rpm: bool,
     rpm: f32,

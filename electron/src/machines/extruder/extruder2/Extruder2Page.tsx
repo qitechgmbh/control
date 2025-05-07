@@ -12,21 +12,25 @@ export function Extruder2Page() {
           link: "control",
           title: "Steuerung",
           icon: "lu:CirclePlay",
+          activeLink: "control",
         },
         {
           link: "graphs",
           title: "Graphs",
           icon: "lu:ChartSpline",
+          activeLink: "graph",
         },
         {
           link: "settings",
           title: "Config",
           icon: "lu:Settings",
+          activeLink: "settings",
         },
         {
           link: "manual",
           title: "Manual",
           icon: "lu:BookOpen",
+          activeLink: "manual",
         },
       ]}
     />

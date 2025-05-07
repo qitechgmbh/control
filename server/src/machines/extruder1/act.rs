@@ -1,6 +1,6 @@
 use super::ExtruderV2;
 use control_core::actors::Actor;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 impl Actor for ExtruderV2 {
     fn act(
@@ -10,8 +10,8 @@ impl Actor for ExtruderV2 {
         Box::pin(async move {
             self.inverter.act(now_ts).await;
 
-            let now = chrono::Utc::now();
-            if (now - self.last_measurement_emit).num_milliseconds() > 16 {
+            let now = Instant::now();
+            if now.duration_since(self.last_measurement_emit) > Duration::from_millis(16) {
                 self.emit_heating(self.heating_back.clone(), super::HeatingType::Back);
                 self.emit_heating(self.heating_front.clone(), super::HeatingType::Front);
                 self.emit_heating(self.heating_middle.clone(), super::HeatingType::Middle);

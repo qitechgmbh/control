@@ -18,7 +18,7 @@ export function useExtruder2() {
   const { serial: serialString } = extruder2Route.useParams();
 
   // Memoize the machine identification to keep it stable between renders
-  const machineIdentification = useMemo(() => {
+  const machineIdentification: MachineIdentificationUnique = useMemo(() => {
     const serial = parseInt(serialString); // Use 0 as fallback if NaN
 
     if (isNaN(serial)) {
@@ -28,14 +28,16 @@ export function useExtruder2() {
       );
 
       return {
-        vendor: 0,
-        machine: 0,
+        machine_identification: {
+          vendor: 0,
+          machine: 0,
+        },
         serial: 0,
       };
     }
 
     return {
-      ...extruder2.machine_identification,
+      machine_identification: extruder2.machine_identification,
       serial,
     };
   }, [serialString]); // Only recreate when serialString changes

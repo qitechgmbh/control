@@ -129,9 +129,7 @@ export function useExtruder2Namespace(
   // Generate namespace ID from validated machine ID
   const namespaceId = useRef<NamespaceId>({
     type: "machine",
-    vendor: machine_identification_unique.vendor,
-    serial: machine_identification_unique.serial,
-    machine: machine_identification_unique.machine,
+    machine_identification_unique,
   });
 
   // Use the implementation with validated namespace ID
