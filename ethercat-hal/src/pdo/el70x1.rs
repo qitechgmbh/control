@@ -6,18 +6,22 @@ use ethercat_hal_derive::PdoObject;
 #[pdo_object(bits = 48)]
 pub struct EncStatusCompact {
     /// # 6000:01
+    /// (6000:02 on EL7031-0030)
     /// The counter value was latched with the C track.
     pub latch_extern_valid: bool,
 
     /// # 6000:02
+    /// (6000:03 on EL7031-0030)
     /// The counter value was stored via the external latch.
     pub set_counter_done: bool,
 
     /// # 6000:03
+    /// (6000:04 on EL7031-0030)
     /// The counter was set.
     pub counter_underflow: bool,
 
     /// # 6000:04
+    /// (6000:05 on EL7031-0030)
     /// Counter underflow.
     pub counter_overflow: bool,
 
@@ -74,19 +78,23 @@ impl TxPdoObject for EncStatusCompact {
 #[pdo_object(bits = 80)]
 pub struct EncStatus {
     /// # 6000:01
-    /// The counter value was latched with the C track.
+    /// (6000:02 on EL7031-0030)
+    /// The counter value was stored via the external latch.
     pub latch_extern_valid: bool,
 
     /// # 6000:02
-    /// The counter value was stored via the external latch.
+    /// (6000:03 on EL7031-0030)
+    /// The counter was set.
     pub set_counter_done: bool,
 
     /// # 6000:03
-    /// The counter was set.
+    /// (6000:04 on EL7031-0030)
+    /// Counter underflow.
     pub counter_underflow: bool,
 
     /// # 6000:04
-    /// Counter underflow.
+    /// (6000:05 on EL7031-0030)
+    /// Counter overflow.
     pub counter_overflow: bool,
 
     /// # 6000:0D
@@ -157,47 +165,47 @@ impl TxPdoObject for EncTimestampCompact {
 pub struct StmStatus {
     /// # 6010:01
     /// Driver stage is ready for enabling.
-    ready_to_enable: bool,
+    pub ready_to_enable: bool,
 
     /// # 6010:02
     /// Driver stage is ready for operation.
-    ready: bool,
+    pub ready: bool,
 
     /// # 6010:03
     /// A warning has occurred.
-    warning: bool,
+    pub warning: bool,
 
     /// # 6010:04
     /// An error has occurred (see index 0xA010).
-    error: bool,
+    pub error: bool,
 
     /// # 6010:05
     /// Motor turns in positive direction.
-    moving_positive: bool,
+    pub moving_positive: bool,
 
     /// # 6010:06
     /// Motor turns in negative direction.
-    moving_negative: bool,
+    pub moving_negative: bool,
 
     /// # 6010:07
     /// Reduced torque is active.
-    torque_reduced: bool,
+    pub torque_reduced: bool,
 
     /// # 6010:0C
     /// Digital input 1.
-    digital_input_1: bool,
+    pub digital_input_1: bool,
 
     /// # 6010:0D
     /// Digital input 2.
-    digital_input_2: bool,
+    pub digital_input_2: bool,
 
     /// # 6010:0E
     /// The Sync error bit is only required for DC mode. It indicates whether a synchronization error has occurred during the previous cycle.
-    sync_error: bool,
+    pub sync_error: bool,
 
     /// # 6010:10
     /// The TxPDO toggle is toggled by the slave when the data of the associated TxPDO is updated.
-    txpdo_toggle: bool,
+    pub txpdo_toggle: bool,
 }
 
 impl TxPdoObject for StmStatus {
@@ -340,6 +348,11 @@ pub struct PosStatus {
     /// Motor is in the deceleration phase.
     pub decelerate: bool,
 
+    /// # 6020:08
+    /// Ready to execute.
+    /// Not sure if this valie is only on EL7031-0030 or other too
+    pub ready_to_execute: bool,
+
     /// # 6020:11
     /// Current target position of the travel command generator.
     pub actual_position: u32,
@@ -427,14 +440,17 @@ impl TxPdoObject for PosActualPositionLag {
 #[pdo_object(bits = 32)]
 pub struct EncControlCompact {
     /// # 7000:01
+    /// (7000:02 on EL7031-0030)
     /// Activate latching via the C-track.
     pub enable_latch_extern_on_positive_edge: bool,
 
     /// # 7000:02
+    /// (7000:03 on EL7031-0030)
     /// Activate external latch with positive edge.
     pub set_counter: bool,
 
     /// # 7000:03
+    /// (7000:04 on EL7031-0030)
     /// Set the counter value.
     pub enable_latch_extern_on_negative_edge: bool,
 
@@ -460,18 +476,22 @@ impl RxPdoObject for EncControlCompact {
 #[pdo_object(bits = 48)]
 pub struct EncControl {
     /// # 7000:01
+    /// (7000:02 on EL7031-0030)
     /// Activate external latch with positive edge.
     pub enable_latch_extern_on_positive_edge: bool,
 
     /// # 7000:02
+    /// (7000:03 on EL7031-0030)
     /// Activate external latch with positive edge.
     pub set_counter: bool,
 
     /// # 7000:03
+    /// (7000:04 on EL7031-0030)
     /// Activate external latch with negative edge.
     pub enable_latch_extern_on_negative_edge: bool,
 
     /// # 7000:11
+    /// (7000:12 on EL7031-0030)
     /// This is the counter value to be set via "Set counter".
     pub set_counter_value: u32,
 }

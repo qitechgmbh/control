@@ -9,22 +9,20 @@
 | White/Brown  | Unused/POE (B)       | 7            | SG (ground)            | 7              | SG              |
 | Brown        | Unused/POE (B)       | 8            | PU power supply        | 8              | -               |
 
-we need pin 3 4 5 6 and 7
-Both Grounds always connect to Ground (Brown Jumper)
 
-Combinations:
-Green and Blue, White/Green and White/Blue
 
-Gnd von usb Chip zu SG und SG von Inverter
-A goes to greend and blue pair
-B goes to green/white and blue/white
+Mitsubishi Differential Pairs:
+- White/Green and White/Blue A 
+- Green and Blue B
+- White/Orange and White/Brown C
 
-el6021 wiring
-Txd+ together with rxd+ A pin 1 and 2
-txd- together with txd- B pin 5 and 6
-ground together with ground C
+el6021 Differential Pairs
+- Pin 5 and 6 of el6021 connect with Pair B
+- Pin 1 and 2 of el6021 connect with Pair A
+- Pin 3 and 7 of el6021 connect with Pair C
 
-mitsubishi
-RDA und SDA -> A
-RDB und SDB -> B
-sg und sg zu C
+
+What needs to be bridged?
+- pin 5 and 6 of el6021 need to be bridged with Ethernet pin 4 and 6
+- pin 1 and 2 of el6021 need to be bridged with Ethernet pin 3 and 5
+- pin 3 and 7 of el6021 need to be bridged with Ethernet pin 1 and 7

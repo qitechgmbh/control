@@ -139,6 +139,4 @@ We could combine the code of the frontend and backend using [Doxius](https://dio
 
 - [x] [Ethercat Basics](./docs/ethercat-basics.md)
 
-- [ ] Operating System
-  - Why
-  - How
+- [x] [NixOS Operating System](./docs/nixos/README.md)

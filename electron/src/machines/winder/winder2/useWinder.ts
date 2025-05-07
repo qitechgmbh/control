@@ -5,7 +5,7 @@ import { MachineIdentificationUnique, winder2 } from "@/machines/types";
 import { winder2SerialRoute } from "@/routes/routes";
 import { z } from "zod";
 import { Mode, useWinder2Namespace } from "./winder2Namespace";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { TimeSeries } from "@/lib/timeseries";
 
 function useLaserpointer(
@@ -148,7 +148,7 @@ export function useWinder2() {
   const { serial: serialString } = winder2SerialRoute.useParams();
 
   // Memoize the machine identification to keep it stable between renders
-  const machineIdentification = useMemo(() => {
+  const machineIdentification: MachineIdentificationUnique = useMemo(() => {
     const serial = parseInt(serialString); // Use 0 as fallback if NaN
 
     if (isNaN(serial)) {
@@ -158,14 +158,16 @@ export function useWinder2() {
       );
 
       return {
-        vendor: 0,
-        machine: 0,
+        machine_identification: {
+          vendor: 0,
+          machine: 0,
+        },
         serial: 0,
       };
     }
 
     return {
-      ...winder2.machine_identification,
+      machine_identification: winder2.machine_identification,
       serial,
     };
   }, [serialString]); // Only recreate when serialString changes

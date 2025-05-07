@@ -1,9 +1,9 @@
-use super::r#loop::setup_loop;
+use super::setup::setup_loop;
 use crate::{
-    app_state::{AppState, APP_STATE},
+    app_state::AppState,
     panic::PanicDetails,
     socketio::main_namespace::{
-        ethercat_interface_discovery_event::EthercatInterfaceDiscoveryEvent, MainNamespaceEvents,
+        MainNamespaceEvents, ethercat_interface_discovery_event::EthercatInterfaceDiscoveryEvent,
     },
 };
 use control_core::{
@@ -18,8 +18,9 @@ pub fn init_ethercat(
     app_state: Arc<AppState>,
 ) -> Result<(), anyhow::Error> {
     // Notify client via socketio
+    let app_state_clone = app_state.clone();
     let _ = smol::block_on(async move {
-        let main_namespace = &mut APP_STATE
+        let main_namespace = &mut app_state_clone
             .socketio_setup
             .namespaces
             .write()
@@ -48,8 +49,9 @@ pub fn init_ethercat(
 
     // Notify client via socketio
     let interface_clone = interface.clone();
+    let app_state_clone = app_state.clone();
     let _ = smol::block_on(async move {
-        let main_namespace = &mut APP_STATE
+        let main_namespace = &mut app_state_clone
             .socketio_setup
             .namespaces
             .write()

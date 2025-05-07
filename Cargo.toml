@@ -1,4 +1,10 @@
 [workspace]
-members = ["server", "ethercat-hal", "ethercat-hal-derive", "control-core"]
+members = [
+    "server",
+    "ethercat-hal",
+    "ethercat-hal-derive",
+    "control-core",
+    "ethercat-eeprom-dump",
+]
 exclude = []
 resolver = "2"

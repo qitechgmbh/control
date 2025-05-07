@@ -3,7 +3,7 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt;
 use std::str::FromStr;
 
-use crate::identification::MachineIdentificationUnique;
+use crate::machines::identification::{MachineIdentification, MachineIdentificationUnique};
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub enum NamespaceId {
@@ -19,7 +19,10 @@ impl Serialize for NamespaceId {
         match self {
             NamespaceId::Main => serializer.serialize_str("/main"),
             NamespaceId::Machine(id) => {
-                let path = format!("/machine/{}/{}/{}", id.vendor, id.machine, id.serial);
+                let path = format!(
+                    "/machine/{}/{}/{}",
+                    id.machine_identification.vendor, id.machine_identification.machine, id.serial
+                );
                 serializer.serialize_str(&path)
             }
         }
@@ -62,8 +65,7 @@ impl<'de> Deserialize<'de> for NamespaceId {
                             .map_err(|_| E::custom("Invalid serial id"))?;
 
                         return Ok(NamespaceId::Machine(MachineIdentificationUnique {
-                            vendor,
-                            machine,
+                            machine_identification: MachineIdentification { vendor, machine },
                             serial,
                         }));
                     }
@@ -100,8 +102,7 @@ impl FromStr for NamespaceId {
                     .map_err(|_| "Invalid serial id".to_string())?;
 
                 return Ok(NamespaceId::Machine(MachineIdentificationUnique {
-                    vendor,
-                    machine,
+                    machine_identification: MachineIdentification { vendor, machine },
                     serial,
                 }));
             }
@@ -117,7 +118,11 @@ impl fmt::Display for NamespaceId {
         match self {
             NamespaceId::Main => write!(f, "/main"),
             NamespaceId::Machine(id) => {
-                write!(f, "/machine/{}/{}/{}", id.vendor, id.machine, id.serial)
+                write!(
+                    f,
+                    "/machine/{}/{}/{}",
+                    id.machine_identification.vendor, id.machine_identification.machine, id.serial
+                )
             }
         }
     }
@@ -139,8 +144,10 @@ mod tests {
     #[test]
     fn test_serialize_machine() {
         let machine_id = MachineIdentificationUnique {
-            vendor: 123,
-            machine: 456,
+            machine_identification: MachineIdentification {
+                vendor: 123,
+                machine: 456,
+            },
             serial: 789,
         };
         let namespace_id = NamespaceId::Machine(machine_id);
@@ -162,8 +169,8 @@ mod tests {
 
         match namespace_id {
             NamespaceId::Machine(id) => {
-                assert_eq!(id.vendor, 123);
-                assert_eq!(id.machine, 456);
+                assert_eq!(id.machine_identification.vendor, 123);
+                assert_eq!(id.machine_identification.machine, 456);
                 assert_eq!(id.serial, 789);
             }
             _ => panic!("Expected NamespaceId::Machine"),
@@ -203,8 +210,8 @@ mod tests {
 
         match namespace_id {
             NamespaceId::Machine(id) => {
-                assert_eq!(id.vendor, 123);
-                assert_eq!(id.machine, 456);
+                assert_eq!(id.machine_identification.vendor, 123);
+                assert_eq!(id.machine_identification.machine, 456);
                 assert_eq!(id.serial, 789);
             }
             _ => panic!("Expected NamespaceId::Machine"),
@@ -226,8 +233,10 @@ mod tests {
     #[test]
     fn test_display_machine() {
         let machine_id = MachineIdentificationUnique {
-            vendor: 123,
-            machine: 456,
+            machine_identification: MachineIdentification {
+                vendor: 123,
+                machine: 456,
+            },
             serial: 789,
         };
         let namespace_id = NamespaceId::Machine(machine_id);
@@ -245,8 +254,10 @@ mod tests {
     #[test]
     fn test_roundtrip_machine() {
         let machine_id = MachineIdentificationUnique {
-            vendor: 123,
-            machine: 456,
+            machine_identification: MachineIdentification {
+                vendor: 123,
+                machine: 456,
+            },
             serial: 789,
         };
         let original = NamespaceId::Machine(machine_id);
@@ -255,8 +266,8 @@ mod tests {
 
         match deserialized {
             NamespaceId::Machine(id) => {
-                assert_eq!(id.vendor, 123);
-                assert_eq!(id.machine, 456);
+                assert_eq!(id.machine_identification.vendor, 123);
+                assert_eq!(id.machine_identification.machine, 456);
                 assert_eq!(id.serial, 789);
             }
             _ => panic!("Expected NamespaceId::Machine"),
@@ -267,8 +278,10 @@ mod tests {
     fn test_string_roundtrip() {
         // Test using Display and FromStr
         let original = NamespaceId::Machine(MachineIdentificationUnique {
-            vendor: 123,
-            machine: 456,
+            machine_identification: MachineIdentification {
+                vendor: 123,
+                machine: 456,
+            },
             serial: 789,
         });
 
@@ -277,8 +290,8 @@ mod tests {
 
         match parsed {
             NamespaceId::Machine(id) => {
-                assert_eq!(id.vendor, 123);
-                assert_eq!(id.machine, 456);
+                assert_eq!(id.machine_identification.vendor, 123);
+                assert_eq!(id.machine_identification.machine, 456);
                 assert_eq!(id.serial, 789);
             }
             _ => panic!("Expected NamespaceId::Machine"),

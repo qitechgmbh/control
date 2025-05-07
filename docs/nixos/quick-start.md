@@ -1,8 +1,8 @@
-# QiTech Industries Control Software - NixOS Quick Start Guide
+# QiTech Control - NixOS Quick Start Guide
 
 ## Introduction
 
-This guide will help you set up a NixOS system with QiTech Industries Control Software and manage updates.
+This guide will help you set up a NixOS system with QiTech Control and manage updates.
 
 ## Initial Setup
 
@@ -110,7 +110,6 @@ sudo nixos-rebuild switch --flake .#nixos --rollback
 
 The system uses special environment variables:
 
-- `QITECH_BUILD_ENV`: Set to "control-os" for NixOS deployments
-- `QITECH_DEPLOYMENT_TYPE`: Indicates deployment type (e.g., "production")
+- `QITECH_OS`: Set to "true" for NixOS deployments
 
 These are configured in `configuration.nix`, `electron.nix`, and `home.nix`.

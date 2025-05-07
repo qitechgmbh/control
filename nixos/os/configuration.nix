@@ -2,19 +2,67 @@
 # your system.  Help is available in the configuration.nix(5) man page
 # and in the NixOS manual (accessible by running ‘nixos-help’).
 
-{ config, pkgs, qitech-control, ... }:
+{ config, pkgs, installInfo, ... }:
 
 {
   imports =
     [ # Include the results of the hardware scan.
-      ./hardware-configuration.nix
+      /etc/nixos/hardware-configuration.nix
     ];
 
   # Bootloader.
-  boot.loader.systemd-boot.enable = true;
+  boot.loader.systemd-boot = {
+    enable = true;
+    consoleMode = "max";  # Use the highest available resolution
+  };
   boot.loader.efi.canTouchEfiVariables = true;
 
   boot.kernelPackages = pkgs.linuxPackages_latest;
+
+  boot.kernelParams = [
+    # Graphical
+    "logo.nologo" # Remove kernel logo during boot
+
+    # Performance 
+    
+    # Specific Vulnerabilities Addressed by Mitigations:
+    # - Spectre variants (V1, V2, V4, SWAPGS, SpectreRSB, etc.)
+    # - Meltdown (Rogue Data Cache Load)
+    # - Foreshadow/L1TF (L1 Terminal Fault)
+    # - Microarchitectural Data Sampling (MDS, RIDL, Fallout, ZombieLoad)
+    # - SRBDS (Special Register Buffer Data Sampling)
+    # - TSX Asynchronous Abort (TAA)
+    # - iTLB Multihit
+    # - And others as they're discovered and mitigated
+    # 
+    # With mitigations=off
+    # - PROS: Maximum performance, equivalent to pre-2018 behavior
+    # - CONS: Vulnerable to Spectre, Meltdown, Foreshadow, ZombieLoad, etc.
+    #         Should ONLY be used in completely trusted environments
+    # - Improves performance by 7-43%
+    "mitigation=off"
+    "intel_pstate=performance"    # Intel CPU-specific performance mode (if applicable)
+
+    # Memory Management
+    "transparent_hugepage=always" # Use larger memory pages for memory intense applications
+    "nmi_watchdog=0"              # Disable NMI watchdog for reduced CPU overhead and realtime execution
+    
+    # High-throughput ethernet parameters
+    "pcie_aspm=off"         # Disable PCIe power management for NICs
+    "intel_iommu=off"       # Disable IOMMU (performance gain)
+
+    # Reliability
+    "panic=10"              # Auto-reboot 10 seconds after kernel panic
+    "oops=panic"            # Treat kernel oops as panic for auto-recovery
+  ];
+
+  # Add these system settings for a more comprehensive kiosk setup
+  boot.kernel.sysctl = {
+    "kernel.panic_on_oops" = 1;          # Reboot on kernel oops
+    "kernel.panic" = 10;                 # Reboot after 10 seconds on panic
+    "vm.swappiness" = 10;                # Reduce swap usage
+    "kernel.sysrq" = 1;                  # Enable SysRq for emergency control
+  };
 
   nix = {
     package = pkgs.nixVersions.stable;
@@ -62,21 +110,22 @@
   networking.networkmanager.enable = true;
 
   # Set your time zone.
-  time.timeZone = "Europe/Berlin";
+  time.timeZone = "UTC";
 
   # Select internationalisation properties.
-  i18n.defaultLocale = "en_US.UTF-8";
+  # we use en_DK for english texts but metric units and 24h time
+  i18n.defaultLocale = "en_DK.UTF-8";
 
   i18n.extraLocaleSettings = {
-    LC_ADDRESS = "de_DE.UTF-8";
-    LC_IDENTIFICATION = "de_DE.UTF-8";
-    LC_MEASUREMENT = "de_DE.UTF-8";
-    LC_MONETARY = "de_DE.UTF-8";
-    LC_NAME = "de_DE.UTF-8";
-    LC_NUMERIC = "de_DE.UTF-8";
-    LC_PAPER = "de_DE.UTF-8";
-    LC_TELEPHONE = "de_DE.UTF-8";
-    LC_TIME = "de_DE.UTF-8";
+    LC_ADDRESS = "en_DK.UTF-8";
+    LC_IDENTIFICATION = "en_DK.UTF-8";
+    LC_MEASUREMENT = "en_DK.UTF-8";
+    LC_MONETARY = "en_DK.UTF-8";
+    LC_NAME = "en_DK.UTF-8";
+    LC_NUMERIC = "en_DK.UTF-8";
+    LC_PAPER = "en_DK.UTF-8";
+    LC_TELEPHONE = "en_DK.UTF-8";
+    LC_TIME = "en_DK.UTF-8";
   };
 
   # Enable the X11 windowing system.
@@ -97,7 +146,12 @@
   systemd.targets.hybrid-sleep.enable = false;
 
   # Additional power management settings
-  powerManagement.enable = false;
+  powerManagement = {
+    enable = true;
+    cpuFreqGovernor = "performance";
+    # Disable power throttling for peripheral devices
+    powertop.enable = false;
+  };
 
   # Ensure all power management is disabled
   services.logind = {
@@ -124,7 +178,7 @@
   services.printing.enable = false;
 
   # Enable sound with pipewire.
-  hardware.pulseaudio.enable = false;
+  services.pulseaudio.enable = false;
   security.rtkit.enable = true;
   services.pipewire = {
     enable = true;
@@ -153,20 +207,12 @@
     openFirewall = true;
     user = "qitech-service";
     group = "qitech-service"; 
-    port = 3001;
-    package = qitech-control.packages.${pkgs.system}.server;
-  };
-
-  systemd.services.qitech = {
-    environment = {
-      QITECH_BUILD_ENV = "control-os";
-      QITECH_DEPLOYMENT_TYPE = "production";
-    };
+    package = pkgs.qitechPackages.server;
   };
 
   users.users.qitech = {
     isNormalUser = true;
-    description = "QiTech Industries";
+    description = "QiTech HMI";
     extraGroups = [ "networkmanager" "wheel" "realtime" ];
     packages = with pkgs; [ ];
   };
@@ -182,18 +228,21 @@
   systemd.services."autovt@tty1".enable = false;
 
   # Install firefox.
-  programs.firefox.enable = false;
+  programs.firefox.enable = true;
 
   # List packages installed in system profile. To search, run:
   # $ nix search wget
   environment.systemPackages = with pkgs; [
-  #  vim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
-  #  wget
+    #  vim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
+    #  wget
     gnome-tweaks
     gnome-extension-manager
     gnomeExtensions.dash-to-dock
+    # Extension to disable activities overview on login
+    gnomeExtensions.no-overview
     git
-    qitech-control.packages.${pkgs.system}.electron
+    pkgs.qitechPackages.electron
+    htop
   ];
 
   xdg.portal.enable = true;
@@ -207,7 +256,6 @@
     epiphany # web browser
     evince # document viewer
     geary # email reader
-    gedit # text editor
     simple-scan # document scanner
     gnome-characters
     gnome-music
@@ -226,10 +274,17 @@
     seahorse # password manager
   ]);
 
+  # Set system wide env variables
   environment.variables = {
-    QITECH_BUILD_ENV = "control-os";
-    QITECH_DEPLOYMENT_TYPE = "production";
+    QITECH_OS = "true";
+    QITECH_OS_GIT_TIMESTAMP = installInfo.gitTimestamp;
+    QITECH_OS_GIT_COMMIT = installInfo.gitCommit;
+    QITECH_OS_GIT_ABBREVIATION = installInfo.gitAbbreviation;
+    QITECH_OS_GIT_URL = installInfo.gitUrl;
   };
+
+  # Set revision labe;
+  system.nixos.label = "${installInfo.gitAbbreviationEscaped}_${installInfo.gitCommit}";
   
   # Some programs need SUID wrappers, can be configured further or are
   # started in user sessions.

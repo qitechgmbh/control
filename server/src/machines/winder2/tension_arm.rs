@@ -1,7 +1,8 @@
-use control_core::actors::analog_input_getter::{AnalogInputGetter, AnalogInputValue};
+use control_core::actors::analog_input_getter::AnalogInputGetter;
+use ethercat_hal::io::analog_input::physical::AnalogInputValue;
 use uom::si::{
     angle::revolution,
-    electric_potential::{volt, ElectricPotential},
+    electric_potential::{ElectricPotential, volt},
     f64::Angle,
 };
 
@@ -77,22 +78,22 @@ impl TensionArm {
 mod tests {
     use super::*;
     use approx::assert_relative_eq;
-    use control_core::actors::{
-        analog_input_getter::{AnalogInputGetter, AnalogInputRange},
-        Actor,
-    };
+    use control_core::actors::Actor;
     use core::f64;
-    use ethercat_hal::io::{analog_input::AnalogInputInput, analog_input_dummy::AnalogInputDummy};
+    use ethercat_hal::io::{
+        analog_input::{AnalogInputInput, physical::AnalogInputRange},
+        analog_input_dummy::AnalogInputDummy,
+    };
     use std::time::Instant;
 
     #[test]
     fn volts_to_angle() {
         let tension_arm = TensionArm::new(AnalogInputGetter::new(
-            AnalogInputDummy::new().analog_input(),
-            AnalogInputRange::Potential {
+            AnalogInputDummy::new(AnalogInputRange::Potential {
                 min: ElectricPotential::new::<volt>(-10.0),
                 max: ElectricPotential::new::<volt>(10.0),
-            },
+            })
+            .analog_input(),
         ));
 
         // 0V = 0deg
@@ -119,14 +120,11 @@ mod tests {
 
     #[test]
     fn get_volts() {
-        let mut analog_input_dummy = AnalogInputDummy::new();
-        let analog_input_getter = AnalogInputGetter::new(
-            analog_input_dummy.analog_input(),
-            AnalogInputRange::Potential {
-                min: ElectricPotential::new::<volt>(-10.0),
-                max: ElectricPotential::new::<volt>(10.0),
-            },
-        );
+        let mut analog_input_dummy = AnalogInputDummy::new(AnalogInputRange::Potential {
+            min: ElectricPotential::new::<volt>(-10.0),
+            max: ElectricPotential::new::<volt>(10.0),
+        });
+        let analog_input_getter = AnalogInputGetter::new(analog_input_dummy.analog_input());
         let mut tension_arm = TensionArm::new(analog_input_getter);
 
         // 0.0 normalized = 0V
@@ -151,15 +149,12 @@ mod tests {
 
     #[test]
     fn test_tension_arm() {
-        let mut analog_input_dummy = AnalogInputDummy::new();
+        let mut analog_input_dummy = AnalogInputDummy::new(AnalogInputRange::Potential {
+            min: ElectricPotential::new::<volt>(-10.0),
+            max: ElectricPotential::new::<volt>(10.0),
+        });
         let analog_input = analog_input_dummy.analog_input();
-        let analog_input_getter = AnalogInputGetter::new(
-            analog_input,
-            AnalogInputRange::Potential {
-                min: ElectricPotential::new::<volt>(-10.0),
-                max: ElectricPotential::new::<volt>(10.0),
-            },
-        );
+        let analog_input_getter = AnalogInputGetter::new(analog_input);
         let mut tension_arm = TensionArm::new(analog_input_getter);
 
         // 0V = 0.25 = 0 revolution

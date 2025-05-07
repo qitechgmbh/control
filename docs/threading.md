@@ -20,10 +20,8 @@ Starts threads for testing different interfaces in parallel.
 
 Uses Smol `LocalExecutor`.
 
-### `EthercatLoopThread` from `server::ethercat::init::init_ethercat`
+### `LoopThread` from `server::ethercat::init::init_ethercat`
 Uses thread-local `smol` runtime.
-
-Starts the Ethercrab TX/RX thread.
 
 Runs the main control loop.
 

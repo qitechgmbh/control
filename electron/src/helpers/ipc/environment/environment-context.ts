@@ -1,7 +1,8 @@
-import { contextBridge, ipcRenderer } from "electron";
+import { ENVIRONMENT_INFO } from "./environment-channels";
 
 export function exposeEnvironmentContext() {
+  const { contextBridge, ipcRenderer } = window.require("electron");
   contextBridge.exposeInMainWorld("environment", {
-    getInfo: () => ipcRenderer.invoke("environment-get-info"),
+    getInfo: () => ipcRenderer.invoke(ENVIRONMENT_INFO),
   });
 }

@@ -1,17 +1,21 @@
 import { ipcMain } from "electron";
+import { ENVIRONMENT_INFO } from "./environment-channels";
 
 // Environment information
-const environmentInfo = {
-  deploymentType: process.env.QITECH_DEPLOYMENT_TYPE || 'standard',
-  buildEnv: process.env.QITECH_BUILD_ENV || 'standard'
+export const environmentInfo = {
+  qitechOs: process.env.QITECH_OS === "true",
+  qitechOsGitTimestamp: process.env.QITECH_OS_GIT_TIMESTAMP
+    ? isNaN(Date.parse(process.env.QITECH_OS_GIT_TIMESTAMP))
+      ? undefined
+      : new Date(process.env.QITECH_OS_GIT_TIMESTAMP)
+    : undefined,
+  qitechOsGitCommit: process.env.QITECH_OS_GIT_COMMIT,
+  qitechOsGitAbbreviation: process.env.QITECH_OS_GIT_ABBREVIATION,
+  qitechOsGitUrl: process.env.QITECH_OS_GIT_URL,
 };
 
-// Log environment information to console
-console.log("Deployment type:", environmentInfo.deploymentType);
-console.log("Build env:", environmentInfo.buildEnv);
-
 export function addEnvironmentEventListeners() {
-  ipcMain.handle('environment-get-info', async () => {
+  ipcMain.handle(ENVIRONMENT_INFO, async () => {
     return environmentInfo;
   });
 }

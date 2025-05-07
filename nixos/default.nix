@@ -6,7 +6,7 @@
 }:
 
 let
-  rust = pkgs.rust-bin.beta.latest.default.override {
+  rust = pkgs.rust-bin.stable.latest.default.override {
     extensions = [ "rust-src" "rust-analyzer" ];
     targets = [ "x86_64-unknown-linux-gnu" ];
   };
@@ -26,7 +26,7 @@ in {
     ];
     
     shellHook = ''
-      echo "QiTech Industries Control Software Development Environment"
+      echo "QiTech Control Development Environment"
       echo "Rust version: $(${rust}/bin/rustc --version)"
       echo "Node version: $(${pkgs.nodejs}/bin/node --version)"
     '';

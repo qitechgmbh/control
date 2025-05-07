@@ -2,7 +2,7 @@ use crate::{
     app_state::AppState,
     rest::util::{ResponseUtil, ResponseUtilError},
 };
-use axum::{body::Body, extract::State, http::Response, Json};
+use axum::{Json, body::Body, extract::State, http::Response};
 use control_core::rest::mutation::{MachineMutationBody, MutationResponse};
 use serde_json::Value;
 use std::sync::Arc;
@@ -23,32 +23,35 @@ async fn _post_machine_mutate(
     State(app_state): State<Arc<AppState>>,
     Json(body): Json<MachineMutationBody<Value>>,
 ) -> Result<(), anyhow::Error> {
-    let ethercat_setup_guard = app_state.ethercat_setup.read().await;
-    let ethercat_setup = ethercat_setup_guard.as_ref().ok_or(anyhow::anyhow!(
-        "[{}::_post_machine_mutate] No setup",
-        module_path!()
-    ))?;
+    // lock machines
+    let machines_guard = app_state.machines.read().await;
 
     // find machine with given identification in hashmap
-    let machine = ethercat_setup
-        .machines
+    let machine = machines_guard
         .get(&body.machine_identification_unique)
         .ok_or(anyhow::anyhow!(
-            "[{}::_post_machine_mutate] Machine not found {}, all machines: {:?}",
+            "[{}::_post_machine_mutate] Machine not found {:?}",
             module_path!(),
             body.machine_identification_unique,
-            ethercat_setup.machines.keys()
         ))?;
 
-    // check if machine has error
-    let machine = machine.as_ref().or(Err(anyhow::anyhow!(
-        "[{}::_post_machine_mutate] Machine has error",
-        module_path!()
-    )))?;
+    // check machine for error
+    let machine = match machine {
+        Ok(m) => m,
+        Err(e) => {
+            return Err(anyhow::anyhow!(
+                "[{}::_post_machine_mutate] Machine has error: {}",
+                module_path!(),
+                e
+            ));
+        }
+    };
+
+    // lock machine
+    let mut machine_guard = machine.lock().await;
 
     // write data to machine
-    let mut machine = machine.write().await;
-    machine.api_mutate(body.data).or_else(|e| {
+    machine_guard.api_mutate(body.data).or_else(|e| {
         Err(anyhow::anyhow!(
             "[{}::_post_machine_mutate] Machine api_mutate error: {}",
             module_path!(),

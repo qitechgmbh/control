@@ -6,7 +6,7 @@ let
   cfg = config.services.qitech;
 in {
   options.services.qitech = {
-    enable = mkEnableOption "QiTech Industries Control Software";
+    enable = mkEnableOption "QiTech Control";
     
     openFirewall = mkOption {
       type = types.bool;
@@ -24,12 +24,6 @@ in {
       type = types.str;
       default = "qitech-service";
       description = "Group under which the service runs";
-    };
-    
-    port = mkOption {
-      type = types.port;
-      default = 8000;
-      description = "Port on which the QiTech server listens";
     };
     
     package = mkOption {
@@ -57,8 +51,8 @@ in {
     users.groups.${cfg.group} = {};
     
     # Install the Electron app system-wide
-    environment.systemPackages = with pkgs; [
-      qitech-control-electron
+    environment.systemPackages = [
+      pkgs.qitechPackages.electron
     ];
     
     # Configure udev rules for EtherCAT device access
@@ -72,7 +66,7 @@ in {
     
     # Configure the systemd service
     systemd.services.qitech-control-server = {
-      description = "QiTech Industries Control Software Server";
+      description = "QiTech Control Server";
       wantedBy = [ "multi-user.target" ];
       after = [ "network.target" ];
       
@@ -80,8 +74,9 @@ in {
         Type = "simple";
         User = cfg.user;
         Group = cfg.group;
-        ExecStart = "${cfg.package}/bin/qitech-control-server";
-        Restart = "on-failure";
+        ExecStart = "${cfg.package}/bin/server";
+        Restart = "always";
+        RestartSec = "10s";
         
         # Grant specific capabilities needed for EtherCAT
         CapabilityBoundingSet = "CAP_NET_RAW CAP_NET_ADMIN CAP_SYS_NICE";
@@ -99,10 +94,16 @@ in {
         RestrictNamespaces = true;
         LockPersonality = true;
         MemoryDenyWriteExecute = false;
+
+        # Logging
+        StandardOutput = "journal";
+        StandardError = "journal";
+        SyslogIdentifier = "qitech-control-server";
       };
       
       environment = {
-        PORT = toString cfg.port;
+        RUST_BACKTRACE = "1";
+        RUST_LOG = "debug";
       };
     };
     
@@ -130,7 +131,7 @@ in {
     
     # Open firewall if requested
     networking.firewall = mkIf cfg.openFirewall {
-      allowedTCPPorts = [ cfg.port ];
+      allowedTCPPorts = [ 3001 ];
     };
     
     # Desktop integration

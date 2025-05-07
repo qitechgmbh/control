@@ -2,7 +2,7 @@
   home.stateVersion = "24.11";
 
   home.packages = with pkgs; [
-    qitech-control-electron
+    pkgs.qitechPackages.electron
   ];
 
   # Add autostart entry for the QiTech electron app
@@ -10,8 +10,8 @@
     [Desktop Entry]
     Type=Application
     Name=QiTech Control
-    Comment=QiTech Industries Control Software
-    Exec=env QITECH_BUILD_ENV=control-os QITECH_DEPLOYMENT_TYPE=production qitech-control-electron
+    Comment=QiTech Control
+    Exec=qitech-control-electron
     Icon=de.qitech.control-electron
     Terminal=false
     StartupWMClass=QiTech Control
@@ -60,10 +60,11 @@
       lock-delay = "uint32 0";
     };
 
-    # Add display settings to prevent blanking
+    # Interface settings with hot-corners disabled
     "org/gnome/desktop/interface" = {
       enable-animations = true;
       show-battery-percentage = true;
+      enable-hot-corners = false;  # Prevent activities from opening with hot corners
     };
 
     # Show dock on all monitors and always visible
@@ -87,18 +88,34 @@
     "org/gnome/desktop/wm/preferences" = {
       num-workspaces = 1;  # Set a fixed number of workspaces (default: 4)
     };
+
+    "org/gnome/desktop/lockdown" = {
+      disable-lock-screen = true;  # Disable lock screen
+      disable-log-out = false;  # Enable logout option (To be able to reboot manually)
+      disable-user-switching = true;  # Disable user switching
+      disable-screensaver = true;  # Disable screensaver
+      user-adminstration-disabled = true;  # Disable user administration
+    };
     
     "org/gnome/shell" = {
       always-show-log-out = true;
       enabled-extensions = [
         "dash-to-dock@micxgx.gmail.com"
+        "no-overview@fthx"
       ];
       favorite-apps = [
         "de.qitech.control-electron.desktop"  # The desktop entry from the QiTech app
         "org.gnome.Settings.desktop"
       ];
       disable-user-extensions = false;
-      enable-hot-corners = false;
+      disable-extension-version-validation = true;
+      welcome-dialog-last-shown-version = "999.999.999";  # Prevents welcome screen
+      looking-glass-history = [];
+    };
+    
+    # Disable automatic Activities overview on startup
+    "org/gnome/shell/extensions/ding" = {
+      start-corner = "top-left";  # This can help with preventing Activities from opening
     };
   };
 }

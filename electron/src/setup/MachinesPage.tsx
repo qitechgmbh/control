@@ -11,24 +11,21 @@ import {
 import React, { useMemo } from "react";
 import { getVendorPreset, getMachinePreset } from "@/machines/types";
 import { IconText } from "@/components/IconText";
-import {
-  EthercatSetupEventData,
-  useMainNamespace,
-} from "@/client/mainNamespace";
+import { MachinesEventData, useMainNamespace } from "@/client/mainNamespace";
 
 export const columns: ColumnDef<
-  NonNullable<EthercatSetupEventData["Done"]>["machines"][number]
+  NonNullable<MachinesEventData>["machines"][number]
 >[] = [
   {
     accessorKey: "qitech_machine",
     header: "Machine",
     cell: (row) => {
-      const machine_identification_unique =
-        row.row.original?.machine_identification_unique;
-      if (!machine_identification_unique) {
+      const machine_identification =
+        row.row.original?.machine_identification_unique.machine_identification;
+      if (!machine_identification) {
         return "—";
       }
-      const machinePreset = getMachinePreset(machine_identification_unique);
+      const machinePreset = getMachinePreset(machine_identification);
       return machinePreset?.name + " " + machinePreset?.version;
     },
   },
@@ -36,14 +33,12 @@ export const columns: ColumnDef<
     accessorKey: "qitech_vendor",
     header: "Vendor",
     cell: (row) => {
-      const machine_identification_unique =
-        row.row.original?.machine_identification_unique;
-      if (!machine_identification_unique) {
+      const machine_identification =
+        row.row.original?.machine_identification_unique.machine_identification;
+      if (!machine_identification) {
         return "—";
       }
-      return (
-        getVendorPreset(machine_identification_unique.vendor)?.name ?? "UNKNOWN"
-      );
+      return getVendorPreset(machine_identification.vendor)?.name ?? "UNKNOWN";
     },
   },
   {
@@ -75,11 +70,11 @@ export const columns: ColumnDef<
 ];
 
 export function MachinesPage() {
-  const { ethercatSetup } = useMainNamespace();
+  const { machines } = useMainNamespace();
 
   const data = useMemo(() => {
-    return ethercatSetup?.data?.Done?.machines || [];
-  }, [ethercatSetup]);
+    return machines?.data?.machines || [];
+  }, [machines]);
 
   const table = useReactTable({
     data,
@@ -90,7 +85,7 @@ export function MachinesPage() {
   return (
     <Page>
       <SectionTitle title="Machines">
-        <RefreshIndicator ts={ethercatSetup?.ts} />
+        <RefreshIndicator ts={machines?.ts} />
       </SectionTitle>
       <MyTable table={table} key={data.toString()} />
     </Page>

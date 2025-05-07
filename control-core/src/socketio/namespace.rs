@@ -1,6 +1,10 @@
 use crate::socketio::event::GenericEvent;
 use socketioxide::extract::SocketRef;
-use std::{collections::HashMap, time::Duration};
+use std::{
+    alloc::System,
+    collections::HashMap,
+    time::{Duration, Instant, SystemTime, UNIX_EPOCH},
+};
 
 pub trait NamespaceInterface {
     /// Adds a socket to the namespace.
@@ -171,9 +175,11 @@ pub fn cache_one_event() -> CacheFn {
 /// [BufferFn] that stores events for a certain duration
 pub fn cache_duration(duration: Duration) -> CacheFn {
     Box::new(move |events, event| {
-        let now = chrono::Utc::now();
-        let cutoff_time = now - chrono::Duration::from_std(duration).unwrap_or_default();
-        let cutoff_millis = cutoff_time.timestamp_millis();
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("System time before UNIX EPOCH");
+        let cutoff_time = now - duration;
+        let cutoff_millis = cutoff_time.as_millis() as u64;
 
         // Since events are ordered by increasing ts, we can find the first index
         // that should be kept and truncate everything before it

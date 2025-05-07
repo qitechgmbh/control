@@ -4,14 +4,14 @@ use crate::{
     io::temperature_input::{TemperatureInputDevice, TemperatureInputInput, TemperatureInputState},
     pdo::el32xx::RtdInput,
 };
-use ethercat_hal_derive::{Device, TxPdo};
+use ethercat_hal_derive::{EthercatDevice, TxPdo};
 
-use super::NewDevice;
+use super::NewEthercatDevice;
 
 /// EL3204 4-channel temperature input device
 ///
 /// PT100 / Ni100 (RTD) / (2 wire)
-#[derive(Device)]
+#[derive(EthercatDevice)]
 pub struct EL3204 {
     pub txpdo: EL3204TxPdo,
 }
@@ -22,7 +22,7 @@ impl std::fmt::Debug for EL3204 {
     }
 }
 
-impl NewDevice for EL3204 {
+impl NewEthercatDevice for EL3204 {
     fn new() -> Self {
         Self {
             txpdo: EL3204TxPdo::default(),

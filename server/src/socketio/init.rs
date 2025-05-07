@@ -1,18 +1,32 @@
 use std::str::FromStr;
+use std::sync::Arc;
 
-use crate::app_state::APP_STATE;
+use crate::app_state::AppState;
 use control_core::socketio::namespace_id::NamespaceId;
 use socketioxide::extract::SocketRef;
 use socketioxide::layer::SocketIoLayer;
 
-pub async fn init_socketio() -> SocketIoLayer {
+pub async fn init_socketio(app_state: &Arc<AppState>) -> SocketIoLayer {
     // create
     let (socketio_layer, io) = socketioxide::SocketIo::new_layer();
 
-    // set the on connect handler for main namespace
-    io.ns("/main", setup_namespace);
+    // Clone app_state for the first handler
+    let app_state_main = app_state.clone();
 
-    match io.dyn_ns("/machine/{vendor}/{machine}/{serial}", setup_namespace) {
+    // set the on connect handler for main namespace
+    io.ns("/main", move |socket: SocketRef| {
+        handle_socket_connection(socket, app_state_main.clone());
+    });
+
+    // Clone app_state for the second handler
+    let app_state_machine = app_state.clone();
+
+    match io.dyn_ns(
+        "/machine/{vendor}/{machine}/{serial}",
+        move |socket: SocketRef| {
+            handle_socket_connection(socket, app_state_machine.clone());
+        },
+    ) {
         Ok(_) => {
             // log
             log::info!("Machine namespace created");
@@ -28,18 +42,18 @@ pub async fn init_socketio() -> SocketIoLayer {
     }
 
     // set the io to the app state
-    let mut socketio_guard = APP_STATE.socketio_setup.socketio.write().await;
+    let mut socketio_guard = app_state.socketio_setup.socketio.write().await;
     socketio_guard.replace(io);
 
     return socketio_layer;
 }
 
-fn setup_namespace(socket: SocketRef) {
+fn handle_socket_connection(socket: SocketRef, app_state: Arc<AppState>) {
     let namespace_id = match NamespaceId::from_str(socket.ns()) {
         Ok(namespace_id) => namespace_id,
         Err(err) => {
             log::error!(
-                "[{}::setup_namespace] Failed to parse namespace id: {}",
+                "[{}::handle_socket_connection] Failed to parse namespace id: {}",
                 module_path!(),
                 err
             );
@@ -47,24 +61,26 @@ fn setup_namespace(socket: SocketRef) {
         }
     };
 
-    // Set up disconnect handler
-    setup_disconnection(&socket, namespace_id.clone());
+    // Setup disconnection handler
+    setup_disconnection(socket.clone(), namespace_id.clone(), app_state.clone());
 
-    // Set up connection
-    smol::block_on(setup_connection(socket, namespace_id));
+    // Setup connection
+    setup_connection(socket, namespace_id, app_state);
 }
 
-fn setup_disconnection(socket: &SocketRef, namepsace_id: NamespaceId) {
-    socket.on_disconnect(|socket: SocketRef| {
+fn setup_disconnection(socket: SocketRef, namespace_id: NamespaceId, app_state: Arc<AppState>) {
+    socket.on_disconnect(move |socket: SocketRef| {
+        let namespace_id = namespace_id.clone();
+        let app_state = app_state.clone();
+
         smol::block_on(async move {
             log::debug!("Socket disconnected {}", socket.id);
-            let mut socketio_namespaces_guard = APP_STATE.socketio_setup.namespaces.write().await;
+            let mut socketio_namespaces_guard = app_state.socketio_setup.namespaces.write().await;
 
             // remove from machine namespace
             socketio_namespaces_guard
-                .apply_mut(
-                    namepsace_id.clone(),
-                    |namespace_interface| match namespace_interface {
+                .apply_mut(namespace_id.clone(), &app_state, |namespace_interface| {
+                    match namespace_interface {
                         Ok(namespace_interface) => {
                             namespace_interface.unsubscribe(socket.clone());
                         }
@@ -72,37 +88,38 @@ fn setup_disconnection(socket: &SocketRef, namepsace_id: NamespaceId) {
                             log::error!(
                                 "[{}::on_disconnect_machine_ns] Namespace {:?} not found: {}",
                                 module_path!(),
-                                namepsace_id,
+                                namespace_id,
                                 err
                             );
                         }
-                    },
-                )
+                    }
+                })
                 .await;
         });
     });
 }
 
-async fn setup_connection(socket: SocketRef, namespace_id: NamespaceId) {
+fn setup_connection(socket: SocketRef, namespace_id: NamespaceId, app_state: Arc<AppState>) {
     log::info!("Socket connected {}", socket.id);
-    let mut socketio_namespaces_guard = APP_STATE.socketio_setup.namespaces.write().await;
-    socketio_namespaces_guard
-        .apply_mut(
-            namespace_id.clone(),
-            |namespace_interface| match namespace_interface {
-                Ok(namespace_interface) => {
-                    namespace_interface.subscribe(socket.clone());
-                    namespace_interface.reemit(socket);
+    smol::block_on(async {
+        let mut socketio_namespaces_guard = app_state.socketio_setup.namespaces.write().await;
+        socketio_namespaces_guard
+            .apply_mut(namespace_id.clone(), &app_state, |namespace_interface| {
+                match namespace_interface {
+                    Ok(namespace_interface) => {
+                        namespace_interface.subscribe(socket.clone());
+                        namespace_interface.reemit(socket);
+                    }
+                    Err(err) => {
+                        log::error!(
+                            "[{}::on_connect_machine_ns] Namespace {:?} not found: {}",
+                            module_path!(),
+                            namespace_id,
+                            err
+                        );
+                    }
                 }
-                Err(err) => {
-                    log::error!(
-                        "[{}::on_connect_machine_ns] Namespace {:?} not found: {}",
-                        module_path!(),
-                        namespace_id,
-                        err
-                    );
-                }
-            },
-        )
-        .await;
+            })
+            .await;
+    });
 }

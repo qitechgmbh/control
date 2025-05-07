@@ -43,8 +43,21 @@ export function SidebarItem({
   );
 }
 
+// Create a Width Context
+const SidebarlessWidthContext = React.createContext<number | null>(null);
+
+// Create a hook to use the width context
+export function useSidebarlessWidth() {
+  const width = React.useContext(SidebarlessWidthContext);
+  if (width === null) {
+    throw new Error("useWidth must be used within a WidthProvider");
+  }
+  return width;
+}
+
 export function SidebarLayout() {
   const machines = useMachines();
+  const [contentWidth, setContentWidth] = React.useState<number>(0);
   const items: SidebarItemContent[] = [
     ...machines.map((machine) => ({
       link: `/_sidebar/machines/${machine.slug}/${machine.machine_identification_unique.serial}/control`,
@@ -60,8 +73,31 @@ export function SidebarLayout() {
     },
   ];
 
+  // width measuring
+  const outletRef = React.useRef<HTMLDivElement>(null);
+  React.useEffect(() => {
+    if (outletRef.current) {
+      // Set initial width
+      setContentWidth(outletRef.current.offsetWidth);
+
+      // Create a ResizeObserver to track width changes
+      const resizeObserver = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+          setContentWidth(entry.contentRect.width);
+        }
+      });
+
+      resizeObserver.observe(outletRef.current);
+
+      // Clean up observer on unmount
+      return () => {
+        resizeObserver.disconnect();
+      };
+    }
+  }, []);
+
   return (
-    <>
+    <SidebarlessWidthContext.Provider value={contentWidth}>
       <div className="fixed flex h-full w-48 flex-col bg-neutral-200">
         <div className="flex h-18 flex-col items-center justify-center gap-0 pt-2">
           <div className="font-qitech line-clamp-none text-3xl">QITECH</div>
@@ -74,9 +110,9 @@ export function SidebarLayout() {
           ))}
         </div>
       </div>
-      <div className="pl-48">
+      <div className="ml-48" ref={outletRef}>
         <Outlet />
       </div>
-    </>
+    </SidebarlessWidthContext.Provider>
   );
 }
