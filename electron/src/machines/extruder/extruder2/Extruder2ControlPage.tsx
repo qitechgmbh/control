@@ -11,7 +11,6 @@ import { Label } from "@/control/Label";
 import { EditValue } from "@/control/EditValue";
 import { roundToDecimals } from "@/lib/decimal";
 import { useExtruder2 } from "./useExtruder";
-import { ReadOnlyValue } from "@/control/ReadonlyValue";
 import { TimeSeriesValueNumeric } from "@/control/TimeSeriesValue";
 
 export function Extruder2ControlPage() {
