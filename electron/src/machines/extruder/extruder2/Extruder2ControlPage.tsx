@@ -12,6 +12,7 @@ import { EditValue } from "@/control/EditValue";
 import { roundToDecimals } from "@/lib/decimal";
 import { useExtruder2 } from "./useExtruder";
 import { ReadOnlyValue } from "@/control/ReadonlyValue";
+import { TimeSeriesValueNumeric } from "@/control/TimeSeriesValue";
 
 export function Extruder2ControlPage() {
   const {
@@ -21,9 +22,6 @@ export function Extruder2ControlPage() {
     modeIsDisabled,
     inverterSetRotation,
     rotationState,
-    frontHeatingTarget,
-    backHeatingTarget,
-    middleHeatingTarget,
     frontHeatingState,
     backHeatingState,
     middleHeatingState,
@@ -98,13 +96,12 @@ export function Extruder2ControlPage() {
               />
             </Label>
 
-            <Label label="Actual Pressure">
-              <ReadOnlyValue
-                value={bar}
-                unit="bar"
-                renderValue={(value) => roundToDecimals(value, 0)}
-              />
-            </Label>
+            <TimeSeriesValueNumeric
+              label="Nozzle Pressure"
+              unit="bar"
+              renderValue={(value) => roundToDecimals(value, 0)}
+              timeseries={1}
+            />
           </div>
         </ControlCard>
 
