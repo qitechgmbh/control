@@ -13,6 +13,7 @@ pub mod el3024;
 pub mod el3204;
 pub mod el6021;
 pub mod el7031;
+pub mod el7031_0030;
 pub mod el7041_0052;
 // pub mod el4008;
 
@@ -162,9 +163,7 @@ pub fn device_from_subdevice_identity_tuple(
         // "EL4008" => Ok(Arc::new(RwLock::new(EL4008::new()))),
         // TODO: implement EL3204 identity
         // "EL3204" => Ok(Arc::new(RwLock::new(EL3204::new()))),
-        EL7031_IDENTITY_A | EL7031_IDENTITY_B => {
-            Ok(Arc::new(RwLock::new(el7031::EL7031::new())))
-        }
+        EL7031_IDENTITY_A | EL7031_IDENTITY_B => Ok(Arc::new(RwLock::new(el7031::EL7031::new()))),
         EL7041_0052_IDENTITY_A => Ok(Arc::new(RwLock::new(el7041_0052::EL7041_0052::new()))),
         _ => Err(anyhow::anyhow!(
             "[{}::device_from_subdevice] No Driver: vendor_id: {:?}, product_id: {:?}, revision: {:?}",
