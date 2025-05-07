@@ -139,6 +139,8 @@ export function useMotor(
   targetBar: number | undefined;
   targetRpm: number | undefined;
   uses_rpm: boolean | undefined;
+  rpmTs: TimeSeries;
+  barTs: TimeSeries;
   SetTargetRpm: (rpm: number) => void;
   SetRegulation: (usesRpm: boolean) => void;
   SetTargetPressure: (bar: number) => void;
@@ -155,7 +157,7 @@ export function useMotor(
     SetTargetPressure: z.number(),
   });
 
-  const { motorRpmState, motorBarState, motorRegulationState } =
+  const { motorRpmState, motorBarState, motorRegulationState, rpm, bar } =
     useExtruder2Namespace(machine_identification_unique);
 
   const rpmState = useStateOptimistic<number>();
@@ -231,6 +233,8 @@ export function useMotor(
     bar: pressureState.value,
     targetBar: targetPressureState.value,
     targetRpm: rpmTargetState.value,
+    rpmTs: rpm,
+    barTs: bar,
     SetTargetRpm,
     SetRegulation,
     SetTargetPressure,
@@ -251,6 +255,10 @@ export function useHeatingTemperature(
   frontHeatingState: Heating | undefined;
   backHeatingState: Heating | undefined;
   middleHeatingState: Heating | undefined;
+
+  frontTemperature: TimeSeries;
+  backTemperature: TimeSeries;
+  middleTemperature: TimeSeries;
 } {
   const frontHeatingTargetState = useStateOptimistic<number>();
   const backHeatingTargetState = useStateOptimistic<number>();
@@ -315,8 +323,14 @@ export function useHeatingTemperature(
   };
 
   // Read path
-  const { heatingFrontState, heatingBackState, heatingMiddleState } =
-    useExtruder2Namespace(machine_identification_unique);
+  const {
+    heatingFrontState,
+    heatingBackState,
+    heatingMiddleState,
+    frontTemperature,
+    backTemperature,
+    middleTemperature,
+  } = useExtruder2Namespace(machine_identification_unique);
 
   useEffect(() => {
     if (heatingFrontState?.data) {
@@ -350,5 +364,9 @@ export function useHeatingTemperature(
     frontHeatingState: heatingFrontState?.data,
     backHeatingState: heatingBackState?.data,
     middleHeatingState: heatingMiddleState?.data,
+
+    frontTemperature,
+    backTemperature,
+    middleTemperature,
   };
 }

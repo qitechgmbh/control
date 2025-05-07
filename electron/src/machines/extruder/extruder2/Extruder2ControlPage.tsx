@@ -18,10 +18,9 @@ export function Extruder2ControlPage() {
   const {
     mode,
     SetMode,
-    modeIsLoading,
-    modeIsDisabled,
-    inverterSetRotation,
-    rotationState,
+    frontTemperature,
+    backTemperature,
+    middleTemperature,
     frontHeatingState,
     backHeatingState,
     middleHeatingState,
@@ -30,8 +29,8 @@ export function Extruder2ControlPage() {
     SetHeatingMiddleTemp,
     SetRegulation,
     uses_rpm,
-    rpm,
-    bar,
+    barTs,
+    rpmTs,
     targetBar,
     targetRpm,
     SetTargetPressure,
@@ -44,16 +43,19 @@ export function Extruder2ControlPage() {
         <HeatingZone
           title={"Heating Front"}
           heatingState={frontHeatingState}
+          heatingTimeSeries={frontTemperature}
           onChangeTargetTemp={SetHeatingFrontTemp}
         />
         <HeatingZone
           title={"Heating Middle"}
           heatingState={middleHeatingState}
+          heatingTimeSeries={middleTemperature}
           onChangeTargetTemp={SetHeatingMiddleTemp}
         />
         <HeatingZone
           title={"Heating Back"}
           heatingState={backHeatingState}
+          heatingTimeSeries={backTemperature}
           onChangeTargetTemp={SetHeatingBackTemp}
         />
         <ControlCard className="bg-red" title="Screw Drive">
@@ -88,31 +90,23 @@ export function Extruder2ControlPage() {
             </Label>
           </div>
           <div className="flex flex-row flex-wrap gap-4">
-            <Label label="Actual RPM">
-              <ReadOnlyValue
-                value={rpm}
-                unit="rpm"
-                renderValue={(value) => roundToDecimals(value, 0)}
-              />
-            </Label>
+            <TimeSeriesValueNumeric
+              label="Rpm"
+              unit="rpm"
+              renderValue={(value) => roundToDecimals(value, 0)}
+              timeseries={rpmTs}
+            />
 
             <TimeSeriesValueNumeric
-              label="Nozzle Pressure"
+              label="Pressure"
               unit="bar"
               renderValue={(value) => roundToDecimals(value, 0)}
-              timeseries={1}
+              timeseries={barTs}
             />
           </div>
         </ControlCard>
 
-        <ControlCard className="bg-red" title="Measurements">
-          {/* <TimeSeriesValueNumeric
-            label="Nozzle Pressure"
-            unit="bar"
-            value={55}
-            renderValue={(value) => roundToDecimals(value, 0)}
-          /> */}
-        </ControlCard>
+        <ControlCard className="bg-red" title="Measurements"></ControlCard>
         <ControlCard className="bg-red" title="Mode">
           <SelectionGroup<"Standby" | "Heat" | "Extrude">
             value={mode}
