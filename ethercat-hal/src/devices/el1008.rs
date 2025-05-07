@@ -1,5 +1,3 @@
-use std::any;
-
 use super::{NewEthercatDevice, SubDeviceIdentityTuple};
 use crate::io::digital_input::{DigitalInputDevice, DigitalInputInput, DigitalInputState};
 use crate::pdo::{PredefinedPdoAssignment, TxPdo, basic::BoolPdoObject};
