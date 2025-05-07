@@ -1,7 +1,6 @@
 import { ControlCard } from "@/control/ControlCard";
 import { EditValue } from "@/control/EditValue";
 import { Label } from "@/control/Label";
-import { ReadOnlyValue } from "@/control/ReadonlyValue";
 import { roundToDecimals } from "@/lib/decimal";
 import { Flame } from "lucide-react"; // Or any other icon library
 import React from "react";
@@ -23,7 +22,6 @@ export function HeatingZone({
   onChangeTargetTemp,
 }: Props) {
   const targetTemperature = heatingState?.target_temperature ?? 150;
-  const temperature = heatingState?.temperature ?? 0;
   const heating = heatingState?.heating ?? false;
 
   return (
