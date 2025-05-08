@@ -43,7 +43,7 @@ pub struct ExtruderV2 {
     heating_back: Heating,
     heating_middle: Heating,
     last_measurement_emit: Instant,
-    pressure_sensor: AnalogInputGetter,
+    pressure_sensor: AnalogInputGetter, // EL3024
     uses_rpm: bool,
     rpm: f32,
     bar: f32,
@@ -115,8 +115,21 @@ impl ExtruderV2 {
         self.target_bar = bar;
     }
 
+    fn set_bar(&mut self) {
+        let normalized = self.pressure_sensor.get_normalized();
+        let normalized = match normalized {
+            Some(normalized) => normalized,
+            None => todo!(),
+        };
+        // assuming full scale pressure of 10 bar
+        let bar = normalized * 10.0;
+        self.bar = bar;
+        self.emit_bar();
+    }
+
     fn set_target_rpm(&mut self, rpm: f32) {
         self.target_rpm = rpm;
+        self.inverter.set_running_rpm_target(rpm);
     }
 }
 
