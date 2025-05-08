@@ -115,6 +115,18 @@ impl ExtruderV2 {
         self.target_bar = bar;
     }
 
+    fn set_bar(&mut self) {
+        let normalized = self.pressure_sensor.get_normalized();
+        let normalized = match normalized {
+            Some(normalized) => normalized,
+            None => todo!(),
+        };
+        // assuming full scale pressure of 10 bar
+        let bar = normalized * 10.0;
+        self.bar = bar;
+        self.emit_bar();
+    }
+
     fn set_target_rpm(&mut self, rpm: f32) {
         self.target_rpm = rpm;
         self.inverter.set_running_rpm_target(rpm);
