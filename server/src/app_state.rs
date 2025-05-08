@@ -1,18 +1,17 @@
 use crate::ethercat::config::{MAX_SUBDEVICES, PDI_LEN};
-use crate::serial::dre::Dre;
 use crate::serial::serial_detection::SerialDetection;
 use crate::socketio::namespaces::Namespaces;
 use control_core::machines::Machine;
 use control_core::machines::identification::{DeviceIdentification, MachineIdentificationUnique};
 use control_core::machines::manager::MachineManager;
-use control_core::serial::registry::SerialRegistry;
-use control_core::serial::{ProductConfig, Serial};
 use ethercat_hal::devices::EthercatDevice;
 use ethercrab::{MainDevice, SubDeviceGroup, subdevice_group::Op};
 use smol::lock::RwLock;
 use socketioxide::SocketIo;
 use std::collections::HashMap;
 use std::sync::Arc;
+use super::serial::register::SERIAL_REGISTRY;
+
 
 pub struct SocketioSetup {
     pub socketio: RwLock<Option<SocketIo>>,
@@ -22,7 +21,7 @@ pub struct SocketioSetup {
 pub struct AppState {
     pub socketio_setup: SocketioSetup,
     pub ethercat_setup: Arc<RwLock<Option<EthercatSetup>>>,
-    pub serial_setup: Arc<RwLock<Option<SerialSetup>>>,
+    pub serial_setup: Arc<RwLock<SerialDetection>>,
     pub machines: RwLock<MachineManager>,
 }
 
@@ -65,29 +64,10 @@ impl AppState {
                 namespaces: RwLock::new(Namespaces::new()),
             },
             ethercat_setup: Arc::new(RwLock::new(None)),
-            serial_setup: Arc::new(RwLock::new(None)),
+            serial_setup: Arc::new(RwLock::new(SerialDetection::new(
+                SERIAL_REGISTRY.clone(),
+            ))),
             machines: RwLock::new(MachineManager::new()),
         }
-    }
-}
-
-pub struct SerialSetup{
-    pub connected_serial: HashMap<String, Result<Arc<RwLock<dyn Serial>>, anyhow::Error>>,
-    pub serial_detection: Arc<RwLock<SerialDetection>>,
-}
-
-impl SerialSetup {
-    pub async fn new() -> Self {
-        let registry =  SerialRegistry::new();
-        let sd = Arc::new(RwLock::new(SerialDetection::new(registry.clone())));
-        Self {
-            connected_serial: sd.read().await.connected_serial_usb.iter()
-                .map(|(k, v)| (k.clone(), v.as_ref().map(|arc| Arc::clone(arc)).map_err(|e| anyhow::Error::msg(e.to_string()))))
-                .collect(),
-            serial_detection: sd.clone(),
-        }
-    }
-    pub async fn register_config(&mut self, pc: ProductConfig) {
-        self.serial_detection.write().await.sr.register::<Dre>(pc.clone());
     }
 }

@@ -7,7 +7,7 @@ use ethercrab::{SubDevicePdi, SubDeviceRef};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct EthercatSetupDone {
+pub struct SerialSetupDones {
     pub devices: Vec<DeviceObj>,
     pub machines: Vec<MachineObj>,
 }
@@ -20,7 +20,7 @@ pub struct MachineObj {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct DeviceObj {
-    pub configured_address: u16,
+    pub path: &str,
     pub name: String,
     pub vendor_id: u32,
     pub product_id: u32,

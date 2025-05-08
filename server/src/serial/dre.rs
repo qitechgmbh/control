@@ -1,31 +1,13 @@
-/*
-*@author: Alisher Darmenov
-*@company: QiTech
-*@created: 27.04.2025
-*@last_update: 1.05.2025
-*@description: This module is responsible for laser diameter measurement using DRE device
-*/
-use serial::{prelude::*, unix::TTYPort};
-use std::{any::Any, io::Write, time::Duration};
+use serial::prelude::*;
+use smol::lock::RwLock;
+use std::{any::Any, io::Write, sync::Arc, thread, time::Duration};
 use control_core::modbus;
 use anyhow::{anyhow, Error};
-
 use control_core::serial::{Serial, SerialNew};
 
-#[derive(Clone)]
-struct DreConfig {
-    pub lower_tolerance: f32,
-    pub target_diameter: f32,
-    pub upper_tolerance: f32,
-}
-
-
 pub struct Dre {
-    pub port: TTYPort,
-    pub diameter: f32,
-    config: DreConfig,
+    pub diameter: Arc<RwLock<Result<f32, Error>>>,
     pub path: String,
-    failed_request_counter: u8
 }
 
 impl Serial for Dre {
@@ -39,237 +21,87 @@ impl Serial for Dre {
 }
 
 impl SerialNew for Dre {
-    fn new(path: &str) -> Result<Self, Error> {//establishing connection with the serial device
-        let mut port = match serial::open(path) {
-            Ok(port) => port,
-            Err(e) => return Err(anyhow!("Failed to open port: {}", e)),
-        };
-        match port.reconfigure(&|settings| {
-            (match settings.set_baud_rate(serial::Baud9600) {
-                Ok(_) => {},
-                Err(e) => return Err(e),
-            });
-            settings.set_char_size(serial::Bits8);
-            settings.set_parity(serial::ParityNone);
-            settings.set_stop_bits(serial::Stop1);
-            settings.set_flow_control(serial::FlowNone);
-            Ok(())
-        }){
-            Ok(_) => {},
-            Err(e) => return Err(anyhow!("Failed to configure port: {}", e)),
-        };
-        match port.set_timeout(Duration::from_millis(100)) {
-            Ok(_) => {},
-            Err(e) => return Err(anyhow!("Failed to set timeout: {}", e)),
-        };
+    fn new(path: &str) -> Result<Self, Error> {
+        let path_string = path.to_string();
+        let diameter = Arc::new(RwLock::new(Ok(0.0)));
+        let failed_request_counter = Arc::new(RwLock::new(0));
 
-        let mut failed_request_counter:u8 = 0;
-        let mut target_diameter:f32 = 0.0;
-        let mut upper_tolerance:f32 = 0.0;
-        let mut lower_tolerance:f32 = 0.0;
-        let mut diameter:f32 = 0.0;
+        let diameter_clone = Arc::clone(&diameter);
+        let counter_clone = Arc::clone(&failed_request_counter);
+        let path_clone = path_string.clone();
 
-        //request & responce loop for target diameter
-        loop{
-            if failed_request_counter >10 {
-                return Err(Error::msg("Connection problem with Dre Device" ));
-            }
-            // Creating request and sending it to the serial device
-            let request = modbus::ModbusRequest{
-                slave_id: 1,
-                function_code: modbus::ModbusFunctionCode::ReadHoldingRegister,
-                data: vec![(101 >> 8) as u8, (101 & 0xFF) as u8],
-            };
-            let request_vec: Vec<u8> = request.into();
-            match port.write_all(&request_vec){
-                Ok(_) => {},
-                Err(e) => return Err(Error::msg(format!("Failed to write to port: {}", e))),
-            }
-            // Waiting for response from the serial device
-            std::thread::sleep(modbus::calculate_modbus_rtu_timeout(
-                8, 
-                Duration::from_millis(50), 
-                9600,
-                8));
-            // Reading response from the serial device
-            let value = modbus::receive_data_modbus(&mut port);
-            if let Some(value) = value {
-                failed_request_counter = 0;
-                target_diameter = u16::from_be_bytes([value[0], value[1]]) as f32 / 1000.0;
-                break;
-            } else {
-                failed_request_counter+=1;
-                continue;
-            }
-        }
-        //request & responce loop for upper tolerance
-        loop{
-            if failed_request_counter >10 {
-                return Err(Error::msg("Connection problem with Dre Device" ));
-            }
-            // Creating request and sending it to the serial device
-            let request = modbus::ModbusRequest{
-                slave_id: 1,
-                function_code: modbus::ModbusFunctionCode::ReadHoldingRegister,
-                data: vec![(102 >> 8) as u8, (102 & 0xFF) as u8],
-            };
-            let request_vec: Vec<u8> = request.into();
-            match port.write_all(&request_vec){
-                Ok(_) => {},
-                Err(e) => return Err(Error::msg(format!("Failed to write to port: {}", e))),
-            };
+        thread::Builder::new()
+            .name("DRE".to_owned())
+            .spawn(move || {
+                smol::block_on(async move {
+                    loop {
+                        let request = modbus::ModbusRequest {
+                            slave_id: 1,
+                            function_code: modbus::ModbusFunctionCode::ReadInputRegister,
+                            data: vec![(0 >> 8) as u8, (0 & 0xFF) as u8],
+                        };
+                        let request_vec: Vec<u8> = request.into();
 
-            // Waiting for response from the serial device
-            std::thread::sleep(modbus::calculate_modbus_rtu_timeout(
-                8, 
-                Duration::from_millis(50), 
-                9600,
-                8));
+                        match serial::open(&path_clone) {
+                            Ok(mut port) => {
+                                let _ = port.reconfigure(&|settings| {
+                                    let _ = settings.set_baud_rate(serial::Baud9600);
+                                    settings.set_char_size(serial::Bits8);
+                                    settings.set_parity(serial::ParityNone);
+                                    settings.set_stop_bits(serial::Stop1);
+                                    settings.set_flow_control(serial::FlowNone);
+                                    Ok(())
+                                });
+                                let _ = port.set_timeout(Duration::from_millis(100));
 
-            // Reading response from the serial device
-            let value = modbus::receive_data_modbus(&mut port);
-            if let Some(value) = value {
-                failed_request_counter=0;
-                upper_tolerance = u16::from_be_bytes([value[0], value[1]]) as f32 / 1000.0;
-                break;
-            }else {
-                failed_request_counter+=1;
-                continue;
-            }
-        }
+                                if let Err(e) = port.write_all(&request_vec) {
+                                    eprintln!("Failed to write to port: {}", e);
+                                    continue;
+                                }
 
-        //request & responce loop for lower tolerance
-        loop{
-            if failed_request_counter >10 {
-                return Err(Error::msg("Connection problem with Dre Device" ));
-            }
-            // Creating request and sending it to the serial device
-            let request = modbus::ModbusRequest{
-                slave_id: 1,
-                function_code: modbus::ModbusFunctionCode::ReadHoldingRegister,
-                data: vec![(103 >> 8) as u8, (103 & 0xFF) as u8],
-            };
-            let request_vec: Vec<u8> = request.into();
-            match port.write_all(&request_vec){
-                Ok(_) => {},
-                Err(e) => return Err(Error::msg(format!("Failed to write to port: {}", e))),
-            };
+                                std::thread::sleep(modbus::calculate_modbus_rtu_timeout(
+                                    8,
+                                    Duration::from_millis(50),
+                                    9600,
+                                    8,
+                                ));
+                                let result = modbus::receive_data_modbus(&mut port);
+                                if let Some(value) = result {
+                                    let val = u16::from_be_bytes([value[0], value[1]]) as f32 / 1000.0;
+                                    {
+                                        let mut diam = diameter_clone.write().await;
+                                        *diam = Ok(val);
+                                    }
+                                    {
+                                        let mut count = counter_clone.write().await;
+                                        *count = 0;
+                                    }
+                                } else {
+                                    let mut count = counter_clone.write().await;
+                                    *count += 1;
+                                    if *count > 10 {
+                                        let mut diam = diameter_clone.write().await;
+                                        *diam = Err(anyhow!("Failed to read from serial device after 10 tries"));
+                                        drop(port);
+                                        break;
+                                    }
+                                }
+                            }
+                            Err(e) => {
+                                eprintln!("Failed to open port: {}", e);
+                                break;
+                            }
+                        }
 
-            // Waiting for response from the serial device
-            std::thread::sleep(modbus::calculate_modbus_rtu_timeout(
-                8, 
-                Duration::from_millis(50), 
-                9600,
-                8));
+                        std::thread::sleep(Duration::from_millis(300));
+                    }
+                });
+            })
+            .expect("Failed to spawn DRE update thread");
 
-            // Reading response from the serial device
-            let value = modbus::receive_data_modbus(&mut port);
-            if let Some(value) = value {
-                failed_request_counter=0;
-                lower_tolerance = u16::from_be_bytes([value[0], value[1]]) as f32 / 1000.0;
-                break;
-            } else {
-                failed_request_counter+=1;
-                continue;
-            }
-        }
-
-        //request & responce loop for current diameter
-        loop{
-            if failed_request_counter > 10 {
-                return Err(Error::msg("Connection problem with Dre Device" ));
-            }
-            // Creating request and sending it to the serial device
-            let request = modbus::ModbusRequest{
-                slave_id: 1,
-                function_code: modbus::ModbusFunctionCode::ReadInputRegister,
-                data: vec![(0 >> 8) as u8, (0 & 0xFF) as u8],
-            };
-            let request_vec: Vec<u8> = request.into();
-            match port.write_all(&request_vec){
-                Ok(_) => {},
-                Err(e) => return Err(Error::msg(format!("Failed to write to port: {}", e))),
-            };
-
-            // Waiting for response from the serial device
-            std::thread::sleep(modbus::calculate_modbus_rtu_timeout(
-                8, 
-                Duration::from_millis(50), 
-                9600,
-                8));
-
-            // Reading response from the serial device
-            let value = modbus::receive_data_modbus(&mut port);
-            if let Some(value) = value {
-                failed_request_counter=0;
-                diameter = u16::from_be_bytes([value[0], value[1]]) as f32 / 1000.0;
-                break;
-            } else {
-                failed_request_counter+=1;
-                continue;
-            }
-        }
-        
-        return Ok(Dre{
-            port: port,
-            diameter: diameter,
-            config: DreConfig{
-                lower_tolerance: lower_tolerance,
-                target_diameter: target_diameter,
-                upper_tolerance: upper_tolerance,
-            },
-            path: path.to_string(),
-            failed_request_counter: failed_request_counter
-        });
-
-    }
-
-    
-}
-impl Dre {
-
-    /* @return: Result<f32, Error> - return current diameter or error
-     *
-     * @description: This function is used to get the current diameter
-     */
-    pub fn diameter_request(&mut self) -> Result<f32, Error> {
-        //request & responce loop for current diameter
-        loop{
-            if self.failed_request_counter > 10 {
-                return Err(Error::msg("Connection problem with Dre Device" ));
-            }
-            // Creating request and sending it to the serial device
-            let request = modbus::ModbusRequest{
-                slave_id: 1,
-                function_code: modbus::ModbusFunctionCode::ReadInputRegister,
-                data: vec![(0 >> 8) as u8, (0 & 0xFF) as u8],
-            };
-            let request_vec: Vec<u8> = request.into();
-            match self.port.write_all(&request_vec){
-                Ok(_) => {},
-                Err(e) => return Err(Error::msg(format!("Failed to write to port: {}", e))),
-            };
-
-            // Waiting for response from the serial device
-            std::thread::sleep(modbus::calculate_modbus_rtu_timeout(
-                8, 
-                Duration::from_millis(50), 
-                9600,
-                8));
-
-            // Reading response from the serial device
-            let value = modbus::receive_data_modbus(&mut self.port);
-            if let Some(value) = value {
-                self.failed_request_counter = 0;
-                if value.len() != 2 {
-                    return Err(Error::msg("Invalid response length"));
-                }
-                self.diameter = u16::from_be_bytes([value[0], value[1]]) as f32 / 1000.0;
-                return Ok(self.diameter);
-            } else {
-                self.failed_request_counter+=1;
-                continue;
-            }
-        }
+        Ok(Dre {
+            diameter,
+            path: path_string,
+        })
     }
 }

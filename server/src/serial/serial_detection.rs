@@ -3,10 +3,8 @@
 *@company: QiTech
 *@created: 20.04.2025
 *
-*@last_update: 2.05.2025
 *@description: This module is responsible for usb detection and validation, specially made with serialport to avoid complexity and size of tokio_serial
 */
-
 
 use serialport::{SerialPortInfo,SerialPortType,UsbPortInfo};
 use std::{
@@ -14,8 +12,9 @@ use std::{
     sync::Arc,
 };
 use smol::lock::RwLock;
-
 use control_core::serial::{registry::SerialRegistry, ProductConfig, Serial};
+use super::dre::Dre;
+
 #[derive(Debug)]
 struct PortChange {
     added: Vec<(String, UsbPortInfo)>,
@@ -47,7 +46,7 @@ impl SerialDetection {
     fn update(&self)-> Option<Vec<SerialPortInfo>>{
         match serialport::available_ports() {
             Ok(ports) => Some(ports),
-            Err(e)=> None
+            Err(_)=> None
         }
     }
 
@@ -121,7 +120,7 @@ impl SerialDetection {
         }
     }
 
-    fn retry(
+    async fn retry(
         &mut self,
         check_list: Vec<(String, UsbPortInfo)>){
             for (path, info) in check_list.iter(){
@@ -129,14 +128,36 @@ impl SerialDetection {
                     vendor_id: info.vid,
                     product_id: info.pid
                 };
-
                 match self.connected_serial_usb.get(path){                    
                     Some(rec) => {
                         match rec {
-                            Ok(_) => {},
-                            Err(e) => {
+                            Ok(device) => {
+                                match self.sr.downcast::<Dre>(device.clone()).await{
+                                    Ok(dre) =>{
+                                        let l = dre.read().await;
+                                        match *l.diameter.read().await {
+                                            Ok(_) => {},
+                                            Err(ref e) => {
+                                                eprintln!("Error reading Dre device at {}: {}", path, e);
+                                                self.connected_serial_usb.remove(&path.clone());
+                                                self.connected_serial_usb.insert(
+                                                    path.clone(),
+                                                    Err(anyhow::anyhow!("Dre device is disconnected")),
+                                                );
+                                            }
+                                        }
+                                        
+                                        
+                                    },
+                                    Err(_) => {
+                                        self.connected_serial_usb.remove(&path.clone());
+                                        self.connected_serial_usb.insert(path.clone(), Err(anyhow::anyhow!("Dre device is disconnected")));
+                                    }
+                                }
+                                
+                            },
+                            Err(_) => {
                                 let ag = self.sr.new_machine(path,&conf);
-                                println!("Retrying to connect to port {}: {:?}", path, e);
                                 if ag.is_ok(){
                                     self.connected_serial_usb.insert(path.clone(), ag);
                                 }
@@ -148,7 +169,7 @@ impl SerialDetection {
             }
         }
     
-    pub fn cycle(&mut self){
+    pub async fn cycle(&mut self){
         let up = self.update();
         let usb_ports = self.extract_usb_serial_devices(up);
         let comp = self.compare_ports(self.ports.clone(), usb_ports.clone());
@@ -164,7 +185,11 @@ impl SerialDetection {
         self.remove_usb_from(comp.removed);
         let mut check_list = self.ports.clone();
         check_list.retain(|item| !comp.added.contains(item));
-        self.retry(check_list);
+
+
+        self.retry(check_list).await;
+
+        
     }
 }
 

@@ -1,13 +1,13 @@
 use std::{panic::catch_unwind, process::exit, sync::Arc};
 use app_state::AppState;
-use control_core::serial::{registry::SerialRegistry, ProductConfig};
+
 use env_logger::Env;
 use ethercat::init::init_ethercat;
 use r#loop::init_loop;
-use panic::PanicDetails;
+use panic:: PanicDetails;
 use rest::init::init_api;
-use serial::{dre::Dre, dre_config::{DRE_PID, DRE_VID}, init::init_serial, serial_detection::SerialDetection};
-use smol::{channel::unbounded, lock::RwLock};
+use serial::init::init_serial;
+use smol::channel::unbounded;
 
 pub mod app_state;
 pub mod ethercat;
@@ -34,24 +34,14 @@ fn main() {
 
 fn main2() {
     env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
-
     let app_state = Arc::new(AppState::new());
 
     let (thread_panic_tx, thread_panic_rx) = unbounded::<PanicDetails>();
-    let mut registry = SerialRegistry::new();
-    registry.register::<Dre>(ProductConfig {
-        vendor_id: DRE_VID,
-        product_id: DRE_PID,
-    });
 
-
-    let sd = Arc::new(RwLock::new(SerialDetection::new(registry.clone())));
-
-    init_serial(thread_panic_tx.clone(), app_state.clone(),registry.clone(), sd.clone());
+    init_serial(thread_panic_tx.clone(), app_state.clone()).expect("Failed to initialize Serial");
     init_api(thread_panic_tx.clone(), app_state.clone()).expect("Failed to initialize API");
     init_ethercat(thread_panic_tx.clone(), app_state.clone()).expect("Failed to initialize EtherCAT");
     init_loop(thread_panic_tx, app_state).expect("Failed to initialize loop");
-
     
     smol::block_on(async {
         loop {

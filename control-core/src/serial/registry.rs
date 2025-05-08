@@ -1,5 +1,5 @@
 use std::{
-    any::{Any, TypeId},
+    any::TypeId,
     collections::HashMap,
     sync::Arc,
 };
@@ -65,7 +65,6 @@ impl SerialRegistry {
         path: &str,
         profuct_config: &ProductConfig,
     ) -> Result<Arc<RwLock<dyn Serial>>, anyhow::Error> {
-
         // find serial new function by comparing ProdutConfig
         let (_, serial_new_fn) = self
             .type_map

@@ -1,5 +1,4 @@
 pub mod registry;
-
 use std::any::Any;
 
 pub trait Serial: Any + Send + Sync + SerialNew {

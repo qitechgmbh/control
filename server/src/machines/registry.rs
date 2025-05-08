@@ -10,10 +10,5 @@ lazy_static! {
             machine: MACHINE_WINDER_V1,
         });
         mc
-
-        // let mut sdr = SerislDeviceRegistry::new();
-        // sdr.register::<Dre>(SerialDeviceIdentification::new(
-
-        // )); 
     };
 }
