@@ -2,47 +2,56 @@ import { ControlCard } from "@/control/ControlCard";
 import { EditValue } from "@/control/EditValue";
 import { Label } from "@/control/Label";
 import { roundToDecimals } from "@/lib/decimal";
+import { Flame } from "lucide-react"; // Or any other icon library
 import React from "react";
+import { Heating } from "./extruder2/extruder2Namespace";
+import { TimeSeries } from "@/lib/timeseries";
+import { TimeSeriesValueNumeric } from "@/control/TimeSeriesValue";
 
 type Props = {
   title: string;
-  temperature: number;
-  heating: boolean;
-  targetTemperature: number;
+  heatingState: Heating | undefined;
+  heatingTimeSeries: TimeSeries;
+  onChangeTargetTemp?: (temperature: number) => void;
 };
 
 export function HeatingZone({
   title,
-  temperature,
-  heating,
-  targetTemperature,
+  heatingState,
+  heatingTimeSeries,
+  onChangeTargetTemp,
 }: Props) {
+  const targetTemperature = heatingState?.target_temperature ?? 150;
+  const heating = heatingState?.heating ?? false;
+
   return (
     <ControlCard className="bg-red" title={title}>
-      {/* <ControlValueBoolean
-        label="Heating"
-        icon="lu:Flame"
-        value={heating}
-        renderValue={(value) => (value === true ? "ON" : "OFF")}
-      /> */}
-      {/* <TimeSeriesValueNumeric
-        label="Temperature"
-        unit="C"
-        value={temperature}
-        renderValue={(value) => roundToDecimals(value, 0)}
-      /> */}
+      <div className="mb-4 flex gap-4">
+        <Label label="Target Temperature">
+          <EditValue
+            value={targetTemperature}
+            defaultValue={150}
+            min={50}
+            max={330}
+            unit="C"
+            title="Target Temperature"
+            renderValue={(value) => roundToDecimals(value, 0)}
+            onChange={onChangeTargetTemp}
+          />
+        </Label>
 
-      <Label label="Target Temperature">
-        <EditValue
-          value={targetTemperature}
-          defaultValue={150}
-          min={50}
-          max={330}
+        <TimeSeriesValueNumeric
+          label="Temperature"
           unit="C"
-          title="Target Temperature"
           renderValue={(value) => roundToDecimals(value, 0)}
+          timeseries={heatingTimeSeries}
         />
-      </Label>
+        <label className="flex items-center space-x-2">
+          <Flame
+            className={`h-5 w-5 ${heating ? "text-orange-500" : "text-gray-400"}`}
+          />
+        </label>
+      </div>
     </ControlCard>
   );
 }
