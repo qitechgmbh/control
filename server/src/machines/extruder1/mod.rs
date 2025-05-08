@@ -43,7 +43,7 @@ pub struct ExtruderV2 {
     heating_back: Heating,
     heating_middle: Heating,
     last_measurement_emit: Instant,
-    pressure_sensor: AnalogInputGetter,
+    pressure_sensor: AnalogInputGetter, // EL3024
     uses_rpm: bool,
     rpm: f32,
     bar: f32,
@@ -117,6 +117,7 @@ impl ExtruderV2 {
 
     fn set_target_rpm(&mut self, rpm: f32) {
         self.target_rpm = rpm;
+        self.inverter.set_running_rpm_target(rpm);
     }
 }
 

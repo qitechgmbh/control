@@ -1,10 +1,12 @@
 use super::Actor;
-use crate::modbus::{
-    ModbusFunctionCode, ModbusRequest, ModbusResponse, calculate_modbus_rtu_timeout,
+use crate::{
+    converters::motor_converter::MotorConverter,
+    modbus::{ModbusFunctionCode, ModbusRequest, ModbusResponse, calculate_modbus_rtu_timeout},
 };
 use ethercat_hal::io::serial_interface::{SerialEncoding, SerialInterface};
 use std::{
     collections::VecDeque,
+    os::linux::raw,
     pin::Pin,
     time::{Duration, Instant},
 };
@@ -24,6 +26,41 @@ pub enum State {
     ReadyToSend,
     /// Initial State
     Uninitialized,
+}
+
+#[derive(Debug)]
+pub enum OperationMode {
+    PU,
+    EXT,
+    NET,
+}
+
+impl MitsubishiInverterRS485Actor {
+    pub fn convert_hz_float_to_word(&mut self, value: f32, little_endian: bool) -> u16 {
+        let scaled = value * 100.0; // Convert Hz to 0.01 Hz units
+        scaled.round() as u16
+    }
+
+    pub fn set_running_rpm_target(&mut self, rpm: f32) {
+        let mut request: ModbusRequest = MitsubishiControlRequests::WriteRunningFrequency.into();
+        let hz = MotorConverter::rpm_to_hz(rpm); // convert rpm to hz
+        let result: u16 = self.convert_hz_float_to_word(hz, true); // convert hz float to short
+        println!(
+            "hz {} hz to word{:?} {:?}",
+            hz,
+            result,
+            result.to_be_bytes()
+        );
+        request.data[2] = result.to_le_bytes()[1];
+        request.data[3] = result.to_le_bytes()[0];
+        self.add_request(request);
+    }
+
+    pub fn read_running_frequency() {
+        // Check if the current element pushed to front is freq event
+    }
+
+    pub fn switch_operation_mode() {}
 }
 
 /// Specifies all System environmet Variables
@@ -76,7 +113,7 @@ impl From<MitsubishiControlRequests> for ModbusRequest {
                 ModbusRequest {
                     slave_id: 1,
                     function_code: ModbusFunctionCode::PresetHoldingRegister,
-                    data: vec![reg_bytes[0], reg_bytes[1], 0x96, 0x96], // Special value 0x9696
+                    data: vec![reg_bytes[0], reg_bytes[1], 0x0, 0x0],
                 }
             }
             MitsubishiControlRequests::ReadInverterStatus => {
@@ -232,16 +269,20 @@ impl MitsubishiInverterRS485Actor {
                     return;
                 }
             };
-            let response: Result<ModbusResponse, _> = ModbusResponse::try_from(raw_response);
+            let response: Result<ModbusResponse, _> =
+                ModbusResponse::try_from(raw_response.clone());
 
             match &response {
                 Ok(result) => {
-                    //self.response_queue.push_front(result.clone());
                     self.last_message_size = result.clone().data.len() + 4;
                     // wait one ethercat cycle
                     self.state = State::ReadyToSend;
                 }
-                Err(_) => log::error!("Error Parsing ModbusResponse!"),
+                Err(_) => {
+                    log::error!("Error Parsing ModbusResponse!");
+                    println!("{:?}", raw_response);
+                    self.state = State::ReadyToSend;
+                }
             };
         })
     }

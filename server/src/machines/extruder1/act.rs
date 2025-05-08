@@ -15,13 +15,9 @@ impl Actor for ExtruderV2 {
                 self.emit_heating(self.heating_back.clone(), super::HeatingType::Back);
                 self.emit_heating(self.heating_front.clone(), super::HeatingType::Front);
                 self.emit_heating(self.heating_middle.clone(), super::HeatingType::Middle);
-
                 self.emit_regulation();
-
                 self.emit_mode_state();
-
                 self.emit_rotation_state();
-
                 self.emit_bar();
                 self.emit_rpm();
 

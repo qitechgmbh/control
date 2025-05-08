@@ -101,6 +101,7 @@ fn validate_modbus_response(raw_data: Vec<u8>) -> Result<(), Error> {
     }
     // 5 is the smallest possible Response Size
     if raw_data.len() < 5 {
+        println!("raw_data.len() < 5");
         return Err(anyhow::anyhow!(
             "Error: Response is invalid, its less than 5 bytes"
         ));
