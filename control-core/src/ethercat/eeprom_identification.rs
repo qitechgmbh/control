@@ -3,6 +3,7 @@ use anyhow::anyhow;
 use ethercat_hal::devices::ek1100::EK1100_IDENTITY_A;
 use ethercat_hal::devices::el1008::EL1008_IDENTITY_A;
 use ethercat_hal::devices::el2002::EL2002_IDENTITY_A;
+use ethercat_hal::devices::el2004::EL2004_IDENTITY_A;
 use ethercat_hal::devices::el2008::EL2008_IDENTITY_A;
 use ethercat_hal::devices::el2521::{
     EL2521_IDENTITY_0000_A, EL2521_IDENTITY_0000_B, EL2521_IDENTITY_0024_A,
@@ -212,6 +213,7 @@ pub fn get_identification_addresses<'maindevice>(
         EK1100_IDENTITY_A => MachineIdentificationAddresses::default(),
         EL1008_IDENTITY_A => MachineIdentificationAddresses::default(),
         EL2002_IDENTITY_A => MachineIdentificationAddresses::default(),
+        EL2004_IDENTITY_A => MachineIdentificationAddresses::default(),
         EL2008_IDENTITY_A => MachineIdentificationAddresses::default(),
         EL3001_IDENTITY_A => MachineIdentificationAddresses::default(),
         EL2521_IDENTITY_0000_A | EL2521_IDENTITY_0000_B | EL2521_IDENTITY_0024_A => {
