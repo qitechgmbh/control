@@ -1,7 +1,9 @@
 pub mod ek1100;
 pub mod el1008;
 pub mod el2002;
+pub mod el2004;
 pub mod el2008;
+
 pub mod el2024;
 pub mod el2521;
 pub mod el2522;
@@ -24,6 +26,7 @@ use bitvec::{order::Lsb0, slice::BitSlice};
 use ek1100::{EK1100, EK1100_IDENTITY_A};
 use el1008::EL1008_IDENTITY_A;
 use el2002::{EL2002, EL2002_IDENTITY_A};
+use el2004::{EL2004, EL2004_IDENTITY_A};
 use el2008::{EL2008, EL2008_IDENTITY_A};
 use el2521::{EL2521_IDENTITY_0000_A, EL2521_IDENTITY_0000_B, EL2521_IDENTITY_0024_A};
 use el2522::{EL2522, EL2522_IDENTITY_A};
@@ -145,6 +148,7 @@ pub fn device_from_subdevice_identity_tuple(
         EK1100_IDENTITY_A => Ok(Arc::new(RwLock::new(EK1100::new()))),
         EL1008_IDENTITY_A => Ok(Arc::new(RwLock::new(EL1008::new()))),
         EL2002_IDENTITY_A => Ok(Arc::new(RwLock::new(EL2002::new()))),
+        EL2004_IDENTITY_A => Ok(Arc::new(RwLock::new(EL2004::new()))),
         EL2008_IDENTITY_A => Ok(Arc::new(RwLock::new(EL2008::new()))),
         // TODO: implement EL2024 identity
         // EL2024 => Ok(Arc::new(RwLock::new(EL2024::new()))),
