@@ -3,6 +3,7 @@ use control_core::{
     actors::{
         analog_input_getter::AnalogInputGetter,
         digital_output_blinker::DigitalOutputBlinker,
+        digital_output_setter::DigitalOutputSetter,
         mitsubishi_inverter_rs485::{MitsubishiControlRequests, MitsubishiInverterRS485Actor},
         temperature_input_getter::TemperatureInputGetter,
     },
@@ -10,12 +11,14 @@ use control_core::{
     modbus::ModbusRequest,
     socketio::namespace::NamespaceCacheingLogic,
 };
-use ethercat_hal::io::temperature_input::TemperatureInput;
+
 use serde::{Deserialize, Serialize};
 use std::time::Instant;
+use temperature_controller::TemperatureController;
 pub mod act;
 pub mod api;
 pub mod new;
+pub mod temperature_controller;
 
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
 pub enum ExtruderV2Mode {
@@ -57,7 +60,9 @@ pub struct ExtruderV2 {
     temp_sensor_3: TemperatureInputGetter,
     temp_sensor_2: TemperatureInputGetter,
 
-    test: DigitalOutputBlinker,
+    temperature_controller: TemperatureController,
+
+    heating_relay_1: DigitalOutputSetter,
 }
 
 impl std::fmt::Display for ExtruderV2 {

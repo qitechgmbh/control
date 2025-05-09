@@ -1,10 +1,13 @@
 use std::time::{Duration, Instant};
 
+use crate::machines::extruder1::temperature_controller::{self, TemperatureController};
+
 use super::{ExtruderV2, ExtruderV2Mode, Heating, api::ExtruderV2Namespace};
 use anyhow::Error;
 use control_core::{
     actors::{
         analog_input_getter::AnalogInputGetter, digital_output_blinker::DigitalOutputBlinker,
+        digital_output_setter::DigitalOutputSetter,
         mitsubishi_inverter_rs485::MitsubishiInverterRS485Actor,
         temperature_input_getter::TemperatureInputGetter,
     },
@@ -210,7 +213,7 @@ impl MachineNewTrait for ExtruderV2 {
             let pressure_sensor = AnalogInputGetter::new(AnalogInput::new(el3021, EL3021Port::AI1));
 
             let digital_out_1 = DigitalOutput::new(el2004, EL2004Port::DO1);
-
+            let temperature_controller = TemperatureController::new(0.4, 0.001, 0.001, 0.0);
             let extruder: ExtruderV2 = Self {
                 inverter: MitsubishiInverterRS485Actor::new(SerialInterface::new(
                     el6021,
@@ -223,7 +226,7 @@ impl MachineNewTrait for ExtruderV2 {
                 heating_front: Heating {
                     temperature: 150.0,
                     heating: false,
-                    target_temperature: 150.0,
+                    target_temperature: 60.0,
                 },
                 heating_back: Heating {
                     temperature: 150.0,
@@ -243,7 +246,10 @@ impl MachineNewTrait for ExtruderV2 {
                 temp_sensor_1: t1_getter,
                 temp_sensor_2: t2_getter,
                 temp_sensor_3: t3_getter,
-                test: DigitalOutputBlinker::new(digital_out_1, Duration::from_secs(1)),
+
+                heating_relay_1: DigitalOutputSetter::new(digital_out_1),
+
+                temperature_controller,
             };
             Ok(extruder)
         })

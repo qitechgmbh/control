@@ -56,7 +56,6 @@ pub trait EthercatDevice: NewEthercatDevice + Any + Send + Sync + Debug {
     fn input_checked(&mut self, input: &BitSlice<u8, Lsb0>) -> Result<(), anyhow::Error> {
         // validate input has correct length
         let input_len = self.input_len();
-        println!("self: {:?} {:?}", self, input.clone());
         if input.len() != input_len {
             return Err(anyhow::anyhow!(
                 "[{}::Device::input_checked] Input length is {} and must be {} bits",
