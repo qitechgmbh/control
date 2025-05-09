@@ -224,6 +224,17 @@ export const extruder2: MachinePreset = {
         },
       ],
     },
+    {
+      role: 3,
+      role_label: "4x Analog",
+      allowed_devices: [
+        {
+          vendor_id: 2,
+          product_id: 131346514,
+          revision: 1179648,
+        },
+      ],
+    },
   ],
 };
 

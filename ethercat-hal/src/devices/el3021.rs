@@ -81,7 +81,6 @@ impl AnalogInputDevice<EL3021Port> for EL3021 {
             },
         };
         let raw_value = U16SigningConverter::load_raw(raw_value);
-        println!("{}", raw_value);
 
         let presentation = match port {
             EL3021Port::AI1 => self.configuration.channel1.presentation,

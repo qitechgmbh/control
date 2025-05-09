@@ -392,6 +392,10 @@ impl Actor for MitsubishiInverterRS485Actor {
                 return;
             }
 
+            if self.request_queue.is_empty() {
+                self.add_request(MitsubishiControlRequests::ReadRunningFrequency.into());
+            }
+
             self.last_ts = now_ts;
             match self.state {
                 State::WaitingForResponse => self.read_modbus_response().await,
