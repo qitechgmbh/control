@@ -2,12 +2,15 @@ use api::{ExtruderV2Events, ExtruderV2Namespace};
 use control_core::{
     actors::{
         analog_input_getter::AnalogInputGetter,
+        digital_output_blinker::DigitalOutputBlinker,
         mitsubishi_inverter_rs485::{MitsubishiControlRequests, MitsubishiInverterRS485Actor},
+        temperature_input_getter::TemperatureInputGetter,
     },
     machines::Machine,
     modbus::ModbusRequest,
     socketio::namespace::NamespaceCacheingLogic,
 };
+use ethercat_hal::io::temperature_input::TemperatureInput;
 use serde::{Deserialize, Serialize};
 use std::time::Instant;
 pub mod act;
@@ -40,8 +43,8 @@ pub struct ExtruderV2 {
     namespace: ExtruderV2Namespace,
     mode: ExtruderV2Mode,
     heating_front: Heating,
-    heating_back: Heating,
     heating_middle: Heating,
+    heating_back: Heating,
     last_measurement_emit: Instant,
     pressure_sensor: AnalogInputGetter, // EL3024
     uses_rpm: bool,
@@ -49,6 +52,12 @@ pub struct ExtruderV2 {
     bar: f32,
     target_rpm: f32,
     target_bar: f32,
+
+    temp_sensor_1: TemperatureInputGetter,
+    temp_sensor_3: TemperatureInputGetter,
+    temp_sensor_2: TemperatureInputGetter,
+
+    test: DigitalOutputBlinker,
 }
 
 impl std::fmt::Display for ExtruderV2 {

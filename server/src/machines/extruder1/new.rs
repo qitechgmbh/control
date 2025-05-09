@@ -1,11 +1,12 @@
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use super::{ExtruderV2, ExtruderV2Mode, Heating, api::ExtruderV2Namespace};
 use anyhow::Error;
 use control_core::{
     actors::{
-        analog_input_getter::AnalogInputGetter,
+        analog_input_getter::AnalogInputGetter, digital_output_blinker::DigitalOutputBlinker,
         mitsubishi_inverter_rs485::MitsubishiInverterRS485Actor,
+        temperature_input_getter::TemperatureInputGetter,
     },
     machines::{
         identification::DeviceHardwareIdentification,
@@ -21,13 +22,18 @@ use ethercat_hal::{
     devices::{
         downcast_device,
         ek1100::EK1100_IDENTITY_A,
-        el2004::{EL2004, EL2004_IDENTITY_A},
+        el2004::{EL2004, EL2004_IDENTITY_A, EL2004Port},
         el3021::{EL3021, EL3021_IDENTITY_A, EL3021Port},
-        el3204::EL3204,
+        el3204::{EL3204, EL3204Port},
         el6021::{self, EL6021, EL6021_IDENTITY_A},
         subdevice_identity_to_tuple,
     },
-    io::{analog_input::AnalogInput, serial_interface::SerialInterface},
+    io::{
+        analog_input::AnalogInput,
+        digital_output::DigitalOutput,
+        serial_interface::SerialInterface,
+        temperature_input::{TemperatureInput, TemperatureInputDevice},
+    },
 };
 use uom::si::electric_current::{ElectricCurrent, milliampere};
 
@@ -193,7 +199,17 @@ impl MachineNewTrait for ExtruderV2 {
                 }
             };
 
+            let t1 = TemperatureInput::new(el3204.clone(), EL3204Port::T1);
+            let t2 = TemperatureInput::new(el3204.clone(), EL3204Port::T2);
+            let t3 = TemperatureInput::new(el3204.clone(), EL3204Port::T3);
+
+            let t1_getter = TemperatureInputGetter::new(t1);
+            let t2_getter = TemperatureInputGetter::new(t2);
+            let t3_getter = TemperatureInputGetter::new(t3);
+
             let pressure_sensor = AnalogInputGetter::new(AnalogInput::new(el3021, EL3021Port::AI1));
+
+            let digital_out_1 = DigitalOutput::new(el2004, EL2004Port::DO1);
 
             let extruder: ExtruderV2 = Self {
                 inverter: MitsubishiInverterRS485Actor::new(SerialInterface::new(
@@ -224,6 +240,10 @@ impl MachineNewTrait for ExtruderV2 {
                 bar: 0.0,
                 target_rpm: 0.0,
                 target_bar: 0.0,
+                temp_sensor_1: t1_getter,
+                temp_sensor_2: t2_getter,
+                temp_sensor_3: t3_getter,
+                test: DigitalOutputBlinker::new(digital_out_1, Duration::from_secs(1)),
             };
             Ok(extruder)
         })

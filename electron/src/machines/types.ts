@@ -235,6 +235,17 @@ export const extruder2: MachinePreset = {
         },
       ],
     },
+    {
+      role: 4,
+      role_label: "4x Temperature",
+      allowed_devices: [
+        {
+          vendor_id: 2,
+          product_id: 0xc843052,
+          revision: 1441792,
+        },
+      ],
+    },
   ],
 };
 
