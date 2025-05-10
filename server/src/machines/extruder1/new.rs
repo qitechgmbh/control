@@ -2,7 +2,10 @@ use std::time::{Duration, Instant};
 
 use crate::machines::extruder1::temperature_controller::{self, TemperatureController};
 
-use super::{ExtruderV2, ExtruderV2Mode, Heating, api::ExtruderV2Namespace};
+use super::{
+    ExtruderV2, ExtruderV2Mode, Heating, api::ExtruderV2Namespace,
+    pressure_controller::PressureController,
+};
 use anyhow::Error;
 use control_core::{
     actors::{
@@ -220,6 +223,8 @@ impl MachineNewTrait for ExtruderV2 {
             let temperature_controller_middle = TemperatureController::new(0.4, 0.001, 0.001, 0.0);
             let temperature_controller_back = TemperatureController::new(0.4, 0.001, 0.001, 0.0);
 
+            let pressure_motor_controller = PressureController::new(0.1, 0.001, 0.001, 6.0);
+
             let extruder: ExtruderV2 = Self {
                 inverter: MitsubishiInverterRS485Actor::new(SerialInterface::new(
                     el6021,
@@ -260,6 +265,8 @@ impl MachineNewTrait for ExtruderV2 {
                 temperature_controller_front: temperature_controller_front,
                 temperature_controller_middle: temperature_controller_middle,
                 temperature_controller_back: temperature_controller_back,
+
+                pressure_motor_controller: pressure_motor_controller,
             };
             Ok(extruder)
         })

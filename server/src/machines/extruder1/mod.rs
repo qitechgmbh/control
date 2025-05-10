@@ -2,7 +2,6 @@ use api::{ExtruderV2Events, ExtruderV2Namespace};
 use control_core::{
     actors::{
         analog_input_getter::AnalogInputGetter,
-        digital_output_blinker::DigitalOutputBlinker,
         digital_output_setter::DigitalOutputSetter,
         mitsubishi_inverter_rs485::{MitsubishiControlRequests, MitsubishiInverterRS485Actor},
         temperature_input_getter::TemperatureInputGetter,
@@ -12,12 +11,14 @@ use control_core::{
     socketio::namespace::NamespaceCacheingLogic,
 };
 
+use pressure_controller::PressureController;
 use serde::{Deserialize, Serialize};
 use std::time::Instant;
 use temperature_controller::TemperatureController;
 pub mod act;
 pub mod api;
 pub mod new;
+pub mod pressure_controller;
 pub mod temperature_controller;
 
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
@@ -70,6 +71,8 @@ pub struct ExtruderV2 {
     temperature_controller_front: TemperatureController,
     temperature_controller_middle: TemperatureController,
     temperature_controller_back: TemperatureController,
+
+    pressure_motor_controller: PressureController,
 }
 
 impl std::fmt::Display for ExtruderV2 {
@@ -231,8 +234,13 @@ impl ExtruderV2 {
     }
 
     fn set_target_rpm(&mut self, rpm: f32) {
-        self.target_rpm = rpm;
-        self.inverter.set_running_rpm_target(rpm);
+        println!("set_target_rpm uses_rpm: {}", self.uses_rpm);
+        if self.uses_rpm {
+            self.target_rpm = rpm;
+            self.inverter.set_running_rpm_target(rpm);
+        } else {
+            return;
+        }
     }
 }
 
