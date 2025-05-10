@@ -297,7 +297,6 @@ impl MitsubishiInverterRS485Actor {
             if !(self.serial_interface.has_message)().await {
                 //   return;
             }
-
             let res: Option<Vec<u8>> = (self.serial_interface.read_message)().await;
             let raw_response = match res {
                 Some(res) => res,
@@ -306,21 +305,18 @@ impl MitsubishiInverterRS485Actor {
                     vec![]
                 }
             };
+
             let response: Result<ModbusResponse, _> =
                 ModbusResponse::try_from(raw_response.clone());
-
             match response {
                 Ok(result) => {
                     self.last_message_size = result.clone().data.len() + 4;
                     // wait one ethercat cycle
-                    println!("{:?}", raw_response);
-
                     self.state = State::ReadyToSend;
                     Ok(result)
                 }
                 Err(_) => {
                     //  log::error!("Error Parsing ModbusResponse!");
-                    println!("{:?}", raw_response);
                     self.state = State::ReadyToSend;
                     Err(anyhow::anyhow!("error"))
                 }
@@ -401,16 +397,12 @@ impl From<u8> for MitsubishiModbusExceptionCode {
 impl MitsubishiInverterRS485Actor {
     // When we get respone from Pr. 40014 (Running Frequency) Convert to rpm and save it
     fn handle_motor_frequency(&mut self, resp: ModbusResponse) {
-        if resp.data.len() < 8 {
-            println!("Data Missing");
+        if resp.data.len() < 4 {
+            return;
         }
         let freq_bytes = &resp.data[1..3]; // bytes 1 and 2 are needed
         self.current_freq = u16::from_be_bytes([freq_bytes[0], freq_bytes[1]]) as f32 / 100.0;
         self.current_rpm = MotorConverter::hz_to_rpm(self.current_freq);
-        println!(
-            "current_freq:{} current_rpm: {}",
-            self.current_freq, self.current_rpm
-        );
     }
 
     fn handle_response(&mut self, resp: ModbusResponse) {

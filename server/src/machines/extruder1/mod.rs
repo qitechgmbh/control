@@ -160,13 +160,16 @@ impl ExtruderV2 {
 impl ExtruderV2 {
     fn set_rotation_state(&mut self, forward: bool) {
         self.inverter.forward_rotation = forward;
-        if forward {
-            let req: ModbusRequest = MitsubishiControlRequests::StartForwardRotation.into();
-            self.inverter.add_request(req);
-        } else {
-            let req: ModbusRequest = MitsubishiControlRequests::StartReverseRotation.into();
-            self.inverter.add_request(req);
+        if self.mode == ExtruderV2Mode::Extrude {
+            if forward {
+                let req: ModbusRequest = MitsubishiControlRequests::StartForwardRotation.into();
+                self.inverter.add_request(req);
+            } else {
+                let req: ModbusRequest = MitsubishiControlRequests::StartReverseRotation.into();
+                self.inverter.add_request(req);
+            }
         }
+
         self.emit_rotation_state();
     }
 
