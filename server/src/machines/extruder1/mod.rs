@@ -45,9 +45,6 @@ pub struct ExtruderV2 {
     inverter: MitsubishiInverterRS485Actor,
     namespace: ExtruderV2Namespace,
     mode: ExtruderV2Mode,
-    heating_front: Heating,
-    heating_middle: Heating,
-    heating_back: Heating,
     last_measurement_emit: Instant,
     pressure_sensor: AnalogInputGetter, // EL3024
     uses_rpm: bool,
@@ -56,13 +53,23 @@ pub struct ExtruderV2 {
     target_rpm: f32,
     target_bar: f32,
 
-    temp_sensor_1: TemperatureInputGetter,
-    temp_sensor_3: TemperatureInputGetter,
-    temp_sensor_2: TemperatureInputGetter,
+    // Temperature TODO: CLEAN UP
+    // Heating contains the current temp,target and relais state
+    heating_front: Heating,
+    heating_middle: Heating,
+    heating_back: Heating,
 
-    temperature_controller: TemperatureController,
+    temp_sensor_1: TemperatureInputGetter,
+    temp_sensor_2: TemperatureInputGetter,
+    temp_sensor_3: TemperatureInputGetter,
 
     heating_relay_1: DigitalOutputSetter,
+    heating_relay_2: DigitalOutputSetter,
+    heating_relay_3: DigitalOutputSetter,
+
+    temperature_controller_front: TemperatureController,
+    temperature_controller_middle: TemperatureController,
+    temperature_controller_back: TemperatureController,
 }
 
 impl std::fmt::Display for ExtruderV2 {

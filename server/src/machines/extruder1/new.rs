@@ -171,7 +171,6 @@ impl MachineNewTrait for ExtruderV2 {
                     }
                 }
             };
-            println!("{:?}", hardware.ethercat_devices);
 
             let el3204 = {
                 let device_identification =
@@ -212,8 +211,15 @@ impl MachineNewTrait for ExtruderV2 {
 
             let pressure_sensor = AnalogInputGetter::new(AnalogInput::new(el3021, EL3021Port::AI1));
 
-            let digital_out_1 = DigitalOutput::new(el2004, EL2004Port::DO1);
-            let temperature_controller = TemperatureController::new(0.4, 0.001, 0.001, 0.0);
+            // For the Relais
+            let digital_out_1 = DigitalOutput::new(el2004.clone(), EL2004Port::DO1);
+            let digital_out_2 = DigitalOutput::new(el2004.clone(), EL2004Port::DO2);
+            let digital_out_3 = DigitalOutput::new(el2004.clone(), EL2004Port::DO3);
+
+            let temperature_controller_front = TemperatureController::new(0.4, 0.001, 0.001, 0.0);
+            let temperature_controller_middle = TemperatureController::new(0.4, 0.001, 0.001, 0.0);
+            let temperature_controller_back = TemperatureController::new(0.4, 0.001, 0.001, 0.0);
+
             let extruder: ExtruderV2 = Self {
                 inverter: MitsubishiInverterRS485Actor::new(SerialInterface::new(
                     el6021,
@@ -248,8 +254,12 @@ impl MachineNewTrait for ExtruderV2 {
                 temp_sensor_3: t3_getter,
 
                 heating_relay_1: DigitalOutputSetter::new(digital_out_1),
+                heating_relay_2: DigitalOutputSetter::new(digital_out_2),
+                heating_relay_3: DigitalOutputSetter::new(digital_out_3),
 
-                temperature_controller,
+                temperature_controller_front: temperature_controller_front,
+                temperature_controller_middle: temperature_controller_middle,
+                temperature_controller_back: temperature_controller_back,
             };
             Ok(extruder)
         })
