@@ -61,11 +61,9 @@ impl Actor for ExtruderV2 {
             let now = Instant::now();
             if now.duration_since(self.last_measurement_emit) > Duration::from_millis(16) {
                 // channel 1
-
                 self.emit_heating(self.heating_back.clone(), super::HeatingType::Back);
                 self.emit_heating(self.heating_front.clone(), super::HeatingType::Front);
                 self.emit_heating(self.heating_middle.clone(), super::HeatingType::Middle);
-
                 self.emit_regulation();
                 self.emit_mode_state();
                 self.emit_rotation_state();
