@@ -74,6 +74,12 @@ export function DeviceEepromDialog({ device }: Props) {
   );
 }
 
+/*
+
+
+
+*/
+
 type ContentProps = {
   device: EthercatSetupEventData["devices"][number];
   setOpen: (open: boolean) => void;
@@ -95,16 +101,26 @@ export function DeviceEeepromDialogContent({ device, setOpen }: ContentProps) {
   });
   const values = useFormValues(form);
 
+  console.log(device);
+  console.log(device["device_identification"]["Ethercat"]);
+
   const onSubmit = (values: FormSchema) => {
     client
       .writeMachineDeviceIdentification({
-        subdevice_index: device.subdevice_index,
-        machine_identification_unique: {
-          vendor: VENDOR_QITECH,
-          serial: parseInt(values.serial!),
-          machine: parseInt(values.machine!),
+        machine_identification: {
+          machine_identification_unique: {
+            machine_identification: {
+              vendor: VENDOR_QITECH,
+              machine: parseInt(values.machine!),
+            },
+            serial: parseInt(values.serial!),
+          },
+
+          role: parseInt(values.role!),
         },
-        role: parseInt(values.role!),
+        hardware_identification: {
+          subdevice_index: 4,
+        },
       })
       .then((res) => {
         if (res.success) {
@@ -122,7 +138,6 @@ export function DeviceEeepromDialogContent({ device, setOpen }: ContentProps) {
     if (!values.machine) return;
     return getMachinePreset({
       vendor: VENDOR_QITECH,
-      serial: 0,
       machine: parseInt(values.machine),
     });
   }, [values.machine]);
