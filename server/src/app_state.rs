@@ -10,7 +10,7 @@ use smol::lock::RwLock;
 use socketioxide::SocketIo;
 use std::collections::HashMap;
 use std::sync::Arc;
-use super::serial::register::SERIAL_REGISTRY;
+use super::serial::register::SERIAL_DETECTION;
 
 
 pub struct SocketioSetup {
@@ -64,9 +64,7 @@ impl AppState {
                 namespaces: RwLock::new(Namespaces::new()),
             },
             ethercat_setup: Arc::new(RwLock::new(None)),
-            serial_setup: Arc::new(RwLock::new(SerialDetection::new(
-                SERIAL_REGISTRY.clone(),
-            ))),
+            serial_setup:SERIAL_DETECTION.clone(),
             machines: RwLock::new(MachineManager::new()),
         }
     }

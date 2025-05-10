@@ -18,7 +18,7 @@ pub struct CloneableFn(
 );
 
 impl CloneableFn {
-    pub fn new<F>(f: F) -> Self
+    pub fn new_serial<F>(f: F) -> Self
     where
         F: Fn(&str) -> Result<Arc<RwLock<dyn Serial>>, Error> + Send + Sync + 'static,
     {
@@ -53,8 +53,8 @@ impl SerialRegistry {
             TypeId::of::<T>(),
             (
                 machine_identficiation,
-                CloneableFn::new(|path| {
-                    Ok(Arc::new(RwLock::new(T::new(path)?)))
+                CloneableFn::new_serial(|path| {
+                    Ok(Arc::new(RwLock::new(T::new_serial(path)?)))
                 }),
             ),
         );

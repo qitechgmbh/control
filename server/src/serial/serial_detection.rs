@@ -13,13 +13,15 @@ use std::{
 };
 use smol::lock::RwLock;
 use control_core::serial::{registry::SerialRegistry, ProductConfig, Serial};
-use super::dre::Dre;
+use crate::machines::dre::Dre;
 
 #[derive(Debug)]
 struct PortChange {
     added: Vec<(String, UsbPortInfo)>,
     removed: Vec<(String, UsbPortInfo)>,
 }
+
+
 pub struct SerialDetection {
     pub sr: SerialRegistry,
     pub connected_serial_usb: HashMap<String, Result<Arc<RwLock<dyn Serial>>, anyhow::Error>>,
@@ -185,8 +187,6 @@ impl SerialDetection {
         self.remove_usb_from(comp.removed);
         let mut check_list = self.ports.clone();
         check_list.retain(|item| !comp.added.contains(item));
-
-
         self.retry(check_list).await;
 
         

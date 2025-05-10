@@ -8,7 +8,6 @@ use crate::panic::PanicDetails;
 use crate::app_state::AppState;
 use crate::panic::send_panic;
 
-
 pub fn init_serial(
     thread_panic_tx: Sender<PanicDetails>,
     app_state: Arc<AppState>

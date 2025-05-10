@@ -7,7 +7,7 @@ pub trait Serial: Any + Send + Sync + SerialNew {
 }
 
 pub trait SerialNew {
-    fn new(path: &str) -> Result<Self, anyhow::Error>
+    fn new_serial(path: &str) -> Result<Self, anyhow::Error>
     where
         Self: Sized;
 }

@@ -1,29 +1,15 @@
-use serial::prelude::*;
+use std::{io::Write, sync::Arc, thread, time::Duration};
+
+use super::Dre;
+use anyhow::{Error,anyhow};
+use control_core::{modbus, serial::SerialNew};
+use serial::SerialPort;
 use smol::lock::RwLock;
-use std::{any::Any, io::Write, sync::Arc, thread, time::Duration};
-use control_core::modbus;
-use anyhow::{anyhow, Error};
-use control_core::serial::{Serial, SerialNew};
-
-pub struct Dre {
-    pub diameter: Arc<RwLock<Result<f32, Error>>>,
-    pub path: String,
-}
-
-impl Serial for Dre {
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
-
-    fn as_any_mut(&mut self) -> &mut dyn Any {
-        self
-    }
-}
 
 impl SerialNew for Dre {
-    fn new(path: &str) -> Result<Self, Error> {
+    fn new_serial(path: &str) -> Result<Self, Error> {
         let path_string = path.to_string();
-        let diameter = Arc::new(RwLock::new(Ok(0.0)));
+        let diameter = Arc::new(RwLock::new(Err(anyhow::anyhow!("No connection"))));
         let failed_request_counter = Arc::new(RwLock::new(0));
 
         let diameter_clone = Arc::clone(&diameter);
@@ -45,7 +31,7 @@ impl SerialNew for Dre {
                         match serial::open(&path_clone) {
                             Ok(mut port) => {
                                 let _ = port.reconfigure(&|settings| {
-                                    let _ = settings.set_baud_rate(serial::Baud9600);
+                                    let _ = settings.set_baud_rate(serial::Baud38400);
                                     settings.set_char_size(serial::Bits8);
                                     settings.set_parity(serial::ParityNone);
                                     settings.set_stop_bits(serial::Stop1);
@@ -61,8 +47,8 @@ impl SerialNew for Dre {
 
                                 std::thread::sleep(modbus::calculate_modbus_rtu_timeout(
                                     8,
-                                    Duration::from_millis(50),
-                                    9600,
+                                    Duration::from_millis(10),
+                                    38400,
                                     8,
                                 ));
                                 let result = modbus::receive_data_modbus(&mut port);
@@ -92,8 +78,6 @@ impl SerialNew for Dre {
                                 break;
                             }
                         }
-
-                        std::thread::sleep(Duration::from_millis(300));
                     }
                 });
             })

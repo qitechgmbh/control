@@ -1,9 +1,9 @@
 use smol::lock::Mutex;
 
-use crate::machines::{
+use crate::{machines::{
     identification::MachineIdentificationUnique,
     new::{MachineNewHardware, MachineNewHardwareEthercat, MachineNewParams},
-};
+}, serial::registry::SerialRegistry};
 use std::collections::HashMap;
 
 use super::{
@@ -76,6 +76,16 @@ impl MachineManager {
         self.ethercat_machines
             .get(machine_identification)
             .or_else(|| self.serial_machines.get(machine_identification))
+    }
+
+    pub fn add_serial_devices(
+        &mut self,
+        device_identifications: &Vec<DeviceIdentification>,
+        serial_registry: &SerialRegistry){
+        log::info!(
+            "[{}::add_serial_devices] Device Groups",
+            module_path!());
+        
     }
 }
 
