@@ -104,7 +104,7 @@ impl MitsubishiControlRequests {
             MitsubishiSystemRegister::OperationModeAndSetting => 0x9,
             MitsubishiSystemRegister::RunningFrequencyRAM => 0x0d,
             MitsubishiSystemRegister::RunningFrequencyEEPROM => 0x0e,
-            MitsubishiSystemRegister::MotorFrequency => 0x200,
+            MitsubishiSystemRegister::MotorFrequency => 0x00C8,
         }
     }
 }
@@ -270,7 +270,7 @@ impl MitsubishiInverterRS485Actor {
             baudrate: None,
             encoding: None,
             forward_rotation: true,
-            next_response_type: ResponseType::ReadFrequency,
+            next_response_type: ResponseType::ReadMotorFrequency,
             current_freq: 0.0,
             current_rpm: 0.0,
         }
@@ -333,8 +333,9 @@ impl MitsubishiInverterRS485Actor {
         Box::pin(async move {
             if self.request_queue.len() == 0 {
                 return;
-            }
+            };
             let request: Vec<u8> = self.request_queue.pop_back().unwrap().into();
+            println!("raw_request : {:?}", request.clone());
             let res = (self.serial_interface.write_message)(request.clone()).await;
             match res {
                 Ok(_) => (),
@@ -400,7 +401,7 @@ impl From<u8> for MitsubishiModbusExceptionCode {
 impl MitsubishiInverterRS485Actor {
     // When we get respone from Pr. 40014 (Running Frequency) Convert to rpm and save it
     fn handle_motor_frequency(&mut self, resp: ModbusResponse) {
-        if resp.data.len() < 4 {
+        if resp.data.len() < 8 {
             println!("Data Missing");
         }
         let freq_bytes = &resp.data[1..3]; // bytes 1 and 2 are needed
