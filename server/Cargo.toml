@@ -33,6 +33,12 @@ bitvec = "1.0.1"
 lazy_static = "1.5.0"
 smol = "2.0.2"
 
+
+# dre usb
+crc = "3.2.1"
+serial = "0.4.0"
+serialport = "4.7.1"
+
 [dev-dependencies]
 approx = "0.5.1"
 

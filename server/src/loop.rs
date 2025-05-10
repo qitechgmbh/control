@@ -1,8 +1,11 @@
 use crate::app_state::AppState;
+use crate::machines::dre::Dre;
 use crate::panic::{PanicDetails, send_panic};
 use bitvec::prelude::*;
 use smol::channel::Sender;
+use std::collections::HashMap;
 use std::sync::Arc;
+
 
 pub fn init_loop(
     thread_panic_tx: Sender<PanicDetails>,
@@ -33,6 +36,28 @@ pub fn init_loop(
 }
 
 pub async fn loop_once<'maindevice>(app_state: Arc<AppState>) -> Result<(), anyhow::Error> {
+
+    let serial_setup_guard = app_state.serial_setup.read().await;
+
+    let list = &serial_setup_guard.connected_serial_usb;
+
+    let mut diameters = HashMap::new();
+    for (path, func) in list{
+        match func {
+            Ok(device) =>{
+                match serial_setup_guard.sr.downcast::<Dre>(device.clone()).await{
+                    Ok(dre) => 
+                        match *dre.read().await.diameter.read().await {
+                            Ok(diameter) => diameters.insert(path, Ok(diameter.clone())),
+                            Err(_) => diameters.insert(path, Err(anyhow::anyhow!("Failed to read diameter"))),
+                        },
+                    Err(e) => diameters.insert(path, Err(anyhow::anyhow!("It is not Dre : {:?}",e)))
+                };
+            },
+            Err(e) =>{ diameters.insert(path, Err(anyhow::anyhow!("{:?}",e)));}
+        }
+    }
+
     let ethercat_setup_guard = app_state.ethercat_setup.read().await;
 
     // only if we have an ethercat setup

@@ -3,7 +3,7 @@ use api::MachineApi;
 use new::MachineNewTrait;
 use std::any::Any;
 use std::fmt::Debug;
-
+use crate::serial::Serial;
 pub mod api;
 pub mod identification;
 pub mod manager;
@@ -11,4 +11,4 @@ pub mod manager_iter;
 pub mod new;
 pub mod registry;
 
-pub trait Machine: MachineNewTrait + MachineApi + Actor + Any + Debug {}
+pub trait Machine: MachineNewTrait + MachineApi + Actor + Any + Debug + Serial{}

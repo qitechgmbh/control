@@ -88,10 +88,14 @@ impl TryFrom<DeviceIdentification> for DeviceIdentificationIdentified {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum DeviceHardwareIdentification {
     Ethercat(DeviceHardwareIdentificationEthercat),
-    // UsbDevice...,
+    SerialUSB(DeviceHardwareIdentificationSerial)
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct DeviceHardwareIdentificationEthercat {
     pub subdevice_index: usize,
+}
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct DeviceHardwareIdentificationSerial{
+    pub path:String
 }

@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use anyhow::Error;
-
+use serial;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ParityType {
     Even,
@@ -14,6 +14,8 @@ pub enum ParityType {
 pub enum ModbusFunctionCode {
     /// Read one or more Registers
     ReadHoldingRegister,
+    /// Read Input register
+    ReadInputRegister,
     /// write one Register Value
     PresetHoldingRegister,
     /// The response should echo back your request
@@ -59,6 +61,7 @@ impl TryFrom<u8> for ModbusFunctionCode {
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         match value {
             0x03 => Ok(ModbusFunctionCode::ReadHoldingRegister),
+            0x04 => Ok(ModbusFunctionCode::ReadInputRegister),
             0x06 => Ok(ModbusFunctionCode::PresetHoldingRegister),
             0x08 => Ok(ModbusFunctionCode::DiagnoseFunction),
             _ => Err(anyhow::anyhow!("Error: Modbus Function Code doesnt exist!")),
@@ -70,6 +73,7 @@ impl From<ModbusFunctionCode> for u8 {
     fn from(value: ModbusFunctionCode) -> Self {
         match value {
             ModbusFunctionCode::ReadHoldingRegister => 0x03,
+            ModbusFunctionCode::ReadInputRegister => 0x04,
             ModbusFunctionCode::PresetHoldingRegister => 0x06,
             ModbusFunctionCode::DiagnoseFunction => 0x08,
         }
@@ -94,7 +98,37 @@ impl From<ModbusRequest> for Vec<u8> {
         return buffer;
     }
 }
+/* @added by Alisher Darmenov
+ *
+ * @param: port - It takes a mutable reference to a serial port and a ModbusRequest as input.
+ * 
+ * @return: Option<Vec<u8>> -It returns an Option containing the ModbusResponse if successful, or None if there was an error.
+ * 
+ * @description: This function is used to send a Modbus request to a device and receive the response.
+ */
+pub fn receive_data_modbus(port: &mut dyn serial::SerialPort) -> Option<Vec<u8>> {
+    let mut buf: [u8; 256] = [0; 256];
 
+    if let Ok(n) = port.read(&mut buf) {
+        match validate_modbus_response(buf[..n].to_vec()){
+            Ok(_) => {
+                let mut result:Vec<u8> = Vec::new();
+                for i in 0..buf[2]{
+                    result.push(buf[i as usize + 3]);
+                }
+                return Some(result)
+            }
+            Err(_) => {
+                return None
+            }
+        }
+        
+    } else {
+        //println!("Error reading from port");
+        return None
+    }
+    
+}
 fn validate_modbus_response(raw_data: Vec<u8>) -> Result<(), Error> {
     if raw_data.len() == 0 {
         return Err(anyhow::anyhow!("Error: Response is Empty!"));
