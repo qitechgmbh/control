@@ -80,6 +80,84 @@ impl std::fmt::Display for ExtruderV2 {
 impl Machine for ExtruderV2 {}
 
 impl ExtruderV2 {
+    // Set all relais to ZERO
+    // We dont need a function to enable again though, as the act Loop will detect the mode
+    fn turn_heating_off(&mut self) {
+        self.heating_relay_1.set(false);
+        self.heating_relay_2.set(false);
+        self.heating_relay_3.set(false);
+
+        self.heating_back.heating = false;
+        self.heating_front.heating = false;
+        self.heating_middle.heating = false;
+    }
+
+    // Send Motor Turn Off Request to the Inverter
+    fn turn_motor_off(&mut self) {
+        self.inverter
+            .add_request(MitsubishiControlRequests::StopMotor.into());
+    }
+
+    fn turn_motor_on(&mut self) {
+        if self.inverter.forward_rotation {
+            self.inverter
+                .add_request(MitsubishiControlRequests::StartForwardRotation.into());
+        } else {
+            self.inverter
+                .add_request(MitsubishiControlRequests::StartReverseRotation.into());
+        }
+    }
+
+    // Turn heating OFF and do nothing
+    fn switch_to_standby(&mut self) {
+        match self.mode {
+            ExtruderV2Mode::Standby => (),
+            ExtruderV2Mode::Heat => {
+                self.turn_heating_off();
+            }
+            ExtruderV2Mode::Extrude => {
+                self.turn_heating_off();
+                self.turn_motor_off();
+            }
+        };
+        self.mode = ExtruderV2Mode::Standby;
+    }
+
+    // turn off motor if on and keep heating on
+    fn switch_to_heat(&mut self) {
+        // From what mode are we transitioning ?
+        match self.mode {
+            ExtruderV2Mode::Standby => (),
+            ExtruderV2Mode::Heat => (),
+            ExtruderV2Mode::Extrude => self.turn_motor_off(),
+        }
+        self.mode = ExtruderV2Mode::Heat;
+    }
+
+    // keep heating on, and turn motor on
+    fn switch_to_extrude(&mut self) {
+        match self.mode {
+            ExtruderV2Mode::Standby => self.turn_motor_on(),
+            ExtruderV2Mode::Heat => self.turn_motor_on(),
+            ExtruderV2Mode::Extrude => (), // Do nothing, we are already extruding
+        }
+        self.mode = ExtruderV2Mode::Extrude;
+    }
+
+    fn switch_mode(&mut self, mode: ExtruderV2Mode) {
+        if self.mode == mode {
+            return;
+        }
+
+        match mode {
+            ExtruderV2Mode::Standby => self.switch_to_standby(),
+            ExtruderV2Mode::Heat => self.switch_to_heat(),
+            ExtruderV2Mode::Extrude => self.switch_to_extrude(),
+        }
+    }
+}
+
+impl ExtruderV2 {
     fn set_rotation_state(&mut self, forward: bool) {
         self.inverter.forward_rotation = forward;
         if forward {
@@ -102,7 +180,8 @@ impl ExtruderV2 {
     }
 
     fn set_mode_state(&mut self, mode: ExtruderV2Mode) {
-        self.mode = mode.clone();
+        self.switch_mode(mode);
+
         self.emit_mode_state();
     }
 

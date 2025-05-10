@@ -1,4 +1,4 @@
-use super::ExtruderV2;
+use super::{ExtruderV2, ExtruderV2Mode};
 use control_core::actors::Actor;
 use std::time::{Duration, Instant};
 
@@ -19,24 +19,24 @@ impl Actor for ExtruderV2 {
             self.heating_relay_2.act(now_ts).await;
             self.heating_relay_3.act(now_ts).await;
 
-            // TODO macke functions that handle mode switches
-            /*
-                        match self.mode {
-                            super::ExtruderV2Mode::Standby => ,
-                            super::ExtruderV2Mode::Heat => todo!(),
-                            super::ExtruderV2Mode::Extrude => todo!(),
-                        }
-            */
+            self.heating_front.temperature = self.temp_sensor_1.temperature; // set the temperature read from the sensor
+            // channel 2
+            self.heating_middle.temperature = self.temp_sensor_2.temperature;
+            // channel 3
+            self.heating_back.temperature = self.temp_sensor_3.temperature;
 
-            let now = Instant::now();
-            if now.duration_since(self.last_measurement_emit) > Duration::from_millis(16) {
-                // channel 1
-                self.heating_front.temperature = self.temp_sensor_1.temperature; // set the temperature read from the sensor
-                // channel 2
-                self.heating_middle.temperature = self.temp_sensor_2.temperature;
-                // channel 3
-                self.heating_back.temperature = self.temp_sensor_3.temperature;
+            self.temperature_controller_front.target_temp =
+                self.heating_front.target_temperature as f64; // set target temperature
 
+            self.temperature_controller_middle.target_temp =
+                self.heating_middle.target_temperature as f64; // set target temperature
+
+            self.temperature_controller_back.target_temp =
+                self.heating_back.target_temperature as f64; // set target temperature
+
+            if self.mode == ExtruderV2Mode::Standby {
+                self.turn_heating_off();
+            } else if self.mode == ExtruderV2Mode::Heat || self.mode == ExtruderV2Mode::Extrude {
                 let on_1 = self
                     .temperature_controller_front
                     .update(self.heating_front.temperature as f64, now_ts); // check if we need to set our relais to enabled to reach target temp
@@ -49,15 +49,6 @@ impl Actor for ExtruderV2 {
                     .temperature_controller_back
                     .update(self.heating_back.temperature as f64, now_ts); // check if we need to set our relais to enabled to reach target temp
 
-                self.temperature_controller_front.target_temp =
-                    self.heating_front.target_temperature as f64; // set target temperature
-
-                self.temperature_controller_middle.target_temp =
-                    self.heating_middle.target_temperature as f64; // set target temperature
-
-                self.temperature_controller_back.target_temp =
-                    self.heating_back.target_temperature as f64; // set target temperature
-
                 self.heating_relay_1.set(on_1); // set relay to on or off
                 self.heating_relay_2.set(on_2); // set relay to on or off
                 self.heating_relay_3.set(on_3); // set relay to on or off
@@ -65,6 +56,11 @@ impl Actor for ExtruderV2 {
                 self.heating_front.heating = on_1;
                 self.heating_middle.heating = on_2;
                 self.heating_back.heating = on_3;
+            }
+
+            let now = Instant::now();
+            if now.duration_since(self.last_measurement_emit) > Duration::from_millis(16) {
+                // channel 1
 
                 self.emit_heating(self.heating_back.clone(), super::HeatingType::Back);
                 self.emit_heating(self.heating_front.clone(), super::HeatingType::Front);
