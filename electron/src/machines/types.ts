@@ -204,6 +204,17 @@ export const extruder2: MachinePreset = {
     },
     {
       role: 1,
+      role_label: "2X Digital Input",
+      allowed_devices: [
+        {
+          vendor_id: 2,
+          product_id: 65679442,
+          revision: 1179648,
+        },
+      ],
+    },
+    {
+      role: 2,
       role_label: "1X Serial Interface For Inverter",
       allowed_devices: [
         {
@@ -214,19 +225,8 @@ export const extruder2: MachinePreset = {
       ],
     },
     {
-      role: 2,
-      role_label: "1X Analog Channel",
-      allowed_devices: [
-        {
-          vendor_id: 2,
-          product_id: 197996626,
-          revision: 1310720,
-        },
-      ],
-    },
-    {
       role: 3,
-      role_label: "4x Analog",
+      role_label: "4X Digital Out",
       allowed_devices: [
         {
           vendor_id: 2,
@@ -237,6 +237,17 @@ export const extruder2: MachinePreset = {
     },
     {
       role: 4,
+      role_label: "1x Analog Input 4-20mA",
+      allowed_devices: [
+        {
+          vendor_id: 2,
+          product_id: 197996626,
+          revision: 1310720,
+        },
+      ],
+    },
+    {
+      role: 5,
       role_label: "4x Temperature",
       allowed_devices: [
         {

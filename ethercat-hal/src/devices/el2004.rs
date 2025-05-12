@@ -90,7 +90,7 @@ impl Default for EL2004RxPdo {
 }
 
 pub const EL2004_VENDOR_ID: u32 = 0x2;
-pub const EL2004_PRODUCT_ID: u32 = 131346514; // NOTE: Different from EL2008
+pub const EL2004_PRODUCT_ID: u32 = 131346514;
 pub const EL2004_REVISION_A: u32 = 1179648;
 pub const EL2004_IDENTITY_A: SubDeviceIdentityTuple =
     (EL2004_VENDOR_ID, EL2004_PRODUCT_ID, EL2004_REVISION_A);

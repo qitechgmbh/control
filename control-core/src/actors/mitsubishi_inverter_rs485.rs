@@ -397,7 +397,7 @@ impl From<u8> for MitsubishiModbusExceptionCode {
 impl MitsubishiInverterRS485Actor {
     // When we get respone from Pr. 40014 (Running Frequency) Convert to rpm and save it
     fn handle_motor_frequency(&mut self, resp: ModbusResponse) {
-        println!("handle_motor_frequency: {:?}", resp);
+        //println!("handle_motor_frequency: {:?}", resp);
         if resp.data.len() < 4 {
             //return;
         }

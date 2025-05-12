@@ -1,6 +1,7 @@
 use anyhow::Error;
 use anyhow::anyhow;
 use ethercat_hal::devices::ek1100::EK1100_IDENTITY_A;
+use ethercat_hal::devices::el1002::EL1002_IDENTITY_A;
 use ethercat_hal::devices::el1008::EL1008_IDENTITY_A;
 use ethercat_hal::devices::el2002::EL2002_IDENTITY_A;
 use ethercat_hal::devices::el2004::EL2004_IDENTITY_A;
@@ -212,6 +213,7 @@ pub fn get_identification_addresses<'maindevice>(
 
     Ok(match identity_tuple {
         EK1100_IDENTITY_A => MachineIdentificationAddresses::default(),
+        EL1002_IDENTITY_A => MachineIdentificationAddresses::default(),
         EL1008_IDENTITY_A => MachineIdentificationAddresses::default(),
         EL2002_IDENTITY_A => MachineIdentificationAddresses::default(),
         EL2004_IDENTITY_A => MachineIdentificationAddresses::default(),

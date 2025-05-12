@@ -28,9 +28,10 @@ use ethercat_hal::{
     devices::{
         downcast_device,
         ek1100::EK1100_IDENTITY_A,
+        el1002::{EL1002, EL1002_IDENTITY_A},
         el2004::{EL2004, EL2004_IDENTITY_A, EL2004Port},
         el3021::{EL3021, EL3021_IDENTITY_A, EL3021Port},
-        el3204::{EL3204, EL3204Port},
+        el3204::{EL3204, EL3204_IDENTITY_A, EL3204Port},
         el6021::{self, EL6021, EL6021_IDENTITY_A},
         subdevice_identity_to_tuple,
     },
@@ -88,9 +89,38 @@ impl MachineNewTrait for ExtruderV2 {
                 };
             }
 
-            let el6021 = {
+            let el1002 = {
                 let device_identification =
                     get_device_identification_by_role(params.device_group, 1)?;
+                let device_hardware_identification_ethercat =
+                    match &device_identification.device_hardware_identification {
+                        DeviceHardwareIdentification::Ethercat(
+                            device_hardware_identification_ethercat,
+                        ) => device_hardware_identification_ethercat,
+                    };
+                let subdevice_index = device_hardware_identification_ethercat.subdevice_index;
+                let subdevice = get_subdevice_by_index(hardware.subdevices, subdevice_index)?;
+                let subdevice_identity = subdevice.identity();
+                match subdevice_identity_to_tuple(&subdevice_identity) {
+                    EL1002_IDENTITY_A => {
+                        let ethercat_device = get_ethercat_device_by_index(
+                            &hardware.ethercat_devices,
+                            subdevice_index,
+                        )?;
+                        downcast_device::<EL1002>(ethercat_device).await?
+                    }
+                    _ => {
+                        return Err(anyhow::anyhow!(
+                            "[{}::MachineNewTrait/Winder2::new] Device with role 1 is not an EL1002",
+                            module_path!()
+                        ));
+                    }
+                }
+            };
+
+            let el6021 = {
+                let device_identification =
+                    get_device_identification_by_role(params.device_group, 2)?;
                 let device_hardware_identification_ethercat =
                     match &device_identification.device_hardware_identification {
                         DeviceHardwareIdentification::Ethercat(
@@ -110,36 +140,7 @@ impl MachineNewTrait for ExtruderV2 {
                     }
                     _ => {
                         return Err(anyhow::anyhow!(
-                            "[{}::MachineNewTrait/Winder2::new] Device with role 0 is not an EK1100",
-                            module_path!()
-                        ));
-                    }
-                }
-            };
-
-            let el3021 = {
-                let device_identification =
-                    get_device_identification_by_role(params.device_group, 2)?;
-                let device_hardware_identification_ethercat =
-                    match &device_identification.device_hardware_identification {
-                        DeviceHardwareIdentification::Ethercat(
-                            device_hardware_identification_ethercat,
-                        ) => device_hardware_identification_ethercat,
-                    };
-                let subdevice_index = device_hardware_identification_ethercat.subdevice_index;
-                let subdevice = get_subdevice_by_index(hardware.subdevices, subdevice_index)?;
-                let subdevice_identity = subdevice.identity();
-                match subdevice_identity_to_tuple(&subdevice_identity) {
-                    EL3021_IDENTITY_A => {
-                        let ethercat_device = get_ethercat_device_by_index(
-                            &hardware.ethercat_devices,
-                            subdevice_index,
-                        )?;
-                        downcast_device::<EL3021>(ethercat_device).await?
-                    }
-                    _ => {
-                        return Err(anyhow::anyhow!(
-                            "[{}::MachineNewTrait/Winder2::new] Device with role 0 is not an EK1100",
+                            "[{}::MachineNewTrait/Winder2::new] Device with role 2 is not an EL6021",
                             module_path!()
                         ));
                     }
@@ -168,7 +169,36 @@ impl MachineNewTrait for ExtruderV2 {
                     }
                     _ => {
                         return Err(anyhow::anyhow!(
-                            "[{}::MachineNewTrait/Winder2::new] Device with role 0 is not an EK1100",
+                            "[{}::MachineNewTrait/Winder2::new] Device with role 3 is not an EL2004",
+                            module_path!()
+                        ));
+                    }
+                }
+            };
+
+            let el3021 = {
+                let device_identification =
+                    get_device_identification_by_role(params.device_group, 4)?;
+                let device_hardware_identification_ethercat =
+                    match &device_identification.device_hardware_identification {
+                        DeviceHardwareIdentification::Ethercat(
+                            device_hardware_identification_ethercat,
+                        ) => device_hardware_identification_ethercat,
+                    };
+                let subdevice_index = device_hardware_identification_ethercat.subdevice_index;
+                let subdevice = get_subdevice_by_index(hardware.subdevices, subdevice_index)?;
+                let subdevice_identity = subdevice.identity();
+                match subdevice_identity_to_tuple(&subdevice_identity) {
+                    EL3021_IDENTITY_A => {
+                        let ethercat_device = get_ethercat_device_by_index(
+                            &hardware.ethercat_devices,
+                            subdevice_index,
+                        )?;
+                        downcast_device::<EL3021>(ethercat_device).await?
+                    }
+                    _ => {
+                        return Err(anyhow::anyhow!(
+                            "[{}::MachineNewTrait/Winder2::new] Device with role 4 is not an EL3021",
                             module_path!()
                         ));
                     }
@@ -177,7 +207,7 @@ impl MachineNewTrait for ExtruderV2 {
 
             let el3204 = {
                 let device_identification =
-                    get_device_identification_by_role(params.device_group, 4)?;
+                    get_device_identification_by_role(params.device_group, 5)?;
                 let device_hardware_identification_ethercat =
                     match &device_identification.device_hardware_identification {
                         DeviceHardwareIdentification::Ethercat(
@@ -197,7 +227,7 @@ impl MachineNewTrait for ExtruderV2 {
                     }
                     _ => {
                         return Err(anyhow::anyhow!(
-                            "[{}::MachineNewTrait/Winder2::new] Device with role 0 is not an EK1100",
+                            "[{}::MachineNewTrait/Winder2::new] Device with role 5 is not an EL3204",
                             module_path!()
                         ));
                     }

@@ -97,7 +97,7 @@ impl PredefinedPdoAssignment<EL1002TxPdo, ()> for EL1002PredefinedPdoAssignment 
 }
 
 pub const EL1002_VENDOR_ID: u32 = 0x2;
-pub const EL1002_PRODUCT_ID: u32 = 0x03f03052;
-pub const EL1002_REVISION_A: u32 = 0x00120000;
+pub const EL1002_PRODUCT_ID: u32 = 65679442;
+pub const EL1002_REVISION_A: u32 = 1179648;
 pub const EL1002_IDENTITY_A: SubDeviceIdentityTuple =
     (EL1002_VENDOR_ID, EL1002_PRODUCT_ID, EL1002_REVISION_A);
