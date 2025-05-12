@@ -3,7 +3,7 @@ use std::time::{Duration, Instant};
 use control_core::controllers::pid::PidController;
 
 /// Clampable frequency limits (in Hz)
-const MIN_FREQ: f64 = 10.0;
+const MIN_FREQ: f64 = 0.0;
 const MAX_FREQ: f64 = 60.0;
 
 #[derive(Debug)]

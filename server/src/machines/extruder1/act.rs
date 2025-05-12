@@ -1,7 +1,8 @@
 use super::{ExtruderV2, ExtruderV2Mode};
-use control_core::actors::Actor;
+use control_core::{actors::Actor, converters::motor_converter::MotorConverter};
 use std::time::{Duration, Instant};
 
+// TODO: CLEAN UP ACT
 impl Actor for ExtruderV2 {
     fn act(
         &mut self,
@@ -18,6 +19,8 @@ impl Actor for ExtruderV2 {
             self.heating_relay_1.act(now_ts).await;
             self.heating_relay_2.act(now_ts).await;
             self.heating_relay_3.act(now_ts).await;
+
+            self.set_bar();
 
             self.heating_front.temperature = self.temp_sensor_1.temperature; // set the temperature read from the sensor
             // channel 2
@@ -59,16 +62,34 @@ impl Actor for ExtruderV2 {
             }
 
             let now = Instant::now();
-            if now.duration_since(self.last_measurement_emit) > Duration::from_millis(16) {
+            if now.duration_since(self.last_measurement_emit) > Duration::from_millis(32) {
                 // channel 1
                 self.emit_heating(self.heating_back.clone(), super::HeatingType::Back);
                 self.emit_heating(self.heating_front.clone(), super::HeatingType::Front);
                 self.emit_heating(self.heating_middle.clone(), super::HeatingType::Middle);
+
                 self.emit_regulation();
                 self.emit_mode_state();
                 self.emit_rotation_state();
-                self.set_bar();
+                self.emit_bar();
                 self.emit_rpm();
+
+                if self.mode == ExtruderV2Mode::Extrude && self.uses_rpm == false {
+                    self.pressure_motor_controller.target_pressure = self.target_bar as f64;
+                    let res = self
+                        .pressure_motor_controller
+                        .update(self.bar as f64, now_ts);
+
+                    let rpm = MotorConverter::hz_to_rpm(res as f32);
+
+                    self.inverter.set_running_rpm_target(rpm);
+
+                    println!(
+                        "pressuresensor bar: {}  new hz for motor {} target {}",
+                        self.bar, res, self.pressure_motor_controller.target_pressure
+                    );
+                }
+
                 self.last_measurement_emit = now;
             }
         })

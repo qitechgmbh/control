@@ -223,7 +223,7 @@ impl MachineNewTrait for ExtruderV2 {
             let temperature_controller_middle = TemperatureController::new(0.4, 0.001, 0.001, 0.0);
             let temperature_controller_back = TemperatureController::new(0.4, 0.001, 0.001, 0.0);
 
-            let pressure_motor_controller = PressureController::new(0.1, 0.001, 0.001, 6.0);
+            let pressure_motor_controller = PressureController::new(1.0, 0.1, 0.1, 60.0);
 
             let extruder: ExtruderV2 = Self {
                 inverter: MitsubishiInverterRS485Actor::new(SerialInterface::new(

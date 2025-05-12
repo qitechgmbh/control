@@ -230,7 +230,6 @@ impl ExtruderV2 {
         // assuming full scale pressure of 10 bar
         let bar = normalized * 10.0;
         self.bar = bar;
-        self.emit_bar();
     }
 
     fn set_target_rpm(&mut self, rpm: f32) {

@@ -331,7 +331,7 @@ impl MitsubishiInverterRS485Actor {
                 return;
             };
             let request: Vec<u8> = self.request_queue.pop_back().unwrap().into();
-            println!("raw_request : {:?}", request.clone());
+            //            println!("raw_request : {:?}", request.clone());
             let res = (self.serial_interface.write_message)(request.clone()).await;
             match res {
                 Ok(_) => (),
@@ -397,8 +397,9 @@ impl From<u8> for MitsubishiModbusExceptionCode {
 impl MitsubishiInverterRS485Actor {
     // When we get respone from Pr. 40014 (Running Frequency) Convert to rpm and save it
     fn handle_motor_frequency(&mut self, resp: ModbusResponse) {
+        println!("handle_motor_frequency: {:?}", resp);
         if resp.data.len() < 4 {
-            return;
+            //return;
         }
         let freq_bytes = &resp.data[1..3]; // bytes 1 and 2 are needed
         self.current_freq = u16::from_be_bytes([freq_bytes[0], freq_bytes[1]]) as f32 / 100.0;

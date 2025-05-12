@@ -39,7 +39,7 @@ impl TemperatureController {
         // Compare duty cycle to elapsed time
         let on_time = PWM_PERIOD.mul_f64(duty);
 
-        println!("update Relais: {} duty: {}", elapsed < on_time, duty);
+        //println!("update Relais: {} duty: {}", elapsed < on_time, duty);
         // Relay is ON if within duty cycle window
         return elapsed < on_time;
     }
