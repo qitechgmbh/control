@@ -82,7 +82,7 @@
     "@tanstack/react-table": "^8.21.2",
     "@tanstack/router-devtools": "^1.105.0",
     "@tanstack/zod-adapter": "^1.116.0",
-    "@vitejs/plugin-react": "^4.3.4",
+    "@vitejs/plugin-react": "^4.4.1",
     "babel-plugin-react-compiler": "^19.0.0-beta-714736e-20250131",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
