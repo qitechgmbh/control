@@ -208,7 +208,21 @@ impl From<MitsubishiControlRequests> for MitsubishiModbusRequest {
                     expected_response_type: ResponseType::ReadMotorFrequency,
                 }
             }
-            MitsubishiControlRequests::ResetInverter => todo!(),
+            MitsubishiControlRequests::ResetInverter => {
+                let reg: u16 = MitsubishiControlRequests::get_system_register(
+                    MitsubishiSystemRegister::InverterStatusAndControl,
+                );
+                let reg_bytes = reg.to_be_bytes();
+                MitsubishiModbusRequest {
+                    request: ModbusRequest {
+                        slave_id: 1,
+                        function_code: ModbusFunctionCode::PresetHoldingRegister,
+                        data: vec![reg_bytes[0], reg_bytes[1], 0x0, 0b00000001],
+                    },
+                    request_type: RequestType::OperationCommand,
+                    expected_response_type: ResponseType::ReadMotorFrequency,
+                }
+            }
             MitsubishiControlRequests::ClearAllParameters => todo!(),
             MitsubishiControlRequests::ClearNonCommunicationParameter => todo!(),
             MitsubishiControlRequests::ClearNonCommunicationParameters => todo!(),
@@ -470,6 +484,8 @@ impl Actor for MitsubishiInverterRS485Actor {
                 let res = (self.serial_interface.initialize)().await;
                 if res == true {
                     self.state = State::ReadyToSend;
+                    // every time when our inverter is "Uninitialzed" reset it first to clear any error states it may have
+                    self.add_request(MitsubishiControlRequests::ResetInverter.into());
                     self.baudrate = (self.serial_interface.get_baudrate)().await;
                     self.encoding = (self.serial_interface.get_serial_encoding)().await;
                 }
