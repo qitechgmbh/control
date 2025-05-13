@@ -3,7 +3,9 @@ use control_core::{
     actors::{
         analog_input_getter::AnalogInputGetter,
         digital_output_setter::DigitalOutputSetter,
-        mitsubishi_inverter_rs485::{MitsubishiControlRequests, MitsubishiInverterRS485Actor},
+        mitsubishi_inverter_rs485::{
+            MitsubishiControlRequests, MitsubishiInverterRS485Actor, MitsubishiModbusRequest,
+        },
         temperature_input_getter::TemperatureInputGetter,
     },
     machines::Machine,
@@ -165,10 +167,13 @@ impl ExtruderV2 {
         self.inverter.forward_rotation = forward;
         if self.mode == ExtruderV2Mode::Extrude {
             if forward {
-                let req: ModbusRequest = MitsubishiControlRequests::StartForwardRotation.into();
+                let req: MitsubishiModbusRequest =
+                    MitsubishiControlRequests::StartForwardRotation.into();
+
                 self.inverter.add_request(req);
             } else {
-                let req: ModbusRequest = MitsubishiControlRequests::StartReverseRotation.into();
+                let req: MitsubishiModbusRequest =
+                    MitsubishiControlRequests::StartReverseRotation.into();
                 self.inverter.add_request(req);
             }
         }
