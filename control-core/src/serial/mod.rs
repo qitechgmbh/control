@@ -1,19 +1,34 @@
+use std::{any::Any, sync::Arc};
+
+use smol::lock::RwLock;
+use std::fmt::Debug;
+
+use crate::machines::identification::DeviceIdentification;
+
 pub mod registry;
-use std::any::Any;
+pub mod serial_detection;
 
-pub trait Serial: Any + Send + Sync + SerialNew {
-    fn as_any(&self) -> &dyn Any;
-    fn as_any_mut(&mut self) -> &mut dyn Any;
-}
+pub trait SerialDevice: Any + Send + Sync + SerialDeviceNew + Debug {}
 
-pub trait SerialNew {
-    fn new_serial(path: &str) -> Result<Self, anyhow::Error>
+pub trait SerialDeviceNew {
+    fn new_serial(
+        params: &SerialDeviceNewParams,
+    ) -> Result<(DeviceIdentification, Arc<RwLock<Self>>), anyhow::Error>
     where
         Self: Sized;
 }
 
-#[derive(PartialEq,Clone,Debug)]
-pub struct ProductConfig{
+pub trait SerialDeviceThread {
+    fn start_thread() -> Result<(), anyhow::Error>;
+}
+
+pub struct SerialDeviceNewParams {
+    pub path: String,
+    pub device_thread_panix_tx: smol::channel::Sender<(String, anyhow::Error)>,
+}
+
+#[derive(PartialEq, Clone, Debug)]
+pub struct SerialDeviceIdentification {
     pub vendor_id: u16,
     pub product_id: u16,
 }

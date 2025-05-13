@@ -1,25 +1,23 @@
+use std::{sync::Arc, time::Instant};
+
+use api::DreMachineNamespace;
+use control_core::machines::Machine;
 use smol::lock::RwLock;
-use std::{any::Any, sync::Arc};
-use anyhow::Error;
-use control_core::serial::Serial;
 
+use crate::serial::devices::dre::Dre;
 
-pub mod new;
 pub mod act;
 pub mod api;
+pub mod new;
 
+#[derive(Debug)]
+pub struct DreMachine {
+    // drivers
+    dre: Arc<RwLock<Dre>>,
 
-pub struct Dre {
-    pub diameter: Arc<RwLock<Result<f32, Error>>>,
-    pub path: String,
+    // socketio
+    namespace: DreMachineNamespace,
+    last_measurement_emit: Instant,
 }
 
-impl Serial for Dre {
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
-
-    fn as_any_mut(&mut self) -> &mut dyn Any {
-        self
-    }
-}
+impl Machine for DreMachine {}

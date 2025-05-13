@@ -1,6 +1,6 @@
 use crate::app_state::EthercatSetup;
 use crate::machines::registry::MACHINE_REGISTRY;
-use crate::panic::{PanicDetails, send_panic};
+use crate::panic::send_panic;
 use crate::socketio::main_namespace::MainNamespaceEvents;
 use crate::socketio::main_namespace::ethercat_devices_event::EthercatDevicesEventBuilder;
 use crate::socketio::main_namespace::machines_event::MachinesEventBuilder;
@@ -21,7 +21,7 @@ use smol::channel::Sender;
 use std::{sync::Arc, time::Duration};
 
 pub async fn setup_loop(
-    thread_panic_tx: Sender<PanicDetails>,
+    thread_panic_tx: Sender<&'static str>,
     interface: &str,
     app_state: Arc<AppState>,
 ) -> Result<(), anyhow::Error> {

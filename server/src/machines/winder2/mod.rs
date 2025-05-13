@@ -15,9 +15,11 @@ use api::{
 use control_core::{
     actors::{
         digital_output_setter::DigitalOutputSetter, stepper_driver_el70x1::StepperDriverEL70x1,
-    }, converters::step_converter::StepConverter, machines::Machine, serial::{Serial, SerialNew}, socketio::namespace::NamespaceCacheingLogic
+    },
+    converters::step_converter::StepConverter,
+    machines::Machine,
+    socketio::namespace::NamespaceCacheingLogic,
 };
-use serde::de::value::Error;
 use spool_speed_controller::SpoolSpeedControllerTrait;
 use tension_arm::TensionArm;
 use uom::si::{angle::degree, angular_velocity::revolution_per_minute};
@@ -45,21 +47,6 @@ pub struct Winder2 {
 
 impl Machine for Winder2 {}
 
-
-impl Serial for Winder2 {
-    fn as_any(&self) -> &dyn std::any::Any {
-        todo!()
-    }
-    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
-        todo!()
-    }
-}
-impl SerialNew for Winder2 {
-    fn new_serial(path: &str) -> Result<Self, anyhow::Error> {
-        println!("Creating Winder2 from path: {}", path);
-        Err(anyhow::anyhow!("Error, Winder is not Serial!"))
-    }
-}
 /// Implement Traverse
 impl Winder2 {
     fn set_laser(&mut self, value: bool) {
@@ -200,5 +187,3 @@ impl std::fmt::Display for Winder2 {
         write!(f, "Winder2")
     }
 }
-
-
