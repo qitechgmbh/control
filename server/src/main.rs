@@ -1,10 +1,9 @@
-use std::{panic::catch_unwind, process::exit, sync::Arc};
 use app_state::AppState;
+use std::{panic::catch_unwind, process::exit, sync::Arc};
 
 use env_logger::Env;
 use ethercat::init::init_ethercat;
 use r#loop::init_loop;
-use panic:: PanicDetails;
 use rest::init::init_api;
 use serial::init::init_serial;
 use smol::channel::unbounded;
@@ -15,8 +14,8 @@ pub mod r#loop;
 pub mod machines;
 pub mod panic;
 pub mod rest;
-pub mod socketio;
 pub mod serial;
+pub mod socketio;
 
 fn main() {
     // if the program panics we restart all of it
@@ -36,13 +35,14 @@ fn main2() {
     env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
     let app_state = Arc::new(AppState::new());
 
-    let (thread_panic_tx, thread_panic_rx) = unbounded::<PanicDetails>();
+    let (thread_panic_tx, thread_panic_rx) = unbounded::<&'static str>();
 
     init_serial(thread_panic_tx.clone(), app_state.clone()).expect("Failed to initialize Serial");
     init_api(thread_panic_tx.clone(), app_state.clone()).expect("Failed to initialize API");
-    init_ethercat(thread_panic_tx.clone(), app_state.clone()).expect("Failed to initialize EtherCAT");
+    init_ethercat(thread_panic_tx.clone(), app_state.clone())
+        .expect("Failed to initialize EtherCAT");
     init_loop(thread_panic_tx, app_state).expect("Failed to initialize loop");
-    
+
     smol::block_on(async {
         loop {
             match thread_panic_rx.try_recv() {

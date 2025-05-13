@@ -1,7 +1,3 @@
-pub mod serial_detection;
+pub mod devices;
 pub mod init;
-pub mod register;
-pub mod dre_config;
-
-pub const VENDOR_QITECH: u16 = 0x0001;
-pub const MACHINE_DRE: u16 = 0x0006;
+pub mod registry;

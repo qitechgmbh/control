@@ -98,54 +98,51 @@ impl From<ModbusRequest> for Vec<u8> {
         return buffer;
     }
 }
+
 /* @added by Alisher Darmenov
  *
  * @param: port - It takes a mutable reference to a serial port and a ModbusRequest as input.
- * 
+ *
  * @return: Option<Vec<u8>> -It returns an Option containing the ModbusResponse if successful, or None if there was an error.
- * 
+ *
  * @description: This function is used to send a Modbus request to a device and receive the response.
  */
-pub fn receive_data_modbus(port: &mut dyn serial::SerialPort) -> Option<Vec<u8>> {
+pub fn receive_data_modbus(
+    port: &mut dyn serial::SerialPort,
+) -> Result<Option<Vec<u8>>, anyhow::Error> {
     let mut buf: [u8; 256] = [0; 256];
+    let data_length = port.read(&mut buf)?;
 
-    if let Ok(n) = port.read(&mut buf) {
-        match validate_modbus_response(buf[..n].to_vec()){
-            Ok(_) => {
-                let mut result:Vec<u8> = Vec::new();
-                for i in 0..buf[2]{
-                    result.push(buf[i as usize + 3]);
-                }
-                return Some(result)
-            }
-            Err(_) => {
-                return None
-            }
-        }
-        
-    } else {
-        //println!("Error reading from port");
-        return None
+    if data_length == 0 {
+        return Ok(None);
     }
-    
+
+    match validate_modbus_response(buf[..data_length].to_vec()) {
+        Ok(result) => Ok(Some(result)),
+        Err(_) => Ok(None),
+    }
 }
-fn validate_modbus_response(raw_data: Vec<u8>) -> Result<(), Error> {
+
+fn validate_modbus_response(raw_data: Vec<u8>) -> Result<Vec<u8>, Error> {
     if raw_data.len() == 0 {
         return Err(anyhow::anyhow!("Error: Response is Empty!"));
     }
+
     // 5 is the smallest possible Response Size
-    if raw_data.len() < 5 {
+    if raw_data.len() <= 5 {
         return Err(anyhow::anyhow!(
             "Error: Response is invalid, its less than 5 bytes"
         ));
     }
 
+    // check if the slave id is valid
     if raw_data[0] < 1 || raw_data[0] > 247 {
         return Err(anyhow::anyhow!(
             "Error: Response is invalid, slave_id is outside of the valid range 1-247"
         ));
     }
-    return Ok(());
+
+    return Ok(raw_data);
 }
 
 // expects to be given the entire raw message

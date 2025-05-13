@@ -1,98 +1,83 @@
-use std::{
-    any::TypeId,
-    collections::HashMap,
-    sync::Arc,
+use super::SerialDeviceNewParams;
+use crate::{
+    machines::identification::DeviceIdentification,
+    serial::{SerialDevice, SerialDeviceIdentification},
 };
-use smol::lock::RwLock;
 use anyhow::{Error, Result};
+use smol::lock::RwLock;
+use std::{any::TypeId, collections::HashMap, sync::Arc};
 
-use crate::serial::{
-    ProductConfig,
-    Serial,
-};
-
+pub type SerialDeviceNewClosure = Arc<
+    dyn Fn(
+            &SerialDeviceNewParams,
+        ) -> Result<(DeviceIdentification, Arc<RwLock<dyn SerialDevice>>), Error>
+        + Send
+        + Sync,
+>;
 
 #[derive(Clone)]
-pub struct CloneableFn(
-    Arc<dyn Fn(&str) -> Result<Arc<RwLock<dyn Serial>>, Error> + Send + Sync>,
-);
-
-impl CloneableFn {
-    pub fn new_serial<F>(f: F) -> Self
-    where
-        F: Fn(&str) -> Result<Arc<RwLock<dyn Serial>>, Error> + Send + Sync + 'static,
-    {
-        CloneableFn(Arc::new(f))
-    }
+pub struct SerialDeviceRegistry {
+    pub type_map: HashMap<TypeId, (SerialDeviceIdentification, SerialDeviceNewClosure)>,
 }
 
-impl std::ops::Deref for CloneableFn {
-    type Target = dyn Fn(&str) -> Result<Arc<RwLock<dyn Serial>>, Error> + Send + Sync;
-    fn deref(&self) -> &Self::Target {
-        &*self.0
-    }
-}
-pub type SerialNewFn = CloneableFn;
-#[derive(Clone)]
-pub struct SerialRegistry {
-    pub type_map: HashMap<TypeId, (ProductConfig, SerialNewFn)>,
-}
-
-impl SerialRegistry {
+impl SerialDeviceRegistry {
     pub fn new() -> Self {
         Self {
             type_map: HashMap::new(),
         }
     }
 
-    pub fn register<T: Serial + 'static>(
+    pub fn register<T: SerialDevice + 'static>(
         &mut self,
-        machine_identficiation: ProductConfig,
+        serial_device_identification: SerialDeviceIdentification,
     ) {
         self.type_map.insert(
             TypeId::of::<T>(),
             (
-                machine_identficiation,
-                CloneableFn::new_serial(|path| {
-                    Ok(Arc::new(RwLock::new(T::new_serial(path)?)))
+                serial_device_identification,
+                Arc::new(move |params| {
+                    let (identification, device) = T::new_serial(params)?;
+                    Ok((identification, device))
                 }),
             ),
         );
     }
 
-    pub fn new_machine(
+    pub fn new_serial_device(
         &self,
-        path: &str,
-        profuct_config: &ProductConfig,
-    ) -> Result<Arc<RwLock<dyn Serial>>, anyhow::Error> {
+        serial_device_new_params: &SerialDeviceNewParams,
+        serial_device_identification: &SerialDeviceIdentification,
+    ) -> Result<(DeviceIdentification, Arc<RwLock<dyn SerialDevice>>), anyhow::Error> {
         // find serial new function by comparing ProdutConfig
         let (_, serial_new_fn) = self
             .type_map
             .values()
-            .find(|(pc, _)| pc == profuct_config)
+            .find(|(sdi, _)| sdi == serial_device_identification)
             .ok_or(anyhow::anyhow!(
                 "[{}::MachineConstructor::new_machine] Machine not found",
                 module_path!()
             ))?;
 
         // call machine new function by reference
-        (serial_new_fn)(path)
+        (serial_new_fn)(serial_device_new_params)
     }
 
-    pub async fn downcast<T: Serial + 'static>(
+    pub async fn downcast_arc_rwlock<T: SerialDevice + 'static>(
         &self,
-        machine: Arc<RwLock<dyn Serial>>,
+        serial_device: Arc<RwLock<dyn SerialDevice>>,
     ) -> Result<Arc<RwLock<T>>, Error> {
-        let ok = {
-            let guard = machine.read().await;
-            guard.as_any().is::<T>()
+        // Use the Any trait for type checking
+        let type_id = {
+            let type_id_fn = Arc::new(|device: &dyn SerialDevice| device.type_id());
+            let guard = serial_device.read().await;
+            let id = type_id_fn(&*guard);
+            drop(guard);
+            id
         };
-    
-        if ok {
-            // SAFETY: We have checked that it's the correct type
-            let arc = unsafe {
-                Arc::from_raw(Arc::into_raw(machine) as *const RwLock<T>)
-            };
+
+        if TypeId::of::<T>() == type_id {
+            // transmute Arc
+            let arc = unsafe { Arc::from_raw(Arc::into_raw(serial_device) as *const RwLock<T>) };
             Ok(arc)
         } else {
             Err(anyhow::anyhow!(
@@ -102,6 +87,4 @@ impl SerialRegistry {
             ))
         }
     }
-    
-
 }
