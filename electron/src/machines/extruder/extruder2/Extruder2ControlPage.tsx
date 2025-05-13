@@ -10,94 +10,126 @@ import { HeatingZone } from "../HeatingZone";
 import { Label } from "@/control/Label";
 import { EditValue } from "@/control/EditValue";
 import { roundToDecimals } from "@/lib/decimal";
+import { useExtruder2 } from "./useExtruder";
+import { TimeSeriesValueNumeric } from "@/control/TimeSeriesValue";
 
-export function Extruder1ControlPage() {
+export function Extruder2ControlPage() {
+  const {
+    mode,
+    SetMode,
+    frontTemperature,
+    backTemperature,
+    middleTemperature,
+    frontHeatingState,
+    backHeatingState,
+    middleHeatingState,
+    SetHeatingFrontTemp,
+    SetHeatingBackTemp,
+    SetHeatingMiddleTemp,
+    SetRegulation,
+    uses_rpm,
+    barTs,
+    rpmTs,
+    targetBar,
+    targetRpm,
+    SetTargetPressure,
+    SetTargetRpm,
+  } = useExtruder2();
+
   return (
     <Page>
       <ControlGrid>
         <HeatingZone
           title={"Heating Front"}
-          temperature={150}
-          heating={true}
-          targetTemperature={155}
+          heatingState={frontHeatingState}
+          heatingTimeSeries={frontTemperature}
+          onChangeTargetTemp={SetHeatingFrontTemp}
         />
         <HeatingZone
           title={"Heating Middle"}
-          temperature={150}
-          heating={true}
-          targetTemperature={155}
+          heatingState={middleHeatingState}
+          heatingTimeSeries={middleTemperature}
+          onChangeTargetTemp={SetHeatingMiddleTemp}
         />
         <HeatingZone
-          title={"Headting Back"}
-          temperature={150}
-          heating={true}
-          targetTemperature={155}
+          title={"Heating Back"}
+          heatingState={backHeatingState}
+          heatingTimeSeries={backTemperature}
+          onChangeTargetTemp={SetHeatingBackTemp}
         />
         <ControlCard className="bg-red" title="Screw Drive">
-          {/* <TimeSeriesValueNumeric
-            label="Drehzahl"
-            unit="rpm"
-            timeseries={null}
-            renderValue={(value) => roundToDecimals(value, 0) || "N/A"}
-          /> */}
           <Label label="Regulation">
             <SelectionGroupBoolean
-              value={false}
+              value={uses_rpm}
               optionFalse={{ children: "RPM" }}
               optionTrue={{ children: "Pressure" }}
+              onChange={SetRegulation}
             />
           </Label>
           <div className="flex flex-row flex-wrap gap-4">
             <Label label="Target RPM">
               <EditValue
-                value={undefined}
+                value={targetRpm}
                 defaultValue={0}
                 unit="rpm"
                 title="Target RPM"
+                min={0}
+                max={3600}
                 renderValue={(value) => roundToDecimals(value, 0)}
+                onChange={SetTargetRpm}
               />
             </Label>
             <Label label="Target Pressure">
               <EditValue
-                value={undefined}
+                value={targetBar}
                 defaultValue={200}
                 unit="bar"
                 title="Target Pressure"
                 renderValue={(value) => roundToDecimals(value, 0)}
+                onChange={SetTargetPressure}
               />
             </Label>
           </div>
+          <div className="flex flex-row flex-wrap gap-4">
+            <TimeSeriesValueNumeric
+              label="Rpm"
+              unit="rpm"
+              renderValue={(value) => roundToDecimals(value, 0)}
+              timeseries={rpmTs}
+            />
+
+            <TimeSeriesValueNumeric
+              label="Pressure"
+              unit="bar"
+              renderValue={(value) => roundToDecimals(value, 0)}
+              timeseries={barTs}
+            />
+          </div>
         </ControlCard>
 
-        <ControlCard className="bg-red" title="Measurements">
-          {/* <TimeSeriesValueNumeric
-            label="Nozzle Pressure"
-            unit="bar"
-            value={55}
-            renderValue={(value) => roundToDecimals(value, 0)}
-          /> */}
-        </ControlCard>
+        <ControlCard className="bg-red" title="Measurements"></ControlCard>
         <ControlCard className="bg-red" title="Mode">
-          <SelectionGroup<"standby" | "heating" | "extrude">
-            value="standby"
+          <SelectionGroup<"Standby" | "Heat" | "Extrude">
+            value={mode}
             orientation="vertical"
             options={{
-              standby: {
+              Standby: {
                 children: "Standby",
                 icon: "lu:CirclePause",
                 isActiveClassName: "bg-green-600",
               },
-              heating: {
+              Heat: {
                 children: "Heat",
                 icon: "lu:Flame",
                 isActiveClassName: "bg-green-600",
               },
-              extrude: {
+              Extrude: {
                 children: "Extrude",
                 icon: "lu:ArrowBigLeftDash",
                 isActiveClassName: "bg-green-600",
               },
             }}
+            onChange={SetMode}
           />
         </ControlCard>
       </ControlGrid>
