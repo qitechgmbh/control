@@ -51,4 +51,5 @@ The main task of Serial Init loop is to run `Serial Detection` as a separate thr
 The main goal is to create a global Serial Detection static using already registered Serial Product Configurations. These configurations should be accessible and updatable from different thread tasks.
 
 ## TODO list
-We need to assign Vendor & Product ID of DRE separately.
+- We need to assign Vendor & Product ID of DRE separately as machine.
+- Remake retry connection, so it will work for all devices and not only dre specific
