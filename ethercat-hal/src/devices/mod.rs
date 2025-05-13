@@ -2,6 +2,7 @@ pub mod ek1100;
 pub mod el1008;
 pub mod el2002;
 pub mod el2008;
+
 pub mod el2024;
 pub mod el2521;
 pub mod el2522;
@@ -15,6 +16,7 @@ pub mod el6021;
 pub mod el7031;
 pub mod el7031_0030;
 pub mod el7041_0052;
+
 // pub mod el4008;
 
 use super::devices::el1008::EL1008;
@@ -30,7 +32,10 @@ use el2522::{EL2522, EL2522_IDENTITY_A};
 use el3001::EL3001_IDENTITY_A;
 use el3021::EL3021_IDENTITY_A;
 use el3024::EL3024_IDENTITY_A;
-use el6021::EL6021_IDENTITY_A;
+
+use el3204::EL3204_IDENTITY_A;
+use el3204::EL3204_IDENTITY_B;
+
 use el7031::{EL7031_IDENTITY_A, EL7031_IDENTITY_B};
 use el7041_0052::EL7041_0052_IDENTITY_A;
 use ethercrab::{MainDevice, SubDeviceIdentity};
@@ -159,7 +164,7 @@ pub fn device_from_subdevice_identity_tuple(
         EL3001_IDENTITY_A => Ok(Arc::new(RwLock::new(el3001::EL3001::new()))),
         EL3021_IDENTITY_A => Ok(Arc::new(RwLock::new(el3021::EL3021::new()))),
         EL3024_IDENTITY_A => Ok(Arc::new(RwLock::new(el3024::EL3024::new()))),
-        EL6021_IDENTITY_A => Ok(Arc::new(RwLock::new(el6021::EL6021::new()))),
+        EL3204_IDENTITY_A | EL3204_IDENTITY_B => Ok(Arc::new(RwLock::new(el3204::EL3204::new()))),
         // "EL4008" => Ok(Arc::new(RwLock::new(EL4008::new()))),
         // TODO: implement EL3204 identity
         // "EL3204" => Ok(Arc::new(RwLock::new(EL3204::new()))),
