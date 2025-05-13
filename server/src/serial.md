@@ -30,8 +30,8 @@ The next step is to check if the devices that were previously disconnected or un
 ## DRE (Laser Diameter Measuring Instrument)
 DRE Device has simple structure, it has two parameters (measured diameter) and the path to the serial port, for communication establishment. Also it is connected to the Trait of all Serial Devices.
 
--After the start of DRE, it will constantly update measured diameter parameter, under current Configurations of Modbus RTU connection (30 diameter updates per second)
--If Connection could not be established with DRE 10 times in a row, then diameter update will stop, and instead of diameter parameter will be error message
+- After the start of DRE, it will constantly update measured diameter parameter, under current Configurations of Modbus RTU connection (30 diameter updates per second)
+- If Connection could not be established with DRE 10 times in a row, then diameter update will stop, and instead of diameter parameter will be error message
 
 ### Current DRE Parameters
 `1)` Baud Rate 38400
