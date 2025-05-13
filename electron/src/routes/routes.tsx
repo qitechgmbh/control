@@ -10,8 +10,13 @@ import { Winder1ControlPage } from "@/machines/winder/winder2/Winder2ControlPage
 import { Winder1ManualPage } from "@/machines/winder/winder2/Winder2Manual";
 import { Winder1SettingPage } from "@/machines/winder/winder2/Winder2Settings";
 import { Winder1GraphsPage } from "@/machines/winder/winder2/Winder2Graphs";
+import { Extruder2Page } from "@/machines/extruder/extruder2/Extruder2Page";
+import { Extruder2ControlPage } from "@/machines/extruder/extruder2/Extruder2ControlPage";
+import { Extruder2SettingsPage } from "@/machines/extruder/extruder2/Extruder2Settings";
+import { ExtruderV2ManualPage } from "@/machines/extruder/extruder2/Extruder2Manual";
 import { ChooseVersionPage } from "@/setup/ChooseVersionPage";
 import { fallback, zodValidator } from "@tanstack/zod-adapter";
+
 import {
   defaultGithubSource,
   GithubSource,
@@ -40,6 +45,30 @@ export const sidebarRoute = createRoute({
 export const machinesRoute = createRoute({
   getParentRoute: () => sidebarRoute,
   path: "machines",
+});
+
+export const extruder2Route = createRoute({
+  getParentRoute: () => machinesRoute,
+  path: "extruder2/$serial",
+  component: () => <Extruder2Page />,
+});
+
+export const extruder2ControlRoute = createRoute({
+  getParentRoute: () => extruder2Route,
+  path: "control",
+  component: () => <Extruder2ControlPage />,
+});
+
+export const extruder2SettingsRoute = createRoute({
+  getParentRoute: () => extruder2Route,
+  path: "settings",
+  component: () => <Extruder2SettingsPage />,
+});
+
+export const extruder2ManualRoute = createRoute({
+  getParentRoute: () => extruder2Route,
+  path: "manual",
+  component: () => <ExtruderV2ManualPage />,
 });
 
 export const winder2SerialRoute = createRoute({
@@ -149,12 +178,19 @@ export const rootTree = RootRoute.addChildren([
         updateExecuteRoute,
       ]),
     ]),
+
     machinesRoute.addChildren([
       winder2SerialRoute.addChildren([
         winder2ControlRoute,
         winder2ManualRoute,
         winder2SettingsRoute,
         winder2GraphsRoute,
+      ]),
+
+      extruder2Route.addChildren([
+        extruder2ControlRoute,
+        extruder2SettingsRoute,
+        extruder2ManualRoute,
       ]),
     ]),
   ]),
