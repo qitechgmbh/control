@@ -14,7 +14,7 @@ use ethercat_hal::devices::el3001::EL3001_IDENTITY_A;
 use ethercat_hal::devices::el3021::EL3021_IDENTITY_A;
 use ethercat_hal::devices::el3024::EL3024_IDENTITY_A;
 use ethercat_hal::devices::el3204::EL3204_IDENTITY_A;
-use ethercat_hal::devices::el3204::EL3204_IDENTITY_A;
+use ethercat_hal::devices::el6021::EL6021_IDENTITY_A;
 use ethercat_hal::devices::el6021::EL6021_IDENTITY_B;
 
 use ethercat_hal::devices::el3204::EL3204_IDENTITY_B;

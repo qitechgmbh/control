@@ -31,8 +31,8 @@ use ethercat_hal::{
         el1002::{EL1002, EL1002_IDENTITY_A},
         el2004::{EL2004, EL2004_IDENTITY_A, EL2004Port},
         el3021::{EL3021, EL3021_IDENTITY_A, EL3021Port},
-        el3204::{EL3204, EL3204_IDENTITY_A, EL3204Port},
-        el6021::{self, EL6021, EL6021_IDENTITY_A},
+        el3204::{EL3204, EL3204_IDENTITY_A, EL3204_IDENTITY_B, EL3204Port},
+        el6021::{self, EL6021, EL6021_IDENTITY_A, EL6021_IDENTITY_B},
         subdevice_identity_to_tuple,
     },
     io::{
@@ -131,7 +131,7 @@ impl MachineNewTrait for ExtruderV2 {
                 let subdevice = get_subdevice_by_index(hardware.subdevices, subdevice_index)?;
                 let subdevice_identity = subdevice.identity();
                 match subdevice_identity_to_tuple(&subdevice_identity) {
-                    EL6021_IDENTITY_A => {
+                    EL6021_IDENTITY_A | EL6021_IDENTITY_B => {
                         let ethercat_device = get_ethercat_device_by_index(
                             &hardware.ethercat_devices,
                             subdevice_index,
@@ -218,7 +218,7 @@ impl MachineNewTrait for ExtruderV2 {
                 let subdevice = get_subdevice_by_index(hardware.subdevices, subdevice_index)?;
                 let subdevice_identity = subdevice.identity();
                 match subdevice_identity_to_tuple(&subdevice_identity) {
-                    EL3204_IDENTITY_A => {
+                    EL3204_IDENTITY_A | EL3204_IDENTITY_B => {
                         let ethercat_device = get_ethercat_device_by_index(
                             &hardware.ethercat_devices,
                             subdevice_index,
