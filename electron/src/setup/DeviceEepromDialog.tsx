@@ -44,10 +44,12 @@ import { Separator } from "@/components/ui/separator";
 import { Icon } from "@/components/Icon";
 import { toast } from "sonner";
 import { Toast } from "@/components/Toast";
-import { EthercatSetupEventData } from "@/client/mainNamespace";
+import { EthercatDevicesEventData } from "@/client/mainNamespace";
+
+type Device = NonNullable<EthercatDevicesEventData["Done"]>["devices"][number];
 
 type Props = {
-  device: EthercatSetupEventData["devices"][number];
+  device: Device;
 };
 
 const formSchema = z.object({
@@ -81,7 +83,7 @@ export function DeviceEepromDialog({ device }: Props) {
 */
 
 type ContentProps = {
-  device: EthercatSetupEventData["devices"][number];
+  device: Device;
   setOpen: (open: boolean) => void;
 };
 
@@ -92,10 +94,10 @@ export function DeviceEeepromDialogContent({ device, setOpen }: ContentProps) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       machine:
-        device.machine_device_identification?.machine_identification_unique.machine.toString(),
+        device.device_identification.device_machine_identification?.machine_identification_unique.machine_identification.machine.toString(),
       serial:
-        device.machine_device_identification?.machine_identification_unique.serial.toString(),
-      role: device.machine_device_identification?.role.toString(),
+        device.device_identification.device_machine_identification?.machine_identification_unique.serial.toString(),
+      role: device.device_identification.device_machine_identification?.role.toString(),
     },
     mode: "all",
   });
@@ -107,7 +109,12 @@ export function DeviceEeepromDialogContent({ device, setOpen }: ContentProps) {
   const onSubmit = (values: FormSchema) => {
     client
       .writeMachineDeviceIdentification({
-        machine_identification: {
+        hardware_identification_ethercat: {
+          subdevice_index:
+            device.device_identification.device_hardware_identification
+              .Ethercat!.subdevice_index,
+        },
+        device_machine_identification: {
           machine_identification_unique: {
             machine_identification: {
               vendor: VENDOR_QITECH,
@@ -115,11 +122,7 @@ export function DeviceEeepromDialogContent({ device, setOpen }: ContentProps) {
             },
             serial: parseInt(values.serial!),
           },
-
           role: parseInt(values.role!),
-        },
-        hardware_identification: {
-          subdevice_index: 4,
         },
       })
       .then((res) => {
