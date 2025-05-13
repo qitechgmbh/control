@@ -61,8 +61,8 @@ export function Extruder2ControlPage() {
           <Label label="Regulation">
             <SelectionGroupBoolean
               value={uses_rpm}
-              optionFalse={{ children: "RPM" }}
-              optionTrue={{ children: "Pressure" }}
+              optionTrue={{ children: "RPM" }}
+              optionFalse={{ children: "Pressure" }}
               onChange={SetRegulation}
             />
           </Label>

@@ -2,7 +2,7 @@ use std::time::{Duration, Instant};
 
 use control_core::controllers::pid::PidController;
 
-const PWM_PERIOD: Duration = Duration::from_millis(200);
+const PWM_PERIOD: Duration = Duration::from_millis(5000);
 
 #[derive(Debug)]
 
@@ -21,10 +21,18 @@ impl TemperatureController {
         }
     }
 
+    /*
+    heat dissapation pid controller
+    take 27 C room temp
+    0.001 kp
+    error = measured_temp - room_temp
+
+    */
+
     pub fn update(&mut self, measured_temp: f64, now: Instant) -> bool {
         let error = self.target_temp - measured_temp;
         let control = self.pid.update(error, now); // PID output
-        // println!("control {} error {}", control, error);
+        println!("control {} error {}", control, error);
         // Clamp PID output to 0.0 – 1.0 (as duty cycle)
         let duty = control.clamp(0.0, 1.0);
 

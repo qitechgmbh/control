@@ -35,7 +35,7 @@ export function HeatingZone({
             max={330}
             unit="C"
             title="Target Temperature"
-            renderValue={(value) => roundToDecimals(value, 0)}
+            renderValue={(value) => roundToDecimals(value, 1)}
             onChange={onChangeTargetTemp}
           />
         </Label>
@@ -43,7 +43,7 @@ export function HeatingZone({
         <TimeSeriesValueNumeric
           label="Temperature"
           unit="C"
-          renderValue={(value) => roundToDecimals(value, 0)}
+          renderValue={(value) => roundToDecimals(value, 1)}
           timeseries={heatingTimeSeries}
         />
         <label className="flex items-center space-x-2">
