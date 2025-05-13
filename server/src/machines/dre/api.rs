@@ -1,19 +1,18 @@
 use std::time::Duration;
 
-use super::Dre;
+use super::DreMachine;
 use control_core::{
     machines::api::MachineApi,
     socketio::{
         event::{Event, GenericEvent},
         namespace::{
-            cache_duration, cache_one_event, CacheFn, CacheableEvents, Namespace,
-            NamespaceCacheingLogic, NamespaceInterface,
+            CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, NamespaceInterface,
+            cache_duration,
         },
     },
 };
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use serde_json::Value;
-use super::super::super::serial::register::SERIAL_DETECTION;
 
 #[derive(Serialize, Debug, Clone)]
 pub struct AllConnectedDevice {
@@ -23,79 +22,46 @@ pub struct AllConnectedDevice {
 }
 
 #[derive(Serialize, Debug, Clone)]
-pub struct AllConnectedDevicesEvent {
-    devices: Vec<AllConnectedDevice>,
-}
-impl AllConnectedDevicesEvent {
-    pub fn build(&self) -> Event<Self> {
-        Event::new("AllConnectedDevicesEvent", self.clone())
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct DiameterRequestEvent {
-    pub device: String,
-}
-impl DiameterRequestEvent {
-    pub fn build(&self) -> Event<Self> {
-        Event::new("DiameterRequestEvent", self.clone())
-    }
-}
-
-#[derive(Serialize, Debug, Clone)]
-pub struct DiameterResponseEvent {
-    pub device: String,
+pub struct DiameterEvent {
     pub diameter: Option<f32>,
-    pub error: Option<String>,
 }
-impl DiameterResponseEvent {
+
+impl DiameterEvent {
     pub fn build(&self) -> Event<Self> {
         Event::new("DiameterResponseEvent", self.clone())
     }
 }
 
 pub enum DreEvents {
-    AllConnectedDevicesEvent(Event<AllConnectedDevicesEvent>),
-    DiameterResponseEvent(Event<DiameterResponseEvent>),
-    DiameterRequestEvent(Event<DiameterRequestEvent>)
+    DiameterEvent(Event<DiameterEvent>),
 }
 
-
 #[derive(Debug)]
-pub struct DreNamespace(Namespace);
+pub struct DreMachineNamespace(Namespace);
 
-impl DreNamespace {
+impl DreMachineNamespace {
     pub fn new() -> Self {
         Self(Namespace::new())
     }
 }
 
-
-
 impl CacheableEvents<DreEvents> for DreEvents {
     fn event_value(&self) -> Result<GenericEvent, serde_json::Error> {
         match self {
-            DreEvents::AllConnectedDevicesEvent(event) => event.try_into(),
-            DreEvents::DiameterResponseEvent(event) => event.try_into(),
-            DreEvents::DiameterRequestEvent(event) => event.try_into(),
+            DreEvents::DiameterEvent(event) => event.try_into(),
         }
     }
 
     fn event_cache_fn(&self) -> CacheFn {
-        let cache_one_hour = cache_duration(Duration::from_secs(60 * 60));
         let cache_ten_secs = cache_duration(Duration::from_secs(10));
-        let cache_one = cache_one_event();
 
         match self {
-            DreEvents::AllConnectedDevicesEvent(_) => cache_one_hour,
-            DreEvents::DiameterResponseEvent(_) => cache_ten_secs,
-            DreEvents::DiameterRequestEvent(_) => cache_one,
+            DreEvents::DiameterEvent(_) => cache_ten_secs,
         }
     }
 }
 
-
-impl NamespaceCacheingLogic<DreEvents> for DreNamespace {
+impl NamespaceCacheingLogic<DreEvents> for DreMachineNamespace {
     fn emit_cached(&mut self, events: DreEvents) {
         let event = match events.event_value() {
             Ok(event) => event,
@@ -112,7 +78,6 @@ impl NamespaceCacheingLogic<DreEvents> for DreNamespace {
         self.0.emit_cached(&event, buffer_fn);
     }
 }
-
 
 // impl DreNamespace {
 //     // This function handles events and updates the connected devices or responds to requests
@@ -184,3 +149,15 @@ impl NamespaceCacheingLogic<DreEvents> for DreNamespace {
 //         }
 //     }
 // }
+
+impl MachineApi for DreMachine {
+    fn api_mutate(&mut self, _request_body: Value) -> Result<(), anyhow::Error> {
+        // let mutation: Mutation = serde_json::from_value(request_body)?;
+        // match mutation {}
+        Ok(())
+    }
+
+    fn api_event_namespace(&mut self) -> &mut dyn NamespaceInterface {
+        &mut self.namespace.0
+    }
+}

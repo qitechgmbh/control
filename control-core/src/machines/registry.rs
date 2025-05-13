@@ -1,11 +1,7 @@
 use super::{Machine, identification::MachineIdentification, new::MachineNewParams};
 use anyhow::Error;
-use smol::lock::{Mutex, RwLock};
-use std::{
-    any::{Any, TypeId},
-    collections::HashMap,
-    sync::Arc,
-};
+use smol::lock::Mutex;
+use std::{any::TypeId, collections::HashMap};
 
 pub type MachineNewClosure =
     Box<dyn Fn(&MachineNewParams) -> Result<Box<Mutex<dyn Machine>>, Error> + Send + Sync>;
@@ -68,39 +64,5 @@ impl MachineRegistry {
 
         // call machine new function by reference
         (machine_new_closure)(machine_new_params)
-    }
-
-    pub fn downcast_arc_rwlock<T: Machine + 'static>(
-        &self,
-        machine: Arc<RwLock<dyn Machine>>,
-    ) -> Result<Arc<RwLock<T>>, Error> {
-        if TypeId::of::<T>() == machine.type_id() {
-            // transmute Arc
-            let arc = unsafe { Arc::from_raw(Arc::into_raw(machine) as *const RwLock<T>) };
-            Ok(arc)
-        } else {
-            Err(anyhow::anyhow!(
-                "[{}::MachineConstructor::downcast] Machine is not of type {}",
-                module_path!(),
-                std::any::type_name::<T>()
-            ))
-        }
-    }
-
-    pub fn downcast_box_rwlock<T: Machine + 'static>(
-        &self,
-        machine: Box<RwLock<dyn Machine>>,
-    ) -> Result<RwLock<T>, Error> {
-        if TypeId::of::<T>() == machine.type_id() {
-            // transmute Box
-            let box_machine = unsafe { Box::from_raw(Box::into_raw(machine) as *mut RwLock<T>) };
-            Ok(*box_machine)
-        } else {
-            Err(anyhow::anyhow!(
-                "[{}::MachineConstructor::downcast] Machine is not of type {}",
-                module_path!(),
-                std::any::type_name::<T>()
-            ))
-        }
     }
 }
