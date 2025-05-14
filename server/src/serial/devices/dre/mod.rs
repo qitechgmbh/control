@@ -1,8 +1,5 @@
 use std::{
-    io::Write,
-    sync::Arc,
-    thread,
-    time::{Duration, Instant},
+    io::Write, sync::Arc, thread, time::{Duration, Instant}
 };
 
 use anyhow::anyhow;
@@ -15,15 +12,16 @@ use control_core::{
     modbus::{self, ModbusRequest, ModbusResponse},
     serial::{SerialDevice, SerialDeviceNew, SerialDeviceNewParams},
 };
+use serde::Serialize;
 use serial::SerialPort;
 use smol::lock::RwLock;
 use uom::si::f64::Length;
-
+use serde::ser::SerializeStruct;
 use crate::{
     machines::{MACHINE_DRE, VENDOR_QITECH},
     panic::send_panic_error,
 };
-
+/// The struct of DRE Device
 #[derive(Debug)]
 pub struct Dre {
     pub data: Option<DreData>,
@@ -126,20 +124,34 @@ impl SerialDeviceNew for Dre {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DreData {
     pub diameter: Length,
     pub last_timestamp: Instant,
 }
 
+impl Serialize for DreData {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let mut state = serializer.serialize_struct("DreData", 2)?;
+        state.serialize_field("diameter", &self.diameter.get::<uom::si::length::millimeter>())?;
+        state.serialize_field("last_timestamp", &self.last_timestamp.elapsed().as_secs())?;
+        state.end()
+    }
+}
+
 impl Dre {
-    pub async fn get_data(&self) -> Result<Length, String> {
+    pub async fn get_diameter(&self) -> Result<Length, String> {
         match &self.data {
             Some(data) => Ok(data.diameter),
             None => Err("No data from DRE".to_string()),
         }
     }
-
+    pub async fn get_data(&self) -> Option<DreData> {
+        self.data.clone()
+    }
     async fn process(_self: Arc<RwLock<Self>>) -> Result<(), anyhow::Error> {
         let path = {
             let read_guard = _self.read().await;
