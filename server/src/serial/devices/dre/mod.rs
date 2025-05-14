@@ -185,7 +185,6 @@ impl Dre {
             if let Some(diameter_response) = response {
                 // try to convert it to a DreDiameterResponse
                 let diameter_response = DreDiameterResponse::try_from(diameter_response)?;
-
                 // save the diameter
                 let mut self_guard = _self.write().await;
                 self_guard.data = Some(DreData {
