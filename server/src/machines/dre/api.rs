@@ -11,8 +11,9 @@ use control_core::{
         },
     },
 };
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use uom::si::f64::Length;
 
 
 #[derive(Serialize, Debug, Clone)]
@@ -55,6 +56,14 @@ impl CacheableEvents<DreEvents> for DreEvents {
     }
 }
 
+
+#[derive(Deserialize, Serialize)]
+enum Mutation {
+    TargetSetTargetDiameter(Length),
+    TargetSetLowerTolerance(Length),
+    TargetSetHigherTolerance(Length)
+}
+
 impl NamespaceCacheingLogic<DreEvents> for DreMachineNamespace {
     fn emit_cached(&mut self, events: DreEvents) {
         let event = match events.event_value() {
@@ -74,7 +83,16 @@ impl NamespaceCacheingLogic<DreEvents> for DreMachineNamespace {
 }
 
 impl MachineApi for DreMachine {
-    fn api_mutate(&mut self, _request_body: Value) -> Result<(), anyhow::Error> {
+    fn api_mutate(&mut self, request_body: Value) -> Result<(), anyhow::Error> {
+        let mutation: Mutation = serde_json::from_value(request_body)?;
+        match mutation {
+            Mutation::TargetSetHigherTolerance(higher_tolerance)
+            =>{self.target_set_higher_tolerance(higher_tolerance)},
+            Mutation::TargetSetLowerTolerance(lower_tolerance)
+            =>{self.target_set_lower_tolerance(lower_tolerance);},
+            Mutation::TargetSetTargetDiameter(target_diameter)
+            =>{self.target_set_target_diameter(target_diameter);}
+        }
         Ok(())
     }
 
