@@ -1,9 +1,7 @@
 use std::{sync::Arc, time::Instant};
-
-use api::DreMachineNamespace;
-use control_core::machines::Machine;
+use api::{DiameterEvent, DreEvents, DreMachineNamespace};
+use control_core::{machines::Machine, socketio::namespace::NamespaceCacheingLogic};
 use smol::lock::RwLock;
-
 use crate::serial::devices::dre::Dre;
 
 pub mod act;
@@ -21,3 +19,15 @@ pub struct DreMachine {
 }
 
 impl Machine for DreMachine {}
+
+impl DreMachine{
+    pub async fn emit_dre_data(&mut self) {
+        let dre_data = self.dre.read().await.get_data().await;
+
+        let diameter_event = DiameterEvent{
+            dre_data
+        };
+        self.namespace.emit_cached(DreEvents::DiameterEvent(diameter_event.build()));
+
+    }
+}
