@@ -7,7 +7,7 @@ use std::{
 
 use anyhow::anyhow;
 use control_core::{
-    helpers::retry::retry,
+    helpers::{retry::retry,hashing::{hashing,xor_u128_to_u16}},
     machines::identification::{
         DeviceHardwareIdentification, DeviceHardwareIdentificationSerial, DeviceIdentification,
         DeviceMachineIdentification, MachineIdentification, MachineIdentificationUnique,
@@ -73,7 +73,8 @@ impl SerialDeviceNew for Dre {
             diameter: Length::new::<uom::si::length::millimeter>(0.0),
             last_timestamp: Instant::now(),
         });
-
+        let hash = hashing(&params.path.clone());
+        let serial = xor_u128_to_u16(hash);
         let device_identification = DeviceIdentification {
             device_machine_identification: Some(DeviceMachineIdentification {
                 machine_identification_unique: MachineIdentificationUnique {
@@ -81,8 +82,7 @@ impl SerialDeviceNew for Dre {
                         vendor: VENDOR_QITECH,
                         machine: MACHINE_DRE,
                     },
-                    // TODO hash here
-                    serial: 0,
+                    serial: serial,
                 },
                 role: 0,
             }),
