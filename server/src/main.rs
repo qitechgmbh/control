@@ -1,3 +1,7 @@
+#[cfg(feature = "dhat-heap")]
+#[global_allocator]
+static ALLOC: dhat::Alloc = dhat::Alloc;
+
 use std::{panic::catch_unwind, process::exit, sync::Arc};
 
 use app_state::AppState;
@@ -31,6 +35,9 @@ fn main() {
 }
 
 fn main2() {
+    #[cfg(feature = "dhat-heap")]
+    let profiler = dhat::Profiler::new_heap();
+
     env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
 
     let app_state = Arc::new(AppState::new());
@@ -43,7 +50,19 @@ fn main2() {
     init_loop(thread_panic_tx, app_state).expect("Failed to initialize loop");
 
     smol::block_on(async {
+        #[cfg(feature = "dhat-heap")]
+        let dhat_analysis_time = std::time::Duration::from_secs(60);
+        #[cfg(feature = "dhat-heap")]
+        let dhat_analysis_start = std::time::Instant::now();
+
         loop {
+            // if `dhat-heap` is enabled, we will analyze the heap for 60 seconds and then exit
+            #[cfg(feature = "dhat-heap")]
+            if dhat_analysis_start.elapsed() > dhat_analysis_time {
+                drop(profiler);
+                exit(0)
+            }
+
             match thread_panic_rx.try_recv() {
                 Ok(panic_details) => {
                     log::error!(

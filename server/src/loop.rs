@@ -12,8 +12,8 @@ pub fn init_loop(
     std::thread::Builder::new()
         .name("LoopThread".to_owned())
         .spawn(move || {
+            send_panic("LoopThread", thread_panic_tx.clone());
             loop {
-                send_panic("LoopThread", thread_panic_tx.clone());
                 let rt = smol::LocalExecutor::new();
                 let res = smol::block_on(rt.run(async { loop_once(app_state.clone()).await }));
                 if let Err(err) = res {
