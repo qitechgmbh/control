@@ -16,6 +16,6 @@ smol = "2.0.2"
 socketioxide = "0.17.0"
 uom = "0.36.0"
 bitvec = { version = "1.0.1", features = ["alloc"] }
-crc = "3.2.1"
+crc = "3.3.0"
 [dev-dependencies]
 approx = "0.5.1"
