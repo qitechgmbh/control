@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use anyhow::Error;
-
+use serial;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ParityType {
     Even,
@@ -14,6 +14,8 @@ pub enum ParityType {
 pub enum ModbusFunctionCode {
     /// Read one or more Registers
     ReadHoldingRegister,
+    /// Read Input register
+    ReadInputRegister,
     /// write one Register Value
     PresetHoldingRegister,
     /// The response should echo back your request
@@ -59,6 +61,7 @@ impl TryFrom<u8> for ModbusFunctionCode {
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         match value {
             0x03 => Ok(ModbusFunctionCode::ReadHoldingRegister),
+            0x04 => Ok(ModbusFunctionCode::ReadInputRegister),
             0x06 => Ok(ModbusFunctionCode::PresetHoldingRegister),
             0x08 => Ok(ModbusFunctionCode::DiagnoseFunction),
             _ => Err(anyhow::anyhow!("Error: Modbus Function Code doesnt exist!")),
@@ -70,6 +73,7 @@ impl From<ModbusFunctionCode> for u8 {
     fn from(value: ModbusFunctionCode) -> Self {
         match value {
             ModbusFunctionCode::ReadHoldingRegister => 0x03,
+            ModbusFunctionCode::ReadInputRegister => 0x04,
             ModbusFunctionCode::PresetHoldingRegister => 0x06,
             ModbusFunctionCode::DiagnoseFunction => 0x08,
         }
@@ -94,24 +98,67 @@ impl From<ModbusRequest> for Vec<u8> {
         return buffer;
     }
 }
+/// Reads data from a Modbus device via a serial port.
+///
+/// # Parameters
+/// - `port`: A mutable reference to a serial port.
+///
+/// # Returns
+/// A `Result` containing an `Option` with the raw Modbus response as a `Vec<u8>` if successful, 
+/// or `None` if the response is invalid or an error occurs.
+pub fn receive_data_modbus(
+    port: &mut dyn serial::SerialPort,
+) -> Result<Option<Vec<u8>>, anyhow::Error> {
+    let mut buf: [u8; 256] = [0; 256];
+    let data_length = port.read(&mut buf)?;
 
-fn validate_modbus_response(raw_data: Vec<u8>) -> Result<(), Error> {
+    if data_length == 0 {
+        return Ok(None);
+    }
+
+    match validate_modbus_response(buf[..data_length].to_vec()) {
+        Ok(result) => {
+            Ok(check_crc(&result).then_some(result))
+        },
+        Err(_) => Ok(None),
+    }
+}
+
+/// Computes Modbus CRC-16 (polynomial 0x8005 / reversed 0xA001)
+pub fn modbus_crc16(data: &[u8]) -> u16 {
+    data.iter().fold(0xFFFF, |mut crc, &byte| {
+        crc ^= byte as u16;
+        (0..8).for_each(|_| crc = (crc >> 1) ^ if crc & 1 != 0 { 0xA001 } else { 0 });
+        crc
+    })
+}
+
+/// Checks if the message's CRC is correct (uses Modbus CRC-16).
+pub fn check_crc(raw_data: &[u8]) -> bool {
+    raw_data.len() >= 2 && 
+    modbus_crc16(&raw_data[..raw_data.len() - 2]) == extract_crc(&raw_data.to_vec()).unwrap_or(0)
+}
+
+fn validate_modbus_response(raw_data: Vec<u8>) -> Result<Vec<u8>, Error> {
     if raw_data.len() == 0 {
         return Err(anyhow::anyhow!("Error: Response is Empty!"));
     }
+
     // 5 is the smallest possible Response Size
-    if raw_data.len() < 5 {
+    if raw_data.len() <= 5 {
         return Err(anyhow::anyhow!(
             "Error: Response is invalid, its less than 5 bytes"
         ));
     }
 
+    // check if the slave id is valid
     if raw_data[0] < 1 || raw_data[0] > 247 {
         return Err(anyhow::anyhow!(
             "Error: Response is invalid, slave_id is outside of the valid range 1-247"
         ));
     }
-    return Ok(());
+
+    return Ok(raw_data);
 }
 
 // expects to be given the entire raw message

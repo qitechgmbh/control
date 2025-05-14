@@ -1,11 +1,11 @@
 use crate::app_state::AppState;
-use crate::panic::{PanicDetails, send_panic};
+use crate::panic::send_panic;
 use bitvec::prelude::*;
 use smol::channel::Sender;
 use std::sync::Arc;
 
 pub fn init_loop(
-    thread_panic_tx: Sender<PanicDetails>,
+    thread_panic_tx: Sender<&'static str>,
     app_state: Arc<AppState>,
 ) -> Result<(), anyhow::Error> {
     // Start control loop

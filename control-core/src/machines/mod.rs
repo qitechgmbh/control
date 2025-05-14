@@ -3,7 +3,6 @@ use api::MachineApi;
 use new::MachineNewTrait;
 use std::any::Any;
 use std::fmt::Debug;
-
 pub mod api;
 pub mod identification;
 pub mod manager;
