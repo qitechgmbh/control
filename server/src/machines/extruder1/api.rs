@@ -6,8 +6,8 @@ use control_core::{
     socketio::{
         event::{Event, GenericEvent},
         namespace::{
-            cache_duration, cache_one_event, CacheFn, CacheableEvents, Namespace,
-            NamespaceCacheingLogic, NamespaceInterface,
+            CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, NamespaceInterface,
+            cache_duration, cache_one_event,
         },
     },
 };
@@ -224,7 +224,7 @@ impl NamespaceCacheingLogic<ExtruderV2Events> for ExtruderV2Namespace {
             }
         };
         let buffer_fn = events.event_cache_fn();
-        self.0.emit_cached(&event, buffer_fn);
+        self.0.emit_cached(&event, &buffer_fn);
     }
 }
 
@@ -252,8 +252,8 @@ impl CacheableEvents<ExtruderV2Events> for ExtruderV2Events {
     }
 
     fn event_cache_fn(&self) -> CacheFn {
-        let cache_one_hour = cache_duration(Duration::from_secs(60 * 60));
-        let cache_ten_secs = cache_duration(Duration::from_secs(10));
+        let cache_one_hour = cache_duration(Duration::from_secs(60 * 60), Duration::from_secs(1));
+        let cache_ten_secs = cache_duration(Duration::from_secs(10), Duration::from_secs(1));
         let cache_one = cache_one_event();
 
         match self {

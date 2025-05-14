@@ -39,7 +39,7 @@ where
                 return;
             }
         };
-        self.0.emit_cached(&generic_event, buffer_fn);
+        self.0.emit_cached(&generic_event, &buffer_fn);
     }
 }
 
