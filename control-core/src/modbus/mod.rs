@@ -98,15 +98,14 @@ impl From<ModbusRequest> for Vec<u8> {
         return buffer;
     }
 }
-
-/* @added by Alisher Darmenov
- *
- * @param: port - It takes a mutable reference to a serial port and a ModbusRequest as input.
- *
- * @return: Option<Vec<u8>> -It returns an Option containing the ModbusResponse if successful, or None if there was an error.
- *
- * @description: This function is used to send a Modbus request to a device and receive the response.
- */
+/// Reads data from a Modbus device via a serial port.
+///
+/// # Parameters
+/// - `port`: A mutable reference to a serial port.
+///
+/// # Returns
+/// A `Result` containing an `Option` with the raw Modbus response as a `Vec<u8>` if successful, 
+/// or `None` if the response is invalid or an error occurs.
 pub fn receive_data_modbus(
     port: &mut dyn serial::SerialPort,
 ) -> Result<Option<Vec<u8>>, anyhow::Error> {
@@ -118,9 +117,26 @@ pub fn receive_data_modbus(
     }
 
     match validate_modbus_response(buf[..data_length].to_vec()) {
-        Ok(result) => Ok(Some(result)),
+        Ok(result) => {
+            Ok(check_crc(&result).then_some(result))
+        },
         Err(_) => Ok(None),
     }
+}
+
+/// Computes Modbus CRC-16 (polynomial 0x8005 / reversed 0xA001)
+pub fn modbus_crc16(data: &[u8]) -> u16 {
+    data.iter().fold(0xFFFF, |mut crc, &byte| {
+        crc ^= byte as u16;
+        (0..8).for_each(|_| crc = (crc >> 1) ^ if crc & 1 != 0 { 0xA001 } else { 0 });
+        crc
+    })
+}
+
+/// Checks if the message's CRC is correct (uses Modbus CRC-16).
+pub fn check_crc(raw_data: &[u8]) -> bool {
+    raw_data.len() >= 2 && 
+    modbus_crc16(&raw_data[..raw_data.len() - 2]) == extract_crc(&raw_data.to_vec()).unwrap_or(0)
 }
 
 fn validate_modbus_response(raw_data: Vec<u8>) -> Result<Vec<u8>, Error> {
