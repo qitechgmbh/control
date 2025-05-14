@@ -166,16 +166,12 @@ impl ExtruderV2 {
     fn set_rotation_state(&mut self, forward: bool) {
         self.inverter.forward_rotation = forward;
         if self.mode == ExtruderV2Mode::Extrude {
-            if forward {
-                let req: MitsubishiModbusRequest =
-                    MitsubishiControlRequests::StartForwardRotation.into();
-
-                self.inverter.add_request(req);
-            } else {
-                let req: MitsubishiModbusRequest =
-                    MitsubishiControlRequests::StartReverseRotation.into();
-                self.inverter.add_request(req);
-            }
+            let req: MitsubishiModbusRequest = match forward {
+                // Our gearbox is inverted!!!
+                true => MitsubishiControlRequests::StartReverseRotation.into(),
+                false => MitsubishiControlRequests::StartForwardRotation.into(),
+            };
+            self.inverter.add_request(req);
         }
 
         self.emit_rotation_state();
