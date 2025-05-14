@@ -6,12 +6,12 @@ Serial communication interface through which information transfers in or out seq
 Current Serial Devices:
 - DRE (Laser Diameter Measuring Instrument), connected through RTU Modbus (USB).
 
-## Current Serial Detection (./server/src/serial/serial_detection.rs)
+## Current Serial Detection (./control-core/src/serial/serial_detection.rs)
 Serial Detection contains 3 main components:
-- `Serial Registry`, the interface that is used as buffer for all registered Serial Devices, and responsible for start of registered Serial Devices and returns link to started Serial Device. (./control-core/src/serial/registry.rs)
+- `Serial Device Registry`, the interface that is used as buffer for all registered Serial Devices, and responsible for start of registered Serial Devices and returns link to started Serial Device. (./control-core/src/serial/registry.rs)
 - `Connected Serial USB`, the hashmap that saves the path to USB port with the link to started Serial Device under this port path.
 - `Ports`, previously detected USB ports with pathes and usb port information (such as Vendor & Product ID, Serial Number)
-
+  
 The cycle of Serial Detection is consisted from following steps:
 
 `1)` Detection of all current Serial Connections
