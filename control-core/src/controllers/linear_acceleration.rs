@@ -1,11 +1,18 @@
 use std::time::Instant;
 
+use uom::si::{
+    angular_acceleration::radian_per_second_squared,
+    angular_velocity::radian_per_second,
+    f64::{AngularAcceleration, AngularVelocity},
+};
+
+#[derive(Debug)]
 pub struct LinearAccelerationController {
     /// Maximum acceleration in units per second (positive value)
-    pub max_acceleration: f64,
+    pub acceleration: f64,
 
     /// Maximum deceleration in units per second (negative value)
-    pub max_deceleration: f64,
+    pub deceleration: f64,
 
     /// Calculated speed at the last update
     speed: f64,
@@ -15,17 +22,10 @@ pub struct LinearAccelerationController {
 }
 
 impl LinearAccelerationController {
-    pub fn new(max_acceleration: f64, max_deceleration: f64, initial_speed: f64) -> Self {
-        // Ensure max_deceleration is negative
-        let max_deceleration = if max_deceleration > 0.0 {
-            -max_deceleration
-        } else {
-            max_deceleration
-        };
-
+    pub fn new(acceleration: f64, deceleration: f64, initial_speed: f64) -> Self {
         Self {
-            max_acceleration,
-            max_deceleration,
+            acceleration,
+            deceleration,
             speed: initial_speed,
             last_t: None,
         }
@@ -46,21 +46,60 @@ impl LinearAccelerationController {
 
         // Need to accelerate
         if self.speed < target_speed {
-            let speed_change = self.max_acceleration * dt;
+            let speed_change = self.acceleration * dt;
             let new_speed = (self.speed + speed_change).min(target_speed);
             self.speed = new_speed;
             return new_speed;
         }
 
-        // Need to decelerate (max_deceleration is negative)
+        // Need to decelerate (deceleration is negative)
         if self.speed > target_speed {
-            let speed_change = self.max_deceleration * dt; // This will be negative
+            let speed_change = self.deceleration * dt; // This will be negative
             let new_speed = (self.speed + speed_change).max(target_speed);
             self.speed = new_speed;
             return new_speed;
         }
 
         self.speed
+    }
+
+    pub fn reset(&mut self, initial_speed: f64) {
+        self.speed = initial_speed;
+        self.last_t = None; // Reset the last update time
+    }
+}
+
+/// LinearAngularAccelerationController wraps LinearAccelerationController
+/// to handle angular velocities and accelerations.
+#[derive(Debug)]
+pub struct LinearAngularAccelerationController {
+    controller: LinearAccelerationController,
+}
+
+impl LinearAngularAccelerationController {
+    pub fn new(
+        acceleration: AngularAcceleration,
+        deceleration: AngularAcceleration,
+        initial_speed: AngularVelocity,
+    ) -> Self {
+        Self {
+            controller: LinearAccelerationController::new(
+                acceleration.get::<radian_per_second_squared>(),
+                deceleration.get::<radian_per_second_squared>(),
+                initial_speed.get::<radian_per_second>(),
+            ),
+        }
+    }
+
+    pub fn update(&mut self, target_speed: AngularVelocity, t: Instant) -> AngularVelocity {
+        let target_speed = target_speed.get::<radian_per_second>();
+        let new_speed = self.controller.update(target_speed, t);
+        return AngularVelocity::new::<radian_per_second>(new_speed);
+    }
+
+    pub fn reset(&mut self, initial_speed: AngularVelocity) {
+        let initial_speed = initial_speed.get::<radian_per_second>();
+        self.controller.reset(initial_speed);
     }
 }
 
@@ -80,17 +119,10 @@ mod tests {
     #[test]
     fn test_initialization() {
         let controller = LinearAccelerationController::new(10.0, -15.0, 5.0);
-        assert_relative_eq!(controller.max_acceleration, 10.0, epsilon = EPSILON);
-        assert_relative_eq!(controller.max_deceleration, -15.0, epsilon = EPSILON);
+        assert_relative_eq!(controller.acceleration, 10.0, epsilon = EPSILON);
+        assert_relative_eq!(controller.deceleration, -15.0, epsilon = EPSILON);
         assert_relative_eq!(controller.speed, 5.0, epsilon = EPSILON);
         assert!(controller.last_t.is_none());
-    }
-
-    #[test]
-    fn test_initialization_positive_deceleration() {
-        // Test that positive deceleration values are converted to negative
-        let controller = LinearAccelerationController::new(10.0, 15.0, 5.0);
-        assert_relative_eq!(controller.max_deceleration, -15.0, epsilon = EPSILON);
     }
 
     #[test]
