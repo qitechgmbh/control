@@ -1,7 +1,6 @@
 pub mod act;
 pub mod api;
 pub mod clamp_revolution;
-pub mod linear_spool_speed_controller;
 pub mod new;
 pub mod spool_speed_controller;
 pub mod tension_arm;
@@ -20,7 +19,7 @@ use control_core::{
     machines::Machine,
     socketio::namespace::NamespaceCacheingLogic,
 };
-use spool_speed_controller::SpoolSpeedControllerTrait;
+use spool_speed_controller::SpoolSpeedController;
 use tension_arm::TensionArm;
 use uom::si::{angle::degree, angular_velocity::revolution_per_minute};
 
@@ -41,7 +40,7 @@ pub struct Winder2 {
     pub mode: Winder2Mode,
 
     // control circuit arm/spool
-    pub spool_speed_controller: Box<dyn SpoolSpeedControllerTrait + Send + Sync>,
+    pub spool_speed_controller: SpoolSpeedController,
     pub spool_step_converter: StepConverter,
 }
 
@@ -121,7 +120,8 @@ impl Winder2 {
     /// called by `act`
     pub fn sync_spool_speed(&mut self, t: Instant) {
         let speed = self.spool_speed_controller.get_speed(t, &self.tension_arm);
-        self.spool.set_speed(speed);
+        let steps_per_second = self.spool_step_converter.angular_velocity_to_steps(speed);
+        self.spool.set_speed(steps_per_second as i32);
     }
 
     fn emit_tension_arm_angle(&mut self) {
@@ -146,11 +146,19 @@ impl Winder2 {
 /// Implement Spool
 impl Winder2 {
     pub fn spool_set_speed_max(&mut self, max_speed: f64) {
+        // Convert rpm to angular velocity
+        let max_speed = self
+            .spool_step_converter
+            .steps_to_angular_velocity(max_speed);
         self.spool_speed_controller.set_max_speed(max_speed);
         self.emit_spool_state();
     }
 
     pub fn spool_set_speed_min(&mut self, min_speed: f64) {
+        // Convert rpm to angular velocity
+        let min_speed = self
+            .spool_step_converter
+            .steps_to_angular_velocity(min_speed);
         self.spool_speed_controller.set_min_speed(min_speed);
         self.emit_spool_state();
     }
@@ -165,9 +173,19 @@ impl Winder2 {
     }
 
     fn emit_spool_state(&mut self) {
+        // Convert angular velocity to steps/second
+        let speed_min = self
+            .spool_speed_controller
+            .get_min_speed()
+            .get::<revolution_per_minute>();
+        // Convert angular velocity to steps/second
+        let speed_max = self
+            .spool_speed_controller
+            .get_max_speed()
+            .get::<revolution_per_minute>();
         let event = api::SpoolStateEvent {
-            speed_min: self.spool_speed_controller.get_min_speed(),
-            speed_max: self.spool_speed_controller.get_max_speed(),
+            speed_min,
+            speed_max,
         }
         .build();
         self.namespace.emit_cached(Winder1Events::SpoolState(event))

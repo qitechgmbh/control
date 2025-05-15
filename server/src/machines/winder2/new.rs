@@ -1,7 +1,7 @@
 use std::time::Instant;
 
 use super::api::Winder1Namespace;
-use super::linear_spool_speed_controller::LinearSpoolSpeedController;
+use super::spool_speed_controller::SpoolSpeedController;
 use super::tension_arm::TensionArm;
 use super::{Winder2, Winder2Mode};
 use anyhow::Error;
@@ -15,6 +15,7 @@ use control_core::machines::new::{
     get_ethercat_device_by_index, get_subdevice_by_index, validate_no_role_dublicates,
     validate_same_machine_identification_unique,
 };
+use control_core::uom_extensions::angular_acceleration::revolutions_per_minute_per_second;
 use ethercat_hal::coe::ConfigurableDevice;
 use ethercat_hal::devices::el2002::{EL2002, EL2002Port};
 use ethercat_hal::devices::el7031::coe::EL7031Configuration;
@@ -36,6 +37,8 @@ use ethercat_hal::io::digital_output::DigitalOutput;
 use ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1;
 use ethercat_hal::shared_config;
 use ethercat_hal::shared_config::el70x1::{EL70x1OperationMode, StmMotorConfiguration};
+use uom::si::angular_velocity::revolution_per_minute;
+use uom::si::f64::{AngularAcceleration, AngularVelocity};
 
 impl MachineNewTrait for Winder2 {
     fn new<'maindevice>(params: &MachineNewParams) -> Result<Self, Error> {
@@ -298,6 +301,8 @@ impl MachineNewTrait for Winder2 {
                 (el7031_0030, el7031_0030_config)
             };
 
+            let spool_step_converter = StepConverter::new(200);
+
             let mut new = Self {
                 traverse: StepperDriverEL70x1::new(
                     StepperVelocityEL70x1::new(el7031, EL7031StepperPort::STM1),
@@ -318,8 +323,13 @@ impl MachineNewTrait for Winder2 {
                 laser: DigitalOutputSetter::new(DigitalOutput::new(el2002, EL2002Port::DO1)),
                 namespace: Winder1Namespace::new(),
                 mode: Winder2Mode::Standby,
-                spool_step_converter: StepConverter::new(200),
-                spool_speed_controller: Box::new(LinearSpoolSpeedController::new(200.0, 1250.0)),
+                spool_step_converter,
+                spool_speed_controller: SpoolSpeedController::new(
+                    AngularVelocity::new::<revolution_per_minute>(50.0),
+                    AngularVelocity::new::<revolution_per_minute>(1000.0),
+                    AngularAcceleration::new::<revolutions_per_minute_per_second>(200.0),
+                    AngularAcceleration::new::<revolutions_per_minute_per_second>(-200.0),
+                ),
                 last_measurement_emit: Instant::now(),
             };
 
