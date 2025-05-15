@@ -32,6 +32,7 @@ use el3021::EL3021_IDENTITY_A;
 use el3024::EL3024_IDENTITY_A;
 use el6021::EL6021_IDENTITY_A;
 use el7031::{EL7031_IDENTITY_A, EL7031_IDENTITY_B};
+use el7031_0030::EL7031_0030_IDENTITY_A;
 use el7041_0052::EL7041_0052_IDENTITY_A;
 use ethercrab::{MainDevice, SubDeviceIdentity};
 use smol::lock::RwLock;
@@ -51,13 +52,16 @@ pub trait EthercatDevice: NewEthercatDevice + Any + Send + Sync + Debug {
     /// automatically validate input length, then calls input
     fn input_checked(&mut self, input: &BitSlice<u8, Lsb0>) -> Result<(), anyhow::Error> {
         // validate input has correct length
-        let input_len = self.input_len();
-        if input.len() != input_len {
+        let expected = self.input_len();
+        let actual = input.len();
+        if actual != expected {
             return Err(anyhow::anyhow!(
-                "[{}::Device::input_checked] Input length is {} and must be {} bits",
+                "[{}::Device::input_checked] Input length is {} ({} bytes) and must be {} bits ({} bytes)",
                 module_path!(),
-                input.len(),
-                input_len
+                actual,
+                actual / 8,
+                expected,
+                expected / 8
             ));
         }
         self.input(input)
@@ -86,13 +90,16 @@ pub trait EthercatDevice: NewEthercatDevice + Any + Send + Sync + Debug {
         self.output(output)?;
 
         // validate input has correct length
-        let output_len = self.output_len();
-        if output.len() != output_len {
+        let expected = self.output_len();
+        let actual = output.len();
+        if output.len() != expected {
             return Err(anyhow::anyhow!(
-                "[{}::Device::output_checked] Output length is {} and must be {} bits",
+                "[{}::Device::output_checked] Output length is {} ({} bytes) and must be {} bits ({} bytes)",
                 module_path!(),
-                output.len(),
-                output_len
+                actual,
+                actual / 8,
+                expected,
+                expected / 8
             ));
         }
 
@@ -164,6 +171,7 @@ pub fn device_from_subdevice_identity_tuple(
         // TODO: implement EL3204 identity
         // "EL3204" => Ok(Arc::new(RwLock::new(EL3204::new()))),
         EL7031_IDENTITY_A | EL7031_IDENTITY_B => Ok(Arc::new(RwLock::new(el7031::EL7031::new()))),
+        EL7031_0030_IDENTITY_A => Ok(Arc::new(RwLock::new(el7031_0030::EL7031_0030::new()))),
         EL7041_0052_IDENTITY_A => Ok(Arc::new(RwLock::new(el7041_0052::EL7041_0052::new()))),
         _ => Err(anyhow::anyhow!(
             "[{}::device_from_subdevice] No Driver: vendor_id: {:?}, product_id: {:?}, revision: {:?}",

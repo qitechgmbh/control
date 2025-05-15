@@ -8,7 +8,7 @@ use crate::{
     types::EthercrabSubDevicePreoperational,
 };
 
-use super::{pdo::EL7041_0052PredefinedPdoAssignment, EL7041_0052};
+use super::{EL7041_0052, pdo::EL7041_0052PredefinedPdoAssignment};
 
 /// Configuration for EL7041_0052 Stepper Motor Terminal
 #[derive(Debug, Clone)]
@@ -83,10 +83,10 @@ impl ConfigurableDevice<EL7041_0052Configuration> for EL7041_0052 {
         device: &EthercrabSubDevicePreoperational<'maindevice>,
         config: &EL7041_0052Configuration,
     ) -> Result<(), anyhow::Error> {
-        self.configuration = config.clone();
-        self.txpdo.write_config(device).await?;
-        self.rxpdo.write_config(device).await?;
         config.write_config(device).await?;
+        self.configuration = config.clone();
+        self.txpdo = config.pdo_assignment.txpdo_assignment();
+        self.rxpdo = config.pdo_assignment.rxpdo_assignment();
         Ok(())
     }
 

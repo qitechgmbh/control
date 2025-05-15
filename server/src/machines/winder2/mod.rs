@@ -27,8 +27,8 @@ use uom::si::{angle::degree, angular_velocity::revolution_per_minute};
 #[derive(Debug)]
 pub struct Winder2 {
     // drivers
-    // pub traverse_driver: StepperDriverPulseTrain,
-    // pub puller_driver: StepperDriverPulseTrain,
+    pub traverse: StepperDriverEL70x1,
+    pub puller: StepperDriverEL70x1,
     pub spool: StepperDriverEL70x1,
     pub tension_arm: TensionArm,
     pub laser: DigitalOutputSetter,
