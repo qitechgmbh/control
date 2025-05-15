@@ -301,7 +301,7 @@ impl MachineNewTrait for Winder2 {
                 (el7031_0030, el7031_0030_config)
             };
 
-            let spool_step_converter = StepConverter::new(200);
+            let spool_step_converter = StepConverter::new(600);
 
             let mut new = Self {
                 traverse: StepperDriverEL70x1::new(
@@ -325,10 +325,10 @@ impl MachineNewTrait for Winder2 {
                 mode: Winder2Mode::Standby,
                 spool_step_converter,
                 spool_speed_controller: SpoolSpeedController::new(
-                    AngularVelocity::new::<revolution_per_minute>(50.0),
-                    AngularVelocity::new::<revolution_per_minute>(1000.0),
-                    AngularAcceleration::new::<revolutions_per_minute_per_second>(200.0),
-                    AngularAcceleration::new::<revolutions_per_minute_per_second>(-200.0),
+                    AngularVelocity::new::<revolution_per_minute>(10.0),
+                    AngularVelocity::new::<revolution_per_minute>(600.0),
+                    AngularAcceleration::new::<revolutions_per_minute_per_second>(100.0),
+                    AngularAcceleration::new::<revolutions_per_minute_per_second>(-100.0),
                 ),
                 last_measurement_emit: Instant::now(),
             };

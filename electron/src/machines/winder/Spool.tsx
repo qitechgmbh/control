@@ -6,7 +6,7 @@ type Props = {
 
 export function Spool({ rpm }: Props) {
   const [rotationState, setRotationState] = React.useState({
-    rotation: 0,
+    rotations: 0,
     lastRpm: undefined as number | undefined,
     lastRpmTime: undefined as number | undefined,
   });
@@ -14,28 +14,25 @@ export function Spool({ rpm }: Props) {
   useEffect(() => {
     if (rpm !== undefined) {
       const now = Date.now();
-      setRotationState((prev) => {
-        const newState = { ...prev, lastRpm: rpm, lastRpmTime: now };
-
-        if (prev.lastRpmTime !== undefined && prev.lastRpm !== undefined) {
-          const deltaTime = now - prev.lastRpmTime;
-          const deltaRotation = (-rpm * deltaTime) / 360;
-          newState.rotation = prev.rotation + deltaRotation;
-        }
-
-        return newState;
+      // Calculate the new rotation based on the RPM and time elapsed
+      const dt = (now - (rotationState.lastRpmTime || now)) / 1000; // Convert ms to seconds
+      const newRotations = ((rpm / 60) * dt) % 1; // Convert RPM to rotations per second
+      setRotationState({
+        rotations: (rotationState.rotations + newRotations) % 1, // Keep it within 0-1
+        lastRpm: rpm,
+        lastRpmTime: now,
       });
     }
   }, [rpm]);
 
-  const { rotation } = rotationState;
+  const { rotations } = rotationState;
 
   return (
     <div className="flex w-full justify-center">
       <div
         className="aspect-square h-32"
         style={{
-          transform: `rotate(${rotation}deg)`,
+          transform: `rotate(${rotations * 360}deg)`,
         }}
       >
         <svg

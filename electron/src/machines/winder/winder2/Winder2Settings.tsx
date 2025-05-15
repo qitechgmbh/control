@@ -20,8 +20,8 @@ export function Winder1SettingPage() {
               unit="rpm"
               step={100}
               min={10}
-              max={Math.min(spoolState?.data.speed_max || 1250, 1250)}
-              defaultValue={100}
+              max={Math.min(spoolState?.data.speed_max || 600, 600)}
+              defaultValue={10}
               renderValue={(value) => roundToDecimals(value, 0)}
               onChange={(value) => spoolSetSpeedMin(value)}
             />
@@ -31,10 +31,10 @@ export function Winder1SettingPage() {
               value={spoolState?.data.speed_max}
               title={"Max Speed"}
               unit="rpm"
-              min={Math.max(spoolState?.data.speed_min || 0, 100)}
+              min={Math.max(spoolState?.data.speed_min || 0, 10)}
               step={100}
-              max={1250}
-              defaultValue={1250}
+              max={600}
+              defaultValue={1500}
               renderValue={(value) => roundToDecimals(value, 0)}
               onChange={(value) => spoolSetSpeedMax(value)}
             />
