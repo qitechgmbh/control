@@ -9,10 +9,10 @@ use uom::si::{
 #[derive(Debug)]
 pub struct LinearAccelerationController {
     /// Maximum acceleration in units per second (positive value)
-    pub acceleration: f64,
+    acceleration: f64,
 
     /// Maximum deceleration in units per second (negative value)
-    pub deceleration: f64,
+    deceleration: f64,
 
     /// Calculated speed at the last update
     speed: f64,
@@ -67,13 +67,21 @@ impl LinearAccelerationController {
         self.speed = initial_speed;
         self.last_t = None; // Reset the last update time
     }
+
+    pub fn set_acceleration(&mut self, acceleration: f64) {
+        self.acceleration = acceleration;
+    }
+
+    pub fn set_deceleration(&mut self, deceleration: f64) {
+        self.deceleration = deceleration;
+    }
 }
 
 /// LinearAngularAccelerationController wraps LinearAccelerationController
 /// to handle angular velocities and accelerations.
 #[derive(Debug)]
 pub struct LinearAngularAccelerationController {
-    controller: LinearAccelerationController,
+    pub controller: LinearAccelerationController,
 }
 
 impl LinearAngularAccelerationController {
@@ -100,6 +108,15 @@ impl LinearAngularAccelerationController {
     pub fn reset(&mut self, initial_speed: AngularVelocity) {
         let initial_speed = initial_speed.get::<radian_per_second>();
         self.controller.reset(initial_speed);
+    }
+
+    pub fn set_acceleration(&mut self, acceleration: AngularAcceleration) {
+        self.controller
+            .set_acceleration(acceleration.get::<radian_per_second_squared>());
+    }
+    pub fn set_deceleration(&mut self, deceleration: AngularAcceleration) {
+        self.controller
+            .set_deceleration(deceleration.get::<radian_per_second_squared>());
     }
 }
 

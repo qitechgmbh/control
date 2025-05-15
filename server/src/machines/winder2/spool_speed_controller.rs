@@ -2,12 +2,17 @@ use super::{
     clamp_revolution::{Clamping, clamp_revolution, scale_revolution_to_range},
     tension_arm::TensionArm,
 };
-use control_core::controllers::linear_acceleration::LinearAngularAccelerationController;
+use control_core::{
+    controllers::linear_acceleration::LinearAngularAccelerationController,
+    helpers::interpolation::{interpolate_exponential, scale},
+    uom_extensions::angular_acceleration::revolutions_per_minute_per_second,
+};
 use std::time::Instant;
 use uom::{
     ConstZero,
     si::{
         angle::{degree, revolution},
+        angular_velocity::{radian_per_second, revolution_per_minute},
         f64::{Angle, AngularAcceleration, AngularVelocity},
     },
 };
@@ -93,8 +98,15 @@ impl SpoolSpeedController {
 
         let filament_tension_inverted = 1.0 - filament_tension;
 
-        // interpolate speed
-        let speed = filament_tension_inverted * (max_speed - min_speed) + min_speed;
+        // use exponetial interpolation to make the speed change more sensitive in the lower range
+        let filament_tension_exponential = interpolate_exponential(filament_tension_inverted, 2.0);
+
+        // interpolate speed linear
+        let speed = AngularVelocity::new::<radian_per_second>(scale(
+            filament_tension_exponential,
+            min_speed.get::<radian_per_second>(),
+            max_speed.get::<radian_per_second>(),
+        ));
 
         // save speed
         return speed;
@@ -154,12 +166,25 @@ impl SpoolSpeedController {
         self.acceleration_controller.reset(AngularVelocity::ZERO);
     }
 
+    fn update_acceleration(&mut self) {
+        // Set acceleration to 1/10 of the range between min and max speed
+        // The spool will accelerate from min to max speed in 10 seconds
+        let range = self.max_speed - self.min_speed;
+        let acceleration = AngularAcceleration::new::<revolutions_per_minute_per_second>(
+            range.get::<revolution_per_minute>() / 10.0,
+        );
+        self.acceleration_controller.set_acceleration(acceleration);
+        self.acceleration_controller.set_deceleration(-acceleration);
+    }
+
     pub fn set_max_speed(&mut self, max_speed: AngularVelocity) {
         self.max_speed = max_speed;
+        self.update_acceleration();
     }
 
     pub fn set_min_speed(&mut self, min_speed: AngularVelocity) {
         self.min_speed = min_speed;
+        self.update_acceleration();
     }
 
     pub fn get_max_speed(&self) -> AngularVelocity {
