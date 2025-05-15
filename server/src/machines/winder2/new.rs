@@ -325,7 +325,7 @@ impl MachineNewTrait for Winder2 {
                 mode: Winder2Mode::Standby,
                 spool_step_converter,
                 spool_speed_controller: SpoolSpeedController::new(
-                    AngularVelocity::new::<revolution_per_minute>(10.0),
+                    AngularVelocity::new::<revolution_per_minute>(0.0),
                     AngularVelocity::new::<revolution_per_minute>(600.0),
                     AngularAcceleration::new::<revolutions_per_minute_per_second>(100.0),
                     AngularAcceleration::new::<revolutions_per_minute_per_second>(-100.0),
