@@ -220,7 +220,6 @@ impl AnalogInputDevice<EL7031_0030AnalogInputPort> for EL7031_0030 {
             },
         };
         let raw_value = U16SigningConverter::load_raw(raw_value);
-        println!("{}", raw_value);
 
         let value: i16 = raw_value.as_signed();
 
@@ -232,7 +231,7 @@ impl AnalogInputDevice<EL7031_0030AnalogInputPort> for EL7031_0030 {
 
     fn analog_input_range(&self) -> AnalogInputRange {
         AnalogInputRange::Potential {
-            min: ElectricPotential::new::<volt>(0.0),
+            min: ElectricPotential::new::<volt>(-10.0),
             max: ElectricPotential::new::<volt>(10.0),
         }
     }
