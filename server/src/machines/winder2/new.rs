@@ -20,6 +20,16 @@ use ethercat_hal::devices::el2002::{EL2002, EL2002Port};
 use ethercat_hal::devices::el3001::{
     EL3001, EL3001Configuration, EL3001Port, EL3001PredefinedPdoAssignment,
 };
+use ethercat_hal::devices::el7031::coe::EL7031Configuration;
+use ethercat_hal::devices::el7031::pdo::EL7031PredefinedPdoAssignment;
+use ethercat_hal::devices::el7031::{
+    EL7031, EL7031_IDENTITY_A, EL7031_IDENTITY_B, EL7031StepperPort,
+};
+use ethercat_hal::devices::el7031_0030::coe::EL7031_0030Configuration;
+use ethercat_hal::devices::el7031_0030::pdo::EL7031_0030PredefinedPdoAssignment;
+use ethercat_hal::devices::el7031_0030::{
+    self, EL7031_0030, EL7031_0030_IDENTITY_A, EL7031_0030StepperPort,
+};
 use ethercat_hal::devices::el7041_0052::coe::EL7041_0052Configuration;
 use ethercat_hal::devices::el7041_0052::{EL7041_0052, EL7041_0052_IDENTITY_A, EL7041_0052Port};
 use ethercat_hal::devices::{downcast_device, subdevice_identity_to_tuple};
@@ -29,9 +39,8 @@ use ethercat_hal::devices::{
 use ethercat_hal::io::analog_input::AnalogInput;
 use ethercat_hal::io::digital_output::DigitalOutput;
 use ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1;
-use ethercat_hal::shared_config::el70x1::{
-    EL70x1OperationMode, StmFeatures, StmMotorConfiguration,
-};
+use ethercat_hal::shared_config;
+use ethercat_hal::shared_config::el70x1::{EL70x1OperationMode, StmMotorConfiguration};
 
 impl MachineNewTrait for Winder2 {
     fn new<'maindevice>(params: &MachineNewParams) -> Result<Self, Error> {
@@ -176,7 +185,7 @@ impl MachineNewTrait for Winder2 {
             };
 
             // Role 3
-            // 1x Stepper Winder
+            // 1x Stepper Spool
             // EL7041-0052
             let (el7041, el7041_config) = {
                 let device_identification =
@@ -211,7 +220,7 @@ impl MachineNewTrait for Winder2 {
                     ))?,
                 };
                 let el7041_config = EL7041_0052Configuration {
-                    stm_features: StmFeatures {
+                    stm_features: shared_config::el70x1::StmFeatures {
                         operation_mode: EL70x1OperationMode::DirectVelocity,
                         ..Default::default()
                     },
@@ -232,54 +241,122 @@ impl MachineNewTrait for Winder2 {
             // Role 4
             // 1x Stepper Traverse
             // EL7031
-            // let device_identification = get_device_identity_by_role(params.device_group, 4)?;
-            // let device_hardware_identification_ethercat =
-            //     match device_identification.device_hardware_identification {
-            //         DeviceHardwareIdentification::Ethercat(
-            //             device_hardware_identification_ethercat,
-            //         ) => device_hardware_identification_ethercat,
-            //         _ => Err(anyhow::anyhow!(
-            //             "[{}::MachineNewTrait/Winder2::new] Device with role 4 is not Ethercat",
-            //             module_path!()
-            //         ))?,
-            //     };
-            // let subdevice = get_subdevice_by_index(
-            //     subdevices,
-            //     device_hardware_identification_ethercat.subdevice_index,
-            // )?;
-            // let subdevice_identity = subdevice.identity();
-            // let el7031 = match subdevice_identity_to_tuple(&subdevice_identity) {
-            //     EL7041_0052_IDENTITY_A => {
-            //         let ethercat_device = device_from_subdevice_identity(&subdevice_identity)?;
-            //         downcast_device::<EL7041_0052>(ethercat_device).await?
-            //     }
-            //     _ => Err(anyhow::anyhow!(
-            //         "[{}::MachineNewTrait/Winder2::new] Device with role 4 is not an EL7031",
-            //         module_path!()
-            //     ))?,
-            // };
-            // ethercat_devices.insert(
-            //     device_hardware_identification_ethercat.subdevice_index,
-            //     el7031.clone(),
-            // );
-            // let el7031_config = EL7041_0052Configuration {
-            //     stm_features: StmFeatures {
-            //         operation_mode: EL70x1OperationMode::DirectVelocity,
-            //         ..Default::default()
-            //     },
-            //     stm_motor: StmMotorConfiguration {
-            //         max_current: 1500,
-            //         ..Default::default()
-            //     },
-            //     ..Default::default()
-            // };
-            // el7031
-            //     .write()
-            //     .await
-            //     .write_config(&subdevice, &el7031_config)
-            //     .await?;
+            let (el7031, el7031_config) = {
+                let device_identification =
+                    get_device_identification_by_role(params.device_group, 4)?;
+                let device_hardware_identification_ethercat =
+                    match &device_identification.device_hardware_identification {
+                        DeviceHardwareIdentification::Ethercat(
+                            device_hardware_identification_ethercat,
+                        ) => device_hardware_identification_ethercat,
+                        // _ => Err(anyhow::anyhow!(
+                        //     "[{}::MachineNewTrait/Winder2::new] Device with role 4 is not Ethercat",
+                        //     module_path!()
+                        // ))?,
+                    };
+                let subdevice = get_subdevice_by_index(
+                    hardware.subdevices,
+                    device_hardware_identification_ethercat.subdevice_index,
+                )?;
+                let subdevice_index = device_hardware_identification_ethercat.subdevice_index;
+                let subdevice_identity = subdevice.identity();
+                let el7031 = match subdevice_identity_to_tuple(&subdevice_identity) {
+                    EL7031_IDENTITY_A | EL7031_IDENTITY_B => {
+                        let ethercat_device = get_ethercat_device_by_index(
+                            &hardware.ethercat_devices,
+                            subdevice_index,
+                        )?;
+                        downcast_device::<EL7031>(ethercat_device).await?
+                    }
+                    _ => Err(anyhow::anyhow!(
+                        "[{}::MachineNewTrait/Winder2::new] Device with role 4 is not an EL7031",
+                        module_path!()
+                    ))?,
+                };
+                let el7031_config = EL7031Configuration {
+                    stm_features: shared_config::el70x1::StmFeatures {
+                        operation_mode: EL70x1OperationMode::DirectVelocity,
+                        ..Default::default()
+                    },
+                    stm_motor: StmMotorConfiguration {
+                        max_current: 1500,
+                        ..Default::default()
+                    },
+                    pdo_assignment: EL7031PredefinedPdoAssignment::VelocityControlCompact,
+                    ..Default::default()
+                };
+                el7031
+                    .write()
+                    .await
+                    .write_config(&subdevice, &el7031_config)
+                    .await?;
+                (el7031, el7031_config)
+            };
+
+            // Role 5
+            // 1x Stepper Puller
+            // EL7031
+            let (el7031_0030, el7031_0030_config) = {
+                let device_identification =
+                    get_device_identification_by_role(params.device_group, 5)?;
+                let device_hardware_identification_ethercat =
+                    match &device_identification.device_hardware_identification {
+                        DeviceHardwareIdentification::Ethercat(
+                            device_hardware_identification_ethercat,
+                        ) => device_hardware_identification_ethercat,
+                        // _ => Err(anyhow::anyhow!(
+                        //     "[{}::MachineNewTrait/Winder2::new] Device with role 4 is not Ethercat",
+                        //     module_path!()
+                        // ))?,
+                    };
+                let subdevice = get_subdevice_by_index(
+                    hardware.subdevices,
+                    device_hardware_identification_ethercat.subdevice_index,
+                )?;
+                let subdevice_index = device_hardware_identification_ethercat.subdevice_index;
+                let subdevice_identity = subdevice.identity();
+                let el7031_0030 = match subdevice_identity_to_tuple(&subdevice_identity) {
+                    EL7031_0030_IDENTITY_A => {
+                        let ethercat_device = get_ethercat_device_by_index(
+                            &hardware.ethercat_devices,
+                            subdevice_index,
+                        )?;
+                        downcast_device::<EL7031_0030>(ethercat_device).await?
+                    }
+                    _ => Err(anyhow::anyhow!(
+                        "[{}::MachineNewTrait/Winder2::new] Device with role 5 is not an EL7031-0030",
+                        module_path!()
+                    ))?,
+                };
+                let el7031_0030_config = EL7031_0030Configuration {
+                    stm_features: el7031_0030::coe::StmFeatures {
+                        operation_mode: EL70x1OperationMode::DirectVelocity,
+                        ..Default::default()
+                    },
+                    stm_motor: StmMotorConfiguration {
+                        max_current: 1500,
+                        ..Default::default()
+                    },
+                    pdo_assignment: EL7031_0030PredefinedPdoAssignment::VelocityControlCompact,
+                    ..Default::default()
+                };
+                el7031_0030
+                    .write()
+                    .await
+                    .write_config(&subdevice, &el7031_0030_config)
+                    .await?;
+                (el7031_0030, el7031_0030_config)
+            };
 
             let mut new = Self {
+                traverse: StepperDriverEL70x1::new(
+                    StepperVelocityEL70x1::new(el7031, EL7031StepperPort::STM1),
+                    &el7031_config.stm_features.speed_range,
+                ),
+                puller: StepperDriverEL70x1::new(
+                    StepperVelocityEL70x1::new(el7031_0030, EL7031_0030StepperPort::STM1),
+                    &el7031_0030_config.stm_features.speed_range,
+                ),
                 spool: StepperDriverEL70x1::new(
                     StepperVelocityEL70x1::new(el7041, EL7041_0052Port::STM1),
                     &el7041_config.stm_features.speed_range,
@@ -295,11 +372,6 @@ impl MachineNewTrait for Winder2 {
                 spool_speed_controller: Box::new(LinearSpoolSpeedController::new(200.0, 1250.0)),
                 last_measurement_emit: Instant::now(),
             };
-
-            // Role 5
-            // 1x Stepper Puller
-            // EL7031
-            // TODO
 
             // initalize events
             new.emit_traverse_state();
