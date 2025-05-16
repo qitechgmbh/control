@@ -27,7 +27,7 @@ use tension_arm::TensionArm;
 use uom::si::{
     angle::degree,
     angular_velocity::revolution_per_minute,
-    f64::{Length, Velocity},
+    f64::{AngularVelocity, Length, Velocity},
     length::millimeter,
 };
 
@@ -245,19 +245,13 @@ impl Winder2 {
     }
 
     pub fn spool_set_speed_max(&mut self, max_speed: f64) {
-        // Convert rpm to angular velocity
-        let max_speed = self
-            .spool_step_converter
-            .steps_to_angular_velocity(max_speed);
+        let max_speed = AngularVelocity::new::<revolution_per_minute>(max_speed);
         self.spool_speed_controller.set_max_speed(max_speed);
         self.emit_spool_state();
     }
 
     pub fn spool_set_speed_min(&mut self, min_speed: f64) {
-        // Convert rpm to angular velocity
-        let min_speed = self
-            .spool_step_converter
-            .steps_to_angular_velocity(min_speed);
+        let min_speed = AngularVelocity::new::<revolution_per_minute>(min_speed);
         self.spool_speed_controller.set_min_speed(min_speed);
         self.emit_spool_state();
     }
