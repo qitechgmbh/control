@@ -1,7 +1,7 @@
-use std::time::Duration;
-
 use anyhow::Error;
+use crc::{CRC_16_MODBUS, Crc};
 use serial;
+use std::time::Duration;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ParityType {
     Even,
@@ -104,43 +104,34 @@ impl From<ModbusRequest> for Vec<u8> {
 /// - `port`: A mutable reference to a serial port.
 ///
 /// # Returns
-/// A `Result` containing an `Option` with the raw Modbus response as a `Vec<u8>` if successful, 
+/// A `Result` containing an `Option` with the raw Modbus response as a `Vec<u8>` if successful,
 /// or `None` if the response is invalid or an error occurs.
 pub fn receive_data_modbus(
     port: &mut dyn serial::SerialPort,
 ) -> Result<Option<Vec<u8>>, anyhow::Error> {
     let mut buf: [u8; 256] = [0; 256];
     let data_length = port.read(&mut buf)?;
-
     if data_length == 0 {
         return Ok(None);
     }
-
-    match validate_modbus_response(buf[..data_length].to_vec()) {
-        Ok(result) => {
-            Ok(check_crc(&result).then_some(result))
-        },
-        Err(_) => Ok(None),
-    }
+    validate_modbus_response(buf[..data_length].to_vec()).map(Some)
 }
 
-/// Computes Modbus CRC-16 (polynomial 0x8005 / reversed 0xA001)
+/// Computes Modbus CRC-16 using `crc` crate.
 pub fn modbus_crc16(data: &[u8]) -> u16 {
-    data.iter().fold(0xFFFF, |mut crc, &byte| {
-        crc ^= byte as u16;
-        (0..8).for_each(|_| crc = (crc >> 1) ^ if crc & 1 != 0 { 0xA001 } else { 0 });
-        crc
-    })
+    let modbus: Crc<u16> = Crc::<u16>::new(&CRC_16_MODBUS);
+    modbus.checksum(data)
 }
 
 /// Checks if the message's CRC is correct (uses Modbus CRC-16).
-pub fn check_crc(raw_data: &[u8]) -> bool {
-    raw_data.len() >= 2 && 
-    modbus_crc16(&raw_data[..raw_data.len() - 2]) == extract_crc(&raw_data.to_vec()).unwrap_or(0)
+fn check_crc(raw_data: &Vec<u8>) -> Result<bool, Error> {
+    let expected_crc = extract_crc(raw_data)?;
+    let actual_crc = modbus_crc16(&raw_data[..raw_data.len() - 2]);
+    Ok(expected_crc == actual_crc)
 }
 
 fn validate_modbus_response(raw_data: Vec<u8>) -> Result<Vec<u8>, Error> {
-    if raw_data.len() == 0 {
+    if raw_data.is_empty() {
         return Err(anyhow::anyhow!("Error: Response is Empty!"));
     }
 
@@ -157,24 +148,25 @@ fn validate_modbus_response(raw_data: Vec<u8>) -> Result<Vec<u8>, Error> {
             "Error: Response is invalid, slave_id is outside of the valid range 1-247"
         ));
     }
-
-    return Ok(raw_data);
+    if check_crc(&raw_data)? {
+        Ok(raw_data)
+    } else {
+        Err(anyhow::anyhow!("Error: CRC does not match"))
+    }
 }
 
 // expects to be given the entire raw message
 fn extract_crc(raw_data: &Vec<u8>) -> Result<u16, Error> {
-    let raw_data1 = raw_data.clone();
-    let result = validate_modbus_response(raw_data1);
-    if let Err(error) = result {
-        return Err(error);
+    if raw_data.len() < 2 {
+        return Err(anyhow::anyhow!("Not enough data to extract CRC"));
     }
+
     let low_byte = raw_data[raw_data.len() - 2];
     let high_byte = raw_data[raw_data.len() - 1];
 
     let crc = u16::from_le_bytes([low_byte, high_byte]);
     Ok(crc)
 }
-
 impl TryFrom<Vec<u8>> for ModbusResponse {
     type Error = anyhow::Error;
     fn try_from(value: Vec<u8>) -> Result<ModbusResponse, Error> {

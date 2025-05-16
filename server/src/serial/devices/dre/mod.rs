@@ -1,10 +1,20 @@
 use std::{
-    io::Write, sync::Arc, thread, time::{Duration, Instant}
+    io::Write,
+    sync::Arc,
+    thread,
+    time::{Duration, Instant},
 };
 
+use crate::{
+    machines::{MACHINE_DRE, VENDOR_QITECH},
+    panic::send_panic_error,
+};
 use anyhow::anyhow;
 use control_core::{
-    helpers::{retry::retry,hashing::{hashing,xor_u128_to_u16}},
+    helpers::{
+        hashing::{hashing, xor_u128_to_u16},
+        retry::retry,
+    },
     machines::identification::{
         DeviceHardwareIdentification, DeviceHardwareIdentificationSerial, DeviceIdentification,
         DeviceMachineIdentification, MachineIdentification, MachineIdentificationUnique,
@@ -12,15 +22,9 @@ use control_core::{
     modbus::{self, ModbusRequest, ModbusResponse},
     serial::{SerialDevice, SerialDeviceNew, SerialDeviceNewParams},
 };
-use serde::Serialize;
 use serial::SerialPort;
 use smol::lock::RwLock;
 use uom::si::f64::Length;
-use serde::ser::SerializeStruct;
-use crate::{
-    machines::{MACHINE_DRE, VENDOR_QITECH},
-    panic::send_panic_error,
-};
 /// The struct of DRE Device
 #[derive(Debug)]
 pub struct Dre {
@@ -128,18 +132,6 @@ impl SerialDeviceNew for Dre {
 pub struct DreData {
     pub diameter: Length,
     pub last_timestamp: Instant,
-}
-
-impl Serialize for DreData {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        let mut state = serializer.serialize_struct("DreData", 2)?;
-        state.serialize_field("diameter", &self.diameter.get::<uom::si::length::millimeter>())?;
-        state.serialize_field("last_timestamp", &self.last_timestamp.elapsed().as_secs())?;
-        state.end()
-    }
 }
 
 impl Dre {

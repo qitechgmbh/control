@@ -15,7 +15,7 @@ use super::{
     new::MachineNewHardwareSerial,
     registry::MachineRegistry,
 };
-
+#[derive(Debug)]
 pub struct MachineManager {
     pub ethercat_machines:
         HashMap<MachineIdentificationUnique, Result<Box<Mutex<dyn Machine>>, anyhow::Error>>,

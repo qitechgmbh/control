@@ -2,7 +2,7 @@ use std::time::Instant;
 
 use crate::serial::{devices::dre::Dre, registry::SERIAL_DEVICE_REGISTRY};
 
-use super::{api::DreMachineNamespace, DreMachine, DreTarget};
+use super::{DreMachine, DreTarget, api::DreMachineNamespace};
 use anyhow::Error;
 use control_core::machines::new::MachineNewTrait;
 use uom::si::{f64::Length, length::millimeter};
@@ -36,16 +36,16 @@ impl MachineNewTrait for DreMachine {
             Err(_) => return Err(Error::msg("Failed to downcast to Dre")),
         };
         // set dre target configuration
-        let dre_target = DreTarget{
+        let dre_target = DreTarget {
             higher_tolerance: Length::new::<millimeter>(0.0),
-            lower_tolerance:Length::new::<millimeter>(0.0),
-            diameter:Length::new::<millimeter>(0.0)
+            lower_tolerance: Length::new::<millimeter>(0.0),
+            diameter: Length::new::<millimeter>(0.0),
         };
         Ok(Self {
             dre,
             namespace: DreMachineNamespace::new(),
             last_measurement_emit: Instant::now(),
-            dre_target
+            dre_target,
         })
     }
 }

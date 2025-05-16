@@ -1,5 +1,3 @@
-use std::time::Duration;
-use crate::serial::devices::dre::DreData;
 use super::DreMachine;
 use control_core::{
     machines::api::MachineApi,
@@ -13,17 +11,16 @@ use control_core::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use uom::si::f64::Length;
-
+use std::time::Duration;
 
 #[derive(Serialize, Debug, Clone)]
 pub struct DiameterEvent {
-    pub dre_data: Option<DreData>,
+    pub diameter: Option<f64>,
 }
 
 impl DiameterEvent {
     pub fn build(&self) -> Event<Self> {
-        Event::new("DiameterResponseEvent", self.clone())
+        Event::new("DiameterEvent", self.clone())
     }
 }
 
@@ -56,12 +53,14 @@ impl CacheableEvents<DreEvents> for DreEvents {
     }
 }
 
-
 #[derive(Deserialize, Serialize)]
+/// All values in the Mutation enum should be positive.
+/// This ensures that the parameters for setting tolerances and target diameter
+/// are valid and meaningful within the context of the DreMachine's operation.
 enum Mutation {
-    TargetSetTargetDiameter(Length),
-    TargetSetLowerTolerance(Length),
-    TargetSetHigherTolerance(Length)
+    TargetSetTargetDiameter(f64),
+    TargetSetLowerTolerance(f64),
+    TargetSetHigherTolerance(f64),
 }
 
 impl NamespaceCacheingLogic<DreEvents> for DreMachineNamespace {
@@ -86,12 +85,15 @@ impl MachineApi for DreMachine {
     fn api_mutate(&mut self, request_body: Value) -> Result<(), anyhow::Error> {
         let mutation: Mutation = serde_json::from_value(request_body)?;
         match mutation {
-            Mutation::TargetSetHigherTolerance(higher_tolerance)
-            =>{self.target_set_higher_tolerance(higher_tolerance)},
-            Mutation::TargetSetLowerTolerance(lower_tolerance)
-            =>{self.target_set_lower_tolerance(lower_tolerance);},
-            Mutation::TargetSetTargetDiameter(target_diameter)
-            =>{self.target_set_target_diameter(target_diameter);}
+            Mutation::TargetSetHigherTolerance(higher_tolerance) => {
+                self.target_set_higher_tolerance(higher_tolerance)
+            }
+            Mutation::TargetSetLowerTolerance(lower_tolerance) => {
+                self.target_set_lower_tolerance(lower_tolerance);
+            }
+            Mutation::TargetSetTargetDiameter(target_diameter) => {
+                self.target_set_target_diameter(target_diameter);
+            }
         }
         Ok(())
     }

@@ -111,12 +111,9 @@ impl<'serialdeviceregistry> SerialDetection<'serialdeviceregistry> {
 
         // reamove ports
         for removed in usb_ports_diff.removed {
-            // remove the port from the list
-            self.ports.remove(&removed.0);
-
-            // get DeviceIdentification for removed part path
-            let device_identification = self.ports.get(&removed.0).unwrap().1.clone();
-            result.removed.push(device_identification);
+            if let Some((_, device_identification, _)) = self.ports.remove(&removed.0) {
+                result.removed.push(device_identification);
+            }
 
             log::info!(
                 "[{}::SerialDetection::check_ports] Removed port: {}",
@@ -143,8 +140,6 @@ impl<'serialdeviceregistry> SerialDetection<'serialdeviceregistry> {
 
             // only if created device driver sucessfully
             if let Ok((device_identification, device)) = device_result {
-                //
-
                 // add the device to the ports list
                 self.ports.insert(
                     added.0.clone(),
@@ -169,10 +164,14 @@ impl<'serialdeviceregistry> SerialDetection<'serialdeviceregistry> {
         result
     }
 
-    pub async fn check_remove_signals(&mut self) {
+    pub async fn check_remove_signals(&mut self) -> Vec<DeviceIdentification> {
+        let mut removed_signals: Vec<DeviceIdentification> = Vec::new();
         match self.device_removal_signal_rx.try_recv() {
             Ok((path, error)) => {
-                // remove the device wher the tuple positon 1 equals signal
+                // remove the device when the tuple positon 1 equals signal
+                if let Some(info) = self.ports.get(&path.clone()) {
+                    removed_signals.push(info.1.clone());
+                };
                 self.ports.remove(&path);
 
                 log::debug!(
@@ -184,6 +183,7 @@ impl<'serialdeviceregistry> SerialDetection<'serialdeviceregistry> {
             }
             Err(_) => {}
         }
+        removed_signals
     }
 }
 

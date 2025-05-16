@@ -1,6 +1,10 @@
 use super::DreMachine;
 use control_core::actors::Actor;
-use std::{future::Future, pin::Pin, time::{Duration, Instant}};
+use std::{
+    future::Future,
+    pin::Pin,
+    time::{Duration, Instant},
+};
 
 /// Implements the `Actor` trait for the `DreMachine`.
 ///
@@ -16,7 +20,7 @@ use std::{future::Future, pin::Pin, time::{Duration, Instant}};
 /// - If the condition is met, it asynchronously emits DRE data by calling `emit_dre_data` and updates the `last_measurement_emit` timestamp.
 ///
 /// The method ensures that the diameter value is updated approximately 60 times per second.
-/// 
+///
 impl Actor for DreMachine {
     fn act(&mut self, _now_ts: Instant) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
         Box::pin(async move {
