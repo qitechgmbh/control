@@ -169,10 +169,15 @@ impl<'serialdeviceregistry> SerialDetection<'serialdeviceregistry> {
         result
     }
 
-    pub async fn check_remove_signals(&mut self) {
+    pub async fn check_remove_signals(&mut self) -> Vec<DeviceIdentification>{
+        let mut removed_signals:Vec<DeviceIdentification> = Vec::new();
         match self.device_removal_signal_rx.try_recv() {
             Ok((path, error)) => {
                 // remove the device wher the tuple positon 1 equals signal
+                match self.ports.get(&path.clone()) {
+                    Some(info) =>{removed_signals.push(info.1.clone())},
+                    None=>{}
+                };
                 self.ports.remove(&path);
 
                 log::debug!(
@@ -184,6 +189,7 @@ impl<'serialdeviceregistry> SerialDetection<'serialdeviceregistry> {
             }
             Err(_) => {}
         }
+        removed_signals
     }
 }
 

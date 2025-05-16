@@ -22,18 +22,19 @@ pub fn init_serial(
                     loop {
                         let result = {
                             let mut serial_setup_guard = app_state_clone.serial_setup.write().await;
-                            serial_setup_guard
+                            let mut removed_signals = serial_setup_guard
                                 .serial_detection
                                 .check_remove_signals()
                                 .await;
-                            serial_setup_guard.serial_detection.check_ports().await
+                            
+                            let mut port_result =serial_setup_guard.serial_detection.check_ports().await;
+                            port_result.removed.append(&mut removed_signals);
+                            port_result
                         };
-
 
                         // sync serial device discovery to machine manager
                         {
                             let mut machine_guard = app_state_clone.machines.write().await;
-
                             // turn added devices into machines
                             for (device_identifiaction, device) in result.added {
                                 machine_guard.add_serial_device(
