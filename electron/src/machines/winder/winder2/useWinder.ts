@@ -7,6 +7,7 @@ import { z } from "zod";
 import { Mode, useWinder2Namespace } from "./winder2Namespace";
 import { useEffect, useMemo } from "react";
 import { TimeSeries } from "@/lib/timeseries";
+import { rustEnumSchema } from "@/lib/types";
 
 function useLaserpointer(
   machine_identification_unique: MachineIdentificationUnique,
@@ -102,6 +103,111 @@ function useSpool(machine_identification_unique: MachineIdentificationUnique) {
   return { spoolRpm, spoolState, spoolSetSpeedMin, spoolSetSpeedMax };
 }
 
+function usePuller(machine_identification_unique: MachineIdentificationUnique) {
+  // Write Path
+  const pullerStateOptimistic = useStateOptimistic<{
+    target_speed: number;
+    target_diameter: number;
+    regulation: "Speed" | "Diameter";
+  }>();
+
+  const schemaSetTargetSpeed = z.object({
+    PullerSetTargetSpeed: z.number(),
+  });
+  const { request: requestSetTargetSpeed } =
+    useMachineMutation(schemaSetTargetSpeed);
+  const pullerSetTargetSpeed = async (targetSpeed: number) => {
+    if (pullerStateOptimistic.value) {
+      pullerStateOptimistic.setOptimistic({
+        ...pullerStateOptimistic.value,
+        target_speed: targetSpeed,
+      });
+    }
+    requestSetTargetSpeed({
+      machine_identification_unique,
+      data: { PullerSetTargetSpeed: targetSpeed },
+    })
+      .then((response) => {
+        if (!response.success) pullerStateOptimistic.resetToReal();
+      })
+      .catch(() => pullerStateOptimistic.resetToReal());
+  };
+
+  const schemaSetTargetDiameter = z.object({
+    PullerSetTargetDiameter: z.number(),
+  });
+  const { request: requestSetTargetDiameter } = useMachineMutation(
+    schemaSetTargetDiameter,
+  );
+  const pullerSetTargetDiameter = async (targetDiameter: number) => {
+    if (pullerStateOptimistic.value) {
+      pullerStateOptimistic.setOptimistic({
+        ...pullerStateOptimistic.value,
+        target_diameter: targetDiameter,
+      });
+    }
+    requestSetTargetDiameter({
+      machine_identification_unique,
+      data: { PullerSetTargetDiameter: targetDiameter },
+    })
+      .then((response) => {
+        if (!response.success) pullerStateOptimistic.resetToReal();
+      })
+      .catch(() => pullerStateOptimistic.resetToReal());
+  };
+
+  const schemaSetRegulationMode = z.object({
+    PullerSetRegulationMode: z.enum(["Speed", "Diameter"]),
+  });
+  const { request: requestSetRegulationMode } = useMachineMutation(
+    schemaSetRegulationMode,
+  );
+  const pullerSetRegulationMode = async (
+    regulationMode: "Speed" | "Diameter",
+  ) => {
+    if (pullerStateOptimistic.value) {
+      pullerStateOptimistic.setOptimistic({
+        ...pullerStateOptimistic.value,
+        regulation: regulationMode,
+      });
+    }
+    requestSetRegulationMode({
+      machine_identification_unique,
+      data: { PullerSetRegulationMode: regulationMode },
+    })
+      .then((response) => {
+        if (!response.success) pullerStateOptimistic.resetToReal();
+      })
+      .catch(() => pullerStateOptimistic.resetToReal());
+  };
+
+  // Read Path
+  const { pullerState, pullerSpeed } = useWinder2Namespace(
+    machine_identification_unique,
+  );
+
+  // Update real values from server
+  useEffect(() => {
+    if (pullerState?.data) {
+      pullerStateOptimistic.setReal(pullerState.data);
+    }
+  }, [pullerState]);
+
+  return {
+    pullerState,
+    pullerSpeed,
+    pullerSetTargetSpeed,
+    pullerSetTargetDiameter,
+    pullerSetRegulationMode,
+    pullerStateIsLoading:
+      pullerStateOptimistic.isOptimistic ||
+      !pullerStateOptimistic.isInitialized,
+    pullerStateIsDisabled:
+      pullerStateOptimistic.isOptimistic ||
+      !pullerStateOptimistic.isInitialized,
+  };
+}
+
 function useMode(machine_identification_unique: MachineIdentificationUnique): {
   mode: Mode | undefined;
   setMode: (value: Mode) => void;
@@ -174,6 +280,7 @@ export function useWinder2() {
   const laserpointerControls = useLaserpointer(machineIdentification);
   const tensionArm = useTensionArm(machineIdentification);
   const spool = useSpool(machineIdentification);
+  const puller = usePuller(machineIdentification);
   const mode = useMode(machineIdentification);
 
   return {
@@ -181,5 +288,6 @@ export function useWinder2() {
     ...mode,
     ...tensionArm,
     ...spool,
+    ...puller,
   };
 }

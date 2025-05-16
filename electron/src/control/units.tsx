@@ -19,6 +19,8 @@ export function getUnitIcon(unit: Unit): IconName {
       return "lu:Expand";
     case "deg":
       return "lu:TriangleRight";
+    case "m/min":
+      return "lu:Gauge";
     default:
       return "lu:ChartNoAxesColumn";
   }
@@ -40,6 +42,8 @@ export function renderUnitSymbol(unit: Unit | undefined): string {
       return "bar";
     case "deg":
       return "deg";
+    case "m/min":
+      return "m/min";
     default:
       return "";
   }
@@ -83,12 +87,23 @@ export function renderUnitSymbolLong(unit: Unit): string {
       return "bars";
     case "deg":
       return "degrees";
+    case "m/min":
+      return "meters/minute";
     default:
       return "";
   }
 }
 
-export const units = ["m/s", "mm", "rpm", "deg", "m", "C", "bar"] as const;
+export const units = [
+  "m/s",
+  "mm",
+  "rpm",
+  "deg",
+  "m",
+  "C",
+  "bar",
+  "m/min",
+] as const;
 
 export type Unit = (typeof units)[number];
 

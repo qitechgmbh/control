@@ -1,5 +1,7 @@
 use std::time::Instant;
 
+use crate::machines::winder2::puller_speed_controller::PullerSpeedController;
+
 use super::api::Winder1Namespace;
 use super::spool_speed_controller::SpoolSpeedController;
 use super::tension_arm::TensionArm;
@@ -15,7 +17,9 @@ use control_core::machines::new::{
     get_ethercat_device_by_index, get_subdevice_by_index, validate_no_role_dublicates,
     validate_same_machine_identification_unique,
 };
-use control_core::uom_extensions::angular_acceleration::revolutions_per_minute_per_second;
+use control_core::uom_extensions::acceleration::meter_per_minute_per_second;
+use control_core::uom_extensions::angular_acceleration::revolution_per_minute_per_second;
+use control_core::uom_extensions::velocity::meter_per_minute;
 use ethercat_hal::coe::ConfigurableDevice;
 use ethercat_hal::devices::el2002::{EL2002, EL2002Port};
 use ethercat_hal::devices::el7031::coe::EL7031Configuration;
@@ -37,8 +41,11 @@ use ethercat_hal::io::digital_output::DigitalOutput;
 use ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1;
 use ethercat_hal::shared_config;
 use ethercat_hal::shared_config::el70x1::{EL70x1OperationMode, StmMotorConfiguration};
+use uom::si::acceleration::meter_per_second_squared;
 use uom::si::angular_velocity::revolution_per_minute;
-use uom::si::f64::{AngularAcceleration, AngularVelocity};
+use uom::si::f64::{Acceleration, AngularAcceleration, AngularVelocity, Length, Velocity};
+use uom::si::length::millimeter;
+use uom::si::velocity::kilometer_per_hour;
 
 impl MachineNewTrait for Winder2 {
     fn new<'maindevice>(params: &MachineNewParams) -> Result<Self, Error> {
@@ -301,7 +308,7 @@ impl MachineNewTrait for Winder2 {
                 (el7031_0030, el7031_0030_config)
             };
 
-            let spool_step_converter = StepConverter::new(600);
+            let mode = Winder2Mode::Standby;
 
             let mut new = Self {
                 traverse: StepperDriverEL70x1::new(
@@ -322,15 +329,23 @@ impl MachineNewTrait for Winder2 {
                 ))),
                 laser: DigitalOutputSetter::new(DigitalOutput::new(el2002, EL2002Port::DO1)),
                 namespace: Winder1Namespace::new(),
-                mode: Winder2Mode::Standby,
-                spool_step_converter,
+                mode: mode.clone(),
+                spool_step_converter: StepConverter::new(600),
                 spool_speed_controller: SpoolSpeedController::new(
                     AngularVelocity::new::<revolution_per_minute>(0.0),
                     AngularVelocity::new::<revolution_per_minute>(600.0),
-                    AngularAcceleration::new::<revolutions_per_minute_per_second>(100.0),
-                    AngularAcceleration::new::<revolutions_per_minute_per_second>(-100.0),
+                    AngularAcceleration::new::<revolution_per_minute_per_second>(200.0),
+                    AngularAcceleration::new::<revolution_per_minute_per_second>(-200.0),
                 ),
                 last_measurement_emit: Instant::now(),
+                spool_mode: mode.clone().into(),
+                puller_mode: mode.into(),
+                puller_speed_controller: PullerSpeedController::new(
+                    Acceleration::new::<meter_per_minute_per_second>(10.0),
+                    Velocity::new::<meter_per_minute>(1.0),
+                    Length::new::<millimeter>(1.75),
+                ),
+                puller_step_converter: StepConverter::new(600),
             };
 
             // initalize events
@@ -338,6 +353,7 @@ impl MachineNewTrait for Winder2 {
             new.emit_mode_state();
             new.emit_spool_state();
             new.emit_tension_arm_state();
+            new.emit_puller_state();
 
             Ok(new)
         })

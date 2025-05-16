@@ -59,7 +59,6 @@ export const pullerRegulationSchema = z.enum(["Speed", "Diameter"]);
  * Puller state event schema
  */
 export const pullerStateEventDataSchema = z.object({
-  speed: z.number(),
   regulation: pullerRegulationSchema,
   target_speed: z.number(),
   target_diameter: z.number(),

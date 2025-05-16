@@ -5,7 +5,7 @@ use super::{
 use control_core::{
     controllers::linear_acceleration::LinearAngularAccelerationController,
     helpers::interpolation::{interpolate_exponential, scale},
-    uom_extensions::angular_acceleration::revolutions_per_minute_per_second,
+    uom_extensions::angular_acceleration::revolution_per_minute_per_second,
 };
 use std::time::Instant;
 use uom::{
@@ -143,7 +143,11 @@ impl SpoolSpeedController {
 }
 
 impl SpoolSpeedController {
-    pub fn get_speed(&mut self, t: Instant, tension_arm: &TensionArm) -> AngularVelocity {
+    pub fn get_angular_velocity(
+        &mut self,
+        t: Instant,
+        tension_arm: &TensionArm,
+    ) -> AngularVelocity {
         let speed = self.speed_raw(t, tension_arm);
         let speed = match self.enabled {
             true => speed,
@@ -170,8 +174,8 @@ impl SpoolSpeedController {
         // Set acceleration to 1/10 of the range between min and max speed
         // The spool will accelerate from min to max speed in 10 seconds
         let range = self.max_speed - self.min_speed;
-        let acceleration = AngularAcceleration::new::<revolutions_per_minute_per_second>(
-            range.get::<revolution_per_minute>() / 10.0,
+        let acceleration = AngularAcceleration::new::<revolution_per_minute_per_second>(
+            range.get::<revolution_per_minute>() / 3.0,
         );
         self.acceleration_controller.set_acceleration(acceleration);
         self.acceleration_controller.set_deceleration(-acceleration);

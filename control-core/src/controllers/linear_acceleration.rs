@@ -1,13 +1,15 @@
 use std::time::Instant;
 
 use uom::si::{
+    acceleration::meter_per_second_squared,
     angular_acceleration::radian_per_second_squared,
     angular_velocity::radian_per_second,
-    f64::{AngularAcceleration, AngularVelocity},
+    f64::{Acceleration, AngularAcceleration, AngularVelocity, Velocity},
+    velocity::meter_per_second,
 };
 
 #[derive(Debug)]
-pub struct LinearAccelerationController {
+pub struct LinearAccelerationBaseController {
     /// Maximum acceleration in units per second (positive value)
     acceleration: f64,
 
@@ -21,7 +23,7 @@ pub struct LinearAccelerationController {
     last_t: Option<Instant>,
 }
 
-impl LinearAccelerationController {
+impl LinearAccelerationBaseController {
     pub fn new(acceleration: f64, deceleration: f64, initial_speed: f64) -> Self {
         Self {
             acceleration,
@@ -77,11 +79,11 @@ impl LinearAccelerationController {
     }
 }
 
-/// LinearAngularAccelerationController wraps LinearAccelerationController
+/// [`LinearAngularAccelerationController`] wraps [`LinearAccelerationController`]
 /// to handle angular velocities and accelerations.
 #[derive(Debug)]
 pub struct LinearAngularAccelerationController {
-    pub controller: LinearAccelerationController,
+    pub controller: LinearAccelerationBaseController,
 }
 
 impl LinearAngularAccelerationController {
@@ -91,7 +93,7 @@ impl LinearAngularAccelerationController {
         initial_speed: AngularVelocity,
     ) -> Self {
         Self {
-            controller: LinearAccelerationController::new(
+            controller: LinearAccelerationBaseController::new(
                 acceleration.get::<radian_per_second_squared>(),
                 deceleration.get::<radian_per_second_squared>(),
                 initial_speed.get::<radian_per_second>(),
@@ -120,6 +122,46 @@ impl LinearAngularAccelerationController {
     }
 }
 
+/// [`LinearAccelerationController`] wraps [`LinearF64AccelerationController`]
+/// to handle linear velocities and accelerations.
+#[derive(Debug)]
+pub struct LinearAccelerationController {
+    pub controller: LinearAccelerationBaseController,
+}
+
+impl LinearAccelerationController {
+    pub fn new(
+        acceleration: Acceleration,
+        deceleration: Acceleration,
+        initial_speed: Velocity,
+    ) -> Self {
+        Self {
+            controller: LinearAccelerationBaseController::new(
+                acceleration.get::<meter_per_second_squared>(),
+                deceleration.get::<meter_per_second_squared>(),
+                initial_speed.get::<meter_per_second>(),
+            ),
+        }
+    }
+    pub fn update(&mut self, target_speed: Velocity, t: Instant) -> Velocity {
+        let target_speed = target_speed.get::<meter_per_second>();
+        let new_speed = self.controller.update(target_speed, t);
+        return Velocity::new::<meter_per_second>(new_speed);
+    }
+    pub fn reset(&mut self, initial_speed: Velocity) {
+        let initial_speed = initial_speed.get::<meter_per_second>();
+        self.controller.reset(initial_speed);
+    }
+    pub fn set_acceleration(&mut self, acceleration: Acceleration) {
+        self.controller
+            .set_acceleration(acceleration.get::<meter_per_second_squared>());
+    }
+    pub fn set_deceleration(&mut self, deceleration: Acceleration) {
+        self.controller
+            .set_deceleration(deceleration.get::<meter_per_second_squared>());
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -135,7 +177,7 @@ mod tests {
 
     #[test]
     fn test_initialization() {
-        let controller = LinearAccelerationController::new(10.0, -15.0, 5.0);
+        let controller = LinearAccelerationBaseController::new(10.0, -15.0, 5.0);
         assert_relative_eq!(controller.acceleration, 10.0, epsilon = EPSILON);
         assert_relative_eq!(controller.deceleration, -15.0, epsilon = EPSILON);
         assert_relative_eq!(controller.speed, 5.0, epsilon = EPSILON);
@@ -144,7 +186,7 @@ mod tests {
 
     #[test]
     fn test_first_update() {
-        let mut controller = LinearAccelerationController::new(10.0, -15.0, 5.0);
+        let mut controller = LinearAccelerationBaseController::new(10.0, -15.0, 5.0);
         let now = Instant::now();
 
         let speed = controller.update(5.0, now);
@@ -156,7 +198,7 @@ mod tests {
 
     #[test]
     fn test_acceleration() {
-        let mut controller = LinearAccelerationController::new(10.0, -15.0, 0.0);
+        let mut controller = LinearAccelerationBaseController::new(10.0, -15.0, 0.0);
         let t1 = Instant::now();
         controller.update(0.0, t1); // Initialize last_t
 
@@ -175,7 +217,7 @@ mod tests {
 
     #[test]
     fn test_deceleration() {
-        let mut controller = LinearAccelerationController::new(10.0, -15.0, 10.0);
+        let mut controller = LinearAccelerationBaseController::new(10.0, -15.0, 10.0);
         let t1 = Instant::now();
         controller.update(10.0, t1); // Initialize last_t
 
@@ -194,7 +236,7 @@ mod tests {
 
     #[test]
     fn test_constant_speed() {
-        let mut controller = LinearAccelerationController::new(10.0, -15.0, 7.0);
+        let mut controller = LinearAccelerationBaseController::new(10.0, -15.0, 7.0);
         let t1 = Instant::now();
         controller.update(7.0, t1); // Initialize last_t
 
@@ -207,7 +249,7 @@ mod tests {
 
     #[test]
     fn test_acceleration_limit() {
-        let mut controller = LinearAccelerationController::new(10.0, -15.0, 0.0);
+        let mut controller = LinearAccelerationBaseController::new(10.0, -15.0, 0.0);
         let t1 = Instant::now();
         controller.update(0.0, t1); // Initialize last_t
 
@@ -224,7 +266,7 @@ mod tests {
 
     #[test]
     fn test_deceleration_limit() {
-        let mut controller = LinearAccelerationController::new(10.0, -15.0, 20.0);
+        let mut controller = LinearAccelerationBaseController::new(10.0, -15.0, 20.0);
         let t1 = Instant::now();
         controller.update(20.0, t1); // Initialize last_t
 
@@ -241,7 +283,7 @@ mod tests {
 
     #[test]
     fn test_zero_time_delta() {
-        let mut controller = LinearAccelerationController::new(10.0, -15.0, 5.0);
+        let mut controller = LinearAccelerationBaseController::new(10.0, -15.0, 5.0);
         let now = Instant::now();
 
         controller.update(5.0, now); // Initialize last_t
@@ -254,7 +296,7 @@ mod tests {
 
     #[test]
     fn test_acceleration_capped_at_target() {
-        let mut controller = LinearAccelerationController::new(100.0, -15.0, 3.0);
+        let mut controller = LinearAccelerationBaseController::new(100.0, -15.0, 3.0);
         let t1 = Instant::now();
         controller.update(3.0, t1); // Initialize last_t
 
@@ -272,7 +314,7 @@ mod tests {
 
     #[test]
     fn test_deceleration_capped_at_target() {
-        let mut controller = LinearAccelerationController::new(10.0, -100.0, 8.0);
+        let mut controller = LinearAccelerationBaseController::new(10.0, -100.0, 8.0);
         let t1 = Instant::now();
         controller.update(8.0, t1); // Initialize last_t
 
@@ -290,7 +332,7 @@ mod tests {
 
     #[test]
     fn test_exact_acceleration_to_target() {
-        let mut controller = LinearAccelerationController::new(20.0, -15.0, 3.0);
+        let mut controller = LinearAccelerationBaseController::new(20.0, -15.0, 3.0);
         let t1 = Instant::now();
         controller.update(3.0, t1); // Initialize last_t
 
@@ -307,7 +349,7 @@ mod tests {
 
     #[test]
     fn test_exact_deceleration_to_target() {
-        let mut controller = LinearAccelerationController::new(10.0, -30.0, 8.0);
+        let mut controller = LinearAccelerationBaseController::new(10.0, -30.0, 8.0);
         let t1 = Instant::now();
         controller.update(8.0, t1); // Initialize last_t
 

@@ -14,6 +14,7 @@ export type Props<KEY extends string> = {
 
 type Option = ComponentProps<typeof TouchButton> & {
   isActiveClassName?: string;
+  disabled?: boolean;
 };
 
 export function SelectionGroup<KEY extends string>({
@@ -26,11 +27,20 @@ export function SelectionGroup<KEY extends string>({
   return (
     <div className="flex flex-row flex-wrap gap-4">
       {Object.entries(options as Record<string, Option>).map(
-        ([key, { children, icon, className, isActiveClassName }]) => (
+        ([
+          key,
+          {
+            children,
+            icon,
+            className,
+            isActiveClassName,
+            disabled: optionDisabled,
+          },
+        ]) => (
           <TouchButton
             key={key}
             icon={icon}
-            disabled={disabled}
+            disabled={disabled || optionDisabled}
             onClick={() => onChange?.(key as KEY)}
             variant={key === value ? "default" : "outline"}
             isLoading={key === value && loading}
