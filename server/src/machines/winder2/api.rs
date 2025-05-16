@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use super::{Winder2, Winder2Mode};
+use super::{Winder2, Winder2Mode, puller_speed_controller::PullerRegulationMode};
 use control_core::{
     machines::api::MachineApi,
     socketio::{
@@ -13,12 +13,6 @@ use control_core::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub enum PullerRegulation {
-    Speed,
-    Diameter,
-}
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum AutostopTransition {
@@ -68,7 +62,7 @@ enum Mutation {
 
     // Puller
     /// on = speed, off = stop
-    PullerSetRegulation(PullerRegulation),
+    PullerSetRegulationMode(PullerRegulationMode),
     PullerSetTargetSpeed(f64),
     PullerSetTargetDiameter(f64),
 
@@ -135,11 +129,9 @@ impl TraverseStateEvent {
 
 #[derive(Serialize, Debug, Clone)]
 pub struct PullerStateEvent {
-    /// speed in mm/s
-    pub speed: f64,
     /// regulation type
-    pub regulation: PullerRegulation,
-    /// target speed in mm/s
+    pub regulation: PullerRegulationMode,
+    /// target speed in m/min
     pub target_speed: f64,
     /// target diameter in mm
     pub target_diameter: f64,
@@ -153,7 +145,7 @@ impl PullerStateEvent {
 
 #[derive(Serialize, Debug, Clone)]
 pub struct PullerSpeedEvent {
-    /// speed in mm/s
+    /// speed in m/min
     pub speed: f64,
 }
 
@@ -343,8 +335,8 @@ impl MachineApi for Winder2 {
             Mutation::TraverseGotoLimitOuter => todo!(),
             Mutation::TraverseGotoLimitInner => todo!(),
             Mutation::TraverseGotoHome(_) => todo!(),
-            Mutation::PullerSetRegulation(_) => todo!(),
-            Mutation::PullerSetTargetSpeed(_) => todo!(),
+            Mutation::PullerSetRegulationMode(regulation) => self.puller_set_regulation(regulation),
+            Mutation::PullerSetTargetSpeed(value) => self.puller_set_target_speed(value),
             Mutation::PullerSetTargetDiameter(_) => todo!(),
             Mutation::AutostopEnable(_) => todo!(),
             Mutation::AutostopEnableAlarm(_) => todo!(),
