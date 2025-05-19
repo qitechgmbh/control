@@ -37,9 +37,9 @@ impl MachineNewTrait for DreMachine {
         };
         // set dre target configuration
         let dre_target = DreTarget {
-            higher_tolerance: Length::new::<millimeter>(0.0),
-            lower_tolerance: Length::new::<millimeter>(0.0),
-            diameter: Length::new::<millimeter>(0.0),
+            higher_tolerance: Length::new::<millimeter>(0.05),
+            lower_tolerance: Length::new::<millimeter>(0.05),
+            diameter: Length::new::<millimeter>(1.75),
         };
         Ok(Self {
             dre,

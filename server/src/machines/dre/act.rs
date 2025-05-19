@@ -27,7 +27,8 @@ impl Actor for DreMachine {
             let now = Instant::now();
             // The diameter value is updated approximately 60 times per second
             if now.duration_since(self.last_measurement_emit) > Duration::from_millis(16) {
-                self.emit_dre_data().await;
+                self.emit_diameter().await;
+                self.emit_dre_state();
                 self.last_measurement_emit = now;
             }
         })

@@ -175,10 +175,10 @@ export const winder2: MachinePreset = {
   ],
 };
 
-export const dre: MachinePreset = {
+export const dre1: MachinePreset = {
   name: "DRE",
   version: "V1",
-  slug: "DRE",
+  slug: "dre1",
   icon: "lu:Diameter",
   machine_identification: {
     vendor: VENDOR_QITECH,
@@ -186,7 +186,7 @@ export const dre: MachinePreset = {
   },
   device_roles: []
 }
-export const machinePresets: MachinePreset[] = [winder2, dre];
+export const machinePresets: MachinePreset[] = [winder2, dre1];
 
 export const getMachinePreset = (
   machine_identification: MachineIdentification,

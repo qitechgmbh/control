@@ -19,9 +19,11 @@ import {
   githubSourceSchema,
 } from "@/setup/GithubSourceDialog";
 import { z } from "zod";
-import { error } from "console";
 import { ChangelogPage } from "@/setup/ChangelogPage";
 import { UpdateExecutePage } from "@/setup/UpdateExecutePage";
+import { Dre1Page } from "@/machines/dre/dre1/Dre1Page";
+import { Dre1ControlPage } from "@/machines/dre/dre1/Dre1ControlPage";
+import { Dre1GraphsPage } from "@/machines/dre/dre1/Dre1Graph";
 
 // make a route tree like this
 // _mainNavigation/machines/winder2/$serial/control
@@ -70,6 +72,25 @@ export const winder2GraphsRoute = createRoute({
   getParentRoute: () => winder2SerialRoute,
   path: "graphs",
   component: () => <Winder1GraphsPage />,
+});
+
+export const dre1SerialRoute = createRoute({
+  getParentRoute: () => machinesRoute,
+  path: "dre1/$serial",
+  component: () => <Dre1Page />,
+});
+
+export const dre1ControlRoute = createRoute({
+  getParentRoute: () => dre1SerialRoute,
+  path: "control",
+  component: () => <Dre1ControlPage />,
+});
+
+export const dre1GraphsRoute = createRoute({
+  getParentRoute: () => dre1SerialRoute,
+  path: "graphs",
+  component
+    : () => <Dre1GraphsPage />,
 });
 
 export const setupRoute = createRoute({
@@ -150,6 +171,10 @@ export const rootTree = RootRoute.addChildren([
       ]),
     ]),
     machinesRoute.addChildren([
+      dre1SerialRoute.addChildren([
+        dre1ControlRoute,
+        dre1GraphsRoute,
+      ]),
       winder2SerialRoute.addChildren([
         winder2ControlRoute,
         winder2ManualRoute,
