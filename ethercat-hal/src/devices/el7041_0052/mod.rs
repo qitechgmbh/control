@@ -1,7 +1,7 @@
 use coe::EL7041_0052Configuration;
 use ethercat_hal_derive::EthercatDevice;
 
-use super::{NewEthercatDevice, SubDeviceIdentityTuple};
+use super::{EthercatDeviceProcessing, NewEthercatDevice, SubDeviceIdentityTuple};
 use crate::{
     io::{
         digital_input::{DigitalInputDevice, DigitalInputInput, DigitalInputState},
@@ -35,6 +35,8 @@ impl NewEthercatDevice for EL7041_0052 {
         }
     }
 }
+
+impl EthercatDeviceProcessing for EL7041_0052 {}
 
 impl StepperVelocityEL70x1Device<EL7041_0052Port> for EL7041_0052 {
     fn stepper_velocity_write(

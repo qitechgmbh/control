@@ -6,7 +6,7 @@ use crate::{
 };
 use ethercat_hal_derive::{EthercatDevice, TxPdo};
 
-use super::NewEthercatDevice;
+use super::{EthercatDeviceProcessing, NewEthercatDevice};
 
 /// EL3204 4-channel temperature input device
 ///
@@ -15,6 +15,8 @@ use super::NewEthercatDevice;
 pub struct EL3204 {
     pub txpdo: EL3204TxPdo,
 }
+
+impl EthercatDeviceProcessing for EL3204 {}
 
 impl std::fmt::Debug for EL3204 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

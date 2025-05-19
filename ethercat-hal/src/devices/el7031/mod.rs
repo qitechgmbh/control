@@ -18,7 +18,7 @@ use crate::{
     shared_config::el70x1::EL70x1OperationMode,
 };
 
-use super::{NewEthercatDevice, SubDeviceIdentityTuple};
+use super::{EthercatDeviceProcessing, NewEthercatDevice, SubDeviceIdentityTuple};
 
 #[derive(Debug, EthercatDevice)]
 pub struct EL7031 {
@@ -26,6 +26,8 @@ pub struct EL7031 {
     pub rxpdo: EL7031RxPdo,
     pub configuration: EL7031Configuration,
 }
+
+impl EthercatDeviceProcessing for EL7031 {}
 
 impl NewEthercatDevice for EL7031 {
     fn new() -> Self {

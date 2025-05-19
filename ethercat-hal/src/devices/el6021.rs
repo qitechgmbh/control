@@ -1,4 +1,4 @@
-use super::{NewEthercatDevice, SubDeviceIdentityTuple};
+use super::{EthercatDeviceProcessing, NewEthercatDevice, SubDeviceIdentityTuple};
 use crate::coe::{ConfigurableDevice, Configuration};
 use crate::io::serial_interface::{SerialEncoding, SerialInterfaceDevice};
 use crate::pdo::{PredefinedPdoAssignment, RxPdo, RxPdoObject, TxPdo, TxPdoObject};
@@ -374,6 +374,8 @@ pub struct EL6021 {
     pub has_messages_last_toggle: bool,
     pub initialized: bool,
 }
+
+impl EthercatDeviceProcessing for EL6021 {}
 
 impl PredefinedPdoAssignment<EL6021TxPdo, EL6021RxPdo> for EL6021PdoPreset {
     fn txpdo_assignment(&self) -> EL6021TxPdo {

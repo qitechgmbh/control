@@ -15,6 +15,9 @@ Here is a checklist of what we need to implement:
   - field `rxpdo` instance of `EL0000RxPdo` (only if the device has outputs)
   - field `configuration` instance of `EL0000Configuration` (only if configurable)
   - implement `NewDevice` trait
+  - implement `EthercatDeviceProcessing` trait
+    - optional: override `input_post_process()` method for custom input data processing
+    - optional: override `output_pre_process()` method for custom output data preparation
 - TxPdo / RxPdo Struct `struct EL0000TxPdo` and/or `struct EL0000RxPdo`
   - derive `#[derive(Debug, Clone)]`
   - derive `#[derive(TxPdo)]` and/or `#[derive(RxPdo)]`
@@ -45,6 +48,37 @@ These are helpful resources:
 - Identification: Attach the device and read the identity values with QiTech Control in the "Setup > EtherCAT > Devices" tab
 
 ESI Files are not needed but could be an alternative reference, though not a very readable one.
+
+## EthercatDeviceProcessing
+
+The `EthercatDeviceProcessing` trait provides hooks for custom processing of input and output data that happens between the EtherCAT data exchange and the device's IO layer. Every EtherCAT device must implement this trait, even if it doesn't need custom processing.
+
+This trait provides two optional methods:
+
+- `input_post_process()`: Called after the device has received input data from the EtherCAT bus, allowing transformation of the raw PDO data before it's exposed through the IO interfaces. 
+- `output_pre_process()`: Called before data is sent to the EtherCAT bus, allowing preparation or transformation of data from the IO interfaces before it's written to the PDO objects.
+
+For most devices, the default implementations (which do nothing) are sufficient. You only need to override these methods when the raw PDO data requires transformation before being used by the IO layer or vice versa.
+
+Example implementation:
+
+```rust
+impl EthercatDeviceProcessing for EL0000 {
+    // Optional: Only override when needed
+    fn input_post_process(&mut self) -> Result<(), anyhow::Error> {
+        // Process data after it's received from EtherCAT but before it's accessed via IO interfaces
+        // Example: Transform raw sensor data into engineering units
+        Ok(())
+    }
+    
+    // Optional: Only override when needed
+    fn output_pre_process(&mut self) -> Result<(), anyhow::Error> {
+        // Process data before it's sent to EtherCAT
+        // Example: Apply limits or transforms to output values
+        Ok(())
+    }
+}
+```
 
 ## Identity
 

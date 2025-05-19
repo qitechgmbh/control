@@ -1,3 +1,4 @@
+use super::EthercatDeviceProcessing;
 use super::{NewEthercatDevice, SubDeviceIdentityTuple};
 use crate::io::analog_input::physical::AnalogInputRange;
 use crate::pdo::RxPdo;
@@ -38,6 +39,8 @@ pub struct EL3024 {
     pub txpdo: EL3024TxPdo,
     pub rxpdo: EL3024RxPdo,
 }
+
+impl EthercatDeviceProcessing for EL3024 {}
 
 impl std::fmt::Debug for EL3024 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

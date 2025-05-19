@@ -23,7 +23,7 @@ use crate::{
     signing::U16SigningConverter,
 };
 
-use super::{NewEthercatDevice, SubDeviceIdentityTuple};
+use super::{EthercatDeviceProcessing, NewEthercatDevice, SubDeviceIdentityTuple};
 
 #[derive(Debug, EthercatDevice)]
 pub struct EL7031_0030 {
@@ -31,6 +31,8 @@ pub struct EL7031_0030 {
     pub rxpdo: EL7031_0030RxPdo,
     pub configuration: EL7031_0030Configuration,
 }
+
+impl EthercatDeviceProcessing for EL7031_0030 {}
 
 impl NewEthercatDevice for EL7031_0030 {
     fn new() -> Self {

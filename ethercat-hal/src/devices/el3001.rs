@@ -1,4 +1,4 @@
-use super::{NewEthercatDevice, SubDeviceIdentityTuple};
+use super::{EthercatDeviceProcessing, NewEthercatDevice, SubDeviceIdentityTuple};
 use crate::{
     coe::{ConfigurableDevice, Configuration},
     io::analog_input::physical::AnalogInputRange,
@@ -21,6 +21,8 @@ pub struct EL3001 {
     pub txpdo: EL3001TxPdo,
     pub configuration: EL3001Configuration,
 }
+
+impl EthercatDeviceProcessing for EL3001 {}
 
 impl std::fmt::Debug for EL3001 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

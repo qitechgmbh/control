@@ -1,6 +1,6 @@
-use super::{NewEthercatDevice, SubDeviceIdentityTuple};
+use super::{EthercatDeviceProcessing, NewEthercatDevice, SubDeviceIdentityTuple};
 use crate::io::digital_output::{DigitalOutputDevice, DigitalOutputOutput, DigitalOutputState};
-use crate::pdo::{basic::BoolPdoObject, RxPdo};
+use crate::pdo::{RxPdo, basic::BoolPdoObject};
 use crate::types::EthercrabSubDevicePreoperational;
 use ethercat_hal_derive::{EthercatDevice, RxPdo};
 
@@ -11,6 +11,8 @@ use ethercat_hal_derive::{EthercatDevice, RxPdo};
 pub struct EL2008 {
     pub rxpdo: EL2008RxPdo,
 }
+
+impl EthercatDeviceProcessing for EL2008 {}
 
 impl std::fmt::Debug for EL2008 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
