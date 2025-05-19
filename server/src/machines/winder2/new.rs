@@ -10,7 +10,8 @@ use anyhow::Error;
 use control_core::actors::analog_input_getter::AnalogInputGetter;
 use control_core::actors::digital_output_setter::DigitalOutputSetter;
 use control_core::actors::stepper_driver_el70x1::StepperDriverEL70x1;
-use control_core::converters::step_converter::StepConverter;
+use control_core::converters::linear_step_converter::LinearStepConverter;
+use control_core::converters::step_converter::AngularStepConverter;
 use control_core::machines::identification::DeviceHardwareIdentification;
 use control_core::machines::new::{
     MachineNewHardware, MachineNewParams, MachineNewTrait, get_device_identification_by_role,
@@ -330,7 +331,7 @@ impl MachineNewTrait for Winder2 {
                 laser: DigitalOutputSetter::new(DigitalOutput::new(el2002, EL2002Port::DO1)),
                 namespace: Winder1Namespace::new(),
                 mode: mode.clone(),
-                spool_step_converter: StepConverter::new(600),
+                spool_step_converter: AngularStepConverter::new(600),
                 spool_speed_controller: SpoolSpeedController::new(
                     AngularVelocity::new::<revolution_per_minute>(0.0),
                     AngularVelocity::new::<revolution_per_minute>(600.0),
@@ -344,8 +345,12 @@ impl MachineNewTrait for Winder2 {
                     Acceleration::new::<meter_per_minute_per_second>(10.0),
                     Velocity::new::<meter_per_minute>(1.0),
                     Length::new::<millimeter>(1.75),
+                    LinearStepConverter::new(
+                        200,                             // Assuming 200 steps per revolution for the puller stepper,
+                        Length::new::<millimeter>(40.0), // 4mm redius of the puller wheel
+                    ),
                 ),
-                puller_step_converter: StepConverter::new(600),
+                
             };
 
             // initalize events

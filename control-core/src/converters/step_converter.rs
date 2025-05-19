@@ -6,11 +6,11 @@ use uom::si::{
 };
 
 #[derive(Debug, Clone)]
-pub struct StepConverter {
-    steps_per_revolution: i16,
+pub struct AngularStepConverter {
+    pub steps_per_revolution: i16,
 }
 
-impl StepConverter {
+impl AngularStepConverter {
     pub fn new(steps_per_revolution: i16) -> Self {
         Self {
             steps_per_revolution,
@@ -70,13 +70,13 @@ mod tests {
 
     #[test]
     fn test_new() {
-        let converter = StepConverter::new(200);
+        let converter = AngularStepConverter::new(200);
         assert_eq!(converter.steps_per_revolution, 200);
     }
 
     #[test]
     fn test_steps_to_angle() {
-        let converter = StepConverter::new(200);
+        let converter = AngularStepConverter::new(200);
 
         // Test full revolution
         let angle = converter.steps_to_angle(200.0);
@@ -94,14 +94,14 @@ mod tests {
         assert_relative_eq!(angle.get::<degree>(), 90.0, epsilon = EPSILON);
 
         // Test with different steps_per_revolution
-        let converter = StepConverter::new(400);
+        let converter = AngularStepConverter::new(400);
         let angle = converter.steps_to_angle(100.0);
         assert_relative_eq!(angle.get::<revolution>(), 0.25, epsilon = EPSILON);
     }
 
     #[test]
     fn test_angle_to_steps() {
-        let converter = StepConverter::new(200);
+        let converter = AngularStepConverter::new(200);
 
         // Test full revolution
         let steps = converter.angle_to_steps(Angle::new::<revolution>(1.0));
@@ -116,14 +116,14 @@ mod tests {
         assert_relative_eq!(steps, 50.0, epsilon = EPSILON);
 
         // Test with different steps_per_revolution
-        let converter = StepConverter::new(400);
+        let converter = AngularStepConverter::new(400);
         let steps = converter.angle_to_steps(Angle::new::<degree>(90.0));
         assert_relative_eq!(steps, 100.0, epsilon = EPSILON);
     }
 
     #[test]
     fn test_steps_to_angular_velocity() {
-        let converter = StepConverter::new(200);
+        let converter = AngularStepConverter::new(200);
 
         // Test one revolution per second
         let angular_velocity = converter.steps_to_angular_velocity(200.0);
@@ -147,7 +147,7 @@ mod tests {
         );
 
         // Test with different steps_per_revolution
-        let converter = StepConverter::new(400);
+        let converter = AngularStepConverter::new(400);
         let angular_velocity = converter.steps_to_angular_velocity(200.0);
         assert_relative_eq!(
             angular_velocity.get::<revolution_per_second>(),
@@ -158,7 +158,7 @@ mod tests {
 
     #[test]
     fn test_angular_velocity_to_steps() {
-        let converter = StepConverter::new(200);
+        let converter = AngularStepConverter::new(200);
 
         // Test one revolution per second
         let steps =
@@ -171,7 +171,7 @@ mod tests {
         assert_relative_eq!(steps, 100.0, epsilon = EPSILON);
 
         // Test with different steps_per_revolution
-        let converter = StepConverter::new(400);
+        let converter = AngularStepConverter::new(400);
         let steps =
             converter.angular_velocity_to_steps(AngularVelocity::new::<revolution_per_second>(0.5));
         assert_relative_eq!(steps, 200.0, epsilon = EPSILON);
@@ -179,7 +179,7 @@ mod tests {
 
     #[test]
     fn test_steps_to_angular_acceleration() {
-        let converter = StepConverter::new(200);
+        let converter = AngularStepConverter::new(200);
 
         // Test one revolution per second squared
         let angular_acceleration = converter.steps_to_angular_acceleration(200.0);
@@ -199,7 +199,7 @@ mod tests {
         );
 
         // Test with different steps_per_revolution
-        let converter = StepConverter::new(400);
+        let converter = AngularStepConverter::new(400);
         let angular_acceleration = converter.steps_to_angular_acceleration(400.0);
         assert_relative_eq!(
             angular_acceleration.get::<radian_per_second_squared>(),
@@ -210,7 +210,7 @@ mod tests {
 
     #[test]
     fn test_angular_acceleration_to_steps() {
-        let converter = StepConverter::new(200);
+        let converter = AngularStepConverter::new(200);
 
         // Test one revolution per second squared (2π rad/s²)
         let rps2 = 2.0 * std::f64::consts::PI;
@@ -226,7 +226,7 @@ mod tests {
         assert_relative_eq!(steps, 100.0, epsilon = EPSILON);
 
         // Test with different steps_per_revolution
-        let converter = StepConverter::new(400);
+        let converter = AngularStepConverter::new(400);
         let steps = converter.angular_acceleration_to_steps(AngularAcceleration::new::<
             radian_per_second_squared,
         >(rps2));
@@ -235,7 +235,7 @@ mod tests {
 
     #[test]
     fn test_roundtrip_conversions() {
-        let converter = StepConverter::new(200);
+        let converter = AngularStepConverter::new(200);
 
         // Test angle roundtrip
         let original_steps = 123.0;

@@ -16,7 +16,7 @@ use control_core::{
     actors::{
         digital_output_setter::DigitalOutputSetter, stepper_driver_el70x1::StepperDriverEL70x1,
     },
-    converters::step_converter::StepConverter,
+    converters::step_converter::AngularStepConverter,
     machines::Machine,
     socketio::namespace::NamespaceCacheingLogic,
     uom_extensions::velocity::meter_per_minute,
@@ -51,11 +51,10 @@ pub struct Winder2 {
 
     // control circuit arm/spool
     pub spool_speed_controller: SpoolSpeedController,
-    pub spool_step_converter: StepConverter,
+    pub spool_step_converter: AngularStepConverter,
 
     // control cirguit puller
     pub puller_speed_controller: PullerSpeedController,
-    pub puller_step_converter: StepConverter,
 }
 
 impl Machine for Winder2 {}
@@ -291,7 +290,8 @@ impl Winder2 {
     pub fn sync_puller_speed(&mut self, t: Instant) {
         let angular_velocity = self.puller_speed_controller.get_angular_velocity(t);
         let steps_per_second = self
-            .puller_step_converter
+            .puller_speed_controller
+            .converter
             .angular_velocity_to_steps(angular_velocity);
         self.puller.set_speed(steps_per_second as i32);
     }
@@ -322,10 +322,13 @@ impl Winder2 {
     pub fn emit_puller_speed(&mut self) {
         let steps_per_second = self.puller.get_speed();
         let angular_velocity = self
-            .puller_step_converter
+            .puller_speed_controller
+            .converter
             .steps_to_angular_velocity(steps_per_second as f64);
-        let speed = PullerSpeedController::angular_velocity_to_speed(angular_velocity);
-        let event = api::Winder1Events::PullerSpeed(
+        let speed = self
+            .puller_speed_controller
+            .angular_velocity_to_speed(angular_velocity);
+        let event = api::Winder2Events::PullerSpeed(
             api::PullerSpeedEvent {
                 speed: speed.get::<meter_per_minute>(),
             }
