@@ -9,8 +9,8 @@ pub mod tension_arm;
 use std::{fmt::Debug, time::Instant};
 
 use api::{
-    ModeStateEvent, TensionArmAngleEvent, TensionArmStateEvent, TraverseStateEvent, Winder1Events,
-    Winder1Namespace,
+    ModeStateEvent, TensionArmAngleEvent, TensionArmStateEvent, TraverseStateEvent, Winder2Events,
+    Winder2Namespace,
 };
 use control_core::{
     actors::{
@@ -41,7 +41,7 @@ pub struct Winder2 {
     pub laser: DigitalOutputSetter,
 
     // socketio
-    namespace: Winder1Namespace,
+    namespace: Winder2Namespace,
     last_measurement_emit: Instant,
 
     // mode
@@ -73,7 +73,7 @@ impl Winder2 {
         }
         .build();
         self.namespace
-            .emit_cached(Winder1Events::TraverseState(event))
+            .emit_cached(Winder2Events::TraverseState(event))
     }
 }
 
@@ -199,7 +199,7 @@ impl Winder2 {
             mode: self.mode.clone().into(),
         }
         .build();
-        self.namespace.emit_cached(Winder1Events::Mode(event))
+        self.namespace.emit_cached(Winder2Events::Mode(event))
     }
 }
 
@@ -217,7 +217,7 @@ impl Winder2 {
         }
         .build();
         self.namespace
-            .emit_cached(Winder1Events::TensionArmAngleEvent(event))
+            .emit_cached(Winder2Events::TensionArmAngleEvent(event))
     }
 
     fn emit_tension_arm_state(&mut self) {
@@ -226,7 +226,7 @@ impl Winder2 {
         }
         .build();
         self.namespace
-            .emit_cached(Winder1Events::TensionArmStateEvent(event))
+            .emit_cached(Winder2Events::TensionArmStateEvent(event))
     }
 }
 
@@ -261,7 +261,7 @@ impl Winder2 {
             .steps_to_angular_velocity(self.spool.get_speed() as f64)
             .get::<revolution_per_minute>();
         let event = api::SpoolRpmEvent { rpm }.build();
-        self.namespace.emit_cached(Winder1Events::SpoolRpm(event))
+        self.namespace.emit_cached(Winder2Events::SpoolRpm(event))
     }
 
     fn emit_spool_state(&mut self) {
@@ -280,7 +280,7 @@ impl Winder2 {
             speed_max,
         }
         .build();
-        self.namespace.emit_cached(Winder1Events::SpoolState(event))
+        self.namespace.emit_cached(Winder2Events::SpoolState(event))
     }
 }
 
@@ -338,7 +338,7 @@ impl Winder2 {
     }
 
     pub fn emit_puller_state(&mut self) {
-        let event = api::Winder1Events::PullerState(
+        let event = api::Winder2Events::PullerState(
             api::PullerStateEvent {
                 regulation: self.puller_speed_controller.regulation_mode.clone(),
                 target_speed: self

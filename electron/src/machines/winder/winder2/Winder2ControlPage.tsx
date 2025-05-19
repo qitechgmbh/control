@@ -18,7 +18,7 @@ import { TensionArm } from "../TensionArm";
 import { roundDegreesToDecimals, roundToDecimals } from "@/lib/decimal";
 import { Spool } from "../Spool";
 
-export function Winder1ControlPage() {
+export function Winder2ControlPage() {
   // use optimistic state
   const {
     laserpointer,

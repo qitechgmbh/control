@@ -245,7 +245,7 @@ impl TensionArmStateEvent {
     }
 }
 
-pub enum Winder1Events {
+pub enum Winder2Events {
     TraversePosition(Event<TraversePositionEvent>),
     TraverseState(Event<TraverseStateEvent>),
     PullerSpeed(Event<PullerSpeedEvent>),
@@ -260,10 +260,10 @@ pub enum Winder1Events {
 }
 
 #[derive(Debug)]
-pub struct Winder1Namespace(Namespace);
+pub struct Winder2Namespace(Namespace);
 
-impl NamespaceCacheingLogic<Winder1Events> for Winder1Namespace {
-    fn emit_cached(&mut self, events: Winder1Events) {
+impl NamespaceCacheingLogic<Winder2Events> for Winder2Namespace {
+    fn emit_cached(&mut self, events: Winder2Events) {
         let event = match events.event_value() {
             Ok(event) => event,
             Err(err) => {
@@ -280,26 +280,26 @@ impl NamespaceCacheingLogic<Winder1Events> for Winder1Namespace {
     }
 }
 
-impl Winder1Namespace {
+impl Winder2Namespace {
     pub fn new() -> Self {
         Self(Namespace::new())
     }
 }
 
-impl CacheableEvents<Winder1Events> for Winder1Events {
+impl CacheableEvents<Winder2Events> for Winder2Events {
     fn event_value(&self) -> Result<GenericEvent, serde_json::Error> {
         match self {
-            Winder1Events::TraversePosition(event) => event.try_into(),
-            Winder1Events::TraverseState(event) => event.try_into(),
-            Winder1Events::PullerSpeed(event) => event.try_into(),
-            Winder1Events::PullerState(event) => event.try_into(),
-            Winder1Events::AutostopWoundedlength(event) => event.try_into(),
-            Winder1Events::AutostopState(event) => event.try_into(),
-            Winder1Events::Mode(event) => event.try_into(),
-            Winder1Events::SpoolRpm(event) => event.try_into(),
-            Winder1Events::SpoolState(event) => event.try_into(),
-            Winder1Events::TensionArmAngleEvent(event) => event.try_into(),
-            Winder1Events::TensionArmStateEvent(event) => event.try_into(),
+            Winder2Events::TraversePosition(event) => event.try_into(),
+            Winder2Events::TraverseState(event) => event.try_into(),
+            Winder2Events::PullerSpeed(event) => event.try_into(),
+            Winder2Events::PullerState(event) => event.try_into(),
+            Winder2Events::AutostopWoundedlength(event) => event.try_into(),
+            Winder2Events::AutostopState(event) => event.try_into(),
+            Winder2Events::Mode(event) => event.try_into(),
+            Winder2Events::SpoolRpm(event) => event.try_into(),
+            Winder2Events::SpoolState(event) => event.try_into(),
+            Winder2Events::TensionArmAngleEvent(event) => event.try_into(),
+            Winder2Events::TensionArmStateEvent(event) => event.try_into(),
         }
     }
 
@@ -309,17 +309,17 @@ impl CacheableEvents<Winder1Events> for Winder1Events {
         let cache_one = cache_one_event();
 
         match self {
-            Winder1Events::TraversePosition(_) => cache_one_hour,
-            Winder1Events::TraverseState(_) => cache_one,
-            Winder1Events::PullerSpeed(_) => cache_one_hour,
-            Winder1Events::PullerState(_) => cache_one,
-            Winder1Events::AutostopWoundedlength(_) => cache_one_hour,
-            Winder1Events::AutostopState(_) => cache_one,
-            Winder1Events::Mode(_) => cache_one,
-            Winder1Events::SpoolRpm(_) => cache_ten_secs,
-            Winder1Events::SpoolState(_) => cache_one,
-            Winder1Events::TensionArmAngleEvent(_) => cache_one_hour,
-            Winder1Events::TensionArmStateEvent(_) => cache_one,
+            Winder2Events::TraversePosition(_) => cache_one_hour,
+            Winder2Events::TraverseState(_) => cache_one,
+            Winder2Events::PullerSpeed(_) => cache_one_hour,
+            Winder2Events::PullerState(_) => cache_one,
+            Winder2Events::AutostopWoundedlength(_) => cache_one_hour,
+            Winder2Events::AutostopState(_) => cache_one,
+            Winder2Events::Mode(_) => cache_one,
+            Winder2Events::SpoolRpm(_) => cache_ten_secs,
+            Winder2Events::SpoolState(_) => cache_one,
+            Winder2Events::TensionArmAngleEvent(_) => cache_one_hour,
+            Winder2Events::TensionArmStateEvent(_) => cache_one,
         }
     }
 }

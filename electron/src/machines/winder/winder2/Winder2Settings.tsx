@@ -7,7 +7,7 @@ import { useWinder2 } from "./useWinder";
 import { roundToDecimals } from "@/lib/decimal";
 import { Label } from "@/control/Label";
 
-export function Winder1SettingPage() {
+export function Winder2SettingPage() {
   const { spoolState, spoolSetSpeedMax, spoolSetSpeedMin } = useWinder2();
   return (
     <Page>

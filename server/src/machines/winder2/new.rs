@@ -2,7 +2,7 @@ use std::time::Instant;
 
 use crate::machines::winder2::puller_speed_controller::PullerSpeedController;
 
-use super::api::Winder1Namespace;
+use super::api::Winder2Namespace;
 use super::spool_speed_controller::SpoolSpeedController;
 use super::tension_arm::TensionArm;
 use super::{Winder2, Winder2Mode};
@@ -329,7 +329,7 @@ impl MachineNewTrait for Winder2 {
                     EL7031_0030AnalogInputPort::AI1,
                 ))),
                 laser: DigitalOutputSetter::new(DigitalOutput::new(el2002, EL2002Port::DO1)),
-                namespace: Winder1Namespace::new(),
+                namespace: Winder2Namespace::new(),
                 mode: mode.clone(),
                 spool_step_converter: AngularStepConverter::new(600),
                 spool_speed_controller: SpoolSpeedController::new(

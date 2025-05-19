@@ -5,11 +5,11 @@ import { SidebarLayout } from "@/components/SidebarLayout";
 import { SetupPage } from "@/setup/SetupPage";
 import { EthercatPage } from "@/setup/EthercatPage";
 import { MachinesPage } from "@/setup/MachinesPage";
-import { Winder1Page } from "@/machines/winder/winder2/Winder2Page";
-import { Winder1ControlPage } from "@/machines/winder/winder2/Winder2ControlPage";
-import { Winder1ManualPage } from "@/machines/winder/winder2/Winder2Manual";
-import { Winder1SettingPage } from "@/machines/winder/winder2/Winder2Settings";
-import { Winder1GraphsPage } from "@/machines/winder/winder2/Winder2Graphs";
+import { Winder2Page } from "@/machines/winder/winder2/Winder2Page";
+import { Winder2ControlPage } from "@/machines/winder/winder2/Winder2ControlPage";
+import { Winder2ManualPage } from "@/machines/winder/winder2/Winder2Manual";
+import { Winder2SettingPage } from "@/machines/winder/winder2/Winder2Settings";
+import { Winder2GraphsPage } from "@/machines/winder/winder2/Winder2Graphs";
 import { ChooseVersionPage } from "@/setup/ChooseVersionPage";
 import { fallback, zodValidator } from "@tanstack/zod-adapter";
 import {
@@ -45,31 +45,31 @@ export const machinesRoute = createRoute({
 export const winder2SerialRoute = createRoute({
   getParentRoute: () => machinesRoute,
   path: "winder2/$serial",
-  component: () => <Winder1Page />,
+  component: () => <Winder2Page />,
 });
 
 export const winder2ControlRoute = createRoute({
   getParentRoute: () => winder2SerialRoute,
   path: "control",
-  component: () => <Winder1ControlPage />,
+  component: () => <Winder2ControlPage />,
 });
 
 export const winder2ManualRoute = createRoute({
   getParentRoute: () => winder2SerialRoute,
   path: "manual",
-  component: () => <Winder1ManualPage />,
+  component: () => <Winder2ManualPage />,
 });
 
 export const winder2SettingsRoute = createRoute({
   getParentRoute: () => winder2SerialRoute,
   path: "settings",
-  component: () => <Winder1SettingPage />,
+  component: () => <Winder2SettingPage />,
 });
 
 export const winder2GraphsRoute = createRoute({
   getParentRoute: () => winder2SerialRoute,
   path: "graphs",
-  component: () => <Winder1GraphsPage />,
+  component: () => <Winder2GraphsPage />,
 });
 
 export const setupRoute = createRoute({
