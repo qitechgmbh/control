@@ -1,4 +1,4 @@
-use ethercat_hal::shared_config::el70x1::EL70x1SpeedRange;
+use crate::shared_config::el70x1::EL70x1SpeedRange;
 
 #[derive(Debug)]
 pub struct EL70x1VelocityCalculator {

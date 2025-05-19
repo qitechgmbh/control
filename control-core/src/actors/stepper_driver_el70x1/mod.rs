@@ -1,12 +1,10 @@
 use super::Actor;
 use core::panic;
-use el70xx_velocity_converter::EL70x1VelocityCalculator;
 use ethercat_hal::{
+    helpers::el70xx_velocity_converter::EL70x1VelocityCalculator,
     io::stepper_velocity_el70x1::StepperVelocityEL70x1, shared_config::el70x1::EL70x1SpeedRange,
 };
 use std::{future::Future, pin::Pin, time::Instant};
-
-pub mod el70xx_velocity_converter;
 
 /// Set a digital output high and low with a given interval
 #[derive(Debug)]
