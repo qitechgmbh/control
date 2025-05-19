@@ -6,7 +6,7 @@ use crate::{
         EL7031_0030AnalogInputChannelConfiguration, EncConfiguration, PosConfiguration,
         PosFeatures, StmControllerConfiguration, StmMotorConfiguration,
     },
-    types::EthercrabSubDevicePreoperational,
+    helpers::ethercrab_types::EthercrabSubDevicePreoperational,
 };
 
 use super::{EL7031_0030, pdo::EL7031_0030PredefinedPdoAssignment};

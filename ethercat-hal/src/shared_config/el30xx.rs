@@ -1,4 +1,4 @@
-use crate::types::EthercrabSubDevicePreoperational;
+use crate::helpers::ethercrab_types::EthercrabSubDevicePreoperational;
 
 impl EL30XXChannelConfiguration {
     pub async fn write_channel_config<'a>(

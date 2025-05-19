@@ -1,6 +1,6 @@
 use std::future::Future;
 
-use crate::types::EthercrabSubDevicePreoperational;
+use crate::helpers::ethercrab_types::EthercrabSubDevicePreoperational;
 
 pub trait Configuration {
     #[allow(async_fn_in_trait)]

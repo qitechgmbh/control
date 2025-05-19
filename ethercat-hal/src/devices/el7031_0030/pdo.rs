@@ -6,7 +6,7 @@ use crate::pdo::el70x1::{
     StmControl, StmExternalPosition, StmInternalPosition, StmPosition, StmStatus,
     StmSynchronInfoData, StmVelocity,
 };
-use crate::types::EthercrabSubDevicePreoperational;
+use crate::helpers::ethercrab_types::EthercrabSubDevicePreoperational;
 use ethercat_hal_derive::{RxPdo, TxPdo};
 
 #[derive(Debug, Clone, TxPdo)]

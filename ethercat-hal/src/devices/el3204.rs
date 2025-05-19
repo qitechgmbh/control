@@ -1,5 +1,5 @@
 use crate::pdo::TxPdo;
-use crate::types::EthercrabSubDevicePreoperational;
+use crate::helpers::ethercrab_types::EthercrabSubDevicePreoperational;
 use crate::{
     io::temperature_input::{TemperatureInputDevice, TemperatureInputInput, TemperatureInputState},
     pdo::el32xx::RtdInput,

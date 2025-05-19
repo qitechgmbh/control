@@ -18,7 +18,9 @@ pub mod el7041_0052;
 // pub mod el4008;
 
 use super::devices::el1008::EL1008;
-use crate::{devices::el2521::EL2521, types::EthercrabSubDeviceGroupPreoperational};
+use crate::{
+    devices::el2521::EL2521, helpers::ethercrab_types::EthercrabSubDeviceGroupPreoperational,
+};
 use anyhow::anyhow;
 use bitvec::{order::Lsb0, slice::BitSlice};
 use ek1100::{EK1100, EK1100_IDENTITY_A};

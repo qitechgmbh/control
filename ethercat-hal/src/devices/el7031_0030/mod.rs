@@ -20,7 +20,7 @@ use crate::{
     },
     pdo::{PredefinedPdoAssignment, RxPdo, TxPdo},
     shared_config::el70x1::EL70x1OperationMode,
-    signing::U16SigningConverter,
+    helpers::signing_converter_u16::U16SigningConverter,
 };
 
 use super::{EthercatDeviceProcessing, NewEthercatDevice, SubDeviceIdentityTuple};

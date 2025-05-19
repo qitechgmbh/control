@@ -1,17 +1,17 @@
 use super::{EthercatDeviceProcessing, NewEthercatDevice, SubDeviceIdentityTuple};
 use crate::{
     coe::{ConfigurableDevice, Configuration},
+    helpers::signing_converter_u16::U16SigningConverter,
     io::analog_input::physical::AnalogInputRange,
     pdo::{
         PredefinedPdoAssignment, TxPdo,
         analog_input::{AiCompact, AiStandard},
     },
     shared_config::el30xx::{EL30XXChannelConfiguration, EL30XXPresentation},
-    signing::U16SigningConverter,
 };
 use crate::{
+    helpers::ethercrab_types::EthercrabSubDevicePreoperational,
     io::analog_input::{AnalogInputDevice, AnalogInputInput, AnalogInputState},
-    types::EthercrabSubDevicePreoperational,
 };
 use ethercat_hal_derive::{EthercatDevice, RxPdo, TxPdo};
 use uom::si::{electric_potential::volt, f64::ElectricPotential};

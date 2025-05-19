@@ -1,6 +1,6 @@
 use anyhow;
 
-use crate::types::EthercrabSubDevicePreoperational;
+use crate::helpers::ethercrab_types::EthercrabSubDevicePreoperational;
 
 #[derive(Debug, Clone)]
 pub struct EncConfiguration {
