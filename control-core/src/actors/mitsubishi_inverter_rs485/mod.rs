@@ -346,6 +346,7 @@ impl MitsubishiInverterRS485Actor {
             }
 
             let res: Option<Vec<u8>> = (self.serial_interface.read_message)().await;
+            //println!("{:?}", res);
             let raw_response = match res {
                 Some(res) => res,
                 None => {
@@ -364,7 +365,7 @@ impl MitsubishiInverterRS485Actor {
                     Ok(result)
                 }
                 Err(_) => {
-                    log::error!("Error Parsing ModbusResponse!");
+                    //      log::error!("Error Parsing ModbusResponse!");
                     self.state = State::ReadyToSend;
                     Err(anyhow::anyhow!("error"))
                 }
@@ -382,6 +383,7 @@ impl MitsubishiInverterRS485Actor {
             self.next_response_type = request.expected_response_type;
             self.last_request_type = self.last_request_type;
             let modbus_request: Vec<u8> = request.request.into();
+            // println!("{:?}", modbus_request);
             let res = (self.serial_interface.write_message)(modbus_request.clone()).await;
             match res {
                 Ok(_) => (),
@@ -488,6 +490,7 @@ impl Actor for MitsubishiInverterRS485Actor {
                     self.add_request(MitsubishiControlRequests::ResetInverter.into());
                     self.baudrate = (self.serial_interface.get_baudrate)().await;
                     self.encoding = (self.serial_interface.get_serial_encoding)().await;
+                    //      println!("{:?} {:?}", self.baudrate, self.encoding)
                 }
                 return;
             }
@@ -506,7 +509,7 @@ impl Actor for MitsubishiInverterRS485Actor {
                 encoding.total_bits(),
                 self.last_request_type.timeout_duration(),
                 baudrate,
-                self.last_message_size * 2,
+                self.last_message_size * 1000,
             );
 
             // if we have no requests add ReadMotorFrequency

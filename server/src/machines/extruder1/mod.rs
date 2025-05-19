@@ -71,11 +71,10 @@ pub struct ExtruderV2 {
     temp_sensor_3: TemperatureInputGetter,
     temp_sensor_4: TemperatureInputGetter,
 
-    heating_relay_1: DigitalOutputSetter,
-    heating_relay_2: DigitalOutputSetter,
-    heating_relay_3: DigitalOutputSetter,
-    heating_relay_4: DigitalOutputSetter,
-
+    // heating_relay_1: DigitalOutputSetter,
+    // heating_relay_2: DigitalOutputSetter,
+    // heating_relay_3: DigitalOutputSetter,
+    // heating_relay_4: DigitalOutputSetter,
     temperature_controller_front: TemperatureController,
     temperature_controller_middle: TemperatureController,
     temperature_controller_back: TemperatureController,
@@ -95,9 +94,9 @@ impl ExtruderV2 {
     // Set all relais to ZERO
     // We dont need a function to enable again though, as the act Loop will detect the mode
     fn turn_heating_off(&mut self) {
-        self.heating_relay_1.set(false);
-        self.heating_relay_2.set(false);
-        self.heating_relay_3.set(false);
+        // self.heating_relay_1.set(false);
+        // self.heating_relay_2.set(false);
+        // self.heating_relay_3.set(false);
 
         self.heating_back.heating = false;
         self.heating_front.heating = false;
@@ -150,24 +149,27 @@ impl ExtruderV2 {
     fn set_can_switch_extrude(&mut self) {
         const NINETY_PERCENT: f32 = 0.9;
         let heat_back_is_valid =
-            (self.heating_back.temperature / self.heating_back.target_temperature < NINETY_PERCENT)
+            (self.heating_back.temperature / self.heating_back.target_temperature > NINETY_PERCENT)
                 && (self.heating_back.temperature > 80.0);
 
         let heat_middle_is_valid = (self.heating_middle.temperature
             / self.heating_middle.target_temperature
-            < NINETY_PERCENT)
+            > NINETY_PERCENT)
             && (self.heating_middle.temperature > 80.0);
 
         let heat_front_is_valid = (self.heating_front.temperature
             / self.heating_front.target_temperature
-            < NINETY_PERCENT)
+            > NINETY_PERCENT)
             && (self.heating_front.temperature > 80.0);
 
         let heat_nozzle_is_valid = (self.heating_nozzle.temperature
             / self.heating_nozzle.target_temperature
-            < NINETY_PERCENT)
+            > NINETY_PERCENT)
             && (self.heating_nozzle.temperature > 80.0);
-
+        // println!(
+        //     "{} {} {} {}",
+        //     heat_back_is_valid, heat_front_is_valid, heat_middle_is_valid, heat_nozzle_is_valid,
+        // );
         self.can_extrude = heat_back_is_valid
             && heat_front_is_valid
             && heat_middle_is_valid
@@ -299,6 +301,11 @@ impl ExtruderV2 {
     fn set_heating_middle(&mut self, heating: Heating) {
         self.heating_middle = heating.clone();
         self.emit_heating(heating, HeatingType::Middle);
+    }
+
+    fn set_heating_nozzle(&mut self, heating: Heating) {
+        self.heating_nozzle = heating.clone();
+        self.emit_heating(heating, HeatingType::Nozzle);
     }
 
     fn emit_heating(&mut self, heating: Heating, heating_type: HeatingType) {

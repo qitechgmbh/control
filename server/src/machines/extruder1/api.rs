@@ -202,10 +202,12 @@ enum Mutation {
     SetHeatingFront(Heating),
     SetHeatingBack(Heating),
     SetHeatingMiddle(Heating),
+    SetHeatingNozzle(Heating),
 
     SetFrontHeatingTemperature(f32),
     SetBackHeatingTemperature(f32),
     SetMiddleHeatingTemperature(f32),
+    SetNozzleHeatingTemperature(f32),
 }
 
 #[derive(Debug)]
@@ -296,17 +298,15 @@ impl MachineApi for ExtruderV2 {
             Mutation::ClearParameter() => todo!(),
             Mutation::ClearNonCommunicationParameter() => todo!(),
             Mutation::ClearNonCommunicationParameters() => todo!(),
-
             Mutation::SetMode(mode) => self.set_mode_state(mode),
             Mutation::SetRotation(forward) => self.set_rotation_state(forward),
             Mutation::SetHeatingFront(heating) => self.set_heating_front(heating),
             Mutation::SetHeatingMiddle(heating) => self.set_heating_middle(heating),
             Mutation::SetHeatingBack(heating) => self.set_heating_back(heating),
+            Mutation::SetHeatingNozzle(heating) => self.set_heating_nozzle(heating),
             Mutation::SetRegulation(uses_rpm) => self.set_regulation(uses_rpm),
             Mutation::SetTargetPressure(bar) => self.set_target_pressure(bar),
             Mutation::SetTargetRpm(rpm) => self.set_target_rpm(rpm),
-
-            // ... existing arms
             Mutation::SetFrontHeatingTemperature(temp) => {
                 self.set_target_temperature(temp, HeatingType::Front)
             }
@@ -315,6 +315,9 @@ impl MachineApi for ExtruderV2 {
             }
             Mutation::SetBackHeatingTemperature(temp) => {
                 self.set_target_temperature(temp, HeatingType::Back)
+            }
+            Mutation::SetNozzleHeatingTemperature(temp) => {
+                self.set_target_temperature(temp, HeatingType::Nozzle)
             }
         }
         Ok(())

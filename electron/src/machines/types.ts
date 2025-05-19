@@ -227,6 +227,11 @@ export const extruder2: MachinePreset = {
           product_id: 394604626,
           revision: 0x140000,
         },
+        {
+          vendor_id: 2,
+          product_id: 394604626,
+          revision: 0x160000,
+        },
       ],
     },
     {
