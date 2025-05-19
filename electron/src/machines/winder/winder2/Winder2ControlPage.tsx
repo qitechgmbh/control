@@ -203,7 +203,7 @@ export function Winder1ControlPage() {
               unit="m/min"
               title="Target Speed"
               defaultValue={1}
-              min={0}
+              min={-10}
               max={100}
               step={0.1}
               renderValue={(value) => roundToDecimals(value, 0)}
