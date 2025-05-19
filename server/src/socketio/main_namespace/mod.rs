@@ -26,7 +26,6 @@ where
     MainNamespaceEvents: CacheableEvents<MainNamespaceEvents>,
 {
     fn emit_cached(&mut self, event: MainNamespaceEvents) {
-        println!("Emitting event: {:?}", event);
         let buffer_fn = event.event_cache_fn();
         let generic_event = match event.event_value() {
             Ok(event) => event,
@@ -39,7 +38,7 @@ where
                 return;
             }
         };
-        self.0.emit_cached(&generic_event, buffer_fn);
+        self.0.emit_cached(&generic_event, &buffer_fn);
     }
 }
 

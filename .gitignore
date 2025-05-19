@@ -2,3 +2,4 @@ target/
 dist/
 .DS_Store
 Cargo.lock
+dhat-heap.json

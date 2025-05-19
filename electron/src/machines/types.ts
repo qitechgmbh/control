@@ -136,18 +136,7 @@ export const winder2: MachinePreset = {
     },
     {
       role: 2,
-      role_label: "1x Analog Input",
-      allowed_devices: [
-        {
-          vendor_id: 2,
-          product_id: 0xbb93052,
-          revision: 0x160000,
-        },
-      ],
-    },
-    {
-      role: 3,
-      role_label: "1x Stepper Winder",
+      role_label: "1x Stepper Spool",
       allowed_devices: [
         {
           vendor_id: 2,
@@ -157,7 +146,7 @@ export const winder2: MachinePreset = {
       ],
     },
     {
-      role: 4,
+      role: 3,
       role_label: "1x Stepper Traverse",
       allowed_devices: [
         {
@@ -165,16 +154,21 @@ export const winder2: MachinePreset = {
           product_id: 0x1b773052,
           revision: 0x1a0000,
         },
+        {
+          vendor_id: 2,
+          product_id: 0x1b773052,
+          revision: 0x190000,
+        },
       ],
     },
     {
-      role: 5,
+      role: 4,
       role_label: "1x Stepper Puller",
       allowed_devices: [
         {
           vendor_id: 2,
-          product_id: 0, // TODO
-          revision: 0, // TODO
+          product_id: 0x1b773052,
+          revision: 0x10001e,
         },
       ],
     },

@@ -1,6 +1,6 @@
+pub mod analog_input;
 pub mod basic;
 pub mod el252x;
-pub mod el30xx;
 pub mod el32xx;
 pub mod el70x1;
 
@@ -121,7 +121,7 @@ pub trait RxPdo: Configuration {
     /// Get objects return an array of optinal references to the PDO objects
     ///
     /// This method is commonly derived using the [`ethercat_hal_derive::RxPdo`] macro.
-    fn get_objects(&self) -> &[Option<&dyn RxPdoObject>];
+    fn get_objects(&self) -> Box<[Option<&dyn crate::pdo::RxPdoObject>]>;
 
     /// Calculating the size of the PDO assignment in bits
     ///
@@ -132,7 +132,10 @@ pub trait RxPdo: Configuration {
         let used_bits = self
             .get_objects()
             .iter()
-            .map(|objects| objects.map(|object| object.size()).unwrap_or(0))
+            .map(|object| match object {
+                Some(object) => object.size(),
+                None => 0,
+            })
             .sum::<usize>();
         let padding = match used_bits % 8 {
             0 => 0,
@@ -187,12 +190,12 @@ pub trait TxPdo: Configuration {
     /// Get objects return an array of optinal references to the PDO objects
     ///
     /// This method is commonly derived using the [`ethercat_hal_derive::TxPdo`] macro.
-    fn get_objects(&self) -> &[Option<&dyn TxPdoObject>];
+    fn get_objects(&self) -> Box<[Option<&dyn TxPdoObject>]>;
 
     /// Get objects return an array of optinal mutable references to the PDO objects
     ///
     /// This method is commonly derived using the [`ethercat_hal_derive::TxPdo`] macro.
-    fn get_objects_mut(&mut self) -> &mut [Option<&mut dyn TxPdoObject>];
+    fn get_objects_mut(&mut self) -> Box<[Option<&mut dyn TxPdoObject>]>;
 
     /// Calculating the size of the PDO assignment in bits
     ///
@@ -203,7 +206,10 @@ pub trait TxPdo: Configuration {
         let used_bits = self
             .get_objects()
             .iter()
-            .map(|objects| objects.map(|object| object.size()).unwrap_or(0))
+            .map(|object| match object {
+                Some(object) => object.size(),
+                None => 0,
+            })
             .sum::<usize>();
         let padding = match used_bits % 8 {
             0 => 0,

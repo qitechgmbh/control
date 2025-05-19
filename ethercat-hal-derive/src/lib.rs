@@ -65,13 +65,12 @@ fn rxpdo_derive2(item: proc_macro2::TokenStream) -> deluxe::Result<proc_macro2::
 
         impl #impl_generics crate::pdo::RxPdo for #ident #ty_generics #where_clause {
             #[doc="Implemented by the ethercat_hal_derive::RxPdo derive macro"]
-            fn get_objects(&self) -> &[Option<&dyn crate::pdo::RxPdoObject>] {
-                let objs = vec![
+            fn get_objects(&self) -> Box<[Option<&dyn crate::pdo::RxPdoObject>]> {
+                Box::new([
                     #(
                         self.#field_name.as_ref().map(|o| o as &dyn crate::pdo::RxPdoObject),
                     )*
-                ];
-                Box::leak(objs.into_boxed_slice())
+                ])
             }
         }
     };
@@ -117,23 +116,21 @@ fn txpdo_derive2(item: proc_macro2::TokenStream) -> deluxe::Result<proc_macro2::
 
         impl #impl_generics crate::pdo::TxPdo for #ident #ty_generics #where_clause {
             #[doc="Implemented by the ethercat_hal_derive::TxPdo derive macro"]
-            fn get_objects(&self) -> &[Option<&dyn crate::pdo::TxPdoObject>] {
-                let objs = vec![
+            fn get_objects(&self) -> Box<[Option<&dyn crate::pdo::TxPdoObject>]> {
+                Box::new([
                     #(
                         self.#field_name.as_ref().map(|o| o as &dyn crate::pdo::TxPdoObject),
                     )*
-                ];
-                Box::leak(objs.into_boxed_slice())
+                ])
             }
 
             #[doc="Implemented by the ethercat_hal_derive::TxPdo derive macro"]
-            fn get_objects_mut(&mut self) -> &mut [Option<&mut dyn crate::pdo::TxPdoObject>] {
-                let objs = vec![
+            fn get_objects_mut(&mut self) -> Box<[Option<&mut dyn crate::pdo::TxPdoObject>]> {
+                Box::new([
                     #(
                         self.#field_name.as_mut().map(|o| o as &mut dyn crate::pdo::TxPdoObject),
                     )*
-                ];
-                Box::leak(objs.into_boxed_slice())
+                ])
             }
         }
     };

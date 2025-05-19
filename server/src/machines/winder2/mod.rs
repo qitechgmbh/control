@@ -1,8 +1,8 @@
 pub mod act;
 pub mod api;
 pub mod clamp_revolution;
-pub mod linear_spool_speed_controller;
 pub mod new;
+pub mod puller_speed_controller;
 pub mod spool_speed_controller;
 pub mod tension_arm;
 
@@ -19,16 +19,23 @@ use control_core::{
     converters::step_converter::StepConverter,
     machines::Machine,
     socketio::namespace::NamespaceCacheingLogic,
+    uom_extensions::velocity::meter_per_minute,
 };
-use spool_speed_controller::SpoolSpeedControllerTrait;
+use puller_speed_controller::{PullerRegulationMode, PullerSpeedController};
+use spool_speed_controller::SpoolSpeedController;
 use tension_arm::TensionArm;
-use uom::si::{angle::degree, angular_velocity::revolution_per_minute};
+use uom::si::{
+    angle::degree,
+    angular_velocity::revolution_per_minute,
+    f64::{AngularVelocity, Length, Velocity},
+    length::millimeter,
+};
 
 #[derive(Debug)]
 pub struct Winder2 {
     // drivers
-    // pub traverse_driver: StepperDriverPulseTrain,
-    // pub puller_driver: StepperDriverPulseTrain,
+    pub traverse: StepperDriverEL70x1,
+    pub puller: StepperDriverEL70x1,
     pub spool: StepperDriverEL70x1,
     pub tension_arm: TensionArm,
     pub laser: DigitalOutputSetter,
@@ -39,10 +46,16 @@ pub struct Winder2 {
 
     // mode
     pub mode: Winder2Mode,
+    pub spool_mode: SpoolMode,
+    pub puller_mode: PullerMode,
 
     // control circuit arm/spool
-    pub spool_speed_controller: Box<dyn SpoolSpeedControllerTrait + Send + Sync>,
+    pub spool_speed_controller: SpoolSpeedController,
     pub spool_step_converter: StepConverter,
+
+    // control cirguit puller
+    pub puller_speed_controller: PullerSpeedController,
+    pub puller_step_converter: StepConverter,
 }
 
 impl Machine for Winder2 {}
@@ -71,34 +84,115 @@ impl Winder2 {
         // all transitions are allowed
         self.mode = mode.clone();
 
-        // transiotion actions
-        match mode {
-            Winder2Mode::Standby => {
-                // Spool
-                self.spool.set_speed(0);
-                self.spool.set_enabled(false);
-                self.spool_speed_controller.set_enabled(false);
-            }
-            Winder2Mode::Hold => {
-                // Spool
-                self.spool.set_speed(0);
-                self.spool.set_enabled(true);
-                self.spool_speed_controller.set_enabled(false);
-            }
-            Winder2Mode::Pull => {
-                // Spool
-                self.spool.set_speed(0);
-                self.spool.set_enabled(true);
-                self.spool_speed_controller.set_enabled(false);
-            }
-            Winder2Mode::Wind => {
-                // Spool
-                self.spool.set_enabled(true);
-                self.spool_speed_controller.reset();
-                self.spool_speed_controller.set_enabled(true);
-            }
-        }
+        // Apply the mode changes to the spool and puller
+        self.set_spool_mode(mode);
+        self.set_puller_mode(mode);
+
         self.emit_mode_state();
+    }
+
+    /// Apply the mode changes to the spool
+    ///
+    /// It contains a transition matrix for atomic changes.
+    /// It will set [`Self::spool_mode`]
+    fn set_spool_mode(&mut self, mode: &Winder2Mode) {
+        // Convert to `Winder2Mode` to `SpoolMode`
+        let mode: SpoolMode = mode.clone().into();
+
+        // Transition matrix
+        match self.spool_mode {
+            SpoolMode::Standby => match mode {
+                SpoolMode::Standby => {}
+                SpoolMode::Hold => {
+                    // From [`SpoolMode::Standby`] to [`SpoolMode::Hold`]
+                    self.spool.set_enabled(true);
+                }
+                SpoolMode::Wind => {
+                    // From [`SpoolMode::Standby`] to [`SpoolMode::Wind`]
+                    self.spool.set_enabled(true);
+                    self.spool_speed_controller.reset();
+                    self.spool_speed_controller.set_enabled(true);
+                }
+            },
+            SpoolMode::Hold => match mode {
+                SpoolMode::Standby => {
+                    // From [`SpoolMode::Hold`] to [`SpoolMode::Standby`]
+                    self.spool.set_enabled(false);
+                }
+                SpoolMode::Hold => {}
+                SpoolMode::Wind => {
+                    // From [`SpoolMode::Hold`] to [`SpoolMode::Wind`]
+                    self.spool_speed_controller.reset();
+                    self.spool_speed_controller.set_enabled(true);
+                }
+            },
+            SpoolMode::Wind => match mode {
+                SpoolMode::Standby => {
+                    // From [`SpoolMode::Wind`] to [`SpoolMode::Standby`]
+                    self.spool.set_enabled(false);
+                    self.spool_speed_controller.set_enabled(false);
+                }
+                SpoolMode::Hold => {
+                    // From [`SpoolMode::Wind`] to [`SpoolMode::Hold`]
+                    self.spool_speed_controller.set_enabled(false);
+                }
+                SpoolMode::Wind => {}
+            },
+        }
+
+        // Update the internal state
+        self.spool_mode = mode;
+    }
+
+    /// Apply the mode changes to the puller
+    ///
+    /// It contains a transition matrix for atomic changes.
+    /// It will set [`Self::puller_mode`]
+    fn set_puller_mode(&mut self, mode: &Winder2Mode) {
+        // Convert to `Winder2Mode` to `PullerMode`
+        let mode: PullerMode = mode.clone().into();
+
+        // Transition matrix
+        match self.puller_mode {
+            PullerMode::Standby => match mode {
+                PullerMode::Standby => {}
+                PullerMode::Hold => {
+                    // From [`PullerMode::Standby`] to [`PullerMode::Hold`]
+                    self.puller.set_enabled(true);
+                }
+                PullerMode::Pull => {
+                    // From [`PullerMode::Standby`] to [`PullerMode::Pull`]
+                    self.puller.set_enabled(true);
+                    self.puller_speed_controller.set_enabled(true);
+                }
+            },
+            PullerMode::Hold => match mode {
+                PullerMode::Standby => {
+                    // From [`PullerMode::Hold`] to [`PullerMode::Standby`]
+                    self.puller.set_enabled(false);
+                }
+                PullerMode::Hold => {}
+                PullerMode::Pull => {
+                    // From [`PullerMode::Hold`] to [`PullerMode::Pull`]
+                    self.puller_speed_controller.set_enabled(true);
+                }
+            },
+            PullerMode::Pull => match mode {
+                PullerMode::Standby => {
+                    // From [`PullerMode::Pull`] to [`PullerMode::Standby`]
+                    self.puller.set_enabled(false);
+                    self.puller_speed_controller.set_enabled(false);
+                }
+                PullerMode::Hold => {
+                    // From [`PullerMode::Pull`] to [`PullerMode::Hold`]
+                    self.puller_speed_controller.set_enabled(false);
+                }
+                PullerMode::Pull => {}
+            },
+        }
+
+        // Update the internal state
+        self.puller_mode = mode;
     }
 
     fn emit_mode_state(&mut self) {
@@ -116,12 +210,6 @@ impl Winder2 {
         self.tension_arm.zero();
         self.emit_tension_arm_angle();
         self.emit_tension_arm_state();
-    }
-
-    /// called by `act`
-    pub fn sync_spool_speed(&mut self, t: Instant) {
-        let speed = self.spool_speed_controller.get_speed(t, &self.tension_arm);
-        self.spool.set_speed(speed);
     }
 
     fn emit_tension_arm_angle(&mut self) {
@@ -145,12 +233,25 @@ impl Winder2 {
 
 /// Implement Spool
 impl Winder2 {
+    /// called by `act`
+    pub fn sync_spool_speed(&mut self, t: Instant) {
+        let angular_velocity = self
+            .spool_speed_controller
+            .get_angular_velocity(t, &self.tension_arm);
+        let steps_per_second = self
+            .spool_step_converter
+            .angular_velocity_to_steps(angular_velocity);
+        self.spool.set_speed(steps_per_second as i32);
+    }
+
     pub fn spool_set_speed_max(&mut self, max_speed: f64) {
+        let max_speed = AngularVelocity::new::<revolution_per_minute>(max_speed);
         self.spool_speed_controller.set_max_speed(max_speed);
         self.emit_spool_state();
     }
 
     pub fn spool_set_speed_min(&mut self, min_speed: f64) {
+        let min_speed = AngularVelocity::new::<revolution_per_minute>(min_speed);
         self.spool_speed_controller.set_min_speed(min_speed);
         self.emit_spool_state();
     }
@@ -165,12 +266,90 @@ impl Winder2 {
     }
 
     fn emit_spool_state(&mut self) {
+        // Convert angular velocity to steps/second
+        let speed_min = self
+            .spool_speed_controller
+            .get_min_speed()
+            .get::<revolution_per_minute>();
+        // Convert angular velocity to steps/second
+        let speed_max = self
+            .spool_speed_controller
+            .get_max_speed()
+            .get::<revolution_per_minute>();
         let event = api::SpoolStateEvent {
-            speed_min: self.spool_speed_controller.get_min_speed(),
-            speed_max: self.spool_speed_controller.get_max_speed(),
+            speed_min,
+            speed_max,
         }
         .build();
         self.namespace.emit_cached(Winder1Events::SpoolState(event))
+    }
+}
+
+/// Implement Puller
+impl Winder2 {
+    /// called by `act`
+    pub fn sync_puller_speed(&mut self, t: Instant) {
+        let angular_velocity = self.puller_speed_controller.get_angular_velocity(t);
+        let steps_per_second = self
+            .puller_step_converter
+            .angular_velocity_to_steps(angular_velocity);
+        self.puller.set_speed(steps_per_second as i32);
+    }
+
+    pub fn puller_set_regulation(&mut self, puller_regulation_mode: PullerRegulationMode) {
+        self.puller_speed_controller
+            .set_regulation_mode(puller_regulation_mode);
+        self.emit_puller_state();
+    }
+
+    /// Set target speed in m/min
+    pub fn puller_set_target_speed(&mut self, target_speed: f64) {
+        // Convert m/min to velocity
+        let target_speed = Velocity::new::<meter_per_minute>(target_speed);
+        self.puller_speed_controller.set_target_speed(target_speed);
+        self.emit_puller_state();
+    }
+
+    /// Set target diameter in mm
+    pub fn puller_set_target_diameter(&mut self, target_diameter: f64) {
+        // Convert m/min to velocity
+        let target_diameter = Length::new::<millimeter>(target_diameter);
+        self.puller_speed_controller
+            .set_target_diameter(target_diameter);
+        self.emit_puller_state();
+    }
+
+    pub fn emit_puller_speed(&mut self) {
+        let steps_per_second = self.puller.get_speed();
+        let angular_velocity = self
+            .puller_step_converter
+            .steps_to_angular_velocity(steps_per_second as f64);
+        let speed = PullerSpeedController::angular_velocity_to_speed(angular_velocity);
+        let event = api::Winder1Events::PullerSpeed(
+            api::PullerSpeedEvent {
+                speed: speed.get::<meter_per_minute>(),
+            }
+            .build(),
+        );
+        self.namespace.emit_cached(event);
+    }
+
+    pub fn emit_puller_state(&mut self) {
+        let event = api::Winder1Events::PullerState(
+            api::PullerStateEvent {
+                regulation: self.puller_speed_controller.regulation_mode.clone(),
+                target_speed: self
+                    .puller_speed_controller
+                    .target_speed
+                    .get::<meter_per_minute>(),
+                target_diameter: self
+                    .puller_speed_controller
+                    .target_diameter
+                    .get::<millimeter>(),
+            }
+            .build(),
+        );
+        self.namespace.emit_cached(event);
     }
 }
 
@@ -180,6 +359,42 @@ pub enum Winder2Mode {
     Hold,
     Pull,
     Wind,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum SpoolMode {
+    Standby,
+    Hold,
+    Wind,
+}
+
+impl From<Winder2Mode> for SpoolMode {
+    fn from(mode: Winder2Mode) -> Self {
+        match mode {
+            Winder2Mode::Standby => SpoolMode::Standby,
+            Winder2Mode::Hold => SpoolMode::Hold,
+            Winder2Mode::Pull => SpoolMode::Hold,
+            Winder2Mode::Wind => SpoolMode::Wind,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum PullerMode {
+    Standby,
+    Hold,
+    Pull,
+}
+
+impl From<Winder2Mode> for PullerMode {
+    fn from(mode: Winder2Mode) -> Self {
+        match mode {
+            Winder2Mode::Standby => PullerMode::Standby,
+            Winder2Mode::Hold => PullerMode::Hold,
+            Winder2Mode::Pull => PullerMode::Pull,
+            Winder2Mode::Wind => PullerMode::Pull,
+        }
+    }
 }
 
 impl std::fmt::Display for Winder2 {

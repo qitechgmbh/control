@@ -9,8 +9,8 @@ use std::sync::Arc;
 
 #[derive(serde::Deserialize, Debug)]
 pub struct Body {
-    pub machine_identification: DeviceMachineIdentification,
-    pub hardware_identification: DeviceHardwareIdentificationEthercat,
+    pub device_machine_identification: DeviceMachineIdentification,
+    pub hardware_identification_ethercat: DeviceHardwareIdentificationEthercat,
 }
 
 #[axum::debug_handler]
@@ -26,7 +26,7 @@ pub async fn post_write_machine_device_identification(
 
     let subdevice = match ethercat_setup.group.subdevice(
         &ethercat_setup.maindevice,
-        body.hardware_identification.subdevice_index,
+        body.hardware_identification_ethercat.subdevice_index,
     ) {
         Ok(subdevice) => subdevice,
         Err(_) => return ResponseUtil::not_found("SubDevice not found"),
@@ -35,7 +35,7 @@ pub async fn post_write_machine_device_identification(
     match write_machine_device_identification(
         &subdevice,
         &ethercat_setup.maindevice,
-        &body.machine_identification,
+        &body.device_machine_identification,
     )
     .await
     {

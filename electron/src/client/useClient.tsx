@@ -1,6 +1,9 @@
 import { toastHttpNotOk, toastZodError } from "@/components/Toast";
-import { machineIdentificationUnique } from "@/machines/types";
-import { machine } from "os";
+import {
+  deviceHardwareIdentificationEthercatSchema,
+  deviceMachineIdentification,
+  machineIdentificationUnique,
+} from "@/machines/types";
 import { useState } from "react";
 import { z } from "zod";
 
@@ -16,13 +19,8 @@ const mutationResponseSchema = z.discriminatedUnion("success", [
 ]);
 
 const writeMachineIdentification = z.object({
-  subdevice_index: z.number(),
-  machine_identification_unique: z.object({
-    vendor: z.number(),
-    serial: z.number(),
-    machine: z.number(),
-  }),
-  role: z.number(),
+  hardware_identification_ethercat: deviceHardwareIdentificationEthercatSchema,
+  device_machine_identification: deviceMachineIdentification,
 });
 
 function machineMutateRequestSchema<T extends z.ZodTypeAny>(dataSchema: T) {

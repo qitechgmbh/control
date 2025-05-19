@@ -249,13 +249,13 @@ pub struct StmFeatures {
     /// Select "Info data 1" (see 0x6010:11)
     ///
     /// default: `0x03` (3dec) = Motor current coil A
-    pub select_info_data_1: EL7031InfoData,
+    pub select_info_data_1: EL70x1InfoData,
 
     /// # 0x8012:19
     /// Selection "Info data 2"
     ///
     /// default: `0x04` (4dec) = Motor current coil B
-    pub select_info_data_2: EL7031InfoData,
+    pub select_info_data_2: EL70x1InfoData,
 
     /// # 0x8012:30
     /// Inversion of digital input 1
@@ -277,7 +277,7 @@ pub struct StmFeatures {
     /// - `3` = Auto start
     ///
     /// default: `0x02` (2dec) = Plc cam
-    pub function_for_input_1: EL7031InputFunction,
+    pub function_for_input_1: EL70x1InputFunction,
 
     /// # 0x8012:36
     /// Selection of the function for input 2
@@ -287,7 +287,7 @@ pub struct StmFeatures {
     /// - `3` = Auto start
     ///
     /// default: `0x02` (2dec) = Plc cam
-    pub function_for_input_2: EL7031InputFunction,
+    pub function_for_input_2: EL70x1InputFunction,
 }
 
 impl Default for StmFeatures {
@@ -297,12 +297,12 @@ impl Default for StmFeatures {
             operation_mode: EL70x1OperationMode::Automatic,
             speed_range: EL70x1SpeedRange::Steps2000,
             invert_motor_polarity: false,
-            select_info_data_1: EL7031InfoData::MotorCurrentCoilA,
-            select_info_data_2: EL7031InfoData::MotorCurrentCoilB,
+            select_info_data_1: EL70x1InfoData::MotorCurrentCoilA,
+            select_info_data_2: EL70x1InfoData::MotorCurrentCoilB,
             invert_digital_input_1: false,
             invert_digital_input_2: false,
-            function_for_input_1: EL7031InputFunction::PlcCam,
-            function_for_input_2: EL7031InputFunction::PlcCam,
+            function_for_input_1: EL70x1InputFunction::PlcCam,
+            function_for_input_2: EL70x1InputFunction::PlcCam,
         }
     }
 }
@@ -312,7 +312,6 @@ impl StmFeatures {
         &self,
         device: &EthercrabSubDevicePreoperational<'a>,
     ) -> Result<(), anyhow::Error> {
-        device.sdo_write(0x8012, 0x01, 0u8).await?;
         device
             .sdo_write(0x8012, 0x05, u8::from(self.speed_range))
             .await?;
@@ -785,7 +784,7 @@ impl From<EL70x1SpeedRange> for u8 {
 
 /// Info data selection for EL7031
 #[derive(Clone, Copy, PartialEq, Eq)]
-pub enum EL7031InfoData {
+pub enum EL70x1InfoData {
     /// Status word
     StatusWord = 0,
     /// Motor voltage coil A (unit 1 mV)
@@ -818,7 +817,7 @@ pub enum EL7031InfoData {
     DrivePositionLagHigh = 153,
 }
 
-impl std::fmt::Debug for EL7031InfoData {
+impl std::fmt::Debug for EL70x1InfoData {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::StatusWord => write!(f, "StatusWord (0)"),
@@ -840,7 +839,7 @@ impl std::fmt::Debug for EL7031InfoData {
     }
 }
 
-impl TryFrom<u8> for EL7031InfoData {
+impl TryFrom<u8> for EL70x1InfoData {
     type Error = anyhow::Error;
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
@@ -868,15 +867,15 @@ impl TryFrom<u8> for EL7031InfoData {
     }
 }
 
-impl From<EL7031InfoData> for u8 {
-    fn from(value: EL7031InfoData) -> Self {
+impl From<EL70x1InfoData> for u8 {
+    fn from(value: EL70x1InfoData) -> Self {
         value as u8
     }
 }
 
 /// Input function for EL7031
 #[derive(Clone, Copy, PartialEq, Eq)]
-pub enum EL7031InputFunction {
+pub enum EL70x1InputFunction {
     /// Normal input
     NormalInput = 0,
     /// Hardware Enable
@@ -887,7 +886,7 @@ pub enum EL7031InputFunction {
     AutoStart = 3,
 }
 
-impl std::fmt::Debug for EL7031InputFunction {
+impl std::fmt::Debug for EL70x1InputFunction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::NormalInput => write!(f, "NormalInput (0)"),
@@ -898,7 +897,7 @@ impl std::fmt::Debug for EL7031InputFunction {
     }
 }
 
-impl TryFrom<u8> for EL7031InputFunction {
+impl TryFrom<u8> for EL70x1InputFunction {
     type Error = anyhow::Error;
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
@@ -915,8 +914,133 @@ impl TryFrom<u8> for EL7031InputFunction {
     }
 }
 
-impl From<EL7031InputFunction> for u8 {
-    fn from(value: EL7031InputFunction) -> Self {
+impl From<EL70x1InputFunction> for u8 {
+    fn from(value: EL70x1InputFunction) -> Self {
         value as u8
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct EL7031_0030AnalogInputChannelConfiguration {
+    // 80n0:01 User Scaling is Active
+    pub enable_user_scale: bool,
+
+    // 80n0:06
+    // Enable filter, which makes PLC-cycle-synchronous
+    // data exchange unnecessary
+    pub enable_filter: bool,
+
+    // 80n0:07
+    // limit 1 enabled
+    pub enable_limit_1: bool,
+
+    // 80n0:08
+    // limit2 enabled
+    pub enable_limit_2: bool,
+
+    // 80n0:11
+    // User Scaling Offset
+    pub user_scale_offset: i16,
+
+    // 80n0:12
+    // Gain of the user scaling
+    // The gain has a fixed-point-representation with the factor
+    // 2^-16 The value 1 corresponds to 65535 and is limited to +/- 0x7FFFFF
+    pub user_scale_gain: i32,
+
+    // 80n0:13
+    // First limit value for setting the status bits
+    pub limit_1: i16,
+
+    // 80n0:14
+    // Second limit value for setting the status bits
+    pub limit_2: i16,
+
+    // 80n0:15
+    /*
+       This object determines the digital filter settings if it is
+       active via Enable filter (Index base_index:06 [} 320]).
+       The possible settings are numbered consecutively.
+       2: IIR 1
+       3: IIR 2
+       ...
+       9: IIR 8
+    */
+    pub filter_settings: EL7031_0030AnalogInputFilterSettings,
+}
+
+impl EL7031_0030AnalogInputChannelConfiguration {
+    pub async fn write_channel_config<'a>(
+        &self,
+        device: &EthercrabSubDevicePreoperational<'a>,
+        base_index: u16,
+    ) -> Result<(), anyhow::Error> {
+        device
+            .sdo_write(base_index, 0x01, self.enable_user_scale)
+            .await?;
+        device
+            .sdo_write(base_index, 0x06, self.enable_filter)
+            .await?;
+        device
+            .sdo_write(base_index, 0x07, self.enable_limit_1)
+            .await?;
+        device
+            .sdo_write(base_index, 0x08, self.enable_limit_2)
+            .await?;
+        device
+            .sdo_write(base_index, 0x11, self.user_scale_offset)
+            .await?;
+        device
+            .sdo_write(base_index, 0x12, self.user_scale_gain)
+            .await?;
+        device.sdo_write(base_index, 0x13, self.limit_1).await?;
+        device.sdo_write(base_index, 0x14, self.limit_2).await?;
+        device
+            .sdo_write(base_index, 0x15, u16::from(self.filter_settings))
+            .await?;
+        Ok(())
+    }
+}
+
+impl Default for EL7031_0030AnalogInputChannelConfiguration {
+    fn default() -> Self {
+        Self {
+            enable_user_scale: false,
+            enable_filter: true,
+            enable_limit_1: false,
+            enable_limit_2: false,
+            user_scale_offset: 0,
+            user_scale_gain: 65536,
+            limit_1: 0,
+            limit_2: 0,
+            filter_settings: EL7031_0030AnalogInputFilterSettings::IIR1,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum EL7031_0030AnalogInputFilterSettings {
+    IIR1,
+    IIR2,
+    IIR3,
+    IIR4,
+    IIR5,
+    IIR6,
+    IIR7,
+    IIR8,
+}
+
+impl From<EL7031_0030AnalogInputFilterSettings> for u16 {
+    fn from(filter_settings: EL7031_0030AnalogInputFilterSettings) -> Self {
+        match filter_settings {
+            EL7031_0030AnalogInputFilterSettings::IIR1 => 2,
+            EL7031_0030AnalogInputFilterSettings::IIR2 => 3,
+            EL7031_0030AnalogInputFilterSettings::IIR3 => 4,
+            EL7031_0030AnalogInputFilterSettings::IIR4 => 5,
+            EL7031_0030AnalogInputFilterSettings::IIR5 => 6,
+            EL7031_0030AnalogInputFilterSettings::IIR6 => 7,
+            EL7031_0030AnalogInputFilterSettings::IIR7 => 8,
+            EL7031_0030AnalogInputFilterSettings::IIR8 => 9,
+        }
     }
 }

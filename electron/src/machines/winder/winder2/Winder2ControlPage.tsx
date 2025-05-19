@@ -33,6 +33,11 @@ export function Winder1ControlPage() {
     setMode,
     modeIsLoading,
     modeIsDisabled,
+    pullerState,
+    pullerSpeed,
+    pullerSetRegulationMode,
+    pullerSetTargetSpeed,
+    pullerSetTargetDiameter,
   } = useWinder2();
 
   return (
@@ -169,32 +174,40 @@ export function Winder1ControlPage() {
         </ControlCard>
 
         <ControlCard className="bg-red" title="Puller">
-          {/* <TimeSeriesValueNumeric
+          <TimeSeriesValueNumeric
             label="Speed"
-            unit="m/s"
-            value={16}
+            unit="m/min"
+            timeseries={pullerSpeed}
             renderValue={(value) => roundToDecimals(value, 0)}
-          /> */}
+          />
           <Label label="Regulation">
-            <SelectionGroupBoolean
-              value={false}
-              optionFalse={{ children: "Speed", icon: "lu:Gauge" }}
-              optionTrue={{
-                children: "Diameter (Sync to DRE™)",
-                icon: "lu:Diameter",
+            <SelectionGroup
+              value={pullerState?.data.regulation}
+              options={{
+                Speed: {
+                  children: "Speed",
+                  icon: "lu:Gauge",
+                },
+                Diameter: {
+                  children: "Diameter (Sync to DRE™)",
+                  icon: "lu:Diameter",
+                  disabled: true,
+                },
               }}
+              onChange={pullerSetRegulationMode}
             />
           </Label>
           <Label label="Target Speed">
             <EditValue
-              value={undefined}
-              unit="m/s"
+              value={pullerState?.data.target_speed}
+              unit="m/min"
               title="Target Speed"
-              defaultValue={0}
-              min={0}
+              defaultValue={1}
+              min={-10}
               max={100}
-              step={1}
+              step={0.1}
               renderValue={(value) => roundToDecimals(value, 0)}
+              onChange={pullerSetTargetSpeed}
             />
           </Label>
         </ControlCard>

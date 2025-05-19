@@ -47,7 +47,7 @@ pub trait NamespaceInterface {
     fn cache(
         &mut self,
         event: &GenericEvent,
-        buffer_fn: Box<dyn Fn(&mut Vec<GenericEvent>, &GenericEvent) -> ()>,
+        buffer_fn: &Box<dyn Fn(&mut Vec<GenericEvent>, &GenericEvent) -> ()>,
     );
 
     /// Emits an event to all sockets in the namespace and caches it.
@@ -63,7 +63,7 @@ pub trait NamespaceInterface {
     fn emit_cached(
         &mut self,
         event: &GenericEvent,
-        buffer_fn: Box<dyn Fn(&mut Vec<GenericEvent>, &GenericEvent) -> ()>,
+        buffer_fn: &Box<dyn Fn(&mut Vec<GenericEvent>, &GenericEvent) -> ()>,
     );
 }
 
@@ -116,7 +116,7 @@ impl NamespaceInterface for Namespace {
     fn cache(
         &mut self,
         event: &GenericEvent,
-        buffer_fn: Box<dyn Fn(&mut Vec<GenericEvent>, &GenericEvent) -> ()>,
+        buffer_fn: &Box<dyn Fn(&mut Vec<GenericEvent>, &GenericEvent) -> ()>,
     ) {
         let mut cached_events_for_key = self
             .events
@@ -128,7 +128,7 @@ impl NamespaceInterface for Namespace {
     fn emit_cached(
         &mut self,
         event: &GenericEvent,
-        buffer_fn: Box<dyn Fn(&mut Vec<GenericEvent>, &GenericEvent) -> ()>,
+        buffer_fn: &Box<dyn Fn(&mut Vec<GenericEvent>, &GenericEvent) -> ()>,
     ) {
         // cache the event
         self.cache(event, buffer_fn);
@@ -172,16 +172,28 @@ pub fn cache_one_event() -> CacheFn {
 }
 
 /// [BufferFn] that stores events for a certain duration
-pub fn cache_duration(duration: Duration) -> CacheFn {
+pub fn cache_duration(duration: Duration, bucket_size: Duration) -> CacheFn {
     Box::new(move |events, event| {
-        let now = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .expect("System time before UNIX EPOCH");
-        let cutoff_time = now - duration;
-        let cutoff_millis = cutoff_time.as_millis() as u64;
+        // Use event.ts instead of system time
+        let current_time = event.ts as u128;
 
+        // calculate current bucket & last bucket
+        let bucket = current_time / bucket_size.as_millis();
+        let last_bucket = match events.last() {
+            Some(last_event) => last_event.ts as u128 / bucket_size.as_millis(),
+            None => 0,
+        };
+
+        // if the bucket is not larger we early exit
+        if bucket <= last_bucket {
+            return;
+        }
+
+        // Remove old events
         // Since events are ordered by increasing ts, we can find the first index
         // that should be kept and truncate everything before it
+        let cutoff_time = current_time.saturating_sub(duration.as_millis());
+        let cutoff_millis = cutoff_time as u64;
         if let Some(keep_idx) = events.iter().position(|evt| evt.ts >= cutoff_millis) {
             events.drain(0..keep_idx);
         } else if !events.is_empty() {
@@ -189,6 +201,99 @@ pub fn cache_duration(duration: Duration) -> CacheFn {
             events.clear();
         }
 
+        // Add event
         events.push(event.clone());
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use std::cmp::min;
+
+    use super::*;
+
+    #[test]
+    fn test_cache_n_events() {
+        // Create a cache function that stores the last 2 events
+        let cache_fn = cache_n_events(2);
+
+        // Create namespace
+        let mut namespace = Namespace::new();
+        assert!(namespace.events.is_empty());
+
+        // Add event
+        let event1 = GenericEvent {
+            name: "test_event".to_string(),
+            data: serde_json::json!({"value": 1}),
+            ts: 0,
+        };
+        namespace.cache(&event1, &cache_fn);
+
+        // Check that we have one event name in the map
+        assert_eq!(namespace.events.len(), 1);
+        // Check that we have one event under that name
+        assert_eq!(namespace.events.get("test_event").unwrap().len(), 1);
+        assert_eq!(namespace.events.get("test_event").unwrap()[0].ts, 0);
+
+        // Add another event
+        let event2 = GenericEvent {
+            name: "test_event".to_string(),
+            data: serde_json::json!({"value": 2}),
+            ts: 1,
+        };
+        namespace.cache(&event2, &cache_fn);
+
+        // Still one event name
+        assert_eq!(namespace.events.len(), 1);
+        // But now two events under that name
+        assert_eq!(namespace.events.get("test_event").unwrap().len(), 2);
+        assert_eq!(namespace.events.get("test_event").unwrap()[0].ts, 0);
+        assert_eq!(namespace.events.get("test_event").unwrap()[1].ts, 1);
+
+        // Add a third event, which should remove the first one
+        let event3 = GenericEvent {
+            name: "test_event".to_string(),
+            data: serde_json::json!({"value": 3}),
+            ts: 2,
+        };
+        namespace.cache(&event3, &cache_fn);
+
+        // Still one event name
+        assert_eq!(namespace.events.len(), 1);
+        // Still two events under that name (because of the limit)
+        assert_eq!(namespace.events.get("test_event").unwrap().len(), 2);
+        // But now the events should be the second and third ones
+        assert_eq!(namespace.events.get("test_event").unwrap()[0].ts, 1);
+        assert_eq!(namespace.events.get("test_event").unwrap()[1].ts, 2);
+    }
+
+    #[test]
+    /// duration: 10 seconds, bucket_size: 1 second
+    /// use a for loop that tries to add an event every 100ms
+    fn test_cache_duration() {
+        // Create a cache function that stores events for 10 seconds
+        let duration = Duration::new(10, 0);
+        let bucket_size = Duration::new(1, 0);
+        let cache_fn = cache_duration(duration, bucket_size);
+
+        // Create namespace
+        let mut namespace = Namespace::new();
+        assert!(namespace.events.is_empty());
+
+        // Add events every 100ms for 20 seconds
+        for i in 0..200 {
+            let event = GenericEvent {
+                name: "test_event".to_string(),
+                data: serde_json::json!({"value": i}),
+                ts: (i * 100) as u64,
+            };
+            namespace.cache(&event, &cache_fn);
+
+            let should_have_events = min(i / 10, 11);
+            assert_eq!(
+                namespace.events.get("test_event").unwrap().len(),
+                should_have_events
+            );
+        }
+    }
 }

@@ -1,5 +1,5 @@
 use crate::pdo::PredefinedPdoAssignment;
-use crate::pdo::el30xx::{AiCompact, AiStandard};
+use crate::pdo::analog_input::{AiCompact, AiStandard};
 use crate::pdo::el70x1::{
     EncControl, EncControlCompact, EncStatus, EncStatusCompact, EncTimestampCompact,
     PosActualPositionLag, PosControl, PosControl2, PosControlCompact, PosStatus, PosStatusCompact,
@@ -110,10 +110,10 @@ impl PredefinedPdoAssignment<EL7031_0030TxPdo, EL7031_0030RxPdo>
                 stm_internal_position: None,
                 stm_external_position: None,
                 pos_actual_position_lag: None,
-                ai_standard_channel_1: None,
-                ai_compact_channel_1: Some(AiCompact::default()),
-                ai_standard_channel_2: None,
-                ai_compact_channel_2: Some(AiCompact::default()),
+                ai_standard_channel_1: Some(AiStandard::default()),
+                ai_compact_channel_1: None,
+                ai_standard_channel_2: Some(AiStandard::default()),
+                ai_compact_channel_2: None,
             },
             EL7031_0030PredefinedPdoAssignment::VelocityControlCompactWithInfoData => {
                 EL7031_0030TxPdo {
@@ -127,10 +127,10 @@ impl PredefinedPdoAssignment<EL7031_0030TxPdo, EL7031_0030RxPdo>
                     stm_internal_position: None,
                     stm_external_position: None,
                     pos_actual_position_lag: None,
-                    ai_standard_channel_1: None,
-                    ai_compact_channel_1: Some(AiCompact::default()),
-                    ai_standard_channel_2: None,
-                    ai_compact_channel_2: Some(AiCompact::default()),
+                    ai_standard_channel_1: Some(AiStandard::default()),
+                    ai_compact_channel_1: None,
+                    ai_standard_channel_2: Some(AiStandard::default()),
+                    ai_compact_channel_2: None,
                 }
             }
             EL7031_0030PredefinedPdoAssignment::VelocityControl => EL7031_0030TxPdo {
@@ -293,7 +293,7 @@ impl PredefinedPdoAssignment<EL7031_0030TxPdo, EL7031_0030RxPdo>
                 stm_velocity: None,
                 pos_control_compact: Some(PosControlCompact::default()),
                 pos_control: None,
-                pos_control_2: Some(PosControl2::default()),
+                pos_control_2: None,
             },
             EL7031_0030PredefinedPdoAssignment::PositionInterface
             | EL7031_0030PredefinedPdoAssignment::PositionInterfaceWithInfoData => {
@@ -305,7 +305,7 @@ impl PredefinedPdoAssignment<EL7031_0030TxPdo, EL7031_0030RxPdo>
                     stm_velocity: None,
                     pos_control_compact: None,
                     pos_control: Some(PosControl::default()),
-                    pos_control_2: Some(PosControl2::default()),
+                    pos_control_2: None,
                 }
             }
             EL7031_0030PredefinedPdoAssignment::PositionInterfaceAutoStart
@@ -327,6 +327,103 @@ impl PredefinedPdoAssignment<EL7031_0030TxPdo, EL7031_0030RxPdo>
 
 impl Default for EL7031_0030PredefinedPdoAssignment {
     fn default() -> Self {
-        EL7031_0030PredefinedPdoAssignment::VelocityControlCompact
+        EL7031_0030PredefinedPdoAssignment::PositionControl
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::pdo::{RxPdo, TxPdo};
+
+    #[test]
+    fn test_pdo_assignment_velocity_control_compact() {
+        let pdo_assignment = EL7031_0030PredefinedPdoAssignment::VelocityControlCompact;
+        let txpdo = pdo_assignment.txpdo_assignment();
+        let rxpdo = pdo_assignment.rxpdo_assignment();
+
+        assert_eq!(txpdo.size(), 16 * 8);
+        assert_eq!(rxpdo.size(), 8 * 8);
+    }
+
+    #[test]
+    fn test_pdo_assignment_velocity_control_compact_with_info_data() {
+        let pdo_assignment = EL7031_0030PredefinedPdoAssignment::VelocityControlCompactWithInfoData;
+        let txpdo = pdo_assignment.txpdo_assignment();
+        let rxpdo = pdo_assignment.rxpdo_assignment();
+
+        assert_eq!(txpdo.size(), 20 * 8);
+        assert_eq!(rxpdo.size(), 8 * 8);
+    }
+
+    #[test]
+    fn test_pdo_assignment_velocity_control() {
+        let pdo_assignment = EL7031_0030PredefinedPdoAssignment::VelocityControl;
+        let txpdo = pdo_assignment.txpdo_assignment();
+        let rxpdo = pdo_assignment.rxpdo_assignment();
+
+        assert_eq!(txpdo.size(), 20 * 8);
+        assert_eq!(rxpdo.size(), 10 * 8);
+    }
+
+    #[test]
+    fn test_pdo_assignment_position_control() {
+        let pdo_assignment = EL7031_0030PredefinedPdoAssignment::PositionControl;
+        let txpdo = pdo_assignment.txpdo_assignment();
+        let rxpdo = pdo_assignment.rxpdo_assignment();
+
+        assert_eq!(txpdo.size(), 20 * 8);
+        assert_eq!(rxpdo.size(), 12 * 8);
+    }
+
+    #[test]
+    fn test_pdo_assignment_position_interface_compact() {
+        let pdo_assignment = EL7031_0030PredefinedPdoAssignment::PositionInterfaceCompact;
+        let txpdo = pdo_assignment.txpdo_assignment();
+        let rxpdo = pdo_assignment.rxpdo_assignment();
+
+        assert_eq!(txpdo.size(), 22 * 8);
+        assert_eq!(rxpdo.size(), 14 * 8);
+    }
+
+    #[test]
+    fn test_pdo_assignment_position_interface() {
+        let pdo_assignment = EL7031_0030PredefinedPdoAssignment::PositionInterface;
+        let txpdo = pdo_assignment.txpdo_assignment();
+        let rxpdo = pdo_assignment.rxpdo_assignment();
+
+        assert_eq!(txpdo.size(), 32 * 8);
+        assert_eq!(rxpdo.size(), 22 * 8);
+    }
+
+    #[test]
+    fn test_pdo_assignment_position_interface_with_info_data() {
+        let pdo_assignment = EL7031_0030PredefinedPdoAssignment::PositionInterfaceWithInfoData;
+        let txpdo = pdo_assignment.txpdo_assignment();
+        let rxpdo = pdo_assignment.rxpdo_assignment();
+
+        assert_eq!(txpdo.size(), 36 * 8);
+        assert_eq!(rxpdo.size(), 22 * 8);
+    }
+
+    #[test]
+    fn test_pdo_assignment_position_interface_auto_start() {
+        let pdo_assignment = EL7031_0030PredefinedPdoAssignment::PositionInterfaceAutoStart;
+        let txpdo = pdo_assignment.txpdo_assignment();
+        let rxpdo = pdo_assignment.rxpdo_assignment();
+
+        assert_eq!(txpdo.size(), 32 * 8);
+        assert_eq!(rxpdo.size(), 36 * 8);
+    }
+
+    #[test]
+    fn test_pdo_assignment_position_interface_auto_start_with_info_data() {
+        let pdo_assignment =
+            EL7031_0030PredefinedPdoAssignment::PositionInterfaceAutoStartWithInfoData;
+        let txpdo = pdo_assignment.txpdo_assignment();
+        let rxpdo = pdo_assignment.rxpdo_assignment();
+
+        assert_eq!(txpdo.size(), 36 * 8);
+        assert_eq!(rxpdo.size(), 36 * 8);
     }
 }

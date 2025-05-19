@@ -38,10 +38,10 @@ impl NewEthercatDevice for EL7031 {
     }
 }
 
-impl StepperVelocityEL70x1Device<EL7031Port> for EL7031 {
+impl StepperVelocityEL70x1Device<EL7031StepperPort> for EL7031 {
     fn stepper_velocity_write(
         &mut self,
-        port: EL7031Port,
+        port: EL7031StepperPort,
         value: StepperVelocityEL70x1Output,
     ) -> Result<(), anyhow::Error> {
         // check if operating mode is velocity
@@ -53,7 +53,7 @@ impl StepperVelocityEL70x1Device<EL7031Port> for EL7031 {
         }
 
         match port {
-            EL7031Port::STM1 => {
+            EL7031StepperPort::STM1 => {
                 match &mut self.rxpdo.enc_control_compact {
                     Some(before) => *before = value.enc_control_compact,
                     None => {
@@ -74,18 +74,12 @@ impl StepperVelocityEL70x1Device<EL7031Port> for EL7031 {
                 }
                 Ok(())
             }
-            _ => {
-                return Err(anyhow!(
-                    "Port {:?} is not supported for stepper velocity",
-                    port
-                ));
-            }
         }
     }
 
     fn stepper_velocity_state(
         &self,
-        port: EL7031Port,
+        port: EL7031StepperPort,
     ) -> Result<StepperVelocityEL70x1State, anyhow::Error> {
         // check if operating mode is velocity
         if self.configuration.stm_features.operation_mode != EL70x1OperationMode::DirectVelocity {
@@ -96,7 +90,7 @@ impl StepperVelocityEL70x1Device<EL7031Port> for EL7031 {
         }
 
         match port {
-            EL7031Port::STM1 => Ok(StepperVelocityEL70x1State {
+            EL7031StepperPort::STM1 => Ok(StepperVelocityEL70x1State {
                 input: StepperVelocityEL70x1Input {
                     enc_status_compact: match &self.txpdo.enc_status_compact {
                         Some(value) => value.clone(),
@@ -122,18 +116,15 @@ impl StepperVelocityEL70x1Device<EL7031Port> for EL7031 {
                     },
                 },
             }),
-            _ => {
-                return Err(anyhow!(
-                    "Port {:?} is not supported for stepper velocity",
-                    port
-                ));
-            }
         }
     }
 }
 
-impl DigitalInputDevice<EL7031Port> for EL7031 {
-    fn digital_input_state(&self, port: EL7031Port) -> Result<DigitalInputState, anyhow::Error> {
+impl DigitalInputDevice<EL7031DigitalInputPort> for EL7031 {
+    fn digital_input_state(
+        &self,
+        port: EL7031DigitalInputPort,
+    ) -> Result<DigitalInputState, anyhow::Error> {
         let error1 = anyhow::anyhow!(
             "[{}::Device::digital_input_state] Port {:?} is not available",
             module_path!(),
@@ -142,25 +133,19 @@ impl DigitalInputDevice<EL7031Port> for EL7031 {
         Ok(DigitalInputState {
             input: DigitalInputInput {
                 value: match port {
-                    EL7031Port::DI1 => {
+                    EL7031DigitalInputPort::DI1 => {
                         self.txpdo
                             .stm_status
                             .as_ref()
                             .ok_or(error1)?
                             .digital_input_1
                     }
-                    EL7031Port::DI2 => {
+                    EL7031DigitalInputPort::DI2 => {
                         self.txpdo
                             .stm_status
                             .as_ref()
                             .ok_or(error1)?
                             .digital_input_2
-                    }
-                    _ => {
-                        return Err(anyhow!(
-                            "Port {:?} is not supported for digital input",
-                            port
-                        ));
                     }
                 },
             },
@@ -169,8 +154,12 @@ impl DigitalInputDevice<EL7031Port> for EL7031 {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub enum EL7031Port {
+pub enum EL7031StepperPort {
     STM1,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum EL7031DigitalInputPort {
     DI1,
     DI2,
 }
