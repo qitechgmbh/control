@@ -35,7 +35,10 @@ impl DreMachine {
             .await
             .map(|dre_data| dre_data.diameter.get::<millimeter>());
 
-        let diameter_event = DiameterEvent { diameter };
+        let diameter_event = DiameterEvent {
+            diameter: diameter.unwrap_or(0.0),
+        };
+
         self.namespace
             .emit_cached(DreEvents::DiameterEvent(diameter_event.build()));
     }

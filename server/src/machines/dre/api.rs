@@ -15,7 +15,7 @@ use std::time::Duration;
 
 #[derive(Serialize, Debug, Clone)]
 pub struct DiameterEvent {
-    pub diameter: Option<f64>,
+    pub diameter: f64,
 }
 
 impl DiameterEvent {
@@ -45,7 +45,7 @@ impl CacheableEvents<DreEvents> for DreEvents {
     }
 
     fn event_cache_fn(&self) -> CacheFn {
-        let cache_ten_secs = cache_duration(Duration::from_secs(10));
+        let cache_ten_secs = cache_duration(Duration::from_secs(10), Duration::from_secs(1));
 
         match self {
             DreEvents::DiameterEvent(_) => cache_ten_secs,
@@ -77,7 +77,7 @@ impl NamespaceCacheingLogic<DreEvents> for DreMachineNamespace {
             }
         };
         let buffer_fn = events.event_cache_fn();
-        self.0.emit_cached(&event, buffer_fn);
+        self.0.emit_cached(&event, &buffer_fn);
     }
 }
 

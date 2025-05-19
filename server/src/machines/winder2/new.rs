@@ -264,10 +264,10 @@ impl MachineNewTrait for Winder2 {
                         DeviceHardwareIdentification::Ethercat(
                             device_hardware_identification_ethercat,
                         ) => device_hardware_identification_ethercat,
-                        // _ => Err(anyhow::anyhow!(
-                        //     "[{}::MachineNewTrait/Winder2::new] Device with role 4 is not Ethercat",
-                        //     module_path!()
-                        // ))?,
+                        _ => Err(anyhow::anyhow!(
+                            "[{}::MachineNewTrait/Winder2::new] Device with role 4 is not Ethercat",
+                            module_path!()
+                        ))?,
                     };
                 let subdevice = get_subdevice_by_index(
                     hardware.subdevices,
