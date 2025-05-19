@@ -15,18 +15,18 @@ impl Actor for ExtruderV2 {
             self.temp_sensor_1.act(now_ts).await;
             self.temp_sensor_2.act(now_ts).await;
             self.temp_sensor_3.act(now_ts).await;
+            self.temp_sensor_4.act(now_ts).await;
 
             self.heating_relay_1.act(now_ts).await;
             self.heating_relay_2.act(now_ts).await;
             self.heating_relay_3.act(now_ts).await;
+            self.heating_relay_4.act(now_ts).await;
 
             self.set_bar();
-
-            self.heating_front.temperature = self.temp_sensor_1.temperature; // set the temperature read from the sensor
-            // channel 2
+            self.heating_front.temperature = self.temp_sensor_1.temperature; // set the temperature read from the sensor            
             self.heating_middle.temperature = self.temp_sensor_2.temperature;
-            // channel 3
             self.heating_back.temperature = self.temp_sensor_3.temperature;
+            self.heating_nozzle.temperature = self.temp_sensor_3.temperature;
 
             self.temperature_controller_front.target_temp =
                 self.heating_front.target_temperature as f64; // set target temperature
@@ -36,6 +36,9 @@ impl Actor for ExtruderV2 {
 
             self.temperature_controller_back.target_temp =
                 self.heating_back.target_temperature as f64; // set target temperature
+
+            self.temperature_controller_nozzle.target_temp =
+                self.heating_nozzle.target_temperature as f64;
 
             if self.mode == ExtruderV2Mode::Standby {
                 self.turn_heating_off();
@@ -52,13 +55,19 @@ impl Actor for ExtruderV2 {
                     .temperature_controller_back
                     .update(self.heating_back.temperature as f64, now_ts); // check if we need to set our relais to enabled to reach target temp
 
+                let on_4 = self
+                    .temperature_controller_back
+                    .update(self.heating_nozzle.temperature as f64, now_ts); // check if we need to set our relais to enabled to reach target temp
+
                 self.heating_relay_1.set(on_1); // set relay to on or off
                 self.heating_relay_2.set(on_2); // set relay to on or off
                 self.heating_relay_3.set(on_3); // set relay to on or off
+                self.heating_relay_4.set(on_4); // set relay to on or off
 
                 self.heating_front.heating = on_1;
                 self.heating_middle.heating = on_2;
                 self.heating_back.heating = on_3;
+                self.heating_nozzle.heating = on_4;
             }
 
             let now = Instant::now();

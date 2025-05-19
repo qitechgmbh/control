@@ -237,10 +237,12 @@ impl MachineNewTrait for ExtruderV2 {
             let t1 = TemperatureInput::new(el3204.clone(), EL3204Port::T1);
             let t2 = TemperatureInput::new(el3204.clone(), EL3204Port::T2);
             let t3 = TemperatureInput::new(el3204.clone(), EL3204Port::T3);
+            let t4 = TemperatureInput::new(el3204.clone(), EL3204Port::T4);
 
             let t1_getter = TemperatureInputGetter::new(t1);
             let t2_getter = TemperatureInputGetter::new(t2);
             let t3_getter = TemperatureInputGetter::new(t3);
+            let t4_getter = TemperatureInputGetter::new(t4);
 
             let pressure_sensor = AnalogInputGetter::new(AnalogInput::new(el3021, EL3021Port::AI1));
 
@@ -248,10 +250,12 @@ impl MachineNewTrait for ExtruderV2 {
             let digital_out_1 = DigitalOutput::new(el2004.clone(), EL2004Port::DO1);
             let digital_out_2 = DigitalOutput::new(el2004.clone(), EL2004Port::DO2);
             let digital_out_3 = DigitalOutput::new(el2004.clone(), EL2004Port::DO3);
+            let digital_out_4 = DigitalOutput::new(el2004.clone(), EL2004Port::DO3);
 
             let temperature_controller_front = TemperatureController::new(0.1, 0.0, 0.0, 0.0);
             let temperature_controller_middle = TemperatureController::new(0.1, 0.0, 0.0, 0.0);
             let temperature_controller_back = TemperatureController::new(0.1, 0.0, 0.0, 0.0);
+            let temperature_controller_nozzle = TemperatureController::new(0.1, 0.0, 0.0, 0.0);
 
             let pressure_motor_controller = PressureController::new(1.0, 0.1, 0.1, 60.0);
 
@@ -264,6 +268,11 @@ impl MachineNewTrait for ExtruderV2 {
                 last_measurement_emit: Instant::now(),
                 pressure_sensor: pressure_sensor,
                 mode: ExtruderV2Mode::Standby,
+                heating_nozzle: Heating {
+                    temperature: 150.0,
+                    heating: false,
+                    target_temperature: 60.0,
+                },
                 heating_front: Heating {
                     temperature: 150.0,
                     heating: false,
@@ -287,14 +296,17 @@ impl MachineNewTrait for ExtruderV2 {
                 temp_sensor_1: t1_getter,
                 temp_sensor_2: t2_getter,
                 temp_sensor_3: t3_getter,
+                temp_sensor_4: t4_getter,
 
                 heating_relay_1: DigitalOutputSetter::new(digital_out_1),
                 heating_relay_2: DigitalOutputSetter::new(digital_out_2),
                 heating_relay_3: DigitalOutputSetter::new(digital_out_3),
+                heating_relay_4: DigitalOutputSetter::new(digital_out_4),
 
                 temperature_controller_front: temperature_controller_front,
                 temperature_controller_middle: temperature_controller_middle,
                 temperature_controller_back: temperature_controller_back,
+                temperature_controller_nozzle: temperature_controller_nozzle,
 
                 pressure_motor_controller: pressure_motor_controller,
             };

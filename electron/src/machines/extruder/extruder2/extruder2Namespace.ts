@@ -24,6 +24,7 @@ export type Extruder2NamespaceStore = {
   inverterState: InverterStatusEvent | null;
   rotationState: InverterRotationEvent | null;
 
+  heatingNozzleState: HeatingStateEvent | null;
   heatingFrontState: HeatingStateEvent | null;
   heatingBackState: HeatingStateEvent | null;
   heatingMiddleState: HeatingStateEvent | null;
@@ -35,6 +36,8 @@ export type Extruder2NamespaceStore = {
   // Metric Events (cached for 1 hour )
   rpm: TimeSeries;
   bar: TimeSeries;
+
+  nozzleTemperature: TimeSeries;
   frontTemperature: TimeSeries;
   backTemperature: TimeSeries;
   middleTemperature: TimeSeries;
@@ -51,6 +54,9 @@ const { initialTimeSeries: frontTemperature, insert: addFrontTemperature } =
   createTimeSeries(ONE_SECOND, ONE_HOUR);
 
 const { initialTimeSeries: middleTemperature, insert: addMiddleTemperature } =
+  createTimeSeries(ONE_SECOND, ONE_HOUR);
+
+const { initialTimeSeries: nozzleTemperature, insert: addNozzleTemperature } =
   createTimeSeries(ONE_SECOND, ONE_HOUR);
 
 const { initialTimeSeries: rpm, insert: addRpm } = createTimeSeries(
@@ -95,6 +101,22 @@ export function extruder2MessageHandler(
             state.heatingFrontState = parsed;
             state.frontTemperature = addFrontTemperature(
               state.frontTemperature,
+              timeseriesValue,
+            );
+          }),
+        );
+      } else if (eventName == "NozzleHeatingStateEvent") {
+        const parsed = heatingStateEventSchema.parse(event);
+        const timeseriesValue: TimeSeriesValue = {
+          value: parsed.data.temperature,
+          timestamp: event.ts,
+        };
+
+        store.setState(
+          produce(store.getState(), (state) => {
+            state.heatingNozzleState = parsed;
+            state.nozzleTemperature = addNozzleTemperature(
+              state.nozzleTemperature,
               timeseriesValue,
             );
           }),
@@ -183,15 +205,19 @@ export const createExtruder2NamespaceStore =
         modeState: null,
         inverterState: null,
         rotationState: null,
+
+        heatingNozzleState: null,
         heatingFrontState: null,
         heatingBackState: null,
         heatingMiddleState: null,
+
         motorRpmState: null,
         motorRegulationState: null,
         motorBarState: null,
 
         rpm,
         bar,
+        nozzleTemperature,
         frontTemperature,
         backTemperature,
         middleTemperature,

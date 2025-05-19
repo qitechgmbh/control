@@ -38,6 +38,7 @@ pub struct Heating {
 }
 
 pub enum HeatingType {
+    Nozzle,
     Front,
     Back,
     Middle,
@@ -61,18 +62,22 @@ pub struct ExtruderV2 {
     heating_front: Heating,
     heating_middle: Heating,
     heating_back: Heating,
+    heating_nozzle: Heating,
 
     temp_sensor_1: TemperatureInputGetter,
     temp_sensor_2: TemperatureInputGetter,
     temp_sensor_3: TemperatureInputGetter,
+    temp_sensor_4: TemperatureInputGetter,
 
     heating_relay_1: DigitalOutputSetter,
     heating_relay_2: DigitalOutputSetter,
     heating_relay_3: DigitalOutputSetter,
+    heating_relay_4: DigitalOutputSetter,
 
     temperature_controller_front: TemperatureController,
     temperature_controller_middle: TemperatureController,
     temperature_controller_back: TemperatureController,
+    temperature_controller_nozzle: TemperatureController,
 
     pressure_motor_controller: PressureController,
 }
@@ -276,12 +281,14 @@ impl ExtruderV2 {
 
     fn set_target_temperature(&mut self, target_temperature: f32, heating_type: HeatingType) {
         match heating_type {
+            HeatingType::Nozzle => self.heating_nozzle.target_temperature = target_temperature,
             HeatingType::Front => self.heating_front.target_temperature = target_temperature,
             HeatingType::Back => self.heating_back.target_temperature = target_temperature,
             HeatingType::Middle => self.heating_middle.target_temperature = target_temperature,
         }
 
         match heating_type {
+            HeatingType::Nozzle => self.emit_heating(self.heating_nozzle.clone(), heating_type),
             HeatingType::Front => self.emit_heating(self.heating_front.clone(), heating_type),
             HeatingType::Back => self.emit_heating(self.heating_back.clone(), heating_type),
             HeatingType::Middle => self.emit_heating(self.heating_middle.clone(), heating_type),

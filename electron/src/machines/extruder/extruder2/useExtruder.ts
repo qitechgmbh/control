@@ -244,25 +244,34 @@ export function useMotor(
 export function useHeatingTemperature(
   machine_identification_unique: MachineIdentificationUnique,
 ): {
+  SetHeatingNozzleTemp: (value: number) => void;
   SetHeatingFrontTemp: (value: number) => void;
   SetHeatingBackTemp: (value: number) => void;
   SetHeatingMiddleTemp: (value: number) => void;
 
+  nozzleHeatingTarget: number | undefined;
   frontHeatingTarget: number | undefined;
   backHeatingTarget: number | undefined;
   middleHeatingTarget: number | undefined;
 
+  nozzleHeatingState: Heating | undefined;
   frontHeatingState: Heating | undefined;
   backHeatingState: Heating | undefined;
   middleHeatingState: Heating | undefined;
 
+  nozzleTemperature: TimeSeries;
   frontTemperature: TimeSeries;
   backTemperature: TimeSeries;
   middleTemperature: TimeSeries;
 } {
+  const nozzleHeatingTargetState = useStateOptimistic<number>();
   const frontHeatingTargetState = useStateOptimistic<number>();
   const backHeatingTargetState = useStateOptimistic<number>();
   const middleHeatingTargetState = useStateOptimistic<number>();
+
+  const SetNozzleHeatingSchema = z.object({
+    SetNozzleHeatingTemperature: z.number(),
+  });
 
   const SetFrontHeatingSchema = z.object({
     SetFrontHeatingTemperature: z.number(),
@@ -276,9 +285,26 @@ export function useHeatingTemperature(
     SetMiddleHeatingTemperature: z.number(),
   });
 
+  const { request: HeatingNozzleRequest } = useMachineMutation(
+    SetNozzleHeatingSchema,
+  );
+
+  const SetHeatingNozzleTemp = async (value: number) => {
+    frontHeatingTargetState.setOptimistic(value);
+    HeatingNozzleRequest({
+      machine_identification_unique,
+      data: { SetNozzleHeatingTemperature: value },
+    })
+      .then((response) => {
+        if (!response.success) nozzleHeatingTargetState.resetToReal();
+      })
+      .catch(() => nozzleHeatingTargetState.resetToReal());
+  };
+
   const { request: HeatiingFrontRequest } = useMachineMutation(
     SetFrontHeatingSchema,
   );
+
   const SetHeatingFrontTemp = async (value: number) => {
     frontHeatingTargetState.setOptimistic(value);
     HeatiingFrontRequest({
@@ -327,9 +353,11 @@ export function useHeatingTemperature(
     heatingFrontState,
     heatingBackState,
     heatingMiddleState,
+    heatingNozzleState,
     frontTemperature,
     backTemperature,
     middleTemperature,
+    nozzleTemperature,
   } = useExtruder2Namespace(machine_identification_unique);
 
   useEffect(() => {
@@ -353,18 +381,22 @@ export function useHeatingTemperature(
   ]);
 
   return {
+    SetHeatingNozzleTemp,
     SetHeatingFrontTemp,
     SetHeatingBackTemp,
     SetHeatingMiddleTemp,
 
+    nozzleHeatingTarget: nozzleHeatingTargetState.value,
     frontHeatingTarget: frontHeatingTargetState.value,
     backHeatingTarget: backHeatingTargetState.value,
     middleHeatingTarget: middleHeatingTargetState.value,
 
+    nozzleHeatingState: heatingNozzleState?.data,
     frontHeatingState: heatingFrontState?.data,
     backHeatingState: heatingBackState?.data,
     middleHeatingState: heatingMiddleState?.data,
 
+    nozzleTemperature,
     frontTemperature,
     backTemperature,
     middleTemperature,

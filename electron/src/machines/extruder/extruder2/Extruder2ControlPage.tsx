@@ -17,12 +17,15 @@ export function Extruder2ControlPage() {
   const {
     mode,
     SetMode,
+    nozzleTemperature,
     frontTemperature,
     backTemperature,
     middleTemperature,
+    nozzleHeatingState,
     frontHeatingState,
     backHeatingState,
     middleHeatingState,
+    SetHeatingNozzleTemp,
     SetHeatingFrontTemp,
     SetHeatingBackTemp,
     SetHeatingMiddleTemp,
@@ -39,6 +42,12 @@ export function Extruder2ControlPage() {
   return (
     <Page>
       <ControlGrid>
+        <HeatingZone
+          title={"Heating Nozzle"}
+          heatingState={nozzleHeatingState}
+          heatingTimeSeries={nozzleTemperature}
+          onChangeTargetTemp={SetHeatingNozzleTemp}
+        />
         <HeatingZone
           title={"Heating Front"}
           heatingState={frontHeatingState}

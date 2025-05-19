@@ -37,6 +37,7 @@ pub struct HeatingStateEvent {
 impl HeatingStateEvent {
     pub fn build(&self, heating_type: HeatingType) -> Event<Self> {
         let event = match heating_type {
+            HeatingType::Nozzle => Event::new("NozzleHeatingStateEvent", self.clone()),
             HeatingType::Front => Event::new("FrontHeatingStateEvent", self.clone()),
             HeatingType::Back => Event::new("BackHeatingStateEvent", self.clone()),
             HeatingType::Middle => Event::new("MiddleHeatingStateEvent", self.clone()),
