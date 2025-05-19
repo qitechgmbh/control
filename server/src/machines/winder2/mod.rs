@@ -17,7 +17,7 @@ use control_core::{
     actors::{
         digital_output_setter::DigitalOutputSetter, stepper_driver_el70x1::StepperDriverEL70x1,
     },
-    converters::step_converter::AngularStepConverter,
+    converters::angular_step_converter::AngularStepConverter,
     machines::Machine,
     socketio::namespace::NamespaceCacheingLogic,
     uom_extensions::velocity::meter_per_minute,

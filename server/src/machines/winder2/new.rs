@@ -12,7 +12,7 @@ use control_core::actors::analog_input_getter::AnalogInputGetter;
 use control_core::actors::digital_output_setter::DigitalOutputSetter;
 use control_core::actors::stepper_driver_el70x1::StepperDriverEL70x1;
 use control_core::converters::linear_step_converter::LinearStepConverter;
-use control_core::converters::step_converter::AngularStepConverter;
+use control_core::converters::angular_step_converter::AngularStepConverter;
 use control_core::machines::identification::DeviceHardwareIdentification;
 use control_core::machines::new::{
     MachineNewHardware, MachineNewParams, MachineNewTrait, get_device_identification_by_role,

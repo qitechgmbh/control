@@ -8,7 +8,7 @@ use uom::si::{
     velocity::meter_per_second,
 };
 
-use super::step_converter::AngularStepConverter;
+use super::angular_step_converter::AngularStepConverter;
 
 #[derive(Debug, Clone)]
 pub struct LinearStepConverter {
