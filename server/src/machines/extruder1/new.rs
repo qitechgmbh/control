@@ -309,6 +309,7 @@ impl MachineNewTrait for ExtruderV2 {
                 temperature_controller_nozzle: temperature_controller_nozzle,
 
                 pressure_motor_controller: pressure_motor_controller,
+                can_extrude: false,
             };
             Ok(extruder)
         })

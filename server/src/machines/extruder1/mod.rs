@@ -57,6 +57,8 @@ pub struct ExtruderV2 {
     target_rpm: f32,
     target_bar: f32,
 
+    can_extrude: bool,
+
     // Temperature TODO: CLEAN UP
     // Heating contains the current temp,target and relais state
     heating_front: Heating,
@@ -144,8 +146,40 @@ impl ExtruderV2 {
         self.mode = ExtruderV2Mode::Heat;
     }
 
+    /// Checks if the extruder is allowed to extrude and then sets can_extrude true or false
+    fn set_can_switch_extrude(&mut self) {
+        const NINETY_PERCENT: f32 = 0.9;
+        let heat_back_is_valid =
+            (self.heating_back.temperature / self.heating_back.target_temperature < NINETY_PERCENT)
+                && (self.heating_back.temperature > 80.0);
+
+        let heat_middle_is_valid = (self.heating_middle.temperature
+            / self.heating_middle.target_temperature
+            < NINETY_PERCENT)
+            && (self.heating_middle.temperature > 80.0);
+
+        let heat_front_is_valid = (self.heating_front.temperature
+            / self.heating_front.target_temperature
+            < NINETY_PERCENT)
+            && (self.heating_front.temperature > 80.0);
+
+        let heat_nozzle_is_valid = (self.heating_nozzle.temperature
+            / self.heating_nozzle.target_temperature
+            < NINETY_PERCENT)
+            && (self.heating_nozzle.temperature > 80.0);
+
+        self.can_extrude = heat_back_is_valid
+            && heat_front_is_valid
+            && heat_middle_is_valid
+            && heat_nozzle_is_valid;
+    }
+
     // keep heating on, and turn motor on
     fn switch_to_extrude(&mut self) {
+        if self.can_extrude == false {
+            return;
+        }
+
         match self.mode {
             ExtruderV2Mode::Standby => self.turn_motor_on(),
             ExtruderV2Mode::Heat => self.turn_motor_on(),
