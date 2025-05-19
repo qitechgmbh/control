@@ -33,7 +33,7 @@ export function TraverseBar({
           <div
             className="absolute h-full bg-black"
             style={{
-              left: `${minStopPercent}%`,
+              right: `${minStopPercent}%`,
               width: `${maxStopPercent - minStopPercent}%`,
             }}
           />

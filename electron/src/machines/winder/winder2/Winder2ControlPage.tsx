@@ -28,6 +28,8 @@ export function Winder2ControlPage() {
     tensionArmAngle,
     tensionArmAngleZero,
     tensionArmState,
+    tensionArmStateIsLoading,
+    tensionArmStateIsDisabled,
     spoolRpm,
     mode,
     setMode,
@@ -37,7 +39,17 @@ export function Winder2ControlPage() {
     pullerSpeed,
     pullerSetRegulationMode,
     pullerSetTargetSpeed,
-    pullerSetTargetDiameter,
+    pullerStateIsLoading,
+    pullerStateIsDisabled,
+    traversePosition,
+    traverseState,
+    traverseSetLimitInner,
+    traverseSetLimitOuter,
+    traverseGotoLimitInner,
+    traverseGotoLimitOuter,
+    traverseGotoHome,
+    traverseStateIsLoading,
+    traverseStateIsDisabled,
   } = useWinder2();
 
   return (
@@ -54,51 +66,67 @@ export function Winder2ControlPage() {
         </ControlCard>
 
         <ControlCard className="bg-red" height={2} title="Traverse">
-          {/* <TimeSeriesValueNumeric
+          <TimeSeriesValueNumeric
             label="Position"
             unit="mm"
-            value={55}
+            timeseries={traversePosition}
             renderValue={(value) => roundToDecimals(value, 0)}
-          /> */}
-          <TraverseBar
-            inside={0}
-            outside={100}
-            min={16}
-            max={72}
-            current={55}
           />
+          {traverseState && (
+            <TraverseBar
+              inside={0}
+              outside={100}
+              min={traverseState.data.limit_inner}
+              max={traverseState.data.limit_outer}
+              current={traversePosition.current?.value ?? 0}
+            />
+          )}
           <div className="flex flex-row flex-wrap gap-4">
             <Label label="Outer Limit">
               <EditValue
-                value={undefined}
+                value={traverseState?.data.limit_outer}
                 unit="mm"
                 title="Outer Limit"
-                defaultValue={16}
+                defaultValue={80}
                 min={0}
                 minLabel="IN"
                 maxLabel="OUT"
-                max={80}
+                max={100}
                 renderValue={(value) => roundToDecimals(value, 0)}
                 inverted
+                onChange={traverseSetLimitOuter}
               />
-              <TouchButton variant="outline" icon="lu:ArrowLeftToLine">
+              <TouchButton
+                variant="outline"
+                icon="lu:ArrowLeftToLine"
+                onClick={traverseGotoLimitOuter}
+                disabled={traverseStateIsDisabled}
+                isLoading={traverseStateIsLoading}
+              >
                 Go to Outer Limit
               </TouchButton>
             </Label>
             <Label label="Inner Limit">
               <EditValue
-                value={undefined}
+                value={traverseState?.data.limit_inner}
                 unit="mm"
-                title="Limit Innen"
+                title="Inner Limit"
                 min={0}
-                max={80}
-                defaultValue={72}
+                max={100}
+                defaultValue={16}
                 minLabel="IN"
                 maxLabel="OUT"
                 renderValue={(value) => roundToDecimals(value, 0)}
                 inverted
+                onChange={traverseSetLimitInner}
               />
-              <TouchButton variant="outline" icon="lu:ArrowRightToLine">
+              <TouchButton
+                variant="outline"
+                icon="lu:ArrowRightToLine"
+                onClick={traverseGotoLimitInner}
+                disabled={traverseStateIsDisabled}
+                isLoading={traverseStateIsLoading}
+              >
                 Go to Inner Limit
               </TouchButton>
             </Label>
@@ -114,10 +142,22 @@ export function Winder2ControlPage() {
             />
           </Label>
           <Label label="Home">
-            <TouchButton variant="outline" icon="lu:House" isLoading>
+            <TouchButton
+              variant="outline"
+              icon="lu:House"
+              onClick={() => traverseGotoHome(50)} // Default position in the middle (50%)
+              disabled={traverseStateIsDisabled}
+              isLoading={traverseStateIsLoading}
+            >
               Go to Home
             </TouchButton>
-            <StatusBadge variant="error">Not Homed</StatusBadge>
+            {traverseState && (
+              <StatusBadge
+                variant={traverseState.data.is_homed ? "success" : "error"}
+              >
+                {traverseState.data.is_homed ? "Homed" : "Not Homed"}
+              </StatusBadge>
+            )}
           </Label>
         </ControlCard>
 
@@ -133,6 +173,8 @@ export function Winder2ControlPage() {
             variant="outline"
             icon="lu:House"
             onClick={tensionArmAngleZero}
+            disabled={tensionArmStateIsDisabled}
+            isLoading={tensionArmStateIsLoading}
           >
             Set Zero Point
           </TouchButton>
@@ -195,6 +237,8 @@ export function Winder2ControlPage() {
                 },
               }}
               onChange={pullerSetRegulationMode}
+              disabled={pullerStateIsDisabled}
+              loading={pullerStateIsLoading}
             />
           </Label>
           <Label label="Target Speed">

@@ -1,6 +1,7 @@
 use std::time::Instant;
 
 use crate::machines::winder2::puller_speed_controller::PullerSpeedController;
+use crate::machines::winder2::traverse_controller::TraverseController;
 
 use super::api::Winder2Namespace;
 use super::spool_speed_controller::SpoolSpeedController;
@@ -42,11 +43,9 @@ use ethercat_hal::io::digital_output::DigitalOutput;
 use ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1;
 use ethercat_hal::shared_config;
 use ethercat_hal::shared_config::el70x1::{EL70x1OperationMode, StmMotorConfiguration};
-use uom::si::acceleration::meter_per_second_squared;
 use uom::si::angular_velocity::revolution_per_minute;
 use uom::si::f64::{Acceleration, AngularAcceleration, AngularVelocity, Length, Velocity};
 use uom::si::length::millimeter;
-use uom::si::velocity::kilometer_per_hour;
 
 impl MachineNewTrait for Winder2 {
     fn new<'maindevice>(params: &MachineNewParams) -> Result<Self, Error> {
@@ -350,11 +349,15 @@ impl MachineNewTrait for Winder2 {
                         Length::new::<millimeter>(40.0), // 4mm redius of the puller wheel
                     ),
                 ),
-                
+                traverse_controller: TraverseController::new(
+                    16.0, // Default inner limit
+                    80.0, // Default outer limit
+                ),
             };
 
             // initalize events
             new.emit_traverse_state();
+            new.emit_traverse_position();
             new.emit_mode_state();
             new.emit_spool_state();
             new.emit_tension_arm_state();

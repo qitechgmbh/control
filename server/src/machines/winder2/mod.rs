@@ -5,12 +5,13 @@ pub mod new;
 pub mod puller_speed_controller;
 pub mod spool_speed_controller;
 pub mod tension_arm;
+pub mod traverse_controller;
 
 use std::{fmt::Debug, time::Instant};
 
 use api::{
-    ModeStateEvent, TensionArmAngleEvent, TensionArmStateEvent, TraverseStateEvent, Winder2Events,
-    Winder2Namespace,
+    ModeStateEvent, TensionArmAngleEvent, TensionArmStateEvent, TraversePositionEvent,
+    TraverseStateEvent, Winder2Events, Winder2Namespace,
 };
 use control_core::{
     actors::{
@@ -24,6 +25,7 @@ use control_core::{
 use puller_speed_controller::{PullerRegulationMode, PullerSpeedController};
 use spool_speed_controller::SpoolSpeedController;
 use tension_arm::TensionArm;
+use traverse_controller::TraverseController;
 use uom::si::{
     angle::degree,
     angular_velocity::revolution_per_minute,
@@ -39,6 +41,9 @@ pub struct Winder2 {
     pub spool: StepperDriverEL70x1,
     pub tension_arm: TensionArm,
     pub laser: DigitalOutputSetter,
+
+    // controllers
+    pub traverse_controller: TraverseController,
 
     // socketio
     namespace: Winder2Namespace,
@@ -66,10 +71,51 @@ impl Winder2 {
         self.emit_traverse_state();
     }
 
+    pub fn traverse_set_limit_inner(&mut self, limit: f64) {
+        self.traverse_controller.set_limit_inner(limit);
+        self.emit_traverse_state();
+    }
+
+    pub fn traverse_set_limit_outer(&mut self, limit: f64) {
+        self.traverse_controller.set_limit_outer(limit);
+        self.emit_traverse_state();
+    }
+
+    pub fn traverse_goto_limit_inner(&mut self) {
+        self.traverse_controller.goto_limit_inner();
+        self.emit_traverse_state();
+    }
+
+    pub fn traverse_goto_limit_outer(&mut self) {
+        self.traverse_controller.goto_limit_outer();
+        self.emit_traverse_state();
+    }
+
+    pub fn traverse_goto_home(&mut self, home_position: f64) {
+        self.traverse_controller.goto_home(home_position);
+        self.emit_traverse_state();
+    }
+
+    pub fn emit_traverse_position(&mut self) {
+        let position = self.traverse_controller.get_current_position();
+        let event = TraversePositionEvent { position }.build();
+        self.namespace
+            .emit_cached(Winder2Events::TraversePosition(event))
+    }
+
     fn emit_traverse_state(&mut self) {
         let event = TraverseStateEvent {
+            limit_inner: self.traverse_controller.get_limit_inner(),
+            limit_outer: self.traverse_controller.get_limit_outer(),
+            position_in: self.traverse_controller.get_limit_inner(),
+            position_out: self.traverse_controller.get_limit_outer(),
+            is_in: self.traverse_controller.is_in(),
+            is_out: self.traverse_controller.is_out(),
+            is_going_in: self.traverse_controller.is_going_in(),
+            is_going_out: self.traverse_controller.is_going_out(),
+            is_homed: self.traverse_controller.is_homed(),
+            is_going_home: self.traverse_controller.is_going_home(),
             laserpointer: self.laser.get(),
-            ..Default::default()
         }
         .build();
         self.namespace
