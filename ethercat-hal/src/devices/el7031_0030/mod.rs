@@ -20,7 +20,10 @@ use crate::{
     },
     pdo::{PredefinedPdoAssignment, RxPdo, TxPdo},
     shared_config::el70x1::EL70x1OperationMode,
-    helpers::signing_converter_u16::U16SigningConverter,
+    helpers::{
+        signing_converter_u16::U16SigningConverter,
+        counter_wrapper_u16_i128::CounterWrapperU16U128,
+    },
 };
 
 use super::{EthercatDeviceProcessing, NewEthercatDevice, SubDeviceIdentityTuple};
@@ -30,9 +33,52 @@ pub struct EL7031_0030 {
     pub txpdo: EL7031_0030TxPdo,
     pub rxpdo: EL7031_0030RxPdo,
     pub configuration: EL7031_0030Configuration,
+    pub counter_wrapper: CounterWrapperU16U128,
 }
 
-impl EthercatDeviceProcessing for EL7031_0030 {}
+impl EthercatDeviceProcessing for EL7031_0030 {
+    fn input_post_process(&mut self) -> Result<(), anyhow::Error> {
+        let counter_overflow = match &self.txpdo.enc_status_compact {
+            Some(value) => value.counter_underflow,
+            None => return Err(anyhow!("enc_status_compact is None")),
+        };
+
+        let counter_underflow = match &self.txpdo.enc_status_compact {
+            Some(value) => value.counter_overflow,
+            None => return Err(anyhow!("enc_status_compact is None")),
+        };
+
+        let counter_value = match &self.txpdo.enc_status_compact {
+            Some(value) => value.counter_value,
+            None => return Err(anyhow!("enc_status_compact is None")),
+        };
+
+        // update the counter wrapper
+        self.counter_wrapper
+            .update(counter_value, counter_underflow, counter_overflow);
+
+        Ok(())
+    }
+
+    fn output_pre_process(&mut self) -> Result<(), anyhow::Error> {
+        // set counter
+        match &mut self.rxpdo.enc_control_compact {
+            Some(enc_control_compact) => match self.counter_wrapper.pop_override() {
+                Some(new_counter) => {
+                    enc_control_compact.set_counter = true;
+                    enc_control_compact.set_counter_value = new_counter;
+                }
+                None => {
+                    enc_control_compact.set_counter = false;
+                    enc_control_compact.set_counter_value = 0;
+                }
+            },
+            None => return Err(anyhow!("enc_control_compact is None")),
+        }
+
+        Ok(())
+    }
+}
 
 impl NewEthercatDevice for EL7031_0030 {
     fn new() -> Self {
@@ -41,6 +87,7 @@ impl NewEthercatDevice for EL7031_0030 {
             txpdo: configuration.pdo_assignment.txpdo_assignment(),
             rxpdo: configuration.pdo_assignment.rxpdo_assignment(),
             configuration,
+            counter_wrapper: CounterWrapperU16U128::new(0),
         }
     }
 }
@@ -62,17 +109,17 @@ impl StepperVelocityEL70x1Device<EL7031_0030StepperPort> for EL7031_0030 {
 
         match port {
             EL7031_0030StepperPort::STM1 => {
-                match &mut self.rxpdo.enc_control_compact {
-                    Some(before) => *before = value.enc_control_compact,
-                    None => {
-                        return Err(anyhow!(
-                            "[{}::StepperVelocityEL70x1Device::stepper_velocity_write] enc_status_compact is None",
-                            module_path!()
-                        ));
-                    }
+                // set the counter override if provided
+                if let Some(new_counter) = value.set_counter {
+                    self.counter_wrapper.push_override(new_counter);
                 }
+
                 match &mut self.rxpdo.stm_control {
-                    Some(before) => *before = value.stm_control,
+                    Some(stm_control) => {
+                        stm_control.enable = value.enable;
+                        stm_control.reduce_torque = value.reduce_torque;
+                        stm_control.reset = value.reset;
+                    }
                     None => {
                         return Err(anyhow!(
                             "[{}::StepperVelocityEL70x1Device::stepper_velocity_write] stm_control is None",
@@ -81,7 +128,9 @@ impl StepperVelocityEL70x1Device<EL7031_0030StepperPort> for EL7031_0030 {
                     }
                 }
                 match &mut self.rxpdo.stm_velocity {
-                    Some(before) => *before = value.stm_velocity,
+                    Some(stm_velocity) => {
+                        stm_velocity.velocity = value.velocity;
+                    }
                     None => {
                         return Err(anyhow!(
                             "[{}::StepperVelocityEL70x1Device::stepper_velocity_write] stm_velocity is None",
@@ -108,57 +157,57 @@ impl StepperVelocityEL70x1Device<EL7031_0030StepperPort> for EL7031_0030 {
         }
 
         match port {
-            EL7031_0030StepperPort::STM1 => Ok(StepperVelocityEL70x1State {
-                input: StepperVelocityEL70x1Input {
-                    enc_status_compact: match &self.txpdo.enc_status_compact {
-                        Some(value) => value.clone(),
-                        None => {
-                            return Err(anyhow!(
-                                "[{}::StepperVelocityEL70x1Device::stepper_velocity_state] enc_status_compact is None",
-                                module_path!()
-                            ));
-                        }
+            EL7031_0030StepperPort::STM1 => {
+                let stm_status = match &self.txpdo.stm_status {
+                    Some(value) => value,
+                    None => {
+                        return Err(anyhow!(
+                            "[{}::StepperVelocityEL70x1Device::stepper_velocity_state] stm_status is None",
+                            module_path!()
+                        ));
+                    }
+                };
+
+                let stm_control = match &self.rxpdo.stm_control {
+                    Some(value) => value,
+                    None => {
+                        return Err(anyhow!(
+                            "[{}::StepperVelocityEL70x1Device::stepper_velocity_state] stm_control is None",
+                            module_path!()
+                        ));
+                    }
+                };
+
+                let stm_velocity = match &self.rxpdo.stm_velocity {
+                    Some(value) => value,
+                    None => {
+                        return Err(anyhow!(
+                            "[{}::StepperVelocityEL70x1Device::stepper_velocity_state] stm_velocity is None",
+                            module_path!()
+                        ));
+                    }
+                };
+
+                Ok(StepperVelocityEL70x1State {
+                    input: StepperVelocityEL70x1Input {
+                        counter_value: self.counter_wrapper.current(),
+                        ready_to_enable: stm_status.ready_to_enable,
+                        ready: stm_status.ready,
+                        warning: stm_status.warning,
+                        error: stm_status.error,
+                        moving_positive: stm_status.moving_positive,
+                        moving_negative: stm_status.moving_negative,
+                        torque_reduced: stm_status.torque_reduced,
                     },
-                    stm_status: match &self.txpdo.stm_status {
-                        Some(value) => value.clone(),
-                        None => {
-                            return Err(anyhow!(
-                                "[{}::StepperVelocityEL70x1Device::stepper_velocity_state] stm_status is None",
-                                module_path!()
-                            ));
-                        }
+                    output: StepperVelocityEL70x1Output {
+                        velocity: stm_velocity.velocity,
+                        enable: stm_control.enable,
+                        reduce_torque: stm_control.reduce_torque,
+                        reset: stm_control.reset,
+                        set_counter: self.counter_wrapper.get_override(),
                     },
-                },
-                output: StepperVelocityEL70x1Output {
-                    enc_control_compact: match &self.rxpdo.enc_control_compact {
-                        Some(value) => value.clone(),
-                        None => {
-                            return Err(anyhow!(
-                                "[{}::StepperVelocityEL70x1Device::stepper_velocity_state] enc_control_compact is None",
-                                module_path!()
-                            ));
-                        }
-                    },
-                    stm_control: match &self.rxpdo.stm_control {
-                        Some(value) => value.clone(),
-                        None => {
-                            return Err(anyhow!(
-                                "[{}::StepperVelocityEL70x1Device::stepper_velocity_state] stm_control is None",
-                                module_path!()
-                            ));
-                        }
-                    },
-                    stm_velocity: match &self.rxpdo.stm_velocity {
-                        Some(value) => value.clone(),
-                        None => {
-                            return Err(anyhow!(
-                                "[{}::StepperVelocityEL70x1Device::stepper_velocity_state] stm_velocity is None",
-                                module_path!()
-                            ));
-                        }
-                    },
-                },
-            }),
+                })
+            }
         }
     }
 }

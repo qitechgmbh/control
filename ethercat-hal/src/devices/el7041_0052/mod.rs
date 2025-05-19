@@ -3,6 +3,7 @@ use ethercat_hal_derive::EthercatDevice;
 
 use super::{EthercatDeviceProcessing, NewEthercatDevice, SubDeviceIdentityTuple};
 use crate::{
+    helpers::counter_wrapper_u16_i128::CounterWrapperU16U128,
     io::{
         digital_input::{DigitalInputDevice, DigitalInputInput, DigitalInputState},
         stepper_velocity_el70x1::{
@@ -23,6 +24,9 @@ pub struct EL7041_0052 {
     pub txpdo: pdo::EL7041_0052TxPdo,
     pub rxpdo: pdo::EL7041_0052RxPdo,
     pub configuration: EL7041_0052Configuration,
+
+    // encoder wrapping
+    pub counter_wrapper: CounterWrapperU16U128,
 }
 
 impl NewEthercatDevice for EL7041_0052 {
@@ -32,11 +36,54 @@ impl NewEthercatDevice for EL7041_0052 {
             txpdo: configuration.pdo_assignment.txpdo_assignment(),
             rxpdo: configuration.pdo_assignment.rxpdo_assignment(),
             configuration,
+            counter_wrapper: CounterWrapperU16U128::new(0),
         }
     }
 }
 
-impl EthercatDeviceProcessing for EL7041_0052 {}
+impl EthercatDeviceProcessing for EL7041_0052 {
+    fn input_post_process(&mut self) -> Result<(), anyhow::Error> {
+        let counter_overflow = match &self.txpdo.enc_status_compact {
+            Some(value) => value.counter_underflow,
+            None => return Err(anyhow!("enc_status_compact is None")),
+        };
+
+        let counter_underflow = match &self.txpdo.enc_status_compact {
+            Some(value) => value.counter_overflow,
+            None => return Err(anyhow!("enc_status_compact is None")),
+        };
+
+        let counter_value = match &self.txpdo.enc_status_compact {
+            Some(value) => value.counter_value,
+            None => return Err(anyhow!("enc_status_compact is None")),
+        };
+
+        // update the counter wrapper
+        self.counter_wrapper
+            .update(counter_value, counter_underflow, counter_overflow);
+
+        Ok(())
+    }
+
+    fn output_pre_process(&mut self) -> Result<(), anyhow::Error> {
+        // set counter
+        match &mut self.rxpdo.enc_control_compact {
+            Some(enc_control_compact) => match self.counter_wrapper.pop_override() {
+                Some(new_counter) => {
+                    enc_control_compact.set_counter = true;
+                    enc_control_compact.set_counter_value = new_counter;
+                }
+                None => {
+                    enc_control_compact.set_counter = false;
+                    enc_control_compact.set_counter_value = 0;
+                }
+            },
+            None => return Err(anyhow!("enc_control_compact is None")),
+        }
+
+        Ok(())
+    }
+}
 
 impl StepperVelocityEL70x1Device<EL7041_0052Port> for EL7041_0052 {
     fn stepper_velocity_write(
@@ -54,20 +101,25 @@ impl StepperVelocityEL70x1Device<EL7041_0052Port> for EL7041_0052 {
 
         match port {
             EL7041_0052Port::STM1 => {
-                match &mut self.rxpdo.enc_control_compact {
-                    Some(before) => *before = value.enc_control_compact,
-                    None => {
-                        return Err(anyhow!("enc_status_compact is None"));
-                    }
+                // set the counter override if provided
+                if let Some(new_counter) = value.set_counter {
+                    self.counter_wrapper.push_override(new_counter);
                 }
+
                 match &mut self.rxpdo.stm_control {
-                    Some(before) => *before = value.stm_control,
+                    Some(stm_control) => {
+                        stm_control.enable = value.enable;
+                        stm_control.reset = value.reset;
+                        stm_control.reduce_torque = value.reduce_torque;
+                    }
                     None => {
                         return Err(anyhow!("stm_control is None"));
                     }
                 }
                 match &mut self.rxpdo.stm_velocity {
-                    Some(before) => *before = value.stm_velocity,
+                    Some(stm_velocity) => {
+                        stm_velocity.velocity = value.velocity;
+                    }
                     None => {
                         return Err(anyhow!("stm_velocity is None"));
                     }
@@ -96,32 +148,43 @@ impl StepperVelocityEL70x1Device<EL7041_0052Port> for EL7041_0052 {
         }
 
         match port {
-            EL7041_0052Port::STM1 => Ok(StepperVelocityEL70x1State {
-                input: StepperVelocityEL70x1Input {
-                    enc_status_compact: match &self.txpdo.enc_status_compact {
-                        Some(value) => value.clone(),
-                        None => return Err(anyhow!("enc_status_compact is None")),
+            EL7041_0052Port::STM1 => {
+                let stm_status = match &self.txpdo.stm_status {
+                    Some(value) => value,
+                    None => return Err(anyhow!("stm_status is None")),
+                };
+
+                let stm_control = match &self.rxpdo.stm_control {
+                    Some(value) => value,
+                    None => return Err(anyhow!("stm_control is None")),
+                };
+
+                let stm_velocity = match &self.rxpdo.stm_velocity {
+                    Some(value) => value,
+                    None => return Err(anyhow!("stm_velocity is None")),
+                };
+
+                Ok(StepperVelocityEL70x1State {
+                    input: StepperVelocityEL70x1Input {
+                        // Use the counter wrapper to get the current counter value
+                        counter_value: self.counter_wrapper.current(),
+                        ready_to_enable: stm_status.ready_to_enable,
+                        ready: stm_status.ready,
+                        warning: stm_status.warning,
+                        error: stm_status.error,
+                        moving_positive: stm_status.moving_positive,
+                        moving_negative: stm_status.moving_negative,
+                        torque_reduced: stm_status.torque_reduced,
                     },
-                    stm_status: match &self.txpdo.stm_status {
-                        Some(value) => value.clone(),
-                        None => return Err(anyhow!("stm_status is None")),
+                    output: StepperVelocityEL70x1Output {
+                        velocity: stm_velocity.velocity,
+                        enable: stm_control.enable,
+                        reduce_torque: stm_control.reduce_torque,
+                        reset: stm_control.reset,
+                        set_counter: self.counter_wrapper.get_override(),
                     },
-                },
-                output: StepperVelocityEL70x1Output {
-                    enc_control_compact: match &self.rxpdo.enc_control_compact {
-                        Some(value) => value.clone(),
-                        None => return Err(anyhow!("enc_control_compact is None")),
-                    },
-                    stm_control: match &self.rxpdo.stm_control {
-                        Some(value) => value.clone(),
-                        None => return Err(anyhow!("stm_control is None")),
-                    },
-                    stm_velocity: match &self.rxpdo.stm_velocity {
-                        Some(value) => value.clone(),
-                        None => return Err(anyhow!("stm_velocity is None")),
-                    },
-                },
-            }),
+                })
+            }
             _ => {
                 return Err(anyhow!(
                     "Port {:?} is not supported for stepper velocity",
@@ -137,11 +200,8 @@ impl DigitalInputDevice<EL7041_0052Port> for EL7041_0052 {
         &self,
         port: EL7041_0052Port,
     ) -> Result<DigitalInputState, anyhow::Error> {
-        let error1 = anyhow::anyhow!(
-            "[{}::Device::digital_input_state] Port {:?} is not available",
-            module_path!(),
-            port
-        );
+        let error1 = anyhow::anyhow!("stm_status is None");
+        
         Ok(DigitalInputState {
             input: DigitalInputInput {
                 value: match port {

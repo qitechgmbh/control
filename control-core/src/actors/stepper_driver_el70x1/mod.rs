@@ -60,8 +60,8 @@ impl Actor for StepperDriverEL70x1 {
             let mut output = state.output.clone();
 
             // set the output
-            output.stm_control.enable = self.enabled;
-            output.stm_velocity.velocity = self.velocity;
+            output.enable = self.enabled;
+            output.velocity = self.velocity;
 
             // write the output
             match (self.stepper.write)(output).await {
