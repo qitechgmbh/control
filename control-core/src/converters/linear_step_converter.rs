@@ -10,18 +10,45 @@ use uom::si::{
 
 use super::angular_step_converter::AngularStepConverter;
 
+/// Converts between linear measurements and motor steps
+///
+/// This converter handles the transformation between linear motion (distance, velocity,
+/// acceleration) and motor steps, using the relationship between linear and rotary motion
+/// through a wheel or pulley of a specific radius.
 #[derive(Debug, Clone)]
 pub struct LinearStepConverter {
     angular_step_converter: AngularStepConverter,
     radius: Length,
+    circumference: Length,
 }
 
 // Constructor and basic getters
 impl LinearStepConverter {
-    pub fn new(steps_per_revolution: i16, radius: Length) -> Self {
+    /// Create a new converter from radius and steps per revolution
+    pub fn from_radius(steps_per_revolution: i16, radius: Length) -> Self {
+        let circumference =
+            Length::new::<meter>(2.0 * std::f64::consts::PI * radius.get::<meter>());
         Self {
             angular_step_converter: AngularStepConverter::new(steps_per_revolution),
             radius,
+            circumference,
+        }
+    }
+
+    /// Create a new converter from diameter and steps per revolution
+    pub fn from_diameter(steps_per_revolution: i16, diameter: Length) -> Self {
+        let radius = diameter / 2.0;
+        Self::from_radius(steps_per_revolution, radius)
+    }
+
+    /// Create a new converter from circumference and steps per revolution
+    pub fn from_circumference(steps_per_revolution: i16, circumference: Length) -> Self {
+        let radius =
+            Length::new::<meter>(circumference.get::<meter>() / (2.0 * std::f64::consts::PI));
+        Self {
+            angular_step_converter: AngularStepConverter::new(steps_per_revolution),
+            radius,
+            circumference,
         }
     }
 
@@ -32,12 +59,12 @@ impl LinearStepConverter {
 
     /// Get the diameter of the system
     pub fn diameter(&self) -> Length {
-        Length::new::<meter>(2.0 * self.radius.get::<meter>())
+        self.radius * 2.0
     }
 
     /// Get the circumference of the system
     pub fn circumference(&self) -> Length {
-        Length::new::<meter>(2.0 * std::f64::consts::PI * self.radius.get::<meter>())
+        self.circumference
     }
 
     /// Get the steps per revolution
@@ -49,10 +76,11 @@ impl LinearStepConverter {
 // Linear to/from steps conversions
 impl LinearStepConverter {
     /// Convert linear distance to steps
+    ///
+    /// Formula: steps = (distance / circumference) * steps_per_revolution
     pub fn distance_to_steps(&self, distance: Length) -> f64 {
-        // Convert distance to angle: angle = distance/radius
-        let circumference = 2.0 * std::f64::consts::PI * self.radius.get::<meter>();
-        let revolutions = distance.get::<meter>() / circumference;
+        // Convert distance to angle: angle = distance/circumference (in revolutions)
+        let revolutions = distance.get::<meter>() / self.circumference.get::<meter>();
         let angle = Angle::new::<revolution>(revolutions);
 
         // Convert angle to steps
@@ -60,24 +88,26 @@ impl LinearStepConverter {
     }
 
     /// Convert steps to linear distance
+    ///
+    /// Formula: distance = (steps / steps_per_revolution) * circumference
     pub fn steps_to_distance(&self, steps: f64) -> Length {
         // Convert steps to angle
         let angle = self.angular_step_converter.steps_to_angle(steps);
 
-        // Convert angle to distance: distance = angle * radius
+        // Convert angle to distance: distance = angle * circumference
         let revolutions = angle.get::<revolution>();
-        let circumference = 2.0 * std::f64::consts::PI * self.radius.get::<meter>();
-        let distance = revolutions * circumference;
+        let distance = revolutions * self.circumference.get::<meter>();
 
         Length::new::<meter>(distance)
     }
 
     /// Convert linear velocity to steps/second
+    ///
+    /// Formula: steps/second = (velocity / circumference) * steps_per_revolution
     pub fn velocity_to_steps(&self, velocity: Velocity) -> f64 {
-        // Convert linear velocity to angular velocity: ω = v/r
+        // Convert linear velocity to angular velocity: ω = v/circumference (in rev/s)
         let linear_velocity = velocity.get::<meter_per_second>();
-        let angular_velocity_rps =
-            linear_velocity / (2.0 * std::f64::consts::PI * self.radius.get::<meter>());
+        let angular_velocity_rps = linear_velocity / self.circumference.get::<meter>();
         let angular_velocity = AngularVelocity::new::<revolution_per_second>(angular_velocity_rps);
 
         // Convert angular velocity to steps/second
@@ -86,21 +116,24 @@ impl LinearStepConverter {
     }
 
     /// Convert steps/second to linear velocity
+    ///
+    /// Formula: velocity = (steps_per_second / steps_per_revolution) * circumference
     pub fn steps_to_velocity(&self, steps_per_second: f64) -> Velocity {
         // Convert steps/second to angular velocity
         let angular_velocity = self
             .angular_step_converter
             .steps_to_angular_velocity(steps_per_second);
 
-        // Convert angular velocity to linear velocity: v = ω * r
+        // Convert angular velocity to linear velocity: v = ω * circumference
         let angular_velocity_rps = angular_velocity.get::<revolution_per_second>();
-        let linear_velocity =
-            angular_velocity_rps * 2.0 * std::f64::consts::PI * self.radius.get::<meter>();
+        let linear_velocity = angular_velocity_rps * self.circumference.get::<meter>();
 
         Velocity::new::<meter_per_second>(linear_velocity)
     }
 
     /// Convert linear acceleration to steps/second²
+    ///
+    /// Formula: steps/second² = (acceleration / radius) * (steps_per_revolution / (2π))
     pub fn acceleration_to_steps(&self, acceleration: Acceleration) -> f64 {
         // Convert linear acceleration to angular acceleration: α = a/r
         let linear_acceleration = acceleration.get::<meter_per_second_squared>();
@@ -115,6 +148,8 @@ impl LinearStepConverter {
     }
 
     /// Convert steps/second² to linear acceleration
+    ///
+    /// Formula: acceleration = (steps_per_second² / steps_per_revolution) * (2π) * radius
     pub fn steps_to_acceleration(&self, steps_per_second_squared: f64) -> Acceleration {
         // Convert steps/second² to angular acceleration
         let angular_acceleration = self
@@ -133,37 +168,43 @@ impl LinearStepConverter {
 // Linear to/from angular conversions
 impl LinearStepConverter {
     /// Convert linear distance to angle
+    ///
+    /// Formula: angle (in revolutions) = distance / circumference
     pub fn distance_to_angle(&self, distance: Length) -> Angle {
-        let circumference = 2.0 * std::f64::consts::PI * self.radius.get::<meter>();
-        let revolutions = distance.get::<meter>() / circumference;
+        let revolutions = distance.get::<meter>() / self.circumference.get::<meter>();
         Angle::new::<revolution>(revolutions)
     }
 
     /// Convert angle to linear distance
+    ///
+    /// Formula: distance = angle (in revolutions) * circumference
     pub fn angle_to_distance(&self, angle: Angle) -> Length {
         let revolutions = angle.get::<revolution>();
-        let circumference = 2.0 * std::f64::consts::PI * self.radius.get::<meter>();
-        let distance = revolutions * circumference;
+        let distance = revolutions * self.circumference.get::<meter>();
         Length::new::<meter>(distance)
     }
 
     /// Convert linear velocity to angular velocity
+    ///
+    /// Formula: angular velocity (in rev/s) = velocity / circumference
     pub fn velocity_to_angular_velocity(&self, velocity: Velocity) -> AngularVelocity {
         let linear_velocity = velocity.get::<meter_per_second>();
-        let angular_velocity_rps =
-            linear_velocity / (2.0 * std::f64::consts::PI * self.radius.get::<meter>());
+        let angular_velocity_rps = linear_velocity / self.circumference.get::<meter>();
         AngularVelocity::new::<revolution_per_second>(angular_velocity_rps)
     }
 
     /// Convert angular velocity to linear velocity
+    ///
+    /// Formula: velocity = angular velocity (in rev/s) * circumference
     pub fn angular_velocity_to_velocity(&self, angular_velocity: AngularVelocity) -> Velocity {
         let angular_velocity_rps = angular_velocity.get::<revolution_per_second>();
-        let linear_velocity =
-            angular_velocity_rps * 2.0 * std::f64::consts::PI * self.radius.get::<meter>();
+        let linear_velocity = angular_velocity_rps * self.circumference.get::<meter>();
         Velocity::new::<meter_per_second>(linear_velocity)
     }
 
     /// Convert linear acceleration to angular acceleration
+    ///
+    /// Formula: angular acceleration (in rad/s²) = acceleration / radius
     pub fn acceleration_to_angular_acceleration(
         &self,
         acceleration: Acceleration,
@@ -174,6 +215,8 @@ impl LinearStepConverter {
     }
 
     /// Convert angular acceleration to linear acceleration
+    ///
+    /// Formula: acceleration = angular acceleration (in rad/s²) * radius
     pub fn angular_acceleration_to_acceleration(
         &self,
         angular_acceleration: AngularAcceleration,
@@ -210,7 +253,8 @@ impl LinearStepConverter {
 
     /// Convert steps/second² to angular acceleration
     pub fn steps_to_angular_acceleration(&self, steps: f64) -> AngularAcceleration {
-        self.angular_step_converter.steps_to_angular_acceleration(steps)
+        self.angular_step_converter
+            .steps_to_angular_acceleration(steps)
     }
 
     /// Convert angular acceleration to steps/second²
@@ -228,14 +272,14 @@ mod tests {
 
     #[test]
     fn test_new() {
-        let converter = LinearStepConverter::new(200, Length::new::<meter>(0.1));
+        let converter = LinearStepConverter::from_radius(200, Length::new::<meter>(0.1));
         assert_eq!(converter.steps_per_revolution(), 200);
         assert_eq!(converter.radius().get::<meter>(), 0.1);
     }
 
     #[test]
     fn test_diameter_and_circumference() {
-        let converter = LinearStepConverter::new(200, Length::new::<meter>(0.1));
+        let converter = LinearStepConverter::from_radius(200, Length::new::<meter>(0.1));
 
         // Test diameter
         let diameter = converter.diameter();
@@ -254,7 +298,7 @@ mod tests {
     // Tests for linear <-> steps conversions
     #[test]
     fn test_distance_to_steps() {
-        let converter = LinearStepConverter::new(200, Length::new::<meter>(0.1));
+        let converter = LinearStepConverter::from_radius(200, Length::new::<meter>(0.1));
         let circumference = 2.0 * std::f64::consts::PI * 0.1; // 0.628m
 
         // One full revolution
@@ -268,7 +312,7 @@ mod tests {
 
     #[test]
     fn test_steps_to_distance() {
-        let converter = LinearStepConverter::new(200, Length::new::<meter>(0.1));
+        let converter = LinearStepConverter::from_radius(200, Length::new::<meter>(0.1));
         let circumference = 2.0 * std::f64::consts::PI * 0.1; // 0.628m
 
         // One full revolution
@@ -286,7 +330,7 @@ mod tests {
 
     #[test]
     fn test_velocity_to_steps() {
-        let converter = LinearStepConverter::new(200, Length::new::<meter>(0.1));
+        let converter = LinearStepConverter::from_radius(200, Length::new::<meter>(0.1));
         let circumference = 2.0 * std::f64::consts::PI * 0.1; // 0.628m
 
         // Linear velocity equivalent to one revolution per second
@@ -302,7 +346,7 @@ mod tests {
 
     #[test]
     fn test_steps_to_velocity() {
-        let converter = LinearStepConverter::new(200, Length::new::<meter>(0.1));
+        let converter = LinearStepConverter::from_radius(200, Length::new::<meter>(0.1));
         let circumference = 2.0 * std::f64::consts::PI * 0.1; // 0.628m
 
         // Steps for one revolution per second
@@ -324,7 +368,7 @@ mod tests {
 
     #[test]
     fn test_acceleration_to_steps() {
-        let converter = LinearStepConverter::new(200, Length::new::<meter>(0.1));
+        let converter = LinearStepConverter::from_radius(200, Length::new::<meter>(0.1));
 
         // Create a linear acceleration of 1 m/s²
         // This will result in angular acceleration of a/r = 1/0.1 = 10 rad/s²
@@ -343,7 +387,7 @@ mod tests {
 
     #[test]
     fn test_steps_to_acceleration() {
-        let converter = LinearStepConverter::new(200, Length::new::<meter>(0.1));
+        let converter = LinearStepConverter::from_radius(200, Length::new::<meter>(0.1));
 
         // Steps for one revolution per second squared
         let acceleration = converter.steps_to_acceleration(200.0);
@@ -358,7 +402,7 @@ mod tests {
     // Tests for linear <-> angular conversions
     #[test]
     fn test_distance_to_angle() {
-        let converter = LinearStepConverter::new(200, Length::new::<meter>(0.1));
+        let converter = LinearStepConverter::from_radius(200, Length::new::<meter>(0.1));
         let circumference = 2.0 * std::f64::consts::PI * 0.1; // 0.628m
 
         // Full circumference = 1 revolution
@@ -372,7 +416,7 @@ mod tests {
 
     #[test]
     fn test_angle_to_distance() {
-        let converter = LinearStepConverter::new(200, Length::new::<meter>(0.1));
+        let converter = LinearStepConverter::from_radius(200, Length::new::<meter>(0.1));
         let circumference = 2.0 * std::f64::consts::PI * 0.1; // 0.628m
 
         // 1 revolution = full circumference
@@ -390,7 +434,7 @@ mod tests {
 
     #[test]
     fn test_velocity_to_angular_velocity() {
-        let converter = LinearStepConverter::new(200, Length::new::<meter>(0.1));
+        let converter = LinearStepConverter::from_radius(200, Length::new::<meter>(0.1));
         let circumference = 2.0 * std::f64::consts::PI * 0.1; // 0.628m
 
         // Linear velocity of full circumference per second = 1 revolution per second
@@ -416,7 +460,7 @@ mod tests {
 
     #[test]
     fn test_angular_velocity_to_velocity() {
-        let converter = LinearStepConverter::new(200, Length::new::<meter>(0.1));
+        let converter = LinearStepConverter::from_radius(200, Length::new::<meter>(0.1));
         let circumference = 2.0 * std::f64::consts::PI * 0.1; // 0.628m
 
         // 1 revolution per second = linear velocity of full circumference per second
@@ -440,7 +484,7 @@ mod tests {
 
     #[test]
     fn test_acceleration_to_angular_acceleration() {
-        let converter = LinearStepConverter::new(200, Length::new::<meter>(0.1));
+        let converter = LinearStepConverter::from_radius(200, Length::new::<meter>(0.1));
 
         // Linear acceleration of 1 m/s² = angular acceleration of 10 rad/s²
         let angular_accel = converter.acceleration_to_angular_acceleration(Acceleration::new::<
@@ -455,7 +499,7 @@ mod tests {
 
     #[test]
     fn test_angular_acceleration_to_acceleration() {
-        let converter = LinearStepConverter::new(200, Length::new::<meter>(0.1));
+        let converter = LinearStepConverter::from_radius(200, Length::new::<meter>(0.1));
 
         // Angular acceleration of 10 rad/s² = linear acceleration of 1 m/s²
         let acceleration =
@@ -472,7 +516,7 @@ mod tests {
     // Tests for forwarded angular <-> steps methods
     #[test]
     fn test_forwarded_steps_to_angle() {
-        let converter = LinearStepConverter::new(200, Length::new::<meter>(0.1));
+        let converter = LinearStepConverter::from_radius(200, Length::new::<meter>(0.1));
 
         // 200 steps = 1 revolution
         let angle = converter.steps_to_angle(200.0);
@@ -485,7 +529,7 @@ mod tests {
 
     #[test]
     fn test_forwarded_angle_to_steps() {
-        let converter = LinearStepConverter::new(200, Length::new::<meter>(0.1));
+        let converter = LinearStepConverter::from_radius(200, Length::new::<meter>(0.1));
 
         // 1 revolution = 200 steps
         let steps = converter.angle_to_steps(Angle::new::<revolution>(1.0));
@@ -498,7 +542,7 @@ mod tests {
 
     #[test]
     fn test_roundtrip_conversions() {
-        let converter = LinearStepConverter::new(200, Length::new::<meter>(0.1));
+        let converter = LinearStepConverter::from_radius(200, Length::new::<meter>(0.1));
 
         // Test linear distance to steps roundtrip
         let original_distance = Length::new::<meter>(0.456);
