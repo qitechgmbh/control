@@ -77,7 +77,7 @@ impl Actor for StepperDriverEL70x1 {
             // set the output
             output.enable = self.enabled;
             output.velocity = self.velocity;
-            output.set_counter = self.set_position;
+            output.set_counter = self.set_position.take();
 
             // write the output
             match (self.stepper.write)(output).await {

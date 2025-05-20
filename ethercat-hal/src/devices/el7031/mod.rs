@@ -7,6 +7,7 @@ use ethercat_hal_derive::EthercatDevice;
 use pdo::{EL7031RxPdo, EL7031TxPdo};
 
 use crate::{
+    helpers::counter_wrapper_u16_i128::CounterWrapperU16U128,
     io::{
         digital_input::{DigitalInputDevice, DigitalInputInput, DigitalInputState},
         stepper_velocity_el70x1::{
@@ -16,7 +17,6 @@ use crate::{
     },
     pdo::{PredefinedPdoAssignment, RxPdo, TxPdo},
     shared_config::el70x1::EL70x1OperationMode,
-    helpers::counter_wrapper_u16_i128::CounterWrapperU16U128,
 };
 
 use super::{EthercatDeviceProcessing, NewEthercatDevice, SubDeviceIdentityTuple};
@@ -31,42 +31,63 @@ pub struct EL7031 {
 
 impl EthercatDeviceProcessing for EL7031 {
     fn input_post_process(&mut self) -> Result<(), anyhow::Error> {
-        let counter_overflow = match &self.txpdo.enc_status_compact {
-            Some(value) => value.counter_underflow,
-            None => return Err(anyhow!("enc_status_compact is None")),
-        };
-
-        let counter_underflow = match &self.txpdo.enc_status_compact {
-            Some(value) => value.counter_overflow,
-            None => return Err(anyhow!("enc_status_compact is None")),
-        };
-
-        let counter_value = match &self.txpdo.enc_status_compact {
-            Some(value) => value.counter_value,
+        let enc_status_compact = match &self.txpdo.enc_status_compact {
+            Some(value) => value,
             None => return Err(anyhow!("enc_status_compact is None")),
         };
 
         // update the counter wrapper
-        self.counter_wrapper
-            .update(counter_value, counter_underflow, counter_overflow);
+        self.counter_wrapper.update(
+            enc_status_compact.counter_value,
+            enc_status_compact.counter_underflow,
+            enc_status_compact.counter_overflow,
+        );
 
         Ok(())
     }
 
     fn output_pre_process(&mut self) -> Result<(), anyhow::Error> {
-        // set counter
-        match &mut self.rxpdo.enc_control_compact {
-            Some(enc_control_compact) => match self.counter_wrapper.pop_override() {
-                Some(new_counter) => {
-                    enc_control_compact.set_counter = true;
-                    enc_control_compact.set_counter_value = new_counter;
-                }
-                None => {
-                    enc_control_compact.set_counter = false;
-                    enc_control_compact.set_counter_value = 0;
-                }
-            },
+        let enc_status_compact = match &self.txpdo.enc_status_compact {
+            Some(value) => value,
+            None => return Err(anyhow!("enc_status_compact is None")),
+        };
+
+        let enc_control_compact = match &mut self.rxpdo.enc_control_compact {
+            Some(value) => value,
             None => return Err(anyhow!("enc_control_compact is None")),
+        };
+
+        let stm_status = match &self.txpdo.stm_status {
+            Some(value) => value,
+            None => return Err(anyhow!("stm_status is None")),
+        };
+
+        let stm_control = match &mut self.rxpdo.stm_control {
+            Some(value) => value,
+            None => return Err(anyhow!("stm_control is None")),
+        };
+
+        // reset errors
+        if stm_status.error {
+            stm_control.reset = true;
+        }
+
+        // clear counter overflow/underflow flags by setting the counter to the current value
+        if enc_status_compact.counter_overflow || enc_status_compact.counter_underflow {
+            enc_control_compact.set_counter = true;
+            enc_control_compact.set_counter_value = enc_status_compact.counter_value;
+        }
+
+        // set counter
+        match self.counter_wrapper.pop_override() {
+            Some(new_counter) => {
+                enc_control_compact.set_counter = true;
+                enc_control_compact.set_counter_value = new_counter;
+            }
+            None => {
+                enc_control_compact.set_counter = false;
+                enc_control_compact.set_counter_value = 0;
+            }
         }
 
         Ok(())
@@ -80,7 +101,7 @@ impl NewEthercatDevice for EL7031 {
             txpdo: configuration.pdo_assignment.txpdo_assignment(),
             rxpdo: configuration.pdo_assignment.rxpdo_assignment(),
             configuration,
-            counter_wrapper: CounterWrapperU16U128::new(0),
+            counter_wrapper: CounterWrapperU16U128::new(),
         }
     }
 }
