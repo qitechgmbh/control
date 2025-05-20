@@ -146,36 +146,36 @@ impl MachineNewTrait for ExtruderV2 {
                     }
                 }
             };
-            /*
-                        let el2004 = {
-                            let device_identification =
-                                get_device_identification_by_role(params.device_group, 3)?;
-                            let device_hardware_identification_ethercat =
-                                match &device_identification.device_hardware_identification {
-                                    DeviceHardwareIdentification::Ethercat(
-                                        device_hardware_identification_ethercat,
-                                    ) => device_hardware_identification_ethercat,
-                                };
-                            let subdevice_index = device_hardware_identification_ethercat.subdevice_index;
-                            let subdevice = get_subdevice_by_index(hardware.subdevices, subdevice_index)?;
-                            let subdevice_identity = subdevice.identity();
-                            match subdevice_identity_to_tuple(&subdevice_identity) {
-                                EL2004_IDENTITY_A => {
-                                    let ethercat_device = get_ethercat_device_by_index(
-                                        &hardware.ethercat_devices,
-                                        subdevice_index,
-                                    )?;
-                                    downcast_device::<EL2004>(ethercat_device).await?
-                                }
-                                _ => {
-                                    return Err(anyhow::anyhow!(
-                                        "[{}::MachineNewTrait/Winder2::new] Device with role 3 is not an EL2004",
-                                        module_path!()
-                                    ));
-                                }
-                            }
-                        };
-            */
+
+            let el2004 = {
+                let device_identification =
+                    get_device_identification_by_role(params.device_group, 3)?;
+                let device_hardware_identification_ethercat =
+                    match &device_identification.device_hardware_identification {
+                        DeviceHardwareIdentification::Ethercat(
+                            device_hardware_identification_ethercat,
+                        ) => device_hardware_identification_ethercat,
+                    };
+                let subdevice_index = device_hardware_identification_ethercat.subdevice_index;
+                let subdevice = get_subdevice_by_index(hardware.subdevices, subdevice_index)?;
+                let subdevice_identity = subdevice.identity();
+                match subdevice_identity_to_tuple(&subdevice_identity) {
+                    EL2004_IDENTITY_A => {
+                        let ethercat_device = get_ethercat_device_by_index(
+                            &hardware.ethercat_devices,
+                            subdevice_index,
+                        )?;
+                        downcast_device::<EL2004>(ethercat_device).await?
+                    }
+                    _ => {
+                        return Err(anyhow::anyhow!(
+                            "[{}::MachineNewTrait/Winder2::new] Device with role 3 is not an EL2004",
+                            module_path!()
+                        ));
+                    }
+                }
+            };
+
             let el3021 = {
                 let device_identification =
                     get_device_identification_by_role(params.device_group, 4)?;
@@ -245,13 +245,13 @@ impl MachineNewTrait for ExtruderV2 {
             let t4_getter = TemperatureInputGetter::new(t4);
 
             let pressure_sensor = AnalogInputGetter::new(AnalogInput::new(el3021, EL3021Port::AI1));
-            /*
-                        // For the Relais
-                        let digital_out_1 = DigitalOutput::new(el2004.clone(), EL2004Port::DO1);
-                        let digital_out_2 = DigitalOutput::new(el2004.clone(), EL2004Port::DO2);
-                        let digital_out_3 = DigitalOutput::new(el2004.clone(), EL2004Port::DO3);
-                        let digital_out_4 = DigitalOutput::new(el2004.clone(), EL2004Port::DO3);
-            */
+
+            // For the Relais
+            let digital_out_1 = DigitalOutput::new(el2004.clone(), EL2004Port::DO1);
+            let digital_out_2 = DigitalOutput::new(el2004.clone(), EL2004Port::DO2);
+            let digital_out_3 = DigitalOutput::new(el2004.clone(), EL2004Port::DO3);
+            let digital_out_4 = DigitalOutput::new(el2004.clone(), EL2004Port::DO4);
+
             let temperature_controller_front = TemperatureController::new(0.1, 0.0, 0.0, 0.0);
             let temperature_controller_middle = TemperatureController::new(0.1, 0.0, 0.0, 0.0);
             let temperature_controller_back = TemperatureController::new(0.1, 0.0, 0.0, 0.0);
@@ -298,10 +298,11 @@ impl MachineNewTrait for ExtruderV2 {
                 temp_sensor_3: t3_getter,
                 temp_sensor_4: t4_getter,
 
-                // heating_relay_1: DigitalOutputSetter::new(digital_out_1),
-                // heating_relay_2: DigitalOutputSetter::new(digital_out_2),
-                // heating_relay_3: DigitalOutputSetter::new(digital_out_3),
-                // heating_relay_4: DigitalOutputSetter::new(digital_out_4),
+                heating_relay_1: DigitalOutputSetter::new(digital_out_1),
+                heating_relay_2: DigitalOutputSetter::new(digital_out_2),
+                heating_relay_3: DigitalOutputSetter::new(digital_out_3),
+                heating_relay_4: DigitalOutputSetter::new(digital_out_4),
+
                 temperature_controller_front: temperature_controller_front,
                 temperature_controller_middle: temperature_controller_middle,
                 temperature_controller_back: temperature_controller_back,

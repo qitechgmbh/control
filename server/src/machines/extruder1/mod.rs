@@ -71,10 +71,11 @@ pub struct ExtruderV2 {
     temp_sensor_3: TemperatureInputGetter,
     temp_sensor_4: TemperatureInputGetter,
 
-    // heating_relay_1: DigitalOutputSetter,
-    // heating_relay_2: DigitalOutputSetter,
-    // heating_relay_3: DigitalOutputSetter,
-    // heating_relay_4: DigitalOutputSetter,
+    heating_relay_1: DigitalOutputSetter,
+    heating_relay_2: DigitalOutputSetter,
+    heating_relay_3: DigitalOutputSetter,
+    heating_relay_4: DigitalOutputSetter,
+
     temperature_controller_front: TemperatureController,
     temperature_controller_middle: TemperatureController,
     temperature_controller_back: TemperatureController,

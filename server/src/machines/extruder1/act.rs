@@ -17,10 +17,10 @@ impl Actor for ExtruderV2 {
             self.temp_sensor_3.act(now_ts).await;
             self.temp_sensor_4.act(now_ts).await;
 
-            // self.heating_relay_1.act(now_ts).await;
-            // self.heating_relay_2.act(now_ts).await;
-            // self.heating_relay_3.act(now_ts).await;
-            // self.heating_relay_4.act(now_ts).await;
+            self.heating_relay_1.act(now_ts).await;
+            self.heating_relay_2.act(now_ts).await;
+            self.heating_relay_3.act(now_ts).await;
+            self.heating_relay_4.act(now_ts).await;
 
             self.set_bar();
 
@@ -28,11 +28,6 @@ impl Actor for ExtruderV2 {
             self.heating_middle.temperature = self.temp_sensor_2.temperature;
             self.heating_back.temperature = self.temp_sensor_3.temperature;
             self.heating_nozzle.temperature = self.temp_sensor_4.temperature;
-
-            self.heating_front.temperature = 81.0; // set the temperature read from the sensor            
-            self.heating_middle.temperature = 81.0;
-            self.heating_back.temperature = 81.0;
-            self.heating_nozzle.temperature = 81.0;
 
             self.temperature_controller_front.target_temp =
                 self.heating_front.target_temperature as f64; // set target temperature
@@ -67,10 +62,10 @@ impl Actor for ExtruderV2 {
                     .temperature_controller_nozzle
                     .update(self.heating_nozzle.temperature as f64, now_ts); // check if we need to set our relais to enabled to reach target temp
 
-                // self.heating_relay_1.set(on_1); // set relay to on or off
-                // self.heating_relay_2.set(on_2); // set relay to on or off
-                // self.heating_relay_3.set(on_3); // set relay to on or off
-                // self.heating_relay_4.set(on_4); // set relay to on or off
+                self.heating_relay_1.set(on_1); // set relay to on or off
+                self.heating_relay_2.set(on_2); // set relay to on or off
+                self.heating_relay_3.set(on_3); // set relay to on or off
+                self.heating_relay_4.set(on_4); // set relay to on or off
 
                 self.heating_front.heating = on_1;
                 self.heating_middle.heating = on_2;
@@ -83,7 +78,7 @@ impl Actor for ExtruderV2 {
             }
 
             let now = Instant::now();
-            if now.duration_since(self.last_measurement_emit) > Duration::from_millis(32) {
+            if now.duration_since(self.last_measurement_emit) > Duration::from_millis(16) {
                 // channel 1
                 self.emit_heating(self.heating_back.clone(), super::HeatingType::Back);
                 self.emit_heating(self.heating_front.clone(), super::HeatingType::Front);
@@ -106,10 +101,10 @@ impl Actor for ExtruderV2 {
 
                     self.inverter.set_running_rpm_target(rpm);
 
-                    println!(
+                    /*println!(
                         "pressuresensor bar: {}  new hz for motor {} target {}",
                         self.bar, res, self.pressure_motor_controller.target_pressure
-                    );
+                    );*/
                 }
 
                 self.last_measurement_emit = now;
