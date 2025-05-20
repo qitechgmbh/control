@@ -75,7 +75,7 @@ export function Winder2ControlPage() {
           {traverseState && (
             <TraverseBar
               inside={0}
-              outside={100}
+              outside={180}
               min={traverseState.data.limit_inner}
               max={traverseState.data.limit_outer}
               current={traversePosition.current?.value ?? 0}
@@ -91,7 +91,7 @@ export function Winder2ControlPage() {
                 min={0}
                 minLabel="IN"
                 maxLabel="OUT"
-                max={100}
+                max={180}
                 renderValue={(value) => roundToDecimals(value, 1)}
                 inverted
                 onChange={traverseSetLimitOuter}
@@ -112,7 +112,7 @@ export function Winder2ControlPage() {
                 unit="mm"
                 title="Inner Limit"
                 min={0}
-                max={100}
+                max={180}
                 defaultValue={16}
                 minLabel="IN"
                 maxLabel="OUT"
