@@ -468,7 +468,7 @@ impl MitsubishiInverterRS485Actor {
         match self.next_response_type {
             ResponseType::ReadFrequency => self.handle_inverter_frequency(resp),
             ResponseType::ReadInverterStatus => (),
-            ResponseType::WriteFrequency => println!("WriteFrequency"),
+            ResponseType::WriteFrequency => (),
             ResponseType::ReadMotorFrequency => self.handle_motor_frequency(resp),
             ResponseType::InverterStatus => self.handle_inverter_status(resp),
             ResponseType::InverterControl => (),
@@ -490,7 +490,6 @@ impl Actor for MitsubishiInverterRS485Actor {
                     self.add_request(MitsubishiControlRequests::ResetInverter.into());
                     self.baudrate = (self.serial_interface.get_baudrate)().await;
                     self.encoding = (self.serial_interface.get_serial_encoding)().await;
-                    //      println!("{:?} {:?}", self.baudrate, self.encoding)
                 }
                 return;
             }
@@ -509,7 +508,7 @@ impl Actor for MitsubishiInverterRS485Actor {
                 encoding.total_bits(),
                 self.last_request_type.timeout_duration(),
                 baudrate,
-                self.last_message_size * 1000,
+                self.last_message_size,
             );
 
             // if we have no requests add ReadMotorFrequency
