@@ -25,6 +25,7 @@ use control_core::{
     },
 };
 use ethercat_hal::{
+    coe::ConfigurableDevice,
     devices::{
         downcast_device,
         ek1100::EK1100_IDENTITY_A,
@@ -32,7 +33,7 @@ use ethercat_hal::{
         el2004::{EL2004, EL2004_IDENTITY_A, EL2004Port},
         el3021::{EL3021, EL3021_IDENTITY_A, EL3021Port},
         el3204::{EL3204, EL3204_IDENTITY_A, EL3204_IDENTITY_B, EL3204Port},
-        el6021::{self, EL6021, EL6021_IDENTITY_A, EL6021_IDENTITY_B},
+        el6021::{self, EL6021, EL6021_IDENTITY_A, EL6021_IDENTITY_B, EL6021Configuration},
         subdevice_identity_to_tuple,
     },
     io::{
@@ -130,7 +131,7 @@ impl MachineNewTrait for ExtruderV2 {
                 let subdevice_index = device_hardware_identification_ethercat.subdevice_index;
                 let subdevice = get_subdevice_by_index(hardware.subdevices, subdevice_index)?;
                 let subdevice_identity = subdevice.identity();
-                match subdevice_identity_to_tuple(&subdevice_identity) {
+                let el6021 = match subdevice_identity_to_tuple(&subdevice_identity) {
                     EL6021_IDENTITY_A | EL6021_IDENTITY_B => {
                         let ethercat_device = get_ethercat_device_by_index(
                             &hardware.ethercat_devices,
@@ -144,7 +145,13 @@ impl MachineNewTrait for ExtruderV2 {
                             module_path!()
                         ));
                     }
-                }
+                };
+                el6021
+                    .write()
+                    .await
+                    .write_config(&subdevice, &EL6021Configuration::default())
+                    .await?;
+                el6021
             };
 
             let el2004 = {
