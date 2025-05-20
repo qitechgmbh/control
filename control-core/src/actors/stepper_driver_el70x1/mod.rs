@@ -1,7 +1,7 @@
 use super::Actor;
 use core::panic;
 use ethercat_hal::{
-    helpers::el70xx_velocity_converter::EL70x1VelocityCalculator,
+    helpers::el70xx_velocity_converter::EL70x1VelocityConverter,
     io::stepper_velocity_el70x1::StepperVelocityEL70x1, shared_config::el70x1::EL70x1SpeedRange,
 };
 use std::{future::Future, pin::Pin, time::Instant};
@@ -12,7 +12,7 @@ pub struct StepperDriverEL70x1 {
     stepper: StepperVelocityEL70x1,
     enabled: bool,
     velocity: i16,
-    pub converter: EL70x1VelocityCalculator,
+    pub converter: EL70x1VelocityConverter,
 }
 
 impl StepperDriverEL70x1 {
@@ -21,18 +21,18 @@ impl StepperDriverEL70x1 {
             stepper,
             enabled: false,
             velocity: 0,
-            converter: EL70x1VelocityCalculator::new(speed_range),
+            converter: EL70x1VelocityConverter::new(speed_range)
         }
     }
 
     /// Set the speed in steps per second
     pub fn set_speed(&mut self, steps_per_second: i32) {
-        self.velocity = self.converter.steps_to_velocity(steps_per_second)
+        self.velocity = self.converter.steps_to_velocity(steps_per_second, true)
     }
 
     /// Get the speed in steps per second
     pub fn get_speed(&self) -> i32 {
-        self.converter.velocity_to_steps(self.velocity) as i32
+        self.converter.velocity_to_steps(self.velocity, true) as i32
     }
 
     /// Enable or disable the stepper
