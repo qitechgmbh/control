@@ -36,7 +36,6 @@ impl CounterWrapperU16U128 {
             counter_underflow_rising,
             counter_overflow_rising,
         );
-        
         self.counter += change as i128;
         self.last_counter = counter;
         self.last_counter_underflow = counter_underflow;

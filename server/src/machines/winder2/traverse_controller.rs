@@ -20,7 +20,8 @@ pub struct TraverseController {
     limit_inner: Length,
     limit_outer: Length,
     state: State,
-    converter: LinearStepConverter,
+    fullstep_converter: LinearStepConverter,
+    microstep_converter: LinearStepConverter,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -91,15 +92,19 @@ pub enum HomingState {
 }
 
 impl TraverseController {
-    pub fn new(limit_inner: Length, limit_outer: Length) -> Self {
+    pub fn new(limit_inner: Length, limit_outer: Length, microsteps: u8) -> Self {
         Self {
             enabled: false,
             position: Length::ZERO,
             limit_inner,
             limit_outer,
             state: State::NotHomed,
-            converter: LinearStepConverter::from_circumference(
+            fullstep_converter: LinearStepConverter::from_circumference(
                 200,
+                Length::new::<millimeter>(35.0),
+            ),
+            microstep_converter: LinearStepConverter::from_circumference(
+                200 * microsteps as i16,
                 Length::new::<millimeter>(35.0),
             ),
         }
@@ -217,7 +222,7 @@ impl TraverseController {
     /// Gets the current traverse position as a [`Length`].
     pub fn sync_position(&mut self, traverse: &StepperDriverEL70x1) {
         let steps = traverse.get_position();
-        self.position = self.converter.steps_to_distance(steps as f64);
+        self.position = self.microstep_converter.steps_to_distance(steps as f64);
     }
 
     /// Calculates a desired speed based on the current state and the end stop status.
@@ -241,14 +246,14 @@ impl TraverseController {
             State::Idle => {}
             State::GoingIn => {
                 // If inner limit is reached
-                if self.is_at_position(self.limit_inner, Length::new::<millimeter>(0.1)) {
+                if self.is_at_position(self.limit_inner, Length::new::<millimeter>(0.049)) {
                     // Put Into Idle
                     self.state = State::Idle;
                 }
             }
             State::GoingOut => {
                 // If outer limit is reached
-                if self.is_at_position(self.limit_outer, Length::new::<millimeter>(0.1)) {
+                if self.is_at_position(self.limit_outer, Length::new::<millimeter>(0.049)) {
                     // Put Into Idle
                     self.state = State::Idle;
                 }
@@ -270,7 +275,7 @@ impl TraverseController {
                     }
                 }
                 HomingState::FindEnstopFineDistancing => {
-                    // Move out 500ms
+                    // Move out until endstop is not triggered anymore
                     if traverse_end_stop.value() == false {
                         // Find endstop fine
                         self.state = State::Homing(HomingState::FindEndtopFine);
@@ -297,21 +302,21 @@ impl TraverseController {
             State::Traversing(traversing_state) => match traversing_state {
                 TraversingState::GoingOut => {
                     // If outer limit is reached
-                    if self.is_at_position(self.limit_outer, Length::new::<millimeter>(0.1)) {
+                    if self.is_at_position(self.limit_outer, Length::new::<millimeter>(0.049)) {
                         // Turn around
                         self.state = State::Traversing(TraversingState::GoingOut);
                     }
                 }
                 TraversingState::TraversingIn => {
                     // If inner limit is reached
-                    if self.is_at_position(self.limit_inner, Length::new::<millimeter>(0.1)) {
+                    if self.is_at_position(self.limit_inner, Length::new::<millimeter>(0.049)) {
                         // Turn around
                         self.state = State::Traversing(TraversingState::TraversingOut);
                     }
                 }
                 TraversingState::TraversingOut => {
                     // If outer limit is reached
-                    if self.is_at_position(self.limit_outer, Length::new::<millimeter>(0.1)) {
+                    if self.is_at_position(self.limit_outer, Length::new::<millimeter>(0.049)) {
                         // Turn around
                         self.state = State::Traversing(TraversingState::TraversingIn);
                     }
@@ -323,8 +328,20 @@ impl TraverseController {
         let speed = match &self.state {
             State::NotHomed => Velocity::ZERO, // Not homed, no movement
             State::Idle => Velocity::ZERO,     // No movement in idle state
-            State::GoingIn => Velocity::new::<millimeter_per_second>(-100.0),
-            State::GoingOut => Velocity::new::<millimeter_per_second>(100.0),
+            State::GoingIn => {
+                // Move in at a speed of 25 mm/s
+                self.speed_to_position(
+                    self.limit_inner,
+                    Velocity::new::<millimeter_per_second>(-100.0),
+                )
+            }
+            State::GoingOut => {
+                // Move out at a speed of 25 mm/s
+                self.speed_to_position(
+                    self.limit_outer,
+                    Velocity::new::<millimeter_per_second>(-100.0),
+                )
+            }
             State::Homing(homing_state) => match homing_state {
                 HomingState::Initialize => unreachable!(
                     "Initialize always transitions to another state before speed is set"
@@ -363,10 +380,6 @@ impl TraverseController {
             },
         };
 
-        print!("Mode: {:?} ", self.state);
-        print!("Speed: {:?}", speed);
-        println!("Position: {:?}", self.position);
-
         speed
     }
 
@@ -376,7 +389,7 @@ impl TraverseController {
         traverse_end_stop: &DigitalInputGetter,
     ) {
         let speed = self.get_speed(traverse, traverse_end_stop);
-        let steps_per_second = self.converter.velocity_to_steps(speed);
+        let steps_per_second = self.fullstep_converter.velocity_to_steps(speed);
         traverse.set_speed(steps_per_second as i32);
     }
 }
