@@ -182,10 +182,6 @@ impl ExtruderV2 {
 
     // keep heating on, and turn motor on
     fn switch_to_extrude(&mut self) {
-        if self.can_extrude == false {
-            return;
-        }
-
         match self.mode {
             ExtruderV2Mode::Standby => self.turn_motor_on(),
             ExtruderV2Mode::Heat => self.turn_motor_on(),

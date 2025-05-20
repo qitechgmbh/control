@@ -46,7 +46,7 @@ impl Actor for ExtruderV2 {
             self.temperature_controller_nozzle.target_temp =
                 self.heating_nozzle.target_temperature as f64;
 
-            self.set_can_switch_extrude();
+            //  self.set_can_switch_extrude();
 
             if self.mode == ExtruderV2Mode::Standby {
                 self.turn_heating_off();
@@ -78,9 +78,9 @@ impl Actor for ExtruderV2 {
                 self.heating_nozzle.heating = on_4;
             }
 
-            if self.mode == ExtruderV2Mode::Extrude && self.can_extrude == false {
-                self.switch_to_heat();
-            }
+            //  if self.mode == ExtruderV2Mode::Extrude && self.can_extrude == false {
+            //     self.switch_to_heat();
+            // }
 
             let now = Instant::now();
             if now.duration_since(self.last_measurement_emit) > Duration::from_millis(16) {
