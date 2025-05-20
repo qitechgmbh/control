@@ -95,13 +95,15 @@ impl ExtruderV2 {
     // Set all relais to ZERO
     // We dont need a function to enable again though, as the act Loop will detect the mode
     fn turn_heating_off(&mut self) {
-        // self.heating_relay_1.set(false);
-        // self.heating_relay_2.set(false);
-        // self.heating_relay_3.set(false);
+        self.heating_relay_1.set(false);
+        self.heating_relay_2.set(false);
+        self.heating_relay_3.set(false);
+        self.heating_relay_4.set(false);
 
         self.heating_back.heating = false;
         self.heating_front.heating = false;
         self.heating_middle.heating = false;
+        self.heating_nozzle.heating = false;
     }
 
     // Send Motor Turn Off Request to the Inverter
