@@ -267,6 +267,7 @@ export const heatingStateDataSchema = z.object({
   temperature: z.number(),
   heating: z.boolean(),
   target_temperature: z.number(),
+  wiring_error: z.boolean(),
 });
 
 export const heatingTargetTemperatureDataSchema = z.object({

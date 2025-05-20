@@ -29,6 +29,11 @@ impl Actor for ExtruderV2 {
             self.heating_back.temperature = self.temp_sensor_3.temperature;
             self.heating_nozzle.temperature = self.temp_sensor_4.temperature;
 
+            self.heating_front.wiring_error = self.temp_sensor_1.wiring_error;
+            self.heating_middle.wiring_error = self.temp_sensor_2.wiring_error;
+            self.heating_back.wiring_error = self.temp_sensor_3.wiring_error;
+            self.heating_nozzle.wiring_error = self.temp_sensor_4.wiring_error;
+
             self.temperature_controller_front.target_temp =
                 self.heating_front.target_temperature as f64; // set target temperature
 

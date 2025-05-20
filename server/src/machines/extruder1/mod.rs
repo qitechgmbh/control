@@ -35,6 +35,7 @@ pub struct Heating {
     pub temperature: f32,
     pub heating: bool,
     pub target_temperature: f32,
+    pub wiring_error: bool,
 }
 
 pub enum HeatingType {
@@ -316,6 +317,7 @@ impl ExtruderV2 {
             temperature: heating.temperature,
             heating: heating.heating,
             target_temperature: heating.target_temperature,
+            wiring_error: heating.wiring_error,
         }
         .build(heating_type);
 

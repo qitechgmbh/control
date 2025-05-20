@@ -7,6 +7,7 @@ import React from "react";
 import { Heating } from "./extruder2/extruder2Namespace";
 import { TimeSeries } from "@/lib/timeseries";
 import { TimeSeriesValueNumeric } from "@/control/TimeSeriesValue";
+import { StatusBadge } from "@/control/StatusBadge";
 
 type Props = {
   title: string;
@@ -43,7 +44,9 @@ export function HeatingZone({
         <TimeSeriesValueNumeric
           label="Temperature"
           unit="C"
-          renderValue={(value) => roundToDecimals(value, 1)}
+          renderValue={(value) =>
+            heatingState?.wiring_error ? "0.0" : roundToDecimals(value, 1)
+          }
           timeseries={heatingTimeSeries}
         />
         <label className="flex items-center space-x-2">
@@ -52,6 +55,11 @@ export function HeatingZone({
           />
         </label>
       </div>
+      {heatingState?.wiring_error && (
+        <StatusBadge variant="error">
+          Cant Read Temperature! Check Temperature Sensor Wiring!
+        </StatusBadge>
+      )}
     </ControlCard>
   );
 }

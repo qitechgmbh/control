@@ -32,6 +32,7 @@ pub struct HeatingStateEvent {
     pub temperature: f32,
     pub heating: bool,
     pub target_temperature: f32,
+    pub wiring_error: bool,
 }
 
 impl HeatingStateEvent {

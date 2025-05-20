@@ -1,16 +1,12 @@
-use std::time::{Duration, Instant};
-
-use crate::machines::extruder1::temperature_controller::{self, TemperatureController};
-
 use super::{
     ExtruderV2, ExtruderV2Mode, Heating, api::ExtruderV2Namespace,
     pressure_controller::PressureController,
 };
+use crate::machines::extruder1::temperature_controller::TemperatureController;
 use anyhow::Error;
 use control_core::{
     actors::{
-        analog_input_getter::AnalogInputGetter, digital_output_blinker::DigitalOutputBlinker,
-        digital_output_setter::DigitalOutputSetter,
+        analog_input_getter::AnalogInputGetter, digital_output_setter::DigitalOutputSetter,
         mitsubishi_inverter_rs485::MitsubishiInverterRS485Actor,
         temperature_input_getter::TemperatureInputGetter,
     },
@@ -37,13 +33,11 @@ use ethercat_hal::{
         subdevice_identity_to_tuple,
     },
     io::{
-        analog_input::AnalogInput,
-        digital_output::DigitalOutput,
-        serial_interface::SerialInterface,
-        temperature_input::{TemperatureInput, TemperatureInputDevice},
+        analog_input::AnalogInput, digital_output::DigitalOutput,
+        serial_interface::SerialInterface, temperature_input::TemperatureInput,
     },
 };
-use uom::si::electric_current::{ElectricCurrent, milliampere};
+use std::time::Instant;
 
 impl MachineNewTrait for ExtruderV2 {
     fn new<'maindevice>(params: &MachineNewParams) -> Result<Self, Error> {
@@ -264,7 +258,7 @@ impl MachineNewTrait for ExtruderV2 {
             let temperature_controller_back = TemperatureController::new(0.1, 0.0, 0.0, 0.0);
             let temperature_controller_nozzle = TemperatureController::new(0.1, 0.0, 0.0, 0.0);
 
-            let pressure_motor_controller = PressureController::new(1.0, 0.1, 0.1, 60.0);
+            let pressure_motor_controller = PressureController::new(1.0, 0.1, 0.1, 10.0);
 
             let extruder: ExtruderV2 = Self {
                 inverter: MitsubishiInverterRS485Actor::new(SerialInterface::new(
@@ -278,28 +272,35 @@ impl MachineNewTrait for ExtruderV2 {
                 heating_nozzle: Heating {
                     temperature: 150.0,
                     heating: false,
-                    target_temperature: 60.0,
+                    target_temperature: 150.0,
+                    wiring_error: false,
                 },
                 heating_front: Heating {
                     temperature: 150.0,
                     heating: false,
-                    target_temperature: 60.0,
+                    target_temperature: 150.0,
+                    wiring_error: false,
                 },
                 heating_back: Heating {
                     temperature: 150.0,
                     heating: false,
                     target_temperature: 150.0,
+                    wiring_error: false,
                 },
                 heating_middle: Heating {
                     temperature: 150.0,
                     heating: false,
                     target_temperature: 150.0,
+                    wiring_error: false,
                 },
                 uses_rpm: true,
+
                 rpm: 0.0,
                 bar: 0.0,
+
                 target_rpm: 0.0,
                 target_bar: 0.0,
+
                 temp_sensor_1: t1_getter,
                 temp_sensor_2: t2_getter,
                 temp_sensor_3: t3_getter,

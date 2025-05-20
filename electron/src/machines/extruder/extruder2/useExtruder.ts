@@ -374,10 +374,16 @@ export function useHeatingTemperature(
         heatingMiddleState.data.target_temperature,
       );
     }
+    if (heatingNozzleState?.data) {
+      nozzleHeatingTargetState.setReal(
+        heatingNozzleState.data.target_temperature,
+      );
+    }
   }, [
     frontHeatingTargetState,
     backHeatingTargetState,
     middleHeatingTargetState,
+    nozzleHeatingTargetState,
   ]);
 
   return {

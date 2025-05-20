@@ -346,7 +346,6 @@ impl MitsubishiInverterRS485Actor {
             }
 
             let res: Option<Vec<u8>> = (self.serial_interface.read_message)().await;
-            //println!("{:?}", res);
             let raw_response = match res {
                 Some(res) => res,
                 None => {
@@ -365,7 +364,7 @@ impl MitsubishiInverterRS485Actor {
                     Ok(result)
                 }
                 Err(_) => {
-                    //      log::error!("Error Parsing ModbusResponse!");
+                    log::error!("Error Parsing ModbusResponse!");
                     self.state = State::ReadyToSend;
                     Err(anyhow::anyhow!("error"))
                 }
@@ -383,7 +382,6 @@ impl MitsubishiInverterRS485Actor {
             self.next_response_type = request.expected_response_type;
             self.last_request_type = self.last_request_type;
             let modbus_request: Vec<u8> = request.request.into();
-            // println!("{:?}", modbus_request);
             let res = (self.serial_interface.write_message)(modbus_request.clone()).await;
             match res {
                 Ok(_) => (),
@@ -451,7 +449,6 @@ impl From<u8> for MitsubishiModbusExceptionCode {
 impl MitsubishiInverterRS485Actor {
     // When we get respone from Pr. 40014 (Running Frequency) Convert to rpm and save it
     fn handle_motor_frequency(&mut self, resp: ModbusResponse) {
-        //println!("handle_motor_frequency: {:?}", resp);
         if resp.data.len() < 4 {
             //return;
         }
