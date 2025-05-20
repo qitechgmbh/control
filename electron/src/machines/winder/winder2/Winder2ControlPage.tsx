@@ -70,7 +70,7 @@ export function Winder2ControlPage() {
             label="Position"
             unit="mm"
             timeseries={traversePosition}
-            renderValue={(value) => roundToDecimals(value, 0)}
+            renderValue={(value) => roundToDecimals(value, 1)}
           />
           {traverseState && (
             <TraverseBar
@@ -92,7 +92,7 @@ export function Winder2ControlPage() {
                 minLabel="IN"
                 maxLabel="OUT"
                 max={100}
-                renderValue={(value) => roundToDecimals(value, 0)}
+                renderValue={(value) => roundToDecimals(value, 1)}
                 inverted
                 onChange={traverseSetLimitOuter}
               />
@@ -116,7 +116,7 @@ export function Winder2ControlPage() {
                 defaultValue={16}
                 minLabel="IN"
                 maxLabel="OUT"
-                renderValue={(value) => roundToDecimals(value, 0)}
+                renderValue={(value) => roundToDecimals(value, 1)}
                 inverted
                 onChange={traverseSetLimitInner}
               />
@@ -146,7 +146,11 @@ export function Winder2ControlPage() {
               variant="outline"
               icon="lu:House"
               onClick={() => traverseGotoHome()}
-              disabled={traverseStateIsDisabled}
+              disabled={
+                traverseStateIsDisabled ||
+                traverseState?.data.is_going_home ||
+                traverseState?.data.is_traversing
+              }
               isLoading={traverseStateIsLoading}
             >
               Go to Home

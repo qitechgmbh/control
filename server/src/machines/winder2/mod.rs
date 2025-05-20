@@ -75,11 +75,13 @@ impl Winder2 {
     }
 
     pub fn traverse_set_limit_inner(&mut self, limit: f64) {
+        let limit = Length::new::<millimeter>(limit);
         self.traverse_controller.set_limit_inner(limit);
         self.emit_traverse_state();
     }
 
     pub fn traverse_set_limit_outer(&mut self, limit: f64) {
+        let limit = Length::new::<millimeter>(limit);
         self.traverse_controller.set_limit_outer(limit);
         self.emit_traverse_state();
     }
@@ -118,7 +120,10 @@ impl Winder2 {
     }
 
     pub fn emit_traverse_position(&mut self) {
-        let position = self.traverse_controller.get_current_position();
+        let position = self
+            .traverse_controller
+            .get_current_position()
+            .map(|x| x.get::<millimeter>());
         let event = TraversePositionEvent { position }.build();
         self.namespace
             .emit_cached(Winder2Events::TraversePosition(event))
@@ -126,14 +131,27 @@ impl Winder2 {
 
     fn emit_traverse_state(&mut self) {
         let event = TraverseStateEvent {
-            limit_inner: self.traverse_controller.get_limit_inner(),
-            limit_outer: self.traverse_controller.get_limit_outer(),
-            position_in: self.traverse_controller.get_limit_inner(),
-            position_out: self.traverse_controller.get_limit_outer(),
+            limit_inner: self
+                .traverse_controller
+                .get_limit_inner()
+                .get::<millimeter>(),
+            limit_outer: self
+                .traverse_controller
+                .get_limit_outer()
+                .get::<millimeter>(),
+            position_in: self
+                .traverse_controller
+                .get_limit_inner()
+                .get::<millimeter>(),
+            position_out: self
+                .traverse_controller
+                .get_limit_outer()
+                .get::<millimeter>(),
             is_going_in: self.traverse_controller.is_going_in(),
             is_going_out: self.traverse_controller.is_going_out(),
             is_homed: self.traverse_controller.is_homed(),
             is_going_home: self.traverse_controller.is_going_home(),
+            is_traversing: self.traverse_controller.is_traversing(),
             laserpointer: self.laser.get(),
         }
         .build();

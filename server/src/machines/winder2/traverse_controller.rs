@@ -16,9 +16,9 @@ use uom::{
 #[derive(Debug)]
 pub struct TraverseController {
     enabled: bool,
-    limit_inner: f64,
-    limit_outer: f64,
-    current_position: f64,
+    position: Length,
+    limit_inner: Length,
+    limit_outer: Length,
     state: State,
     converter: LinearStepConverter,
 }
@@ -28,17 +28,9 @@ pub enum State {
     /// Initial state
     NotHomed,
 
-    /// Homing is in progress
-    ///
-    /// After homing is done, the state will change to [`State::Idle`]
-    Homing,
-
     /// Doing nothing
     /// Already homed
     Idle,
-
-    /// Move between inner and outer limits
-    Traversing(TraversingState),
 
     /// Going to inner limit
     ///
@@ -49,24 +41,62 @@ pub enum State {
     ///
     /// After reaching the outer limit, the state will change to [`State::Idle`]
     GoingOut,
+
+    /// Homing is in progress
+    ///
+    /// After homing is done, the state will change to [`State::Idle`]
+    Homing(HomingState),
+
+    /// Move between inner and outer limits
+    Traversing(TraversingState),
 }
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum TraversingState {
-    /// Like [`State::GoingIn`] but will go into [`State::GoingOut`] after reaching the inner limit
-    GoingIn,
-
-    /// Like [`State::GoingOut`] but will go into [`State::GoingIn`] after reaching the outer limit
+    /// Like [`State::GoingOut`] but
+    /// - will go into [`State::GoingIn`] after reaching the outer limit
     GoingOut,
+
+    /// Like [`State::GoingIn`] but
+    /// - will go into [`State::GoingOut`] after reaching the inner limit
+    /// - speed is synced to spool speed
+    TraversingIn,
+
+    /// Like [`State::GoingOut`] but
+    /// - will go into [`State::GoingIn`] after reaching the outer limit
+    /// - speed is synced to spool speed
+    TraversingOut,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum HomingState {
+    /// In this state the traverse is not moving but checks if the endstop si triggered
+    /// If the endstop is triggered we go into [`HomingState::EscapeEndstop`]
+    /// If the endstop is not triggered we go into [`HomingState::FindEndstop`]
+    Initialize,
+
+    /// In this state the traverse is moving out away from the endstop until it's not triggered anymore
+    /// The it goes into [`HomingState::FindEnstopFineDistancing`]
+    EscapeEndstop,
+
+    /// Moving out away from the endstop
+    /// Then Transition into [`HomingState::FindEndtopFine`]
+    FindEnstopFineDistancing,
+
+    /// In this state the traverse is fast until it reaches the endstop
+    FindEndstopCoarse,
+
+    /// In this state the traverse is moving slowly until it reaches the endstop
+    FindEndtopFine,
 }
 
 impl TraverseController {
-    pub fn new(limit_inner: f64, limit_outer: f64) -> Self {
+    pub fn new(limit_inner: Length, limit_outer: Length) -> Self {
         Self {
             enabled: false,
+            position: Length::ZERO,
             limit_inner,
             limit_outer,
-            current_position: 0.0,
             state: State::NotHomed,
             converter: LinearStepConverter::from_circumference(
                 200,
@@ -82,24 +112,27 @@ impl TraverseController {
         self.enabled = enabled;
     }
 
-    pub fn set_limit_inner(&mut self, limit: f64) {
+    pub fn set_limit_inner(&mut self, limit: Length) {
         self.limit_inner = limit;
     }
 
-    pub fn set_limit_outer(&mut self, limit: f64) {
+    pub fn set_limit_outer(&mut self, limit: Length) {
         self.limit_outer = limit;
     }
 
-    pub fn get_limit_inner(&self) -> f64 {
+    pub fn get_limit_inner(&self) -> Length {
         self.limit_inner
     }
 
-    pub fn get_limit_outer(&self) -> f64 {
+    pub fn get_limit_outer(&self) -> Length {
         self.limit_outer
     }
 
-    pub fn get_current_position(&self) -> f64 {
-        self.current_position
+    pub fn get_current_position(&self) -> Option<Length> {
+        match self.is_homed() {
+            true => Some(self.position),
+            false => None,
+        }
     }
 
     pub fn is_enabled(&self) -> bool {
@@ -118,11 +151,11 @@ impl TraverseController {
     }
 
     pub fn goto_home(&mut self) {
-        self.state = State::Homing;
+        self.state = State::Homing(HomingState::Initialize);
     }
 
     pub fn start_traversing(&mut self) {
-        self.state = State::Traversing(TraversingState::GoingIn);
+        self.state = State::Traversing(TraversingState::TraversingIn);
     }
 
     pub fn is_homed(&self) -> bool {
@@ -134,7 +167,7 @@ impl TraverseController {
         // [`State::GoingIn`] or [`State::Traversing(TraversingState::GoingIn)`] matches!
         matches!(
             self.state,
-            State::GoingIn | State::Traversing(TraversingState::GoingIn)
+            State::GoingIn | State::Traversing(TraversingState::TraversingIn)
         )
     }
 
@@ -148,7 +181,7 @@ impl TraverseController {
 
     pub fn is_going_home(&self) -> bool {
         // [`State::Homing`]
-        matches!(self.state, State::Homing)
+        matches!(self.state, State::Homing(_))
     }
 
     pub fn is_traversing(&self) -> bool {
@@ -158,11 +191,33 @@ impl TraverseController {
 }
 
 impl TraverseController {
+    // If at inner limit within a tolerance
+    fn is_at_position(&self, target_position: Length, tolerance: Length) -> bool {
+        let upper_tolerance = target_position + tolerance.abs();
+        let lower_tolerance = target_position - tolerance.abs();
+        if self.position >= lower_tolerance && self.position <= upper_tolerance {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    // Changes the direction of the speed based on the current position and target position
+    fn speed_to_position(&self, target_position: Length, absolute_speed: Velocity) -> Velocity {
+        // If we are over the target position we need to move negative
+        if self.position > target_position {
+            return -absolute_speed.abs();
+        } else if self.position < target_position {
+            return absolute_speed.abs();
+        } else {
+            return Velocity::ZERO;
+        }
+    }
+
     /// Gets the current traverse position as a [`Length`].
-    #[allow(unused)]
-    fn get_position(&self, traverse: &StepperDriverEL70x1) -> Length {
+    pub fn sync_position(&mut self, traverse: &StepperDriverEL70x1) {
         let steps = traverse.get_position();
-        self.converter.steps_to_distance(steps as f64)
+        self.position = self.converter.steps_to_distance(steps as f64);
     }
 
     /// Calculates a desired speed based on the current state and the end stop status.
@@ -178,24 +233,141 @@ impl TraverseController {
             return Velocity::ZERO;
         }
 
-        // let position = self.get_position(traverse);
+        self.sync_position(traverse);
 
-        // Check state transitions
-        if self.state == State::Homing && traverse_end_stop.value() == true {
-            // Set poition of traverse to 0
-            traverse.set_position(0);
-            // Put Into Idle
-            self.state = State::Idle;
+        // Automatic Transitions
+        match &self.state {
+            State::NotHomed => {}
+            State::Idle => {}
+            State::GoingIn => {
+                // If inner limit is reached
+                if self.is_at_position(self.limit_inner, Length::new::<millimeter>(0.1)) {
+                    // Put Into Idle
+                    self.state = State::Idle;
+                }
+            }
+            State::GoingOut => {
+                // If outer limit is reached
+                if self.is_at_position(self.limit_outer, Length::new::<millimeter>(0.1)) {
+                    // Put Into Idle
+                    self.state = State::Idle;
+                }
+            }
+            State::Homing(homing_state) => match homing_state {
+                HomingState::Initialize => {
+                    // If endstop is triggered, escape the endstop
+                    if traverse_end_stop.value() == true {
+                        self.state = State::Homing(HomingState::EscapeEndstop);
+                    } else {
+                        // If endstop is not triggered, move to the endstop
+                        self.state = State::Homing(HomingState::FindEndstopCoarse);
+                    }
+                }
+                HomingState::EscapeEndstop => {
+                    // Move out until endstop is not triggered anymore
+                    if traverse_end_stop.value() == false {
+                        self.state = State::Homing(HomingState::FindEnstopFineDistancing);
+                    }
+                }
+                HomingState::FindEnstopFineDistancing => {
+                    // Move out 500ms
+                    if traverse_end_stop.value() == false {
+                        // Find endstop fine
+                        self.state = State::Homing(HomingState::FindEndtopFine);
+                    }
+                }
+                HomingState::FindEndtopFine => {
+                    // If endstop is reached change to idle
+                    if traverse_end_stop.value() == true {
+                        // Set poition of traverse to 0
+                        traverse.set_position(0);
+                        // Put Into Idle
+                        self.state = State::Idle;
+                    }
+                }
+                HomingState::FindEndstopCoarse => {
+                    // Move to endstop
+                    if traverse_end_stop.value() == true {
+                        // Move awaiy from endstop
+                        self.state = State::Homing(HomingState::FindEnstopFineDistancing);
+                    }
+                }
+            },
+
+            State::Traversing(traversing_state) => match traversing_state {
+                TraversingState::GoingOut => {
+                    // If outer limit is reached
+                    if self.is_at_position(self.limit_outer, Length::new::<millimeter>(0.1)) {
+                        // Turn around
+                        self.state = State::Traversing(TraversingState::GoingOut);
+                    }
+                }
+                TraversingState::TraversingIn => {
+                    // If inner limit is reached
+                    if self.is_at_position(self.limit_inner, Length::new::<millimeter>(0.1)) {
+                        // Turn around
+                        self.state = State::Traversing(TraversingState::TraversingOut);
+                    }
+                }
+                TraversingState::TraversingOut => {
+                    // If outer limit is reached
+                    if self.is_at_position(self.limit_outer, Length::new::<millimeter>(0.1)) {
+                        // Turn around
+                        self.state = State::Traversing(TraversingState::TraversingIn);
+                    }
+                }
+            },
         }
 
-        match self.state {
-            State::Homing => Velocity::new::<millimeter_per_second>(-50.0), // Homing speed
-            State::Idle => Velocity::ZERO, // No movement in idle state
+        // Speed
+        let speed = match &self.state {
             State::NotHomed => Velocity::ZERO, // Not homed, no movement
-            State::Traversing(_) => todo!(),
-            State::GoingIn => todo!(),
-            State::GoingOut => todo!(),
-        }
+            State::Idle => Velocity::ZERO,     // No movement in idle state
+            State::GoingIn => Velocity::new::<millimeter_per_second>(-100.0),
+            State::GoingOut => Velocity::new::<millimeter_per_second>(100.0),
+            State::Homing(homing_state) => match homing_state {
+                HomingState::Initialize => unreachable!(
+                    "Initialize always transitions to another state before speed is set"
+                ),
+                HomingState::EscapeEndstop => {
+                    // Move out at a speed of 10 mm/s
+                    Velocity::new::<millimeter_per_second>(10.0)
+                }
+                HomingState::FindEnstopFineDistancing => {
+                    // Move out at a speed of 2 mm/s
+                    Velocity::new::<millimeter_per_second>(2.0)
+                }
+                HomingState::FindEndstopCoarse => {
+                    // Move in at a speed of -100 mm/s
+                    Velocity::new::<millimeter_per_second>(-100.0)
+                }
+                HomingState::FindEndtopFine => {
+                    // move into the endstop at 2 mm/s
+                    Velocity::new::<millimeter_per_second>(-2.0)
+                }
+            }, // Homing speed
+            State::Traversing(traversing_state) => match traversing_state {
+                TraversingState::GoingOut => {
+                    // Move out at a speed of 100 mm/s
+                    self.speed_to_position(
+                        self.limit_outer,
+                        Velocity::new::<millimeter_per_second>(100.0),
+                    )
+                }
+                TraversingState::TraversingIn => {
+                    todo!()
+                }
+                TraversingState::TraversingOut => {
+                    todo!()
+                }
+            },
+        };
+
+        print!("Mode: {:?} ", self.state);
+        print!("Speed: {:?}", speed);
+        println!("Position: {:?}", self.position);
+
+        speed
     }
 
     pub fn update_speed(

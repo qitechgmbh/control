@@ -89,7 +89,7 @@ enum Mutation {
 #[derive(Serialize, Debug, Clone)]
 pub struct TraversePositionEvent {
     /// position in mm
-    pub position: f64,
+    pub position: Option<f64>,
 }
 
 impl TraversePositionEvent {
@@ -116,6 +116,8 @@ pub struct TraverseStateEvent {
     pub is_homed: bool,
     /// if is homing
     pub is_going_home: bool,
+    /// if is traversing
+    pub is_traversing: bool,
     /// laserpointer is on
     pub laserpointer: bool,
 }

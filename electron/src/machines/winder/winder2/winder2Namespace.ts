@@ -30,7 +30,7 @@ import {
  * Traverse position event schema
  */
 export const traversePositionEventDataSchema = z.object({
-  position: z.number(),
+  position: z.number().nullable(),
 });
 
 /**
@@ -45,6 +45,7 @@ export const traverseStateEventDataSchema = z.object({
   is_going_out: z.boolean(),
   is_homed: z.boolean(),
   is_going_home: z.boolean(),
+  is_traversing: z.boolean(),
   laserpointer: z.boolean(),
 });
 
@@ -295,7 +296,7 @@ export function winder2MessageHandler(
       else if (eventName === "TraversePositionEvent") {
         let parsed = traversePositionEventSchema.parse(event);
         let timeseriesValue: TimeSeriesValue = {
-          value: parsed.data.position,
+          value: parsed.data.position ?? 0,
           timestamp: event.ts,
         };
         store.setState(

@@ -19,7 +19,7 @@ use control_core::machines::new::{
     MachineNewHardware, MachineNewParams, MachineNewTrait, get_device_identification_by_role,
     get_ethercat_device_by_index, get_subdevice_by_index, validate_no_role_dublicates,
     validate_same_machine_identification_unique,
-}; 
+};
 use control_core::uom_extensions::acceleration::meter_per_minute_per_second;
 use control_core::uom_extensions::angular_acceleration::revolution_per_minute_per_second;
 use control_core::uom_extensions::velocity::meter_per_minute;
@@ -364,8 +364,8 @@ impl MachineNewTrait for Winder2 {
                     ),
                 ),
                 traverse_controller: TraverseController::new(
-                    16.0, // Default inner limit
-                    80.0, // Default outer limit
+                    Length::new::<millimeter>(15.0), // Default inner limit
+                    Length::new::<millimeter>(80.0), // Default outer limit
                 ),
             };
 
