@@ -41,11 +41,9 @@ use ethercat_hal::io::digital_output::DigitalOutput;
 use ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1;
 use ethercat_hal::shared_config;
 use ethercat_hal::shared_config::el70x1::{EL70x1OperationMode, StmMotorConfiguration};
-use uom::si::acceleration::meter_per_second_squared;
 use uom::si::angular_velocity::revolution_per_minute;
 use uom::si::f64::{Acceleration, AngularAcceleration, AngularVelocity, Length, Velocity};
 use uom::si::length::millimeter;
-use uom::si::velocity::kilometer_per_hour;
 
 impl MachineNewTrait for Winder2 {
     fn new<'maindevice>(params: &MachineNewParams) -> Result<Self, Error> {

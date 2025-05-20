@@ -1,5 +1,5 @@
 use crate::serial::devices::dre::Dre;
-use api::{DiameterEvent, DreEvents, DreMachineNamespace};
+use api::{DiameterEvent, DreEvents, DreMachineNamespace, DreStateEvent};
 use control_core::{machines::Machine, socketio::namespace::NamespaceCacheingLogic};
 use smol::lock::RwLock;
 use std::{sync::Arc, time::Instant};
@@ -26,22 +26,33 @@ impl Machine for DreMachine {}
 
 impl DreMachine {
     ///diameter in mm
-    pub async fn emit_dre_data(&mut self) {
-        let diameter = self
-            .dre
-            .read()
-            .await
-            .get_data()
-            .await
-            .map(|dre_data| dre_data.diameter.get::<millimeter>());
-
+    pub fn emit_diameter(&mut self) {
+        let diameter = smol::block_on(async {
+            self.dre
+                .read()
+                .await
+                .get_data()
+                .await
+                .map(|dre_data| dre_data.diameter.get::<millimeter>())
+        });
         let diameter_event = DiameterEvent {
             diameter: diameter.unwrap_or(0.0),
         };
+        self.namespace
+            .emit_cached(DreEvents::Diameter(diameter_event.build()));
+    }
+
+    pub fn emit_dre_state(&mut self) {
+        let dre_state_event = DreStateEvent {
+            higher_tolerance: self.dre_target.higher_tolerance.get::<millimeter>(),
+            lower_tolerance: self.dre_target.lower_tolerance.get::<millimeter>(),
+            target_diameter: self.dre_target.diameter.get::<millimeter>(),
+        };
 
         self.namespace
-            .emit_cached(DreEvents::DiameterEvent(diameter_event.build()));
+            .emit_cached(DreEvents::DreState(dre_state_event.build()));
     }
+
     pub fn target_set_higher_tolerance(&mut self, higher_tolerance: f64) {
         self.dre_target.higher_tolerance = Length::new::<millimeter>(higher_tolerance);
     }

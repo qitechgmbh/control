@@ -5,7 +5,7 @@ use control_core::{
         event::{Event, GenericEvent},
         namespace::{
             CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, NamespaceInterface,
-            cache_duration,
+            cache_duration, cache_one_event,
         },
     },
 };
@@ -23,9 +23,22 @@ impl DiameterEvent {
         Event::new("DiameterEvent", self.clone())
     }
 }
+#[derive(Serialize, Debug, Clone)]
+pub struct DreStateEvent {
+    pub higher_tolerance: f64,
+    pub lower_tolerance: f64,
+    pub target_diameter: f64,
+}
+
+impl DreStateEvent {
+    pub fn build(&self) -> Event<Self> {
+        Event::new("DreStateEvent", self.clone())
+    }
+}
 
 pub enum DreEvents {
-    DiameterEvent(Event<DiameterEvent>),
+    Diameter(Event<DiameterEvent>),
+    DreState(Event<DreStateEvent>),
 }
 
 #[derive(Debug)]
@@ -40,15 +53,18 @@ impl DreMachineNamespace {
 impl CacheableEvents<DreEvents> for DreEvents {
     fn event_value(&self) -> Result<GenericEvent, serde_json::Error> {
         match self {
-            DreEvents::DiameterEvent(event) => event.try_into(),
+            DreEvents::Diameter(event) => event.try_into(),
+            DreEvents::DreState(event) => event.try_into(),
         }
     }
 
     fn event_cache_fn(&self) -> CacheFn {
         let cache_ten_secs = cache_duration(Duration::from_secs(10), Duration::from_secs(1));
+        let cache_one = cache_one_event();
 
         match self {
-            DreEvents::DiameterEvent(_) => cache_ten_secs,
+            DreEvents::Diameter(_) => cache_ten_secs,
+            DreEvents::DreState(_) => cache_one,
         }
     }
 }
