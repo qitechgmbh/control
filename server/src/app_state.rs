@@ -1,8 +1,10 @@
 use crate::ethercat::config::{MAX_SUBDEVICES, PDI_LEN};
+use crate::serial::registry::SERIAL_DEVICE_REGISTRY;
 use crate::socketio::namespaces::Namespaces;
 use control_core::machines::Machine;
 use control_core::machines::identification::{DeviceIdentification, MachineIdentificationUnique};
 use control_core::machines::manager::MachineManager;
+use control_core::serial::serial_detection::SerialDetection;
 use ethercat_hal::devices::EthercatDevice;
 use ethercrab::{MainDevice, SubDeviceGroup, subdevice_group::Op};
 use smol::lock::RwLock;
@@ -15,9 +17,14 @@ pub struct SocketioSetup {
     pub namespaces: RwLock<Namespaces>,
 }
 
+pub struct SerialSetup {
+    pub serial_detection: SerialDetection<'static>,
+}
+
 pub struct AppState {
     pub socketio_setup: SocketioSetup,
     pub ethercat_setup: Arc<RwLock<Option<EthercatSetup>>>,
+    pub serial_setup: Arc<RwLock<SerialSetup>>,
     pub machines: RwLock<MachineManager>,
 }
 
@@ -60,6 +67,9 @@ impl AppState {
                 namespaces: RwLock::new(Namespaces::new()),
             },
             ethercat_setup: Arc::new(RwLock::new(None)),
+            serial_setup: Arc::new(RwLock::new(SerialSetup {
+                serial_detection: SerialDetection::new(&SERIAL_DEVICE_REGISTRY),
+            })),
             machines: RwLock::new(MachineManager::new()),
         }
     }

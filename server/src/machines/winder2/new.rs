@@ -63,12 +63,12 @@ impl MachineNewTrait for Winder2 {
 
         let hardware = match &params.hardware {
             MachineNewHardware::Ethercat(x) => x,
-            // _ => {
-            //     return Err(anyhow::anyhow!(
-            //         "[{}::MachineNewTrait/Winder2::new] MachineNewHardware is not Ethercat",
-            //         module_path!()
-            //     ));
-            // }
+            _ => {
+                return Err(anyhow::anyhow!(
+                    "[{}::MachineNewTrait/Winder2::new] MachineNewHardware is not Ethercat",
+                    module_path!()
+                ));
+            }
         };
 
         log::info!(
@@ -93,10 +93,10 @@ impl MachineNewTrait for Winder2 {
                         DeviceHardwareIdentification::Ethercat(
                             device_hardware_identification_ethercat,
                         ) => device_hardware_identification_ethercat,
-                        // _ => Err(anyhow::anyhow!(
-                        //     "[{}::MachineNewTrait/Winder2::new] Device with role 0 is not Ethercat",
-                        //     module_path!()
-                        // ))?,
+                        _ => Err(anyhow::anyhow!(
+                            "[{}::MachineNewTrait/Winder2::new] Device with role 0 is not Ethercat",
+                            module_path!()
+                        ))?, //uncommented
                     };
                 let subdevice_index = device_hardware_identification_ethercat.subdevice_index;
                 let subdevice = get_subdevice_by_index(hardware.subdevices, subdevice_index)?;
@@ -123,10 +123,10 @@ impl MachineNewTrait for Winder2 {
                         DeviceHardwareIdentification::Ethercat(
                             device_hardware_identification_ethercat,
                         ) => device_hardware_identification_ethercat,
-                        // _ => Err(anyhow::anyhow!(
-                        //     "[{}::MachineNewTrait/Winder2::new] Device with role 1 is not Ethercat",
-                        //     module_path!()
-                        // ))?,
+                        _ => Err(anyhow::anyhow!(
+                            "[{}::MachineNewTrait/Winder2::new] Device with role 1 is not Ethercat",
+                            module_path!()
+                        ))?, //uncommented
                     };
                 let subdevice_index = device_hardware_identification_ethercat.subdevice_index;
                 let subdevice = get_subdevice_by_index(hardware.subdevices, subdevice_index)?;
@@ -157,10 +157,10 @@ impl MachineNewTrait for Winder2 {
                         DeviceHardwareIdentification::Ethercat(
                             device_hardware_identification_ethercat,
                         ) => device_hardware_identification_ethercat,
-                        // _ => Err(anyhow::anyhow!(
-                        //     "[{}::MachineNewTrait/Winder2::new] Device with role 3 is not Ethercat",
-                        //     module_path!()
-                        // ))?,
+                        _ => Err(anyhow::anyhow!(
+                            "[{}::MachineNewTrait/Winder2::new] Device with role 2 is not Ethercat",
+                            module_path!()
+                        ))?,
                     };
                 let subdevice = get_subdevice_by_index(
                     hardware.subdevices,
@@ -211,10 +211,10 @@ impl MachineNewTrait for Winder2 {
                         DeviceHardwareIdentification::Ethercat(
                             device_hardware_identification_ethercat,
                         ) => device_hardware_identification_ethercat,
-                        // _ => Err(anyhow::anyhow!(
-                        //     "[{}::MachineNewTrait/Winder2::new] Device with role 4 is not Ethercat",
-                        //     module_path!()
-                        // ))?,
+                        _ => Err(anyhow::anyhow!(
+                            "[{}::MachineNewTrait/Winder2::new] Device with role 3 is not Ethercat",
+                            module_path!()
+                        ))?,
                     };
                 let subdevice = get_subdevice_by_index(
                     hardware.subdevices,
@@ -270,10 +270,10 @@ impl MachineNewTrait for Winder2 {
                         DeviceHardwareIdentification::Ethercat(
                             device_hardware_identification_ethercat,
                         ) => device_hardware_identification_ethercat,
-                        // _ => Err(anyhow::anyhow!(
-                        //     "[{}::MachineNewTrait/Winder2::new] Device with role 4 is not Ethercat",
-                        //     module_path!()
-                        // ))?,
+                        _ => Err(anyhow::anyhow!(
+                            "[{}::MachineNewTrait/Winder2::new] Device with role 4 is not Ethercat",
+                            module_path!()
+                        ))?,
                     };
                 let subdevice = get_subdevice_by_index(
                     hardware.subdevices,

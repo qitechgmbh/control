@@ -22,7 +22,6 @@ impl MachinesEventBuilder {
 
     pub async fn build(&self, app_state: Arc<AppState>) -> Event<MachinesEvent> {
         let mut machine_objs: Vec<_> = vec![];
-
         // add machines
         let machines_guard = app_state.machines.read().await;
         for machine in machines_guard.iter() {

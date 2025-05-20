@@ -16,7 +16,7 @@ type UseMachine = {
   icon: MachinePreset["icon"];
 };
 
-// returns only valid mahcines
+// returns only valid machines
 export function useMachines(): UseMachine[] {
   const { machines } = useMainNamespace();
 
