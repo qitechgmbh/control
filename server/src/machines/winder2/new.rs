@@ -13,6 +13,7 @@ use control_core::actors::digital_output_setter::DigitalOutputSetter;
 use control_core::actors::stepper_driver_el70x1::StepperDriverEL70x1;
 use control_core::converters::linear_step_converter::LinearStepConverter;
 use control_core::converters::angular_step_converter::AngularStepConverter;
+use control_core::converters::linear_step_converter::LinearStepConverter;
 use control_core::machines::identification::DeviceHardwareIdentification;
 use control_core::machines::new::{
     MachineNewHardware, MachineNewParams, MachineNewTrait, get_device_identification_by_role,
@@ -45,7 +46,7 @@ use ethercat_hal::shared_config;
 use ethercat_hal::shared_config::el70x1::{EL70x1OperationMode, StmMotorConfiguration};
 use uom::si::angular_velocity::revolution_per_minute;
 use uom::si::f64::{Acceleration, AngularAcceleration, AngularVelocity, Length, Velocity};
-use uom::si::length::millimeter;
+use uom::si::length::{centimeter, millimeter};
 
 impl MachineNewTrait for Winder2 {
     fn new<'maindevice>(params: &MachineNewParams) -> Result<Self, Error> {
@@ -236,6 +237,10 @@ impl MachineNewTrait for Winder2 {
                 let el7031_config = EL7031Configuration {
                     stm_features: shared_config::el70x1::StmFeatures {
                         operation_mode: EL70x1OperationMode::DirectVelocity,
+                        // Max Speed of 1000 steps/s
+                        // Max @ 9cm diameter = approx 85 m/min
+                        // Max @ 20cm diameter = approx 185 m/min
+                        speed_range: shared_config::el70x1::EL70x1SpeedRange::Steps1000,
                         ..Default::default()
                     },
                     stm_motor: StmMotorConfiguration {
@@ -291,6 +296,9 @@ impl MachineNewTrait for Winder2 {
                 let el7031_0030_config = EL7031_0030Configuration {
                     stm_features: el7031_0030::coe::StmFeatures {
                         operation_mode: EL70x1OperationMode::DirectVelocity,
+                        // Max Speed of 1000 steps/s
+                        // Max @ 8cm diameter = approx 75 m/min
+                        speed_range: shared_config::el70x1::EL70x1SpeedRange::Steps1000,
                         ..Default::default()
                     },
                     stm_motor: StmMotorConfiguration {
@@ -330,10 +338,10 @@ impl MachineNewTrait for Winder2 {
                 laser: DigitalOutputSetter::new(DigitalOutput::new(el2002, EL2002Port::DO1)),
                 namespace: Winder2Namespace::new(),
                 mode: mode.clone(),
-                spool_step_converter: AngularStepConverter::new(600),
+                spool_step_converter: AngularStepConverter::new(200),
                 spool_speed_controller: SpoolSpeedController::new(
                     AngularVelocity::new::<revolution_per_minute>(0.0),
-                    AngularVelocity::new::<revolution_per_minute>(600.0),
+                    AngularVelocity::new::<revolution_per_minute>(800.0),
                     AngularAcceleration::new::<revolution_per_minute_per_second>(200.0),
                     AngularAcceleration::new::<revolution_per_minute_per_second>(-200.0),
                 ),
@@ -344,9 +352,9 @@ impl MachineNewTrait for Winder2 {
                     Acceleration::new::<meter_per_minute_per_second>(10.0),
                     Velocity::new::<meter_per_minute>(1.0),
                     Length::new::<millimeter>(1.75),
-                    LinearStepConverter::new(
-                        200,                             // Assuming 200 steps per revolution for the puller stepper,
-                        Length::new::<millimeter>(40.0), // 4mm redius of the puller wheel
+                    LinearStepConverter::from_diameter(
+                        200,                            // Assuming 200 steps per revolution for the puller stepper,
+                        Length::new::<centimeter>(8.0), // 8cm diameter of the puller wheel
                     ),
                 ),
                 traverse_controller: TraverseController::new(
