@@ -43,12 +43,6 @@ export function Extruder2ControlPage() {
     <Page>
       <ControlGrid>
         <HeatingZone
-          title={"Heating Nozzle"}
-          heatingState={nozzleHeatingState}
-          heatingTimeSeries={nozzleTemperature}
-          onChangeTargetTemp={SetHeatingNozzleTemp}
-        />
-        <HeatingZone
           title={"Heating Front"}
           heatingState={frontHeatingState}
           heatingTimeSeries={frontTemperature}
@@ -65,6 +59,12 @@ export function Extruder2ControlPage() {
           heatingState={backHeatingState}
           heatingTimeSeries={backTemperature}
           onChangeTargetTemp={SetHeatingBackTemp}
+        />
+        <HeatingZone
+          title={"Heating Nozzle"}
+          heatingState={nozzleHeatingState}
+          heatingTimeSeries={nozzleTemperature}
+          onChangeTargetTemp={SetHeatingNozzleTemp}
         />
         <ControlCard className="bg-red" title="Screw Drive">
           <Label label="Regulation">
@@ -116,7 +116,6 @@ export function Extruder2ControlPage() {
           </div>
         </ControlCard>
 
-        <ControlCard className="bg-red" title="Measurements"></ControlCard>
         <ControlCard className="bg-red" title="Mode">
           <SelectionGroup<"Standby" | "Heat" | "Extrude">
             value={mode}

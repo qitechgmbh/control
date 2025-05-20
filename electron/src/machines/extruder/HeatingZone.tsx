@@ -15,7 +15,6 @@ type Props = {
   heatingTimeSeries: TimeSeries;
   onChangeTargetTemp?: (temperature: number) => void;
 };
-
 export function HeatingZone({
   title,
   heatingState,
@@ -27,7 +26,24 @@ export function HeatingZone({
 
   return (
     <ControlCard className="bg-red" title={title}>
-      <div className="mb-4 flex gap-4">
+      <div className="mb-4 flex flex-col gap-4">
+        <div className="flex gap-4">
+          <TimeSeriesValueNumeric
+            label="Temperature"
+            unit="C"
+            renderValue={(value) =>
+              heatingState?.wiring_error ? "0.0" : roundToDecimals(value, 1)
+            }
+            timeseries={heatingTimeSeries}
+          />
+
+          <label className="flex items-center space-x-2">
+            <Flame
+              className={`h-5 w-5 ${heating ? "text-orange-500" : "text-gray-400"}`}
+            />
+          </label>
+        </div>
+
         <Label label="Target Temperature">
           <EditValue
             value={targetTemperature}
@@ -40,21 +56,8 @@ export function HeatingZone({
             onChange={onChangeTargetTemp}
           />
         </Label>
-
-        <TimeSeriesValueNumeric
-          label="Temperature"
-          unit="C"
-          renderValue={(value) =>
-            heatingState?.wiring_error ? "0.0" : roundToDecimals(value, 1)
-          }
-          timeseries={heatingTimeSeries}
-        />
-        <label className="flex items-center space-x-2">
-          <Flame
-            className={`h-5 w-5 ${heating ? "text-orange-500" : "text-gray-400"}`}
-          />
-        </label>
       </div>
+
       {heatingState?.wiring_error && (
         <StatusBadge variant="error">
           Cant Read Temperature! Check Temperature Sensor Wiring!
