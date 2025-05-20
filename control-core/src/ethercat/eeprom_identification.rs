@@ -19,6 +19,7 @@ use ethercat_hal::devices::el6021::EL6021_IDENTITY_B;
 
 use ethercat_hal::devices::el3204::EL3204_IDENTITY_B;
 
+use ethercat_hal::devices::el6021::EL6021_IDENTITY_C;
 use ethercat_hal::devices::el7031::EL7031_IDENTITY_A;
 use ethercat_hal::devices::el7031::EL7031_IDENTITY_B;
 use ethercat_hal::devices::el7041_0052::EL7041_0052_IDENTITY_A;
@@ -232,7 +233,7 @@ pub fn get_identification_addresses<'maindevice>(
         EL3021_IDENTITY_A => MachineIdentificationAddresses::default(),
         EL7031_IDENTITY_A | EL7031_IDENTITY_B => MachineIdentificationAddresses::default(),
         EL7041_0052_IDENTITY_A => MachineIdentificationAddresses::default(),
-        EL6021_IDENTITY_A | EL6021_IDENTITY_B => MachineIdentificationAddresses::default(),
+        EL6021_IDENTITY_A | EL6021_IDENTITY_B | EL6021_IDENTITY_C => MachineIdentificationAddresses::default(),
         _ => {
             // block_on(u16dump(&subdevice, maindevice, 0x00, 0xff))?;
             Err(anyhow!(
