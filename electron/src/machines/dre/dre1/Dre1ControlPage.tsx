@@ -1,6 +1,6 @@
 import { ControlCard } from "@/control/ControlCard";
 import { Page } from "@/components/Page";
-import React, { useEffect } from "react";
+import React from "react";
 import { ControlGrid } from "@/control/ControlGrid";
 import { TimeSeriesValueNumeric } from "@/control/TimeSeriesValue";
 
@@ -8,6 +8,8 @@ import { EditValue } from "@/control/EditValue";
 import { Label } from "@/control/Label";
 
 import { useDre1 } from "./useDre";
+
+import { DiameterVisualisation } from '../DiameterVisualisation';
 
 
 export function Dre1ControlPage() {
@@ -19,22 +21,28 @@ export function Dre1ControlPage() {
         dreSetHigherTolerance
     } = useDre1();
 
-
     // Controlled local states synced with dreState
     const targetDiameter = dreState?.data?.target_diameter ?? 0;
     const lowerTolerance = dreState?.data?.lower_tolerance ?? 0;
     const higherTolerance = dreState?.data?.higher_tolerance ?? 0;
-
     return (
         <Page>
             <ControlGrid columns={2}>
                 <ControlCard title="Diameter Measurement">
-                    <TimeSeriesValueNumeric
-                        label="Current Diameter"
-                        unit="mm"
-                        timeseries={dreDiameter}
-                        renderValue={(value) => value.toFixed(3)}
-                    />
+                    <DiameterVisualisation
+                        targetDiameter={targetDiameter}
+                        lowTolerance={lowerTolerance}
+                        highTolerance={higherTolerance}
+                        dreDiameter={dreDiameter} />
+                    <div className="flex flex-row items-center gap-6">
+                        <TimeSeriesValueNumeric
+                            label="Current Diameter"
+                            unit="mm"
+                            timeseries={dreDiameter}
+                            renderValue={(value) => value.toFixed(3)}
+                        />
+
+                    </div>
                 </ControlCard>
                 <ControlCard title="DRE Settings">
                     <Label label="Set Target Diameter">

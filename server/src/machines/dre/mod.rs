@@ -26,14 +26,15 @@ impl Machine for DreMachine {}
 
 impl DreMachine {
     ///diameter in mm
-    pub async fn emit_diameter(&mut self) {
-        let diameter = self
-            .dre
-            .read()
-            .await
-            .get_data()
-            .await
-            .map(|dre_data| dre_data.diameter.get::<millimeter>());
+    pub fn emit_diameter(&mut self) {
+        let diameter = smol::block_on(async {
+            self.dre
+                .read()
+                .await
+                .get_data()
+                .await
+                .map(|dre_data| dre_data.diameter.get::<millimeter>())
+        });
 
         let diameter_event = DiameterEvent {
             diameter: diameter.unwrap_or(0.0),
