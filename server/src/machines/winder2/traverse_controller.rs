@@ -207,6 +207,17 @@ impl TraverseController {
         }
     }
 
+    /// Calculate distance to position
+    fn distance_to_position(&self, target_position: Length) -> Length {
+        if self.position > target_position {
+            return self.position - target_position;
+        } else if self.position < target_position {
+            return target_position - self.position;
+        } else {
+            return Length::ZERO;
+        }
+    }
+
     // Changes the direction of the speed based on the current position and target position
     fn speed_to_position(&self, target_position: Length, absolute_speed: Velocity) -> Velocity {
         // If we are over the target position we need to move negative
@@ -246,14 +257,14 @@ impl TraverseController {
             State::Idle => {}
             State::GoingIn => {
                 // If inner limit is reached
-                if self.is_at_position(self.limit_inner, Length::new::<millimeter>(0.049)) {
+                if self.is_at_position(self.limit_inner, Length::new::<millimeter>(0.01)) {
                     // Put Into Idle
                     self.state = State::Idle;
                 }
             }
             State::GoingOut => {
                 // If outer limit is reached
-                if self.is_at_position(self.limit_outer, Length::new::<millimeter>(0.049)) {
+                if self.is_at_position(self.limit_outer, Length::new::<millimeter>(0.01)) {
                     // Put Into Idle
                     self.state = State::Idle;
                 }
@@ -302,21 +313,21 @@ impl TraverseController {
             State::Traversing(traversing_state) => match traversing_state {
                 TraversingState::GoingOut => {
                     // If outer limit is reached
-                    if self.is_at_position(self.limit_outer, Length::new::<millimeter>(0.049)) {
+                    if self.is_at_position(self.limit_outer, Length::new::<millimeter>(0.01)) {
                         // Turn around
                         self.state = State::Traversing(TraversingState::GoingOut);
                     }
                 }
                 TraversingState::TraversingIn => {
                     // If inner limit is reached
-                    if self.is_at_position(self.limit_inner, Length::new::<millimeter>(0.049)) {
+                    if self.is_at_position(self.limit_inner, Length::new::<millimeter>(0.01)) {
                         // Turn around
                         self.state = State::Traversing(TraversingState::TraversingOut);
                     }
                 }
                 TraversingState::TraversingOut => {
                     // If outer limit is reached
-                    if self.is_at_position(self.limit_outer, Length::new::<millimeter>(0.049)) {
+                    if self.is_at_position(self.limit_outer, Length::new::<millimeter>(0.01)) {
                         // Turn around
                         self.state = State::Traversing(TraversingState::TraversingIn);
                     }
@@ -332,14 +343,26 @@ impl TraverseController {
                 // Move in at a speed of 25 mm/s
                 self.speed_to_position(
                     self.limit_inner,
-                    Velocity::new::<millimeter_per_second>(-100.0),
+                    if self.distance_to_position(self.limit_inner).abs()
+                        > Length::new::<millimeter>(1.0)
+                    {
+                        Velocity::new::<millimeter_per_second>(100.0)
+                    } else {
+                        Velocity::new::<millimeter_per_second>(10.0)
+                    },
                 )
             }
             State::GoingOut => {
                 // Move out at a speed of 25 mm/s
                 self.speed_to_position(
                     self.limit_outer,
-                    Velocity::new::<millimeter_per_second>(-100.0),
+                    if self.distance_to_position(self.limit_outer).abs()
+                        > Length::new::<millimeter>(1.0)
+                    {
+                        Velocity::new::<millimeter_per_second>(100.0)
+                    } else {
+                        Velocity::new::<millimeter_per_second>(10.0)
+                    },
                 )
             }
             State::Homing(homing_state) => match homing_state {
