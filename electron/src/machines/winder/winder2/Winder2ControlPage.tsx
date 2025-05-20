@@ -145,7 +145,7 @@ export function Winder2ControlPage() {
             <TouchButton
               variant="outline"
               icon="lu:House"
-              onClick={() => traverseGotoHome(50)} // Default position in the middle (50%)
+              onClick={() => traverseGotoHome()}
               disabled={traverseStateIsDisabled}
               isLoading={traverseStateIsLoading}
             >

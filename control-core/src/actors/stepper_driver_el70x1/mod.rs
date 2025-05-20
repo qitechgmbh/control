@@ -12,6 +12,8 @@ pub struct StepperDriverEL70x1 {
     stepper: StepperVelocityEL70x1,
     enabled: bool,
     velocity: i16,
+    position: i128,
+    set_position: Option<i128>,
     pub converter: EL70x1VelocityConverter,
 }
 
@@ -21,7 +23,9 @@ impl StepperDriverEL70x1 {
             stepper,
             enabled: false,
             velocity: 0,
-            converter: EL70x1VelocityConverter::new(speed_range)
+            converter: EL70x1VelocityConverter::new(speed_range),
+            position: 0,
+            set_position: None,
         }
     }
 
@@ -44,6 +48,16 @@ impl StepperDriverEL70x1 {
     pub fn is_enabled(&self) -> bool {
         self.enabled
     }
+
+    /// Get the current position of the stepper
+    pub fn get_position(&self) -> i128 {
+        self.position
+    }
+
+    /// Set the position of the stepper
+    pub fn set_position(&mut self, position: i128) {
+        self.set_position = Some(position);
+    }
 }
 
 impl Actor for StepperDriverEL70x1 {
@@ -55,11 +69,15 @@ impl Actor for StepperDriverEL70x1 {
                     panic!("Error while reading StepperVelocity {:?}", e);
                 }
             };
+            // set the input
+            self.position = state.input.counter_value;
+
             let mut output = state.output.clone();
 
             // set the output
             output.enable = self.enabled;
             output.velocity = self.velocity;
+            output.set_counter = self.set_position;
 
             // write the output
             match (self.stepper.write)(output).await {

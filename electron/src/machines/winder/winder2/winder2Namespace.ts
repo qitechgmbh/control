@@ -41,8 +41,6 @@ export const traverseStateEventDataSchema = z.object({
   limit_outer: z.number(),
   position_in: z.number(),
   position_out: z.number(),
-  is_in: z.boolean(),
-  is_out: z.boolean(),
   is_going_in: z.boolean(),
   is_going_out: z.boolean(),
   is_homed: z.boolean(),

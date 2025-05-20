@@ -15,7 +15,8 @@ use api::{
 };
 use control_core::{
     actors::{
-        digital_output_setter::DigitalOutputSetter, stepper_driver_el70x1::StepperDriverEL70x1,
+        digital_input_getter::DigitalInputGetter, digital_output_setter::DigitalOutputSetter,
+        stepper_driver_el70x1::StepperDriverEL70x1,
     },
     converters::angular_step_converter::AngularStepConverter,
     machines::Machine,
@@ -44,6 +45,7 @@ pub struct Winder2 {
 
     // controllers
     pub traverse_controller: TraverseController,
+    pub traverse_end_stop: DigitalInputGetter,
 
     // socketio
     namespace: Winder2Namespace,
@@ -52,6 +54,7 @@ pub struct Winder2 {
     // mode
     pub mode: Winder2Mode,
     pub spool_mode: SpoolMode,
+    pub traverse_mode: TraverseMode,
     pub puller_mode: PullerMode,
 
     // control circuit arm/spool
@@ -82,17 +85,35 @@ impl Winder2 {
     }
 
     pub fn traverse_goto_limit_inner(&mut self) {
+        // Only possible if homed, not standby, not traversing
+        if !self.traverse_controller.is_homed()
+            || self.traverse_mode == TraverseMode::Standby
+            || self.traverse_controller.is_traversing()
+        {
+            return;
+        }
         self.traverse_controller.goto_limit_inner();
         self.emit_traverse_state();
     }
 
     pub fn traverse_goto_limit_outer(&mut self) {
+        // Only possible if homed, not standby, not traversing
+        if !self.traverse_controller.is_homed()
+            || self.traverse_mode == TraverseMode::Standby
+            || self.traverse_controller.is_traversing()
+        {
+            return;
+        }
         self.traverse_controller.goto_limit_outer();
         self.emit_traverse_state();
     }
 
-    pub fn traverse_goto_home(&mut self, home_position: f64) {
-        self.traverse_controller.goto_home(home_position);
+    pub fn traverse_goto_home(&mut self) {
+        // Only if not traversing
+        if self.traverse_controller.is_traversing() {
+            return;
+        }
+        self.traverse_controller.goto_home();
         self.emit_traverse_state();
     }
 
@@ -109,8 +130,6 @@ impl Winder2 {
             limit_outer: self.traverse_controller.get_limit_outer(),
             position_in: self.traverse_controller.get_limit_inner(),
             position_out: self.traverse_controller.get_limit_outer(),
-            is_in: self.traverse_controller.is_in(),
-            is_out: self.traverse_controller.is_out(),
             is_going_in: self.traverse_controller.is_going_in(),
             is_going_out: self.traverse_controller.is_going_out(),
             is_homed: self.traverse_controller.is_homed(),
@@ -120,6 +139,11 @@ impl Winder2 {
         .build();
         self.namespace
             .emit_cached(Winder2Events::TraverseState(event))
+    }
+
+    pub fn sync_traverse_speed(&mut self) {
+        self.traverse_controller
+            .update_speed(&mut self.traverse, &mut self.traverse_end_stop);
     }
 }
 
@@ -132,6 +156,7 @@ impl Winder2 {
         // Apply the mode changes to the spool and puller
         self.set_spool_mode(mode);
         self.set_puller_mode(mode);
+        self.set_traverse_mode(mode);
 
         self.emit_mode_state();
     }
@@ -187,6 +212,74 @@ impl Winder2 {
 
         // Update the internal state
         self.spool_mode = mode;
+    }
+
+    /// Apply the mode changes to the spool
+    ///
+    /// It contains a transition matrix for atomic changes.
+    /// It will set [`Self::spool_mode`]
+    fn set_traverse_mode(&mut self, mode: &Winder2Mode) {
+        // Convert to `Winder2Mode` to `TraverseMode`
+        let mode: TraverseMode = mode.clone().into();
+
+        // If coming out of standby
+        if self.traverse_mode == TraverseMode::Standby && mode != TraverseMode::Standby {
+            self.traverse.set_enabled(true);
+            self.traverse_controller.set_enabled(true);
+        }
+
+        // If going into standby
+        if mode == TraverseMode::Standby && self.traverse_mode != TraverseMode::Standby {
+            // If we are going into standby, we need to stop the traverse
+            self.traverse.set_enabled(false);
+            self.traverse_controller.set_enabled(false);
+        }
+
+        // Transition matrix
+        match self.traverse_mode {
+            TraverseMode::Standby => match mode {
+                TraverseMode::Standby => {}
+                TraverseMode::Hold => {
+                    // From [`TraverseMode::Standby`] to [`TraverseMode::Hold`]
+                    self.traverse.set_enabled(true);
+                    self.traverse_controller.set_enabled(true);
+                    self.traverse_controller.goto_home();
+                }
+                TraverseMode::Traverse => {
+                    // From [`TraverseMode::Standby`] to [`TraverseMode::Wind`]
+                    self.traverse.set_enabled(true);
+                    self.traverse_controller.set_enabled(true);
+                    self.traverse_controller.start_traversing();
+                }
+            },
+            TraverseMode::Hold => match mode {
+                TraverseMode::Standby => {
+                    // From [`TraverseMode::Hold`] to [`TraverseMode::Standby`]
+                    self.traverse.set_enabled(false);
+                    self.traverse_controller.set_enabled(false);
+                }
+                TraverseMode::Hold => {}
+                TraverseMode::Traverse => {
+                    // From [`TraverseMode::Hold`] to [`TraverseMode::Wind`]
+                    self.traverse_controller.start_traversing();
+                }
+            },
+            TraverseMode::Traverse => match mode {
+                TraverseMode::Standby => {
+                    // From [`TraverseMode::Wind`] to [`TraverseMode::Standby`]
+                    self.traverse.set_enabled(false);
+                    self.traverse_controller.set_enabled(false);
+                }
+                TraverseMode::Hold => {
+                    // From [`TraverseMode::Wind`] to [`TraverseMode::Hold`]
+                    self.traverse_controller.goto_home();
+                }
+                TraverseMode::Traverse => {}
+            },
+        }
+
+        // Update the internal state
+        self.traverse_mode = mode;
     }
 
     /// Apply the mode changes to the puller
@@ -424,6 +517,24 @@ impl From<Winder2Mode> for SpoolMode {
             Winder2Mode::Hold => SpoolMode::Hold,
             Winder2Mode::Pull => SpoolMode::Hold,
             Winder2Mode::Wind => SpoolMode::Wind,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum TraverseMode {
+    Standby,
+    Hold,
+    Traverse,
+}
+
+impl From<Winder2Mode> for TraverseMode {
+    fn from(mode: Winder2Mode) -> Self {
+        match mode {
+            Winder2Mode::Standby => TraverseMode::Standby,
+            Winder2Mode::Hold => TraverseMode::Hold,
+            Winder2Mode::Pull => TraverseMode::Hold,
+            Winder2Mode::Wind => TraverseMode::Traverse,
         }
     }
 }

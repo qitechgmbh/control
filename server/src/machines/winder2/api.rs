@@ -53,12 +53,15 @@ impl From<Mode> for Winder2Mode {
 #[derive(Deserialize, Serialize)]
 enum Mutation {
     // Traverse
+    /// Position in mm from home point
     TraverseSetLimitOuter(f64),
+    /// Position in mm from home point
     TraverseSetLimitInner(f64),
     TraverseGotoLimitOuter,
     TraverseGotoLimitInner,
+    /// Find home point
+    TraverseGotoHome,
     TraverseEnableLaserpointer(bool),
-    TraverseGotoHome(f64),
 
     // Puller
     /// on = speed, off = stop
@@ -105,10 +108,6 @@ pub struct TraverseStateEvent {
     pub position_in: f64,
     /// position out in mm
     pub position_out: f64,
-    /// is at position in
-    pub is_in: bool,
-    /// is at position out
-    pub is_out: bool,
     /// is going to position in
     pub is_going_in: bool,
     /// is going to position out
@@ -334,7 +333,7 @@ impl MachineApi for Winder2 {
             Mutation::TraverseSetLimitInner(limit) => self.traverse_set_limit_inner(limit),
             Mutation::TraverseGotoLimitOuter => self.traverse_goto_limit_outer(),
             Mutation::TraverseGotoLimitInner => self.traverse_goto_limit_inner(),
-            Mutation::TraverseGotoHome(position) => self.traverse_goto_home(position),
+            Mutation::TraverseGotoHome => self.traverse_goto_home(),
             Mutation::PullerSetRegulationMode(regulation) => self.puller_set_regulation(regulation),
             Mutation::PullerSetTargetSpeed(value) => self.puller_set_target_speed(value),
             Mutation::PullerSetTargetDiameter(_) => todo!(),

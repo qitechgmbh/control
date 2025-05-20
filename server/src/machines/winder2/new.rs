@@ -9,9 +9,9 @@ use super::tension_arm::TensionArm;
 use super::{Winder2, Winder2Mode};
 use anyhow::Error;
 use control_core::actors::analog_input_getter::AnalogInputGetter;
+use control_core::actors::digital_input_getter::DigitalInputGetter;
 use control_core::actors::digital_output_setter::DigitalOutputSetter;
 use control_core::actors::stepper_driver_el70x1::StepperDriverEL70x1;
-use control_core::converters::linear_step_converter::LinearStepConverter;
 use control_core::converters::angular_step_converter::AngularStepConverter;
 use control_core::converters::linear_step_converter::LinearStepConverter;
 use control_core::machines::identification::DeviceHardwareIdentification;
@@ -19,7 +19,7 @@ use control_core::machines::new::{
     MachineNewHardware, MachineNewParams, MachineNewTrait, get_device_identification_by_role,
     get_ethercat_device_by_index, get_subdevice_by_index, validate_no_role_dublicates,
     validate_same_machine_identification_unique,
-};
+}; 
 use control_core::uom_extensions::acceleration::meter_per_minute_per_second;
 use control_core::uom_extensions::angular_acceleration::revolution_per_minute_per_second;
 use control_core::uom_extensions::velocity::meter_per_minute;
@@ -28,7 +28,7 @@ use ethercat_hal::devices::el2002::{EL2002, EL2002Port};
 use ethercat_hal::devices::el7031::coe::EL7031Configuration;
 use ethercat_hal::devices::el7031::pdo::EL7031PredefinedPdoAssignment;
 use ethercat_hal::devices::el7031::{
-    EL7031, EL7031_IDENTITY_A, EL7031_IDENTITY_B, EL7031StepperPort,
+    EL7031, EL7031_IDENTITY_A, EL7031_IDENTITY_B, EL7031DigitalInputPort, EL7031StepperPort,
 };
 use ethercat_hal::devices::el7031_0030::coe::EL7031_0030Configuration;
 use ethercat_hal::devices::el7031_0030::pdo::EL7031_0030PredefinedPdoAssignment;
@@ -40,6 +40,7 @@ use ethercat_hal::devices::el7041_0052::{EL7041_0052, EL7041_0052_IDENTITY_A, EL
 use ethercat_hal::devices::{downcast_device, subdevice_identity_to_tuple};
 use ethercat_hal::devices::{ek1100::EK1100_IDENTITY_A, el2002::EL2002_IDENTITY_A};
 use ethercat_hal::io::analog_input::AnalogInput;
+use ethercat_hal::io::digital_input::DigitalInput;
 use ethercat_hal::io::digital_output::DigitalOutput;
 use ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1;
 use ethercat_hal::shared_config;
@@ -320,9 +321,13 @@ impl MachineNewTrait for Winder2 {
 
             let mut new = Self {
                 traverse: StepperDriverEL70x1::new(
-                    StepperVelocityEL70x1::new(el7031, EL7031StepperPort::STM1),
+                    StepperVelocityEL70x1::new(el7031.clone(), EL7031StepperPort::STM1),
                     &el7031_config.stm_features.speed_range,
                 ),
+                traverse_end_stop: DigitalInputGetter::new(DigitalInput::new(
+                    el7031,
+                    EL7031DigitalInputPort::DI1,
+                )),
                 puller: StepperDriverEL70x1::new(
                     StepperVelocityEL70x1::new(el7031_0030.clone(), EL7031_0030StepperPort::STM1),
                     &el7031_0030_config.stm_features.speed_range,
@@ -347,6 +352,7 @@ impl MachineNewTrait for Winder2 {
                 ),
                 last_measurement_emit: Instant::now(),
                 spool_mode: mode.clone().into(),
+                traverse_mode: mode.clone().into(),
                 puller_mode: mode.into(),
                 puller_speed_controller: PullerSpeedController::new(
                     Acceleration::new::<meter_per_minute_per_second>(10.0),

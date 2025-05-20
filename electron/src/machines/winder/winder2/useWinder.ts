@@ -181,14 +181,12 @@ function useTraverse(
     });
   };
 
-  const schemaGotoHome = z.object({
-    TraverseGotoHome: z.number(),
-  });
+  const schemaGotoHome = z.literal("TraverseGotoHome");
   const { request: requestGotoHome } = useMachineMutation(schemaGotoHome);
-  const traverseGotoHome = async (homePosition: number) => {
+  const traverseGotoHome = async () => {
     requestGotoHome({
       machine_identification_unique,
-      data: { TraverseGotoHome: homePosition },
+      data: "TraverseGotoHome",
     });
   };
 
