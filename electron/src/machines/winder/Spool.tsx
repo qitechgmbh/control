@@ -32,7 +32,7 @@ export function Spool({ rpm }: Props) {
       <div
         className="aspect-square h-32"
         style={{
-          transform: `rotate(${rotations * 360}deg)`,
+          transform: `rotate(-${rotations * 360}deg)`,
         }}
       >
         <svg
