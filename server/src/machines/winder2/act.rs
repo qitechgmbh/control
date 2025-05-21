@@ -25,6 +25,11 @@ impl Actor for Winder2 {
             // sync the traverse speed
             self.sync_traverse_speed();
 
+            // check if traverse state changed
+            if self.traverse_controller.dif_change_state() {
+                self.emit_traverse_state();
+            }
+
             // if last measurement emit is older than 1 second, emit a new measurement
             let now = Instant::now();
             if now.duration_since(self.last_measurement_emit) > Duration::from_millis(16) {

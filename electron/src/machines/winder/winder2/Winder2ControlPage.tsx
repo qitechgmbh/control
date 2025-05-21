@@ -151,7 +151,9 @@ export function Winder2ControlPage() {
                 traverseState?.data.is_going_home ||
                 traverseState?.data.is_traversing
               }
-              isLoading={traverseStateIsLoading}
+              isLoading={
+                traverseStateIsLoading || traverseState?.data.is_going_home
+              }
             >
               Go to Home
             </TouchButton>

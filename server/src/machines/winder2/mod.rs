@@ -194,6 +194,7 @@ impl Winder2 {
         self.set_traverse_mode(mode);
 
         self.emit_mode_state();
+        self.emit_traverse_state();
     }
 
     /// Apply the mode changes to the spool

@@ -24,9 +24,12 @@ pub struct TraverseController {
     state: State,
     fullstep_converter: LinearStepConverter,
     microstep_converter: LinearStepConverter,
+    // A sticky flag if the [`State`] changed (not the sub states)
+    // Needed to send state updates to the UI
+    did_change_state: bool,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum State {
     /// Initial state
     NotHomed,
@@ -54,7 +57,7 @@ pub enum State {
     Traversing(TraversingState),
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum TraversingState {
     /// Like [`State::GoingOut`] but
     /// - will go into [`State::GoingIn`] after reaching the outer limit
@@ -71,7 +74,7 @@ pub enum TraversingState {
     TraversingOut,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum HomingState {
     /// In this state the traverse is not moving but checks if the endstop si triggered
     /// If the endstop is triggered we go into [`HomingState::EscapeEndstop`]
@@ -103,6 +106,7 @@ impl TraverseController {
             step_size: Length::new::<millimeter>(1.0), // Default step size
             padding: Length::new::<millimeter>(0.01),  // Default padding
             state: State::NotHomed,
+            did_change_state: false,
             fullstep_converter: LinearStepConverter::from_circumference(
                 200,
                 Length::new::<millimeter>(35.0),
@@ -162,6 +166,13 @@ impl TraverseController {
 
     pub fn is_enabled(&self) -> bool {
         self.enabled
+    }
+
+    pub fn dif_change_state(&mut self) -> bool {
+        let did_change = self.did_change_state;
+        // Reset the flag
+        self.did_change_state = false;
+        did_change
     }
 }
 
@@ -250,6 +261,19 @@ impl TraverseController {
         self.position = self.microstep_converter.steps_to_distance(steps as f64);
     }
 
+    /// Update the [`did_change_state`] flag
+    /// Only considers the major state not the sub states
+    fn update_did_change_state(&mut self, old_state: &State) -> bool {
+        match self.state {
+            State::NotHomed => !matches!(old_state, State::NotHomed),
+            State::Idle => !matches!(old_state, State::Idle),
+            State::GoingIn => !matches!(old_state, State::GoingIn),
+            State::GoingOut => !matches!(old_state, State::GoingOut),
+            State::Homing(_) => !matches!(old_state, State::Homing(_)),
+            State::Traversing(_) => !matches!(old_state, State::Traversing(_)),
+        }
+    }
+
     /// Calculates a desired speed based on the current state and the end stop status.
     ///
     /// Positive speed moved out, negative speed moves in.
@@ -265,6 +289,9 @@ impl TraverseController {
         }
 
         self.sync_position(traverse);
+
+        // save state before
+        let old_state = self.state.clone();
 
         // Automatic Transitions
         match &self.state {
@@ -325,6 +352,7 @@ impl TraverseController {
                 }
             },
 
+            // If state changed we
             State::Traversing(traversing_state) => match traversing_state {
                 TraversingState::GoingOut => {
                     // If outer limit is reached
@@ -357,6 +385,11 @@ impl TraverseController {
                     }
                 }
             },
+        }
+
+        // Set the [`did_change_state`] flag
+        if self.did_change_state == false {
+            self.did_change_state = self.update_did_change_state(&old_state);
         }
 
         // Speed
