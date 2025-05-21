@@ -1,4 +1,4 @@
-use super::{NewEthercatDevice, SubDeviceIdentityTuple};
+use super::{EthercatDeviceProcessing, NewEthercatDevice, SubDeviceIdentityTuple};
 use crate::{
     coe::{ConfigurableDevice, Configuration},
     io::pulse_train_output::{
@@ -6,10 +6,10 @@ use crate::{
         PulseTrainOutputState,
     },
     pdo::{
-        el252x::{EncControl, EncStatus, PtoControl, PtoStatus, PtoTarget},
         PredefinedPdoAssignment, RxPdo, TxPdo,
+        el252x::{EncControl, EncStatus, PtoControl, PtoStatus, PtoTarget},
     },
-    types::EthercrabSubDevicePreoperational,
+    helpers::ethercrab_types::EthercrabSubDevicePreoperational,
 };
 use anyhow::Ok;
 use ethercat_hal_derive::{EthercatDevice, RxPdo, TxPdo};
@@ -21,6 +21,8 @@ pub struct EL2522 {
     pub txpdo: EL2522TxPdo,
     pub rxpdo: EL2522RxPdo,
 }
+
+impl EthercatDeviceProcessing for EL2522 {}
 
 impl std::fmt::Debug for EL2522 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

@@ -5,7 +5,7 @@ use crate::{
         EncConfiguration, PosConfiguration, PosFeatures, StmControllerConfiguration, StmFeatures,
         StmMotorConfiguration,
     },
-    types::EthercrabSubDevicePreoperational,
+    helpers::ethercrab_types::EthercrabSubDevicePreoperational,
 };
 
 use super::{EL7041_0052, pdo::EL7041_0052PredefinedPdoAssignment};

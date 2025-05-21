@@ -1,9 +1,9 @@
 use crate::io::digital_output::{DigitalOutputDevice, DigitalOutputOutput, DigitalOutputState};
 use crate::pdo::{RxPdo, basic::BoolPdoObject};
-use crate::types::EthercrabSubDevicePreoperational;
+use crate::helpers::ethercrab_types::EthercrabSubDevicePreoperational;
 use ethercat_hal_derive::{EthercatDevice, RxPdo};
 
-use super::NewEthercatDevice;
+use super::{EthercatDeviceProcessing, NewEthercatDevice};
 
 /// EL2809 16-channel digital output device
 ///
@@ -12,6 +12,8 @@ use super::NewEthercatDevice;
 pub struct EL2809 {
     pub rxpdo: EL2809RxPdo,
 }
+
+impl EthercatDeviceProcessing for EL2809 {}
 
 impl std::fmt::Debug for EL2809 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

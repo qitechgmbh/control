@@ -923,6 +923,7 @@ dependencies = [
  "bitvec",
  "ethercat_hal_derive",
  "ethercrab",
+ "rand",
  "smol",
  "uom",
 ]

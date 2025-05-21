@@ -53,12 +53,19 @@ impl From<Mode> for Winder2Mode {
 #[derive(Deserialize, Serialize)]
 enum Mutation {
     // Traverse
+    /// Position in mm from home point
     TraverseSetLimitOuter(f64),
+    /// Position in mm from home point
     TraverseSetLimitInner(f64),
+    /// Step size in mm for traverse movement
+    TraverseSetStepSize(f64),
+    /// Padding in mm for traverse movement limits
+    TraverseSetPadding(f64),
     TraverseGotoLimitOuter,
     TraverseGotoLimitInner,
+    /// Find home point
+    TraverseGotoHome,
     TraverseEnableLaserpointer(bool),
-    TraverseGotoHome(f64),
 
     // Puller
     /// on = speed, off = stop
@@ -86,7 +93,7 @@ enum Mutation {
 #[derive(Serialize, Debug, Clone)]
 pub struct TraversePositionEvent {
     /// position in mm
-    pub position: f64,
+    pub position: Option<f64>,
 }
 
 impl TraversePositionEvent {
@@ -105,10 +112,6 @@ pub struct TraverseStateEvent {
     pub position_in: f64,
     /// position out in mm
     pub position_out: f64,
-    /// is at position in
-    pub is_in: bool,
-    /// is at position out
-    pub is_out: bool,
     /// is going to position in
     pub is_going_in: bool,
     /// is going to position out
@@ -117,8 +120,14 @@ pub struct TraverseStateEvent {
     pub is_homed: bool,
     /// if is homing
     pub is_going_home: bool,
+    /// if is traversing
+    pub is_traversing: bool,
     /// laserpointer is on
     pub laserpointer: bool,
+    /// step size in mm
+    pub step_size: f64,
+    /// padding in mm
+    pub padding: f64,
 }
 
 impl TraverseStateEvent {
@@ -245,7 +254,7 @@ impl TensionArmStateEvent {
     }
 }
 
-pub enum Winder1Events {
+pub enum Winder2Events {
     TraversePosition(Event<TraversePositionEvent>),
     TraverseState(Event<TraverseStateEvent>),
     PullerSpeed(Event<PullerSpeedEvent>),
@@ -260,10 +269,10 @@ pub enum Winder1Events {
 }
 
 #[derive(Debug)]
-pub struct Winder1Namespace(Namespace);
+pub struct Winder2Namespace(Namespace);
 
-impl NamespaceCacheingLogic<Winder1Events> for Winder1Namespace {
-    fn emit_cached(&mut self, events: Winder1Events) {
+impl NamespaceCacheingLogic<Winder2Events> for Winder2Namespace {
+    fn emit_cached(&mut self, events: Winder2Events) {
         let event = match events.event_value() {
             Ok(event) => event,
             Err(err) => {
@@ -280,26 +289,26 @@ impl NamespaceCacheingLogic<Winder1Events> for Winder1Namespace {
     }
 }
 
-impl Winder1Namespace {
+impl Winder2Namespace {
     pub fn new() -> Self {
         Self(Namespace::new())
     }
 }
 
-impl CacheableEvents<Winder1Events> for Winder1Events {
+impl CacheableEvents<Winder2Events> for Winder2Events {
     fn event_value(&self) -> Result<GenericEvent, serde_json::Error> {
         match self {
-            Winder1Events::TraversePosition(event) => event.try_into(),
-            Winder1Events::TraverseState(event) => event.try_into(),
-            Winder1Events::PullerSpeed(event) => event.try_into(),
-            Winder1Events::PullerState(event) => event.try_into(),
-            Winder1Events::AutostopWoundedlength(event) => event.try_into(),
-            Winder1Events::AutostopState(event) => event.try_into(),
-            Winder1Events::Mode(event) => event.try_into(),
-            Winder1Events::SpoolRpm(event) => event.try_into(),
-            Winder1Events::SpoolState(event) => event.try_into(),
-            Winder1Events::TensionArmAngleEvent(event) => event.try_into(),
-            Winder1Events::TensionArmStateEvent(event) => event.try_into(),
+            Winder2Events::TraversePosition(event) => event.try_into(),
+            Winder2Events::TraverseState(event) => event.try_into(),
+            Winder2Events::PullerSpeed(event) => event.try_into(),
+            Winder2Events::PullerState(event) => event.try_into(),
+            Winder2Events::AutostopWoundedlength(event) => event.try_into(),
+            Winder2Events::AutostopState(event) => event.try_into(),
+            Winder2Events::Mode(event) => event.try_into(),
+            Winder2Events::SpoolRpm(event) => event.try_into(),
+            Winder2Events::SpoolState(event) => event.try_into(),
+            Winder2Events::TensionArmAngleEvent(event) => event.try_into(),
+            Winder2Events::TensionArmStateEvent(event) => event.try_into(),
         }
     }
 
@@ -309,17 +318,17 @@ impl CacheableEvents<Winder1Events> for Winder1Events {
         let cache_one = cache_one_event();
 
         match self {
-            Winder1Events::TraversePosition(_) => cache_one_hour,
-            Winder1Events::TraverseState(_) => cache_one,
-            Winder1Events::PullerSpeed(_) => cache_one_hour,
-            Winder1Events::PullerState(_) => cache_one,
-            Winder1Events::AutostopWoundedlength(_) => cache_one_hour,
-            Winder1Events::AutostopState(_) => cache_one,
-            Winder1Events::Mode(_) => cache_one,
-            Winder1Events::SpoolRpm(_) => cache_ten_secs,
-            Winder1Events::SpoolState(_) => cache_one,
-            Winder1Events::TensionArmAngleEvent(_) => cache_one_hour,
-            Winder1Events::TensionArmStateEvent(_) => cache_one,
+            Winder2Events::TraversePosition(_) => cache_one_hour,
+            Winder2Events::TraverseState(_) => cache_one,
+            Winder2Events::PullerSpeed(_) => cache_one_hour,
+            Winder2Events::PullerState(_) => cache_one,
+            Winder2Events::AutostopWoundedlength(_) => cache_one_hour,
+            Winder2Events::AutostopState(_) => cache_one,
+            Winder2Events::Mode(_) => cache_one,
+            Winder2Events::SpoolRpm(_) => cache_ten_secs,
+            Winder2Events::SpoolState(_) => cache_one,
+            Winder2Events::TensionArmAngleEvent(_) => cache_one_hour,
+            Winder2Events::TensionArmStateEvent(_) => cache_one,
         }
     }
 }
@@ -330,11 +339,13 @@ impl MachineApi for Winder2 {
         match mutation {
             Mutation::TraverseEnableLaserpointer(enable) => self.set_laser(enable),
             Mutation::ModeSet(mode) => self.set_mode(&mode.into()),
-            Mutation::TraverseSetLimitOuter(_) => todo!(),
-            Mutation::TraverseSetLimitInner(_) => todo!(),
-            Mutation::TraverseGotoLimitOuter => todo!(),
-            Mutation::TraverseGotoLimitInner => todo!(),
-            Mutation::TraverseGotoHome(_) => todo!(),
+            Mutation::TraverseSetLimitOuter(limit) => self.traverse_set_limit_outer(limit),
+            Mutation::TraverseSetLimitInner(limit) => self.traverse_set_limit_inner(limit),
+            Mutation::TraverseSetStepSize(size) => self.traverse_set_step_size(size),
+            Mutation::TraverseSetPadding(padding) => self.traverse_set_padding(padding),
+            Mutation::TraverseGotoLimitOuter => self.traverse_goto_limit_outer(),
+            Mutation::TraverseGotoLimitInner => self.traverse_goto_limit_inner(),
+            Mutation::TraverseGotoHome => self.traverse_goto_home(),
             Mutation::PullerSetRegulationMode(regulation) => self.puller_set_regulation(regulation),
             Mutation::PullerSetTargetSpeed(value) => self.puller_set_target_speed(value),
             Mutation::PullerSetTargetDiameter(_) => todo!(),

@@ -1,12 +1,12 @@
 /**
- * @file Winder1Room.ts
- * @description TypeScript implementation of Winder1 namespace with Zod schema validation.
+ * @file winder2Namespace.ts
+ * @description TypeScript implementation of Winder2 namespace with Zod schema validation.
  */
 
 import { StoreApi } from "zustand";
 import { create } from "zustand";
 import { produce } from "immer";
-import { number, z } from "zod";
+import { z } from "zod";
 import {
   EventHandler,
   eventSchema,
@@ -30,7 +30,7 @@ import {
  * Traverse position event schema
  */
 export const traversePositionEventDataSchema = z.object({
-  position: z.number(),
+  position: z.number().nullable(),
 });
 
 /**
@@ -41,13 +41,14 @@ export const traverseStateEventDataSchema = z.object({
   limit_outer: z.number(),
   position_in: z.number(),
   position_out: z.number(),
-  is_in: z.boolean(),
-  is_out: z.boolean(),
   is_going_in: z.boolean(),
   is_going_out: z.boolean(),
   is_homed: z.boolean(),
   is_going_home: z.boolean(),
+  is_traversing: z.boolean(),
   laserpointer: z.boolean(),
+  step_size: z.number(),
+  padding: z.number(),
 });
 
 /**
@@ -81,7 +82,7 @@ export const autostopWoundedLengthEventDataSchema = z.object({
 /**
  * Autostop transition state enum
  */
-export const autostopTransitionSchema = z.enum(["None", "Pending", "Active"]);
+export const autostopTransitionSchema = z.enum(["Standby", "Pull"]);
 
 /**
  * Autostop state event schema
@@ -178,7 +179,7 @@ export type MeasurementsTensionArmEvent = z.infer<
 >;
 export type TensionArmStateEvent = z.infer<typeof tensionArmStateEventSchema>;
 
-export type Winder1NamespaceStore = {
+export type Winder2NamespaceStore = {
   // State events (latest only)
   traverseState: TraverseStateEvent | null;
   pullerState: PullerStateEvent | null;
@@ -215,12 +216,12 @@ const { initialTimeSeries: tensionArmAngle, insert: addTensionArmAngle } =
   createTimeSeries(ONE_SECOND, ONE_HOUR);
 
 /**
- * Factory function to create a new Winder1 namespace store
- * @returns A new Zustand store instance for Winder1 namespace
+ * Factory function to create a new Winder2 namespace store
+ * @returns A new Zustand store instance for Winder2 namespace
  */
-export const createWinder1NamespaceStore =
-  (): StoreApi<Winder1NamespaceStore> =>
-    create<Winder1NamespaceStore>((set) => {
+export const createWinder2NamespaceStore =
+  (): StoreApi<Winder2NamespaceStore> =>
+    create<Winder2NamespaceStore>((set) => {
       return {
         // State events (latest only)
         traverseState: null,
@@ -239,16 +240,16 @@ export const createWinder1NamespaceStore =
       };
     });
 /**
- * @file Winder1Room.ts (continued)
+ * @file winder2Namespace.ts (continued)
  */
 
 /**
- * Creates a message handler for Winder1 namespace events with validation and appropriate caching strategies
+ * Creates a message handler for Winder2 namespace events with validation and appropriate caching strategies
  * @param store The store to update when messages are received
  * @returns A message handler function
  */
 export function winder2MessageHandler(
-  store: StoreApi<Winder1NamespaceStore>,
+  store: StoreApi<Winder2NamespaceStore>,
 ): EventHandler {
   return (event: Event<any>) => {
     const eventName = event.name;
@@ -297,7 +298,7 @@ export function winder2MessageHandler(
       else if (eventName === "TraversePositionEvent") {
         let parsed = traversePositionEventSchema.parse(event);
         let timeseriesValue: TimeSeriesValue = {
-          value: parsed.data.position,
+          value: parsed.data.position ?? 0,
           timestamp: event.ts,
         };
         store.setState(
@@ -322,7 +323,7 @@ export function winder2MessageHandler(
             );
           }),
         );
-      } else if (eventName === "AutostopWoundedlengthEvent") {
+      } else if (eventName === "AutostopWoundedLengthEvent") {
         let parsed = autostopWoundedLengthEventSchema.parse(event);
         let timeseriesValue: TimeSeriesValue = {
           value: parsed.data.wounded_length,
@@ -376,21 +377,21 @@ export function winder2MessageHandler(
 }
 
 /**
- * Create the Winder1 namespace implementation
+ * Create the Winder2 namespace implementation
  */
 const useWinder2NamespaceImplementation =
-  createNamespaceHookImplementation<Winder1NamespaceStore>({
-    createStore: createWinder1NamespaceStore,
+  createNamespaceHookImplementation<Winder2NamespaceStore>({
+    createStore: createWinder2NamespaceStore,
     createEventHandler: winder2MessageHandler,
   });
 
 /**
- * Hook for a machine-specific Winder1 namespace
+ * Hook for a machine-specific Winder2 namespace
  *
  * @example
  * ```tsx
  * function WinderStatus({ machine }) {
- *   const { traverseState, pullerSpeeds } = useWinder1Namespace(machine);
+ *   const { traverseState, pullerSpeeds } = useWinder2Namespace(machine);
  *
  *   return (
  *     <div>
@@ -410,7 +411,7 @@ const useWinder2NamespaceImplementation =
  */
 export function useWinder2Namespace(
   machine_identification_unique: MachineIdentificationUnique,
-): Winder1NamespaceStore {
+): Winder2NamespaceStore {
   // Generate namespace ID from validated machine ID
   const namespaceId = useRef<NamespaceId>({
     type: "machine",

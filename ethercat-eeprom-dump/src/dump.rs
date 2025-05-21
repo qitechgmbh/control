@@ -1,6 +1,6 @@
 use std::{fs::File, io::Write};
 
-use ethercat_hal::types::EthercrabSubDeviceGroupPreoperational;
+use ethercat_hal::helpers::ethercrab_types::EthercrabSubDeviceGroupPreoperational;
 use ethercrab::MainDevice;
 
 use crate::{MAX_SUBDEVICES, PDI_LEN, print::print_buffer};

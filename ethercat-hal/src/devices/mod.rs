@@ -18,7 +18,9 @@ pub mod el7041_0052;
 // pub mod el4008;
 
 use super::devices::el1008::EL1008;
-use crate::{devices::el2521::EL2521, types::EthercrabSubDeviceGroupPreoperational};
+use crate::{
+    devices::el2521::EL2521, helpers::ethercrab_types::EthercrabSubDeviceGroupPreoperational,
+};
 use anyhow::anyhow;
 use bitvec::{order::Lsb0, slice::BitSlice};
 use ek1100::{EK1100, EK1100_IDENTITY_A};
@@ -41,7 +43,10 @@ use std::{any::Any, fmt::Debug, sync::Arc};
 /// A trait for all devices
 ///
 /// provides interface to read and write the PDO data
-pub trait EthercatDevice: NewEthercatDevice + Any + Send + Sync + Debug {
+pub trait EthercatDevice
+where
+    Self: NewEthercatDevice + EthercatDeviceProcessing + Any + Send + Sync + Debug,
+{
     /// Input data from the last cycle
     /// `ts` is the timestamp when the input data was sent by the device
     fn input(&mut self, _input: &BitSlice<u8, Lsb0>) -> Result<(), anyhow::Error>;
@@ -65,18 +70,6 @@ pub trait EthercatDevice: NewEthercatDevice + Any + Send + Sync + Debug {
             ));
         }
         self.input(input)
-    }
-
-    /// Devices can override this function if they want to post process the input data
-    /// This might be the case if the pdo is not what is needed in the io layer
-    fn input_post_process(&mut self) -> Result<(), anyhow::Error> {
-        Ok(())
-    }
-
-    /// Devices can override this function if they want to pre process the output data
-    /// This might be the case if the pdo is not what is needed in the io layer
-    fn output_pre_process(&mut self) -> Result<(), anyhow::Error> {
-        Ok(())
     }
 
     /// Output data for the next cycle
@@ -107,6 +100,21 @@ pub trait EthercatDevice: NewEthercatDevice + Any + Send + Sync + Debug {
     }
 
     fn as_any(&self) -> &dyn Any;
+}
+
+/// A trait for devices that want to process input and output data
+pub trait EthercatDeviceProcessing {
+    /// Devices can override this function if they want to post process the input data
+    /// This might be the case if the pdo is not what is needed in the io layer
+    fn input_post_process(&mut self) -> Result<(), anyhow::Error> {
+        Ok(())
+    }
+
+    /// Devices can override this function if they want to pre process the output data
+    /// This might be the case if the pdo is not what is needed in the io layer
+    fn output_pre_process(&mut self) -> Result<(), anyhow::Error> {
+        Ok(())
+    }
 }
 
 /// A constructor trait for devices

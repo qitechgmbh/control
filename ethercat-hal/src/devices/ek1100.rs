@@ -1,9 +1,11 @@
-use super::{NewEthercatDevice, SubDeviceIdentityTuple};
+use super::{EthercatDeviceProcessing, NewEthercatDevice, SubDeviceIdentityTuple};
 use ethercat_hal_derive::EthercatDevice;
 
 /// EK1100 bus coupler
 #[derive(Clone, EthercatDevice)]
 pub struct EK1100 {}
+
+impl EthercatDeviceProcessing for EK1100 {}
 
 impl NewEthercatDevice for EK1100 {
     fn new() -> Self {

@@ -1,3 +1,4 @@
+use super::EthercatDeviceProcessing;
 use super::{NewEthercatDevice, SubDeviceIdentityTuple};
 use crate::io::analog_input::physical::AnalogInputRange;
 use crate::pdo::RxPdo;
@@ -9,11 +10,11 @@ use crate::{
         analog_input::{AiCompact, AiStandard},
     },
     shared_config::el30xx::{EL30XXChannelConfiguration, EL30XXPresentation},
-    signing::U16SigningConverter,
+    helpers::signing_converter_u16::U16SigningConverter,
 };
 use crate::{
     io::analog_input::{AnalogInputDevice, AnalogInputInput, AnalogInputState},
-    types::EthercrabSubDevicePreoperational,
+    helpers::ethercrab_types::EthercrabSubDevicePreoperational,
 };
 use ethercat_hal_derive::{EthercatDevice, RxPdo, TxPdo};
 use uom::si::electric_current::milliampere;
@@ -38,6 +39,8 @@ pub struct EL3024 {
     pub txpdo: EL3024TxPdo,
     pub rxpdo: EL3024RxPdo,
 }
+
+impl EthercatDeviceProcessing for EL3024 {}
 
 impl std::fmt::Debug for EL3024 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

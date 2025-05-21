@@ -3,8 +3,6 @@ use std::{fmt, future::Future, pin::Pin, sync::Arc};
 use anyhow::Error;
 use smol::lock::RwLock;
 
-use crate::pdo::el70x1::{EncControlCompact, EncStatusCompact, StmControl, StmStatus, StmVelocity};
-
 /// Pulse Train Output (PTO) device
 ///
 /// Generates digital puleses with a given frequency (not PWM) and counts them.
@@ -73,16 +71,47 @@ pub struct StepperVelocityEL70x1State {
 
 #[derive(Debug, Clone)]
 pub struct StepperVelocityEL70x1Input {
-    pub enc_status_compact: EncStatusCompact,
-    pub stm_status: StmStatus,
-    // pub stm_sychron_info_data: StmSynchronInfoData,
+    /// Combination of `counter_underflow`, `counter_overflow`, and `counter_value` from [`crate::pdo::el70x1::EncControlCompact`]
+    pub counter_value: i128,
+
+    /// `ready_to_enable` from [`crate::pdo::el70x1::StmStatus`]
+    pub ready_to_enable: bool,
+
+    /// `ready` from [`crate::pdo::el70x1::StmStatus`]
+    pub ready: bool,
+
+    /// `warning` from [`crate::pdo::el70x1::StmStatus`]
+    pub warning: bool,
+
+    /// `error` from [`crate::pdo::el70x1::StmStatus`]
+    pub error: bool,
+
+    /// `moving_positive` from [`crate::pdo::el70x1::StmStatus`]
+    pub moving_positive: bool,
+
+    /// `moving_negative` from [`crate::pdo::el70x1::StmStatus`]
+    pub moving_negative: bool,
+
+    /// `torque_reduced` from [`crate::pdo::el70x1::StmStatus`]
+    pub torque_reduced: bool,
 }
 
 #[derive(Debug, Clone)]
 pub struct StepperVelocityEL70x1Output {
-    pub enc_control_compact: EncControlCompact,
-    pub stm_control: StmControl,
-    pub stm_velocity: StmVelocity,
+    /// `velocity` from [`crate::pdo::el70x1::StmVelocity`]
+    pub velocity: i16,
+
+    /// `enable` from [`crate::pdo::el70x1::StmControl`]
+    pub enable: bool,
+
+    /// `reduce_torque` from [`crate::pdo::el70x1::StmControl`]
+    pub reduce_torque: bool,
+
+    /// `reset` from [`crate::pdo::el70x1::StmControl`]
+    pub reset: bool,
+
+    /// `set_counter` and `set_counter_value` from [`crate::pdo::el70x1::EncControl`]
+    pub set_counter: Option<i128>,
 }
 
 pub trait StepperVelocityEL70x1Device<PORT>: Send + Sync

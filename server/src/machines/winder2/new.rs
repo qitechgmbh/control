@@ -1,16 +1,19 @@
 use std::time::Instant;
 
 use crate::machines::winder2::puller_speed_controller::PullerSpeedController;
+use crate::machines::winder2::traverse_controller::TraverseController;
 
-use super::api::Winder1Namespace;
+use super::api::Winder2Namespace;
 use super::spool_speed_controller::SpoolSpeedController;
 use super::tension_arm::TensionArm;
 use super::{Winder2, Winder2Mode};
 use anyhow::Error;
 use control_core::actors::analog_input_getter::AnalogInputGetter;
+use control_core::actors::digital_input_getter::DigitalInputGetter;
 use control_core::actors::digital_output_setter::DigitalOutputSetter;
 use control_core::actors::stepper_driver_el70x1::StepperDriverEL70x1;
-use control_core::converters::step_converter::StepConverter;
+use control_core::converters::angular_step_converter::AngularStepConverter;
+use control_core::converters::linear_step_converter::LinearStepConverter;
 use control_core::machines::identification::DeviceHardwareIdentification;
 use control_core::machines::new::{
     MachineNewHardware, MachineNewParams, MachineNewTrait, get_device_identification_by_role,
@@ -25,7 +28,7 @@ use ethercat_hal::devices::el2002::{EL2002, EL2002Port};
 use ethercat_hal::devices::el7031::coe::EL7031Configuration;
 use ethercat_hal::devices::el7031::pdo::EL7031PredefinedPdoAssignment;
 use ethercat_hal::devices::el7031::{
-    EL7031, EL7031_IDENTITY_A, EL7031_IDENTITY_B, EL7031StepperPort,
+    EL7031, EL7031_IDENTITY_A, EL7031_IDENTITY_B, EL7031DigitalInputPort, EL7031StepperPort,
 };
 use ethercat_hal::devices::el7031_0030::coe::EL7031_0030Configuration;
 use ethercat_hal::devices::el7031_0030::pdo::EL7031_0030PredefinedPdoAssignment;
@@ -37,13 +40,14 @@ use ethercat_hal::devices::el7041_0052::{EL7041_0052, EL7041_0052_IDENTITY_A, EL
 use ethercat_hal::devices::{downcast_device, subdevice_identity_to_tuple};
 use ethercat_hal::devices::{ek1100::EK1100_IDENTITY_A, el2002::EL2002_IDENTITY_A};
 use ethercat_hal::io::analog_input::AnalogInput;
+use ethercat_hal::io::digital_input::DigitalInput;
 use ethercat_hal::io::digital_output::DigitalOutput;
 use ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1;
 use ethercat_hal::shared_config;
 use ethercat_hal::shared_config::el70x1::{EL70x1OperationMode, StmMotorConfiguration};
 use uom::si::angular_velocity::revolution_per_minute;
 use uom::si::f64::{Acceleration, AngularAcceleration, AngularVelocity, Length, Velocity};
-use uom::si::length::millimeter;
+use uom::si::length::{centimeter, millimeter};
 
 impl MachineNewTrait for Winder2 {
     fn new<'maindevice>(params: &MachineNewParams) -> Result<Self, Error> {
@@ -234,6 +238,10 @@ impl MachineNewTrait for Winder2 {
                 let el7031_config = EL7031Configuration {
                     stm_features: shared_config::el70x1::StmFeatures {
                         operation_mode: EL70x1OperationMode::DirectVelocity,
+                        // Max Speed of 1000 steps/s
+                        // Max @ 9cm diameter = approx 85 m/min
+                        // Max @ 20cm diameter = approx 185 m/min
+                        speed_range: shared_config::el70x1::EL70x1SpeedRange::Steps1000,
                         ..Default::default()
                     },
                     stm_motor: StmMotorConfiguration {
@@ -289,6 +297,9 @@ impl MachineNewTrait for Winder2 {
                 let el7031_0030_config = EL7031_0030Configuration {
                     stm_features: el7031_0030::coe::StmFeatures {
                         operation_mode: EL70x1OperationMode::DirectVelocity,
+                        // Max Speed of 1000 steps/s
+                        // Max @ 8cm diameter = approx 75 m/min
+                        speed_range: shared_config::el70x1::EL70x1SpeedRange::Steps1000,
                         ..Default::default()
                     },
                     stm_motor: StmMotorConfiguration {
@@ -310,9 +321,13 @@ impl MachineNewTrait for Winder2 {
 
             let mut new = Self {
                 traverse: StepperDriverEL70x1::new(
-                    StepperVelocityEL70x1::new(el7031, EL7031StepperPort::STM1),
+                    StepperVelocityEL70x1::new(el7031.clone(), EL7031StepperPort::STM1),
                     &el7031_config.stm_features.speed_range,
                 ),
+                traverse_end_stop: DigitalInputGetter::new(DigitalInput::new(
+                    el7031,
+                    EL7031DigitalInputPort::DI1,
+                )),
                 puller: StepperDriverEL70x1::new(
                     StepperVelocityEL70x1::new(el7031_0030.clone(), EL7031_0030StepperPort::STM1),
                     &el7031_0030_config.stm_features.speed_range,
@@ -326,28 +341,38 @@ impl MachineNewTrait for Winder2 {
                     EL7031_0030AnalogInputPort::AI1,
                 ))),
                 laser: DigitalOutputSetter::new(DigitalOutput::new(el2002, EL2002Port::DO1)),
-                namespace: Winder1Namespace::new(),
+                namespace: Winder2Namespace::new(),
                 mode: mode.clone(),
-                spool_step_converter: StepConverter::new(600),
+                spool_step_converter: AngularStepConverter::new(200),
                 spool_speed_controller: SpoolSpeedController::new(
                     AngularVelocity::new::<revolution_per_minute>(0.0),
-                    AngularVelocity::new::<revolution_per_minute>(600.0),
+                    AngularVelocity::new::<revolution_per_minute>(800.0),
                     AngularAcceleration::new::<revolution_per_minute_per_second>(200.0),
                     AngularAcceleration::new::<revolution_per_minute_per_second>(-200.0),
                 ),
                 last_measurement_emit: Instant::now(),
                 spool_mode: mode.clone().into(),
+                traverse_mode: mode.clone().into(),
                 puller_mode: mode.into(),
                 puller_speed_controller: PullerSpeedController::new(
                     Acceleration::new::<meter_per_minute_per_second>(10.0),
                     Velocity::new::<meter_per_minute>(1.0),
                     Length::new::<millimeter>(1.75),
+                    LinearStepConverter::from_diameter(
+                        200,                            // Assuming 200 steps per revolution for the puller stepper,
+                        Length::new::<centimeter>(8.0), // 8cm diameter of the puller wheel
+                    ),
                 ),
-                puller_step_converter: StepConverter::new(600),
+                traverse_controller: TraverseController::new(
+                    Length::new::<millimeter>(15.0), // Default inner limit
+                    Length::new::<millimeter>(80.0), // Default outer limit
+                    64,                              // Microsteps
+                ),
             };
 
             // initalize events
             new.emit_traverse_state();
+            new.emit_traverse_position();
             new.emit_mode_state();
             new.emit_spool_state();
             new.emit_tension_arm_state();

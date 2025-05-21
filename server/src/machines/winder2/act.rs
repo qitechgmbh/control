@@ -9,10 +9,10 @@ impl Actor for Winder2 {
         now: Instant,
     ) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send + '_>> {
         Box::pin(async move {
-            // self.traverse_driver.act(now).await;
-            // self.puller_driver.act(now).await;
-            self.spool.act(now).await;
+            self.traverse.act(now).await;
+            self.traverse_end_stop.act(now).await;
             self.puller.act(now).await;
+            self.spool.act(now).await;
             self.tension_arm.analog_input_getter.act(now).await;
             self.laser.act(now).await;
 
@@ -22,12 +22,21 @@ impl Actor for Winder2 {
             // sync the puller speed
             self.sync_puller_speed(now);
 
+            // sync the traverse speed
+            self.sync_traverse_speed();
+
+            // check if traverse state changed
+            if self.traverse_controller.dif_change_state() {
+                self.emit_traverse_state();
+            }
+
             // if last measurement emit is older than 1 second, emit a new measurement
             let now = Instant::now();
             if now.duration_since(self.last_measurement_emit) > Duration::from_millis(16) {
                 self.emit_tension_arm_angle();
                 self.emit_spool_rpm();
                 self.emit_puller_speed();
+                self.emit_traverse_position();
                 self.last_measurement_emit = now;
             }
         })

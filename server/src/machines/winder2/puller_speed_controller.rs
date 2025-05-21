@@ -1,15 +1,11 @@
 use std::time::Instant;
 
 use control_core::controllers::linear_acceleration::LinearAccelerationController;
+use control_core::converters::linear_step_converter::LinearStepConverter;
 use serde::{Deserialize, Serialize};
 use uom::{
     ConstZero,
-    si::{
-        angular_velocity::revolution_per_second,
-        f64::{Acceleration, AngularVelocity, Length, Velocity},
-        length::{meter, millimeter},
-        velocity::meter_per_second,
-    },
+    si::f64::{Acceleration, AngularVelocity, Length, Velocity},
 };
 
 #[derive(Debug)]
@@ -20,6 +16,8 @@ pub struct PullerSpeedController {
     pub regulation_mode: PullerRegulationMode,
     /// Linear acceleration controller to dampen speed change
     acceleration_controller: LinearAccelerationController,
+    /// Converter for linear to angular transformations
+    pub converter: LinearStepConverter,
 }
 
 impl PullerSpeedController {
@@ -27,6 +25,7 @@ impl PullerSpeedController {
         acceleration: Acceleration,
         target_speed: Velocity,
         target_diameter: Length,
+        converter: LinearStepConverter,
     ) -> Self {
         Self {
             enabled: false,
@@ -38,6 +37,7 @@ impl PullerSpeedController {
                 -acceleration,
                 Velocity::ZERO,
             ),
+            converter,
         }
     }
 
@@ -69,35 +69,19 @@ impl PullerSpeedController {
         self.acceleration_controller.update(speed, t)
     }
 
-    pub fn speed_to_angular_velocity(speed: Velocity) -> AngularVelocity {
-        // The diameter of the wheel is 80mm
-        let diameter = Length::new::<millimeter>(80.0);
-        let circumfence = diameter * std::f64::consts::PI;
-
-        // convert linear speed to angular speed
-        let angular_speed = AngularVelocity::new::<revolution_per_second>(
-            speed.get::<meter_per_second>() / circumfence.get::<meter>(),
-        );
-
-        angular_speed
+    pub fn speed_to_angular_velocity(&self, speed: Velocity) -> AngularVelocity {
+        // Use the converter to transform from linear velocity to angular velocity
+        self.converter.velocity_to_angular_velocity(speed)
     }
 
-    pub fn angular_velocity_to_speed(angular_speed: AngularVelocity) -> Velocity {
-        // The diameter of the wheel is 80mm
-        let diameter = Length::new::<millimeter>(80.0);
-        let circumfence = diameter * std::f64::consts::PI;
-
-        // convert angular speed to linear speed
-        let speed = Velocity::new::<meter_per_second>(
-            angular_speed.get::<revolution_per_second>() * circumfence.get::<meter>(),
-        );
-
-        speed
+    pub fn angular_velocity_to_speed(&self, angular_speed: AngularVelocity) -> Velocity {
+        // Use the converter to transform from angular velocity to linear velocity
+        self.converter.angular_velocity_to_velocity(angular_speed)
     }
 
     pub fn get_angular_velocity(&mut self, t: Instant) -> AngularVelocity {
         let speed = self.get_speed(t);
-        return Self::speed_to_angular_velocity(speed);
+        self.speed_to_angular_velocity(speed)
     }
 }
 
@@ -105,48 +89,4 @@ impl PullerSpeedController {
 pub enum PullerRegulationMode {
     Speed,
     Diameter,
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use approx::assert_relative_eq;
-    use core::f64;
-
-    #[test]
-    fn test_speed_to_angular_velocity() {
-        // Test case 1: Standard positive velocity
-        let speed1 = Velocity::new::<meter_per_second>(1.0);
-        // Diameter = 80mm = 0.08m
-        // Circumference = π * 0.08 ≈ 0.25133m
-        // Expected angular velocity = 1.0 / 0.25133 ≈ 3.9789 rev/s
-        let expected1 =
-            AngularVelocity::new::<revolution_per_second>(1.0 / (0.08 * std::f64::consts::PI));
-        let result1 = PullerSpeedController::speed_to_angular_velocity(speed1);
-        assert_relative_eq!(
-            result1.get::<revolution_per_second>(),
-            expected1.get::<revolution_per_second>(),
-            epsilon = f64::EPSILON
-        );
-
-        // Test case 2: Zero velocity
-        let speed2 = Velocity::new::<meter_per_second>(0.0);
-        let result2 = PullerSpeedController::speed_to_angular_velocity(speed2);
-        assert_relative_eq!(
-            result2.get::<revolution_per_second>(),
-            0.0,
-            epsilon = f64::EPSILON
-        );
-
-        // Test case 3: Negative velocity (reverse direction)
-        let speed3 = Velocity::new::<meter_per_second>(-2.0);
-        let expected3 =
-            AngularVelocity::new::<revolution_per_second>(-2.0 / (0.08 * std::f64::consts::PI));
-        let result3 = PullerSpeedController::speed_to_angular_velocity(speed3);
-        assert_relative_eq!(
-            result3.get::<revolution_per_second>(),
-            expected3.get::<revolution_per_second>(),
-            epsilon = f64::EPSILON
-        );
-    }
 }
