@@ -157,13 +157,9 @@ export function Winder2ControlPage() {
             >
               Go to Home
             </TouchButton>
-            {traverseState && (
-              <StatusBadge
-                variant={traverseState.data.is_homed ? "success" : "error"}
-              >
-                {traverseState.data.is_homed ? "Homed" : "Not Homed"}
-              </StatusBadge>
-            )}
+            {traverseState?.data.is_homed !== true ? (
+              <StatusBadge variant={"error"}>{"Not Homed"}</StatusBadge>
+            ) : null}
           </Label>
         </ControlCard>
 
