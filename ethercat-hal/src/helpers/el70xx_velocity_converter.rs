@@ -115,12 +115,12 @@ mod tests {
     fn test_round_propabilistic() {
         // Test the rounding function with a few values
         let mut sum = 0.0;
-        for _ in 0..10000 {
+        for _ in 0..100000 {
             let rounded = round_propabilistic(0.5);
             sum += rounded as f64;
         }
         // Check that the average is close to 0.5
-        let average = sum / 10000.0;
+        let average = sum / 100000.0;
         assert_relative_eq!(average, 0.5, epsilon = 0.01);
     }
 }
