@@ -1,5 +1,5 @@
 import { Icon, IconName } from "@/components/Icon";
-import React, { useEffect } from "react";
+import React, { useCallback, useEffect, useMemo } from "react";
 import {
   getUnitIcon,
   renderUndefinedValue,
@@ -20,7 +20,6 @@ import { TouchInput } from "@/components/touch/TouchInput";
 import { IconText } from "@/components/IconText";
 import { cva } from "class-variance-authority";
 import { z } from "zod";
-import { use } from "chai";
 
 type Props = {
   unit?: Unit;
@@ -30,8 +29,10 @@ type Props = {
   icon?: IconName;
   defaultValue: number;
   min?: number;
+  minSlider?: number; // Override the slider min value
   minLabel?: string;
   max?: number;
+  maxSlider?: number; // Override the slider max value
   maxLabel?: string;
   step?: number;
   valueSchema?: z.ZodType<number>;
@@ -73,6 +74,8 @@ export function EditValue({
   max,
   minLabel,
   maxLabel,
+  minSlider,
+  maxSlider,
   onChange,
 }: Props) {
   const formSchema = z.object({
@@ -89,6 +92,16 @@ export function EditValue({
   });
   const formValues = useFormValues(form);
   const { value: formValue } = formValues;
+
+  // step decimals for rounding
+  const stepDecimals = useMemo(() => {
+    let stepString = step.toString();
+    if (stepString.includes(".")) {
+      stepString = stepString.split(".")[1];
+    }
+    let stepDecimals = stepString.length;
+    return stepDecimals;
+  }, [step]);
 
   // if external value changes
   // for example from undefined to defined
@@ -113,12 +126,17 @@ export function EditValue({
 
   const [open, setOpen] = React.useState(false);
 
-  const setValue = (value: number) => {
-    form.setValue("value", value);
-  };
+  const setValue = useCallback(
+    (value: number) => {
+      // round to step decimals
+      const stepFactor = Math.pow(10, stepDecimals);
+      value = Math.round(value * stepFactor) / stepFactor;
+      form.setValue("value", value);
+    },
+    [form, stepDecimals],
+  );
 
   const valueIsDefined = value !== undefined && value !== null;
-  console.log("valueIsDefined", valueIsDefined);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -163,7 +181,7 @@ export function EditValue({
               }
             />
             <div className="flex flex-col items-center gap-2">
-              <EditValueText
+              <EditValueInputField
                 formValue={formValue}
                 setFormValue={(value) => setValue(value)}
                 valueSchema={schema}
@@ -260,7 +278,7 @@ type EditValueTextProps = {
   max?: number;
 };
 
-const inputStyle = cva("font-mono text-2xl", {
+const inputStyle = cva("font-mono", {
   variants: {
     error: {
       true: "text-red-500",
@@ -268,7 +286,7 @@ const inputStyle = cva("font-mono text-2xl", {
   },
 });
 
-function EditValueText({
+function EditValueInputField({
   formValue,
   setFormValue,
   valueSchema,
