@@ -7,7 +7,7 @@ use control_core::{
 use uom::{
     ConstZero,
     si::{
-        f64::{Length, Velocity},
+        f64::{AngularVelocity, Length, Velocity},
         length::millimeter,
         velocity::millimeter_per_second,
     },
@@ -19,6 +19,8 @@ pub struct TraverseController {
     position: Length,
     limit_inner: Length,
     limit_outer: Length,
+    step_size: Length,
+    padding: Length,
     state: State,
     fullstep_converter: LinearStepConverter,
     microstep_converter: LinearStepConverter,
@@ -98,6 +100,8 @@ impl TraverseController {
             position: Length::ZERO,
             limit_inner,
             limit_outer,
+            step_size: Length::new::<millimeter>(1.0), // Default step size
+            padding: Length::new::<millimeter>(0.01),  // Default padding
             state: State::NotHomed,
             fullstep_converter: LinearStepConverter::from_circumference(
                 200,
@@ -125,12 +129,28 @@ impl TraverseController {
         self.limit_outer = limit;
     }
 
+    pub fn set_step_size(&mut self, step_size: Length) {
+        self.step_size = step_size;
+    }
+
+    pub fn set_padding(&mut self, padding: Length) {
+        self.padding = padding;
+    }
+
     pub fn get_limit_inner(&self) -> Length {
         self.limit_inner
     }
 
     pub fn get_limit_outer(&self) -> Length {
         self.limit_outer
+    }
+
+    pub fn get_step_size(&self) -> Length {
+        self.step_size
+    }
+
+    pub fn get_padding(&self) -> Length {
+        self.padding
     }
 
     pub fn get_current_position(&self) -> Option<Length> {
@@ -160,7 +180,7 @@ impl TraverseController {
     }
 
     pub fn start_traversing(&mut self) {
-        self.state = State::Traversing(TraversingState::TraversingIn);
+        self.state = State::Traversing(TraversingState::GoingOut);
     }
 
     pub fn is_homed(&self) -> bool {
@@ -169,19 +189,13 @@ impl TraverseController {
     }
 
     pub fn is_going_in(&self) -> bool {
-        // [`State::GoingIn`] or [`State::Traversing(TraversingState::GoingIn)`] matches!
-        matches!(
-            self.state,
-            State::GoingIn | State::Traversing(TraversingState::TraversingIn)
-        )
+        // [`State::GoingIn`]
+        matches!(self.state, State::GoingIn)
     }
 
     pub fn is_going_out(&self) -> bool {
-        // [`State::GoingOut`] or [`State::Traversing(TraversingState::GoingOut)`] matches!
-        matches!(
-            self.state,
-            State::GoingOut | State::Traversing(TraversingState::GoingOut)
-        )
+        // [`State::GoingOut`]
+        matches!(self.state, State::GoingOut)
     }
 
     pub fn is_going_home(&self) -> bool {
@@ -243,6 +257,7 @@ impl TraverseController {
         &mut self,
         traverse: &mut StepperDriverEL70x1,
         traverse_end_stop: &DigitalInputGetter,
+        spool_speed: AngularVelocity,
     ) -> Velocity {
         // Don't move if not enabled or in a state that doesn't result in movement
         if !self.enabled {
@@ -313,21 +328,30 @@ impl TraverseController {
             State::Traversing(traversing_state) => match traversing_state {
                 TraversingState::GoingOut => {
                     // If outer limit is reached
-                    if self.is_at_position(self.limit_outer, Length::new::<millimeter>(0.01)) {
+                    if self.is_at_position(
+                        self.limit_outer - self.padding + Length::new::<millimeter>(0.01),
+                        Length::new::<millimeter>(0.02),
+                    ) {
                         // Turn around
-                        self.state = State::Traversing(TraversingState::GoingOut);
+                        self.state = State::Traversing(TraversingState::TraversingIn);
                     }
                 }
                 TraversingState::TraversingIn => {
                     // If inner limit is reached
-                    if self.is_at_position(self.limit_inner, Length::new::<millimeter>(0.01)) {
+                    if self.is_at_position(
+                        self.limit_inner + self.padding - Length::new::<millimeter>(0.01),
+                        Length::new::<millimeter>(0.02),
+                    ) {
                         // Turn around
                         self.state = State::Traversing(TraversingState::TraversingOut);
                     }
                 }
                 TraversingState::TraversingOut => {
                     // If outer limit is reached
-                    if self.is_at_position(self.limit_outer, Length::new::<millimeter>(0.01)) {
+                    if self.is_at_position(
+                        self.limit_outer - self.padding + Length::new::<millimeter>(0.01),
+                        Length::new::<millimeter>(0.02),
+                    ) {
                         // Turn around
                         self.state = State::Traversing(TraversingState::TraversingIn);
                     }
@@ -340,28 +364,26 @@ impl TraverseController {
             State::NotHomed => Velocity::ZERO, // Not homed, no movement
             State::Idle => Velocity::ZERO,     // No movement in idle state
             State::GoingIn => {
-                // Move in at a speed of 25 mm/s
+                // Move in at a speed of 10-100 mm/s
                 self.speed_to_position(
                     self.limit_inner,
-                    if self.distance_to_position(self.limit_inner).abs()
+                    match self.distance_to_position(self.limit_inner).abs()
                         > Length::new::<millimeter>(1.0)
                     {
-                        Velocity::new::<millimeter_per_second>(100.0)
-                    } else {
-                        Velocity::new::<millimeter_per_second>(10.0)
+                        true => Velocity::new::<millimeter_per_second>(100.0),
+                        false => Velocity::new::<millimeter_per_second>(10.0),
                     },
                 )
             }
             State::GoingOut => {
-                // Move out at a speed of 25 mm/s
+                // Move out at a speed of 10-100 mm/s
                 self.speed_to_position(
                     self.limit_outer,
-                    if self.distance_to_position(self.limit_outer).abs()
+                    match self.distance_to_position(self.limit_outer).abs()
                         > Length::new::<millimeter>(1.0)
                     {
-                        Velocity::new::<millimeter_per_second>(100.0)
-                    } else {
-                        Velocity::new::<millimeter_per_second>(10.0)
+                        true => Velocity::new::<millimeter_per_second>(100.0),
+                        false => Velocity::new::<millimeter_per_second>(10.0),
                     },
                 )
             }
@@ -390,28 +412,49 @@ impl TraverseController {
                 TraversingState::GoingOut => {
                     // Move out at a speed of 100 mm/s
                     self.speed_to_position(
-                        self.limit_outer,
+                        self.limit_outer - self.padding + Length::new::<millimeter>(0.01),
                         Velocity::new::<millimeter_per_second>(100.0),
                     )
                 }
-                TraversingState::TraversingIn => {
-                    todo!()
-                }
-                TraversingState::TraversingOut => {
-                    todo!()
-                }
+                TraversingState::TraversingIn => self.speed_to_position(
+                    self.limit_inner + self.padding - Length::new::<millimeter>(0.01),
+                    self.calculate_traverse_speed(spool_speed),
+                ),
+                TraversingState::TraversingOut => self.speed_to_position(
+                    self.limit_outer - self.padding + Length::new::<millimeter>(0.01),
+                    self.calculate_traverse_speed(spool_speed),
+                ),
             },
         };
 
         speed
     }
 
+    /// Calculate the traverse speed
+    ///
+    /// The traverse speed is the linear speed at which the winding mechanism moves along the spool.
+    /// It's directly proportional to how fast the spool rotates and how far the traverse moves per rotation.
+    ///
+    /// - Traverse Distance per Revolution [mm] = Step Size [mm]
+    /// - Traverse Speed [mm/s] = Spool Speed [rev/s or rad/s] * Step Size [mm]
+    ///
+    /// Note: While the traverse range (from outer limit minus padding to inner limit plus padding)
+    /// determines the total area to be covered, the traverse speed itself depends only on
+    /// the step size and spool rotation speed.
+    pub fn calculate_traverse_speed(&self, spool_speed: AngularVelocity) -> Velocity {
+        // Calculate the traverse speed directly from spool speed and step size
+        let traverse_speed: Velocity = spool_speed * self.step_size;
+
+        traverse_speed
+    }
+
     pub fn update_speed(
         &mut self,
         traverse: &mut StepperDriverEL70x1,
         traverse_end_stop: &DigitalInputGetter,
+        spool_speed: AngularVelocity,
     ) {
-        let speed = self.get_speed(traverse, traverse_end_stop);
+        let speed = self.get_speed(traverse, traverse_end_stop, spool_speed);
         let steps_per_second = self.fullstep_converter.velocity_to_steps(speed);
         traverse.set_speed(steps_per_second as i32);
     }

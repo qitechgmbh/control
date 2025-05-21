@@ -86,6 +86,18 @@ impl Winder2 {
         self.emit_traverse_state();
     }
 
+    pub fn traverse_set_step_size(&mut self, step_size: f64) {
+        let step_size = Length::new::<millimeter>(step_size);
+        self.traverse_controller.set_step_size(step_size);
+        self.emit_traverse_state();
+    }
+
+    pub fn traverse_set_padding(&mut self, padding: f64) {
+        let padding = Length::new::<millimeter>(padding);
+        self.traverse_controller.set_padding(padding);
+        self.emit_traverse_state();
+    }
+
     pub fn traverse_goto_limit_inner(&mut self) {
         // Only possible if homed, not standby, not traversing
         if !self.traverse_controller.is_homed()
@@ -153,6 +165,8 @@ impl Winder2 {
             is_going_home: self.traverse_controller.is_going_home(),
             is_traversing: self.traverse_controller.is_traversing(),
             laserpointer: self.laser.get(),
+            step_size: self.traverse_controller.get_step_size().get::<millimeter>(),
+            padding: self.traverse_controller.get_padding().get::<millimeter>(),
         }
         .build();
         self.namespace
@@ -160,8 +174,11 @@ impl Winder2 {
     }
 
     pub fn sync_traverse_speed(&mut self) {
-        self.traverse_controller
-            .update_speed(&mut self.traverse, &mut self.traverse_end_stop);
+        self.traverse_controller.update_speed(
+            &mut self.traverse,
+            &mut self.traverse_end_stop,
+            self.spool_speed_controller.get_speed(),
+        );
     }
 }
 

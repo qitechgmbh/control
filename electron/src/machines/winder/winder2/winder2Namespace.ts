@@ -47,6 +47,8 @@ export const traverseStateEventDataSchema = z.object({
   is_going_home: z.boolean(),
   is_traversing: z.boolean(),
   laserpointer: z.boolean(),
+  step_size: z.number(),
+  padding: z.number(),
 });
 
 /**

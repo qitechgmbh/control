@@ -198,4 +198,8 @@ impl SpoolSpeedController {
     pub fn get_min_speed(&self) -> AngularVelocity {
         self.min_speed
     }
+
+    pub fn get_speed(&self) -> AngularVelocity {
+        self.speed
+    }
 }

@@ -115,6 +115,8 @@ function useTraverse(
   const traverseStateOptimistic = useStateOptimistic<{
     limit_inner: number;
     limit_outer: number;
+    step_size: number;
+    padding: number;
   }>();
 
   const schemaSetLimitInner = z.object({
@@ -190,6 +192,48 @@ function useTraverse(
     });
   };
 
+  const schemaSetStepSize = z.object({
+    TraverseSetStepSize: z.number(),
+  });
+  const { request: requestSetStepSize } = useMachineMutation(schemaSetStepSize);
+  const traverseSetStepSize = async (stepSize: number) => {
+    if (traverseStateOptimistic.value) {
+      traverseStateOptimistic.setOptimistic({
+        ...traverseStateOptimistic.value,
+        step_size: stepSize,
+      });
+    }
+    requestSetStepSize({
+      machine_identification_unique,
+      data: { TraverseSetStepSize: stepSize },
+    })
+      .then((response) => {
+        if (!response.success) traverseStateOptimistic.resetToReal();
+      })
+      .catch(() => traverseStateOptimistic.resetToReal());
+  };
+
+  const schemaSetPadding = z.object({
+    TraverseSetPadding: z.number(),
+  });
+  const { request: requestSetPadding } = useMachineMutation(schemaSetPadding);
+  const traverseSetPadding = async (padding: number) => {
+    if (traverseStateOptimistic.value) {
+      traverseStateOptimistic.setOptimistic({
+        ...traverseStateOptimistic.value,
+        padding: padding,
+      });
+    }
+    requestSetPadding({
+      machine_identification_unique,
+      data: { TraverseSetPadding: padding },
+    })
+      .then((response) => {
+        if (!response.success) traverseStateOptimistic.resetToReal();
+      })
+      .catch(() => traverseStateOptimistic.resetToReal());
+  };
+
   // Read Path
   const { traversePosition, traverseState } = useWinder2Namespace(
     machine_identification_unique,
@@ -201,6 +245,8 @@ function useTraverse(
       traverseStateOptimistic.setReal({
         limit_inner: traverseState.data.limit_inner,
         limit_outer: traverseState.data.limit_outer,
+        step_size: traverseState.data.step_size,
+        padding: traverseState.data.padding,
       });
     }
   }, [traverseState]);
@@ -213,6 +259,8 @@ function useTraverse(
     traverseGotoLimitInner,
     traverseGotoLimitOuter,
     traverseGotoHome,
+    traverseSetStepSize,
+    traverseSetPadding,
     traverseStateIsLoading:
       traverseStateOptimistic.isOptimistic ||
       !traverseStateOptimistic.isInitialized,

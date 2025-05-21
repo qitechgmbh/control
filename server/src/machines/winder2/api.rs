@@ -57,6 +57,10 @@ enum Mutation {
     TraverseSetLimitOuter(f64),
     /// Position in mm from home point
     TraverseSetLimitInner(f64),
+    /// Step size in mm for traverse movement
+    TraverseSetStepSize(f64),
+    /// Padding in mm for traverse movement limits
+    TraverseSetPadding(f64),
     TraverseGotoLimitOuter,
     TraverseGotoLimitInner,
     /// Find home point
@@ -120,6 +124,10 @@ pub struct TraverseStateEvent {
     pub is_traversing: bool,
     /// laserpointer is on
     pub laserpointer: bool,
+    /// step size in mm
+    pub step_size: f64,
+    /// padding in mm
+    pub padding: f64,
 }
 
 impl TraverseStateEvent {
@@ -333,6 +341,8 @@ impl MachineApi for Winder2 {
             Mutation::ModeSet(mode) => self.set_mode(&mode.into()),
             Mutation::TraverseSetLimitOuter(limit) => self.traverse_set_limit_outer(limit),
             Mutation::TraverseSetLimitInner(limit) => self.traverse_set_limit_inner(limit),
+            Mutation::TraverseSetStepSize(size) => self.traverse_set_step_size(size),
+            Mutation::TraverseSetPadding(padding) => self.traverse_set_padding(padding),
             Mutation::TraverseGotoLimitOuter => self.traverse_goto_limit_outer(),
             Mutation::TraverseGotoLimitInner => self.traverse_goto_limit_inner(),
             Mutation::TraverseGotoHome => self.traverse_goto_home(),
