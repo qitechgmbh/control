@@ -20,6 +20,11 @@ interface ElectronWindow {
   close: () => Promise<void>;
 }
 
+interface Gnome {
+  showVirtualKeyboard: () => Promise<void>;
+  hideVirtualKeyboard: () => Promise<void>;
+}
+
 interface EnvironmentInfo {
   qitechOs: boolean;
   qitechOsGitTimestamp?: Date;
@@ -52,4 +57,5 @@ declare interface Window {
   electronWindow: ElectronWindow;
   environment: EnvironmentContext;
   update: UpdateContext;
+  gnome: Gnome;
 }
