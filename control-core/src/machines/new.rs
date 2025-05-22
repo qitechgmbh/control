@@ -1,13 +1,15 @@
+use crate::serial::SerialDevice;
+
 use super::identification::DeviceIdentificationIdentified;
 use anyhow::Error;
-use ethercat_hal::{devices::EthercatDevice, types::EthercrabSubDevicePreoperational};
+use ethercat_hal::{devices::EthercatDevice, helpers::ethercrab_types::EthercrabSubDevicePreoperational};
 use ethercrab::{SubDevice, SubDeviceRef};
 use smol::lock::RwLock;
 use std::sync::Arc;
 
 pub trait MachineNewTrait {
     fn new<'maindevice, 'subdevices>(
-        params: &MachineNewParams<'maindevice, 'subdevices, '_, '_, '_, '_>,
+        params: &MachineNewParams<'maindevice, 'subdevices, '_, '_, '_, '_, '_>,
     ) -> Result<Self, Error>
     where
         Self: Sized;
@@ -19,6 +21,7 @@ pub struct MachineNewParams<
     'device_identifications_identified,
     'ethercat_devices,
     'machine_new_hardware_etehrcat,
+    'machine_new_hardware_serial,
     'machine_new_hardware,
 > where
     'maindevice: 'machine_new_hardware,
@@ -32,6 +35,7 @@ pub struct MachineNewParams<
         'subdevices,
         'ethercat_devices,
         'machine_new_hardware_etehrcat,
+        'machine_new_hardware_serial,
     >,
 }
 
@@ -40,6 +44,7 @@ pub enum MachineNewHardware<
     'subdevices,
     'ethercat_devices,
     'machine_new_hardware_etehrcat,
+    'machine_new_hardware_serial,
 > where
     'maindevice: 'machine_new_hardware_etehrcat,
     'subdevices: 'machine_new_hardware_etehrcat,
@@ -52,12 +57,17 @@ pub enum MachineNewHardware<
             'ethercat_devices,
         >,
     ),
+    Serial(&'machine_new_hardware_serial MachineNewHardwareSerial),
 }
 
 pub struct MachineNewHardwareEthercat<'maindevice, 'subdevices, 'ethercat_devices> {
     pub subdevices:
         &'subdevices Vec<&'subdevices SubDeviceRef<'maindevice, &'subdevices SubDevice>>,
     pub ethercat_devices: &'ethercat_devices Vec<Arc<RwLock<dyn EthercatDevice>>>,
+}
+
+pub struct MachineNewHardwareSerial {
+    pub device: Arc<RwLock<dyn SerialDevice>>,
 }
 
 // validates that all devices in the group have the same machine identification

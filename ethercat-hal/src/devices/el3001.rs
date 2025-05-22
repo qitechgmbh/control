@@ -1,17 +1,17 @@
-use super::{NewEthercatDevice, SubDeviceIdentityTuple};
+use super::{EthercatDeviceProcessing, NewEthercatDevice, SubDeviceIdentityTuple};
 use crate::{
     coe::{ConfigurableDevice, Configuration},
+    helpers::signing_converter_u16::U16SigningConverter,
     io::analog_input::physical::AnalogInputRange,
     pdo::{
         PredefinedPdoAssignment, TxPdo,
-        el30xx::{AiCompact, AiStandard},
+        analog_input::{AiCompact, AiStandard},
     },
     shared_config::el30xx::{EL30XXChannelConfiguration, EL30XXPresentation},
-    signing::U16SigningConverter,
 };
 use crate::{
+    helpers::ethercrab_types::EthercrabSubDevicePreoperational,
     io::analog_input::{AnalogInputDevice, AnalogInputInput, AnalogInputState},
-    types::EthercrabSubDevicePreoperational,
 };
 use ethercat_hal_derive::{EthercatDevice, RxPdo, TxPdo};
 use uom::si::{electric_potential::volt, f64::ElectricPotential};
@@ -21,6 +21,8 @@ pub struct EL3001 {
     pub txpdo: EL3001TxPdo,
     pub configuration: EL3001Configuration,
 }
+
+impl EthercatDeviceProcessing for EL3001 {}
 
 impl std::fmt::Debug for EL3001 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

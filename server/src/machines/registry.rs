@@ -1,5 +1,7 @@
 use crate::machines::{
-    MACHINE_EXTRUDER_V1, MACHINE_WINDER_V1, VENDOR_QITECH, extruder1::ExtruderV2, winder2::Winder2,
+    MACHINE_DRE, 
+    MACHINE_EXTRUDER_V1, MACHINE_WINDER_V1, VENDOR_QITECH, dre::DreMachine, extruder1::ExtruderV2, winder2::Winder2,
+,
 };
 use control_core::machines::{identification::MachineIdentification, registry::MachineRegistry};
 use lazy_static::lazy_static;
@@ -10,6 +12,10 @@ lazy_static! {
         mc.register::<Winder2>(MachineIdentification {
             vendor: VENDOR_QITECH,
             machine: MACHINE_WINDER_V1,
+        });
+        mc.register::<DreMachine>(MachineIdentification {
+            vendor: VENDOR_QITECH,
+            machine: MACHINE_DRE,
         });
         mc.register::<ExtruderV2>(MachineIdentification {
             vendor: VENDOR_QITECH,

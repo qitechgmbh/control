@@ -2,7 +2,7 @@ import { Topbar } from "@/components/Topbar";
 import { winder2SerialRoute } from "@/routes/routes";
 import React from "react";
 
-export function Winder1Page() {
+export function Winder2Page() {
   const { serial } = winder2SerialRoute.useParams();
   return (
     <Topbar

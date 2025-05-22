@@ -1,9 +1,9 @@
 use crate::io::digital_output::{DigitalOutputDevice, DigitalOutputOutput, DigitalOutputState};
-use crate::pdo::{basic::BoolPdoObject, RxPdo};
-use crate::types::EthercrabSubDevicePreoperational;
+use crate::pdo::{RxPdo, basic::BoolPdoObject};
+use crate::helpers::ethercrab_types::EthercrabSubDevicePreoperational;
 use ethercat_hal_derive::{EthercatDevice, RxPdo};
 
-use super::NewEthercatDevice;
+use super::{EthercatDeviceProcessing, NewEthercatDevice};
 
 /// EL2634 4-channel relay device
 ///
@@ -12,6 +12,8 @@ use super::NewEthercatDevice;
 pub struct EL2634 {
     pub rxpdo: EL2634RxPdo,
 }
+
+impl EthercatDeviceProcessing for EL2634 {}
 
 impl std::fmt::Debug for EL2634 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

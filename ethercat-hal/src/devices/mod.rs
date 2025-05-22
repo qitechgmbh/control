@@ -22,7 +22,9 @@ pub mod el7041_0052;
 // pub mod el4008;
 
 use super::devices::el1008::EL1008;
-use crate::{devices::el2521::EL2521, types::EthercrabSubDeviceGroupPreoperational};
+use crate::{
+    devices::el2521::EL2521, helpers::ethercrab_types::EthercrabSubDeviceGroupPreoperational,
+};
 use anyhow::anyhow;
 use bitvec::{order::Lsb0, slice::BitSlice};
 use ek1100::{EK1100, EK1100_IDENTITY_A};
@@ -42,6 +44,7 @@ use el6021::{EL6021_IDENTITY_A, EL6021_IDENTITY_B, EL6021_IDENTITY_C};
 use el3204::EL3204_IDENTITY_B;
 
 use el7031::{EL7031_IDENTITY_A, EL7031_IDENTITY_B};
+use el7031_0030::EL7031_0030_IDENTITY_A;
 use el7041_0052::EL7041_0052_IDENTITY_A;
 use ethercrab::{MainDevice, SubDeviceIdentity};
 use smol::lock::RwLock;
@@ -50,7 +53,10 @@ use std::{any::Any, fmt::Debug, sync::Arc};
 /// A trait for all devices
 ///
 /// provides interface to read and write the PDO data
-pub trait EthercatDevice: NewEthercatDevice + Any + Send + Sync + Debug {
+pub trait EthercatDevice
+where
+    Self: NewEthercatDevice + EthercatDeviceProcessing + Any + Send + Sync + Debug,
+{
     /// Input data from the last cycle
     /// `ts` is the timestamp when the input data was sent by the device
     fn input(&mut self, _input: &BitSlice<u8, Lsb0>) -> Result<(), anyhow::Error>;
@@ -61,28 +67,19 @@ pub trait EthercatDevice: NewEthercatDevice + Any + Send + Sync + Debug {
     /// automatically validate input length, then calls input
     fn input_checked(&mut self, input: &BitSlice<u8, Lsb0>) -> Result<(), anyhow::Error> {
         // validate input has correct length
-        let input_len = self.input_len();
-        if input.len() != input_len {
+        let expected = self.input_len();
+        let actual = input.len();
+        if actual != expected {
             return Err(anyhow::anyhow!(
-                "[{}::Device::input_checked] Input length is {} and must be {} bits",
+                "[{}::Device::input_checked] Input length is {} ({} bytes) and must be {} bits ({} bytes)",
                 module_path!(),
-                input.len(),
-                input_len
+                actual,
+                actual / 8,
+                expected,
+                expected / 8
             ));
         }
         self.input(input)
-    }
-
-    /// Devices can override this function if they want to post process the input data
-    /// This might be the case if the pdo is not what is needed in the io layer
-    fn input_post_process(&mut self) -> Result<(), anyhow::Error> {
-        Ok(())
-    }
-
-    /// Devices can override this function if they want to pre process the output data
-    /// This might be the case if the pdo is not what is needed in the io layer
-    fn output_pre_process(&mut self) -> Result<(), anyhow::Error> {
-        Ok(())
     }
 
     /// Output data for the next cycle
@@ -96,13 +93,16 @@ pub trait EthercatDevice: NewEthercatDevice + Any + Send + Sync + Debug {
         self.output(output)?;
 
         // validate input has correct length
-        let output_len = self.output_len();
-        if output.len() != output_len {
+        let expected = self.output_len();
+        let actual = output.len();
+        if output.len() != expected {
             return Err(anyhow::anyhow!(
-                "[{}::Device::output_checked] Output length is {} and must be {} bits",
+                "[{}::Device::output_checked] Output length is {} ({} bytes) and must be {} bits ({} bytes)",
                 module_path!(),
-                output.len(),
-                output_len
+                actual,
+                actual / 8,
+                expected,
+                expected / 8
             ));
         }
 
@@ -110,6 +110,21 @@ pub trait EthercatDevice: NewEthercatDevice + Any + Send + Sync + Debug {
     }
 
     fn as_any(&self) -> &dyn Any;
+}
+
+/// A trait for devices that want to process input and output data
+pub trait EthercatDeviceProcessing {
+    /// Devices can override this function if they want to post process the input data
+    /// This might be the case if the pdo is not what is needed in the io layer
+    fn input_post_process(&mut self) -> Result<(), anyhow::Error> {
+        Ok(())
+    }
+
+    /// Devices can override this function if they want to pre process the output data
+    /// This might be the case if the pdo is not what is needed in the io layer
+    fn output_pre_process(&mut self) -> Result<(), anyhow::Error> {
+        Ok(())
+    }
 }
 
 /// A constructor trait for devices
@@ -179,6 +194,7 @@ pub fn device_from_subdevice_identity_tuple(
         // TODO: implement EL3204 identity
         // "EL3204" => Ok(Arc::new(RwLock::new(EL3204::new()))),
         EL7031_IDENTITY_A | EL7031_IDENTITY_B => Ok(Arc::new(RwLock::new(el7031::EL7031::new()))),
+        EL7031_0030_IDENTITY_A => Ok(Arc::new(RwLock::new(el7031_0030::EL7031_0030::new()))),
         EL7041_0052_IDENTITY_A => Ok(Arc::new(RwLock::new(el7041_0052::EL7041_0052::new()))),
         _ => Err(anyhow::anyhow!(
             "[{}::device_from_subdevice] No Driver: vendor_id: {:?}, product_id: {:?}, revision: {:?}",

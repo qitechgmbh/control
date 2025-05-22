@@ -3,7 +3,8 @@ use control_core::ethercat::eeprom_identification::{
     get_identification_addresses, machine_device_identification,
 };
 use ethercat_hal::{
-    devices::device_from_subdevice_identity, types::EthercrabSubDeviceGroupPreoperational,
+    devices::device_from_subdevice_identity,
+    helpers::ethercrab_types::EthercrabSubDeviceGroupPreoperational,
 };
 use ethercrab::MainDevice;
 use futures::executor::block_on;

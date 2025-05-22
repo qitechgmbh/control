@@ -1,6 +1,6 @@
+pub mod analog_input;
 pub mod basic;
 pub mod el252x;
-pub mod el30xx;
 pub mod el32xx;
 pub mod el70x1;
 
@@ -132,7 +132,10 @@ pub trait RxPdo: Configuration {
         let used_bits = self
             .get_objects()
             .iter()
-            .map(|objects| objects.map(|object| object.size()).unwrap_or(0))
+            .map(|object| match object {
+                Some(object) => object.size(),
+                None => 0,
+            })
             .sum::<usize>();
         let padding = match used_bits % 8 {
             0 => 0,
@@ -203,7 +206,10 @@ pub trait TxPdo: Configuration {
         let used_bits = self
             .get_objects()
             .iter()
-            .map(|objects| objects.map(|object| object.size()).unwrap_or(0))
+            .map(|object| match object {
+                Some(object) => object.size(),
+                None => 0,
+            })
             .sum::<usize>();
         let padding = match used_bits % 8 {
             0 => 0,

@@ -18,7 +18,7 @@ import { TensionArm } from "../TensionArm";
 import { roundDegreesToDecimals, roundToDecimals } from "@/lib/decimal";
 import { Spool } from "../Spool";
 
-export function Winder1ControlPage() {
+export function Winder2ControlPage() {
   // use optimistic state
   const {
     laserpointer,
@@ -28,11 +28,28 @@ export function Winder1ControlPage() {
     tensionArmAngle,
     tensionArmAngleZero,
     tensionArmState,
+    tensionArmStateIsLoading,
+    tensionArmStateIsDisabled,
     spoolRpm,
     mode,
     setMode,
     modeIsLoading,
     modeIsDisabled,
+    pullerState,
+    pullerSpeed,
+    pullerSetRegulationMode,
+    pullerSetTargetSpeed,
+    pullerStateIsLoading,
+    pullerStateIsDisabled,
+    traversePosition,
+    traverseState,
+    traverseSetLimitInner,
+    traverseSetLimitOuter,
+    traverseGotoLimitInner,
+    traverseGotoLimitOuter,
+    traverseGotoHome,
+    traverseStateIsLoading,
+    traverseStateIsDisabled,
   } = useWinder2();
 
   return (
@@ -49,51 +66,67 @@ export function Winder1ControlPage() {
         </ControlCard>
 
         <ControlCard className="bg-red" height={2} title="Traverse">
-          {/* <TimeSeriesValueNumeric
+          <TimeSeriesValueNumeric
             label="Position"
             unit="mm"
-            value={55}
-            renderValue={(value) => roundToDecimals(value, 0)}
-          /> */}
-          <TraverseBar
-            inside={0}
-            outside={100}
-            min={16}
-            max={72}
-            current={55}
+            timeseries={traversePosition}
+            renderValue={(value) => roundToDecimals(value, 1)}
           />
+          {traverseState && (
+            <TraverseBar
+              inside={0}
+              outside={180}
+              min={traverseState.data.limit_inner}
+              max={traverseState.data.limit_outer}
+              current={traversePosition.current?.value ?? 0}
+            />
+          )}
           <div className="flex flex-row flex-wrap gap-4">
             <Label label="Outer Limit">
               <EditValue
-                value={undefined}
+                value={traverseState?.data.limit_outer}
                 unit="mm"
                 title="Outer Limit"
-                defaultValue={16}
+                defaultValue={80}
                 min={0}
                 minLabel="IN"
                 maxLabel="OUT"
-                max={80}
-                renderValue={(value) => roundToDecimals(value, 0)}
+                max={180}
+                renderValue={(value) => roundToDecimals(value, 1)}
                 inverted
+                onChange={traverseSetLimitOuter}
               />
-              <TouchButton variant="outline" icon="lu:ArrowLeftToLine">
+              <TouchButton
+                variant="outline"
+                icon="lu:ArrowLeftToLine"
+                onClick={traverseGotoLimitOuter}
+                disabled={traverseStateIsDisabled}
+                isLoading={traverseStateIsLoading}
+              >
                 Go to Outer Limit
               </TouchButton>
             </Label>
             <Label label="Inner Limit">
               <EditValue
-                value={undefined}
+                value={traverseState?.data.limit_inner}
                 unit="mm"
-                title="Limit Innen"
+                title="Inner Limit"
                 min={0}
-                max={80}
-                defaultValue={72}
+                max={180}
+                defaultValue={16}
                 minLabel="IN"
                 maxLabel="OUT"
-                renderValue={(value) => roundToDecimals(value, 0)}
+                renderValue={(value) => roundToDecimals(value, 1)}
                 inverted
+                onChange={traverseSetLimitInner}
               />
-              <TouchButton variant="outline" icon="lu:ArrowRightToLine">
+              <TouchButton
+                variant="outline"
+                icon="lu:ArrowRightToLine"
+                onClick={traverseGotoLimitInner}
+                disabled={traverseStateIsDisabled}
+                isLoading={traverseStateIsLoading}
+              >
                 Go to Inner Limit
               </TouchButton>
             </Label>
@@ -109,10 +142,24 @@ export function Winder1ControlPage() {
             />
           </Label>
           <Label label="Home">
-            <TouchButton variant="outline" icon="lu:House" isLoading>
+            <TouchButton
+              variant="outline"
+              icon="lu:House"
+              onClick={() => traverseGotoHome()}
+              disabled={
+                traverseStateIsDisabled ||
+                traverseState?.data.is_going_home ||
+                traverseState?.data.is_traversing
+              }
+              isLoading={
+                traverseStateIsLoading || traverseState?.data.is_going_home
+              }
+            >
               Go to Home
             </TouchButton>
-            <StatusBadge variant="error">Not Homed</StatusBadge>
+            {traverseState?.data.is_homed !== true ? (
+              <StatusBadge variant={"error"}>{"Not Homed"}</StatusBadge>
+            ) : null}
           </Label>
         </ControlCard>
 
@@ -128,6 +175,8 @@ export function Winder1ControlPage() {
             variant="outline"
             icon="lu:House"
             onClick={tensionArmAngleZero}
+            disabled={tensionArmStateIsDisabled}
+            isLoading={tensionArmStateIsLoading}
           >
             Set Zero Point
           </TouchButton>
@@ -169,32 +218,42 @@ export function Winder1ControlPage() {
         </ControlCard>
 
         <ControlCard className="bg-red" title="Puller">
-          {/* <TimeSeriesValueNumeric
+          <TimeSeriesValueNumeric
             label="Speed"
-            unit="m/s"
-            value={16}
+            unit="m/min"
+            timeseries={pullerSpeed}
             renderValue={(value) => roundToDecimals(value, 0)}
-          /> */}
+          />
           <Label label="Regulation">
-            <SelectionGroupBoolean
-              value={false}
-              optionFalse={{ children: "Speed", icon: "lu:Gauge" }}
-              optionTrue={{
-                children: "Diameter (Sync to DRE™)",
-                icon: "lu:Diameter",
+            <SelectionGroup
+              value={pullerState?.data.regulation}
+              options={{
+                Speed: {
+                  children: "Speed",
+                  icon: "lu:Gauge",
+                },
+                Diameter: {
+                  children: "Diameter (Sync to DRE™)",
+                  icon: "lu:Diameter",
+                  disabled: true,
+                },
               }}
+              onChange={pullerSetRegulationMode}
+              disabled={pullerStateIsDisabled}
+              loading={pullerStateIsLoading}
             />
           </Label>
           <Label label="Target Speed">
             <EditValue
-              value={undefined}
-              unit="m/s"
+              value={pullerState?.data.target_speed}
+              unit="m/min"
               title="Target Speed"
-              defaultValue={0}
-              min={0}
+              defaultValue={1}
+              min={-10}
               max={100}
-              step={1}
+              step={0.1}
               renderValue={(value) => roundToDecimals(value, 0)}
+              onChange={pullerSetTargetSpeed}
             />
           </Label>
         </ControlCard>

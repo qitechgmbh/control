@@ -1,12 +1,12 @@
+use crate::helpers::ethercrab_types::EthercrabSubDevicePreoperational;
 use crate::pdo::TxPdo;
-use crate::types::EthercrabSubDevicePreoperational;
 use crate::{
     io::temperature_input::{TemperatureInputDevice, TemperatureInputInput, TemperatureInputState},
     pdo::el32xx::RtdInput,
 };
 use ethercat_hal_derive::{EthercatDevice, TxPdo};
 
-use super::{NewEthercatDevice, SubDeviceIdentityTuple};
+use super::{EthercatDeviceProcessing, NewEthercatDevice, SubDeviceIdentityTuple};
 
 /// EL3204 4-channel temperature input device
 ///
@@ -15,6 +15,8 @@ use super::{NewEthercatDevice, SubDeviceIdentityTuple};
 pub struct EL3204 {
     pub txpdo: EL3204TxPdo,
 }
+
+impl EthercatDeviceProcessing for EL3204 {}
 
 impl std::fmt::Debug for EL3204 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

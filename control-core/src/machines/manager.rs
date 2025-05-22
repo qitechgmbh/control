@@ -1,17 +1,21 @@
-use smol::lock::Mutex;
+use smol::lock::{Mutex, RwLock};
 
-use crate::machines::{
-    identification::MachineIdentificationUnique,
-    new::{MachineNewHardware, MachineNewHardwareEthercat, MachineNewParams},
+use crate::{
+    machines::{
+        identification::MachineIdentificationUnique,
+        new::{MachineNewHardware, MachineNewHardwareEthercat, MachineNewParams},
+    },
+    serial::SerialDevice,
 };
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 
 use super::{
     Machine,
     identification::{DeviceIdentification, DeviceIdentificationIdentified},
+    new::MachineNewHardwareSerial,
     registry::MachineRegistry,
 };
-
+#[derive(Debug)]
 pub struct MachineManager {
     pub ethercat_machines:
         HashMap<MachineIdentificationUnique, Result<Box<Mutex<dyn Machine>>, anyhow::Error>>,
@@ -76,6 +80,53 @@ impl MachineManager {
         self.ethercat_machines
             .get(machine_identification)
             .or_else(|| self.serial_machines.get(machine_identification))
+    }
+
+    pub fn add_serial_device(
+        &mut self,
+        device_identification: &DeviceIdentification,
+        device: Arc<RwLock<dyn SerialDevice>>,
+        machine_registry: &MachineRegistry,
+    ) {
+        let hardware = MachineNewHardwareSerial { device };
+
+        let device_identification_identified: DeviceIdentificationIdentified =
+            device_identification
+                .clone()
+                .try_into()
+                .expect("Serial devices always have machine identification");
+
+        let new_machine = machine_registry.new_machine(&MachineNewParams {
+            device_group: &vec![device_identification_identified.clone()],
+            hardware: &MachineNewHardware::Serial(&hardware),
+        });
+
+        log::info!(
+            "[{}::add_serial_device] Adding serial machine {:?}",
+            module_path!(),
+            new_machine
+        );
+
+        self.serial_machines.insert(
+            device_identification_identified
+                .device_machine_identification
+                .machine_identification_unique,
+            new_machine,
+        );
+    }
+
+    pub fn remove_serial_device(&mut self, device_identification: &DeviceIdentification) {
+        let device_identification_identified: DeviceIdentificationIdentified =
+            device_identification
+                .clone()
+                .try_into()
+                .expect("Serial devices always have machine identification");
+
+        self.serial_machines.remove(
+            &device_identification_identified
+                .device_machine_identification
+                .machine_identification_unique,
+        );
     }
 }
 

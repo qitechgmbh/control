@@ -1,11 +1,11 @@
 use crate::app_state::AppState;
-use crate::panic::{PanicDetails, send_panic};
+use crate::panic::send_panic;
 use bitvec::prelude::*;
 use smol::channel::Sender;
 use std::sync::Arc;
 
 pub fn init_loop(
-    thread_panic_tx: Sender<PanicDetails>,
+    thread_panic_tx: Sender<&'static str>,
     app_state: Arc<AppState>,
 ) -> Result<(), anyhow::Error> {
     // Start control loop
@@ -51,10 +51,14 @@ pub async fn loop_once<'maindevice>(app_state: Arc<AppState>) -> Result<(), anyh
             .iter(&ethercat_setup.maindevice)
             .enumerate()
         {
-            let mut device = ethercat_setup.devices[i].1.as_ref().write().await;
+            // retrieve inputs
             let input = subdevice.inputs_raw();
             let input_bits = input.view_bits::<Lsb0>();
 
+            // get device
+            let mut device = ethercat_setup.devices[i].1.as_ref().write().await;
+
+            // put inputs into device
             device.input_checked(input_bits).or_else(|e| {
                 Err(anyhow::anyhow!(
                     "[{}::loop_once] SubDevice with index {} failed to copy inputs\n{:?}",
@@ -64,6 +68,7 @@ pub async fn loop_once<'maindevice>(app_state: Arc<AppState>) -> Result<(), anyh
                 ))
             })?;
 
+            // post process inputs
             device.input_post_process().or_else(|e| {
                 Err(anyhow::anyhow!(
                     "[{}::loop_once] SubDevice with index {} failed to copy post_process\n{:?}",
@@ -102,10 +107,14 @@ pub async fn loop_once<'maindevice>(app_state: Arc<AppState>) -> Result<(), anyh
             .iter(&ethercat_setup.maindevice)
             .enumerate()
         {
-            let mut device = ethercat_setup.devices[i].1.as_ref().write().await;
+            // get output buffer for device
             let mut output = subdevice.outputs_raw_mut();
             let output_bits = output.view_bits_mut::<Lsb0>();
 
+            // get device
+            let mut device = ethercat_setup.devices[i].1.as_ref().write().await;
+
+            // pre process outputs
             device.output_pre_process().or_else(|e| {
                 Err(anyhow::anyhow!(
                     "[{}::loop_once] SubDevice with index {} failed to pre process outputs \n{:?}",
@@ -115,6 +124,7 @@ pub async fn loop_once<'maindevice>(app_state: Arc<AppState>) -> Result<(), anyh
                 ))
             })?;
 
+            // put outputs into device
             device.output_checked(output_bits).or_else(|e| {
                 Err(anyhow::anyhow!(
                     "[{}::loop_once] SubDevice with index {} failed to copy outputs\n{:?}",

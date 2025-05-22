@@ -22,7 +22,7 @@ export function TraverseBar({
   const range = outside - inside;
   const minStopPercent = ((min - inside) / range) * 100;
   const maxStopPercent = ((max - inside) / range) * 100;
-  const currentPercent = ((current - inside) / range) * 100;
+  const currentPercent = 100 - ((current - inside) / range) * 100;
 
   return (
     <div className={cn("w-full space-y-1 pt-6", className)}>
@@ -33,7 +33,7 @@ export function TraverseBar({
           <div
             className="absolute h-full bg-black"
             style={{
-              left: `${minStopPercent}%`,
+              right: `${minStopPercent}%`,
               width: `${maxStopPercent - minStopPercent}%`,
             }}
           />
@@ -57,3 +57,4 @@ export function TraverseBar({
     </div>
   );
 }
+ 

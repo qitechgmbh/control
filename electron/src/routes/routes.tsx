@@ -5,11 +5,11 @@ import { SidebarLayout } from "@/components/SidebarLayout";
 import { SetupPage } from "@/setup/SetupPage";
 import { EthercatPage } from "@/setup/EthercatPage";
 import { MachinesPage } from "@/setup/MachinesPage";
-import { Winder1Page } from "@/machines/winder/winder2/Winder2Page";
-import { Winder1ControlPage } from "@/machines/winder/winder2/Winder2ControlPage";
-import { Winder1ManualPage } from "@/machines/winder/winder2/Winder2Manual";
-import { Winder1SettingPage } from "@/machines/winder/winder2/Winder2Settings";
-import { Winder1GraphsPage } from "@/machines/winder/winder2/Winder2Graphs";
+import { Winder2Page } from "@/machines/winder/winder2/Winder2Page";
+import { Winder2ControlPage } from "@/machines/winder/winder2/Winder2ControlPage";
+import { Winder2ManualPage } from "@/machines/winder/winder2/Winder2Manual";
+import { Winder2SettingPage } from "@/machines/winder/winder2/Winder2Settings";
+import { Winder2GraphsPage } from "@/machines/winder/winder2/Winder2Graphs";
 import { Extruder2Page } from "@/machines/extruder/extruder2/Extruder2Page";
 import { Extruder2ControlPage } from "@/machines/extruder/extruder2/Extruder2ControlPage";
 import { Extruder2SettingsPage } from "@/machines/extruder/extruder2/Extruder2Settings";
@@ -24,9 +24,11 @@ import {
   githubSourceSchema,
 } from "@/setup/GithubSourceDialog";
 import { z } from "zod";
-import { error } from "console";
 import { ChangelogPage } from "@/setup/ChangelogPage";
 import { UpdateExecutePage } from "@/setup/UpdateExecutePage";
+import { Dre1Page } from "@/machines/dre/dre1/Dre1Page";
+import { Dre1ControlPage } from "@/machines/dre/dre1/Dre1ControlPage";
+import { Dre1GraphsPage } from "@/machines/dre/dre1/Dre1Graph";
 
 // make a route tree like this
 // _mainNavigation/machines/winder2/$serial/control
@@ -74,31 +76,49 @@ export const extruder2ManualRoute = createRoute({
 export const winder2SerialRoute = createRoute({
   getParentRoute: () => machinesRoute,
   path: "winder2/$serial",
-  component: () => <Winder1Page />,
+  component: () => <Winder2Page />,
 });
 
 export const winder2ControlRoute = createRoute({
   getParentRoute: () => winder2SerialRoute,
   path: "control",
-  component: () => <Winder1ControlPage />,
+  component: () => <Winder2ControlPage />,
 });
 
 export const winder2ManualRoute = createRoute({
   getParentRoute: () => winder2SerialRoute,
   path: "manual",
-  component: () => <Winder1ManualPage />,
+  component: () => <Winder2ManualPage />,
 });
 
 export const winder2SettingsRoute = createRoute({
   getParentRoute: () => winder2SerialRoute,
   path: "settings",
-  component: () => <Winder1SettingPage />,
+  component: () => <Winder2SettingPage />,
 });
 
 export const winder2GraphsRoute = createRoute({
   getParentRoute: () => winder2SerialRoute,
   path: "graphs",
-  component: () => <Winder1GraphsPage />,
+  component: () => <Winder2GraphsPage />,
+});
+
+export const dre1SerialRoute = createRoute({
+  getParentRoute: () => machinesRoute,
+  path: "dre1/$serial",
+  component: () => <Dre1Page />,
+});
+
+export const dre1ControlRoute = createRoute({
+  getParentRoute: () => dre1SerialRoute,
+  path: "control",
+  component: () => <Dre1ControlPage />,
+});
+
+export const dre1GraphsRoute = createRoute({
+  getParentRoute: () => dre1SerialRoute,
+  path: "graphs",
+  component: () => <Dre1GraphsPage />,
 });
 
 export const setupRoute = createRoute({
@@ -180,6 +200,7 @@ export const rootTree = RootRoute.addChildren([
     ]),
 
     machinesRoute.addChildren([
+      dre1SerialRoute.addChildren([dre1ControlRoute, dre1GraphsRoute]),
       winder2SerialRoute.addChildren([
         winder2ControlRoute,
         winder2ManualRoute,
