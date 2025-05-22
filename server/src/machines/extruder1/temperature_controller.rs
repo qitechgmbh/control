@@ -1,5 +1,3 @@
-use std::time::{Duration, Instant};
-
 use control_core::{
     actors::{
         Actor, digital_output_setter::DigitalOutputSetter,
@@ -7,6 +5,7 @@ use control_core::{
     },
     controllers::pid::PidController,
 };
+use std::time::{Duration, Instant};
 
 use super::Heating;
 

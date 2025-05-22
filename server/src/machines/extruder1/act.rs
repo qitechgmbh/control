@@ -22,6 +22,7 @@ impl Actor for ExtruderV2 {
             self.temperature_controller_middle
                 .update_heating(now_ts)
                 .await;
+
             self.set_bar();
 
             if self.mode == ExtruderV2Mode::Standby {

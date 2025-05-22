@@ -43,7 +43,6 @@ impl MitsubishiInverterRS485Actor {
     pub fn set_running_rpm_target(&mut self, rpm: f32) {
         let mut request: MitsubishiModbusRequest =
             MitsubishiControlRequests::WriteRunningFrequency.into();
-
         let hz = MotorConverter::rpm_to_hz(rpm); // convert rpm to hz
         let result: u16 = self.convert_hz_float_to_word(hz, true); // convert hz float to short
         request.request.data[2] = result.to_le_bytes()[1];
@@ -479,6 +478,7 @@ impl Actor for MitsubishiInverterRS485Actor {
                     self.state = State::ReadyToSend;
                     // every time when our inverter is "Uninitialzed" reset it first to clear any error states it may have
                     self.add_request(MitsubishiControlRequests::ResetInverter.into());
+                    self.set_running_rpm_target(0.0);
                     self.baudrate = (self.serial_interface.get_baudrate)().await;
                     self.encoding = (self.serial_interface.get_serial_encoding)().await;
                 }
