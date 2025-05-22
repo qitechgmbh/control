@@ -210,7 +210,7 @@ impl From<MitsubishiControlRequests> for MitsubishiModbusRequest {
             }
             MitsubishiControlRequests::ResetInverter => {
                 let reg: u16 = MitsubishiControlRequests::get_system_register(
-                    MitsubishiSystemRegister::InverterStatusAndControl,
+                    MitsubishiSystemRegister::InverterReset,
                 );
                 let reg_bytes = reg.to_be_bytes();
                 MitsubishiModbusRequest {
@@ -220,7 +220,7 @@ impl From<MitsubishiControlRequests> for MitsubishiModbusRequest {
                         data: vec![reg_bytes[0], reg_bytes[1], 0x0, 0b00000001],
                     },
                     request_type: RequestType::OperationCommand,
-                    expected_response_type: ResponseType::ReadMotorFrequency,
+                    expected_response_type: ResponseType::NoResponse,
                 }
             }
             MitsubishiControlRequests::ClearAllParameters => todo!(),
