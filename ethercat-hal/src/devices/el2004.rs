@@ -1,9 +1,8 @@
-use super::{NewEthercatDevice, SubDeviceIdentityTuple};
+use super::{EthercatDeviceProcessing, NewEthercatDevice, SubDeviceIdentityTuple};
+use crate::helpers::ethercrab_types::EthercrabSubDevicePreoperational;
 use crate::io::digital_output::{DigitalOutputDevice, DigitalOutputOutput, DigitalOutputState};
 use crate::pdo::{RxPdo, basic::BoolPdoObject};
-use crate::types::EthercrabSubDevicePreoperational;
 use ethercat_hal_derive::{EthercatDevice, RxPdo};
-
 /// EL2004 4-channel digital output device
 ///
 /// 24V DC, 0.5A per channel
@@ -11,6 +10,8 @@ use ethercat_hal_derive::{EthercatDevice, RxPdo};
 pub struct EL2004 {
     pub rxpdo: EL2004RxPdo,
 }
+
+impl EthercatDeviceProcessing for EL2004 {}
 
 impl std::fmt::Debug for EL2004 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

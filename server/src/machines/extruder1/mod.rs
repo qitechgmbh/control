@@ -225,7 +225,6 @@ impl ExtruderV2 {
     }
 
     fn set_target_rpm(&mut self, rpm: f32) {
-        println!("set_target_rpm uses_rpm: {}", self.uses_rpm);
         if self.uses_rpm {
             self.target_rpm = rpm;
             self.inverter.set_running_rpm_target(rpm);

@@ -56,6 +56,12 @@ impl MachineNewTrait for ExtruderV2 {
 
         let hardware = match &params.hardware {
             MachineNewHardware::Ethercat(x) => x,
+            _ => {
+                return Err(anyhow::anyhow!(
+                    "[{}::MachineNewTrait/Extruder2::new] MachineNewHardware is not Ethercat",
+                    module_path!()
+                ));
+            }
         };
         // using block_on because making this funciton async creates a lifetime issue
         // if its async the compiler thinks &subdevices is persisted in the future which might never execute
@@ -72,6 +78,10 @@ impl MachineNewTrait for ExtruderV2 {
                         DeviceHardwareIdentification::Ethercat(
                             device_hardware_identification_ethercat,
                         ) => device_hardware_identification_ethercat,
+                        _ => Err(anyhow::anyhow!(
+                            "[{}::MachineNewTrait/Winder2::new] Device with role 0 is not Ethercat",
+                            module_path!()
+                        ))?, //uncommented
                     };
                 let subdevice_index = device_hardware_identification_ethercat.subdevice_index;
                 let subdevice = get_subdevice_by_index(hardware.subdevices, subdevice_index)?;
@@ -95,6 +105,10 @@ impl MachineNewTrait for ExtruderV2 {
                         DeviceHardwareIdentification::Ethercat(
                             device_hardware_identification_ethercat,
                         ) => device_hardware_identification_ethercat,
+                        _ => Err(anyhow::anyhow!(
+                            "[{}::MachineNewTrait/Winder2::new] Device with role 1 is not Ethercat",
+                            module_path!()
+                        ))?, //uncommented
                     };
                 let subdevice_index = device_hardware_identification_ethercat.subdevice_index;
                 let subdevice = get_subdevice_by_index(hardware.subdevices, subdevice_index)?;
@@ -124,6 +138,10 @@ impl MachineNewTrait for ExtruderV2 {
                         DeviceHardwareIdentification::Ethercat(
                             device_hardware_identification_ethercat,
                         ) => device_hardware_identification_ethercat,
+                        _ => Err(anyhow::anyhow!(
+                            "[{}::MachineNewTrait/Winder2::new] Device with role 2 is not Ethercat",
+                            module_path!()
+                        ))?, //uncommented
                     };
                 let subdevice_index = device_hardware_identification_ethercat.subdevice_index;
                 let subdevice = get_subdevice_by_index(hardware.subdevices, subdevice_index)?;
@@ -159,6 +177,10 @@ impl MachineNewTrait for ExtruderV2 {
                         DeviceHardwareIdentification::Ethercat(
                             device_hardware_identification_ethercat,
                         ) => device_hardware_identification_ethercat,
+                        _ => Err(anyhow::anyhow!(
+                            "[{}::MachineNewTrait/Winder2::new] Device with role 3 is not Ethercat",
+                            module_path!()
+                        ))?, //uncommented
                     };
                 let subdevice_index = device_hardware_identification_ethercat.subdevice_index;
                 let subdevice = get_subdevice_by_index(hardware.subdevices, subdevice_index)?;
@@ -188,6 +210,10 @@ impl MachineNewTrait for ExtruderV2 {
                         DeviceHardwareIdentification::Ethercat(
                             device_hardware_identification_ethercat,
                         ) => device_hardware_identification_ethercat,
+                        _ => Err(anyhow::anyhow!(
+                            "[{}::MachineNewTrait/Winder2::new] Device with role 4 is not Ethercat",
+                            module_path!()
+                        ))?, //uncommented
                     };
                 let subdevice_index = device_hardware_identification_ethercat.subdevice_index;
                 let subdevice = get_subdevice_by_index(hardware.subdevices, subdevice_index)?;
@@ -217,6 +243,10 @@ impl MachineNewTrait for ExtruderV2 {
                         DeviceHardwareIdentification::Ethercat(
                             device_hardware_identification_ethercat,
                         ) => device_hardware_identification_ethercat,
+                        _ => Err(anyhow::anyhow!(
+                            "[{}::MachineNewTrait/Winder2::new] Device with role 5 is not Ethercat",
+                            module_path!()
+                        ))?, //uncommented
                     };
                 let subdevice_index = device_hardware_identification_ethercat.subdevice_index;
                 let subdevice = get_subdevice_by_index(hardware.subdevices, subdevice_index)?;

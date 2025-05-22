@@ -1,9 +1,9 @@
 use super::{NewEthercatDevice, SubDeviceIdentityTuple};
+use crate::devices::EthercatDeviceProcessing;
+use crate::helpers::ethercrab_types::EthercrabSubDevicePreoperational;
 use crate::io::digital_input::{DigitalInputDevice, DigitalInputInput, DigitalInputState};
 use crate::pdo::{PredefinedPdoAssignment, TxPdo, basic::BoolPdoObject};
-use crate::types::EthercrabSubDevicePreoperational;
 use ethercat_hal_derive::{EthercatDevice, TxPdo};
-
 /// EL1002 8-channel digital input device
 ///
 /// 24V DC, 3ms filter
@@ -11,6 +11,8 @@ use ethercat_hal_derive::{EthercatDevice, TxPdo};
 pub struct EL1002 {
     pub txpdo: EL1002TxPdo,
 }
+
+impl EthercatDeviceProcessing for EL1002 {}
 
 impl std::fmt::Debug for EL1002 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
