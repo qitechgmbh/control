@@ -86,8 +86,8 @@ impl MachineNewTrait for ExtruderV2 {
                     }
                 };
             }
-
-            let el1002 = {
+            // What is its use ?
+            let _el1002 = {
                 let device_identification =
                     get_device_identification_by_role(params.device_group, 1)?;
                 let device_hardware_identification_ethercat =
@@ -247,19 +247,57 @@ impl MachineNewTrait for ExtruderV2 {
             let t2_getter = TemperatureInputGetter::new(t2);
             let t3_getter = TemperatureInputGetter::new(t3);
             let t4_getter = TemperatureInputGetter::new(t4);
-
-            let pressure_sensor = AnalogInputGetter::new(AnalogInput::new(el3021, EL3021Port::AI1));
-
             // For the Relais
             let digital_out_1 = DigitalOutput::new(el2004.clone(), EL2004Port::DO1);
             let digital_out_2 = DigitalOutput::new(el2004.clone(), EL2004Port::DO2);
             let digital_out_3 = DigitalOutput::new(el2004.clone(), EL2004Port::DO3);
             let digital_out_4 = DigitalOutput::new(el2004.clone(), EL2004Port::DO4);
 
-            let temperature_controller_front = TemperatureController::new(0.1, 0.0, 0.0, 0.0);
-            let temperature_controller_middle = TemperatureController::new(0.1, 0.0, 0.0, 0.0);
-            let temperature_controller_back = TemperatureController::new(0.1, 0.0, 0.0, 0.0);
-            let temperature_controller_nozzle = TemperatureController::new(0.1, 0.0, 0.0, 0.0);
+            let pressure_sensor = AnalogInputGetter::new(AnalogInput::new(el3021, EL3021Port::AI1));
+
+            // Only front heating on: These values work 0.08, 0.001, 0.007, Overshoot 0.5 undershoot ~0.7 (Problems when starting far away because of integral)
+            let temperature_controller_front = TemperatureController::new(
+                0.16,
+                0.002,
+                0.005,
+                200.0,
+                t1_getter,
+                DigitalOutputSetter::new(digital_out_1),
+                Heating::default(),
+            );
+
+            // Only front heating on: These values work 0.08, 0.001, 0.007, Overshoot 0.5 undershoot ~0.7 (Problems when starting far away because of integral)
+            let temperature_controller_middle = TemperatureController::new(
+                0.16,
+                0.002,
+                0.005,
+                200.0,
+                t2_getter,
+                DigitalOutputSetter::new(digital_out_2),
+                Heating::default(),
+            );
+
+            // Only front heating on: These values work 0.08, 0.001, 0.007, Overshoot 0.5 undershoot ~0.7 (Problems when starting far away because of integral)
+            let temperature_controller_back = TemperatureController::new(
+                0.16,
+                0.002,
+                0.005,
+                200.0,
+                t3_getter,
+                DigitalOutputSetter::new(digital_out_3),
+                Heating::default(),
+            );
+
+            // Only front heating on: These values work 0.08, 0.001, 0.007, Overshoot 0.5 undershoot ~0.7 (Problems when starting far away because of integral)
+            let temperature_controller_nozzle = TemperatureController::new(
+                0.16,
+                0.002,
+                0.005,
+                200.0,
+                t4_getter,
+                DigitalOutputSetter::new(digital_out_4),
+                Heating::default(),
+            );
 
             let pressure_motor_controller = PressureController::new(1.0, 0.1, 0.1, 10.0);
 
@@ -272,47 +310,10 @@ impl MachineNewTrait for ExtruderV2 {
                 last_measurement_emit: Instant::now(),
                 pressure_sensor: pressure_sensor,
                 mode: ExtruderV2Mode::Standby,
-                heating_nozzle: Heating {
-                    temperature: 150.0,
-                    heating: false,
-                    target_temperature: 150.0,
-                    wiring_error: false,
-                },
-                heating_front: Heating {
-                    temperature: 150.0,
-                    heating: false,
-                    target_temperature: 150.0,
-                    wiring_error: false,
-                },
-                heating_back: Heating {
-                    temperature: 150.0,
-                    heating: false,
-                    target_temperature: 150.0,
-                    wiring_error: false,
-                },
-                heating_middle: Heating {
-                    temperature: 150.0,
-                    heating: false,
-                    target_temperature: 150.0,
-                    wiring_error: false,
-                },
                 uses_rpm: true,
-
-                rpm: 0.0,
                 bar: 0.0,
-
                 target_rpm: 0.0,
                 target_bar: 0.0,
-
-                temp_sensor_1: t1_getter,
-                temp_sensor_2: t2_getter,
-                temp_sensor_3: t3_getter,
-                temp_sensor_4: t4_getter,
-
-                heating_relay_1: DigitalOutputSetter::new(digital_out_1),
-                heating_relay_2: DigitalOutputSetter::new(digital_out_2),
-                heating_relay_3: DigitalOutputSetter::new(digital_out_3),
-                heating_relay_4: DigitalOutputSetter::new(digital_out_4),
 
                 temperature_controller_front: temperature_controller_front,
                 temperature_controller_middle: temperature_controller_middle,
@@ -320,7 +321,6 @@ impl MachineNewTrait for ExtruderV2 {
                 temperature_controller_nozzle: temperature_controller_nozzle,
 
                 pressure_motor_controller: pressure_motor_controller,
-                can_extrude: false,
             };
             Ok(extruder)
         })

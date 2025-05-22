@@ -2,14 +2,11 @@ use api::{ExtruderV2Events, ExtruderV2Namespace};
 use control_core::{
     actors::{
         analog_input_getter::AnalogInputGetter,
-        digital_output_setter::DigitalOutputSetter,
         mitsubishi_inverter_rs485::{
             MitsubishiControlRequests, MitsubishiInverterRS485Actor, MitsubishiModbusRequest,
         },
-        temperature_input_getter::TemperatureInputGetter,
     },
     machines::Machine,
-    modbus::ModbusRequest,
     socketio::namespace::NamespaceCacheingLogic,
 };
 
@@ -38,6 +35,17 @@ pub struct Heating {
     pub wiring_error: bool,
 }
 
+impl Default for Heating {
+    fn default() -> Self {
+        Self {
+            temperature: 0.0,
+            heating: false,
+            target_temperature: 150.0,
+            wiring_error: false,
+        }
+    }
+}
+
 pub enum HeatingType {
     Nozzle,
     Front,
@@ -53,35 +61,13 @@ pub struct ExtruderV2 {
     last_measurement_emit: Instant,
     pressure_sensor: AnalogInputGetter, // EL3024
     uses_rpm: bool,
-    rpm: f32,
     bar: f32,
     target_rpm: f32,
     target_bar: f32,
-
-    can_extrude: bool,
-
-    // Temperature TODO: CLEAN UP
-    // Heating contains the current temp,target and relais state
-    heating_front: Heating,
-    heating_middle: Heating,
-    heating_back: Heating,
-    heating_nozzle: Heating,
-
-    temp_sensor_1: TemperatureInputGetter,
-    temp_sensor_2: TemperatureInputGetter,
-    temp_sensor_3: TemperatureInputGetter,
-    temp_sensor_4: TemperatureInputGetter,
-
-    heating_relay_1: DigitalOutputSetter,
-    heating_relay_2: DigitalOutputSetter,
-    heating_relay_3: DigitalOutputSetter,
-    heating_relay_4: DigitalOutputSetter,
-
     temperature_controller_front: TemperatureController,
     temperature_controller_middle: TemperatureController,
     temperature_controller_back: TemperatureController,
     temperature_controller_nozzle: TemperatureController,
-
     pressure_motor_controller: PressureController,
 }
 
@@ -96,15 +82,10 @@ impl ExtruderV2 {
     // Set all relais to ZERO
     // We dont need a function to enable again though, as the act Loop will detect the mode
     fn turn_heating_off(&mut self) {
-        self.heating_relay_1.set(false);
-        self.heating_relay_2.set(false);
-        self.heating_relay_3.set(false);
-        self.heating_relay_4.set(false);
-
-        self.heating_back.heating = false;
-        self.heating_front.heating = false;
-        self.heating_middle.heating = false;
-        self.heating_nozzle.heating = false;
+        self.temperature_controller_back.disable();
+        self.temperature_controller_front.disable();
+        self.temperature_controller_middle.disable();
+        self.temperature_controller_nozzle.disable();
     }
 
     // Send Motor Turn Off Request to the Inverter
@@ -147,37 +128,6 @@ impl ExtruderV2 {
             ExtruderV2Mode::Extrude => self.turn_motor_off(),
         }
         self.mode = ExtruderV2Mode::Heat;
-    }
-
-    /// Checks if the extruder is allowed to extrude and then sets can_extrude true or false
-    fn set_can_switch_extrude(&mut self) {
-        const NINETY_PERCENT: f32 = 0.9;
-        let heat_back_is_valid =
-            (self.heating_back.temperature / self.heating_back.target_temperature > NINETY_PERCENT)
-                && (self.heating_back.temperature > 80.0);
-
-        let heat_middle_is_valid = (self.heating_middle.temperature
-            / self.heating_middle.target_temperature
-            > NINETY_PERCENT)
-            && (self.heating_middle.temperature > 80.0);
-
-        let heat_front_is_valid = (self.heating_front.temperature
-            / self.heating_front.target_temperature
-            > NINETY_PERCENT)
-            && (self.heating_front.temperature > 80.0);
-
-        let heat_nozzle_is_valid = (self.heating_nozzle.temperature
-            / self.heating_nozzle.target_temperature
-            > NINETY_PERCENT)
-            && (self.heating_nozzle.temperature > 80.0);
-        // println!(
-        //     "{} {} {} {}",
-        //     heat_back_is_valid, heat_front_is_valid, heat_middle_is_valid, heat_nozzle_is_valid,
-        // );
-        self.can_extrude = heat_back_is_valid
-            && heat_front_is_valid
-            && heat_middle_is_valid
-            && heat_nozzle_is_valid;
     }
 
     // keep heating on, and turn motor on
@@ -289,22 +239,22 @@ impl ExtruderV2 {
 impl ExtruderV2 {
     // Heating
     fn set_heating_front(&mut self, heating: Heating) {
-        self.heating_front = heating.clone();
+        self.temperature_controller_front.heating = heating.clone();
         self.emit_heating(heating, HeatingType::Front);
     }
 
     fn set_heating_back(&mut self, heating: Heating) {
-        self.heating_back = heating.clone();
+        self.temperature_controller_back.heating = heating.clone();
         self.emit_heating(heating, HeatingType::Back);
     }
 
     fn set_heating_middle(&mut self, heating: Heating) {
-        self.heating_middle = heating.clone();
+        self.temperature_controller_middle.heating = heating.clone();
         self.emit_heating(heating, HeatingType::Middle);
     }
 
     fn set_heating_nozzle(&mut self, heating: Heating) {
-        self.heating_nozzle = heating.clone();
+        self.temperature_controller_nozzle.heating = heating.clone();
         self.emit_heating(heating, HeatingType::Nozzle);
     }
 
@@ -323,17 +273,40 @@ impl ExtruderV2 {
 
     fn set_target_temperature(&mut self, target_temperature: f32, heating_type: HeatingType) {
         match heating_type {
-            HeatingType::Nozzle => self.heating_nozzle.target_temperature = target_temperature,
-            HeatingType::Front => self.heating_front.target_temperature = target_temperature,
-            HeatingType::Back => self.heating_back.target_temperature = target_temperature,
-            HeatingType::Middle => self.heating_middle.target_temperature = target_temperature,
+            HeatingType::Nozzle => self
+                .temperature_controller_nozzle
+                .set_target_temperature(target_temperature),
+
+            HeatingType::Front => self
+                .temperature_controller_front
+                .set_target_temperature(target_temperature),
+
+            HeatingType::Back => self
+                .temperature_controller_back
+                .set_target_temperature(target_temperature),
+
+            HeatingType::Middle => self
+                .temperature_controller_middle
+                .set_target_temperature(target_temperature),
         }
 
         match heating_type {
-            HeatingType::Nozzle => self.emit_heating(self.heating_nozzle.clone(), heating_type),
-            HeatingType::Front => self.emit_heating(self.heating_front.clone(), heating_type),
-            HeatingType::Back => self.emit_heating(self.heating_back.clone(), heating_type),
-            HeatingType::Middle => self.emit_heating(self.heating_middle.clone(), heating_type),
+            HeatingType::Nozzle => self.emit_heating(
+                self.temperature_controller_nozzle.heating.clone(),
+                heating_type,
+            ),
+            HeatingType::Front => self.emit_heating(
+                self.temperature_controller_front.heating.clone(),
+                heating_type,
+            ),
+            HeatingType::Back => self.emit_heating(
+                self.temperature_controller_back.heating.clone(),
+                heating_type,
+            ),
+            HeatingType::Middle => self.emit_heating(
+                self.temperature_controller_middle.heating.clone(),
+                heating_type,
+            ),
         }
     }
 }

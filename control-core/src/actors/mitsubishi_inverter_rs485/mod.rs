@@ -449,25 +449,19 @@ impl From<u8> for MitsubishiModbusExceptionCode {
 impl MitsubishiInverterRS485Actor {
     // When we get respone from Pr. 40014 (Running Frequency) Convert to rpm and save it
     fn handle_motor_frequency(&mut self, resp: ModbusResponse) {
-        if resp.data.len() < 4 {
-            //return;
-        }
         let freq_bytes = &resp.data[1..3]; // bytes 1 and 2 are needed
         self.current_freq = u16::from_be_bytes([freq_bytes[0], freq_bytes[1]]) as f32 / 100.0;
         self.current_rpm = MotorConverter::hz_to_rpm(self.current_freq);
     }
 
-    fn handle_inverter_status(&mut self, resp: ModbusResponse) {}
-
-    fn handle_inverter_frequency(&mut self, resp: ModbusResponse) {}
-
+    // Technically we could verify that every request also was successful with this match and return an Error, or not
     fn handle_response(&mut self, resp: ModbusResponse) {
         match self.next_response_type {
-            ResponseType::ReadFrequency => self.handle_inverter_frequency(resp),
+            ResponseType::ReadFrequency => (),
             ResponseType::ReadInverterStatus => (),
             ResponseType::WriteFrequency => (),
             ResponseType::ReadMotorFrequency => self.handle_motor_frequency(resp),
-            ResponseType::InverterStatus => self.handle_inverter_status(resp),
+            ResponseType::InverterStatus => (),
             ResponseType::InverterControl => (),
             ResponseType::NoResponse => (),
         }

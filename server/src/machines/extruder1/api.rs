@@ -170,6 +170,7 @@ enum Mutation {
     SetEepromFrequency(f32),
     SetMinimumFrequency(f32),
     SetMaximumFrequency(f32),
+
     ///Get
     GetRunningFrequency(),
     GetEepromFrequency(),
@@ -256,8 +257,8 @@ impl CacheableEvents<ExtruderV2Events> for ExtruderV2Events {
     }
 
     fn event_cache_fn(&self) -> CacheFn {
-        let cache_one_hour = cache_duration(Duration::from_secs(60 * 60), Duration::from_secs(1));
-        let cache_ten_secs = cache_duration(Duration::from_secs(10), Duration::from_secs(1));
+        let _cache_one_hour = cache_duration(Duration::from_secs(60 * 60), Duration::from_secs(1));
+        let _cache_ten_secs = cache_duration(Duration::from_secs(10), Duration::from_secs(1));
         let cache_one = cache_one_event();
 
         match self {
@@ -269,11 +270,11 @@ impl CacheableEvents<ExtruderV2Events> for ExtruderV2Events {
             }
             ExtruderV2Events::InverterSuccessEvent(_) => todo!(),
             ExtruderV2Events::RotationStateEvent(_) => cache_one,
-            ExtruderV2Events::ModeEvent(event) => cache_one,
-            ExtruderV2Events::RegulationStateEvent(event) => cache_one,
-            ExtruderV2Events::PressureStateEvent(event) => cache_one,
-            ExtruderV2Events::RpmStateEvent(event) => cache_one,
-            ExtruderV2Events::HeatingStateEvent(event) => cache_one,
+            ExtruderV2Events::ModeEvent(_) => cache_one,
+            ExtruderV2Events::RegulationStateEvent(_) => cache_one,
+            ExtruderV2Events::PressureStateEvent(_) => cache_one,
+            ExtruderV2Events::RpmStateEvent(_) => cache_one,
+            ExtruderV2Events::HeatingStateEvent(_) => cache_one,
         }
     }
 }
