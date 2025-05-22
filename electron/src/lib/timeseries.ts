@@ -7,7 +7,6 @@ export interface TimeSeriesValue {
   value: number;
   timestamp: number;
 }
-
 /**
  * Min/Max tracker using deques for O(1) operations
  */
@@ -86,7 +85,6 @@ export interface TimeSeries {
   long: Series;
   short: Series;
 }
-
 /**
  * Return type of createTimeSeries
  */
@@ -94,7 +92,6 @@ export interface TimeSeriesWithInsert {
   initialTimeSeries: TimeSeries;
   insert: (series: TimeSeries, valueObj: TimeSeriesValue) => TimeSeries;
 }
-
 /**
  * Extract data with time window filtering
  */
