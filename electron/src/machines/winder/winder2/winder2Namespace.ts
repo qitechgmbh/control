@@ -202,23 +202,43 @@ export type Winder2NamespaceStore = {
 };
 
 // Constants for time durations
+const TWENTY_MILISECOND = 20;
 const ONE_SECOND = 1000;
+const FIVE_SECOND = 5 * ONE_SECOND;
 const ONE_HOUR = 60 * 60 * ONE_SECOND;
-
 const { initialTimeSeries: traversePosition, insert: addTraversePosition } =
-  createTimeSeries(ONE_SECOND, ONE_HOUR);
+  createTimeSeries(
+    TWENTY_MILISECOND,
+    ONE_SECOND,
+    FIVE_SECOND,
+    ONE_HOUR,);
 const {
   initialTimeSeries: autostopWoundedLength,
   insert: addAutostopWoundedLength,
-} = createTimeSeries(ONE_SECOND, ONE_HOUR);
-const { initialTimeSeries: pullerSpeed, insert: addPullerSpeed } =
-  createTimeSeries(ONE_SECOND, ONE_HOUR);
-const { initialTimeSeries: spoolRpm, insert: addSpoolRpm } = createTimeSeries(
+} = createTimeSeries(
+  TWENTY_MILISECOND,
   ONE_SECOND,
+  FIVE_SECOND,
+  ONE_HOUR,);
+const { initialTimeSeries: pullerSpeed, insert: addPullerSpeed } =
+  createTimeSeries(
+    TWENTY_MILISECOND,
+    ONE_SECOND,
+    FIVE_SECOND,
+    ONE_HOUR,
+  );
+const { initialTimeSeries: spoolRpm, insert: addSpoolRpm } = createTimeSeries(
+  TWENTY_MILISECOND,
+  ONE_SECOND,
+  FIVE_SECOND,
   ONE_HOUR,
 );
 const { initialTimeSeries: tensionArmAngle, insert: addTensionArmAngle } =
-  createTimeSeries(ONE_SECOND, ONE_HOUR);
+  createTimeSeries(
+    TWENTY_MILISECOND,
+    ONE_SECOND,
+    FIVE_SECOND,
+    ONE_HOUR,);
 
 /**
  * Factory function to create a new Winder2 namespace store

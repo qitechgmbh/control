@@ -6,9 +6,9 @@ import {
   renderUnitSymbol,
   Unit,
 } from "./units";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Label } from "./Label";
 import { TimeSeries } from "@/lib/timeseries";
+import { MiniGraph } from "@/helpers/mini_graph";
 
 type Props = {
   label: string;
@@ -45,7 +45,7 @@ function _TimeSeriesValue({
           </div>
         </Label>
       </div>
-      <Skeleton className="h-16 flex-1 bg-neutral-100"></Skeleton>
+      <MiniGraph newData={timeseries} />
     </div>
   );
 }
