@@ -35,24 +35,6 @@ pub struct ModbusResponse {
     pub crc: u16,
 }
 
-impl ModbusResponse {
-    fn is_exception(self) -> bool {
-        if self.data.len() > 2 {
-            let function_code = self.data[1];
-            return (function_code & 0b10000000) > 0; // first bit is set when an exception happens in Modbus
-        }
-        return false;
-    }
-
-    fn get_exception_code(self) -> u8 {
-        if self.data.len() > 3 {
-            let exception = self.data[2];
-            return exception;
-        }
-        return 0;
-    }
-}
-
 impl TryFrom<u8> for ModbusFunctionCode {
     type Error = anyhow::Error;
 
