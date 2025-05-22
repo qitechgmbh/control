@@ -6,8 +6,6 @@ import { winder2SerialRoute } from "@/routes/routes";
 import { z } from "zod";
 import { Mode, useWinder2Namespace } from "./winder2Namespace";
 import { useEffect, useMemo } from "react";
-import { TimeSeries } from "@/lib/timeseries";
-import { rustEnumSchema } from "@/lib/types";
 
 function useLaserpointer(
   machine_identification_unique: MachineIdentificationUnique,
