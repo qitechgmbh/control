@@ -74,7 +74,7 @@ export const createTimeSeries = (
 };
 
 type Series = {
-  values: TimeSeriesValue[];
+  values: (TimeSeriesValue | null)[];
   index: number;
   size: number;
   lastTimestamp: number;

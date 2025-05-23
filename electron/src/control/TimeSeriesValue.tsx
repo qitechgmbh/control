@@ -40,7 +40,7 @@ function _TimeSeriesValue({
 
   return (
     <div className="bg-red flex flex-row items-center gap-4">
-      <div>
+      <div className="h-16">
         <Label label={label}>
           <div className="flex flex-row items-center gap-4">
             <Icon
@@ -56,7 +56,7 @@ function _TimeSeriesValue({
           </div>
         </Label>
       </div>
-      <div className="flex-1 bg-red-300" ref={miniGraphRef}>
+      <div className="flex-1 h-16" ref={miniGraphRef}>
         <MiniGraph newData={timeseries} width={width} />
       </div>
     </div>
