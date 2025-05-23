@@ -72,6 +72,7 @@ enum Mutation {
     PullerSetRegulationMode(PullerRegulationMode),
     PullerSetTargetSpeed(f64),
     PullerSetTargetDiameter(f64),
+    PullerSetForward(bool),
 
     // Auto Stop
     AutostopEnable(bool),
@@ -144,6 +145,8 @@ pub struct PullerStateEvent {
     pub target_speed: f64,
     /// target diameter in mm
     pub target_diameter: f64,
+    /// forward rotation direction
+    pub forward: bool,
 }
 
 impl PullerStateEvent {
@@ -349,6 +352,7 @@ impl MachineApi for Winder2 {
             Mutation::PullerSetRegulationMode(regulation) => self.puller_set_regulation(regulation),
             Mutation::PullerSetTargetSpeed(value) => self.puller_set_target_speed(value),
             Mutation::PullerSetTargetDiameter(_) => todo!(),
+            Mutation::PullerSetForward(value) => self.puller_set_forward(value),
             Mutation::AutostopEnable(_) => todo!(),
             Mutation::AutostopEnableAlarm(_) => todo!(),
             Mutation::AutostopSetLimit(_) => todo!(),

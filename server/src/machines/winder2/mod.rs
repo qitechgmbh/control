@@ -214,7 +214,7 @@ impl Winder2 {
                     self.spool.set_enabled(true);
                 }
                 SpoolMode::Wind => {
-                    // From [`SpoolMode::Standby`] to [`SpoolMode::Wind`]
+                   
                     self.spool.set_enabled(true);
                     self.spool_speed_controller.reset();
                     self.spool_speed_controller.set_enabled(true);
@@ -494,6 +494,12 @@ impl Winder2 {
         self.emit_puller_state();
     }
 
+    /// Set forward direction
+    pub fn puller_set_forward(&mut self, forward: bool) {
+        self.puller_speed_controller.set_forward(forward);
+        self.emit_puller_state();
+    }
+
     pub fn emit_puller_speed(&mut self) {
         let steps_per_second = self.puller.get_speed();
         let angular_velocity = self
@@ -524,6 +530,7 @@ impl Winder2 {
                     .puller_speed_controller
                     .target_diameter
                     .get::<millimeter>(),
+                forward: self.puller_speed_controller.forward,
             }
             .build(),
         );
