@@ -41,7 +41,6 @@ export function Dre1ControlPage() {
                             timeseries={dreDiameter}
                             renderValue={(value) => value.toFixed(3)}
                         />
-
                     </div>
                 </ControlCard>
                 <ControlCard title="DRE Settings">
@@ -94,3 +93,4 @@ export function Dre1ControlPage() {
         </Page>
     );
 }
+
