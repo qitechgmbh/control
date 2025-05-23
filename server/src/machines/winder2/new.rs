@@ -20,8 +20,6 @@ use control_core::machines::new::{
     get_ethercat_device_by_index, get_subdevice_by_index, validate_no_role_dublicates,
     validate_same_machine_identification_unique,
 };
-use control_core::uom_extensions::acceleration::meter_per_minute_per_second;
-use control_core::uom_extensions::angular_acceleration::revolution_per_minute_per_second;
 use control_core::uom_extensions::velocity::meter_per_minute;
 use ethercat_hal::coe::ConfigurableDevice;
 use ethercat_hal::devices::el2002::{EL2002, EL2002Port};
@@ -45,8 +43,7 @@ use ethercat_hal::io::digital_output::DigitalOutput;
 use ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1;
 use ethercat_hal::shared_config;
 use ethercat_hal::shared_config::el70x1::{EL70x1OperationMode, StmMotorConfiguration};
-use uom::si::angular_velocity::revolution_per_minute;
-use uom::si::f64::{Acceleration, AngularAcceleration, AngularVelocity, Length, Velocity};
+use uom::si::f64::{Length, Velocity};
 use uom::si::length::{centimeter, millimeter};
 
 impl MachineNewTrait for Winder2 {
@@ -344,18 +341,12 @@ impl MachineNewTrait for Winder2 {
                 namespace: Winder2Namespace::new(),
                 mode: mode.clone(),
                 spool_step_converter: AngularStepConverter::new(200),
-                spool_speed_controller: SpoolSpeedController::new(
-                    AngularVelocity::new::<revolution_per_minute>(0.0),
-                    AngularVelocity::new::<revolution_per_minute>(800.0),
-                    AngularAcceleration::new::<revolution_per_minute_per_second>(200.0),
-                    AngularAcceleration::new::<revolution_per_minute_per_second>(-200.0),
-                ),
+                spool_speed_controller: SpoolSpeedController::new(),
                 last_measurement_emit: Instant::now(),
                 spool_mode: mode.clone().into(),
                 traverse_mode: mode.clone().into(),
                 puller_mode: mode.into(),
                 puller_speed_controller: PullerSpeedController::new(
-                    Acceleration::new::<meter_per_minute_per_second>(10.0),
                     Velocity::new::<meter_per_minute>(1.0),
                     Length::new::<millimeter>(1.75),
                     LinearStepConverter::from_diameter(
