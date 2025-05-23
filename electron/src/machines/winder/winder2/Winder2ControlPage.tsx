@@ -50,6 +50,7 @@ export function Winder2ControlPage() {
     traverseGotoHome,
     traverseStateIsLoading,
     traverseStateIsDisabled,
+    modeState,
   } = useWinder2();
 
   return (
@@ -100,8 +101,14 @@ export function Winder2ControlPage() {
                 variant="outline"
                 icon="lu:ArrowLeftToLine"
                 onClick={traverseGotoLimitOuter}
-                disabled={traverseStateIsDisabled}
-                isLoading={traverseStateIsLoading}
+                disabled={
+                  traverseStateIsDisabled || 
+                  !traverseState?.data.can_go_out
+                }
+                isLoading={
+                  traverseStateIsLoading || 
+                  traverseState?.data.is_going_out
+                }
               >
                 Go to Outer Limit
               </TouchButton>
@@ -124,8 +131,14 @@ export function Winder2ControlPage() {
                 variant="outline"
                 icon="lu:ArrowRightToLine"
                 onClick={traverseGotoLimitInner}
-                disabled={traverseStateIsDisabled}
-                isLoading={traverseStateIsLoading}
+                disabled={
+                  traverseStateIsDisabled || 
+                  !traverseState?.data.can_go_in
+                }
+                isLoading={
+                  traverseStateIsLoading || 
+                  traverseState?.data.is_going_in
+                }
               >
                 Go to Inner Limit
               </TouchButton>
@@ -148,8 +161,7 @@ export function Winder2ControlPage() {
               onClick={() => traverseGotoHome()}
               disabled={
                 traverseStateIsDisabled ||
-                traverseState?.data.is_going_home ||
-                traverseState?.data.is_traversing
+                !traverseState?.data.can_go_home
               }
               isLoading={
                 traverseStateIsLoading || traverseState?.data.is_going_home
@@ -212,6 +224,7 @@ export function Winder2ControlPage() {
                 children: "Wind",
                 icon: "lu:RefreshCcw",
                 isActiveClassName: "bg-green-600",
+                disabled: !modeState?.data.can_wind,
               },
             }}
           />

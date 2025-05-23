@@ -99,35 +99,23 @@ impl Winder2 {
     }
 
     pub fn traverse_goto_limit_inner(&mut self) {
-        // Only possible if homed, not standby, not traversing
-        if !self.traverse_controller.is_homed()
-            || self.traverse_mode == TraverseMode::Standby
-            || self.traverse_controller.is_traversing()
-        {
-            return;
+        if self.can_go_in() {
+            self.traverse_controller.goto_limit_inner();
         }
-        self.traverse_controller.goto_limit_inner();
         self.emit_traverse_state();
     }
 
     pub fn traverse_goto_limit_outer(&mut self) {
-        // Only possible if homed, not standby, not traversing
-        if !self.traverse_controller.is_homed()
-            || self.traverse_mode == TraverseMode::Standby
-            || self.traverse_controller.is_traversing()
-        {
-            return;
+        if self.can_go_out() {
+            self.traverse_controller.goto_limit_outer();
         }
-        self.traverse_controller.goto_limit_outer();
         self.emit_traverse_state();
     }
 
     pub fn traverse_goto_home(&mut self) {
-        // Only if not traversing
-        if self.traverse_controller.is_traversing() {
-            return;
+        if self.can_go_home() {
+            self.traverse_controller.goto_home();
         }
-        self.traverse_controller.goto_home();
         self.emit_traverse_state();
     }
 
@@ -167,6 +155,9 @@ impl Winder2 {
             laserpointer: self.laser.get(),
             step_size: self.traverse_controller.get_step_size().get::<millimeter>(),
             padding: self.traverse_controller.get_padding().get::<millimeter>(),
+            can_go_in: self.can_go_in(),
+            can_go_out: self.can_go_out(),
+            can_go_home: self.can_go_home(),
         }
         .build();
         self.namespace
@@ -180,18 +171,66 @@ impl Winder2 {
             self.spool_speed_controller.get_speed(),
         );
     }
+
+    /// Can wind capability check
+    pub fn can_wind(&self) -> bool {
+        // Check if tension arm is zeroed and traverse is homed
+        self.tension_arm.zeroed
+            && self.traverse_controller.is_homed()
+            && !self.traverse_controller.is_going_home()
+    }
+
+    /// Can go to inner limit capability check
+    pub fn can_go_in(&self) -> bool {
+        // Check if traverse is homed, not in standby, not traversing
+        // Allow changing direction (even when going out)
+        // Disallow when homing is in progress
+        self.traverse_controller.is_homed()
+            && self.traverse_mode != TraverseMode::Standby
+            && !self.traverse_controller.is_going_in()
+            && !self.traverse_controller.is_going_home()
+            && !self.traverse_controller.is_traversing()
+            && self.mode != Winder2Mode::Wind
+    }
+
+    /// Can go to outer limit capability check
+    pub fn can_go_out(&self) -> bool {
+        // Check if traverse is homed, not in standby, not traversing
+        // Allow changing direction (even when going in)
+        // Disallow when homing is in progress
+        self.traverse_controller.is_homed()
+            && self.traverse_mode != TraverseMode::Standby
+            && !self.traverse_controller.is_going_out()
+            && !self.traverse_controller.is_going_home()
+            && !self.traverse_controller.is_traversing()
+            && self.mode != Winder2Mode::Wind
+    }
+
+    /// Can go home capability check
+    pub fn can_go_home(&self) -> bool {
+        // Check if not in standby, not traversing
+        // Allow going home even when going in or out
+        self.traverse_mode != TraverseMode::Standby
+            && !self.traverse_controller.is_going_home()
+            && !self.traverse_controller.is_traversing()
+            && self.mode != Winder2Mode::Wind
+    }
 }
 
 /// Implement Mode
 impl Winder2 {
     fn set_mode(&mut self, mode: &Winder2Mode) {
-        // all transitions are allowed
-        self.mode = mode.clone();
+        let should_update = *mode != Winder2Mode::Wind || self.can_wind();
 
-        // Apply the mode changes to the spool and puller
-        self.set_spool_mode(mode);
-        self.set_puller_mode(mode);
-        self.set_traverse_mode(mode);
+        if should_update {
+            // all transitions are allowed
+            self.mode = mode.clone();
+
+            // Apply the mode changes to the spool and puller
+            self.set_spool_mode(mode);
+            self.set_puller_mode(mode);
+            self.set_traverse_mode(mode);
+        }
 
         self.emit_mode_state();
         self.emit_traverse_state();
@@ -214,7 +253,6 @@ impl Winder2 {
                     self.spool.set_enabled(true);
                 }
                 SpoolMode::Wind => {
-                   
                     self.spool.set_enabled(true);
                     self.spool_speed_controller.reset();
                     self.spool_speed_controller.set_enabled(true);
@@ -372,6 +410,7 @@ impl Winder2 {
     fn emit_mode_state(&mut self) {
         let event = ModeStateEvent {
             mode: self.mode.clone().into(),
+            can_wind: self.can_wind(),
         }
         .build();
         self.namespace.emit_cached(Winder2Events::Mode(event))
@@ -384,6 +423,8 @@ impl Winder2 {
         self.tension_arm.zero();
         self.emit_tension_arm_angle();
         self.emit_tension_arm_state();
+        // Also emit mode state as zeroing affects the can_wind capability
+        self.emit_mode_state();
     }
 
     fn emit_tension_arm_angle(&mut self) {
