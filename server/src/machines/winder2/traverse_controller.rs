@@ -346,6 +346,8 @@ impl TraverseController {
                 HomingState::FindEndstopCoarse => {
                     // Move to endstop
                     if traverse_end_stop.value() == true {
+                        // Set poition of traverse to 0
+                        traverse.set_position(0);
                         // Move awaiy from endstop
                         self.state = State::Homing(HomingState::FindEnstopFineDistancing);
                     }

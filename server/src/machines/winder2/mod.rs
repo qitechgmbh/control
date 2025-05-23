@@ -254,7 +254,7 @@ impl Winder2 {
                 }
                 SpoolMode::Wind => {
                     self.spool.set_enabled(true);
-                    self.spool_speed_controller.reset();
+                    // self.spool_speed_controller.reset();
                     self.spool_speed_controller.set_enabled(true);
                 }
             },
@@ -266,7 +266,7 @@ impl Winder2 {
                 SpoolMode::Hold => {}
                 SpoolMode::Wind => {
                     // From [`SpoolMode::Hold`] to [`SpoolMode::Wind`]
-                    self.spool_speed_controller.reset();
+                    // self.spool_speed_controller.reset();
                     self.spool_speed_controller.set_enabled(true);
                 }
             },
