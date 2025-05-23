@@ -8,6 +8,7 @@ import {
   Mode,
   PullerStateEvent,
   TensionArmStateEvent,
+  ModeStateEvent,
   useWinder2Namespace,
 } from "./winder2Namespace";
 import { useEffect, useMemo } from "react";
@@ -430,6 +431,7 @@ function useMode(machine_identification_unique: MachineIdentificationUnique): {
   setMode: (value: Mode) => void;
   modeIsLoading: boolean;
   modeIsDisabled: boolean;
+  modeState: ModeStateEvent | null;
 } {
   const state = useStateOptimistic<Mode>();
 
@@ -463,6 +465,7 @@ function useMode(machine_identification_unique: MachineIdentificationUnique): {
     setMode,
     modeIsLoading: state.isOptimistic || !state.isInitialized,
     modeIsDisabled: state.isOptimistic || !state.isInitialized,
+    modeState,
   };
 }
 

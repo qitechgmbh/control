@@ -129,6 +129,12 @@ pub struct TraverseStateEvent {
     pub step_size: f64,
     /// padding in mm
     pub padding: f64,
+    /// can go in (to inner limit)
+    pub can_go_in: bool,
+    /// can go out (to outer limit)
+    pub can_go_out: bool,
+    /// can home
+    pub can_go_home: bool,
 }
 
 impl TraverseStateEvent {
@@ -201,6 +207,8 @@ impl AutostopStateEvent {
 pub struct ModeStateEvent {
     /// mode
     pub mode: Mode,
+    /// can wind
+    pub can_wind: bool,
 }
 
 impl ModeStateEvent {

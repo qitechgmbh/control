@@ -28,6 +28,10 @@ impl Actor for Winder2 {
             // check if traverse state changed
             if self.traverse_controller.dif_change_state() {
                 self.emit_traverse_state();
+
+                // Also emit mode state when traverse state changes
+                // This ensures the frontend gets updated capability flags when homing completes
+                self.emit_mode_state();
             }
 
             // if last measurement emit is older than 1 second, emit a new measurement

@@ -49,6 +49,9 @@ export const traverseStateEventDataSchema = z.object({
   laserpointer: z.boolean(),
   step_size: z.number(),
   padding: z.number(),
+  can_go_in: z.boolean(),
+  can_go_out: z.boolean(),
+  can_go_home: z.boolean(),
 });
 
 /**
@@ -105,6 +108,7 @@ export const modeSchema = z.enum(["Standby", "Hold", "Pull", "Wind"]);
  */
 export const modeStateEventDataSchema = z.object({
   mode: modeSchema,
+  can_wind: z.boolean(),
 });
 
 /**
