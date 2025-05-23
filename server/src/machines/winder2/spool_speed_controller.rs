@@ -3,7 +3,7 @@ use super::{
     tension_arm::TensionArm,
 };
 use control_core::{
-    controllers::linear_acceleration::LinearAngularAccelerationController,
+    controllers::first_degree_motion::angular_acceleration_speed_controller::AngularAccelerationLimitingController,
     helpers::interpolation::{interpolate_exponential, scale},
     uom_extensions::angular_acceleration::revolution_per_minute_per_second,
 };
@@ -12,6 +12,7 @@ use uom::{
     ConstZero,
     si::{
         angle::{degree, revolution},
+        angular_acceleration::radian_per_second_squared,
         angular_velocity::{radian_per_second, revolution_per_minute},
         f64::{Angle, AngularAcceleration, AngularVelocity},
     },
@@ -28,7 +29,7 @@ pub struct SpoolSpeedController {
     /// Whether the speed controller is enabled or not
     enabled: bool,
     /// Linear acceleration controller to dampen speed change
-    acceleration_controller: LinearAngularAccelerationController,
+    acceleration_controller: AngularAccelerationLimitingController,
 }
 
 impl SpoolSpeedController {
@@ -37,20 +38,21 @@ impl SpoolSpeedController {
     /// - `max_speed`: Maximum
     /// - `acceleration`: Acceleration
     /// - `deceleration`: Deceleration (preferably negative)
-    pub fn new(
-        min_speed: AngularVelocity,
-        max_speed: AngularVelocity,
-        acceleration: AngularAcceleration,
-        deceleration: AngularAcceleration,
-    ) -> Self {
+    pub fn new() -> Self {
+        let min_speed = AngularVelocity::new::<radian_per_second>(0.0);
+        let max_speed = AngularVelocity::new::<radian_per_second>(800.0);
+        let min_angular_acceleration = AngularAcceleration::new::<radian_per_second_squared>(200.0);
+        let max_angular_acceleration =
+            AngularAcceleration::new::<radian_per_second_squared>(-200.0);
+
         Self {
             min_speed,
             max_speed,
             speed: AngularVelocity::ZERO,
             enabled: false,
-            acceleration_controller: LinearAngularAccelerationController::new(
-                acceleration,
-                deceleration,
+            acceleration_controller: AngularAccelerationLimitingController::new(
+                max_angular_acceleration,
+                min_angular_acceleration,
                 AngularVelocity::ZERO,
             ),
         }
@@ -175,7 +177,7 @@ impl SpoolSpeedController {
         // The spool will accelerate from min to max speed in 10 seconds
         let range = self.max_speed - self.min_speed;
         let acceleration = AngularAcceleration::new::<revolution_per_minute_per_second>(
-            range.get::<revolution_per_minute>() / 3.0,
+            range.get::<revolution_per_minute>() / 4.0,
         );
         self.acceleration_controller.set_acceleration(acceleration);
         self.acceleration_controller.set_deceleration(-acceleration);
