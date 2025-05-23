@@ -76,6 +76,12 @@ export function DeviceEepromDialog({ device }: Props) {
   );
 }
 
+/*
+
+
+
+*/
+
 type ContentProps = {
   device: Device;
   setOpen: (open: boolean) => void;
@@ -96,6 +102,9 @@ export function DeviceEeepromDialogContent({ device, setOpen }: ContentProps) {
     mode: "all",
   });
   const values = useFormValues(form);
+
+  console.log(device);
+  console.log(device["device_identification"]["Ethercat"]);
 
   const onSubmit = (values: FormSchema) => {
     client

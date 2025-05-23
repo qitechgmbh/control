@@ -440,6 +440,7 @@ function useMode(machine_identification_unique: MachineIdentificationUnique): {
     ModeSet: z.enum(["Standby", "Hold", "Pull", "Wind"]),
   });
   const { request } = useMachineMutation(schema);
+
   const setMode = async (value: Mode) => {
     state.setOptimistic(value);
     request({
