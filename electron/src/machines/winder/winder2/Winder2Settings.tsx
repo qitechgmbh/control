@@ -89,13 +89,13 @@ export function Winder2SettingPage() {
               value={pullerState?.data.forward}
               disabled={pullerStateIsDisabled}
               loading={pullerStateIsLoading}
-              optionFalse={{ 
-                children: "Reverse", 
-                icon: "lu:RotateCcw" 
+              optionFalse={{
+                children: "Reverse",
+                icon: "lu:RotateCcw",
               }}
-              optionTrue={{ 
-                children: "Forward", 
-                icon: "lu:RotateCw" 
+              optionTrue={{
+                children: "Forward",
+                icon: "lu:RotateCw",
               }}
               onChange={(value) => pullerSetForward(value)}
             />

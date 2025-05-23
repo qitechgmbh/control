@@ -52,6 +52,10 @@ export function Winder2ControlPage() {
     traverseStateIsDisabled,
   } = useWinder2();
 
+  // Check if winding should be disabled due to zeroing or homing requirements
+  const windingDisabled =
+    !tensionArmState?.data.zeroed || traverseState?.data.is_homed !== true;
+
   return (
     <Page>
       <ControlGrid>
@@ -212,6 +216,7 @@ export function Winder2ControlPage() {
                 children: "Wind",
                 icon: "lu:RefreshCcw",
                 isActiveClassName: "bg-green-600",
+                disabled: windingDisabled,
               },
             }}
           />
