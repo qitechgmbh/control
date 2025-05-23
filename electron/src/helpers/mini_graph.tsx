@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import * as d3 from "d3";
 import { TimeSeries } from "@/lib/timeseries";
 
@@ -9,78 +9,83 @@ type MiniGraphProps = {
 
 const HEIGHT = 56;
 const MARGIN = { top: 5, right: 35, bottom: 5, left: 0 };
+
 export function MiniGraph({ newData, width }: MiniGraphProps) {
     const svgRef = useRef<SVGSVGElement | null>(null);
-
+    const dataRef = useRef<[number, number][]>([]);
+    const [, setMinMax] = useState({ min: Infinity, max: -Infinity });
     useEffect(() => {
-        if (!newData || !newData.short.values.length) return;
+        if (!newData?.current || !svgRef.current || !newData.short.values.length) return;
 
-        const { values, index, size, lastTimestamp, timeWindow } = newData.short;
+        const cur = newData.current;
+        if (cur.timestamp <= 0) return;
 
+        const { timeWindow, size } = newData.short;
+        const points = dataRef.current;
+
+        const estimatedInterval = timeWindow / size;
+        const maxPoints = Math.floor(timeWindow / estimatedInterval);
+
+        // Push new point and maintain time-based sliding window
+        points.push([cur.timestamp, cur.value]);
+        const startTime = cur.timestamp - timeWindow;
+        while (points.length > 0 && points[0][0] < startTime) {
+            points.shift();
+        }
+
+        // Min/max update
+        const values = points.map(p => p[1]);
+        const newMin = Math.min(...values);
+        const newMax = Math.max(...values);
+        setMinMax({ min: newMin, max: newMax });
+
+        // D3 drawing
         const svg = d3.select(svgRef.current);
-        svg.selectAll("*").remove();
-
         const graphWidth = width - MARGIN.left - MARGIN.right;
         const graphHeight = HEIGHT - MARGIN.top - MARGIN.bottom;
 
-
-        const path: [number, number][] = [];
-
-        let minValue = Infinity;
-        let maxValue = -Infinity;
-        let oldestTime = Infinity;
-        let newestTime = lastTimestamp;
-
-        for (let i = 0; i < size; i++) {
-            const idx = (index + i) % size;
-            const cur = values[idx];
-            if (cur == null) break;
-            if (cur.timestamp > 0 && cur.timestamp < lastTimestamp) {
-                path.push([cur.timestamp, cur.value]);
-
-                minValue = Math.min(minValue, cur.value);
-                maxValue = Math.max(maxValue, cur.value);
-                oldestTime = Math.min(oldestTime, cur.timestamp);
-            }
-        }
-        if (path.length === 0) return; // no valid data, do not draw anything
-
-        const xDomainStart = newestTime - timeWindow + 1000;
-        const xDomainEnd = newestTime;
-
         const x = d3.scaleLinear()
-            .domain([xDomainStart, xDomainEnd])
+            .domain([cur.timestamp - timeWindow, cur.timestamp])
             .range([0, graphWidth])
             .clamp(true);
+
         const y = d3.scaleLinear()
-            .domain([minValue * 0.9, maxValue * 1.1])
+            .domain([newMin * 0.9, newMax * 1.1])
             .range([graphHeight, 0]);
 
-        const g = svg.append("g")
-            .attr("transform", `translate(${MARGIN.left},${MARGIN.top})`);
+        let g = svg.select<SVGGElement>("g.graph-group");
+        if (g.empty()) {
+            g = svg.append("g")
+                .attr("class", "graph-group")
+                .attr("transform", `translate(${MARGIN.left},${MARGIN.top})`);
+        }
 
-        // Y Axis on the right side:
-        g.append("g")
+        let yAxisGroup = g.select<SVGGElement>("g.y-axis");
+        if (yAxisGroup.empty()) {
+            yAxisGroup = g.append("g").attr("class", "y-axis");
+        }
+        yAxisGroup
             .attr("transform", `translate(${graphWidth}, 0)`)
             .call(d3.axisRight(y).ticks(3).tickSize(4))
             .call(g => g.select(".domain").remove())
             .call(g => g.selectAll("line").style("stroke", "#ccc").style("stroke-width", 0.5));
 
-        // <-- X Axis block removed here -->
-
-        // Draw the line only with existing points
         const lineGen = d3.line<[number, number]>()
             .x(d => x(d[0]))
             .y(d => y(d[1]))
             .curve(d3.curveLinear);
 
-        g.append("path")
-            .attr("fill", "none")
-            .attr("stroke", "black")
-            .attr("stroke-width", 2)
-            .attr("d", lineGen(path)!);
+        let path = g.select<SVGPathElement>("path.line");
+        if (path.empty()) {
+            path = g.append("path")
+                .attr("class", "line")
+                .attr("fill", "none")
+                .attr("stroke", "black")
+                .attr("stroke-width", 2);
+        }
 
-    }, [newData, width]);
+        path.attr("d", lineGen(points)!);
+    }, [newData?.current, width]);
 
 
     return (

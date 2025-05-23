@@ -39,11 +39,11 @@ export function DiameterVisualisation({
 
     const minDia = targetDiameter - lowTolerance;
     const maxDia = targetDiameter + highTolerance;
-    const midDia = (minDia + maxDia) / 2;
+    const totalTolerance = lowTolerance + highTolerance;
+    const midDia = minDia + (maxDia - minDia) * (lowTolerance / totalTolerance);
 
     const pixelMin = 100;
     const pixelMax = 200;
-    const pixelMid = (pixelMin + pixelMax) / 2;
 
     const lerp = (
         value: number,
@@ -57,7 +57,7 @@ export function DiameterVisualisation({
             ((value - inputMin) * (outputMax - outputMin)) / (inputMax - inputMin)
         );
     };
-
+    const pixelMid = lerp(midDia, minDia, maxDia, pixelMin, pixelMax);
     let dynamicDiameterPx: number | null = null;
 
     if (actualDiameter > 0) {
