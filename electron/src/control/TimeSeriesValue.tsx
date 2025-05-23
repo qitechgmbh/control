@@ -1,14 +1,14 @@
 import { Icon, IconName } from "@/components/Icon";
-import React, { useEffect } from "react";
+import React from "react";
 import {
   getUnitIcon,
   renderUndefinedValue,
   renderUnitSymbol,
   Unit,
 } from "./units";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Label } from "./Label";
 import { TimeSeries } from "@/lib/timeseries";
+import { MiniGraph } from "@/helpers/mini_graph";
 
 type Props = {
   label: string;
@@ -29,9 +29,20 @@ function _TimeSeriesValue({
 }: Props) {
   const value = timeseries.current?.value;
 
+  const miniGraphRef = React.useRef<HTMLDivElement>(null);
+
+  // get width of the mini graph container
+  const [width, setWidth] = React.useState(0);
+  React.useEffect(() => {
+    if (miniGraphRef.current) {
+      const rect = miniGraphRef.current.getBoundingClientRect();
+      setWidth(rect.width);
+    }
+  }, [miniGraphRef.current]);
+
   return (
     <div className="bg-red flex flex-row items-center gap-4">
-      <div className="flex-1">
+      <div className="h-16">
         <Label label={label}>
           <div className="flex flex-row items-center gap-4">
             <Icon
@@ -47,7 +58,9 @@ function _TimeSeriesValue({
           </div>
         </Label>
       </div>
-      <Skeleton className="h-16 flex-1 bg-neutral-100"></Skeleton>
+      <div className="flex-1 h-16" ref={miniGraphRef}>
+        <MiniGraph newData={timeseries} width={width} />
+      </div>
     </div>
   );
 }
