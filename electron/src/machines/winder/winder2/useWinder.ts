@@ -376,6 +376,27 @@ function usePuller(machine_identification_unique: MachineIdentificationUnique) {
       .catch(() => pullerStateOptimistic.resetToReal());
   };
 
+  const schemaSetForward = z.object({
+    PullerSetForward: z.boolean(),
+  });
+  const { request: requestSetForward } = useMachineMutation(schemaSetForward);
+  const pullerSetForward = async (forward: boolean) => {
+    if (pullerStateOptimistic.value) {
+      pullerStateOptimistic.setOptimistic({
+        ...pullerStateOptimistic.value,
+        forward: forward,
+      });
+    }
+    requestSetForward({
+      machine_identification_unique,
+      data: { PullerSetForward: forward },
+    })
+      .then((response) => {
+        if (!response.success) pullerStateOptimistic.resetToReal();
+      })
+      .catch(() => pullerStateOptimistic.resetToReal());
+  };
+
   // Read Path
   const { pullerState, pullerSpeed } = useWinder2Namespace(
     machine_identification_unique,
@@ -394,6 +415,7 @@ function usePuller(machine_identification_unique: MachineIdentificationUnique) {
     pullerSetTargetSpeed,
     pullerSetTargetDiameter,
     pullerSetRegulationMode,
+    pullerSetForward,
     pullerStateIsLoading:
       pullerStateOptimistic.isOptimistic ||
       !pullerStateOptimistic.isInitialized,

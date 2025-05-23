@@ -6,6 +6,7 @@ import React from "react";
 import { useWinder2 } from "./useWinder";
 import { roundToDecimals } from "@/lib/decimal";
 import { Label } from "@/control/Label";
+import { SelectionGroupBoolean } from "@/control/SelectionGroup";
 
 export function Winder2SettingPage() {
   const {
@@ -16,6 +17,10 @@ export function Winder2SettingPage() {
     traverseSetStepSize,
     traverseSetPadding,
     traverseStateIsDisabled,
+    pullerState,
+    pullerSetForward,
+    pullerStateIsDisabled,
+    pullerStateIsLoading,
   } = useWinder2();
   return (
     <Page>
@@ -74,6 +79,25 @@ export function Winder2SettingPage() {
               defaultValue={0.01}
               renderValue={(value) => roundToDecimals(value, 2)}
               onChange={(value) => traverseSetPadding(value)}
+            />
+          </Label>
+        </ControlCard>
+
+        <ControlCard title="Puller">
+          <Label label="Rotation Direction">
+            <SelectionGroupBoolean
+              value={pullerState?.data.forward}
+              disabled={pullerStateIsDisabled}
+              loading={pullerStateIsLoading}
+              optionFalse={{ 
+                children: "Reverse", 
+                icon: "lu:RotateCcw" 
+              }}
+              optionTrue={{ 
+                children: "Forward", 
+                icon: "lu:RotateCw" 
+              }}
+              onChange={(value) => pullerSetForward(value)}
             />
           </Label>
         </ControlCard>

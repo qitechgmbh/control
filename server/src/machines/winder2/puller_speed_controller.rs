@@ -14,6 +14,8 @@ pub struct PullerSpeedController {
     pub target_speed: Velocity,
     pub target_diameter: Length,
     pub regulation_mode: PullerRegulationMode,
+    /// Forward rotation direction. If false, applies negative sign to speed
+    pub forward: bool,
     /// Linear acceleration controller to dampen speed change
     acceleration_controller: LinearAccelerationController,
     /// Converter for linear to angular transformations
@@ -32,6 +34,7 @@ impl PullerSpeedController {
             target_speed,
             target_diameter,
             regulation_mode: PullerRegulationMode::Speed,
+            forward: true,
             acceleration_controller: LinearAccelerationController::new(
                 acceleration,
                 -acceleration,
@@ -57,6 +60,10 @@ impl PullerSpeedController {
         self.regulation_mode = regulation;
     }
 
+    pub fn set_forward(&mut self, forward: bool) {
+        self.forward = forward;
+    }
+
     fn get_speed(&mut self, t: Instant) -> Velocity {
         let speed = match self.enabled {
             true => match self.regulation_mode {
@@ -65,6 +72,8 @@ impl PullerSpeedController {
             },
             false => Velocity::ZERO,
         };
+
+        let speed = if self.forward { speed } else { -speed };
 
         self.acceleration_controller.update(speed, t)
     }

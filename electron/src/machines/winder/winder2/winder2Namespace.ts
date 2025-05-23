@@ -63,6 +63,7 @@ export const pullerStateEventDataSchema = z.object({
   regulation: pullerRegulationSchema,
   target_speed: z.number(),
   target_diameter: z.number(),
+  forward: z.boolean(),
 });
 
 /**
