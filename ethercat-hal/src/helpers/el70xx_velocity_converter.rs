@@ -76,18 +76,18 @@ mod tests {
         let calc = EL70x1VelocityConverter::new(&EL70x1SpeedRange::Steps4000); // 4000 steps/s
 
         // 0 sps = 0% velocity
-        assert_eq!(calc.steps_to_velocity(0, true), 0);
+        assert_eq!(calc.steps_to_velocity(0, false), 0);
         // 1000 sps = 25% velocity = 8192 (25% of 32767)
-        let v1 = calc.steps_to_velocity(1000, true);
+        let v1 = calc.steps_to_velocity(1000, false);
         assert!((v1 - 8192i16).abs() <= 1, "Expected 8192±1, got {}", v1);
         // 2000 sps = 50% velocity = 16384 (50% of 32767)
-        let v2 = calc.steps_to_velocity(2000, true);
+        let v2 = calc.steps_to_velocity(2000, false);
         assert!((v2 - 16384i16).abs() <= 1, "Expected 16384±1, got {}", v2);
         // 3000 sps = 75% velocity = 24575 (75% of 32767)
-        let v3 = calc.steps_to_velocity(3000, true);
+        let v3 = calc.steps_to_velocity(3000, false);
         assert!((v3 - 24575i16).abs() <= 1, "Expected 24575±1, got {}", v3);
         // 4000 sps = 100% velocity = 32767 (100% of 32767)
-        let v4 = calc.steps_to_velocity(4000, true);
+        let v4 = calc.steps_to_velocity(4000, false);
         assert!((v4 - 32767i16).abs() <= 1, "Expected 32767±1, got {}", v4);
     }
 
@@ -96,18 +96,18 @@ mod tests {
         let calc = EL70x1VelocityConverter::new(&EL70x1SpeedRange::Steps4000); // 4000 steps/s
 
         // 0% velocity = 0i16 = 0 sps
-        assert_eq!(calc.velocity_to_steps(0, true), 0);
+        assert_eq!(calc.velocity_to_steps(0, false), 0);
         // 25% velocity = 8192i16 = 1000 sps
-        let s1 = calc.velocity_to_steps(8192, true);
+        let s1 = calc.velocity_to_steps(8192, false);
         assert_eq!((s1 - 1000i16).abs(), 0, "Expected 1000±0, got {}", s1);
         // 50% velocity = 16384i16 = 2000 sps
-        let s2 = calc.velocity_to_steps(16384, true);
+        let s2 = calc.velocity_to_steps(16384, false);
         assert_eq!((s2 - 2000i16).abs(), 0, "Expected 2000±0, got {}", s2);
         // 75% velocity = 24575i16 = 3000 sps
-        let s3 = calc.velocity_to_steps(24575, true);
+        let s3 = calc.velocity_to_steps(24575, false);
         assert_eq!((s3 - 3000i16).abs(), 0, "Expected 3000±0, got {}", s3);
         // 100% velocity = 32767i16 = 4000 sps
-        let s4 = calc.velocity_to_steps(32767, true);
+        let s4 = calc.velocity_to_steps(32767, false);
         assert_eq!((s4 - 4000i16).abs(), 0, "Expected 4000±0, got {}", s4);
     }
 
