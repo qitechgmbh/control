@@ -44,12 +44,9 @@ impl PullerSpeedController {
             target_diameter,
             regulation_mode: PullerRegulationMode::Speed,
             forward: true,
-            acceleration_controller: LinearJerkSpeedController::new(
-                Some(-speed),
+            acceleration_controller: LinearJerkSpeedController::new_simple(
                 Some(speed),
-                -acceleration,
                 acceleration,
-                -jerk,
                 jerk,
             ),
             converter,

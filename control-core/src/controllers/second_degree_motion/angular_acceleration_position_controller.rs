@@ -7,7 +7,9 @@ use uom::si::{
     f64::{Angle, AngularAcceleration, AngularVelocity},
 };
 
-use super::acceleration_position_controller::AccelerationPositionController;
+use super::acceleration_position_controller::{
+    AccelerationPositionController, MotionControllerError,
+};
 
 /// Angular Acceleration Position Controller with proper physical units
 #[derive(Debug)]
@@ -28,13 +30,44 @@ impl AngularAccelerationPositionController {
     ) -> Self {
         Self {
             controller: AccelerationPositionController::new(
-                min_position.map(|angle| angle.get::<radian>()),
-                max_position.map(|angle| angle.get::<radian>()),
-                min_speed.get::<radian_per_second>(),
-                max_speed.get::<radian_per_second>(),
-                min_acceleration.get::<radian_per_second_squared>(),
-                max_acceleration.get::<radian_per_second_squared>(),
-            ),
+                min_speed.get::<radian_per_second>(),                // min_speed
+                max_speed.get::<radian_per_second>(),                // max_speed
+                min_acceleration.get::<radian_per_second_squared>(), // min_acceleration
+                max_acceleration.get::<radian_per_second_squared>(), // max_acceleration
+                min_position.map(|angle| angle.get::<radian>()),     // min_position
+                max_position.map(|angle| angle.get::<radian>()),     // max_position
+                1e-6,                                                // position_tolerance
+                1e-6,                                                // speed_tolerance
+            )
+            .expect("Failed to create AccelerationPositionController"),
+            last_update: None,
+        }
+    }
+
+    /// Create a new angular position controller with simple symmetric limits
+    ///
+    /// This is a convenience constructor that creates symmetric limits:
+    /// - Position limits: [-position, +position] (if position is Some)
+    /// - Speed limits: [-speed, +speed]
+    /// - Acceleration limits: [-acceleration, +acceleration]
+    /// - Default tolerances: 1e-6 for both position and speed
+    ///
+    /// # Parameters (ordered: position, speed, acceleration)
+    /// - `position`: Optional maximum position magnitude (None for no limits, Some(x) creates [-x, +x])
+    /// - `speed`: Maximum angular velocity magnitude (creates limits [-speed, +speed])
+    /// - `acceleration`: Maximum angular acceleration magnitude (creates limits [-acceleration, +acceleration])
+    pub fn new_simple(
+        position: Option<Angle>,
+        speed: AngularVelocity,
+        acceleration: AngularAcceleration,
+    ) -> Self {
+        Self {
+            controller: AccelerationPositionController::new_simple(
+                position.map(|angle| angle.get::<radian>()),
+                speed.get::<radian_per_second>(),
+                acceleration.get::<radian_per_second_squared>(),
+            )
+            .expect("Failed to create AccelerationPositionController"),
             last_update: None,
         }
     }
@@ -50,7 +83,10 @@ impl AngularAccelerationPositionController {
         self.last_update = Some(t);
 
         // Update controller with raw angle values
-        let result = self.controller.update(target_angle.get::<radian>(), dt);
+        let result = self
+            .controller
+            .update(target_angle.get::<radian>(), dt)
+            .expect("Failed to update AccelerationPositionController");
         Angle::new::<radian>(result)
     }
 
@@ -79,15 +115,21 @@ impl AngularAccelerationPositionController {
     }
 
     /// Set the minimum angle position limit
-    pub fn set_min_position(&mut self, min_position: Option<Angle>) {
+    pub fn set_min_position(
+        &mut self,
+        min_position: Option<Angle>,
+    ) -> Result<(), MotionControllerError> {
         self.controller
-            .set_min_position(min_position.map(|angle| angle.get::<radian>()));
+            .set_min_position(min_position.map(|angle| angle.get::<radian>()))
     }
 
     /// Set the maximum angle position limit
-    pub fn set_max_position(&mut self, max_position: Option<Angle>) {
+    pub fn set_max_position(
+        &mut self,
+        max_position: Option<Angle>,
+    ) -> Result<(), MotionControllerError> {
         self.controller
-            .set_max_position(max_position.map(|angle| angle.get::<radian>()));
+            .set_max_position(max_position.map(|angle| angle.get::<radian>()))
     }
 
     /// Get the current angular velocity
@@ -96,15 +138,21 @@ impl AngularAccelerationPositionController {
     }
 
     /// Set the minimum angular velocity
-    pub fn set_min_speed(&mut self, min_speed: AngularVelocity) {
+    pub fn set_min_speed(
+        &mut self,
+        min_speed: AngularVelocity,
+    ) -> Result<(), MotionControllerError> {
         self.controller
-            .set_min_speed(min_speed.get::<radian_per_second>());
+            .set_min_speed(min_speed.get::<radian_per_second>())
     }
 
     /// Set the maximum angular velocity
-    pub fn set_max_speed(&mut self, max_speed: AngularVelocity) {
+    pub fn set_max_speed(
+        &mut self,
+        max_speed: AngularVelocity,
+    ) -> Result<(), MotionControllerError> {
         self.controller
-            .set_max_speed(max_speed.get::<radian_per_second>());
+            .set_max_speed(max_speed.get::<radian_per_second>())
     }
 
     /// Get the current angular acceleration
@@ -113,31 +161,63 @@ impl AngularAccelerationPositionController {
     }
 
     /// Set the minimum angular acceleration
-    pub fn set_min_acceleration(&mut self, min_acceleration: AngularAcceleration) {
+    pub fn set_min_acceleration(
+        &mut self,
+        min_acceleration: AngularAcceleration,
+    ) -> Result<(), MotionControllerError> {
         self.controller
-            .set_min_acceleration(min_acceleration.get::<radian_per_second_squared>());
+            .set_min_acceleration(min_acceleration.get::<radian_per_second_squared>())
     }
 
     /// Set the maximum angular acceleration
-    pub fn set_max_acceleration(&mut self, max_acceleration: AngularAcceleration) {
+    pub fn set_max_acceleration(
+        &mut self,
+        max_acceleration: AngularAcceleration,
+    ) -> Result<(), MotionControllerError> {
         self.controller
-            .set_max_acceleration(max_acceleration.get::<radian_per_second_squared>());
+            .set_max_acceleration(max_acceleration.get::<radian_per_second_squared>())
     }
 
-    /// Reset the controller to a new angular position and velocity
+    /// Resets the controller to a specific angular position
     ///
-    /// This resets all internal state including:
-    /// - Current angular position to the provided value
-    /// - Current angular velocity to the provided value (optional, defaults to 0)
+    /// This method completely reinitializes the controller state, setting:
+    /// - Current angular position to the specified value
+    /// - Target angular position to the specified value (stops any ongoing motion)
+    /// - Current angular velocity to 0
     /// - Current angular acceleration to 0
-    /// - Target angular position to the current position
+    /// - Motion phase to Idle
+    /// - Clears any motion planning state and timing information
     ///
-    /// # Parameters
-    /// - `position`: The new current angular position
-    /// - `velocity`: The new current angular velocity (optional, defaults to 0)
-    pub fn reset(&mut self, position: Angle, velocity: Option<AngularVelocity>) {
-        let velocity_value = velocity.map(|v| v.get::<radian_per_second>());
-        self.controller
-            .reset(position.get::<radian>(), velocity_value);
+    /// Use this method when you need to teleport the controlled object to a new angular position
+    /// or when recovering from errors/emergency stops.
+    ///
+    /// # Arguments
+    /// * `position` - The new angular position to reset to
+    ///
+    /// # Returns
+    /// Returns `Ok(())` on success, or `Err(MotionControllerError)` if the position is outside configured limits.
+    ///
+    /// # Errors
+    /// - `InvalidPositionLimits`: If the specified position is outside the configured min/max position limits
+    ///
+    /// # Example
+    /// ```rust
+    /// use control_core::controllers::second_degree_motion::angular_acceleration_position_controller::AngularAccelerationPositionController;
+    /// use uom::si::f64::Angle;
+    /// use uom::si::angle::degree;
+    ///
+    /// let mut controller = AngularAccelerationPositionController::new_simple(
+    ///     Some(Angle::new::<degree>(180.0)),
+    ///     // ... other parameters
+    /// )?;
+    ///
+    /// // Reset to 45 degrees
+    /// let new_position = Angle::new::<degree>(45.0);
+    /// controller.reset(new_position)?;
+    /// ```
+    pub fn reset(&mut self, position: Angle) -> Result<(), MotionControllerError> {
+        self.controller.reset(position.get::<radian>())?;
+        self.last_update = None;
+        Ok(())
     }
 }
