@@ -5,6 +5,7 @@ use control_core::{
     converters::linear_step_converter::LinearStepConverter,
     uom_extensions::{
         acceleration::meter_per_minute_per_second, jerk::meter_per_minute_per_second_squared,
+        velocity::meter_per_minute,
     },
 };
 use serde::{Deserialize, Serialize};
@@ -33,8 +34,9 @@ impl PullerSpeedController {
         target_diameter: Length,
         converter: LinearStepConverter,
     ) -> Self {
-        let acceleration = Acceleration::new::<meter_per_minute_per_second>(60.0);
-        let jerk = Jerk::new::<meter_per_minute_per_second_squared>(60.0);
+        let acceleration = Acceleration::new::<meter_per_minute_per_second>(100.0);
+        let jerk = Jerk::new::<meter_per_minute_per_second_squared>(100.0);
+        let speed = Velocity::new::<meter_per_minute>(75.0);
 
         Self {
             enabled: false,
@@ -43,10 +45,12 @@ impl PullerSpeedController {
             regulation_mode: PullerRegulationMode::Speed,
             forward: true,
             acceleration_controller: LinearJerkSpeedController::new(
-                acceleration,
+                Some(-speed),
+                Some(speed),
                 -acceleration,
-                jerk,
+                acceleration,
                 -jerk,
+                jerk,
             ),
             converter,
         }

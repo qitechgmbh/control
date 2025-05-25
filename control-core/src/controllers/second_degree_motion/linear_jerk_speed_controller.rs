@@ -19,17 +19,21 @@ pub struct LinearJerkSpeedController {
 impl LinearJerkSpeedController {
     /// Create a new linear speed controller with jerk limits
     pub fn new(
-        max_acceleration: Acceleration,
+        min_speed: Option<Velocity>,
+        max_speed: Option<Velocity>,
         min_acceleration: Acceleration,
-        max_jerk: Jerk,
+        max_acceleration: Acceleration,
         min_jerk: Jerk,
+        max_jerk: Jerk,
     ) -> Self {
         Self {
             controller: JerkSpeedController::new(
-                max_acceleration.get::<meter_per_second_squared>(),
+                min_speed.map(|speed| speed.get::<meter_per_second>()),
+                max_speed.map(|speed| speed.get::<meter_per_second>()),
                 min_acceleration.get::<meter_per_second_squared>(),
-                max_jerk.get::<meter_per_second_cubed>(),
+                max_acceleration.get::<meter_per_second_squared>(),
                 min_jerk.get::<meter_per_second_cubed>(),
+                max_jerk.get::<meter_per_second_cubed>(),
             ),
             last_update: None,
         }
@@ -56,25 +60,40 @@ impl LinearJerkSpeedController {
         Velocity::new::<meter_per_second>(self.controller.get_speed())
     }
 
-    /// Get the current acceleration
-    pub fn get_acceleration(&self) -> Acceleration {
-        Acceleration::new::<meter_per_second_squared>(self.controller.get_acceleration())
-    }
-
-    /// Get the current jerk
-    pub fn get_jerk(&self) -> Jerk {
-        Jerk::new::<meter_per_second_cubed>(self.controller.get_jerk())
-    }
-
     /// Get the target speed
     pub fn get_target_speed(&self) -> Velocity {
         Velocity::new::<meter_per_second>(self.controller.get_target_speed())
     }
 
-    /// Set the maximum acceleration
-    pub fn set_max_acceleration(&mut self, max_acceleration: Acceleration) {
+    /// Get the minimum velocity limit
+    pub fn get_min_speed(&self) -> Option<Velocity> {
         self.controller
-            .set_max_acceleration(max_acceleration.get::<meter_per_second_squared>());
+            .get_min_speed()
+            .map(|speed| Velocity::new::<meter_per_second>(speed))
+    }
+
+    /// Get the maximum velocity limit
+    pub fn get_max_speed(&self) -> Option<Velocity> {
+        self.controller
+            .get_max_speed()
+            .map(|speed| Velocity::new::<meter_per_second>(speed))
+    }
+
+    /// Set the minimum velocity limit
+    pub fn set_min_speed(&mut self, min_speed: Option<Velocity>) {
+        self.controller
+            .set_min_speed(min_speed.map(|speed| speed.get::<meter_per_second>()));
+    }
+
+    /// Set the maximum velocity limit
+    pub fn set_max_speed(&mut self, max_speed: Option<Velocity>) {
+        self.controller
+            .set_max_speed(max_speed.map(|speed| speed.get::<meter_per_second>()));
+    }
+
+    /// Get the current acceleration
+    pub fn get_acceleration(&self) -> Acceleration {
+        Acceleration::new::<meter_per_second_squared>(self.controller.get_acceleration())
     }
 
     /// Set the minimum acceleration
@@ -83,15 +102,44 @@ impl LinearJerkSpeedController {
             .set_min_acceleration(min_acceleration.get::<meter_per_second_squared>());
     }
 
-    /// Set the maximum jerk
-    pub fn set_max_jerk(&mut self, max_jerk: Jerk) {
+    /// Set the maximum acceleration
+    pub fn set_max_acceleration(&mut self, max_acceleration: Acceleration) {
         self.controller
-            .set_max_jerk(max_jerk.get::<meter_per_second_cubed>());
+            .set_max_acceleration(max_acceleration.get::<meter_per_second_squared>());
+    }
+
+    /// Get the current jerk
+    pub fn get_jerk(&self) -> Jerk {
+        Jerk::new::<meter_per_second_cubed>(self.controller.get_jerk())
     }
 
     /// Set the minimum jerk
     pub fn set_min_jerk(&mut self, min_jerk: Jerk) {
         self.controller
             .set_min_jerk(min_jerk.get::<meter_per_second_cubed>());
+    }
+
+    /// Set the maximum jerk
+    pub fn set_max_jerk(&mut self, max_jerk: Jerk) {
+        self.controller
+            .set_max_jerk(max_jerk.get::<meter_per_second_cubed>());
+    }
+
+    /// Reset the controller to a new velocity and acceleration
+    ///
+    /// This resets all internal state including:
+    /// - Current velocity to the provided value
+    /// - Current acceleration to the provided value (optional, defaults to 0)
+    /// - Current jerk to 0
+    /// - Target velocity to the current velocity
+    ///
+    /// # Parameters
+    /// - `velocity`: The new current velocity
+    /// - `acceleration`: The new current acceleration (optional, defaults to 0)
+    pub fn reset(&mut self, velocity: Velocity, acceleration: Option<Acceleration>) {
+        let acceleration_value = acceleration.map(|a| a.get::<meter_per_second_squared>());
+        self.controller
+            .reset(velocity.get::<meter_per_second>(), acceleration_value);
+        self.last_update = None;
     }
 }

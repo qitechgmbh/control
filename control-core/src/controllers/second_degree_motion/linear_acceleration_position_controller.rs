@@ -19,17 +19,21 @@ pub struct LinearAccelerationPositionController {
 impl LinearAccelerationPositionController {
     /// Create a new linear position controller with acceleration limits
     pub fn new(
-        max_speed: Velocity,
+        min_position: Option<Length>,
+        max_position: Option<Length>,
         min_speed: Velocity,
-        max_acceleration: Acceleration,
+        max_speed: Velocity,
         min_acceleration: Acceleration,
+        max_acceleration: Acceleration,
     ) -> Self {
         Self {
             controller: AccelerationPositionController::new(
-                max_speed.get::<meter_per_second>(),
+                min_position.map(|length| length.get::<meter>()),
+                max_position.map(|length| length.get::<meter>()),
                 min_speed.get::<meter_per_second>(),
-                max_acceleration.get::<meter_per_second_squared>(),
+                max_speed.get::<meter_per_second>(),
                 min_acceleration.get::<meter_per_second_squared>(),
+                max_acceleration.get::<meter_per_second_squared>(),
             ),
             last_update: None,
         }
@@ -56,25 +60,36 @@ impl LinearAccelerationPositionController {
         Length::new::<meter>(self.controller.get_position())
     }
 
-    /// Get the current speed
-    pub fn get_speed(&self) -> Velocity {
-        Velocity::new::<meter_per_second>(self.controller.get_speed())
-    }
-
-    /// Get the current acceleration
-    pub fn get_acceleration(&self) -> Acceleration {
-        Acceleration::new::<meter_per_second_squared>(self.controller.get_acceleration())
-    }
-
     /// Get the target position
     pub fn get_target_position(&self) -> Length {
         Length::new::<meter>(self.controller.get_target_position())
     }
 
-    /// Set the maximum speed
-    pub fn set_max_speed(&mut self, max_speed: Velocity) {
+    /// Get the minimum position limit
+    pub fn get_min_position(&self) -> Option<Length> {
+        self.controller.get_min_position().map(|length| Length::new::<meter>(length))
+    }
+
+    /// Get the maximum position limit
+    pub fn get_max_position(&self) -> Option<Length> {
+        self.controller.get_max_position().map(|length| Length::new::<meter>(length))
+    }
+
+    /// Set the minimum position limit
+    pub fn set_min_position(&mut self, min_position: Option<Length>) {
         self.controller
-            .set_max_speed(max_speed.get::<meter_per_second>());
+            .set_min_position(min_position.map(|length| length.get::<meter>()));
+    }
+
+    /// Set the maximum position limit
+    pub fn set_max_position(&mut self, max_position: Option<Length>) {
+        self.controller
+            .set_max_position(max_position.map(|length| length.get::<meter>()));
+    }
+
+    /// Get the current speed
+    pub fn get_speed(&self) -> Velocity {
+        Velocity::new::<meter_per_second>(self.controller.get_speed())
     }
 
     /// Set the minimum speed
@@ -83,15 +98,42 @@ impl LinearAccelerationPositionController {
             .set_min_speed(min_speed.get::<meter_per_second>());
     }
 
-    /// Set the maximum acceleration
-    pub fn set_max_acceleration(&mut self, max_acceleration: Acceleration) {
+    /// Set the maximum speed
+    pub fn set_max_speed(&mut self, max_speed: Velocity) {
         self.controller
-            .set_max_acceleration(max_acceleration.get::<meter_per_second_squared>());
+            .set_max_speed(max_speed.get::<meter_per_second>());
+    }
+
+    /// Get the current acceleration
+    pub fn get_acceleration(&self) -> Acceleration {
+        Acceleration::new::<meter_per_second_squared>(self.controller.get_acceleration())
     }
 
     /// Set the minimum acceleration
     pub fn set_min_acceleration(&mut self, min_acceleration: Acceleration) {
         self.controller
             .set_min_acceleration(min_acceleration.get::<meter_per_second_squared>());
+    }
+
+    /// Set the maximum acceleration
+    pub fn set_max_acceleration(&mut self, max_acceleration: Acceleration) {
+        self.controller
+            .set_max_acceleration(max_acceleration.get::<meter_per_second_squared>());
+    }
+
+    /// Reset the controller to a new position and velocity
+    ///
+    /// This resets all internal state including:
+    /// - Current position to the provided value
+    /// - Current velocity to the provided value (optional, defaults to 0)
+    /// - Current acceleration to 0
+    /// - Target position to the current position
+    ///
+    /// # Parameters
+    /// - `position`: The new current position
+    /// - `velocity`: The new current velocity (optional, defaults to 0)
+    pub fn reset(&mut self, position: Length, velocity: Option<Velocity>) {
+        let velocity_value = velocity.map(|v| v.get::<meter_per_second>());
+        self.controller.reset(position.get::<meter>(), velocity_value);
     }
 }

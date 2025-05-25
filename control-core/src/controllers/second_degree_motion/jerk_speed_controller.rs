@@ -15,18 +15,29 @@ pub struct JerkSpeedController {
 impl JerkSpeedController {
     /// Create a new speed controller with the given constraints
     ///
-    /// Parameters:
-    /// - max_acceleration: Maximum acceleration (positive value)
-    /// - min_acceleration: Minimum acceleration (negative value)
-    /// - max_jerk: Maximum jerk for increasing acceleration (positive value)
-    /// - min_jerk: Minimum jerk for decreasing acceleration (negative value)
-    pub fn new(max_acceleration: f64, min_acceleration: f64, max_jerk: f64, min_jerk: f64) -> Self {
+    /// # Parameters (ordered: speed, acceleration, jerk)
+    /// - `min_speed`: Optional minimum allowed speed (None for no limit)
+    /// - `max_speed`: Optional maximum allowed speed (None for no limit)
+    /// - `min_acceleration`: Minimum acceleration (negative value)
+    /// - `max_acceleration`: Maximum acceleration (positive value)
+    /// - `min_jerk`: Minimum jerk for decreasing acceleration (negative value)
+    /// - `max_jerk`: Maximum jerk for increasing acceleration (positive value)
+    pub fn new(
+        min_speed: Option<f64>,
+        max_speed: Option<f64>,
+        min_acceleration: f64,
+        max_acceleration: f64,
+        min_jerk: f64,
+        max_jerk: f64,
+    ) -> Self {
         // Create the base controller with renamed parameters
         let base_controller = AccelerationPositionController::new(
-            max_acceleration, // max_speed in the base controller
+            min_speed,        // min_position in the base controller
+            max_speed,        // max_position in the base controller
             min_acceleration, // min_speed in the base controller
-            max_jerk,         // max_acceleration in the base controller
+            max_acceleration, // max_speed in the base controller
             min_jerk,         // min_acceleration in the base controller
+            max_jerk,         // max_acceleration in the base controller
         );
 
         JerkSpeedController { base_controller }
@@ -65,9 +76,24 @@ impl JerkSpeedController {
         self.base_controller.get_target_position()
     }
 
-    /// Set the max acceleration
-    pub fn set_max_acceleration(&mut self, max_acceleration: f64) {
-        self.base_controller.set_max_speed(max_acceleration);
+    /// Get the minimum speed limit
+    pub fn get_min_speed(&self) -> Option<f64> {
+        self.base_controller.get_min_position()
+    }
+
+    /// Get the maximum speed limit
+    pub fn get_max_speed(&self) -> Option<f64> {
+        self.base_controller.get_max_position()
+    }
+
+    /// Set the minimum speed limit
+    pub fn set_min_speed(&mut self, min_speed: Option<f64>) {
+        self.base_controller.set_min_position(min_speed);
+    }
+
+    /// Set the maximum speed limit
+    pub fn set_max_speed(&mut self, max_speed: Option<f64>) {
+        self.base_controller.set_max_position(max_speed);
     }
 
     /// Set the min acceleration
@@ -75,13 +101,35 @@ impl JerkSpeedController {
         self.base_controller.set_min_speed(min_acceleration);
     }
 
-    /// Set the max jerk
-    pub fn set_max_jerk(&mut self, max_jerk: f64) {
-        self.base_controller.set_max_acceleration(max_jerk);
+    /// Set the max acceleration
+    pub fn set_max_acceleration(&mut self, max_acceleration: f64) {
+        self.base_controller.set_max_speed(max_acceleration);
     }
 
     /// Set the min jerk
     pub fn set_min_jerk(&mut self, min_jerk: f64) {
         self.base_controller.set_min_acceleration(min_jerk);
+    }
+
+    /// Set the max jerk
+    pub fn set_max_jerk(&mut self, max_jerk: f64) {
+        self.base_controller.set_max_acceleration(max_jerk);
+    }
+
+    /// Reset the controller to a new speed and acceleration
+    ///
+    /// This resets all internal state including:
+    /// - Current speed to the provided value
+    /// - Current acceleration to the provided value (optional, defaults to 0.0)
+    /// - Current jerk to 0
+    /// - Target speed to the current speed
+    ///
+    /// # Parameters
+    /// - `speed`: The new current speed
+    /// - `acceleration`: The new current acceleration (optional, defaults to 0.0)
+    pub fn reset(&mut self, speed: f64, acceleration: Option<f64>) {
+        let acceleration = acceleration.unwrap_or(0.0);
+        // Reset using the base controller with mapped parameters
+        self.base_controller.reset(speed, Some(acceleration));
     }
 }

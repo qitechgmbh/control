@@ -32,8 +32,8 @@ if (!gotTheLock) {
 function createWindow() {
   const preload = path.join(__dirname, "preload.js");
   const mainWindow = new BrowserWindow({
-    width: 800,
-    height: 600,
+    width: 1200,
+    height: 800,
     autoHideMenuBar: true,
     fullscreenable: true,
     webPreferences: {
