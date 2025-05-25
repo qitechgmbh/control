@@ -102,12 +102,10 @@ export function Winder2ControlPage() {
                 icon="lu:ArrowLeftToLine"
                 onClick={traverseGotoLimitOuter}
                 disabled={
-                  traverseStateIsDisabled || 
-                  !traverseState?.data.can_go_out
+                  traverseStateIsDisabled || !traverseState?.data.can_go_out
                 }
                 isLoading={
-                  traverseStateIsLoading || 
-                  traverseState?.data.is_going_out
+                  traverseStateIsLoading || traverseState?.data.is_going_out
                 }
               >
                 Go to Outer Limit
@@ -132,12 +130,10 @@ export function Winder2ControlPage() {
                 icon="lu:ArrowRightToLine"
                 onClick={traverseGotoLimitInner}
                 disabled={
-                  traverseStateIsDisabled || 
-                  !traverseState?.data.can_go_in
+                  traverseStateIsDisabled || !traverseState?.data.can_go_in
                 }
                 isLoading={
-                  traverseStateIsLoading || 
-                  traverseState?.data.is_going_in
+                  traverseStateIsLoading || traverseState?.data.is_going_in
                 }
               >
                 Go to Inner Limit
@@ -160,8 +156,7 @@ export function Winder2ControlPage() {
               icon="lu:House"
               onClick={() => traverseGotoHome()}
               disabled={
-                traverseStateIsDisabled ||
-                !traverseState?.data.can_go_home
+                traverseStateIsDisabled || !traverseState?.data.can_go_home
               }
               isLoading={
                 traverseStateIsLoading || traverseState?.data.is_going_home
@@ -263,7 +258,7 @@ export function Winder2ControlPage() {
               title="Target Speed"
               defaultValue={1}
               min={0}
-              max={100}
+              max={75}
               step={0.1}
               renderValue={(value) => roundToDecimals(value, 0)}
               onChange={pullerSetTargetSpeed}

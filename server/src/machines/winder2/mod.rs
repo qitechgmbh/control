@@ -254,7 +254,7 @@ impl Winder2 {
                 }
                 SpoolMode::Wind => {
                     self.spool.set_enabled(true);
-                    self.spool_speed_controller.reset();
+                    // self.spool_speed_controller.reset();
                     self.spool_speed_controller.set_enabled(true);
                 }
             },
@@ -266,7 +266,7 @@ impl Winder2 {
                 SpoolMode::Hold => {}
                 SpoolMode::Wind => {
                     // From [`SpoolMode::Hold`] to [`SpoolMode::Wind`]
-                    self.spool_speed_controller.reset();
+                    // self.spool_speed_controller.reset();
                     self.spool_speed_controller.set_enabled(true);
                 }
             },
@@ -461,13 +461,13 @@ impl Winder2 {
 
     pub fn spool_set_speed_max(&mut self, max_speed: f64) {
         let max_speed = AngularVelocity::new::<revolution_per_minute>(max_speed);
-        self.spool_speed_controller.set_max_speed(max_speed);
+        let _ = self.spool_speed_controller.set_max_speed(max_speed);
         self.emit_spool_state();
     }
 
     pub fn spool_set_speed_min(&mut self, min_speed: f64) {
         let min_speed = AngularVelocity::new::<revolution_per_minute>(min_speed);
-        self.spool_speed_controller.set_min_speed(min_speed);
+        let _ = self.spool_speed_controller.set_min_speed(min_speed);
         self.emit_spool_state();
     }
 

@@ -1,11 +1,17 @@
 use std::time::Instant;
 
-use control_core::controllers::linear_acceleration::LinearAccelerationController;
-use control_core::converters::linear_step_converter::LinearStepConverter;
+use control_core::{
+    controllers::second_degree_motion::linear_jerk_speed_controller::LinearJerkSpeedController,
+    converters::linear_step_converter::LinearStepConverter,
+    uom_extensions::{
+        acceleration::meter_per_minute_per_second, jerk::meter_per_minute_per_second_squared,
+        velocity::meter_per_minute,
+    },
+};
 use serde::{Deserialize, Serialize};
 use uom::{
     ConstZero,
-    si::f64::{Acceleration, AngularVelocity, Length, Velocity},
+    si::f64::{Acceleration, AngularVelocity, Jerk, Length, Velocity},
 };
 
 #[derive(Debug)]
@@ -17,28 +23,31 @@ pub struct PullerSpeedController {
     /// Forward rotation direction. If false, applies negative sign to speed
     pub forward: bool,
     /// Linear acceleration controller to dampen speed change
-    acceleration_controller: LinearAccelerationController,
+    acceleration_controller: LinearJerkSpeedController,
     /// Converter for linear to angular transformations
     pub converter: LinearStepConverter,
 }
 
 impl PullerSpeedController {
     pub fn new(
-        acceleration: Acceleration,
         target_speed: Velocity,
         target_diameter: Length,
         converter: LinearStepConverter,
     ) -> Self {
+        let acceleration = Acceleration::new::<meter_per_minute_per_second>(100.0);
+        let jerk = Jerk::new::<meter_per_minute_per_second_squared>(100.0);
+        let speed = Velocity::new::<meter_per_minute>(75.0);
+
         Self {
             enabled: false,
             target_speed,
             target_diameter,
             regulation_mode: PullerRegulationMode::Speed,
             forward: true,
-            acceleration_controller: LinearAccelerationController::new(
+            acceleration_controller: LinearJerkSpeedController::new_simple(
+                Some(speed),
                 acceleration,
-                -acceleration,
-                Velocity::ZERO,
+                jerk,
             ),
             converter,
         }

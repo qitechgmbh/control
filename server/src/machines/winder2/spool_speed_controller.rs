@@ -3,9 +3,15 @@ use super::{
     tension_arm::TensionArm,
 };
 use control_core::{
-    controllers::linear_acceleration::LinearAngularAccelerationController,
+    controllers::second_degree_motion::{
+        acceleration_position_controller::MotionControllerError,
+        angular_jerk_speed_controller::AngularJerkSpeedController,
+    },
     helpers::interpolation::{interpolate_exponential, scale},
-    uom_extensions::angular_acceleration::revolution_per_minute_per_second,
+    uom_extensions::{
+        angular_acceleration::revolution_per_minute_per_second,
+        angular_jerk::revolution_per_minute_per_second_squared,
+    },
 };
 use std::time::Instant;
 use uom::{
@@ -13,7 +19,7 @@ use uom::{
     si::{
         angle::{degree, revolution},
         angular_velocity::{radian_per_second, revolution_per_minute},
-        f64::{Angle, AngularAcceleration, AngularVelocity},
+        f64::{Angle, AngularAcceleration, AngularJerk, AngularVelocity},
     },
 };
 
@@ -21,43 +27,51 @@ use uom::{
 pub struct SpoolSpeedController {
     /// Current speed in
     speed: AngularVelocity,
-    /// Minimum speed in
-    min_speed: AngularVelocity,
-    /// Maximum speed in
-    max_speed: AngularVelocity,
     /// Whether the speed controller is enabled or not
     enabled: bool,
     /// Linear acceleration controller to dampen speed change
-    acceleration_controller: LinearAngularAccelerationController,
+    acceleration_controller: AngularJerkSpeedController,
 }
 
 impl SpoolSpeedController {
     /// Parameters:
-    /// - `min_speed`: Minimum
-    /// - `max_speed`: Maximum
+    /// - `min_speed`: Minimum speed
+    /// - `max_speed`: Maximum speed  
     /// - `acceleration`: Acceleration
     /// - `deceleration`: Deceleration (preferably negative)
-    pub fn new(
-        min_speed: AngularVelocity,
-        max_speed: AngularVelocity,
-        acceleration: AngularAcceleration,
-        deceleration: AngularAcceleration,
-    ) -> Self {
+    pub fn new() -> Self {
+        let max_speed = AngularVelocity::new::<revolution_per_minute>(600.0);
+        let max_angular_acceleration =
+            AngularAcceleration::new::<revolution_per_minute_per_second>(600.0);
+        let max_jerk = AngularJerk::new::<revolution_per_minute_per_second_squared>(600.0);
+
         Self {
-            min_speed,
-            max_speed,
             speed: AngularVelocity::ZERO,
             enabled: false,
-            acceleration_controller: LinearAngularAccelerationController::new(
-                acceleration,
-                deceleration,
-                AngularVelocity::ZERO,
+            acceleration_controller: AngularJerkSpeedController::new_simple(
+                Some(max_speed),
+                max_angular_acceleration,
+                max_jerk,
             ),
         }
     }
 }
 
 impl SpoolSpeedController {
+    /// Helper method to get min speed without Option type
+    fn min_speed(&self) -> AngularVelocity {
+        self.acceleration_controller
+            .get_min_speed()
+            .unwrap_or(AngularVelocity::ZERO)
+    }
+
+    /// Helper method to get max speed without Option type  
+    fn max_speed(&self) -> AngularVelocity {
+        self.acceleration_controller
+            .get_max_speed()
+            .unwrap_or(AngularVelocity::new::<radian_per_second>(f64::INFINITY))
+    }
+
     /// Calculates the desired speed based on the tension arm angle.
     ///
     /// If the arm is over it's maximum angle, the speed is set to the minimum speed.
@@ -71,8 +85,8 @@ impl SpoolSpeedController {
     /// Returns:
     /// - speed
     fn speed_raw(&mut self, _t: Instant, tension_arm: &TensionArm) -> AngularVelocity {
-        let min_speed = self.min_speed * 0.0;
-        let max_speed = self.max_speed * 1.0;
+        let min_speed = self.min_speed() * 0.0;
+        let max_speed = self.max_speed() * 1.0;
 
         // calculate filament tension
         let tension_arm_min_degree: f64 = Angle::new::<degree>(20.0).get::<revolution>();
@@ -121,7 +135,8 @@ impl SpoolSpeedController {
     /// Returns:
     /// - The new speed after applying acceleration.
     fn accelerate_speed(&mut self, speed: AngularVelocity, t: Instant) -> AngularVelocity {
-        self.acceleration_controller.update(speed, t)
+        let new_speed = self.acceleration_controller.update(speed, t);
+        return new_speed;
     }
 
     /// Clamps the speed to the defined minimum and maximum speed.
@@ -132,10 +147,13 @@ impl SpoolSpeedController {
     /// Returns:
     /// - The clamped speed, ensuring it is within the range of `min_speed` and `max_speed`.
     fn clamp_speed(&mut self, speed: AngularVelocity) -> AngularVelocity {
-        if speed < self.min_speed {
+        let min_speed = self.min_speed();
+        let max_speed = self.max_speed();
+
+        if speed < min_speed {
             return AngularVelocity::ZERO;
-        } else if speed > self.max_speed {
-            return self.max_speed;
+        } else if speed > max_speed {
+            return max_speed;
         } else {
             return speed;
         }
@@ -167,36 +185,51 @@ impl SpoolSpeedController {
 
     pub fn reset(&mut self) {
         self.speed = AngularVelocity::ZERO;
-        self.acceleration_controller.reset(AngularVelocity::ZERO);
+        let _ = self.acceleration_controller.reset(AngularVelocity::ZERO);
     }
 
-    fn update_acceleration(&mut self) {
-        // Set acceleration to 1/10 of the range between min and max speed
-        // The spool will accelerate from min to max speed in 10 seconds
-        let range = self.max_speed - self.min_speed;
+    fn update_acceleration(&mut self) -> Result<(), MotionControllerError> {
+        // Set acceleration to 1/4 of the range between min and max speed
+        // The spool will accelerate from min to max speed in 4 seconds
+        let min_speed = self.min_speed();
+        let max_speed = self.max_speed();
+        let range = max_speed - min_speed;
         let acceleration = AngularAcceleration::new::<revolution_per_minute_per_second>(
-            range.get::<revolution_per_minute>() / 3.0,
+            range.get::<revolution_per_minute>() / 4.0,
         );
-        self.acceleration_controller.set_acceleration(acceleration);
-        self.acceleration_controller.set_deceleration(-acceleration);
+        self.acceleration_controller
+            .set_max_acceleration(acceleration)?;
+        self.acceleration_controller
+            .set_min_acceleration(-acceleration)?;
+        Ok(())
     }
 
-    pub fn set_max_speed(&mut self, max_speed: AngularVelocity) {
-        self.max_speed = max_speed;
-        self.update_acceleration();
+    pub fn set_max_speed(
+        &mut self,
+        max_speed: AngularVelocity,
+    ) -> Result<(), MotionControllerError> {
+        self.acceleration_controller
+            .set_max_speed(Some(max_speed))?;
+        self.update_acceleration()?;
+        Ok(())
     }
 
-    pub fn set_min_speed(&mut self, min_speed: AngularVelocity) {
-        self.min_speed = min_speed;
-        self.update_acceleration();
+    pub fn set_min_speed(
+        &mut self,
+        min_speed: AngularVelocity,
+    ) -> Result<(), MotionControllerError> {
+        self.acceleration_controller
+            .set_min_speed(Some(min_speed))?;
+        self.update_acceleration()?;
+        Ok(())
     }
 
     pub fn get_max_speed(&self) -> AngularVelocity {
-        self.max_speed
+        self.max_speed()
     }
 
     pub fn get_min_speed(&self) -> AngularVelocity {
-        self.min_speed
+        self.min_speed()
     }
 
     pub fn get_speed(&self) -> AngularVelocity {
