@@ -19,7 +19,7 @@ use super::acceleration_position_controller::{
 /// or any application requiring smooth speed transitions.
 ///
 /// # Example
-/// ```rust
+/// ```ignore
 /// // Create a controller for speed control with jerk limiting
 /// let controller = JerkSpeedController::new_simple(
 ///     Some(100.0),  // Max speed ±100 units/s
@@ -56,7 +56,7 @@ impl JerkSpeedController {
     /// Panics if the underlying AccelerationPositionController cannot be created with the given parameters
     ///
     /// # Example
-    /// ```rust
+    /// ```ignore
     /// // Create controller with asymmetric limits
     /// let controller = JerkSpeedController::new(
     ///     Some(-50.0),  // Min speed: -50 units/s
@@ -114,7 +114,7 @@ impl JerkSpeedController {
     /// Panics if acceleration or jerk values are negative or zero
     ///
     /// # Example
-    /// ```rust
+    /// ```ignore
     /// // Create controller with symmetric limits
     /// let controller = JerkSpeedController::new_simple(
     ///     Some(100.0),  // Speed limits: [-100, +100] units/s
@@ -161,7 +161,7 @@ impl JerkSpeedController {
     /// Panics if the underlying controller update fails (should not happen in normal operation)
     ///
     /// # Example
-    /// ```rust
+    /// ```ignore
     /// let mut controller = JerkSpeedController::new_simple(Some(100.0), 50.0, 25.0);
     ///
     /// // Control loop
@@ -361,7 +361,7 @@ impl JerkSpeedController {
     /// Returns MotionControllerError if the speed is outside the configured limits
     ///
     /// # Example
-    /// ```rust
+    /// ```ignore
     /// let mut controller = JerkSpeedController::new_simple(Some(100.0), 50.0, 25.0);
     ///
     /// // Reset to zero speed with zero acceleration

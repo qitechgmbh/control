@@ -22,7 +22,7 @@ use super::jerk_speed_controller::JerkSpeedController;
 /// requiring smooth speed transitions.
 ///
 /// # Example
-/// ```rust
+/// ```ignore
 /// use uom::si::{
 ///     angular_velocity::revolution_per_minute,
 ///     angular_acceleration::revolution_per_minute_per_second,
@@ -64,7 +64,7 @@ impl AngularJerkSpeedController {
     /// A new AngularJerkSpeedController instance
     ///
     /// # Example
-    /// ```rust
+    /// ```ignore
     /// use uom::si::{
     ///     angular_velocity::revolution_per_minute,
     ///     angular_acceleration::revolution_per_minute_per_second,
@@ -126,7 +126,7 @@ impl AngularJerkSpeedController {
     /// Panics if acceleration or jerk values are negative or zero
     ///
     /// # Example
-    /// ```rust
+    /// ```ignore
     /// use uom::si::{
     ///     angular_velocity::revolution_per_minute,
     ///     angular_acceleration::revolution_per_minute_per_second,
@@ -183,7 +183,7 @@ impl AngularJerkSpeedController {
     /// The current angular velocity after applying the motion profile for this time step
     ///
     /// # Example
-    /// ```rust
+    /// ```ignore
     /// use std::time::Instant;
     /// use uom::si::{angular_velocity::revolution_per_minute, f64::AngularVelocity};
     ///

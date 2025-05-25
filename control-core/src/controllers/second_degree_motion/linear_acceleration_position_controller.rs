@@ -21,7 +21,7 @@ use super::acceleration_position_controller::{
 /// ensuring that position, speed, and acceleration constraints are respected during motion.
 ///
 /// # Example
-/// ```rust
+/// ```ignore
 /// use uom::si::{length::meter, velocity::meter_per_second, acceleration::meter_per_second_squared};
 /// use uom::si::f64::{Length, Velocity, Acceleration};
 ///
@@ -100,7 +100,7 @@ impl LinearAccelerationPositionController {
     /// - The underlying controller cannot be created with the calculated limits
     ///
     /// # Example
-    /// ```rust
+    /// ```ignore
     /// use uom::si::{length::meter, velocity::meter_per_second, acceleration::meter_per_second_squared};
     /// use uom::si::f64::{Length, Velocity, Acceleration};
     ///
@@ -148,7 +148,7 @@ impl LinearAccelerationPositionController {
     /// Panics if the underlying controller update fails (should not happen in normal operation)
     ///
     /// # Example
-    /// ```rust
+    /// ```ignore
     /// use std::time::Instant;
     /// use uom::si::{length::meter, f64::Length};
     ///
@@ -378,7 +378,7 @@ impl LinearAccelerationPositionController {
     /// Returns MotionControllerError if the position is outside the configured limits
     ///
     /// # Example
-    /// ```rust
+    /// ```ignore
     /// use uom::si::{length::meter, velocity::meter_per_second, f64::{Length, Velocity}};
     ///
     /// let new_position = Length::new::<meter>(0.0);

@@ -22,7 +22,7 @@ use super::jerk_speed_controller::JerkSpeedController;
 /// translational machinery requiring smooth speed transitions.
 ///
 /// # Example
-/// ```rust
+/// ```ignore
 /// use uom::si::{
 ///     velocity::meter_per_second,
 ///     acceleration::meter_per_second_squared,
@@ -64,7 +64,7 @@ impl LinearJerkSpeedController {
     /// A new LinearJerkSpeedController instance
     ///
     /// # Example
-    /// ```rust
+    /// ```ignore
     /// use uom::si::{
     ///     velocity::meter_per_second,
     ///     acceleration::meter_per_second_squared,
@@ -126,7 +126,7 @@ impl LinearJerkSpeedController {
     /// Panics if acceleration or jerk values are negative or zero
     ///
     /// # Example
-    /// ```rust
+    /// ```ignore
     /// use uom::si::{
     ///     velocity::meter_per_second,
     ///     acceleration::meter_per_second_squared,

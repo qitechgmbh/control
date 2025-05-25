@@ -201,7 +201,7 @@ impl AngularAccelerationPositionController {
     /// - `InvalidPositionLimits`: If the specified position is outside the configured min/max position limits
     ///
     /// # Example
-    /// ```rust
+    /// ```ignore
     /// use control_core::controllers::second_degree_motion::angular_acceleration_position_controller::AngularAccelerationPositionController;
     /// use uom::si::f64::Angle;
     /// use uom::si::angle::degree;

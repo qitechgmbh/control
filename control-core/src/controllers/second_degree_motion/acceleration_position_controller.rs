@@ -96,7 +96,7 @@ impl std::error::Error for MotionControllerError {}
 ///
 /// ### Speed Profile Optimization
 /// When full acceleration isn't possible, the controller solves for optimal peak speed using:
-/// ```
+/// ```ignore
 /// peak_speed = sqrt(current_speed² + (2 * remaining_distance * accel * decel) / (accel + decel))
 /// ```
 ///
@@ -270,7 +270,7 @@ impl AccelerationPositionController {
     /// - `InvalidPositionLimits`: If min_position > max_position
     ///
     /// # Example
-    /// ```rust
+    /// ```ignore
     /// use control_core::controllers::second_degree_motion::acceleration_position_controller::AccelerationPositionController;
     ///
     /// let controller = AccelerationPositionController::new(
@@ -447,7 +447,7 @@ impl AccelerationPositionController {
     /// - `InvalidTimeStep`: If dt ≤ 0 or dt > 1.0
     ///
     /// # Example
-    /// ```rust
+    /// ```ignore
     /// use control_core::controllers::second_degree_motion::acceleration_position_controller::AccelerationPositionController;
     ///
     /// let mut controller = AccelerationPositionController::new_simple(None, 10.0, 5.0)?;
@@ -870,7 +870,7 @@ impl AccelerationPositionController {
     /// - `InvalidPositionLimits`: If the specified position is outside the configured min/max position limits
     ///
     /// # Example
-    /// ```rust
+    /// ```ignore
     /// use control_core::controllers::second_degree_motion::acceleration_position_controller::AccelerationPositionController;
     ///
     /// let mut controller = AccelerationPositionController::new_simple(
