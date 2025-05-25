@@ -11,11 +11,11 @@ use super::acceleration_speed_controller::AccelerationSpeedController;
 /// [`LinearAngularAccelerationController`] wraps [`LinearAccelerationController`]
 /// to handle angular velocities and accelerations.
 #[derive(Debug)]
-pub struct AngularAccelerationLimitingController {
+pub struct AngularAccelerationSpeedController {
     pub controller: AccelerationSpeedController,
 }
 
-impl AngularAccelerationLimitingController {
+impl AngularAccelerationSpeedController {
     pub fn new(
         acceleration: AngularAcceleration,
         deceleration: AngularAcceleration,
