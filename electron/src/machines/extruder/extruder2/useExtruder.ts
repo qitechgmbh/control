@@ -141,9 +141,9 @@ export function useMotor(
   bar: number | undefined;
   barTs: TimeSeries;
   targetBar: number | undefined;
-  inverterSetTargetScrewRpm: (rpm: number) => void;
-  inverterSetRegulation: (usesRpm: boolean) => void;
-  inverterSetTargetPressure: (bar: number) => void;
+  screwSetTargetRpm: (rpm: number) => void;
+  screwSetRegulation: (usesRpm: boolean) => void;
+  screwSetTargetPressure: (bar: number) => void;
 } {
   const SetTargetRpmSchema = z.object({
     InverterSetTargetRpm: z.number(),
@@ -167,7 +167,7 @@ export function useMotor(
   const { request: regulationRequest } =
     useMachineMutation(SetRegulationSchema);
 
-  const inverterSetRegulation = async (value: boolean) => {
+  const screwSetRegulation = async (value: boolean) => {
     regulationState.setOptimistic(value);
     regulationRequest({
       machine_identification_unique,
@@ -180,7 +180,7 @@ export function useMotor(
   };
 
   const { request: reqestTargetRpm } = useMachineMutation(SetTargetRpmSchema);
-  const inverterSetTargetScrewRpm = async (value: number) => {
+  const screwSetTargetRpm = async (value: number) => {
     rpmTargetState.setOptimistic(value);
     reqestTargetRpm({
       machine_identification_unique,
@@ -199,7 +199,7 @@ export function useMotor(
     SetTargetPressureSchema,
   );
 
-  const inverterSetTargetPressure = async (value: number) => {
+  const screwSetTargetPressure = async (value: number) => {
     targetPressureState.setOptimistic(value);
     targetPressureRequest({
       machine_identification_unique,
@@ -237,19 +237,19 @@ export function useMotor(
     targetBar: targetPressureState.value,
     barTs: bar,
 
-    inverterSetTargetScrewRpm,
-    inverterSetTargetPressure,
-    inverterSetRegulation,
+    screwSetTargetRpm,
+    screwSetTargetPressure,
+    screwSetRegulation,
   };
 }
 
 export function useHeatingTemperature(
   machine_identification_unique: MachineIdentificationUnique,
 ): {
-  heatingNozzleSetTemp: (value: number) => void;
-  heatingFrontSetTemp: (value: number) => void;
-  heatingBackSetTemp: (value: number) => void;
-  heatingMiddleSetTemp: (value: number) => void;
+  heatingSetNozzleTemp: (value: number) => void;
+  heatingSetFrontTemp: (value: number) => void;
+  heatingSetBackTemp: (value: number) => void;
+  heatingSetMiddleTemp: (value: number) => void;
 
   nozzleHeatingTarget: number | undefined;
   frontHeatingTarget: number | undefined;
@@ -291,7 +291,7 @@ export function useHeatingTemperature(
     SetNozzleHeatingSchema,
   );
 
-  const heatingNozzleSetTemp = async (value: number) => {
+  const heatingSetNozzleTemp = async (value: number) => {
     frontHeatingTargetState.setOptimistic(value);
     HeatingNozzleRequest({
       machine_identification_unique,
@@ -307,7 +307,7 @@ export function useHeatingTemperature(
     SetFrontHeatingSchema,
   );
 
-  const heatingFrontSetTemp = async (value: number) => {
+  const heatingSetFrontTemp = async (value: number) => {
     frontHeatingTargetState.setOptimistic(value);
     HeatiingFrontRequest({
       machine_identification_unique,
@@ -322,7 +322,7 @@ export function useHeatingTemperature(
   const { request: HeatingBackRequest } =
     useMachineMutation(SetBackHeatingSchema);
 
-  const heatingBackSetTemp = async (value: number) => {
+  const heatingSetBackTemp = async (value: number) => {
     backHeatingTargetState.setOptimistic(value);
     HeatingBackRequest({
       machine_identification_unique,
@@ -338,7 +338,7 @@ export function useHeatingTemperature(
     SetMiddleHeatingSchema,
   );
 
-  const heatingMiddleSetTemp = async (value: number) => {
+  const heatingSetMiddleTemp = async (value: number) => {
     middleHeatingTargetState.setOptimistic(value);
     HeatingMiddleRequest({
       machine_identification_unique,
@@ -389,10 +389,10 @@ export function useHeatingTemperature(
   ]);
 
   return {
-    heatingNozzleSetTemp,
-    heatingFrontSetTemp,
-    heatingBackSetTemp,
-    heatingMiddleSetTemp,
+    heatingSetNozzleTemp,
+    heatingSetFrontTemp,
+    heatingSetBackTemp,
+    heatingSetMiddleTemp,
     nozzleHeatingTarget: nozzleHeatingTargetState.value,
     frontHeatingTarget: frontHeatingTargetState.value,
     backHeatingTarget: backHeatingTargetState.value,

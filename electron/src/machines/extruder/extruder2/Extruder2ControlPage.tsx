@@ -25,13 +25,13 @@ export function Extruder2ControlPage() {
     middleHeatingState,
     middleTemperature,
     extruderSetMode,
-    heatingBackSetTemp,
-    heatingFrontSetTemp,
-    heatingNozzleSetTemp,
-    heatingMiddleSetTemp,
-    inverterSetRegulation,
-    inverterSetTargetPressure,
-    inverterSetTargetScrewRpm,
+    heatingSetBackTemp,
+    heatingSetFrontTemp,
+    heatingSetMiddleTemp,
+    heatingSetNozzleTemp,
+    screwSetRegulation,
+    screwSetTargetPressure,
+    screwSetTargetRpm,
     uses_rpm,
     barTs,
     rpmTs,
@@ -46,25 +46,25 @@ export function Extruder2ControlPage() {
           title={"Heating Front"}
           heatingState={frontHeatingState}
           heatingTimeSeries={frontTemperature}
-          onChangeTargetTemp={heatingFrontSetTemp}
+          onChangeTargetTemp={heatingSetFrontTemp}
         />
         <HeatingZone
           title={"Heating Middle"}
           heatingState={middleHeatingState}
           heatingTimeSeries={middleTemperature}
-          onChangeTargetTemp={heatingMiddleSetTemp}
+          onChangeTargetTemp={heatingSetMiddleTemp}
         />
         <HeatingZone
           title={"Heating Back"}
           heatingState={backHeatingState}
           heatingTimeSeries={backTemperature}
-          onChangeTargetTemp={heatingBackSetTemp}
+          onChangeTargetTemp={heatingSetMiddleTemp}
         />
         <HeatingZone
           title={"Heating Nozzle"}
           heatingState={nozzleHeatingState}
           heatingTimeSeries={nozzleTemperature}
-          onChangeTargetTemp={heatingNozzleSetTemp}
+          onChangeTargetTemp={heatingSetNozzleTemp}
         />
         <ControlCard className="bg-red" title="Screw Drive">
           <Label label="Regulation">
@@ -72,7 +72,7 @@ export function Extruder2ControlPage() {
               value={uses_rpm}
               optionTrue={{ children: "RPM" }}
               optionFalse={{ children: "Pressure" }}
-              onChange={inverterSetRegulation}
+              onChange={screwSetRegulation}
             />
           </Label>
           <div className="flex flex-row flex-wrap gap-4">
@@ -85,7 +85,7 @@ export function Extruder2ControlPage() {
                 min={0}
                 max={106}
                 renderValue={(value) => roundToDecimals(value, 0)}
-                onChange={inverterSetTargetScrewRpm}
+                onChange={screwSetTargetRpm}
               />
             </Label>
             <Label label="Target Pressure">
@@ -95,7 +95,7 @@ export function Extruder2ControlPage() {
                 unit="bar"
                 title="Target Pressure"
                 renderValue={(value) => roundToDecimals(value, 0)}
-                onChange={inverterSetTargetPressure}
+                onChange={screwSetTargetPressure}
               />
             </Label>
           </div>
