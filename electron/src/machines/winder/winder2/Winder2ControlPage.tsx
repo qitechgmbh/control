@@ -32,7 +32,7 @@ export function Winder2ControlPage() {
     tensionArmStateIsDisabled,
     spoolRpm,
     mode,
-    setMode,
+    ExtruderSetMode,
     modeIsLoading,
     modeIsDisabled,
     pullerState,
@@ -190,7 +190,7 @@ export function Winder2ControlPage() {
             value={mode}
             disabled={modeIsDisabled}
             loading={modeIsLoading}
-            onChange={setMode}
+            onChange={ExtruderSetMode}
             orientation="vertical"
             options={{
               Standby: {

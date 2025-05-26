@@ -63,13 +63,13 @@ export function useInverter(
 } {
   const state = useStateOptimistic();
 
-  const schema = z.object({ SetRotation: z.boolean() });
+  const schema = z.object({ InverterRotationSetDirection: z.boolean() });
   const { request: requestRotation } = useMachineMutation(schema);
   const inverterSetRotation = async (forward: boolean) => {
     state.setOptimistic(forward);
     requestRotation({
       machine_identification_unique,
-      data: { SetRotation: forward },
+      data: { InverterRotationSetDirection: forward },
     });
   };
 
@@ -90,7 +90,7 @@ export function useMode(
   machine_identification_unique: MachineIdentificationUnique,
 ): {
   mode: Mode | undefined;
-  SetMode: (value: Mode) => void;
+  ExtruderSetMode: (value: Mode) => void;
   modeIsLoading: boolean;
   modeIsDisabled: boolean;
 } {
@@ -98,16 +98,16 @@ export function useMode(
 
   // Write path
   const schema = z.object({
-    SetMode: z.enum(["Heat", "Extrude", "Standby"]),
+    ExtruderSetMode: z.enum(["Heat", "Extrude", "Standby"]),
   });
 
   const { request } = useMachineMutation(schema);
 
-  const SetMode = async (value: Mode) => {
+  const ExtruderSetMode = async (value: Mode) => {
     state.setOptimistic(value);
     request({
       machine_identification_unique,
-      data: { SetMode: value },
+      data: { ExtruderSetMode: value },
     })
       .then((response) => {
         if (!response.success) state.resetToReal();
@@ -125,7 +125,7 @@ export function useMode(
 
   return {
     mode: state.value,
-    SetMode,
+    ExtruderSetMode,
     modeIsLoading: state.isOptimistic || !state.isInitialized,
     modeIsDisabled: state.isOptimistic || !state.isInitialized,
   };
@@ -141,20 +141,20 @@ export function useMotor(
   uses_rpm: boolean | undefined;
   rpmTs: TimeSeries;
   barTs: TimeSeries;
-  SetTargetRpm: (rpm: number) => void;
-  SetRegulation: (usesRpm: boolean) => void;
-  SetTargetPressure: (bar: number) => void;
+  InverterSetTargetRpm: (rpm: number) => void;
+  InverterSetRegulation: (usesRpm: boolean) => void;
+  InverterSetTargetPressure: (bar: number) => void;
 } {
   const SetTargetRpmSchema = z.object({
-    SetTargetRpm: z.number(),
+    InverterSetTargetRpm: z.number(),
   });
 
   const SetRegulationSchema = z.object({
-    SetRegulation: z.boolean(),
+    InverterSetRegulation: z.boolean(),
   });
 
   const SetTargetPressureSchema = z.object({
-    SetTargetPressure: z.number(),
+    InverterSetTargetPressure: z.number(),
   });
 
   const { motorRpmState, motorBarState, motorRegulationState, rpm, bar } =
@@ -167,11 +167,11 @@ export function useMotor(
   const { request: regulationRequest } =
     useMachineMutation(SetRegulationSchema);
 
-  const SetRegulation = async (value: boolean) => {
+  const InverterSetRegulation = async (value: boolean) => {
     regulationState.setOptimistic(value);
     regulationRequest({
       machine_identification_unique,
-      data: { SetRegulation: value },
+      data: { InverterSetRegulation: value },
     })
       .then((response) => {
         if (!response.success) regulationState.resetToReal();
@@ -180,11 +180,11 @@ export function useMotor(
   };
 
   const { request: reqestTargetRpm } = useMachineMutation(SetTargetRpmSchema);
-  const SetTargetRpm = async (value: number) => {
+  const InverterSetTargetRpm = async (value: number) => {
     rpmTargetState.setOptimistic(value);
     reqestTargetRpm({
       machine_identification_unique,
-      data: { SetTargetRpm: value },
+      data: { InverterSetTargetRpm: value },
     })
       .then((response) => {
         if (!response.success) rpmTargetState.resetToReal();
@@ -199,11 +199,11 @@ export function useMotor(
     SetTargetPressureSchema,
   );
 
-  const SetTargetPressure = async (value: number) => {
+  const InverterSetTargetPressure = async (value: number) => {
     targetPressureState.setOptimistic(value);
     targetPressureRequest({
       machine_identification_unique,
-      data: { SetTargetPressure: value },
+      data: { InverterSetTargetPressure: value },
     })
       .then((response) => {
         if (!response.success) targetPressureState.resetToReal();
@@ -235,9 +235,9 @@ export function useMotor(
     targetRpm: rpmTargetState.value,
     rpmTs: rpm,
     barTs: bar,
-    SetTargetRpm,
-    SetRegulation,
-    SetTargetPressure,
+    InverterSetTargetRpm,
+    InverterSetRegulation,
+    InverterSetTargetPressure,
   };
 }
 
@@ -270,19 +270,19 @@ export function useHeatingTemperature(
   const middleHeatingTargetState = useStateOptimistic<number>();
 
   const SetNozzleHeatingSchema = z.object({
-    SetNozzleHeatingTemperature: z.number(),
+    NozzleSetHeatingTemperature: z.number(),
   });
 
   const SetFrontHeatingSchema = z.object({
-    SetFrontHeatingTemperature: z.number(),
+    FrontHeatingSetTargetTemperature: z.number(),
   });
 
   const SetBackHeatingSchema = z.object({
-    SetBackHeatingTemperature: z.number(),
+    BackHeatingSetTargetTemperature: z.number(),
   });
 
   const SetMiddleHeatingSchema = z.object({
-    SetMiddleHeatingTemperature: z.number(),
+    MiddleSetHeatingTemperature: z.number(),
   });
 
   const { request: HeatingNozzleRequest } = useMachineMutation(
@@ -293,7 +293,7 @@ export function useHeatingTemperature(
     frontHeatingTargetState.setOptimistic(value);
     HeatingNozzleRequest({
       machine_identification_unique,
-      data: { SetNozzleHeatingTemperature: value },
+      data: { NozzleSetHeatingTemperature: value },
     })
       .then((response) => {
         if (!response.success) nozzleHeatingTargetState.resetToReal();
@@ -309,7 +309,7 @@ export function useHeatingTemperature(
     frontHeatingTargetState.setOptimistic(value);
     HeatiingFrontRequest({
       machine_identification_unique,
-      data: { SetFrontHeatingTemperature: value },
+      data: { FrontHeatingSetTargetTemperature: value },
     })
       .then((response) => {
         if (!response.success) frontHeatingTargetState.resetToReal();
@@ -324,7 +324,7 @@ export function useHeatingTemperature(
     backHeatingTargetState.setOptimistic(value);
     HeatingBackRequest({
       machine_identification_unique,
-      data: { SetBackHeatingTemperature: value },
+      data: { BackHeatingSetTargetTemperature: value },
     })
       .then((response) => {
         if (!response.success) backHeatingTargetState.resetToReal();
@@ -340,7 +340,7 @@ export function useHeatingTemperature(
     middleHeatingTargetState.setOptimistic(value);
     HeatingMiddleRequest({
       machine_identification_unique,
-      data: { SetMiddleHeatingTemperature: value },
+      data: { MiddleSetHeatingTemperature: value },
     })
       .then((response) => {
         if (!response.success) middleHeatingTargetState.resetToReal();

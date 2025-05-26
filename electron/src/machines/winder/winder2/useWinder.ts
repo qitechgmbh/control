@@ -405,7 +405,7 @@ function usePuller(machine_identification_unique: MachineIdentificationUnique) {
 
 function useMode(machine_identification_unique: MachineIdentificationUnique): {
   mode: Mode | undefined;
-  setMode: (value: Mode) => void;
+  ExtruderSetMode: (value: Mode) => void;
   modeIsLoading: boolean;
   modeIsDisabled: boolean;
 } {
@@ -417,7 +417,7 @@ function useMode(machine_identification_unique: MachineIdentificationUnique): {
   });
   const { request } = useMachineMutation(schema);
 
-  const setMode = async (value: Mode) => {
+  const ExtruderSetMode = async (value: Mode) => {
     state.setOptimistic(value);
     request({
       machine_identification_unique,
@@ -439,7 +439,7 @@ function useMode(machine_identification_unique: MachineIdentificationUnique): {
 
   return {
     mode: state.value,
-    setMode,
+    ExtruderSetMode,
     modeIsLoading: state.isOptimistic || !state.isInitialized,
     modeIsDisabled: state.isOptimistic || !state.isInitialized,
   };

@@ -161,22 +161,16 @@ enum Mutation {
     /// INVERTER
     /// Frequency Control
     // Set Rotation also starts the motor
-    SetRotation(bool),
-    SetTargetPressure(f32),
-    SetTargetRpm(f32),
-    SetRegulation(bool),
+    InverterRotationSetDirection(bool),
+    InverterSetTargetPressure(f32),
+    InverterSetTargetRpm(f32),
+    InverterSetRegulation(bool),
     //Mode
-    SetMode(ExtruderV2Mode),
-    //Heating
-    SetHeatingFront(Heating),
-    SetHeatingBack(Heating),
-    SetHeatingMiddle(Heating),
-    SetHeatingNozzle(Heating),
-
-    SetFrontHeatingTemperature(f32),
-    SetBackHeatingTemperature(f32),
-    SetMiddleHeatingTemperature(f32),
-    SetNozzleHeatingTemperature(f32),
+    ExtruderSetMode(ExtruderV2Mode),
+    FrontHeatingSetTargetTemperature(f32),
+    BackHeatingSetTargetTemperature(f32),
+    MiddleSetHeatingTemperature(f32),
+    NozzleSetHeatingTemperature(f32),
 }
 
 #[derive(Debug)]
@@ -239,26 +233,22 @@ impl MachineApi for ExtruderV2 {
         // there are multiple Modbus Frames that are "prebuilt"
         let control: Mutation = serde_json::from_value(request_body)?;
         match control {
-            Mutation::SetMode(mode) => self.set_mode_state(mode),
-            Mutation::SetRotation(forward) => self.set_rotation_state(forward),
-            Mutation::SetHeatingFront(heating) => self.set_heating_front(heating),
-            Mutation::SetHeatingMiddle(heating) => self.set_heating_middle(heating),
-            Mutation::SetHeatingBack(heating) => self.set_heating_back(heating),
-            Mutation::SetHeatingNozzle(heating) => self.set_heating_nozzle(heating),
-            Mutation::SetRegulation(uses_rpm) => self.set_regulation(uses_rpm),
-            Mutation::SetTargetPressure(bar) => self.set_target_pressure(bar),
-            Mutation::SetTargetRpm(rpm) => self.set_target_rpm(rpm),
+            Mutation::ExtruderSetMode(mode) => self.set_mode_state(mode),
+            Mutation::InverterRotationSetDirection(forward) => self.set_rotation_state(forward),
+            Mutation::InverterSetRegulation(uses_rpm) => self.set_regulation(uses_rpm),
+            Mutation::InverterSetTargetPressure(bar) => self.set_target_pressure(bar),
+            Mutation::InverterSetTargetRpm(rpm) => self.set_target_rpm(rpm),
 
-            Mutation::SetFrontHeatingTemperature(temp) => {
+            Mutation::FrontHeatingSetTargetTemperature(temp) => {
                 self.set_target_temperature(temp, HeatingType::Front)
             }
-            Mutation::SetMiddleHeatingTemperature(temp) => {
+            Mutation::MiddleSetHeatingTemperature(temp) => {
                 self.set_target_temperature(temp, HeatingType::Middle)
             }
-            Mutation::SetBackHeatingTemperature(temp) => {
+            Mutation::BackHeatingSetTargetTemperature(temp) => {
                 self.set_target_temperature(temp, HeatingType::Back)
             }
-            Mutation::SetNozzleHeatingTemperature(temp) => {
+            Mutation::NozzleSetHeatingTemperature(temp) => {
                 self.set_target_temperature(temp, HeatingType::Nozzle)
             }
         }

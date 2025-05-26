@@ -16,7 +16,7 @@ import { TimeSeriesValueNumeric } from "@/control/TimeSeriesValue";
 export function Extruder2ControlPage() {
   const {
     mode,
-    SetMode,
+    ExtruderSetMode,
     nozzleTemperature,
     frontTemperature,
     backTemperature,
@@ -29,14 +29,14 @@ export function Extruder2ControlPage() {
     SetHeatingFrontTemp,
     SetHeatingBackTemp,
     SetHeatingMiddleTemp,
-    SetRegulation,
+    InverterSetRegulation,
     uses_rpm,
     barTs,
     rpmTs,
     targetBar,
     targetRpm,
-    SetTargetPressure,
-    SetTargetRpm,
+    InverterSetTargetPressure,
+    InverterSetTargetRpm,
   } = useExtruder2();
 
   return (
@@ -72,7 +72,7 @@ export function Extruder2ControlPage() {
               value={uses_rpm}
               optionTrue={{ children: "RPM" }}
               optionFalse={{ children: "Pressure" }}
-              onChange={SetRegulation}
+              onChange={InverterSetRegulation}
             />
           </Label>
           <div className="flex flex-row flex-wrap gap-4">
@@ -85,7 +85,7 @@ export function Extruder2ControlPage() {
                 min={0}
                 max={106}
                 renderValue={(value) => roundToDecimals(value, 0)}
-                onChange={SetTargetRpm}
+                onChange={InverterSetTargetRpm}
               />
             </Label>
             <Label label="Target Pressure">
@@ -95,7 +95,7 @@ export function Extruder2ControlPage() {
                 unit="bar"
                 title="Target Pressure"
                 renderValue={(value) => roundToDecimals(value, 0)}
-                onChange={SetTargetPressure}
+                onChange={InverterSetTargetPressure}
               />
             </Label>
           </div>
@@ -137,7 +137,7 @@ export function Extruder2ControlPage() {
                 isActiveClassName: "bg-green-600",
               },
             }}
-            onChange={SetMode}
+            onChange={ExtruderSetMode}
           />
         </ControlCard>
       </ControlGrid>

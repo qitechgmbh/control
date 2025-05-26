@@ -202,27 +202,6 @@ impl ExtruderV2 {
 
 // Heating
 impl ExtruderV2 {
-    // Heating
-    fn set_heating_front(&mut self, heating: Heating) {
-        self.temperature_controller_front.heating = heating.clone();
-        self.emit_heating(heating, HeatingType::Front);
-    }
-
-    fn set_heating_back(&mut self, heating: Heating) {
-        self.temperature_controller_back.heating = heating.clone();
-        self.emit_heating(heating, HeatingType::Back);
-    }
-
-    fn set_heating_middle(&mut self, heating: Heating) {
-        self.temperature_controller_middle.heating = heating.clone();
-        self.emit_heating(heating, HeatingType::Middle);
-    }
-
-    fn set_heating_nozzle(&mut self, heating: Heating) {
-        self.temperature_controller_nozzle.heating = heating.clone();
-        self.emit_heating(heating, HeatingType::Nozzle);
-    }
-
     fn emit_heating(&mut self, heating: Heating, heating_type: HeatingType) {
         let event = api::HeatingStateEvent {
             temperature: heating.temperature,
