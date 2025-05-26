@@ -13,8 +13,8 @@ export function Extruder2SettingsPage() {
         <Label label="Rotation Direction">
           <SelectionGroupBoolean
             value={rotationState}
-            optionTrue={{ children: "Backward" }}
-            optionFalse={{ children: "Forward" }}
+            optionTrue={{ children: "Forward" }}
+            optionFalse={{ children: "Backward" }}
             onChange={inverterSetRotation}
           />
         </Label>

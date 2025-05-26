@@ -10,11 +10,7 @@ use std::{
 };
 use uom::{
     ConstZero,
-    si::{
-        f32::AngularVelocity,
-        f64::Frequency,
-        frequency::{centihertz, hertz},
-    },
+    si::{f64::Frequency, frequency::centihertz},
 };
 
 #[derive(Debug)]
@@ -303,7 +299,6 @@ pub struct MitsubishiInverterRS485Actor {
     pub last_request_type: RequestType,
     pub state: State,
     pub next_response_type: ResponseType,
-    pub forward_rotation: bool,
     pub frequency: Frequency,
 }
 
@@ -315,7 +310,6 @@ impl MitsubishiInverterRS485Actor {
             state: State::Uninitialized,
             request_queue: VecDeque::new(),
             response_queue: VecDeque::new(),
-            forward_rotation: true,
             next_response_type: ResponseType::ReadMotorFrequency,
             last_request_type: RequestType::OperationCommand,
             last_message_size: 0,
