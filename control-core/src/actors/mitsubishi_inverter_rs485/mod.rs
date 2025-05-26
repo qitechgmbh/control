@@ -8,10 +8,13 @@ use std::{
     pin::Pin,
     time::{Duration, Instant},
 };
-use uom::si::{
-    f32::AngularVelocity,
-    f64::Frequency,
-    frequency::{centihertz, hertz},
+use uom::{
+    ConstZero,
+    si::{
+        f32::AngularVelocity,
+        f64::Frequency,
+        frequency::{centihertz, hertz},
+    },
 };
 
 #[derive(Debug)]
@@ -318,7 +321,7 @@ impl MitsubishiInverterRS485Actor {
             last_message_size: 0,
             baudrate: None,
             encoding: None,
-            frequency: Frequency::new::<hertz>(0.0),
+            frequency: Frequency::ZERO,
         }
     }
 
