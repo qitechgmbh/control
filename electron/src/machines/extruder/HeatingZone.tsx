@@ -2,12 +2,13 @@ import { ControlCard } from "@/control/ControlCard";
 import { EditValue } from "@/control/EditValue";
 import { Label } from "@/control/Label";
 import { roundToDecimals } from "@/lib/decimal";
-import { Flame } from "lucide-react"; // Or any other icon library
+
 import React from "react";
 import { Heating } from "./extruder2/extruder2Namespace";
 import { TimeSeries } from "@/lib/timeseries";
 import { TimeSeriesValueNumeric } from "@/control/TimeSeriesValue";
 import { StatusBadge } from "@/control/StatusBadge";
+import { Icon } from "@/components/Icon";
 
 type Props = {
   title: string;
@@ -38,7 +39,8 @@ export function HeatingZone({
           />
 
           <div className="flex items-center space-x-2">
-            <Flame
+            <Icon
+              name="lu:Flame"
               className={`h-5 w-5 ${heating ? "text-orange-500" : "text-gray-400"}`}
             />
           </div>
