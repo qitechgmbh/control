@@ -4,7 +4,6 @@ use crate::io::digital_output::{DigitalOutputDevice, DigitalOutputOutput, Digita
 use crate::pdo::{RxPdo, basic::BoolPdoObject};
 use ethercat_hal_derive::{EthercatDevice, RxPdo};
 /// EL2004 4-channel digital output device
-///
 /// 24V DC, 0.5A per channel
 #[derive(EthercatDevice)]
 pub struct EL2004 {
