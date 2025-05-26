@@ -7,6 +7,7 @@ use std::{
 };
 
 /// Set a digital output high and low with a given interval
+#[derive(Debug)]
 pub struct DigitalOutputBlinker {
     last_toggle: Instant,
     output: DigitalOutput,

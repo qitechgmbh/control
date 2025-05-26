@@ -76,6 +76,7 @@ export function DeviceEepromDialog({ device }: Props) {
   );
 }
 
+// (Empty comment block removed)
 type ContentProps = {
   device: Device;
   setOpen: (open: boolean) => void;
@@ -96,6 +97,8 @@ export function DeviceEeepromDialogContent({ device, setOpen }: ContentProps) {
     mode: "all",
   });
   const values = useFormValues(form);
+
+// Removed unnecessary console.log statements.
 
   const onSubmit = (values: FormSchema) => {
     client
