@@ -8,6 +8,11 @@ use std::{
     pin::Pin,
     time::{Duration, Instant},
 };
+use uom::si::{
+    f32::AngularVelocity,
+    f64::Frequency,
+    frequency::{centihertz, hertz},
+};
 
 #[derive(Debug)]
 pub enum State {
@@ -34,15 +39,15 @@ pub enum OperationMode {
 }
 
 impl MitsubishiInverterRS485Actor {
-    pub fn convert_hz_float_to_word(&mut self, value: f32, little_endian: bool) -> u16 {
-        let scaled = value * 100.0; // Convert Hz to 0.01 Hz units
+    pub fn convert_hz_float_to_word(&mut self, value: Frequency) -> u16 {
+        let scaled = value.get::<centihertz>(); // Convert Hz to 0.01 Hz units
         scaled.round() as u16
     }
 
-    pub fn set_frequency_target(&mut self, frequency: f32) {
+    pub fn set_frequency_target(&mut self, frequency: Frequency) {
         let mut request: MitsubishiModbusRequest =
             MitsubishiControlRequests::WriteRunningFrequency.into();
-        let result: u16 = self.convert_hz_float_to_word(frequency, true); // convert hz float to short
+        let result: u16 = self.convert_hz_float_to_word(frequency); // convert hz float to short
         request.request.data[2] = result.to_le_bytes()[1];
         request.request.data[3] = result.to_le_bytes()[0];
         self.add_request(request);
@@ -296,7 +301,7 @@ pub struct MitsubishiInverterRS485Actor {
     pub state: State,
     pub next_response_type: ResponseType,
     pub forward_rotation: bool,
-    pub frequency: f32,
+    pub frequency: Frequency,
 }
 
 impl MitsubishiInverterRS485Actor {
@@ -313,7 +318,7 @@ impl MitsubishiInverterRS485Actor {
             last_message_size: 0,
             baudrate: None,
             encoding: None,
-            frequency: 0.0,
+            frequency: Frequency::new::<hertz>(0.0),
         }
     }
 
@@ -443,7 +448,8 @@ impl MitsubishiInverterRS485Actor {
     // When we get respone from Pr. 40014 (Running Frequency) Convert to rpm and save it
     fn handle_motor_frequency(&mut self, resp: ModbusResponse) {
         let freq_bytes = &resp.data[1..3]; // bytes 1 and 2 are needed
-        self.frequency = u16::from_be_bytes([freq_bytes[0], freq_bytes[1]]) as f32 / 100.0;
+        let raw_frequency = u16::from_be_bytes([freq_bytes[0], freq_bytes[1]]) as f64;
+        self.frequency = Frequency::new::<centihertz>(raw_frequency);
     }
 
     // Technically we could verify that every request also was successful with this match and return an Error, or not
@@ -471,7 +477,6 @@ impl Actor for MitsubishiInverterRS485Actor {
                     self.state = State::ReadyToSend;
                     // every time when our inverter is "Uninitialzed" reset it first to clear any error states it may have
                     self.add_request(MitsubishiControlRequests::ResetInverter.into());
-                    self.set_frequency_target(0.0);
                     self.baudrate = (self.serial_interface.get_baudrate)().await;
                     self.encoding = (self.serial_interface.get_serial_encoding)().await;
                 }

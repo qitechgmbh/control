@@ -10,17 +10,23 @@ use control_core::{
     },
     controllers::pid::PidController,
 };
+use uom::si::{
+    angular_velocity::revolution_per_minute,
+    f64::{AngularVelocity, Frequency, Pressure},
+    frequency::{self, cycle_per_minute, hertz},
+    pressure::bar,
+};
 
 /// Clampable frequency limits (in Hz)
 const MIN_FREQ: f64 = 0.0;
 const MAX_FREQ: f64 = 60.0;
-const TRANSMISSION_RATIO: f32 = 34.0;
+const TRANSMISSION_RATIO: f64 = 34.0;
 
 #[derive(Debug)]
 pub struct ScrewSpeedController {
     pid: PidController,
-    pub target_pressure: f32,
-    pub target_rpm: f32,
+    pub target_pressure: Pressure,
+    pub target_rpm: AngularVelocity,
     pub inverter: MitsubishiInverterRS485Actor,
     pressure_sensor: AnalogInputGetter,
     last_update: Instant,
@@ -34,8 +40,8 @@ impl ScrewSpeedController {
         kp: f64,
         ki: f64,
         kd: f64,
-        target_pressure: f32,
-        target_rpm: f32,
+        target_pressure: Pressure,
+        target_rpm: AngularVelocity,
         pressure_sensor: AnalogInputGetter,
     ) -> Self {
         let now = Instant::now();
@@ -51,6 +57,10 @@ impl ScrewSpeedController {
         }
     }
 
+    pub fn get_target_rpm(&mut self) -> AngularVelocity {
+        self.target_rpm
+    }
+
     pub fn get_rotation_direction(&mut self) -> bool {
         self.forward_rotation
     }
@@ -64,16 +74,19 @@ impl ScrewSpeedController {
         self.inverter.add_request(req);
     }
 
-    pub fn set_target_pressure(&mut self, target_pressure: f32) {
+    pub fn set_target_pressure(&mut self, target_pressure: Pressure) {
         self.target_pressure = target_pressure;
     }
 
-    pub fn set_target_screw_rpm(&mut self, target_rpm: f32) {
-        self.target_rpm = target_rpm;
+    pub fn set_target_screw_rpm(&mut self, target_rpm: f64) {
         // Use uom here and perhaps clamp it
+        let target_rpm = AngularVelocity::new::<revolution_per_minute>(target_rpm);
+        let target_motor_rpm = target_rpm * TRANSMISSION_RATIO as f64;
+        self.target_rpm = target_motor_rpm;
+        let target_frequency =
+            Frequency::new::<cycle_per_minute>(self.target_rpm.get::<revolution_per_minute>());
 
-        self.inverter
-            .set_frequency_target((target_rpm / 60.0) * TRANSMISSION_RATIO);
+        self.inverter.set_frequency_target(target_frequency);
     }
 
     pub fn get_uses_rpm(&mut self) -> bool {
@@ -100,38 +113,49 @@ impl ScrewSpeedController {
         }
     }
 
-    pub fn get_screw_rpm(&mut self) -> f32 {
-        let rpm = self.inverter.frequency / 60.0;
-        self.calculate_transmission(rpm)
+    pub fn get_screw_rpm(&mut self) -> AngularVelocity {
+        let frequency = self.get_frequency();
+        let rpm = frequency.get::<cycle_per_minute>();
+        self.calculate_transmission(AngularVelocity::new::<revolution_per_minute>(rpm))
     }
 
-    pub fn get_frequency(&mut self) -> f32 {
+    pub fn get_frequency(&mut self) -> Frequency {
         self.inverter.frequency
     }
 
-    pub fn get_pressure(&mut self) -> f32 {
+    pub fn get_target_pressure(&self) -> Pressure {
+        self.target_pressure
+    }
+
+    pub fn get_pressure(&mut self) -> Pressure {
         let normalized = self.pressure_sensor.get_normalized();
         let normalized = match normalized {
             Some(normalized) => normalized,
             None => 0.0,
         };
         // assuming full scale pressure of 10 bar
-        let bar = normalized * 10.0;
-        bar
+        let pressure: f64 = normalized as f64 * 10.0;
+        return Pressure::new::<bar>(pressure);
     }
 
-    pub fn calculate_transmission(&self, rpm: f32) -> f32 {
+    pub fn calculate_transmission(&self, rpm: AngularVelocity) -> AngularVelocity {
         rpm / TRANSMISSION_RATIO
     }
 
     pub async fn update(&mut self, now: Instant) {
         self.inverter.act(now).await;
         if !self.uses_rpm {
-            let measured_pressure: f32 = self.get_pressure();
+            let measured_pressure = self.get_pressure();
             let error = self.target_pressure - measured_pressure;
-            let freq = self.pid.update(error.into(), now).clamp(MIN_FREQ, MAX_FREQ);
+
+            let freq = self
+                .pid
+                .update(error.get::<bar>(), now)
+                .clamp(MIN_FREQ, MAX_FREQ);
+            let frequency = Frequency::new::<hertz>(freq);
+
             self.last_update = now;
-            self.inverter.set_frequency_target(freq as f32);
+            self.inverter.set_frequency_target(frequency);
         }
     }
 

@@ -6,6 +6,11 @@ use control_core::{
     controllers::pid::PidController,
 };
 use std::time::{Duration, Instant};
+use uom::si::{
+    f64::{TemperatureInterval, ThermodynamicTemperature},
+    temperature_interval::degree_celsius as delta_celsius,
+    thermodynamic_temperature::degree_celsius,
+};
 
 use super::Heating;
 
@@ -18,7 +23,7 @@ pub struct TemperatureController {
     temperature_sensor: TemperatureInputGetter,
     relais: DigitalOutputSetter,
     pub heating: Heating,
-    pub target_temp: f64,
+    pub target_temp: ThermodynamicTemperature,
     window_start: Instant,
     heating_allowed: bool,
 }
@@ -34,7 +39,7 @@ impl TemperatureController {
         kp: f64,
         ki: f64,
         kd: f64,
-        target_temp: f64,
+        target_temp: ThermodynamicTemperature,
         temperature_sensor: TemperatureInputGetter,
         relais: DigitalOutputSetter,
         heating: Heating,
@@ -50,7 +55,8 @@ impl TemperatureController {
         }
     }
 
-    pub fn set_target_temperature(&mut self, temp: f32) {
+    pub fn set_target_temperature(&mut self, temp: ThermodynamicTemperature) {
+        // heating needs to be deserializable and serializable!!, so we cant use uom on it
         self.heating.target_temperature = temp;
     }
 
@@ -64,12 +70,17 @@ impl TemperatureController {
 
     pub async fn update(&mut self, now: Instant) -> () {
         self.temperature_sensor.act(now).await;
-        self.heating.temperature = self.temperature_sensor.get_temperature();
+        let temperature = ThermodynamicTemperature::new::<degree_celsius>(
+            self.temperature_sensor.get_temperature(),
+        );
+        self.heating.temperature = temperature;
         self.heating.wiring_error = self.temperature_sensor.get_wiring_error();
+
         self.relais.act(now).await;
 
         if self.heating_allowed {
-            let error = (self.heating.target_temperature - self.heating.temperature) as f64;
+            let error: f64 = self.heating.target_temperature.get::<degree_celsius>()
+                - self.heating.temperature.get::<degree_celsius>();
             let control = self.pid.update(error, now); // PID output
             // Clamp PID output to 0.0 – 1.0 (as duty cycle)
             let duty = control.clamp(0.0, 1.0);

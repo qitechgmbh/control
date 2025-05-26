@@ -7,7 +7,7 @@ use super::Actor;
 #[derive(Debug)]
 pub struct TemperatureInputGetter {
     input: TemperatureInput,
-    temperature: f32,
+    temperature: f64,
     wiring_error: bool,
 }
 
@@ -20,7 +20,7 @@ impl TemperatureInputGetter {
         }
     }
 
-    pub fn get_temperature(&self) -> f32 {
+    pub fn get_temperature(&self) -> f64 {
         self.temperature
     }
 
@@ -33,7 +33,7 @@ impl Actor for TemperatureInputGetter {
     fn act(&mut self, _now: Instant) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
         Box::pin(async move {
             let input = (self.input.state)().await.input;
-            self.temperature = input.temperature;
+            self.temperature = input.temperature as f64;
             self.wiring_error = input.overvoltage | input.undervoltage;
             if self.wiring_error {
                 self.temperature = 0.0;

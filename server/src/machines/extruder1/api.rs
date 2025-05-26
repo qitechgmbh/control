@@ -16,7 +16,7 @@ use serde_json::Value;
 
 #[derive(Serialize, Debug, Clone)]
 pub struct FrequencyEvent {
-    frequency: f32,
+    frequency: f64,
     // is this the Frequency in the eeprom or the one in memory(running)
     is_ram: bool,
 }
@@ -29,9 +29,9 @@ pub struct MotorStateEvent {
 
 #[derive(Serialize, Debug, Clone)]
 pub struct HeatingStateEvent {
-    pub temperature: f32,
+    pub temperature: f64,
     pub heating: bool,
-    pub target_temperature: f32,
+    pub target_temperature: f64,
     pub wiring_error: bool,
 }
 
@@ -124,8 +124,8 @@ pub struct ErrorEvent {
 #[derive(Serialize, Debug, Clone)]
 
 pub struct PressureStateEvent {
-    pub bar: f32,
-    pub target_bar: f32,
+    pub bar: f64,
+    pub target_bar: f64,
 }
 
 impl PressureStateEvent {
@@ -137,8 +137,8 @@ impl PressureStateEvent {
 #[derive(Serialize, Debug, Clone)]
 
 pub struct ScrewStateEvent {
-    pub rpm: f32,
-    pub target_rpm: f32,
+    pub rpm: f64,
+    pub target_rpm: f64,
 }
 
 impl ScrewStateEvent {
@@ -162,15 +162,15 @@ enum Mutation {
     /// Frequency Control
     // Set Rotation also starts the motor
     InverterRotationSetDirection(bool),
-    InverterSetTargetPressure(f32),
-    InverterSetTargetRpm(f32),
+    InverterSetTargetPressure(f64),
+    InverterSetTargetRpm(f64),
     InverterSetRegulation(bool),
     //Mode
     ExtruderSetMode(ExtruderV2Mode),
-    FrontHeatingSetTargetTemperature(f32),
-    BackHeatingSetTargetTemperature(f32),
-    MiddleSetHeatingTemperature(f32),
-    NozzleSetHeatingTemperature(f32),
+    FrontHeatingSetTargetTemperature(f64),
+    BackHeatingSetTargetTemperature(f64),
+    MiddleSetHeatingTemperature(f64),
+    NozzleSetHeatingTemperature(f64),
 }
 
 #[derive(Debug)]

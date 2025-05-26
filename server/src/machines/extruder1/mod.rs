@@ -14,6 +14,12 @@ use screw_speed_controller::ScrewSpeedController;
 use serde::{Deserialize, Serialize};
 use std::time::Instant;
 use temperature_controller::TemperatureController;
+use uom::si::{
+    angular_velocity::revolution_per_minute,
+    f64::{Pressure, ThermodynamicTemperature},
+    pressure::bar,
+    thermodynamic_temperature::degree_celsius,
+};
 pub mod act;
 pub mod api;
 pub mod new;
@@ -27,20 +33,20 @@ pub enum ExtruderV2Mode {
     Extrude,
 }
 
-#[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Heating {
-    pub temperature: f32,
+    pub temperature: ThermodynamicTemperature,
     pub heating: bool,
-    pub target_temperature: f32,
+    pub target_temperature: ThermodynamicTemperature,
     pub wiring_error: bool,
 }
 
 impl Default for Heating {
     fn default() -> Self {
         Self {
-            temperature: 0.0,
+            temperature: ThermodynamicTemperature::new::<degree_celsius>(0.0),
             heating: false,
-            target_temperature: 150.0,
+            target_temperature: ThermodynamicTemperature::new::<degree_celsius>(0.0),
             wiring_error: false,
         }
     }
@@ -191,11 +197,12 @@ impl ExtruderV2 {
             .emit_cached(ExtruderV2Events::RegulationStateEvent(event));
     }
 
-    fn set_target_pressure(&mut self, bar: f32) {
-        self.screw_speed_controller.set_target_pressure(bar);
+    fn set_target_pressure(&mut self, pressure: f64) {
+        let pressure = Pressure::new::<bar>(pressure);
+        self.screw_speed_controller.set_target_pressure(pressure);
     }
 
-    fn set_target_rpm(&mut self, rpm: f32) {
+    fn set_target_rpm(&mut self, rpm: f64) {
         self.screw_speed_controller.set_target_screw_rpm(rpm);
     }
 }
@@ -204,9 +211,9 @@ impl ExtruderV2 {
 impl ExtruderV2 {
     fn emit_heating(&mut self, heating: Heating, heating_type: HeatingType) {
         let event = api::HeatingStateEvent {
-            temperature: heating.temperature,
+            temperature: heating.temperature.get::<degree_celsius>(),
             heating: heating.heating,
-            target_temperature: heating.target_temperature,
+            target_temperature: heating.target_temperature.get::<degree_celsius>(),
             wiring_error: heating.wiring_error,
         }
         .build(heating_type);
@@ -215,23 +222,25 @@ impl ExtruderV2 {
             .emit_cached(ExtruderV2Events::HeatingStateEvent(event));
     }
 
-    fn set_target_temperature(&mut self, target_temperature: f32, heating_type: HeatingType) {
+    fn set_target_temperature(&mut self, target_temperature: f64, heating_type: HeatingType) {
+        let target_temp = ThermodynamicTemperature::new::<degree_celsius>(target_temperature);
+
         match heating_type {
             HeatingType::Nozzle => self
                 .temperature_controller_nozzle
-                .set_target_temperature(target_temperature),
+                .set_target_temperature(target_temp),
 
             HeatingType::Front => self
                 .temperature_controller_front
-                .set_target_temperature(target_temperature),
+                .set_target_temperature(target_temp),
 
             HeatingType::Back => self
                 .temperature_controller_back
-                .set_target_temperature(target_temperature),
+                .set_target_temperature(target_temp),
 
             HeatingType::Middle => self
                 .temperature_controller_middle
-                .set_target_temperature(target_temperature),
+                .set_target_temperature(target_temp),
         }
 
         match heating_type {
@@ -257,10 +266,13 @@ impl ExtruderV2 {
 
 impl ExtruderV2 {
     fn emit_rpm(&mut self) {
+        let rpm = self.screw_speed_controller.get_screw_rpm();
+        let target_rpm = self.screw_speed_controller.get_target_rpm();
+
         let event = api::ScrewStateEvent {
             // use uom here
-            rpm: self.screw_speed_controller.get_screw_rpm(),
-            target_rpm: self.screw_speed_controller.target_rpm,
+            rpm: rpm.get::<revolution_per_minute>(),
+            target_rpm: target_rpm.get::<revolution_per_minute>(),
         }
         .build();
         self.namespace
@@ -268,9 +280,11 @@ impl ExtruderV2 {
     }
 
     fn emit_bar(&mut self) {
+        let pressure = self.screw_speed_controller.get_pressure();
+        let target_pressure = self.screw_speed_controller.get_target_pressure();
         let event = api::PressureStateEvent {
-            bar: self.screw_speed_controller.get_pressure(),
-            target_bar: self.screw_speed_controller.target_pressure,
+            bar: pressure.get::<bar>(),
+            target_bar: target_pressure.get::<bar>(),
         }
         .build();
         self.namespace

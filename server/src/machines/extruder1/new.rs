@@ -41,6 +41,13 @@ use ethercat_hal::{
     },
 };
 use std::time::Instant;
+use uom::si::{
+    angular_velocity::revolution_per_minute,
+    f64::{AngularVelocity, Pressure, ThermodynamicTemperature},
+    frequency::cycle_per_minute,
+    pressure::bar,
+    thermodynamic_temperature::degree_celsius,
+};
 
 impl MachineNewTrait for ExtruderV2 {
     fn new<'maindevice>(params: &MachineNewParams) -> Result<Self, Error> {
@@ -290,7 +297,7 @@ impl MachineNewTrait for ExtruderV2 {
                 0.16,
                 0.002,
                 0.005,
-                200.0,
+                ThermodynamicTemperature::new::<degree_celsius>(200.0),
                 t1_getter,
                 DigitalOutputSetter::new(digital_out_1),
                 Heating::default(),
@@ -301,7 +308,7 @@ impl MachineNewTrait for ExtruderV2 {
                 0.16,
                 0.002,
                 0.005,
-                200.0,
+                ThermodynamicTemperature::new::<degree_celsius>(200.0),
                 t2_getter,
                 DigitalOutputSetter::new(digital_out_2),
                 Heating::default(),
@@ -312,7 +319,7 @@ impl MachineNewTrait for ExtruderV2 {
                 0.16,
                 0.002,
                 0.005,
-                200.0,
+                ThermodynamicTemperature::new::<degree_celsius>(200.0),
                 t3_getter,
                 DigitalOutputSetter::new(digital_out_3),
                 Heating::default(),
@@ -323,7 +330,7 @@ impl MachineNewTrait for ExtruderV2 {
                 0.16,
                 0.002,
                 0.005,
-                200.0,
+                ThermodynamicTemperature::new::<degree_celsius>(200.0),
                 t4_getter,
                 DigitalOutputSetter::new(digital_out_4),
                 Heating::default(),
@@ -333,8 +340,18 @@ impl MachineNewTrait for ExtruderV2 {
                 el6021::EL6021Port::SI1,
             ));
 
-            let screw_speed_controller =
-                ScrewSpeedController::new(inverter, 1.0, 0.1, 0.1, 10.0, 0.0, pressure_sensor);
+            let target_pressure = Pressure::new::<bar>(10.0);
+            let target_rpm = AngularVelocity::new::<revolution_per_minute>(0.0);
+
+            let screw_speed_controller = ScrewSpeedController::new(
+                inverter,
+                1.0,
+                0.1,
+                0.1,
+                target_pressure,
+                target_rpm,
+                pressure_sensor,
+            );
 
             let extruder: ExtruderV2 = Self {
                 namespace: ExtruderV2Namespace::new(),
