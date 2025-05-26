@@ -53,10 +53,13 @@ fn handle_socket_connection(socket: SocketRef, app_state: Arc<AppState>) {
         Ok(namespace_id) => namespace_id,
         Err(err) => {
             log::error!(
-                "[{}::handle_socket_connection] Failed to parse namespace id: {}",
+                "[{}::handle_socket_connection] Failed to parse namespace id '{}': {}, disconnecting socket {}",
                 module_path!(),
-                err
+                socket.ns(),
+                err,
+                socket.id
             );
+            socket.disconnect().ok(); // Disconnect invalid namespace connections immediately
             return;
         }
     };
@@ -74,7 +77,11 @@ fn setup_disconnection(socket: SocketRef, namespace_id: NamespaceId, app_state: 
         let app_state = app_state.clone();
 
         smol::block_on(async move {
-            log::debug!("Socket disconnected {}", socket.id);
+            log::debug!(
+                "Socket disconnected {} from namespace {}",
+                socket.id,
+                namespace_id
+            );
             let mut socketio_namespaces_guard = app_state.socketio_setup.namespaces.write().await;
 
             // remove from machine namespace
@@ -100,19 +107,30 @@ fn setup_disconnection(socket: SocketRef, namespace_id: NamespaceId, app_state: 
 }
 
 fn setup_connection(socket: SocketRef, namespace_id: NamespaceId, app_state: Arc<AppState>) {
-    log::info!("Socket connected {}", socket.id);
+    log::info!(
+        "Socket connected {} to namespace {}",
+        socket.id,
+        namespace_id
+    );
     smol::block_on(async {
         let mut socketio_namespaces_guard = app_state.socketio_setup.namespaces.write().await;
+        
+        // Try to apply to existing namespace first
+        let mut namespace_found = false;
         socketio_namespaces_guard
             .apply_mut(namespace_id.clone(), &app_state, |namespace_interface| {
                 match namespace_interface {
                     Ok(namespace_interface) => {
+                        // Successfully found and subscribed to existing namespace
                         namespace_interface.subscribe(socket.clone());
-                        namespace_interface.reemit(socket);
+                        namespace_interface.reemit(socket.clone());
+                        namespace_found = true;
                     }
                     Err(err) => {
-                        log::error!(
-                            "[{}::on_connect_machine_ns] Namespace {:?} not found: {}",
+                        // Namespace doesn't exist yet - this is expected during startup
+                        // We'll handle this case below by queueing the connection
+                        log::debug!(
+                            "[{}::setup_connection] Namespace {:?} not found: {}",
                             module_path!(),
                             namespace_id,
                             err
@@ -121,5 +139,31 @@ fn setup_connection(socket: SocketRef, namespace_id: NamespaceId, app_state: Arc
                 }
             })
             .await;
+        
+        // Handle cases where namespace was not found
+        if !namespace_found {
+            match namespace_id {
+                NamespaceId::Machine(machine_identification_unique) => {
+                    // Machine namespace not ready yet, add to pending connections queue
+                    // This handles the timing issue where clients reconnect during server startup
+                    // before machines are initialized from EtherCAT setup
+                    log::info!(
+                        "Machine namespace not ready yet, adding socket {} to pending connections for machine {:?}",
+                        socket.id,
+                        machine_identification_unique
+                    );
+                    socketio_namespaces_guard.add_pending_machine_connection(machine_identification_unique, socket);
+                }
+                NamespaceId::Main => {
+                    // Main namespace should always exist, if it doesn't something is wrong
+                    // Disconnect the socket to prevent resource leaks
+                    log::error!(
+                        "Main namespace not found for socket {}, disconnecting",
+                        socket.id
+                    );
+                    socket.disconnect().ok(); // Ignore errors during disconnect
+                }
+            }
+        }
     });
 }

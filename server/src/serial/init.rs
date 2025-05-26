@@ -56,6 +56,18 @@ pub fn init_serial(
                                 for device_identification in result.removed {
                                     machine_guard.remove_serial_device(&device_identification)
                                 }
+                                drop(machine_guard);
+                            }
+
+                            // Process any pending socket connections for newly added serial machines.
+                            // 
+                            // Serial machines can be added/removed dynamically during runtime when USB devices
+                            // are plugged/unplugged. If clients try to connect to a serial machine namespace
+                            // before the device is detected and added, their connections are queued.
+                            // This processes those queued connections once the serial machine becomes available.
+                            {
+                                let mut socketio_namespaces_guard = app_state_clone.socketio_setup.namespaces.write().await;
+                                socketio_namespaces_guard.process_pending_connections(&app_state_clone).await;
                             }
 
                             // Notify client via socketio

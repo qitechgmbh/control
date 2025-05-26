@@ -1,9 +1,6 @@
 use crate::socketio::event::GenericEvent;
 use socketioxide::extract::SocketRef;
-use std::{
-    collections::HashMap,
-    time::{Duration,SystemTime, UNIX_EPOCH},
-};
+use std::{collections::HashMap, time::Duration};
 
 pub trait NamespaceInterface {
     /// Adds a socket to the namespace.
@@ -130,11 +127,46 @@ impl NamespaceInterface for Namespace {
         event: &GenericEvent,
         buffer_fn: &Box<dyn Fn(&mut Vec<GenericEvent>, &GenericEvent) -> ()>,
     ) {
+        if event.name.contains("State") {
+            log::debug!(
+                "[{}::emit_cached] Emitting event: {:?}",
+                module_path!(),
+                event.name
+            );
+        }
+
         // cache the event
         self.cache(event, buffer_fn);
 
         // emit the event
         self.emit(event);
+    }
+}
+
+impl Drop for Namespace {
+    /// Clean up when the namespace is dropped by disconnecting all connected sockets.
+    ///
+    /// This ensures that when a machine is removed and its namespace is dropped,
+    /// all connected clients are properly disconnected rather than being left in
+    /// a stale connection state.
+    fn drop(&mut self) {
+        log::info!(
+            "[{}::Namespace::drop] Namespace being dropped, disconnecting {} sockets",
+            module_path!(),
+            self.sockets.len()
+        );
+
+        for socket in &self.sockets {
+            log::debug!(
+                "[{}::Namespace::drop] Disconnecting socket {}",
+                module_path!(),
+                socket.id
+            );
+            socket.clone().disconnect().ok(); // Ignore errors during cleanup
+        }
+
+        // Clear the sockets vector
+        self.sockets.clear();
     }
 }
 

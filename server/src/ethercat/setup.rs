@@ -182,6 +182,21 @@ pub async fn setup_loop(
     );
     drop(machines_guard);
 
+    // Process any pending socket connections now that machines are initialized.
+    // 
+    // This is critical for handling the timing issue where clients reconnect during
+    // server startup before machine initialization completes. During this window:
+    // 1. Clients attempt to connect to machine namespaces (e.g., /machine/1/2/1)
+    // 2. Connections are queued because machines don't exist yet
+    // 3. Now that machines are initialized, we process the queue
+    // 4. Queued sockets are subscribed and receive cached events
+    // 
+    // Without this step, early connections would remain unsubscribed forever.
+    {
+        let mut socketio_namespaces_guard = app_state.socketio_setup.namespaces.write().await;
+        socketio_namespaces_guard.process_pending_connections(&app_state).await;
+    }
+
     // remove subdevice from devices tuple
     let devices = devices
         .iter()
