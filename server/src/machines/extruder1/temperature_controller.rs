@@ -1,3 +1,4 @@
+use super::Heating;
 use control_core::{
     actors::{
         Actor, digital_output_setter::DigitalOutputSetter,
@@ -7,10 +8,6 @@ use control_core::{
 };
 use std::time::{Duration, Instant};
 use uom::si::{f64::ThermodynamicTemperature, thermodynamic_temperature::degree_celsius};
-
-use super::Heating;
-
-const PWM_PERIOD: Duration = Duration::from_millis(100);
 
 #[derive(Debug)]
 
@@ -22,6 +19,7 @@ pub struct TemperatureController {
     pub target_temp: ThermodynamicTemperature,
     window_start: Instant,
     heating_allowed: bool,
+    pwm_period: Duration,
 }
 
 impl TemperatureController {
@@ -39,6 +37,7 @@ impl TemperatureController {
         temperature_sensor: TemperatureInputGetter,
         relais: DigitalOutputSetter,
         heating: Heating,
+        pwm_duration: Duration,
     ) -> Self {
         Self {
             pid: PidController::new(kp, ki, kd),
@@ -48,6 +47,7 @@ impl TemperatureController {
             relais: relais,
             heating: heating,
             heating_allowed: false,
+            pwm_period: pwm_duration,
         }
     }
 
@@ -83,12 +83,12 @@ impl TemperatureController {
             let elapsed = now.duration_since(self.window_start);
 
             // Restart window if needed
-            if elapsed >= PWM_PERIOD {
+            if elapsed >= self.pwm_period {
                 self.window_start = now;
             }
 
             // Compare duty cycle to elapsed time
-            let on_time = PWM_PERIOD.mul_f64(duty);
+            let on_time = self.pwm_period.mul_f64(duty);
 
             // Relay is ON if within duty cycle window
             let on = elapsed < on_time;
