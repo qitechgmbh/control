@@ -345,7 +345,6 @@ impl MitsubishiInverterRS485Actor {
             let raw_response = match res {
                 Some(res) => res,
                 None => {
-                    log::error!("ERROR: No Modbus Response");
                     vec![]
                 }
             };
