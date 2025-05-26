@@ -50,13 +50,11 @@ impl TemperatureController {
         self.heating.target_temperature = temp;
     }
 
-    pub async fn update_heating(&mut self, now: Instant) {
+    pub async fn update(&mut self, now: Instant) -> () {
         self.temperature_sensor.act(now).await;
         self.heating.temperature = self.temperature_sensor.temperature;
         self.heating.wiring_error = self.temperature_sensor.wiring_error;
-    }
 
-    pub fn update_pid(&mut self, now: Instant) -> () {
         let error = (self.heating.target_temperature - self.heating.temperature) as f64;
         let control = self.pid.update(error, now); // PID output
         // Clamp PID output to 0.0 – 1.0 (as duty cycle)

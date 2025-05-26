@@ -10,28 +10,15 @@ impl Actor for ExtruderV2 {
         Box::pin(async move {
             self.inverter.act(now_ts).await;
             self.pressure_sensor.act(now_ts).await;
-            self.temperature_controller_back
-                .update_heating(now_ts)
-                .await;
-            self.temperature_controller_nozzle
-                .update_heating(now_ts)
-                .await;
-            self.temperature_controller_front
-                .update_heating(now_ts)
-                .await;
-            self.temperature_controller_middle
-                .update_heating(now_ts)
-                .await;
+            self.temperature_controller_back.update(now_ts).await;
+            self.temperature_controller_nozzle.update(now_ts).await;
+            self.temperature_controller_front.update(now_ts).await;
+            self.temperature_controller_middle.update(now_ts).await;
 
             self.set_bar();
 
             if self.mode == ExtruderV2Mode::Standby {
                 self.turn_heating_off();
-            } else if self.mode == ExtruderV2Mode::Heat || self.mode == ExtruderV2Mode::Extrude {
-                self.temperature_controller_front.update_pid(now_ts);
-                self.temperature_controller_middle.update_pid(now_ts);
-                self.temperature_controller_back.update_pid(now_ts);
-                self.temperature_controller_nozzle.update_pid(now_ts);
             }
 
             let now = Instant::now();
