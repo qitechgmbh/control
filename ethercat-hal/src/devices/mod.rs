@@ -4,7 +4,6 @@ pub mod el1008;
 pub mod el2002;
 pub mod el2004;
 pub mod el2008;
-
 pub mod el2024;
 pub mod el2521;
 pub mod el2522;
@@ -18,9 +17,7 @@ pub mod el6021;
 pub mod el7031;
 pub mod el7031_0030;
 pub mod el7041_0052;
-
 // pub mod el4008;
-
 use super::devices::el1008::EL1008;
 use crate::{
     devices::el2521::EL2521, helpers::ethercrab_types::EthercrabSubDeviceGroupPreoperational,
