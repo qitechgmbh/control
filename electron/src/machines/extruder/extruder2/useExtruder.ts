@@ -90,7 +90,7 @@ export function useMode(
   machine_identification_unique: MachineIdentificationUnique,
 ): {
   mode: Mode | undefined;
-  ExtruderSetMode: (value: Mode) => void;
+  extruderSetMode: (value: Mode) => void;
   modeIsLoading: boolean;
   modeIsDisabled: boolean;
 } {
@@ -103,7 +103,7 @@ export function useMode(
 
   const { request } = useMachineMutation(schema);
 
-  const ExtruderSetMode = async (value: Mode) => {
+  const extruderSetMode = async (value: Mode) => {
     state.setOptimistic(value);
     request({
       machine_identification_unique,
@@ -125,7 +125,7 @@ export function useMode(
 
   return {
     mode: state.value,
-    ExtruderSetMode,
+    extruderSetMode,
     modeIsLoading: state.isOptimistic || !state.isInitialized,
     modeIsDisabled: state.isOptimistic || !state.isInitialized,
   };
@@ -134,16 +134,16 @@ export function useMode(
 export function useMotor(
   machine_identification_unique: MachineIdentificationUnique,
 ): {
-  rpm: number | undefined;
-  bar: number | undefined;
-  targetBar: number | undefined;
-  targetRpm: number | undefined;
   uses_rpm: boolean | undefined;
+  rpm: number | undefined;
   rpmTs: TimeSeries;
+  targetRpm: number | undefined;
+  bar: number | undefined;
   barTs: TimeSeries;
-  InverterSetTargetRpm: (rpm: number) => void;
-  InverterSetRegulation: (usesRpm: boolean) => void;
-  InverterSetTargetPressure: (bar: number) => void;
+  targetBar: number | undefined;
+  inverterSetTargetScrewRpm: (rpm: number) => void;
+  inverterSetRegulation: (usesRpm: boolean) => void;
+  inverterSetTargetPressure: (bar: number) => void;
 } {
   const SetTargetRpmSchema = z.object({
     InverterSetTargetRpm: z.number(),
@@ -167,7 +167,7 @@ export function useMotor(
   const { request: regulationRequest } =
     useMachineMutation(SetRegulationSchema);
 
-  const InverterSetRegulation = async (value: boolean) => {
+  const inverterSetRegulation = async (value: boolean) => {
     regulationState.setOptimistic(value);
     regulationRequest({
       machine_identification_unique,
@@ -180,7 +180,7 @@ export function useMotor(
   };
 
   const { request: reqestTargetRpm } = useMachineMutation(SetTargetRpmSchema);
-  const InverterSetTargetRpm = async (value: number) => {
+  const inverterSetTargetScrewRpm = async (value: number) => {
     rpmTargetState.setOptimistic(value);
     reqestTargetRpm({
       machine_identification_unique,
@@ -199,7 +199,7 @@ export function useMotor(
     SetTargetPressureSchema,
   );
 
-  const InverterSetTargetPressure = async (value: number) => {
+  const inverterSetTargetPressure = async (value: number) => {
     targetPressureState.setOptimistic(value);
     targetPressureRequest({
       machine_identification_unique,
@@ -228,26 +228,28 @@ export function useMotor(
   }, [motorRpmState, motorBarState, motorRegulationState]);
 
   return {
-    uses_rpm: regulationState.value,
     rpm: rpmState.value,
+    rpmTs: rpm,
+    uses_rpm: regulationState.value,
+    targetRpm: rpmTargetState.value,
+
     bar: pressureState.value,
     targetBar: targetPressureState.value,
-    targetRpm: rpmTargetState.value,
-    rpmTs: rpm,
     barTs: bar,
-    InverterSetTargetRpm,
-    InverterSetRegulation,
-    InverterSetTargetPressure,
+
+    inverterSetTargetScrewRpm,
+    inverterSetTargetPressure,
+    inverterSetRegulation,
   };
 }
 
 export function useHeatingTemperature(
   machine_identification_unique: MachineIdentificationUnique,
 ): {
-  SetHeatingNozzleTemp: (value: number) => void;
-  SetHeatingFrontTemp: (value: number) => void;
-  SetHeatingBackTemp: (value: number) => void;
-  SetHeatingMiddleTemp: (value: number) => void;
+  heatingNozzleSetTemp: (value: number) => void;
+  heatingFrontSetTemp: (value: number) => void;
+  heatingBackSetTemp: (value: number) => void;
+  heatingMiddleSetTemp: (value: number) => void;
 
   nozzleHeatingTarget: number | undefined;
   frontHeatingTarget: number | undefined;
@@ -289,7 +291,7 @@ export function useHeatingTemperature(
     SetNozzleHeatingSchema,
   );
 
-  const SetHeatingNozzleTemp = async (value: number) => {
+  const heatingNozzleSetTemp = async (value: number) => {
     frontHeatingTargetState.setOptimistic(value);
     HeatingNozzleRequest({
       machine_identification_unique,
@@ -305,7 +307,7 @@ export function useHeatingTemperature(
     SetFrontHeatingSchema,
   );
 
-  const SetHeatingFrontTemp = async (value: number) => {
+  const heatingFrontSetTemp = async (value: number) => {
     frontHeatingTargetState.setOptimistic(value);
     HeatiingFrontRequest({
       machine_identification_unique,
@@ -320,7 +322,7 @@ export function useHeatingTemperature(
   const { request: HeatingBackRequest } =
     useMachineMutation(SetBackHeatingSchema);
 
-  const SetHeatingBackTemp = async (value: number) => {
+  const heatingBackSetTemp = async (value: number) => {
     backHeatingTargetState.setOptimistic(value);
     HeatingBackRequest({
       machine_identification_unique,
@@ -336,7 +338,7 @@ export function useHeatingTemperature(
     SetMiddleHeatingSchema,
   );
 
-  const SetHeatingMiddleTemp = async (value: number) => {
+  const heatingMiddleSetTemp = async (value: number) => {
     middleHeatingTargetState.setOptimistic(value);
     HeatingMiddleRequest({
       machine_identification_unique,
@@ -387,11 +389,10 @@ export function useHeatingTemperature(
   ]);
 
   return {
-    SetHeatingNozzleTemp,
-    SetHeatingFrontTemp,
-    SetHeatingBackTemp,
-    SetHeatingMiddleTemp,
-
+    heatingNozzleSetTemp,
+    heatingFrontSetTemp,
+    heatingBackSetTemp,
+    heatingMiddleSetTemp,
     nozzleHeatingTarget: nozzleHeatingTargetState.value,
     frontHeatingTarget: frontHeatingTargetState.value,
     backHeatingTarget: backHeatingTargetState.value,

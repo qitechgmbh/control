@@ -16,27 +16,27 @@ import { TimeSeriesValueNumeric } from "@/control/TimeSeriesValue";
 export function Extruder2ControlPage() {
   const {
     mode,
-    ExtruderSetMode,
-    nozzleTemperature,
-    frontTemperature,
-    backTemperature,
-    middleTemperature,
     nozzleHeatingState,
+    nozzleTemperature,
     frontHeatingState,
+    frontTemperature,
     backHeatingState,
+    backTemperature,
     middleHeatingState,
-    SetHeatingNozzleTemp,
-    SetHeatingFrontTemp,
-    SetHeatingBackTemp,
-    SetHeatingMiddleTemp,
-    InverterSetRegulation,
+    middleTemperature,
+    extruderSetMode,
+    heatingBackSetTemp,
+    heatingFrontSetTemp,
+    heatingNozzleSetTemp,
+    heatingMiddleSetTemp,
+    inverterSetRegulation,
+    inverterSetTargetPressure,
+    inverterSetTargetScrewRpm,
     uses_rpm,
     barTs,
     rpmTs,
     targetBar,
     targetRpm,
-    InverterSetTargetPressure,
-    InverterSetTargetRpm,
   } = useExtruder2();
 
   return (
@@ -46,25 +46,25 @@ export function Extruder2ControlPage() {
           title={"Heating Front"}
           heatingState={frontHeatingState}
           heatingTimeSeries={frontTemperature}
-          onChangeTargetTemp={SetHeatingFrontTemp}
+          onChangeTargetTemp={heatingFrontSetTemp}
         />
         <HeatingZone
           title={"Heating Middle"}
           heatingState={middleHeatingState}
           heatingTimeSeries={middleTemperature}
-          onChangeTargetTemp={SetHeatingMiddleTemp}
+          onChangeTargetTemp={heatingMiddleSetTemp}
         />
         <HeatingZone
           title={"Heating Back"}
           heatingState={backHeatingState}
           heatingTimeSeries={backTemperature}
-          onChangeTargetTemp={SetHeatingBackTemp}
+          onChangeTargetTemp={heatingBackSetTemp}
         />
         <HeatingZone
           title={"Heating Nozzle"}
           heatingState={nozzleHeatingState}
           heatingTimeSeries={nozzleTemperature}
-          onChangeTargetTemp={SetHeatingNozzleTemp}
+          onChangeTargetTemp={heatingNozzleSetTemp}
         />
         <ControlCard className="bg-red" title="Screw Drive">
           <Label label="Regulation">
@@ -72,7 +72,7 @@ export function Extruder2ControlPage() {
               value={uses_rpm}
               optionTrue={{ children: "RPM" }}
               optionFalse={{ children: "Pressure" }}
-              onChange={InverterSetRegulation}
+              onChange={inverterSetRegulation}
             />
           </Label>
           <div className="flex flex-row flex-wrap gap-4">
@@ -85,7 +85,7 @@ export function Extruder2ControlPage() {
                 min={0}
                 max={106}
                 renderValue={(value) => roundToDecimals(value, 0)}
-                onChange={InverterSetTargetRpm}
+                onChange={inverterSetTargetScrewRpm}
               />
             </Label>
             <Label label="Target Pressure">
@@ -95,7 +95,7 @@ export function Extruder2ControlPage() {
                 unit="bar"
                 title="Target Pressure"
                 renderValue={(value) => roundToDecimals(value, 0)}
-                onChange={InverterSetTargetPressure}
+                onChange={inverterSetTargetPressure}
               />
             </Label>
           </div>
@@ -137,7 +137,7 @@ export function Extruder2ControlPage() {
                 isActiveClassName: "bg-green-600",
               },
             }}
-            onChange={ExtruderSetMode}
+            onChange={extruderSetMode}
           />
         </ControlCard>
       </ControlGrid>
