@@ -1,7 +1,6 @@
 use super::Actor;
-use crate::{
-    converters::motor_converter::MotorConverter,
-    modbus::{ModbusFunctionCode, ModbusRequest, ModbusResponse, calculate_modbus_rtu_timeout},
+use crate::modbus::{
+    ModbusFunctionCode, ModbusRequest, ModbusResponse, calculate_modbus_rtu_timeout,
 };
 use ethercat_hal::io::serial_interface::{SerialEncoding, SerialInterface};
 use std::{
@@ -40,11 +39,10 @@ impl MitsubishiInverterRS485Actor {
         scaled.round() as u16
     }
 
-    pub fn set_running_rpm_target(&mut self, rpm: f32) {
+    pub fn set_frequency_target(&mut self, frequency: f32) {
         let mut request: MitsubishiModbusRequest =
             MitsubishiControlRequests::WriteRunningFrequency.into();
-        let hz = MotorConverter::rpm_to_hz(rpm); // convert rpm to hz
-        let result: u16 = self.convert_hz_float_to_word(hz, true); // convert hz float to short
+        let result: u16 = self.convert_hz_float_to_word(frequency, true); // convert hz float to short
         request.request.data[2] = result.to_le_bytes()[1];
         request.request.data[3] = result.to_le_bytes()[0];
         self.add_request(request);
@@ -473,7 +471,7 @@ impl Actor for MitsubishiInverterRS485Actor {
                     self.state = State::ReadyToSend;
                     // every time when our inverter is "Uninitialzed" reset it first to clear any error states it may have
                     self.add_request(MitsubishiControlRequests::ResetInverter.into());
-                    self.set_running_rpm_target(0.0);
+                    self.set_frequency_target(0.0);
                     self.baudrate = (self.serial_interface.get_baudrate)().await;
                     self.encoding = (self.serial_interface.get_serial_encoding)().await;
                 }

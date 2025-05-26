@@ -9,12 +9,12 @@ use control_core::{
         },
     },
     controllers::pid::PidController,
-    converters::motor_converter::MotorConverter,
 };
 
 /// Clampable frequency limits (in Hz)
 const MIN_FREQ: f64 = 0.0;
 const MAX_FREQ: f64 = 60.0;
+const TRANSMISSION_RATIO: f32 = 34.0;
 
 #[derive(Debug)]
 pub struct ScrewSpeedController {
@@ -36,7 +36,6 @@ impl ScrewSpeedController {
         kd: f64,
         target_pressure: f32,
         target_rpm: f32,
-
         pressure_sensor: AnalogInputGetter,
     ) -> Self {
         let now = Instant::now();
@@ -71,7 +70,9 @@ impl ScrewSpeedController {
 
     pub fn set_target_rpm(&mut self, target_rpm: f32) {
         self.target_rpm = target_rpm;
-        self.inverter.set_running_rpm_target(target_rpm);
+        // Use uom here
+        self.inverter
+            .set_frequency_target((target_rpm / 60.0) * TRANSMISSION_RATIO);
     }
 
     pub fn get_uses_rpm(&mut self) -> bool {
@@ -99,7 +100,8 @@ impl ScrewSpeedController {
     }
 
     pub fn get_rpm(&mut self) -> f32 {
-        self.inverter.frequency / 60.0
+        let rpm = self.inverter.frequency / 60.0;
+        self.calculate_transmission(rpm)
     }
 
     pub fn get_frequency(&mut self) -> f32 {
@@ -117,6 +119,10 @@ impl ScrewSpeedController {
         bar
     }
 
+    pub fn calculate_transmission(&self, rpm: f32) -> f32 {
+        rpm / TRANSMISSION_RATIO
+    }
+
     pub async fn update(&mut self, now: Instant) {
         self.inverter.act(now).await;
         if !self.uses_rpm {
@@ -124,8 +130,7 @@ impl ScrewSpeedController {
             let error = self.target_pressure - measured_pressure;
             let freq = self.pid.update(error.into(), now).clamp(MIN_FREQ, MAX_FREQ);
             self.last_update = now;
-            let rpm = MotorConverter::hz_to_rpm(freq as f32);
-            self.inverter.set_running_rpm_target(rpm);
+            self.inverter.set_frequency_target(freq as f32);
         }
     }
 

@@ -1,5 +1,5 @@
 use super::{ExtruderV2, ExtruderV2Mode};
-use control_core::{actors::Actor, converters::motor_converter::MotorConverter};
+use control_core::actors::Actor;
 use std::time::{Duration, Instant};
 
 impl Actor for ExtruderV2 {

@@ -76,14 +76,14 @@ export function Extruder2ControlPage() {
             />
           </Label>
           <div className="flex flex-row flex-wrap gap-4">
-            <Label label="Target RPM">
+            <Label label="Target Output RPM">
               <EditValue
                 value={targetRpm}
                 defaultValue={0}
                 unit="rpm"
-                title="Target RPM"
+                title="Target Output RPM"
                 min={0}
-                max={3600}
+                max={106}
                 renderValue={(value) => roundToDecimals(value, 0)}
                 onChange={SetTargetRpm}
               />
