@@ -68,9 +68,10 @@ impl ScrewSpeedController {
         self.target_pressure = target_pressure;
     }
 
-    pub fn set_target_rpm(&mut self, target_rpm: f32) {
+    pub fn set_target_screw_rpm(&mut self, target_rpm: f32) {
         self.target_rpm = target_rpm;
-        // Use uom here
+        // Use uom here and perhaps clamp it
+
         self.inverter
             .set_frequency_target((target_rpm / 60.0) * TRANSMISSION_RATIO);
     }

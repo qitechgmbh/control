@@ -196,7 +196,7 @@ impl ExtruderV2 {
     }
 
     fn set_target_rpm(&mut self, rpm: f32) {
-        self.screw_speed_controller.set_target_rpm(rpm);
+        self.screw_speed_controller.set_target_screw_rpm(rpm);
     }
 }
 
