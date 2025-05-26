@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use std::time::Instant;
 use temperature_controller::TemperatureController;
 use uom::si::{
-    angular_velocity::revolution_per_minute,
+    angular_velocity::{AngularVelocity, revolution_per_minute},
     f64::{Pressure, ThermodynamicTemperature},
     pressure::bar,
     thermodynamic_temperature::degree_celsius,
@@ -193,7 +193,9 @@ impl ExtruderV2 {
     }
 
     fn set_target_rpm(&mut self, rpm: f64) {
-        self.screw_speed_controller.set_target_screw_rpm(rpm);
+        let revolution_per_minutes = AngularVelocity::new::<revolution_per_minute>(rpm);
+        self.screw_speed_controller
+            .set_target_screw_rpm(revolution_per_minutes);
     }
 }
 
