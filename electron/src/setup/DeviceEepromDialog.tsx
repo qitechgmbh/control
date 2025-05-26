@@ -76,12 +76,7 @@ export function DeviceEepromDialog({ device }: Props) {
   );
 }
 
-/*
-
-
-
-*/
-
+// (Empty comment block removed)
 type ContentProps = {
   device: Device;
   setOpen: (open: boolean) => void;
