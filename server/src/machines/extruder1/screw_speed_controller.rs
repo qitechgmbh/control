@@ -100,7 +100,7 @@ impl ScrewSpeedController {
         }
     }
 
-    pub fn get_rpm(&mut self) -> f32 {
+    pub fn get_screw_rpm(&mut self) -> f32 {
         let rpm = self.inverter.frequency / 60.0;
         self.calculate_transmission(rpm)
     }

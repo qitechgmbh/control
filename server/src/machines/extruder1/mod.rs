@@ -280,7 +280,7 @@ impl ExtruderV2 {
     fn emit_rpm(&mut self) {
         let event = api::RpmStateEvent {
             // use uom here
-            rpm: self.screw_speed_controller.get_rpm(),
+            rpm: self.screw_speed_controller.get_screw_rpm(),
             target_rpm: self.screw_speed_controller.target_rpm,
         }
         .build();
