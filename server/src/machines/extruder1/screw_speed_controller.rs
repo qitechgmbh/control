@@ -13,7 +13,7 @@ use control_core::{
 use uom::si::{
     angular_velocity::revolution_per_minute,
     f64::{AngularVelocity, Frequency, Pressure},
-    frequency::{self, cycle_per_minute, hertz},
+    frequency::{cycle_per_minute, hertz},
     pressure::bar,
 };
 

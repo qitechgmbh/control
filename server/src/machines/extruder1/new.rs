@@ -44,7 +44,6 @@ use std::time::Instant;
 use uom::si::{
     angular_velocity::revolution_per_minute,
     f64::{AngularVelocity, Pressure, ThermodynamicTemperature},
-    frequency::cycle_per_minute,
     pressure::bar,
     thermodynamic_temperature::degree_celsius,
 };

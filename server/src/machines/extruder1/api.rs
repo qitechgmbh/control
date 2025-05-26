@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use super::{ExtruderV2, ExtruderV2Mode, Heating, HeatingType};
+use super::{ExtruderV2, ExtruderV2Mode, HeatingType};
 use control_core::{
     machines::api::MachineApi,
     socketio::{

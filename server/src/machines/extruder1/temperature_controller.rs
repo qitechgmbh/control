@@ -6,11 +6,7 @@ use control_core::{
     controllers::pid::PidController,
 };
 use std::time::{Duration, Instant};
-use uom::si::{
-    f64::{TemperatureInterval, ThermodynamicTemperature},
-    temperature_interval::degree_celsius as delta_celsius,
-    thermodynamic_temperature::degree_celsius,
-};
+use uom::si::{f64::ThermodynamicTemperature, thermodynamic_temperature::degree_celsius};
 
 use super::Heating;
 

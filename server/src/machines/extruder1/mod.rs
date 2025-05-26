@@ -1,15 +1,5 @@
 use api::{ExtruderV2Events, ExtruderV2Namespace};
-use control_core::{
-    actors::{
-        analog_input_getter::AnalogInputGetter,
-        mitsubishi_inverter_rs485::{
-            MitsubishiControlRequests, MitsubishiInverterRS485Actor, MitsubishiModbusRequest,
-        },
-    },
-    machines::Machine,
-    socketio::namespace::NamespaceCacheingLogic,
-};
-
+use control_core::{machines::Machine, socketio::namespace::NamespaceCacheingLogic};
 use screw_speed_controller::ScrewSpeedController;
 use serde::{Deserialize, Serialize};
 use std::time::Instant;
