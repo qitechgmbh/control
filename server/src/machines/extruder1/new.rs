@@ -342,15 +342,8 @@ impl MachineNewTrait for ExtruderV2 {
             let target_pressure = Pressure::new::<bar>(10.0);
             let target_rpm = AngularVelocity::new::<revolution_per_minute>(0.0);
 
-            let screw_speed_controller = ScrewSpeedController::new(
-                inverter,
-                1.0,
-                0.1,
-                0.1,
-                target_pressure,
-                target_rpm,
-                pressure_sensor,
-            );
+            let screw_speed_controller =
+                ScrewSpeedController::new(inverter, target_pressure, target_rpm, pressure_sensor);
 
             let extruder: ExtruderV2 = Self {
                 namespace: ExtruderV2Namespace::new(),

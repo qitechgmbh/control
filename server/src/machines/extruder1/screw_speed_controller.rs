@@ -37,9 +37,6 @@ pub struct ScrewSpeedController {
 impl ScrewSpeedController {
     pub fn new(
         inverter: MitsubishiInverterRS485Actor,
-        kp: f64,
-        ki: f64,
-        kd: f64,
         target_pressure: Pressure,
         target_rpm: AngularVelocity,
         pressure_sensor: AnalogInputGetter,
@@ -47,7 +44,8 @@ impl ScrewSpeedController {
         let now = Instant::now();
         Self {
             inverter: inverter,
-            pid: PidController::new(kp, ki, kd),
+            // need to tune
+            pid: PidController::new(0.1, 0.1, 0.1),
             last_update: now,
             target_pressure,
             target_rpm,
