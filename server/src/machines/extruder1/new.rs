@@ -40,7 +40,7 @@ use ethercat_hal::{
         serial_interface::SerialInterface, temperature_input::TemperatureInput,
     },
 };
-use std::time::Instant;
+use std::time::{Duration, Instant};
 use uom::si::{
     angular_velocity::revolution_per_minute,
     f64::{AngularVelocity, Pressure, ThermodynamicTemperature},
@@ -300,6 +300,7 @@ impl MachineNewTrait for ExtruderV2 {
                 t1_getter,
                 DigitalOutputSetter::new(digital_out_1),
                 Heating::default(),
+                Duration::from_millis(500),
             );
 
             // Only front heating on: These values work 0.08, 0.001, 0.007, Overshoot 0.5 undershoot ~0.7 (Problems when starting far away because of integral)
@@ -311,6 +312,7 @@ impl MachineNewTrait for ExtruderV2 {
                 t2_getter,
                 DigitalOutputSetter::new(digital_out_2),
                 Heating::default(),
+                Duration::from_millis(500),
             );
 
             // Only front heating on: These values work 0.08, 0.001, 0.007, Overshoot 0.5 undershoot ~0.7 (Problems when starting far away because of integral)
@@ -322,6 +324,7 @@ impl MachineNewTrait for ExtruderV2 {
                 t3_getter,
                 DigitalOutputSetter::new(digital_out_3),
                 Heating::default(),
+                Duration::from_millis(500),
             );
 
             // Only front heating on: These values work 0.08, 0.001, 0.007, Overshoot 0.5 undershoot ~0.7 (Problems when starting far away because of integral)
@@ -333,6 +336,7 @@ impl MachineNewTrait for ExtruderV2 {
                 t4_getter,
                 DigitalOutputSetter::new(digital_out_4),
                 Heating::default(),
+                Duration::from_millis(500),
             );
             let inverter = MitsubishiInverterRS485Actor::new(SerialInterface::new(
                 el6021,
