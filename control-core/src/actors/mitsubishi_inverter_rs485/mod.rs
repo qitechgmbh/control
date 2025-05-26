@@ -298,8 +298,7 @@ pub struct MitsubishiInverterRS485Actor {
     pub state: State,
     pub next_response_type: ResponseType,
     pub forward_rotation: bool,
-    pub current_freq: f32,
-    pub current_rpm: f32,
+    pub frequency: f32,
 }
 
 impl MitsubishiInverterRS485Actor {
@@ -316,8 +315,7 @@ impl MitsubishiInverterRS485Actor {
             last_message_size: 0,
             baudrate: None,
             encoding: None,
-            current_freq: 0.0,
-            current_rpm: 0.0,
+            frequency: 0.0,
         }
     }
 
@@ -448,8 +446,7 @@ impl MitsubishiInverterRS485Actor {
     // When we get respone from Pr. 40014 (Running Frequency) Convert to rpm and save it
     fn handle_motor_frequency(&mut self, resp: ModbusResponse) {
         let freq_bytes = &resp.data[1..3]; // bytes 1 and 2 are needed
-        self.current_freq = u16::from_be_bytes([freq_bytes[0], freq_bytes[1]]) as f32 / 100.0;
-        self.current_rpm = MotorConverter::hz_to_rpm(self.current_freq);
+        self.frequency = u16::from_be_bytes([freq_bytes[0], freq_bytes[1]]) as f32 / 100.0;
     }
 
     // Technically we could verify that every request also was successful with this match and return an Error, or not

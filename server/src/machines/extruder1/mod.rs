@@ -313,7 +313,8 @@ impl ExtruderV2 {
 impl ExtruderV2 {
     fn emit_rpm(&mut self) {
         let event = api::RpmStateEvent {
-            rpm: self.inverter.current_rpm,
+            // use uom here
+            rpm: self.inverter.frequency / 60.0,
             target_rpm: self.target_rpm,
         }
         .build();
