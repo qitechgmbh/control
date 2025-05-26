@@ -70,8 +70,10 @@ pub async fn setup_loop(
             mailbox_response: Duration::from_millis(1000),
         },
         MainDeviceConfig {
-            retry_behaviour: RetryBehaviour::Forever,
-            ..Default::default()
+            // Default RetryBehaviour::None
+            retry_behaviour: RetryBehaviour::None,
+            // Default 10_000
+            dc_static_sync_iterations: 10_000,
         },
     );
 
