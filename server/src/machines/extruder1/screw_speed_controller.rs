@@ -33,6 +33,7 @@ pub struct ScrewSpeedController {
     uses_rpm: bool,
     forward_rotation: bool,
     transmission_converter: TransmissionConverter,
+    motor_on: bool,
 }
 
 impl ScrewSpeedController {
@@ -54,6 +55,7 @@ impl ScrewSpeedController {
             uses_rpm: true,
             forward_rotation: true,
             transmission_converter: TransmissionConverter::new(),
+            motor_on: false,
         }
     }
 
@@ -66,12 +68,16 @@ impl ScrewSpeedController {
     }
 
     pub fn set_rotation_direction(&mut self, forward: bool) {
-        let req: MitsubishiModbusRequest = match forward {
-            // Our gearbox is inverted!!!
-            true => MitsubishiControlRequests::StartReverseRotation.into(),
-            false => MitsubishiControlRequests::StartForwardRotation.into(),
-        };
-        self.inverter.add_request(req);
+        self.forward_rotation = forward;
+        if self.motor_on {
+            if self.forward_rotation {
+                self.inverter
+                    .add_request(MitsubishiControlRequests::StartReverseRotation.into());
+            } else {
+                self.inverter
+                    .add_request(MitsubishiControlRequests::StartForwardRotation.into());
+            }
+        }
     }
 
     pub fn set_target_pressure(&mut self, target_pressure: Pressure) {
@@ -103,16 +109,18 @@ impl ScrewSpeedController {
     pub fn turn_motor_off(&mut self) {
         self.inverter
             .add_request(MitsubishiControlRequests::StopMotor.into());
+        self.motor_on = false;
     }
 
     pub fn turn_motor_on(&mut self) {
-        if self.inverter.forward_rotation {
-            self.inverter
-                .add_request(MitsubishiControlRequests::StartForwardRotation.into());
-        } else {
+        if self.forward_rotation {
             self.inverter
                 .add_request(MitsubishiControlRequests::StartReverseRotation.into());
+        } else {
+            self.inverter
+                .add_request(MitsubishiControlRequests::StartForwardRotation.into());
         }
+        self.motor_on = true;
     }
 
     pub fn get_screw_rpm(&mut self) -> AngularVelocity {
