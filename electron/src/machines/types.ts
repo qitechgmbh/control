@@ -182,7 +182,7 @@ export const extruder2: MachinePreset = {
   icon: "lu:Disc3",
   machine_identification: {
     vendor: VENDOR_QITECH,
-    machine: 0x0003,
+    machine: 0x0004,
   },
   device_roles: [
     {

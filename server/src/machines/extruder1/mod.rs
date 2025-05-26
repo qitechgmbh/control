@@ -82,6 +82,13 @@ impl ExtruderV2 {
         self.temperature_controller_nozzle.disable();
     }
 
+    fn enable_heating(&mut self) {
+        self.temperature_controller_back.allow_heating();
+        self.temperature_controller_front.allow_heating();
+        self.temperature_controller_middle.allow_heating();
+        self.temperature_controller_nozzle.allow_heating();
+    }
+
     // Turn heating OFF and do nothing
     fn switch_to_standby(&mut self) {
         match self.mode {
@@ -101,7 +108,7 @@ impl ExtruderV2 {
     fn switch_to_heat(&mut self) {
         // From what mode are we transitioning ?
         match self.mode {
-            ExtruderV2Mode::Standby => (),
+            ExtruderV2Mode::Standby => self.enable_heating(),
             ExtruderV2Mode::Heat => (),
             ExtruderV2Mode::Extrude => self.screw_speed_controller.turn_motor_off(),
         }
@@ -111,8 +118,14 @@ impl ExtruderV2 {
     // keep heating on, and turn motor on
     fn switch_to_extrude(&mut self) {
         match self.mode {
-            ExtruderV2Mode::Standby => self.screw_speed_controller.turn_motor_on(),
-            ExtruderV2Mode::Heat => self.screw_speed_controller.turn_motor_on(),
+            ExtruderV2Mode::Standby => {
+                self.screw_speed_controller.turn_motor_on();
+                self.enable_heating();
+            }
+            ExtruderV2Mode::Heat => {
+                self.screw_speed_controller.turn_motor_on();
+                self.enable_heating();
+            }
             ExtruderV2Mode::Extrude => (), // Do nothing, we are already extruding
         }
         self.mode = ExtruderV2Mode::Extrude;

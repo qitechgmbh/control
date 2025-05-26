@@ -248,6 +248,7 @@ impl MachineApi for ExtruderV2 {
             Mutation::SetRegulation(uses_rpm) => self.set_regulation(uses_rpm),
             Mutation::SetTargetPressure(bar) => self.set_target_pressure(bar),
             Mutation::SetTargetRpm(rpm) => self.set_target_rpm(rpm),
+
             Mutation::SetFrontHeatingTemperature(temp) => {
                 self.set_target_temperature(temp, HeatingType::Front)
             }

@@ -117,8 +117,8 @@ impl ScrewSpeedController {
         bar
     }
 
-    pub fn update(&mut self, now: Instant) {
-        self.inverter.act(now);
+    pub async fn update(&mut self, now: Instant) {
+        self.inverter.act(now).await;
         if !self.uses_rpm {
             let measured_pressure: f32 = self.get_pressure();
             let error = self.target_pressure - measured_pressure;
