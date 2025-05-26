@@ -76,9 +76,8 @@ impl ScrewSpeedController {
         self.target_pressure = target_pressure;
     }
 
-    pub fn set_target_screw_rpm(&mut self, target_rpm: f64) {
+    pub fn set_target_screw_rpm(&mut self, target_rpm: AngularVelocity) {
         // Use uom here and perhaps clamp it
-        let target_rpm = AngularVelocity::new::<revolution_per_minute>(target_rpm);
         let target_motor_rpm = target_rpm * TRANSMISSION_RATIO as f64;
         self.target_rpm = target_motor_rpm;
         let target_frequency =
