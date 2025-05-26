@@ -284,21 +284,20 @@ pub enum ResponseType {
 
 #[derive(Debug)]
 pub struct MitsubishiInverterRS485Actor {
+    // Communication
     pub serial_interface: SerialInterface,
+    pub baudrate: Option<u32>,
+    pub encoding: Option<SerialEncoding>,
+    pub request_queue: VecDeque<MitsubishiModbusRequest>,
+    pub response_queue: VecDeque<ModbusResponse>,
+
+    // State
     pub last_ts: Instant,
     pub last_message_size: usize,
     pub last_request_type: RequestType,
     pub state: State,
-
-    pub baudrate: Option<u32>,
-    pub encoding: Option<SerialEncoding>,
-
-    pub request_queue: VecDeque<MitsubishiModbusRequest>,
-    pub response_queue: VecDeque<ModbusResponse>,
-
-    pub forward_rotation: bool,
     pub next_response_type: ResponseType,
-
+    pub forward_rotation: bool,
     pub current_freq: f32,
     pub current_rpm: f32,
 }
