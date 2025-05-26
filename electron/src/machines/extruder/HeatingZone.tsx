@@ -2,7 +2,6 @@ import { ControlCard } from "@/control/ControlCard";
 import { EditValue } from "@/control/EditValue";
 import { Label } from "@/control/Label";
 import { roundToDecimals } from "@/lib/decimal";
-
 import React from "react";
 import { Heating } from "./extruder2/extruder2Namespace";
 import { TimeSeries } from "@/lib/timeseries";
