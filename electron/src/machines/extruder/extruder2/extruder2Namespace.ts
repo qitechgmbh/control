@@ -29,7 +29,7 @@ export type Extruder2NamespaceStore = {
   heatingBackState: HeatingStateEvent | null;
   heatingMiddleState: HeatingStateEvent | null;
 
-  motorRpmState: MotorRpmStateEvent | null;
+  motorRpmState: MotorScrewStateEvent | null;
   motorBarState: MotorPressureStateEvent | null;
   motorRegulationState: MotorRegulationStateEvent | null;
 
@@ -173,8 +173,8 @@ export function extruder2MessageHandler(
             state.bar = addBar(state.bar, timeseriesValue);
           }),
         );
-      } else if (eventName == "RpmStateEvent") {
-        const parsed = motorRpmStateEventSchema.parse(event);
+      } else if (eventName == "ScrewStateEvent") {
+        const parsed = motorScrewStateEventSchema.parse(event);
         const timeseriesValue: TimeSeriesValue = {
           value: parsed.data.rpm,
           timestamp: event.ts,
@@ -274,7 +274,7 @@ export const heatingTargetTemperatureDataSchema = z.object({
   target_temperature: z.number(),
 });
 
-export const motorRpmStateEventDataSchema = z.object({
+export const motorScrewStateEventDataSchema = z.object({
   rpm: z.number(),
   target_rpm: z.number(),
 });
@@ -293,8 +293,8 @@ export const heatingTargetEventSchema = eventSchema(
   heatingTargetTemperatureDataSchema,
 );
 
-export const motorRpmStateEventSchema = eventSchema(
-  motorRpmStateEventDataSchema,
+export const motorScrewStateEventSchema = eventSchema(
+  motorScrewStateEventDataSchema,
 );
 
 export const motorPressureStateEventSchema = eventSchema(
@@ -312,7 +312,7 @@ export const heatingStateEventSchema = eventSchema(heatingStateDataSchema);
 export const modeStateEventSchema = eventSchema(modeStateEventDataSchema);
 
 // type defs
-export type MotorRpmStateEvent = z.infer<typeof motorRpmStateEventSchema>;
+export type MotorScrewStateEvent = z.infer<typeof motorScrewStateEventSchema>;
 export type MotorPressureStateEvent = z.infer<
   typeof motorPressureStateEventSchema
 >;
@@ -329,6 +329,6 @@ export type HeatingType = z.infer<typeof heatingTypeSchema>;
 export type Heating = z.infer<typeof heatingStateDataSchema>;
 
 export type MotorPressure = z.infer<typeof motorBarStateEventDataSchema>;
-export type MotorRpm = z.infer<typeof motorRpmStateEventDataSchema>;
+export type MotorRpm = z.infer<typeof motorScrewStateEventDataSchema>;
 
 export type Mode = z.infer<typeof modeSchema>;

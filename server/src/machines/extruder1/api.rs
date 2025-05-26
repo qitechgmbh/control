@@ -136,14 +136,14 @@ impl PressureStateEvent {
 
 #[derive(Serialize, Debug, Clone)]
 
-pub struct RpmStateEvent {
+pub struct ScrewStateEvent {
     pub rpm: f32,
     pub target_rpm: f32,
 }
 
-impl RpmStateEvent {
+impl ScrewStateEvent {
     pub fn build(&self) -> Event<Self> {
-        Event::new("RpmStateEvent", self.clone())
+        Event::new("ScrewStateEvent", self.clone())
     }
 }
 
@@ -152,7 +152,7 @@ pub enum ExtruderV2Events {
     ModeEvent(Event<ModeEvent>),
     RegulationStateEvent(Event<RegulationStateEvent>),
     PressureStateEvent(Event<PressureStateEvent>),
-    RpmStateEvent(Event<RpmStateEvent>),
+    ScrewStateEvent(Event<ScrewStateEvent>),
     HeatingStateEvent(Event<HeatingStateEvent>),
 }
 
@@ -213,7 +213,7 @@ impl CacheableEvents<ExtruderV2Events> for ExtruderV2Events {
             ExtruderV2Events::ModeEvent(event) => event.try_into(),
             ExtruderV2Events::RegulationStateEvent(event) => event.try_into(),
             ExtruderV2Events::PressureStateEvent(event) => event.try_into(),
-            ExtruderV2Events::RpmStateEvent(event) => event.try_into(),
+            ExtruderV2Events::ScrewStateEvent(event) => event.try_into(),
             ExtruderV2Events::HeatingStateEvent(event) => event.try_into(),
         }
     }
@@ -228,7 +228,7 @@ impl CacheableEvents<ExtruderV2Events> for ExtruderV2Events {
             ExtruderV2Events::ModeEvent(_) => cache_one,
             ExtruderV2Events::RegulationStateEvent(_) => cache_one,
             ExtruderV2Events::PressureStateEvent(_) => cache_one,
-            ExtruderV2Events::RpmStateEvent(_) => cache_one,
+            ExtruderV2Events::ScrewStateEvent(_) => cache_one,
             ExtruderV2Events::HeatingStateEvent(_) => cache_one,
         }
     }

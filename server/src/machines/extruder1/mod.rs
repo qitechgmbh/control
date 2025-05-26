@@ -278,14 +278,14 @@ impl ExtruderV2 {
 
 impl ExtruderV2 {
     fn emit_rpm(&mut self) {
-        let event = api::RpmStateEvent {
+        let event = api::ScrewStateEvent {
             // use uom here
             rpm: self.screw_speed_controller.get_screw_rpm(),
             target_rpm: self.screw_speed_controller.target_rpm,
         }
         .build();
         self.namespace
-            .emit_cached(ExtruderV2Events::RpmStateEvent(event));
+            .emit_cached(ExtruderV2Events::ScrewStateEvent(event));
     }
 
     fn emit_bar(&mut self) {
