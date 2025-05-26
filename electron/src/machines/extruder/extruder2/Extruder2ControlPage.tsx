@@ -58,7 +58,7 @@ export function Extruder2ControlPage() {
           title={"Heating Back"}
           heatingState={backHeatingState}
           heatingTimeSeries={backTemperature}
-          onChangeTargetTemp={heatingSetMiddleTemp}
+          onChangeTargetTemp={heatingSetBackTemp}
         />
         <HeatingZone
           title={"Heating Nozzle"}
