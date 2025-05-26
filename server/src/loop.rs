@@ -18,8 +18,15 @@ pub fn init_loop(
                 let res = smol::block_on(rt.run(async { loop_once(app_state.clone()).await }));
                 if let Err(err) = res {
                     log::error!("Loop failed\n{:?}", err);
+                    break;
                 }
             }
+            // loop should never exit, but if it does, we send a panic message
+            // this causes the server to exit (and restarted by systemd if running on NixOS)
+            panic!(
+                "[{}::init_loop] Loop thread exited unexpectedly",
+                module_path!()
+            );
         })
         .or_else(|e| {
             Err(anyhow::anyhow!(
