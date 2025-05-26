@@ -9,6 +9,7 @@ use control_core::{
         },
     },
     controllers::pid::PidController,
+    converters::transmission_converter::TransmissionConverter,
 };
 use uom::si::{
     angular_velocity::revolution_per_minute,
@@ -20,7 +21,6 @@ use uom::si::{
 /// Clampable frequency limits (in Hz)
 const MIN_FREQ: f64 = 0.0;
 const MAX_FREQ: f64 = 60.0;
-const TRANSMISSION_RATIO: f64 = 34.0;
 
 #[derive(Debug)]
 pub struct ScrewSpeedController {
@@ -32,6 +32,7 @@ pub struct ScrewSpeedController {
     last_update: Instant,
     uses_rpm: bool,
     forward_rotation: bool,
+    transmission_converter: TransmissionConverter,
 }
 
 impl ScrewSpeedController {
@@ -52,6 +53,7 @@ impl ScrewSpeedController {
             pressure_sensor,
             uses_rpm: true,
             forward_rotation: true,
+            transmission_converter: TransmissionConverter::new(),
         }
     }
 
@@ -78,7 +80,9 @@ impl ScrewSpeedController {
 
     pub fn set_target_screw_rpm(&mut self, target_rpm: AngularVelocity) {
         // Use uom here and perhaps clamp it
-        let target_motor_rpm = target_rpm * TRANSMISSION_RATIO as f64;
+        let target_motor_rpm = self
+            .transmission_converter
+            .calculate_screw_input_rpm(target_rpm);
         self.target_rpm = target_motor_rpm;
         let target_frequency =
             Frequency::new::<cycle_per_minute>(self.target_rpm.get::<revolution_per_minute>());
@@ -113,7 +117,8 @@ impl ScrewSpeedController {
     pub fn get_screw_rpm(&mut self) -> AngularVelocity {
         let frequency = self.get_frequency();
         let rpm = frequency.get::<cycle_per_minute>();
-        self.calculate_transmission(AngularVelocity::new::<revolution_per_minute>(rpm))
+        self.transmission_converter
+            .calculate_screw_output_rpm(AngularVelocity::new::<revolution_per_minute>(rpm))
     }
 
     pub fn get_frequency(&mut self) -> Frequency {
@@ -133,10 +138,6 @@ impl ScrewSpeedController {
         // assuming full scale pressure of 10 bar
         let pressure: f64 = normalized as f64 * 10.0;
         return Pressure::new::<bar>(pressure);
-    }
-
-    pub fn calculate_transmission(&self, rpm: AngularVelocity) -> AngularVelocity {
-        rpm / TRANSMISSION_RATIO
     }
 
     pub async fn update(&mut self, now: Instant) {
