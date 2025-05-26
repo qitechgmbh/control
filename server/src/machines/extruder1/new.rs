@@ -294,8 +294,8 @@ impl MachineNewTrait for ExtruderV2 {
             // Only front heating on: These values work 0.08, 0.001, 0.007, Overshoot 0.5 undershoot ~0.7 (Problems when starting far away because of integral)
             let temperature_controller_front = TemperatureController::new(
                 0.16,
-                0.002,
-                0.005,
+                0.0,
+                0.008,
                 ThermodynamicTemperature::new::<degree_celsius>(200.0),
                 t1_getter,
                 DigitalOutputSetter::new(digital_out_1),
@@ -306,8 +306,8 @@ impl MachineNewTrait for ExtruderV2 {
             // Only front heating on: These values work 0.08, 0.001, 0.007, Overshoot 0.5 undershoot ~0.7 (Problems when starting far away because of integral)
             let temperature_controller_middle = TemperatureController::new(
                 0.16,
-                0.002,
-                0.005,
+                0.0,
+                0.008,
                 ThermodynamicTemperature::new::<degree_celsius>(200.0),
                 t2_getter,
                 DigitalOutputSetter::new(digital_out_2),
@@ -318,8 +318,8 @@ impl MachineNewTrait for ExtruderV2 {
             // Only front heating on: These values work 0.08, 0.001, 0.007, Overshoot 0.5 undershoot ~0.7 (Problems when starting far away because of integral)
             let temperature_controller_back = TemperatureController::new(
                 0.16,
-                0.002,
-                0.005,
+                0.0,
+                0.008,
                 ThermodynamicTemperature::new::<degree_celsius>(200.0),
                 t3_getter,
                 DigitalOutputSetter::new(digital_out_3),
@@ -330,8 +330,8 @@ impl MachineNewTrait for ExtruderV2 {
             // Only front heating on: These values work 0.08, 0.001, 0.007, Overshoot 0.5 undershoot ~0.7 (Problems when starting far away because of integral)
             let temperature_controller_nozzle = TemperatureController::new(
                 0.16,
-                0.002,
-                0.005,
+                0.0,
+                0.008,
                 ThermodynamicTemperature::new::<degree_celsius>(200.0),
                 t4_getter,
                 DigitalOutputSetter::new(digital_out_4),
