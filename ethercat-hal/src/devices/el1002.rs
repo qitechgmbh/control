@@ -4,8 +4,7 @@ use crate::helpers::ethercrab_types::EthercrabSubDevicePreoperational;
 use crate::io::digital_input::{DigitalInputDevice, DigitalInputInput, DigitalInputState};
 use crate::pdo::{PredefinedPdoAssignment, TxPdo, basic::BoolPdoObject};
 use ethercat_hal_derive::{EthercatDevice, TxPdo};
-/// EL1002 8-channel digital input device
-///
+/// EL1002 2-channel digital input device
 /// 24V DC, 3ms filter
 #[derive(Clone, EthercatDevice)]
 pub struct EL1002 {
