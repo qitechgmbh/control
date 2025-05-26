@@ -64,8 +64,8 @@ impl TemperatureController {
 
     pub async fn update(&mut self, now: Instant) -> () {
         self.temperature_sensor.act(now).await;
-        self.heating.temperature = self.temperature_sensor.temperature;
-        self.heating.wiring_error = self.temperature_sensor.wiring_error;
+        self.heating.temperature = self.temperature_sensor.get_temperature();
+        self.heating.wiring_error = self.temperature_sensor.get_wiring_error();
         self.relais.act(now).await;
 
         if self.heating_allowed {
