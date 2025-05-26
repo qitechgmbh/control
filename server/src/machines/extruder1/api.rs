@@ -148,11 +148,6 @@ impl RpmStateEvent {
 }
 
 pub enum ExtruderV2Events {
-    InverterStateEvent(Event<InverterStatusEvent>),
-    InverterModeEvent(Event<OperationModeEvent>),
-    InverterErrorEvent(Event<ErrorEvent>),
-    InverterFrequencyEvent(Event<FrequencyEvent>),
-    InverterSuccessEvent(Event<InverterSuccessEvent>),
     RotationStateEvent(Event<RotationStateEvent>),
     ModeEvent(Event<ModeEvent>),
     RegulationStateEvent(Event<RegulationStateEvent>),
@@ -165,41 +160,13 @@ pub enum ExtruderV2Events {
 enum Mutation {
     /// INVERTER
     /// Frequency Control
-    /// Set
-    SetRunningFrequency(f32),
-    SetEepromFrequency(f32),
-    SetMinimumFrequency(f32),
-    SetMaximumFrequency(f32),
-
-    ///Get
-    GetRunningFrequency(),
-    GetEepromFrequency(),
-    GetMaximumFrequency(),
-    GetMinimumFrequency(),
-
-    /// Motor Control
-    // true is forward rotation, false reverse rotation
     // Set Rotation also starts the motor
     SetRotation(bool),
-    StopMotor(),
     SetTargetPressure(f32),
     SetTargetRpm(f32),
     SetRegulation(bool),
-
-    /// Inverter Control
-    SetOperationMode(u8),
-    WriteParameter(u16, u16),
-    ReadParameter(u16),
-
-    // Clears
-    ClearAllParameters(),
-    ClearParameter(),
-    ClearNonCommunicationParameter(),
-    ClearNonCommunicationParameters(),
-    // Extruder Control
     //Mode
     SetMode(ExtruderV2Mode),
-
     //Heating
     SetHeatingFront(Heating),
     SetHeatingBack(Heating),
@@ -242,11 +209,6 @@ impl ExtruderV2Namespace {
 impl CacheableEvents<ExtruderV2Events> for ExtruderV2Events {
     fn event_value(&self) -> Result<GenericEvent, serde_json::Error> {
         match self {
-            ExtruderV2Events::InverterStateEvent(event) => event.try_into(),
-            ExtruderV2Events::InverterModeEvent(event) => event.try_into(),
-            ExtruderV2Events::InverterErrorEvent(event) => event.try_into(),
-            ExtruderV2Events::InverterFrequencyEvent(event) => event.try_into(),
-            ExtruderV2Events::InverterSuccessEvent(event) => event.try_into(),
             ExtruderV2Events::RotationStateEvent(event) => event.try_into(),
             ExtruderV2Events::ModeEvent(event) => event.try_into(),
             ExtruderV2Events::RegulationStateEvent(event) => event.try_into(),
@@ -262,13 +224,6 @@ impl CacheableEvents<ExtruderV2Events> for ExtruderV2Events {
         let cache_one = cache_one_event();
 
         match self {
-            ExtruderV2Events::InverterStateEvent(_) => todo!(),
-            ExtruderV2Events::InverterModeEvent(_) => todo!(),
-            ExtruderV2Events::InverterErrorEvent(_) => todo!(),
-            ExtruderV2Events::InverterFrequencyEvent(_) => {
-                todo!()
-            }
-            ExtruderV2Events::InverterSuccessEvent(_) => todo!(),
             ExtruderV2Events::RotationStateEvent(_) => cache_one,
             ExtruderV2Events::ModeEvent(_) => cache_one,
             ExtruderV2Events::RegulationStateEvent(_) => cache_one,
@@ -284,22 +239,6 @@ impl MachineApi for ExtruderV2 {
         // there are multiple Modbus Frames that are "prebuilt"
         let control: Mutation = serde_json::from_value(request_body)?;
         match control {
-            Mutation::SetRunningFrequency(_) => todo!(),
-            Mutation::SetEepromFrequency(_) => todo!(),
-            Mutation::SetMinimumFrequency(_) => todo!(),
-            Mutation::SetMaximumFrequency(_) => todo!(),
-            Mutation::GetRunningFrequency() => todo!(),
-            Mutation::GetEepromFrequency() => todo!(),
-            Mutation::GetMaximumFrequency() => todo!(),
-            Mutation::GetMinimumFrequency() => todo!(),
-            Mutation::StopMotor() => todo!(),
-            Mutation::SetOperationMode(_) => todo!(),
-            Mutation::WriteParameter(_, _) => todo!(),
-            Mutation::ReadParameter(_) => todo!(),
-            Mutation::ClearAllParameters() => todo!(),
-            Mutation::ClearParameter() => todo!(),
-            Mutation::ClearNonCommunicationParameter() => todo!(),
-            Mutation::ClearNonCommunicationParameters() => todo!(),
             Mutation::SetMode(mode) => self.set_mode_state(mode),
             Mutation::SetRotation(forward) => self.set_rotation_state(forward),
             Mutation::SetHeatingFront(heating) => self.set_heating_front(heating),
