@@ -6,22 +6,15 @@ import React from "react";
 import { useExtruder2 } from "./useExtruder";
 
 export function Extruder2SettingsPage() {
-  const {
-    mode,
-    SetMode,
-    modeIsLoading,
-    modeIsDisabled,
-    inverterSetRotation,
-    rotationState,
-  } = useExtruder2();
+  const { inverterSetRotation, rotationState } = useExtruder2();
   return (
     <Page>
       <ControlCard className="bg-red" title="Inverter Settings">
         <Label label="Rotation Direction">
           <SelectionGroupBoolean
             value={rotationState}
-            optionTrue={{ children: "Backwards" }}
-            optionFalse={{ children: "Forwards" }}
+            optionTrue={{ children: "Backward" }}
+            optionFalse={{ children: "Forward" }}
             onChange={inverterSetRotation}
           />
         </Label>
