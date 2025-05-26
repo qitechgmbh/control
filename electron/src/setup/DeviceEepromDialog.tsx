@@ -76,12 +76,7 @@ export function DeviceEepromDialog({ device }: Props) {
   );
 }
 
-/*
-
-
-
-*/
-
+// (Empty comment block removed)
 type ContentProps = {
   device: Device;
   setOpen: (open: boolean) => void;
@@ -103,8 +98,7 @@ export function DeviceEeepromDialogContent({ device, setOpen }: ContentProps) {
   });
   const values = useFormValues(form);
 
-  console.log(device);
-  console.log(device["device_identification"]["Ethercat"]);
+// Removed unnecessary console.log statements.
 
   const onSubmit = (values: FormSchema) => {
     client

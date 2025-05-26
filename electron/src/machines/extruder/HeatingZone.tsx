@@ -37,11 +37,11 @@ export function HeatingZone({
             timeseries={heatingTimeSeries}
           />
 
-          <label className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2">
             <Flame
               className={`h-5 w-5 ${heating ? "text-orange-500" : "text-gray-400"}`}
             />
-          </label>
+          </div>
         </div>
 
         <Label label="Target Temperature">
