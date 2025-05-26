@@ -1,6 +1,6 @@
 use super::{
     ExtruderV2, ExtruderV2Mode, Heating, api::ExtruderV2Namespace,
-    pressure_controller::PressureController,
+    screw_speed_controller::ScrewSpeedController,
 };
 use crate::machines::extruder1::temperature_controller::TemperatureController;
 use anyhow::Error;
@@ -328,29 +328,23 @@ impl MachineNewTrait for ExtruderV2 {
                 DigitalOutputSetter::new(digital_out_4),
                 Heating::default(),
             );
+            let inverter = MitsubishiInverterRS485Actor::new(SerialInterface::new(
+                el6021,
+                el6021::EL6021Port::SI1,
+            ));
 
-            let pressure_motor_controller = PressureController::new(1.0, 0.1, 0.1, 10.0);
+            let screw_speed_controller =
+                ScrewSpeedController::new(inverter, 1.0, 0.1, 0.1, 10.0, 0.0, pressure_sensor);
 
             let extruder: ExtruderV2 = Self {
-                inverter: MitsubishiInverterRS485Actor::new(SerialInterface::new(
-                    el6021,
-                    el6021::EL6021Port::SI1,
-                )),
                 namespace: ExtruderV2Namespace::new(),
                 last_measurement_emit: Instant::now(),
-                pressure_sensor: pressure_sensor,
                 mode: ExtruderV2Mode::Standby,
-                uses_rpm: true,
-                bar: 0.0,
-                target_rpm: 0.0,
-                target_bar: 0.0,
-
                 temperature_controller_front: temperature_controller_front,
                 temperature_controller_middle: temperature_controller_middle,
                 temperature_controller_back: temperature_controller_back,
                 temperature_controller_nozzle: temperature_controller_nozzle,
-
-                pressure_motor_controller: pressure_motor_controller,
+                screw_speed_controller: screw_speed_controller,
             };
             Ok(extruder)
         })

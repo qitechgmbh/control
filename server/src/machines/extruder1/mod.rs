@@ -10,14 +10,14 @@ use control_core::{
     socketio::namespace::NamespaceCacheingLogic,
 };
 
-use pressure_controller::PressureController;
+use screw_speed_controller::ScrewSpeedController;
 use serde::{Deserialize, Serialize};
 use std::time::Instant;
 use temperature_controller::TemperatureController;
 pub mod act;
 pub mod api;
 pub mod new;
-pub mod pressure_controller;
+pub mod screw_speed_controller;
 pub mod temperature_controller;
 
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
@@ -55,20 +55,14 @@ pub enum HeatingType {
 
 #[derive(Debug)]
 pub struct ExtruderV2 {
-    inverter: MitsubishiInverterRS485Actor,
     namespace: ExtruderV2Namespace,
     mode: ExtruderV2Mode,
     last_measurement_emit: Instant,
-    pressure_sensor: AnalogInputGetter, // EL3024
-    uses_rpm: bool,
-    bar: f32,
-    target_rpm: f32,
-    target_bar: f32,
+    screw_speed_controller: ScrewSpeedController,
     temperature_controller_front: TemperatureController,
     temperature_controller_middle: TemperatureController,
     temperature_controller_back: TemperatureController,
     temperature_controller_nozzle: TemperatureController,
-    pressure_motor_controller: PressureController,
 }
 
 impl std::fmt::Display for ExtruderV2 {
@@ -88,22 +82,6 @@ impl ExtruderV2 {
         self.temperature_controller_nozzle.disable();
     }
 
-    // Send Motor Turn Off Request to the Inverter
-    fn turn_motor_off(&mut self) {
-        self.inverter
-            .add_request(MitsubishiControlRequests::StopMotor.into());
-    }
-
-    fn turn_motor_on(&mut self) {
-        if self.inverter.forward_rotation {
-            self.inverter
-                .add_request(MitsubishiControlRequests::StartForwardRotation.into());
-        } else {
-            self.inverter
-                .add_request(MitsubishiControlRequests::StartReverseRotation.into());
-        }
-    }
-
     // Turn heating OFF and do nothing
     fn switch_to_standby(&mut self) {
         match self.mode {
@@ -113,7 +91,7 @@ impl ExtruderV2 {
             }
             ExtruderV2Mode::Extrude => {
                 self.turn_heating_off();
-                self.turn_motor_off();
+                self.screw_speed_controller.turn_motor_off();
             }
         };
         self.mode = ExtruderV2Mode::Standby;
@@ -125,7 +103,7 @@ impl ExtruderV2 {
         match self.mode {
             ExtruderV2Mode::Standby => (),
             ExtruderV2Mode::Heat => (),
-            ExtruderV2Mode::Extrude => self.turn_motor_off(),
+            ExtruderV2Mode::Extrude => self.screw_speed_controller.turn_motor_off(),
         }
         self.mode = ExtruderV2Mode::Heat;
     }
@@ -133,8 +111,8 @@ impl ExtruderV2 {
     // keep heating on, and turn motor on
     fn switch_to_extrude(&mut self) {
         match self.mode {
-            ExtruderV2Mode::Standby => self.turn_motor_on(),
-            ExtruderV2Mode::Heat => self.turn_motor_on(),
+            ExtruderV2Mode::Standby => self.screw_speed_controller.turn_motor_on(),
+            ExtruderV2Mode::Heat => self.screw_speed_controller.turn_motor_on(),
             ExtruderV2Mode::Extrude => (), // Do nothing, we are already extruding
         }
         self.mode = ExtruderV2Mode::Extrude;
@@ -155,22 +133,13 @@ impl ExtruderV2 {
 
 impl ExtruderV2 {
     fn set_rotation_state(&mut self, forward: bool) {
-        self.inverter.forward_rotation = forward;
-        if self.mode == ExtruderV2Mode::Extrude {
-            let req: MitsubishiModbusRequest = match forward {
-                // Our gearbox is inverted!!!
-                true => MitsubishiControlRequests::StartReverseRotation.into(),
-                false => MitsubishiControlRequests::StartForwardRotation.into(),
-            };
-            self.inverter.add_request(req);
-        }
-
+        self.screw_speed_controller.set_rotation_direction(forward);
         self.emit_rotation_state();
     }
 
     fn emit_rotation_state(&mut self) {
         let event = api::RotationStateEvent {
-            forward: self.inverter.forward_rotation.clone(),
+            forward: self.screw_speed_controller.get_rotation_direction(),
         }
         .build();
         self.namespace
@@ -196,13 +165,13 @@ impl ExtruderV2 {
 // Motor
 impl ExtruderV2 {
     fn set_regulation(&mut self, uses_rpm: bool) {
-        self.uses_rpm = uses_rpm.clone();
+        self.screw_speed_controller.set_uses_rpm(uses_rpm);
         self.emit_regulation();
     }
 
     fn emit_regulation(&mut self) {
         let event = api::RegulationStateEvent {
-            uses_rpm: self.uses_rpm,
+            uses_rpm: self.screw_speed_controller.get_uses_rpm(),
         }
         .build();
         self.namespace
@@ -210,27 +179,11 @@ impl ExtruderV2 {
     }
 
     fn set_target_pressure(&mut self, bar: f32) {
-        self.target_bar = bar;
-    }
-
-    fn set_bar(&mut self) {
-        let normalized = self.pressure_sensor.get_normalized();
-        let normalized = match normalized {
-            Some(normalized) => normalized,
-            None => todo!(),
-        };
-        // assuming full scale pressure of 10 bar
-        let bar = normalized * 10.0;
-        self.bar = bar;
+        self.screw_speed_controller.set_target_pressure(bar);
     }
 
     fn set_target_rpm(&mut self, rpm: f32) {
-        if self.uses_rpm {
-            self.target_rpm = rpm;
-            self.inverter.set_running_rpm_target(rpm);
-        } else {
-            return;
-        }
+        self.screw_speed_controller.set_target_rpm(rpm);
     }
 }
 
@@ -314,8 +267,8 @@ impl ExtruderV2 {
     fn emit_rpm(&mut self) {
         let event = api::RpmStateEvent {
             // use uom here
-            rpm: self.inverter.frequency / 60.0,
-            target_rpm: self.target_rpm,
+            rpm: self.screw_speed_controller.get_rpm(),
+            target_rpm: self.screw_speed_controller.target_rpm,
         }
         .build();
         self.namespace
@@ -324,8 +277,8 @@ impl ExtruderV2 {
 
     fn emit_bar(&mut self) {
         let event = api::PressureStateEvent {
-            bar: self.bar,
-            target_bar: self.target_bar,
+            bar: self.screw_speed_controller.get_pressure(),
+            target_bar: self.screw_speed_controller.target_pressure,
         }
         .build();
         self.namespace
