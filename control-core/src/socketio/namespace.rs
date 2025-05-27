@@ -25,21 +25,15 @@ impl SocketQueue {
         }
     }
 
-    /// Add an event to the queue and immediately try to flush
-    pub fn emit(&self, event: GenericEvent, socket: SocketRef) {
-        self.push(event);
-        self.flush(socket);
-    }
-
     /// Add an event to the queue
-    fn push(&self, event: GenericEvent) {
+    pub fn push(&self, event: GenericEvent) {
         if let Ok(mut queue) = self.queue.lock() {
             queue.push_back(event);
         }
     }
 
     /// Force flush events asynchronously (assumes flushing flag is already set)
-    fn flush(&self, socket: SocketRef) {
+    pub fn flush(&self, socket: SocketRef) {
         // Check if we're already flushing
         if self
             .is_flushing
@@ -162,13 +156,6 @@ pub trait NamespaceInterface {
         event: &GenericEvent,
         buffer_fn: &Box<dyn Fn(&mut Vec<GenericEvent>, &GenericEvent) -> ()>,
     );
-
-    /// Emits an event to a specific socket in the namespace.
-    ///
-    /// # Arguments
-    /// * `event` - The event to be emitted
-    /// * `socket` - A reference to the socket that will receive the event
-    fn emit_to_socket(&mut self, event: &GenericEvent, socket: SocketRef);
 }
 
 #[derive(Debug)]
@@ -204,27 +191,27 @@ impl NamespaceInterface for Namespace {
     }
 
     fn reemit(&mut self, socket: SocketRef) {
-        let events_to_emit: Vec<GenericEvent> = self
-            .events
-            .values()
-            .flat_map(|events| events.iter().cloned())
-            .collect();
+        if let Some(queue) = self.socket_queues.get(&socket.id) {
+            let events_to_emit: Vec<GenericEvent> = self
+                .events
+                .values()
+                .flat_map(|events| events.iter().cloned())
+                .collect();
 
-        for event in events_to_emit {
-            self.emit_to_socket(&event, socket.clone());
+            for event in events_to_emit {
+                queue.push(event.clone());
+            }
+            queue.flush(socket.clone());
         }
     }
 
     fn emit(&mut self, event: &GenericEvent) {
         // Use the new emit function which combines push and flush
         for socket in self.sockets.clone() {
-            self.emit_to_socket(event, socket.clone());
-        }
-    }
-
-    fn emit_to_socket(&mut self, event: &GenericEvent, socket: SocketRef) {
-        if let Some(queue) = self.socket_queues.get(&socket.id) {
-            queue.emit(event.clone(), socket);
+            if let Some(queue) = self.socket_queues.get(&socket.id) {
+                queue.push(event.clone());
+                queue.flush(socket.clone());
+            }
         }
     }
 
