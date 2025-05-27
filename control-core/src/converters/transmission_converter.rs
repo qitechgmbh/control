@@ -1,4 +1,4 @@
-use uom::si::{angular_velocity::revolution_per_minute, f64::AngularVelocity};
+use uom::si::f64::AngularVelocity;
 
 #[derive(Debug, Clone)]
 pub struct TransmissionConverter {

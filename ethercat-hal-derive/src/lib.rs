@@ -174,14 +174,12 @@ pub fn ethercat_device_derive(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     let name = &input.ident;
 
+    #[allow(unused_assignments)]
     let mut output_impl = quote! {};
+    #[allow(unused_assignments)]
     let mut input_impl = quote! {};
     let mut has_rxpdo = false;
     let mut has_txpdo = false;
-
-    // remove warnings for variables never read
-    let _ = &output_impl;
-    let _ = &input_impl;
 
     if let Data::Struct(data_struct) = input.data {
         for field in data_struct.fields.iter() {

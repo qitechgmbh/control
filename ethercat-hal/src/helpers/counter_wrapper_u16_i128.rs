@@ -230,6 +230,7 @@ mod tests {
     fn test_integration() {
         // Simulate a full rotation: 0 -> 65535 -> 0
         let mut position: i128 = 0;
+        #[allow(unused_assignments)]
         let mut raw_counter: u16 = 0;
 
         // Increment to 65530

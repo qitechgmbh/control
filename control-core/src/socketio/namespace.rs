@@ -1,9 +1,6 @@
 use crate::socketio::event::GenericEvent;
 use socketioxide::extract::SocketRef;
-use std::{
-    collections::HashMap,
-    time::{Duration,SystemTime, UNIX_EPOCH},
-};
+use std::{collections::HashMap, time::Duration};
 
 pub trait NamespaceInterface {
     /// Adds a socket to the namespace.

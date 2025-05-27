@@ -4,9 +4,7 @@ use control_core::{
     actors::{
         Actor,
         analog_input_getter::AnalogInputGetter,
-        mitsubishi_inverter_rs485::{
-            MitsubishiControlRequests, MitsubishiInverterRS485Actor, MitsubishiModbusRequest,
-        },
+        mitsubishi_inverter_rs485::{MitsubishiControlRequests, MitsubishiInverterRS485Actor},
     },
     controllers::pid::PidController,
     converters::transmission_converter::TransmissionConverter,
