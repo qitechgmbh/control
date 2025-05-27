@@ -263,39 +263,51 @@ export function winder2MessageHandler(
       // Apply appropriate caching strategy based on event type
       // State events (keep only the latest)
       if (eventName === "TraverseStateEvent") {
+        let parsed = traverseStateEventSchema.parse(event);
+        console.log("TraverseStateEvent", parsed);
         store.setState(
           produce(store.getState(), (state) => {
-            state.traverseState = traverseStateEventSchema.parse(event);
+            state.traverseState = parsed;
           }),
         );
       } else if (eventName === "PullerStateEvent") {
+        let parsed = pullerStateEventSchema.parse(event);
+        console.log("PullerStateEvent", parsed);
         store.setState(
           produce(store.getState(), (state) => {
-            state.pullerState = pullerStateEventSchema.parse(event);
+            state.pullerState = parsed;
           }),
         );
       } else if (eventName === "AutostopStateEvent") {
+        let parsed = autostopStateEventSchema.parse(event);
+        console.log("AutostopStateEvent", parsed);
         store.setState(
           produce(store.getState(), (state) => {
-            state.autostopState = autostopStateEventSchema.parse(event);
+            state.autostopState = parsed;
           }),
         );
       } else if (eventName === "ModeStateEvent") {
+        let parsed = modeStateEventSchema.parse(event);
+        console.log("ModeStateEvent", parsed);
         store.setState(
           produce(store.getState(), (state) => {
-            state.modeState = modeStateEventSchema.parse(event);
+            state.modeState = parsed;
           }),
         );
       } else if (eventName === "SpoolStateEvent") {
+        let parsed = spoolStateEventSchema.parse(event);
+        console.log("SpoolStateEvent", parsed);
         store.setState(
           produce(store.getState(), (state) => {
-            state.spoolState = spoolStateEventSchema.parse(event);
+            state.spoolState = parsed;
           }),
         );
       } else if (eventName === "TensionArmStateEvent") {
+        let parsed = tensionArmStateEventSchema.parse(event);
+        console.log("TensionArmStateEvent", parsed);
         store.setState(
           produce(store.getState(), (state) => {
-            state.tensionArmState = tensionArmStateEventSchema.parse(event);
+            state.tensionArmState = parsed;
           }),
         );
       }

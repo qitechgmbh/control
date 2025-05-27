@@ -1,6 +1,106 @@
 use crate::socketio::event::GenericEvent;
-use socketioxide::extract::SocketRef;
-use std::{collections::HashMap, time::Duration};
+use socketioxide::{extract::SocketRef, socket::Sid};
+use std::{
+    collections::{HashMap, VecDeque},
+    sync::{
+        Arc, Mutex,
+        atomic::{AtomicBool, Ordering},
+    },
+    time::Duration,
+};
+
+/// A queue for managing events for a specific socket
+#[derive(Debug)]
+pub struct SocketQueue {
+    queue: Arc<Mutex<VecDeque<GenericEvent>>>,
+    is_flushing: Arc<AtomicBool>,
+}
+
+impl SocketQueue {
+    /// Create a new socket queue for the given socket ID
+    pub fn new() -> Self {
+        Self {
+            queue: Arc::new(Mutex::new(VecDeque::new())),
+            is_flushing: Arc::new(AtomicBool::new(false)),
+        }
+    }
+
+    /// Add an event to the queue and immediately try to flush
+    pub fn emit(&self, event: GenericEvent, socket: SocketRef) {
+        self.push(event);
+        self.flush(socket);
+    }
+
+    /// Add an event to the queue
+    fn push(&self, event: GenericEvent) {
+        if let Ok(mut queue) = self.queue.lock() {
+            queue.push_back(event);
+        }
+    }
+
+    /// Force flush events asynchronously (assumes flushing flag is already set)
+    fn flush(&self, socket: SocketRef) {
+        // Check if we're already flushing
+        if self
+            .is_flushing
+            .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
+            .is_err()
+        {
+            // Already flushing, return early
+            return;
+        }
+
+        let queue = Arc::clone(&self.queue);
+        let is_flushing = Arc::clone(&self.is_flushing);
+
+        // Spawn a smol task to flush the queue
+        smol::spawn(async move {
+            let mut events_to_flush = Vec::new();
+
+            // Collect all events from the queue
+            if let Ok(mut queue_guard) = queue.lock() {
+                while let Some(event) = queue_guard.pop_front() {
+                    events_to_flush.push(event);
+                }
+            }
+
+            // Emit all events
+            for event in events_to_flush {
+                // retry
+                loop {
+                    match socket.emit("event", &event) {
+                        Ok(_) => break, // Successfully emitted, exit loop
+                        Err(e) => match e {
+                            socketioxide::SendError::Serialize(_) => {
+                                // no reason in retrying serialization errors
+                                break;
+                            }
+                            socketioxide::SendError::Socket(socket_error) => match socket_error {
+                                socketioxide::SocketError::InternalChannelFull => {
+                                    // wait 10ms before retrying
+                                    log::warn!(
+                                        "Socket {} internal channel full, retrying in 10ms",
+                                        socket.id
+                                    );
+                                    smol::Timer::after(Duration::from_millis(10)).await;
+                                    continue; // Retry sending the event
+                                }
+                                socketioxide::SocketError::Closed => {
+                                    // Socket is closed, no point in retrying
+                                    break;
+                                }
+                            },
+                        },
+                    }
+                }
+            }
+
+            // Reset the flushing flag
+            is_flushing.store(false, Ordering::SeqCst);
+        })
+        .detach();
+    }
+}
 
 pub trait NamespaceInterface {
     /// Adds a socket to the namespace.
@@ -62,12 +162,20 @@ pub trait NamespaceInterface {
         event: &GenericEvent,
         buffer_fn: &Box<dyn Fn(&mut Vec<GenericEvent>, &GenericEvent) -> ()>,
     );
+
+    /// Emits an event to a specific socket in the namespace.
+    ///
+    /// # Arguments
+    /// * `event` - The event to be emitted
+    /// * `socket` - A reference to the socket that will receive the event
+    fn emit_to_socket(&mut self, event: &GenericEvent, socket: SocketRef);
 }
 
 #[derive(Debug)]
 pub struct Namespace {
     sockets: Vec<SocketRef>,
     events: HashMap<String, Vec<GenericEvent>>,
+    socket_queues: HashMap<Sid, SocketQueue>,
 }
 
 impl Namespace {
@@ -75,6 +183,7 @@ impl Namespace {
         Self {
             sockets: vec![],
             events: HashMap::new(),
+            socket_queues: HashMap::new(),
         }
     }
 }
@@ -83,30 +192,39 @@ impl NamespaceInterface for Namespace {
     fn subscribe(&mut self, socket: SocketRef) {
         // add the socket to the list
         self.sockets.push(socket.clone());
+        // create a new queue for this socket
+        self.socket_queues.insert(socket.id, SocketQueue::new());
     }
 
     fn unsubscribe(&mut self, socket: SocketRef) {
         // remove the socket from the list
         self.sockets.retain(|s| s.id != socket.id);
+        // remove the socket's queue
+        self.socket_queues.remove(&socket.id);
     }
 
     fn reemit(&mut self, socket: SocketRef) {
-        for (_, events) in self.events.iter() {
-            log::debug!(
-                "Re-emitting {} {} events to socket {}",
-                events.len(),
-                events[0].name,
-                socket.id
-            );
-            for event in events.iter() {
-                let _ = socket.emit("event", &event);
-            }
+        let events_to_emit: Vec<GenericEvent> = self
+            .events
+            .values()
+            .flat_map(|events| events.iter().cloned())
+            .collect();
+
+        for event in events_to_emit {
+            self.emit_to_socket(&event, socket.clone());
         }
     }
 
     fn emit(&mut self, event: &GenericEvent) {
-        for socket in self.sockets.iter() {
-            let _ = socket.emit("event", &event);
+        // Use the new emit function which combines push and flush
+        for socket in self.sockets.clone() {
+            self.emit_to_socket(event, socket.clone());
+        }
+    }
+
+    fn emit_to_socket(&mut self, event: &GenericEvent, socket: SocketRef) {
+        if let Some(queue) = self.socket_queues.get(&socket.id) {
+            queue.emit(event.clone(), socket);
         }
     }
 

@@ -8,7 +8,9 @@ use socketioxide::layer::SocketIoLayer;
 
 pub async fn init_socketio(app_state: &Arc<AppState>) -> SocketIoLayer {
     // create
-    let (socketio_layer, io) = socketioxide::SocketIo::new_layer();
+    let (socketio_layer, io) = socketioxide::SocketIoBuilder::new()
+    .max_buffer_size(10)
+    .build_layer();
 
     // Clone app_state for the first handler
     let app_state_main = app_state.clone();
@@ -110,8 +112,14 @@ fn setup_connection(socket: SocketRef, namespace_id: NamespaceId, app_state: Arc
                 |namespace_interface| {
                     match namespace_interface {
                         Ok(namespace_interface) => {
+                            // First subscribe the socket
                             namespace_interface.subscribe(socket_clone.clone());
+                            log::debug!("Socket {} subscribed to namespace {}", socket_clone.id, namespace_id_clone);
+                            
+                            // Then re-emit cached events
                             namespace_interface.reemit(socket_clone.clone());
+                            log::debug!("Reemit completed for socket {} in namespace {}", socket_clone.id, namespace_id_clone);
+                            
                             log::info!(
                                 "Socket {} was connected to namespace {}",
                                 socket_clone.id,
@@ -119,14 +127,13 @@ fn setup_connection(socket: SocketRef, namespace_id: NamespaceId, app_state: Arc
                             );
                         }
                         Err(err) => {
-                            // disconnect the socket if namespace not found
                             log::warn!(
-                                "Socket was disconnected {} from namespace {}: {:?}",
+                                "Socket connection failed for {} in namespace {}, disconnecting: {:?}",
                                 socket_clone.id,
                                 namespace_id_clone,
                                 err
                             );
-                            let _ = socket_clone.clone().disconnect();
+                            let _ = socket_clone.disconnect();
                         }
                     }
                 },
