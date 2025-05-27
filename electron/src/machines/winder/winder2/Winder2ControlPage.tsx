@@ -143,7 +143,11 @@ export function Winder2ControlPage() {
           <Label label="Laserpointer">
             <SelectionGroupBoolean
               value={laserpointer}
-              disabled={laserpointerIsLoading}
+              disabled={
+                laserpointerIsLoading ||
+                traverseStateIsLoading ||
+                traverseStateIsDisabled
+              }
               loading={laserpointerIsDisabled}
               optionFalse={{ children: "Off", icon: "lu:LightbulbOff" }}
               optionTrue={{ children: "On", icon: "lu:Lightbulb" }}
