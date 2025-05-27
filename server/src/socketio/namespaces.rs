@@ -26,7 +26,7 @@ impl Namespaces {
         match namespace_id {
             NamespaceId::Main => callback(Ok(&mut self.main_namespace.0)),
             NamespaceId::Machine(machine_identification_unique) => {
-                // lock machines
+                // Lock machines and work directly with the reference to avoid cloning issues
                 let machines_guard = app_state.machines.read().await;
 
                 // get machine
@@ -56,9 +56,8 @@ impl Namespaces {
                     }
                 };
 
-                let mut machines_guard = machine.lock().await;
-
-                let namespace = machines_guard.api_event_namespace();
+                let mut machine_guard = machine.lock().await;
+                let namespace = machine_guard.api_event_namespace();
                 callback(Ok(namespace));
             }
         }

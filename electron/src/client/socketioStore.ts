@@ -181,11 +181,22 @@ const useSocketioStore = create<SocketioStore>()((set, get) => ({
       // reset the store
       resetStore(set);
     });
-    socket.on("disconnect", () => {
-      console.warn(`Disconnected from ${namespace_path}`);
+    socket.on("disconnect", (reason) => {
+      console.warn(`Disconnected from ${namespace_path}, reason: ${reason}`);
 
       // reset the store
       resetStore(set);
+
+      // Attempt to reconnect after a short delay for any disconnect reason
+      console.log(
+        `Disconnected from ${namespace_path}, attempting reconnect in 1s...`,
+      );
+      setTimeout(() => {
+        if (get().hasNamespace(namespaceId) && !socket.connected) {
+          console.log(`Reconnecting to ${namespace_path}...`);
+          socket.connect();
+        }
+      }, 1000);
     });
 
     socket.on("event", (event: unknown) => {

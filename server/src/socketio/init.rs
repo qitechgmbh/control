@@ -73,53 +73,65 @@ fn setup_disconnection(socket: SocketRef, namespace_id: NamespaceId, app_state: 
         let namespace_id = namespace_id.clone();
         let app_state = app_state.clone();
 
-        smol::block_on(async move {
-            log::debug!("Socket disconnected {}", socket.id);
+        // Spawn async task to avoid blocking and potential deadlocks
+        smol::spawn(async move {
+            log::debug!(
+                "Socket disconnected {} from namespace {}",
+                socket.id,
+                namespace_id
+            );
             let mut socketio_namespaces_guard = app_state.socketio_setup.namespaces.write().await;
 
             // remove from machine namespace
             socketio_namespaces_guard
                 .apply_mut(namespace_id.clone(), &app_state, |namespace_interface| {
-                    match namespace_interface {
-                        Ok(namespace_interface) => {
-                            namespace_interface.unsubscribe(socket.clone());
-                        }
-                        Err(err) => {
-                            log::error!(
-                                "[{}::on_disconnect_machine_ns] Namespace {:?} not found: {}",
-                                module_path!(),
-                                namespace_id,
-                                err
-                            );
-                        }
+                    if let Ok(namespace_interface) = namespace_interface {
+                        namespace_interface.unsubscribe(socket.clone());
                     }
                 })
                 .await;
-        });
+        })
+        .detach();
     });
 }
 
 fn setup_connection(socket: SocketRef, namespace_id: NamespaceId, app_state: Arc<AppState>) {
-    log::info!("Socket connected {}", socket.id);
-    smol::block_on(async {
-        let mut socketio_namespaces_guard = app_state.socketio_setup.namespaces.write().await;
+    // Spawn async task to avoid blocking and potential deadlocks
+    let socket_clone = socket.clone();
+    let namespace_id_clone = namespace_id.clone();
+    let app_state_clone = app_state.clone();
+
+    smol::spawn(async move {
+        let mut socketio_namespaces_guard = app_state_clone.socketio_setup.namespaces.write().await;
         socketio_namespaces_guard
-            .apply_mut(namespace_id.clone(), &app_state, |namespace_interface| {
-                match namespace_interface {
-                    Ok(namespace_interface) => {
-                        namespace_interface.subscribe(socket.clone());
-                        namespace_interface.reemit(socket);
+            .apply_mut(
+                namespace_id_clone.clone(),
+                &app_state_clone,
+                |namespace_interface| {
+                    match namespace_interface {
+                        Ok(namespace_interface) => {
+                            namespace_interface.subscribe(socket_clone.clone());
+                            namespace_interface.reemit(socket_clone.clone());
+                            log::info!(
+                                "Socket {} was connected to namespace {}",
+                                socket_clone.id,
+                                namespace_id_clone
+                            );
+                        }
+                        Err(err) => {
+                            // disconnect the socket if namespace not found
+                            log::warn!(
+                                "Socket was disconnected {} from namespace {}: {:?}",
+                                socket_clone.id,
+                                namespace_id_clone,
+                                err
+                            );
+                            let _ = socket_clone.clone().disconnect();
+                        }
                     }
-                    Err(err) => {
-                        log::error!(
-                            "[{}::on_connect_machine_ns] Namespace {:?} not found: {}",
-                            module_path!(),
-                            namespace_id,
-                            err
-                        );
-                    }
-                }
-            })
+                },
+            )
             .await;
-    });
+    })
+    .detach();
 }

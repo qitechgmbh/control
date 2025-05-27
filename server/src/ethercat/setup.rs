@@ -171,16 +171,17 @@ pub async fn setup_loop(
         );
 
     // construct machines
-    let mut machines_guard = app_state.machines.write().await;
-    machines_guard.set_ethercat_devices::<MAX_SUBDEVICES, PDI_LEN>(
-        &identified_device_identifications,
-        &MACHINE_REGISTRY,
-        &MachineNewHardwareEthercat {
-            ethercat_devices: &identified_devices,
-            subdevices: &identified_subdevices,
-        },
-    );
-    drop(machines_guard);
+    {
+        let mut machines_guard = app_state.machines.write().await;
+        machines_guard.set_ethercat_devices::<MAX_SUBDEVICES, PDI_LEN>(
+            &identified_device_identifications,
+            &MACHINE_REGISTRY,
+            &MachineNewHardwareEthercat {
+                ethercat_devices: &identified_devices,
+                subdevices: &identified_subdevices,
+            },
+        );
+    }
 
     // remove subdevice from devices tuple
     let devices = devices
