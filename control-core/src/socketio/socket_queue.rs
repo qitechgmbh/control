@@ -51,19 +51,27 @@ impl SocketQueue {
 
         // Spawn a smol task to flush the queue
         smol::spawn(async move {
-            let mut events_to_flush = Vec::new();
+            // Process events directly from the queue without collecting first
+            loop {
+                let event = {
+                    if let Ok(mut queue_guard) = queue.lock() {
+                        queue_guard.pop_front()
+                    } else {
+                        break; // Exit if we can't lock the queue
+                    }
+                };
 
-            // Collect all events from the queue
-            if let Ok(mut queue_guard) = queue.lock() {
-                while let Some(event) = queue_guard.pop_front() {
-                    events_to_flush.push(event);
-                }
-            }
+                let Some(event) = event else {
+                    break; // No more events in queue
+                };
 
-            // Emit all events
-            for event in events_to_flush {
-                // retry
+                // retry loop for each event
                 loop {
+                    // check if socket is still connected
+                    if !socket.connected() {
+                        break; // Exit the loop if the socket is not connected
+                    }
+
                     match socket.emit("event", &event) {
                         Ok(_) => break, // Successfully emitted, exit loop
                         Err(e) => match e {
@@ -76,7 +84,7 @@ impl SocketQueue {
                                     // wait 10ms before retrying
                                     log::warn!(
                                         "Socket {} internal channel full, retrying in 10ms",
-                                        socket.id
+                                        socket.id,
                                     );
                                     smol::Timer::after(Duration::from_millis(10)).await;
                                     continue; // Retry sending the event
