@@ -5,16 +5,16 @@ use crate::pdo::RxPdo;
 use crate::pdo::TxPdo;
 use crate::{
     coe::{ConfigurableDevice, Configuration},
+    helpers::signing_converter_u16::U16SigningConverter,
     pdo::{
         PredefinedPdoAssignment,
         analog_input::{AiCompact, AiStandard},
     },
     shared_config::el30xx::{EL30XXChannelConfiguration, EL30XXPresentation},
-    helpers::signing_converter_u16::U16SigningConverter,
 };
 use crate::{
-    io::analog_input::{AnalogInputDevice, AnalogInputInput, AnalogInputState},
     helpers::ethercrab_types::EthercrabSubDevicePreoperational,
+    io::analog_input::{AnalogInputDevice, AnalogInputInput, AnalogInputState},
 };
 use ethercat_hal_derive::{EthercatDevice, RxPdo, TxPdo};
 use uom::si::electric_current::milliampere;
@@ -38,6 +38,7 @@ pub struct EL3024 {
     pub configuration: EL3024Configuration,
     pub txpdo: EL3024TxPdo,
     pub rxpdo: EL3024RxPdo,
+    is_used: bool,
 }
 
 impl EthercatDeviceProcessing for EL3024 {}
@@ -73,6 +74,7 @@ impl NewEthercatDevice for EL3024 {
             configuration: configuration.clone(),
             txpdo: configuration.pdo_assignment.txpdo_assignment(),
             rxpdo: configuration.pdo_assignment.rxpdo_assignment(),
+            is_used: false,
         }
     }
 }

@@ -1,7 +1,7 @@
 use super::{EthercatDeviceProcessing, NewEthercatDevice, SubDeviceIdentityTuple};
+use crate::helpers::ethercrab_types::EthercrabSubDevicePreoperational;
 use crate::io::digital_output::{DigitalOutputDevice, DigitalOutputOutput, DigitalOutputState};
 use crate::pdo::{RxPdo, basic::BoolPdoObject};
-use crate::helpers::ethercrab_types::EthercrabSubDevicePreoperational;
 use ethercat_hal_derive::{EthercatDevice, RxPdo};
 
 /// EL2008 8-channel digital output device
@@ -10,6 +10,7 @@ use ethercat_hal_derive::{EthercatDevice, RxPdo};
 #[derive(EthercatDevice)]
 pub struct EL2008 {
     pub rxpdo: EL2008RxPdo,
+    is_used: bool,
 }
 
 impl EthercatDeviceProcessing for EL2008 {}
@@ -24,6 +25,7 @@ impl NewEthercatDevice for EL2008 {
     fn new() -> Self {
         Self {
             rxpdo: EL2008RxPdo::default(),
+            is_used: false,
         }
     }
 }

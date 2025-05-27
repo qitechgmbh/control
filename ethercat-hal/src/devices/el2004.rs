@@ -8,6 +8,7 @@ use ethercat_hal_derive::{EthercatDevice, RxPdo};
 #[derive(EthercatDevice)]
 pub struct EL2004 {
     pub rxpdo: EL2004RxPdo,
+    is_used: bool,
 }
 
 impl EthercatDeviceProcessing for EL2004 {}
@@ -22,6 +23,7 @@ impl NewEthercatDevice for EL2004 {
     fn new() -> Self {
         Self {
             rxpdo: EL2004RxPdo::default(),
+            is_used: false,
         }
     }
 }

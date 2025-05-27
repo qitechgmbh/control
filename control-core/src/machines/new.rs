@@ -2,7 +2,9 @@ use crate::serial::SerialDevice;
 
 use super::identification::DeviceIdentificationIdentified;
 use anyhow::Error;
-use ethercat_hal::{devices::EthercatDevice, helpers::ethercrab_types::EthercrabSubDevicePreoperational};
+use ethercat_hal::{
+    devices::EthercatDevice, helpers::ethercrab_types::EthercrabSubDevicePreoperational,
+};
 use ethercrab::{SubDevice, SubDeviceRef};
 use smol::lock::RwLock;
 use std::sync::Arc;

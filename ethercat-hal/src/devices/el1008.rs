@@ -1,7 +1,7 @@
 use super::{EthercatDeviceProcessing, NewEthercatDevice, SubDeviceIdentityTuple};
+use crate::helpers::ethercrab_types::EthercrabSubDevicePreoperational;
 use crate::io::digital_input::{DigitalInputDevice, DigitalInputInput, DigitalInputState};
 use crate::pdo::{PredefinedPdoAssignment, TxPdo, basic::BoolPdoObject};
-use crate::helpers::ethercrab_types::EthercrabSubDevicePreoperational;
 use ethercat_hal_derive::{EthercatDevice, TxPdo};
 
 /// EL1008 8-channel digital input device
@@ -10,6 +10,7 @@ use ethercat_hal_derive::{EthercatDevice, TxPdo};
 #[derive(Clone, EthercatDevice)]
 pub struct EL1008 {
     pub txpdo: EL1008TxPdo,
+    is_used: bool,
 }
 
 impl EthercatDeviceProcessing for EL1008 {}
@@ -24,6 +25,7 @@ impl NewEthercatDevice for EL1008 {
     fn new() -> Self {
         Self {
             txpdo: EL1008TxPdo::default(),
+            is_used: false,
         }
     }
 }

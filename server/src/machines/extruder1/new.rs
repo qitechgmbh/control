@@ -23,8 +23,8 @@ use control_core::{
 use ethercat_hal::{
     coe::ConfigurableDevice,
     devices::{
-        downcast_device,
-        ek1100::EK1100_IDENTITY_A,
+        EthercatDeviceUsed, downcast_device,
+        ek1100::{EK1100, EK1100_IDENTITY_A},
         el1002::{EL1002, EL1002_IDENTITY_A},
         el2004::{EL2004, EL2004_IDENTITY_A, EL2004Port},
         el3021::{EL3021, EL3021_IDENTITY_A, EL3021Port},
@@ -92,8 +92,14 @@ impl MachineNewTrait for ExtruderV2 {
                 let subdevice_index = device_hardware_identification_ethercat.subdevice_index;
                 let subdevice = get_subdevice_by_index(hardware.subdevices, subdevice_index)?;
                 let subdevice_identity = subdevice.identity();
-                match subdevice_identity_to_tuple(&subdevice_identity) {
-                    EK1100_IDENTITY_A => (),
+                let device = match subdevice_identity_to_tuple(&subdevice_identity) {
+                    EK1100_IDENTITY_A => {
+                        let ethercat_device = get_ethercat_device_by_index(
+                            &hardware.ethercat_devices,
+                            subdevice_index,
+                        )?;
+                        downcast_device::<EK1100>(ethercat_device).await?
+                    }
                     _ => {
                         return Err(anyhow::anyhow!(
                             "[{}::MachineNewTrait/Winder2::new] Device with role 0 is not an EK1100",
@@ -101,7 +107,12 @@ impl MachineNewTrait for ExtruderV2 {
                         ));
                     }
                 };
+                {
+                    let mut device_guard = device.write().await;
+                    device_guard.set_used(true);
+                }
             }
+
             // What is its use ?
             let _el1002 = {
                 let device_identification =
@@ -119,7 +130,7 @@ impl MachineNewTrait for ExtruderV2 {
                 let subdevice_index = device_hardware_identification_ethercat.subdevice_index;
                 let subdevice = get_subdevice_by_index(hardware.subdevices, subdevice_index)?;
                 let subdevice_identity = subdevice.identity();
-                match subdevice_identity_to_tuple(&subdevice_identity) {
+                let device = match subdevice_identity_to_tuple(&subdevice_identity) {
                     EL1002_IDENTITY_A => {
                         let ethercat_device = get_ethercat_device_by_index(
                             &hardware.ethercat_devices,
@@ -133,7 +144,12 @@ impl MachineNewTrait for ExtruderV2 {
                             module_path!()
                         ));
                     }
+                };
+                {
+                    let mut device_guard = device.write().await;
+                    device_guard.set_used(true);
                 }
+                device
             };
 
             let el6021 = {
@@ -152,7 +168,7 @@ impl MachineNewTrait for ExtruderV2 {
                 let subdevice_index = device_hardware_identification_ethercat.subdevice_index;
                 let subdevice = get_subdevice_by_index(hardware.subdevices, subdevice_index)?;
                 let subdevice_identity = subdevice.identity();
-                let el6021 = match subdevice_identity_to_tuple(&subdevice_identity) {
+                let device = match subdevice_identity_to_tuple(&subdevice_identity) {
                     EL6021_IDENTITY_A | EL6021_IDENTITY_B | EL6021_IDENTITY_C => {
                         let ethercat_device = get_ethercat_device_by_index(
                             &hardware.ethercat_devices,
@@ -167,12 +183,16 @@ impl MachineNewTrait for ExtruderV2 {
                         ));
                     }
                 };
-                el6021
+                device
                     .write()
                     .await
                     .write_config(&subdevice, &EL6021Configuration::default())
                     .await?;
-                el6021
+                {
+                    let mut device_guard = device.write().await;
+                    device_guard.set_used(true);
+                }
+                device
             };
 
             let el2004 = {
@@ -191,7 +211,7 @@ impl MachineNewTrait for ExtruderV2 {
                 let subdevice_index = device_hardware_identification_ethercat.subdevice_index;
                 let subdevice = get_subdevice_by_index(hardware.subdevices, subdevice_index)?;
                 let subdevice_identity = subdevice.identity();
-                match subdevice_identity_to_tuple(&subdevice_identity) {
+                let device = match subdevice_identity_to_tuple(&subdevice_identity) {
                     EL2004_IDENTITY_A => {
                         let ethercat_device = get_ethercat_device_by_index(
                             &hardware.ethercat_devices,
@@ -205,7 +225,12 @@ impl MachineNewTrait for ExtruderV2 {
                             module_path!()
                         ));
                     }
+                };
+                {
+                    let mut device_guard = device.write().await;
+                    device_guard.set_used(true);
                 }
+                device
             };
 
             let el3021 = {
@@ -224,7 +249,7 @@ impl MachineNewTrait for ExtruderV2 {
                 let subdevice_index = device_hardware_identification_ethercat.subdevice_index;
                 let subdevice = get_subdevice_by_index(hardware.subdevices, subdevice_index)?;
                 let subdevice_identity = subdevice.identity();
-                match subdevice_identity_to_tuple(&subdevice_identity) {
+                let device = match subdevice_identity_to_tuple(&subdevice_identity) {
                     EL3021_IDENTITY_A => {
                         let ethercat_device = get_ethercat_device_by_index(
                             &hardware.ethercat_devices,
@@ -238,7 +263,12 @@ impl MachineNewTrait for ExtruderV2 {
                             module_path!()
                         ));
                     }
+                };
+                {
+                    let mut device_guard = device.write().await;
+                    device_guard.set_used(true);
                 }
+                device
             };
 
             let el3204 = {
@@ -257,7 +287,7 @@ impl MachineNewTrait for ExtruderV2 {
                 let subdevice_index = device_hardware_identification_ethercat.subdevice_index;
                 let subdevice = get_subdevice_by_index(hardware.subdevices, subdevice_index)?;
                 let subdevice_identity = subdevice.identity();
-                match subdevice_identity_to_tuple(&subdevice_identity) {
+                let device = match subdevice_identity_to_tuple(&subdevice_identity) {
                     EL3204_IDENTITY_A | EL3204_IDENTITY_B => {
                         let ethercat_device = get_ethercat_device_by_index(
                             &hardware.ethercat_devices,
@@ -271,7 +301,12 @@ impl MachineNewTrait for ExtruderV2 {
                             module_path!()
                         ));
                     }
+                };
+                {
+                    let mut device_guard = device.write().await;
+                    device_guard.set_used(true);
                 }
+                device
             };
 
             let t1 = TemperatureInput::new(el3204.clone(), EL3204Port::T1);

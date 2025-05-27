@@ -1,6 +1,6 @@
+use crate::helpers::ethercrab_types::EthercrabSubDevicePreoperational;
 use crate::io::digital_output::{DigitalOutputDevice, DigitalOutputOutput, DigitalOutputState};
 use crate::pdo::{RxPdo, basic::BoolPdoObject};
-use crate::helpers::ethercrab_types::EthercrabSubDevicePreoperational;
 use ethercat_hal_derive::{EthercatDevice, RxPdo};
 
 use super::{EthercatDeviceProcessing, NewEthercatDevice};
@@ -11,6 +11,7 @@ use super::{EthercatDeviceProcessing, NewEthercatDevice};
 #[derive(EthercatDevice)]
 pub struct EL2024 {
     pub rxpdo: EL2024RxPdo,
+    is_used: bool,
 }
 
 impl EthercatDeviceProcessing for EL2024 {}
@@ -25,6 +26,7 @@ impl NewEthercatDevice for EL2024 {
     fn new() -> Self {
         Self {
             rxpdo: EL2024RxPdo::default(),
+            is_used: false,
         }
     }
 }

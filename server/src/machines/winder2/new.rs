@@ -22,6 +22,7 @@ use control_core::machines::new::{
 };
 use control_core::uom_extensions::velocity::meter_per_minute;
 use ethercat_hal::coe::ConfigurableDevice;
+use ethercat_hal::devices::ek1100::EK1100;
 use ethercat_hal::devices::el2002::{EL2002, EL2002Port};
 use ethercat_hal::devices::el7031::coe::EL7031Configuration;
 use ethercat_hal::devices::el7031::pdo::EL7031PredefinedPdoAssignment;
@@ -35,7 +36,7 @@ use ethercat_hal::devices::el7031_0030::{
 };
 use ethercat_hal::devices::el7041_0052::coe::EL7041_0052Configuration;
 use ethercat_hal::devices::el7041_0052::{EL7041_0052, EL7041_0052_IDENTITY_A, EL7041_0052Port};
-use ethercat_hal::devices::{downcast_device, subdevice_identity_to_tuple};
+use ethercat_hal::devices::{EthercatDeviceUsed, downcast_device, subdevice_identity_to_tuple};
 use ethercat_hal::devices::{ek1100::EK1100_IDENTITY_A, el2002::EL2002_IDENTITY_A};
 use ethercat_hal::io::analog_input::AnalogInput;
 use ethercat_hal::io::digital_input::DigitalInput;
@@ -98,8 +99,14 @@ impl MachineNewTrait for Winder2 {
                 let subdevice_index = device_hardware_identification_ethercat.subdevice_index;
                 let subdevice = get_subdevice_by_index(hardware.subdevices, subdevice_index)?;
                 let subdevice_identity = subdevice.identity();
-                match subdevice_identity_to_tuple(&subdevice_identity) {
-                    EK1100_IDENTITY_A => (),
+                let device = match subdevice_identity_to_tuple(&subdevice_identity) {
+                    EK1100_IDENTITY_A => {
+                        let ethercat_device = get_ethercat_device_by_index(
+                            &hardware.ethercat_devices,
+                            subdevice_index,
+                        )?;
+                        downcast_device::<EK1100>(ethercat_device).await?
+                    }
                     _ => {
                         return Err(anyhow::anyhow!(
                             "[{}::MachineNewTrait/Winder2::new] Device with role 0 is not an EK1100",
@@ -107,6 +114,10 @@ impl MachineNewTrait for Winder2 {
                         ));
                     }
                 };
+                {
+                    let mut device_guard = device.write().await;
+                    device_guard.set_used(true);
+                }
             }
 
             // Role 1
@@ -128,7 +139,7 @@ impl MachineNewTrait for Winder2 {
                 let subdevice_index = device_hardware_identification_ethercat.subdevice_index;
                 let subdevice = get_subdevice_by_index(hardware.subdevices, subdevice_index)?;
                 let subdevice_identity = subdevice.identity();
-                match subdevice_identity_to_tuple(&subdevice_identity) {
+                let device = match subdevice_identity_to_tuple(&subdevice_identity) {
                     EL2002_IDENTITY_A => {
                         let ethercat_device = get_ethercat_device_by_index(
                             &hardware.ethercat_devices,
@@ -140,7 +151,12 @@ impl MachineNewTrait for Winder2 {
                         "[{}::MachineNewTrait/Winder2::new] Device with role 1 is not an EL2002",
                         module_path!()
                     ))?,
+                };
+                {
+                    let mut device_guard = device.write().await;
+                    device_guard.set_used(true);
                 }
+                device
             };
 
             // Role 2
@@ -165,7 +181,7 @@ impl MachineNewTrait for Winder2 {
                 )?;
                 let subdevice_index = device_hardware_identification_ethercat.subdevice_index;
                 let subdevice_identity = subdevice.identity();
-                let el7041 = match subdevice_identity_to_tuple(&subdevice_identity) {
+                let device = match subdevice_identity_to_tuple(&subdevice_identity) {
                     EL7041_0052_IDENTITY_A => {
                         let ethercat_device = get_ethercat_device_by_index(
                             &hardware.ethercat_devices,
@@ -178,7 +194,7 @@ impl MachineNewTrait for Winder2 {
                         module_path!()
                     ))?,
                 };
-                let el7041_config = EL7041_0052Configuration {
+                let config = EL7041_0052Configuration {
                     stm_features: shared_config::el70x1::StmFeatures {
                         operation_mode: EL70x1OperationMode::DirectVelocity,
                         ..Default::default()
@@ -189,12 +205,16 @@ impl MachineNewTrait for Winder2 {
                     },
                     ..Default::default()
                 };
-                el7041
+                device
                     .write()
                     .await
-                    .write_config(&subdevice, &el7041_config)
+                    .write_config(&subdevice, &config)
                     .await?;
-                (el7041, el7041_config)
+                {
+                    let mut device_guard = device.write().await;
+                    device_guard.set_used(true);
+                }
+                (device, config)
             };
 
             // Role 3
@@ -219,7 +239,7 @@ impl MachineNewTrait for Winder2 {
                 )?;
                 let subdevice_index = device_hardware_identification_ethercat.subdevice_index;
                 let subdevice_identity = subdevice.identity();
-                let el7031 = match subdevice_identity_to_tuple(&subdevice_identity) {
+                let device = match subdevice_identity_to_tuple(&subdevice_identity) {
                     EL7031_IDENTITY_A | EL7031_IDENTITY_B => {
                         let ethercat_device = get_ethercat_device_by_index(
                             &hardware.ethercat_devices,
@@ -232,7 +252,7 @@ impl MachineNewTrait for Winder2 {
                         module_path!()
                     ))?,
                 };
-                let el7031_config = EL7031Configuration {
+                let config = EL7031Configuration {
                     stm_features: shared_config::el70x1::StmFeatures {
                         operation_mode: EL70x1OperationMode::DirectVelocity,
                         // Max Speed of 1000 steps/s
@@ -248,12 +268,16 @@ impl MachineNewTrait for Winder2 {
                     pdo_assignment: EL7031PredefinedPdoAssignment::VelocityControlCompact,
                     ..Default::default()
                 };
-                el7031
+                device
                     .write()
                     .await
-                    .write_config(&subdevice, &el7031_config)
+                    .write_config(&subdevice, &config)
                     .await?;
-                (el7031, el7031_config)
+                {
+                    let mut device_guard = device.write().await;
+                    device_guard.set_used(true);
+                }
+                (device, config)
             };
 
             // Role 4
@@ -278,7 +302,7 @@ impl MachineNewTrait for Winder2 {
                 )?;
                 let subdevice_index = device_hardware_identification_ethercat.subdevice_index;
                 let subdevice_identity = subdevice.identity();
-                let el7031_0030 = match subdevice_identity_to_tuple(&subdevice_identity) {
+                let device = match subdevice_identity_to_tuple(&subdevice_identity) {
                     EL7031_0030_IDENTITY_A => {
                         let ethercat_device = get_ethercat_device_by_index(
                             &hardware.ethercat_devices,
@@ -291,7 +315,7 @@ impl MachineNewTrait for Winder2 {
                         module_path!()
                     ))?,
                 };
-                let el7031_0030_config = EL7031_0030Configuration {
+                let config = EL7031_0030Configuration {
                     stm_features: el7031_0030::coe::StmFeatures {
                         operation_mode: EL70x1OperationMode::DirectVelocity,
                         // Max Speed of 1000 steps/s
@@ -306,12 +330,16 @@ impl MachineNewTrait for Winder2 {
                     pdo_assignment: EL7031_0030PredefinedPdoAssignment::VelocityControlCompact,
                     ..Default::default()
                 };
-                el7031_0030
+                device
                     .write()
                     .await
-                    .write_config(&subdevice, &el7031_0030_config)
+                    .write_config(&subdevice, &config)
                     .await?;
-                (el7031_0030, el7031_0030_config)
+                {
+                    let mut device_guard = device.write().await;
+                    device_guard.set_used(true);
+                }
+                (device, config)
             };
 
             let mode = Winder2Mode::Standby;

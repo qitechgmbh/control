@@ -9,6 +9,7 @@ use ethercat_hal_derive::{EthercatDevice, TxPdo};
 #[derive(Clone, EthercatDevice)]
 pub struct EL1002 {
     pub txpdo: EL1002TxPdo,
+    is_used: bool,
 }
 
 impl EthercatDeviceProcessing for EL1002 {}
@@ -23,6 +24,7 @@ impl NewEthercatDevice for EL1002 {
     fn new() -> Self {
         Self {
             txpdo: EL1002TxPdo::default(),
+            is_used: false,
         }
     }
 }

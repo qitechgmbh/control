@@ -31,6 +31,7 @@ use super::{EthercatDeviceProcessing, NewEthercatDevice, SubDeviceIdentityTuple}
 pub struct EL7031_0030 {
     pub txpdo: EL7031_0030TxPdo,
     pub rxpdo: EL7031_0030RxPdo,
+    is_used: bool,
     pub configuration: EL7031_0030Configuration,
     pub counter_wrapper: CounterWrapperU16U128,
 }
@@ -106,6 +107,7 @@ impl NewEthercatDevice for EL7031_0030 {
         Self {
             txpdo: configuration.pdo_assignment.txpdo_assignment(),
             rxpdo: configuration.pdo_assignment.rxpdo_assignment(),
+            is_used: false,
             configuration,
             counter_wrapper: CounterWrapperU16U128::new(),
         }

@@ -3,25 +3,21 @@ use ethercat_hal_derive::EthercatDevice;
 
 /// EK1100 bus coupler
 #[derive(Clone, EthercatDevice)]
-pub struct EK1100 {}
+pub struct EK1100 {
+    is_used: bool,
+}
 
 impl EthercatDeviceProcessing for EK1100 {}
 
 impl NewEthercatDevice for EK1100 {
     fn new() -> Self {
-        Self {}
+        Self { is_used: false }
     }
 }
 
 impl std::fmt::Debug for EK1100 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "EK1100")
-    }
-}
-
-impl EK1100 {
-    pub fn new() -> Self {
-        Self {}
     }
 }
 

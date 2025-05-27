@@ -23,6 +23,7 @@ pub mod pdo;
 pub struct EL7041_0052 {
     pub txpdo: pdo::EL7041_0052TxPdo,
     pub rxpdo: pdo::EL7041_0052RxPdo,
+    is_used: bool,
     pub configuration: EL7041_0052Configuration,
 
     // encoder wrapping
@@ -35,6 +36,7 @@ impl NewEthercatDevice for EL7041_0052 {
         EL7041_0052 {
             txpdo: configuration.pdo_assignment.txpdo_assignment(),
             rxpdo: configuration.pdo_assignment.rxpdo_assignment(),
+            is_used: false,
             configuration,
             counter_wrapper: CounterWrapperU16U128::new(),
         }
