@@ -100,15 +100,19 @@ impl NamespaceInterface for Namespace {
 
     fn reemit(&mut self, socket: SocketRef) {
         if let Some(queue) = self.socket_queues.get(&socket.id) {
-            let events_to_emit: Vec<GenericEvent> = self
-                .events
-                .values()
-                .flat_map(|events| events.iter().cloned())
-                .collect();
+            // Collect events grouped by name/kind with their counts for sorting
+            let mut event_groups: Vec<(&String, &Vec<GenericEvent>)> = self.events.iter().collect();
 
-            for event in events_to_emit {
-                queue.push(event.clone());
+            // Sort by event count (ascending - lowest count first)
+            event_groups.sort_by(|a, b| a.1.len().cmp(&b.1.len()));
+
+            // Emit events in order of lowest count first
+            for (_event_name, events) in event_groups {
+                for event in events {
+                    queue.push(event.clone());
+                }
             }
+            
             queue.flush(socket.clone());
         }
     }
