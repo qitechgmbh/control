@@ -1,0 +1,41 @@
+name: Electron
+
+on:
+  push:
+    branches:
+      - "**"
+  pull_request:
+    branches:
+      - "*"
+
+jobs:
+  build-electron:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: electron
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache NPM dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.npm
+            node_modules/
+          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
+
+      - name: Install
+        run: npm i
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm run test
+
+      - name: Build
+        run: npm run package
