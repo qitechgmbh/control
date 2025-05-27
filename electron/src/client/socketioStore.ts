@@ -182,6 +182,7 @@ const useSocketioStore = create<SocketioStore>()((set, get) => ({
       resetStore(set);
     });
     socket.on("disconnect", (reason) => {
+      socket.disconnect();
       console.warn(`Disconnected from ${namespace_path}, reason: ${reason}`);
 
       // reset the store

@@ -118,7 +118,6 @@ export function EditValue({
   };
 
   const valueIsDefined = value !== undefined && value !== null;
-  console.log("valueIsDefined", valueIsDefined);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>

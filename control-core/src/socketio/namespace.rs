@@ -1,6 +1,8 @@
 use crate::socketio::event::GenericEvent;
-use socketioxide::extract::SocketRef;
+use socketioxide::{extract::SocketRef, socket::Sid};
 use std::{collections::HashMap, time::Duration};
+
+use super::socket_queue::SocketQueue;
 
 pub trait NamespaceInterface {
     /// Adds a socket to the namespace.
@@ -68,6 +70,7 @@ pub trait NamespaceInterface {
 pub struct Namespace {
     sockets: Vec<SocketRef>,
     events: HashMap<String, Vec<GenericEvent>>,
+    socket_queues: HashMap<Sid, SocketQueue>,
 }
 
 impl Namespace {
@@ -75,6 +78,7 @@ impl Namespace {
         Self {
             sockets: vec![],
             events: HashMap::new(),
+            socket_queues: HashMap::new(),
         }
     }
 }
@@ -83,30 +87,43 @@ impl NamespaceInterface for Namespace {
     fn subscribe(&mut self, socket: SocketRef) {
         // add the socket to the list
         self.sockets.push(socket.clone());
+        // create a new queue for this socket
+        self.socket_queues.insert(socket.id, SocketQueue::new());
     }
 
     fn unsubscribe(&mut self, socket: SocketRef) {
         // remove the socket from the list
         self.sockets.retain(|s| s.id != socket.id);
+        // remove the socket's queue
+        self.socket_queues.remove(&socket.id);
     }
 
     fn reemit(&mut self, socket: SocketRef) {
-        for (_, events) in self.events.iter() {
-            log::debug!(
-                "Re-emitting {} {} events to socket {}",
-                events.len(),
-                events[0].name,
-                socket.id
-            );
-            for event in events.iter() {
-                let _ = socket.emit("event", &event);
+        if let Some(queue) = self.socket_queues.get(&socket.id) {
+            // Collect events grouped by name/kind with their counts for sorting
+            let mut event_groups: Vec<(&String, &Vec<GenericEvent>)> = self.events.iter().collect();
+
+            // Sort by event count (ascending - lowest count first)
+            event_groups.sort_by(|a, b| a.1.len().cmp(&b.1.len()));
+
+            // Emit events in order of lowest count first
+            for (_event_name, events) in event_groups {
+                for event in events {
+                    queue.push(event.clone());
+                }
             }
+            
+            queue.flush(socket.clone());
         }
     }
 
     fn emit(&mut self, event: &GenericEvent) {
-        for socket in self.sockets.iter() {
-            let _ = socket.emit("event", &event);
+        // Use the new emit function which combines push and flush
+        for socket in self.sockets.clone() {
+            if let Some(queue) = self.socket_queues.get(&socket.id) {
+                queue.push(event.clone());
+                queue.flush(socket.clone());
+            }
         }
     }
 
