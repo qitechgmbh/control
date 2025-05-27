@@ -13,7 +13,7 @@ impl DigitalOutputSetter {
     pub fn new(output: DigitalOutput) -> Self {
         Self {
             output,
-            enabled: true,
+            enabled: false,
         }
     }
     pub fn set(&mut self, enabled: bool) {
