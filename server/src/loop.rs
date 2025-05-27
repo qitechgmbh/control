@@ -65,6 +65,12 @@ pub async fn loop_once<'maindevice>(app_state: Arc<AppState>) -> Result<(), anyh
             // get device
             let mut device = ethercat_setup.devices[i].1.as_ref().write().await;
 
+            // check if the device is used
+            if !device.is_used() {
+                // if the device is not used, we skip it
+                continue;
+            }
+
             // put inputs into device
             device.input_checked(input_bits).or_else(|e| {
                 Err(anyhow::anyhow!(
@@ -120,6 +126,12 @@ pub async fn loop_once<'maindevice>(app_state: Arc<AppState>) -> Result<(), anyh
 
             // get device
             let mut device = ethercat_setup.devices[i].1.as_ref().write().await;
+
+            // check if the device is used
+            if !device.is_used() {
+                // if the device is not used, we skip it
+                continue;
+            }
 
             // pre process outputs
             device.output_pre_process().or_else(|e| {

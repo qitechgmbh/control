@@ -1,8 +1,8 @@
 use super::{EthercatDeviceProcessing, NewEthercatDevice, SubDeviceIdentityTuple};
 use crate::coe::{ConfigurableDevice, Configuration};
+use crate::helpers::ethercrab_types::EthercrabSubDevicePreoperational;
 use crate::io::serial_interface::{SerialEncoding, SerialInterfaceDevice};
 use crate::pdo::{PredefinedPdoAssignment, RxPdo, RxPdoObject, TxPdo, TxPdoObject};
-use crate::helpers::ethercrab_types::EthercrabSubDevicePreoperational;
 use anyhow::{Error, anyhow};
 use bitvec::field::BitField;
 use bitvec::order::Lsb0;
@@ -369,6 +369,7 @@ pub struct EL6021 {
     pub configuration: EL6021Configuration,
     pub txpdo: EL6021TxPdo,
     pub rxpdo: EL6021RxPdo,
+    is_used: bool,
     pub output_ts: u64,
     pub input_ts: u64,
     pub has_messages_last_toggle: bool,
@@ -404,6 +405,7 @@ impl NewEthercatDevice for EL6021 {
             configuration: configuration.clone(),
             txpdo: configuration.pdo_assignment.txpdo_assignment(),
             rxpdo: configuration.pdo_assignment.rxpdo_assignment(),
+            is_used: false,
             output_ts: 0,
             input_ts: 0,
             has_messages_last_toggle: false,

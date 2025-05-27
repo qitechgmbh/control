@@ -1,6 +1,7 @@
 use super::{EthercatDeviceProcessing, NewEthercatDevice, SubDeviceIdentityTuple};
 use crate::{
     coe::{ConfigurableDevice, Configuration},
+    helpers::ethercrab_types::EthercrabSubDevicePreoperational,
     io::pulse_train_output::{
         PulseTrainOutputDevice, PulseTrainOutputInput, PulseTrainOutputOutput,
         PulseTrainOutputState,
@@ -9,7 +10,6 @@ use crate::{
         PredefinedPdoAssignment, RxPdo, TxPdo,
         el252x::{EncControl, EncStatus, PtoControl, PtoStatus, PtoTarget},
     },
-    helpers::ethercrab_types::EthercrabSubDevicePreoperational,
 };
 use anyhow::Ok;
 use ethercat_hal_derive::{EthercatDevice, RxPdo, TxPdo};
@@ -20,6 +20,7 @@ pub struct EL2522 {
     pub configuration: EL2522Configuration,
     pub txpdo: EL2522TxPdo,
     pub rxpdo: EL2522RxPdo,
+    is_used: bool,
 }
 
 impl EthercatDeviceProcessing for EL2522 {}
@@ -40,6 +41,7 @@ impl NewEthercatDevice for EL2522 {
             configuration: configuration,
             txpdo,
             rxpdo,
+            is_used: false,
         }
     }
 }
