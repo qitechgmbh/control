@@ -9,7 +9,7 @@ use socketioxide::layer::SocketIoLayer;
 pub async fn init_socketio(app_state: &Arc<AppState>) -> SocketIoLayer {
     // create
     let (socketio_layer, io) = socketioxide::SocketIoBuilder::new()
-    .max_buffer_size(10)
+    .max_buffer_size(1024)
     .build_layer();
 
     // Clone app_state for the first handler
