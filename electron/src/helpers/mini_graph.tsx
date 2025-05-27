@@ -1,5 +1,6 @@
-import React, { useEffect, useRef, useState } from "react";
-import * as d3 from "d3";
+import React, { useEffect, useRef } from "react";
+import uPlot from "uplot";
+import "uplot/dist/uPlot.min.css";
 import { TimeSeries } from "@/lib/timeseries";
 
 type MiniGraphProps = {
@@ -7,95 +8,100 @@ type MiniGraphProps = {
     width: number;
 };
 
-const HEIGHT = 56;
-const MARGIN = { top: 5, right: 35, bottom: 5, left: 0 };
+const HEIGHT = 64;
 
 export function MiniGraph({ newData, width }: MiniGraphProps) {
-    const svgRef = useRef<SVGSVGElement | null>(null);
-    const dataRef = useRef<[number, number][]>([]);
-    const [, setMinMax] = useState({ min: Infinity, max: -Infinity });
+    const uplotRef = useRef<uPlot | null>(null);
+    const divRef = useRef<HTMLDivElement | null>(null);
+
     useEffect(() => {
-        if (!newData?.current || !svgRef.current || !newData.short.values.length) return;
+        if (!newData?.short || !divRef.current) return;
 
-        const cur = newData.current;
-        if (cur.timestamp <= 0) return;
+        const { values, index, size, timeWindow, lastTimestamp } = newData.short;
+        const timestamps: number[] = [];
+        const data: number[] = [];
 
-        const { timeWindow, size } = newData.short;
-        const points = dataRef.current;
-
-        const estimatedInterval = timeWindow / size;
-        const maxPoints = Math.floor(timeWindow / estimatedInterval);
-
-        // Push new point and maintain time-based sliding window
-        points.push([cur.timestamp, cur.value]);
-        const startTime = cur.timestamp - timeWindow;
-        while (points.length > 0 && points[0][0] < startTime) {
-            points.shift();
+        for (let i = 0; i < size; i++) {
+            const idx = (index + i) % size;
+            const point = values[idx];
+            if (point && point.timestamp > 0 && point.timestamp >= lastTimestamp - timeWindow) {
+                timestamps.push(point.timestamp);
+                data.push(point.value);
+            }
         }
 
-        // Min/max update
-        const values = points.map(p => p[1]);
-        const newMin = Math.min(...values);
-        const newMax = Math.max(...values);
-        setMinMax({ min: newMin, max: newMax });
+        if (timestamps.length === 0 || data.length === 0) return;
 
-        // D3 drawing
-        const svg = d3.select(svgRef.current);
-        const graphWidth = width - MARGIN.left - MARGIN.right;
-        const graphHeight = HEIGHT - MARGIN.top - MARGIN.bottom;
+        const minY = Math.min(...data);
+        const maxY = Math.max(...data);
+        const range = maxY - minY || 1;
 
-        const x = d3.scaleLinear()
-            .domain([cur.timestamp - timeWindow, cur.timestamp])
-            .range([0, graphWidth])
-            .clamp(true);
+        const uData: uPlot.AlignedData = [timestamps, data];
 
-        const y = d3.scaleLinear()
-            .domain([newMin * 0.9, newMax * 1.1])
-            .range([graphHeight, 0]);
+        const opts: uPlot.Options = {
+            width,
+            height: HEIGHT,
 
-        let g = svg.select<SVGGElement>("g.graph-group");
-        if (g.empty()) {
-            g = svg.append("g")
-                .attr("class", "graph-group")
-                .attr("transform", `translate(${MARGIN.left},${MARGIN.top})`);
+            padding: [5, 40, 5, 0],
+
+            cursor: { show: false },
+            legend: { show: false },
+
+            scales: {
+                x: {
+                    time: false,
+                    min: timestamps[0],
+                    max: timestamps[timestamps.length - 1],
+                },
+                y: {
+                    auto: false,
+                    min: minY - range * 0.1,
+                    max: maxY + range * 0.1,
+                },
+            },
+
+            axes: [
+                { show: false }, // hide x-axis
+                {
+                    side: 1,
+                    size: 0, // remove y-axis width so no margin on right side
+                    grid: { stroke: "#ccc", width: 0.5 },
+                    ticks: { stroke: "#ccc", width: 0.5 },
+                    values: (u, ticks) => ticks.map(v => v.toFixed(1)),
+                },
+            ],
+
+            series: [
+                {},
+                {
+                    stroke: "black",
+                    width: 2,
+                    spanGaps: true,
+                },
+            ],
+        };
+
+        if (uplotRef.current) {
+            uplotRef.current.destroy();
+            uplotRef.current = null;
         }
 
-        let yAxisGroup = g.select<SVGGElement>("g.y-axis");
-        if (yAxisGroup.empty()) {
-            yAxisGroup = g.append("g").attr("class", "y-axis");
-        }
-        yAxisGroup
-            .attr("transform", `translate(${graphWidth}, 0)`)
-            .call(d3.axisRight(y).ticks(3).tickSize(4))
-            .call(g => g.select(".domain").remove())
-            .call(g => g.selectAll("line").style("stroke", "#ccc").style("stroke-width", 0.5));
+        uplotRef.current = new uPlot(opts, uData, divRef.current);
 
-        const lineGen = d3.line<[number, number]>()
-            .x(d => x(d[0]))
-            .y(d => y(d[1]))
-            .curve(d3.curveLinear);
-
-        let path = g.select<SVGPathElement>("path.line");
-        if (path.empty()) {
-            path = g.append("path")
-                .attr("class", "line")
-                .attr("fill", "none")
-                .attr("stroke", "black")
-                .attr("stroke-width", 2);
-        }
-
-        path.attr("d", lineGen(points)!);
-    }, [newData?.current, width]);
-
+        return () => {
+            uplotRef.current?.destroy();
+            uplotRef.current = null;
+        };
+    }, [newData?.short, width]);
 
     return (
-        <svg
-            ref={svgRef}
-            width="100%"
-            height={HEIGHT}
-            viewBox={`0 0 ${width ?? 250} ${HEIGHT}`}
-            preserveAspectRatio="none"
-            style={{ display: "block" }}
+        <div
+            ref={divRef}
+            style={{
+                width: "100%",
+                height: HEIGHT,
+                overflow: "hidden",
+            }}
         />
     );
 }

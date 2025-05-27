@@ -18,6 +18,9 @@ type Props = {
   renderValue?: (value: number) => string;
 };
 
+type AllowedT = number | boolean;
+
+
 function _TimeSeriesValue({
   unit,
   timeseries,
@@ -27,20 +30,46 @@ function _TimeSeriesValue({
 }: Props) {
   const value = timeseries.current?.value;
 
-  const miniGraphRef = React.useRef<HTMLDivElement>(null);
-
-  // get width of the mini graph container
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  const leftRef = React.useRef<HTMLDivElement>(null);
   const [width, setWidth] = React.useState(0);
+
   React.useEffect(() => {
-    if (miniGraphRef.current) {
-      const rect = miniGraphRef.current.getBoundingClientRect();
-      setWidth(rect.width);
-    }
-  }, [miniGraphRef.current]);
+    if (!containerRef.current || !leftRef.current) return;
+
+    const container = containerRef.current;
+    const left = leftRef.current;
+
+    const calculateWidth = () => {
+      const containerWidth = container.getBoundingClientRect().width;
+      const leftWidth = left.getBoundingClientRect().width;
+      const padding = 16;
+      const remaining = Math.max(containerWidth - leftWidth - padding, 0);
+      setWidth(remaining);
+    };
+
+    calculateWidth();
+
+    // Listen for resizes on the container
+    const resizeObserver = new ResizeObserver(() => {
+      calculateWidth();
+    });
+
+    resizeObserver.observe(container);
+    resizeObserver.observe(left);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, []);
 
   return (
-    <div className="bg-red flex flex-row items-center gap-4">
-      <div className="h-16">
+    <div
+      ref={containerRef}
+      className="bg-red flex flex-row items-center gap-4"
+      style={{ width: "100%" }} // make sure container stretches full width of grid cell
+    >
+      <div ref={leftRef} className="h-16 flex-shrink-0">
         <Label label={label}>
           <div className="flex flex-row items-center gap-4">
             <Icon
@@ -56,12 +85,17 @@ function _TimeSeriesValue({
           </div>
         </Label>
       </div>
-      <div className="flex-1 h-16" ref={miniGraphRef}>
+
+      <div
+        className="h-16"
+        style={{ flexGrow: 1, minWidth: 0 /* allow shrinking */ }}
+      >
         <MiniGraph newData={timeseries} width={width} />
       </div>
     </div>
   );
 }
+
 
 export function TimeSeriesValueNumeric(props: Props) {
   return <_TimeSeriesValue {...props} />;

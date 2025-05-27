@@ -11,7 +11,6 @@ import { useDre1 } from "./useDre";
 
 import { DiameterVisualisation } from '../DiameterVisualisation';
 
-
 export function Dre1ControlPage() {
     const {
         dreDiameter,
