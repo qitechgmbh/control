@@ -8,91 +8,110 @@ type MiniGraphProps = {
     width: number;
 };
 
+// Make update interval configurable here:
+const UPDATE_INTERVAL_MS = 100;
+
 const HEIGHT = 64;
 
 export function MiniGraph({ newData, width }: MiniGraphProps) {
-    const uplotRef = useRef<uPlot | null>(null);
     const divRef = useRef<HTMLDivElement | null>(null);
+    const uplotRef = useRef<uPlot | null>(null);
+    const dataRef = useRef<[number[], number[]]>([[], []]); // [timestamps, values]
+
+    // Store latest newData.current, to access inside interval
+    const latestDataRef = useRef(newData?.current);
 
     useEffect(() => {
-        if (!newData?.short || !divRef.current) return;
+        latestDataRef.current = newData?.current;
+    }, [newData?.current]);
 
-        const { values, index, size, timeWindow, lastTimestamp } = newData.short;
-        const timestamps: number[] = [];
-        const data: number[] = [];
+    useEffect(() => {
+        if (!divRef.current || !newData?.short?.timeWindow) return;
 
-        for (let i = 0; i < size; i++) {
-            const idx = (index + i) % size;
-            const point = values[idx];
-            if (point && point.timestamp > 0 && point.timestamp >= lastTimestamp - timeWindow) {
-                timestamps.push(point.timestamp);
-                data.push(point.value);
+        const timeWindow = newData.short.timeWindow;
+
+        // Use the configurable interval here
+        const intervalId = setInterval(() => {
+            const cur = latestDataRef.current;
+            if (!cur || cur.timestamp <= 0) return;
+
+            const [timestamps, values] = dataRef.current;
+
+            // Add new data point at each tick
+            timestamps.push(cur.timestamp);
+            values.push(cur.value);
+
+            // Remove old points outside time window
+            const cutoff = cur.timestamp - timeWindow;
+            while (timestamps.length && timestamps[0] < cutoff) {
+                timestamps.shift();
+                values.shift();
             }
-        }
 
-        if (timestamps.length === 0 || data.length === 0) return;
+            // Update graph scales
+            const minY = Math.min(...values);
+            const maxY = Math.max(...values);
+            const range = maxY - minY || 1;
 
-        const minY = Math.min(...data);
-        const maxY = Math.max(...data);
-        const range = maxY - minY || 1;
+            const uData: uPlot.AlignedData = [timestamps, values];
 
-        const uData: uPlot.AlignedData = [timestamps, data];
+            const opts: uPlot.Options = {
+                width,
+                height: HEIGHT,
+                padding: [5, 50, 5, 0],
 
-        const opts: uPlot.Options = {
-            width,
-            height: HEIGHT,
+                cursor: { show: false },
+                legend: { show: false },
 
-            padding: [5, 40, 5, 0],
-
-            cursor: { show: false },
-            legend: { show: false },
-
-            scales: {
-                x: {
-                    time: false,
-                    min: timestamps[0],
-                    max: timestamps[timestamps.length - 1],
+                scales: {
+                    x: {
+                        time: true,
+                        min: cutoff,
+                        max: cur.timestamp,
+                    },
+                    y: {
+                        auto: false,
+                        min: minY - range * 0.1,
+                        max: maxY + range * 0.1,
+                    },
                 },
-                y: {
-                    auto: false,
+
+                axes: [
+                    { show: false },
+                    {
+                        side: 1,
+                        grid: { stroke: "#ccc", width: 0.5 },
+                        ticks: { stroke: "#ccc", width: 0.5 },
+                        values: (u, ticks) => ticks.map((v) => v.toFixed(1)),
+                    },
+                ],
+
+                series: [
+                    {},
+                    {
+                        stroke: "black",
+                        width: 2,
+                        spanGaps: true,
+                    },
+                ],
+            };
+
+            if (!uplotRef.current) {
+                if (divRef.current) {
+                    uplotRef.current = new uPlot(opts, uData, divRef.current);
+                }
+            } else {
+                uplotRef.current.setData(uData);
+                uplotRef.current.setScale("x", { min: cutoff, max: cur.timestamp });
+                uplotRef.current.setScale("y", {
                     min: minY - range * 0.1,
                     max: maxY + range * 0.1,
-                },
-            },
+                });
+            }
+        }, UPDATE_INTERVAL_MS);
 
-            axes: [
-                { show: false }, // hide x-axis
-                {
-                    side: 1,
-                    size: 0, // remove y-axis width so no margin on right side
-                    grid: { stroke: "#ccc", width: 0.5 },
-                    ticks: { stroke: "#ccc", width: 0.5 },
-                    values: (u, ticks) => ticks.map(v => v.toFixed(1)),
-                },
-            ],
-
-            series: [
-                {},
-                {
-                    stroke: "black",
-                    width: 2,
-                    spanGaps: true,
-                },
-            ],
-        };
-
-        if (uplotRef.current) {
-            uplotRef.current.destroy();
-            uplotRef.current = null;
-        }
-
-        uplotRef.current = new uPlot(opts, uData, divRef.current);
-
-        return () => {
-            uplotRef.current?.destroy();
-            uplotRef.current = null;
-        };
-    }, [newData?.short, width]);
+        return () => clearInterval(intervalId);
+    }, [width, newData?.short?.timeWindow]);
 
     return (
         <div
