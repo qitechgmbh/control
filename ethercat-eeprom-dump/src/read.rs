@@ -636,9 +636,9 @@ impl From<&[u8]> for EepromData {
         // Basic device information with bounds checking
         let device_info = DeviceMachineIdentification {
             vendor: if words.len() > 0x28 { words[0x0028] } else { 0 },
-            serial: if words.len() > 0x2A { words[0x0029] } else { 0 },
-            machine: if words.len() > 0x29 { words[0x002A] } else { 0 },
-            role: if words.len() > 0x2B { words[0x002B] } else { 0 },
+            machine: if words.len() > 0x29 { words[0x0029] } else { 0 },
+            serial: if words.len() > 0x2A { words[0x002a] } else { 0 },
+            role: if words.len() > 0x2B { words[0x002b] } else { 0 },
         };
 
         // Extract string sections using sliding window approach
