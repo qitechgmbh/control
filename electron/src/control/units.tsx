@@ -21,6 +21,8 @@ export function getUnitIcon(unit: Unit): IconName {
       return "lu:TriangleRight";
     case "m/min":
       return "lu:Gauge";
+    case "mHz":
+      return "lu:AudioWaveform";
     default:
       return "lu:ChartNoAxesColumn";
   }
@@ -44,6 +46,8 @@ export function renderUnitSymbol(unit: Unit | undefined): string {
       return "deg";
     case "m/min":
       return "m/min";
+    case "mHz":
+      return "mHz";
     default:
       return "";
   }
@@ -89,6 +93,8 @@ export function renderUnitSymbolLong(unit: Unit): string {
       return "degrees";
     case "m/min":
       return "meters/minute";
+    case "mHz":
+      return "millihertz";
     default:
       return "";
   }
@@ -103,6 +109,7 @@ export const units = [
   "C",
   "bar",
   "m/min",
+  "mHz",
 ] as const;
 
 export type Unit = (typeof units)[number];
