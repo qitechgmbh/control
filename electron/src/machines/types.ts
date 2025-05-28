@@ -280,7 +280,25 @@ export const dre1: MachinePreset = {
   },
   device_roles: [],
 };
-export const machinePresets: MachinePreset[] = [winder2, extruder2, dre1];
+
+export const mock1: MachinePreset = {
+  name: "Mock",
+  version: "V1",
+  slug: "mock1",
+  icon: "lu:FlaskConical",
+  machine_identification: {
+    vendor: VENDOR_QITECH,
+    machine: 0x0007,
+  },
+  device_roles: [],
+};
+
+export const machinePresets: MachinePreset[] = [
+  winder2,
+  extruder2,
+  dre1,
+  mock1,
+];
 
 export const getMachinePreset = (
   machine_identification: MachineIdentification,

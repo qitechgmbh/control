@@ -28,6 +28,8 @@ import { ChangelogPage } from "@/setup/ChangelogPage";
 import { UpdateExecutePage } from "@/setup/UpdateExecutePage";
 import { Dre1Page } from "@/machines/dre/dre1/Dre1Page";
 import { Dre1ControlPage } from "@/machines/dre/dre1/Dre1ControlPage";
+import { Mock1Page } from "@/machines/mock/mock1/Mock1Page";
+import { Mock1ControlPage } from "@/machines/mock/mock1/Mock1ControlPage";
 import { Dre1GraphsPage } from "@/machines/dre/dre1/Dre1Graph";
 
 // make a route tree like this
@@ -119,6 +121,18 @@ export const dre1GraphsRoute = createRoute({
   getParentRoute: () => dre1SerialRoute,
   path: "graphs",
   component: () => <Dre1GraphsPage />,
+});
+
+export const mock1SerialRoute = createRoute({
+  getParentRoute: () => machinesRoute,
+  path: "mock1/$serial",
+  component: () => <Mock1Page />,
+});
+
+export const mock1ControlRoute = createRoute({
+  getParentRoute: () => mock1SerialRoute,
+  path: "control",
+  component: () => <Mock1ControlPage />,
 });
 
 export const setupRoute = createRoute({
@@ -213,6 +227,8 @@ export const rootTree = RootRoute.addChildren([
         extruder2SettingsRoute,
         extruder2ManualRoute,
       ]),
+
+      mock1SerialRoute.addChildren([mock1ControlRoute]),
     ]),
   ]),
 ]);

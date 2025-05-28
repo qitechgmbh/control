@@ -9,11 +9,11 @@ use restore::restore_eeoprom;
 /// Maximum number of SubDevices that can be stored. This must be a power of 2 greater than 1.
 const MAX_SUBDEVICES: usize = 16;
 /// Maximum PDU data payload size - set this to the max PDI size or higher.
-const MAX_PDU_DATA: usize = PduStorage::element_size(128);
+const MAX_PDU_DATA: usize = PduStorage::element_size(256);
 /// Maximum number of EtherCAT frames that can be in flight at any one time.
 const MAX_FRAMES: usize = 16;
 /// Maximum total PDI length.
-const PDI_LEN: usize = 128;
+const PDI_LEN: usize = 256;
 
 static PDU_STORAGE: PduStorage<MAX_FRAMES, MAX_PDU_DATA> = PduStorage::new();
 
