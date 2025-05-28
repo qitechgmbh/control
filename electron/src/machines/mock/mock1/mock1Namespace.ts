@@ -71,13 +71,13 @@ export type Mock1NamespaceStore = {
 };
 
 // Constants for time durations
-const TWENTY_MILISECOND = 20;
+const TWENTY_MILLISECOND = 20;
 const ONE_SECOND = 1000;
 const FIVE_SECOND = 5 * ONE_SECOND;
 const ONE_HOUR = 60 * 60 * ONE_SECOND;
 
 const { initialTimeSeries: sineWave, insert: addSineWave } = createTimeSeries(
-  TWENTY_MILISECOND,
+  TWENTY_MILLISECOND,
   ONE_SECOND,
   FIVE_SECOND,
   ONE_HOUR,

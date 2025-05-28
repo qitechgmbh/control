@@ -9,63 +9,7 @@ export interface TimeSeriesValue {
 }
 
 /**
- * Min/Max tracker using deques for O(1) operations
- */
-class MinMaxTracker {
-  private minDeque: { value: number; index: number }[] = [];
-  private maxDeque: { value: number; index: number }[] = [];
-  private globalIndex = 0;
-
-  push(value: number): void {
-    // Remove elements from back while current value is smaller (for min)
-    while (this.minDeque.length && this.minDeque[this.minDeque.length - 1].value >= value) {
-      this.minDeque.pop();
-    }
-    this.minDeque.push({ value, index: this.globalIndex });
-
-    // Remove elements from back while current value is larger (for max)
-    while (this.maxDeque.length && this.maxDeque[this.maxDeque.length - 1].value <= value) {
-      this.maxDeque.pop();
-    }
-    this.maxDeque.push({ value, index: this.globalIndex });
-
-    this.globalIndex++;
-  }
-
-  removeOldest(): void {
-    const oldestIndex = this.globalIndex - this.getValidSize();
-
-    // Remove elements from front that are too old
-    while (this.minDeque.length && this.minDeque[0].index <= oldestIndex) {
-      this.minDeque.shift();
-    }
-    while (this.maxDeque.length && this.maxDeque[0].index <= oldestIndex) {
-      this.maxDeque.shift();
-    }
-  }
-
-  getMin(): number {
-    return this.minDeque.length ? this.minDeque[0].value : 0;
-  }
-
-  getMax(): number {
-    return this.maxDeque.length ? this.maxDeque[0].value : 0;
-  }
-
-  private getValidSize(): number {
-    // This should be set by the parent Series
-    return Math.max(this.minDeque.length, this.maxDeque.length);
-  }
-
-  reset(): void {
-    this.minDeque = [];
-    this.maxDeque = [];
-    this.globalIndex = 0;
-  }
-}
-
-/**
- * Enhanced Series type with min/max tracking
+ * Enhanced Series type without min/max tracking (we'll calculate dynamically)
  */
 type Series = {
   values: (TimeSeriesValue | null)[];
@@ -74,7 +18,6 @@ type Series = {
   lastTimestamp: number;
   timeWindow: number;
   sampleInterval: number;
-  minMaxTracker: MinMaxTracker;
   validCount: number; // Track how many valid entries we have
 };
 
@@ -117,13 +60,32 @@ export function extractDataFromSeries(series: Series, timeWindow?: number): [num
 }
 
 /**
- * Get min/max values from series in O(1) time
+ * Get min/max values from series by dynamically scanning the data
  */
-export function getSeriesMinMax(series: Series): { min: number; max: number } {
-  return {
-    min: series.minMaxTracker.getMin(),
-    max: series.minMaxTracker.getMax()
-  };
+export function getSeriesMinMax(series: Series, timeWindow?: number): { min: number; max: number } {
+  const cutoffTime = timeWindow ? series.lastTimestamp - timeWindow : 0;
+
+  let min = Number.POSITIVE_INFINITY;
+  let max = Number.NEGATIVE_INFINITY;
+  let hasValidData = false;
+
+  const { values: raw, index, size } = series;
+  for (let i = 0; i < size; i++) {
+    const idx = (index + i) % size;
+    const val = raw[idx];
+    if (val && val.timestamp > 0 && val.timestamp >= cutoffTime) {
+      hasValidData = true;
+      if (val.value < min) min = val.value;
+      if (val.value > max) max = val.value;
+    }
+  }
+
+  // Return sensible defaults if no valid data
+  if (!hasValidData) {
+    return { min: 0, max: 0 };
+  }
+
+  return { min, max };
 }
 
 /**
@@ -168,7 +130,7 @@ export function seriesToUPlotData(series: Series, timeWindow?: number): [number[
 }
 
 /**
- * Factory function to create a new time series with circular buffers and min/max tracking
+ * Factory function to create a new time series with circular buffers
  */
 export const createTimeSeries = (
   sampleIntervalShort: number,
@@ -190,7 +152,6 @@ export const createTimeSeries = (
       lastTimestamp: 0,
       timeWindow: retentionDurationShort,
       sampleInterval: sampleIntervalShort,
-      minMaxTracker: new MinMaxTracker(),
       validCount: 0,
     },
     long: {
@@ -200,7 +161,6 @@ export const createTimeSeries = (
       lastTimestamp: 0,
       timeWindow: retentionDurationLong,
       sampleInterval: sampleIntervalLong,
-      minMaxTracker: new MinMaxTracker(),
       validCount: 0,
     },
   };
@@ -221,12 +181,9 @@ export const createTimeSeries = (
         draft.short.index = (draft.short.index + 1) % draft.short.size;
         draft.short.lastTimestamp = value.timestamp;
 
-        if (isShortOverwriting) {
-          draft.short.minMaxTracker.removeOldest();
-        } else {
+        if (!isShortOverwriting) {
           draft.short.validCount++;
         }
-        draft.short.minMaxTracker.push(value.value);
       }
 
       // Insert into long buffer only if enough time has passed (downsampling)
@@ -241,12 +198,9 @@ export const createTimeSeries = (
         draft.long.index = (draft.long.index + 1) % draft.long.size;
         draft.long.lastTimestamp = value.timestamp;
 
-        if (isLongOverwriting) {
-          draft.long.minMaxTracker.removeOldest();
-        } else {
+        if (!isLongOverwriting) {
           draft.long.validCount++;
         }
-        draft.long.minMaxTracker.push(value.value);
       }
     });
   };
@@ -276,5 +230,4 @@ export function resetSeries(series: Series): void {
   series.index = 0;
   series.lastTimestamp = 0;
   series.validCount = 0;
-  series.minMaxTracker.reset();
 }

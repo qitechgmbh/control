@@ -8,7 +8,7 @@ import {
 } from "./units";
 import { Label } from "./Label";
 import { TimeSeries } from "@/lib/timeseries";
-import { MiniGraph } from "@/helpers/mini_graph";
+import { MiniGraph } from "@/helpers/MiniGraph";
 
 type Props = {
   label: string;
@@ -86,10 +86,7 @@ function _TimeSeriesValue({
         </Label>
       </div>
 
-      <div
-        className="h-16"
-        style={{ flexGrow: 1, minWidth: 0 /* allow shrinking */ }}
-      >
+      <div className="h-16 flex-grow min-w-0">
         <MiniGraph newData={timeseries} width={width} />
       </div>
     </div>
