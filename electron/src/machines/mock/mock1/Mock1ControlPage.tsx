@@ -24,8 +24,29 @@ export function Mock1ControlPage() {
 
   return (
     <Page>
-      <ControlGrid columns={2}>
-        <ControlCard title="Sine Wave Generator">
+      <ControlGrid>
+        <ControlCard title="Sine Wave">
+          <TimeSeriesValueNumeric
+            label="Current Value"
+            timeseries={sineWave}
+            renderValue={(value) => value.toFixed(3)}
+          />
+        </ControlCard>
+        <ControlCard title="Sine Wave">
+          <TimeSeriesValueNumeric
+            label="Current Value"
+            timeseries={sineWave}
+            renderValue={(value) => value.toFixed(3)}
+          />
+        </ControlCard>
+        <ControlCard title="Sine Wave">
+          <TimeSeriesValueNumeric
+            label="Current Value"
+            timeseries={sineWave}
+            renderValue={(value) => value.toFixed(3)}
+          />
+        </ControlCard>
+        <ControlCard title="Sine Wave">
           <TimeSeriesValueNumeric
             label="Current Value"
             timeseries={sineWave}
@@ -33,7 +54,7 @@ export function Mock1ControlPage() {
           />
         </ControlCard>
 
-        <ControlCard title="Settings">
+        <ControlCard title="Frequency">
           <div className="flex flex-col gap-4">
             <EditValue
               title="Frequency (Hz)"
@@ -46,133 +67,21 @@ export function Mock1ControlPage() {
               renderValue={(value) => value.toFixed(0)}
               onChange={mockSetFrequency}
             />
-
-            <div className="flex flex-col gap-2">
-              <div className="text-sm font-medium">Mode</div>
-              <SelectionGroup
-                value={mode}
-                onChange={(newMode: Mode) => mockSetMode(newMode)}
-                disabled={modeStateIsDisabled}
-                options={{
-                  Standby: { children: "Standby" },
-                  Running: { children: "Running" },
-                }}
-              />
-            </div>
           </div>
         </ControlCard>
-      </ControlGrid>
-      <ControlGrid columns={2}>
-        <ControlCard title="Sine Wave Generator">
-          <TimeSeriesValueNumeric
-            label="Current Value"
-            timeseries={sineWave}
-            renderValue={(value) => value.toFixed(3)}
-          />
-        </ControlCard>
 
-        <ControlCard title="Settings">
-          <div className="flex flex-col gap-4">
-            <EditValue
-              title="Frequency (Hz)"
-              unit="mHz"
-              value={frequency}
-              defaultValue={500}
-              min={1}
-              max={1000}
-              step={10}
-              renderValue={(value) => value.toFixed(0)}
-              onChange={mockSetFrequency}
+        <ControlCard title="Mode">
+          <div className="flex flex-col gap-2">
+            <div className="text-sm font-medium">Mode</div>
+            <SelectionGroup
+              value={mode}
+              onChange={(newMode: Mode) => mockSetMode(newMode)}
+              disabled={modeStateIsDisabled}
+              options={{
+                Standby: { children: "Standby" },
+                Running: { children: "Running" },
+              }}
             />
-
-            <div className="flex flex-col gap-2">
-              <div className="text-sm font-medium">Mode</div>
-              <SelectionGroup
-                value={mode}
-                onChange={(newMode: Mode) => mockSetMode(newMode)}
-                disabled={modeStateIsDisabled}
-                options={{
-                  Standby: { children: "Standby" },
-                  Running: { children: "Running" },
-                }}
-              />
-            </div>
-          </div>
-        </ControlCard>
-      </ControlGrid>
-      <ControlGrid columns={2}>
-        <ControlCard title="Sine Wave Generator">
-          <TimeSeriesValueNumeric
-            label="Current Value"
-            timeseries={sineWave}
-            renderValue={(value) => value.toFixed(3)}
-          />
-        </ControlCard>
-
-        <ControlCard title="Settings">
-          <div className="flex flex-col gap-4">
-            <EditValue
-              title="Frequency (Hz)"
-              unit="mHz"
-              value={frequency}
-              defaultValue={500}
-              min={1}
-              max={1000}
-              step={10}
-              renderValue={(value) => value.toFixed(0)}
-              onChange={mockSetFrequency}
-            />
-
-            <div className="flex flex-col gap-2">
-              <div className="text-sm font-medium">Mode</div>
-              <SelectionGroup
-                value={mode}
-                onChange={(newMode: Mode) => mockSetMode(newMode)}
-                disabled={modeStateIsDisabled}
-                options={{
-                  Standby: { children: "Standby" },
-                  Running: { children: "Running" },
-                }}
-              />
-            </div>
-          </div>
-        </ControlCard>
-      </ControlGrid>
-      <ControlGrid columns={2}>
-        <ControlCard title="Sine Wave Generator">
-          <TimeSeriesValueNumeric
-            label="Current Value"
-            timeseries={sineWave}
-            renderValue={(value) => value.toFixed(3)}
-          />
-        </ControlCard>
-
-        <ControlCard title="Settings">
-          <div className="flex flex-col gap-4">
-            <EditValue
-              title="Frequency (Hz)"
-              unit="mHz"
-              value={frequency}
-              defaultValue={500}
-              min={1}
-              max={1000}
-              step={10}
-              renderValue={(value) => value.toFixed(0)}
-              onChange={mockSetFrequency}
-            />
-
-            <div className="flex flex-col gap-2">
-              <div className="text-sm font-medium">Mode</div>
-              <SelectionGroup
-                value={mode}
-                onChange={(newMode: Mode) => mockSetMode(newMode)}
-                disabled={modeStateIsDisabled}
-                options={{
-                  Standby: { children: "Standby" },
-                  Running: { children: "Running" },
-                }}
-              />
-            </div>
           </div>
         </ControlCard>
       </ControlGrid>
