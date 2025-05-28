@@ -5,8 +5,6 @@ import { ControlGrid } from "@/control/ControlGrid";
 import { TimeSeriesValueNumeric } from "@/control/TimeSeriesValue";
 import { EditValue } from "@/control/EditValue";
 import { useMock1 } from "./useMock";
-import { Button } from "@/components/ui/button";
-import { Icon } from "@/components/Icon";
 import { SelectionGroup } from "@/control/SelectionGroup";
 import { Mode } from "./mock1Namespace";
 
@@ -17,16 +15,12 @@ export function Mock1ControlPage() {
     modeState,
     mockSetFrequency,
     mockSetMode,
-    mockStateIsLoading,
-    mockStateIsDisabled,
-    modeStateIsLoading,
     modeStateIsDisabled,
   } = useMock1();
 
   // Controlled local states synced with mockState and modeState
   const frequency = mockState?.data?.frequency ?? 1.0;
   const mode = modeState?.data?.mode ?? "Standby";
-  const isRunning = mode === "Running";
 
   return (
     <Page>

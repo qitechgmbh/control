@@ -6,7 +6,7 @@
 import { StoreApi } from "zustand";
 import { create } from "zustand";
 import { produce } from "immer";
-import { number, z } from "zod";
+import { z } from "zod";
 import {
   EventHandler,
   eventSchema,
@@ -84,7 +84,7 @@ const { initialTimeSeries: sineWave, insert: addSineWave } = createTimeSeries(
  * @returns A new Zustand store instance for Mock1 namespace
  */
 export const createMock1NamespaceStore = (): StoreApi<Mock1NamespaceStore> =>
-  create<Mock1NamespaceStore>((set) => {
+  create<Mock1NamespaceStore>(() => {
     return {
       mockState: null,
       modeState: null,
@@ -130,8 +130,8 @@ export function mock1MessageHandler(
       }
       // Metric events (keep for 1 hour)
       else if (eventName === "SineWaveEvent") {
-        let parsed = sineWaveEventSchema.parse(event);
-        let timeseriesValue: TimeSeriesValue = {
+        const parsed = sineWaveEventSchema.parse(event);
+        const timeseriesValue: TimeSeriesValue = {
           value: parsed.data.amplitude,
           timestamp: event.ts,
         };
@@ -167,11 +167,11 @@ export function useMock1Namespace(
   machine_identification_unique: MachineIdentificationUnique,
 ): Mock1NamespaceStore {
   // Generate namespace ID from validated machine ID
-  const namespaceId = useRef<NamespaceId>({
+  const namespaceId: NamespaceId = {
     type: "machine",
     machine_identification_unique,
-  });
+  };
 
   // Use the implementation with validated namespace ID
-  return useMock1NamespaceImplementation(namespaceId.current);
+  return useMock1NamespaceImplementation(namespaceId);
 }
