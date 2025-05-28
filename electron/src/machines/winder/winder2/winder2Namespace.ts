@@ -263,7 +263,7 @@ export function winder2MessageHandler(
       // Apply appropriate caching strategy based on event type
       // State events (keep only the latest)
       if (eventName === "TraverseStateEvent") {
-        let parsed = traverseStateEventSchema.parse(event);
+        const parsed = traverseStateEventSchema.parse(event);
         console.log("TraverseStateEvent", parsed);
         store.setState(
           produce(store.getState(), (state) => {
@@ -271,7 +271,7 @@ export function winder2MessageHandler(
           }),
         );
       } else if (eventName === "PullerStateEvent") {
-        let parsed = pullerStateEventSchema.parse(event);
+        const parsed = pullerStateEventSchema.parse(event);
         console.log("PullerStateEvent", parsed);
         store.setState(
           produce(store.getState(), (state) => {
@@ -279,7 +279,7 @@ export function winder2MessageHandler(
           }),
         );
       } else if (eventName === "AutostopStateEvent") {
-        let parsed = autostopStateEventSchema.parse(event);
+        const parsed = autostopStateEventSchema.parse(event);
         console.log("AutostopStateEvent", parsed);
         store.setState(
           produce(store.getState(), (state) => {
@@ -287,7 +287,7 @@ export function winder2MessageHandler(
           }),
         );
       } else if (eventName === "ModeStateEvent") {
-        let parsed = modeStateEventSchema.parse(event);
+        const parsed = modeStateEventSchema.parse(event);
         console.log("ModeStateEvent", parsed);
         store.setState(
           produce(store.getState(), (state) => {
@@ -295,7 +295,7 @@ export function winder2MessageHandler(
           }),
         );
       } else if (eventName === "SpoolStateEvent") {
-        let parsed = spoolStateEventSchema.parse(event);
+        const parsed = spoolStateEventSchema.parse(event);
         console.log("SpoolStateEvent", parsed);
         store.setState(
           produce(store.getState(), (state) => {
@@ -303,7 +303,7 @@ export function winder2MessageHandler(
           }),
         );
       } else if (eventName === "TensionArmStateEvent") {
-        let parsed = tensionArmStateEventSchema.parse(event);
+        const parsed = tensionArmStateEventSchema.parse(event);
         console.log("TensionArmStateEvent", parsed);
         store.setState(
           produce(store.getState(), (state) => {
@@ -430,10 +430,13 @@ export function useWinder2Namespace(
   machine_identification_unique: MachineIdentificationUnique,
 ): Winder2NamespaceStore {
   // Generate namespace ID from validated machine ID
-  const namespaceId = useMemo<NamespaceId>(() => ({
-    type: "machine",
-    machine_identification_unique,
-  }), [machine_identification_unique]);
+  const namespaceId = useMemo<NamespaceId>(
+    () => ({
+      type: "machine",
+      machine_identification_unique,
+    }),
+    [machine_identification_unique],
+  );
 
   // Use the implementation with validated namespace ID
   return useWinder2NamespaceImplementation(namespaceId);
