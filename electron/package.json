@@ -101,6 +101,7 @@
     "sonner": "^2.0.1",
     "tailwind-merge": "^3.0.1",
     "tailwindcss-animate": "^1.0.7",
+    "uplot": "^1.6.32",
     "zod": "^3.24.2",
     "zod-validation-error": "^3.4.0",
     "zustand": "^5.0.3"
