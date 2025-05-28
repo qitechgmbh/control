@@ -1,4 +1,4 @@
-use super::{MockMachine, api};
+use super::MockMachine;
 use control_core::actors::Actor;
 use std::{
     future::Future,
@@ -35,8 +35,7 @@ impl Actor for MockMachine {
 
             // Only emit sine wave if machine is in Running mode
             // The sine wave value is updated approximately 60 times per second
-            if now.duration_since(self.last_measurement_emit) > Duration::from_millis(16)
-            {
+            if now.duration_since(self.last_measurement_emit) > Duration::from_millis(16) {
                 self.emit_sine_wave();
                 self.last_measurement_emit = now;
             }

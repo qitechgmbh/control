@@ -87,7 +87,7 @@ function _TimeSeriesValue({
       </div>
 
       <div className="h-16 flex-grow min-w-0">
-        <MiniGraph newData={timeseries} width={width} />
+        <MiniGraph newData={timeseries} width={width} renderValue={renderValue} />
       </div>
     </div>
   );

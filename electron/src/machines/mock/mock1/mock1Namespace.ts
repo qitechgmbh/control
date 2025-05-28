@@ -17,7 +17,6 @@ import {
   createNamespaceHookImplementation,
 } from "../../../client/socketioStore";
 import { MachineIdentificationUnique } from "@/machines/types";
-import { useRef } from "react";
 import {
   createTimeSeries,
   TimeSeries,

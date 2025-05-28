@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useCallback } from "react";
+import React, { useEffect, useRef, useCallback, useMemo } from "react";
 import uPlot from "uplot";
 import "uplot/dist/uPlot.min.css";
 import { getSeriesMinMax, seriesToUPlotData, TimeSeries } from "@/lib/timeseries";
@@ -6,52 +6,112 @@ import { getSeriesMinMax, seriesToUPlotData, TimeSeries } from "@/lib/timeseries
 type MiniGraphProps = {
     newData: TimeSeries | null;
     width: number;
+    renderValue?: (value: number) => string;
 };
 
 const HEIGHT = 64;
 
-export function MiniGraph({ newData, width }: MiniGraphProps) {
+export function MiniGraph({ newData, width, renderValue }: MiniGraphProps) {
     const divRef = useRef<HTMLDivElement | null>(null);
     const uplotRef = useRef<uPlot | null>(null);
-    const lastUpdateTimestamp = useRef<number>(0);
-    const isInitialized = useRef<boolean>(false);
 
-    // Memoized update function to avoid recreating on every render
+    // Performance tracking refs
+    const lastUpdateTimestamp = useRef<number>(0);
+    const lastDataHash = useRef<string>("");
+    const lastMinMax = useRef<{ min: number; max: number }>({ min: 0, max: 0 });
+    const rafId = useRef<number>(0);
+    const isInitialized = useRef<boolean>(false);
+    const pendingUpdate = useRef<boolean>(false);
+
+    // Fast hash function for data change detection
+    const hashData = useCallback((timestamps: number[], values: number[]): string => {
+        if (timestamps.length === 0) return "";
+        // Hash only first, last, and length for performance
+        return `${timestamps[0]}-${timestamps[timestamps.length - 1]}-${timestamps.length}-${values[values.length - 1]}`;
+    }, []);
+
+    // Memoize the tick formatter to avoid recreating on every render
+    const tickFormatter = useMemo(() => {
+        return renderValue ?
+            (u: uPlot, ticks: number[]) => ticks.map(v => renderValue(v)) :
+            (u: uPlot, ticks: number[]) => ticks.map(v => v.toFixed(1));
+    }, [renderValue]);
+
+    // Ultra-efficient update function
     const updateChart = useCallback(() => {
-        if (!uplotRef.current || !newData?.short || !newData?.current) return;
+        if (!uplotRef.current || !newData?.short || !newData?.current) {
+            pendingUpdate.current = false;
+            return;
+        }
 
         const cur = newData.current;
 
-        // Only update if we have new data
-        if (cur.timestamp <= lastUpdateTimestamp.current) return;
-
-        lastUpdateTimestamp.current = cur.timestamp;
+        // Skip if no new data
+        if (cur.timestamp <= lastUpdateTimestamp.current) {
+            pendingUpdate.current = false;
+            return;
+        }
 
         const short = newData.short;
         const timeWindow = short.timeWindow;
 
-        // Get data efficiently
+        // Get data
         const [timestamps, values] = seriesToUPlotData(short);
 
-        if (timestamps.length === 0) return;
+        if (timestamps.length === 0) {
+            pendingUpdate.current = false;
+            return;
+        }
 
-        // Get min/max in O(1)
+        // Check if data actually changed using hash
+        const dataHash = hashData(timestamps, values);
+        if (dataHash === lastDataHash.current) {
+            pendingUpdate.current = false;
+            return;
+        }
+
+        // Get min/max and check if scales need updating
         const { min: minY, max: maxY } = getSeriesMinMax(short);
+        const scalesChanged = minY !== lastMinMax.current.min || maxY !== lastMinMax.current.max;
+
+        // Update tracking vars
+        lastUpdateTimestamp.current = cur.timestamp;
+        lastDataHash.current = dataHash;
+        lastMinMax.current = { min: minY, max: maxY };
+
         const range = maxY - minY || 1;
+        const cutoff = cur.timestamp - timeWindow;
 
-        // Use current timestamp to ensure line reaches edge
-        const cutoff = cur.timestamp - timeWindow + 1000;
-
-        // Batch all updates together to minimize redraws
+        // Batch all updates to minimize redraws
         uplotRef.current.batch(() => {
+            // Always update data and x-scale (time moves forward)
             uplotRef.current!.setData([timestamps, values]);
             uplotRef.current!.setScale("x", { min: cutoff, max: cur.timestamp });
-            uplotRef.current!.setScale("y", {
-                min: minY - range * 0.1,
-                max: maxY + range * 0.1,
-            });
+
+            // Only update y-scale if min/max changed
+            if (scalesChanged) {
+                uplotRef.current!.setScale("y", {
+                    min: minY - range * 0.1,
+                    max: maxY + range * 0.1,
+                });
+            }
         });
-    }, [newData]);
+
+        pendingUpdate.current = false;
+    }, [newData, hashData]);
+
+    // RAF-throttled update scheduler
+    const scheduleUpdate = useCallback(() => {
+        if (pendingUpdate.current || !isInitialized.current) return;
+
+        pendingUpdate.current = true;
+
+        if (rafId.current) {
+            cancelAnimationFrame(rafId.current);
+        }
+
+        rafId.current = requestAnimationFrame(updateChart);
+    }, [updateChart]);
 
     // Initialize chart only once
     useEffect(() => {
@@ -60,19 +120,19 @@ export function MiniGraph({ newData, width }: MiniGraphProps) {
         const short = newData.short;
         const timeWindow = short.timeWindow;
 
-        // Extract initial data
+        // Get initial data
         const [allTimestamps, allValues] = seriesToUPlotData(short);
-
-        // Get min/max
         const { min: minY, max: maxY } = getSeriesMinMax(short);
         const range = maxY - minY || 1;
 
-        // Use current time or latest timestamp
+        // Initialize tracking
+        const dataHash = hashData(allTimestamps, allValues);
+        lastDataHash.current = dataHash;
+        lastMinMax.current = { min: minY, max: maxY };
+
         const now = Date.now();
         const latestTimestamp = allTimestamps.length > 0 ? allTimestamps[allTimestamps.length - 1] : now;
         const cutoff = latestTimestamp - timeWindow;
-
-        const uData: uPlot.AlignedData = [allTimestamps, allValues];
 
         const opts: uPlot.Options = {
             width,
@@ -98,7 +158,7 @@ export function MiniGraph({ newData, width }: MiniGraphProps) {
                     side: 1,
                     grid: { stroke: "#ccc", width: 0.5 },
                     ticks: { stroke: "#ccc", width: 0.5 },
-                    values: (u, ticks) => ticks.map(v => v.toFixed(1)),
+                    values: tickFormatter, // Use the memoized formatter
                 },
             ],
             series: [
@@ -107,29 +167,33 @@ export function MiniGraph({ newData, width }: MiniGraphProps) {
                     stroke: "black",
                     width: 2,
                     spanGaps: true,
+                    points: { show: false }, // Hide the dots/points
                 },
             ],
         };
 
-        uplotRef.current = new uPlot(opts, uData, divRef.current);
+        uplotRef.current = new uPlot(opts, [allTimestamps, allValues], divRef.current);
         isInitialized.current = true;
 
         return () => {
+            if (rafId.current) {
+                cancelAnimationFrame(rafId.current);
+            }
             uplotRef.current?.destroy();
             uplotRef.current = null;
             isInitialized.current = false;
+            pendingUpdate.current = false;
         };
-    }, [width, newData?.short?.timeWindow]); // Only recreate on width/timeWindow changes
+    }, [width, newData?.short?.timeWindow, hashData, tickFormatter]);
 
-    // Update chart when new data arrives (event-driven, not polling)
+    // Trigger updates only when timestamp changes
     useEffect(() => {
-        if (!isInitialized.current) return;
-        updateChart();
-    }, [newData?.current?.timestamp, updateChart]); // Only update when timestamp changes
+        scheduleUpdate();
+    }, [newData?.current?.timestamp, scheduleUpdate]);
 
-    // Handle width changes without recreating the entire chart
+    // Efficient width handling
     useEffect(() => {
-        if (!uplotRef.current) return;
+        if (!uplotRef.current || !isInitialized.current) return;
         uplotRef.current.setSize({ width, height: HEIGHT });
     }, [width]);
 
