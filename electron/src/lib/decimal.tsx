@@ -1,3 +1,5 @@
+import React from "react";
+
 export function roundToDecimals(num: number, decimals: number): string {
   let output = num.toFixed(decimals);
 

@@ -114,7 +114,7 @@ export const units = [
 
 export type Unit = (typeof units)[number];
 
-export function renderUndefinedValue<T>(
+export function renderValueToReactNode<T>(
   value?: T | undefined | null,
   unit?: Unit,
   renderValue?: (value: T) => string,
@@ -128,12 +128,21 @@ export function renderUndefinedValue<T>(
       </span>
     );
   }
-  if (renderValue) {
-    if (renderUnitSyntax) {
-      return renderUnitSyntax(renderValue(value), unit);
-    } else {
-      return renderValue(value);
+
+  const valueString = renderValue ? renderValue(value) : value.toString();
+
+  const valueStringSplit = valueString.split(".");
+  const reactNodes: ReactNode[] = [];
+  for (let i = 0; i < valueStringSplit.length; i++) {
+    if (i > 0) {
+      reactNodes.push(
+        <span key={`dot-${i}`} className="font-serif">
+          .
+        </span>,
+      );
     }
+    reactNodes.push(<span key={`value-${i}`}>{valueStringSplit[i]}</span>);
   }
-  return value.toString();
+
+  return <>{reactNodes}</>;
 }
