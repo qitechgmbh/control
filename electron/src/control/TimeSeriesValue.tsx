@@ -6,9 +6,9 @@ import {
   renderUnitSymbol,
   Unit,
 } from "./units";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Label } from "./Label";
 import { TimeSeries } from "@/lib/timeseries";
+import { MiniGraph } from "@/helpers/MiniGraph";
 
 type Props = {
   label: string;
@@ -17,6 +17,9 @@ type Props = {
   icon?: IconName;
   renderValue?: (value: number) => string;
 };
+
+type AllowedT = number | boolean;
+
 
 function _TimeSeriesValue({
   unit,
@@ -27,9 +30,46 @@ function _TimeSeriesValue({
 }: Props) {
   const value = timeseries.current?.value;
 
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  const leftRef = React.useRef<HTMLDivElement>(null);
+  const [width, setWidth] = React.useState(0);
+
+  React.useEffect(() => {
+    if (!containerRef.current || !leftRef.current) return;
+
+    const container = containerRef.current;
+    const left = leftRef.current;
+
+    const calculateWidth = () => {
+      const containerWidth = container.getBoundingClientRect().width;
+      const leftWidth = left.getBoundingClientRect().width;
+      const padding = 16;
+      const remaining = Math.max(containerWidth - leftWidth - padding, 0);
+      setWidth(remaining);
+    };
+
+    calculateWidth();
+
+    // Listen for resizes on the container
+    const resizeObserver = new ResizeObserver(() => {
+      calculateWidth();
+    });
+
+    resizeObserver.observe(container);
+    resizeObserver.observe(left);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, []);
+
   return (
-    <div className="bg-red flex flex-row items-center gap-4">
-      <div className="flex-1">
+    <div
+      ref={containerRef}
+      className="bg-red flex flex-row items-center gap-4"
+      style={{ width: "100%" }} // make sure container stretches full width of grid cell
+    >
+      <div ref={leftRef} className="h-16 flex-shrink-0">
         <Label label={label}>
           <div className="flex flex-row items-center gap-4">
             <Icon
@@ -45,10 +85,14 @@ function _TimeSeriesValue({
           </div>
         </Label>
       </div>
-      <Skeleton className="h-16 flex-1 bg-neutral-100"></Skeleton>
+
+      <div className="h-16 flex-grow min-w-0">
+        <MiniGraph newData={timeseries} width={width} />
+      </div>
     </div>
   );
 }
+
 
 export function TimeSeriesValueNumeric(props: Props) {
   return <_TimeSeriesValue {...props} />;
