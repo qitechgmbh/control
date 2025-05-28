@@ -20,7 +20,6 @@ import { TouchInput } from "@/components/touch/TouchInput";
 import { IconText } from "@/components/IconText";
 import { cva } from "class-variance-authority";
 import { z } from "zod";
-import { use } from "chai";
 
 type Props = {
   unit?: Unit;

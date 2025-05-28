@@ -4,14 +4,8 @@ import { useStateOptimistic } from "@/lib/useStateOptimistic";
 import { MachineIdentificationUnique, extruder2 } from "@/machines/types";
 import { extruder2Route } from "@/routes/routes";
 import { z } from "zod";
-import {
-  Heating,
-  Mode,
-  MotorPressure,
-  heatingStateDataSchema,
-  useExtruder2Namespace,
-} from "./extruder2Namespace";
-import { useEffect, useMemo, useState } from "react";
+import { Heating, Mode, useExtruder2Namespace } from "./extruder2Namespace";
+import { useEffect, useMemo } from "react";
 import { TimeSeries } from "@/lib/timeseries";
 
 export function useExtruder2() {

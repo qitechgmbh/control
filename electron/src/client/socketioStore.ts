@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo } from "react";
 import { create, StoreApi } from "zustand";
 import { produce } from "immer";
 import { io, Socket } from "socket.io-client";
@@ -150,6 +150,7 @@ const useSocketioStore = create<SocketioStore>()((set, get) => ({
     const namespace_path = serializeNamespaceId(namespaceId);
     return !!get().namespaces[namespace_path];
   },
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   initNamespace: <S>(namespaceId, createStore, createEventHandler) => {
     const namespace_path = serializeNamespaceId(namespaceId);
 
@@ -202,7 +203,7 @@ const useSocketioStore = create<SocketioStore>()((set, get) => ({
 
     socket.on("event", (event: unknown) => {
       // validate the event
-      let event_parsed = eventSchema(z.any()).safeParse(event);
+      const event_parsed = eventSchema(z.any()).safeParse(event);
       if (!event_parsed.success) {
         toastZodError(event_parsed.error, "Invalid event");
         return;
@@ -262,7 +263,7 @@ const useSocketioStore = create<SocketioStore>()((set, get) => ({
           ) {
             // Create a timeout to check if the namespace is still unused after 10 seconds
             // In an edge case ther could be a use inside the 10 seconds and the again 0 but we will still disconnect (simplicity)
-            const timeout = setTimeout(() => {
+            setTimeout(() => {
               set(
                 produce((state: SocketioStore) => {
                   const ns = state.namespaces[namespace_path];

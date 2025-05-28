@@ -1,4 +1,3 @@
-import { Fullscreen } from "lucide-react";
 import {
   WIN_MINIMIZE_CHANNEL,
   WIN_MAXIMIZE_CHANNEL,

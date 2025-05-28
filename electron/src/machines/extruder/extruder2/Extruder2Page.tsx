@@ -3,7 +3,7 @@ import { extruder2Route } from "@/routes/routes";
 import React from "react";
 
 export function Extruder2Page() {
-  let { serial } = extruder2Route.useParams();
+  const { serial } = extruder2Route.useParams();
   return (
     <Topbar
       pathname={`/_sidebar/machines/extruder2/${serial}`}

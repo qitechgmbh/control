@@ -36,93 +36,96 @@ async function update(
   event: Electron.IpcMainInvokeEvent,
   params: UpdateExecuteListenerParams,
 ): Promise<void> {
-  return new Promise(async (resolve, reject) => {
-    try {
-      const {
-        githubRepoOwner,
-        githubRepoName,
-        githubToken,
-        tag,
-        branch,
-        commit,
-      } = params;
-
-      // Implement your update logic here
-      console.log("Update parameters:", {
-        githubRepoOwner,
-        githubRepoName,
-        githubToken,
-        tag,
-        branch,
-        commit,
-      });
-
-      const qitechControlEnv = process.env.QITECH_CONTROL_ENV;
-      const homeDir =
-        qitechControlEnv === "control-os" ? "/home/qitech" : process.env.HOME;
-      if (!homeDir) {
-        event.sender.send(
-          UPDATE_LOG,
-          terminalColor("red", terminalError("Home directory not found")),
-        );
-        return;
-      }
-
-      // 1. first make sure the clone path is empty by deleting it if it containsa .git folder
-      const repoDir = `${homeDir}/${githubRepoName}`;
-      const clearResult = await clearRepoDirectory(
-        `${homeDir}/${githubRepoName}`,
-        event,
-      );
-      if (!clearResult.success) {
-        event.sender.send(UPDATE_LOG, clearResult.error);
-        return;
-      }
-
-      // 2. clone the repository
-      const cloneResult = await cloneRepository(
-        {
+  return new Promise((resolve, reject) => {
+    (async () => {
+      try {
+        const {
           githubRepoOwner,
           githubRepoName,
           githubToken,
           tag,
           branch,
           commit,
-        },
-        event,
-      );
-      if (!cloneResult.success) {
-        event.sender.send(UPDATE_LOG, cloneResult.error);
-        return;
-      }
+        } = params;
 
-      // 3. make the nixos-install.sh script executable
-      const chmodResult = await runCommand(
-        "chmod",
-        ["+x", "nixos-install.sh"],
-        repoDir,
-        event,
-      );
-      if (!chmodResult.success) {
-        event.sender.send(UPDATE_LOG, chmodResult.error);
-        return;
-      }
+        // Implement your update logic here
+        console.log("Update parameters:", {
+          githubRepoOwner,
+          githubRepoName,
+          githubToken,
+          tag,
+          branch,
+          commit,
+        });
 
-      // 4. run the nixos-install.sh script
-      const installResult = await runCommand(
-        "./nixos-install.sh",
-        [],
-        repoDir,
-        event,
-      );
-      if (!installResult.success) {
-        event.sender.send(UPDATE_LOG, installResult.error);
-        return;
+        const qitechControlEnv = process.env.QITECH_CONTROL_ENV;
+        const homeDir =
+          qitechControlEnv === "control-os" ? "/home/qitech" : process.env.HOME;
+        if (!homeDir) {
+          event.sender.send(
+            UPDATE_LOG,
+            terminalColor("red", terminalError("Home directory not found")),
+          );
+          return;
+        }
+
+        // 1. first make sure the clone path is empty by deleting it if it containsa .git folder
+        const repoDir = `${homeDir}/${githubRepoName}`;
+        const clearResult = await clearRepoDirectory(
+          `${homeDir}/${githubRepoName}`,
+          event,
+        );
+        if (!clearResult.success) {
+          event.sender.send(UPDATE_LOG, clearResult.error);
+          return;
+        }
+
+        // 2. clone the repository
+        const cloneResult = await cloneRepository(
+          {
+            githubRepoOwner,
+            githubRepoName,
+            githubToken,
+            tag,
+            branch,
+            commit,
+          },
+          event,
+        );
+        if (!cloneResult.success) {
+          event.sender.send(UPDATE_LOG, cloneResult.error);
+          return;
+        }
+
+        // 3. make the nixos-install.sh script executable
+        const chmodResult = await runCommand(
+          "chmod",
+          ["+x", "nixos-install.sh"],
+          repoDir,
+          event,
+        );
+        if (!chmodResult.success) {
+          event.sender.send(UPDATE_LOG, chmodResult.error);
+          return;
+        }
+
+        // 4. run the nixos-install.sh script
+        const installResult = await runCommand(
+          "./nixos-install.sh",
+          [],
+          repoDir,
+          event,
+        );
+        if (!installResult.success) {
+          event.sender.send(UPDATE_LOG, installResult.error);
+          return;
+        }
+
+        resolve();
+      } catch (error: any) {
+        reject(error);
       }
-    } catch (error: any) {
-      reject(error);
-    }
-    resolve();
+    })();
   });
 }
 
@@ -188,7 +191,7 @@ async function cloneRepository(
     : `https://github.com/${githubRepoOwner}/${githubRepoName}.git`;
 
   // Determine clone arguments based on whether tag, branch, or commit is specified
-  let cloneArgs = ["clone", repoUrl];
+  const cloneArgs = ["clone", repoUrl];
 
   if (tag) {
     // Clone a specific tag

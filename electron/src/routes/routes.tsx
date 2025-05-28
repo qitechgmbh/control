@@ -17,12 +17,7 @@ import { ExtruderV2ManualPage } from "@/machines/extruder/extruder2/Extruder2Man
 import { ChooseVersionPage } from "@/setup/ChooseVersionPage";
 import { fallback, zodValidator } from "@tanstack/zod-adapter";
 
-import {
-  defaultGithubSource,
-  GithubSource,
-  GithubSourceDialog,
-  githubSourceSchema,
-} from "@/setup/GithubSourceDialog";
+import { githubSourceSchema } from "@/setup/GithubSourceDialog";
 import { z } from "zod";
 import { ChangelogPage } from "@/setup/ChangelogPage";
 import { UpdateExecutePage } from "@/setup/UpdateExecutePage";

@@ -16,7 +16,6 @@ export function Winder2SettingPage() {
     traverseState,
     traverseSetStepSize,
     traverseSetPadding,
-    traverseStateIsDisabled,
     pullerState,
     pullerSetForward,
     pullerStateIsDisabled,
