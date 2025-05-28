@@ -76,6 +76,8 @@ type Namespace<S> = {
   handler: EventHandler;
   /** Zustand store holding the room state */
   store: StoreApi<S>;
+  /** Timeout ID for disconnection */
+  disconnectTimeoutId?: NodeJS.Timeout;
 };
 
 /**
@@ -222,6 +224,7 @@ const useSocketioStore = create<SocketioStore>()((set, get) => ({
           socket,
           handler,
           store,
+          disconnectTimeoutId: undefined,
         };
       }),
     );
@@ -237,13 +240,20 @@ const useSocketioStore = create<SocketioStore>()((set, get) => ({
       throw new Error(`Namespace ${namespace_path} not initialized`);
     }
 
-    // increment the count
+    // increment the count and clear any pending disconnect timeout
     set(
       produce((state: SocketioStore) => {
         state.namespaces[namespace_path].count++;
+
+        // Clear any pending disconnect timeout since we have active subscribers
+        if (state.namespaces[namespace_path].disconnectTimeoutId) {
+          clearTimeout(state.namespaces[namespace_path].disconnectTimeoutId);
+          state.namespaces[namespace_path].disconnectTimeoutId = undefined;
+        }
       }),
     );
   },
+
   decrementNamespace: (namespaceId: NamespaceId) => {
     const namespace_path = serializeNamespaceId(namespaceId);
 
@@ -261,9 +271,15 @@ const useSocketioStore = create<SocketioStore>()((set, get) => ({
             namespaceId.type !== "main" &&
             state.namespaces[namespace_path].count <= 0
           ) {
+            // Clear any existing timeout first
+            if (state.namespaces[namespace_path].disconnectTimeoutId) {
+              clearTimeout(
+                state.namespaces[namespace_path].disconnectTimeoutId,
+              );
+            }
+
             // Create a timeout to check if the namespace is still unused after 10 seconds
-            // In an edge case ther could be a use inside the 10 seconds and the again 0 but we will still disconnect (simplicity)
-            setTimeout(() => {
+            const timeoutId = setTimeout(() => {
               set(
                 produce((state: SocketioStore) => {
                   const ns = state.namespaces[namespace_path];
@@ -276,7 +292,9 @@ const useSocketioStore = create<SocketioStore>()((set, get) => ({
                   }
                 }),
               );
-            }, 10000);
+            }, 10 * 1000);
+
+            state.namespaces[namespace_path].disconnectTimeoutId = timeoutId;
           }
         }),
       );
