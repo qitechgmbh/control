@@ -7,6 +7,7 @@ export interface TimeSeriesValue {
   value: number;
   timestamp: number;
 }
+
 /**
  * Min/Max tracker using deques for O(1) operations
  */
@@ -85,6 +86,7 @@ export interface TimeSeries {
   long: Series;
   short: Series;
 }
+
 /**
  * Return type of createTimeSeries
  */
@@ -92,6 +94,7 @@ export interface TimeSeriesWithInsert {
   initialTimeSeries: TimeSeries;
   insert: (series: TimeSeries, valueObj: TimeSeriesValue) => TimeSeries;
 }
+
 /**
  * Extract data with time window filtering
  */
@@ -206,38 +209,45 @@ export const createTimeSeries = (
     return produce(series, (draft) => {
       draft.current = value;
 
-      // Insert into short buffer
-      const shortOldValue = draft.short.values[draft.short.index];
-      const isShortOverwriting = shortOldValue && shortOldValue.timestamp > 0;
+      // Insert into short buffer only if enough time has passed (downsampling)
+      const shortSampleInterval = draft.short.sampleInterval;
+      const timeSinceLastShort = value.timestamp - draft.short.lastTimestamp;
 
-      draft.short.values[draft.short.index] = value;
-      draft.short.index = (draft.short.index + 1) % draft.short.size;
-      draft.short.lastTimestamp = value.timestamp;
+      if (timeSinceLastShort >= shortSampleInterval) {
+        const shortOldValue = draft.short.values[draft.short.index];
+        const isShortOverwriting = shortOldValue && shortOldValue.timestamp > 0;
 
-      // Update min/max tracker for short series
-      if (isShortOverwriting) {
-        // When overwriting, we need to handle the circular nature
-        draft.short.minMaxTracker.removeOldest();
-      } else {
-        draft.short.validCount++;
+        draft.short.values[draft.short.index] = value;
+        draft.short.index = (draft.short.index + 1) % draft.short.size;
+        draft.short.lastTimestamp = value.timestamp;
+
+        if (isShortOverwriting) {
+          draft.short.minMaxTracker.removeOldest();
+        } else {
+          draft.short.validCount++;
+        }
+        draft.short.minMaxTracker.push(value.value);
       }
-      draft.short.minMaxTracker.push(value.value);
 
-      // Insert into long buffer
-      const longOldValue = draft.long.values[draft.long.index];
-      const isLongOverwriting = longOldValue && longOldValue.timestamp > 0;
+      // Insert into long buffer only if enough time has passed (downsampling)
+      const longSampleInterval = draft.long.sampleInterval;
+      const timeSinceLastLong = value.timestamp - draft.long.lastTimestamp;
 
-      draft.long.values[draft.long.index] = value;
-      draft.long.index = (draft.long.index + 1) % draft.long.size;
-      draft.long.lastTimestamp = value.timestamp;
+      if (timeSinceLastLong >= longSampleInterval) {
+        const longOldValue = draft.long.values[draft.long.index];
+        const isLongOverwriting = longOldValue && longOldValue.timestamp > 0;
 
-      // Update min/max tracker for long series
-      if (isLongOverwriting) {
-        draft.long.minMaxTracker.removeOldest();
-      } else {
-        draft.long.validCount++;
+        draft.long.values[draft.long.index] = value;
+        draft.long.index = (draft.long.index + 1) % draft.long.size;
+        draft.long.lastTimestamp = value.timestamp;
+
+        if (isLongOverwriting) {
+          draft.long.minMaxTracker.removeOldest();
+        } else {
+          draft.long.validCount++;
+        }
+        draft.long.minMaxTracker.push(value.value);
       }
-      draft.long.minMaxTracker.push(value.value);
     });
   };
 

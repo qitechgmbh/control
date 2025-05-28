@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useCallback } from "react";
 import uPlot from "uplot";
 import "uplot/dist/uPlot.min.css";
 import { getSeriesMinMax, seriesToUPlotData, TimeSeries } from "@/lib/timeseries";
@@ -8,36 +8,68 @@ type MiniGraphProps = {
     width: number;
 };
 
-
 const HEIGHT = 64;
 
 export function MiniGraph({ newData, width }: MiniGraphProps) {
     const divRef = useRef<HTMLDivElement | null>(null);
     const uplotRef = useRef<uPlot | null>(null);
-    const latestDataRef = useRef(newData?.current);
-    const UPDATE_INTERVAL_MS = newData?.short.sampleInterval;
+    const lastUpdateTimestamp = useRef<number>(0);
+    const isInitialized = useRef<boolean>(false);
 
-    useEffect(() => {
-        latestDataRef.current = newData?.current;
-    }, [newData?.current]);
+    // Memoized update function to avoid recreating on every render
+    const updateChart = useCallback(() => {
+        if (!uplotRef.current || !newData?.short || !newData?.current) return;
 
-    useEffect(() => {
-        if (!divRef.current || !newData?.short?.timeWindow) return;
+        const cur = newData.current;
+
+        // Only update if we have new data
+        if (cur.timestamp <= lastUpdateTimestamp.current) return;
+
+        lastUpdateTimestamp.current = cur.timestamp;
 
         const short = newData.short;
         const timeWindow = short.timeWindow;
 
-        // Extract ALL data first, then filter by time window in the scale
-        const [allTimestamps, allValues] = seriesToUPlotData(short); // No time window filter
+        // Get data efficiently
+        const [timestamps, values] = seriesToUPlotData(short);
 
-        if (allTimestamps.length === 0) return;
+        if (timestamps.length === 0) return;
 
         // Get min/max in O(1)
         const { min: minY, max: maxY } = getSeriesMinMax(short);
         const range = maxY - minY || 1;
 
-        // Use the latest timestamp as the end point
-        const latestTimestamp = allTimestamps[allTimestamps.length - 1];
+        // Use current timestamp to ensure line reaches edge
+        const cutoff = cur.timestamp - timeWindow + 1000;
+
+        // Batch all updates together to minimize redraws
+        uplotRef.current.batch(() => {
+            uplotRef.current!.setData([timestamps, values]);
+            uplotRef.current!.setScale("x", { min: cutoff, max: cur.timestamp });
+            uplotRef.current!.setScale("y", {
+                min: minY - range * 0.1,
+                max: maxY + range * 0.1,
+            });
+        });
+    }, [newData]);
+
+    // Initialize chart only once
+    useEffect(() => {
+        if (!divRef.current || !newData?.short?.timeWindow || isInitialized.current) return;
+
+        const short = newData.short;
+        const timeWindow = short.timeWindow;
+
+        // Extract initial data
+        const [allTimestamps, allValues] = seriesToUPlotData(short);
+
+        // Get min/max
+        const { min: minY, max: maxY } = getSeriesMinMax(short);
+        const range = maxY - minY || 1;
+
+        // Use current time or latest timestamp
+        const now = Date.now();
+        const latestTimestamp = allTimestamps.length > 0 ? allTimestamps[allTimestamps.length - 1] : now;
         const cutoff = latestTimestamp - timeWindow;
 
         const uData: uPlot.AlignedData = [allTimestamps, allValues];
@@ -80,38 +112,26 @@ export function MiniGraph({ newData, width }: MiniGraphProps) {
         };
 
         uplotRef.current = new uPlot(opts, uData, divRef.current);
-
-        const intervalId = setInterval(() => {
-            const cur = latestDataRef.current;
-            if (!cur || cur.timestamp <= 0 || !newData?.short) return;
-
-            // Get ALL data, let uPlot handle the time window via scales
-            const [timestamps, values] = seriesToUPlotData(newData.short); // No time window filter
-
-            if (timestamps.length === 0) return;
-
-            // Get min/max in O(1)
-            const { min: minY, max: maxY } = getSeriesMinMax(newData.short);
-            const range = maxY - minY || 1;
-
-            // Use current timestamp as the end point
-            const latestTimestamp = timestamps[timestamps.length - 1];
-            const cutoff = latestTimestamp - timeWindow;
-
-            uplotRef.current?.setData([timestamps, values]);
-            uplotRef.current?.setScale("x", { min: cutoff, max: latestTimestamp });
-            uplotRef.current?.setScale("y", {
-                min: minY - range * 0.1,
-                max: maxY + range * 0.1,
-            });
-        }, UPDATE_INTERVAL_MS);
+        isInitialized.current = true;
 
         return () => {
-            clearInterval(intervalId);
             uplotRef.current?.destroy();
             uplotRef.current = null;
+            isInitialized.current = false;
         };
-    }, [width, newData?.short?.timeWindow, newData]);
+    }, [width, newData?.short?.timeWindow]); // Only recreate on width/timeWindow changes
+
+    // Update chart when new data arrives (event-driven, not polling)
+    useEffect(() => {
+        if (!isInitialized.current) return;
+        updateChart();
+    }, [newData?.current?.timestamp, updateChart]); // Only update when timestamp changes
+
+    // Handle width changes without recreating the entire chart
+    useEffect(() => {
+        if (!uplotRef.current) return;
+        uplotRef.current.setSize({ width, height: HEIGHT });
+    }, [width]);
 
     return (
         <div
