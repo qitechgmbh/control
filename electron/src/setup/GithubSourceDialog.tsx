@@ -7,7 +7,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { useClient } from "@/client/useClient";
 import React, { useMemo } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -83,11 +82,9 @@ export function GithubSourceDialogContent({
   onChange,
   setOpen,
 }: ContentProps) {
-  const client = useClient();
-
   const form = useForm<GithubSource>({
     resolver: zodResolver(githubSourceSchema),
-    defaultValues: defaultGithubSource,
+    defaultValues: value,
     mode: "all",
   });
 

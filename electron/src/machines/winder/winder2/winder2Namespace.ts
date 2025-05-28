@@ -17,7 +17,7 @@ import {
   createNamespaceHookImplementation,
 } from "../../../client/socketioStore";
 import { MachineIdentificationUnique } from "@/machines/types";
-import { useRef } from "react";
+import { useMemo } from "react";
 import {
   createTimeSeries,
   TimeSeries,
@@ -226,7 +226,7 @@ const { initialTimeSeries: tensionArmAngle, insert: addTensionArmAngle } =
  */
 export const createWinder2NamespaceStore =
   (): StoreApi<Winder2NamespaceStore> =>
-    create<Winder2NamespaceStore>((set) => {
+    create<Winder2NamespaceStore>(() => {
       return {
         // State events (latest only)
         traverseState: null,
@@ -313,8 +313,8 @@ export function winder2MessageHandler(
       }
       // Metric events (keep for 1 hour)
       else if (eventName === "TraversePositionEvent") {
-        let parsed = traversePositionEventSchema.parse(event);
-        let timeseriesValue: TimeSeriesValue = {
+        const parsed = traversePositionEventSchema.parse(event);
+        const timeseriesValue: TimeSeriesValue = {
           value: parsed.data.position ?? 0,
           timestamp: event.ts,
         };
@@ -327,8 +327,8 @@ export function winder2MessageHandler(
           }),
         );
       } else if (eventName === "PullerSpeedEvent") {
-        let parsed = pullerSpeedEventSchema.parse(event);
-        let timeseriesValue: TimeSeriesValue = {
+        const parsed = pullerSpeedEventSchema.parse(event);
+        const timeseriesValue: TimeSeriesValue = {
           value: parsed.data.speed,
           timestamp: event.ts,
         };
@@ -341,8 +341,8 @@ export function winder2MessageHandler(
           }),
         );
       } else if (eventName === "AutostopWoundedLengthEvent") {
-        let parsed = autostopWoundedLengthEventSchema.parse(event);
-        let timeseriesValue: TimeSeriesValue = {
+        const parsed = autostopWoundedLengthEventSchema.parse(event);
+        const timeseriesValue: TimeSeriesValue = {
           value: parsed.data.wounded_length,
           timestamp: event.ts,
         };
@@ -355,8 +355,8 @@ export function winder2MessageHandler(
           }),
         );
       } else if (eventName === "SpoolRpmEvent") {
-        let parsed = spoolRpmEventSchema.parse(event);
-        let timeseriesValue: TimeSeriesValue = {
+        const parsed = spoolRpmEventSchema.parse(event);
+        const timeseriesValue: TimeSeriesValue = {
           value: parsed.data.rpm,
           timestamp: event.ts,
         };
@@ -366,8 +366,8 @@ export function winder2MessageHandler(
           }),
         );
       } else if (eventName === "TensionArmAngleEvent") {
-        let parsed = tensionArmAngleEventSchema.parse(event);
-        let timeseriesValue: TimeSeriesValue = {
+        const parsed = tensionArmAngleEventSchema.parse(event);
+        const timeseriesValue: TimeSeriesValue = {
           value: parsed.data.degree,
           timestamp: event.ts,
         };
@@ -430,11 +430,11 @@ export function useWinder2Namespace(
   machine_identification_unique: MachineIdentificationUnique,
 ): Winder2NamespaceStore {
   // Generate namespace ID from validated machine ID
-  const namespaceId = useRef<NamespaceId>({
+  const namespaceId = useMemo<NamespaceId>(() => ({
     type: "machine",
     machine_identification_unique,
-  });
+  }), [machine_identification_unique]);
 
   // Use the implementation with validated namespace ID
-  return useWinder2NamespaceImplementation(namespaceId.current);
+  return useWinder2NamespaceImplementation(namespaceId);
 }

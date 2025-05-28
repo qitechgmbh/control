@@ -16,13 +16,15 @@ const prettierIgnorePath = path.resolve(__dirname, ".prettierignore");
 export default [
   includeIgnoreFile(prettierIgnorePath),
   {
+    ignores: ["src/components/ui/**/*"],
+  },
+  {
     files: ["**/*.{js,mjs,cjs,ts,jsx,tsx}"],
     plugins: {
       "react-compiler": reactCompiler,
     },
     rules: {
       "react-compiler/react-compiler": "error",
-      "@typescript-eslint/no-explicit-any": "warning",
     },
   },
   { languageOptions: { globals: globals.browser } },
@@ -30,4 +32,11 @@ export default [
   pluginReact.configs.flat.recommended,
   eslintPluginPrettierRecommended,
   ...tseslint.configs.recommended,
+  {
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-unused-vars": "warn",
+      "react/no-unknown-property": "warn",
+    },
+  },
 ];

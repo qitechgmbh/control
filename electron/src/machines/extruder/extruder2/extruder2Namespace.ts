@@ -1,18 +1,16 @@
 import { StoreApi } from "zustand";
 import { create } from "zustand";
 import { produce } from "immer";
-import { boolean, number, z } from "zod";
+import { z } from "zod";
 import {
   EventHandler,
   eventSchema,
   Event,
   handleEventValidationError,
-  handleUnhandledEventError,
   NamespaceId,
   createNamespaceHookImplementation,
 } from "../../../client/socketioStore";
 import { MachineIdentificationUnique } from "@/machines/types";
-import { useRef } from "react";
 import {
   createTimeSeries,
   TimeSeries,
@@ -200,7 +198,7 @@ export function extruder2MessageHandler(
 
 export const createExtruder2NamespaceStore =
   (): StoreApi<Extruder2NamespaceStore> =>
-    create<Extruder2NamespaceStore>((set) => {
+    create<Extruder2NamespaceStore>(() => {
       return {
         modeState: null,
         inverterState: null,
@@ -234,13 +232,13 @@ export function useExtruder2Namespace(
   machine_identification_unique: MachineIdentificationUnique,
 ): Extruder2NamespaceStore {
   // Generate namespace ID from validated machine ID
-  const namespaceId = useRef<NamespaceId>({
+  const namespaceId: NamespaceId = {
     type: "machine",
     machine_identification_unique,
-  });
+  };
 
   // Use the implementation with validated namespace ID
-  return useExtruder2NamespaceImplementation(namespaceId.current);
+  return useExtruder2NamespaceImplementation(namespaceId);
 }
 
 export const inverterStatusEventSchema = z.object({});

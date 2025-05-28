@@ -13,7 +13,7 @@ export function roundToDecimals(num: number, decimals: number): string {
 /// but round from 359.5 to 0.0
 export function roundDegreesToDecimals(num: number, decimals: number): string {
   const threshold = 360 - Math.pow(10, -decimals) / 2;
-  let output = num >= threshold ? 0 : num;
+  const output = num >= threshold ? 0 : num;
 
   return roundToDecimals(output, decimals);
 }

@@ -2,7 +2,6 @@ import { Page } from "@/components/Page";
 import { SectionTitle } from "@/components/SectionTitle";
 import React, { useEffect } from "react";
 import { useNavigate, useSearch } from "@tanstack/react-router";
-import { L } from "vitest/dist/chunks/reporters.DTtkbAtP";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Alert } from "@/components/Alert";
 import { Markdown } from "@/components/Markdown";

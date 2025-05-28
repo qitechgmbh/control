@@ -8,7 +8,9 @@ export function useEffectAsync(
     let isMounted = true;
 
     const executeEffect = async () => {
-      await effect();
+      if (isMounted) {
+        await effect();
+      }
     };
 
     executeEffect();

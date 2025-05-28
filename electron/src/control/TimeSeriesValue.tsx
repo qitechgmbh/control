@@ -1,5 +1,5 @@
 import { Icon, IconName } from "@/components/Icon";
-import React, { useEffect } from "react";
+import React from "react";
 import {
   getUnitIcon,
   renderUndefinedValue,
@@ -17,8 +17,6 @@ type Props = {
   icon?: IconName;
   renderValue?: (value: number) => string;
 };
-
-type AllowedT = number | boolean;
 
 function _TimeSeriesValue({
   unit,

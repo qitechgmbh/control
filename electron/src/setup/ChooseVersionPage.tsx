@@ -353,7 +353,7 @@ export function CurrentVersionCard() {
   }, []);
 
   const githubRegex =
-    /https:\/\/(?<token>[^@.]+)@?github\.com\/(?<username>[^\/^\.]+)\/(?<repository>[^\/^\.]+)(?:.+)/;
+    /https:\/\/(?<token>[^@.]+)@?github\.com\/(?<username>[^/^.]+)\/(?<repository>[^/^.]+)(?:.+)/;
   const match = environmentInfo?.qitechOsGitUrl?.match(githubRegex);
   const githubRepoOwner = match?.groups?.username;
   const githubRepoName = match?.groups?.repository;
