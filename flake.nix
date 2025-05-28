@@ -45,6 +45,7 @@
               };
               electron = final.callPackage ./nixos/packages/electron.nix { 
                 commitHash = builtins.getEnv "QITECH_COMMIT_HASH";
+                nodejs = final.nodejs_22;
               };
             };
           })
@@ -69,14 +70,14 @@
             pkg-config
             libudev-zero
             libpcap
-            nodejs
+            nodejs_22
             nodePackages.npm
           ];
           
           shellHook = ''
             echo "QiTech Control Development Environment"
             echo "Rust version: $(${rust}/bin/rustc --version)"
-            echo "Node version: $(${pkgs.nodejs}/bin/node --version)"
+            echo "Node version: $(${pkgs.nodejs_22}/bin/node --version)"
           '';
         };
       }
@@ -105,6 +106,7 @@
                     };
                     electron = final.callPackage ./nixos/packages/electron.nix {
                       commitHash = installInfo.gitCommit;
+                      nodejs = final.nodejs_22;
                     };
                   };
                 })

@@ -16,6 +16,11 @@ jobs:
         working-directory: electron
 
     steps:
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18" # or '20' for latest LTS
+
       - uses: actions/checkout@v4
 
       - name: Cache NPM dependencies
