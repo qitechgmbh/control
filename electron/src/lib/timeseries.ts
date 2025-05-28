@@ -1,7 +1,7 @@
 import { produce } from "immer";
 
 /**
- * Interface for the current value (kept as an object for API compatibility)
+ * Interface for a single data point
  */
 export interface TimeSeriesValue {
   value: number;
@@ -9,15 +9,25 @@ export interface TimeSeriesValue {
 }
 
 /**
- * Interface for the store state using TypedArrays
+ * Enhanced Series type without min/max tracking (we'll calculate dynamically)
+ */
+type Series = {
+  values: (TimeSeriesValue | null)[];
+  index: number;
+  size: number;
+  lastTimestamp: number;
+  timeWindow: number;
+  sampleInterval: number;
+  validCount: number; // Track how many valid entries we have
+};
+
+/**
+ * Interface for the time series state
  */
 export interface TimeSeries {
   current: TimeSeriesValue | null;
-  seriesValues: Float32Array; // Array of time series values
-  seriesTimestamps: Float32Array; // Array of corresponding timestamps
-  writeIndex: number; // Current write position in the circular buffer
-  filledCount: number; // Number of valid entries in the buffer
-  lastBucketTimestamp?: number; // Track the last bucket timestamp
+  long: Series;
+  short: Series;
 }
 
 /**
@@ -29,71 +39,195 @@ export interface TimeSeriesWithInsert {
 }
 
 /**
- * Factory function to create a time series data structure with an immutable insert function
- *
- * @param {number} sampleInterval - Interval in ms to sample values
- * @param {number} retentionDuration - How long to keep values in ms
- * @returns {TimeSeriesWithInsert} - Object containing initial TimeSeries and insert function
+ * Extract data with time window filtering
+ */
+export function extractDataFromSeries(series: Series, timeWindow?: number): [number[], number[]] {
+  const timestamps: number[] = [];
+  const values: number[] = [];
+  const cutoffTime = timeWindow ? series.lastTimestamp - timeWindow : 0;
+
+  const { values: raw, index, size } = series;
+  for (let i = 0; i < size; i++) {
+    const idx = (index + i) % size;
+    const val = raw[idx];
+    if (val && val.timestamp > 0 && val.timestamp >= cutoffTime) {
+      timestamps.push(val.timestamp);
+      values.push(val.value);
+    }
+  }
+
+  return [timestamps, values];
+}
+
+/**
+ * Get min/max values from series by dynamically scanning the data
+ */
+export function getSeriesMinMax(series: Series, timeWindow?: number): { min: number; max: number } {
+  const cutoffTime = timeWindow ? series.lastTimestamp - timeWindow : 0;
+
+  let min = Number.POSITIVE_INFINITY;
+  let max = Number.NEGATIVE_INFINITY;
+  let hasValidData = false;
+
+  const { values: raw, index, size } = series;
+  for (let i = 0; i < size; i++) {
+    const idx = (index + i) % size;
+    const val = raw[idx];
+    if (val && val.timestamp > 0 && val.timestamp >= cutoffTime) {
+      hasValidData = true;
+      if (val.value < min) min = val.value;
+      if (val.value > max) max = val.value;
+    }
+  }
+
+  // Return sensible defaults if no valid data
+  if (!hasValidData) {
+    return { min: 0, max: 0 };
+  }
+
+  return { min, max };
+}
+
+/**
+ * Get series statistics
+ */
+export function getSeriesStats(series: Series): {
+  min: number;
+  max: number;
+  count: number;
+  latest: TimeSeriesValue | null;
+  timeRange: { start: number; end: number } | null;
+} {
+  const { min, max } = getSeriesMinMax(series);
+  const latest = series.validCount > 0 ? series.values[(series.index - 1 + series.size) % series.size] : null;
+
+  // Find time range
+  let timeRange: { start: number; end: number } | null = null;
+  if (series.validCount > 0) {
+    const [timestamps] = extractDataFromSeries(series);
+    if (timestamps.length > 0) {
+      timeRange = {
+        start: timestamps[0],
+        end: timestamps[timestamps.length - 1]
+      };
+    }
+  }
+
+  return {
+    min,
+    max,
+    count: series.validCount,
+    latest,
+    timeRange
+  };
+}
+
+/**
+ * Convert series to uPlot-compatible data format
+ */
+export function seriesToUPlotData(series: Series, timeWindow?: number): [number[], number[]] {
+  return extractDataFromSeries(series, timeWindow);
+}
+
+/**
+ * Factory function to create a new time series with circular buffers
  */
 export const createTimeSeries = (
-  sampleInterval: number,
-  retentionDuration: number,
+  sampleIntervalShort: number,
+  sampleIntervalLong: number,
+  retentionDurationShort: number,
+  retentionDurationLong: number
 ): TimeSeriesWithInsert => {
-  // Calculate exact buffer size needed
-  const bufferSize: number = Math.ceil(retentionDuration / sampleInterval);
+  const shortSize = Math.ceil(retentionDurationShort / sampleIntervalShort);
+  const longSize = Math.ceil(retentionDurationLong / sampleIntervalLong);
 
-  // Create initial TimeSeries with pre-allocated TypedArrays
+  const emptyEntry: TimeSeriesValue = { value: 0, timestamp: 0 };
+
   const initialTimeSeries: TimeSeries = {
     current: null,
-    seriesValues: new Float32Array(bufferSize),
-    seriesTimestamps: new Float32Array(bufferSize),
-    writeIndex: 0,
-    filledCount: 0,
-    lastBucketTimestamp: -1,
+    short: {
+      values: Array.from({ length: shortSize }, () => ({ ...emptyEntry })),
+      index: 0,
+      size: shortSize,
+      lastTimestamp: 0,
+      timeWindow: retentionDurationShort,
+      sampleInterval: sampleIntervalShort,
+      validCount: 0,
+    },
+    long: {
+      values: Array.from({ length: longSize }, () => ({ ...emptyEntry })),
+      index: 0,
+      size: longSize,
+      lastTimestamp: 0,
+      timeWindow: retentionDurationLong,
+      sampleInterval: sampleIntervalLong,
+      validCount: 0,
+    },
   };
 
-  /**
-   * Insert a value into the time series, returning a new TimeSeries object
-   * Uses Immer's produce for immutability
-   *
-   * @param {TimeSeries} series - The current time series state
-   * @param {Object} valueObj - Object containing value and timestamp
-   * @returns {TimeSeries} - New time series with the inserted value
-   */
   const insert = (series: TimeSeries, value: TimeSeriesValue): TimeSeries => {
     return produce(series, (draft) => {
-      // Update current value unconditionally
       draft.current = value;
 
-      // Calculate the bucket for this timestamp
-      const timeseriesBucket: number =
-        Math.floor(value.timestamp / sampleInterval) * sampleInterval;
+      // Insert into short buffer only if enough time has passed (downsampling)
+      const shortSampleInterval = draft.short.sampleInterval;
+      const timeSinceLastShort = value.timestamp - draft.short.lastTimestamp;
 
-      // Check if we already have an entry for this bucket
-      if (draft.lastBucketTimestamp === timeseriesBucket) {
-        // Same bucket, no need to update the time series arrays
-        return;
+      if (timeSinceLastShort >= shortSampleInterval) {
+        const shortOldValue = draft.short.values[draft.short.index];
+        const isShortOverwriting = shortOldValue && shortOldValue.timestamp > 0;
+
+        draft.short.values[draft.short.index] = value;
+        draft.short.index = (draft.short.index + 1) % draft.short.size;
+        draft.short.lastTimestamp = value.timestamp;
+
+        if (!isShortOverwriting) {
+          draft.short.validCount++;
+        }
       }
 
-      // New bucket - update the TypedArrays
-      draft.seriesTimestamps[draft.writeIndex] = timeseriesBucket;
-      draft.seriesValues[draft.writeIndex] = value.value;
+      // Insert into long buffer only if enough time has passed (downsampling)
+      const longSampleInterval = draft.long.sampleInterval;
+      const timeSinceLastLong = value.timestamp - draft.long.lastTimestamp;
 
-      // Update tracking variables
-      draft.lastBucketTimestamp = timeseriesBucket;
+      if (timeSinceLastLong >= longSampleInterval) {
+        const longOldValue = draft.long.values[draft.long.index];
+        const isLongOverwriting = longOldValue && longOldValue.timestamp > 0;
 
-      // Update metadata
-      if (draft.filledCount < bufferSize) {
-        draft.filledCount++;
+        draft.long.values[draft.long.index] = value;
+        draft.long.index = (draft.long.index + 1) % draft.long.size;
+        draft.long.lastTimestamp = value.timestamp;
+
+        if (!isLongOverwriting) {
+          draft.long.validCount++;
+        }
       }
-
-      // Advance the write pointer for next time
-      draft.writeIndex = (draft.writeIndex + 1) % bufferSize;
     });
   };
 
-  return {
-    initialTimeSeries,
-    insert,
-  };
+  return { initialTimeSeries, insert };
 };
+
+/**
+ * Helper to get valid data count from series
+ */
+export function getValidDataCount(series: Series): number {
+  return series.validCount;
+}
+
+/**
+ * Helper to check if series is full
+ */
+export function isSeriesFull(series: Series): boolean {
+  return series.validCount >= series.size;
+}
+
+/**
+ * Reset series to empty state
+ */
+export function resetSeries(series: Series): void {
+  series.values.fill({ value: 0, timestamp: 0 });
+  series.index = 0;
+  series.lastTimestamp = 0;
+  series.validCount = 0;
+}
