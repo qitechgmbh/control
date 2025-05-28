@@ -27,13 +27,13 @@ We need to know what the purpose of each device in a machine is:
 
 How and where do we save the identification values? A machine does not have a central storage medium. Saving the network configuration in the application is bad when changing the EtherCAT master device. Additionally, the serial number in the EEPROM is always `0`. Not all devices have the CoE key value store.
 
-The solution: Persisting the values in empty spaces inside each device's EEPROM. As seen in the [ESC Access](https://infosys.beckhoff.com/english.php?content=../content/1033/tc3_io_intro/1358008331.html&id=) documentation, there are reserved spaces. With a hex dump of the EEPROM, we can confirm that these spaces are likely not used. The EEPROM is very small, so we can fit the values as four `u32` (Big Endian) values. In case we need to customize the position of the values, we customize the addresses for each device.
+The solution: Persisting the values in empty spaces inside each device's EEPROM. As seen in the [ESC Access](https://infosys.beckhoff.com/english.php?content=../content/1033/tc3_io_intro/1358008331.html&id=) documentation, there are reserved spaces. With a hex dump of the EEPROM, we can confirm that these spaces are likely not used. The EEPROM is very small, so we can fit the values as four `u16` (Big Endian) values. In case we need to customize the position of the values, we customize the addresses for each device.
 
 The default word (not byte) addresses are:
 - Vendor: `0x0028`
+- Machine: `0x0029`
 - Serial: `0x002A`
-- Machine: `0x002C`
-- Role: `0x002E`
+- Role: `0x002B`
 
 ## Writing values
 1. For each new device, we need to identify free space in the EEPROM and add them to `get_identification_addresses` in `control-core/src/identification/mod.rs`.
