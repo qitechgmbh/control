@@ -10,7 +10,7 @@ export function Extruder2Page() {
       items={[
         {
           link: "control",
-          title: "Steuerung",
+          title: "Control",
           icon: "lu:CirclePlay",
           activeLink: "control",
         },

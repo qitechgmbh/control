@@ -66,8 +66,7 @@ function _TimeSeriesValue({
   return (
     <div
       ref={containerRef}
-      className="bg-red flex flex-row items-center gap-4"
-      style={{ width: "100%" }} // make sure container stretches full width of grid cell
+      className="bg-red flex flex-row items-center gap-4 w-full"
     >
       <div ref={leftRef} className="h-16 flex-shrink-0">
         <Label label={label}>

@@ -11,7 +11,7 @@ export function Dre1Page() {
                 {
                     link: "control",
                     activeLink: "control",
-                    title: "Steuerung",
+                    title: "Control",
                     icon: "lu:CirclePlay",
                 },
                 {
