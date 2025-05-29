@@ -35,7 +35,7 @@ smol = "2.0.2"
 dhat = { version = "0.3.3", optional = true }
 
 # dre usb
-crc = "3.2.1"
+crc = "3.3.0"
 serial = "0.4.0"
 serialport = "4.7.1"
 
