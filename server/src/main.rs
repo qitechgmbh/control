@@ -3,9 +3,10 @@
 static ALLOC: dhat::Alloc = dhat::Alloc;
 
 use app_state::AppState;
+use control_core::helpers::loop_trottle::LoopThrottle;
 #[cfg(feature = "mock-machine")]
 use mock::init::init_mock;
-use std::{panic::catch_unwind, process::exit, sync::Arc};
+use std::{panic::catch_unwind, process::exit, sync::Arc, time::Duration};
 
 use env_logger::Env;
 use ethercat::init::init_ethercat;
@@ -64,7 +65,13 @@ fn main2() {
         #[cfg(feature = "dhat-heap")]
         let dhat_analysis_start = std::time::Instant::now();
 
+        let mut throttle = LoopThrottle::new(Duration::from_millis(100), 10, None);
+
         loop {
+            // Without throttleing the loop it would run as fast as possible, consuming 100% CPU
+            // We throttle it to 100ms, which is a good balance between responsiveness and CPU usage
+            throttle.sleep().await;
+
             // if `dhat-heap` is enabled, we will analyze the heap for 60 seconds and then exit
             #[cfg(feature = "dhat-heap")]
             if dhat_analysis_start.elapsed() > dhat_analysis_time {
