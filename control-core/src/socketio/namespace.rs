@@ -5,73 +5,11 @@ use tracing::instrument;
 
 use super::socket_queue::SocketQueue;
 
-pub trait NamespaceInterface {
-    /// Adds a socket to the namespace.
-    ///
-    /// # Arguments
-    ///
-    /// * `socket` - A reference to the socket to be added
-    fn subscribe(&mut self, socket: SocketRef);
-
-    /// Removes a socket from the namespace.
-    ///
-    /// # Arguments
-    ///
-    /// * `socket` - A reference to the socket to be removed
-    fn unsubscribe(&mut self, socket: SocketRef);
-
-    /// Re-emits cached events to a specific socket.
-    ///
-    /// This is typically used when a socket reconnects or joins an existing namespace
-    /// to bring it up to date with the current state.
-    ///
-    /// # Arguments
-    ///
-    /// * `socket` - A reference to the socket that will receive the cached events
-    fn reemit(&mut self, socket: SocketRef);
-
-    /// Emits an event to all sockets in the namespace.
-    ///
-    /// # Arguments
-    ///
-    /// * `event` - The event to be emitted
-    fn emit(&mut self, event: &GenericEvent);
-
-    /// Caches an event with a specific key for later retrieval.
-    ///
-    /// # Arguments
-    ///
-    /// * `cache_key` - A string key to identify the cache
-    /// * `event` - The event to be cached
-    /// * `buffer_fn` - A function that defines how the event should be added to the cache buffer
-    fn cache(
-        &mut self,
-        event: &GenericEvent,
-        buffer_fn: &Box<dyn Fn(&mut Vec<GenericEvent>, &GenericEvent) -> ()>,
-    );
-
-    /// Emits an event to all sockets in the namespace and caches it.
-    ///
-    /// This is a convenience method that combines the functionality of
-    /// [`Namespace::emit`] and [`Namespace::cache`].
-    ///
-    /// # Arguments
-    ///
-    /// * `event` - The event to be emitted and cached
-    /// * `cache_key` - A string key to identify the cache
-    /// * `buffer_fn` - A function that defines how the event should be added to the cache buffer
-    fn emit_cached(
-        &mut self,
-        event: &GenericEvent,
-        buffer_fn: &Box<dyn Fn(&mut Vec<GenericEvent>, &GenericEvent) -> ()>,
-    );
-}
-
 #[derive(Debug)]
 pub struct Namespace {
-    sockets: Vec<SocketRef>,
-    events: HashMap<String, Vec<GenericEvent>>,
-    socket_queues: HashMap<Sid, SocketQueue>,
+    pub sockets: Vec<SocketRef>,
+    pub events: HashMap<String, Vec<GenericEvent>>,
+    pub socket_queues: HashMap<Sid, SocketQueue>,
 }
 
 impl Namespace {
@@ -84,25 +22,43 @@ impl Namespace {
     }
 }
 
-impl NamespaceInterface for Namespace {
+impl Namespace {
+    /// Adds a socket to the namespace.
+    ///
+    /// # Arguments
+    ///
+    /// * `socket` - A reference to the socket to be added
     #[instrument(skip_all)]
-    fn subscribe(&mut self, socket: SocketRef) {
+    pub fn subscribe(&mut self, socket: SocketRef) {
         // add the socket to the list
         self.sockets.push(socket.clone());
         // create a new queue for this socket
         self.socket_queues.insert(socket.id, SocketQueue::new());
     }
 
+    /// Removes a socket from the namespace.
+    ///
+    /// # Arguments
+    ///
+    /// * `socket` - A reference to the socket to be removed
     #[instrument(skip_all)]
-    fn unsubscribe(&mut self, socket: SocketRef) {
+    pub fn unsubscribe(&mut self, socket: SocketRef) {
         // remove the socket from the list
         self.sockets.retain(|s| s.id != socket.id);
         // remove the socket's queue
         self.socket_queues.remove(&socket.id);
     }
 
+    /// Re-emits cached events to a specific socket.
+    ///
+    /// This is typically used when a socket reconnects or joins an existing namespace
+    /// to bring it up to date with the current state.
+    ///
+    /// # Arguments
+    ///
+    /// * `socket` - A reference to the socket that will receive the cached events
     #[instrument(skip_all)]
-    fn reemit(&mut self, socket: SocketRef) {
+    pub fn reemit(&mut self, socket: SocketRef) {
         if let Some(queue) = self.socket_queues.get(&socket.id) {
             // Collect events grouped by name/kind with their counts for sorting
             let mut event_groups: Vec<(&String, &Vec<GenericEvent>)> = self.events.iter().collect();
@@ -121,8 +77,13 @@ impl NamespaceInterface for Namespace {
         }
     }
 
+    /// Emits an event to all sockets in the namespace.
+    ///
+    /// # Arguments
+    ///
+    /// * `event` - The event to be emitted
     #[instrument(skip_all)]
-    fn emit(&mut self, event: &GenericEvent) {
+    pub fn emit(&mut self, event: &GenericEvent) {
         // Use the new emit function which combines push and flush
         for socket in self.sockets.clone() {
             if let Some(queue) = self.socket_queues.get(&socket.id) {
@@ -132,8 +93,15 @@ impl NamespaceInterface for Namespace {
         }
     }
 
+    /// Caches an event with a specific key for later retrieval.
+    ///
+    /// # Arguments
+    ///
+    /// * `cache_key` - A string key to identify the cache
+    /// * `event` - The event to be cached
+    /// * `buffer_fn` - A function that defines how the event should be added to the cache buffer
     #[instrument(skip_all)]
-    fn cache(
+    pub fn cache(
         &mut self,
         event: &GenericEvent,
         buffer_fn: &Box<dyn Fn(&mut Vec<GenericEvent>, &GenericEvent) -> ()>,
@@ -145,8 +113,18 @@ impl NamespaceInterface for Namespace {
         buffer_fn(&mut cached_events_for_key, event);
     }
 
+    /// Emits an event to all sockets in the namespace and caches it.
+    ///
+    /// This is a convenience method that combines the functionality of
+    /// [`Namespace::emit`] and [`Namespace::cache`].
+    ///
+    /// # Arguments
+    ///
+    /// * `event` - The event to be emitted and cached
+    /// * `cache_key` - A string key to identify the cache
+    /// * `buffer_fn` - A function that defines how the event should be added to the cache buffer
     #[instrument(skip_all)]
-    fn emit_cached(
+    pub fn emit_cached(
         &mut self,
         event: &GenericEvent,
         buffer_fn: &Box<dyn Fn(&mut Vec<GenericEvent>, &GenericEvent) -> ()>,
