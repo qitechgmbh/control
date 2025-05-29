@@ -1,3 +1,10 @@
+#[cfg(all(not(target_env = "msvc"), not(feature = "dhat-heap")))]
+use tikv_jemallocator::Jemalloc;
+
+#[cfg(all(not(target_env = "msvc"), not(feature = "dhat-heap")))]
+#[global_allocator]
+static GLOBAL: Jemalloc = Jemalloc;
+
 #[cfg(feature = "dhat-heap")]
 #[global_allocator]
 static ALLOC: dhat::Alloc = dhat::Alloc;
@@ -12,6 +19,7 @@ use env_logger::Env;
 use ethercat::init::init_ethercat;
 use r#loop::init_loop;
 use rest::init::init_api;
+#[cfg(not(feature = "mock-machine"))]
 use serial::init::init_serial;
 use smol::channel::unbounded;
 
@@ -41,9 +49,6 @@ fn main() {
 }
 
 fn main2() {
-    #[cfg(feature = "dhat-heap")]
-    let profiler = dhat::Profiler::new_heap();
-
     env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
     let app_state = Arc::new(AppState::new());
 
@@ -59,11 +64,20 @@ fn main2() {
     init_mock(app_state.clone()).expect("Failed to initialize mock machines");
     init_loop(thread_panic_tx, app_state).expect("Failed to initialize loop");
 
+    #[cfg(feature = "dhat-heap")]
+    let profiler = dhat::Profiler::new_heap();
+
     smol::block_on(async {
         #[cfg(feature = "dhat-heap")]
         let dhat_analysis_time = std::time::Duration::from_secs(60);
         #[cfg(feature = "dhat-heap")]
         let dhat_analysis_start = std::time::Instant::now();
+        #[cfg(feature = "dhat-heap")]
+        log::info!(
+            "[{}::main] Starting dhat heap profiler for {} seconds",
+            module_path!(),
+            dhat_analysis_time.as_secs()
+        );
 
         let mut throttle = LoopThrottle::new(Duration::from_millis(100), 10, None);
 
