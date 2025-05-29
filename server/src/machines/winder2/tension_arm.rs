@@ -84,7 +84,7 @@ mod tests {
         analog_input::{AnalogInputInput, physical::AnalogInputRange},
         analog_input_dummy::AnalogInputDummy,
     };
-    use std::time::Instant;
+    use std::{i16, time::Instant};
 
     #[test]
     fn volts_to_angle() {
@@ -92,6 +92,8 @@ mod tests {
             AnalogInputDummy::new(AnalogInputRange::Potential {
                 min: ElectricPotential::new::<volt>(-10.0),
                 max: ElectricPotential::new::<volt>(10.0),
+                min_raw: i16::MIN,
+                max_raw: i16::MAX,
             })
             .analog_input(),
         ));
@@ -123,6 +125,8 @@ mod tests {
         let mut analog_input_dummy = AnalogInputDummy::new(AnalogInputRange::Potential {
             min: ElectricPotential::new::<volt>(-10.0),
             max: ElectricPotential::new::<volt>(10.0),
+            min_raw: i16::MIN,
+            max_raw: i16::MAX,
         });
         let analog_input_getter = AnalogInputGetter::new(analog_input_dummy.analog_input());
         let mut tension_arm = TensionArm::new(analog_input_getter);
@@ -152,6 +156,8 @@ mod tests {
         let mut analog_input_dummy = AnalogInputDummy::new(AnalogInputRange::Potential {
             min: ElectricPotential::new::<volt>(-10.0),
             max: ElectricPotential::new::<volt>(10.0),
+            min_raw: i16::MIN,
+            max_raw: i16::MAX,
         });
         let analog_input = analog_input_dummy.analog_input();
         let analog_input_getter = AnalogInputGetter::new(analog_input);
