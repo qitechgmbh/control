@@ -57,7 +57,7 @@ export function Mock1ControlPage() {
         <ControlCard title="Frequency">
           <div className="flex flex-col gap-4">
             <EditValue
-              title="Frequency (Hz)"
+              title="Frequency"
               unit="mHz"
               value={frequency}
               defaultValue={500}
