@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-clap = { version = "4.5.37", features = ["derive"] }
+clap = { version = "4.5.38", features = ["derive"] }
 ethercrab = "0.6.0"
 interfaces = "0.0.9"
 tokio = { version = "1.45.0", features = ["macros", "rt-multi-thread"] }
