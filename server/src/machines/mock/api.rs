@@ -77,11 +77,11 @@ impl CacheableEvents<MockEvents> for MockEvents {
     }
 
     fn event_cache_fn(&self) -> CacheFn {
-        let cache_ten_secs = cache_duration(Duration::from_secs(10), Duration::from_secs(1));
+        let cache_one_hour = cache_duration(Duration::from_secs(60 * 60), Duration::from_secs(1));
         let cache_one = cache_one_event();
 
         match self {
-            MockEvents::SineWave(_) => cache_ten_secs,
+            MockEvents::SineWave(_) => cache_one_hour,
             MockEvents::SineWaveState(_) => cache_one,
             MockEvents::ModeState(_) => cache_one,
         }

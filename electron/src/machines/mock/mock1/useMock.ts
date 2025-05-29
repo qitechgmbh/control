@@ -6,6 +6,7 @@ import { z } from "zod";
 import { useMock1Namespace, Mode } from "./mock1Namespace";
 import { useEffect, useMemo } from "react";
 import { useStateOptimistic } from "@/lib/useStateOptimistic";
+import { FPS_60, useThrottle } from "@/lib/useThrottle";
 
 function useMock(machine_identification_unique: MachineIdentificationUnique) {
   // Write Path
@@ -65,6 +66,9 @@ function useMock(machine_identification_unique: MachineIdentificationUnique) {
     machine_identification_unique,
   );
 
+  // Throttle UI updates to 60 FPS
+  const debouncedSineWave = useThrottle(sineWave, FPS_60); // 60fps
+
   // Update real values from server
   useEffect(() => {
     if (mockState?.data) {
@@ -79,7 +83,7 @@ function useMock(machine_identification_unique: MachineIdentificationUnique) {
   }, [modeState]);
 
   return {
-    sineWave,
+    sineWave: debouncedSineWave,
     mockState,
     modeState,
     mockSetFrequency,

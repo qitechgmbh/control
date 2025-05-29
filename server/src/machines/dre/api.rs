@@ -59,11 +59,11 @@ impl CacheableEvents<DreEvents> for DreEvents {
     }
 
     fn event_cache_fn(&self) -> CacheFn {
-        let cache_ten_secs = cache_duration(Duration::from_secs(10), Duration::from_secs(1));
+        let cache_one_hour = cache_duration(Duration::from_secs(60 * 60), Duration::from_secs(1));
         let cache_one = cache_one_event();
 
         match self {
-            DreEvents::Diameter(_) => cache_ten_secs,
+            DreEvents::Diameter(_) => cache_one_hour,
             DreEvents::DreState(_) => cache_one,
         }
     }
