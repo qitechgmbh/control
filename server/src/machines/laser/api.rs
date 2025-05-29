@@ -4,8 +4,8 @@ use control_core::{
     socketio::{
         event::{Event, GenericEvent},
         namespace::{
-            CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, NamespaceInterface,
-            cache_duration, cache_one_event,
+            CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_duration,
+            cache_one_event,
         },
     },
 };
@@ -112,7 +112,7 @@ impl MachineApi for LaserMachine {
         Ok(())
     }
 
-    fn api_event_namespace(&mut self) -> &mut dyn NamespaceInterface {
+    fn api_event_namespace(&mut self) -> &mut Namespace {
         &mut self.namespace.0
     }
 }
