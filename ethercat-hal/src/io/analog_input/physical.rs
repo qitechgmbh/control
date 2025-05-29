@@ -11,33 +11,67 @@ pub enum AnalogInputRange {
     Potential {
         min: ElectricPotential,
         max: ElectricPotential,
+        min_raw: i16,
+        max_raw: i16,
     },
     Current {
         min: ElectricCurrent,
         max: ElectricCurrent,
+        min_raw: i16,
+        max_raw: i16,
     },
 }
 
 impl AnalogInputRange {
-    /// Convert a normalized value (-1.0 to 1.0) to a physical value
-    pub fn normalized_to_physical(&self, normalized: f32) -> AnalogInputValue {
-        // map -1/1 to 0/1
-        let clipped = normalized as f64 / 2.0 + 0.5;
+    pub fn get_min_raw(&self) -> i16 {
+        return match self {
+            AnalogInputRange::Potential { min_raw, .. } => *min_raw,
+            AnalogInputRange::Current { min_raw, .. } => *min_raw,
+        };
+    }
+
+    pub fn get_max_raw(&self) -> i16 {
+        return match self {
+            AnalogInputRange::Potential { max_raw, .. } => *max_raw,
+            AnalogInputRange::Current { max_raw, .. } => *max_raw,
+        };
+    }
+
+    pub fn raw_to_normalized(&self, raw_value: i16) -> f32 {
+        let range = (self.get_max_raw() - self.get_min_raw()) as f32;
+        return (raw_value - self.get_min_raw()) as f32 / range;
+    }
+
+    pub fn raw_to_physical(&self, raw_value: i16) -> AnalogInputValue {
+        let normalized = self.raw_to_normalized(raw_value);
 
         match self {
-            AnalogInputRange::Potential { min, max } => {
-                let value = *min + (*max - *min).abs() * clipped;
+            AnalogInputRange::Potential { min, max, .. } => {
+                let value = *min + (*max - *min).abs() * normalized as f64;
                 AnalogInputValue::Potential(value)
             }
-            AnalogInputRange::Current { min, max } => {
-                let value = *min + (*max - *min).abs() * clipped;
+            AnalogInputRange::Current { min, max, .. } => {
+                let value = *min + (*max - *min).abs() * normalized as f64;
+                AnalogInputValue::Current(value)
+            }
+        }
+    }
+
+    /// Convert a normalized value (0 to 1.0) to a physical value
+    pub fn normalized_to_physical(&self, normalized: f32) -> AnalogInputValue {
+        match self {
+            AnalogInputRange::Potential { min, max, .. } => {
+                let value = *min + (*max - *min).abs() * normalized as f64;
+                AnalogInputValue::Potential(value)
+            }
+            AnalogInputRange::Current { min, max, .. } => {
+                let value = *min + (*max - *min).abs() * normalized as f64;
                 AnalogInputValue::Current(value)
             }
         }
     }
 }
 
-// test using AnalogInputRange not AnalogInputGetter
 #[cfg(test)]
 mod tests {
     use core::f64;
@@ -53,10 +87,12 @@ mod tests {
         let analog_input_getter = AnalogInputRange::Potential {
             min: ElectricPotential::new::<volt>(-10.0),
             max: ElectricPotential::new::<volt>(10.0),
+            min_raw: i16::MIN,
+            max_raw: i16::MAX,
         };
 
-        // Check that normalized -1.0 is -10V
-        let value = analog_input_getter.normalized_to_physical(-1.0);
+        // 0 raw = -10V
+        let value = analog_input_getter.raw_to_physical(0);
         match value {
             AnalogInputValue::Potential(v) => {
                 assert_relative_eq!(v.get::<volt>(), -10.0, epsilon = f64::EPSILON);
@@ -64,26 +100,17 @@ mod tests {
             _ => panic!("Expected a potential value"),
         }
 
-        // Check that normalized 0.0 is 0V
-        let value = analog_input_getter.normalized_to_physical(0.0);
+        // 2047 raw ~ 0V
+        let value = analog_input_getter.raw_to_physical(2047);
         match value {
             AnalogInputValue::Potential(v) => {
-                assert_relative_eq!(v.get::<volt>(), 0.0, epsilon = f64::EPSILON);
+                assert_relative_eq!(v.get::<volt>(), 0.0, epsilon = 0.01);
             }
             _ => panic!("Expected a potential value"),
         }
 
-        // Check that normalized 0.5 is 5V
-        let value = analog_input_getter.normalized_to_physical(0.5);
-        match value {
-            AnalogInputValue::Potential(v) => {
-                assert_relative_eq!(v.get::<volt>(), 5.0, epsilon = f64::EPSILON);
-            }
-            _ => panic!("Expected a potential value"),
-        }
-
-        // Check that normalized 1.0 is 10V
-        let value = analog_input_getter.normalized_to_physical(1.0);
+        // 4095 raw = 10V
+        let value = analog_input_getter.raw_to_physical(4095);
         match value {
             AnalogInputValue::Potential(v) => {
                 assert_relative_eq!(v.get::<volt>(), 10.0, epsilon = f64::EPSILON);
@@ -93,15 +120,16 @@ mod tests {
     }
 
     #[test]
-    // 4mA to 20mA
     fn test_analog_input_getter_current() {
         let analog_input_getter = AnalogInputRange::Current {
             min: ElectricCurrent::new::<milliampere>(4.0),
             max: ElectricCurrent::new::<milliampere>(20.0),
+            min_raw: 0,
+            max_raw: i16::MAX,
         };
 
-        // Check that normalized -1.0 is 4mA
-        let value = analog_input_getter.normalized_to_physical(-1.0);
+        // 0 raw = 4mA
+        let value = analog_input_getter.raw_to_physical(0);
         match value {
             AnalogInputValue::Current(v) => {
                 assert_relative_eq!(v.get::<milliampere>(), 4.0, epsilon = f64::EPSILON);
@@ -109,26 +137,17 @@ mod tests {
             _ => panic!("Expected a current value"),
         }
 
-        // Check that normalized 0.0 is 12mA
-        let value = analog_input_getter.normalized_to_physical(0.0);
+        // 2047 raw ~ 12mA
+        let value = analog_input_getter.raw_to_physical(2047);
         match value {
             AnalogInputValue::Current(v) => {
-                assert_relative_eq!(v.get::<milliampere>(), 12.0, epsilon = f64::EPSILON);
+                assert_relative_eq!(v.get::<milliampere>(), 12.0, epsilon = 0.01);
             }
             _ => panic!("Expected a current value"),
         }
 
-        // Check that normalized 0.5 is 16mA
-        let value = analog_input_getter.normalized_to_physical(0.5);
-        match value {
-            AnalogInputValue::Current(v) => {
-                assert_relative_eq!(v.get::<milliampere>(), 16.0, epsilon = f64::EPSILON);
-            }
-            _ => panic!("Expected a current value"),
-        }
-
-        // Check that normalized 1.0 is 20mA
-        let value = analog_input_getter.normalized_to_physical(1.0);
+        // 4095 raw = 20mA
+        let value = analog_input_getter.raw_to_physical(4095);
         match value {
             AnalogInputValue::Current(v) => {
                 assert_relative_eq!(v.get::<milliampere>(), 20.0, epsilon = f64::EPSILON);

@@ -152,6 +152,8 @@ impl AnalogInputDevice<EL3024Port> for EL3024 {
         AnalogInputRange::Current {
             min: ElectricCurrent::new::<milliampere>(4.0),
             max: ElectricCurrent::new::<milliampere>(20.0),
+            min_raw: 0,
+            max_raw: 32767,
         }
     }
 }
