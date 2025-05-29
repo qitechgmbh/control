@@ -82,6 +82,8 @@ impl AnalogInputDevice<EL3001Port> for EL3001 {
         AnalogInputRange::Potential {
             min: ElectricPotential::new::<volt>(-10.0),
             max: ElectricPotential::new::<volt>(10.0),
+            min_raw: i16::MIN,
+            max_raw: i16::MAX,
         }
     }
 }
