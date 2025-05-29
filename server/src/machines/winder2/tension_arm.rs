@@ -123,9 +123,9 @@ mod tests {
     #[test]
     fn get_volts() {
         let mut analog_input_dummy = AnalogInputDummy::new(AnalogInputRange::Potential {
-            min: ElectricPotential::new::<volt>(-10.0),
+            min: ElectricPotential::new::<volt>(0.0),
             max: ElectricPotential::new::<volt>(10.0),
-            min_raw: i16::MIN,
+            min_raw: 0,
             max_raw: i16::MAX,
         });
         let analog_input_getter = AnalogInputGetter::new(analog_input_dummy.analog_input());
@@ -154,9 +154,9 @@ mod tests {
     #[test]
     fn test_tension_arm() {
         let mut analog_input_dummy = AnalogInputDummy::new(AnalogInputRange::Potential {
-            min: ElectricPotential::new::<volt>(-10.0),
+            min: ElectricPotential::new::<volt>(0.0),
             max: ElectricPotential::new::<volt>(10.0),
-            min_raw: i16::MIN,
+            min_raw: 0,
             max_raw: i16::MAX,
         });
         let analog_input = analog_input_dummy.analog_input();
