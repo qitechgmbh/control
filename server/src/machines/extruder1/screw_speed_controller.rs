@@ -142,13 +142,15 @@ impl ScrewSpeedController {
             Some(normalized) => normalized,
             None => 0.0,
         };
-        // assuming full scale pressure of 10 bar
-        let pressure: f64 = normalized as f64 * 10.0;
+        // assuming full scale pressure of 350 bar, which is the max range of our sensors
+        let pressure: f64 = normalized as f64 * 350.0;
         return Pressure::new::<bar>(pressure);
     }
 
     pub async fn update(&mut self, now: Instant) {
         self.inverter.act(now).await;
+        self.pressure_sensor.act(now).await;
+
         if !self.uses_rpm {
             let measured_pressure = self.get_pressure();
             let error = self.target_pressure - measured_pressure;
