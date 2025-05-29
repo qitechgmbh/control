@@ -34,11 +34,13 @@ lazy_static = "1.5.0"
 smol = "2.0.2"
 dhat = { version = "0.3.3", optional = true }
 
-
 # dre usb
 crc = "3.2.1"
 serial = "0.4.0"
 serialport = "4.7.1"
+
+[target.'cfg(not(target_env = "msvc"))'.dependencies]
+tikv-jemallocator = { version = "0.6", features = ["profiling"] }
 
 [dev-dependencies]
 approx = "0.5.1"
