@@ -37,14 +37,13 @@ impl AnalogInputRange {
         };
     }
 
-    pub fn raw_to_normalized(&self, raw_value: i16) -> f32 {
-        let range = (self.get_max_raw() - self.get_min_raw()) as f32;
-        return (raw_value - self.get_min_raw()) as f32 / range;
+    pub fn raw_to_normalized(&self, raw_value: i16) -> f64 {
+        let range = (self.get_max_raw() as i32 - self.get_min_raw() as i32) as f64;
+        return (raw_value as i32 - self.get_min_raw() as i32) as f64 / range;
     }
 
     pub fn raw_to_physical(&self, raw_value: i16) -> AnalogInputValue {
         let normalized = self.raw_to_normalized(raw_value);
-
         match self {
             AnalogInputRange::Potential { min, max, .. } => {
                 let value = *min + (*max - *min).abs() * normalized as f64;
@@ -92,7 +91,7 @@ mod tests {
         };
 
         // 0 raw = -10V
-        let value = analog_input_getter.raw_to_physical(0);
+        let value = analog_input_getter.raw_to_physical(i16::MIN);
         match value {
             AnalogInputValue::Potential(v) => {
                 assert_relative_eq!(v.get::<volt>(), -10.0, epsilon = f64::EPSILON);
@@ -101,7 +100,7 @@ mod tests {
         }
 
         // 2047 raw ~ 0V
-        let value = analog_input_getter.raw_to_physical(2047);
+        let value = analog_input_getter.raw_to_physical(0);
         match value {
             AnalogInputValue::Potential(v) => {
                 assert_relative_eq!(v.get::<volt>(), 0.0, epsilon = 0.01);
@@ -110,7 +109,7 @@ mod tests {
         }
 
         // 4095 raw = 10V
-        let value = analog_input_getter.raw_to_physical(4095);
+        let value = analog_input_getter.raw_to_physical(i16::MAX);
         match value {
             AnalogInputValue::Potential(v) => {
                 assert_relative_eq!(v.get::<volt>(), 10.0, epsilon = f64::EPSILON);
@@ -138,7 +137,7 @@ mod tests {
         }
 
         // 2047 raw ~ 12mA
-        let value = analog_input_getter.raw_to_physical(2047);
+        let value = analog_input_getter.raw_to_physical(i16::MAX / 2);
         match value {
             AnalogInputValue::Current(v) => {
                 assert_relative_eq!(v.get::<milliampere>(), 12.0, epsilon = 0.01);
@@ -147,7 +146,7 @@ mod tests {
         }
 
         // 4095 raw = 20mA
-        let value = analog_input_getter.raw_to_physical(4095);
+        let value = analog_input_getter.raw_to_physical(i16::MAX);
         match value {
             AnalogInputValue::Current(v) => {
                 assert_relative_eq!(v.get::<milliampere>(), 20.0, epsilon = f64::EPSILON);
