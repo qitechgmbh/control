@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use control_core::socketio::{namespace::NamespaceInterface, namespace_id::NamespaceId};
+use control_core::socketio::{namespace::Namespace, namespace_id::NamespaceId};
 
 use crate::app_state;
 
@@ -21,7 +21,7 @@ impl Namespaces {
         &mut self,
         namespace_id: NamespaceId,
         app_state: &Arc<app_state::AppState>,
-        callback: impl FnOnce(Result<&mut dyn NamespaceInterface, anyhow::Error>),
+        callback: impl FnOnce(Result<&mut Namespace, anyhow::Error>),
     ) {
         match namespace_id {
             NamespaceId::Main => callback(Ok(&mut self.main_namespace.0)),

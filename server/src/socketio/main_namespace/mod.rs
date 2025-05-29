@@ -1,9 +1,6 @@
 use control_core::socketio::{
     event::{Event, GenericEvent},
-    namespace::{
-        CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, NamespaceInterface,
-        cache_one_event,
-    },
+    namespace::{CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_one_event},
 };
 use ethercat_devices_event::EthercatDevicesEvent;
 use ethercat_interface_discovery_event::EthercatInterfaceDiscoveryEvent;
