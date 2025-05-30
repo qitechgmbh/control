@@ -52,12 +52,6 @@ impl SocketQueue {
                     }
                     socketioxide::SendError::Socket(socket_error) => match socket_error {
                         socketioxide::SocketError::InternalChannelFull => {
-                            // wait 10ms before retrying
-                            log::warn!(
-                                "Socket {} internal channel full, retrying in 10ms",
-                                socket.id,
-                            );
-                            smol::Timer::after(Duration::from_millis(10)).await;
                             continue; // Retry sending the event
                         }
                         socketioxide::SocketError::Closed => {
