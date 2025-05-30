@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{sync::Arc, time::Duration};
 
 use super::{Winder2, Winder2Mode, puller_speed_controller::PullerRegulationMode};
 use control_core::{
@@ -276,8 +276,9 @@ impl NamespaceCacheingLogic<Winder2Events> for Winder2Namespace {
                 return;
             }
         };
+        let event = Arc::new(event);
         let buffer_fn = events.event_cache_fn();
-        self.0.emit_cached(&event, &buffer_fn);
+        self.0.emit_cached(event, &buffer_fn);
     }
 }
 
