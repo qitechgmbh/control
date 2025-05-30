@@ -21,7 +21,7 @@ use r#loop::init_loop;
 use rest::init::init_api;
 #[cfg(not(feature = "mock-machine"))]
 use serial::init::init_serial;
-use smol::channel::unbounded;
+use smol::{Timer, channel::unbounded};
 
 pub mod app_state;
 pub mod ethercat;
@@ -54,6 +54,7 @@ fn main2() {
 
     let (thread_panic_tx, thread_panic_rx) = unbounded::<&'static str>();
 
+    init_debug(app_state.clone());
     init_api(thread_panic_tx.clone(), app_state.clone()).expect("Failed to initialize API");
     #[cfg(not(feature = "mock-machine"))]
     init_serial(thread_panic_tx.clone(), app_state.clone()).expect("Failed to initialize Serial");
@@ -106,4 +107,67 @@ fn main2() {
             }
         }
     })
+}
+
+/// Starts a thread that rust debug code every second.
+fn init_debug(app_state: Arc<AppState>) {
+    std::thread::Builder::new()
+        .name("debug".to_string())
+        .spawn(move || {
+            log::info!("[{}::debug] Debug thread running", module_path!());
+            smol::block_on(async move {
+                let mut throttle = LoopThrottle::new(Duration::from_millis(10), 10, None);
+                loop {
+                    throttle.sleep().await;
+
+                    // iterate all machines
+                    let machines_guard = app_state.machines.read().await;
+                    for (midu, machine) in machines_guard.iter() {
+                        // log the machine name and its state
+                        log::info!("[{}::debug] Machine: {:?}", module_path!(), midu);
+
+                        // get machine
+                        let mut machine = match machine {
+                            Ok(machine) => machine.lock().await,
+                            Err(_) => continue,
+                        };
+
+                        let namespace = machine.api_event_namespace();
+
+                        // Log cached events
+                        for (event_name, events) in namespace.events.iter() {
+                            // log the event name and its length
+                            log::info!(
+                                "[{}::debug] Event: {}, Amount: {}",
+                                module_path!(),
+                                event_name,
+                                events.len()
+                            );
+                        }
+
+                        // Log socket queues
+                        for (socket_name, queue) in namespace.socket_queues.iter() {
+                            // log the socket name and its length
+                            let queue_lock = loop {
+                                match queue.queue.lock() {
+                                    Ok(queue_lock) => break queue_lock,
+                                    Err(_) => {
+                                        Timer::after(Duration::from_millis(1)).await;
+                                        continue;
+                                    }
+                                }
+                            };
+
+                            log::info!(
+                                "[{}::debug] Socket: {}, Amount: {}",
+                                module_path!(),
+                                socket_name,
+                                queue_lock.len()
+                            );
+                        }
+                    }
+                }
+            })
+        })
+        .expect("Failed to spawn debug thread");
 }

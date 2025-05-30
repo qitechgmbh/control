@@ -14,8 +14,8 @@ use super::event::GenericEvent;
 /// A queue for managing events for a specific socket
 #[derive(Debug)]
 pub struct SocketQueue {
-    queue: Arc<Mutex<VecDeque<GenericEvent>>>,
-    is_flushing: Arc<AtomicBool>,
+    pub queue: Arc<Mutex<VecDeque<GenericEvent>>>,
+    pub is_flushing: Arc<AtomicBool>,
 }
 
 impl SocketQueue {
