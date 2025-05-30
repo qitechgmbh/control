@@ -1,6 +1,6 @@
 use crate::socketio::event::GenericEvent;
 use socketioxide::{extract::SocketRef, socket::Sid};
-use std::{collections::HashMap, time::Duration};
+use std::{collections::HashMap, sync::Arc, time::Duration};
 use tracing::instrument;
 
 use super::socket_queue::SocketQueue;
@@ -8,7 +8,7 @@ use super::socket_queue::SocketQueue;
 #[derive(Debug)]
 pub struct Namespace {
     pub sockets: Vec<SocketRef>,
-    pub events: HashMap<String, Vec<GenericEvent>>,
+    pub events: HashMap<String, Vec<Arc<GenericEvent>>>,
     pub socket_queues: HashMap<Sid, SocketQueue>,
 }
 
@@ -61,7 +61,8 @@ impl Namespace {
     pub fn reemit(&mut self, socket: SocketRef) {
         if let Some(queue) = self.socket_queues.get(&socket.id) {
             // Collect events grouped by name/kind with their counts for sorting
-            let mut event_groups: Vec<(&String, &Vec<GenericEvent>)> = self.events.iter().collect();
+            let mut event_groups: Vec<(&String, &Vec<Arc<GenericEvent>>)> =
+                self.events.iter().collect();
 
             // Sort by event count (ascending - lowest count first)
             event_groups.sort_by(|a, b| a.1.len().cmp(&b.1.len()));
@@ -83,7 +84,7 @@ impl Namespace {
     ///
     /// * `event` - The event to be emitted
     #[instrument(skip_all)]
-    pub fn emit(&mut self, event: &GenericEvent) {
+    pub fn emit(&mut self, event: Arc<GenericEvent>) {
         // Use the new emit function which combines push and flush
         for socket in self.sockets.clone() {
             if let Some(queue) = self.socket_queues.get(&socket.id) {
@@ -103,14 +104,14 @@ impl Namespace {
     #[instrument(skip_all)]
     pub fn cache(
         &mut self,
-        event: &GenericEvent,
-        buffer_fn: &Box<dyn Fn(&mut Vec<GenericEvent>, &GenericEvent) -> ()>,
+        event: Arc<GenericEvent>,
+        buffer_fn: &Box<dyn Fn(&mut Vec<Arc<GenericEvent>>, &Arc<GenericEvent>) -> ()>,
     ) {
         let mut cached_events_for_key = self
             .events
             .entry(event.name.clone())
             .or_insert_with(Vec::new);
-        buffer_fn(&mut cached_events_for_key, event);
+        buffer_fn(&mut cached_events_for_key, &event);
     }
 
     /// Emits an event to all sockets in the namespace and caches it.
@@ -126,11 +127,11 @@ impl Namespace {
     #[instrument(skip_all)]
     pub fn emit_cached(
         &mut self,
-        event: &GenericEvent,
-        buffer_fn: &Box<dyn Fn(&mut Vec<GenericEvent>, &GenericEvent) -> ()>,
+        event: Arc<GenericEvent>,
+        buffer_fn: &Box<dyn Fn(&mut Vec<Arc<GenericEvent>>, &Arc<GenericEvent>) -> ()>,
     ) {
         // cache the event
-        self.cache(event, buffer_fn);
+        self.cache(event.clone(), &buffer_fn);
 
         // emit the event
         self.emit(event);
@@ -153,7 +154,7 @@ pub trait CacheableEvents<Events> {
     fn event_cache_fn(&self) -> CacheFn;
 }
 
-pub type CacheFn = Box<dyn Fn(&mut Vec<GenericEvent>, &GenericEvent) -> ()>;
+pub type CacheFn = Box<dyn Fn(&mut Vec<Arc<GenericEvent>>, &Arc<GenericEvent>) -> ()>;
 
 /// [BufferFn] that stores the last n events
 pub fn cache_n_events(n: usize) -> CacheFn {
@@ -222,12 +223,12 @@ mod tests {
         assert!(namespace.events.is_empty());
 
         // Add event
-        let event1 = GenericEvent {
+        let event1 = Arc::new(GenericEvent {
             name: "test_event".to_string(),
             data: serde_json::json!({"value": 1}),
             ts: 0,
-        };
-        namespace.cache(&event1, &cache_fn);
+        });
+        namespace.cache(event1, &cache_fn);
 
         // Check that we have one event name in the map
         assert_eq!(namespace.events.len(), 1);
@@ -236,12 +237,12 @@ mod tests {
         assert_eq!(namespace.events.get("test_event").unwrap()[0].ts, 0);
 
         // Add another event
-        let event2 = GenericEvent {
+        let event2 = Arc::new(GenericEvent {
             name: "test_event".to_string(),
             data: serde_json::json!({"value": 2}),
             ts: 1,
-        };
-        namespace.cache(&event2, &cache_fn);
+        });
+        namespace.cache(event2, &cache_fn);
 
         // Still one event name
         assert_eq!(namespace.events.len(), 1);
@@ -251,12 +252,12 @@ mod tests {
         assert_eq!(namespace.events.get("test_event").unwrap()[1].ts, 1);
 
         // Add a third event, which should remove the first one
-        let event3 = GenericEvent {
+        let event3 = Arc::new(GenericEvent {
             name: "test_event".to_string(),
             data: serde_json::json!({"value": 3}),
             ts: 2,
-        };
-        namespace.cache(&event3, &cache_fn);
+        });
+        namespace.cache(event3, &cache_fn);
 
         // Still one event name
         assert_eq!(namespace.events.len(), 1);
@@ -282,12 +283,12 @@ mod tests {
 
         // Add events every 100ms for 20 seconds
         for i in 0..200 {
-            let event = GenericEvent {
+            let event = Arc::new(GenericEvent {
                 name: "test_event".to_string(),
                 data: serde_json::json!({"value": i}),
                 ts: (i * 100) as u64,
-            };
-            namespace.cache(&event, &cache_fn);
+            });
+            namespace.cache(event, &cache_fn);
 
             let should_have_events = min(i / 10, 11);
             assert_eq!(
