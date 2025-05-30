@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{sync::Arc, time::Duration};
 
 use super::{ExtruderV2, ExtruderV2Mode, HeatingType};
 use control_core::{
@@ -222,8 +222,9 @@ impl NamespaceCacheingLogic<ExtruderV2Events> for ExtruderV2Namespace {
                 return;
             }
         };
+        let event = Arc::new(event);
         let buffer_fn = events.event_cache_fn();
-        self.0.emit_cached(&event, &buffer_fn);
+        self.0.emit_cached(event, &buffer_fn);
     }
 }
 

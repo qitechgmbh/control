@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use control_core::socketio::{
     event::{Event, GenericEvent},
     namespace::{CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_one_event},
@@ -33,7 +35,8 @@ where
                 return;
             }
         };
-        self.0.emit_cached(&generic_event, &buffer_fn);
+        let generic_event = Arc::new(generic_event);
+        self.0.emit_cached(generic_event, &buffer_fn);
     }
 }
 

@@ -11,7 +11,7 @@ use control_core::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::time::Duration;
+use std::{sync::Arc, time::Duration};
 use tracing::instrument;
 
 #[derive(Serialize, Debug, Clone)]
@@ -90,8 +90,9 @@ impl NamespaceCacheingLogic<LaserEvents> for LaserMachineNamespace {
                 return;
             }
         };
+        let event = Arc::new(event);
         let buffer_fn = events.event_cache_fn();
-        self.0.emit_cached(&event, &buffer_fn);
+        self.0.emit_cached(event, &buffer_fn);
     }
 }
 
