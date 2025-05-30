@@ -1,4 +1,3 @@
-use std::sync::Arc;
 use super::MockMachine;
 use control_core::{
     machines::api::MachineApi,
@@ -13,6 +12,7 @@ use control_core::{
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::sync::Arc;
+use std::time::Duration;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum Mode {
