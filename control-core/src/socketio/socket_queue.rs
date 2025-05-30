@@ -102,12 +102,14 @@ impl SocketQueue {
             }
             let elapsed = start_t.elapsed();
 
-            log::info!(
-                "[SocketQueue::flush] Flushed {} events for socket {} in {:?}us",
-                event_cnt,
-                socket.id,
-                elapsed.as_micros()
-            );
+            if event_cnt > 10 {
+                log::info!(
+                    "[SocketQueue::flush] Flushed {} events for socket {} in {:?}us",
+                    event_cnt,
+                    socket.id,
+                    elapsed.as_micros()
+                );
+            }
 
             // Reset the flushing flag
             is_flushing.store(false, Ordering::SeqCst);
