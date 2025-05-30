@@ -207,26 +207,13 @@ const ONE_SECOND = 1000;
 const FIVE_SECOND = 5 * ONE_SECOND;
 const ONE_HOUR = 60 * 60 * ONE_SECOND;
 const { initialTimeSeries: traversePosition, insert: addTraversePosition } =
-  createTimeSeries(
-    TWENTY_MILLISECOND,
-    ONE_SECOND,
-    FIVE_SECOND,
-    ONE_HOUR,);
+  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
 const {
   initialTimeSeries: autostopWoundedLength,
   insert: addAutostopWoundedLength,
-} = createTimeSeries(
-  TWENTY_MILLISECOND,
-  ONE_SECOND,
-  FIVE_SECOND,
-  ONE_HOUR,);
+} = createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
 const { initialTimeSeries: pullerSpeed, insert: addPullerSpeed } =
-  createTimeSeries(
-    TWENTY_MILLISECOND,
-    ONE_SECOND,
-    FIVE_SECOND,
-    ONE_HOUR,
-  );
+  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
 const { initialTimeSeries: spoolRpm, insert: addSpoolRpm } = createTimeSeries(
   TWENTY_MILLISECOND,
   ONE_SECOND,
@@ -234,11 +221,7 @@ const { initialTimeSeries: spoolRpm, insert: addSpoolRpm } = createTimeSeries(
   ONE_HOUR,
 );
 const { initialTimeSeries: tensionArmAngle, insert: addTensionArmAngle } =
-  createTimeSeries(
-    TWENTY_MILLISECOND,
-    ONE_SECOND,
-    FIVE_SECOND,
-    ONE_HOUR,);
+  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
 
 /**
  * Factory function to create a new Winder2 namespace store
@@ -334,6 +317,7 @@ export function winder2MessageHandler(
       // Metric events (keep for 1 hour)
       else if (eventName === "TraversePositionEvent") {
         const parsed = traversePositionEventSchema.parse(event);
+        console.log("TraversePositionEvent", parsed);
         const timeseriesValue: TimeSeriesValue = {
           value: parsed.data.position ?? 0,
           timestamp: event.ts,
@@ -348,6 +332,7 @@ export function winder2MessageHandler(
         );
       } else if (eventName === "PullerSpeedEvent") {
         const parsed = pullerSpeedEventSchema.parse(event);
+        console.log("PullerSpeedEvent", parsed);
         const timeseriesValue: TimeSeriesValue = {
           value: parsed.data.speed,
           timestamp: event.ts,
@@ -362,6 +347,7 @@ export function winder2MessageHandler(
         );
       } else if (eventName === "AutostopWoundedLengthEvent") {
         const parsed = autostopWoundedLengthEventSchema.parse(event);
+        console.log("AutostopWoundedLengthEvent", parsed);
         const timeseriesValue: TimeSeriesValue = {
           value: parsed.data.wounded_length,
           timestamp: event.ts,
@@ -376,6 +362,7 @@ export function winder2MessageHandler(
         );
       } else if (eventName === "SpoolRpmEvent") {
         const parsed = spoolRpmEventSchema.parse(event);
+        console.log("SpoolRpmEvent", parsed);
         const timeseriesValue: TimeSeriesValue = {
           value: parsed.data.rpm,
           timestamp: event.ts,
@@ -387,6 +374,7 @@ export function winder2MessageHandler(
         );
       } else if (eventName === "TensionArmAngleEvent") {
         const parsed = tensionArmAngleEventSchema.parse(event);
+        console.log("TensionArmAngleEvent", parsed);
         const timeseriesValue: TimeSeriesValue = {
           value: parsed.data.degree,
           timestamp: event.ts,
