@@ -116,7 +116,7 @@ fn init_debug(app_state: Arc<AppState>) {
         .spawn(move || {
             log::info!("[{}::debug] Debug thread running", module_path!());
             smol::block_on(async move {
-                let mut throttle = LoopThrottle::new(Duration::from_millis(10), 10, None);
+                let mut throttle = LoopThrottle::new(Duration::from_millis(1000), 10, None);
                 loop {
                     throttle.sleep().await;
 
@@ -152,7 +152,7 @@ fn init_debug(app_state: Arc<AppState>) {
                                 match queue.queue.lock() {
                                     Ok(queue_lock) => break queue_lock,
                                     Err(_) => {
-                                        Timer::after(Duration::from_millis(1)).await;
+                                        Timer::after(Duration::from_millis(100)).await;
                                         continue;
                                     }
                                 }
