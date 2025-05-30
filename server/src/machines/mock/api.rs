@@ -1,3 +1,4 @@
+use std::sync::Arc;
 use super::MockMachine;
 use control_core::{
     machines::api::MachineApi,
@@ -11,7 +12,7 @@ use control_core::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::time::Duration;
+use std::sync::Arc;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum Mode {
@@ -109,8 +110,9 @@ impl NamespaceCacheingLogic<MockEvents> for MockMachineNamespace {
                 return;
             }
         };
+        let event = Arc::new(event);
         let buffer_fn = events.event_cache_fn();
-        self.0.emit_cached(&event, &buffer_fn);
+        self.0.emit_cached(event, &buffer_fn);
     }
 }
 

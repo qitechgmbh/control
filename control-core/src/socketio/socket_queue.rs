@@ -4,7 +4,7 @@ use std::{
         Arc, Mutex,
         atomic::{AtomicBool, Ordering},
     },
-    time::Duration,
+    time::{Duration, Instant},
 };
 
 use socketioxide::extract::SocketRef;
@@ -14,7 +14,7 @@ use super::event::GenericEvent;
 /// A queue for managing events for a specific socket
 #[derive(Debug)]
 pub struct SocketQueue {
-    pub queue: Arc<Mutex<VecDeque<GenericEvent>>>,
+    pub queue: Arc<Mutex<VecDeque<Arc<GenericEvent>>>>,
     pub is_flushing: Arc<AtomicBool>,
 }
 
@@ -28,9 +28,45 @@ impl SocketQueue {
     }
 
     /// Add an event to the queue
-    pub fn push(&self, event: GenericEvent) {
+    pub fn push(&self, event: Arc<GenericEvent>) {
         if let Ok(mut queue) = self.queue.lock() {
             queue.push_back(event);
+        }
+    }
+
+    /// Send a single event with retry logic
+    async fn send_event(socket: &SocketRef, event: Arc<GenericEvent>) {
+        // retry loop for each event
+        loop {
+            // check if socket is still connected
+            if !socket.connected() {
+                break; // Exit the loop if the socket is not connected
+            }
+
+            match socket.emit("event", event.as_ref()) {
+                Ok(_) => break, // Successfully emitted, exit loop
+                Err(e) => match e {
+                    socketioxide::SendError::Serialize(_) => {
+                        // no reason in retrying serialization errors
+                        break;
+                    }
+                    socketioxide::SendError::Socket(socket_error) => match socket_error {
+                        socketioxide::SocketError::InternalChannelFull => {
+                            // wait 10ms before retrying
+                            log::warn!(
+                                "Socket {} internal channel full, retrying in 10ms",
+                                socket.id,
+                            );
+                            smol::Timer::after(Duration::from_millis(10)).await;
+                            continue; // Retry sending the event
+                        }
+                        socketioxide::SocketError::Closed => {
+                            // Socket is closed, no point in retrying
+                            break;
+                        }
+                    },
+                },
+            }
         }
     }
 
@@ -52,6 +88,8 @@ impl SocketQueue {
         // Spawn a smol task to flush the queue
         smol::spawn(async move {
             // Process events directly from the queue without collecting first
+            let mut event_cnt = 0;
+            let start_t = Instant::now();
             loop {
                 let event = {
                     if let Ok(mut queue_guard) = queue.lock() {
@@ -65,39 +103,17 @@ impl SocketQueue {
                     break; // No more events in queue
                 };
 
-                // retry loop for each event
-                loop {
-                    // check if socket is still connected
-                    if !socket.connected() {
-                        break; // Exit the loop if the socket is not connected
-                    }
-
-                    match socket.emit("event", &event) {
-                        Ok(_) => break, // Successfully emitted, exit loop
-                        Err(e) => match e {
-                            socketioxide::SendError::Serialize(_) => {
-                                // no reason in retrying serialization errors
-                                break;
-                            }
-                            socketioxide::SendError::Socket(socket_error) => match socket_error {
-                                socketioxide::SocketError::InternalChannelFull => {
-                                    // wait 10ms before retrying
-                                    log::warn!(
-                                        "Socket {} internal channel full, retrying in 10ms",
-                                        socket.id,
-                                    );
-                                    smol::Timer::after(Duration::from_millis(10)).await;
-                                    continue; // Retry sending the event
-                                }
-                                socketioxide::SocketError::Closed => {
-                                    // Socket is closed, no point in retrying
-                                    break;
-                                }
-                            },
-                        },
-                    }
-                }
+                Self::send_event(&socket, event).await;
+                event_cnt += 1;
             }
+            let elapsed = start_t.elapsed();
+
+            log::info!(
+                "[SocketQueue::flush] Flushed {} events for socket {} in {:?}us",
+                event_cnt,
+                socket.id,
+                elapsed.as_micros()
+            );
 
             // Reset the flushing flag
             is_flushing.store(false, Ordering::SeqCst);
