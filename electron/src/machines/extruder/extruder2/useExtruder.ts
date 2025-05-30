@@ -221,8 +221,8 @@ export function useMotor(
   }, [motorRpmState, motorBarState, motorRegulationState]);
 
   // debounce rpm and bar to 60fps
-  const [rpmThrottled] = useDebounce(rpm, 1000 / 60);
-  const [barThrottled] = useDebounce(bar, 1000 / 60);
+  const rpmThrottled = useThrottle(rpm, FPS_60);
+  const barThrottled = useThrottle(bar, FPS_60);
 
   return {
     rpm: rpmThrottled,
