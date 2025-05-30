@@ -177,9 +177,10 @@ pub fn cache_duration(duration: Duration, bucket_size: Duration) -> CacheFn {
         let current_time = event.ts as u128;
 
         // calculate current bucket & last bucket
-        let bucket = current_time / bucket_size.as_millis();
+        let bucket_size_ms = bucket_size.as_millis().max(1);
+        let bucket = current_time / bucket_size_ms; // Avoid division by zero
         let last_bucket = match events.last() {
-            Some(last_event) => last_event.ts as u128 / bucket_size.as_millis(),
+            Some(last_event) => last_event.ts as u128 / bucket_size_ms,
             None => 0,
         };
 
