@@ -4,7 +4,7 @@ use std::{
         Arc, Mutex,
         atomic::{AtomicBool, Ordering},
     },
-    time::{Duration, Instant},
+    time::Instant,
 };
 
 use socketioxide::extract::SocketRef;
@@ -104,10 +104,10 @@ impl SocketQueue {
 
             if event_cnt > 10 {
                 log::info!(
-                    "[SocketQueue::flush] Flushed {} events for socket {} in {:?}us",
+                    "Flushed {} events for socket {} in {:?}ms",
                     event_cnt,
                     socket.id,
-                    elapsed.as_micros()
+                    elapsed.as_millis()
                 );
             }
 
