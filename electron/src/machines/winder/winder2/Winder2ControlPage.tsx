@@ -96,7 +96,7 @@ export function Winder2ControlPage() {
                 minLabel="IN"
                 maxLabel="OUT"
                 max={180}
-                renderValue={(value) => roundToDecimals(value, 1)}
+                renderValue={(value) => roundToDecimals(value, 0)}
                 inverted
                 onChange={traverseSetLimitOuter}
               />
@@ -130,7 +130,7 @@ export function Winder2ControlPage() {
                 defaultValue={16}
                 minLabel="IN"
                 maxLabel="OUT"
-                renderValue={(value) => roundToDecimals(value, 1)}
+                renderValue={(value) => roundToDecimals(value, 0)}
                 inverted
                 onChange={traverseSetLimitInner}
               />

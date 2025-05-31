@@ -45,8 +45,8 @@ export function Winder2SettingPage() {
               unit="rpm"
               min={Math.max(spoolState?.data.speed_min || 0, 0)}
               step={25}
-              max={600}
-              defaultValue={600}
+              max={800}
+              defaultValue={800}
               renderValue={(value) => roundToDecimals(value, 0)}
               onChange={(value) => spoolSetSpeedMax(value)}
             />
@@ -59,11 +59,11 @@ export function Winder2SettingPage() {
               value={traverseState?.data.step_size}
               title={"Step Size"}
               unit="mm"
-              step={0.1}
+              step={0.05}
               min={0.1}
               max={10}
               defaultValue={1.0}
-              renderValue={(value) => roundToDecimals(value, 1)}
+              renderValue={(value) => roundToDecimals(value, 2)}
               onChange={(value) => traverseSetStepSize(value)}
             />
           </Label>
