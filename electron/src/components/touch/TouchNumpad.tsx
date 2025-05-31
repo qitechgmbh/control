@@ -50,7 +50,7 @@ export function TouchNumpad({
       <TouchNumpadButton onClick={() => onDigit?.("5")}>5</TouchNumpadButton>
       <TouchNumpadButton onClick={() => onDigit?.("6")}>6</TouchNumpadButton>
       <TouchNumpadButton onClick={() => onCursorLeft?.()}>
-        <Icon name="lu:ChevronLeft" />
+        <Icon name="lu:ArrowLeft" />
       </TouchNumpadButton>
 
       {/* Row 3: 1 2 3 -> */}
@@ -58,15 +58,17 @@ export function TouchNumpad({
       <TouchNumpadButton onClick={() => onDigit?.("2")}>2</TouchNumpadButton>
       <TouchNumpadButton onClick={() => onDigit?.("3")}>3</TouchNumpadButton>
       <TouchNumpadButton onClick={() => onCursorRight?.()}>
-        <Icon name="lu:ChevronRight" />
+        <Icon name="lu:ArrowRight" />
       </TouchNumpadButton>
 
       {/* Row 4: 0 (spans 2 cols) · +- */}
       <TouchNumpadButton onClick={() => onDigit?.("0")} className="col-span-2">
         0
       </TouchNumpadButton>
-      <TouchNumpadButton onClick={() => onDecimal?.()}>·</TouchNumpadButton>
-      <TouchNumpadButton onClick={() => onToggleSign?.()}>±</TouchNumpadButton>
+      <TouchNumpadButton onClick={() => onDecimal?.()}>•</TouchNumpadButton>
+      <TouchNumpadButton onClick={() => onToggleSign?.()}>
+        <Icon name="lu:Diff" />
+      </TouchNumpadButton>
     </div>
   );
 }
@@ -84,7 +86,7 @@ function TouchNumpadButton({
 }: TouchNumpadButtonProps) {
   return (
     <Button
-      className={`h-full ${className?.includes("col-span-2") ? "w-full" : "w-22"} ${className || ""}`}
+      className={`h-full font-mono text-2xl font-normal ${className?.includes("col-span-2") ? "w-full" : "w-22"} ${className || ""}`}
       variant="outline"
       onMouseDown={(e) => {
         // Prevent the button from stealing focus from the input
