@@ -1,5 +1,5 @@
 import { Icon, IconName } from "@/components/Icon";
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 import {
   getUnitIcon,
   renderValueToReactNode,
@@ -30,8 +30,10 @@ type Props = {
   icon?: IconName;
   defaultValue: number;
   min?: number;
+  minSlider?: number; // Override the slider min value
   minLabel?: string;
   max?: number;
+  maxSlider?: number; // Override the slider max value
   maxLabel?: string;
   step?: number;
   valueSchema?: z.ZodType<number>;
@@ -59,6 +61,25 @@ const buttonStyle = cva("flex w-min flex-col items-center gap-4 ", {
   },
 });
 
+/**
+ * EditValue Component
+ * 
+ * A comprehensive numeric input component with:
+ * - Touch-friendly numpad interface
+ * - Precision handling for floating point operations
+ * - Real-time validation with visual feedback
+ * - Decimal point manipulation (add/move)
+ * - +/- increment buttons with step-based rounding
+ * - Slider for range selection
+ * - Unit display and formatting
+ * 
+ * Key Features:
+ * - Handles trailing decimals and zeros properly
+ * - Prevents floating-point artifacts through step-based rounding
+ * - Supports decimal point movement with cursor tracking
+ * - Bidirectional sync between form state and input display
+ * - Resets invalid inputs to last valid value on blur
+ */
 export function EditValue({
   unit,
   value,
@@ -73,122 +94,137 @@ export function EditValue({
   max,
   minLabel,
   maxLabel,
+  minSlider,
+  maxSlider,
   onChange,
 }: Props) {
+  // Form setup
   const formSchema = z.object({
     value: schema ?? z.number(),
   });
   type FormSchema = z.infer<typeof formSchema>;
+  
   const form = useForm<FormSchema>({
     resolver: zodResolver<FormSchema>(formSchema),
     values: { value: value ?? defaultValue },
-    defaultValues: {
-      value: defaultValue,
-    },
+    defaultValues: { value: defaultValue },
     mode: "all",
   });
+  
   const formValues = useFormValues(form);
   const { value: formValue } = formValues;
+
+  // Calculate step decimals for precise rounding
+  const stepDecimals = useMemo(() => {
+    const stepString = step.toString();
+    const decimalIndex = stepString.indexOf(".");
+    return decimalIndex === -1 ? 0 : stepString.length - decimalIndex - 1;
+  }, [step]);
+
+  // Helper function to round values according to step precision
+  const roundToStepDecimals = React.useCallback((value: number) => {
+    const multiplier = Math.pow(10, stepDecimals);
+    return Math.round(value * multiplier) / multiplier;
+  }, [stepDecimals]);
 
   // Input state management
   const [valueString, setValueString] = React.useState("");
   const [valueStringDirty, setValueStringDirty] = React.useState(false);
   const [valueStringError, setValueStringError] = React.useState(false);
   const inputRef = React.useRef<HTMLInputElement>(null);
+  const preventFormSyncRef = React.useRef(false);
 
   // Modal and numpad state
   const [open, setOpen] = React.useState(false);
   const [numpadExtended, setNumpadExtended] = React.useState(false);
 
-  // if external value changes
-  // for example from undefined to defined
-  // we reset the form
+  // Reset external value changes (e.g., from undefined to defined)
   useEffect(() => {
-    form.reset({
-      value: value ?? defaultValue,
-    });
+    form.reset({ value: value ?? defaultValue });
   }, [value, defaultValue]);
 
-  // form to input sync
+  // Sync form value to input display (when form changes externally)
   useEffect(() => {
-    // Only update from form if user is not actively editing
-    if (!valueStringDirty) {
-      const newValueString =
-        formValue !== undefined && formValue !== null
-          ? formValue.toString()
-          : "";
-      setValueString(newValueString);
+    const hasTrailingDecimal = valueString.endsWith(".") && /^\d+\.$/.test(valueString);
+    
+    // Only update input from form if user isn't editing and no special conditions
+    if (!valueStringDirty && !preventFormSyncRef.current && !hasTrailingDecimal) {
+      const displayValue = formValue !== undefined && formValue !== null
+        ? roundToStepDecimals(formValue).toString()
+        : "";
+      setValueString(displayValue);
     }
-  }, [formValue, valueStringDirty]);
+  }, [formValue, valueStringDirty, valueString, roundToStepDecimals]);
 
-  // input to form sync
+  // Sync input changes to form (when user types)
   useEffect(() => {
     if (!valueStringDirty) return;
-    // replace , with .
-    const newValueString = valueString.replace(/,/g, ".");
 
-    // Handle empty string case - don't reset dirty state immediately
-    if (newValueString === "" || newValueString === "-") {
+    const normalizedInput = valueString.replace(/,/g, ".");
+
+    // Handle empty or incomplete input
+    if (normalizedInput === "" || normalizedInput === "-") {
       setValueStringError(false);
-      // Keep dirty state true for empty values to prevent form from overwriting
       return;
     }
 
-    // Regex that properly handles integers and decimals
-    // Allows: 123, -123, 123., 123.45, .45, -.45
+    // Validate number format (allows trailing decimals and zeros)
     const floatRegex = /^-?(\d+\.?\d*|\.\d+)$/;
-
-    // Check if it's a valid number format
-    if (!floatRegex.test(newValueString)) {
+    if (!floatRegex.test(normalizedInput)) {
       setValueStringError(true);
       return;
     }
 
-    // Parse the number early to check bounds even for trailing decimals
-    const numericValue = parseFloat(newValueString);
-
-    // Check bounds even for incomplete numbers (like "1010.")
-    const hasError =
+    const numericValue = parseFloat(normalizedInput);
+    const hasValidationError = 
       isNaN(numericValue) ||
       (schema && !schema.safeParse(numericValue).success) ||
       (max !== undefined && numericValue > max) ||
       (min !== undefined && numericValue < min);
 
-    // Handle trailing decimal point case (e.g., "5." should be allowed but not converted yet)
-    // BUT still show error if it violates bounds
-    if (newValueString.endsWith(".") && /^\d+\.$/.test(newValueString)) {
-      setValueStringError(hasError);
-      // Keep dirty state true to prevent form from overwriting the trailing decimal
+    // Handle special cases: trailing decimal points and zeros
+    const hasTrailingDecimal = /^\d+\.$/.test(normalizedInput);
+    const hasTrailingZeros = /\.\d*0+$/.test(normalizedInput);
+
+    if (hasTrailingDecimal || hasTrailingZeros) {
+      setValueStringError(hasValidationError);
+      if (!hasValidationError) {
+        form.setValue("value", numericValue);
+        // Keep dirty state for trailing decimals, clear for trailing zeros
+        if (hasTrailingZeros && !hasTrailingDecimal) {
+          setValueStringDirty(false);
+          setValueStringError(false);
+          preventFormSyncRef.current = false;
+        }
+      }
       return;
     }
 
-    // Handle trailing zeros after decimal (e.g., "5.0" should not auto-convert to prevent "5.05" issues)
-    if (/\.\d*0+$/.test(newValueString)) {
-      setValueStringError(hasError);
-      // Keep dirty state true to prevent form from auto-converting "5.0" to "5"
-      return;
-    }
-
-    if (hasError) {
+    // Regular number update
+    if (hasValidationError) {
       setValueStringError(true);
     } else {
       form.setValue("value", numericValue);
       setValueStringDirty(false);
       setValueStringError(false);
+      preventFormSyncRef.current = false;
     }
-  }, [valueString, valueStringDirty, schema, max, min, form]);
+  }, [valueString, valueStringDirty, schema, max, min, form, roundToStepDecimals]);
 
-  // Reset function for closing modal
+  // Reset input state to clean form value
   const resetInput = React.useCallback(() => {
     setValueStringDirty(false);
     setValueStringError(false);
-  }, []);
+    preventFormSyncRef.current = false;
+    
+    const cleanValue = formValue !== undefined && formValue !== null
+      ? roundToStepDecimals(formValue).toString()
+      : "";
+    setValueString(cleanValue);
+  }, [formValue, roundToStepDecimals]);
 
   const handleAbort = () => {
-    // Reset form to the current external value (not defaultValue)
-    form.reset({
-      value: value ?? defaultValue,
-    });
+    form.reset({ value: value ?? defaultValue });
     setOpen(false);
     setNumpadExtended(false);
     resetInput();
@@ -199,166 +235,149 @@ export function EditValue({
       onChange?.(data.value);
       setOpen(false);
       setNumpadExtended(false);
+      resetInput();
     })();
   };
 
-  // Create stable numpad handlers with cursor position support
+  // Numpad interaction handlers
   const numpadHandlers = React.useMemo(() => {
-    // Helper function to ensure input has focus
     const ensureFocus = () => {
       if (inputRef.current && document.activeElement !== inputRef.current) {
         inputRef.current.focus();
       }
     };
 
+    const updateCursorPosition = (position: number) => {
+      setTimeout(() => {
+        if (inputRef.current) {
+          inputRef.current.setSelectionRange(position, position);
+        }
+      }, 0);
+    };
+
     return {
       appendDigit: (digit: string) => {
-        if (inputRef.current) {
-          ensureFocus();
-          const input = inputRef.current;
-          const start = input.selectionStart || 0;
-          const end = input.selectionEnd || 0;
-          const currentValue = valueString;
-          const newValue =
-            currentValue.slice(0, start) + digit + currentValue.slice(end);
-          setValueString(newValue);
-          setValueStringDirty(true);
-
-          // Set cursor position after the inserted digit
-          setTimeout(() => {
-            if (input) {
-              input.setSelectionRange(start + 1, start + 1);
-            }
-          }, 0);
-        }
+        if (!inputRef.current) return;
+        
+        ensureFocus();
+        const input = inputRef.current;
+        const start = input.selectionStart || 0;
+        const end = input.selectionEnd || 0;
+        const newValue = valueString.slice(0, start) + digit + valueString.slice(end);
+        
+        setValueString(newValue);
+        setValueStringDirty(true);
+        updateCursorPosition(start + 1);
       },
+
       addDecimal: () => {
-        if (inputRef.current && !valueString.includes(".")) {
-          ensureFocus();
-          const input = inputRef.current;
-          const start = input.selectionStart || 0;
-          const end = input.selectionEnd || 0;
-          const currentValue = valueString;
-          const newValue =
-            currentValue.slice(0, start) + "." + currentValue.slice(end);
+        if (!inputRef.current) return;
+        
+        ensureFocus();
+        const input = inputRef.current;
+        const start = input.selectionStart || 0;
+        const end = input.selectionEnd || 0;
+
+        if (!valueString.includes(".")) {
+          // Add decimal at cursor position
+          const newValue = valueString.slice(0, start) + "." + valueString.slice(end);
           setValueString(newValue);
           setValueStringDirty(true);
+          updateCursorPosition(start + 1);
+        } else {
+          // Move existing decimal to cursor position
+          const currentDecimalIndex = valueString.indexOf(".");
+          const valueWithoutDecimal = valueString.replace(".", "");
+          const adjustedStart = start > currentDecimalIndex ? start - 1 : start;
+          const newValue = 
+            valueWithoutDecimal.slice(0, adjustedStart) + 
+            "." + 
+            valueWithoutDecimal.slice(adjustedStart);
 
-          // Set cursor position after the decimal point
-          setTimeout(() => {
-            if (input) {
-              input.setSelectionRange(start + 1, start + 1);
-            }
-          }, 0);
+          preventFormSyncRef.current = true;
+          setValueStringDirty(true);
+          setValueString(newValue);
+          
+          setTimeout(() => { preventFormSyncRef.current = false; }, 100);
+          updateCursorPosition(adjustedStart + 1);
         }
       },
+
       deleteChar: () => {
-        if (inputRef.current) {
-          ensureFocus();
-          const input = inputRef.current;
-          const start = input.selectionStart || 0;
-          const end = input.selectionEnd || 0;
-          const currentValue = valueString;
+        if (!inputRef.current) return;
+        
+        ensureFocus();
+        const input = inputRef.current;
+        const start = input.selectionStart || 0;
+        const end = input.selectionEnd || 0;
 
-          if (start !== end) {
-            // Delete selection
-            const newValue =
-              currentValue.slice(0, start) + currentValue.slice(end);
-            setValueString(newValue);
-            setValueStringDirty(true);
-            setTimeout(() => {
-              if (input) {
-                input.setSelectionRange(start, start);
-              }
-            }, 0);
-          } else if (start > 0) {
-            // Delete character before cursor (normal backspace behavior)
-            const newValue =
-              currentValue.slice(0, start - 1) + currentValue.slice(start);
-            setValueString(newValue);
-            setValueStringDirty(true);
-            setTimeout(() => {
-              if (input) {
-                input.setSelectionRange(start - 1, start - 1);
-              }
-            }, 0);
-          } else if (start === 0 && currentValue.length > 0) {
-            // Cursor is at beginning, delete character to the right (like Delete key)
-            const newValue = currentValue.slice(1);
-            setValueString(newValue);
-            setValueStringDirty(true);
-            setTimeout(() => {
-              if (input) {
-                input.setSelectionRange(0, 0);
-              }
-            }, 0);
-          }
+        let newValue: string;
+        let newPosition: number;
+
+        if (start !== end) {
+          // Delete selection
+          newValue = valueString.slice(0, start) + valueString.slice(end);
+          newPosition = start;
+        } else if (start > 0) {
+          // Backspace
+          newValue = valueString.slice(0, start - 1) + valueString.slice(start);
+          newPosition = start - 1;
+        } else if (start === 0 && valueString.length > 0) {
+          // Delete at beginning
+          newValue = valueString.slice(1);
+          newPosition = 0;
+        } else {
+          return;
         }
+
+        setValueString(newValue);
+        setValueStringDirty(true);
+        updateCursorPosition(newPosition);
       },
+
       toggleSign: () => {
-        if (inputRef.current) {
-          ensureFocus();
-          const input = inputRef.current;
-          const currentValue = valueString;
+        if (!inputRef.current) return;
+        
+        ensureFocus();
+        const input = inputRef.current;
+        const currentPos = input.selectionStart || 0;
 
-          if (currentValue === "" || currentValue === "0") {
-            // For empty or zero, start with negative
-            setValueString("-");
-            setValueStringDirty(true);
-            setTimeout(() => {
-              if (input) {
-                input.setSelectionRange(1, 1);
-              }
-            }, 0);
-          } else if (currentValue.startsWith("-")) {
-            // Remove negative sign
-            const newValue = currentValue.slice(1);
-            setValueString(newValue);
-            setValueStringDirty(true);
-            // Keep cursor in same relative position
-            const currentPos = input.selectionStart || 0;
-            setTimeout(() => {
-              if (input) {
-                input.setSelectionRange(
-                  Math.max(0, currentPos - 1),
-                  Math.max(0, currentPos - 1),
-                );
-              }
-            }, 0);
-          } else {
-            // Add negative sign
-            const newValue = "-" + currentValue;
-            setValueString(newValue);
-            setValueStringDirty(true);
-            // Keep cursor in same relative position
-            const currentPos = input.selectionStart || 0;
-            setTimeout(() => {
-              if (input) {
-                input.setSelectionRange(currentPos + 1, currentPos + 1);
-              }
-            }, 0);
-          }
+        let newValue: string;
+        let newPosition: number;
+
+        if (valueString === "" || valueString === "0") {
+          newValue = "-";
+          newPosition = 1;
+        } else if (valueString.startsWith("-")) {
+          newValue = valueString.slice(1);
+          newPosition = Math.max(0, currentPos - 1);
+        } else {
+          newValue = "-" + valueString;
+          newPosition = currentPos + 1;
         }
+
+        setValueString(newValue);
+        setValueStringDirty(true);
+        updateCursorPosition(newPosition);
       },
+
       moveCursorLeft: () => {
-        if (inputRef.current) {
-          ensureFocus();
-          const input = inputRef.current;
-          const currentPos = input.selectionStart || 0;
-          if (currentPos > 0) {
-            input.setSelectionRange(currentPos - 1, currentPos - 1);
-          }
+        if (!inputRef.current) return;
+        
+        ensureFocus();
+        const currentPos = inputRef.current.selectionStart || 0;
+        if (currentPos > 0) {
+          inputRef.current.setSelectionRange(currentPos - 1, currentPos - 1);
         }
       },
+
       moveCursorRight: () => {
-        if (inputRef.current) {
-          ensureFocus();
-          const input = inputRef.current;
-          const currentPos = input.selectionStart || 0;
-          const maxPos = valueString.length;
-          if (currentPos < maxPos) {
-            input.setSelectionRange(currentPos + 1, currentPos + 1);
-          }
+        if (!inputRef.current) return;
+        
+        ensureFocus();
+        const currentPos = inputRef.current.selectionStart || 0;
+        if (currentPos < valueString.length) {
+          inputRef.current.setSelectionRange(currentPos + 1, currentPos + 1);
         }
       },
     };
@@ -377,10 +396,7 @@ export function EditValue({
         setOpen(isOpen);
         if (!isOpen) {
           setNumpadExtended(false);
-          // Reset form and input to saved value when closing without saving
-          form.reset({
-            value: value ?? defaultValue,
-          });
+          form.reset({ value: value ?? defaultValue });
           resetInput();
         }
       }}
@@ -402,7 +418,7 @@ export function EditValue({
         </TouchButton>
       </PopoverTrigger>
       {valueIsDefined && (
-        <PopoverContent className="mx-8 flex w-min rounded-2xl p-0 shadow-2xl">
+        <PopoverContent className="mx-8 flex w-auto rounded-2xl p-0 shadow-2xl">
           <div className="flex flex-col gap-6 p-6">
             <div className="text-l flex flex-row items-center gap-2">
               <Icon
@@ -421,8 +437,8 @@ export function EditValue({
                 onClick={() =>
                   setValue(
                     min !== undefined
-                      ? Math.max(min, formValue - step)
-                      : formValue - step,
+                      ? Math.max(min, roundToStepDecimals(formValue - step))
+                      : roundToStepDecimals(formValue - step),
                   )
                 }
               />
@@ -430,7 +446,7 @@ export function EditValue({
                 <div>
                   <TouchInput
                     ref={inputRef}
-                    className={`font-mono text-2xl transition-colors duration-200 ease-in-out ${valueStringError ? "text-red-500" : "text-black"}`}
+                    className={`py-9 font-mono text-2xl transition-colors duration-200 ease-in-out ${valueStringError ? "text-red-500" : "text-black"}`}
                     value={valueString}
                     onChange={(e) => {
                       const value = e.target.value;
@@ -441,11 +457,13 @@ export function EditValue({
                       setNumpadExtended(true);
                     }}
                     onBlur={() => {
-                      // Always reset dirty state on blur to allow form sync
                       setValueStringDirty(false);
                       if (valueStringError) {
-                        setValueString(formValue.toString());
+                        // Reset to actual external value when input is invalid
+                        const resetValue = value ?? defaultValue;
+                        setValueString(resetValue.toString());
                         setValueStringError(false);
+                        form.setValue("value", resetValue);
                       }
                     }}
                   />
@@ -462,8 +480,8 @@ export function EditValue({
                 onClick={() =>
                   setValue(
                     max !== undefined
-                      ? Math.min(max, formValue + step)
-                      : formValue + step,
+                      ? Math.min(max, roundToStepDecimals(formValue + step))
+                      : roundToStepDecimals(formValue + step),
                   )
                 }
               />
@@ -473,8 +491,8 @@ export function EditValue({
                 className="w-[48rem]"
                 value={formValue ? [formValue] : undefined}
                 onValueChange={(x) => setValue(x[0])}
-                min={min}
-                max={max}
+                min={minSlider ?? min}
+                max={maxSlider ?? max}
                 step={step}
                 inverted={inverted}
                 unit={unit}
@@ -488,7 +506,7 @@ export function EditValue({
               <TouchButton
                 variant="outline"
                 icon="lu:X"
-                className="flex-1"
+                className="h-21 flex-1"
                 onClick={handleAbort}
               >
                 Abort
@@ -497,7 +515,7 @@ export function EditValue({
                 <TouchButton
                   variant="default"
                   icon="lu:Save"
-                  className="w-full"
+                  className="h-21 w-full"
                   onClick={handleSubmit}
                 >
                   Save
@@ -513,7 +531,7 @@ export function EditValue({
                 <TouchButton
                   variant="outline"
                   icon="lu:Undo2"
-                  className="flex-1"
+                  className="h-21 flex-1"
                   onClick={() => {
                     setValue(defaultValue);
                     handleSubmit();
@@ -530,7 +548,7 @@ export function EditValue({
           {/* Numpad Side */}
           <div
             className={`flex flex-row gap-6 overflow-hidden transition-all duration-300 ease-in-out ${
-              numpadExtended ? "max-w-[420px] opacity-100" : "max-w-0 opacity-0"
+              numpadExtended ? "max-w-[28em] opacity-100" : "max-w-0 opacity-0"
             }`}
           >
             <div className="h-full w-[1px] flex-shrink-0 bg-neutral-200" />

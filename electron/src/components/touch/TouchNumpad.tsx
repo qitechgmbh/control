@@ -27,7 +27,14 @@ export type TouchNumpadInputProps = {
   onCursorRight?: () => void;
 };
 
-export function TouchNumpad({ onDigit, onDecimal, onDelete, onToggleSign, onCursorLeft, onCursorRight }: TouchNumpadInputProps = {}) {
+export function TouchNumpad({
+  onDigit,
+  onDecimal,
+  onDelete,
+  onToggleSign,
+  onCursorLeft,
+  onCursorRight,
+}: TouchNumpadInputProps = {}) {
   return (
     <div className="grid h-full w-max grid-cols-4 gap-4">
       {/* Row 1: 7 8 9 DEL */}
@@ -37,7 +44,7 @@ export function TouchNumpad({ onDigit, onDecimal, onDelete, onToggleSign, onCurs
       <TouchNumpadButton onClick={() => onDelete?.()}>
         <Icon name="lu:Delete" />
       </TouchNumpadButton>
-      
+
       {/* Row 2: 4 5 6 <- */}
       <TouchNumpadButton onClick={() => onDigit?.("4")}>4</TouchNumpadButton>
       <TouchNumpadButton onClick={() => onDigit?.("5")}>5</TouchNumpadButton>
@@ -45,7 +52,7 @@ export function TouchNumpad({ onDigit, onDecimal, onDelete, onToggleSign, onCurs
       <TouchNumpadButton onClick={() => onCursorLeft?.()}>
         <Icon name="lu:ChevronLeft" />
       </TouchNumpadButton>
-      
+
       {/* Row 3: 1 2 3 -> */}
       <TouchNumpadButton onClick={() => onDigit?.("1")}>1</TouchNumpadButton>
       <TouchNumpadButton onClick={() => onDigit?.("2")}>2</TouchNumpadButton>
@@ -53,15 +60,13 @@ export function TouchNumpad({ onDigit, onDecimal, onDelete, onToggleSign, onCurs
       <TouchNumpadButton onClick={() => onCursorRight?.()}>
         <Icon name="lu:ChevronRight" />
       </TouchNumpadButton>
-      
+
       {/* Row 4: 0 (spans 2 cols) · +- */}
       <TouchNumpadButton onClick={() => onDigit?.("0")} className="col-span-2">
         0
       </TouchNumpadButton>
       <TouchNumpadButton onClick={() => onDecimal?.()}>·</TouchNumpadButton>
-      <TouchNumpadButton onClick={() => onToggleSign?.()}>
-        ±
-      </TouchNumpadButton>
+      <TouchNumpadButton onClick={() => onToggleSign?.()}>±</TouchNumpadButton>
     </div>
   );
 }
@@ -72,10 +77,14 @@ type TouchNumpadButtonProps = {
   className?: string;
 };
 
-function TouchNumpadButton({ children, onClick, className }: TouchNumpadButtonProps) {
+function TouchNumpadButton({
+  children,
+  onClick,
+  className,
+}: TouchNumpadButtonProps) {
   return (
     <Button
-      className={`h-full font-bold ${className?.includes('col-span-2') ? 'w-full' : 'w-20'} ${className || ''}`}
+      className={`h-full ${className?.includes("col-span-2") ? "w-full" : "w-22"} ${className || ""}`}
       variant="outline"
       onMouseDown={(e) => {
         // Prevent the button from stealing focus from the input
