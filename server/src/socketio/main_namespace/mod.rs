@@ -8,6 +8,7 @@ use control_core::socketio::{
 use ethercat_devices_event::EthercatDevicesEvent;
 use ethercat_interface_discovery_event::EthercatInterfaceDiscoveryEvent;
 use machines_event::MachinesEvent;
+use tracing::instrument;
 
 pub mod ethercat_devices_event;
 pub mod ethercat_interface_discovery_event;
@@ -25,16 +26,13 @@ impl NamespaceCacheingLogic<MainNamespaceEvents> for MainRoom
 where
     MainNamespaceEvents: CacheableEvents<MainNamespaceEvents>,
 {
+    #[instrument(skip_all)]
     fn emit_cached(&mut self, event: MainNamespaceEvents) {
         let buffer_fn = event.event_cache_fn();
         let generic_event = match event.event_value() {
             Ok(event) => event,
             Err(err) => {
-                log::error!(
-                    "[{}::emit_cached] Failed to event.event_value(): {:?}",
-                    module_path!(),
-                    err
-                );
+                tracing::error!("Failed to event.event_value(): {:?}", err);
                 return;
             }
         };
@@ -42,7 +40,7 @@ where
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub enum MainNamespaceEvents {
     MachinesEvent(Event<MachinesEvent>),
     EthercatDevicesEvent(Event<EthercatDevicesEvent>),

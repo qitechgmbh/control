@@ -5,12 +5,14 @@ use crate::app_state::AppState;
 use control_core::socketio::namespace_id::NamespaceId;
 use socketioxide::extract::SocketRef;
 use socketioxide::layer::SocketIoLayer;
+use tracing::{info_span, span};
+use tracing_futures::Instrument;
 
 pub async fn init_socketio(app_state: &Arc<AppState>) -> SocketIoLayer {
     // create
     let (socketio_layer, io) = socketioxide::SocketIoBuilder::new()
-    .max_buffer_size(1024)
-    .build_layer();
+        .max_buffer_size(1024)
+        .build_layer();
 
     // Clone app_state for the first handler
     let app_state_main = app_state.clone();
@@ -23,24 +25,13 @@ pub async fn init_socketio(app_state: &Arc<AppState>) -> SocketIoLayer {
     // Clone app_state for the second handler
     let app_state_machine = app_state.clone();
 
-    match io.dyn_ns(
+    if let Err(err) = io.dyn_ns(
         "/machine/{vendor}/{machine}/{serial}",
         move |socket: SocketRef| {
             handle_socket_connection(socket, app_state_machine.clone());
         },
     ) {
-        Ok(_) => {
-            // log
-            log::info!("Machine namespace created");
-        }
-        Err(err) => {
-            // log
-            log::error!(
-                "[{}::init_socketio] Failed to parse machine namespace: {}",
-                module_path!(),
-                err
-            );
-        }
+        tracing::error!("Failed to detect machine namespace: {}", err);
     }
 
     // set the io to the app state
@@ -54,11 +45,7 @@ fn handle_socket_connection(socket: SocketRef, app_state: Arc<AppState>) {
     let namespace_id = match NamespaceId::from_str(socket.ns()) {
         Ok(namespace_id) => namespace_id,
         Err(err) => {
-            log::error!(
-                "[{}::handle_socket_connection] Failed to parse namespace id: {}",
-                module_path!(),
-                err
-            );
+            tracing::error!("Failed to parse NamespaceId: {}", err);
             return;
         }
     };
@@ -77,10 +64,10 @@ fn setup_disconnection(socket: SocketRef, namespace_id: NamespaceId, app_state: 
 
         // Spawn async task to avoid blocking and potential deadlocks
         smol::spawn(async move {
-            log::debug!(
-                "Socket disconnected {} from namespace {}",
-                socket.id,
-                namespace_id
+            tracing::debug!(
+                socket = ?socket.id,
+                namespace = %namespace_id,
+                "Socket disconnected from namespace",
             );
             let mut socketio_namespaces_guard = app_state.socketio_setup.namespaces.write().await;
 
@@ -103,42 +90,51 @@ fn setup_connection(socket: SocketRef, namespace_id: NamespaceId, app_state: Arc
     let namespace_id_clone = namespace_id.clone();
     let app_state_clone = app_state.clone();
 
-    smol::spawn(async move {
-        let mut socketio_namespaces_guard = app_state_clone.socketio_setup.namespaces.write().await;
-        socketio_namespaces_guard
-            .apply_mut(
-                namespace_id_clone.clone(),
-                &app_state_clone,
-                |namespace_interface| {
-                    match namespace_interface {
-                        Ok(namespace_interface) => {
-                            // First subscribe the socket
-                            namespace_interface.subscribe(socket_clone.clone());
-                            log::debug!("Socket {} subscribed to namespace {}", socket_clone.id, namespace_id_clone);
-                            
-                            // Then re-emit cached events
-                            namespace_interface.reemit(socket_clone.clone());
-                            log::debug!("Reemit completed for socket {} in namespace {}", socket_clone.id, namespace_id_clone);
-                            
-                            log::info!(
-                                "Socket {} was connected to namespace {}",
-                                socket_clone.id,
-                                namespace_id_clone
-                            );
+    let span = info_span!(
+        "socketio_connection",
+        socket = ?socket_clone.id,
+        namespace = %namespace_id_clone,
+        "Connecting socket to namespace"
+    );
+
+    smol::spawn(
+        async move {
+            let mut socketio_namespaces_guard =
+                app_state_clone.socketio_setup.namespaces.write().await;
+            socketio_namespaces_guard
+                .apply_mut(
+                    namespace_id_clone.clone(),
+                    &app_state_clone,
+                    |namespace_interface| {
+                        match namespace_interface {
+                            Ok(namespace_interface) => {
+                                // First subscribe the socket
+                                namespace_interface.subscribe(socket_clone.clone());
+
+                                // Then re-emit cached events
+                                namespace_interface.reemit(socket_clone.clone());
+                            }
+                            Err(err) => {
+                                tracing::warn!(
+                                    socket = ?socket_clone.id,
+                                    namespace = %namespace_id_clone,
+                                    "Couln't subscribe socket to namespace, disconnecting: {:?}",
+                                    err
+                                );
+                                let _ = socket_clone.disconnect();
+                            }
                         }
-                        Err(err) => {
-                            log::warn!(
-                                "Socket connection failed for {} in namespace {}, disconnecting: {:?}",
-                                socket_clone.id,
-                                namespace_id_clone,
-                                err
-                            );
-                            let _ = socket_clone.disconnect();
-                        }
-                    }
-                },
-            )
-            .await;
-    })
+                    },
+                )
+                .await;
+        }
+        .instrument(span),
+    )
     .detach();
+
+    tracing::info!(
+        socket = ?socket.id,
+        namespace = %namespace_id,
+        "Socket connected to namespace",
+    );
 }

@@ -25,8 +25,7 @@ use ethercat_hal::devices::el7031_0030::EL7031_0030_IDENTITY_A;
 use ethercat_hal::devices::el7041_0052::EL7041_0052_IDENTITY_A;
 use ethercat_hal::devices::subdevice_identity_to_tuple;
 use ethercat_hal::helpers::ethercrab_types::{
-    EthercrabSubDeviceOperational,
-    EthercrabSubDevicePreoperational,
+    EthercrabSubDeviceOperational, EthercrabSubDevicePreoperational,
 };
 use ethercrab::MainDevice;
 use ethercrab::SubDeviceIdentity;
@@ -68,9 +67,7 @@ impl Default for MachineIdentificationAddresses {
 /// Reads the EEPROM of all subdevices to get their machine device identifications
 ///
 /// Returns a vector of MachineDeviceIdentification for all subdevices
-pub async fn read_device_identifications<
-    'maindevice,
->(
+pub async fn read_device_identifications<'maindevice>(
     subdevices: &Vec<EthercrabSubDevicePreoperational<'maindevice>>,
     maindevice: &MainDevice<'maindevice>,
 ) -> Vec<Result<DeviceMachineIdentification, Error>> {
@@ -123,7 +120,6 @@ pub async fn machine_device_identification<'maindevice>(
                     module_path!(),
                     subdevice.name()
                 )))?,
-           
         },
         role: subdevice
             .eeprom_read::<u16>(maindevice, addresses.role_word)
@@ -135,17 +131,20 @@ pub async fn machine_device_identification<'maindevice>(
             )))?,
     };
 
-    log::debug!(
-        "[{}::machine_device_identification] Read MDI from EEPROM for device {}\nVendor:  0x{:08x} at 0x{:04x}-0x{:04x}\nSerial:  0x{:08x} at 0x{:04x}-0x{:04x}\nMachine: 0x{:08x} at 0x{:04x}-0x{:04x}\nRole:    0x{:08x} at 0x{:04x}-0x{:04x}",
-        module_path!(),
+    tracing::debug!(
+        "Read MDI from EEPROM for device {}\nVendor:  0x{:08x} at 0x{:04x}-0x{:04x}\nSerial:  0x{:08x} at 0x{:04x}-0x{:04x}\nMachine: 0x{:08x} at 0x{:04x}-0x{:04x}\nRole:    0x{:08x} at 0x{:04x}-0x{:04x}",
         subdevice.name(),
-        mdi.machine_identification_unique.machine_identification.vendor,
+        mdi.machine_identification_unique
+            .machine_identification
+            .vendor,
         addresses.vendor_word,
         addresses.vendor_word + 1,
         mdi.machine_identification_unique.serial,
         addresses.serial_word,
         addresses.serial_word + 1,
-        mdi.machine_identification_unique.machine_identification.machine,
+        mdi.machine_identification_unique
+            .machine_identification
+            .machine,
         addresses.machine_word,
         addresses.machine_word + 1,
         mdi.role,
@@ -163,17 +162,22 @@ pub async fn write_machine_device_identification<'maindevice, const MAX_PDI: usi
     device_identification: &DeviceMachineIdentification,
 ) -> Result<(), Error> {
     let addresses = get_identification_addresses(&subdevice.identity(), subdevice.name())?;
-    log::debug!(
-        "[{}::write_machine_device_identification] Writing MDI to EEPROM for device {}\nVendor:  0x{:08x} at 0x{:04x}-0x{:04x}\nSerial:  0x{:08x} at 0x{:04x}-0x{:04x}\nMachine: 0x{:08x} at 0x{:04x}-0x{:04x}\nRole:    0x{:08x} at 0x{:04x}-0x{:04x}",
-        module_path!(),
+    tracing::debug!(
+        "Writing MDI to EEPROM for device {}\nVendor:  0x{:08x} at 0x{:04x}-0x{:04x}\nSerial:  0x{:08x} at 0x{:04x}-0x{:04x}\nMachine: 0x{:08x} at 0x{:04x}-0x{:04x}\nRole:    0x{:08x} at 0x{:04x}-0x{:04x}",
         subdevice.name(),
-        device_identification.machine_identification_unique.machine_identification.vendor,
+        device_identification
+            .machine_identification_unique
+            .machine_identification
+            .vendor,
         addresses.vendor_word,
         addresses.vendor_word + 1,
         device_identification.machine_identification_unique.serial,
         addresses.serial_word,
         addresses.serial_word + 1,
-        device_identification.machine_identification_unique.machine_identification.machine,
+        device_identification
+            .machine_identification_unique
+            .machine_identification
+            .machine,
         addresses.machine_word,
         addresses.machine_word + 1,
         device_identification.role,
@@ -185,7 +189,10 @@ pub async fn write_machine_device_identification<'maindevice, const MAX_PDI: usi
         .eeprom_write_dangerously(
             maindevice,
             addresses.vendor_word,
-            device_identification.machine_identification_unique.machine_identification.vendor,
+            device_identification
+                .machine_identification_unique
+                .machine_identification
+                .vendor,
         )
         .await?;
     subdevice
@@ -199,7 +206,10 @@ pub async fn write_machine_device_identification<'maindevice, const MAX_PDI: usi
         .eeprom_write_dangerously(
             maindevice,
             addresses.machine_word,
-            device_identification.machine_identification_unique.machine_identification.machine,
+            device_identification
+                .machine_identification_unique
+                .machine_identification
+                .machine,
         )
         .await?;
     subdevice
@@ -234,7 +244,9 @@ pub fn get_identification_addresses<'maindevice>(
         EL7031_IDENTITY_A | EL7031_IDENTITY_B => MachineIdentificationAddresses::default(),
         EL7031_0030_IDENTITY_A => MachineIdentificationAddresses::default(),
         EL7041_0052_IDENTITY_A => MachineIdentificationAddresses::default(),
-        EL6021_IDENTITY_A | EL6021_IDENTITY_B | EL6021_IDENTITY_C => MachineIdentificationAddresses::default(),
+        EL6021_IDENTITY_A | EL6021_IDENTITY_B | EL6021_IDENTITY_C => {
+            MachineIdentificationAddresses::default()
+        }
         _ => {
             // block_on(u16dump(&subdevice, maindevice, 0x00, 0xff))?;
             Err(anyhow!(

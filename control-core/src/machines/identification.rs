@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -12,6 +14,16 @@ impl MachineIdentificationUnique {
     /// Check if values are non-zero
     pub fn is_valid(&self) -> bool {
         self.machine_identification.is_valid() && self.serial != 0
+    }
+}
+
+impl Display for MachineIdentificationUnique {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}/{}/{}",
+            self.machine_identification.vendor, self.machine_identification.machine, self.serial
+        )
     }
 }
 

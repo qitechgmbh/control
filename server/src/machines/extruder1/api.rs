@@ -13,6 +13,7 @@ use control_core::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use tracing::instrument;
 
 #[derive(Serialize, Debug, Clone)]
 pub struct FrequencyEvent {
@@ -177,15 +178,12 @@ enum Mutation {
 pub struct ExtruderV2Namespace(Namespace);
 
 impl NamespaceCacheingLogic<ExtruderV2Events> for ExtruderV2Namespace {
+    #[instrument(skip_all)]
     fn emit_cached(&mut self, events: ExtruderV2Events) {
         let event = match events.event_value() {
             Ok(event) => event,
             Err(err) => {
-                log::error!(
-                    "[{}::emit_cached] Failed to event.event_value(): {:?}",
-                    module_path!(),
-                    err
-                );
+                tracing::error!("Failed to emit: {:?}", err);
                 return;
             }
         };
