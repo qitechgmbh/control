@@ -8,6 +8,7 @@ use std::{
 };
 
 use socketioxide::extract::SocketRef;
+use tracing::{Instrument, debug_span, instrument};
 
 use super::event::GenericEvent;
 
@@ -28,6 +29,7 @@ impl SocketQueue {
     }
 
     /// Add an event to the queue
+    #[instrument]
     pub fn push(&self, event: GenericEvent) {
         if let Ok(mut queue) = self.queue.lock() {
             queue.push_back(event);
@@ -35,6 +37,7 @@ impl SocketQueue {
     }
 
     /// Force flush events asynchronously (assumes flushing flag is already set)
+    #[instrument(skip_all)]
     pub fn flush(&self, socket: SocketRef) {
         // Check if we're already flushing
         if self
@@ -49,59 +52,72 @@ impl SocketQueue {
         let queue = Arc::clone(&self.queue);
         let is_flushing = Arc::clone(&self.is_flushing);
 
+        let span = debug_span!("socket_queue_flush", socket_id = ?socket.id);
+
         // Spawn a smol task to flush the queue
-        smol::spawn(async move {
-            // Process events directly from the queue without collecting first
-            loop {
-                let event = {
-                    if let Ok(mut queue_guard) = queue.lock() {
-                        queue_guard.pop_front()
-                    } else {
-                        break; // Exit if we can't lock the queue
-                    }
-                };
-
-                let Some(event) = event else {
-                    break; // No more events in queue
-                };
-
-                // retry loop for each event
+        smol::spawn(
+            async move {
+                // Process events directly from the queue without collecting first
                 loop {
-                    // check if socket is still connected
-                    if !socket.connected() {
-                        break; // Exit the loop if the socket is not connected
-                    }
+                    let event = {
+                        if let Ok(mut queue_guard) = queue.lock() {
+                            queue_guard.pop_front()
+                        } else {
+                            break; // Exit if we can't lock the queue
+                        }
+                    };
 
-                    match socket.emit("event", &event) {
-                        Ok(_) => break, // Successfully emitted, exit loop
-                        Err(e) => match e {
-                            socketioxide::SendError::Serialize(_) => {
-                                // no reason in retrying serialization errors
-                                break;
-                            }
-                            socketioxide::SendError::Socket(socket_error) => match socket_error {
-                                socketioxide::SocketError::InternalChannelFull => {
-                                    // wait 10ms before retrying
-                                    log::warn!(
-                                        "Socket {} internal channel full, retrying in 10ms",
-                                        socket.id,
-                                    );
-                                    smol::Timer::after(Duration::from_millis(10)).await;
-                                    continue; // Retry sending the event
-                                }
-                                socketioxide::SocketError::Closed => {
-                                    // Socket is closed, no point in retrying
+                    let Some(event) = event else {
+                        break; // No more events in queue
+                    };
+
+                    // retry loop for each event
+                    loop {
+                        // check if socket is still connected
+                        if !socket.connected() {
+                            break; // Exit the loop if the socket is not connected
+                        }
+
+                        let span = debug_span!(
+                            "socket_queue_flush_event",
+                            socket_id = ?socket.id,
+                            event_name = %event.name,
+                        );
+                        let _enter = span.enter();
+
+                        match socket.emit("event", &event) {
+                            Ok(_) => break, // Successfully emitted, exit loop
+                            Err(e) => match e {
+                                socketioxide::SendError::Serialize(_) => {
+                                    // no reason in retrying serialization errors
                                     break;
                                 }
+                                socketioxide::SendError::Socket(socket_error) => match socket_error
+                                {
+                                    socketioxide::SocketError::InternalChannelFull => {
+                                        // wait 10ms before retrying
+                                        tracing::warn!(
+                                            "Socket {} internal channel full, retrying in 10ms",
+                                            socket.id,
+                                        );
+                                        smol::Timer::after(Duration::from_millis(10)).await;
+                                        continue; // Retry sending the event
+                                    }
+                                    socketioxide::SocketError::Closed => {
+                                        // Socket is closed, no point in retrying
+                                        break;
+                                    }
+                                },
                             },
-                        },
+                        }
                     }
                 }
-            }
 
-            // Reset the flushing flag
-            is_flushing.store(false, Ordering::SeqCst);
-        })
+                // Reset the flushing flag
+                is_flushing.store(false, Ordering::SeqCst);
+            }
+            .instrument(span),
+        )
         .detach();
     }
 }

@@ -47,6 +47,15 @@ async fn _post_machine_mutate(
         }
     };
 
+    // log
+    tracing::info!(
+        machine = %body.machine_identification_unique,
+        data = ?body.data,
+        "Mutating machine"
+    );
+    let span = tracing::info_span!("machine_mutate", machine = %body.machine_identification_unique);
+    let _span = span.enter();
+
     // lock machine
     let mut machine_guard = machine.lock().await;
 

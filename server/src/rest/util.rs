@@ -11,7 +11,7 @@ impl ResponseUtil {
         let json = match serde_json::to_string(&json!({ "error": message })) {
             Ok(json) => json,
             Err(e) => {
-                log::error!("Failed to serialize error message: {}", e);
+                tracing::error!("Failed to serialize error message: {}", e);
                 return Response::builder()
                     .status(StatusCode::INTERNAL_SERVER_ERROR)
                     .body(Body::empty())
@@ -29,7 +29,7 @@ impl ResponseUtil {
         let json = match serde_json::to_string(&data) {
             Ok(json) => json,
             Err(e) => {
-                log::error!("Failed to serialize response data: {}", e);
+                tracing::error!("Failed to serialize response data: {}", e);
                 return ResponseUtil::error("Failed to serialize response data");
             }
         };
@@ -45,7 +45,7 @@ impl ResponseUtil {
         let json = match serde_json::to_string(&json!({ "error": message })) {
             Ok(json) => json,
             Err(e) => {
-                log::error!("Failed to serialize not found message: {}", e);
+                tracing::error!("Failed to serialize not found message: {}", e);
                 return ResponseUtil::error("Failed to serialize not found message");
             }
         };

@@ -9,7 +9,8 @@ use smol::channel::Sender;
 use std::sync::Arc;
 use std::thread::JoinHandle;
 use tower_http::cors::CorsLayer;
-use tower_http::trace::TraceLayer;
+use tower_http::trace::{DefaultMakeSpan, DefaultOnRequest, DefaultOnResponse, TraceLayer};
+use tracing::Level;
 
 pub fn init_api(
     thread_panic_tx: Sender<&'static str>,
@@ -20,19 +21,33 @@ pub fn init_api(
         .spawn(|| {
             send_panic("ApiThread", thread_panic_tx);
 
-            let rt = tokio::runtime::Runtime::new().expect("Failed to create runtime");
+            let rt = tokio::runtime::Builder::new_multi_thread()
+                .thread_name("tokio")
+                .enable_io()
+                .enable_time()
+                .build()
+                .expect("Failed to create runtime");
+
             rt.spawn(async {
                 // allow all CORS requests
                 let cors = CorsLayer::permissive();
 
-                //setup logging
-                // TODO: this codes makes etehrcrab crash
-                // tracing_subscriber::fmt()
-                //     .with_max_level(tracing::Level::DEBUG)
-                //     .init();
-
                 // creat socketio layer
                 let socketio_layer = init_socketio(&app_state).await;
+
+                // Create a more detailed trace layer for HTTP requests
+                let trace_layer = TraceLayer::new_for_http()
+                    .make_span_with(
+                        DefaultMakeSpan::new()
+                            .level(Level::DEBUG)
+                            .include_headers(false),
+                    )
+                    .on_request(DefaultOnRequest::new().level(Level::TRACE))
+                    .on_response(
+                        DefaultOnResponse::new()
+                            .level(Level::TRACE)
+                            .include_headers(false),
+                    );
 
                 // make axum server to serve the data on /ethercat
                 let app = axum::Router::new()
@@ -43,12 +58,14 @@ pub fn init_api(
                     .route("/api/v1/machine/mutate", post(post_machine_mutate))
                     .layer(socketio_layer)
                     .layer(cors)
-                    .layer(TraceLayer::new_for_http())
+                    .layer(trace_layer)
                     .with_state(app_state);
 
                 let listener = tokio::net::TcpListener::bind("0.0.0.0:3001")
                     .await
                     .expect("Failed to bind to port 3001");
+
+                tracing::info!("Starting HTTP server on 0.0.0.0:3001");
                 axum::serve(listener, app).await.expect("Failed to serve");
             });
 

@@ -30,11 +30,7 @@ where
         let generic_event = match event.event_value() {
             Ok(event) => event,
             Err(err) => {
-                log::error!(
-                    "[{}::emit_cached] Failed to event.event_value(): {:?}",
-                    module_path!(),
-                    err
-                );
+                tracing::error!("Failed to event.event_value(): {:?}", err);
                 return;
             }
         };

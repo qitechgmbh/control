@@ -43,7 +43,6 @@ pub fn init_serial(
                         if !result.added.is_empty() || !result.removed.is_empty() {
                             // sync serial device discovery to machine manager
                             {
-                                println!("{:?}", result);
                                 let mut machine_guard = app_state_clone.machines.write().await;
                                 // turn added devices into machines
                                 for (device_identifiaction, device) in result.added {

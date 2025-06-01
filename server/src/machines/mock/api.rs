@@ -101,11 +101,7 @@ impl NamespaceCacheingLogic<MockEvents> for MockMachineNamespace {
         let event = match events.event_value() {
             Ok(event) => event,
             Err(err) => {
-                log::error!(
-                    "[{}::emit_cached] Failed to event.event_value(): {:?}",
-                    module_path!(),
-                    err
-                );
+                tracing::error!("Failed to emit: {:?}", err);
                 return;
             }
         };

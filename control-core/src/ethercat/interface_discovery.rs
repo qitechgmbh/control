@@ -21,21 +21,21 @@ const IFACE_DISCOVERY_MAX_PDI_LEN: usize = 128;
 /// }
 /// ```
 pub async fn discover_ethercat_interface() -> Result<String, anyhow::Error> {
-    log::info!("Discovering EtherCAT interface...");
+    tracing::info!("Discovering EtherCAT interface...");
 
     // Set up a custom panic hook that suppresses panic output
     let default_hook = std::panic::take_hook();
     std::panic::set_hook(Box::new(move |panic_info| {
         // Optional: log the panic in a controlled way
         if let Some(location) = panic_info.location() {
-            log::debug!(
+            tracing::debug!(
                 "Suppressed panic in interface test: {} (at {}:{})",
                 panic_info,
                 location.file(),
                 location.line()
             );
         } else {
-            log::debug!("Suppressed panic in interface test: {}", panic_info);
+            tracing::debug!("Suppressed panic in interface test: {}", panic_info);
         }
         // Don't call the default hook, which would print the backtrace
     }));
@@ -65,11 +65,11 @@ pub async fn discover_ethercat_interface() -> Result<String, anyhow::Error> {
                     smol::block_on(async {
                         match test_interface(&name) {
                             Ok(_) => {
-                                log::debug!("Found working EtherCAT interface: {}", name);
+                                tracing::info!("Found working EtherCAT interface: {}", name);
                                 Some(name.clone())
                             }
                             Err(e) => {
-                                log::debug!("Interface {} failed: {}", name, e);
+                                tracing::debug!("Interface {} failed: {}", name, e);
                                 None
                             }
                         }
@@ -99,7 +99,7 @@ pub async fn discover_ethercat_interface() -> Result<String, anyhow::Error> {
 }
 
 fn test_interface(interface: &str) -> Result<(), anyhow::Error> {
-    log::debug!("Testing interface: {}", interface);
+    tracing::trace!("Testing interface: {}", interface);
 
     let pdu_storage = Box::leak(Box::new(PduStorage::<
         IFACE_DISCOVERY_MAX_FRAMES,

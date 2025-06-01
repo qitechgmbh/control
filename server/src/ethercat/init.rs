@@ -34,11 +34,11 @@ pub fn init_ethercat(
         loop {
             match discover_ethercat_interface().await {
                 Ok(interface) => {
-                    log::info!("Found working interface: {}", interface);
+                    tracing::info!("Found working interface: {}", interface);
                     break interface;
                 }
                 Err(_) => {
-                    log::warn!("No working interface found, retrying...");
+                    tracing::warn!("No working interface found, retrying...");
                     // wait 1 seconds before retrying
                     smol::Timer::after(std::time::Duration::from_secs(1)).await;
                 }

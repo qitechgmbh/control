@@ -32,7 +32,7 @@ fn test_hash() {
     let test_case = "/dev/ttyUSB1";
     let hash = hashing(test_case);
     let hash_2bytes = xor_u128_to_u16(hash);
-    log::info!("{}", test_case);
+    tracing::info!("{}", test_case);
     assert_eq!(test_case, "/dev/ttyUSB1");
     assert!(hash == 8977446972540388683742);
     assert!(hash_2bytes == 165);

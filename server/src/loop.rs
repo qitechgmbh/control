@@ -23,7 +23,7 @@ pub fn init_loop(
                     loop_once(app_state.clone()).await
                 }));
                 if let Err(err) = res {
-                    log::error!("Loop failed\n{:?}", err);
+                    tracing::error!("Loop failed\n{:?}", err);
                     break;
                 }
             }
