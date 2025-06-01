@@ -63,7 +63,7 @@ const buttonStyle = cva("flex w-min flex-col items-center gap-4 ", {
 
 /**
  * EditValue Component
- * 
+ *
  * A comprehensive numeric input component with:
  * - Touch-friendly numpad interface
  * - Precision handling for floating point operations
@@ -72,7 +72,7 @@ const buttonStyle = cva("flex w-min flex-col items-center gap-4 ", {
  * - +/- increment buttons with step-based rounding
  * - Slider for range selection
  * - Unit display and formatting
- * 
+ *
  * Key Features:
  * - Handles trailing decimals and zeros properly
  * - Prevents floating-point artifacts through step-based rounding
@@ -103,14 +103,14 @@ export function EditValue({
     value: schema ?? z.number(),
   });
   type FormSchema = z.infer<typeof formSchema>;
-  
+
   const form = useForm<FormSchema>({
     resolver: zodResolver<FormSchema>(formSchema),
     values: { value: value ?? defaultValue },
     defaultValues: { value: defaultValue },
     mode: "all",
   });
-  
+
   const formValues = useFormValues(form);
   const { value: formValue } = formValues;
 
@@ -122,10 +122,13 @@ export function EditValue({
   }, [step]);
 
   // Helper function to round values according to step precision
-  const roundToStepDecimals = React.useCallback((value: number) => {
-    const multiplier = Math.pow(10, stepDecimals);
-    return Math.round(value * multiplier) / multiplier;
-  }, [stepDecimals]);
+  const roundToStepDecimals = React.useCallback(
+    (value: number) => {
+      const multiplier = Math.pow(10, stepDecimals);
+      return Math.round(value * multiplier) / multiplier;
+    },
+    [stepDecimals],
+  );
 
   // Input state management
   const [valueString, setValueString] = React.useState("");
@@ -145,13 +148,19 @@ export function EditValue({
 
   // Sync form value to input display (when form changes externally)
   useEffect(() => {
-    const hasTrailingDecimal = valueString.endsWith(".") && /^\d+\.$/.test(valueString);
-    
+    const hasTrailingDecimal =
+      valueString.endsWith(".") && /^\d+\.$/.test(valueString);
+
     // Only update input from form if user isn't editing and no special conditions
-    if (!valueStringDirty && !preventFormSyncRef.current && !hasTrailingDecimal) {
-      const displayValue = formValue !== undefined && formValue !== null
-        ? roundToStepDecimals(formValue).toString()
-        : "";
+    if (
+      !valueStringDirty &&
+      !preventFormSyncRef.current &&
+      !hasTrailingDecimal
+    ) {
+      const displayValue =
+        formValue !== undefined && formValue !== null
+          ? roundToStepDecimals(formValue).toString()
+          : "";
       setValueString(displayValue);
     }
   }, [formValue, valueStringDirty, valueString, roundToStepDecimals]);
@@ -176,7 +185,7 @@ export function EditValue({
     }
 
     const numericValue = parseFloat(normalizedInput);
-    const hasValidationError = 
+    const hasValidationError =
       isNaN(numericValue) ||
       (schema && !schema.safeParse(numericValue).success) ||
       (max !== undefined && numericValue > max) ||
@@ -209,17 +218,26 @@ export function EditValue({
       setValueStringError(false);
       preventFormSyncRef.current = false;
     }
-  }, [valueString, valueStringDirty, schema, max, min, form, roundToStepDecimals]);
+  }, [
+    valueString,
+    valueStringDirty,
+    schema,
+    max,
+    min,
+    form,
+    roundToStepDecimals,
+  ]);
 
   // Reset input state to clean form value
   const resetInput = React.useCallback(() => {
     setValueStringDirty(false);
     setValueStringError(false);
     preventFormSyncRef.current = false;
-    
-    const cleanValue = formValue !== undefined && formValue !== null
-      ? roundToStepDecimals(formValue).toString()
-      : "";
+
+    const cleanValue =
+      formValue !== undefined && formValue !== null
+        ? roundToStepDecimals(formValue).toString()
+        : "";
     setValueString(cleanValue);
   }, [formValue, roundToStepDecimals]);
 
@@ -258,13 +276,14 @@ export function EditValue({
     return {
       appendDigit: (digit: string) => {
         if (!inputRef.current) return;
-        
+
         ensureFocus();
         const input = inputRef.current;
         const start = input.selectionStart || 0;
         const end = input.selectionEnd || 0;
-        const newValue = valueString.slice(0, start) + digit + valueString.slice(end);
-        
+        const newValue =
+          valueString.slice(0, start) + digit + valueString.slice(end);
+
         setValueString(newValue);
         setValueStringDirty(true);
         updateCursorPosition(start + 1);
@@ -272,7 +291,7 @@ export function EditValue({
 
       addDecimal: () => {
         if (!inputRef.current) return;
-        
+
         ensureFocus();
         const input = inputRef.current;
         const start = input.selectionStart || 0;
@@ -280,7 +299,8 @@ export function EditValue({
 
         if (!valueString.includes(".")) {
           // Add decimal at cursor position
-          const newValue = valueString.slice(0, start) + "." + valueString.slice(end);
+          const newValue =
+            valueString.slice(0, start) + "." + valueString.slice(end);
           setValueString(newValue);
           setValueStringDirty(true);
           updateCursorPosition(start + 1);
@@ -289,23 +309,25 @@ export function EditValue({
           const currentDecimalIndex = valueString.indexOf(".");
           const valueWithoutDecimal = valueString.replace(".", "");
           const adjustedStart = start > currentDecimalIndex ? start - 1 : start;
-          const newValue = 
-            valueWithoutDecimal.slice(0, adjustedStart) + 
-            "." + 
+          const newValue =
+            valueWithoutDecimal.slice(0, adjustedStart) +
+            "." +
             valueWithoutDecimal.slice(adjustedStart);
 
           preventFormSyncRef.current = true;
           setValueStringDirty(true);
           setValueString(newValue);
-          
-          setTimeout(() => { preventFormSyncRef.current = false; }, 100);
+
+          setTimeout(() => {
+            preventFormSyncRef.current = false;
+          }, 100);
           updateCursorPosition(adjustedStart + 1);
         }
       },
 
       deleteChar: () => {
         if (!inputRef.current) return;
-        
+
         ensureFocus();
         const input = inputRef.current;
         const start = input.selectionStart || 0;
@@ -337,7 +359,7 @@ export function EditValue({
 
       toggleSign: () => {
         if (!inputRef.current) return;
-        
+
         ensureFocus();
         const input = inputRef.current;
         const currentPos = input.selectionStart || 0;
@@ -363,7 +385,7 @@ export function EditValue({
 
       moveCursorLeft: () => {
         if (!inputRef.current) return;
-        
+
         ensureFocus();
         const currentPos = inputRef.current.selectionStart || 0;
         if (currentPos > 0) {
@@ -373,7 +395,7 @@ export function EditValue({
 
       moveCursorRight: () => {
         if (!inputRef.current) return;
-        
+
         ensureFocus();
         const currentPos = inputRef.current.selectionStart || 0;
         if (currentPos < valueString.length) {
@@ -386,6 +408,48 @@ export function EditValue({
   const setValue = (value: number) => {
     form.setValue("value", value);
   };
+
+  // Continuous increment/decrement functionality
+  const intervalRef = React.useRef<NodeJS.Timeout | null>(null);
+  const timeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+  
+  const startContinuousChange = React.useCallback((increment: boolean) => {
+    const performChange = () => {
+      const currentValue = form.getValues().value;
+      const newValue = increment
+        ? (max !== undefined
+            ? Math.min(max, roundToStepDecimals(currentValue + step))
+            : roundToStepDecimals(currentValue + step))
+        : (min !== undefined
+            ? Math.max(min, roundToStepDecimals(currentValue - step))
+            : roundToStepDecimals(currentValue - step));
+      setValue(newValue);
+    };
+
+    // Initial delay before starting continuous changes
+    timeoutRef.current = setTimeout(() => {
+      // Start continuous changes at regular intervals
+      intervalRef.current = setInterval(performChange, 100); // Change every 100ms
+    }, 500); // Wait 500ms before starting continuous changes
+  }, [step, min, max, roundToStepDecimals, form]);
+
+  const stopContinuousChange = React.useCallback(() => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+  }, []);
+
+  // Cleanup on unmount
+  React.useEffect(() => {
+    return () => {
+      stopContinuousChange();
+    };
+  }, [stopContinuousChange]);
 
   const valueIsDefined = value !== undefined && value !== null;
 
@@ -441,6 +505,11 @@ export function EditValue({
                       : roundToStepDecimals(formValue - step),
                   )
                 }
+                onMouseDown={() => startContinuousChange(false)}
+                onMouseUp={stopContinuousChange}
+                onMouseLeave={stopContinuousChange}
+                onTouchStart={() => startContinuousChange(false)}
+                onTouchEnd={stopContinuousChange}
               />
               <div className="flex flex-col items-center gap-2">
                 <div>
@@ -484,6 +553,11 @@ export function EditValue({
                       : roundToStepDecimals(formValue + step),
                   )
                 }
+                onMouseDown={() => startContinuousChange(true)}
+                onMouseUp={stopContinuousChange}
+                onMouseLeave={stopContinuousChange}
+                onTouchStart={() => startContinuousChange(true)}
+                onTouchEnd={stopContinuousChange}
               />
             </div>
             <div className="py-0">
