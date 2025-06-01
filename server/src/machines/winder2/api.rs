@@ -13,6 +13,7 @@ use control_core::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use tracing::instrument;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum AutostopTransition {
@@ -283,6 +284,7 @@ pub enum Winder2Events {
 pub struct Winder2Namespace(Namespace);
 
 impl NamespaceCacheingLogic<Winder2Events> for Winder2Namespace {
+    #[instrument(skip_all)]
     fn emit_cached(&mut self, events: Winder2Events) {
         let event = match events.event_value() {
             Ok(event) => event,

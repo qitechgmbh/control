@@ -11,7 +11,6 @@ static ALLOC: dhat::Alloc = dhat::Alloc;
 
 use app_state::AppState;
 use control_core::helpers::loop_trottle::LoopThrottle;
-use init_tracing::init_tracing;
 #[cfg(feature = "mock-machine")]
 use mock::init::init_mock;
 use std::{panic::catch_unwind, process::exit, sync::Arc, time::Duration};
@@ -25,7 +24,7 @@ use smol::channel::unbounded;
 
 pub mod app_state;
 pub mod ethercat;
-pub mod init_tracing;
+pub mod logging;
 pub mod r#loop;
 pub mod machines;
 #[cfg(feature = "mock-machine")]
@@ -36,17 +35,19 @@ pub mod serial;
 pub mod socketio;
 
 fn main() {
-    init_tracing();
+    logging::init_tracing();
     tracing::info!("Tracing initialized successfully");
 
     // if the program panics we restart all of it
     match catch_unwind(|| main2()) {
         Ok(_) => {
             tracing::info!("Program ended normally");
+            #[cfg(feature = "tracing-otel")]
             exit(0);
         }
         Err(err) => {
             tracing::error!("Program panicked: {:?}", err);
+            #[cfg(feature = "tracing-otel")]
             exit(1);
         }
     }
@@ -97,7 +98,7 @@ fn main2() {
 
             match thread_panic_rx.try_recv() {
                 Ok(panic_details) => {
-                    tracing::error!("Thread panicked: {:?}", panic_details);
+                    ::tracing::error!("Thread panicked: {:?}", panic_details);
                     exit(1);
                 }
                 Err(_) => {}
@@ -113,7 +114,7 @@ mod tests {
     #[test]
     fn test_main() {
         // setup logging
-        init_tracing();
-        tracing::info!("Running main test");
+        logging::init_tracing();
+        ::tracing::info!("Running main test");
     }
 }
