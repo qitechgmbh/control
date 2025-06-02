@@ -165,7 +165,7 @@ where
 }
 
 pub trait CacheableEvents<Events> {
-    fn event_value(&self) -> Result<GenericEvent, serde_json::Error>;
+    fn event_value(&self) -> GenericEvent;
     fn event_cache_fn(&self) -> CacheFn;
 }
 
@@ -226,7 +226,14 @@ pub fn cache_duration(duration: Duration, bucket_size: Duration) -> CacheFn {
 mod tests {
     use std::cmp::min;
 
+    use serde::Serialize;
+
     use super::*;
+
+    #[derive(Debug, Clone, Serialize)]
+    struct TestEventData {
+        value: usize,
+    }
 
     #[test]
     fn test_cache_n_events() {
@@ -241,7 +248,7 @@ mod tests {
         // Add event
         let event1 = Arc::new(GenericEvent {
             name: "test_event".to_string(),
-            data: serde_json::json!({"value": 1}),
+            data: Box::new(TestEventData { value: 1 }),
             ts: 0,
         });
         namespace.cache(event1, &cache_fn);
@@ -255,7 +262,7 @@ mod tests {
         // Add another event
         let event2 = Arc::new(GenericEvent {
             name: "test_event".to_string(),
-            data: serde_json::json!({"value": 2}),
+            data: Box::new(TestEventData { value: 2 }),
             ts: 1,
         });
         namespace.cache(event2, &cache_fn);
@@ -270,7 +277,7 @@ mod tests {
         // Add a third event, which should remove the first one
         let event3 = Arc::new(GenericEvent {
             name: "test_event".to_string(),
-            data: serde_json::json!({"value": 3}),
+            data: Box::new(TestEventData { value: 3 }),
             ts: 2,
         });
         namespace.cache(event3, &cache_fn);
@@ -302,7 +309,7 @@ mod tests {
         for i in 0..200 {
             let event = Arc::new(GenericEvent {
                 name: "test_event".to_string(),
-                data: serde_json::json!({"value": i}),
+                data: Box::new(TestEventData { value: i }),
                 ts: (i * 100) as u64,
             });
             namespace.cache(event, &cache_fn);

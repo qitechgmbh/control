@@ -75,11 +75,11 @@ impl MockMachineNamespace {
 }
 
 impl CacheableEvents<MockEvents> for MockEvents {
-    fn event_value(&self) -> Result<GenericEvent, serde_json::Error> {
+    fn event_value(&self) -> GenericEvent {
         match self {
-            MockEvents::SineWave(event) => event.try_into(),
-            MockEvents::SineWaveState(event) => event.try_into(),
-            MockEvents::ModeState(event) => event.try_into(),
+            MockEvents::SineWave(event) => event.into(),
+            MockEvents::SineWaveState(event) => event.into(),
+            MockEvents::ModeState(event) => event.into(),
         }
     }
 
@@ -106,14 +106,7 @@ enum Mutation {
 impl NamespaceCacheingLogic<MockEvents> for MockMachineNamespace {
     #[instrument(skip_all)]
     fn emit(&mut self, events: MockEvents) {
-        let event = match events.event_value() {
-            Ok(event) => event,
-            Err(err) => {
-                tracing::error!("Failed to emit: {:?}", err);
-                return;
-            }
-        };
-        let event = Arc::new(event);
+        let event = Arc::new(events.event_value());
         let buffer_fn = events.event_cache_fn();
         self.namespace.emit(event, &buffer_fn);
     }

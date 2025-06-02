@@ -58,10 +58,10 @@ impl LaserMachineNamespace {
 }
 
 impl CacheableEvents<LaserEvents> for LaserEvents {
-    fn event_value(&self) -> Result<GenericEvent, serde_json::Error> {
+    fn event_value(&self) -> GenericEvent {
         match self {
-            LaserEvents::Diameter(event) => event.try_into(),
-            LaserEvents::LaserState(event) => event.try_into(),
+            LaserEvents::Diameter(event) => event.into(),
+            LaserEvents::LaserState(event) => event.into(),
         }
     }
 
@@ -89,14 +89,7 @@ enum Mutation {
 impl NamespaceCacheingLogic<LaserEvents> for LaserMachineNamespace {
     #[instrument(skip_all)]
     fn emit(&mut self, events: LaserEvents) {
-        let event = match events.event_value() {
-            Ok(event) => event,
-            Err(err) => {
-                tracing::error!("Failed to emit: {:?}", err);
-                return;
-            }
-        };
-        let event = Arc::new(event);
+        let event = Arc::new(events.event_value());
         let buffer_fn = events.event_cache_fn();
         self.namespace.emit(event, &buffer_fn);
     }

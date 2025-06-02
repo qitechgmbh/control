@@ -1,20 +1,30 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use erased_serde::Serialize as ErasedSerialize;
 use serde::Serialize;
-use serde_json::Value;
 
-#[derive(Debug, Serialize)]
+#[derive(Serialize)]
 pub struct GenericEvent {
     pub name: String,
-    pub data: Value,
+    pub data: Box<dyn ErasedSerialize + Send + Sync>,
     /// Timestamp in milliseconds
     pub ts: u64,
+}
+
+impl std::fmt::Debug for GenericEvent {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("GenericEvent")
+            .field("name", &self.name)
+            .field("data", &"[erased]")
+            .field("ts", &self.ts)
+            .finish()
+    }
 }
 
 #[derive(Debug, Clone, Serialize)]
 pub struct Event<T>
 where
-    T: Serialize,
+    T: Serialize + Send + Sync + 'static,
 {
     pub name: String,
     pub data: T,
@@ -22,39 +32,35 @@ where
     pub ts: u64,
 }
 
-impl<T> TryFrom<Event<T>> for GenericEvent
+impl<T> From<Event<T>> for GenericEvent
 where
-    T: Serialize,
+    T: Serialize + Send + Sync + 'static,
 {
-    type Error = serde_json::Error;
-
-    fn try_from(event: Event<T>) -> Result<Self, Self::Error> {
-        Ok(Self {
+    fn from(event: Event<T>) -> Self {
+        Self {
             name: event.name,
-            data: serde_json::to_value(event.data)?,
+            data: Box::new(event.data),
             ts: event.ts,
-        })
+        }
     }
 }
 
-impl<T> TryFrom<&Event<T>> for GenericEvent
+impl<T> From<&Event<T>> for GenericEvent
 where
-    T: Serialize,
+    T: Serialize + Clone + Send + Sync + 'static,
 {
-    type Error = serde_json::Error;
-
-    fn try_from(event: &Event<T>) -> Result<Self, Self::Error> {
-        Ok(Self {
+    fn from(event: &Event<T>) -> Self {
+        Self {
             name: event.name.clone(),
-            data: serde_json::to_value(&event.data)?,
+            data: Box::new(event.data.clone()),
             ts: event.ts,
-        })
+        }
     }
 }
 
 impl<T> Event<T>
 where
-    T: Serialize + Clone,
+    T: Serialize + Clone + Send + Sync + 'static,
 {
     pub fn new(event: &str, data: T) -> Self {
         Self {
