@@ -7,17 +7,23 @@ use control_core::socketio::{
 use ethercat_devices_event::EthercatDevicesEvent;
 use ethercat_interface_discovery_event::EthercatInterfaceDiscoveryEvent;
 use machines_event::MachinesEvent;
+use smol::channel::Sender;
+use socketioxide::extract::SocketRef;
 use tracing::instrument;
 
 pub mod ethercat_devices_event;
 pub mod ethercat_interface_discovery_event;
 pub mod machines_event;
 
-pub struct MainRoom(pub Namespace);
+pub struct MainRoom {
+    pub namespace: Namespace,
+}
 
 impl MainRoom {
-    pub fn new() -> Self {
-        Self(Namespace::new())
+    pub fn new(socket_queue_tx: Sender<(SocketRef, Arc<GenericEvent>)>) -> Self {
+        Self {
+            namespace: Namespace::new(socket_queue_tx),
+        }
     }
 }
 
@@ -26,7 +32,7 @@ where
     MainNamespaceEvents: CacheableEvents<MainNamespaceEvents>,
 {
     #[instrument(skip_all)]
-    fn emit_cached(&mut self, event: MainNamespaceEvents) {
+    fn emit(&mut self, event: MainNamespaceEvents) {
         let buffer_fn = event.event_cache_fn();
         let generic_event = match event.event_value() {
             Ok(event) => event,
@@ -36,7 +42,7 @@ where
             }
         };
         let generic_event = Arc::new(generic_event);
-        self.0.emit_cached(generic_event, &buffer_fn);
+        self.namespace.emit(generic_event, &buffer_fn);
     }
 }
 

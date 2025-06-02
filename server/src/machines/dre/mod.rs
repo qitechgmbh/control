@@ -39,7 +39,7 @@ impl DreMachine {
             diameter: diameter.unwrap_or(0.0),
         };
         self.namespace
-            .emit_cached(DreEvents::Diameter(diameter_event.build()));
+            .emit(DreEvents::Diameter(diameter_event.build()));
     }
 
     pub fn emit_dre_state(&mut self) {
@@ -50,7 +50,7 @@ impl DreMachine {
         };
 
         self.namespace
-            .emit_cached(DreEvents::DreState(dre_state_event.build()));
+            .emit(DreEvents::DreState(dre_state_event.build()));
     }
 
     pub fn target_set_higher_tolerance(&mut self, higher_tolerance: f64) {

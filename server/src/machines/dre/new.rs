@@ -43,7 +43,7 @@ impl MachineNewTrait for DreMachine {
         };
         Ok(Self {
             dre,
-            namespace: DreMachineNamespace::new(),
+            namespace: DreMachineNamespace::new(params.socket_queue_tx.clone()),
             last_measurement_emit: Instant::now(),
             dre_target,
         })
