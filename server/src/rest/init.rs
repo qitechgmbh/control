@@ -1,7 +1,7 @@
 use super::handlers::machine_mutation::post_machine_mutate;
 use super::handlers::write_machine_device_identification::post_write_machine_device_identification;
 use crate::app_state::AppState;
-use crate::panic::{send_panic, PanicDetails};
+use crate::panic::{PanicDetails, send_panic};
 use crate::socketio::init::init_socketio;
 use anyhow::anyhow;
 use axum::routing::post;
@@ -17,18 +17,17 @@ pub fn init_api(
     app_state: Arc<AppState>,
 ) -> Result<JoinHandle<()>, anyhow::Error> {
     std::thread::Builder::new()
-        .name("ApiThread".to_string())
+        .name("api".to_string())
         .spawn(|| {
             send_panic(thread_panic_tx);
 
-            let rt = tokio::runtime::Builder::new_multi_thread()
-                .thread_name("tokio")
+            let rt = tokio::runtime::Builder::new_current_thread()
                 .enable_io()
                 .enable_time()
                 .build()
                 .expect("Failed to create runtime");
 
-            rt.spawn(async {
+            rt.block_on(async {
                 // allow all CORS requests
                 let cors = CorsLayer::permissive();
 
@@ -68,10 +67,6 @@ pub fn init_api(
                 tracing::info!("Starting HTTP server on 0.0.0.0:3001");
                 axum::serve(listener, app).await.expect("Failed to serve");
             });
-
-            loop {
-                std::thread::park();
-            }
         })
         .map_err(|e| anyhow!("Failed to spawn API thread: {}", e))
 }
