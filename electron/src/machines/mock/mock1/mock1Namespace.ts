@@ -5,7 +5,6 @@
 
 import { StoreApi } from "zustand";
 import { create } from "zustand";
-import { produce } from "immer";
 import { z } from "zod";
 import {
   EventHandler,
@@ -111,21 +110,19 @@ export function mock1MessageHandler(
       if (eventName === "MockStateEvent") {
         const parsed = mockStateEventSchema.parse(event);
         console.log("MockStateEvent", parsed);
-        store.setState(
-          produce(store.getState(), (state) => {
-            state.mockState = parsed;
-          }),
-        );
+        store.setState((state) => ({
+          ...state,
+          mockState: parsed,
+        }));
       }
       // Mode state events (latest only)
       else if (eventName === "ModeStateEvent") {
         const parsed = modeStateEventSchema.parse(event);
         console.log("ModeStateEvent", parsed);
-        store.setState(
-          produce(store.getState(), (state) => {
-            state.modeState = parsed;
-          }),
-        );
+        store.setState((state) => ({
+          ...state,
+          modeState: parsed,
+        }));
       }
       // Metric events (keep for 1 hour)
       else if (eventName === "SineWaveEvent") {
@@ -133,11 +130,10 @@ export function mock1MessageHandler(
           value: event.data.amplitude ?? 0,
           timestamp: event.ts,
         };
-        store.setState(
-          produce(store.getState(), (state) => {
-            state.sineWave = addSineWave(state.sineWave, timeseriesValue);
-          }),
-        );
+        store.setState((state) => ({
+          ...state,
+          sineWave: addSineWave(state.sineWave, timeseriesValue),
+        }));
       } else {
         handleUnhandledEventError(eventName);
       }
