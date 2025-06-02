@@ -40,17 +40,20 @@ impl SpoolSpeedController {
     /// - `acceleration`: Acceleration
     /// - `deceleration`: Deceleration (preferably negative)
     pub fn new() -> Self {
-        let max_speed = AngularVelocity::new::<revolution_per_minute>(600.0);
+        let max_speed = AngularVelocity::new::<revolution_per_minute>(150.0);
         let max_angular_acceleration =
-            AngularAcceleration::new::<revolution_per_minute_per_second>(600.0);
-        let max_jerk = AngularJerk::new::<revolution_per_minute_per_second_squared>(600.0);
+            AngularAcceleration::new::<revolution_per_minute_per_second>(150.0);
+        let max_jerk = AngularJerk::new::<revolution_per_minute_per_second_squared>(150.0);
 
         Self {
             speed: AngularVelocity::ZERO,
             enabled: false,
-            acceleration_controller: AngularJerkSpeedController::new_simple(
+            acceleration_controller: AngularJerkSpeedController::new(
+                Some(AngularVelocity::ZERO),
                 Some(max_speed),
+                -max_angular_acceleration,
                 max_angular_acceleration,
+                -max_jerk,
                 max_jerk,
             ),
         }
