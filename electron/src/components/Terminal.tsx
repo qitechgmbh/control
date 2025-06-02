@@ -1,7 +1,6 @@
 import { cva } from "class-variance-authority";
 import React, { useEffect, useRef, useState } from "react";
 import { Icon } from "./Icon";
-import "./Terminal.css"; // Import custom styles for terminal
 
 type Props = {
   lines: string[];
@@ -46,7 +45,8 @@ const colorMap: Record<string, string> = {
 // Parse ANSI color codes in text
 const parseColorCodes = (text: string) => {
   // Split by ANSI escape sequences
-  const parts = text.split(/(\\x1b\[\d+m)/g);
+  // eslint-disable-next-line no-control-regex
+  const parts = text.split(/(\x1b\[\d+m)/g);
 
   let currentClass = "";
   const result: { text: string; className: string }[] = [];
@@ -54,7 +54,7 @@ const parseColorCodes = (text: string) => {
   for (let i = 0; i < parts.length; i++) {
     const part = parts[i];
 
-    if (part.startsWith("\\x1b[")) {
+    if (part.startsWith("\x1b[")) {
       // This is a color code
       const code = part.slice(2, -1); // Extract the number from \x1b[XXm
       currentClass = colorMap[code] || "";
@@ -69,7 +69,8 @@ const parseColorCodes = (text: string) => {
 
 // Function to strip ANSI color codes for plain text copy
 const stripColorCodes = (text: string): string => {
-  return text.replace(/\\x1b\[\d+m/g, "");
+  // eslint-disable-next-line no-control-regex
+  return text.replace(/\x1b\[\d+m/g, "");
 };
 
 export function Terminal({
@@ -158,6 +159,28 @@ export function Terminal({
           scrollbarColor: "rgb(82 82 91) transparent",
         }}
       >
+        <style>{`
+          Add commentMore actions
+          /* For Webkit browsers (Chrome, Safari) */
+          .scrollbar-thin::-webkit-scrollbar {
+            width: 6px;
+          }
+
+          .scrollbar-thin::-webkit-scrollbar-track {
+            background: transparent;
+          }
+
+          .scrollbar-thin::-webkit-scrollbar-thumb {
+            background-color: rgb(82 82 91);
+            border-radius: 3px;
+          }
+
+          /* For Firefox */
+          .scrollbar-thin {
+            scrollbar-width: thin;
+            scrollbar-color: rgb(82 82 91) transparent;
+          }
+        `}</style>
         {lines.map((line, index) => {
           const colorParts = parseColorCodes(line);
 
