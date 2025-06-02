@@ -1,7 +1,7 @@
 use super::handlers::machine_mutation::post_machine_mutate;
 use super::handlers::write_machine_device_identification::post_write_machine_device_identification;
 use crate::app_state::AppState;
-use crate::panic::send_panic;
+use crate::panic::{send_panic, PanicDetails};
 use crate::socketio::init::init_socketio;
 use anyhow::anyhow;
 use axum::routing::post;
@@ -13,13 +13,13 @@ use tower_http::trace::{DefaultMakeSpan, DefaultOnRequest, DefaultOnResponse, Tr
 use tracing::Level;
 
 pub fn init_api(
-    thread_panic_tx: Sender<&'static str>,
+    thread_panic_tx: Sender<PanicDetails>,
     app_state: Arc<AppState>,
 ) -> Result<JoinHandle<()>, anyhow::Error> {
     std::thread::Builder::new()
         .name("ApiThread".to_string())
         .spawn(|| {
-            send_panic("ApiThread", thread_panic_tx);
+            send_panic(thread_panic_tx);
 
             let rt = tokio::runtime::Builder::new_multi_thread()
                 .thread_name("tokio")

@@ -1,22 +1,22 @@
 use crate::app_state::AppState;
-use crate::panic::send_panic;
+use crate::panic::{send_panic, PanicDetails};
 use bitvec::prelude::*;
 use control_core::helpers::loop_trottle::LoopThrottle;
 use smol::channel::Sender;
 use std::sync::Arc;
 use std::time::Duration;
-use tracing::{debug_span, info_span, instrument, span, trace_span};
+use tracing::{info_span, instrument, trace_span};
 use tracing_futures::Instrument as _;
 
 pub fn init_loop(
-    thread_panic_tx: Sender<&'static str>,
+    thread_panic_tx: Sender<PanicDetails>,
     app_state: Arc<AppState>,
 ) -> Result<(), anyhow::Error> {
     // Start control loop
     std::thread::Builder::new()
         .name("LoopThread".to_owned())
         .spawn(move || {
-            send_panic("LoopThread", thread_panic_tx.clone());
+            send_panic(thread_panic_tx.clone());
             let rt = smol::LocalExecutor::new();
             let mut throttle = LoopThrottle::new(Duration::from_millis(1), 1, None);
             loop {
