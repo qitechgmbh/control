@@ -13,6 +13,7 @@ import {
   handleUnhandledEventError,
   NamespaceId,
   createNamespaceHookImplementation,
+  ThrottledStoreUpdater,
 } from "../../../client/socketioStore";
 import { MachineIdentificationUnique } from "@/machines/types";
 import {
@@ -96,19 +97,28 @@ export const createMock1NamespaceStore = (): StoreApi<Mock1NamespaceStore> =>
 /**
  * Creates a message handler for Mock1 namespace events with validation and appropriate caching strategies
  * @param store The store to update when messages are received
+ * @param throttledUpdater Throttled updater for batching updates at 60 FPS
  * @returns A message handler function
  */
 export function mock1MessageHandler(
   store: StoreApi<Mock1NamespaceStore>,
+  throttledUpdater: ThrottledStoreUpdater<Mock1NamespaceStore>,
 ): EventHandler {
   return (event: Event<any>) => {
     const eventName = event.name;
+
+    // Helper function to update store through buffer
+    const updateStore = (
+      updater: (state: Mock1NamespaceStore) => Mock1NamespaceStore,
+    ) => {
+      throttledUpdater.updateWith(updater);
+    };
 
     try {
       // Apply appropriate caching strategy based on event type
       if (eventName === "MockStateEvent") {
         console.log("MockStateEvent", event);
-        store.setState((state) => ({
+        updateStore((state) => ({
           ...state,
           mockState: event as MockStateEvent,
         }));
@@ -116,7 +126,7 @@ export function mock1MessageHandler(
       // Mode state events (latest only)
       else if (eventName === "ModeStateEvent") {
         console.log("ModeStateEvent", event);
-        store.setState((state) => ({
+        updateStore((state) => ({
           ...state,
           modeState: event as ModeStateEvent,
         }));
@@ -127,7 +137,7 @@ export function mock1MessageHandler(
           value: event.data.amplitude ?? 0,
           timestamp: event.ts,
         };
-        store.setState((state) => ({
+        updateStore((state) => ({
           ...state,
           sineWave: addSineWave(state.sineWave, timeseriesValue),
         }));

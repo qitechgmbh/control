@@ -13,6 +13,7 @@ import {
   handleUnhandledEventError,
   NamespaceId,
   createNamespaceHookImplementation,
+  ThrottledStoreUpdater,
 } from "../../../client/socketioStore";
 import { MachineIdentificationUnique } from "@/machines/types";
 import {
@@ -76,18 +77,27 @@ export const createLaser1NamespaceStore = (): StoreApi<Laser1NamespaceStore> =>
 /**
  * Creates a message handler for Laser1 namespace events with validation and appropriate caching strategies
  * @param store The store to update when messages are received
+ * @param throttledUpdater Throttled updater for batching updates at 60 FPS
  * @returns A message handler function
  */
 export function laser1MessageHandler(
   store: StoreApi<Laser1NamespaceStore>,
+  throttledUpdater: ThrottledStoreUpdater<Laser1NamespaceStore>,
 ): EventHandler {
   return (event: Event<any>) => {
     const eventName = event.name;
 
+    // Helper function to update store through buffer
+    const updateStore = (
+      updater: (state: Laser1NamespaceStore) => Laser1NamespaceStore,
+    ) => {
+      throttledUpdater.updateWith(updater);
+    };
+
     try {
       // Apply appropriate caching strategy based on event type
       if (eventName === "LaserStateEvent") {
-        store.setState((state) => ({
+        updateStore((state) => ({
           ...state,
           laserState: event as LaserStateEvent,
         }));
@@ -99,9 +109,9 @@ export function laser1MessageHandler(
           value: diameterEvent.data.diameter,
           timestamp: event.ts,
         };
-        store.setState((state) => ({
+        updateStore((state) => ({
           ...state,
-          dreDiameter: addDiameter(state.laserDiameter, timeseriesValue),
+          laserDiameter: addDiameter(state.laserDiameter, timeseriesValue),
         }));
       } else {
         handleUnhandledEventError(eventName);

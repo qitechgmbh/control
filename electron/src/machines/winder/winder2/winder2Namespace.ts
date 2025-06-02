@@ -13,6 +13,7 @@ import {
   handleUnhandledEventError,
   NamespaceId,
   createNamespaceHookImplementation,
+  ThrottledStoreUpdater,
 } from "../../../client/socketioStore";
 import { MachineIdentificationUnique } from "@/machines/types";
 import { useMemo } from "react";
@@ -246,44 +247,53 @@ export const createWinder2NamespaceStore =
 /**
  * Creates a message handler for Winder2 namespace events with validation and appropriate caching strategies
  * @param store The store to update when messages are received
+ * @param throttledUpdater Throttled updater for batching updates at 60 FPS
  * @returns A message handler function
  */
 export function winder2MessageHandler(
   store: StoreApi<Winder2NamespaceStore>,
+  throttledUpdater: ThrottledStoreUpdater<Winder2NamespaceStore>,
 ): EventHandler {
   return (event: Event<any>) => {
     const eventName = event.name;
+
+    // Helper function to update store through buffer
+    const updateStore = (
+      updater: (state: Winder2NamespaceStore) => Winder2NamespaceStore,
+    ) => {
+      throttledUpdater.updateWith(updater);
+    };
 
     try {
       // Apply appropriate caching strategy based on event type
       // State events (keep only the latest)
       if (eventName === "TraverseStateEvent") {
         console.log("TraverseStateEvent", event);
-        store.setState((state) => ({
+        updateStore((state) => ({
           ...state,
           traverseState: event as TraverseStateEvent,
         }));
       } else if (eventName === "PullerStateEvent") {
         console.log("PullerStateEvent", event);
-        store.setState((state) => ({
+        updateStore((state) => ({
           ...state,
           pullerState: event as PullerStateEvent,
         }));
       } else if (eventName === "AutostopStateEvent") {
         console.log("AutostopStateEvent", event);
-        store.setState((state) => ({
+        updateStore((state) => ({
           ...state,
           autostopState: event as AutostopStateEvent,
         }));
       } else if (eventName === "ModeStateEvent") {
         console.log("ModeStateEvent", event);
-        store.setState((state) => ({
+        updateStore((state) => ({
           ...state,
           modeState: event as ModeStateEvent,
         }));
       } else if (eventName === "TensionArmStateEvent") {
         console.log("TensionArmStateEvent", event);
-        store.setState((state) => ({
+        updateStore((state) => ({
           ...state,
           tensionArmState: event as TensionArmStateEvent,
         }));
@@ -295,7 +305,7 @@ export function winder2MessageHandler(
           value: positionEvent.data.position ?? 0,
           timestamp: event.ts,
         };
-        store.setState((state) => ({
+        updateStore((state) => ({
           ...state,
           traversePosition: addTraversePosition(
             state.traversePosition,
@@ -308,7 +318,7 @@ export function winder2MessageHandler(
           value: speedEvent.data.speed,
           timestamp: event.ts,
         };
-        store.setState((state) => ({
+        updateStore((state) => ({
           ...state,
           pullerSpeed: addPullerSpeed(state.pullerSpeed, timeseriesValue),
         }));
@@ -318,7 +328,7 @@ export function winder2MessageHandler(
           value: woundedEvent.data.wounded_length,
           timestamp: event.ts,
         };
-        store.setState((state) => ({
+        updateStore((state) => ({
           ...state,
           autostopWoundedLength: addAutostopWoundedLength(
             state.autostopWoundedLength,
@@ -331,7 +341,7 @@ export function winder2MessageHandler(
           value: rpmEvent.data.rpm,
           timestamp: event.ts,
         };
-        store.setState((state) => ({
+        updateStore((state) => ({
           ...state,
           spoolRpm: addSpoolRpm(state.spoolRpm, timeseriesValue),
         }));
@@ -341,7 +351,7 @@ export function winder2MessageHandler(
           value: angleEvent.data.degree,
           timestamp: event.ts,
         };
-        store.setState((state) => ({
+        updateStore((state) => ({
           ...state,
           tensionArmAngle: addTensionArmAngle(
             state.tensionArmAngle,
