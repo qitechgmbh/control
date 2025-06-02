@@ -22,6 +22,9 @@ use rest::init::init_api;
 use serial::init::init_serial;
 use smol::channel::unbounded;
 
+#[cfg(all(not(target_env = "msvc"), not(feature = "dhat-heap")))]
+use jemalloc_stats::init_jemalloc_stats;
+
 pub mod app_state;
 pub mod ethercat;
 pub mod logging;
@@ -34,9 +37,15 @@ pub mod rest;
 pub mod serial;
 pub mod socketio;
 
+#[cfg(all(not(target_env = "msvc"), not(feature = "dhat-heap")))]
+pub mod jemalloc_stats;
+
 fn main() {
     logging::init_tracing();
     tracing::info!("Tracing initialized successfully");
+
+    #[cfg(all(not(target_env = "msvc"), not(feature = "dhat-heap")))]
+    init_jemalloc_stats();
 
     // if the program panics we restart all of it
     match catch_unwind(|| main2()) {
