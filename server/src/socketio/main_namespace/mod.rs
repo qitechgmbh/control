@@ -34,14 +34,7 @@ where
     #[instrument(skip_all)]
     fn emit(&mut self, event: MainNamespaceEvents) {
         let buffer_fn = event.event_cache_fn();
-        let generic_event = match event.event_value() {
-            Ok(event) => event,
-            Err(err) => {
-                tracing::error!("Failed to event.event_value(): {:?}", err);
-                return;
-            }
-        };
-        let generic_event = Arc::new(generic_event);
+        let generic_event = Arc::new(event.event_value());
         self.namespace.emit(generic_event, &buffer_fn);
     }
 }
@@ -54,11 +47,11 @@ pub enum MainNamespaceEvents {
 }
 
 impl CacheableEvents<MainNamespaceEvents> for MainNamespaceEvents {
-    fn event_value(&self) -> Result<GenericEvent, serde_json::Error> {
+    fn event_value(&self) -> GenericEvent {
         match self {
-            MainNamespaceEvents::EthercatDevicesEvent(event) => event.clone().try_into(),
-            MainNamespaceEvents::EthercatInterfaceDiscoveryEvent(event) => event.clone().try_into(),
-            MainNamespaceEvents::MachinesEvent(event) => event.clone().try_into(),
+            MainNamespaceEvents::EthercatDevicesEvent(event) => event.into(),
+            MainNamespaceEvents::EthercatInterfaceDiscoveryEvent(event) => event.into(),
+            MainNamespaceEvents::MachinesEvent(event) => event.into(),
         }
     }
 

@@ -273,14 +273,7 @@ pub struct Winder2Namespace {
 impl NamespaceCacheingLogic<Winder2Events> for Winder2Namespace {
     #[instrument(skip_all)]
     fn emit(&mut self, events: Winder2Events) {
-        let event = match events.event_value() {
-            Ok(event) => event,
-            Err(err) => {
-                tracing::error!("Failed to emit: {:?}", err);
-                return;
-            }
-        };
-        let event = Arc::new(event);
+        let event = Arc::new(events.event_value());
         let buffer_fn = events.event_cache_fn();
         self.namespace.emit(event, &buffer_fn);
     }
@@ -295,18 +288,18 @@ impl Winder2Namespace {
 }
 
 impl CacheableEvents<Winder2Events> for Winder2Events {
-    fn event_value(&self) -> Result<GenericEvent, serde_json::Error> {
+    fn event_value(&self) -> GenericEvent {
         match self {
-            Winder2Events::TraversePosition(event) => event.try_into(),
-            Winder2Events::TraverseState(event) => event.try_into(),
-            Winder2Events::PullerSpeed(event) => event.try_into(),
-            Winder2Events::PullerState(event) => event.try_into(),
-            Winder2Events::AutostopWoundedlength(event) => event.try_into(),
-            Winder2Events::AutostopState(event) => event.try_into(),
-            Winder2Events::Mode(event) => event.try_into(),
-            Winder2Events::SpoolRpm(event) => event.try_into(),
-            Winder2Events::TensionArmAngleEvent(event) => event.try_into(),
-            Winder2Events::TensionArmStateEvent(event) => event.try_into(),
+            Winder2Events::TraversePosition(event) => event.into(),
+            Winder2Events::TraverseState(event) => event.into(),
+            Winder2Events::PullerSpeed(event) => event.into(),
+            Winder2Events::PullerState(event) => event.into(),
+            Winder2Events::AutostopWoundedlength(event) => event.into(),
+            Winder2Events::AutostopState(event) => event.into(),
+            Winder2Events::Mode(event) => event.into(),
+            Winder2Events::SpoolRpm(event) => event.into(),
+            Winder2Events::TensionArmAngleEvent(event) => event.into(),
+            Winder2Events::TensionArmStateEvent(event) => event.into(),
         }
     }
 

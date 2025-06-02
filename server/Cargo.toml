@@ -12,7 +12,7 @@ control_core = { path = "../control-core" }
 uom = { version = "0.36.0", default-features = false, features = ["f64"] }
 serde = "1.0.217"
 anyhow = "1.0.98"
-serde_json = "1.0.137"
+
 open = "5.3.2"
 bitvec = "1.0.1"
 lazy_static = "1.5.0"
@@ -26,7 +26,8 @@ thread-priority = "1.2.0"
 regex = "1.11.1"
 
 # web
-socketioxide = "0.17.1"
+serde_json = "1.0.140"
+socketioxide = { version = "0.17.1", features = ["msgpack"] }
 tower-http = { version = "0.6.6", features = ["cors", "trace", "fs"] }
 axum = { version = "0.8.4", features = ["macros"] }
 
