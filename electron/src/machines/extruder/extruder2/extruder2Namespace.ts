@@ -7,6 +7,7 @@ import {
   Event,
   NamespaceId,
   createNamespaceHookImplementation,
+  ThrottledStoreUpdater,
 } from "../../../client/socketioStore";
 import { MachineIdentificationUnique } from "@/machines/types";
 import {
@@ -75,9 +76,18 @@ const { initialTimeSeries: bar, insert: addBar } = createTimeSeries(
 
 export function extruder2MessageHandler(
   store: StoreApi<Extruder2NamespaceStore>,
+  throttledUpdater: ThrottledStoreUpdater<Extruder2NamespaceStore>,
 ): EventHandler {
   return (event: Event<any>) => {
     const eventName = event.name;
+
+    // Helper function to update store through buffer
+    const updateStore = (
+      updater: (state: Extruder2NamespaceStore) => Extruder2NamespaceStore,
+    ) => {
+      throttledUpdater.updateWith(updater);
+    };
+
     try {
       if (eventName == "ExtruderSettingsStateEvent") {
         store.setState(
@@ -91,12 +101,12 @@ export function extruder2MessageHandler(
       if (eventName == "InverterStatusEvent") {
         // TODO: Handle if needed
       } else if (eventName == "RotationStateEvent") {
-        store.setState((state) => ({
+        updateStore((state) => ({
           ...state,
           rotationState: event as InverterRotationEvent,
         }));
       } else if (eventName == "ModeStateEvent") {
-        store.setState((state) => ({
+        updateStore((state) => ({
           ...state,
           modeState: event as ModeStateEvent,
         }));
@@ -107,7 +117,7 @@ export function extruder2MessageHandler(
           timestamp: event.ts,
         };
 
-        store.setState((state) => ({
+        updateStore((state) => ({
           ...state,
           heatingFrontState: heatingEvent,
           frontTemperature: addFrontTemperature(
@@ -122,7 +132,7 @@ export function extruder2MessageHandler(
           timestamp: event.ts,
         };
 
-        store.setState((state) => ({
+        updateStore((state) => ({
           ...state,
           heatingNozzleState: heatingEvent,
           nozzleTemperature: addNozzleTemperature(
@@ -137,7 +147,7 @@ export function extruder2MessageHandler(
           timestamp: event.ts,
         };
 
-        store.setState((state) => ({
+        updateStore((state) => ({
           ...state,
           heatingBackState: heatingEvent,
           backTemperature: addBackTemperature(
@@ -152,7 +162,7 @@ export function extruder2MessageHandler(
           timestamp: event.ts,
         };
 
-        store.setState((state) => ({
+        updateStore((state) => ({
           ...state,
           heatingMiddleState: heatingEvent,
           middleTemperature: addMiddleTemperature(
@@ -161,7 +171,7 @@ export function extruder2MessageHandler(
           ),
         }));
       } else if (eventName == "RegulationStateEvent") {
-        store.setState((state) => ({
+        updateStore((state) => ({
           ...state,
           motorRegulationState: event as MotorRegulationStateEvent,
         }));
@@ -172,7 +182,7 @@ export function extruder2MessageHandler(
           timestamp: event.ts,
         };
 
-        store.setState((state) => ({
+        updateStore((state) => ({
           ...state,
           motorBarState: pressureEvent,
           bar: addBar(state.bar, timeseriesValue),
@@ -184,7 +194,7 @@ export function extruder2MessageHandler(
           timestamp: event.ts,
         };
 
-        store.setState((state) => ({
+        updateStore((state) => ({
           ...state,
           motorRpmState: screwEvent,
           rpm: addRpm(state.rpm, timeseriesValue),

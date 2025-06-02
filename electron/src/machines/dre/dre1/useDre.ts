@@ -6,7 +6,6 @@ import { z } from "zod";
 import { useDre1Namespace } from "./dre1Namespace";
 import { useEffect, useMemo } from "react";
 import { useStateOptimistic } from "@/lib/useStateOptimistic";
-import { FPS_60, useThrottle } from "@/lib/useThrottle";
 
 function useDre(machine_identification_unique: MachineIdentificationUnique) {
   // Write Path
@@ -100,11 +99,8 @@ function useDre(machine_identification_unique: MachineIdentificationUnique) {
     }
   }, [dreState]);
 
-  // throttle to 60fps
-  const dreDiameterThrottled = useThrottle(dreDiameter, FPS_60);
-
   return {
-    dreDiameter: dreDiameterThrottled,
+    dreDiameter,
     dreState,
     dreSetTargetDiameter,
     dreSetLowerTolerance,
