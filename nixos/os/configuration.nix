@@ -107,7 +107,41 @@
   # networking.proxy.noProxy = "127.0.0.1,localhost,internal.domain";
 
   # Enable networking
-  networking.networkmanager.enable = true;
+  networking.networkmanager = {
+    enable = true;
+    wifi = {
+      backend = "wpa_supplicant";
+      powersave = false;
+    };
+  };
+
+  hardware.bluetooth = {
+    enable = true;
+  };
+
+  # Reset radios only on new NixOS generations
+  systemd.services.reset-radios-on-rebuild = {
+    description = "Reset radios on new NixOS generation";
+    after = [ "NetworkManager.service" "bluetooth.service" ];
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = pkgs.writeShellScript "reset-radios-on-rebuild" ''
+        GENERATION_FILE="/var/lib/radio-states/last-generation"
+        CURRENT_GENERATION="$(readlink /run/current-system)"
+        
+        mkdir -p /var/lib/radio-states
+        
+        if [ ! -f "$GENERATION_FILE" ] || [ "$(cat "$GENERATION_FILE" 2>/dev/null)" != "$CURRENT_GENERATION" ]; then
+          # New generation - reset radios
+          ${pkgs.networkmanager}/bin/nmcli radio wifi off
+          ${pkgs.bluez}/bin/bluetoothctl power off
+          
+          echo "$CURRENT_GENERATION" > "$GENERATION_FILE"
+        fi
+      '';
+    };
+  };
 
   # Set your time zone.
   time.timeZone = "UTC";
