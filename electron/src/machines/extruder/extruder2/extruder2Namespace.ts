@@ -5,7 +5,6 @@ import {
   EventHandler,
   eventSchema,
   Event,
-  handleEventValidationError,
   NamespaceId,
   createNamespaceHookImplementation,
 } from "../../../client/socketioStore";
@@ -113,68 +112,68 @@ export function extruder2MessageHandler(
       } else if (eventName == "RotationStateEvent") {
         store.setState((state) => ({
           ...state,
-          rotationState: inverterRotationEventSchema.parse(event),
+          rotationState: event as InverterRotationEvent,
         }));
       } else if (eventName == "ModeStateEvent") {
         store.setState((state) => ({
           ...state,
-          modeState: modeStateEventSchema.parse(event),
+          modeState: event as ModeStateEvent,
         }));
       } else if (eventName == "FrontHeatingStateEvent") {
-        const parsed = heatingStateEventSchema.parse(event);
+        const heatingEvent = event as HeatingStateEvent;
         const timeseriesValue: TimeSeriesValue = {
-          value: parsed.data.temperature,
+          value: heatingEvent.data.temperature,
           timestamp: event.ts,
         };
 
         store.setState((state) => ({
           ...state,
-          heatingFrontState: parsed,
+          heatingFrontState: heatingEvent,
           frontTemperature: addFrontTemperature(
             state.frontTemperature,
             timeseriesValue,
           ),
         }));
       } else if (eventName == "NozzleHeatingStateEvent") {
-        const parsed = heatingStateEventSchema.parse(event);
+        const heatingEvent = event as HeatingStateEvent;
         const timeseriesValue: TimeSeriesValue = {
-          value: parsed.data.temperature,
+          value: heatingEvent.data.temperature,
           timestamp: event.ts,
         };
 
         store.setState((state) => ({
           ...state,
-          heatingNozzleState: parsed,
+          heatingNozzleState: heatingEvent,
           nozzleTemperature: addNozzleTemperature(
             state.nozzleTemperature,
             timeseriesValue,
           ),
         }));
       } else if (eventName == "BackHeatingStateEvent") {
-        const parsed = heatingStateEventSchema.parse(event);
+        const heatingEvent = event as HeatingStateEvent;
         const timeseriesValue: TimeSeriesValue = {
-          value: parsed.data.temperature,
+          value: heatingEvent.data.temperature,
           timestamp: event.ts,
         };
 
         store.setState((state) => ({
           ...state,
-          heatingBackState: parsed,
+          heatingBackState: heatingEvent,
           backTemperature: addBackTemperature(
             state.backTemperature,
             timeseriesValue,
           ),
         }));
       } else if (eventName == "MiddleHeatingStateEvent") {
-        const parsed = heatingStateEventSchema.parse(event);
+        const heatingEvent = event as HeatingStateEvent;
         const timeseriesValue: TimeSeriesValue = {
-          value: parsed.data.temperature,
+          value: heatingEvent.data.temperature,
           timestamp: event.ts,
         };
 
         store.setState((state) => ({
           ...state,
-          heatingMiddleState: parsed,
+          heatingMiddleState: heatingEvent,
           middleTemperature: addMiddleTemperature(
             state.middleTemperature,
             timeseriesValue,
@@ -227,40 +226,36 @@ export function extruder2MessageHandler(
       } else if (eventName == "RegulationStateEvent") {
         store.setState((state) => ({
           ...state,
-          motorRegulationState: motorRegulationEventSchema.parse(event),
+          motorRegulationState: event as MotorRegulationStateEvent,
         }));
       } else if (eventName == "PressureStateEvent") {
-        const parsed = motorPressureStateEventSchema.parse(event);
+        const pressureEvent = event as MotorPressureStateEvent;
         const timeseriesValue: TimeSeriesValue = {
-          value: parsed.data.bar,
+          value: pressureEvent.data.bar,
           timestamp: event.ts,
         };
 
         store.setState((state) => ({
           ...state,
-          motorBarState: parsed,
+          motorBarState: pressureEvent,
           bar: addBar(state.bar, timeseriesValue),
         }));
       } else if (eventName == "ScrewStateEvent") {
-        const parsed = motorScrewStateEventSchema.parse(event);
+        const screwEvent = event as MotorScrewStateEvent;
         const timeseriesValue: TimeSeriesValue = {
-          value: parsed.data.rpm,
+          value: screwEvent.data.rpm,
           timestamp: event.ts,
         };
 
         store.setState((state) => ({
           ...state,
-          motorRpmState: parsed,
+          motorRpmState: screwEvent,
           rpm: addRpm(state.rpm, timeseriesValue),
         }));
       }
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        handleEventValidationError(error, eventName);
-      } else {
-        console.error(`Unexpected error processing ${eventName} event:`, error);
-        throw error;
-      }
+      console.error(`Unexpected error processing ${eventName} event:`, error);
+      throw error;
     }
   };
 }
