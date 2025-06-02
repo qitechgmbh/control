@@ -109,33 +109,28 @@ export function mock1MessageHandler(
     try {
       // Apply appropriate caching strategy based on event type
       if (eventName === "MockStateEvent") {
+        const parsed = mockStateEventSchema.parse(event);
+        console.log("MockStateEvent", parsed);
         store.setState(
           produce(store.getState(), (state) => {
-            state.mockState = {
-              name: event.name,
-              data: mockStateEventDataSchema.parse(event.data),
-              ts: event.ts,
-            };
+            state.mockState = parsed;
           }),
         );
       }
       // Mode state events (latest only)
       else if (eventName === "ModeStateEvent") {
+        const parsed = modeStateEventSchema.parse(event);
+        console.log("ModeStateEvent", parsed);
         store.setState(
           produce(store.getState(), (state) => {
-            state.modeState = {
-              name: event.name,
-              data: modeStateEventDataSchema.parse(event.data),
-              ts: event.ts,
-            };
+            state.modeState = parsed;
           }),
         );
       }
       // Metric events (keep for 1 hour)
       else if (eventName === "SineWaveEvent") {
-        const parsed = sineWaveEventSchema.parse(event);
         const timeseriesValue: TimeSeriesValue = {
-          value: parsed.data.amplitude,
+          value: event.data.amplitude ?? 0,
           timestamp: event.ts,
         };
         store.setState(
