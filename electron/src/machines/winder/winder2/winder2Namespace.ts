@@ -10,7 +10,6 @@ import {
   EventHandler,
   eventSchema,
   Event,
-  handleEventValidationError,
   handleUnhandledEventError,
   NamespaceId,
   createNamespaceHookImplementation,
@@ -161,25 +160,21 @@ export const tensionArmStateEventSchema = eventSchema(
 
 // ========== Type Inferences ==========
 
-export type TraversePositionEvent = z.infer<
-  typeof traversePositionEventDataSchema
->;
+export type TraversePositionEvent = z.infer<typeof traversePositionEventSchema>;
 export type TraverseStateEvent = z.infer<typeof traverseStateEventSchema>;
 export type PullerStateEvent = z.infer<typeof pullerStateEventSchema>;
 export type PullerSpeedEvent = z.infer<typeof pullerSpeedEventSchema>;
 export type AutostopWoundedLengthEvent = z.infer<
-  typeof autostopWoundedLengthEventDataSchema
+  typeof autostopWoundedLengthEventSchema
 >;
 export type AutostopTransition = z.infer<typeof autostopTransitionSchema>;
 export type AutostopStateEvent = z.infer<typeof autostopStateEventSchema>;
 export type Mode = z.infer<typeof modeSchema>;
 export type ModeStateEvent = z.infer<typeof modeStateEventSchema>;
 export type SpoolStateEvent = z.infer<typeof spoolStateEventSchema>;
-export type MeasurementsWindingRpmEvent = z.infer<
-  typeof spoolRpmEventDataSchema
->;
+export type MeasurementsWindingRpmEvent = z.infer<typeof spoolRpmEventSchema>;
 export type MeasurementsTensionArmEvent = z.infer<
-  typeof tensionArmAngleEventDataSchema
+  typeof tensionArmAngleEventSchema
 >;
 export type TensionArmStateEvent = z.infer<typeof tensionArmStateEventSchema>;
 
@@ -263,46 +258,41 @@ export function winder2MessageHandler(
       // Apply appropriate caching strategy based on event type
       // State events (keep only the latest)
       if (eventName === "TraverseStateEvent") {
-        const parsed = traverseStateEventSchema.parse(event);
-        console.log("TraverseStateEvent", parsed);
+        console.log("TraverseStateEvent", event);
         store.setState((state) => ({
           ...state,
-          traverseState: parsed,
+          traverseState: event as TraverseStateEvent,
         }));
       } else if (eventName === "PullerStateEvent") {
-        const parsed = pullerStateEventSchema.parse(event);
-        console.log("PullerStateEvent", parsed);
+        console.log("PullerStateEvent", event);
         store.setState((state) => ({
           ...state,
-          pullerState: parsed,
+          pullerState: event as PullerStateEvent,
         }));
       } else if (eventName === "AutostopStateEvent") {
-        const parsed = autostopStateEventSchema.parse(event);
-        console.log("AutostopStateEvent", parsed);
+        console.log("AutostopStateEvent", event);
         store.setState((state) => ({
           ...state,
-          autostopState: parsed,
+          autostopState: event as AutostopStateEvent,
         }));
       } else if (eventName === "ModeStateEvent") {
-        const parsed = modeStateEventSchema.parse(event);
-        console.log("ModeStateEvent", parsed);
+        console.log("ModeStateEvent", event);
         store.setState((state) => ({
           ...state,
-          modeState: parsed,
+          modeState: event as ModeStateEvent,
         }));
       } else if (eventName === "TensionArmStateEvent") {
-        const parsed = tensionArmStateEventSchema.parse(event);
-        console.log("TensionArmStateEvent", parsed);
+        console.log("TensionArmStateEvent", event);
         store.setState((state) => ({
           ...state,
-          tensionArmState: parsed,
+          tensionArmState: event as TensionArmStateEvent,
         }));
       }
       // Metric events (keep for 1 hour)
       else if (eventName === "TraversePositionEvent") {
-        const parsed = traversePositionEventSchema.parse(event);
+        const positionEvent = event as TraversePositionEvent;
         const timeseriesValue: TimeSeriesValue = {
-          value: parsed.data.position ?? 0,
+          value: positionEvent.data.position ?? 0,
           timestamp: event.ts,
         };
         store.setState((state) => ({
@@ -313,9 +303,9 @@ export function winder2MessageHandler(
           ),
         }));
       } else if (eventName === "PullerSpeedEvent") {
-        const parsed = pullerSpeedEventSchema.parse(event);
+        const speedEvent = event as PullerSpeedEvent;
         const timeseriesValue: TimeSeriesValue = {
-          value: parsed.data.speed,
+          value: speedEvent.data.speed,
           timestamp: event.ts,
         };
         store.setState((state) => ({
@@ -323,9 +313,9 @@ export function winder2MessageHandler(
           pullerSpeed: addPullerSpeed(state.pullerSpeed, timeseriesValue),
         }));
       } else if (eventName === "AutostopWoundedLengthEvent") {
-        const parsed = autostopWoundedLengthEventSchema.parse(event);
+        const woundedEvent = event as AutostopWoundedLengthEvent;
         const timeseriesValue: TimeSeriesValue = {
-          value: parsed.data.wounded_length,
+          value: woundedEvent.data.wounded_length,
           timestamp: event.ts,
         };
         store.setState((state) => ({
@@ -336,9 +326,9 @@ export function winder2MessageHandler(
           ),
         }));
       } else if (eventName === "SpoolRpmEvent") {
-        const parsed = spoolRpmEventSchema.parse(event);
+        const rpmEvent = event as MeasurementsWindingRpmEvent;
         const timeseriesValue: TimeSeriesValue = {
-          value: parsed.data.rpm,
+          value: rpmEvent.data.rpm,
           timestamp: event.ts,
         };
         store.setState((state) => ({
@@ -346,9 +336,9 @@ export function winder2MessageHandler(
           spoolRpm: addSpoolRpm(state.spoolRpm, timeseriesValue),
         }));
       } else if (eventName === "TensionArmAngleEvent") {
-        const parsed = tensionArmAngleEventSchema.parse(event);
+        const angleEvent = event as MeasurementsTensionArmEvent;
         const timeseriesValue: TimeSeriesValue = {
-          value: parsed.data.degree,
+          value: angleEvent.data.degree,
           timestamp: event.ts,
         };
         store.setState((state) => ({
@@ -362,12 +352,8 @@ export function winder2MessageHandler(
         handleUnhandledEventError(eventName);
       }
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        handleEventValidationError(error, eventName);
-      } else {
-        console.error(`Unexpected error processing ${eventName} event:`, error);
-        throw error;
-      }
+      console.error(`Unexpected error processing ${eventName} event:`, error);
+      throw error;
     }
   };
 }

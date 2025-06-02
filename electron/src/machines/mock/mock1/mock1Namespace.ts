@@ -10,7 +10,6 @@ import {
   EventHandler,
   eventSchema,
   Event,
-  handleEventValidationError,
   handleUnhandledEventError,
   NamespaceId,
   createNamespaceHookImplementation,
@@ -108,20 +107,18 @@ export function mock1MessageHandler(
     try {
       // Apply appropriate caching strategy based on event type
       if (eventName === "MockStateEvent") {
-        const parsed = mockStateEventSchema.parse(event);
-        console.log("MockStateEvent", parsed);
+        console.log("MockStateEvent", event);
         store.setState((state) => ({
           ...state,
-          mockState: parsed,
+          mockState: event as MockStateEvent,
         }));
       }
       // Mode state events (latest only)
       else if (eventName === "ModeStateEvent") {
-        const parsed = modeStateEventSchema.parse(event);
-        console.log("ModeStateEvent", parsed);
+        console.log("ModeStateEvent", event);
         store.setState((state) => ({
           ...state,
-          modeState: parsed,
+          modeState: event as ModeStateEvent,
         }));
       }
       // Metric events (keep for 1 hour)
@@ -138,12 +135,8 @@ export function mock1MessageHandler(
         handleUnhandledEventError(eventName);
       }
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        handleEventValidationError(error, eventName);
-      } else {
-        console.error(`Unexpected error processing ${eventName} event:`, error);
-        throw error;
-      }
+      console.error(`Unexpected error processing ${eventName} event:`, error);
+      throw error;
     }
   };
 }
