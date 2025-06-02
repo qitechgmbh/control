@@ -11,6 +11,8 @@ use control_core::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use smol::channel::Sender;
+use socketioxide::extract::SocketRef;
 use std::{sync::Arc, time::Duration};
 use tracing::instrument;
 
@@ -43,11 +45,15 @@ pub enum LaserEvents {
 }
 
 #[derive(Debug)]
-pub struct LaserMachineNamespace(Namespace);
+pub struct LaserMachineNamespace {
+    pub namespace: Namespace,
+}
 
 impl LaserMachineNamespace {
-    pub fn new() -> Self {
-        Self(Namespace::new())
+    pub fn new(socket_queue_tx: Sender<(SocketRef, Arc<GenericEvent>)>) -> Self {
+        Self {
+            namespace: Namespace::new(socket_queue_tx),
+        }
     }
 }
 
@@ -82,7 +88,7 @@ enum Mutation {
 
 impl NamespaceCacheingLogic<LaserEvents> for LaserMachineNamespace {
     #[instrument(skip_all)]
-    fn emit_cached(&mut self, events: LaserEvents) {
+    fn emit(&mut self, events: LaserEvents) {
         let event = match events.event_value() {
             Ok(event) => event,
             Err(err) => {
@@ -92,7 +98,7 @@ impl NamespaceCacheingLogic<LaserEvents> for LaserMachineNamespace {
         };
         let event = Arc::new(event);
         let buffer_fn = events.event_cache_fn();
-        self.0.emit_cached(event, &buffer_fn);
+        self.namespace.emit(event, &buffer_fn);
     }
 }
 
@@ -114,6 +120,6 @@ impl MachineApi for LaserMachine {
     }
 
     fn api_event_namespace(&mut self) -> &mut Namespace {
-        &mut self.namespace.0
+        &mut self.namespace.namespace
     }
 }

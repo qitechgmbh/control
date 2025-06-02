@@ -1,4 +1,3 @@
-use std::sync::Arc;
 use super::MockMachine;
 use control_core::{
     machines::api::MachineApi,
@@ -12,7 +11,9 @@ use control_core::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::sync::Arc;
+use smol::channel::Sender;
+use socketioxide::extract::SocketRef;
+use std::{sync::Arc, time::Duration};
 use tracing::instrument;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -61,11 +62,15 @@ pub enum MockEvents {
 }
 
 #[derive(Debug)]
-pub struct MockMachineNamespace(Namespace);
+pub struct MockMachineNamespace {
+    pub namespace: Namespace,
+}
 
 impl MockMachineNamespace {
-    pub fn new() -> Self {
-        Self(Namespace::new())
+    pub fn new(socket_queue_tx: Sender<(SocketRef, Arc<GenericEvent>)>) -> Self {
+        Self {
+            namespace: Namespace::new(socket_queue_tx),
+        }
     }
 }
 
@@ -100,7 +105,7 @@ enum Mutation {
 
 impl NamespaceCacheingLogic<MockEvents> for MockMachineNamespace {
     #[instrument(skip_all)]
-    fn emit_cached(&mut self, events: MockEvents) {
+    fn emit(&mut self, events: MockEvents) {
         let event = match events.event_value() {
             Ok(event) => event,
             Err(err) => {
@@ -110,7 +115,7 @@ impl NamespaceCacheingLogic<MockEvents> for MockMachineNamespace {
         };
         let event = Arc::new(event);
         let buffer_fn = events.event_cache_fn();
-        self.0.emit_cached(event, &buffer_fn);
+        self.namespace.emit(event, &buffer_fn);
     }
 }
 
@@ -129,6 +134,6 @@ impl MachineApi for MockMachine {
     }
 
     fn api_event_namespace(&mut self) -> &mut Namespace {
-        &mut self.namespace.0
+        &mut self.namespace.namespace
     }
 }

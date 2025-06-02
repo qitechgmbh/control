@@ -25,6 +25,7 @@ use serial::init::init_serial;
 use jemalloc_stats::init_jemalloc_stats;
 
 use crate::panic::init_panic;
+use crate::socketio::queue::init_socketio_queue;
 
 pub mod app_state;
 pub mod ethercat;
