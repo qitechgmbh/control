@@ -5,7 +5,7 @@ use crate::app_state::AppState;
 use control_core::socketio::namespace_id::NamespaceId;
 use socketioxide::extract::SocketRef;
 use socketioxide::layer::SocketIoLayer;
-use tracing::{info_span, span};
+use tracing::info_span;
 use tracing_futures::Instrument;
 
 pub async fn init_socketio(app_state: &Arc<AppState>) -> SocketIoLayer {

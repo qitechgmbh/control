@@ -13,7 +13,9 @@ use app_state::AppState;
 use control_core::helpers::loop_trottle::LoopThrottle;
 #[cfg(feature = "mock-machine")]
 use mock::init::init_mock;
+use panic::PanicDetails;
 use std::{panic::catch_unwind, process::exit, sync::Arc, time::Duration};
+use tracing::error;
 
 use ethercat::init::init_ethercat;
 use r#loop::init_loop;
@@ -50,13 +52,11 @@ fn main() {
     // if the program panics we restart all of it
     match catch_unwind(|| main2()) {
         Ok(_) => {
-            tracing::info!("Program ended normally");
-            #[cfg(feature = "tracing-otel")]
+            tracing::info!("Exiting program with code 0");
             exit(0);
         }
         Err(err) => {
-            tracing::error!("Program panicked: {:?}", err);
-            #[cfg(feature = "tracing-otel")]
+            tracing::error!("Exiting program with code 1 due to panic: {:?}", err);
             exit(1);
         }
     }
@@ -65,7 +65,7 @@ fn main() {
 fn main2() {
     let app_state = Arc::new(AppState::new());
 
-    let (thread_panic_tx, thread_panic_rx) = unbounded::<&'static str>();
+    let (thread_panic_tx, thread_panic_rx) = unbounded::<PanicDetails>();
 
     init_api(thread_panic_tx.clone(), app_state.clone()).expect("Failed to initialize API");
     #[cfg(not(feature = "mock-machine"))]
@@ -107,7 +107,7 @@ fn main2() {
 
             match thread_panic_rx.try_recv() {
                 Ok(panic_details) => {
-                    ::tracing::error!("Thread panicked: {:?}", panic_details);
+                    error!("{}", panic_details);
                     exit(1);
                 }
                 Err(_) => {}

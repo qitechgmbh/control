@@ -1,6 +1,7 @@
 use super::setup::setup_loop;
 use crate::{
     app_state::AppState,
+    panic::PanicDetails,
     socketio::main_namespace::{
         MainNamespaceEvents, ethercat_interface_discovery_event::EthercatInterfaceDiscoveryEvent,
     },
@@ -13,7 +14,7 @@ use smol::channel::Sender;
 use std::sync::Arc;
 
 pub fn init_ethercat(
-    thread_panic_tx: Sender<&'static str>,
+    thread_panic_tx: Sender<PanicDetails>,
     app_state: Arc<AppState>,
 ) -> Result<(), anyhow::Error> {
     // Notify client via socketio

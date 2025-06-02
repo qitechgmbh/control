@@ -129,7 +129,7 @@ impl<'serialdeviceregistry> SerialDetection<'serialdeviceregistry> {
             let device_result = self.serial_device_registry.new_serial_device(
                 &SerialDeviceNewParams {
                     path: added.0.clone(),
-                    device_thread_panix_tx: self.device_removal_signal_tx.clone(),
+                    device_thread_panic_tx: self.device_removal_signal_tx.clone(),
                 },
                 &serial_device_identification,
             );

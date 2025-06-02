@@ -22,6 +22,7 @@ dhat = { version = "0.3.3", optional = true }
 smol = "2.0.2"
 tokio = { version = "1.44.2", features = ["rt-multi-thread"] }
 thread-priority = "1.2.0"
+regex = "1.11.1"
 
 # web
 socketioxide = "0.17.1"
