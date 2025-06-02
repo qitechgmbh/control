@@ -5,7 +5,6 @@
 
 import { StoreApi } from "zustand";
 import { create } from "zustand";
-import { produce } from "immer";
 import { z } from "zod";
 import {
   EventHandler,
@@ -89,15 +88,14 @@ export function dre1MessageHandler(
     try {
       // Apply appropriate caching strategy based on event type
       if (eventName === "DreStateEvent") {
-        store.setState(
-          produce(store.getState(), (state) => {
-            state.dreState = {
-              name: event.name,
-              data: dreStateEventDataSchema.parse(event.data),
-              ts: event.ts,
-            };
-          }),
-        );
+        store.setState((state) => ({
+          ...state,
+          dreState: {
+            name: event.name,
+            data: dreStateEventDataSchema.parse(event.data),
+            ts: event.ts,
+          },
+        }));
       }
       // Metric events (keep for 1 hour)
       else if (eventName === "DiameterEvent") {
@@ -106,11 +104,10 @@ export function dre1MessageHandler(
           value: parsed.data.diameter,
           timestamp: event.ts,
         };
-        store.setState(
-          produce(store.getState(), (state) => {
-            state.dreDiameter = addDiameter(state.dreDiameter, timeseriesValue);
-          }),
-        );
+        store.setState((state) => ({
+          ...state,
+          dreDiameter: addDiameter(state.dreDiameter, timeseriesValue),
+        }));
       } else {
         handleUnhandledEventError(eventName);
       }
