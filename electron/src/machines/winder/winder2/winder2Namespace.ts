@@ -5,7 +5,6 @@
 
 import { StoreApi } from "zustand";
 import { create } from "zustand";
-import { produce } from "immer";
 import { z } from "zod";
 import {
   EventHandler,
@@ -266,43 +265,38 @@ export function winder2MessageHandler(
       if (eventName === "TraverseStateEvent") {
         const parsed = traverseStateEventSchema.parse(event);
         console.log("TraverseStateEvent", parsed);
-        store.setState(
-          produce(store.getState(), (state) => {
-            state.traverseState = parsed;
-          }),
-        );
+        store.setState((state) => ({
+          ...state,
+          traverseState: parsed,
+        }));
       } else if (eventName === "PullerStateEvent") {
         const parsed = pullerStateEventSchema.parse(event);
         console.log("PullerStateEvent", parsed);
-        store.setState(
-          produce(store.getState(), (state) => {
-            state.pullerState = parsed;
-          }),
-        );
+        store.setState((state) => ({
+          ...state,
+          pullerState: parsed,
+        }));
       } else if (eventName === "AutostopStateEvent") {
         const parsed = autostopStateEventSchema.parse(event);
         console.log("AutostopStateEvent", parsed);
-        store.setState(
-          produce(store.getState(), (state) => {
-            state.autostopState = parsed;
-          }),
-        );
+        store.setState((state) => ({
+          ...state,
+          autostopState: parsed,
+        }));
       } else if (eventName === "ModeStateEvent") {
         const parsed = modeStateEventSchema.parse(event);
         console.log("ModeStateEvent", parsed);
-        store.setState(
-          produce(store.getState(), (state) => {
-            state.modeState = parsed;
-          }),
-        );
+        store.setState((state) => ({
+          ...state,
+          modeState: parsed,
+        }));
       } else if (eventName === "TensionArmStateEvent") {
         const parsed = tensionArmStateEventSchema.parse(event);
         console.log("TensionArmStateEvent", parsed);
-        store.setState(
-          produce(store.getState(), (state) => {
-            state.tensionArmState = parsed;
-          }),
-        );
+        store.setState((state) => ({
+          ...state,
+          tensionArmState: parsed,
+        }));
       }
       // Metric events (keep for 1 hour)
       else if (eventName === "TraversePositionEvent") {
@@ -311,67 +305,59 @@ export function winder2MessageHandler(
           value: parsed.data.position ?? 0,
           timestamp: event.ts,
         };
-        store.setState(
-          produce(store.getState(), (state) => {
-            state.traversePosition = addTraversePosition(
-              state.traversePosition,
-              timeseriesValue,
-            );
-          }),
-        );
+        store.setState((state) => ({
+          ...state,
+          traversePosition: addTraversePosition(
+            state.traversePosition,
+            timeseriesValue,
+          ),
+        }));
       } else if (eventName === "PullerSpeedEvent") {
         const parsed = pullerSpeedEventSchema.parse(event);
         const timeseriesValue: TimeSeriesValue = {
           value: parsed.data.speed,
           timestamp: event.ts,
         };
-        store.setState(
-          produce(store.getState(), (state) => {
-            state.pullerSpeed = addPullerSpeed(
-              state.pullerSpeed,
-              timeseriesValue,
-            );
-          }),
-        );
+        store.setState((state) => ({
+          ...state,
+          pullerSpeed: addPullerSpeed(state.pullerSpeed, timeseriesValue),
+        }));
       } else if (eventName === "AutostopWoundedLengthEvent") {
         const parsed = autostopWoundedLengthEventSchema.parse(event);
         const timeseriesValue: TimeSeriesValue = {
           value: parsed.data.wounded_length,
           timestamp: event.ts,
         };
-        store.setState(
-          produce(store.getState(), (state) => {
-            state.autostopWoundedLength = addAutostopWoundedLength(
-              state.autostopWoundedLength,
-              timeseriesValue,
-            );
-          }),
-        );
+        store.setState((state) => ({
+          ...state,
+          autostopWoundedLength: addAutostopWoundedLength(
+            state.autostopWoundedLength,
+            timeseriesValue,
+          ),
+        }));
       } else if (eventName === "SpoolRpmEvent") {
         const parsed = spoolRpmEventSchema.parse(event);
         const timeseriesValue: TimeSeriesValue = {
           value: parsed.data.rpm,
           timestamp: event.ts,
         };
-        store.setState(
-          produce(store.getState(), (state) => {
-            state.spoolRpm = addSpoolRpm(state.spoolRpm, timeseriesValue);
-          }),
-        );
+        store.setState((state) => ({
+          ...state,
+          spoolRpm: addSpoolRpm(state.spoolRpm, timeseriesValue),
+        }));
       } else if (eventName === "TensionArmAngleEvent") {
         const parsed = tensionArmAngleEventSchema.parse(event);
         const timeseriesValue: TimeSeriesValue = {
           value: parsed.data.degree,
           timestamp: event.ts,
         };
-        store.setState(
-          produce(store.getState(), (state) => {
-            state.tensionArmAngle = addTensionArmAngle(
-              state.tensionArmAngle,
-              timeseriesValue,
-            );
-          }),
-        );
+        store.setState((state) => ({
+          ...state,
+          tensionArmAngle: addTensionArmAngle(
+            state.tensionArmAngle,
+            timeseriesValue,
+          ),
+        }));
       } else {
         handleUnhandledEventError(eventName);
       }
