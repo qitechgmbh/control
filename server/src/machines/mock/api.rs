@@ -5,7 +5,7 @@ use control_core::{
         event::{Event, GenericEvent},
         namespace::{
             CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_duration,
-            cache_one_event,
+            cache_n_events, cache_one_event,
         },
     },
 };
@@ -84,7 +84,7 @@ impl CacheableEvents<MockEvents> for MockEvents {
     }
 
     fn event_cache_fn(&self) -> CacheFn {
-        let cache_one_hour = cache_duration(Duration::from_secs(60 * 60), Duration::from_secs(1));
+        let cache_one_hour = cache_n_events(10000);
         let cache_one = cache_one_event();
 
         match self {
