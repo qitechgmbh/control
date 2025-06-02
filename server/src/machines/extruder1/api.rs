@@ -219,14 +219,7 @@ pub struct ExtruderV2Namespace {
 impl NamespaceCacheingLogic<ExtruderV2Events> for ExtruderV2Namespace {
     #[instrument(skip_all)]
     fn emit(&mut self, events: ExtruderV2Events) {
-        let event = match events.event_value() {
-            Ok(event) => event,
-            Err(err) => {
-                tracing::error!("Failed to emit: {:?}", err);
-                return;
-            }
-        };
-        let event = Arc::new(event);
+        let event = Arc::new(events.event_value());
         let buffer_fn = events.event_cache_fn();
         self.namespace.emit(event, &buffer_fn);
     }
@@ -241,16 +234,16 @@ impl ExtruderV2Namespace {
 }
 
 impl CacheableEvents<ExtruderV2Events> for ExtruderV2Events {
-    fn event_value(&self) -> Result<GenericEvent, serde_json::Error> {
+    fn event_value(&self) -> GenericEvent {
         match self {
-            ExtruderV2Events::RotationStateEvent(event) => event.try_into(),
-            ExtruderV2Events::ModeEvent(event) => event.try_into(),
-            ExtruderV2Events::RegulationStateEvent(event) => event.try_into(),
-            ExtruderV2Events::PressureStateEvent(event) => event.try_into(),
-            ExtruderV2Events::ScrewStateEvent(event) => event.try_into(),
-            ExtruderV2Events::HeatingStateEvent(event) => event.try_into(),
-            ExtruderV2Events::ExtruderSettingsStateEvent(event) => event.try_into(),
-            ExtruderV2Events::HeatingPowerEvent(event) => event.try_into(),
+            ExtruderV2Events::RotationStateEvent(event) => event.into(),
+            ExtruderV2Events::ModeEvent(event) => event.into(),
+            ExtruderV2Events::RegulationStateEvent(event) => event.into(),
+            ExtruderV2Events::PressureStateEvent(event) => event.into(),
+            ExtruderV2Events::ScrewStateEvent(event) => event.into(),
+            ExtruderV2Events::HeatingStateEvent(event) => event.into(),
+            ExtruderV2Events::ExtruderSettingsStateEvent(event) => event.into(),
+            ExtruderV2Events::HeatingPowerEvent(event) => event.into(),
         }
     }
 

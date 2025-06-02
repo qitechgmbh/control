@@ -19,5 +19,6 @@ bitvec = { version = "1.0.1", features = ["alloc"] }
 crc = "3.3.0"
 serial = "0.4.0"
 tracing = "0.1.41"
+erased-serde = "0.4.6"
 [dev-dependencies]
 approx = "0.5.1"
