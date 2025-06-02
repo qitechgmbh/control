@@ -97,7 +97,7 @@ fn setup_connection(socket: SocketRef, namespace_id: NamespaceId, app_state: Arc
         "Connecting socket to namespace"
     );
 
-    smol::spawn(
+    smol::block_on(
         async move {
             let mut socketio_namespaces_guard =
                 app_state_clone.socketio_setup.namespaces.write().await;
@@ -129,8 +129,7 @@ fn setup_connection(socket: SocketRef, namespace_id: NamespaceId, app_state: Arc
                 .await;
         }
         .instrument(span),
-    )
-    .detach();
+    );
 
     tracing::info!(
         "Socket connected to namespace socket={:?} namespace={}",
