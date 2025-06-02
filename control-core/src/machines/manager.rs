@@ -1,4 +1,8 @@
-use smol::lock::{Mutex, RwLock};
+use smol::{
+    channel::Sender,
+    lock::{Mutex, RwLock},
+};
+use socketioxide::extract::SocketRef;
 
 use crate::{
     machines::{
@@ -6,6 +10,7 @@ use crate::{
         new::{MachineNewHardware, MachineNewHardwareEthercat, MachineNewParams},
     },
     serial::SerialDevice,
+    socketio::event::GenericEvent,
 };
 use std::{collections::HashMap, sync::Arc};
 
@@ -36,6 +41,7 @@ impl MachineManager {
         device_identifications: &Vec<DeviceIdentification>,
         machine_registry: &MachineRegistry,
         hardware: &MachineNewHardwareEthercat,
+        socket_queue_tx: Sender<(SocketRef, Arc<GenericEvent>)>,
     ) {
         // empty ethercat machines
         self.ethercat_machines.clear();
@@ -62,6 +68,7 @@ impl MachineManager {
             let new_machine = machine_registry.new_machine(&MachineNewParams {
                 device_group,
                 hardware: &machine_new_hardware,
+                socket_queue_tx: socket_queue_tx.clone(),
             });
 
             // insert the machine into the ethercat machines map
@@ -86,6 +93,7 @@ impl MachineManager {
         device_identification: &DeviceIdentification,
         device: Arc<RwLock<dyn SerialDevice>>,
         machine_registry: &MachineRegistry,
+        socket_queue_tx: Sender<(SocketRef, Arc<GenericEvent>)>,
     ) {
         let hardware = MachineNewHardwareSerial { device };
 
@@ -98,6 +106,7 @@ impl MachineManager {
         let new_machine = machine_registry.new_machine(&MachineNewParams {
             device_group: &vec![device_identification_identified.clone()],
             hardware: &MachineNewHardware::Serial(&hardware),
+            socket_queue_tx,
         });
 
         tracing::info!("Adding serial machine {:?}", new_machine);
