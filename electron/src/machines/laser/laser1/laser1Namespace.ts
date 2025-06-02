@@ -5,7 +5,6 @@
 
 import { StoreApi } from "zustand";
 import { create } from "zustand";
-import { produce } from "immer";
 import { z } from "zod";
 import {
   EventHandler,
@@ -89,15 +88,14 @@ export function laser1MessageHandler(
     try {
       // Apply appropriate caching strategy based on event type
       if (eventName === "LaserStateEvent") {
-        store.setState(
-          produce(store.getState(), (state) => {
-            state.laserState = {
-              name: event.name,
-              data: laserStateEventDataSchema.parse(event.data),
-              ts: event.ts,
-            };
-          }),
-        );
+        store.setState((state) => ({
+          ...state,
+          dreState: {
+            name: event.name,
+            data: laserStateEventDataSchema.parse(event.data),
+            ts: event.ts,
+          },
+        }));
       }
       // Metric events (keep for 1 hour)
       else if (eventName === "DiameterEvent") {
@@ -106,14 +104,10 @@ export function laser1MessageHandler(
           value: parsed.data.diameter,
           timestamp: event.ts,
         };
-        store.setState(
-          produce(store.getState(), (state) => {
-            state.laserDiameter = addDiameter(
-              state.laserDiameter,
-              timeseriesValue,
-            );
-          }),
-        );
+        store.setState((state) => ({
+          ...state,
+          dreDiameter: addDiameter(state.laserDiameter, timeseriesValue),
+        }));
       } else {
         handleUnhandledEventError(eventName);
       }
