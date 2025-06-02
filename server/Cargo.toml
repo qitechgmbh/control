@@ -24,7 +24,7 @@ tokio = { version = "1.44.2", features = ["rt-multi-thread"] }
 thread-priority = "1.2.0"
 
 # web
-socketioxide = "0.17.0"
+socketioxide = "0.17.1"
 tower-http = { version = "0.6.2", features = ["cors", "trace", "fs"] }
 axum = { version = "0.8.4", features = ["macros"] }
 
