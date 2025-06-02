@@ -2,6 +2,7 @@ import { useEffect, useMemo } from "react";
 import { create, StoreApi } from "zustand";
 import { produce } from "immer";
 import { io, Socket } from "socket.io-client";
+import MsgPackParser from "socket.io-msgpack-parser";
 import { useSyncExternalStore } from "react";
 import { z } from "zod";
 import { toastError, toastZodError } from "@/components/Toast";
@@ -162,7 +163,10 @@ const useSocketioStore = create<SocketioStore>()((set, get) => ({
     }
 
     // create a new socket
-    const socket = io(get().baseUrl + namespace_path, { autoConnect: false });
+    const socket = io(get().baseUrl + namespace_path, {
+      autoConnect: false,
+      parser: MsgPackParser,
+    });
 
     // create function to reset the store
     // creating a new store and a new event handler

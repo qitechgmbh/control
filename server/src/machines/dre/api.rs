@@ -58,10 +58,10 @@ impl DreMachineNamespace {
 }
 
 impl CacheableEvents<DreEvents> for DreEvents {
-    fn event_value(&self) -> Result<GenericEvent, serde_json::Error> {
+    fn event_value(&self) -> GenericEvent {
         match self {
-            DreEvents::Diameter(event) => event.try_into(),
-            DreEvents::DreState(event) => event.try_into(),
+            DreEvents::Diameter(event) => event.into(),
+            DreEvents::DreState(event) => event.into(),
         }
     }
 
@@ -89,14 +89,7 @@ enum Mutation {
 impl NamespaceCacheingLogic<DreEvents> for DreMachineNamespace {
     #[instrument(skip_all)]
     fn emit(&mut self, events: DreEvents) {
-        let event = match events.event_value() {
-            Ok(event) => event,
-            Err(err) => {
-                tracing::error!("Failed to emit: {:?}", err);
-                return;
-            }
-        };
-        let event = Arc::new(event);
+        let event = Arc::new(events.event_value());
         let buffer_fn = events.event_cache_fn();
         self.namespace.emit(event, &buffer_fn);
     }
