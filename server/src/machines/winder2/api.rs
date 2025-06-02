@@ -13,6 +13,8 @@ use control_core::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use smol::channel::Sender;
+use socketioxide::extract::SocketRef;
 use tracing::instrument;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -264,11 +266,13 @@ pub enum Winder2Events {
 }
 
 #[derive(Debug)]
-pub struct Winder2Namespace(Namespace);
+pub struct Winder2Namespace {
+    pub namespace: Namespace,
+}
 
 impl NamespaceCacheingLogic<Winder2Events> for Winder2Namespace {
     #[instrument(skip_all)]
-    fn emit_cached(&mut self, events: Winder2Events) {
+    fn emit(&mut self, events: Winder2Events) {
         let event = match events.event_value() {
             Ok(event) => event,
             Err(err) => {
@@ -278,13 +282,15 @@ impl NamespaceCacheingLogic<Winder2Events> for Winder2Namespace {
         };
         let event = Arc::new(event);
         let buffer_fn = events.event_cache_fn();
-        self.0.emit_cached(event, &buffer_fn);
+        self.namespace.emit(event, &buffer_fn);
     }
 }
 
 impl Winder2Namespace {
-    pub fn new() -> Self {
-        Self(Namespace::new())
+    pub fn new(socket_queue_tx: Sender<(SocketRef, Arc<GenericEvent>)>) -> Self {
+        Self {
+            namespace: Namespace::new(socket_queue_tx),
+        }
     }
 }
 
@@ -351,6 +357,6 @@ impl MachineApi for Winder2 {
     }
 
     fn api_event_namespace(&mut self) -> &mut Namespace {
-        &mut self.namespace.0
+        &mut self.namespace.namespace
     }
 }

@@ -13,6 +13,8 @@ use control_core::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use smol::channel::Sender;
+use socketioxide::extract::SocketRef;
 use tracing::instrument;
 
 #[derive(Serialize, Debug, Clone)]
@@ -210,11 +212,13 @@ enum Mutation {
 }
 
 #[derive(Debug)]
-pub struct ExtruderV2Namespace(Namespace);
+pub struct ExtruderV2Namespace {
+    pub namespace: Namespace,
+}
 
 impl NamespaceCacheingLogic<ExtruderV2Events> for ExtruderV2Namespace {
     #[instrument(skip_all)]
-    fn emit_cached(&mut self, events: ExtruderV2Events) {
+    fn emit(&mut self, events: ExtruderV2Events) {
         let event = match events.event_value() {
             Ok(event) => event,
             Err(err) => {
@@ -224,13 +228,15 @@ impl NamespaceCacheingLogic<ExtruderV2Events> for ExtruderV2Namespace {
         };
         let event = Arc::new(event);
         let buffer_fn = events.event_cache_fn();
-        self.0.emit_cached(event, &buffer_fn);
+        self.namespace.emit(event, &buffer_fn);
     }
 }
 
 impl ExtruderV2Namespace {
-    pub fn new() -> Self {
-        Self(Namespace::new())
+    pub fn new(socket_queue_tx: Sender<(SocketRef, Arc<GenericEvent>)>) -> Self {
+        Self {
+            namespace: Namespace::new(socket_queue_tx),
+        }
     }
 }
 
@@ -300,6 +306,6 @@ impl MachineApi for ExtruderV2 {
     }
 
     fn api_event_namespace(&mut self) -> &mut Namespace {
-        &mut self.namespace.0
+        &mut self.namespace.namespace
     }
 }
