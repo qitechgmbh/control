@@ -304,8 +304,10 @@ impl AnalogInputDevice<EL7031_0030AnalogInputPort> for EL7031_0030 {
 
     fn analog_input_range(&self) -> AnalogInputRange {
         AnalogInputRange::Potential {
-            min: ElectricPotential::new::<volt>(-10.0),
+            min: ElectricPotential::new::<volt>(0.0),
             max: ElectricPotential::new::<volt>(10.0),
+            min_raw: 0,
+            max_raw: i16::MAX,
         }
     }
 }
