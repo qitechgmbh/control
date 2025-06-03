@@ -43,6 +43,7 @@ impl Actor for ExtruderV2 {
                 self.emit_rotation_state();
                 self.emit_bar();
                 self.emit_rpm();
+                self.emit_extruder_settings();
 
                 self.last_measurement_emit = now;
             }

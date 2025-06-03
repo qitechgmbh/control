@@ -31,6 +31,8 @@ export type Extruder2NamespaceStore = {
   motorBarState: MotorPressureStateEvent | null;
   motorRegulationState: MotorRegulationStateEvent | null;
 
+  extruderSettingsState: ExtruderSettingsStateEvent | null;
+
   // Metric Events (cached for 1 hour )
   rpm: TimeSeries;
   bar: TimeSeries;
@@ -79,6 +81,15 @@ export function extruder2MessageHandler(
   return (event: Event<any>) => {
     const eventName = event.name;
     try {
+      if (eventName == "ExtruderSettingsStateEvent") {
+        store.setState(
+          produce(store.getState(), (state) => {
+            state.extruderSettingsState =
+              extruderSettingsStateEventSchema.parse(event);
+          }),
+        );
+      }
+
       if (eventName == "InverterStatusEvent") {
         // TODO: Handle if needed
       } else if (eventName == "RotationStateEvent") {
@@ -218,6 +229,7 @@ export const createExtruder2NamespaceStore =
         motorRpmState: null,
         motorRegulationState: null,
         motorBarState: null,
+        extruderSettingsState: null,
 
         rpm,
         bar,
@@ -292,6 +304,19 @@ export const motorRegulationEventDataSchema = z.object({
   uses_rpm: z.boolean(),
 });
 
+export const extruderPressureLimitDataSchema = z.object({
+  pressure_limit: z.number(),
+});
+
+export const extruderPressureLimitEnabledDataSchema = z.object({
+  pressure_limit_enabled: z.boolean(),
+});
+
+export const extruderSettingsStateEventDataSchema = z.object({
+  pressure_limit: z.number(),
+  pressure_limit_enabled: z.boolean(),
+});
+
 // Event Schemas
 export const heatingTargetEventSchema = eventSchema(
   heatingTargetTemperatureDataSchema,
@@ -315,6 +340,10 @@ export const motorRegulationEventSchema = eventSchema(
 export const heatingStateEventSchema = eventSchema(heatingStateDataSchema);
 export const modeStateEventSchema = eventSchema(modeStateEventDataSchema);
 
+export const extruderSettingsStateEventSchema = eventSchema(
+  extruderSettingsStateEventDataSchema,
+);
+
 // type defs
 export type MotorScrewStateEvent = z.infer<typeof motorScrewStateEventSchema>;
 export type MotorPressureStateEvent = z.infer<
@@ -336,3 +365,7 @@ export type MotorPressure = z.infer<typeof motorBarStateEventDataSchema>;
 export type MotorRpm = z.infer<typeof motorScrewStateEventDataSchema>;
 
 export type Mode = z.infer<typeof modeSchema>;
+
+export type ExtruderSettingsStateEvent = z.infer<
+  typeof extruderSettingsStateEventSchema
+>;

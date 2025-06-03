@@ -41,12 +41,82 @@ export function useExtruder2() {
   const mode = useMode(machineIdentification);
   const motor = useMotor(machineIdentification);
   const heating = useHeatingTemperature(machineIdentification);
-
+  const settings = useSettings(machineIdentification);
   return {
     ...inverter,
     ...mode,
     ...motor,
     ...heating,
+    ...settings,
+  };
+}
+
+export function useSettings(
+  machine_identification_unique: MachineIdentificationUnique,
+): {
+  extruderSetPressureLimit: (pressure_limit: number) => void;
+  extruderSetPressureLimitIsEnabled: (
+    pressure_limit_is_enabled: boolean,
+  ) => void;
+  pressureLimitState: number | undefined;
+  pressureLimitEnabledState: boolean | undefined;
+} {
+  const pressureLimitState = useStateOptimistic();
+  const pressureLimitEnabledState = useStateOptimistic();
+  // Define schemas
+  const pressureLimitSchema = z.object({
+    ExtruderSetPressureLimit: z.number(),
+  });
+  const pressureLimitEnabledSchema = z.object({
+    ExtruderSetPressureLimitIsEnabled: z.boolean(),
+  });
+
+  // Create mutation hooks
+  const { request: pressureLimit } = useMachineMutation(pressureLimitSchema);
+  const { request: pressureLimitIsEnabled } = useMachineMutation(
+    pressureLimitEnabledSchema,
+  );
+
+  const { extruderSettingsState } = useExtruder2Namespace(
+    machine_identification_unique,
+  );
+
+  // Set pressure limit value
+  const extruderSetPressureLimit = async (pressure: number) => {
+    pressureLimitState.setOptimistic(pressure);
+    pressureLimit({
+      machine_identification_unique,
+      data: { ExtruderSetPressureLimit: pressure },
+    });
+  };
+
+  // Enable/disable pressure limit
+  const extruderSetPressureLimitIsEnabled = (enabled: boolean) => {
+    pressureLimitEnabledState.setOptimistic(enabled);
+    pressureLimitIsEnabled({
+      machine_identification_unique,
+      data: { ExtruderSetPressureLimitIsEnabled: enabled },
+    });
+  };
+
+  useEffect(() => {
+    if (extruderSettingsState?.data) {
+      pressureLimitState.setReal(extruderSettingsState.data.pressure_limit);
+      pressureLimitEnabledState.setReal(
+        extruderSettingsState.data.pressure_limit,
+      );
+    }
+  }, [
+    extruderSettingsState?.data.pressure_limit,
+    extruderSettingsState?.data.pressure_limit_enabled,
+  ]);
+
+  return {
+    extruderSetPressureLimit,
+    extruderSetPressureLimitIsEnabled,
+    pressureLimitState: extruderSettingsState?.data.pressure_limit,
+    pressureLimitEnabledState:
+      extruderSettingsState?.data.pressure_limit_enabled,
   };
 }
 
