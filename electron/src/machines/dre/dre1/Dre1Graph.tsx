@@ -1,37 +1,59 @@
 import { Page } from "@/components/Page";
-import { BigGraph } from "@/helpers/BigGraph";
+import { BigGraph, GraphConfig } from "@/helpers/BigGraph";
 import React from "react";
 import { useDre1 } from "./useDre";
-import { ControlCard } from "@/control/ControlCard";
 
 export function Dre1GraphsPage() {
-  const {
-    dreDiameter,
-    dreState,
-  } = useDre1();
+  const { dreDiameter, dreState } = useDre1();
 
   // Controlled local states synced with dreState
   const targetDiameter = dreState?.data?.target_diameter ?? 0;
   const lowerTolerance = dreState?.data?.lower_tolerance ?? 0;
   const higherTolerance = dreState?.data?.higher_tolerance ?? 0;
 
-  return <Page>
-    <ControlCard title="Diameter Graph">
-      <div style={{
-        width: '100%',
-        height: '80vh', // 80% of viewport height
-        minHeight: '400px', // Minimum height to ensure usability
-        maxHeight: '800px' // Maximum height to prevent it from being too large
-      }}>
-        <BigGraph
-          newData={dreDiameter}
-          threshold1={targetDiameter + higherTolerance}
-          threshold2={targetDiameter - lowerTolerance}
-          target={targetDiameter}
-          unit="mm"
-          renderValue={(value) => value.toFixed(3)}
-        />
-      </div>
-    </ControlCard>
-  </Page>;
+  const config: GraphConfig = {
+    title: "Diameter Graph",
+    description: "Real-time diameter measurements with thresholds",
+    defaultTimeWindow: 1 * 60 * 1000, // 1 minute
+    exportFilename: "diameter_data",
+    lines: [
+      {
+        type: "threshold",
+        value: targetDiameter + higherTolerance,
+        label: "Upper Threshold",
+        color: "#ef4444",
+        dash: [5, 5],
+      },
+      {
+        type: "threshold",
+        value: targetDiameter - lowerTolerance,
+        label: "Lower Threshold",
+        color: "#f97316",
+        dash: [5, 5],
+      },
+      {
+        type: "target",
+        value: targetDiameter,
+        label: "Target",
+        color: "#6b7280",
+      },
+    ],
+    colors: {
+      primary: "#3b82f6",
+      grid: "#e2e8f0",
+      axis: "#64748b",
+      background: "#ffffff",
+    },
+  };
+
+  return (
+    <Page>
+      <BigGraph
+        newData={dreDiameter}
+        unit="mm"
+        renderValue={(value) => value.toFixed(3)}
+        config={config}
+      />
+    </Page>
+  );
 }
