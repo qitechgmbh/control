@@ -1,4 +1,4 @@
-use std::time::Instant;
+use std::{any, time::Instant};
 
 use control_core::{
     actors::{
@@ -8,10 +8,13 @@ use control_core::{
     },
     controllers::pid::PidController,
     converters::transmission_converter::TransmissionConverter,
+    helpers::interpolation::normalize,
 };
 use uom::si::{
     angular_velocity::revolution_per_minute,
-    f64::{AngularVelocity, Frequency, Pressure},
+    electric_current::milliampere,
+    electric_potential::millivolt,
+    f64::{AngularVelocity, ElectricCurrent, Frequency, Pressure},
     frequency::{cycle_per_minute, hertz},
     pressure::bar,
 };
@@ -156,15 +159,34 @@ impl ScrewSpeedController {
         self.target_pressure
     }
 
+    pub fn get_sensor_current(&self) -> Result<ElectricCurrent, anyhow::Error> {
+        let phys: ethercat_hal::io::analog_input::physical::AnalogInputValue = self
+            .pressure_sensor
+            .get_physical()
+            .ok_or_else(|| anyhow::anyhow!("no value"))?;
+
+        match phys {
+            ethercat_hal::io::analog_input::physical::AnalogInputValue::Potential(_) => {
+                Err(anyhow::anyhow!("Potential is not expected"))
+            }
+            ethercat_hal::io::analog_input::physical::AnalogInputValue::Current(quantity) => {
+                Ok(quantity)
+            }
+        }
+    }
+
     pub fn get_pressure(&mut self) -> Pressure {
-        let normalized = self.pressure_sensor.get_normalized();
-        let normalized = match normalized {
-            Some(normalized) => normalized,
-            None => 0.0,
+        let current_result = self.get_sensor_current();
+        let current = match current_result {
+            Ok(current) => current.get::<milliampere>(),
+            Err(_) => todo!(),
         };
-        // assuming full scale pressure of 10 bar
-        let pressure: f64 = normalized as f64 * 10.0;
-        return Pressure::new::<bar>(pressure);
+        let normalized = normalize(current, 4.0, 20.0);
+        // Our pressure sensor has a range of Up to 350 Bar
+
+        let actual_pressure = (normalized) * 350.0;
+
+        return Pressure::new::<bar>(actual_pressure);
     }
 
     pub async fn update(&mut self, now: Instant) {
@@ -179,9 +201,10 @@ impl ScrewSpeedController {
             self.turn_motor_off();
             return;
         }
-
         if !self.uses_rpm {
+            let measured_pressure = self.get_pressure();
             let error = self.target_pressure - measured_pressure;
+
             let freq = self
                 .pid
                 .update(error.get::<bar>(), now)

@@ -107,6 +107,8 @@ impl AnalogInputDevice<EL3021Port> for EL3021 {
         AnalogInputRange::Current {
             min: ElectricCurrent::new::<milliampere>(4.0),
             max: ElectricCurrent::new::<milliampere>(20.0),
+            min_raw: 0,
+            max_raw: i16::MAX,
         }
     }
 }
