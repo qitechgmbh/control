@@ -90,7 +90,7 @@ mod tests {
             max_raw: i16::MAX,
         };
 
-        // 0 raw = -10V
+        // -32768 raw = -10V
         let value = analog_input_getter.raw_to_physical(i16::MIN);
         match value {
             AnalogInputValue::Potential(v) => {
@@ -99,7 +99,7 @@ mod tests {
             _ => panic!("Expected a potential value"),
         }
 
-        // 2047 raw ~ 0V
+        // 0 raw ~ 0V
         let value = analog_input_getter.raw_to_physical(0);
         match value {
             AnalogInputValue::Potential(v) => {
@@ -108,7 +108,7 @@ mod tests {
             _ => panic!("Expected a potential value"),
         }
 
-        // 4095 raw = 10V
+        // 32767 raw = 10V
         let value = analog_input_getter.raw_to_physical(i16::MAX);
         match value {
             AnalogInputValue::Potential(v) => {
@@ -136,7 +136,7 @@ mod tests {
             _ => panic!("Expected a current value"),
         }
 
-        // 2047 raw ~ 12mA
+        // 16383 raw ~ 12mA
         let value = analog_input_getter.raw_to_physical(i16::MAX / 2);
         match value {
             AnalogInputValue::Current(v) => {
@@ -145,7 +145,7 @@ mod tests {
             _ => panic!("Expected a current value"),
         }
 
-        // 4095 raw = 20mA
+        // 32767 raw = 20mA
         let value = analog_input_getter.raw_to_physical(i16::MAX);
         match value {
             AnalogInputValue::Current(v) => {

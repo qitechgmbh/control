@@ -90,9 +90,9 @@ mod tests {
     fn volts_to_angle() {
         let tension_arm = TensionArm::new(AnalogInputGetter::new(
             AnalogInputDummy::new(AnalogInputRange::Potential {
-                min: ElectricPotential::new::<volt>(-10.0),
+                min: ElectricPotential::new::<volt>(0.0),
                 max: ElectricPotential::new::<volt>(10.0),
-                min_raw: i16::MIN,
+                min_raw: 0,
                 max_raw: i16::MAX,
             })
             .analog_input(),
