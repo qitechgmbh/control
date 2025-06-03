@@ -34,7 +34,7 @@ export function Extruder2SettingsPage() {
           <EditValue
             value={pressureLimitState}
             defaultValue={0}
-            unit="rpm"
+            unit="bar"
             title="Nozzle Pressure Limit"
             min={0}
             max={350}
