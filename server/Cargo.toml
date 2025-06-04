@@ -17,6 +17,7 @@ open = "5.3.2"
 bitvec = "1.0.1"
 lazy_static = "1.5.0"
 dhat = { version = "0.3.3", optional = true }
+euclid = "0.22.11"
 
 # concurrency
 smol = "2.0.2"
@@ -57,6 +58,7 @@ tikv-jemalloc-ctl = "0.6"
 
 [dev-dependencies]
 approx = "0.5.1"
+textplots = "0.8.7"
 
 [features]
 default = ["tracing-fmt"]

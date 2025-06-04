@@ -1,6 +1,7 @@
 pub mod act;
 pub mod api;
 pub mod clamp_revolution;
+pub mod filament_tension;
 pub mod new;
 pub mod puller_speed_controller;
 pub mod spool_speed_controller;
