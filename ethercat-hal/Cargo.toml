@@ -9,7 +9,7 @@ ethercrab = "0.6"
 ethercat_hal_derive = { version = "0.1.0", path = "../ethercat-hal-derive" }
 bitvec = { version = "1.0.1", features = ["alloc"] }
 smol = "2.0.2"
-uom = "0.36.0"
+uom = "0.37.0"
 rand = "0.9.1"
 
 [dev-dependencies]
