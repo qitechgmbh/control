@@ -473,9 +473,11 @@ impl Winder2 {
 impl Winder2 {
     /// called by `act`
     pub fn sync_spool_speed(&mut self, t: Instant) {
-        let angular_velocity = self
-            .spool_speed_controller
-            .get_angular_velocity(t, &self.tension_arm);
+        let angular_velocity = self.spool_speed_controller.update_speed(
+            t,
+            &self.tension_arm,
+            &self.puller_speed_controller,
+        );
         let steps_per_second = self
             .spool_step_converter
             .angular_velocity_to_steps(angular_velocity);
