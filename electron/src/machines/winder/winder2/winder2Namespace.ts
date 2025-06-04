@@ -190,7 +190,6 @@ export type Winder2NamespaceStore = {
   pullerState: PullerStateEvent | null;
   autostopState: AutostopStateEvent | null;
   modeState: ModeStateEvent | null;
-  spoolState: SpoolStateEvent | null;
   tensionArmState: TensionArmStateEvent | null;
 
   // Metric events (cached for 1 hour)
@@ -207,26 +206,13 @@ const ONE_SECOND = 1000;
 const FIVE_SECOND = 5 * ONE_SECOND;
 const ONE_HOUR = 60 * 60 * ONE_SECOND;
 const { initialTimeSeries: traversePosition, insert: addTraversePosition } =
-  createTimeSeries(
-    TWENTY_MILLISECOND,
-    ONE_SECOND,
-    FIVE_SECOND,
-    ONE_HOUR,);
+  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
 const {
   initialTimeSeries: autostopWoundedLength,
   insert: addAutostopWoundedLength,
-} = createTimeSeries(
-  TWENTY_MILLISECOND,
-  ONE_SECOND,
-  FIVE_SECOND,
-  ONE_HOUR,);
+} = createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
 const { initialTimeSeries: pullerSpeed, insert: addPullerSpeed } =
-  createTimeSeries(
-    TWENTY_MILLISECOND,
-    ONE_SECOND,
-    FIVE_SECOND,
-    ONE_HOUR,
-  );
+  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
 const { initialTimeSeries: spoolRpm, insert: addSpoolRpm } = createTimeSeries(
   TWENTY_MILLISECOND,
   ONE_SECOND,
@@ -234,11 +220,7 @@ const { initialTimeSeries: spoolRpm, insert: addSpoolRpm } = createTimeSeries(
   ONE_HOUR,
 );
 const { initialTimeSeries: tensionArmAngle, insert: addTensionArmAngle } =
-  createTimeSeries(
-    TWENTY_MILLISECOND,
-    ONE_SECOND,
-    FIVE_SECOND,
-    ONE_HOUR,);
+  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
 
 /**
  * Factory function to create a new Winder2 namespace store
@@ -253,7 +235,6 @@ export const createWinder2NamespaceStore =
         pullerState: null,
         autostopState: null,
         modeState: null,
-        spoolState: null,
         tensionArmState: null,
 
         // Metric events (cached for 1 hour)
@@ -312,14 +293,6 @@ export function winder2MessageHandler(
         store.setState(
           produce(store.getState(), (state) => {
             state.modeState = parsed;
-          }),
-        );
-      } else if (eventName === "SpoolStateEvent") {
-        const parsed = spoolStateEventSchema.parse(event);
-        console.log("SpoolStateEvent", parsed);
-        store.setState(
-          produce(store.getState(), (state) => {
-            state.spoolState = parsed;
           }),
         );
       } else if (eventName === "TensionArmStateEvent") {

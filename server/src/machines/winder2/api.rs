@@ -84,10 +84,6 @@ enum Mutation {
     // Tension Arm
     TensionArmAngleZero,
 
-    // Spool
-    SpoolSetSpeedMax(f64),
-    SpoolSetSpeedMin(f64),
-
     // Mode
     ModeSet(Mode),
 }
@@ -231,18 +227,6 @@ impl SpoolRpmEvent {
 }
 
 #[derive(Serialize, Debug, Clone)]
-pub struct SpoolStateEvent {
-    pub speed_min: f64,
-    pub speed_max: f64,
-}
-
-impl SpoolStateEvent {
-    pub fn build(&self) -> Event<Self> {
-        Event::new("SpoolStateEvent", self.clone())
-    }
-}
-
-#[derive(Serialize, Debug, Clone)]
 pub struct TensionArmAngleEvent {
     /// degree
     pub degree: f64,
@@ -275,7 +259,6 @@ pub enum Winder2Events {
     AutostopState(Event<AutostopStateEvent>),
     Mode(Event<ModeStateEvent>),
     SpoolRpm(Event<SpoolRpmEvent>),
-    SpoolState(Event<SpoolStateEvent>),
     TensionArmAngleEvent(Event<TensionArmAngleEvent>),
     TensionArmStateEvent(Event<TensionArmStateEvent>),
 }
@@ -315,7 +298,6 @@ impl CacheableEvents<Winder2Events> for Winder2Events {
             Winder2Events::AutostopState(event) => event.try_into(),
             Winder2Events::Mode(event) => event.try_into(),
             Winder2Events::SpoolRpm(event) => event.try_into(),
-            Winder2Events::SpoolState(event) => event.try_into(),
             Winder2Events::TensionArmAngleEvent(event) => event.try_into(),
             Winder2Events::TensionArmStateEvent(event) => event.try_into(),
         }
@@ -335,7 +317,6 @@ impl CacheableEvents<Winder2Events> for Winder2Events {
             Winder2Events::AutostopState(_) => cache_one,
             Winder2Events::Mode(_) => cache_one,
             Winder2Events::SpoolRpm(_) => cache_ten_secs,
-            Winder2Events::SpoolState(_) => cache_one,
             Winder2Events::TensionArmAngleEvent(_) => cache_one_hour,
             Winder2Events::TensionArmStateEvent(_) => cache_one,
         }
@@ -364,8 +345,6 @@ impl MachineApi for Winder2 {
             Mutation::AutostopSetLimit(_) => todo!(),
             Mutation::AutostopSetTransition(_) => todo!(),
             Mutation::TensionArmAngleZero => self.tension_arm_zero(),
-            Mutation::SpoolSetSpeedMax(value) => self.spool_set_speed_max(value),
-            Mutation::SpoolSetSpeedMin(value) => self.spool_set_speed_min(value),
         }
         Ok(())
     }

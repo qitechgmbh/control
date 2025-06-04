@@ -31,7 +31,7 @@ use traverse_controller::TraverseController;
 use uom::si::{
     angle::degree,
     angular_velocity::revolution_per_minute,
-    f64::{AngularVelocity, Length, Velocity},
+    f64::{Length, Velocity},
     length::millimeter,
 };
 
@@ -484,18 +484,6 @@ impl Winder2 {
         self.spool.set_speed(steps_per_second as i32);
     }
 
-    pub fn spool_set_speed_max(&mut self, max_speed: f64) {
-        let max_speed = AngularVelocity::new::<revolution_per_minute>(max_speed);
-        let _ = self.spool_speed_controller.set_max_speed(max_speed);
-        self.emit_spool_state();
-    }
-
-    pub fn spool_set_speed_min(&mut self, min_speed: f64) {
-        let min_speed = AngularVelocity::new::<revolution_per_minute>(min_speed);
-        let _ = self.spool_speed_controller.set_min_speed(min_speed);
-        self.emit_spool_state();
-    }
-
     fn emit_spool_rpm(&mut self) {
         let rpm = self
             .spool_step_converter
@@ -503,25 +491,6 @@ impl Winder2 {
             .get::<revolution_per_minute>();
         let event = api::SpoolRpmEvent { rpm }.build();
         self.namespace.emit_cached(Winder2Events::SpoolRpm(event))
-    }
-
-    fn emit_spool_state(&mut self) {
-        // Convert angular velocity to steps/second
-        let speed_min = self
-            .spool_speed_controller
-            .get_min_speed()
-            .get::<revolution_per_minute>();
-        // Convert angular velocity to steps/second
-        let speed_max = self
-            .spool_speed_controller
-            .get_max_speed()
-            .get::<revolution_per_minute>();
-        let event = api::SpoolStateEvent {
-            speed_min,
-            speed_max,
-        }
-        .build();
-        self.namespace.emit_cached(Winder2Events::SpoolState(event))
     }
 }
 

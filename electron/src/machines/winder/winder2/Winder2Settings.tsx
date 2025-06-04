@@ -10,9 +10,6 @@ import { SelectionGroupBoolean } from "@/control/SelectionGroup";
 
 export function Winder2SettingPage() {
   const {
-    spoolState,
-    spoolSetSpeedMax,
-    spoolSetSpeedMin,
     traverseState,
     traverseSetStepSize,
     traverseSetPadding,
@@ -24,35 +21,6 @@ export function Winder2SettingPage() {
   return (
     <Page>
       <ControlGrid>
-        <ControlCard title="Spool">
-          <Label label="Min Speed">
-            <EditValue
-              value={spoolState?.data.speed_min}
-              title={"Min Speed"}
-              unit="rpm"
-              step={25}
-              min={0}
-              max={Math.min(spoolState?.data.speed_max || 600, 600)}
-              defaultValue={0}
-              renderValue={(value) => roundToDecimals(value, 0)}
-              onChange={(value) => spoolSetSpeedMin(value)}
-            />
-          </Label>
-          <Label label="Max Speed">
-            <EditValue
-              value={spoolState?.data.speed_max}
-              title={"Max Speed"}
-              unit="rpm"
-              min={Math.max(spoolState?.data.speed_min || 0, 0)}
-              step={25}
-              max={800}
-              defaultValue={800}
-              renderValue={(value) => roundToDecimals(value, 0)}
-              onChange={(value) => spoolSetSpeedMax(value)}
-            />
-          </Label>
-        </ControlCard>
-
         <ControlCard title="Traverse">
           <Label label="Step Size">
             <EditValue
