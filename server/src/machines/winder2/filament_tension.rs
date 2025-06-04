@@ -5,7 +5,7 @@ use uom::{
     si::{
         angle::radian,
         f64::{Angle, Length},
-        length::{centimeter, meter},
+        length::centimeter,
         ratio::ratio,
     },
 };
@@ -13,7 +13,7 @@ use uom::{
 /// The "tension" of the filament is not linear regarding the angle of the tension arm since it moves in an angular motion.
 /// With this calculator we can calculate the filament length and tension based on the angle of the tension arm using geometry.
 ///
-/// ⠉⠢⢄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇ 1.0
+/// ⠉⠢⢄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇ 0.0
 /// ⠀⠀⠀⠉⠢⢄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇
 /// ⠀⠀⠀⠀⠀⠀⠑⢄⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇
 /// ⠀⠀⠀⠀⠀⠀⠀⠀⠈⠒⢄⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇
@@ -28,7 +28,7 @@ use uom::{
 /// ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠒⠤⢄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇
 /// ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠑⠒⠤⣀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇
 /// ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠉⠒⠒⠤⠤⢄⣀⣀⡀⠀⠀⠀⠀⠀⠀⡇
-/// ⠁⠈⠀⠁⠈⠀⠁⠈⠀⠁⠈⠀⠁⠈⠀⠁⠈⠀⠁⠈⠀⠁⠈⠀⠁⠈⠀⠁⠈⠀⠁⠈⠀⠁⠈⠀⠁⠈⠀⠁⠈⠀⠁⠈⠀⠁⠈⠀⠁⠈⠀⠁⠈⠈⠉⠉⠉⠉⠉⠉⠁ 0.0
+/// ⠁⠈⠀⠁⠈⠀⠁⠈⠀⠁⠈⠀⠁⠈⠀⠁⠈⠀⠁⠈⠀⠁⠈⠀⠁⠈⠀⠁⠈⠀⠁⠈⠀⠁⠈⠀⠁⠈⠀⠁⠈⠀⠁⠈⠀⠁⠈⠀⠁⠈⠀⠁⠈⠈⠉⠉⠉⠉⠉⠉⠁ 1.0
 /// 10.0                                                    90.0
 #[derive(Debug, Clone)]
 pub struct FilamentTensionCalculator {
@@ -43,7 +43,7 @@ pub struct FilamentTensionCalculator {
     max_angle: Angle,
     min_distance: Length,
     max_distance: Length,
-    angle_converter: AngleConverterUom,
+    pub angle_converter: AngleConverterUom,
 }
 
 impl FilamentTensionCalculator {
@@ -100,22 +100,19 @@ impl FilamentTensionCalculator {
 
     /// Calculate the filament buffer as a value between 0.0 (min) and 1.0 (max)
     ///
-    /// `0.0`` means the filament is at its minimum length (optimal angle),
+    /// `1.0` means the minimum amount of filament is in the tensioning system (high tension)
     ///
-    /// `1.0` means the filament is at its maximum length (worst angle).
+    /// `0.0` means the maximum amount of filament is in the tensioning system (low tension)
     ///
     /// - [`tension_arm_angle`] in Y-Flipped CW rotation system
-    pub fn calc_filament_buffer(&self, tension_arm_angle: Angle) -> f64 {
+    pub fn calc_filament_tension(&self, tension_arm_angle: Angle) -> f64 {
         let current_distance = self.calc_filament_length(tension_arm_angle);
 
         let distance_range = self.max_distance - self.min_distance;
-        if distance_range.abs().get::<meter>() < f64::EPSILON {
-            0.0 // Avoid division by zero
-        } else {
-            ((current_distance - self.min_distance) / distance_range)
-                .get::<ratio>()
-                .clamp(0.0, 1.0)
-        }
+
+        1.0 - ((current_distance - self.min_distance) / distance_range)
+            .get::<ratio>()
+            .clamp(0.0, 1.0)
     }
 
     /// Get the optimal angle (minimum filament length)
@@ -200,7 +197,7 @@ mod tests {
         let data: Vec<(f32, f32)> = (0..=360)
             .map(|angle_deg| {
                 let tension =
-                    calculator.calc_filament_buffer(Angle::new::<degree>(angle_deg as f64));
+                    calculator.calc_filament_tension(Angle::new::<degree>(angle_deg as f64));
                 (angle_deg as f32, tension as f32)
             })
             .collect();
@@ -214,12 +211,12 @@ mod tests {
         println!(
             "Tension at min angle ({}°): {:.2}",
             min_angle,
-            calculator.calc_filament_buffer(calculator.get_min_angle())
+            calculator.calc_filament_tension(calculator.get_min_angle())
         );
         println!(
             "Tension at max angle ({}°): {:.2}",
             max_angle,
-            calculator.calc_filament_buffer(calculator.get_max_angle())
+            calculator.calc_filament_tension(calculator.get_max_angle())
         );
     }
 }

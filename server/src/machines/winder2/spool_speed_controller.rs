@@ -1,25 +1,23 @@
-use super::{
-    clamp_revolution::{Clamping, clamp_revolution, scale_revolution_to_range},
-    tension_arm::TensionArm,
+use crate::machines::winder2::{
+    clamp_revolution::clamp_revolution_uom, filament_tension::FilamentTensionCalculator,
 };
+
+use super::{clamp_revolution::Clamping, tension_arm::TensionArm};
 use control_core::{
-    controllers::second_degree_motion::{
-        acceleration_position_controller::MotionControllerError,
-        angular_jerk_speed_controller::AngularJerkSpeedController,
+    controllers::{
+        first_degree_motion::angular_acceleration_speed_controller::AngularAccelerationSpeedController,
+        second_degree_motion::acceleration_position_controller::MotionControllerError,
     },
     helpers::interpolation::{interpolate_exponential, scale},
-    uom_extensions::{
-        angular_acceleration::revolution_per_minute_per_second,
-        angular_jerk::revolution_per_minute_per_second_squared,
-    },
+    uom_extensions::angular_acceleration::revolution_per_minute_per_second,
 };
 use std::time::Instant;
 use uom::{
     ConstZero,
     si::{
-        angle::{degree, revolution},
+        angle::degree,
         angular_velocity::{radian_per_second, revolution_per_minute},
-        f64::{Angle, AngularAcceleration, AngularJerk, AngularVelocity},
+        f64::{Angle, AngularAcceleration, AngularVelocity},
     },
 };
 
@@ -30,7 +28,9 @@ pub struct SpoolSpeedController {
     /// Whether the speed controller is enabled or not
     enabled: bool,
     /// Linear acceleration controller to dampen speed change
-    acceleration_controller: AngularJerkSpeedController,
+    acceleration_controller: AngularAccelerationSpeedController,
+    /// Filament tension calculator
+    filament_calc: FilamentTensionCalculator,
 }
 
 impl SpoolSpeedController {
@@ -42,19 +42,21 @@ impl SpoolSpeedController {
     pub fn new() -> Self {
         let max_speed = AngularVelocity::new::<revolution_per_minute>(150.0);
         let max_angular_acceleration =
-            AngularAcceleration::new::<revolution_per_minute_per_second>(150.0);
-        let max_jerk = AngularJerk::new::<revolution_per_minute_per_second_squared>(150.0);
+            AngularAcceleration::new::<revolution_per_minute_per_second>(150.0 / 4.0);
 
         Self {
             speed: AngularVelocity::ZERO,
             enabled: false,
-            acceleration_controller: AngularJerkSpeedController::new(
+            acceleration_controller: AngularAccelerationSpeedController::new(
                 Some(AngularVelocity::ZERO),
                 Some(max_speed),
                 -max_angular_acceleration,
                 max_angular_acceleration,
-                -max_jerk,
-                max_jerk,
+                AngularVelocity::ZERO,
+            ),
+            filament_calc: FilamentTensionCalculator::new(
+                Angle::new::<degree>(90.0),
+                Angle::new::<degree>(20.0),
             ),
         }
     }
@@ -92,13 +94,12 @@ impl SpoolSpeedController {
         let max_speed = self.max_speed() * 1.0;
 
         // calculate filament tension
-        let tension_arm_min_degree: f64 = Angle::new::<degree>(20.0).get::<revolution>();
-        let tension_arm_max_degree: f64 = Angle::new::<degree>(90.0).get::<revolution>();
         let tension_arm_angle = tension_arm.get_angle();
-        let tension_arm_revolution = clamp_revolution(
-            tension_arm_angle.get::<revolution>(),
-            tension_arm_min_degree,
-            tension_arm_max_degree,
+        let tension_arm_revolution = clamp_revolution_uom(
+            tension_arm_angle,
+            // inverted because min angle is max tension
+            self.filament_calc.get_max_angle(),
+            self.filament_calc.get_min_angle(),
         );
 
         match tension_arm_revolution.1 {
@@ -107,11 +108,9 @@ impl SpoolSpeedController {
             _ => {}
         };
 
-        let filament_tension = scale_revolution_to_range(
-            tension_arm_revolution.0,
-            tension_arm_min_degree,
-            tension_arm_max_degree,
-        );
+        let filament_tension = self
+            .filament_calc
+            .calc_filament_tension(tension_arm_revolution.0);
 
         let filament_tension_inverted = 1.0 - filament_tension;
 
@@ -201,9 +200,9 @@ impl SpoolSpeedController {
             range.get::<revolution_per_minute>() / 4.0,
         );
         self.acceleration_controller
-            .set_max_acceleration(acceleration)?;
+            .set_max_acceleration(acceleration);
         self.acceleration_controller
-            .set_min_acceleration(-acceleration)?;
+            .set_min_acceleration(-acceleration);
         Ok(())
     }
 
@@ -211,8 +210,7 @@ impl SpoolSpeedController {
         &mut self,
         max_speed: AngularVelocity,
     ) -> Result<(), MotionControllerError> {
-        self.acceleration_controller
-            .set_max_speed(Some(max_speed))?;
+        self.acceleration_controller.set_max_speed(Some(max_speed));
         self.update_acceleration()?;
         Ok(())
     }
@@ -221,8 +219,7 @@ impl SpoolSpeedController {
         &mut self,
         min_speed: AngularVelocity,
     ) -> Result<(), MotionControllerError> {
-        self.acceleration_controller
-            .set_min_speed(Some(min_speed))?;
+        self.acceleration_controller.set_min_speed(Some(min_speed));
         self.update_acceleration()?;
         Ok(())
     }
