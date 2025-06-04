@@ -42,28 +42,34 @@ export type Extruder2NamespaceStore = {
 };
 
 // Constants for time durations
+const TWENTY_MILLISECOND = 20;
 const ONE_SECOND = 1000;
+const FIVE_SECOND = 5 * ONE_SECOND;
 const ONE_HOUR = 60 * 60 * ONE_SECOND;
 
 const { initialTimeSeries: backTemperature, insert: addBackTemperature } =
-  createTimeSeries(ONE_SECOND, ONE_HOUR);
+  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
 
 const { initialTimeSeries: frontTemperature, insert: addFrontTemperature } =
-  createTimeSeries(ONE_SECOND, ONE_HOUR);
+  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
 
 const { initialTimeSeries: middleTemperature, insert: addMiddleTemperature } =
-  createTimeSeries(ONE_SECOND, ONE_HOUR);
+  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
 
 const { initialTimeSeries: nozzleTemperature, insert: addNozzleTemperature } =
-  createTimeSeries(ONE_SECOND, ONE_HOUR);
+  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
 
 const { initialTimeSeries: rpm, insert: addRpm } = createTimeSeries(
+  TWENTY_MILLISECOND,
   ONE_SECOND,
+  FIVE_SECOND,
   ONE_HOUR,
 );
 
 const { initialTimeSeries: bar, insert: addBar } = createTimeSeries(
+  TWENTY_MILLISECOND,
   ONE_SECOND,
+  FIVE_SECOND,
   ONE_HOUR,
 );
 

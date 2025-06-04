@@ -89,7 +89,10 @@ export function Winder2ControlPage() {
                 unit="mm"
                 title="Outer Limit"
                 defaultValue={80}
-                min={0}
+                // Traverse limit validation: Outer limit must be at least 0.9mm greater than inner limit
+                // We use 1mm buffer to ensure the backend validation (which requires >0.9mm) will pass
+                // Formula: min_outer = inner_limit + 1mm
+                min={Math.max(0, (traverseState?.data.limit_inner ?? 0) + 1)}
                 minLabel="IN"
                 maxLabel="OUT"
                 max={180}
@@ -117,7 +120,13 @@ export function Winder2ControlPage() {
                 unit="mm"
                 title="Inner Limit"
                 min={0}
-                max={180}
+                // Traverse limit validation: Inner limit must be at least 0.9mm smaller than outer limit
+                // We use 1mm buffer to ensure the backend validation (which requires outer > inner + 0.9mm) will pass
+                // Formula: max_inner = outer_limit - 1mm
+                max={Math.min(
+                  180,
+                  (traverseState?.data.limit_outer ?? 180) - 1,
+                )}
                 defaultValue={16}
                 minLabel="IN"
                 maxLabel="OUT"

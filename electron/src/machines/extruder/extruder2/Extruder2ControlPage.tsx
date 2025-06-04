@@ -33,8 +33,8 @@ export function Extruder2ControlPage() {
     screwSetTargetPressure,
     screwSetTargetRpm,
     uses_rpm,
-    barTs,
-    rpmTs,
+    bar,
+    rpm,
     targetBar,
     targetRpm,
   } = useExtruder2();
@@ -104,14 +104,14 @@ export function Extruder2ControlPage() {
               label="Rpm"
               unit="rpm"
               renderValue={(value) => roundToDecimals(value, 0)}
-              timeseries={rpmTs}
+              timeseries={rpm}
             />
 
             <TimeSeriesValueNumeric
               label="Pressure"
               unit="bar"
               renderValue={(value) => roundToDecimals(value, 0)}
-              timeseries={barTs}
+              timeseries={bar}
             />
           </div>
         </ControlCard>

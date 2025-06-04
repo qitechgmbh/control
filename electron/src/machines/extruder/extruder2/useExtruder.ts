@@ -7,6 +7,7 @@ import { z } from "zod";
 import { Heating, Mode, useExtruder2Namespace } from "./extruder2Namespace";
 import { useEffect, useMemo } from "react";
 import { TimeSeries } from "@/lib/timeseries";
+import { FPS_60, useThrottle } from "@/lib/useThrottle";
 
 export function useExtruder2() {
   const { serial: serialString } = extruder2Route.useParams();
@@ -129,11 +130,9 @@ export function useMotor(
   machine_identification_unique: MachineIdentificationUnique,
 ): {
   uses_rpm: boolean | undefined;
-  rpm: number | undefined;
-  rpmTs: TimeSeries;
+  rpm: TimeSeries;
   targetRpm: number | undefined;
-  bar: number | undefined;
-  barTs: TimeSeries;
+  bar: TimeSeries;
   targetBar: number | undefined;
   screwSetTargetRpm: (rpm: number) => void;
   screwSetRegulation: (usesRpm: boolean) => void;
@@ -221,15 +220,16 @@ export function useMotor(
     }
   }, [motorRpmState, motorBarState, motorRegulationState]);
 
+  // debounce rpm and bar to 60fps
+  const rpmThrottled = useThrottle(rpm, FPS_60);
+  const barThrottled = useThrottle(bar, FPS_60);
+
   return {
-    rpm: rpmState.value,
-    rpmTs: rpm,
+    rpm: rpmThrottled,
     uses_rpm: regulationState.value,
     targetRpm: rpmTargetState.value,
-
-    bar: pressureState.value,
     targetBar: targetPressureState.value,
-    barTs: bar,
+    bar: barThrottled,
 
     screwSetTargetRpm,
     screwSetTargetPressure,
@@ -382,6 +382,25 @@ export function useHeatingTemperature(
     nozzleHeatingTargetState,
   ]);
 
+  // debounce fast changeing values to 60fps
+  const nozzleHeatingStateThrottled = useThrottle(
+    heatingNozzleState?.data,
+    FPS_60,
+  );
+  const frontHeatingStateThrottled = useThrottle(
+    heatingFrontState?.data,
+    FPS_60,
+  );
+  const backHeatingStateThrottled = useThrottle(heatingBackState?.data, FPS_60);
+  const middleHeatingStateThrottled = useThrottle(
+    heatingMiddleState?.data,
+    FPS_60,
+  );
+  const nozzleTemperatureThrottled = useThrottle(nozzleTemperature, FPS_60);
+  const frontTemperatureThrottled = useThrottle(frontTemperature, FPS_60);
+  const backTemperatureThrottled = useThrottle(backTemperature, FPS_60);
+  const middleTemperatureThrottled = useThrottle(middleTemperature, FPS_60);
+
   return {
     heatingSetNozzleTemp,
     heatingSetFrontTemp,
@@ -392,14 +411,14 @@ export function useHeatingTemperature(
     backHeatingTarget: backHeatingTargetState.value,
     middleHeatingTarget: middleHeatingTargetState.value,
 
-    nozzleHeatingState: heatingNozzleState?.data,
-    frontHeatingState: heatingFrontState?.data,
-    backHeatingState: heatingBackState?.data,
-    middleHeatingState: heatingMiddleState?.data,
+    nozzleHeatingState: nozzleHeatingStateThrottled,
+    frontHeatingState: frontHeatingStateThrottled,
+    backHeatingState: backHeatingStateThrottled,
+    middleHeatingState: middleHeatingStateThrottled,
 
-    nozzleTemperature,
-    frontTemperature,
-    backTemperature,
-    middleTemperature,
+    nozzleTemperature: nozzleTemperatureThrottled,
+    frontTemperature: frontTemperatureThrottled,
+    backTemperature: backTemperatureThrottled,
+    middleTemperature: middleTemperatureThrottled,
   };
 }

@@ -2,7 +2,7 @@ import { Icon, IconName } from "@/components/Icon";
 import React, { useEffect } from "react";
 import {
   getUnitIcon,
-  renderUndefinedValue,
+  renderValueToReactNode,
   renderUnitSymbol,
   renderUnitSymbolLong,
   renderUnitSyntax,
@@ -128,7 +128,7 @@ export function EditValue({
         >
           <div className="flex flex-row items-center gap-2">
             <span className="font-mono text-4xl font-bold">
-              {renderUndefinedValue(value, unit, renderValue)}
+              {renderValueToReactNode(value, unit, renderValue)}
             </span>
             <span>{renderUnitSymbol(unit)}</span>
           </div>
