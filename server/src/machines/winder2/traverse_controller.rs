@@ -7,8 +7,9 @@ use control_core::{
 use uom::{
     ConstZero,
     si::{
+        angular_velocity::revolution_per_second,
         f64::{AngularVelocity, Length, Velocity},
-        length::millimeter,
+        length::{meter, millimeter},
         velocity::millimeter_per_second,
     },
 };
@@ -103,8 +104,8 @@ impl TraverseController {
             position: Length::ZERO,
             limit_inner,
             limit_outer,
-            step_size: Length::new::<millimeter>(1.0), // Default step size
-            padding: Length::new::<millimeter>(0.01),  // Default padding
+            step_size: Length::new::<millimeter>(1.75), // Default step size
+            padding: Length::new::<millimeter>(0.88),   // Default padding
             state: State::NotHomed,
             did_change_state: false,
             fullstep_converter: LinearStepConverter::from_circumference(
@@ -478,7 +479,9 @@ impl TraverseController {
     /// the step size and spool rotation speed.
     pub fn calculate_traverse_speed(&self, spool_speed: AngularVelocity) -> Velocity {
         // Calculate the traverse speed directly from spool speed and step size
-        let traverse_speed: Velocity = spool_speed * self.step_size;
+        let traverse_speed: Velocity = Velocity::new::<millimeter_per_second>(
+            spool_speed.get::<revolution_per_second>() * self.step_size.get::<millimeter>(),
+        );
 
         traverse_speed
     }
