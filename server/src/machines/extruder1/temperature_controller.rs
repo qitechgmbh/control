@@ -20,6 +20,7 @@ pub struct TemperatureController {
     window_start: Instant,
     heating_allowed: bool,
     pwm_period: Duration,
+    max_temperature: ThermodynamicTemperature,
 }
 
 impl TemperatureController {
@@ -34,6 +35,7 @@ impl TemperatureController {
         ki: f64,
         kd: f64,
         target_temp: ThermodynamicTemperature,
+        max_temperature: ThermodynamicTemperature,
         temperature_sensor: TemperatureInputGetter,
         relais: DigitalOutputSetter,
         heating: Heating,
@@ -48,6 +50,7 @@ impl TemperatureController {
             heating: heating,
             heating_allowed: false,
             pwm_period: pwm_duration,
+            max_temperature: max_temperature,
         }
     }
 
@@ -71,8 +74,15 @@ impl TemperatureController {
         );
         self.heating.temperature = temperature;
         self.heating.wiring_error = self.temperature_sensor.get_wiring_error();
-
-        self.relais.act(now).await;
+        if self.heating.temperature > self.max_temperature {
+            // disable the relais and return
+            self.relais.set(false);
+            self.heating.heating = false;
+            self.relais.act(now).await;
+            return;
+        } else {
+            self.relais.act(now).await;
+        }
 
         if self.heating_allowed {
             let error: f64 = self.heating.target_temperature.get::<degree_celsius>()
