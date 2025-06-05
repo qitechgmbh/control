@@ -114,11 +114,6 @@ impl SpoolSpeedController {
             puller_speed_controller.last_speed.get::<meter_per_second>() * 750.0,
         );
 
-        info!(
-            "SpoolSpeedController: Calculating speed with max_speed: {}",
-            max_speed.get::<radian_per_second>()
-        );
-
         // calculate filament tension
         let tension_arm_angle = tension_arm.get_angle();
         let tension_arm_revolution = clamp_revolution_uom(

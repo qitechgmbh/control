@@ -279,20 +279,26 @@ const useSocketioStore = create<SocketioStore>()((set, get) => ({
             }
 
             // Create a timeout to check if the namespace is still unused after 10 seconds
-            const timeoutId = setTimeout(() => {
-              set(
-                produce((state: SocketioStore) => {
-                  const ns = state.namespaces[namespace_path];
-                  if (ns && ns.count <= 0) {
-                    ns.socket.disconnect();
-                    delete state.namespaces[namespace_path];
-                    console.log(
-                      `Namespace ${namespace_path} disconnected after 10s of inactivity`,
-                    );
-                  }
-                }),
-              );
-            }, 10 * 1000);
+            const timeoutId = setTimeout(
+              () => {
+                set(
+                  produce((state: SocketioStore) => {
+                    const ns = state.namespaces[namespace_path];
+                    if (ns && ns.count <= 0) {
+                      ns.socket.disconnect();
+                      delete state.namespaces[namespace_path];
+                      console.log(
+                        `Namespace ${namespace_path} disconnected after 10s of inactivity`,
+                      );
+                    }
+                  }),
+                );
+              },
+              // 1 year in milliseconds
+              // this is a workaround to avoid the current issues with the event reloading
+              // perf improvements are tracked by #269
+              365 * 24 * 60 * 60 * 1000,
+            );
 
             state.namespaces[namespace_path].disconnectTimeoutId = timeoutId;
           }
