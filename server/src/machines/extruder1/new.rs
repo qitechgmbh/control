@@ -383,7 +383,7 @@ impl MachineNewTrait for ExtruderV2 {
                 el6021::EL6021Port::SI1,
             ));
 
-            let target_pressure = Pressure::new::<bar>(10.0);
+            let target_pressure = Pressure::new::<bar>(0.0);
             let target_rpm = AngularVelocity::new::<revolution_per_minute>(0.0);
 
             let screw_speed_controller =
