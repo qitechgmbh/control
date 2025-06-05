@@ -1,3 +1,5 @@
+use std::time::Instant;
+
 use control_core::{
     actors::{
         digital_input_getter::DigitalInputGetter, stepper_driver_el70x1::StepperDriverEL70x1,
@@ -9,7 +11,7 @@ use uom::{
     si::{
         angular_velocity::revolution_per_second,
         f64::{AngularVelocity, Length, Velocity},
-        length::{meter, millimeter},
+        length::millimeter,
         velocity::millimeter_per_second,
     },
 };
@@ -95,6 +97,9 @@ pub enum HomingState {
 
     /// In this state the traverse is moving slowly until it reaches the endstop
     FindEndtopFine,
+
+    /// In this state we check if th current position is actually 0.0, if not we redo the homing routine
+    Validate(Instant),
 }
 
 impl TraverseController {
@@ -341,16 +346,26 @@ impl TraverseController {
                         // Set poition of traverse to 0
                         traverse.set_position(0);
                         // Put Into Idle
-                        self.state = State::Idle;
+                        self.state = State::Homing(HomingState::Validate(Instant::now()));
                     }
                 }
                 HomingState::FindEndstopCoarse => {
                     // Move to endstop
                     if traverse_end_stop.value() == true {
-                        // Set poition of traverse to 0
-                        traverse.set_position(0);
                         // Move awaiy from endstop
                         self.state = State::Homing(HomingState::FindEnstopFineDistancing);
+                    }
+                }
+                HomingState::Validate(instant) => {
+                    // If 100ms have passed check if position is actually 0.0
+                    if instant.elapsed().as_millis() > 100 {
+                        if self.is_at_position(Length::ZERO, Length::new::<millimeter>(0.01)) {
+                            // If position is 0.0, put into idle
+                            self.state = State::Idle;
+                        } else {
+                            // If position is not 0.0, redo homing
+                            self.state = State::Homing(HomingState::Initialize);
+                        }
                     }
                 }
             },
@@ -424,9 +439,7 @@ impl TraverseController {
                 )
             }
             State::Homing(homing_state) => match homing_state {
-                HomingState::Initialize => unreachable!(
-                    "Initialize always transitions to another state before speed is set"
-                ),
+                HomingState::Initialize => Velocity::ZERO,
                 HomingState::EscapeEndstop => {
                     // Move out at a speed of 10 mm/s
                     Velocity::new::<millimeter_per_second>(10.0)
@@ -442,6 +455,10 @@ impl TraverseController {
                 HomingState::FindEndtopFine => {
                     // move into the endstop at 2 mm/s
                     Velocity::new::<millimeter_per_second>(-2.0)
+                }
+                HomingState::Validate(_) => {
+                    // We stand still until the validation cooldown has passed
+                    Velocity::ZERO
                 }
             }, // Homing speed
             State::Traversing(traversing_state) => match traversing_state {

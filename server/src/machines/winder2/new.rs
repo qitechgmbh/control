@@ -376,8 +376,8 @@ impl MachineNewTrait for Winder2 {
                     ),
                 ),
                 traverse_controller: TraverseController::new(
-                    Length::new::<millimeter>(15.0), // Default inner limit
-                    Length::new::<millimeter>(80.0), // Default outer limit
+                    Length::new::<millimeter>(22.0), // Default inner limit
+                    Length::new::<millimeter>(92.0), // Default outer limit
                     64,                              // Microsteps
                 ),
             };
