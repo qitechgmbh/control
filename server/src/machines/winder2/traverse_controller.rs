@@ -374,30 +374,21 @@ impl TraverseController {
             State::Traversing(traversing_state) => match traversing_state {
                 TraversingState::GoingOut => {
                     // If outer limit is reached
-                    if self.is_at_position(
-                        self.limit_outer - self.padding + Length::new::<millimeter>(0.01),
-                        Length::new::<millimeter>(0.02),
-                    ) {
+                    if self.position >= self.limit_outer - self.padding {
                         // Turn around
                         self.state = State::Traversing(TraversingState::TraversingIn);
                     }
                 }
                 TraversingState::TraversingIn => {
                     // If inner limit is reached
-                    if self.is_at_position(
-                        self.limit_inner + self.padding - Length::new::<millimeter>(0.01),
-                        Length::new::<millimeter>(0.02),
-                    ) {
+                    if self.position <= self.limit_inner + self.padding {
                         // Turn around
                         self.state = State::Traversing(TraversingState::TraversingOut);
                     }
                 }
                 TraversingState::TraversingOut => {
                     // If outer limit is reached
-                    if self.is_at_position(
-                        self.limit_outer - self.padding + Length::new::<millimeter>(0.01),
-                        Length::new::<millimeter>(0.02),
-                    ) {
+                    if self.position >= self.limit_outer - self.padding {
                         // Turn around
                         self.state = State::Traversing(TraversingState::TraversingIn);
                     }
