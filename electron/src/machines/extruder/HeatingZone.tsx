@@ -13,12 +13,14 @@ type Props = {
   title: string;
   heatingState: Heating | undefined;
   heatingTimeSeries: TimeSeries;
+  heatingPower: TimeSeries;
   onChangeTargetTemp?: (temperature: number) => void;
 };
 export function HeatingZone({
   title,
   heatingState,
   heatingTimeSeries,
+  heatingPower,
   onChangeTargetTemp,
 }: Props) {
   const targetTemperature = heatingState?.target_temperature ?? 150;
@@ -53,12 +55,12 @@ export function HeatingZone({
       </div>
 
       <TimeSeriesValueNumeric
-        label="Heating power"
+        label="Heating Power"
         unit="W"
         renderValue={(value) =>
-          heatingState?.wiring_error ? "0.0" : roundToDecimals(value, 1)
+          heatingState?.wiring_error ? "0.0" : roundToDecimals(value, 0)
         }
-        timeseries={heatingTimeSeries}
+        timeseries={heatingPower}
       />
 
       {heatingState?.wiring_error && (
