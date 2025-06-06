@@ -364,7 +364,6 @@ export const inverterRotationEventDataSchema = z.object({
 
 export const heatingStateDataSchema = z.object({
   temperature: z.number(),
-  heating: z.boolean(),
   target_temperature: z.number(),
   wiring_error: z.boolean(),
 });

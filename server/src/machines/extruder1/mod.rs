@@ -245,7 +245,6 @@ impl ExtruderV2 {
     fn emit_heating(&mut self, heating: Heating, heating_type: HeatingType) {
         let event = api::HeatingStateEvent {
             temperature: heating.temperature.get::<degree_celsius>(),
-            heating: heating.heating,
             target_temperature: heating.target_temperature.get::<degree_celsius>(),
             wiring_error: heating.wiring_error,
         }

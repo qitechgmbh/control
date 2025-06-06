@@ -31,7 +31,6 @@ pub struct MotorStateEvent {
 #[derive(Serialize, Debug, Clone)]
 pub struct HeatingStateEvent {
     pub temperature: f64,
-    pub heating: bool,
     pub target_temperature: f64,
     pub wiring_error: bool,
 }
