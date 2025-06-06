@@ -344,11 +344,6 @@ impl MitsubishiInverterRS485Actor {
             .insert(request.control_request_type.clone(), request);
     }
 
-    /// This is used by the Api to pop off the Response of our Request
-    pub fn get_response(&mut self) -> Option<ModbusResponse> {
-        return self.response.clone();
-    }
-
     /// This is used internally to read the receive buffer of the el6021
     fn read_modbus_response(
         &mut self,
@@ -359,7 +354,7 @@ impl MitsubishiInverterRS485Actor {
             }
 
             let res: Option<Vec<u8>> = (self.serial_interface.read_message)().await;
-            let raw_response = match res.clone() {
+            let raw_response = match res {
                 Some(res) => res,
                 None => {
                     vec![]
@@ -368,7 +363,7 @@ impl MitsubishiInverterRS485Actor {
 
             let response: Result<ModbusResponse, _> =
                 ModbusResponse::try_from(raw_response.clone());
-            println!("{:?}", res);
+            println!("{:?}", raw_response);
             match response {
                 Ok(result) => {
                     self.last_message_size = result.clone().data.len() + 4;
@@ -483,6 +478,7 @@ impl MitsubishiInverterRS485Actor {
     fn handle_motor_frequency(&mut self, resp: ModbusResponse) {
         let freq_bytes = &resp.data[1..3]; // bytes 1 and 2 are needed
         let raw_frequency = u16::from_be_bytes([freq_bytes[0], freq_bytes[1]]) as f64;
+        println!("raw freq {:?}", raw_frequency);
         self.frequency = Frequency::new::<centihertz>(raw_frequency);
     }
 
@@ -529,7 +525,7 @@ impl Actor for MitsubishiInverterRS485Actor {
 
             let timeout = calculate_modbus_rtu_timeout(
                 encoding.total_bits(),
-                self.last_request_type.timeout_duration(),
+                self.last_request_type.timeout_duration() * 10,
                 baudrate,
                 self.last_message_size,
             );
