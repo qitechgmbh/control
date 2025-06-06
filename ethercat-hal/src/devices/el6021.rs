@@ -438,6 +438,7 @@ impl SerialInterfaceDevice<EL6021Port> for EL6021 {
             if let Some(rx_pdo) = &mut self.rxpdo.com_rx_pdo_map_22_byte {
                 rx_pdo.control.received_acepted = !rx_pdo.control.received_acepted;
             }
+            println!("{:?}", received_data);
             return Some(received_data);
         } else {
             return None;
@@ -463,6 +464,8 @@ impl SerialInterfaceDevice<EL6021Port> for EL6021 {
             rx_pdo.length = message.len() as u8;
             rx_pdo.data = data_buffer;
             rx_pdo.control.transmit_request = !rx_pdo.control.transmit_request;
+
+            //println!("write_message {:?}", message);
 
             return Ok(());
         } else {
