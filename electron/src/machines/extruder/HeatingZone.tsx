@@ -36,13 +36,6 @@ export function HeatingZone({
             }
             timeseries={heatingTimeSeries}
           />
-
-          <div className="flex items-center space-x-2">
-            <Icon
-              name="lu:Flame"
-              className={`h-5 w-5 ${heating ? "text-orange-500" : "text-gray-400"}`}
-            />
-          </div>
         </div>
 
         <Label label="Target Temperature">
@@ -58,6 +51,15 @@ export function HeatingZone({
           />
         </Label>
       </div>
+
+      <TimeSeriesValueNumeric
+        label="Heating power"
+        unit="W"
+        renderValue={(value) =>
+          heatingState?.wiring_error ? "0.0" : roundToDecimals(value, 1)
+        }
+        timeseries={heatingTimeSeries}
+      />
 
       {heatingState?.wiring_error && (
         <StatusBadge variant="error">
