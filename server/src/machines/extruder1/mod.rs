@@ -1,4 +1,4 @@
-use api::{ExtruderV2Events, ExtruderV2Namespace};
+use api::{ExtruderSettingsStateEvent, ExtruderV2Events, ExtruderV2Namespace};
 use control_core::{machines::Machine, socketio::namespace::NamespaceCacheingLogic};
 use screw_speed_controller::ScrewSpeedController;
 use serde::{Deserialize, Serialize};
@@ -55,6 +55,7 @@ pub struct ExtruderV2 {
     mode: ExtruderV2Mode,
     last_measurement_emit: Instant,
     screw_speed_controller: ScrewSpeedController,
+
     temperature_controller_front: TemperatureController,
     temperature_controller_middle: TemperatureController,
     temperature_controller_back: TemperatureController,
@@ -67,6 +68,46 @@ impl std::fmt::Display for ExtruderV2 {
     }
 }
 impl Machine for ExtruderV2 {}
+
+impl ExtruderV2 {
+    // Extruder Settings Api Impl
+    fn set_nozzle_pressure_limit_is_enabled(&mut self, enabled: bool) {
+        self.screw_speed_controller
+            .set_nozzle_pressure_limit_is_enabled(enabled);
+    }
+
+    /// pressure is represented as bar
+    fn set_nozzle_pressure_limit(&mut self, pressure: f64) {
+        let nozzle_pressure_limit = Pressure::new::<bar>(pressure);
+        self.screw_speed_controller
+            .set_nozzle_pressure_limit(nozzle_pressure_limit);
+    }
+
+    fn get_nozzle_pressure_limit(&mut self) -> f64 {
+        let nozzle_pressure: Pressure = self.screw_speed_controller.get_nozzle_pressure_limit();
+        return nozzle_pressure.get::<bar>();
+    }
+
+    fn get_nozzle_pressure_limit_enabled(&mut self) -> bool {
+        return self
+            .screw_speed_controller
+            .get_nozzle_pressure_limit_enabled();
+    }
+
+    fn emit_extruder_settings(&mut self) {
+        let pressure: f64 = self.get_nozzle_pressure_limit();
+        let enabled = self.get_nozzle_pressure_limit_enabled();
+
+        let event = ExtruderSettingsStateEvent {
+            pressure_limit: pressure,
+            pressure_limit_enabled: enabled,
+        }
+        .build();
+
+        self.namespace
+            .emit_cached(ExtruderV2Events::ExtruderSettingsStateEvent(event));
+    }
+}
 
 impl ExtruderV2 {
     // Set all relais to ZERO

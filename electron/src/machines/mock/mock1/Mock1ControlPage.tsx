@@ -61,9 +61,9 @@ export function Mock1ControlPage() {
               unit="mHz"
               value={frequency}
               defaultValue={500}
-              min={1}
+              min={0.0}
               max={1000}
-              step={10}
+              step={0.1}
               renderValue={(value) => value.toFixed(0)}
               onChange={mockSetFrequency}
             />

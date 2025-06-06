@@ -1,6 +1,7 @@
 use crate::socketio::event::GenericEvent;
 use socketioxide::{extract::SocketRef, socket::Sid};
 use std::{collections::HashMap, time::Duration};
+use tracing::instrument;
 
 use super::socket_queue::SocketQueue;
 
@@ -84,6 +85,7 @@ impl Namespace {
 }
 
 impl NamespaceInterface for Namespace {
+    #[instrument(skip_all)]
     fn subscribe(&mut self, socket: SocketRef) {
         // add the socket to the list
         self.sockets.push(socket.clone());
@@ -91,6 +93,7 @@ impl NamespaceInterface for Namespace {
         self.socket_queues.insert(socket.id, SocketQueue::new());
     }
 
+    #[instrument(skip_all)]
     fn unsubscribe(&mut self, socket: SocketRef) {
         // remove the socket from the list
         self.sockets.retain(|s| s.id != socket.id);
@@ -98,6 +101,7 @@ impl NamespaceInterface for Namespace {
         self.socket_queues.remove(&socket.id);
     }
 
+    #[instrument(skip_all)]
     fn reemit(&mut self, socket: SocketRef) {
         if let Some(queue) = self.socket_queues.get(&socket.id) {
             // Collect events grouped by name/kind with their counts for sorting
@@ -112,11 +116,12 @@ impl NamespaceInterface for Namespace {
                     queue.push(event.clone());
                 }
             }
-            
+
             queue.flush(socket.clone());
         }
     }
 
+    #[instrument(skip_all)]
     fn emit(&mut self, event: &GenericEvent) {
         // Use the new emit function which combines push and flush
         for socket in self.sockets.clone() {
@@ -127,6 +132,7 @@ impl NamespaceInterface for Namespace {
         }
     }
 
+    #[instrument(skip_all)]
     fn cache(
         &mut self,
         event: &GenericEvent,
@@ -139,6 +145,7 @@ impl NamespaceInterface for Namespace {
         buffer_fn(&mut cached_events_for_key, event);
     }
 
+    #[instrument(skip_all)]
     fn emit_cached(
         &mut self,
         event: &GenericEvent,

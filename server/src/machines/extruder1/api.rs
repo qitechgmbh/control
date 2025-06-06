@@ -13,6 +13,7 @@ use control_core::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use tracing::instrument;
 
 #[derive(Serialize, Debug, Clone)]
 pub struct FrequencyEvent {
@@ -147,6 +148,19 @@ impl ScrewStateEvent {
     }
 }
 
+#[derive(Serialize, Debug, Clone)]
+
+pub struct ExtruderSettingsStateEvent {
+    pub pressure_limit: f64,
+    pub pressure_limit_enabled: bool,
+}
+
+impl ExtruderSettingsStateEvent {
+    pub fn build(&self) -> Event<Self> {
+        Event::new("ExtruderSettingsStateEvent", self.clone())
+    }
+}
+
 pub enum ExtruderV2Events {
     RotationStateEvent(Event<RotationStateEvent>),
     ModeEvent(Event<ModeEvent>),
@@ -154,6 +168,7 @@ pub enum ExtruderV2Events {
     PressureStateEvent(Event<PressureStateEvent>),
     ScrewStateEvent(Event<ScrewStateEvent>),
     HeatingStateEvent(Event<HeatingStateEvent>),
+    ExtruderSettingsStateEvent(Event<ExtruderSettingsStateEvent>),
 }
 
 #[derive(Deserialize, Serialize)]
@@ -165,27 +180,29 @@ enum Mutation {
     InverterSetTargetPressure(f64),
     InverterSetTargetRpm(f64),
     InverterSetRegulation(bool),
+
     //Mode
     ExtruderSetMode(ExtruderV2Mode),
     FrontHeatingSetTargetTemperature(f64),
     BackHeatingSetTargetTemperature(f64),
     MiddleSetHeatingTemperature(f64),
     NozzleSetHeatingTemperature(f64),
+
+    // SetPressure
+    ExtruderSetPressureLimit(f64),
+    ExtruderSetPressureLimitIsEnabled(bool),
 }
 
 #[derive(Debug)]
 pub struct ExtruderV2Namespace(Namespace);
 
 impl NamespaceCacheingLogic<ExtruderV2Events> for ExtruderV2Namespace {
+    #[instrument(skip_all)]
     fn emit_cached(&mut self, events: ExtruderV2Events) {
         let event = match events.event_value() {
             Ok(event) => event,
             Err(err) => {
-                log::error!(
-                    "[{}::emit_cached] Failed to event.event_value(): {:?}",
-                    module_path!(),
-                    err
-                );
+                tracing::error!("Failed to emit: {:?}", err);
                 return;
             }
         };
@@ -209,6 +226,7 @@ impl CacheableEvents<ExtruderV2Events> for ExtruderV2Events {
             ExtruderV2Events::PressureStateEvent(event) => event.try_into(),
             ExtruderV2Events::ScrewStateEvent(event) => event.try_into(),
             ExtruderV2Events::HeatingStateEvent(event) => event.try_into(),
+            ExtruderV2Events::ExtruderSettingsStateEvent(event) => event.try_into(),
         }
     }
 
@@ -224,6 +242,7 @@ impl CacheableEvents<ExtruderV2Events> for ExtruderV2Events {
             ExtruderV2Events::PressureStateEvent(_) => cache_one,
             ExtruderV2Events::ScrewStateEvent(_) => cache_one,
             ExtruderV2Events::HeatingStateEvent(_) => cache_one,
+            ExtruderV2Events::ExtruderSettingsStateEvent(_) => cache_one,
         }
     }
 }
@@ -250,6 +269,12 @@ impl MachineApi for ExtruderV2 {
             }
             Mutation::NozzleSetHeatingTemperature(temp) => {
                 self.set_target_temperature(temp, HeatingType::Nozzle)
+            }
+            Mutation::ExtruderSetPressureLimit(pressure_limit) => {
+                self.set_nozzle_pressure_limit(pressure_limit);
+            }
+            Mutation::ExtruderSetPressureLimitIsEnabled(enabled) => {
+                self.set_nozzle_pressure_limit_is_enabled(enabled);
             }
         }
         Ok(())

@@ -1,6 +1,6 @@
 use crate::app_state::EthercatSetup;
 use crate::machines::registry::MACHINE_REGISTRY;
-use crate::panic::send_panic;
+use crate::panic::{PanicDetails, send_panic};
 use crate::socketio::main_namespace::MainNamespaceEvents;
 use crate::socketio::main_namespace::ethercat_devices_event::EthercatDevicesEventBuilder;
 use crate::socketio::main_namespace::machines_event::MachinesEventBuilder;
@@ -21,15 +21,15 @@ use smol::channel::Sender;
 use std::{sync::Arc, time::Duration};
 
 pub async fn setup_loop(
-    thread_panic_tx: Sender<&'static str>,
+    thread_panic_tx: Sender<PanicDetails>,
     interface: &str,
     app_state: Arc<AppState>,
 ) -> Result<(), anyhow::Error> {
-    log::info!("Starting Ethercat PDU loop");
+    tracing::info!("Starting Ethercat PDU loop");
 
     // Erase all all setup data from `app_state`
     {
-        log::info!("Setting up Ethercat network");
+        tracing::debug!("Setting up Ethercat network");
         let mut ethercat_setup_guard = app_state.ethercat_setup.write().await;
         *ethercat_setup_guard = None;
     }
@@ -42,7 +42,7 @@ pub async fn setup_loop(
     std::thread::Builder::new()
         .name("EthercatTxRxThread".to_owned())
         .spawn(move || {
-            send_panic("EthercatTxRxThread", thread_panic_tx_clone);
+            send_panic(thread_panic_tx_clone);
             let rt = smol::LocalExecutor::new();
             let _ = smol::block_on(rt.run(async {
                 tx_rx_task(&interface, tx, rx)
@@ -98,7 +98,7 @@ pub async fn setup_loop(
         .await
     {
         Ok(group) => {
-            log::info!("Initialized {} subdevices", &group.len());
+            tracing::info!("Initialized {} subdevices", &group.len());
             group
         }
         Err(err) => Err(anyhow::anyhow!(
@@ -205,7 +205,7 @@ pub async fn setup_loop(
     // Put group in operational state
     let group_op = match group_preop.into_op(&maindevice).await {
         Ok(group_op) => {
-            log::info!("Group in OP state");
+            tracing::info!("Group in OP state");
             group_op
         }
         Err(err) => Err(anyhow::anyhow!(

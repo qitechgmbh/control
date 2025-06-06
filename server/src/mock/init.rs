@@ -13,16 +13,14 @@ use {
 
 #[cfg(feature = "mock-machine")]
 pub fn init_mock(app_state: Arc<AppState>) -> Result<(), anyhow::Error> {
-    log::info!("[{}::init_mock] Initializing mock machines", module_path!());
-
     // For mock devices, we need to manually create and add them to the machine manager
     // since they won't be detected by the serial detection loop
-    smol::block_on(async {
+    return smol::block_on(async {
         // Create a mock serial device manually
         let (device_thread_panic_tx, _device_thread_panic_rx) = smol::channel::unbounded();
         let serial_params = SerialDeviceNewParams {
             path: "/dev/mock-serial".to_string(),
-            device_thread_panix_tx: device_thread_panic_tx,
+            device_thread_panic_tx,
         };
 
         // Create the mock serial device
@@ -48,25 +46,15 @@ pub fn init_mock(app_state: Arc<AppState>) -> Result<(), anyhow::Error> {
                     .main_namespace;
                 let event = MachinesEventBuilder().build(app_state_event.clone()).await;
                 main_namespace.emit_cached(MainNamespaceEvents::MachinesEvent(event));
-
-                log::info!(
-                    "[{}::init_mock] Mock machine added successfully",
-                    module_path!()
-                );
+                Ok(())
             }
             Err(e) => {
-                log::error!(
-                    "[{}::init_mock] Failed to create mock serial device: {}",
-                    module_path!(),
-                    e
-                );
+                tracing::error!("Failed to create mock serial device: {}", e);
+                return Err(e);
             }
         }
     });
 
-    log::info!(
-        "[{}::init_mock] Mock machines initialized successfully",
-        module_path!()
-    );
+    tracing::info!("Mock machines initialized successfully");
     Ok(())
 }

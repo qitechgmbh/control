@@ -5,6 +5,7 @@ use std::fmt::Debug;
 
 use crate::machines::identification::DeviceIdentification;
 
+pub mod panic;
 pub mod registry;
 pub mod serial_detection;
 
@@ -24,7 +25,7 @@ pub trait SerialDeviceThread {
 
 pub struct SerialDeviceNewParams {
     pub path: String,
-    pub device_thread_panix_tx: smol::channel::Sender<(String, anyhow::Error)>,
+    pub device_thread_panic_tx: smol::channel::Sender<(String, anyhow::Error)>,
 }
 
 #[derive(PartialEq, Clone, Debug)]

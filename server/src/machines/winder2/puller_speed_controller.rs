@@ -26,6 +26,7 @@ pub struct PullerSpeedController {
     acceleration_controller: LinearJerkSpeedController,
     /// Converter for linear to angular transformations
     pub converter: LinearStepConverter,
+    pub last_speed: Velocity,
 }
 
 impl PullerSpeedController {
@@ -34,9 +35,9 @@ impl PullerSpeedController {
         target_diameter: Length,
         converter: LinearStepConverter,
     ) -> Self {
-        let acceleration = Acceleration::new::<meter_per_minute_per_second>(100.0);
-        let jerk = Jerk::new::<meter_per_minute_per_second_squared>(100.0);
-        let speed = Velocity::new::<meter_per_minute>(75.0);
+        let acceleration = Acceleration::new::<meter_per_minute_per_second>(5.0);
+        let jerk = Jerk::new::<meter_per_minute_per_second_squared>(10.0);
+        let speed = Velocity::new::<meter_per_minute>(50.0);
 
         Self {
             enabled: false,
@@ -50,6 +51,7 @@ impl PullerSpeedController {
                 jerk,
             ),
             converter,
+            last_speed: Velocity::ZERO,
         }
     }
 
@@ -73,7 +75,7 @@ impl PullerSpeedController {
         self.forward = forward;
     }
 
-    fn get_speed(&mut self, t: Instant) -> Velocity {
+    fn update_speed(&mut self, t: Instant) -> Velocity {
         let speed = match self.enabled {
             true => match self.regulation_mode {
                 PullerRegulationMode::Speed => self.target_speed,
@@ -84,7 +86,10 @@ impl PullerSpeedController {
 
         let speed = if self.forward { speed } else { -speed };
 
-        self.acceleration_controller.update(speed, t)
+        let speed = self.acceleration_controller.update(speed, t);
+
+        self.last_speed = speed;
+        speed
     }
 
     pub fn speed_to_angular_velocity(&self, speed: Velocity) -> AngularVelocity {
@@ -98,7 +103,7 @@ impl PullerSpeedController {
     }
 
     pub fn get_angular_velocity(&mut self, t: Instant) -> AngularVelocity {
-        let speed = self.get_speed(t);
+        let speed = self.update_speed(t);
         self.speed_to_angular_velocity(speed)
     }
 }

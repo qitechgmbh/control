@@ -69,13 +69,6 @@ impl MachineNewTrait for Winder2 {
             }
         };
 
-        log::info!(
-            "[{}::MachineNewTrait/Winder2::new] Hardware: Ethercat Devices {:?}, Subdevices {:?}",
-            module_path!(),
-            hardware.ethercat_devices.len(),
-            hardware.subdevices.len()
-        );
-
         // using block_on because making this funciton async creates a lifetime issue
         // if its async the compiler thinks &subdevices is persisted in the future which might never execute
         // so we can't drop subdevices unless this machine is dropped, which is bad
@@ -383,8 +376,8 @@ impl MachineNewTrait for Winder2 {
                     ),
                 ),
                 traverse_controller: TraverseController::new(
-                    Length::new::<millimeter>(15.0), // Default inner limit
-                    Length::new::<millimeter>(80.0), // Default outer limit
+                    Length::new::<millimeter>(22.0), // Default inner limit
+                    Length::new::<millimeter>(92.0), // Default outer limit
                     64,                              // Microsteps
                 ),
             };
@@ -393,7 +386,6 @@ impl MachineNewTrait for Winder2 {
             new.emit_traverse_state();
             new.emit_traverse_position();
             new.emit_mode_state();
-            new.emit_spool_state();
             new.emit_tension_arm_state();
             new.emit_puller_state();
 

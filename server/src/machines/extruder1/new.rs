@@ -325,13 +325,15 @@ impl MachineNewTrait for ExtruderV2 {
             let digital_out_4 = DigitalOutput::new(el2004.clone(), EL2004Port::DO4);
 
             let pressure_sensor = AnalogInputGetter::new(AnalogInput::new(el3021, EL3021Port::AI1));
-
+            // The Extruders temparature Controllers should disable the relais when the max_temperature is reached
+            let extruder_max_temperature = ThermodynamicTemperature::new::<degree_celsius>(300.0);
             // Only front heating on: These values work 0.08, 0.001, 0.007, Overshoot 0.5 undershoot ~0.7 (Problems when starting far away because of integral)
             let temperature_controller_front = TemperatureController::new(
                 0.16,
                 0.0,
                 0.008,
-                ThermodynamicTemperature::new::<degree_celsius>(200.0),
+                ThermodynamicTemperature::new::<degree_celsius>(150.0),
+                extruder_max_temperature,
                 t1_getter,
                 DigitalOutputSetter::new(digital_out_1),
                 Heating::default(),
@@ -343,7 +345,8 @@ impl MachineNewTrait for ExtruderV2 {
                 0.16,
                 0.0,
                 0.008,
-                ThermodynamicTemperature::new::<degree_celsius>(200.0),
+                ThermodynamicTemperature::new::<degree_celsius>(150.0),
+                extruder_max_temperature,
                 t2_getter,
                 DigitalOutputSetter::new(digital_out_2),
                 Heating::default(),
@@ -355,7 +358,8 @@ impl MachineNewTrait for ExtruderV2 {
                 0.16,
                 0.0,
                 0.008,
-                ThermodynamicTemperature::new::<degree_celsius>(200.0),
+                ThermodynamicTemperature::new::<degree_celsius>(150.0),
+                extruder_max_temperature,
                 t3_getter,
                 DigitalOutputSetter::new(digital_out_3),
                 Heating::default(),
@@ -367,7 +371,8 @@ impl MachineNewTrait for ExtruderV2 {
                 0.16,
                 0.0,
                 0.008,
-                ThermodynamicTemperature::new::<degree_celsius>(200.0),
+                ThermodynamicTemperature::new::<degree_celsius>(150.0),
+                extruder_max_temperature,
                 t4_getter,
                 DigitalOutputSetter::new(digital_out_4),
                 Heating::default(),
@@ -378,7 +383,7 @@ impl MachineNewTrait for ExtruderV2 {
                 el6021::EL6021Port::SI1,
             ));
 
-            let target_pressure = Pressure::new::<bar>(10.0);
+            let target_pressure = Pressure::new::<bar>(0.0);
             let target_rpm = AngularVelocity::new::<revolution_per_minute>(0.0);
 
             let screw_speed_controller =

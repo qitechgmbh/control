@@ -115,11 +115,7 @@ impl<'serialdeviceregistry> SerialDetection<'serialdeviceregistry> {
                 result.removed.push(device_identification);
             }
 
-            log::info!(
-                "[{}::SerialDetection::check_ports] Removed port: {}",
-                module_path!(),
-                removed.0
-            );
+            tracing::trace!("Removed port: {}", removed.0);
         }
 
         // add new ports
@@ -133,7 +129,7 @@ impl<'serialdeviceregistry> SerialDetection<'serialdeviceregistry> {
             let device_result = self.serial_device_registry.new_serial_device(
                 &SerialDeviceNewParams {
                     path: added.0.clone(),
-                    device_thread_panix_tx: self.device_removal_signal_tx.clone(),
+                    device_thread_panic_tx: self.device_removal_signal_tx.clone(),
                 },
                 &serial_device_identification,
             );
@@ -153,11 +149,7 @@ impl<'serialdeviceregistry> SerialDetection<'serialdeviceregistry> {
                 // add to result list
                 result.added.push((device_identification, device.clone()));
 
-                log::debug!(
-                    "[{}::SerialDetection::check_ports] Added port: {}",
-                    module_path!(),
-                    added.0
-                );
+                tracing::trace!("Added port: {}", added.0);
             }
         }
 
@@ -174,12 +166,7 @@ impl<'serialdeviceregistry> SerialDetection<'serialdeviceregistry> {
                 };
                 self.ports.remove(&path);
 
-                log::debug!(
-                    "[{}::SerialDetection::check_remove_signals] Removed device: {:?}: {}",
-                    module_path!(),
-                    path,
-                    error
-                );
+                tracing::trace!("Removed device: {:?}: {}", path, error);
             }
             Err(_) => {}
         }

@@ -1,4 +1,4 @@
-use std::time::Instant;
+use std::{any, time::Instant};
 
 use control_core::{
     actors::{
@@ -8,10 +8,12 @@ use control_core::{
     },
     controllers::pid::PidController,
     converters::transmission_converter::TransmissionConverter,
+    helpers::interpolation::normalize,
 };
 use uom::si::{
     angular_velocity::revolution_per_minute,
-    f64::{AngularVelocity, Frequency, Pressure},
+    electric_current::milliampere,
+    f64::{AngularVelocity, ElectricCurrent, Frequency, Pressure},
     frequency::{cycle_per_minute, hertz},
     pressure::bar,
 };
@@ -32,6 +34,8 @@ pub struct ScrewSpeedController {
     forward_rotation: bool,
     transmission_converter: TransmissionConverter,
     motor_on: bool,
+    nozzle_pressure_limit: Pressure,
+    nozzle_pressure_limit_enabled: bool,
 }
 
 impl ScrewSpeedController {
@@ -54,7 +58,29 @@ impl ScrewSpeedController {
             forward_rotation: true,
             transmission_converter: TransmissionConverter::new(),
             motor_on: false,
+            nozzle_pressure_limit: Pressure::new::<bar>(100.0),
+            nozzle_pressure_limit_enabled: true,
         }
+    }
+
+    pub fn get_motor_enabled(&mut self) -> bool {
+        return self.motor_on;
+    }
+
+    pub fn set_nozzle_pressure_limit(&mut self, pressure: Pressure) {
+        self.nozzle_pressure_limit = pressure;
+    }
+
+    pub fn get_nozzle_pressure_limit(&mut self) -> Pressure {
+        return self.nozzle_pressure_limit;
+    }
+
+    pub fn get_nozzle_pressure_limit_enabled(&mut self) -> bool {
+        return self.nozzle_pressure_limit_enabled;
+    }
+
+    pub fn set_nozzle_pressure_limit_is_enabled(&mut self, enabled: bool) {
+        self.nozzle_pressure_limit_enabled = enabled;
     }
 
     pub fn get_target_rpm(&mut self) -> AngularVelocity {
@@ -136,27 +162,55 @@ impl ScrewSpeedController {
         self.target_pressure
     }
 
+    pub fn get_sensor_current(&self) -> Result<ElectricCurrent, anyhow::Error> {
+        let phys: ethercat_hal::io::analog_input::physical::AnalogInputValue = self
+            .pressure_sensor
+            .get_physical()
+            .ok_or_else(|| anyhow::anyhow!("no value"))?;
+
+        match phys {
+            ethercat_hal::io::analog_input::physical::AnalogInputValue::Potential(_) => {
+                Err(anyhow::anyhow!("Potential is not expected"))
+            }
+            ethercat_hal::io::analog_input::physical::AnalogInputValue::Current(quantity) => {
+                Ok(quantity)
+            }
+        }
+    }
+
     pub fn get_pressure(&mut self) -> Pressure {
-        let normalized = self.pressure_sensor.get_normalized();
-        let normalized = match normalized {
-            Some(normalized) => normalized,
-            None => 0.0,
+        let current_result = self.get_sensor_current();
+        let current = match current_result {
+            Ok(current) => current.get::<milliampere>(),
+            Err(_) => todo!(),
         };
-        // assuming full scale pressure of 10 bar
-        let pressure: f64 = normalized as f64 * 10.0;
-        return Pressure::new::<bar>(pressure);
+        let normalized = normalize(current, 4.0, 20.0);
+        // Our pressure sensor has a range of Up to 350 Bar
+
+        let actual_pressure = (normalized) * 350.0;
+
+        return Pressure::new::<bar>(actual_pressure);
     }
 
     pub async fn update(&mut self, now: Instant) {
         self.inverter.act(now).await;
-        if !self.uses_rpm {
-            let measured_pressure = self.get_pressure();
-            let error = self.target_pressure - measured_pressure;
+        self.pressure_sensor.act(now).await;
 
+        let measured_pressure = self.get_pressure();
+        if (measured_pressure >= self.nozzle_pressure_limit)
+            && self.nozzle_pressure_limit_enabled
+            && self.motor_on
+        {
+            self.turn_motor_off();
+            return;
+        }
+        if !self.uses_rpm {
+            let error = self.target_pressure - measured_pressure;
             let freq = self
                 .pid
                 .update(error.get::<bar>(), now)
                 .clamp(MIN_FREQ, MAX_FREQ);
+
             let frequency = Frequency::new::<hertz>(freq);
 
             self.last_update = now;

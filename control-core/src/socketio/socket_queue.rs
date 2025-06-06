@@ -8,6 +8,7 @@ use std::{
 };
 
 use socketioxide::extract::SocketRef;
+use tracing::{debug_span, instrument};
 
 use super::event::GenericEvent;
 
@@ -28,6 +29,7 @@ impl SocketQueue {
     }
 
     /// Add an event to the queue
+    #[instrument(skip_all)]
     pub fn push(&self, event: GenericEvent) {
         if let Ok(mut queue) = self.queue.lock() {
             queue.push_back(event);
@@ -35,6 +37,7 @@ impl SocketQueue {
     }
 
     /// Force flush events asynchronously (assumes flushing flag is already set)
+    #[instrument(skip_all)]
     pub fn flush(&self, socket: SocketRef) {
         // Check if we're already flushing
         if self
@@ -51,6 +54,9 @@ impl SocketQueue {
 
         // Spawn a smol task to flush the queue
         smol::spawn(async move {
+            let span = debug_span!("socket_queue_flush", socket_id = ?socket.id);
+            let _enter = span.enter();
+
             // Process events directly from the queue without collecting first
             loop {
                 let event = {
@@ -72,6 +78,13 @@ impl SocketQueue {
                         break; // Exit the loop if the socket is not connected
                     }
 
+                    let span = debug_span!(
+                        "socket_queue_flush_event",
+                        socket_id = ?socket.id,
+                        event_name = %event.name,
+                    );
+                    let _enter = span.enter();
+
                     match socket.emit("event", &event) {
                         Ok(_) => break, // Successfully emitted, exit loop
                         Err(e) => match e {
@@ -82,7 +95,7 @@ impl SocketQueue {
                             socketioxide::SendError::Socket(socket_error) => match socket_error {
                                 socketioxide::SocketError::InternalChannelFull => {
                                     // wait 10ms before retrying
-                                    log::warn!(
+                                    tracing::warn!(
                                         "Socket {} internal channel full, retrying in 10ms",
                                         socket.id,
                                     );

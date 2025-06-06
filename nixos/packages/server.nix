@@ -42,8 +42,12 @@ customRustPlatform.buildRustPackage rec {
   nativeBuildInputs = [ pkg-config ];
   buildInputs = [ libpcap libudev-zero ];
 
-  # Build only the server package
+  # Build only the server package with journald logging for NixOS
   buildAndTestSubdir = "server";
+  
+  # Enable journald logging feature for NixOS systems
+  buildFeatures = [ "tracing-journald" ];
+  buildNoDefaultFeatures = true;
 
   # Reduce memory usage during build
   CARGO_BUILD_JOBS = "1";

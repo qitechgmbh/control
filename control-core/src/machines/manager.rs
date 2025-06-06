@@ -43,9 +43,8 @@ impl MachineManager {
         // group devices by machine device identification
         let device_grouping_result = group_devices_by_identification(device_identifications);
 
-        log::info!(
-            "[{}::set_ethercat_devices] Device Groups {:?}",
-            module_path!(),
+        tracing::info!(
+            "Device Groups {:?}",
             device_grouping_result.device_groups.len()
         );
 
@@ -101,11 +100,7 @@ impl MachineManager {
             hardware: &MachineNewHardware::Serial(&hardware),
         });
 
-        log::info!(
-            "[{}::add_serial_device] Adding serial machine {:?}",
-            module_path!(),
-            new_machine
-        );
+        tracing::info!("Adding serial machine {:?}", new_machine);
 
         self.serial_machines.insert(
             device_identification_identified
@@ -121,6 +116,11 @@ impl MachineManager {
                 .clone()
                 .try_into()
                 .expect("Serial devices always have machine identification");
+
+        tracing::info!(
+            "Removing serial machine {:?}",
+            device_identification_identified
+        );
 
         self.serial_machines.remove(
             &device_identification_identified

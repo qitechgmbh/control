@@ -91,6 +91,7 @@ We could combine the code of the frontend and backend using [Doxius](https://dio
 
 - Server
   - [X] [Threading](./docs/control-loop.md)
+  - [X] [Logging](./docs/logging.md)
   - [ ] Control Loop Setup
     - Control Loop Thread
       - [ ] realtime

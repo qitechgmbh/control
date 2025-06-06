@@ -1,13 +1,15 @@
 use crate::app_state::AppState;
-use crate::panic::send_panic;
+use crate::panic::{send_panic, PanicDetails};
 use bitvec::prelude::*;
 use control_core::helpers::loop_trottle::LoopThrottle;
 use smol::channel::Sender;
 use std::sync::Arc;
 use std::time::Duration;
+use tracing::{info_span, instrument, trace_span};
+use tracing_futures::Instrument as _;
 
 pub fn init_loop(
-    thread_panic_tx: Sender<&'static str>,
+    thread_panic_tx: Sender<PanicDetails>,
     app_state: Arc<AppState>,
 ) -> Result<(), anyhow::Error> {
     // Start control loop
@@ -22,8 +24,9 @@ pub fn init_loop(
                     throttle.sleep().await;
                     loop_once(app_state.clone()).await
                 }));
+
                 if let Err(err) = res {
-                    log::error!("Loop failed\n{:?}", err);
+                    tracing::error!("Loop failed\n{:?}", err);
                     break;
                 }
             }
@@ -45,6 +48,7 @@ pub fn init_loop(
     Ok(())
 }
 
+#[instrument(skip(app_state))]
 pub async fn loop_once<'maindevice>(app_state: Arc<AppState>) -> Result<(), anyhow::Error> {
     let ethercat_setup_guard = app_state.ethercat_setup.read().await;
 
@@ -52,6 +56,9 @@ pub async fn loop_once<'maindevice>(app_state: Arc<AppState>) -> Result<(), anyh
     // - tx/rx cycle
     // - copy inputs to devices
     if let Some(ethercat_setup) = ethercat_setup_guard.as_ref() {
+        let span = trace_span!("loop_once_inputs");
+        let _enter = span.enter();
+
         // TX/RX cycle
         ethercat_setup
             .group
@@ -100,26 +107,36 @@ pub async fn loop_once<'maindevice>(app_state: Arc<AppState>) -> Result<(), anyh
     }
 
     // execute machines
-    let machine_guard = app_state.machines.read().await;
-    let now = std::time::Instant::now();
-    for machine in machine_guard.iter() {
-        if let Ok(machine) = machine.1 {
-            // if the machine is currenlty locked (likely processing API call)
-            // we skip the machine
-            match machine.try_lock() {
-                Some(mut machine_guard) => {
-                    // execute machine
-                    machine_guard.act(now).await;
+    {
+        let span = trace_span!("loop_once_act");
+        let _enter = span.enter();
+
+        let machine_guard = app_state.machines.read().await;
+        let now = std::time::Instant::now();
+
+        for machine in machine_guard.iter() {
+            if let Ok(machine) = machine.1 {
+                // if the machine is currenlty locked (likely processing API call)
+                // we skip the machine
+                match machine.try_lock() {
+                    Some(mut machine_guard) => {
+                        let span = trace_span!("loop_once_act_machine",);
+                        let _enter = span.enter();
+                        // execute machine
+                        machine_guard.act(now).await;
+                    }
+                    None => {}
                 }
-                None => {}
             }
         }
     }
-    drop(machine_guard);
 
     // only if we have an ethercat setup
     // - copy outputs from devices
     if let Some(ethercat_setup) = ethercat_setup_guard.as_ref() {
+        let span = trace_span!("loop_once_outputs");
+        let _enter = span.enter();
+
         // copy outputs from devices
         for (i, subdevice) in ethercat_setup
             .group

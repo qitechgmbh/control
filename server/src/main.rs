@@ -13,9 +13,10 @@ use app_state::AppState;
 use control_core::helpers::loop_trottle::LoopThrottle;
 #[cfg(feature = "mock-machine")]
 use mock::init::init_mock;
+use panic::PanicDetails;
 use std::{panic::catch_unwind, process::exit, sync::Arc, time::Duration};
+use tracing::error;
 
-use env_logger::Env;
 use ethercat::init::init_ethercat;
 use r#loop::init_loop;
 use rest::init::init_api;
@@ -23,8 +24,12 @@ use rest::init::init_api;
 use serial::init::init_serial;
 use smol::channel::unbounded;
 
+#[cfg(all(not(target_env = "msvc"), not(feature = "dhat-heap")))]
+use jemalloc_stats::init_jemalloc_stats;
+
 pub mod app_state;
 pub mod ethercat;
+pub mod logging;
 pub mod r#loop;
 pub mod machines;
 #[cfg(feature = "mock-machine")]
@@ -34,25 +39,33 @@ pub mod rest;
 pub mod serial;
 pub mod socketio;
 
+#[cfg(all(not(target_env = "msvc"), not(feature = "dhat-heap")))]
+pub mod jemalloc_stats;
+
 fn main() {
+    logging::init_tracing();
+    tracing::info!("Tracing initialized successfully");
+
+    #[cfg(all(not(target_env = "msvc"), not(feature = "dhat-heap")))]
+    init_jemalloc_stats();
+
     // if the program panics we restart all of it
     match catch_unwind(|| main2()) {
         Ok(_) => {
-            log::info!("[{}::main] Program ended normally", module_path!());
+            tracing::info!("Exiting program with code 0");
             exit(0);
         }
         Err(err) => {
-            log::error!("[{}::main] Program panicked: {:?}", module_path!(), err);
+            tracing::error!("Exiting program with code 1 due to panic: {:?}", err);
             exit(1);
         }
     }
 }
 
 fn main2() {
-    env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
     let app_state = Arc::new(AppState::new());
 
-    let (thread_panic_tx, thread_panic_rx) = unbounded::<&'static str>();
+    let (thread_panic_tx, thread_panic_rx) = unbounded::<PanicDetails>();
 
     init_api(thread_panic_tx.clone(), app_state.clone()).expect("Failed to initialize API");
     #[cfg(not(feature = "mock-machine"))]
@@ -73,9 +86,8 @@ fn main2() {
         #[cfg(feature = "dhat-heap")]
         let dhat_analysis_start = std::time::Instant::now();
         #[cfg(feature = "dhat-heap")]
-        log::info!(
-            "[{}::main] Starting dhat heap profiler for {} seconds",
-            module_path!(),
+        tracing::info!(
+            "Starting dhat heap profiler for {} seconds",
             dhat_analysis_time.as_secs()
         );
 
@@ -95,15 +107,23 @@ fn main2() {
 
             match thread_panic_rx.try_recv() {
                 Ok(panic_details) => {
-                    log::error!(
-                        "[{}::main] Thread panicked: {:?}",
-                        module_path!(),
-                        panic_details
-                    );
+                    error!("{}", panic_details);
                     exit(1);
                 }
                 Err(_) => {}
             }
         }
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_main() {
+        // setup logging
+        logging::init_tracing();
+        ::tracing::info!("Running main test");
+    }
 }

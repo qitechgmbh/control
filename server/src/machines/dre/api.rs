@@ -12,6 +12,7 @@ use control_core::{
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::time::Duration;
+use tracing::instrument;
 
 #[derive(Serialize, Debug, Clone)]
 pub struct DiameterEvent {
@@ -80,15 +81,12 @@ enum Mutation {
 }
 
 impl NamespaceCacheingLogic<DreEvents> for DreMachineNamespace {
+    #[instrument(skip_all)]
     fn emit_cached(&mut self, events: DreEvents) {
         let event = match events.event_value() {
             Ok(event) => event,
             Err(err) => {
-                log::error!(
-                    "[{}::emit_cached] Failed to event.event_value(): {:?}",
-                    module_path!(),
-                    err
-                );
+                tracing::error!("Failed to emit: {:?}", err);
                 return;
             }
         };

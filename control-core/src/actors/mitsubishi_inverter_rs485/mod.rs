@@ -359,7 +359,7 @@ impl MitsubishiInverterRS485Actor {
                     Ok(result)
                 }
                 Err(_) => {
-                    log::error!("Error Parsing ModbusResponse!");
+                    tracing::error!("Error Parsing ModbusResponse!");
                     self.state = State::ReadyToSend;
                     Err(anyhow::anyhow!("error"))
                 }
@@ -380,7 +380,7 @@ impl MitsubishiInverterRS485Actor {
             let res = (self.serial_interface.write_message)(modbus_request.clone()).await;
             match res {
                 Ok(_) => (),
-                Err(_) => log::error!("ERROR: serial_interface.write_message has failed"),
+                Err(_) => tracing::error!("ERROR: serial_interface.write_message has failed"),
             }
             self.state = State::WaitingForRequestAccept;
             self.last_message_size = modbus_request.len();

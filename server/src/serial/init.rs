@@ -1,4 +1,4 @@
-use crate::panic::send_panic;
+use crate::panic::{PanicDetails, send_panic};
 use crate::socketio::main_namespace::MainNamespaceEvents;
 use crate::socketio::main_namespace::machines_event::MachinesEventBuilder;
 use crate::{app_state::AppState, machines::registry::MACHINE_REGISTRY};
@@ -7,7 +7,7 @@ use smol::channel::Sender;
 use std::{sync::Arc, thread, time::Duration};
 
 pub fn init_serial(
-    thread_panic_tx: Sender<&'static str>,
+    thread_panic_tx: Sender<PanicDetails>,
     app_state: Arc<AppState>,
 ) -> Result<(), anyhow::Error> {
     let thread_panic_tx_clone = thread_panic_tx.clone();
@@ -19,7 +19,7 @@ pub fn init_serial(
         .spawn(move || {
             let app_state_clone = app_state_clone;
             smol::block_on(async move {
-                send_panic("SerialDetectionThread", thread_panic_tx_clone);
+                send_panic(thread_panic_tx_clone);
 
                 let rt = smol::LocalExecutor::new();
                 rt.run(async {
@@ -43,7 +43,6 @@ pub fn init_serial(
                         if !result.added.is_empty() || !result.removed.is_empty() {
                             // sync serial device discovery to machine manager
                             {
-                                println!("{:?}", result);
                                 let mut machine_guard = app_state_clone.machines.write().await;
                                 // turn added devices into machines
                                 for (device_identifiaction, device) in result.added {

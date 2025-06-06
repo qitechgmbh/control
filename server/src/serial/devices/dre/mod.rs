@@ -5,10 +5,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use crate::{
-    machines::{MACHINE_DRE, VENDOR_QITECH},
-    panic::send_panic_error,
-};
+use crate::machines::{MACHINE_DRE, VENDOR_QITECH};
 use anyhow::anyhow;
 use control_core::{
     helpers::{
@@ -20,7 +17,9 @@ use control_core::{
         DeviceMachineIdentification, MachineIdentification, MachineIdentificationUnique,
     },
     modbus::{self, ModbusRequest, ModbusResponse},
-    serial::{SerialDevice, SerialDeviceNew, SerialDeviceNewParams},
+    serial::{
+        SerialDevice, SerialDeviceNew, SerialDeviceNewParams, panic::send_serial_device_panic,
+    },
 };
 use serial::SerialPort;
 use smol::lock::RwLock;
@@ -75,8 +74,6 @@ impl SerialDeviceNew for Dre {
     fn new_serial(
         params: &SerialDeviceNewParams,
     ) -> Result<(DeviceIdentification, Arc<RwLock<Dre>>), anyhow::Error> {
-        let path_clone = params.path.clone();
-
         let dre_data = Some(DreData {
             diameter: Length::new::<uom::si::length::millimeter>(0.0),
             last_timestamp: Instant::now(),
@@ -108,12 +105,14 @@ impl SerialDeviceNew for Dre {
         }));
 
         // Spawn the device thread
-        let device_thread_panix_tx = params.device_thread_panix_tx.clone();
+        let device_thread_panic_tx = params.device_thread_panic_tx.clone();
+        let path_for_panic = params.path.clone();
+        let path_for_removal = params.path.clone();
         let _self_clone = _self.clone();
         thread::Builder::new()
             .name("DRE".to_owned())
             .spawn(move || {
-                send_panic_error(path_clone.clone(), device_thread_panix_tx.clone());
+                send_serial_device_panic(path_for_panic, device_thread_panic_tx.clone());
                 let _ = smol::block_on(async {
                     let process_result = Self::process(_self_clone).await;
 
@@ -123,8 +122,8 @@ impl SerialDeviceNew for Dre {
                     };
 
                     // if the task exists we want to remove the device
-                    device_thread_panix_tx
-                        .send((path_clone, exit_reason))
+                    device_thread_panic_tx
+                        .send((path_for_removal, exit_reason))
                         .await
                         .expect("Failed to send device removal signal");
                 });

@@ -36,8 +36,8 @@ export function TouchSlider({
     [value, defaultValue, min, max],
   );
 
-  const minLabel = _minLabel ?? renderUnitSyntax(renderValue?.(min), unit);
-  const maxLabel = _maxLabel ?? renderUnitSyntax(renderValue?.(max), unit);
+  const minLabel = _minLabel ?? "MIN";
+  const maxLabel = _maxLabel ?? "MAX";
 
   const labelStyle = cva(
     "flex flex-row h-0 justify-between text-xs text-gray-400",

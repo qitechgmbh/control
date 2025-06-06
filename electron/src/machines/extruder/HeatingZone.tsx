@@ -50,7 +50,7 @@ export function HeatingZone({
             value={targetTemperature}
             defaultValue={150}
             min={50}
-            max={330}
+            max={300}
             unit="C"
             title="Target Temperature"
             renderValue={(value) => roundToDecimals(value, 1)}

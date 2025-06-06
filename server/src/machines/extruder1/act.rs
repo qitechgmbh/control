@@ -18,6 +18,12 @@ impl Actor for ExtruderV2 {
                 self.turn_heating_off();
             }
 
+            if self.mode == ExtruderV2Mode::Extrude
+                && self.screw_speed_controller.get_motor_enabled() == false
+            {
+                self.switch_to_heat();
+            }
+
             let now = Instant::now();
 
             if now.duration_since(self.last_measurement_emit) > Duration::from_millis(16) {
@@ -43,6 +49,7 @@ impl Actor for ExtruderV2 {
                 self.emit_rotation_state();
                 self.emit_bar();
                 self.emit_rpm();
+                self.emit_extruder_settings();
 
                 self.last_measurement_emit = now;
             }

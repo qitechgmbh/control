@@ -2,11 +2,17 @@ use std::time::Instant;
 
 #[derive(Debug)]
 pub struct AccelerationSpeedController {
-    /// Maximum acceleration in units per second (positive value)
-    acceleration: f64,
+    /// Maximum deceleration in units per second (positive value)
+    max_acceleration: f64,
 
-    /// Maximum deceleration in units per second (negative value)
-    deceleration: f64,
+    /// Maximum acceleratoin in units per second (negative value)
+    min_acceleration: f64,
+
+    /// Minimum speed limit (None for no limit)
+    min_speed: Option<f64>,
+
+    /// Maximum speed limit (None for no limit)
+    max_speed: Option<f64>,
 
     /// Calculated speed at the last update
     last_speed: f64,
@@ -16,13 +22,34 @@ pub struct AccelerationSpeedController {
 }
 
 impl AccelerationSpeedController {
-    pub fn new(acceleration: f64, deceleration: f64, initial_speed: f64) -> Self {
+    pub fn new(
+        min_speed: Option<f64>,
+        max_speed: Option<f64>,
+        min_acceleration: f64,
+        max_acceleration: f64,
+        initial_speed: f64,
+    ) -> Self {
         Self {
-            acceleration,
-            deceleration,
+            min_acceleration,
+            max_acceleration,
+            min_speed,
+            max_speed,
             last_speed: initial_speed,
             last_t: None,
         }
+    }
+
+    /// Creates a new acceleration speed controller with simplified parameters.
+    /// Sets min_acceleration to -max_acceleration for symmetric behavior.
+    /// No speed limits are applied.
+    pub fn new_simple(max_acceleration: f64, initial_speed: f64) -> Self {
+        Self::new(
+            None,                    // min_speed
+            None,                    // max_speed
+            -max_acceleration,       // min_acceleration (deceleration)
+            max_acceleration,        // max_acceleration
+            initial_speed,
+        )
     }
 
     pub fn update(&mut self, target_speed: f64, t: Instant) -> f64 {
@@ -41,10 +68,10 @@ impl AccelerationSpeedController {
         // Get acceleration
         let acceleration = if target_speed > self.last_speed {
             // We are accelerating
-            self.acceleration
+            self.max_acceleration
         } else if target_speed < self.last_speed {
             // We are decelerating
-            self.deceleration
+            self.min_acceleration
         } else {
             0.0
         };
@@ -63,6 +90,9 @@ impl AccelerationSpeedController {
             new_speed
         };
 
+        // Apply speed limits
+        let new_speed = self.apply_speed_limits(new_speed);
+
         self.last_speed = new_speed;
 
         new_speed
@@ -73,12 +103,42 @@ impl AccelerationSpeedController {
         self.last_t = None; // Reset the last update time
     }
 
-    pub fn set_acceleration(&mut self, acceleration: f64) {
-        self.acceleration = acceleration;
+    pub fn set_max_acceleration(&mut self, acceleration: f64) {
+        self.max_acceleration = acceleration;
     }
 
-    pub fn set_deceleration(&mut self, deceleration: f64) {
-        self.deceleration = deceleration;
+    fn apply_speed_limits(&self, speed: f64) -> f64 {
+        let mut limited_speed = speed;
+
+        if let Some(min) = self.min_speed {
+            limited_speed = limited_speed.max(min);
+        }
+
+        if let Some(max) = self.max_speed {
+            limited_speed = limited_speed.min(max);
+        }
+
+        limited_speed
+    }
+
+    pub fn get_min_speed(&self) -> Option<f64> {
+        self.min_speed
+    }
+
+    pub fn get_max_speed(&self) -> Option<f64> {
+        self.max_speed
+    }
+
+    pub fn set_min_speed(&mut self, min_speed: Option<f64>) {
+        self.min_speed = min_speed;
+    }
+
+    pub fn set_max_speed(&mut self, max_speed: Option<f64>) {
+        self.max_speed = max_speed;
+    }
+
+    pub fn set_min_acceleration(&mut self, deceleration: f64) {
+        self.min_acceleration = deceleration;
     }
 }
 
@@ -97,16 +157,16 @@ mod tests {
 
     #[test]
     fn test_initialization() {
-        let controller = AccelerationSpeedController::new(10.0, -15.0, 5.0);
-        assert_relative_eq!(controller.acceleration, 10.0, epsilon = EPSILON);
-        assert_relative_eq!(controller.deceleration, -15.0, epsilon = EPSILON);
+        let controller = AccelerationSpeedController::new(None, None, -15.0, 10.0, 5.0);
+        assert_relative_eq!(controller.max_acceleration, 10.0, epsilon = EPSILON);
+        assert_relative_eq!(controller.min_acceleration, -15.0, epsilon = EPSILON);
         assert_relative_eq!(controller.last_speed, 5.0, epsilon = EPSILON);
         assert!(controller.last_t.is_none());
     }
 
     #[test]
     fn test_first_update() {
-        let mut controller = AccelerationSpeedController::new(10.0, -15.0, 5.0);
+        let mut controller = AccelerationSpeedController::new(None, None, -15.0, 10.0, 5.0);
         let now = Instant::now();
 
         let speed = controller.update(5.0, now);
@@ -118,7 +178,7 @@ mod tests {
 
     #[test]
     fn test_acceleration() {
-        let mut controller = AccelerationSpeedController::new(10.0, -15.0, 0.0);
+        let mut controller = AccelerationSpeedController::new(None, None, -15.0, 10.0, 0.0);
         let t1 = Instant::now();
         controller.update(0.0, t1); // Initialize last_t
 
@@ -137,7 +197,7 @@ mod tests {
 
     #[test]
     fn test_deceleration() {
-        let mut controller = AccelerationSpeedController::new(10.0, -15.0, 10.0);
+        let mut controller = AccelerationSpeedController::new(None, None, -15.0, 10.0, 10.0);
         let t1 = Instant::now();
         controller.update(10.0, t1); // Initialize last_t
 
@@ -156,7 +216,7 @@ mod tests {
 
     #[test]
     fn test_constant_speed() {
-        let mut controller = AccelerationSpeedController::new(10.0, -15.0, 7.0);
+        let mut controller = AccelerationSpeedController::new(None, None, -15.0, 10.0, 7.0);
         let t1 = Instant::now();
         controller.update(7.0, t1); // Initialize last_t
 
@@ -169,7 +229,7 @@ mod tests {
 
     #[test]
     fn test_acceleration_limit() {
-        let mut controller = AccelerationSpeedController::new(10.0, -15.0, 0.0);
+        let mut controller = AccelerationSpeedController::new(None, None, -15.0, 10.0, 0.0);
         let t1 = Instant::now();
         controller.update(0.0, t1); // Initialize last_t
 
@@ -186,7 +246,7 @@ mod tests {
 
     #[test]
     fn test_deceleration_limit() {
-        let mut controller = AccelerationSpeedController::new(10.0, -15.0, 20.0);
+        let mut controller = AccelerationSpeedController::new(None, None, -15.0, 10.0, 20.0);
         let t1 = Instant::now();
         controller.update(20.0, t1); // Initialize last_t
 
@@ -203,7 +263,7 @@ mod tests {
 
     #[test]
     fn test_zero_time_delta() {
-        let mut controller = AccelerationSpeedController::new(10.0, -15.0, 5.0);
+        let mut controller = AccelerationSpeedController::new(None, None, -15.0, 10.0, 5.0);
         let now = Instant::now();
 
         controller.update(5.0, now); // Initialize last_t
@@ -216,7 +276,7 @@ mod tests {
 
     #[test]
     fn test_acceleration_capped_at_target() {
-        let mut controller = AccelerationSpeedController::new(100.0, -15.0, 3.0);
+        let mut controller = AccelerationSpeedController::new(None, None, -15.0, 100.0, 3.0);
         let t1 = Instant::now();
         controller.update(3.0, t1); // Initialize last_t
 
@@ -234,7 +294,7 @@ mod tests {
 
     #[test]
     fn test_deceleration_capped_at_target() {
-        let mut controller = AccelerationSpeedController::new(10.0, -100.0, 8.0);
+        let mut controller = AccelerationSpeedController::new(None, None, -100.0, 10.0, 8.0);
         let t1 = Instant::now();
         controller.update(8.0, t1); // Initialize last_t
 
@@ -252,7 +312,7 @@ mod tests {
 
     #[test]
     fn test_exact_acceleration_to_target() {
-        let mut controller = AccelerationSpeedController::new(20.0, -15.0, 3.0);
+        let mut controller = AccelerationSpeedController::new(None, None, -15.0, 20.0, 3.0);
         let t1 = Instant::now();
         controller.update(3.0, t1); // Initialize last_t
 
@@ -269,7 +329,7 @@ mod tests {
 
     #[test]
     fn test_exact_deceleration_to_target() {
-        let mut controller = AccelerationSpeedController::new(10.0, -30.0, 8.0);
+        let mut controller = AccelerationSpeedController::new(None, None, -30.0, 10.0, 8.0);
         let t1 = Instant::now();
         controller.update(8.0, t1); // Initialize last_t
 
@@ -282,5 +342,93 @@ mod tests {
         let speed = controller.update(5.0, t2);
 
         assert_relative_eq!(speed, 5.0, epsilon = EPSILON);
+    }
+
+    #[test]
+    fn test_speed_limits_initialization() {
+        let controller =
+            AccelerationSpeedController::new(Some(-50.0), Some(100.0), -10.0, 20.0, 5.0);
+        assert_eq!(controller.get_min_speed(), Some(-50.0));
+        assert_eq!(controller.get_max_speed(), Some(100.0));
+    }
+
+    #[test]
+    fn test_max_speed_limit() {
+        let mut controller = AccelerationSpeedController::new(None, Some(50.0), -10.0, 100.0, 0.0);
+        let t1 = Instant::now();
+        controller.update(0.0, t1); // Initialize last_t
+
+        let dt = 1.0; // 1 second
+        let t2 = future_instant(t1, dt);
+
+        // Try to reach 80.0, but should be limited to 50.0
+        let speed = controller.update(80.0, t2);
+        assert_eq!(speed, 50.0);
+    }
+
+    #[test]
+    fn test_min_speed_limit() {
+        let mut controller = AccelerationSpeedController::new(Some(-30.0), None, -100.0, 10.0, 0.0);
+        let t1 = Instant::now();
+        controller.update(0.0, t1); // Initialize last_t
+
+        let dt = 1.0; // 1 second
+        let t2 = future_instant(t1, dt);
+
+        // Try to reach -50.0, but should be limited to -30.0
+        let speed = controller.update(-50.0, t2);
+        assert_eq!(speed, -30.0);
+    }
+
+    #[test]
+    fn test_speed_within_limits() {
+        let mut controller =
+            AccelerationSpeedController::new(Some(-50.0), Some(50.0), -20.0, 20.0, 0.0);
+        let t1 = Instant::now();
+        controller.update(0.0, t1); // Initialize last_t
+
+        let dt = 0.5; // 0.5 seconds
+        let t2 = future_instant(t1, dt);
+
+        // Target 10.0, with acceleration 20.0, should reach 10.0 in 0.5s
+        let speed = controller.update(10.0, t2);
+        assert_relative_eq!(speed, 10.0, epsilon = EPSILON);
+    }
+
+    #[test]
+    fn test_speed_limit_setters() {
+        let mut controller = AccelerationSpeedController::new(None, None, -15.0, 10.0, 5.0);
+
+        // Initially no limits
+        assert_eq!(controller.get_min_speed(), None);
+        assert_eq!(controller.get_max_speed(), None);
+
+        // Set limits
+        controller.set_min_speed(Some(-100.0));
+        controller.set_max_speed(Some(100.0));
+
+        assert_eq!(controller.get_min_speed(), Some(-100.0));
+        assert_eq!(controller.get_max_speed(), Some(100.0));
+
+        // Remove limits
+        controller.set_min_speed(None);
+        controller.set_max_speed(None);
+
+        assert_eq!(controller.get_min_speed(), None);
+        assert_eq!(controller.get_max_speed(), None);
+    }
+
+    #[test]
+    fn test_new_simple_constructor() {
+        let controller = AccelerationSpeedController::new_simple(20.0, 5.0);
+
+        // Check that acceleration values are symmetric
+        assert_eq!(controller.min_acceleration, -20.0);
+        assert_eq!(controller.max_acceleration, 20.0);
+        assert_eq!(controller.last_speed, 5.0);
+
+        // Check that speed limits are None
+        assert_eq!(controller.get_min_speed(), None);
+        assert_eq!(controller.get_max_speed(), None);
     }
 }

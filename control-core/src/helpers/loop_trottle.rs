@@ -32,7 +32,7 @@ impl LoopThrottle {
             on_update,
         }
     }
-
+    #[instrument(skip_all)]
     pub async fn sleep(&mut self) {
         self.total_cycles += 1;
 
