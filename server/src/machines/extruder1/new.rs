@@ -338,6 +338,7 @@ impl MachineNewTrait for ExtruderV2 {
                 DigitalOutputSetter::new(digital_out_1),
                 Heating::default(),
                 Duration::from_millis(500),
+                700.0,
             );
 
             // Only front heating on: These values work 0.08, 0.001, 0.007, Overshoot 0.5 undershoot ~0.7 (Problems when starting far away because of integral)
@@ -351,6 +352,7 @@ impl MachineNewTrait for ExtruderV2 {
                 DigitalOutputSetter::new(digital_out_2),
                 Heating::default(),
                 Duration::from_millis(500),
+                700.0,
             );
 
             // Only front heating on: These values work 0.08, 0.001, 0.007, Overshoot 0.5 undershoot ~0.7 (Problems when starting far away because of integral)
@@ -364,6 +366,7 @@ impl MachineNewTrait for ExtruderV2 {
                 DigitalOutputSetter::new(digital_out_3),
                 Heating::default(),
                 Duration::from_millis(500),
+                700.0,
             );
 
             // Only front heating on: These values work 0.08, 0.001, 0.007, Overshoot 0.5 undershoot ~0.7 (Problems when starting far away because of integral)
@@ -377,7 +380,9 @@ impl MachineNewTrait for ExtruderV2 {
                 DigitalOutputSetter::new(digital_out_4),
                 Heating::default(),
                 Duration::from_millis(500),
+                200.0,
             );
+
             let inverter = MitsubishiInverterRS485Actor::new(SerialInterface::new(
                 el6021,
                 el6021::EL6021Port::SI1,

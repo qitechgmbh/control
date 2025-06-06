@@ -245,7 +245,6 @@ impl ExtruderV2 {
     fn emit_heating(&mut self, heating: Heating, heating_type: HeatingType) {
         let event = api::HeatingStateEvent {
             temperature: heating.temperature.get::<degree_celsius>(),
-            heating: heating.heating,
             target_temperature: heating.target_temperature.get::<degree_celsius>(),
             wiring_error: heating.wiring_error,
         }
@@ -253,6 +252,27 @@ impl ExtruderV2 {
 
         self.namespace
             .emit_cached(ExtruderV2Events::HeatingStateEvent(event));
+    }
+
+    fn emit_heating_element_power(&mut self, heating_type: HeatingType) {
+        let wattage = match heating_type {
+            HeatingType::Nozzle => self
+                .temperature_controller_nozzle
+                .get_heating_element_wattage(),
+            HeatingType::Front => self
+                .temperature_controller_front
+                .get_heating_element_wattage(),
+            HeatingType::Back => self
+                .temperature_controller_back
+                .get_heating_element_wattage(),
+            HeatingType::Middle => self
+                .temperature_controller_middle
+                .get_heating_element_wattage(),
+        };
+
+        let event = api::HeatingPowerEvent { wattage }.build(heating_type);
+        self.namespace
+            .emit_cached(ExtruderV2Events::HeatingPowerEvent(event));
     }
 
     fn set_target_temperature(&mut self, target_temperature: f64, heating_type: HeatingType) {

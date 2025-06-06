@@ -41,6 +41,7 @@ export function useExtruder2() {
   const mode = useMode(machineIdentification);
   const motor = useMotor(machineIdentification);
   const heating = useHeatingTemperature(machineIdentification);
+  const heatingPower = useHeatingPower(machineIdentification);
   const settings = useSettings(machineIdentification);
   return {
     ...inverter,
@@ -48,7 +49,22 @@ export function useExtruder2() {
     ...motor,
     ...heating,
     ...settings,
+    ...heatingPower,
   };
+}
+
+export function useHeatingPower(
+  machine_identification_unique: MachineIdentificationUnique,
+): {
+  nozzlePower: TimeSeries;
+  frontPower: TimeSeries;
+  middlePower: TimeSeries;
+  backPower: TimeSeries;
+} {
+  const { nozzlePower, frontPower, middlePower, backPower } =
+    useExtruder2Namespace(machine_identification_unique);
+
+  return { nozzlePower, frontPower, middlePower, backPower };
 }
 
 export function useSettings(

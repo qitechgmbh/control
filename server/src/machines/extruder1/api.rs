@@ -31,7 +31,6 @@ pub struct MotorStateEvent {
 #[derive(Serialize, Debug, Clone)]
 pub struct HeatingStateEvent {
     pub temperature: f64,
-    pub heating: bool,
     pub target_temperature: f64,
     pub wiring_error: bool,
 }
@@ -161,6 +160,22 @@ impl ExtruderSettingsStateEvent {
     }
 }
 
+#[derive(Serialize, Debug, Clone)]
+pub struct HeatingPowerEvent {
+    pub wattage: f64,
+}
+
+impl HeatingPowerEvent {
+    pub fn build(&self, heating_type: HeatingType) -> Event<Self> {
+        match heating_type {
+            HeatingType::Nozzle => Event::new("NozzleHeatingPowerEvent", self.clone()),
+            HeatingType::Front => Event::new("FrontHeatingPowerEvent", self.clone()),
+            HeatingType::Back => Event::new("BackHeatingPowerEvent", self.clone()),
+            HeatingType::Middle => Event::new("MiddleHeatingPowerEvent", self.clone()),
+        }
+    }
+}
+
 pub enum ExtruderV2Events {
     RotationStateEvent(Event<RotationStateEvent>),
     ModeEvent(Event<ModeEvent>),
@@ -169,6 +184,7 @@ pub enum ExtruderV2Events {
     ScrewStateEvent(Event<ScrewStateEvent>),
     HeatingStateEvent(Event<HeatingStateEvent>),
     ExtruderSettingsStateEvent(Event<ExtruderSettingsStateEvent>),
+    HeatingPowerEvent(Event<HeatingPowerEvent>),
 }
 
 #[derive(Deserialize, Serialize)]
@@ -227,6 +243,7 @@ impl CacheableEvents<ExtruderV2Events> for ExtruderV2Events {
             ExtruderV2Events::ScrewStateEvent(event) => event.try_into(),
             ExtruderV2Events::HeatingStateEvent(event) => event.try_into(),
             ExtruderV2Events::ExtruderSettingsStateEvent(event) => event.try_into(),
+            ExtruderV2Events::HeatingPowerEvent(event) => event.try_into(),
         }
     }
 
@@ -243,6 +260,7 @@ impl CacheableEvents<ExtruderV2Events> for ExtruderV2Events {
             ExtruderV2Events::ScrewStateEvent(_) => cache_one,
             ExtruderV2Events::HeatingStateEvent(_) => cache_one,
             ExtruderV2Events::ExtruderSettingsStateEvent(_) => cache_one,
+            ExtruderV2Events::HeatingPowerEvent(_) => cache_one,
         }
     }
 }

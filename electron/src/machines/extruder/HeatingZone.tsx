@@ -7,22 +7,22 @@ import { Heating } from "./extruder2/extruder2Namespace";
 import { TimeSeries } from "@/lib/timeseries";
 import { TimeSeriesValueNumeric } from "@/control/TimeSeriesValue";
 import { StatusBadge } from "@/control/StatusBadge";
-import { Icon } from "@/components/Icon";
 
 type Props = {
   title: string;
   heatingState: Heating | undefined;
   heatingTimeSeries: TimeSeries;
+  heatingPower: TimeSeries;
   onChangeTargetTemp?: (temperature: number) => void;
 };
 export function HeatingZone({
   title,
   heatingState,
   heatingTimeSeries,
+  heatingPower,
   onChangeTargetTemp,
 }: Props) {
   const targetTemperature = heatingState?.target_temperature ?? 150;
-  const heating = heatingState?.heating ?? false;
 
   return (
     <ControlCard className="bg-red" title={title}>
@@ -36,13 +36,6 @@ export function HeatingZone({
             }
             timeseries={heatingTimeSeries}
           />
-
-          <div className="flex items-center space-x-2">
-            <Icon
-              name="lu:Flame"
-              className={`h-5 w-5 ${heating ? "text-orange-500" : "text-gray-400"}`}
-            />
-          </div>
         </div>
 
         <Label label="Target Temperature">
@@ -58,6 +51,15 @@ export function HeatingZone({
           />
         </Label>
       </div>
+
+      <TimeSeriesValueNumeric
+        label="Heating Power"
+        unit="W"
+        renderValue={(value) =>
+          heatingState?.wiring_error ? "0.0" : roundToDecimals(value, 0)
+        }
+        timeseries={heatingPower}
+      />
 
       {heatingState?.wiring_error && (
         <StatusBadge variant="error">

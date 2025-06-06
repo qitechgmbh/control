@@ -23,6 +23,8 @@ export function getUnitIcon(unit: Unit): IconName {
       return "lu:Gauge";
     case "mHz":
       return "lu:AudioWaveform";
+    case "W":
+      return "lu:Zap";
     default:
       return "lu:ChartNoAxesColumn";
   }
@@ -48,6 +50,8 @@ export function renderUnitSymbol(unit: Unit | undefined): string {
       return "m/min";
     case "mHz":
       return "mHz";
+    case "W":
+      return "W";
     default:
       return "";
   }
@@ -110,6 +114,7 @@ export const units = [
   "bar",
   "m/min",
   "mHz",
+  "W",
 ] as const;
 
 export type Unit = (typeof units)[number];
