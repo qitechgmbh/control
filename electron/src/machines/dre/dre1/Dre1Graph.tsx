@@ -6,7 +6,6 @@ import { useDre1 } from "./useDre";
 export function Dre1GraphsPage() {
   const { dreDiameter, dreState } = useDre1();
 
-  // Controlled local states synced with dreState
   const targetDiameter = dreState?.data?.target_diameter ?? 0;
   const lowerTolerance = dreState?.data?.lower_tolerance ?? 0;
   const higherTolerance = dreState?.data?.higher_tolerance ?? 0;

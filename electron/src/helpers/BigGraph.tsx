@@ -227,7 +227,6 @@ export function BigGraph({
         animationStateRef.current.isAnimating = false;
       }
 
-      // **KEY CHANGE: Pass the real points count to buildUPlotData**
       const animatedUData = buildUPlotData(
         animatedTimestamps,
         animatedValues,
@@ -287,7 +286,6 @@ export function BigGraph({
     animationFrameRef.current = requestAnimationFrame(animate);
   };
 
-  // **STOP ALL ANIMATIONS**
   const stopAnimations = () => {
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
@@ -797,40 +795,41 @@ export function BigGraph({
 
     chartCreatedRef.current = true;
 
-    // **INITIALIZE LAST RENDERED DATA**
     lastRenderedDataRef.current = {
       timestamps: [...timestamps],
       values: [...values],
     };
   };
-
+  const isSwitchingModeRef = useRef(false);
+  const isUserTimeWindowChangeRef = useRef(false);
   const switchToLiveMode = () => {
-    console.log(
-      "Switching to live mode with selectedTimeWindow:",
-      selectedTimeWindow,
-    );
-
-    setIsLiveMode(true);
-
+    // Set switching flag
+    isSwitchingModeRef.current = true;
     // Stop any ongoing animations
     stopAnimations();
 
-    // Store the current time window before any state changes
     const currentTimeWindow = selectedTimeWindow;
 
-    // Force set the view mode based on time window
+    // Update state synchronously
+    setIsLiveMode(true);
+
+    // Determine view mode based on time window
     if (currentTimeWindow === "all") {
       setViewMode("all");
     } else {
       setViewMode("default");
     }
 
+    // Show all data immediately in live mode with current time window
     if (uplotRef.current && newData?.long) {
       const [timestamps, values] = seriesToUPlotData(newData.long);
+      const fullData = buildUPlotData(timestamps, values);
+      uplotRef.current.setData(fullData);
+
+      // Apply the selected time window immediately using stored value
       if (timestamps.length > 0) {
         const latestTimestamp = timestamps[timestamps.length - 1];
 
-        // Apply the selected time window immediately
         if (currentTimeWindow === "all") {
           const fullStart = startTimeRef.current ?? timestamps[0];
           uplotRef.current.setScale("x", {
@@ -838,46 +837,39 @@ export function BigGraph({
             max: latestTimestamp,
           });
           updateYAxisScale(timestamps, values, fullStart, latestTimestamp);
-          manualScaleRef.current = null;
         } else {
           const viewStart = latestTimestamp - (currentTimeWindow as number);
-          console.log("Setting live mode scale:", {
-            currentTimeWindow,
-            latestTimestamp,
-            viewStart,
-            calculatedWindow: latestTimestamp - viewStart,
-          });
           uplotRef.current.setScale("x", {
             min: viewStart,
             max: latestTimestamp,
           });
           updateYAxisScale(timestamps, values, viewStart, latestTimestamp);
-          manualScaleRef.current = null;
         }
 
-        // Show all data immediately in live mode
-        const fullData = buildUPlotData(timestamps, values);
-        uplotRef.current.setData(fullData);
-
-        // Update last rendered data
-        lastRenderedDataRef.current = { timestamps, values };
+        // Clear manual scale reference for live mode
+        manualScaleRef.current = null;
       }
+
+      // Update last rendered data
+      lastRenderedDataRef.current = { timestamps, values };
     }
 
-    console.log(
-      "Live mode switch complete. Applied timeWindow:",
-      currentTimeWindow,
-      "viewMode should be:",
-      currentTimeWindow === "all" ? "all" : "default",
-    );
+    setTimeout(() => {
+      isSwitchingModeRef.current = false;
+    }, 100);
   };
 
   const switchToHistoricalMode = () => {
-    setIsLiveMode(false);
-    setViewMode("manual");
-
+    // Set switching flag
+    isSwitchingModeRef.current = true;
     // Stop any ongoing animations
     stopAnimations();
+
+    const currentTimeWindow = selectedTimeWindow;
+
+    // Update state synchronously
+    setIsLiveMode(false);
+    setViewMode("manual");
 
     if (uplotRef.current && uplotRef.current.scales) {
       const xScale = uplotRef.current.scales.x;
@@ -903,11 +895,11 @@ export function BigGraph({
       const fullData = buildUPlotData(timestamps, values);
       uplotRef.current.setData(fullData);
 
-      // Apply the selected time window immediately
+      // Apply the selected time window immediately using stored value
       if (timestamps.length > 0) {
         const latestTimestamp = timestamps[timestamps.length - 1];
 
-        if (selectedTimeWindow === "all") {
+        if (currentTimeWindow === "all") {
           const fullStart = startTimeRef.current ?? timestamps[0];
           uplotRef.current.setScale("x", {
             min: fullStart,
@@ -915,7 +907,7 @@ export function BigGraph({
           });
           updateYAxisScale(timestamps, values, fullStart, latestTimestamp);
         } else {
-          const viewStart = latestTimestamp - (selectedTimeWindow as number);
+          const viewStart = latestTimestamp - (currentTimeWindow as number);
           uplotRef.current.setScale("x", {
             min: viewStart,
             max: latestTimestamp,
@@ -936,6 +928,9 @@ export function BigGraph({
       // Update last rendered data
       lastRenderedDataRef.current = { timestamps, values };
     }
+    setTimeout(() => {
+      isSwitchingModeRef.current = false;
+    }, 100); // Increased delay slightly
   };
 
   // Simple scroll detection
@@ -987,14 +982,13 @@ export function BigGraph({
       chartCreatedRef.current = false;
     };
   }, [newData?.long, containerRef.current]);
-  // **NEW: Data updates effect with point-by-point animation**
   useEffect(() => {
     if (
       !uplotRef.current ||
       !newData?.long ||
       isScrollingRef.current ||
       !chartCreatedRef.current ||
-      !isLiveMode // Only animate in live mode
+      !isLiveMode
     )
       return;
 
@@ -1058,7 +1052,7 @@ export function BigGraph({
     isLiveMode,
   ]);
 
-  // **MODIFIED: Live updates effect for current value (no animation)**
+  // Live data updates effect
   useEffect(() => {
     if (
       !uplotRef.current ||
@@ -1066,7 +1060,7 @@ export function BigGraph({
       isScrollingRef.current ||
       !isLiveMode ||
       !chartCreatedRef.current ||
-      animationStateRef.current.isAnimating // Don't interfere with point animations
+      animationStateRef.current.isAnimating
     )
       return;
 
@@ -1246,65 +1240,84 @@ export function BigGraph({
       alert("Error exporting data to Excel. Please try again.");
     }
   };
-
-  // Handle time window change with immediate application
   const handleTimeWindowChange = (newTimeWindow: number | "all") => {
-    setSelectedTimeWindow(newTimeWindow);
+    if (isSwitchingModeRef.current) {
+      return;
+    }
+
+    isUserTimeWindowChangeRef.current = true;
 
     // Stop any ongoing animations when changing time window
     stopAnimations();
 
-    if (!uplotRef.current || !newData?.long) return;
+    // Update the selected time window first
+    setSelectedTimeWindow(newTimeWindow);
+
+    if (!uplotRef.current || !newData?.long) {
+      isUserTimeWindowChangeRef.current = false;
+      return;
+    }
 
     const [timestamps, values] = seriesToUPlotData(newData.long);
-    if (timestamps.length === 0) return;
+    if (timestamps.length === 0) {
+      isUserTimeWindowChangeRef.current = false;
+      return;
+    }
 
+    // Apply the time window immediately with proper view mode
     if (newTimeWindow === "all") {
       setViewMode("all");
-      setIsLiveMode(true);
-      const fullStart = startTimeRef.current ?? timestamps[0];
-      const fullEnd = timestamps[timestamps.length - 1];
-
-      uplotRef.current.setScale("x", {
-        min: fullStart,
-        max: fullEnd,
-      });
-      manualScaleRef.current = null;
-    } else if (isLiveMode) {
-      const latestTimestamp = timestamps[timestamps.length - 1];
-      const viewStart = latestTimestamp - newTimeWindow;
-
-      uplotRef.current.setScale("x", {
-        min: viewStart,
-        max: latestTimestamp,
-      });
-      setViewMode("default");
+      if (isLiveMode) {
+        const fullStart = startTimeRef.current ?? timestamps[0];
+        const fullEnd = timestamps[timestamps.length - 1];
+        uplotRef.current.setScale("x", { min: fullStart, max: fullEnd });
+        updateYAxisScale(timestamps, values, fullStart, fullEnd);
+      }
       manualScaleRef.current = null;
     } else {
-      const rightmostTimestamp = getRightmostVisibleTimestamp();
-      if (rightmostTimestamp) {
-        const newViewStart = rightmostTimestamp - newTimeWindow;
-        const minY = Math.min(...values);
-        const maxY = Math.max(...values);
-        const range = maxY - minY || 1;
-
+      if (isLiveMode) {
+        setViewMode("default");
+        const latestTimestamp = timestamps[timestamps.length - 1];
+        const viewStart = latestTimestamp - newTimeWindow;
         uplotRef.current.setScale("x", {
-          min: newViewStart,
-          max: rightmostTimestamp,
+          min: viewStart,
+          max: latestTimestamp,
         });
+        updateYAxisScale(timestamps, values, viewStart, latestTimestamp);
+        manualScaleRef.current = null;
+      } else {
+        // Historical mode - maintain current position but adjust window
+        const rightmostTimestamp = getRightmostVisibleTimestamp();
+        if (rightmostTimestamp) {
+          const newViewStart = rightmostTimestamp - newTimeWindow;
+          uplotRef.current.setScale("x", {
+            min: newViewStart,
+            max: rightmostTimestamp,
+          });
+          updateYAxisScale(
+            timestamps,
+            values,
+            newViewStart,
+            rightmostTimestamp,
+          );
 
-        manualScaleRef.current = {
-          x: { min: newViewStart, max: rightmostTimestamp },
-          y: { min: minY - range * 0.1, max: maxY + range * 0.1 },
-        };
-        setViewMode("manual");
+          manualScaleRef.current = {
+            x: { min: newViewStart, max: rightmostTimestamp },
+            y: manualScaleRef.current?.y ?? {
+              min: Math.min(...values),
+              max: Math.max(...values),
+            },
+          };
+        }
       }
     }
 
-    updateYAxisScale(timestamps, values);
-
     // Update last rendered data to current state
     lastRenderedDataRef.current = { timestamps, values };
+
+    setTimeout(() => {
+      isUserTimeWindowChangeRef.current = false;
+    }, 50); // Reduced timeout
   };
 
   const displayValue =
