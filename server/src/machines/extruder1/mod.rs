@@ -255,6 +255,27 @@ impl ExtruderV2 {
             .emit_cached(ExtruderV2Events::HeatingStateEvent(event));
     }
 
+    fn emit_heating_element_power(&mut self, heating_type: HeatingType) {
+        let wattage = match heating_type {
+            HeatingType::Nozzle => self
+                .temperature_controller_nozzle
+                .get_heating_element_wattage(),
+            HeatingType::Front => self
+                .temperature_controller_front
+                .get_heating_element_wattage(),
+            HeatingType::Back => self
+                .temperature_controller_back
+                .get_heating_element_wattage(),
+            HeatingType::Middle => self
+                .temperature_controller_middle
+                .get_heating_element_wattage(),
+        };
+
+        let event = api::HeatingPowerEvent { wattage }.build(heating_type);
+        self.namespace
+            .emit_cached(ExtruderV2Events::HeatingPowerEvent(event));
+    }
+
     fn set_target_temperature(&mut self, target_temperature: f64, heating_type: HeatingType) {
         let target_temp = ThermodynamicTemperature::new::<degree_celsius>(target_temperature);
 
