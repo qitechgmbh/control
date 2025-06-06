@@ -243,7 +243,7 @@ export function Winder2ControlPage() {
             label="Speed"
             unit="m/min"
             timeseries={pullerSpeed}
-            renderValue={(value) => roundToDecimals(value, 0)}
+            renderValue={(value) => roundToDecimals(value, 1)}
           />
           <Label label="Regulation">
             <SelectionGroup
@@ -273,7 +273,7 @@ export function Winder2ControlPage() {
               min={0}
               max={75}
               step={0.1}
-              renderValue={(value) => roundToDecimals(value, 0)}
+              renderValue={(value) => roundToDecimals(value, 1)}
               onChange={pullerSetTargetSpeed}
             />
           </Label>
