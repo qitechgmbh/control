@@ -49,6 +49,10 @@ pub async fn discover_ethercat_interface() -> Result<String, anyhow::Error> {
                 && iface.is_running()
                 && !iface.is_loopback()
                 && !iface.name.starts_with("bridge")
+                && !iface.name.starts_with("utun")   // Exclude tunnel interfaces
+                && !iface.name.starts_with("awdl")   // Exclude Apple Wireless Direct Link
+                && !iface.name.starts_with("anpi")   // Exclude Apple Network Privacy Interface
+                && !iface.name.starts_with("llw") // Exclude Apple low-latency WLAN
         })
         .collect::<Vec<_>>();
 
@@ -60,34 +64,40 @@ pub async fn discover_ethercat_interface() -> Result<String, anyhow::Error> {
         .iter()
         .map(|iface| {
             let name = iface.name.clone();
-            std::thread::spawn(move || {
-                std::panic::catch_unwind(|| {
-                    smol::block_on(async {
-                        match test_interface(&name) {
-                            Ok(_) => {
-                                tracing::info!("Found working EtherCAT interface: {}", name);
-                                Some(name.clone())
+            std::thread::Builder::new()
+                .name(format!("ethercat-test-{}", name))
+                .spawn(move || {
+                    std::panic::catch_unwind(|| {
+                        smol::block_on(async {
+                            match test_interface(&name) {
+                                Ok(_) => {
+                                    tracing::info!("Found working EtherCAT interface: {}", name);
+                                    Some(name.clone())
+                                }
+                                Err(_) => {
+                                    tracing::debug!("Interface {} failed", name);
+                                    None
+                                }
                             }
-                            Err(e) => {
-                                tracing::debug!("Interface {} failed: {}", name, e);
-                                None
-                            }
-                        }
+                        })
                     })
+                    .unwrap_or(None)
                 })
-                .unwrap_or(None)
-            })
+                .expect("Failed to spawn thread")
         })
         .collect::<Vec<_>>();
 
-    // Return first successful interface
-    let result =
-        tasks
-            .into_iter()
-            .find_map(|task| match task.join().expect("Should join thread") {
-                Some(name) => Some(name),
-                None => None,
-            });
+    // Wait for all tasks to complete and collect successful results
+    let successful_interfaces: Vec<String> = tasks
+        .into_iter()
+        .filter_map(|task| match task.join().expect("Should join thread") {
+            Some(name) => Some(name),
+            None => None,
+        })
+        .collect();
+
+    // Return the first successful interface (they're sorted by name)
+    let result = successful_interfaces.into_iter().next();
 
     // Restore the default panic hook
     std::panic::set_hook(default_hook);
@@ -133,7 +143,12 @@ fn test_interface(interface: &str) -> Result<(), anyhow::Error> {
                 // Default 1000ms
                 mailbox_response: Duration::from_millis(1000),
             },
-            MainDeviceConfig::default(),
+            MainDeviceConfig {
+                // Default 10000
+                dc_static_sync_iterations: 10000,
+                // Default None
+                retry_behaviour: ethercrab::RetryBehaviour::None,
+            },
         ));
 
         let result = maindevice
