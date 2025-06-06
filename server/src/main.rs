@@ -27,6 +27,8 @@ use smol::channel::unbounded;
 #[cfg(all(not(target_env = "msvc"), not(feature = "dhat-heap")))]
 use jemalloc_stats::init_jemalloc_stats;
 
+use crate::socketio::queue::init_socketio_queue;
+
 pub mod app_state;
 pub mod ethercat;
 pub mod logging;
@@ -68,6 +70,7 @@ fn main2() {
     let (thread_panic_tx, thread_panic_rx) = unbounded::<PanicDetails>();
 
     init_api(thread_panic_tx.clone(), app_state.clone()).expect("Failed to initialize API");
+    init_socketio_queue(thread_panic_tx.clone(), app_state.clone());
     #[cfg(not(feature = "mock-machine"))]
     init_serial(thread_panic_tx.clone(), app_state.clone()).expect("Failed to initialize Serial");
     #[cfg(not(feature = "mock-machine"))]

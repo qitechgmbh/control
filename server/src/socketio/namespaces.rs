@@ -1,6 +1,10 @@
 use std::sync::Arc;
 
-use control_core::socketio::{namespace::NamespaceInterface, namespace_id::NamespaceId};
+use control_core::socketio::{
+    event::GenericEvent, namespace::Namespace, namespace_id::NamespaceId,
+};
+use smol::channel::Sender;
+use socketioxide::extract::SocketRef;
 
 use crate::app_state;
 
@@ -11,9 +15,9 @@ pub struct Namespaces {
 }
 
 impl Namespaces {
-    pub fn new() -> Self {
+    pub fn new(socket_queue_tx: Sender<(SocketRef, Arc<GenericEvent>)>) -> Self {
         Self {
-            main_namespace: MainRoom::new(),
+            main_namespace: MainRoom::new(socket_queue_tx),
         }
     }
 
@@ -21,10 +25,10 @@ impl Namespaces {
         &mut self,
         namespace_id: NamespaceId,
         app_state: &Arc<app_state::AppState>,
-        callback: impl FnOnce(Result<&mut dyn NamespaceInterface, anyhow::Error>),
+        callback: impl FnOnce(Result<&mut Namespace, anyhow::Error>),
     ) {
         match namespace_id {
-            NamespaceId::Main => callback(Ok(&mut self.main_namespace.0)),
+            NamespaceId::Main => callback(Ok(&mut self.main_namespace.namespace)),
             NamespaceId::Machine(machine_identification_unique) => {
                 // Lock machines and work directly with the reference to avoid cloning issues
                 let machines_guard = app_state.machines.read().await;

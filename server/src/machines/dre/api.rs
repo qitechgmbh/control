@@ -4,14 +4,16 @@ use control_core::{
     socketio::{
         event::{Event, GenericEvent},
         namespace::{
-            CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, NamespaceInterface,
-            cache_duration, cache_one_event,
+            CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_duration,
+            cache_one_event,
         },
     },
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::time::Duration;
+use smol::channel::Sender;
+use socketioxide::extract::SocketRef;
+use std::{sync::Arc, time::Duration};
 use tracing::instrument;
 
 #[derive(Serialize, Debug, Clone)]
@@ -43,19 +45,23 @@ pub enum DreEvents {
 }
 
 #[derive(Debug)]
-pub struct DreMachineNamespace(Namespace);
+pub struct DreMachineNamespace {
+    pub namespace: Namespace,
+}
 
 impl DreMachineNamespace {
-    pub fn new() -> Self {
-        Self(Namespace::new())
+    pub fn new(socket_queue_tx: Sender<(SocketRef, Arc<GenericEvent>)>) -> Self {
+        Self {
+            namespace: Namespace::new(socket_queue_tx),
+        }
     }
 }
 
 impl CacheableEvents<DreEvents> for DreEvents {
-    fn event_value(&self) -> Result<GenericEvent, serde_json::Error> {
+    fn event_value(&self) -> GenericEvent {
         match self {
-            DreEvents::Diameter(event) => event.try_into(),
-            DreEvents::DreState(event) => event.try_into(),
+            DreEvents::Diameter(event) => event.into(),
+            DreEvents::DreState(event) => event.into(),
         }
     }
 
@@ -82,16 +88,10 @@ enum Mutation {
 
 impl NamespaceCacheingLogic<DreEvents> for DreMachineNamespace {
     #[instrument(skip_all)]
-    fn emit_cached(&mut self, events: DreEvents) {
-        let event = match events.event_value() {
-            Ok(event) => event,
-            Err(err) => {
-                tracing::error!("Failed to emit: {:?}", err);
-                return;
-            }
-        };
+    fn emit(&mut self, events: DreEvents) {
+        let event = Arc::new(events.event_value());
         let buffer_fn = events.event_cache_fn();
-        self.0.emit_cached(&event, &buffer_fn);
+        self.namespace.emit(event, &buffer_fn);
     }
 }
 
@@ -112,7 +112,7 @@ impl MachineApi for DreMachine {
         Ok(())
     }
 
-    fn api_event_namespace(&mut self) -> &mut dyn NamespaceInterface {
-        &mut self.namespace.0
+    fn api_event_namespace(&mut self) -> &mut Namespace {
+        &mut self.namespace.namespace
     }
 }

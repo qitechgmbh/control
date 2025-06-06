@@ -5,16 +5,15 @@
 
 import { StoreApi } from "zustand";
 import { create } from "zustand";
-import { produce } from "immer";
 import { z } from "zod";
 import {
   EventHandler,
   eventSchema,
   Event,
-  handleEventValidationError,
   handleUnhandledEventError,
   NamespaceId,
   createNamespaceHookImplementation,
+  ThrottledStoreUpdater,
 } from "../../../client/socketioStore";
 import { MachineIdentificationUnique } from "@/machines/types";
 import {
@@ -78,49 +77,48 @@ export const createDre1NamespaceStore = (): StoreApi<Dre1NamespaceStore> =>
 /**
  * Creates a message handler for Dre1 namespace events with validation and appropriate caching strategies
  * @param store The store to update when messages are received
+ * @param throttledUpdater Throttled updater for batching updates at 60 FPS
  * @returns A message handler function
  */
 export function dre1MessageHandler(
   store: StoreApi<Dre1NamespaceStore>,
+  throttledUpdater: ThrottledStoreUpdater<Dre1NamespaceStore>,
 ): EventHandler {
   return (event: Event<any>) => {
     const eventName = event.name;
 
+    // Helper function to update store through buffer
+    const updateStore = (
+      updater: (state: Dre1NamespaceStore) => Dre1NamespaceStore,
+    ) => {
+      throttledUpdater.updateWith(updater);
+    };
+
     try {
       // Apply appropriate caching strategy based on event type
       if (eventName === "DreStateEvent") {
-        store.setState(
-          produce(store.getState(), (state) => {
-            state.dreState = {
-              name: event.name,
-              data: dreStateEventDataSchema.parse(event.data),
-              ts: event.ts,
-            };
-          }),
-        );
+        updateStore((state) => ({
+          ...state,
+          dreState: event as DreStateEvent,
+        }));
       }
       // Metric events (keep for 1 hour)
       else if (eventName === "DiameterEvent") {
-        const parsed = diameterEventSchema.parse(event);
+        const diameterEvent = event as DiameterEvent;
         const timeseriesValue: TimeSeriesValue = {
-          value: parsed.data.diameter,
+          value: diameterEvent.data.diameter,
           timestamp: event.ts,
         };
-        store.setState(
-          produce(store.getState(), (state) => {
-            state.dreDiameter = addDiameter(state.dreDiameter, timeseriesValue);
-          }),
-        );
+        updateStore((state) => ({
+          ...state,
+          dreDiameter: addDiameter(state.dreDiameter, timeseriesValue),
+        }));
       } else {
         handleUnhandledEventError(eventName);
       }
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        handleEventValidationError(error, eventName);
-      } else {
-        console.error(`Unexpected error processing ${eventName} event:`, error);
-        throw error;
-      }
+      console.error(`Unexpected error processing ${eventName} event:`, error);
+      throw error;
     }
   };
 }
