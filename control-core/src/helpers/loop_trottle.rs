@@ -1,5 +1,6 @@
 use smol::Timer;
 use std::time::{Duration, Instant};
+use tracing::instrument;
 
 pub struct LoopThrottle {
     target_cycle_time: Duration,
