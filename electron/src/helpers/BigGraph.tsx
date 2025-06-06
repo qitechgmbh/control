@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import uPlot from "uplot";
 import "uplot/dist/uPlot.min.css";
 import {
@@ -18,6 +18,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { GraphConfig, populateConfigDefaults } from "./graphConfig";
 
 // Configuration types for additional lines
 export type GraphLine = {
@@ -30,23 +31,6 @@ export type GraphLine = {
   show?: boolean;
 };
 
-export type GraphConfig = {
-  title: string;
-  description?: string;
-  icon?: IconName;
-  lines?: GraphLine[];
-  timeWindows?: Array<{ value: number | "all"; label: string }>;
-  defaultTimeWindow?: number | "all";
-  exportFilename?: string;
-  showLegend?: boolean;
-  colors?: {
-    primary?: string;
-    grid?: string;
-    axis?: string;
-    background?: string;
-  };
-};
-
 type BigGraphProps = {
   newData: TimeSeries | null;
   unit?: Unit;
@@ -54,24 +38,14 @@ type BigGraphProps = {
   config: GraphConfig;
 };
 
-// Default time window options with "Show All" included
-const DEFAULT_TIME_WINDOW_OPTIONS = [
-  { value: 10 * 1000, label: "10s" },
-  { value: 30 * 1000, label: "30s" },
-  { value: 1 * 60 * 1000, label: "1m" },
-  { value: 5 * 60 * 1000, label: "5m" },
-  { value: 10 * 60 * 1000, label: "10m" },
-  { value: 30 * 60 * 1000, label: "30m" },
-  { value: 1 * 60 * 60 * 1000, label: "1h" },
-  { value: "all" as const, label: "Show All" },
-];
-
 export function BigGraph({
   newData,
   unit,
   renderValue,
-  config,
+  config: _config,
 }: BigGraphProps) {
+  const config = useMemo(() => populateConfigDefaults(_config), [_config]);
+
   const containerRef = useRef<HTMLDivElement | null>(null);
   const uplotRef = useRef<uPlot | null>(null);
   const chartCreatedRef = useRef(false);
@@ -83,7 +57,7 @@ export function BigGraph({
   );
   const [isLiveMode, setIsLiveMode] = useState(true);
   const [selectedTimeWindow, setSelectedTimeWindow] = useState<number | "all">(
-    config.defaultTimeWindow ?? 1 * 60 * 1000,
+    config.defaultTimeWindow,
   );
   const [cursorValue, setCursorValue] = useState<number | null>(null);
   const startTimeRef = useRef<number | null>(null);
@@ -130,13 +104,7 @@ export function BigGraph({
   const TARGET_FPS = 60; // Smooth 60fps updates
 
   const UPDATE_INTERVAL_MS = newData?.long?.sampleInterval ?? 100;
-  const timeWindowOptions = config.timeWindows ?? DEFAULT_TIME_WINDOW_OPTIONS;
-  const colors = {
-    primary: config.colors?.primary ?? "#3b82f6",
-    grid: config.colors?.grid ?? "#e2e8f0",
-    axis: config.colors?.axis ?? "#64748b",
-    background: config.colors?.background ?? "#ffffff",
-  };
+  const timeWindowOptions = config.timeWindows;
 
   // **LINEAR INTERPOLATION FUNCTION**
   const lerp = (start: number, end: number, t: number): number => {
@@ -317,7 +285,7 @@ export function BigGraph({
 
       // Include line values for proper scaling
       const allValues = [...values];
-      config.lines?.forEach((line) => {
+      config.lines.forEach((line) => {
         if (line.show !== false) {
           allValues.push(line.value);
         }
@@ -356,7 +324,7 @@ export function BigGraph({
     }
 
     // Add line data for each configured line
-    config.lines?.forEach((line) => {
+    config.lines.forEach((line) => {
       if (line.show !== false) {
         uData.push(timestamps.map(() => line.value));
       }
@@ -381,7 +349,7 @@ export function BigGraph({
     }
 
     // Include line values in the visible range for proper scaling
-    config.lines?.forEach((line) => {
+    config.lines.forEach((line) => {
       if (line.show !== false) {
         visibleValues.push(line.value);
       }
@@ -447,7 +415,7 @@ export function BigGraph({
       { label: "Time" },
       {
         label: "Value",
-        stroke: colors.primary,
+        stroke: config.colors.primary,
         width: 2,
         spanGaps: true,
         points: {
@@ -455,15 +423,15 @@ export function BigGraph({
             return dataIdx < realPointsCountRef.current;
           },
           size: 6,
-          stroke: colors.primary,
-          fill: colors.primary, // Changed from "#ffffff" to match the line color
+          stroke: config.colors.primary,
+          fill: config.colors.primary, // Changed from "#ffffff" to match the line color
           width: 2,
         },
       },
     ];
 
     // Add line series
-    config.lines?.forEach((line) => {
+    config.lines.forEach((line) => {
       if (line.show !== false) {
         seriesConfig.push({
           label: line.label,
@@ -570,10 +538,10 @@ export function BigGraph({
         },
         axes: [
           {
-            stroke: colors.axis,
+            stroke: config.colors.axis,
             labelSize: 14,
             labelFont: "Inter, system-ui, sans-serif",
-            grid: { stroke: colors.grid, width: 1 },
+            grid: { stroke: config.colors.grid, width: 1 },
             values: (u, ticks) =>
               ticks.map((ts) =>
                 new Date(ts).toLocaleTimeString("en-GB", {
@@ -585,10 +553,10 @@ export function BigGraph({
               ),
           },
           {
-            stroke: colors.axis,
+            stroke: config.colors.axis,
             labelSize: 14,
             labelFont: "Inter, system-ui, sans-serif",
-            grid: { stroke: colors.grid, width: 1 },
+            grid: { stroke: config.colors.grid, width: 1 },
             side: 1,
             values: (u, ticks) =>
               ticks.map((v) => (renderValue ? renderValue(v) : v.toFixed(3))),
@@ -1160,7 +1128,7 @@ export function BigGraph({
         };
 
         // Add line values for comparison
-        config.lines?.forEach((line) => {
+        config.lines.forEach((line) => {
           row[`${line.label} (${renderUnitSymbol(unit)})`] = renderValue
             ? renderValue(line.value)
             : line.value.toFixed(3);
@@ -1189,7 +1157,7 @@ export function BigGraph({
       ];
 
       // Add lines to summary
-      config.lines?.forEach((line) => {
+      config.lines.forEach((line) => {
         summaryData.push([
           `${line.label} (${renderUnitSymbol(unit)})`,
           renderValue ? renderValue(line.value) : line.value.toFixed(3),
@@ -1441,7 +1409,7 @@ export function BigGraph({
           <div
             ref={containerRef}
             className="h-full w-full overflow-hidden"
-            style={{ backgroundColor: colors.background }}
+            style={{ backgroundColor: config.colors.background }}
           />
         </div>
       </div>
@@ -1467,7 +1435,6 @@ export function DiameterGraph({
 }) {
   const config: GraphConfig = {
     title: "Diameter",
-    description: "Real-time diameter measurements with thresholds",
     icon: "lu:Circle",
     lines: [
       {
