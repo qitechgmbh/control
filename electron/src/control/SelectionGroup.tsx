@@ -10,11 +10,13 @@ export type Props<KEY extends string> = {
     [K in KEY]: Option;
   };
   orientation?: "horizontal" | "vertical";
+  className?: string;
 };
 
 type Option = ComponentProps<typeof TouchButton> & {
   isActiveClassName?: string;
   disabled?: boolean;
+  className?: string;
 };
 
 export function SelectionGroup<KEY extends string>({
@@ -23,9 +25,10 @@ export function SelectionGroup<KEY extends string>({
   disabled,
   loading,
   value,
+  className = "",
 }: Props<KEY>) {
   return (
-    <div className="flex flex-row flex-wrap gap-4">
+    <div className={`flex flex-row flex-wrap gap-4 ${className}`}>
       {Object.entries(options as Record<string, Option>).map(
         ([
           key,
