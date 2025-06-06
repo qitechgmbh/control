@@ -229,7 +229,7 @@ export function ChooseVersionPage() {
                   key={branch.name}
                   title={branch.name}
                   kind="branch"
-                  isOlder={true}
+                  isOlder={isOlderThanCurrent(branch.date)}
                   onClick={() => {
                     navigate({
                       to: "/_sidebar/setup/update/changelog",
