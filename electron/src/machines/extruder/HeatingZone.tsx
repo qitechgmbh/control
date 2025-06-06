@@ -7,7 +7,6 @@ import { Heating } from "./extruder2/extruder2Namespace";
 import { TimeSeries } from "@/lib/timeseries";
 import { TimeSeriesValueNumeric } from "@/control/TimeSeriesValue";
 import { StatusBadge } from "@/control/StatusBadge";
-import { Icon } from "@/components/Icon";
 
 type Props = {
   title: string;
@@ -24,7 +23,6 @@ export function HeatingZone({
   onChangeTargetTemp,
 }: Props) {
   const targetTemperature = heatingState?.target_temperature ?? 150;
-  const heating = heatingState?.heating ?? false;
 
   return (
     <ControlCard className="bg-red" title={title}>
