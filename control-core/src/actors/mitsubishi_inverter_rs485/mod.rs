@@ -4,7 +4,7 @@ use crate::modbus::{
 };
 use ethercat_hal::io::serial_interface::{SerialEncoding, SerialInterface};
 use std::{
-    collections::{HashMap, VecDeque},
+    collections::HashMap,
     pin::Pin,
     time::{Duration, Instant},
     u16,
@@ -390,7 +390,9 @@ impl MitsubishiInverterRS485Actor {
         })
     }
 
-    /// This is used internally to fill the write buffer of the el6021
+    /// This is used internally to fill the write buffer of the el6021 with the modbus request
+    /// Decides what requests to send first by finding the one with the highest priority
+    /// For example Highest Priority requests: ResetInverter StopMotor    
     fn send_modbus_request(&mut self) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
         Box::pin(async move {
             if self.request_map.len() == 0 {
@@ -400,7 +402,7 @@ impl MitsubishiInverterRS485Actor {
             let mut highest_prio_request: Option<&mut MitsubishiModbusRequest> = None;
             let mut highest_priority: u16 = 0;
 
-            for (key, value) in self.request_map.iter_mut() {
+            for (_, value) in self.request_map.iter_mut() {
                 // borrowchecker complaining
                 let priority = value.priority;
                 if priority > highest_priority {
