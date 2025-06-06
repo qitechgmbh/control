@@ -120,21 +120,25 @@ export function Extruder2ControlPage() {
           <SelectionGroup<"Standby" | "Heat" | "Extrude">
             value={mode}
             orientation="vertical"
+            className="grid h-full grid-cols-2 gap-2"
             options={{
               Standby: {
                 children: "Standby",
                 icon: "lu:CirclePause",
                 isActiveClassName: "bg-green-600",
+                className: "h-full",
               },
               Heat: {
                 children: "Heat",
                 icon: "lu:Flame",
                 isActiveClassName: "bg-green-600",
+                className: "h-full",
               },
               Extrude: {
                 children: "Extrude",
                 icon: "lu:ArrowBigLeftDash",
                 isActiveClassName: "bg-green-600",
+                className: "h-full",
               },
             }}
             onChange={extruderSetMode}

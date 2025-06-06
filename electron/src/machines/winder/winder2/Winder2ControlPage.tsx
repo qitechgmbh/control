@@ -212,27 +212,32 @@ export function Winder2ControlPage() {
             loading={modeIsLoading}
             onChange={ExtruderSetMode}
             orientation="vertical"
+            className="grid h-full grid-cols-2 gap-2"
             options={{
               Standby: {
                 children: "Standby",
                 icon: "lu:Power",
                 isActiveClassName: "bg-green-600",
+                className: "h-full",
               },
               Hold: {
                 children: "Hold",
                 icon: "lu:CirclePause",
                 isActiveClassName: "bg-green-600",
+                className: "h-full",
               },
               Pull: {
                 children: "Pull",
                 icon: "lu:ChevronsLeft",
                 isActiveClassName: "bg-green-600",
+                className: "h-full",
               },
               Wind: {
                 children: "Wind",
                 icon: "lu:RefreshCcw",
                 isActiveClassName: "bg-green-600",
                 disabled: !modeState?.data.can_wind,
+                className: "h-full",
               },
             }}
           />
