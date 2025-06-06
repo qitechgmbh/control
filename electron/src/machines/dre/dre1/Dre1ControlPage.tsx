@@ -10,7 +10,6 @@ import { Label } from "@/control/Label";
 import { useDre1 } from "./useDre";
 
 import { DiameterVisualisation } from '../DiameterVisualisation';
-import { TimeSeries } from "@/lib/timeseries";
 
 export function Dre1ControlPage() {
     const {
