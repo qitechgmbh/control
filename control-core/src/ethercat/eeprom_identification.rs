@@ -57,8 +57,8 @@ impl Default for MachineIdentificationAddresses {
     fn default() -> Self {
         Self {
             vendor_word: 0x0028,
-            serial_word: 0x0029,
-            machine_word: 0x002a,
+            machine_word: 0x0029,
+            serial_word: 0x002a,
             role_word: 0x002b,
         }
     }
