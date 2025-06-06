@@ -15,6 +15,12 @@ export function Winder2Page() {
           icon: "lu:CirclePlay",
         },
         {
+          link: "graphs",
+          activeLink: "graphs",
+          title: "Graphs",
+          icon: "lu:ChartSpline",
+        },
+        {
           link: "settings",
           activeLink: "settings",
           title: "Config",
