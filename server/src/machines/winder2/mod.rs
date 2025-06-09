@@ -451,10 +451,17 @@ impl Winder2 {
     }
 
     fn emit_tension_arm_angle(&mut self) {
-        let event = TensionArmAngleEvent {
-            degree: self.tension_arm.get_angle().get::<degree>(),
-        }
-        .build();
+        let angle_deg = self.tension_arm.get_angle().get::<degree>();
+
+        // Wrap [270;<360] to [-90; 0]
+        // This is done to reduce flicker in the graphs around the zero point
+        let angle_deg = if angle_deg >= 270.0 {
+            angle_deg - 360.0
+        } else {
+            angle_deg
+        };
+
+        let event = TensionArmAngleEvent { degree: angle_deg }.build();
         self.namespace
             .emit_cached(Winder2Events::TensionArmAngleEvent(event))
     }
