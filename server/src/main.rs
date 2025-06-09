@@ -1,3 +1,4 @@
+use ethercrab::error;
 #[cfg(all(not(target_env = "msvc"), not(feature = "dhat-heap")))]
 use tikv_jemallocator::Jemalloc;
 
@@ -10,22 +11,20 @@ static GLOBAL: Jemalloc = Jemalloc;
 static ALLOC: dhat::Alloc = dhat::Alloc;
 
 use app_state::AppState;
-use control_core::helpers::loop_trottle::LoopThrottle;
 #[cfg(feature = "mock-machine")]
 use mock::init::init_mock;
-use panic::PanicDetails;
-use std::{panic::catch_unwind, process::exit, sync::Arc, time::Duration};
-use tracing::error;
+use std::{sync::Arc, time::Duration};
 
 use ethercat::init::init_ethercat;
 use r#loop::init_loop;
 use rest::init::init_api;
 #[cfg(not(feature = "mock-machine"))]
 use serial::init::init_serial;
-use smol::channel::unbounded;
 
 #[cfg(all(not(target_env = "msvc"), not(feature = "dhat-heap")))]
 use jemalloc_stats::init_jemalloc_stats;
+
+use crate::panic::init_panic;
 
 pub mod app_state;
 pub mod ethercat;
@@ -43,74 +42,74 @@ pub mod socketio;
 pub mod jemalloc_stats;
 
 fn main() {
+    // Initialize panic handling
+    let thread_panic_tx = init_panic();
+
     logging::init_tracing();
     tracing::info!("Tracing initialized successfully");
 
     #[cfg(all(not(target_env = "msvc"), not(feature = "dhat-heap")))]
     init_jemalloc_stats();
 
-    // if the program panics we restart all of it
-    match catch_unwind(|| main2()) {
-        Ok(_) => {
-            tracing::info!("Exiting program with code 0");
-            exit(0);
-        }
-        Err(err) => {
-            tracing::error!("Exiting program with code 1 due to panic: {:?}", err);
-            exit(1);
-        }
+    let app_state = Arc::new(AppState::new());
+
+    // Spawn init thread
+    let init_thread = std::thread::Builder::new()
+        .name("init".to_string())
+        .spawn({
+            let thread_panic_tx = thread_panic_tx.clone();
+            let app_state = app_state.clone();
+            move || {
+                init_api(thread_panic_tx.clone(), app_state.clone())
+                    .expect("Failed to initialize API");
+                #[cfg(not(feature = "mock-machine"))]
+                init_serial(thread_panic_tx.clone(), app_state.clone())
+                    .expect("Failed to initialize Serial");
+                #[cfg(not(feature = "mock-machine"))]
+                init_ethercat(thread_panic_tx.clone(), app_state.clone())
+                    .expect("Failed to initialize EtherCAT");
+                #[cfg(feature = "mock-machine")]
+                init_mock(app_state.clone()).expect("Failed to initialize mock machines");
+                init_loop(thread_panic_tx, app_state).expect("Failed to initialize loop");
+
+                #[cfg(feature = "dhat-heap")]
+                init_dhat_heap_profiling();
+            }
+        })
+        .expect("Failed to spawn init thread");
+
+    // Wait for init thread to complete
+    init_thread.join().expect("Init thread panicked");
+
+    // Keep the main thread alive indefinitely
+    // The program should only exit via panic handling or external signals
+    loop {
+        std::thread::sleep(Duration::from_secs(u64::MAX));
     }
 }
 
-fn main2() {
-    let app_state = Arc::new(AppState::new());
+#[cfg(feature = "dhat-heap")]
+fn init_dhat_heap_profiling() {
+    use std::{process::exit, time::Duration};
 
-    let (thread_panic_tx, thread_panic_rx) = unbounded::<PanicDetails>();
-
-    init_api(thread_panic_tx.clone(), app_state.clone()).expect("Failed to initialize API");
-    #[cfg(not(feature = "mock-machine"))]
-    init_serial(thread_panic_tx.clone(), app_state.clone()).expect("Failed to initialize Serial");
-    #[cfg(not(feature = "mock-machine"))]
-    init_ethercat(thread_panic_tx.clone(), app_state.clone())
-        .expect("Failed to initialize EtherCAT");
-    #[cfg(feature = "mock-machine")]
-    init_mock(app_state.clone()).expect("Failed to initialize mock machines");
-    init_loop(thread_panic_tx, app_state).expect("Failed to initialize loop");
-
-    #[cfg(feature = "dhat-heap")]
     let profiler = dhat::Profiler::new_heap();
 
     smol::block_on(async {
-        #[cfg(feature = "dhat-heap")]
         let dhat_analysis_time = std::time::Duration::from_secs(60);
-        #[cfg(feature = "dhat-heap")]
         let dhat_analysis_start = std::time::Instant::now();
-        #[cfg(feature = "dhat-heap")]
         tracing::info!(
             "Starting dhat heap profiler for {} seconds",
             dhat_analysis_time.as_secs()
         );
 
-        let mut throttle = LoopThrottle::new(Duration::from_millis(100), 10, None);
-
         loop {
-            // Without throttleing the loop it would run as fast as possible, consuming 100% CPU
-            // We throttle it to 100ms, which is a good balance between responsiveness and CPU usage
-            throttle.sleep().await;
+            use std::time::Duration;
+            smol::Timer::after(Duration::from_secs(1)).await;
 
             // if `dhat-heap` is enabled, we will analyze the heap for 60 seconds and then exit
-            #[cfg(feature = "dhat-heap")]
             if dhat_analysis_start.elapsed() > dhat_analysis_time {
                 drop(profiler);
                 exit(0)
-            }
-
-            match thread_panic_rx.try_recv() {
-                Ok(panic_details) => {
-                    error!("{}", panic_details);
-                    exit(1);
-                }
-                Err(_) => {}
             }
         }
     })

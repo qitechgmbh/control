@@ -1,4 +1,6 @@
-use smol::channel::Sender;
+use smol::channel::{Sender, unbounded};
+use std::process::exit;
+use tracing::error;
 
 #[derive(Debug, Clone)]
 pub struct PanicDetails {
@@ -137,4 +139,37 @@ pub fn send_panic(thread_panic_tx: Sender<PanicDetails>) {
         // Send detailed panic info through channel
         let _ = smol::block_on(thread_panic_tx.send(panic_details));
     }));
+}
+
+/// Initialize panic handling system
+/// Sets up panic handler and starts dedicated panic monitoring thread
+pub fn init_panic() -> Sender<PanicDetails> {
+    let (thread_panic_tx, thread_panic_rx) = unbounded::<PanicDetails>();
+    send_panic(thread_panic_tx.clone());
+
+    // Start panic monitoring thread
+    let thread_panic_rx_clone = thread_panic_rx.clone();
+    std::thread::Builder::new()
+        .name("panic".to_string())
+        .spawn(move || {
+            // Create an executor for this thread
+            let rt = smol::Executor::new();
+            smol::block_on(rt.run(async {
+                loop {
+                    match thread_panic_rx_clone.recv().await {
+                        Ok(panic_details) => {
+                            error!("{}", panic_details);
+                            exit(1);
+                        }
+                        Err(_) => {
+                            // Channel closed, exit gracefully
+                            break;
+                        }
+                    }
+                }
+            }))
+        })
+        .expect("Failed to spawn panic monitoring thread");
+
+    thread_panic_tx
 }
