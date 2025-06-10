@@ -97,11 +97,11 @@ async function setNixOSGeneration(generationId: string): Promise<{
 }> {
   return new Promise((resolve) => {
     // Switch to the specified generation using nixos-rebuild
-    // First switch to the generation, then activate it
+    // Set the generation to be used at next boot, then reboot immediately
     const process = spawn("sudo", [
       "sh",
       "-c",
-      `nix-env --switch-generation ${generationId} -p /nix/var/nix/profiles/system && /nix/var/nix/profiles/system/bin/switch-to-configuration switch`,
+      `nix-env --switch-generation ${generationId} -p /nix/var/nix/profiles/system && /nix/var/nix/profiles/system/bin/switch-to-configuration boot && reboot`,
     ]);
 
     let stderr = "";
