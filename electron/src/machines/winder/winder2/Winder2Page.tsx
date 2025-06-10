@@ -26,12 +26,6 @@ export function Winder2Page() {
           title: "Config",
           icon: "lu:Settings",
         },
-        {
-          link: "manual",
-          activeLink: "manual",
-          title: "Manual",
-          icon: "lu:BookOpen",
-        },
       ]}
     />
   );
