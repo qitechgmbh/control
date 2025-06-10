@@ -378,13 +378,6 @@ export function ChooseVersionPage() {
       </Collapsible>
 
       <SectionTitle title="Old Versions"></SectionTitle>
-      <span className="w-max">
-        <Alert title="Local System Generations" variant="info">
-          These are previous NixOS system generations installed on this machine.
-          You can switch back to any of them or delete old ones to free up
-          space.
-        </Alert>
-      </span>
 
       {nixosError && (
         <span className="w-max">
@@ -441,10 +434,11 @@ function GenerationButton({
         <div className="flex items-center gap-2">
           <Icon name="lu:History" />
           <span className="flex-1 truncate">
-            Update {generation.id} – {generation.name}
+            Update {generation.id}
             {generation.current && " (current)"}
           </span>
         </div>
+        <span className="text-sm text-gray-600">{generation.name}</span>
         <span className="font-mono text-sm text-gray-700">
           {generation.date ? new Date(generation.date).toLocaleString() : "N/A"}
         </span>
@@ -466,7 +460,7 @@ function GenerationButton({
           onClick={onSet}
           disabled={isLoading || generation.current}
         >
-          {isLoading ? <LoadingSpinner /> : "Set"}
+          {isLoading ? <LoadingSpinner /> : "Downgrade"}
         </TouchButton>
         <TouchButton
           className="flex-shrink-0"
