@@ -18,12 +18,17 @@ export function SetupPage() {
           title: "EtherCat",
           icon: "lu:EthernetPort",
         },
-
         {
           link: "update/choose-version",
           activeLink: "update",
           title: "Update",
           icon: "lu:CircleFadingArrowUp",
+        },
+        {
+          link: "troubleshoot",
+          activeLink: "troubleshoot",
+          title: "Troubleshoot",
+          icon: "lu:MessageSquareWarning",
         },
       ]}
     />
