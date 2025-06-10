@@ -438,7 +438,7 @@ function GenerationButton({
             {generation.current && " (current)"}
           </span>
         </div>
-        <span className="block truncate text-sm text-gray-600">
+        <span className="block truncate font-mono text-sm text-gray-700">
           {generation.name}
         </span>
         <span className="block font-mono text-sm text-gray-700">
