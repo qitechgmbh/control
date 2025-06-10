@@ -140,12 +140,12 @@ async function deleteNixOSGeneration(generationId: string): Promise<{
   error?: string;
 }> {
   return new Promise((resolve) => {
-    // Delete the specified generation using nixos-collect-garbage and update bootloader
-    // This is the proper NixOS way to delete generations
+    // Delete the specified generation using nix-env and update bootloader
+    // This is the proper NixOS way to delete specific generations
     const process = spawn("sudo", [
       "sh",
       "-c",
-      `nixos-collect-garbage --delete-generations ${generationId} && /nix/var/nix/profiles/system/bin/switch-to-configuration boot`,
+      `nix-env --delete-generations ${generationId} -p /nix/var/nix/profiles/system && /nix/var/nix/profiles/system/bin/switch-to-configuration boot`,
     ]);
 
     let stderr = "";
