@@ -27,7 +27,7 @@ regex = "1.11.1"
 
 # web
 socketioxide = "0.17.1"
-tower-http = { version = "0.6.5", features = ["cors", "trace", "fs"] }
+tower-http = { version = "0.6.6", features = ["cors", "trace", "fs"] }
 axum = { version = "0.8.4", features = ["macros"] }
 
 # serial
