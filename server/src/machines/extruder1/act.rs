@@ -44,6 +44,12 @@ impl Actor for ExtruderV2 {
                     self.temperature_controller_nozzle.heating.clone(),
                     super::HeatingType::Nozzle,
                 );
+
+                self.emit_heating_element_power(super::HeatingType::Nozzle);
+                self.emit_heating_element_power(super::HeatingType::Front);
+                self.emit_heating_element_power(super::HeatingType::Middle);
+                self.emit_heating_element_power(super::HeatingType::Back);
+
                 self.emit_regulation();
                 self.emit_mode_state();
                 self.emit_rotation_state();
