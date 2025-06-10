@@ -377,7 +377,7 @@ export function ChooseVersionPage() {
         </CollapsibleContent>
       </Collapsible>
 
-      <SectionTitle title="Old Versions"></SectionTitle>
+      <SectionTitle title="Installed Versions"></SectionTitle>
 
       {nixosError && (
         <span className="w-max">
