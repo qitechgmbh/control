@@ -438,7 +438,9 @@ function GenerationButton({
             {generation.current && " (current)"}
           </span>
         </div>
-        <span className="text-sm text-gray-600">{generation.name}</span>
+        <span className="truncate text-sm text-gray-600">
+          {generation.name}
+        </span>
         <span className="font-mono text-sm text-gray-700">
           {generation.date ? new Date(generation.date).toLocaleString() : "N/A"}
         </span>
