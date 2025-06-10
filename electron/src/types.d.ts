@@ -55,10 +55,34 @@ interface TroubleshootContext {
   onLogData: (callback: (log: string) => void) => void;
 }
 
+interface NixOSGeneration {
+  id: string;
+  name: string;
+  version: string;
+  current: boolean;
+  date: string;
+  path: string;
+  description?: string;
+}
+
+interface NixOSContext {
+  listGenerations: () => Promise<{
+    success: boolean;
+    generations: NixOSGeneration[];
+    error?: string;
+  }>;
+  setGeneration: (
+    generationId: string,
+  ) => Promise<{ success: boolean; error?: string }>;
+  deleteGeneration: (
+    generationId: string,
+  ) => Promise<{ success: boolean; error?: string }>;
+}
 declare interface Window {
   themeMode: ThemeModeContext;
   electronWindow: ElectronWindow;
   environment: EnvironmentContext;
   update: UpdateContext;
   troubleshoot: TroubleshootContext;
+  nixos: NixOSContext;
 }
