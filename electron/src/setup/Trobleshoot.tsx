@@ -89,6 +89,7 @@ export function TroubleshootPage() {
         autoScroll={true}
         className="h-160"
         title="qitech-control-server"
+        exportPrefix="qitech_control_server_journald"
       />
     </Page>
   );
