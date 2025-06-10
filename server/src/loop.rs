@@ -1,5 +1,5 @@
 use crate::app_state::AppState;
-use crate::panic::{send_panic, PanicDetails};
+use crate::panic::{PanicDetails, send_panic};
 use bitvec::prelude::*;
 use control_core::helpers::loop_trottle::LoopThrottle;
 use smol::channel::Sender;
@@ -14,20 +14,17 @@ pub fn init_loop(
 ) -> Result<(), anyhow::Error> {
     // Start control loop
     std::thread::Builder::new()
-        .name("LoopThread".to_owned())
+        .name("loop".to_owned())
         .spawn(move || {
             send_panic(thread_panic_tx.clone());
             let rt = smol::LocalExecutor::new();
             let mut throttle = LoopThrottle::new(Duration::from_millis(1), 1, None);
             loop {
-                let span = info_span!("loop");
-                let res = smol::block_on(
-                    rt.run(async {
-                        throttle.sleep().await;
-                        loop_once(app_state.clone()).await
-                    })
-                    .instrument(span),
-                );
+                let res = smol::block_on(rt.run(async {
+                    throttle.sleep().await;
+                    loop_once(app_state.clone()).await
+                }));
+
                 if let Err(err) = res {
                     tracing::error!("Loop failed\n{:?}", err);
                     break;
