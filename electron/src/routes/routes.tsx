@@ -27,6 +27,7 @@ import { Mock1Page } from "@/machines/mock/mock1/Mock1Page";
 import { Mock1ControlPage } from "@/machines/mock/mock1/Mock1ControlPage";
 import { Dre1GraphsPage } from "@/machines/dre/dre1/Dre1Graph";
 import { Mock1GraphPage } from "@/machines/mock/mock1/Mock1Graph";
+import { TroubleshootPage } from "@/setup/Trobleshoot";
 
 // make a route tree like this
 // _mainNavigation/machines/winder2/$serial/control
@@ -144,6 +145,12 @@ export const setupRoute = createRoute({
   component: () => <SetupPage />,
 });
 
+export const troubleshootRoute = createRoute({
+  getParentRoute: () => setupRoute,
+  path: "troubleshoot",
+  component: () => <TroubleshootPage />, // Placeholder for future troubleshooting page
+});
+
 export const ethercatRoute = createRoute({
   getParentRoute: () => setupRoute,
   path: "ethercat",
@@ -214,6 +221,7 @@ export const rootTree = RootRoute.addChildren([
         updateChangelogRoute,
         updateExecuteRoute,
       ]),
+      troubleshootRoute,
     ]),
 
     machinesRoute.addChildren([

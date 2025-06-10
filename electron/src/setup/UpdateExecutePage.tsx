@@ -53,7 +53,11 @@ export function UpdateExecutePage() {
         Please stay connected to the internet and leave the power on. The update
         procuedure takes a couple of minutes and reboots the machine afterwards.
       </Alert>
-      <Terminal lines={terminalLines} className="h-160" />
+      <Terminal
+        lines={terminalLines}
+        className="h-160"
+        exportPrefix="qitech_control_server_update"
+      />
     </Page>
   );
 }

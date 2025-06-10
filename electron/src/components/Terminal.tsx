@@ -7,6 +7,7 @@ type Props = {
   autoScroll?: boolean; // Optional prop to control if terminal should auto-scroll
   className?: string; // Optional prop to control terminal height
   title?: string;
+  exportPrefix?: string; // Optional prefix for exported log files
 };
 
 const terminalStyle = cva([
@@ -78,10 +79,12 @@ export function Terminal({
   autoScroll = true,
   className,
   title = "Terminal",
+  exportPrefix,
 }: Props) {
   const terminalRef = useRef<HTMLDivElement>(null);
   const [isScrolledToBottom, setIsScrolledToBottom] = useState(true);
   const [copySuccess, setCopySuccess] = useState(false);
+  const [exportSuccess, setExportSuccess] = useState(false);
 
   // Handle scrolling
   useEffect(() => {
@@ -125,28 +128,85 @@ export function Terminal({
     }
   };
 
+  // Handle export to file
+  const handleExport = () => {
+    if (!exportPrefix) return;
+
+    // Strip ANSI color codes and join lines
+    const plainText = lines.map((line) => stripColorCodes(line)).join("\n");
+
+    // Create timestamp for filename
+    const timestamp = new Date()
+      .toISOString()
+      .replace(/[:.]/g, "-")
+      .slice(0, -5);
+    const filename = `${exportPrefix}_${timestamp}.log`;
+
+    // Create blob and download
+    const blob = new Blob([plainText], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+
+    // Create temporary link element and trigger download
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    // Clean up
+    URL.revokeObjectURL(url);
+
+    // Show success feedback
+    setExportSuccess(true);
+    setTimeout(() => {
+      setExportSuccess(false);
+    }, 2000);
+  };
+
   return (
     <div className={terminalStyle({ className })}>
       {/* Terminal header */}
       <div className="flex items-center justify-between border-b border-neutral-700 bg-neutral-800 px-4 py-2">
         <div className="text-xs text-neutral-400">{title}</div>
-        <button
-          onClick={handleCopy}
-          className="flex items-center text-xs text-neutral-400 transition-colors hover:text-neutral-200"
-          title="Copy to clipboard"
-        >
-          {copySuccess ? (
-            <>
-              <Icon name="lu:ClipboardCheck" className="mr-2 size-4" />
-              Copied!
-            </>
-          ) : (
-            <>
-              <Icon name="lu:Clipboard" className="mr-2 size-4" />
-              Copy
-            </>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleCopy}
+            className="flex items-center text-xs text-neutral-400 transition-colors hover:text-neutral-200"
+            title="Copy to clipboard"
+          >
+            {copySuccess ? (
+              <>
+                <Icon name="lu:ClipboardCheck" className="mr-2 size-4" />
+                Copied!
+              </>
+            ) : (
+              <>
+                <Icon name="lu:Clipboard" className="mr-2 size-4" />
+                Copy
+              </>
+            )}
+          </button>
+          {exportPrefix && (
+            <button
+              onClick={handleExport}
+              className="flex items-center text-xs text-neutral-400 transition-colors hover:text-neutral-200"
+              title="Export logs to file"
+            >
+              {exportSuccess ? (
+                <>
+                  <Icon name="lu:Check" className="mr-2 size-4" />
+                  Exported!
+                </>
+              ) : (
+                <>
+                  <Icon name="lu:Save" className="mr-2 size-4" />
+                  Export
+                </>
+              )}
+            </button>
           )}
-        </button>
+        </div>
       </div>
 
       {/* Terminal content with custom scrollbar styling */}

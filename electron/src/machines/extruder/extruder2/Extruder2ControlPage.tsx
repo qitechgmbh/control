@@ -18,12 +18,20 @@ export function Extruder2ControlPage() {
     mode,
     nozzleHeatingState,
     nozzleTemperature,
+    nozzlePower,
+
     frontHeatingState,
     frontTemperature,
+    frontPower,
+
     backHeatingState,
     backTemperature,
+    backPower,
+
     middleHeatingState,
     middleTemperature,
+    middlePower,
+
     extruderSetMode,
     heatingSetBackTemp,
     heatingSetFrontTemp,
@@ -46,24 +54,28 @@ export function Extruder2ControlPage() {
           title={"Heating Front"}
           heatingState={frontHeatingState}
           heatingTimeSeries={frontTemperature}
+          heatingPower={frontPower}
           onChangeTargetTemp={heatingSetFrontTemp}
         />
         <HeatingZone
           title={"Heating Middle"}
           heatingState={middleHeatingState}
           heatingTimeSeries={middleTemperature}
+          heatingPower={middlePower}
           onChangeTargetTemp={heatingSetMiddleTemp}
         />
         <HeatingZone
           title={"Heating Back"}
           heatingState={backHeatingState}
           heatingTimeSeries={backTemperature}
+          heatingPower={backPower}
           onChangeTargetTemp={heatingSetBackTemp}
         />
         <HeatingZone
           title={"Heating Nozzle"}
           heatingState={nozzleHeatingState}
           heatingTimeSeries={nozzleTemperature}
+          heatingPower={nozzlePower}
           onChangeTargetTemp={heatingSetNozzleTemp}
         />
         <ControlCard className="bg-red" title="Screw Drive">
@@ -120,21 +132,25 @@ export function Extruder2ControlPage() {
           <SelectionGroup<"Standby" | "Heat" | "Extrude">
             value={mode}
             orientation="vertical"
+            className="grid h-full grid-cols-2 gap-2"
             options={{
               Standby: {
                 children: "Standby",
                 icon: "lu:CirclePause",
                 isActiveClassName: "bg-green-600",
+                className: "h-full",
               },
               Heat: {
                 children: "Heat",
                 icon: "lu:Flame",
                 isActiveClassName: "bg-green-600",
+                className: "h-full",
               },
               Extrude: {
                 children: "Extrude",
                 icon: "lu:ArrowBigLeftDash",
                 isActiveClassName: "bg-green-600",
+                className: "h-full",
               },
             }}
             onChange={extruderSetMode}

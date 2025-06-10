@@ -41,6 +41,11 @@ export type Extruder2NamespaceStore = {
   frontTemperature: TimeSeries;
   backTemperature: TimeSeries;
   middleTemperature: TimeSeries;
+
+  nozzlePower: TimeSeries;
+  frontPower: TimeSeries;
+  middlePower: TimeSeries;
+  backPower: TimeSeries;
 };
 
 // Constants for time durations
@@ -60,6 +65,22 @@ const { initialTimeSeries: middleTemperature, insert: addMiddleTemperature } =
 
 const { initialTimeSeries: nozzleTemperature, insert: addNozzleTemperature } =
   createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+
+const { initialTimeSeries: nozzlePower, insert: addNozzlePower } =
+  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+
+const { initialTimeSeries: frontPower, insert: addFrontPower } =
+  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+
+const { initialTimeSeries: middlePower, insert: addMiddlePower } =
+  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+
+const { initialTimeSeries: backPower, insert: addBackPower } = createTimeSeries(
+  TWENTY_MILLISECOND,
+  ONE_SECOND,
+  FIVE_SECOND,
+  ONE_HOUR,
+);
 
 const { initialTimeSeries: rpm, insert: addRpm } = createTimeSeries(
   TWENTY_MILLISECOND,
@@ -168,6 +189,63 @@ export function extruder2MessageHandler(
             );
           }),
         );
+      } else if (eventName == "NozzleHeatingPowerEvent") {
+        const parsed = heatingPowerEventSchema.parse(event);
+        const timeseriesValue: TimeSeriesValue = {
+          value: parsed.data.wattage,
+          timestamp: event.ts,
+        };
+
+        store.setState(
+          produce(store.getState(), (state) => {
+            // state.heatingMiddleState = parsed;
+            state.nozzlePower = addNozzlePower(
+              state.nozzlePower,
+              timeseriesValue,
+            );
+          }),
+        );
+      } else if (eventName == "FrontHeatingPowerEvent") {
+        const parsed = heatingPowerEventSchema.parse(event);
+        const timeseriesValue: TimeSeriesValue = {
+          value: parsed.data.wattage,
+          timestamp: event.ts,
+        };
+
+        store.setState(
+          produce(store.getState(), (state) => {
+            //state.heatingMiddleState = parsed;
+            state.frontPower = addFrontPower(state.frontPower, timeseriesValue);
+          }),
+        );
+      } else if (eventName == "MiddleHeatingPowerEvent") {
+        const parsed = heatingPowerEventSchema.parse(event);
+        const timeseriesValue: TimeSeriesValue = {
+          value: parsed.data.wattage,
+          timestamp: event.ts,
+        };
+
+        store.setState(
+          produce(store.getState(), (state) => {
+            //state.heatingMiddleState = parsed;
+            state.middlePower = addMiddlePower(
+              state.middlePower,
+              timeseriesValue,
+            );
+          }),
+        );
+      } else if (eventName == "BackHeatingPowerEvent") {
+        const parsed = heatingPowerEventSchema.parse(event);
+        const timeseriesValue: TimeSeriesValue = {
+          value: parsed.data.wattage,
+          timestamp: event.ts,
+        };
+
+        store.setState(
+          produce(store.getState(), (state) => {
+            state.backPower = addBackPower(state.backPower, timeseriesValue);
+          }),
+        );
       } else if (eventName == "RegulationStateEvent") {
         store.setState(
           produce(store.getState(), (state) => {
@@ -233,10 +311,15 @@ export const createExtruder2NamespaceStore =
 
         rpm,
         bar,
+
         nozzleTemperature,
         frontTemperature,
         backTemperature,
         middleTemperature,
+        nozzlePower,
+        frontPower,
+        backPower,
+        middlePower,
       };
     });
 
@@ -281,7 +364,6 @@ export const inverterRotationEventDataSchema = z.object({
 
 export const heatingStateDataSchema = z.object({
   temperature: z.number(),
-  heating: z.boolean(),
   target_temperature: z.number(),
   wiring_error: z.boolean(),
 });
@@ -344,6 +426,12 @@ export const extruderSettingsStateEventSchema = eventSchema(
   extruderSettingsStateEventDataSchema,
 );
 
+export const heatingPowerEventDataSchema = z.object({
+  wattage: z.number(),
+});
+
+export const heatingPowerEventSchema = eventSchema(heatingPowerEventDataSchema);
+
 // type defs
 export type MotorScrewStateEvent = z.infer<typeof motorScrewStateEventSchema>;
 export type MotorPressureStateEvent = z.infer<
@@ -356,6 +444,7 @@ export type MotorRegulationStateEvent = z.infer<
   typeof motorRegulationEventSchema
 >;
 export type ModeStateEvent = z.infer<typeof modeStateEventSchema>;
+export type HeatingPowerEvent = z.infer<typeof heatingPowerEventSchema>;
 export type HeatingStateEvent = z.infer<typeof heatingStateEventSchema>;
 
 export type HeatingType = z.infer<typeof heatingTypeSchema>;

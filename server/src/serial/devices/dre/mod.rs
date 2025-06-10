@@ -45,7 +45,7 @@ impl TryFrom<ModbusResponse> for DreDiameterResponse {
     type Error = anyhow::Error;
 
     fn try_from(value: ModbusResponse) -> Result<Self, Self::Error> {
-        if value.data.len() < 3 {
+         if value.data.len() < 3 {
             return Err(anyhow!(
                 "Invalid response data length: {}",
                 value.data.len()

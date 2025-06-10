@@ -6,6 +6,7 @@ use control_core::{
     },
     converters::linear_step_converter::LinearStepConverter,
 };
+use tracing::info;
 use uom::{
     ConstZero,
     si::{
@@ -462,11 +463,11 @@ impl TraverseController {
                 }
                 TraversingState::TraversingIn => self.speed_to_position(
                     self.limit_inner + self.padding - Length::new::<millimeter>(0.01),
-                    self.calculate_traverse_speed(spool_speed),
+                    Self::calculate_traverse_speed(spool_speed, self.step_size),
                 ),
                 TraversingState::TraversingOut => self.speed_to_position(
                     self.limit_outer - self.padding + Length::new::<millimeter>(0.01),
-                    self.calculate_traverse_speed(spool_speed),
+                    Self::calculate_traverse_speed(spool_speed, self.step_size),
                 ),
             },
         };
@@ -485,10 +486,10 @@ impl TraverseController {
     /// Note: While the traverse range (from outer limit minus padding to inner limit plus padding)
     /// determines the total area to be covered, the traverse speed itself depends only on
     /// the step size and spool rotation speed.
-    pub fn calculate_traverse_speed(&self, spool_speed: AngularVelocity) -> Velocity {
+    pub fn calculate_traverse_speed(spool_speed: AngularVelocity, step_size: Length) -> Velocity {
         // Calculate the traverse speed directly from spool speed and step size
         let traverse_speed: Velocity = Velocity::new::<millimeter_per_second>(
-            spool_speed.get::<revolution_per_second>() * self.step_size.get::<millimeter>(),
+            spool_speed.get::<revolution_per_second>() * step_size.get::<millimeter>(),
         );
 
         traverse_speed
@@ -503,5 +504,25 @@ impl TraverseController {
         let speed = self.get_speed(traverse, traverse_end_stop, spool_speed);
         let steps_per_second = self.fullstep_converter.velocity_to_steps(speed);
         traverse.set_speed(steps_per_second as i32);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use approx::assert_relative_eq;
+
+    use super::*;
+
+    #[test]
+    fn test_calculate_traverse_speed() {
+        let spool_speed = AngularVelocity::new::<revolution_per_second>(1.0); // 1 revolution per second
+        let step_size = Length::new::<millimeter>(1.75); // 1.75 mm step size
+
+        let traverse_speed = TraverseController::calculate_traverse_speed(spool_speed, step_size);
+        assert_relative_eq!(
+            traverse_speed.get::<millimeter_per_second>(),
+            1.75,
+            epsilon = f64::EPSILON
+        );
     }
 }

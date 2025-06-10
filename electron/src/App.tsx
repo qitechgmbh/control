@@ -8,9 +8,13 @@ import { router } from "./routes/router";
 import { RouterProvider } from "@tanstack/react-router";
 import { Toaster } from "./components/ui/sonner";
 import { enableMapSet } from "immer";
+import { useGlobalLogStreaming } from "./hooks/useGlobalLogStreaming";
 
 export default function App() {
   const { i18n } = useTranslation();
+
+  // Start global log streaming
+  useGlobalLogStreaming();
 
   useEffect(() => {
     syncThemeWithLocal();
