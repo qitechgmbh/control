@@ -395,7 +395,7 @@ export function ChooseVersionPage() {
       )}
 
       {nixosGenerations !== undefined && nixosGenerations.length > 0 ? (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {nixosGenerations.map((generation) => (
             <GenerationButton
               key={generation.id}

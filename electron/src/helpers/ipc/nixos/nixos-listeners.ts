@@ -55,9 +55,7 @@ async function listNixOSGenerations(): Promise<{
 }> {
   return new Promise((resolve) => {
     // List all generations using nixos-rebuild
-    const process = spawn("sudo", ["nixos-rebuild", "list-generations"], {
-      shell: true,
-    });
+    const process = spawn("sudo", ["nixos-rebuild", "list-generations"]);
 
     let stdout = "";
     let stderr = "";
@@ -100,17 +98,11 @@ async function setNixOSGeneration(generationId: string): Promise<{
   return new Promise((resolve) => {
     // Switch to the specified generation using nixos-rebuild
     // First switch to the generation, then activate it
-    const process = spawn(
-      "sudo",
-      [
-        "sh",
-        "-c",
-        `nix-env --switch-generation ${generationId} -p /nix/var/nix/profiles/system && /nix/var/nix/profiles/system/bin/switch-to-configuration switch`,
-      ],
-      {
-        shell: true,
-      },
-    );
+    const process = spawn("sudo", [
+      "sh",
+      "-c",
+      `nix-env --switch-generation ${generationId} -p /nix/var/nix/profiles/system && /nix/var/nix/profiles/system/bin/switch-to-configuration switch`,
+    ]);
 
     let stderr = "";
     let stdout = "";
@@ -150,17 +142,11 @@ async function deleteNixOSGeneration(generationId: string): Promise<{
   return new Promise((resolve) => {
     // Delete the specified generation using nixos-collect-garbage and update bootloader
     // This is the proper NixOS way to delete generations
-    const process = spawn(
-      "sudo",
-      [
-        "sh",
-        "-c",
-        `nixos-collect-garbage --delete-generations ${generationId} && /nix/var/nix/profiles/system/bin/switch-to-configuration boot`,
-      ],
-      {
-        shell: true,
-      },
-    );
+    const process = spawn("sudo", [
+      "sh",
+      "-c",
+      `nixos-collect-garbage --delete-generations ${generationId} && /nix/var/nix/profiles/system/bin/switch-to-configuration boot`,
+    ]);
 
     let stderr = "";
     let stdout = "";
