@@ -438,10 +438,10 @@ function GenerationButton({
             {generation.current && " (current)"}
           </span>
         </div>
-        <span className="truncate text-sm text-gray-600">
+        <span className="block truncate text-sm text-gray-600">
           {generation.name}
         </span>
-        <span className="font-mono text-sm text-gray-700">
+        <span className="block font-mono text-sm text-gray-700">
           {generation.date ? new Date(generation.date).toLocaleString() : "N/A"}
         </span>
         {generation.kernelVersion && (
@@ -462,7 +462,7 @@ function GenerationButton({
           onClick={onSet}
           disabled={isLoading || generation.current}
         >
-          {isLoading ? <LoadingSpinner /> : "Downgrade"}
+          {isLoading ? <LoadingSpinner /> : "Select"}
         </TouchButton>
         <TouchButton
           className="flex-shrink-0"
