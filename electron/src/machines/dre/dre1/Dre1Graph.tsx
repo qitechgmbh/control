@@ -52,6 +52,8 @@ export function Dre1GraphsPage() {
         unit="mm"
         renderValue={(value) => value.toFixed(3)}
         config={config}
+        syncGroupId="diameter-group"
+        graphId="diameter-main"
       />
     </Page>
   );

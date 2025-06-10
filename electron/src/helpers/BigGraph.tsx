@@ -1,11 +1,15 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useEffect,
+  useRef,
+  useState,
+  useCallback,
+  createContext,
+  useContext,
+  ReactNode,
+} from "react";
 import uPlot from "uplot";
 import "uplot/dist/uPlot.min.css";
-import {
-  TimeSeries,
-  seriesToUPlotData,
-  getSeriesMinMax,
-} from "@/lib/timeseries";
+import { TimeSeries, seriesToUPlotData } from "@/lib/timeseries";
 import { renderUnitSymbol, Unit, getUnitIcon } from "@/control/units";
 import { TouchButton } from "@/components/touch/TouchButton";
 import { Icon, IconName } from "@/components/Icon";
@@ -18,7 +22,91 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { GraphConfig, populateConfigDefaults } from "./graphConfig";
+
+// Sync Context for synchronized zooming
+type SyncState = {
+  x: { min: number; max: number };
+  timeWindow?: number | "all";
+  viewMode?: "default" | "all" | "manual";
+  isLiveMode?: boolean;
+};
+
+type GraphSyncContextType = {
+  registerGraph: (id: string, updateFn: (state: SyncState) => void) => void;
+  unregisterGraph: (id: string) => void;
+  syncZoom: (fromId: string, state: SyncState) => void;
+  syncTimeWindow: (fromId: string, timeWindow: number | "all") => void;
+  syncViewMode: (
+    fromId: string,
+    viewMode: "default" | "all" | "manual",
+    isLiveMode: boolean,
+  ) => void;
+};
+
+const GraphSyncContext = createContext<GraphSyncContextType | null>(null);
+export function GraphSyncProvider({
+  children,
+}: {
+  children: ReactNode;
+  groupId: string;
+}) {
+  const graphsRef = useRef<Map<string, (state: SyncState) => void>>(new Map());
+
+  const registerGraph = (id: string, updateFn: (state: SyncState) => void) => {
+    graphsRef.current.set(id, updateFn);
+  };
+
+  const unregisterGraph = (id: string) => {
+    graphsRef.current.delete(id);
+  };
+
+  const syncZoom = (fromId: string, state: SyncState) => {
+    graphsRef.current.forEach((updateFn, id) => {
+      if (id !== fromId) {
+        updateFn(state);
+      }
+    });
+  };
+
+  const syncTimeWindow = (fromId: string, timeWindow: number | "all") => {
+    graphsRef.current.forEach((updateFn, id) => {
+      if (id !== fromId) {
+        updateFn({ x: { min: 0, max: 0 }, timeWindow });
+      }
+    });
+  };
+
+  const syncViewMode = (
+    fromId: string,
+    viewMode: "default" | "all" | "manual",
+    isLiveMode: boolean,
+  ) => {
+    graphsRef.current.forEach((updateFn, id) => {
+      if (id !== fromId) {
+        updateFn({ x: { min: 0, max: 0 }, viewMode, isLiveMode });
+      }
+    });
+  };
+
+  return (
+    <GraphSyncContext.Provider
+      value={{
+        registerGraph,
+        unregisterGraph,
+        syncZoom,
+        syncTimeWindow,
+        syncViewMode,
+      }}
+    >
+      {children}
+    </GraphSyncContext.Provider>
+  );
+}
+
+export const useGraphSync = () => {
+  const context = useContext(GraphSyncContext);
+  return context; // Allow null for non-synced graphs
+};
 
 // Configuration types for additional lines
 export type GraphLine = {
@@ -31,33 +119,62 @@ export type GraphLine = {
   show?: boolean;
 };
 
+export type GraphConfig = {
+  title: string;
+  description?: string;
+  icon?: IconName;
+  lines?: GraphLine[];
+  timeWindows?: Array<{ value: number | "all"; label: string }>;
+  defaultTimeWindow?: number | "all";
+  exportFilename?: string;
+  showLegend?: boolean;
+  colors?: {
+    primary?: string;
+    grid?: string;
+    axis?: string;
+    background?: string;
+  };
+};
+
 type BigGraphProps = {
   newData: TimeSeries | null;
   unit?: Unit;
   renderValue?: (value: number) => string;
   config: GraphConfig;
+  syncGroupId?: string;
+  graphId: string;
 };
+
+// Default time window options with "Show All" included
+const DEFAULT_TIME_WINDOW_OPTIONS = [
+  { value: 10 * 1000, label: "10s" },
+  { value: 30 * 1000, label: "30s" },
+  { value: 1 * 60 * 1000, label: "1m" },
+  { value: 5 * 60 * 1000, label: "5m" },
+  { value: 10 * 60 * 1000, label: "10m" },
+  { value: 30 * 60 * 1000, label: "30m" },
+  { value: 1 * 60 * 60 * 1000, label: "1h" },
+  { value: "all" as const, label: "Show All" },
+];
 
 export function BigGraph({
   newData,
   unit,
   renderValue,
-  config: _config,
+  config,
+  syncGroupId,
+  graphId,
 }: BigGraphProps) {
-  const config = useMemo(() => populateConfigDefaults(_config), [_config]);
-
   const containerRef = useRef<HTMLDivElement | null>(null);
   const uplotRef = useRef<uPlot | null>(null);
   const chartCreatedRef = useRef(false);
-  const isScrollingRef = useRef(false);
-  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const [viewMode, setViewMode] = useState<"default" | "all" | "manual">(
     "default",
   );
   const [isLiveMode, setIsLiveMode] = useState(true);
   const [selectedTimeWindow, setSelectedTimeWindow] = useState<number | "all">(
-    config.defaultTimeWindow,
+    config.defaultTimeWindow ?? 30 * 60 * 1000,
   );
   const [cursorValue, setCursorValue] = useState<number | null>(null);
   const startTimeRef = useRef<number | null>(null);
@@ -68,14 +185,24 @@ export function BigGraph({
   const isUserZoomingRef = useRef(false);
   const isDraggingRef = useRef(false);
   const lastDragXRef = useRef<number | null>(null);
-  // Add this new ref to track which points are real vs animated
   const realPointsCountRef = useRef(0);
-  // Touch/pinch refs
   const isPinchingRef = useRef(false);
   const lastPinchDistanceRef = useRef<number | null>(null);
   const pinchCenterRef = useRef<{ x: number; y: number } | null>(null);
 
-  //  Point-by-point animation refs**
+  // Sync context
+  const graphSync = syncGroupId ? useGraphSync() : null;
+  const isSyncingRef = useRef(false);
+
+  // Touch direction detection
+  const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(
+    null,
+  );
+  const touchDirectionRef = useRef<"horizontal" | "vertical" | "unknown">(
+    "unknown",
+  );
+
+  // Point-by-point animation refs
   const animationFrameRef = useRef<number | null>(null);
   const lastRenderedDataRef = useRef<{
     timestamps: number[];
@@ -99,30 +226,157 @@ export function BigGraph({
     targetIndex: 0,
   });
 
-  // **ANIMATION CONSTANTS**
-  const POINT_ANIMATION_DURATION = 1000; // 1 second per point animation
-  const TARGET_FPS = 60; // Smooth 60fps updates
+  // Animation constants
+  const POINT_ANIMATION_DURATION = 1000;
+  const timeWindowOptions = config.timeWindows ?? DEFAULT_TIME_WINDOW_OPTIONS;
+  const colors = {
+    primary: config.colors?.primary ?? "#3b82f6",
+    grid: config.colors?.grid ?? "#e2e8f0",
+    axis: config.colors?.axis ?? "#64748b",
+    background: config.colors?.background ?? "#ffffff",
+  };
 
-  const UPDATE_INTERVAL_MS = newData?.long?.sampleInterval ?? 100;
-  const timeWindowOptions = config.timeWindows;
+  const handleSyncUpdate = useCallback(
+    (state: SyncState) => {
+      if (!uplotRef.current) return;
 
-  // **LINEAR INTERPOLATION FUNCTION**
+      // Temporarily disable user zoom detection during sync
+      const wasUserZooming = isUserZoomingRef.current;
+      isUserZoomingRef.current = false;
+
+      if (state.viewMode !== undefined && state.isLiveMode !== undefined) {
+        // Sync view mode
+        setViewMode(state.viewMode);
+        setIsLiveMode(state.isLiveMode);
+
+        if (state.isLiveMode) {
+          stopAnimations();
+          if (newData?.long) {
+            const [timestamps, values] = seriesToUPlotData(newData.long);
+            const fullData = buildUPlotData(timestamps, values);
+            uplotRef.current.setData(fullData);
+
+            if (timestamps.length > 0) {
+              const latestTimestamp = timestamps[timestamps.length - 1];
+
+              if (state.viewMode === "all") {
+                const fullStart = startTimeRef.current ?? timestamps[0];
+                uplotRef.current.setScale("x", {
+                  min: fullStart,
+                  max: latestTimestamp,
+                });
+                updateYAxisScale(
+                  timestamps,
+                  values,
+                  fullStart,
+                  latestTimestamp,
+                );
+              } else if (state.viewMode === "default") {
+                const viewStart =
+                  latestTimestamp - (selectedTimeWindow as number);
+                uplotRef.current.setScale("x", {
+                  min: viewStart,
+                  max: latestTimestamp,
+                });
+                updateYAxisScale(
+                  timestamps,
+                  values,
+                  viewStart,
+                  latestTimestamp,
+                );
+              }
+            }
+
+            manualScaleRef.current = null;
+            lastRenderedDataRef.current = { timestamps, values };
+          }
+        } else {
+          stopAnimations();
+          if (uplotRef.current.scales) {
+            const xScale = uplotRef.current.scales.x;
+            const yScale = uplotRef.current.scales.y;
+            if (
+              xScale &&
+              yScale &&
+              xScale.min !== undefined &&
+              xScale.max !== undefined &&
+              yScale.min !== undefined &&
+              yScale.max !== undefined
+            ) {
+              manualScaleRef.current = {
+                x: { min: xScale.min ?? 0, max: xScale.max ?? 0 },
+                y: { min: yScale.min, max: yScale.max },
+              };
+            }
+          }
+        }
+      } else if (state.timeWindow !== undefined) {
+        // Sync time window
+        setSelectedTimeWindow(state.timeWindow);
+        handleTimeWindowChangeInternal(state.timeWindow, true);
+      } else {
+        // Sync zoom - this is the key fix
+        setViewMode("manual");
+        setIsLiveMode(false);
+
+        // Use batch to ensure atomic update
+        uplotRef.current.batch(() => {
+          uplotRef.current!.setScale("x", {
+            min: state.x.min,
+            max: state.x.max,
+          });
+
+          if (newData?.long) {
+            const [timestamps, values] = seriesToUPlotData(newData.long);
+            updateYAxisScale(timestamps, values, state.x.min, state.x.max);
+          }
+        });
+
+        if (newData?.long) {
+          const [_series, values] = seriesToUPlotData(newData.long);
+          manualScaleRef.current = {
+            x: { min: state.x.min, max: state.x.max },
+            y: manualScaleRef.current?.y ?? {
+              min: Math.min(...values),
+              max: Math.max(...values),
+            },
+          };
+        }
+      }
+
+      // Restore the original user zoom state
+      setTimeout(() => {
+        isUserZoomingRef.current = wasUserZooming;
+      }, 10);
+    },
+    [newData, selectedTimeWindow],
+  );
+
+  // Register with sync context
+  useEffect(() => {
+    if (graphSync) {
+      graphSync.registerGraph(graphId, handleSyncUpdate);
+      return () => graphSync.unregisterGraph(graphId);
+    }
+  }, [graphSync, graphId, handleSyncUpdate]);
+
+  // Linear interpolation function
   const lerp = (start: number, end: number, t: number): number => {
     return start + (end - start) * t;
   };
 
-  // **ANIMATE NEW POINT ADDITION**
+  // Animate new point addition
   const animateNewPoint = (
     currentData: { timestamps: number[]; values: number[] },
     targetData: { timestamps: number[]; values: number[] },
   ) => {
-    // Check if we have a new point to animate
     if (targetData.timestamps.length <= currentData.timestamps.length) {
-      return; // No new points
+      return;
     }
 
-    // Get the new point details
+    // Only animate to the exact next point - no prediction
     const newIndex = currentData.timestamps.length;
+
     const prevValue =
       currentData.values[newIndex - 1] ?? targetData.values[newIndex];
     const prevTimestamp =
@@ -130,13 +384,11 @@ export function BigGraph({
     const newValue = targetData.values[newIndex];
     const newTimestamp = targetData.timestamps[newIndex];
 
-    // Cancel any existing animation
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
       animationFrameRef.current = null;
     }
 
-    // Set up animation state
     animationStateRef.current = {
       isAnimating: true,
       startTime: performance.now(),
@@ -147,19 +399,18 @@ export function BigGraph({
       targetIndex: newIndex,
     };
 
-    // Start animation loop
     const animate = (currentTime: number) => {
       if (!uplotRef.current || !animationStateRef.current.isAnimating) return;
 
       const elapsed = currentTime - animationStateRef.current.startTime;
       const progress = Math.min(elapsed / POINT_ANIMATION_DURATION, 1);
 
-      // Create interpolated data
+      // Use current data as base, don't modify it
       const animatedTimestamps = [...currentData.timestamps];
       const animatedValues = [...currentData.values];
 
       if (progress < 1) {
-        // Interpolate both timestamp AND value
+        // Animate only to the exact target point
         const interpolatedTimestamp = lerp(
           animationStateRef.current.fromTimestamp,
           animationStateRef.current.toTimestamp,
@@ -171,44 +422,36 @@ export function BigGraph({
           progress,
         );
 
-        // Add the interpolated point
         animatedTimestamps.push(interpolatedTimestamp);
         animatedValues.push(interpolatedValue);
       } else {
-        // Animation complete - add all remaining points up to the target
-        for (
-          let i = animationStateRef.current.targetIndex;
-          i < targetData.timestamps.length;
-          i++
-        ) {
-          animatedTimestamps.push(targetData.timestamps[i]);
-          animatedValues.push(targetData.values[i]);
-        }
+        // Animation complete - add exactly the target point
+        animatedTimestamps.push(animationStateRef.current.toTimestamp);
+        animatedValues.push(animationStateRef.current.toValue);
 
-        // Update the last rendered data and real points count
+        // Update rendered data to this exact point
         lastRenderedDataRef.current = {
-          timestamps: [...targetData.timestamps],
-          values: [...targetData.values],
+          timestamps: [...animatedTimestamps],
+          values: [...animatedValues],
         };
-        realPointsCountRef.current = targetData.timestamps.length;
-
+        realPointsCountRef.current = animatedTimestamps.length;
         animationStateRef.current.isAnimating = false;
       }
 
       const animatedUData = buildUPlotData(
         animatedTimestamps,
         animatedValues,
-        currentData.timestamps.length, // Only show points for the original data
+        animatedTimestamps.length,
       );
       uplotRef.current.setData(animatedUData);
 
-      // Update scales if in live mode
+      // Update view if in live mode
       if (isLiveMode && animatedTimestamps.length > 0) {
         const latestTimestamp =
           animatedTimestamps[animatedTimestamps.length - 1];
 
         if (viewMode === "default") {
-          let xMin, xMax;
+          let xMin: number | undefined, xMax: number | undefined;
 
           if (selectedTimeWindow === "all") {
             const fullStart = startTimeRef.current ?? animatedTimestamps[0];
@@ -237,12 +480,11 @@ export function BigGraph({
       }
 
       if (progress < 1) {
-        // Continue animation
         animationFrameRef.current = requestAnimationFrame(animate);
       } else {
-        // Check if there are more points to animate
+        // Check if there are more points to animate (only immediate next point)
         if (targetData.timestamps.length > animatedTimestamps.length) {
-          // Start next animation immediately
+          // Animate the next single point
           animateNewPoint(
             { timestamps: animatedTimestamps, values: animatedValues },
             targetData,
@@ -270,38 +512,51 @@ export function BigGraph({
   ) => {
     if (!uplotRef.current || values.length === 0) return;
 
-    let yRange;
+    let visibleValues: number[] = [];
 
     if (xMin !== undefined && xMax !== undefined) {
-      // Scale based on visible time window
-      yRange = getVisibleDataRange(timestamps, values, xMin, xMax);
-    }
-
-    if (!yRange) {
-      // Fallback to full data range
-      const minY = Math.min(...values);
-      const maxY = Math.max(...values);
-      const range = maxY - minY || 1;
-
-      // Include line values for proper scaling
-      const allValues = [...values];
-      config.lines.forEach((line) => {
-        if (line.show !== false) {
-          allValues.push(line.value);
+      // Get values that are actually visible in the time window
+      for (let i = 0; i < timestamps.length; i++) {
+        if (timestamps[i] >= xMin && timestamps[i] <= xMax) {
+          visibleValues.push(values[i]);
         }
-      });
-
-      const finalMinY = Math.min(...allValues);
-      const finalMaxY = Math.max(...allValues);
-      const finalRange = finalMaxY - finalMinY || 1;
-
-      yRange = {
-        min: finalMinY - finalRange * 0.1,
-        max: finalMaxY + finalRange * 0.1,
-      };
+      }
+    } else {
+      // Use all values if no time window specified
+      visibleValues = [...values];
     }
 
-    uplotRef.current.setScale("y", yRange);
+    // Include line values for proper scaling
+    config.lines?.forEach((line) => {
+      if (line.show !== false) {
+        visibleValues.push(line.value);
+      }
+    });
+
+    if (visibleValues.length === 0) {
+      // Fallback if no visible values
+      visibleValues = values;
+    }
+
+    const minY = Math.min(...visibleValues);
+    const maxY = Math.max(...visibleValues);
+    const range = maxY - minY || Math.abs(maxY) * 0.1 || 1;
+
+    // Add 10% padding above and below
+    const yRange = {
+      min: minY - range * 0.1,
+      max: maxY + range * 0.1,
+    };
+
+    // Force Y-axis to update with new range - use batch update
+    uplotRef.current.batch(() => {
+      uplotRef.current!.setScale("y", yRange);
+    });
+
+    // Update manual scale reference if in manual mode
+    if (viewMode === "manual" && manualScaleRef.current) {
+      manualScaleRef.current.y = yRange;
+    }
   };
 
   const getRightmostVisibleTimestamp = () => {
@@ -318,13 +573,11 @@ export function BigGraph({
   ): uPlot.AlignedData => {
     const uData: uPlot.AlignedData = [timestamps, values];
 
-    // Store the real points count for point visibility logic
     if (realPointsCount !== undefined) {
       realPointsCountRef.current = realPointsCount;
     }
 
-    // Add line data for each configured line
-    config.lines.forEach((line) => {
+    config.lines?.forEach((line) => {
       if (line.show !== false) {
         uData.push(timestamps.map(() => line.value));
       }
@@ -332,65 +585,22 @@ export function BigGraph({
 
     return uData;
   };
-
-  // Helper function for visible data range
-  const getVisibleDataRange = (
-    timestamps: number[],
-    values: number[],
-    xMin: number,
-    xMax: number,
-  ) => {
-    const visibleValues: number[] = [];
-
-    for (let i = 0; i < timestamps.length; i++) {
-      if (timestamps[i] >= xMin && timestamps[i] <= xMax) {
-        visibleValues.push(values[i]);
-      }
-    }
-
-    // Include line values in the visible range for proper scaling
-    config.lines.forEach((line) => {
-      if (line.show !== false) {
-        visibleValues.push(line.value);
-      }
-    });
-
-    if (visibleValues.length === 0) {
-      return null;
-    }
-
-    const minY = Math.min(...visibleValues);
-    const maxY = Math.max(...visibleValues);
-    const range = maxY - minY || 1;
-
-    return {
-      min: minY - range * 0.1,
-      max: maxY + range * 0.1,
-    };
-  };
-
   const createChart = () => {
     if (!containerRef.current || !newData?.long) return;
 
     const [timestamps, values] = seriesToUPlotData(newData.long);
     if (timestamps.length === 0) return;
 
-    // Set start time reference
     if (startTimeRef.current === null && timestamps.length > 0) {
       startTimeRef.current = timestamps[0];
     }
 
-    const { min: minY, max: maxY } = getSeriesMinMax(newData.long);
-    const range = maxY - minY || 1;
-
-    // Build uPlot data structure
     const uData = buildUPlotData(timestamps, values);
 
-    // Calculate initial view
     const lastTimestamp = timestamps[timestamps.length - 1] ?? 0;
     const fullStart = startTimeRef.current ?? timestamps[0] ?? 0;
 
-    let initialMin, initialMax;
+    let initialMin: number, initialMax: number;
     if (viewMode === "manual" && manualScaleRef.current) {
       initialMin = manualScaleRef.current.x.min;
       initialMax = manualScaleRef.current.x.max;
@@ -406,32 +616,70 @@ export function BigGraph({
       initialMax = lastTimestamp;
     }
 
+    // Calculate initial Y range based on VISIBLE data, not all data
+    let initialYMin: number, initialYMax: number;
+
+    // Get values that are visible in the initial time window
+    const initialVisibleValues: number[] = [];
+    for (let i = 0; i < timestamps.length; i++) {
+      if (timestamps[i] >= initialMin && timestamps[i] <= initialMax) {
+        initialVisibleValues.push(values[i]);
+      }
+    }
+
+    // Include line values
+    config.lines?.forEach((line) => {
+      if (line.show !== false) {
+        initialVisibleValues.push(line.value);
+      }
+    });
+
+    // If no visible values, fallback to all values
+    if (initialVisibleValues.length === 0) {
+      initialVisibleValues.push(...values);
+      config.lines?.forEach((line) => {
+        if (line.show !== false) {
+          initialVisibleValues.push(line.value);
+        }
+      });
+    }
+
+    if (initialVisibleValues.length > 0) {
+      const minY = Math.min(...initialVisibleValues);
+      const maxY = Math.max(...initialVisibleValues);
+      const range = maxY - minY || Math.abs(maxY) * 0.1 || 1;
+
+      initialYMin = minY - range * 0.1;
+      initialYMax = maxY + range * 0.1;
+    } else {
+      initialYMin = -1;
+      initialYMax = 1;
+    }
+
     const rect = containerRef.current.getBoundingClientRect();
     const width = rect.width;
     const height = Math.min(rect.height, window.innerHeight * 0.5);
 
-    // Build series configuration
     const seriesConfig: uPlot.Series[] = [
       { label: "Time" },
       {
         label: "Value",
-        stroke: config.colors.primary,
+        stroke: colors.primary,
         width: 2,
         spanGaps: true,
         points: {
-          show: (u, seriesIdx, dataIdx) => {
+          show: (_u, _seriesIdx, dataIdx) => {
             return dataIdx < realPointsCountRef.current;
           },
           size: 6,
-          stroke: config.colors.primary,
-          fill: config.colors.primary, // Changed from "#ffffff" to match the line color
+          stroke: colors.primary,
+          fill: colors.primary,
           width: 2,
         },
       },
     ];
 
-    // Add line series
-    config.lines.forEach((line) => {
+    config.lines?.forEach((line) => {
       if (line.show !== false) {
         seriesConfig.push({
           label: line.label,
@@ -443,7 +691,6 @@ export function BigGraph({
       }
     });
 
-    // Destroy existing chart if it exists
     if (uplotRef.current) {
       uplotRef.current.destroy();
       uplotRef.current = null;
@@ -475,31 +722,32 @@ export function BigGraph({
                 const xScale = u.scales.x;
                 if (xScale.min !== undefined && xScale.max !== undefined) {
                   const [timestamps, values] = seriesToUPlotData(newData.long);
+                  updateYAxisScale(timestamps, values, xScale.min, xScale.max);
 
-                  // Use the enhanced scaling function
-                  const yRange = getVisibleDataRange(
-                    timestamps,
-                    values,
-                    xScale.min,
-                    xScale.max,
-                  );
-
-                  if (yRange) {
-                    u.setScale("y", yRange);
-
-                    manualScaleRef.current = {
-                      x: { min: xScale.min, max: xScale.max },
-                      y: { min: yRange.min, max: yRange.max },
-                    };
-                  }
+                  manualScaleRef.current = {
+                    x: { min: xScale.min ?? 0, max: xScale.max ?? 0 },
+                    y: {
+                      min: u.scales.y?.min ?? 0,
+                      max: u.scales.y?.max ?? 1,
+                    },
+                  };
 
                   setViewMode("manual");
                   setIsLiveMode(false);
+
+                  if (graphSync) {
+                    setTimeout(() => {
+                      graphSync.syncZoom(graphId, {
+                        x: { min: xScale.min ?? 0, max: xScale.max ?? 0 },
+                      });
+                    }, 0);
+                  }
                 }
                 isUserZoomingRef.current = false;
               }
             },
           ],
+
           setCursor: [
             (u) => {
               if (
@@ -527,41 +775,205 @@ export function BigGraph({
         scales: {
           x: {
             time: true,
+            auto: true,
             min: initialMin,
             max: initialMax,
+            // This ensures linear time scaling - equal intervals = equal distance
+            distr: 1, // Linear distribution
           },
           y: {
             auto: false,
-            min: minY - range * 0.1,
-            max: maxY + range * 0.1,
+            min: initialYMin,
+            max: initialYMax,
           },
         },
+
         axes: [
           {
-            stroke: config.colors.axis,
-            labelSize: 14,
+            stroke: colors.axis,
+            labelSize: 12,
             labelFont: "Inter, system-ui, sans-serif",
-            grid: { stroke: config.colors.grid, width: 1 },
-            values: (u, ticks) =>
-              ticks.map((ts) =>
-                new Date(ts).toLocaleTimeString("en-GB", {
-                  hour12: false,
-                  hour: "2-digit",
-                  minute: "2-digit",
-                  second: "2-digit",
-                }),
-              ),
+            grid: { stroke: colors.grid, width: 1 },
+            space: 60,
+            values: (u, ticks) => {
+              const xScale = u.scales.x;
+              if (
+                !xScale ||
+                xScale.min === undefined ||
+                xScale.max === undefined
+              ) {
+                return ticks.map((ts) => {
+                  const date = new Date(ts);
+                  return date.toLocaleTimeString("en-GB", {
+                    hour12: false,
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    second: "2-digit",
+                  });
+                });
+              }
+
+              const timeRange = xScale.max - xScale.min;
+
+              return ticks.map((ts) => {
+                const date = new Date(ts);
+
+                // For very short ranges (≤ 30s), show full time with seconds
+                if (timeRange <= 30 * 1000) {
+                  return date.toLocaleTimeString("en-GB", {
+                    hour12: false,
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    second: "2-digit",
+                  });
+                }
+                // For short ranges (≤ 5min), show time with seconds
+                else if (timeRange <= 5 * 60 * 1000) {
+                  return date.toLocaleTimeString("en-GB", {
+                    hour12: false,
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    second: "2-digit",
+                  });
+                }
+                // For medium ranges (≤ 1hour), show HH:MM
+                else if (timeRange <= 60 * 60 * 1000) {
+                  return date.toLocaleTimeString("en-GB", {
+                    hour12: false,
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  });
+                }
+                // For longer ranges, show HH:MM
+                else {
+                  return date.toLocaleTimeString("en-GB", {
+                    hour12: false,
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  });
+                }
+              });
+            },
+
+            splits: (
+              _u,
+              _axisIdx,
+              scaleMin,
+              scaleMax,
+              _foundIncr,
+              _foundSpace,
+            ) => {
+              const timeRange = scaleMax - scaleMin;
+              const ticks: number[] = [];
+
+              // For ≤ 10 seconds: every 1 second
+              if (timeRange <= 10 * 1000) {
+                const startTime = Math.ceil(scaleMin / 1000) * 1000;
+                for (let t = startTime; t <= scaleMax; t += 1000) {
+                  if (t >= scaleMin) ticks.push(t);
+                }
+              }
+              // For ≤ 30 seconds: every 5 seconds
+              else if (timeRange <= 30 * 1000) {
+                const startTime = Math.ceil(scaleMin / 5000) * 5000;
+                for (let t = startTime; t <= scaleMax; t += 5000) {
+                  if (t >= scaleMin) ticks.push(t);
+                }
+              }
+              // For ≤ 1 minute: every 10 seconds
+              else if (timeRange <= 60 * 1000) {
+                const startTime = Math.ceil(scaleMin / 10000) * 10000;
+                for (let t = startTime; t <= scaleMax; t += 10000) {
+                  if (t >= scaleMin) ticks.push(t);
+                }
+              }
+              // For ≤ 5 minutes: every 30 seconds
+              else if (timeRange <= 5 * 60 * 1000) {
+                const startTime = Math.ceil(scaleMin / 30000) * 30000;
+                for (let t = startTime; t <= scaleMax; t += 30000) {
+                  if (t >= scaleMin) ticks.push(t);
+                }
+              }
+              // For ≤ 10 minutes: every 1 minute
+              else if (timeRange <= 10 * 60 * 1000) {
+                const startTime = Math.ceil(scaleMin / 60000) * 60000;
+                for (let t = startTime; t <= scaleMax; t += 60000) {
+                  if (t >= scaleMin) ticks.push(t);
+                }
+              }
+              // For ≤ 30 minutes: every 2 minutes
+              else if (timeRange <= 30 * 60 * 1000) {
+                const startTime = Math.ceil(scaleMin / 120000) * 120000;
+                for (let t = startTime; t <= scaleMax; t += 120000) {
+                  if (t >= scaleMin) ticks.push(t);
+                }
+              }
+              // For ≤ 1 hour: every 5 minutes
+              else if (timeRange <= 60 * 60 * 1000) {
+                const startTime = Math.ceil(scaleMin / 300000) * 300000;
+                for (let t = startTime; t <= scaleMax; t += 300000) {
+                  if (t >= scaleMin) ticks.push(t);
+                }
+              }
+              // For ≤ 6 hours: every 30 minutes
+              else if (timeRange <= 6 * 60 * 60 * 1000) {
+                const startTime = Math.ceil(scaleMin / 1800000) * 1800000;
+                for (let t = startTime; t <= scaleMax; t += 1800000) {
+                  if (t >= scaleMin) ticks.push(t);
+                }
+              }
+              // For longer ranges: every 1 hour
+              else {
+                const startTime = Math.ceil(scaleMin / 3600000) * 3600000;
+                for (let t = startTime; t <= scaleMax; t += 3600000) {
+                  if (t >= scaleMin) ticks.push(t);
+                }
+              }
+
+              return ticks;
+            },
           },
+
+          // Y-axis remains the same
           {
-            stroke: config.colors.axis,
-            labelSize: 14,
+            stroke: colors.axis,
+            labelSize: 12,
             labelFont: "Inter, system-ui, sans-serif",
-            grid: { stroke: config.colors.grid, width: 1 },
+            grid: { stroke: colors.grid, width: 1 },
             side: 1,
-            values: (u, ticks) =>
-              ticks.map((v) => (renderValue ? renderValue(v) : v.toFixed(3))),
+            space: 60,
+            values: (_u, ticks) => {
+              // First try with renderValue function
+              if (renderValue) {
+                const renderedValues = ticks.map(renderValue);
+                const uniqueValues = new Set(renderedValues);
+
+                // If no duplicates, use renderValue
+                if (uniqueValues.size === renderedValues.length) {
+                  return renderedValues;
+                }
+              }
+
+              // If renderValue creates duplicates or doesn't exist, find optimal precision
+              const precision = 0;
+              const maxPrecision = 4;
+
+              for (let p = precision; p <= maxPrecision; p++) {
+                const formattedValues = ticks.map((v) => v.toFixed(p));
+                const uniqueFormatted = new Set(formattedValues);
+
+                // If all values are unique at this precision, use it
+                if (uniqueFormatted.size === formattedValues.length) {
+                  return formattedValues;
+                }
+              }
+
+              // Fallback: use maximum precision
+              return ticks.map((v) => v.toFixed(maxPrecision));
+            },
           },
         ],
+
         series: seriesConfig,
       },
       uData,
@@ -569,84 +981,121 @@ export function BigGraph({
     );
 
     const handleTouchStart = (e: TouchEvent) => {
-      if (e.touches.length === 1) {
-        // Single finger - dragging
-        isDraggingRef.current = true;
-        lastDragXRef.current = e.touches[0].clientX;
-        e.preventDefault();
-      } else if (e.touches.length === 2) {
+      const touch = e.touches[0];
+      touchStartRef.current = {
+        x: touch.clientX,
+        y: touch.clientY,
+        time: Date.now(),
+      };
+      touchDirectionRef.current = "unknown";
+
+      // Only handle multi-touch gestures - let single touch scroll normally
+      if (e.touches.length === 2) {
         // Two fingers - pinch to zoom
         isPinchingRef.current = true;
         isDraggingRef.current = false;
+        touchDirectionRef.current = "horizontal";
 
         const touch1 = e.touches[0];
         const touch2 = e.touches[1];
 
-        // Calculate distance between fingers
         const distance = Math.sqrt(
           Math.pow(touch2.clientX - touch1.clientX, 2) +
             Math.pow(touch2.clientY - touch1.clientY, 2),
         );
         lastPinchDistanceRef.current = distance;
 
-        // Calculate center point between fingers
         pinchCenterRef.current = {
           x: (touch1.clientX + touch2.clientX) / 2,
           y: (touch1.clientY + touch2.clientY) / 2,
         };
 
-        e.preventDefault();
+        e.preventDefault(); // Only prevent for 2+ finger gestures
       }
+      // For single finger, don't prevent default - allow normal scrolling
     };
 
     const handleTouchMove = (e: TouchEvent) => {
-      if (e.touches.length === 1 && isDraggingRef.current) {
-        // Single finger dragging - continue regardless of pinch state
-        const currentX = e.touches[0].clientX;
-        const deltaX = currentX - (lastDragXRef.current || 0);
-        lastDragXRef.current = currentX;
+      if (!touchStartRef.current) return;
 
-        // In your touch move handler, when updating the scale:
-        if (uplotRef.current && Math.abs(deltaX) > 1) {
-          const xScale = uplotRef.current.scales.x;
-          if (xScale && xScale.min !== undefined && xScale.max !== undefined) {
-            const pixelToTime = (xScale.max - xScale.min) / width;
-            const timeDelta = -deltaX * pixelToTime;
+      if (e.touches.length === 1) {
+        // Single finger - ONLY interfere if it's a very clear horizontal drag attempt
+        const touch = e.touches[0];
+        const deltaX = Math.abs(touch.clientX - touchStartRef.current.x);
+        const deltaY = Math.abs(touch.clientY - touchStartRef.current.y);
+        const timeDelta = Date.now() - touchStartRef.current.time;
 
-            const newMin = xScale.min + timeDelta;
-            const newMax = xScale.max + timeDelta;
-
-            uplotRef.current.setScale("x", { min: newMin, max: newMax });
-
-            // Update Y-axis based on new visible window
-            const [timestamps, values] = seriesToUPlotData(newData.long);
-            const yRange = getVisibleDataRange(
-              timestamps,
-              values,
-              newMin,
-              newMax,
-            );
-
-            if (yRange) {
-              uplotRef.current.setScale("y", yRange);
-              manualScaleRef.current = {
-                x: { min: newMin, max: newMax },
-                y: { min: yRange.min, max: yRange.max },
-              };
-            }
-
-            setViewMode("manual");
-            setIsLiveMode(false);
-          }
+        // Much more strict criteria for chart interaction
+        if (
+          touchDirectionRef.current === "unknown" &&
+          deltaX > 20 && // Higher threshold
+          deltaY < 10 && // Very low vertical tolerance
+          deltaX > deltaY * 4 && // Much stricter ratio
+          timeDelta < 500 // Must be quick movement
+        ) {
+          touchDirectionRef.current = "horizontal";
+          isDraggingRef.current = true;
+          lastDragXRef.current = touch.clientX;
+          e.preventDefault(); // Only now prevent default
+        } else if (touchDirectionRef.current === "unknown") {
+          // Any other movement - allow normal page scrolling
+          return;
         }
 
-        e.preventDefault();
+        // Handle chart dragging only if we've confirmed it's horizontal
+        if (
+          touchDirectionRef.current === "horizontal" &&
+          isDraggingRef.current
+        ) {
+          e.preventDefault();
+
+          const currentX = touch.clientX;
+          const dragDelta = currentX - (lastDragXRef.current || 0);
+          lastDragXRef.current = currentX;
+
+          if (uplotRef.current && Math.abs(dragDelta) > 2) {
+            const xScale = uplotRef.current.scales.x;
+            if (
+              xScale &&
+              xScale.min !== undefined &&
+              xScale.max !== undefined
+            ) {
+              const pixelToTime = (xScale.max - xScale.min) / width;
+              const timeDelta = -dragDelta * pixelToTime;
+
+              const newMin = xScale.min + timeDelta;
+              const newMax = xScale.max + timeDelta;
+
+              uplotRef.current.setScale("x", { min: newMin, max: newMax });
+              const [timestamps, values] = seriesToUPlotData(newData.long);
+              updateYAxisScale(timestamps, values, newMin, newMax);
+
+              manualScaleRef.current = {
+                x: { min: newMin, max: newMax },
+                y: {
+                  min: uplotRef.current.scales.y?.min ?? 0,
+                  max: uplotRef.current.scales.y?.max ?? 1,
+                },
+              };
+
+              setViewMode("manual");
+              setIsLiveMode(false);
+
+              if (graphSync) {
+                graphSync.syncZoom(graphId, {
+                  x: { min: newMin, max: newMax },
+                });
+              }
+            }
+          }
+        }
       } else if (e.touches.length === 2 && isPinchingRef.current) {
         // Two finger pinch zoom
+        e.preventDefault();
+
         const touch1 = e.touches[0];
         const touch2 = e.touches[1];
 
-        // Calculate new distance
         const newDistance = Math.sqrt(
           Math.pow(touch2.clientX - touch1.clientX, 2) +
             Math.pow(touch2.clientY - touch1.clientY, 2),
@@ -662,74 +1111,80 @@ export function BigGraph({
             xScale.max !== undefined &&
             pinchCenterRef.current
           ) {
-            // Get the container bounds to convert touch coordinates to chart coordinates
             const rect = containerRef.current?.getBoundingClientRect();
             if (rect) {
-              // Convert touch center to chart time coordinate
               const touchXRelative =
                 (pinchCenterRef.current.x - rect.left) / rect.width;
               const centerTime =
                 xScale.min + (xScale.max - xScale.min) * touchXRelative;
 
-              // Calculate new time range
               const currentRange = xScale.max - xScale.min;
               const newRange = currentRange / scaleFactor;
 
-              // Keep the zoom centered on the pinch point
               const leftRatio = (centerTime - xScale.min) / currentRange;
               const rightRatio = (xScale.max - centerTime) / currentRange;
 
               const newMin = centerTime - newRange * leftRatio;
               const newMax = centerTime + newRange * rightRatio;
 
-              uplotRef.current.setScale("x", {
-                min: newMin,
-                max: newMax,
-              });
+              uplotRef.current.setScale("x", { min: newMin, max: newMax });
+              const [timestamps, values] = seriesToUPlotData(newData.long);
+              updateYAxisScale(timestamps, values, newMin, newMax);
 
-              // Update manual scale reference
-              const currentYScale = uplotRef.current.scales.y;
               manualScaleRef.current = {
                 x: { min: newMin, max: newMax },
                 y: {
-                  min: currentYScale?.min ?? minY - range * 0.1,
-                  max: currentYScale?.max ?? maxY + range * 0.1,
+                  min: uplotRef.current.scales.y?.min ?? 0,
+                  max: uplotRef.current.scales.y?.max ?? 1,
                 },
               };
               setViewMode("manual");
               setIsLiveMode(false);
+
+              if (graphSync) {
+                graphSync.syncZoom(graphId, {
+                  x: { min: newMin, max: newMax },
+                });
+              }
             }
           }
         }
 
         lastPinchDistanceRef.current = newDistance;
-        e.preventDefault();
       }
+      // For all other cases, don't prevent default - allow normal scrolling
     };
-
     const handleTouchEnd = (e: TouchEvent) => {
       if (e.touches.length === 0) {
-        // All fingers lifted - stop all interactions
+        // All fingers lifted - reset everything
         isDraggingRef.current = false;
         isPinchingRef.current = false;
         lastDragXRef.current = null;
         lastPinchDistanceRef.current = null;
         pinchCenterRef.current = null;
-      } else if (e.touches.length === 1) {
-        // Went from multiple fingers to single finger
-        if (isPinchingRef.current) {
-          // Was pinching, now switch to dragging
-          isPinchingRef.current = false;
-          lastPinchDistanceRef.current = null;
-          pinchCenterRef.current = null;
+        touchStartRef.current = null;
+        touchDirectionRef.current = "unknown";
+      } else if (e.touches.length === 1 && isPinchingRef.current) {
+        // Went from pinch to single finger
+        isPinchingRef.current = false;
+        lastPinchDistanceRef.current = null;
+        pinchCenterRef.current = null;
 
-          // Start fresh drag with the remaining finger
-          isDraggingRef.current = true;
-          lastDragXRef.current = e.touches[0].clientX;
-        }
-        // If was already dragging, continue dragging (don't reset)
+        // Reset for potential new interaction
+        const touch = e.touches[0];
+        touchStartRef.current = {
+          x: touch.clientX,
+          y: touch.clientY,
+          time: Date.now(),
+        };
+        touchDirectionRef.current = "unknown";
+        isDraggingRef.current = false;
       }
-      e.preventDefault();
+
+      // Only prevent default if we actually intercepted the gesture
+      if (touchDirectionRef.current === "horizontal" && isDraggingRef.current) {
+        e.preventDefault();
+      }
     };
 
     const handleMouseDown = (e: MouseEvent) => {
@@ -743,7 +1198,7 @@ export function BigGraph({
     };
 
     if (containerRef.current && uplotRef.current) {
-      // Touch events for mobile/tablet
+      // Touch events with more permissive settings
       containerRef.current.addEventListener("touchstart", handleTouchStart, {
         passive: false,
       });
@@ -756,6 +1211,8 @@ export function BigGraph({
 
       // Mouse events
       containerRef.current.addEventListener("mousedown", handleMouseDown);
+
+      // Remove or modify wheel handler to be less aggressive
       containerRef.current.addEventListener("wheel", handleWheel, {
         passive: false,
       });
@@ -768,33 +1225,38 @@ export function BigGraph({
       values: [...values],
     };
   };
+
   const isSwitchingModeRef = useRef(false);
   const isUserTimeWindowChangeRef = useRef(false);
+
   const switchToLiveMode = () => {
-    // Set switching flag
     isSwitchingModeRef.current = true;
-    // Stop any ongoing animations
     stopAnimations();
 
     const currentTimeWindow = selectedTimeWindow;
 
-    // Update state synchronously
     setIsLiveMode(true);
 
-    // Determine view mode based on time window
     if (currentTimeWindow === "all") {
       setViewMode("all");
     } else {
       setViewMode("default");
     }
 
-    // Show all data immediately in live mode with current time window
+    // Broadcast mode change to other graphs
+    if (graphSync && !isSyncingRef.current) {
+      graphSync.syncViewMode(
+        graphId,
+        currentTimeWindow === "all" ? "all" : "default",
+        true,
+      );
+    }
+
     if (uplotRef.current && newData?.long) {
       const [timestamps, values] = seriesToUPlotData(newData.long);
       const fullData = buildUPlotData(timestamps, values);
       uplotRef.current.setData(fullData);
 
-      // Apply the selected time window immediately using stored value
       if (timestamps.length > 0) {
         const latestTimestamp = timestamps[timestamps.length - 1];
 
@@ -814,11 +1276,9 @@ export function BigGraph({
           updateYAxisScale(timestamps, values, viewStart, latestTimestamp);
         }
 
-        // Clear manual scale reference for live mode
         manualScaleRef.current = null;
       }
 
-      // Update last rendered data
       lastRenderedDataRef.current = { timestamps, values };
     }
 
@@ -828,16 +1288,16 @@ export function BigGraph({
   };
 
   const switchToHistoricalMode = () => {
-    // Set switching flag
     isSwitchingModeRef.current = true;
-    // Stop any ongoing animations
     stopAnimations();
 
-    const currentTimeWindow = selectedTimeWindow;
-
-    // Update state synchronously
     setIsLiveMode(false);
     setViewMode("manual");
+
+    // Broadcast mode change to other graphs
+    if (graphSync && !isSyncingRef.current) {
+      graphSync.syncViewMode(graphId, "manual", false);
+    }
 
     if (uplotRef.current && uplotRef.current.scales) {
       const xScale = uplotRef.current.scales.x;
@@ -857,34 +1317,87 @@ export function BigGraph({
       }
     }
 
-    // Show all data immediately in historical mode with current time window
     if (uplotRef.current && newData?.long) {
       const [timestamps, values] = seriesToUPlotData(newData.long);
       const fullData = buildUPlotData(timestamps, values);
       uplotRef.current.setData(fullData);
+      lastRenderedDataRef.current = { timestamps, values };
+    }
 
-      // Apply the selected time window immediately using stored value
-      if (timestamps.length > 0) {
+    setTimeout(() => {
+      isSwitchingModeRef.current = false;
+    }, 100);
+  };
+
+  const handleTimeWindowChangeInternal = (
+    newTimeWindow: number | "all",
+    isSync: boolean = false,
+  ) => {
+    if (isSwitchingModeRef.current || (!isSync && isSyncingRef.current)) {
+      return;
+    }
+
+    if (!isSync) {
+      isUserTimeWindowChangeRef.current = true;
+    }
+
+    stopAnimations();
+    setSelectedTimeWindow(newTimeWindow);
+
+    if (!uplotRef.current || !newData?.long) {
+      if (!isSync) {
+        isUserTimeWindowChangeRef.current = false;
+      }
+      return;
+    }
+
+    const [timestamps, values] = seriesToUPlotData(newData.long);
+    if (timestamps.length === 0) {
+      if (!isSync) {
+        isUserTimeWindowChangeRef.current = false;
+      }
+      return;
+    }
+
+    if (newTimeWindow === "all") {
+      setViewMode("all");
+      if (isLiveMode) {
+        const fullStart = startTimeRef.current ?? timestamps[0];
+        const fullEnd = timestamps[timestamps.length - 1];
+        uplotRef.current.setScale("x", { min: fullStart, max: fullEnd });
+        updateYAxisScale(timestamps, values, fullStart, fullEnd);
+      }
+      manualScaleRef.current = null;
+    } else {
+      if (isLiveMode) {
+        setViewMode("default");
         const latestTimestamp = timestamps[timestamps.length - 1];
-
-        if (currentTimeWindow === "all") {
-          const fullStart = startTimeRef.current ?? timestamps[0];
+        const viewStart = latestTimestamp - newTimeWindow;
+        uplotRef.current.setScale("x", {
+          min: viewStart,
+          max: latestTimestamp,
+        });
+        updateYAxisScale(timestamps, values, viewStart, latestTimestamp);
+        manualScaleRef.current = null;
+      } else {
+        // Historical mode - this is the key fix to match your simple version
+        const rightmostTimestamp = getRightmostVisibleTimestamp();
+        if (rightmostTimestamp) {
+          const newViewStart = rightmostTimestamp - newTimeWindow;
           uplotRef.current.setScale("x", {
-            min: fullStart,
-            max: latestTimestamp,
+            min: newViewStart,
+            max: rightmostTimestamp,
           });
-          updateYAxisScale(timestamps, values, fullStart, latestTimestamp);
-        } else {
-          const viewStart = latestTimestamp - (currentTimeWindow as number);
-          uplotRef.current.setScale("x", {
-            min: viewStart,
-            max: latestTimestamp,
-          });
-          updateYAxisScale(timestamps, values, viewStart, latestTimestamp);
+          // This is the crucial call - auto-scale Y-axis for the new time window
+          updateYAxisScale(
+            timestamps,
+            values,
+            newViewStart,
+            rightmostTimestamp,
+          );
 
-          // Update manual scale reference with the time window
           manualScaleRef.current = {
-            x: { min: viewStart, max: latestTimestamp },
+            x: { min: newViewStart, max: rightmostTimestamp },
             y: manualScaleRef.current?.y ?? {
               min: Math.min(...values),
               max: Math.max(...values),
@@ -892,40 +1405,28 @@ export function BigGraph({
           };
         }
       }
-
-      // Update last rendered data
-      lastRenderedDataRef.current = { timestamps, values };
     }
-    setTimeout(() => {
-      isSwitchingModeRef.current = false;
-    }, 100); // Increased delay slightly
+
+    lastRenderedDataRef.current = { timestamps, values };
+
+    // Broadcast time window change to other graphs
+    if (graphSync && !isSync && !isSyncingRef.current) {
+      graphSync.syncTimeWindow(graphId, newTimeWindow);
+    }
+
+    if (!isSync) {
+      setTimeout(() => {
+        isUserTimeWindowChangeRef.current = false;
+      }, 50);
+    }
   };
 
-  // Simple scroll detection
-  useEffect(() => {
-    const handleScroll = () => {
-      isScrollingRef.current = true;
+  // Public time window change function
+  const handleTimeWindowChange = (newTimeWindow: number | "all") => {
+    handleTimeWindowChangeInternal(newTimeWindow, false);
+  };
 
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current);
-      }
-
-      scrollTimeoutRef.current = setTimeout(() => {
-        isScrollingRef.current = false;
-      }, 100);
-    };
-
-    window.addEventListener("scroll", handleScroll, { passive: true });
-
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current);
-      }
-    };
-  }, []);
-
-  // Chart creation effect - only create when we have data and container
+  // Chart creation effect
   useEffect(() => {
     if (!containerRef.current || !newData?.long) {
       chartCreatedRef.current = false;
@@ -938,7 +1439,6 @@ export function BigGraph({
       return;
     }
 
-    // Always recreate the chart to ensure proper timestamp ordering
     createChart();
 
     return () => {
@@ -950,11 +1450,11 @@ export function BigGraph({
       chartCreatedRef.current = false;
     };
   }, [newData?.long, containerRef.current]);
+
   useEffect(() => {
     if (
       !uplotRef.current ||
       !newData?.long ||
-      isScrollingRef.current ||
       !chartCreatedRef.current ||
       !isLiveMode
     )
@@ -966,12 +1466,22 @@ export function BigGraph({
     const currentData = lastRenderedDataRef.current;
     const targetData = { timestamps, values };
 
-    // Check if we have new data points to animate
+    // Only animate if we have new points, and only animate to existing data
     if (targetData.timestamps.length > currentData.timestamps.length) {
-      // We have new points - start animation
-      animateNewPoint(currentData, targetData);
+      // Ensure we don't animate beyond actual data
+      const maxAnimatableLength = Math.min(
+        targetData.timestamps.length,
+        currentData.timestamps.length + 1, // Only one point ahead at a time
+      );
+
+      const limitedTargetData = {
+        timestamps: targetData.timestamps.slice(0, maxAnimatableLength),
+        values: targetData.values.slice(0, maxAnimatableLength),
+      };
+
+      animateNewPoint(currentData, limitedTargetData);
     } else if (targetData.timestamps.length === currentData.timestamps.length) {
-      // Same number of points - check if any values changed
+      // Handle value updates without animation
       let hasChanges = false;
       for (let i = 0; i < targetData.values.length; i++) {
         if (Math.abs(targetData.values[i] - currentData.values[i]) > 0.001) {
@@ -981,15 +1491,14 @@ export function BigGraph({
       }
 
       if (hasChanges) {
-        // Values changed - update immediately without animation
         const uData = buildUPlotData(timestamps, values);
         uplotRef.current.setData(uData);
         lastRenderedDataRef.current = { timestamps, values };
 
-        // Update scales
+        // Update view scales
         const lastTimestamp = timestamps[timestamps.length - 1] ?? 0;
         if (viewMode === "default") {
-          let xMin, xMax;
+          let xMin: number | undefined, xMax: number | undefined;
 
           if (selectedTimeWindow === "all") {
             const fullStart = startTimeRef.current ?? timestamps[0];
@@ -1025,13 +1534,13 @@ export function BigGraph({
     if (
       !uplotRef.current ||
       !newData?.current ||
-      isScrollingRef.current ||
       !isLiveMode ||
       !chartCreatedRef.current ||
       animationStateRef.current.isAnimating
     )
       return;
 
+    // In the live data updates effect, modify this section:
     const updateLiveData = () => {
       if (!newData?.long || !newData?.current || !uplotRef.current) return;
 
@@ -1040,43 +1549,36 @@ export function BigGraph({
       const liveTimestamps = [...timestamps];
       const liveValues = [...values];
 
-      const lastTimestamp = timestamps[timestamps.length - 1] || 0;
-      const timeSinceLastPoint = cur.timestamp - lastTimestamp;
+      // Always add the current point for live updates
+      liveTimestamps.push(cur.timestamp);
+      liveValues.push(cur.value);
 
-      // Only add current point if it's significantly different from last recorded point
-      if (timeSinceLastPoint > UPDATE_INTERVAL_MS * 0.5) {
-        liveTimestamps.push(cur.timestamp);
-        liveValues.push(cur.value);
+      const liveData = buildUPlotData(liveTimestamps, liveValues);
+      uplotRef.current.setData(liveData);
 
-        // This will trigger the animation in the data updates effect above
-        // by updating newData.long, so we don't need to animate here
-      } else {
-        // Just update the display with current data including live point
-        liveTimestamps.push(cur.timestamp);
-        liveValues.push(cur.value);
+      const latestTimestamp = liveTimestamps[liveTimestamps.length - 1];
 
-        const liveData = buildUPlotData(liveTimestamps, liveValues);
-        uplotRef.current.setData(liveData);
+      if (viewMode === "default") {
+        let xMin, xMax;
 
-        const latestTimestamp = liveTimestamps[liveTimestamps.length - 1];
-
-        if (viewMode === "default") {
-          let xMin, xMax;
-
-          if (selectedTimeWindow === "all") {
-            const fullStart = startTimeRef.current ?? liveTimestamps[0];
-            xMin = fullStart;
-            xMax = latestTimestamp;
-          } else {
-            xMin = latestTimestamp - (selectedTimeWindow as number);
-            xMax = latestTimestamp;
-          }
-
-          uplotRef.current.setScale("x", { min: xMin, max: xMax });
-          updateYAxisScale(liveTimestamps, liveValues, xMin, xMax);
-        } else if (viewMode === "all") {
+        if (selectedTimeWindow === "all") {
           const fullStart = startTimeRef.current ?? liveTimestamps[0];
-          uplotRef.current.setScale("x", {
+          xMin = fullStart;
+          xMax = latestTimestamp;
+        } else {
+          xMin = latestTimestamp - (selectedTimeWindow as number);
+          xMax = latestTimestamp;
+        }
+
+        // Force immediate scale update to prevent time gaps
+        uplotRef.current.batch(() => {
+          uplotRef.current!.setScale("x", { min: xMin, max: xMax });
+          updateYAxisScale(liveTimestamps, liveValues, xMin, xMax);
+        });
+      } else if (viewMode === "all") {
+        const fullStart = startTimeRef.current ?? liveTimestamps[0];
+        uplotRef.current.batch(() => {
+          uplotRef.current!.setScale("x", {
             min: fullStart,
             max: latestTimestamp,
           });
@@ -1086,7 +1588,7 @@ export function BigGraph({
             fullStart,
             latestTimestamp,
           );
-        }
+        });
       }
 
       if (startTimeRef.current === null && liveTimestamps.length > 0) {
@@ -1118,7 +1620,6 @@ export function BigGraph({
         return;
       }
 
-      // Prepare data for Excel export with proper timestamp formatting
       const exportData = timestamps.map((timestamp, index) => {
         const row: any = {
           Timestamp: new Date(timestamp),
@@ -1127,8 +1628,7 @@ export function BigGraph({
             : values[index]?.toFixed(3) || "",
         };
 
-        // Add line values for comparison
-        config.lines.forEach((line) => {
+        config.lines?.forEach((line) => {
           row[`${line.label} (${renderUnitSymbol(unit)})`] = renderValue
             ? renderValue(line.value)
             : line.value.toFixed(3);
@@ -1144,11 +1644,9 @@ export function BigGraph({
         return row;
       });
 
-      // Create workbook and worksheet
       const workbook = XLSX.utils.book_new();
       const worksheet = XLSX.utils.json_to_sheet(exportData);
 
-      // Create summary data
       const summaryData = [
         [`${config.title} Export Summary`, ""],
         ["Export Date", new Date()],
@@ -1156,15 +1654,13 @@ export function BigGraph({
         ["Parameters", ""],
       ];
 
-      // Add lines to summary
-      config.lines.forEach((line) => {
+      config.lines?.forEach((line) => {
         summaryData.push([
           `${line.label} (${renderUnitSymbol(unit)})`,
           renderValue ? renderValue(line.value) : line.value.toFixed(3),
         ]);
       });
 
-      // Add statistics
       summaryData.push(["", ""], ["Statistics", ""]);
       summaryData.push(["Total Data Points", timestamps.length.toString()]);
       summaryData.push(["Time Range Start", new Date(timestamps[0])]);
@@ -1207,85 +1703,6 @@ export function BigGraph({
     } catch (error) {
       alert("Error exporting data to Excel. Please try again.");
     }
-  };
-  const handleTimeWindowChange = (newTimeWindow: number | "all") => {
-    if (isSwitchingModeRef.current) {
-      return;
-    }
-
-    isUserTimeWindowChangeRef.current = true;
-
-    // Stop any ongoing animations when changing time window
-    stopAnimations();
-
-    // Update the selected time window first
-    setSelectedTimeWindow(newTimeWindow);
-
-    if (!uplotRef.current || !newData?.long) {
-      isUserTimeWindowChangeRef.current = false;
-      return;
-    }
-
-    const [timestamps, values] = seriesToUPlotData(newData.long);
-    if (timestamps.length === 0) {
-      isUserTimeWindowChangeRef.current = false;
-      return;
-    }
-
-    // Apply the time window immediately with proper view mode
-    if (newTimeWindow === "all") {
-      setViewMode("all");
-      if (isLiveMode) {
-        const fullStart = startTimeRef.current ?? timestamps[0];
-        const fullEnd = timestamps[timestamps.length - 1];
-        uplotRef.current.setScale("x", { min: fullStart, max: fullEnd });
-        updateYAxisScale(timestamps, values, fullStart, fullEnd);
-      }
-      manualScaleRef.current = null;
-    } else {
-      if (isLiveMode) {
-        setViewMode("default");
-        const latestTimestamp = timestamps[timestamps.length - 1];
-        const viewStart = latestTimestamp - newTimeWindow;
-        uplotRef.current.setScale("x", {
-          min: viewStart,
-          max: latestTimestamp,
-        });
-        updateYAxisScale(timestamps, values, viewStart, latestTimestamp);
-        manualScaleRef.current = null;
-      } else {
-        // Historical mode - maintain current position but adjust window
-        const rightmostTimestamp = getRightmostVisibleTimestamp();
-        if (rightmostTimestamp) {
-          const newViewStart = rightmostTimestamp - newTimeWindow;
-          uplotRef.current.setScale("x", {
-            min: newViewStart,
-            max: rightmostTimestamp,
-          });
-          updateYAxisScale(
-            timestamps,
-            values,
-            newViewStart,
-            rightmostTimestamp,
-          );
-
-          manualScaleRef.current = {
-            x: { min: newViewStart, max: rightmostTimestamp },
-            y: manualScaleRef.current?.y ?? {
-              min: Math.min(...values),
-              max: Math.max(...values),
-            },
-          };
-        }
-      }
-    }
-
-    // Update last rendered data to current state
-    lastRenderedDataRef.current = { timestamps, values };
-
-    setTimeout(() => {
-      isUserTimeWindowChangeRef.current = false;
-    }, 50); // Reduced timeout
   };
 
   const displayValue =
@@ -1409,7 +1826,7 @@ export function BigGraph({
           <div
             ref={containerRef}
             className="h-full w-full overflow-hidden"
-            style={{ backgroundColor: config.colors.background }}
+            style={{ backgroundColor: colors.background }}
           />
         </div>
       </div>
@@ -1435,7 +1852,6 @@ export function DiameterGraph({
 }) {
   const config: GraphConfig = {
     title: "Diameter",
-    icon: "lu:Circle",
     lines: [
       {
         type: "threshold",
@@ -1473,6 +1889,8 @@ export function DiameterGraph({
       unit={unit}
       renderValue={renderValue}
       config={config}
+      syncGroupId="diameter-group"
+      graphId="diameter-main"
     />
   );
 }
