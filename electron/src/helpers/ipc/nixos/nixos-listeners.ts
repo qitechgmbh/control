@@ -197,11 +197,20 @@ function parseNixOSGenerations(output: string): NixOSGeneration[] {
   const lines = output.trim().split("\n");
   const generations: NixOSGeneration[] = [];
 
-  for (const line of lines) {
-    // Skip header line and empty lines
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    // Skip the first line (header) and empty lines
+    if (i === 0 || !line.trim()) {
+      continue;
+    }
+
+    // Also skip any line that looks like a header
     if (
-      (line.includes("Generation") && line.includes("Build date")) ||
-      !line.trim()
+      line.includes("Generation") &&
+      (line.includes("Build date") ||
+        line.includes("NixOS version") ||
+        line.includes("Configuration"))
     ) {
       continue;
     }
@@ -215,6 +224,10 @@ function parseNixOSGenerations(output: string): NixOSGeneration[] {
     if (parts.length < 4) continue;
 
     const id = parts[0];
+
+    // Skip if first part is not a number (could be header remnant)
+    if (!/^\d+$/.test(id)) continue;
+
     let currentIndex = 1;
     let isCurrent = false;
 
@@ -248,5 +261,6 @@ function parseNixOSGenerations(output: string): NixOSGeneration[] {
     });
   }
 
-  return generations.reverse(); // Show newest first
+  // Sort by generation ID (numeric) in descending order to show newest first
+  return generations.sort((a, b) => parseInt(b.id) - parseInt(a.id));
 }
