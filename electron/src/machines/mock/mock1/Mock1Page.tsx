@@ -14,12 +14,6 @@ export function Mock1Page() {
           title: "Control",
           icon: "lu:CirclePlay",
         },
-        {
-          link: "graph",
-          activeLink: "graph",
-          title: "Graph",
-          icon: "lu:CirclePlay",
-        },
       ]}
     />
   );
