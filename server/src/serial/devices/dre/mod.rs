@@ -45,6 +45,12 @@ impl TryFrom<ModbusResponse> for DreDiameterResponse {
     type Error = anyhow::Error;
 
     fn try_from(value: ModbusResponse) -> Result<Self, Self::Error> {
+         if value.data.len() < 3 {
+            return Err(anyhow!(
+                "Invalid response data length: {}",
+                value.data.len()
+            ));
+        }
         let diameter = u16::from_be_bytes([value.data[1], value.data[2]]) as f64 / 1000.0;
         Ok(DreDiameterResponse {
             diameter: Length::new::<uom::si::length::millimeter>(diameter),
