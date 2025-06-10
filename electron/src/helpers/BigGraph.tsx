@@ -1700,7 +1700,7 @@ export function BigGraph({
         : `${config.title.toLowerCase().replace(/\s+/g, "_")}_${timestamp}.xlsx`;
 
       XLSX.writeFile(workbook, filename);
-    } catch (error) {
+    } catch (_error) {
       alert("Error exporting data to Excel. Please try again.");
     }
   };
