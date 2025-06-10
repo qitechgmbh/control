@@ -62,6 +62,7 @@ interface NixOSGeneration {
   current: boolean;
   date: string;
   path: string;
+  kernelVersion?: string;
   description?: string;
 }
 

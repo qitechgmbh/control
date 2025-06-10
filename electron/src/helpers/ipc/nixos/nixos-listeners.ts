@@ -54,14 +54,10 @@ async function listNixOSGenerations(): Promise<{
   error?: string;
 }> {
   return new Promise((resolve) => {
-    // List all generations using nix-env
-    const process = spawn(
-      "sudo",
-      ["nix-env", "--list-generations", "-p", "/nix/var/nix/profiles/system"],
-      {
-        shell: true,
-      },
-    );
+    // List all generations using nixos-rebuild
+    const process = spawn("sudo", ["nixos-rebuild", "list-generations"], {
+      shell: true,
+    });
 
     let stdout = "";
     let stderr = "";
@@ -102,15 +98,14 @@ async function setNixOSGeneration(generationId: string): Promise<{
   error?: string;
 }> {
   return new Promise((resolve) => {
-    // Switch to the specified generation
+    // Switch to the specified generation using nixos-rebuild
+    // First switch to the generation, then activate it
     const process = spawn(
       "sudo",
       [
-        "nix-env",
-        "--switch-generation",
-        generationId,
-        "-p",
-        "/nix/var/nix/profiles/system",
+        "sh",
+        "-c",
+        `nix-env --switch-generation ${generationId} -p /nix/var/nix/profiles/system && /nix/var/nix/profiles/system/bin/switch-to-configuration switch`,
       ],
       {
         shell: true,
@@ -118,6 +113,11 @@ async function setNixOSGeneration(generationId: string): Promise<{
     );
 
     let stderr = "";
+    let stdout = "";
+
+    process.stdout?.on("data", (data) => {
+      stdout += data.toString();
+    });
 
     process.stderr?.on("data", (data) => {
       stderr += data.toString();
@@ -129,7 +129,7 @@ async function setNixOSGeneration(generationId: string): Promise<{
       } else {
         resolve({
           success: false,
-          error: stderr || `Process exited with code ${code}`,
+          error: stderr || stdout || `Process exited with code ${code}`,
         });
       }
     });
@@ -148,13 +148,14 @@ async function deleteNixOSGeneration(generationId: string): Promise<{
   error?: string;
 }> {
   return new Promise((resolve) => {
-    // Delete the specified generation and update bootloader
+    // Delete the specified generation using nixos-collect-garbage and update bootloader
+    // This is the proper NixOS way to delete generations
     const process = spawn(
       "sudo",
       [
         "sh",
         "-c",
-        `nix-env --delete-generations ${generationId} -p /nix/var/nix/profiles/system && /nix/var/nix/profiles/system/bin/switch-to-configuration boot`,
+        `nixos-collect-garbage --delete-generations ${generationId} && /nix/var/nix/profiles/system/bin/switch-to-configuration boot`,
       ],
       {
         shell: true,
@@ -197,22 +198,54 @@ function parseNixOSGenerations(output: string): NixOSGeneration[] {
   const generations: NixOSGeneration[] = [];
 
   for (const line of lines) {
-    // Parse lines like: "   1   2024-01-15 14:30:20   (current)"
-    const match = line.match(
-      /^\s*(\d+)\s+(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\s*(\(current\))?/,
-    );
-
-    if (match) {
-      const [, id, date, currentMarker] = match;
-      generations.push({
-        id,
-        name: `Generation ${id}`,
-        version: id,
-        current: !!currentMarker,
-        date,
-        path: `/nix/var/nix/profiles/system-${id}-link`,
-      });
+    // Skip header line and empty lines
+    if (
+      (line.includes("Generation") && line.includes("Build date")) ||
+      !line.trim()
+    ) {
+      continue;
     }
+
+    // Parse lines from nixos-rebuild list-generations:
+    // Format: "ID [current] DATE TIME NIXOS_VERSION [CONFIGURATION] [REVISION] [SPECIALISATION] KERNEL"
+    // Example: "62 current 2025-06-10 08:51:35 fix.33_c744e1481fdc0bf25821bd0ee0ae8278f155                            6.14.8"
+
+    // Split the line into parts and extract information
+    const parts = line.trim().split(/\s+/);
+    if (parts.length < 4) continue;
+
+    const id = parts[0];
+    let currentIndex = 1;
+    let isCurrent = false;
+
+    // Check if "current" is present
+    if (parts[1] === "current") {
+      isCurrent = true;
+      currentIndex = 2;
+    }
+
+    // Extract date and time (should be at currentIndex and currentIndex+1)
+    const date = parts[currentIndex];
+    const time = parts[currentIndex + 1];
+    const dateTime = `${date} ${time}`;
+
+    // The next part should be the NixOS version/name
+    const nixosVersion = parts[currentIndex + 2] || `Generation ${id}`;
+
+    // The last part (if it looks like a kernel version) is the kernel
+    const lastPart = parts[parts.length - 1];
+    const kernelVersion =
+      lastPart && /^\d+\.\d+(\.\d+)?/.test(lastPart) ? lastPart : undefined;
+
+    generations.push({
+      id,
+      name: nixosVersion,
+      version: nixosVersion,
+      current: isCurrent,
+      date: dateTime,
+      path: `/nix/var/nix/profiles/system-${id}-link`,
+      kernelVersion,
+    });
   }
 
   return generations.reverse(); // Show newest first

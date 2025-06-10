@@ -243,7 +243,9 @@ export function ChooseVersionPage() {
         if (updatedResult.success) {
           setNixosGenerations(updatedResult.generations);
         }
-        console.log(`Successfully deleted generation ${generationId} and updated bootloader`);
+        console.log(
+          `Successfully deleted generation ${generationId} and updated bootloader`,
+        );
       } else {
         console.error(`Failed to delete generation: ${result.error}`);
         setNixosError(result.error || "Failed to delete generation");
@@ -439,13 +441,18 @@ function GenerationButton({
         <div className="flex items-center gap-2">
           <Icon name="lu:History" />
           <span className="flex-1 truncate">
-            GEN {generation.id} – {generation.name}
+            Update {generation.id} – {generation.name}
             {generation.current && " (current)"}
           </span>
         </div>
         <span className="font-mono text-sm text-gray-700">
           {generation.date ? new Date(generation.date).toLocaleString() : "N/A"}
         </span>
+        {generation.kernelVersion && (
+          <span className="font-mono text-sm text-gray-600">
+            Kernel: {generation.kernelVersion}
+          </span>
+        )}
         {generation.description && (
           <span className="text-sm text-gray-600">
             {generation.description}
