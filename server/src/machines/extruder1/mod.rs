@@ -132,10 +132,12 @@ impl ExtruderV2 {
             ExtruderV2Mode::Standby => (),
             ExtruderV2Mode::Heat => {
                 self.turn_heating_off();
+                self.screw_speed_controller.reset_pid();
             }
             ExtruderV2Mode::Extrude => {
                 self.turn_heating_off();
                 self.screw_speed_controller.turn_motor_off();
+                self.screw_speed_controller.reset_pid();
             }
         };
         self.mode = ExtruderV2Mode::Standby;
@@ -147,7 +149,10 @@ impl ExtruderV2 {
         match self.mode {
             ExtruderV2Mode::Standby => self.enable_heating(),
             ExtruderV2Mode::Heat => (),
-            ExtruderV2Mode::Extrude => self.screw_speed_controller.turn_motor_off(),
+            ExtruderV2Mode::Extrude => {
+                self.screw_speed_controller.turn_motor_off();
+                self.screw_speed_controller.reset_pid();
+            }
         }
         self.mode = ExtruderV2Mode::Heat;
     }
@@ -158,10 +163,12 @@ impl ExtruderV2 {
             ExtruderV2Mode::Standby => {
                 self.screw_speed_controller.turn_motor_on();
                 self.enable_heating();
+                self.screw_speed_controller.reset_pid();
             }
             ExtruderV2Mode::Heat => {
                 self.screw_speed_controller.turn_motor_on();
                 self.enable_heating();
+                self.screw_speed_controller.reset_pid();
             }
             ExtruderV2Mode::Extrude => (), // Do nothing, we are already extruding
         }
@@ -215,7 +222,14 @@ impl ExtruderV2 {
 // Motor
 impl ExtruderV2 {
     fn set_regulation(&mut self, uses_rpm: bool) {
+        if (self.screw_speed_controller.get_uses_rpm() == false && uses_rpm == true) {
+            self.screw_speed_controller
+                .set_target_screw_rpm(self.screw_speed_controller.target_rpm);
+        }
+
+        self.screw_speed_controller.reset_pid();
         self.screw_speed_controller.set_uses_rpm(uses_rpm);
+
         self.emit_regulation();
     }
 

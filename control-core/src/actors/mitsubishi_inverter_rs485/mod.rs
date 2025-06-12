@@ -410,7 +410,7 @@ impl MitsubishiInverterRS485Actor {
                     highest_priority = priority;
                 }
             }
-
+            // println!("{:?}", highest_prio_request);
             let request = match highest_prio_request {
                 Some(request) => request,
                 None => return,
