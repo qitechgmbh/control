@@ -1,13 +1,13 @@
 use std::time::Instant;
 
-use crate::serial::{devices::dre::Dre, registry::SERIAL_DEVICE_REGISTRY};
+use crate::serial::{devices::laser::Laser, registry::SERIAL_DEVICE_REGISTRY};
 
-use super::{DreMachine, DreTarget, api::DreMachineNamespace};
+use super::{LaserMachine, LaserTarget, api::LaserMachineNamespace};
 use anyhow::Error;
 use control_core::machines::new::MachineNewTrait;
 use uom::si::{f64::Length, length::millimeter};
 
-impl MachineNewTrait for DreMachine {
+impl MachineNewTrait for LaserMachine {
     fn new<'maindevice, 'subdevices>(
         params: &control_core::machines::new::MachineNewParams<
             'maindevice,
@@ -24,28 +24,28 @@ impl MachineNewTrait for DreMachine {
     {
         let hardware_serial = match params.hardware {
             control_core::machines::new::MachineNewHardware::Serial(serial) => *serial,
-            _ => return Err(Error::msg("Invalid hardware type for DreMachine")),
+            _ => return Err(Error::msg("Invalid hardware type for LaserMachine")),
         };
 
-        // downcast the hardware_serial to Arc<RwLock<Dre>>
+        // downcast the hardware_serial to Arc<RwLock<Laser>>
 
-        let dre = match smol::block_on(
-            SERIAL_DEVICE_REGISTRY.downcast_arc_rwlock::<Dre>(hardware_serial.device.clone()),
+        let laser = match smol::block_on(
+            SERIAL_DEVICE_REGISTRY.downcast_arc_rwlock::<Laser>(hardware_serial.device.clone()),
         ) {
-            Ok(dre) => dre,
-            Err(_) => return Err(Error::msg("Failed to downcast to Dre")),
+            Ok(laser) => laser,
+            Err(_) => return Err(Error::msg("Failed to downcast to Laser")),
         };
-        // set dre target configuration
-        let dre_target = DreTarget {
+        // set laser target configuration
+        let laser_target = LaserTarget {
             higher_tolerance: Length::new::<millimeter>(0.05),
             lower_tolerance: Length::new::<millimeter>(0.05),
             diameter: Length::new::<millimeter>(1.75),
         };
         Ok(Self {
-            dre,
-            namespace: DreMachineNamespace::new(),
+            laser,
+            namespace: LaserMachineNamespace::new(),
             last_measurement_emit: Instant::now(),
-            dre_target,
+            laser_target,
         })
     }
 }

@@ -1,4 +1,4 @@
-use super::DreMachine;
+use super::LaserMachine;
 use control_core::{
     machines::api::MachineApi,
     socketio::{
@@ -25,37 +25,37 @@ impl DiameterEvent {
     }
 }
 #[derive(Serialize, Debug, Clone)]
-pub struct DreStateEvent {
+pub struct LaserStateEvent {
     pub higher_tolerance: f64,
     pub lower_tolerance: f64,
     pub target_diameter: f64,
 }
 
-impl DreStateEvent {
+impl LaserStateEvent {
     pub fn build(&self) -> Event<Self> {
-        Event::new("DreStateEvent", self.clone())
+        Event::new("LaserStateEvent", self.clone())
     }
 }
 
-pub enum DreEvents {
+pub enum LaserEvents {
     Diameter(Event<DiameterEvent>),
-    DreState(Event<DreStateEvent>),
+    LaserState(Event<LaserStateEvent>),
 }
 
 #[derive(Debug)]
-pub struct DreMachineNamespace(Namespace);
+pub struct LaserMachineNamespace(Namespace);
 
-impl DreMachineNamespace {
+impl LaserMachineNamespace {
     pub fn new() -> Self {
         Self(Namespace::new())
     }
 }
 
-impl CacheableEvents<DreEvents> for DreEvents {
+impl CacheableEvents<LaserEvents> for LaserEvents {
     fn event_value(&self) -> Result<GenericEvent, serde_json::Error> {
         match self {
-            DreEvents::Diameter(event) => event.try_into(),
-            DreEvents::DreState(event) => event.try_into(),
+            LaserEvents::Diameter(event) => event.try_into(),
+            LaserEvents::LaserState(event) => event.try_into(),
         }
     }
 
@@ -64,8 +64,8 @@ impl CacheableEvents<DreEvents> for DreEvents {
         let cache_one = cache_one_event();
 
         match self {
-            DreEvents::Diameter(_) => cache_one_hour,
-            DreEvents::DreState(_) => cache_one,
+            LaserEvents::Diameter(_) => cache_one_hour,
+            LaserEvents::LaserState(_) => cache_one,
         }
     }
 }
@@ -73,16 +73,16 @@ impl CacheableEvents<DreEvents> for DreEvents {
 #[derive(Deserialize, Serialize)]
 /// All values in the Mutation enum should be positive.
 /// This ensures that the parameters for setting tolerances and target diameter
-/// are valid and meaningful within the context of the DreMachine's operation.
+/// are valid and meaningful within the context of the LaserMachine's operation.
 enum Mutation {
     TargetSetTargetDiameter(f64),
     TargetSetLowerTolerance(f64),
     TargetSetHigherTolerance(f64),
 }
 
-impl NamespaceCacheingLogic<DreEvents> for DreMachineNamespace {
+impl NamespaceCacheingLogic<LaserEvents> for LaserMachineNamespace {
     #[instrument(skip_all)]
-    fn emit_cached(&mut self, events: DreEvents) {
+    fn emit_cached(&mut self, events: LaserEvents) {
         let event = match events.event_value() {
             Ok(event) => event,
             Err(err) => {
@@ -95,7 +95,7 @@ impl NamespaceCacheingLogic<DreEvents> for DreMachineNamespace {
     }
 }
 
-impl MachineApi for DreMachine {
+impl MachineApi for LaserMachine {
     fn api_mutate(&mut self, request_body: Value) -> Result<(), anyhow::Error> {
         let mutation: Mutation = serde_json::from_value(request_body)?;
         match mutation {

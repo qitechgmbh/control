@@ -1,6 +1,6 @@
 /**
- * @file dre1Namespace.ts
- * @description TypeScript implementation of Dre1 namespace with Zod schema validation.
+ * @file laser1Namespace.ts
+ * @description TypeScript implementation of Laser1 namespace with Zod schema validation.
  */
 
 import { StoreApi } from "zustand";
@@ -25,31 +25,31 @@ import {
 
 // ========== Event Schema Definitions ==========
 /**
- * Measurements diameter from DRE
+ * Measurements diameter from Laser
  */
 export const diameterEventDataSchema = z.object({
   diameter: z.number(),
 });
 
-export const dreStateEventDataSchema = z.object({
+export const laserStateEventDataSchema = z.object({
   higher_tolerance: z.number(),
   lower_tolerance: z.number(),
   target_diameter: z.number(),
 });
 // ========== Event Schemas with Wrappers ==========
 export const diameterEventSchema = eventSchema(diameterEventDataSchema);
-export const dreStateEventSchema = eventSchema(dreStateEventDataSchema);
+export const laserStateEventSchema = eventSchema(laserStateEventDataSchema);
 
 // ========== Type Inferences ==========
 export type DiameterEvent = z.infer<typeof diameterEventSchema>;
 
-export type DreStateEvent = z.infer<typeof dreStateEventSchema>;
+export type LaserStateEvent = z.infer<typeof laserStateEventSchema>;
 
-export type Dre1NamespaceStore = {
+export type Laser1NamespaceStore = {
   // State events (latest only)
-  dreState: DreStateEvent | null;
+  laserState: LaserStateEvent | null;
   // Metric events (cached for 1 hour)
-  dreDiameter: TimeSeries;
+  laserDiameter: TimeSeries;
 };
 
 // Constants for time durations
@@ -64,36 +64,36 @@ const { initialTimeSeries: diameter, insert: addDiameter } = createTimeSeries(
   ONE_HOUR,
 );
 /**
- * Factory function to create a new Dre1 namespace store
- * @returns A new Zustand store instance for Dre1 namespace
+ * Factory function to create a new Laser1 namespace store
+ * @returns A new Zustand store instance for Laser1 namespace
  */
-export const createDre1NamespaceStore = (): StoreApi<Dre1NamespaceStore> =>
-  create<Dre1NamespaceStore>(() => {
+export const createLaser1NamespaceStore = (): StoreApi<Laser1NamespaceStore> =>
+  create<Laser1NamespaceStore>(() => {
     return {
-      dreState: null,
-      dreDiameter: diameter,
+      laserState: null,
+      laserDiameter: diameter,
     };
   });
 
 /**
- * Creates a message handler for Dre1 namespace events with validation and appropriate caching strategies
+ * Creates a message handler for Laser1 namespace events with validation and appropriate caching strategies
  * @param store The store to update when messages are received
  * @returns A message handler function
  */
-export function dre1MessageHandler(
-  store: StoreApi<Dre1NamespaceStore>,
+export function laser1MessageHandler(
+  store: StoreApi<Laser1NamespaceStore>,
 ): EventHandler {
   return (event: Event<any>) => {
     const eventName = event.name;
 
     try {
       // Apply appropriate caching strategy based on event type
-      if (eventName === "DreStateEvent") {
+      if (eventName === "LaserStateEvent") {
         store.setState(
           produce(store.getState(), (state) => {
-            state.dreState = {
+            state.laserState = {
               name: event.name,
-              data: dreStateEventDataSchema.parse(event.data),
+              data: laserStateEventDataSchema.parse(event.data),
               ts: event.ts,
             };
           }),
@@ -108,7 +108,10 @@ export function dre1MessageHandler(
         };
         store.setState(
           produce(store.getState(), (state) => {
-            state.dreDiameter = addDiameter(state.dreDiameter, timeseriesValue);
+            state.laserDiameter = addDiameter(
+              state.laserDiameter,
+              timeseriesValue,
+            );
           }),
         );
       } else {
@@ -126,17 +129,17 @@ export function dre1MessageHandler(
 }
 
 /**
- * Create the Dre1 namespace implementation
+ * Create the Laser1 namespace implementation
  */
-const useDre1NamespaceImplementation =
-  createNamespaceHookImplementation<Dre1NamespaceStore>({
-    createStore: createDre1NamespaceStore,
-    createEventHandler: dre1MessageHandler,
+const useLaser1NamespaceImplementation =
+  createNamespaceHookImplementation<Laser1NamespaceStore>({
+    createStore: createLaser1NamespaceStore,
+    createEventHandler: laser1MessageHandler,
   });
 
-export function useDre1Namespace(
+export function useLaser1Namespace(
   machine_identification_unique: MachineIdentificationUnique,
-): Dre1NamespaceStore {
+): Laser1NamespaceStore {
   // Generate namespace ID from validated machine ID
   const namespaceId: NamespaceId = {
     type: "machine",
@@ -144,5 +147,5 @@ export function useDre1Namespace(
   };
 
   // Use the implementation with validated namespace ID
-  return useDre1NamespaceImplementation(namespaceId);
+  return useLaser1NamespaceImplementation(namespaceId);
 }

@@ -1,12 +1,12 @@
 import { Page } from "@/components/Page";
 import { MarkdownWithToc } from "@/components/MarkdownWithToc";
 import React from "react";
-import dreManualContent from "@/assets/markdown/dre/manual.md?raw";
+import laserManualContent from "@/assets/markdown/laser/manual.md?raw";
 
-export function Dre1ManualPage() {
+export function Laser1ManualPage() {
   return (
     <Page>
-      <MarkdownWithToc markdownContent={dreManualContent} />
+      <MarkdownWithToc markdownContent={laserManualContent} />
     </Page>
   );
 }
