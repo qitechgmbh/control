@@ -27,6 +27,7 @@ import { Mock1Page } from "@/machines/mock/mock1/Mock1Page";
 import { Mock1ControlPage } from "@/machines/mock/mock1/Mock1ControlPage";
 import { Dre1GraphsPage } from "@/machines/dre/dre1/Dre1Graph";
 import { Mock1GraphPage } from "@/machines/mock/mock1/Mock1Graph";
+import { Mock1ManualPage } from "@/machines/mock/mock1/Mock1Manual";
 import { TroubleshootPage } from "@/setup/Trobleshoot";
 
 // make a route tree like this
@@ -138,6 +139,11 @@ export const mock1GraphRoute = createRoute({
   component: () => <Mock1GraphPage />,
 });
 
+export const mock1ManualRoute = createRoute({
+  getParentRoute: () => mock1SerialRoute,
+  path: "manual",
+  component: () => <Mock1ManualPage />,
+});
 
 export const setupRoute = createRoute({
   getParentRoute: () => sidebarRoute,
@@ -242,6 +248,7 @@ export const rootTree = RootRoute.addChildren([
       mock1SerialRoute.addChildren([
         mock1ControlRoute,
         mock1GraphRoute,
+        mock1ManualRoute,
       ]),
     ]),
   ]),
