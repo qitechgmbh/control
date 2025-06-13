@@ -1,5 +1,10 @@
 import { Page } from "@/components/Page";
-import { BigGraph, GraphConfig, GraphSyncProvider } from "@/helpers/BigGraph";
+import {
+  BigGraph,
+  GraphConfig,
+  GraphSyncProvider,
+  FloatingExportButton,
+} from "@/helpers/BigGraph";
 import React from "react";
 import { useMock1 } from "./useMock";
 
@@ -21,31 +26,32 @@ export function Mock1GraphPage() {
             config={config}
             unit={"mm"}
             renderValue={(value) => value.toFixed(3)}
-            syncGroupId="main-dashboard"
-            graphId="diameter-graph"
+            syncGroupId="mock"
+            graphId="0-graph"
           />
           <BigGraph
             newData={sineWave}
             config={config}
             unit={"mm"}
-            syncGroupId="main-dashboard"
+            syncGroupId="mock"
             graphId="1-graph"
           />
           <BigGraph
             newData={sineWave}
             config={config}
             unit={"mm"}
-            syncGroupId="main-dashboard"
+            syncGroupId="mock"
             graphId="2-graph"
           />
           <BigGraph
             newData={sineWave}
             config={config}
             unit={"mm"}
-            syncGroupId="main-dashboard"
+            syncGroupId="mock"
             graphId="3-graph"
           />
         </div>
+        <FloatingExportButton groupId="mock" />
       </GraphSyncProvider>
     </Page>
   );

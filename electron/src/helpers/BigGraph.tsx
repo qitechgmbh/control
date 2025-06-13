@@ -13,7 +13,6 @@ import { TimeSeries, seriesToUPlotData } from "@/lib/timeseries";
 import { renderUnitSymbol, Unit, getUnitIcon } from "@/control/units";
 import { TouchButton } from "@/components/touch/TouchButton";
 import { Icon, IconName } from "@/components/Icon";
-import * as XLSX from "xlsx";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,7 +21,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
+import { GraphExportData, exportGraphsToExcel } from "./excel_helpers";
 // Sync Context for synchronized zooming
 type SyncState = {
   x: { min: number; max: number };
@@ -30,7 +29,6 @@ type SyncState = {
   viewMode?: "default" | "all" | "manual";
   isLiveMode?: boolean;
 };
-
 type GraphSyncContextType = {
   registerGraph: (id: string, updateFn: (state: SyncState) => void) => void;
   unregisterGraph: (id: string) => void;
@@ -41,16 +39,31 @@ type GraphSyncContextType = {
     viewMode: "default" | "all" | "manual",
     isLiveMode: boolean,
   ) => void;
+  registerGraphData: (
+    id: string,
+    getDataFn: () => GraphExportData | null,
+  ) => void;
+  unregisterGraphData: (id: string) => void;
+  exportAllGraphs: () => void;
+  hasGraphs: () => boolean;
+  hasRegisteredGraphs: boolean;
 };
-
 const GraphSyncContext = createContext<GraphSyncContextType | null>(null);
+
 export function GraphSyncProvider({
   children,
+  groupId,
 }: {
   children: ReactNode;
   groupId: string;
 }) {
   const graphsRef = useRef<Map<string, (state: SyncState) => void>>(new Map());
+  const graphDataRef = useRef<Map<string, () => GraphExportData | null>>(
+    new Map(),
+  );
+
+  // Add this state to track when graphs are registered
+  const [hasRegisteredGraphs, setHasRegisteredGraphs] = useState(false);
 
   const registerGraph = (id: string, updateFn: (state: SyncState) => void) => {
     graphsRef.current.set(id, updateFn);
@@ -58,6 +71,25 @@ export function GraphSyncProvider({
 
   const unregisterGraph = (id: string) => {
     graphsRef.current.delete(id);
+  };
+
+  const registerGraphData = (
+    id: string,
+    getDataFn: () => GraphExportData | null,
+  ) => {
+    graphDataRef.current.set(id, getDataFn);
+    // Update state when graphs are registered
+    setHasRegisteredGraphs(graphDataRef.current.size > 0);
+  };
+
+  const unregisterGraphData = (id: string) => {
+    graphDataRef.current.delete(id);
+    // Update state when graphs are unregistered
+    setHasRegisteredGraphs(graphDataRef.current.size > 0);
+  };
+
+  const hasGraphs = () => {
+    return graphDataRef.current.size > 0;
   };
 
   const syncZoom = (fromId: string, state: SyncState) => {
@@ -88,6 +120,10 @@ export function GraphSyncProvider({
     });
   };
 
+  const exportAllGraphs = () => {
+    exportGraphsToExcel(graphDataRef.current, groupId);
+  };
+
   return (
     <GraphSyncContext.Provider
       value={{
@@ -96,6 +132,11 @@ export function GraphSyncProvider({
         syncZoom,
         syncTimeWindow,
         syncViewMode,
+        registerGraphData,
+        unregisterGraphData,
+        exportAllGraphs,
+        hasGraphs,
+        hasRegisteredGraphs,
       }}
     >
       {children}
@@ -105,8 +146,27 @@ export function GraphSyncProvider({
 
 export const useGraphSync = () => {
   const context = useContext(GraphSyncContext);
-  return context; // Allow null for non-synced graphs
+  return context;
 };
+
+export function FloatingExportButton({ groupId }: { groupId: string }) {
+  const graphSync = useGraphSync();
+
+  // Use the state-based approach instead of the function call
+  if (!graphSync || !graphSync.hasRegisteredGraphs) return null;
+
+  return (
+    <div className="fixed right-10 bottom-6 z-50">
+      <TouchButton
+        onClick={graphSync.exportAllGraphs}
+        variant="outline"
+        className="bg-green-600 px-3 py-2 text-base font-medium text-white transition-colors hover:bg-green-100"
+      >
+        Export
+      </TouchButton>
+    </div>
+  );
+}
 
 // Configuration types for additional lines
 export type GraphLine = {
@@ -352,6 +412,20 @@ export function BigGraph({
     [newData, selectedTimeWindow],
   );
 
+  useEffect(() => {
+    if (graphSync) {
+      const getGraphData = (): GraphExportData | null => ({
+        config,
+        data: newData,
+        unit,
+        renderValue,
+      });
+
+      graphSync.registerGraphData(graphId, getGraphData);
+      return () => graphSync.unregisterGraphData(graphId);
+    }
+  }, [graphSync, graphId, config, newData, unit, renderValue]);
+
   // Register with sync context
   useEffect(() => {
     if (graphSync) {
@@ -585,6 +659,7 @@ export function BigGraph({
 
     return uData;
   };
+
   const createChart = () => {
     if (!containerRef.current || !newData?.long) return;
 
@@ -1154,6 +1229,7 @@ export function BigGraph({
       }
       // For all other cases, don't prevent default - allow normal scrolling
     };
+
     const handleTouchEnd = (e: TouchEvent) => {
       if (e.touches.length === 0) {
         // All fingers lifted - reset everything
@@ -1540,7 +1616,6 @@ export function BigGraph({
     )
       return;
 
-    // In the live data updates effect, modify this section:
     const updateLiveData = () => {
       if (!newData?.long || !newData?.current || !uplotRef.current) return;
 
@@ -1605,106 +1680,6 @@ export function BigGraph({
     isLiveMode,
   ]);
 
-  // Excel export function
-  const exportToExcel = () => {
-    try {
-      if (!newData?.long) {
-        alert("No data to export");
-        return;
-      }
-
-      const [timestamps, values] = seriesToUPlotData(newData.long);
-
-      if (timestamps.length === 0) {
-        alert("No data to export");
-        return;
-      }
-
-      const exportData = timestamps.map((timestamp, index) => {
-        const row: any = {
-          Timestamp: new Date(timestamp),
-          [`Value (${renderUnitSymbol(unit)})`]: renderValue
-            ? renderValue(values[index])
-            : values[index]?.toFixed(3) || "",
-        };
-
-        config.lines?.forEach((line) => {
-          row[`${line.label} (${renderUnitSymbol(unit)})`] = renderValue
-            ? renderValue(line.value)
-            : line.value.toFixed(3);
-
-          if (line.type === "threshold") {
-            row[`Within ${line.label}`] =
-              Math.abs(values[index] - line.value) <= line.value * 0.05
-                ? "Yes"
-                : "No";
-          }
-        });
-
-        return row;
-      });
-
-      const workbook = XLSX.utils.book_new();
-      const worksheet = XLSX.utils.json_to_sheet(exportData);
-
-      const summaryData = [
-        [`${config.title} Export Summary`, ""],
-        ["Export Date", new Date()],
-        ["", ""],
-        ["Parameters", ""],
-      ];
-
-      config.lines?.forEach((line) => {
-        summaryData.push([
-          `${line.label} (${renderUnitSymbol(unit)})`,
-          renderValue ? renderValue(line.value) : line.value.toFixed(3),
-        ]);
-      });
-
-      summaryData.push(["", ""], ["Statistics", ""]);
-      summaryData.push(["Total Data Points", timestamps.length.toString()]);
-      summaryData.push(["Time Range Start", new Date(timestamps[0])]);
-      summaryData.push([
-        "Time Range End",
-        new Date(timestamps[timestamps.length - 1]),
-      ]);
-      summaryData.push([
-        `Min Value (${renderUnitSymbol(unit)})`,
-        renderValue
-          ? renderValue(Math.min(...values))
-          : Math.min(...values).toFixed(3),
-      ]);
-      summaryData.push([
-        `Max Value (${renderUnitSymbol(unit)})`,
-        renderValue
-          ? renderValue(Math.max(...values))
-          : Math.max(...values).toFixed(3),
-      ]);
-      summaryData.push([
-        `Average Value (${renderUnitSymbol(unit)})`,
-        renderValue
-          ? renderValue(values.reduce((a, b) => a + b, 0) / values.length)
-          : (values.reduce((a, b) => a + b, 0) / values.length).toFixed(3),
-      ]);
-
-      const summaryWorksheet = XLSX.utils.aoa_to_sheet(summaryData);
-      XLSX.utils.book_append_sheet(workbook, summaryWorksheet, "Summary");
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Data");
-
-      const timestamp = new Date()
-        .toISOString()
-        .replace(/[:.]/g, "-")
-        .slice(0, 19);
-      const filename = config.exportFilename
-        ? `${config.exportFilename}_${timestamp}.xlsx`
-        : `${config.title.toLowerCase().replace(/\s+/g, "_")}_${timestamp}.xlsx`;
-
-      XLSX.writeFile(workbook, filename);
-    } catch (_error) {
-      alert("Error exporting data to Excel. Please try again.");
-    }
-  };
-
   const displayValue =
     cursorValue !== null ? cursorValue : newData?.current?.value;
 
@@ -1744,7 +1719,7 @@ export function BigGraph({
               </span>
             </div>
           </div>
-          {/* Right side - Time window dropdown, View buttons, Export */}
+          {/* Right side - Time window dropdown, View buttons */}
           <div className="flex items-center gap-4">
             {/* Time window dropdown */}
             <DropdownMenu>
@@ -1801,18 +1776,6 @@ export function BigGraph({
                 Live
               </TouchButton>
             </div>
-
-            {/* Separator line */}
-            <div className="h-12 w-px bg-gray-300"></div>
-
-            {/* Export Button */}
-            <TouchButton
-              onClick={exportToExcel}
-              variant="outline"
-              className="bg-green-600 px-3 py-2 text-base font-medium text-white transition-colors hover:bg-green-100"
-            >
-              Export
-            </TouchButton>
           </div>
         </div>
 

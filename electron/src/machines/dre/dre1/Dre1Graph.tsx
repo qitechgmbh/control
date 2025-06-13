@@ -1,5 +1,10 @@
 import { Page } from "@/components/Page";
-import { BigGraph, GraphConfig } from "@/helpers/BigGraph";
+import {
+  BigGraph,
+  GraphConfig,
+  GraphSyncProvider,
+  FloatingExportButton,
+} from "@/helpers/BigGraph";
 import React from "react";
 import { useDre1 } from "./useDre";
 
@@ -47,14 +52,18 @@ export function Dre1GraphsPage() {
 
   return (
     <Page>
-      <BigGraph
-        newData={dreDiameter}
-        unit="mm"
-        renderValue={(value) => value.toFixed(3)}
-        config={config}
-        syncGroupId="diameter-group"
-        graphId="diameter-main"
-      />
+      <GraphSyncProvider groupId="diameter-group">
+        <BigGraph
+          newData={dreDiameter}
+          unit="mm"
+          renderValue={(value) => value.toFixed(3)}
+          config={config}
+          syncGroupId="diameter-group"
+          graphId="diameter-graph"
+        />
+
+        <FloatingExportButton groupId="diameter-group" />
+      </GraphSyncProvider>
     </Page>
   );
 }

@@ -5,6 +5,7 @@ import {
   GraphLine,
   GraphSyncProvider,
   GraphConfig,
+  FloatingExportButton,
 } from "@/helpers/BigGraph";
 import { useWinder2 } from "./useWinder";
 import { roundDegreesToDecimals, roundToDecimals } from "@/lib/decimal";
@@ -52,6 +53,8 @@ export function Winder2GraphsPage() {
             renderValue={(value) => roundToDecimals(value, 0)}
           />
         </div>
+
+        <FloatingExportButton groupId="winder2-group" />
       </GraphSyncProvider>
     </Page>
   );
