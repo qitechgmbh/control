@@ -103,9 +103,11 @@ export function Extruder2ControlPage() {
             <Label label="Target Pressure">
               <EditValue
                 value={targetBar}
-                defaultValue={200}
+                defaultValue={0}
                 unit="bar"
                 title="Target Pressure"
+                min={0.0}
+                max={150.0}
                 renderValue={(value) => roundToDecimals(value, 0)}
                 onChange={screwSetTargetPressure}
               />
