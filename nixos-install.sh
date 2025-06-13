@@ -23,7 +23,7 @@ fi
 # Create escaped version for system.nixos.label
 GIT_ABBREVIATION_ESCAPED=$(echo "$GIT_ABBREVIATION" | sed -e 's/+/-/g' -e 's/[^a-zA-Z0-9:_\.-]//g')  # e.g., "2-0-0", "main", "b2c7f6e"
 
-sudo cat > ./nixos/os/installInfo.nix << EOF
+sudo tee ./nixos/os/installInfo.nix > /dev/null << EOF
 {
   gitTimestamp = "$GIT_TIMESTAMP";
   gitCommit = "$GIT_COMMIT";
