@@ -269,11 +269,11 @@ export const extruder2: MachinePreset = {
   ],
 };
 
-export const dre1: MachinePreset = {
-  name: "DRE",
+export const laser1: MachinePreset = {
+  name: "Laser",
   version: "V1",
-  slug: "dre1",
-  icon: "lu:Diameter",
+  slug: "laser1",
+  icon: "lu:Sun",
   machine_identification: {
     vendor: VENDOR_QITECH,
     machine: 0x0006,
@@ -296,7 +296,7 @@ export const mock1: MachinePreset = {
 export const machinePresets: MachinePreset[] = [
   winder2,
   extruder2,
-  dre1,
+  laser1,
   mock1,
 ];
 

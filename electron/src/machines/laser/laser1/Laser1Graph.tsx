@@ -1,14 +1,14 @@
 import { Page } from "@/components/Page";
 import { BigGraph, GraphConfig } from "@/helpers/BigGraph";
 import React from "react";
-import { useDre1 } from "./useDre";
+import { useLaser1 } from "./useLaser1";
 
-export function Dre1GraphsPage() {
-  const { dreDiameter, dreState } = useDre1();
+export function Laser1GraphsPage() {
+  const { laserDiameter, laserState } = useLaser1();
 
-  const targetDiameter = dreState?.data?.target_diameter ?? 0;
-  const lowerTolerance = dreState?.data?.lower_tolerance ?? 0;
-  const higherTolerance = dreState?.data?.higher_tolerance ?? 0;
+  const targetDiameter = laserState?.data?.target_diameter ?? 0;
+  const lowerTolerance = laserState?.data?.lower_tolerance ?? 0;
+  const higherTolerance = laserState?.data?.higher_tolerance ?? 0;
 
   const config: GraphConfig = {
     title: "Diameter",
@@ -48,7 +48,7 @@ export function Dre1GraphsPage() {
   return (
     <Page>
       <BigGraph
-        newData={dreDiameter}
+        newData={laserDiameter}
         unit="mm"
         renderValue={(value) => value.toFixed(3)}
         config={config}

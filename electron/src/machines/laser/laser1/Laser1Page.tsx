@@ -1,12 +1,12 @@
 import { Topbar } from "@/components/Topbar";
-import { dre1SerialRoute } from "@/routes/routes";
+import { laser1SerialRoute } from "@/routes/routes";
 import React from "react";
 
-export function Dre1Page() {
-  const { serial } = dre1SerialRoute.useParams();
+export function Laser1Page() {
+  const { serial } = laser1SerialRoute.useParams();
   return (
     <Topbar
-      pathname={`/_sidebar/machines/dre1/${serial}`}
+      pathname={`/_sidebar/machines/laser1/${serial}`}
       items={[
         {
           link: "control",
