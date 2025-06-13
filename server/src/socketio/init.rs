@@ -65,9 +65,9 @@ fn setup_disconnection(socket: SocketRef, namespace_id: NamespaceId, app_state: 
         // Spawn async task to avoid blocking and potential deadlocks
         smol::spawn(async move {
             tracing::debug!(
-                socket = ?socket.id,
-                namespace = %namespace_id,
-                "Socket disconnected from namespace",
+                "Socket disconnected from namespace socket={:?} namespace={}",
+                socket.id,
+                namespace_id,
             );
             let mut socketio_namespaces_guard = app_state.socketio_setup.namespaces.write().await;
 
@@ -116,9 +116,9 @@ fn setup_connection(socket: SocketRef, namespace_id: NamespaceId, app_state: Arc
                             }
                             Err(err) => {
                                 tracing::warn!(
-                                    socket = ?socket_clone.id,
-                                    namespace = %namespace_id_clone,
-                                    "Couln't subscribe socket to namespace, disconnecting: {:?}",
+                                    "Couldn't subscribe socket to namespace, disconnecting socket={:?} namespace={} error={:?}",
+                                    socket_clone.id,
+                                    namespace_id_clone,
                                     err
                                 );
                                 let _ = socket_clone.disconnect();
@@ -133,8 +133,8 @@ fn setup_connection(socket: SocketRef, namespace_id: NamespaceId, app_state: Arc
     .detach();
 
     tracing::info!(
-        socket = ?socket.id,
-        namespace = %namespace_id,
-        "Socket connected to namespace",
+        "Socket connected to namespace socket={:?} namespace={}",
+        socket.id,
+        namespace_id,
     );
 }

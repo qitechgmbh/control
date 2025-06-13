@@ -103,10 +103,10 @@ where
     let tracer = tracer_provider.tracer(SERVICE_NAME);
 
     tracing::info!(
-        service_name = SERVICE_NAME,
-        service_namespace = SERVICE_NAMESPACE,
-        endpoint = OTLP_ENDPOINT,
-        "OpenTelemetry tracer initialized with channel-based exporter"
+        "OpenTelemetry tracer initialized with channel-based exporter service_name={} namespace={} endpoint={}",
+        SERVICE_NAME,
+        SERVICE_NAMESPACE,
+        OTLP_ENDPOINT
     );
 
     Box::new(tracing_opentelemetry::layer().with_tracer(tracer))
@@ -137,7 +137,7 @@ fn spawn_exporter_thread(receiver: Receiver<Vec<SpanData>>) {
                         exporter
                     }
                     Err(error) => {
-                        tracing::error!(%error, "Failed to create OTLP exporter");
+                        tracing::error!("Failed to create OTLP exporter error={}", error);
                         return;
                     }
                 };
@@ -146,7 +146,7 @@ fn spawn_exporter_thread(receiver: Receiver<Vec<SpanData>>) {
                 while let Ok(spans) = receiver.recv() {
                     if !spans.is_empty() {
                         if let Err(error) = export_spans(&exporter, spans).await {
-                            tracing::warn!(%error, "Failed to export span batch");
+                            tracing::warn!("Failed to export span batch error={}", error);
                         }
                     }
                 }
