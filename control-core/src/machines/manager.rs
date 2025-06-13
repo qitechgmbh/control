@@ -44,7 +44,7 @@ impl MachineManager {
         let device_grouping_result = group_devices_by_identification(device_identifications);
 
         tracing::info!(
-            "Device Groups {:?}",
+            "Device Groups {}",
             device_grouping_result.device_groups.len()
         );
 
