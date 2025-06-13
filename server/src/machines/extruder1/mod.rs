@@ -1,4 +1,6 @@
-use api::{ExtruderSettingsStateEvent, ExtruderV2Events, ExtruderV2Namespace};
+use api::{
+    ExtruderSettingsStateEvent, ExtruderV2Events, ExtruderV2Namespace, PidSettings, PidType,
+};
 use control_core::{machines::Machine, socketio::namespace::NamespaceCacheingLogic};
 use screw_speed_controller::ScrewSpeedController;
 use serde::{Deserialize, Serialize};
@@ -356,5 +358,43 @@ impl ExtruderV2 {
         .build();
         self.namespace
             .emit_cached(ExtruderV2Events::PressureStateEvent(event));
+    }
+}
+
+impl ExtruderV2 {
+    fn emit_pressure_pid_settings(&mut self) {
+        let kd = self.screw_speed_controller.pid.get_kd();
+        let kp = self.screw_speed_controller.pid.get_kp();
+        let ki = self.screw_speed_controller.pid.get_ki();
+        let event = api::PidSettingsEvent { ki, kp, kd }.build(PidType::Pressure);
+        self.namespace
+            .emit_cached(ExtruderV2Events::PidSettingsEvent(event));
+    }
+
+    fn emit_temperature_pid_settings(&mut self) {
+        let kd = self.temperature_controller_front.pid.get_kd();
+        let kp = self.temperature_controller_front.pid.get_kp();
+        let ki = self.temperature_controller_front.pid.get_ki();
+        let event = api::PidSettingsEvent { ki, kp, kd }.build(PidType::Temperature);
+        self.namespace
+            .emit_cached(ExtruderV2Events::PidSettingsEvent(event));
+    }
+
+    fn configure_pressure_pid(&mut self, settings: PidSettings) {
+        self.screw_speed_controller
+            .pid
+            .configure(settings.ki, settings.kp, settings.kd);
+    }
+
+    fn configure_temperature_pid(&mut self, settings: PidSettings) {
+        self.temperature_controller_back
+            .pid
+            .configure(settings.ki, settings.kp, settings.kd);
+        self.temperature_controller_middle
+            .pid
+            .configure(settings.ki, settings.kp, settings.kd);
+        self.temperature_controller_front
+            .pid
+            .configure(settings.ki, settings.kp, settings.kd);
     }
 }
