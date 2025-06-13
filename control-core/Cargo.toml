@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+uom = "0.37.0"
 anyhow = "1.0.98"
 axum = "0.8.4"
 ethercat_hal = { path = "../ethercat-hal" }
@@ -14,7 +15,6 @@ serde_json = "1.0.140"
 serialport = "4.7.1"
 smol = "2.0.2"
 socketioxide = "0.17.1"
-uom = "0.36.0"
 bitvec = { version = "1.0.1", features = ["alloc"] }
 crc = "3.2.1"
 serial = "0.4.0"
