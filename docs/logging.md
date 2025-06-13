@@ -308,15 +308,32 @@ pub fn my_function() {
 
 ### Structured Logging
 
+**Important**: When logging to journald (systemd's logging service), key-value pairs in event logs are not properly captured. Instead, include structured data using string formatting within the message itself.
+
 ```rust
 use tracing::{info, instrument};
 
+// ❌ Don't use key-value pairs in event logs (won't work with journald)
+info!(
+    user_id = %user.id,
+    email = %user.email,
+    "Updating user profile"
+);
+
+// ✅ Use string formatting instead (works with journald)
+info!(
+    "Updating user profile user_id={} email={}",
+    user.id,
+    user.email
+);
+
+// ✅ Spans can still use structured fields
 #[instrument(fields(user_id = %user.id, operation = "update"))]
 pub fn update_user(user: &User) {
     info!(
-        user_id = %user.id,
-        email = %user.email,
-        "Updating user profile"
+        "Updating user profile user_id={} email={}",
+        user.id,
+        user.email
     );
 }
 ```
@@ -353,11 +370,11 @@ use anyhow::Result;
 pub fn operation_with_error_handling() -> Result<()> {
     match risky_operation() {
         Ok(result) => {
-            info!(result = ?result, "Operation completed successfully");
+            info!("Operation completed successfully result={:?}", result);
             Ok(())
         }
         Err(e) => {
-            error!(error = %e, "Operation failed");
+            error!("Operation failed error={}", e);
             Err(e)
         }
     }
