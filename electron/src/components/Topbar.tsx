@@ -41,10 +41,9 @@ type TopbarProps = {
 export function Topbar({ items, pathname }: TopbarProps) {
   const sidebarlessWidth = useSidebarlessWidth();
   return (
-    <div className="flex h-full w-full flex-col">
-      <div className="h-18"></div>
+    <div className="flex h-screen w-full flex-col">
       <div
-        className="fixed flex h-18 gap-2 bg-neutral-200 pt-2 pr-2"
+        className="fixed top-0 flex h-18 gap-2 bg-neutral-200 pt-2 pr-2"
         // 50 is below popup dialogs
         style={{ zIndex: 50, width: sidebarlessWidth }}
       >
@@ -70,7 +69,9 @@ export function Topbar({ items, pathname }: TopbarProps) {
         <FullscreenButton />
       </div>
 
-      <Outlet />
+      <div className="mt-18 h-full overflow-y-auto">
+        <Outlet />
+      </div>
     </div>
   );
 }
