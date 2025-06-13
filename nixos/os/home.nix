@@ -1,4 +1,4 @@
-{ config, pkgs, ... }: {
+{ config, pkgs, lib, ... }: {
   home.stateVersion = "24.11";
 
   home.packages = with pkgs; [
@@ -39,26 +39,26 @@
 
     # Disable screen blanking/timeout
     "org/gnome/desktop/session" = {
-      idle-delay = "uint32 0";  # Use uint32 format to ensure proper type
+      idle-delay = lib.gvariant.mkUint32 0;  # Use uint32 format to ensure proper type
     };
     
-    # Disable automatic suspend and screen dimming
-    "org/gnome/settings-daemon/plugins/power" = {
-      sleep-inactive-ac-type = "nothing";
-      sleep-inactive-battery-type = "nothing";
-      power-button-action = "nothing";
-      idle-dim = false;
-      sleep-inactive-ac-timeout = "uint32 0";
-      sleep-inactive-battery-timeout = "uint32 0";
-      ambient-enabled = false;
-    };
-    
-    # Disable screen lock
-    "org/gnome/desktop/screensaver" = {
-      lock-enabled = false;
-      idle-activation-enabled = false;
-      lock-delay = "uint32 0";
-    };
+  # Disable automatic suspend and screen dimming
+  "org/gnome/settings-daemon/plugins/power" = {
+    sleep-inactive-ac-type = "nothing";
+    sleep-inactive-battery-type = "nothing";
+    power-button-action = "nothing";
+    idle-dim = false;
+    sleep-inactive-ac-timeout = lib.gvariant.mkUint32 0;
+    sleep-inactive-battery-timeout = lib.gvariant.mkUint32 0;
+    ambient-enabled = false;
+  };
+
+  # Disable screen lock
+  "org/gnome/desktop/screensaver" = {
+    lock-enabled = false;
+    idle-activation-enabled = false;
+    lock-delay = lib.gvariant.mkUint32 0;
+  };
 
     # Interface settings with hot-corners disabled
     "org/gnome/desktop/interface" = {
