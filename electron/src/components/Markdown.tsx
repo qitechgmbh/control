@@ -1,33 +1,137 @@
 import React from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { generateHeadingId } from "@/lib/markdown/heading";
 
 type MarkdownProps = {
   text: string;
 };
 
+// Extract plain text from React children
+function extractTextFromChildren(children: React.ReactNode): string {
+  return React.Children.toArray(children)
+    .map((child) => {
+      if (typeof child === "string") return child;
+      if (typeof child === "number") return child.toString();
+      if (
+        React.isValidElement(child) &&
+        typeof child.props === "object" &&
+        child.props !== null
+      ) {
+        return extractTextFromChildren((child.props as any).children || "");
+      }
+      return "";
+    })
+    .join("");
+}
+
 export function Markdown({ text }: MarkdownProps) {
+  /**
+   * First heading detection for removing top padding
+   *
+   * This logic detects if the markdown content starts with a heading and removes
+   * the top padding from only that first heading to create better visual spacing
+   * between the topbar and content.
+   *
+   * How it works:
+   * 1. Parse the first line of markdown text using regex: /^(#{1,6})\s+(.+)/
+   *    - Matches 1-6 hash symbols at the start of the text
+   *    - Captures the heading level (number of #) and the heading text
+   * 2. Each heading component (h1, h2, h3, h4) calls isFirstHeading() with its text and level
+   * 3. Only the heading that exactly matches the first heading's text and level gets isFirst = true
+   * 4. The first heading renders without pt-4 (top padding), all others keep their padding
+   *
+   * Example: For markdown starting with "# Mock Machine Manual"
+   * - firstHeadingInfo = { level: 1, text: "Mock Machine Manual", startsWithHeading: true }
+   * - Only the h1 with text "Mock Machine Manual" will have no top padding
+   * - Subsequent headings like "## Overview" will keep their normal pt-4 padding
+   */
+  const firstHeadingInfo = React.useMemo(() => {
+    const trimmedText = text.trim();
+    const firstLineMatch = trimmedText.match(/^(#{1,6})\s+(.+)/);
+    if (firstLineMatch) {
+      return {
+        level: firstLineMatch[1].length,
+        text: firstLineMatch[2].trim(),
+        startsWithHeading: true,
+      };
+    }
+    return { startsWithHeading: false };
+  }, [text]);
+
+  const isFirstHeading = (headingText: string, level: number) => {
+    return (
+      firstHeadingInfo.startsWithHeading &&
+      firstHeadingInfo.text === headingText &&
+      firstHeadingInfo.level === level
+    );
+  };
+
   return (
     <div>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          h1: ({ node, ...props }) => (
-            <h1 className="pt-4 pb-2 text-2xl" {...props} />
-          ),
+          h1: ({ node, children, ...props }) => {
+            const text = extractTextFromChildren(children);
+            const id = generateHeadingId(text);
+            const isFirst = isFirstHeading(text, 1);
+            return (
+              <h1
+                id={id}
+                className={`${isFirst ? "" : "pt-4"} pb-2 text-2xl`}
+                {...props}
+              >
+                {children}
+              </h1>
+            );
+          },
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          h2: ({ node, ...props }) => (
-            <h2 className="pt-4 pb-2 text-xl" {...props} />
-          ),
+          h2: ({ node, children, ...props }) => {
+            const text = extractTextFromChildren(children);
+            const id = generateHeadingId(text);
+            const isFirst = isFirstHeading(text, 2);
+            return (
+              <h2
+                id={id}
+                className={`${isFirst ? "" : "pt-4"} pb-2 text-xl`}
+                {...props}
+              >
+                {children}
+              </h2>
+            );
+          },
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          h3: ({ node, ...props }) => (
-            <h3 className="pt-4 pb-2 text-lg" {...props} />
-          ),
+          h3: ({ node, children, ...props }) => {
+            const text = extractTextFromChildren(children);
+            const id = generateHeadingId(text);
+            const isFirst = isFirstHeading(text, 3);
+            return (
+              <h3
+                id={id}
+                className={`${isFirst ? "" : "pt-4"} pb-2 text-lg`}
+                {...props}
+              >
+                {children}
+              </h3>
+            );
+          },
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          h4: ({ node, ...props }) => (
-            <h4 className="pt-4 pb-2 text-lg" {...props} />
-          ),
+          h4: ({ node, children, ...props }) => {
+            const text = extractTextFromChildren(children);
+            const id = generateHeadingId(text);
+            const isFirst = isFirstHeading(text, 4);
+            return (
+              <h4
+                id={id}
+                className={`${isFirst ? "" : "pt-4"} pb-2 text-lg`}
+                {...props}
+              >
+                {children}
+              </h4>
+            );
+          },
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           ul: ({ node, ...props }) => (
             <ul className="markdown-list list-inside list-disc" {...props} />

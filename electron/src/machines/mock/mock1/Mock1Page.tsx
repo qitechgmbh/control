@@ -20,6 +20,12 @@ export function Mock1Page() {
           title: "Graph",
           icon: "lu:CirclePlay",
         },
+        {
+          link: "manual",
+          activeLink: "manual",
+          title: "Manual",
+          icon: "lu:BookOpen",
+        },
       ]}
     />
   );
