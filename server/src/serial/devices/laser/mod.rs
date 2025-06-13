@@ -5,7 +5,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use crate::machines::{MACHINE_DRE, VENDOR_QITECH};
+use crate::machines::{MACHINE_LASER_V1, VENDOR_QITECH};
 use anyhow::anyhow;
 use control_core::{
     helpers::{
@@ -24,44 +24,45 @@ use control_core::{
 use serial::SerialPort;
 use smol::lock::RwLock;
 use uom::si::f64::Length;
-/// The struct of DRE Device
+
+/// The struct of Laser Device
 #[derive(Debug)]
-pub struct Dre {
-    pub data: Option<DreData>,
+pub struct Laser {
+    pub data: Option<LaserData>,
     pub path: String,
 }
 
-impl SerialDevice for Dre {}
+impl SerialDevice for Laser {}
 
-enum DreModbusRequsts {
+enum LaserModbusRequsts {
     ReadDiameter,
 }
 
-struct DreDiameterResponse {
+struct LaserDiameterResponse {
     pub diameter: Length,
 }
 
-impl TryFrom<ModbusResponse> for DreDiameterResponse {
+impl TryFrom<ModbusResponse> for LaserDiameterResponse {
     type Error = anyhow::Error;
 
     fn try_from(value: ModbusResponse) -> Result<Self, Self::Error> {
-         if value.data.len() < 3 {
+        if value.data.len() < 3 {
             return Err(anyhow!(
                 "Invalid response data length: {}",
                 value.data.len()
             ));
         }
         let diameter = u16::from_be_bytes([value.data[1], value.data[2]]) as f64 / 1000.0;
-        Ok(DreDiameterResponse {
+        Ok(LaserDiameterResponse {
             diameter: Length::new::<uom::si::length::millimeter>(diameter),
         })
     }
 }
 
-impl From<DreModbusRequsts> for modbus::ModbusRequest {
-    fn from(request: DreModbusRequsts) -> Self {
+impl From<LaserModbusRequsts> for modbus::ModbusRequest {
+    fn from(request: LaserModbusRequsts) -> Self {
         match request {
-            DreModbusRequsts::ReadDiameter => modbus::ModbusRequest {
+            LaserModbusRequsts::ReadDiameter => modbus::ModbusRequest {
                 slave_id: 1,
                 function_code: modbus::ModbusFunctionCode::ReadInputRegister,
                 data: vec![(0 >> 8) as u8, (0 & 0xFF) as u8],
@@ -70,11 +71,11 @@ impl From<DreModbusRequsts> for modbus::ModbusRequest {
     }
 }
 
-impl SerialDeviceNew for Dre {
+impl SerialDeviceNew for Laser {
     fn new_serial(
         params: &SerialDeviceNewParams,
-    ) -> Result<(DeviceIdentification, Arc<RwLock<Dre>>), anyhow::Error> {
-        let dre_data = Some(DreData {
+    ) -> Result<(DeviceIdentification, Arc<RwLock<Laser>>), anyhow::Error> {
+        let laser_data = Some(LaserData {
             diameter: Length::new::<uom::si::length::millimeter>(0.0),
             last_timestamp: Instant::now(),
         });
@@ -85,7 +86,7 @@ impl SerialDeviceNew for Dre {
                 machine_identification_unique: MachineIdentificationUnique {
                     machine_identification: MachineIdentification {
                         vendor: VENDOR_QITECH,
-                        machine: MACHINE_DRE,
+                        machine: MACHINE_LASER_V1,
                     },
                     serial: serial,
                 },
@@ -98,9 +99,9 @@ impl SerialDeviceNew for Dre {
             ),
         };
 
-        // Create a new Dre instance
-        let _self = Arc::new(RwLock::new(Dre {
-            data: dre_data,
+        // Create a new Laser instance
+        let _self = Arc::new(RwLock::new(Laser {
+            data: laser_data,
             path: params.path.clone(),
         }));
 
@@ -110,7 +111,7 @@ impl SerialDeviceNew for Dre {
         let path_for_removal = params.path.clone();
         let _self_clone = _self.clone();
         thread::Builder::new()
-            .name("DRE".to_owned())
+            .name("laser".to_owned())
             .spawn(move || {
                 send_serial_device_panic(path_for_panic, device_thread_panic_tx.clone());
                 let _ = smol::block_on(async {
@@ -134,19 +135,19 @@ impl SerialDeviceNew for Dre {
 }
 
 #[derive(Debug, Clone)]
-pub struct DreData {
+pub struct LaserData {
     pub diameter: Length,
     pub last_timestamp: Instant,
 }
 
-impl Dre {
+impl Laser {
     pub async fn get_diameter(&self) -> Result<Length, String> {
         match &self.data {
             Some(data) => Ok(data.diameter),
-            None => Err("No data from DRE".to_string()),
+            None => Err("No data from Laser".to_string()),
         }
     }
-    pub async fn get_data(&self) -> Option<DreData> {
+    pub async fn get_data(&self) -> Option<LaserData> {
         self.data.clone()
     }
     async fn process(_self: Arc<RwLock<Self>>) -> Result<(), anyhow::Error> {
@@ -155,7 +156,7 @@ impl Dre {
             read_guard.path.clone()
         };
 
-        let request: ModbusRequest = DreModbusRequsts::ReadDiameter.into();
+        let request: ModbusRequest = LaserModbusRequsts::ReadDiameter.into();
         let request_buffer: Vec<u8> = request.into();
 
         // port configuration
@@ -192,11 +193,11 @@ impl Dre {
             })?;
 
             if let Some(diameter_response) = response {
-                // try to convert it to a DreDiameterResponse
-                let diameter_response = DreDiameterResponse::try_from(diameter_response)?;
+                // try to convert it to a LaserDiameterResponse
+                let diameter_response = LaserDiameterResponse::try_from(diameter_response)?;
                 // save the diameter
                 let mut self_guard = _self.write().await;
-                self_guard.data = Some(DreData {
+                self_guard.data = Some(LaserData {
                     diameter: diameter_response.diameter,
                     last_timestamp: Instant::now(),
                 });

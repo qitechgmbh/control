@@ -6,7 +6,7 @@ type AnimateCableProps = {
   targetDiameter: number;
   lowTolerance: number;
   highTolerance: number;
-  dreDiameter: TimeSeries;
+  diameter: TimeSeries;
 };
 
 // Ring color depending on tolerance
@@ -33,9 +33,9 @@ export function DiameterVisualisation({
   targetDiameter,
   lowTolerance,
   highTolerance,
-  dreDiameter,
+  diameter,
 }: AnimateCableProps) {
-  const actualDiameter = dreDiameter.current?.value ?? 0.0;
+  const actualDiameter = diameter.current?.value ?? 0.0;
 
   const minDia = targetDiameter - lowTolerance;
   const maxDia = targetDiameter + highTolerance;
@@ -50,7 +50,7 @@ export function DiameterVisualisation({
     inputMin: number,
     inputMax: number,
     outputMin: number,
-    outputMax: number
+    outputMax: number,
   ) => {
     return (
       outputMin +

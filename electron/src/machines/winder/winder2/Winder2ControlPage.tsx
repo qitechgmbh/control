@@ -259,7 +259,7 @@ export function Winder2ControlPage() {
                   icon: "lu:Gauge",
                 },
                 Diameter: {
-                  children: "Diameter (Sync to DRE™)",
+                  children: "Diameter",
                   icon: "lu:Diameter",
                   disabled: true,
                 },
