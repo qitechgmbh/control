@@ -273,7 +273,7 @@ export const laser1: MachinePreset = {
   name: "Laser",
   version: "V1",
   slug: "laser1",
-  icon: "lu:Diameter",
+  icon: "lu:Sun",
   machine_identification: {
     vendor: VENDOR_QITECH,
     machine: 0x0006,

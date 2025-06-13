@@ -260,7 +260,7 @@ export function Winder2ControlPage() {
                 },
                 Diameter: {
                   children: "Diameter",
-                  icon: "lu:Diameter",
+                  icon: "lu:Sun",
                   disabled: true,
                 },
               }}
