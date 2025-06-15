@@ -31,7 +31,7 @@ tower-http = { version = "0.6.6", features = ["cors", "trace", "fs"] }
 axum = { version = "0.8.4", features = ["macros"] }
 
 # serial
-crc = "3.2.1"
+crc = "3.3.0"
 serial = "0.4.0"
 serialport = "4.7.1"
 
