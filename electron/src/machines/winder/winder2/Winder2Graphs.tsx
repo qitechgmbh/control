@@ -5,7 +5,8 @@ import {
   GraphLine,
   GraphSyncProvider,
   GraphConfig,
-  FloatingExportButton,
+  GraphControls,
+  FloatingControlPanel,
 } from "@/helpers/BigGraph";
 import { useWinder2 } from "./useWinder";
 import { roundDegreesToDecimals, roundToDecimals } from "@/lib/decimal";
@@ -25,36 +26,39 @@ export function Winder2GraphsPage() {
   return (
     <Page>
       <GraphSyncProvider groupId="winder2-group">
-        <div className="grid gap-4">
-          <SpoolRpmGraph
-            newData={spoolRpm}
-            unit="rpm"
-            renderValue={(value) => roundToDecimals(value, 0)}
-          />
+        <div className="flex flex-col gap-4">
+          <GraphControls groupId="winder2-group" />
 
-          <TraversePositionGraph
-            newData={traversePosition}
-            limitInner={traverseState?.data.limit_inner}
-            limitOuter={traverseState?.data.limit_outer}
-            unit="mm"
-            renderValue={(value) => roundToDecimals(value, 1)}
-          />
+          <div className="grid gap-4">
+            <SpoolRpmGraph
+              newData={spoolRpm}
+              unit="rpm"
+              renderValue={(value) => roundToDecimals(value, 0)}
+            />
 
-          <TensionArmAngleGraph
-            newData={tensionArmAngle}
-            unit="deg"
-            renderValue={(value) => roundDegreesToDecimals(value, 0)}
-          />
+            <TraversePositionGraph
+              newData={traversePosition}
+              limitInner={traverseState?.data.limit_inner}
+              limitOuter={traverseState?.data.limit_outer}
+              unit="mm"
+              renderValue={(value) => roundToDecimals(value, 1)}
+            />
 
-          <PullerSpeedGraph
-            newData={pullerSpeed}
-            targetSpeed={pullerState?.data.target_speed}
-            unit="m/min"
-            renderValue={(value) => roundToDecimals(value, 0)}
-          />
+            <TensionArmAngleGraph
+              newData={tensionArmAngle}
+              unit="deg"
+              renderValue={(value) => roundDegreesToDecimals(value, 0)}
+            />
+
+            <PullerSpeedGraph
+              newData={pullerSpeed}
+              targetSpeed={pullerState?.data.target_speed}
+              unit="m/min"
+              renderValue={(value) => roundToDecimals(value, 0)}
+            />
+          </div>
         </div>
-
-        <FloatingExportButton groupId="winder2-group" />
+        <FloatingControlPanel groupId="winder2-group" />
       </GraphSyncProvider>
     </Page>
   );

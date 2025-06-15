@@ -13,6 +13,7 @@ import { TimeSeries, seriesToUPlotData } from "@/lib/timeseries";
 import { renderUnitSymbol, Unit, getUnitIcon } from "@/control/units";
 import { TouchButton } from "@/components/touch/TouchButton";
 import { Icon, IconName } from "@/components/Icon";
+import { ControlCard } from "@/control/ControlCard";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,6 +23,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { GraphExportData, exportGraphsToExcel } from "./excel_helpers";
+
 // Sync Context for synchronized zooming
 type SyncState = {
   x: { min: number; max: number };
@@ -29,6 +31,7 @@ type SyncState = {
   viewMode?: "default" | "all" | "manual";
   isLiveMode?: boolean;
 };
+
 type GraphSyncContextType = {
   registerGraph: (id: string, updateFn: (state: SyncState) => void) => void;
   unregisterGraph: (id: string) => void;
@@ -47,23 +50,38 @@ type GraphSyncContextType = {
   exportAllGraphs: () => void;
   hasGraphs: () => boolean;
   hasRegisteredGraphs: boolean;
+  switchToLiveMode: () => void;
+  switchToHistoricalMode: () => void;
+  handleTimeWindowChange: (timeWindow: number | "all") => void;
+  getCurrentTimeWindow: () => number | "all";
+  getIsLiveMode: () => boolean;
+  getTimeWindowOptions: () => Array<{ value: number | "all"; label: string }>;
+  showControls: boolean;
+  setShowControls: (show: boolean) => void;
 };
-const GraphSyncContext = createContext<GraphSyncContextType | null>(null);
 
+const GraphSyncContext = createContext<GraphSyncContextType | null>(null);
 export function GraphSyncProvider({
   children,
   groupId,
+  showControls = true, // Default to true for backward compatibility
 }: {
   children: ReactNode;
   groupId: string;
+  showControls?: boolean;
 }) {
   const graphsRef = useRef<Map<string, (state: SyncState) => void>>(new Map());
   const graphDataRef = useRef<Map<string, () => GraphExportData | null>>(
     new Map(),
   );
 
-  // Add this state to track when graphs are registered
+  // Add state for sync controls
   const [hasRegisteredGraphs, setHasRegisteredGraphs] = useState(false);
+  const [currentTimeWindow, setCurrentTimeWindow] = useState<number | "all">(
+    30 * 60 * 1000,
+  );
+  const [isLiveMode, setIsLiveMode] = useState(true);
+  const [controlsVisible, setControlsVisible] = useState(showControls);
 
   const registerGraph = (id: string, updateFn: (state: SyncState) => void) => {
     graphsRef.current.set(id, updateFn);
@@ -78,13 +96,11 @@ export function GraphSyncProvider({
     getDataFn: () => GraphExportData | null,
   ) => {
     graphDataRef.current.set(id, getDataFn);
-    // Update state when graphs are registered
     setHasRegisteredGraphs(graphDataRef.current.size > 0);
   };
 
   const unregisterGraphData = (id: string) => {
     graphDataRef.current.delete(id);
-    // Update state when graphs are unregistered
     setHasRegisteredGraphs(graphDataRef.current.size > 0);
   };
 
@@ -101,6 +117,7 @@ export function GraphSyncProvider({
   };
 
   const syncTimeWindow = (fromId: string, timeWindow: number | "all") => {
+    setCurrentTimeWindow(timeWindow);
     graphsRef.current.forEach((updateFn, id) => {
       if (id !== fromId) {
         updateFn({ x: { min: 0, max: 0 }, timeWindow });
@@ -113,6 +130,7 @@ export function GraphSyncProvider({
     viewMode: "default" | "all" | "manual",
     isLiveMode: boolean,
   ) => {
+    setIsLiveMode(isLiveMode);
     graphsRef.current.forEach((updateFn, id) => {
       if (id !== fromId) {
         updateFn({ x: { min: 0, max: 0 }, viewMode, isLiveMode });
@@ -123,6 +141,46 @@ export function GraphSyncProvider({
   const exportAllGraphs = () => {
     exportGraphsToExcel(graphDataRef.current, groupId);
   };
+
+  // Sync control methods
+  const switchToLiveMode = () => {
+    setIsLiveMode(true);
+    graphsRef.current.forEach((updateFn) => {
+      updateFn({
+        x: { min: 0, max: 0 },
+        viewMode: currentTimeWindow === "all" ? "all" : "default",
+        isLiveMode: true,
+      });
+    });
+  };
+
+  const switchToHistoricalMode = () => {
+    setIsLiveMode(false);
+    graphsRef.current.forEach((updateFn) => {
+      updateFn({
+        x: { min: 0, max: 0 },
+        viewMode: "manual",
+        isLiveMode: false,
+      });
+    });
+  };
+
+  const handleTimeWindowChange = (timeWindow: number | "all") => {
+    setCurrentTimeWindow(timeWindow);
+    graphsRef.current.forEach((updateFn) => {
+      updateFn({ x: { min: 0, max: 0 }, timeWindow });
+    });
+  };
+
+  const getCurrentTimeWindow = () => currentTimeWindow;
+  const getIsLiveMode = () => isLiveMode;
+  const getTimeWindowOptions = () => DEFAULT_TIME_WINDOW_OPTIONS;
+  const setShowControls = (show: boolean) => setControlsVisible(show);
+
+  // Update controlsVisible when showControls prop changes
+  useEffect(() => {
+    setControlsVisible(showControls);
+  }, [showControls]);
 
   return (
     <GraphSyncContext.Provider
@@ -137,6 +195,14 @@ export function GraphSyncProvider({
         exportAllGraphs,
         hasGraphs,
         hasRegisteredGraphs,
+        switchToLiveMode,
+        switchToHistoricalMode,
+        handleTimeWindowChange,
+        getCurrentTimeWindow,
+        getIsLiveMode,
+        getTimeWindowOptions,
+        showControls: controlsVisible,
+        setShowControls,
       }}
     >
       {children}
@@ -148,24 +214,213 @@ export const useGraphSync = () => {
   const context = useContext(GraphSyncContext);
   return context;
 };
-
-export function FloatingExportButton({ groupId }: { groupId: string }) {
+export function GraphControls({ groupId }: { groupId: string }) {
   const graphSync = useGraphSync();
 
-  // Use the state-based approach instead of the function call
-  if (!graphSync || !graphSync.hasRegisteredGraphs) return null;
+  if (!graphSync || !graphSync.hasRegisteredGraphs || !graphSync.showControls) {
+    return null;
+  }
+
+  const currentTimeWindow = graphSync.getCurrentTimeWindow();
+  const isLiveMode = graphSync.getIsLiveMode();
+  const timeWindowOptions = graphSync.getTimeWindowOptions();
+
+  const getSelectedTimeWindowLabel = () => {
+    const option = timeWindowOptions.find(
+      (opt) => opt.value === currentTimeWindow,
+    );
+    return option ? option.label : "1m";
+  };
 
   return (
-    <div className="fixed right-10 bottom-6 z-50">
-      <TouchButton
-        onClick={graphSync.exportAllGraphs}
-        variant="outline"
-        className="bg-green-600 px-3 py-2 text-base font-medium text-white transition-colors hover:bg-green-100"
-      >
-        Export
-      </TouchButton>
+    <ControlCard>
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold">Graph Controls</h2>
+
+        <div className="flex items-center gap-3">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <TouchButton
+                variant="outline"
+                className="h-auto border-gray-300 bg-white px-3 py-3 text-base text-gray-900 hover:bg-gray-50"
+              >
+                {getSelectedTimeWindowLabel()}
+                <Icon name="lu:ChevronDown" className="ml-2 size-4" />
+              </TouchButton>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel className="text-base font-medium">
+                Time Window
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {timeWindowOptions.map((option) => (
+                <DropdownMenuItem
+                  key={option.value}
+                  onClick={() => graphSync.handleTimeWindowChange(option.value)}
+                  className={`min-h-[48px] px-4 py-3 text-base ${
+                    currentTimeWindow === option.value ? "bg-blue-50" : ""
+                  }`}
+                >
+                  {option.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* View mode buttons */}
+          <TouchButton
+            onClick={graphSync.switchToHistoricalMode}
+            variant="outline"
+            className={`h-auto px-3 py-3 text-base font-medium transition-colors ${
+              !isLiveMode
+                ? "bg-black text-white"
+                : "border-gray-300 bg-white text-gray-700 hover:bg-gray-100"
+            }`}
+          >
+            Historical
+          </TouchButton>
+          <TouchButton
+            onClick={graphSync.switchToLiveMode}
+            variant="outline"
+            className={`h-auto px-3 py-3 text-base font-medium transition-colors ${
+              isLiveMode
+                ? "bg-black text-white"
+                : "border-gray-300 bg-white text-gray-700 hover:bg-gray-100"
+            }`}
+          >
+            Live
+          </TouchButton>
+
+          {/* Separator line */}
+          <div className="mx-2 h-8 w-px bg-gray-200"></div>
+
+          {/* Export button */}
+          <TouchButton
+            onClick={graphSync.exportAllGraphs}
+            variant="outline"
+            className="h-auto bg-green-600 px-3 py-3 text-base font-medium text-white hover:bg-green-700"
+          >
+            Export
+          </TouchButton>
+        </div>
+      </div>
+    </ControlCard>
+  );
+}
+// New floating control panel component
+export function FloatingControlPanel({ groupId }: { groupId: string }) {
+  const graphSync = useGraphSync();
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  if (!graphSync || !graphSync.hasRegisteredGraphs || !graphSync.showControls) {
+    return null;
+  }
+
+  const currentTimeWindow = graphSync.getCurrentTimeWindow();
+  const isLiveMode = graphSync.getIsLiveMode();
+  const timeWindowOptions = graphSync.getTimeWindowOptions();
+
+  const getSelectedTimeWindowLabel = () => {
+    const option = timeWindowOptions.find(
+      (opt) => opt.value === currentTimeWindow,
+    );
+    return option ? option.label : "1m";
+  };
+
+  return (
+    <div className="fixed right-6 bottom-6 z-50">
+      <div className="flex items-end gap-3">
+        {/* Expanded controls */}
+        {isExpanded && (
+          <div className="animate-in slide-in-from-right-2 duration-200">
+            <ControlCard className="pt-6">
+              <div className="flex items-center gap-3">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <TouchButton
+                      variant="outline"
+                      className="h-auto border-gray-300 bg-white px-3 py-3 text-base text-gray-900 hover:bg-gray-50"
+                    >
+                      {getSelectedTimeWindowLabel()}
+                      <Icon name="lu:ChevronDown" className="ml-2 size-4" />
+                    </TouchButton>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuLabel className="text-base font-medium">
+                      Time Window
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {timeWindowOptions.map((option) => (
+                      <DropdownMenuItem
+                        key={option.value}
+                        onClick={() =>
+                          graphSync.handleTimeWindowChange(option.value)
+                        }
+                        className={`min-h-[48px] px-4 py-3 text-base ${
+                          currentTimeWindow === option.value ? "bg-blue-50" : ""
+                        }`}
+                      >
+                        {option.label}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                {/* View mode buttons */}
+                <TouchButton
+                  onClick={graphSync.switchToHistoricalMode}
+                  variant="outline"
+                  className={`h-auto px-3 py-3 text-base font-medium transition-colors ${
+                    !isLiveMode
+                      ? "bg-black text-white"
+                      : "border-gray-300 bg-white text-gray-700 hover:bg-gray-100"
+                  }`}
+                >
+                  Historical
+                </TouchButton>
+                <TouchButton
+                  onClick={graphSync.switchToLiveMode}
+                  variant="outline"
+                  className={`h-auto px-3 py-3 text-base font-medium transition-colors ${
+                    isLiveMode
+                      ? "bg-black text-white"
+                      : "border-gray-300 bg-white text-gray-700 hover:bg-gray-100"
+                  }`}
+                >
+                  Live
+                </TouchButton>
+
+                {/* Separator line */}
+                <div className="mx-2 h-8 w-px bg-gray-200"></div>
+
+                {/* Export button */}
+                <TouchButton
+                  onClick={graphSync.exportAllGraphs}
+                  variant="outline"
+                  className="h-auto bg-green-600 px-3 py-3 text-base font-medium text-white hover:bg-green-700"
+                >
+                  Export
+                </TouchButton>
+              </div>
+            </ControlCard>
+          </div>
+        )}
+
+        {/* Toggle button */}
+        <TouchButton
+          onClick={() => setIsExpanded(!isExpanded)}
+          variant="outline"
+          className="h-auto bg-green-600 px-3 py-3 text-white hover:bg-green-700"
+          icon={isExpanded ? "lu:Minus" : "lu:Plus"}
+        />
+      </div>
     </div>
   );
+}
+
+// Keep the old export button for backward compatibility but make it hidden
+export function FloatingExportButton({ groupId }: { groupId: string }) {
+  return null; // Hidden - functionality moved to FloatingControlPanel
 }
 
 // Configuration types for additional lines
@@ -1717,64 +1972,6 @@ export function BigGraph({
               <span className="leading-none text-gray-500">
                 {renderUnitSymbol(unit)}
               </span>
-            </div>
-          </div>
-          {/* Right side - Time window dropdown, View buttons */}
-          <div className="flex items-center gap-4">
-            {/* Time window dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <TouchButton
-                  variant="outline"
-                  className="border-gray-300 px-3 py-2 text-base font-medium text-gray-900 hover:bg-gray-50"
-                >
-                  {getSelectedTimeWindowLabel()}
-                  <Icon name="lu:ChevronDown" className="ml-2 size-4" />
-                </TouchButton>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel className="text-base font-medium">
-                  Time Window
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {timeWindowOptions.map((option) => (
-                  <DropdownMenuItem
-                    key={option.value}
-                    onClick={() => handleTimeWindowChange(option.value)}
-                    className={`min-h-[48px] px-4 py-3 text-base ${
-                      selectedTimeWindow === option.value ? "bg-blue-50" : ""
-                    }`}
-                  >
-                    {option.label}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            {/* View Buttons */}
-            <div className="flex items-center gap-4">
-              <TouchButton
-                onClick={switchToHistoricalMode}
-                variant="outline"
-                className={`px-3 py-2 text-base font-medium transition-colors ${
-                  !isLiveMode
-                    ? "bg-black text-white shadow-sm"
-                    : "border-gray-300 text-gray-700 hover:bg-gray-100"
-                }`}
-              >
-                Historical
-              </TouchButton>
-              <TouchButton
-                onClick={switchToLiveMode}
-                variant="outline"
-                className={`px-3 py-2 text-base font-medium transition-colors ${
-                  isLiveMode
-                    ? "bg-black text-white shadow-sm"
-                    : "border-gray-300 text-gray-700 hover:bg-gray-100"
-                }`}
-              >
-                Live
-              </TouchButton>
             </div>
           </div>
         </div>

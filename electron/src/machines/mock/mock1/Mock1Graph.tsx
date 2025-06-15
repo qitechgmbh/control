@@ -3,7 +3,8 @@ import {
   BigGraph,
   GraphConfig,
   GraphSyncProvider,
-  FloatingExportButton,
+  FloatingControlPanel,
+  GraphControls,
 } from "@/helpers/BigGraph";
 import React from "react";
 import { useMock1 } from "./useMock";
@@ -20,7 +21,8 @@ export function Mock1GraphPage() {
   return (
     <Page>
       <GraphSyncProvider groupId="main-dashboard">
-        <div className="grid gap-4">
+        <div className="flex flex-col gap-4">
+          <GraphControls groupId="mock" />
           <BigGraph
             newData={sineWave}
             config={config}
@@ -51,7 +53,7 @@ export function Mock1GraphPage() {
             graphId="3-graph"
           />
         </div>
-        <FloatingExportButton groupId="mock" />
+        <FloatingControlPanel groupId="mock" />
       </GraphSyncProvider>
     </Page>
   );

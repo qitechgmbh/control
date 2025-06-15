@@ -3,7 +3,8 @@ import {
   BigGraph,
   GraphConfig,
   GraphSyncProvider,
-  FloatingExportButton,
+  GraphControls,
+  FloatingControlPanel,
 } from "@/helpers/BigGraph";
 import React from "react";
 import { useDre1 } from "./useDre";
@@ -53,16 +54,19 @@ export function Dre1GraphsPage() {
   return (
     <Page>
       <GraphSyncProvider groupId="diameter-group">
-        <BigGraph
-          newData={dreDiameter}
-          unit="mm"
-          renderValue={(value) => value.toFixed(3)}
-          config={config}
-          syncGroupId="diameter-group"
-          graphId="diameter-graph"
-        />
+        <div className="flex flex-col gap-4">
+          <GraphControls groupId="diameter-group" />
 
-        <FloatingExportButton groupId="diameter-group" />
+          <BigGraph
+            newData={dreDiameter}
+            unit="mm"
+            renderValue={(value) => value.toFixed(3)}
+            config={config}
+            syncGroupId="diameter-group"
+            graphId="diameter-graph"
+          />
+        </div>
+        <FloatingControlPanel groupId="diameter-group" />
       </GraphSyncProvider>
     </Page>
   );
