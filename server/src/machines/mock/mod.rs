@@ -46,7 +46,7 @@ impl MockMachine {
         let sine_wave_event = SineWaveEvent { amplitude: y };
 
         self.namespace
-            .emit_cached(MockEvents::SineWave(sine_wave_event.build()));
+            .emit(MockEvents::SineWave(sine_wave_event.build()));
     }
 
     /// Emit the current state of the mock machine only if values have changed
@@ -62,7 +62,7 @@ impl MockMachine {
             };
 
             self.namespace
-                .emit_cached(MockEvents::SineWaveState(mock_state_event.build()));
+                .emit(MockEvents::SineWaveState(mock_state_event.build()));
 
             // Update last emitted values
             self.last_emitted_frequency = Some(current_frequency_mhz);
@@ -82,7 +82,7 @@ impl MockMachine {
             };
 
             self.namespace
-                .emit_cached(MockEvents::ModeState(mode_state_event.build()));
+                .emit(MockEvents::ModeState(mode_state_event.build()));
 
             // Update last emitted values
             self.last_emitted_mode = Some(current_mode);

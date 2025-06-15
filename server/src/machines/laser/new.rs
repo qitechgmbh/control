@@ -43,7 +43,7 @@ impl MachineNewTrait for LaserMachine {
         };
         Ok(Self {
             laser,
-            namespace: LaserMachineNamespace::new(),
+            namespace: LaserMachineNamespace::new(params.socket_queue_tx.clone()),
             last_measurement_emit: Instant::now(),
             laser_target,
         })

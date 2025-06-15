@@ -149,7 +149,7 @@ impl Winder2 {
             .map(|x| x.get::<millimeter>());
         let event = TraversePositionEvent { position }.build();
         self.namespace
-            .emit_cached(Winder2Events::TraversePosition(event))
+            .emit(Winder2Events::TraversePosition(event))
     }
 
     fn emit_traverse_state(&mut self) {
@@ -184,7 +184,7 @@ impl Winder2 {
         }
         .build();
         self.namespace
-            .emit_cached(Winder2Events::TraverseState(event))
+            .emit(Winder2Events::TraverseState(event))
     }
 
     pub fn sync_traverse_speed(&mut self) {
@@ -436,7 +436,7 @@ impl Winder2 {
             can_wind: self.can_wind(),
         }
         .build();
-        self.namespace.emit_cached(Winder2Events::Mode(event))
+        self.namespace.emit(Winder2Events::Mode(event))
     }
 }
 
@@ -463,7 +463,7 @@ impl Winder2 {
 
         let event = TensionArmAngleEvent { degree: angle_deg }.build();
         self.namespace
-            .emit_cached(Winder2Events::TensionArmAngleEvent(event))
+            .emit(Winder2Events::TensionArmAngleEvent(event))
     }
 
     fn emit_tension_arm_state(&mut self) {
@@ -472,7 +472,7 @@ impl Winder2 {
         }
         .build();
         self.namespace
-            .emit_cached(Winder2Events::TensionArmStateEvent(event))
+            .emit(Winder2Events::TensionArmStateEvent(event))
     }
 }
 
@@ -497,7 +497,7 @@ impl Winder2 {
             .steps_to_angular_velocity(self.spool.get_speed() as f64)
             .get::<revolution_per_minute>();
         let event = api::SpoolRpmEvent { rpm }.build();
-        self.namespace.emit_cached(Winder2Events::SpoolRpm(event))
+        self.namespace.emit(Winder2Events::SpoolRpm(event))
     }
 }
 
@@ -557,7 +557,7 @@ impl Winder2 {
             }
             .build(),
         );
-        self.namespace.emit_cached(event);
+        self.namespace.emit(event);
     }
 
     pub fn emit_puller_state(&mut self) {
@@ -576,7 +576,7 @@ impl Winder2 {
             }
             .build(),
         );
-        self.namespace.emit_cached(event);
+        self.namespace.emit(event);
     }
 }
 

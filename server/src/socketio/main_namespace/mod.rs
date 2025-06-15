@@ -1,24 +1,29 @@
+use std::sync::Arc;
+
 use control_core::socketio::{
     event::{Event, GenericEvent},
-    namespace::{
-        CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, NamespaceInterface,
-        cache_one_event,
-    },
+    namespace::{CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_one_event},
 };
 use ethercat_devices_event::EthercatDevicesEvent;
 use ethercat_interface_discovery_event::EthercatInterfaceDiscoveryEvent;
 use machines_event::MachinesEvent;
+use smol::channel::Sender;
+use socketioxide::extract::SocketRef;
 use tracing::instrument;
 
 pub mod ethercat_devices_event;
 pub mod ethercat_interface_discovery_event;
 pub mod machines_event;
 
-pub struct MainRoom(pub Namespace);
+pub struct MainRoom {
+    pub namespace: Namespace,
+}
 
 impl MainRoom {
-    pub fn new() -> Self {
-        Self(Namespace::new())
+    pub fn new(socket_queue_tx: Sender<(SocketRef, Arc<GenericEvent>)>) -> Self {
+        Self {
+            namespace: Namespace::new(socket_queue_tx),
+        }
     }
 }
 
@@ -27,16 +32,10 @@ where
     MainNamespaceEvents: CacheableEvents<MainNamespaceEvents>,
 {
     #[instrument(skip_all)]
-    fn emit_cached(&mut self, event: MainNamespaceEvents) {
+    fn emit(&mut self, event: MainNamespaceEvents) {
         let buffer_fn = event.event_cache_fn();
-        let generic_event = match event.event_value() {
-            Ok(event) => event,
-            Err(err) => {
-                tracing::error!("Failed to event.event_value(): {:?}", err);
-                return;
-            }
-        };
-        self.0.emit_cached(&generic_event, &buffer_fn);
+        let generic_event = Arc::new(event.event_value());
+        self.namespace.emit(generic_event, &buffer_fn);
     }
 }
 
@@ -48,11 +47,11 @@ pub enum MainNamespaceEvents {
 }
 
 impl CacheableEvents<MainNamespaceEvents> for MainNamespaceEvents {
-    fn event_value(&self) -> Result<GenericEvent, serde_json::Error> {
+    fn event_value(&self) -> GenericEvent {
         match self {
-            MainNamespaceEvents::EthercatDevicesEvent(event) => event.clone().try_into(),
-            MainNamespaceEvents::EthercatInterfaceDiscoveryEvent(event) => event.clone().try_into(),
-            MainNamespaceEvents::MachinesEvent(event) => event.clone().try_into(),
+            MainNamespaceEvents::EthercatDevicesEvent(event) => event.into(),
+            MainNamespaceEvents::EthercatInterfaceDiscoveryEvent(event) => event.into(),
+            MainNamespaceEvents::MachinesEvent(event) => event.into(),
         }
     }
 
