@@ -386,10 +386,6 @@ impl MitsubishiInverterRS485Actor {
         &mut self,
     ) -> Pin<Box<dyn Future<Output = Result<ModbusResponse, anyhow::Error>> + Send + '_>> {
         Box::pin(async move {
-            if !(self.serial_interface.has_message)().await {
-                //   return;
-            }
-
             let res: Option<Vec<u8>> = (self.serial_interface.read_message)().await;
             let raw_response = match res {
                 Some(res) => res,
@@ -409,7 +405,6 @@ impl MitsubishiInverterRS485Actor {
                 }
                 Err(_) => {
                     self.last_message_size = 22;
-                    tracing::error!("Error Parsing ModbusResponse!");
                     self.state = State::WaitingForReceiveAccept;
                     Err(anyhow::anyhow!("error"))
                 }
@@ -556,25 +551,6 @@ impl MitsubishiInverterRS485Actor {
         self.frequency = Frequency::ZERO;
         self.last_control_request_type = MitsubishiControlRequests::ReadInverterStatus;
     }
-
-    pub async fn initialize(&mut self, now_ts: Instant) {
-        let elapsed: Duration = now_ts.duration_since(self.last_ts);
-        // State is uninitialized until serial interface init returns true, which takes a few cycles on the el6021
-        if let State::Uninitialized = self.state {
-            let res = (self.serial_interface.initialize)().await;
-            if res == true {
-                self.state = State::ReadyToSend;
-                // every time when our inverter is "Uninitialzed" reset it first to clear any error states it may have
-                //self.add_request(MitsubishiControlRequests::ResetInverter.into());
-                self.baudrate = (self.serial_interface.get_baudrate)().await;
-                self.encoding = (self.serial_interface.get_serial_encoding)().await;
-                self.last_ts = Instant::now();
-                return;
-            } else {
-                return;
-            }
-        }
-    }
 }
 
 impl Actor for MitsubishiInverterRS485Actor {
@@ -609,7 +585,7 @@ impl Actor for MitsubishiInverterRS485Actor {
 
             let timeout = calculate_modbus_rtu_timeout(
                 encoding.total_bits(),
-                self.last_request_type.timeout_duration() * 3,
+                self.last_request_type.timeout_duration(),
                 baudrate,
                 self.last_message_size,
             );
@@ -617,8 +593,8 @@ impl Actor for MitsubishiInverterRS485Actor {
             if elapsed < timeout {
                 return;
             }
+
             self.add_request(MitsubishiControlRequests::ReadMotorFrequency.into());
-            //   self.add_request(MitsubishiControlRequests::WriteRunningFrequency.into());
 
             self.last_ts = now_ts;
             match self.state {
@@ -628,7 +604,7 @@ impl Actor for MitsubishiInverterRS485Actor {
                         Ok(ret) => {
                             self.handle_response(ret);
                         }
-                        Err(err) => tracing::error!("{}", err), // Do nothing for now
+                        Err(err) => (), // Do nothing for now
                     }
 
                     self.next_response_type = ResponseType::NoResponse;
