@@ -26,7 +26,8 @@ impl Actor for LaserMachine {
         Box::pin(async move {
             let now = Instant::now();
             // The diameter value is updated approximately 60 times per second
-            if now.duration_since(self.last_measurement_emit) > Duration::from_millis(16) {
+            if now.duration_since(self.last_measurement_emit) > Duration::from_secs_f64(1.0 / 60.0)
+            {
                 self.emit_diameter();
                 self.emit_laser_state();
                 self.last_measurement_emit = now;

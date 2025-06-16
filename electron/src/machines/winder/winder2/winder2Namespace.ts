@@ -5,16 +5,15 @@
 
 import { StoreApi } from "zustand";
 import { create } from "zustand";
-import { produce } from "immer";
 import { z } from "zod";
 import {
   EventHandler,
   eventSchema,
   Event,
-  handleEventValidationError,
   handleUnhandledEventError,
   NamespaceId,
   createNamespaceHookImplementation,
+  ThrottledStoreUpdater,
 } from "../../../client/socketioStore";
 import { MachineIdentificationUnique } from "@/machines/types";
 import { useMemo } from "react";
@@ -162,25 +161,21 @@ export const tensionArmStateEventSchema = eventSchema(
 
 // ========== Type Inferences ==========
 
-export type TraversePositionEvent = z.infer<
-  typeof traversePositionEventDataSchema
->;
+export type TraversePositionEvent = z.infer<typeof traversePositionEventSchema>;
 export type TraverseStateEvent = z.infer<typeof traverseStateEventSchema>;
 export type PullerStateEvent = z.infer<typeof pullerStateEventSchema>;
 export type PullerSpeedEvent = z.infer<typeof pullerSpeedEventSchema>;
 export type AutostopWoundedLengthEvent = z.infer<
-  typeof autostopWoundedLengthEventDataSchema
+  typeof autostopWoundedLengthEventSchema
 >;
 export type AutostopTransition = z.infer<typeof autostopTransitionSchema>;
 export type AutostopStateEvent = z.infer<typeof autostopStateEventSchema>;
 export type Mode = z.infer<typeof modeSchema>;
 export type ModeStateEvent = z.infer<typeof modeStateEventSchema>;
 export type SpoolStateEvent = z.infer<typeof spoolStateEventSchema>;
-export type MeasurementsWindingRpmEvent = z.infer<
-  typeof spoolRpmEventDataSchema
->;
+export type MeasurementsWindingRpmEvent = z.infer<typeof spoolRpmEventSchema>;
 export type MeasurementsTensionArmEvent = z.infer<
-  typeof tensionArmAngleEventDataSchema
+  typeof tensionArmAngleEventSchema
 >;
 export type TensionArmStateEvent = z.infer<typeof tensionArmStateEventSchema>;
 
@@ -252,136 +247,123 @@ export const createWinder2NamespaceStore =
 /**
  * Creates a message handler for Winder2 namespace events with validation and appropriate caching strategies
  * @param store The store to update when messages are received
+ * @param throttledUpdater Throttled updater for batching updates at 60 FPS
  * @returns A message handler function
  */
 export function winder2MessageHandler(
   store: StoreApi<Winder2NamespaceStore>,
+  throttledUpdater: ThrottledStoreUpdater<Winder2NamespaceStore>,
 ): EventHandler {
   return (event: Event<any>) => {
     const eventName = event.name;
+
+    // Helper function to update store through buffer
+    const updateStore = (
+      updater: (state: Winder2NamespaceStore) => Winder2NamespaceStore,
+    ) => {
+      throttledUpdater.updateWith(updater);
+    };
 
     try {
       // Apply appropriate caching strategy based on event type
       // State events (keep only the latest)
       if (eventName === "TraverseStateEvent") {
-        const parsed = traverseStateEventSchema.parse(event);
-        console.log("TraverseStateEvent", parsed);
-        store.setState(
-          produce(store.getState(), (state) => {
-            state.traverseState = parsed;
-          }),
-        );
+        console.log("TraverseStateEvent", event);
+        updateStore((state) => ({
+          ...state,
+          traverseState: event as TraverseStateEvent,
+        }));
       } else if (eventName === "PullerStateEvent") {
-        const parsed = pullerStateEventSchema.parse(event);
-        console.log("PullerStateEvent", parsed);
-        store.setState(
-          produce(store.getState(), (state) => {
-            state.pullerState = parsed;
-          }),
-        );
+        console.log("PullerStateEvent", event);
+        updateStore((state) => ({
+          ...state,
+          pullerState: event as PullerStateEvent,
+        }));
       } else if (eventName === "AutostopStateEvent") {
-        const parsed = autostopStateEventSchema.parse(event);
-        console.log("AutostopStateEvent", parsed);
-        store.setState(
-          produce(store.getState(), (state) => {
-            state.autostopState = parsed;
-          }),
-        );
+        console.log("AutostopStateEvent", event);
+        updateStore((state) => ({
+          ...state,
+          autostopState: event as AutostopStateEvent,
+        }));
       } else if (eventName === "ModeStateEvent") {
-        const parsed = modeStateEventSchema.parse(event);
-        console.log("ModeStateEvent", parsed);
-        store.setState(
-          produce(store.getState(), (state) => {
-            state.modeState = parsed;
-          }),
-        );
+        console.log("ModeStateEvent", event);
+        updateStore((state) => ({
+          ...state,
+          modeState: event as ModeStateEvent,
+        }));
       } else if (eventName === "TensionArmStateEvent") {
-        const parsed = tensionArmStateEventSchema.parse(event);
-        console.log("TensionArmStateEvent", parsed);
-        store.setState(
-          produce(store.getState(), (state) => {
-            state.tensionArmState = parsed;
-          }),
-        );
+        console.log("TensionArmStateEvent", event);
+        updateStore((state) => ({
+          ...state,
+          tensionArmState: event as TensionArmStateEvent,
+        }));
       }
       // Metric events (keep for 1 hour)
       else if (eventName === "TraversePositionEvent") {
-        const parsed = traversePositionEventSchema.parse(event);
+        const positionEvent = event as TraversePositionEvent;
         const timeseriesValue: TimeSeriesValue = {
-          value: parsed.data.position ?? 0,
+          value: positionEvent.data.position ?? 0,
           timestamp: event.ts,
         };
-        store.setState(
-          produce(store.getState(), (state) => {
-            state.traversePosition = addTraversePosition(
-              state.traversePosition,
-              timeseriesValue,
-            );
-          }),
-        );
+        updateStore((state) => ({
+          ...state,
+          traversePosition: addTraversePosition(
+            state.traversePosition,
+            timeseriesValue,
+          ),
+        }));
       } else if (eventName === "PullerSpeedEvent") {
-        const parsed = pullerSpeedEventSchema.parse(event);
+        const speedEvent = event as PullerSpeedEvent;
         const timeseriesValue: TimeSeriesValue = {
-          value: parsed.data.speed,
+          value: speedEvent.data.speed,
           timestamp: event.ts,
         };
-        store.setState(
-          produce(store.getState(), (state) => {
-            state.pullerSpeed = addPullerSpeed(
-              state.pullerSpeed,
-              timeseriesValue,
-            );
-          }),
-        );
+        updateStore((state) => ({
+          ...state,
+          pullerSpeed: addPullerSpeed(state.pullerSpeed, timeseriesValue),
+        }));
       } else if (eventName === "AutostopWoundedLengthEvent") {
-        const parsed = autostopWoundedLengthEventSchema.parse(event);
+        const woundedEvent = event as AutostopWoundedLengthEvent;
         const timeseriesValue: TimeSeriesValue = {
-          value: parsed.data.wounded_length,
+          value: woundedEvent.data.wounded_length,
           timestamp: event.ts,
         };
-        store.setState(
-          produce(store.getState(), (state) => {
-            state.autostopWoundedLength = addAutostopWoundedLength(
-              state.autostopWoundedLength,
-              timeseriesValue,
-            );
-          }),
-        );
+        updateStore((state) => ({
+          ...state,
+          autostopWoundedLength: addAutostopWoundedLength(
+            state.autostopWoundedLength,
+            timeseriesValue,
+          ),
+        }));
       } else if (eventName === "SpoolRpmEvent") {
-        const parsed = spoolRpmEventSchema.parse(event);
+        const rpmEvent = event as MeasurementsWindingRpmEvent;
         const timeseriesValue: TimeSeriesValue = {
-          value: parsed.data.rpm,
+          value: rpmEvent.data.rpm,
           timestamp: event.ts,
         };
-        store.setState(
-          produce(store.getState(), (state) => {
-            state.spoolRpm = addSpoolRpm(state.spoolRpm, timeseriesValue);
-          }),
-        );
+        updateStore((state) => ({
+          ...state,
+          spoolRpm: addSpoolRpm(state.spoolRpm, timeseriesValue),
+        }));
       } else if (eventName === "TensionArmAngleEvent") {
-        const parsed = tensionArmAngleEventSchema.parse(event);
+        const angleEvent = event as MeasurementsTensionArmEvent;
         const timeseriesValue: TimeSeriesValue = {
-          value: parsed.data.degree,
+          value: angleEvent.data.degree,
           timestamp: event.ts,
         };
-        store.setState(
-          produce(store.getState(), (state) => {
-            state.tensionArmAngle = addTensionArmAngle(
-              state.tensionArmAngle,
-              timeseriesValue,
-            );
-          }),
-        );
+        updateStore((state) => ({
+          ...state,
+          tensionArmAngle: addTensionArmAngle(
+            state.tensionArmAngle,
+            timeseriesValue,
+          ),
+        }));
       } else {
         handleUnhandledEventError(eventName);
       }
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        handleEventValidationError(error, eventName);
-      } else {
-        console.error(`Unexpected error processing ${eventName} event:`, error);
-        throw error;
-      }
+      console.error(`Unexpected error processing ${eventName} event:`, error);
+      throw error;
     }
   };
 }
