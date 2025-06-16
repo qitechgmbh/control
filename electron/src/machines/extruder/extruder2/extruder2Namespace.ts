@@ -196,7 +196,7 @@ export function extruder2MessageHandler(
           timestamp: event.ts,
         };
 
-        store.setState((state) => ({
+        updateStore((state) => ({
           ...state,
           nozzlePower: addNozzlePower(state.nozzlePower, timeseriesValue),
         }));
@@ -207,7 +207,7 @@ export function extruder2MessageHandler(
           timestamp: event.ts,
         };
 
-        store.setState((state) => ({
+        updateStore((state) => ({
           ...state,
           frontPower: addFrontPower(state.frontPower, timeseriesValue),
         }));
@@ -218,7 +218,7 @@ export function extruder2MessageHandler(
           timestamp: event.ts,
         };
 
-        store.setState((state) => ({
+        updateStore((state) => ({
           ...state,
           middlePower: addMiddlePower(state.middlePower, timeseriesValue),
         }));
@@ -229,7 +229,7 @@ export function extruder2MessageHandler(
           timestamp: event.ts,
         };
 
-        store.setState((state) => ({
+        updateStore((state) => ({
           ...state,
           backPower: addBackPower(state.backPower, timeseriesValue),
         }));
