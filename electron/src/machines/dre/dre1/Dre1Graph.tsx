@@ -1,16 +1,18 @@
 import { Page } from "@/components/Page";
 import {
-  BigGraph,
-  GraphConfig,
-  GraphSyncProvider,
-  GraphControls,
-  FloatingControlPanel,
-} from "@/helpers/BigGraph";
+  AutoSyncedBigGraph,
+  SyncedFloatingControlPanel,
+  SyncedGraphControls,
+  useGraphSync,
+  type GraphConfig,
+} from "@/components/graph";
 import React from "react";
 import { useDre1 } from "./useDre";
 
 export function Dre1GraphsPage() {
   const { dreDiameter, dreState } = useDre1();
+
+  const syncHook = useGraphSync(30 * 60 * 1000, "diameter-group");
 
   const targetDiameter = dreState?.data?.target_diameter ?? 0;
   const lowerTolerance = dreState?.data?.lower_tolerance ?? 0;
@@ -18,8 +20,7 @@ export function Dre1GraphsPage() {
 
   const config: GraphConfig = {
     title: "Diameter",
-    description: "Real-time diameter measurements with thresholds",
-    defaultTimeWindow: 30 * 60 * 1000, // 30 minute
+    defaultTimeWindow: 30 * 60 * 1000, // 30 minutes
     exportFilename: "diameter_data",
     lines: [
       {
@@ -53,21 +54,20 @@ export function Dre1GraphsPage() {
 
   return (
     <Page className="pb-20">
-      <GraphSyncProvider groupId="diameter-group">
-        <div className="flex flex-col gap-4">
-          <GraphControls groupId="diameter-group" />
+      <div className="flex flex-col gap-4">
+        <SyncedGraphControls controlProps={syncHook.controlProps} />
 
-          <BigGraph
-            newData={dreDiameter}
-            unit="mm"
-            renderValue={(value) => value.toFixed(3)}
-            config={config}
-            syncGroupId="diameter-group"
-            graphId="diameter-graph"
-          />
-        </div>
-        <FloatingControlPanel groupId="diameter-group" />
-      </GraphSyncProvider>
+        <AutoSyncedBigGraph
+          syncHook={syncHook}
+          newData={dreDiameter}
+          unit="mm"
+          renderValue={(value) => value.toFixed(3)}
+          config={config}
+          graphId="diameter-graph"
+        />
+      </div>
+
+      <SyncedFloatingControlPanel controlProps={syncHook.controlProps} />
     </Page>
   );
 }
