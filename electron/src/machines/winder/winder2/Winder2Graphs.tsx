@@ -24,7 +24,7 @@ export function Winder2GraphsPage() {
   } = useWinder2();
 
   return (
-    <Page>
+    <Page className="pb-20">
       <GraphSyncProvider groupId="winder2-group">
         <div className="flex flex-col gap-4">
           <GraphControls groupId="winder2-group" />

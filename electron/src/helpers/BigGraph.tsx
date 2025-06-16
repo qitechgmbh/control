@@ -233,10 +233,8 @@ export function GraphControls({ groupId }: { groupId: string }) {
   };
 
   return (
-    <ControlCard>
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Graph Controls</h2>
-
+    <ControlCard className="ml-auto w-fit py-4">
+      <div className="flex items-center justify-end">
         <div className="flex items-center gap-3">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -329,91 +327,95 @@ export function FloatingControlPanel({ groupId }: { groupId: string }) {
 
   return (
     <div className="fixed right-6 bottom-6 z-50">
-      <div className="flex items-end gap-3">
-        {/* Expanded controls */}
-        {isExpanded && (
-          <div className="animate-in slide-in-from-right-2 duration-200">
-            <ControlCard className="pt-6">
-              <div className="flex items-center gap-3">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <TouchButton
-                      variant="outline"
-                      className="h-auto border-gray-300 bg-white px-3 py-3 text-base text-gray-900 hover:bg-gray-50"
-                    >
-                      {getSelectedTimeWindowLabel()}
-                      <Icon name="lu:ChevronDown" className="ml-2 size-4" />
-                    </TouchButton>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuLabel className="text-base font-medium">
-                      Time Window
-                    </DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    {timeWindowOptions.map((option) => (
-                      <DropdownMenuItem
-                        key={option.value}
-                        onClick={() =>
-                          graphSync.handleTimeWindowChange(option.value)
-                        }
-                        className={`min-h-[48px] px-4 py-3 text-base ${
-                          currentTimeWindow === option.value ? "bg-blue-50" : ""
-                        }`}
-                      >
-                        {option.label}
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-
-                {/* View mode buttons */}
+      <ControlCard className="overflow-hidden px-4 py-4 transition-all duration-300 ease-in-out">
+        <div
+          className={`flex items-center ${isExpanded ? "gap-3" : "justify-center"}`}
+        >
+          <div
+            className={`flex items-center gap-3 transition-all duration-300 ease-in-out ${
+              isExpanded
+                ? "max-w-none translate-x-0 opacity-100"
+                : "w-0 max-w-0 overflow-hidden opacity-0"
+            }`}
+          >
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
                 <TouchButton
-                  onClick={graphSync.switchToHistoricalMode}
                   variant="outline"
-                  className={`h-auto px-3 py-3 text-base font-medium transition-colors ${
-                    !isLiveMode
-                      ? "bg-black text-white"
-                      : "border-gray-300 bg-white text-gray-700 hover:bg-gray-100"
-                  }`}
+                  className="h-auto border-gray-300 bg-white px-3 py-3 text-base text-gray-900 hover:bg-gray-50"
                 >
-                  Historical
+                  {getSelectedTimeWindowLabel()}
+                  <Icon name="lu:ChevronDown" className="ml-2 size-4" />
                 </TouchButton>
-                <TouchButton
-                  onClick={graphSync.switchToLiveMode}
-                  variant="outline"
-                  className={`h-auto px-3 py-3 text-base font-medium transition-colors ${
-                    isLiveMode
-                      ? "bg-black text-white"
-                      : "border-gray-300 bg-white text-gray-700 hover:bg-gray-100"
-                  }`}
-                >
-                  Live
-                </TouchButton>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel className="text-base font-medium">
+                  Time Window
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {timeWindowOptions.map((option) => (
+                  <DropdownMenuItem
+                    key={option.value}
+                    onClick={() =>
+                      graphSync.handleTimeWindowChange(option.value)
+                    }
+                    className={`min-h-[48px] px-4 py-3 text-base ${
+                      currentTimeWindow === option.value ? "bg-blue-50" : ""
+                    }`}
+                  >
+                    {option.label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
 
-                {/* Separator line */}
-                <div className="mx-2 h-8 w-px bg-gray-200"></div>
-
-                {/* Export button */}
-                <TouchButton
-                  onClick={graphSync.exportAllGraphs}
-                  variant="outline"
-                  className="h-auto bg-green-600 px-3 py-3 text-base font-medium text-white hover:bg-green-700"
-                >
-                  Export
-                </TouchButton>
-              </div>
-            </ControlCard>
+            {/* View mode buttons */}
+            <TouchButton
+              onClick={graphSync.switchToHistoricalMode}
+              variant="outline"
+              className={`h-auto px-3 py-3 text-base font-medium transition-colors ${
+                !isLiveMode
+                  ? "bg-black text-white"
+                  : "border-gray-300 bg-white text-gray-700 hover:bg-gray-100"
+              }`}
+            >
+              Historical
+            </TouchButton>
+            <TouchButton
+              onClick={graphSync.switchToLiveMode}
+              variant="outline"
+              className={`h-auto px-3 py-3 text-base font-medium transition-colors ${
+                isLiveMode
+                  ? "bg-black text-white"
+                  : "border-gray-300 bg-white text-gray-700 hover:bg-gray-100"
+              }`}
+            >
+              Live
+            </TouchButton>
+            {/* Separator line - only shows when expanded */}
+            {isExpanded && <div className="h-8 w-px bg-gray-200"></div>}
+            {/* Export button */}
+            <TouchButton
+              onClick={graphSync.exportAllGraphs}
+              variant="outline"
+              className="h-auto bg-green-600 px-3 py-3 text-base font-medium text-white hover:bg-green-700"
+            >
+              Export
+            </TouchButton>
           </div>
-        )}
 
-        {/* Toggle button */}
-        <TouchButton
-          onClick={() => setIsExpanded(!isExpanded)}
-          variant="outline"
-          className="h-auto bg-green-600 px-3 py-3 text-white hover:bg-green-700"
-          icon={isExpanded ? "lu:Minus" : "lu:Plus"}
-        />
-      </div>
+          {/* Separator line - only shows when expanded */}
+          {isExpanded && <div className="h-8 w-px bg-gray-200"></div>}
+
+          {/* Toggle button - always visible */}
+          <TouchButton
+            onClick={() => setIsExpanded(!isExpanded)}
+            variant="outline"
+            className="h-auto flex-shrink-0 bg-green-600 p-3 text-white hover:bg-green-700"
+            icon={isExpanded ? "lu:Minus" : "lu:Plus"}
+          />
+        </div>
+      </ControlCard>
     </div>
   );
 }
@@ -1951,7 +1953,7 @@ export function BigGraph({
         {/* Header */}
         <div className="flex items-center justify-between pt-4 pr-5 pb-6 pl-6">
           {/* Left side - Icon, Title, Current value */}
-          <div className="-mt-1 flex items-center gap-4">
+          <div className="mt-1 flex items-center gap-4">
             <Icon
               name={unit ? getUnitIcon(unit) : "lu:TrendingUp"}
               className="size-6 text-gray-600"

@@ -52,7 +52,7 @@ export function Dre1GraphsPage() {
   };
 
   return (
-    <Page>
+    <Page className="pb-20">
       <GraphSyncProvider groupId="diameter-group">
         <div className="flex flex-col gap-4">
           <GraphControls groupId="diameter-group" />

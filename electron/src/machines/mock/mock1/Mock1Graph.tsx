@@ -19,7 +19,7 @@ export function Mock1GraphPage() {
   };
 
   return (
-    <Page>
+    <Page className="pb-20">
       <GraphSyncProvider groupId="main-dashboard">
         <div className="flex flex-col gap-4">
           <GraphControls groupId="mock" />
