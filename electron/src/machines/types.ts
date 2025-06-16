@@ -179,7 +179,7 @@ export const extruder2: MachinePreset = {
   name: "Extruder",
   version: "V2",
   slug: "extruder2",
-  icon: "lu:Disc3",
+  icon: "qi:Extruder",
   machine_identification: {
     vendor: VENDOR_QITECH,
     machine: 0x0004,
