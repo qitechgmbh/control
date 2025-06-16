@@ -33,8 +33,6 @@ export type Extruder2NamespaceStore = {
 
   extruderSettingsState: ExtruderSettingsStateEvent | null;
 
-  pressurePidSettings: PidSettingsEvent | null;
-  temperaturePidSettings: PidSettingsEvent | null;
   // Metric Events (cached for 1 hour )
   rpm: TimeSeries;
   bar: TimeSeries;
@@ -104,22 +102,6 @@ export function extruder2MessageHandler(
   return (event: Event<any>) => {
     const eventName = event.name;
     try {
-      if (eventName == "TemperaturePidSettingsEvent") {
-        store.setState(
-          produce(store.getState(), (state) => {
-            state.temperaturePidSettings = pidSettingsEventSchema.parse(event);
-          }),
-        );
-      }
-
-      if (eventName == "PressurePidSettingsEvent") {
-        store.setState(
-          produce(store.getState(), (state) => {
-            state.pressurePidSettings = pidSettingsEventSchema.parse(event);
-          }),
-        );
-      }
-
       if (eventName == "ExtruderSettingsStateEvent") {
         store.setState(
           produce(store.getState(), (state) => {
@@ -327,9 +309,6 @@ export const createExtruder2NamespaceStore =
         motorBarState: null,
         extruderSettingsState: null,
 
-        pressurePidSettings: null,
-        temperaturePidSettings: null,
-
         rpm,
         bar,
 
@@ -420,12 +399,6 @@ export const extruderSettingsStateEventDataSchema = z.object({
   pressure_limit_enabled: z.boolean(),
 });
 
-export const pidSettingsEventDataSchema = z.object({
-  ki: z.number(),
-  kd: z.number(),
-  kp: z.number(),
-});
-
 // Event Schemas
 export const heatingTargetEventSchema = eventSchema(
   heatingTargetTemperatureDataSchema,
@@ -453,8 +426,6 @@ export const extruderSettingsStateEventSchema = eventSchema(
   extruderSettingsStateEventDataSchema,
 );
 
-export const pidSettingsEventSchema = eventSchema(pidSettingsEventDataSchema);
-
 export const heatingPowerEventDataSchema = z.object({
   wattage: z.number(),
 });
@@ -481,10 +452,8 @@ export type Heating = z.infer<typeof heatingStateDataSchema>;
 
 export type MotorPressure = z.infer<typeof motorBarStateEventDataSchema>;
 export type MotorRpm = z.infer<typeof motorScrewStateEventDataSchema>;
-export type Mode = z.infer<typeof modeSchema>;
 
-export type PidSettings = z.infer<typeof pidSettingsEventDataSchema>;
-export type PidSettingsEvent = z.infer<typeof pidSettingsEventSchema>;
+export type Mode = z.infer<typeof modeSchema>;
 
 export type ExtruderSettingsStateEvent = z.infer<
   typeof extruderSettingsStateEventSchema
