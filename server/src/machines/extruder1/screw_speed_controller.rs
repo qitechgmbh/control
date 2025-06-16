@@ -206,7 +206,7 @@ impl ScrewSpeedController {
 
         let measured_pressure = self.get_pressure();
 
-        if !self.uses_rpm && !is_extruding {
+        if !self.uses_rpm && !is_extruding && self.motor_on {
             let frequency = Frequency::new::<hertz>(0.0);
             self.last_update = now;
             self.inverter.set_frequency_target(frequency);
