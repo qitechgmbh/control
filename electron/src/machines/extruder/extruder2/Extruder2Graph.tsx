@@ -9,7 +9,7 @@ import {
 import React from "react";
 import { useExtruder2 } from "./useExtruder";
 
-export function Dre1GraphsPage() {
+export function Extruder2GraphsPage() {
   const {
     nozzleHeatingState,
     nozzleTemperature,
@@ -126,7 +126,7 @@ export function Dre1GraphsPage() {
   };
 
   return (
-    <Page>
+    <Page className="pb-20">
       <GraphSyncProvider groupId="extruder-group">
         <div className="flex flex-col gap-4">
           <GraphControls groupId="extruder-group" />
