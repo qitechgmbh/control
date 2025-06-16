@@ -305,7 +305,6 @@ impl CacheableEvents<Winder2Events> for Winder2Events {
 
     fn event_cache_fn(&self) -> CacheFn {
         let cache_one_hour = cache_duration(Duration::from_secs(60 * 60), Duration::from_secs(1));
-        let cache_ten_secs = cache_duration(Duration::from_secs(10), Duration::from_secs(1));
         let cache_one = cache_one_event();
 
         match self {
@@ -316,7 +315,7 @@ impl CacheableEvents<Winder2Events> for Winder2Events {
             Winder2Events::AutostopWoundedlength(_) => cache_one_hour,
             Winder2Events::AutostopState(_) => cache_one,
             Winder2Events::Mode(_) => cache_one,
-            Winder2Events::SpoolRpm(_) => cache_ten_secs,
+            Winder2Events::SpoolRpm(_) => cache_one_hour,
             Winder2Events::TensionArmAngleEvent(_) => cache_one_hour,
             Winder2Events::TensionArmStateEvent(_) => cache_one,
         }

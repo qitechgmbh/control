@@ -248,19 +248,21 @@ impl CacheableEvents<ExtruderV2Events> for ExtruderV2Events {
     }
 
     fn event_cache_fn(&self) -> CacheFn {
-        let _cache_one_hour = cache_duration(Duration::from_secs(60 * 60), Duration::from_secs(1));
-        let _cache_ten_secs = cache_duration(Duration::from_secs(10), Duration::from_secs(1));
+        let cache_one_hour = cache_duration(Duration::from_secs(60 * 60), Duration::from_secs(1));
         let cache_one = cache_one_event();
 
         match self {
+            // State events (keep only the latest)
             ExtruderV2Events::RotationStateEvent(_) => cache_one,
             ExtruderV2Events::ModeEvent(_) => cache_one,
             ExtruderV2Events::RegulationStateEvent(_) => cache_one,
-            ExtruderV2Events::PressureStateEvent(_) => cache_one,
-            ExtruderV2Events::ScrewStateEvent(_) => cache_one,
-            ExtruderV2Events::HeatingStateEvent(_) => cache_one,
             ExtruderV2Events::ExtruderSettingsStateEvent(_) => cache_one,
-            ExtruderV2Events::HeatingPowerEvent(_) => cache_one,
+            ExtruderV2Events::HeatingStateEvent(_) => cache_one,
+
+            // Time series events (keep for 1 hour)
+            ExtruderV2Events::PressureStateEvent(_) => cache_one_hour,
+            ExtruderV2Events::ScrewStateEvent(_) => cache_one_hour,
+            ExtruderV2Events::HeatingPowerEvent(_) => cache_one_hour,
         }
     }
 }
