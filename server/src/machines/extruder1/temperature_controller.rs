@@ -26,6 +26,7 @@ pub struct TemperatureController {
     max_temperature: ThermodynamicTemperature,
     temperature_pid_output: f64,
     heating_element_wattage: f64,
+    max_clamp: f64,
 }
 
 impl TemperatureController {
@@ -46,6 +47,7 @@ impl TemperatureController {
         heating: Heating,
         pwm_duration: Duration,
         heating_element_wattage: f64,
+        max_clamp: f64,
     ) -> Self {
         Self {
             pid: PidController::new(kp, ki, kd),
@@ -59,6 +61,7 @@ impl TemperatureController {
             max_temperature: max_temperature,
             temperature_pid_output: 0.0,
             heating_element_wattage: heating_element_wattage,
+            max_clamp: max_clamp,
         }
     }
 
@@ -105,7 +108,7 @@ impl TemperatureController {
 
             let control = self.pid.update(error, now); // PID output
             // Clamp PID output to 0.0 – 1.0 (as duty cycle)
-            let duty = control.clamp(0.0, 1.0);
+            let duty = control.clamp(0.0, self.max_clamp);
 
             self.temperature_pid_output = duty;
 

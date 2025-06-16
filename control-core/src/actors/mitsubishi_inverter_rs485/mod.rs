@@ -2,6 +2,7 @@ use super::Actor;
 use crate::modbus::{
     ModbusFunctionCode, ModbusRequest, ModbusResponse, calculate_modbus_rtu_timeout,
 };
+use axum::http::request;
 use ethercat_hal::io::serial_interface::{SerialEncoding, SerialInterface};
 use std::{
     collections::HashMap,
@@ -130,6 +131,7 @@ impl From<MitsubishiControlRequests> for MitsubishiModbusRequest {
                     expected_response_type: ResponseType::WriteFrequency,
                     priority: u16::MAX - 1,
                     control_request_type: MitsubishiControlRequests::WriteRunningFrequency,
+                    ignored_times: 0,
                 }
             }
             MitsubishiControlRequests::ReadInverterStatus => {
@@ -147,6 +149,7 @@ impl From<MitsubishiControlRequests> for MitsubishiModbusRequest {
                     expected_response_type: ResponseType::InverterStatus,
                     priority: u16::MAX - 3,
                     control_request_type: MitsubishiControlRequests::ReadInverterStatus,
+                    ignored_times: 0,
                 }
             }
             MitsubishiControlRequests::StopMotor => {
@@ -164,6 +167,7 @@ impl From<MitsubishiControlRequests> for MitsubishiModbusRequest {
                     expected_response_type: ResponseType::InverterControl,
                     priority: u16::MAX, // StopMotor should have highest priority
                     control_request_type: MitsubishiControlRequests::StopMotor,
+                    ignored_times: 0,
                 }
             }
             MitsubishiControlRequests::StartForwardRotation => {
@@ -181,6 +185,7 @@ impl From<MitsubishiControlRequests> for MitsubishiModbusRequest {
                     expected_response_type: ResponseType::InverterControl,
                     priority: u16::MAX - 1,
                     control_request_type: MitsubishiControlRequests::StartForwardRotation,
+                    ignored_times: 0,
                 }
             }
             MitsubishiControlRequests::StartReverseRotation => {
@@ -198,6 +203,7 @@ impl From<MitsubishiControlRequests> for MitsubishiModbusRequest {
                     expected_response_type: ResponseType::InverterControl,
                     priority: u16::MAX - 1,
                     control_request_type: MitsubishiControlRequests::StartReverseRotation,
+                    ignored_times: 0,
                 }
             }
             MitsubishiControlRequests::ReadRunningFrequency => {
@@ -215,6 +221,7 @@ impl From<MitsubishiControlRequests> for MitsubishiModbusRequest {
                     expected_response_type: ResponseType::ReadFrequency,
                     priority: u16::MAX - 4,
                     control_request_type: MitsubishiControlRequests::ReadRunningFrequency,
+                    ignored_times: 0,
                 }
             }
             MitsubishiControlRequests::ReadMotorFrequency => {
@@ -232,6 +239,7 @@ impl From<MitsubishiControlRequests> for MitsubishiModbusRequest {
                     expected_response_type: ResponseType::ReadMotorFrequency,
                     priority: u16::MAX - 2,
                     control_request_type: MitsubishiControlRequests::ReadMotorFrequency,
+                    ignored_times: 0,
                 }
             }
             MitsubishiControlRequests::ResetInverter => {
@@ -245,15 +253,17 @@ impl From<MitsubishiControlRequests> for MitsubishiModbusRequest {
                         function_code: ModbusFunctionCode::PresetHoldingRegister,
                         data: vec![reg_bytes[0], reg_bytes[1], 0x0, 0b00000001],
                     },
-                    request_type: RequestType::OperationCommand,
+                    request_type: RequestType::Reset,
                     expected_response_type: ResponseType::NoResponse,
                     priority: u16::MAX,
                     control_request_type: MitsubishiControlRequests::ResetInverter,
+                    ignored_times: 0,
                 }
             }
             MitsubishiControlRequests::ClearAllParameters => todo!(),
             MitsubishiControlRequests::ClearNonCommunicationParameter => todo!(),
             MitsubishiControlRequests::ClearNonCommunicationParameters => todo!(),
+            MitsubishiControlRequests::None => todo!(),
         }
     }
 }
@@ -261,6 +271,7 @@ impl From<MitsubishiControlRequests> for MitsubishiModbusRequest {
 /// These Requests Serve as Templates for controling the inverter
 #[derive(Debug, Clone, Eq, Hash, PartialEq)]
 pub enum MitsubishiControlRequests {
+    None,
     /// Register 40002, Reset/Restart the Inverter
     ResetInverter,
     /// Register 40004, Clear ALL parameters
@@ -286,13 +297,14 @@ pub enum MitsubishiControlRequests {
 }
 
 // We need to know from the request queue which events are of what operation type, so that the correct timeout can be used
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct MitsubishiModbusRequest {
     request: ModbusRequest,
     control_request_type: MitsubishiControlRequests,
     request_type: RequestType,
     expected_response_type: ResponseType,
     priority: u16,
+    ignored_times: u32,
 }
 
 #[derive(Debug)]
@@ -340,7 +352,7 @@ impl MitsubishiInverterRS485Actor {
             state: State::Uninitialized,
             request_map: HashMap::new(),
             response: None,
-            next_response_type: ResponseType::ReadMotorFrequency,
+            next_response_type: ResponseType::NoResponse,
             last_request_type: RequestType::OperationCommand,
             last_message_size: 0,
             baudrate: None,
@@ -352,8 +364,21 @@ impl MitsubishiInverterRS485Actor {
 
     /// This would get called by the api to add a new request to the inverter
     pub fn add_request(&mut self, request: MitsubishiModbusRequest) {
-        self.request_map
-            .insert(request.control_request_type.clone(), request);
+        // If a request already exists and its values get replaced, then use the olde requests ignored_times, to ensure its executed at some point
+        // Otherwise requests that are added frequently are never called, because new requests have ignored_times = 0
+        if self.request_map.contains_key(&request.control_request_type) {
+            // unwrap is safe here
+            let old_request = self.request_map.get(&request.control_request_type).unwrap();
+
+            let mut new_request = request.clone();
+            new_request.ignored_times = old_request.ignored_times;
+
+            self.request_map
+                .insert(request.control_request_type.clone(), new_request);
+        } else {
+            self.request_map
+                .insert(request.control_request_type.clone(), request);
+        }
     }
 
     /// This is used internally to read the receive buffer of the el6021
@@ -361,10 +386,6 @@ impl MitsubishiInverterRS485Actor {
         &mut self,
     ) -> Pin<Box<dyn Future<Output = Result<ModbusResponse, anyhow::Error>> + Send + '_>> {
         Box::pin(async move {
-            if !(self.serial_interface.has_message)().await {
-                //   return;
-            }
-
             let res: Option<Vec<u8>> = (self.serial_interface.read_message)().await;
             let raw_response = match res {
                 Some(res) => res,
@@ -375,19 +396,26 @@ impl MitsubishiInverterRS485Actor {
 
             let response: Result<ModbusResponse, _> =
                 ModbusResponse::try_from(raw_response.clone());
+
             match response {
                 Ok(result) => {
                     self.last_message_size = result.clone().data.len() + 4;
-                    self.state = State::ReadyToSend;
+                    self.state = State::WaitingForReceiveAccept;
                     Ok(result)
                 }
                 Err(_) => {
-                    tracing::error!("Error Parsing ModbusResponse!");
-                    self.state = State::ReadyToSend;
+                    self.last_message_size = 22;
+                    self.state = State::WaitingForReceiveAccept;
                     Err(anyhow::anyhow!("error"))
                 }
             }
         })
+    }
+
+    fn set_ignored_times_modbus_requests(&mut self) {
+        for (_, value) in self.request_map.iter_mut() {
+            value.ignored_times += 1;
+        }
     }
 
     /// This is used internally to fill the write buffer of the el6021 with the modbus request
@@ -400,14 +428,17 @@ impl MitsubishiInverterRS485Actor {
             };
 
             let mut highest_prio_request: Option<&mut MitsubishiModbusRequest> = None;
-            let mut highest_priority: u16 = 0;
+            let mut highest_priority: u32 = 0;
 
             for (_, value) in self.request_map.iter_mut() {
                 // borrowchecker complaining
-                let priority = value.priority;
-                if priority > highest_priority {
+                let priority = value.priority as u32;
+                let ignored_times = value.ignored_times;
+                let effective_priority: u32 = priority as u32 + ignored_times;
+
+                if effective_priority > highest_priority {
                     highest_prio_request = Some(value);
-                    highest_priority = priority;
+                    highest_priority = effective_priority;
                 }
             }
 
@@ -415,7 +446,6 @@ impl MitsubishiInverterRS485Actor {
                 Some(request) => request,
                 None => return,
             };
-
             let modbus_request: Vec<u8> = request.request.clone().into();
             let res = (self.serial_interface.write_message)(modbus_request.clone()).await;
 
@@ -436,13 +466,14 @@ impl MitsubishiInverterRS485Actor {
 
 #[derive(Debug, Clone, Copy)]
 pub enum RequestType {
+    None,
     /// Monitoring, Operation (start,stop etc) command, frequency setting (RAM), less than 12 milliseconds timeout for Response
     OperationCommand,
     /// Parameter Read/Write and Frequency (EEPROM), Less than 30 milliseconds timeout for Response
     ReadWrite,
     /// Less than 5 seconds timeout for Response
     ParamClear,
-    /// no Timeout for Response
+    /// Supposedly no waiting time, however inverter takes a while to start ~300ms should be more than enough
     Reset,
 }
 
@@ -452,7 +483,8 @@ impl RequestType {
             RequestType::OperationCommand => Duration::from_millis(12),
             RequestType::ReadWrite => Duration::from_millis(30),
             RequestType::ParamClear => Duration::from_millis(5000),
-            RequestType::Reset => Duration::from_millis(30),
+            RequestType::Reset => Duration::from_millis(300),
+            RequestType::None => Duration::from_millis(12),
         }
     }
 }
@@ -488,14 +520,12 @@ impl From<u8> for MitsubishiModbusExceptionCode {
 
 // Handle different Response types
 impl MitsubishiInverterRS485Actor {
-    // When we get respone from Pr. 40014 (Running Frequency) Convert to rpm and save it
     fn handle_motor_frequency(&mut self, resp: ModbusResponse) {
         let freq_bytes = &resp.data[1..3]; // bytes 1 and 2 are needed
         let raw_frequency = u16::from_be_bytes([freq_bytes[0], freq_bytes[1]]) as f64;
         self.frequency = Frequency::new::<centihertz>(raw_frequency);
     }
 
-    // Technically we could verify that every request also was successful with this match and return an Error, or not
     fn handle_response(&mut self, resp: ModbusResponse) {
         match self.next_response_type {
             ResponseType::ReadFrequency => (),
@@ -506,6 +536,18 @@ impl MitsubishiInverterRS485Actor {
             ResponseType::InverterControl => (),
             ResponseType::NoResponse => (),
         }
+    }
+
+    pub fn reset_state(&mut self) {
+        self.state = State::ReadyToSend;
+        self.last_ts = Instant::now();
+        self.request_map = HashMap::new();
+        self.response = None;
+        self.next_response_type = ResponseType::InverterStatus;
+        self.last_request_type = RequestType::OperationCommand;
+        self.last_message_size = 0;
+        self.frequency = Frequency::ZERO;
+        self.last_control_request_type = MitsubishiControlRequests::ReadInverterStatus;
     }
 }
 
@@ -522,8 +564,11 @@ impl Actor for MitsubishiInverterRS485Actor {
                     self.add_request(MitsubishiControlRequests::ResetInverter.into());
                     self.baudrate = (self.serial_interface.get_baudrate)().await;
                     self.encoding = (self.serial_interface.get_serial_encoding)().await;
+                    self.last_ts = now_ts;
+                    return;
+                } else {
+                    return;
                 }
-                return;
             }
 
             let encoding = match self.encoding {
@@ -543,29 +588,37 @@ impl Actor for MitsubishiInverterRS485Actor {
                 self.last_message_size,
             );
 
-            self.add_request(MitsubishiControlRequests::ReadMotorFrequency.into());
-
             if elapsed < timeout {
                 return;
             }
+            self.add_request(MitsubishiControlRequests::ReadMotorFrequency.into());
 
             self.last_ts = now_ts;
-
             match self.state {
                 State::WaitingForResponse => {
                     let ret = self.read_modbus_response().await;
                     match ret {
-                        Ok(ret) => self.handle_response(ret),
+                        Ok(ret) => {
+                            self.handle_response(ret);
+                        }
                         Err(_) => (), // Do nothing for now
                     }
+
+                    self.next_response_type = ResponseType::NoResponse;
                 }
-                State::ReadyToSend => self.send_modbus_request().await,
-                State::WaitingForReceiveAccept => self.state = State::ReadyToSend,
-                State::WaitingForRequestAccept => self.state = State::WaitingForResponse,
+                State::ReadyToSend => {
+                    self.send_modbus_request().await;
+                    self.request_map.remove(&self.last_control_request_type);
+                    self.set_ignored_times_modbus_requests();
+                }
+                State::WaitingForReceiveAccept => {
+                    self.state = State::ReadyToSend;
+                }
+                State::WaitingForRequestAccept => {
+                    self.state = State::WaitingForResponse;
+                }
                 _ => (),
             }
-
-            self.request_map.remove(&self.last_control_request_type);
             self.response = None;
         })
     }

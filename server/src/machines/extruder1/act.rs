@@ -12,7 +12,12 @@ impl Actor for ExtruderV2 {
             self.temperature_controller_nozzle.update(now_ts).await;
             self.temperature_controller_front.update(now_ts).await;
             self.temperature_controller_middle.update(now_ts).await;
-            self.screw_speed_controller.update(now_ts).await;
+
+            if self.mode == ExtruderV2Mode::Extrude {
+                self.screw_speed_controller.update(now_ts, true).await;
+            } else {
+                self.screw_speed_controller.update(now_ts, false).await;
+            }
 
             if self.mode == ExtruderV2Mode::Standby {
                 self.turn_heating_off();
@@ -53,6 +58,7 @@ impl Actor for ExtruderV2 {
                 self.emit_regulation();
                 self.emit_mode_state();
                 self.emit_rotation_state();
+
                 self.emit_bar();
                 self.emit_rpm();
                 self.emit_extruder_settings();
