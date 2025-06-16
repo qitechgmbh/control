@@ -435,6 +435,10 @@ impl SerialInterfaceDevice<EL6021Port> for EL6021 {
         if let Some(tx_pdo) = &mut self.txpdo.com_tx_pdo_map_22_byte {
             let valid_length = tx_pdo.length as usize;
             let received_data = tx_pdo.data[..valid_length.min(22)].to_vec();
+
+            if received_data.is_empty() {
+                return None;
+            }
             if let Some(rx_pdo) = &mut self.rxpdo.com_rx_pdo_map_22_byte {
                 rx_pdo.control.received_acepted = !rx_pdo.control.received_acepted;
             }
@@ -463,7 +467,6 @@ impl SerialInterfaceDevice<EL6021Port> for EL6021 {
             rx_pdo.length = message.len() as u8;
             rx_pdo.data = data_buffer;
             rx_pdo.control.transmit_request = !rx_pdo.control.transmit_request;
-
             return Ok(());
         } else {
             return Err(anyhow::anyhow!("Error: RxPdo is not available"));
@@ -524,6 +527,10 @@ impl SerialInterfaceDevice<EL6021Port> for EL6021 {
                 return false;
             }
         }
+    }
+
+    fn serial_interface_reset(&mut self, port: EL6021Port) -> bool {
+        return false;
     }
 }
 
