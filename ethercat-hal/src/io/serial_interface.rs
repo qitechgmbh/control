@@ -145,6 +145,7 @@ where
     fn get_serial_encoding(&self, port: PORTS) -> Option<SerialEncoding>;
     fn get_baudrate(&self, port: PORTS) -> Option<u32>;
     fn serial_interface_initialize(&mut self, port: PORTS) -> bool;
+    fn serial_interface_reset(&mut self, port: PORTS) -> bool;
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

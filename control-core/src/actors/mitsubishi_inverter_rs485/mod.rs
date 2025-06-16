@@ -253,7 +253,7 @@ impl From<MitsubishiControlRequests> for MitsubishiModbusRequest {
                         function_code: ModbusFunctionCode::PresetHoldingRegister,
                         data: vec![reg_bytes[0], reg_bytes[1], 0x0, 0b00000001],
                     },
-                    request_type: RequestType::OperationCommand,
+                    request_type: RequestType::Reset,
                     expected_response_type: ResponseType::NoResponse,
                     priority: u16::MAX,
                     control_request_type: MitsubishiControlRequests::ResetInverter,
@@ -366,7 +366,6 @@ impl MitsubishiInverterRS485Actor {
     pub fn add_request(&mut self, request: MitsubishiModbusRequest) {
         // If a request already exists and its values get replaced, then use the olde requests ignored_times, to ensure its executed at some point
         // Otherwise requests that are added frequently are never called, because new requests have ignored_times = 0
-        println!("add_request {:?}", request.control_request_type);
         if self.request_map.contains_key(&request.control_request_type) {
             // unwrap is safe here
             let old_request = self.request_map.get(&request.control_request_type).unwrap();
@@ -409,9 +408,9 @@ impl MitsubishiInverterRS485Actor {
                     Ok(result)
                 }
                 Err(_) => {
+                    self.last_message_size = 22;
                     tracing::error!("Error Parsing ModbusResponse!");
                     self.state = State::WaitingForReceiveAccept;
-                    self.next_response_type = ResponseType::NoResponse;
                     Err(anyhow::anyhow!("error"))
                 }
             }
@@ -452,8 +451,6 @@ impl MitsubishiInverterRS485Actor {
                 Some(request) => request,
                 None => return,
             };
-            // println!();
-            // println!("next request is: {:?} ", request.control_request_type);
             let modbus_request: Vec<u8> = request.request.clone().into();
             let res = (self.serial_interface.write_message)(modbus_request.clone()).await;
 
@@ -481,7 +478,7 @@ pub enum RequestType {
     ReadWrite,
     /// Less than 5 seconds timeout for Response
     ParamClear,
-    /// no Timeout for Response
+    /// Supposedly no waiting time, however inverter takes a while to start ~300ms should be more than enough
     Reset,
 }
 
@@ -491,7 +488,7 @@ impl RequestType {
             RequestType::OperationCommand => Duration::from_millis(12),
             RequestType::ReadWrite => Duration::from_millis(30),
             RequestType::ParamClear => Duration::from_millis(5000),
-            RequestType::Reset => Duration::from_millis(3000),
+            RequestType::Reset => Duration::from_millis(300),
             RequestType::None => Duration::from_millis(12),
         }
     }
@@ -537,7 +534,6 @@ impl MitsubishiInverterRS485Actor {
 
     // Technically we could verify that every request also was successful with this match and return an Error, or not
     fn handle_response(&mut self, resp: ModbusResponse) {
-        // println!("{:?}", resp);
         match self.next_response_type {
             ResponseType::ReadFrequency => (),
             ResponseType::ReadInverterStatus => (),
@@ -545,9 +541,8 @@ impl MitsubishiInverterRS485Actor {
             ResponseType::ReadMotorFrequency => self.handle_motor_frequency(resp),
             ResponseType::InverterStatus => (),
             ResponseType::InverterControl => (),
-            ResponseType::NoResponse => println!("NO RESPONSE"),
+            ResponseType::NoResponse => (),
         }
-        // println!("WaitingForResponse {:?}", self.next_response_type);
     }
 
     pub fn reset_state(&mut self) {
@@ -560,6 +555,25 @@ impl MitsubishiInverterRS485Actor {
         self.last_message_size = 0;
         self.frequency = Frequency::ZERO;
         self.last_control_request_type = MitsubishiControlRequests::ReadInverterStatus;
+    }
+
+    pub async fn initialize(&mut self, now_ts: Instant) {
+        let elapsed: Duration = now_ts.duration_since(self.last_ts);
+        // State is uninitialized until serial interface init returns true, which takes a few cycles on the el6021
+        if let State::Uninitialized = self.state {
+            let res = (self.serial_interface.initialize)().await;
+            if res == true {
+                self.state = State::ReadyToSend;
+                // every time when our inverter is "Uninitialzed" reset it first to clear any error states it may have
+                //self.add_request(MitsubishiControlRequests::ResetInverter.into());
+                self.baudrate = (self.serial_interface.get_baudrate)().await;
+                self.encoding = (self.serial_interface.get_serial_encoding)().await;
+                self.last_ts = Instant::now();
+                return;
+            } else {
+                return;
+            }
+        }
     }
 }
 
@@ -576,9 +590,11 @@ impl Actor for MitsubishiInverterRS485Actor {
                     self.add_request(MitsubishiControlRequests::ResetInverter.into());
                     self.baudrate = (self.serial_interface.get_baudrate)().await;
                     self.encoding = (self.serial_interface.get_serial_encoding)().await;
-                    self.send_modbus_request();
+                    self.last_ts = now_ts;
+                    return;
+                } else {
+                    return;
                 }
-                return;
             }
 
             let encoding = match self.encoding {
@@ -602,35 +618,31 @@ impl Actor for MitsubishiInverterRS485Actor {
                 return;
             }
             self.add_request(MitsubishiControlRequests::ReadMotorFrequency.into());
+            //   self.add_request(MitsubishiControlRequests::WriteRunningFrequency.into());
 
             self.last_ts = now_ts;
             match self.state {
                 State::WaitingForResponse => {
-                    //println!("WaitingForResponse {:?}", self.next_response_type);
                     let ret = self.read_modbus_response().await;
                     match ret {
                         Ok(ret) => {
                             self.handle_response(ret);
                         }
-                        Err(_) => (), // Do nothing for now
+                        Err(err) => tracing::error!("{}", err), // Do nothing for now
                     }
+
                     self.next_response_type = ResponseType::NoResponse;
                 }
                 State::ReadyToSend => {
                     self.send_modbus_request().await;
                     self.request_map.remove(&self.last_control_request_type);
                     self.set_ignored_times_modbus_requests();
-                    //    println!("ReadyToSend {:?}", self.next_response_type);
                 }
                 State::WaitingForReceiveAccept => {
-                    //  println!("WaitingForReceiveAccept {:?}", self.next_response_type);
                     self.state = State::ReadyToSend;
                 }
                 State::WaitingForRequestAccept => {
-                    //                    println!("WaitingForRequestAccept {:?}", self.next_response_type);
                     self.state = State::WaitingForResponse;
-                    self.last_control_request_type = MitsubishiControlRequests::None;
-                    self.last_request_type = RequestType::None;
                 }
                 _ => (),
             }
