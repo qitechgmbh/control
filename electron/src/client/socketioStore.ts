@@ -395,22 +395,26 @@ const useSocketioStore = create<SocketioStore>()((set, get) => ({
               );
             }
 
-            // Create a timeout to check if the namespace is still unused after 10 seconds
-            const timeoutId = setTimeout(() => {
-              set(
-                produce((state: SocketioStore) => {
-                  const ns = state.namespaces[namespace_path];
-                  if (ns && ns.count <= 0) {
-                    ns.socket.disconnect();
-                    ns.throttledUpdater.destroy(); // Clean up throttled updater
-                    delete state.namespaces[namespace_path];
-                    console.log(
-                      `Namespace ${namespace_path} disconnected after 10s of inactivity`,
-                    );
-                  }
-                }),
-              );
-            }, 10 * 1000);
+            // Create a timeout to check if the namespace is still unused after 1 hour
+            const timeoutId = setTimeout(
+              () => {
+                set(
+                  produce((state: SocketioStore) => {
+                    const ns = state.namespaces[namespace_path];
+                    if (ns && ns.count <= 0) {
+                      ns.socket.disconnect();
+                      ns.throttledUpdater.destroy(); // Clean up throttled updater
+                      delete state.namespaces[namespace_path];
+                      console.log(
+                        `Namespace ${namespace_path} disconnected after 1h of inactivity`,
+                      );
+                    }
+                  }),
+                );
+              },
+              // 1h until disconnect
+              60 * 60 * 1000,
+            );
 
             state.namespaces[namespace_path].disconnectTimeoutId = timeoutId;
           }
