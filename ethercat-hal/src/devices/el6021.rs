@@ -438,7 +438,9 @@ impl SerialInterfaceDevice<EL6021Port> for EL6021 {
         if let Some(tx_pdo) = &mut self.txpdo.com_tx_pdo_map_22_byte {
             let valid_length = tx_pdo.length as usize;
             let received_data = tx_pdo.data[..valid_length.min(22)].to_vec();
-
+            if received_data.is_empty() {
+                return None;
+            }
             if let Some(rx_pdo) = &mut self.rxpdo.com_rx_pdo_map_22_byte {
                 rx_pdo.control.received_acepted = !rx_pdo.control.received_acepted;
             }
@@ -483,7 +485,7 @@ impl SerialInterfaceDevice<EL6021Port> for EL6021 {
     }
     /// For el6021 this returns false for as long as the Initialization takes
     /// When its finished it returns true    
-
+    /// Every step of the init has to be done in an EtherCatCycle
     fn serial_interface_initialize(&mut self, port: EL6021Port) -> bool {
         match port {
             EL6021Port::SI1 => {
@@ -500,11 +502,26 @@ impl SerialInterfaceDevice<EL6021Port> for EL6021 {
                     None => return false,
                 };
 
+                /*
+                Initialization was accepted
+                init_accepted 1: Initialization was completed by the terminal.
+                init_request 1: The controller requests terminal for initialization. The
+                    transmit and receive functions will be blocked, the FIFO
+                    pointer will be reset and the interface will be initialized with
+                    the values of the responsible Settings object. The execution
+                    of the initialization will be acknowledged by the terminal
+                    with the ‘Init accepted’ bit.
+                */
                 if rxpdo.control.init_request && txpdo.status.init_accepted {
                     rxpdo.control.init_request = false;
                     return false;
                 }
 
+                /*
+                    This is the initial state
+                    init_accepted 0: Initialization was completed by the terminal.
+                    init_request 0: The terminal is ready again for serial data exchange.
+                */
                 if rxpdo.control.init_request == false
                     && txpdo.status.init_accepted == false
                     && self.initialized == false
@@ -514,14 +531,18 @@ impl SerialInterfaceDevice<EL6021Port> for EL6021 {
                     return false;
                 }
 
+                /*
+                    init_accepted 1: Initialization was completed by the terminal.
+                    init_request 0: The terminal is ready again for serial data exchange.
+                */
                 if rxpdo.control.init_request == false && txpdo.status.init_accepted == true {
                     return false;
                 }
 
                 /*
-                If both init_request and init_accepted == false
-                init_accepted 0: The controller once again requests the terminal to prepare for serial data exchange.
-                init_request 0: The terminal is ready again for serial data exchange.
+                    If both init_request and init_accepted == false, initialization is complete
+                    init_accepted 0: The controller once again requests the terminal to prepare for serial data exchange.
+                    init_request 0: The terminal is ready again for serial data exchange.
                 */
                 if rxpdo.control.init_request == false
                     && txpdo.status.init_accepted == false
