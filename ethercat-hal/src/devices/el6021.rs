@@ -483,6 +483,7 @@ impl SerialInterfaceDevice<EL6021Port> for EL6021 {
     }
     /// For el6021 this returns false for as long as the Initialization takes
     /// When its finished it returns true    
+
     fn serial_interface_initialize(&mut self, port: EL6021Port) -> bool {
         match port {
             EL6021Port::SI1 => {
@@ -517,6 +518,11 @@ impl SerialInterfaceDevice<EL6021Port> for EL6021 {
                     return false;
                 }
 
+                /*
+                If both init_request and init_accepted == false
+                init_accepted 0: The controller once again requests the terminal to prepare for serial data exchange.
+                init_request 0: The terminal is ready again for serial data exchange.
+                */
                 if rxpdo.control.init_request == false
                     && txpdo.status.init_accepted == false
                     && self.initialized == true
