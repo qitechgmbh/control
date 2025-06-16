@@ -17,6 +17,8 @@ type Option = ComponentProps<typeof TouchButton> & {
   isActiveClassName?: string;
   disabled?: boolean;
   className?: string;
+  /** Optional confirmation message. If provided, shows a native browser confirmation dialog before executing onChange callback */
+  confirmation?: string;
 };
 
 export function SelectionGroup<KEY extends string>({
@@ -38,13 +40,27 @@ export function SelectionGroup<KEY extends string>({
             className,
             isActiveClassName,
             disabled: optionDisabled,
+            confirmation,
           },
         ]) => (
           <TouchButton
             key={key}
             icon={icon}
             disabled={disabled || optionDisabled}
-            onClick={() => onChange?.(key as KEY)}
+            onClick={() => {
+              // Check if this option requires confirmation
+              if (confirmation) {
+                // Show native browser confirmation dialog
+                if (window.confirm(confirmation)) {
+                  // User clicked "OK" - proceed with the action
+                  onChange?.(key as KEY);
+                }
+                // If user clicked "Cancel", do nothing
+              } else {
+                // No confirmation required - execute action immediately
+                onChange?.(key as KEY);
+              }
+            }}
             variant={key === value ? "default" : "outline"}
             isLoading={key === value && loading}
             className={
