@@ -46,6 +46,7 @@ pub fn init_mock(app_state: Arc<AppState>) -> Result<(), anyhow::Error> {
                     .main_namespace;
                 let event = MachinesEventBuilder().build(app_state_event.clone()).await;
                 main_namespace.emit_cached(MainNamespaceEvents::MachinesEvent(event));
+                tracing::info!("Mock machines initialized successfully");
                 Ok(())
             }
             Err(e) => {
@@ -54,7 +55,4 @@ pub fn init_mock(app_state: Arc<AppState>) -> Result<(), anyhow::Error> {
             }
         }
     });
-
-    tracing::info!("Mock machines initialized successfully");
-    Ok(())
 }
