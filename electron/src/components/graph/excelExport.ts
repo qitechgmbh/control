@@ -1,7 +1,7 @@
 import * as XLSX from "xlsx";
 import { TimeSeries, seriesToUPlotData } from "@/lib/timeseries";
 import { renderUnitSymbol, Unit } from "@/control/units";
-import { GraphConfig } from "./BigGraph";
+import { GraphConfig } from "./types";
 
 export type GraphExportData = {
   config: GraphConfig;
@@ -211,7 +211,6 @@ function createGraphSummaryData(
     [`${exportData.config.title} Summary (${graphId})`, ""],
     ["Graph ID", graphId],
     ["Export Date", new Date()],
-    ["Description", exportData.config.description || ""],
     ["", ""],
     ["Parameters", ""],
   ];

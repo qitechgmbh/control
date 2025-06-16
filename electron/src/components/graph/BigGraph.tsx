@@ -1,499 +1,29 @@
-import React, {
-  useEffect,
-  useRef,
-  useState,
-  useCallback,
-  createContext,
-  useContext,
-  ReactNode,
-} from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import uPlot from "uplot";
 import "uplot/dist/uPlot.min.css";
-import { TimeSeries, seriesToUPlotData } from "@/lib/timeseries";
-import { renderUnitSymbol, Unit, getUnitIcon } from "@/control/units";
-import { TouchButton } from "@/components/touch/TouchButton";
-import { Icon, IconName } from "@/components/Icon";
-import { ControlCard } from "@/control/ControlCard";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { GraphExportData, exportGraphsToExcel } from "./excel_helpers";
-
-// Sync Context for synchronized zooming (kept for backward compatibility)
-type SyncState = {
-  x: { min: number; max: number };
-  timeWindow?: number | "all";
-  viewMode?: "default" | "all" | "manual";
-  isLiveMode?: boolean;
-};
-
-type GraphSyncContextType = {
-  registerGraph: (id: string, updateFn: (state: SyncState) => void) => void;
-  unregisterGraph: (id: string) => void;
-  syncZoom: (fromId: string, state: SyncState) => void;
-  syncTimeWindow: (fromId: string, timeWindow: number | "all") => void;
-  syncViewMode: (
-    fromId: string,
-    viewMode: "default" | "all" | "manual",
-    isLiveMode: boolean,
-  ) => void;
-  registerGraphData: (
-    id: string,
-    getDataFn: () => GraphExportData | null,
-  ) => void;
-  unregisterGraphData: (id: string) => void;
-  exportAllGraphs: () => void;
-  hasGraphs: () => boolean;
-  hasRegisteredGraphs: boolean;
-  switchToLiveMode: () => void;
-  switchToHistoricalMode: () => void;
-  handleTimeWindowChange: (timeWindow: number | "all") => void;
-  getCurrentTimeWindow: () => number | "all";
-  getIsLiveMode: () => boolean;
-  getTimeWindowOptions: () => Array<{ value: number | "all"; label: string }>;
-  showControls: boolean;
-  setShowControls: (show: boolean) => void;
-};
-
-const GraphSyncContext = createContext<GraphSyncContextType | null>(null);
-
-export function GraphSyncProvider({
-  children,
-  groupId,
-  showControls = true,
-}: {
-  children: ReactNode;
-  groupId: string;
-  showControls?: boolean;
-}) {
-  const graphsRef = useRef<Map<string, (state: SyncState) => void>>(new Map());
-  const graphDataRef = useRef<Map<string, () => GraphExportData | null>>(
-    new Map(),
-  );
-
-  const [hasRegisteredGraphs, setHasRegisteredGraphs] = useState(false);
-  const [currentTimeWindow, setCurrentTimeWindow] = useState<number | "all">(
-    30 * 60 * 1000,
-  );
-  const [isLiveMode, setIsLiveMode] = useState(true);
-  const [controlsVisible, setControlsVisible] = useState(showControls);
-
-  const registerGraph = (id: string, updateFn: (state: SyncState) => void) => {
-    graphsRef.current.set(id, updateFn);
-  };
-
-  const unregisterGraph = (id: string) => {
-    graphsRef.current.delete(id);
-  };
-
-  const registerGraphData = (
-    id: string,
-    getDataFn: () => GraphExportData | null,
-  ) => {
-    graphDataRef.current.set(id, getDataFn);
-    setHasRegisteredGraphs(graphDataRef.current.size > 0);
-  };
-
-  const unregisterGraphData = (id: string) => {
-    graphDataRef.current.delete(id);
-    setHasRegisteredGraphs(graphDataRef.current.size > 0);
-  };
-
-  const hasGraphs = () => {
-    return graphDataRef.current.size > 0;
-  };
-
-  const syncZoom = (fromId: string, state: SyncState) => {
-    graphsRef.current.forEach((updateFn, id) => {
-      if (id !== fromId) {
-        updateFn(state);
-      }
-    });
-  };
-
-  const syncTimeWindow = (fromId: string, timeWindow: number | "all") => {
-    setCurrentTimeWindow(timeWindow);
-    graphsRef.current.forEach((updateFn, id) => {
-      if (id !== fromId) {
-        updateFn({ x: { min: 0, max: 0 }, timeWindow });
-      }
-    });
-  };
-
-  const syncViewMode = (
-    fromId: string,
-    viewMode: "default" | "all" | "manual",
-    isLiveMode: boolean,
-  ) => {
-    setIsLiveMode(isLiveMode);
-    graphsRef.current.forEach((updateFn, id) => {
-      if (id !== fromId) {
-        updateFn({ x: { min: 0, max: 0 }, viewMode, isLiveMode });
-      }
-    });
-  };
-
-  const exportAllGraphs = () => {
-    exportGraphsToExcel(graphDataRef.current, groupId);
-  };
-
-  const switchToLiveMode = () => {
-    setIsLiveMode(true);
-    graphsRef.current.forEach((updateFn) => {
-      updateFn({
-        x: { min: 0, max: 0 },
-        viewMode: currentTimeWindow === "all" ? "all" : "default",
-        isLiveMode: true,
-      });
-    });
-  };
-
-  const switchToHistoricalMode = () => {
-    setIsLiveMode(false);
-    graphsRef.current.forEach((updateFn) => {
-      updateFn({
-        x: { min: 0, max: 0 },
-        viewMode: "manual",
-        isLiveMode: false,
-      });
-    });
-  };
-
-  const handleTimeWindowChange = (timeWindow: number | "all") => {
-    setCurrentTimeWindow(timeWindow);
-    graphsRef.current.forEach((updateFn) => {
-      updateFn({ x: { min: 0, max: 0 }, timeWindow });
-    });
-  };
-
-  const getCurrentTimeWindow = () => currentTimeWindow;
-  const getIsLiveMode = () => isLiveMode;
-  const getTimeWindowOptions = () => DEFAULT_TIME_WINDOW_OPTIONS;
-  const setShowControls = (show: boolean) => setControlsVisible(show);
-
-  useEffect(() => {
-    setControlsVisible(showControls);
-  }, [showControls]);
-
-  return (
-    <GraphSyncContext.Provider
-      value={{
-        registerGraph,
-        unregisterGraph,
-        syncZoom,
-        syncTimeWindow,
-        syncViewMode,
-        registerGraphData,
-        unregisterGraphData,
-        exportAllGraphs,
-        hasGraphs,
-        hasRegisteredGraphs,
-        switchToLiveMode,
-        switchToHistoricalMode,
-        handleTimeWindowChange,
-        getCurrentTimeWindow,
-        getIsLiveMode,
-        getTimeWindowOptions,
-        showControls: controlsVisible,
-        setShowControls,
-      }}
-    >
-      {children}
-    </GraphSyncContext.Provider>
-  );
-}
-
-export const useGraphSync = () => {
-  const context = useContext(GraphSyncContext);
-  return context;
-};
-
-export function GraphControls({ groupId }: { groupId: string }) {
-  const graphSync = useGraphSync();
-
-  if (!graphSync || !graphSync.hasRegisteredGraphs || !graphSync.showControls) {
-    return null;
-  }
-
-  const currentTimeWindow = graphSync.getCurrentTimeWindow();
-  const isLiveMode = graphSync.getIsLiveMode();
-  const timeWindowOptions = graphSync.getTimeWindowOptions();
-
-  const getSelectedTimeWindowLabel = () => {
-    const option = timeWindowOptions.find(
-      (opt) => opt.value === currentTimeWindow,
-    );
-    return option ? option.label : "1m";
-  };
-
-  return (
-    <ControlCard className="ml-auto w-fit py-4">
-      <div className="flex items-center justify-end">
-        <div className="flex items-center gap-3">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <TouchButton
-                variant="outline"
-                className="h-auto border-gray-300 bg-white px-3 py-3 text-base text-gray-900 hover:bg-gray-50"
-              >
-                {getSelectedTimeWindowLabel()}
-                <Icon name="lu:ChevronDown" className="ml-2 size-4" />
-              </TouchButton>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel className="text-base font-medium">
-                Time Window
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              {timeWindowOptions.map((option) => (
-                <DropdownMenuItem
-                  key={option.value}
-                  onClick={() => graphSync.handleTimeWindowChange(option.value)}
-                  className={`min-h-[48px] px-4 py-3 text-base ${
-                    currentTimeWindow === option.value ? "bg-blue-50" : ""
-                  }`}
-                >
-                  {option.label}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          <TouchButton
-            onClick={graphSync.switchToHistoricalMode}
-            variant="outline"
-            className={`h-auto px-3 py-3 text-base font-medium transition-colors ${
-              !isLiveMode
-                ? "bg-black text-white"
-                : "border-gray-300 bg-white text-gray-700 hover:bg-gray-100"
-            }`}
-          >
-            Historical
-          </TouchButton>
-          <TouchButton
-            onClick={graphSync.switchToLiveMode}
-            variant="outline"
-            className={`h-auto px-3 py-3 text-base font-medium transition-colors ${
-              isLiveMode
-                ? "bg-black text-white"
-                : "border-gray-300 bg-white text-gray-700 hover:bg-gray-100"
-            }`}
-          >
-            Live
-          </TouchButton>
-
-          <div className="mx-2 h-8 w-px bg-gray-200"></div>
-
-          <TouchButton
-            onClick={graphSync.exportAllGraphs}
-            variant="outline"
-            className="h-auto bg-green-600 px-3 py-3 text-base font-medium text-white hover:bg-green-700"
-          >
-            Export
-          </TouchButton>
-        </div>
-      </div>
-    </ControlCard>
-  );
-}
-
-export function FloatingControlPanel({ groupId }: { groupId: string }) {
-  const graphSync = useGraphSync();
-  const [isExpanded, setIsExpanded] = useState(false);
-
-  if (!graphSync || !graphSync.hasRegisteredGraphs || !graphSync.showControls) {
-    return null;
-  }
-
-  const currentTimeWindow = graphSync.getCurrentTimeWindow();
-  const isLiveMode = graphSync.getIsLiveMode();
-  const timeWindowOptions = graphSync.getTimeWindowOptions();
-
-  const getSelectedTimeWindowLabel = () => {
-    const option = timeWindowOptions.find(
-      (opt) => opt.value === currentTimeWindow,
-    );
-    return option ? option.label : "1m";
-  };
-
-  return (
-    <div className="fixed right-6 bottom-6 z-50">
-      <ControlCard className="overflow-hidden px-4 py-4 transition-all duration-300 ease-in-out">
-        <div
-          className={`flex items-center ${isExpanded ? "gap-3" : "justify-center"}`}
-        >
-          <div
-            className={`flex items-center gap-3 transition-all duration-300 ease-in-out ${
-              isExpanded
-                ? "max-w-none translate-x-0 opacity-100"
-                : "w-0 max-w-0 overflow-hidden opacity-0"
-            }`}
-          >
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <TouchButton
-                  variant="outline"
-                  className="h-auto border-gray-300 bg-white px-3 py-3 text-base text-gray-900 hover:bg-gray-50"
-                >
-                  {getSelectedTimeWindowLabel()}
-                  <Icon name="lu:ChevronDown" className="ml-2 size-4" />
-                </TouchButton>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel className="text-base font-medium">
-                  Time Window
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {timeWindowOptions.map((option) => (
-                  <DropdownMenuItem
-                    key={option.value}
-                    onClick={() =>
-                      graphSync.handleTimeWindowChange(option.value)
-                    }
-                    className={`min-h-[48px] px-4 py-3 text-base ${
-                      currentTimeWindow === option.value ? "bg-blue-50" : ""
-                    }`}
-                  >
-                    {option.label}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            <TouchButton
-              onClick={graphSync.switchToHistoricalMode}
-              variant="outline"
-              className={`h-auto px-3 py-3 text-base font-medium transition-colors ${
-                !isLiveMode
-                  ? "bg-black text-white"
-                  : "border-gray-300 bg-white text-gray-700 hover:bg-gray-100"
-              }`}
-            >
-              Historical
-            </TouchButton>
-            <TouchButton
-              onClick={graphSync.switchToLiveMode}
-              variant="outline"
-              className={`h-auto px-3 py-3 text-base font-medium transition-colors ${
-                isLiveMode
-                  ? "bg-black text-white"
-                  : "border-gray-300 bg-white text-gray-700 hover:bg-gray-100"
-              }`}
-            >
-              Live
-            </TouchButton>
-            {isExpanded && <div className="h-8 w-px bg-gray-200"></div>}
-            <TouchButton
-              onClick={graphSync.exportAllGraphs}
-              variant="outline"
-              className="h-auto bg-green-600 px-3 py-3 text-base font-medium text-white hover:bg-green-700"
-            >
-              Export
-            </TouchButton>
-          </div>
-
-          {isExpanded && <div className="h-8 w-px bg-gray-200"></div>}
-
-          <TouchButton
-            onClick={() => setIsExpanded(!isExpanded)}
-            variant="outline"
-            className="h-auto flex-shrink-0 bg-green-600 p-3 text-white hover:bg-green-700"
-            icon={isExpanded ? "lu:Minus" : "lu:Plus"}
-          />
-        </div>
-      </ControlCard>
-    </div>
-  );
-}
-
-export function FloatingExportButton({ groupId }: { groupId: string }) {
-  return null;
-}
-
-// New prop-based sync types
-export type PropGraphSync = {
-  timeWindow: number | "all";
-  viewMode: "default" | "all" | "manual";
-  isLiveMode: boolean;
-  xRange?: { min: number; max: number };
-  onTimeWindowChange?: (graphId: string, timeWindow: number | "all") => void;
-  onViewModeChange?: (
-    graphId: string,
-    viewMode: "default" | "all" | "manual",
-    isLiveMode: boolean,
-  ) => void;
-  onZoomChange?: (
-    graphId: string,
-    xRange: { min: number; max: number },
-  ) => void;
-};
-
-// Configuration types for additional lines
-export type GraphLine = {
-  type: "threshold" | "target" | "reference";
-  value: number;
-  label: string;
-  color: string;
-  width?: number;
-  dash?: number[];
-  show?: boolean;
-};
-
-export type GraphConfig = {
-  title: string;
-  icon?: IconName;
-  lines?: GraphLine[];
-  timeWindows?: Array<{ value: number | "all"; label: string }>;
-  defaultTimeWindow?: number | "all";
-  exportFilename?: string;
-  showLegend?: boolean;
-  colors?: {
-    primary?: string;
-    grid?: string;
-    axis?: string;
-    background?: string;
-  };
-};
-
-type BigGraphProps = {
-  newData: TimeSeries | null;
-  unit?: Unit;
-  renderValue?: (value: number) => string;
-  config: GraphConfig;
-  graphId: string;
-
-  // Prop-based sync (new approach)
-  syncGraph?: PropGraphSync;
-
-  // Context-based sync (legacy support)
-  syncGroupId?: string;
-};
-
-const DEFAULT_TIME_WINDOW_OPTIONS = [
-  { value: 10 * 1000, label: "10s" },
-  { value: 30 * 1000, label: "30s" },
-  { value: 1 * 60 * 1000, label: "1m" },
-  { value: 5 * 60 * 1000, label: "5m" },
-  { value: 10 * 60 * 1000, label: "10m" },
-  { value: 30 * 60 * 1000, label: "30m" },
-  { value: 1 * 60 * 60 * 1000, label: "1h" },
-  { value: "all" as const, label: "Show All" },
-];
+import { seriesToUPlotData } from "@/lib/timeseries";
+import { renderUnitSymbol, getUnitIcon } from "@/control/units";
+import { Icon } from "@/components/Icon";
+import { BigGraphProps } from "./types";
+import { GraphExportData } from "./excelExport";
+import { POINT_ANIMATION_DURATION, DEFAULT_COLORS } from "./constants";
 
 export function BigGraph({
   newData,
   unit,
   renderValue,
   config,
-  syncGroupId,
   graphId,
   syncGraph,
-}: BigGraphProps) {
+  onRegisterForExport,
+  onUnregisterFromExport,
+}: BigGraphProps & {
+  onRegisterForExport?: (
+    graphId: string,
+    getDataFn: () => GraphExportData | null,
+  ) => void;
+  onUnregisterFromExport?: (graphId: string) => void;
+}) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const uplotRef = useRef<uPlot | null>(null);
   const chartCreatedRef = useRef(false);
@@ -520,10 +50,6 @@ export function BigGraph({
   const isPinchingRef = useRef(false);
   const lastPinchDistanceRef = useRef<number | null>(null);
   const pinchCenterRef = useRef<{ x: number; y: number } | null>(null);
-
-  // Legacy sync context support
-  const graphSync = syncGroupId ? useGraphSync() : null;
-  const isSyncingRef = useRef(false);
 
   // Touch direction detection
   const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(
@@ -557,13 +83,46 @@ export function BigGraph({
     targetIndex: 0,
   });
 
-  const POINT_ANIMATION_DURATION = 1000;
   const colors = {
-    primary: config.colors?.primary ?? "#3b82f6",
-    grid: config.colors?.grid ?? "#e2e8f0",
-    axis: config.colors?.axis ?? "#64748b",
-    background: config.colors?.background ?? "#ffffff",
+    primary: config.colors?.primary ?? DEFAULT_COLORS.primary,
+    grid: config.colors?.grid ?? DEFAULT_COLORS.grid,
+    axis: config.colors?.axis ?? DEFAULT_COLORS.axis,
+    background: config.colors?.background ?? DEFAULT_COLORS.background,
   };
+
+  // Export registration effect
+  useEffect(() => {
+    if (onRegisterForExport) {
+      const getExportData = (): GraphExportData | null => {
+        if (!newData) return null;
+
+        const exportData: GraphExportData = {
+          config,
+          data: newData,
+          unit,
+          renderValue,
+        };
+
+        return exportData;
+      };
+
+      onRegisterForExport(graphId, getExportData);
+
+      return () => {
+        if (onUnregisterFromExport) {
+          onUnregisterFromExport(graphId);
+        }
+      };
+    }
+  }, [
+    graphId,
+    newData,
+    config,
+    unit,
+    renderValue,
+    onRegisterForExport,
+    onUnregisterFromExport,
+  ]);
 
   // Prop-based sync state updates
   useEffect(() => {
@@ -617,139 +176,6 @@ export function BigGraph({
       setIsLiveMode(false);
     }
   }, [syncGraph]);
-
-  // Legacy context sync handler
-  const handleSyncUpdate = useCallback(
-    (state: SyncState) => {
-      if (!uplotRef.current) return;
-
-      const wasUserZooming = isUserZoomingRef.current;
-      isUserZoomingRef.current = false;
-
-      if (state.viewMode !== undefined && state.isLiveMode !== undefined) {
-        setViewMode(state.viewMode);
-        setIsLiveMode(state.isLiveMode);
-
-        if (state.isLiveMode) {
-          stopAnimations();
-          if (newData?.long) {
-            const [timestamps, values] = seriesToUPlotData(newData.long);
-            const fullData = buildUPlotData(timestamps, values);
-            uplotRef.current.setData(fullData);
-
-            if (timestamps.length > 0) {
-              const latestTimestamp = timestamps[timestamps.length - 1];
-
-              if (state.viewMode === "all") {
-                const fullStart = startTimeRef.current ?? timestamps[0];
-                uplotRef.current.setScale("x", {
-                  min: fullStart,
-                  max: latestTimestamp,
-                });
-                updateYAxisScale(
-                  timestamps,
-                  values,
-                  fullStart,
-                  latestTimestamp,
-                );
-              } else if (state.viewMode === "default") {
-                const viewStart =
-                  latestTimestamp - (selectedTimeWindow as number);
-                uplotRef.current.setScale("x", {
-                  min: viewStart,
-                  max: latestTimestamp,
-                });
-                updateYAxisScale(
-                  timestamps,
-                  values,
-                  viewStart,
-                  latestTimestamp,
-                );
-              }
-            }
-
-            manualScaleRef.current = null;
-            lastRenderedDataRef.current = { timestamps, values };
-          }
-        } else {
-          stopAnimations();
-          if (uplotRef.current.scales) {
-            const xScale = uplotRef.current.scales.x;
-            const yScale = uplotRef.current.scales.y;
-            if (
-              xScale &&
-              yScale &&
-              xScale.min !== undefined &&
-              xScale.max !== undefined &&
-              yScale.min !== undefined &&
-              yScale.max !== undefined
-            ) {
-              manualScaleRef.current = {
-                x: { min: xScale.min ?? 0, max: xScale.max ?? 0 },
-                y: { min: yScale.min, max: yScale.max },
-              };
-            }
-          }
-        }
-      } else if (state.timeWindow !== undefined) {
-        setSelectedTimeWindow(state.timeWindow);
-        handleTimeWindowChangeInternal(state.timeWindow, true);
-      } else {
-        setViewMode("manual");
-        setIsLiveMode(false);
-
-        uplotRef.current.batch(() => {
-          uplotRef.current!.setScale("x", {
-            min: state.x.min,
-            max: state.x.max,
-          });
-
-          if (newData?.long) {
-            const [timestamps, values] = seriesToUPlotData(newData.long);
-            updateYAxisScale(timestamps, values, state.x.min, state.x.max);
-          }
-        });
-
-        if (newData?.long) {
-          const [_series, values] = seriesToUPlotData(newData.long);
-          manualScaleRef.current = {
-            x: { min: state.x.min, max: state.x.max },
-            y: manualScaleRef.current?.y ?? {
-              min: Math.min(...values),
-              max: Math.max(...values),
-            },
-          };
-        }
-      }
-
-      setTimeout(() => {
-        isUserZoomingRef.current = wasUserZooming;
-      }, 10);
-    },
-    [newData, selectedTimeWindow],
-  );
-
-  // Legacy context registration
-  useEffect(() => {
-    if (graphSync) {
-      const getGraphData = (): GraphExportData | null => ({
-        config,
-        data: newData,
-        unit,
-        renderValue,
-      });
-
-      graphSync.registerGraphData(graphId, getGraphData);
-      return () => graphSync.unregisterGraphData(graphId);
-    }
-  }, [graphSync, graphId, config, newData, unit, renderValue]);
-
-  useEffect(() => {
-    if (graphSync) {
-      graphSync.registerGraph(graphId, handleSyncUpdate);
-      return () => graphSync.unregisterGraph(graphId);
-    }
-  }, [graphSync, graphId, handleSyncUpdate]);
 
   const lerp = (start: number, end: number, t: number): number => {
     return start + (end - start) * t;
@@ -1113,13 +539,8 @@ export function BigGraph({
                     });
                   }
 
-                  // Legacy context sync
-                  if (graphSync) {
-                    setTimeout(() => {
-                      graphSync.syncZoom(graphId, {
-                        x: { min: xScale.min ?? 0, max: xScale.max ?? 0 },
-                      });
-                    }, 0);
+                  if (syncGraph?.onViewModeChange) {
+                    syncGraph.onViewModeChange(graphId, "manual", false);
                   }
                 }
                 isUserZoomingRef.current = false;
@@ -1430,11 +851,8 @@ export function BigGraph({
                 });
               }
 
-              // Legacy context sync
-              if (graphSync) {
-                graphSync.syncZoom(graphId, {
-                  x: { min: newMin, max: newMax },
-                });
+              if (syncGraph?.onViewModeChange) {
+                syncGraph.onViewModeChange(graphId, "manual", false);
               }
             }
           }
@@ -1498,11 +916,8 @@ export function BigGraph({
                 });
               }
 
-              // Legacy context sync
-              if (graphSync) {
-                graphSync.syncZoom(graphId, {
-                  x: { min: newMin, max: newMax },
-                });
+              if (syncGraph?.onViewModeChange) {
+                syncGraph.onViewModeChange(graphId, "manual", false);
               }
             }
           }
@@ -1577,36 +992,19 @@ export function BigGraph({
     };
   };
 
-  const isSwitchingModeRef = useRef(false);
-  const isUserTimeWindowChangeRef = useRef(false);
-
   const handleTimeWindowChangeInternal = (
     newTimeWindow: number | "all",
     isSync: boolean = false,
   ) => {
-    if (isSwitchingModeRef.current || (!isSync && isSyncingRef.current)) {
-      return;
-    }
-
-    if (!isSync) {
-      isUserTimeWindowChangeRef.current = true;
-    }
-
     stopAnimations();
     setSelectedTimeWindow(newTimeWindow);
 
     if (!uplotRef.current || !newData?.long) {
-      if (!isSync) {
-        isUserTimeWindowChangeRef.current = false;
-      }
       return;
     }
 
     const [timestamps, values] = seriesToUPlotData(newData.long);
     if (timestamps.length === 0) {
-      if (!isSync) {
-        isUserTimeWindowChangeRef.current = false;
-      }
       return;
     }
 
@@ -1661,17 +1059,6 @@ export function BigGraph({
     // Prop-based sync
     if (!isSync && syncGraph?.onTimeWindowChange) {
       syncGraph.onTimeWindowChange(graphId, newTimeWindow);
-    }
-
-    // Legacy context sync
-    if (graphSync && !isSync && !isSyncingRef.current) {
-      graphSync.syncTimeWindow(graphId, newTimeWindow);
-    }
-
-    if (!isSync) {
-      setTimeout(() => {
-        isUserTimeWindowChangeRef.current = false;
-      }, 50);
     }
   };
 
@@ -1845,7 +1232,6 @@ export function BigGraph({
     config.lines,
     isLiveMode,
   ]);
-
   const displayValue =
     cursorValue !== null ? cursorValue : newData?.current?.value;
 
@@ -1891,71 +1277,5 @@ export function BigGraph({
         </div>
       </div>
     </div>
-  );
-}
-
-// Convenience wrapper for diameter graphs
-export function DiameterGraph({
-  newData,
-  threshold1,
-  threshold2,
-  target,
-  unit,
-  renderValue,
-  syncState,
-  syncCallbacks,
-}: {
-  newData: TimeSeries | null;
-  threshold1: number;
-  threshold2: number;
-  target: number;
-  unit?: Unit;
-  renderValue?: (value: number) => string;
-  syncState?: PropSyncState;
-  syncCallbacks?: PropSyncCallbacks;
-}) {
-  const config: GraphConfig = {
-    title: "Diameter",
-    lines: [
-      {
-        type: "threshold",
-        value: threshold1,
-        label: "Upper Threshold",
-        color: "#ef4444",
-        dash: [5, 5],
-      },
-      {
-        type: "threshold",
-        value: threshold2,
-        label: "Lower Threshold",
-        color: "#f97316",
-        dash: [5, 5],
-      },
-      {
-        type: "target",
-        value: target,
-        label: "Target",
-        color: "#6b7280",
-      },
-    ],
-    colors: {
-      primary: "#3b82f6",
-      grid: "#e2e8f0",
-      axis: "#64748b",
-      background: "#ffffff",
-    },
-    exportFilename: "diameter_data",
-  };
-
-  return (
-    <BigGraph
-      newData={newData}
-      unit={unit}
-      renderValue={renderValue}
-      config={config}
-      graphId="diameter-main"
-      syncState={syncState}
-      syncCallbacks={syncCallbacks}
-    />
   );
 }
