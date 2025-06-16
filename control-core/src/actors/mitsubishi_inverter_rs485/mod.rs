@@ -520,14 +520,12 @@ impl From<u8> for MitsubishiModbusExceptionCode {
 
 // Handle different Response types
 impl MitsubishiInverterRS485Actor {
-    // When we get respone from Pr. 40014 (Running Frequency) Convert to rpm and save it
     fn handle_motor_frequency(&mut self, resp: ModbusResponse) {
         let freq_bytes = &resp.data[1..3]; // bytes 1 and 2 are needed
         let raw_frequency = u16::from_be_bytes([freq_bytes[0], freq_bytes[1]]) as f64;
         self.frequency = Frequency::new::<centihertz>(raw_frequency);
     }
 
-    // Technically we could verify that every request also was successful with this match and return an Error, or not
     fn handle_response(&mut self, resp: ModbusResponse) {
         match self.next_response_type {
             ResponseType::ReadFrequency => (),
@@ -593,7 +591,6 @@ impl Actor for MitsubishiInverterRS485Actor {
             if elapsed < timeout {
                 return;
             }
-
             self.add_request(MitsubishiControlRequests::ReadMotorFrequency.into());
 
             self.last_ts = now_ts;
@@ -604,7 +601,7 @@ impl Actor for MitsubishiInverterRS485Actor {
                         Ok(ret) => {
                             self.handle_response(ret);
                         }
-                        Err(err) => (), // Do nothing for now
+                        Err(_) => (), // Do nothing for now
                     }
 
                     self.next_response_type = ResponseType::NoResponse;
@@ -622,7 +619,6 @@ impl Actor for MitsubishiInverterRS485Actor {
                 }
                 _ => (),
             }
-
             self.response = None;
         })
     }
