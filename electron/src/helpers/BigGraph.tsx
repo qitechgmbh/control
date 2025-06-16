@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { GraphExportData, exportGraphsToExcel } from "./excel_helpers";
 
-// Sync Context for synchronized zooming
+// Sync Context for synchronized zooming (kept for backward compatibility)
 type SyncState = {
   x: { min: number; max: number };
   timeWindow?: number | "all";
@@ -61,10 +61,11 @@ type GraphSyncContextType = {
 };
 
 const GraphSyncContext = createContext<GraphSyncContextType | null>(null);
+
 export function GraphSyncProvider({
   children,
   groupId,
-  showControls = true, // Default to true for backward compatibility
+  showControls = true,
 }: {
   children: ReactNode;
   groupId: string;
@@ -75,7 +76,6 @@ export function GraphSyncProvider({
     new Map(),
   );
 
-  // Add state for sync controls
   const [hasRegisteredGraphs, setHasRegisteredGraphs] = useState(false);
   const [currentTimeWindow, setCurrentTimeWindow] = useState<number | "all">(
     30 * 60 * 1000,
@@ -142,7 +142,6 @@ export function GraphSyncProvider({
     exportGraphsToExcel(graphDataRef.current, groupId);
   };
 
-  // Sync control methods
   const switchToLiveMode = () => {
     setIsLiveMode(true);
     graphsRef.current.forEach((updateFn) => {
@@ -177,7 +176,6 @@ export function GraphSyncProvider({
   const getTimeWindowOptions = () => DEFAULT_TIME_WINDOW_OPTIONS;
   const setShowControls = (show: boolean) => setControlsVisible(show);
 
-  // Update controlsVisible when showControls prop changes
   useEffect(() => {
     setControlsVisible(showControls);
   }, [showControls]);
@@ -214,6 +212,7 @@ export const useGraphSync = () => {
   const context = useContext(GraphSyncContext);
   return context;
 };
+
 export function GraphControls({ groupId }: { groupId: string }) {
   const graphSync = useGraphSync();
 
@@ -265,7 +264,6 @@ export function GraphControls({ groupId }: { groupId: string }) {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* View mode buttons */}
           <TouchButton
             onClick={graphSync.switchToHistoricalMode}
             variant="outline"
@@ -289,10 +287,8 @@ export function GraphControls({ groupId }: { groupId: string }) {
             Live
           </TouchButton>
 
-          {/* Separator line */}
           <div className="mx-2 h-8 w-px bg-gray-200"></div>
 
-          {/* Export button */}
           <TouchButton
             onClick={graphSync.exportAllGraphs}
             variant="outline"
@@ -305,7 +301,7 @@ export function GraphControls({ groupId }: { groupId: string }) {
     </ControlCard>
   );
 }
-// New floating control panel component
+
 export function FloatingControlPanel({ groupId }: { groupId: string }) {
   const graphSync = useGraphSync();
   const [isExpanded, setIsExpanded] = useState(false);
@@ -369,7 +365,6 @@ export function FloatingControlPanel({ groupId }: { groupId: string }) {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            {/* View mode buttons */}
             <TouchButton
               onClick={graphSync.switchToHistoricalMode}
               variant="outline"
@@ -392,9 +387,7 @@ export function FloatingControlPanel({ groupId }: { groupId: string }) {
             >
               Live
             </TouchButton>
-            {/* Separator line - only shows when expanded */}
             {isExpanded && <div className="h-8 w-px bg-gray-200"></div>}
-            {/* Export button */}
             <TouchButton
               onClick={graphSync.exportAllGraphs}
               variant="outline"
@@ -404,10 +397,8 @@ export function FloatingControlPanel({ groupId }: { groupId: string }) {
             </TouchButton>
           </div>
 
-          {/* Separator line - only shows when expanded */}
           {isExpanded && <div className="h-8 w-px bg-gray-200"></div>}
 
-          {/* Toggle button - always visible */}
           <TouchButton
             onClick={() => setIsExpanded(!isExpanded)}
             variant="outline"
@@ -420,10 +411,27 @@ export function FloatingControlPanel({ groupId }: { groupId: string }) {
   );
 }
 
-// Keep the old export button for backward compatibility but make it hidden
 export function FloatingExportButton({ groupId }: { groupId: string }) {
-  return null; // Hidden - functionality moved to FloatingControlPanel
+  return null;
 }
+
+// New prop-based sync types
+export type PropGraphSync = {
+  timeWindow: number | "all";
+  viewMode: "default" | "all" | "manual";
+  isLiveMode: boolean;
+  xRange?: { min: number; max: number };
+  onTimeWindowChange?: (graphId: string, timeWindow: number | "all") => void;
+  onViewModeChange?: (
+    graphId: string,
+    viewMode: "default" | "all" | "manual",
+    isLiveMode: boolean,
+  ) => void;
+  onZoomChange?: (
+    graphId: string,
+    xRange: { min: number; max: number },
+  ) => void;
+};
 
 // Configuration types for additional lines
 export type GraphLine = {
@@ -438,7 +446,6 @@ export type GraphLine = {
 
 export type GraphConfig = {
   title: string;
-  description?: string;
   icon?: IconName;
   lines?: GraphLine[];
   timeWindows?: Array<{ value: number | "all"; label: string }>;
@@ -458,11 +465,15 @@ type BigGraphProps = {
   unit?: Unit;
   renderValue?: (value: number) => string;
   config: GraphConfig;
-  syncGroupId?: string;
   graphId: string;
+
+  // Prop-based sync (new approach)
+  syncGraph?: PropGraphSync;
+
+  // Context-based sync (legacy support)
+  syncGroupId?: string;
 };
 
-// Default time window options with "Show All" included
 const DEFAULT_TIME_WINDOW_OPTIONS = [
   { value: 10 * 1000, label: "10s" },
   { value: 30 * 1000, label: "30s" },
@@ -481,18 +492,21 @@ export function BigGraph({
   config,
   syncGroupId,
   graphId,
+  syncGraph,
 }: BigGraphProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const uplotRef = useRef<uPlot | null>(null);
   const chartCreatedRef = useRef(false);
 
+  // Initialize state from props or defaults
   const [viewMode, setViewMode] = useState<"default" | "all" | "manual">(
-    "default",
+    syncGraph?.viewMode ?? "default",
   );
-  const [isLiveMode, setIsLiveMode] = useState(true);
+  const [isLiveMode, setIsLiveMode] = useState(syncGraph?.isLiveMode ?? true);
   const [selectedTimeWindow, setSelectedTimeWindow] = useState<number | "all">(
-    config.defaultTimeWindow ?? 30 * 60 * 1000,
+    syncGraph?.timeWindow ?? config.defaultTimeWindow ?? 30 * 60 * 1000,
   );
+
   const [cursorValue, setCursorValue] = useState<number | null>(null);
   const startTimeRef = useRef<number | null>(null);
   const manualScaleRef = useRef<{
@@ -507,7 +521,7 @@ export function BigGraph({
   const lastPinchDistanceRef = useRef<number | null>(null);
   const pinchCenterRef = useRef<{ x: number; y: number } | null>(null);
 
-  // Sync context
+  // Legacy sync context support
   const graphSync = syncGroupId ? useGraphSync() : null;
   const isSyncingRef = useRef(false);
 
@@ -543,9 +557,7 @@ export function BigGraph({
     targetIndex: 0,
   });
 
-  // Animation constants
   const POINT_ANIMATION_DURATION = 1000;
-  const timeWindowOptions = config.timeWindows ?? DEFAULT_TIME_WINDOW_OPTIONS;
   const colors = {
     primary: config.colors?.primary ?? "#3b82f6",
     grid: config.colors?.grid ?? "#e2e8f0",
@@ -553,16 +565,68 @@ export function BigGraph({
     background: config.colors?.background ?? "#ffffff",
   };
 
+  // Prop-based sync state updates
+  useEffect(() => {
+    if (!syncGraph) return;
+
+    let hasChanges = false;
+
+    if (syncGraph.timeWindow !== selectedTimeWindow) {
+      setSelectedTimeWindow(syncGraph.timeWindow);
+      handleTimeWindowChangeInternal(syncGraph.timeWindow, true);
+      hasChanges = true;
+    }
+
+    if (syncGraph.viewMode !== viewMode) {
+      setViewMode(syncGraph.viewMode);
+      hasChanges = true;
+    }
+
+    if (syncGraph.isLiveMode !== isLiveMode) {
+      setIsLiveMode(syncGraph.isLiveMode);
+      hasChanges = true;
+    }
+
+    if (syncGraph.xRange && uplotRef.current) {
+      uplotRef.current.batch(() => {
+        uplotRef.current!.setScale("x", {
+          min: syncGraph.xRange!.min,
+          max: syncGraph.xRange!.max,
+        });
+
+        if (newData?.long) {
+          const [timestamps, values] = seriesToUPlotData(newData.long);
+          updateYAxisScale(
+            timestamps,
+            values,
+            syncGraph.xRange!.min,
+            syncGraph.xRange!.max,
+          );
+        }
+      });
+
+      manualScaleRef.current = {
+        x: syncGraph.xRange,
+        y: manualScaleRef.current?.y ?? { min: 0, max: 1 },
+      };
+      hasChanges = true;
+    }
+
+    if (hasChanges && syncGraph.viewMode === "manual") {
+      setViewMode("manual");
+      setIsLiveMode(false);
+    }
+  }, [syncGraph]);
+
+  // Legacy context sync handler
   const handleSyncUpdate = useCallback(
     (state: SyncState) => {
       if (!uplotRef.current) return;
 
-      // Temporarily disable user zoom detection during sync
       const wasUserZooming = isUserZoomingRef.current;
       isUserZoomingRef.current = false;
 
       if (state.viewMode !== undefined && state.isLiveMode !== undefined) {
-        // Sync view mode
         setViewMode(state.viewMode);
         setIsLiveMode(state.isLiveMode);
 
@@ -628,15 +692,12 @@ export function BigGraph({
           }
         }
       } else if (state.timeWindow !== undefined) {
-        // Sync time window
         setSelectedTimeWindow(state.timeWindow);
         handleTimeWindowChangeInternal(state.timeWindow, true);
       } else {
-        // Sync zoom - this is the key fix
         setViewMode("manual");
         setIsLiveMode(false);
 
-        // Use batch to ensure atomic update
         uplotRef.current.batch(() => {
           uplotRef.current!.setScale("x", {
             min: state.x.min,
@@ -661,7 +722,6 @@ export function BigGraph({
         }
       }
 
-      // Restore the original user zoom state
       setTimeout(() => {
         isUserZoomingRef.current = wasUserZooming;
       }, 10);
@@ -669,6 +729,7 @@ export function BigGraph({
     [newData, selectedTimeWindow],
   );
 
+  // Legacy context registration
   useEffect(() => {
     if (graphSync) {
       const getGraphData = (): GraphExportData | null => ({
@@ -683,7 +744,6 @@ export function BigGraph({
     }
   }, [graphSync, graphId, config, newData, unit, renderValue]);
 
-  // Register with sync context
   useEffect(() => {
     if (graphSync) {
       graphSync.registerGraph(graphId, handleSyncUpdate);
@@ -691,12 +751,10 @@ export function BigGraph({
     }
   }, [graphSync, graphId, handleSyncUpdate]);
 
-  // Linear interpolation function
   const lerp = (start: number, end: number, t: number): number => {
     return start + (end - start) * t;
   };
 
-  // Animate new point addition
   const animateNewPoint = (
     currentData: { timestamps: number[]; values: number[] },
     targetData: { timestamps: number[]; values: number[] },
@@ -705,7 +763,6 @@ export function BigGraph({
       return;
     }
 
-    // Only animate to the exact next point - no prediction
     const newIndex = currentData.timestamps.length;
 
     const prevValue =
@@ -736,12 +793,10 @@ export function BigGraph({
       const elapsed = currentTime - animationStateRef.current.startTime;
       const progress = Math.min(elapsed / POINT_ANIMATION_DURATION, 1);
 
-      // Use current data as base, don't modify it
       const animatedTimestamps = [...currentData.timestamps];
       const animatedValues = [...currentData.values];
 
       if (progress < 1) {
-        // Animate only to the exact target point
         const interpolatedTimestamp = lerp(
           animationStateRef.current.fromTimestamp,
           animationStateRef.current.toTimestamp,
@@ -756,11 +811,9 @@ export function BigGraph({
         animatedTimestamps.push(interpolatedTimestamp);
         animatedValues.push(interpolatedValue);
       } else {
-        // Animation complete - add exactly the target point
         animatedTimestamps.push(animationStateRef.current.toTimestamp);
         animatedValues.push(animationStateRef.current.toValue);
 
-        // Update rendered data to this exact point
         lastRenderedDataRef.current = {
           timestamps: [...animatedTimestamps],
           values: [...animatedValues],
@@ -776,7 +829,6 @@ export function BigGraph({
       );
       uplotRef.current.setData(animatedUData);
 
-      // Update view if in live mode
       if (isLiveMode && animatedTimestamps.length > 0) {
         const latestTimestamp =
           animatedTimestamps[animatedTimestamps.length - 1];
@@ -813,9 +865,7 @@ export function BigGraph({
       if (progress < 1) {
         animationFrameRef.current = requestAnimationFrame(animate);
       } else {
-        // Check if there are more points to animate (only immediate next point)
         if (targetData.timestamps.length > animatedTimestamps.length) {
-          // Animate the next single point
           animateNewPoint(
             { timestamps: animatedTimestamps, values: animatedValues },
             targetData,
@@ -846,18 +896,15 @@ export function BigGraph({
     let visibleValues: number[] = [];
 
     if (xMin !== undefined && xMax !== undefined) {
-      // Get values that are actually visible in the time window
       for (let i = 0; i < timestamps.length; i++) {
         if (timestamps[i] >= xMin && timestamps[i] <= xMax) {
           visibleValues.push(values[i]);
         }
       }
     } else {
-      // Use all values if no time window specified
       visibleValues = [...values];
     }
 
-    // Include line values for proper scaling
     config.lines?.forEach((line) => {
       if (line.show !== false) {
         visibleValues.push(line.value);
@@ -865,7 +912,6 @@ export function BigGraph({
     });
 
     if (visibleValues.length === 0) {
-      // Fallback if no visible values
       visibleValues = values;
     }
 
@@ -873,18 +919,15 @@ export function BigGraph({
     const maxY = Math.max(...visibleValues);
     const range = maxY - minY || Math.abs(maxY) * 0.1 || 1;
 
-    // Add 10% padding above and below
     const yRange = {
       min: minY - range * 0.1,
       max: maxY + range * 0.1,
     };
 
-    // Force Y-axis to update with new range - use batch update
     uplotRef.current.batch(() => {
       uplotRef.current!.setScale("y", yRange);
     });
 
-    // Update manual scale reference if in manual mode
     if (viewMode === "manual" && manualScaleRef.current) {
       manualScaleRef.current.y = yRange;
     }
@@ -948,10 +991,6 @@ export function BigGraph({
       initialMax = lastTimestamp;
     }
 
-    // Calculate initial Y range based on VISIBLE data, not all data
-    let initialYMin: number, initialYMax: number;
-
-    // Get values that are visible in the initial time window
     const initialVisibleValues: number[] = [];
     for (let i = 0; i < timestamps.length; i++) {
       if (timestamps[i] >= initialMin && timestamps[i] <= initialMax) {
@@ -959,14 +998,12 @@ export function BigGraph({
       }
     }
 
-    // Include line values
     config.lines?.forEach((line) => {
       if (line.show !== false) {
         initialVisibleValues.push(line.value);
       }
     });
 
-    // If no visible values, fallback to all values
     if (initialVisibleValues.length === 0) {
       initialVisibleValues.push(...values);
       config.lines?.forEach((line) => {
@@ -976,6 +1013,7 @@ export function BigGraph({
       });
     }
 
+    let initialYMin: number, initialYMax: number;
     if (initialVisibleValues.length > 0) {
       const minY = Math.min(...initialVisibleValues);
       const maxY = Math.max(...initialVisibleValues);
@@ -1067,6 +1105,15 @@ export function BigGraph({
                   setViewMode("manual");
                   setIsLiveMode(false);
 
+                  // Prop-based sync
+                  if (syncGraph?.onZoomChange) {
+                    syncGraph.onZoomChange(graphId, {
+                      min: xScale.min ?? 0,
+                      max: xScale.max ?? 0,
+                    });
+                  }
+
+                  // Legacy context sync
                   if (graphSync) {
                     setTimeout(() => {
                       graphSync.syncZoom(graphId, {
@@ -1110,8 +1157,7 @@ export function BigGraph({
             auto: true,
             min: initialMin,
             max: initialMax,
-            // This ensures linear time scaling - equal intervals = equal distance
-            distr: 1, // Linear distribution
+            distr: 1,
           },
           y: {
             auto: false,
@@ -1150,7 +1196,6 @@ export function BigGraph({
               return ticks.map((ts) => {
                 const date = new Date(ts);
 
-                // For very short ranges (≤ 30s), show full time with seconds
                 if (timeRange <= 30 * 1000) {
                   return date.toLocaleTimeString("en-GB", {
                     hour12: false,
@@ -1158,26 +1203,20 @@ export function BigGraph({
                     minute: "2-digit",
                     second: "2-digit",
                   });
-                }
-                // For short ranges (≤ 5min), show time with seconds
-                else if (timeRange <= 5 * 60 * 1000) {
+                } else if (timeRange <= 5 * 60 * 1000) {
                   return date.toLocaleTimeString("en-GB", {
                     hour12: false,
                     hour: "2-digit",
                     minute: "2-digit",
                     second: "2-digit",
                   });
-                }
-                // For medium ranges (≤ 1hour), show HH:MM
-                else if (timeRange <= 60 * 60 * 1000) {
+                } else if (timeRange <= 60 * 60 * 1000) {
                   return date.toLocaleTimeString("en-GB", {
                     hour12: false,
                     hour: "2-digit",
                     minute: "2-digit",
                   });
-                }
-                // For longer ranges, show HH:MM
-                else {
+                } else {
                   return date.toLocaleTimeString("en-GB", {
                     hour12: false,
                     hour: "2-digit",
@@ -1198,64 +1237,47 @@ export function BigGraph({
               const timeRange = scaleMax - scaleMin;
               const ticks: number[] = [];
 
-              // For ≤ 10 seconds: every 1 second
               if (timeRange <= 10 * 1000) {
                 const startTime = Math.ceil(scaleMin / 1000) * 1000;
                 for (let t = startTime; t <= scaleMax; t += 1000) {
                   if (t >= scaleMin) ticks.push(t);
                 }
-              }
-              // For ≤ 30 seconds: every 5 seconds
-              else if (timeRange <= 30 * 1000) {
+              } else if (timeRange <= 30 * 1000) {
                 const startTime = Math.ceil(scaleMin / 5000) * 5000;
                 for (let t = startTime; t <= scaleMax; t += 5000) {
                   if (t >= scaleMin) ticks.push(t);
                 }
-              }
-              // For ≤ 1 minute: every 10 seconds
-              else if (timeRange <= 60 * 1000) {
+              } else if (timeRange <= 60 * 1000) {
                 const startTime = Math.ceil(scaleMin / 10000) * 10000;
                 for (let t = startTime; t <= scaleMax; t += 10000) {
                   if (t >= scaleMin) ticks.push(t);
                 }
-              }
-              // For ≤ 5 minutes: every 30 seconds
-              else if (timeRange <= 5 * 60 * 1000) {
+              } else if (timeRange <= 5 * 60 * 1000) {
                 const startTime = Math.ceil(scaleMin / 30000) * 30000;
                 for (let t = startTime; t <= scaleMax; t += 30000) {
                   if (t >= scaleMin) ticks.push(t);
                 }
-              }
-              // For ≤ 10 minutes: every 1 minute
-              else if (timeRange <= 10 * 60 * 1000) {
+              } else if (timeRange <= 10 * 60 * 1000) {
                 const startTime = Math.ceil(scaleMin / 60000) * 60000;
                 for (let t = startTime; t <= scaleMax; t += 60000) {
                   if (t >= scaleMin) ticks.push(t);
                 }
-              }
-              // For ≤ 30 minutes: every 2 minutes
-              else if (timeRange <= 30 * 60 * 1000) {
+              } else if (timeRange <= 30 * 60 * 1000) {
                 const startTime = Math.ceil(scaleMin / 120000) * 120000;
                 for (let t = startTime; t <= scaleMax; t += 120000) {
                   if (t >= scaleMin) ticks.push(t);
                 }
-              }
-              // For ≤ 1 hour: every 5 minutes
-              else if (timeRange <= 60 * 60 * 1000) {
+              } else if (timeRange <= 60 * 60 * 1000) {
                 const startTime = Math.ceil(scaleMin / 300000) * 300000;
                 for (let t = startTime; t <= scaleMax; t += 300000) {
                   if (t >= scaleMin) ticks.push(t);
                 }
-              }
-              // For ≤ 6 hours: every 30 minutes
-              else if (timeRange <= 6 * 60 * 60 * 1000) {
+              } else if (timeRange <= 6 * 60 * 60 * 1000) {
                 const startTime = Math.ceil(scaleMin / 1800000) * 1800000;
                 for (let t = startTime; t <= scaleMax; t += 1800000) {
                   if (t >= scaleMin) ticks.push(t);
                 }
-              }
-              // For longer ranges: every 1 hour
-              else {
+              } else {
                 const startTime = Math.ceil(scaleMin / 3600000) * 3600000;
                 for (let t = startTime; t <= scaleMax; t += 3600000) {
                   if (t >= scaleMin) ticks.push(t);
@@ -1266,7 +1288,6 @@ export function BigGraph({
             },
           },
 
-          // Y-axis remains the same
           {
             stroke: colors.axis,
             labelSize: 12,
@@ -1275,18 +1296,15 @@ export function BigGraph({
             side: 1,
             space: 60,
             values: (_u, ticks) => {
-              // First try with renderValue function
               if (renderValue) {
                 const renderedValues = ticks.map(renderValue);
                 const uniqueValues = new Set(renderedValues);
 
-                // If no duplicates, use renderValue
                 if (uniqueValues.size === renderedValues.length) {
                   return renderedValues;
                 }
               }
 
-              // If renderValue creates duplicates or doesn't exist, find optimal precision
               const precision = 0;
               const maxPrecision = 4;
 
@@ -1294,13 +1312,11 @@ export function BigGraph({
                 const formattedValues = ticks.map((v) => v.toFixed(p));
                 const uniqueFormatted = new Set(formattedValues);
 
-                // If all values are unique at this precision, use it
                 if (uniqueFormatted.size === formattedValues.length) {
                   return formattedValues;
                 }
               }
 
-              // Fallback: use maximum precision
               return ticks.map((v) => v.toFixed(maxPrecision));
             },
           },
@@ -1321,9 +1337,7 @@ export function BigGraph({
       };
       touchDirectionRef.current = "unknown";
 
-      // Only handle multi-touch gestures - let single touch scroll normally
       if (e.touches.length === 2) {
-        // Two fingers - pinch to zoom
         isPinchingRef.current = true;
         isDraggingRef.current = false;
         touchDirectionRef.current = "horizontal";
@@ -1342,39 +1356,34 @@ export function BigGraph({
           y: (touch1.clientY + touch2.clientY) / 2,
         };
 
-        e.preventDefault(); // Only prevent for 2+ finger gestures
+        e.preventDefault();
       }
-      // For single finger, don't prevent default - allow normal scrolling
     };
 
     const handleTouchMove = (e: TouchEvent) => {
       if (!touchStartRef.current) return;
 
       if (e.touches.length === 1) {
-        // Single finger - ONLY interfere if it's a very clear horizontal drag attempt
         const touch = e.touches[0];
         const deltaX = Math.abs(touch.clientX - touchStartRef.current.x);
         const deltaY = Math.abs(touch.clientY - touchStartRef.current.y);
         const timeDelta = Date.now() - touchStartRef.current.time;
 
-        // Much more strict criteria for chart interaction
         if (
           touchDirectionRef.current === "unknown" &&
-          deltaX > 20 && // Higher threshold
-          deltaY < 10 && // Very low vertical tolerance
-          deltaX > deltaY * 4 && // Much stricter ratio
-          timeDelta < 500 // Must be quick movement
+          deltaX > 20 &&
+          deltaY < 10 &&
+          deltaX > deltaY * 4 &&
+          timeDelta < 500
         ) {
           touchDirectionRef.current = "horizontal";
           isDraggingRef.current = true;
           lastDragXRef.current = touch.clientX;
-          e.preventDefault(); // Only now prevent default
+          e.preventDefault();
         } else if (touchDirectionRef.current === "unknown") {
-          // Any other movement - allow normal page scrolling
           return;
         }
 
-        // Handle chart dragging only if we've confirmed it's horizontal
         if (
           touchDirectionRef.current === "horizontal" &&
           isDraggingRef.current
@@ -1413,6 +1422,15 @@ export function BigGraph({
               setViewMode("manual");
               setIsLiveMode(false);
 
+              // Prop-based sync
+              if (syncGraph?.onZoomChange) {
+                syncGraph.onZoomChange(graphId, {
+                  min: newMin,
+                  max: newMax,
+                });
+              }
+
+              // Legacy context sync
               if (graphSync) {
                 graphSync.syncZoom(graphId, {
                   x: { min: newMin, max: newMax },
@@ -1422,7 +1440,6 @@ export function BigGraph({
           }
         }
       } else if (e.touches.length === 2 && isPinchingRef.current) {
-        // Two finger pinch zoom
         e.preventDefault();
 
         const touch1 = e.touches[0];
@@ -1473,6 +1490,15 @@ export function BigGraph({
               setViewMode("manual");
               setIsLiveMode(false);
 
+              // Prop-based sync
+              if (syncGraph?.onZoomChange) {
+                syncGraph.onZoomChange(graphId, {
+                  min: newMin,
+                  max: newMax,
+                });
+              }
+
+              // Legacy context sync
               if (graphSync) {
                 graphSync.syncZoom(graphId, {
                   x: { min: newMin, max: newMax },
@@ -1484,12 +1510,10 @@ export function BigGraph({
 
         lastPinchDistanceRef.current = newDistance;
       }
-      // For all other cases, don't prevent default - allow normal scrolling
     };
 
     const handleTouchEnd = (e: TouchEvent) => {
       if (e.touches.length === 0) {
-        // All fingers lifted - reset everything
         isDraggingRef.current = false;
         isPinchingRef.current = false;
         lastDragXRef.current = null;
@@ -1498,12 +1522,10 @@ export function BigGraph({
         touchStartRef.current = null;
         touchDirectionRef.current = "unknown";
       } else if (e.touches.length === 1 && isPinchingRef.current) {
-        // Went from pinch to single finger
         isPinchingRef.current = false;
         lastPinchDistanceRef.current = null;
         pinchCenterRef.current = null;
 
-        // Reset for potential new interaction
         const touch = e.touches[0];
         touchStartRef.current = {
           x: touch.clientX,
@@ -1514,7 +1536,6 @@ export function BigGraph({
         isDraggingRef.current = false;
       }
 
-      // Only prevent default if we actually intercepted the gesture
       if (touchDirectionRef.current === "horizontal" && isDraggingRef.current) {
         e.preventDefault();
       }
@@ -1531,7 +1552,6 @@ export function BigGraph({
     };
 
     if (containerRef.current && uplotRef.current) {
-      // Touch events with more permissive settings
       containerRef.current.addEventListener("touchstart", handleTouchStart, {
         passive: false,
       });
@@ -1542,10 +1562,8 @@ export function BigGraph({
         passive: false,
       });
 
-      // Mouse events
       containerRef.current.addEventListener("mousedown", handleMouseDown);
 
-      // Remove or modify wheel handler to be less aggressive
       containerRef.current.addEventListener("wheel", handleWheel, {
         passive: false,
       });
@@ -1561,106 +1579,6 @@ export function BigGraph({
 
   const isSwitchingModeRef = useRef(false);
   const isUserTimeWindowChangeRef = useRef(false);
-
-  const switchToLiveMode = () => {
-    isSwitchingModeRef.current = true;
-    stopAnimations();
-
-    const currentTimeWindow = selectedTimeWindow;
-
-    setIsLiveMode(true);
-
-    if (currentTimeWindow === "all") {
-      setViewMode("all");
-    } else {
-      setViewMode("default");
-    }
-
-    // Broadcast mode change to other graphs
-    if (graphSync && !isSyncingRef.current) {
-      graphSync.syncViewMode(
-        graphId,
-        currentTimeWindow === "all" ? "all" : "default",
-        true,
-      );
-    }
-
-    if (uplotRef.current && newData?.long) {
-      const [timestamps, values] = seriesToUPlotData(newData.long);
-      const fullData = buildUPlotData(timestamps, values);
-      uplotRef.current.setData(fullData);
-
-      if (timestamps.length > 0) {
-        const latestTimestamp = timestamps[timestamps.length - 1];
-
-        if (currentTimeWindow === "all") {
-          const fullStart = startTimeRef.current ?? timestamps[0];
-          uplotRef.current.setScale("x", {
-            min: fullStart,
-            max: latestTimestamp,
-          });
-          updateYAxisScale(timestamps, values, fullStart, latestTimestamp);
-        } else {
-          const viewStart = latestTimestamp - (currentTimeWindow as number);
-          uplotRef.current.setScale("x", {
-            min: viewStart,
-            max: latestTimestamp,
-          });
-          updateYAxisScale(timestamps, values, viewStart, latestTimestamp);
-        }
-
-        manualScaleRef.current = null;
-      }
-
-      lastRenderedDataRef.current = { timestamps, values };
-    }
-
-    setTimeout(() => {
-      isSwitchingModeRef.current = false;
-    }, 100);
-  };
-
-  const switchToHistoricalMode = () => {
-    isSwitchingModeRef.current = true;
-    stopAnimations();
-
-    setIsLiveMode(false);
-    setViewMode("manual");
-
-    // Broadcast mode change to other graphs
-    if (graphSync && !isSyncingRef.current) {
-      graphSync.syncViewMode(graphId, "manual", false);
-    }
-
-    if (uplotRef.current && uplotRef.current.scales) {
-      const xScale = uplotRef.current.scales.x;
-      const yScale = uplotRef.current.scales.y;
-      if (
-        xScale &&
-        yScale &&
-        xScale.min !== undefined &&
-        xScale.max !== undefined &&
-        yScale.min !== undefined &&
-        yScale.max !== undefined
-      ) {
-        manualScaleRef.current = {
-          x: { min: xScale.min, max: xScale.max },
-          y: { min: yScale.min, max: yScale.max },
-        };
-      }
-    }
-
-    if (uplotRef.current && newData?.long) {
-      const [timestamps, values] = seriesToUPlotData(newData.long);
-      const fullData = buildUPlotData(timestamps, values);
-      uplotRef.current.setData(fullData);
-      lastRenderedDataRef.current = { timestamps, values };
-    }
-
-    setTimeout(() => {
-      isSwitchingModeRef.current = false;
-    }, 100);
-  };
 
   const handleTimeWindowChangeInternal = (
     newTimeWindow: number | "all",
@@ -1713,7 +1631,6 @@ export function BigGraph({
         updateYAxisScale(timestamps, values, viewStart, latestTimestamp);
         manualScaleRef.current = null;
       } else {
-        // Historical mode - this is the key fix to match your simple version
         const rightmostTimestamp = getRightmostVisibleTimestamp();
         if (rightmostTimestamp) {
           const newViewStart = rightmostTimestamp - newTimeWindow;
@@ -1721,7 +1638,6 @@ export function BigGraph({
             min: newViewStart,
             max: rightmostTimestamp,
           });
-          // This is the crucial call - auto-scale Y-axis for the new time window
           updateYAxisScale(
             timestamps,
             values,
@@ -1742,7 +1658,12 @@ export function BigGraph({
 
     lastRenderedDataRef.current = { timestamps, values };
 
-    // Broadcast time window change to other graphs
+    // Prop-based sync
+    if (!isSync && syncGraph?.onTimeWindowChange) {
+      syncGraph.onTimeWindowChange(graphId, newTimeWindow);
+    }
+
+    // Legacy context sync
     if (graphSync && !isSync && !isSyncingRef.current) {
       graphSync.syncTimeWindow(graphId, newTimeWindow);
     }
@@ -1752,11 +1673,6 @@ export function BigGraph({
         isUserTimeWindowChangeRef.current = false;
       }, 50);
     }
-  };
-
-  // Public time window change function
-  const handleTimeWindowChange = (newTimeWindow: number | "all") => {
-    handleTimeWindowChangeInternal(newTimeWindow, false);
   };
 
   // Chart creation effect
@@ -1799,12 +1715,10 @@ export function BigGraph({
     const currentData = lastRenderedDataRef.current;
     const targetData = { timestamps, values };
 
-    // Only animate if we have new points, and only animate to existing data
     if (targetData.timestamps.length > currentData.timestamps.length) {
-      // Ensure we don't animate beyond actual data
       const maxAnimatableLength = Math.min(
         targetData.timestamps.length,
-        currentData.timestamps.length + 1, // Only one point ahead at a time
+        currentData.timestamps.length + 1,
       );
 
       const limitedTargetData = {
@@ -1814,7 +1728,6 @@ export function BigGraph({
 
       animateNewPoint(currentData, limitedTargetData);
     } else if (targetData.timestamps.length === currentData.timestamps.length) {
-      // Handle value updates without animation
       let hasChanges = false;
       for (let i = 0; i < targetData.values.length; i++) {
         if (Math.abs(targetData.values[i] - currentData.values[i]) > 0.001) {
@@ -1828,7 +1741,6 @@ export function BigGraph({
         uplotRef.current.setData(uData);
         lastRenderedDataRef.current = { timestamps, values };
 
-        // Update view scales
         const lastTimestamp = timestamps[timestamps.length - 1] ?? 0;
         if (viewMode === "default") {
           let xMin: number | undefined, xMax: number | undefined;
@@ -1862,7 +1774,6 @@ export function BigGraph({
     isLiveMode,
   ]);
 
-  // Live data updates effect
   useEffect(() => {
     if (
       !uplotRef.current ||
@@ -1881,7 +1792,6 @@ export function BigGraph({
       const liveTimestamps = [...timestamps];
       const liveValues = [...values];
 
-      // Always add the current point for live updates
       liveTimestamps.push(cur.timestamp);
       liveValues.push(cur.value);
 
@@ -1902,7 +1812,6 @@ export function BigGraph({
           xMax = latestTimestamp;
         }
 
-        // Force immediate scale update to prevent time gaps
         uplotRef.current.batch(() => {
           uplotRef.current!.setScale("x", { min: xMin, max: xMax });
           updateYAxisScale(liveTimestamps, liveValues, xMin, xMax);
@@ -1940,19 +1849,10 @@ export function BigGraph({
   const displayValue =
     cursorValue !== null ? cursorValue : newData?.current?.value;
 
-  const getSelectedTimeWindowLabel = () => {
-    const option = timeWindowOptions.find(
-      (opt) => opt.value === selectedTimeWindow,
-    );
-    return option ? option.label : "1m";
-  };
-
   return (
     <div className="h-[50vh] w-full">
       <div className="flex h-full w-full flex-col overflow-hidden rounded-3xl border border-gray-200 bg-white shadow">
-        {/* Header */}
         <div className="flex items-center justify-between pt-4 pr-5 pb-6 pl-6">
-          {/* Left side - Icon, Title, Current value */}
           <div className="mt-1 flex items-center gap-4">
             <Icon
               name={unit ? getUnitIcon(unit) : "lu:TrendingUp"}
@@ -1978,12 +1878,10 @@ export function BigGraph({
           </div>
         </div>
 
-        {/* Separator line with padding */}
         <div className="-mt-2 px-6">
           <div className="h-px bg-gray-200"></div>
         </div>
 
-        {/* Graph Container - full width with only vertical padding */}
         <div className="flex-1 overflow-hidden rounded-b-3xl pt-4">
           <div
             ref={containerRef}
@@ -2004,6 +1902,8 @@ export function DiameterGraph({
   target,
   unit,
   renderValue,
+  syncState,
+  syncCallbacks,
 }: {
   newData: TimeSeries | null;
   threshold1: number;
@@ -2011,6 +1911,8 @@ export function DiameterGraph({
   target: number;
   unit?: Unit;
   renderValue?: (value: number) => string;
+  syncState?: PropSyncState;
+  syncCallbacks?: PropSyncCallbacks;
 }) {
   const config: GraphConfig = {
     title: "Diameter",
@@ -2051,8 +1953,9 @@ export function DiameterGraph({
       unit={unit}
       renderValue={renderValue}
       config={config}
-      syncGroupId="diameter-group"
       graphId="diameter-main"
+      syncState={syncState}
+      syncCallbacks={syncCallbacks}
     />
   );
 }

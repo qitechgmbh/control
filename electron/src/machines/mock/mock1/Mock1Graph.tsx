@@ -25,7 +25,7 @@ export function Mock1GraphPage() {
           <GraphControls groupId="mock" />
           <BigGraph
             newData={sineWave}
-            config={config}
+            config={{ ...config, title: "Sine Wave (Original)" }}
             unit={"mm"}
             renderValue={(value) => value.toFixed(3)}
             syncGroupId="mock"
@@ -33,22 +33,25 @@ export function Mock1GraphPage() {
           />
           <BigGraph
             newData={sineWave}
-            config={config}
+            config={{ ...config, title: "Sine Wave (+0.1)" }}
             unit={"mm"}
+            renderValue={(value) => value.toFixed(3)}
             syncGroupId="mock"
             graphId="1-graph"
           />
           <BigGraph
             newData={sineWave}
-            config={config}
+            config={{ ...config, title: "Sine Wave (+0.2)" }}
             unit={"mm"}
+            renderValue={(value) => value.toFixed(3)}
             syncGroupId="mock"
             graphId="2-graph"
           />
           <BigGraph
             newData={sineWave}
-            config={config}
+            config={{ ...config, title: "Sine Wave (+0.3)" }}
             unit={"mm"}
+            renderValue={(value) => value.toFixed(3)}
             syncGroupId="mock"
             graphId="3-graph"
           />
