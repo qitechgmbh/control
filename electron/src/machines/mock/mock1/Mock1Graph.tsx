@@ -28,7 +28,7 @@ export function Mock1GraphPage() {
         <AutoSyncedBigGraph
           syncHook={syncHook}
           newData={sineWave}
-          config={{ ...config, title: "Sine Wave (Original)" }}
+          config={{ ...config, title: "Sine Wave 1" }}
           unit={"mm"}
           renderValue={(value) => value.toFixed(3)}
           graphId="0-graph"
@@ -37,7 +37,7 @@ export function Mock1GraphPage() {
         <AutoSyncedBigGraph
           syncHook={syncHook}
           newData={sineWave}
-          config={{ ...config, title: "Sine Wave (+0.1)" }}
+          config={{ ...config, title: "Sine Wave 2" }}
           unit={"mm"}
           renderValue={(value) => value.toFixed(3)}
           graphId="1-graph"
@@ -46,7 +46,7 @@ export function Mock1GraphPage() {
         <AutoSyncedBigGraph
           syncHook={syncHook}
           newData={sineWave}
-          config={{ ...config, title: "Sine Wave (+0.2)" }}
+          config={{ ...config, title: "Sine Wave 3" }}
           unit={"mm"}
           renderValue={(value) => value.toFixed(3)}
           graphId="2-graph"
@@ -55,7 +55,7 @@ export function Mock1GraphPage() {
         <AutoSyncedBigGraph
           syncHook={syncHook}
           newData={sineWave}
-          config={{ ...config, title: "Sine Wave (+0.3)" }}
+          config={{ ...config, title: "Sine Wave 4" }}
           unit={"mm"}
           renderValue={(value) => value.toFixed(3)}
           graphId="3-graph"

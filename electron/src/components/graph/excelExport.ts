@@ -22,7 +22,7 @@ export function exportGraphsToExcel(
       .slice(0, 19);
 
     // Create group summary sheet
-    const groupSummaryData = createGroupSummaryData(groupId, graphDataMap);
+    const groupSummaryData = createGroupSummaryData(graphDataMap);
 
     const hasValidData = addGraphSummaryToWorkbook(
       groupSummaryData,
@@ -57,13 +57,11 @@ export function exportGraphsToExcel(
 }
 
 function createGroupSummaryData(
-  groupId: string,
   graphDataMap: Map<string, () => GraphExportData | null>,
 ): any[][] {
   return [
-    [`${groupId} Export Summary`, ""],
+    [`Export Summary`, ""],
     ["Export Date", new Date()],
-    ["Group ID", groupId],
     ["Total Graphs", graphDataMap.size.toString()],
     ["", ""],
     ["Graphs in this export:", ""],
@@ -115,7 +113,6 @@ function exportIndividualGraphs(
     // Create summary sheet for this graph
     const graphSummaryData = createGraphSummaryData(
       exportData,
-      graphId,
       timestamps,
       values,
     );
@@ -203,13 +200,11 @@ function generateUniqueSheetNames(
 
 function createGraphSummaryData(
   exportData: GraphExportData,
-  graphId: string,
   timestamps: number[],
   values: number[],
 ): any[][] {
   const graphSummaryData = [
-    [`${exportData.config.title} Summary (${graphId})`, ""],
-    ["Graph ID", graphId],
+    [`Summary ${exportData.config.title} `, ""],
     ["Export Date", new Date()],
     ["", ""],
     ["Parameters", ""],

@@ -10,9 +10,6 @@ export {
   AutoSyncedBigGraph,
 } from "./SyncedComponents";
 
-// Specialized graphs
-export { DiameterGraph } from "./SpecializedGraphs";
-
 // Hooks
 export { useGraphSync } from "./useGraphSync";
 
