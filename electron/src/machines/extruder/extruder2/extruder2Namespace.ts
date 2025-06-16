@@ -111,7 +111,7 @@ export function extruder2MessageHandler(
 
     try {
       if (eventName == "ExtruderSettingsStateEvent") {
-        store.setState((state) => ({
+        updateStore((state) => ({
           ...state,
           extruderSettingsState: extruderSettingsStateEventSchema.parse(event),
         }));
