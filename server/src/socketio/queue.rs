@@ -93,9 +93,11 @@ pub fn init_socketio_queue(thread_panic_tx: Sender<PanicDetails>, app_state: Arc
                                 let elapsed = batch_start.elapsed();
                                 if event_count > 0 {
                                     debug!(
-                                        events_per_second =
-                                            (event_count as f64 / elapsed.as_secs_f64()) as u64,
-                                        "SocketIO Stats"
+                                        "[{}::init_socketio_queue] Processed {} events in {:.2?} ({:.1} events/s)",
+                                        module_path!(),
+                                        event_count,
+                                        elapsed,
+                                        event_count as f64 / elapsed.as_secs_f64(),
                                     );
                                 }
                                 event_count = 0;
