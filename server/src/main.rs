@@ -14,6 +14,7 @@ use app_state::AppState;
 use mock::init::init_mock;
 use std::{sync::Arc, time::Duration};
 
+use control_core::realtime::lock_memory;
 use ethercat::init::init_ethercat;
 use r#loop::init_loop;
 use rest::init::init_api;
@@ -44,6 +45,13 @@ pub mod jemalloc_stats;
 fn main() {
     // Initialize panic handling
     let thread_panic_tx = init_panic();
+
+    // lock memory
+    if let Err(e) = lock_memory() {
+        tracing::error!("[{}::main] Failed to lock memory: {:?}", module_path!(), e);
+    } else {
+        tracing::info!("[{}::main] Memory locked successfully", module_path!());
+    }
 
     logging::init_tracing();
     tracing::info!("Tracing initialized successfully");

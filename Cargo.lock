@@ -586,6 +586,7 @@ dependencies = [
  "ethercat_hal",
  "ethercrab",
  "interfaces",
+ "libc",
  "serde",
  "serde_json",
  "serial",
