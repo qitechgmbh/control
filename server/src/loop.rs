@@ -2,11 +2,11 @@ use crate::app_state::AppState;
 use crate::panic::{PanicDetails, send_panic};
 use bitvec::prelude::*;
 use control_core::helpers::loop_trottle::LoopThrottle;
+use control_core::helpers::retry::retry_conditionally_async;
 use smol::channel::Sender;
 use std::sync::Arc;
 use std::time::Duration;
-use tracing::{info_span, instrument, trace_span};
-use tracing_futures::Instrument as _;
+use tracing::{debug, error, instrument, trace_span};
 
 pub fn init_loop(
     thread_panic_tx: Sender<PanicDetails>,
@@ -18,7 +18,7 @@ pub fn init_loop(
         .spawn(move || {
             send_panic(thread_panic_tx.clone());
             let rt = smol::LocalExecutor::new();
-            let mut throttle = LoopThrottle::new(Duration::from_millis(1), 1, None);
+            let mut throttle = LoopThrottle::new(Duration::from_millis(1), 10, None);
             loop {
                 let res = smol::block_on(rt.run(async {
                     throttle.sleep().await;
@@ -59,7 +59,6 @@ pub async fn loop_once<'maindevice>(app_state: Arc<AppState>) -> Result<(), anyh
         let span = trace_span!("loop_once_inputs");
         let _enter = span.enter();
 
-        // TX/RX cycle
         ethercat_setup
             .group
             .tx_rx(&ethercat_setup.maindevice)
