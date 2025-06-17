@@ -10,7 +10,7 @@ use anyhow::anyhow;
 use control_core::{
     helpers::{
         hashing::{hashing, xor_u128_to_u16},
-        retry::retry,
+        retry::retry_n_times,
     },
     machines::identification::{
         DeviceHardwareIdentification, DeviceHardwareIdentificationSerial, DeviceIdentification,
@@ -174,7 +174,7 @@ impl Laser {
 
         loop {
             // send diameter request
-            let response = retry(10, || {
+            let response = retry_n_times(10, || {
                 if let Err(e) = port.write_all(&request_buffer) {
                     return Err(anyhow!("Failed to write to port: {}", e));
                 }
