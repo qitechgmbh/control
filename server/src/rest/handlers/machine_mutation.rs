@@ -49,9 +49,9 @@ async fn _post_machine_mutate(
 
     // log
     tracing::info!(
-        machine = %body.machine_identification_unique,
-        data = ?body.data,
-        "Mutating machine"
+        "Mutating machine machine={} data={:?}",
+        body.machine_identification_unique,
+        body.data,
     );
     let span = tracing::info_span!("machine_mutate", machine = %body.machine_identification_unique);
     let _span = span.enter();

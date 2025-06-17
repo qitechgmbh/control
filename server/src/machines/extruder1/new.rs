@@ -31,7 +31,7 @@ use ethercat_hal::{
         el3204::{EL3204, EL3204_IDENTITY_A, EL3204_IDENTITY_B, EL3204Port},
         el6021::{
             self, EL6021, EL6021_IDENTITY_A, EL6021_IDENTITY_B, EL6021_IDENTITY_C,
-            EL6021Configuration,
+            EL6021_IDENTITY_D, EL6021Configuration,
         },
         subdevice_identity_to_tuple,
     },
@@ -169,7 +169,8 @@ impl MachineNewTrait for ExtruderV2 {
                 let subdevice = get_subdevice_by_index(hardware.subdevices, subdevice_index)?;
                 let subdevice_identity = subdevice.identity();
                 let device = match subdevice_identity_to_tuple(&subdevice_identity) {
-                    EL6021_IDENTITY_A | EL6021_IDENTITY_B | EL6021_IDENTITY_C => {
+                    EL6021_IDENTITY_A | EL6021_IDENTITY_B | EL6021_IDENTITY_C
+                    | EL6021_IDENTITY_D => {
                         let ethercat_device = get_ethercat_device_by_index(
                             &hardware.ethercat_devices,
                             subdevice_index,
@@ -339,6 +340,7 @@ impl MachineNewTrait for ExtruderV2 {
                 Heating::default(),
                 Duration::from_millis(500),
                 700.0,
+                1.0,
             );
 
             // Only front heating on: These values work 0.08, 0.001, 0.007, Overshoot 0.5 undershoot ~0.7 (Problems when starting far away because of integral)
@@ -353,6 +355,7 @@ impl MachineNewTrait for ExtruderV2 {
                 Heating::default(),
                 Duration::from_millis(500),
                 700.0,
+                1.0,
             );
 
             // Only front heating on: These values work 0.08, 0.001, 0.007, Overshoot 0.5 undershoot ~0.7 (Problems when starting far away because of integral)
@@ -367,6 +370,7 @@ impl MachineNewTrait for ExtruderV2 {
                 Heating::default(),
                 Duration::from_millis(500),
                 700.0,
+                1.0,
             );
 
             // Only front heating on: These values work 0.08, 0.001, 0.007, Overshoot 0.5 undershoot ~0.7 (Problems when starting far away because of integral)
@@ -381,6 +385,7 @@ impl MachineNewTrait for ExtruderV2 {
                 Heating::default(),
                 Duration::from_millis(500),
                 200.0,
+                0.95,
             );
 
             let inverter = MitsubishiInverterRS485Actor::new(SerialInterface::new(
@@ -395,7 +400,7 @@ impl MachineNewTrait for ExtruderV2 {
                 ScrewSpeedController::new(inverter, target_pressure, target_rpm, pressure_sensor);
 
             let extruder: ExtruderV2 = Self {
-                namespace: ExtruderV2Namespace::new(),
+                namespace: ExtruderV2Namespace::new(params.socket_queue_tx.clone()),
                 last_measurement_emit: Instant::now(),
                 mode: ExtruderV2Mode::Standby,
                 temperature_controller_front: temperature_controller_front,
