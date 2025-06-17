@@ -8,8 +8,6 @@ import {
   REACT_DEVELOPER_TOOLS,
 } from "electron-devtools-installer";
 
-const inDevelopment = process.env.NODE_ENV === "development";
-
 // Set consistent app ID for Windows taskbar and GNOME dock integration
 app.setAppUserModelId("de.qitech.control-electron");
 
@@ -38,7 +36,7 @@ function createWindow() {
     autoHideMenuBar: true,
     fullscreenable: true,
     webPreferences: {
-      devTools: inDevelopment,
+      devTools: true, // Always enable DevTools in all builds
       contextIsolation: true,
       nodeIntegration: true,
       nodeIntegrationInSubFrames: false,
@@ -68,8 +66,8 @@ async function installExtensions() {
   try {
     const result = await installExtension(REACT_DEVELOPER_TOOLS);
     console.log(`Extensions installed successfully: ${result.name}`);
-  } catch {
-    console.error("Failed to install extensions");
+  } catch (error) {
+    console.error("Failed to install extensions:", error);
   }
 }
 
