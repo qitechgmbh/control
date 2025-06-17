@@ -1,17 +1,5 @@
 # --- Build stage ---
-FROM rust:1.67 as builder
-
-
-
-
-
-
-
-
-WORKDIR /app
-
-#Updating Rust toolchain to nightly for the latest features and fixes
-RUN rustup update nightly && rustup default nightly
+FROM rust:1.86
 
 WORKDIR /app
 
@@ -20,31 +8,8 @@ RUN apt-get update && \
     apt-get install -y libssl-dev ca-certificates libudev-dev pkg-config && \
     rm -rf /var/lib/apt/lists/*
 
-
-# Copy the Cargo configuration and source code
-COPY Cargo.toml Cargo.lock ./
-COPY server ./server
-COPY control-core ./control-core
-COPY ethercat-hal ./ethercat-hal
-COPY ethercat-hal-derive ./ethercat-hal-derive
-COPY ethercat-eeprom-dump ./ethercat-eeprom-dump
-
-RUN cargo fetch 
-RUN cargo build --features mock-machine
-
-
-
-# Set Runtime stage
-FROM debian:bookworm-slim
-
-WORKDIR /app
-
-
-# Copy the compiled binary from the builder
-COPY --from=builder /app/target/debug/server /app/server
-
 # Expose the server port
 EXPOSE 3001
 
-# Start the server mit Mock-Konfiguration
-CMD ["./server", "--mock"]
+# Start Server
+CMD ["cargo", "run", "--features", "mock-machine", "--manifest-path", "server/Cargo toml", "--", "--mock"]
