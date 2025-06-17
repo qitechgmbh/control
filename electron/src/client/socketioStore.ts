@@ -64,8 +64,17 @@ export class ThrottledStoreUpdater<S> {
    * Sync the entire buffer to the store
    */
   private syncToStore(): void {
-    this.store.setState(this.buffer);
-    this.syncTimer = null;
+    try {
+      this.store.setState(this.buffer);
+      this.syncTimer = null;
+    } catch (error) {
+      console.error("Error syncing to store:", error);
+      this.syncTimer = null;
+      // Retry after a short delay
+      setTimeout(() => {
+        this.scheduleSync();
+      }, 100);
+    }
   }
 
   /**
