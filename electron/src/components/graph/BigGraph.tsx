@@ -50,6 +50,10 @@ export function BigGraph({
   const isPinchingRef = useRef(false);
   const lastPinchDistanceRef = useRef<number | null>(null);
   const pinchCenterRef = useRef<{ x: number; y: number } | null>(null);
+  const lastProcessedCountRef = useRef(0);
+
+  // CRITICAL FIX: Store the freeze timestamp when switching to historical mode
+  const historicalFreezeTimestampRef = useRef<number | null>(null);
 
   // Touch direction detection
   const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(
@@ -90,6 +94,46 @@ export function BigGraph({
     background: config.colors?.background ?? DEFAULT_COLORS.background,
   };
 
+  // Helper function to get current live end timestamp
+  const getCurrentLiveEndTimestamp = useCallback((): number => {
+    if (!newData?.long) return Date.now();
+
+    const [timestamps] = seriesToUPlotData(newData.long);
+    if (timestamps.length === 0) return Date.now();
+
+    // Use current data if available and newer, otherwise use last data point
+    const lastDataTimestamp = timestamps[timestamps.length - 1];
+    const currentTimestamp = newData.current?.timestamp;
+
+    if (currentTimestamp && currentTimestamp > lastDataTimestamp) {
+      return currentTimestamp;
+    }
+
+    return lastDataTimestamp;
+  }, [newData]);
+
+  const captureHistoricalFreezeTimestamp = useCallback(() => {
+    // Always get the current live timestamp when switching to historical
+    const currentLiveEnd = getCurrentLiveEndTimestamp();
+    historicalFreezeTimestampRef.current = currentLiveEnd;
+    console.log(
+      "🔒 Captured new freeze timestamp:",
+      new Date(currentLiveEnd).toISOString(),
+    );
+    return currentLiveEnd;
+  }, [getCurrentLiveEndTimestamp]);
+
+  // Helper function to get historical end timestamp
+  const getHistoricalEndTimestamp = useCallback((): number => {
+    // If we're in historical mode and have a freeze timestamp, use it
+    if (!isLiveMode && historicalFreezeTimestampRef.current !== null) {
+      return historicalFreezeTimestampRef.current;
+    }
+
+    // Otherwise get current live end timestamp
+    return getCurrentLiveEndTimestamp();
+  }, [isLiveMode, getCurrentLiveEndTimestamp]);
+
   // Export registration effect
   useEffect(() => {
     if (onRegisterForExport) {
@@ -124,7 +168,6 @@ export function BigGraph({
     onUnregisterFromExport,
   ]);
 
-  // Prop-based sync state updates
   useEffect(() => {
     if (!syncGraph) return;
 
@@ -142,7 +185,23 @@ export function BigGraph({
     }
 
     if (syncGraph.isLiveMode !== isLiveMode) {
-      setIsLiveMode(syncGraph.isLiveMode);
+      const newIsLiveMode = syncGraph.isLiveMode;
+
+      if (isLiveMode && !newIsLiveMode) {
+        // Switching live → historical: ALWAYS capture fresh timestamp
+        captureHistoricalFreezeTimestamp();
+        stopAnimations();
+        lastProcessedCountRef.current = 0;
+        manualScaleRef.current = null; // Reset manual scale
+        console.log("🔄 Switched to historical mode");
+      } else if (!isLiveMode && newIsLiveMode) {
+        // Switching historical → live: COMPLETELY clear freeze timestamp
+        historicalFreezeTimestampRef.current = null;
+        manualScaleRef.current = null; // Reset manual scale
+        console.log("🔄 Switched to live mode - cleared freeze timestamp");
+      }
+
+      setIsLiveMode(newIsLiveMode);
       hasChanges = true;
     }
 
@@ -174,8 +233,20 @@ export function BigGraph({
     if (hasChanges && syncGraph.viewMode === "manual") {
       setViewMode("manual");
       setIsLiveMode(false);
+      stopAnimations();
+      lastProcessedCountRef.current = 0;
     }
-  }, [syncGraph]);
+  }, [
+    syncGraph?.timeWindow,
+    syncGraph?.viewMode,
+    syncGraph?.isLiveMode,
+    syncGraph?.xRange?.min,
+    syncGraph?.xRange?.max,
+    selectedTimeWindow,
+    viewMode,
+    isLiveMode,
+    captureHistoricalFreezeTimestamp,
+  ]);
 
   const lerp = (start: number, end: number, t: number): number => {
     return start + (end - start) * t;
@@ -186,6 +257,9 @@ export function BigGraph({
     targetData: { timestamps: number[]; values: number[] },
   ) => {
     if (targetData.timestamps.length <= currentData.timestamps.length) {
+      return;
+    }
+    if (!isLiveMode || viewMode === "manual") {
       return;
     }
 
@@ -214,7 +288,12 @@ export function BigGraph({
     };
 
     const animate = (currentTime: number) => {
-      if (!uplotRef.current || !animationStateRef.current.isAnimating) return;
+      if (
+        !uplotRef.current ||
+        !animationStateRef.current.isAnimating ||
+        !isLiveMode
+      )
+        return;
 
       const elapsed = currentTime - animationStateRef.current.startTime;
       const progress = Math.min(elapsed / POINT_ANIMATION_DURATION, 1);
@@ -398,7 +477,6 @@ export function BigGraph({
 
     const uData = buildUPlotData(timestamps, values);
 
-    const lastTimestamp = timestamps[timestamps.length - 1] ?? 0;
     const fullStart = startTimeRef.current ?? timestamps[0] ?? 0;
 
     let initialMin: number, initialMax: number;
@@ -407,16 +485,27 @@ export function BigGraph({
       initialMax = manualScaleRef.current.x.max;
     } else if (selectedTimeWindow === "all") {
       initialMin = fullStart;
-      initialMax = lastTimestamp;
+      initialMax = getHistoricalEndTimestamp();
     } else {
-      const defaultViewStart = Math.max(
-        lastTimestamp - (selectedTimeWindow as number),
-        fullStart,
-      );
-      initialMin = defaultViewStart;
-      initialMax = lastTimestamp;
+      // FIXED: Remove Math.max constraint for historical mode
+      const endTimestamp = getHistoricalEndTimestamp();
+
+      if (isLiveMode) {
+        // Live mode: constrain to available data
+        const defaultViewStart = Math.max(
+          endTimestamp - (selectedTimeWindow as number),
+          fullStart,
+        );
+        initialMin = defaultViewStart;
+      } else {
+        // Historical mode: show full time window regardless of available data
+        initialMin = endTimestamp - (selectedTimeWindow as number);
+      }
+
+      initialMax = endTimestamp;
     }
 
+    // Rest of the function remains the same...
     const initialVisibleValues: number[] = [];
     for (let i = 0; i < timestamps.length; i++) {
       if (timestamps[i] >= initialMin && timestamps[i] <= initialMax) {
@@ -603,7 +692,8 @@ export function BigGraph({
               ) {
                 return ticks.map((ts) => {
                   const date = new Date(ts);
-                  return date.toLocaleTimeString("en-GB", {
+                  return date.toLocaleTimeString(undefined, {
+                    // undefined uses system locale
                     hour12: false,
                     hour: "2-digit",
                     minute: "2-digit",
@@ -618,35 +708,47 @@ export function BigGraph({
                 const date = new Date(ts);
 
                 if (timeRange <= 30 * 1000) {
-                  return date.toLocaleTimeString("en-GB", {
+                  // For very short ranges, show seconds
+                  return date.toLocaleTimeString(undefined, {
                     hour12: false,
                     hour: "2-digit",
                     minute: "2-digit",
                     second: "2-digit",
                   });
                 } else if (timeRange <= 5 * 60 * 1000) {
-                  return date.toLocaleTimeString("en-GB", {
+                  // For 5 minute ranges, show seconds
+                  return date.toLocaleTimeString(undefined, {
                     hour12: false,
                     hour: "2-digit",
                     minute: "2-digit",
                     second: "2-digit",
                   });
                 } else if (timeRange <= 60 * 60 * 1000) {
-                  return date.toLocaleTimeString("en-GB", {
+                  // For hour ranges, show minutes
+                  return date.toLocaleTimeString(undefined, {
+                    hour12: false,
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  });
+                } else if (timeRange <= 24 * 60 * 60 * 1000) {
+                  // For day ranges, show hours and minutes
+                  return date.toLocaleTimeString(undefined, {
                     hour12: false,
                     hour: "2-digit",
                     minute: "2-digit",
                   });
                 } else {
-                  return date.toLocaleTimeString("en-GB", {
-                    hour12: false,
+                  // For longer ranges, show date and time
+                  return date.toLocaleString(undefined, {
+                    month: "short",
+                    day: "numeric",
                     hour: "2-digit",
                     minute: "2-digit",
+                    hour12: false,
                   });
                 }
               });
             },
-
             splits: (
               _u,
               _axisIdx,
@@ -749,6 +851,7 @@ export function BigGraph({
       containerRef.current,
     );
 
+    // Touch handlers (keeping the same as before)
     const handleTouchStart = (e: TouchEvent) => {
       const touch = e.touches[0];
       touchStartRef.current = {
@@ -990,8 +1093,10 @@ export function BigGraph({
       timestamps: [...timestamps],
       values: [...values],
     };
+    if (isLiveMode) {
+      lastProcessedCountRef.current = timestamps.length;
+    }
   };
-
   const handleTimeWindowChangeInternal = (
     newTimeWindow: number | "all",
     isSync: boolean = false,
@@ -999,29 +1104,57 @@ export function BigGraph({
     stopAnimations();
     setSelectedTimeWindow(newTimeWindow);
 
-    if (!uplotRef.current || !newData?.long) {
+    if (!uplotRef.current) {
       return;
     }
 
-    const [timestamps, values] = seriesToUPlotData(newData.long);
-    if (timestamps.length === 0) {
-      return;
-    }
+    const [timestamps, values] = seriesToUPlotData(
+      newData?.long || { timestamps: [], values: [] },
+    );
 
     if (newTimeWindow === "all") {
       setViewMode("all");
+
       if (isLiveMode) {
-        const fullStart = startTimeRef.current ?? timestamps[0];
-        const fullEnd = timestamps[timestamps.length - 1];
+        // Live mode: show all data up to the latest timestamp
+        const fullStart =
+          timestamps.length > 0
+            ? timestamps[0]
+            : Date.now() - 24 * 60 * 60 * 1000; // Default to last 24 hours if no data
+        const fullEnd =
+          timestamps.length > 0
+            ? timestamps[timestamps.length - 1]
+            : Date.now();
         uplotRef.current.setScale("x", { min: fullStart, max: fullEnd });
         updateYAxisScale(timestamps, values, fullStart, fullEnd);
+      } else {
+        // Historical mode: show all data but end at the freeze timestamp
+        const endTimestamp =
+          historicalFreezeTimestampRef.current ??
+          captureHistoricalFreezeTimestamp(); // Ensure freeze timestamp is set
+        const fullStart = endTimestamp - 24 * 60 * 60 * 1000; // Default to 24 hours before freeze timestamp
+
+        uplotRef.current.setScale("x", { min: fullStart, max: endTimestamp });
+        updateYAxisScale(timestamps, values, fullStart, endTimestamp);
+
+        manualScaleRef.current = {
+          x: { min: fullStart, max: endTimestamp },
+          y: manualScaleRef.current?.y ?? {
+            min: Math.min(...values),
+            max: Math.max(...values),
+          },
+        };
       }
-      manualScaleRef.current = null;
     } else {
+      // Handle specific time window
       if (isLiveMode) {
         setViewMode("default");
-        const latestTimestamp = timestamps[timestamps.length - 1];
+        const latestTimestamp =
+          timestamps.length > 0
+            ? timestamps[timestamps.length - 1]
+            : Date.now();
         const viewStart = latestTimestamp - newTimeWindow;
+
         uplotRef.current.setScale("x", {
           min: viewStart,
           max: latestTimestamp,
@@ -1029,32 +1162,50 @@ export function BigGraph({
         updateYAxisScale(timestamps, values, viewStart, latestTimestamp);
         manualScaleRef.current = null;
       } else {
-        const rightmostTimestamp = getRightmostVisibleTimestamp();
-        if (rightmostTimestamp) {
-          const newViewStart = rightmostTimestamp - newTimeWindow;
-          uplotRef.current.setScale("x", {
-            min: newViewStart,
-            max: rightmostTimestamp,
-          });
-          updateYAxisScale(
-            timestamps,
-            values,
-            newViewStart,
-            rightmostTimestamp,
-          );
+        // Historical mode with specific time window
+        setViewMode("default");
 
-          manualScaleRef.current = {
-            x: { min: newViewStart, max: rightmostTimestamp },
-            y: manualScaleRef.current?.y ?? {
-              min: Math.min(...values),
-              max: Math.max(...values),
-            },
-          };
+        const endTimestamp =
+          historicalFreezeTimestampRef.current ??
+          captureHistoricalFreezeTimestamp(); // Ensure freeze timestamp is set
+        const newViewStart = endTimestamp - newTimeWindow;
+
+        // Enforce the time window range, even if no data exists
+        uplotRef.current.setScale("x", {
+          min: newViewStart,
+          max: endTimestamp,
+        });
+
+        // Update the Y-axis scale based on visible data within the range
+        const visibleValues: number[] = [];
+        for (let i = 0; i < timestamps.length; i++) {
+          if (timestamps[i] >= newViewStart && timestamps[i] <= endTimestamp) {
+            visibleValues.push(values[i]);
+          }
         }
+
+        const minY = visibleValues.length > 0 ? Math.min(...visibleValues) : 0;
+        const maxY = visibleValues.length > 0 ? Math.max(...visibleValues) : 1;
+
+        uplotRef.current.setScale("y", {
+          min: minY - (maxY - minY) * 0.1,
+          max: maxY + (maxY - minY) * 0.1,
+        });
+
+        manualScaleRef.current = {
+          x: { min: newViewStart, max: endTimestamp },
+          y: {
+            min: minY - (maxY - minY) * 0.1,
+            max: maxY + (maxY - minY) * 0.1,
+          },
+        };
       }
     }
 
     lastRenderedDataRef.current = { timestamps, values };
+    if (isLiveMode) {
+      lastProcessedCountRef.current = timestamps.length;
+    }
 
     // Prop-based sync
     if (!isSync && syncGraph?.onTimeWindowChange) {
@@ -1087,17 +1238,24 @@ export function BigGraph({
     };
   }, [newData?.long, containerRef.current]);
 
+  // Data update effects - only run in live mode
   useEffect(() => {
+    // CRITICAL: Only update data when in live mode
     if (
       !uplotRef.current ||
       !newData?.long ||
       !chartCreatedRef.current ||
-      !isLiveMode
+      !isLiveMode ||
+      viewMode === "manual"
     )
       return;
 
     const [timestamps, values] = seriesToUPlotData(newData.long);
     if (timestamps.length === 0) return;
+
+    if (timestamps.length <= lastProcessedCountRef.current) {
+      return;
+    }
 
     const currentData = lastRenderedDataRef.current;
     const targetData = { timestamps, values };
@@ -1161,13 +1319,16 @@ export function BigGraph({
     isLiveMode,
   ]);
 
+  // Current data effect - only run in live mode
   useEffect(() => {
+    // CRITICAL: Only update current data when in live mode
     if (
       !uplotRef.current ||
       !newData?.current ||
       !isLiveMode ||
       !chartCreatedRef.current ||
-      animationStateRef.current.isAnimating
+      animationStateRef.current.isAnimating ||
+      viewMode === "manual"
     )
       return;
 
@@ -1232,6 +1393,7 @@ export function BigGraph({
     config.lines,
     isLiveMode,
   ]);
+
   const displayValue =
     cursorValue !== null ? cursorValue : newData?.current?.value;
 
