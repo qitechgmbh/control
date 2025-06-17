@@ -2,11 +2,11 @@ use crate::app_state::AppState;
 use crate::panic::{PanicDetails, send_panic};
 use bitvec::prelude::*;
 use control_core::helpers::loop_trottle::LoopThrottle;
+use control_core::helpers::retry::retry_conditionally_async;
 use smol::channel::Sender;
 use std::sync::Arc;
 use std::time::Duration;
-use tracing::{info_span, instrument, trace_span};
-use tracing_futures::Instrument as _;
+use tracing::{debug, error, instrument, trace_span};
 
 pub fn init_loop(
     thread_panic_tx: Sender<PanicDetails>,
@@ -59,11 +59,27 @@ pub async fn loop_once<'maindevice>(app_state: Arc<AppState>) -> Result<(), anyh
         let span = trace_span!("loop_once_inputs");
         let _enter = span.enter();
 
-        // TX/RX cycle
-        ethercat_setup
-            .group
-            .tx_rx(&ethercat_setup.maindevice)
-            .await?;
+        // retyr tx/rx cycle for up to 10 times
+        let mut retry_counter: u8 = 0;
+        retry_conditionally_async(
+            || async { ethercat_setup.group.tx_rx(&ethercat_setup.maindevice).await },
+            |e| {
+                error!(
+                    "[{}::loop_once] EtherCAT TX/RX failed: \n{:?}",
+                    module_path!(),
+                    e
+                );
+                retry_counter += 1;
+                let do_retry = retry_counter < 10;
+                debug!(
+                    "[{}::loop_once] EtherCAT TX/RX retrying, {} retries left",
+                    module_path!(),
+                    retry_counter
+                );
+                do_retry
+            },
+        )
+        .await?;
 
         // copy inputs to devices
         for (i, subdevice) in ethercat_setup
