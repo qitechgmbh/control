@@ -1,4 +1,4 @@
-import { useEffect, RefObject } from "react";
+import { useEffect, RefObject, useRef, useState } from "react";
 import uPlot from "uplot";
 import { seriesToUPlotData } from "@/lib/timeseries";
 import { BigGraphProps } from "./types";
@@ -13,7 +13,6 @@ interface UseBigGraphEffectsProps {
   // Refs
   containerRef: RefObject<HTMLDivElement | null>;
   uplotRef: RefObject<uPlot | null>;
-  chartCreatedRef: RefObject<boolean>;
   startTimeRef: RefObject<number | null>;
   manualScaleRef: RefObject<{
     x: { min: number; max: number };
@@ -71,17 +70,14 @@ interface UseBigGraphEffectsProps {
 }
 
 export function useBigGraphEffects({
-  // Refs
   containerRef,
   uplotRef,
-  chartCreatedRef,
   startTimeRef,
   manualScaleRef,
   lastProcessedCountRef,
   animationRefs,
   handlerRefs,
 
-  // Props
   newData,
   unit,
   renderValue,
@@ -91,38 +87,39 @@ export function useBigGraphEffects({
   onRegisterForExport,
   onUnregisterFromExport,
 
-  // State
   viewMode,
   isLiveMode,
   selectedTimeWindow,
 
-  // State setters
   setSelectedTimeWindow,
   setViewMode,
   setIsLiveMode,
   setCursorValue,
 
-  // Handlers
   liveMode,
   historicalMode,
   colors,
   updateYAxisScale,
   handleTimeWindowChangeInternal,
 }: UseBigGraphEffectsProps) {
+  const [isChartCreated, setIsChartCreated] = useState(false);
+
+  const localmanualScale = useRef(manualScaleRef.current);
+  const localProcessedCount = useRef(lastProcessedCountRef.current);
+  const localuplotRef = useRef<uPlot | null>(uplotRef.current);
+
   // Register/unregister this graph for Excel export functionality
   useEffect(() => {
     if (onRegisterForExport) {
       const getExportData = (): GraphExportData | null => {
         if (!newData) return null;
 
-        const exportData: GraphExportData = {
+        return {
           config,
           data: newData,
           unit,
           renderValue,
         };
-
-        return exportData;
       };
 
       onRegisterForExport(graphId, getExportData);
@@ -164,10 +161,8 @@ export function useBigGraphEffects({
       const newIsLiveMode = syncGraph.isLiveMode;
 
       if (isLiveMode && !newIsLiveMode) {
-        // Switching live → historical
         historicalMode.switchToHistoricalMode();
       } else if (!isLiveMode && newIsLiveMode) {
-        // Switching historical → live
         historicalMode.switchToLiveMode();
       }
 
@@ -178,8 +173,8 @@ export function useBigGraphEffects({
     if (syncGraph.xRange && uplotRef.current) {
       uplotRef.current.batch(() => {
         uplotRef.current!.setScale("x", {
-          min: syncGraph.xRange!.min,
-          max: syncGraph.xRange!.max,
+          min: syncGraph.xRange?.min ?? 0,
+          max: syncGraph.xRange?.max ?? 0,
         });
 
         if (newData?.long) {
@@ -187,13 +182,12 @@ export function useBigGraphEffects({
           updateYAxisScale(
             timestamps,
             values,
-            syncGraph.xRange!.min,
-            syncGraph.xRange!.max,
+            syncGraph.xRange?.min ?? 0,
+            syncGraph.xRange?.max ?? 0,
           );
         }
       });
-
-      manualScaleRef.current = {
+      localmanualScale.current = {
         x: syncGraph.xRange,
         y: manualScaleRef.current?.y ?? { min: 0, max: 1 },
       };
@@ -204,7 +198,7 @@ export function useBigGraphEffects({
       setViewMode("manual");
       setIsLiveMode(false);
       stopAnimations(animationRefs);
-      lastProcessedCountRef.current = 0;
+      localProcessedCount.current = 0;
     }
   }, [
     syncGraph?.timeWindow,
@@ -222,13 +216,13 @@ export function useBigGraphEffects({
   // Create and initialize the uPlot chart when data becomes available
   useEffect(() => {
     if (!containerRef.current || !newData?.long) {
-      chartCreatedRef.current = false;
+      setIsChartCreated(false);
       return;
     }
 
     const [timestamps] = seriesToUPlotData(newData.long);
     if (timestamps.length === 0) {
-      chartCreatedRef.current = false;
+      setIsChartCreated(false);
       return;
     }
 
@@ -255,29 +249,26 @@ export function useBigGraphEffects({
       setCursorValue,
     });
 
-    chartCreatedRef.current = true;
+    setIsChartCreated(true);
 
     if (isLiveMode) {
-      lastProcessedCountRef.current = timestamps.length;
+      localProcessedCount.current = timestamps.length;
     }
 
     return () => {
-      if (cleanup) {
-        cleanup();
-      }
+      if (cleanup) cleanup();
       if (uplotRef.current) {
         uplotRef.current.destroy();
-        uplotRef.current = null;
+        localuplotRef.current = null;
       }
       stopAnimations(animationRefs);
-      chartCreatedRef.current = false;
+      setIsChartCreated(false);
     };
   }, [newData?.long, containerRef.current]);
 
   // Update chart data when new historical data arrives (live mode only)
   useEffect(() => {
     if (!isLiveMode || viewMode === "manual") return;
-
     liveMode.processNewHistoricalData();
   }, [
     newData?.long?.validCount,
@@ -294,7 +285,7 @@ export function useBigGraphEffects({
       !uplotRef.current ||
       !newData?.current ||
       !isLiveMode ||
-      !chartCreatedRef.current ||
+      !isChartCreated ||
       animationRefs.animationState.current.isAnimating ||
       viewMode === "manual"
     )
@@ -307,6 +298,7 @@ export function useBigGraphEffects({
     selectedTimeWindow,
     config.lines,
     isLiveMode,
+    isChartCreated,
     liveMode.updateLiveData,
   ]);
 }

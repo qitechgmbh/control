@@ -37,7 +37,8 @@ export function useHistoricalMode({
   } | null>;
 }): HistoricalModeHandlers {
   const historicalFreezeTimestampRef = useRef<number | null>(null);
-
+  const localRef = useRef(manualScaleRef.current);
+  const localProcessedCount = useRef(lastProcessedCountRef.current);
   const captureHistoricalFreezeTimestamp = useCallback(() => {
     // Always get the current live timestamp when switching to historical
     const currentLiveEnd = getCurrentLiveEndTimestamp();
@@ -71,7 +72,7 @@ export function useHistoricalMode({
         uplotRef.current.setScale("x", { min: fullStart, max: endTimestamp });
         updateYAxisScale(timestamps, values, fullStart, endTimestamp);
 
-        manualScaleRef.current = {
+        localRef.current = {
           x: { min: fullStart, max: endTimestamp },
           y: manualScaleRef.current?.y ?? {
             min: Math.min(...values),
@@ -105,7 +106,7 @@ export function useHistoricalMode({
           max: maxY + (maxY - minY) * 0.1,
         });
 
-        manualScaleRef.current = {
+        localRef.current = {
           x: { min: newViewStart, max: endTimestamp },
           y: {
             min: minY - (maxY - minY) * 0.1,
@@ -127,8 +128,8 @@ export function useHistoricalMode({
     // Capture freeze timestamp when switching to historical
     captureHistoricalFreezeTimestamp();
     stopAnimations(animationRefs);
-    lastProcessedCountRef.current = 0;
-    manualScaleRef.current = null;
+    localProcessedCount.current = 0;
+    localRef.current = null;
   }, [
     captureHistoricalFreezeTimestamp,
     animationRefs,
@@ -139,7 +140,7 @@ export function useHistoricalMode({
   const switchToLiveMode = useCallback(() => {
     // Clear freeze timestamp when switching to live
     historicalFreezeTimestampRef.current = null;
-    manualScaleRef.current = null;
+    localRef.current = null;
   }, [manualScaleRef]);
 
   return {

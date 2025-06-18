@@ -200,8 +200,8 @@ export function FloatingControlPanel({
           <TouchButton
             onClick={() => setIsExpanded(!isExpanded)}
             variant="outline"
-            className="h-auto flex-shrink-0 bg-green-600 p-3 text-white hover:bg-green-700"
-            icon={isExpanded ? "lu:Minus" : "lu:Plus"}
+            className="h-auto flex-shrink-0 bg-black p-3 text-white hover:bg-gray-100"
+            icon={isExpanded ? "lu:ChevronRight" : "lu:ChevronLeft"}
           />
         </div>
       </ControlCard>

@@ -2,7 +2,6 @@ import { Page } from "@/components/Page";
 import {
   AutoSyncedBigGraph,
   SyncedFloatingControlPanel,
-  SyncedGraphControls,
   useGraphSync,
   type GraphConfig,
 } from "@/components/graph";
@@ -21,10 +20,8 @@ export function Mock1GraphPage() {
   };
 
   return (
-    <Page className="pb-20">
+    <Page className="pb-25">
       <div className="flex flex-col gap-4">
-        <SyncedGraphControls controlProps={syncHook.controlProps} />
-
         <AutoSyncedBigGraph
           syncHook={syncHook}
           newData={sineWave}

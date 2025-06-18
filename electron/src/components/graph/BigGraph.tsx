@@ -183,7 +183,6 @@ export function BigGraph({
     // Refs
     containerRef,
     uplotRef,
-    chartCreatedRef,
     startTimeRef,
     manualScaleRef,
     lastProcessedCountRef,

@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useRef } from "react";
 import uPlot from "uplot";
 import { seriesToUPlotData } from "@/lib/timeseries";
 import { buildUPlotData, animateNewPoint, AnimationRefs } from "./animation";
@@ -38,6 +38,10 @@ export function useLiveMode({
   lastProcessedCountRef: React.RefObject<number>;
   chartCreatedRef: React.RefObject<boolean>;
 }): LiveModeHandlers {
+  const localStartTime = useRef(startTimeRef.current);
+  const localanimationData = useRef(animationRefs.lastRenderedData.current);
+  const localProcessedCount = useRef(lastProcessedCountRef.current);
+
   const getCurrentLiveEndTimestamp = useCallback((): number => {
     if (!newData?.long) return Date.now();
 
@@ -108,9 +112,8 @@ export function useLiveMode({
         );
       });
     }
-
     if (startTimeRef.current === null && liveTimestamps.length > 0) {
-      startTimeRef.current = liveTimestamps[0];
+      localStartTime.current = liveTimestamps[0];
     }
   }, [
     newData,
@@ -156,9 +159,8 @@ export function useLiveMode({
         });
         updateYAxisScale(timestamps, values, viewStart, latestTimestamp);
       }
-
-      animationRefs.lastRenderedData.current = { timestamps, values };
-      lastProcessedCountRef.current = timestamps.length;
+      localanimationData.current = { timestamps, values };
+      localProcessedCount.current = timestamps.length;
     },
     [uplotRef, newData, updateYAxisScale, animationRefs, lastProcessedCountRef],
   );
@@ -224,7 +226,7 @@ export function useLiveMode({
           config,
         );
         uplotRef.current.setData(uData);
-        animationRefs.lastRenderedData.current = { timestamps, values };
+        localanimationData.current = { timestamps, values };
 
         const lastTimestamp = timestamps[timestamps.length - 1] ?? 0;
         if (viewMode === "default") {
