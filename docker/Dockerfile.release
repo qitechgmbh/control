@@ -1,0 +1,35 @@
+FROM rust:1.86 as builder
+
+WORKDIR /app
+
+# Install necessary dependencies for building the project
+RUN rustup target add x86_64-unknown-linux-musl && \
+    apt-get update && \
+    apt install -y musl-tools musl-dev && \
+    apt-get install -y libssl-dev ca-certificates libudev-dev pkg-config && \
+    rm -rf /var/lib/apt/lists/*
+
+#copy the source code into the container
+COPY Cargo.toml Cargo.lock ./
+COPY server ./server
+COPY control-core ./control-core
+COPY ethercat-hal ./ethercat-hal
+COPY ethercat-hal-derive ./ethercat-hal-derive
+COPY ethercat-eeprom-dump ./ethercat-eeprom-dump
+
+RUN cargo fetch
+RUN cargo build --release --target x86_64-unknown-linux-musl
+
+# Set Runtime stage
+FROM debian:bookworm-slim
+
+WORKDIR /app
+
+# Copy the compiled binary from the builderAdd commentMore actions
+COPY --from=builder /app/target/x86_64-unknown-linux-musl/release/server /app/server
+
+# Expose the server port
+EXPOSE 3001
+
+# Start Server
+CMD ["./server"]

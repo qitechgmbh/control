@@ -11,5 +11,5 @@ RUN apt-get update && \
 # Expose the server port
 EXPOSE 3001
 
-# Start Server in debug mode with mock features enabled
-CMD ["cargo", "run", "--features", "mock-machine", "--manifest-path", "server/Cargo.toml", "--", "--mock"]
+# Start Server in debug mode 
+CMD ["cargo", "run", "--manifest-path", "server/Cargo.toml"]
