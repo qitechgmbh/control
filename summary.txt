@@ -1,76 +1,0 @@
-⠋ 🔎: ./ethercat-hal-derive ⠙ 🔎: ./ethercat-hal-derive (analyzing Cargo.toml)⠹ 🔎: ./ethercat-hal-derive (analyzing Cargo.toml)⠸ 🔎: ./ethercat-hal-derive (analyzing Cargo.toml)⠼ 🔎: ./ethercat-hal-derive (analyzing Cargo.toml)⠋ Fetching licenses from GitHub ⠙ Fetching licenses from GitHub ⠴ 🔎: ./ethercat-hal-derive (found 334 packages)⠹ Fetching licenses from GitHub ⠦ 🔎: ./ethercat-hal-derive (found 334 packages)⠸ Fetching licenses from GitHub ⠧ 🔎: ./ethercat-hal-derive (found 334 packages)⠼ Fetching licenses from GitHub ⠇ 🔎: ./ethercat-hal-derive (found 334 packages)⠴ Fetching licenses from GitHub ⠏ 🔎: ./ethercat-hal-derive (found 334 packages)⠦ Fetching licenses from GitHub ⠋ 🔎: ./ethercat-hal-derive (found 334 packages)✓ Fetching licenses from GitHub  ✅
-✓ 🔎: ./ethercat-hal-derive (found 334 packages) ✅
-⠋ 🔎: ./electron ⠋ Fetching licenses from GitHub ⠙ 🔎: ./electron (analyzing package.json)⠙ Fetching licenses from GitHub ⠹ 🔎: ./electron (analyzing package.json)⠹ Fetching licenses from GitHub ⠸ 🔎: ./electron (analyzing package.json)⠸ Fetching licenses from GitHub ⠼ 🔎: ./electron (analyzing package.json)⠼ Fetching licenses from GitHub ⠴ 🔎: ./electron (analyzing package.json)⠴ Fetching licenses from GitHub ⠦ 🔎: ./electron (analyzing package.json)✓ Fetching licenses from GitHub  ✅
-⠧ 🔎: ./electron (analyzing package.json)⠇ 🔎: ./electron (analyzing package.json)⠏ 🔎: ./electron (analyzing package.json)⠋ 🔎: ./electron (analyzing package.json)⠙ 🔎: ./electron (analyzing package.json)⠹ 🔎: ./electron (analyzing package.json)⠸ 🔎: ./electron (analyzing package.json)⠼ 🔎: ./electron (analyzing package.json)⠴ 🔎: ./electron (analyzing package.json)⠦ 🔎: ./electron (analyzing package.json)⠧ 🔎: ./electron (analyzing package.json)⠇ 🔎: ./electron (analyzing package.json)⠏ 🔎: ./electron (analyzing package.json)⠋ 🔎: ./electron (analyzing package.json)⠙ 🔎: ./electron (analyzing package.json)⠹ 🔎: ./electron (analyzing package.json)⠸ 🔎: ./electron (analyzing package.json)⠼ 🔎: ./electron (analyzing package.json)⠴ 🔎: ./electron (analyzing package.json)⠦ 🔎: ./electron (analyzing package.json)⠧ 🔎: ./electron (analyzing package.json)⠇ 🔎: ./electron (analyzing package.json)⠏ 🔎: ./electron (analyzing package.json)⠋ 🔎: ./electron (analyzing package.json)⠙ 🔎: ./electron (analyzing package.json)⠹ 🔎: ./electron (analyzing package.json)⠸ 🔎: ./electron (analyzing package.json)⠼ 🔎: ./electron (analyzing package.json)⠴ 🔎: ./electron (analyzing package.json)⠦ 🔎: ./electron (analyzing package.json)⠧ 🔎: ./electron (analyzing package.json)⠇ 🔎: ./electron (analyzing package.json)⠏ 🔎: ./electron (analyzing package.json)⠋ 🔎: ./electron (analyzing package.json)⠙ 🔎: ./electron (analyzing package.json)⠹ 🔎: ./electron (analyzing package.json)⠸ 🔎: ./electron (analyzing package.json)⠼ 🔎: ./electron (analyzing package.json)⠴ 🔎: ./electron (analyzing package.json)⠦ 🔎: ./electron (analyzing package.json)✓ 🔎: ./electron (found 43 dependencies) ✅
-⠋ 🔎: ./control-core ⠙ 🔎: ./control-core (analyzing Cargo.toml)⠹ 🔎: ./control-core (analyzing Cargo.toml)⠸ 🔎: ./control-core (analyzing Cargo.toml)⠋ Fetching licenses from GitHub ⠙ Fetching licenses from GitHub ⠼ 🔎: ./control-core (found 334 packages)⠹ Fetching licenses from GitHub ⠴ 🔎: ./control-core (found 334 packages)⠸ Fetching licenses from GitHub ⠦ 🔎: ./control-core (found 334 packages)⠼ Fetching licenses from GitHub ⠧ 🔎: ./control-core (found 334 packages)⠴ Fetching licenses from GitHub ⠇ 🔎: ./control-core (found 334 packages)⠦ Fetching licenses from GitHub ⠏ 🔎: ./control-core (found 334 packages)⠧ Fetching licenses from GitHub ⠋ 🔎: ./control-core (found 334 packages)✓ Fetching licenses from GitHub  ✅
-✓ 🔎: ./control-core (found 334 packages) ✅
-⠋ 🔎: ./server ⠙ 🔎: ./server (analyzing Cargo.toml)⠹ 🔎: ./server (analyzing Cargo.toml)⠸ 🔎: ./server (analyzing Cargo.toml)⠋ Fetching licenses from GitHub ⠙ Fetching licenses from GitHub ⠼ 🔎: ./server (found 334 packages)⠹ Fetching licenses from GitHub ⠴ 🔎: ./server (found 334 packages)⠸ Fetching licenses from GitHub ⠦ 🔎: ./server (found 334 packages)⠼ Fetching licenses from GitHub ⠧ 🔎: ./server (found 334 packages)⠴ Fetching licenses from GitHub ⠇ 🔎: ./server (found 334 packages)✓ Fetching licenses from GitHub  ✅
-✓ 🔎: ./server (found 334 packages) ✅
-⠋ 🔎: ./ethercat-hal ⠙ 🔎: ./ethercat-hal (analyzing Cargo.toml)⠹ 🔎: ./ethercat-hal (analyzing Cargo.toml)⠸ 🔎: ./ethercat-hal (analyzing Cargo.toml)⠋ Fetching licenses from GitHub ⠙ Fetching licenses from GitHub ⠼ 🔎: ./ethercat-hal (found 334 packages)⠹ Fetching licenses from GitHub ⠴ 🔎: ./ethercat-hal (found 334 packages)⠸ Fetching licenses from GitHub ⠦ 🔎: ./ethercat-hal (found 334 packages)⠼ Fetching licenses from GitHub ⠧ 🔎: ./ethercat-hal (found 334 packages)✓ Fetching licenses from GitHub  ✅
-✓ 🔎: ./ethercat-hal (found 334 packages) ✅
-⠋ 🔎: ./ethercat-eeprom-dump ⠙ 🔎: ./ethercat-eeprom-dump (analyzing Cargo.toml)⠹ 🔎: ./ethercat-eeprom-dump (analyzing Cargo.toml)⠸ 🔎: ./ethercat-eeprom-dump (analyzing Cargo.toml)⠋ Fetching licenses from GitHub ⠙ Fetching licenses from GitHub ⠼ 🔎: ./ethercat-eeprom-dump (found 334 packages)⠹ Fetching licenses from GitHub ⠴ 🔎: ./ethercat-eeprom-dump (found 334 packages)⠸ Fetching licenses from GitHub ⠦ 🔎: ./ethercat-eeprom-dump (found 334 packages)⠼ Fetching licenses from GitHub ⠧ 🔎: ./ethercat-eeprom-dump (found 334 packages)⠴ Fetching licenses from GitHub ⠇ 🔎: ./ethercat-eeprom-dump (found 334 packages)✓ Fetching licenses from GitHub  ✅
-✓ 🔎: ./ethercat-eeprom-dump (found 334 packages) ✅
-⠋ 🔎: . ⠙ 🔎: . (analyzing Cargo.toml)⠹ 🔎: . (analyzing Cargo.toml)⠸ 🔎: . (analyzing Cargo.toml)⠋ Fetching licenses from GitHub ⠙ Fetching licenses from GitHub ⠼ 🔎: . (found 334 packages)⠹ Fetching licenses from GitHub ⠴ 🔎: . (found 334 packages)⠸ Fetching licenses from GitHub ⠦ 🔎: . (found 334 packages)⠼ Fetching licenses from GitHub ⠧ 🔎: . (found 334 packages)⠴ Fetching licenses from GitHub ⠇ 🔎: . (found 334 packages)✓ Fetching licenses from GitHub  ✅
-✓ 🔎: . (found 334 packages) ✅
-
-📄 Project License: Apache-3.0
-
-🔍 License Summary
-
-┌─────────────────────────────────────────────────────────────┐
-│ License Type                                        │ Count │
-├─────────────────────────────────────────────────────────────┤
-│ (MIT OR Apache-2.0) AND Unicode-3.0                 │ 6     │
-│ 0BSD OR MIT OR Apache-2.0                           │ 6     │
-│ Apache-2.0                                          │ 33    │
-│ Apache-2.0 / MIT                                    │ 6     │
-│ Apache-2.0 OR BSL-1.0                               │ 6     │
-│ Apache-2.0 OR MIT                                   │ 186   │
-│ Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT │ 30    │
-│ Apache-2.0/MIT                                      │ 6     │
-│ BSD-2-Clause OR Apache-2.0 OR MIT                   │ 12    │
-│ BSD-2-Clause OR MIT OR Apache-2.0                   │ 6     │
-│ ISC                                                 │ 7     │
-│ MIT                                                 │ 513   │
-│ MIT / Apache-2.0                                    │ 6     │
-│ MIT AND BSD-3-Clause                                │ 6     │
-│ MIT OR Apache-2.0                                   │ 978   │
-│ MIT OR Apache-2.0 OR LGPL-2.1-or-later              │ 6     │
-│ MIT OR Zlib OR Apache-2.0                           │ 6     │
-│ MIT/Apache-2.0                                      │ 132   │
-│ No License                                          │ 30    │
-│ Unlicense OR MIT                                    │ 24    │
-│ Unlicense/MIT                                       │ 18    │
-│ Zlib OR Apache-2.0 OR MIT                           │ 6     │
-└─────────────────────────────────────────────────────────────┘
-
-📦 Total dependencies scanned: 2047
-
-⚠️ Warning: Restrictive licenses found!
-
-┌────────────────────────────────────┐
-│ Package    │ Version │ License     │
-├────────────────────────────────────┤
-│ colored    │ 2.2.0   │ MPL-2.0     │
-│ serialport │ 4.7.1   │ MPL-2.0     │
-│ unescaper  │ 0.1.6   │ GPL-3.0/MIT │
-│ colored    │ 2.2.0   │ MPL-2.0     │
-│ serialport │ 4.7.1   │ MPL-2.0     │
-│ unescaper  │ 0.1.6   │ GPL-3.0/MIT │
-│ colored    │ 2.2.0   │ MPL-2.0     │
-│ serialport │ 4.7.1   │ MPL-2.0     │
-│ unescaper  │ 0.1.6   │ GPL-3.0/MIT │
-│ colored    │ 2.2.0   │ MPL-2.0     │
-│ serialport │ 4.7.1   │ MPL-2.0     │
-│ unescaper  │ 0.1.6   │ GPL-3.0/MIT │
-│ colored    │ 2.2.0   │ MPL-2.0     │
-│ serialport │ 4.7.1   │ MPL-2.0     │
-│ unescaper  │ 0.1.6   │ GPL-3.0/MIT │
-│ colored    │ 2.2.0   │ MPL-2.0     │
-│ serialport │ 4.7.1   │ MPL-2.0     │
-│ unescaper  │ 0.1.6   │ GPL-3.0/MIT │
-└────────────────────────────────────┘
-
-
-✅ No incompatible licenses found! 🎉
-
