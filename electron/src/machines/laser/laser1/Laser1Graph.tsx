@@ -6,6 +6,7 @@ import {
   useGraphSync,
   type GraphConfig,
 } from "@/components/graph";
+
 import React from "react";
 import { useLaser1 } from "./useLaser1";
 
@@ -13,7 +14,6 @@ export function Laser1GraphsPage() {
   const { laserDiameter, laserState } = useLaser1();
 
   const syncHook = useGraphSync(30 * 60 * 1000, "diameter-group");
-
   const targetDiameter = laserState?.data?.target_diameter ?? 0;
   const lowerTolerance = laserState?.data?.lower_tolerance ?? 0;
   const higherTolerance = laserState?.data?.higher_tolerance ?? 0;
@@ -66,7 +66,6 @@ export function Laser1GraphsPage() {
           graphId="diameter-graph"
         />
       </div>
-
       <SyncedFloatingControlPanel controlProps={syncHook.controlProps} />
     </Page>
   );
