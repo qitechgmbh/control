@@ -8,7 +8,7 @@ import {
 } from "./units";
 import { Label } from "./Label";
 import { TimeSeries } from "@/lib/timeseries";
-import { MiniGraph } from "@/helpers/MiniGraph";
+import { MiniGraph } from "@/components/graph/MiniGraph";
 import {
   useContainerDimensions,
   useMaxContainerMaxDimension,

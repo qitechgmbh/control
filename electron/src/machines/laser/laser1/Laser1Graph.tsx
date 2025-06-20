@@ -1,19 +1,26 @@
 import { Page } from "@/components/Page";
-import { BigGraph, GraphConfig } from "@/helpers/BigGraph";
+import {
+  AutoSyncedBigGraph,
+  SyncedFloatingControlPanel,
+  SyncedGraphControls,
+  useGraphSync,
+  type GraphConfig,
+} from "@/components/graph";
+
 import React from "react";
 import { useLaser1 } from "./useLaser1";
 
 export function Laser1GraphsPage() {
   const { laserDiameter, laserState } = useLaser1();
 
+  const syncHook = useGraphSync(30 * 60 * 1000, "diameter-group");
   const targetDiameter = laserState?.data?.target_diameter ?? 0;
   const lowerTolerance = laserState?.data?.lower_tolerance ?? 0;
   const higherTolerance = laserState?.data?.higher_tolerance ?? 0;
 
   const config: GraphConfig = {
     title: "Diameter",
-    description: "Real-time diameter measurements with thresholds",
-    defaultTimeWindow: 30 * 60 * 1000, // 30 minute
+    defaultTimeWindow: 30 * 60 * 1000, // 30 minutes
     exportFilename: "diameter_data",
     lines: [
       {
@@ -46,15 +53,20 @@ export function Laser1GraphsPage() {
   };
 
   return (
-    <Page>
-      <BigGraph
-        newData={laserDiameter}
-        unit="mm"
-        renderValue={(value) => value.toFixed(3)}
-        config={config}
-        syncGroupId="diameter-group"
-        graphId="diameter-main"
-      />
+    <Page className="pb-20">
+      <div className="flex flex-col gap-4">
+        <SyncedGraphControls controlProps={syncHook.controlProps} />
+
+        <AutoSyncedBigGraph
+          syncHook={syncHook}
+          newData={laserDiameter}
+          unit="mm"
+          renderValue={(value) => value.toFixed(3)}
+          config={config}
+          graphId="diameter-graph"
+        />
+      </div>
+      <SyncedFloatingControlPanel controlProps={syncHook.controlProps} />
     </Page>
   );
 }
