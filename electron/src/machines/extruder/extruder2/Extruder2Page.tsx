@@ -18,7 +18,7 @@ export function Extruder2Page() {
           link: "graphs",
           title: "Graphs",
           icon: "lu:ChartSpline",
-          activeLink: "graph",
+          activeLink: "graphs",
         },
         {
           link: "settings",

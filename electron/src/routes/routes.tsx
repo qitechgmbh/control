@@ -10,7 +10,9 @@ import { Winder2ControlPage } from "@/machines/winder/winder2/Winder2ControlPage
 import { Winder2ManualPage } from "@/machines/winder/winder2/Winder2Manual";
 import { Winder2SettingPage } from "@/machines/winder/winder2/Winder2Settings";
 import { Winder2GraphsPage } from "@/machines/winder/winder2/Winder2Graphs";
+
 import { Extruder2Page } from "@/machines/extruder/extruder2/Extruder2Page";
+import { Extruder2GraphsPage } from "@/machines/extruder/extruder2/Extruder2Graph";
 import { Extruder2ControlPage } from "@/machines/extruder/extruder2/Extruder2ControlPage";
 import { Extruder2SettingsPage } from "@/machines/extruder/extruder2/Extruder2Settings";
 import { ExtruderV2ManualPage } from "@/machines/extruder/extruder2/Extruder2Manual";
@@ -71,6 +73,12 @@ export const extruder2ManualRoute = createRoute({
   getParentRoute: () => extruder2Route,
   path: "manual",
   component: () => <ExtruderV2ManualPage />,
+});
+
+export const extruder2GraphRoute = createRoute({
+  getParentRoute: () => extruder2Route,
+  path: "graphs",
+  component: () => <Extruder2GraphsPage />,
 });
 
 export const winder2SerialRoute = createRoute({
@@ -244,6 +252,7 @@ export const rootTree = RootRoute.addChildren([
         extruder2ControlRoute,
         extruder2SettingsRoute,
         extruder2ManualRoute,
+        extruder2GraphRoute,
       ]),
 
       mock1SerialRoute.addChildren([

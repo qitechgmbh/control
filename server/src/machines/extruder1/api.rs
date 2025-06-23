@@ -288,7 +288,7 @@ impl CacheableEvents<ExtruderV2Events> for ExtruderV2Events {
             ExtruderV2Events::ExtruderSettingsStateEvent(event) => event.into(),
             ExtruderV2Events::HeatingPowerEvent(event) => event.into(),
             ExtruderV2Events::InverterStatusEvent(event) => event.into(),
-            ExtruderV2Events::PidSettingsEvent(event) => event.try_into(),
+            ExtruderV2Events::PidSettingsEvent(event) => event.into(),
         }
     }
 
