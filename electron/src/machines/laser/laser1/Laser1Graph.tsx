@@ -59,7 +59,7 @@ export function Laser1GraphsPage() {
 
         <AutoSyncedBigGraph
           syncHook={syncHook}
-          newData={laserDiameter}
+          newData={{ newData: laserDiameter }}
           unit="mm"
           renderValue={(value) => value.toFixed(3)}
           config={config}
