@@ -410,6 +410,8 @@ impl NewEthercatDevice for EL6021 {
             input_ts: 0,
             has_messages_last_toggle: false,
             initialized: false,
+            last_transmit_accepted_toggle: false,
+            last_receive_accepted: false,
         }
     }
 }
@@ -417,6 +419,24 @@ impl NewEthercatDevice for EL6021 {
 #[derive(Clone)]
 pub enum EL6021Port {
     SI1, // Serial
+}
+
+impl EL6021 {
+    fn debug(&mut self, msg: String) -> () {
+        let txpdo_opt = &mut self.txpdo.com_tx_pdo_map_22_byte;
+        let txpdo = match txpdo_opt {
+            Some(txpdo_opt) => txpdo_opt,
+            None => return,
+        };
+
+        let rxpdo_opt = &mut self.rxpdo.com_rx_pdo_map_22_byte;
+        let rxpdo = match rxpdo_opt {
+            Some(rxpdo_opt) => rxpdo_opt,
+            None => return,
+        };
+
+        println!("{} {:?} {:?}", msg, rxpdo.control, txpdo.status);
+    }
 }
 
 impl SerialInterfaceDevice<EL6021Port> for EL6021 {
@@ -429,6 +449,8 @@ impl SerialInterfaceDevice<EL6021Port> for EL6021 {
     }
 
     fn serial_interface_read_message(&mut self, _port: EL6021Port) -> Option<Vec<u8>> {
+        //self.debug("serial_interface_read_message".to_string());
+
         if !self.serial_interface_has_messages(_port) {
             return None;
         }
@@ -571,12 +593,47 @@ impl SerialInterfaceDevice<EL6021Port> for EL6021 {
                 {
                     // set inital state of the toggle
                     self.has_messages_last_toggle = txpdo.status.receive_request;
+                    self.last_transmit_accepted_toggle = txpdo.status.transmit_accepted;
+                    self.last_receive_accepted = rxpdo.control.received_acepted;
+
                     return true;
                 }
 
                 return false;
             }
         }
+    }
+
+    fn serial_interface_write_finished(&mut self, port: EL6021Port) -> bool {
+        let txpdo_opt = &mut self.txpdo.com_tx_pdo_map_22_byte;
+        let txpdo = match txpdo_opt {
+            Some(txpdo_opt) => txpdo_opt,
+            None => return false,
+        };
+
+        let rxpdo_opt = &mut self.rxpdo.com_rx_pdo_map_22_byte;
+        let rxpdo = match rxpdo_opt {
+            Some(rxpdo_opt) => rxpdo_opt,
+            None => return false,
+        };
+
+        return rxpdo.control.transmit_request == txpdo.status.transmit_accepted;
+    }
+
+    fn serial_interface_read_finished(&mut self, _port: EL6021Port) -> bool {
+        let txpdo_opt = &mut self.txpdo.com_tx_pdo_map_22_byte;
+        let txpdo = match txpdo_opt {
+            Some(txpdo_opt) => txpdo_opt,
+            None => return false,
+        };
+
+        let rxpdo_opt = &mut self.rxpdo.com_rx_pdo_map_22_byte;
+        let rxpdo = match rxpdo_opt {
+            Some(rxpdo_opt) => rxpdo_opt,
+            None => return false,
+        };
+        rxpdo.control.received_acepted = !rxpdo.control.received_acepted;
+        return rxpdo.control.received_acepted == txpdo.status.receive_request;
     }
 }
 
