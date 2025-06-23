@@ -112,20 +112,11 @@ export function extruder2MessageHandler(
     };
 
     try {
-      if (eventName == "TemperaturePidSettingsEvent") {
-        store.setState(
-          produce(store.getState(), (state) => {
-            state.temperaturePidSettings = pidSettingsEventSchema.parse(event);
-          }),
-        );
-      }
-
       if (eventName == "PressurePidSettingsEvent") {
-        store.setState(
-          produce(store.getState(), (state) => {
-            state.pressurePidSettings = pidSettingsEventSchema.parse(event);
-          }),
-        );
+        updateStore((state) => ({
+          ...state,
+          pressurePidSettings: pidSettingsEventSchema.parse(event),
+        }));
       }
 
       if (eventName == "ExtruderSettingsStateEvent") {
