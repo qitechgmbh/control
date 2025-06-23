@@ -429,8 +429,6 @@ impl SerialInterfaceDevice<EL6021Port> for EL6021 {
     }
 
     fn serial_interface_read_message(&mut self, _port: EL6021Port) -> Option<Vec<u8>> {
-        //self.debug("serial_interface_read_message".to_string());
-
         if !self.serial_interface_has_messages(_port) {
             return None;
         }
@@ -457,8 +455,6 @@ impl SerialInterfaceDevice<EL6021Port> for EL6021 {
         _port: EL6021Port,
         message: Vec<u8>,
     ) -> Result<(), Error> {
-        //self.debug("serial_interface_write_message".to_string());
-
         if let Some(rx_pdo) = &mut self.rxpdo.com_rx_pdo_map_22_byte {
             // perhaps the 22 could be a constant
             if message.len() > 22 {

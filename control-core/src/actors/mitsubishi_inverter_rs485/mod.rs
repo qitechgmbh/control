@@ -2,7 +2,6 @@ use super::Actor;
 use crate::modbus::{
     ModbusFunctionCode, ModbusRequest, ModbusResponse, calculate_modbus_rtu_timeout,
 };
-use axum::http::request;
 use bitvec::{
     order::{Lsb0, Msb0},
     slice::BitSlice,
@@ -661,7 +660,6 @@ impl Actor for MitsubishiInverterRS485Actor {
                         self.state = State::WaitingForResponse;
                     }
                 }
-
                 _ => (),
             }
             self.response = None;
