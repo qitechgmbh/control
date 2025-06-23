@@ -24,7 +24,7 @@ const MAX_FREQ: f64 = 60.0;
 
 #[derive(Debug)]
 pub struct ScrewSpeedController {
-    pid: PidController,
+    pub pid: PidController,
     pub target_pressure: Pressure,
     pub target_rpm: AngularVelocity,
     pub inverter: MitsubishiInverterRS485Actor,
@@ -203,6 +203,7 @@ impl ScrewSpeedController {
     pub async fn update(&mut self, now: Instant, is_extruding: bool) {
         self.pressure_sensor.act(now).await;
         self.inverter.act(now).await;
+
         let measured_pressure = self.get_pressure();
 
         if !self.uses_rpm && !is_extruding && self.motor_on {
@@ -237,11 +238,10 @@ impl ScrewSpeedController {
                 .update(error.get::<bar>(), now)
                 .clamp(MIN_FREQ, MAX_FREQ);
 
-            //            println!("error:{} freq:{}", error.get::<bar>(), freq);
-
             let frequency = Frequency::new::<hertz>(freq);
 
             self.last_update = now;
+
             self.inverter.set_frequency_target(frequency);
         }
     }
