@@ -60,11 +60,16 @@ export function Extruder2GraphsPage() {
       title: "Back",
       color: "#3b82f6",
     },
+    {
+      newData: middleTemperature,
+      title: "Middle",
+      color: "#ffffff",
+    },
   ].filter((item) => item.newData); // Filter out any null/undefined data
 
   const temperatureConfig: GraphConfig = {
     ...baseConfig,
-    title: "Temperatures (Nozzle, Front, Back)",
+    title: "Temperatures (Nozzle, Front, Back, Middle)",
     exportFilename: "temperatures_data",
     lines: [
       // Target temperature lines
@@ -97,6 +102,17 @@ export function Extruder2GraphsPage() {
               value: backHeatingState.target_temperature,
               label: "Back Target",
               color: "#3b82f6",
+              show: true,
+            },
+          ]
+        : []),
+      ...(middleHeatingState?.target_temperature !== undefined
+        ? [
+            {
+              type: "target" as const,
+              value: middleHeatingState.target_temperature,
+              label: "Middle Target",
+              color: "#ffffff",
               show: true,
             },
           ]
@@ -134,11 +150,16 @@ export function Extruder2GraphsPage() {
       title: "Back",
       color: "#3b82f6",
     },
+    {
+      newData: middlePower,
+      title: "Middle",
+      color: "#ffffff",
+    },
   ].filter((item) => item.newData); // Filter out any null/undefined data
 
   const powerConfig: GraphConfig = {
     ...baseConfig,
-    title: "Power Outputs (Nozzle, Front, Back)",
+    title: "Power Outputs (Nozzle, Front, Back, Middle)",
     exportFilename: "power_data",
     colors: {
       primary: "#10b981",

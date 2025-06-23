@@ -60,7 +60,7 @@ export function exportGraphsToExcel(
     }> = [];
 
     // First pass: collect all series data and count
-    graphDataMap.forEach((getDataFn, graphId) => {
+    graphDataMap.forEach((getDataFn) => {
       const exportData = getDataFn();
       if (exportData?.data) {
         const validSeries = getAllValidSeries(exportData.data);
@@ -122,7 +122,7 @@ function createSummarySheet(
     ["Graphs and Series:", ""],
   ];
 
-  graphDataMap.forEach((getDataFn, graphId) => {
+  graphDataMap.forEach((getDataFn) => {
     const exportData = getDataFn();
     if (exportData?.data) {
       const validSeries = getAllValidSeries(exportData.data);
@@ -218,7 +218,7 @@ function exportSeriesWithStats(
   graphDataMap: Map<string, () => GraphExportData | null>,
   usedSheetNames: Set<string>,
 ): void {
-  graphDataMap.forEach((getDataFn, graphId) => {
+  graphDataMap.forEach((getDataFn) => {
     const exportData = getDataFn();
     if (!exportData?.data) return;
 

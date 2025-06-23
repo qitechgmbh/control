@@ -423,14 +423,7 @@ export function createChart({
               }
             });
           },
-          splits: (
-            _u,
-            _axisIdx,
-            scaleMin,
-            scaleMax,
-            _foundIncr,
-            _foundSpace,
-          ) => {
+          splits: (_u, _axisIdx, scaleMin, scaleMax) => {
             const timeRange = scaleMax - scaleMin;
             const ticks: number[] = [];
 
