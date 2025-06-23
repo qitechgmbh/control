@@ -373,6 +373,8 @@ pub struct EL6021 {
     pub output_ts: u64,
     pub input_ts: u64,
     pub has_messages_last_toggle: bool,
+    pub last_transmit_accepted_toggle: bool,
+    pub last_receive_accepted: bool,
     pub initialized: bool,
 }
 
@@ -410,6 +412,8 @@ impl NewEthercatDevice for EL6021 {
             input_ts: 0,
             has_messages_last_toggle: false,
             initialized: false,
+            last_transmit_accepted_toggle: false,
+            last_receive_accepted: false,
         }
     }
 }
@@ -419,18 +423,36 @@ pub enum EL6021Port {
     SI1, // Serial
 }
 
+impl EL6021 {
+    fn debug(&mut self, msg: String) -> () {
+        let txpdo_opt = &mut self.txpdo.com_tx_pdo_map_22_byte;
+        let txpdo = match txpdo_opt {
+            Some(txpdo_opt) => txpdo_opt,
+            None => return,
+        };
+
+        let rxpdo_opt = &mut self.rxpdo.com_rx_pdo_map_22_byte;
+        let rxpdo = match rxpdo_opt {
+            Some(rxpdo_opt) => rxpdo_opt,
+            None => return,
+        };
+
+        println!("{} {:?} {:?}", msg, rxpdo.control, txpdo.status);
+    }
+}
+
 impl SerialInterfaceDevice<EL6021Port> for EL6021 {
     fn serial_interface_has_messages(&mut self, _port: EL6021Port) -> bool {
         if let Some(tx_pdo) = &mut self.txpdo.com_tx_pdo_map_22_byte {
-            let ret = tx_pdo.status.receive_request != self.has_messages_last_toggle;
-            self.has_messages_last_toggle = tx_pdo.status.receive_request;
-            tx_pdo.status.receive_request = !tx_pdo.status.receive_request;
-            return ret;
+            // Only check if the bit has changed, don't update our state yet
+            return tx_pdo.status.receive_request != self.has_messages_last_toggle;
         }
         return false;
     }
 
     fn serial_interface_read_message(&mut self, _port: EL6021Port) -> Option<Vec<u8>> {
+        //self.debug("serial_interface_read_message".to_string());
+
         if !self.serial_interface_has_messages(_port) {
             return None;
         }
@@ -442,9 +464,10 @@ impl SerialInterfaceDevice<EL6021Port> for EL6021 {
             if received_data.is_empty() {
                 return None;
             }
-            if let Some(rx_pdo) = &mut self.rxpdo.com_rx_pdo_map_22_byte {
-                rx_pdo.control.received_acepted = !rx_pdo.control.received_acepted;
-            }
+
+            // Update our stored state of the toggle bit AFTER reading the data
+            self.has_messages_last_toggle = tx_pdo.status.receive_request;
+
             return Some(received_data);
         } else {
             return None;
@@ -456,6 +479,8 @@ impl SerialInterfaceDevice<EL6021Port> for EL6021 {
         _port: EL6021Port,
         message: Vec<u8>,
     ) -> Result<(), Error> {
+        //self.debug("serial_interface_write_message".to_string());
+
         if let Some(rx_pdo) = &mut self.rxpdo.com_rx_pdo_map_22_byte {
             // perhaps the 22 could be a constant
             if message.len() > 22 {
@@ -470,7 +495,6 @@ impl SerialInterfaceDevice<EL6021Port> for EL6021 {
             rx_pdo.length = message.len() as u8;
             rx_pdo.data = data_buffer;
             rx_pdo.control.transmit_request = !rx_pdo.control.transmit_request;
-            // println!("{:?}", rx_pdo);
             return Ok(());
         } else {
             return Err(anyhow::anyhow!("Error: RxPdo is not available"));
@@ -492,13 +516,12 @@ impl SerialInterfaceDevice<EL6021Port> for EL6021 {
         match port {
             EL6021Port::SI1 => {
                 let rxpdo_opt = &mut self.rxpdo.com_rx_pdo_map_22_byte;
-                let txpdo_opt = &mut self.txpdo.com_tx_pdo_map_22_byte;
 
                 let rxpdo = match rxpdo_opt {
                     Some(rxpdo_opt) => rxpdo_opt,
                     None => return false,
                 };
-
+                let txpdo_opt = &mut self.txpdo.com_tx_pdo_map_22_byte;
                 let txpdo = match txpdo_opt {
                     Some(txpdo_opt) => txpdo_opt,
                     None => return false,
@@ -552,12 +575,47 @@ impl SerialInterfaceDevice<EL6021Port> for EL6021 {
                 {
                     // set inital state of the toggle
                     self.has_messages_last_toggle = txpdo.status.receive_request;
+                    self.last_transmit_accepted_toggle = txpdo.status.transmit_accepted;
+                    self.last_receive_accepted = rxpdo.control.received_acepted;
+
                     return true;
                 }
 
                 return false;
             }
         }
+    }
+
+    fn serial_interface_write_finished(&mut self, port: EL6021Port) -> bool {
+        let txpdo_opt = &mut self.txpdo.com_tx_pdo_map_22_byte;
+        let txpdo = match txpdo_opt {
+            Some(txpdo_opt) => txpdo_opt,
+            None => return false,
+        };
+
+        let rxpdo_opt = &mut self.rxpdo.com_rx_pdo_map_22_byte;
+        let rxpdo = match rxpdo_opt {
+            Some(rxpdo_opt) => rxpdo_opt,
+            None => return false,
+        };
+
+        return rxpdo.control.transmit_request == txpdo.status.transmit_accepted;
+    }
+
+    fn serial_interface_read_finished(&mut self, _port: EL6021Port) -> bool {
+        let txpdo_opt = &mut self.txpdo.com_tx_pdo_map_22_byte;
+        let txpdo = match txpdo_opt {
+            Some(txpdo_opt) => txpdo_opt,
+            None => return false,
+        };
+
+        let rxpdo_opt = &mut self.rxpdo.com_rx_pdo_map_22_byte;
+        let rxpdo = match rxpdo_opt {
+            Some(rxpdo_opt) => rxpdo_opt,
+            None => return false,
+        };
+        rxpdo.control.received_acepted = !rxpdo.control.received_acepted;
+        return rxpdo.control.received_acepted == txpdo.status.receive_request;
     }
 }
 
