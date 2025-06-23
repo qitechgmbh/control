@@ -134,19 +134,11 @@ A slave recognizes message data as one message when a **3.5 character long no-da
 
 ---
 
-# el6021 settings needed for Modbus RTU
-
-Continuous is needed for Modbus RTU
-8000:04 Enable send fifo data continuous TRUE
-8000:06 Enable half duplex
-8000:11 Enable Baud rate 19200 Baud
-8000:15 Data Frame 8N2
-
 # Inverter settings
 
-## Motor Constant
+## Motor Constants
 
-The following is a table that shows which Registers need to be set for the safe operation of the Motor.
+The following is a table that shows which Registers need to be set on the Inverter for the safe operation of the Motor.
 
 | Parameter number (Pr) | Name                         | Value         |
 | --------------------- | ---------------------------- | ------------- |
