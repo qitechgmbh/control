@@ -2,12 +2,37 @@ import { useCallback, useRef } from "react";
 import uPlot from "uplot";
 import { seriesToUPlotData } from "@/lib/timeseries";
 import { buildUPlotData, animateNewPoint, AnimationRefs } from "./animation";
-import { GraphConfig } from "./types";
-export interface LiveModeHandlers {
-  getCurrentLiveEndTimestamp: () => number;
-  updateLiveData: () => void;
-  handleLiveTimeWindow: (timeWindow: number | "all") => void;
-  processNewHistoricalData: () => void;
+import {
+  GraphConfig,
+  BigGraphProps,
+  SeriesData,
+  LiveModeHandlers,
+} from "./types";
+
+// Helper functions for multi-series support
+function normalizeDataSeries(data: BigGraphProps["newData"]): SeriesData[] {
+  if (Array.isArray(data)) {
+    return data;
+  }
+  return [data];
+}
+
+function getPrimarySeriesData(data: BigGraphProps["newData"]) {
+  const normalized = normalizeDataSeries(data);
+  const primarySeries = normalized.find((series) => series.newData !== null);
+  return primarySeries?.newData || null;
+}
+
+function getAllSeriesData(data: BigGraphProps["newData"]): number[][] {
+  const normalized = normalizeDataSeries(data);
+  return normalized
+    .filter((series) => series.newData !== null)
+    .map((series) => {
+      if (!series.newData?.long) return [];
+      const [, values] = seriesToUPlotData(series.newData.long);
+      return values;
+    })
+    .filter((values) => values.length > 0);
 }
 
 export function useLiveMode({
@@ -22,7 +47,7 @@ export function useLiveMode({
   lastProcessedCountRef,
   chartCreatedRef,
 }: {
-  newData: any;
+  newData: BigGraphProps["newData"];
   uplotRef: React.RefObject<uPlot | null>;
   config: GraphConfig;
   animationRefs: AnimationRefs;
@@ -43,14 +68,15 @@ export function useLiveMode({
   const localProcessedCount = useRef(lastProcessedCountRef.current);
 
   const getCurrentLiveEndTimestamp = useCallback((): number => {
-    if (!newData?.long) return Date.now();
+    const primaryData = getPrimarySeriesData(newData);
+    if (!primaryData?.long) return Date.now();
 
-    const [timestamps] = seriesToUPlotData(newData.long);
+    const [timestamps] = seriesToUPlotData(primaryData.long);
     if (timestamps.length === 0) return Date.now();
 
     // Use current data if available and newer, otherwise use last data point
     const lastDataTimestamp = timestamps[timestamps.length - 1];
-    const currentTimestamp = newData.current?.timestamp;
+    const currentTimestamp = primaryData.current?.timestamp;
 
     if (currentTimestamp && currentTimestamp > lastDataTimestamp) {
       return currentTimestamp;
@@ -60,60 +86,91 @@ export function useLiveMode({
   }, [newData]);
 
   const updateLiveData = useCallback(() => {
-    if (!newData?.long || !newData?.current || !uplotRef.current) return;
+    const primaryData = getPrimarySeriesData(newData);
+    if (!primaryData?.long || !primaryData?.current || !uplotRef.current)
+      return;
 
-    const [timestamps, values] = seriesToUPlotData(newData.long);
-    const cur = newData.current;
-    const liveTimestamps = [...timestamps];
-    const liveValues = [...values];
+    try {
+      const [timestamps, values] = seriesToUPlotData(primaryData.long);
+      const cur = primaryData.current;
+      const liveTimestamps = [...timestamps];
+      const liveValues = [...values];
 
-    liveTimestamps.push(cur.timestamp);
-    liveValues.push(cur.value);
+      liveTimestamps.push(cur.timestamp);
+      liveValues.push(cur.value);
 
-    const liveData = buildUPlotData(
-      liveTimestamps,
-      liveValues,
-      undefined,
-      animationRefs.realPointsCount,
-      config,
-    );
-    uplotRef.current.setData(liveData);
+      // Get all series data and extend with current values
+      const allSeriesValues = getAllSeriesData(newData);
+      const normalized = normalizeDataSeries(newData);
 
-    const latestTimestamp = liveTimestamps[liveTimestamps.length - 1];
-
-    if (viewMode === "default") {
-      let xMin, xMax;
-
-      if (selectedTimeWindow === "all") {
-        const fullStart = startTimeRef.current ?? liveTimestamps[0];
-        xMin = fullStart;
-        xMax = latestTimestamp;
-      } else {
-        xMin = latestTimestamp - (selectedTimeWindow as number);
-        xMax = latestTimestamp;
+      // Only include additional series if we have multiple series
+      let additionalSeriesValues: number[][] = [];
+      if (normalized.length > 1) {
+        // Extend each series with current or last known value
+        additionalSeriesValues = allSeriesValues
+          .slice(1)
+          .map((seriesValues, index) => {
+            const seriesIndex = index + 1; // Account for primary series
+            const seriesData = normalized[seriesIndex]?.newData;
+            const currentValue =
+              seriesData?.current?.value ??
+              (seriesValues.length > 0
+                ? seriesValues[seriesValues.length - 1]
+                : 0);
+            return [...seriesValues, currentValue];
+          });
       }
 
-      uplotRef.current.batch(() => {
-        uplotRef.current!.setScale("x", { min: xMin, max: xMax });
-        updateYAxisScale(liveTimestamps, liveValues, xMin, xMax);
-      });
-    } else if (viewMode === "all") {
-      const fullStart = startTimeRef.current ?? liveTimestamps[0];
-      uplotRef.current.batch(() => {
-        uplotRef.current!.setScale("x", {
-          min: fullStart,
-          max: latestTimestamp,
+      const liveData = buildUPlotData(
+        liveTimestamps,
+        liveValues,
+        undefined,
+        animationRefs.realPointsCount,
+        config,
+        additionalSeriesValues,
+      );
+
+      uplotRef.current.setData(liveData);
+
+      const latestTimestamp = liveTimestamps[liveTimestamps.length - 1];
+
+      if (viewMode === "default") {
+        let xMin, xMax;
+
+        if (selectedTimeWindow === "all") {
+          const fullStart = startTimeRef.current ?? liveTimestamps[0];
+          xMin = fullStart;
+          xMax = latestTimestamp;
+        } else {
+          xMin = latestTimestamp - (selectedTimeWindow as number);
+          xMax = latestTimestamp;
+        }
+
+        uplotRef.current.batch(() => {
+          uplotRef.current!.setScale("x", { min: xMin, max: xMax });
+          updateYAxisScale(liveTimestamps, liveValues, xMin, xMax);
         });
-        updateYAxisScale(
-          liveTimestamps,
-          liveValues,
-          fullStart,
-          latestTimestamp,
-        );
-      });
-    }
-    if (startTimeRef.current === null && liveTimestamps.length > 0) {
-      localStartTime.current = liveTimestamps[0];
+      } else if (viewMode === "all") {
+        const fullStart = startTimeRef.current ?? liveTimestamps[0];
+        uplotRef.current.batch(() => {
+          uplotRef.current!.setScale("x", {
+            min: fullStart,
+            max: latestTimestamp,
+          });
+          updateYAxisScale(
+            liveTimestamps,
+            liveValues,
+            fullStart,
+            latestTimestamp,
+          );
+        });
+      }
+
+      if (startTimeRef.current === null && liveTimestamps.length > 0) {
+        localStartTime.current = liveTimestamps[0];
+      }
+    } catch (error) {
+      console.warn("Error in updateLiveData:", error);
     }
   }, [
     newData,
@@ -128,39 +185,51 @@ export function useLiveMode({
 
   const handleLiveTimeWindow = useCallback(
     (timeWindow: number | "all") => {
-      if (!uplotRef.current || !newData?.long) return;
+      if (!uplotRef.current) return;
 
-      const [timestamps, values] = seriesToUPlotData(newData.long);
+      const primaryData = getPrimarySeriesData(newData);
+      if (!primaryData?.long) return;
 
-      if (timeWindow === "all") {
-        // Live mode: show all data up to the latest timestamp
-        const fullStart =
-          timestamps.length > 0
-            ? timestamps[0]
-            : Date.now() - 24 * 60 * 60 * 1000;
-        const fullEnd =
-          timestamps.length > 0
-            ? timestamps[timestamps.length - 1]
-            : Date.now();
+      try {
+        const [timestamps, values] = seriesToUPlotData(primaryData.long);
 
-        uplotRef.current.setScale("x", { min: fullStart, max: fullEnd });
-        updateYAxisScale(timestamps, values, fullStart, fullEnd);
-      } else {
-        // Handle specific time window in live mode
-        const latestTimestamp =
-          timestamps.length > 0
-            ? timestamps[timestamps.length - 1]
-            : Date.now();
-        const viewStart = latestTimestamp - timeWindow;
+        if (timeWindow === "all") {
+          // Live mode: show all data up to the latest timestamp
+          const fullStart =
+            timestamps.length > 0
+              ? timestamps[0]
+              : Date.now() - 24 * 60 * 60 * 1000;
+          const fullEnd =
+            timestamps.length > 0
+              ? timestamps[timestamps.length - 1]
+              : Date.now();
 
-        uplotRef.current.setScale("x", {
-          min: viewStart,
-          max: latestTimestamp,
-        });
-        updateYAxisScale(timestamps, values, viewStart, latestTimestamp);
+          uplotRef.current.batch(() => {
+            uplotRef.current!.setScale("x", { min: fullStart, max: fullEnd });
+            updateYAxisScale(timestamps, values, fullStart, fullEnd);
+          });
+        } else {
+          // Handle specific time window in live mode
+          const latestTimestamp =
+            timestamps.length > 0
+              ? timestamps[timestamps.length - 1]
+              : Date.now();
+          const viewStart = latestTimestamp - timeWindow;
+
+          uplotRef.current.batch(() => {
+            uplotRef.current!.setScale("x", {
+              min: viewStart,
+              max: latestTimestamp,
+            });
+            updateYAxisScale(timestamps, values, viewStart, latestTimestamp);
+          });
+        }
+
+        localanimationData.current = { timestamps, values };
+        localProcessedCount.current = timestamps.length;
+      } catch (error) {
+        console.warn("Error in handleLiveTimeWindow:", error);
       }
-      localanimationData.current = { timestamps, values };
-      localProcessedCount.current = timestamps.length;
     },
     [uplotRef, newData, updateYAxisScale, animationRefs, lastProcessedCountRef],
   );
@@ -168,90 +237,115 @@ export function useLiveMode({
   const processNewHistoricalData = useCallback(() => {
     if (
       !uplotRef.current ||
-      !newData?.long ||
       !chartCreatedRef.current ||
       viewMode === "manual"
     ) {
       return;
     }
 
-    const [timestamps, values] = seriesToUPlotData(newData.long);
-    if (timestamps.length === 0) return;
+    const primaryData = getPrimarySeriesData(newData);
+    if (!primaryData?.long) return;
 
-    if (timestamps.length <= lastProcessedCountRef.current) {
-      return;
-    }
+    try {
+      const [timestamps, values] = seriesToUPlotData(primaryData.long);
+      if (timestamps.length === 0) return;
 
-    const currentData = animationRefs.lastRenderedData.current;
-    const targetData = { timestamps, values };
+      // Check if we need to process new data
+      if (timestamps.length <= lastProcessedCountRef.current) {
+        return;
+      }
 
-    if (targetData.timestamps.length > currentData.timestamps.length) {
-      const maxAnimatableLength = Math.min(
-        targetData.timestamps.length,
-        currentData.timestamps.length + 1,
-      );
+      const currentData = animationRefs.lastRenderedData.current;
+      const targetData = { timestamps, values };
 
-      const limitedTargetData = {
-        timestamps: targetData.timestamps.slice(0, maxAnimatableLength),
-        values: targetData.values.slice(0, maxAnimatableLength),
+      // Create function to get all series data for animation
+      const getAllSeriesDataForAnimation = () => {
+        const allSeriesValues = getAllSeriesData(newData);
+        return allSeriesValues.slice(1); // Skip primary series as it's already included
       };
 
-      animateNewPoint(
-        currentData,
-        limitedTargetData,
-        animationRefs,
-        uplotRef,
-        true, // isLiveMode
-        viewMode,
-        selectedTimeWindow,
-        startTimeRef,
-        config,
-        updateYAxisScale,
-      );
-    } else if (targetData.timestamps.length === currentData.timestamps.length) {
-      let hasChanges = false;
-      for (let i = 0; i < targetData.values.length; i++) {
-        if (Math.abs(targetData.values[i] - currentData.values[i]) > 0.001) {
-          hasChanges = true;
-          break;
-        }
-      }
-
-      if (hasChanges) {
-        const uData = buildUPlotData(
-          timestamps,
-          values,
-          undefined,
-          animationRefs.realPointsCount,
-          config,
+      if (targetData.timestamps.length > currentData.timestamps.length) {
+        const maxAnimatableLength = Math.min(
+          targetData.timestamps.length,
+          currentData.timestamps.length + 1,
         );
-        uplotRef.current.setData(uData);
-        localanimationData.current = { timestamps, values };
 
-        const lastTimestamp = timestamps[timestamps.length - 1] ?? 0;
-        if (viewMode === "default") {
-          let xMin: number | undefined, xMax: number | undefined;
+        const limitedTargetData = {
+          timestamps: targetData.timestamps.slice(0, maxAnimatableLength),
+          values: targetData.values.slice(0, maxAnimatableLength),
+        };
 
-          if (selectedTimeWindow === "all") {
-            const fullStart = startTimeRef.current ?? timestamps[0];
-            xMin = fullStart;
-            xMax = lastTimestamp;
-          } else {
-            xMin = lastTimestamp - (selectedTimeWindow as number);
-            xMax = lastTimestamp;
+        animateNewPoint(
+          currentData,
+          limitedTargetData,
+          animationRefs,
+          uplotRef,
+          true, // isLiveMode
+          viewMode,
+          selectedTimeWindow,
+          startTimeRef,
+          config,
+          updateYAxisScale,
+          getAllSeriesDataForAnimation,
+        );
+      } else if (
+        targetData.timestamps.length === currentData.timestamps.length
+      ) {
+        let hasChanges = false;
+        for (let i = 0; i < targetData.values.length; i++) {
+          if (Math.abs(targetData.values[i] - currentData.values[i]) > 0.001) {
+            hasChanges = true;
+            break;
           }
+        }
 
-          uplotRef.current.setScale("x", { min: xMin, max: xMax });
-          updateYAxisScale(timestamps, values, xMin, xMax);
-        } else if (viewMode === "all") {
-          const fullStart = startTimeRef.current ?? timestamps[0];
-          uplotRef.current.setScale("x", {
-            min: fullStart,
-            max: lastTimestamp,
-          });
-          updateYAxisScale(timestamps, values, fullStart, lastTimestamp);
+        if (hasChanges) {
+          const allSeriesValues = getAllSeriesData(newData);
+          const additionalSeriesValues = allSeriesValues.slice(1); // Skip primary series
+
+          const uData = buildUPlotData(
+            timestamps,
+            values,
+            undefined,
+            animationRefs.realPointsCount,
+            config,
+            additionalSeriesValues,
+          );
+
+          uplotRef.current.setData(uData);
+          localanimationData.current = { timestamps, values };
+
+          const lastTimestamp = timestamps[timestamps.length - 1] ?? 0;
+          if (viewMode === "default") {
+            let xMin: number | undefined, xMax: number | undefined;
+
+            if (selectedTimeWindow === "all") {
+              const fullStart = startTimeRef.current ?? timestamps[0];
+              xMin = fullStart;
+              xMax = lastTimestamp;
+            } else {
+              xMin = lastTimestamp - (selectedTimeWindow as number);
+              xMax = lastTimestamp;
+            }
+
+            uplotRef.current.batch(() => {
+              uplotRef.current!.setScale("x", { min: xMin, max: xMax });
+              updateYAxisScale(timestamps, values, xMin, xMax);
+            });
+          } else if (viewMode === "all") {
+            const fullStart = startTimeRef.current ?? timestamps[0];
+            uplotRef.current.batch(() => {
+              uplotRef.current!.setScale("x", {
+                min: fullStart,
+                max: lastTimestamp,
+              });
+              updateYAxisScale(timestamps, values, fullStart, lastTimestamp);
+            });
+          }
         }
       }
+    } catch (error) {
+      console.warn("Error in processNewHistoricalData:", error);
     }
   }, [
     uplotRef,
@@ -273,3 +367,4 @@ export function useLiveMode({
     processNewHistoricalData,
   };
 }
+export type { LiveModeHandlers };
