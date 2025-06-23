@@ -428,7 +428,7 @@ impl MitsubishiInverterRS485Actor {
                 }
                 Err(_) => {
                     self.last_message_size = 22;
-                    self.state = State::WaitingForReceiveAccept;
+                    //                    self.state = State::WaitingForReceiveAccept;
                     Err(anyhow::anyhow!("error"))
                 }
             }
@@ -470,8 +470,8 @@ impl MitsubishiInverterRS485Actor {
                 None => return,
             };
             let modbus_request: Vec<u8> = request.request.clone().into();
-            let res = (self.serial_interface.write_message)(modbus_request.clone()).await;
 
+            let res = (self.serial_interface.write_message)(modbus_request.clone()).await;
             match res {
                 Ok(_) => {
                     self.next_response_type = request.expected_response_type;
@@ -565,14 +565,16 @@ impl MitsubishiInverterRS485Actor {
         };
     }
 
-    fn handle_response(&mut self, resp: ModbusResponse) {
+    async fn handle_no_response(&mut self) {}
+
+    async fn handle_response(&mut self, resp: ModbusResponse) {
         match self.next_response_type {
             ResponseType::ReadFrequency => (),
             ResponseType::WriteFrequency => (),
             ResponseType::ReadMotorFrequency => self.handle_motor_frequency(resp),
             ResponseType::InverterStatus => self.handle_read_inverter_status(resp),
             ResponseType::InverterControl => (),
-            ResponseType::NoResponse => (),
+            ResponseType::NoResponse => self.handle_no_response().await,
         }
     }
 }
@@ -619,18 +621,23 @@ impl Actor for MitsubishiInverterRS485Actor {
             }
 
             self.add_request(MitsubishiControlRequests::ReadMotorFrequency.into());
-            // inverterstatus has less priority than readmotor
             self.add_request(MitsubishiControlRequests::ReadInverterStatus.into());
-
             self.last_ts = now_ts;
+
             match self.state {
                 State::WaitingForResponse => {
                     let ret = self.read_modbus_response().await;
                     match ret {
                         Ok(ret) => {
-                            self.handle_response(ret);
+                            self.handle_response(ret).await;
                         }
-                        Err(_) => (), // Do nothing for now
+                        Err(_) => {
+                            if let MitsubishiControlRequests::ResetInverter =
+                                self.last_control_request_type
+                            {
+                                self.state = State::ReadyToSend;
+                            }
+                        }
                     }
 
                     self.next_response_type = ResponseType::NoResponse;
@@ -641,11 +648,16 @@ impl Actor for MitsubishiInverterRS485Actor {
                     self.set_ignored_times_modbus_requests();
                 }
                 State::WaitingForReceiveAccept => {
+                    _ = (self.serial_interface.read_finished)().await;
                     self.state = State::ReadyToSend;
                 }
                 State::WaitingForRequestAccept => {
-                    self.state = State::WaitingForResponse;
+                    let res = (self.serial_interface.write_finished)().await;
+                    if res == true {
+                        self.state = State::WaitingForResponse;
+                    }
                 }
+
                 _ => (),
             }
             self.response = None;
