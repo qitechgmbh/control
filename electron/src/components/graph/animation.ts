@@ -65,13 +65,25 @@ export function buildUPlotData(
   realPointsCount: number | undefined,
   realPointsCountRef: React.RefObject<number>,
   config: { lines?: Array<{ show?: boolean; value: number }> },
+  allSeriesData?: number[][],
 ): uPlot.AlignedData {
-  const uData: uPlot.AlignedData = [timestamps, values];
+  const uData: uPlot.AlignedData = [timestamps];
+
+  // Add primary series (for animation)
+  uData.push(values);
+
+  // Add additional series if provided
+  if (allSeriesData) {
+    allSeriesData.forEach((seriesValues) => {
+      uData.push(seriesValues);
+    });
+  }
 
   if (realPointsCount !== undefined) {
     realPointsCountRef.current = realPointsCount;
   }
 
+  // Add config lines
   config.lines?.forEach((line) => {
     if (line.show !== false) {
       uData.push(timestamps.map(() => line.value));
@@ -97,6 +109,7 @@ export function animateNewPoint(
     xMin?: number,
     xMax?: number,
   ) => void,
+  getAllSeriesData?: () => number[][],
 ): void {
   if (targetData.timestamps.length <= currentData.timestamps.length) {
     return;
@@ -169,13 +182,18 @@ export function animateNewPoint(
       refs.animationState.current.isAnimating = false;
     }
 
+    // Get all series data for complete uPlot update
+    const allSeriesData = getAllSeriesData ? getAllSeriesData() : undefined;
+
     const animatedUData = buildUPlotData(
       animatedTimestamps,
       animatedValues,
       animatedTimestamps.length,
       refs.realPointsCount,
       config,
+      allSeriesData,
     );
+
     uplotRef.current.setData(animatedUData);
 
     if (isLiveMode && animatedTimestamps.length > 0) {
@@ -225,6 +243,7 @@ export function animateNewPoint(
           startTimeRef,
           config,
           updateYAxisScale,
+          getAllSeriesData,
         );
       }
     }

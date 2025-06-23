@@ -1,19 +1,18 @@
 import uPlot from "uplot";
-import { seriesToUPlotData } from "@/lib/timeseries";
-import { buildUPlotData } from "./animation";
+import { seriesToUPlotData, TimeSeries } from "@/lib/timeseries";
 import {
   createEventHandlers,
   attachEventHandlers,
   HandlerRefs,
   HandlerCallbacks,
 } from "./handlers";
-import { BigGraphProps } from "./types";
+import { BigGraphProps, SeriesData } from "./types";
 import { AnimationRefs } from "./animation";
 
 export interface CreateChartParams {
-  containerRef: React.RefObject<HTMLDivElement | null>; // Changed this line
+  containerRef: React.RefObject<HTMLDivElement | null>;
   uplotRef: React.RefObject<uPlot | null>;
-  newData: NonNullable<BigGraphProps["newData"]>;
+  newData: BigGraphProps["newData"];
   config: BigGraphProps["config"];
   colors: {
     primary: string;
@@ -48,6 +47,28 @@ export interface CreateChartParams {
   setCursorValue: React.Dispatch<React.SetStateAction<number | null>>;
 }
 
+// Helper function to normalize data to array format
+function normalizeDataSeries(data: BigGraphProps["newData"]): SeriesData[] {
+  if (Array.isArray(data)) {
+    return data;
+  }
+  return [data];
+}
+
+// Helper function to get all valid TimeSeries from DataSeries
+function getAllTimeSeries(
+  data: BigGraphProps["newData"],
+): Array<{ series: TimeSeries; title?: string; color?: string }> {
+  const normalized = normalizeDataSeries(data);
+  return normalized
+    .filter((series) => series.newData !== null)
+    .map((series) => ({
+      series: series.newData!,
+      title: series.title,
+      color: series.color,
+    }));
+}
+
 export function createChart({
   containerRef,
   uplotRef,
@@ -70,22 +91,35 @@ export function createChart({
   setIsLiveMode,
   setCursorValue,
 }: CreateChartParams): (() => void) | undefined {
-  if (!containerRef.current || !newData?.long) return;
+  if (!containerRef.current) return;
 
-  const [timestamps, values] = seriesToUPlotData(newData.long);
+  const allSeries = getAllTimeSeries(newData);
+  if (allSeries.length === 0) return;
+
+  // Use the first series for timing calculations
+  const primarySeries = allSeries[0].series;
+  const [timestamps, primaryValues] = seriesToUPlotData(primarySeries.long);
   if (timestamps.length === 0) return;
 
   if (startTimeRef.current === null && timestamps.length > 0) {
     startTimeRef.current = timestamps[0];
   }
 
-  const uData = buildUPlotData(
-    timestamps,
-    values,
-    undefined,
-    animationRefs.realPointsCount,
-    config,
-  );
+  // Build uPlot data for all series
+  const uPlotData: uPlot.AlignedData = [timestamps as any];
+
+  allSeries.forEach(({ series }) => {
+    const [, values] = seriesToUPlotData(series.long);
+    uPlotData.push(values as any);
+  });
+
+  // Add config lines data
+  config.lines?.forEach((line) => {
+    if (line.show !== false) {
+      const lineData = new Array(timestamps.length).fill(line.value);
+      uPlotData.push(lineData as any);
+    }
+  });
 
   const fullStart = startTimeRef.current ?? timestamps[0] ?? 0;
 
@@ -97,31 +131,34 @@ export function createChart({
     initialMin = fullStart;
     initialMax = getHistoricalEndTimestamp();
   } else {
-    // Remove Math.max constraint for historical mode
     const endTimestamp = getHistoricalEndTimestamp();
 
     if (isLiveMode) {
-      // Live mode: constrain to available data
       const defaultViewStart = Math.max(
         endTimestamp - (selectedTimeWindow as number),
         fullStart,
       );
       initialMin = defaultViewStart;
     } else {
-      // Historical mode: show full time window regardless of available data
       initialMin = endTimestamp - (selectedTimeWindow as number);
     }
 
     initialMax = endTimestamp;
   }
 
-  // Calculate initial Y range
+  // Calculate initial Y range from all series
   const initialVisibleValues: number[] = [];
-  for (let i = 0; i < timestamps.length; i++) {
-    if (timestamps[i] >= initialMin && timestamps[i] <= initialMax) {
-      initialVisibleValues.push(values[i]);
+  allSeries.forEach(({ series }) => {
+    const [seriesTimestamps, seriesValues] = seriesToUPlotData(series.long);
+    for (let i = 0; i < seriesTimestamps.length; i++) {
+      if (
+        seriesTimestamps[i] >= initialMin &&
+        seriesTimestamps[i] <= initialMax
+      ) {
+        initialVisibleValues.push(seriesValues[i]);
+      }
     }
-  }
+  });
 
   config.lines?.forEach((line) => {
     if (line.show !== false) {
@@ -130,7 +167,10 @@ export function createChart({
   });
 
   if (initialVisibleValues.length === 0) {
-    initialVisibleValues.push(...values);
+    allSeries.forEach(({ series }) => {
+      const [, values] = seriesToUPlotData(series.long);
+      initialVisibleValues.push(...values);
+    });
     config.lines?.forEach((line) => {
       if (line.show !== false) {
         initialVisibleValues.push(line.value);
@@ -155,25 +195,31 @@ export function createChart({
   const width = rect.width;
   const height = Math.min(rect.height, window.innerHeight * 0.5);
 
-  const seriesConfig: uPlot.Series[] = [
-    { label: "Time" },
-    {
-      label: "Value",
-      stroke: colors.primary,
+  // Build series configuration
+  const seriesConfig: uPlot.Series[] = [{ label: "Time" }];
+
+  // Add data series
+  const defaultColors = ["#3b82f6", "#ef4444", "#10b981", "#f59e0b", "#8b5cf6"];
+  allSeries.forEach(({ title, color }, index) => {
+    seriesConfig.push({
+      label: title || `Series ${index + 1}`,
+      stroke: color || defaultColors[index % defaultColors.length],
       width: 2,
       spanGaps: true,
+      show: true,
       points: {
         show: (_u, _seriesIdx, dataIdx) => {
           return dataIdx < animationRefs.realPointsCount.current;
         },
         size: 6,
-        stroke: colors.primary,
-        fill: colors.primary,
+        stroke: color || defaultColors[index % defaultColors.length],
+        fill: color || defaultColors[index % defaultColors.length],
         width: 2,
       },
-    },
-  ];
+    });
+  });
 
+  // Add config lines
   config.lines?.forEach((line) => {
     if (line.show !== false) {
       seriesConfig.push({
@@ -182,6 +228,7 @@ export function createChart({
         width: line.width ?? 1,
         dash: line.dash ?? (line.type === "threshold" ? [5, 5] : undefined),
         show: true,
+        points: { show: false },
       });
     }
   });
@@ -208,7 +255,7 @@ export function createChart({
         sync: { key: "myCursor" },
       },
       legend: {
-        show: false,
+        show: config.showLegend ?? allSeries.length > 1,
       },
       hooks: {
         setScale: [
@@ -216,8 +263,32 @@ export function createChart({
             if (handlerRefs.isUserZoomingRef.current) {
               const xScale = u.scales.x;
               if (xScale.min !== undefined && xScale.max !== undefined) {
-                const [timestamps, values] = seriesToUPlotData(newData.long);
-                updateYAxisScale(timestamps, values, xScale.min, xScale.max);
+                // Update Y axis based on all visible series
+                const allVisibleValues: number[] = [];
+                allSeries.forEach(({ series }) => {
+                  const [seriesTimestamps, seriesValues] = seriesToUPlotData(
+                    series.long,
+                  );
+                  for (let i = 0; i < seriesTimestamps.length; i++) {
+                    if (
+                      seriesTimestamps[i] >= xScale.min! &&
+                      seriesTimestamps[i] <= xScale.max!
+                    ) {
+                      allVisibleValues.push(seriesValues[i]);
+                    }
+                  }
+                });
+
+                if (allVisibleValues.length > 0) {
+                  const minY = Math.min(...allVisibleValues);
+                  const maxY = Math.max(...allVisibleValues);
+                  const range = maxY - minY || Math.abs(maxY) * 0.1 || 1;
+
+                  u.setScale("y", {
+                    min: minY - range * 0.1,
+                    max: maxY + range * 0.1,
+                  });
+                }
 
                 manualScaleRef.current = {
                   x: { min: xScale.min ?? 0, max: xScale.max ?? 0 },
@@ -230,7 +301,6 @@ export function createChart({
                 setViewMode("manual");
                 setIsLiveMode(false);
 
-                // Prop-based sync
                 if (syncGraph?.onZoomChange) {
                   syncGraph.onZoomChange(graphId, {
                     min: xScale.min ?? 0,
@@ -255,8 +325,8 @@ export function createChart({
               u.data[1][u.cursor.idx] !== undefined
             ) {
               const timestamp = u.data[0][u.cursor.idx];
-              const value = u.data[1][u.cursor.idx];
-              const cur = newData?.current;
+              const value = u.data[1][u.cursor.idx]; // Use first series for cursor value
+              const cur = allSeries[0]?.series?.current;
 
               const isNearCurrent =
                 cur &&
@@ -303,7 +373,6 @@ export function createChart({
               return ticks.map((ts) => {
                 const date = new Date(ts);
                 return date.toLocaleTimeString(undefined, {
-                  // undefined uses system locale
                   hour12: false,
                   hour: "2-digit",
                   minute: "2-digit",
@@ -318,7 +387,6 @@ export function createChart({
               const date = new Date(ts);
 
               if (timeRange <= 30 * 1000) {
-                // For very short ranges, show seconds
                 return date.toLocaleTimeString(undefined, {
                   hour12: false,
                   hour: "2-digit",
@@ -326,7 +394,6 @@ export function createChart({
                   second: "2-digit",
                 });
               } else if (timeRange <= 5 * 60 * 1000) {
-                // For 5 minute ranges, show seconds
                 return date.toLocaleTimeString(undefined, {
                   hour12: false,
                   hour: "2-digit",
@@ -334,21 +401,18 @@ export function createChart({
                   second: "2-digit",
                 });
               } else if (timeRange <= 60 * 60 * 1000) {
-                // For hour ranges, show minutes
                 return date.toLocaleTimeString(undefined, {
                   hour12: false,
                   hour: "2-digit",
                   minute: "2-digit",
                 });
               } else if (timeRange <= 24 * 60 * 60 * 1000) {
-                // For day ranges, show hours and minutes
                 return date.toLocaleTimeString(undefined, {
                   hour12: false,
                   hour: "2-digit",
                   minute: "2-digit",
                 });
               } else {
-                // For longer ranges, show date and time
                 return date.toLocaleString(undefined, {
                   month: "short",
                   day: "numeric",
@@ -359,14 +423,7 @@ export function createChart({
               }
             });
           },
-          splits: (
-            _u,
-            _axisIdx,
-            scaleMin,
-            scaleMax,
-            _foundIncr,
-            _foundSpace,
-          ) => {
+          splits: (_u, _axisIdx, scaleMin, scaleMax) => {
             const timeRange = scaleMax - scaleMin;
             const ticks: number[] = [];
 
@@ -456,7 +513,7 @@ export function createChart({
 
       series: seriesConfig,
     },
-    uData,
+    uPlotData,
     containerRef.current,
   );
 
@@ -486,9 +543,8 @@ export function createChart({
 
   animationRefs.lastRenderedData.current = {
     timestamps: [...timestamps],
-    values: [...values],
+    values: [...primaryValues],
   };
 
-  // Return cleanup function
   return cleanup;
 }
