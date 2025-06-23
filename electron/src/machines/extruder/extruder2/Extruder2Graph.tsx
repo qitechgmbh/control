@@ -1,11 +1,10 @@
 import { Page } from "@/components/Page";
 import {
-  BigGraph,
-  GraphConfig,
-  GraphSyncProvider,
-  GraphControls,
-  FloatingControlPanel,
-} from "@/helpers/BigGraph";
+  AutoSyncedBigGraph,
+  SyncedFloatingControlPanel,
+  useGraphSync,
+  type GraphConfig,
+} from "@/components/graph";
 import React from "react";
 import { useExtruder2 } from "./useExtruder";
 
@@ -34,39 +33,112 @@ export function Extruder2GraphsPage() {
     targetRpm,
   } = useExtruder2();
 
-  // Temperature graph configs
-  const createTemperatureConfig = (
-    title: string,
-    targetTemp?: number,
-  ): GraphConfig => ({
-    title,
-    description: "Real-time temperature monitoring",
+  const syncHook = useGraphSync(30 * 60 * 1000, "extruder-graphs");
+
+  // Base config
+  const baseConfig: GraphConfig = {
     defaultTimeWindow: 30 * 60 * 1000, // 30 minutes
-    exportFilename: `${title.toLowerCase().replace(" ", "_")}_data`,
-    lines:
-      targetTemp !== undefined
+    exportFilename: "extruder_data",
+    showLegend: true,
+    title: "extruder data",
+  };
+
+  // Combined Temperature Graph (nozzle, front, back)
+  const temperatureData = [
+    {
+      newData: nozzleTemperature,
+      title: "Nozzle",
+      color: "#ef4444",
+    },
+    {
+      newData: frontTemperature,
+      title: "Front",
+      color: "#f59e0b",
+    },
+    {
+      newData: backTemperature,
+      title: "Back",
+      color: "#3b82f6",
+    },
+  ].filter((item) => item.newData); // Filter out any null/undefined data
+
+  const temperatureConfig: GraphConfig = {
+    ...baseConfig,
+    title: "Temperatures (Nozzle, Front, Back)",
+    exportFilename: "temperatures_data",
+    lines: [
+      // Target temperature lines
+      ...(nozzleHeatingState?.target_temperature !== undefined
         ? [
             {
-              type: "target",
-              value: targetTemp,
-              label: "Target Temperature",
-              color: "#6b7280",
+              type: "target" as const,
+              value: nozzleHeatingState.target_temperature,
+              label: "Nozzle Target",
+              color: "#ef4444",
+              show: true,
             },
           ]
-        : [],
+        : []),
+      ...(frontHeatingState?.target_temperature !== undefined
+        ? [
+            {
+              type: "target" as const,
+              value: frontHeatingState.target_temperature,
+              label: "Front Target",
+              color: "#f59e0b",
+              show: true,
+            },
+          ]
+        : []),
+      ...(backHeatingState?.target_temperature !== undefined
+        ? [
+            {
+              type: "target" as const,
+              value: backHeatingState.target_temperature,
+              label: "Back Target",
+              color: "#3b82f6",
+              show: true,
+            },
+          ]
+        : []),
+      // Safety threshold
+      {
+        type: "threshold",
+        value: 250,
+        label: "Safety Limit",
+        color: "#dc2626",
+      },
+    ],
     colors: {
       primary: "#ef4444",
       grid: "#e2e8f0",
       axis: "#64748b",
       background: "#ffffff",
     },
-  });
+  };
 
-  // Power graph config
+  // Combined Power Graph (nozzle, front, back)
+  const powerData = [
+    {
+      newData: nozzlePower,
+      title: "Nozzle",
+      color: "#ef4444",
+    },
+    {
+      newData: frontPower,
+      title: "Front",
+      color: "#f59e0b",
+    },
+    {
+      newData: backPower,
+      title: "Back",
+      color: "#3b82f6",
+    },
+  ].filter((item) => item.newData); // Filter out any null/undefined data
+
   const powerConfig: GraphConfig = {
-    title: "Power Output",
-    description: "Real-time power monitoring",
-    defaultTimeWindow: 30 * 60 * 1000, // 30 minutes
+    ...baseConfig,
+    title: "Power Outputs (Nozzle, Front, Back)",
     exportFilename: "power_data",
     colors: {
       primary: "#10b981",
@@ -76,23 +148,30 @@ export function Extruder2GraphsPage() {
     },
   };
 
-  // Pressure/RPM graph configs
+  // Pressure Graph (single with target line)
   const pressureConfig: GraphConfig = {
+    ...baseConfig,
     title: "Pressure",
-    description: "Real-time pressure monitoring",
-    defaultTimeWindow: 30 * 60 * 1000, // 30 minutes
     exportFilename: "pressure_data",
-    lines:
-      targetBar !== undefined
+    lines: [
+      ...(targetBar !== undefined
         ? [
             {
-              type: "target",
+              type: "target" as const,
               value: targetBar,
               label: "Target Pressure",
               color: "#6b7280",
+              show: true,
             },
           ]
-        : [],
+        : []),
+      {
+        type: "threshold",
+        value: 50,
+        label: "Maximum Pressure",
+        color: "#ef4444",
+      },
+    ],
     colors: {
       primary: "#3b82f6",
       grid: "#e2e8f0",
@@ -101,22 +180,30 @@ export function Extruder2GraphsPage() {
     },
   };
 
+  // RPM Graph (single with target line)
   const rpmConfig: GraphConfig = {
+    ...baseConfig,
     title: "RPM",
-    description: "Real-time RPM monitoring",
-    defaultTimeWindow: 30 * 60 * 1000, // 30 minutes
     exportFilename: "rpm_data",
-    lines:
-      targetRpm !== undefined
+    lines: [
+      ...(targetRpm !== undefined
         ? [
             {
-              type: "target",
+              type: "target" as const,
               value: targetRpm,
               label: "Target RPM",
               color: "#6b7280",
+              show: true,
             },
           ]
-        : [],
+        : []),
+      {
+        type: "threshold",
+        value: 1000,
+        label: "Maximum RPM",
+        color: "#ef4444",
+      },
+    ],
     colors: {
       primary: "#8b5cf6",
       grid: "#e2e8f0",
@@ -126,121 +213,58 @@ export function Extruder2GraphsPage() {
   };
 
   return (
-    <Page className="pb-20">
-      <GraphSyncProvider groupId="extruder-group">
-        <div className="flex flex-col gap-4">
-          <GraphControls groupId="extruder-group" />
-
-          {/* Temperature Graphs */}
-          <BigGraph
-            newData={nozzleTemperature}
+    <Page className="pb-25">
+      <div className="flex flex-col gap-4">
+        {/* 1. Combined Temperature Graph (nozzle, front, back) */}
+        {temperatureData.length > 0 && (
+          <AutoSyncedBigGraph
+            syncHook={syncHook}
+            newData={temperatureData}
+            config={temperatureConfig}
             unit="deg"
             renderValue={(value) => value.toFixed(1)}
-            config={createTemperatureConfig(
-              "Nozzle Temperature",
-              nozzleHeatingState?.target_temperature,
-            )}
-            syncGroupId="extruder-group"
-            graphId="nozzle-temp-graph"
+            graphId="combined-temperatures"
           />
+        )}
 
-          <BigGraph
-            newData={frontTemperature}
-            unit="deg"
-            renderValue={(value) => value.toFixed(1)}
-            config={createTemperatureConfig(
-              "Front Temperature",
-              frontHeatingState?.target_temperature,
-            )}
-            syncGroupId="extruder-group"
-            graphId="front-temp-graph"
-          />
-
-          <BigGraph
-            newData={backTemperature}
-            unit="deg"
-            renderValue={(value) => value.toFixed(1)}
-            config={createTemperatureConfig(
-              "Back Temperature",
-              backHeatingState?.target_temperature,
-            )}
-            syncGroupId="extruder-group"
-            graphId="back-temp-graph"
-          />
-
-          <BigGraph
-            newData={middleTemperature}
-            unit="deg"
-            renderValue={(value) => value.toFixed(1)}
-            config={createTemperatureConfig(
-              "Middle Temperature",
-              middleHeatingState?.target_temperature,
-            )}
-            syncGroupId="extruder-group"
-            graphId="middle-temp-graph"
-          />
-
-          {/* Power Graphs */}
-          <BigGraph
-            newData={nozzlePower}
+        {/* 2. Combined Power Graph (nozzle, front, back) */}
+        {powerData.length > 0 && (
+          <AutoSyncedBigGraph
+            syncHook={syncHook}
+            newData={powerData}
+            config={powerConfig}
             unit="W"
             renderValue={(value) => value.toFixed(1)}
-            config={{ ...powerConfig, title: "Nozzle Power" }}
-            syncGroupId="extruder-group"
-            graphId="nozzle-power-graph"
+            graphId="combined-power"
           />
+        )}
 
-          <BigGraph
-            newData={frontPower}
-            unit="W"
-            renderValue={(value) => value.toFixed(1)}
-            config={{ ...powerConfig, title: "Front Power" }}
-            syncGroupId="extruder-group"
-            graphId="front-power-graph"
-          />
-
-          <BigGraph
-            newData={backPower}
-            unit="W"
-            renderValue={(value) => value.toFixed(1)}
-            config={{ ...powerConfig, title: "Back Power" }}
-            syncGroupId="extruder-group"
-            graphId="back-power-graph"
-          />
-
-          <BigGraph
-            newData={middlePower}
-            unit="W"
-            renderValue={(value) => value.toFixed(1)}
-            config={{ ...powerConfig, title: "Middle Power" }}
-            syncGroupId="extruder-group"
-            graphId="middle-power-graph"
-          />
-
-          {/* Pressure Graph */}
-          <BigGraph
-            newData={bar}
+        {/* 3. Single Pressure Graph with target line */}
+        {bar && (
+          <AutoSyncedBigGraph
+            syncHook={syncHook}
+            newData={{ newData: bar }}
+            config={pressureConfig}
             unit="bar"
             renderValue={(value) => value.toFixed(2)}
-            config={pressureConfig}
-            syncGroupId="extruder-group"
             graphId="pressure-graph"
           />
+        )}
 
-          {/* RPM Graph (only if uses_rpm is true) */}
-          {uses_rpm && (
-            <BigGraph
-              newData={rpm}
-              unit="rpm"
-              renderValue={(value) => value.toFixed(0)}
-              config={rpmConfig}
-              syncGroupId="extruder-group"
-              graphId="rpm-graph"
-            />
-          )}
-        </div>
-        <FloatingControlPanel groupId="extruder-group" />
-      </GraphSyncProvider>
+        {/* 4. Single RPM Graph with target line (only if uses_rpm is true) */}
+        {uses_rpm && rpm && (
+          <AutoSyncedBigGraph
+            syncHook={syncHook}
+            newData={{ newData: rpm }}
+            config={rpmConfig}
+            unit="rpm"
+            renderValue={(value) => value.toFixed(0)}
+            graphId="rpm-graph"
+          />
+        )}
+      </div>
+
+      <SyncedFloatingControlPanel controlProps={syncHook.controlProps} />
     </Page>
   );
 }

@@ -47,8 +47,17 @@ export type GraphConfig = {
   };
 };
 
-export type BigGraphProps = {
+// Support for multiple series
+export type SeriesData = {
   newData: TimeSeries | null;
+  title?: string;
+  color?: string;
+};
+
+export type DataSeries = SeriesData | SeriesData[];
+
+export type BigGraphProps = {
+  newData: DataSeries;
   unit?: Unit;
   renderValue?: (value: number) => string;
   config: GraphConfig;
@@ -70,3 +79,17 @@ export type ControlProps = {
   onExport?: () => void;
   timeWindowOptions?: TimeWindowOption[];
 };
+
+export interface LiveModeHandlers {
+  getCurrentLiveEndTimestamp: () => number;
+  updateLiveData: () => void;
+  handleLiveTimeWindow: (timeWindow: number | "all") => void;
+  processNewHistoricalData: () => void;
+}
+export interface HistoricalModeHandlers {
+  captureHistoricalFreezeTimestamp: () => number;
+  getHistoricalEndTimestamp: () => number;
+  handleHistoricalTimeWindow: (timeWindow: number | "all") => void;
+  switchToHistoricalMode: () => void;
+  switchToLiveMode: () => void;
+}

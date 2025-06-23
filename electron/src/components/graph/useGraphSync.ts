@@ -17,10 +17,13 @@ export function useGraphSync(
     { min: number; max: number } | undefined
   >();
 
-  // Store graph data for export using your GraphExportData type
+  // Store graph data for export
   const graphDataRef = useRef<Map<string, () => GraphExportData | null>>(
     new Map(),
   );
+
+  // Track which graph initiated the change to prevent loops
+  const lastChangeSourceRef = useRef<string | null>(null);
 
   // Register graph for export
   const registerGraphForExport = useCallback(
@@ -35,7 +38,7 @@ export function useGraphSync(
     graphDataRef.current.delete(graphId);
   }, []);
 
-  // Export all graphs using your existing function
+  // Export all graphs
   const handleExport = useCallback(() => {
     if (graphDataRef.current.size === 0) {
       console.warn("No graphs registered for export");
@@ -45,12 +48,20 @@ export function useGraphSync(
     exportGraphsToExcel(graphDataRef.current, exportGroupId || "synced-graphs");
   }, [exportGroupId]);
 
-  // Sync callbacks
+  // Sync callbacks - prevent infinite loops
   const handleTimeWindowChange = useCallback(
     (graphId: string, newTimeWindow: number | "all") => {
+      if (lastChangeSourceRef.current === graphId) return;
+
+      lastChangeSourceRef.current = graphId;
       setTimeWindow(newTimeWindow);
       setViewMode(newTimeWindow === "all" ? "all" : "default");
       setXRange(undefined);
+
+      // Clear the source after a brief delay
+      setTimeout(() => {
+        lastChangeSourceRef.current = null;
+      }, 100);
     },
     [],
   );
@@ -61,17 +72,31 @@ export function useGraphSync(
       newViewMode: "default" | "all" | "manual",
       newIsLiveMode: boolean,
     ) => {
+      if (lastChangeSourceRef.current === graphId) return;
+
+      lastChangeSourceRef.current = graphId;
       setViewMode(newViewMode);
       setIsLiveMode(newIsLiveMode);
+
+      setTimeout(() => {
+        lastChangeSourceRef.current = null;
+      }, 100);
     },
     [],
   );
 
   const handleZoomChange = useCallback(
     (graphId: string, newXRange: { min: number; max: number }) => {
+      if (lastChangeSourceRef.current === graphId) return;
+
+      lastChangeSourceRef.current = graphId;
       setXRange(newXRange);
       setViewMode("manual");
       setIsLiveMode(false);
+
+      setTimeout(() => {
+        lastChangeSourceRef.current = null;
+      }, 100);
     },
     [],
   );
@@ -93,6 +118,7 @@ export function useGraphSync(
       setTimeWindow(newTimeWindow);
       setViewMode(newTimeWindow === "all" ? "all" : "default");
       setXRange(undefined);
+      setIsLiveMode(true); // Reset to live mode when changing time window
     },
     [],
   );

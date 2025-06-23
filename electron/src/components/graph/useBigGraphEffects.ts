@@ -1,7 +1,7 @@
 import { useEffect, RefObject, useRef, useState } from "react";
 import uPlot from "uplot";
-import { seriesToUPlotData } from "@/lib/timeseries";
-import { BigGraphProps } from "./types";
+import { seriesToUPlotData, TimeSeries } from "@/lib/timeseries";
+import { BigGraphProps, DataSeries, SeriesData } from "./types";
 import { GraphExportData } from "./excelExport";
 import { AnimationRefs, stopAnimations } from "./animation";
 import { HandlerRefs } from "./handlers";
@@ -14,13 +14,14 @@ interface UseBigGraphEffectsProps {
   containerRef: RefObject<HTMLDivElement | null>;
   uplotRef: RefObject<uPlot | null>;
   startTimeRef: RefObject<number | null>;
-  manualScaleRef: RefObject<{
+  manualScaleRef: React.MutableRefObject<{
     x: { min: number; max: number };
     y: { min: number; max: number };
   } | null>;
-  lastProcessedCountRef: RefObject<number>;
+  lastProcessedCountRef: React.MutableRefObject<number>;
   animationRefs: AnimationRefs;
   handlerRefs: HandlerRefs;
+  chartCreatedRef: React.MutableRefObject<boolean>;
 
   // Props
   newData: BigGraphProps["newData"];
@@ -69,6 +70,20 @@ interface UseBigGraphEffectsProps {
   ) => void;
 }
 
+// Helper function to normalize data to array format
+function normalizeDataSeries(data: BigGraphProps["newData"]): SeriesData[] {
+  if (Array.isArray(data)) {
+    return data;
+  }
+  return [data];
+}
+
+// Helper function to get the primary series (first valid one)
+function getPrimarySeries(data: BigGraphProps["newData"]): SeriesData | null {
+  const normalized = normalizeDataSeries(data);
+  return normalized.find((series) => series.newData !== null) || null;
+}
+
 export function useBigGraphEffects({
   containerRef,
   uplotRef,
@@ -77,6 +92,7 @@ export function useBigGraphEffects({
   lastProcessedCountRef,
   animationRefs,
   handlerRefs,
+  chartCreatedRef,
 
   newData,
   unit,
@@ -103,20 +119,31 @@ export function useBigGraphEffects({
   handleTimeWindowChangeInternal,
 }: UseBigGraphEffectsProps) {
   const [isChartCreated, setIsChartCreated] = useState(false);
-
-  const localmanualScale = useRef(manualScaleRef.current);
+  const localManualScale = useRef(manualScaleRef.current);
   const localProcessedCount = useRef(lastProcessedCountRef.current);
-  const localuplotRef = useRef<uPlot | null>(uplotRef.current);
+  const localUplotRef = useRef<uPlot | null>(uplotRef.current);
+  const localChart = useRef(chartCreatedRef.current);
+
+  // Sync state tracking
+  const lastSyncStateRef = useRef({
+    timeWindow: selectedTimeWindow,
+    viewMode,
+    isLiveMode,
+    xRange: syncGraph?.xRange,
+  });
+
+  // Get primary series for compatibility with existing logic
+  const primarySeries = getPrimarySeries(newData);
 
   // Register/unregister this graph for Excel export functionality
   useEffect(() => {
-    if (onRegisterForExport) {
+    if (onRegisterForExport && primarySeries?.newData) {
       const getExportData = (): GraphExportData | null => {
-        if (!newData) return null;
+        if (!primarySeries?.newData) return null;
 
         return {
           config,
-          data: newData,
+          data: primarySeries as unknown as DataSeries,
           unit,
           renderValue,
         };
@@ -132,7 +159,7 @@ export function useBigGraphEffects({
     }
   }, [
     graphId,
-    newData,
+    primarySeries?.newData,
     config,
     unit,
     renderValue,
@@ -144,41 +171,61 @@ export function useBigGraphEffects({
   useEffect(() => {
     if (!syncGraph) return;
 
+    const lastState = lastSyncStateRef.current;
     let hasChanges = false;
 
-    if (syncGraph.timeWindow !== selectedTimeWindow) {
+    // Check for time window changes
+    if (syncGraph.timeWindow !== lastState.timeWindow) {
       setSelectedTimeWindow(syncGraph.timeWindow);
       handleTimeWindowChangeInternal(syncGraph.timeWindow, true);
       hasChanges = true;
     }
 
-    if (syncGraph.viewMode !== viewMode) {
+    // Check for view mode changes
+    if (syncGraph.viewMode !== lastState.viewMode) {
       setViewMode(syncGraph.viewMode);
       hasChanges = true;
     }
 
-    if (syncGraph.isLiveMode !== isLiveMode) {
+    // Check for live mode changes
+    if (syncGraph.isLiveMode !== lastState.isLiveMode) {
       const newIsLiveMode = syncGraph.isLiveMode;
 
-      if (isLiveMode && !newIsLiveMode) {
+      if (lastState.isLiveMode && !newIsLiveMode) {
         historicalMode.switchToHistoricalMode();
-      } else if (!isLiveMode && newIsLiveMode) {
+      } else if (!lastState.isLiveMode && newIsLiveMode) {
         historicalMode.switchToLiveMode();
+
+        // Add a longer delay to ensure proper state transition
+        setTimeout(() => {
+          if (liveMode.processNewHistoricalData) {
+            liveMode.processNewHistoricalData();
+          }
+        }, 200);
       }
 
       setIsLiveMode(newIsLiveMode);
       hasChanges = true;
     }
 
-    if (syncGraph.xRange && uplotRef.current) {
+    // Check for zoom range changes
+    const xRangeChanged =
+      syncGraph.xRange &&
+      (!lastState.xRange ||
+        syncGraph.xRange.min !== lastState.xRange.min ||
+        syncGraph.xRange.max !== lastState.xRange.max);
+
+    if (xRangeChanged && uplotRef.current && primarySeries?.newData?.long) {
       uplotRef.current.batch(() => {
         uplotRef.current!.setScale("x", {
           min: syncGraph.xRange?.min ?? 0,
           max: syncGraph.xRange?.max ?? 0,
         });
 
-        if (newData?.long) {
-          const [timestamps, values] = seriesToUPlotData(newData.long);
+        if (primarySeries.newData?.long) {
+          const [timestamps, values] = seriesToUPlotData(
+            primarySeries.newData.long,
+          );
           updateYAxisScale(
             timestamps,
             values,
@@ -187,18 +234,29 @@ export function useBigGraphEffects({
           );
         }
       });
-      localmanualScale.current = {
-        x: syncGraph.xRange,
-        y: manualScaleRef.current?.y ?? { min: 0, max: 1 },
+
+      localManualScale.current = {
+        x: syncGraph.xRange ?? { min: 0, max: 1 },
+        y: localManualScale.current?.y ?? { min: 0, max: 1 },
       };
       hasChanges = true;
     }
 
-    if (hasChanges && syncGraph.viewMode === "manual") {
-      setViewMode("manual");
-      setIsLiveMode(false);
-      stopAnimations(animationRefs);
-      localProcessedCount.current = 0;
+    if (hasChanges) {
+      if (syncGraph.viewMode === "manual") {
+        setViewMode("manual");
+        setIsLiveMode(false);
+        stopAnimations(animationRefs);
+        localProcessedCount.current = 0;
+      }
+
+      // Update last sync state
+      lastSyncStateRef.current = {
+        timeWindow: syncGraph.timeWindow,
+        viewMode: syncGraph.viewMode,
+        isLiveMode: syncGraph.isLiveMode,
+        xRange: syncGraph.xRange,
+      };
     }
   }, [
     syncGraph?.timeWindow,
@@ -206,23 +264,33 @@ export function useBigGraphEffects({
     syncGraph?.isLiveMode,
     syncGraph?.xRange?.min,
     syncGraph?.xRange?.max,
-    selectedTimeWindow,
-    viewMode,
-    isLiveMode,
     historicalMode.switchToHistoricalMode,
     historicalMode.switchToLiveMode,
+    setSelectedTimeWindow,
+    handleTimeWindowChangeInternal,
+    setViewMode,
+    setIsLiveMode,
+    uplotRef,
+    primarySeries?.newData?.long,
+    updateYAxisScale,
+    manualScaleRef,
+    animationRefs,
+    lastProcessedCountRef,
+    liveMode.processNewHistoricalData,
   ]);
 
   // Create and initialize the uPlot chart when data becomes available
   useEffect(() => {
-    if (!containerRef.current || !newData?.long) {
+    if (!containerRef.current || !primarySeries?.newData?.long) {
       setIsChartCreated(false);
+      localChart.current = false;
       return;
     }
 
-    const [timestamps] = seriesToUPlotData(newData.long);
+    const [timestamps] = seriesToUPlotData(primarySeries.newData.long);
     if (timestamps.length === 0) {
       setIsChartCreated(false);
+      localChart.current = false;
       return;
     }
 
@@ -250,6 +318,7 @@ export function useBigGraphEffects({
     });
 
     setIsChartCreated(true);
+    localChart.current = true;
 
     if (isLiveMode) {
       localProcessedCount.current = timestamps.length;
@@ -257,25 +326,57 @@ export function useBigGraphEffects({
 
     return () => {
       if (cleanup) cleanup();
-      if (uplotRef.current) {
-        uplotRef.current.destroy();
-        localuplotRef.current = null;
+      if (localUplotRef.current) {
+        localUplotRef.current.destroy();
+        localUplotRef.current = null;
       }
       stopAnimations(animationRefs);
       setIsChartCreated(false);
+      localChart.current = false;
     };
-  }, [newData?.long, containerRef.current]);
-
-  // Update chart data when new historical data arrives (live mode only)
-  useEffect(() => {
-    if (!isLiveMode || viewMode === "manual") return;
-    liveMode.processNewHistoricalData();
   }, [
-    newData?.long?.validCount,
-    newData?.long?.lastTimestamp,
+    primarySeries?.newData?.long,
+    containerRef,
+    uplotRef,
+    newData,
+    config,
+    colors,
+    renderValue,
     viewMode,
     selectedTimeWindow,
     isLiveMode,
+    startTimeRef,
+    manualScaleRef,
+    animationRefs,
+    handlerRefs,
+    graphId,
+    syncGraph,
+    historicalMode.getHistoricalEndTimestamp,
+    updateYAxisScale,
+    setViewMode,
+    setIsLiveMode,
+    setCursorValue,
+    chartCreatedRef,
+    lastProcessedCountRef,
+  ]);
+
+  // Update chart data when new historical data arrives (live mode only)
+  useEffect(() => {
+    if (!isLiveMode || viewMode === "manual" || !isChartCreated) return;
+
+    // Add a delay to ensure chart is ready after mode switch
+    const timeoutId = setTimeout(() => {
+      liveMode.processNewHistoricalData();
+    }, 100);
+
+    return () => clearTimeout(timeoutId);
+  }, [
+    primarySeries?.newData?.long?.validCount,
+    primarySeries?.newData?.long?.lastTimestamp,
+    viewMode,
+    selectedTimeWindow,
+    isLiveMode,
+    isChartCreated,
     liveMode.processNewHistoricalData,
   ]);
 
@@ -283,7 +384,7 @@ export function useBigGraphEffects({
   useEffect(() => {
     if (
       !uplotRef.current ||
-      !newData?.current ||
+      !primarySeries?.newData?.current ||
       !isLiveMode ||
       !isChartCreated ||
       animationRefs.animationState.current.isAnimating ||
@@ -293,12 +394,20 @@ export function useBigGraphEffects({
 
     liveMode.updateLiveData();
   }, [
-    newData?.current?.timestamp,
+    primarySeries?.newData?.current?.timestamp,
     viewMode,
     selectedTimeWindow,
     config.lines,
     isLiveMode,
     isChartCreated,
     liveMode.updateLiveData,
+    uplotRef,
+    primarySeries?.newData?.current,
+    animationRefs.animationState,
   ]);
+
+  // Suppress unused variable warnings for local refs
+  void localManualScale;
+  void localProcessedCount;
+  void localUplotRef;
 }
