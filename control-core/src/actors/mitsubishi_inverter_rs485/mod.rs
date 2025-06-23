@@ -431,7 +431,6 @@ impl MitsubishiInverterRS485Actor {
                 }
                 Err(_) => {
                     self.last_message_size = 22;
-                    //                    self.state = State::WaitingForReceiveAccept;
                     Err(anyhow::anyhow!("error"))
                 }
             }
