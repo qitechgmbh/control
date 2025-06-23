@@ -34,8 +34,6 @@ pub enum State {
     ReadyToSend,
     /// Initial State
     Uninitialized,
-    /// Initial State
-    UninitializedInverterReset,
 }
 
 #[derive(Debug)]
@@ -571,9 +569,7 @@ impl MitsubishiInverterRS485Actor {
         };
     }
 
-    async fn handle_no_response(&mut self) {
-        //self.state = State::ReadyToSend
-    }
+    async fn handle_no_response(&mut self) {}
 
     async fn handle_response(&mut self, resp: ModbusResponse) {
         match self.next_response_type {
@@ -629,9 +625,7 @@ impl Actor for MitsubishiInverterRS485Actor {
             }
 
             self.add_request(MitsubishiControlRequests::ReadMotorFrequency.into());
-            // inverterstatus has less priority than readmotor
             self.add_request(MitsubishiControlRequests::ReadInverterStatus.into());
-
             self.last_ts = now_ts;
 
             match self.state {
