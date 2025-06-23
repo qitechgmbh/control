@@ -61,6 +61,8 @@ impl Actor for ExtruderV2 {
                 self.emit_rotation_state();
                 self.emit_inverter_status();
 
+                self.emit_pressure_pid_settings();
+
                 self.emit_bar();
                 self.emit_rpm();
                 self.emit_extruder_settings();

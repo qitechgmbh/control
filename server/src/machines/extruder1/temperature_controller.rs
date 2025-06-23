@@ -15,7 +15,7 @@ use uom::si::{
 #[derive(Debug)]
 
 pub struct TemperatureController {
-    pid: PidController,
+    pub pid: PidController,
     temperature_sensor: TemperatureInputGetter,
     relais: DigitalOutputSetter,
     pub heating: Heating,

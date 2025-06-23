@@ -9,6 +9,7 @@ import {
   InverterStatus,
   Mode,
   useExtruder2Namespace,
+  PidSettings,
 } from "./extruder2Namespace";
 import { useEffect, useMemo } from "react";
 import { TimeSeries } from "@/lib/timeseries";
@@ -47,6 +48,8 @@ export function useExtruder2() {
   const heating = useHeatingTemperature(machineIdentification);
   const heatingPower = useHeatingPower(machineIdentification);
   const settings = useSettings(machineIdentification);
+  const pidSettings = usePidSettings(machineIdentification);
+
   return {
     ...inverter,
     ...mode,
@@ -54,6 +57,7 @@ export function useExtruder2() {
     ...heating,
     ...settings,
     ...heatingPower,
+    ...pidSettings,
   };
 }
 
@@ -342,6 +346,53 @@ export function useMotor(
   };
 }
 
+export function usePidSettings(
+  machine_identification_unique: MachineIdentificationUnique,
+): {
+  pressurePidSettings: PidSettings | undefined;
+  setPressurePid: (settings: PidSettings) => void;
+} {
+  const { pressurePidSettings, temperaturePidSettings } = useExtruder2Namespace(
+    machine_identification_unique,
+  );
+
+  const pressurePidSettingsState = useStateOptimistic<PidSettings>();
+
+  const SetPressurePidSchema = z.object({
+    SetPressurePidSettings: z.object({
+      ki: z.number(),
+      kp: z.number(),
+      kd: z.number(),
+    }),
+  });
+
+  const { request: PressurePidSettingsRequest } =
+    useMachineMutation(SetPressurePidSchema);
+
+  const setPressurePid = async (value: PidSettings) => {
+    pressurePidSettingsState.setOptimistic(value);
+    PressurePidSettingsRequest({
+      machine_identification_unique,
+      data: { SetPressurePidSettings: value },
+    })
+      .then((response) => {
+        if (!response.success) pressurePidSettingsState.resetToReal();
+      })
+      .catch(() => pressurePidSettingsState.resetToReal());
+  };
+
+  useEffect(() => {
+    if (pressurePidSettings?.data) {
+      pressurePidSettingsState.setReal(pressurePidSettings?.data);
+    }
+  });
+
+  return {
+    pressurePidSettings: pressurePidSettingsState.value,
+    setPressurePid,
+  };
+}
+
 export function useHeatingTemperature(
   machine_identification_unique: MachineIdentificationUnique,
 ): {
@@ -492,6 +543,7 @@ export function useHeatingTemperature(
     heatingSetFrontTemp,
     heatingSetBackTemp,
     heatingSetMiddleTemp,
+
     nozzleHeatingTarget: nozzleHeatingTargetState.value,
     frontHeatingTarget: frontHeatingTargetState.value,
     backHeatingTarget: backHeatingTargetState.value,

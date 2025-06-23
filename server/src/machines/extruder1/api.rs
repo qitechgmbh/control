@@ -168,6 +168,34 @@ impl ExtruderSettingsStateEvent {
     }
 }
 
+pub enum PidType {
+    Temperature,
+    Pressure,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct PidSettings {
+    pub ki: f64,
+    pub kp: f64,
+    pub kd: f64,
+}
+
+#[derive(Serialize, Debug, Clone)]
+pub struct PidSettingsEvent {
+    pub ki: f64,
+    pub kp: f64,
+    pub kd: f64,
+}
+
+impl PidSettingsEvent {
+    pub fn build(&self, pid_type: PidType) -> Event<Self> {
+        match pid_type {
+            PidType::Temperature => Event::new("TemperaturePidSettingsEvent", self.clone()),
+            PidType::Pressure => Event::new("PressurePidSettingsEvent", self.clone()),
+        }
+    }
+}
+
 #[derive(Serialize, Debug, Clone)]
 pub struct HeatingPowerEvent {
     pub wattage: f64,
@@ -194,6 +222,7 @@ pub enum ExtruderV2Events {
     ExtruderSettingsStateEvent(Event<ExtruderSettingsStateEvent>),
     HeatingPowerEvent(Event<HeatingPowerEvent>),
     InverterStatusEvent(Event<InverterStatusEvent>),
+    PidSettingsEvent(Event<PidSettingsEvent>),
 }
 
 #[derive(Deserialize, Serialize)]
@@ -216,6 +245,9 @@ enum Mutation {
     // SetPressure
     ExtruderSetPressureLimit(f64),
     ExtruderSetPressureLimitIsEnabled(bool),
+
+    // Pid Configure
+    SetPressurePidSettings(PidSettings),
 
     // Reset
     InverterReset(bool),
@@ -255,6 +287,7 @@ impl CacheableEvents<ExtruderV2Events> for ExtruderV2Events {
             ExtruderV2Events::ExtruderSettingsStateEvent(event) => event.into(),
             ExtruderV2Events::HeatingPowerEvent(event) => event.into(),
             ExtruderV2Events::InverterStatusEvent(event) => event.into(),
+            ExtruderV2Events::PidSettingsEvent(event) => event.into(),
         }
     }
 
@@ -272,6 +305,7 @@ impl CacheableEvents<ExtruderV2Events> for ExtruderV2Events {
             ExtruderV2Events::ScrewStateEvent(_) => cache_one_hour,
             ExtruderV2Events::HeatingPowerEvent(_) => cache_one_hour,
             ExtruderV2Events::InverterStatusEvent(_) => cache_one,
+            ExtruderV2Events::PidSettingsEvent(_) => cache_one,
         }
     }
 }
@@ -305,6 +339,10 @@ impl MachineApi for ExtruderV2 {
             }
             Mutation::ExtruderSetPressureLimitIsEnabled(enabled) => {
                 self.set_nozzle_pressure_limit_is_enabled(enabled);
+            }
+
+            Mutation::SetPressurePidSettings(settings) => {
+                self.configure_pressure_pid(settings);
             }
         }
         Ok(())
