@@ -21,22 +21,6 @@ function normalizeDataSeries(data: BigGraphProps["newData"]): SeriesData[] {
   return [data];
 }
 
-// Helper function to get all series for export (including hidden ones)
-function getAllSeries(data: BigGraphProps["newData"]): Array<{
-  series: any;
-  title?: string;
-  color?: string;
-  index: number;
-}> {
-  const normalized = normalizeDataSeries(data);
-  return normalized.map((series, index) => ({
-    series: series.newData,
-    title: series.title,
-    color: series.color,
-    index,
-  }));
-}
-
 // Helper function to get primary series for display value
 function getPrimarySeries(data: BigGraphProps["newData"]): SeriesData | null {
   const normalized = normalizeDataSeries(data);
@@ -262,16 +246,27 @@ export function BigGraph({
         return;
       }
 
+      // FIXED: Handle time window changes properly based on current mode
       if (newTimeWindow === "all") {
         setViewMode("all");
-      } else {
-        setViewMode("default");
-      }
-
-      if (isLiveMode) {
+        // Only switch to live mode when selecting "all"
+        if (!isLiveMode) {
+          setIsLiveMode(true);
+          historicalMode.switchToLiveMode();
+        }
+        // Always use live mode handler for "all"
         liveMode.handleLiveTimeWindow(newTimeWindow);
       } else {
-        historicalMode.handleHistoricalTimeWindow(newTimeWindow);
+        // For specific time windows (30m, 1h, etc.)
+        setViewMode("default");
+        // Stay in current mode (don't change isLiveMode)
+
+        if (isLiveMode) {
+          liveMode.handleLiveTimeWindow(newTimeWindow);
+        } else {
+          // Stay in historical mode for specific time windows
+          historicalMode.handleHistoricalTimeWindow(newTimeWindow);
+        }
       }
 
       // Notify parent about time window change
@@ -284,6 +279,7 @@ export function BigGraph({
       isLiveMode,
       liveMode.handleLiveTimeWindow,
       historicalMode.handleHistoricalTimeWindow,
+      historicalMode.switchToLiveMode,
       syncGraph,
       graphId,
     ],
