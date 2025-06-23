@@ -21,11 +21,12 @@ pub fn init_tracing() {
             "info,\
              tower_http=debug,\
              axum=debug,\
+             ethercrab=info,\
              h2=error,\
              tower=error,\
              tonic=error,\
              hyper=error,\
-             opentelemetry_otlp=error"
+             opentelemetry_otlp=error",
         )
     });
 
@@ -61,7 +62,7 @@ pub fn init_tracing() {
         {
             // First add a filter layer to block events from the OtelExporter thread
             let subscriber = subscriber.with(opentelemetry::create_thread_filter_layer());
-            
+
             // Then add the OpenTelemetry layer
             subscriber.with(opentelemetry::init_opentelemetry_tracing_with_tokio())
         }

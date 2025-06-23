@@ -93,23 +93,29 @@ impl RegulationStateEvent {
 #[derive(Serialize, Debug, Clone)]
 pub struct InverterStatusEvent {
     /// RUN (Inverter running)
-    running: bool,
+    pub running: bool,
     /// Forward running motor spins forward
-    forward_running: bool,
+    pub forward_running: bool,
     /// Reverse running motor spins backwards
-    reverse_running: bool,
+    pub reverse_running: bool,
     /// Up to frequency, SU not completely sure what its for
-    up_to_frequency: bool,
+    pub up_to_frequency: bool,
     /// overload warning OL
-    overload_warning: bool,
+    pub overload_warning: bool,
     /// No function, its described that way in the datasheet
-    no_function: bool,
+    pub no_function: bool,
     /// FU Output Frequency Detection
-    output_frequency_detection: bool,
+    pub output_frequency_detection: bool,
     /// ABC (Fault)
-    abc_fault: bool,
+    pub abc_fault: bool,
     /// is True when a fault occured
-    fault_occurence: bool,
+    pub fault_occurence: bool,
+}
+
+impl InverterStatusEvent {
+    pub fn build(&self) -> Event<Self> {
+        Event::new("InverterStatusEvent", self.clone())
+    }
 }
 
 /// This is used when we just need a simple confirmation, that what we did, didnt cause errors
@@ -187,6 +193,7 @@ pub enum ExtruderV2Events {
     HeatingStateEvent(Event<HeatingStateEvent>),
     ExtruderSettingsStateEvent(Event<ExtruderSettingsStateEvent>),
     HeatingPowerEvent(Event<HeatingPowerEvent>),
+    InverterStatusEvent(Event<InverterStatusEvent>),
 }
 
 #[derive(Deserialize, Serialize)]
@@ -209,6 +216,9 @@ enum Mutation {
     // SetPressure
     ExtruderSetPressureLimit(f64),
     ExtruderSetPressureLimitIsEnabled(bool),
+
+    // Reset
+    InverterReset(bool),
 }
 
 #[derive(Debug)]
@@ -244,6 +254,7 @@ impl CacheableEvents<ExtruderV2Events> for ExtruderV2Events {
             ExtruderV2Events::HeatingStateEvent(event) => event.into(),
             ExtruderV2Events::ExtruderSettingsStateEvent(event) => event.into(),
             ExtruderV2Events::HeatingPowerEvent(event) => event.into(),
+            ExtruderV2Events::InverterStatusEvent(event) => event.into(),
         }
     }
 
@@ -252,17 +263,15 @@ impl CacheableEvents<ExtruderV2Events> for ExtruderV2Events {
         let cache_one = cache_one_event();
 
         match self {
-            // State events (keep only the latest)
             ExtruderV2Events::RotationStateEvent(_) => cache_one,
             ExtruderV2Events::ModeEvent(_) => cache_one,
             ExtruderV2Events::RegulationStateEvent(_) => cache_one,
             ExtruderV2Events::ExtruderSettingsStateEvent(_) => cache_one,
             ExtruderV2Events::HeatingStateEvent(_) => cache_one,
-
-            // Time series events (keep for 1 hour)
             ExtruderV2Events::PressureStateEvent(_) => cache_one_hour,
             ExtruderV2Events::ScrewStateEvent(_) => cache_one_hour,
             ExtruderV2Events::HeatingPowerEvent(_) => cache_one_hour,
+            ExtruderV2Events::InverterStatusEvent(_) => cache_one,
         }
     }
 }
@@ -277,6 +286,7 @@ impl MachineApi for ExtruderV2 {
             Mutation::InverterSetRegulation(uses_rpm) => self.set_regulation(uses_rpm),
             Mutation::InverterSetTargetPressure(bar) => self.set_target_pressure(bar),
             Mutation::InverterSetTargetRpm(rpm) => self.set_target_rpm(rpm),
+            Mutation::InverterReset(_) => self.reset_inverter(),
 
             Mutation::FrontHeatingSetTargetTemperature(temp) => {
                 self.set_target_temperature(temp, HeatingType::Front)

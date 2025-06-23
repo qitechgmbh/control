@@ -1,5 +1,8 @@
 use api::{ExtruderSettingsStateEvent, ExtruderV2Events, ExtruderV2Namespace};
-use control_core::{machines::Machine, socketio::namespace::NamespaceCacheingLogic};
+use control_core::{
+    actors::mitsubishi_inverter_rs485::MitsubishiControlRequests, machines::Machine,
+    socketio::namespace::NamespaceCacheingLogic,
+};
 use screw_speed_controller::ScrewSpeedController;
 use serde::{Deserialize, Serialize};
 use std::time::Instant;
@@ -201,6 +204,30 @@ impl ExtruderV2 {
         .build();
         self.namespace
             .emit(ExtruderV2Events::RotationStateEvent(event))
+    }
+
+    fn emit_inverter_status(&mut self) {
+        let status = &self.screw_speed_controller.inverter.inverter_status;
+        let event = api::InverterStatusEvent {
+            running: status.running,
+            forward_running: status.forward_running,
+            reverse_running: status.reverse_running,
+            up_to_frequency: status.su,
+            overload_warning: status.ol,
+            no_function: status.no_function,
+            output_frequency_detection: status.fu,
+            abc_fault: status.abc_,
+            fault_occurence: status.fault_occurence,
+        }
+        .build();
+        self.namespace
+            .emit(ExtruderV2Events::InverterStatusEvent(event));
+    }
+
+    fn reset_inverter(&mut self) {
+        self.screw_speed_controller
+            .inverter
+            .add_request(MitsubishiControlRequests::ResetInverter.into());
     }
 
     fn set_mode_state(&mut self, mode: ExtruderV2Mode) {
