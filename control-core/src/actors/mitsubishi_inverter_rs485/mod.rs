@@ -2,11 +2,7 @@ use super::Actor;
 use crate::modbus::{
     ModbusFunctionCode, ModbusRequest, ModbusResponse, calculate_modbus_rtu_timeout,
 };
-use axum::http::request;
-use bitvec::{
-    order::{Lsb0, Msb0},
-    slice::BitSlice,
-};
+use bitvec::{order::Lsb0, slice::BitSlice};
 use ethercat_hal::io::serial_interface::{SerialEncoding, SerialInterface};
 use std::{
     collections::HashMap,
