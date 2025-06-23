@@ -29,6 +29,7 @@ import { Laser1GraphsPage } from "@/machines/laser/laser1/Laser1Graph";
 import { Mock1GraphPage } from "@/machines/mock/mock1/Mock1Graph";
 import { Mock1ManualPage } from "@/machines/mock/mock1/Mock1Manual";
 import { TroubleshootPage } from "@/setup/Trobleshoot";
+import { Extruder2GraphsPage } from "@/machines/extruder/extruder2/Extruder2Graph";
 
 // make a route tree like this
 // _mainNavigation/machines/winder2/$serial/control
@@ -71,6 +72,12 @@ export const extruder2ManualRoute = createRoute({
   getParentRoute: () => extruder2Route,
   path: "manual",
   component: () => <ExtruderV2ManualPage />,
+});
+
+export const extruder2GraphsRoute = createRoute({
+  getParentRoute: () => extruder2Route,
+  path: "graphs",
+  component: () => <Extruder2GraphsPage />,
 });
 
 export const winder2SerialRoute = createRoute({
@@ -244,6 +251,7 @@ export const rootTree = RootRoute.addChildren([
         extruder2ControlRoute,
         extruder2SettingsRoute,
         extruder2ManualRoute,
+        extruder2GraphsRoute,
       ]),
 
       mock1SerialRoute.addChildren([
