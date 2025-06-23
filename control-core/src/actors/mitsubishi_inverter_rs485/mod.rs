@@ -568,16 +568,14 @@ impl MitsubishiInverterRS485Actor {
         };
     }
 
-    async fn handle_no_response(&mut self) {}
-
-    async fn handle_response(&mut self, resp: ModbusResponse) {
+    fn handle_response(&mut self, resp: ModbusResponse) {
         match self.next_response_type {
             ResponseType::ReadFrequency => (),
             ResponseType::WriteFrequency => (),
             ResponseType::ReadMotorFrequency => self.handle_motor_frequency(resp),
             ResponseType::InverterStatus => self.handle_read_inverter_status(resp),
             ResponseType::InverterControl => (),
-            ResponseType::NoResponse => self.handle_no_response().await,
+            ResponseType::NoResponse => (),
         }
     }
 }
@@ -632,7 +630,7 @@ impl Actor for MitsubishiInverterRS485Actor {
                     let ret = self.read_modbus_response().await;
                     match ret {
                         Ok(ret) => {
-                            self.handle_response(ret).await;
+                            self.handle_response(ret);
                         }
                         Err(_) => {
                             if let MitsubishiControlRequests::ResetInverter =
@@ -642,7 +640,6 @@ impl Actor for MitsubishiInverterRS485Actor {
                             }
                         }
                     }
-
                     self.next_response_type = ResponseType::NoResponse;
                 }
                 State::ReadyToSend => {
@@ -651,12 +648,22 @@ impl Actor for MitsubishiInverterRS485Actor {
                     self.set_ignored_times_modbus_requests();
                 }
                 State::WaitingForReceiveAccept => {
-                    _ = (self.serial_interface.read_finished)().await;
+                    // Waste atleast one Ethercat Cycle here to ensure that request/response stay in sync
                     self.state = State::ReadyToSend;
                 }
                 State::WaitingForRequestAccept => {
-                    let res = (self.serial_interface.write_finished)().await;
-                    if res == true {
+                    // An empty vec is used to check if we are finished with writing the message
+                    // This is to keep the Serialinterface more simple
+                    let res = (self.serial_interface.write_message)(vec![]).await;
+                    let finished = match res {
+                        Ok(res) => res,
+                        Err(_) => {
+                            self.state = State::ReadyToSend;
+                            return;
+                        }
+                    };
+
+                    if finished == true {
                         self.state = State::WaitingForResponse;
                     }
                 }
