@@ -116,6 +116,11 @@ impl MitsubishiControlRequests {
 
     this is because StartMotor is higher priority
     Since the events do not need to be pushed into a queue this makes the inverter operation more stable
+
+    Lets say one request "A" with priority 1 and one with 2 "B" are queued up, assume that request B is frequently used
+    1. Request "B" is executed due to higher priority
+    2. When B is added again request A has the same priority because it was ignored. B is executed once again
+    3. B is added again, now A has an effective priority of 3, which is higher then B
 */
 impl From<MitsubishiControlRequests> for MitsubishiModbusRequest {
     fn from(request: MitsubishiControlRequests) -> Self {
@@ -151,6 +156,8 @@ impl From<MitsubishiControlRequests> for MitsubishiModbusRequest {
                     },
                     request_type: RequestType::OperationCommand,
                     expected_response_type: ResponseType::InverterStatus,
+                    // Priority is -6 because we do not want to know the status as frequently as the frequency, which is why its priority is lower
+                    // In essence this means for every fifth ReadMotorFrequency request an InverterStatus request is sent
                     priority: u16::MAX - 6,
                     control_request_type: MitsubishiControlRequests::ReadInverterStatus,
                     ignored_times: 0,
