@@ -4,7 +4,12 @@ import { useStateOptimistic } from "@/lib/useStateOptimistic";
 import { MachineIdentificationUnique, extruder2 } from "@/machines/types";
 import { extruder2Route } from "@/routes/routes";
 import { z } from "zod";
-import { Heating, Mode, useExtruder2Namespace } from "./extruder2Namespace";
+import {
+  Heating,
+  InverterStatus,
+  Mode,
+  useExtruder2Namespace,
+} from "./extruder2Namespace";
 import { useEffect, useMemo } from "react";
 import { TimeSeries } from "@/lib/timeseries";
 
@@ -140,6 +145,8 @@ export function useInverter(
 ): {
   inverterSetRotation: (forward: boolean) => void;
   rotationState: boolean | undefined;
+  inverterReset: () => void;
+  inverterState: InverterStatus | undefined;
 } {
   const state = useStateOptimistic();
 
@@ -153,7 +160,19 @@ export function useInverter(
     });
   };
 
-  const { rotationState } = useExtruder2Namespace(
+  const inverterSchema = z.object({
+    InverterReset: z.boolean(), // this represents a zero-argument tuple variant
+  });
+
+  const { request: requestReset } = useMachineMutation(inverterSchema);
+  const inverterReset = async () => {
+    requestReset({
+      machine_identification_unique,
+      data: { InverterReset: true }, // key is the enum variant, value is empty tuple
+    });
+  };
+
+  const { rotationState, inverterState } = useExtruder2Namespace(
     machine_identification_unique,
   );
 
@@ -163,7 +182,12 @@ export function useInverter(
     }
   }, [rotationState?.data.forward]);
 
-  return { inverterSetRotation, rotationState: rotationState?.data.forward };
+  return {
+    inverterSetRotation,
+    rotationState: rotationState?.data.forward,
+    inverterReset,
+    inverterState: inverterState?.data,
+  };
 }
 
 export function useMode(

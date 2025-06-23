@@ -12,6 +12,7 @@ import { EditValue } from "@/control/EditValue";
 import { roundToDecimals } from "@/lib/decimal";
 import { useExtruder2 } from "./useExtruder";
 import { TimeSeriesValueNumeric } from "@/control/TimeSeriesValue";
+import { StatusBadge } from "@/control/StatusBadge";
 
 export function Extruder2ControlPage() {
   const {
@@ -40,11 +41,13 @@ export function Extruder2ControlPage() {
     screwSetRegulation,
     screwSetTargetPressure,
     screwSetTargetRpm,
+
     uses_rpm,
     bar,
     rpm,
     targetBar,
     targetRpm,
+    inverterState,
   } = useExtruder2();
 
   return (
@@ -79,6 +82,20 @@ export function Extruder2ControlPage() {
           onChangeTargetTemp={heatingSetNozzleTemp}
         />
         <ControlCard className="bg-red" title="Screw Drive">
+          {inverterState?.fault_occurence == true && (
+            <StatusBadge variant="error">
+              Inverter encountered an error!! Press the restart button in Config
+            </StatusBadge>
+          )}
+          {inverterState?.running == true &&
+            inverterState.fault_occurence == false && (
+              <StatusBadge variant="success">Running</StatusBadge>
+            )}
+          {inverterState?.running == false &&
+            inverterState.fault_occurence == false && (
+              <StatusBadge variant="success">Healthy</StatusBadge>
+            )}
+
           <Label label="Regulation">
             <SelectionGroupBoolean
               value={uses_rpm}

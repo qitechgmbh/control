@@ -118,7 +118,11 @@ export function extruder2MessageHandler(
       }
 
       if (eventName == "InverterStatusEvent") {
-        // TODO: Handle if needed
+        console.log(eventName);
+        updateStore((state) => ({
+          ...state,
+          inverterState: event as InverterStatusEvent,
+        }));
       } else if (eventName == "RotationStateEvent") {
         updateStore((state) => ({
           ...state,
@@ -321,7 +325,6 @@ export function useExtruder2Namespace(
   return useExtruder2NamespaceImplementation(namespaceId);
 }
 
-export const inverterStatusEventSchema = z.object({});
 export const modeSchema = z.enum(["Standby", "Heat", "Extrude"]);
 export const mode = z.object({
   mode: modeSchema,
@@ -333,6 +336,28 @@ export const SetRegulationSchema = z.object({
 });
 
 // Data Schemas
+
+export const inverterStatusEventDataSchema = z.object({
+  // RUN (Inverter running)
+  running: z.boolean(),
+  // Forward running motor spins forward
+  forward_running: z.boolean(),
+  // Reverse running motor spins backwards
+  reverse_running: z.boolean(),
+  // Up to frequency, SU not completely sure what its for
+  up_to_frequency: z.boolean(),
+  // overload warning OL
+  overload_warning: z.boolean(),
+  // No function, its described that way in the datasheet
+  no_function: z.boolean(),
+  // FU Output Frequency Detection
+  output_frequency_detection: z.boolean(),
+  // ABC (Fault)
+  abc_fault: z.boolean(),
+  // is True when a fault occured
+  fault_occurence: z.boolean(),
+});
+
 export const modeStateEventDataSchema = z.object({
   mode: modeSchema,
 });
@@ -411,6 +436,10 @@ export const heatingPowerEventDataSchema = z.object({
 
 export const heatingPowerEventSchema = eventSchema(heatingPowerEventDataSchema);
 
+export const inverterStatusEventSchema = eventSchema(
+  inverterStatusEventDataSchema,
+);
+
 // type defs
 export type MotorScrewStateEvent = z.infer<typeof motorScrewStateEventSchema>;
 export type MotorPressureStateEvent = z.infer<
@@ -433,6 +462,7 @@ export type MotorPressure = z.infer<typeof motorBarStateEventDataSchema>;
 export type MotorRpm = z.infer<typeof motorScrewStateEventDataSchema>;
 
 export type Mode = z.infer<typeof modeSchema>;
+export type InverterStatus = z.infer<typeof inverterStatusEventDataSchema>;
 
 export type ExtruderSettingsStateEvent = z.infer<
   typeof extruderSettingsStateEventSchema

@@ -6,10 +6,12 @@ import React from "react";
 import { useExtruder2 } from "./useExtruder";
 import { EditValue } from "@/control/EditValue";
 import { roundToDecimals } from "@/lib/decimal";
+import { TouchButton } from "@/components/touch/TouchButton";
 
 export function Extruder2SettingsPage() {
   const {
     inverterSetRotation,
+    inverterReset,
     rotationState,
     extruderSetPressureLimit,
     extruderSetPressureLimitIsEnabled,
@@ -26,6 +28,16 @@ export function Extruder2SettingsPage() {
             optionFalse={{ children: "Backward" }}
             onChange={inverterSetRotation}
           />
+        </Label>
+
+        <Label label="Reset Inverter">
+          <button
+            onClick={inverterReset}
+            className="inline-block w-fit max-w-max rounded bg-red-600 px-4 py-4 text-base whitespace-nowrap text-white hover:bg-red-700"
+            style={{ minWidth: "auto", width: "fit-content" }}
+          >
+            Reset Inverter
+          </button>
         </Label>
       </ControlCard>
 
