@@ -1,6 +1,5 @@
 import { StoreApi } from "zustand";
 import { create } from "zustand";
-import { produce } from "immer";
 import { z } from "zod";
 import {
   EventHandler,
@@ -113,28 +112,25 @@ export function mainMessageHandler(
       if (eventName === "EthercatDevicesEvent") {
         const validatedEvent = ethercatDevicesEventSchema.parse(event);
         console.log("EthercatDevicesEvent", validatedEvent);
-        store.setState(
-          produce((state) => {
-            state.ethercatDevices = validatedEvent;
-          }),
-        );
+        store.setState((state) => ({
+          ...state,
+          ethercatDevices: validatedEvent,
+        }));
       } else if (eventName === "MachinesEvent") {
         const validatedEvent = machinesEventSchema.parse(event);
         console.log("MachinesEvent", validatedEvent);
-        store.setState(
-          produce((state) => {
-            state.machines = validatedEvent;
-          }),
-        );
+        store.setState((state) => ({
+          ...state,
+          machines: validatedEvent,
+        }));
       } else if (eventName === "EthercatInterfaceDiscoveryEvent") {
         const validatedEvent =
           ethercatInterfaceDiscoveryEventSchema.parse(event);
         console.log("EthercatInterfaceDiscoveryEvent", validatedEvent);
-        store.setState(
-          produce((state) => {
-            state.ethercatInterfaceDiscovery = validatedEvent;
-          }),
-        );
+        store.setState((state) => ({
+          ...state,
+          ethercatInterfaceDiscovery: validatedEvent,
+        }));
       } else {
         handleUnhandledEventError(eventName);
       }

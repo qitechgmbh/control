@@ -438,6 +438,7 @@ impl SerialInterfaceDevice<EL6021Port> for EL6021 {
         if let Some(tx_pdo) = &mut self.txpdo.com_tx_pdo_map_22_byte {
             let valid_length = tx_pdo.length as usize;
             let received_data = tx_pdo.data[..valid_length.min(22)].to_vec();
+
             if received_data.is_empty() {
                 return None;
             }
@@ -469,6 +470,7 @@ impl SerialInterfaceDevice<EL6021Port> for EL6021 {
             rx_pdo.length = message.len() as u8;
             rx_pdo.data = data_buffer;
             rx_pdo.control.transmit_request = !rx_pdo.control.transmit_request;
+            // println!("{:?}", rx_pdo);
             return Ok(());
         } else {
             return Err(anyhow::anyhow!("Error: RxPdo is not available"));
@@ -626,6 +628,7 @@ pub const EL6021_PRODUCT_ID: u32 = 0x17853052;
 pub const EL6021_REVISION_A: u32 = 0x150000;
 pub const EL6021_REVISION_B: u32 = 0x140000;
 pub const EL6021_REVISION_C: u32 = 0x160000;
+pub const EL6021_REVISION_D: u32 = 0x100000;
 
 pub const EL6021_IDENTITY_A: SubDeviceIdentityTuple =
     (EL6021_VENDOR_ID, EL6021_PRODUCT_ID, EL6021_REVISION_A);
@@ -635,3 +638,6 @@ pub const EL6021_IDENTITY_B: SubDeviceIdentityTuple =
 
 pub const EL6021_IDENTITY_C: SubDeviceIdentityTuple =
     (EL6021_VENDOR_ID, EL6021_PRODUCT_ID, EL6021_REVISION_C);
+
+pub const EL6021_IDENTITY_D: SubDeviceIdentityTuple =
+    (EL6021_VENDOR_ID, EL6021_PRODUCT_ID, EL6021_REVISION_D);

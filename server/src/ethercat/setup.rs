@@ -59,7 +59,7 @@ pub async fn setup_loop(
             // Default 5000ms
             state_transition: Duration::from_millis(10 * 1000),
             // Default 30_000us
-            pdu: Duration::from_millis(1000),
+            pdu: Duration::from_millis(25),
             // Default 10ms
             eeprom: Duration::from_millis(10),
             // Default 0ms
@@ -71,7 +71,7 @@ pub async fn setup_loop(
         },
         MainDeviceConfig {
             // Default RetryBehaviour::None
-            retry_behaviour: RetryBehaviour::None,
+            retry_behaviour: RetryBehaviour::Count(100), // 25ms * 100 = 2.5s
             // Default 10_000
             dc_static_sync_iterations: 10_000,
         },
@@ -87,7 +87,7 @@ pub async fn setup_loop(
                 .await
                 .main_namespace;
             let event = EthercatDevicesEventBuilder().initializing();
-            main_namespace.emit_cached(MainNamespaceEvents::EthercatDevicesEvent(event));
+            main_namespace.emit(MainNamespaceEvents::EthercatDevicesEvent(event));
         }
     });
 
@@ -180,6 +180,7 @@ pub async fn setup_loop(
                 ethercat_devices: &identified_devices,
                 subdevices: &identified_subdevices,
             },
+            app_state.socketio_setup.socket_queue_tx.clone(),
         );
     }
 
@@ -199,7 +200,7 @@ pub async fn setup_loop(
             .await
             .main_namespace;
         let event = MachinesEventBuilder().build(app_state_clone.clone()).await;
-        main_namespace.emit_cached(MainNamespaceEvents::MachinesEvent(event));
+        main_namespace.emit(MainNamespaceEvents::MachinesEvent(event));
     });
 
     // Put group in operational state
@@ -237,7 +238,7 @@ pub async fn setup_loop(
         let event = EthercatDevicesEventBuilder()
             .build(app_state_clone.clone())
             .await;
-        main_namespace.emit_cached(MainNamespaceEvents::EthercatDevicesEvent(event));
+        main_namespace.emit(MainNamespaceEvents::EthercatDevicesEvent(event));
     });
 
     Ok(())

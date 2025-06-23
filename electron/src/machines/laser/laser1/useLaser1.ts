@@ -1,16 +1,15 @@
 import { toastError } from "@/components/Toast";
 import { useMachineMutate as useMachineMutation } from "@/client/useClient";
-import { dre1, MachineIdentificationUnique } from "@/machines/types";
-import { dre1SerialRoute } from "@/routes/routes";
+import { laser1, MachineIdentificationUnique } from "@/machines/types";
+import { laser1SerialRoute } from "@/routes/routes";
 import { z } from "zod";
-import { useDre1Namespace } from "./dre1Namespace";
+import { useLaser1Namespace } from "./laser1Namespace";
 import { useEffect, useMemo } from "react";
 import { useStateOptimistic } from "@/lib/useStateOptimistic";
-import { FPS_60, useThrottle } from "@/lib/useThrottle";
 
-function useDre(machine_identification_unique: MachineIdentificationUnique) {
+function useLaser(machine_identification_unique: MachineIdentificationUnique) {
   // Write Path
-  const dreStateOptimistic = useStateOptimistic<{
+  const laserStateOptimistic = useStateOptimistic<{
     target_diameter: number;
     lower_tolerance: number;
     higher_tolerance: number;
@@ -20,10 +19,10 @@ function useDre(machine_identification_unique: MachineIdentificationUnique) {
   });
   const { request: requestTargetDiameter } =
     useMachineMutation(schemaTargetDiameter);
-  const dreSetTargetDiameter = async (target_diameter: number) => {
-    if (dreStateOptimistic.value) {
-      dreStateOptimistic.setOptimistic({
-        ...dreStateOptimistic.value,
+  const laserSetTargetDiameter = async (target_diameter: number) => {
+    if (laserStateOptimistic.value) {
+      laserStateOptimistic.setOptimistic({
+        ...laserStateOptimistic.value,
         target_diameter: target_diameter,
       });
     }
@@ -34,9 +33,9 @@ function useDre(machine_identification_unique: MachineIdentificationUnique) {
       },
     })
       .then((response) => {
-        if (!response.success) dreStateOptimistic.resetToReal();
+        if (!response.success) laserStateOptimistic.resetToReal();
       })
-      .catch(() => dreStateOptimistic.resetToReal());
+      .catch(() => laserStateOptimistic.resetToReal());
   };
 
   const schemaLowerTolerance = z.object({
@@ -44,10 +43,10 @@ function useDre(machine_identification_unique: MachineIdentificationUnique) {
   });
   const { request: requestLowerTolerance } =
     useMachineMutation(schemaLowerTolerance);
-  const dreSetLowerTolerance = async (lower_tolerance: number) => {
-    if (dreStateOptimistic.value) {
-      dreStateOptimistic.setOptimistic({
-        ...dreStateOptimistic.value,
+  const laserSetLowerTolerance = async (lower_tolerance: number) => {
+    if (laserStateOptimistic.value) {
+      laserStateOptimistic.setOptimistic({
+        ...laserStateOptimistic.value,
         lower_tolerance: lower_tolerance,
       });
     }
@@ -58,9 +57,9 @@ function useDre(machine_identification_unique: MachineIdentificationUnique) {
       },
     })
       .then((response) => {
-        if (!response.success) dreStateOptimistic.resetToReal();
+        if (!response.success) laserStateOptimistic.resetToReal();
       })
-      .catch(() => dreStateOptimistic.resetToReal());
+      .catch(() => laserStateOptimistic.resetToReal());
   };
 
   const schemaHigherTolerance = z.object({
@@ -69,10 +68,10 @@ function useDre(machine_identification_unique: MachineIdentificationUnique) {
   const { request: requestHigherTolerance } = useMachineMutation(
     schemaHigherTolerance,
   );
-  const dreSetHigherTolerance = async (higher_tolerance: number) => {
-    if (dreStateOptimistic.value) {
-      dreStateOptimistic.setOptimistic({
-        ...dreStateOptimistic.value,
+  const laserSetHigherTolerance = async (higher_tolerance: number) => {
+    if (laserStateOptimistic.value) {
+      laserStateOptimistic.setOptimistic({
+        ...laserStateOptimistic.value,
         higher_tolerance: higher_tolerance,
       });
     }
@@ -83,41 +82,38 @@ function useDre(machine_identification_unique: MachineIdentificationUnique) {
       },
     })
       .then((response) => {
-        if (!response.success) dreStateOptimistic.resetToReal();
+        if (!response.success) laserStateOptimistic.resetToReal();
       })
-      .catch(() => dreStateOptimistic.resetToReal());
+      .catch(() => laserStateOptimistic.resetToReal());
   };
 
   // Read Path
-  const { dreDiameter, dreState } = useDre1Namespace(
+  const { laserDiameter, laserState } = useLaser1Namespace(
     machine_identification_unique,
   );
 
   // Update real values from server
   useEffect(() => {
-    if (dreState?.data) {
-      dreStateOptimistic.setReal(dreState.data);
+    if (laserState?.data) {
+      laserStateOptimistic.setReal(laserState.data);
     }
-  }, [dreState]);
-
-  // throttle to 60fps
-  const dreDiameterThrottled = useThrottle(dreDiameter, FPS_60);
+  }, [laserState]);
 
   return {
-    dreDiameter: dreDiameterThrottled,
-    dreState,
-    dreSetTargetDiameter,
-    dreSetLowerTolerance,
-    dreSetHigherTolerance,
-    dreStateIsLoading:
-      dreStateOptimistic.isOptimistic || !dreStateOptimistic.isInitialized,
-    dreStateIsDisabled:
-      dreStateOptimistic.isOptimistic || !dreStateOptimistic.isInitialized,
+    laserDiameter,
+    laserState,
+    laserSetTargetDiameter: laserSetTargetDiameter,
+    laserSetLowerTolerance: laserSetLowerTolerance,
+    laserSetHigherTolerance: laserSetHigherTolerance,
+    laserStateIsLoading:
+      laserStateOptimistic.isOptimistic || !laserStateOptimistic.isInitialized,
+    laserStateIsDisabled:
+      laserStateOptimistic.isOptimistic || !laserStateOptimistic.isInitialized,
   };
 }
 
-export function useDre1() {
-  const { serial: serialString } = dre1SerialRoute.useParams();
+export function useLaser1() {
+  const { serial: serialString } = laser1SerialRoute.useParams();
 
   // Memoize the machine identification to keep it stable between renders
   const machineIdentification: MachineIdentificationUnique = useMemo(() => {
@@ -139,14 +135,14 @@ export function useDre1() {
     }
 
     return {
-      machine_identification: dre1.machine_identification,
+      machine_identification: laser1.machine_identification,
       serial,
     };
   }, [serialString]); // Only recreate when serialString changes
 
-  const dre = useDre(machineIdentification);
+  const laser = useLaser(machineIdentification);
 
   return {
-    ...dre,
+    ...laser,
   };
 }

@@ -1,7 +1,10 @@
 use api::{
     ExtruderSettingsStateEvent, ExtruderV2Events, ExtruderV2Namespace, PidSettings, PidType,
 };
-use control_core::{machines::Machine, socketio::namespace::NamespaceCacheingLogic};
+use control_core::{
+    actors::mitsubishi_inverter_rs485::MitsubishiControlRequests, machines::Machine,
+    socketio::namespace::NamespaceCacheingLogic,
+};
 use screw_speed_controller::ScrewSpeedController;
 use serde::{Deserialize, Serialize};
 use std::time::Instant;
@@ -107,7 +110,7 @@ impl ExtruderV2 {
         .build();
 
         self.namespace
-            .emit_cached(ExtruderV2Events::ExtruderSettingsStateEvent(event));
+            .emit(ExtruderV2Events::ExtruderSettingsStateEvent(event));
     }
 }
 
@@ -202,7 +205,31 @@ impl ExtruderV2 {
         }
         .build();
         self.namespace
-            .emit_cached(ExtruderV2Events::RotationStateEvent(event))
+            .emit(ExtruderV2Events::RotationStateEvent(event))
+    }
+
+    fn emit_inverter_status(&mut self) {
+        let status = &self.screw_speed_controller.inverter.inverter_status;
+        let event = api::InverterStatusEvent {
+            running: status.running,
+            forward_running: status.forward_running,
+            reverse_running: status.reverse_running,
+            up_to_frequency: status.su,
+            overload_warning: status.ol,
+            no_function: status.no_function,
+            output_frequency_detection: status.fu,
+            abc_fault: status.abc_,
+            fault_occurence: status.fault_occurence,
+        }
+        .build();
+        self.namespace
+            .emit(ExtruderV2Events::InverterStatusEvent(event));
+    }
+
+    fn reset_inverter(&mut self) {
+        self.screw_speed_controller
+            .inverter
+            .add_request(MitsubishiControlRequests::ResetInverter.into());
     }
 
     fn set_mode_state(&mut self, mode: ExtruderV2Mode) {
@@ -216,8 +243,7 @@ impl ExtruderV2 {
             mode: self.mode.clone(),
         }
         .build();
-        self.namespace
-            .emit_cached(ExtruderV2Events::ModeEvent(event));
+        self.namespace.emit(ExtruderV2Events::ModeEvent(event));
     }
 }
 
@@ -241,7 +267,7 @@ impl ExtruderV2 {
         }
         .build();
         self.namespace
-            .emit_cached(ExtruderV2Events::RegulationStateEvent(event));
+            .emit(ExtruderV2Events::RegulationStateEvent(event));
     }
 
     fn set_target_pressure(&mut self, pressure: f64) {
@@ -267,7 +293,7 @@ impl ExtruderV2 {
         .build(heating_type);
 
         self.namespace
-            .emit_cached(ExtruderV2Events::HeatingStateEvent(event));
+            .emit(ExtruderV2Events::HeatingStateEvent(event));
     }
 
     fn emit_heating_element_power(&mut self, heating_type: HeatingType) {
@@ -288,7 +314,7 @@ impl ExtruderV2 {
 
         let event = api::HeatingPowerEvent { wattage }.build(heating_type);
         self.namespace
-            .emit_cached(ExtruderV2Events::HeatingPowerEvent(event));
+            .emit(ExtruderV2Events::HeatingPowerEvent(event));
     }
 
     fn set_target_temperature(&mut self, target_temperature: f64, heating_type: HeatingType) {
@@ -345,7 +371,7 @@ impl ExtruderV2 {
         }
         .build();
         self.namespace
-            .emit_cached(ExtruderV2Events::ScrewStateEvent(event));
+            .emit(ExtruderV2Events::ScrewStateEvent(event));
     }
 
     fn emit_bar(&mut self) {
@@ -357,7 +383,7 @@ impl ExtruderV2 {
         }
         .build();
         self.namespace
-            .emit_cached(ExtruderV2Events::PressureStateEvent(event));
+            .emit(ExtruderV2Events::PressureStateEvent(event));
     }
 }
 
@@ -368,7 +394,7 @@ impl ExtruderV2 {
         let ki = self.screw_speed_controller.pid.get_ki();
         let event = api::PidSettingsEvent { ki, kp, kd }.build(PidType::Pressure);
         self.namespace
-            .emit_cached(ExtruderV2Events::PidSettingsEvent(event));
+            .emit(ExtruderV2Events::PidSettingsEvent(event));
     }
 
     fn emit_temperature_pid_settings(&mut self) {
@@ -377,7 +403,7 @@ impl ExtruderV2 {
         let ki = self.temperature_controller_front.pid.get_ki();
         let event = api::PidSettingsEvent { ki, kp, kd }.build(PidType::Temperature);
         self.namespace
-            .emit_cached(ExtruderV2Events::PidSettingsEvent(event));
+            .emit(ExtruderV2Events::PidSettingsEvent(event));
     }
 
     fn configure_pressure_pid(&mut self, settings: PidSettings) {

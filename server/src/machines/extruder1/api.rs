@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{sync::Arc, time::Duration};
 
 use super::{ExtruderV2, ExtruderV2Mode, HeatingType};
 use control_core::{
@@ -6,13 +6,15 @@ use control_core::{
     socketio::{
         event::{Event, GenericEvent},
         namespace::{
-            CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, NamespaceInterface,
-            cache_duration, cache_one_event,
+            CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_duration,
+            cache_one_event,
         },
     },
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use smol::channel::Sender;
+use socketioxide::extract::SocketRef;
 use tracing::instrument;
 
 #[derive(Serialize, Debug, Clone)]
@@ -91,23 +93,29 @@ impl RegulationStateEvent {
 #[derive(Serialize, Debug, Clone)]
 pub struct InverterStatusEvent {
     /// RUN (Inverter running)
-    running: bool,
+    pub running: bool,
     /// Forward running motor spins forward
-    forward_running: bool,
+    pub forward_running: bool,
     /// Reverse running motor spins backwards
-    reverse_running: bool,
+    pub reverse_running: bool,
     /// Up to frequency, SU not completely sure what its for
-    up_to_frequency: bool,
+    pub up_to_frequency: bool,
     /// overload warning OL
-    overload_warning: bool,
+    pub overload_warning: bool,
     /// No function, its described that way in the datasheet
-    no_function: bool,
+    pub no_function: bool,
     /// FU Output Frequency Detection
-    output_frequency_detection: bool,
+    pub output_frequency_detection: bool,
     /// ABC (Fault)
-    abc_fault: bool,
+    pub abc_fault: bool,
     /// is True when a fault occured
-    fault_occurence: bool,
+    pub fault_occurence: bool,
+}
+
+impl InverterStatusEvent {
+    pub fn build(&self) -> Event<Self> {
+        Event::new("InverterStatusEvent", self.clone())
+    }
 }
 
 /// This is used when we just need a simple confirmation, that what we did, didnt cause errors
@@ -213,6 +221,7 @@ pub enum ExtruderV2Events {
     HeatingStateEvent(Event<HeatingStateEvent>),
     ExtruderSettingsStateEvent(Event<ExtruderSettingsStateEvent>),
     HeatingPowerEvent(Event<HeatingPowerEvent>),
+    InverterStatusEvent(Event<InverterStatusEvent>),
     PidSettingsEvent(Event<PidSettingsEvent>),
 }
 
@@ -240,61 +249,63 @@ enum Mutation {
     // Pid Configure
     SetTemperaturePidSettings(PidSettings),
     SetPressurePidSettings(PidSettings),
+
+    // Reset
+    InverterReset(bool),
 }
 
 #[derive(Debug)]
-pub struct ExtruderV2Namespace(Namespace);
+pub struct ExtruderV2Namespace {
+    pub namespace: Namespace,
+}
 
 impl NamespaceCacheingLogic<ExtruderV2Events> for ExtruderV2Namespace {
     #[instrument(skip_all)]
-    fn emit_cached(&mut self, events: ExtruderV2Events) {
-        let event = match events.event_value() {
-            Ok(event) => event,
-            Err(err) => {
-                tracing::error!("Failed to emit: {:?}", err);
-                return;
-            }
-        };
+    fn emit(&mut self, events: ExtruderV2Events) {
+        let event = Arc::new(events.event_value());
         let buffer_fn = events.event_cache_fn();
-        self.0.emit_cached(&event, &buffer_fn);
+        self.namespace.emit(event, &buffer_fn);
     }
 }
 
 impl ExtruderV2Namespace {
-    pub fn new() -> Self {
-        Self(Namespace::new())
+    pub fn new(socket_queue_tx: Sender<(SocketRef, Arc<GenericEvent>)>) -> Self {
+        Self {
+            namespace: Namespace::new(socket_queue_tx),
+        }
     }
 }
 
 impl CacheableEvents<ExtruderV2Events> for ExtruderV2Events {
-    fn event_value(&self) -> Result<GenericEvent, serde_json::Error> {
+    fn event_value(&self) -> GenericEvent {
         match self {
-            ExtruderV2Events::RotationStateEvent(event) => event.try_into(),
-            ExtruderV2Events::ModeEvent(event) => event.try_into(),
-            ExtruderV2Events::RegulationStateEvent(event) => event.try_into(),
-            ExtruderV2Events::PressureStateEvent(event) => event.try_into(),
-            ExtruderV2Events::ScrewStateEvent(event) => event.try_into(),
-            ExtruderV2Events::HeatingStateEvent(event) => event.try_into(),
-            ExtruderV2Events::ExtruderSettingsStateEvent(event) => event.try_into(),
-            ExtruderV2Events::HeatingPowerEvent(event) => event.try_into(),
+            ExtruderV2Events::RotationStateEvent(event) => event.into(),
+            ExtruderV2Events::ModeEvent(event) => event.into(),
+            ExtruderV2Events::RegulationStateEvent(event) => event.into(),
+            ExtruderV2Events::PressureStateEvent(event) => event.into(),
+            ExtruderV2Events::ScrewStateEvent(event) => event.into(),
+            ExtruderV2Events::HeatingStateEvent(event) => event.into(),
+            ExtruderV2Events::ExtruderSettingsStateEvent(event) => event.into(),
+            ExtruderV2Events::HeatingPowerEvent(event) => event.into(),
+            ExtruderV2Events::InverterStatusEvent(event) => event.into(),
             ExtruderV2Events::PidSettingsEvent(event) => event.try_into(),
         }
     }
 
     fn event_cache_fn(&self) -> CacheFn {
-        let _cache_one_hour = cache_duration(Duration::from_secs(60 * 60), Duration::from_secs(1));
-        let _cache_ten_secs = cache_duration(Duration::from_secs(10), Duration::from_secs(1));
+        let cache_one_hour = cache_duration(Duration::from_secs(60 * 60), Duration::from_secs(1));
         let cache_one = cache_one_event();
 
         match self {
             ExtruderV2Events::RotationStateEvent(_) => cache_one,
             ExtruderV2Events::ModeEvent(_) => cache_one,
             ExtruderV2Events::RegulationStateEvent(_) => cache_one,
-            ExtruderV2Events::PressureStateEvent(_) => cache_one,
-            ExtruderV2Events::ScrewStateEvent(_) => cache_one,
-            ExtruderV2Events::HeatingStateEvent(_) => cache_one,
             ExtruderV2Events::ExtruderSettingsStateEvent(_) => cache_one,
-            ExtruderV2Events::HeatingPowerEvent(_) => cache_one,
+            ExtruderV2Events::HeatingStateEvent(_) => cache_one,
+            ExtruderV2Events::PressureStateEvent(_) => cache_one_hour,
+            ExtruderV2Events::ScrewStateEvent(_) => cache_one_hour,
+            ExtruderV2Events::HeatingPowerEvent(_) => cache_one_hour,
+            ExtruderV2Events::InverterStatusEvent(_) => cache_one,
             ExtruderV2Events::PidSettingsEvent(_) => cache_one,
         }
     }
@@ -310,6 +321,7 @@ impl MachineApi for ExtruderV2 {
             Mutation::InverterSetRegulation(uses_rpm) => self.set_regulation(uses_rpm),
             Mutation::InverterSetTargetPressure(bar) => self.set_target_pressure(bar),
             Mutation::InverterSetTargetRpm(rpm) => self.set_target_rpm(rpm),
+            Mutation::InverterReset(_) => self.reset_inverter(),
 
             Mutation::FrontHeatingSetTargetTemperature(temp) => {
                 self.set_target_temperature(temp, HeatingType::Front)
@@ -341,7 +353,7 @@ impl MachineApi for ExtruderV2 {
         Ok(())
     }
 
-    fn api_event_namespace(&mut self) -> &mut dyn NamespaceInterface {
-        &mut self.namespace.0
+    fn api_event_namespace(&mut self) -> &mut Namespace {
+        &mut self.namespace.namespace
     }
 }

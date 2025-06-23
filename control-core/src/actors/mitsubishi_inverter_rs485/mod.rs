@@ -3,6 +3,10 @@ use crate::modbus::{
     ModbusFunctionCode, ModbusRequest, ModbusResponse, calculate_modbus_rtu_timeout,
 };
 use axum::http::request;
+use bitvec::{
+    order::{Lsb0, Msb0},
+    slice::BitSlice,
+};
 use ethercat_hal::io::serial_interface::{SerialEncoding, SerialInterface};
 use std::{
     collections::HashMap,
@@ -112,6 +116,11 @@ impl MitsubishiControlRequests {
 
     this is because StartMotor is higher priority
     Since the events do not need to be pushed into a queue this makes the inverter operation more stable
+
+    Lets say one request "A" with priority 1 and one with 2 "B" are queued up, assume that request B is frequently used
+    1. Request "B" is executed due to higher priority
+    2. When B is added again request A has the same priority because it was ignored. B is executed once again
+    3. B is added again, now A has an effective priority of 3, which is higher then B
 */
 impl From<MitsubishiControlRequests> for MitsubishiModbusRequest {
     fn from(request: MitsubishiControlRequests) -> Self {
@@ -147,7 +156,9 @@ impl From<MitsubishiControlRequests> for MitsubishiModbusRequest {
                     },
                     request_type: RequestType::OperationCommand,
                     expected_response_type: ResponseType::InverterStatus,
-                    priority: u16::MAX - 3,
+                    // Priority is -6 because we do not want to know the status as frequently as the frequency, which is why its priority is lower
+                    // In essence this means for every fifth ReadMotorFrequency request an InverterStatus request is sent
+                    priority: u16::MAX - 6,
                     control_request_type: MitsubishiControlRequests::ReadInverterStatus,
                     ignored_times: 0,
                 }
@@ -319,10 +330,24 @@ pub enum ResponseType {
     NoResponse,
     ReadFrequency,
     ReadMotorFrequency, // Motor Frequency is the actual frequency, that the motor is running at right now
-    ReadInverterStatus,
     WriteFrequency,
     InverterStatus,
     InverterControl,
+}
+
+#[derive(Debug, Default)]
+
+pub struct MitsubishiInverterStatus {
+    pub running: bool,
+    pub forward_running: bool,
+    pub reverse_running: bool,
+    pub su: bool,
+    pub ol: bool,
+    pub no_function: bool,
+    pub fu: bool,
+    pub abc_: bool,
+
+    pub fault_occurence: bool,
 }
 
 #[derive(Debug)]
@@ -333,6 +358,8 @@ pub struct MitsubishiInverterRS485Actor {
     pub encoding: Option<SerialEncoding>,
     pub request_map: HashMap<MitsubishiControlRequests, MitsubishiModbusRequest>,
     pub response: Option<ModbusResponse>,
+
+    pub inverter_status: MitsubishiInverterStatus,
 
     // State
     pub last_ts: Instant,
@@ -359,6 +386,7 @@ impl MitsubishiInverterRS485Actor {
             encoding: None,
             frequency: Frequency::ZERO,
             last_control_request_type: MitsubishiControlRequests::ResetInverter,
+            inverter_status: MitsubishiInverterStatus::default(),
         }
     }
 
@@ -396,7 +424,6 @@ impl MitsubishiInverterRS485Actor {
 
             let response: Result<ModbusResponse, _> =
                 ModbusResponse::try_from(raw_response.clone());
-
             match response {
                 Ok(result) => {
                     self.last_message_size = result.clone().data.len() + 4;
@@ -526,28 +553,31 @@ impl MitsubishiInverterRS485Actor {
         self.frequency = Frequency::new::<centihertz>(raw_frequency);
     }
 
+    fn handle_read_inverter_status(&mut self, resp: ModbusResponse) {
+        let status_bytes: [u8; 2] = resp.data[1..3].try_into().unwrap();
+        let bits: &BitSlice<u8, Lsb0> = BitSlice::<_, Lsb0>::from_slice(&status_bytes);
+        self.inverter_status = MitsubishiInverterStatus {
+            running: bits[8],
+            forward_running: bits[9],
+            reverse_running: bits[10],
+            su: bits[11],
+            ol: bits[12],
+            no_function: bits[13],
+            fu: bits[14],
+            abc_: bits[15],
+            fault_occurence: bits[7],
+        };
+    }
+
     fn handle_response(&mut self, resp: ModbusResponse) {
         match self.next_response_type {
             ResponseType::ReadFrequency => (),
-            ResponseType::ReadInverterStatus => (),
             ResponseType::WriteFrequency => (),
             ResponseType::ReadMotorFrequency => self.handle_motor_frequency(resp),
-            ResponseType::InverterStatus => (),
+            ResponseType::InverterStatus => self.handle_read_inverter_status(resp),
             ResponseType::InverterControl => (),
             ResponseType::NoResponse => (),
         }
-    }
-
-    pub fn reset_state(&mut self) {
-        self.state = State::ReadyToSend;
-        self.last_ts = Instant::now();
-        self.request_map = HashMap::new();
-        self.response = None;
-        self.next_response_type = ResponseType::InverterStatus;
-        self.last_request_type = RequestType::OperationCommand;
-        self.last_message_size = 0;
-        self.frequency = Frequency::ZERO;
-        self.last_control_request_type = MitsubishiControlRequests::ReadInverterStatus;
     }
 }
 
@@ -591,7 +621,10 @@ impl Actor for MitsubishiInverterRS485Actor {
             if elapsed < timeout {
                 return;
             }
+
             self.add_request(MitsubishiControlRequests::ReadMotorFrequency.into());
+            // inverterstatus has less priority than readmotor
+            self.add_request(MitsubishiControlRequests::ReadInverterStatus.into());
 
             self.last_ts = now_ts;
             match self.state {

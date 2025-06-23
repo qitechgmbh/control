@@ -31,7 +31,8 @@ impl Actor for ExtruderV2 {
 
             let now = Instant::now();
 
-            if now.duration_since(self.last_measurement_emit) > Duration::from_millis(16) {
+            if now.duration_since(self.last_measurement_emit) > Duration::from_secs_f64(1.0 / 60.0)
+            {
                 // channel 1
                 self.emit_heating(
                     self.temperature_controller_back.heating.clone(),
@@ -58,6 +59,7 @@ impl Actor for ExtruderV2 {
                 self.emit_regulation();
                 self.emit_mode_state();
                 self.emit_rotation_state();
+                self.emit_inverter_status();
 
                 self.emit_pressure_pid_settings();
                 self.emit_temperature_pid_settings();

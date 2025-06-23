@@ -1,17 +1,19 @@
-use super::DreMachine;
+use super::LaserMachine;
 use control_core::{
     machines::api::MachineApi,
     socketio::{
         event::{Event, GenericEvent},
         namespace::{
-            CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, NamespaceInterface,
-            cache_duration, cache_one_event,
+            CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_duration,
+            cache_one_event,
         },
     },
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::time::Duration;
+use smol::channel::Sender;
+use socketioxide::extract::SocketRef;
+use std::{sync::Arc, time::Duration};
 use tracing::instrument;
 
 #[derive(Serialize, Debug, Clone)]
@@ -25,37 +27,41 @@ impl DiameterEvent {
     }
 }
 #[derive(Serialize, Debug, Clone)]
-pub struct DreStateEvent {
+pub struct LaserStateEvent {
     pub higher_tolerance: f64,
     pub lower_tolerance: f64,
     pub target_diameter: f64,
 }
 
-impl DreStateEvent {
+impl LaserStateEvent {
     pub fn build(&self) -> Event<Self> {
-        Event::new("DreStateEvent", self.clone())
+        Event::new("LaserStateEvent", self.clone())
     }
 }
 
-pub enum DreEvents {
+pub enum LaserEvents {
     Diameter(Event<DiameterEvent>),
-    DreState(Event<DreStateEvent>),
+    LaserState(Event<LaserStateEvent>),
 }
 
 #[derive(Debug)]
-pub struct DreMachineNamespace(Namespace);
+pub struct LaserMachineNamespace {
+    pub namespace: Namespace,
+}
 
-impl DreMachineNamespace {
-    pub fn new() -> Self {
-        Self(Namespace::new())
+impl LaserMachineNamespace {
+    pub fn new(socket_queue_tx: Sender<(SocketRef, Arc<GenericEvent>)>) -> Self {
+        Self {
+            namespace: Namespace::new(socket_queue_tx),
+        }
     }
 }
 
-impl CacheableEvents<DreEvents> for DreEvents {
-    fn event_value(&self) -> Result<GenericEvent, serde_json::Error> {
+impl CacheableEvents<LaserEvents> for LaserEvents {
+    fn event_value(&self) -> GenericEvent {
         match self {
-            DreEvents::Diameter(event) => event.try_into(),
-            DreEvents::DreState(event) => event.try_into(),
+            LaserEvents::Diameter(event) => event.into(),
+            LaserEvents::LaserState(event) => event.into(),
         }
     }
 
@@ -64,8 +70,8 @@ impl CacheableEvents<DreEvents> for DreEvents {
         let cache_one = cache_one_event();
 
         match self {
-            DreEvents::Diameter(_) => cache_one_hour,
-            DreEvents::DreState(_) => cache_one,
+            LaserEvents::Diameter(_) => cache_one_hour,
+            LaserEvents::LaserState(_) => cache_one,
         }
     }
 }
@@ -73,29 +79,23 @@ impl CacheableEvents<DreEvents> for DreEvents {
 #[derive(Deserialize, Serialize)]
 /// All values in the Mutation enum should be positive.
 /// This ensures that the parameters for setting tolerances and target diameter
-/// are valid and meaningful within the context of the DreMachine's operation.
+/// are valid and meaningful within the context of the LaserMachine's operation.
 enum Mutation {
     TargetSetTargetDiameter(f64),
     TargetSetLowerTolerance(f64),
     TargetSetHigherTolerance(f64),
 }
 
-impl NamespaceCacheingLogic<DreEvents> for DreMachineNamespace {
+impl NamespaceCacheingLogic<LaserEvents> for LaserMachineNamespace {
     #[instrument(skip_all)]
-    fn emit_cached(&mut self, events: DreEvents) {
-        let event = match events.event_value() {
-            Ok(event) => event,
-            Err(err) => {
-                tracing::error!("Failed to emit: {:?}", err);
-                return;
-            }
-        };
+    fn emit(&mut self, events: LaserEvents) {
+        let event = Arc::new(events.event_value());
         let buffer_fn = events.event_cache_fn();
-        self.0.emit_cached(&event, &buffer_fn);
+        self.namespace.emit(event, &buffer_fn);
     }
 }
 
-impl MachineApi for DreMachine {
+impl MachineApi for LaserMachine {
     fn api_mutate(&mut self, request_body: Value) -> Result<(), anyhow::Error> {
         let mutation: Mutation = serde_json::from_value(request_body)?;
         match mutation {
@@ -112,7 +112,7 @@ impl MachineApi for DreMachine {
         Ok(())
     }
 
-    fn api_event_namespace(&mut self) -> &mut dyn NamespaceInterface {
-        &mut self.namespace.0
+    fn api_event_namespace(&mut self) -> &mut Namespace {
+        &mut self.namespace.namespace
     }
 }
