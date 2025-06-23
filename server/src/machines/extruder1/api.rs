@@ -247,7 +247,6 @@ enum Mutation {
     ExtruderSetPressureLimitIsEnabled(bool),
 
     // Pid Configure
-    SetTemperaturePidSettings(PidSettings),
     SetPressurePidSettings(PidSettings),
 
     // Reset
@@ -288,7 +287,7 @@ impl CacheableEvents<ExtruderV2Events> for ExtruderV2Events {
             ExtruderV2Events::ExtruderSettingsStateEvent(event) => event.into(),
             ExtruderV2Events::HeatingPowerEvent(event) => event.into(),
             ExtruderV2Events::InverterStatusEvent(event) => event.into(),
-            ExtruderV2Events::PidSettingsEvent(event) => event.try_into(),
+            ExtruderV2Events::PidSettingsEvent(event) => event.into(),
         }
     }
 
@@ -344,10 +343,6 @@ impl MachineApi for ExtruderV2 {
 
             Mutation::SetPressurePidSettings(settings) => {
                 self.configure_pressure_pid(settings);
-            }
-
-            Mutation::SetTemperaturePidSettings(settings) => {
-                self.configure_temperature_pid(settings);
             }
         }
         Ok(())

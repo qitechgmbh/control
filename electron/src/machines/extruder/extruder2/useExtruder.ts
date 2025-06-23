@@ -349,25 +349,14 @@ export function useMotor(
 export function usePidSettings(
   machine_identification_unique: MachineIdentificationUnique,
 ): {
-  temperaturePidSettings: PidSettings | undefined;
   pressurePidSettings: PidSettings | undefined;
   setPressurePid: (settings: PidSettings) => void;
-  setTemperaturePid: (settings: PidSettings) => void;
 } {
   const { pressurePidSettings, temperaturePidSettings } = useExtruder2Namespace(
     machine_identification_unique,
   );
 
-  const temperaturePidSettingsState = useStateOptimistic<PidSettings>();
   const pressurePidSettingsState = useStateOptimistic<PidSettings>();
-
-  const SetTemperaturePidSchema = z.object({
-    SetTemperaturePidSettings: z.object({
-      ki: z.number(),
-      kp: z.number(),
-      kd: z.number(),
-    }),
-  });
 
   const SetPressurePidSchema = z.object({
     SetPressurePidSettings: z.object({
@@ -376,10 +365,6 @@ export function usePidSettings(
       kd: z.number(),
     }),
   });
-
-  const { request: TemperaturePidSettingsRequest } = useMachineMutation(
-    SetTemperaturePidSchema,
-  );
 
   const { request: PressurePidSettingsRequest } =
     useMachineMutation(SetPressurePidSchema);
@@ -396,32 +381,14 @@ export function usePidSettings(
       .catch(() => pressurePidSettingsState.resetToReal());
   };
 
-  const setTemperaturePid = async (value: PidSettings) => {
-    temperaturePidSettingsState.setOptimistic(value);
-    TemperaturePidSettingsRequest({
-      machine_identification_unique,
-      data: { SetTemperaturePidSettings: value },
-    })
-      .then((response) => {
-        if (!response.success) temperaturePidSettingsState.resetToReal();
-      })
-      .catch(() => temperaturePidSettingsState.resetToReal());
-  };
-
   useEffect(() => {
     if (pressurePidSettings?.data) {
       pressurePidSettingsState.setReal(pressurePidSettings?.data);
-    }
-
-    if (temperaturePidSettings?.data) {
-      temperaturePidSettingsState.setReal(temperaturePidSettings?.data);
     }
   });
 
   return {
     pressurePidSettings: pressurePidSettingsState.value,
-    temperaturePidSettings: temperaturePidSettingsState.value,
-    setTemperaturePid,
     setPressurePid,
   };
 }

@@ -402,16 +402,4 @@ impl ExtruderV2 {
             .pid
             .configure(settings.ki, settings.kp, settings.kd);
     }
-
-    fn configure_temperature_pid(&mut self, settings: PidSettings) {
-        self.temperature_controller_back
-            .pid
-            .configure(settings.ki, settings.kp, settings.kd);
-        self.temperature_controller_middle
-            .pid
-            .configure(settings.ki, settings.kp, settings.kd);
-        self.temperature_controller_front
-            .pid
-            .configure(settings.ki, settings.kp, settings.kd);
-    }
 }

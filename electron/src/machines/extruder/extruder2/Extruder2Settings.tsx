@@ -6,7 +6,6 @@ import { SelectionGroupBoolean } from "@/control/SelectionGroup";
 import { EditValue } from "@/control/EditValue";
 import { roundToDecimals } from "@/lib/decimal";
 import { useExtruder2 } from "./useExtruder";
-import { TouchButton } from "@/components/touch/TouchButton";
 
 export function Extruder2SettingsPage() {
   const {
@@ -18,18 +17,11 @@ export function Extruder2SettingsPage() {
     pressureLimitState,
     pressureLimitEnabledState,
     pressurePidSettings,
-    temperaturePidSettings,
     setPressurePid,
-    setTemperaturePid,
   } = useExtruder2();
 
   const [showAdvanced, setShowAdvanced] = useState(false);
 
-  const [pid1, setPid1] = useState<{
-    kp: number;
-    ki: number;
-    kd: number;
-  } | null>(null);
   const [pid2, setPid2] = useState<{
     kp: number;
     ki: number;
@@ -37,15 +29,12 @@ export function Extruder2SettingsPage() {
   } | null>(null);
 
   useEffect(() => {
-    if (!pid1 && temperaturePidSettings) {
-      setPid1(temperaturePidSettings);
-    }
     if (!pid2 && pressurePidSettings) {
       setPid2(pressurePidSettings);
     }
-  }, [temperaturePidSettings, pressurePidSettings, pid1, pid2]);
+  }, [pressurePidSettings, pid2]);
 
-  if (!pid1 || !pid2) {
+  if (!pid2) {
     return <div>Loading PID settings...</div>;
   }
 
@@ -105,55 +94,7 @@ export function Extruder2SettingsPage() {
 
       {showAdvanced && (
         <>
-          <ControlCard title="Temperature PID Settings">
-            <Label label="Kp">
-              <EditValue
-                value={pid1.kp}
-                defaultValue={0}
-                min={0}
-                max={100}
-                step={0.01}
-                renderValue={(v) => roundToDecimals(v, 2)}
-                onChange={(v) => setPid1({ ...pid1, kp: v })}
-                title="Temperature PID KP"
-              />
-            </Label>
-            <Label label="Ki">
-              <EditValue
-                value={pid1.ki}
-                defaultValue={0}
-                min={0}
-                max={100}
-                step={0.01}
-                renderValue={(v) => roundToDecimals(v, 2)}
-                onChange={(v) => setPid1({ ...pid1, ki: v })}
-                title="Temperature PID KI"
-              />
-            </Label>
-            <Label label="Kd">
-              <EditValue
-                value={pid1.kd}
-                defaultValue={0}
-                min={0}
-                max={100}
-                step={0.01}
-                renderValue={(v) => roundToDecimals(v, 2)}
-                onChange={(v) => setPid1({ ...pid1, kd: v })}
-                title="Temperature PID KD"
-              />
-            </Label>
-
-            <div className="mt-2 flex justify-end">
-              <button
-                className="rounded bg-blue-600 px-4 py-2 text-white"
-                onClick={() => setTemperaturePid(pid1)}
-              >
-                Save Temperature PID
-              </button>
-            </div>
-          </ControlCard>
-
-          <ControlCard title="Pressure PID Settings Group 2">
+          <ControlCard title="Pressure PID Settings ">
             <Label label="Kp">
               <EditValue
                 value={pid2.kp}
