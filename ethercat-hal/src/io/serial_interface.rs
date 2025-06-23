@@ -17,6 +17,9 @@ pub struct SerialInterface {
         Box<dyn Fn() -> Pin<Box<dyn Future<Output = Option<SerialEncoding>> + Send>> + Send + Sync>,
 
     pub initialize: Box<dyn Fn() -> Pin<Box<dyn Future<Output = bool> + Send>> + Send + Sync>,
+
+    pub write_finished: Box<dyn Fn() -> Pin<Box<dyn Future<Output = bool> + Send>> + Send + Sync>,
+    pub read_finished: Box<dyn Fn() -> Pin<Box<dyn Future<Output = bool> + Send>> + Send + Sync>,
 }
 
 impl fmt::Debug for SerialInterface {
@@ -120,6 +123,33 @@ impl SerialInterface {
                 device.serial_interface_initialize(port_clone)
             })
         });
+
+        port2 = port.clone();
+        device2 = device.clone();
+
+        let write_finished = Box::new(move || -> Pin<Box<dyn Future<Output = bool> + Send>> {
+            let device2 = device2.clone();
+            let port_clone = port2.clone();
+
+            Box::pin(async move {
+                let mut device = device2.write().await;
+                device.serial_interface_write_finished(port_clone)
+            })
+        });
+
+        port2 = port.clone();
+        device2 = device.clone();
+
+        let read_finished = Box::new(move || -> Pin<Box<dyn Future<Output = bool> + Send>> {
+            let device2 = device2.clone();
+            let port_clone = port2.clone();
+
+            Box::pin(async move {
+                let mut device = device2.write().await;
+                device.serial_interface_read_finished(port_clone)
+            })
+        });
+
         SerialInterface {
             has_message,
             write_message,
@@ -127,6 +157,8 @@ impl SerialInterface {
             get_baudrate,
             get_serial_encoding,
             initialize,
+            write_finished,
+            read_finished,
         }
     }
 }
@@ -145,6 +177,8 @@ where
     fn get_serial_encoding(&self, port: PORTS) -> Option<SerialEncoding>;
     fn get_baudrate(&self, port: PORTS) -> Option<u32>;
     fn serial_interface_initialize(&mut self, port: PORTS) -> bool;
+    fn serial_interface_write_finished(&mut self, port: PORTS) -> bool;
+    fn serial_interface_read_finished(&mut self, port: PORTS) -> bool;
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
