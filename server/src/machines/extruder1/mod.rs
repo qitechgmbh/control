@@ -105,7 +105,7 @@ impl ExtruderV2 {
         .build();
 
         self.namespace
-            .emit_cached(ExtruderV2Events::ExtruderSettingsStateEvent(event));
+            .emit(ExtruderV2Events::ExtruderSettingsStateEvent(event));
     }
 }
 
@@ -132,10 +132,12 @@ impl ExtruderV2 {
             ExtruderV2Mode::Standby => (),
             ExtruderV2Mode::Heat => {
                 self.turn_heating_off();
+                self.screw_speed_controller.reset_pid();
             }
             ExtruderV2Mode::Extrude => {
                 self.turn_heating_off();
                 self.screw_speed_controller.turn_motor_off();
+                self.screw_speed_controller.reset_pid();
             }
         };
         self.mode = ExtruderV2Mode::Standby;
@@ -147,7 +149,10 @@ impl ExtruderV2 {
         match self.mode {
             ExtruderV2Mode::Standby => self.enable_heating(),
             ExtruderV2Mode::Heat => (),
-            ExtruderV2Mode::Extrude => self.screw_speed_controller.turn_motor_off(),
+            ExtruderV2Mode::Extrude => {
+                self.screw_speed_controller.turn_motor_off();
+                self.screw_speed_controller.reset_pid();
+            }
         }
         self.mode = ExtruderV2Mode::Heat;
     }
@@ -158,10 +163,12 @@ impl ExtruderV2 {
             ExtruderV2Mode::Standby => {
                 self.screw_speed_controller.turn_motor_on();
                 self.enable_heating();
+                self.screw_speed_controller.reset_pid();
             }
             ExtruderV2Mode::Heat => {
                 self.screw_speed_controller.turn_motor_on();
                 self.enable_heating();
+                self.screw_speed_controller.reset_pid();
             }
             ExtruderV2Mode::Extrude => (), // Do nothing, we are already extruding
         }
@@ -193,7 +200,7 @@ impl ExtruderV2 {
         }
         .build();
         self.namespace
-            .emit_cached(ExtruderV2Events::RotationStateEvent(event))
+            .emit(ExtruderV2Events::RotationStateEvent(event))
     }
 
     fn set_mode_state(&mut self, mode: ExtruderV2Mode) {
@@ -207,15 +214,21 @@ impl ExtruderV2 {
             mode: self.mode.clone(),
         }
         .build();
-        self.namespace
-            .emit_cached(ExtruderV2Events::ModeEvent(event));
+        self.namespace.emit(ExtruderV2Events::ModeEvent(event));
     }
 }
 
 // Motor
 impl ExtruderV2 {
     fn set_regulation(&mut self, uses_rpm: bool) {
+        if (self.screw_speed_controller.get_uses_rpm() == false && uses_rpm == true) {
+            self.screw_speed_controller
+                .set_target_screw_rpm(self.screw_speed_controller.target_rpm);
+        }
+
+        self.screw_speed_controller.reset_pid();
         self.screw_speed_controller.set_uses_rpm(uses_rpm);
+
         self.emit_regulation();
     }
 
@@ -225,7 +238,7 @@ impl ExtruderV2 {
         }
         .build();
         self.namespace
-            .emit_cached(ExtruderV2Events::RegulationStateEvent(event));
+            .emit(ExtruderV2Events::RegulationStateEvent(event));
     }
 
     fn set_target_pressure(&mut self, pressure: f64) {
@@ -251,7 +264,7 @@ impl ExtruderV2 {
         .build(heating_type);
 
         self.namespace
-            .emit_cached(ExtruderV2Events::HeatingStateEvent(event));
+            .emit(ExtruderV2Events::HeatingStateEvent(event));
     }
 
     fn emit_heating_element_power(&mut self, heating_type: HeatingType) {
@@ -272,7 +285,7 @@ impl ExtruderV2 {
 
         let event = api::HeatingPowerEvent { wattage }.build(heating_type);
         self.namespace
-            .emit_cached(ExtruderV2Events::HeatingPowerEvent(event));
+            .emit(ExtruderV2Events::HeatingPowerEvent(event));
     }
 
     fn set_target_temperature(&mut self, target_temperature: f64, heating_type: HeatingType) {
@@ -329,7 +342,7 @@ impl ExtruderV2 {
         }
         .build();
         self.namespace
-            .emit_cached(ExtruderV2Events::ScrewStateEvent(event));
+            .emit(ExtruderV2Events::ScrewStateEvent(event));
     }
 
     fn emit_bar(&mut self) {
@@ -341,6 +354,6 @@ impl ExtruderV2 {
         }
         .build();
         self.namespace
-            .emit_cached(ExtruderV2Events::PressureStateEvent(event));
+            .emit(ExtruderV2Events::PressureStateEvent(event));
     }
 }

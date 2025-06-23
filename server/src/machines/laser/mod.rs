@@ -39,7 +39,7 @@ impl LaserMachine {
             diameter: diameter.unwrap_or(0.0),
         };
         self.namespace
-            .emit_cached(LaserEvents::Diameter(diameter_event.build()));
+            .emit(LaserEvents::Diameter(diameter_event.build()));
     }
 
     pub fn emit_laser_state(&mut self) {
@@ -50,7 +50,7 @@ impl LaserMachine {
         };
 
         self.namespace
-            .emit_cached(LaserEvents::LaserState(laser_state_event.build()));
+            .emit(LaserEvents::LaserState(laser_state_event.build()));
     }
 
     pub fn target_set_higher_tolerance(&mut self, higher_tolerance: f64) {

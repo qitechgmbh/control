@@ -25,6 +25,7 @@ use serial::init::init_serial;
 use jemalloc_stats::init_jemalloc_stats;
 
 use crate::panic::init_panic;
+use crate::socketio::queue::init_socketio_queue;
 
 pub mod app_state;
 pub mod ethercat;
@@ -60,6 +61,7 @@ fn main() {
             let thread_panic_tx = thread_panic_tx.clone();
             let app_state = app_state.clone();
             move || {
+                init_socketio_queue(thread_panic_tx.clone(), app_state.clone());
                 init_api(thread_panic_tx.clone(), app_state.clone())
                     .expect("Failed to initialize API");
                 #[cfg(not(feature = "mock-machine"))]

@@ -5,16 +5,15 @@
 
 import { StoreApi } from "zustand";
 import { create } from "zustand";
-import { produce } from "immer";
 import { z } from "zod";
 import {
   EventHandler,
   eventSchema,
   Event,
-  handleEventValidationError,
   handleUnhandledEventError,
   NamespaceId,
   createNamespaceHookImplementation,
+  ThrottledStoreUpdater,
 } from "../../../client/socketioStore";
 import { MachineIdentificationUnique } from "@/machines/types";
 import {
@@ -98,61 +97,56 @@ export const createMock1NamespaceStore = (): StoreApi<Mock1NamespaceStore> =>
 /**
  * Creates a message handler for Mock1 namespace events with validation and appropriate caching strategies
  * @param store The store to update when messages are received
+ * @param throttledUpdater Throttled updater for batching updates at 60 FPS
  * @returns A message handler function
  */
 export function mock1MessageHandler(
   store: StoreApi<Mock1NamespaceStore>,
+  throttledUpdater: ThrottledStoreUpdater<Mock1NamespaceStore>,
 ): EventHandler {
   return (event: Event<any>) => {
     const eventName = event.name;
 
+    // Helper function to update store through buffer
+    const updateStore = (
+      updater: (state: Mock1NamespaceStore) => Mock1NamespaceStore,
+    ) => {
+      throttledUpdater.updateWith(updater);
+    };
+
     try {
       // Apply appropriate caching strategy based on event type
       if (eventName === "MockStateEvent") {
-        store.setState(
-          produce(store.getState(), (state) => {
-            state.mockState = {
-              name: event.name,
-              data: mockStateEventDataSchema.parse(event.data),
-              ts: event.ts,
-            };
-          }),
-        );
+        console.log("MockStateEvent", event);
+        updateStore((state) => ({
+          ...state,
+          mockState: event as MockStateEvent,
+        }));
       }
       // Mode state events (latest only)
       else if (eventName === "ModeStateEvent") {
-        store.setState(
-          produce(store.getState(), (state) => {
-            state.modeState = {
-              name: event.name,
-              data: modeStateEventDataSchema.parse(event.data),
-              ts: event.ts,
-            };
-          }),
-        );
+        console.log("ModeStateEvent", event);
+        updateStore((state) => ({
+          ...state,
+          modeState: event as ModeStateEvent,
+        }));
       }
       // Metric events (keep for 1 hour)
       else if (eventName === "SineWaveEvent") {
-        const parsed = sineWaveEventSchema.parse(event);
         const timeseriesValue: TimeSeriesValue = {
-          value: parsed.data.amplitude,
+          value: event.data.amplitude ?? 0,
           timestamp: event.ts,
         };
-        store.setState(
-          produce(store.getState(), (state) => {
-            state.sineWave = addSineWave(state.sineWave, timeseriesValue);
-          }),
-        );
+        updateStore((state) => ({
+          ...state,
+          sineWave: addSineWave(state.sineWave, timeseriesValue),
+        }));
       } else {
         handleUnhandledEventError(eventName);
       }
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        handleEventValidationError(error, eventName);
-      } else {
-        console.error(`Unexpected error processing ${eventName} event:`, error);
-        throw error;
-      }
+      console.error(`Unexpected error processing ${eventName} event:`, error);
+      throw error;
     }
   };
 }

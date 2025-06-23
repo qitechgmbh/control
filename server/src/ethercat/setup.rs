@@ -87,7 +87,7 @@ pub async fn setup_loop(
                 .await
                 .main_namespace;
             let event = EthercatDevicesEventBuilder().initializing();
-            main_namespace.emit_cached(MainNamespaceEvents::EthercatDevicesEvent(event));
+            main_namespace.emit(MainNamespaceEvents::EthercatDevicesEvent(event));
         }
     });
 
@@ -180,6 +180,7 @@ pub async fn setup_loop(
                 ethercat_devices: &identified_devices,
                 subdevices: &identified_subdevices,
             },
+            app_state.socketio_setup.socket_queue_tx.clone(),
         );
     }
 
@@ -199,7 +200,7 @@ pub async fn setup_loop(
             .await
             .main_namespace;
         let event = MachinesEventBuilder().build(app_state_clone.clone()).await;
-        main_namespace.emit_cached(MainNamespaceEvents::MachinesEvent(event));
+        main_namespace.emit(MainNamespaceEvents::MachinesEvent(event));
     });
 
     // Put group in operational state
@@ -237,7 +238,7 @@ pub async fn setup_loop(
         let event = EthercatDevicesEventBuilder()
             .build(app_state_clone.clone())
             .await;
-        main_namespace.emit_cached(MainNamespaceEvents::EthercatDevicesEvent(event));
+        main_namespace.emit(MainNamespaceEvents::EthercatDevicesEvent(event));
     });
 
     Ok(())

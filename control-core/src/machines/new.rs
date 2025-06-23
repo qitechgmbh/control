@@ -6,8 +6,11 @@ use ethercat_hal::{
     devices::EthercatDevice, helpers::ethercrab_types::EthercrabSubDevicePreoperational,
 };
 use ethercrab::{SubDevice, SubDeviceRef};
-use smol::lock::RwLock;
+use smol::{channel::Sender, lock::RwLock};
+use socketioxide::extract::SocketRef;
 use std::sync::Arc;
+
+use crate::socketio::event::GenericEvent;
 
 pub trait MachineNewTrait {
     fn new<'maindevice, 'subdevices>(
@@ -39,6 +42,7 @@ pub struct MachineNewParams<
         'machine_new_hardware_etehrcat,
         'machine_new_hardware_serial,
     >,
+    pub socket_queue_tx: Sender<(SocketRef, Arc<GenericEvent>)>,
 }
 
 pub enum MachineNewHardware<

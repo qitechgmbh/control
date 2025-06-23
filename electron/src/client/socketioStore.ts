@@ -2,10 +2,115 @@ import { useEffect, useMemo } from "react";
 import { create, StoreApi } from "zustand";
 import { produce } from "immer";
 import { io, Socket } from "socket.io-client";
+import MsgPackParser from "socket.io-msgpack-parser";
 import { useSyncExternalStore } from "react";
 import { z } from "zod";
 import { toastError, toastZodError } from "@/components/Toast";
 import { MachineIdentificationUnique } from "@/machines/types";
+
+/**
+ * Simple buffer-based store updater to limit React re-renders to ~60 FPS
+ * Writes events to a plain JS object and syncs to store every 16ms
+ */
+export class ThrottledStoreUpdater<S> {
+  private store: StoreApi<S>;
+  private buffer: S;
+  private syncTimer: NodeJS.Timeout | null = null;
+  private readonly syncDelay = 1000 / 60; // ~60 FPS (16.67ms)
+
+  constructor(store: StoreApi<S>) {
+    this.store = store;
+    // Initialize buffer with current store state
+    this.buffer = { ...store.getState() };
+  }
+
+  /**
+   * Update the buffer directly (no store update yet)
+   * @param updates Partial state to merge into buffer
+   */
+  update(updates: Partial<S>): void {
+    this.buffer = { ...this.buffer, ...updates };
+    this.scheduleSync();
+  }
+
+  /**
+   * Apply a function to update the buffer
+   * @param updater Function that takes current buffer and returns new state
+   */
+  updateWith(updater: (state: S) => S): void {
+    this.buffer = updater(this.buffer);
+    this.scheduleSync();
+  }
+
+  /**
+   * Get current buffer state for immediate reads
+   */
+  getBufferState(): S {
+    return this.buffer;
+  }
+
+  /**
+   * Schedule a sync to store if not already scheduled
+   */
+  private scheduleSync(): void {
+    if (this.syncTimer === null) {
+      this.syncTimer = setTimeout(() => {
+        this.syncToStore();
+      }, this.syncDelay);
+    }
+  }
+
+  /**
+   * Sync the entire buffer to the store
+   */
+  private syncToStore(): void {
+    this.store.setState(this.buffer);
+    this.syncTimer = null;
+  }
+
+  /**
+   * Force immediate sync of buffer to store
+   */
+  forceSync(): void {
+    if (this.syncTimer) {
+      clearTimeout(this.syncTimer);
+      this.syncToStore();
+    }
+  }
+
+  /**
+   * Cleanup resources
+   */
+  destroy(): void {
+    if (this.syncTimer) {
+      clearTimeout(this.syncTimer);
+      this.syncTimer = null;
+    }
+    // Final sync before destroy
+    this.syncToStore();
+  }
+}
+
+/**
+ * Creates a throttled event handler that batches store updates for better performance
+ * @param originalHandler The original event handler that processes events
+ * @returns A new event handler that batches updates at 60 FPS
+ */
+export function createThrottledEventHandler<S>(
+  store: StoreApi<S>,
+  originalHandler: (
+    event: Event<any>,
+    updateBuffer: (updater: (state: S) => S) => void,
+  ) => void,
+): EventHandler {
+  const throttledUpdater = new ThrottledStoreUpdater(store);
+
+  return (event: Event<any>) => {
+    originalHandler(event, (updater) => {
+      throttledUpdater.updateWith(updater);
+    });
+  };
+}
 
 /**
  * Generic event schema builder
@@ -78,6 +183,8 @@ type Namespace<S> = {
   store: StoreApi<S>;
   /** Timeout ID for disconnection */
   disconnectTimeoutId?: NodeJS.Timeout;
+  /** Throttled store updater for batching state updates */
+  throttledUpdater: ThrottledStoreUpdater<S>;
 };
 
 /**
@@ -132,7 +239,10 @@ type SocketioStore = {
   initNamespace: <S>(
     namespaceId: NamespaceId,
     createStore: () => StoreApi<S>,
-    createEventHandler: (store: StoreApi<S>) => EventHandler,
+    createEventHandler: (
+      store: StoreApi<S>,
+      throttledUpdater: ThrottledStoreUpdater<S>,
+    ) => EventHandler,
   ) => void;
   incrementNamespace: (namespaceId: NamespaceId) => void;
   decrementNamespace: (namespaceId: NamespaceId) => void;
@@ -162,7 +272,10 @@ const useSocketioStore = create<SocketioStore>()((set, get) => ({
     }
 
     // create a new socket
-    const socket = io(get().baseUrl + namespace_path, { autoConnect: false });
+    const socket = io(get().baseUrl + namespace_path, {
+      autoConnect: false,
+      parser: MsgPackParser,
+    });
 
     // create function to reset the store
     // creating a new store and a new event handler
@@ -170,9 +283,11 @@ const useSocketioStore = create<SocketioStore>()((set, get) => ({
       set(
         produce((state: SocketioStore) => {
           const store = createStore();
-          const eventHandler = createEventHandler(store);
+          const throttledUpdater = new ThrottledStoreUpdater(store);
+          const eventHandler = createEventHandler(store, throttledUpdater);
           state.namespaces[namespace_path].store = store;
           state.namespaces[namespace_path].handler = eventHandler;
+          state.namespaces[namespace_path].throttledUpdater = throttledUpdater;
         }),
       );
     };
@@ -218,12 +333,14 @@ const useSocketioStore = create<SocketioStore>()((set, get) => ({
     set(
       produce((state: SocketioStore) => {
         const store = createStore();
-        const handler = createEventHandler(store);
+        const throttledUpdater = new ThrottledStoreUpdater(store);
+        const handler = createEventHandler(store, throttledUpdater);
         state.namespaces[namespace_path] = {
           count: 0,
           socket,
           handler,
           store,
+          throttledUpdater,
           disconnectTimeoutId: undefined,
         };
       }),
@@ -278,7 +395,7 @@ const useSocketioStore = create<SocketioStore>()((set, get) => ({
               );
             }
 
-            // Create a timeout to check if the namespace is still unused after 10 seconds
+            // Create a timeout to check if the namespace is still unused after 1 hour
             const timeoutId = setTimeout(
               () => {
                 set(
@@ -286,18 +403,17 @@ const useSocketioStore = create<SocketioStore>()((set, get) => ({
                     const ns = state.namespaces[namespace_path];
                     if (ns && ns.count <= 0) {
                       ns.socket.disconnect();
+                      ns.throttledUpdater.destroy(); // Clean up throttled updater
                       delete state.namespaces[namespace_path];
                       console.log(
-                        `Namespace ${namespace_path} disconnected after 10s of inactivity`,
+                        `Namespace ${namespace_path} disconnected after 1h of inactivity`,
                       );
                     }
                   }),
                 );
               },
-              // 1 year in milliseconds
-              // this is a workaround to avoid the current issues with the event reloading
-              // perf improvements are tracked by #269
-              365 * 24 * 60 * 60 * 1000,
+              // 1h until disconnect
+              60 * 60 * 1000,
             );
 
             state.namespaces[namespace_path].disconnectTimeoutId = timeoutId;
@@ -322,9 +438,13 @@ export interface NamespaceImplementationConfig<S> {
   /**
    * Function that creates a message handler for this namespace
    * @param store The store that will be updated by the handler
+   * @param throttledUpdater Throttled updater for batching updates
    * @returns A message handler function
    */
-  createEventHandler: (store: StoreApi<S>) => EventHandler;
+  createEventHandler: (
+    store: StoreApi<S>,
+    throttledUpdater: ThrottledStoreUpdater<S>,
+  ) => EventHandler;
 }
 
 export type NamespaceImplementationResult<S> = (namespaceId: NamespaceId) => S;

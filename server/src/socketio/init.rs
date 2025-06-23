@@ -3,6 +3,7 @@ use std::sync::Arc;
 
 use crate::app_state::AppState;
 use control_core::socketio::namespace_id::NamespaceId;
+use socketioxide::ParserConfig;
 use socketioxide::extract::SocketRef;
 use socketioxide::layer::SocketIoLayer;
 use tracing::info_span;
@@ -12,6 +13,7 @@ pub async fn init_socketio(app_state: &Arc<AppState>) -> SocketIoLayer {
     // create
     let (socketio_layer, io) = socketioxide::SocketIoBuilder::new()
         .max_buffer_size(1024)
+        .with_parser(ParserConfig::msgpack())
         .build_layer();
 
     // Clone app_state for the first handler
@@ -97,7 +99,7 @@ fn setup_connection(socket: SocketRef, namespace_id: NamespaceId, app_state: Arc
         "Connecting socket to namespace"
     );
 
-    smol::spawn(
+    smol::block_on(
         async move {
             let mut socketio_namespaces_guard =
                 app_state_clone.socketio_setup.namespaces.write().await;
@@ -129,8 +131,7 @@ fn setup_connection(socket: SocketRef, namespace_id: NamespaceId, app_state: Arc
                 .await;
         }
         .instrument(span),
-    )
-    .detach();
+    );
 
     tracing::info!(
         "Socket connected to namespace socket={:?} namespace={}",

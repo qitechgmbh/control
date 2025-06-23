@@ -6,7 +6,6 @@ import { z } from "zod";
 import { useLaser1Namespace } from "./laser1Namespace";
 import { useEffect, useMemo } from "react";
 import { useStateOptimistic } from "@/lib/useStateOptimistic";
-import { FPS_60, useThrottle } from "@/lib/useThrottle";
 
 function useLaser(machine_identification_unique: MachineIdentificationUnique) {
   // Write Path
@@ -100,11 +99,8 @@ function useLaser(machine_identification_unique: MachineIdentificationUnique) {
     }
   }, [laserState]);
 
-  // throttle to 60fps
-  const laserDiameterThrottled = useThrottle(laserDiameter, FPS_60);
-
   return {
-    laserDiameter: laserDiameterThrottled,
+    laserDiameter,
     laserState,
     laserSetTargetDiameter: laserSetTargetDiameter,
     laserSetLowerTolerance: laserSetLowerTolerance,

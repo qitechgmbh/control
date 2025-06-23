@@ -49,7 +49,7 @@ impl ScrewSpeedController {
         Self {
             inverter: inverter,
             // need to tune
-            pid: PidController::new(0.1, 0.1, 0.1),
+            pid: PidController::new(1.0, 0.1, 0.0),
             last_update: now,
             target_pressure,
             target_rpm,
@@ -105,6 +105,7 @@ impl ScrewSpeedController {
     }
 
     pub fn set_target_pressure(&mut self, target_pressure: Pressure) {
+        self.reset_pid();
         self.target_pressure = target_pressure;
     }
 
@@ -178,11 +179,18 @@ impl ScrewSpeedController {
         }
     }
 
+    pub fn reset_pid(&mut self) {
+        self.pid.reset()
+    }
+
     pub fn get_pressure(&mut self) -> Pressure {
         let current_result = self.get_sensor_current();
         let current = match current_result {
             Ok(current) => current.get::<milliampere>(),
-            Err(_) => todo!(),
+            Err(err) => {
+                tracing::error!("cant get pressure sensor reading");
+                return Pressure::new::<bar>(0.0);
+            }
         };
         let normalized = normalize(current, 4.0, 20.0);
         // Our pressure sensor has a range of Up to 350 Bar
@@ -192,11 +200,19 @@ impl ScrewSpeedController {
         return Pressure::new::<bar>(actual_pressure);
     }
 
-    pub async fn update(&mut self, now: Instant) {
-        self.inverter.act(now).await;
+    pub async fn update(&mut self, now: Instant, is_extruding: bool) {
         self.pressure_sensor.act(now).await;
-
+        self.inverter.act(now).await;
         let measured_pressure = self.get_pressure();
+
+        if !self.uses_rpm && !is_extruding && self.motor_on {
+            let frequency = Frequency::new::<hertz>(0.0);
+            self.last_update = now;
+            self.inverter.set_frequency_target(frequency);
+            self.turn_motor_off();
+            return;
+        }
+
         if (measured_pressure >= self.nozzle_pressure_limit)
             && self.nozzle_pressure_limit_enabled
             && self.motor_on
@@ -204,12 +220,24 @@ impl ScrewSpeedController {
             self.turn_motor_off();
             return;
         }
-        if !self.uses_rpm {
-            let error = self.target_pressure - measured_pressure;
+
+        if is_extruding == true && self.motor_on == false {
+            self.turn_motor_on();
+        }
+
+        if !self.uses_rpm && is_extruding == true {
+            let mut error = self.target_pressure - measured_pressure;
+
+            if error < Pressure::new::<bar>(0.0) {
+                error = Pressure::new::<bar>(0.0);
+            }
+
             let freq = self
                 .pid
                 .update(error.get::<bar>(), now)
                 .clamp(MIN_FREQ, MAX_FREQ);
+
+            //            println!("error:{} freq:{}", error.get::<bar>(), freq);
 
             let frequency = Frequency::new::<hertz>(freq);
 

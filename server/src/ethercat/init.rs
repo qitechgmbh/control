@@ -27,7 +27,7 @@ pub fn init_ethercat(
             .await
             .main_namespace;
         let event = EthercatInterfaceDiscoveryEvent::Discovering(true).build();
-        main_namespace.emit_cached(MainNamespaceEvents::EthercatInterfaceDiscoveryEvent(event));
+        main_namespace.emit(MainNamespaceEvents::EthercatInterfaceDiscoveryEvent(event));
     });
 
     // tries to find a suitable interface in a loop
@@ -58,7 +58,7 @@ pub fn init_ethercat(
             .await
             .main_namespace;
         let event = EthercatInterfaceDiscoveryEvent::Done(interface_clone).build();
-        main_namespace.emit_cached(MainNamespaceEvents::EthercatInterfaceDiscoveryEvent(event));
+        main_namespace.emit(MainNamespaceEvents::EthercatInterfaceDiscoveryEvent(event));
     });
 
     smol::block_on(setup_loop(thread_panic_tx, &interface, app_state.clone()))?;
