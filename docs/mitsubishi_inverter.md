@@ -134,16 +134,6 @@ A slave recognizes message data as one message when a **3.5 character long no-da
 
 ---
 
-# Mitsubishi Inverter settings for Modbus RTU
-
-Protocol Selection: set Pr 549 to 1 (Modbus RTU)
-set 551 to a non zero value (9999)
-Operation mode selection: set Pr 79 to 0
-PU communication station number: set Pr 117 to a value of 1-32 (this is also the slave address)
-PU communication speed: set Pr 118 the same baudrate as the Beckhoff terminal. For example Terminal has 19200 then you need to set 192
-PU communication stop bit: set Pr 119 according to Beckhoff terminal setting
-PU communication parity check: set Pr 120 according to Beckhoff terminal setting
-
 # el6021 settings needed for Modbus RTU
 
 Continuous is needed for Modbus RTU
@@ -152,7 +142,7 @@ Continuous is needed for Modbus RTU
 8000:11 Enable Baud rate 19200 Baud
 8000:15 Data Frame 8N2
 
-# Inverter settings relevant for Motor
+# Inverter settings
 
 ## Motor Constant
 
@@ -160,20 +150,30 @@ The following is a table that shows which Registers need to be set for the safe 
 
 | Parameter number (Pr) | Name                         | Value         |
 | --------------------- | ---------------------------- | ------------- |
-| 71                    | Applied Motor                | 0             |
-| 80                    | Motor Capacity               | 15 (1.5 kw)   |
-| 96                    | Auto tuning setting/status   | 1             |
-| 1                     | Max Frequency                | 5000          |
-| 2                     | Min Frequency                | 0             |
-| 9                     | Electronic Thermal O/L Relay | 3.30 (Ampere) |
-| 3                     | Base frequency               | 5000 (50 Hz)  |
-| 19                    | Base frequency voltage       | 400 (Volt)    |
+| `71`                  | Applied Motor                | 0             |
+| `80`                  | Motor Capacity               | 15 (1.5 kw)   |
+| `96`                  | Auto tuning setting/status   | 1             |
+| `1`                   | Max Frequency                | 5000          |
+| `2`                   | Min Frequency                | 0             |
+| `9`                   | Electronic Thermal O/L Relay | 3.30 (Ampere) |
+| `3`                   | Base frequency               | 5000 (50 Hz)  |
+| `19`                  | Base frequency voltage       | 400 (Volt)    |
 
-## Settings relevant for Communication/Control
+## All Settings needed for the Inverter Communication/Operation with Extruder
 
-| Parameter number (Pr) | Name                                 | Value |
-| --------------------- | ------------------------------------ | ----- |
-| 79                    | Operation Mode                       | 0     |
-| 340                   | Communication startup mode selection | 1     |
-
-The Combination of 79 = 0 and 340 = 1 starts the inverter in the NET operation Mode, which enables us to start/stop the motor.
+The Following settings are required to get the inverter Communication and Operation working properly
+| Parameter Number (Pr) | Value | Description |
+| --------------------- | ----- | -------------------------------------------------------------------------------------------- |
+| `Pr. 78` | 0 | Allows Reverse Rotation |
+| `Pr. 79` | 0 | Operation Mode Selection |
+| `Pr. 117` | 1 | Station Number (Slave Number) |
+| `Pr. 118` | 192 | Baudrate (192 → 19200 bps) |
+| `Pr. 119` | 0 | Stop Bit Length |
+| `Pr. 120` | 2 | Parity Check |
+| `Pr. 121` | 9999 | PU communication retry count |
+| `Pr. 122` | 1.0 | Communication Check Time (Time until no communication causes E.PUE fault), 0.1 seconds steps |
+| `Pr. 338` | 0 | Communication operation command source, 0 -> given through PU |
+| `Pr. 339` | 0 | Communication speed command source, 0 -> given through PU |
+| `Pr. 340` | 1 | Startup in Network Mode |
+| `Pr. 549` | 1 | Protocol Selection (1 = Modbus) |
+| `Pr. 551` | 9999 | Automatically Detect PU Connector |
