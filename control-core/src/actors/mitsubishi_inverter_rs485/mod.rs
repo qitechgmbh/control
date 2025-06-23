@@ -2,7 +2,6 @@ use super::Actor;
 use crate::modbus::{
     ModbusFunctionCode, ModbusRequest, ModbusResponse, calculate_modbus_rtu_timeout,
 };
-use axum::http::request;
 use bitvec::{
     order::{Lsb0, Msb0},
     slice::BitSlice,
@@ -432,7 +431,6 @@ impl MitsubishiInverterRS485Actor {
                 }
                 Err(_) => {
                     self.last_message_size = 22;
-                    self.state = State::WaitingForReceiveAccept;
                     Err(anyhow::anyhow!("error"))
                 }
             }
@@ -474,8 +472,8 @@ impl MitsubishiInverterRS485Actor {
                 None => return,
             };
             let modbus_request: Vec<u8> = request.request.clone().into();
-            let res = (self.serial_interface.write_message)(modbus_request.clone()).await;
 
+            let res = (self.serial_interface.write_message)(modbus_request.clone()).await;
             match res {
                 Ok(_) => {
                     self.next_response_type = request.expected_response_type;
@@ -623,10 +621,9 @@ impl Actor for MitsubishiInverterRS485Actor {
             }
 
             self.add_request(MitsubishiControlRequests::ReadMotorFrequency.into());
-            // inverterstatus has less priority than readmotor
             self.add_request(MitsubishiControlRequests::ReadInverterStatus.into());
-
             self.last_ts = now_ts;
+
             match self.state {
                 State::WaitingForResponse => {
                     let ret = self.read_modbus_response().await;
@@ -634,9 +631,14 @@ impl Actor for MitsubishiInverterRS485Actor {
                         Ok(ret) => {
                             self.handle_response(ret);
                         }
-                        Err(_) => (), // Do nothing for now
+                        Err(_) => {
+                            if let MitsubishiControlRequests::ResetInverter =
+                                self.last_control_request_type
+                            {
+                                self.state = State::ReadyToSend;
+                            }
+                        }
                     }
-
                     self.next_response_type = ResponseType::NoResponse;
                 }
                 State::ReadyToSend => {
@@ -645,10 +647,24 @@ impl Actor for MitsubishiInverterRS485Actor {
                     self.set_ignored_times_modbus_requests();
                 }
                 State::WaitingForReceiveAccept => {
+                    // Waste atleast one Ethercat Cycle here to ensure that request/response stay in sync
                     self.state = State::ReadyToSend;
                 }
                 State::WaitingForRequestAccept => {
-                    self.state = State::WaitingForResponse;
+                    // An empty vec is used to check if we are finished with writing the message
+                    // This is to keep the Serialinterface more simple
+                    let res = (self.serial_interface.write_message)(vec![]).await;
+                    let finished = match res {
+                        Ok(res) => res,
+                        Err(_) => {
+                            self.state = State::ReadyToSend;
+                            return;
+                        }
+                    };
+
+                    if finished == true {
+                        self.state = State::WaitingForResponse;
+                    }
                 }
                 _ => (),
             }
