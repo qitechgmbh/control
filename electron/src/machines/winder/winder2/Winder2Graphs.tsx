@@ -1,8 +1,7 @@
 import { Page } from "@/components/Page";
 import {
-  BigGraph,
+  AutoSyncedBigGraph,
   SyncedFloatingControlPanel,
-  SyncedGraphControls,
   useGraphSync,
   type GraphConfig,
   type GraphLine,
@@ -28,9 +27,22 @@ export function Winder2GraphsPage() {
   return (
     <Page className="pb-20">
       <div className="flex flex-col gap-4">
-        <SyncedGraphControls controlProps={syncHook.controlProps} />
-
         <div className="grid gap-4">
+          <PullerSpeedGraph
+            syncHook={syncHook}
+            newData={pullerSpeed}
+            targetSpeed={pullerState?.data.target_speed}
+            unit="m/min"
+            renderValue={(value) => roundToDecimals(value, 0)}
+          />
+
+          <TensionArmAngleGraph
+            syncHook={syncHook}
+            newData={tensionArmAngle}
+            unit="deg"
+            renderValue={(value) => roundDegreesToDecimals(value, 0)}
+          />
+
           <SpoolRpmGraph
             syncHook={syncHook}
             newData={spoolRpm}
@@ -45,21 +57,6 @@ export function Winder2GraphsPage() {
             limitOuter={traverseState?.data.limit_outer}
             unit="mm"
             renderValue={(value) => roundToDecimals(value, 1)}
-          />
-
-          <TensionArmAngleGraph
-            syncHook={syncHook}
-            newData={tensionArmAngle}
-            unit="deg"
-            renderValue={(value) => roundDegreesToDecimals(value, 0)}
-          />
-
-          <PullerSpeedGraph
-            syncHook={syncHook}
-            newData={pullerSpeed}
-            targetSpeed={pullerState?.data.target_speed}
-            unit="m/min"
-            renderValue={(value) => roundToDecimals(value, 0)}
           />
         </div>
       </div>
@@ -92,13 +89,13 @@ export function SpoolRpmGraph({
   };
 
   return (
-    <BigGraph
+    <AutoSyncedBigGraph
+      syncHook={syncHook}
       newData={{ newData }}
       unit={unit}
       renderValue={renderValue}
       config={config}
       graphId="spool-rpm"
-      syncGraph={syncHook.syncGraph}
     />
   );
 }
@@ -151,13 +148,13 @@ export function TraversePositionGraph({
   };
 
   return (
-    <BigGraph
+    <AutoSyncedBigGraph
+      syncHook={syncHook}
       newData={{ newData }}
       unit={unit}
       renderValue={renderValue}
       config={config}
       graphId="traverse-position"
-      syncGraph={syncHook.syncGraph}
     />
   );
 }
@@ -183,13 +180,13 @@ export function TensionArmAngleGraph({
   };
 
   return (
-    <BigGraph
+    <AutoSyncedBigGraph
+      syncHook={syncHook}
       newData={{ newData }}
       unit={unit}
       renderValue={renderValue}
       config={config}
       graphId="tension-arm-angle"
-      syncGraph={syncHook.syncGraph}
     />
   );
 }
@@ -229,13 +226,13 @@ export function PullerSpeedGraph({
   };
 
   return (
-    <BigGraph
+    <AutoSyncedBigGraph
+      syncHook={syncHook}
       newData={{ newData }}
       unit={unit}
       renderValue={renderValue}
       config={config}
       graphId="puller-speed"
-      syncGraph={syncHook.syncGraph}
     />
   );
 }

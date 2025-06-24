@@ -129,6 +129,9 @@ export function useBigGraphEffects({
     xRange: syncGraph?.xRange,
   });
 
+  // Track if user is currently interacting with the chart
+  const isUserInteractingRef = useRef(false);
+
   // Get primary series for compatibility with existing logic
   const primarySeries = getPrimarySeries(newData);
 
@@ -164,9 +167,27 @@ export function useBigGraphEffects({
     onUnregisterFromExport,
   ]);
 
+  // Track user interactions to prevent sync overrides
+  useEffect(() => {
+    const checkUserInteraction = () => {
+      isUserInteractingRef.current =
+        handlerRefs.isDraggingRef.current ||
+        handlerRefs.isPinchingRef.current ||
+        handlerRefs.isUserZoomingRef.current;
+    };
+
+    const intervalId = setInterval(checkUserInteraction, 100);
+    return () => clearInterval(intervalId);
+  }, [handlerRefs]);
+
   // Sync graph state with external sync props
   useEffect(() => {
     if (!syncGraph) return;
+
+    // Don't sync if user is currently interacting with the chart
+    if (isUserInteractingRef.current || viewMode === "manual") {
+      return;
+    }
 
     const lastState = lastSyncStateRef.current;
     let hasChanges = false;
@@ -205,14 +226,19 @@ export function useBigGraphEffects({
       hasChanges = true;
     }
 
-    // Check for zoom range changes
+    // Check for zoom range changes (only if not in manual mode)
     const xRangeChanged =
       syncGraph.xRange &&
       (!lastState.xRange ||
         syncGraph.xRange.min !== lastState.xRange.min ||
         syncGraph.xRange.max !== lastState.xRange.max);
 
-    if (xRangeChanged && uplotRef.current && primarySeries?.newData?.long) {
+    if (
+      xRangeChanged &&
+      uplotRef.current &&
+      primarySeries?.newData?.long &&
+      syncGraph.viewMode !== "manual"
+    ) {
       uplotRef.current.batch(() => {
         uplotRef.current!.setScale("x", {
           min: syncGraph.xRange?.min ?? 0,
@@ -260,6 +286,7 @@ export function useBigGraphEffects({
     syncGraph?.isLiveMode,
     syncGraph?.xRange?.min,
     syncGraph?.xRange?.max,
+    viewMode, // Add viewMode as dependency
     historicalMode.switchToHistoricalMode,
     historicalMode.switchToLiveMode,
   ]);
@@ -322,8 +349,15 @@ export function useBigGraphEffects({
   }, [primarySeries?.newData?.long, containerRef.current]);
 
   // Update chart data when new historical data arrives (live mode only)
+  // Skip if in manual mode to prevent overriding user interactions
   useEffect(() => {
-    if (!isLiveMode || viewMode === "manual" || !isChartCreated) return;
+    if (
+      !isLiveMode ||
+      viewMode === "manual" ||
+      !isChartCreated ||
+      isUserInteractingRef.current
+    )
+      return;
 
     // Add a delay to ensure chart is ready after mode switch
     const timeoutId = setTimeout(() => {
@@ -342,6 +376,7 @@ export function useBigGraphEffects({
   ]);
 
   // Update chart with real-time current data point (live mode only)
+  // Skip if in manual mode to prevent overriding user interactions
   useEffect(() => {
     if (
       !uplotRef.current ||
@@ -349,7 +384,8 @@ export function useBigGraphEffects({
       !isLiveMode ||
       !isChartCreated ||
       animationRefs.animationState.current.isAnimating ||
-      viewMode === "manual"
+      viewMode === "manual" ||
+      isUserInteractingRef.current
     )
       return;
 
