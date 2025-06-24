@@ -69,62 +69,6 @@ function getAllTimeSeries(
     }));
 }
 
-// Helper function to create unified timestamp array and align all series data
-function alignSeriesData(
-  allSeries: Array<{ series: TimeSeries; title?: string; color?: string }>,
-  renderValue?: (value: number) => string,
-): {
-  timestamps: number[];
-  alignedValues: number[][];
-} {
-  if (allSeries.length === 0) {
-    return { timestamps: [], alignedValues: [] };
-  }
-
-  // Get all unique timestamps from all series
-  const allTimestamps = new Set<number>();
-  const seriesData: Array<{ timestamps: number[]; values: number[] }> = [];
-
-  allSeries.forEach(({ series }) => {
-    const [timestamps, values] = seriesToUPlotData(series.long);
-
-    // Apply renderValue formatting if provided
-    const processedValues = renderValue
-      ? values.map((v) => parseFloat(renderValue(v)))
-      : values;
-
-    seriesData.push({ timestamps, values: processedValues });
-    timestamps.forEach((ts) => allTimestamps.add(ts));
-  });
-
-  // Sort timestamps
-  const sortedTimestamps = Array.from(allTimestamps).sort((a, b) => a - b);
-
-  // Align all series to the unified timestamp array
-  const alignedValues: number[][] = [];
-
-  seriesData.forEach(({ timestamps, values }) => {
-    const alignedSeries: number[] = [];
-
-    for (const targetTimestamp of sortedTimestamps) {
-      const index = timestamps.indexOf(targetTimestamp);
-      if (index !== -1) {
-        alignedSeries.push(values[index]);
-      } else {
-        // Use null for missing data points - uPlot will handle gaps
-        alignedSeries.push(null as any);
-      }
-    }
-
-    alignedValues.push(alignedSeries);
-  });
-
-  return {
-    timestamps: sortedTimestamps,
-    alignedValues,
-  };
-}
-
 export function createChart({
   containerRef,
   uplotRef,
@@ -152,17 +96,20 @@ export function createChart({
   const allSeries = getAllTimeSeries(newData);
   if (allSeries.length === 0) return;
 
-  // Align all series data to unified timestamps
-  const { timestamps, alignedValues } = alignSeriesData(allSeries, renderValue);
+  // Use the first series for timing calculations
+  const primarySeries = allSeries[0].series;
+  const [timestamps, primaryValues] = seriesToUPlotData(primarySeries.long);
   if (timestamps.length === 0) return;
 
   if (startTimeRef.current === null && timestamps.length > 0) {
     startTimeRef.current = timestamps[0];
   }
 
-  // Build uPlot data with aligned series
+  // Build uPlot data for all series
   const uPlotData: uPlot.AlignedData = [timestamps as any];
-  alignedValues.forEach((values) => {
+
+  allSeries.forEach(({ series }) => {
+    const [, values] = seriesToUPlotData(series.long);
     uPlotData.push(values as any);
   });
 
@@ -199,18 +146,19 @@ export function createChart({
     initialMax = endTimestamp;
   }
 
-  // Calculate initial Y range from all aligned series
+  // Calculate initial Y range from all series
   const initialVisibleValues: number[] = [];
-
-  for (let i = 0; i < timestamps.length; i++) {
-    if (timestamps[i] >= initialMin && timestamps[i] <= initialMax) {
-      alignedValues.forEach((seriesValues) => {
-        if (seriesValues[i] !== null && seriesValues[i] !== undefined) {
-          initialVisibleValues.push(seriesValues[i]);
-        }
-      });
+  allSeries.forEach(({ series }) => {
+    const [seriesTimestamps, seriesValues] = seriesToUPlotData(series.long);
+    for (let i = 0; i < seriesTimestamps.length; i++) {
+      if (
+        seriesTimestamps[i] >= initialMin &&
+        seriesTimestamps[i] <= initialMax
+      ) {
+        initialVisibleValues.push(seriesValues[i]);
+      }
     }
-  }
+  });
 
   config.lines?.forEach((line) => {
     if (line.show !== false) {
@@ -219,12 +167,9 @@ export function createChart({
   });
 
   if (initialVisibleValues.length === 0) {
-    alignedValues.forEach((seriesValues) => {
-      seriesValues.forEach((value) => {
-        if (value !== null && value !== undefined) {
-          initialVisibleValues.push(value);
-        }
-      });
+    allSeries.forEach(({ series }) => {
+      const [, values] = seriesToUPlotData(series.long);
+      initialVisibleValues.push(...values);
     });
     config.lines?.forEach((line) => {
       if (line.show !== false) {
@@ -318,24 +263,21 @@ export function createChart({
             if (handlerRefs.isUserZoomingRef.current) {
               const xScale = u.scales.x;
               if (xScale.min !== undefined && xScale.max !== undefined) {
-                // Update Y axis based on all visible series using aligned data
+                // Update Y axis based on all visible series
                 const allVisibleValues: number[] = [];
-
-                for (let i = 0; i < timestamps.length; i++) {
-                  if (
-                    timestamps[i] >= xScale.min! &&
-                    timestamps[i] <= xScale.max!
-                  ) {
-                    alignedValues.forEach((seriesValues) => {
-                      if (
-                        seriesValues[i] !== null &&
-                        seriesValues[i] !== undefined
-                      ) {
-                        allVisibleValues.push(seriesValues[i]);
-                      }
-                    });
+                allSeries.forEach(({ series }) => {
+                  const [seriesTimestamps, seriesValues] = seriesToUPlotData(
+                    series.long,
+                  );
+                  for (let i = 0; i < seriesTimestamps.length; i++) {
+                    if (
+                      seriesTimestamps[i] >= xScale.min! &&
+                      seriesTimestamps[i] <= xScale.max!
+                    ) {
+                      allVisibleValues.push(seriesValues[i]);
+                    }
                   }
-                }
+                });
 
                 if (allVisibleValues.length > 0) {
                   const minY = Math.min(...allVisibleValues);
@@ -391,15 +333,7 @@ export function createChart({
                 timestamp !== undefined &&
                 Math.abs(timestamp - cur.timestamp) < 1000;
 
-              // Apply renderValue to current value if using it
-              const processedCurrentValue =
-                cur && renderValue
-                  ? parseFloat(renderValue(cur.value))
-                  : cur?.value;
-
-              const displayValue = isNearCurrent
-                ? processedCurrentValue
-                : value;
+              const displayValue = isNearCurrent ? cur.value : value;
               setCursorValue(displayValue ?? null);
             } else {
               setCursorValue(null);
@@ -561,7 +495,7 @@ export function createChart({
             }
 
             const precision = 0;
-            const maxPrecision = 2;
+            const maxPrecision = 4;
 
             for (let p = precision; p <= maxPrecision; p++) {
               const formattedValues = ticks.map((v) => v.toFixed(p));
@@ -609,7 +543,7 @@ export function createChart({
 
   animationRefs.lastRenderedData.current = {
     timestamps: [...timestamps],
-    values: alignedValues.length > 0 ? [...alignedValues[0]] : [],
+    values: [...primaryValues],
   };
 
   return cleanup;
