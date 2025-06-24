@@ -51,10 +51,6 @@ export function Mock1GraphPage() {
     ],
   };
 
-  if (!sineWave) {
-    return <Page className="pb-25">Loading...</Page>;
-  }
-
   // Combined data for 3 sine waves
   const combinedData = [
     { newData: sineWave, title: "Sine Wave 1", color: "#3b82f6" },
@@ -75,8 +71,6 @@ export function Mock1GraphPage() {
         color: "#3b82f6", // Blue
         type: "threshold",
         show: true,
-        strokeWidth: 2,
-        strokeDashArray: "3,3",
       },
       {
         value: -0.3,
@@ -84,8 +78,6 @@ export function Mock1GraphPage() {
         color: "#3b82f6", // Blue
         type: "threshold",
         show: true,
-        strokeWidth: 2,
-        strokeDashArray: "3,3",
       },
     ],
   };
