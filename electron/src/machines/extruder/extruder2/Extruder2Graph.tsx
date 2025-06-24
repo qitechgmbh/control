@@ -1,7 +1,8 @@
 import { Page } from "@/components/Page";
 import {
-  AutoSyncedBigGraph,
+  BigGraph,
   SyncedFloatingControlPanel,
+  SyncedGraphControls,
   useGraphSync,
   type GraphConfig,
 } from "@/components/graph";
@@ -26,7 +27,6 @@ export function Extruder2GraphsPage() {
     middleTemperature,
     middlePower,
 
-    uses_rpm,
     bar,
     rpm,
     targetBar,
@@ -43,7 +43,7 @@ export function Extruder2GraphsPage() {
     title: "extruder data",
   };
 
-  // Combined Temperature Graph (nozzle, front, back)
+  // Combined Temperature Graph (nozzle, front, back, middle)
   const temperatureData = [
     {
       newData: nozzleTemperature,
@@ -133,7 +133,7 @@ export function Extruder2GraphsPage() {
     },
   };
 
-  // Combined Power Graph (nozzle, front, back)
+  // Combined Power Graph (nozzle, front, back, middle)
   const powerData = [
     {
       newData: nozzlePower,
@@ -169,7 +169,7 @@ export function Extruder2GraphsPage() {
     },
   };
 
-  // Pressure Graph (single with target line)
+  // Pressure Graph
   const pressureConfig: GraphConfig = {
     ...baseConfig,
     title: "Pressure",
@@ -201,7 +201,7 @@ export function Extruder2GraphsPage() {
     },
   };
 
-  // RPM Graph (single with target line)
+  // RPM Graph
   const rpmConfig: GraphConfig = {
     ...baseConfig,
     title: "RPM",
@@ -236,53 +236,43 @@ export function Extruder2GraphsPage() {
   return (
     <Page className="pb-25">
       <div className="flex flex-col gap-4">
-        {/* 1. Combined Temperature Graph (nozzle, front, back) */}
-        {temperatureData.length > 0 && (
-          <AutoSyncedBigGraph
-            syncHook={syncHook}
-            newData={temperatureData}
-            config={temperatureConfig}
-            unit="deg"
-            renderValue={(value) => value.toFixed(1)}
-            graphId="combined-temperatures"
-          />
-        )}
+        <SyncedGraphControls controlProps={syncHook.controlProps} />
 
-        {/* 2. Combined Power Graph (nozzle, front, back) */}
-        {powerData.length > 0 && (
-          <AutoSyncedBigGraph
-            syncHook={syncHook}
-            newData={powerData}
-            config={powerConfig}
-            unit="W"
-            renderValue={(value) => value.toFixed(1)}
-            graphId="combined-power"
-          />
-        )}
+        <BigGraph
+          newData={temperatureData}
+          config={temperatureConfig}
+          unit="deg"
+          renderValue={(value) => value.toFixed(1)}
+          graphId="combined-temperatures"
+          syncGraph={syncHook.syncGraph}
+        />
 
-        {/* 3. Single Pressure Graph with target line */}
-        {bar && (
-          <AutoSyncedBigGraph
-            syncHook={syncHook}
-            newData={{ newData: bar }}
-            config={pressureConfig}
-            unit="bar"
-            renderValue={(value) => value.toFixed(2)}
-            graphId="pressure-graph"
-          />
-        )}
+        <BigGraph
+          newData={powerData}
+          config={powerConfig}
+          unit="W"
+          renderValue={(value) => value.toFixed(1)}
+          graphId="combined-power"
+          syncGraph={syncHook.syncGraph}
+        />
 
-        {/* 4. Single RPM Graph with target line (only if uses_rpm is true) */}
-        {uses_rpm && rpm && (
-          <AutoSyncedBigGraph
-            syncHook={syncHook}
-            newData={{ newData: rpm }}
-            config={rpmConfig}
-            unit="rpm"
-            renderValue={(value) => value.toFixed(0)}
-            graphId="rpm-graph"
-          />
-        )}
+        <BigGraph
+          newData={{ newData: bar }}
+          config={pressureConfig}
+          unit="bar"
+          renderValue={(value) => value.toFixed(2)}
+          graphId="pressure-graph"
+          syncGraph={syncHook.syncGraph}
+        />
+
+        <BigGraph
+          newData={{ newData: rpm }}
+          config={rpmConfig}
+          unit="rpm"
+          renderValue={(value) => value.toFixed(0)}
+          graphId="rpm-graph"
+          syncGraph={syncHook.syncGraph}
+        />
       </div>
 
       <SyncedFloatingControlPanel controlProps={syncHook.controlProps} />

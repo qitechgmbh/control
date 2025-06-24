@@ -1,6 +1,6 @@
 import { Page } from "@/components/Page";
 import {
-  AutoSyncedBigGraph,
+  BigGraph,
   SyncedFloatingControlPanel,
   SyncedGraphControls,
   useGraphSync,
@@ -92,13 +92,13 @@ export function SpoolRpmGraph({
   };
 
   return (
-    <AutoSyncedBigGraph
-      syncHook={syncHook}
-      newData={newData}
+    <BigGraph
+      newData={{ newData }}
       unit={unit}
       renderValue={renderValue}
       config={config}
       graphId="spool-rpm"
+      syncGraph={syncHook.syncGraph}
     />
   );
 }
@@ -151,13 +151,13 @@ export function TraversePositionGraph({
   };
 
   return (
-    <AutoSyncedBigGraph
-      syncHook={syncHook}
-      newData={newData}
+    <BigGraph
+      newData={{ newData }}
       unit={unit}
       renderValue={renderValue}
       config={config}
       graphId="traverse-position"
+      syncGraph={syncHook.syncGraph}
     />
   );
 }
@@ -183,13 +183,13 @@ export function TensionArmAngleGraph({
   };
 
   return (
-    <AutoSyncedBigGraph
-      syncHook={syncHook}
-      newData={newData}
+    <BigGraph
+      newData={{ newData }}
       unit={unit}
       renderValue={renderValue}
       config={config}
       graphId="tension-arm-angle"
+      syncGraph={syncHook.syncGraph}
     />
   );
 }
@@ -229,13 +229,13 @@ export function PullerSpeedGraph({
   };
 
   return (
-    <AutoSyncedBigGraph
-      syncHook={syncHook}
-      newData={newData}
+    <BigGraph
+      newData={{ newData }}
       unit={unit}
       renderValue={renderValue}
       config={config}
       graphId="puller-speed"
+      syncGraph={syncHook.syncGraph}
     />
   );
 }
