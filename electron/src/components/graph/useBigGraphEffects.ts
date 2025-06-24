@@ -1,11 +1,17 @@
+// useBigGraphEffects.tsx
 /* eslint-disable react-compiler/react-compiler */
 import { useEffect, RefObject, useRef, useState } from "react";
 import uPlot from "uplot";
 import { seriesToUPlotData } from "@/lib/timeseries";
-import { BigGraphProps, DataSeries, SeriesData } from "./types";
+import {
+  BigGraphProps,
+  DataSeries,
+  SeriesData,
+  AnimationRefs,
+  HandlerRefs,
+} from "./types";
 import { GraphExportData } from "./excelExport";
-import { AnimationRefs, stopAnimations } from "./animation";
-import { HandlerRefs } from "./handlers";
+import { stopAnimations } from "./animation";
 import { createChart } from "./createChart";
 import { LiveModeHandlers } from "./liveMode";
 import { HistoricalModeHandlers } from "./historicalMode";
@@ -41,6 +47,7 @@ interface UseBigGraphEffectsProps {
   viewMode: "default" | "all" | "manual";
   isLiveMode: boolean;
   selectedTimeWindow: number | "all";
+  visibleSeries: boolean[]; // Added visible series state
 
   // State setters
   setSelectedTimeWindow: (value: number | "all") => void;
@@ -59,12 +66,7 @@ interface UseBigGraphEffectsProps {
     axis: string;
     background: string;
   };
-  updateYAxisScale: (
-    timestamps: number[],
-    values: number[],
-    xMin?: number,
-    xMax?: number,
-  ) => void;
+  updateYAxisScale: (xMin?: number, xMax?: number) => void; // Updated signature
   handleTimeWindowChangeInternal: (
     newTimeWindow: number | "all",
     isSync?: boolean,
@@ -107,6 +109,7 @@ export function useBigGraphEffects({
   viewMode,
   isLiveMode,
   selectedTimeWindow,
+  visibleSeries, // Added visible series
 
   setSelectedTimeWindow,
   setViewMode,
@@ -205,31 +208,25 @@ export function useBigGraphEffects({
       hasChanges = true;
     }
 
-    // Check for zoom range changes
+    // Check for zoom range changes - Updated to use new updateYAxisScale signature
     const xRangeChanged =
       syncGraph.xRange &&
       (!lastState.xRange ||
         syncGraph.xRange.min !== lastState.xRange.min ||
         syncGraph.xRange.max !== lastState.xRange.max);
 
-    if (xRangeChanged && uplotRef.current && primarySeries?.newData?.long) {
+    if (xRangeChanged && uplotRef.current) {
       uplotRef.current.batch(() => {
         uplotRef.current!.setScale("x", {
           min: syncGraph.xRange?.min ?? 0,
           max: syncGraph.xRange?.max ?? 0,
         });
 
-        if (primarySeries.newData?.long) {
-          const [timestamps, values] = seriesToUPlotData(
-            primarySeries.newData.long,
-          );
-          updateYAxisScale(
-            timestamps,
-            values,
-            syncGraph.xRange?.min ?? 0,
-            syncGraph.xRange?.max ?? 0,
-          );
-        }
+        // Updated to use new updateYAxisScale signature
+        updateYAxisScale(
+          syncGraph.xRange?.min ?? 0,
+          syncGraph.xRange?.max ?? 0,
+        );
       });
       manualScaleRef.current = {
         x: syncGraph.xRange ?? { min: 0, max: 1 },
@@ -262,6 +259,7 @@ export function useBigGraphEffects({
     syncGraph?.xRange?.max,
     historicalMode.switchToHistoricalMode,
     historicalMode.switchToLiveMode,
+    updateYAxisScale, // Added to dependencies
   ]);
 
   // Create and initialize the uPlot chart when data becomes available
@@ -363,4 +361,17 @@ export function useBigGraphEffects({
     isChartCreated,
     liveMode.updateLiveData,
   ]);
+
+  // Update Y-axis scale when series visibility changes
+  useEffect(() => {
+    if (!uplotRef.current || !isChartCreated) return;
+
+    // Recalculate Y-axis scale based on currently visible series
+    const currentScale = uplotRef.current.scales.x;
+    if (currentScale?.min !== undefined && currentScale?.max !== undefined) {
+      updateYAxisScale(currentScale.min, currentScale.max);
+    } else {
+      updateYAxisScale(); // Recalculate for entire range
+    }
+  }, [visibleSeries, isChartCreated, updateYAxisScale]);
 }

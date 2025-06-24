@@ -1,30 +1,9 @@
 import { RefObject } from "react";
 import uPlot from "uplot";
-import { seriesToUPlotData } from "@/lib/timeseries";
-import { GraphConfig } from "./types";
-
-export interface HandlerRefs {
-  isUserZoomingRef: RefObject<boolean>;
-  isDraggingRef: RefObject<boolean>;
-  lastDragXRef: RefObject<number | null>;
-  isPinchingRef: RefObject<boolean>;
-  lastPinchDistanceRef: RefObject<number | null>;
-  pinchCenterRef: RefObject<{ x: number; y: number } | null>;
-  touchStartRef: RefObject<{
-    x: number;
-    y: number;
-    time: number;
-  } | null>;
-  touchDirectionRef: RefObject<"horizontal" | "vertical" | "unknown">;
-}
+import { GraphConfig, HandlerRefs } from "./types";
 
 export interface HandlerCallbacks {
-  updateYAxisScale: (
-    timestamps: number[],
-    values: number[],
-    xMin?: number,
-    xMax?: number,
-  ) => void;
+  updateYAxisScale: (xMin?: number, xMax?: number) => void;
   setViewMode: (mode: "default" | "all" | "manual") => void;
   setIsLiveMode: (isLive: boolean) => void;
   onZoomChange?: (graphId: string, range: { min: number; max: number }) => void;
@@ -129,8 +108,7 @@ export function createEventHandlers(
             const newMax = xScale.max + timeDelta;
 
             uplotRef.current.setScale("x", { min: newMin, max: newMax });
-            const [timestamps, values] = seriesToUPlotData(newData.long);
-            callbacks.updateYAxisScale(timestamps, values, newMin, newMax);
+            callbacks.updateYAxisScale(newMin, newMax);
 
             manualScaleRef.current = {
               x: { min: newMin, max: newMax },
@@ -195,8 +173,7 @@ export function createEventHandlers(
             const newMax = centerTime + newRange * rightRatio;
 
             uplotRef.current.setScale("x", { min: newMin, max: newMax });
-            const [timestamps, values] = seriesToUPlotData(newData.long);
-            callbacks.updateYAxisScale(timestamps, values, newMin, newMax);
+            callbacks.updateYAxisScale(newMin, newMax);
 
             manualScaleRef.current = {
               x: { min: newMin, max: newMax },

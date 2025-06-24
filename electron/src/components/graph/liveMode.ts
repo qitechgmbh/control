@@ -1,12 +1,13 @@
 import { useCallback, useRef } from "react";
 import uPlot from "uplot";
 import { seriesToUPlotData } from "@/lib/timeseries";
-import { buildUPlotData, animateNewPoint, AnimationRefs } from "./animation";
+import { buildUPlotData, animateNewPoint } from "./animation";
 import {
   GraphConfig,
   BigGraphProps,
   SeriesData,
   LiveModeHandlers,
+  AnimationRefs,
 } from "./types";
 
 // Helper functions for multi-series support
@@ -54,12 +55,7 @@ export function useLiveMode({
   viewMode: "default" | "all" | "manual";
   selectedTimeWindow: number | "all";
   startTimeRef: React.RefObject<number | null>;
-  updateYAxisScale: (
-    timestamps: number[],
-    values: number[],
-    xMin?: number,
-    xMax?: number,
-  ) => void;
+  updateYAxisScale: (xMin?: number, xMax?: number) => void; // Updated signature
   lastProcessedCountRef: React.RefObject<number>;
   chartCreatedRef: React.RefObject<boolean>;
 }): LiveModeHandlers {
@@ -148,7 +144,7 @@ export function useLiveMode({
 
         uplotRef.current.batch(() => {
           uplotRef.current!.setScale("x", { min: xMin, max: xMax });
-          updateYAxisScale(liveTimestamps, liveValues, xMin, xMax);
+          updateYAxisScale(xMin, xMax); // Updated call
         });
       } else if (viewMode === "all") {
         const fullStart = startTimeRef.current ?? liveTimestamps[0];
@@ -157,12 +153,7 @@ export function useLiveMode({
             min: fullStart,
             max: latestTimestamp,
           });
-          updateYAxisScale(
-            liveTimestamps,
-            liveValues,
-            fullStart,
-            latestTimestamp,
-          );
+          updateYAxisScale(fullStart, latestTimestamp); // Updated call
         });
       }
 
@@ -206,7 +197,7 @@ export function useLiveMode({
 
           uplotRef.current.batch(() => {
             uplotRef.current!.setScale("x", { min: fullStart, max: fullEnd });
-            updateYAxisScale(timestamps, values, fullStart, fullEnd);
+            updateYAxisScale(fullStart, fullEnd); // Updated call
           });
         } else {
           // Handle specific time window in live mode
@@ -221,7 +212,7 @@ export function useLiveMode({
               min: viewStart,
               max: latestTimestamp,
             });
-            updateYAxisScale(timestamps, values, viewStart, latestTimestamp);
+            updateYAxisScale(viewStart, latestTimestamp); // Updated call
           });
         }
 
@@ -330,7 +321,7 @@ export function useLiveMode({
 
             uplotRef.current.batch(() => {
               uplotRef.current!.setScale("x", { min: xMin, max: xMax });
-              updateYAxisScale(timestamps, values, xMin, xMax);
+              updateYAxisScale(xMin, xMax); // Updated call
             });
           } else if (viewMode === "all") {
             const fullStart = startTimeRef.current ?? timestamps[0];
@@ -339,7 +330,7 @@ export function useLiveMode({
                 min: fullStart,
                 max: lastTimestamp,
               });
-              updateYAxisScale(timestamps, values, fullStart, lastTimestamp);
+              updateYAxisScale(fullStart, lastTimestamp); // Updated call
             });
           }
         }

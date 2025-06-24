@@ -3,71 +3,9 @@ import { seriesToUPlotData, TimeSeries } from "@/lib/timeseries";
 import {
   createEventHandlers,
   attachEventHandlers,
-  HandlerRefs,
   HandlerCallbacks,
 } from "./handlers";
-import { BigGraphProps, SeriesData } from "./types";
-import { AnimationRefs } from "./animation";
-
-export interface CreateChartParams {
-  containerRef: React.RefObject<HTMLDivElement | null>;
-  uplotRef: React.RefObject<uPlot | null>;
-  newData: BigGraphProps["newData"];
-  config: BigGraphProps["config"];
-  colors: {
-    primary: string;
-    grid: string;
-    axis: string;
-    background: string;
-  };
-  renderValue?: (value: number) => string;
-  viewMode: "default" | "all" | "manual";
-  selectedTimeWindow: number | "all";
-  isLiveMode: boolean;
-  startTimeRef: React.RefObject<number | null>;
-  manualScaleRef: React.RefObject<{
-    x: { min: number; max: number };
-    y: { min: number; max: number };
-  } | null>;
-  animationRefs: AnimationRefs;
-  handlerRefs: HandlerRefs;
-  graphId: string;
-  syncGraph?: BigGraphProps["syncGraph"];
-  getHistoricalEndTimestamp: () => number;
-  updateYAxisScale: (
-    timestamps: number[],
-    values: number[],
-    xMin?: number,
-    xMax?: number,
-  ) => void;
-  setViewMode: React.Dispatch<
-    React.SetStateAction<"default" | "all" | "manual">
-  >;
-  setIsLiveMode: React.Dispatch<React.SetStateAction<boolean>>;
-  setCursorValue: React.Dispatch<React.SetStateAction<number | null>>;
-}
-
-// Helper function to normalize data to array format
-function normalizeDataSeries(data: BigGraphProps["newData"]): SeriesData[] {
-  if (Array.isArray(data)) {
-    return data;
-  }
-  return [data];
-}
-
-// Helper function to get all valid TimeSeries from DataSeries
-function getAllTimeSeries(
-  data: BigGraphProps["newData"],
-): Array<{ series: TimeSeries; title?: string; color?: string }> {
-  const normalized = normalizeDataSeries(data);
-  return normalized
-    .filter((series) => series.newData !== null)
-    .map((series) => ({
-      series: series.newData!,
-      title: series.title,
-      color: series.color,
-    }));
-}
+import { BigGraphProps, CreateChartParams, SeriesData } from "./types";
 
 export function createChart({
   containerRef,
@@ -263,32 +201,8 @@ export function createChart({
             if (handlerRefs.isUserZoomingRef.current) {
               const xScale = u.scales.x;
               if (xScale.min !== undefined && xScale.max !== undefined) {
-                // Update Y axis based on all visible series
-                const allVisibleValues: number[] = [];
-                allSeries.forEach(({ series }) => {
-                  const [seriesTimestamps, seriesValues] = seriesToUPlotData(
-                    series.long,
-                  );
-                  for (let i = 0; i < seriesTimestamps.length; i++) {
-                    if (
-                      seriesTimestamps[i] >= xScale.min! &&
-                      seriesTimestamps[i] <= xScale.max!
-                    ) {
-                      allVisibleValues.push(seriesValues[i]);
-                    }
-                  }
-                });
-
-                if (allVisibleValues.length > 0) {
-                  const minY = Math.min(...allVisibleValues);
-                  const maxY = Math.max(...allVisibleValues);
-                  const range = maxY - minY || Math.abs(maxY) * 0.1 || 1;
-
-                  u.setScale("y", {
-                    min: minY - range * 0.1,
-                    max: maxY + range * 0.1,
-                  });
-                }
+                // Use the new updateYAxisScale function signature
+                updateYAxisScale(xScale.min, xScale.max);
 
                 manualScaleRef.current = {
                   x: { min: xScale.min ?? 0, max: xScale.max ?? 0 },
@@ -484,13 +398,13 @@ export function createChart({
           grid: { stroke: colors.grid, width: 1 },
           side: 1,
           space: 60,
-          values: (_u, ticks) => {
+          values: (_u, ticks): (string | number | null)[] => {
             if (renderValue) {
               const renderedValues = ticks.map(renderValue);
               const uniqueValues = new Set(renderedValues);
 
               if (uniqueValues.size === renderedValues.length) {
-                return renderedValues;
+                return renderedValues as (string | number | null)[];
               }
             }
 
@@ -547,4 +461,26 @@ export function createChart({
   };
 
   return cleanup;
+}
+
+// Helper function to normalize data to array format
+function normalizeDataSeries(data: BigGraphProps["newData"]): SeriesData[] {
+  if (Array.isArray(data)) {
+    return data;
+  }
+  return [data];
+}
+
+// Helper function to get all valid TimeSeries from DataSeries
+function getAllTimeSeries(
+  data: BigGraphProps["newData"],
+): Array<{ series: TimeSeries; title?: string; color?: string }> {
+  const normalized = normalizeDataSeries(data);
+  return normalized
+    .filter((series) => series.newData !== null)
+    .map((series) => ({
+      series: series.newData!,
+      title: series.title,
+      color: series.color,
+    }));
 }

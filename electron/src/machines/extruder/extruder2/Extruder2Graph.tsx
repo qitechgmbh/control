@@ -1,8 +1,7 @@
 import { Page } from "@/components/Page";
 import {
-  BigGraph,
+  AutoSyncedBigGraph,
   SyncedFloatingControlPanel,
-  SyncedGraphControls,
   useGraphSync,
   type GraphConfig,
 } from "@/components/graph";
@@ -63,13 +62,13 @@ export function Extruder2GraphsPage() {
     {
       newData: middleTemperature,
       title: "Middle",
-      color: "#ffffff",
+      color: "#8b5cf6",
     },
   ].filter((item) => item.newData); // Filter out any null/undefined data
 
   const temperatureConfig: GraphConfig = {
     ...baseConfig,
-    title: "Temperatures (Nozzle, Front, Back, Middle)",
+    title: "Temperatures",
     exportFilename: "temperatures_data",
     lines: [
       // Target temperature lines
@@ -112,18 +111,11 @@ export function Extruder2GraphsPage() {
               type: "target" as const,
               value: middleHeatingState.target_temperature,
               label: "Middle Target",
-              color: "#ffffff",
+              color: "#8b5cf6",
               show: true,
             },
           ]
         : []),
-      // Safety threshold
-      {
-        type: "threshold",
-        value: 250,
-        label: "Safety Limit",
-        color: "#dc2626",
-      },
     ],
     colors: {
       primary: "#ef4444",
@@ -153,13 +145,13 @@ export function Extruder2GraphsPage() {
     {
       newData: middlePower,
       title: "Middle",
-      color: "#ffffff",
+      color: "#8b5cf6",
     },
   ].filter((item) => item.newData); // Filter out any null/undefined data
 
   const powerConfig: GraphConfig = {
     ...baseConfig,
-    title: "Power Outputs (Nozzle, Front, Back, Middle)",
+    title: "Power Outputs",
     exportFilename: "power_data",
     colors: {
       primary: "#10b981",
@@ -186,12 +178,6 @@ export function Extruder2GraphsPage() {
             },
           ]
         : []),
-      {
-        type: "threshold",
-        value: 50,
-        label: "Maximum Pressure",
-        color: "#ef4444",
-      },
     ],
     colors: {
       primary: "#3b82f6",
@@ -218,12 +204,6 @@ export function Extruder2GraphsPage() {
             },
           ]
         : []),
-      {
-        type: "threshold",
-        value: 1000,
-        label: "Maximum RPM",
-        color: "#ef4444",
-      },
     ],
     colors: {
       primary: "#8b5cf6",
@@ -236,42 +216,40 @@ export function Extruder2GraphsPage() {
   return (
     <Page className="pb-25">
       <div className="flex flex-col gap-4">
-        <SyncedGraphControls controlProps={syncHook.controlProps} />
-
-        <BigGraph
-          newData={temperatureData}
-          config={temperatureConfig}
-          unit="deg"
-          renderValue={(value) => value.toFixed(1)}
-          graphId="combined-temperatures"
-          syncGraph={syncHook.syncGraph}
-        />
-
-        <BigGraph
-          newData={powerData}
-          config={powerConfig}
-          unit="W"
-          renderValue={(value) => value.toFixed(1)}
-          graphId="combined-power"
-          syncGraph={syncHook.syncGraph}
-        />
-
-        <BigGraph
+        <AutoSyncedBigGraph
+          syncHook={syncHook}
           newData={{ newData: bar }}
           config={pressureConfig}
           unit="bar"
           renderValue={(value) => value.toFixed(2)}
           graphId="pressure-graph"
-          syncGraph={syncHook.syncGraph}
         />
 
-        <BigGraph
+        <AutoSyncedBigGraph
+          syncHook={syncHook}
+          newData={temperatureData}
+          config={temperatureConfig}
+          unit="C"
+          renderValue={(value) => value.toFixed(1)}
+          graphId="combined-temperatures"
+        />
+
+        <AutoSyncedBigGraph
+          syncHook={syncHook}
+          newData={powerData}
+          config={powerConfig}
+          unit="W"
+          renderValue={(value) => value.toFixed(1)}
+          graphId="combined-power"
+        />
+
+        <AutoSyncedBigGraph
+          syncHook={syncHook}
           newData={{ newData: rpm }}
           config={rpmConfig}
           unit="rpm"
           renderValue={(value) => value.toFixed(0)}
           graphId="rpm-graph"
-          syncGraph={syncHook.syncGraph}
         />
       </div>
 

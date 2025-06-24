@@ -1,26 +1,12 @@
 import { useRef } from "react";
 import uPlot from "uplot";
 import { POINT_ANIMATION_DURATION } from "./constants";
-
-export interface AnimationState {
-  isAnimating: boolean;
-  startTime: number;
-  fromValue: number;
-  toValue: number;
-  fromTimestamp: number;
-  toTimestamp: number;
-  targetIndex: number;
-}
-
-export interface AnimationRefs {
-  animationFrame: React.RefObject<number | null>;
-  animationState: React.RefObject<AnimationState>;
-  lastRenderedData: React.RefObject<{
-    timestamps: number[];
-    values: number[];
-  }>;
-  realPointsCount: React.RefObject<number>;
-}
+import {
+  AnimationRefs,
+  AnimationState,
+  BigGraphProps,
+  SeriesData,
+} from "./types";
 
 export function useAnimationRefs(): AnimationRefs {
   const animationFrameRef = useRef<number | null>(null);
@@ -103,12 +89,7 @@ export function animateNewPoint(
   selectedTimeWindow: number | "all",
   startTimeRef: React.RefObject<number | null>,
   config: { lines?: Array<{ show?: boolean; value: number }> },
-  updateYAxisScale: (
-    timestamps: number[],
-    values: number[],
-    xMin?: number,
-    xMax?: number,
-  ) => void,
+  updateYAxisScale: (xMin?: number, xMax?: number) => void, // Updated signature
   getAllSeriesData?: () => number[][],
 ): void {
   if (targetData.timestamps.length <= currentData.timestamps.length) {
@@ -212,19 +193,14 @@ export function animateNewPoint(
         }
 
         uplotRef.current.setScale("x", { min: xMin, max: xMax });
-        updateYAxisScale(animatedTimestamps, animatedValues, xMin, xMax);
+        updateYAxisScale(xMin, xMax); // Updated call
       } else if (viewMode === "all") {
         const fullStart = startTimeRef.current ?? animatedTimestamps[0];
         uplotRef.current.setScale("x", {
           min: fullStart,
           max: latestTimestamp,
         });
-        updateYAxisScale(
-          animatedTimestamps,
-          animatedValues,
-          fullStart,
-          latestTimestamp,
-        );
+        updateYAxisScale(fullStart, latestTimestamp); // Updated call
       }
     }
 
@@ -250,4 +226,31 @@ export function animateNewPoint(
   };
 
   refs.animationFrame.current = requestAnimationFrame(animate);
+}
+
+// Helper function to normalize data to array format
+export function normalizeDataSeries(
+  data: BigGraphProps["newData"],
+): SeriesData[] {
+  if (Array.isArray(data)) {
+    return data;
+  }
+  return [data];
+}
+
+// Helper function to get primary series for display value
+export function getPrimarySeries(
+  data: BigGraphProps["newData"],
+): SeriesData | null {
+  const normalized = normalizeDataSeries(data);
+  return normalized.find((series) => series.newData !== null) || null;
+}
+
+// Helper function to format value for display
+export function formatDisplayValue(
+  value: number | undefined | null,
+  renderValue?: (value: number) => string,
+): string {
+  if (value === undefined || value === null) return "N/A";
+  return renderValue ? renderValue(value) : value.toFixed(2);
 }

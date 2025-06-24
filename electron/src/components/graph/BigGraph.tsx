@@ -1,40 +1,25 @@
+// BigGraph.tsx
 import React, { useRef, useState, useCallback, useEffect } from "react";
 import uPlot from "uplot";
 import "uplot/dist/uPlot.min.css";
 import { renderUnitSymbol, getUnitIcon } from "@/control/units";
 import { Icon } from "@/components/Icon";
-import { BigGraphProps, SeriesData } from "./types";
+import { BigGraphProps, HandlerRefs } from "./types";
 import { GraphExportData } from "./excelExport";
 import { DEFAULT_COLORS } from "./constants";
-import { useAnimationRefs, stopAnimations } from "./animation";
-import { HandlerRefs } from "./handlers";
+import {
+  useAnimationRefs,
+  stopAnimations,
+  normalizeDataSeries,
+  getPrimarySeries,
+  formatDisplayValue,
+} from "./animation";
 import { useLiveMode } from "./liveMode";
 import { useHistoricalMode } from "./historicalMode";
 import { useBigGraphEffects } from "./useBigGraphEffects";
 import { TouchButton } from "../touch/TouchButton";
-
-// Helper function to normalize data to array format
-function normalizeDataSeries(data: BigGraphProps["newData"]): SeriesData[] {
-  if (Array.isArray(data)) {
-    return data;
-  }
-  return [data];
-}
-
-// Helper function to get primary series for display value
-function getPrimarySeries(data: BigGraphProps["newData"]): SeriesData | null {
-  const normalized = normalizeDataSeries(data);
-  return normalized.find((series) => series.newData !== null) || null;
-}
-
-// Helper function to format value for display
-function formatDisplayValue(
-  value: number | undefined | null,
-  renderValue?: (value: number) => string,
-): string {
-  if (value === undefined || value === null) return "N/A";
-  return renderValue ? renderValue(value) : value.toFixed(2);
-}
+import { seriesToUPlotData } from "@/lib/timeseries";
+import { ControlCard } from "@/control/ControlCard";
 
 export function BigGraph({
   newData,
@@ -67,7 +52,7 @@ export function BigGraph({
 
   // Track when visibility changes to force chart recreation
   const [visibilityVersion, setVisibilityVersion] = useState(0);
-  const [isRecreatingChart, setIsRecreatingChart] = useState(false);
+  const [, setIsRecreatingChart] = useState(false);
 
   // Initialize state from props or defaults
   const [viewMode, setViewMode] = useState<"default" | "all" | "manual">(
@@ -105,28 +90,11 @@ export function BigGraph({
     background: config.colors?.background ?? DEFAULT_COLORS.background,
   };
 
-  // Effect to ensure at least one series is visible
-  useEffect(() => {
-    const hasVisibleSeries = visibleSeries.some((visible) => visible);
-    if (!hasVisibleSeries && normalizedSeries.length > 0) {
-      const firstValidIndex = normalizedSeries.findIndex(
-        (series) => series.newData !== null,
-      );
-      if (firstValidIndex !== -1) {
-        setVisibleSeries((prev) => {
-          const newVisibility = [...prev];
-          newVisibility[firstValidIndex] = true;
-          return newVisibility;
-        });
-      }
-    }
-  }, [visibleSeries, normalizedSeries]);
-
-  // Filter data based on visibility
+  // Create filtered data based on visibility - THIS IS THE KEY FIX
   const filteredData = React.useMemo(() => {
     if (Array.isArray(newData)) {
       const filtered = newData.filter((_, index) => visibleSeries[index]);
-      return filtered.length > 0 ? filtered : newData.slice(0, 1); // Fallback to first series
+      return filtered.length > 0 ? filtered : [newData[0]]; // Ensure at least one series
     }
     return visibleSeries[0] ? newData : { newData: null };
   }, [newData, visibleSeries]);
@@ -135,10 +103,9 @@ export function BigGraph({
   useEffect(() => {
     if (onRegisterForExport) {
       const getExportData = (): GraphExportData | null => {
-        // Return ALL series data for export, not just visible ones
         return {
           config,
-          data: newData, // Use original newData, not filtered
+          data: newData, // Use original newData for export
           unit,
           renderValue,
         };
@@ -157,39 +124,63 @@ export function BigGraph({
     onUnregisterFromExport,
     graphId,
     config,
-    newData, // Use original newData
+    newData,
     unit,
     renderValue,
   ]);
 
   const updateYAxisScale = useCallback(
-    (timestamps: number[], values: number[], xMin?: number, xMax?: number) => {
-      if (!uplotRef.current || values.length === 0) return;
+    (xMin?: number, xMax?: number) => {
+      if (!uplotRef.current) return;
 
-      let visibleValues: number[] = [];
-
-      if (xMin !== undefined && xMax !== undefined) {
-        for (let i = 0; i < timestamps.length; i++) {
-          if (timestamps[i] >= xMin && timestamps[i] <= xMax) {
-            visibleValues.push(values[i]);
-          }
-        }
-      } else {
-        visibleValues = [...values];
+      const isInHistoricalMode = !isLiveMode || viewMode === "manual";
+      if (isInHistoricalMode) {
+        return; // Don't update Y-axis in historical mode
       }
+
+      const normalizedData = normalizeDataSeries(newData);
+      let allVisibleValues: number[] = [];
+
+      // Collect values from all visible series
+      normalizedData.forEach((series, index) => {
+        if (!visibleSeries[index] || !series.newData?.long) return;
+
+        const [timestamps, values] = seriesToUPlotData(series.newData.long);
+        if (values.length === 0) return;
+
+        let seriesToInclude: number[] = [];
+
+        if (xMin !== undefined && xMax !== undefined) {
+          for (let i = 0; i < timestamps.length; i++) {
+            if (timestamps[i] >= xMin && timestamps[i] <= xMax) {
+              seriesToInclude.push(values[i]);
+            }
+          }
+        } else {
+          seriesToInclude = [...values];
+        }
+
+        allVisibleValues.push(...seriesToInclude);
+      });
 
       config.lines?.forEach((line) => {
         if (line.show !== false) {
-          visibleValues.push(line.value);
+          allVisibleValues.push(line.value);
         }
       });
 
-      if (visibleValues.length === 0) {
-        visibleValues = values;
+      if (allVisibleValues.length === 0) {
+        const primarySeries = getPrimarySeries(filteredData); // Use filtered data
+        if (primarySeries?.newData?.long) {
+          const [, values] = seriesToUPlotData(primarySeries.newData.long);
+          allVisibleValues = values;
+        }
       }
 
-      const minY = Math.min(...visibleValues);
-      const maxY = Math.max(...visibleValues);
+      if (allVisibleValues.length === 0) return;
+
+      const minY = Math.min(...allVisibleValues);
+      const maxY = Math.max(...allVisibleValues);
       const range = maxY - minY || Math.abs(maxY) * 0.1 || 1;
 
       const yRange = {
@@ -201,20 +192,16 @@ export function BigGraph({
         uplotRef.current.batch(() => {
           uplotRef.current!.setScale("y", yRange);
         });
-
-        if (viewMode === "manual" && manualScaleRef.current) {
-          manualScaleRef.current.y = yRange;
-        }
       } catch (error) {
         console.warn("Error updating Y-axis scale:", error);
       }
     },
-    [config.lines, viewMode],
+    [config.lines, viewMode, isLiveMode, newData, visibleSeries],
   );
 
-  // Initialize live mode handlers
+  // FIXED: Initialize live mode handlers with filtered data
   const liveMode = useLiveMode({
-    newData: filteredData,
+    newData: filteredData, // Use filtered data
     uplotRef,
     config,
     animationRefs,
@@ -226,9 +213,9 @@ export function BigGraph({
     chartCreatedRef,
   });
 
-  // Initialize historical mode handlers
+  // FIXED: Initialize historical mode handlers with filtered data
   const historicalMode = useHistoricalMode({
-    newData: filteredData,
+    newData: filteredData, // Use filtered data
     uplotRef,
     animationRefs,
     getCurrentLiveEndTimestamp: liveMode.getCurrentLiveEndTimestamp,
@@ -246,30 +233,22 @@ export function BigGraph({
         return;
       }
 
-      // FIXED: Handle time window changes properly based on current mode
       if (newTimeWindow === "all") {
         setViewMode("all");
-        // Only switch to live mode when selecting "all"
         if (!isLiveMode) {
           setIsLiveMode(true);
           historicalMode.switchToLiveMode();
         }
-        // Always use live mode handler for "all"
         liveMode.handleLiveTimeWindow(newTimeWindow);
       } else {
-        // For specific time windows (30m, 1h, etc.)
         setViewMode("default");
-        // Stay in current mode (don't change isLiveMode)
-
         if (isLiveMode) {
           liveMode.handleLiveTimeWindow(newTimeWindow);
         } else {
-          // Stay in historical mode for specific time windows
           historicalMode.handleHistoricalTimeWindow(newTimeWindow);
         }
       }
 
-      // Notify parent about time window change
       if (!isSync && syncGraph?.onTimeWindowChange) {
         syncGraph.onTimeWindowChange(graphId, newTimeWindow);
       }
@@ -297,8 +276,7 @@ export function BigGraph({
           0;
 
       if (wouldHideAll) {
-        // Don't allow hiding the last visible series
-        return prev;
+        return prev; // Don't allow hiding the last visible series
       }
 
       newVisibility[index] = !newVisibility[index];
@@ -334,7 +312,7 @@ export function BigGraph({
     }
   }, [visibilityVersion, animationRefs]);
 
-  // Use the extracted useEffect hooks
+  // Use the extracted useEffect hooks with filtered data
   useBigGraphEffects({
     // Refs
     containerRef,
@@ -346,8 +324,8 @@ export function BigGraph({
     handlerRefs,
     chartCreatedRef,
 
-    // Props
-    newData: filteredData,
+    // Props - FIXED: Use filtered data for chart operations
+    newData: filteredData, // Use filtered data
     unit,
     renderValue,
     config,
@@ -360,6 +338,7 @@ export function BigGraph({
     viewMode,
     isLiveMode,
     selectedTimeWindow,
+    visibleSeries,
 
     // State setters
     setSelectedTimeWindow,
@@ -375,6 +354,7 @@ export function BigGraph({
     handleTimeWindowChangeInternal,
   });
 
+  // Use filtered data for display value calculation
   const primarySeries = getPrimarySeries(filteredData);
   const displayValue =
     cursorValue !== null ? cursorValue : primarySeries?.newData?.current?.value;
@@ -394,70 +374,77 @@ export function BigGraph({
             <h2 className="text-2xl leading-none font-bold text-gray-900">
               {config.title}
             </h2>
+          </div>
 
-            {/* Show main display value only for single series or primary series */}
+          <div className="flex items-center gap-4">
             {normalizedSeries.length === 1 && (
-              <div className="flex items-center gap-2 text-base text-gray-600">
-                <span className="font-mono leading-none font-bold text-gray-900">
-                  {formatDisplayValue(displayValue, renderValue)}
-                </span>
-                <span className="leading-none text-gray-500">
-                  {renderUnitSymbol(unit)}
-                </span>
+              <ControlCard className="rounded-md px-4 py-3">
+                <div className="flex items-center gap-2 text-base text-gray-600">
+                  <span className="font-mono leading-none font-bold text-gray-900">
+                    {formatDisplayValue(displayValue, renderValue)}
+                  </span>
+                  <span className="leading-none text-gray-500">
+                    {renderUnitSymbol(unit)}
+                  </span>
+                </div>
+              </ControlCard>
+            )}
+
+            {/* Series Toggle Controls */}
+            {normalizedSeries.length > 1 && (
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
+                  {normalizedSeries.map((series, index) => {
+                    const seriesColor =
+                      series.color ||
+                      defaultColors[index % defaultColors.length];
+                    const currentValue = series.newData?.current?.value;
+                    const formattedValue = formatDisplayValue(
+                      currentValue,
+                      renderValue,
+                    );
+
+                    const isLastVisible =
+                      visibleSeries[index] &&
+                      visibleSeries.filter((visible) => visible).length === 1;
+
+                    return (
+                      <TouchButton
+                        key={index}
+                        onClick={() => !isLastVisible && toggleSeries(index)}
+                        className={`rounded-md px-4 py-1.5 text-sm transition-all ${
+                          visibleSeries[index]
+                            ? "text-white shadow-md"
+                            : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                        } ${isLastVisible ? "cursor-not-allowed" : ""}`}
+                        style={{
+                          backgroundColor: visibleSeries[index]
+                            ? seriesColor
+                            : undefined,
+                        }}
+                        title={`${series.title || `Series ${index + 1}`}: ${formattedValue} ${renderUnitSymbol(unit) || ""}`}
+                      >
+                        <div className="flex flex-col items-center">
+                          <span className="text-xs font-medium">
+                            {series.title || `S${index + 1}`}
+                          </span>
+                          <span
+                            className={`font-mono leading-none font-bold ${
+                              visibleSeries[index]
+                                ? "text-white"
+                                : "text-gray-500"
+                            }`}
+                          >
+                            {formattedValue} {renderUnitSymbol(unit)}
+                          </span>
+                        </div>
+                      </TouchButton>
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>
-
-          {/* Series Toggle Controls */}
-          {normalizedSeries.length > 1 && (
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1">
-                {normalizedSeries.map((series, index) => {
-                  const seriesColor =
-                    series.color || defaultColors[index % defaultColors.length];
-                  const currentValue = series.newData?.current?.value;
-                  const formattedValue = formatDisplayValue(
-                    currentValue,
-                    renderValue,
-                  );
-
-                  // Check if this is the last visible series
-                  const isLastVisible =
-                    visibleSeries[index] &&
-                    visibleSeries.filter((visible) => visible).length === 1;
-
-                  return (
-                    <TouchButton
-                      key={index}
-                      onClick={() => toggleSeries(index)}
-                      disabled={isLastVisible}
-                      className={`rounded-md px-3 py-1 text-sm transition-all ${
-                        visibleSeries[index]
-                          ? "text-white shadow-md"
-                          : "bg-gray-100 text-gray-500 hover:bg-gray-200"
-                      } ${isLastVisible ? "cursor-not-allowed opacity-75" : ""}`}
-                      style={{
-                        backgroundColor: visibleSeries[index]
-                          ? seriesColor
-                          : undefined,
-                      }}
-                      title={`${series.title || `Series ${index + 1}`}: ${formattedValue} ${renderUnitSymbol(unit) || ""}`}
-                    >
-                      <div className="flex flex-col items-center">
-                        <span className="text-xs font-medium">
-                          {series.title || `S${index + 1}`}
-                        </span>
-                        <span className="font-mono leading-none font-bold text-white">
-                          {formatDisplayValue(displayValue, renderValue)}{" "}
-                          {renderUnitSymbol(unit)}
-                        </span>
-                      </div>
-                    </TouchButton>
-                  );
-                })}
-              </div>
-            </div>
-          )}
         </div>
 
         <div className="-mt-2 px-6">
@@ -467,9 +454,7 @@ export function BigGraph({
         <div className="flex-1 overflow-hidden rounded-b-3xl pt-4">
           <div
             ref={containerRef}
-            className={`h-full w-full overflow-hidden transition-opacity duration-100 ${
-              isRecreatingChart ? "opacity-50" : "opacity-100"
-            }`}
+            className={`h-full w-full overflow-hidden transition-opacity duration-100`}
             style={{ backgroundColor: colors.background }}
           />
         </div>

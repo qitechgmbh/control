@@ -7,6 +7,7 @@ import {
 } from "@/components/graph";
 import React from "react";
 import { useMock1 } from "./useMock";
+import { TimeSeriesValue, type Series, TimeSeries } from "@/lib/timeseries";
 
 export function Mock1GraphPage() {
   const { sineWave } = useMock1();
@@ -41,21 +42,38 @@ export function Mock1GraphPage() {
         type: "target",
         show: true,
       },
-      {
-        value: 0.8,
-        label: "Critical Level",
-        color: "#f59e0b", // Orange
-        show: true,
-        type: "threshold",
-      },
     ],
   };
+  const offsetValues: (TimeSeriesValue | null)[] = sineWave.long.values.map(
+    (v) =>
+      v !== null ? { value: v.value * -1, timestamp: v.timestamp } : null,
+  );
 
+  const series: Series = {
+    values: offsetValues,
+    index: sineWave.long.index,
+    size: sineWave.long.size,
+    lastTimestamp: sineWave.long.lastTimestamp,
+    timeWindow: sineWave.long.timeWindow,
+    sampleInterval: sineWave.long.sampleInterval,
+    validCount: sineWave.long.validCount,
+  };
+  const currentValue: TimeSeriesValue | null =
+    sineWave.current !== null
+      ? {
+          value: sineWave.current.value * -1,
+          timestamp: sineWave.current.timestamp,
+        }
+      : null;
+  const sineWave2: TimeSeries = {
+    current: currentValue,
+    long: series,
+    short: sineWave.short,
+  };
   // Combined data for 3 sine waves
   const combinedData = [
     { newData: sineWave, title: "Sine Wave 1", color: "#3b82f6" },
-    { newData: sineWave, title: "Sine Wave 2", color: "#ef4444" },
-    { newData: sineWave, title: "Sine Wave 3", color: "#10b981" },
+    { newData: sineWave2, title: "Sine Wave 2", color: "#ef4444" },
   ];
 
   // Single sine wave data with different lines
@@ -63,7 +81,7 @@ export function Mock1GraphPage() {
 
   const singleGraphConfig: GraphConfig = {
     ...config,
-    title: "Sine Wave 4",
+    title: "Sine Wave 3",
     lines: [
       {
         value: 0.3,
@@ -83,12 +101,12 @@ export function Mock1GraphPage() {
   };
 
   return (
-    <Page className="pb-25">
+    <Page className="pb-27">
       <div className="flex flex-col gap-4">
         <AutoSyncedBigGraph
           syncHook={syncHook}
           newData={combinedData}
-          config={{ ...config, title: "Combined Sine Waves (1, 2, 3)" }}
+          config={{ ...config, title: "Combined Sine Waves (1, 2)" }}
           unit={"mm"}
           renderValue={(value) => value.toFixed(3)}
           graphId="combined-graph"
