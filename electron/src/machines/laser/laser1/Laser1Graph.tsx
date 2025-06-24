@@ -1,8 +1,7 @@
 import { Page } from "@/components/Page";
 import {
-  BigGraph,
+  AutoSyncedBigGraph,
   SyncedFloatingControlPanel,
-  SyncedGraphControls,
   useGraphSync,
   type GraphConfig,
 } from "@/components/graph";
@@ -55,15 +54,13 @@ export function Laser1GraphsPage() {
   return (
     <Page className="pb-20">
       <div className="flex flex-col gap-4">
-        <SyncedGraphControls controlProps={syncHook.controlProps} />
-
-        <BigGraph
+        <AutoSyncedBigGraph
+          syncHook={syncHook}
           newData={{ newData: laserDiameter }}
           unit="mm"
           renderValue={(value) => value.toFixed(3)}
           config={config}
           graphId="diameter-graph"
-          syncGraph={syncHook.syncGraph}
         />
       </div>
       <SyncedFloatingControlPanel controlProps={syncHook.controlProps} />
