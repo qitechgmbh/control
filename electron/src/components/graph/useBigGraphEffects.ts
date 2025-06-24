@@ -1,5 +1,5 @@
 /* eslint-disable react-compiler/react-compiler */
-import { useEffect, RefObject, useRef, useState } from "react";
+import { useEffect, RefObject, useRef, useState, useCallback } from "react";
 import uPlot from "uplot";
 import { seriesToUPlotData } from "@/lib/timeseries";
 import { BigGraphProps, DataSeries, SeriesData } from "./types";
@@ -120,6 +120,7 @@ export function useBigGraphEffects({
   handleTimeWindowChangeInternal,
 }: UseBigGraphEffectsProps) {
   const [isChartCreated, setIsChartCreated] = useState(false);
+  const [isUserInteracting, setIsUserInteracting] = useState(false);
 
   // Sync state tracking
   const lastSyncStateRef = useRef({
@@ -129,13 +130,40 @@ export function useBigGraphEffects({
     xRange: syncGraph?.xRange,
   });
 
-  // Track if user is currently interacting with the chart
-  const isUserInteractingRef = useRef(false);
+  // Track user interaction state to prevent overriding manual changes
+  const lastInteractionTimeRef = useRef(0);
 
   // Get primary series for compatibility with existing logic
   const primarySeries = getPrimarySeries(newData);
 
-  // Register/unregister this graph for Excel export functionality
+  // Check user interaction status
+  const checkUserInteraction = useCallback(() => {
+    const isInteracting =
+      handlerRefs.isDraggingRef.current ||
+      handlerRefs.isPinchingRef.current ||
+      handlerRefs.isUserZoomingRef.current;
+
+    if (isInteracting) {
+      setIsUserInteracting(true);
+      lastInteractionTimeRef.current = Date.now();
+    } else if (isUserInteracting) {
+      // User stopped interacting, add a grace period
+      const timeSinceLastInteraction =
+        Date.now() - lastInteractionTimeRef.current;
+      if (timeSinceLastInteraction >= 500) {
+        // 500ms grace period
+        setIsUserInteracting(false);
+      }
+    }
+  }, [handlerRefs, isUserInteracting]);
+
+  // Monitor handler refs to detect user interactions - ALWAYS runs
+  useEffect(() => {
+    const interval = setInterval(checkUserInteraction, 100);
+    return () => clearInterval(interval);
+  }, [checkUserInteraction]);
+
+  // Register/unregister this graph for Excel export functionality - ALWAYS runs
   useEffect(() => {
     if (onRegisterForExport && primarySeries?.newData) {
       const getExportData = (): GraphExportData | null => {
@@ -167,27 +195,9 @@ export function useBigGraphEffects({
     onUnregisterFromExport,
   ]);
 
-  // Track user interactions to prevent sync overrides
-  useEffect(() => {
-    const checkUserInteraction = () => {
-      isUserInteractingRef.current =
-        handlerRefs.isDraggingRef.current ||
-        handlerRefs.isPinchingRef.current ||
-        handlerRefs.isUserZoomingRef.current;
-    };
-
-    const intervalId = setInterval(checkUserInteraction, 100);
-    return () => clearInterval(intervalId);
-  }, [handlerRefs]);
-
-  // Sync graph state with external sync props
+  // Sync graph state with external sync props - ALWAYS runs
   useEffect(() => {
     if (!syncGraph) return;
-
-    // Don't sync if user is currently interacting with the chart
-    if (isUserInteractingRef.current || viewMode === "manual") {
-      return;
-    }
 
     const lastState = lastSyncStateRef.current;
     let hasChanges = false;
@@ -226,19 +236,14 @@ export function useBigGraphEffects({
       hasChanges = true;
     }
 
-    // Check for zoom range changes (only if not in manual mode)
+    // Check for zoom range changes
     const xRangeChanged =
       syncGraph.xRange &&
       (!lastState.xRange ||
         syncGraph.xRange.min !== lastState.xRange.min ||
         syncGraph.xRange.max !== lastState.xRange.max);
 
-    if (
-      xRangeChanged &&
-      uplotRef.current &&
-      primarySeries?.newData?.long &&
-      syncGraph.viewMode !== "manual"
-    ) {
+    if (xRangeChanged && uplotRef.current && primarySeries?.newData?.long) {
       uplotRef.current.batch(() => {
         uplotRef.current!.setScale("x", {
           min: syncGraph.xRange?.min ?? 0,
@@ -286,12 +291,22 @@ export function useBigGraphEffects({
     syncGraph?.isLiveMode,
     syncGraph?.xRange?.min,
     syncGraph?.xRange?.max,
-    viewMode, // Add viewMode as dependency
     historicalMode.switchToHistoricalMode,
     historicalMode.switchToLiveMode,
+    setSelectedTimeWindow,
+    handleTimeWindowChangeInternal,
+    setViewMode,
+    setIsLiveMode,
+    stopAnimations,
+    animationRefs,
+    lastProcessedCountRef,
+    uplotRef,
+    primarySeries?.newData?.long,
+    updateYAxisScale,
+    liveMode.processNewHistoricalData,
   ]);
 
-  // Create and initialize the uPlot chart when data becomes available
+  // Create and initialize the uPlot chart when data becomes available - ALWAYS runs
   useEffect(() => {
     if (!containerRef.current || !primarySeries?.newData?.long) {
       setIsChartCreated(false);
@@ -348,20 +363,23 @@ export function useBigGraphEffects({
     };
   }, [primarySeries?.newData?.long, containerRef.current]);
 
-  // Update chart data when new historical data arrives (live mode only)
-  // Skip if in manual mode to prevent overriding user interactions
+  // Update chart data when new historical data arrives - ALWAYS runs
   useEffect(() => {
+    // Early return with conditions, but hook always runs
     if (
       !isLiveMode ||
       viewMode === "manual" ||
       !isChartCreated ||
-      isUserInteractingRef.current
+      isUserInteracting
     )
       return;
 
     // Add a delay to ensure chart is ready after mode switch
     const timeoutId = setTimeout(() => {
-      liveMode.processNewHistoricalData();
+      // Since we already checked the conditions above, we can simplify this
+      if (isLiveMode && !isUserInteracting) {
+        liveMode.processNewHistoricalData();
+      }
     }, 100);
 
     return () => clearTimeout(timeoutId);
@@ -372,12 +390,13 @@ export function useBigGraphEffects({
     selectedTimeWindow,
     isLiveMode,
     isChartCreated,
+    isUserInteracting,
     liveMode.processNewHistoricalData,
   ]);
 
-  // Update chart with real-time current data point (live mode only)
-  // Skip if in manual mode to prevent overriding user interactions
+  // Update chart with real-time current data point - ALWAYS runs
   useEffect(() => {
+    // Early return with conditions, but hook always runs
     if (
       !uplotRef.current ||
       !primarySeries?.newData?.current ||
@@ -385,7 +404,7 @@ export function useBigGraphEffects({
       !isChartCreated ||
       animationRefs.animationState.current.isAnimating ||
       viewMode === "manual" ||
-      isUserInteractingRef.current
+      isUserInteracting
     )
       return;
 
@@ -397,6 +416,10 @@ export function useBigGraphEffects({
     config.lines,
     isLiveMode,
     isChartCreated,
+    isUserInteracting,
+    animationRefs.animationState,
     liveMode.updateLiveData,
+    uplotRef,
+    primarySeries?.newData?.current,
   ]);
 }

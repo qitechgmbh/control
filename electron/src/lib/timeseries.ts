@@ -41,7 +41,10 @@ export interface TimeSeriesWithInsert {
 /**
  * Extract data with time window filtering in chronological order
  */
-export function extractDataFromSeries(series: Series, timeWindow?: number): [number[], number[]] {
+export function extractDataFromSeries(
+  series: Series,
+  timeWindow?: number,
+): [number[], number[]] {
   const timestamps: number[] = [];
   const values: number[] = [];
   const cutoffTime = timeWindow ? series.lastTimestamp - timeWindow : 0;
@@ -51,7 +54,7 @@ export function extractDataFromSeries(series: Series, timeWindow?: number): [num
   }
 
   let startIdx: number;
-  
+
   if (validCount < size) {
     startIdx = 0;
   } else {
@@ -62,7 +65,7 @@ export function extractDataFromSeries(series: Series, timeWindow?: number): [num
   for (let i = 0; i < validCount; i++) {
     const idx = (startIdx + i) % size;
     const val = raw[idx];
-    
+
     if (val && val.timestamp > 0 && val.timestamp >= cutoffTime) {
       timestamps.push(val.timestamp);
       values.push(val.value);
@@ -75,7 +78,10 @@ export function extractDataFromSeries(series: Series, timeWindow?: number): [num
 /**
  * Get min/max values from series by dynamically scanning the data
  */
-export function getSeriesMinMax(series: Series, timeWindow?: number): { min: number; max: number } {
+export function getSeriesMinMax(
+  series: Series,
+  timeWindow?: number,
+): { min: number; max: number } {
   const cutoffTime = timeWindow ? series.lastTimestamp - timeWindow : 0;
 
   let min = Number.POSITIVE_INFINITY;
@@ -83,13 +89,13 @@ export function getSeriesMinMax(series: Series, timeWindow?: number): { min: num
   let hasValidData = false;
 
   const { values: raw, index, size, validCount } = series;
-  
+
   if (validCount === 0) {
     return { min: 0, max: 0 };
   }
 
   let startIdx: number;
-  
+
   if (validCount < size) {
     startIdx = 0;
   } else {
@@ -99,7 +105,7 @@ export function getSeriesMinMax(series: Series, timeWindow?: number): { min: num
   for (let i = 0; i < validCount; i++) {
     const idx = (startIdx + i) % size;
     const val = raw[idx];
-    
+
     if (val && val.timestamp > 0 && val.timestamp >= cutoffTime) {
       hasValidData = true;
       if (val.value < min) min = val.value;
@@ -126,7 +132,7 @@ export function getSeriesStats(series: Series): {
   timeRange: { start: number; end: number } | null;
 } {
   const { min, max } = getSeriesMinMax(series);
-  
+
   // Get the latest value (most recently inserted)
   let latest: TimeSeriesValue | null = null;
   if (series.validCount > 0) {
@@ -145,7 +151,7 @@ export function getSeriesStats(series: Series): {
     if (timestamps.length > 0) {
       timeRange = {
         start: timestamps[0],
-        end: timestamps[timestamps.length - 1]
+        end: timestamps[timestamps.length - 1],
       };
     }
   }
@@ -155,15 +161,17 @@ export function getSeriesStats(series: Series): {
     max,
     count: series.validCount,
     latest,
-    timeRange
+    timeRange,
   };
 }
-
 
 /**
  * Convert series to uPlot-compatible data format
  */
-export function seriesToUPlotData(series: Series, timeWindow?: number): [number[], number[]] {
+export function seriesToUPlotData(
+  series: Series,
+  timeWindow?: number,
+): [number[], number[]] {
   return extractDataFromSeries(series, timeWindow);
 }
 
@@ -174,7 +182,7 @@ export const createTimeSeries = (
   sampleIntervalShort: number,
   sampleIntervalLong: number,
   retentionDurationShort: number,
-  retentionDurationLong: number
+  retentionDurationLong: number,
 ): TimeSeriesWithInsert => {
   const shortSize = Math.ceil(retentionDurationShort / sampleIntervalShort);
   const longSize = Math.ceil(retentionDurationLong / sampleIntervalLong);

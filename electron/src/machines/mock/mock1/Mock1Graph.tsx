@@ -90,7 +90,7 @@ export function Mock1GraphPage() {
           newData={combinedData}
           config={{ ...config, title: "Combined Sine Waves (1, 2, 3)" }}
           unit={"mm"}
-          renderValue={(value) => value.toFixed(0)}
+          renderValue={(value) => value.toFixed(3)}
           graphId="combined-graph"
         />
 

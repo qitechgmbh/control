@@ -6,35 +6,18 @@ import { Icon } from "@/components/Icon";
 import { BigGraphProps, SeriesData } from "./types";
 import { GraphExportData } from "./excelExport";
 import { DEFAULT_COLORS } from "./constants";
-import { useAnimationRefs, stopAnimations } from "./animation";
+import {
+  useAnimationRefs,
+  stopAnimations,
+  normalizeDataSeries,
+  getPrimarySeries,
+  formatDisplayValue,
+} from "./animation";
 import { HandlerRefs } from "./handlers";
 import { useLiveMode } from "./liveMode";
 import { useHistoricalMode } from "./historicalMode";
 import { useBigGraphEffects } from "./useBigGraphEffects";
 import { TouchButton } from "../touch/TouchButton";
-
-// Helper function to normalize data to array format
-function normalizeDataSeries(data: BigGraphProps["newData"]): SeriesData[] {
-  if (Array.isArray(data)) {
-    return data;
-  }
-  return [data];
-}
-
-// Helper function to get primary series for display value
-function getPrimarySeries(data: BigGraphProps["newData"]): SeriesData | null {
-  const normalized = normalizeDataSeries(data);
-  return normalized.find((series) => series.newData !== null) || null;
-}
-
-// Helper function to format value for display
-function formatDisplayValue(
-  value: number | undefined | null,
-  renderValue?: (value: number) => string,
-): string {
-  if (value === undefined || value === null) return "N/A";
-  return renderValue ? renderValue(value) : value.toFixed(2);
-}
 
 export function BigGraph({
   newData,
