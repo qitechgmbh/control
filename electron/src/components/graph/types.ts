@@ -9,6 +9,7 @@ export type PropGraphSync = {
   viewMode: "default" | "all" | "manual";
   isLiveMode: boolean;
   xRange?: { min: number; max: number };
+  historicalFreezeTimestamp?: number | null;
   onTimeWindowChange?: (graphId: string, timeWindow: number | "all") => void;
   onViewModeChange?: (
     graphId: string,

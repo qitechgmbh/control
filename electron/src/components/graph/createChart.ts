@@ -202,10 +202,7 @@ export function createChart({
               const xScale = u.scales.x;
               if (xScale.min !== undefined && xScale.max !== undefined) {
                 // Use the new updateYAxisScale function signature
-                const min = [xScale.min];
-                const max = [xScale.max];
-
-                updateYAxisScale(min, max);
+                updateYAxisScale(xScale.min, xScale.max);
 
                 manualScaleRef.current = {
                   x: { min: xScale.min ?? 0, max: xScale.max ?? 0 },
