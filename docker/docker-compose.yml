@@ -1,0 +1,25 @@
+version: '3.8'
+services:
+  mock:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.mock
+    container_name: mock_service
+    ports:
+      - "3001:3001"
+    volumes:
+      - ../../:/app
+  release:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.release
+    container_name: release_service
+    ports:
+      - "3001:3001"
+  release_debug:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.optimized
+    container_name: release_debug_service
+    ports:
+      - "3001:3001"

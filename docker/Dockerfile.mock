@@ -1,0 +1,15 @@
+# --- Build stage ---
+FROM rust:1.86
+
+WORKDIR /app
+
+# Install necessary dependencies for building the project
+RUN apt-get update && \
+    apt-get install -y libssl-dev ca-certificates libudev-dev pkg-config && \
+    rm -rf /var/lib/apt/lists/*
+
+# Expose the server port
+EXPOSE 3001
+
+# Start Server in debug mode with mock features enabled
+CMD ["cargo", "run", "--features", "mock-machine", "--manifest-path", "server/Cargo.toml", "--", "--mock"]
