@@ -194,7 +194,6 @@ export function createEventHandlers(
 
             const newMin = centerTime - newRange * leftRatio;
             const newMax = centerTime + newRange * rightRatio;
-
             updateScaleAndSync(newMin, newMax);
           }
         }

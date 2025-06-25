@@ -22,7 +22,6 @@ export function useGraphSync(
     new Map(),
   );
 
-  // IMPROVED: Better synchronization tracking with request ID
   const syncStateRef = useRef({
     lastChangeSource: null as string | null,
     isProcessingChange: false,
@@ -79,7 +78,6 @@ export function useGraphSync(
 
       syncStateRef.current.isProcessingChange = true;
       syncStateRef.current.lastChangeSource = graphId;
-
       // Use requestAnimationFrame to ensure state updates happen in next frame
       requestAnimationFrame(() => {
         // Check if this request is still valid
@@ -153,7 +151,6 @@ export function useGraphSync(
     [updateSyncState],
   );
 
-  // IMPROVED: Immediate zoom handling for better responsiveness
   const handleZoomChange = useCallback(
     (graphId: string, newXRange: { min: number; max: number }) => {
       updateSyncState(graphId, {
