@@ -6,7 +6,6 @@ use control_core::{
     },
     converters::linear_step_converter::LinearStepConverter,
 };
-use tracing::info;
 use uom::{
     ConstZero,
     si::{
