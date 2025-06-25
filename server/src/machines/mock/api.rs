@@ -4,14 +4,16 @@ use control_core::{
     socketio::{
         event::{Event, GenericEvent},
         namespace::{
-            CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, NamespaceInterface,
-            cache_duration, cache_one_event,
+            CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_duration,
+            cache_one_event,
         },
     },
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::time::Duration;
+use smol::channel::Sender;
+use socketioxide::extract::SocketRef;
+use std::{sync::Arc, time::Duration};
 use tracing::instrument;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -60,20 +62,24 @@ pub enum MockEvents {
 }
 
 #[derive(Debug)]
-pub struct MockMachineNamespace(Namespace);
+pub struct MockMachineNamespace {
+    pub namespace: Namespace,
+}
 
 impl MockMachineNamespace {
-    pub fn new() -> Self {
-        Self(Namespace::new())
+    pub fn new(socket_queue_tx: Sender<(SocketRef, Arc<GenericEvent>)>) -> Self {
+        Self {
+            namespace: Namespace::new(socket_queue_tx),
+        }
     }
 }
 
 impl CacheableEvents<MockEvents> for MockEvents {
-    fn event_value(&self) -> Result<GenericEvent, serde_json::Error> {
+    fn event_value(&self) -> GenericEvent {
         match self {
-            MockEvents::SineWave(event) => event.try_into(),
-            MockEvents::SineWaveState(event) => event.try_into(),
-            MockEvents::ModeState(event) => event.try_into(),
+            MockEvents::SineWave(event) => event.into(),
+            MockEvents::SineWaveState(event) => event.into(),
+            MockEvents::ModeState(event) => event.into(),
         }
     }
 
@@ -99,16 +105,10 @@ enum Mutation {
 
 impl NamespaceCacheingLogic<MockEvents> for MockMachineNamespace {
     #[instrument(skip_all)]
-    fn emit_cached(&mut self, events: MockEvents) {
-        let event = match events.event_value() {
-            Ok(event) => event,
-            Err(err) => {
-                tracing::error!("Failed to emit: {:?}", err);
-                return;
-            }
-        };
+    fn emit(&mut self, events: MockEvents) {
+        let event = Arc::new(events.event_value());
         let buffer_fn = events.event_cache_fn();
-        self.0.emit_cached(&event, &buffer_fn);
+        self.namespace.emit(event, &buffer_fn);
     }
 }
 
@@ -126,7 +126,7 @@ impl MachineApi for MockMachine {
         Ok(())
     }
 
-    fn api_event_namespace(&mut self) -> &mut dyn NamespaceInterface {
-        &mut self.namespace.0
+    fn api_event_namespace(&mut self) -> &mut Namespace {
+        &mut self.namespace.namespace
     }
 }

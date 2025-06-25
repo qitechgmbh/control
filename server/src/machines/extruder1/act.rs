@@ -12,7 +12,12 @@ impl Actor for ExtruderV2 {
             self.temperature_controller_nozzle.update(now_ts).await;
             self.temperature_controller_front.update(now_ts).await;
             self.temperature_controller_middle.update(now_ts).await;
-            self.screw_speed_controller.update(now_ts).await;
+
+            if self.mode == ExtruderV2Mode::Extrude {
+                self.screw_speed_controller.update(now_ts, true).await;
+            } else {
+                self.screw_speed_controller.update(now_ts, false).await;
+            }
 
             if self.mode == ExtruderV2Mode::Standby {
                 self.turn_heating_off();
@@ -26,7 +31,8 @@ impl Actor for ExtruderV2 {
 
             let now = Instant::now();
 
-            if now.duration_since(self.last_measurement_emit) > Duration::from_millis(16) {
+            if now.duration_since(self.last_measurement_emit) > Duration::from_secs_f64(1.0 / 60.0)
+            {
                 // channel 1
                 self.emit_heating(
                     self.temperature_controller_back.heating.clone(),
@@ -53,6 +59,7 @@ impl Actor for ExtruderV2 {
                 self.emit_regulation();
                 self.emit_mode_state();
                 self.emit_rotation_state();
+
                 self.emit_bar();
                 self.emit_rpm();
                 self.emit_extruder_settings();

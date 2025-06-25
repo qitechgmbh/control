@@ -340,6 +340,7 @@ impl MachineNewTrait for ExtruderV2 {
                 Heating::default(),
                 Duration::from_millis(500),
                 700.0,
+                1.0,
             );
 
             // Only front heating on: These values work 0.08, 0.001, 0.007, Overshoot 0.5 undershoot ~0.7 (Problems when starting far away because of integral)
@@ -354,6 +355,7 @@ impl MachineNewTrait for ExtruderV2 {
                 Heating::default(),
                 Duration::from_millis(500),
                 700.0,
+                1.0,
             );
 
             // Only front heating on: These values work 0.08, 0.001, 0.007, Overshoot 0.5 undershoot ~0.7 (Problems when starting far away because of integral)
@@ -368,6 +370,7 @@ impl MachineNewTrait for ExtruderV2 {
                 Heating::default(),
                 Duration::from_millis(500),
                 700.0,
+                1.0,
             );
 
             // Only front heating on: These values work 0.08, 0.001, 0.007, Overshoot 0.5 undershoot ~0.7 (Problems when starting far away because of integral)
@@ -382,6 +385,7 @@ impl MachineNewTrait for ExtruderV2 {
                 Heating::default(),
                 Duration::from_millis(500),
                 200.0,
+                0.95,
             );
 
             let inverter = MitsubishiInverterRS485Actor::new(SerialInterface::new(
@@ -396,7 +400,7 @@ impl MachineNewTrait for ExtruderV2 {
                 ScrewSpeedController::new(inverter, target_pressure, target_rpm, pressure_sensor);
 
             let extruder: ExtruderV2 = Self {
-                namespace: ExtruderV2Namespace::new(),
+                namespace: ExtruderV2Namespace::new(params.socket_queue_tx.clone()),
                 last_measurement_emit: Instant::now(),
                 mode: ExtruderV2Mode::Standby,
                 temperature_controller_front: temperature_controller_front,
