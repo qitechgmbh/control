@@ -1,6 +1,7 @@
 import { IconName } from "@/components/Icon";
 import { Unit } from "@/control/units";
 import { TimeSeries } from "@/lib/timeseries";
+import { RefObject } from "react";
 
 // Prop-based sync types
 export type PropGraphSync = {
@@ -92,4 +93,72 @@ export interface HistoricalModeHandlers {
   handleHistoricalTimeWindow: (timeWindow: number | "all") => void;
   switchToHistoricalMode: () => void;
   switchToLiveMode: () => void;
+}
+
+export interface CreateChartParams {
+  containerRef: React.RefObject<HTMLDivElement | null>;
+  uplotRef: React.RefObject<uPlot | null>;
+  newData: BigGraphProps["newData"];
+  config: BigGraphProps["config"];
+  colors: {
+    primary: string;
+    grid: string;
+    axis: string;
+    background: string;
+  };
+  renderValue?: (value: number) => string;
+  viewMode: "default" | "all" | "manual";
+  selectedTimeWindow: number | "all";
+  isLiveMode: boolean;
+  startTimeRef: React.RefObject<number | null>;
+  manualScaleRef: React.RefObject<{
+    x: { min: number; max: number };
+    y: { min: number; max: number };
+  } | null>;
+  animationRefs: AnimationRefs;
+  handlerRefs: HandlerRefs;
+  graphId: string;
+  syncGraph?: BigGraphProps["syncGraph"];
+  getHistoricalEndTimestamp: () => number;
+  updateYAxisScale: (xMin?: number, xMax?: number) => void;
+  setViewMode: React.Dispatch<
+    React.SetStateAction<"default" | "all" | "manual">
+  >;
+  setIsLiveMode: React.Dispatch<React.SetStateAction<boolean>>;
+  setCursorValue: React.Dispatch<React.SetStateAction<number | null>>;
+}
+
+export interface AnimationState {
+  isAnimating: boolean;
+  startTime: number;
+  fromValue: number;
+  toValue: number;
+  fromTimestamp: number;
+  toTimestamp: number;
+  targetIndex: number;
+}
+
+export interface AnimationRefs {
+  animationFrame: React.RefObject<number | null>;
+  animationState: React.RefObject<AnimationState>;
+  lastRenderedData: React.RefObject<{
+    timestamps: number[];
+    values: number[];
+  }>;
+  realPointsCount: React.RefObject<number>;
+}
+
+export interface HandlerRefs {
+  isUserZoomingRef: RefObject<boolean>;
+  isDraggingRef: RefObject<boolean>;
+  lastDragXRef: RefObject<number | null>;
+  isPinchingRef: RefObject<boolean>;
+  lastPinchDistanceRef: RefObject<number | null>;
+  pinchCenterRef: RefObject<{ x: number; y: number } | null>;
+  touchStartRef: RefObject<{
+    x: number;
+    y: number;
+    time: number;
+  } | null>;
+  touchDirectionRef: RefObject<"horizontal" | "vertical" | "unknown">;
 }

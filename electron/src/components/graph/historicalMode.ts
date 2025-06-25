@@ -2,8 +2,13 @@
 import { useRef, useCallback } from "react";
 import uPlot from "uplot";
 import { seriesToUPlotData } from "@/lib/timeseries";
-import { stopAnimations, AnimationRefs } from "./animation";
-import { BigGraphProps, SeriesData, HistoricalModeHandlers } from "./types";
+import { stopAnimations } from "./animation";
+import {
+  BigGraphProps,
+  SeriesData,
+  HistoricalModeHandlers,
+  AnimationRefs,
+} from "./types";
 
 // Helper functions for multi-series support
 function normalizeDataSeries(data: BigGraphProps["newData"]): SeriesData[] {
@@ -33,21 +38,17 @@ export function useHistoricalMode({
   uplotRef: React.RefObject<uPlot | null>;
   animationRefs: AnimationRefs;
   getCurrentLiveEndTimestamp: () => number;
-  updateYAxisScale: (
-    timestamps: number[],
-    values: number[],
-    xMin?: number,
-    xMax?: number,
-  ) => void;
-  lastProcessedCountRef: React.MutableRefObject<number>;
-  manualScaleRef: React.MutableRefObject<{
+  updateYAxisScale: (xMin?: number, xMax?: number) => void;
+  lastProcessedCountRef: React.RefObject<number>;
+  manualScaleRef: React.RefObject<{
     x: { min: number; max: number };
     y: { min: number; max: number };
   } | null>;
-  syncHistoricalFreezeTimestamp?: number | null; // ADDED: Optional sync freeze timestamp
+  syncHistoricalFreezeTimestamp?: number | null;
 }): HistoricalModeHandlers {
   const localHistoricalFreezeTimestampRef = useRef<number | null>(null);
   const localManualScale = useRef(manualScaleRef.current);
+  const isInHistoricalModeRef = useRef(false); // Track historical mode state
 
   const captureHistoricalFreezeTimestamp = useCallback(() => {
     // FIXED: Use sync freeze timestamp if available, otherwise capture current time
@@ -98,7 +99,7 @@ export function useHistoricalMode({
           startTimestamp = endTimestamp - timeWindow;
         }
 
-        // Filter values for the visible time range
+        // Calculate Y-axis range manually for historical mode to prevent jumping
         const visibleValues: number[] = [];
         for (let i = 0; i < timestamps.length; i++) {
           if (
@@ -109,30 +110,36 @@ export function useHistoricalMode({
           }
         }
 
-        // Calculate Y-axis range
-        const minY = visibleValues.length > 0 ? Math.min(...visibleValues) : 0;
-        const maxY = visibleValues.length > 0 ? Math.max(...visibleValues) : 1;
-        const range = maxY - minY || Math.abs(maxY) * 0.1 || 1;
+        // Calculate stable Y-axis range
+        let yMin: number, yMax: number;
+        if (visibleValues.length > 0) {
+          yMin = Math.min(...visibleValues);
+          yMax = Math.max(...visibleValues);
+          const range = yMax - yMin || Math.abs(yMax) * 0.1 || 1;
+          yMin = yMin - range * 0.1;
+          yMax = yMax + range * 0.1;
+        } else {
+          yMin = -1;
+          yMax = 1;
+        }
 
-        const yRange = {
-          min: minY - range * 0.1,
-          max: maxY + range * 0.1,
-        };
-
-        // Apply the scale changes
+        // Apply the scale changes in a single batch to prevent jumping
         uplotRef.current.batch(() => {
           uplotRef.current!.setScale("x", {
             min: startTimestamp,
             max: endTimestamp,
           });
 
-          uplotRef.current!.setScale("y", yRange);
+          uplotRef.current!.setScale("y", {
+            min: yMin,
+            max: yMax,
+          });
         });
 
-        // Update manual scale reference
+        // Update manual scale reference with the calculated values
         localManualScale.current = {
           x: { min: startTimestamp, max: endTimestamp },
-          y: yRange,
+          y: { min: yMin, max: yMax },
         };
 
         manualScaleRef.current = localManualScale.current;
@@ -144,6 +151,9 @@ export function useHistoricalMode({
   );
 
   const switchToHistoricalMode = useCallback(() => {
+    // Mark that we're entering historical mode
+    isInHistoricalModeRef.current = true;
+
     // Capture freeze timestamp when switching to historical
     captureHistoricalFreezeTimestamp();
     stopAnimations(animationRefs);
@@ -154,6 +164,9 @@ export function useHistoricalMode({
   }, [captureHistoricalFreezeTimestamp, animationRefs, lastProcessedCountRef]);
 
   const switchToLiveMode = useCallback(() => {
+    // Mark that we're leaving historical mode
+    isInHistoricalModeRef.current = false;
+
     // FIXED: Clear local freeze timestamp when switching to live
     localHistoricalFreezeTimestampRef.current = null;
 
@@ -173,7 +186,7 @@ export function useHistoricalMode({
       const primaryData = getPrimarySeriesData(newData);
       if (primaryData?.long) {
         try {
-          const [timestamps, values] = seriesToUPlotData(primaryData.long);
+          const [timestamps] = seriesToUPlotData(primaryData.long);
           if (timestamps.length > 0) {
             // Get current live end timestamp
             const currentLiveEnd = getCurrentLiveEndTimestamp();
@@ -187,8 +200,8 @@ export function useHistoricalMode({
                 max: currentLiveEnd,
               });
 
-              // Update Y scale for visible data
-              updateYAxisScale(timestamps, values, recentStart, currentLiveEnd);
+              // Now it's safe to use updateYAxisScale since we're back in live mode
+              updateYAxisScale(recentStart, currentLiveEnd);
             });
           }
         } catch (error) {

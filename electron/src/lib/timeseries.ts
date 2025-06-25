@@ -11,7 +11,7 @@ export interface TimeSeriesValue {
 /**
  * Enhanced Series type without min/max tracking (we'll calculate dynamically)
  */
-type Series = {
+export type Series = {
   values: (TimeSeriesValue | null)[];
   index: number;
   size: number;

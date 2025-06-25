@@ -1,9 +1,10 @@
+// BigGraph.tsx
 import React, { useRef, useState, useCallback, useEffect } from "react";
 import uPlot from "uplot";
 import "uplot/dist/uPlot.min.css";
 import { renderUnitSymbol, getUnitIcon } from "@/control/units";
 import { Icon } from "@/components/Icon";
-import { BigGraphProps, SeriesData } from "./types";
+import { BigGraphProps, HandlerRefs } from "./types";
 import { GraphExportData } from "./excelExport";
 import { DEFAULT_COLORS } from "./constants";
 import {
@@ -13,11 +14,11 @@ import {
   getPrimarySeries,
   formatDisplayValue,
 } from "./animation";
-import { HandlerRefs } from "./handlers";
 import { useLiveMode } from "./liveMode";
 import { useHistoricalMode } from "./historicalMode";
 import { useBigGraphEffects } from "./useBigGraphEffects";
 import { TouchButton } from "../touch/TouchButton";
+import { seriesToUPlotData } from "@/lib/timeseries";
 
 export function BigGraph({
   newData,
@@ -88,24 +89,7 @@ export function BigGraph({
     background: config.colors?.background ?? DEFAULT_COLORS.background,
   };
 
-  // Effect to ensure at least one series is visible
-  useEffect(() => {
-    const hasVisibleSeries = visibleSeries.some((visible) => visible);
-    if (!hasVisibleSeries && normalizedSeries.length > 0) {
-      const firstValidIndex = normalizedSeries.findIndex(
-        (series) => series.newData !== null,
-      );
-      if (firstValidIndex !== -1) {
-        setVisibleSeries((prev) => {
-          const newVisibility = [...prev];
-          newVisibility[firstValidIndex] = true;
-          return newVisibility;
-        });
-      }
-    }
-  }, [visibleSeries, normalizedSeries]);
-
-  // Filter data based on visibility
+  // Filter data based on visibility for display purposes only
   const filteredData = React.useMemo(() => {
     if (Array.isArray(newData)) {
       const filtered = newData.filter((_, index) => visibleSeries[index]);
@@ -145,34 +129,74 @@ export function BigGraph({
     renderValue,
   ]);
 
+  // In BigGraph.tsx, update the updateYAxisScale function with better protection:
   const updateYAxisScale = useCallback(
-    (timestamps: number[], values: number[], xMin?: number, xMax?: number) => {
-      if (!uplotRef.current || values.length === 0) return;
+    (xMin?: number, xMax?: number) => {
+      if (!uplotRef.current) return;
 
-      let visibleValues: number[] = [];
+      // ENHANCED: More robust historical mode detection
+      const isInHistoricalMode = !isLiveMode || viewMode === "manual";
 
-      if (xMin !== undefined && xMax !== undefined) {
-        for (let i = 0; i < timestamps.length; i++) {
-          if (timestamps[i] >= xMin && timestamps[i] <= xMax) {
-            visibleValues.push(values[i]);
-          }
-        }
-      } else {
-        visibleValues = [...values];
+      // Debug logging to identify what's calling this function
+      if (isInHistoricalMode) {
+        console.log("updateYAxisScale called in historical mode - ignoring", {
+          isLiveMode,
+          viewMode,
+          xMin,
+          xMax,
+          stack: new Error().stack?.split("\n").slice(1, 4),
+        });
+        return; // Don't update Y-axis in historical mode
       }
 
+      const normalizedData = normalizeDataSeries(newData);
+      let allVisibleValues: number[] = [];
+
+      // Collect values from all visible series
+      normalizedData.forEach((series, index) => {
+        if (!visibleSeries[index] || !series.newData?.long) return;
+
+        const [timestamps, values] = seriesToUPlotData(series.newData.long);
+
+        if (values.length === 0) return;
+
+        let seriesToInclude: number[] = [];
+
+        if (xMin !== undefined && xMax !== undefined) {
+          // Filter values within the visible time range
+          for (let i = 0; i < timestamps.length; i++) {
+            if (timestamps[i] >= xMin && timestamps[i] <= xMax) {
+              seriesToInclude.push(values[i]);
+            }
+          }
+        } else {
+          // Include all values if no range specified
+          seriesToInclude = [...values];
+        }
+
+        allVisibleValues.push(...seriesToInclude);
+      });
+
+      // Add configuration lines to the visible values
       config.lines?.forEach((line) => {
         if (line.show !== false) {
-          visibleValues.push(line.value);
+          allVisibleValues.push(line.value);
         }
       });
 
-      if (visibleValues.length === 0) {
-        visibleValues = values;
+      // Fallback if no visible values found
+      if (allVisibleValues.length === 0) {
+        const primarySeries = getPrimarySeries(newData);
+        if (primarySeries?.newData?.long) {
+          const [, values] = seriesToUPlotData(primarySeries.newData.long);
+          allVisibleValues = values;
+        }
       }
 
-      const minY = Math.min(...visibleValues);
-      const maxY = Math.max(...visibleValues);
+      if (allVisibleValues.length === 0) return;
+
+      const minY = Math.min(...allVisibleValues);
+      const maxY = Math.max(...allVisibleValues);
       const range = maxY - minY || Math.abs(maxY) * 0.1 || 1;
 
       const yRange = {
@@ -184,20 +208,16 @@ export function BigGraph({
         uplotRef.current.batch(() => {
           uplotRef.current!.setScale("y", yRange);
         });
-
-        if (viewMode === "manual" && manualScaleRef.current) {
-          manualScaleRef.current.y = yRange;
-        }
       } catch (error) {
         console.warn("Error updating Y-axis scale:", error);
       }
     },
-    [config.lines, viewMode],
+    [config.lines, viewMode, isLiveMode, newData, visibleSeries],
   );
 
-  // Initialize live mode handlers
+  // FIXED: Initialize live mode handlers with original data, not filtered
   const liveMode = useLiveMode({
-    newData: filteredData,
+    newData: newData, // <-- Use original data, not filtered
     uplotRef,
     config,
     animationRefs,
@@ -209,9 +229,9 @@ export function BigGraph({
     chartCreatedRef,
   });
 
-  // Initialize historical mode handlers
+  // FIXED: Initialize historical mode handlers with original data, not filtered
   const historicalMode = useHistoricalMode({
-    newData: filteredData,
+    newData: newData, // <-- Use original data, not filtered
     uplotRef,
     animationRefs,
     getCurrentLiveEndTimestamp: liveMode.getCurrentLiveEndTimestamp,
@@ -317,7 +337,7 @@ export function BigGraph({
     }
   }, [visibilityVersion, animationRefs]);
 
-  // Use the extracted useEffect hooks
+  //  Use the extracted useEffect hooks with original data
   useBigGraphEffects({
     // Refs
     containerRef,
@@ -329,8 +349,8 @@ export function BigGraph({
     handlerRefs,
     chartCreatedRef,
 
-    // Props
-    newData: filteredData,
+    // Props - FIXED: Use original data, not filtered
+    newData: newData, // <-- Use original data, not filtered
     unit,
     renderValue,
     config,
@@ -343,6 +363,7 @@ export function BigGraph({
     viewMode,
     isLiveMode,
     selectedTimeWindow,
+    visibleSeries, // Pass visible series state
 
     // State setters
     setSelectedTimeWindow,
@@ -358,6 +379,7 @@ export function BigGraph({
     handleTimeWindowChangeInternal,
   });
 
+  // Use filtered data for display value calculation
   const primarySeries = getPrimarySeries(filteredData);
   const displayValue =
     cursorValue !== null ? cursorValue : primarySeries?.newData?.current?.value;

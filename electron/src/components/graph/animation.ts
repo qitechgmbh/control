@@ -1,27 +1,12 @@
 import { useRef } from "react";
 import uPlot from "uplot";
 import { POINT_ANIMATION_DURATION } from "./constants";
-import { BigGraphProps, SeriesData } from "./types";
-
-export interface AnimationState {
-  isAnimating: boolean;
-  startTime: number;
-  fromValue: number;
-  toValue: number;
-  fromTimestamp: number;
-  toTimestamp: number;
-  targetIndex: number;
-}
-
-export interface AnimationRefs {
-  animationFrame: React.RefObject<number | null>;
-  animationState: React.RefObject<AnimationState>;
-  lastRenderedData: React.RefObject<{
-    timestamps: number[];
-    values: number[];
-  }>;
-  realPointsCount: React.RefObject<number>;
-}
+import {
+  AnimationRefs,
+  AnimationState,
+  BigGraphProps,
+  SeriesData,
+} from "./types";
 
 export function useAnimationRefs(): AnimationRefs {
   const animationFrameRef = useRef<number | null>(null);
@@ -104,12 +89,7 @@ export function animateNewPoint(
   selectedTimeWindow: number | "all",
   startTimeRef: React.RefObject<number | null>,
   config: { lines?: Array<{ show?: boolean; value: number }> },
-  updateYAxisScale: (
-    timestamps: number[],
-    values: number[],
-    xMin?: number,
-    xMax?: number,
-  ) => void,
+  updateYAxisScale: (xMin?: number, xMax?: number) => void, // Updated signature
   getAllSeriesData?: () => number[][],
 ): void {
   if (targetData.timestamps.length <= currentData.timestamps.length) {
@@ -213,19 +193,14 @@ export function animateNewPoint(
         }
 
         uplotRef.current.setScale("x", { min: xMin, max: xMax });
-        updateYAxisScale(animatedTimestamps, animatedValues, xMin, xMax);
+        updateYAxisScale(xMin, xMax); // Updated call
       } else if (viewMode === "all") {
         const fullStart = startTimeRef.current ?? animatedTimestamps[0];
         uplotRef.current.setScale("x", {
           min: fullStart,
           max: latestTimestamp,
         });
-        updateYAxisScale(
-          animatedTimestamps,
-          animatedValues,
-          fullStart,
-          latestTimestamp,
-        );
+        updateYAxisScale(fullStart, latestTimestamp); // Updated call
       }
     }
 

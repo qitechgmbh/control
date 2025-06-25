@@ -1,22 +1,7 @@
 import { RefObject } from "react";
 import uPlot from "uplot";
 import { seriesToUPlotData } from "@/lib/timeseries";
-import { GraphConfig } from "./types";
-
-export interface HandlerRefs {
-  isUserZoomingRef: RefObject<boolean>;
-  isDraggingRef: RefObject<boolean>;
-  lastDragXRef: RefObject<number | null>;
-  isPinchingRef: RefObject<boolean>;
-  lastPinchDistanceRef: RefObject<number | null>;
-  pinchCenterRef: RefObject<{ x: number; y: number } | null>;
-  touchStartRef: RefObject<{
-    x: number;
-    y: number;
-    time: number;
-  } | null>;
-  touchDirectionRef: RefObject<"horizontal" | "vertical" | "unknown">;
-}
+import { GraphConfig, HandlerRefs } from "./types";
 
 export interface HandlerCallbacks {
   updateYAxisScale: (
