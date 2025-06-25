@@ -89,11 +89,11 @@ export function BigGraph({
     background: config.colors?.background ?? DEFAULT_COLORS.background,
   };
 
-  // Filter data based on visibility for display purposes only
+  // Create filtered data based on visibility - THIS IS THE KEY FIX
   const filteredData = React.useMemo(() => {
     if (Array.isArray(newData)) {
       const filtered = newData.filter((_, index) => visibleSeries[index]);
-      return filtered.length > 0 ? filtered : newData.slice(0, 1); // Fallback to first series
+      return filtered.length > 0 ? filtered : [newData[0]]; // Ensure at least one series
     }
     return visibleSeries[0] ? newData : { newData: null };
   }, [newData, visibleSeries]);
@@ -102,10 +102,9 @@ export function BigGraph({
   useEffect(() => {
     if (onRegisterForExport) {
       const getExportData = (): GraphExportData | null => {
-        // Return ALL series data for export, not just visible ones
         return {
           config,
-          data: newData, // Use original newData, not filtered
+          data: newData, // Use original newData for export
           unit,
           renderValue,
         };
@@ -124,28 +123,17 @@ export function BigGraph({
     onUnregisterFromExport,
     graphId,
     config,
-    newData, // Use original newData
+    newData,
     unit,
     renderValue,
   ]);
 
-  // In BigGraph.tsx, update the updateYAxisScale function with better protection:
   const updateYAxisScale = useCallback(
     (xMin?: number, xMax?: number) => {
       if (!uplotRef.current) return;
 
-      // ENHANCED: More robust historical mode detection
       const isInHistoricalMode = !isLiveMode || viewMode === "manual";
-
-      // Debug logging to identify what's calling this function
       if (isInHistoricalMode) {
-        console.log("updateYAxisScale called in historical mode - ignoring", {
-          isLiveMode,
-          viewMode,
-          xMin,
-          xMax,
-          stack: new Error().stack?.split("\n").slice(1, 4),
-        });
         return; // Don't update Y-axis in historical mode
       }
 
@@ -157,36 +145,31 @@ export function BigGraph({
         if (!visibleSeries[index] || !series.newData?.long) return;
 
         const [timestamps, values] = seriesToUPlotData(series.newData.long);
-
         if (values.length === 0) return;
 
         let seriesToInclude: number[] = [];
 
         if (xMin !== undefined && xMax !== undefined) {
-          // Filter values within the visible time range
           for (let i = 0; i < timestamps.length; i++) {
             if (timestamps[i] >= xMin && timestamps[i] <= xMax) {
               seriesToInclude.push(values[i]);
             }
           }
         } else {
-          // Include all values if no range specified
           seriesToInclude = [...values];
         }
 
         allVisibleValues.push(...seriesToInclude);
       });
 
-      // Add configuration lines to the visible values
       config.lines?.forEach((line) => {
         if (line.show !== false) {
           allVisibleValues.push(line.value);
         }
       });
 
-      // Fallback if no visible values found
       if (allVisibleValues.length === 0) {
-        const primarySeries = getPrimarySeries(newData);
+        const primarySeries = getPrimarySeries(filteredData); // Use filtered data
         if (primarySeries?.newData?.long) {
           const [, values] = seriesToUPlotData(primarySeries.newData.long);
           allVisibleValues = values;
@@ -215,9 +198,9 @@ export function BigGraph({
     [config.lines, viewMode, isLiveMode, newData, visibleSeries],
   );
 
-  // FIXED: Initialize live mode handlers with original data, not filtered
+  // FIXED: Initialize live mode handlers with filtered data
   const liveMode = useLiveMode({
-    newData: newData, // <-- Use original data, not filtered
+    newData: filteredData, // Use filtered data
     uplotRef,
     config,
     animationRefs,
@@ -229,9 +212,9 @@ export function BigGraph({
     chartCreatedRef,
   });
 
-  // FIXED: Initialize historical mode handlers with original data, not filtered
+  // FIXED: Initialize historical mode handlers with filtered data
   const historicalMode = useHistoricalMode({
-    newData: newData, // <-- Use original data, not filtered
+    newData: filteredData, // Use filtered data
     uplotRef,
     animationRefs,
     getCurrentLiveEndTimestamp: liveMode.getCurrentLiveEndTimestamp,
@@ -249,30 +232,22 @@ export function BigGraph({
         return;
       }
 
-      // FIXED: Handle time window changes properly based on current mode
       if (newTimeWindow === "all") {
         setViewMode("all");
-        // Only switch to live mode when selecting "all"
         if (!isLiveMode) {
           setIsLiveMode(true);
           historicalMode.switchToLiveMode();
         }
-        // Always use live mode handler for "all"
         liveMode.handleLiveTimeWindow(newTimeWindow);
       } else {
-        // For specific time windows (30m, 1h, etc.)
         setViewMode("default");
-        // Stay in current mode (don't change isLiveMode)
-
         if (isLiveMode) {
           liveMode.handleLiveTimeWindow(newTimeWindow);
         } else {
-          // Stay in historical mode for specific time windows
           historicalMode.handleHistoricalTimeWindow(newTimeWindow);
         }
       }
 
-      // Notify parent about time window change
       if (!isSync && syncGraph?.onTimeWindowChange) {
         syncGraph.onTimeWindowChange(graphId, newTimeWindow);
       }
@@ -300,8 +275,7 @@ export function BigGraph({
           0;
 
       if (wouldHideAll) {
-        // Don't allow hiding the last visible series
-        return prev;
+        return prev; // Don't allow hiding the last visible series
       }
 
       newVisibility[index] = !newVisibility[index];
@@ -337,7 +311,7 @@ export function BigGraph({
     }
   }, [visibilityVersion, animationRefs]);
 
-  //  Use the extracted useEffect hooks with original data
+  // Use the extracted useEffect hooks with filtered data
   useBigGraphEffects({
     // Refs
     containerRef,
@@ -349,8 +323,8 @@ export function BigGraph({
     handlerRefs,
     chartCreatedRef,
 
-    // Props - FIXED: Use original data, not filtered
-    newData: newData, // <-- Use original data, not filtered
+    // Props - FIXED: Use filtered data for chart operations
+    newData: filteredData, // Use filtered data
     unit,
     renderValue,
     config,
@@ -363,7 +337,7 @@ export function BigGraph({
     viewMode,
     isLiveMode,
     selectedTimeWindow,
-    visibleSeries, // Pass visible series state
+    visibleSeries,
 
     // State setters
     setSelectedTimeWindow,
@@ -400,7 +374,6 @@ export function BigGraph({
               {config.title}
             </h2>
 
-            {/* Show main display value only for single series or primary series */}
             {normalizedSeries.length === 1 && (
               <div className="flex items-center gap-2 text-base text-gray-600">
                 <span className="font-mono leading-none font-bold text-gray-900">
@@ -426,7 +399,6 @@ export function BigGraph({
                     renderValue,
                   );
 
-                  // Check if this is the last visible series
                   const isLastVisible =
                     visibleSeries[index] &&
                     visibleSeries.filter((visible) => visible).length === 1;
@@ -434,13 +406,12 @@ export function BigGraph({
                   return (
                     <TouchButton
                       key={index}
-                      onClick={() => toggleSeries(index)}
-                      disabled={isLastVisible}
+                      onClick={() => !isLastVisible && toggleSeries(index)}
                       className={`rounded-md px-3 py-1 text-sm transition-all ${
                         visibleSeries[index]
                           ? "text-white shadow-md"
                           : "bg-gray-100 text-gray-500 hover:bg-gray-200"
-                      } ${isLastVisible ? "cursor-not-allowed opacity-75" : ""}`}
+                      } ${isLastVisible ? "cursor-not-allowed" : ""}`}
                       style={{
                         backgroundColor: visibleSeries[index]
                           ? seriesColor
@@ -453,8 +424,7 @@ export function BigGraph({
                           {series.title || `S${index + 1}`}
                         </span>
                         <span className="font-mono leading-none font-bold text-white">
-                          {formatDisplayValue(displayValue, renderValue)}{" "}
-                          {renderUnitSymbol(unit)}
+                          {formattedValue} {renderUnitSymbol(unit)}
                         </span>
                       </div>
                     </TouchButton>
@@ -472,9 +442,7 @@ export function BigGraph({
         <div className="flex-1 overflow-hidden rounded-b-3xl pt-4">
           <div
             ref={containerRef}
-            className={`h-full w-full overflow-hidden transition-opacity duration-100 ${
-              isRecreatingChart ? "opacity-50" : "opacity-100"
-            }`}
+            className={`h-full w-full overflow-hidden transition-opacity duration-100`}
             style={{ backgroundColor: colors.background }}
           />
         </div>
