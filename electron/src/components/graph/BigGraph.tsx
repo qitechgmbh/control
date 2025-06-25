@@ -19,6 +19,7 @@ import { useHistoricalMode } from "./historicalMode";
 import { useBigGraphEffects } from "./useBigGraphEffects";
 import { TouchButton } from "../touch/TouchButton";
 import { seriesToUPlotData } from "@/lib/timeseries";
+import { ControlCard } from "@/control/ControlCard";
 
 export function BigGraph({
   newData,
@@ -373,66 +374,77 @@ export function BigGraph({
             <h2 className="text-2xl leading-none font-bold text-gray-900">
               {config.title}
             </h2>
+          </div>
 
+          <div className="flex items-center gap-4">
             {normalizedSeries.length === 1 && (
-              <div className="flex items-center gap-2 text-base text-gray-600">
-                <span className="font-mono leading-none font-bold text-gray-900">
-                  {formatDisplayValue(displayValue, renderValue)}
-                </span>
-                <span className="leading-none text-gray-500">
-                  {renderUnitSymbol(unit)}
-                </span>
+              <ControlCard className="rounded-md px-4 py-3">
+                <div className="flex items-center gap-2 text-base text-gray-600">
+                  <span className="font-mono leading-none font-bold text-gray-900">
+                    {formatDisplayValue(displayValue, renderValue)}
+                  </span>
+                  <span className="leading-none text-gray-500">
+                    {renderUnitSymbol(unit)}
+                  </span>
+                </div>
+              </ControlCard>
+            )}
+
+            {/* Series Toggle Controls */}
+            {normalizedSeries.length > 1 && (
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
+                  {normalizedSeries.map((series, index) => {
+                    const seriesColor =
+                      series.color ||
+                      defaultColors[index % defaultColors.length];
+                    const currentValue = series.newData?.current?.value;
+                    const formattedValue = formatDisplayValue(
+                      currentValue,
+                      renderValue,
+                    );
+
+                    const isLastVisible =
+                      visibleSeries[index] &&
+                      visibleSeries.filter((visible) => visible).length === 1;
+
+                    return (
+                      <TouchButton
+                        key={index}
+                        onClick={() => !isLastVisible && toggleSeries(index)}
+                        className={`rounded-md px-4 py-1.5 text-sm transition-all ${
+                          visibleSeries[index]
+                            ? "text-white shadow-md"
+                            : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                        } ${isLastVisible ? "cursor-not-allowed" : ""}`}
+                        style={{
+                          backgroundColor: visibleSeries[index]
+                            ? seriesColor
+                            : undefined,
+                        }}
+                        title={`${series.title || `Series ${index + 1}`}: ${formattedValue} ${renderUnitSymbol(unit) || ""}`}
+                      >
+                        <div className="flex flex-col items-center">
+                          <span className="text-xs font-medium">
+                            {series.title || `S${index + 1}`}
+                          </span>
+                          <span
+                            className={`font-mono leading-none font-bold ${
+                              visibleSeries[index]
+                                ? "text-white"
+                                : "text-gray-500"
+                            }`}
+                          >
+                            {formattedValue} {renderUnitSymbol(unit)}
+                          </span>
+                        </div>
+                      </TouchButton>
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>
-
-          {/* Series Toggle Controls */}
-          {normalizedSeries.length > 1 && (
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1">
-                {normalizedSeries.map((series, index) => {
-                  const seriesColor =
-                    series.color || defaultColors[index % defaultColors.length];
-                  const currentValue = series.newData?.current?.value;
-                  const formattedValue = formatDisplayValue(
-                    currentValue,
-                    renderValue,
-                  );
-
-                  const isLastVisible =
-                    visibleSeries[index] &&
-                    visibleSeries.filter((visible) => visible).length === 1;
-
-                  return (
-                    <TouchButton
-                      key={index}
-                      onClick={() => !isLastVisible && toggleSeries(index)}
-                      className={`rounded-md px-3 py-1 text-sm transition-all ${
-                        visibleSeries[index]
-                          ? "text-white shadow-md"
-                          : "bg-gray-100 text-gray-500 hover:bg-gray-200"
-                      } ${isLastVisible ? "cursor-not-allowed" : ""}`}
-                      style={{
-                        backgroundColor: visibleSeries[index]
-                          ? seriesColor
-                          : undefined,
-                      }}
-                      title={`${series.title || `Series ${index + 1}`}: ${formattedValue} ${renderUnitSymbol(unit) || ""}`}
-                    >
-                      <div className="flex flex-col items-center">
-                        <span className="text-xs font-medium">
-                          {series.title || `S${index + 1}`}
-                        </span>
-                        <span className="font-mono leading-none font-bold text-white">
-                          {formattedValue} {renderUnitSymbol(unit)}
-                        </span>
-                      </div>
-                    </TouchButton>
-                  );
-                })}
-              </div>
-            </div>
-          )}
         </div>
 
         <div className="-mt-2 px-6">

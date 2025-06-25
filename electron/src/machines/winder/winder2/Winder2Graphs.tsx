@@ -25,7 +25,7 @@ export function Winder2GraphsPage() {
   const syncHook = useGraphSync(30 * 60 * 1000, "winder2-group");
 
   return (
-    <Page className="pb-20">
+    <Page className="pb-27">
       <div className="flex flex-col gap-4">
         <div className="grid gap-4">
           <PullerSpeedGraph

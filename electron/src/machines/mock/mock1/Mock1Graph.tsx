@@ -101,7 +101,7 @@ export function Mock1GraphPage() {
   };
 
   return (
-    <Page className="pb-25">
+    <Page className="pb-27">
       <div className="flex flex-col gap-4">
         <AutoSyncedBigGraph
           syncHook={syncHook}
