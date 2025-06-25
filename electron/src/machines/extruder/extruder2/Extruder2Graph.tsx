@@ -68,7 +68,7 @@ export function Extruder2GraphsPage() {
 
   const temperatureConfig: GraphConfig = {
     ...baseConfig,
-    title: "Temperatures (Nozzle, Front, Back, Middle)",
+    title: "Temperatures",
     exportFilename: "temperatures_data",
     lines: [
       // Target temperature lines
@@ -151,7 +151,7 @@ export function Extruder2GraphsPage() {
 
   const powerConfig: GraphConfig = {
     ...baseConfig,
-    title: "Power Outputs (Nozzle, Front, Back, Middle)",
+    title: "Power Outputs",
     exportFilename: "power_data",
     colors: {
       primary: "#10b981",
@@ -229,7 +229,7 @@ export function Extruder2GraphsPage() {
           syncHook={syncHook}
           newData={temperatureData}
           config={temperatureConfig}
-          unit="deg"
+          unit="C"
           renderValue={(value) => value.toFixed(1)}
           graphId="combined-temperatures"
         />
