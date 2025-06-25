@@ -1,11 +1,17 @@
+// useBigGraphEffects.tsx
 /* eslint-disable react-compiler/react-compiler */
-import { useEffect, RefObject, useRef, useState, useCallback } from "react";
+import { useEffect, RefObject, useRef, useState } from "react";
 import uPlot from "uplot";
 import { seriesToUPlotData } from "@/lib/timeseries";
-import { BigGraphProps, DataSeries, SeriesData } from "./types";
+import {
+  BigGraphProps,
+  DataSeries,
+  SeriesData,
+  AnimationRefs,
+  HandlerRefs,
+} from "./types";
 import { GraphExportData } from "./excelExport";
-import { AnimationRefs, stopAnimations } from "./animation";
-import { HandlerRefs } from "./handlers";
+import { stopAnimations } from "./animation";
 import { createChart } from "./createChart";
 import { LiveModeHandlers } from "./liveMode";
 import { HistoricalModeHandlers } from "./historicalMode";
@@ -41,6 +47,7 @@ interface UseBigGraphEffectsProps {
   viewMode: "default" | "all" | "manual";
   isLiveMode: boolean;
   selectedTimeWindow: number | "all";
+  visibleSeries: boolean[]; // Added visible series state
 
   // State setters
   setSelectedTimeWindow: (value: number | "all") => void;
@@ -59,12 +66,7 @@ interface UseBigGraphEffectsProps {
     axis: string;
     background: string;
   };
-  updateYAxisScale: (
-    timestamps: number[],
-    values: number[],
-    xMin?: number,
-    xMax?: number,
-  ) => void;
+  updateYAxisScale: (xMin?: number, xMax?: number) => void; // Updated signature
   handleTimeWindowChangeInternal: (
     newTimeWindow: number | "all",
     isSync?: boolean,
@@ -107,6 +109,7 @@ export function useBigGraphEffects({
   viewMode,
   isLiveMode,
   selectedTimeWindow,
+  visibleSeries, // Added visible series
 
   setSelectedTimeWindow,
   setViewMode,
@@ -120,7 +123,6 @@ export function useBigGraphEffects({
   handleTimeWindowChangeInternal,
 }: UseBigGraphEffectsProps) {
   const [isChartCreated, setIsChartCreated] = useState(false);
-  const [isUserInteracting, setIsUserInteracting] = useState(false);
 
   // Sync state tracking
   const lastSyncStateRef = useRef({
@@ -130,40 +132,10 @@ export function useBigGraphEffects({
     xRange: syncGraph?.xRange,
   });
 
-  // Track user interaction state to prevent overriding manual changes
-  const lastInteractionTimeRef = useRef(0);
-
   // Get primary series for compatibility with existing logic
   const primarySeries = getPrimarySeries(newData);
 
-  // Check user interaction status
-  const checkUserInteraction = useCallback(() => {
-    const isInteracting =
-      handlerRefs.isDraggingRef.current ||
-      handlerRefs.isPinchingRef.current ||
-      handlerRefs.isUserZoomingRef.current;
-
-    if (isInteracting) {
-      setIsUserInteracting(true);
-      lastInteractionTimeRef.current = Date.now();
-    } else if (isUserInteracting) {
-      // User stopped interacting, add a grace period
-      const timeSinceLastInteraction =
-        Date.now() - lastInteractionTimeRef.current;
-      if (timeSinceLastInteraction >= 500) {
-        // 500ms grace period
-        setIsUserInteracting(false);
-      }
-    }
-  }, [handlerRefs, isUserInteracting]);
-
-  // Monitor handler refs to detect user interactions - ALWAYS runs
-  useEffect(() => {
-    const interval = setInterval(checkUserInteraction, 100);
-    return () => clearInterval(interval);
-  }, [checkUserInteraction]);
-
-  // Register/unregister this graph for Excel export functionality - ALWAYS runs
+  // Register/unregister this graph for Excel export functionality
   useEffect(() => {
     if (onRegisterForExport && primarySeries?.newData) {
       const getExportData = (): GraphExportData | null => {
@@ -195,7 +167,7 @@ export function useBigGraphEffects({
     onUnregisterFromExport,
   ]);
 
-  // Sync graph state with external sync props - ALWAYS runs
+  // Sync graph state with external sync props
   useEffect(() => {
     if (!syncGraph) return;
 
@@ -236,31 +208,25 @@ export function useBigGraphEffects({
       hasChanges = true;
     }
 
-    // Check for zoom range changes
+    // Check for zoom range changes - Updated to use new updateYAxisScale signature
     const xRangeChanged =
       syncGraph.xRange &&
       (!lastState.xRange ||
         syncGraph.xRange.min !== lastState.xRange.min ||
         syncGraph.xRange.max !== lastState.xRange.max);
 
-    if (xRangeChanged && uplotRef.current && primarySeries?.newData?.long) {
+    if (xRangeChanged && uplotRef.current) {
       uplotRef.current.batch(() => {
         uplotRef.current!.setScale("x", {
           min: syncGraph.xRange?.min ?? 0,
           max: syncGraph.xRange?.max ?? 0,
         });
 
-        if (primarySeries.newData?.long) {
-          const [timestamps, values] = seriesToUPlotData(
-            primarySeries.newData.long,
-          );
-          updateYAxisScale(
-            timestamps,
-            values,
-            syncGraph.xRange?.min ?? 0,
-            syncGraph.xRange?.max ?? 0,
-          );
-        }
+        // Updated to use new updateYAxisScale signature
+        updateYAxisScale(
+          syncGraph.xRange?.min ?? 0,
+          syncGraph.xRange?.max ?? 0,
+        );
       });
       manualScaleRef.current = {
         x: syncGraph.xRange ?? { min: 0, max: 1 },
@@ -293,20 +259,10 @@ export function useBigGraphEffects({
     syncGraph?.xRange?.max,
     historicalMode.switchToHistoricalMode,
     historicalMode.switchToLiveMode,
-    setSelectedTimeWindow,
-    handleTimeWindowChangeInternal,
-    setViewMode,
-    setIsLiveMode,
-    stopAnimations,
-    animationRefs,
-    lastProcessedCountRef,
-    uplotRef,
-    primarySeries?.newData?.long,
-    updateYAxisScale,
-    liveMode.processNewHistoricalData,
+    updateYAxisScale, // Added to dependencies
   ]);
 
-  // Create and initialize the uPlot chart when data becomes available - ALWAYS runs
+  // Create and initialize the uPlot chart when data becomes available
   useEffect(() => {
     if (!containerRef.current || !primarySeries?.newData?.long) {
       setIsChartCreated(false);
@@ -363,23 +319,13 @@ export function useBigGraphEffects({
     };
   }, [primarySeries?.newData?.long, containerRef.current]);
 
-  // Update chart data when new historical data arrives - ALWAYS runs
+  // Update chart data when new historical data arrives (live mode only)
   useEffect(() => {
-    // Early return with conditions, but hook always runs
-    if (
-      !isLiveMode ||
-      viewMode === "manual" ||
-      !isChartCreated ||
-      isUserInteracting
-    )
-      return;
+    if (!isLiveMode || viewMode === "manual" || !isChartCreated) return;
 
     // Add a delay to ensure chart is ready after mode switch
     const timeoutId = setTimeout(() => {
-      // Since we already checked the conditions above, we can simplify this
-      if (isLiveMode && !isUserInteracting) {
-        liveMode.processNewHistoricalData();
-      }
+      liveMode.processNewHistoricalData();
     }, 100);
 
     return () => clearTimeout(timeoutId);
@@ -390,21 +336,18 @@ export function useBigGraphEffects({
     selectedTimeWindow,
     isLiveMode,
     isChartCreated,
-    isUserInteracting,
     liveMode.processNewHistoricalData,
   ]);
 
-  // Update chart with real-time current data point - ALWAYS runs
+  // Update chart with real-time current data point (live mode only)
   useEffect(() => {
-    // Early return with conditions, but hook always runs
     if (
       !uplotRef.current ||
       !primarySeries?.newData?.current ||
       !isLiveMode ||
       !isChartCreated ||
       animationRefs.animationState.current.isAnimating ||
-      viewMode === "manual" ||
-      isUserInteracting
+      viewMode === "manual"
     )
       return;
 
@@ -416,10 +359,19 @@ export function useBigGraphEffects({
     config.lines,
     isLiveMode,
     isChartCreated,
-    isUserInteracting,
-    animationRefs.animationState,
     liveMode.updateLiveData,
-    uplotRef,
-    primarySeries?.newData?.current,
   ]);
+
+  // Update Y-axis scale when series visibility changes
+  useEffect(() => {
+    if (!uplotRef.current || !isChartCreated) return;
+
+    // Recalculate Y-axis scale based on currently visible series
+    const currentScale = uplotRef.current.scales.x;
+    if (currentScale?.min !== undefined && currentScale?.max !== undefined) {
+      updateYAxisScale(currentScale.min, currentScale.max);
+    } else {
+      updateYAxisScale(); // Recalculate for entire range
+    }
+  }, [visibleSeries, isChartCreated, updateYAxisScale]);
 }
