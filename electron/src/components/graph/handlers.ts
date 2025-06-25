@@ -28,6 +28,52 @@ export function createEventHandlers(
   } | null>,
   width: number,
 ) {
+  // IMPROVED: Add debouncing for callback invocations
+  const callbackTimeouts = {
+    zoom: null as NodeJS.Timeout | null,
+    viewMode: null as NodeJS.Timeout | null,
+  };
+
+  const debouncedCallbacks = {
+    onZoomChange: (range: { min: number; max: number }) => {
+      if (callbackTimeouts.zoom) clearTimeout(callbackTimeouts.zoom);
+      callbackTimeouts.zoom = setTimeout(() => {
+        callbacks.onZoomChange?.(graphId, range);
+      }, 16); // ~60fps
+    },
+    onViewModeChange: (mode: "default" | "all" | "manual", isLive: boolean) => {
+      if (callbackTimeouts.viewMode) clearTimeout(callbackTimeouts.viewMode);
+      callbackTimeouts.viewMode = setTimeout(() => {
+        callbacks.onViewModeChange?.(graphId, mode, isLive);
+      }, 16);
+    },
+  };
+
+  const updateScaleAndSync = (newMin: number, newMax: number) => {
+    if (!uplotRef.current) return;
+
+    // Update uPlot scale
+    uplotRef.current.setScale("x", { min: newMin, max: newMax });
+    callbacks.updateYAxisScale(newMin, newMax);
+
+    // Update manual scale reference
+    manualScaleRef.current = {
+      x: { min: newMin, max: newMax },
+      y: {
+        min: uplotRef.current.scales.y?.min ?? 0,
+        max: uplotRef.current.scales.y?.max ?? 1,
+      },
+    };
+
+    // Update local state immediately
+    callbacks.setViewMode("manual");
+    callbacks.setIsLiveMode(false);
+
+    // Sync with other graphs (debounced)
+    debouncedCallbacks.onZoomChange({ min: newMin, max: newMax });
+    debouncedCallbacks.onViewModeChange("manual", false);
+  };
+
   const handleTouchStart = (e: TouchEvent) => {
     const touch = e.touches[0];
     handlerRefs.touchStartRef.current = {
@@ -107,30 +153,7 @@ export function createEventHandlers(
             const newMin = xScale.min + timeDelta;
             const newMax = xScale.max + timeDelta;
 
-            uplotRef.current.setScale("x", { min: newMin, max: newMax });
-            callbacks.updateYAxisScale(newMin, newMax);
-
-            manualScaleRef.current = {
-              x: { min: newMin, max: newMax },
-              y: {
-                min: uplotRef.current.scales.y?.min ?? 0,
-                max: uplotRef.current.scales.y?.max ?? 1,
-              },
-            };
-
-            callbacks.setViewMode("manual");
-            callbacks.setIsLiveMode(false);
-
-            if (callbacks.onZoomChange) {
-              callbacks.onZoomChange(graphId, {
-                min: newMin,
-                max: newMax,
-              });
-            }
-
-            if (callbacks.onViewModeChange) {
-              callbacks.onViewModeChange(graphId, "manual", false);
-            }
+            updateScaleAndSync(newMin, newMax);
           }
         }
       }
@@ -171,30 +194,7 @@ export function createEventHandlers(
 
             const newMin = centerTime - newRange * leftRatio;
             const newMax = centerTime + newRange * rightRatio;
-
-            uplotRef.current.setScale("x", { min: newMin, max: newMax });
-            callbacks.updateYAxisScale(newMin, newMax);
-
-            manualScaleRef.current = {
-              x: { min: newMin, max: newMax },
-              y: {
-                min: uplotRef.current.scales.y?.min ?? 0,
-                max: uplotRef.current.scales.y?.max ?? 1,
-              },
-            };
-            callbacks.setViewMode("manual");
-            callbacks.setIsLiveMode(false);
-
-            if (callbacks.onZoomChange) {
-              callbacks.onZoomChange(graphId, {
-                min: newMin,
-                max: newMax,
-              });
-            }
-
-            if (callbacks.onViewModeChange) {
-              callbacks.onViewModeChange(graphId, "manual", false);
-            }
+            updateScaleAndSync(newMin, newMax);
           }
         }
       }
@@ -204,35 +204,38 @@ export function createEventHandlers(
   };
 
   const handleTouchEnd = (e: TouchEvent) => {
-    if (e.touches.length === 0) {
-      handlerRefs.isDraggingRef.current = false;
-      handlerRefs.isPinchingRef.current = false;
-      handlerRefs.lastDragXRef.current = null;
-      handlerRefs.lastPinchDistanceRef.current = null;
-      handlerRefs.pinchCenterRef.current = null;
-      handlerRefs.touchStartRef.current = null;
-      handlerRefs.touchDirectionRef.current = "unknown";
-    } else if (e.touches.length === 1 && handlerRefs.isPinchingRef.current) {
-      handlerRefs.isPinchingRef.current = false;
-      handlerRefs.lastPinchDistanceRef.current = null;
-      handlerRefs.pinchCenterRef.current = null;
+    // IMPROVED: Add small delay before cleanup to ensure sync completes
+    setTimeout(() => {
+      if (e.touches.length === 0) {
+        handlerRefs.isDraggingRef.current = false;
+        handlerRefs.isPinchingRef.current = false;
+        handlerRefs.lastDragXRef.current = null;
+        handlerRefs.lastPinchDistanceRef.current = null;
+        handlerRefs.pinchCenterRef.current = null;
+        handlerRefs.touchStartRef.current = null;
+        handlerRefs.touchDirectionRef.current = "unknown";
+      } else if (e.touches.length === 1 && handlerRefs.isPinchingRef.current) {
+        handlerRefs.isPinchingRef.current = false;
+        handlerRefs.lastPinchDistanceRef.current = null;
+        handlerRefs.pinchCenterRef.current = null;
 
-      const touch = e.touches[0];
-      handlerRefs.touchStartRef.current = {
-        x: touch.clientX,
-        y: touch.clientY,
-        time: Date.now(),
-      };
-      handlerRefs.touchDirectionRef.current = "unknown";
-      handlerRefs.isDraggingRef.current = false;
-    }
+        const touch = e.touches[0];
+        handlerRefs.touchStartRef.current = {
+          x: touch.clientX,
+          y: touch.clientY,
+          time: Date.now(),
+        };
+        handlerRefs.touchDirectionRef.current = "unknown";
+        handlerRefs.isDraggingRef.current = false;
+      }
 
-    if (
-      handlerRefs.touchDirectionRef.current === "horizontal" &&
-      handlerRefs.isDraggingRef.current
-    ) {
-      e.preventDefault();
-    }
+      if (
+        handlerRefs.touchDirectionRef.current === "horizontal" &&
+        handlerRefs.isDraggingRef.current
+      ) {
+        e.preventDefault();
+      }
+    }, 50); // Small delay to ensure sync completes
   };
 
   const handleMouseDown = (e: MouseEvent) => {
@@ -245,12 +248,19 @@ export function createEventHandlers(
     e.preventDefault();
   };
 
+  // IMPROVED: Cleanup function to clear timeouts
+  const cleanup = () => {
+    if (callbackTimeouts.zoom) clearTimeout(callbackTimeouts.zoom);
+    if (callbackTimeouts.viewMode) clearTimeout(callbackTimeouts.viewMode);
+  };
+
   return {
     handleTouchStart,
     handleTouchMove,
     handleTouchEnd,
     handleMouseDown,
     handleWheel,
+    cleanup, // Export cleanup function
   };
 }
 
@@ -281,5 +291,7 @@ export function attachEventHandlers(
     containerElement.removeEventListener("touchend", handlers.handleTouchEnd);
     containerElement.removeEventListener("mousedown", handlers.handleMouseDown);
     containerElement.removeEventListener("wheel", handlers.handleWheel);
+
+    handlers.cleanup();
   };
 }
