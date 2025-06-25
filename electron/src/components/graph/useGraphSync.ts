@@ -22,28 +22,37 @@ export function useGraphSync(
     new Map(),
   );
 
-  // IMPROVED: Better synchronization tracking
+  // IMPROVED: Better synchronization tracking with request ID
   const syncStateRef = useRef({
     lastChangeSource: null as string | null,
     isProcessingChange: false,
     pendingChanges: new Set<string>(),
+    currentRequestId: 0,
   });
 
-  // IMPROVED: Debounced cleanup for better performance
-  const cleanupTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // IMPROVED: Separate timeouts for different operations
+  const timeoutRefs = useRef({
+    cleanup: null as NodeJS.Timeout | null,
+    throttledZoom: null as NodeJS.Timeout | null,
+  });
+
+  // IMPROVED: Throttling state using ref instead of function property
+  const throttleStateRef = useRef({
+    lastCall: 0,
+  });
 
   const clearChangeSource = useCallback(() => {
-    if (cleanupTimeoutRef.current) {
-      clearTimeout(cleanupTimeoutRef.current);
+    if (timeoutRefs.current.cleanup) {
+      clearTimeout(timeoutRefs.current.cleanup);
     }
-    cleanupTimeoutRef.current = setTimeout(() => {
+    timeoutRefs.current.cleanup = setTimeout(() => {
       syncStateRef.current.lastChangeSource = null;
       syncStateRef.current.isProcessingChange = false;
       syncStateRef.current.pendingChanges.clear();
-    }, 150); // Slightly longer timeout for complex operations
+    }, 100);
   }, []);
 
-  // IMPROVED: Atomic state updates to prevent race conditions
+  // IMPROVED: Atomic state updates with request ID tracking
   const updateSyncState = useCallback(
     (
       graphId: string,
@@ -55,10 +64,15 @@ export function useGraphSync(
         clearHistoricalFreeze?: boolean;
         setHistoricalFreeze?: boolean;
       },
+      requestId?: number,
     ) => {
-      // Prevent circular updates
+      // Generate request ID if not provided
+      const currentRequestId =
+        requestId ?? ++syncStateRef.current.currentRequestId;
+
+      // Prevent circular updates and stale requests
       if (syncStateRef.current.lastChangeSource === graphId) return;
-      if (syncStateRef.current.isProcessingChange) {
+      if (syncStateRef.current.isProcessingChange && !requestId) {
         syncStateRef.current.pendingChanges.add(graphId);
         return;
       }
@@ -66,20 +80,28 @@ export function useGraphSync(
       syncStateRef.current.isProcessingChange = true;
       syncStateRef.current.lastChangeSource = graphId;
 
-      // Batch all state updates together
-      if (updates.timeWindow !== undefined) setTimeWindow(updates.timeWindow);
-      if (updates.viewMode !== undefined) setViewMode(updates.viewMode);
-      if (updates.isLiveMode !== undefined) setIsLiveMode(updates.isLiveMode);
-      if (updates.xRange !== undefined) setXRange(updates.xRange);
+      // Use requestAnimationFrame to ensure state updates happen in next frame
+      requestAnimationFrame(() => {
+        // Check if this request is still valid
+        if (currentRequestId < syncStateRef.current.currentRequestId - 1) {
+          return; // Skip stale request
+        }
 
-      // Handle historical freeze timestamp
-      if (updates.clearHistoricalFreeze) {
-        historicalFreezeTimestampRef.current = null;
-      } else if (updates.setHistoricalFreeze) {
-        historicalFreezeTimestampRef.current = Date.now();
-      }
+        // Batch all state updates together
+        if (updates.timeWindow !== undefined) setTimeWindow(updates.timeWindow);
+        if (updates.viewMode !== undefined) setViewMode(updates.viewMode);
+        if (updates.isLiveMode !== undefined) setIsLiveMode(updates.isLiveMode);
+        if (updates.xRange !== undefined) setXRange(updates.xRange);
 
-      clearChangeSource();
+        // Handle historical freeze timestamp
+        if (updates.clearHistoricalFreeze) {
+          historicalFreezeTimestampRef.current = null;
+        } else if (updates.setHistoricalFreeze) {
+          historicalFreezeTimestampRef.current = Date.now();
+        }
+
+        clearChangeSource();
+      });
     },
     [clearChangeSource],
   );
@@ -103,7 +125,6 @@ export function useGraphSync(
     exportGraphsToExcel(graphDataRef.current, exportGroupId || "synced-graphs");
   }, [exportGroupId]);
 
-  // IMPROVED: More robust handlers
   const handleTimeWindowChange = useCallback(
     (graphId: string, newTimeWindow: number | "all") => {
       updateSyncState(graphId, {
@@ -132,7 +153,7 @@ export function useGraphSync(
     [updateSyncState],
   );
 
-  // IMPROVED: Better zoom handling for drag operations
+  // IMPROVED: Immediate zoom handling for better responsiveness
   const handleZoomChange = useCallback(
     (graphId: string, newXRange: { min: number; max: number }) => {
       updateSyncState(graphId, {
@@ -145,17 +166,28 @@ export function useGraphSync(
     [updateSyncState],
   );
 
-  // IMPROVED: Throttled zoom updates for better performance during dragging
-  const throttledZoomRef = useRef<NodeJS.Timeout | null>(null);
+  // IMPROVED: Better throttling with immediate first call using ref
   const handleZoomChangeThrottled = useCallback(
     (graphId: string, newXRange: { min: number; max: number }) => {
-      if (throttledZoomRef.current) {
-        clearTimeout(throttledZoomRef.current);
+      // Clear existing throttled call
+      if (timeoutRefs.current.throttledZoom) {
+        clearTimeout(timeoutRefs.current.throttledZoom);
       }
 
-      throttledZoomRef.current = setTimeout(() => {
+      // For the first call or if enough time has passed, execute immediately
+      const now = Date.now();
+      const lastCall = throttleStateRef.current.lastCall;
+
+      if (now - lastCall > 100) {
         handleZoomChange(graphId, newXRange);
-      }, 50); // Throttle zoom updates to every 50ms during rapid changes
+        throttleStateRef.current.lastCall = now;
+      } else {
+        // Throttle subsequent calls
+        timeoutRefs.current.throttledZoom = setTimeout(() => {
+          handleZoomChange(graphId, newXRange);
+          throttleStateRef.current.lastCall = Date.now();
+        }, 50);
+      }
     },
     [handleZoomChange],
   );
@@ -198,7 +230,7 @@ export function useGraphSync(
     historicalFreezeTimestamp: historicalFreezeTimestampRef.current,
     onTimeWindowChange: handleTimeWindowChange,
     onViewModeChange: handleViewModeChange,
-    onZoomChange: handleZoomChangeThrottled, // Use throttled version
+    onZoomChange: handleZoomChangeThrottled,
   };
 
   const controlProps = {
