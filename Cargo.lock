@@ -592,6 +592,7 @@ dependencies = [
  "serialport",
  "smol",
  "socketioxide",
+ "textplots",
  "tracing",
  "uom",
 ]

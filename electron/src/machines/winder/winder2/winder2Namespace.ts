@@ -133,6 +133,20 @@ export const tensionArmStateEventDataSchema = z.object({
   zeroed: z.boolean(),
 });
 
+/**
+ * Spool speed controller regulation mode enum
+ */
+export const spoolRegulationModeSchema = z.enum(["Adaptive", "MinMax"]);
+
+/**
+ * Spool speed controller state event schema
+ */
+export const spoolSpeedControllerStateEventDataSchema = z.object({
+  regulation_mode: spoolRegulationModeSchema,
+  minmax_min_speed: z.number(),
+  minmax_max_speed: z.number(),
+});
+
 // ========== Event Schemas with Wrappers ==========
 
 export const traversePositionEventSchema = eventSchema(
@@ -158,6 +172,9 @@ export const tensionArmAngleEventSchema = eventSchema(
 export const tensionArmStateEventSchema = eventSchema(
   tensionArmStateEventDataSchema,
 );
+export const spoolSpeedControllerStateEventSchema = eventSchema(
+  spoolSpeedControllerStateEventDataSchema,
+);
 
 // ========== Type Inferences ==========
 
@@ -178,6 +195,10 @@ export type MeasurementsTensionArmEvent = z.infer<
   typeof tensionArmAngleEventSchema
 >;
 export type TensionArmStateEvent = z.infer<typeof tensionArmStateEventSchema>;
+export type SpoolRegulationMode = z.infer<typeof spoolRegulationModeSchema>;
+export type SpoolSpeedControllerStateEvent = z.infer<
+  typeof spoolSpeedControllerStateEventSchema
+>;
 
 export type Winder2NamespaceStore = {
   // State events (latest only)
@@ -186,6 +207,7 @@ export type Winder2NamespaceStore = {
   autostopState: AutostopStateEvent | null;
   modeState: ModeStateEvent | null;
   tensionArmState: TensionArmStateEvent | null;
+  spoolSpeedControllerState: SpoolSpeedControllerStateEvent | null;
 
   // Metric events (cached for 1 hour)
   traversePosition: TimeSeries;
@@ -231,6 +253,7 @@ export const createWinder2NamespaceStore =
         autostopState: null,
         modeState: null,
         tensionArmState: null,
+        spoolSpeedControllerState: null,
 
         // Metric events (cached for 1 hour)
         traversePosition,
@@ -296,6 +319,12 @@ export function winder2MessageHandler(
         updateStore((state) => ({
           ...state,
           tensionArmState: event as TensionArmStateEvent,
+        }));
+      } else if (eventName === "SpoolSpeedControllerStateEvent") {
+        console.log("SpoolSpeedControllerStateEvent", event);
+        updateStore((state) => ({
+          ...state,
+          spoolSpeedControllerState: event as SpoolSpeedControllerStateEvent,
         }));
       }
       // Metric events (keep for 1 hour)
