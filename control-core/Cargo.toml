@@ -22,3 +22,4 @@ tracing = "0.1.41"
 erased-serde = "0.4.6"
 [dev-dependencies]
 approx = "0.5.1"
+textplots = "0.8"

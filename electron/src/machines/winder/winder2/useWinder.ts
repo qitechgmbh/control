@@ -10,6 +10,8 @@ import {
   PullerStateEvent,
   TensionArmStateEvent,
   ModeStateEvent,
+  SpoolRegulationMode,
+  SpoolSpeedControllerStateEvent,
   useWinder2Namespace,
 } from "./winder2Namespace";
 import { useEffect, useMemo } from "react";
@@ -446,6 +448,109 @@ function useMode(machine_identification_unique: MachineIdentificationUnique): {
   };
 }
 
+function useSpoolSpeedController(
+  machine_identification_unique: MachineIdentificationUnique,
+): {
+  spoolSpeedControllerState: SpoolSpeedControllerStateEvent | null;
+  setRegulationMode: (mode: SpoolRegulationMode) => void;
+  setMinMaxMinSpeed: (speed: number) => void;
+  setMinMaxMaxSpeed: (speed: number) => void;
+  spoolControllerIsLoading: boolean;
+  spoolControllerIsDisabled: boolean;
+} {
+  const spoolStateOptimistic =
+    useStateOptimistic<SpoolSpeedControllerStateEvent["data"]>();
+
+  // Write path - Set regulation mode
+  const regulationSchema = z.object({
+    SpoolSetRegulationMode: z.enum(["Adaptive", "MinMax"]),
+  });
+  const { request: requestRegulation } = useMachineMutation(regulationSchema);
+  const setRegulationMode = async (mode: SpoolRegulationMode) => {
+    if (spoolStateOptimistic.value) {
+      spoolStateOptimistic.setOptimistic({
+        ...spoolStateOptimistic.value,
+        regulation_mode: mode,
+      });
+    }
+    requestRegulation({
+      machine_identification_unique,
+      data: { SpoolSetRegulationMode: mode },
+    })
+      .then((response) => {
+        if (!response.success) spoolStateOptimistic.resetToReal();
+      })
+      .catch(() => spoolStateOptimistic.resetToReal());
+  };
+
+  // Write path - Set minmax min speed
+  const minSpeedSchema = z.object({
+    SpoolSetMinMaxMinSpeed: z.number(),
+  });
+  const { request: requestMinSpeed } = useMachineMutation(minSpeedSchema);
+  const setMinMaxMinSpeed = async (speed: number) => {
+    if (spoolStateOptimistic.value) {
+      spoolStateOptimistic.setOptimistic({
+        ...spoolStateOptimistic.value,
+        minmax_min_speed: speed,
+      });
+    }
+    requestMinSpeed({
+      machine_identification_unique,
+      data: { SpoolSetMinMaxMinSpeed: speed },
+    })
+      .then((response) => {
+        if (!response.success) spoolStateOptimistic.resetToReal();
+      })
+      .catch(() => spoolStateOptimistic.resetToReal());
+  };
+
+  // Write path - Set minmax max speed
+  const maxSpeedSchema = z.object({
+    SpoolSetMinMaxMaxSpeed: z.number(),
+  });
+  const { request: requestMaxSpeed } = useMachineMutation(maxSpeedSchema);
+  const setMinMaxMaxSpeed = async (speed: number) => {
+    if (spoolStateOptimistic.value) {
+      spoolStateOptimistic.setOptimistic({
+        ...spoolStateOptimistic.value,
+        minmax_max_speed: speed,
+      });
+    }
+    requestMaxSpeed({
+      machine_identification_unique,
+      data: { SpoolSetMinMaxMaxSpeed: speed },
+    })
+      .then((response) => {
+        if (!response.success) spoolStateOptimistic.resetToReal();
+      })
+      .catch(() => spoolStateOptimistic.resetToReal());
+  };
+
+  // Read path
+  const { spoolSpeedControllerState } = useWinder2Namespace(
+    machine_identification_unique,
+  );
+
+  // Update real values from server
+  useEffect(() => {
+    if (spoolSpeedControllerState?.data) {
+      spoolStateOptimistic.setReal(spoolSpeedControllerState.data);
+    }
+  }, [spoolSpeedControllerState]);
+
+  return {
+    spoolSpeedControllerState,
+    setRegulationMode,
+    setMinMaxMinSpeed,
+    setMinMaxMaxSpeed,
+    spoolControllerIsLoading:
+      spoolStateOptimistic.isOptimistic || !spoolStateOptimistic.isInitialized,
+    spoolControllerIsDisabled:
+      spoolStateOptimistic.isOptimistic || !spoolStateOptimistic.isInitialized,
+  };
+}
+
 export function useWinder2() {
   const { serial: serialString } = winder2SerialRoute.useParams();
 
@@ -480,6 +585,7 @@ export function useWinder2() {
   const puller = usePuller(machineIdentification);
   const mode = useMode(machineIdentification);
   const traverse = useTraverse(machineIdentification);
+  const spoolSpeedController = useSpoolSpeedController(machineIdentification);
 
   return {
     ...laserpointerControls,
@@ -488,5 +594,6 @@ export function useWinder2() {
     ...spool,
     ...puller,
     ...traverse,
+    ...spoolSpeedController,
   };
 }

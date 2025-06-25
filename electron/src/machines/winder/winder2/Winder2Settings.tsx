@@ -7,6 +7,7 @@ import { useWinder2 } from "./useWinder";
 import { roundToDecimals } from "@/lib/decimal";
 import { Label } from "@/control/Label";
 import { SelectionGroupBoolean } from "@/control/SelectionGroup";
+import { SelectionGroup } from "@/control/SelectionGroup";
 
 export function Winder2SettingPage() {
   const {
@@ -17,7 +18,14 @@ export function Winder2SettingPage() {
     pullerSetForward,
     pullerStateIsDisabled,
     pullerStateIsLoading,
+    spoolSpeedControllerState,
+    setRegulationMode,
+    setMinMaxMinSpeed,
+    setMinMaxMaxSpeed,
+    spoolControllerIsDisabled,
+    spoolControllerIsLoading,
   } = useWinder2();
+
   return (
     <Page>
       <ControlGrid>
@@ -48,6 +56,60 @@ export function Winder2SettingPage() {
               onChange={(value) => traverseSetPadding(value)}
             />
           </Label>
+        </ControlCard>
+
+        <ControlCard title="Spool">
+          <Label label="Speed Algorithm">
+            <SelectionGroup
+              value={spoolSpeedControllerState?.data.regulation_mode}
+              disabled={spoolControllerIsDisabled}
+              loading={spoolControllerIsLoading}
+              options={{
+                MinMax: {
+                  children: "Min/Max",
+                  icon: "lu:ArrowUpDown",
+                },
+                Adaptive: {
+                  children: "Adaptive",
+                  icon: "lu:Brain",
+                },
+              }}
+              onChange={(value) =>
+                setRegulationMode(value as "Adaptive" | "MinMax")
+              }
+            />
+          </Label>
+
+          {spoolSpeedControllerState?.data.regulation_mode === "MinMax" && (
+            <>
+              <Label label="Minimum Speed">
+                <EditValue
+                  value={spoolSpeedControllerState?.data.minmax_min_speed}
+                  title={"Minimum Speed"}
+                  unit="rpm"
+                  step={10}
+                  min={0}
+                  max={600}
+                  defaultValue={50}
+                  renderValue={(value) => roundToDecimals(value, 0)}
+                  onChange={(value) => setMinMaxMinSpeed(value)}
+                />
+              </Label>
+              <Label label="Maximum Speed">
+                <EditValue
+                  value={spoolSpeedControllerState?.data.minmax_max_speed}
+                  title={"Maximum Speed"}
+                  unit="rpm"
+                  step={10}
+                  min={0}
+                  max={600}
+                  defaultValue={150}
+                  renderValue={(value) => roundToDecimals(value, 0)}
+                  onChange={(value) => setMinMaxMaxSpeed(value)}
+                />
+              </Label>
+            </>
+          )}
         </ControlCard>
 
         <ControlCard title="Puller">
