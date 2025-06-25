@@ -51,7 +51,7 @@ export function BigGraph({
 
   // Track when visibility changes to force chart recreation
   const [visibilityVersion, setVisibilityVersion] = useState(0);
-  const [isRecreatingChart, setIsRecreatingChart] = useState(false);
+  const [, setIsRecreatingChart] = useState(false);
 
   // Initialize state from props or defaults
   const [viewMode, setViewMode] = useState<"default" | "all" | "manual">(
