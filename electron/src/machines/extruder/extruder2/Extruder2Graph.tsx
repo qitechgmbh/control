@@ -2,7 +2,6 @@ import { Page } from "@/components/Page";
 import {
   AutoSyncedBigGraph,
   SyncedFloatingControlPanel,
-  SyncedGraphControls,
   useGraphSync,
   type GraphConfig,
 } from "@/components/graph";
@@ -63,7 +62,7 @@ export function Extruder2GraphsPage() {
     {
       newData: middleTemperature,
       title: "Middle",
-      color: "#ffffff",
+      color: "#8b5cf6",
     },
   ].filter((item) => item.newData); // Filter out any null/undefined data
 
@@ -112,7 +111,7 @@ export function Extruder2GraphsPage() {
               type: "target" as const,
               value: middleHeatingState.target_temperature,
               label: "Middle Target",
-              color: "#ffffff",
+              color: "#8b5cf6",
               show: true,
             },
           ]
@@ -146,7 +145,7 @@ export function Extruder2GraphsPage() {
     {
       newData: middlePower,
       title: "Middle",
-      color: "#ffffff",
+      color: "#8b5cf6",
     },
   ].filter((item) => item.newData); // Filter out any null/undefined data
 

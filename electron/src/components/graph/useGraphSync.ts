@@ -17,18 +17,73 @@ export function useGraphSync(
     { min: number; max: number } | undefined
   >();
 
-  // ADDED: Track historical freeze timestamp at sync level
   const historicalFreezeTimestampRef = useRef<number | null>(null);
-
-  // Store graph data for export
   const graphDataRef = useRef<Map<string, () => GraphExportData | null>>(
     new Map(),
   );
 
-  // Track which graph initiated the change to prevent loops
-  const lastChangeSourceRef = useRef<string | null>(null);
+  // IMPROVED: Better synchronization tracking
+  const syncStateRef = useRef({
+    lastChangeSource: null as string | null,
+    isProcessingChange: false,
+    pendingChanges: new Set<string>(),
+  });
 
-  // Register graph for export
+  // IMPROVED: Debounced cleanup for better performance
+  const cleanupTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const clearChangeSource = useCallback(() => {
+    if (cleanupTimeoutRef.current) {
+      clearTimeout(cleanupTimeoutRef.current);
+    }
+    cleanupTimeoutRef.current = setTimeout(() => {
+      syncStateRef.current.lastChangeSource = null;
+      syncStateRef.current.isProcessingChange = false;
+      syncStateRef.current.pendingChanges.clear();
+    }, 150); // Slightly longer timeout for complex operations
+  }, []);
+
+  // IMPROVED: Atomic state updates to prevent race conditions
+  const updateSyncState = useCallback(
+    (
+      graphId: string,
+      updates: {
+        timeWindow?: number | "all";
+        viewMode?: "default" | "all" | "manual";
+        isLiveMode?: boolean;
+        xRange?: { min: number; max: number } | undefined;
+        clearHistoricalFreeze?: boolean;
+        setHistoricalFreeze?: boolean;
+      },
+    ) => {
+      // Prevent circular updates
+      if (syncStateRef.current.lastChangeSource === graphId) return;
+      if (syncStateRef.current.isProcessingChange) {
+        syncStateRef.current.pendingChanges.add(graphId);
+        return;
+      }
+
+      syncStateRef.current.isProcessingChange = true;
+      syncStateRef.current.lastChangeSource = graphId;
+
+      // Batch all state updates together
+      if (updates.timeWindow !== undefined) setTimeWindow(updates.timeWindow);
+      if (updates.viewMode !== undefined) setViewMode(updates.viewMode);
+      if (updates.isLiveMode !== undefined) setIsLiveMode(updates.isLiveMode);
+      if (updates.xRange !== undefined) setXRange(updates.xRange);
+
+      // Handle historical freeze timestamp
+      if (updates.clearHistoricalFreeze) {
+        historicalFreezeTimestampRef.current = null;
+      } else if (updates.setHistoricalFreeze) {
+        historicalFreezeTimestampRef.current = Date.now();
+      }
+
+      clearChangeSource();
+    },
+    [clearChangeSource],
+  );
+
   const registerGraphForExport = useCallback(
     (graphId: string, getDataFn: () => GraphExportData | null) => {
       graphDataRef.current.set(graphId, getDataFn);
@@ -36,48 +91,30 @@ export function useGraphSync(
     [],
   );
 
-  // Unregister graph from export
   const unregisterGraphFromExport = useCallback((graphId: string) => {
     graphDataRef.current.delete(graphId);
   }, []);
 
-  // Export all graphs
   const handleExport = useCallback(() => {
     if (graphDataRef.current.size === 0) {
       console.warn("No graphs registered for export");
       return;
     }
-
     exportGraphsToExcel(graphDataRef.current, exportGroupId || "synced-graphs");
   }, [exportGroupId]);
 
-  // FIXED: Sync callbacks with historical freeze timestamp logic
+  // IMPROVED: More robust handlers
   const handleTimeWindowChange = useCallback(
     (graphId: string, newTimeWindow: number | "all") => {
-      if (lastChangeSourceRef.current === graphId) return;
-
-      lastChangeSourceRef.current = graphId;
-      setTimeWindow(newTimeWindow);
-
-      if (newTimeWindow === "all") {
-        setViewMode("all");
-        setIsLiveMode(true);
-        // Clear historical freeze when switching to "all"
-        historicalFreezeTimestampRef.current = null;
-      } else {
-        setViewMode("default");
-        // Don't change isLiveMode - preserve current mode
-        // If in historical mode, keep the frozen timestamp
-      }
-
-      setXRange(undefined);
-
-      // Clear the source after a brief delay
-      setTimeout(() => {
-        lastChangeSourceRef.current = null;
-      }, 100);
+      updateSyncState(graphId, {
+        timeWindow: newTimeWindow,
+        viewMode: newTimeWindow === "all" ? "all" : "default",
+        isLiveMode: newTimeWindow === "all" ? true : isLiveMode,
+        xRange: undefined,
+        clearHistoricalFreeze: newTimeWindow === "all",
+      });
     },
-    [],
+    [updateSyncState, isLiveMode],
   );
 
   const handleViewModeChange = useCallback(
@@ -86,95 +123,84 @@ export function useGraphSync(
       newViewMode: "default" | "all" | "manual",
       newIsLiveMode: boolean,
     ) => {
-      if (lastChangeSourceRef.current === graphId) return;
-
-      lastChangeSourceRef.current = graphId;
-      setViewMode(newViewMode);
-      setIsLiveMode(newIsLiveMode);
-
-      // ADDED: Clear historical freeze when switching to live mode
-      if (newIsLiveMode) {
-        historicalFreezeTimestampRef.current = null;
-      }
-
-      setTimeout(() => {
-        lastChangeSourceRef.current = null;
-      }, 100);
+      updateSyncState(graphId, {
+        viewMode: newViewMode,
+        isLiveMode: newIsLiveMode,
+        clearHistoricalFreeze: newIsLiveMode,
+      });
     },
-    [],
+    [updateSyncState],
   );
 
+  // IMPROVED: Better zoom handling for drag operations
   const handleZoomChange = useCallback(
     (graphId: string, newXRange: { min: number; max: number }) => {
-      if (lastChangeSourceRef.current === graphId) return;
-
-      lastChangeSourceRef.current = graphId;
-      setXRange(newXRange);
-      setViewMode("manual");
-      setIsLiveMode(false);
-
-      // ADDED: Capture freeze timestamp when manually zooming (entering historical mode)
-      if (historicalFreezeTimestampRef.current === null) {
-        historicalFreezeTimestampRef.current = Date.now();
-      }
-
-      setTimeout(() => {
-        lastChangeSourceRef.current = null;
-      }, 100);
+      updateSyncState(graphId, {
+        xRange: newXRange,
+        viewMode: "manual",
+        isLiveMode: false,
+        setHistoricalFreeze: historicalFreezeTimestampRef.current === null,
+      });
     },
-    [],
+    [updateSyncState],
   );
 
-  // Control handlers
+  // IMPROVED: Throttled zoom updates for better performance during dragging
+  const throttledZoomRef = useRef<NodeJS.Timeout | null>(null);
+  const handleZoomChangeThrottled = useCallback(
+    (graphId: string, newXRange: { min: number; max: number }) => {
+      if (throttledZoomRef.current) {
+        clearTimeout(throttledZoomRef.current);
+      }
+
+      throttledZoomRef.current = setTimeout(() => {
+        handleZoomChange(graphId, newXRange);
+      }, 50); // Throttle zoom updates to every 50ms during rapid changes
+    },
+    [handleZoomChange],
+  );
+
   const handleSwitchToLive = useCallback(() => {
-    setIsLiveMode(true);
-    setViewMode(timeWindow === "all" ? "all" : "default");
-    setXRange(undefined);
-    // ADDED: Clear historical freeze when switching to live
-    historicalFreezeTimestampRef.current = null;
-  }, [timeWindow]);
+    updateSyncState("control", {
+      isLiveMode: true,
+      viewMode: timeWindow === "all" ? "all" : "default",
+      xRange: undefined,
+      clearHistoricalFreeze: true,
+    });
+  }, [updateSyncState, timeWindow]);
 
   const handleSwitchToHistorical = useCallback(() => {
-    setIsLiveMode(false);
-    setViewMode("manual");
-    // ADDED: Capture freeze timestamp when switching to historical
-    historicalFreezeTimestampRef.current = Date.now();
-  }, []);
+    updateSyncState("control", {
+      isLiveMode: false,
+      viewMode: "manual",
+      setHistoricalFreeze: true,
+    });
+  }, [updateSyncState]);
 
   const handleControlTimeWindowChange = useCallback(
     (newTimeWindow: number | "all") => {
-      setTimeWindow(newTimeWindow);
-
-      if (newTimeWindow === "all") {
-        setViewMode("all");
-        setIsLiveMode(true);
-        // Clear historical freeze when switching to "all"
-        historicalFreezeTimestampRef.current = null;
-      } else {
-        setViewMode("default");
-        // Don't automatically switch to live mode for specific time windows
-        // Preserve current mode (live or historical)
-      }
-
-      setXRange(undefined);
+      updateSyncState("control", {
+        timeWindow: newTimeWindow,
+        viewMode: newTimeWindow === "all" ? "all" : "default",
+        isLiveMode: newTimeWindow === "all" ? true : isLiveMode,
+        xRange: undefined,
+        clearHistoricalFreeze: newTimeWindow === "all",
+      });
     },
-    [],
+    [updateSyncState, isLiveMode],
   );
 
-  // Create sync object for graphs
   const syncGraph: PropGraphSync = {
     timeWindow,
     viewMode,
     isLiveMode,
     xRange,
-    // ADDED: Pass historical freeze timestamp to graphs
     historicalFreezeTimestamp: historicalFreezeTimestampRef.current,
     onTimeWindowChange: handleTimeWindowChange,
     onViewModeChange: handleViewModeChange,
-    onZoomChange: handleZoomChange,
+    onZoomChange: handleZoomChangeThrottled, // Use throttled version
   };
 
-  // Control props object with export
   const controlProps = {
     timeWindow,
     isLiveMode,
@@ -190,12 +216,10 @@ export function useGraphSync(
     registerGraphForExport,
     unregisterGraphFromExport,
     handleExport,
-    // Individual state values if needed
     timeWindow,
     viewMode,
     isLiveMode,
     xRange,
-    // ADDED: Expose historical freeze timestamp
     historicalFreezeTimestamp: historicalFreezeTimestampRef.current,
   };
 }
