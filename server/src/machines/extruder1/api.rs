@@ -396,23 +396,20 @@ impl CacheableEvents<ExtruderV2Events> for ExtruderV2Events {
             ExtruderV2Events::ModeEvent(_) => cache_one,
             ExtruderV2Events::RegulationStateEvent(_) => cache_one,
             ExtruderV2Events::ExtruderSettingsStateEvent(_) => cache_one,
-
             ExtruderV2Events::NozzleHeatingStateEvent(_) => cache_one,
             ExtruderV2Events::FrontHeatingStateEvent(_) => cache_one,
             ExtruderV2Events::MiddleHeatingStateEvent(_) => cache_one,
             ExtruderV2Events::BackHeatingStateEvent(_) => cache_one,
+            ExtruderV2Events::InverterStatusEvent(_) => cache_one,
+            ExtruderV2Events::PidSettingsEvent(_) => cache_one,
 
             ExtruderV2Events::PressureStateEvent(_) => cache_one_hour,
             ExtruderV2Events::ScrewStateEvent(_) => cache_one_hour,
             ExtruderV2Events::HeatingPowerEvent(_) => cache_one_hour,
-
-            ExtruderV2Events::InverterStatusEvent(_) => cache_one,
-            ExtruderV2Events::PidSettingsEvent(_) => cache_one,
-
-            ExtruderV2Events::NozzleHeatingTemperatureEvent(event) => cache_one_hour,
-            ExtruderV2Events::FrontHeatingTemperatureEvent(event) => cache_one_hour,
-            ExtruderV2Events::MiddleHeatingTemperatureEvent(event) => cache_one_hour,
-            ExtruderV2Events::BackHeatingTemperatureEvent(event) => cache_one_hour,
+            ExtruderV2Events::NozzleHeatingTemperatureEvent(_) => cache_one_hour,
+            ExtruderV2Events::FrontHeatingTemperatureEvent(_) => cache_one_hour,
+            ExtruderV2Events::MiddleHeatingTemperatureEvent(_) => cache_one_hour,
+            ExtruderV2Events::BackHeatingTemperatureEvent(_) => cache_one_hour,
         }
     }
 }
