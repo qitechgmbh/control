@@ -28,7 +28,7 @@ impl Actor for MockMachine {
             let now = Instant::now();
 
             // Emit initial state if this is the first call
-            if self.last_emitted_frequency.is_none() || self.last_emitted_mode.is_none() {
+            if self.last_emitted_frequencies.is_none() || self.last_emitted_mode.is_none() {
                 self.emit_sine_wave_state();
                 self.emit_mode_state();
             }

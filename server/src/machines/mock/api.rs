@@ -38,7 +38,9 @@ impl SineWaveEvent {
 
 #[derive(Serialize, Debug, Clone)]
 pub struct SineWaveStateEvent {
-    pub frequency: f64,
+    pub frequency1: f64,
+    pub frequency2: f64,
+    pub frequency3: f64,
 }
 
 impl SineWaveStateEvent {
@@ -102,7 +104,9 @@ impl CacheableEvents<MockEvents> for MockEvents {
 /// Mutation for controlling the mock machine
 enum Mutation {
     /// Set the frequency of the sine wave in millihertz
-    SetFrequency(f64),
+    SetFrequency1(f64),
+    SetFrequency2(f64),
+    SetFrequency3(f64),
     SetMode(Mode),
 }
 
@@ -119,8 +123,14 @@ impl MachineApi for MockMachine {
     fn api_mutate(&mut self, request_body: Value) -> Result<(), anyhow::Error> {
         let mutation: Mutation = serde_json::from_value(request_body)?;
         match mutation {
-            Mutation::SetFrequency(frequency) => {
-                self.set_frequency(frequency);
+            Mutation::SetFrequency1(frequency) => {
+                self.set_frequency1(frequency);
+            }
+            Mutation::SetFrequency2(frequency) => {
+                self.set_frequency2(frequency);
+            }
+            Mutation::SetFrequency3(frequency) => {
+                self.set_frequency3(frequency);
             }
             Mutation::SetMode(mode) => {
                 self.set_mode(mode);
