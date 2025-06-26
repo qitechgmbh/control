@@ -24,7 +24,10 @@ pub enum Mode {
 
 #[derive(Serialize, Debug, Clone)]
 pub struct SineWaveEvent {
-    pub amplitude: f64,
+    pub amplitude_sum: f64,
+    pub amplitude1: f64,
+    pub amplitude2: f64,
+    pub amplitude3: f64,
 }
 
 impl SineWaveEvent {
