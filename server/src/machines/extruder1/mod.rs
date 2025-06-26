@@ -79,6 +79,7 @@ impl ExtruderV2 {
     fn set_nozzle_pressure_limit_is_enabled(&mut self, enabled: bool) {
         self.screw_speed_controller
             .set_nozzle_pressure_limit_is_enabled(enabled);
+        self.emit_extruder_settings();
     }
 
     /// pressure is represented as bar
@@ -86,6 +87,7 @@ impl ExtruderV2 {
         let nozzle_pressure_limit = Pressure::new::<bar>(pressure);
         self.screw_speed_controller
             .set_nozzle_pressure_limit(nozzle_pressure_limit);
+        self.emit_extruder_settings();
     }
 
     fn get_nozzle_pressure_limit(&mut self) -> f64 {
@@ -250,7 +252,7 @@ impl ExtruderV2 {
 // Motor
 impl ExtruderV2 {
     fn set_regulation(&mut self, uses_rpm: bool) {
-        if (self.screw_speed_controller.get_uses_rpm() == false && uses_rpm == true) {
+        if self.screw_speed_controller.get_uses_rpm() == false && uses_rpm == true {
             self.screw_speed_controller
                 .set_target_screw_rpm(self.screw_speed_controller.target_rpm);
         }
@@ -273,6 +275,8 @@ impl ExtruderV2 {
     fn set_target_pressure(&mut self, pressure: f64) {
         let pressure = Pressure::new::<bar>(pressure);
         self.screw_speed_controller.set_target_pressure(pressure);
+
+        self.emit_bar();
     }
 
     fn set_target_rpm(&mut self, rpm: f64) {
@@ -285,15 +289,87 @@ impl ExtruderV2 {
 // Heating
 impl ExtruderV2 {
     fn emit_heating(&mut self, heating: Heating, heating_type: HeatingType) {
-        let event = api::HeatingStateEvent {
-            temperature: heating.temperature.get::<degree_celsius>(),
-            target_temperature: heating.target_temperature.get::<degree_celsius>(),
-            wiring_error: heating.wiring_error,
-        }
-        .build(heating_type);
+        match heating_type {
+            HeatingType::Nozzle => {
+                let event = api::NozzleHeatingStateEvent {
+                    target_temperature: heating.target_temperature.get::<degree_celsius>(),
+                    wiring_error: heating.wiring_error,
+                }
+                .build();
+                self.namespace
+                    .emit(ExtruderV2Events::NozzleHeatingStateEvent(event));
+            }
+            HeatingType::Front => {
+                let event = api::FrontHeatingStateEvent {
+                    target_temperature: heating.target_temperature.get::<degree_celsius>(),
+                    wiring_error: heating.wiring_error,
+                }
+                .build();
+                self.namespace
+                    .emit(ExtruderV2Events::FrontHeatingStateEvent(event));
+            }
 
-        self.namespace
-            .emit(ExtruderV2Events::HeatingStateEvent(event));
+            HeatingType::Back => {
+                let event = api::BackHeatingStateEvent {
+                    target_temperature: heating.target_temperature.get::<degree_celsius>(),
+                    wiring_error: heating.wiring_error,
+                }
+                .build();
+                self.namespace
+                    .emit(ExtruderV2Events::BackHeatingStateEvent(event));
+            }
+            HeatingType::Middle => {
+                let event = api::MiddleHeatingStateEvent {
+                    target_temperature: heating.target_temperature.get::<degree_celsius>(),
+                    wiring_error: heating.wiring_error,
+                }
+                .build();
+
+                self.namespace
+                    .emit(ExtruderV2Events::MiddleHeatingStateEvent(event));
+            }
+        };
+    }
+
+    fn emit_temperature(&mut self, heating_type: HeatingType) {
+        match heating_type {
+            HeatingType::Nozzle => {
+                let event = api::NozzleHeatingTemperatureEvent {
+                    temperature: self.temperature_controller_nozzle.get_heating_temperature(),
+                }
+                .build();
+
+                self.namespace
+                    .emit(ExtruderV2Events::NozzleHeatingTemperatureEvent(event));
+            }
+            HeatingType::Front => {
+                let event = api::FrontHeatingTemperatureEvent {
+                    temperature: self.temperature_controller_front.get_heating_temperature(),
+                }
+                .build();
+
+                self.namespace
+                    .emit(ExtruderV2Events::FrontHeatingTemperatureEvent(event));
+            }
+            HeatingType::Back => {
+                let event = api::BackHeatingTemperatureEvent {
+                    temperature: self.temperature_controller_back.get_heating_temperature(),
+                }
+                .build();
+
+                self.namespace
+                    .emit(ExtruderV2Events::BackHeatingTemperatureEvent(event));
+            }
+            HeatingType::Middle => {
+                let event = api::MiddleHeatingTemperatureEvent {
+                    temperature: self.temperature_controller_middle.get_heating_temperature(),
+                }
+                .build();
+
+                self.namespace
+                    .emit(ExtruderV2Events::MiddleHeatingTemperatureEvent(event));
+            }
+        }
     }
 
     fn emit_heating_element_power(&mut self, heating_type: HeatingType) {
@@ -365,7 +441,6 @@ impl ExtruderV2 {
         let target_rpm = self.screw_speed_controller.get_target_rpm();
 
         let event = api::ScrewStateEvent {
-            // use uom here
             rpm: rpm.get::<revolution_per_minute>(),
             target_rpm: target_rpm.get::<revolution_per_minute>(),
         }
@@ -401,5 +476,7 @@ impl ExtruderV2 {
         self.screw_speed_controller
             .pid
             .configure(settings.ki, settings.kp, settings.kd);
+
+        self.emit_pressure_pid_settings();
     }
 }

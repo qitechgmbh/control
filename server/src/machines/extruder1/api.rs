@@ -30,22 +30,99 @@ pub struct MotorStateEvent {
     forward_rotation: bool,
 }
 
+// Individual event structs
 #[derive(Serialize, Debug, Clone)]
-pub struct HeatingStateEvent {
-    pub temperature: f64,
+pub struct NozzleHeatingStateEvent {
     pub target_temperature: f64,
     pub wiring_error: bool,
 }
 
-impl HeatingStateEvent {
-    pub fn build(&self, heating_type: HeatingType) -> Event<Self> {
-        let event = match heating_type {
-            HeatingType::Nozzle => Event::new("NozzleHeatingStateEvent", self.clone()),
-            HeatingType::Front => Event::new("FrontHeatingStateEvent", self.clone()),
-            HeatingType::Back => Event::new("BackHeatingStateEvent", self.clone()),
-            HeatingType::Middle => Event::new("MiddleHeatingStateEvent", self.clone()),
-        };
-        return event;
+#[derive(Serialize, Debug, Clone)]
+pub struct FrontHeatingStateEvent {
+    pub target_temperature: f64,
+    pub wiring_error: bool,
+}
+
+#[derive(Serialize, Debug, Clone)]
+pub struct BackHeatingStateEvent {
+    pub target_temperature: f64,
+    pub wiring_error: bool,
+}
+
+#[derive(Serialize, Debug, Clone)]
+pub struct MiddleHeatingStateEvent {
+    pub target_temperature: f64,
+    pub wiring_error: bool,
+}
+
+// Individual implementations
+impl NozzleHeatingStateEvent {
+    pub fn build(&self) -> Event<Self> {
+        Event::new("NozzleHeatingStateEvent", self.clone())
+    }
+}
+
+impl FrontHeatingStateEvent {
+    pub fn build(&self) -> Event<Self> {
+        Event::new("FrontHeatingStateEvent", self.clone())
+    }
+}
+
+impl BackHeatingStateEvent {
+    pub fn build(&self) -> Event<Self> {
+        Event::new("BackHeatingStateEvent", self.clone())
+    }
+}
+
+impl MiddleHeatingStateEvent {
+    pub fn build(&self) -> Event<Self> {
+        Event::new("MiddleHeatingStateEvent", self.clone())
+    }
+}
+
+// Individual event structs
+#[derive(Serialize, Debug, Clone)]
+pub struct NozzleHeatingTemperatureEvent {
+    pub temperature: f64,
+}
+
+#[derive(Serialize, Debug, Clone)]
+pub struct MiddleHeatingTemperatureEvent {
+    pub temperature: f64,
+}
+
+#[derive(Serialize, Debug, Clone)]
+pub struct BackHeatingTemperatureEvent {
+    pub temperature: f64,
+}
+
+#[derive(Serialize, Debug, Clone)]
+pub struct FrontHeatingTemperatureEvent {
+    pub temperature: f64,
+}
+
+// Individual implementations
+impl NozzleHeatingTemperatureEvent {
+    pub fn build(&self) -> Event<Self> {
+        Event::new("NozzleHeatingTemperatureEvent", self.clone())
+    }
+}
+
+impl MiddleHeatingTemperatureEvent {
+    pub fn build(&self) -> Event<Self> {
+        Event::new("MiddleHeatingTemperatureEvent", self.clone())
+    }
+}
+
+impl BackHeatingTemperatureEvent {
+    pub fn build(&self) -> Event<Self> {
+        Event::new("BackHeatingTemperatureEvent", self.clone())
+    }
+}
+
+impl FrontHeatingTemperatureEvent {
+    pub fn build(&self) -> Event<Self> {
+        Event::new("FrontHeatingTemperatureEvent", self.clone())
     }
 }
 
@@ -218,7 +295,17 @@ pub enum ExtruderV2Events {
     RegulationStateEvent(Event<RegulationStateEvent>),
     PressureStateEvent(Event<PressureStateEvent>),
     ScrewStateEvent(Event<ScrewStateEvent>),
-    HeatingStateEvent(Event<HeatingStateEvent>),
+
+    NozzleHeatingStateEvent(Event<NozzleHeatingStateEvent>),
+    FrontHeatingStateEvent(Event<FrontHeatingStateEvent>),
+    MiddleHeatingStateEvent(Event<MiddleHeatingStateEvent>),
+    BackHeatingStateEvent(Event<BackHeatingStateEvent>),
+
+    NozzleHeatingTemperatureEvent(Event<NozzleHeatingTemperatureEvent>),
+    FrontHeatingTemperatureEvent(Event<FrontHeatingTemperatureEvent>),
+    MiddleHeatingTemperatureEvent(Event<MiddleHeatingTemperatureEvent>),
+    BackHeatingTemperatureEvent(Event<BackHeatingTemperatureEvent>),
+
     ExtruderSettingsStateEvent(Event<ExtruderSettingsStateEvent>),
     HeatingPowerEvent(Event<HeatingPowerEvent>),
     InverterStatusEvent(Event<InverterStatusEvent>),
@@ -283,11 +370,20 @@ impl CacheableEvents<ExtruderV2Events> for ExtruderV2Events {
             ExtruderV2Events::RegulationStateEvent(event) => event.into(),
             ExtruderV2Events::PressureStateEvent(event) => event.into(),
             ExtruderV2Events::ScrewStateEvent(event) => event.into(),
-            ExtruderV2Events::HeatingStateEvent(event) => event.into(),
             ExtruderV2Events::ExtruderSettingsStateEvent(event) => event.into(),
             ExtruderV2Events::HeatingPowerEvent(event) => event.into(),
             ExtruderV2Events::InverterStatusEvent(event) => event.into(),
             ExtruderV2Events::PidSettingsEvent(event) => event.into(),
+
+            ExtruderV2Events::NozzleHeatingStateEvent(event) => event.into(),
+            ExtruderV2Events::FrontHeatingStateEvent(event) => event.into(),
+            ExtruderV2Events::MiddleHeatingStateEvent(event) => event.into(),
+            ExtruderV2Events::BackHeatingStateEvent(event) => event.into(),
+
+            ExtruderV2Events::NozzleHeatingTemperatureEvent(event) => event.into(),
+            ExtruderV2Events::FrontHeatingTemperatureEvent(event) => event.into(),
+            ExtruderV2Events::MiddleHeatingTemperatureEvent(event) => event.into(),
+            ExtruderV2Events::BackHeatingTemperatureEvent(event) => event.into(),
         }
     }
 
@@ -300,12 +396,23 @@ impl CacheableEvents<ExtruderV2Events> for ExtruderV2Events {
             ExtruderV2Events::ModeEvent(_) => cache_one,
             ExtruderV2Events::RegulationStateEvent(_) => cache_one,
             ExtruderV2Events::ExtruderSettingsStateEvent(_) => cache_one,
-            ExtruderV2Events::HeatingStateEvent(_) => cache_one,
+
+            ExtruderV2Events::NozzleHeatingStateEvent(_) => cache_one,
+            ExtruderV2Events::FrontHeatingStateEvent(_) => cache_one,
+            ExtruderV2Events::MiddleHeatingStateEvent(_) => cache_one,
+            ExtruderV2Events::BackHeatingStateEvent(_) => cache_one,
+
             ExtruderV2Events::PressureStateEvent(_) => cache_one_hour,
             ExtruderV2Events::ScrewStateEvent(_) => cache_one_hour,
             ExtruderV2Events::HeatingPowerEvent(_) => cache_one_hour,
+
             ExtruderV2Events::InverterStatusEvent(_) => cache_one,
             ExtruderV2Events::PidSettingsEvent(_) => cache_one,
+
+            ExtruderV2Events::NozzleHeatingTemperatureEvent(event) => cache_one_hour,
+            ExtruderV2Events::FrontHeatingTemperatureEvent(event) => cache_one_hour,
+            ExtruderV2Events::MiddleHeatingTemperatureEvent(event) => cache_one_hour,
+            ExtruderV2Events::BackHeatingTemperatureEvent(event) => cache_one_hour,
         }
     }
 }

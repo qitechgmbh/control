@@ -81,6 +81,10 @@ impl TemperatureController {
         return self.temperature_pid_output * self.heating_element_wattage;
     }
 
+    pub fn get_heating_temperature(&mut self) -> f64 {
+        return self.heating.temperature.get::<degree_celsius>();
+    }
+
     pub async fn update(&mut self, now: Instant) -> () {
         self.temperature_sensor.act(now).await;
         self.temperature_pid_output = 0.0;
