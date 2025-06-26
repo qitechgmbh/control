@@ -11,7 +11,7 @@ import { produce } from "immer";
 
 function useMock(machine_identification_unique: MachineIdentificationUnique) {
   // Get consolidated state and live values from namespace
-  const { state, defaultState, sineWave } = useMock1Namespace(
+  const { state, defaultState, sineWaveSum, sineWave1, sineWave2, sineWave3 } = useMock1Namespace(
     machine_identification_unique,
   );
 
@@ -42,22 +42,60 @@ function useMock(machine_identification_unique: MachineIdentificationUnique) {
   };
 
   // Action functions with verb-first names
-  const schemaSetFrequency = z.object({ SetFrequency: z.number() });
-  const { request: requestSetFrequency } =
-    useMachineMutation(schemaSetFrequency);
-  const setFrequency = (frequency: number) => {
+  const setSchemaFrequency1 = z.object({ SetFrequency1: z.number() });
+  const { request: requestSetFrequency1 } =
+    useMachineMutation(setSchemaFrequency1);
+  const setFrequency1 = (frequency: number) => {
     updateStateOptimistically(
       (current) => {
-        current.data.sine_wave_state.frequency = frequency;
+        current.data.frequency1 = frequency;
       },
       () =>
-        requestSetFrequency({
+        requestSetFrequency1({
           machine_identification_unique,
           data: {
-            SetFrequency: frequency,
+            SetFrequency1: frequency,
           },
         }),
     );
+  };
+
+  // Action functions with verb-first names
+  const setSchemaFrequency2 = z.object({ SetFrequency2: z.number() });
+  const { request: requestSetFrequency2 } =
+    useMachineMutation(setSchemaFrequency2);
+  const setFrequency2 = (frequency: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.frequency2 = frequency;
+      },
+      () =>
+        requestSetFrequency2({
+          machine_identification_unique,
+          data: {
+            SetFrequency2: frequency,
+          },
+        }),
+    );
+  };
+
+  // Action functions with verb-first names
+  const setSchemaFrequency3 = z.object({ SetFrequency3: z.number() });
+  const { request: requestSetFrequency3 } =
+      useMachineMutation(setSchemaFrequency3);
+  const setFrequency3 = (frequency: number) => {
+      updateStateOptimistically(
+          (current) => {
+              current.data.frequency3 = frequency;
+          },
+          () =>
+          requestSetFrequency3({
+              machine_identification_unique,
+              data: {
+                  SetFrequency3: frequency,
+              },
+          }),
+      );
   };
 
   const schemaSetMode = z.object({ SetMode: z.enum(["Standby", "Running"]) });
@@ -85,14 +123,19 @@ function useMock(machine_identification_unique: MachineIdentificationUnique) {
     defaultState: defaultState?.data,
 
     // Individual live values (TimeSeries)
-    sineWave,
+    sineWave1,
+    sineWave2,
+    sineWave3,
+    sineWaveSum,
 
     // Loading states
     isLoading: stateOptimistic.isOptimistic,
     isDisabled: !stateOptimistic.isInitialized,
 
     // Action functions (verb-first)
-    setFrequency,
+    setFrequency1,
+    setFrequency2,
+    setFrequency3,
     setMode,
   };
 }

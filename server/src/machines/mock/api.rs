@@ -24,8 +24,10 @@ pub enum Mode {
 
 #[derive(Serialize, Debug, Clone, Default)]
 pub struct LiveValuesEvent {
-    /// sine wave amplitude value
-    pub sine_wave_amplitude: f64,
+    pub amplitude_sum: f64,
+    pub amplitude1: f64,
+    pub amplitude2: f64,
+    pub amplitude3: f64,
 }
 
 impl LiveValuesEvent {
@@ -37,8 +39,10 @@ impl LiveValuesEvent {
 #[derive(Serialize, Debug, Clone, PartialEq)]
 pub struct StateEvent {
     pub is_default_state: bool,
-    /// sine wave state
-    pub sine_wave_state: SineWaveState,
+    /// sine wave frequencies in millihertz
+    pub frequency1: f64,
+    pub frequency2: f64,
+    pub frequency3: f64,
     /// mode state
     pub mode_state: ModeState,
 }
@@ -47,12 +51,6 @@ impl StateEvent {
     pub fn build(&self) -> Event<Self> {
         Event::new("StateEvent", self.clone())
     }
-}
-
-#[derive(Serialize, Debug, Clone, PartialEq)]
-pub struct SineWaveState {
-    /// frequency in millihertz
-    pub frequency: f64,
 }
 
 #[derive(Serialize, Debug, Clone, PartialEq)]
@@ -102,7 +100,9 @@ impl CacheableEvents<MockEvents> for MockEvents {
 /// Mutation for controlling the mock machine
 enum Mutation {
     /// Set the frequency of the sine wave in millihertz
-    SetFrequency(f64),
+    SetFrequency1(f64),
+    SetFrequency2(f64),
+    SetFrequency3(f64),
     SetMode(Mode),
 }
 
@@ -119,8 +119,14 @@ impl MachineApi for MockMachine {
     fn api_mutate(&mut self, request_body: Value) -> Result<(), anyhow::Error> {
         let mutation: Mutation = serde_json::from_value(request_body)?;
         match mutation {
-            Mutation::SetFrequency(frequency) => {
-                self.set_frequency(frequency);
+            Mutation::SetFrequency1(frequency) => {
+                self.set_frequency1(frequency);
+            }
+            Mutation::SetFrequency2(frequency) => {
+                self.set_frequency2(frequency);
+            }
+            Mutation::SetFrequency3(frequency) => {
+                self.set_frequency3(frequency);
             }
             Mutation::SetMode(mode) => {
                 self.set_mode(mode);
