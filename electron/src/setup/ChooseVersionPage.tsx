@@ -20,9 +20,11 @@ import {
   deleteNixOSGeneration,
   isNixOSAvailable,
 } from "@/helpers/nixos_helpers";
+import { useUpdateStore } from "@/stores/updateStore";
 
 export function ChooseVersionPage() {
   const navigate = useNavigate();
+  const { isUpdating, updateSource } = useUpdateStore();
 
   // load environment info
   const [environmentInfo, setEnvironmentInfo] = useState<
@@ -280,6 +282,31 @@ export function ChooseVersionPage() {
           update the system.
         </Alert>
       </span>
+
+      {isUpdating && updateSource && (
+        <div className="flex items-center gap-4">
+          <Alert title="Update in Progress" variant="warning">
+            An update is currently running. You can monitor its progress on the execute page.
+          </Alert>
+          <TouchButton
+            className="w-max"
+            icon="lu:Eye"
+            onClick={() => navigate({ 
+              to: "/_sidebar/setup/update/execute", 
+              search: { 
+                githubRepoOwner: updateSource.githubRepoOwner,
+                githubRepoName: updateSource.githubRepoName,
+                githubToken: updateSource.githubToken,
+                tag: updateSource.tag,
+                branch: updateSource.branch,
+                commit: updateSource.commit,
+              } 
+            })}
+          >
+            View Update Progress
+          </TouchButton>
+        </div>
+      )}
 
       <span className="text-xl">Choose a Version</span>
       {tags !== undefined && tags.length > 0 ? (

@@ -1,3 +1,13 @@
+let updateCancelled = false;
+
+export function cancelCurrentUpdate() {
+  updateCancelled = true;
+}
+
+export function resetUpdateCancellation() {
+  updateCancelled = false;
+}
+
 export async function updateExecute(
   source: {
     githubRepoOwner: string;
@@ -8,14 +18,31 @@ export async function updateExecute(
     commit?: string;
   },
   onLog: (log: string) => void,
+  shouldCancel?: () => boolean,
 ): Promise<{ success: boolean; error?: string }> {
+  updateCancelled = false;
+  
   return new Promise((resolve) => {
-    window.update.onLog(onLog);
+    const originalOnLog = onLog;
+    const wrappedOnLog = (log: string) => {
+      if (updateCancelled || (shouldCancel && shouldCancel())) {
+        resolve({ success: false, error: "Update was cancelled by user" });
+        return;
+      }
+      originalOnLog(log);
+    };
+    
+    window.update.onLog(wrappedOnLog);
     window.update.execute(source);
     window.update.onEnd((params) => {
       window.update.onLog(() => {});
       window.update.onEnd(() => {});
-      resolve(params);
+      
+      if (updateCancelled || (shouldCancel && shouldCancel())) {
+        resolve({ success: false, error: "Update was cancelled by user" });
+      } else {
+        resolve(params);
+      }
     });
   });
 }
