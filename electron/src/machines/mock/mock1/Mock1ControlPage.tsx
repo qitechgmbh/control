@@ -7,10 +7,28 @@ import { EditValue } from "@/control/EditValue";
 import { useMock1 } from "./useMock";
 import { SelectionGroup } from "@/control/SelectionGroup";
 import { Mode } from "./mock1Namespace";
+import { TimeSeries } from "@/lib/timeseries";
+
+type SineWaveCardProps = {
+    title: string,
+    timeseries: TimeSeries;
+}
+
+function SineWaveCard({ title, timeseries }: SineWaveCardProps) {
+  return (
+    <ControlCard title={title}>
+      <TimeSeriesValueNumeric
+        label="Current Value"
+        timeseries={timeseries}
+        renderValue={(value) => value.toFixed(3)}
+      />
+    </ControlCard>
+  );
+}
 
 export function Mock1ControlPage() {
   const {
-    sineWave,
+    sineWaves,
     mockState,
     modeState,
     mockSetFrequency,
@@ -25,34 +43,10 @@ export function Mock1ControlPage() {
   return (
     <Page>
       <ControlGrid>
-        <ControlCard title="Sine Wave">
-          <TimeSeriesValueNumeric
-            label="Current Value"
-            timeseries={sineWave}
-            renderValue={(value) => value.toFixed(3)}
-          />
-        </ControlCard>
-        <ControlCard title="Sine Wave">
-          <TimeSeriesValueNumeric
-            label="Current Value"
-            timeseries={sineWave}
-            renderValue={(value) => value.toFixed(3)}
-          />
-        </ControlCard>
-        <ControlCard title="Sine Wave">
-          <TimeSeriesValueNumeric
-            label="Current Value"
-            timeseries={sineWave}
-            renderValue={(value) => value.toFixed(3)}
-          />
-        </ControlCard>
-        <ControlCard title="Sine Wave">
-          <TimeSeriesValueNumeric
-            label="Current Value"
-            timeseries={sineWave}
-            renderValue={(value) => value.toFixed(3)}
-          />
-        </ControlCard>
+        <SineWaveCard title="SineWaveSum" timeseries={sineWaves.sineWaveSum} />
+        <SineWaveCard title="Sine Wave 1" timeseries={sineWaves.sineWave1} />
+        <SineWaveCard title="Sine Wave 2" timeseries={sineWaves.sineWave2} />
+        <SineWaveCard title="Sine Wave 3" timeseries={sineWaves.sineWave3} />
 
         <ControlCard title="Frequency">
           <div className="flex flex-col gap-4">

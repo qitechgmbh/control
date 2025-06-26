@@ -62,7 +62,7 @@ function useMock(machine_identification_unique: MachineIdentificationUnique) {
   };
 
   // Read Path
-  const { sineWave, mockState, modeState } = useMock1Namespace(
+  const { sineWaves, mockState, modeState } = useMock1Namespace(
     machine_identification_unique,
   );
 
@@ -80,7 +80,7 @@ function useMock(machine_identification_unique: MachineIdentificationUnique) {
   }, [modeState]);
 
   return {
-    sineWave,
+    sineWaves,
     mockState,
     modeState,
     mockSetFrequency,

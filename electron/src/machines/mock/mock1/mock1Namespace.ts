@@ -29,10 +29,13 @@ import {
 export const modeSchema = z.enum(["Standby", "Running"]);
 
 /**
- * Sine wave data from Mock Machine (only amplitude)
+ * Sine wave data from Mock Machine (three amplitudes and their sum)
  */
 export const sineWaveEventDataSchema = z.object({
-  amplitude: z.number(),
+  amplitude_sum: z.number(),
+  amplitude1: z.number(),
+  amplitude2: z.number(),
+  amplitude3: z.number(),
 });
 
 /**
@@ -60,12 +63,19 @@ export type SineWaveEvent = z.infer<typeof sineWaveEventSchema>;
 export type MockStateEvent = z.infer<typeof mockStateEventSchema>;
 export type ModeStateEvent = z.infer<typeof modeStateEventSchema>;
 
+export type SineWaves = {
+    sineWaveSum: TimeSeries;
+    sineWave1: TimeSeries;
+    sineWave2: TimeSeries;
+    sineWave3: TimeSeries;
+}
+
 export type Mock1NamespaceStore = {
   // State events (latest only)
   mockState: MockStateEvent | null;
   modeState: ModeStateEvent | null;
   // Metric events (cached for 1 hour)
-  sineWave: TimeSeries;
+  sineWaves: SineWaves;
 };
 
 // Constants for time durations
@@ -81,18 +91,40 @@ const { initialTimeSeries: sineWave, insert: addSineWave } = createTimeSeries(
   ONE_HOUR,
 );
 
+function addEventToSineWaves(waves: SineWaves, event: SineWaveEvent): SineWaves {
+    const toSeriesValue = (amp: number): TimeSeriesValue => ({
+      value: amp ?? 0,
+      timestamp: event.ts,
+    });
+
+    return {
+        sineWaveSum: addSineWave(waves.sineWaveSum, toSeriesValue(event.data.amplitude_sum)),
+        sineWave1: addSineWave(waves.sineWave1, toSeriesValue(event.data.amplitude1)),
+        sineWave2: addSineWave(waves.sineWave2, toSeriesValue(event.data.amplitude2)),
+        sineWave3: addSineWave(waves.sineWave3, toSeriesValue(event.data.amplitude3)),
+    };
+}
+
 /**
  * Factory function to create a new Mock1 namespace store
  * @returns A new Zustand store instance for Mock1 namespace
  */
-export const createMock1NamespaceStore = (): StoreApi<Mock1NamespaceStore> =>
-  create<Mock1NamespaceStore>(() => {
+export const createMock1NamespaceStore = (): StoreApi<Mock1NamespaceStore> => {
+    const sineWaves = {
+      sineWaveSum: sineWave,
+      sineWave1: sineWave,
+      sineWave2: sineWave,
+      sineWave3: sineWave,
+    };
+
+  return create<Mock1NamespaceStore>(() => {
     return {
       mockState: null,
       modeState: null,
-      sineWave: sineWave,
+      sineWaves,
     };
   });
+}
 
 /**
  * Creates a message handler for Mock1 namespace events with validation and appropriate caching strategies
@@ -133,13 +165,9 @@ export function mock1MessageHandler(
       }
       // Metric events (keep for 1 hour)
       else if (eventName === "SineWaveEvent") {
-        const timeseriesValue: TimeSeriesValue = {
-          value: event.data.amplitude ?? 0,
-          timestamp: event.ts,
-        };
         updateStore((state) => ({
           ...state,
-          sineWave: addSineWave(state.sineWave, timeseriesValue),
+          sineWaves: addEventToSineWaves(state.sineWaves, event),
         }));
       } else {
         handleUnhandledEventError(eventName);

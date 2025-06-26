@@ -43,7 +43,16 @@ impl MockMachine {
             Mode::Running => (2.0 * std::f64::consts::PI * freq_hz * elapsed).sin(),
         };
 
-        let sine_wave_event = SineWaveEvent { amplitude: y };
+        let amplitude1 = 2.0 * y + 69.0;
+        let amplitude2 = y + 420.0;
+        let amplitude3 = 3.0 * y + 42.0;
+
+        let sine_wave_event = SineWaveEvent {
+            amplitude_sum: amplitude1 + amplitude2 + amplitude3,
+            amplitude1,
+            amplitude2,
+            amplitude3,
+        };
 
         self.namespace
             .emit(MockEvents::SineWave(sine_wave_event.build()));
