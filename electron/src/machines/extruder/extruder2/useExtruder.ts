@@ -5,7 +5,6 @@ import { MachineIdentificationUnique, extruder2 } from "@/machines/types";
 import { extruder2Route } from "@/routes/routes";
 import { z } from "zod";
 import {
-  Heating,
   InverterStatus,
   Mode,
   useExtruder2Namespace,
@@ -407,15 +406,15 @@ export function useHeatingTemperature(
   heatingSetBackTemp: (value: number) => void;
   heatingSetMiddleTemp: (value: number) => void;
 
+  nozzleWiringError: boolean | null;
+  frontWiringError: boolean | null;
+  backWiringError: boolean | null;
+  middleWiringError: boolean | null;
+
   nozzleHeatingTarget: number | undefined;
   frontHeatingTarget: number | undefined;
   backHeatingTarget: number | undefined;
   middleHeatingTarget: number | undefined;
-
-  nozzleHeatingState: Heating | undefined;
-  frontHeatingState: Heating | undefined;
-  backHeatingState: Heating | undefined;
-  middleHeatingState: Heating | undefined;
 
   nozzleTemperature: TimeSeries;
   frontTemperature: TimeSeries;
@@ -508,36 +507,17 @@ export function useHeatingTemperature(
 
   // Read path
   const {
-    heatingFrontState,
-    heatingBackState,
-    heatingMiddleState,
-    heatingNozzleState,
+    nozzleWiringError,
+    frontWiringError,
+    backWiringError,
+    middleWiringError,
     frontTemperature,
     backTemperature,
     middleTemperature,
     nozzleTemperature,
   } = useExtruder2Namespace(machine_identification_unique);
 
-  useEffect(() => {
-    if (heatingFrontState?.data) {
-      frontHeatingTargetState.setReal(
-        heatingFrontState.data.target_temperature,
-      );
-    }
-    if (heatingBackState?.data) {
-      backHeatingTargetState.setReal(heatingBackState.data.target_temperature);
-    }
-    if (heatingMiddleState?.data) {
-      middleHeatingTargetState.setReal(
-        heatingMiddleState.data.target_temperature,
-      );
-    }
-    if (heatingNozzleState?.data) {
-      nozzleHeatingTargetState.setReal(
-        heatingNozzleState.data.target_temperature,
-      );
-    }
-  }, [
+  useEffect(() => {}, [
     frontHeatingTargetState,
     backHeatingTargetState,
     middleHeatingTargetState,
@@ -550,15 +530,15 @@ export function useHeatingTemperature(
     heatingSetBackTemp,
     heatingSetMiddleTemp,
 
+    nozzleWiringError,
+    frontWiringError,
+    backWiringError,
+    middleWiringError,
+
     nozzleHeatingTarget: nozzleHeatingTargetState.value,
     frontHeatingTarget: frontHeatingTargetState.value,
     backHeatingTarget: backHeatingTargetState.value,
     middleHeatingTarget: middleHeatingTargetState.value,
-
-    nozzleHeatingState: heatingNozzleState?.data,
-    frontHeatingState: heatingFrontState?.data,
-    backHeatingState: heatingBackState?.data,
-    middleHeatingState: heatingMiddleState?.data,
 
     nozzleTemperature,
     frontTemperature,

@@ -3,26 +3,28 @@ import { EditValue } from "@/control/EditValue";
 import { Label } from "@/control/Label";
 import { roundToDecimals } from "@/lib/decimal";
 import React from "react";
-import { Heating } from "./extruder2/extruder2Namespace";
 import { TimeSeries } from "@/lib/timeseries";
 import { TimeSeriesValueNumeric } from "@/control/TimeSeriesValue";
 import { StatusBadge } from "@/control/StatusBadge";
 
 type Props = {
   title: string;
-  heatingState: Heating | undefined;
+  heatingTarget: number | undefined;
   heatingTimeSeries: TimeSeries;
   heatingPower: TimeSeries;
+  heatingWiringError: boolean | null;
   onChangeTargetTemp?: (temperature: number) => void;
 };
 export function HeatingZone({
   title,
-  heatingState,
+  heatingTarget,
+  heatingWiringError,
   heatingTimeSeries,
   heatingPower,
   onChangeTargetTemp,
 }: Props) {
-  const targetTemperature = heatingState?.target_temperature ?? 150;
+  const targetTemperature = heatingTarget ?? 150;
+  const wiringError = heatingWiringError ?? false;
 
   return (
     <ControlCard className="bg-red" title={title}>
@@ -32,7 +34,7 @@ export function HeatingZone({
             label="Temperature"
             unit="C"
             renderValue={(value) =>
-              heatingState?.wiring_error ? "0.0" : roundToDecimals(value, 1)
+              wiringError ? "0.0" : roundToDecimals(value, 1)
             }
             timeseries={heatingTimeSeries}
           />
@@ -56,12 +58,12 @@ export function HeatingZone({
         label="Heating Power"
         unit="W"
         renderValue={(value) =>
-          heatingState?.wiring_error ? "0.0" : roundToDecimals(value, 0)
+          wiringError ? "0.0" : roundToDecimals(value, 0)
         }
         timeseries={heatingPower}
       />
 
-      {heatingState?.wiring_error && (
+      {wiringError && (
         <StatusBadge variant="error">
           Cant Read Temperature! Check Temperature Sensor Wiring!
         </StatusBadge>
