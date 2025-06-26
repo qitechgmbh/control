@@ -515,6 +515,10 @@ export function useHeatingTemperature(
     backTemperature,
     middleTemperature,
     nozzleTemperature,
+    frontTargetTemperature,
+    backTargetTemperature,
+    middleTargetTemperature,
+    nozzleTargetTemperature,
   } = useExtruder2Namespace(machine_identification_unique);
 
   useEffect(() => {}, [
@@ -535,10 +539,10 @@ export function useHeatingTemperature(
     backWiringError,
     middleWiringError,
 
-    nozzleHeatingTarget: nozzleHeatingTargetState.value,
-    frontHeatingTarget: frontHeatingTargetState.value,
-    backHeatingTarget: backHeatingTargetState.value,
-    middleHeatingTarget: middleHeatingTargetState.value,
+    nozzleHeatingTarget: nozzleTargetTemperature ?? 0.0,
+    frontHeatingTarget: frontTargetTemperature ?? 0.0,
+    middleHeatingTarget: middleTargetTemperature ?? 0.0,
+    backHeatingTarget: backTargetTemperature ?? 0.0,
 
     nozzleTemperature,
     frontTemperature,
