@@ -1,7 +1,7 @@
 /// Normalizes a value from a given range [min, max] to the range [0, 1].
 ///
-/// This function maps any value from an arbitrary range to the standard
-/// normalized range [0, 1]. Values outside the input range are clamped
+/// This function maps a value from an arbitrary range to the standard
+/// normalized range [0, 1]. Values o/// Plot for Steepness = -1:ge are clamped
 /// to the boundaries (0.0 or 1.0).
 ///
 /// # Arguments
@@ -17,6 +17,7 @@
 ///
 /// # Example
 /// ```rust
+/// use control_core::helpers::interpolation::normalize;
 /// let normalized = normalize(5.0, 0.0, 10.0); // Returns 0.5
 /// let clamped = normalize(-2.0, 0.0, 10.0);   // Returns 0.0 (clamped)
 /// ```
@@ -54,6 +55,7 @@ where
 ///
 /// # Example
 /// ```rust
+/// use control_core::helpers::interpolation::scale;
 /// let scaled = scale(0.5, 0.0, 100.0); // Returns 50.0
 /// let negative_range = scale(0.25, -10.0, 10.0); // Returns -5.0
 /// ```
@@ -89,12 +91,13 @@ where
 ///
 /// # Example
 /// ```rust
+/// use control_core::helpers::interpolation::interpolate_hinge;
 /// // Create a hinge at (0.3, 0.7)
 /// let result1 = interpolate_hinge(0.15, 0.3, 0.7); // Returns 0.35 (halfway to hinge)
 /// let result2 = interpolate_hinge(0.3, 0.3, 0.7);  // Returns 0.7 (at hinge)
 /// let result3 = interpolate_hinge(0.65, 0.3, 0.7); // Returns 0.85 (halfway from hinge to 1)
 /// ```
-/// ```
+/// ```ignore
 /// Hinge at (0.8, 0.2)
 /// ⡁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢰⠁ 1.0
 /// ⠄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡜⠀
@@ -152,6 +155,7 @@ where
 ///
 /// # Example
 /// ```rust
+/// use control_core::helpers::interpolation::interpolate_exponential;
 /// let convex = interpolate_exponential(0.5, 2.0);   // Slow start, fast end
 /// let concave = interpolate_exponential(0.5, -2.0); // Fast start, slow end
 /// let linear = interpolate_exponential(0.5, 0.0);   // Linear (returns 0.5)
@@ -160,7 +164,7 @@ where
 /// # Plots
 /// Steepness = -3
 /// Steepness = -3
-/// ```
+/// ```ignore
 /// ⡁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⡠⠤⠔⠒⠒⠉⠁ 1.0
 /// ⠄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⠤⠔⠊⠉⠀⠀⠀⠀⠀⠀⠀⠀
 /// ⠂⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡠⠒⠊⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
@@ -181,7 +185,7 @@ where
 /// ```
 ///
 /// Steepness = -1
-/// ```
+/// ```ignore
 /// ⡁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⠤⠒⠁ 1.0
 /// ⠄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⠤⠊⠁⠀⠀⠀
 /// ⠂⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⠤⠒⠁⠀⠀⠀⠀⠀⠀
@@ -202,7 +206,7 @@ where
 /// ```
 ///
 /// Steepness = 0
-/// ```
+/// ```ignore
 /// ⡁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⠔⠁ 1.0
 /// ⠄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⠔⠁⠀⠀
 /// ⠂⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⠔⠁⠀⠀⠀⠀
@@ -223,7 +227,7 @@ where
 /// ```
 ///
 /// Steepness = 1
-/// ```
+/// ```ignore
 /// ⡁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡰⠁ 1.0
 /// ⠄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⠔⠁⠀
 /// ⠂⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⠃⠀⠀⠀
@@ -244,7 +248,7 @@ where
 /// ```
 ///
 /// Steepness = 3
-/// ```
+/// ```ignore
 /// ⡁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢰⠁ 1.0
 /// ⠄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡎⠀
 /// ⠂⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⠎⠀⠀
@@ -297,13 +301,14 @@ pub fn interpolate_exponential(normalized_value: f64, steepness: f64) -> f64 {
 ///
 /// # Example
 /// ```rust
+/// use control_core::helpers::interpolation::interpolate_inflected_exponential;
 /// let y = interpolate_inflected_exponential(0.25, 2.0); // Gentle S-curve
 /// let y = interpolate_inflected_exponential(0.75, 5.0); // Sharp S-curve
 /// ```
 ///
 /// # Plots
 /// Steepness = 0.5
-/// ```
+/// ```ignore
 /// ⡁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡰⠁ 1.0
 /// ⠄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡰⠉⠀⠀
 /// ⠂⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⠜⠀⠀⠀⠀
@@ -324,7 +329,7 @@ pub fn interpolate_exponential(normalized_value: f64, steepness: f64) -> f64 {
 /// ```
 ///
 /// Steepness = 1
-/// ```
+/// ```ignore
 /// ⡁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡰⠁ 1.0
 /// ⠄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⠒⠁⠀
 /// ⠂⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡠⠃⠀⠀⠀
@@ -345,7 +350,7 @@ pub fn interpolate_exponential(normalized_value: f64, steepness: f64) -> f64 {
 /// ```
 ///
 /// Steepness = 2
-/// ```
+/// ```ignore
 /// ⡁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢰⠁ 1.0
 /// ⠄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡠⠃⠀
 /// ⠂⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡸⠀⠀⠀
@@ -366,7 +371,7 @@ pub fn interpolate_exponential(normalized_value: f64, steepness: f64) -> f64 {
 /// ```
 ///
 /// Steepness = 5
-/// ```
+/// ```ignore
 /// ⡁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢰⠁ 1.0
 /// ⠄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡜⠀
 /// ⠂⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⠇⠀
@@ -426,6 +431,7 @@ pub fn interpolate_inflected_exponential(x: f64, steepness: f64) -> f64 {
 ///
 /// # Example
 /// ```rust
+/// use control_core::helpers::interpolation::invert;
 /// let inverted = invert(0.3); // Returns 0.7
 /// let boundary = invert(0.0); // Returns 1.0
 /// let clamped = invert(1.5);  // Returns 0.0 (input clamped to 1.0 first)
@@ -449,6 +455,7 @@ pub fn invert(value: f64) -> f64 {
 ///
 /// # Example
 /// ```rust
+/// use control_core::helpers::interpolation::clip;
 /// let normal = clip(0.5);  // Returns 0.5
 /// let low = clip(-0.3);    // Returns 0.0
 /// let high = clip(1.7);    // Returns 1.0
@@ -718,16 +725,8 @@ mod tests {
 
         // Test with different hinge points
         // Hinge at (0.5, 0.5) - should be linear
-        assert_relative_eq!(
-            interpolate_hinge(0.25, 0.5, 0.5),
-            0.25,
-            epsilon = EPSILON
-        );
-        assert_relative_eq!(
-            interpolate_hinge(0.75, 0.5, 0.5),
-            0.75,
-            epsilon = EPSILON
-        );
+        assert_relative_eq!(interpolate_hinge(0.25, 0.5, 0.5), 0.25, epsilon = EPSILON);
+        assert_relative_eq!(interpolate_hinge(0.75, 0.5, 0.5), 0.75, epsilon = EPSILON);
 
         // Hinge at (0.2, 0.9) - steep left, shallow right
         assert_relative_eq!(
