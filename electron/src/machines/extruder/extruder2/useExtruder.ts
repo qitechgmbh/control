@@ -229,7 +229,7 @@ export function useMode(
     if (modeState?.data) {
       state.setReal(modeState.data.mode);
     }
-  }, [modeState]);
+  }, [modeState?.data.mode]);
 
   return {
     mode: state.value,
@@ -331,7 +331,13 @@ export function useMotor(
     if (motorRegulationState?.data) {
       regulationState.setReal(motorRegulationState.data.uses_rpm);
     }
-  }, [motorRpmState, motorBarState, motorRegulationState]);
+  }, [
+    motorRpmState?.data.rpm,
+    motorRpmState?.data.target_rpm,
+    motorBarState?.data.bar,
+    motorBarState?.data.target_bar,
+    motorRegulationState?.data.uses_rpm,
+  ]);
 
   return {
     rpm: rpm,
