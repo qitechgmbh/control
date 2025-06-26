@@ -358,7 +358,7 @@ export function usePidSettings(
   pressurePidSettings: PidSettings | undefined;
   setPressurePid: (settings: PidSettings) => void;
 } {
-  const { pressurePidSettings, temperaturePidSettings } = useExtruder2Namespace(
+  const { pressurePidSettings } = useExtruder2Namespace(
     machine_identification_unique,
   );
 
