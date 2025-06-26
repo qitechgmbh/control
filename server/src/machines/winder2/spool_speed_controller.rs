@@ -60,8 +60,6 @@ impl SpoolSpeedController {
     }
 
     pub fn set_type(&mut self, r#type: SpoolSpeedControllerType) {
-        info!("Setting spool speed controller type to {:?}", r#type);
-
         // If we're switching to a different type, copy the current speed to the target controller
         if std::mem::discriminant(&self.r#type) != std::mem::discriminant(&r#type) {
             // Get the current speed from the active controller
@@ -83,13 +81,6 @@ impl SpoolSpeedController {
                     self.minmax_controller.set_speed(current_speed); // Set again after reset to maintain speed
                 }
             }
-
-            info!(
-                "Switched spool speed controller from {:?} to {:?}, copied speed: {:.1} RPM",
-                self.r#type,
-                r#type,
-                current_speed.get::<uom::si::angular_velocity::revolution_per_minute>()
-            );
         }
 
         self.r#type = r#type;

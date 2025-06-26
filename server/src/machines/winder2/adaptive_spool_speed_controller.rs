@@ -197,13 +197,6 @@ impl AdaptiveSpoolSpeedController {
             max_speed.get::<radian_per_second>(),
         ));
 
-        // log speed and speed change
-        info!(
-            "Calculated speed: {:.2} rev/s, Speed Change: {:.2} rev/s",
-            speed.get::<revolution_per_second>(),
-            speed.get::<revolution_per_second>()
-        );
-
         speed
     }
 
@@ -311,13 +304,6 @@ impl AdaptiveSpoolSpeedController {
             .clamp(Self::RADIUS_MIN, Self::RADIUS_MAX);
 
         self.radius = Length::new::<centimeter>(new_radius); // Convert to cm
-
-        info!(
-            "Estimated diameter: {:.2} cm, Tension: {:.2}, Tension Error: {:.2}",
-            self.radius.get::<centimeter>(),
-            filament_tension,
-            tension_error
-        );
 
         self.last_max_speed_factor_update = Some(t);
     }
