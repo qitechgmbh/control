@@ -42,7 +42,9 @@ export const sineWaveEventDataSchema = z.object({
  * Sine wave state event (frequency only)
  */
 export const mockStateEventDataSchema = z.object({
-  frequency: z.number(),
+  frequency1: z.number(),
+  frequency2: z.number(),
+  frequency3: z.number(),
 });
 
 /**

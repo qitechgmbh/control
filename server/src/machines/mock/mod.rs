@@ -2,6 +2,7 @@ use api::{
     MockEvents, MockMachineNamespace, Mode, ModeStateEvent, SineWaveEvent, SineWaveStateEvent,
 };
 use control_core::{machines::Machine, socketio::namespace::NamespaceCacheingLogic};
+use tracing_subscriber::fmt::FormatFields;
 use std::time::Instant;
 use uom::si::{
     f64::Frequency,
@@ -13,6 +14,39 @@ pub mod api;
 pub mod new;
 
 #[derive(Debug)]
+struct SineWaveFrequencies {
+    frequency1: Frequency,
+    frequency2: Frequency,
+    frequency3: Frequency,
+}
+
+impl SineWaveFrequencies {
+    pub fn new() -> Self {
+        SineWaveFrequencies {
+            frequency1: Frequency::new::<hertz>(0.1),
+            frequency2: Frequency::new::<hertz>(0.2),
+            frequency3: Frequency::new::<hertz>(0.5),
+        }
+    }
+
+    pub fn get_as_mhz(&self) -> [f64; 3] {
+        [
+            self.frequency1.get::<millihertz>(),
+            self.frequency2.get::<millihertz>(),
+            self.frequency3.get::<millihertz>(),
+        ]
+    }
+
+    pub fn get_amplitudes(&self, t: f64) -> [f64; 3] {
+        [
+            (self.frequency1.get::<hertz>() * t).sin(),
+            (self.frequency2.get::<hertz>() * t).sin(),
+            (self.frequency3.get::<hertz>() * t).sin(),
+        ]
+    }
+}
+
+#[derive(Debug)]
 pub struct MockMachine {
     // socketio
     namespace: MockMachineNamespace,
@@ -20,11 +54,11 @@ pub struct MockMachine {
 
     // mock machine specific fields
     t_0: Instant,
-    frequency: Frequency,
+    frequencies: SineWaveFrequencies,
     mode: Mode,
 
     // State tracking to only emit when values change
-    last_emitted_frequency: Option<f64>,
+    last_emitted_frequencies: Option<[f64; 3]>,
     last_emitted_mode: Option<Mode>,
 }
 
@@ -35,23 +69,20 @@ impl MockMachine {
     pub fn emit_sine_wave(&mut self) {
         let now = Instant::now();
         let elapsed = now.duration_since(self.t_0).as_secs_f64();
-        let freq_hz = self.frequency.get::<hertz>();
 
         // Calculate sine wave: sin(2π * frequency * time)
-        let y = match self.mode {
+        let t = match self.mode {
             Mode::Standby => 0.0,
-            Mode::Running => (2.0 * std::f64::consts::PI * freq_hz * elapsed).sin(),
+            Mode::Running => 2.0 * std::f64::consts::PI * elapsed,
         };
 
-        let amplitude1 = 2.0 * y + 69.0;
-        let amplitude2 = y + 420.0;
-        let amplitude3 = 3.0 * y + 42.0;
+        let amplitudes = self.frequencies.get_amplitudes(t);
 
         let sine_wave_event = SineWaveEvent {
-            amplitude_sum: amplitude1 + amplitude2 + amplitude3,
-            amplitude1,
-            amplitude2,
-            amplitude3,
+            amplitude_sum: amplitudes[0] + amplitudes[1] + amplitudes[2],
+            amplitude1: amplitudes[0],
+            amplitude2: amplitudes[1],
+            amplitude3: amplitudes[2],
         };
 
         self.namespace
@@ -60,21 +91,23 @@ impl MockMachine {
 
     /// Emit the current state of the mock machine only if values have changed
     pub fn emit_sine_wave_state(&mut self) {
-        let current_frequency_mhz = self.frequency.get::<millihertz>();
+        let current_frequencies = self.frequencies.get_as_mhz();
 
         // Only emit if values have changed or this is the first emission
-        let should_emit = self.last_emitted_frequency != Some(current_frequency_mhz);
+        let should_emit = self.last_emitted_frequencies != Some(current_frequencies);
 
         if should_emit {
-            let mock_state_event = SineWaveStateEvent {
-                frequency: current_frequency_mhz,
+            let frequencies_event = SineWaveStateEvent {
+                frequency1: current_frequencies[0],
+                frequency2: current_frequencies[1],
+                frequency3: current_frequencies[2],
             };
 
             self.namespace
-                .emit(MockEvents::SineWaveState(mock_state_event.build()));
+                .emit(MockEvents::SineWaveState(frequencies_event.build()));
 
             // Update last emitted values
-            self.last_emitted_frequency = Some(current_frequency_mhz);
+            self.last_emitted_frequencies = Some(current_frequencies);
         }
     }
 
@@ -98,9 +131,23 @@ impl MockMachine {
         }
     }
 
-    /// Set the frequency of the sine wave
-    pub fn set_frequency(&mut self, frequency_mhz: f64) {
-        self.frequency = Frequency::new::<millihertz>(frequency_mhz);
+    /// Set the frequency of the first sine wave
+    pub fn set_frequency1(&mut self, frequency_mhz: f64) {
+        self.frequencies.frequency1 = Frequency::new::<millihertz>(frequency_mhz);
+        // Emit state change immediately
+        self.emit_sine_wave_state();
+    }
+
+    /// Set the frequency of the second sine wave
+    pub fn set_frequency2(&mut self, frequency_mhz: f64) {
+        self.frequencies.frequency2 = Frequency::new::<millihertz>(frequency_mhz);
+        // Emit state change immediately
+        self.emit_sine_wave_state();
+    }
+
+    /// Set the frequency of the third sine wave
+    pub fn set_frequency3(&mut self, frequency_mhz: f64) {
+        self.frequencies.frequency3 = Frequency::new::<millihertz>(frequency_mhz);
         // Emit state change immediately
         self.emit_sine_wave_state();
     }

@@ -31,35 +31,63 @@ export function Mock1ControlPage() {
     sineWaves,
     mockState,
     modeState,
-    mockSetFrequency,
+    mockSetFrequency1,
+    mockSetFrequency2,
+    mockSetFrequency3,
     mockSetMode,
     modeStateIsDisabled,
   } = useMock1();
 
   // Controlled local states synced with mockState and modeState
-  const frequency = mockState?.data?.frequency ?? 1.0;
+  const frequency1 = mockState?.data?.frequency1 ?? 1.0;
+  const frequency2 = mockState?.data?.frequency2 ?? 1.0;
+  const frequency3 = mockState?.data?.frequency3 ?? 1.0;
   const mode = modeState?.data?.mode ?? "Standby";
 
   return (
     <Page>
       <ControlGrid>
-        <SineWaveCard title="SineWaveSum" timeseries={sineWaves.sineWaveSum} />
         <SineWaveCard title="Sine Wave 1" timeseries={sineWaves.sineWave1} />
         <SineWaveCard title="Sine Wave 2" timeseries={sineWaves.sineWave2} />
         <SineWaveCard title="Sine Wave 3" timeseries={sineWaves.sineWave3} />
+        <SineWaveCard title="SineWaveSum" timeseries={sineWaves.sineWaveSum} />
 
-        <ControlCard title="Frequency">
+        <ControlCard title="Frequencies">
           <div className="flex flex-col gap-4">
             <EditValue
               title="Frequency"
               unit="mHz"
-              value={frequency}
+              value={frequency1}
               defaultValue={500}
               min={0.0}
               max={1000}
-              step={0.1}
+              step={1}
               renderValue={(value) => value.toFixed(0)}
-              onChange={mockSetFrequency}
+              onChange={mockSetFrequency1}
+            />
+
+            <EditValue
+              title="Frequency"
+              unit="mHz"
+              value={frequency2}
+              defaultValue={500}
+              min={0.0}
+              max={1000}
+              step={1}
+              renderValue={(value) => value.toFixed(0)}
+              onChange={mockSetFrequency2}
+            />
+
+            <EditValue
+              title="Frequency"
+              unit="mHz"
+              value={frequency3}
+              defaultValue={500}
+              min={0.0}
+              max={1000}
+              step={1}
+              renderValue={(value) => value.toFixed(0)}
+              onChange={mockSetFrequency3}
             />
           </div>
         </ControlCard>

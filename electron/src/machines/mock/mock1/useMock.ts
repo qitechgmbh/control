@@ -8,30 +8,81 @@ import { useMock1Namespace, Mode } from "./mock1Namespace";
 import { useEffect, useMemo } from "react";
 import { useStateOptimistic } from "@/lib/useStateOptimistic";
 
+const schemaSetFrequency1 = z.object({ SetFrequency1: z.number() });
+const schemaSetFrequency2 = z.object({ SetFrequency2: z.number() });
+const schemaSetFrequency3 = z.object({ SetFrequency3: z.number() });
+
 function useMock(machine_identification_unique: MachineIdentificationUnique) {
+
   // Write Path
   const mockStateOptimistic = useStateOptimistic<{
-    frequency: number;
+    frequency1: number;
+    frequency2: number;
+    frequency3: number;
   }>();
 
   const modeStateOptimistic = useStateOptimistic<{
     mode: Mode;
   }>();
 
-  const schemaSetFrequency = z.object({ SetFrequency: z.number() });
-  const { request: requestSetFrequency } =
-    useMachineMutation(schemaSetFrequency);
-  const mockSetFrequency = async (frequency: number) => {
+  const { request: requestSetFrequency1 } =
+      useMachineMutation(schemaSetFrequency1);
+
+  const { request: requestSetFrequency2 } =
+      useMachineMutation(schemaSetFrequency2);
+
+  const { request: requestSetFrequency3 } =
+      useMachineMutation(schemaSetFrequency3);
+
+  const mockSetFrequency1 = async (frequency: number) => {
     if (mockStateOptimistic.value) {
       mockStateOptimistic.setOptimistic({
         ...mockStateOptimistic.value,
-        frequency: frequency,
+        frequency1: frequency,
       });
     }
-    requestSetFrequency({
+    requestSetFrequency1({
       machine_identification_unique,
       data: {
-        SetFrequency: frequency,
+        SetFrequency1: frequency,
+      },
+    })
+      .then((response) => {
+        if (!response.success) mockStateOptimistic.resetToReal();
+      })
+      .catch(() => mockStateOptimistic.resetToReal());
+  };
+
+  const mockSetFrequency2 = async (frequency: number) => {
+    if (mockStateOptimistic.value) {
+      mockStateOptimistic.setOptimistic({
+        ...mockStateOptimistic.value,
+        frequency2: frequency,
+      });
+    }
+    requestSetFrequency2({
+      machine_identification_unique,
+      data: {
+        SetFrequency2: frequency,
+      },
+    })
+      .then((response) => {
+        if (!response.success) mockStateOptimistic.resetToReal();
+      })
+      .catch(() => mockStateOptimistic.resetToReal());
+  };
+
+  const mockSetFrequency3 = async (frequency: number) => {
+    if (mockStateOptimistic.value) {
+      mockStateOptimistic.setOptimistic({
+        ...mockStateOptimistic.value,
+        frequency3: frequency,
+      });
+    }
+    requestSetFrequency3({
+      machine_identification_unique,
+      data: {
+        SetFrequency3: frequency,
       },
     })
       .then((response) => {
@@ -83,7 +134,9 @@ function useMock(machine_identification_unique: MachineIdentificationUnique) {
     sineWaves,
     mockState,
     modeState,
-    mockSetFrequency,
+    mockSetFrequency1,
+    mockSetFrequency2,
+    mockSetFrequency3,
     mockSetMode,
     mockStateIsLoading:
       mockStateOptimistic.isOptimistic || !mockStateOptimistic.isInitialized,
