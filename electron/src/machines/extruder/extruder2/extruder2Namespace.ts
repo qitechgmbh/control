@@ -143,6 +143,7 @@ export function extruder2MessageHandler(
           modeState: event as ModeStateEvent,
         }));
       } else if (eventName == "FrontHeatingTemperatureEvent") {
+        console.log(event);
         const timeseriesValue: TimeSeriesValue = {
           value: event.data.temperature,
           timestamp: event.ts,
@@ -194,52 +195,32 @@ export function extruder2MessageHandler(
             timeseriesValue,
           ),
         }));
-      } else if (eventName == "FrontHeatingTargetTemperatureEvent") {
-        let parsed = heatingTargetEventSchema.parse(event);
+      } else if (eventName == "FrontHeatingStateEvent") {
+        let parsed = heatingStateEventSchema.parse(event);
         updateStore((state) => ({
           ...state,
           frontTargetTemperature: parsed.data.target_temperature,
+          frontWiringError: parsed.data.wiring_error,
         }));
-      } else if (eventName == "BackHeatingTargetTemperatureEvent") {
-        let parsed = heatingTargetEventSchema.parse(event);
+      } else if (eventName == "BackHeatingStateEvent") {
+        let parsed = heatingStateEventSchema.parse(event);
         updateStore((state) => ({
           ...state,
           backTargetTemperature: parsed.data.target_temperature,
+          backWiringError: parsed.data.wiring_error,
         }));
-      } else if (eventName == "MiddleHeatingTargetTemperatureEvent") {
-        let parsed = heatingTargetEventSchema.parse(event);
+      } else if (eventName == "MiddleHeatingStateEvent") {
+        let parsed = heatingStateEventSchema.parse(event);
         updateStore((state) => ({
           ...state,
           middleTargetTemperature: parsed.data.target_temperature,
+          middleWiringError: parsed.data.wiring_error,
         }));
-      } else if (eventName == "NozzleHeatingTargetTemperatureEvent") {
-        let parsed = heatingTargetEventSchema.parse(event);
+      } else if (eventName == "NozzleHeatingStateEvent") {
+        let parsed = heatingStateEventSchema.parse(event);
         updateStore((state) => ({
           ...state,
           nozzleTargetTemperature: parsed.data.target_temperature,
-        }));
-      } else if (eventName == "BackHeatingWiringErrorEvent") {
-        let parsed = heatingWiringErrorEventSchema.parse(event);
-        updateStore((state) => ({
-          ...state,
-          backWiringError: parsed.data.wiring_error,
-        }));
-      } else if (eventName == "FrontHeatingWiringErrorEvent") {
-        let parsed = heatingWiringErrorEventSchema.parse(event);
-        updateStore((state) => ({
-          ...state,
-          frontWiringError: parsed.data.wiring_error,
-        }));
-      } else if (eventName == "MiddleHeatingWiringErrorEvent") {
-        let parsed = heatingWiringErrorEventSchema.parse(event);
-        updateStore((state) => ({
-          ...state,
-          middleWiringError: parsed.data.wiring_error,
-        }));
-      } else if (eventName == "NozzleHeatingWiringErrorEvent") {
-        let parsed = heatingWiringErrorEventSchema.parse(event);
-        updateStore((state) => ({
-          ...state,
           nozzleWiringError: parsed.data.wiring_error,
         }));
       } else if (eventName == "NozzleHeatingPowerEvent") {
@@ -428,15 +409,13 @@ export const inverterRotationEventDataSchema = z.object({
   forward: z.boolean(),
 });
 
-export const heatingWiringErrorDataSchema = z.object({
-  wiring_error: z.boolean(),
-});
 export const heatingTemperatureDataSchema = z.object({
   temperature: z.number(),
 });
 
-export const heatingTargetTemperatureDataSchema = z.object({
+export const heatingStateDataSchema = z.object({
   target_temperature: z.number(),
+  wiring_error: z.boolean(),
 });
 
 export const motorScrewStateEventDataSchema = z.object({
@@ -477,13 +456,7 @@ export const heatingTemperatureEventSchema = eventSchema(
   heatingTemperatureDataSchema,
 );
 
-export const heatingWiringErrorEventSchema = eventSchema(
-  heatingWiringErrorDataSchema,
-);
-
-export const heatingTargetEventSchema = eventSchema(
-  heatingTargetTemperatureDataSchema,
-);
+export const heatingStateEventSchema = eventSchema(heatingStateDataSchema);
 
 export const motorScrewStateEventSchema = eventSchema(
   motorScrewStateEventDataSchema,

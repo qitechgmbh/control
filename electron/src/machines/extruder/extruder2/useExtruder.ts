@@ -447,7 +447,7 @@ export function useHeatingTemperature(
   );
 
   const heatingSetNozzleTemp = async (value: number) => {
-    frontHeatingTargetState.setOptimistic(value);
+    nozzleHeatingTargetState.setOptimistic(value);
     HeatingNozzleRequest({
       machine_identification_unique,
       data: { NozzleSetHeatingTemperature: value },
