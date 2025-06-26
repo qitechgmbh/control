@@ -41,17 +41,19 @@ impl MockMachine {
     pub fn emit_live_values(&mut self) {
         let now = Instant::now();
         let elapsed = now.duration_since(self.t_0).as_secs_f64();
-        let freq_hz = self.frequency1.get::<hertz>();
+        let freq1_hz = self.frequency1.get::<hertz>();
+        let freq2_hz = self.frequency2.get::<hertz>();
+        let freq3_hz = self.frequency3.get::<hertz>();
 
         // Calculate sine wave: sin(2π * frequency * time)
-        let y = match self.mode {
+        let t = match self.mode {
             Mode::Standby => 0.0,
-            Mode::Running => (2.0 * std::f64::consts::PI * freq_hz * elapsed).sin(),
+            Mode::Running => 2.0 * std::f64::consts::PI * elapsed,
         };
 
-        let amplitude1 = 2.0 * y + 69.0;
-        let amplitude2 = y + 420.0;
-        let amplitude3 = 3.0 * y + 42.0;
+        let amplitude1 = (t * freq1_hz).sin();
+        let amplitude2 = (t * freq2_hz).sin();
+        let amplitude3 = (t * freq3_hz).sin();
 
         let live_values = LiveValuesEvent {
             amplitude_sum: amplitude1 + amplitude2 + amplitude3,

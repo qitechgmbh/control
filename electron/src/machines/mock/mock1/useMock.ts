@@ -60,7 +60,6 @@ function useMock(machine_identification_unique: MachineIdentificationUnique) {
     );
   };
 
-  // Action functions with verb-first names
   const setSchemaFrequency2 = z.object({ SetFrequency2: z.number() });
   const { request: requestSetFrequency2 } =
     useMachineMutation(setSchemaFrequency2);
@@ -79,7 +78,6 @@ function useMock(machine_identification_unique: MachineIdentificationUnique) {
     );
   };
 
-  // Action functions with verb-first names
   const setSchemaFrequency3 = z.object({ SetFrequency3: z.number() });
   const { request: requestSetFrequency3 } =
       useMachineMutation(setSchemaFrequency3);
