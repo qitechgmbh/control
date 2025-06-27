@@ -26,6 +26,12 @@ export function Mock1Page() {
           title: "Manual",
           icon: "lu:BookOpen",
         },
+        {
+          link: "presets",
+          activeLink: "presets",
+          title: "Presets",
+          icon: "lu:Save",
+        },
       ]}
     />
   );

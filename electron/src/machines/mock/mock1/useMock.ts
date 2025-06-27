@@ -1,6 +1,7 @@
 import { toastError } from "@/components/Toast";
 import { useMachineMutate as useMachineMutation } from "@/client/useClient";
-import { mock1, MachineIdentificationUnique } from "@/machines/types";
+import { MachineIdentificationUnique } from "@/machines/types";
+import { mock1 } from "@/machines/properties";
 import { mock1SerialRoute } from "@/routes/routes";
 import { z } from "zod";
 import { useMock1Namespace, Mode } from "./mock1Namespace";
