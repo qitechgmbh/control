@@ -9,7 +9,10 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import React, { useMemo } from "react";
-import { getVendorProperties, getMachineProperties } from "@/machines/properties";
+import {
+  getVendorProperties,
+  getMachineProperties,
+} from "@/machines/properties";
 import { IconText } from "@/components/IconText";
 import { MachinesEventData, useMainNamespace } from "@/client/mainNamespace";
 

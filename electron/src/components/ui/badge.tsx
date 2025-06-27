@@ -15,8 +15,7 @@ const badgeVariants = cva(
           "border-transparent bg-neutral-100 text-neutral-900 dark:bg-neutral-800 dark:text-neutral-50",
         destructive:
           "border-transparent bg-red-500 text-white focus-visible:ring-red-500/20 dark:focus-visible:ring-red-500/40 dark:bg-red-500/70 dark:bg-red-900 dark:focus-visible:ring-red-900/20 dark:dark:focus-visible:ring-red-900/40 dark:dark:bg-red-900/70",
-        outline:
-          "text-neutral-950 dark:text-neutral-50",
+        outline: "text-neutral-950 dark:text-neutral-50",
       },
     },
     defaultVariants: {
