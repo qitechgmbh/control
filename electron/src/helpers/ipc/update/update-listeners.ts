@@ -1,7 +1,11 @@
 import { ipcMain } from "electron";
-import { UPDATE_END, UPDATE_EXECUTE, UPDATE_LOG } from "./update-channels";
-import { spawn } from "child_process";
+import { UPDATE_END, UPDATE_EXECUTE, UPDATE_LOG, UPDATE_CANCEL } from "./update-channels";
+import { spawn, ChildProcess } from "child_process";
 import { existsSync } from "fs";
+
+// Global state to track running processes and cancellation
+let runningProcesses: ChildProcess[] = [];
+let updateCancelled = false;
 
 type UpdateExecuteListenerParams = {
   githubRepoOwner: string;
@@ -15,10 +19,15 @@ type UpdateExecuteListenerParams = {
 export function addUpdateEventListeners() {
   // Remove any existing handlers to prevent duplicates
   ipcMain.removeHandler(UPDATE_EXECUTE);
+  ipcMain.removeHandler(UPDATE_CANCEL);
 
   ipcMain.handle(
     UPDATE_EXECUTE,
     async (event, params: UpdateExecuteListenerParams) => {
+      // Reset cancellation state when starting a new update
+      updateCancelled = false;
+      runningProcesses = [];
+
       update(event, params)
         .then(() => {
           event.sender.send(
@@ -34,6 +43,41 @@ export function addUpdateEventListeners() {
         });
     },
   );
+
+  ipcMain.handle(UPDATE_CANCEL, async (event) => {
+    updateCancelled = true;
+    
+    // Kill all running processes
+    for (const process of runningProcesses) {
+      if (process && !process.killed) {
+        event.sender.send(
+          UPDATE_LOG,
+          terminalInfo(`Terminating process PID: ${process.pid}`),
+        );
+        process.kill('SIGTERM');
+        
+        // If SIGTERM doesn't work after 5 seconds, use SIGKILL
+        setTimeout(() => {
+          if (process && !process.killed) {
+            event.sender.send(
+              UPDATE_LOG,
+              terminalInfo(`Force killing process PID: ${process.pid}`),
+            );
+            process.kill('SIGKILL');
+          }
+        }, 5000);
+      }
+    }
+    
+    runningProcesses = [];
+    
+    event.sender.send(
+      UPDATE_LOG,
+      terminalInfo("Update cancellation requested - terminating all processes"),
+    );
+    
+    return { success: true };
+  });
 }
 
 async function update(
@@ -79,6 +123,11 @@ async function update(
           terminalInfo(`Preparing update directory: ${repoDir}`),
         );
 
+        if (updateCancelled) {
+          reject(new Error("Update was cancelled by user"));
+          return;
+        }
+
         const clearResult = await clearRepoDirectory(repoDir, event);
         if (!clearResult.success) {
           // Even if clearing fails, we should continue - the git clone might overwrite or fail gracefully
@@ -88,6 +137,11 @@ async function update(
               `Warning: Could not fully clear directory, continuing with clone attempt`,
             ),
           );
+        }
+
+        if (updateCancelled) {
+          reject(new Error("Update was cancelled by user"));
+          return;
         }
 
         // 2. clone the repository
@@ -108,6 +162,11 @@ async function update(
           return;
         }
 
+        if (updateCancelled) {
+          reject(new Error("Update was cancelled by user"));
+          return;
+        }
+
         // 3. make the nixos-install.sh script executable
         const scriptPath = `${repoDir}/nixos-install.sh`;
 
@@ -116,6 +175,11 @@ async function update(
           const errorMsg = `nixos-install.sh script not found at ${scriptPath}`;
           event.sender.send(UPDATE_LOG, terminalError(errorMsg));
           reject(new Error(errorMsg));
+          return;
+        }
+
+        if (updateCancelled) {
+          reject(new Error("Update was cancelled by user"));
           return;
         }
 
@@ -130,6 +194,11 @@ async function update(
           reject(
             new Error(chmodResult.error || "Failed to make script executable"),
           );
+          return;
+        }
+
+        if (updateCancelled) {
+          reject(new Error("Update was cancelled by user"));
           return;
         }
 
@@ -232,6 +301,11 @@ async function cloneRepository(
     return { success: false, error: terminalError("Home directory not found") };
   }
 
+  // Check for cancellation before proceeding
+  if (updateCancelled) {
+    return { success: false, error: "Update was cancelled by user" };
+  }
+
   // Construct repository URL
   const repoUrl = githubToken
     ? `https://${githubToken}@github.com/${githubRepoOwner}/${githubRepoName}.git`
@@ -288,6 +362,11 @@ async function cloneRepository(
     };
   }
 
+  // Check for cancellation before checkout
+  if (updateCancelled) {
+    return { success: false, error: "Update was cancelled by user" };
+  }
+
   // If commit is specified, checkout the specific commit
   if (commit && cmd1.success) {
     const repoDir = `${homeDir}/${githubRepoName}`;
@@ -319,6 +398,11 @@ async function runCommand(
   event: Electron.IpcMainInvokeEvent,
 ): Promise<{ success: boolean; error?: string }> {
   try {
+    // Check if update was cancelled before starting command
+    if (updateCancelled) {
+      return { success: false, error: "Update was cancelled by user" };
+    }
+
     const completeCommand = `${cmd} ${args.join(" ")}`;
     const workingDirText = terminalGray(workingDir);
     event.sender.send(
@@ -330,8 +414,12 @@ async function runCommand(
       cwd: workingDir,
     });
 
+    // Track this process so we can kill it if needed
+    runningProcesses.push(childProcess);
+
     // Stream stdout logs back to renderer
     childProcess.stdout.on("data", (data) => {
+      if (updateCancelled) return; // Don't send logs if cancelled
       const log = data.toString();
       console.log(log);
       event.sender.send(UPDATE_LOG, log);
@@ -339,6 +427,7 @@ async function runCommand(
 
     // Stream stderr logs back to renderer
     childProcess.stderr.on("data", (data) => {
+      if (updateCancelled) return; // Don't send logs if cancelled
       const log = data.toString();
       console.error(log);
       event.sender.send(UPDATE_LOG, log);
@@ -347,6 +436,17 @@ async function runCommand(
     // Handle process completion
     return new Promise((resolve) => {
       childProcess.on("close", (code) => {
+        // Remove from tracking array
+        const index = runningProcesses.indexOf(childProcess);
+        if (index > -1) {
+          runningProcesses.splice(index, 1);
+        }
+
+        if (updateCancelled) {
+          resolve({ success: false, error: "Update was cancelled by user" });
+          return;
+        }
+
         if (code === 0) {
           event.sender.send(
             UPDATE_LOG,
@@ -366,6 +466,17 @@ async function runCommand(
       });
 
       childProcess.on("error", (err) => {
+        // Remove from tracking array
+        const index = runningProcesses.indexOf(childProcess);
+        if (index > -1) {
+          runningProcesses.splice(index, 1);
+        }
+
+        if (updateCancelled) {
+          resolve({ success: false, error: "Update was cancelled by user" });
+          return;
+        }
+
         event.sender.send(
           UPDATE_LOG,
           terminalError(`Command error: ${err.message}`),
@@ -374,6 +485,10 @@ async function runCommand(
       });
     });
   } catch (error: any) {
+    if (updateCancelled) {
+      return { success: false, error: "Update was cancelled by user" };
+    }
+    
     event.sender.send(UPDATE_LOG, terminalError(`Error: ${error.toString()}`));
     return { success: false, error: error.toString() };
   }

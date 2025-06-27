@@ -41,6 +41,7 @@ interface UpdateContext {
     branch?: string;
     commit?: string;
   }) => Promise<void>;
+  cancel: () => Promise<{ success: boolean }>;
   onLog: (callback: (log: string) => void) => void;
   onEnd: (
     callback: (params: { success: boolean; error?: string }) => void,

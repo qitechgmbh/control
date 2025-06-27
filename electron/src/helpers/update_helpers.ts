@@ -2,6 +2,8 @@ let updateCancelled = false;
 
 export function cancelCurrentUpdate() {
   updateCancelled = true;
+  // Also signal the backend to cancel
+  window.update.cancel();
 }
 
 export function resetUpdateCancellation() {
