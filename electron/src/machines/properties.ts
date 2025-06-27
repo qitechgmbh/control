@@ -1,4 +1,4 @@
-import {MachineProperties, MachineIdentification, DeviceRole} from "./types";
+import { MachineProperties, MachineIdentification, DeviceRole } from "./types";
 
 export const VENDOR_QITECH = 0x0001;
 
@@ -251,4 +251,3 @@ export function filterAllowedDevices(
     ),
   );
 }
-
