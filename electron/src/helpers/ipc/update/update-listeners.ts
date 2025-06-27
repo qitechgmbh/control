@@ -72,20 +72,20 @@ async function update(
           return;
         }
 
-        // 1. first make sure the clone path is empty by deleting it if it containsa .git folder
+        // 1. first make sure the clone path is empty by deleting it if it exists
         const repoDir = `${homeDir}/${githubRepoName}`;
-        const clearResult = await clearRepoDirectory(
-          `${homeDir}/${githubRepoName}`,
-          event,
+        event.sender.send(
+          UPDATE_LOG,
+          terminalInfo(`Preparing update directory: ${repoDir}`),
         );
+        
+        const clearResult = await clearRepoDirectory(repoDir, event);
         if (!clearResult.success) {
-          event.sender.send(UPDATE_LOG, clearResult.error);
-          reject(
-            new Error(
-              clearResult.error || "Failed to clear repository directory",
-            ),
+          // Even if clearing fails, we should continue - the git clone might overwrite or fail gracefully
+          event.sender.send(
+            UPDATE_LOG, 
+            terminalInfo(`Warning: Could not fully clear directory, continuing with clone attempt`)
           );
-          return;
         }
 
         // 2. clone the repository
@@ -107,6 +107,16 @@ async function update(
         }
 
         // 3. make the nixos-install.sh script executable
+        const scriptPath = `${repoDir}/nixos-install.sh`;
+        
+        // Check if the script exists before trying to make it executable
+        if (!existsSync(scriptPath)) {
+          const errorMsg = `nixos-install.sh script not found at ${scriptPath}`;
+          event.sender.send(UPDATE_LOG, terminalError(errorMsg));
+          reject(new Error(errorMsg));
+          return;
+        }
+
         const chmodResult = await runCommand(
           "chmod",
           ["+x", "nixos-install.sh"],
@@ -167,41 +177,38 @@ async function clearRepoDirectory(
       return { success: true };
     }
 
-    // Check if the directory contains a .git folder using Node.js
-    const gitPath = `${repoDir}/.git`;
-    if (existsSync(gitPath)) {
-      // If .git exists, delete the directory
-      const rmResult = await runCommand("rm", ["-rf", repoDir], "/", event);
-      if (!rmResult.success) {
-        event.sender.send(UPDATE_LOG, rmResult.error);
-        return { success: false, error: rmResult.error };
-      }
+    // If directory exists, delete it regardless of whether it's a git repo or not
+    // This ensures we always start with a clean slate
+    event.sender.send(
+      UPDATE_LOG,
+      terminalInfo(`Cleaning directory ${repoDir}`),
+    );
+    
+    const rmResult = await runCommand("rm", ["-rf", repoDir], "/", event);
+    if (!rmResult.success) {
+      // If rm fails, try to continue anyway - it might be a permission issue
+      // but the clone might still work
       event.sender.send(
         UPDATE_LOG,
-        terminalSuccess(`Deleted existing repository at ${repoDir}`),
+        terminalInfo(`Warning: Could not delete ${repoDir}, continuing anyway: ${rmResult.error}`),
       );
     } else {
       event.sender.send(
         UPDATE_LOG,
-        terminalInfo(
-          `Directory ${repoDir} exists but is not a git repository, deleting anyway`,
-        ),
-      );
-      // Delete the directory even if it's not a git repo
-      const rmResult = await runCommand("rm", ["-rf", repoDir], "/", event);
-      if (!rmResult.success) {
-        event.sender.send(UPDATE_LOG, rmResult.error);
-        return { success: false, error: rmResult.error };
-      }
-      event.sender.send(
-        UPDATE_LOG,
-        terminalSuccess(`Deleted directory at ${repoDir}`),
+        terminalSuccess(`Successfully cleaned directory ${repoDir}`),
       );
     }
+    
+    // Always return success - we don't want to fail the update just because
+    // we couldn't clean the directory
     return { success: true };
   } catch (error: any) {
-    event.sender.send(UPDATE_LOG, terminalError(`Error: ${error.toString()}`));
-    return { success: false, error: error.toString() };
+    // Log the error but don't fail the update process
+    event.sender.send(
+      UPDATE_LOG, 
+      terminalInfo(`Warning: Error cleaning directory ${repoDir}: ${error.toString()}, continuing anyway`)
+    );
+    return { success: true };
   }
 }
 
@@ -251,9 +258,27 @@ async function cloneRepository(
   const cmd1 = await runCommand("git", cloneArgs, homeDir, event);
 
   if (!cmd1.success) {
+    // If clone fails, try to provide more helpful error information
+    event.sender.send(
+      UPDATE_LOG,
+      terminalError("Git clone failed. This might be due to:"),
+    );
+    event.sender.send(
+      UPDATE_LOG,
+      terminalError("- Network connectivity issues"),
+    );
+    event.sender.send(
+      UPDATE_LOG,
+      terminalError("- Invalid GitHub token or repository access"),
+    );
+    event.sender.send(
+      UPDATE_LOG,
+      terminalError("- Repository doesn't exist or is private"),
+    );
+    
     return {
       success: false,
-      error: terminalError("Failed to clone repository"),
+      error: `Failed to clone repository: ${cmd1.error}`,
     };
   }
 
