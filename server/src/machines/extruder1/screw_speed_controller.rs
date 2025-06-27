@@ -1,4 +1,4 @@
-use std::{any, time::Instant};
+use std::time::Instant;
 
 use control_core::{
     actors::{
@@ -187,7 +187,7 @@ impl ScrewSpeedController {
         let current_result = self.get_sensor_current();
         let current = match current_result {
             Ok(current) => current.get::<milliampere>(),
-            Err(err) => {
+            Err(_) => {
                 tracing::error!("cant get pressure sensor reading");
                 return Pressure::new::<bar>(0.0);
             }
