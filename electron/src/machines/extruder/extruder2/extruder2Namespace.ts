@@ -143,7 +143,6 @@ export function extruder2MessageHandler(
           modeState: event as ModeStateEvent,
         }));
       } else if (eventName == "FrontHeatingTemperatureEvent") {
-        console.log(event);
         const timeseriesValue: TimeSeriesValue = {
           value: event.data.temperature,
           timestamp: event.ts,
@@ -196,28 +195,28 @@ export function extruder2MessageHandler(
           ),
         }));
       } else if (eventName == "FrontHeatingStateEvent") {
-        let parsed = heatingStateEventSchema.parse(event);
+        const parsed = heatingStateEventSchema.parse(event);
         updateStore((state) => ({
           ...state,
           frontTargetTemperature: parsed.data.target_temperature,
           frontWiringError: parsed.data.wiring_error,
         }));
       } else if (eventName == "BackHeatingStateEvent") {
-        let parsed = heatingStateEventSchema.parse(event);
+        const parsed = heatingStateEventSchema.parse(event);
         updateStore((state) => ({
           ...state,
           backTargetTemperature: parsed.data.target_temperature,
           backWiringError: parsed.data.wiring_error,
         }));
       } else if (eventName == "MiddleHeatingStateEvent") {
-        let parsed = heatingStateEventSchema.parse(event);
+        const parsed = heatingStateEventSchema.parse(event);
         updateStore((state) => ({
           ...state,
           middleTargetTemperature: parsed.data.target_temperature,
           middleWiringError: parsed.data.wiring_error,
         }));
       } else if (eventName == "NozzleHeatingStateEvent") {
-        let parsed = heatingStateEventSchema.parse(event);
+        const parsed = heatingStateEventSchema.parse(event);
         updateStore((state) => ({
           ...state,
           nozzleTargetTemperature: parsed.data.target_temperature,
