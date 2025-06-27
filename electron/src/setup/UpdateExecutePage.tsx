@@ -5,7 +5,7 @@ import { Terminal } from "@/components/Terminal";
 import { TouchButton } from "@/components/touch/TouchButton";
 import { updateExecute, cancelCurrentUpdate } from "@/helpers/update_helpers";
 import { useUpdateStore } from "@/stores/updateStore";
-import { useSearch, useNavigate } from "@tanstack/react-router";
+import { useSearch } from "@tanstack/react-router";
 import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -13,7 +13,6 @@ export function UpdateExecutePage() {
   const search = useSearch({
     from: "/_sidebar/setup/update/execute",
   });
-  const navigate = useNavigate();
 
   const {
     isUpdating,
@@ -23,10 +22,15 @@ export function UpdateExecutePage() {
     addLog,
     finishUpdate,
     cancelUpdate,
-    resetUpdate,
+    clearLogs,
   } = useUpdateStore();
 
   const [shouldCancel, setShouldCancel] = useState(false);
+
+  // Clear terminal immediately when component mounts
+  useEffect(() => {
+    clearLogs();
+  }, [clearLogs]);
 
   // Check if user navigated back to an ongoing update
   useEffect(() => {
@@ -69,21 +73,13 @@ export function UpdateExecutePage() {
     toast.info("Cancelling update...");
   };
 
-  const handleGoBack = () => {
-    navigate({ to: "/_sidebar/setup/update/changelog", search });
-  };
-
-  const handleReset = () => {
-    resetUpdate();
-  };
-
   return (
     <Page>
       <SectionTitle title="Apply Update" />
 
       <div className="flex gap-4">
-        {/* Show Apply Update button when not updating and no successful result exists */}
-        {!isUpdating && !updateResult && (
+        {/* Show Apply Update button when not updating */}
+        {!isUpdating && (
           <TouchButton
             className="w-max"
             icon="lu:CircleFadingArrowUp"
@@ -105,39 +101,7 @@ export function UpdateExecutePage() {
           </TouchButton>
         )}
 
-        {/* Show Back button when not updating and no result yet */}
-        {!isUpdating && !updateResult && (
-          <TouchButton
-            className="w-max"
-            icon="lu:ArrowLeft"
-            onClick={handleGoBack}
-            variant="outline"
-          >
-            Back to Changelog
-          </TouchButton>
-        )}
 
-        {/* Show reset and back buttons when update is complete (success or failure) */}
-        {!isUpdating && updateResult && (
-          <>
-            <TouchButton
-              className="w-max"
-              icon="lu:RotateCcw"
-              onClick={handleReset}
-              variant="outline"
-            >
-              Start New Update
-            </TouchButton>
-            <TouchButton
-              className="w-max"
-              icon="lu:ArrowLeft"
-              onClick={handleGoBack}
-              variant="outline"
-            >
-              Back to Changelog
-            </TouchButton>
-          </>
-        )}
       </div>
 
       <Alert title="Update Procedure Info" variant="info">
