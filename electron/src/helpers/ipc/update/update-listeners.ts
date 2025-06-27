@@ -1,6 +1,7 @@
 import { ipcMain } from "electron";
 import { UPDATE_END, UPDATE_EXECUTE, UPDATE_LOG } from "./update-channels";
 import { spawn } from "child_process";
+import { existsSync } from "fs";
 
 type UpdateExecuteListenerParams = {
   githubRepoOwner: string;
@@ -62,10 +63,9 @@ async function update(
         const homeDir =
           qitechControlEnv === "control-os" ? "/home/qitech" : process.env.HOME;
         if (!homeDir) {
-          event.sender.send(
-            UPDATE_LOG,
-            terminalColor("red", terminalError("Home directory not found")),
-          );
+          const errorMsg = "Home directory not found";
+          event.sender.send(UPDATE_LOG, terminalError(errorMsg));
+          reject(new Error(errorMsg));
           return;
         }
 
@@ -77,6 +77,11 @@ async function update(
         );
         if (!clearResult.success) {
           event.sender.send(UPDATE_LOG, clearResult.error);
+          reject(
+            new Error(
+              clearResult.error || "Failed to clear repository directory",
+            ),
+          );
           return;
         }
 
@@ -94,6 +99,7 @@ async function update(
         );
         if (!cloneResult.success) {
           event.sender.send(UPDATE_LOG, cloneResult.error);
+          reject(new Error(cloneResult.error || "Failed to clone repository"));
           return;
         }
 
@@ -106,6 +112,9 @@ async function update(
         );
         if (!chmodResult.success) {
           event.sender.send(UPDATE_LOG, chmodResult.error);
+          reject(
+            new Error(chmodResult.error || "Failed to make script executable"),
+          );
           return;
         }
 
@@ -118,6 +127,9 @@ async function update(
         );
         if (!installResult.success) {
           event.sender.send(UPDATE_LOG, installResult.error);
+          reject(
+            new Error(installResult.error || "Failed to run nixos-install.sh"),
+          );
           return;
         }
 
@@ -143,11 +155,20 @@ async function clearRepoDirectory(
   event: Electron.IpcMainInvokeEvent,
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    // Check if the directory exists
-    const lsResult = await runCommand("ls", [".git"], repoDir, event);
-    if (lsResult.success) {
-      // If it exists, delete the directory
-      const rmResult = await runCommand("rm", ["-rf", repoDir], repoDir, event);
+    // Use Node.js existsSync to check if directory exists (more reliable than shell commands)
+    if (!existsSync(repoDir)) {
+      event.sender.send(
+        UPDATE_LOG,
+        terminalInfo(`Directory ${repoDir} does not exist, nothing to delete`),
+      );
+      return { success: true };
+    }
+
+    // Check if the directory contains a .git folder using Node.js
+    const gitPath = `${repoDir}/.git`;
+    if (existsSync(gitPath)) {
+      // If .git exists, delete the directory
+      const rmResult = await runCommand("rm", ["-rf", repoDir], "/", event);
       if (!rmResult.success) {
         event.sender.send(UPDATE_LOG, rmResult.error);
         return { success: false, error: rmResult.error };
@@ -159,9 +180,19 @@ async function clearRepoDirectory(
     } else {
       event.sender.send(
         UPDATE_LOG,
-        terminalError(
-          `No existing repository found at ${repoDir}, nothing to delete`,
+        terminalInfo(
+          `Directory ${repoDir} exists but is not a git repository, deleting anyway`,
         ),
+      );
+      // Delete the directory even if it's not a git repo
+      const rmResult = await runCommand("rm", ["-rf", repoDir], "/", event);
+      if (!rmResult.success) {
+        event.sender.send(UPDATE_LOG, rmResult.error);
+        return { success: false, error: rmResult.error };
+      }
+      event.sender.send(
+        UPDATE_LOG,
+        terminalSuccess(`Deleted directory at ${repoDir}`),
       );
     }
     return { success: true };
@@ -261,27 +292,27 @@ async function runCommand(
       `🚀 ${workingDirText} ${terminalColor("blue", completeCommand)}`,
     );
 
-    const process = spawn(cmd, args, {
+    const childProcess = spawn(cmd, args, {
       cwd: workingDir,
     });
 
     // Stream stdout logs back to renderer
-    process.stdout.on("data", (data) => {
+    childProcess.stdout.on("data", (data) => {
       const log = data.toString();
       console.log(log);
       event.sender.send(UPDATE_LOG, log);
     });
 
     // Stream stderr logs back to renderer
-    process.stderr.on("data", (data) => {
+    childProcess.stderr.on("data", (data) => {
       const log = data.toString();
       console.error(log);
       event.sender.send(UPDATE_LOG, log);
     });
 
     // Handle process completion
-    return new Promise((resolve, reject) => {
-      process.on("close", (code) => {
+    return new Promise((resolve) => {
+      childProcess.on("close", (code) => {
         if (code === 0) {
           event.sender.send(
             UPDATE_LOG,
@@ -293,19 +324,19 @@ async function runCommand(
             UPDATE_LOG,
             terminalError(`Command failed with code ${code}`),
           );
-          reject({
+          resolve({
             success: false,
-            error: terminalError(code?.toString() ?? "NO_CODE"),
+            error: `Command failed with code ${code?.toString() ?? "NO_CODE"}`,
           });
         }
       });
 
-      process.on("error", (err) => {
+      childProcess.on("error", (err) => {
         event.sender.send(
           UPDATE_LOG,
           terminalError(`Command error: ${err.message}`),
         );
-        reject({ success: false, error: err.message });
+        resolve({ success: false, error: err.message });
       });
     });
   } catch (error: any) {
