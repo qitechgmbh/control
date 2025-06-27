@@ -59,6 +59,8 @@ export function Extruder2ControlPage() {
           heatingTimeSeries={frontTemperature}
           heatingPower={frontPower}
           onChangeTargetTemp={heatingSetFrontTemp}
+          min={0}
+          max={300}
         />
         <HeatingZone
           title={"Heating Middle"}
@@ -66,6 +68,8 @@ export function Extruder2ControlPage() {
           heatingTimeSeries={middleTemperature}
           heatingPower={middlePower}
           onChangeTargetTemp={heatingSetMiddleTemp}
+          min={0}
+          max={300}
         />
         <HeatingZone
           title={"Heating Back"}
@@ -73,6 +77,8 @@ export function Extruder2ControlPage() {
           heatingTimeSeries={backTemperature}
           heatingPower={backPower}
           onChangeTargetTemp={heatingSetBackTemp}
+          min={0}
+          max={300}
         />
         <HeatingZone
           title={"Heating Nozzle"}
@@ -80,6 +86,8 @@ export function Extruder2ControlPage() {
           heatingTimeSeries={nozzleTemperature}
           heatingPower={nozzlePower}
           onChangeTargetTemp={heatingSetNozzleTemp}
+          min={0}
+          max={300}
         />
         <ControlCard className="bg-red" title="Screw Drive">
           {inverterState?.fault_occurence == true && (
