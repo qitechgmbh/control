@@ -82,14 +82,12 @@ export function UpdateExecutePage() {
       <SectionTitle title="Apply Update" />
 
       <div className="flex gap-4">
-        {/* Show Apply Update button when no update result exists */}
-        {!updateResult && (
+        {/* Show Apply Update button when not updating and no successful result exists */}
+        {!isUpdating && !updateResult && (
           <TouchButton
             className="w-max"
             icon="lu:CircleFadingArrowUp"
             onClick={handleStartUpdate}
-            disabled={isUpdating}
-            isLoading={isUpdating}
           >
             Apply Update
           </TouchButton>
@@ -119,8 +117,8 @@ export function UpdateExecutePage() {
           </TouchButton>
         )}
 
-        {/* Show reset and back buttons when update is complete */}
-        {updateResult && (
+        {/* Show reset and back buttons when update is complete (success or failure) */}
+        {!isUpdating && updateResult && (
           <>
             <TouchButton
               className="w-max"

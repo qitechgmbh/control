@@ -15,7 +15,7 @@ type UpdateExecuteListenerParams = {
 export function addUpdateEventListeners() {
   // Remove any existing handlers to prevent duplicates
   ipcMain.removeHandler(UPDATE_EXECUTE);
-  
+
   ipcMain.handle(
     UPDATE_EXECUTE,
     async (event, params: UpdateExecuteListenerParams) => {
@@ -78,13 +78,15 @@ async function update(
           UPDATE_LOG,
           terminalInfo(`Preparing update directory: ${repoDir}`),
         );
-        
+
         const clearResult = await clearRepoDirectory(repoDir, event);
         if (!clearResult.success) {
           // Even if clearing fails, we should continue - the git clone might overwrite or fail gracefully
           event.sender.send(
-            UPDATE_LOG, 
-            terminalInfo(`Warning: Could not fully clear directory, continuing with clone attempt`)
+            UPDATE_LOG,
+            terminalInfo(
+              `Warning: Could not fully clear directory, continuing with clone attempt`,
+            ),
           );
         }
 
@@ -108,7 +110,7 @@ async function update(
 
         // 3. make the nixos-install.sh script executable
         const scriptPath = `${repoDir}/nixos-install.sh`;
-        
+
         // Check if the script exists before trying to make it executable
         if (!existsSync(scriptPath)) {
           const errorMsg = `nixos-install.sh script not found at ${scriptPath}`;
@@ -183,14 +185,16 @@ async function clearRepoDirectory(
       UPDATE_LOG,
       terminalInfo(`Cleaning directory ${repoDir}`),
     );
-    
+
     const rmResult = await runCommand("rm", ["-rf", repoDir], "/", event);
     if (!rmResult.success) {
       // If rm fails, try to continue anyway - it might be a permission issue
       // but the clone might still work
       event.sender.send(
         UPDATE_LOG,
-        terminalInfo(`Warning: Could not delete ${repoDir}, continuing anyway: ${rmResult.error}`),
+        terminalInfo(
+          `Warning: Could not delete ${repoDir}, continuing anyway: ${rmResult.error}`,
+        ),
       );
     } else {
       event.sender.send(
@@ -198,15 +202,17 @@ async function clearRepoDirectory(
         terminalSuccess(`Successfully cleaned directory ${repoDir}`),
       );
     }
-    
+
     // Always return success - we don't want to fail the update just because
     // we couldn't clean the directory
     return { success: true };
   } catch (error: any) {
     // Log the error but don't fail the update process
     event.sender.send(
-      UPDATE_LOG, 
-      terminalInfo(`Warning: Error cleaning directory ${repoDir}: ${error.toString()}, continuing anyway`)
+      UPDATE_LOG,
+      terminalInfo(
+        `Warning: Error cleaning directory ${repoDir}: ${error.toString()}, continuing anyway`,
+      ),
     );
     return { success: true };
   }
@@ -275,7 +281,7 @@ async function cloneRepository(
       UPDATE_LOG,
       terminalError("- Repository doesn't exist or is private"),
     );
-    
+
     return {
       success: false,
       error: `Failed to clone repository: ${cmd1.error}`,
