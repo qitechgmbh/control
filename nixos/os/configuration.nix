@@ -213,7 +213,7 @@
   users.users.qitech = {
     isNormalUser = true;
     description = "QiTech HMI";
-    extraGroups = [ "networkmanager" "wheel" "realtime" ];
+    extraGroups = [ "networkmanager" "wheel" "realtime" "wireshark" ];
     packages = with pkgs; [ ];
   };
 
@@ -230,6 +230,10 @@
   # Install firefox.
   programs.firefox.enable = true;
 
+  # Enable Wireshark with proper permissions
+  programs.wireshark.enable = true;
+  programs.wireshark.package = pkgs.wireshark;
+
   # List packages installed in system profile. To search, run:
   # $ nix search wget
   environment.systemPackages = with pkgs; [
@@ -243,6 +247,7 @@
     git
     pkgs.qitechPackages.electron
     htop
+    wireshark
   ];
 
   xdg.portal.enable = true;
