@@ -3,7 +3,11 @@ import { Page } from "@/components/Page";
 import { SectionTitle } from "@/components/SectionTitle";
 import { Terminal } from "@/components/Terminal";
 import { TouchButton } from "@/components/touch/TouchButton";
-import { updateExecute, cancelCurrentUpdate } from "@/helpers/update_helpers";
+import {
+  updateExecute,
+  cancelCurrentUpdate,
+  resetUpdateCancellation,
+} from "@/helpers/update_helpers";
 import { useUpdateStore } from "@/stores/updateStore";
 import { useSearch } from "@tanstack/react-router";
 import React, { useEffect, useState } from "react";
@@ -41,13 +45,17 @@ export function UpdateExecutePage() {
   }, [isUpdating, updateResult]);
 
   const handleStartUpdate = async () => {
+    // Reset all cancellation state first
+    setShouldCancel(false);
+    resetUpdateCancellation();
+
     const source = {
       ...search,
       githubToken: search.githubToken || undefined,
     };
 
+    // Start update (this will reset updateResult and set isUpdating = true)
     startUpdate(source);
-    setShouldCancel(false);
 
     const res = await updateExecute(
       source,
@@ -100,8 +108,6 @@ export function UpdateExecutePage() {
             Cancel Update
           </TouchButton>
         )}
-
-
       </div>
 
       <Alert title="Update Procedure Info" variant="info">
