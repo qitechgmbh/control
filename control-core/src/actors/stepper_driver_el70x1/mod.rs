@@ -30,7 +30,7 @@ impl StepperDriverEL70x1 {
     }
 
     /// Set the speed in steps per second
-    pub fn set_speed(&mut self, steps_per_second: i32) {
+    pub fn set_speed(&mut self, steps_per_second: f64) {
         self.velocity = self.converter.steps_to_velocity(steps_per_second, true)
     }
 
