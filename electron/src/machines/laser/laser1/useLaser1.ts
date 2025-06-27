@@ -1,6 +1,7 @@
 import { toastError } from "@/components/Toast";
 import { useMachineMutate as useMachineMutation } from "@/client/useClient";
-import { laser1, MachineIdentificationUnique } from "@/machines/types";
+import { MachineIdentificationUnique } from "@/machines/types";
+import { laser1 } from "@/machines/properties";
 import { laser1SerialRoute } from "@/routes/routes";
 import { z } from "zod";
 import { useLaser1Namespace } from "./laser1Namespace";

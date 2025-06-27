@@ -59,7 +59,7 @@ export function MarkdownWithToc({
           style={{ maxHeight: "calc(100vh - 6rem)" }}
         >
           <div
-            className="overflow-y-auto scrollbar-hide"
+            className="scrollbar-hide overflow-y-auto"
             style={{ maxHeight: "calc(100vh - 8rem)" }}
           >
             <MarkdownToc
