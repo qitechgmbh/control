@@ -1,10 +1,10 @@
 import { cva } from "class-variance-authority";
-import React, { 
-  useCallback, 
-  useEffect, 
-  useMemo, 
-  useRef, 
-  useState 
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
 } from "react";
 import { Icon } from "./Icon";
 
@@ -83,9 +83,9 @@ const parseColorCodesCached = (text: string) => {
   if (parseCache.has(text)) {
     return parseCache.get(text)!;
   }
-  
+
   const result = parseColorCodes(text);
-  
+
   // Limit cache size to prevent memory leaks
   if (parseCache.size > 1000) {
     const firstKey = parseCache.keys().next().value;
@@ -93,7 +93,7 @@ const parseColorCodesCached = (text: string) => {
       parseCache.delete(firstKey);
     }
   }
-  
+
   parseCache.set(text, result);
   return result;
 };
@@ -105,29 +105,25 @@ const stripColorCodes = (text: string): string => {
 };
 
 // Memoized line component for better performance
-const TerminalLine = React.memo(({ 
-  line, 
-  index 
-}: { 
-  line: string; 
-  index: number;
-}) => {
-  const colorParts = useMemo(() => parseColorCodesCached(line), [line]);
+const TerminalLine = React.memo(
+  ({ line, index }: { line: string; index: number }) => {
+    const colorParts = useMemo(() => parseColorCodesCached(line), [line]);
 
-  return (
-    <div key={index} className="whitespace-pre-wrap">
-      {colorParts.length > 0
-        ? colorParts.map((part, partIndex) => (
-            <span key={partIndex} className={part.className}>
-              {part.text || " "}
-            </span>
-          ))
-        : line || " "}
-    </div>
-  );
-});
+    return (
+      <div key={index} className="whitespace-pre-wrap">
+        {colorParts.length > 0
+          ? colorParts.map((part, partIndex) => (
+              <span key={partIndex} className={part.className}>
+                {part.text || " "}
+              </span>
+            ))
+          : line || " "}
+      </div>
+    );
+  },
+);
 
-TerminalLine.displayName = 'TerminalLine';
+TerminalLine.displayName = "TerminalLine";
 
 export function Terminal({
   lines,
@@ -155,12 +151,12 @@ export function Terminal({
 
   // Calculate visible range for virtualization
   const lineHeight = 20; // Approximate line height in pixels
-  
+
   const visibleRange = useMemo(() => {
     const visibleStart = Math.max(0, Math.floor(scrollTop / lineHeight) - 10);
     const visibleEnd = Math.min(
       displayLines.length,
-      visibleStart + Math.ceil(containerHeight / lineHeight) + 20
+      visibleStart + Math.ceil(containerHeight / lineHeight) + 20,
     );
 
     return { start: visibleStart, end: visibleEnd };
@@ -194,6 +190,22 @@ export function Terminal({
     };
   }, [updateDimensions]);
 
+  // Initialize scroll position on mount and handle edge cases
+  useEffect(() => {
+    const terminal = terminalRef.current;
+    if (!terminal) return;
+
+    // Initial scroll to bottom if autoScroll is enabled
+    if (autoScroll) {
+      requestAnimationFrame(() => {
+        if (terminal) {
+          terminal.scrollTop = terminal.scrollHeight;
+          setIsScrolledToBottom(true);
+        }
+      });
+    }
+  }, [autoScroll]);
+
   // Handle scrolling - Optimized to use display lines
   useEffect(() => {
     const terminal = terminalRef.current;
@@ -201,7 +213,12 @@ export function Terminal({
 
     // If auto-scroll is enabled and user was at bottom, scroll to bottom when lines change
     if (autoScroll && isScrolledToBottom) {
-      terminal.scrollTop = terminal.scrollHeight;
+      // Use requestAnimationFrame to ensure scroll happens after DOM updates
+      requestAnimationFrame(() => {
+        if (terminal) {
+          terminal.scrollTop = terminal.scrollHeight;
+        }
+      });
     }
   }, [displayLines, autoScroll, isScrolledToBottom]);
 
@@ -219,10 +236,10 @@ export function Terminal({
       const currentScrollTop = terminal.scrollTop;
       setScrollTop(currentScrollTop);
 
-      const isAtBottom =
-        Math.abs(
-          terminal.scrollHeight - terminal.clientHeight - currentScrollTop,
-        ) < 10; // Small threshold to account for rounding errors
+      // More reliable bottom detection with larger threshold
+      const scrollHeight = terminal.scrollHeight;
+      const clientHeight = terminal.clientHeight;
+      const isAtBottom = scrollHeight - clientHeight - currentScrollTop <= 50;
 
       setIsScrolledToBottom(isAtBottom);
     }, 16); // ~60fps throttling
@@ -282,12 +299,33 @@ export function Terminal({
     }, 2000);
   }, [exportPrefix, lines]);
 
+  // Manual scroll to bottom function
+  const scrollToBottom = useCallback(() => {
+    const terminal = terminalRef.current;
+    if (terminal) {
+      requestAnimationFrame(() => {
+        terminal.scrollTop = terminal.scrollHeight;
+        setIsScrolledToBottom(true);
+      });
+    }
+  }, []);
+
   return (
     <div className={terminalStyle({ className })}>
       {/* Terminal header */}
       <div className="flex items-center justify-between border-b border-neutral-700 bg-neutral-800 px-4 py-2">
         <div className="text-xs text-neutral-400">{title}</div>
         <div className="flex items-center gap-2">
+          {!isScrolledToBottom && (
+            <button
+              onClick={scrollToBottom}
+              className="flex items-center text-xs text-neutral-400 transition-colors hover:text-neutral-200"
+              title="Scroll to bottom"
+            >
+              <Icon name="lu:ArrowDown" className="mr-1 size-3" />
+              Bottom
+            </button>
+          )}
           <button
             onClick={handleCopy}
             className="flex items-center text-xs text-neutral-400 transition-colors hover:text-neutral-200"
@@ -361,15 +399,15 @@ export function Terminal({
         `}</style>
         {/* Virtualized rendering */}
         <div style={{ height: displayLines.length * lineHeight }}>
-          <div 
-            style={{ 
+          <div
+            style={{
               transform: `translateY(${visibleRange.start * lineHeight}px)`,
-              position: 'relative'
+              position: "relative",
             }}
           >
             {visibleLines.map((line, index) => (
-              <TerminalLine 
-                key={visibleRange.start + index}
+              <TerminalLine
+                key={`${visibleRange.start + index}-${line.slice(0, 50)}`}
                 line={line}
                 index={visibleRange.start + index}
               />
@@ -381,19 +419,22 @@ export function Terminal({
       {/* Status bar */}
       <div className="flex items-center justify-between bg-neutral-800 px-4 py-1 text-xs text-neutral-400">
         <div>
-          {lines.length} lines 
+          {lines.length} lines
           {lines.length !== displayLines.length && (
             <span className="text-yellow-400">
-              {" "}(showing last {displayLines.length})
+              {" "}
+              (showing last {displayLines.length})
             </span>
           )}
-          <span className="text-blue-400">
-            {" "}• virtualized
-          </span>
+          <span className="text-blue-400"> • virtualized</span>
         </div>
         <div>
           {isScrolledToBottom ? "At bottom" : "Scrolled up"} |
-          {autoScroll ? " Auto-scroll enabled" : " Auto-scroll disabled"}
+          {autoScroll && isScrolledToBottom
+            ? " Auto-scroll active"
+            : autoScroll
+              ? " Auto-scroll ready"
+              : " Auto-scroll disabled"}
         </div>
       </div>
     </div>
