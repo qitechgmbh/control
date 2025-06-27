@@ -11,8 +11,8 @@ import { Hex } from "@/components/Value";
 import { useClient } from "@/client/useClient";
 import {
   filterAllowedDevices,
-  getMachinePreset,
-  machinePresets,
+  getMachineProperties,
+  machineProperties,
   VENDOR_QITECH,
 } from "@/machines/properties";
 import React, { useEffect, useMemo } from "react";
@@ -98,7 +98,7 @@ export function DeviceEeepromDialogContent({ device, setOpen }: ContentProps) {
   });
   const values = useFormValues(form);
 
-// Removed unnecessary console.log statements.
+  // Removed unnecessary console.log statements.
 
   const onSubmit = (values: FormSchema) => {
     client
@@ -133,7 +133,7 @@ export function DeviceEeepromDialogContent({ device, setOpen }: ContentProps) {
 
   const machinePreset = useMemo(() => {
     if (!values.machine) return;
-    return getMachinePreset({
+    return getMachineProperties({
       vendor: VENDOR_QITECH,
       machine: parseInt(values.machine),
     });
@@ -195,7 +195,7 @@ export function DeviceEeepromDialogContent({ device, setOpen }: ContentProps) {
                       <SelectValue placeholder="Machine" />
                     </SelectTrigger>
                     <SelectContent>
-                      {machinePresets.map((machine) => (
+                      {machineProperties.map((machine) => (
                         <SelectItem
                           key={machine.machine_identification.machine}
                           value={machine.machine_identification.machine.toString()}

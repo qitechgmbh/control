@@ -67,7 +67,7 @@ export const columns: ColumnDef<
       if (!machine_identification) {
         return "—";
       }
-      const machinePreset = getMachinePreset(machine_identification);
+      const machinePreset = getMachineProperties(machine_identification);
       return machinePreset?.name + " " + machinePreset?.version;
     },
   },
@@ -96,7 +96,7 @@ export const columns: ColumnDef<
       if (!machine_identification) {
         return "—";
       }
-      const machinePreset = getMachinePreset(machine_identification);
+      const machinePreset = getMachineProperties(machine_identification);
       const deviceRole = machinePreset?.device_roles.find(
         (device_role) =>
           device_role.role === device_machine_identification.role,

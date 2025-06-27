@@ -9,7 +9,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import React, { useMemo } from "react";
-import { getVendorPreset, getMachinePreset } from "@/machines/types";
+import { getVendorProperties, getMachineProperties } from "@/machines/properties";
 import { IconText } from "@/components/IconText";
 import { MachinesEventData, useMainNamespace } from "@/client/mainNamespace";
 
@@ -25,7 +25,7 @@ export const columns: ColumnDef<
       if (!machine_identification) {
         return "—";
       }
-      const machinePreset = getMachinePreset(machine_identification);
+      const machinePreset = getMachineProperties(machine_identification);
       return machinePreset?.name + " " + machinePreset?.version;
     },
   },
@@ -38,7 +38,9 @@ export const columns: ColumnDef<
       if (!machine_identification) {
         return "—";
       }
-      return getVendorPreset(machine_identification.vendor)?.name ?? "UNKNOWN";
+      return (
+        getVendorProperties(machine_identification.vendor)?.name ?? "UNKNOWN"
+      );
     },
   },
   {

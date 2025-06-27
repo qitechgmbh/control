@@ -1,5 +1,4 @@
 import {
-  VendorProperties,
   MachineProperties,
   MachineIdentificationUnique,
 } from "@/machines/types";
@@ -7,16 +6,17 @@ import { useMainNamespace } from "./mainNamespace";
 import {
   getVendorProperties,
   getMachineProperties,
+  VendorProperties,
 } from "@/machines/properties";
 
 
 type UseMachine = {
   machine_identification_unique: MachineIdentificationUnique;
-  name: MachinePreset["name"];
-  version: MachinePreset["version"];
-  slug: MachinePreset["slug"];
-  vendor: VendorPreset["name"];
-  icon: MachinePreset["icon"];
+  name: MachineProperties["name"];
+  version: MachineProperties["version"];
+  slug: MachineProperties["slug"];
+  vendor: VendorProperties["name"];
+  icon: MachineProperties["icon"];
 };
 
 // returns only valid machines
@@ -28,10 +28,10 @@ export function useMachines(): UseMachine[] {
       machines.data.machines
         .filter((machine) => machine.error === null)
         .map((machine) => {
-          const machinePreset = getMachinePreset(
+          const machinePreset = getMachineProperties(
             machine.machine_identification_unique.machine_identification,
           );
-          const vendorPreset = getVendorPreset(
+          const vendorPreset = getVendorProperties(
             machinePreset!.machine_identification.vendor,
           );
           if (!machinePreset || !vendorPreset) {

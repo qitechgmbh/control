@@ -63,7 +63,7 @@ export type DeviceHardwareIdentification = z.infer<
   typeof deviceHardwareIdentificationSchema
 >;
 
-export type MachinePreset = {
+export type MachineProperties = {
   // displayable name
   name: string;
   // displayable version
