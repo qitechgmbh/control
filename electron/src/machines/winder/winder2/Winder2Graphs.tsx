@@ -91,7 +91,10 @@ export function SpoolRpmGraph({
   return (
     <AutoSyncedBigGraph
       syncHook={syncHook}
-      newData={{ newData }}
+      newData={{
+        newData,
+        color: "#10b981",
+      }}
       unit={unit}
       renderValue={renderValue}
       config={config}
@@ -121,8 +124,7 @@ export function TraversePositionGraph({
     lines.push({
       type: "threshold",
       value: limitInner,
-      label: "Inner Limit",
-      color: "#ef4444",
+      color: "#8b5cf6",
       dash: [5, 5],
     });
   }
@@ -131,8 +133,7 @@ export function TraversePositionGraph({
     lines.push({
       type: "threshold",
       value: limitOuter,
-      label: "Outer Limit",
-      color: "#ef4444",
+      color: "#8b5cf6",
       dash: [5, 5],
     });
   }
@@ -140,7 +141,6 @@ export function TraversePositionGraph({
   const config: GraphConfig = {
     title: "Traverse Position",
     icon: "lu:Move",
-    lines,
     colors: {
       primary: "#8b5cf6",
     },
@@ -150,7 +150,11 @@ export function TraversePositionGraph({
   return (
     <AutoSyncedBigGraph
       syncHook={syncHook}
-      newData={{ newData }}
+      newData={{
+        newData,
+        color: "#8b5cf6",
+        lines,
+      }}
       unit={unit}
       renderValue={renderValue}
       config={config}
@@ -182,7 +186,10 @@ export function TensionArmAngleGraph({
   return (
     <AutoSyncedBigGraph
       syncHook={syncHook}
-      newData={{ newData }}
+      newData={{
+        newData,
+        color: "#f59e0b",
+      }}
       unit={unit}
       renderValue={renderValue}
       config={config}
@@ -211,14 +218,13 @@ export function PullerSpeedGraph({
       type: "target",
       value: targetSpeed,
       label: "Target Speed",
-      color: "#6b7280",
+      color: "#06b6d4", // Match series color
     });
   }
 
   const config: GraphConfig = {
     title: "Puller Speed",
     icon: "lu:Gauge",
-    lines,
     colors: {
       primary: "#06b6d4",
     },
@@ -228,7 +234,11 @@ export function PullerSpeedGraph({
   return (
     <AutoSyncedBigGraph
       syncHook={syncHook}
-      newData={{ newData }}
+      newData={{
+        newData,
+        color: "#06b6d4",
+        lines,
+      }}
       unit={unit}
       renderValue={renderValue}
       config={config}

@@ -17,9 +17,6 @@ pub struct SerialInterface {
         Box<dyn Fn() -> Pin<Box<dyn Future<Output = Option<SerialEncoding>> + Send>> + Send + Sync>,
 
     pub initialize: Box<dyn Fn() -> Pin<Box<dyn Future<Output = bool> + Send>> + Send + Sync>,
-
-    pub write_finished: Box<dyn Fn() -> Pin<Box<dyn Future<Output = bool> + Send>> + Send + Sync>,
-    pub read_finished: Box<dyn Fn() -> Pin<Box<dyn Future<Output = bool> + Send>> + Send + Sync>,
 }
 
 impl fmt::Debug for SerialInterface {
@@ -130,8 +127,6 @@ impl SerialInterface {
             get_baudrate,
             get_serial_encoding,
             initialize,
-            write_finished,
-            read_finished,
         }
     }
 }
@@ -150,8 +145,6 @@ where
     fn get_serial_encoding(&self, port: PORTS) -> Option<SerialEncoding>;
     fn get_baudrate(&self, port: PORTS) -> Option<u32>;
     fn serial_interface_initialize(&mut self, port: PORTS) -> bool;
-    fn serial_interface_write_finished(&mut self, port: PORTS) -> bool;
-    fn serial_interface_read_finished(&mut self, port: PORTS) -> bool;
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

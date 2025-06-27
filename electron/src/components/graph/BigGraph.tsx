@@ -21,6 +21,83 @@ import { TouchButton } from "../touch/TouchButton";
 import { seriesToUPlotData } from "@/lib/timeseries";
 import { ControlCard } from "@/control/ControlCard";
 
+// Helper function to collect lines connected to visible series
+const getVisibleLines = (data: any, visibleSeries: boolean[]) => {
+  const visibleLines: any[] = [];
+
+  if (Array.isArray(data)) {
+    // Multiple series - collect lines only from visible series
+    data.forEach((series, index) => {
+      if (visibleSeries[index] && series.lines && Array.isArray(series.lines)) {
+        // Add series info to each line for proper styling
+        const seriesLines = series.lines.map((line: any) => ({
+          ...line,
+          // Override color with series color if not explicitly set
+          color: line.color || series.color,
+          // Ensure lines are always dashed
+          dash: line.dash || [5, 5],
+          // Mark as connected to this series
+          seriesIndex: index,
+          seriesTitle: series.title,
+        }));
+        visibleLines.push(...seriesLines);
+      }
+    });
+  } else {
+    // Single series - include lines only if series is visible
+    if (visibleSeries[0] && data.lines && Array.isArray(data.lines)) {
+      const seriesLines = data.lines.map((line: any) => ({
+        ...line,
+        // Override color with series color if not explicitly set
+        color: line.color || data.color,
+        // Ensure lines are always dashed
+        dash: line.dash || [5, 5],
+        // Mark as connected to this series
+        seriesIndex: 0,
+        seriesTitle: data.title,
+      }));
+      visibleLines.push(...seriesLines);
+    }
+  }
+
+  return visibleLines;
+};
+
+// Helper function to merge config lines with series-connected lines
+const mergeConfigWithVisibleLines = (
+  config: any,
+  data: any,
+  visibleSeries: boolean[],
+) => {
+  const configLines = config.lines || [];
+  const seriesLines = getVisibleLines(data, visibleSeries);
+
+  // Combine config lines with visible series lines
+  const allLines = [...configLines, ...seriesLines];
+
+  // Remove duplicates based on label and series connection
+  const uniqueLines = allLines.filter((line, index, arr) => {
+    return (
+      arr.findIndex((l) => {
+        // For series-connected lines, check both label and series index
+        if (line.seriesIndex !== undefined && l.seriesIndex !== undefined) {
+          return l.label === line.label && l.seriesIndex === line.seriesIndex;
+        }
+        // For config lines, just check label or value
+        return (
+          (l.label && l.label === line.label) ||
+          (l.value === line.value && l.type === line.type)
+        );
+      }) === index
+    );
+  });
+
+  return {
+    ...config,
+    lines: uniqueLines,
+  };
+};
+
 export function BigGraph({
   newData,
   unit,
@@ -50,6 +127,11 @@ export function BigGraph({
     new Array(normalizedSeries.length).fill(true),
   );
 
+  // Merge config with lines from visible series only
+  const enhancedConfig = React.useMemo(() => {
+    return mergeConfigWithVisibleLines(config, newData, visibleSeries);
+  }, [config, newData, visibleSeries]); // Include visibleSeries in dependency
+
   // Track when visibility changes to force chart recreation
   const [visibilityVersion, setVisibilityVersion] = useState(0);
   const [, setIsRecreatingChart] = useState(false);
@@ -60,7 +142,7 @@ export function BigGraph({
   );
   const [isLiveMode, setIsLiveMode] = useState(syncGraph?.isLiveMode ?? true);
   const [selectedTimeWindow, setSelectedTimeWindow] = useState<number | "all">(
-    syncGraph?.timeWindow ?? config.defaultTimeWindow ?? 30 * 60 * 1000,
+    syncGraph?.timeWindow ?? enhancedConfig.defaultTimeWindow ?? 30 * 60 * 1000,
   );
 
   const [cursorValue, setCursorValue] = useState<number | null>(null);
@@ -84,13 +166,13 @@ export function BigGraph({
   };
 
   const colors = {
-    primary: config.colors?.primary ?? DEFAULT_COLORS.primary,
-    grid: config.colors?.grid ?? DEFAULT_COLORS.grid,
-    axis: config.colors?.axis ?? DEFAULT_COLORS.axis,
-    background: config.colors?.background ?? DEFAULT_COLORS.background,
+    primary: enhancedConfig.colors?.primary ?? DEFAULT_COLORS.primary,
+    grid: enhancedConfig.colors?.grid ?? DEFAULT_COLORS.grid,
+    axis: enhancedConfig.colors?.axis ?? DEFAULT_COLORS.axis,
+    background: enhancedConfig.colors?.background ?? DEFAULT_COLORS.background,
   };
 
-  // Create filtered data based on visibility - THIS IS THE KEY FIX
+  // Create filtered data based on visibility
   const filteredData = React.useMemo(() => {
     if (Array.isArray(newData)) {
       const filtered = newData.filter((_, index) => visibleSeries[index]);
@@ -99,13 +181,23 @@ export function BigGraph({
     return visibleSeries[0] ? newData : { newData: null };
   }, [newData, visibleSeries]);
 
-  // Register export function that includes ALL series (not just visible ones)
+  // Register export function that includes ALL series and their lines
   useEffect(() => {
     if (onRegisterForExport) {
       const getExportData = (): GraphExportData | null => {
+        // For export, include all lines from all series
+        const allSeriesLines = getVisibleLines(
+          newData,
+          new Array(normalizedSeries.length).fill(true),
+        );
+        const exportConfig = {
+          ...config,
+          lines: [...(config.lines || []), ...allSeriesLines],
+        };
+
         return {
-          config,
-          data: newData, // Use original newData for export
+          config: exportConfig,
+          data: newData,
           unit,
           renderValue,
         };
@@ -125,6 +217,7 @@ export function BigGraph({
     graphId,
     config,
     newData,
+    normalizedSeries.length,
     unit,
     renderValue,
   ]);
@@ -163,14 +256,15 @@ export function BigGraph({
         allVisibleValues.push(...seriesToInclude);
       });
 
-      config.lines?.forEach((line) => {
+      // Include line values in Y-axis calculation (only visible lines)
+      enhancedConfig.lines?.forEach((line) => {
         if (line.show !== false) {
           allVisibleValues.push(line.value);
         }
       });
 
       if (allVisibleValues.length === 0) {
-        const primarySeries = getPrimarySeries(filteredData); // Use filtered data
+        const primarySeries = getPrimarySeries(filteredData);
         if (primarySeries?.newData?.long) {
           const [, values] = seriesToUPlotData(primarySeries.newData.long);
           allVisibleValues = values;
@@ -196,14 +290,14 @@ export function BigGraph({
         console.warn("Error updating Y-axis scale:", error);
       }
     },
-    [config.lines, viewMode, isLiveMode, newData, visibleSeries],
+    [enhancedConfig.lines, viewMode, isLiveMode, newData, visibleSeries],
   );
 
-  // FIXED: Initialize live mode handlers with filtered data
+  // Initialize live mode handlers with filtered data
   const liveMode = useLiveMode({
-    newData: filteredData, // Use filtered data
+    newData: filteredData,
     uplotRef,
-    config,
+    config: enhancedConfig,
     animationRefs,
     viewMode,
     selectedTimeWindow,
@@ -213,9 +307,9 @@ export function BigGraph({
     chartCreatedRef,
   });
 
-  // FIXED: Initialize historical mode handlers with filtered data
+  // Initialize historical mode handlers with filtered data
   const historicalMode = useHistoricalMode({
-    newData: filteredData, // Use filtered data
+    newData: filteredData,
     uplotRef,
     animationRefs,
     getCurrentLiveEndTimestamp: liveMode.getCurrentLiveEndTimestamp,
@@ -324,11 +418,11 @@ export function BigGraph({
     handlerRefs,
     chartCreatedRef,
 
-    // Props - FIXED: Use filtered data for chart operations
-    newData: filteredData, // Use filtered data
+    // Props - Use enhanced config and filtered data
+    newData: filteredData,
     unit,
     renderValue,
-    config,
+    config: enhancedConfig,
     graphId,
     syncGraph,
     onRegisterForExport,
@@ -372,7 +466,7 @@ export function BigGraph({
             />
 
             <h2 className="text-2xl leading-none font-bold text-gray-900">
-              {config.title}
+              {enhancedConfig.title}
             </h2>
           </div>
 
@@ -408,6 +502,11 @@ export function BigGraph({
                       visibleSeries[index] &&
                       visibleSeries.filter((visible) => visible).length === 1;
 
+                    // Get connected lines for this series
+                    const seriesLines = Array.isArray(newData)
+                      ? newData[index]?.lines || []
+                      : newData.lines || [];
+
                     return (
                       <TouchButton
                         key={index}
@@ -422,7 +521,11 @@ export function BigGraph({
                             ? seriesColor
                             : undefined,
                         }}
-                        title={`${series.title || `Series ${index + 1}`}: ${formattedValue} ${renderUnitSymbol(unit) || ""}`}
+                        title={`${series.title || `Series ${index + 1}`}: ${formattedValue} ${renderUnitSymbol(unit) || ""}${
+                          seriesLines.length > 0
+                            ? `\nLines: ${seriesLines.map((l) => l.label || `${l.value}`).join(", ")}`
+                            : ""
+                        }`}
                       >
                         <div className="flex flex-col items-center">
                           <span className="text-xs font-medium">
@@ -435,7 +538,8 @@ export function BigGraph({
                                 : "text-gray-500"
                             }`}
                           >
-                            {formattedValue} {renderUnitSymbol(unit)}
+                            {formatDisplayValue(currentValue, renderValue)}
+                            {renderUnitSymbol(unit)}
                           </span>
                         </div>
                       </TouchButton>
