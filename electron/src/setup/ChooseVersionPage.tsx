@@ -264,6 +264,35 @@ export function ChooseVersionPage() {
     <Page>
       <SectionTitle title="Current Version"></SectionTitle>
       <CurrentVersionCard />
+      
+      {isUpdating && updateSource && (
+        <div className="mt-4">
+          <SectionTitle title="Update Status"></SectionTitle>
+          <div className="flex items-center gap-4">
+            <Alert title="Update in Progress" variant="warning" className="flex-1">
+              An update is currently running. You can monitor its progress on the execute page.
+            </Alert>
+            <TouchButton
+              className="w-max"
+              icon="lu:Eye"
+              onClick={() => navigate({ 
+                to: "/_sidebar/setup/update/execute", 
+                search: { 
+                  githubRepoOwner: updateSource.githubRepoOwner,
+                  githubRepoName: updateSource.githubRepoName,
+                  githubToken: updateSource.githubToken,
+                  tag: updateSource.tag,
+                  branch: updateSource.branch,
+                  commit: updateSource.commit,
+                } 
+              })}
+            >
+              View Update Progress
+            </TouchButton>
+          </div>
+        </div>
+      )}
+      
       <SectionTitle title="Update"></SectionTitle>
       <div className="flex flex-row items-center gap-4">
         <div className="flex flex-col">
@@ -282,31 +311,6 @@ export function ChooseVersionPage() {
           update the system.
         </Alert>
       </span>
-
-      {isUpdating && updateSource && (
-        <div className="flex items-center gap-4">
-          <Alert title="Update in Progress" variant="warning">
-            An update is currently running. You can monitor its progress on the execute page.
-          </Alert>
-          <TouchButton
-            className="w-max"
-            icon="lu:Eye"
-            onClick={() => navigate({ 
-              to: "/_sidebar/setup/update/execute", 
-              search: { 
-                githubRepoOwner: updateSource.githubRepoOwner,
-                githubRepoName: updateSource.githubRepoName,
-                githubToken: updateSource.githubToken,
-                tag: updateSource.tag,
-                branch: updateSource.branch,
-                commit: updateSource.commit,
-              } 
-            })}
-          >
-            View Update Progress
-          </TouchButton>
-        </div>
-      )}
 
       <span className="text-xl">Choose a Version</span>
       {tags !== undefined && tags.length > 0 ? (
