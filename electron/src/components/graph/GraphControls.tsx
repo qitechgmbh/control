@@ -118,7 +118,7 @@ export function FloatingControlPanel({
   };
 
   return (
-    <div className="fixed right-6 bottom-6 z-50">
+    <div className="fixed right-10 bottom-6 z-50">
       <ControlCard className="overflow-hidden px-4 py-4 transition-all duration-300 ease-in-out">
         <div
           className={`flex items-center ${isExpanded ? "gap-3" : "justify-center"}`}
