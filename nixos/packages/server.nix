@@ -5,28 +5,10 @@
 , libudev-zero
 , libpcap
 , commitHash
-, rust-bin ? null
 }:
 
-let
-  rustStable = if rust-bin != null then
-    rust-bin.stable.latest.default.override {
-      extensions = [ "rust-src" "rust-analyzer" ];
-      targets = [ "x86_64-unknown-linux-gnu" ];
-    }
-  else
-    rustPlatform.rust.rustc;
-    
-  # Create a custom rustPlatform with stable
-  customRustPlatform = rustPlatform // {
-    rust = rustPlatform.rust // {
-      rustc = rustStable;
-      cargo = rustStable;
-    };
-  };
-in
-
-customRustPlatform.buildRustPackage rec {
+# Uses Rust 1.86 stable from nixpkgs 25.05
+rustPlatform.buildRustPackage rec {
   pname = "qitech-control-server";
   version = commitHash;
 
