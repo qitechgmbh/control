@@ -1,23 +1,22 @@
-{ pkgs ? import <nixpkgs> {
-    overlays = [
-      (import (fetchTarball "https://github.com/oxalica/rust-overlay/archive/master.tar.gz"))
-    ];
-  }
+{ pkgs ? import <nixpkgs> {}
 }:
 
 let
-  rust = pkgs.rust-bin.stable.latest.default.override {
-    extensions = [ "rust-src" "rust-analyzer" ];
-    targets = [ "x86_64-unknown-linux-gnu" ];
-  };
+  # Use standard Rust 1.86 from nixpkgs
+  rust = pkgs.rustc;
 in {
-  server = pkgs.callPackage ./nixos/packages/server.nix { inherit rust; };
-  electron = pkgs.callPackage ./nixos/packages/electron.nix { nodejs = pkgs.nodejs_22; };
+  server = pkgs.callPackage ./packages/server.nix { commitHash = "dev"; };
+  electron = pkgs.callPackage ./packages/electron.nix { 
+    nodejs = pkgs.nodejs_22; 
+    commitHash = "dev";
+  };
 
   # Package for quick development testing without a flake
   shell = pkgs.mkShell {
     buildInputs = with pkgs; [
-      rust
+      rustc
+      cargo
+      rust-analyzer
       pkg-config
       libudev-zero
       libpcap
@@ -27,7 +26,7 @@ in {
     
     shellHook = ''
       echo "QiTech Control Development Environment"
-      echo "Rust version: $(${rust}/bin/rustc --version)"
+      echo "Rust version: $(rustc --version)"
       echo "Node version: $(${pkgs.nodejs_22}/bin/node --version)"
     '';
   };
