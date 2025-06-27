@@ -6,12 +6,15 @@ import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Alert } from "@/components/Alert";
 import { Markdown } from "@/components/Markdown";
 import { TouchButton } from "@/components/touch/TouchButton";
+import { useUpdateStore } from "@/stores/updateStore";
 
 export function ChangelogPage() {
   const navigate = useNavigate();
   const search = useSearch({
     from: "/_sidebar/setup/update/changelog",
   });
+
+  const { isUpdating } = useUpdateStore();
 
   const versionType = search.branch
     ? "Branch"
@@ -70,6 +73,7 @@ export function ChangelogPage() {
           <TouchButton
             className="w-max"
             icon="lu:Check"
+            disabled={isUpdating}
             onClick={() => {
               navigate({
                 to: "/_sidebar/setup/update/execute",
