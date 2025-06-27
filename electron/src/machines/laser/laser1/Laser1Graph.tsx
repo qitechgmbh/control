@@ -21,28 +21,6 @@ export function Laser1GraphsPage() {
     title: "Diameter",
     defaultTimeWindow: 30 * 60 * 1000, // 30 minutes
     exportFilename: "diameter_data",
-    lines: [
-      {
-        type: "threshold",
-        value: targetDiameter + higherTolerance,
-        label: "Upper Threshold",
-        color: "#ef4444",
-        dash: [5, 5],
-      },
-      {
-        type: "threshold",
-        value: targetDiameter - lowerTolerance,
-        label: "Lower Threshold",
-        color: "#f97316",
-        dash: [5, 5],
-      },
-      {
-        type: "target",
-        value: targetDiameter,
-        label: "Target",
-        color: "#6b7280",
-      },
-    ],
     colors: {
       primary: "#3b82f6",
       grid: "#e2e8f0",
@@ -56,7 +34,32 @@ export function Laser1GraphsPage() {
       <div className="flex flex-col gap-4">
         <AutoSyncedBigGraph
           syncHook={syncHook}
-          newData={{ newData: laserDiameter }}
+          newData={{
+            newData: laserDiameter,
+            color: "#3b82f6",
+            lines: [
+              {
+                type: "threshold",
+                value: targetDiameter + higherTolerance,
+                label: "Upper Threshold",
+                color: "#3b82f6",
+                dash: [5, 5],
+              },
+              {
+                type: "threshold",
+                value: targetDiameter - lowerTolerance,
+                label: "Lower Threshold",
+                color: "#3b82f6",
+                dash: [5, 5],
+              },
+              {
+                type: "target",
+                value: targetDiameter,
+                label: "Target",
+                color: "#3b82f6",
+              },
+            ],
+          }}
           unit="mm"
           renderValue={(value) => value.toFixed(3)}
           config={config}

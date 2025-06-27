@@ -42,81 +42,89 @@ export function Extruder2GraphsPage() {
     title: "extruder data",
   };
 
-  // Combined Temperature Graph (nozzle, front, back, middle)
   const temperatureData = [
-    {
-      newData: nozzleTemperature,
-      title: "Nozzle",
-      color: "#ef4444",
-    },
-    {
-      newData: frontTemperature,
-      title: "Front",
-      color: "#f59e0b",
-    },
-    {
-      newData: backTemperature,
-      title: "Back",
-      color: "#3b82f6",
-    },
-    {
-      newData: middleTemperature,
-      title: "Middle",
-      color: "#8b5cf6",
-    },
-  ].filter((item) => item.newData); // Filter out any null/undefined data
+    ...(nozzleTemperature
+      ? [
+          {
+            newData: nozzleTemperature,
+            color: "#ef4444",
+            lines:
+              nozzleHeatingState?.target_temperature !== undefined
+                ? [
+                    {
+                      type: "target" as const,
+                      value: nozzleHeatingState.target_temperature,
+                      color: "#ef4444",
+                      show: true,
+                    },
+                  ]
+                : [],
+          },
+        ]
+      : []),
+    ...(frontTemperature
+      ? [
+          {
+            newData: frontTemperature,
+            color: "#f59e0b",
+            lines:
+              frontHeatingState?.target_temperature !== undefined
+                ? [
+                    {
+                      type: "target" as const,
+                      value: frontHeatingState.target_temperature,
+                      color: "#f59e0b",
+                      show: true,
+                    },
+                  ]
+                : [],
+          },
+        ]
+      : []),
+    ...(middleTemperature
+      ? [
+          {
+            newData: middleTemperature,
+            color: "#8b5cf6",
+            lines:
+              middleHeatingState?.target_temperature !== undefined
+                ? [
+                    {
+                      type: "target" as const,
+                      value: middleHeatingState.target_temperature,
+                      color: "#8b5cf6",
+                      show: true,
+                    },
+                  ]
+                : [],
+          },
+        ]
+      : []),
+    ...(backTemperature
+      ? [
+          {
+            newData: backTemperature,
+            color: "#3b82f6",
+            lines:
+              backHeatingState?.target_temperature !== undefined
+                ? [
+                    {
+                      type: "target" as const,
+                      value: backHeatingState.target_temperature,
+                      color: "#3b82f6",
+                      show: true,
+                    },
+                  ]
+                : [],
+          },
+        ]
+      : []),
+  ];
 
   const temperatureConfig: GraphConfig = {
     ...baseConfig,
     title: "Temperatures",
     exportFilename: "temperatures_data",
-    lines: [
-      // Target temperature lines
-      ...(nozzleHeatingState?.target_temperature !== undefined
-        ? [
-            {
-              type: "target" as const,
-              value: nozzleHeatingState.target_temperature,
-              label: "Nozzle Target",
-              color: "#ef4444",
-              show: true,
-            },
-          ]
-        : []),
-      ...(frontHeatingState?.target_temperature !== undefined
-        ? [
-            {
-              type: "target" as const,
-              value: frontHeatingState.target_temperature,
-              label: "Front Target",
-              color: "#f59e0b",
-              show: true,
-            },
-          ]
-        : []),
-      ...(backHeatingState?.target_temperature !== undefined
-        ? [
-            {
-              type: "target" as const,
-              value: backHeatingState.target_temperature,
-              label: "Back Target",
-              color: "#3b82f6",
-              show: true,
-            },
-          ]
-        : []),
-      ...(middleHeatingState?.target_temperature !== undefined
-        ? [
-            {
-              type: "target" as const,
-              value: middleHeatingState.target_temperature,
-              label: "Middle Target",
-              color: "#8b5cf6",
-              show: true,
-            },
-          ]
-        : []),
-    ],
     colors: {
       primary: "#ef4444",
       grid: "#e2e8f0",
@@ -125,29 +133,45 @@ export function Extruder2GraphsPage() {
     },
   };
 
-  // Combined Power Graph (nozzle, front, back, middle)
+  // Combined Power Graph (no target lines for power)
   const powerData = [
-    {
-      newData: nozzlePower,
-      title: "Nozzle",
-      color: "#ef4444",
-    },
-    {
-      newData: frontPower,
-      title: "Front",
-      color: "#f59e0b",
-    },
-    {
-      newData: backPower,
-      title: "Back",
-      color: "#3b82f6",
-    },
-    {
-      newData: middlePower,
-      title: "Middle",
-      color: "#8b5cf6",
-    },
-  ].filter((item) => item.newData); // Filter out any null/undefined data
+    ...(nozzlePower
+      ? [
+          {
+            newData: nozzlePower,
+            title: "Nozzle",
+            color: "#ef4444",
+          },
+        ]
+      : []),
+    ...(frontPower
+      ? [
+          {
+            newData: frontPower,
+            title: "Front",
+            color: "#f59e0b",
+          },
+        ]
+      : []),
+    ...(backPower
+      ? [
+          {
+            newData: backPower,
+            title: "Back",
+            color: "#3b82f6",
+          },
+        ]
+      : []),
+    ...(middlePower
+      ? [
+          {
+            newData: middlePower,
+            title: "Middle",
+            color: "#8b5cf6",
+          },
+        ]
+      : []),
+  ];
 
   const powerConfig: GraphConfig = {
     ...baseConfig,
@@ -161,24 +185,11 @@ export function Extruder2GraphsPage() {
     },
   };
 
-  // Pressure Graph
+  // Pressure Graph with connected target line
   const pressureConfig: GraphConfig = {
     ...baseConfig,
     title: "Pressure",
     exportFilename: "pressure_data",
-    lines: [
-      ...(targetBar !== undefined
-        ? [
-            {
-              type: "target" as const,
-              value: targetBar,
-              label: "Target Pressure",
-              color: "#6b7280",
-              show: true,
-            },
-          ]
-        : []),
-    ],
     colors: {
       primary: "#3b82f6",
       grid: "#e2e8f0",
@@ -187,24 +198,11 @@ export function Extruder2GraphsPage() {
     },
   };
 
-  // RPM Graph
+  // RPM Graph with connected target line
   const rpmConfig: GraphConfig = {
     ...baseConfig,
     title: "RPM",
     exportFilename: "rpm_data",
-    lines: [
-      ...(targetRpm !== undefined
-        ? [
-            {
-              type: "target" as const,
-              value: targetRpm,
-              label: "Target RPM",
-              color: "#6b7280",
-              show: true,
-            },
-          ]
-        : []),
-    ],
     colors: {
       primary: "#8b5cf6",
       grid: "#e2e8f0",
@@ -218,7 +216,21 @@ export function Extruder2GraphsPage() {
       <div className="flex flex-col gap-4">
         <AutoSyncedBigGraph
           syncHook={syncHook}
-          newData={{ newData: bar }}
+          newData={{
+            newData: bar,
+            color: "#3b82f6",
+            lines:
+              targetBar !== undefined
+                ? [
+                    {
+                      type: "target" as const,
+                      value: targetBar,
+                      color: "#3b82f6",
+                      show: true,
+                    },
+                  ]
+                : [],
+          }}
           config={pressureConfig}
           unit="bar"
           renderValue={(value) => value.toFixed(2)}
@@ -245,7 +257,21 @@ export function Extruder2GraphsPage() {
 
         <AutoSyncedBigGraph
           syncHook={syncHook}
-          newData={{ newData: rpm }}
+          newData={{
+            newData: rpm,
+            color: "#8b5cf6",
+            lines:
+              targetRpm !== undefined
+                ? [
+                    {
+                      type: "target" as const,
+                      value: targetRpm,
+                      color: "#8b5cf6",
+                      show: true,
+                    },
+                  ]
+                : [],
+          }}
           config={rpmConfig}
           unit="rpm"
           renderValue={(value) => value.toFixed(0)}
