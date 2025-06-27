@@ -15,19 +15,13 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     
-    # Add the Rust overlay as an input
-    rust-overlay = {
-      url = "github:oxalica/rust-overlay";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-    
     # Add flake-utils which was missing
     flake-utils = {
       url = "github:numtide/flake-utils";
     };
   };
 
-  outputs = { self, nixpkgs, rust-overlay, flake-utils, qitech-control, home-manager, ... }:
+  outputs = { self, nixpkgs, flake-utils, qitech-control, home-manager, ... }:
     let
       # Import git info at the top level so it's available everywhere
       installInfo = import ./nixos/os/installInfo.nix;
@@ -35,12 +29,10 @@
     flake-utils.lib.eachDefaultSystem (system:
       let
         overlays = [ 
-          (import rust-overlay)
           # Add our own overlay for QiTech packages
           (final: prev: {
             qitechPackages = {
               server = final.callPackage ./nixos/packages/server.nix { 
-                rust-bin = final.rust-bin;
                 commitHash = builtins.getEnv "QITECH_COMMIT_HASH";
               };
               electron = final.callPackage ./nixos/packages/electron.nix { 
@@ -52,11 +44,8 @@
         ];
         pkgs = import nixpkgs { inherit system overlays; };
 
-        # Use Rust nightly for edition 2024 support
-        rust = pkgs.rust-bin.stable.latest.default.override {
-          extensions = [ "rust-src" "rust-analyzer" ];
-          targets = [ "x86_64-unknown-linux-gnu" ];
-        };
+        # Use Rust 1.86 stable from nixpkgs
+        rust = pkgs.rustc;
       in {
         packages = {
           server = pkgs.qitechPackages.server;
@@ -66,7 +55,9 @@
         
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [
-            rust
+            rustc
+            cargo
+            rust-analyzer
             pkg-config
             libudev-zero
             libpcap
@@ -76,7 +67,7 @@
           
           shellHook = ''
             echo "QiTech Control Development Environment"
-            echo "Rust version: $(${rust}/bin/rustc --version)"
+            echo "Rust version: $(rustc --version)"
             echo "Node version: $(${pkgs.nodejs_22}/bin/node --version)"
           '';
         };
@@ -96,12 +87,10 @@
           modules = [
             # Apply the overlays to the system
             { nixpkgs.overlays = [
-                (import rust-overlay)
                 # Add our own overlay for QiTech packages with commit hash support
                 (final: prev: {
                   qitechPackages = {
                     server = final.callPackage ./nixos/packages/server.nix { 
-                      rust-bin = final.rust-bin;
                       commitHash = installInfo.gitCommit;
                     };
                     electron = final.callPackage ./nixos/packages/electron.nix {
