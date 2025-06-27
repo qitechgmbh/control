@@ -10,17 +10,26 @@ import { useExtruder2 } from "./useExtruder";
 
 export function Extruder2GraphsPage() {
   const {
-    state,
+    nozzleHeatingState,
     nozzleTemperature,
     nozzlePower,
+
+    frontHeatingState,
     frontTemperature,
     frontPower,
+
+    backHeatingState,
     backTemperature,
     backPower,
+
+    middleHeatingState,
     middleTemperature,
     middlePower,
-    pressure,
-    screwRpm,
+
+    bar,
+    rpm,
+    targetBar,
+    targetRpm,
   } = useExtruder2();
 
   const syncHook = useGraphSync(30 * 60 * 1000, "extruder-graphs");
@@ -40,11 +49,11 @@ export function Extruder2GraphsPage() {
             newData: nozzleTemperature,
             color: "#ef4444",
             lines:
-              state?.heating_states.nozzle?.target_temperature !== undefined
+              nozzleHeatingState?.target_temperature !== undefined
                 ? [
                     {
                       type: "target" as const,
-                      value: state.heating_states.nozzle.target_temperature,
+                      value: nozzleHeatingState.target_temperature,
                       color: "#ef4444",
                       show: true,
                     },
@@ -59,11 +68,11 @@ export function Extruder2GraphsPage() {
             newData: frontTemperature,
             color: "#f59e0b",
             lines:
-              state?.heating_states.front?.target_temperature !== undefined
+              frontHeatingState?.target_temperature !== undefined
                 ? [
                     {
                       type: "target" as const,
-                      value: state.heating_states.front.target_temperature,
+                      value: frontHeatingState.target_temperature,
                       color: "#f59e0b",
                       show: true,
                     },
@@ -78,11 +87,11 @@ export function Extruder2GraphsPage() {
             newData: middleTemperature,
             color: "#8b5cf6",
             lines:
-              state?.heating_states.middle?.target_temperature !== undefined
+              middleHeatingState?.target_temperature !== undefined
                 ? [
                     {
                       type: "target" as const,
-                      value: state.heating_states.middle.target_temperature,
+                      value: middleHeatingState.target_temperature,
                       color: "#8b5cf6",
                       show: true,
                     },
@@ -97,11 +106,11 @@ export function Extruder2GraphsPage() {
             newData: backTemperature,
             color: "#3b82f6",
             lines:
-              state?.heating_states.back?.target_temperature !== undefined
+              backHeatingState?.target_temperature !== undefined
                 ? [
                     {
                       type: "target" as const,
-                      value: state.heating_states.back.target_temperature,
+                      value: backHeatingState.target_temperature,
                       color: "#3b82f6",
                       show: true,
                     },
@@ -208,14 +217,14 @@ export function Extruder2GraphsPage() {
         <AutoSyncedBigGraph
           syncHook={syncHook}
           newData={{
-            newData: pressure,
+            newData: bar,
             color: "#3b82f6",
             lines:
-              state?.pressure_state.target_bar !== undefined
+              targetBar !== undefined
                 ? [
                     {
                       type: "target" as const,
-                      value: state.pressure_state.target_bar,
+                      value: targetBar,
                       color: "#3b82f6",
                       show: true,
                     },
@@ -249,14 +258,14 @@ export function Extruder2GraphsPage() {
         <AutoSyncedBigGraph
           syncHook={syncHook}
           newData={{
-            newData: screwRpm,
+            newData: rpm,
             color: "#8b5cf6",
             lines:
-              state?.screw_state.target_rpm !== undefined
+              targetRpm !== undefined
                 ? [
                     {
                       type: "target" as const,
-                      value: state.screw_state.target_rpm,
+                      value: targetRpm,
                       color: "#8b5cf6",
                       show: true,
                     },
