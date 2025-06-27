@@ -148,8 +148,7 @@ impl Winder2 {
             .get_current_position()
             .map(|x| x.get::<millimeter>());
         let event = TraversePositionEvent { position }.build();
-        self.namespace
-            .emit(Winder2Events::TraversePosition(event))
+        self.namespace.emit(Winder2Events::TraversePosition(event))
     }
 
     fn emit_traverse_state(&mut self) {
@@ -183,8 +182,7 @@ impl Winder2 {
             can_go_home: self.can_go_home(),
         }
         .build();
-        self.namespace
-            .emit(Winder2Events::TraverseState(event))
+        self.namespace.emit(Winder2Events::TraverseState(event))
     }
 
     pub fn sync_traverse_speed(&mut self) {
@@ -488,7 +486,7 @@ impl Winder2 {
         let steps_per_second = self
             .spool_step_converter
             .angular_velocity_to_steps(angular_velocity);
-        self.spool.set_speed(steps_per_second as i32);
+        self.spool.set_speed(steps_per_second);
     }
 
     fn emit_spool_rpm(&mut self) {
@@ -510,7 +508,7 @@ impl Winder2 {
             .puller_speed_controller
             .converter
             .angular_velocity_to_steps(angular_velocity);
-        self.puller.set_speed(steps_per_second as i32);
+        self.puller.set_speed(steps_per_second);
     }
 
     pub fn puller_set_regulation(&mut self, puller_regulation_mode: PullerRegulationMode) {
