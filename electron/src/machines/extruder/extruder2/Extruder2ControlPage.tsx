@@ -17,19 +17,24 @@ import { StatusBadge } from "@/control/StatusBadge";
 export function Extruder2ControlPage() {
   const {
     mode,
-    nozzleHeatingState,
+
+    nozzleHeatingTarget,
+    nozzleWiringError,
     nozzleTemperature,
     nozzlePower,
 
-    frontHeatingState,
+    frontHeatingTarget,
+    frontWiringError,
     frontTemperature,
     frontPower,
 
-    backHeatingState,
+    backHeatingTarget,
+    backWiringError,
     backTemperature,
     backPower,
 
-    middleHeatingState,
+    middleHeatingTarget,
+    middleWiringError,
     middleTemperature,
     middlePower,
 
@@ -55,30 +60,34 @@ export function Extruder2ControlPage() {
       <ControlGrid>
         <HeatingZone
           title={"Heating Front"}
-          heatingState={frontHeatingState}
           heatingTimeSeries={frontTemperature}
+          heatingTarget={frontHeatingTarget}
+          heatingWiringError={frontWiringError}
           heatingPower={frontPower}
           onChangeTargetTemp={heatingSetFrontTemp}
         />
         <HeatingZone
           title={"Heating Middle"}
-          heatingState={middleHeatingState}
           heatingTimeSeries={middleTemperature}
+          heatingTarget={middleHeatingTarget}
           heatingPower={middlePower}
+          heatingWiringError={middleWiringError}
           onChangeTargetTemp={heatingSetMiddleTemp}
         />
         <HeatingZone
           title={"Heating Back"}
-          heatingState={backHeatingState}
           heatingTimeSeries={backTemperature}
           heatingPower={backPower}
+          heatingTarget={backHeatingTarget}
+          heatingWiringError={backWiringError}
           onChangeTargetTemp={heatingSetBackTemp}
         />
         <HeatingZone
           title={"Heating Nozzle"}
-          heatingState={nozzleHeatingState}
           heatingTimeSeries={nozzleTemperature}
           heatingPower={nozzlePower}
+          heatingTarget={nozzleHeatingTarget}
+          heatingWiringError={nozzleWiringError}
           onChangeTargetTemp={heatingSetNozzleTemp}
         />
         <ControlCard className="bg-red" title="Screw Drive">

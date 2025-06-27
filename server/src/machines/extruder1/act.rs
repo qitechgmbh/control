@@ -30,42 +30,21 @@ impl Actor for ExtruderV2 {
             }
 
             let now = Instant::now();
-
             if now.duration_since(self.last_measurement_emit) > Duration::from_secs_f64(1.0 / 60.0)
             {
-                // channel 1
-                self.emit_heating(
-                    self.temperature_controller_back.heating.clone(),
-                    super::HeatingType::Back,
-                );
-                self.emit_heating(
-                    self.temperature_controller_front.heating.clone(),
-                    super::HeatingType::Front,
-                );
-                self.emit_heating(
-                    self.temperature_controller_middle.heating.clone(),
-                    super::HeatingType::Middle,
-                );
-                self.emit_heating(
-                    self.temperature_controller_nozzle.heating.clone(),
-                    super::HeatingType::Nozzle,
-                );
-
+                self.emit_inverter_status();
                 self.emit_heating_element_power(super::HeatingType::Nozzle);
                 self.emit_heating_element_power(super::HeatingType::Front);
                 self.emit_heating_element_power(super::HeatingType::Middle);
                 self.emit_heating_element_power(super::HeatingType::Back);
 
-                self.emit_regulation();
-                self.emit_mode_state();
-                self.emit_rotation_state();
-                self.emit_inverter_status();
-
-                self.emit_pressure_pid_settings();
+                self.emit_temperature(super::HeatingType::Nozzle);
+                self.emit_temperature(super::HeatingType::Middle);
+                self.emit_temperature(super::HeatingType::Back);
+                self.emit_temperature(super::HeatingType::Front);
 
                 self.emit_bar();
                 self.emit_rpm();
-                self.emit_extruder_settings();
 
                 self.last_measurement_emit = now;
             }
