@@ -13,10 +13,14 @@ type Props = {
   heatingState: Heating | undefined;
   heatingTimeSeries: TimeSeries;
   heatingPower: TimeSeries;
+  min: number;
+  max: number;
   onChangeTargetTemp?: (temperature: number) => void;
 };
 export function HeatingZone({
   title,
+  min,
+  max,
   heatingState,
   heatingTimeSeries,
   heatingPower,
@@ -42,8 +46,8 @@ export function HeatingZone({
           <EditValue
             value={targetTemperature}
             defaultValue={150}
-            min={50}
-            max={300}
+            min={min}
+            max={max}
             unit="C"
             title="Target Temperature"
             renderValue={(value) => roundToDecimals(value, 1)}
