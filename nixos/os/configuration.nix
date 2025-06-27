@@ -243,6 +243,7 @@
     git
     pkgs.qitechPackages.electron
     htop
+    wireshark
   ];
 
   xdg.portal.enable = true;
