@@ -41,20 +41,20 @@ export function UpdateExecutePage() {
       ...search,
       githubToken: search.githubToken || undefined,
     };
-    
+
     startUpdate(source);
     setShouldCancel(false);
-    
+
     const res = await updateExecute(
-      source, 
+      source,
       (log: string) => {
         addLog(log);
       },
-      () => shouldCancel
+      () => shouldCancel,
     );
-    
+
     finishUpdate(res);
-    
+
     if (res.success) {
       toast.success("Update applied successfully");
     } else if (res.error !== "Update was cancelled by user") {
@@ -80,8 +80,9 @@ export function UpdateExecutePage() {
   return (
     <Page>
       <SectionTitle title="Apply Update" />
-      
+
       <div className="flex gap-4">
+        {/* Show Apply Update button when no update result exists */}
         {!updateResult && (
           <TouchButton
             className="w-max"
@@ -93,7 +94,8 @@ export function UpdateExecutePage() {
             Apply Update
           </TouchButton>
         )}
-        
+
+        {/* Show Cancel button only when update is actively running */}
         {isUpdating && (
           <TouchButton
             className="w-max"
@@ -104,7 +106,8 @@ export function UpdateExecutePage() {
             Cancel Update
           </TouchButton>
         )}
-        
+
+        {/* Show Back button when not updating and no result yet */}
         {!isUpdating && !updateResult && (
           <TouchButton
             className="w-max"
@@ -116,6 +119,7 @@ export function UpdateExecutePage() {
           </TouchButton>
         )}
 
+        {/* Show reset and back buttons when update is complete */}
         {updateResult && (
           <>
             <TouchButton
@@ -142,19 +146,18 @@ export function UpdateExecutePage() {
         Please stay connected to the internet and leave the power on. The update
         procuedure takes a couple of minutes and reboots the machine afterwards.
       </Alert>
-      
+
       {updateResult && !isUpdating && (
-        <Alert 
-          title={updateResult.success ? "Update Successful" : "Update Failed"} 
+        <Alert
+          title={updateResult.success ? "Update Successful" : "Update Failed"}
           variant={updateResult.success ? "info" : "error"}
         >
-          {updateResult.success 
+          {updateResult.success
             ? "The update has been applied successfully. The system will reboot shortly."
-            : `Update failed: ${updateResult.error}`
-          }
+            : `Update failed: ${updateResult.error}`}
         </Alert>
       )}
-      
+
       <Terminal
         lines={logs}
         className="h-160"
