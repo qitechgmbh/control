@@ -1,7 +1,8 @@
 import { toastError } from "@/components/Toast";
 import { useMachineMutate as useMachineMutation } from "@/client/useClient";
 import { useStateOptimistic } from "@/lib/useStateOptimistic";
-import { MachineIdentificationUnique, extruder2 } from "@/machines/types";
+import { MachineIdentificationUnique } from "@/machines/types";
+import { extruder2 } from "@/machines/properties";
 import { extruder2Route } from "@/routes/routes";
 import { z } from "zod";
 import {

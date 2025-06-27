@@ -1,4 +1,4 @@
-@import 'tailwindcss';
+@import "tailwindcss";
 
 @plugin 'tailwindcss-animate';
 
@@ -81,15 +81,11 @@
   }
   @font-face {
     font-family: "Sora";
-    src: url(
-        "../assets/fonts/Sora/Sora.ttf"
-    );
+    src: url("../assets/fonts/Sora/Sora.ttf");
   }
   @font-face {
     font-family: "Consequences";
-    src: url(
-        "../assets/fonts/Consequences/Consequences.ttf"
-    );
+    src: url("../assets/fonts/Consequences/Consequences.ttf");
   }
 }
 
@@ -159,10 +155,10 @@
 
 @layer base {
   * {
-    @apply m-0 border-border p-0;
+    @apply border-border m-0 p-0;
   }
   body {
-    @apply overflow-x-hidden bg-background text-foreground;
+    @apply bg-background text-foreground overflow-x-hidden;
   }
   .draglayer {
     @apply bg-background;

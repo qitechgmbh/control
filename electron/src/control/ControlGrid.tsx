@@ -8,13 +8,13 @@ type Props = {
 
 export function ControlGrid({ children, columns = 3 }: Props) {
   return (
-    <div id="grid" className={controlGrifStyle({ columns })}>
+    <div id="grid" className={controlGridStyle({ columns })}>
       {children}
     </div>
   );
 }
 
-const controlGrifStyle = cva(
+const controlGridStyle = cva(
   "grid w-full auto-cols-fr grid-cols-1 gap-6 lg:grid-cols-2",
   {
     variants: {

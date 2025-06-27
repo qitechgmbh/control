@@ -412,26 +412,29 @@ export function EditValue({
   // Continuous increment/decrement functionality
   const intervalRef = React.useRef<NodeJS.Timeout | null>(null);
   const timeoutRef = React.useRef<NodeJS.Timeout | null>(null);
-  
-  const startContinuousChange = React.useCallback((increment: boolean) => {
-    const performChange = () => {
-      const currentValue = form.getValues().value;
-      const newValue = increment
-        ? (max !== undefined
-            ? Math.min(max, roundToStepDecimals(currentValue + step))
-            : roundToStepDecimals(currentValue + step))
-        : (min !== undefined
-            ? Math.max(min, roundToStepDecimals(currentValue - step))
-            : roundToStepDecimals(currentValue - step));
-      setValue(newValue);
-    };
 
-    // Initial delay before starting continuous changes
-    timeoutRef.current = setTimeout(() => {
-      // Start continuous changes at regular intervals
-      intervalRef.current = setInterval(performChange, 100); // Change every 100ms
-    }, 500); // Wait 500ms before starting continuous changes
-  }, [step, min, max, roundToStepDecimals, form]);
+  const startContinuousChange = React.useCallback(
+    (increment: boolean) => {
+      const performChange = () => {
+        const currentValue = form.getValues().value;
+        const newValue = increment
+          ? max !== undefined
+            ? Math.min(max, roundToStepDecimals(currentValue + step))
+            : roundToStepDecimals(currentValue + step)
+          : min !== undefined
+            ? Math.max(min, roundToStepDecimals(currentValue - step))
+            : roundToStepDecimals(currentValue - step);
+        setValue(newValue);
+      };
+
+      // Initial delay before starting continuous changes
+      timeoutRef.current = setTimeout(() => {
+        // Start continuous changes at regular intervals
+        intervalRef.current = setInterval(performChange, 100); // Change every 100ms
+      }, 500); // Wait 500ms before starting continuous changes
+    },
+    [step, min, max, roundToStepDecimals, form],
+  );
 
   const stopContinuousChange = React.useCallback(() => {
     if (timeoutRef.current) {
