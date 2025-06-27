@@ -2,10 +2,7 @@ use super::Actor;
 use crate::modbus::{
     ModbusFunctionCode, ModbusRequest, ModbusResponse, calculate_modbus_rtu_timeout,
 };
-use bitvec::{
-    order::{Lsb0, Msb0},
-    slice::BitSlice,
-};
+use bitvec::{order::Lsb0, slice::BitSlice};
 use ethercat_hal::io::serial_interface::{SerialEncoding, SerialInterface};
 use std::{
     collections::HashMap,
@@ -70,21 +67,21 @@ enum MitsubishiSystemRegister {
     /// Register 40002
     InverterReset,
     /// Register 40003
-    ParameterClear,
+    //ParameterClear,
     /// Register 40004
-    AllParameterClear,
+    //AllParameterClear,
     /// Register 40006
-    ParamClearNonCommunication,
+    //ParamClearNonCommunication,
     /// Register 40007
-    AllParameterClearNonCommunication,
+    //AllParameterClearNonCommunication,
     /// Register 40009
     InverterStatusAndControl,
     /// Register 40010
-    OperationModeAndSetting,
+    //OperationModeAndSetting,
     /// Register 40014
     RunningFrequencyRAM,
     /// Register 40015
-    RunningFrequencyEEPROM,
+    //RunningFrequencyEEPROM,
     /// Register 40201
     MotorFrequency,
 }
@@ -93,14 +90,14 @@ impl MitsubishiControlRequests {
     fn get_system_register(value: MitsubishiSystemRegister) -> u16 {
         match value {
             MitsubishiSystemRegister::InverterReset => 0x1,
-            MitsubishiSystemRegister::ParameterClear => 0x2,
-            MitsubishiSystemRegister::AllParameterClear => 0x3,
-            MitsubishiSystemRegister::ParamClearNonCommunication => 0x5,
-            MitsubishiSystemRegister::AllParameterClearNonCommunication => 0x6,
+            // MitsubishiSystemRegister::ParameterClear => 0x2,
+            // MitsubishiSystemRegister::AllParameterClear => 0x3,
+            // MitsubishiSystemRegister::ParamClearNonCommunication => 0x5,
+            // MitsubishiSystemRegister::AllParameterClearNonCommunication => 0x6,
             MitsubishiSystemRegister::InverterStatusAndControl => 0x8,
-            MitsubishiSystemRegister::OperationModeAndSetting => 0x9,
+            // MitsubishiSystemRegister::OperationModeAndSetting => 0x9,
             MitsubishiSystemRegister::RunningFrequencyRAM => 0x0d,
-            MitsubishiSystemRegister::RunningFrequencyEEPROM => 0x0e,
+            //MitsubishiSystemRegister::RunningFrequencyEEPROM => 0x0e,
             MitsubishiSystemRegister::MotorFrequency => 0x00C8,
         }
     }
