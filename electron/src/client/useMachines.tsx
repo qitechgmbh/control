@@ -9,7 +9,6 @@ import {
   VendorProperties,
 } from "@/machines/properties";
 
-
 type UseMachine = {
   machine_identification_unique: MachineIdentificationUnique;
   name: MachineProperties["name"];
