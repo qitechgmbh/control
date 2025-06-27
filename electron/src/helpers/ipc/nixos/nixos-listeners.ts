@@ -8,6 +8,11 @@ import {
 import { NixOSGeneration } from "./nixos-context";
 
 export function addNixOSEventListeners() {
+  // Remove any existing handlers to prevent duplicates
+  ipcMain.removeHandler(NIXOS_LIST_GENERATIONS);
+  ipcMain.removeHandler(NIXOS_SET_GENERATION);
+  ipcMain.removeHandler(NIXOS_DELETE_GENERATION);
+
   ipcMain.handle(NIXOS_LIST_GENERATIONS, async () => {
     try {
       return await listNixOSGenerations();

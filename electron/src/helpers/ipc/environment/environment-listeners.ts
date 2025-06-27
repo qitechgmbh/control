@@ -15,6 +15,9 @@ export const environmentInfo = {
 };
 
 export function addEnvironmentEventListeners() {
+  // Remove any existing handlers to prevent duplicates
+  ipcMain.removeHandler(ENVIRONMENT_INFO);
+
   ipcMain.handle(ENVIRONMENT_INFO, async () => {
     return environmentInfo;
   });

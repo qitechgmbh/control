@@ -11,6 +11,12 @@ import {
 let logStreamProcess: ChildProcess | null = null;
 
 export function addTroubleshootEventListeners() {
+  // Remove any existing handlers to prevent duplicates
+  ipcMain.removeHandler(TROUBLESHOOT_REBOOT_HMI);
+  ipcMain.removeHandler(TROUBLESHOOT_RESTART_BACKEND);
+  ipcMain.removeHandler(TROUBLESHOOT_START_LOG_STREAM);
+  ipcMain.removeHandler(TROUBLESHOOT_STOP_LOG_STREAM);
+
   ipcMain.handle(TROUBLESHOOT_REBOOT_HMI, async () => {
     try {
       spawn("sudo", ["reboot"], { shell: true });

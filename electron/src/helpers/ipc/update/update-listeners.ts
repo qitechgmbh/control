@@ -13,6 +13,9 @@ type UpdateExecuteListenerParams = {
 };
 
 export function addUpdateEventListeners() {
+  // Remove any existing handlers to prevent duplicates
+  ipcMain.removeHandler(UPDATE_EXECUTE);
+  
   ipcMain.handle(
     UPDATE_EXECUTE,
     async (event, params: UpdateExecuteListenerParams) => {
