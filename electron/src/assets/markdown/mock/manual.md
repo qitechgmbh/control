@@ -5,11 +5,12 @@
 This is the operating manual for the Mock Machine control system. The Mock Machine is a simulated industrial device used for testing and development purposes.
 
 ![Mock Machine Duck](duck.jpg)
-*Figure 1: Mock Machine Mascot*
+_Figure 1: Mock Machine Mascot_
 
 ## Safety Information
 
 ⚠️ **Important Safety Notes:**
+
 - Always ensure proper safety protocols are followed
 - Verify all connections before operation
 - Keep emergency stop accessible at all times
@@ -39,6 +40,7 @@ The mock machine interface provides:
 ### Monitoring
 
 Use the Graph tab to monitor:
+
 - System performance metrics
 - Sensor readings
 - Historical data trends
@@ -62,11 +64,13 @@ Use the Graph tab to monitor:
 ## Maintenance
 
 ### Daily Checks
+
 - [ ] Verify all indicators are green
 - [ ] Check for error messages
 - [ ] Review system logs
 
 ### Weekly Maintenance
+
 - [ ] Clean control panel
 - [ ] Check cable connections
 - [ ] Update system logs
@@ -77,4 +81,4 @@ For technical support, contact the engineering team or refer to the system docum
 
 ---
 
-*Last updated: June 2025*
+_Last updated: June 2025_

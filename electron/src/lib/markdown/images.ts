@@ -10,7 +10,7 @@
  */
 export function processMarkdownImages(
   markdownContent: string,
-  imageImports: Record<string, string>
+  imageImports: Record<string, string>,
 ): string {
   let processedContent = markdownContent;
 
@@ -18,16 +18,16 @@ export function processMarkdownImages(
   Object.entries(imageImports).forEach(([relativePath, importedUrl]) => {
     // Handle different markdown image syntaxes
     const patterns = [
-      new RegExp(`!\\[([^\\]]*)\\]\\(${escapeRegExp(relativePath)}\\)`, 'g'),
-      new RegExp(`<img[^>]*src="${escapeRegExp(relativePath)}"[^>]*>`, 'g'),
+      new RegExp(`!\\[([^\\]]*)\\]\\(${escapeRegExp(relativePath)}\\)`, "g"),
+      new RegExp(`<img[^>]*src="${escapeRegExp(relativePath)}"[^>]*>`, "g"),
     ];
 
-    patterns.forEach(pattern => {
+    patterns.forEach((pattern) => {
       processedContent = processedContent.replace(pattern, (match) => {
-        if (match.startsWith('![')) {
+        if (match.startsWith("![")) {
           // Standard markdown image syntax
           const altTextMatch = match.match(/!\[([^\]]*)\]/);
-          const altText = altTextMatch ? altTextMatch[1] : '';
+          const altText = altTextMatch ? altTextMatch[1] : "";
           return `![${altText}](${importedUrl})`;
         } else {
           // HTML img tag syntax
@@ -44,24 +44,26 @@ export function processMarkdownImages(
  * Escapes special regex characters in a string
  */
 function escapeRegExp(string: string): string {
-  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 /**
  * Convenience function for creating image import maps
  * Automatically handles common relative path formats
  */
-export function createImageImports(imports: Record<string, string>): Record<string, string> {
+export function createImageImports(
+  imports: Record<string, string>,
+): Record<string, string> {
   const imageImports: Record<string, string> = {};
 
   Object.entries(imports).forEach(([key, value]) => {
     // Add the original key
     imageImports[key] = value;
-    
+
     // Also add variations for different relative path formats
-    if (key.startsWith('./')) {
+    if (key.startsWith("./")) {
       imageImports[key.substring(2)] = value; // Remove './' prefix
-    } else if (!key.startsWith('./')) {
+    } else if (!key.startsWith("./")) {
       imageImports[`./${key}`] = value; // Add './' prefix
     }
   });
