@@ -21,10 +21,10 @@ impl EL70x1VelocityConverter {
     }
 
     /// Convert steps per second to the i16 velocity value used by the EL7031
-    pub fn steps_to_velocity(&self, steps_per_second: i32, propability_rounding: bool) -> i16 {
+    pub fn steps_to_velocity(&self, steps_per_second: f64, propability_rounding: bool) -> i16 {
         // Calculate the velocity value (10000 = 100% of max speed)
         let velocity_f64 =
-            (steps_per_second as f64 / self.max_steps_per_seconds as f64) * std::i16::MAX as f64;
+            (steps_per_second / self.max_steps_per_seconds as f64) * std::i16::MAX as f64;
 
         match propability_rounding {
             true => round_propabilistic(velocity_f64),
@@ -76,18 +76,18 @@ mod tests {
         let calc = EL70x1VelocityConverter::new(&EL70x1SpeedRange::Steps4000); // 4000 steps/s
 
         // 0 sps = 0% velocity
-        assert_eq!(calc.steps_to_velocity(0, false), 0);
+        assert_eq!(calc.steps_to_velocity(0.0, false), 0);
         // 1000 sps = 25% velocity = 8192 (25% of 32767)
-        let v1 = calc.steps_to_velocity(1000, false);
+        let v1 = calc.steps_to_velocity(1000.0, false);
         assert!((v1 - 8192i16).abs() <= 1, "Expected 8192±1, got {}", v1);
         // 2000 sps = 50% velocity = 16384 (50% of 32767)
-        let v2 = calc.steps_to_velocity(2000, false);
+        let v2 = calc.steps_to_velocity(2000.0, false);
         assert!((v2 - 16384i16).abs() <= 1, "Expected 16384±1, got {}", v2);
         // 3000 sps = 75% velocity = 24575 (75% of 32767)
-        let v3 = calc.steps_to_velocity(3000, false);
+        let v3 = calc.steps_to_velocity(3000.0, false);
         assert!((v3 - 24575i16).abs() <= 1, "Expected 24575±1, got {}", v3);
         // 4000 sps = 100% velocity = 32767 (100% of 32767)
-        let v4 = calc.steps_to_velocity(4000, false);
+        let v4 = calc.steps_to_velocity(4000.0, false);
         assert!((v4 - 32767i16).abs() <= 1, "Expected 32767±1, got {}", v4);
     }
 

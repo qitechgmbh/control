@@ -503,7 +503,7 @@ impl TraverseController {
     ) {
         let speed = self.get_speed(traverse, traverse_end_stop, spool_speed);
         let steps_per_second = self.fullstep_converter.velocity_to_steps(speed);
-        traverse.set_speed(steps_per_second as i32);
+        traverse.set_speed(steps_per_second);
     }
 }
 
