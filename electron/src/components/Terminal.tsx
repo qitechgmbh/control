@@ -1,5 +1,11 @@
 import { cva } from "class-variance-authority";
-import React, { useEffect, useRef, useState } from "react";
+import React, { 
+  useCallback, 
+  useEffect, 
+  useMemo, 
+  useRef, 
+  useState 
+} from "react";
 import { Icon } from "./Icon";
 
 type Props = {
@@ -8,6 +14,7 @@ type Props = {
   className?: string; // Optional prop to control terminal height
   title?: string;
   exportPrefix?: string; // Optional prefix for exported log files
+  maxLines?: number; // Maximum number of lines to render (for performance)
 };
 
 const terminalStyle = cva([
@@ -43,7 +50,7 @@ const colorMap: Record<string, string> = {
   "47": "bg-gray-200",
 };
 
-// Parse ANSI color codes in text
+// Parse ANSI color codes in text - Memoized for performance
 const parseColorCodes = (text: string) => {
   // Split by ANSI escape sequences
   // eslint-disable-next-line no-control-regex
@@ -68,11 +75,59 @@ const parseColorCodes = (text: string) => {
   return result;
 };
 
+// Cache for parsed color codes to avoid re-parsing
+const parseCache = new Map<string, { text: string; className: string }[]>();
+
+// Optimized parse function with caching
+const parseColorCodesCached = (text: string) => {
+  if (parseCache.has(text)) {
+    return parseCache.get(text)!;
+  }
+  
+  const result = parseColorCodes(text);
+  
+  // Limit cache size to prevent memory leaks
+  if (parseCache.size > 1000) {
+    const firstKey = parseCache.keys().next().value;
+    if (firstKey) {
+      parseCache.delete(firstKey);
+    }
+  }
+  
+  parseCache.set(text, result);
+  return result;
+};
+
 // Function to strip ANSI color codes for plain text copy
 const stripColorCodes = (text: string): string => {
   // eslint-disable-next-line no-control-regex
   return text.replace(/\x1b\[\d+m/g, "");
 };
+
+// Memoized line component for better performance
+const TerminalLine = React.memo(({ 
+  line, 
+  index 
+}: { 
+  line: string; 
+  index: number;
+}) => {
+  const colorParts = useMemo(() => parseColorCodesCached(line), [line]);
+
+  return (
+    <div key={index} className="whitespace-pre-wrap">
+      {colorParts.length > 0
+        ? colorParts.map((part, partIndex) => (
+            <span key={partIndex} className={part.className}>
+              {part.text || " "}
+            </span>
+          ))
+        : line || " "}
+    </div>
+  );
+});
+
+TerminalLine.displayName = 'TerminalLine';
 
 export function Terminal({
   lines,
@@ -80,13 +135,66 @@ export function Terminal({
   className,
   title = "Terminal",
   exportPrefix,
+  maxLines = 1000,
 }: Props) {
   const terminalRef = useRef<HTMLDivElement>(null);
   const [isScrolledToBottom, setIsScrolledToBottom] = useState(true);
   const [copySuccess, setCopySuccess] = useState(false);
   const [exportSuccess, setExportSuccess] = useState(false);
+  const [scrollTop, setScrollTop] = useState(0);
+  const [containerHeight, setContainerHeight] = useState(0);
 
-  // Handle scrolling
+  // Throttle scroll updates for performance
+  const scrollThrottle = useRef<NodeJS.Timeout | null>(null);
+
+  // Limit lines for performance - keep most recent lines
+  const displayLines = useMemo(() => {
+    if (lines.length <= maxLines) return lines;
+    return lines.slice(-maxLines);
+  }, [lines, maxLines]);
+
+  // Calculate visible range for virtualization
+  const lineHeight = 20; // Approximate line height in pixels
+  
+  const visibleRange = useMemo(() => {
+    const visibleStart = Math.max(0, Math.floor(scrollTop / lineHeight) - 10);
+    const visibleEnd = Math.min(
+      displayLines.length,
+      visibleStart + Math.ceil(containerHeight / lineHeight) + 20
+    );
+
+    return { start: visibleStart, end: visibleEnd };
+  }, [displayLines.length, containerHeight, scrollTop]);
+
+  // Memoize visible lines to prevent unnecessary re-parsing
+  const visibleLines = useMemo(() => {
+    return displayLines.slice(visibleRange.start, visibleRange.end);
+  }, [displayLines, visibleRange]);
+
+  // Update container dimensions
+  const updateDimensions = useCallback(() => {
+    const terminal = terminalRef.current;
+    if (terminal) {
+      setContainerHeight(terminal.clientHeight);
+    }
+  }, []);
+
+  useEffect(() => {
+    updateDimensions();
+    const resizeObserver = new ResizeObserver(updateDimensions);
+    if (terminalRef.current) {
+      resizeObserver.observe(terminalRef.current);
+    }
+    return () => {
+      resizeObserver.disconnect();
+      // Clean up scroll throttle on unmount
+      if (scrollThrottle.current) {
+        clearTimeout(scrollThrottle.current);
+      }
+    };
+  }, [updateDimensions]);
+
+  // Handle scrolling - Optimized to use display lines
   useEffect(() => {
     const terminal = terminalRef.current;
     if (!terminal) return;
@@ -95,24 +203,34 @@ export function Terminal({
     if (autoScroll && isScrolledToBottom) {
       terminal.scrollTop = terminal.scrollHeight;
     }
-  }, [lines, autoScroll, isScrolledToBottom]);
+  }, [displayLines, autoScroll, isScrolledToBottom]);
 
-  // Handle scroll events to detect if user is at bottom
-  const handleScroll = () => {
+  // Handle scroll events to detect if user is at bottom - Throttled for performance
+  const handleScroll = useCallback(() => {
     const terminal = terminalRef.current;
     if (!terminal) return;
 
-    const isAtBottom =
-      Math.abs(
-        terminal.scrollHeight - terminal.clientHeight - terminal.scrollTop,
-      ) < 10; // Small threshold to account for rounding errors
+    // Clear existing throttle
+    if (scrollThrottle.current) {
+      clearTimeout(scrollThrottle.current);
+    }
 
-    setIsScrolledToBottom(isAtBottom);
-  };
+    scrollThrottle.current = setTimeout(() => {
+      const currentScrollTop = terminal.scrollTop;
+      setScrollTop(currentScrollTop);
 
-  // Handle copy to clipboard
-  const handleCopy = async () => {
-    // Strip ANSI color codes and join lines
+      const isAtBottom =
+        Math.abs(
+          terminal.scrollHeight - terminal.clientHeight - currentScrollTop,
+        ) < 10; // Small threshold to account for rounding errors
+
+      setIsScrolledToBottom(isAtBottom);
+    }, 16); // ~60fps throttling
+  }, []);
+
+  // Handle copy to clipboard - Optimized to use display lines
+  const handleCopy = useCallback(async () => {
+    // Strip ANSI color codes and join lines - use original lines, not just displayed
     const plainText = lines.map((line) => stripColorCodes(line)).join("\n");
 
     try {
@@ -126,13 +244,13 @@ export function Terminal({
     } catch (err) {
       console.error("Failed to copy text: ", err);
     }
-  };
+  }, [lines]);
 
-  // Handle export to file
-  const handleExport = () => {
+  // Handle export to file - Optimized to use all lines
+  const handleExport = useCallback(() => {
     if (!exportPrefix) return;
 
-    // Strip ANSI color codes and join lines
+    // Strip ANSI color codes and join lines - use original lines, not just displayed
     const plainText = lines.map((line) => stripColorCodes(line)).join("\n");
 
     // Create timestamp for filename
@@ -162,7 +280,7 @@ export function Terminal({
     setTimeout(() => {
       setExportSuccess(false);
     }, 2000);
-  };
+  }, [exportPrefix, lines]);
 
   return (
     <div className={terminalStyle({ className })}>
@@ -241,26 +359,38 @@ export function Terminal({
             scrollbar-color: rgb(82 82 91) transparent;
           }
         `}</style>
-        {lines.map((line, index) => {
-          const colorParts = parseColorCodes(line);
-
-          return (
-            <div key={index} className="whitespace-pre-wrap">
-              {colorParts.length > 0
-                ? colorParts.map((part, partIndex) => (
-                    <span key={partIndex} className={part.className}>
-                      {part.text || " "}
-                    </span>
-                  ))
-                : line || " "}
-            </div>
-          );
-        })}
+        {/* Virtualized rendering */}
+        <div style={{ height: displayLines.length * lineHeight }}>
+          <div 
+            style={{ 
+              transform: `translateY(${visibleRange.start * lineHeight}px)`,
+              position: 'relative'
+            }}
+          >
+            {visibleLines.map((line, index) => (
+              <TerminalLine 
+                key={visibleRange.start + index}
+                line={line}
+                index={visibleRange.start + index}
+              />
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Status bar */}
       <div className="flex items-center justify-between bg-neutral-800 px-4 py-1 text-xs text-neutral-400">
-        <div>{lines.length} lines</div>
+        <div>
+          {lines.length} lines 
+          {lines.length !== displayLines.length && (
+            <span className="text-yellow-400">
+              {" "}(showing last {displayLines.length})
+            </span>
+          )}
+          <span className="text-blue-400">
+            {" "}• virtualized
+          </span>
+        </div>
         <div>
           {isScrolledToBottom ? "At bottom" : "Scrolled up"} |
           {autoScroll ? " Auto-scroll enabled" : " Auto-scroll disabled"}
