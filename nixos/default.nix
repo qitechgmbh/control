@@ -2,32 +2,13 @@
 }:
 
 let
-  # Use standard Rust 1.86 from nixpkgs
-  rust = pkgs.rustc;
+  # Use the flake's packages when available
+  flake = builtins.getFlake (toString ../.);
+  system = builtins.currentSystem;
 in {
-  server = pkgs.callPackage ./packages/server.nix { commitHash = "dev"; };
-  electron = pkgs.callPackage ./packages/electron.nix { 
-    nodejs = pkgs.nodejs_22; 
-    commitHash = "dev";
-  };
-
-  # Package for quick development testing without a flake
-  shell = pkgs.mkShell {
-    buildInputs = with pkgs; [
-      rustc
-      cargo
-      rust-analyzer
-      pkg-config
-      libudev-zero
-      libpcap
-      nodejs_22
-      nodePackages.npm
-    ];
-    
-    shellHook = ''
-      echo "QiTech Control Development Environment"
-      echo "Rust version: $(rustc --version)"
-      echo "Node version: $(${pkgs.nodejs_22}/bin/node --version)"
-    '';
-  };
+  server = flake.packages.${system}.server;
+  electron = flake.packages.${system}.electron;
+  
+  # Use the flake's development shell for consistency
+  shell = flake.devShells.${system}.default;
 }
