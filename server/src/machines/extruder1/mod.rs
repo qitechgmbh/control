@@ -250,7 +250,7 @@ impl ExtruderV2 {
 // Motor
 impl ExtruderV2 {
     fn set_regulation(&mut self, uses_rpm: bool) {
-        if (self.screw_speed_controller.get_uses_rpm() == false && uses_rpm == true) {
+        if self.screw_speed_controller.get_uses_rpm() == false && uses_rpm == true {
             self.screw_speed_controller
                 .set_target_screw_rpm(self.screw_speed_controller.target_rpm);
         }
