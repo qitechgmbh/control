@@ -27,7 +27,7 @@ let
     version = commitHash;
     
     # Reduce memory usage during build
-    CARGO_BUILD_JOBS = "1";
+    CARGO_BUILD_JOBS = "2";
   };
   
   # Build *just* the cargo dependencies (of the entire workspace),
@@ -44,9 +44,9 @@ craneLib.buildPackage (commonArgs // {
 
   # Create a swap file if building on a memory-constrained system
   preBuild = ''
-      if [ $(free -m | grep Mem | awk '{print $2}') -lt 8000 ]; then
+      if [ $(free -m | grep Mem | awk '{print $2}') -lt 6000 ]; then
         mkdir -p $TMPDIR/swap
-        dd if=/dev/zero of=$TMPDIR/swap/swapfile bs=1M count=4096
+        dd if=/dev/zero of=$TMPDIR/swap/swapfile bs=1M count=8192
         chmod 600 $TMPDIR/swap/swapfile
         mkswap $TMPDIR/swap/swapfile
         swapon $TMPDIR/swap/swapfile
