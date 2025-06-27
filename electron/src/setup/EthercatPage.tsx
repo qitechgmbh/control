@@ -10,7 +10,7 @@ import {
 } from "@tanstack/react-table";
 import React, { useMemo } from "react";
 import { DeviceEepromDialog } from "./DeviceEepromDialog";
-import { getMachinePreset } from "@/machines/types";
+import { getMachineProperties } from "@/machines/properties";
 import { DeviceRoleComponent } from "@/components/DeviceRole";
 import {
   EthercatDevicesEventData,

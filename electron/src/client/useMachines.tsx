@@ -1,11 +1,14 @@
 import {
-  getVendorPreset,
-  getMachinePreset,
-  MachinePreset,
-  VendorPreset,
+  VendorProperties,
+  MachineProperties,
   MachineIdentificationUnique,
 } from "@/machines/types";
 import { useMainNamespace } from "./mainNamespace";
+import {
+  getVendorProperties,
+  getMachineProperties,
+} from "@/machines/properties";
+
 
 type UseMachine = {
   machine_identification_unique: MachineIdentificationUnique;

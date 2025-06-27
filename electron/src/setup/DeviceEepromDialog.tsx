@@ -14,7 +14,7 @@ import {
   getMachinePreset,
   machinePresets,
   VENDOR_QITECH,
-} from "@/machines/types";
+} from "@/machines/properties";
 import React, { useEffect, useMemo } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";

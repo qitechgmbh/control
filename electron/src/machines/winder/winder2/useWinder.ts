@@ -1,7 +1,8 @@
 import { toastError } from "@/components/Toast";
 import { useMachineMutate as useMachineMutation } from "@/client/useClient";
 import { useStateOptimistic } from "@/lib/useStateOptimistic";
-import { MachineIdentificationUnique, winder2 } from "@/machines/types";
+import { MachineIdentificationUnique } from "@/machines/types";
+import { winder2 } from "@/machines/properties";
 import { winder2SerialRoute } from "@/routes/routes";
 import { z } from "zod";
 import {
