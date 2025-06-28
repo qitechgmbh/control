@@ -1,5 +1,6 @@
 use crate::machines::winder2::{
     clamp_revolution::clamp_revolution_uom, filament_tension::FilamentTensionCalculator,
+    puller_speed_controller::PullerSpeedController,
 };
 
 use super::{clamp_revolution::Clamping, tension_arm::TensionArm};
@@ -20,8 +21,10 @@ use uom::{
     si::{
         angle::degree,
         angular_acceleration::radian_per_second_squared,
-        angular_velocity::{radian_per_second, revolution_per_minute},
-        f64::{Angle, AngularAcceleration, AngularVelocity},
+        angular_velocity::{radian_per_second, revolution_per_minute, revolution_per_second},
+        f64::{Angle, AngularAcceleration, AngularVelocity, Length, Velocity},
+        length::meter,
+        velocity::meter_per_second,
     },
 };
 
@@ -274,5 +277,20 @@ impl MinMaxSpoolSpeedController {
         self.last_speed = speed;
         // Also update the acceleration controller's current speed to ensure smooth transitions
         let _ = self.acceleration_controller.reset(speed);
+    }
+
+    /// derive the radius from the puller speed and the current angular speed
+    pub fn get_radius(&self, puller_speed_controller: &PullerSpeedController) -> Length {
+        let puller_speed: Velocity = puller_speed_controller.get_target_speed();
+        let angular_speed: AngularVelocity = self.last_speed;
+
+        // Calculate the radius using the formula: radius = speed / angular_speed
+        let radius =
+            puller_speed.get::<meter_per_second>() / angular_speed.get::<revolution_per_second>();
+
+        // Ensure the radius is a normal number, otherwise default to 0.0
+        let radius = Some(radius).filter(|&n| n.is_normal()).unwrap_or(0.0);
+
+        Length::new::<meter>(radius)
     }
 }

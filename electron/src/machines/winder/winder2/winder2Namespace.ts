@@ -117,6 +117,13 @@ export const spoolRpmEventDataSchema = z.object({
   rpm: z.number(),
 });
 
+/**
+ * Spool diameter event schema
+ */
+export const spoolDiameterEventDataSchema = z.object({
+  diameter: z.number(),
+});
+
 export const spoolStateEventDataSchema = z.object({
   speed_min: z.number(),
   speed_max: z.number(),
@@ -165,6 +172,9 @@ export const autostopStateEventSchema = eventSchema(
 );
 export const modeStateEventSchema = eventSchema(modeStateEventDataSchema);
 export const spoolRpmEventSchema = eventSchema(spoolRpmEventDataSchema);
+export const spoolDiameterEventSchema = eventSchema(
+  spoolDiameterEventDataSchema,
+);
 export const spoolStateEventSchema = eventSchema(spoolStateEventDataSchema);
 export const tensionArmAngleEventSchema = eventSchema(
   tensionArmAngleEventDataSchema,
@@ -191,6 +201,7 @@ export type Mode = z.infer<typeof modeSchema>;
 export type ModeStateEvent = z.infer<typeof modeStateEventSchema>;
 export type SpoolStateEvent = z.infer<typeof spoolStateEventSchema>;
 export type MeasurementsWindingRpmEvent = z.infer<typeof spoolRpmEventSchema>;
+export type SpoolDiameterEvent = z.infer<typeof spoolDiameterEventSchema>;
 export type MeasurementsTensionArmEvent = z.infer<
   typeof tensionArmAngleEventSchema
 >;
@@ -214,6 +225,7 @@ export type Winder2NamespaceStore = {
   pullerSpeed: TimeSeries;
   autostopWoundedLength: TimeSeries;
   spoolRpm: TimeSeries;
+  spoolDiameter: TimeSeries;
   tensionArmAngle: TimeSeries;
 };
 
@@ -236,6 +248,8 @@ const { initialTimeSeries: spoolRpm, insert: addSpoolRpm } = createTimeSeries(
   FIVE_SECOND,
   ONE_HOUR,
 );
+const { initialTimeSeries: spoolDiameter, insert: addSpoolDiameter } =
+  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
 const { initialTimeSeries: tensionArmAngle, insert: addTensionArmAngle } =
   createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
 
@@ -260,6 +274,7 @@ export const createWinder2NamespaceStore =
         pullerSpeed,
         autostopWoundedLength,
         spoolRpm,
+        spoolDiameter,
         tensionArmAngle,
       };
     });
@@ -373,6 +388,16 @@ export function winder2MessageHandler(
         updateStore((state) => ({
           ...state,
           spoolRpm: addSpoolRpm(state.spoolRpm, timeseriesValue),
+        }));
+      } else if (eventName === "SpoolDiameterEvent") {
+        const diameterEvent = event as SpoolDiameterEvent;
+        const timeseriesValue: TimeSeriesValue = {
+          value: diameterEvent.data.diameter,
+          timestamp: event.ts,
+        };
+        updateStore((state) => ({
+          ...state,
+          spoolDiameter: addSpoolDiameter(state.spoolDiameter, timeseriesValue),
         }));
       } else if (eventName === "TensionArmAngleEvent") {
         const angleEvent = event as MeasurementsTensionArmEvent;

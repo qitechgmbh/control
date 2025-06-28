@@ -234,6 +234,18 @@ impl SpoolRpmEvent {
 }
 
 #[derive(Serialize, Debug, Clone)]
+pub struct SpoolDiameterEvent {
+    /// diameter in mm
+    pub diameter: f64,
+}
+
+impl SpoolDiameterEvent {
+    pub fn build(&self) -> Event<Self> {
+        Event::new("SpoolDiameterEvent", self.clone())
+    }
+}
+
+#[derive(Serialize, Debug, Clone)]
 pub struct TensionArmAngleEvent {
     /// degree
     pub degree: f64,
@@ -282,6 +294,7 @@ pub enum Winder2Events {
     AutostopState(Event<AutostopStateEvent>),
     Mode(Event<ModeStateEvent>),
     SpoolRpm(Event<SpoolRpmEvent>),
+    SpoolDiameter(Event<SpoolDiameterEvent>),
     TensionArmAngleEvent(Event<TensionArmAngleEvent>),
     TensionArmStateEvent(Event<TensionArmStateEvent>),
     SpoolSpeedControllerStateEvent(Event<SpoolSpeedControllerStateEvent>),
@@ -320,6 +333,7 @@ impl CacheableEvents<Winder2Events> for Winder2Events {
             Winder2Events::AutostopState(event) => event.into(),
             Winder2Events::Mode(event) => event.into(),
             Winder2Events::SpoolRpm(event) => event.into(),
+            Winder2Events::SpoolDiameter(event) => event.into(),
             Winder2Events::TensionArmAngleEvent(event) => event.into(),
             Winder2Events::TensionArmStateEvent(event) => event.into(),
             Winder2Events::SpoolSpeedControllerStateEvent(event) => event.into(),
@@ -339,6 +353,7 @@ impl CacheableEvents<Winder2Events> for Winder2Events {
             Winder2Events::AutostopState(_) => cache_one,
             Winder2Events::Mode(_) => cache_one,
             Winder2Events::SpoolRpm(_) => cache_one_hour,
+            Winder2Events::SpoolDiameter(_) => cache_one_hour,
             Winder2Events::TensionArmAngleEvent(_) => cache_one_hour,
             Winder2Events::TensionArmStateEvent(_) => cache_one,
             Winder2Events::SpoolSpeedControllerStateEvent(_) => cache_one,
