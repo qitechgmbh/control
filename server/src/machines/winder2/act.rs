@@ -2,7 +2,6 @@ use std::time::{Duration, Instant};
 
 use super::Winder2;
 use control_core::actors::Actor;
-use tracing::debug;
 
 impl Actor for Winder2 {
     fn act(
@@ -40,6 +39,7 @@ impl Actor for Winder2 {
             {
                 self.emit_tension_arm_angle();
                 self.emit_spool_rpm();
+                self.emit_spool_diameter();
                 self.emit_puller_speed();
                 self.emit_traverse_position();
                 self.last_measurement_emit = now;

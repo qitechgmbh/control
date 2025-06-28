@@ -102,9 +102,13 @@ impl PullerSpeedController {
         self.converter.angular_velocity_to_velocity(angular_speed)
     }
 
-    pub fn get_angular_velocity(&mut self, t: Instant) -> AngularVelocity {
+    pub fn calc_angular_velocity(&mut self, t: Instant) -> AngularVelocity {
         let speed = self.update_speed(t);
         self.speed_to_angular_velocity(speed)
+    }
+
+    pub fn get_target_speed(&self) -> Velocity {
+        self.target_speed
     }
 }
 

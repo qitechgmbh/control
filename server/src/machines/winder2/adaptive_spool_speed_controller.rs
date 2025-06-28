@@ -6,24 +6,19 @@ use crate::machines::winder2::{
 use super::{clamp_revolution::Clamping, tension_arm::TensionArm};
 use control_core::{
     controllers::first_degree_motion::angular_acceleration_speed_controller::AngularAccelerationSpeedController,
-    helpers::{
-        interpolation::{interpolate_hinge, scale},
-        moving_time_window::MovingTimeWindow,
-    },
-    uom_extensions::velocity::meter_per_minute,
+    helpers::{interpolation::scale, moving_time_window::MovingTimeWindow},
 };
 use core::f64;
-use std::{f64::consts::PI, time::Instant};
-use tracing::info;
+use std::time::Instant;
 use uom::{
     ConstZero,
     si::{
         angle::degree,
         angular_acceleration::radian_per_second_squared,
-        angular_velocity::{radian_per_second, revolution_per_minute, revolution_per_second},
+        angular_velocity::{radian_per_second, revolution_per_minute},
         f64::{Angle, AngularAcceleration, AngularVelocity, Length},
         length::{centimeter, meter},
-        velocity::{centimeter_per_second, meter_per_second},
+        velocity::meter_per_second,
     },
 };
 
@@ -73,14 +68,14 @@ impl AdaptiveSpoolSpeedController {
     const TENSION_TARGET: f64 = 0.7;
 
     /// Proportional control gain for adaptive learning (negative: higher tension reduces speed)
-    const PROPORTIONAL_GAIN: f64 = 1.0;
+    const PROPORTIONAL_GAIN: f64 = 0.5;
 
     const RADIUS_MIN: f64 = 4.25;
 
     const RADIUS_MAX: f64 = 20.0;
 
     /// if the tension is the lowest, the speed can be up to 2x the puller speed
-    const MAX_SPEED_MULTIPLIER: f64 = 3.0;
+    const MAX_SPEED_MULTIPLIER: f64 = 4.0;
 
     /// Base acceleration as a fraction of max possible speed (per second)
     const BASE_ACCELERATION_FACTOR: f64 = 0.2; // 20% of max speed per second
@@ -391,5 +386,9 @@ impl AdaptiveSpoolSpeedController {
     pub fn set_speed(&mut self, speed: AngularVelocity) {
         self.last_speed = speed;
         let _ = self.acceleration_controller.reset(speed);
+    }
+
+    pub fn get_radius(&self) -> Length {
+        self.radius
     }
 }
