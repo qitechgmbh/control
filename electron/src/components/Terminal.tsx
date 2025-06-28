@@ -1,11 +1,12 @@
 import { cva } from "class-variance-authority";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { FixedSizeList as List } from "react-window";
 import { Icon } from "./Icon";
 
 type Props = {
   lines: string[];
   autoScroll?: boolean; // Optional prop to control if terminal should auto-scroll
-  className?: string; // Optional prop to control terminal height
+  className?: string; // Optional prop to control terminal styling
   title?: string;
   exportPrefix?: string; // Optional prefix for exported log files
 };
@@ -43,36 +44,82 @@ const colorMap: Record<string, string> = {
   "47": "bg-gray-200",
 };
 
-// Parse ANSI color codes in text
-const parseColorCodes = (text: string) => {
-  // Split by ANSI escape sequences
-  // eslint-disable-next-line no-control-regex
-  const parts = text.split(/(\x1b\[\d+m)/g);
-
-  let currentClass = "";
-  const result: { text: string; className: string }[] = [];
-
-  for (let i = 0; i < parts.length; i++) {
-    const part = parts[i];
-
-    if (part.startsWith("\x1b[")) {
-      // This is a color code
-      const code = part.slice(2, -1); // Extract the number from \x1b[XXm
-      currentClass = colorMap[code] || "";
-    } else if (part) {
-      // This is text content
-      result.push({ text: part, className: currentClass });
+// Parse ANSI color codes in text with memoization
+const parseColorCodes = (() => {
+  const cache = new Map<string, { text: string; className: string }[]>();
+  
+  return (text: string) => {
+    // Check cache first
+    if (cache.has(text)) {
+      return cache.get(text)!;
     }
-  }
 
-  return result;
-};
+    // Split by ANSI escape sequences
+    // eslint-disable-next-line no-control-regex
+    const parts = text.split(/(\x1b\[\d+m)/g);
+
+    let currentClass = "";
+    const result: { text: string; className: string }[] = [];
+
+    for (let i = 0; i < parts.length; i++) {
+      const part = parts[i];
+
+      if (part.startsWith("\x1b[")) {
+        // This is a color code
+        const code = part.slice(2, -1); // Extract the number from \x1b[XXm
+        currentClass = colorMap[code] || "";
+      } else if (part) {
+        // This is text content
+        result.push({ text: part, className: currentClass });
+      }
+    }
+
+    // Cache the result (limit cache size to prevent memory leaks)
+    if (cache.size >= 1000) {
+      const firstKey = cache.keys().next().value;
+      if (firstKey) {
+        cache.delete(firstKey);
+      }
+    }
+    cache.set(text, result);
+
+    return result;
+  };
+})();
 
 // Function to strip ANSI color codes for plain text copy
 const stripColorCodes = (text: string): string => {
   // eslint-disable-next-line no-control-regex
   return text.replace(/\x1b\[\d+m/g, "");
 };
+
+// Memoized row component for virtualization
+const TerminalRow = React.memo(({ 
+  index, 
+  style, 
+  data 
+}: { 
+  index: number; 
+  style: React.CSSProperties; 
+  data: string[]; 
+}) => {
+  const line = data[index];
+  const colorParts = useMemo(() => parseColorCodes(line), [line]);
+
+  return (
+    <div style={style} className="whitespace-pre-wrap px-4 py-0.5">
+      {colorParts.length > 0
+        ? colorParts.map((part, partIndex) => (
+            <span key={`${index}-${partIndex}`} className={part.className}>
+              {part.text || " "}
+            </span>
+          ))
+        : line || " "}
+    </div>
+  );
+});
+
+TerminalRow.displayName = 'TerminalRow';
 
 export function Terminal({
   lines,
@@ -81,37 +128,63 @@ export function Terminal({
   title = "Terminal",
   exportPrefix,
 }: Props) {
-  const terminalRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<List>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [isScrolledToBottom, setIsScrolledToBottom] = useState(true);
   const [copySuccess, setCopySuccess] = useState(false);
   const [exportSuccess, setExportSuccess] = useState(false);
+  const [containerHeight, setContainerHeight] = useState(400);
 
-  // Handle scrolling
+  // Fixed configuration values
+  const itemHeight = 20;
+  const overscan = 5;
+
+  // Track container height changes
   useEffect(() => {
-    const terminal = terminalRef.current;
-    if (!terminal) return;
+    const container = containerRef.current;
+    if (!container) return;
 
-    // If auto-scroll is enabled and user was at bottom, scroll to bottom when lines change
-    if (autoScroll && isScrolledToBottom) {
-      terminal.scrollTop = terminal.scrollHeight;
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setContainerHeight(entry.contentRect.height);
+      }
+    });
+
+    resizeObserver.observe(container);
+    
+    // Set initial height
+    setContainerHeight(container.clientHeight);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, []);
+
+  // Handle scrolling to bottom when lines change
+  useEffect(() => {
+    if (autoScroll && isScrolledToBottom && listRef.current && lines.length > 0) {
+      listRef.current.scrollToItem(lines.length - 1, "end");
     }
   }, [lines, autoScroll, isScrolledToBottom]);
 
   // Handle scroll events to detect if user is at bottom
-  const handleScroll = () => {
-    const terminal = terminalRef.current;
-    if (!terminal) return;
-
-    const isAtBottom =
-      Math.abs(
-        terminal.scrollHeight - terminal.clientHeight - terminal.scrollTop,
-      ) < 10; // Small threshold to account for rounding errors
-
+  const handleScroll = useCallback(({ scrollOffset, scrollUpdateWasRequested }: { 
+    scrollOffset: number;
+    scrollUpdateWasRequested: boolean;
+  }) => {
+    // Skip manual scroll position updates (like auto-scroll)
+    if (scrollUpdateWasRequested) return;
+    
+    const totalHeight = lines.length * itemHeight;
+    const maxScrollOffset = Math.max(0, totalHeight - containerHeight);
+    
+    // Check if scrolled to bottom (with small threshold for rounding errors)
+    const isAtBottom = scrollOffset >= maxScrollOffset - 10;
     setIsScrolledToBottom(isAtBottom);
-  };
+  }, [lines.length, itemHeight, containerHeight]);
 
   // Handle copy to clipboard
-  const handleCopy = async () => {
+  const handleCopy = useCallback(async () => {
     // Strip ANSI color codes and join lines
     const plainText = lines.map((line) => stripColorCodes(line)).join("\n");
 
@@ -126,10 +199,10 @@ export function Terminal({
     } catch (err) {
       console.error("Failed to copy text: ", err);
     }
-  };
+  }, [lines]);
 
   // Handle export to file
-  const handleExport = () => {
+  const handleExport = useCallback(() => {
     if (!exportPrefix) return;
 
     // Strip ANSI color codes and join lines
@@ -162,7 +235,7 @@ export function Terminal({
     setTimeout(() => {
       setExportSuccess(false);
     }, 2000);
-  };
+  }, [exportPrefix, lines]);
 
   return (
     <div className={terminalStyle({ className })}>
@@ -209,18 +282,27 @@ export function Terminal({
         </div>
       </div>
 
-      {/* Terminal content with custom scrollbar styling */}
-      <div
-        ref={terminalRef}
-        onScroll={handleScroll}
-        className={`scrollbar-thin scrollbar-thumb-neutral-600 scrollbar-track-transparent flex-grow overflow-y-auto bg-neutral-900 p-4 text-neutral-300`}
-        style={{
-          scrollbarWidth: "thin",
-          scrollbarColor: "rgb(82 82 91) transparent",
-        }}
-      >
+      {/* Virtualized Terminal content */}
+      <div ref={containerRef} className="flex-grow bg-neutral-900 text-neutral-300">
+        <List
+          ref={listRef}
+          height={containerHeight}
+          width="100%"
+          itemCount={lines.length}
+          itemSize={itemHeight}
+          itemData={lines}
+          onScroll={handleScroll}
+          overscanCount={overscan}
+          style={{
+            scrollbarWidth: "thin",
+            scrollbarColor: "rgb(82 82 91) transparent",
+          }}
+        >
+          {TerminalRow}
+        </List>
+        
+        {/* Custom scrollbar styles */}
         <style>{`
-          Add commentMore actions
           /* For Webkit browsers (Chrome, Safari) */
           .scrollbar-thin::-webkit-scrollbar {
             width: 6px;
@@ -241,21 +323,6 @@ export function Terminal({
             scrollbar-color: rgb(82 82 91) transparent;
           }
         `}</style>
-        {lines.map((line, index) => {
-          const colorParts = parseColorCodes(line);
-
-          return (
-            <div key={index} className="whitespace-pre-wrap">
-              {colorParts.length > 0
-                ? colorParts.map((part, partIndex) => (
-                    <span key={partIndex} className={part.className}>
-                      {part.text || " "}
-                    </span>
-                  ))
-                : line || " "}
-            </div>
-          );
-        })}
       </div>
 
       {/* Status bar */}
