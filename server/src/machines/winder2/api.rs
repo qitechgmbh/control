@@ -77,6 +77,11 @@ enum Mutation {
     PullerSetTargetDiameter(f64),
     PullerSetForward(bool),
 
+    // Spool Speed Controller
+    SpoolSetRegulationMode(super::spool_speed_controller::SpoolSpeedControllerType),
+    SpoolSetMinMaxMinSpeed(f64),
+    SpoolSetMinMaxMaxSpeed(f64),
+
     // Auto Stop
     AutostopEnable(bool),
     AutostopEnableAlarm(bool),
@@ -252,6 +257,22 @@ impl TensionArmStateEvent {
     }
 }
 
+#[derive(Serialize, Debug, Clone)]
+pub struct SpoolSpeedControllerStateEvent {
+    /// regulation mode
+    pub regulation_mode: super::spool_speed_controller::SpoolSpeedControllerType,
+    /// min speed in rpm for minmax mode
+    pub minmax_min_speed: f64,
+    /// max speed in rpm for minmax mode
+    pub minmax_max_speed: f64,
+}
+
+impl SpoolSpeedControllerStateEvent {
+    pub fn build(&self) -> Event<Self> {
+        Event::new("SpoolSpeedControllerStateEvent", self.clone())
+    }
+}
+
 pub enum Winder2Events {
     TraversePosition(Event<TraversePositionEvent>),
     TraverseState(Event<TraverseStateEvent>),
@@ -263,6 +284,7 @@ pub enum Winder2Events {
     SpoolRpm(Event<SpoolRpmEvent>),
     TensionArmAngleEvent(Event<TensionArmAngleEvent>),
     TensionArmStateEvent(Event<TensionArmStateEvent>),
+    SpoolSpeedControllerStateEvent(Event<SpoolSpeedControllerStateEvent>),
 }
 
 #[derive(Debug)]
@@ -300,6 +322,7 @@ impl CacheableEvents<Winder2Events> for Winder2Events {
             Winder2Events::SpoolRpm(event) => event.into(),
             Winder2Events::TensionArmAngleEvent(event) => event.into(),
             Winder2Events::TensionArmStateEvent(event) => event.into(),
+            Winder2Events::SpoolSpeedControllerStateEvent(event) => event.into(),
         }
     }
 
@@ -318,6 +341,7 @@ impl CacheableEvents<Winder2Events> for Winder2Events {
             Winder2Events::SpoolRpm(_) => cache_one_hour,
             Winder2Events::TensionArmAngleEvent(_) => cache_one_hour,
             Winder2Events::TensionArmStateEvent(_) => cache_one,
+            Winder2Events::SpoolSpeedControllerStateEvent(_) => cache_one,
         }
     }
 }
@@ -339,6 +363,9 @@ impl MachineApi for Winder2 {
             Mutation::PullerSetTargetSpeed(value) => self.puller_set_target_speed(value),
             Mutation::PullerSetTargetDiameter(_) => todo!(),
             Mutation::PullerSetForward(value) => self.puller_set_forward(value),
+            Mutation::SpoolSetRegulationMode(mode) => self.spool_set_regulation_mode(mode),
+            Mutation::SpoolSetMinMaxMinSpeed(speed) => self.spool_set_minmax_min_speed(speed),
+            Mutation::SpoolSetMinMaxMaxSpeed(speed) => self.spool_set_minmax_max_speed(speed),
             Mutation::AutostopEnable(_) => todo!(),
             Mutation::AutostopEnableAlarm(_) => todo!(),
             Mutation::AutostopSetLimit(_) => todo!(),

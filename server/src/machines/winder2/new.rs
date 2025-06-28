@@ -1,12 +1,11 @@
 use std::time::Instant;
 
-use crate::machines::winder2::puller_speed_controller::PullerSpeedController;
-use crate::machines::winder2::traverse_controller::TraverseController;
-
 use super::api::Winder2Namespace;
-use super::spool_speed_controller::SpoolSpeedController;
 use super::tension_arm::TensionArm;
 use super::{Winder2, Winder2Mode};
+use crate::machines::winder2::puller_speed_controller::PullerSpeedController;
+use crate::machines::winder2::spool_speed_controller::SpoolSpeedController;
+use crate::machines::winder2::traverse_controller::TraverseController;
 use anyhow::Error;
 use control_core::actors::analog_input_getter::AnalogInputGetter;
 use control_core::actors::digital_input_getter::DigitalInputGetter;
@@ -388,6 +387,7 @@ impl MachineNewTrait for Winder2 {
             new.emit_mode_state();
             new.emit_tension_arm_state();
             new.emit_puller_state();
+            new.emit_spool_speed_controller_state();
 
             Ok(new)
         })

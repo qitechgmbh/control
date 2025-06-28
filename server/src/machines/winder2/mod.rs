@@ -1,7 +1,9 @@
 pub mod act;
 pub mod api;
+pub mod adaptive_spool_speed_controller;
 pub mod clamp_revolution;
 pub mod filament_tension;
+pub mod minmax_spool_speed_controller;
 pub mod new;
 pub mod puller_speed_controller;
 pub mod spool_speed_controller;
@@ -255,6 +257,7 @@ impl Winder2 {
 
         self.emit_mode_state();
         self.emit_traverse_state();
+        self.emit_spool_speed_controller_state();
     }
 
     /// Apply the mode changes to the spool
@@ -571,6 +574,51 @@ impl Winder2 {
                     .target_diameter
                     .get::<millimeter>(),
                 forward: self.puller_speed_controller.forward,
+            }
+            .build(),
+        );
+        self.namespace.emit(event);
+    }
+
+    // Spool Speed Controller API methods
+    pub fn spool_set_regulation_mode(
+        &mut self,
+        regulation_mode: spool_speed_controller::SpoolSpeedControllerType,
+    ) {
+        self.spool_speed_controller.set_type(regulation_mode);
+        self.emit_spool_speed_controller_state();
+    }
+
+    /// Set minimum speed for minmax mode in RPM
+    pub fn spool_set_minmax_min_speed(&mut self, min_speed_rpm: f64) {
+        let min_speed = uom::si::f64::AngularVelocity::new::<revolution_per_minute>(min_speed_rpm);
+        if let Err(e) = self.spool_speed_controller.set_minmax_min_speed(min_speed) {
+            tracing::error!("Failed to set spool min speed: {:?}", e);
+        }
+        self.emit_spool_speed_controller_state();
+    }
+
+    /// Set maximum speed for minmax mode in RPM
+    pub fn spool_set_minmax_max_speed(&mut self, max_speed_rpm: f64) {
+        let max_speed = uom::si::f64::AngularVelocity::new::<revolution_per_minute>(max_speed_rpm);
+        if let Err(e) = self.spool_speed_controller.set_minmax_max_speed(max_speed) {
+            tracing::error!("Failed to set spool max speed: {:?}", e);
+        }
+        self.emit_spool_speed_controller_state();
+    }
+
+    pub fn emit_spool_speed_controller_state(&mut self) {
+        let event = api::Winder2Events::SpoolSpeedControllerStateEvent(
+            api::SpoolSpeedControllerStateEvent {
+                regulation_mode: self.spool_speed_controller.get_type().clone(),
+                minmax_min_speed: self
+                    .spool_speed_controller
+                    .get_minmax_min_speed()
+                    .get::<revolution_per_minute>(),
+                minmax_max_speed: self
+                    .spool_speed_controller
+                    .get_minmax_max_speed()
+                    .get::<revolution_per_minute>(),
             }
             .build(),
         );
