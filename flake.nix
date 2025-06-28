@@ -7,7 +7,6 @@
     # Crane for Rust builds with dependency caching
     crane = {
       url = "github:ipetkov/crane";
-      inputs.nixpkgs.follows = "nixpkgs";
     };
     
     home-manager = {
@@ -40,7 +39,7 @@
             qitechPackages = {
               server = final.callPackage ./nixos/packages/server.nix { 
                 commitHash = builtins.getEnv "QITECH_COMMIT_HASH";
-                inherit crane;
+                craneLib = crane.mkLib final;
               };
               electron = final.callPackage ./nixos/packages/electron.nix { 
                 commitHash = builtins.getEnv "QITECH_COMMIT_HASH";
@@ -98,7 +97,7 @@
                   qitechPackages = {
                     server = final.callPackage ./nixos/packages/server.nix { 
                       commitHash = installInfo.gitCommit;
-                      inherit crane;
+                      craneLib = crane.mkLib final;
                     };
                     electron = final.callPackage ./nixos/packages/electron.nix {
                       commitHash = installInfo.gitCommit;

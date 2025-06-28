@@ -4,13 +4,10 @@
 , libudev-zero
 , libpcap
 , commitHash
-, crane
+, craneLib
 }:
 
 let
-  # Create crane lib properly
-  craneLib = crane.mkLib pkgs;
-  
   # Use crane's source cleaning which is more intelligent for Cargo projects
   src = craneLib.cleanCargoSource ../..;
   
