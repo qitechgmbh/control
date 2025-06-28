@@ -617,6 +617,44 @@ impl Winder2 {
         self.emit_spool_speed_controller_state();
     }
 
+    /// Set tension target for adaptive mode (0.0-1.0)
+    pub fn spool_set_adaptive_tension_target(&mut self, tension_target: f64) {
+        self.spool_speed_controller
+            .set_adaptive_tension_target(tension_target);
+        self.emit_spool_speed_controller_state();
+    }
+
+    /// Set radius learning rate for adaptive mode
+    pub fn spool_set_adaptive_radius_learning_rate(&mut self, radius_learning_rate: f64) {
+        self.spool_speed_controller
+            .set_adaptive_radius_learning_rate(radius_learning_rate);
+        self.emit_spool_speed_controller_state();
+    }
+
+    /// Set max speed multiplier for adaptive mode
+    pub fn spool_set_adaptive_max_speed_multiplier(&mut self, max_speed_multiplier: f64) {
+        self.spool_speed_controller
+            .set_adaptive_max_speed_multiplier(max_speed_multiplier);
+        self.emit_spool_speed_controller_state();
+    }
+
+    /// Set acceleration factor for adaptive mode
+    pub fn spool_set_adaptive_acceleration_factor(&mut self, acceleration_factor: f64) {
+        self.spool_speed_controller
+            .set_adaptive_acceleration_factor(acceleration_factor);
+        self.emit_spool_speed_controller_state();
+    }
+
+    /// Set deacceleration urgency multiplier for adaptive mode
+    pub fn spool_set_adaptive_deacceleration_urgency_multiplier(
+        &mut self,
+        deacceleration_urgency_multiplier: f64,
+    ) {
+        self.spool_speed_controller
+            .set_adaptive_deacceleration_urgency_multiplier(deacceleration_urgency_multiplier);
+        self.emit_spool_speed_controller_state();
+    }
+
     pub fn emit_spool_speed_controller_state(&mut self) {
         let event = api::Winder2Events::SpoolSpeedControllerStateEvent(
             api::SpoolSpeedControllerStateEvent {
@@ -629,6 +667,19 @@ impl Winder2 {
                     .spool_speed_controller
                     .get_minmax_max_speed()
                     .get::<revolution_per_minute>(),
+                adaptive_tension_target: self.spool_speed_controller.get_adaptive_tension_target(),
+                adaptive_radius_learning_rate: self
+                    .spool_speed_controller
+                    .get_adaptive_radius_learning_rate(),
+                adaptive_max_speed_multiplier: self
+                    .spool_speed_controller
+                    .get_adaptive_max_speed_multiplier(),
+                adaptive_acceleration_factor: self
+                    .spool_speed_controller
+                    .get_adaptive_acceleration_factor(),
+                adaptive_deacceleration_urgency_multiplier: self
+                    .spool_speed_controller
+                    .get_adaptive_deacceleration_urgency_multiplier(),
             }
             .build(),
         );

@@ -457,6 +457,11 @@ function useSpoolSpeedController(
   setRegulationMode: (mode: SpoolRegulationMode) => void;
   setMinMaxMinSpeed: (speed: number) => void;
   setMinMaxMaxSpeed: (speed: number) => void;
+  setAdaptiveTensionTarget: (value: number) => void;
+  setAdaptiveRadiusLearningRate: (value: number) => void;
+  setAdaptiveMaxSpeedMultiplier: (value: number) => void;
+  setAdaptiveAccelerationFactor: (value: number) => void;
+  setAdaptiveDeaccelerationUrgencyMultiplier: (value: number) => void;
   spoolControllerIsLoading: boolean;
   spoolControllerIsDisabled: boolean;
 } {
@@ -529,6 +534,121 @@ function useSpoolSpeedController(
       .catch(() => spoolStateOptimistic.resetToReal());
   };
 
+  // Write path - Set adaptive parameters
+  const adaptiveTensionTargetSchema = z.object({
+    SpoolSetAdaptiveTensionTarget: z.number(),
+  });
+  const { request: requestAdaptiveTensionTarget } = useMachineMutation(
+    adaptiveTensionTargetSchema,
+  );
+  const setAdaptiveTensionTarget = async (value: number) => {
+    if (spoolStateOptimistic.value) {
+      spoolStateOptimistic.setOptimistic({
+        ...spoolStateOptimistic.value,
+        adaptive_tension_target: value,
+      });
+    }
+    requestAdaptiveTensionTarget({
+      machine_identification_unique,
+      data: { SpoolSetAdaptiveTensionTarget: value },
+    })
+      .then((response) => {
+        if (!response.success) spoolStateOptimistic.resetToReal();
+      })
+      .catch(() => spoolStateOptimistic.resetToReal());
+  };
+
+  const adaptiveRadiusLearningRateSchema = z.object({
+    SpoolSetAdaptiveRadiusLearningRate: z.number(),
+  });
+  const { request: requestAdaptiveRadiusLearningRate } = useMachineMutation(
+    adaptiveRadiusLearningRateSchema,
+  );
+  const setAdaptiveRadiusLearningRate = async (value: number) => {
+    if (spoolStateOptimistic.value) {
+      spoolStateOptimistic.setOptimistic({
+        ...spoolStateOptimistic.value,
+        adaptive_radius_learning_rate: value,
+      });
+    }
+    requestAdaptiveRadiusLearningRate({
+      machine_identification_unique,
+      data: { SpoolSetAdaptiveRadiusLearningRate: value },
+    })
+      .then((response) => {
+        if (!response.success) spoolStateOptimistic.resetToReal();
+      })
+      .catch(() => spoolStateOptimistic.resetToReal());
+  };
+
+  const adaptiveMaxSpeedMultiplierSchema = z.object({
+    SpoolSetAdaptiveMaxSpeedMultiplier: z.number(),
+  });
+  const { request: requestAdaptiveMaxSpeedMultiplier } = useMachineMutation(
+    adaptiveMaxSpeedMultiplierSchema,
+  );
+  const setAdaptiveMaxSpeedMultiplier = async (value: number) => {
+    if (spoolStateOptimistic.value) {
+      spoolStateOptimistic.setOptimistic({
+        ...spoolStateOptimistic.value,
+        adaptive_max_speed_multiplier: value,
+      });
+    }
+    requestAdaptiveMaxSpeedMultiplier({
+      machine_identification_unique,
+      data: { SpoolSetAdaptiveMaxSpeedMultiplier: value },
+    })
+      .then((response) => {
+        if (!response.success) spoolStateOptimistic.resetToReal();
+      })
+      .catch(() => spoolStateOptimistic.resetToReal());
+  };
+
+  const adaptiveAccelerationFactorSchema = z.object({
+    SpoolSetAdaptiveAccelerationFactor: z.number(),
+  });
+  const { request: requestAdaptiveAccelerationFactor } = useMachineMutation(
+    adaptiveAccelerationFactorSchema,
+  );
+  const setAdaptiveAccelerationFactor = async (value: number) => {
+    if (spoolStateOptimistic.value) {
+      spoolStateOptimistic.setOptimistic({
+        ...spoolStateOptimistic.value,
+        adaptive_acceleration_factor: value,
+      });
+    }
+    requestAdaptiveAccelerationFactor({
+      machine_identification_unique,
+      data: { SpoolSetAdaptiveAccelerationFactor: value },
+    })
+      .then((response) => {
+        if (!response.success) spoolStateOptimistic.resetToReal();
+      })
+      .catch(() => spoolStateOptimistic.resetToReal());
+  };
+
+  const adaptiveDeaccelerationUrgencyMultiplierSchema = z.object({
+    SpoolSetAdaptiveDeaccelerationUrgencyMultiplier: z.number(),
+  });
+  const { request: requestAdaptiveDeaccelerationUrgencyMultiplier } =
+    useMachineMutation(adaptiveDeaccelerationUrgencyMultiplierSchema);
+  const setAdaptiveDeaccelerationUrgencyMultiplier = async (value: number) => {
+    if (spoolStateOptimistic.value) {
+      spoolStateOptimistic.setOptimistic({
+        ...spoolStateOptimistic.value,
+        adaptive_deacceleration_urgency_multiplier: value,
+      });
+    }
+    requestAdaptiveDeaccelerationUrgencyMultiplier({
+      machine_identification_unique,
+      data: { SpoolSetAdaptiveDeaccelerationUrgencyMultiplier: value },
+    })
+      .then((response) => {
+        if (!response.success) spoolStateOptimistic.resetToReal();
+      })
+      .catch(() => spoolStateOptimistic.resetToReal());
+  };
+
   // Read path
   const { spoolSpeedControllerState } = useWinder2Namespace(
     machine_identification_unique,
@@ -546,6 +666,11 @@ function useSpoolSpeedController(
     setRegulationMode,
     setMinMaxMinSpeed,
     setMinMaxMaxSpeed,
+    setAdaptiveTensionTarget,
+    setAdaptiveRadiusLearningRate,
+    setAdaptiveMaxSpeedMultiplier,
+    setAdaptiveAccelerationFactor,
+    setAdaptiveDeaccelerationUrgencyMultiplier,
     spoolControllerIsLoading:
       spoolStateOptimistic.isOptimistic || !spoolStateOptimistic.isInitialized,
     spoolControllerIsDisabled:
