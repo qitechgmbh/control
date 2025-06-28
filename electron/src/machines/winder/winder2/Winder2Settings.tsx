@@ -75,7 +75,7 @@ export function Winder2SettingPage() {
                   icon: "lu:ArrowUpDown",
                 },
                 Adaptive: {
-                  children: "Adaptive",
+                  children: "Adaptive (beta)",
                   icon: "lu:Brain",
                 },
               }}
@@ -174,8 +174,8 @@ export function Winder2SettingPage() {
                   unit={undefined}
                   step={0.01}
                   min={0.01}
-                  max={100}
-                  defaultValue={0.2}
+                  max={10}
+                  defaultValue={0.3}
                   renderValue={(value) => roundToDecimals(value, 2)}
                   onChange={(value) => setAdaptiveAccelerationFactor(value)}
                 />
@@ -188,10 +188,10 @@ export function Winder2SettingPage() {
                   }
                   title={"Deacceleration Urgency Multiplier"}
                   unit={undefined}
-                  step={0.5}
+                  step={1}
                   min={1}
                   max={100}
-                  defaultValue={15.0}
+                  defaultValue={40.0}
                   renderValue={(value) => roundToDecimals(value, 1)}
                   onChange={(value) =>
                     setAdaptiveDeaccelerationUrgencyMultiplier(value)
