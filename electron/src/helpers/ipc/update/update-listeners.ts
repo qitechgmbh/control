@@ -1,6 +1,12 @@
 import { ipcMain } from "electron";
-import { UPDATE_END, UPDATE_EXECUTE, UPDATE_LOG } from "./update-channels";
-import { spawn } from "child_process";
+import {
+  UPDATE_CANCEL,
+  UPDATE_END,
+  UPDATE_EXECUTE,
+  UPDATE_LOG,
+} from "./update-channels";
+import { spawn, ChildProcess } from "child_process";
+import tkill from "@jub3i/tree-kill";
 
 type UpdateExecuteListenerParams = {
   githubRepoOwner: string;
@@ -11,18 +17,23 @@ type UpdateExecuteListenerParams = {
   commit?: string;
 };
 
+// Store reference to current update process for cancellation
+let currentUpdateProcess: ChildProcess | null = null;
+
 export function addUpdateEventListeners() {
   ipcMain.handle(
     UPDATE_EXECUTE,
     async (event, params: UpdateExecuteListenerParams) => {
       update(event, params)
         .then(() => {
+          currentUpdateProcess = null;
           event.sender.send(
             UPDATE_END,
             terminalSuccess("Update completed successfully!"),
           );
         })
         .catch((error) => {
+          currentUpdateProcess = null;
           event.sender.send(
             UPDATE_END,
             terminalError(`Update failed: ${error.message}`),
@@ -30,6 +41,52 @@ export function addUpdateEventListeners() {
         });
     },
   );
+
+  ipcMain.handle(UPDATE_CANCEL, async (event) => {
+    if (currentUpdateProcess) {
+      event.sender.send(
+        UPDATE_LOG,
+        terminalInfo("Cancelling update process..."),
+      );
+
+      // Kill the process and all its child processes using tree-kill
+      try {
+        const pid = currentUpdateProcess.pid!;
+
+        // Use tree-kill to properly terminate the entire process tree
+        // First try graceful termination with SIGTERM (default signal)
+        await new Promise<void>((resolve, reject) => {
+          tkill(pid, (err) => {
+            if (err) {
+              // If graceful termination fails, force kill with SIGKILL
+              tkill(pid, "SIGKILL", (killErr) => {
+                if (killErr) {
+                  reject(killErr);
+                } else {
+                  resolve();
+                }
+              });
+            } else {
+              resolve();
+            }
+          });
+        });
+
+        currentUpdateProcess = null;
+        event.sender.send(UPDATE_END, terminalInfo("Update process cancelled"));
+        return { success: true };
+      } catch (error: any) {
+        event.sender.send(
+          UPDATE_LOG,
+          terminalError(`Error cancelling process: ${error.message}`),
+        );
+        return { success: false, error: error.message };
+      }
+    } else {
+      event.sender.send(UPDATE_LOG, terminalInfo("No update process running"));
+      return { success: false, error: "No update process running" };
+    }
+  });
 }
 
 async function update(
@@ -261,19 +318,22 @@ async function runCommand(
       `🚀 ${workingDirText} ${terminalColor("blue", completeCommand)}`,
     );
 
-    const process = spawn(cmd, args, {
+    const childProcess = spawn(cmd, args, {
       cwd: workingDir,
     });
 
+    // Store reference to current process for cancellation
+    currentUpdateProcess = childProcess;
+
     // Stream stdout logs back to renderer
-    process.stdout.on("data", (data) => {
+    childProcess.stdout.on("data", (data) => {
       const log = data.toString();
       console.log(log);
       event.sender.send(UPDATE_LOG, log);
     });
 
     // Stream stderr logs back to renderer
-    process.stderr.on("data", (data) => {
+    childProcess.stderr.on("data", (data) => {
       const log = data.toString();
       console.error(log);
       event.sender.send(UPDATE_LOG, log);
@@ -281,8 +341,19 @@ async function runCommand(
 
     // Handle process completion
     return new Promise((resolve, reject) => {
-      process.on("close", (code) => {
-        if (code === 0) {
+      childProcess.on("close", (code, signal) => {
+        // Clear process reference when completed
+        if (currentUpdateProcess === childProcess) {
+          currentUpdateProcess = null;
+        }
+
+        if (signal === "SIGTERM" || signal === "SIGKILL") {
+          event.sender.send(UPDATE_LOG, terminalInfo("Command was cancelled"));
+          reject({
+            success: false,
+            error: "Command was cancelled",
+          });
+        } else if (code === 0) {
           event.sender.send(
             UPDATE_LOG,
             terminalSuccess("Command completed successfully"),
@@ -300,7 +371,12 @@ async function runCommand(
         }
       });
 
-      process.on("error", (err) => {
+      childProcess.on("error", (err) => {
+        // Clear process reference on error
+        if (currentUpdateProcess === childProcess) {
+          currentUpdateProcess = null;
+        }
+
         event.sender.send(
           UPDATE_LOG,
           terminalError(`Command error: ${err.message}`),

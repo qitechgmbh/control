@@ -19,3 +19,10 @@ export async function updateExecute(
     });
   });
 }
+
+export async function updateCancel(): Promise<{
+  success: boolean;
+  error?: string;
+}> {
+  return window.update.cancel();
+}
