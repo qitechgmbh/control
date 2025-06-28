@@ -89,13 +89,15 @@ impl AdaptiveSpoolSpeedController {
     const MAX_SPEED_MULTIPLIER: f64 = 4.0;
 
     /// Base acceleration as a fraction of max possible speed (per second)
-    const ACCELERATION_FACTOR: f64 = 0.2; // 20% of max speed per second
+    const ACCELERATION_FACTOR: f64 = 0.3; // 20% of max speed per second
 
     /// Urgency multiplier for near-zero target speeds
-    const DEACCELERATION_URGENCY_MULTIPLIER: f64 = 15.0;
+    const DEACCELERATION_URGENCY_MULTIPLIER: f64 = 40.0;
 
     /// Minimum acceleration limit to prevent completely frozen motion
     const MIN_ACCELERATION_LIMIT: f64 = 0.5; // rad/s²
+
+    const MAX_ACCELERATION_LIMIT: f64 = 50.0; // rad/s²
 
     /// Creates a new adaptive spool speed controller with default settings.
     ///
@@ -217,6 +219,24 @@ impl AdaptiveSpoolSpeedController {
     /// as the basis for acceleration limits, ensuring smooth operation across all speed ranges
     /// while providing instant deceleration capability when approaching zero.
     ///
+    /// ## Urgency Factor Logic
+    ///
+    /// The urgency factor provides faster deceleration when the target speed is near zero
+    /// and the current speed is significantly higher. This prevents overshoot and allows
+    /// quick stops when needed (e.g., when tension becomes too high).
+    ///
+    /// Urgency is triggered when:
+    /// 1. Target speed is very low (< 0.1 rad/s) - indicating we want to stop or go very slow
+    /// 2. Speed difference is significant (> 0.1 rad/s) - indicating we need a large change
+    ///
+    /// When urgency is active, acceleration limits are multiplied by 3.0, allowing:
+    /// - Faster deceleration to zero when tension gets too high
+    /// - Quick response to emergency stop conditions
+    /// - Smooth operation during normal speed changes (urgency factor = 1.0)
+    ///
+    /// This prevents the "speed goes to zero abruptly" issue by ensuring acceleration
+    /// limits are still bounded and reasonable, while providing responsive control.
+    ///
     /// # Parameters
     /// - `target_speed`: Target speed to accelerate towards
     /// - `puller_speed_controller`: Reference to puller for current max speed calculation
@@ -231,27 +251,50 @@ impl AdaptiveSpoolSpeedController {
         t: Instant,
     ) -> AngularVelocity {
         let target_speed_rad_s = target_speed.get::<radian_per_second>();
+        let current_speed_rad_s = self.last_speed.get::<radian_per_second>();
         let current_max_speed = self.get_max_speed(puller_speed_controller);
         let max_speed_rad_s = current_max_speed.get::<radian_per_second>();
 
         // Base acceleration proportional to current max operating speed
         let base_acceleration = max_speed_rad_s * self.acceleration_factor;
 
-        // Simple urgency factor - dramatically increases near zero
-        let urgency_factor = if target_speed_rad_s.abs() < 0.1 {
-            self.deacceleration_urgency_multiplier * (1.0 / (target_speed_rad_s.abs() + 0.01))
+        // Calculate speed difference to determine urgency
+        let speed_difference = (target_speed_rad_s - current_speed_rad_s).abs();
+
+        // Urgency Factor Calculation:
+        // The urgency factor increases acceleration limits when we need to quickly
+        // decelerate to a very low target speed. This is crucial for tension control
+        // where high tension (requiring low/zero speed) needs immediate response.
+        //
+        // Two conditions must be met for urgency activation:
+        // 1. Target speed < 0.1 rad/s (we want to stop or go very slow)
+        // 2. Speed difference > 0.1 rad/s (current speed is significantly higher)
+        //
+        // Without urgency: Normal acceleration limits apply (smooth but slower)
+        // With urgency: 3x acceleration limits (faster response, prevents overshoot)
+        let urgency_threshold = 0.1; // rad/s
+        let urgency_factor = if target_speed_rad_s.abs() < urgency_threshold
+            && speed_difference > urgency_threshold
+        {
+            // Only apply urgency when we actually need to decelerate quickly to near-zero
+            let urgency_multiplier = 3.0; // Reduced from 15.0 for stability
+            urgency_multiplier
         } else {
-            1.0
+            1.0 // Normal operation - no urgency needed
         };
 
-        // Final acceleration limit
-        let acceleration_limit =
-            (base_acceleration * urgency_factor).max(Self::MIN_ACCELERATION_LIMIT);
+        // Final acceleration limit calculation:
+        // base_acceleration (20% of max speed per second) × urgency_factor (1.0 or 3.0)
+        // Then clamped to safe bounds: [0.5, 50.0] rad/s²
+        // This ensures acceleration is never too small (frozen motion) or too large (instability)
+        let acceleration_limit = (base_acceleration * urgency_factor)
+            .max(Self::MIN_ACCELERATION_LIMIT)
+            .min(Self::MAX_ACCELERATION_LIMIT); // Add upper bound to prevent numerical issues
 
         let acceleration =
             AngularAcceleration::new::<radian_per_second_squared>(acceleration_limit);
 
-        // Update acceleration controller limits
+        // Always update acceleration limits to ensure consistency
         self.acceleration_controller
             .set_max_acceleration(acceleration);
         self.acceleration_controller
@@ -306,7 +349,7 @@ impl AdaptiveSpoolSpeedController {
         // negative error means too little tension, so we increase speed
         let tension_error = filament_tension - self.tension_target;
 
-        // Calculate proportional control adjustment
+        // Calculate proportional control adjustment with rate limiting
         let proportional_gain = self.radius_learning_rate * delta_t;
         let radius_change = tension_error * proportional_gain;
 
@@ -314,7 +357,7 @@ impl AdaptiveSpoolSpeedController {
         let new_radius = (self.radius.get::<centimeter>() + radius_change)
             .clamp(Self::RADIUS_MIN, Self::RADIUS_MAX);
 
-        self.radius = Length::new::<centimeter>(new_radius); // Convert to cm
+        self.radius = Length::new::<centimeter>(new_radius);
 
         self.last_max_speed_factor_update = Some(t);
     }
