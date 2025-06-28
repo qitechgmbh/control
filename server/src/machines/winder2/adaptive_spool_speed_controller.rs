@@ -43,6 +43,17 @@ pub struct AdaptiveSpoolSpeedController {
     radius: Length,
     /// Timestamp of last max speed factor update, used for time-aware learning rate calculation
     last_max_speed_factor_update: Option<Instant>,
+
+    /// Target normalized tension value (0.0-1.0) that the controller tries to maintain
+    tension_target: f64,
+    /// Proportional control gain for adaptive learning (negative: higher tension reduces speed)
+    radius_learning_rate: f64,
+    /// Speed multiplier when tension is at minimum (max speed factor)
+    max_speed_multiplier: f64,
+    /// Base acceleration as a fraction of max possible speed (per second)
+    acceleration_factor: f64,
+    /// Urgency multiplier for near-zero target speeds
+    deacceleration_urgency_multiplier: f64,
 }
 
 impl AdaptiveSpoolSpeedController {
@@ -68,7 +79,7 @@ impl AdaptiveSpoolSpeedController {
     const TENSION_TARGET: f64 = 0.7;
 
     /// Proportional control gain for adaptive learning (negative: higher tension reduces speed)
-    const PROPORTIONAL_GAIN: f64 = 0.5;
+    const RADIUS_LEARNING_RATE: f64 = 0.5;
 
     const RADIUS_MIN: f64 = 4.25;
 
@@ -78,10 +89,10 @@ impl AdaptiveSpoolSpeedController {
     const MAX_SPEED_MULTIPLIER: f64 = 4.0;
 
     /// Base acceleration as a fraction of max possible speed (per second)
-    const BASE_ACCELERATION_FACTOR: f64 = 0.2; // 20% of max speed per second
+    const ACCELERATION_FACTOR: f64 = 0.2; // 20% of max speed per second
 
     /// Urgency multiplier for near-zero target speeds
-    const URGENCY_MULTIPLIER: f64 = 15.0;
+    const DEACCELERATION_URGENCY_MULTIPLIER: f64 = 15.0;
 
     /// Minimum acceleration limit to prevent completely frozen motion
     const MIN_ACCELERATION_LIMIT: f64 = 0.5; // rad/s²
@@ -115,6 +126,11 @@ impl AdaptiveSpoolSpeedController {
             ),
             radius: Length::new::<centimeter>(4.25),
             last_max_speed_factor_update: None,
+            tension_target: Self::TENSION_TARGET,
+            radius_learning_rate: Self::RADIUS_LEARNING_RATE,
+            max_speed_multiplier: Self::MAX_SPEED_MULTIPLIER,
+            acceleration_factor: Self::ACCELERATION_FACTOR,
+            deacceleration_urgency_multiplier: Self::DEACCELERATION_URGENCY_MULTIPLIER,
         }
     }
 
@@ -141,7 +157,7 @@ impl AdaptiveSpoolSpeedController {
         AngularVelocity::new::<radian_per_second>(
             (puller_speed_controller.last_speed.get::<meter_per_second>()
                 / self.radius.get::<meter>())
-                * Self::MAX_SPEED_MULTIPLIER,
+                * self.max_speed_multiplier,
         )
     }
 
@@ -219,11 +235,11 @@ impl AdaptiveSpoolSpeedController {
         let max_speed_rad_s = current_max_speed.get::<radian_per_second>();
 
         // Base acceleration proportional to current max operating speed
-        let base_acceleration = max_speed_rad_s * Self::BASE_ACCELERATION_FACTOR;
+        let base_acceleration = max_speed_rad_s * self.acceleration_factor;
 
         // Simple urgency factor - dramatically increases near zero
         let urgency_factor = if target_speed_rad_s.abs() < 0.1 {
-            Self::URGENCY_MULTIPLIER * (1.0 / (target_speed_rad_s.abs() + 0.01))
+            self.deacceleration_urgency_multiplier * (1.0 / (target_speed_rad_s.abs() + 0.01))
         } else {
             1.0
         };
@@ -288,10 +304,10 @@ impl AdaptiveSpoolSpeedController {
 
         // positive error means too much tension, so we reduce speed
         // negative error means too little tension, so we increase speed
-        let tension_error = filament_tension - Self::TENSION_TARGET;
+        let tension_error = filament_tension - self.tension_target;
 
         // Calculate proportional control adjustment
-        let proportional_gain = Self::PROPORTIONAL_GAIN * delta_t;
+        let proportional_gain = self.radius_learning_rate * delta_t;
         let radius_change = tension_error * proportional_gain;
 
         // Update the speed factor directly
@@ -366,6 +382,11 @@ impl AdaptiveSpoolSpeedController {
         let _ = self.acceleration_controller.reset(AngularVelocity::ZERO);
         self.radius = Length::new::<centimeter>(4.25);
         self.last_max_speed_factor_update = None;
+        self.tension_target = Self::TENSION_TARGET;
+        self.radius_learning_rate = Self::RADIUS_LEARNING_RATE;
+        self.max_speed_multiplier = Self::MAX_SPEED_MULTIPLIER;
+        self.acceleration_factor = Self::ACCELERATION_FACTOR;
+        self.deacceleration_urgency_multiplier = Self::DEACCELERATION_URGENCY_MULTIPLIER;
     }
 
     /// Returns the last commanded speed from the controller.
@@ -390,5 +411,49 @@ impl AdaptiveSpoolSpeedController {
 
     pub fn get_radius(&self) -> Length {
         self.radius
+    }
+
+    // Getters and setters for the new configurable parameters
+    pub fn get_tension_target(&self) -> f64 {
+        self.tension_target
+    }
+
+    pub fn set_tension_target(&mut self, tension_target: f64) {
+        self.tension_target = tension_target.clamp(0.0, 1.0);
+    }
+
+    pub fn get_radius_learning_rate(&self) -> f64 {
+        self.radius_learning_rate
+    }
+
+    pub fn set_radius_learning_rate(&mut self, radius_learning_rate: f64) {
+        self.radius_learning_rate = radius_learning_rate.max(0.0);
+    }
+
+    pub fn get_max_speed_multiplier(&self) -> f64 {
+        self.max_speed_multiplier
+    }
+
+    pub fn set_max_speed_multiplier(&mut self, max_speed_multiplier: f64) {
+        self.max_speed_multiplier = max_speed_multiplier.max(0.1);
+    }
+
+    pub fn get_acceleration_factor(&self) -> f64 {
+        self.acceleration_factor
+    }
+
+    pub fn set_acceleration_factor(&mut self, acceleration_factor: f64) {
+        self.acceleration_factor = acceleration_factor.clamp(0.01, 1.0);
+    }
+
+    pub fn get_deacceleration_urgency_multiplier(&self) -> f64 {
+        self.deacceleration_urgency_multiplier
+    }
+
+    pub fn set_deacceleration_urgency_multiplier(
+        &mut self,
+        deacceleration_urgency_multiplier: f64,
+    ) {
+        self.deacceleration_urgency_multiplier = deacceleration_urgency_multiplier.max(1.0);
     }
 }
