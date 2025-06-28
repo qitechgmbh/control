@@ -7,6 +7,7 @@ import {
 } from "./update-channels";
 import { spawn, ChildProcess } from "child_process";
 import tkill from "@jub3i/tree-kill";
+import { existsSync, rmSync } from "fs";
 
 type UpdateExecuteListenerParams = {
   githubRepoOwner: string;
@@ -200,15 +201,10 @@ async function clearRepoDirectory(
   event: Electron.IpcMainInvokeEvent,
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    // Check if the directory exists
-    const lsResult = await runCommand("ls", [".git"], repoDir, event);
-    if (lsResult.success) {
-      // If it exists, delete the directory
-      const rmResult = await runCommand("rm", ["-rf", repoDir], repoDir, event);
-      if (!rmResult.success) {
-        event.sender.send(UPDATE_LOG, rmResult.error);
-        return { success: false, error: rmResult.error };
-      }
+    // Check if the repo directory exists
+    if (existsSync(repoDir)) {
+      // If it exists, delete the repo directory
+      rmSync(repoDir, { recursive: true, force: true });
       event.sender.send(
         UPDATE_LOG,
         terminalSuccess(`Deleted existing repository at ${repoDir}`),
@@ -216,7 +212,7 @@ async function clearRepoDirectory(
     } else {
       event.sender.send(
         UPDATE_LOG,
-        terminalError(
+        terminalInfo(
           `No existing repository found at ${repoDir}, nothing to delete`,
         ),
       );
