@@ -276,9 +276,11 @@ function useTraverse(
 
 function useSpool(machine_identification_unique: MachineIdentificationUnique) {
   // Read Path
-  const { spoolRpm } = useWinder2Namespace(machine_identification_unique);
+  const { spoolRpm, spoolDiameter } = useWinder2Namespace(
+    machine_identification_unique,
+  );
 
-  return { spoolRpm };
+  return { spoolRpm, spoolDiameter };
 }
 
 function usePuller(machine_identification_unique: MachineIdentificationUnique) {
