@@ -1,6 +1,6 @@
 pub mod act;
-pub mod api;
 pub mod adaptive_spool_speed_controller;
+pub mod api;
 pub mod clamp_revolution;
 pub mod filament_tension;
 pub mod minmax_spool_speed_controller;
@@ -10,7 +10,7 @@ pub mod spool_speed_controller;
 pub mod tension_arm;
 pub mod traverse_controller;
 
-use std::{fmt::Debug, time::Instant};
+use std::{fmt::Debug, ops::Mul, time::Instant};
 
 use api::{
     ModeStateEvent, TensionArmAngleEvent, TensionArmStateEvent, TraversePositionEvent,
@@ -34,7 +34,7 @@ use uom::si::{
     angle::degree,
     angular_velocity::revolution_per_minute,
     f64::{Length, Velocity},
-    length::millimeter,
+    length::{centimeter, millimeter},
 };
 
 #[derive(Debug)]
@@ -500,13 +500,23 @@ impl Winder2 {
         let event = api::SpoolRpmEvent { rpm }.build();
         self.namespace.emit(Winder2Events::SpoolRpm(event))
     }
+
+    fn emit_spool_diameter(&mut self) {
+        let diameter = self
+            .spool_speed_controller
+            .get_estimated_radius()
+            .mul(2.0)
+            .get::<centimeter>();
+        let event = api::SpoolDiameterEvent { diameter }.build();
+        self.namespace.emit(Winder2Events::SpoolDiameter(event))
+    }
 }
 
 /// Implement Puller
 impl Winder2 {
     /// called by `act`
     pub fn sync_puller_speed(&mut self, t: Instant) {
-        let angular_velocity = self.puller_speed_controller.get_angular_velocity(t);
+        let angular_velocity = self.puller_speed_controller.calc_angular_velocity(t);
         let steps_per_second = self
             .puller_speed_controller
             .converter

@@ -15,6 +15,7 @@ import { Unit } from "@/control/units";
 export function Winder2GraphsPage() {
   const {
     spoolRpm,
+    spoolDiameter,
     traversePosition,
     traverseState,
     tensionArmAngle,
@@ -56,6 +57,13 @@ export function Winder2GraphsPage() {
             limitInner={traverseState?.data.limit_inner}
             limitOuter={traverseState?.data.limit_outer}
             unit="mm"
+            renderValue={(value) => roundToDecimals(value, 1)}
+          />
+
+          <SpoolDiameterGraph
+            syncHook={syncHook}
+            newData={spoolDiameter}
+            unit="cm"
             renderValue={(value) => roundToDecimals(value, 1)}
           />
         </div>
@@ -233,6 +241,40 @@ export function PullerSpeedGraph({
       renderValue={renderValue}
       config={config}
       graphId="puller-speed"
+    />
+  );
+}
+
+export function SpoolDiameterGraph({
+  syncHook,
+  newData,
+  unit,
+  renderValue,
+}: {
+  syncHook: ReturnType<typeof useGraphSync>;
+  newData: TimeSeries | null;
+  unit?: Unit;
+  renderValue?: (value: number) => string;
+}) {
+  const config: GraphConfig = {
+    title: "Estimated Spool Diameter",
+    icon: "lu:Circle",
+    colors: {
+      primary: "#ec4899",
+      grid: "#e2e8f0",
+      background: "#ffffff",
+    },
+    exportFilename: "spool_diameter_data",
+  };
+
+  return (
+    <AutoSyncedBigGraph
+      syncHook={syncHook}
+      newData={{ newData }}
+      unit={unit}
+      renderValue={renderValue}
+      config={config}
+      graphId="spool-diameter"
     />
   );
 }
