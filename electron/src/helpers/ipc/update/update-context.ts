@@ -1,4 +1,9 @@
-import { UPDATE_END, UPDATE_EXECUTE, UPDATE_LOG } from "./update-channels";
+import {
+  UPDATE_CANCEL,
+  UPDATE_END,
+  UPDATE_EXECUTE,
+  UPDATE_LOG,
+} from "./update-channels";
 
 type UpdateExecuteInvokeParams = {
   source: {
@@ -16,6 +21,7 @@ export function exposeUpdateContext() {
   contextBridge.exposeInMainWorld("update", {
     execute: (params: UpdateExecuteInvokeParams) =>
       ipcRenderer.invoke(UPDATE_EXECUTE, params),
+    cancel: () => ipcRenderer.invoke(UPDATE_CANCEL),
     onLog: (callback: (log: string) => void) =>
       ipcRenderer.on(UPDATE_LOG, (_event, log: string) => {
         callback(log);
