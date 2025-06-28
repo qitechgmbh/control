@@ -152,6 +152,11 @@ export const spoolSpeedControllerStateEventDataSchema = z.object({
   regulation_mode: spoolRegulationModeSchema,
   minmax_min_speed: z.number(),
   minmax_max_speed: z.number(),
+  adaptive_tension_target: z.number(),
+  adaptive_radius_learning_rate: z.number(),
+  adaptive_max_speed_multiplier: z.number(),
+  adaptive_acceleration_factor: z.number(),
+  adaptive_deacceleration_urgency_multiplier: z.number(),
 });
 
 // ========== Event Schemas with Wrappers ==========

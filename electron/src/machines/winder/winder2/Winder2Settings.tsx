@@ -22,6 +22,11 @@ export function Winder2SettingPage() {
     setRegulationMode,
     setMinMaxMinSpeed,
     setMinMaxMaxSpeed,
+    setAdaptiveTensionTarget,
+    setAdaptiveRadiusLearningRate,
+    setAdaptiveMaxSpeedMultiplier,
+    setAdaptiveAccelerationFactor,
+    setAdaptiveDeaccelerationUrgencyMultiplier,
     spoolControllerIsDisabled,
     spoolControllerIsLoading,
   } = useWinder2();
@@ -109,6 +114,91 @@ export function Winder2SettingPage() {
                 />
               </Label>
             </>
+          )}
+
+          {spoolSpeedControllerState?.data.regulation_mode === "Adaptive" && (
+            <div className="flex flex-row flex-wrap gap-4">
+              <Label label="Tension Target">
+                <EditValue
+                  value={
+                    spoolSpeedControllerState?.data.adaptive_tension_target
+                  }
+                  title={"Tension Target"}
+                  unit={undefined}
+                  step={0.01}
+                  min={0}
+                  max={1}
+                  defaultValue={0.7}
+                  renderValue={(value) => roundToDecimals(value, 2)}
+                  onChange={(value) => setAdaptiveTensionTarget(value)}
+                />
+              </Label>
+              <Label label="Learning Rate">
+                <EditValue
+                  value={
+                    spoolSpeedControllerState?.data
+                      .adaptive_radius_learning_rate
+                  }
+                  title={"Radius Learning Rate"}
+                  unit={undefined}
+                  step={0.001}
+                  min={0}
+                  max={100}
+                  defaultValue={0.5}
+                  renderValue={(value) => roundToDecimals(value, 2)}
+                  onChange={(value) => setAdaptiveRadiusLearningRate(value)}
+                />
+              </Label>
+              <Label label="Max Speed Multiplier">
+                <EditValue
+                  value={
+                    spoolSpeedControllerState?.data
+                      .adaptive_max_speed_multiplier
+                  }
+                  title={"Max Speed Multiplier"}
+                  unit={undefined}
+                  step={0.1}
+                  min={0.1}
+                  max={10}
+                  defaultValue={4.0}
+                  renderValue={(value) => roundToDecimals(value, 1)}
+                  onChange={(value) => setAdaptiveMaxSpeedMultiplier(value)}
+                />
+              </Label>
+              <Label label="Acceleration Factor">
+                <EditValue
+                  value={
+                    spoolSpeedControllerState?.data.adaptive_acceleration_factor
+                  }
+                  title={"Acceleration Factor"}
+                  unit={undefined}
+                  step={0.01}
+                  min={0.01}
+                  max={100}
+                  defaultValue={0.2}
+                  renderValue={(value) => roundToDecimals(value, 2)}
+                  onChange={(value) => setAdaptiveAccelerationFactor(value)}
+                />
+              </Label>
+              <Label label="Deaccel. Urgency">
+                <EditValue
+                  value={
+                    spoolSpeedControllerState?.data
+                      .adaptive_deacceleration_urgency_multiplier
+                  }
+                  title={"Deacceleration Urgency Multiplier"}
+                  unit={undefined}
+                  step={0.5}
+                  min={1}
+                  max={100}
+                  defaultValue={15.0}
+                  renderValue={(value) => roundToDecimals(value, 1)}
+                  onChange={(value) =>
+                    setAdaptiveDeaccelerationUrgencyMultiplier(value)
+                  }
+                />
+              </Label>
+            </div>
           )}
         </ControlCard>
 

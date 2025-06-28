@@ -82,6 +82,13 @@ enum Mutation {
     SpoolSetMinMaxMinSpeed(f64),
     SpoolSetMinMaxMaxSpeed(f64),
 
+    // Adaptive Spool Speed Controller Parameters
+    SpoolSetAdaptiveTensionTarget(f64),
+    SpoolSetAdaptiveRadiusLearningRate(f64),
+    SpoolSetAdaptiveMaxSpeedMultiplier(f64),
+    SpoolSetAdaptiveAccelerationFactor(f64),
+    SpoolSetAdaptiveDeaccelerationUrgencyMultiplier(f64),
+
     // Auto Stop
     AutostopEnable(bool),
     AutostopEnableAlarm(bool),
@@ -277,6 +284,16 @@ pub struct SpoolSpeedControllerStateEvent {
     pub minmax_min_speed: f64,
     /// max speed in rpm for minmax mode
     pub minmax_max_speed: f64,
+    /// tension target for adaptive mode (0.0-1.0)
+    pub adaptive_tension_target: f64,
+    /// radius learning rate for adaptive mode
+    pub adaptive_radius_learning_rate: f64,
+    /// max speed multiplier for adaptive mode
+    pub adaptive_max_speed_multiplier: f64,
+    /// acceleration factor for adaptive mode
+    pub adaptive_acceleration_factor: f64,
+    /// deacceleration urgency multiplier for adaptive mode
+    pub adaptive_deacceleration_urgency_multiplier: f64,
 }
 
 impl SpoolSpeedControllerStateEvent {
@@ -381,6 +398,21 @@ impl MachineApi for Winder2 {
             Mutation::SpoolSetRegulationMode(mode) => self.spool_set_regulation_mode(mode),
             Mutation::SpoolSetMinMaxMinSpeed(speed) => self.spool_set_minmax_min_speed(speed),
             Mutation::SpoolSetMinMaxMaxSpeed(speed) => self.spool_set_minmax_max_speed(speed),
+            Mutation::SpoolSetAdaptiveTensionTarget(value) => {
+                self.spool_set_adaptive_tension_target(value)
+            }
+            Mutation::SpoolSetAdaptiveRadiusLearningRate(value) => {
+                self.spool_set_adaptive_radius_learning_rate(value)
+            }
+            Mutation::SpoolSetAdaptiveMaxSpeedMultiplier(value) => {
+                self.spool_set_adaptive_max_speed_multiplier(value)
+            }
+            Mutation::SpoolSetAdaptiveAccelerationFactor(value) => {
+                self.spool_set_adaptive_acceleration_factor(value)
+            }
+            Mutation::SpoolSetAdaptiveDeaccelerationUrgencyMultiplier(value) => {
+                self.spool_set_adaptive_deacceleration_urgency_multiplier(value)
+            }
             Mutation::AutostopEnable(_) => todo!(),
             Mutation::AutostopEnableAlarm(_) => todo!(),
             Mutation::AutostopSetLimit(_) => todo!(),

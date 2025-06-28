@@ -152,4 +152,53 @@ impl SpoolSpeedController {
         // Use the average of the last 10 radius measurements
         Length::new::<meter>(self.radius_history.average())
     }
+
+    // Adaptive controller parameter getters and setters
+    pub fn get_adaptive_tension_target(&self) -> f64 {
+        self.adaptive_controller.get_tension_target()
+    }
+
+    pub fn set_adaptive_tension_target(&mut self, tension_target: f64) {
+        self.adaptive_controller.set_tension_target(tension_target);
+    }
+
+    pub fn get_adaptive_radius_learning_rate(&self) -> f64 {
+        self.adaptive_controller.get_radius_learning_rate()
+    }
+
+    pub fn set_adaptive_radius_learning_rate(&mut self, radius_learning_rate: f64) {
+        self.adaptive_controller
+            .set_radius_learning_rate(radius_learning_rate);
+    }
+
+    pub fn get_adaptive_max_speed_multiplier(&self) -> f64 {
+        self.adaptive_controller.get_max_speed_multiplier()
+    }
+
+    pub fn set_adaptive_max_speed_multiplier(&mut self, max_speed_multiplier: f64) {
+        self.adaptive_controller
+            .set_max_speed_multiplier(max_speed_multiplier);
+    }
+
+    pub fn get_adaptive_acceleration_factor(&self) -> f64 {
+        self.adaptive_controller.get_acceleration_factor()
+    }
+
+    pub fn set_adaptive_acceleration_factor(&mut self, acceleration_factor: f64) {
+        self.adaptive_controller
+            .set_acceleration_factor(acceleration_factor);
+    }
+
+    pub fn get_adaptive_deacceleration_urgency_multiplier(&self) -> f64 {
+        self.adaptive_controller
+            .get_deacceleration_urgency_multiplier()
+    }
+
+    pub fn set_adaptive_deacceleration_urgency_multiplier(
+        &mut self,
+        deacceleration_urgency_multiplier: f64,
+    ) {
+        self.adaptive_controller
+            .set_deacceleration_urgency_multiplier(deacceleration_urgency_multiplier);
+    }
 }
