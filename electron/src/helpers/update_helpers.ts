@@ -1,12 +1,8 @@
+import type { UpdateInfo } from "@/stores/updateStore";
+import { useUpdateStore } from "@/stores/updateStore";
+
 export async function updateExecute(
-  source: {
-    githubRepoOwner: string;
-    githubRepoName: string;
-    githubToken?: string;
-    tag?: string;
-    branch?: string;
-    commit?: string;
-  },
+  source: UpdateInfo,
   onLog: (log: string) => void,
 ): Promise<{ success: boolean; error?: string }> {
   return new Promise((resolve) => {
@@ -20,9 +16,42 @@ export async function updateExecute(
   });
 }
 
+// Enhanced helper that automatically manages store state
+export async function updateExecuteWithStore(
+  source: UpdateInfo,
+): Promise<{ success: boolean; error?: string }> {
+  const { setUpdateInfo, startUpdate, stopUpdate, addTerminalLine } =
+    useUpdateStore.getState();
+
+  setUpdateInfo(source);
+  startUpdate();
+
+  try {
+    const result = await updateExecute(source, addTerminalLine);
+    stopUpdate();
+    return result;
+  } catch (error) {
+    stopUpdate();
+    throw error;
+  }
+}
+
 export async function updateCancel(): Promise<{
   success: boolean;
   error?: string;
 }> {
   return window.update.cancel();
+}
+
+// Enhanced helper that automatically manages store state
+export async function updateCancelWithStore(): Promise<{
+  success: boolean;
+  error?: string;
+}> {
+  const result = await updateCancel();
+  if (result.success) {
+    const { stopUpdate } = useUpdateStore.getState();
+    stopUpdate();
+  }
+  return result;
 }
