@@ -20,6 +20,7 @@ _Figure 1: Mock Machine Mascot_
 ### Starting the Machine
 
 1. **Power On Sequence**
+
    - Check all safety switches
    - Verify emergency stops are released
    - Power on the main controller
