@@ -20,9 +20,11 @@ import {
   deleteNixOSGeneration,
   isNixOSAvailable,
 } from "@/helpers/nixos_helpers";
+import { useUpdateStore } from "@/stores/updateStore";
 
 export function ChooseVersionPage() {
   const navigate = useNavigate();
+  const { isUpdating, currentUpdateInfo } = useUpdateStore();
 
   // load environment info
   const [environmentInfo, setEnvironmentInfo] = useState<
@@ -262,6 +264,69 @@ export function ChooseVersionPage() {
     <Page>
       <SectionTitle title="Current Version"></SectionTitle>
       <CurrentVersionCard />
+
+      {/* Current Update Status */}
+      {isUpdating && currentUpdateInfo && (
+        <>
+          <SectionTitle title="Update in Progress"></SectionTitle>
+          <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 p-4">
+            <div className="mb-3 flex items-center gap-2">
+              <LoadingSpinner />
+              <span className="font-semibold text-blue-800">
+                Updating System...
+              </span>
+            </div>
+            <div className="space-y-1 text-sm text-blue-700">
+              <div>
+                <span className="font-medium">Repository:</span>{" "}
+                <span className="font-mono">
+                  {currentUpdateInfo.githubRepoOwner}/
+                  {currentUpdateInfo.githubRepoName}
+                </span>
+              </div>
+              {currentUpdateInfo.tag && (
+                <div>
+                  <span className="font-medium">Tag:</span>{" "}
+                  <span className="font-mono">{currentUpdateInfo.tag}</span>
+                </div>
+              )}
+              {currentUpdateInfo.branch && (
+                <div>
+                  <span className="font-medium">Branch:</span>{" "}
+                  <span className="font-mono">{currentUpdateInfo.branch}</span>
+                </div>
+              )}
+              {currentUpdateInfo.commit && (
+                <div>
+                  <span className="font-medium">Commit:</span>{" "}
+                  <span className="font-mono">
+                    {currentUpdateInfo.commit.substring(0, 8)}
+                  </span>
+                </div>
+              )}
+            </div>
+            <TouchButton
+              className="mt-3 w-max"
+              onClick={() => {
+                navigate({
+                  to: "/_sidebar/setup/update/execute",
+                  search: {
+                    githubRepoOwner: currentUpdateInfo.githubRepoOwner,
+                    githubRepoName: currentUpdateInfo.githubRepoName,
+                    githubToken: currentUpdateInfo.githubToken,
+                    tag: currentUpdateInfo.tag,
+                    branch: currentUpdateInfo.branch,
+                    commit: currentUpdateInfo.commit,
+                  },
+                });
+              }}
+            >
+              View Update Progress
+            </TouchButton>
+          </div>
+        </>
+      )}
+
       <SectionTitle title="Update"></SectionTitle>
       <div className="flex flex-row items-center gap-4">
         <div className="flex flex-col">

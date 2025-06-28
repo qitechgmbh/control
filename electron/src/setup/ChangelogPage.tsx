@@ -6,9 +6,11 @@ import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Alert } from "@/components/Alert";
 import { Markdown } from "@/components/Markdown";
 import { TouchButton } from "@/components/touch/TouchButton";
+import { useUpdateStore } from "@/stores/updateStore";
 
 export function ChangelogPage() {
   const navigate = useNavigate();
+  const { isUpdating } = useUpdateStore();
   const search = useSearch({
     from: "/_sidebar/setup/update/changelog",
   });
@@ -70,6 +72,7 @@ export function ChangelogPage() {
           <TouchButton
             className="w-max"
             icon="lu:Check"
+            disabled={isUpdating}
             onClick={() => {
               navigate({
                 to: "/_sidebar/setup/update/execute",
@@ -77,7 +80,7 @@ export function ChangelogPage() {
               });
             }}
           >
-            Update to This Version
+            {isUpdating ? "Update in Progress..." : "Update to This Version"}
           </TouchButton>
           {changelog === null ? (
             <Alert title="Changelog not found" variant="warning">
