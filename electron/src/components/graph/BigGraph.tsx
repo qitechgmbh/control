@@ -1,10 +1,9 @@
-// BigGraph.tsx
 import React, { useRef, useState, useCallback, useEffect } from "react";
 import uPlot from "uplot";
 import "uplot/dist/uPlot.min.css";
 import { renderUnitSymbol, getUnitIcon } from "@/control/units";
 import { Icon } from "@/components/Icon";
-import { BigGraphProps, HandlerRefs } from "./types";
+import { BigGraphProps, HandlerRefs, SeriesData } from "./types";
 import { GraphExportData } from "./excelExport";
 import { DEFAULT_COLORS } from "./constants";
 import {
@@ -20,23 +19,19 @@ import { useBigGraphEffects } from "./useBigGraphEffects";
 import { TouchButton } from "../touch/TouchButton";
 import { seriesToUPlotData } from "@/lib/timeseries";
 import { ControlCard } from "@/control/ControlCard";
+import { getAllTimeSeries } from "./createChart";
 
-// Helper function to collect lines connected to visible series
+// Collects lines connected to visible series for rendering
 const getVisibleLines = (data: any, visibleSeries: boolean[]) => {
   const visibleLines: any[] = [];
 
   if (Array.isArray(data)) {
-    // Multiple series - collect lines only from visible series
     data.forEach((series, index) => {
       if (visibleSeries[index] && series.lines && Array.isArray(series.lines)) {
-        // Add series info to each line for proper styling
         const seriesLines = series.lines.map((line: any) => ({
           ...line,
-          // Override color with series color if not explicitly set
           color: line.color || series.color,
-          // Ensure lines are always dashed
           dash: line.dash || [5, 5],
-          // Mark as connected to this series
           seriesIndex: index,
           seriesTitle: series.title,
         }));
@@ -44,15 +39,11 @@ const getVisibleLines = (data: any, visibleSeries: boolean[]) => {
       }
     });
   } else {
-    // Single series - include lines only if series is visible
     if (visibleSeries[0] && data.lines && Array.isArray(data.lines)) {
       const seriesLines = data.lines.map((line: any) => ({
         ...line,
-        // Override color with series color if not explicitly set
         color: line.color || data.color,
-        // Ensure lines are always dashed
         dash: line.dash || [5, 5],
-        // Mark as connected to this series
         seriesIndex: 0,
         seriesTitle: data.title,
       }));
@@ -63,7 +54,7 @@ const getVisibleLines = (data: any, visibleSeries: boolean[]) => {
   return visibleLines;
 };
 
-// Helper function to merge config lines with series-connected lines
+// Merges configuration lines with lines from visible series
 const mergeConfigWithVisibleLines = (
   config: any,
   data: any,
@@ -72,18 +63,14 @@ const mergeConfigWithVisibleLines = (
   const configLines = config.lines || [];
   const seriesLines = getVisibleLines(data, visibleSeries);
 
-  // Combine config lines with visible series lines
+  // Combine and remove duplicate lines based on label and series connection
   const allLines = [...configLines, ...seriesLines];
-
-  // Remove duplicates based on label and series connection
   const uniqueLines = allLines.filter((line, index, arr) => {
     return (
       arr.findIndex((l) => {
-        // For series-connected lines, check both label and series index
         if (line.seriesIndex !== undefined && l.seriesIndex !== undefined) {
           return l.label === line.label && l.seriesIndex === line.seriesIndex;
         }
-        // For config lines, just check label or value
         return (
           (l.label && l.label === line.label) ||
           (l.value === line.value && l.type === line.type)
@@ -118,25 +105,21 @@ export function BigGraph({
   const uplotRef = useRef<uPlot | null>(null);
   const chartCreatedRef = useRef(false);
 
-  // Animation refs
+  // Animation references for managing animations
   const animationRefs = useAnimationRefs();
 
-  // Series visibility state
+  // State for series visibility
   const normalizedSeries = normalizeDataSeries(newData);
   const [visibleSeries, setVisibleSeries] = useState<boolean[]>(
     new Array(normalizedSeries.length).fill(true),
   );
 
-  // Merge config with lines from visible series only
+  // Enhanced configuration with visible series lines
   const enhancedConfig = React.useMemo(() => {
     return mergeConfigWithVisibleLines(config, newData, visibleSeries);
-  }, [config, newData, visibleSeries]); // Include visibleSeries in dependency
+  }, [config, newData, visibleSeries]);
 
-  // Track when visibility changes to force chart recreation
-  const [visibilityVersion, setVisibilityVersion] = useState(0);
-  const [, setIsRecreatingChart] = useState(false);
-
-  // Initialize state from props or defaults
+  // State for managing chart visibility and modes
   const [viewMode, setViewMode] = useState<"default" | "all" | "manual">(
     syncGraph?.viewMode ?? "default",
   );
@@ -145,7 +128,12 @@ export function BigGraph({
     syncGraph?.timeWindow ?? enhancedConfig.defaultTimeWindow ?? 30 * 60 * 1000,
   );
 
+  // Cursor state for displaying values
   const [cursorValue, setCursorValue] = useState<number | null>(null);
+  const [cursorValues, setCursorValues] = useState<(number | null)[]>(
+    new Array(normalizedSeries.length).fill(null),
+  );
+
   const startTimeRef = useRef<number | null>(null);
   const manualScaleRef = useRef<{
     x: { min: number; max: number };
@@ -153,7 +141,7 @@ export function BigGraph({
   } | null>(null);
   const lastProcessedCountRef = useRef(0);
 
-  // Handler refs
+  // Handler references for user interactions
   const handlerRefs: HandlerRefs = {
     isUserZoomingRef: useRef(false),
     isDraggingRef: useRef(false),
@@ -172,42 +160,103 @@ export function BigGraph({
     background: enhancedConfig.colors?.background ?? DEFAULT_COLORS.background,
   };
 
-  // Create filtered data based on visibility
-  const filteredData = React.useMemo(() => {
-    if (Array.isArray(newData)) {
-      const filtered = newData.filter((_, index) => visibleSeries[index]);
-      return filtered.length > 0 ? filtered : [newData[0]]; // Ensure at least one series
-    }
-    return visibleSeries[0] ? newData : { newData: null };
-  }, [newData, visibleSeries]);
+  // Update cursor values when series length changes
+  useEffect(() => {
+    setCursorValues(new Array(normalizedSeries.length).fill(null));
+  }, [normalizedSeries.length]);
 
-  // Register export function that includes ALL series and their lines
+  // FAST VISIBILITY UPDATE FUNCTION
+  const updateSeriesVisibility = useCallback(() => {
+    if (!uplotRef.current || !visibleSeries) return;
+
+    const allOriginalSeries = getAllTimeSeries(newData);
+
+    // Update visibility for each series
+    allOriginalSeries.forEach((_, index) => {
+      const seriesIndex = index + 1; // +1 because index 0 is time axis
+      const isVisible = visibleSeries[index];
+
+      if (uplotRef.current!.series[seriesIndex]) {
+        uplotRef.current!.series[seriesIndex].show = isVisible;
+
+        // Update points visibility
+        if (uplotRef.current!.series[seriesIndex].points) {
+          uplotRef.current!.series[seriesIndex].points!.show = (
+            _u,
+            _seriesIdx,
+            dataIdx,
+          ) => {
+            return isVisible && dataIdx < animationRefs.realPointsCount.current;
+          };
+        }
+      }
+    });
+
+    // Trigger lightweight redraw
+    uplotRef.current.redraw();
+  }, [visibleSeries, newData, animationRefs.realPointsCount]);
+
+  // SEPARATE EFFECT FOR VISIBILITY UPDATES ONLY
+  useEffect(() => {
+    if (uplotRef.current && chartCreatedRef.current) {
+      updateSeriesVisibility();
+    }
+  }, [visibleSeries, updateSeriesVisibility]);
+
+  // Register export functionality for the graph
   useEffect(() => {
     if (onRegisterForExport) {
-      const getExportData = (): GraphExportData | null => {
-        // For export, include all lines from all series
-        const allSeriesLines = getVisibleLines(
-          newData,
-          new Array(normalizedSeries.length).fill(true),
-        );
-        const exportConfig = {
-          ...config,
-          lines: [...(config.lines || []), ...allSeriesLines],
+      // Unregister any previous registrations for this graph
+      if (onUnregisterFromExport) {
+        // Clear any existing registrations for this graph's series
+        normalizedSeries.forEach((_, index) => {
+          const seriesId = `${graphId}-series-${index}`;
+          onUnregisterFromExport(seriesId);
+        });
+      }
+
+      // Register each series as a separate export entry
+      normalizedSeries.forEach((series, index) => {
+        if (!series.newData) return;
+
+        const seriesId = `${graphId}-series-${index}`;
+        const seriesTitle = series.title || `Series ${index + 1}`;
+
+        const getSeriesExportData = (): GraphExportData | null => {
+          // Create export data for this specific series only
+          const seriesLines = series.lines || [];
+          const exportConfig = {
+            ...config,
+            title: config.title, // Keep original graph title
+            lines: [...(config.lines || []), ...seriesLines],
+          };
+
+          // Create a single-series data structure for this series
+          const singleSeriesData: SeriesData = {
+            newData: series.newData,
+            title: seriesTitle,
+            color: series.color,
+            lines: series.lines,
+          };
+
+          return {
+            config: exportConfig,
+            data: singleSeriesData, // Return ONLY this specific series
+            unit,
+            renderValue,
+          };
         };
 
-        return {
-          config: exportConfig,
-          data: newData,
-          unit,
-          renderValue,
-        };
-      };
-
-      onRegisterForExport(graphId, getExportData);
+        onRegisterForExport(seriesId, getSeriesExportData);
+      });
 
       return () => {
         if (onUnregisterFromExport) {
-          onUnregisterFromExport(graphId);
+          // Clean up all series registrations
+          normalizedSeries.forEach((_, index) => {
+            const seriesId = `${graphId}-series-${index}`;
+            onUnregisterFromExport(seriesId);
+          });
         }
       };
     }
@@ -216,25 +265,33 @@ export function BigGraph({
     onUnregisterFromExport,
     graphId,
     config,
-    newData,
     normalizedSeries.length,
     unit,
     renderValue,
+    // Add dependencies for series data
+    JSON.stringify(
+      normalizedSeries.map((s) => ({
+        title: s.title,
+        color: s.color,
+        hasData: !!s.newData,
+        linesCount: s.lines?.length || 0,
+      })),
+    ),
   ]);
 
+  // Updates Y-axis scale dynamically based on visible data
   const updateYAxisScale = useCallback(
     (xMin?: number, xMax?: number) => {
       if (!uplotRef.current) return;
 
       const isInHistoricalMode = !isLiveMode || viewMode === "manual";
       if (isInHistoricalMode) {
-        return; // Don't update Y-axis in historical mode
+        return;
       }
 
       const normalizedData = normalizeDataSeries(newData);
       let allVisibleValues: number[] = [];
 
-      // Collect values from all visible series
       normalizedData.forEach((series, index) => {
         if (!visibleSeries[index] || !series.newData?.long) return;
 
@@ -256,7 +313,6 @@ export function BigGraph({
         allVisibleValues.push(...seriesToInclude);
       });
 
-      // Include line values in Y-axis calculation (only visible lines)
       enhancedConfig.lines?.forEach((line) => {
         if (line.show !== false) {
           allVisibleValues.push(line.value);
@@ -264,7 +320,7 @@ export function BigGraph({
       });
 
       if (allVisibleValues.length === 0) {
-        const primarySeries = getPrimarySeries(filteredData);
+        const primarySeries = getPrimarySeries(newData);
         if (primarySeries?.newData?.long) {
           const [, values] = seriesToUPlotData(primarySeries.newData.long);
           allVisibleValues = values;
@@ -293,9 +349,9 @@ export function BigGraph({
     [enhancedConfig.lines, viewMode, isLiveMode, newData, visibleSeries],
   );
 
-  // Initialize live mode handlers with filtered data
+  // Initialize live mode handlers
   const liveMode = useLiveMode({
-    newData: filteredData,
+    newData,
     uplotRef,
     config: enhancedConfig,
     animationRefs,
@@ -307,9 +363,9 @@ export function BigGraph({
     chartCreatedRef,
   });
 
-  // Initialize historical mode handlers with filtered data
+  // Initialize historical mode handlers
   const historicalMode = useHistoricalMode({
-    newData: filteredData,
+    newData,
     uplotRef,
     animationRefs,
     getCurrentLiveEndTimestamp: liveMode.getCurrentLiveEndTimestamp,
@@ -318,6 +374,7 @@ export function BigGraph({
     manualScaleRef,
   });
 
+  // Handles time window changes
   const handleTimeWindowChangeInternal = useCallback(
     (newTimeWindow: number | "all", isSync: boolean = false) => {
       stopAnimations(animationRefs);
@@ -358,57 +415,45 @@ export function BigGraph({
     ],
   );
 
-  // Toggle series visibility with smooth chart recreation
+  // Toggles visibility of a series
   const toggleSeries = useCallback((index: number) => {
     setVisibleSeries((prev) => {
       const newVisibility = [...prev];
 
-      // Check if this would hide all series
+      const currentlyVisible = newVisibility.filter((visible) => visible);
       const wouldHideAll =
-        newVisibility[index] &&
-        newVisibility.filter((visible, i) => i !== index && visible).length ===
-          0;
+        newVisibility[index] && currentlyVisible.length === 1;
 
       if (wouldHideAll) {
-        return prev; // Don't allow hiding the last visible series
+        return prev;
       }
 
       newVisibility[index] = !newVisibility[index];
-
-      // Set recreating flag to prevent flicker
-      setIsRecreatingChart(true);
-
-      // Force chart recreation by incrementing version
-      setVisibilityVersion((v) => v + 1);
-
       return newVisibility;
     });
   }, []);
 
-  // Force chart recreation when visibility changes
-  useEffect(() => {
-    if (visibilityVersion > 0 && uplotRef.current) {
-      // Destroy existing chart
-      uplotRef.current.destroy();
-      uplotRef.current = null;
-      chartCreatedRef.current = false;
+  // Gets the display value for a series
+  const getSeriesDisplayValue = useCallback(
+    (seriesIndex: number) => {
+      const series = normalizedSeries[seriesIndex];
+      if (!series) return null;
 
-      // Stop any ongoing animations
-      stopAnimations(animationRefs);
+      if (normalizedSeries.length > 1) {
+        return cursorValues[seriesIndex] !== null
+          ? cursorValues[seriesIndex]
+          : series.newData?.current?.value;
+      } else {
+        return cursorValue !== null
+          ? cursorValue
+          : series.newData?.current?.value;
+      }
+    },
+    [normalizedSeries, cursorValues, cursorValue],
+  );
 
-      // Reset processed count to force recreation
-      lastProcessedCountRef.current = 0;
-
-      // Clear recreating flag after a short delay to allow chart to rebuild
-      setTimeout(() => {
-        setIsRecreatingChart(false);
-      }, 100);
-    }
-  }, [visibilityVersion, animationRefs]);
-
-  // Use the extracted useEffect hooks with filtered data
+  // Applies effects for the graph (REMOVED visibleSeries from dependencies)
   useBigGraphEffects({
-    // Refs
     containerRef,
     uplotRef,
     startTimeRef,
@@ -417,9 +462,7 @@ export function BigGraph({
     animationRefs,
     handlerRefs,
     chartCreatedRef,
-
-    // Props - Use enhanced config and filtered data
-    newData: filteredData,
+    newData,
     unit,
     renderValue,
     config: enhancedConfig,
@@ -427,20 +470,15 @@ export function BigGraph({
     syncGraph,
     onRegisterForExport,
     onUnregisterFromExport,
-
-    // State
     viewMode,
     isLiveMode,
     selectedTimeWindow,
-    visibleSeries,
-
-    // State setters
+    visibleSeries, // Keep for initial creation
     setSelectedTimeWindow,
     setViewMode,
     setIsLiveMode,
     setCursorValue,
-
-    // Handlers
+    setCursorValues,
     liveMode,
     historicalMode,
     colors,
@@ -448,10 +486,7 @@ export function BigGraph({
     handleTimeWindowChangeInternal,
   });
 
-  // Use filtered data for display value calculation
-  const primarySeries = getPrimarySeries(filteredData);
-  const displayValue =
-    cursorValue !== null ? cursorValue : primarySeries?.newData?.current?.value;
+  const displayValue = getSeriesDisplayValue(0);
 
   const defaultColors = ["#3b82f6", "#ef4444", "#10b981", "#f59e0b", "#8b5cf6"];
 
@@ -484,7 +519,6 @@ export function BigGraph({
               </ControlCard>
             )}
 
-            {/* Series Toggle Controls */}
             {normalizedSeries.length > 1 && (
               <div className="flex items-center gap-2">
                 <div className="flex items-center gap-1">
@@ -492,9 +526,10 @@ export function BigGraph({
                     const seriesColor =
                       series.color ||
                       defaultColors[index % defaultColors.length];
-                    const currentValue = series.newData?.current?.value;
+
+                    const displayValue = getSeriesDisplayValue(index);
                     const formattedValue = formatDisplayValue(
-                      currentValue,
+                      displayValue,
                       renderValue,
                     );
 
@@ -502,7 +537,6 @@ export function BigGraph({
                       visibleSeries[index] &&
                       visibleSeries.filter((visible) => visible).length === 1;
 
-                    // Get connected lines for this series
                     const seriesLines = Array.isArray(newData)
                       ? newData[index]?.lines || []
                       : newData.lines || [];
@@ -510,12 +544,16 @@ export function BigGraph({
                     return (
                       <TouchButton
                         key={index}
-                        onClick={() => !isLastVisible && toggleSeries(index)}
+                        onClick={() => {
+                          if (!isLastVisible) {
+                            toggleSeries(index);
+                          }
+                        }}
                         className={`rounded-md px-4 py-1.5 text-sm transition-all ${
                           visibleSeries[index]
                             ? "text-white shadow-md"
                             : "bg-gray-100 text-gray-500 hover:bg-gray-200"
-                        } ${isLastVisible ? "cursor-not-allowed" : ""}`}
+                        } ${isLastVisible ? "cursor-not-allowed opacity-50" : ""}`}
                         style={{
                           backgroundColor: visibleSeries[index]
                             ? seriesColor
@@ -538,8 +576,7 @@ export function BigGraph({
                                 : "text-gray-500"
                             }`}
                           >
-                            {formatDisplayValue(currentValue, renderValue)}
-                            {renderUnitSymbol(unit)}
+                            {formattedValue} {renderUnitSymbol(unit)}
                           </span>
                         </div>
                       </TouchButton>

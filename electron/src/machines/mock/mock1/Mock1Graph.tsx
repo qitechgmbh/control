@@ -100,6 +100,14 @@ export function Mock1GraphPage() {
       <div className="flex flex-col gap-4">
         <AutoSyncedBigGraph
           syncHook={syncHook}
+          newData={singleData}
+          config={singleGraphConfig}
+          unit={"mm"}
+          renderValue={(value) => value.toFixed(3)}
+          graphId="single-graph1"
+        />
+        <AutoSyncedBigGraph
+          syncHook={syncHook}
           newData={combinedData}
           config={{
             ...config,
@@ -109,7 +117,14 @@ export function Mock1GraphPage() {
           renderValue={(value) => value.toFixed(3)}
           graphId="combined-graph"
         />
-
+        <AutoSyncedBigGraph
+          syncHook={syncHook}
+          newData={singleData}
+          config={singleGraphConfig}
+          unit={"mm"}
+          renderValue={(value) => value.toFixed(3)}
+          graphId="single-graph2"
+        />
         <AutoSyncedBigGraph
           syncHook={syncHook}
           newData={singleData}
