@@ -30,6 +30,8 @@ pub enum State {
     ReadyToSend,
     /// Initial State
     Uninitialized,
+    /// Initial State
+    UninitializedInverterReset,
 }
 
 #[derive(Debug)]
@@ -564,14 +566,18 @@ impl MitsubishiInverterRS485Actor {
         };
     }
 
-    fn handle_response(&mut self, resp: ModbusResponse) {
+    async fn handle_no_response(&mut self) {
+        //self.state = State::ReadyToSend
+    }
+
+    async fn handle_response(&mut self, resp: ModbusResponse) {
         match self.next_response_type {
             ResponseType::ReadFrequency => (),
             ResponseType::WriteFrequency => (),
             ResponseType::ReadMotorFrequency => self.handle_motor_frequency(resp),
             ResponseType::InverterStatus => self.handle_read_inverter_status(resp),
             ResponseType::InverterControl => (),
-            ResponseType::NoResponse => (),
+            ResponseType::NoResponse => self.handle_no_response().await,
         }
     }
 }
@@ -626,7 +632,14 @@ impl Actor for MitsubishiInverterRS485Actor {
                     let ret = self.read_modbus_response().await;
                     match ret {
                         Ok(ret) => {
-                            self.handle_response(ret);
+                            self.handle_response(ret).await;
+                        }
+                        Err(_) => {
+                            if let MitsubishiControlRequests::ResetInverter =
+                                self.last_control_request_type
+                            {
+                                self.state = State::ReadyToSend;
+                            }
                         }
                         Err(_) => {
                             if let MitsubishiControlRequests::ResetInverter =
@@ -663,6 +676,7 @@ impl Actor for MitsubishiInverterRS485Actor {
                         self.state = State::WaitingForResponse;
                     }
                 }
+
                 _ => (),
             }
             self.response = None;

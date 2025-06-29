@@ -246,6 +246,12 @@ export function getPrimarySeries(
   return normalized.find((series) => series.newData !== null) || null;
 }
 
+export function getPrimarySeriesData(data: BigGraphProps["newData"]) {
+  const normalized = normalizeDataSeries(data);
+  const primarySeries = normalized.find((series) => series.newData !== null);
+  return primarySeries?.newData || null;
+}
+
 // Helper function to format value for display
 export function formatDisplayValue(
   value: number | undefined | null,

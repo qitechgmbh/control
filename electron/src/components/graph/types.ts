@@ -24,10 +24,10 @@ export type PropGraphSync = {
 
 // Configuration types for additional lines
 export type GraphLine = {
-  type: "threshold" | "target" | "reference";
+  type: "threshold" | "target";
   value: number;
-  label: string;
   color: string;
+  label?: string;
   width?: number;
   dash?: number[];
   show?: boolean;
@@ -54,6 +54,7 @@ export type SeriesData = {
   newData: TimeSeries | null;
   title?: string;
   color?: string;
+  lines?: GraphLine[];
 };
 
 export type DataSeries = SeriesData | SeriesData[];
