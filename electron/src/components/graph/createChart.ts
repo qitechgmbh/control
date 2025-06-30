@@ -5,7 +5,8 @@ import {
   attachEventHandlers,
   HandlerCallbacks,
 } from "./handlers";
-import { BigGraphProps, CreateChartParams, SeriesData } from "./types";
+import { BigGraphProps, CreateChartParams } from "./types";
+import { normalizeDataSeries } from "./animation";
 
 export function createChart({
   containerRef,
@@ -28,14 +29,20 @@ export function createChart({
   setViewMode,
   setIsLiveMode,
   setCursorValue,
-}: CreateChartParams): (() => void) | undefined {
+  setCursorValues,
+  visibleSeries,
+}: CreateChartParams & {
+  setCursorValues?: React.Dispatch<React.SetStateAction<(number | null)[]>>;
+  visibleSeries?: boolean[];
+}): (() => void) | undefined {
   if (!containerRef.current) return;
 
-  const allSeries = getAllTimeSeries(newData);
-  if (allSeries.length === 0) return;
+  // Get ALL series from original data
+  const allOriginalSeries = getAllTimeSeries(newData);
+  if (allOriginalSeries.length === 0) return;
 
-  // Use the first series for timing calculations
-  const primarySeries = allSeries[0].series;
+  // Use the first available series for timing calculations (visible or not)
+  const primarySeries = allOriginalSeries[0].series;
   const [timestamps, primaryValues] = seriesToUPlotData(primarySeries.long);
   if (timestamps.length === 0) return;
 
@@ -43,10 +50,10 @@ export function createChart({
     startTimeRef.current = timestamps[0];
   }
 
-  // Build uPlot data for all series
+  // Build uPlot data for ALL series (including hidden ones)
   const uPlotData: uPlot.AlignedData = [timestamps as any];
 
-  allSeries.forEach(({ series }) => {
+  allOriginalSeries.forEach(({ series }) => {
     const [, values] = seriesToUPlotData(series.long);
     uPlotData.push(values as any);
   });
@@ -84,42 +91,43 @@ export function createChart({
     initialMax = endTimestamp;
   }
 
-  // Calculate initial Y range from all series
-  const initialVisibleValues: number[] = [];
-  allSeries.forEach(({ series }) => {
+  // Calculate initial Y range from ALL series (not just visible ones)
+  // This prevents scale changes when toggling visibility
+  const initialAllValues: number[] = [];
+  allOriginalSeries.forEach(({ series }) => {
     const [seriesTimestamps, seriesValues] = seriesToUPlotData(series.long);
     for (let i = 0; i < seriesTimestamps.length; i++) {
       if (
         seriesTimestamps[i] >= initialMin &&
         seriesTimestamps[i] <= initialMax
       ) {
-        initialVisibleValues.push(seriesValues[i]);
+        initialAllValues.push(seriesValues[i]);
       }
     }
   });
 
   config.lines?.forEach((line) => {
     if (line.show !== false) {
-      initialVisibleValues.push(line.value);
+      initialAllValues.push(line.value);
     }
   });
 
-  if (initialVisibleValues.length === 0) {
-    allSeries.forEach(({ series }) => {
+  if (initialAllValues.length === 0) {
+    allOriginalSeries.forEach(({ series }) => {
       const [, values] = seriesToUPlotData(series.long);
-      initialVisibleValues.push(...values);
+      initialAllValues.push(...values);
     });
     config.lines?.forEach((line) => {
       if (line.show !== false) {
-        initialVisibleValues.push(line.value);
+        initialAllValues.push(line.value);
       }
     });
   }
 
   let initialYMin: number, initialYMax: number;
-  if (initialVisibleValues.length > 0) {
-    const minY = Math.min(...initialVisibleValues);
-    const maxY = Math.max(...initialVisibleValues);
+  if (initialAllValues.length > 0) {
+    const minY = Math.min(...initialAllValues);
+    const maxY = Math.max(...initialAllValues);
     const range = maxY - minY || Math.abs(maxY) * 0.1 || 1;
 
     initialYMin = minY - range * 0.1;
@@ -133,21 +141,23 @@ export function createChart({
   const width = rect.width;
   const height = Math.min(rect.height, window.innerHeight * 0.5);
 
-  // Build series configuration
+  // Build series configuration for ALL series (but control visibility)
   const seriesConfig: uPlot.Series[] = [{ label: "Time" }];
 
-  // Add data series
+  // Add ALL data series with visibility control
   const defaultColors = ["#3b82f6", "#ef4444", "#10b981", "#f59e0b", "#8b5cf6"];
-  allSeries.forEach(({ title, color }, index) => {
+  allOriginalSeries.forEach(({ title, color }, index) => {
+    const isVisible = !visibleSeries || visibleSeries[index];
+
     seriesConfig.push({
       label: title || `Series ${index + 1}`,
       stroke: color || defaultColors[index % defaultColors.length],
       width: 2,
       spanGaps: true,
-      show: true,
+      show: isVisible, // Control visibility here
       points: {
         show: (_u, _seriesIdx, dataIdx) => {
-          return dataIdx < animationRefs.realPointsCount.current;
+          return isVisible && dataIdx < animationRefs.realPointsCount.current;
         },
         size: 6,
         stroke: color || defaultColors[index % defaultColors.length],
@@ -171,11 +181,13 @@ export function createChart({
     }
   });
 
+  // Always destroy existing chart before creating new one
   if (uplotRef.current) {
     uplotRef.current.destroy();
     uplotRef.current = null;
   }
 
+  // Create new chart with initial visibility settings
   uplotRef.current = new uPlot(
     {
       width,
@@ -193,7 +205,7 @@ export function createChart({
         sync: { key: "myCursor" },
       },
       legend: {
-        show: config.showLegend ?? allSeries.length > 1,
+        show: config.showLegend ?? allOriginalSeries.length > 1,
       },
       hooks: {
         setScale: [
@@ -201,7 +213,6 @@ export function createChart({
             if (handlerRefs.isUserZoomingRef.current) {
               const xScale = u.scales.x;
               if (xScale.min !== undefined && xScale.max !== undefined) {
-                // Use the new updateYAxisScale function signature
                 updateYAxisScale(xScale.min, xScale.max);
 
                 manualScaleRef.current = {
@@ -230,27 +241,69 @@ export function createChart({
             }
           },
         ],
-
         setCursor: [
           (u) => {
-            if (
-              typeof u.cursor.idx === "number" &&
-              u.data[1] &&
-              u.data[1][u.cursor.idx] !== undefined
-            ) {
+            if (typeof u.cursor.idx === "number") {
               const timestamp = u.data[0][u.cursor.idx];
-              const value = u.data[1][u.cursor.idx]; // Use first series for cursor value
-              const cur = allSeries[0]?.series?.current;
 
-              const isNearCurrent =
-                cur &&
-                timestamp !== undefined &&
-                Math.abs(timestamp - cur.timestamp) < 1000;
+              // Handle single series case
+              if (allOriginalSeries.length === 1) {
+                if (u.data[1] && u.data[1][u.cursor.idx] !== undefined) {
+                  const value = u.data[1][u.cursor.idx];
+                  const cur = allOriginalSeries[0]?.series?.current;
 
-              const displayValue = isNearCurrent ? cur.value : value;
-              setCursorValue(displayValue ?? null);
+                  const isNearCurrent =
+                    cur &&
+                    timestamp !== undefined &&
+                    Math.abs(timestamp - cur.timestamp) < 1000;
+
+                  const displayValue = isNearCurrent ? cur.value : value;
+                  setCursorValue(displayValue ?? null);
+                } else {
+                  setCursorValue(null);
+                }
+              }
+              // Handle multiple series case
+              else if (setCursorValues && visibleSeries) {
+                // Create cursor values array for ALL original series
+                const cursorValuesArray: (number | null)[] = new Array(
+                  allOriginalSeries.length,
+                ).fill(null);
+
+                // Since we include ALL series in uPlot data, indices match directly
+                allOriginalSeries.forEach((originalSeries, originalIndex) => {
+                  const dataIndex = originalIndex + 1; // +1 because 0 is timestamps
+
+                  if (
+                    u.data[dataIndex] &&
+                    u.data[dataIndex][u.cursor.idx!] !== undefined
+                  ) {
+                    const value = u.data[dataIndex][u.cursor.idx!];
+                    const cur = originalSeries.series?.current;
+
+                    const isNearCurrent =
+                      cur &&
+                      timestamp !== undefined &&
+                      Math.abs(timestamp - cur.timestamp) < 1000;
+
+                    const displayValue = isNearCurrent ? cur.value : value;
+                    cursorValuesArray[originalIndex] = displayValue ?? null;
+                  }
+                });
+
+                setCursorValues(cursorValuesArray);
+
+                // Set primary cursor value for backward compatibility
+                const firstVisibleValue = cursorValuesArray.find(
+                  (v) => v !== null,
+                );
+                setCursorValue(firstVisibleValue ?? null);
+              }
             } else {
               setCursorValue(null);
+              if (setCursorValues) {
+                setCursorValues(new Array(allOriginalSeries.length).fill(null));
+              }
             }
           },
         ],
@@ -463,16 +516,8 @@ export function createChart({
   return cleanup;
 }
 
-// Helper function to normalize data to array format
-function normalizeDataSeries(data: BigGraphProps["newData"]): SeriesData[] {
-  if (Array.isArray(data)) {
-    return data;
-  }
-  return [data];
-}
-
 // Helper function to get all valid TimeSeries from DataSeries
-function getAllTimeSeries(
+export function getAllTimeSeries(
   data: BigGraphProps["newData"],
 ): Array<{ series: TimeSeries; title?: string; color?: string }> {
   const normalized = normalizeDataSeries(data);

@@ -28,12 +28,13 @@ export function createEventHandlers(
   } | null>,
   width: number,
 ) {
-  // IMPROVED: Add debouncing for callback invocations
+  // Timeout references for debounced callbacks
   const callbackTimeouts = {
     zoom: null as NodeJS.Timeout | null,
     viewMode: null as NodeJS.Timeout | null,
   };
 
+  // Debounced callback handlers
   const debouncedCallbacks = {
     onZoomChange: (range: { min: number; max: number }) => {
       if (callbackTimeouts.zoom) clearTimeout(callbackTimeouts.zoom);
@@ -49,14 +50,13 @@ export function createEventHandlers(
     },
   };
 
+  // Updates the graph's scale and synchronizes it with other graphs
   const updateScaleAndSync = (newMin: number, newMax: number) => {
     if (!uplotRef.current) return;
 
-    // Update uPlot scale
     uplotRef.current.setScale("x", { min: newMin, max: newMax });
     callbacks.updateYAxisScale(newMin, newMax);
 
-    // Update manual scale reference
     manualScaleRef.current = {
       x: { min: newMin, max: newMax },
       y: {
@@ -65,15 +65,14 @@ export function createEventHandlers(
       },
     };
 
-    // Update local state immediately
     callbacks.setViewMode("manual");
     callbacks.setIsLiveMode(false);
 
-    // Sync with other graphs (debounced)
     debouncedCallbacks.onZoomChange({ min: newMin, max: newMax });
     debouncedCallbacks.onViewModeChange("manual", false);
   };
 
+  // Handles touch start events for drag and pinch gestures
   const handleTouchStart = (e: TouchEvent) => {
     const touch = e.touches[0];
     handlerRefs.touchStartRef.current = {
@@ -106,6 +105,7 @@ export function createEventHandlers(
     }
   };
 
+  // Handles touch move events for drag and pinch gestures
   const handleTouchMove = (e: TouchEvent) => {
     if (!handlerRefs.touchStartRef.current) return;
 
@@ -203,8 +203,8 @@ export function createEventHandlers(
     }
   };
 
+  // Handles touch end events and resets state
   const handleTouchEnd = (e: TouchEvent) => {
-    // IMPROVED: Add small delay before cleanup to ensure sync completes
     setTimeout(() => {
       if (e.touches.length === 0) {
         handlerRefs.isDraggingRef.current = false;
@@ -235,20 +235,22 @@ export function createEventHandlers(
       ) {
         e.preventDefault();
       }
-    }, 50); // Small delay to ensure sync completes
+    }, 50);
   };
 
+  // Handles mouse down events for zooming
   const handleMouseDown = (e: MouseEvent) => {
     if (e.button === 0) {
       handlerRefs.isUserZoomingRef.current = true;
     }
   };
 
+  // Prevents default behavior for wheel events
   const handleWheel = (e: WheelEvent) => {
     e.preventDefault();
   };
 
-  // IMPROVED: Cleanup function to clear timeouts
+  // Cleanup function to clear timeouts
   const cleanup = () => {
     if (callbackTimeouts.zoom) clearTimeout(callbackTimeouts.zoom);
     if (callbackTimeouts.viewMode) clearTimeout(callbackTimeouts.viewMode);
@@ -260,7 +262,7 @@ export function createEventHandlers(
     handleTouchEnd,
     handleMouseDown,
     handleWheel,
-    cleanup, // Export cleanup function
+    cleanup,
   };
 }
 
