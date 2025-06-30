@@ -9,7 +9,6 @@ pub struct PidController {
     ki: f64,
     /// Derivative gain
     kd: f64,
-
     // State
     /// Proportional error
     ep: f64,
@@ -18,16 +17,11 @@ pub struct PidController {
     /// Derivative error
     ed: f64,
 
-    /// Prevents a common issue with PID's known as integral windup
-    /// This issue can cause PID's to overshoot drastically for some time until the "windup"
-    /// has "decayed" over time : Basically clamps ei to a min and max
-    integral_windup_clamp_max: f64,
-    integral_windup_clamp_min: f64,
     last: Option<Instant>,
 }
 
 impl PidController {
-    pub fn new(kp: f64, ki: f64, kd: f64, max: f64) -> Self {
+    pub fn new(kp: f64, ki: f64, kd: f64) -> Self {
         Self {
             kp,
             ki,
@@ -36,8 +30,6 @@ impl PidController {
             ei: 0.0,
             ed: 0.0,
             last: None,
-            integral_windup_clamp_max: max,
-            integral_windup_clamp_min: 0.0,
         }
     }
 
@@ -86,11 +78,7 @@ impl PidController {
 
                 // Calculate errors
                 let ep = error;
-                let ei = (self.ei + ep * dt).clamp(
-                    self.integral_windup_clamp_min,
-                    self.integral_windup_clamp_max,
-                );
-
+                let ei = self.ei + ep * dt;
                 let ed = (ep - self.ep) / dt;
 
                 // Calculate signal

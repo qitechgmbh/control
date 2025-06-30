@@ -6,7 +6,7 @@ use control_core::{
         analog_input_getter::AnalogInputGetter,
         mitsubishi_inverter_rs485::{MitsubishiControlRequests, MitsubishiInverterRS485Actor},
     },
-    controllers::pid::PidController,
+    controllers::timeagnostic_pid::TimeagnosticPidController,
     converters::transmission_converter::TransmissionConverter,
     helpers::interpolation::normalize,
 };
@@ -24,7 +24,7 @@ const MAX_FREQ: f64 = 60.0;
 
 #[derive(Debug)]
 pub struct ScrewSpeedController {
-    pub pid: PidController,
+    pub pid: TimeagnosticPidController,
     pub target_pressure: Pressure,
     pub target_rpm: AngularVelocity,
     pub inverter: MitsubishiInverterRS485Actor,
@@ -49,7 +49,17 @@ impl ScrewSpeedController {
         Self {
             inverter: inverter,
             // need to tune
-            pid: PidController::new(0.9, 0.1, 0.0, 1.0),
+            pid: TimeagnosticPidController::new(
+                1.0,
+                0.0,
+                0.0,
+                Some(0.0),
+                Some(1.0),
+                Some(0.0),
+                Some(1.0),
+                Some(0.0),
+                Some(1.0),
+            ),
             last_update: now,
             target_pressure,
             target_rpm,
