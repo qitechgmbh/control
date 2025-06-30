@@ -14,6 +14,7 @@ pub mod el3021;
 pub mod el3024;
 pub mod el3062_0030;
 pub mod el3204;
+pub mod el4002;
 pub mod el6021;
 pub mod el7031;
 pub mod el7031_0030;
