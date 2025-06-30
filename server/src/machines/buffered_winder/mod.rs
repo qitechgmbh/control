@@ -1,5 +1,5 @@
 use api::{
-    BufferedWinderNamespace,
+    BufferedWinderNamespace, Mode,
 };
 use control_core::machines::Machine;
 use std::time::Instant;
@@ -13,6 +13,7 @@ pub struct BufferedWinder {
     namespace: BufferedWinderNamespace,
     last_measurement_emit: Instant,
 
+    mode: Mode,
 }
 
 impl std::fmt::Display for BufferedWinder {
@@ -22,4 +23,6 @@ impl std::fmt::Display for BufferedWinder {
 }
 impl Machine for BufferedWinder {}
 
-//TODO
+impl BufferedWinder {
+    //TODO
+}
