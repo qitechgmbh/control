@@ -157,7 +157,15 @@ export function Markdown({ text }: MarkdownProps) {
           ),
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           strong: ({ node, ...props }) => (
-            <strong className="font-bold" {...props} />
+            <strong className="[font-size:inherit] font-bold" {...props} />
+          ),
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          em: ({ node, ...props }) => (
+            <em className="[font-size:inherit] italic" {...props} />
+          ),
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          del: ({ node, ...props }) => (
+            <del className="[font-size:inherit] line-through" {...props} />
           ),
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           img: ({ node, alt, ...props }) => (
@@ -171,7 +179,7 @@ export function Markdown({ text }: MarkdownProps) {
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           code: ({ node, ...props }) => (
             <code
-              className="rounded-full bg-gray-100 p-0.5 px-2 text-sm"
+              className="rounded-sm bg-gray-100 p-0.5 px-2 [font-size:inherit]"
               {...props}
             />
           ),
