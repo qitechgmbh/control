@@ -1,7 +1,7 @@
 use std::time::Instant;
 
 #[derive(Debug)]
-pub struct TimeagnosticPidController {
+pub struct ClampingTimeagnosticPidController {
     // Params
     /// Proportional gain
     kp: f64,
@@ -26,10 +26,13 @@ pub struct TimeagnosticPidController {
     min_ed: Option<f64>,
     max_ed: Option<f64>,
 
+    min_signal: Option<f64>,
+    max_signal: Option<f64>,
+
     last: Option<Instant>,
 }
 
-impl TimeagnosticPidController {
+impl ClampingTimeagnosticPidController {
     pub fn new(
         kp: f64,
         ki: f64,
@@ -40,6 +43,8 @@ impl TimeagnosticPidController {
         max_ei: Option<f64>,
         min_ed: Option<f64>,
         max_ed: Option<f64>,
+        min_signal: Option<f64>,
+        max_signal: Option<f64>,
     ) -> Self {
         Self {
             kp,
@@ -55,6 +60,28 @@ impl TimeagnosticPidController {
             max_ei,
             min_ed,
             max_ed,
+            min_signal,
+            max_signal,
+        }
+    }
+
+    pub fn simple_new(kp: f64, ki: f64, kd: f64) -> Self {
+        Self {
+            kp,
+            ki,
+            kd,
+            ep: 0.0,
+            ei: 0.0,
+            ed: 0.0,
+            min_ep: None,
+            max_ep: None,
+            min_ei: None,
+            max_ei: None,
+            min_ed: None,
+            max_ed: None,
+            last: None,
+            min_signal: None,
+            max_signal: None,
         }
     }
 
@@ -77,29 +104,12 @@ impl TimeagnosticPidController {
         self.kd = kd;
     }
 
-    // Should this be moved to helpers?
-    pub fn clamp_error(value: f64, min: Option<f64>, max: Option<f64>) -> f64 {
+    pub fn optional_clamp(value: f64, min: Option<f64>, max: Option<f64>) -> f64 {
         match (min, max) {
             (Some(min), Some(max)) => value.clamp(min, max),
-            (_, _) => value,
-        }
-    }
-
-    pub fn simple_new(kp: f64, ki: f64, kd: f64) -> Self {
-        Self {
-            kp,
-            ki,
-            kd,
-            ep: 0.0,
-            ei: 0.0,
-            ed: 0.0,
-            min_ep: None,
-            max_ep: None,
-            min_ei: None,
-            max_ei: None,
-            min_ed: None,
-            max_ed: None,
-            last: None,
+            (Some(min), None) => value.max(min),
+            (None, Some(max)) => value.min(max),
+            (None, None) => value,
         }
     }
 
@@ -112,14 +122,20 @@ impl TimeagnosticPidController {
 
                 // Calculate signal
                 let signal = self.kp * ep;
+                let clamped_signal = ClampingTimeagnosticPidController::optional_clamp(
+                    signal,
+                    self.min_signal,
+                    self.max_signal,
+                );
 
                 // Set values
-                self.ep = ep;
+                self.ep =
+                    ClampingTimeagnosticPidController::optional_clamp(ep, self.min_ep, self.max_ep);
                 self.ei = 0.0;
                 self.ed = 0.0;
                 self.last = Some(t);
 
-                signal
+                clamped_signal
             }
             // Subsequent updates
             Some(last) => {
@@ -127,14 +143,19 @@ impl TimeagnosticPidController {
                 let dt = t.duration_since(last).as_secs_f64();
 
                 // Calculate errors
-                let ep = TimeagnosticPidController::clamp_error(error, self.min_ep, self.max_ep);
-                let ei = TimeagnosticPidController::clamp_error(
+                let ep = ClampingTimeagnosticPidController::optional_clamp(
+                    error,
+                    self.min_ep,
+                    self.max_ep,
+                );
+
+                let ei = ClampingTimeagnosticPidController::optional_clamp(
                     self.ei + ep * dt,
                     self.min_ei,
                     self.max_ei,
                 );
 
-                let ed = TimeagnosticPidController::clamp_error(
+                let ed = ClampingTimeagnosticPidController::optional_clamp(
                     (ep - self.ep) / dt,
                     self.min_ed,
                     self.max_ed,
@@ -147,6 +168,11 @@ impl TimeagnosticPidController {
 
                 // Calculate signal
                 let signal = kp * ep + ki * ei + kd * ed;
+                let clamped_signal = ClampingTimeagnosticPidController::optional_clamp(
+                    signal,
+                    self.min_signal,
+                    self.max_signal,
+                );
 
                 // Set values
                 self.ep = ep;
@@ -154,7 +180,7 @@ impl TimeagnosticPidController {
                 self.ed = ed;
                 self.last = Some(t);
 
-                signal
+                clamped_signal
             }
         };
 
@@ -166,5 +192,50 @@ impl TimeagnosticPidController {
         self.ei = 0.0;
         self.ed = 0.0;
         self.last = None;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::controllers::timeagnostic_pid::ClampingTimeagnosticPidController;
+
+    #[test]
+    fn test_optional_clamp_with_both_bounds() {
+        let val = 5.0;
+        let clamped = ClampingTimeagnosticPidController::optional_clamp(val, Some(1.0), Some(4.0));
+        assert_eq!(clamped, 4.0);
+
+        let clamped = ClampingTimeagnosticPidController::optional_clamp(val, Some(6.0), Some(10.0));
+        assert_eq!(clamped, 6.0);
+
+        let clamped = ClampingTimeagnosticPidController::optional_clamp(val, Some(2.0), Some(6.0));
+        assert_eq!(clamped, 5.0);
+    }
+
+    #[test]
+    fn test_optional_clamp_with_only_min() {
+        let val = 3.0;
+        let clamped = ClampingTimeagnosticPidController::optional_clamp(val, Some(5.0), None);
+        assert_eq!(clamped, 5.0);
+
+        let clamped = ClampingTimeagnosticPidController::optional_clamp(val, Some(2.0), None);
+        assert_eq!(clamped, 3.0);
+    }
+
+    #[test]
+    fn test_optional_clamp_with_only_max() {
+        let val = 7.0;
+        let clamped = ClampingTimeagnosticPidController::optional_clamp(val, None, Some(6.0));
+        assert_eq!(clamped, 6.0);
+
+        let clamped = ClampingTimeagnosticPidController::optional_clamp(val, None, Some(8.0));
+        assert_eq!(clamped, 7.0);
+    }
+
+    #[test]
+    fn test_optional_clamp_with_no_bounds() {
+        let val = 42.0;
+        let clamped = ClampingTimeagnosticPidController::optional_clamp(val, None, None);
+        assert_eq!(clamped, 42.0);
     }
 }
