@@ -9,7 +9,7 @@ use crate::machines::{MACHINE_LASER_V1, VENDOR_QITECH};
 use anyhow::anyhow;
 use control_core::{
     helpers::{
-        hashing::{hashing, xor_u128_to_u16},
+        hashing::{hash_djb2, byte_folding_u16},
         retry::retry_n_times,
     },
     machines::identification::{
@@ -79,8 +79,8 @@ impl SerialDeviceNew for Laser {
             diameter: Length::new::<uom::si::length::millimeter>(0.0),
             last_timestamp: Instant::now(),
         });
-        let hash = hashing(&params.path.clone());
-        let serial = xor_u128_to_u16(hash);
+        let hash = hash_djb2(params.path.as_bytes());
+        let serial = byte_folding_u16(&hash.to_le_bytes());
         let device_identification = DeviceIdentification {
             device_machine_identification: Some(DeviceMachineIdentification {
                 machine_identification_unique: MachineIdentificationUnique {
