@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use control_core::{
-    helpers::hashing::{hashing, xor_u128_to_u16},
+    helpers::hashing::{byte_folding_u16, hash_djb2},
     machines::identification::{
         DeviceHardwareIdentification, DeviceHardwareIdentificationSerial, DeviceIdentification,
         DeviceMachineIdentification, MachineIdentification, MachineIdentificationUnique,
@@ -29,8 +29,8 @@ impl SerialDeviceNew for MockSerialDevice {
         Self: Sized,
     {
         // Generate a unique serial number based on the path
-        let hash = hashing(&params.path);
-        let serial = xor_u128_to_u16(hash);
+        let hash = hash_djb2(params.path.as_bytes());
+        let serial = byte_folding_u16(&hash.to_le_bytes());
 
         let device_identification = DeviceIdentification {
             device_machine_identification: Some(DeviceMachineIdentification {
