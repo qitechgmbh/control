@@ -47,7 +47,7 @@ impl TemperatureController {
         max_clamp: f64,
     ) -> Self {
         Self {
-            pid: PidController::new(kp, ki, kd),
+            pid: PidController::new(kp, ki, kd, 2.0),
             target_temp,
             window_start: Instant::now(),
             temperature_sensor: temperature_sensor,
