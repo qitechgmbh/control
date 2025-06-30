@@ -1,12 +1,30 @@
 use std::sync::Arc;
 
 use control_core::{
-    machines::api::MachineApi, socketio::{event::GenericEvent, namespace::Namespace}
+    machines::api::MachineApi, socketio::{event::{Event, GenericEvent}, namespace::Namespace}
 };
+use serde::{Deserialize, Serialize};
 use smol::channel::Sender;
 use socketioxide::extract::SocketRef;
 
 use super::BufferedWinder;
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub enum Mode {
+    Standby,
+    Running,
+}
+
+#[derive(Serialize, Debug, Clone)]
+pub struct ModeStateEvent {
+    pub mode: Mode,
+}
+
+impl ModeStateEvent {
+    pub fn build(&self) ->  Event<Self> {
+        Event::new("ModeStateEvent", self.clone())
+    }
+}
 
 #[derive(Debug)]
 pub struct BufferedWinderNamespace {

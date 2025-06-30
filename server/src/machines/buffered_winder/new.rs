@@ -4,7 +4,7 @@ use anyhow::Error;
 use control_core::machines::new::{validate_no_role_dublicates, validate_same_machine_identification_unique, MachineNewParams, MachineNewTrait};
 
 use super::{
-    BufferedWinder, api::BufferedWinderNamespace,
+    api::{BufferedWinderNamespace, Mode}, BufferedWinder
 };
 
 impl MachineNewTrait for BufferedWinder {
@@ -27,6 +27,7 @@ impl MachineNewTrait for BufferedWinder {
             let buffered_winder: BufferedWinder = Self {
                     namespace: BufferedWinderNamespace::new(params.socket_queue_tx.clone()),
                     last_measurement_emit: Instant::now(),
+                    mode: Mode::Standby,
             };
             Ok(buffered_winder)
             })
