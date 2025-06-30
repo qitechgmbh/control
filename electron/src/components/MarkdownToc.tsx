@@ -296,13 +296,44 @@ function parseMarkdownHeadings(markdownContent: string): TocItem[] {
     const match = line.match(/^(#{1,6})\s+(.+)$/);
     if (match) {
       const level = match[1].length;
-      const title = match[2].trim();
-      const id = generateHeadingId(title);
+      const rawTitle = match[2].trim();
+      // Strip markdown formatting for TOC display
+      const title = stripMarkdownInlineFormatting(rawTitle);
+      const id = generateHeadingId(rawTitle); // Use raw title for ID generation
       headings.push({ level, title, id });
     }
   });
 
   return buildTocTree(headings);
+}
+
+/**
+ * Strip markdown inline formatting from text for TOC display
+ * Removes: **bold**, *italic*, `code`, ~~strikethrough~~, links, etc.
+ */
+function stripMarkdownInlineFormatting(text: string): string {
+  return (
+    text
+      // Remove bold (**text** or __text__)
+      .replace(/\*\*(.*?)\*\*/g, "$1")
+      .replace(/__(.*?)__/g, "$1")
+      // Remove italic (*text* or _text_)
+      .replace(/\*(.*?)\*/g, "$1")
+      .replace(/_(.*?)_/g, "$1")
+      // Remove strikethrough (~~text~~)
+      .replace(/~~(.*?)~~/g, "$1")
+      // Remove inline code (`text`)
+      .replace(/`([^`]+)`/g, "$1")
+      // Remove links [text](url) -> text
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+      // Remove reference-style links [text][ref] -> text
+      .replace(/\[([^\]]+)\]\[[^\]]*\]/g, "$1")
+      // Remove images ![alt](url) -> alt
+      .replace(/!\[([^\]]*)\]\([^)]+\)/g, "$1")
+      // Clean up any remaining markdown characters
+      .replace(/[*_`~]/g, "")
+      .trim()
+  );
 }
 
 function buildTocTree(
