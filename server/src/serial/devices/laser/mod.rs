@@ -147,9 +147,11 @@ impl Laser {
             None => Err("No data from Laser".to_string()),
         }
     }
+
     pub async fn get_data(&self) -> Option<LaserData> {
         self.data.clone()
     }
+
     async fn process(_self: Arc<RwLock<Self>>) -> Result<(), anyhow::Error> {
         let path = {
             let read_guard = _self.read().await;

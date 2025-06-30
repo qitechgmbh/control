@@ -49,7 +49,7 @@ impl ScrewSpeedController {
         Self {
             inverter: inverter,
             // need to tune
-            pid: PidController::new(1.0, 0.1, 0.0),
+            pid: PidController::new(0.9, 0.1, 0.0, 1.0),
             last_update: now,
             target_pressure,
             target_rpm,
@@ -203,7 +203,6 @@ impl ScrewSpeedController {
     pub async fn update(&mut self, now: Instant, is_extruding: bool) {
         self.pressure_sensor.act(now).await;
         self.inverter.act(now).await;
-
         let measured_pressure = self.get_pressure();
 
         if !self.uses_rpm && !is_extruding && self.motor_on {
@@ -239,9 +238,7 @@ impl ScrewSpeedController {
                 .clamp(MIN_FREQ, MAX_FREQ);
 
             let frequency = Frequency::new::<hertz>(freq);
-
             self.last_update = now;
-
             self.inverter.set_frequency_target(frequency);
         }
     }
