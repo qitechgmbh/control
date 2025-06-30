@@ -6,7 +6,7 @@ use control_core::{
         analog_input_getter::AnalogInputGetter,
         mitsubishi_inverter_rs485::{MitsubishiControlRequests, MitsubishiInverterRS485Actor},
     },
-    controllers::timeagnostic_pid::ClampingTimeagnosticPidController,
+    controllers::clamping_timeagnostic_pid::ClampingTimeagnosticPidController,
     converters::transmission_converter::TransmissionConverter,
     helpers::interpolation::normalize,
 };

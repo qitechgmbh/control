@@ -197,7 +197,7 @@ impl ClampingTimeagnosticPidController {
 
 #[cfg(test)]
 mod tests {
-    use crate::controllers::timeagnostic_pid::ClampingTimeagnosticPidController;
+    use crate::controllers::clamping_timeagnostic_pid::ClampingTimeagnosticPidController;
 
     #[test]
     fn test_optional_clamp_with_both_bounds() {
