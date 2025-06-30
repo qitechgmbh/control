@@ -57,8 +57,9 @@ pub enum HeatingType {
 #[derive(Debug)]
 pub struct ExtruderV2 {
     namespace: ExtruderV2Namespace,
-    mode: ExtruderV2Mode,
     last_measurement_emit: Instant,
+
+    mode: ExtruderV2Mode,
     screw_speed_controller: ScrewSpeedController,
 
     temperature_controller_front: TemperatureController,
@@ -392,6 +393,7 @@ impl ExtruderV2 {
         let kd = self.screw_speed_controller.pid.get_kd();
         let kp = self.screw_speed_controller.pid.get_kp();
         let ki = self.screw_speed_controller.pid.get_ki();
+
         let event = api::PidSettingsEvent { ki, kp, kd }.build(PidType::Pressure);
         self.namespace
             .emit(ExtruderV2Events::PidSettingsEvent(event));
