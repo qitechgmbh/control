@@ -13,7 +13,6 @@ const schemaSetFrequency2 = z.object({ SetFrequency2: z.number() });
 const schemaSetFrequency3 = z.object({ SetFrequency3: z.number() });
 
 function useMock(machine_identification_unique: MachineIdentificationUnique) {
-
   // Write Path
   const mockStateOptimistic = useStateOptimistic<{
     frequency1: number;
@@ -26,13 +25,13 @@ function useMock(machine_identification_unique: MachineIdentificationUnique) {
   }>();
 
   const { request: requestSetFrequency1 } =
-      useMachineMutation(schemaSetFrequency1);
+    useMachineMutation(schemaSetFrequency1);
 
   const { request: requestSetFrequency2 } =
-      useMachineMutation(schemaSetFrequency2);
+    useMachineMutation(schemaSetFrequency2);
 
   const { request: requestSetFrequency3 } =
-      useMachineMutation(schemaSetFrequency3);
+    useMachineMutation(schemaSetFrequency3);
 
   const mockSetFrequency1 = async (frequency: number) => {
     if (mockStateOptimistic.value) {

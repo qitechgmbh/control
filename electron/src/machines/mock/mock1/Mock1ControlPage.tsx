@@ -10,9 +10,9 @@ import { Mode } from "./mock1Namespace";
 import { TimeSeries } from "@/lib/timeseries";
 
 type SineWaveCardProps = {
-    title: string,
-    timeseries: TimeSeries;
-}
+  title: string;
+  timeseries: TimeSeries;
+};
 
 function SineWaveCard({ title, timeseries }: SineWaveCardProps) {
   return (
