@@ -106,7 +106,7 @@ export const createMock1NamespaceStore = (): StoreApi<Mock1NamespaceStore> => {
       sineWave3: sineWave,
     };
   });
-}
+};
 
 /**
  * Creates a message handler for Mock1 namespace events with validation and appropriate caching strategies
