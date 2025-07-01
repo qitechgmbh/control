@@ -16,38 +16,29 @@ import { StatusBadge } from "@/control/StatusBadge";
 
 export function Extruder2ControlPage() {
   const {
-    mode,
-    nozzleHeatingState,
+    state,
     nozzleTemperature,
     nozzlePower,
-
-    frontHeatingState,
     frontTemperature,
     frontPower,
-
-    backHeatingState,
     backTemperature,
     backPower,
-
-    middleHeatingState,
     middleTemperature,
     middlePower,
+    screwRpm,
+    pressure,
 
-    extruderSetMode,
-    heatingSetBackTemp,
-    heatingSetFrontTemp,
-    heatingSetMiddleTemp,
-    heatingSetNozzleTemp,
-    screwSetRegulation,
-    screwSetTargetPressure,
-    screwSetTargetRpm,
+    setExtruderMode,
+    setBackHeatingTemperature,
+    setFrontHeatingTemperature,
+    setMiddleHeatingTemperature,
+    setNozzleHeatingTemperature,
+    setInverterRegulation,
+    setInverterTargetPressure,
+    setInverterTargetRpm,
 
-    uses_rpm,
-    bar,
-    rpm,
-    targetBar,
-    targetRpm,
-    inverterState,
+    isLoading,
+    isDisabled,
   } = useExtruder2();
 
   return (
@@ -55,86 +46,88 @@ export function Extruder2ControlPage() {
       <ControlGrid>
         <HeatingZone
           title={"Heating Front"}
-          heatingState={frontHeatingState}
+          heatingState={state?.heating_states.front}
           heatingTimeSeries={frontTemperature}
           heatingPower={frontPower}
-          onChangeTargetTemp={heatingSetFrontTemp}
+          onChangeTargetTemp={setFrontHeatingTemperature}
           min={0}
           max={300}
         />
         <HeatingZone
           title={"Heating Middle"}
-          heatingState={middleHeatingState}
+          heatingState={state?.heating_states.middle}
           heatingTimeSeries={middleTemperature}
           heatingPower={middlePower}
-          onChangeTargetTemp={heatingSetMiddleTemp}
+          onChangeTargetTemp={setMiddleHeatingTemperature}
           min={0}
           max={300}
         />
         <HeatingZone
           title={"Heating Back"}
-          heatingState={backHeatingState}
+          heatingState={state?.heating_states.back}
           heatingTimeSeries={backTemperature}
           heatingPower={backPower}
-          onChangeTargetTemp={heatingSetBackTemp}
+          onChangeTargetTemp={setBackHeatingTemperature}
           min={0}
           max={300}
         />
         <HeatingZone
           title={"Heating Nozzle"}
-          heatingState={nozzleHeatingState}
+          heatingState={state?.heating_states.nozzle}
           heatingTimeSeries={nozzleTemperature}
           heatingPower={nozzlePower}
-          onChangeTargetTemp={heatingSetNozzleTemp}
+          onChangeTargetTemp={setNozzleHeatingTemperature}
           min={0}
           max={300}
         />
         <ControlCard className="bg-red" title="Screw Drive">
-          {inverterState?.fault_occurence == true && (
+          {state?.inverter_status_state.fault_occurence == true && (
             <StatusBadge variant="error">
               Inverter encountered an error!! Press the restart button in Config
             </StatusBadge>
           )}
-          {inverterState?.running == true &&
-            inverterState.fault_occurence == false && (
+          {state?.inverter_status_state.running == true &&
+            state.inverter_status_state.fault_occurence == false && (
               <StatusBadge variant="success">Running</StatusBadge>
             )}
-          {inverterState?.running == false &&
-            inverterState.fault_occurence == false && (
+          {state?.inverter_status_state.running == false &&
+            state.inverter_status_state.fault_occurence == false && (
               <StatusBadge variant="success">Healthy</StatusBadge>
             )}
 
           <Label label="Regulation">
             <SelectionGroupBoolean
-              value={uses_rpm}
+              value={state?.regulation_state.uses_rpm}
               optionTrue={{ children: "RPM" }}
               optionFalse={{ children: "Pressure" }}
-              onChange={screwSetRegulation}
+              onChange={setInverterRegulation}
+              disabled={isDisabled}
+              loading={isLoading}
             />
           </Label>
           <div className="flex flex-row flex-wrap gap-4">
             <Label label="Target Output RPM">
               <EditValue
-                value={targetRpm}
+                value={state?.screw_state.target_rpm}
                 defaultValue={0}
                 unit="rpm"
                 title="Target Output RPM"
                 min={0}
                 max={106}
                 renderValue={(value) => roundToDecimals(value, 0)}
-                onChange={screwSetTargetRpm}
+                onChange={setInverterTargetRpm}
               />
             </Label>
             <Label label="Target Pressure">
               <EditValue
-                value={targetBar}
+                value={state?.pressure_state.target_bar}
                 defaultValue={0}
                 unit="bar"
                 title="Target Pressure"
                 min={0.0}
                 max={150.0}
                 renderValue={(value) => roundToDecimals(value, 0)}
-                onChange={screwSetTargetPressure}
+                onChange={setInverterTargetPressure}
               />
             </Label>
           </div>
@@ -143,21 +136,21 @@ export function Extruder2ControlPage() {
               label="Rpm"
               unit="rpm"
               renderValue={(value) => roundToDecimals(value, 0)}
-              timeseries={rpm}
+              timeseries={screwRpm}
             />
 
             <TimeSeriesValueNumeric
               label="Pressure"
               unit="bar"
               renderValue={(value) => roundToDecimals(value, 0)}
-              timeseries={bar}
+              timeseries={pressure}
             />
           </div>
         </ControlCard>
 
         <ControlCard className="bg-red" title="Mode">
           <SelectionGroup<"Standby" | "Heat" | "Extrude">
-            value={mode}
+            value={state?.mode_state.mode}
             orientation="vertical"
             className="grid h-full grid-cols-2 gap-2"
             options={{
@@ -180,7 +173,9 @@ export function Extruder2ControlPage() {
                 className: "h-full",
               },
             }}
-            onChange={extruderSetMode}
+            onChange={setExtruderMode}
+            disabled={isDisabled}
+            loading={isLoading}
           />
         </ControlCard>
       </ControlGrid>
