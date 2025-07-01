@@ -18,10 +18,6 @@ use uom::si::{
     pressure::bar,
 };
 
-/// Clampable frequency limits (in Hz)
-const MIN_FREQ: f64 = 0.0;
-const MAX_FREQ: f64 = 60.0;
-
 #[derive(Debug)]
 pub struct ScrewSpeedController {
     pub pid: ClampingTimeagnosticPidController,
@@ -33,7 +29,9 @@ pub struct ScrewSpeedController {
     uses_rpm: bool,
     forward_rotation: bool,
     transmission_converter: TransmissionConverter,
-    frequency: f64,
+    frequency: Frequency,
+    maximum_frequency: Frequency,
+    minimum_frequency: Frequency,
     motor_on: bool,
     nozzle_pressure_limit: Pressure,
     nozzle_pressure_limit_enabled: bool,
@@ -61,7 +59,9 @@ impl ScrewSpeedController {
             motor_on: false,
             nozzle_pressure_limit: Pressure::new::<bar>(100.0),
             nozzle_pressure_limit_enabled: true,
-            frequency: 0.0,
+            frequency: Frequency::new::<hertz>(0.0),
+            maximum_frequency: Frequency::new::<hertz>(60.0),
+            minimum_frequency: Frequency::new::<hertz>(0.0),
         }
     }
 
@@ -165,6 +165,16 @@ impl ScrewSpeedController {
         self.target_pressure
     }
 
+    fn clamp_frequency(frequency: Frequency, min: Frequency, max: Frequency) -> Frequency {
+        if frequency < min {
+            min
+        } else if frequency > max {
+            max
+        } else {
+            frequency
+        }
+    }
+
     pub fn get_sensor_current(&self) -> Result<ElectricCurrent, anyhow::Error> {
         let phys: ethercat_hal::io::analog_input::physical::AnalogInputValue = self
             .pressure_sensor
@@ -229,13 +239,21 @@ impl ScrewSpeedController {
             let error = self.target_pressure - measured_pressure;
 
             let freq_change = self.pid.update(error.get::<bar>(), now);
-            self.frequency += freq_change;
-            self.frequency = self.frequency.clamp(MIN_FREQ, MAX_FREQ);
-            let motor_frequency = Frequency::new::<hertz>(self.frequency);
+            self.frequency += Frequency::new::<hertz>(freq_change);
+            self.frequency = Self::clamp_frequency(
+                self.frequency,
+                self.minimum_frequency,
+                self.maximum_frequency,
+            );
 
-            self.inverter.set_frequency_target(motor_frequency);
+            self.inverter.set_frequency_target(self.frequency);
             self.last_update = now;
         }
+    }
+
+    pub fn start_pressure_regulation(&mut self) {
+        self.last_update = Instant::now();
+        self.frequency = self.inverter.frequency;
     }
 
     pub fn reset(&mut self) {
