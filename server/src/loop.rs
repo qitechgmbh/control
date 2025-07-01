@@ -2,11 +2,10 @@ use crate::app_state::AppState;
 use crate::panic::{PanicDetails, send_panic};
 use bitvec::prelude::*;
 use control_core::helpers::loop_trottle::LoopThrottle;
-use control_core::helpers::retry::retry_conditionally_async;
 use smol::channel::Sender;
 use std::sync::Arc;
 use std::time::Duration;
-use tracing::{debug, error, instrument, trace_span};
+use tracing::{instrument, trace_span};
 
 pub fn init_loop(
     thread_panic_tx: Sender<PanicDetails>,
