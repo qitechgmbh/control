@@ -186,23 +186,12 @@ impl MachineNewTrait for WaterCooling {
             };
 
             let watercooling_min_temperature = ThermodynamicTemperature::new::<degree_celsius>(0.0);
-            let temperature_controller = TemperatureController::new(
-                0.16,
-                0.0,
-                0.008,
-                ThermodynamicTemperature::new::<degree_celsius>(10.0),
-                watercooling_min_temperature,
-                Cooling::default(),
-                Duration::from_millis(500),
-                700.0,
-                1.0,
-            );
+
             // Initialize water cooling system
             let water_cooling = Self {
                 namespace: WaterCoolingNamespace::new(params.socket_queue_tx.clone()),
                 mode: WaterCoolingMode::Standby,
                 last_measurement_emit: Instant::now(),
-                temperature_controller: temperature_controller,
             };
 
             Ok(water_cooling)
