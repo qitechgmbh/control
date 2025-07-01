@@ -18,12 +18,6 @@ use socketioxide::extract::SocketRef;
 use tracing::instrument;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub enum AutostopTransition {
-    Standby,
-    Pull,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum Mode {
     Standby,
     Hold,
@@ -88,12 +82,6 @@ enum Mutation {
     SpoolSetAdaptiveMaxSpeedMultiplier(f64),
     SpoolSetAdaptiveAccelerationFactor(f64),
     SpoolSetAdaptiveDeaccelerationUrgencyMultiplier(f64),
-
-    // Auto Stop
-    AutostopEnable(bool),
-    AutostopEnableAlarm(bool),
-    AutostopSetLimit(f64),
-    AutostopSetTransition(AutostopTransition),
 
     // Tension Arm
     TensionArmAngleZero,
@@ -181,36 +169,6 @@ pub struct PullerSpeedEvent {
 impl PullerSpeedEvent {
     pub fn build(&self) -> Event<Self> {
         Event::new("PullerSpeedEvent", self.clone())
-    }
-}
-
-#[derive(Serialize, Debug, Clone)]
-pub struct AutostopWoundedLengthEvent {
-    /// wounded length in mm
-    pub wounded_length: f64,
-}
-
-impl AutostopWoundedLengthEvent {
-    pub fn build(&self) -> Event<Self> {
-        Event::new("AutostopWoundedLengthEvent", self.clone())
-    }
-}
-
-#[derive(Serialize, Debug, Clone)]
-pub struct AutostopStateEvent {
-    /// if autostop is enabled
-    pub enabled: bool,
-    /// if autostop is enabled and alarm is active
-    pub enabled_alarm: bool,
-    /// limit in mm
-    pub limit: f64,
-    /// transition state
-    pub transition: AutostopTransition,
-}
-
-impl AutostopStateEvent {
-    pub fn build(&self) -> Event<Self> {
-        Event::new("AutostopStateEvent", self.clone())
     }
 }
 
@@ -307,8 +265,6 @@ pub enum Winder2Events {
     TraverseState(Event<TraverseStateEvent>),
     PullerSpeed(Event<PullerSpeedEvent>),
     PullerState(Event<PullerStateEvent>),
-    AutostopWoundedlength(Event<AutostopWoundedLengthEvent>),
-    AutostopState(Event<AutostopStateEvent>),
     Mode(Event<ModeStateEvent>),
     SpoolRpm(Event<SpoolRpmEvent>),
     SpoolDiameter(Event<SpoolDiameterEvent>),
@@ -346,8 +302,6 @@ impl CacheableEvents<Winder2Events> for Winder2Events {
             Winder2Events::TraverseState(event) => event.into(),
             Winder2Events::PullerSpeed(event) => event.into(),
             Winder2Events::PullerState(event) => event.into(),
-            Winder2Events::AutostopWoundedlength(event) => event.into(),
-            Winder2Events::AutostopState(event) => event.into(),
             Winder2Events::Mode(event) => event.into(),
             Winder2Events::SpoolRpm(event) => event.into(),
             Winder2Events::SpoolDiameter(event) => event.into(),
@@ -366,8 +320,6 @@ impl CacheableEvents<Winder2Events> for Winder2Events {
             Winder2Events::TraverseState(_) => cache_one,
             Winder2Events::PullerSpeed(_) => cache_one_hour,
             Winder2Events::PullerState(_) => cache_one,
-            Winder2Events::AutostopWoundedlength(_) => cache_one_hour,
-            Winder2Events::AutostopState(_) => cache_one,
             Winder2Events::Mode(_) => cache_one,
             Winder2Events::SpoolRpm(_) => cache_one_hour,
             Winder2Events::SpoolDiameter(_) => cache_one_hour,
@@ -413,10 +365,6 @@ impl MachineApi for Winder2 {
             Mutation::SpoolSetAdaptiveDeaccelerationUrgencyMultiplier(value) => {
                 self.spool_set_adaptive_deacceleration_urgency_multiplier(value)
             }
-            Mutation::AutostopEnable(_) => todo!(),
-            Mutation::AutostopEnableAlarm(_) => todo!(),
-            Mutation::AutostopSetLimit(_) => todo!(),
-            Mutation::AutostopSetTransition(_) => todo!(),
             Mutation::TensionArmAngleZero => self.tension_arm_zero(),
         }
         Ok(())
