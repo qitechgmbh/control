@@ -4,112 +4,118 @@ import { MachineIdentificationUnique } from "@/machines/types";
 import { laser1 } from "@/machines/properties";
 import { laser1SerialRoute } from "@/routes/routes";
 import { z } from "zod";
-import { useLaser1Namespace } from "./laser1Namespace";
+import { useLaser1Namespace, StateEvent } from "./laser1Namespace";
 import { useEffect, useMemo } from "react";
 import { useStateOptimistic } from "@/lib/useStateOptimistic";
+import { produce } from "immer";
 
 function useLaser(machine_identification_unique: MachineIdentificationUnique) {
-  // Write Path
-  const laserStateOptimistic = useStateOptimistic<{
-    target_diameter: number;
-    lower_tolerance: number;
-    higher_tolerance: number;
-  }>();
+  // Get consolidated state and live values from namespace
+  const { state, diameter } = useLaser1Namespace(machine_identification_unique);
+
+  // Single optimistic state for all state management
+  const stateOptimistic = useStateOptimistic<StateEvent>();
+
+  // Update optimistic state when real state changes
+  useEffect(() => {
+    if (state) {
+      stateOptimistic.setReal(state);
+    }
+  }, [state]);
+
+  // Helper function for optimistic updates using produce
+  const updateStateOptimistically = (
+    producer: (current: StateEvent) => void,
+    serverRequest: () => void,
+  ) => {
+    const currentState = stateOptimistic.value;
+    if (currentState) {
+      stateOptimistic.setOptimistic(produce(currentState, producer));
+    }
+    serverRequest();
+  };
+
+  // Mutation schemas
   const schemaTargetDiameter = z.object({
-    TargetSetTargetDiameter: z.number(),
+    SetTargetDiameter: z.number(),
   });
   const { request: requestTargetDiameter } =
     useMachineMutation(schemaTargetDiameter);
-  const laserSetTargetDiameter = async (target_diameter: number) => {
-    if (laserStateOptimistic.value) {
-      laserStateOptimistic.setOptimistic({
-        ...laserStateOptimistic.value,
-        target_diameter: target_diameter,
-      });
-    }
-    requestTargetDiameter({
-      machine_identification_unique,
-      data: {
-        TargetSetTargetDiameter: target_diameter,
-      },
-    })
-      .then((response) => {
-        if (!response.success) laserStateOptimistic.resetToReal();
-      })
-      .catch(() => laserStateOptimistic.resetToReal());
-  };
 
   const schemaLowerTolerance = z.object({
-    TargetSetLowerTolerance: z.number(),
+    SetLowerTolerance: z.number(),
   });
   const { request: requestLowerTolerance } =
     useMachineMutation(schemaLowerTolerance);
-  const laserSetLowerTolerance = async (lower_tolerance: number) => {
-    if (laserStateOptimistic.value) {
-      laserStateOptimistic.setOptimistic({
-        ...laserStateOptimistic.value,
-        lower_tolerance: lower_tolerance,
-      });
-    }
-    requestLowerTolerance({
-      machine_identification_unique,
-      data: {
-        TargetSetLowerTolerance: lower_tolerance,
-      },
-    })
-      .then((response) => {
-        if (!response.success) laserStateOptimistic.resetToReal();
-      })
-      .catch(() => laserStateOptimistic.resetToReal());
-  };
 
   const schemaHigherTolerance = z.object({
-    TargetSetHigherTolerance: z.number(),
+    SetHigherTolerance: z.number(),
   });
   const { request: requestHigherTolerance } = useMachineMutation(
     schemaHigherTolerance,
   );
-  const laserSetHigherTolerance = async (higher_tolerance: number) => {
-    if (laserStateOptimistic.value) {
-      laserStateOptimistic.setOptimistic({
-        ...laserStateOptimistic.value,
-        higher_tolerance: higher_tolerance,
-      });
-    }
-    requestHigherTolerance({
-      machine_identification_unique,
-      data: {
-        TargetSetHigherTolerance: higher_tolerance,
+
+  // Action functions with verb-first names
+  const setTargetDiameter = (target_diameter: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.laser_state.target_diameter = target_diameter;
       },
-    })
-      .then((response) => {
-        if (!response.success) laserStateOptimistic.resetToReal();
-      })
-      .catch(() => laserStateOptimistic.resetToReal());
+      () =>
+        requestTargetDiameter({
+          machine_identification_unique,
+          data: {
+            SetTargetDiameter: target_diameter,
+          },
+        }),
+    );
   };
 
-  // Read Path
-  const { laserDiameter, laserState } = useLaser1Namespace(
-    machine_identification_unique,
-  );
+  const setLowerTolerance = (lower_tolerance: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.laser_state.lower_tolerance = lower_tolerance;
+      },
+      () =>
+        requestLowerTolerance({
+          machine_identification_unique,
+          data: {
+            SetLowerTolerance: lower_tolerance,
+          },
+        }),
+    );
+  };
 
-  // Update real values from server
-  useEffect(() => {
-    if (laserState?.data) {
-      laserStateOptimistic.setReal(laserState.data);
-    }
-  }, [laserState]);
+  const setHigherTolerance = (higher_tolerance: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.laser_state.higher_tolerance = higher_tolerance;
+      },
+      () =>
+        requestHigherTolerance({
+          machine_identification_unique,
+          data: {
+            SetHigherTolerance: higher_tolerance,
+          },
+        }),
+    );
+  };
 
   return {
-    laserDiameter,
-    laserState,
-    laserSetTargetDiameter: laserSetTargetDiameter,
-    laserSetLowerTolerance: laserSetLowerTolerance,
-    laserSetHigherTolerance: laserSetHigherTolerance,
-    laserStateIsLoading:
-      laserStateOptimistic.isOptimistic || !laserStateOptimistic.isInitialized,
-    laserStateIsDisabled:
-      laserStateOptimistic.isOptimistic || !laserStateOptimistic.isInitialized,
+    // Consolidated state
+    state: stateOptimistic.value?.data,
+
+    // Live values (TimeSeries)
+    diameter,
+
+    // Loading states
+    isLoading: stateOptimistic.isOptimistic,
+    isDisabled: !stateOptimistic.isInitialized,
+
+    // Action functions (verb-first)
+    setTargetDiameter,
+    setLowerTolerance,
+    setHigherTolerance,
   };
 }
 

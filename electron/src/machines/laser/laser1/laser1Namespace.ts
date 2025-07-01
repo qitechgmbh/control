@@ -24,31 +24,37 @@ import {
 
 // ========== Event Schema Definitions ==========
 /**
- * Measurements diameter from Laser
+ * Live values from Laser (60 FPS)
  */
-export const diameterEventDataSchema = z.object({
+export const liveValuesEventDataSchema = z.object({
   diameter: z.number(),
 });
 
-export const laserStateEventDataSchema = z.object({
-  higher_tolerance: z.number(),
-  lower_tolerance: z.number(),
-  target_diameter: z.number(),
+/**
+ * State event from Laser (on state changes only)
+ */
+export const stateEventDataSchema = z.object({
+  laser_state: z.object({
+    higher_tolerance: z.number(),
+    lower_tolerance: z.number(),
+    target_diameter: z.number(),
+  }),
 });
+
 // ========== Event Schemas with Wrappers ==========
-export const diameterEventSchema = eventSchema(diameterEventDataSchema);
-export const laserStateEventSchema = eventSchema(laserStateEventDataSchema);
+export const liveValuesEventSchema = eventSchema(liveValuesEventDataSchema);
+export const stateEventSchema = eventSchema(stateEventDataSchema);
 
 // ========== Type Inferences ==========
-export type DiameterEvent = z.infer<typeof diameterEventSchema>;
-
-export type LaserStateEvent = z.infer<typeof laserStateEventSchema>;
+export type LiveValuesEvent = z.infer<typeof liveValuesEventSchema>;
+export type StateEvent = z.infer<typeof stateEventSchema>;
 
 export type Laser1NamespaceStore = {
-  // State events (latest only)
-  laserState: LaserStateEvent | null;
-  // Metric events (cached for 1 hour)
-  laserDiameter: TimeSeries;
+  // Single state event from server
+  state: StateEvent | null;
+
+  // Time series data for live values
+  diameter: TimeSeries;
 };
 
 // Constants for time durations
@@ -69,8 +75,8 @@ const { initialTimeSeries: diameter, insert: addDiameter } = createTimeSeries(
 export const createLaser1NamespaceStore = (): StoreApi<Laser1NamespaceStore> =>
   create<Laser1NamespaceStore>(() => {
     return {
-      laserState: null,
-      laserDiameter: diameter,
+      state: null,
+      diameter: diameter,
     };
   });
 
@@ -96,22 +102,23 @@ export function laser1MessageHandler(
 
     try {
       // Apply appropriate caching strategy based on event type
-      if (eventName === "LaserStateEvent") {
+      if (eventName === "StateEvent") {
+        const stateEvent = stateEventSchema.parse(event);
         updateStore((state) => ({
           ...state,
-          laserState: event as LaserStateEvent,
+          state: stateEvent,
         }));
       }
-      // Metric events (keep for 1 hour)
-      else if (eventName === "DiameterEvent") {
-        const diameterEvent = event as DiameterEvent;
+      // Live values events (keep for 1 hour)
+      else if (eventName === "LiveValuesEvent") {
+        const liveValuesEvent = liveValuesEventSchema.parse(event);
         const timeseriesValue: TimeSeriesValue = {
-          value: diameterEvent.data.diameter,
+          value: liveValuesEvent.data.diameter,
           timestamp: event.ts,
         };
         updateStore((state) => ({
           ...state,
-          laserDiameter: addDiameter(state.laserDiameter, timeseriesValue),
+          diameter: addDiameter(state.diameter, timeseriesValue),
         }));
       } else {
         handleUnhandledEventError(eventName);
