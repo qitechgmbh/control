@@ -22,7 +22,7 @@ use ethercat_hal::{
         EthercatDeviceUsed, downcast_device,
         ek1100::{EK1100, EK1100_IDENTITY_A},
         el2008::{EL2008, EL2008_IDENTITY_A, EL2008Port},
-        el4002::{EL4002, EL4002_IDENTITY_A, EL4002_IDENTITY_B, EL4002Configuration, EL4002Port},
+        el4002::{EL4002, EL4002_IDENTITY_A, EL4002Configuration, EL4002Port},
         subdevice_identity_to_tuple,
     },
     io::{
@@ -158,7 +158,7 @@ impl MachineNewTrait for WaterCooling {
                 let subdevice = get_subdevice_by_index(hardware.subdevices, subdevice_index)?;
                 let subdevice_identity = subdevice.identity();
                 let device = match subdevice_identity_to_tuple(&subdevice_identity) {
-                    EL4002_IDENTITY_A | EL4002_IDENTITY_B => {
+                    EL4002_IDENTITY_A => {
                         let ethercat_device = get_ethercat_device_by_index(
                             &hardware.ethercat_devices,
                             subdevice_index,
