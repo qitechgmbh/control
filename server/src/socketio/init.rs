@@ -78,6 +78,17 @@ fn setup_disconnection(socket: SocketRef, namespace_id: NamespaceId, app_state: 
                 .apply_mut(namespace_id.clone(), &app_state, |namespace_interface| {
                     if let Ok(namespace_interface) = namespace_interface {
                         namespace_interface.unsubscribe(socket.clone());
+                        tracing::debug!(
+                            "Socket unsubscribed from namespace socket={:?} namespace={}",
+                            socket.id,
+                            namespace_id
+                        );
+                    } else {
+                        tracing::debug!(
+                            "Failed to unsubscribe socket from namespace socket={:?} namespace={}",
+                            socket.id,
+                            namespace_id
+                        );
                     }
                 })
                 .await;
