@@ -26,22 +26,14 @@ impl Actor for Winder2 {
             self.sync_traverse_speed();
 
             // check if traverse state changed
-            if self.traverse_controller.dif_change_state() {
-                self.emit_traverse_state();
-
-                // Also emit mode state when traverse state changes
-                // This ensures the frontend gets updated capability flags when homing completes
-                self.emit_mode_state();
+            if self.traverse_controller.did_change_state() {
+                self.emit_state();
             }
 
             // if last measurement emit is older than 1 second, emit a new measurement
             if now.duration_since(self.last_measurement_emit) > Duration::from_secs_f64(1.0 / 60.0)
             {
-                self.emit_tension_arm_angle();
-                self.emit_spool_rpm();
-                self.emit_spool_diameter();
-                self.emit_puller_speed();
-                self.emit_traverse_position();
+                self.emit_live_values();
                 self.last_measurement_emit = now;
             }
         })
