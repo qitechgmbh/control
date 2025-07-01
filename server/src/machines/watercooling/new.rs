@@ -178,6 +178,9 @@ impl MachineNewTrait for WaterCooling {
                 }
                 device
             };
+
+            let watercooling_min_temperature = ThermodynamicTemperature::new::<degree_celsius>(0.0);
+
             // Initialize water cooling system
             let water_cooling = Self {
                 namespace: WaterCoolingNamespace::new(params.socket_queue_tx.clone()),
