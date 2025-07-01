@@ -6,7 +6,7 @@ use control_core::{
         analog_input_getter::AnalogInputGetter,
         mitsubishi_inverter_rs485::{MitsubishiControlRequests, MitsubishiInverterRS485Actor},
     },
-    controllers::pid::PidController,
+    controllers::clamping_timeagnostic_pid::ClampingTimeagnosticPidController,
     converters::transmission_converter::TransmissionConverter,
     helpers::interpolation::normalize,
 };
@@ -18,13 +18,9 @@ use uom::si::{
     pressure::bar,
 };
 
-/// Clampable frequency limits (in Hz)
-const MIN_FREQ: f64 = 0.0;
-const MAX_FREQ: f64 = 60.0;
-
 #[derive(Debug)]
 pub struct ScrewSpeedController {
-    pub pid: PidController,
+    pub pid: ClampingTimeagnosticPidController,
     pub target_pressure: Pressure,
     pub target_rpm: AngularVelocity,
     pub inverter: MitsubishiInverterRS485Actor,
@@ -33,6 +29,9 @@ pub struct ScrewSpeedController {
     uses_rpm: bool,
     forward_rotation: bool,
     transmission_converter: TransmissionConverter,
+    frequency: Frequency,
+    maximum_frequency: Frequency,
+    minimum_frequency: Frequency,
     motor_on: bool,
     nozzle_pressure_limit: Pressure,
     nozzle_pressure_limit_enabled: bool,
@@ -49,7 +48,7 @@ impl ScrewSpeedController {
         Self {
             inverter: inverter,
             // need to tune
-            pid: PidController::new(1.0, 0.1, 0.0),
+            pid: ClampingTimeagnosticPidController::simple_new(0.1, 0.0, 0.0),
             last_update: now,
             target_pressure,
             target_rpm,
@@ -60,6 +59,9 @@ impl ScrewSpeedController {
             motor_on: false,
             nozzle_pressure_limit: Pressure::new::<bar>(100.0),
             nozzle_pressure_limit_enabled: true,
+            frequency: Frequency::new::<hertz>(0.0),
+            maximum_frequency: Frequency::new::<hertz>(60.0),
+            minimum_frequency: Frequency::new::<hertz>(0.0),
         }
     }
 
@@ -163,6 +165,16 @@ impl ScrewSpeedController {
         self.target_pressure
     }
 
+    fn clamp_frequency(frequency: Frequency, min: Frequency, max: Frequency) -> Frequency {
+        if frequency < min {
+            min
+        } else if frequency > max {
+            max
+        } else {
+            frequency
+        }
+    }
+
     pub fn get_sensor_current(&self) -> Result<ElectricCurrent, anyhow::Error> {
         let phys: ethercat_hal::io::analog_input::physical::AnalogInputValue = self
             .pressure_sensor
@@ -194,9 +206,7 @@ impl ScrewSpeedController {
         };
         let normalized = normalize(current, 4.0, 20.0);
         // Our pressure sensor has a range of Up to 350 Bar
-
         let actual_pressure = (normalized) * 350.0;
-
         return Pressure::new::<bar>(actual_pressure);
     }
 
@@ -226,21 +236,24 @@ impl ScrewSpeedController {
         }
 
         if !self.uses_rpm && is_extruding == true {
-            let mut error = self.target_pressure - measured_pressure;
+            let error = self.target_pressure - measured_pressure;
 
-            if error < Pressure::new::<bar>(0.0) {
-                error = Pressure::new::<bar>(0.0);
-            }
+            let freq_change = self.pid.update(error.get::<bar>(), now);
+            self.frequency += Frequency::new::<hertz>(freq_change);
+            self.frequency = Self::clamp_frequency(
+                self.frequency,
+                self.minimum_frequency,
+                self.maximum_frequency,
+            );
 
-            let freq = self
-                .pid
-                .update(error.get::<bar>(), now)
-                .clamp(MIN_FREQ, MAX_FREQ);
-
-            let frequency = Frequency::new::<hertz>(freq);
+            self.inverter.set_frequency_target(self.frequency);
             self.last_update = now;
-            self.inverter.set_frequency_target(frequency);
         }
+    }
+
+    pub fn start_pressure_regulation(&mut self) {
+        self.last_update = Instant::now();
+        self.frequency = self.inverter.frequency;
     }
 
     pub fn reset(&mut self) {
