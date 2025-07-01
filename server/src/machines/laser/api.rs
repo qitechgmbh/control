@@ -16,32 +16,43 @@ use socketioxide::extract::SocketRef;
 use std::{sync::Arc, time::Duration};
 use tracing::instrument;
 
-#[derive(Serialize, Debug, Clone)]
-pub struct DiameterEvent {
+#[derive(Serialize, Debug, Clone, Default)]
+pub struct LiveValuesEvent {
+    /// diameter measurement in mm
     pub diameter: f64,
 }
 
-impl DiameterEvent {
+impl LiveValuesEvent {
     pub fn build(&self) -> Event<Self> {
-        Event::new("DiameterEvent", self.clone())
+        Event::new("LiveValuesEvent", self.clone())
     }
 }
+
 #[derive(Serialize, Debug, Clone)]
-pub struct LaserStateEvent {
+pub struct StateEvent {
+    /// laser state
+    pub laser_state: LaserState,
+}
+
+impl StateEvent {
+    pub fn build(&self) -> Event<Self> {
+        Event::new("StateEvent", self.clone())
+    }
+}
+
+#[derive(Serialize, Debug, Clone)]
+pub struct LaserState {
+    /// higher tolerance in mm
     pub higher_tolerance: f64,
+    /// lower tolerance in mm
     pub lower_tolerance: f64,
+    /// target diameter in mm
     pub target_diameter: f64,
 }
 
-impl LaserStateEvent {
-    pub fn build(&self) -> Event<Self> {
-        Event::new("LaserStateEvent", self.clone())
-    }
-}
-
 pub enum LaserEvents {
-    Diameter(Event<DiameterEvent>),
-    LaserState(Event<LaserStateEvent>),
+    LiveValues(Event<LiveValuesEvent>),
+    State(Event<StateEvent>),
 }
 
 #[derive(Debug)]
@@ -60,8 +71,8 @@ impl LaserMachineNamespace {
 impl CacheableEvents<LaserEvents> for LaserEvents {
     fn event_value(&self) -> GenericEvent {
         match self {
-            LaserEvents::Diameter(event) => event.into(),
-            LaserEvents::LaserState(event) => event.into(),
+            LaserEvents::LiveValues(event) => event.into(),
+            LaserEvents::State(event) => event.into(),
         }
     }
 
@@ -70,8 +81,8 @@ impl CacheableEvents<LaserEvents> for LaserEvents {
         let cache_one = cache_one_event();
 
         match self {
-            LaserEvents::Diameter(_) => cache_one_hour,
-            LaserEvents::LaserState(_) => cache_one,
+            LaserEvents::LiveValues(_) => cache_one_hour,
+            LaserEvents::State(_) => cache_one,
         }
     }
 }
@@ -81,9 +92,9 @@ impl CacheableEvents<LaserEvents> for LaserEvents {
 /// This ensures that the parameters for setting tolerances and target diameter
 /// are valid and meaningful within the context of the LaserMachine's operation.
 enum Mutation {
-    TargetSetTargetDiameter(f64),
-    TargetSetLowerTolerance(f64),
-    TargetSetHigherTolerance(f64),
+    SetTargetDiameter(f64),
+    SetLowerTolerance(f64),
+    SetHigherTolerance(f64),
 }
 
 impl NamespaceCacheingLogic<LaserEvents> for LaserMachineNamespace {
@@ -99,14 +110,14 @@ impl MachineApi for LaserMachine {
     fn api_mutate(&mut self, request_body: Value) -> Result<(), anyhow::Error> {
         let mutation: Mutation = serde_json::from_value(request_body)?;
         match mutation {
-            Mutation::TargetSetHigherTolerance(higher_tolerance) => {
-                self.target_set_higher_tolerance(higher_tolerance)
+            Mutation::SetHigherTolerance(higher_tolerance) => {
+                self.set_higher_tolerance(higher_tolerance)
             }
-            Mutation::TargetSetLowerTolerance(lower_tolerance) => {
-                self.target_set_lower_tolerance(lower_tolerance);
+            Mutation::SetLowerTolerance(lower_tolerance) => {
+                self.set_lower_tolerance(lower_tolerance);
             }
-            Mutation::TargetSetTargetDiameter(target_diameter) => {
-                self.target_set_target_diameter(target_diameter);
+            Mutation::SetTargetDiameter(target_diameter) => {
+                self.set_target_diameter(target_diameter);
             }
         }
         Ok(())

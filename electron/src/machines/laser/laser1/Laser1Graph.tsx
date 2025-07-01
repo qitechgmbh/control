@@ -10,12 +10,12 @@ import React from "react";
 import { useLaser1 } from "./useLaser1";
 
 export function Laser1GraphsPage() {
-  const { laserDiameter, laserState } = useLaser1();
+  const { diameter, state } = useLaser1();
 
   const syncHook = useGraphSync(30 * 60 * 1000, "diameter-group");
-  const targetDiameter = laserState?.data?.target_diameter ?? 0;
-  const lowerTolerance = laserState?.data?.lower_tolerance ?? 0;
-  const higherTolerance = laserState?.data?.higher_tolerance ?? 0;
+  const targetDiameter = state?.laser_state?.target_diameter ?? 0;
+  const lowerTolerance = state?.laser_state?.lower_tolerance ?? 0;
+  const higherTolerance = state?.laser_state?.higher_tolerance ?? 0;
 
   const config: GraphConfig = {
     title: "Diameter",
@@ -35,7 +35,7 @@ export function Laser1GraphsPage() {
         <AutoSyncedBigGraph
           syncHook={syncHook}
           newData={{
-            newData: laserDiameter,
+            newData: diameter,
             color: "#3b82f6",
             lines: [
               {
