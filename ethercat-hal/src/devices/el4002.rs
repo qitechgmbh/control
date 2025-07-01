@@ -194,13 +194,9 @@ impl PredefinedPdoAssignment<EL4002TxPdo, EL4002RxPdo> for EL4002PredefinedPdoAs
     }
 }
 
-pub const EL4002_VENDOR_ID: u32 = 2;
-pub const EL4002_PRODUCT_ID: u32 = 262210642;
-pub const EL4002_REVISION_A: u32 = 1441792;
-pub const EL4002_REVISION_B: u32 = 1376256;
+pub const EL4002_VENDOR_ID: u32 = 0x2;
+pub const EL4002_PRODUCT_ID: u32 = 0xfa23052;
+pub const EL4002_REVISION_A: u32 = 0x140000;
 
 pub const EL4002_IDENTITY_A: SubDeviceIdentityTuple =
     (EL4002_VENDOR_ID, EL4002_PRODUCT_ID, EL4002_REVISION_A);
-
-pub const EL4002_IDENTITY_B: SubDeviceIdentityTuple =
-    (EL4002_VENDOR_ID, EL4002_PRODUCT_ID, EL4002_REVISION_B);
