@@ -51,43 +51,43 @@ impl From<Mode> for Winder2Mode {
 enum Mutation {
     // Traverse
     /// Position in mm from home point
-    TraverseSetLimitOuter(f64),
+    SetTraverseLimitOuter(f64),
     /// Position in mm from home point
-    TraverseSetLimitInner(f64),
+    SetTraverseLimitInner(f64),
     /// Step size in mm for traverse movement
-    TraverseSetStepSize(f64),
+    SetTraverseStepSize(f64),
     /// Padding in mm for traverse movement limits
-    TraverseSetPadding(f64),
-    TraverseGotoLimitOuter,
-    TraverseGotoLimitInner,
+    SetTraversePadding(f64),
+    GotoTraverseLimitOuter,
+    GotoTraverseLimitInner,
     /// Find home point
-    TraverseGotoHome,
-    TraverseEnableLaserpointer(bool),
+    GotoTraverseHome,
+    EnableTraverseLaserpointer(bool),
 
     // Puller
     /// on = speed, off = stop
-    PullerSetRegulationMode(PullerRegulationMode),
-    PullerSetTargetSpeed(f64),
-    PullerSetTargetDiameter(f64),
-    PullerSetForward(bool),
+    SetPullerRegulationMode(PullerRegulationMode),
+    SetPullerTargetSpeed(f64),
+    SetPullerTargetDiameter(f64),
+    SetPullerForward(bool),
 
     // Spool Speed Controller
-    SpoolSetRegulationMode(super::spool_speed_controller::SpoolSpeedControllerType),
-    SpoolSetMinMaxMinSpeed(f64),
-    SpoolSetMinMaxMaxSpeed(f64),
+    SetSpoolRegulationMode(super::spool_speed_controller::SpoolSpeedControllerType),
+    SetSpoolMinMaxMinSpeed(f64),
+    SetSpoolMinMaxMaxSpeed(f64),
 
     // Adaptive Spool Speed Controller Parameters
-    SpoolSetAdaptiveTensionTarget(f64),
-    SpoolSetAdaptiveRadiusLearningRate(f64),
-    SpoolSetAdaptiveMaxSpeedMultiplier(f64),
-    SpoolSetAdaptiveAccelerationFactor(f64),
-    SpoolSetAdaptiveDeaccelerationUrgencyMultiplier(f64),
+    SetSpoolAdaptiveTensionTarget(f64),
+    SetSpoolAdaptiveRadiusLearningRate(f64),
+    SetSpoolAdaptiveMaxSpeedMultiplier(f64),
+    SetSpoolAdaptiveAccelerationFactor(f64),
+    SetSpoolAdaptiveDeaccelerationUrgencyMultiplier(f64),
 
     // Tension Arm
-    TensionArmAngleZero,
+    ZeroTensionArmAngle,
 
     // Mode
-    ModeSet(Mode),
+    SetMode(Mode),
 }
 
 #[derive(Serialize, Debug, Clone, Default)]
@@ -260,38 +260,38 @@ impl MachineApi for Winder2 {
     fn api_mutate(&mut self, request_body: Value) -> Result<(), anyhow::Error> {
         let mutation: Mutation = serde_json::from_value(request_body)?;
         match mutation {
-            Mutation::TraverseEnableLaserpointer(enable) => self.set_laser(enable),
-            Mutation::ModeSet(mode) => self.set_mode(&mode.into()),
-            Mutation::TraverseSetLimitOuter(limit) => self.traverse_set_limit_outer(limit),
-            Mutation::TraverseSetLimitInner(limit) => self.traverse_set_limit_inner(limit),
-            Mutation::TraverseSetStepSize(size) => self.traverse_set_step_size(size),
-            Mutation::TraverseSetPadding(padding) => self.traverse_set_padding(padding),
-            Mutation::TraverseGotoLimitOuter => self.traverse_goto_limit_outer(),
-            Mutation::TraverseGotoLimitInner => self.traverse_goto_limit_inner(),
-            Mutation::TraverseGotoHome => self.traverse_goto_home(),
-            Mutation::PullerSetRegulationMode(regulation) => self.puller_set_regulation(regulation),
-            Mutation::PullerSetTargetSpeed(value) => self.puller_set_target_speed(value),
-            Mutation::PullerSetTargetDiameter(_) => todo!(),
-            Mutation::PullerSetForward(value) => self.puller_set_forward(value),
-            Mutation::SpoolSetRegulationMode(mode) => self.spool_set_regulation_mode(mode),
-            Mutation::SpoolSetMinMaxMinSpeed(speed) => self.spool_set_minmax_min_speed(speed),
-            Mutation::SpoolSetMinMaxMaxSpeed(speed) => self.spool_set_minmax_max_speed(speed),
-            Mutation::SpoolSetAdaptiveTensionTarget(value) => {
+            Mutation::EnableTraverseLaserpointer(enable) => self.set_laser(enable),
+            Mutation::SetMode(mode) => self.set_mode(&mode.into()),
+            Mutation::SetTraverseLimitOuter(limit) => self.traverse_set_limit_outer(limit),
+            Mutation::SetTraverseLimitInner(limit) => self.traverse_set_limit_inner(limit),
+            Mutation::SetTraverseStepSize(size) => self.traverse_set_step_size(size),
+            Mutation::SetTraversePadding(padding) => self.traverse_set_padding(padding),
+            Mutation::GotoTraverseLimitOuter => self.traverse_goto_limit_outer(),
+            Mutation::GotoTraverseLimitInner => self.traverse_goto_limit_inner(),
+            Mutation::GotoTraverseHome => self.traverse_goto_home(),
+            Mutation::SetPullerRegulationMode(regulation) => self.puller_set_regulation(regulation),
+            Mutation::SetPullerTargetSpeed(value) => self.puller_set_target_speed(value),
+            Mutation::SetPullerTargetDiameter(_) => todo!(),
+            Mutation::SetPullerForward(value) => self.puller_set_forward(value),
+            Mutation::SetSpoolRegulationMode(mode) => self.spool_set_regulation_mode(mode),
+            Mutation::SetSpoolMinMaxMinSpeed(speed) => self.spool_set_minmax_min_speed(speed),
+            Mutation::SetSpoolMinMaxMaxSpeed(speed) => self.spool_set_minmax_max_speed(speed),
+            Mutation::SetSpoolAdaptiveTensionTarget(value) => {
                 self.spool_set_adaptive_tension_target(value)
             }
-            Mutation::SpoolSetAdaptiveRadiusLearningRate(value) => {
+            Mutation::SetSpoolAdaptiveRadiusLearningRate(value) => {
                 self.spool_set_adaptive_radius_learning_rate(value)
             }
-            Mutation::SpoolSetAdaptiveMaxSpeedMultiplier(value) => {
+            Mutation::SetSpoolAdaptiveMaxSpeedMultiplier(value) => {
                 self.spool_set_adaptive_max_speed_multiplier(value)
             }
-            Mutation::SpoolSetAdaptiveAccelerationFactor(value) => {
+            Mutation::SetSpoolAdaptiveAccelerationFactor(value) => {
                 self.spool_set_adaptive_acceleration_factor(value)
             }
-            Mutation::SpoolSetAdaptiveDeaccelerationUrgencyMultiplier(value) => {
+            Mutation::SetSpoolAdaptiveDeaccelerationUrgencyMultiplier(value) => {
                 self.spool_set_adaptive_deacceleration_urgency_multiplier(value)
             }
-            Mutation::TensionArmAngleZero => self.tension_arm_zero(),
+            Mutation::ZeroTensionArmAngle => self.tension_arm_zero(),
         }
         Ok(())
     }

@@ -12,17 +12,17 @@ import { SelectionGroup } from "@/control/SelectionGroup";
 export function Winder2SettingPage() {
   const {
     state,
-    traverseSetStepSize,
-    traverseSetPadding,
-    pullerSetForward,
-    spoolSetRegulationMode,
-    spoolSetMinMaxMinSpeed,
-    spoolSetMinMaxMaxSpeed,
-    spoolSetAdaptiveTensionTarget,
-    spoolSetAdaptiveRadiusLearningRate,
-    spoolSetAdaptiveMaxSpeedMultiplier,
-    spoolSetAdaptiveAccelerationFactor,
-    spoolSetAdaptiveDeaccelerationUrgencyMultiplier,
+    setTraverseStepSize,
+    setTraversePadding,
+    setPullerForward,
+    setSpoolRegulationMode,
+    setSpoolMinMaxMinSpeed,
+    setSpoolMinMaxMaxSpeed,
+    setSpoolAdaptiveTensionTarget,
+    setSpoolAdaptiveRadiusLearningRate,
+    setSpoolAdaptiveMaxSpeedMultiplier,
+    setSpoolAdaptiveAccelerationFactor,
+    setSpoolAdaptiveDeaccelerationUrgencyMultiplier,
     isLoading,
     isDisabled,
   } = useWinder2();
@@ -41,7 +41,7 @@ export function Winder2SettingPage() {
               max={10}
               defaultValue={1.0}
               renderValue={(value) => roundToDecimals(value, 2)}
-              onChange={(value) => traverseSetStepSize(value)}
+              onChange={(value) => setTraverseStepSize(value)}
             />
           </Label>
           <Label label="Padding">
@@ -54,7 +54,7 @@ export function Winder2SettingPage() {
               max={5}
               defaultValue={0.01}
               renderValue={(value) => roundToDecimals(value, 2)}
-              onChange={(value) => traverseSetPadding(value)}
+              onChange={(value) => setTraversePadding(value)}
             />
           </Label>
         </ControlCard>
@@ -76,7 +76,7 @@ export function Winder2SettingPage() {
                 },
               }}
               onChange={(value) =>
-                spoolSetRegulationMode(value as "Adaptive" | "MinMax")
+                setSpoolRegulationMode(value as "Adaptive" | "MinMax")
               }
             />
           </Label>
@@ -94,7 +94,7 @@ export function Winder2SettingPage() {
                   max={600}
                   defaultValue={50}
                   renderValue={(value) => roundToDecimals(value, 0)}
-                  onChange={(value) => spoolSetMinMaxMinSpeed(value)}
+                  onChange={(value) => setSpoolMinMaxMinSpeed(value)}
                 />
               </Label>
               <Label label="Maximum Speed">
@@ -107,7 +107,7 @@ export function Winder2SettingPage() {
                   max={600}
                   defaultValue={150}
                   renderValue={(value) => roundToDecimals(value, 0)}
-                  onChange={(value) => spoolSetMinMaxMaxSpeed(value)}
+                  onChange={(value) => setSpoolMinMaxMaxSpeed(value)}
                 />
               </Label>
             </>
@@ -128,7 +128,7 @@ export function Winder2SettingPage() {
                   max={1}
                   defaultValue={0.7}
                   renderValue={(value) => roundToDecimals(value, 2)}
-                  onChange={(value) => spoolSetAdaptiveTensionTarget(value)}
+                  onChange={(value) => setSpoolAdaptiveTensionTarget(value)}
                 />
               </Label>
               <Label label="Learning Rate">
@@ -145,7 +145,7 @@ export function Winder2SettingPage() {
                   defaultValue={0.5}
                   renderValue={(value) => roundToDecimals(value, 2)}
                   onChange={(value) =>
-                    spoolSetAdaptiveRadiusLearningRate(value)
+                    setSpoolAdaptiveRadiusLearningRate(value)
                   }
                 />
               </Label>
@@ -163,7 +163,7 @@ export function Winder2SettingPage() {
                   defaultValue={4.0}
                   renderValue={(value) => roundToDecimals(value, 1)}
                   onChange={(value) =>
-                    spoolSetAdaptiveMaxSpeedMultiplier(value)
+                    setSpoolAdaptiveMaxSpeedMultiplier(value)
                   }
                 />
               </Label>
@@ -181,7 +181,7 @@ export function Winder2SettingPage() {
                   defaultValue={0.2}
                   renderValue={(value) => roundToDecimals(value, 2)}
                   onChange={(value) =>
-                    spoolSetAdaptiveAccelerationFactor(value)
+                    setSpoolAdaptiveAccelerationFactor(value)
                   }
                 />
               </Label>
@@ -199,7 +199,7 @@ export function Winder2SettingPage() {
                   defaultValue={15.0}
                   renderValue={(value) => roundToDecimals(value, 1)}
                   onChange={(value) =>
-                    spoolSetAdaptiveDeaccelerationUrgencyMultiplier(value)
+                    setSpoolAdaptiveDeaccelerationUrgencyMultiplier(value)
                   }
                 />
               </Label>
@@ -221,7 +221,7 @@ export function Winder2SettingPage() {
                 children: "Forward",
                 icon: "lu:RotateCw",
               }}
-              onChange={(value) => pullerSetForward(value)}
+              onChange={(value) => setPullerForward(value)}
             />
           </Label>
         </ControlCard>

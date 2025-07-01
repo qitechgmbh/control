@@ -68,76 +68,76 @@ export function useWinder2() {
 
   // Request functions for all operations
   const { request: requestTraverseGotoLimitInner } = useMachineMutation(
-    z.literal("TraverseGotoLimitInner"),
+    z.literal("GotoTraverseLimitInner"),
   );
   const { request: requestTraverseGotoLimitOuter } = useMachineMutation(
-    z.literal("TraverseGotoLimitOuter"),
+    z.literal("GotoTraverseLimitOuter"),
   );
   const { request: requestTraverseGotoHome } = useMachineMutation(
-    z.literal("TraverseGotoHome"),
+    z.literal("GotoTraverseHome"),
   );
   const { request: requestSetLaserpointer } = useMachineMutation(
-    z.object({ TraverseEnableLaserpointer: z.boolean() }),
+    z.object({ EnableTraverseLaserpointer: z.boolean() }),
   );
   const { request: requestModeSet } = useMachineMutation(
-    z.object({ ModeSet: modeSchema }),
+    z.object({ SetMode: modeSchema }),
   );
   const { request: requestTensionArmZero } = useMachineMutation(
-    z.literal("TensionArmAngleZero"),
+    z.literal("ZeroTensionArmAngle"),
   );
   const { request: requestTraverseSetLimitInner } = useMachineMutation(
-    z.object({ TraverseSetLimitInner: z.number() }),
+    z.object({ SetTraverseLimitInner: z.number() }),
   );
   const { request: requestTraverseSetLimitOuter } = useMachineMutation(
-    z.object({ TraverseSetLimitOuter: z.number() }),
+    z.object({ SetTraverseLimitOuter: z.number() }),
   );
   const { request: requestTraverseSetStepSize } = useMachineMutation(
-    z.object({ TraverseSetStepSize: z.number() }),
+    z.object({ SetTraverseStepSize: z.number() }),
   );
   const { request: requestTraverseSetPadding } = useMachineMutation(
-    z.object({ TraverseSetPadding: z.number() }),
+    z.object({ SetTraversePadding: z.number() }),
   );
   const { request: requestPullerSetTargetSpeed } = useMachineMutation(
-    z.object({ PullerSetTargetSpeed: z.number() }),
+    z.object({ SetPullerTargetSpeed: z.number() }),
   );
   const { request: requestPullerSetTargetDiameter } = useMachineMutation(
-    z.object({ PullerSetTargetDiameter: z.number() }),
+    z.object({ SetPullerTargetDiameter: z.number() }),
   );
   const { request: requestPullerSetRegulationMode } = useMachineMutation(
     z.object({
-      PullerSetRegulationMode: pullerRegulationSchema,
+      SetPullerRegulationMode: pullerRegulationSchema,
     }),
   );
   const { request: requestPullerSetForward } = useMachineMutation(
-    z.object({ PullerSetForward: z.boolean() }),
+    z.object({ SetPullerForward: z.boolean() }),
   );
   const { request: requestSpoolSetRegulationMode } = useMachineMutation(
-    z.object({ SpoolSetRegulationMode: spoolRegulationModeSchema }),
+    z.object({ SetSpoolRegulationMode: spoolRegulationModeSchema }),
   );
   const { request: requestSpoolSetMinMaxMinSpeed } = useMachineMutation(
-    z.object({ SpoolSetMinMaxMinSpeed: z.number() }),
+    z.object({ SetSpoolMinMaxMinSpeed: z.number() }),
   );
   const { request: requestSpoolSetMinMaxMaxSpeed } = useMachineMutation(
-    z.object({ SpoolSetMinMaxMaxSpeed: z.number() }),
+    z.object({ SetSpoolMinMaxMaxSpeed: z.number() }),
   );
   const { request: requestSpoolSetAdaptiveTensionTarget } = useMachineMutation(
-    z.object({ SpoolSetAdaptiveTensionTarget: z.number() }),
+    z.object({ SetSpoolAdaptiveTensionTarget: z.number() }),
   );
   const { request: requestSpoolSetAdaptiveRadiusLearningRate } =
     useMachineMutation(
-      z.object({ SpoolSetAdaptiveRadiusLearningRate: z.number() }),
+      z.object({ SetSpoolAdaptiveRadiusLearningRate: z.number() }),
     );
   const { request: requestSpoolSetAdaptiveMaxSpeedMultiplier } =
     useMachineMutation(
-      z.object({ SpoolSetAdaptiveMaxSpeedMultiplier: z.number() }),
+      z.object({ SetSpoolAdaptiveMaxSpeedMultiplier: z.number() }),
     );
   const { request: requestSpoolSetAdaptiveAccelerationFactor } =
     useMachineMutation(
-      z.object({ SpoolSetAdaptiveAccelerationFactor: z.number() }),
+      z.object({ SetSpoolAdaptiveAccelerationFactor: z.number() }),
     );
   const { request: requestSpoolSetAdaptiveDeaccelerationUrgencyMultiplier } =
     useMachineMutation(
-      z.object({ SpoolSetAdaptiveDeaccelerationUrgencyMultiplier: z.number() }),
+      z.object({ SetSpoolAdaptiveDeaccelerationUrgencyMultiplier: z.number() }),
     );
 
   // Helper function for optimistic updates using produce
@@ -153,7 +153,7 @@ export function useWinder2() {
   };
 
   // Action functions
-  const tensionArmAngleZero = () => {
+  const zeroTensionArmAngle = () => {
     updateStateOptimistically(
       (current) => {
         current.data.tension_arm_state.zeroed = true;
@@ -161,12 +161,12 @@ export function useWinder2() {
       () =>
         requestTensionArmZero({
           machine_identification_unique: machineIdentification,
-          data: "TensionArmAngleZero",
+          data: "ZeroTensionArmAngle",
         }),
     );
   };
 
-  const traverseSetLimitInner = (limitInner: number) => {
+  const setTraverseLimitInner = (limitInner: number) => {
     updateStateOptimistically(
       (current) => {
         current.data.traverse_state.limit_inner = limitInner;
@@ -174,12 +174,12 @@ export function useWinder2() {
       () =>
         requestTraverseSetLimitInner({
           machine_identification_unique: machineIdentification,
-          data: { TraverseSetLimitInner: limitInner },
+          data: { SetTraverseLimitInner: limitInner },
         }),
     );
   };
 
-  const traverseSetLimitOuter = (limitOuter: number) => {
+  const setTraverseLimitOuter = (limitOuter: number) => {
     updateStateOptimistically(
       (current) => {
         current.data.traverse_state.limit_outer = limitOuter;
@@ -187,12 +187,12 @@ export function useWinder2() {
       () =>
         requestTraverseSetLimitOuter({
           machine_identification_unique: machineIdentification,
-          data: { TraverseSetLimitOuter: limitOuter },
+          data: { SetTraverseLimitOuter: limitOuter },
         }),
     );
   };
 
-  const traverseGotoLimitInner = () => {
+  const gotoTraverseLimitInner = () => {
     updateStateOptimistically(
       (current) => {
         current.data.traverse_state.is_going_in = true;
@@ -200,12 +200,12 @@ export function useWinder2() {
       () =>
         requestTraverseGotoLimitInner({
           machine_identification_unique: machineIdentification,
-          data: "TraverseGotoLimitInner",
+          data: "GotoTraverseLimitInner",
         }),
     );
   };
 
-  const traverseGotoLimitOuter = () => {
+  const gotoTraverseLimitOuter = () => {
     updateStateOptimistically(
       (current) => {
         current.data.traverse_state.is_going_out = true;
@@ -213,12 +213,12 @@ export function useWinder2() {
       () =>
         requestTraverseGotoLimitOuter({
           machine_identification_unique: machineIdentification,
-          data: "TraverseGotoLimitOuter",
+          data: "GotoTraverseLimitOuter",
         }),
     );
   };
 
-  const traverseGotoHome = () => {
+  const gotoTraverseHome = () => {
     updateStateOptimistically(
       (current) => {
         current.data.traverse_state.is_going_home = true;
@@ -226,12 +226,12 @@ export function useWinder2() {
       () =>
         requestTraverseGotoHome({
           machine_identification_unique: machineIdentification,
-          data: "TraverseGotoHome",
+          data: "GotoTraverseHome",
         }),
     );
   };
 
-  const setLaserpointer = (enabled: boolean) => {
+  const enableTraverseLaserpointer = (enabled: boolean) => {
     updateStateOptimistically(
       (current) => {
         current.data.traverse_state.laserpointer = enabled;
@@ -239,12 +239,12 @@ export function useWinder2() {
       () =>
         requestSetLaserpointer({
           machine_identification_unique: machineIdentification,
-          data: { TraverseEnableLaserpointer: enabled },
+          data: { EnableTraverseLaserpointer: enabled },
         }),
     );
   };
 
-  const modeSet = (mode: Mode) => {
+  const setMode = (mode: Mode) => {
     updateStateOptimistically(
       (current) => {
         current.data.mode_state.mode = mode;
@@ -252,12 +252,12 @@ export function useWinder2() {
       () =>
         requestModeSet({
           machine_identification_unique: machineIdentification,
-          data: { ModeSet: mode },
+          data: { SetMode: mode },
         }),
     );
   };
 
-  const traverseSetStepSize = (stepSize: number) => {
+  const setTraverseStepSize = (stepSize: number) => {
     updateStateOptimistically(
       (current) => {
         current.data.traverse_state.step_size = stepSize;
@@ -265,12 +265,12 @@ export function useWinder2() {
       () =>
         requestTraverseSetStepSize({
           machine_identification_unique: machineIdentification,
-          data: { TraverseSetStepSize: stepSize },
+          data: { SetTraverseStepSize: stepSize },
         }),
     );
   };
 
-  const traverseSetPadding = (padding: number) => {
+  const setTraversePadding = (padding: number) => {
     updateStateOptimistically(
       (current) => {
         current.data.traverse_state.padding = padding;
@@ -278,12 +278,12 @@ export function useWinder2() {
       () =>
         requestTraverseSetPadding({
           machine_identification_unique: machineIdentification,
-          data: { TraverseSetPadding: padding },
+          data: { SetTraversePadding: padding },
         }),
     );
   };
 
-  const pullerSetTargetSpeed = (targetSpeed: number) => {
+  const setPullerTargetSpeed = (targetSpeed: number) => {
     updateStateOptimistically(
       (current) => {
         current.data.puller_state.target_speed = targetSpeed;
@@ -291,12 +291,12 @@ export function useWinder2() {
       () =>
         requestPullerSetTargetSpeed({
           machine_identification_unique: machineIdentification,
-          data: { PullerSetTargetSpeed: targetSpeed },
+          data: { SetPullerTargetSpeed: targetSpeed },
         }),
     );
   };
 
-  const pullerSetTargetDiameter = (targetDiameter: number) => {
+  const setPullerTargetDiameter = (targetDiameter: number) => {
     updateStateOptimistically(
       (current) => {
         current.data.puller_state.target_diameter = targetDiameter;
@@ -304,12 +304,12 @@ export function useWinder2() {
       () =>
         requestPullerSetTargetDiameter({
           machine_identification_unique: machineIdentification,
-          data: { PullerSetTargetDiameter: targetDiameter },
+          data: { SetPullerTargetDiameter: targetDiameter },
         }),
     );
   };
 
-  const pullerSetRegulationMode = (regulationMode: PullerRegulation) => {
+  const setPullerRegulationMode = (regulationMode: PullerRegulation) => {
     updateStateOptimistically(
       (current) => {
         current.data.puller_state.regulation = regulationMode;
@@ -317,12 +317,12 @@ export function useWinder2() {
       () =>
         requestPullerSetRegulationMode({
           machine_identification_unique: machineIdentification,
-          data: { PullerSetRegulationMode: regulationMode },
+          data: { SetPullerRegulationMode: regulationMode },
         }),
     );
   };
 
-  const pullerSetForward = (forward: boolean) => {
+  const setPullerForward = (forward: boolean) => {
     updateStateOptimistically(
       (current) => {
         current.data.puller_state.forward = forward;
@@ -330,12 +330,12 @@ export function useWinder2() {
       () =>
         requestPullerSetForward({
           machine_identification_unique: machineIdentification,
-          data: { PullerSetForward: forward },
+          data: { SetPullerForward: forward },
         }),
     );
   };
 
-  const spoolSetRegulationMode = (mode: SpoolRegulationMode) => {
+  const setSpoolRegulationMode = (mode: SpoolRegulationMode) => {
     updateStateOptimistically(
       (current) => {
         current.data.spool_speed_controller_state.regulation_mode = mode;
@@ -343,12 +343,12 @@ export function useWinder2() {
       () =>
         requestSpoolSetRegulationMode({
           machine_identification_unique: machineIdentification,
-          data: { SpoolSetRegulationMode: mode },
+          data: { SetSpoolRegulationMode: mode },
         }),
     );
   };
 
-  const spoolSetMinMaxMinSpeed = (speed: number) => {
+  const setSpoolMinMaxMinSpeed = (speed: number) => {
     updateStateOptimistically(
       (current) => {
         current.data.spool_speed_controller_state.minmax_min_speed = speed;
@@ -356,12 +356,12 @@ export function useWinder2() {
       () =>
         requestSpoolSetMinMaxMinSpeed({
           machine_identification_unique: machineIdentification,
-          data: { SpoolSetMinMaxMinSpeed: speed },
+          data: { SetSpoolMinMaxMinSpeed: speed },
         }),
     );
   };
 
-  const spoolSetMinMaxMaxSpeed = (speed: number) => {
+  const setSpoolMinMaxMaxSpeed = (speed: number) => {
     updateStateOptimistically(
       (current) => {
         current.data.spool_speed_controller_state.minmax_max_speed = speed;
@@ -369,12 +369,12 @@ export function useWinder2() {
       () =>
         requestSpoolSetMinMaxMaxSpeed({
           machine_identification_unique: machineIdentification,
-          data: { SpoolSetMinMaxMaxSpeed: speed },
+          data: { SetSpoolMinMaxMaxSpeed: speed },
         }),
     );
   };
 
-  const spoolSetAdaptiveTensionTarget = (value: number) => {
+  const setSpoolAdaptiveTensionTarget = (value: number) => {
     updateStateOptimistically(
       (current) => {
         current.data.spool_speed_controller_state.adaptive_tension_target =
@@ -383,12 +383,12 @@ export function useWinder2() {
       () =>
         requestSpoolSetAdaptiveTensionTarget({
           machine_identification_unique: machineIdentification,
-          data: { SpoolSetAdaptiveTensionTarget: value },
+          data: { SetSpoolAdaptiveTensionTarget: value },
         }),
     );
   };
 
-  const spoolSetAdaptiveRadiusLearningRate = (value: number) => {
+  const setSpoolAdaptiveRadiusLearningRate = (value: number) => {
     updateStateOptimistically(
       (current) => {
         current.data.spool_speed_controller_state.adaptive_radius_learning_rate =
@@ -397,12 +397,12 @@ export function useWinder2() {
       () =>
         requestSpoolSetAdaptiveRadiusLearningRate({
           machine_identification_unique: machineIdentification,
-          data: { SpoolSetAdaptiveRadiusLearningRate: value },
+          data: { SetSpoolAdaptiveRadiusLearningRate: value },
         }),
     );
   };
 
-  const spoolSetAdaptiveMaxSpeedMultiplier = (value: number) => {
+  const setSpoolAdaptiveMaxSpeedMultiplier = (value: number) => {
     updateStateOptimistically(
       (current) => {
         current.data.spool_speed_controller_state.adaptive_max_speed_multiplier =
@@ -411,12 +411,12 @@ export function useWinder2() {
       () =>
         requestSpoolSetAdaptiveMaxSpeedMultiplier({
           machine_identification_unique: machineIdentification,
-          data: { SpoolSetAdaptiveMaxSpeedMultiplier: value },
+          data: { SetSpoolAdaptiveMaxSpeedMultiplier: value },
         }),
     );
   };
 
-  const spoolSetAdaptiveAccelerationFactor = (value: number) => {
+  const setSpoolAdaptiveAccelerationFactor = (value: number) => {
     updateStateOptimistically(
       (current) => {
         current.data.spool_speed_controller_state.adaptive_acceleration_factor =
@@ -425,12 +425,12 @@ export function useWinder2() {
       () =>
         requestSpoolSetAdaptiveAccelerationFactor({
           machine_identification_unique: machineIdentification,
-          data: { SpoolSetAdaptiveAccelerationFactor: value },
+          data: { SetSpoolAdaptiveAccelerationFactor: value },
         }),
     );
   };
 
-  const spoolSetAdaptiveDeaccelerationUrgencyMultiplier = (value: number) => {
+  const setSpoolAdaptiveDeaccelerationUrgencyMultiplier = (value: number) => {
     updateStateOptimistically(
       (current) => {
         current.data.spool_speed_controller_state.adaptive_deacceleration_urgency_multiplier =
@@ -439,7 +439,7 @@ export function useWinder2() {
       () =>
         requestSpoolSetAdaptiveDeaccelerationUrgencyMultiplier({
           machine_identification_unique: machineIdentification,
-          data: { SpoolSetAdaptiveDeaccelerationUrgencyMultiplier: value },
+          data: { SetSpoolAdaptiveDeaccelerationUrgencyMultiplier: value },
         }),
     );
   };
@@ -464,27 +464,27 @@ export function useWinder2() {
     isDisabled,
 
     // Action functions
-    setLaserpointer,
-    ExtruderSetMode: modeSet,
-    tensionArmAngleZero,
-    traverseSetLimitInner,
-    traverseSetLimitOuter,
-    traverseGotoLimitInner,
-    traverseGotoLimitOuter,
-    traverseGotoHome,
-    traverseSetStepSize,
-    traverseSetPadding,
-    pullerSetTargetSpeed,
-    pullerSetTargetDiameter,
-    pullerSetRegulationMode,
-    pullerSetForward,
-    spoolSetRegulationMode,
-    spoolSetMinMaxMinSpeed,
-    spoolSetMinMaxMaxSpeed,
-    spoolSetAdaptiveTensionTarget,
-    spoolSetAdaptiveRadiusLearningRate,
-    spoolSetAdaptiveMaxSpeedMultiplier,
-    spoolSetAdaptiveAccelerationFactor,
-    spoolSetAdaptiveDeaccelerationUrgencyMultiplier,
+    enableTraverseLaserpointer,
+    setMode,
+    zeroTensionArmAngle,
+    setTraverseLimitInner,
+    setTraverseLimitOuter,
+    gotoTraverseLimitInner,
+    gotoTraverseLimitOuter,
+    gotoTraverseHome,
+    setTraverseStepSize,
+    setTraversePadding,
+    setPullerTargetSpeed,
+    setPullerTargetDiameter,
+    setPullerRegulationMode,
+    setPullerForward,
+    setSpoolRegulationMode,
+    setSpoolMinMaxMinSpeed,
+    setSpoolMinMaxMaxSpeed,
+    setSpoolAdaptiveTensionTarget,
+    setSpoolAdaptiveRadiusLearningRate,
+    setSpoolAdaptiveMaxSpeedMultiplier,
+    setSpoolAdaptiveAccelerationFactor,
+    setSpoolAdaptiveDeaccelerationUrgencyMultiplier,
   };
 }

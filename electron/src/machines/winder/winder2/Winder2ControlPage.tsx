@@ -22,21 +22,21 @@ export function Winder2ControlPage() {
   // use optimistic state
   const {
     state,
-    setLaserpointer,
+    enableTraverseLaserpointer,
     tensionArmAngle,
-    tensionArmAngleZero,
+    zeroTensionArmAngle,
     spoolRpm,
     spoolDiameter,
-    ExtruderSetMode,
+    setMode,
     pullerSpeed,
-    pullerSetRegulationMode,
-    pullerSetTargetSpeed,
+    setPullerRegulationMode,
+    setPullerTargetSpeed,
     traversePosition,
-    traverseSetLimitInner,
-    traverseSetLimitOuter,
-    traverseGotoLimitInner,
-    traverseGotoLimitOuter,
-    traverseGotoHome,
+    setTraverseLimitInner,
+    setTraverseLimitOuter,
+    gotoTraverseLimitInner,
+    gotoTraverseLimitOuter,
+    gotoTraverseHome,
     isLoading,
     isDisabled,
   } = useWinder2();
@@ -92,12 +92,12 @@ export function Winder2ControlPage() {
                 max={180}
                 renderValue={(value) => roundToDecimals(value, 0)}
                 inverted
-                onChange={traverseSetLimitOuter}
+                onChange={setTraverseLimitOuter}
               />
               <TouchButton
                 variant="outline"
                 icon="lu:ArrowLeftToLine"
-                onClick={traverseGotoLimitOuter}
+                onClick={gotoTraverseLimitOuter}
                 disabled={isDisabled || !state?.traverse_state?.can_go_out}
                 isLoading={isLoading || state?.traverse_state?.is_going_out}
               >
@@ -122,12 +122,12 @@ export function Winder2ControlPage() {
                 maxLabel="OUT"
                 renderValue={(value) => roundToDecimals(value, 0)}
                 inverted
-                onChange={traverseSetLimitInner}
+                onChange={setTraverseLimitInner}
               />
               <TouchButton
                 variant="outline"
                 icon="lu:ArrowRightToLine"
-                onClick={traverseGotoLimitInner}
+                onClick={gotoTraverseLimitInner}
                 disabled={isDisabled || !state?.traverse_state?.can_go_in}
                 isLoading={isLoading || state?.traverse_state?.is_going_in}
               >
@@ -142,14 +142,14 @@ export function Winder2ControlPage() {
               loading={isLoading}
               optionFalse={{ children: "Off", icon: "lu:LightbulbOff" }}
               optionTrue={{ children: "On", icon: "lu:Lightbulb" }}
-              onChange={setLaserpointer}
+              onChange={enableTraverseLaserpointer}
             />
           </Label>
           <Label label="Home">
             <TouchButton
               variant="outline"
               icon="lu:House"
-              onClick={() => traverseGotoHome()}
+              onClick={() => gotoTraverseHome()}
               disabled={isDisabled || !state?.traverse_state?.can_go_home}
               isLoading={isLoading || state?.traverse_state?.is_going_home}
             >
@@ -172,7 +172,7 @@ export function Winder2ControlPage() {
           <TouchButton
             variant="outline"
             icon="lu:House"
-            onClick={tensionArmAngleZero}
+            onClick={zeroTensionArmAngle}
             disabled={isDisabled}
             isLoading={isLoading}
           >
@@ -188,7 +188,7 @@ export function Winder2ControlPage() {
             value={state?.mode_state.mode}
             disabled={isDisabled}
             loading={isLoading}
-            onChange={ExtruderSetMode}
+            onChange={setMode}
             orientation="vertical"
             className="grid h-full grid-cols-2 gap-2"
             options={{
@@ -242,7 +242,7 @@ export function Winder2ControlPage() {
                   disabled: true,
                 },
               }}
-              onChange={pullerSetRegulationMode}
+              onChange={setPullerRegulationMode}
               disabled={isDisabled}
               loading={isLoading}
             />
@@ -257,7 +257,7 @@ export function Winder2ControlPage() {
               max={75}
               step={0.1}
               renderValue={(value) => roundToDecimals(value, 1)}
-              onChange={pullerSetTargetSpeed}
+              onChange={setPullerTargetSpeed}
             />
           </Label>
         </ControlCard>
