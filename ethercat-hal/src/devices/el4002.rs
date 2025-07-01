@@ -1,18 +1,31 @@
-use crate::helpers::ethercrab_types::EthercrabSubDevicePreoperational;
+use super::EthercatDeviceProcessing;
+use super::{NewEthercatDevice, SubDeviceIdentityTuple};
 use crate::pdo::RxPdo;
+use crate::pdo::TxPdo;
 use crate::{
-    io::analog_output::{AnalogOutputDevice, AnalogOutputOutput, AnalogOutputState},
-    pdo::el40xx::AnalogOutput,
+    coe::{ConfigurableDevice, Configuration},
+    pdo::{PredefinedPdoAssignment, el40xx::AnalogOutput},
+    shared_config::el40xx::EL40XXChannelConfiguration,
 };
-use ethercat_hal_derive::{EthercatDevice, RxPdo};
+use crate::{
+    helpers::ethercrab_types::EthercrabSubDevicePreoperational,
+    io::analog_output::{AnalogOutputDevice, AnalogOutputOutput, AnalogOutputState},
+};
+use ethercat_hal_derive::{EthercatDevice, RxPdo, TxPdo};
 
-use super::{EthercatDeviceProcessing, NewEthercatDevice, SubDeviceIdentityTuple};
+#[derive(Debug, Clone)]
+pub struct EL4002Configuration {
+    pub pdo_assignment: EL4002PredefinedPdoAssignment,
+    // Output1+ and Output1-
+    pub channel1: EL40XXChannelConfiguration,
+    // Output2+ and Output2-
+    pub channel2: EL40XXChannelConfiguration,
+}
 
-/// EL4002 2-channel analog output device
-///
-/// 0-10V / 0-20mA analog output
 #[derive(EthercatDevice)]
 pub struct EL4002 {
+    pub configuration: EL4002Configuration,
+    pub txpdo: EL4002TxPdo,
     pub rxpdo: EL4002RxPdo,
     is_used: bool,
 }
@@ -25,10 +38,29 @@ impl std::fmt::Debug for EL4002 {
     }
 }
 
+impl Default for EL4002PredefinedPdoAssignment {
+    fn default() -> Self {
+        Self::Standard
+    }
+}
+
+impl Default for EL4002Configuration {
+    fn default() -> Self {
+        Self {
+            pdo_assignment: EL4002PredefinedPdoAssignment::Standard,
+            channel1: EL40XXChannelConfiguration::default(),
+            channel2: EL40XXChannelConfiguration::default(),
+        }
+    }
+}
+
 impl NewEthercatDevice for EL4002 {
     fn new() -> Self {
+        let configuration = EL4002Configuration::default();
         Self {
-            rxpdo: EL4002RxPdo::default(),
+            configuration: configuration.clone(),
+            txpdo: configuration.pdo_assignment.txpdo_assignment(),
+            rxpdo: configuration.pdo_assignment.rxpdo_assignment(),
             is_used: false,
         }
     }
@@ -36,71 +68,136 @@ impl NewEthercatDevice for EL4002 {
 
 impl AnalogOutputDevice<EL4002Port> for EL4002 {
     fn analog_output_state(&self, port: EL4002Port) -> AnalogOutputState {
-        let expect_text = "All channels should be Some(_)";
-        let channel = match port {
-            EL4002Port::AO1 => self.rxpdo.channel1.as_ref().expect(&expect_text),
-            EL4002Port::AO2 => self.rxpdo.channel2.as_ref().expect(&expect_text),
+        let raw_value = match port {
+            EL4002Port::AO1 => {
+                self.rxpdo
+                    .channel1
+                    .as_ref()
+                    .expect("Channel 1 should be configured")
+                    .value
+            }
+            EL4002Port::AO2 => {
+                self.rxpdo
+                    .channel2
+                    .as_ref()
+                    .expect("Channel 2 should be configured")
+                    .value
+            }
         };
 
-        // Convert i16 value to f32 (0.0 to 1.0 range)
-        // Assuming 0-32767 maps to 0.0-1.0
-        let normalized_value = (channel.value as f32) / 32767.0;
+        // Convert raw i16 value to normalized output (0.0 to 1.0)
+        let normalized = (raw_value as f32) / (i16::MAX as f32);
 
         AnalogOutputState {
-            output: AnalogOutputOutput(normalized_value),
+            output: AnalogOutputOutput(normalized),
         }
     }
 
-    fn analog_output_write(&mut self, port: EL4002Port, value: AnalogOutputOutput) {
-        let expect_text = "All channels should be Some(_)";
-        let channel = match port {
-            EL4002Port::AO1 => self.rxpdo.channel1.as_mut().expect(&expect_text),
-            EL4002Port::AO2 => self.rxpdo.channel2.as_mut().expect(&expect_text),
-        };
+    fn analog_output_write(&mut self, port: EL4002Port, output: AnalogOutputOutput) {
+        // Convert normalized value (0.0 to 1.0) to raw i16 value
+        let raw_value = (output.0.clamp(0.0, 1.0) * (i16::MAX as f32)) as i16;
 
-        // Convert f32 (0.0 to 1.0) to i16 (0 to 32767)
-        // Clamp the value to ensure it's within valid range
-        let clamped_value = value.0.clamp(0.0, 1.0);
-        channel.value = (clamped_value * 32767.0) as i16;
+        match port {
+            EL4002Port::AO1 => {
+                if let Some(channel1) = &mut self.rxpdo.channel1 {
+                    channel1.value = raw_value;
+                }
+            }
+            EL4002Port::AO2 => {
+                if let Some(channel2) = &mut self.rxpdo.channel2 {
+                    channel2.value = raw_value;
+                }
+            }
+        }
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+impl ConfigurableDevice<EL4002Configuration> for EL4002 {
+    async fn write_config<'maindevice>(
+        &mut self,
+        device: &EthercrabSubDevicePreoperational<'maindevice>,
+        config: &EL4002Configuration,
+    ) -> Result<(), anyhow::Error> {
+        config.write_config(device).await?;
+        self.configuration = config.clone();
+        self.rxpdo = config.pdo_assignment.rxpdo_assignment();
+        Ok(())
+    }
+
+    fn get_config(&self) -> EL4002Configuration {
+        self.configuration.clone()
+    }
+}
+
+#[derive(Debug, Clone)]
 pub enum EL4002Port {
     AO1,
     AO2,
 }
 
-impl EL4002Port {
-    pub fn to_byte_offset(&self) -> usize {
-        match self {
-            EL4002Port::AO1 => 0,
-            EL4002Port::AO2 => 4,
-        }
-    }
-}
+#[derive(Debug, Clone, TxPdo)]
+pub struct EL4002TxPdo {}
 
 #[derive(Debug, Clone, RxPdo)]
 pub struct EL4002RxPdo {
     #[pdo_object_index(0x1600)]
-    channel1: Option<AnalogOutput>,
+    pub channel1: Option<AnalogOutput>,
     #[pdo_object_index(0x1601)]
-    channel2: Option<AnalogOutput>,
+    pub channel2: Option<AnalogOutput>,
 }
 
-impl Default for EL4002RxPdo {
-    fn default() -> Self {
-        Self {
-            channel1: Some(AnalogOutput::default()),
-            channel2: Some(AnalogOutput::default()),
+impl Configuration for EL4002Configuration {
+    async fn write_config<'a>(
+        &self,
+        device: &EthercrabSubDevicePreoperational<'a>,
+    ) -> Result<(), anyhow::Error> {
+        // Write configuration for Channel 1
+        self.channel1.write_channel_config(device, 0x8000).await?;
+
+        // Write configuration for Channel 2
+        self.channel2.write_channel_config(device, 0x8010).await?;
+
+        self.pdo_assignment
+            .txpdo_assignment()
+            .write_config(device)
+            .await?;
+        self.pdo_assignment
+            .rxpdo_assignment()
+            .write_config(device)
+            .await?;
+        Ok(())
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum EL4002PredefinedPdoAssignment {
+    Standard,
+    Compact,
+}
+
+impl PredefinedPdoAssignment<EL4002TxPdo, EL4002RxPdo> for EL4002PredefinedPdoAssignment {
+    fn txpdo_assignment(&self) -> EL4002TxPdo {
+        EL4002TxPdo {}
+    }
+
+    fn rxpdo_assignment(&self) -> EL4002RxPdo {
+        match self {
+            EL4002PredefinedPdoAssignment::Standard => EL4002RxPdo {
+                channel1: Some(AnalogOutput::default()),
+                channel2: Some(AnalogOutput::default()),
+            },
+            EL4002PredefinedPdoAssignment::Compact => EL4002RxPdo {
+                channel1: Some(AnalogOutput::default()),
+                channel2: Some(AnalogOutput::default()),
+            },
         }
     }
 }
 
-pub const EL4002_VENDOR_ID: u32 = 0x2;
-pub const EL4002_PRODUCT_ID: u32 = 0xfa23052;
-pub const EL4002_REVISION_A: u32 = 0x160000;
-pub const EL4002_REVISION_B: u32 = 0x150000;
+pub const EL4002_VENDOR_ID: u32 = 2;
+pub const EL4002_PRODUCT_ID: u32 = 262210642;
+pub const EL4002_REVISION_A: u32 = 1441792;
+pub const EL4002_REVISION_B: u32 = 1376256;
 
 pub const EL4002_IDENTITY_A: SubDeviceIdentityTuple =
     (EL4002_VENDOR_ID, EL4002_PRODUCT_ID, EL4002_REVISION_A);
