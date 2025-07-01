@@ -44,6 +44,22 @@ impl Namespace {
         self.sockets.retain(|s| s.id != socket.id);
     }
 
+    /// Disconnects all clients in the namespace.
+    ///
+    /// This will forcefully disconnect all sockets and clear the socket list.
+    #[instrument(skip_all)]
+    pub fn disconnect_all(&mut self) {
+        tracing::info!("Disconnecting {} sockets in namespace", self.sockets.len());
+
+        // Disconnect each socket
+        for socket in &self.sockets {
+            let _ = socket.clone().disconnect(); // Ignore errors if socket is already disconnected
+        }
+
+        // Clear the socket list
+        self.sockets.clear();
+    }
+
     /// Re-emits cached events to a specific socket.
     ///
     /// This is typically used when a socket reconnects or joins an existing namespace
@@ -150,6 +166,12 @@ impl Namespace {
                 );
             }
         }
+    }
+}
+
+impl Drop for Namespace {
+    fn drop(&mut self) {
+        self.disconnect_all();
     }
 }
 
