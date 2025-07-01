@@ -13,17 +13,17 @@ import { DiameterVisualisation } from "../DiameterVisualisation";
 
 export function Laser1ControlPage() {
   const {
-    laserDiameter: laserDiameter,
-    laserState,
-    laserSetTargetDiameter,
-    laserSetLowerTolerance,
-    laserSetHigherTolerance,
+    diameter,
+    state,
+    setTargetDiameter,
+    setLowerTolerance,
+    setHigherTolerance,
   } = useLaser1();
 
-  // Controlled local states synced with laserState
-  const targetDiameter = laserState?.data?.target_diameter ?? 0;
-  const lowerTolerance = laserState?.data?.lower_tolerance ?? 0;
-  const higherTolerance = laserState?.data?.higher_tolerance ?? 0;
+  // Extract values from consolidated state
+  const targetDiameter = state?.laser_state?.target_diameter ?? 0;
+  const lowerTolerance = state?.laser_state?.lower_tolerance ?? 0;
+  const higherTolerance = state?.laser_state?.higher_tolerance ?? 0;
   return (
     <Page>
       <ControlGrid columns={2}>
@@ -32,13 +32,13 @@ export function Laser1ControlPage() {
             targetDiameter={targetDiameter}
             lowTolerance={lowerTolerance}
             highTolerance={higherTolerance}
-            diameter={laserDiameter}
+            diameter={diameter}
           />
           <div className="flex flex-row items-center gap-6">
             <TimeSeriesValueNumeric
               label="Current Diameter"
               unit="mm"
-              timeseries={laserDiameter}
+              timeseries={diameter}
               renderValue={(value) => value.toFixed(3)}
             />
           </div>
@@ -55,9 +55,9 @@ export function Laser1ControlPage() {
               renderValue={(value) => value.toFixed(2)}
               onChange={(val) => {
                 if (val < lowerTolerance) {
-                  laserSetLowerTolerance(val);
+                  setLowerTolerance(val);
                 }
-                laserSetTargetDiameter(val);
+                setTargetDiameter(val);
               }}
               defaultValue={0}
             />
@@ -71,7 +71,7 @@ export function Laser1ControlPage() {
               min={0}
               max={Math.min(targetDiameter, 1)}
               renderValue={(value) => value.toFixed(2)}
-              onChange={(val) => laserSetLowerTolerance(val)}
+              onChange={(val) => setLowerTolerance(val)}
               defaultValue={0}
             />
           </Label>
@@ -84,7 +84,7 @@ export function Laser1ControlPage() {
               min={0}
               max={1}
               renderValue={(value) => value.toFixed(2)}
-              onChange={(val) => laserSetHigherTolerance(val)}
+              onChange={(val) => setHigherTolerance(val)}
               defaultValue={0}
             />
           </Label>

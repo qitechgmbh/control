@@ -17,7 +17,7 @@ use std::{
 /// # Description
 /// This method is called to perform periodic actions for the `LaserMachine`. Specifically:
 /// - It checks if the time elapsed since the last measurement emission exceeds 20 milliseconds.
-/// - If the condition is met, it asynchronously emits Laser data by calling `emit_laser_data` and updates the `last_measurement_emit` timestamp.
+/// - If the condition is met, it asynchronously emits live values at 60 FPS.
 ///
 /// The method ensures that the diameter value is updated approximately 60 times per second.
 ///
@@ -27,8 +27,7 @@ impl Actor for LaserMachine {
             // The live values are updated approximately 60 times per second
             if now.duration_since(self.last_measurement_emit) > Duration::from_secs_f64(1.0 / 60.0)
             {
-                self.emit_diameter();
-                self.emit_laser_state();
+                self.emit_live_values();
                 self.last_measurement_emit = now;
             }
         })
