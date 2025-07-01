@@ -1,3 +1,4 @@
+pub mod aquapath1;
 pub mod buffer1;
 pub mod extruder1;
 pub mod laser;
@@ -10,4 +11,5 @@ pub const MACHINE_WINDER_V1: u16 = 0x0002;
 pub const MACHINE_EXTRUDER_V1: u16 = 0x0004;
 pub const MACHINE_LASER_V1: u16 = 0x0006;
 pub const MACHINE_MOCK: u16 = 0x0007;
-pub const MACHINE_BUFFER_V1: u16 = 0x0008;
+pub const MACHINE_BUFFER_V1: u16 = 0x0009;
+pub const MACHINE_AQUAPATH_V1: u16 = 0x0008;

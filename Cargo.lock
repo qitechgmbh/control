@@ -1020,6 +1020,7 @@ dependencies = [
  "futures",
  "rand",
  "smol",
+ "tracing",
  "uom",
 ]
 

@@ -90,13 +90,13 @@ pub async fn setup_loop(
             // Default 30_000us
             pdu: Duration::from_micros(30_000),
             // Default 10ms
-            eeprom: Duration::from_millis(10),
+            eeprom: Duration::from_millis(100),
             // Default 0ms
-            wait_loop_delay: Duration::from_millis(0),
+            wait_loop_delay: Duration::from_millis(10),
             // Default 100ms
-            mailbox_echo: Duration::from_millis(100),
+            mailbox_echo: Duration::from_millis(1000),
             // Default 1000ms
-            mailbox_response: Duration::from_millis(1000),
+            mailbox_response: Duration::from_millis(10000),
         },
         MainDeviceConfig {
             // Default RetryBehaviour::None
@@ -157,14 +157,12 @@ pub async fn setup_loop(
             },
         )
         .collect::<Vec<_>>();
-
     let devices = device_identifications
         .into_iter()
         .zip(devices)
         .zip(&subdevices)
         .map(|((a, b), c)| (a, b, c))
         .collect::<Vec<_>>();
-
     // filter devices and if Option<DeviceMachineIdentification> is Some
     // return identified_devices, identified_device_identifications, identified_subdevices
     let (identified_device_identifications, identified_devices, identified_subdevices): (
@@ -198,7 +196,6 @@ pub async fn setup_loop(
                 acc
             },
         );
-
     // construct machines
     {
         let mut machines_guard = app_state.machines.write().await;
@@ -219,7 +216,12 @@ pub async fn setup_loop(
         .iter()
         .map(|(device_identification, device, _)| (device_identification.clone(), device.clone()))
         .collect::<Vec<_>>();
-
+    for subdevice in subdevices.iter() {
+        if subdevice.name() == "EL5152" {
+            subdevice.sdo_write(0x1C32, 0x1, 0x00u16).await?;
+            subdevice.sdo_write(0x1C33, 0x1, 0x00u16).await?;
+        }
+    }
     // Notify client via socketio
     let app_state_clone = app_state.clone();
     smol::block_on(async move {
