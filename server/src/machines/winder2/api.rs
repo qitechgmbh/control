@@ -90,20 +90,48 @@ enum Mutation {
     ModeSet(Mode),
 }
 
-#[derive(Serialize, Debug, Clone)]
-pub struct TraversePositionEvent {
-    /// position in mm
-    pub position: Option<f64>,
+#[derive(Serialize, Debug, Clone, Default)]
+pub struct LiveValuesEvent {
+    /// traverse position in mm
+    pub traverse_position: Option<f64>,
+    /// puller speed in m/min
+    pub puller_speed: f64,
+    /// spool rpm
+    pub spool_rpm: f64,
+    /// spool diameter in mm
+    pub spool_diameter: f64,
+    /// tension arm angle in degrees
+    pub tension_arm_angle: f64,
 }
 
-impl TraversePositionEvent {
+impl LiveValuesEvent {
     pub fn build(&self) -> Event<Self> {
-        Event::new("TraversePositionEvent", self.clone())
+        Event::new("LiveValuesEvent", self.clone())
     }
 }
 
-#[derive(Serialize, Debug, Clone, Default)]
-pub struct TraverseStateEvent {
+#[derive(Serialize, Debug, Clone)]
+pub struct StateEvent {
+    /// traverse state
+    pub traverse_state: TraverseState,
+    /// puller state
+    pub puller_state: PullerState,
+    /// mode state
+    pub mode_state: ModeState,
+    /// tension arm state
+    pub tension_arm_state: TensionArmState,
+    /// spool speed controller state
+    pub spool_speed_controller_state: SpoolSpeedControllerState,
+}
+
+impl StateEvent {
+    pub fn build(&self) -> Event<Self> {
+        Event::new("StateEvent", self.clone())
+    }
+}
+
+#[derive(Serialize, Debug, Clone)]
+pub struct TraverseState {
     /// min position in mm
     pub limit_inner: f64,
     /// max position in mm
@@ -136,14 +164,8 @@ pub struct TraverseStateEvent {
     pub can_go_home: bool,
 }
 
-impl TraverseStateEvent {
-    pub fn build(&self) -> Event<Self> {
-        Event::new("TraverseStateEvent", self.clone())
-    }
-}
-
 #[derive(Serialize, Debug, Clone)]
-pub struct PullerStateEvent {
+pub struct PullerState {
     /// regulation type
     pub regulation: PullerRegulationMode,
     /// target speed in m/min
@@ -154,88 +176,22 @@ pub struct PullerStateEvent {
     pub forward: bool,
 }
 
-impl PullerStateEvent {
-    pub fn build(&self) -> Event<Self> {
-        Event::new("PullerStateEvent", self.clone())
-    }
-}
-
 #[derive(Serialize, Debug, Clone)]
-pub struct PullerSpeedEvent {
-    /// speed in m/min
-    pub speed: f64,
-}
-
-impl PullerSpeedEvent {
-    pub fn build(&self) -> Event<Self> {
-        Event::new("PullerSpeedEvent", self.clone())
-    }
-}
-
-#[derive(Serialize, Debug, Clone)]
-pub struct ModeStateEvent {
+pub struct ModeState {
     /// mode
     pub mode: Mode,
     /// can wind
     pub can_wind: bool,
 }
 
-impl ModeStateEvent {
-    pub fn build(&self) -> Event<Self> {
-        Event::new("ModeStateEvent", self.clone())
-    }
-}
-
 #[derive(Serialize, Debug, Clone)]
-pub struct SpoolRpmEvent {
-    /// rpm
-    pub rpm: f64,
-}
-
-impl SpoolRpmEvent {
-    pub fn build(&self) -> Event<Self> {
-        Event::new("SpoolRpmEvent", self.clone())
-    }
-}
-
-#[derive(Serialize, Debug, Clone)]
-pub struct SpoolDiameterEvent {
-    /// diameter in mm
-    pub diameter: f64,
-}
-
-impl SpoolDiameterEvent {
-    pub fn build(&self) -> Event<Self> {
-        Event::new("SpoolDiameterEvent", self.clone())
-    }
-}
-
-#[derive(Serialize, Debug, Clone)]
-pub struct TensionArmAngleEvent {
-    /// degree
-    pub degree: f64,
-}
-
-impl TensionArmAngleEvent {
-    pub fn build(&self) -> Event<Self> {
-        Event::new("TensionArmAngleEvent", self.clone())
-    }
-}
-
-#[derive(Serialize, Debug, Clone)]
-pub struct TensionArmStateEvent {
-    /// degree
+pub struct TensionArmState {
+    /// is zeroed
     pub zeroed: bool,
 }
 
-impl TensionArmStateEvent {
-    pub fn build(&self) -> Event<Self> {
-        Event::new("TensionArmStateEvent", self.clone())
-    }
-}
-
 #[derive(Serialize, Debug, Clone)]
-pub struct SpoolSpeedControllerStateEvent {
+pub struct SpoolSpeedControllerState {
     /// regulation mode
     pub regulation_mode: super::spool_speed_controller::SpoolSpeedControllerType,
     /// min speed in rpm for minmax mode
@@ -254,23 +210,9 @@ pub struct SpoolSpeedControllerStateEvent {
     pub adaptive_deacceleration_urgency_multiplier: f64,
 }
 
-impl SpoolSpeedControllerStateEvent {
-    pub fn build(&self) -> Event<Self> {
-        Event::new("SpoolSpeedControllerStateEvent", self.clone())
-    }
-}
-
 pub enum Winder2Events {
-    TraversePosition(Event<TraversePositionEvent>),
-    TraverseState(Event<TraverseStateEvent>),
-    PullerSpeed(Event<PullerSpeedEvent>),
-    PullerState(Event<PullerStateEvent>),
-    Mode(Event<ModeStateEvent>),
-    SpoolRpm(Event<SpoolRpmEvent>),
-    SpoolDiameter(Event<SpoolDiameterEvent>),
-    TensionArmAngleEvent(Event<TensionArmAngleEvent>),
-    TensionArmStateEvent(Event<TensionArmStateEvent>),
-    SpoolSpeedControllerStateEvent(Event<SpoolSpeedControllerStateEvent>),
+    LiveValues(Event<LiveValuesEvent>),
+    State(Event<StateEvent>),
 }
 
 #[derive(Debug)]
@@ -298,16 +240,8 @@ impl Winder2Namespace {
 impl CacheableEvents<Winder2Events> for Winder2Events {
     fn event_value(&self) -> GenericEvent {
         match self {
-            Winder2Events::TraversePosition(event) => event.into(),
-            Winder2Events::TraverseState(event) => event.into(),
-            Winder2Events::PullerSpeed(event) => event.into(),
-            Winder2Events::PullerState(event) => event.into(),
-            Winder2Events::Mode(event) => event.into(),
-            Winder2Events::SpoolRpm(event) => event.into(),
-            Winder2Events::SpoolDiameter(event) => event.into(),
-            Winder2Events::TensionArmAngleEvent(event) => event.into(),
-            Winder2Events::TensionArmStateEvent(event) => event.into(),
-            Winder2Events::SpoolSpeedControllerStateEvent(event) => event.into(),
+            Winder2Events::LiveValues(event) => event.into(),
+            Winder2Events::State(event) => event.into(),
         }
     }
 
@@ -316,16 +250,8 @@ impl CacheableEvents<Winder2Events> for Winder2Events {
         let cache_one = cache_one_event();
 
         match self {
-            Winder2Events::TraversePosition(_) => cache_one_hour,
-            Winder2Events::TraverseState(_) => cache_one,
-            Winder2Events::PullerSpeed(_) => cache_one_hour,
-            Winder2Events::PullerState(_) => cache_one,
-            Winder2Events::Mode(_) => cache_one,
-            Winder2Events::SpoolRpm(_) => cache_one_hour,
-            Winder2Events::SpoolDiameter(_) => cache_one_hour,
-            Winder2Events::TensionArmAngleEvent(_) => cache_one_hour,
-            Winder2Events::TensionArmStateEvent(_) => cache_one,
-            Winder2Events::SpoolSpeedControllerStateEvent(_) => cache_one,
+            Winder2Events::LiveValues(_) => cache_one_hour,
+            Winder2Events::State(_) => cache_one,
         }
     }
 }

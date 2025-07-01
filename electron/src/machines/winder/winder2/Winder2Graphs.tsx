@@ -14,13 +14,12 @@ import { Unit } from "@/control/units";
 
 export function Winder2GraphsPage() {
   const {
+    state,
     spoolRpm,
     spoolDiameter,
     traversePosition,
-    traverseState,
     tensionArmAngle,
     pullerSpeed,
-    pullerState,
   } = useWinder2();
 
   const syncHook = useGraphSync(30 * 60 * 1000, "winder2-group");
@@ -32,7 +31,7 @@ export function Winder2GraphsPage() {
           <PullerSpeedGraph
             syncHook={syncHook}
             newData={pullerSpeed}
-            targetSpeed={pullerState?.data.target_speed}
+            targetSpeed={state?.puller_state?.target_speed}
             unit="m/min"
             renderValue={(value) => roundToDecimals(value, 0)}
           />
@@ -54,8 +53,8 @@ export function Winder2GraphsPage() {
           <TraversePositionGraph
             syncHook={syncHook}
             newData={traversePosition}
-            limitInner={traverseState?.data.limit_inner}
-            limitOuter={traverseState?.data.limit_outer}
+            limitInner={state?.traverse_state?.limit_inner}
+            limitOuter={state?.traverse_state?.limit_outer}
             unit="mm"
             renderValue={(value) => roundToDecimals(value, 1)}
           />
