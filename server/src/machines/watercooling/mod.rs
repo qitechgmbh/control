@@ -1,7 +1,6 @@
 use control_core::{machines::Machine, socketio::namespace::NamespaceCacheingLogic};
 use serde::{Deserialize, Serialize};
 use std::time::Instant;
-use temperature_controller::TemperatureController;
 use uom::si::{f64::ThermodynamicTemperature, thermodynamic_temperature::degree_celsius};
 
 use crate::machines::watercooling::api::{WaterCoolingEvents, WaterCoolingNamespace};
