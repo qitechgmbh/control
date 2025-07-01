@@ -61,21 +61,25 @@ fn main() {
             let thread_panic_tx = thread_panic_tx.clone();
             let app_state = app_state.clone();
             move || {
+                #[cfg(feature = "dhat-heap")]
+                init_dhat_heap_profiling();
+
                 init_socketio_queue(thread_panic_tx.clone(), app_state.clone());
                 init_api(thread_panic_tx.clone(), app_state.clone())
                     .expect("Failed to initialize API");
+                init_loop(thread_panic_tx.clone(), app_state.clone())
+                    .expect("Failed to initialize loop");
+
+                #[cfg(feature = "mock-machine")]
+                init_mock(app_state.clone()).expect("Failed to initialize mock machines");
+
                 #[cfg(not(feature = "mock-machine"))]
                 init_serial(thread_panic_tx.clone(), app_state.clone())
                     .expect("Failed to initialize Serial");
+
                 #[cfg(not(feature = "mock-machine"))]
                 init_ethercat(thread_panic_tx.clone(), app_state.clone())
                     .expect("Failed to initialize EtherCAT");
-                #[cfg(feature = "mock-machine")]
-                init_mock(app_state.clone()).expect("Failed to initialize mock machines");
-                init_loop(thread_panic_tx, app_state).expect("Failed to initialize loop");
-
-                #[cfg(feature = "dhat-heap")]
-                init_dhat_heap_profiling();
             }
         })
         .expect("Failed to spawn init thread");
