@@ -1,9 +1,8 @@
 use super::Actor;
-use crate::modbus::{
-    ModbusFunctionCode, ModbusRequest, ModbusResponse, calculate_modbus_rtu_timeout,
-};
+use crate::modbus::{ModbusFunctionCode, ModbusRequest, ModbusResponse};
 use bitvec::{order::Lsb0, slice::BitSlice};
-use ethercat_hal::io::serial_interface::{SerialEncoding, SerialInterface};
+use ethercat_hal::io::serial_interface::SerialInterface;
+use serial_interface_actor::SerialInterfaceActor;
 use std::{
     collections::HashMap,
     pin::Pin,
@@ -14,6 +13,8 @@ use uom::{
     ConstZero,
     si::{f64::Frequency, frequency::centihertz},
 };
+
+pub mod serial_interface_actor;
 
 #[derive(Debug)]
 pub enum State {
@@ -32,13 +33,6 @@ pub enum State {
     Uninitialized,
 }
 
-#[derive(Debug)]
-pub enum OperationMode {
-    PU,
-    EXT,
-    NET,
-}
-
 impl MitsubishiInverterRS485Actor {
     pub fn convert_hz_float_to_word(&mut self, value: Frequency) -> u16 {
         let scaled = value.get::<centihertz>(); // Convert Hz to 0.01 Hz units
@@ -53,12 +47,6 @@ impl MitsubishiInverterRS485Actor {
         request.request.data[3] = result.to_le_bytes()[0];
         self.add_request(request);
     }
-
-    pub fn read_running_frequency() {
-        // Check if the current element pushed to front is freq event
-    }
-
-    pub fn switch_operation_mode() {}
 }
 
 /// Specifies all System environmet Variables
@@ -99,6 +87,26 @@ impl MitsubishiControlRequests {
             MitsubishiSystemRegister::RunningFrequencyRAM => 0x0d,
             //MitsubishiSystemRegister::RunningFrequencyEEPROM => 0x0e,
             MitsubishiSystemRegister::MotorFrequency => 0x00C8,
+        }
+    }
+}
+
+// So that the generic SerialInterfaceActor can identify the Requests
+impl From<MitsubishiControlRequests> for u32 {
+    fn from(request: MitsubishiControlRequests) -> Self {
+        match request {
+            MitsubishiControlRequests::None => 0,
+            MitsubishiControlRequests::ResetInverter => 1,
+            MitsubishiControlRequests::ClearAllParameters => 2,
+            MitsubishiControlRequests::ClearNonCommunicationParameter => 3,
+            MitsubishiControlRequests::ClearNonCommunicationParameters => 4,
+            MitsubishiControlRequests::ReadInverterStatus => 5,
+            MitsubishiControlRequests::StopMotor => 6,
+            MitsubishiControlRequests::StartForwardRotation => 7,
+            MitsubishiControlRequests::StartReverseRotation => 8,
+            MitsubishiControlRequests::ReadRunningFrequency => 9,
+            MitsubishiControlRequests::WriteRunningFrequency => 10,
+            MitsubishiControlRequests::ReadMotorFrequency => 11,
         }
     }
 }
@@ -314,13 +322,6 @@ pub struct MitsubishiModbusRequest {
     ignored_times: u32,
 }
 
-#[derive(Debug)]
-pub enum RotationDirection {
-    Forward,
-    Backwards,
-    Stopped,
-}
-
 #[derive(Debug, Clone, Copy)]
 pub enum ResponseType {
     NoResponse,
@@ -332,7 +333,6 @@ pub enum ResponseType {
 }
 
 #[derive(Debug, Default)]
-
 pub struct MitsubishiInverterStatus {
     pub running: bool,
     pub forward_running: bool,
@@ -342,21 +342,16 @@ pub struct MitsubishiInverterStatus {
     pub no_function: bool,
     pub fu: bool,
     pub abc_: bool,
-
     pub fault_occurence: bool,
 }
 
 #[derive(Debug)]
 pub struct MitsubishiInverterRS485Actor {
     // Communication
-    pub serial_interface: SerialInterface,
-    pub baudrate: Option<u32>,
-    pub encoding: Option<SerialEncoding>,
     pub request_map: HashMap<MitsubishiControlRequests, MitsubishiModbusRequest>,
     pub response: Option<ModbusResponse>,
-
     pub inverter_status: MitsubishiInverterStatus,
-
+    pub serial_actor: SerialInterfaceActor,
     // State
     pub last_ts: Instant,
     pub last_message_size: usize,
@@ -370,7 +365,7 @@ pub struct MitsubishiInverterRS485Actor {
 impl MitsubishiInverterRS485Actor {
     pub fn new(serial_interface: SerialInterface) -> Self {
         Self {
-            serial_interface,
+            serial_actor: SerialInterfaceActor::new(serial_interface),
             last_ts: Instant::now(),
             state: State::Uninitialized,
             request_map: HashMap::new(),
@@ -378,8 +373,6 @@ impl MitsubishiInverterRS485Actor {
             next_response_type: ResponseType::NoResponse,
             last_request_type: RequestType::OperationCommand,
             last_message_size: 0,
-            baudrate: None,
-            encoding: None,
             frequency: Frequency::ZERO,
             last_control_request_type: MitsubishiControlRequests::ResetInverter,
             inverter_status: MitsubishiInverterStatus::default(),
@@ -393,10 +386,8 @@ impl MitsubishiInverterRS485Actor {
         if self.request_map.contains_key(&request.control_request_type) {
             // unwrap is safe here
             let old_request = self.request_map.get(&request.control_request_type).unwrap();
-
             let mut new_request = request.clone();
             new_request.ignored_times = old_request.ignored_times;
-
             self.request_map
                 .insert(request.control_request_type.clone(), new_request);
         } else {
@@ -410,7 +401,7 @@ impl MitsubishiInverterRS485Actor {
         &mut self,
     ) -> Pin<Box<dyn Future<Output = Result<ModbusResponse, anyhow::Error>> + Send + '_>> {
         Box::pin(async move {
-            let res: Option<Vec<u8>> = (self.serial_interface.read_message)().await;
+            let res: Option<Vec<u8>> = (self.serial_actor.serial_interface.read_message)().await;
             let raw_response = match res {
                 Some(res) => res,
                 None => {
@@ -470,7 +461,8 @@ impl MitsubishiInverterRS485Actor {
             };
             let modbus_request: Vec<u8> = request.request.clone().into();
 
-            let res = (self.serial_interface.write_message)(modbus_request.clone()).await;
+            let res =
+                (self.serial_actor.serial_interface.write_message)(modbus_request.clone()).await;
             match res {
                 Ok(_) => {
                     self.next_response_type = request.expected_response_type;
@@ -507,35 +499,6 @@ impl RequestType {
             RequestType::ParamClear => Duration::from_millis(5000),
             RequestType::Reset => Duration::from_millis(300),
             RequestType::None => Duration::from_millis(12),
-        }
-    }
-}
-
-pub enum MitsubishiModbusExceptionCode {
-    IllegalFunction,
-    IllegalDataAddress,
-    IllegalDataValue,
-    None,
-}
-
-impl From<MitsubishiModbusExceptionCode> for u8 {
-    fn from(value: MitsubishiModbusExceptionCode) -> Self {
-        match value {
-            MitsubishiModbusExceptionCode::None => 0,
-            MitsubishiModbusExceptionCode::IllegalFunction => 1,
-            MitsubishiModbusExceptionCode::IllegalDataAddress => 2,
-            MitsubishiModbusExceptionCode::IllegalDataValue => 3,
-        }
-    }
-}
-
-impl From<u8> for MitsubishiModbusExceptionCode {
-    fn from(value: u8) -> Self {
-        match value {
-            1 => MitsubishiModbusExceptionCode::IllegalFunction,
-            2 => MitsubishiModbusExceptionCode::IllegalDataAddress,
-            3 => MitsubishiModbusExceptionCode::IllegalDataValue,
-            _ => MitsubishiModbusExceptionCode::None,
         }
     }
 }
@@ -582,13 +545,12 @@ impl Actor for MitsubishiInverterRS485Actor {
             let elapsed: Duration = now_ts.duration_since(self.last_ts);
             // State is uninitialized until serial interface init returns true, which takes a few cycles on the el6021
             if let State::Uninitialized = self.state {
-                let res = (self.serial_interface.initialize)().await;
+                let res = (self.serial_actor.serial_interface.initialize)().await;
                 if res == true {
                     self.state = State::ReadyToSend;
                     // every time when our inverter is "Uninitialzed" reset it first to clear any error states it may have
                     self.add_request(MitsubishiControlRequests::ResetInverter.into());
-                    self.baudrate = (self.serial_interface.get_baudrate)().await;
-                    self.encoding = (self.serial_interface.get_serial_encoding)().await;
+                    self.serial_actor.initialize().await;
                     self.last_ts = now_ts;
                     return;
                 } else {
@@ -596,22 +558,13 @@ impl Actor for MitsubishiInverterRS485Actor {
                 }
             }
 
-            let encoding = match self.encoding {
-                Some(encoding) => encoding,
-                None => return,
-            };
-
-            let baudrate = match self.baudrate {
-                Some(baudrate) => baudrate,
-                None => return,
-            };
-
-            let timeout = calculate_modbus_rtu_timeout(
-                encoding.total_bits(),
-                self.last_request_type.timeout_duration(),
-                baudrate,
-                self.last_message_size,
-            );
+            let timeout = self
+                .serial_actor
+                .calculate_modbus_rtu_timeout(
+                    self.last_request_type.timeout_duration(),
+                    self.last_message_size,
+                )
+                .unwrap();
 
             match self.state {
                 State::Uninitialized => (),
@@ -657,7 +610,7 @@ impl Actor for MitsubishiInverterRS485Actor {
                 State::WaitingForRequestAccept => {
                     // An empty vec is used to check if we are finished with writing the message
                     // This is to keep the Serialinterface more simple
-                    let res = (self.serial_interface.write_message)(vec![]).await;
+                    let res = (self.serial_actor.serial_interface.write_message)(vec![]).await;
                     let finished = match res {
                         Ok(res) => res,
                         Err(_) => {
