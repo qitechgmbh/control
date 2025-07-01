@@ -255,8 +255,6 @@ impl ExtruderV2 {
             self.screw_speed_controller
                 .set_target_screw_rpm(self.screw_speed_controller.target_rpm);
         }
-
-        self.screw_speed_controller.reset_pid();
         self.screw_speed_controller.set_uses_rpm(uses_rpm);
 
         self.emit_regulation();
