@@ -39,8 +39,7 @@ pub struct WaterCooling {
     namespace: WaterCoolingNamespace,
     mode: WaterCoolingMode,
     last_measurement_emit: Instant,
-
-    temperature_controller: TemperatureController,
+    // temperature_controller: TemperatureController,
 }
 
 impl std::fmt::Display for WaterCooling {
@@ -52,11 +51,11 @@ impl Machine for WaterCooling {}
 
 impl WaterCooling {
     fn turn_cooling_off(&mut self) {
-        self.temperature_controller.disable();
+        //self.temperature_controller.disable();
     }
 
     fn enable_cooling(&mut self) {
-        self.temperature_controller.allow_cooling();
+        //self.temperature_controller.allow_cooling();
     }
 
     // Turn cooling OFF and do nothing
@@ -122,7 +121,7 @@ impl WaterCooling {
     }
 
     fn emit_cooling_element_power(&mut self) {
-        let wattage = self.temperature_controller.get_cooling_element_wattage();
+        let wattage = 64.20; //self.temperature_controller.get_cooling_element_wattage();
 
         let event = api::CoolingPowerEvent { wattage }.build();
         self.namespace
@@ -132,9 +131,9 @@ impl WaterCooling {
     fn set_target_temperature(&mut self, target_temperature: f64) {
         let target_temp = ThermodynamicTemperature::new::<degree_celsius>(target_temperature);
 
-        self.temperature_controller
-            .set_target_temperature(target_temp);
+        // self.temperature_controller
+        //     .set_target_temperature(target_temp);
 
-        self.emit_cooling(self.temperature_controller.cooling.clone());
+        // self.emit_cooling(self.temperature_controller.cooling.clone());
     }
 }
