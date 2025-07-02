@@ -38,10 +38,10 @@ use uom::si::f64::{Length, Velocity};
 use uom::si::length::{centimeter, millimeter};
 
 use super::{
-    api::{BufferedWinderNamespace, Mode}, BufferedWinder
+    api::{Buffer1Namespace, Mode}, Buffer1
 };
 
-impl MachineNewTrait for BufferedWinder {
+impl MachineNewTrait for Buffer1 {
     fn new<'maindevice>(params: &MachineNewParams) -> Result<Self, Error> {
         // validate general stuff
         let device_identification = params
@@ -57,7 +57,7 @@ impl MachineNewTrait for BufferedWinder {
             MachineNewHardware::Ethercat(x) => x,
             _ => {
                 return Err(anyhow::anyhow!(
-                    "[{}::MachineNewTrait/BufferedWinder::new] MachineNewHardware is not Ethercat",
+                    "[{}::MachineNewTrait/Buffer::new] MachineNewHardware is not Ethercat",
                     module_path!()
                 ));
             }
@@ -78,7 +78,7 @@ impl MachineNewTrait for BufferedWinder {
                             device_hardware_identification_ethercat,
                         ) => device_hardware_identification_ethercat,
                         _ => Err(anyhow::anyhow!(
-                            "[{}::MachineNewTrait/BufferedWinder::new] Device with role 0 is not Ethercat",
+                            "[{}::MachineNewTrait/Buffer::new] Device with role 0 is not Ethercat",
                             module_path!()
                         ))?, //uncommented
                     };
@@ -95,7 +95,7 @@ impl MachineNewTrait for BufferedWinder {
                     }
                     _ => {
                         return Err(anyhow::anyhow!(
-                            "[{}::MachineNewTrait/BufferedWinder::new] Device with role 0 is not an EK1100",
+                            "[{}::MachineNewTrait/Buffer::new] Device with role 0 is not an EK1100",
                             module_path!()
                         ));
                     }
@@ -106,19 +106,19 @@ impl MachineNewTrait for BufferedWinder {
                 }
             }
 
-            // Role 2
+            // Role 1
             // 1x Stepper Spool
             // EL7041-0052
             let (el7041, el7041_config) = {
                 let device_identification =
-                    get_device_identification_by_role(params.device_group, 2)?;
+                    get_device_identification_by_role(params.device_group, 1)?;
                 let device_hardware_identification_ethercat =
                     match &device_identification.device_hardware_identification {
                         DeviceHardwareIdentification::Ethercat(
                             device_hardware_identification_ethercat,
                         ) => device_hardware_identification_ethercat,
                         _ => Err(anyhow::anyhow!(
-                            "[{}::MachineNewTrait/BufferedWinder::new] Device with role 2 is not Ethercat",
+                            "[{}::MachineNewTrait/Buffer::new] Device with role 1 is not Ethercat",
                             module_path!()
                         ))?,
                     };
@@ -137,7 +137,7 @@ impl MachineNewTrait for BufferedWinder {
                         downcast_device::<EL7041_0052>(ethercat_device).await?
                     }
                     _ => Err(anyhow::anyhow!(
-                        "[{}::MachineNewTrait/BufferedWinder::new] Device with role 2 is not an EL7041-0052",
+                        "[{}::MachineNewTrait/Buffer::new] Device with role 2 is not an EL7041-0052",
                         module_path!()
                     ))?,
                 };
@@ -164,19 +164,19 @@ impl MachineNewTrait for BufferedWinder {
                 (device, config)
             };
 
-            // Role 3
-            // 1x Stepper Traverse
+           // Role 4
+            // 1x Stepper Puller
             // EL7031
-            let (el7031, el7031_config) = {
+            let (el7031_0030, el7031_0030_config) = {
                 let device_identification =
-                    get_device_identification_by_role(params.device_group, 3)?;
+                    get_device_identification_by_role(params.device_group, 4)?;
                 let device_hardware_identification_ethercat =
                     match &device_identification.device_hardware_identification {
                         DeviceHardwareIdentification::Ethercat(
                             device_hardware_identification_ethercat,
                         ) => device_hardware_identification_ethercat,
                         _ => Err(anyhow::anyhow!(
-                            "[{}::MachineNewTrait/BufferedWinder::new] Device with role 3 is not Ethercat",
+                            "[{}::MachineNewTrait/Buffer::new] Device with role 4 is not Ethercat",
                             module_path!()
                         ))?,
                     };
@@ -187,24 +187,23 @@ impl MachineNewTrait for BufferedWinder {
                 let subdevice_index = device_hardware_identification_ethercat.subdevice_index;
                 let subdevice_identity = subdevice.identity();
                 let device = match subdevice_identity_to_tuple(&subdevice_identity) {
-                    EL7031_IDENTITY_A | EL7031_IDENTITY_B => {
+                    EL7031_0030_IDENTITY_A => {
                         let ethercat_device = get_ethercat_device_by_index(
                             &hardware.ethercat_devices,
                             subdevice_index,
                         )?;
-                        downcast_device::<EL7031>(ethercat_device).await?
+                        downcast_device::<EL7031_0030>(ethercat_device).await?
                     }
                     _ => Err(anyhow::anyhow!(
-                        "[{}::MachineNewTrait/BufferedWinder::new] Device with role 3 is not an EL7031",
+                        "[{}::MachineNewTrait/Winder2::new] Device with role 5 is not an EL7031-0030",
                         module_path!()
                     ))?,
                 };
-                let config = EL7031Configuration {
-                    stm_features: shared_config::el70x1::StmFeatures {
+                let config = EL7031_0030Configuration {
+                    stm_features: el7031_0030::coe::StmFeatures {
                         operation_mode: EL70x1OperationMode::DirectVelocity,
                         // Max Speed of 1000 steps/s
-                        // Max @ 9cm diameter = approx 85 m/min
-                        // Max @ 20cm diameter = approx 185 m/min
+                        // Max @ 8cm diameter = approx 75 m/min
                         speed_range: shared_config::el70x1::EL70x1SpeedRange::Steps1000,
                         ..Default::default()
                     },
@@ -212,7 +211,7 @@ impl MachineNewTrait for BufferedWinder {
                         max_current: 1500,
                         ..Default::default()
                     },
-                    pdo_assignment: EL7031PredefinedPdoAssignment::VelocityControlCompact,
+                    pdo_assignment: EL7031_0030PredefinedPdoAssignment::VelocityControlCompact,
                     ..Default::default()
                 };
                 device
@@ -225,10 +224,10 @@ impl MachineNewTrait for BufferedWinder {
                     device_guard.set_used(true);
                 }
                 (device, config)
-            };
+            }; 
 
-            let buffered_winder: BufferedWinder = Self {
-                    namespace: BufferedWinderNamespace::new(params.socket_queue_tx.clone()),
+            let buffered_winder: Buffer1 = Self {
+                    namespace: Buffer1Namespace::new(params.socket_queue_tx.clone()),
                     last_measurement_emit: Instant::now(),
                     mode: Mode::Standby,
             };
