@@ -30,6 +30,8 @@ import { Mock1GraphPage } from "@/machines/mock/mock1/Mock1Graph";
 import { Mock1ManualPage } from "@/machines/mock/mock1/Mock1Manual";
 import { TroubleshootPage } from "@/setup/Trobleshoot";
 import { Extruder2GraphsPage } from "@/machines/extruder/extruder2/Extruder2Graph";
+import { Buffer1Page } from "@/machines/buffer/buffer1/Buffer1Page";
+import { Buffer1ControlPage } from "@/machines/buffer/buffer1/Buffer1ControlPage";
 
 // make a route tree like this
 // _mainNavigation/machines/winder2/$serial/control
@@ -152,6 +154,18 @@ export const mock1ManualRoute = createRoute({
   component: () => <Mock1ManualPage />,
 });
 
+export const buffer1SerialRoute = createRoute({
+  getParentRoute: () => machinesRoute,
+  path: "buffer1/$serial",
+  component: () => <Buffer1Page />,
+});
+
+export const buffer1ControlRoute = createRoute({
+  getParentRoute: () => buffer1SerialRoute,
+  path: "control",
+  component: () => <Buffer1ControlPage />,
+});
+
 export const setupRoute = createRoute({
   getParentRoute: () => sidebarRoute,
   path: "setup",
@@ -259,6 +273,8 @@ export const rootTree = RootRoute.addChildren([
         mock1GraphRoute,
         mock1ManualRoute,
       ]),
+
+      buffer1SerialRoute.addChildren([ buffer1ControlRoute ]),
     ]),
   ]),
 ]);

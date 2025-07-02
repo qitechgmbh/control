@@ -216,10 +216,10 @@ export const mock1: MachineProperties = {
   device_roles: [],
 };
 
-export const buffer: MachineProperties = {
+export const buffer1: MachineProperties = {
   name: "Buffer",
   version: "V1",
-  slug: "buffer",
+  slug: "buffer1",
   icon: "lu:Disc3",
   machine_identification: {
     vendor: VENDOR_QITECH,
@@ -266,7 +266,7 @@ export const machineProperties: MachineProperties[] = [
   extruder2,
   laser1,
   mock1,
-  buffer,
+  buffer1,
 ];
 
 export const getMachineProperties = (
