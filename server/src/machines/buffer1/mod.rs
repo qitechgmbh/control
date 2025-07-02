@@ -2,6 +2,7 @@ use api::{
     Buffer1Namespace, Mode,
 };
 use control_core::machines::Machine;
+use tracing::info;
 use std::time::Instant;
 
 pub mod act;
@@ -24,5 +25,11 @@ impl std::fmt::Display for Buffer1 {
 impl Machine for Buffer1 {}
 
 impl Buffer1 {
-    //TODO
+    pub fn buffer_go_up(&mut self) {
+        info!("buffer going up");
+    }
+
+    pub fn buffer_go_down(&mut self) {
+        info!("buffer going down");
+    }
 }
