@@ -164,19 +164,19 @@ impl MachineNewTrait for Buffer1 {
                 (device, config)
             };
 
-           // Role 4
+           // Role 2
             // 1x Stepper Puller
             // EL7031
             let (el7031_0030, el7031_0030_config) = {
                 let device_identification =
-                    get_device_identification_by_role(params.device_group, 4)?;
+                    get_device_identification_by_role(params.device_group, 2)?;
                 let device_hardware_identification_ethercat =
                     match &device_identification.device_hardware_identification {
                         DeviceHardwareIdentification::Ethercat(
                             device_hardware_identification_ethercat,
                         ) => device_hardware_identification_ethercat,
                         _ => Err(anyhow::anyhow!(
-                            "[{}::MachineNewTrait/Buffer::new] Device with role 4 is not Ethercat",
+                            "[{}::MachineNewTrait/Buffer::new] Device with role 2 is not Ethercat",
                             module_path!()
                         ))?,
                     };
@@ -195,7 +195,7 @@ impl MachineNewTrait for Buffer1 {
                         downcast_device::<EL7031_0030>(ethercat_device).await?
                     }
                     _ => Err(anyhow::anyhow!(
-                        "[{}::MachineNewTrait/Winder2::new] Device with role 5 is not an EL7031-0030",
+                        "[{}::MachineNewTrait/Buffer1::new] Device with role 2 is not an EL7031-0030",
                         module_path!()
                     ))?,
                 };
