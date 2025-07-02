@@ -1,9 +1,10 @@
 use std::sync::Arc;
 
 use control_core::{
-    machines::api::MachineApi, socketio::{event::{Event, GenericEvent}, namespace::Namespace}
+    machines::api::MachineApi, rest::mutation, socketio::{event::{Event, GenericEvent}, namespace::Namespace}
 };
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use smol::channel::Sender;
 use socketioxide::extract::SocketRef;
 
@@ -28,6 +29,12 @@ impl ModeStateEvent {
     }
 }
 
+#[derive(Deserialize, Serialize)]
+enum Mutation {
+    BufferGoUp,
+    BufferGoDown,
+}
+
 #[derive(Debug)]
 pub struct Buffer1Namespace {
     pub namespace: Namespace,
@@ -43,8 +50,12 @@ impl Buffer1Namespace {
 }
 
 impl MachineApi for Buffer1 {
-    fn api_mutate(&mut self, value: serde_json::Value) -> Result<(), anyhow::Error> {
-        //TODO: implement Mutations
+    fn api_mutate(&mut self, request_body: Value) -> Result<(), anyhow::Error> {
+        let mutation: Mutation = serde_json::from_value(request_body)?;
+        match mutation {
+            Mutation::BufferGoUp => self.buffer_go_up(),
+            Mutation::BufferGoDown => self.buffer_go_down(),
+        }
         Ok(())
     }
 
