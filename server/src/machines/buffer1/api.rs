@@ -7,12 +7,14 @@ use serde::{Deserialize, Serialize};
 use smol::channel::Sender;
 use socketioxide::extract::SocketRef;
 
-use super::BufferedWinder;
+use super::Buffer1;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum Mode {
     Standby,
     Running,
+    FillingBuffer,
+    EmptyingBuffer,
 }
 
 #[derive(Serialize, Debug, Clone)]
@@ -27,11 +29,11 @@ impl ModeStateEvent {
 }
 
 #[derive(Debug)]
-pub struct BufferedWinderNamespace {
+pub struct Buffer1Namespace {
     pub namespace: Namespace,
 }
 
-impl BufferedWinderNamespace {
+impl Buffer1Namespace {
     pub fn new(socket_queue_tx: Sender<(SocketRef, Arc<GenericEvent>)>) -> Self {
         Self {
             namespace: Namespace::new(socket_queue_tx),
@@ -40,7 +42,7 @@ impl BufferedWinderNamespace {
 
 }
 
-impl MachineApi for BufferedWinder {
+impl MachineApi for Buffer1 {
     fn api_mutate(&mut self, value: serde_json::Value) -> Result<(), anyhow::Error> {
         //TODO: implement Mutations
         Ok(())
@@ -50,5 +52,3 @@ impl MachineApi for BufferedWinder {
         &mut self.namespace.namespace
     }
 }
-
-//TODO
