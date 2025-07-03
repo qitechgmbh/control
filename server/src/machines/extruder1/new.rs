@@ -7,7 +7,7 @@ use anyhow::Error;
 use control_core::{
     actors::{
         analog_input_getter::AnalogInputGetter, digital_output_setter::DigitalOutputSetter,
-        mitsubishi_inverter_rs485::MitsubishiInverterRS485Actor,
+        mitsubishi_inverter_rs485::MitsubishiInverterController,
         temperature_input_getter::TemperatureInputGetter,
     },
     machines::{
@@ -388,7 +388,7 @@ impl MachineNewTrait for ExtruderV2 {
                 0.95,
             );
 
-            let inverter = MitsubishiInverterRS485Actor::new(SerialInterface::new(
+            let inverter = MitsubishiInverterController::new(SerialInterface::new(
                 el6021,
                 el6021::EL6021Port::SI1,
             ));
