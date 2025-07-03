@@ -1,10 +1,10 @@
 use std::time::{Duration, Instant};
 
-use super::Buffer1;
+use super::BufferV1;
 use control_core::actors::Actor;
 use tracing::info;
 
-impl Actor for Buffer1 {
+impl Actor for BufferV1 {
     fn act(
         &mut self,
         now: Instant
@@ -14,8 +14,8 @@ impl Actor for Buffer1 {
             // if last measurement is older than 1 second, emit a new measurement
             if now.duration_since(self.last_measurement_emit) > Duration::from_secs_f64(1.0 / 60.0)
             {
-                // info!("asdasd");
                 // TODO
+                // info!("emitting Event");
                 self.last_measurement_emit = now;
             }
         })

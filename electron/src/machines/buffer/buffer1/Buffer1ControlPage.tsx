@@ -13,34 +13,17 @@ import { SelectionGroup } from "@/control/SelectionGroup";
 
 export function Buffer1ControlPage() {
   const {
-    mode,
+    state,
 
-    bufferSetMode,
-    bufferGoUp,
-    bufferGoDown,
+    setBufferMode,
     } = useBuffer1();
 
   return (
     <Page>
       <ControlGrid>
-        <Label label="Buffer go up!">
-          <TouchButton
-            variant="outline"
-            icon="lu:ArrowUpToLine"
-            onClick={() => bufferGoUp()}
-          ></TouchButton>
-        </Label>
-        <Label label="Buffer go down!">
-          <TouchButton
-            variant="outline"
-            icon="lu:ArrowDownToLine"
-            onClick={() => bufferGoDown()}
-          ></TouchButton>
-        </Label>
-
         <ControlCard className="bg-red" title="Mode">
           <SelectionGroup<"Standby" | "FillingBuffer" | "EmptyingBuffer">
-            value={mode}
+            value={state?.mode_state.mode}
             orientation="vertical"
             className="grid h-full grid-cols-2 gap-2"
             options={{
@@ -63,7 +46,7 @@ export function Buffer1ControlPage() {
                 className: "h-full",
               },
             }}
-            onChange={bufferSetMode}
+            onChange={setBufferMode}
           />
         </ControlCard>
       </ControlGrid>
