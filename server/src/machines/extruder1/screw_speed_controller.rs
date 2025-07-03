@@ -48,7 +48,7 @@ impl ScrewSpeedController {
         Self {
             inverter: inverter,
             // need to tune
-            pid: ClampingTimeagnosticPidController::simple_new(0.1, 0.0, 0.0),
+            pid: ClampingTimeagnosticPidController::simple_new(0.01, 0.0, 0.02),
             last_update: now,
             target_pressure,
             target_rpm,
@@ -217,9 +217,9 @@ impl ScrewSpeedController {
 
         if !self.uses_rpm && !is_extruding && self.motor_on {
             let frequency = Frequency::new::<hertz>(0.0);
-            self.last_update = now;
             self.inverter.set_frequency_target(frequency);
             self.turn_motor_off();
+            self.last_update = now;
             return;
         }
 
@@ -228,6 +228,7 @@ impl ScrewSpeedController {
             && self.motor_on
         {
             self.turn_motor_off();
+            self.last_update = now;
             return;
         }
 
@@ -237,8 +238,10 @@ impl ScrewSpeedController {
 
         if !self.uses_rpm && is_extruding == true {
             let error = self.target_pressure - measured_pressure;
-
             let freq_change = self.pid.update(error.get::<bar>(), now);
+
+            println!("{}", freq_change);
+
             self.frequency += Frequency::new::<hertz>(freq_change);
             self.frequency = Self::clamp_frequency(
                 self.frequency,
@@ -247,13 +250,14 @@ impl ScrewSpeedController {
             );
 
             self.inverter.set_frequency_target(self.frequency);
-            self.last_update = now;
         }
+        self.last_update = now;
     }
 
     pub fn start_pressure_regulation(&mut self) {
         self.last_update = Instant::now();
         self.frequency = self.inverter.frequency;
+        self.pid.reset();
     }
 
     pub fn reset(&mut self) {
