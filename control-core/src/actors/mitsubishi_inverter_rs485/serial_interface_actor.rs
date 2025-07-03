@@ -42,9 +42,9 @@ pub struct SerialInterfaceActor {
     request_metadata_map: HashMap<u32, RequestMetaData>,
     pub response: Option<ModbusResponse>,
     pub state: State,
-    last_message_size: usize,
-    last_message_delay: u32,
-    last_message_id: u32,
+    pub last_message_size: usize,
+    pub last_message_delay: u32,
+    pub last_message_id: u32,
     last_ts: Instant,
 }
 
@@ -217,7 +217,7 @@ impl SerialInterfaceActor {
         return Some(Duration::from_nanos(full_timeout));
     }
 
-    fn act(&mut self, now_ts: Instant) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
+    pub fn act(&mut self, now_ts: Instant) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
         Box::pin(async move {
             let elapsed: Duration = now_ts.duration_since(self.last_ts);
 

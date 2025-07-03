@@ -60,10 +60,8 @@ pub enum HeatingType {
 pub struct ExtruderV2 {
     namespace: ExtruderV2Namespace,
     last_measurement_emit: Instant,
-
     mode: ExtruderV2Mode,
     screw_speed_controller: ScrewSpeedController,
-
     temperature_controller_front: TemperatureController,
     temperature_controller_middle: TemperatureController,
     temperature_controller_back: TemperatureController,
@@ -272,17 +270,6 @@ impl ExtruderV2 {
         self.screw_speed_controller
             .set_nozzle_pressure_limit(nozzle_pressure_limit);
         self.emit_state();
-    }
-
-    fn get_nozzle_pressure_limit(&mut self) -> f64 {
-        let nozzle_pressure: Pressure = self.screw_speed_controller.get_nozzle_pressure_limit();
-        return nozzle_pressure.get::<bar>();
-    }
-
-    fn get_nozzle_pressure_limit_enabled(&mut self) -> bool {
-        return self
-            .screw_speed_controller
-            .get_nozzle_pressure_limit_enabled();
     }
 }
 

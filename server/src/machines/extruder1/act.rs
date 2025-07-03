@@ -35,7 +35,6 @@ impl Actor for ExtruderV2 {
             {
                 // Emit live values at 60 FPS
                 self.emit_live_values();
-                
                 self.last_measurement_emit = now;
             }
         })
