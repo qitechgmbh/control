@@ -248,18 +248,13 @@ export function extruder2MessageHandler(
     try {
       if (eventName === "StateEvent") {
         const stateEvent = stateEventSchema.parse(event);
-        console.log("StateEvent", stateEvent);
-
         updateStore((state) => ({
           ...state,
           state: stateEvent,
         }));
       } else if (eventName === "LiveValuesEvent") {
         const liveValuesEvent = liveValuesEventSchema.parse(event);
-        console.log("LiveValuesEvent", liveValuesEvent);
-
         const timestamp = event.ts;
-
         updateStore((state) => ({
           ...state,
           screwRpm: addScrewRpm(state.screwRpm, {
