@@ -399,7 +399,7 @@ impl MachineNewTrait for ExtruderV2 {
             let screw_speed_controller =
                 ScrewSpeedController::new(inverter, target_pressure, target_rpm, pressure_sensor);
 
-            let extruder: ExtruderV2 = Self {
+            let mut extruder: ExtruderV2 = Self {
                 namespace: ExtruderV2Namespace::new(params.socket_queue_tx.clone()),
                 last_measurement_emit: Instant::now(),
                 mode: ExtruderV2Mode::Standby,
@@ -409,6 +409,7 @@ impl MachineNewTrait for ExtruderV2 {
                 temperature_controller_nozzle: temperature_controller_nozzle,
                 screw_speed_controller: screw_speed_controller,
             };
+            extruder.emit_state();
             Ok(extruder)
         })
     }
