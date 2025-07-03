@@ -27,29 +27,44 @@ import { Winder2NamespaceStore } from "@/machines/winder/winder2/winder2Namespac
 // ========== Event Schema Definitions ==========
 
 /**
- * Machine operation mode num
+ * Machine operation mode enum
  */
 export const modeSchema = z.enum(["Standby", "FillingBuffer", "EmptyingBuffer"]);
+export type Mode = z.infer<typeof modeSchema>;
+
+/**
+ * Consolidated live values event schema (60FPS data)
+ */
+export const liveValuesEventDataSchema = z.object({
+
+});
 
 /**
  * Mode state event schema
  */
-export const modeStateEventDataSchema = z.object({
+export const modeStateSchema = z.object({
   mode: modeSchema,
 });
 
+/**
+ * Consolidated state event schema (state changes only)
+ */
+
+export const stateEventDataSchema = z.object({
+  mode_state: modeStateSchema,
+})
+
 // ========== Event Schemas with Wrappers ==========
 
-export const modeStateEventSchema = eventSchema(modeStateEventDataSchema);
+export const stateEventSchema = eventSchema(stateEventDataSchema);
 
 // ========== Type Inferences ==========
 
-export type Mode = z.infer<typeof modeSchema>;
-export type ModeStateEvent = z.infer<typeof modeStateEventSchema>;
+export type StateEvent = z.infer<typeof stateEventSchema>;
 
 export type Buffer1NamespaceStore = {
   // State events (latest only)
-  modeState: ModeStateEvent | null;
+  state: StateEvent | null;
 };
 
 /**
@@ -61,7 +76,7 @@ export const createBuffer1NamespaceStore =
     create<Buffer1NamespaceStore>(() => {
       return {
         // State events (latest only)
-        modeState: null,
+        state: null,
 
         // Metric events (cached for 1 hour)
       };
@@ -89,11 +104,12 @@ export function buffer1MessageHandler(
     try {
       // Apply appropriate caching strategy based on event type
       // State events (keep only the latest)
-      if (eventName === "ModeStateEvent") {
-        console.log("ModeStateEvent", event);
+      if (eventName === "StateEvent") {
+        const stateEvent = stateEventSchema.parse(event);
+        console.log("StateEvent", event);
         updateStore((state) => ({
           ...state,
-          modeState: event as ModeStateEvent,
+          state: stateEvent,
         }));
       } else {
         handleUnhandledEventError(eventName);
