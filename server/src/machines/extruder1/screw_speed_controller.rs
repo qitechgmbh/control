@@ -240,8 +240,6 @@ impl ScrewSpeedController {
             let error = self.target_pressure - measured_pressure;
             let freq_change = self.pid.update(error.get::<bar>(), now);
 
-            println!("{}", freq_change);
-
             self.frequency += Frequency::new::<hertz>(freq_change);
             self.frequency = Self::clamp_frequency(
                 self.frequency,
