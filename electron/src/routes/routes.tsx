@@ -274,7 +274,7 @@ export const rootTree = RootRoute.addChildren([
         mock1ManualRoute,
       ]),
 
-      buffer1SerialRoute.addChildren([ buffer1ControlRoute ]),
+      buffer1SerialRoute.addChildren([buffer1ControlRoute]),
     ]),
   ]),
 ]);
