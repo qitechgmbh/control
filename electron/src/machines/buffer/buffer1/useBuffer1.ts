@@ -1,37 +1,13 @@
 import { toastError } from "@/components/Toast";
 import { useMachineMutate as useMachineMutation } from "@/client/useClient";
 import { buffer1 } from "@/machines/properties";
-import { MachineIdentificationUnique } from "@/machines/types";
+import { machineIdentificationUnique, MachineIdentificationUnique } from "@/machines/types";
 import { buffer1SerialRoute } from "@/routes/routes";
 import { z } from "zod";
 import { useEffect, useMemo } from "react";
-import { Mode, useBuffer1Namespace } from "./buffer1Namespace";
+import { StateEvent, Mode, useBuffer1Namespace } from "./buffer1Namespace";
 import { useStateOptimistic } from "@/lib/useStateOptimistic";
-
-function useBuffer(machine_identification_unique: MachineIdentificationUnique) {
-  const schemaGoUp = z.literal("BufferGoUp");
-  const { request: requestGoUp } = useMachineMutation(schemaGoUp);
-  const bufferGoUp = async () => {
-    requestGoUp({
-      machine_identification_unique,
-      data: "BufferGoUp",
-    });
-  };
-
-  const schemaGoDown = z.literal("BufferGoDown");
-  const { request: requestGoDown } = useMachineMutation(schemaGoDown);
-  const bufferGoDown = async () => {
-    requestGoDown({
-      machine_identification_unique,
-      data: "BufferGoDown",
-    });
-  };
-
-  return {
-    bufferGoDown,
-    bufferGoUp,
-  };
-}
+import { produce } from "immer";
 
 export function useBuffer1() {
   const { serial: serialString } = buffer1SerialRoute.useParams();
@@ -61,56 +37,58 @@ export function useBuffer1() {
     };
   }, [serialString]); // Only recreate when serialString changes
 
-  const buffer = useBuffer(machineIdentification);
-  const mode = useMode(machineIdentification);
+  // Get consolidated state and live values from namespace
+  const {
+    state,
+  } = useBuffer1Namespace(machineIdentification);
 
-  return {
-    ...buffer,
-    ...mode,
-  };
-}
+  // Single optimistic state for all state management
+  const stateOptimistic = useStateOptimistic<StateEvent>();
 
-export function useMode(
-  machine_identification_unique: MachineIdentificationUnique,
-): {
-  mode: Mode | undefined;
-  bufferSetMode: (value: Mode) => void;
-  modeIsLoading: boolean;
-  modeIsDisabled: boolean;
-} {
-  const state = useStateOptimistic<Mode>();
-
-  // Write path
-  const schema = z.object({
-    BufferSetMode: z.enum(["Standby", "FillingBuffer", "EmptyingBuffer"]),
-  });
-
-  const { request } = useMachineMutation(schema);
-
-  const bufferSetMode = async (value: Mode) => {
-    state.setOptimistic(value);
-    request({
-      machine_identification_unique,
-      data: { BufferSetMode: value },
-    })
-      .then((response) => {
-        if (!response.success) state.resetToReal();
-      })
-      .catch(() => state.resetToReal());
-  };
-
-  // Read path
-  const { modeState } = useBuffer1Namespace(machine_identification_unique);
+  // Update optimistic state when real state changes
   useEffect(() => {
-    if (modeState?.data) {
-      state.setReal(modeState.data.mode);
+    if (state) {
+      stateOptimistic.setReal(state);
     }
-  }, [modeState?.data.mode]);
+  }, [state, stateOptimistic])
 
+  // Helper function for optimistic updates using produce
+  const updateStateOptimistically = (
+    producer: (current: StateEvent) => void,
+    serverRequest: () => void,
+  ) => {
+    const currentState = stateOptimistic.value;
+    if (currentState) {
+      stateOptimistic.setOptimistic(produce(currentState, producer));
+    }
+    serverRequest();
+  };
+
+  // Action functions with verb-first names
+  const setBufferMode = async (mode: Mode) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.mode_state.mode = mode;
+      },
+      () =>
+        requestBufferMode({
+          machine_identification_unique: machineIdentification,
+          data: { SetBufferMode: mode },
+        })
+    )
+  };
+
+  // Mutation hooks
+  const { request: requestBufferMode } = useMachineMutation(
+    z.object({ SetBufferMode: z.enum(["Standby", "FillingBuffer", "EmptyingBuffer"])}),
+  );
+
+ 
   return {
-    mode: state.value,
-    bufferSetMode,
-    modeIsLoading: state.isOptimistic || !state.isInitialized,
-    modeIsDisabled: state.isOptimistic || !state.isInitialized,
+    // Consolidated state
+    state: stateOptimistic.value?.data,
+
+    // Action functions (verb-first)
+    setBufferMode,
   };
 }

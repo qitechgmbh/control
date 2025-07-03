@@ -1,6 +1,6 @@
 use std::{sync::Arc, time::Duration};
 
-use super::Buffer1;
+use super::{BufferV1, BufferV1Mode};
 use control_core::{
     machines::api::MachineApi,
     socketio::{
@@ -16,33 +16,49 @@ use smol::channel::Sender;
 use socketioxide::extract::SocketRef;
 use tracing::instrument;
 
-pub enum Buffer1Events {
-    Mode(Event<ModeStateEvent>),
+#[derive(Serialize, Debug, Clone, Default)]
+pub struct LiveValuesEvent {
+
+}
+
+impl LiveValuesEvent {
+    pub fn build(&self) -> Event<Self> {
+        Event::new("LiveValuesEvent", self.clone())
+    }
+}
+
+#[derive(Serialize, Debug, Clone)]
+pub struct StateEvent {
+    /// mode state
+    pub mode_state: ModeState,
+}
+
+impl StateEvent {
+    pub fn build(&self) -> Event<Self> {
+        Event::new("StateEvent", self.clone())
+    }
+}
+
+#[derive(Serialize, Debug, Clone)]
+pub struct ModeState {
+    pub mode: BufferV1Mode,
+}
+pub enum BufferV1Events {
+    LiveValues(Event<LiveValuesEvent>),
+    State(Event<StateEvent>),
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum Mode {
     Standby,
-    Running,
     FillingBuffer,
     EmptyingBuffer,
 }
 
-#[derive(Serialize, Debug, Clone)]
-pub struct ModeStateEvent {
-    pub mode: Mode,
-}
-
-impl ModeStateEvent {
-    pub fn build(&self) ->  Event<Self> {
-        Event::new("ModeStateEvent", self.clone())
-    }
-}
-
 #[derive(Deserialize, Serialize)]
 enum Mutation {
-    BufferGoUp,
-    BufferGoDown,
+    //Mode
+    SetBufferMode(BufferV1Mode),
 }
 
 #[derive(Debug)]
@@ -50,9 +66,9 @@ pub struct Buffer1Namespace {
     pub namespace: Namespace,
 }
 
-impl NamespaceCacheingLogic<Buffer1Events> for Buffer1Namespace {
+impl NamespaceCacheingLogic<BufferV1Events> for Buffer1Namespace {
     #[instrument(skip_all)]
-    fn emit(&mut self, events: Buffer1Events) {
+    fn emit(&mut self, events: BufferV1Events) {
         let event = Arc::new(events.event_value());
         let buffer_fn = events.event_cache_fn();
         self.namespace.emit(event, &buffer_fn);
@@ -67,10 +83,11 @@ impl Buffer1Namespace {
     }
 }
 
-impl CacheableEvents<Buffer1Events> for Buffer1Events {
+impl CacheableEvents<BufferV1Events> for BufferV1Events {
     fn event_value(&self) -> GenericEvent {
         match self {
-            Buffer1Events::Mode(event) => event.into(),
+            BufferV1Events::LiveValues(event) => event.into(),
+            BufferV1Events::State(event) => event.into(),
         }
     }
 
@@ -79,17 +96,17 @@ impl CacheableEvents<Buffer1Events> for Buffer1Events {
         let cache_one = cache_one_event();
         
         match self {
-            Buffer1Events::Mode(_) => cache_one_hour,
+            BufferV1Events::LiveValues(_) => cache_one_hour,
+            BufferV1Events::State(_) => cache_one,
         }
     }
 }
 
-impl MachineApi for Buffer1 {
+impl MachineApi for BufferV1 {
     fn api_mutate(&mut self, request_body: Value) -> Result<(), anyhow::Error> {
         let mutation: Mutation = serde_json::from_value(request_body)?;
         match mutation {
-            Mutation::BufferGoUp => self.buffer_go_up(),
-            Mutation::BufferGoDown => self.buffer_go_down(),
+            Mutation::SetBufferMode(mode) => self.set_mode_state(mode),
         }
         Ok(())
     }
