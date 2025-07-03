@@ -1,7 +1,7 @@
 use api::{
-    ExtruderV2Events, ExtruderV2Namespace, PidSettings, LiveValuesEvent, StateEvent,
-    RotationState, ModeState, RegulationState, PressureState, ScrewState, HeatingStates, HeatingState,
-    ExtruderSettingsState, InverterStatusState, PidSettingsStates,
+    ExtruderSettingsState, ExtruderV2Events, ExtruderV2Namespace, HeatingState, HeatingStates,
+    InverterStatusState, LiveValuesEvent, ModeState, PidSettings, PidSettingsStates, PressureState,
+    RegulationState, RotationState, ScrewState, StateEvent,
 };
 use control_core::{
     actors::mitsubishi_inverter_rs485::MitsubishiControlRequests, machines::Machine,
@@ -80,22 +80,49 @@ impl Machine for ExtruderV2 {}
 impl ExtruderV2 {
     pub fn emit_live_values(&mut self) {
         let live_values = LiveValuesEvent {
-            screw_rpm: self.screw_speed_controller.get_screw_rpm().get::<revolution_per_minute>(),
+            screw_rpm: self
+                .screw_speed_controller
+                .get_screw_rpm()
+                .get::<revolution_per_minute>(),
             pressure: self.screw_speed_controller.get_pressure().get::<bar>(),
-            nozzle_temperature: self.temperature_controller_nozzle.heating.temperature.get::<degree_celsius>(),
-            front_temperature: self.temperature_controller_front.heating.temperature.get::<degree_celsius>(),
-            back_temperature: self.temperature_controller_back.heating.temperature.get::<degree_celsius>(),
-            middle_temperature: self.temperature_controller_middle.heating.temperature.get::<degree_celsius>(),
-            nozzle_power: self.temperature_controller_nozzle.get_heating_element_wattage(),
-            front_power: self.temperature_controller_front.get_heating_element_wattage(),
-            back_power: self.temperature_controller_back.get_heating_element_wattage(),
-            middle_power: self.temperature_controller_middle.get_heating_element_wattage(),
+            nozzle_temperature: self
+                .temperature_controller_nozzle
+                .heating
+                .temperature
+                .get::<degree_celsius>(),
+            front_temperature: self
+                .temperature_controller_front
+                .heating
+                .temperature
+                .get::<degree_celsius>(),
+            back_temperature: self
+                .temperature_controller_back
+                .heating
+                .temperature
+                .get::<degree_celsius>(),
+            middle_temperature: self
+                .temperature_controller_middle
+                .heating
+                .temperature
+                .get::<degree_celsius>(),
+            nozzle_power: self
+                .temperature_controller_nozzle
+                .get_heating_element_wattage(),
+            front_power: self
+                .temperature_controller_front
+                .get_heating_element_wattage(),
+            back_power: self
+                .temperature_controller_back
+                .get_heating_element_wattage(),
+            middle_power: self
+                .temperature_controller_middle
+                .get_heating_element_wattage(),
         };
-        
+
         let event = live_values.build();
         self.namespace.emit(ExtruderV2Events::LiveValues(event));
     }
-    
+
     pub fn emit_state(&mut self) {
         let state = StateEvent {
             rotation_state: RotationState {
@@ -109,48 +136,110 @@ impl ExtruderV2 {
             },
             pressure_state: PressureState {
                 bar: self.screw_speed_controller.get_pressure().get::<bar>(),
-                target_bar: self.screw_speed_controller.get_target_pressure().get::<bar>(),
+                target_bar: self
+                    .screw_speed_controller
+                    .get_target_pressure()
+                    .get::<bar>(),
             },
             screw_state: ScrewState {
-                rpm: self.screw_speed_controller.get_screw_rpm().get::<revolution_per_minute>(),
-                target_rpm: self.screw_speed_controller.get_target_rpm().get::<revolution_per_minute>(),
+                rpm: self
+                    .screw_speed_controller
+                    .get_screw_rpm()
+                    .get::<revolution_per_minute>(),
+                target_rpm: self
+                    .screw_speed_controller
+                    .get_target_rpm()
+                    .get::<revolution_per_minute>(),
             },
             heating_states: HeatingStates {
                 nozzle: HeatingState {
-                    temperature: self.temperature_controller_nozzle.heating.temperature.get::<degree_celsius>(),
-                    target_temperature: self.temperature_controller_nozzle.heating.target_temperature.get::<degree_celsius>(),
+                    temperature: self
+                        .temperature_controller_nozzle
+                        .heating
+                        .temperature
+                        .get::<degree_celsius>(),
+                    target_temperature: self
+                        .temperature_controller_nozzle
+                        .heating
+                        .target_temperature
+                        .get::<degree_celsius>(),
                     wiring_error: self.temperature_controller_nozzle.heating.wiring_error,
                 },
                 front: HeatingState {
-                    temperature: self.temperature_controller_front.heating.temperature.get::<degree_celsius>(),
-                    target_temperature: self.temperature_controller_front.heating.target_temperature.get::<degree_celsius>(),
+                    temperature: self
+                        .temperature_controller_front
+                        .heating
+                        .temperature
+                        .get::<degree_celsius>(),
+                    target_temperature: self
+                        .temperature_controller_front
+                        .heating
+                        .target_temperature
+                        .get::<degree_celsius>(),
                     wiring_error: self.temperature_controller_front.heating.wiring_error,
                 },
                 back: HeatingState {
-                    temperature: self.temperature_controller_back.heating.temperature.get::<degree_celsius>(),
-                    target_temperature: self.temperature_controller_back.heating.target_temperature.get::<degree_celsius>(),
+                    temperature: self
+                        .temperature_controller_back
+                        .heating
+                        .temperature
+                        .get::<degree_celsius>(),
+                    target_temperature: self
+                        .temperature_controller_back
+                        .heating
+                        .target_temperature
+                        .get::<degree_celsius>(),
                     wiring_error: self.temperature_controller_back.heating.wiring_error,
                 },
                 middle: HeatingState {
-                    temperature: self.temperature_controller_middle.heating.temperature.get::<degree_celsius>(),
-                    target_temperature: self.temperature_controller_middle.heating.target_temperature.get::<degree_celsius>(),
+                    temperature: self
+                        .temperature_controller_middle
+                        .heating
+                        .temperature
+                        .get::<degree_celsius>(),
+                    target_temperature: self
+                        .temperature_controller_middle
+                        .heating
+                        .target_temperature
+                        .get::<degree_celsius>(),
                     wiring_error: self.temperature_controller_middle.heating.wiring_error,
                 },
             },
             extruder_settings_state: ExtruderSettingsState {
-                pressure_limit: self.screw_speed_controller.get_nozzle_pressure_limit().get::<bar>(),
-                pressure_limit_enabled: self.screw_speed_controller.get_nozzle_pressure_limit_enabled(),
+                pressure_limit: self
+                    .screw_speed_controller
+                    .get_nozzle_pressure_limit()
+                    .get::<bar>(),
+                pressure_limit_enabled: self
+                    .screw_speed_controller
+                    .get_nozzle_pressure_limit_enabled(),
             },
             inverter_status_state: InverterStatusState {
                 running: self.screw_speed_controller.inverter.inverter_status.running,
-                forward_running: self.screw_speed_controller.inverter.inverter_status.forward_running,
-                reverse_running: self.screw_speed_controller.inverter.inverter_status.reverse_running,
+                forward_running: self
+                    .screw_speed_controller
+                    .inverter
+                    .inverter_status
+                    .forward_running,
+                reverse_running: self
+                    .screw_speed_controller
+                    .inverter
+                    .inverter_status
+                    .reverse_running,
                 up_to_frequency: self.screw_speed_controller.inverter.inverter_status.su,
                 overload_warning: self.screw_speed_controller.inverter.inverter_status.ol,
-                no_function: self.screw_speed_controller.inverter.inverter_status.no_function,
+                no_function: self
+                    .screw_speed_controller
+                    .inverter
+                    .inverter_status
+                    .no_function,
                 output_frequency_detection: self.screw_speed_controller.inverter.inverter_status.fu,
                 abc_fault: self.screw_speed_controller.inverter.inverter_status.abc_,
-                fault_occurence: self.screw_speed_controller.inverter.inverter_status.fault_occurence,
+                fault_occurence: self
+                    .screw_speed_controller
+                    .inverter
+                    .inverter_status
+                    .fault_occurence,
             },
             pid_settings: PidSettingsStates {
                 temperature: PidSettings {
@@ -165,7 +254,7 @@ impl ExtruderV2 {
                 },
             },
         };
-        
+
         let event = state.build();
         self.namespace.emit(ExtruderV2Events::State(event));
     }
@@ -282,8 +371,6 @@ impl ExtruderV2 {
         self.emit_state();
     }
 
-
-
     fn reset_inverter(&mut self) {
         self.screw_speed_controller
             .inverter
@@ -302,8 +389,13 @@ impl ExtruderV2 {
         if self.screw_speed_controller.get_uses_rpm() == false && uses_rpm == true {
             self.screw_speed_controller
                 .set_target_screw_rpm(self.screw_speed_controller.target_rpm);
+            self.screw_speed_controller.set_uses_rpm(uses_rpm);
         }
-        self.screw_speed_controller.set_uses_rpm(uses_rpm);
+
+        if self.screw_speed_controller.get_uses_rpm() == true && uses_rpm == false {
+            self.screw_speed_controller.set_uses_rpm(uses_rpm);
+            self.screw_speed_controller.start_pressure_regulation();
+        }
         self.emit_state();
     }
 
