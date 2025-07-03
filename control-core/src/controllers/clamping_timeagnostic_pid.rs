@@ -102,7 +102,6 @@ impl ClampingTimeagnosticPidController {
         self.kp = kp;
         self.ki = ki;
         self.kd = kd;
-        println!("{:?}", self);
     }
 
     pub fn optional_clamp(value: f64, min: Option<f64>, max: Option<f64>) -> f64 {
