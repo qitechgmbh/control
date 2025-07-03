@@ -1,7 +1,7 @@
 use api::{
-    Buffer1Namespace, Mode,
+    ModeStateEvent, Buffer1Events, Buffer1Namespace, Mode,
 };
-use control_core::machines::Machine;
+use control_core::{machines::Machine, socketio::namespace::NamespaceCacheingLogic};
 use tracing::info;
 use std::time::Instant;
 
@@ -31,5 +31,13 @@ impl Buffer1 {
 
     pub fn buffer_go_down(&mut self) {
         info!("buffer going down");
+    }
+
+    fn emit_state(&mut self) {
+        let event = ModeStateEvent {
+            mode: self.mode.clone().into(),
+        }
+        .build();
+        self.namespace.emit(Buffer1Events::Mode(event));
     }
 }

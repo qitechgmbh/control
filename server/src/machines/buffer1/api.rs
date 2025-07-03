@@ -1,14 +1,24 @@
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 
+use super::Buffer1;
 use control_core::{
-    machines::api::MachineApi, rest::mutation, socketio::{event::{Event, GenericEvent}, namespace::Namespace}
+    machines::api::MachineApi,
+    socketio::{
+        event::{Event, GenericEvent},
+        namespace::{
+            cache_duration, cache_one_event, CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic
+        },
+    },
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use smol::channel::Sender;
 use socketioxide::extract::SocketRef;
+use tracing::instrument;
 
-use super::Buffer1;
+pub enum Buffer1Events {
+    Mode(Event<ModeStateEvent>),
+}
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum Mode {
@@ -40,13 +50,38 @@ pub struct Buffer1Namespace {
     pub namespace: Namespace,
 }
 
+impl NamespaceCacheingLogic<Buffer1Events> for Buffer1Namespace {
+    #[instrument(skip_all)]
+    fn emit(&mut self, events: Buffer1Events) {
+        let event = Arc::new(events.event_value());
+        let buffer_fn = events.event_cache_fn();
+        self.namespace.emit(event, &buffer_fn);
+    }
+}
+
 impl Buffer1Namespace {
     pub fn new(socket_queue_tx: Sender<(SocketRef, Arc<GenericEvent>)>) -> Self {
         Self {
             namespace: Namespace::new(socket_queue_tx),
         }
     }
+}
 
+impl CacheableEvents<Buffer1Events> for Buffer1Events {
+    fn event_value(&self) -> GenericEvent {
+        match self {
+            Buffer1Events::Mode(event) => event.into(),
+        }
+    }
+
+    fn event_cache_fn(&self) -> CacheFn {
+        let cache_one_hour = cache_duration(Duration::from_secs(60 * 60), Duration::from_secs(1));
+        let cache_one = cache_one_event();
+        
+        match self {
+            Buffer1Events::Mode(_) => cache_one_hour,
+        }
+    }
 }
 
 impl MachineApi for Buffer1 {
