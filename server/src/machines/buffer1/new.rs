@@ -37,11 +37,13 @@ use ethercat_hal::shared_config::el70x1::{EL70x1OperationMode, StmMotorConfigura
 use uom::si::f64::{Length, Velocity};
 use uom::si::length::{centimeter, millimeter};
 
+use crate::machines::buffer1::BufferV1Mode;
+
 use super::{
-    api::{Buffer1Namespace, Mode}, Buffer1
+    api::{Buffer1Namespace, Mode}, BufferV1
 };
 
-impl MachineNewTrait for Buffer1 {
+impl MachineNewTrait for BufferV1 {
     fn new<'maindevice>(params: &MachineNewParams) -> Result<Self, Error> {
         // validate general stuff
         let device_identification = params
@@ -226,13 +228,13 @@ impl MachineNewTrait for Buffer1 {
                 (device, config)
             }; 
 
-            let buffered_winder: Buffer1 = Self {
+            let mut buffer: BufferV1 = Self {
                     namespace: Buffer1Namespace::new(params.socket_queue_tx.clone()),
                     last_measurement_emit: Instant::now(),
-                    mode: Mode::Standby,
+                    mode: BufferV1Mode::Standby,
             };
-
-            Ok(buffered_winder)
+            buffer.emit_state();
+            Ok(buffer)
             })
 
     }
