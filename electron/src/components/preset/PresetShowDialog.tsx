@@ -51,6 +51,7 @@ export function PresetShowDialog<T>({
         <div className="text-sm text-gray-500">
           Last modification: {preset.lastModified.toISOString() || "N/A"}
           <br />
+          <br />
           {renderPreview(preset)}
         </div>
 
@@ -59,7 +60,7 @@ export function PresetShowDialog<T>({
         <TouchButton
           className="flex-shrink-0"
           variant="outline"
-          onClick={handleApply}
+          onClick={() => handleApply(preset)}
           icon="lu:HardDriveDownload"
         >
           Apply to Machine
