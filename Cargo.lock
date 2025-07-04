@@ -995,6 +995,7 @@ dependencies = [
  "ethercrab",
  "rand",
  "smol",
+ "tracing",
  "uom",
 ]
 

@@ -21,6 +21,7 @@ pub fn init_loop(
             loop {
                 let res = smol::block_on(rt.run(async {
                     throttle.sleep().await;
+
                     loop_once(app_state.clone()).await
                 }));
 
