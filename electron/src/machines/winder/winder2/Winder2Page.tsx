@@ -32,6 +32,12 @@ export function Winder2Page() {
         //   title: "Manual",
         //   icon: "lu:BookOpen",
         // },
+        {
+          link: "presets",
+          activeLink: "presets",
+          title: "Presets",
+          icon: "lu:Save",
+        },
       ]}
     />
   );
