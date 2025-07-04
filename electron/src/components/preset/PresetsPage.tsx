@@ -66,7 +66,7 @@ export function PresetsPage<T>({
       />
       <TouchButton onClick={handleNewPreset}>Create new Preset</TouchButton>
       <ControlGrid columns={2}>
-        {presets.get.map((preset) => (
+        {presets.get().map((preset) => (
           <PresetCard
             key={preset.id}
             preset={preset}
