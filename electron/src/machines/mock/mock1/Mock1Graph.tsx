@@ -10,7 +10,7 @@ import { useMock1 } from "./useMock";
 import { TimeSeriesValue, type Series, TimeSeries } from "@/lib/timeseries";
 
 export function Mock1GraphPage() {
-  const { sineWave } = useMock1();
+  const { sineWaves } = useMock1();
 
   const syncHook = useGraphSync(30 * 60 * 1000, "mock-graphs");
 
@@ -22,6 +22,7 @@ export function Mock1GraphPage() {
     lines: [],
   };
 
+  const sineWave = sineWaves.sineWaveSum;
   // Create inverted sine wave (Sine Wave 2)
   const offsetValues: (TimeSeriesValue | null)[] = sineWave.long.values.map(
     (v) =>
