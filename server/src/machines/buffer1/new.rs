@@ -1,46 +1,32 @@
 use std::time::Instant;
 
 use anyhow::Error;
-use control_core::actors::stepper_driver_el70x1::StepperDriverEL70x1;
-use control_core::converters::angular_step_converter::AngularStepConverter;
-use control_core::converters::linear_step_converter::LinearStepConverter;
 use control_core::machines::identification::DeviceHardwareIdentification;
 use control_core::machines::new::{
     MachineNewHardware, MachineNewParams, MachineNewTrait, get_device_identification_by_role,
     get_ethercat_device_by_index, get_subdevice_by_index, validate_no_role_dublicates,
     validate_same_machine_identification_unique,
 };
-use control_core::uom_extensions::velocity::meter_per_minute;
 use ethercat_hal::coe::ConfigurableDevice;
 use ethercat_hal::devices::ek1100::EK1100;
-use ethercat_hal::devices::el2002::{EL2002, EL2002Port};
-use ethercat_hal::devices::el7031::coe::EL7031Configuration;
-use ethercat_hal::devices::el7031::pdo::EL7031PredefinedPdoAssignment;
-use ethercat_hal::devices::el7031::{
-    EL7031, EL7031_IDENTITY_A, EL7031_IDENTITY_B, EL7031DigitalInputPort, EL7031StepperPort,
-};
 use ethercat_hal::devices::el7031_0030::coe::EL7031_0030Configuration;
 use ethercat_hal::devices::el7031_0030::pdo::EL7031_0030PredefinedPdoAssignment;
 use ethercat_hal::devices::el7031_0030::{
-    self, EL7031_0030, EL7031_0030_IDENTITY_A, EL7031_0030AnalogInputPort, EL7031_0030StepperPort,
+    self, EL7031_0030, EL7031_0030_IDENTITY_A,
 };
 use ethercat_hal::devices::el7041_0052::coe::EL7041_0052Configuration;
-use ethercat_hal::devices::el7041_0052::{EL7041_0052, EL7041_0052_IDENTITY_A, EL7041_0052Port};
+use ethercat_hal::devices::el7041_0052::{EL7041_0052, EL7041_0052_IDENTITY_A};
 use ethercat_hal::devices::{EthercatDeviceUsed, downcast_device, subdevice_identity_to_tuple};
-use ethercat_hal::devices::{ek1100::EK1100_IDENTITY_A, el2002::EL2002_IDENTITY_A};
-use ethercat_hal::io::analog_input::AnalogInput;
-use ethercat_hal::io::digital_input::DigitalInput;
-use ethercat_hal::io::digital_output::DigitalOutput;
-use ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1;
+use ethercat_hal::devices::{ek1100::EK1100_IDENTITY_A};
 use ethercat_hal::shared_config;
 use ethercat_hal::shared_config::el70x1::{EL70x1OperationMode, StmMotorConfiguration};
-use uom::si::f64::{Length, Velocity};
-use uom::si::length::{centimeter, millimeter};
+use uom::si::f64::{Frequency};
+use uom::si::frequency::hertz;
 
 use crate::machines::buffer1::BufferV1Mode;
 
 use super::{
-    api::{Buffer1Namespace, Mode}, BufferV1
+    api::{Buffer1Namespace}, BufferV1
 };
 
 impl MachineNewTrait for BufferV1 {
@@ -228,10 +214,15 @@ impl MachineNewTrait for BufferV1 {
                 (device, config)
             }; 
 
+            let t_0 = Instant::now();
+            let frequency = Frequency::new::<hertz>(0.5);
+
             let mut buffer: BufferV1 = Self {
                     namespace: Buffer1Namespace::new(params.socket_queue_tx.clone()),
                     last_measurement_emit: Instant::now(),
                     mode: BufferV1Mode::Standby,
+                    t_0: t_0,
+                    frequency: frequency,
             };
             buffer.emit_state();
             Ok(buffer)

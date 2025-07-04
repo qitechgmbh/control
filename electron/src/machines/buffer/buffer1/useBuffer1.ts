@@ -40,6 +40,7 @@ export function useBuffer1() {
   // Get consolidated state and live values from namespace
   const {
     state,
+    sineWave,
   } = useBuffer1Namespace(machineIdentification);
 
   // Single optimistic state for all state management
@@ -87,6 +88,9 @@ export function useBuffer1() {
   return {
     // Consolidated state
     state: stateOptimistic.value?.data,
+
+    // Individual live values (TimeSeries)
+    sineWave,
 
     // Action functions (verb-first)
     setBufferMode,

@@ -18,7 +18,8 @@ use tracing::instrument;
 
 #[derive(Serialize, Debug, Clone, Default)]
 pub struct LiveValuesEvent {
-
+    /// sin wave
+    pub sineWave: f64,
 }
 
 impl LiveValuesEvent {
@@ -39,13 +40,14 @@ impl StateEvent {
     }
 }
 
-#[derive(Serialize, Debug, Clone)]
-pub struct ModeState {
-    pub mode: BufferV1Mode,
-}
 pub enum BufferV1Events {
     LiveValues(Event<LiveValuesEvent>),
     State(Event<StateEvent>),
+}
+
+#[derive(Serialize, Debug, Clone)]
+pub struct ModeState {
+    pub mode: BufferV1Mode,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]

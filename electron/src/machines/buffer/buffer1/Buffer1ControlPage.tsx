@@ -10,10 +10,12 @@ import {
 import { useBuffer1 } from "./useBuffer1";
 import { ControlCard } from "@/control/ControlCard";
 import { SelectionGroup } from "@/control/SelectionGroup";
+import { TimeSeriesValueNumeric } from "@/control/TimeSeriesValue";
 
 export function Buffer1ControlPage() {
   const {
     state,
+    sineWave,
 
     setBufferMode,
     } = useBuffer1();
@@ -47,6 +49,35 @@ export function Buffer1ControlPage() {
               },
             }}
             onChange={setBufferMode}
+          />
+        </ControlCard>
+
+        <ControlCard title="Sine Wave">
+          <TimeSeriesValueNumeric
+            label="Current Value"
+            timeseries={sineWave}
+            renderValue={(value) => value.toFixed(3)}
+          />
+        </ControlCard>
+        <ControlCard title="Sine Wave">
+          <TimeSeriesValueNumeric
+            label="Current Value"
+            timeseries={sineWave}
+            renderValue={(value) => value.toFixed(3)}
+          />
+        </ControlCard>
+        <ControlCard title="Sine Wave">
+          <TimeSeriesValueNumeric
+            label="Current Value"
+            timeseries={sineWave}
+            renderValue={(value) => value.toFixed(3)}
+          />
+        </ControlCard>
+        <ControlCard title="Sine Wave">
+          <TimeSeriesValueNumeric
+            label="Current Value"
+            timeseries={sineWave}
+            renderValue={(value) => value.toFixed(3)}
           />
         </ControlCard>
       </ControlGrid>
