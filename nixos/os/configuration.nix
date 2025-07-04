@@ -54,6 +54,8 @@
     # Reliability
     "panic=10"              # Auto-reboot 10 seconds after kernel panic
     "oops=panic"            # Treat kernel oops as panic for auto-recovery
+    "usbcore.autosuspend=-1"     # Possibly fixes dre disconnect issue?
+
   ];
 
   # Add these system settings for a more comprehensive kiosk setup
