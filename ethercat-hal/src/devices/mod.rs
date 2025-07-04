@@ -39,6 +39,7 @@ use el3001::EL3001_IDENTITY_A;
 use el3021::EL3021_IDENTITY_A;
 use el3024::EL3024_IDENTITY_A;
 use el3204::EL3204_IDENTITY_A;
+use el4002::{EL4002, EL4002_IDENTITY_A};
 use el6021::{EL6021_IDENTITY_A, EL6021_IDENTITY_B, EL6021_IDENTITY_C, EL6021_IDENTITY_D};
 
 use el3204::EL3204_IDENTITY_B;
@@ -202,6 +203,7 @@ pub fn device_from_subdevice_identity_tuple(
         EL3021_IDENTITY_A => Ok(Arc::new(RwLock::new(el3021::EL3021::new()))),
         EL3024_IDENTITY_A => Ok(Arc::new(RwLock::new(el3024::EL3024::new()))),
         EL3062_0030_IDENTITY_A => Ok(Arc::new(RwLock::new(el3062_0030::EL3062_0030::new()))),
+        EL4002_IDENTITY_A => Ok(Arc::new(RwLock::new(el4002::EL4002::new()))),
         EL6021_IDENTITY_A | EL6021_IDENTITY_B | EL6021_IDENTITY_C | EL6021_IDENTITY_D => {
             Ok(Arc::new(RwLock::new(el6021::EL6021::new())))
         }
@@ -213,7 +215,7 @@ pub fn device_from_subdevice_identity_tuple(
         EL7031_0030_IDENTITY_A => Ok(Arc::new(RwLock::new(el7031_0030::EL7031_0030::new()))),
         EL7041_0052_IDENTITY_A => Ok(Arc::new(RwLock::new(el7041_0052::EL7041_0052::new()))),
         _ => Err(anyhow::anyhow!(
-            "[{}::device_from_subdevice] No Driver: vendor_id: {:?}, product_id: {:?}, revision: {:?}",
+            "[{}::device_from_subdevice] No Driver: vendor_id: 0x{:x?}, product_id: 0x{:x?}, revision: 0x{:x?}",
             module_path!(),
             subdevice_identity_tuple.0,
             subdevice_identity_tuple.1,

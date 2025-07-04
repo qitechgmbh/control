@@ -6,7 +6,7 @@ use control_core::realtime::{set_core_affinity_first_core, set_realtime_priority
 use smol::channel::Sender;
 use std::sync::Arc;
 use std::time::Duration;
-use tracing::{debug, error, instrument, trace, trace_span};
+use tracing::{instrument, trace_span};
 
 pub fn init_loop(
     thread_panic_tx: Sender<PanicDetails>,
@@ -38,13 +38,8 @@ pub fn init_loop(
             }
 
             loop {
-                tracing::info!("Loop started");
-
                 let res = smol::block_on(rt.run(async {
-                    tracing::info!("Loop iteration started");
-
                     throttle.sleep().await;
-                    tracing::info!("sleep");
 
                     loop_once(app_state.clone()).await
                 }));
