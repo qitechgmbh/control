@@ -16,12 +16,8 @@ import {
   ThrottledStoreUpdater,
 } from "../../../client/socketioStore";
 import { MachineIdentificationUnique } from "@/machines/types";
+import { createTimeSeries, TimeSeries, } from "@/lib/timeseries";
 import { useMemo } from "react";
-import {
-  createTimeSeries,
-  TimeSeries,
-  TimeSeriesValue,
-} from "@/lib/timeseries";
 
 // ========== Event Schema Definitions ==========
 
@@ -35,7 +31,7 @@ export type Mode = z.infer<typeof modeSchema>;
  * Consolidated live values event schema (60FPS data)
  */
 export const liveValuesEventDataSchema = z.object({
-  sineWave: z.number(),
+  sine_wave: z.number(),
 });
 
 /**
@@ -46,16 +42,24 @@ export const modeStateSchema = z.object({
 });
 
 /**
+ * Sinewave state event schema
+ */
+export const sineWaveStateSchema = z.object({
+  frequency: z.number(),
+});
+
+/**
  * Consolidated state event schema (state changes only)
  */
 
 export const stateEventDataSchema = z.object({
   mode_state: modeStateSchema,
-})
+  sinewave_state: sineWaveStateSchema,
+});
 
 // ========== Event Schemas with Wrappers ==========
 
-export const liveValuesEventSchema = eventSchema(liveValuesEventDataSchema)
+export const liveValuesEventSchema = eventSchema(liveValuesEventDataSchema);
 export const stateEventSchema = eventSchema(stateEventDataSchema);
 
 // ========== Type Inferences ==========
@@ -67,7 +71,7 @@ export type Buffer1NamespaceStore = {
   state: StateEvent | null;
 
   // Time series data for live values
-  sineWave: TimeSeries;
+  sine_wave: TimeSeries;
 };
 
 // Constants for time durations
@@ -81,7 +85,7 @@ const { initialTimeSeries: sineWave, insert: addSineWave } = createTimeSeries(
   ONE_SECOND,
   FIVE_SECOND,
   ONE_HOUR,
-)
+);
 
 /**
  * Creates a message handler for Buffer1 namespace events with validation and appropriate caching strategies
@@ -107,7 +111,6 @@ export function buffer1MessageHandler(
       // State events (keep only the latest)
       if (eventName === "StateEvent") {
         const stateEvent = stateEventSchema.parse(event);
-        console.log("StateEvent", event);
         updateStore((state) => ({
           ...state,
           state: stateEvent,
@@ -117,8 +120,8 @@ export function buffer1MessageHandler(
         const timestamp = event.ts;
         updateStore((state) => ({
           ...state,
-          sineWave: addSineWave(state.sineWave, {
-            value: liveValuesEvent.data.sineWave,
+          sine_wave: addSineWave(state.sine_wave, {
+            value: liveValuesEvent.data.sine_wave,
             timestamp,
           }),
         }));
@@ -141,7 +144,7 @@ export const createBuffer1NamespaceStore =
     create<Buffer1NamespaceStore>(() => {
       return {
         state: null,
-        sineWave,
+        sine_wave: sineWave,
       };
     });
 
