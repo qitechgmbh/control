@@ -3,10 +3,7 @@ use api::{
     InverterStatusState, LiveValuesEvent, ModeState, PidSettings, PidSettingsStates, PressureState,
     RegulationState, RotationState, ScrewState, StateEvent,
 };
-use control_core::{
-    actors::mitsubishi_inverter_rs485::MitsubishiControlRequests, machines::Machine,
-    socketio::namespace::NamespaceCacheingLogic,
-};
+use control_core::{machines::Machine, socketio::namespace::NamespaceCacheingLogic};
 use screw_speed_controller::ScrewSpeedController;
 use serde::{Deserialize, Serialize};
 use std::time::Instant;
@@ -19,6 +16,7 @@ use uom::si::{
 };
 pub mod act;
 pub mod api;
+pub mod mitsubishi_inverter_rs485;
 pub mod new;
 pub mod screw_speed_controller;
 pub mod temperature_controller;
@@ -60,10 +58,8 @@ pub enum HeatingType {
 pub struct ExtruderV2 {
     namespace: ExtruderV2Namespace,
     last_measurement_emit: Instant,
-
     mode: ExtruderV2Mode,
     screw_speed_controller: ScrewSpeedController,
-
     temperature_controller_front: TemperatureController,
     temperature_controller_middle: TemperatureController,
     temperature_controller_back: TemperatureController,
@@ -273,17 +269,6 @@ impl ExtruderV2 {
             .set_nozzle_pressure_limit(nozzle_pressure_limit);
         self.emit_state();
     }
-
-    fn get_nozzle_pressure_limit(&mut self) -> f64 {
-        let nozzle_pressure: Pressure = self.screw_speed_controller.get_nozzle_pressure_limit();
-        return nozzle_pressure.get::<bar>();
-    }
-
-    fn get_nozzle_pressure_limit_enabled(&mut self) -> bool {
-        return self
-            .screw_speed_controller
-            .get_nozzle_pressure_limit_enabled();
-    }
 }
 
 impl ExtruderV2 {
@@ -372,9 +357,7 @@ impl ExtruderV2 {
     }
 
     fn reset_inverter(&mut self) {
-        self.screw_speed_controller
-            .inverter
-            .add_request(MitsubishiControlRequests::ResetInverter.into());
+        self.screw_speed_controller.inverter.reset_inverter();
     }
 
     fn set_mode_state(&mut self, mode: ExtruderV2Mode) {
