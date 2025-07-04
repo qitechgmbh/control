@@ -2,9 +2,8 @@ use std::time::Instant;
 
 use control_core::{
     actors::{
-        Actor,
-        analog_input_getter::AnalogInputGetter,
-        mitsubishi_inverter_rs485::{MitsubishiControlRequests, MitsubishiInverterController},
+        Actor, analog_input_getter::AnalogInputGetter,
+        mitsubishi_inverter_rs485::MitsubishiInverterController,
     },
     controllers::clamping_timeagnostic_pid::ClampingTimeagnosticPidController,
     converters::transmission_converter::TransmissionConverter,
@@ -128,19 +127,12 @@ impl ScrewSpeedController {
 
     // Send Motor Turn Off Request to the Inverter
     pub fn turn_motor_off(&mut self) {
-        self.inverter
-            .add_request(MitsubishiControlRequests::StopMotor.into());
+        self.inverter.stop_motor();
         self.motor_on = false;
     }
 
     pub fn turn_motor_on(&mut self) {
-        if self.forward_rotation {
-            self.inverter
-                .add_request(MitsubishiControlRequests::StartReverseRotation.into());
-        } else {
-            self.inverter
-                .add_request(MitsubishiControlRequests::StartForwardRotation.into());
-        }
+        self.inverter.set_rotation(self.forward_rotation);
         self.motor_on = true;
     }
 
