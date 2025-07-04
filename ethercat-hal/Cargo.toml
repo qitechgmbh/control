@@ -15,6 +15,7 @@ smol = "2.0.2"
 uom = "0.36.0"
 rand = "0.9.2"
 futures = "0.3.31"
+tracing = "0.1.41"
 
 [dev-dependencies]
 approx = "0.5.1"
