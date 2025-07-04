@@ -54,12 +54,14 @@ export function usePresets<T>({
   };
 
   const getPresetsForMachine = () =>
-    store.presets.filter((preset) =>
-      machineIdentificationEquals(
-        preset.machine_identification,
-        machine_identification,
-      ),
-    );
+    store.presets
+      .sort((a, b) => b.lastModified.getTime() - a.lastModified.getTime())
+      .filter((preset) =>
+        machineIdentificationEquals(
+          preset.machine_identification,
+          machine_identification,
+        ),
+      );
 
   return {
     get: getPresetsForMachine,
