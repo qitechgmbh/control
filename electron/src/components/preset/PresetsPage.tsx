@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, JSX } from "react";
 import { TouchInput } from "@/components/touch/TouchInput";
 import { TouchButton } from "@/components/touch/TouchButton";
 import { ControlGrid } from "@/control/ControlGrid";
@@ -9,6 +9,7 @@ import { PresetCard } from "./PresetCard";
 
 type PresetsPageProps<T> = UsePresetsParams<T> & {
   applyPreset: (preset: Preset<T>) => void;
+  renderPreview: (preset: Preset<T>) => JSX.Element;
 };
 
 export function PresetsPage<T>({
@@ -16,6 +17,7 @@ export function PresetsPage<T>({
   machine_identification,
   readCurrentState,
   schemaVersion,
+  renderPreview,
 }: PresetsPageProps<T>) {
   const presets = usePresets<T>({
     machine_identification,
@@ -33,17 +35,6 @@ export function PresetsPage<T>({
     }
 
     presets.updateFromCurrentState(preset);
-  };
-
-  const handleApplyPreset = (preset: Preset<T>) => {
-    // TODO: this needs to be a proper modal and display the values about to be loaded
-    const msg = `Are you sure you want to apply the preset "${preset.name}"? If done carelessly, this could damage machines.`;
-
-    if (!confirm(msg)) {
-      return;
-    }
-
-    applyPreset(preset);
   };
 
   const handleDeletePreset = (preset: Preset<T>) => {
@@ -71,8 +62,9 @@ export function PresetsPage<T>({
             key={preset.id}
             preset={preset}
             onOverwrite={handleOverwritePreset}
-            onApply={handleApplyPreset}
+            onApply={applyPreset}
             onDelete={handleDeletePreset}
+            renderPreview={renderPreview}
           />
         ))}
       </ControlGrid>
