@@ -22,7 +22,7 @@ use ethercat_hal::{
         EthercatDeviceUsed, downcast_device,
         ek1100::{EK1100, EK1100_IDENTITY_A},
         el2008::{EL2008, EL2008_IDENTITY_A, EL2008Port},
-        el4002::{EL4002, EL4002_IDENTITY_A, EL4002Configuration, EL4002Port},
+        el4002::{EL4002, EL4002_IDENTITY_A, EL4002Configuration},
         subdevice_identity_to_tuple,
     },
     io::{
@@ -100,7 +100,7 @@ impl MachineNewTrait for WaterCooling {
             }
 
             // Role 1 - EL2008 Digital Output Module
-            let el2008 = {
+            let _el2008 = {
                 let device_identification =
                     get_device_identification_by_role(params.device_group, 1)?;
                 let device_hardware_identification_ethercat = match &device_identification
@@ -140,7 +140,7 @@ impl MachineNewTrait for WaterCooling {
             };
 
             // Role 2 - EL4002 Analog Output Module
-            let el4002 = {
+            let _el4002 = {
                 let device_identification =
                     get_device_identification_by_role(params.device_group, 2)?;
                 let device_hardware_identification_ethercat = match &device_identification
@@ -167,26 +167,17 @@ impl MachineNewTrait for WaterCooling {
                     }
                     _ => {
                         return Err(anyhow::anyhow!(
-                            "[{}::MachineNewTrait/WaterCooling::new] Device with role 2 is not an EL4002",
+                            "[{}::MachineNewTrait/WaterCooling::new] Device with role 2 is not an el4002",
                             module_path!()
                         ));
                     }
                 };
-                // Configure the device with default settings
-                device
-                    .write()
-                    .await
-                    .write_config(&subdevice, &EL4002Configuration::default())
-                    .await?;
                 {
                     let mut device_guard = device.write().await;
                     device_guard.set_used(true);
                 }
                 device
             };
-
-            let watercooling_min_temperature = ThermodynamicTemperature::new::<degree_celsius>(0.0);
-
             // Initialize water cooling system
             let water_cooling = Self {
                 namespace: WaterCoolingNamespace::new(params.socket_queue_tx.clone()),

@@ -151,16 +151,16 @@ impl Configuration for EL4002Configuration {
         &self,
         device: &EthercrabSubDevicePreoperational<'a>,
     ) -> Result<(), anyhow::Error> {
-        // Write configuration for Channel 1
+        // // Write configuration for Channel 1
         self.channel1.write_channel_config(device, 0x8000).await?;
 
-        // Write configuration for Channel 2
+        // // Write configuration for Channel 2
         self.channel2.write_channel_config(device, 0x8010).await?;
 
-        self.pdo_assignment
-            .txpdo_assignment()
-            .write_config(device)
-            .await?;
+        // self.pdo_assignment
+        //     .txpdo_assignment()
+        //     .write_config(device)
+        //     .await?;
         self.pdo_assignment
             .rxpdo_assignment()
             .write_config(device)
@@ -194,9 +194,9 @@ impl PredefinedPdoAssignment<EL4002TxPdo, EL4002RxPdo> for EL4002PredefinedPdoAs
     }
 }
 
-pub const EL4002_VENDOR_ID: u32 = 0x2;
-pub const EL4002_PRODUCT_ID: u32 = 0xfa23052;
-pub const EL4002_REVISION_A: u32 = 0x140000;
+pub const EL4002_VENDOR_ID: u32 = 0x00000002;
+pub const EL4002_PRODUCT_ID: u32 = 0x0FA23052;
+pub const EL4002_REVISION_A: u32 = 0x00140000;
 
 pub const EL4002_IDENTITY_A: SubDeviceIdentityTuple =
     (EL4002_VENDOR_ID, EL4002_PRODUCT_ID, EL4002_REVISION_A);
