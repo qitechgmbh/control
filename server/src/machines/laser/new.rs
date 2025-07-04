@@ -41,16 +41,11 @@ impl MachineNewTrait for LaserMachine {
             lower_tolerance: Length::new::<millimeter>(0.05),
             diameter: Length::new::<millimeter>(1.75),
         };
-        let mut laser_machine = Self {
+        Ok(Self {
             laser,
             namespace: LaserMachineNamespace::new(params.socket_queue_tx.clone()),
             last_measurement_emit: Instant::now(),
             laser_target,
-        };
-        
-        // Emit initial state
-        laser_machine.emit_state();
-        
-        Ok(laser_machine)
+        })
     }
 }

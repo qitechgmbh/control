@@ -17,114 +17,81 @@ use smol::channel::Sender;
 use socketioxide::extract::SocketRef;
 use tracing::instrument;
 
-#[derive(Serialize, Debug, Clone, Default)]
-pub struct LiveValuesEvent {
-    /// screw rpm
-    pub screw_rpm: f64,
-    /// pressure in bar
-    pub pressure: f64,
-    /// nozzle temperature in celsius
-    pub nozzle_temperature: f64,
-    /// front temperature in celsius
-    pub front_temperature: f64,
-    /// back temperature in celsius
-    pub back_temperature: f64,
-    /// middle temperature in celsius
-    pub middle_temperature: f64,
-    /// nozzle heating power in watts
-    pub nozzle_power: f64,
-    /// front heating power in watts
-    pub front_power: f64,
-    /// back heating power in watts
-    pub back_power: f64,
-    /// middle heating power in watts
-    pub middle_power: f64,
-}
-
-impl LiveValuesEvent {
-    pub fn build(&self) -> Event<Self> {
-        Event::new("LiveValuesEvent", self.clone())
-    }
+#[derive(Serialize, Debug, Clone)]
+pub struct FrequencyEvent {
+    frequency: f64,
+    // is this the Frequency in the eeprom or the one in memory(running)
+    is_ram: bool,
 }
 
 #[derive(Serialize, Debug, Clone)]
-pub struct StateEvent {
-    /// rotation state
-    pub rotation_state: RotationState,
-    /// mode state
-    pub mode_state: ModeState,
-    /// regulation state
-    pub regulation_state: RegulationState,
-    /// pressure state
-    pub pressure_state: PressureState,
-    /// screw state
-    pub screw_state: ScrewState,
-    /// heating states
-    pub heating_states: HeatingStates,
-    /// extruder settings state
-    pub extruder_settings_state: ExtruderSettingsState,
-    /// inverter status state
-    pub inverter_status_state: InverterStatusState,
-    /// pid settings
-    pub pid_settings: PidSettingsStates,
-}
-
-impl StateEvent {
-    pub fn build(&self) -> Event<Self> {
-        Event::new("StateEvent", self.clone())
-    }
+pub struct MotorStateEvent {
+    start: bool,
+    forward_rotation: bool,
 }
 
 #[derive(Serialize, Debug, Clone)]
-pub struct RotationState {
-    pub forward: bool,
-}
-
-#[derive(Serialize, Debug, Clone)]
-pub struct ModeState {
-    pub mode: ExtruderV2Mode,
-}
-
-#[derive(Serialize, Debug, Clone)]
-pub struct RegulationState {
-    pub uses_rpm: bool,
-}
-
-#[derive(Serialize, Debug, Clone)]
-pub struct PressureState {
-    pub bar: f64,
-    pub target_bar: f64,
-}
-
-#[derive(Serialize, Debug, Clone)]
-pub struct ScrewState {
-    pub rpm: f64,
-    pub target_rpm: f64,
-}
-
-#[derive(Serialize, Debug, Clone)]
-pub struct HeatingStates {
-    pub nozzle: HeatingState,
-    pub front: HeatingState,
-    pub back: HeatingState,
-    pub middle: HeatingState,
-}
-
-#[derive(Serialize, Debug, Clone)]
-pub struct HeatingState {
+pub struct HeatingStateEvent {
     pub temperature: f64,
     pub target_temperature: f64,
     pub wiring_error: bool,
 }
 
-#[derive(Serialize, Debug, Clone)]
-pub struct ExtruderSettingsState {
-    pub pressure_limit: f64,
-    pub pressure_limit_enabled: bool,
+impl HeatingStateEvent {
+    pub fn build(&self, heating_type: HeatingType) -> Event<Self> {
+        let event = match heating_type {
+            HeatingType::Nozzle => Event::new("NozzleHeatingStateEvent", self.clone()),
+            HeatingType::Front => Event::new("FrontHeatingStateEvent", self.clone()),
+            HeatingType::Back => Event::new("BackHeatingStateEvent", self.clone()),
+            HeatingType::Middle => Event::new("MiddleHeatingStateEvent", self.clone()),
+        };
+        return event;
+    }
 }
 
 #[derive(Serialize, Debug, Clone)]
-pub struct InverterStatusState {
+pub struct RotationStateEvent {
+    pub forward: bool,
+}
+
+impl RotationStateEvent {
+    pub fn build(&self) -> Event<Self> {
+        Event::new("RotationStateEvent", self.clone())
+    }
+}
+
+#[derive(Serialize, Debug, Clone)]
+pub struct OperationModeEvent {
+    operation_mode: u8,
+    mode_name: String,
+}
+
+#[derive(Serialize, Debug, Clone)]
+pub struct ModeEvent {
+    pub mode: ExtruderV2Mode,
+}
+
+impl ModeEvent {
+    pub fn build(&self) -> Event<Self> {
+        Event::new("ModeStateEvent", self.clone())
+    }
+}
+
+#[derive(Serialize, Debug, Clone)]
+pub struct RegulationStateEvent {
+    pub uses_rpm: bool,
+}
+
+impl RegulationStateEvent {
+    pub fn build(&self) -> Event<Self> {
+        Event::new("RegulationStateEvent", self.clone())
+    }
+}
+
+/// Inverter status Register 40009
+// bit 8-14 is unused
+#[derive(Serialize, Debug, Clone)]
+pub struct InverterStatusEvent {
     /// RUN (Inverter running)
     pub running: bool,
     /// Forward running motor spins forward
@@ -145,6 +112,67 @@ pub struct InverterStatusState {
     pub fault_occurence: bool,
 }
 
+impl InverterStatusEvent {
+    pub fn build(&self) -> Event<Self> {
+        Event::new("InverterStatusEvent", self.clone())
+    }
+}
+
+/// This is used when we just need a simple confirmation, that what we did, didnt cause errors
+#[derive(Serialize, Debug, Clone)]
+pub struct InverterSuccessEvent {
+    success: bool,
+}
+
+#[derive(Serialize, Debug, Clone)]
+pub struct ErrorEvent {
+    message: String,
+    fault_code: u16,
+}
+#[derive(Serialize, Debug, Clone)]
+
+pub struct PressureStateEvent {
+    pub bar: f64,
+    pub target_bar: f64,
+}
+
+impl PressureStateEvent {
+    pub fn build(&self) -> Event<Self> {
+        Event::new("PressureStateEvent", self.clone())
+    }
+}
+
+#[derive(Serialize, Debug, Clone)]
+
+pub struct ScrewStateEvent {
+    pub rpm: f64,
+    pub target_rpm: f64,
+}
+
+impl ScrewStateEvent {
+    pub fn build(&self) -> Event<Self> {
+        Event::new("ScrewStateEvent", self.clone())
+    }
+}
+
+#[derive(Serialize, Debug, Clone)]
+
+pub struct ExtruderSettingsStateEvent {
+    pub pressure_limit: f64,
+    pub pressure_limit_enabled: bool,
+}
+
+impl ExtruderSettingsStateEvent {
+    pub fn build(&self) -> Event<Self> {
+        Event::new("ExtruderSettingsStateEvent", self.clone())
+    }
+}
+
+pub enum PidType {
+    Temperature,
+    Pressure,
+}
+
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct PidSettings {
     pub ki: f64,
@@ -153,14 +181,48 @@ pub struct PidSettings {
 }
 
 #[derive(Serialize, Debug, Clone)]
-pub struct PidSettingsStates {
-    pub temperature: PidSettings,
-    pub pressure: PidSettings,
+pub struct PidSettingsEvent {
+    pub ki: f64,
+    pub kp: f64,
+    pub kd: f64,
+}
+
+impl PidSettingsEvent {
+    pub fn build(&self, pid_type: PidType) -> Event<Self> {
+        match pid_type {
+            PidType::Temperature => Event::new("TemperaturePidSettingsEvent", self.clone()),
+            PidType::Pressure => Event::new("PressurePidSettingsEvent", self.clone()),
+        }
+    }
+}
+
+#[derive(Serialize, Debug, Clone)]
+pub struct HeatingPowerEvent {
+    pub wattage: f64,
+}
+
+impl HeatingPowerEvent {
+    pub fn build(&self, heating_type: HeatingType) -> Event<Self> {
+        match heating_type {
+            HeatingType::Nozzle => Event::new("NozzleHeatingPowerEvent", self.clone()),
+            HeatingType::Front => Event::new("FrontHeatingPowerEvent", self.clone()),
+            HeatingType::Back => Event::new("BackHeatingPowerEvent", self.clone()),
+            HeatingType::Middle => Event::new("MiddleHeatingPowerEvent", self.clone()),
+        }
+    }
 }
 
 pub enum ExtruderV2Events {
-    LiveValues(Event<LiveValuesEvent>),
-    State(Event<StateEvent>),
+    RotationStateEvent(Event<RotationStateEvent>),
+    ModeEvent(Event<ModeEvent>),
+    RegulationStateEvent(Event<RegulationStateEvent>),
+    PressureStateEvent(Event<PressureStateEvent>),
+    ScrewStateEvent(Event<ScrewStateEvent>),
+    HeatingStateEvent(Event<HeatingStateEvent>),
+    ExtruderSettingsStateEvent(Event<ExtruderSettingsStateEvent>),
+    HeatingPowerEvent(Event<HeatingPowerEvent>),
+    InverterStatusEvent(Event<InverterStatusEvent>),
+    PidSettingsEvent(Event<PidSettingsEvent>),
 }
 
 #[derive(Deserialize, Serialize)]
@@ -168,27 +230,27 @@ enum Mutation {
     /// INVERTER
     /// Frequency Control
     // Set Rotation also starts the motor
-    SetInverterRotationDirection(bool),
-    SetInverterTargetPressure(f64),
-    SetInverterTargetRpm(f64),
-    SetInverterRegulation(bool),
+    InverterRotationSetDirection(bool),
+    InverterSetTargetPressure(f64),
+    InverterSetTargetRpm(f64),
+    InverterSetRegulation(bool),
 
     //Mode
-    SetExtruderMode(ExtruderV2Mode),
-    SetFrontHeatingTargetTemperature(f64),
-    SetBackHeatingTargetTemperature(f64),
-    SetMiddleHeatingTemperature(f64),
-    SetNozzleHeatingTemperature(f64),
+    ExtruderSetMode(ExtruderV2Mode),
+    FrontHeatingSetTargetTemperature(f64),
+    BackHeatingSetTargetTemperature(f64),
+    MiddleSetHeatingTemperature(f64),
+    NozzleSetHeatingTemperature(f64),
 
     // SetPressure
-    SetExtruderPressureLimit(f64),
-    SetExtruderPressureLimitIsEnabled(bool),
+    ExtruderSetPressureLimit(f64),
+    ExtruderSetPressureLimitIsEnabled(bool),
 
     // Pid Configure
     SetPressurePidSettings(PidSettings),
 
     // Reset
-    ResetInverter(bool),
+    InverterReset(bool),
 }
 
 #[derive(Debug)]
@@ -216,8 +278,16 @@ impl ExtruderV2Namespace {
 impl CacheableEvents<ExtruderV2Events> for ExtruderV2Events {
     fn event_value(&self) -> GenericEvent {
         match self {
-            ExtruderV2Events::LiveValues(event) => event.into(),
-            ExtruderV2Events::State(event) => event.into(),
+            ExtruderV2Events::RotationStateEvent(event) => event.into(),
+            ExtruderV2Events::ModeEvent(event) => event.into(),
+            ExtruderV2Events::RegulationStateEvent(event) => event.into(),
+            ExtruderV2Events::PressureStateEvent(event) => event.into(),
+            ExtruderV2Events::ScrewStateEvent(event) => event.into(),
+            ExtruderV2Events::HeatingStateEvent(event) => event.into(),
+            ExtruderV2Events::ExtruderSettingsStateEvent(event) => event.into(),
+            ExtruderV2Events::HeatingPowerEvent(event) => event.into(),
+            ExtruderV2Events::InverterStatusEvent(event) => event.into(),
+            ExtruderV2Events::PidSettingsEvent(event) => event.into(),
         }
     }
 
@@ -226,8 +296,16 @@ impl CacheableEvents<ExtruderV2Events> for ExtruderV2Events {
         let cache_one = cache_one_event();
 
         match self {
-            ExtruderV2Events::LiveValues(_) => cache_one_hour,
-            ExtruderV2Events::State(_) => cache_one,
+            ExtruderV2Events::RotationStateEvent(_) => cache_one,
+            ExtruderV2Events::ModeEvent(_) => cache_one,
+            ExtruderV2Events::RegulationStateEvent(_) => cache_one,
+            ExtruderV2Events::ExtruderSettingsStateEvent(_) => cache_one,
+            ExtruderV2Events::HeatingStateEvent(_) => cache_one,
+            ExtruderV2Events::PressureStateEvent(_) => cache_one_hour,
+            ExtruderV2Events::ScrewStateEvent(_) => cache_one_hour,
+            ExtruderV2Events::HeatingPowerEvent(_) => cache_one_hour,
+            ExtruderV2Events::InverterStatusEvent(_) => cache_one,
+            ExtruderV2Events::PidSettingsEvent(_) => cache_one,
         }
     }
 }
@@ -237,29 +315,29 @@ impl MachineApi for ExtruderV2 {
         // there are multiple Modbus Frames that are "prebuilt"
         let control: Mutation = serde_json::from_value(request_body)?;
         match control {
-            Mutation::SetExtruderMode(mode) => self.set_mode_state(mode),
-            Mutation::SetInverterRotationDirection(forward) => self.set_rotation_state(forward),
-            Mutation::SetInverterRegulation(uses_rpm) => self.set_regulation(uses_rpm),
-            Mutation::SetInverterTargetPressure(bar) => self.set_target_pressure(bar),
-            Mutation::SetInverterTargetRpm(rpm) => self.set_target_rpm(rpm),
-            Mutation::ResetInverter(_) => self.reset_inverter(),
+            Mutation::ExtruderSetMode(mode) => self.set_mode_state(mode),
+            Mutation::InverterRotationSetDirection(forward) => self.set_rotation_state(forward),
+            Mutation::InverterSetRegulation(uses_rpm) => self.set_regulation(uses_rpm),
+            Mutation::InverterSetTargetPressure(bar) => self.set_target_pressure(bar),
+            Mutation::InverterSetTargetRpm(rpm) => self.set_target_rpm(rpm),
+            Mutation::InverterReset(_) => self.reset_inverter(),
 
-            Mutation::SetFrontHeatingTargetTemperature(temp) => {
+            Mutation::FrontHeatingSetTargetTemperature(temp) => {
                 self.set_target_temperature(temp, HeatingType::Front)
             }
-            Mutation::SetMiddleHeatingTemperature(temp) => {
+            Mutation::MiddleSetHeatingTemperature(temp) => {
                 self.set_target_temperature(temp, HeatingType::Middle)
             }
-            Mutation::SetBackHeatingTargetTemperature(temp) => {
+            Mutation::BackHeatingSetTargetTemperature(temp) => {
                 self.set_target_temperature(temp, HeatingType::Back)
             }
-            Mutation::SetNozzleHeatingTemperature(temp) => {
+            Mutation::NozzleSetHeatingTemperature(temp) => {
                 self.set_target_temperature(temp, HeatingType::Nozzle)
             }
-            Mutation::SetExtruderPressureLimit(pressure_limit) => {
+            Mutation::ExtruderSetPressureLimit(pressure_limit) => {
                 self.set_nozzle_pressure_limit(pressure_limit);
             }
-            Mutation::SetExtruderPressureLimitIsEnabled(enabled) => {
+            Mutation::ExtruderSetPressureLimitIsEnabled(enabled) => {
                 self.set_nozzle_pressure_limit_is_enabled(enabled);
             }
 

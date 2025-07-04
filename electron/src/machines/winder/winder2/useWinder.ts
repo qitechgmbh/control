@@ -18,6 +18,234 @@ import {
 import { useEffect, useMemo } from "react";
 import { produce } from "immer";
 
+function useSpoolSpeedController(
+  machine_identification_unique: MachineIdentificationUnique,
+): {
+  spoolSpeedControllerState: SpoolSpeedControllerStateEvent | null;
+  setRegulationMode: (mode: SpoolRegulationMode) => void;
+  setMinMaxMinSpeed: (speed: number) => void;
+  setMinMaxMaxSpeed: (speed: number) => void;
+  setAdaptiveTensionTarget: (value: number) => void;
+  setAdaptiveRadiusLearningRate: (value: number) => void;
+  setAdaptiveMaxSpeedMultiplier: (value: number) => void;
+  setAdaptiveAccelerationFactor: (value: number) => void;
+  setAdaptiveDeaccelerationUrgencyMultiplier: (value: number) => void;
+  spoolControllerIsLoading: boolean;
+  spoolControllerIsDisabled: boolean;
+} {
+  const spoolStateOptimistic =
+    useStateOptimistic<SpoolSpeedControllerStateEvent["data"]>();
+
+  // Write path - Set regulation mode
+  const regulationSchema = z.object({
+    SpoolSetRegulationMode: z.enum(["Adaptive", "MinMax"]),
+  });
+  const { request: requestRegulation } = useMachineMutation(regulationSchema);
+  const setRegulationMode = async (mode: SpoolRegulationMode) => {
+    if (spoolStateOptimistic.value) {
+      spoolStateOptimistic.setOptimistic({
+        ...spoolStateOptimistic.value,
+        regulation_mode: mode,
+      });
+    }
+    requestRegulation({
+      machine_identification_unique,
+      data: { SpoolSetRegulationMode: mode },
+    })
+      .then((response) => {
+        if (!response.success) spoolStateOptimistic.resetToReal();
+      })
+      .catch(() => spoolStateOptimistic.resetToReal());
+  };
+
+  // Write path - Set minmax min speed
+  const minSpeedSchema = z.object({
+    SpoolSetMinMaxMinSpeed: z.number(),
+  });
+  const { request: requestMinSpeed } = useMachineMutation(minSpeedSchema);
+  const setMinMaxMinSpeed = async (speed: number) => {
+    if (spoolStateOptimistic.value) {
+      spoolStateOptimistic.setOptimistic({
+        ...spoolStateOptimistic.value,
+        minmax_min_speed: speed,
+      });
+    }
+    requestMinSpeed({
+      machine_identification_unique,
+      data: { SpoolSetMinMaxMinSpeed: speed },
+    })
+      .then((response) => {
+        if (!response.success) spoolStateOptimistic.resetToReal();
+      })
+      .catch(() => spoolStateOptimistic.resetToReal());
+  };
+
+  // Write path - Set minmax max speed
+  const maxSpeedSchema = z.object({
+    SpoolSetMinMaxMaxSpeed: z.number(),
+  });
+  const { request: requestMaxSpeed } = useMachineMutation(maxSpeedSchema);
+  const setMinMaxMaxSpeed = async (speed: number) => {
+    if (spoolStateOptimistic.value) {
+      spoolStateOptimistic.setOptimistic({
+        ...spoolStateOptimistic.value,
+        minmax_max_speed: speed,
+      });
+    }
+    requestMaxSpeed({
+      machine_identification_unique,
+      data: { SpoolSetMinMaxMaxSpeed: speed },
+    })
+      .then((response) => {
+        if (!response.success) spoolStateOptimistic.resetToReal();
+      })
+      .catch(() => spoolStateOptimistic.resetToReal());
+  };
+
+  // Write path - Set adaptive parameters
+  const adaptiveTensionTargetSchema = z.object({
+    SpoolSetAdaptiveTensionTarget: z.number(),
+  });
+  const { request: requestAdaptiveTensionTarget } = useMachineMutation(
+    adaptiveTensionTargetSchema,
+  );
+  const setAdaptiveTensionTarget = async (value: number) => {
+    if (spoolStateOptimistic.value) {
+      spoolStateOptimistic.setOptimistic({
+        ...spoolStateOptimistic.value,
+        adaptive_tension_target: value,
+      });
+    }
+    requestAdaptiveTensionTarget({
+      machine_identification_unique,
+      data: { SpoolSetAdaptiveTensionTarget: value },
+    })
+      .then((response) => {
+        if (!response.success) spoolStateOptimistic.resetToReal();
+      })
+      .catch(() => spoolStateOptimistic.resetToReal());
+  };
+
+  const adaptiveRadiusLearningRateSchema = z.object({
+    SpoolSetAdaptiveRadiusLearningRate: z.number(),
+  });
+  const { request: requestAdaptiveRadiusLearningRate } = useMachineMutation(
+    adaptiveRadiusLearningRateSchema,
+  );
+  const setAdaptiveRadiusLearningRate = async (value: number) => {
+    if (spoolStateOptimistic.value) {
+      spoolStateOptimistic.setOptimistic({
+        ...spoolStateOptimistic.value,
+        adaptive_radius_learning_rate: value,
+      });
+    }
+    requestAdaptiveRadiusLearningRate({
+      machine_identification_unique,
+      data: { SpoolSetAdaptiveRadiusLearningRate: value },
+    })
+      .then((response) => {
+        if (!response.success) spoolStateOptimistic.resetToReal();
+      })
+      .catch(() => spoolStateOptimistic.resetToReal());
+  };
+
+  const adaptiveMaxSpeedMultiplierSchema = z.object({
+    SpoolSetAdaptiveMaxSpeedMultiplier: z.number(),
+  });
+  const { request: requestAdaptiveMaxSpeedMultiplier } = useMachineMutation(
+    adaptiveMaxSpeedMultiplierSchema,
+  );
+  const setAdaptiveMaxSpeedMultiplier = async (value: number) => {
+    if (spoolStateOptimistic.value) {
+      spoolStateOptimistic.setOptimistic({
+        ...spoolStateOptimistic.value,
+        adaptive_max_speed_multiplier: value,
+      });
+    }
+    requestAdaptiveMaxSpeedMultiplier({
+      machine_identification_unique,
+      data: { SpoolSetAdaptiveMaxSpeedMultiplier: value },
+    })
+      .then((response) => {
+        if (!response.success) spoolStateOptimistic.resetToReal();
+      })
+      .catch(() => spoolStateOptimistic.resetToReal());
+  };
+
+  const adaptiveAccelerationFactorSchema = z.object({
+    SpoolSetAdaptiveAccelerationFactor: z.number(),
+  });
+  const { request: requestAdaptiveAccelerationFactor } = useMachineMutation(
+    adaptiveAccelerationFactorSchema,
+  );
+  const setAdaptiveAccelerationFactor = async (value: number) => {
+    if (spoolStateOptimistic.value) {
+      spoolStateOptimistic.setOptimistic({
+        ...spoolStateOptimistic.value,
+        adaptive_acceleration_factor: value,
+      });
+    }
+    requestAdaptiveAccelerationFactor({
+      machine_identification_unique,
+      data: { SpoolSetAdaptiveAccelerationFactor: value },
+    })
+      .then((response) => {
+        if (!response.success) spoolStateOptimistic.resetToReal();
+      })
+      .catch(() => spoolStateOptimistic.resetToReal());
+  };
+
+  const adaptiveDeaccelerationUrgencyMultiplierSchema = z.object({
+    SpoolSetAdaptiveDeaccelerationUrgencyMultiplier: z.number(),
+  });
+  const { request: requestAdaptiveDeaccelerationUrgencyMultiplier } =
+    useMachineMutation(adaptiveDeaccelerationUrgencyMultiplierSchema);
+  const setAdaptiveDeaccelerationUrgencyMultiplier = async (value: number) => {
+    if (spoolStateOptimistic.value) {
+      spoolStateOptimistic.setOptimistic({
+        ...spoolStateOptimistic.value,
+        adaptive_deacceleration_urgency_multiplier: value,
+      });
+    }
+    requestAdaptiveDeaccelerationUrgencyMultiplier({
+      machine_identification_unique,
+      data: { SpoolSetAdaptiveDeaccelerationUrgencyMultiplier: value },
+    })
+      .then((response) => {
+        if (!response.success) spoolStateOptimistic.resetToReal();
+      })
+      .catch(() => spoolStateOptimistic.resetToReal());
+  };
+
+  // Read path
+  const { spoolSpeedControllerState } = useWinder2Namespace(
+    machine_identification_unique,
+  );
+
+  // Update real values from server
+  useEffect(() => {
+    if (spoolSpeedControllerState?.data) {
+      spoolStateOptimistic.setReal(spoolSpeedControllerState.data);
+    }
+  }, [spoolSpeedControllerState]);
+
+  return {
+    spoolSpeedControllerState,
+    setRegulationMode,
+    setMinMaxMinSpeed,
+    setMinMaxMaxSpeed,
+    setAdaptiveTensionTarget,
+    setAdaptiveRadiusLearningRate,
+    setAdaptiveMaxSpeedMultiplier,
+    setAdaptiveAccelerationFactor,
+    setAdaptiveDeaccelerationUrgencyMultiplier,
+    spoolControllerIsLoading:
+      spoolStateOptimistic.isOptimistic || !spoolStateOptimistic.isInitialized,
+    spoolControllerIsDisabled:
+      spoolStateOptimistic.isOptimistic || !spoolStateOptimistic.isInitialized,
+  };
+}
+
 export function useWinder2() {
   const { serial: serialString } = winder2SerialRoute.useParams();
 

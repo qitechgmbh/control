@@ -382,7 +382,13 @@ impl MachineNewTrait for Winder2 {
             };
 
             // initalize events
-            new.emit_state();
+            new.emit_traverse_state();
+            new.emit_traverse_position();
+            new.emit_mode_state();
+            new.emit_tension_arm_state();
+            new.emit_puller_state();
+            new.emit_spool_speed_controller_state();
+
             Ok(new)
         })
     }
