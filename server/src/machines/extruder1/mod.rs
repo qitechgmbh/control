@@ -3,10 +3,7 @@ use api::{
     InverterStatusState, LiveValuesEvent, ModeState, PidSettings, PidSettingsStates, PressureState,
     RegulationState, RotationState, ScrewState, StateEvent,
 };
-use control_core::{
-    actors::mitsubishi_inverter_rs485::MitsubishiControlRequests, machines::Machine,
-    socketio::namespace::NamespaceCacheingLogic,
-};
+use control_core::{machines::Machine, socketio::namespace::NamespaceCacheingLogic};
 use screw_speed_controller::ScrewSpeedController;
 use serde::{Deserialize, Serialize};
 use std::time::Instant;
@@ -359,9 +356,7 @@ impl ExtruderV2 {
     }
 
     fn reset_inverter(&mut self) {
-        self.screw_speed_controller
-            .inverter
-            .add_request(MitsubishiControlRequests::ResetInverter.into());
+        self.screw_speed_controller.inverter.reset_inverter();
     }
 
     fn set_mode_state(&mut self, mode: ExtruderV2Mode) {

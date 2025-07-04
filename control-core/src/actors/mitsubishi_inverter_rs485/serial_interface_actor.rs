@@ -37,14 +37,13 @@ pub struct SerialInterfaceActor {
     pub serial_interface: SerialInterface,
     pub baudrate: Option<u32>,
     pub encoding: Option<SerialEncoding>,
-    request_map: HashMap<u32, ModbusRequest>,
-    // the priority
-    request_metadata_map: HashMap<u32, RequestMetaData>,
     pub response: Option<ModbusResponse>,
     pub state: State,
     pub last_message_size: usize,
     pub last_message_delay: u32,
     pub last_message_id: u32,
+    request_map: HashMap<u32, ModbusRequest>,
+    request_metadata_map: HashMap<u32, RequestMetaData>,
     last_ts: Instant,
 }
 
@@ -62,6 +61,14 @@ impl SerialInterfaceActor {
             state: State::Uninitialized,
             last_ts: Instant::now(),
             last_message_id: 0,
+        }
+    }
+
+    pub fn is_initialized(&mut self) -> bool {
+        if let State::Uninitialized = self.state {
+            return false;
+        } else {
+            return true;
         }
     }
 
@@ -101,6 +108,7 @@ impl SerialInterfaceActor {
             match response {
                 Ok(result) => {
                     self.last_message_size = result.clone().data.len() + 4;
+                    self.state = State::WaitingForReceiveAccept;
                     Ok(result)
                 }
                 Err(_) => {
@@ -156,12 +164,12 @@ impl SerialInterfaceActor {
                 }
                 Err(_) => tracing::error!("ERROR: serial_interface.write_message has failed"),
             }
-
+            self.state = State::WaitingForRequestAccept;
             self.last_message_size = modbus_request.len();
         })
     }
 
-    pub async fn initialize(&self) -> bool {
+    pub async fn initialize_communication_settings(&mut self) -> bool {
         let baudrate = (self.serial_interface.get_baudrate)().await;
         let encoding = (self.serial_interface.get_serial_encoding)().await;
 
@@ -173,7 +181,25 @@ impl SerialInterfaceActor {
             None => return false,
             Some(_) => (),
         };
+
+        self.baudrate = baudrate;
+        self.encoding = encoding;
+
         return true;
+    }
+
+    pub async fn initialize(&mut self) -> bool {
+        if let State::Uninitialized = self.state {
+            let res = (self.serial_interface.initialize)().await;
+
+            if res == true {
+                self.state = State::ReadyToSend;
+                self.initialize_communication_settings().await;
+                return res;
+            }
+            return res;
+        }
+        return false;
     }
 
     fn set_ignored_times_modbus_requests(&mut self) {
@@ -221,12 +247,15 @@ impl SerialInterfaceActor {
         Box::pin(async move {
             let elapsed: Duration = now_ts.duration_since(self.last_ts);
 
-            let timeout = self
-                .calculate_modbus_rtu_timeout(
-                    Duration::from_nanos(self.last_message_delay as u64),
-                    self.last_message_size,
-                )
-                .unwrap();
+            let timeout = self.calculate_modbus_rtu_timeout(
+                Duration::from_nanos(self.last_message_delay as u64),
+                self.last_message_size,
+            );
+
+            let timeout = match timeout {
+                Some(timeout) => timeout,
+                None => return,
+            };
 
             if elapsed < timeout {
                 return;

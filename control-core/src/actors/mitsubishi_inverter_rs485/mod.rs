@@ -355,7 +355,11 @@ impl MitsubishiInverterController {
     }
 
     fn handle_read_inverter_status(&mut self, resp: ModbusResponse) {
-        let status_bytes: [u8; 2] = resp.data[1..3].try_into().unwrap();
+        let status_bytes: [u8; 2] = match resp.data[1..3].try_into() {
+            Ok(res) => res,
+            Err(_) => return,
+        };
+
         let bits: &BitSlice<u8, Lsb0> = BitSlice::<_, Lsb0>::from_slice(&status_bytes);
         self.inverter_status = MitsubishiInverterStatus {
             running: bits[8],
@@ -407,13 +411,17 @@ impl MitsubishiInverterController {
         scaled.round() as u16
     }
 
-    pub fn add_request(&mut self, request: MitsubishiModbusRequest) {
+    fn add_request(&mut self, request: MitsubishiModbusRequest) {
         self.serial_actor.add_request(
             request.control_request_type.into(),
             request.priority as u32,
             request.request,
             Some(request.request_type.timeout_duration().as_nanos() as u32),
         );
+    }
+
+    pub fn stop_motor(&mut self) {
+        self.add_request(MitsubishiControlRequests::StopMotor.into());
     }
 
     pub fn set_frequency_target(&mut self, frequency: Frequency) {
@@ -441,7 +449,19 @@ impl MitsubishiInverterController {
         }
     }
 
+    pub fn reset_inverter(&mut self) {
+        self.add_request(MitsubishiControlRequests::ResetInverter.into());
+    }
+
     pub async fn act(&mut self, now: Instant) {
+        if self.serial_actor.is_initialized() == false {
+            let res = self.serial_actor.initialize().await;
+            if res {
+                self.add_request(MitsubishiControlRequests::ResetInverter.into());
+            }
+            return;
+        }
+
         self.add_request(MitsubishiControlRequests::ReadInverterStatus.into());
         self.add_request(MitsubishiControlRequests::ReadMotorFrequency.into());
         self.serial_actor.act(now).await;
