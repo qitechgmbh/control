@@ -20,7 +20,7 @@ use ethercat_hal::devices::{EthercatDeviceUsed, downcast_device, subdevice_ident
 use ethercat_hal::devices::{ek1100::EK1100_IDENTITY_A};
 use ethercat_hal::shared_config;
 use ethercat_hal::shared_config::el70x1::{EL70x1OperationMode, StmMotorConfiguration};
-use uom::si::f64::{Frequency};
+use uom::si::f64::Frequency;
 use uom::si::frequency::hertz;
 
 use crate::machines::buffer1::BufferV1Mode;
@@ -215,7 +215,7 @@ impl MachineNewTrait for BufferV1 {
             }; 
 
             let t_0 = Instant::now();
-            let frequency = Frequency::new::<hertz>(0.5);
+            let frequency: Frequency = Frequency::new::<hertz>(0.5);
 
             let mut buffer: BufferV1 = Self {
                     namespace: Buffer1Namespace::new(params.socket_queue_tx.clone()),

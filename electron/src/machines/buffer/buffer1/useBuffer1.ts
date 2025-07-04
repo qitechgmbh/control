@@ -1,7 +1,10 @@
 import { toastError } from "@/components/Toast";
 import { useMachineMutate as useMachineMutation } from "@/client/useClient";
 import { buffer1 } from "@/machines/properties";
-import { machineIdentificationUnique, MachineIdentificationUnique } from "@/machines/types";
+import {
+  machineIdentificationUnique,
+  MachineIdentificationUnique,
+} from "@/machines/types";
 import { buffer1SerialRoute } from "@/routes/routes";
 import { z } from "zod";
 import { useEffect, useMemo } from "react";
@@ -38,10 +41,7 @@ export function useBuffer1() {
   }, [serialString]); // Only recreate when serialString changes
 
   // Get consolidated state and live values from namespace
-  const {
-    state,
-    sineWave,
-  } = useBuffer1Namespace(machineIdentification);
+  const { state, sine_wave: sine_wave } = useBuffer1Namespace(machineIdentification);
 
   // Single optimistic state for all state management
   const stateOptimistic = useStateOptimistic<StateEvent>();
@@ -51,7 +51,7 @@ export function useBuffer1() {
     if (state) {
       stateOptimistic.setReal(state);
     }
-  }, [state, stateOptimistic])
+  }, [state, stateOptimistic]);
 
   // Helper function for optimistic updates using produce
   const updateStateOptimistically = (
@@ -75,24 +75,45 @@ export function useBuffer1() {
         requestBufferMode({
           machine_identification_unique: machineIdentification,
           data: { SetBufferMode: mode },
-        })
-    )
+        }),
+    );
+  };
+
+  const setBufferFrequency = async (frequency: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.sinewave_state.frequency = frequency;
+      },
+      () =>
+        requestBufferFrequency({
+          machine_identification_unique: machineIdentification,
+          data: { SetBufferFrequency: frequency },
+        }),
+    );
   };
 
   // Mutation hooks
   const { request: requestBufferMode } = useMachineMutation(
-    z.object({ SetBufferMode: z.enum(["Standby", "FillingBuffer", "EmptyingBuffer"])}),
+    z.object({
+      SetBufferMode: z.enum(["Standby", "FillingBuffer", "EmptyingBuffer"]),
+    }),
   );
 
- 
+  const { request: requestBufferFrequency } = useMachineMutation(
+      z.object({
+        SetBufferFrequency: z.number(),
+      }),
+  );
+
   return {
     // Consolidated state
     state: stateOptimistic.value?.data,
 
     // Individual live values (TimeSeries)
-    sineWave,
+    sine_wave,
 
     // Action functions (verb-first)
     setBufferMode,
+    setBufferFrequency,
   };
 }

@@ -19,7 +19,7 @@ use tracing::instrument;
 #[derive(Serialize, Debug, Clone, Default)]
 pub struct LiveValuesEvent {
     /// sin wave
-    pub sineWave: f64,
+    pub sine_wave: f64,
 }
 
 impl LiveValuesEvent {
@@ -32,6 +32,8 @@ impl LiveValuesEvent {
 pub struct StateEvent {
     /// mode state
     pub mode_state: ModeState,
+    /// sinewave state
+    pub sinewave_state: SineWaveState,
 }
 
 impl StateEvent {
@@ -57,10 +59,17 @@ pub enum Mode {
     EmptyingBuffer,
 }
 
+#[derive(Serialize, Debug, Clone)]
+pub struct SineWaveState {
+    pub frequency: f64,
+}
+
 #[derive(Deserialize, Serialize)]
 enum Mutation {
     //Mode
     SetBufferMode(BufferV1Mode),
+    //Frequency
+    SetBufferFrequency(f64),
 }
 
 #[derive(Debug)]
@@ -109,6 +118,7 @@ impl MachineApi for BufferV1 {
         let mutation: Mutation = serde_json::from_value(request_body)?;
         match mutation {
             Mutation::SetBufferMode(mode) => self.set_mode_state(mode),
+            Mutation::SetBufferFrequency(frequency) => self.set_frequency_state(frequency),
         }
         Ok(())
     }

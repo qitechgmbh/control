@@ -1,14 +1,11 @@
 use api::{
-    BufferV1Events, Buffer1Namespace, StateEvent, ModeState, LiveValuesEvent,
+    BufferV1Events, Buffer1Namespace, StateEvent, ModeState, SineWaveState, LiveValuesEvent,
 };
 use control_core::{machines::Machine, socketio::namespace::NamespaceCacheingLogic};
 use serde::{Deserialize, Serialize};
 use tracing::info;
+use uom::si::{f64::Frequency, frequency::hertz};
 use std::time::Instant;
-use uom::si::{
-    f64::Frequency,
-    frequency::{hertz, millihertz},
-};
 
 pub mod act;
 pub mod api;
@@ -43,7 +40,7 @@ impl Machine for BufferV1 {}
 impl BufferV1 {
     pub fn emit_live_values(&mut self) {
         let live_values = LiveValuesEvent {
-            sineWave: self.generate_sine_wave(),
+            sine_wave: self.generate_sine_wave(),
         };
 
         let event = live_values.build();
@@ -54,7 +51,10 @@ impl BufferV1 {
         let state = StateEvent {
             mode_state: ModeState {
                 mode: self.mode.clone(),
-            }
+            },
+            sinewave_state: SineWaveState {
+                frequency: self.frequency.get::<hertz>(),
+            },
         };
 
         let event = state.build();
@@ -70,16 +70,16 @@ impl BufferV1 {
         let freq_hz = self.frequency.get::<hertz>();
 
         // Calculate sine wave: sin(2π * frequency * time)
-        let y = match self.mode {
+        let amplitude = match self.mode {
             BufferV1Mode::Standby => 0.0,
             _ => (2.0 * std::f64::consts::PI * freq_hz * elapsed).sin(),
         };
 
-        y
+       amplitude
     }
 
-    pub fn set_frequency(&mut self, frequency_mhz: f64) {
-        self.frequency = Frequency::new::<millihertz>(frequency_mhz);
+    pub fn change_frequency(&mut self, frequency: f64) {
+        self.frequency = Frequency::new::<hertz>(frequency);
     }
 
     // DEBUG MESSAGES
@@ -145,6 +145,11 @@ impl BufferV1 {
 impl BufferV1 {
     fn set_mode_state(&mut self, mode: BufferV1Mode) {
         self.switch_mode(mode);
+        self.emit_state();
+    }
+
+    fn set_frequency_state(&mut self, frequency_mhz: f64) {
+        self.change_frequency(frequency_mhz);
         self.emit_state();
     }
 }
