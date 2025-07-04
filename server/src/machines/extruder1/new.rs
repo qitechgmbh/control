@@ -1,5 +1,6 @@
 use super::{
     ExtruderV2, ExtruderV2Mode, Heating, api::ExtruderV2Namespace,
+    mitsubishi_inverter_rs485::MitsubishiInverterController,
     screw_speed_controller::ScrewSpeedController,
 };
 use crate::machines::extruder1::temperature_controller::TemperatureController;
@@ -7,7 +8,6 @@ use anyhow::Error;
 use control_core::{
     actors::{
         analog_input_getter::AnalogInputGetter, digital_output_setter::DigitalOutputSetter,
-        mitsubishi_inverter_rs485::MitsubishiInverterController,
         temperature_input_getter::TemperatureInputGetter,
     },
     machines::{
