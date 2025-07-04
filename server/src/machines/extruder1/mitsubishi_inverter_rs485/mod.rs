@@ -1,7 +1,7 @@
-use crate::modbus::{ModbusFunctionCode, ModbusRequest, ModbusResponse};
 use bitvec::{order::Lsb0, slice::BitSlice};
+use control_core::actors::serial_interface_actor::SerialInterfaceActor;
+use control_core::modbus::{ModbusFunctionCode, ModbusRequest, ModbusResponse};
 use ethercat_hal::io::serial_interface::SerialInterface;
-use serial_interface_actor::SerialInterfaceActor;
 use std::{
     time::{Duration, Instant},
     u16,
@@ -10,7 +10,6 @@ use uom::{
     ConstZero,
     si::{f64::Frequency, frequency::centihertz},
 };
-pub mod serial_interface_actor;
 
 /// Specifies all System environmet Variables
 /// Register addresses are calculated as follows: Register-value 40002 -> address: 40002-40001 -> address:0x1
