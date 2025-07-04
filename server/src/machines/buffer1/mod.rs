@@ -5,6 +5,10 @@ use control_core::{machines::Machine, socketio::namespace::NamespaceCacheingLogi
 use serde::{Deserialize, Serialize};
 use tracing::info;
 use std::time::Instant;
+use uom::si::{
+    f64::Frequency,
+    frequency::{hertz, millihertz},
+};
 
 pub mod act;
 pub mod api;
@@ -22,6 +26,10 @@ pub struct BufferV1 {
     namespace: Buffer1Namespace,
     last_measurement_emit: Instant,
 
+    // TESTING LIVE EVENTS
+    t_0: Instant,
+    frequency: Frequency,
+
     mode: BufferV1Mode,
 }
 
@@ -34,7 +42,9 @@ impl Machine for BufferV1 {}
 
 impl BufferV1 {
     pub fn emit_live_values(&mut self) {
-        let live_values = LiveValuesEvent {};
+        let live_values = LiveValuesEvent {
+            sineWave: self.generate_sine_wave(),
+        };
 
         let event = live_values.build();
         self.namespace.emit(BufferV1Events::LiveValues(event));
@@ -53,6 +63,25 @@ impl BufferV1 {
 }
 
 impl BufferV1 {
+    // Testing Live Value
+    pub fn generate_sine_wave(&mut self) -> f64 {
+        let now = Instant::now();
+        let elapsed = now.duration_since(self.t_0).as_secs_f64();
+        let freq_hz = self.frequency.get::<hertz>();
+
+        // Calculate sine wave: sin(2π * frequency * time)
+        let y = match self.mode {
+            BufferV1Mode::Standby => 0.0,
+            _ => (2.0 * std::f64::consts::PI * freq_hz * elapsed).sin(),
+        };
+
+        y
+    }
+
+    pub fn set_frequency(&mut self, frequency_mhz: f64) {
+        self.frequency = Frequency::new::<millihertz>(frequency_mhz);
+    }
+
     // DEBUG MESSAGES
     fn fill_buffer(&mut self) {
         info!("Filling Buffer");

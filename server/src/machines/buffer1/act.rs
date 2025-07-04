@@ -2,7 +2,6 @@ use std::time::{Duration, Instant};
 
 use super::BufferV1;
 use control_core::actors::Actor;
-use tracing::info;
 
 impl Actor for BufferV1 {
     fn act(
@@ -14,8 +13,9 @@ impl Actor for BufferV1 {
             // if last measurement is older than 1 second, emit a new measurement
             if now.duration_since(self.last_measurement_emit) > Duration::from_secs_f64(1.0 / 60.0)
             {
-                // TODO
-                // info!("emitting Event");
+                // Emit live values at 60 FPS
+                self.emit_live_values();
+
                 self.last_measurement_emit = now;
             }
         })
