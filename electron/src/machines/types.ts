@@ -28,6 +28,13 @@ export const machineIdentificaiton = z.object({
 
 export type MachineIdentification = z.infer<typeof machineIdentificaiton>;
 
+export function machineIdentificationEquals(
+  a: MachineIdentification,
+  b: MachineIdentification,
+): boolean {
+  return a.vendor === b.vendor && a.machine === b.machine;
+}
+
 export const machineIdentificationUnique = z.object({
   machine_identification: machineIdentificaiton,
   serial: z.number(),
