@@ -1,10 +1,7 @@
 use std::time::Instant;
 
 use control_core::{
-    actors::{
-        Actor, analog_input_getter::AnalogInputGetter,
-        mitsubishi_inverter_rs485::MitsubishiInverterController,
-    },
+    actors::{Actor, analog_input_getter::AnalogInputGetter},
     controllers::clamping_timeagnostic_pid::ClampingTimeagnosticPidController,
     converters::transmission_converter::TransmissionConverter,
     helpers::interpolation::normalize,
@@ -16,6 +13,8 @@ use uom::si::{
     frequency::{cycle_per_minute, hertz},
     pressure::bar,
 };
+
+use super::mitsubishi_inverter_rs485::MitsubishiInverterController;
 
 #[derive(Debug)]
 pub struct ScrewSpeedController {

@@ -16,6 +16,7 @@ use uom::si::{
 };
 pub mod act;
 pub mod api;
+pub mod mitsubishi_inverter_rs485;
 pub mod new;
 pub mod screw_speed_controller;
 pub mod temperature_controller;
