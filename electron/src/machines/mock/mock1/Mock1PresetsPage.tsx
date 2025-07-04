@@ -11,6 +11,16 @@ type Mock1PresetData = {
   frequency3: number;
 };
 
+function renderPreview(preset: Preset<Mock1PresetData>) {
+  return (
+    <>
+      Frequency 1 = {preset.data?.frequency1 || "N/A"} mHz <br />
+      Frequency 2 = {preset.data?.frequency2 || "N/A"} mHz <br />
+      Frequency 3 = {preset.data?.frequency3 || "N/A"} mHz
+    </>
+  );
+}
+
 export function Mock1PresetsPage() {
   const { mockSetFrequency1, mockSetFrequency2, mockSetFrequency3, mockState } =
     useMock1();
@@ -33,6 +43,7 @@ export function Mock1PresetsPage() {
       readCurrentState={readCurrentState}
       schemaVersion={1}
       applyPreset={applyPreset}
+      renderPreview={renderPreview}
     />
   );
 }
