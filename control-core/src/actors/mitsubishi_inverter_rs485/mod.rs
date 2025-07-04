@@ -613,8 +613,15 @@ impl Actor for MitsubishiInverterRS485Actor {
                 self.last_message_size,
             );
 
-            if elapsed < timeout {
-                return;
+            match self.state {
+                State::Uninitialized => (),
+                State::WaitingForRequestAccept => (),
+                State::WaitingForReceiveAccept => (),
+                _ => {
+                    if elapsed < timeout {
+                        return;
+                    }
+                }
             }
 
             self.add_request(MitsubishiControlRequests::ReadMotorFrequency.into());
@@ -636,7 +643,7 @@ impl Actor for MitsubishiInverterRS485Actor {
                             }
                         }
                     }
-                    self.next_response_type = ResponseType::NoResponse;
+                    // self.next_response_type = ResponseType::NoResponse;
                 }
                 State::ReadyToSend => {
                     self.send_modbus_request().await;

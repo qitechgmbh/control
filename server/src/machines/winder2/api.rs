@@ -18,12 +18,6 @@ use socketioxide::extract::SocketRef;
 use tracing::instrument;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub enum AutostopTransition {
-    Standby,
-    Pull,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum Mode {
     Standby,
     Hold,
@@ -57,65 +51,87 @@ impl From<Mode> for Winder2Mode {
 enum Mutation {
     // Traverse
     /// Position in mm from home point
-    TraverseSetLimitOuter(f64),
+    SetTraverseLimitOuter(f64),
     /// Position in mm from home point
-    TraverseSetLimitInner(f64),
+    SetTraverseLimitInner(f64),
     /// Step size in mm for traverse movement
-    TraverseSetStepSize(f64),
+    SetTraverseStepSize(f64),
     /// Padding in mm for traverse movement limits
-    TraverseSetPadding(f64),
-    TraverseGotoLimitOuter,
-    TraverseGotoLimitInner,
+    SetTraversePadding(f64),
+    GotoTraverseLimitOuter,
+    GotoTraverseLimitInner,
     /// Find home point
-    TraverseGotoHome,
-    TraverseEnableLaserpointer(bool),
+    GotoTraverseHome,
+    EnableTraverseLaserpointer(bool),
 
     // Puller
     /// on = speed, off = stop
-    PullerSetRegulationMode(PullerRegulationMode),
-    PullerSetTargetSpeed(f64),
-    PullerSetTargetDiameter(f64),
-    PullerSetForward(bool),
+    SetPullerRegulationMode(PullerRegulationMode),
+    SetPullerTargetSpeed(f64),
+    SetPullerTargetDiameter(f64),
+    SetPullerForward(bool),
 
     // Spool Speed Controller
-    SpoolSetRegulationMode(super::spool_speed_controller::SpoolSpeedControllerType),
-    SpoolSetMinMaxMinSpeed(f64),
-    SpoolSetMinMaxMaxSpeed(f64),
+    SetSpoolRegulationMode(super::spool_speed_controller::SpoolSpeedControllerType),
+    SetSpoolMinMaxMinSpeed(f64),
+    SetSpoolMinMaxMaxSpeed(f64),
 
     // Adaptive Spool Speed Controller Parameters
-    SpoolSetAdaptiveTensionTarget(f64),
-    SpoolSetAdaptiveRadiusLearningRate(f64),
-    SpoolSetAdaptiveMaxSpeedMultiplier(f64),
-    SpoolSetAdaptiveAccelerationFactor(f64),
-    SpoolSetAdaptiveDeaccelerationUrgencyMultiplier(f64),
-
-    // Auto Stop
-    AutostopEnable(bool),
-    AutostopEnableAlarm(bool),
-    AutostopSetLimit(f64),
-    AutostopSetTransition(AutostopTransition),
+    SetSpoolAdaptiveTensionTarget(f64),
+    SetSpoolAdaptiveRadiusLearningRate(f64),
+    SetSpoolAdaptiveMaxSpeedMultiplier(f64),
+    SetSpoolAdaptiveAccelerationFactor(f64),
+    SetSpoolAdaptiveDeaccelerationUrgencyMultiplier(f64),
 
     // Tension Arm
-    TensionArmAngleZero,
+    ZeroTensionArmAngle,
 
     // Mode
-    ModeSet(Mode),
-}
-
-#[derive(Serialize, Debug, Clone)]
-pub struct TraversePositionEvent {
-    /// position in mm
-    pub position: Option<f64>,
-}
-
-impl TraversePositionEvent {
-    pub fn build(&self) -> Event<Self> {
-        Event::new("TraversePositionEvent", self.clone())
-    }
+    SetMode(Mode),
 }
 
 #[derive(Serialize, Debug, Clone, Default)]
-pub struct TraverseStateEvent {
+pub struct LiveValuesEvent {
+    /// traverse position in mm
+    pub traverse_position: Option<f64>,
+    /// puller speed in m/min
+    pub puller_speed: f64,
+    /// spool rpm
+    pub spool_rpm: f64,
+    /// spool diameter in mm
+    pub spool_diameter: f64,
+    /// tension arm angle in degrees
+    pub tension_arm_angle: f64,
+}
+
+impl LiveValuesEvent {
+    pub fn build(&self) -> Event<Self> {
+        Event::new("LiveValuesEvent", self.clone())
+    }
+}
+
+#[derive(Serialize, Debug, Clone)]
+pub struct StateEvent {
+    /// traverse state
+    pub traverse_state: TraverseState,
+    /// puller state
+    pub puller_state: PullerState,
+    /// mode state
+    pub mode_state: ModeState,
+    /// tension arm state
+    pub tension_arm_state: TensionArmState,
+    /// spool speed controller state
+    pub spool_speed_controller_state: SpoolSpeedControllerState,
+}
+
+impl StateEvent {
+    pub fn build(&self) -> Event<Self> {
+        Event::new("StateEvent", self.clone())
+    }
+}
+
+#[derive(Serialize, Debug, Clone)]
+pub struct TraverseState {
     /// min position in mm
     pub limit_inner: f64,
     /// max position in mm
@@ -148,14 +164,8 @@ pub struct TraverseStateEvent {
     pub can_go_home: bool,
 }
 
-impl TraverseStateEvent {
-    pub fn build(&self) -> Event<Self> {
-        Event::new("TraverseStateEvent", self.clone())
-    }
-}
-
 #[derive(Serialize, Debug, Clone)]
-pub struct PullerStateEvent {
+pub struct PullerState {
     /// regulation type
     pub regulation: PullerRegulationMode,
     /// target speed in m/min
@@ -166,118 +176,22 @@ pub struct PullerStateEvent {
     pub forward: bool,
 }
 
-impl PullerStateEvent {
-    pub fn build(&self) -> Event<Self> {
-        Event::new("PullerStateEvent", self.clone())
-    }
-}
-
 #[derive(Serialize, Debug, Clone)]
-pub struct PullerSpeedEvent {
-    /// speed in m/min
-    pub speed: f64,
-}
-
-impl PullerSpeedEvent {
-    pub fn build(&self) -> Event<Self> {
-        Event::new("PullerSpeedEvent", self.clone())
-    }
-}
-
-#[derive(Serialize, Debug, Clone)]
-pub struct AutostopWoundedLengthEvent {
-    /// wounded length in mm
-    pub wounded_length: f64,
-}
-
-impl AutostopWoundedLengthEvent {
-    pub fn build(&self) -> Event<Self> {
-        Event::new("AutostopWoundedLengthEvent", self.clone())
-    }
-}
-
-#[derive(Serialize, Debug, Clone)]
-pub struct AutostopStateEvent {
-    /// if autostop is enabled
-    pub enabled: bool,
-    /// if autostop is enabled and alarm is active
-    pub enabled_alarm: bool,
-    /// limit in mm
-    pub limit: f64,
-    /// transition state
-    pub transition: AutostopTransition,
-}
-
-impl AutostopStateEvent {
-    pub fn build(&self) -> Event<Self> {
-        Event::new("AutostopStateEvent", self.clone())
-    }
-}
-
-#[derive(Serialize, Debug, Clone)]
-pub struct ModeStateEvent {
+pub struct ModeState {
     /// mode
     pub mode: Mode,
     /// can wind
     pub can_wind: bool,
 }
 
-impl ModeStateEvent {
-    pub fn build(&self) -> Event<Self> {
-        Event::new("ModeStateEvent", self.clone())
-    }
-}
-
 #[derive(Serialize, Debug, Clone)]
-pub struct SpoolRpmEvent {
-    /// rpm
-    pub rpm: f64,
-}
-
-impl SpoolRpmEvent {
-    pub fn build(&self) -> Event<Self> {
-        Event::new("SpoolRpmEvent", self.clone())
-    }
-}
-
-#[derive(Serialize, Debug, Clone)]
-pub struct SpoolDiameterEvent {
-    /// diameter in mm
-    pub diameter: f64,
-}
-
-impl SpoolDiameterEvent {
-    pub fn build(&self) -> Event<Self> {
-        Event::new("SpoolDiameterEvent", self.clone())
-    }
-}
-
-#[derive(Serialize, Debug, Clone)]
-pub struct TensionArmAngleEvent {
-    /// degree
-    pub degree: f64,
-}
-
-impl TensionArmAngleEvent {
-    pub fn build(&self) -> Event<Self> {
-        Event::new("TensionArmAngleEvent", self.clone())
-    }
-}
-
-#[derive(Serialize, Debug, Clone)]
-pub struct TensionArmStateEvent {
-    /// degree
+pub struct TensionArmState {
+    /// is zeroed
     pub zeroed: bool,
 }
 
-impl TensionArmStateEvent {
-    pub fn build(&self) -> Event<Self> {
-        Event::new("TensionArmStateEvent", self.clone())
-    }
-}
-
 #[derive(Serialize, Debug, Clone)]
-pub struct SpoolSpeedControllerStateEvent {
+pub struct SpoolSpeedControllerState {
     /// regulation mode
     pub regulation_mode: super::spool_speed_controller::SpoolSpeedControllerType,
     /// min speed in rpm for minmax mode
@@ -296,25 +210,9 @@ pub struct SpoolSpeedControllerStateEvent {
     pub adaptive_deacceleration_urgency_multiplier: f64,
 }
 
-impl SpoolSpeedControllerStateEvent {
-    pub fn build(&self) -> Event<Self> {
-        Event::new("SpoolSpeedControllerStateEvent", self.clone())
-    }
-}
-
 pub enum Winder2Events {
-    TraversePosition(Event<TraversePositionEvent>),
-    TraverseState(Event<TraverseStateEvent>),
-    PullerSpeed(Event<PullerSpeedEvent>),
-    PullerState(Event<PullerStateEvent>),
-    AutostopWoundedlength(Event<AutostopWoundedLengthEvent>),
-    AutostopState(Event<AutostopStateEvent>),
-    Mode(Event<ModeStateEvent>),
-    SpoolRpm(Event<SpoolRpmEvent>),
-    SpoolDiameter(Event<SpoolDiameterEvent>),
-    TensionArmAngleEvent(Event<TensionArmAngleEvent>),
-    TensionArmStateEvent(Event<TensionArmStateEvent>),
-    SpoolSpeedControllerStateEvent(Event<SpoolSpeedControllerStateEvent>),
+    LiveValues(Event<LiveValuesEvent>),
+    State(Event<StateEvent>),
 }
 
 #[derive(Debug)]
@@ -342,18 +240,8 @@ impl Winder2Namespace {
 impl CacheableEvents<Winder2Events> for Winder2Events {
     fn event_value(&self) -> GenericEvent {
         match self {
-            Winder2Events::TraversePosition(event) => event.into(),
-            Winder2Events::TraverseState(event) => event.into(),
-            Winder2Events::PullerSpeed(event) => event.into(),
-            Winder2Events::PullerState(event) => event.into(),
-            Winder2Events::AutostopWoundedlength(event) => event.into(),
-            Winder2Events::AutostopState(event) => event.into(),
-            Winder2Events::Mode(event) => event.into(),
-            Winder2Events::SpoolRpm(event) => event.into(),
-            Winder2Events::SpoolDiameter(event) => event.into(),
-            Winder2Events::TensionArmAngleEvent(event) => event.into(),
-            Winder2Events::TensionArmStateEvent(event) => event.into(),
-            Winder2Events::SpoolSpeedControllerStateEvent(event) => event.into(),
+            Winder2Events::LiveValues(event) => event.into(),
+            Winder2Events::State(event) => event.into(),
         }
     }
 
@@ -362,18 +250,8 @@ impl CacheableEvents<Winder2Events> for Winder2Events {
         let cache_one = cache_one_event();
 
         match self {
-            Winder2Events::TraversePosition(_) => cache_one_hour,
-            Winder2Events::TraverseState(_) => cache_one,
-            Winder2Events::PullerSpeed(_) => cache_one_hour,
-            Winder2Events::PullerState(_) => cache_one,
-            Winder2Events::AutostopWoundedlength(_) => cache_one_hour,
-            Winder2Events::AutostopState(_) => cache_one,
-            Winder2Events::Mode(_) => cache_one,
-            Winder2Events::SpoolRpm(_) => cache_one_hour,
-            Winder2Events::SpoolDiameter(_) => cache_one_hour,
-            Winder2Events::TensionArmAngleEvent(_) => cache_one_hour,
-            Winder2Events::TensionArmStateEvent(_) => cache_one,
-            Winder2Events::SpoolSpeedControllerStateEvent(_) => cache_one,
+            Winder2Events::LiveValues(_) => cache_one_hour,
+            Winder2Events::State(_) => cache_one,
         }
     }
 }
@@ -382,42 +260,38 @@ impl MachineApi for Winder2 {
     fn api_mutate(&mut self, request_body: Value) -> Result<(), anyhow::Error> {
         let mutation: Mutation = serde_json::from_value(request_body)?;
         match mutation {
-            Mutation::TraverseEnableLaserpointer(enable) => self.set_laser(enable),
-            Mutation::ModeSet(mode) => self.set_mode(&mode.into()),
-            Mutation::TraverseSetLimitOuter(limit) => self.traverse_set_limit_outer(limit),
-            Mutation::TraverseSetLimitInner(limit) => self.traverse_set_limit_inner(limit),
-            Mutation::TraverseSetStepSize(size) => self.traverse_set_step_size(size),
-            Mutation::TraverseSetPadding(padding) => self.traverse_set_padding(padding),
-            Mutation::TraverseGotoLimitOuter => self.traverse_goto_limit_outer(),
-            Mutation::TraverseGotoLimitInner => self.traverse_goto_limit_inner(),
-            Mutation::TraverseGotoHome => self.traverse_goto_home(),
-            Mutation::PullerSetRegulationMode(regulation) => self.puller_set_regulation(regulation),
-            Mutation::PullerSetTargetSpeed(value) => self.puller_set_target_speed(value),
-            Mutation::PullerSetTargetDiameter(_) => todo!(),
-            Mutation::PullerSetForward(value) => self.puller_set_forward(value),
-            Mutation::SpoolSetRegulationMode(mode) => self.spool_set_regulation_mode(mode),
-            Mutation::SpoolSetMinMaxMinSpeed(speed) => self.spool_set_minmax_min_speed(speed),
-            Mutation::SpoolSetMinMaxMaxSpeed(speed) => self.spool_set_minmax_max_speed(speed),
-            Mutation::SpoolSetAdaptiveTensionTarget(value) => {
+            Mutation::EnableTraverseLaserpointer(enable) => self.set_laser(enable),
+            Mutation::SetMode(mode) => self.set_mode(&mode.into()),
+            Mutation::SetTraverseLimitOuter(limit) => self.traverse_set_limit_outer(limit),
+            Mutation::SetTraverseLimitInner(limit) => self.traverse_set_limit_inner(limit),
+            Mutation::SetTraverseStepSize(size) => self.traverse_set_step_size(size),
+            Mutation::SetTraversePadding(padding) => self.traverse_set_padding(padding),
+            Mutation::GotoTraverseLimitOuter => self.traverse_goto_limit_outer(),
+            Mutation::GotoTraverseLimitInner => self.traverse_goto_limit_inner(),
+            Mutation::GotoTraverseHome => self.traverse_goto_home(),
+            Mutation::SetPullerRegulationMode(regulation) => self.puller_set_regulation(regulation),
+            Mutation::SetPullerTargetSpeed(value) => self.puller_set_target_speed(value),
+            Mutation::SetPullerTargetDiameter(_) => todo!(),
+            Mutation::SetPullerForward(value) => self.puller_set_forward(value),
+            Mutation::SetSpoolRegulationMode(mode) => self.spool_set_regulation_mode(mode),
+            Mutation::SetSpoolMinMaxMinSpeed(speed) => self.spool_set_minmax_min_speed(speed),
+            Mutation::SetSpoolMinMaxMaxSpeed(speed) => self.spool_set_minmax_max_speed(speed),
+            Mutation::SetSpoolAdaptiveTensionTarget(value) => {
                 self.spool_set_adaptive_tension_target(value)
             }
-            Mutation::SpoolSetAdaptiveRadiusLearningRate(value) => {
+            Mutation::SetSpoolAdaptiveRadiusLearningRate(value) => {
                 self.spool_set_adaptive_radius_learning_rate(value)
             }
-            Mutation::SpoolSetAdaptiveMaxSpeedMultiplier(value) => {
+            Mutation::SetSpoolAdaptiveMaxSpeedMultiplier(value) => {
                 self.spool_set_adaptive_max_speed_multiplier(value)
             }
-            Mutation::SpoolSetAdaptiveAccelerationFactor(value) => {
+            Mutation::SetSpoolAdaptiveAccelerationFactor(value) => {
                 self.spool_set_adaptive_acceleration_factor(value)
             }
-            Mutation::SpoolSetAdaptiveDeaccelerationUrgencyMultiplier(value) => {
+            Mutation::SetSpoolAdaptiveDeaccelerationUrgencyMultiplier(value) => {
                 self.spool_set_adaptive_deacceleration_urgency_multiplier(value)
             }
-            Mutation::AutostopEnable(_) => todo!(),
-            Mutation::AutostopEnableAlarm(_) => todo!(),
-            Mutation::AutostopSetLimit(_) => todo!(),
-            Mutation::AutostopSetTransition(_) => todo!(),
-            Mutation::TensionArmAngleZero => self.tension_arm_zero(),
+            Mutation::ZeroTensionArmAngle => self.tension_arm_zero(),
         }
         Ok(())
     }

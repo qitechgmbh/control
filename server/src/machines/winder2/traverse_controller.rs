@@ -174,7 +174,7 @@ impl TraverseController {
         self.enabled
     }
 
-    pub fn dif_change_state(&mut self) -> bool {
+    pub fn did_change_state(&mut self) -> bool {
         let did_change = self.did_change_state;
         // Reset the flag
         self.did_change_state = false;
