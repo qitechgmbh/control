@@ -1,13 +1,15 @@
-import React from "react";
+import React, { JSX } from "react";
 import { Preset } from "@/lib/preset/preset";
-import { Icon } from "@/components/Icon";
 import { TouchButton } from "@/components/touch/TouchButton";
+import { PresetShowDialog } from "./PresetShowDialog";
+import { Icon } from "../Icon";
 
 export type PresetCardProps<T> = {
   preset: Preset<T>;
   onApply: (preset: Preset<T>) => void;
   onOverwrite: (preset: Preset<T>) => void;
   onDelete: (preset: Preset<T>) => void;
+  renderPreview: (preset: Preset<T>) => JSX.Element;
 };
 
 export function PresetCard<T>({
@@ -15,6 +17,7 @@ export function PresetCard<T>({
   onApply,
   onOverwrite,
   onDelete,
+  renderPreview,
 }: PresetCardProps<T>) {
   return (
     <div className="flex flex-row items-center gap-4 rounded-3xl border border-gray-200 bg-white p-4 shadow">
@@ -24,7 +27,7 @@ export function PresetCard<T>({
             {preset.name}
           </div>
           <div className="text-sm text-gray-500">
-            Last Modified: {preset.lastModified.toDateString() || "N/A"}
+            {preset.lastModified?.toDateString() || "Unknown date"}
           </div>
         </div>
       </div>
@@ -37,14 +40,11 @@ export function PresetCard<T>({
           <Icon name="lu:HardDriveUpload" />
           Overwrite
         </TouchButton>
-        <TouchButton
-          className="flex-shrink-0"
-          variant="outline"
-          onClick={() => onApply(preset)}
-        >
-          <Icon name="lu:HardDriveDownload" />
-          Apply
-        </TouchButton>
+        <PresetShowDialog
+          preset={preset}
+          onApply={onApply}
+          renderPreview={renderPreview}
+        ></PresetShowDialog>
         <TouchButton
           className="flex-shrink-0"
           variant="destructive"
