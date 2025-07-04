@@ -20,6 +20,41 @@ type Winder2PresetData = {
   >;
 };
 
+function renderPreview(preset: Preset<Winder2PresetData>) {
+  return (
+    <>
+      Inner Traverse Limit = {preset.data.traverse_state?.limit_inner ?? "N/A"}{" "}
+      mm <br />
+      Outer Traverse Limit = {preset.data.traverse_state?.limit_outer ??
+        "N/A"}{" "}
+      mm <br />
+      Traverse Step Size = {preset.data.traverse_state?.step_size ??
+        "N/A"} mm <br />
+      Traverse Padding = {preset.data.traverse_state?.padding ?? "N/A"} mm{" "}
+      <br />
+      <br />
+      Puller Regulation = {preset.data.puller_state?.regulation ?? "N/A"} <br />
+      Puller Direction ={" "}
+      {preset.data.puller_state?.forward ? "Forward" : "Backward"} <br />
+      Puller Target Speed = {preset.data.puller_state?.target_speed ??
+        "N/A"}{" "}
+      m/min <br />
+      Puller Target Diameter ={" "}
+      {preset.data.puller_state?.target_diameter ?? "N/A"} mm <br />
+      <br />
+      Spool Regulation ={" "}
+      {preset.data.spool_speed_controller_state?.regulation_mode ?? "N/A"}{" "}
+      <br />
+      Spool Min Speed ={" "}
+      {preset.data.spool_speed_controller_state?.minmax_min_speed ?? "N/A"}{" "}
+      m/min <br />
+      Spool max Speed ={" "}
+      {preset.data.spool_speed_controller_state?.minmax_max_speed ?? "N/A"}{" "}
+      m/min <br />
+    </>
+  );
+}
+
 export function Winder2PresetsPage() {
   const {
     state,
@@ -97,7 +132,7 @@ export function Winder2PresetsPage() {
 
   const readCurrentState = (): Winder2PresetData => ({
     traverse_state: {
-      limit_inner: state?.traverse_state.limit_inner,
+      limit_inner: state?.traverse_state?.limit_inner,
       limit_outer: state?.traverse_state?.limit_outer,
       step_size: state?.traverse_state?.step_size,
       padding: state?.traverse_state?.padding,
@@ -113,6 +148,7 @@ export function Winder2PresetsPage() {
       readCurrentState={readCurrentState}
       schemaVersion={1}
       applyPreset={applyPreset}
+      renderPreview={renderPreview}
     />
   );
 }
