@@ -1,6 +1,6 @@
 /**
  * @file buffer1Namespace.ts
- * @description TypeScript implementation of Winder1 namespace with Zod schema validation.
+ * @description TypeScript implementation of Buffer1 namespace with Zod schema validation.
  */
 
 import { StoreApi } from "zustand";
@@ -22,7 +22,6 @@ import {
   TimeSeries,
   TimeSeriesValue,
 } from "@/lib/timeseries";
-import { Winder2NamespaceStore } from "@/machines/winder/winder2/winder2Namespace";
 
 // ========== Event Schema Definitions ==========
 
@@ -36,7 +35,7 @@ export type Mode = z.infer<typeof modeSchema>;
  * Consolidated live values event schema (60FPS data)
  */
 export const liveValuesEventDataSchema = z.object({
-
+  sineWave: z.number(),
 });
 
 /**
@@ -56,6 +55,7 @@ export const stateEventDataSchema = z.object({
 
 // ========== Event Schemas with Wrappers ==========
 
+export const liveValuesEventSchema = eventSchema(liveValuesEventDataSchema)
 export const stateEventSchema = eventSchema(stateEventDataSchema);
 
 // ========== Type Inferences ==========
@@ -65,22 +65,23 @@ export type StateEvent = z.infer<typeof stateEventSchema>;
 export type Buffer1NamespaceStore = {
   // State events (latest only)
   state: StateEvent | null;
+
+  // Time series data for live values
+  sineWave: TimeSeries;
 };
 
-/**
- * Factory function to create a new Buffer1 namespace store
- * @returns A new Zustand store instance for Buffer1 namespace
- */
-export const createBuffer1NamespaceStore =
-  (): StoreApi<Buffer1NamespaceStore> =>
-    create<Buffer1NamespaceStore>(() => {
-      return {
-        // State events (latest only)
-        state: null,
+// Constants for time durations
+const TWENTY_MILLISECOND = 20;
+const ONE_SECOND = 1000;
+const FIVE_SECOND = 5 * ONE_SECOND;
+const ONE_HOUR = 60 * 60 * ONE_SECOND;
 
-        // Metric events (cached for 1 hour)
-      };
-    });
+const { initialTimeSeries: sineWave, insert: addSineWave } = createTimeSeries(
+  TWENTY_MILLISECOND,
+  ONE_SECOND,
+  FIVE_SECOND,
+  ONE_HOUR,
+)
 
 /**
  * Creates a message handler for Buffer1 namespace events with validation and appropriate caching strategies
@@ -111,6 +112,16 @@ export function buffer1MessageHandler(
           ...state,
           state: stateEvent,
         }));
+      } else if (eventName === "LiveValuesEvent") {
+        const liveValuesEvent = liveValuesEventSchema.parse(event);
+        const timestamp = event.ts;
+        updateStore((state) => ({
+          ...state,
+          sineWave: addSineWave(state.sineWave, {
+            value: liveValuesEvent.data.sineWave,
+            timestamp,
+          }),
+        }));
       } else {
         handleUnhandledEventError(eventName);
       }
@@ -120,6 +131,29 @@ export function buffer1MessageHandler(
     }
   };
 }
+
+/**
+ * Factory function to create a new Buffer1 namespace store
+ * @returns A new Zustand store instance for Buffer1 namespace
+ */
+export const createBuffer1NamespaceStore =
+  (): StoreApi<Buffer1NamespaceStore> =>
+    create<Buffer1NamespaceStore>(() => {
+      return {
+        state: null,
+        sineWave,
+      };
+    });
+
+/**
+ * Create the Buffer1 namespace implementation
+ */
+
+const useBuffer1NamespaceImplementation =
+  createNamespaceHookImplementation<Buffer1NamespaceStore>({
+    createStore: createBuffer1NamespaceStore,
+    createEventHandler: buffer1MessageHandler,
+  });
 
 export function useBuffer1Namespace(
   machine_identification_unique: MachineIdentificationUnique,
@@ -133,13 +167,3 @@ export function useBuffer1Namespace(
   // Use the implementation with validated namespace ID
   return useBuffer1NamespaceImplementation(namespaceId);
 }
-
-/**
- * Create the Buffer1 namespace implementation
- */
-
-const useBuffer1NamespaceImplementation =
-  createNamespaceHookImplementation<Buffer1NamespaceStore>({
-    createStore: createBuffer1NamespaceStore,
-    createEventHandler: buffer1MessageHandler,
-  });
