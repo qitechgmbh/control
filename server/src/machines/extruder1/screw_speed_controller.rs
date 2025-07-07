@@ -1,11 +1,7 @@
 use std::time::Instant;
 
 use control_core::{
-    actors::{
-        Actor,
-        analog_input_getter::AnalogInputGetter,
-        mitsubishi_inverter_rs485::{MitsubishiControlRequests, MitsubishiInverterRS485Actor},
-    },
+    actors::{Actor, analog_input_getter::AnalogInputGetter},
     controllers::clamping_timeagnostic_pid::ClampingTimeagnosticPidController,
     converters::transmission_converter::TransmissionConverter,
     helpers::interpolation::normalize,
@@ -18,12 +14,14 @@ use uom::si::{
     pressure::bar,
 };
 
+use super::mitsubishi_inverter_rs485::MitsubishiInverterController;
+
 #[derive(Debug)]
 pub struct ScrewSpeedController {
     pub pid: ClampingTimeagnosticPidController,
     pub target_pressure: Pressure,
     pub target_rpm: AngularVelocity,
-    pub inverter: MitsubishiInverterRS485Actor,
+    pub inverter: MitsubishiInverterController,
     pressure_sensor: AnalogInputGetter,
     last_update: Instant,
     uses_rpm: bool,
@@ -39,7 +37,7 @@ pub struct ScrewSpeedController {
 
 impl ScrewSpeedController {
     pub fn new(
-        inverter: MitsubishiInverterRS485Actor,
+        inverter: MitsubishiInverterController,
         target_pressure: Pressure,
         target_rpm: AngularVelocity,
         pressure_sensor: AnalogInputGetter,
@@ -96,13 +94,7 @@ impl ScrewSpeedController {
     pub fn set_rotation_direction(&mut self, forward: bool) {
         self.forward_rotation = forward;
         if self.motor_on {
-            if self.forward_rotation {
-                self.inverter
-                    .add_request(MitsubishiControlRequests::StartReverseRotation.into());
-            } else {
-                self.inverter
-                    .add_request(MitsubishiControlRequests::StartForwardRotation.into());
-            }
+            self.inverter.set_rotation(self.forward_rotation);
         }
     }
 
@@ -134,19 +126,12 @@ impl ScrewSpeedController {
 
     // Send Motor Turn Off Request to the Inverter
     pub fn turn_motor_off(&mut self) {
-        self.inverter
-            .add_request(MitsubishiControlRequests::StopMotor.into());
+        self.inverter.stop_motor();
         self.motor_on = false;
     }
 
     pub fn turn_motor_on(&mut self) {
-        if self.forward_rotation {
-            self.inverter
-                .add_request(MitsubishiControlRequests::StartReverseRotation.into());
-        } else {
-            self.inverter
-                .add_request(MitsubishiControlRequests::StartForwardRotation.into());
-        }
+        self.inverter.set_rotation(self.forward_rotation);
         self.motor_on = true;
     }
 
@@ -213,6 +198,7 @@ impl ScrewSpeedController {
     pub async fn update(&mut self, now: Instant, is_extruding: bool) {
         self.pressure_sensor.act(now).await;
         self.inverter.act(now).await;
+
         let measured_pressure = self.get_pressure();
 
         if !self.uses_rpm && !is_extruding && self.motor_on {
