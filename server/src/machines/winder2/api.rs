@@ -83,6 +83,11 @@ enum Mutation {
     SetSpoolAdaptiveAccelerationFactor(f64),
     SetSpoolAdaptiveDeaccelerationUrgencyMultiplier(f64),
 
+    // Puller Auto Stop/Pull
+    SetPullerAutoStopExpectedMeters(f64),
+    SetPullerAutoStopEnabled(bool),
+    SetPullerAutoStop(bool),
+
     // Tension Arm
     ZeroTensionArmAngle,
 
@@ -102,6 +107,9 @@ pub struct LiveValuesEvent {
     pub spool_diameter: f64,
     /// tension arm angle in degrees
     pub tension_arm_angle: f64,
+
+    // pulling progress
+    pub puller_progress: f64,
 }
 
 impl LiveValuesEvent {
@@ -117,6 +125,8 @@ pub struct StateEvent {
     pub traverse_state: TraverseState,
     /// puller state
     pub puller_state: PullerState,
+    pub puller_auto_stop_state: PullerAutoStopState,
+
     /// mode state
     pub mode_state: ModeState,
     /// tension arm state
@@ -175,6 +185,13 @@ pub struct PullerState {
     pub target_diameter: f64,
     /// forward rotation direction
     pub forward: bool,
+}
+
+#[derive(Serialize, Debug, Clone)]
+pub struct PullerAutoStopState {
+    pub puller_expected_meters: f64,
+    pub puller_auto_stop: bool,
+    pub puller_auto_enabled: bool,
 }
 
 #[derive(Serialize, Debug, Clone)]
@@ -293,6 +310,9 @@ impl MachineApi for Winder2 {
                 self.spool_set_adaptive_deacceleration_urgency_multiplier(value)
             }
             Mutation::ZeroTensionArmAngle => self.tension_arm_zero(),
+            Mutation::SetPullerAutoStopExpectedMeters(meters) => self.set_expected_meters(meters),
+            Mutation::SetPullerAutoStopEnabled(enabled) => self.set_puller_auto_enabled(enabled),
+            Mutation::SetPullerAutoStop(stop) => self.set_puller_auto_stop(stop),
         }
         Ok(())
     }
