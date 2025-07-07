@@ -13,8 +13,8 @@ pub mod traverse_controller;
 use std::{fmt::Debug, time::Instant};
 
 use api::{
-    LiveValuesEvent, ModeState, PullerState, SpoolSpeedControllerState, StateEvent,
-    TensionArmState, TraverseState, Winder2Events, Winder2Namespace,
+    LiveValuesEvent, ModeState, PullerAutoStopState, PullerState, SpoolSpeedControllerState,
+    StateEvent, TensionArmState, TraverseState, Winder2Events, Winder2Namespace,
 };
 use control_core::{
     converters::angular_step_converter::AngularStepConverter, machines::Machine,
@@ -62,7 +62,7 @@ pub struct Winder2 {
     pub spool_speed_controller: SpoolSpeedController,
     pub spool_step_converter: AngularStepConverter,
 
-    // control cirguit puller
+    // control circuit puller
     pub puller_speed_controller: PullerSpeedController,
 
     /// Will be initialized as false and set to true by emit_state
@@ -78,6 +78,7 @@ impl Winder2 {
         self.laser.set(value);
         self.emit_state();
     }
+
     /// Validates that traverse limits maintain proper constraints:
     /// - Inner limit must be smaller than outer limit
     /// - At least 0.9mm difference between inner and outer limits
@@ -186,6 +187,7 @@ impl Winder2 {
                 .get::<millimeter>()
                 * 2.0,
             tension_arm_angle: angle_deg,
+            puller_progress: self.puller_progress,
         };
 
         let event = live_values.build();
@@ -267,6 +269,11 @@ impl Winder2 {
                     .spool_speed_controller
                     .get_adaptive_deacceleration_urgency_multiplier(),
             },
+            puller_auto_stop_state: PullerAutoStopState {
+                puller_expected_meters: self.puller_expected_meters,
+                puller_auto_stop: self.puller_auto_stop,
+                puller_auto_enabled: self.puller_auto_enabled,
+            },
         };
 
         let event = state.build();
@@ -279,6 +286,73 @@ impl Winder2 {
             &self.traverse_end_stop,
             self.spool_speed_controller.get_speed(),
         )
+    }
+
+    pub fn set_expected_meters(&mut self, meters: f64) {
+        self.puller_expected_meters = meters;
+        self.emit_state();
+    }
+
+    pub fn set_puller_auto_stop(&mut self, stop: bool) {
+        self.puller_auto_stop = stop;
+        self.emit_state();
+    }
+
+    pub fn set_puller_auto_enabled(&mut self, enabled: bool) {
+        self.puller_auto_enabled = enabled;
+        self.emit_state();
+    }
+
+    pub fn auto_stop_or_pull(&mut self, now: Instant) {
+        if !self.puller_auto_enabled {
+            self.auto_stop_or_pull_reset(now);
+            return;
+        }
+
+        match self.mode {
+            Winder2Mode::Pull => self.calculate_progress_puller(now),
+            Winder2Mode::Wind => self.calculate_progress_puller(now),
+            _ => {
+                self.puller_progress_last_check = now;
+                return;
+            }
+        }
+
+        if self.puller_progress >= 100.0 {
+            self.auto_stop_or_pull_reset(now);
+            match self.puller_auto_stop {
+                true => self.set_mode(&Winder2Mode::Hold),
+                false => self.set_mode(&Winder2Mode::Pull),
+            }
+        }
+    }
+
+    pub fn auto_stop_or_pull_reset(&mut self, now: Instant) {
+        self.puller_meters_pulled = 0.0;
+        self.puller_progress = 0.0;
+        self.puller_progress_last_check = now;
+    }
+
+    pub fn calculate_progress_puller(&mut self, now: Instant) {
+        let steps_per_second = self.puller.get_speed();
+        let angular_velocity = self
+            .puller_speed_controller
+            .converter
+            .steps_to_angular_velocity(steps_per_second as f64);
+
+        let puller_speed = self
+            .puller_speed_controller
+            .angular_velocity_to_speed(angular_velocity);
+
+        let time_since_last_check = now
+            .duration_since(self.puller_progress_last_check)
+            .as_secs_f64()
+            / 60.0;
+
+        let meters_pulled = puller_speed.get::<meter_per_minute>() * time_since_last_check;
+        self.puller_meters_pulled += meters_pulled;
+        self.puller_progress = (self.puller_meters_pulled / self.puller_expected_meters) * 100.0;
+        self.puller_progress_last_check = now;
     }
 
     /// Can wind capability check
