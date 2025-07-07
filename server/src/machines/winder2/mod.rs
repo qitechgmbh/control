@@ -288,7 +288,7 @@ impl Winder2 {
         )
     }
 
-    pub fn set_expected_meters(&mut self, meters: f64) {
+    pub fn set_puller_auto_expected_meters(&mut self, meters: f64) {
         self.puller_expected_meters = meters;
         self.emit_state();
     }
