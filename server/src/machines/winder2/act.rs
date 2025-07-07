@@ -25,7 +25,7 @@ impl Actor for Winder2 {
             // sync the traverse speed
             self.sync_traverse_speed();
 
-            // calculate the progress of meters
+            // automatically stops or pulls after N Meters if enabled
             self.auto_stop_or_pull(now);
 
             // check if traverse state changed

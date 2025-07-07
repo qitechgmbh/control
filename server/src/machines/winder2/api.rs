@@ -310,7 +310,9 @@ impl MachineApi for Winder2 {
                 self.spool_set_adaptive_deacceleration_urgency_multiplier(value)
             }
             Mutation::ZeroTensionArmAngle => self.tension_arm_zero(),
-            Mutation::SetPullerAutoStopExpectedMeters(meters) => self.set_expected_meters(meters),
+            Mutation::SetPullerAutoStopExpectedMeters(meters) => {
+                self.set_puller_auto_expected_meters(meters)
+            }
             Mutation::SetPullerAutoStopEnabled(enabled) => self.set_puller_auto_enabled(enabled),
             Mutation::SetPullerAutoStop(stop) => self.set_puller_auto_stop(stop),
         }
