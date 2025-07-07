@@ -140,9 +140,10 @@ impl SerialInterfaceActor {
                 let effective_priority: u32 = priority as u32 + ignored_times;
 
                 if effective_priority > highest_priority {
-                    highest_prio_request = Some(self.request_map.get(key).unwrap());
+                    highest_prio_request = self.request_map.get(key);
                     highest_priority = effective_priority;
                     highest_id = key;
+
                     delay = match value.extra_delay {
                         Some(delay) => delay,
                         None => 0,
@@ -257,8 +258,15 @@ impl SerialInterfaceActor {
                 None => return,
             };
 
-            if elapsed < timeout {
-                return;
+            match self.state {
+                State::Uninitialized => (),
+                State::WaitingForRequestAccept => (),
+                State::WaitingForReceiveAccept => (),
+                _ => {
+                    if elapsed < timeout {
+                        return;
+                    }
+                }
             }
 
             self.last_ts = now_ts;
