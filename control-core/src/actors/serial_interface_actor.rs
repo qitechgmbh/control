@@ -244,6 +244,10 @@ impl SerialInterfaceActor {
         return Some(Duration::from_nanos(full_timeout));
     }
 
+    pub fn get_response(&self) -> Option<ModbusResponse> {
+        return self.response.clone();
+    }
+
     pub fn act(&mut self, now_ts: Instant) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
         Box::pin(async move {
             let elapsed: Duration = now_ts.duration_since(self.last_ts);
@@ -260,8 +264,6 @@ impl SerialInterfaceActor {
 
             match self.state {
                 State::Uninitialized => (),
-                State::WaitingForRequestAccept => (),
-                State::WaitingForReceiveAccept => (),
                 _ => {
                     if elapsed < timeout {
                         return;
@@ -270,6 +272,7 @@ impl SerialInterfaceActor {
             }
 
             self.last_ts = now_ts;
+            self.response = None;
 
             match self.state {
                 State::WaitingForResponse => {
@@ -281,10 +284,12 @@ impl SerialInterfaceActor {
                         Err(_) => {
                             self.response = None;
                             self.state = State::ReadyToSend;
+                            self.last_message_id = 0;
                         }
                     }
                 }
                 State::ReadyToSend => {
+                    self.last_message_id = 0;
                     self.send_modbus_request().await;
                     self.request_map.remove(&self.last_message_id);
                     self.request_metadata_map.remove(&self.last_message_id);
@@ -312,7 +317,6 @@ impl SerialInterfaceActor {
                 }
                 _ => (),
             }
-            self.response = None;
         })
     }
 }

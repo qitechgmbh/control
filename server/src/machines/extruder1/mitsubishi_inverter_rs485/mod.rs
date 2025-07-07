@@ -69,6 +69,7 @@ impl From<MitsubishiControlRequests> for u32 {
             MitsubishiControlRequests::ReadRunningFrequency => 9,
             MitsubishiControlRequests::WriteRunningFrequency => 10,
             MitsubishiControlRequests::ReadMotorFrequency => 11,
+            MitsubishiControlRequests::WriteParameter => 12,
         }
     }
 }
@@ -247,6 +248,16 @@ impl From<MitsubishiControlRequests> for MitsubishiModbusRequest {
             MitsubishiControlRequests::ClearNonCommunicationParameter => todo!(),
             MitsubishiControlRequests::ClearNonCommunicationParameters => todo!(),
             MitsubishiControlRequests::None => todo!(),
+            MitsubishiControlRequests::WriteParameter => MitsubishiModbusRequest {
+                request: ModbusRequest {
+                    slave_id: 1,
+                    function_code: ModbusFunctionCode::PresetHoldingRegister,
+                    data: vec![0x0, 0x0, 0x0, 0x0],
+                },
+                request_type: RequestType::ReadWrite,
+                priority: u16::MAX,
+                control_request_type: MitsubishiControlRequests::WriteParameter,
+            },
         }
     }
 }
@@ -277,6 +288,8 @@ pub enum MitsubishiControlRequests {
     WriteRunningFrequency,
     /// Read Register 40201, This contains the actual output frequency
     ReadMotorFrequency,
+    /// Write "Arbitrary" Parameters
+    WriteParameter,
 }
 
 // We need to know from the request queue which events are of what operation type, so that the correct timeout can be used
@@ -377,14 +390,17 @@ impl MitsubishiInverterController {
         let response_type: Result<MitsubishiControlRequests, ()> = control_request_type.try_into();
         let result = match response_type {
             Ok(response_type) => response_type,
-            Err(_) => return,
+            Err(_) => {
+                return;
+            }
         };
 
-        let response = match &self.serial_actor.response {
+        let response = match self.serial_actor.get_response() {
             Some(response) => response,
-            None => return,
+            None => {
+                return;
+            }
         };
-
         match result {
             MitsubishiControlRequests::None => (),
             MitsubishiControlRequests::ResetInverter => (),
@@ -402,6 +418,7 @@ impl MitsubishiInverterController {
             MitsubishiControlRequests::ReadMotorFrequency => {
                 self.handle_motor_frequency(response.clone())
             }
+            MitsubishiControlRequests::WriteParameter => (),
         }
     }
 
