@@ -55,6 +55,7 @@ export function useWinder2() {
     spoolRpm,
     spoolDiameter,
     tensionArmAngle,
+    pullerProgress,
   } = useWinder2Namespace(machineIdentification);
 
   // Single optimistic state for all state management
@@ -140,6 +141,18 @@ export function useWinder2() {
     useMachineMutation(
       z.object({ SetSpoolAdaptiveDeaccelerationUrgencyMultiplier: z.number() }),
     );
+
+  const { request: requestPullerExpectedMeters } = useMachineMutation(
+    z.object({ SetPullerAutoStopExpectedMeters: z.number() }),
+  );
+
+  const { request: requestAutoStopEnabled } = useMachineMutation(
+    z.object({ SetPullerAutoStopEnabled: z.boolean() }),
+  );
+
+  const { request: requestPullerAutoStop } = useMachineMutation(
+    z.object({ SetPullerAutoStop: z.boolean() }),
+  );
 
   // Helper function for optimistic updates using produce
   const updateStateOptimistically = (
@@ -336,6 +349,45 @@ export function useWinder2() {
     );
   };
 
+  const setPullerAutoStopExpectedMeters = (meters: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.puller_auto_stop_state.puller_expected_meters = meters;
+      },
+      () =>
+        requestPullerExpectedMeters({
+          machine_identification_unique: machineIdentification,
+          data: { SetPullerAutoStopExpectedMeters: meters },
+        }),
+    );
+  };
+
+  const setPullerAutoStopEnabled = (enabled: boolean) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.puller_auto_stop_state.puller_auto_enabled = enabled;
+      },
+      () =>
+        requestAutoStopEnabled({
+          machine_identification_unique: machineIdentification,
+          data: { SetPullerAutoStopEnabled: enabled },
+        }),
+    );
+  };
+
+  const setPullerAutoStop = (stop: boolean) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.puller_auto_stop_state.puller_auto_stop = stop;
+      },
+      () =>
+        requestPullerAutoStop({
+          machine_identification_unique: machineIdentification,
+          data: { SetPullerAutoStop: stop },
+        }),
+    );
+  };
+
   const setSpoolRegulationMode = (mode: SpoolRegulationMode) => {
     updateStateOptimistically(
       (current) => {
@@ -462,6 +514,7 @@ export function useWinder2() {
     spoolRpm,
     spoolDiameter,
     tensionArmAngle,
+    pullerProgress,
 
     // Loading states
     isLoading,
@@ -482,6 +535,9 @@ export function useWinder2() {
     setPullerTargetDiameter,
     setPullerRegulationMode,
     setPullerForward,
+    setPullerAutoStopExpectedMeters,
+    setPullerAutoStopEnabled,
+    setPullerAutoStop,
     setSpoolRegulationMode,
     setSpoolMinMaxMinSpeed,
     setSpoolMinMaxMaxSpeed,
