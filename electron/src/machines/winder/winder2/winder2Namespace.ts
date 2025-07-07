@@ -260,9 +260,6 @@ export function winder2MessageHandler(
 
         updateStore((state) => {
           const newState = { ...state };
-
-          newState;
-
           // Add traverse position if not null
           if (traverse_position !== null) {
             const timeseriesValue: TimeSeriesValue = {
