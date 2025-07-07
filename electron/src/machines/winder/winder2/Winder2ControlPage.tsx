@@ -30,6 +30,7 @@ export function Winder2ControlPage() {
     spoolDiameter,
     setMode,
     pullerSpeed,
+    pullerProgress,
     setPullerRegulationMode,
     setPullerTargetSpeed,
     traversePosition,
@@ -38,6 +39,9 @@ export function Winder2ControlPage() {
     gotoTraverseLimitInner,
     gotoTraverseLimitOuter,
     gotoTraverseHome,
+    setPullerAutoStopExpectedMeters,
+    setPullerAutoStopEnabled,
+    setPullerAutoStop,
     isLoading,
     isDisabled,
   } = useWinder2();
@@ -261,6 +265,49 @@ export function Winder2ControlPage() {
               onChange={setPullerTargetSpeed}
             />
           </Label>
+        </ControlCard>
+
+        <ControlCard className="bg-red" title="Puller Auto Stop/Pull">
+          <Label label="Meters Until Automatic Action">
+            <EditValue
+              value={state?.puller_auto_stop_state.puller_expected_meters}
+              unit="m"
+              title="Expected Meters"
+              defaultValue={0}
+              min={0}
+              max={100}
+              step={0.1}
+              renderValue={(value) => roundToDecimals(value, 2)}
+              onChange={setPullerAutoStopExpectedMeters}
+            />
+          </Label>
+
+          <Label label="Automatic Action Enabled">
+            <SelectionGroupBoolean
+              value={state?.puller_auto_stop_state.puller_auto_enabled}
+              optionTrue={{ children: "Enabled" }}
+              optionFalse={{ children: "Disabled" }}
+              onChange={setPullerAutoStopEnabled}
+              disabled={isDisabled}
+              loading={isLoading}
+            />
+          </Label>
+          <Label label="Automatic Action">
+            <SelectionGroupBoolean
+              value={state?.puller_auto_stop_state.puller_auto_stop}
+              optionTrue={{ children: "Stop" }}
+              optionFalse={{ children: "Pull" }}
+              onChange={setPullerAutoStop}
+              disabled={isDisabled}
+              loading={isLoading}
+            />{" "}
+          </Label>
+
+          <TimeSeriesValueNumeric
+            label="Progress"
+            renderValue={(value) => roundToDecimals(value, 2) + "%"}
+            timeseries={pullerProgress}
+          />
         </ControlCard>
       </ControlGrid>
     </Page>

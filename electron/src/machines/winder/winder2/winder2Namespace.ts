@@ -34,6 +34,7 @@ export const liveValuesEventDataSchema = z.object({
   spool_rpm: z.number(),
   spool_diameter: z.number(),
   tension_arm_angle: z.number(),
+  puller_progress: z.number(),
 });
 
 /**
@@ -53,6 +54,13 @@ export type Mode = z.infer<typeof modeSchema>;
  */
 export const spoolRegulationModeSchema = z.enum(["Adaptive", "MinMax"]);
 export type SpoolRegulationMode = z.infer<typeof spoolRegulationModeSchema>;
+
+export const pullerAutoStopStateSchema = z.object({
+  puller_expected_meters: z.number(),
+  puller_auto_stop: z.boolean(),
+  puller_auto_enabled: z.boolean(),
+});
+export type PullerAutoStopState = z.infer<typeof pullerAutoStopStateSchema>;
 
 /**
  * Traverse state schema
@@ -124,6 +132,7 @@ export const stateEventDataSchema = z.object({
   mode_state: modeStateSchema,
   tension_arm_state: tensionArmStateSchema,
   spool_speed_controller_state: spoolSpeedControllerStateSchema,
+  puller_auto_stop_state: pullerAutoStopStateSchema,
 });
 
 // ========== Event Schemas with Wrappers ==========
@@ -148,6 +157,7 @@ export type Winder2NamespaceStore = {
   spoolRpm: TimeSeries;
   spoolDiameter: TimeSeries;
   tensionArmAngle: TimeSeries;
+  pullerProgress: TimeSeries;
 };
 
 // Constants for time durations
@@ -155,6 +165,9 @@ const TWENTY_MILLISECOND = 20;
 const ONE_SECOND = 1000;
 const FIVE_SECOND = 5 * ONE_SECOND;
 const ONE_HOUR = 60 * 60 * ONE_SECOND;
+
+const { initialTimeSeries: pullerProgress, insert: addPullerProgress } =
+  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
 const { initialTimeSeries: traversePosition, insert: addTraversePosition } =
   createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
 const { initialTimeSeries: pullerSpeed, insert: addPullerSpeed } =
@@ -188,6 +201,7 @@ export const createWinder2NamespaceStore =
         spoolRpm,
         spoolDiameter,
         tensionArmAngle,
+        pullerProgress,
       };
     });
 /**
@@ -240,11 +254,14 @@ export function winder2MessageHandler(
           spool_rpm,
           spool_diameter,
           tension_arm_angle,
+          puller_progress,
         } = liveValuesEvent.data;
         const timestamp = liveValuesEvent.ts;
 
         updateStore((state) => {
           const newState = { ...state };
+
+          newState;
 
           // Add traverse position if not null
           if (traverse_position !== null) {
@@ -254,6 +271,17 @@ export function winder2MessageHandler(
             };
             newState.traversePosition = addTraversePosition(
               state.traversePosition,
+              timeseriesValue,
+            );
+          }
+
+          if (pullerProgress !== null) {
+            const timeseriesValue: TimeSeriesValue = {
+              value: puller_progress,
+              timestamp,
+            };
+            newState.pullerProgress = addPullerProgress(
+              state.pullerProgress,
               timeseriesValue,
             );
           }
