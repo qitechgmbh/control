@@ -13,6 +13,7 @@ struct RequestMetaData {
     /// This is used when a machine for example takes 4ms to process the request
     /// and is added ontop of the standard waiting time for a serial transfer
     pub extra_delay: Option<u32>,
+    pub no_response_expected: bool,
 }
 
 #[derive(Debug)]
@@ -39,9 +40,12 @@ pub struct SerialInterfaceActor {
     pub encoding: Option<SerialEncoding>,
     pub response: Option<ModbusResponse>,
     pub state: State,
+
     pub last_message_size: usize,
     pub last_message_delay: u32,
     pub last_message_id: u32,
+    pub no_response_expected: bool,
+
     request_map: HashMap<u32, ModbusRequest>,
     request_metadata_map: HashMap<u32, RequestMetaData>,
     last_ts: Instant,
@@ -61,6 +65,7 @@ impl SerialInterfaceActor {
             state: State::Uninitialized,
             last_ts: Instant::now(),
             last_message_id: 0,
+            no_response_expected: false,
         }
     }
 
@@ -77,6 +82,7 @@ impl SerialInterfaceActor {
         request_id: u32,
         priority: u32,
         request: ModbusRequest,
+        no_response_expected: bool,
         delay: Option<u32>,
     ) {
         self.request_map.insert(request_id, request);
@@ -85,6 +91,7 @@ impl SerialInterfaceActor {
                 priority,
                 ignored_times: 0,
                 extra_delay: delay,
+                no_response_expected: no_response_expected,
             };
             self.request_metadata_map.insert(request_id, meta_data);
         }
@@ -111,9 +118,10 @@ impl SerialInterfaceActor {
                     self.state = State::WaitingForReceiveAccept;
                     Ok(result)
                 }
-                Err(_) => {
+                Err(err) => {
                     self.last_message_size = 22;
-                    Err(anyhow::anyhow!("error"))
+
+                    Err(anyhow::anyhow!(err))
                 }
             }
         })
@@ -132,6 +140,7 @@ impl SerialInterfaceActor {
             let mut highest_priority: u32 = 0;
             let mut highest_id: &u32 = &0;
             let mut delay: u32 = 0;
+            let mut no_response_expected: bool = false;
 
             for (key, value) in self.request_metadata_map.iter_mut() {
                 // borrowchecker complaining
@@ -147,7 +156,8 @@ impl SerialInterfaceActor {
                     delay = match value.extra_delay {
                         Some(delay) => delay,
                         None => 0,
-                    }
+                    };
+                    no_response_expected = value.no_response_expected;
                 }
             }
 
@@ -162,6 +172,7 @@ impl SerialInterfaceActor {
                 Ok(_) => {
                     self.last_message_delay = delay;
                     self.last_message_id = *highest_id;
+                    self.no_response_expected = no_response_expected;
                 }
                 Err(_) => tracing::error!("ERROR: serial_interface.write_message has failed"),
             }
@@ -264,6 +275,8 @@ impl SerialInterfaceActor {
 
             match self.state {
                 State::Uninitialized => (),
+                State::WaitingForReceiveAccept => (),
+                State::WaitingForRequestAccept => (),
                 _ => {
                     if elapsed < timeout {
                         return;
@@ -283,8 +296,10 @@ impl SerialInterfaceActor {
                         }
                         Err(_) => {
                             self.response = None;
-                            self.state = State::ReadyToSend;
-                            self.last_message_id = 0;
+                            if self.no_response_expected {
+                                self.state = State::ReadyToSend;
+                                return;
+                            }
                         }
                     }
                 }
