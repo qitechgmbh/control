@@ -41,7 +41,9 @@ export function useBuffer1() {
   }, [serialString]); // Only recreate when serialString changes
 
   // Get consolidated state and live values from namespace
-  const { state, sine_wave: sine_wave } = useBuffer1Namespace(machineIdentification);
+  const { state, sine_wave: sine_wave } = useBuffer1Namespace(
+    machineIdentification,
+  );
 
   // Single optimistic state for all state management
   const stateOptimistic = useStateOptimistic<StateEvent>();
@@ -100,9 +102,9 @@ export function useBuffer1() {
   );
 
   const { request: requestBufferFrequency } = useMachineMutation(
-      z.object({
-        SetBufferFrequency: z.number(),
-      }),
+    z.object({
+      SetBufferFrequency: z.number(),
+    }),
   );
 
   return {

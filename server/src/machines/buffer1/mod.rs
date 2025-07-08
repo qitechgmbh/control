@@ -1,3 +1,9 @@
+pub mod act;
+pub mod api;
+pub mod new;
+pub mod buffer_tower_controller;
+pub mod puller_speed_controller;
+
 use api::{
     BufferV1Events, Buffer1Namespace, StateEvent, ModeState, SineWaveState, LiveValuesEvent,
 };
@@ -6,20 +12,16 @@ use serde::{Deserialize, Serialize};
 use tracing::info;
 use uom::si::{f64::Frequency, frequency::hertz};
 use std::time::Instant;
-
-pub mod act;
-pub mod api;
-pub mod new;
-
-#[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
-pub enum BufferV1Mode {
-    Standby,
-    FillingBuffer,
-    EmptyingBuffer,
-}
+use puller_speed_controller::{PullerSpeedController};
+use buffer_tower_controller::{BufferTowerController};
 
 #[derive(Debug)]
 pub struct BufferV1 {
+    // controllers
+    pub buffer_tower_controller: BufferTowerController,
+    pub puller_speed_controller: PullerSpeedController,
+
+    // socketio
     namespace: Buffer1Namespace,
     last_measurement_emit: Instant,
 
@@ -27,6 +29,7 @@ pub struct BufferV1 {
     t_0: Instant,
     frequency: Frequency,
 
+    // mode
     mode: BufferV1Mode,
 }
 
@@ -152,4 +155,15 @@ impl BufferV1 {
         self.change_frequency(frequency_mhz);
         self.emit_state();
     }
+    fn set_rpm_state(&mut self, rpm: f64) {
+        //TODO 
+        self.emit_state();
+    }
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
+pub enum BufferV1Mode {
+    Standby,
+    FillingBuffer,
+    EmptyingBuffer,
 }

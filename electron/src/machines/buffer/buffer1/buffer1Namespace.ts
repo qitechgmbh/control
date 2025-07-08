@@ -16,7 +16,7 @@ import {
   ThrottledStoreUpdater,
 } from "../../../client/socketioStore";
 import { MachineIdentificationUnique } from "@/machines/types";
-import { createTimeSeries, TimeSeries, } from "@/lib/timeseries";
+import { createTimeSeries, TimeSeries } from "@/lib/timeseries";
 import { useMemo } from "react";
 
 // ========== Event Schema Definitions ==========
@@ -24,7 +24,11 @@ import { useMemo } from "react";
 /**
  * Machine operation mode enum
  */
-export const modeSchema = z.enum(["Standby", "FillingBuffer", "EmptyingBuffer"]);
+export const modeSchema = z.enum([
+  "Standby",
+  "FillingBuffer",
+  "EmptyingBuffer",
+]);
 export type Mode = z.infer<typeof modeSchema>;
 
 /**
