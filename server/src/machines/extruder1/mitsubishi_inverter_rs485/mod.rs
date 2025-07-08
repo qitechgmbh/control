@@ -353,7 +353,7 @@ impl RequestType {
             RequestType::OperationCommand => Duration::from_millis(12),
             RequestType::ReadWrite => Duration::from_millis(30),
             RequestType::ParamClear => Duration::from_millis(5000),
-            RequestType::Reset => Duration::from_millis(300),
+            RequestType::Reset => Duration::from_millis(900),
             RequestType::None => Duration::from_millis(12),
         }
     }
@@ -428,10 +428,18 @@ impl MitsubishiInverterController {
     }
 
     fn add_request(&mut self, request: MitsubishiModbusRequest) {
+        let mut no_response_expected = false;
+        match request.control_request_type {
+            MitsubishiControlRequests::None => no_response_expected = true,
+            MitsubishiControlRequests::ResetInverter => no_response_expected = true,
+            _ => (),
+        }
+
         self.serial_actor.add_request(
             request.control_request_type.into(),
             request.priority as u32,
             request.request,
+            no_response_expected,
             Some(request.request_type.timeout_duration().as_nanos() as u32),
         );
     }
@@ -448,12 +456,7 @@ impl MitsubishiInverterController {
         request.request.data[2] = result.to_le_bytes()[1];
         request.request.data[3] = result.to_le_bytes()[0];
 
-        self.serial_actor.add_request(
-            MitsubishiControlRequests::WriteRunningFrequency.into(),
-            request.priority as u32,
-            request.request,
-            Some(request.request_type.timeout_duration().as_nanos() as u32),
-        );
+        self.add_request(request);
     }
 
     pub fn set_rotation(&mut self, forward_rotation: bool) {
