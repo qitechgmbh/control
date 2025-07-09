@@ -1,22 +1,23 @@
+use control_core::machines::new::MachineAct;
+
 use super::{ExtruderV2, ExtruderV2Mode};
-use control_core::actors::Actor;
 use std::time::{Duration, Instant};
 
-impl Actor for ExtruderV2 {
+impl MachineAct for ExtruderV2 {
     fn act(
         &mut self,
         now_ts: Instant,
     ) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send + '_>> {
         Box::pin(async move {
-            self.temperature_controller_back.update(now_ts).await;
-            self.temperature_controller_nozzle.update(now_ts).await;
-            self.temperature_controller_front.update(now_ts).await;
-            self.temperature_controller_middle.update(now_ts).await;
+            self.temperature_controller_back.update(now_ts);
+            self.temperature_controller_nozzle.update(now_ts);
+            self.temperature_controller_front.update(now_ts);
+            self.temperature_controller_middle.update(now_ts);
 
             if self.mode == ExtruderV2Mode::Extrude {
-                self.screw_speed_controller.update(now_ts, true).await;
+                self.screw_speed_controller.update(now_ts, true);
             } else {
-                self.screw_speed_controller.update(now_ts, false).await;
+                self.screw_speed_controller.update(now_ts, false);
             }
 
             if self.mode == ExtruderV2Mode::Standby {

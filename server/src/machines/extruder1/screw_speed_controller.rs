@@ -1,11 +1,11 @@
 use std::time::Instant;
 
 use control_core::{
-    actors::{Actor, analog_input_getter::AnalogInputGetter},
     controllers::clamping_timeagnostic_pid::ClampingTimeagnosticPidController,
-    converters::transmission_converter::TransmissionConverter,
-    helpers::interpolation::normalize,
+    converters::transmission_converter::TransmissionConverter, helpers::interpolation::normalize,
 };
+use ethercat_hal::io::analog_input::AnalogInput;
+use futures::executor::block_on;
 use uom::si::{
     angular_velocity::revolution_per_minute,
     electric_current::milliampere,
@@ -22,8 +22,7 @@ pub struct ScrewSpeedController {
     pub target_pressure: Pressure,
     pub target_rpm: AngularVelocity,
     pub inverter: MitsubishiInverterController,
-    pressure_sensor: AnalogInputGetter,
-    pressure_wiring_error: bool,
+    pressure_sensor: AnalogInput,
     last_update: Instant,
     uses_rpm: bool,
     forward_rotation: bool,
@@ -41,7 +40,7 @@ impl ScrewSpeedController {
         inverter: MitsubishiInverterController,
         target_pressure: Pressure,
         target_rpm: AngularVelocity,
-        pressure_sensor: AnalogInputGetter,
+        pressure_sensor: AnalogInput,
     ) -> Self {
         let now = Instant::now();
         Self {
@@ -61,7 +60,6 @@ impl ScrewSpeedController {
             frequency: Frequency::new::<hertz>(0.0),
             maximum_frequency: Frequency::new::<hertz>(60.0),
             minimum_frequency: Frequency::new::<hertz>(0.0),
-            pressure_wiring_error: false,
         }
     }
 
@@ -167,10 +165,8 @@ impl ScrewSpeedController {
     }
 
     pub fn get_sensor_current(&self) -> Result<ElectricCurrent, anyhow::Error> {
-        let phys: ethercat_hal::io::analog_input::physical::AnalogInputValue = self
-            .pressure_sensor
-            .get_physical()
-            .ok_or_else(|| anyhow::anyhow!("no value"))?;
+        let phys: ethercat_hal::io::analog_input::physical::AnalogInputValue =
+            self.pressure_sensor.get_physical();
 
         match phys {
             ethercat_hal::io::analog_input::physical::AnalogInputValue::Potential(_) => {
@@ -201,9 +197,9 @@ impl ScrewSpeedController {
         return Pressure::new::<bar>(actual_pressure);
     }
 
-    pub async fn update(&mut self, now: Instant, is_extruding: bool) {
-        self.pressure_sensor.act(now).await;
-        self.inverter.act(now).await;
+    pub fn update(&mut self, now: Instant, is_extruding: bool) {
+        // TODO: move this logic elsewhere or make non async
+        block_on(self.inverter.act(now));
 
         let wiring_error = self.get_wiring_error();
         if wiring_error {

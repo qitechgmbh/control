@@ -1,6 +1,6 @@
 use super::{EthercatDeviceProcessing, NewEthercatDevice, SubDeviceIdentityTuple};
 use crate::helpers::ethercrab_types::EthercrabSubDevicePreoperational;
-use crate::io::digital_output::{DigitalOutputDevice, DigitalOutputOutput, DigitalOutputState};
+use crate::io::digital_output::{DigitalOutputDevice, DigitalOutputOutput};
 use crate::pdo::{RxPdo, basic::BoolPdoObject};
 use ethercat_hal_derive::{EthercatDevice, RxPdo};
 
@@ -31,7 +31,7 @@ impl NewEthercatDevice for EL2002 {
 }
 
 impl DigitalOutputDevice<EL2002Port> for EL2002 {
-    fn digital_output_write(&mut self, port: EL2002Port, value: DigitalOutputOutput) {
+    fn set_output(&mut self, port: EL2002Port, value: DigitalOutputOutput) {
         let expect_text = "All channels should be Some(_)";
         match port {
             EL2002Port::DO1 => {
@@ -43,14 +43,12 @@ impl DigitalOutputDevice<EL2002Port> for EL2002 {
         }
     }
 
-    fn digital_output_state(&self, port: EL2002Port) -> DigitalOutputState {
+    fn get_output(&self, port: EL2002Port) -> DigitalOutputOutput {
         let expect_text = "All channels should be Some(_)";
-        DigitalOutputState {
-            output: DigitalOutputOutput(match port {
-                EL2002Port::DO1 => self.rxpdo.channel1.as_ref().expect(&expect_text).value,
-                EL2002Port::DO2 => self.rxpdo.channel2.as_ref().expect(&expect_text).value,
-            }),
-        }
+        DigitalOutputOutput(match port {
+            EL2002Port::DO1 => self.rxpdo.channel1.as_ref().expect(&expect_text).value,
+            EL2002Port::DO2 => self.rxpdo.channel2.as_ref().expect(&expect_text).value,
+        })
     }
 }
 

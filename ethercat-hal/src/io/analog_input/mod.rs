@@ -1,8 +1,7 @@
 use std::fmt;
-use std::future::Future;
-use std::pin::Pin;
 use std::sync::Arc;
 
+use futures::executor::block_on;
 use physical::{AnalogInputRange, AnalogInputValue};
 use smol::lock::RwLock;
 
@@ -14,8 +13,7 @@ pub mod physical;
 /// depending on the type of device and its range.
 pub struct AnalogInput {
     /// Read the state of the analog input
-    pub state:
-        Box<dyn Fn() -> Pin<Box<dyn Future<Output = AnalogInputState> + Send>> + Send + Sync>,
+    get_input: Box<dyn Fn() -> AnalogInputInput + Send + Sync>,
     pub range: AnalogInputRange,
 }
 
@@ -39,26 +37,34 @@ impl AnalogInput {
         });
 
         // build async get closure
-        let state = Box::new(
-            move || -> Pin<Box<dyn Future<Output = AnalogInputState> + Send>> {
-                let device2 = Arc::clone(&device);
-                let port_clone = port.clone();
-                Box::pin(async move {
-                    let device = device2.read().await;
-                    device.analog_output_state(port_clone)
-                })
-            },
-        );
+        let get_input = Box::new(move || -> AnalogInputInput {
+            let device2 = Arc::clone(&device);
+            let port_clone = port.clone();
+            block_on(async move {
+                let device = device2.read().await;
+                device.get_input(port_clone)
+            })
+        });
 
-        AnalogInput { state, range }
+        AnalogInput { get_input, range }
+    }
+
+    /// Value from -1.0 to 1.0
+    pub fn get_normalized(&self) -> f32 {
+        let input = (self.get_input)();
+        input.normalized
+    }
+
+    pub fn get_physical(&self) -> AnalogInputValue {
+        let normalized = self.get_normalized();
+        self.range.normalized_to_physical(normalized)
+    }
+
+    pub fn get_wiring_error(&self) -> bool {
+        let input = (self.get_input)();
+        input.wiring_error
     }
 }
-
-#[derive(Debug, Clone)]
-pub struct AnalogInputState {
-    pub input: AnalogInputInput,
-}
-
 #[derive(Debug, Clone)]
 pub struct AnalogInputInput {
     /// from -1.0 to 1.0
@@ -75,6 +81,6 @@ impl AnalogInputInput {
 }
 
 pub trait AnalogInputDevice<PORTS>: Send + Sync {
-    fn analog_output_state(&self, port: PORTS) -> AnalogInputState;
+    fn get_input(&self, port: PORTS) -> AnalogInputInput;
     fn analog_input_range(&self) -> AnalogInputRange;
 }

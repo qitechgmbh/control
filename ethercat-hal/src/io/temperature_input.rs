@@ -1,15 +1,15 @@
+use futures::executor::block_on;
 use smol::lock::RwLock;
 
 use crate::pdo::basic::Limit;
-use std::{fmt, future::Future, pin::Pin, sync::Arc};
+use std::{fmt, sync::Arc};
 
 /// Temperature Input (TI) device
 ///
 /// Reads temperature values from the device.
 pub struct TemperatureInput {
     /// Read the state of the temperature input
-    pub state:
-        Box<dyn Fn() -> Pin<Box<dyn Future<Output = TemperatureInputState> + Send>> + Send + Sync>,
+    get_input: Box<dyn Fn() -> TemperatureInputInput + Send + Sync>,
 }
 
 impl fmt::Debug for TemperatureInput {
@@ -26,21 +26,39 @@ impl TemperatureInput {
     where
         PORTS: Clone + Send + Sync + 'static,
     {
-        // build async get closure
+        // build sync get closure
         let port2 = port.clone();
         let device2 = device.clone();
-        let state = Box::new(
-            move || -> Pin<Box<dyn Future<Output = TemperatureInputState> + Send>> {
-                let device2 = device2.clone();
-                let port_clone = port2.clone();
-                Box::pin(async move {
-                    let device = device2.read().await;
-                    device.temperature_input_state(port_clone)
-                })
-            },
-        );
-        TemperatureInput { state }
+        let get_input = Box::new(move || {
+            let device2 = device2.clone();
+            let port_clone = port2.clone();
+            block_on(async move {
+                let device = device2.read().await;
+                device.get_input(port_clone)
+            })
+        });
+        TemperatureInput { get_input }
     }
+
+    /// Get the current temperature in degrees Celsius
+    pub fn get_temperature(&self) -> Result<f64, TemperatureInputError> {
+        let input = (self.get_input)();
+        if input.overvoltage {
+            Err(TemperatureInputError::OverVoltage)
+        } else if input.undervoltage {
+            Err(TemperatureInputError::UnderVoltage)
+        } else {
+            Ok(input.temperature as f64)
+        }
+    }
+}
+
+pub enum TemperatureInputError {
+    /// Over-voltage error
+    OverVoltage,
+
+    /// Under-voltage error
+    UnderVoltage,
 }
 
 #[derive(Debug, Clone)]
@@ -77,5 +95,5 @@ pub struct TemperatureInputInput {
 }
 
 pub trait TemperatureInputDevice<PORTS>: Send + Sync {
-    fn temperature_input_state(&self, port: PORTS) -> TemperatureInputState;
+    fn get_input(&self, port: PORTS) -> TemperatureInputInput;
 }

@@ -1,5 +1,6 @@
-use std::{fmt, future::Future, pin::Pin, sync::Arc};
+use std::{fmt, sync::Arc};
 
+use futures::executor::block_on;
 use smol::lock::RwLock;
 
 /// Pulse Train Output (PTO) device
@@ -7,12 +8,10 @@ use smol::lock::RwLock;
 /// Generates digital puleses with a given frequency (not PWM) and counts them.
 pub struct PulseTrainOutput {
     /// Write to the pulse train output
-    pub write: Box<
-        dyn Fn(PulseTrainOutputOutput) -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync,
-    >,
+    set_output: Box<dyn Fn(PulseTrainOutputOutput) -> () + Send + Sync>,
     /// Read the state of the pulse train output
-    pub state:
-        Box<dyn Fn() -> Pin<Box<dyn Future<Output = PulseTrainOutputState> + Send>> + Send + Sync>,
+    get_output: Box<dyn Fn() -> PulseTrainOutputOutput + Send + Sync>,
+    get_input: Box<dyn Fn() -> PulseTrainOutputInput + Send + Sync>,
 }
 
 impl fmt::Debug for PulseTrainOutput {
@@ -27,31 +26,51 @@ impl<'device> PulseTrainOutput {
         PORT: Clone + Copy + Send + Sync + 'static,
         DEVICE: PulseTrainOutputDevice<PORT> + Send + Sync + 'static,
     {
-        // build async write closure
+        // build sync write closure
         let device1 = device.clone();
-        let write = Box::new(
-            move |value: PulseTrainOutputOutput| -> Pin<Box<dyn Future<Output = ()> + Send>> {
-                let device_clone = device1.clone();
-                Box::pin(async move {
-                    let mut device = device_clone.write().await;
-                    device.pulse_train_output_write(port, value);
-                })
-            },
-        );
+        let set_output = Box::new(move |value: PulseTrainOutputOutput| {
+            let mut device = block_on(device1.write());
+            device.set_output(port, value);
+        });
 
-        // build async get closure
+        // build sync get closure
         let device2 = device.clone();
-        let state = Box::new(
-            move || -> Pin<Box<dyn Future<Output = PulseTrainOutputState> + Send>> {
-                let device2 = device2.clone();
-                Box::pin(async move {
-                    let device = device2.read().await;
-                    device.pulse_train_output_state(port)
-                })
-            },
-        );
+        let get_output = Box::new(move || -> PulseTrainOutputOutput {
+            let device = block_on(device2.read());
+            device.get_output(port)
+        });
 
-        PulseTrainOutput { write, state }
+        // build sync get closure
+        let device2 = device.clone();
+        let get_input = Box::new(move || -> PulseTrainOutputInput {
+            let device = block_on(device2.read());
+            device.get_input(port)
+        });
+
+        PulseTrainOutput {
+            set_output,
+            get_output,
+            get_input,
+        }
+    }
+
+    /// Set the frequency value
+    pub fn set_frequency(&mut self, frequency: i32) {
+        let mut output = (self.get_output)();
+        output.frequency_value = frequency;
+        (self.set_output)(output);
+    }
+
+    /// Get the current frequency value
+    pub fn get_frequency(&self) -> i32 {
+        let output = (self.get_output)();
+        output.frequency_value
+    }
+
+    /// Get the current encoder position (counter value)
+    pub fn get_position(&self) -> u32 {
+        let input = (self.get_input)();
+        input.counter_value
     }
 }
 
@@ -88,6 +107,7 @@ pub trait PulseTrainOutputDevice<PORT>: Send + Sync
 where
     PORT: Clone,
 {
-    fn pulse_train_output_write(&mut self, port: PORT, value: PulseTrainOutputOutput);
-    fn pulse_train_output_state(&self, port: PORT) -> PulseTrainOutputState;
+    fn set_output(&mut self, port: PORT, value: PulseTrainOutputOutput);
+    fn get_output(&self, port: PORT) -> PulseTrainOutputOutput;
+    fn get_input(&self, port: PORT) -> PulseTrainOutputInput;
 }

@@ -1,21 +1,14 @@
 use std::time::{Duration, Instant};
 
 use super::Winder2;
-use control_core::actors::Actor;
+use control_core::machines::new::MachineAct;
 
-impl Actor for Winder2 {
+impl MachineAct for Winder2 {
     fn act(
         &mut self,
         now: Instant,
     ) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send + '_>> {
         Box::pin(async move {
-            self.traverse.act(now).await;
-            self.traverse_end_stop.act(now).await;
-            self.puller.act(now).await;
-            self.spool.act(now).await;
-            self.tension_arm.analog_input_getter.act(now).await;
-            self.laser.act(now).await;
-
             // sync the spool speed
             self.sync_spool_speed(now);
 

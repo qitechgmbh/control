@@ -1,6 +1,6 @@
 use super::{EthercatDeviceProcessing, NewEthercatDevice, SubDeviceIdentityTuple};
 use crate::helpers::ethercrab_types::EthercrabSubDevicePreoperational;
-use crate::io::digital_input::{DigitalInputDevice, DigitalInputInput, DigitalInputState};
+use crate::io::digital_input::{DigitalInputDevice, DigitalInputInput};
 use crate::pdo::{PredefinedPdoAssignment, TxPdo, basic::BoolPdoObject};
 use ethercat_hal_derive::{EthercatDevice, TxPdo};
 
@@ -31,24 +31,22 @@ impl NewEthercatDevice for EL1008 {
 }
 
 impl DigitalInputDevice<EL1008Port> for EL1008 {
-    fn digital_input_state(&self, port: EL1008Port) -> Result<DigitalInputState, anyhow::Error> {
+    fn get_input(&self, port: EL1008Port) -> Result<DigitalInputInput, anyhow::Error> {
         let error = anyhow::anyhow!(
             "[{}::Device::digital_input_state] Port {:?} is not available",
             module_path!(),
             port
         );
-        Ok(DigitalInputState {
-            input: DigitalInputInput {
-                value: match port {
-                    EL1008Port::DI1 => self.txpdo.channel1.as_ref().ok_or(error)?.value,
-                    EL1008Port::DI2 => self.txpdo.channel2.as_ref().ok_or(error)?.value,
-                    EL1008Port::DI3 => self.txpdo.channel3.as_ref().ok_or(error)?.value,
-                    EL1008Port::DI4 => self.txpdo.channel4.as_ref().ok_or(error)?.value,
-                    EL1008Port::DI5 => self.txpdo.channel5.as_ref().ok_or(error)?.value,
-                    EL1008Port::DI6 => self.txpdo.channel6.as_ref().ok_or(error)?.value,
-                    EL1008Port::DI7 => self.txpdo.channel7.as_ref().ok_or(error)?.value,
-                    EL1008Port::DI8 => self.txpdo.channel8.as_ref().ok_or(error)?.value,
-                },
+        Ok(DigitalInputInput {
+            value: match port {
+                EL1008Port::DI1 => self.txpdo.channel1.as_ref().ok_or(error)?.value,
+                EL1008Port::DI2 => self.txpdo.channel2.as_ref().ok_or(error)?.value,
+                EL1008Port::DI3 => self.txpdo.channel3.as_ref().ok_or(error)?.value,
+                EL1008Port::DI4 => self.txpdo.channel4.as_ref().ok_or(error)?.value,
+                EL1008Port::DI5 => self.txpdo.channel5.as_ref().ok_or(error)?.value,
+                EL1008Port::DI6 => self.txpdo.channel6.as_ref().ok_or(error)?.value,
+                EL1008Port::DI7 => self.txpdo.channel7.as_ref().ok_or(error)?.value,
+                EL1008Port::DI8 => self.txpdo.channel8.as_ref().ok_or(error)?.value,
             },
         })
     }

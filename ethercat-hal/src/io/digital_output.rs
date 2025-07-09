@@ -1,5 +1,6 @@
-use std::{fmt, future::Future, pin::Pin, sync::Arc};
+use std::{fmt, sync::Arc};
 
+use futures::executor::block_on;
 use smol::lock::RwLock;
 
 /// Digital Output (DO) device
@@ -7,12 +8,10 @@ use smol::lock::RwLock;
 /// Writes digital values (true or false) to the device.
 pub struct DigitalOutput {
     /// Write a value to the digital output
-    pub write:
-        Box<dyn Fn(DigitalOutputOutput) -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>,
+    set_output: Box<dyn Fn(DigitalOutputOutput) -> () + Send + Sync>,
 
     /// Read the state of the digital output
-    pub state:
-        Box<dyn Fn() -> Pin<Box<dyn Future<Output = DigitalOutputState> + Send>> + Send + Sync>,
+    get_output: Box<dyn Fn() -> DigitalOutputOutput + Send + Sync>,
 }
 
 impl fmt::Debug for DigitalOutput {
@@ -29,40 +28,38 @@ impl DigitalOutput {
     where
         PORT: Clone + Send + Sync + 'static,
     {
-        // build async write closure
+        // build sync write closure
         let port1 = port.clone();
         let device1 = device.clone();
-        let write = Box::new(
-            move |value: DigitalOutputOutput| -> Pin<Box<dyn Future<Output = ()> + Send>> {
-                let device_clone = device1.clone();
-                let port_clone = port1.clone();
-                Box::pin(async move {
-                    let mut device = device_clone.write().await;
-                    device.digital_output_write(port_clone, value);
-                })
-            },
-        );
+        let set_output = Box::new(move |value: DigitalOutputOutput| {
+            let mut device = block_on(device1.write());
+            device.set_output(port1.clone(), value);
+        });
 
-        // build async get closure
+        // build sync get closure
         let port2 = port.clone();
         let device2 = device.clone();
-        let state = Box::new(
-            move || -> Pin<Box<dyn Future<Output = DigitalOutputState> + Send>> {
-                let device2 = device2.clone();
-                let port_clone = port2.clone();
-                Box::pin(async move {
-                    let device = device2.read().await;
-                    device.digital_output_state(port_clone)
-                })
-            },
-        );
-        DigitalOutput { write, state }
-    }
-}
+        let get_output = Box::new(move || -> DigitalOutputOutput {
+            let device = block_on(device2.read());
+            device.get_output(port2.clone())
+        });
 
-#[derive(Debug, Clone)]
-pub struct DigitalOutputState {
-    pub output: DigitalOutputOutput,
+        DigitalOutput {
+            set_output,
+            get_output,
+        }
+    }
+
+    /// Set the digital output value
+    pub fn set(&self, enabled: bool) {
+        (self.set_output)(enabled.into());
+    }
+
+    /// Get the current output value
+    pub fn get(&self) -> bool {
+        let output = (self.get_output)();
+        output.into()
+    }
 }
 
 /// Output value
@@ -87,6 +84,6 @@ pub trait DigitalOutputDevice<PORT>: Send + Sync
 where
     PORT: Clone,
 {
-    fn digital_output_write(&mut self, port: PORT, value: DigitalOutputOutput);
-    fn digital_output_state(&self, port: PORT) -> DigitalOutputState;
+    fn set_output(&mut self, port: PORT, value: DigitalOutputOutput);
+    fn get_output(&self, port: PORT) -> DigitalOutputOutput;
 }

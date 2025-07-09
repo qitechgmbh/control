@@ -11,7 +11,7 @@ use crate::{
 };
 use crate::{
     helpers::ethercrab_types::EthercrabSubDevicePreoperational,
-    io::analog_input::{AnalogInputDevice, AnalogInputInput, AnalogInputState},
+    io::analog_input::{AnalogInputDevice, AnalogInputInput},
 };
 use ethercat_hal_derive::{EthercatDevice, RxPdo, TxPdo};
 use uom::si::{electric_potential::volt, f64::ElectricPotential};
@@ -49,7 +49,7 @@ impl NewEthercatDevice for EL3001 {
 }
 
 impl AnalogInputDevice<EL3001Port> for EL3001 {
-    fn analog_output_state(&self, port: EL3001Port) -> AnalogInputState {
+    fn get_input(&self, port: EL3001Port) -> AnalogInputInput {
         let raw_value = match port {
             EL3001Port::AI1 => match &self.txpdo {
                 EL3001TxPdo {
@@ -73,11 +73,9 @@ impl AnalogInputDevice<EL3001Port> for EL3001 {
             EL30XXPresentation::SignedMagnitude => raw_value.as_signed_magnitude(),
         };
         let normalized = f32::from(value) / f32::from(i16::MAX);
-        AnalogInputState {
-            input: AnalogInputInput {
-                normalized,
-                wiring_error: false,
-            },
+        AnalogInputInput {
+            normalized,
+            wiring_error: false,
         }
     }
 
