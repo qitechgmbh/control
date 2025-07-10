@@ -40,20 +40,24 @@ const previewEntries: PresetPreviewEntry<Mock1PresetData>[] = [
 ];
 
 export function Mock1PresetsPage() {
-  const { mockSetFrequency1, mockSetFrequency2, mockSetFrequency3, mockState } =
+  const { setFrequency1, setFrequency2, setFrequency3, state } =
     useMock1();
 
   const applyPreset = (preset: Preset<Mock1PresetData>) => {
     const frequency1 = preset.data?.frequency1 ?? 100;
     const frequency2 = preset.data?.frequency2 ?? 200;
-    const frequency3 = preset.data?.frequency2 ?? 500;
+    const frequency3 = preset.data?.frequency3 ?? 500;
 
-    mockSetFrequency1(frequency1);
-    mockSetFrequency2(frequency2);
-    mockSetFrequency3(frequency3);
+    setFrequency1(frequency1);
+    setFrequency2(frequency2);
+    setFrequency3(frequency3);
   };
 
-  const readCurrentState = () => mockState?.data ?? {};
+  const readCurrentState = () => ({
+      frequency1: state?.frequency1,
+      frequency2: state?.frequency2,
+      frequency3: state?.frequency3,
+  });
 
   return (
     <PresetsPage
