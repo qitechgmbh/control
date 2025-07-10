@@ -60,18 +60,6 @@ export function PresetsPage<T>({
       />
       <TouchButton onClick={handleNewPreset}>Create new Preset</TouchButton>
       <ControlGrid columns={2}>
-        {presets.defaultPreset !== undefined && (
-          <PresetCard
-            key={presets.defaultPreset.id}
-            preset={presets.defaultPreset}
-            onOverwrite={handleOverwritePreset}
-            onApply={applyPreset}
-            onDelete={handleDeletePreset}
-            previewEntries={previewEntries}
-            isReadOnly={true}
-          />
-        )}
-
         {presets.get().map((preset) => (
           <PresetCard
             key={preset.id}
@@ -80,8 +68,23 @@ export function PresetsPage<T>({
             onApply={applyPreset}
             onDelete={handleDeletePreset}
             previewEntries={previewEntries}
+            isReadOnly={preset.isLatestPreset}
+            isActive={presets.isActive(preset)}
           />
         ))}
+
+        {presets.defaultPreset !== undefined && (
+          <PresetCard
+            preset={presets.defaultPreset}
+            onOverwrite={handleOverwritePreset}
+            onApply={applyPreset}
+            onDelete={handleDeletePreset}
+            previewEntries={previewEntries}
+            isReadOnly
+            hideDate
+            isActive={presets.isActive(presets.defaultPreset)}
+          />
+        )}
       </ControlGrid>
     </Page>
   );

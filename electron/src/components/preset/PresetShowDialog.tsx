@@ -17,12 +17,14 @@ export type PresetShowDialogProps<T> = {
   preset: Preset<T>;
   previewEntries: PresetPreviewEntry<T>[];
   onApply: (preset: Preset<T>) => void;
+  hideDate?: boolean;
 };
 
 export function PresetShowDialog<T>({
   preset,
   onApply,
   previewEntries,
+  hideDate,
 }: PresetShowDialogProps<T>) {
   const [open, setOpen] = useState(false);
 
@@ -52,9 +54,11 @@ export function PresetShowDialog<T>({
         <Separator />
 
         <div className="flex flex-col gap-6 text-sm text-gray-500">
-          <div>
-            Last modification: {preset.lastModified.toLocaleString() || "N/A"}
-          </div>
+          {!hideDate && (
+            <div>
+              Last modification: {preset.lastModified.toLocaleString() || "N/A"}
+            </div>
+          )}
           <PresetPreviewTable entries={previewEntries} preset={preset} />
         </div>
 

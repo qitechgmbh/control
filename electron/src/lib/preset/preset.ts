@@ -6,5 +6,6 @@ export type Preset<T> = {
   lastModified: Date;
   machine_identification: MachineIdentification;
   schemaVersion: number;
+  isLatestPreset?: boolean;
   data: Partial<T>;
 };
