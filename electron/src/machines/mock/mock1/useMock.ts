@@ -11,9 +11,8 @@ import { produce } from "immer";
 
 function useMock(machine_identification_unique: MachineIdentificationUnique) {
   // Get consolidated state and live values from namespace
-  const { state, defaultState, sineWaveSum, sineWave1, sineWave2, sineWave3 } = useMock1Namespace(
-    machine_identification_unique,
-  );
+  const { state, defaultState, sineWaveSum, sineWave1, sineWave2, sineWave3 } =
+    useMock1Namespace(machine_identification_unique);
 
   // Single optimistic state for all state management
   const stateOptimistic = useStateOptimistic<StateEvent>();
@@ -80,20 +79,20 @@ function useMock(machine_identification_unique: MachineIdentificationUnique) {
 
   const setSchemaFrequency3 = z.object({ SetFrequency3: z.number() });
   const { request: requestSetFrequency3 } =
-      useMachineMutation(setSchemaFrequency3);
+    useMachineMutation(setSchemaFrequency3);
   const setFrequency3 = (frequency: number) => {
-      updateStateOptimistically(
-          (current) => {
-              current.data.frequency3 = frequency;
+    updateStateOptimistically(
+      (current) => {
+        current.data.frequency3 = frequency;
+      },
+      () =>
+        requestSetFrequency3({
+          machine_identification_unique,
+          data: {
+            SetFrequency3: frequency,
           },
-          () =>
-          requestSetFrequency3({
-              machine_identification_unique,
-              data: {
-                  SetFrequency3: frequency,
-              },
-          }),
-      );
+        }),
+    );
   };
 
   const schemaSetMode = z.object({ SetMode: z.enum(["Standby", "Running"]) });

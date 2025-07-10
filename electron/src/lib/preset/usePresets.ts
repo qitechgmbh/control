@@ -10,14 +10,14 @@ export type Presets<T> = {
   createFromCurrentState: (name: string) => Preset<T>;
   updateFromCurrentState: (preset: Preset<T>) => Preset<T>;
   remove: (preset: Preset<T>) => void;
-  defaultPreset: Preset<T>;
+  defaultPreset?: Preset<T>;
 };
 
 export type UsePresetsParams<T> = {
   machine_identification: MachineIdentification;
   schemaVersion: number;
   readCurrentState: () => Partial<T>;
-  defaultData: T;
+  defaultData: Partial<T>;
 };
 
 export function usePresets<T>({
@@ -28,14 +28,18 @@ export function usePresets<T>({
 }: UsePresetsParams<T>): Presets<T> {
   const store = usePresetStore();
 
-  const defaultPreset = {
-    id: 0,
-    name: "Machine Defaults",
-    machine_identification,
-    lastModified: new Date(0),
-    schemaVersion,
-    data: defaultData,
-  };
+  const defaultPreset =
+    defaultData === undefined
+      ? undefined
+      : {
+          id: -1,
+          name: "Machine Defaults",
+          machine_identification,
+          lastModified: new Date(0),
+          schemaVersion,
+          isLatestPreset: false,
+          data: defaultData,
+        };
 
   const createFromCurrentState = (name: string): Preset<T> => {
     const data = readCurrentState();
@@ -45,6 +49,7 @@ export function usePresets<T>({
       machine_identification,
       lastModified: new Date(),
       schemaVersion,
+      isLatestPreset: false,
       data,
     });
 

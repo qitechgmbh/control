@@ -1,4 +1,4 @@
-import React from "react";
+import React, { Fragment } from "react";
 import { Preset } from "@/lib/preset/preset";
 import { renderUnitSymbol, renderUnitSyntax, Unit } from "@/control/units";
 
@@ -22,7 +22,7 @@ export function PresetPreviewTable<T>({
       {entries.map((entry) => {
         const value = entry.renderValue(preset);
         return (
-          <>
+          <Fragment key={entry.name}>
             <div>{entry.name}</div>
             <div>=</div>
             <div>
@@ -31,7 +31,7 @@ export function PresetPreviewTable<T>({
                 : renderUnitSyntax(value, entry.unit)}{" "}
               {renderUnitSymbol(entry.unit)}
             </div>
-          </>
+          </Fragment>
         );
       })}
     </div>
