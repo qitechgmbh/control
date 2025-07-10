@@ -1,6 +1,5 @@
 use super::{
-    ExtruderV2, ExtruderV2Mode, Heating, api::ExtruderV2Namespace,
-    mitsubishi_inverter_rs485::MitsubishiInverterController,
+    ExtruderV2, ExtruderV2Mode, Heating, api::ExtruderV2Namespace, mitsubishi_cs80::MitsubishiCS80,
     screw_speed_controller::ScrewSpeedController,
 };
 use crate::machines::extruder1::temperature_controller::TemperatureController;
@@ -383,10 +382,8 @@ impl MachineNewTrait for ExtruderV2 {
                 0.95,
             );
 
-            let inverter = MitsubishiInverterController::new(SerialInterface::new(
-                el6021,
-                el6021::EL6021Port::SI1,
-            ));
+            let inverter =
+                MitsubishiCS80::new(SerialInterface::new(el6021, el6021::EL6021Port::SI1));
 
             let target_pressure = Pressure::new::<bar>(0.0);
             let target_rpm = AngularVelocity::new::<revolution_per_minute>(0.0);

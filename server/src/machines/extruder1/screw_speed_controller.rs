@@ -14,14 +14,14 @@ use uom::si::{
     pressure::bar,
 };
 
-use super::mitsubishi_inverter_rs485::MitsubishiInverterController;
+use super::mitsubishi_cs80::MitsubishiCS80;
 
 #[derive(Debug)]
 pub struct ScrewSpeedController {
     pub pid: ClampingTimeagnosticPidController,
     pub target_pressure: Pressure,
     pub target_rpm: AngularVelocity,
-    pub inverter: MitsubishiInverterController,
+    pub inverter: MitsubishiCS80,
     pressure_sensor: AnalogInput,
     last_update: Instant,
     uses_rpm: bool,
@@ -37,7 +37,7 @@ pub struct ScrewSpeedController {
 
 impl ScrewSpeedController {
     pub fn new(
-        inverter: MitsubishiInverterController,
+        inverter: MitsubishiCS80,
         target_pressure: Pressure,
         target_rpm: AngularVelocity,
         pressure_sensor: AnalogInput,

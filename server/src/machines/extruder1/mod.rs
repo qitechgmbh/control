@@ -16,7 +16,7 @@ use uom::si::{
 };
 pub mod act;
 pub mod api;
-pub mod mitsubishi_inverter_rs485;
+pub mod mitsubishi_cs80;
 pub mod new;
 pub mod screw_speed_controller;
 pub mod temperature_controller;
@@ -217,31 +217,15 @@ impl ExtruderV2 {
                     .get_nozzle_pressure_limit_enabled(),
             },
             inverter_status_state: InverterStatusState {
-                running: self.screw_speed_controller.inverter.inverter_status.running,
-                forward_running: self
-                    .screw_speed_controller
-                    .inverter
-                    .inverter_status
-                    .forward_running,
-                reverse_running: self
-                    .screw_speed_controller
-                    .inverter
-                    .inverter_status
-                    .reverse_running,
-                up_to_frequency: self.screw_speed_controller.inverter.inverter_status.su,
-                overload_warning: self.screw_speed_controller.inverter.inverter_status.ol,
-                no_function: self
-                    .screw_speed_controller
-                    .inverter
-                    .inverter_status
-                    .no_function,
-                output_frequency_detection: self.screw_speed_controller.inverter.inverter_status.fu,
-                abc_fault: self.screw_speed_controller.inverter.inverter_status.abc_,
-                fault_occurence: self
-                    .screw_speed_controller
-                    .inverter
-                    .inverter_status
-                    .fault_occurence,
+                running: self.screw_speed_controller.inverter.status.running,
+                forward_running: self.screw_speed_controller.inverter.status.forward_running,
+                reverse_running: self.screw_speed_controller.inverter.status.reverse_running,
+                up_to_frequency: self.screw_speed_controller.inverter.status.su,
+                overload_warning: self.screw_speed_controller.inverter.status.ol,
+                no_function: self.screw_speed_controller.inverter.status.no_function,
+                output_frequency_detection: self.screw_speed_controller.inverter.status.fu,
+                abc_fault: self.screw_speed_controller.inverter.status.abc_,
+                fault_occurence: self.screw_speed_controller.inverter.status.fault_occurence,
             },
             pid_settings: PidSettingsStates {
                 temperature: PidSettings {
