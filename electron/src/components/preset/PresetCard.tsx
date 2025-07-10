@@ -11,6 +11,7 @@ export type PresetCardProps<T> = {
   onOverwrite: (preset: Preset<T>) => void;
   onDelete: (preset: Preset<T>) => void;
   previewEntries: PresetPreviewEntry<T>[];
+  isReadOnly?: boolean;
 };
 
 export function PresetCard<T>({
@@ -19,6 +20,7 @@ export function PresetCard<T>({
   onOverwrite,
   onDelete,
   previewEntries,
+  isReadOnly,
 }: PresetCardProps<T>) {
   return (
     <div className="flex flex-row items-center gap-4 rounded-3xl border border-gray-200 bg-white p-4 shadow">
@@ -35,26 +37,30 @@ export function PresetCard<T>({
         </div>
       </div>
       <div className="flex gap-2">
-        <TouchButton
-          className="flex-shrink-0"
-          variant="outline"
-          onClick={() => onOverwrite(preset)}
-        >
-          <Icon name="lu:HardDriveUpload" />
-          Overwrite
-        </TouchButton>
+        {!isReadOnly && (
+          <TouchButton
+            className="flex-shrink-0"
+            variant="outline"
+            onClick={() => onOverwrite(preset)}
+          >
+            <Icon name="lu:HardDriveUpload" />
+            Overwrite
+          </TouchButton>
+        )}
         <PresetShowDialog
           preset={preset}
           onApply={onApply}
           previewEntries={previewEntries}
         ></PresetShowDialog>
-        <TouchButton
-          className="flex-shrink-0"
-          variant="destructive"
-          onClick={() => onDelete(preset)}
-        >
-          Delete
-        </TouchButton>
+        {!isReadOnly && (
+          <TouchButton
+            className="flex-shrink-0"
+            variant="destructive"
+            onClick={() => onDelete(preset)}
+          >
+            Delete
+          </TouchButton>
+        )}
       </div>
     </div>
   );
