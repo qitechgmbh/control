@@ -15,6 +15,7 @@ export function Laser1ControlPage() {
   const {
     diameter,
     state,
+    defaultState,
     setTargetDiameter,
     setLowerTolerance,
     setHigherTolerance,
@@ -59,7 +60,7 @@ export function Laser1ControlPage() {
                 }
                 setTargetDiameter(val);
               }}
-              defaultValue={0}
+              defaultValue={defaultState?.laser_state.target_diameter}
             />
           </Label>
           <Label label="Set Lower Tolerance">
@@ -72,7 +73,7 @@ export function Laser1ControlPage() {
               max={Math.min(targetDiameter, 1)}
               renderValue={(value) => value.toFixed(2)}
               onChange={(val) => setLowerTolerance(val)}
-              defaultValue={0}
+              defaultValue={defaultState?.laser_state.lower_tolerance}
             />
           </Label>
           <Label label="Set Higher Tolerance">
@@ -85,7 +86,7 @@ export function Laser1ControlPage() {
               max={1}
               renderValue={(value) => value.toFixed(2)}
               onChange={(val) => setHigherTolerance(val)}
-              defaultValue={0}
+              defaultValue={defaultState?.laser_state.higher_tolerance}
             />
           </Label>
         </ControlCard>

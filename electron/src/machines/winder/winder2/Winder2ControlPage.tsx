@@ -22,6 +22,7 @@ export function Winder2ControlPage() {
   // use optimistic state
   const {
     state,
+    defaultState,
     enableTraverseLaserpointer,
     tensionArmAngle,
     zeroTensionArmAngle,
@@ -82,7 +83,7 @@ export function Winder2ControlPage() {
                 value={state?.traverse_state?.limit_outer}
                 unit="mm"
                 title="Outer Limit"
-                defaultValue={80}
+                defaultValue={defaultState?.traverse_state?.limit_outer}
                 // Traverse limit validation: Outer limit must be at least 0.9mm greater than inner limit
                 // We use 1mm buffer to ensure the backend validation (which requires >0.9mm) will pass
                 // Formula: min_outer = inner_limit + 1mm
@@ -117,7 +118,7 @@ export function Winder2ControlPage() {
                   180,
                   (state?.traverse_state?.limit_outer ?? 180) - 1,
                 )}
-                defaultValue={16}
+                defaultValue={defaultState?.traverse_state?.limit_inner}
                 minLabel="IN"
                 maxLabel="OUT"
                 renderValue={(value) => roundToDecimals(value, 0)}
@@ -252,7 +253,7 @@ export function Winder2ControlPage() {
               value={state?.puller_state?.target_speed}
               unit="m/min"
               title="Target Speed"
-              defaultValue={1}
+              defaultValue={defaultState?.puller_state?.target_speed}
               min={0}
               max={75}
               step={0.1}

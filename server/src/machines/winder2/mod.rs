@@ -66,6 +66,10 @@ pub struct Winder2 {
 
     // control cirguit puller
     pub puller_speed_controller: PullerSpeedController,
+
+    /// Will be initialized as false and set to true by emit_state
+    /// This way we can signal to the client that the first state emission is a default state
+    emitted_default_state: bool,
 }
 
 impl Machine for Winder2 {}
@@ -192,6 +196,7 @@ impl Winder2 {
 
     pub fn emit_state(&mut self) {
         let state = StateEvent {
+            is_default_state: !std::mem::replace(&mut self.emitted_default_state, true),
             traverse_state: TraverseState {
                 limit_inner: self
                     .traverse_controller

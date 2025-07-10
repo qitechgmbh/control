@@ -9,7 +9,8 @@ import { SelectionGroup } from "@/control/SelectionGroup";
 import { Mode } from "./mock1Namespace";
 
 export function Mock1ControlPage() {
-  const { state, sineWave, setFrequency, setMode, isDisabled } = useMock1();
+  const { state, defaultState, sineWave, setFrequency, setMode, isDisabled } =
+    useMock1();
 
   // Controlled local states synced with consolidated state
   const frequency = state?.sine_wave_state?.frequency ?? 1.0;
@@ -53,7 +54,7 @@ export function Mock1ControlPage() {
               title="Frequency"
               unit="mHz"
               value={frequency}
-              defaultValue={500}
+              defaultValue={defaultState?.sine_wave_state.frequency}
               min={0.0}
               max={1000}
               step={0.1}

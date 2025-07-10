@@ -11,7 +11,9 @@ import { produce } from "immer";
 
 function useMock(machine_identification_unique: MachineIdentificationUnique) {
   // Get consolidated state and live values from namespace
-  const { state, sineWave } = useMock1Namespace(machine_identification_unique);
+  const { state, defaultState, sineWave } = useMock1Namespace(
+    machine_identification_unique,
+  );
 
   // Single optimistic state for all state management
   const stateOptimistic = useStateOptimistic<StateEvent>();
@@ -78,6 +80,9 @@ function useMock(machine_identification_unique: MachineIdentificationUnique) {
   return {
     // Consolidated state
     state: stateOptimistic.value?.data,
+
+    // Default state for initial values
+    defaultState: defaultState?.data,
 
     // Individual live values (TimeSeries)
     sineWave,

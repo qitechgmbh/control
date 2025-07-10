@@ -379,6 +379,7 @@ impl MachineNewTrait for Winder2 {
                     Length::new::<millimeter>(92.0), // Default outer limit
                     64,                              // Microsteps
                 ),
+                emitted_default_state: false,
             };
 
             // initalize events

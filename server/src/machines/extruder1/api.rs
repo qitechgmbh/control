@@ -7,7 +7,7 @@ use control_core::{
         event::{Event, GenericEvent},
         namespace::{
             CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_duration,
-            cache_one_event,
+            cache_first_and_last_event,
         },
     },
 };
@@ -49,6 +49,7 @@ impl LiveValuesEvent {
 
 #[derive(Serialize, Debug, Clone)]
 pub struct StateEvent {
+    pub is_default_state: bool,
     /// rotation state
     pub rotation_state: RotationState,
     /// mode state
@@ -223,11 +224,11 @@ impl CacheableEvents<ExtruderV2Events> for ExtruderV2Events {
 
     fn event_cache_fn(&self) -> CacheFn {
         let cache_one_hour = cache_duration(Duration::from_secs(60 * 60), Duration::from_secs(1));
-        let cache_one = cache_one_event();
+        let cache_first_and_last = cache_first_and_last_event();
 
         match self {
             ExtruderV2Events::LiveValues(_) => cache_one_hour,
-            ExtruderV2Events::State(_) => cache_one,
+            ExtruderV2Events::State(_) => cache_first_and_last,
         }
     }
 }

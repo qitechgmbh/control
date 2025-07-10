@@ -12,6 +12,7 @@ import { SelectionGroup } from "@/control/SelectionGroup";
 export function Winder2SettingPage() {
   const {
     state,
+    defaultState,
     setTraverseStepSize,
     setTraversePadding,
     setPullerForward,
@@ -39,7 +40,7 @@ export function Winder2SettingPage() {
               step={0.05}
               min={0.1}
               max={10}
-              defaultValue={1.0}
+              defaultValue={defaultState?.traverse_state?.step_size}
               renderValue={(value) => roundToDecimals(value, 2)}
               onChange={(value) => setTraverseStepSize(value)}
             />
@@ -52,7 +53,7 @@ export function Winder2SettingPage() {
               step={0.01}
               min={0}
               max={5}
-              defaultValue={0.01}
+              defaultValue={defaultState?.traverse_state?.padding}
               renderValue={(value) => roundToDecimals(value, 2)}
               onChange={(value) => setTraversePadding(value)}
             />
@@ -92,7 +93,9 @@ export function Winder2SettingPage() {
                   step={10}
                   min={0}
                   max={600}
-                  defaultValue={50}
+                  defaultValue={
+                    defaultState?.spool_speed_controller_state?.minmax_min_speed
+                  }
                   renderValue={(value) => roundToDecimals(value, 0)}
                   onChange={(value) => setSpoolMinMaxMinSpeed(value)}
                 />
@@ -105,7 +108,9 @@ export function Winder2SettingPage() {
                   step={10}
                   min={0}
                   max={600}
-                  defaultValue={150}
+                  defaultValue={
+                    defaultState?.spool_speed_controller_state?.minmax_max_speed
+                  }
                   renderValue={(value) => roundToDecimals(value, 0)}
                   onChange={(value) => setSpoolMinMaxMaxSpeed(value)}
                 />
@@ -126,7 +131,10 @@ export function Winder2SettingPage() {
                   step={0.01}
                   min={0}
                   max={1}
-                  defaultValue={0.7}
+                  defaultValue={
+                    defaultState?.spool_speed_controller_state
+                      ?.adaptive_tension_target
+                  }
                   renderValue={(value) => roundToDecimals(value, 2)}
                   onChange={(value) => setSpoolAdaptiveTensionTarget(value)}
                 />
@@ -142,7 +150,10 @@ export function Winder2SettingPage() {
                   step={0.001}
                   min={0}
                   max={100}
-                  defaultValue={0.5}
+                  defaultValue={
+                    defaultState?.spool_speed_controller_state
+                      ?.adaptive_radius_learning_rate
+                  }
                   renderValue={(value) => roundToDecimals(value, 2)}
                   onChange={(value) =>
                     setSpoolAdaptiveRadiusLearningRate(value)
@@ -160,7 +171,10 @@ export function Winder2SettingPage() {
                   step={0.1}
                   min={0.1}
                   max={10}
-                  defaultValue={4.0}
+                  defaultValue={
+                    defaultState?.spool_speed_controller_state
+                      ?.adaptive_max_speed_multiplier
+                  }
                   renderValue={(value) => roundToDecimals(value, 1)}
                   onChange={(value) =>
                     setSpoolAdaptiveMaxSpeedMultiplier(value)
@@ -178,7 +192,10 @@ export function Winder2SettingPage() {
                   step={0.01}
                   min={0.01}
                   max={100}
-                  defaultValue={0.2}
+                  defaultValue={
+                    defaultState?.spool_speed_controller_state
+                      ?.adaptive_acceleration_factor
+                  }
                   renderValue={(value) => roundToDecimals(value, 2)}
                   onChange={(value) =>
                     setSpoolAdaptiveAccelerationFactor(value)
@@ -196,7 +213,10 @@ export function Winder2SettingPage() {
                   step={0.5}
                   min={1}
                   max={100}
-                  defaultValue={15.0}
+                  defaultValue={
+                    defaultState?.spool_speed_controller_state
+                      ?.adaptive_deacceleration_urgency_multiplier
+                  }
                   renderValue={(value) => roundToDecimals(value, 1)}
                   onChange={(value) =>
                     setSpoolAdaptiveDeaccelerationUrgencyMultiplier(value)

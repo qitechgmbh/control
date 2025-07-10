@@ -46,11 +46,12 @@ impl MachineNewTrait for LaserMachine {
             namespace: LaserMachineNamespace::new(params.socket_queue_tx.clone()),
             last_measurement_emit: Instant::now(),
             laser_target,
+            emitted_default_state: false,
         };
-        
+
         // Emit initial state
         laser_machine.emit_state();
-        
+
         Ok(laser_machine)
     }
 }

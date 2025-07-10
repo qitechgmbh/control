@@ -34,6 +34,7 @@ export const liveValuesEventDataSchema = z.object({
  * State event from Laser (on state changes only)
  */
 export const stateEventDataSchema = z.object({
+  is_default_state: z.boolean(),
   laser_state: z.object({
     higher_tolerance: z.number(),
     lower_tolerance: z.number(),
@@ -52,6 +53,7 @@ export type StateEvent = z.infer<typeof stateEventSchema>;
 export type Laser1NamespaceStore = {
   // Single state event from server
   state: StateEvent | null;
+  defaultState: StateEvent | null;
 
   // Time series data for live values
   diameter: TimeSeries;
@@ -76,6 +78,7 @@ export const createLaser1NamespaceStore = (): StoreApi<Laser1NamespaceStore> =>
   create<Laser1NamespaceStore>(() => {
     return {
       state: null,
+      defaultState: null,
       diameter: diameter,
     };
   });
@@ -107,6 +110,10 @@ export function laser1MessageHandler(
         updateStore((state) => ({
           ...state,
           state: stateEvent,
+          // only set default state if is_default_state is true
+          defaultState: stateEvent.data.is_default_state
+            ? stateEvent
+            : state.defaultState,
         }));
       }
       // Live values events (keep for 1 hour)

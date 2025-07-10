@@ -1,4 +1,3 @@
-use ethercrab::error;
 #[cfg(all(not(target_env = "msvc"), not(feature = "dhat-heap")))]
 use tikv_jemallocator::Jemalloc;
 

@@ -40,6 +40,7 @@ export function useExtruder2() {
   // Get consolidated state and live values from namespace
   const {
     state,
+    defaultState,
     screwRpm,
     pressure,
     nozzleTemperature,
@@ -357,6 +358,9 @@ export function useExtruder2() {
   return {
     // Consolidated state
     state: stateOptimistic.value?.data,
+
+    // Default state for initial values
+    defaultState: defaultState?.data,
 
     // Individual live values (TimeSeries)
     screwRpm,
