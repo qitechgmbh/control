@@ -29,42 +29,50 @@ import {
 export const modeSchema = z.enum(["Standby", "Running"]);
 
 /**
- * Sine wave data from Mock Machine (only amplitude)
+ * Sine wave state schema
  */
-export const sineWaveEventDataSchema = z.object({
-  amplitude: z.number(),
-});
-
-/**
- * Sine wave state event (frequency only)
- */
-export const mockStateEventDataSchema = z.object({
+export const sineWaveStateSchema = z.object({
   frequency: z.number(),
 });
 
 /**
- * Mode state event schema
+ * Mode state schema
  */
-export const modeStateEventDataSchema = z.object({
+export const modeStateSchema = z.object({
   mode: modeSchema,
 });
 
+/**
+ * Live values event schema (time-series data)
+ */
+export const liveValuesEventDataSchema = z.object({
+  sine_wave_amplitude: z.number(),
+});
+
+/**
+ * State event schema (consolidated state)
+ */
+export const stateEventDataSchema = z.object({
+  sine_wave_state: sineWaveStateSchema,
+  mode_state: modeStateSchema,
+});
+
 // ========== Event Schemas with Wrappers ==========
-export const sineWaveEventSchema = eventSchema(sineWaveEventDataSchema);
-export const mockStateEventSchema = eventSchema(mockStateEventDataSchema);
-export const modeStateEventSchema = eventSchema(modeStateEventDataSchema);
+export const liveValuesEventSchema = eventSchema(liveValuesEventDataSchema);
+export const stateEventSchema = eventSchema(stateEventDataSchema);
 
 // ========== Type Inferences ==========
 export type Mode = z.infer<typeof modeSchema>;
-export type SineWaveEvent = z.infer<typeof sineWaveEventSchema>;
-export type MockStateEvent = z.infer<typeof mockStateEventSchema>;
-export type ModeStateEvent = z.infer<typeof modeStateEventSchema>;
+export type SineWaveState = z.infer<typeof sineWaveStateSchema>;
+export type ModeState = z.infer<typeof modeStateSchema>;
+export type LiveValuesEvent = z.infer<typeof liveValuesEventSchema>;
+export type StateEvent = z.infer<typeof stateEventSchema>;
 
 export type Mock1NamespaceStore = {
-  // State events (latest only)
-  mockState: MockStateEvent | null;
-  modeState: ModeStateEvent | null;
-  // Metric events (cached for 1 hour)
+  // Single state event from server
+  state: StateEvent | null;
+
+  // Time series data for live values
   sineWave: TimeSeries;
 };
 
@@ -88,8 +96,7 @@ const { initialTimeSeries: sineWave, insert: addSineWave } = createTimeSeries(
 export const createMock1NamespaceStore = (): StoreApi<Mock1NamespaceStore> =>
   create<Mock1NamespaceStore>(() => {
     return {
-      mockState: null,
-      modeState: null,
+      state: null,
       sineWave: sineWave,
     };
   });
@@ -115,27 +122,21 @@ export function mock1MessageHandler(
     };
 
     try {
-      // Apply appropriate caching strategy based on event type
-      if (eventName === "MockStateEvent") {
-        console.log("MockStateEvent", event);
+      // State events (latest only)
+      if (eventName === "StateEvent") {
+        const stateEvent = stateEventSchema.parse(event);
+        console.log("StateEvent", stateEvent);
         updateStore((state) => ({
           ...state,
-          mockState: event as MockStateEvent,
+          state: stateEvent,
         }));
       }
-      // Mode state events (latest only)
-      else if (eventName === "ModeStateEvent") {
-        console.log("ModeStateEvent", event);
-        updateStore((state) => ({
-          ...state,
-          modeState: event as ModeStateEvent,
-        }));
-      }
-      // Metric events (keep for 1 hour)
-      else if (eventName === "SineWaveEvent") {
+      // Live values events (time-series data)
+      else if (eventName === "LiveValuesEvent") {
+        const liveValuesEvent = liveValuesEventSchema.parse(event);
         const timeseriesValue: TimeSeriesValue = {
-          value: event.data.amplitude ?? 0,
-          timestamp: event.ts,
+          value: liveValuesEvent.data.sine_wave_amplitude ?? 0,
+          timestamp: liveValuesEvent.ts,
         };
         updateStore((state) => ({
           ...state,

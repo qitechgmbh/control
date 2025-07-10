@@ -1,5 +1,5 @@
 use api::{
-    MockEvents, MockMachineNamespace, Mode, ModeStateEvent, SineWaveEvent, SineWaveStateEvent,
+    MockEvents, MockMachineNamespace, Mode, StateEvent, LiveValuesEvent, SineWaveState, ModeState,
 };
 use control_core::{machines::Machine, socketio::namespace::NamespaceCacheingLogic};
 use std::time::Instant;
@@ -24,68 +24,52 @@ pub struct MockMachine {
     mode: Mode,
 
     // State tracking to only emit when values change
-    last_emitted_frequency: Option<f64>,
-    last_emitted_mode: Option<Mode>,
+    last_emitted_state: Option<StateEvent>,
 }
 
 impl Machine for MockMachine {}
 
 impl MockMachine {
-    /// Emit a sine wave data event with the current time and frequency
-    pub fn emit_sine_wave(&mut self) {
+    /// Emit live values data event with the current sine wave amplitude
+    pub fn emit_live_values(&mut self) {
         let now = Instant::now();
         let elapsed = now.duration_since(self.t_0).as_secs_f64();
         let freq_hz = self.frequency.get::<hertz>();
 
         // Calculate sine wave: sin(2π * frequency * time)
-        let y = match self.mode {
+        let amplitude = match self.mode {
             Mode::Standby => 0.0,
             Mode::Running => (2.0 * std::f64::consts::PI * freq_hz * elapsed).sin(),
         };
 
-        let sine_wave_event = SineWaveEvent { amplitude: y };
+        let live_values = LiveValuesEvent {
+            sine_wave_amplitude: amplitude,
+        };
 
         self.namespace
-            .emit(MockEvents::SineWave(sine_wave_event.build()));
+            .emit(MockEvents::LiveValues(live_values.build()));
     }
 
     /// Emit the current state of the mock machine only if values have changed
-    pub fn emit_sine_wave_state(&mut self) {
-        let current_frequency_mhz = self.frequency.get::<millihertz>();
+    pub fn emit_state(&mut self) {
+        let current_state = StateEvent {
+            sine_wave_state: SineWaveState {
+                frequency: self.frequency.get::<millihertz>(),
+            },
+            mode_state: ModeState {
+                mode: self.mode.clone(),
+            },
+        };
 
         // Only emit if values have changed or this is the first emission
-        let should_emit = self.last_emitted_frequency != Some(current_frequency_mhz);
+        let should_emit = self.last_emitted_state.as_ref() != Some(&current_state);
 
         if should_emit {
-            let mock_state_event = SineWaveStateEvent {
-                frequency: current_frequency_mhz,
-            };
-
             self.namespace
-                .emit(MockEvents::SineWaveState(mock_state_event.build()));
+                .emit(MockEvents::State(current_state.build()));
 
-            // Update last emitted values
-            self.last_emitted_frequency = Some(current_frequency_mhz);
-        }
-    }
-
-    /// Emit the current mode state only if values have changed
-    pub fn emit_mode_state(&mut self) {
-        let current_mode = self.mode.clone();
-
-        // Only emit if values have changed or this is the first emission
-        let should_emit = self.last_emitted_mode != Some(current_mode.clone());
-
-        if should_emit {
-            let mode_state_event = ModeStateEvent {
-                mode: current_mode.clone(),
-            };
-
-            self.namespace
-                .emit(MockEvents::ModeState(mode_state_event.build()));
-
-            // Update last emitted values
-            self.last_emitted_mode = Some(current_mode);
+            // Update last emitted state
+            self.last_emitted_state = Some(current_state);
         }
     }
 
@@ -93,13 +77,13 @@ impl MockMachine {
     pub fn set_frequency(&mut self, frequency_mhz: f64) {
         self.frequency = Frequency::new::<millihertz>(frequency_mhz);
         // Emit state change immediately
-        self.emit_sine_wave_state();
+        self.emit_state();
     }
 
     /// Set the mode of the mock machine
     pub fn set_mode(&mut self, mode: Mode) {
         self.mode = mode;
         // Emit state change immediately
-        self.emit_mode_state();
+        self.emit_state();
     }
 }

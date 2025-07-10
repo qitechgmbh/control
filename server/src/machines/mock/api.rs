@@ -22,43 +22,47 @@ pub enum Mode {
     Running,
 }
 
-#[derive(Serialize, Debug, Clone)]
-pub struct SineWaveEvent {
-    pub amplitude: f64,
+#[derive(Serialize, Debug, Clone, Default)]
+pub struct LiveValuesEvent {
+    /// sine wave amplitude value
+    pub sine_wave_amplitude: f64,
 }
 
-impl SineWaveEvent {
+impl LiveValuesEvent {
     pub fn build(&self) -> Event<Self> {
-        Event::new("SineWaveEvent", self.clone())
+        Event::new("LiveValuesEvent", self.clone())
     }
 }
 
-#[derive(Serialize, Debug, Clone)]
-pub struct SineWaveStateEvent {
+#[derive(Serialize, Debug, Clone, PartialEq)]
+pub struct StateEvent {
+    /// sine wave state
+    pub sine_wave_state: SineWaveState,
+    /// mode state
+    pub mode_state: ModeState,
+}
+
+impl StateEvent {
+    pub fn build(&self) -> Event<Self> {
+        Event::new("StateEvent", self.clone())
+    }
+}
+
+#[derive(Serialize, Debug, Clone, PartialEq)]
+pub struct SineWaveState {
+    /// frequency in millihertz
     pub frequency: f64,
 }
 
-impl SineWaveStateEvent {
-    pub fn build(&self) -> Event<Self> {
-        Event::new("MockStateEvent", self.clone())
-    }
-}
-
-#[derive(Serialize, Debug, Clone)]
-pub struct ModeStateEvent {
+#[derive(Serialize, Debug, Clone, PartialEq)]
+pub struct ModeState {
+    /// current mode
     pub mode: Mode,
 }
 
-impl ModeStateEvent {
-    pub fn build(&self) -> Event<Self> {
-        Event::new("ModeStateEvent", self.clone())
-    }
-}
-
 pub enum MockEvents {
-    SineWave(Event<SineWaveEvent>),
-    SineWaveState(Event<SineWaveStateEvent>),
-    ModeState(Event<ModeStateEvent>),
+    LiveValues(Event<LiveValuesEvent>),
+    State(Event<StateEvent>),
 }
 
 #[derive(Debug)]
@@ -77,9 +81,8 @@ impl MockMachineNamespace {
 impl CacheableEvents<MockEvents> for MockEvents {
     fn event_value(&self) -> GenericEvent {
         match self {
-            MockEvents::SineWave(event) => event.into(),
-            MockEvents::SineWaveState(event) => event.into(),
-            MockEvents::ModeState(event) => event.into(),
+            MockEvents::LiveValues(event) => event.into(),
+            MockEvents::State(event) => event.into(),
         }
     }
 
@@ -88,9 +91,8 @@ impl CacheableEvents<MockEvents> for MockEvents {
         let cache_one = cache_one_event();
 
         match self {
-            MockEvents::SineWave(_) => cache_one_hour,
-            MockEvents::SineWaveState(_) => cache_one,
-            MockEvents::ModeState(_) => cache_one,
+            MockEvents::LiveValues(_) => cache_one_hour,
+            MockEvents::State(_) => cache_one,
         }
     }
 }
