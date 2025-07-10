@@ -9,18 +9,11 @@ import { SelectionGroup } from "@/control/SelectionGroup";
 import { Mode } from "./mock1Namespace";
 
 export function Mock1ControlPage() {
-  const {
-    sineWave,
-    mockState,
-    modeState,
-    mockSetFrequency,
-    mockSetMode,
-    modeStateIsDisabled,
-  } = useMock1();
+  const { state, sineWave, setFrequency, setMode, isDisabled } = useMock1();
 
-  // Controlled local states synced with mockState and modeState
-  const frequency = mockState?.data?.frequency ?? 1.0;
-  const mode = modeState?.data?.mode ?? "Standby";
+  // Controlled local states synced with consolidated state
+  const frequency = state?.sine_wave_state?.frequency ?? 1.0;
+  const mode = state?.mode_state?.mode ?? "Standby";
 
   return (
     <Page>
@@ -65,7 +58,7 @@ export function Mock1ControlPage() {
               max={1000}
               step={0.1}
               renderValue={(value) => value.toFixed(0)}
-              onChange={mockSetFrequency}
+              onChange={setFrequency}
             />
           </div>
         </ControlCard>
@@ -75,8 +68,8 @@ export function Mock1ControlPage() {
             <div className="text-sm font-medium">Mode</div>
             <SelectionGroup
               value={mode}
-              onChange={(newMode: Mode) => mockSetMode(newMode)}
-              disabled={modeStateIsDisabled}
+              onChange={(newMode: Mode) => setMode(newMode)}
+              disabled={isDisabled}
               options={{
                 Standby: { children: "Standby" },
                 Running: { children: "Running" },

@@ -1,5 +1,7 @@
 use std::time::Instant;
 
+use crate::machines::mock;
+
 use super::{
     MockMachine,
     api::{MockMachineNamespace, Mode},
@@ -38,15 +40,18 @@ impl MachineNewTrait for MockMachine {
         }
 
         let now = Instant::now();
-        
-        Ok(Self {
+
+        let mut mock_machine = Self {
             namespace: MockMachineNamespace::new(params.socket_queue_tx.clone()),
             last_measurement_emit: now,
             t_0: now,                                // Initialize start time to current time
             frequency: Frequency::new::<hertz>(0.5), // Default frequency of 500 mHz
             mode: Mode::Standby,                     // Start in standby mode
-            last_emitted_frequency: None,            // No previous emissions
-            last_emitted_mode: None,                 // No previous emissions
-        })
+            last_emitted_state: None,                // No previous state emissions
+        };
+
+        mock_machine.emit_state();
+
+        Ok(mock_machine)
     }
 }
