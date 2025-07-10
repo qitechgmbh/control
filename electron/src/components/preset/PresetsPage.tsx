@@ -19,11 +19,13 @@ export function PresetsPage<T>({
   readCurrentState,
   schemaVersion,
   previewEntries,
+  defaultData,
 }: PresetsPageProps<T>) {
   const presets = usePresets<T>({
     machine_identification,
     readCurrentState,
     schemaVersion,
+    defaultData,
   });
 
   const [newName, setNewName] = useState("");
@@ -58,6 +60,16 @@ export function PresetsPage<T>({
       />
       <TouchButton onClick={handleNewPreset}>Create new Preset</TouchButton>
       <ControlGrid columns={2}>
+        <PresetCard
+          key={presets.defaultPreset.id}
+          preset={presets.defaultPreset}
+          onOverwrite={handleOverwritePreset}
+          onApply={applyPreset}
+          onDelete={handleDeletePreset}
+          previewEntries={previewEntries}
+          isReadOnly={true}
+        />
+
         {presets.get().map((preset) => (
           <PresetCard
             key={preset.id}

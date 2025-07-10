@@ -12,21 +12,27 @@ type Mock1PresetData = {
   frequency3: number;
 };
 
+const defaultData: Mock1PresetData = {
+  frequency1: 100,
+  frequency2: 200,
+  frequency3: 500,
+};
+
 const previewEntries: PresetPreviewEntry<Mock1PresetData>[] = [
   {
-    name: "Freuqcy 1",
+    name: "Frequency 1",
     unit: "mHz",
     renderValue: (preset: Preset<Mock1PresetData>) =>
       preset.data.frequency1?.toFixed(3),
   },
   {
-    name: "Freuqcy 2",
+    name: "Frequency 2",
     unit: "mHz",
     renderValue: (preset: Preset<Mock1PresetData>) =>
       preset.data.frequency2?.toFixed(3),
   },
   {
-    name: "Freuqcy 3",
+    name: "Frequency 3",
     unit: "mHz",
     renderValue: (preset: Preset<Mock1PresetData>) =>
       preset.data.frequency3?.toFixed(3),
@@ -56,6 +62,7 @@ export function Mock1PresetsPage() {
       schemaVersion={1}
       applyPreset={applyPreset}
       previewEntries={previewEntries}
+      defaultData={defaultData}
     />
   );
 }
