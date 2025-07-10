@@ -12,12 +12,6 @@ type Mock1PresetData = {
   frequency3: number;
 };
 
-const defaultData: Mock1PresetData = {
-  frequency1: 100,
-  frequency2: 200,
-  frequency3: 500,
-};
-
 const previewEntries: PresetPreviewEntry<Mock1PresetData>[] = [
   {
     name: "Frequency 1",
@@ -40,8 +34,14 @@ const previewEntries: PresetPreviewEntry<Mock1PresetData>[] = [
 ];
 
 export function Mock1PresetsPage() {
-  const { setFrequency1, setFrequency2, setFrequency3, state } =
+  const { setFrequency1, setFrequency2, setFrequency3, defaultState, state } =
     useMock1();
+
+  const toPreset = (s: typeof state) => ({
+    frequency1: s?.frequency1,
+    frequency2: s?.frequency2,
+    frequency3: s?.frequency3,
+  });
 
   const applyPreset = (preset: Preset<Mock1PresetData>) => {
     const frequency1 = preset.data?.frequency1 ?? 100;
@@ -53,11 +53,7 @@ export function Mock1PresetsPage() {
     setFrequency3(frequency3);
   };
 
-  const readCurrentState = () => ({
-      frequency1: state?.frequency1,
-      frequency2: state?.frequency2,
-      frequency3: state?.frequency3,
-  });
+  const readCurrentState = () => toPreset(state);
 
   return (
     <PresetsPage
@@ -66,7 +62,7 @@ export function Mock1PresetsPage() {
       schemaVersion={1}
       applyPreset={applyPreset}
       previewEntries={previewEntries}
-      defaultData={defaultData}
+      defaultData={toPreset(defaultState)}
     />
   );
 }

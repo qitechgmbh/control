@@ -27,8 +27,19 @@ function SineWaveCard({ title, timeseries }: SineWaveCardProps) {
 }
 
 export function Mock1ControlPage() {
-  const { state, defaultState, sineWave1, sineWave2, sineWave3, sineWaveSum, setFrequency1, setFrequency2, setFrequency3, setMode, isDisabled } =
-    useMock1();
+  const {
+    state,
+    defaultState,
+    sineWave1,
+    sineWave2,
+    sineWave3,
+    sineWaveSum,
+    setFrequency1,
+    setFrequency2,
+    setFrequency3,
+    setMode,
+    isDisabled,
+  } = useMock1();
 
   // Controlled local states synced with consolidated state
   const frequency1 = state?.frequency1 ?? 1.0;
