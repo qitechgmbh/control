@@ -193,7 +193,7 @@ pub trait CacheableEvents<Events> {
 
 pub type CacheFn = Box<dyn Fn(&mut Vec<Arc<GenericEvent>>, &Arc<GenericEvent>) -> ()>;
 
-/// [BufferFn] that stores the last n events
+/// [`BufferFn`] that stores the last n events
 pub fn cache_n_events(n: usize) -> CacheFn {
     Box::new(move |events, event| {
         if events.len() >= n {
@@ -203,12 +203,32 @@ pub fn cache_n_events(n: usize) -> CacheFn {
     })
 }
 
-/// [BufferFn] that stores only one event
+/// [`BufferFn`] that stores only one event
 pub fn cache_one_event() -> CacheFn {
     cache_n_events(1)
 }
 
-/// [BufferFn] that stores events for a certain duration
+/// [`BufferFn`] that stores first and last event
+///
+/// The primary use case of this function is to cache both the default state of a machine, which should be emitted first,
+/// and the last event, which is the most recent state of the machine.
+pub fn cache_first_and_last_event() -> CacheFn {
+    Box::new(move |events, event| {
+        // if the events length 0 or 1, we just push the event
+        if events.is_empty() || events.len() == 1 {
+            events.push(event.clone());
+            return;
+        }
+        // if the event length is 2 we remove the last event and append a new one
+        if events.len() == 2 {
+            events.remove(1);
+            events.push(event.clone());
+            return;
+        }
+    })
+}
+
+/// [`BufferFn`] that stores events for a certain duration
 pub fn cache_duration(duration: Duration, bucket_size: Duration) -> CacheFn {
     Box::new(move |events, event| {
         // Use event.ts instead of system time

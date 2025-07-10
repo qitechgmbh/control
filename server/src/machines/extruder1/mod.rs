@@ -64,6 +64,10 @@ pub struct ExtruderV2 {
     temperature_controller_middle: TemperatureController,
     temperature_controller_back: TemperatureController,
     temperature_controller_nozzle: TemperatureController,
+
+    /// will be initalized as false and set to true by `emit_state`
+    /// This way we can signal to the client that the first state emission is a default state
+    emitted_default_state: bool,
 }
 
 impl std::fmt::Display for ExtruderV2 {
@@ -121,6 +125,7 @@ impl ExtruderV2 {
 
     pub fn emit_state(&mut self) {
         let state = StateEvent {
+            is_default_state: !std::mem::replace(&mut self.emitted_default_state, true),
             rotation_state: RotationState {
                 forward: self.screw_speed_controller.get_rotation_direction(),
             },

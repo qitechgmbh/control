@@ -118,6 +118,7 @@ export const spoolSpeedControllerStateSchema = z.object({
  * Consolidated state event schema (state changes only)
  */
 export const stateEventDataSchema = z.object({
+  is_default_state: z.boolean(),
   traverse_state: traverseStateSchema,
   puller_state: pullerStateSchema,
   mode_state: modeStateSchema,
@@ -139,6 +140,7 @@ export type StateEvent = z.infer<typeof stateEventSchema>;
 export type Winder2NamespaceStore = {
   // State event from server
   state: StateEvent | null;
+  defaultState: StateEvent | null;
 
   // Time series data for live values
   traversePosition: TimeSeries;
@@ -178,6 +180,7 @@ export const createWinder2NamespaceStore =
       return {
         // State event from server
         state: null,
+        defaultState: null,
 
         // Time series data for live values
         traversePosition,
@@ -220,6 +223,10 @@ export function winder2MessageHandler(
         updateStore((state) => ({
           ...state,
           state: stateEvent,
+          // only set default state if is_default_state is true
+          defaultState: stateEvent.data.is_default_state
+            ? stateEvent
+            : state.defaultState,
         }));
       } else if (eventName === "LiveValuesEvent") {
         // Parse and validate the live values event

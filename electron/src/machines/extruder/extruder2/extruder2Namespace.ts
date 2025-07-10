@@ -137,6 +137,7 @@ export const pidSettingsSchema = z.object({
  * Consolidated state event schema (state changes only)
  */
 export const stateEventDataSchema = z.object({
+  is_default_state: z.boolean(),
   rotation_state: rotationStateSchema,
   mode_state: modeStateSchema,
   regulation_state: regulationStateSchema,
@@ -169,6 +170,7 @@ export const mode = z.object({
 export type Extruder2NamespaceStore = {
   // Single state event from server
   state: StateEvent | null;
+  defaultState: StateEvent | null;
 
   // Time series data for live values
   screwRpm: TimeSeries;
@@ -251,6 +253,10 @@ export function extruder2MessageHandler(
         updateStore((state) => ({
           ...state,
           state: stateEvent,
+          // only set default state if is_default_state is true
+          defaultState: stateEvent.data.is_default_state
+            ? stateEvent
+            : state.defaultState,
         }));
       } else if (eventName === "LiveValuesEvent") {
         const liveValuesEvent = liveValuesEventSchema.parse(event);
@@ -313,6 +319,7 @@ export const createExtruder2NamespaceStore =
     create<Extruder2NamespaceStore>(() => {
       return {
         state: null,
+        defaultState: null,
         screwRpm,
         pressure,
         nozzleTemperature,

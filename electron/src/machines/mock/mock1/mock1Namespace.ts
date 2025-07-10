@@ -53,6 +53,7 @@ export const liveValuesEventDataSchema = z.object({
  * State event schema (consolidated state)
  */
 export const stateEventDataSchema = z.object({
+  is_default_state: z.boolean(),
   sine_wave_state: sineWaveStateSchema,
   mode_state: modeStateSchema,
 });
@@ -71,6 +72,7 @@ export type StateEvent = z.infer<typeof stateEventSchema>;
 export type Mock1NamespaceStore = {
   // Single state event from server
   state: StateEvent | null;
+  defaultState: StateEvent | null;
 
   // Time series data for live values
   sineWave: TimeSeries;
@@ -97,6 +99,7 @@ export const createMock1NamespaceStore = (): StoreApi<Mock1NamespaceStore> =>
   create<Mock1NamespaceStore>(() => {
     return {
       state: null,
+      defaultState: null,
       sineWave: sineWave,
     };
   });
@@ -129,6 +132,10 @@ export function mock1MessageHandler(
         updateStore((state) => ({
           ...state,
           state: stateEvent,
+          // only set default state if is_default_state is true
+          defaultState: stateEvent.data.is_default_state
+            ? stateEvent
+            : state.defaultState,
         }));
       }
       // Live values events (time-series data)

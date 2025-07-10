@@ -1,7 +1,5 @@
 use std::time::Instant;
 
-use crate::machines::mock;
-
 use super::{
     MockMachine,
     api::{MockMachineNamespace, Mode},
@@ -48,6 +46,7 @@ impl MachineNewTrait for MockMachine {
             frequency: Frequency::new::<hertz>(0.5), // Default frequency of 500 mHz
             mode: Mode::Standby,                     // Start in standby mode
             last_emitted_state: None,                // No previous state emissions
+            emitted_default_state: false,
         };
 
         mock_machine.emit_state();

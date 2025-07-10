@@ -17,6 +17,7 @@ import { StatusBadge } from "@/control/StatusBadge";
 export function Extruder2ControlPage() {
   const {
     state,
+    defaultState,
     nozzleTemperature,
     nozzlePower,
     frontTemperature,
@@ -109,7 +110,7 @@ export function Extruder2ControlPage() {
             <Label label="Target Output RPM">
               <EditValue
                 value={state?.screw_state.target_rpm}
-                defaultValue={0}
+                defaultValue={defaultState?.screw_state.target_rpm}
                 unit="rpm"
                 title="Target Output RPM"
                 min={0}
@@ -121,7 +122,7 @@ export function Extruder2ControlPage() {
             <Label label="Target Pressure">
               <EditValue
                 value={state?.pressure_state.target_bar}
-                defaultValue={0}
+                defaultValue={defaultState?.pressure_state.target_bar}
                 unit="bar"
                 title="Target Pressure"
                 min={0.0}

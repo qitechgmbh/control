@@ -5,7 +5,7 @@ use control_core::{
         event::{Event, GenericEvent},
         namespace::{
             CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_duration,
-            cache_one_event,
+            cache_first_and_last_event,
         },
     },
 };
@@ -36,6 +36,7 @@ impl LiveValuesEvent {
 
 #[derive(Serialize, Debug, Clone, PartialEq)]
 pub struct StateEvent {
+    pub is_default_state: bool,
     /// sine wave state
     pub sine_wave_state: SineWaveState,
     /// mode state
@@ -88,11 +89,11 @@ impl CacheableEvents<MockEvents> for MockEvents {
 
     fn event_cache_fn(&self) -> CacheFn {
         let cache_one_hour = cache_duration(Duration::from_secs(60 * 60), Duration::from_secs(1));
-        let cache_one = cache_one_event();
+        let cache_first_and_last = cache_first_and_last_event();
 
         match self {
             MockEvents::LiveValues(_) => cache_one_hour,
-            MockEvents::State(_) => cache_one,
+            MockEvents::State(_) => cache_first_and_last,
         }
     }
 }

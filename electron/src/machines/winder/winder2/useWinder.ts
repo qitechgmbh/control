@@ -49,6 +49,7 @@ export function useWinder2() {
   // Get consolidated state and live values from namespace
   const {
     state,
+    defaultState,
     traversePosition,
     pullerSpeed,
     spoolRpm,
@@ -451,6 +452,9 @@ export function useWinder2() {
   return {
     // Consolidated state
     state: stateOptimistic.value?.data,
+
+    // Default state for initial values
+    defaultState: defaultState?.data,
 
     // Individual live values (TimeSeries)
     traversePosition,

@@ -1,8 +1,9 @@
 use api::{
-    MockEvents, MockMachineNamespace, Mode, StateEvent, LiveValuesEvent, SineWaveState, ModeState,
+    LiveValuesEvent, MockEvents, MockMachineNamespace, Mode, ModeState, SineWaveState, StateEvent,
 };
 use control_core::{machines::Machine, socketio::namespace::NamespaceCacheingLogic};
 use std::time::Instant;
+use tracing::info;
 use uom::si::{
     f64::Frequency,
     frequency::{hertz, millihertz},
@@ -25,6 +26,10 @@ pub struct MockMachine {
 
     // State tracking to only emit when values change
     last_emitted_state: Option<StateEvent>,
+
+    /// Will be initialized as false and set to true by emit_state
+    /// This way we can signal to the client that the first state emission is a default state
+    emitted_default_state: bool,
 }
 
 impl Machine for MockMachine {}
@@ -52,7 +57,13 @@ impl MockMachine {
 
     /// Emit the current state of the mock machine only if values have changed
     pub fn emit_state(&mut self) {
+        info!(
+            "Emitting state for MockMachine, is default state: {}",
+            !self.emitted_default_state
+        );
+
         let current_state = StateEvent {
+            is_default_state: !std::mem::replace(&mut self.emitted_default_state, true),
             sine_wave_state: SineWaveState {
                 frequency: self.frequency.get::<millihertz>(),
             },

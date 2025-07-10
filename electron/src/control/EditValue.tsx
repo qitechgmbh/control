@@ -28,7 +28,7 @@ type Props = {
   title: string;
   description?: string;
   icon?: IconName;
-  defaultValue: number;
+  defaultValue?: number;
   min?: number;
   minSlider?: number; // Override the slider min value
   minLabel?: string;
@@ -98,6 +98,8 @@ export function EditValue({
   maxSlider,
   onChange,
 }: Props) {
+  const defaultOrZero = defaultValue ?? 0;
+
   // Form setup
   const formSchema = z.object({
     value: schema ?? z.number(),
@@ -106,7 +108,7 @@ export function EditValue({
 
   const form = useForm<FormSchema>({
     resolver: zodResolver<FormSchema>(formSchema),
-    values: { value: value ?? defaultValue },
+    values: { value: value ?? defaultOrZero },
     defaultValues: { value: defaultValue },
     mode: "all",
   });

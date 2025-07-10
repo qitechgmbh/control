@@ -20,6 +20,10 @@ pub struct LaserMachine {
 
     //laser target configuration
     laser_target: LaserTarget,
+
+    /// Will be initialized as false and set to true by emit_state
+    /// This way we can signal to the client that the first state emission is a default state
+    emitted_default_state: bool,
 }
 
 impl Machine for LaserMachine {}
@@ -44,6 +48,7 @@ impl LaserMachine {
 
     pub fn emit_state(&mut self) {
         let state = StateEvent {
+            is_default_state: !std::mem::replace(&mut self.emitted_default_state, true),
             laser_state: LaserState {
                 higher_tolerance: self.laser_target.higher_tolerance.get::<millimeter>(),
                 lower_tolerance: self.laser_target.lower_tolerance.get::<millimeter>(),

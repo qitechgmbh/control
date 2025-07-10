@@ -10,6 +10,7 @@ import { useExtruder2 } from "./useExtruder";
 export function Extruder2SettingsPage() {
   const {
     state,
+    defaultState,
     setInverterRotationDirection,
     resetInverter,
     setExtruderPressureLimit,
@@ -48,7 +49,7 @@ export function Extruder2SettingsPage() {
         <Label label="Nozzle Pressure Limit">
           <EditValue
             value={state?.extruder_settings_state.pressure_limit}
-            defaultValue={0}
+            defaultValue={defaultState?.extruder_settings_state.pressure_limit}
             unit="bar"
             title="Nozzle Pressure Limit"
             min={0}
@@ -81,7 +82,7 @@ export function Extruder2SettingsPage() {
             <Label label="Kp">
               <EditValue
                 value={state?.pid_settings.pressure.kp}
-                defaultValue={0}
+                defaultValue={defaultState?.pid_settings.pressure.kp}
                 min={0}
                 max={100}
                 step={0.01}
@@ -93,7 +94,7 @@ export function Extruder2SettingsPage() {
             <Label label="Ki">
               <EditValue
                 value={state?.pid_settings.pressure.ki}
-                defaultValue={0}
+                defaultValue={defaultState?.pid_settings.pressure.ki}
                 min={0}
                 max={100}
                 step={0.01}
@@ -105,7 +106,7 @@ export function Extruder2SettingsPage() {
             <Label label="Kd">
               <EditValue
                 value={state?.pid_settings.pressure.kd}
-                defaultValue={0}
+                defaultValue={defaultState?.pid_settings.pressure.kd}
                 min={0}
                 max={100}
                 step={0.01}
