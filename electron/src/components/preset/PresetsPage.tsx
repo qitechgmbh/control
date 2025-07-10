@@ -1,4 +1,4 @@
-import React, { useState, JSX } from "react";
+import React, { useState } from "react";
 import { TouchInput } from "@/components/touch/TouchInput";
 import { TouchButton } from "@/components/touch/TouchButton";
 import { ControlGrid } from "@/control/ControlGrid";
@@ -6,10 +6,11 @@ import { Page } from "@/components/Page";
 import { usePresets, UsePresetsParams } from "@/lib/preset/usePresets";
 import { Preset } from "@/lib/preset/preset";
 import { PresetCard } from "./PresetCard";
+import { PresetPreviewEntry } from "./PresetPreviewTable";
 
 type PresetsPageProps<T> = UsePresetsParams<T> & {
   applyPreset: (preset: Preset<T>) => void;
-  renderPreview: (preset: Preset<T>) => JSX.Element;
+  previewEntries: PresetPreviewEntry<T>[];
 };
 
 export function PresetsPage<T>({
@@ -17,7 +18,7 @@ export function PresetsPage<T>({
   machine_identification,
   readCurrentState,
   schemaVersion,
-  renderPreview,
+  previewEntries,
 }: PresetsPageProps<T>) {
   const presets = usePresets<T>({
     machine_identification,
@@ -64,7 +65,7 @@ export function PresetsPage<T>({
             onOverwrite={handleOverwritePreset}
             onApply={applyPreset}
             onDelete={handleDeletePreset}
-            renderPreview={renderPreview}
+            previewEntries={previewEntries}
           />
         ))}
       </ControlGrid>

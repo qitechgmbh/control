@@ -6,22 +6,23 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import React, { JSX, useState } from "react";
+import React, { useState } from "react";
 import { TouchButton } from "../touch/TouchButton";
 import { DialogHeader } from "../ui/dialog";
-import { Separator } from "@radix-ui/react-select";
 import { Icon } from "../Icon";
+import { Separator } from "../ui/separator";
+import { PresetPreviewEntry, PresetPreviewTable } from "./PresetPreviewTable";
 
 export type PresetShowDialogProps<T> = {
   preset: Preset<T>;
+  previewEntries: PresetPreviewEntry<T>[];
   onApply: (preset: Preset<T>) => void;
-  renderPreview: (preset: Preset<T>) => JSX.Element;
 };
 
 export function PresetShowDialog<T>({
   preset,
   onApply,
-  renderPreview,
+  previewEntries,
 }: PresetShowDialogProps<T>) {
   const [open, setOpen] = useState(false);
 
@@ -37,10 +38,12 @@ export function PresetShowDialog<T>({
           Show and Apply
         </TouchButton>
       </DialogTrigger>
+
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>
-            Preset <i>{preset.name}</i>
+          <DialogTitle className="flex flex-row items-center gap-2">
+            <Icon name="lu:Save" />
+            {preset.name}
           </DialogTitle>
           <DialogDescription>
             Applying presets carelessly might damage machines.
@@ -48,23 +51,32 @@ export function PresetShowDialog<T>({
         </DialogHeader>
         <Separator />
 
-        <div className="text-sm text-gray-500">
-          Last modification: {preset.lastModified.toISOString() || "N/A"}
-          <br />
-          <br />
-          {renderPreview(preset)}
+        <div className="flex flex-col gap-6 text-sm text-gray-500">
+          <div>
+            Last modification: {preset.lastModified.toLocaleString() || "N/A"}
+          </div>
+          <PresetPreviewTable entries={previewEntries} preset={preset} />
         </div>
 
         <Separator />
+        <div className="flex flex-row gap-4">
+          <TouchButton
+            variant="outline"
+            icon="lu:X"
+            className="h-21 flex-1"
+            onClick={() => setOpen(false)}
+          >
+            Abort
+          </TouchButton>
 
-        <TouchButton
-          className="flex-shrink-0"
-          variant="outline"
-          onClick={() => handleApply(preset)}
-          icon="lu:HardDriveDownload"
-        >
-          Apply to Machine
-        </TouchButton>
+          <TouchButton
+            className="h-21 flex-1 flex-shrink-0"
+            onClick={() => handleApply(preset)}
+            icon="lu:HardDriveDownload"
+          >
+            Apply to Machine
+          </TouchButton>
+        </div>
       </DialogContent>
     </Dialog>
   );
