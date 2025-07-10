@@ -145,16 +145,20 @@ export function mock1MessageHandler(
       // Live values events (time-series data)
       else if (eventName === "LiveValuesEvent") {
         const liveValuesEvent = liveValuesEventSchema.parse(event);
-        const wave1Value: TimeSeriesValue = { value: liveValuesEvent.data.amplitude1 ?? 0,
+        const wave1Value: TimeSeriesValue = {
+          value: liveValuesEvent.data.amplitude1 ?? 0,
           timestamp: liveValuesEvent.ts,
         };
-        const wave2Value: TimeSeriesValue = { value: liveValuesEvent.data.amplitude2 ?? 0,
+        const wave2Value: TimeSeriesValue = {
+          value: liveValuesEvent.data.amplitude2 ?? 0,
           timestamp: liveValuesEvent.ts,
         };
-        const wave3Value: TimeSeriesValue = { value: liveValuesEvent.data.amplitude3 ?? 0,
+        const wave3Value: TimeSeriesValue = {
+          value: liveValuesEvent.data.amplitude3 ?? 0,
           timestamp: liveValuesEvent.ts,
         };
-        const waveSumValue: TimeSeriesValue = { value: liveValuesEvent.data.amplitude_sum ?? 0,
+        const waveSumValue: TimeSeriesValue = {
+          value: liveValuesEvent.data.amplitude_sum ?? 0,
           timestamp: liveValuesEvent.ts,
         };
         updateStore((state) => ({
