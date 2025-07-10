@@ -4,6 +4,7 @@ import { mock1 } from "@/machines/properties";
 
 import { PresetsPage } from "@/components/preset/PresetsPage";
 import { Preset } from "@/lib/preset/preset";
+import { PresetPreviewEntry } from "@/components/preset/PresetPreviewTable";
 
 type Mock1PresetData = {
   frequency1: number;
@@ -11,15 +12,26 @@ type Mock1PresetData = {
   frequency3: number;
 };
 
-function renderPreview(preset: Preset<Mock1PresetData>) {
-  return (
-    <>
-      Frequency 1 = {preset.data?.frequency1 || "N/A"} mHz <br />
-      Frequency 2 = {preset.data?.frequency2 || "N/A"} mHz <br />
-      Frequency 3 = {preset.data?.frequency3 || "N/A"} mHz
-    </>
-  );
-}
+const previewEntries: PresetPreviewEntry<Mock1PresetData>[] = [
+  {
+    name: "Freuqcy 1",
+    unit: "mHz",
+    renderValue: (preset: Preset<Mock1PresetData>) =>
+      preset.data.frequency1?.toFixed(3),
+  },
+  {
+    name: "Freuqcy 2",
+    unit: "mHz",
+    renderValue: (preset: Preset<Mock1PresetData>) =>
+      preset.data.frequency2?.toFixed(3),
+  },
+  {
+    name: "Freuqcy 3",
+    unit: "mHz",
+    renderValue: (preset: Preset<Mock1PresetData>) =>
+      preset.data.frequency3?.toFixed(3),
+  },
+];
 
 export function Mock1PresetsPage() {
   const { mockSetFrequency1, mockSetFrequency2, mockSetFrequency3, mockState } =
@@ -43,7 +55,7 @@ export function Mock1PresetsPage() {
       readCurrentState={readCurrentState}
       schemaVersion={1}
       applyPreset={applyPreset}
-      renderPreview={renderPreview}
+      previewEntries={previewEntries}
     />
   );
 }
