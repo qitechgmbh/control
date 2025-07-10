@@ -11,6 +11,7 @@ export type Presets<T> = {
   updateFromCurrentState: (preset: Preset<T>) => Preset<T>;
   remove: (preset: Preset<T>) => void;
   defaultPreset?: Preset<T>;
+  getLatestPreset: () => Preset<T>;
 };
 
 export type UsePresetsParams<T> = {
@@ -37,7 +38,6 @@ export function usePresets<T>({
           machine_identification,
           lastModified: new Date(0),
           schemaVersion,
-          isLatestPreset: false,
           data: defaultData,
         };
 
@@ -80,11 +80,32 @@ export function usePresets<T>({
         ),
       );
 
+  const getLatestPreset = () => {
+    let latestPreset = getPresetsForMachine().find(
+      (preset) => preset.isLatestPreset,
+    );
+    console.log(latestPreset);
+
+    if (latestPreset === undefined) {
+      latestPreset = store.insert({
+        name: "Latest Machine Stettings",
+        machine_identification,
+        lastModified: new Date(),
+        schemaVersion,
+        isLatestPreset: true,
+        data: readCurrentState(),
+      });
+    }
+
+    return latestPreset;
+  };
+
   return {
     get: getPresetsForMachine,
     createFromCurrentState,
     remove: store.remove,
     updateFromCurrentState,
     defaultPreset,
+    getLatestPreset,
   };
 }
