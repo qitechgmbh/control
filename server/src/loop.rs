@@ -29,12 +29,8 @@ pub fn init_loop(
                     break;
                 }
             }
-            // loop should never exit, but if it does, we send a panic message
-            // this causes the server to exit (and restarted by systemd if running on NixOS)
-            panic!(
-                "[{}::init_loop] Loop thread exited unexpectedly",
-                module_path!()
-            );
+            // Exit the entire program if the Loop fails (gets restarted by systemd if running on NixOS)
+            std::process::exit(1);
         })
         .or_else(|e| {
             Err(anyhow::anyhow!(
