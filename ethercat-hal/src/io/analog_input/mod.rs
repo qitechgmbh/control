@@ -64,6 +64,7 @@ pub struct AnalogInputInput {
     /// from -1.0 to 1.0
     /// Can be converted to voltage or mA knowning the type and range of the device
     pub normalized: f32,
+    pub wiring_error: bool,
 }
 
 impl AnalogInputInput {

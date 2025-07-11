@@ -23,6 +23,7 @@ pub struct ScrewSpeedController {
     pub target_rpm: AngularVelocity,
     pub inverter: MitsubishiInverterController,
     pressure_sensor: AnalogInputGetter,
+    pressure_wiring_error: bool,
     last_update: Instant,
     uses_rpm: bool,
     forward_rotation: bool,
@@ -60,6 +61,7 @@ impl ScrewSpeedController {
             frequency: Frequency::new::<hertz>(0.0),
             maximum_frequency: Frequency::new::<hertz>(60.0),
             minimum_frequency: Frequency::new::<hertz>(0.0),
+            pressure_wiring_error: false,
         }
     }
 
@@ -160,6 +162,10 @@ impl ScrewSpeedController {
         }
     }
 
+    pub fn get_wiring_error(&self) -> bool {
+        self.pressure_sensor.get_wiring_error()
+    }
+
     pub fn get_sensor_current(&self) -> Result<ElectricCurrent, anyhow::Error> {
         let phys: ethercat_hal::io::analog_input::physical::AnalogInputValue = self
             .pressure_sensor
@@ -198,6 +204,11 @@ impl ScrewSpeedController {
     pub async fn update(&mut self, now: Instant, is_extruding: bool) {
         self.pressure_sensor.act(now).await;
         self.inverter.act(now).await;
+
+        let wiring_error = self.get_wiring_error();
+        if wiring_error {
+            // emit in act
+        }
 
         let measured_pressure = self.get_pressure();
 

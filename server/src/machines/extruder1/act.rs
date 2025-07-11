@@ -29,6 +29,10 @@ impl Actor for ExtruderV2 {
                 self.switch_to_heat();
             }
 
+            if self.screw_speed_controller.get_wiring_error() {
+                self.emit_state();
+            }
+
             let now = Instant::now();
 
             if now.duration_since(self.last_measurement_emit) > Duration::from_secs_f64(1.0 / 60.0)

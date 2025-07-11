@@ -141,6 +141,7 @@ impl ExtruderV2 {
                     .screw_speed_controller
                     .get_target_pressure()
                     .get::<bar>(),
+                wiring_error: self.screw_speed_controller.get_wiring_error(),
             },
             screw_state: ScrewState {
                 rpm: self

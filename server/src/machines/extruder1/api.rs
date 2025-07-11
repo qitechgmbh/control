@@ -95,6 +95,7 @@ pub struct RegulationState {
 pub struct PressureState {
     pub bar: f64,
     pub target_bar: f64,
+    pub wiring_error: bool,
 }
 
 #[derive(Serialize, Debug, Clone)]

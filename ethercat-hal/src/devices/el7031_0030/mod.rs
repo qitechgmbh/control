@@ -268,37 +268,42 @@ impl DigitalInputDevice<EL7031_0030DigitalInputPort> for EL7031_0030 {
 
 impl AnalogInputDevice<EL7031_0030AnalogInputPort> for EL7031_0030 {
     fn analog_output_state(&self, port: EL7031_0030AnalogInputPort) -> AnalogInputState {
-        let raw_value = match port {
+        let mut wiring_error: bool = false;
+        let mut raw_value = 0;
+
+        (raw_value, wiring_error) = match port {
             EL7031_0030AnalogInputPort::AI1 => match &self.txpdo {
                 EL7031_0030TxPdo {
                     ai_standard_channel_1: Some(ai_standard_channel_1),
                     ..
-                } => ai_standard_channel_1.value,
+                } => (ai_standard_channel_1.value, ai_standard_channel_1.error),
                 EL7031_0030TxPdo {
                     ai_compact_channel_1: Some(ai_compact_channel_1),
                     ..
-                } => ai_compact_channel_1.value,
+                } => (ai_compact_channel_1.value, false),
                 _ => panic!("Invalid TxPdo assignment"),
             },
             EL7031_0030AnalogInputPort::AI2 => match &self.txpdo {
                 EL7031_0030TxPdo {
                     ai_standard_channel_2: Some(ai_standard_channel_2),
                     ..
-                } => ai_standard_channel_2.value,
+                } => (ai_standard_channel_2.value, ai_standard_channel_2.error),
                 EL7031_0030TxPdo {
                     ai_compact_channel_2: Some(ai_compact_channel_2),
                     ..
-                } => ai_compact_channel_2.value,
+                } => (ai_compact_channel_2.value, false),
                 _ => panic!("Invalid TxPdo assignment"),
             },
         };
-        let raw_value = U16SigningConverter::load_raw(raw_value);
-
-        let value: i16 = raw_value.as_signed();
+        let converted_raw_value = U16SigningConverter::load_raw(raw_value);
+        let value: i16 = converted_raw_value.as_signed();
 
         let normalized = f32::from(value) / f32::from(i16::MAX);
         AnalogInputState {
-            input: AnalogInputInput { normalized },
+            input: AnalogInputInput {
+                normalized,
+                wiring_error: wiring_error,
+            },
         }
     }
 
