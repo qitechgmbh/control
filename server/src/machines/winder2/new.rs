@@ -372,7 +372,7 @@ impl MachineNewTrait for Winder2 {
                     progress: Length::ZERO,
                     progress_last_check: Instant::now(),
                     target_length: Length::new::<meter>(250.0),
-                    mode: super::api::SpoolAutomaticActionMode::Disabled,
+                    mode: super::api::SpoolAutomaticActionMode::NoAction,
                 },
             };
 

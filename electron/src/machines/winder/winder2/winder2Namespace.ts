@@ -34,7 +34,7 @@ export const liveValuesEventDataSchema = z.object({
   spool_rpm: z.number(),
   spool_diameter: z.number(),
   tension_arm_angle: z.number(),
-  puller_progress: z.number(),
+  spool_progress: z.number(),
 });
 
 /**
@@ -53,10 +53,11 @@ export type Mode = z.infer<typeof modeSchema>;
  * Machine operation mode enum
  */
 export const spoolAutomaticActionModeSchema = z.enum([
-  "Disabled",
+  "NoAction",
   "Pull",
-  "Stop",
+  "Hold",
 ]);
+
 export type SpoolAutomaticActionMode = z.infer<
   typeof spoolAutomaticActionModeSchema
 >;
@@ -171,7 +172,7 @@ export type Winder2NamespaceStore = {
   spoolRpm: TimeSeries;
   spoolDiameter: TimeSeries;
   tensionArmAngle: TimeSeries;
-  pullerProgress: TimeSeries;
+  spoolProgress: TimeSeries;
 };
 
 // Constants for time durations
@@ -180,7 +181,7 @@ const ONE_SECOND = 1000;
 const FIVE_SECOND = 5 * ONE_SECOND;
 const ONE_HOUR = 60 * 60 * ONE_SECOND;
 
-const { initialTimeSeries: pullerProgress, insert: addPullerProgress } =
+const { initialTimeSeries: spoolProgress, insert: addSpoolProgress } =
   createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
 const { initialTimeSeries: traversePosition, insert: addTraversePosition } =
   createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
@@ -215,7 +216,7 @@ export const createWinder2NamespaceStore =
         spoolRpm,
         spoolDiameter,
         tensionArmAngle,
-        pullerProgress,
+        spoolProgress,
       };
     });
 /**
@@ -267,7 +268,7 @@ export function winder2MessageHandler(
           spool_rpm,
           spool_diameter,
           tension_arm_angle,
-          puller_progress,
+          spool_progress,
         } = liveValuesEvent.data;
         const timestamp = liveValuesEvent.ts;
 
@@ -285,13 +286,13 @@ export function winder2MessageHandler(
             );
           }
 
-          if (pullerProgress !== null) {
+          if (spoolProgress !== null) {
             const timeseriesValue: TimeSeriesValue = {
-              value: puller_progress,
+              value: spool_progress,
               timestamp,
             };
-            newState.pullerProgress = addPullerProgress(
-              state.pullerProgress,
+            newState.spoolProgress = addSpoolProgress(
+              state.spoolProgress,
               timeseriesValue,
             );
           }

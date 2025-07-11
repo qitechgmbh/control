@@ -57,7 +57,7 @@ export function useWinder2() {
     spoolRpm,
     spoolDiameter,
     tensionArmAngle,
-    pullerProgress,
+    spoolProgress,
   } = useWinder2Namespace(machineIdentification);
 
   // Single optimistic state for all state management
@@ -145,6 +145,9 @@ export function useWinder2() {
     );
   const { request: requestSpoolAutomaticRequiredMeters } = useMachineMutation(
     z.object({ SetSpoolAutomaticRequiredMeters: z.number() }),
+  );
+  const { request: requestSpoolResetProgress } = useMachineMutation(
+    z.literal("ResetSpoolProgress"),
   );
 
   const { request: requestSpoolAutomaticAction } = useMachineMutation(
@@ -374,6 +377,13 @@ export function useWinder2() {
     );
   };
 
+  const resetSpoolProgress = () => {
+    requestSpoolResetProgress({
+      machine_identification_unique: machineIdentification,
+      data: "ResetSpoolProgress",
+    });
+  };
+
   const setSpoolRegulationMode = (mode: SpoolRegulationMode) => {
     updateStateOptimistically(
       (current) => {
@@ -500,7 +510,7 @@ export function useWinder2() {
     spoolRpm,
     spoolDiameter,
     tensionArmAngle,
-    pullerProgress,
+    spoolProgress,
 
     // Loading states
     isLoading,
@@ -515,6 +525,7 @@ export function useWinder2() {
     gotoTraverseLimitInner,
     gotoTraverseLimitOuter,
     gotoTraverseHome,
+    resetSpoolProgress,
     setTraverseStepSize,
     setTraversePadding,
     setPullerTargetSpeed,

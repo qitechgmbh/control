@@ -203,9 +203,7 @@ impl Winder2 {
                 .get::<millimeter>()
                 * 2.0,
             tension_arm_angle: angle_deg,
-            puller_progress: (self.spool_automatic_action.progress.get::<meter>()
-                / self.spool_automatic_action.target_length.get::<meter>())
-                * 100.0,
+            spool_progress: self.spool_automatic_action.progress.get::<meter>(),
         };
 
         let event = live_values.build();
@@ -577,8 +575,8 @@ impl Winder2 {
     }
 
     pub fn stop_or_pull_spool(&mut self, now: Instant) {
-        if let SpoolAutomaticActionMode::Disabled = self.spool_automatic_action.mode {
-            self.stop_or_pull_spool_reset(now);
+        if let SpoolAutomaticActionMode::NoAction = self.spool_automatic_action.mode {
+            self.calculate_spool_auto_progress_(now);
             return;
         }
 
@@ -592,11 +590,16 @@ impl Winder2 {
         }
 
         if self.spool_automatic_action.progress >= self.spool_automatic_action.target_length {
-            self.stop_or_pull_spool_reset(now);
             match self.spool_automatic_action.mode {
-                SpoolAutomaticActionMode::Disabled => (),
-                SpoolAutomaticActionMode::Pull => self.set_mode(&Winder2Mode::Pull),
-                SpoolAutomaticActionMode::Stop => self.set_mode(&Winder2Mode::Hold),
+                SpoolAutomaticActionMode::NoAction => (),
+                SpoolAutomaticActionMode::Pull => {
+                    self.stop_or_pull_spool_reset(now);
+                    self.set_mode(&Winder2Mode::Pull);
+                }
+                SpoolAutomaticActionMode::Hold => {
+                    self.stop_or_pull_spool_reset(now);
+                    self.set_mode(&Winder2Mode::Hold);
+                }
             }
         }
     }

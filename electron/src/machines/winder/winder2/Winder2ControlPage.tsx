@@ -30,10 +30,11 @@ export function Winder2ControlPage() {
     spoolDiameter,
     setMode,
     pullerSpeed,
-    pullerProgress,
+    spoolProgress,
     setPullerRegulationMode,
     setPullerTargetSpeed,
     traversePosition,
+    resetSpoolProgress,
     setTraverseLimitInner,
     setTraverseLimitOuter,
     gotoTraverseLimitInner,
@@ -271,8 +272,9 @@ export function Winder2ControlPage() {
             label="Pulled Distance"
             renderValue={(value) => roundToDecimals(value, 2)}
             unit="m"
-            timeseries={pullerProgress}
+            timeseries={spoolProgress}
           />
+
           <Label label="Target Length">
             <EditValue
               value={state?.spool_automatic_action_state.spool_required_meters}
@@ -287,6 +289,15 @@ export function Winder2ControlPage() {
             />
           </Label>
 
+          <TouchButton
+            variant="outline"
+            onClick={resetSpoolProgress}
+            disabled={isDisabled || !state?.traverse_state?.can_go_out}
+            isLoading={isLoading || state?.traverse_state?.is_going_out}
+          >
+            Reset Progress
+          </TouchButton>
+
           <Label label="After Target Length Reached">
             <SelectionGroup<SpoolAutomaticActionMode>
               value={
@@ -297,7 +308,7 @@ export function Winder2ControlPage() {
               onChange={setSpoolAutomaticAction}
               orientation="vertical"
               options={{
-                Stop: {
+                Hold: {
                   children: "Hold",
                   icon: "lu:CirclePause",
                   className: "h-full",
@@ -308,7 +319,7 @@ export function Winder2ControlPage() {
                   className: "h-full",
                 },
 
-                Disabled: {
+                NoAction: {
                   children: "No Action",
                   icon: "lu:RefreshCcw",
                   className: "h-full",
