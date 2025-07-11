@@ -83,10 +83,9 @@ enum Mutation {
     SetSpoolAdaptiveAccelerationFactor(f64),
     SetSpoolAdaptiveDeaccelerationUrgencyMultiplier(f64),
 
-    // Puller Auto Stop/Pull
-    SetPullerAutoStopExpectedMeters(f64),
-    SetPullerAutoStopEnabled(bool),
-    SetPullerAutoStop(bool),
+    // Spool Auto Stop/Pull
+    SetSpoolAutomaticRequiredMeters(f64),
+    SetSpoolAutomaticAction(SpoolAutomaticActionMode),
 
     // Tension Arm
     ZeroTensionArmAngle,
@@ -125,7 +124,7 @@ pub struct StateEvent {
     pub traverse_state: TraverseState,
     /// puller state
     pub puller_state: PullerState,
-    pub puller_auto_stop_state: PullerAutoStopState,
+    pub spool_automatic_action_state: SpoolAutomaticActionState,
 
     /// mode state
     pub mode_state: ModeState,
@@ -187,11 +186,17 @@ pub struct PullerState {
     pub forward: bool,
 }
 
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub enum SpoolAutomaticActionMode {
+    Disabled,
+    Pull,
+    Stop,
+}
+
 #[derive(Serialize, Debug, Clone)]
-pub struct PullerAutoStopState {
-    pub puller_expected_meters: f64,
-    pub puller_auto_stop: bool,
-    pub puller_auto_enabled: bool,
+pub struct SpoolAutomaticActionState {
+    pub spool_required_meters: f64,
+    pub spool_automatic_action_mode: SpoolAutomaticActionMode,
 }
 
 #[derive(Serialize, Debug, Clone)]
@@ -309,12 +314,11 @@ impl MachineApi for Winder2 {
             Mutation::SetSpoolAdaptiveDeaccelerationUrgencyMultiplier(value) => {
                 self.spool_set_adaptive_deacceleration_urgency_multiplier(value)
             }
-            Mutation::ZeroTensionArmAngle => self.tension_arm_zero(),
-            Mutation::SetPullerAutoStopExpectedMeters(meters) => {
-                self.set_puller_auto_expected_meters(meters)
+            Mutation::SetSpoolAutomaticRequiredMeters(meters) => {
+                self.set_spool_automatic_required_meters(meters)
             }
-            Mutation::SetPullerAutoStopEnabled(enabled) => self.set_puller_auto_enabled(enabled),
-            Mutation::SetPullerAutoStop(stop) => self.set_puller_auto_stop(stop),
+            Mutation::SetSpoolAutomaticAction(mode) => self.set_spool_automatic_mode(mode),
+            Mutation::ZeroTensionArmAngle => self.tension_arm_zero(),
         }
         Ok(())
     }
