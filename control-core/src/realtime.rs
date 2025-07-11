@@ -66,8 +66,8 @@ pub fn set_realtime_priority() -> Result<(), anyhow::Error> {
 
         if result != 0 {
             error!(
-                "Failed to set real-time scheduling policy for thread {}: {}",
-                pthread_self,
+                "Failed to set real-time scheduling policy for thread \"{:?}\": {}",
+                std::thread::current().name().unwrap_or("unknown"),
                 std::io::Error::last_os_error()
             );
             return Err(anyhow!(
@@ -76,7 +76,7 @@ pub fn set_realtime_priority() -> Result<(), anyhow::Error> {
             ));
         } else {
             debug!(
-                "Successfully set real-time priority for the thread {}",
+                "Successfully set real-time priority for the thread \"{:?}\"",
                 std::thread::current().name().unwrap_or("unknown")
             );
         }
@@ -160,13 +160,13 @@ pub fn lock_memory() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-pub fn set_core_affinity_first_core() -> Result<(), anyhow::Error> {
-    let binding = core_affinity::get_core_ids().unwrap_or_default();
-    let cores = binding.first();
-    if let Some(core) = cores {
+pub fn set_core_affinity_first_core(core_id: usize) -> Result<(), anyhow::Error> {
+    let cores = core_affinity::get_core_ids().unwrap_or_default();
+    let core = cores.get(core_id);
+    if let Some(core) = core {
         core_affinity::set_for_current(*core);
         debug!(
-            "Set core affinity of thread {:?} to core {:?}",
+            "Set core affinity of thread \"{:?}\" to core {:?}",
             std::thread::current().name().unwrap_or("unknown"),
             core
         );

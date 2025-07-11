@@ -21,7 +21,7 @@ pub fn init_loop(
             let mut throttle = LoopThrottle::new(Duration::from_millis(1), 10, None);
 
             // Set core affinity to first core
-            let _ = set_core_affinity_first_core();
+            let _ = set_core_affinity_first_core(0);
 
             // Set the thread to real-time priority
             if let Err(e) = set_realtime_priority() {
