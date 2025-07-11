@@ -2,7 +2,7 @@ use crate::app_state::AppState;
 use crate::panic::{PanicDetails, send_panic};
 use bitvec::prelude::*;
 use control_core::helpers::loop_trottle::LoopThrottle;
-use control_core::realtime::set_realtime_priority;
+use control_core::realtime::{set_core_affinity_first_core, set_realtime_priority};
 use smol::channel::Sender;
 use std::sync::Arc;
 use std::time::Duration;
@@ -19,6 +19,9 @@ pub fn init_loop(
             send_panic(thread_panic_tx.clone());
             let rt = smol::LocalExecutor::new();
             let mut throttle = LoopThrottle::new(Duration::from_millis(1), 10, None);
+
+            // Set core affinity to first core
+            let _ = set_core_affinity_first_core();
 
             // Set the thread to real-time priority
             if let Err(e) = set_realtime_priority() {
