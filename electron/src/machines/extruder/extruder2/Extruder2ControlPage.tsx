@@ -42,6 +42,35 @@ export function Extruder2ControlPage() {
     isDisabled,
   } = useExtruder2();
 
+  function isZoneReadyForExtrusion(
+    temperature: number,
+    targetTemperature: number,
+  ) {
+    // if temperature is 90% of the target temperature, then we are ready for extrusion
+    return temperature >= 0.9 * targetTemperature && targetTemperature > 0.0;
+  }
+
+  const allZonesReadyForExtrude = () => {
+    const frontReady = isZoneReadyForExtrusion(
+      frontTemperature.current?.value ?? 0,
+      state?.heating_states.front.target_temperature ?? 1,
+    );
+    const middleReady = isZoneReadyForExtrusion(
+      middleTemperature.current?.value ?? 0,
+      state?.heating_states.middle.target_temperature ?? 1,
+    );
+    const backReady = isZoneReadyForExtrusion(
+      backTemperature.current?.value ?? 0,
+      state?.heating_states.back.target_temperature ?? 1,
+    );
+    const nozzleReady = isZoneReadyForExtrusion(
+      nozzleTemperature.current?.value ?? 0,
+      state?.heating_states.nozzle.target_temperature ?? 1,
+    );
+
+    return frontReady && middleReady && backReady && nozzleReady;
+  };
+
   return (
     <Page>
       <ControlGrid>
@@ -177,6 +206,9 @@ export function Extruder2ControlPage() {
                 icon: "lu:ArrowBigLeftDash",
                 isActiveClassName: "bg-green-600",
                 className: "h-full",
+                confirmation: allZonesReadyForExtrude()
+                  ? undefined
+                  : "Temperature is too low. Are you sure you want to extrude?",
               },
             }}
             onChange={setExtruderMode}
