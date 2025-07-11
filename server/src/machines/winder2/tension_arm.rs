@@ -137,7 +137,9 @@ mod tests {
 
         //  0.5 normalized = 5V
         analog_input_dummy.set_input(AnalogInputInput {
-            normalized: (5.0 / 10.0), // 5V of 10V in positive range
+            // 5V of 10V in positive range
+            normalized: (5.0 / 10.0),
+            wiring_error: false,
         });
         smol::block_on(async {
             tension_arm.analog_input_getter.act(Instant::now()).await;
@@ -170,6 +172,7 @@ mod tests {
         // 1.25V = 0.25 revolution
         analog_input_dummy.set_input(AnalogInputInput {
             normalized: (1.25 / 10.0),
+            wiring_error: false,
         });
         smol::block_on(async {
             tension_arm.analog_input_getter.act(Instant::now()).await;
@@ -180,6 +183,7 @@ mod tests {
         // 2.5V = 0.5 revolution
         analog_input_dummy.set_input(AnalogInputInput {
             normalized: (2.5 / 10.0),
+            wiring_error: false,
         });
         smol::block_on(async {
             tension_arm.analog_input_getter.act(Instant::now()).await;
@@ -190,6 +194,7 @@ mod tests {
         // 3.75V = 0.75 revolution
         analog_input_dummy.set_input(AnalogInputInput {
             normalized: (3.75 / 10.0),
+            wiring_error: false,
         });
         smol::block_on(async {
             tension_arm.analog_input_getter.act(Instant::now()).await;
@@ -200,6 +205,7 @@ mod tests {
         // 5V = 1 revolution
         analog_input_dummy.set_input(AnalogInputInput {
             normalized: (5.0 / 10.0),
+            wiring_error: false,
         });
         smol::block_on(async {
             tension_arm.analog_input_getter.act(Instant::now()).await;
@@ -210,6 +216,7 @@ mod tests {
         // 6.25V = 0.25 revolution
         analog_input_dummy.set_input(AnalogInputInput {
             normalized: (6.25 / 10.0),
+            wiring_error: false,
         });
         smol::block_on(async {
             tension_arm.analog_input_getter.act(Instant::now()).await;

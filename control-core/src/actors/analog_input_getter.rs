@@ -7,6 +7,7 @@ use std::{future::Future, pin::Pin, time::Instant};
 pub struct AnalogInputGetter {
     input: AnalogInput,
     normalized: Option<f32>,
+    wiring_error: bool,
 }
 
 impl AnalogInputGetter {
@@ -14,6 +15,7 @@ impl AnalogInputGetter {
         Self {
             input,
             normalized: None,
+            wiring_error: false,
         }
     }
 
@@ -28,13 +30,19 @@ impl AnalogInputGetter {
             None => return None,
         }
     }
+
+    pub fn get_wiring_error(&self) -> bool {
+        self.wiring_error
+    }
 }
 
 impl Actor for AnalogInputGetter {
     fn act(&mut self, _now: Instant) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
         Box::pin(async move {
             let state = (self.input.state)().await;
+
             self.normalized = Some(state.input.normalized);
+            self.wiring_error = state.input.wiring_error;
         })
     }
 }

@@ -12,7 +12,10 @@ pub struct AnalogInputDummy {
 impl AnalogInputDummy {
     pub fn new(range: AnalogInputRange) -> Self {
         let state = Arc::new(Mutex::new(AnalogInputState {
-            input: AnalogInputInput { normalized: 0.0 },
+            input: AnalogInputInput {
+                normalized: 0.0,
+                wiring_error: false,
+            },
         }));
         Self { state, range }
     }
@@ -69,7 +72,10 @@ mod tests {
             max_raw: i16::MAX,
         });
         let state = AnalogInputState {
-            input: AnalogInputInput { normalized: 0.5 },
+            input: AnalogInputInput {
+                normalized: 0.5,
+                wiring_error: false,
+            },
         };
         dummy.set_input(state.input.clone());
 

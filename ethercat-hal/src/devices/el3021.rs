@@ -99,7 +99,7 @@ impl AnalogInputDevice<EL3021Port> for EL3021 {
 
         let normalized = f32::from(value) / f32::from(i16::MAX);
         AnalogInputState {
-            input: AnalogInputInput { normalized },
+            input: AnalogInputInput { normalized, wiring_error: false },
         }
     }
 
