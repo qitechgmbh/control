@@ -13,8 +13,9 @@ pub mod traverse_controller;
 use std::{fmt::Debug, time::Instant};
 
 use api::{
-    LiveValuesEvent, ModeState, PullerAutoStopState, PullerState, SpoolSpeedControllerState,
-    StateEvent, TensionArmState, TraverseState, Winder2Events, Winder2Namespace,
+    LiveValuesEvent, ModeState, PullerState, SpoolAutomaticActionMode, SpoolAutomaticActionState,
+    SpoolSpeedControllerState, StateEvent, TensionArmState, TraverseState, Winder2Events,
+    Winder2Namespace,
 };
 use control_core::{
     converters::angular_step_converter::AngularStepConverter, machines::Machine,
@@ -28,12 +29,24 @@ use puller_speed_controller::{PullerRegulationMode, PullerSpeedController};
 use spool_speed_controller::SpoolSpeedController;
 use tension_arm::TensionArm;
 use traverse_controller::TraverseController;
-use uom::si::{
-    angle::degree,
-    angular_velocity::revolution_per_minute,
-    f64::{Length, Velocity},
-    length::millimeter,
+use uom::{
+    ConstZero,
+    si::{
+        angle::degree,
+        angular_velocity::revolution_per_minute,
+        f64::{Length, Velocity},
+        length::{meter, millimeter},
+        velocity::meter_per_second,
+    },
 };
+
+#[derive(Debug)]
+pub struct SpoolAutomaticAction {
+    pub progress: Length,
+    progress_last_check: Instant,
+    pub target_length: Length,
+    pub mode: SpoolAutomaticActionMode,
+}
 
 #[derive(Debug)]
 pub struct Winder2 {
@@ -61,6 +74,9 @@ pub struct Winder2 {
     // control circuit arm/spool
     pub spool_speed_controller: SpoolSpeedController,
     pub spool_step_converter: AngularStepConverter,
+
+    // spool automatic action state
+    pub spool_automatic_action: SpoolAutomaticAction,
 
     // control circuit puller
     pub puller_speed_controller: PullerSpeedController,
@@ -187,7 +203,9 @@ impl Winder2 {
                 .get::<millimeter>()
                 * 2.0,
             tension_arm_angle: angle_deg,
-            puller_progress: self.puller_progress,
+            puller_progress: (self.spool_automatic_action.progress.get::<meter>()
+                / self.spool_automatic_action.target_length.get::<meter>())
+                * 100.0,
         };
 
         let event = live_values.build();
@@ -269,10 +287,9 @@ impl Winder2 {
                     .spool_speed_controller
                     .get_adaptive_deacceleration_urgency_multiplier(),
             },
-            puller_auto_stop_state: PullerAutoStopState {
-                puller_expected_meters: self.puller_expected_meters,
-                puller_auto_stop: self.puller_auto_stop,
-                puller_auto_enabled: self.puller_auto_enabled,
+            spool_automatic_action_state: SpoolAutomaticActionState {
+                spool_required_meters: self.spool_automatic_action.target_length.get::<meter>(),
+                spool_automatic_action_mode: self.spool_automatic_action.mode.clone(),
             },
         };
 
@@ -286,73 +303,6 @@ impl Winder2 {
             &self.traverse_end_stop,
             self.spool_speed_controller.get_speed(),
         )
-    }
-
-    pub fn set_puller_auto_expected_meters(&mut self, meters: f64) {
-        self.puller_expected_meters = meters;
-        self.emit_state();
-    }
-
-    pub fn set_puller_auto_stop(&mut self, stop: bool) {
-        self.puller_auto_stop = stop;
-        self.emit_state();
-    }
-
-    pub fn set_puller_auto_enabled(&mut self, enabled: bool) {
-        self.puller_auto_enabled = enabled;
-        self.emit_state();
-    }
-
-    pub fn auto_stop_or_pull(&mut self, now: Instant) {
-        if !self.puller_auto_enabled {
-            self.auto_stop_or_pull_reset(now);
-            return;
-        }
-
-        match self.mode {
-            Winder2Mode::Pull => self.calculate_progress_puller(now),
-            Winder2Mode::Wind => self.calculate_progress_puller(now),
-            _ => {
-                self.puller_progress_last_check = now;
-                return;
-            }
-        }
-
-        if self.puller_progress >= 100.0 {
-            self.auto_stop_or_pull_reset(now);
-            match self.puller_auto_stop {
-                true => self.set_mode(&Winder2Mode::Hold),
-                false => self.set_mode(&Winder2Mode::Pull),
-            }
-        }
-    }
-
-    pub fn auto_stop_or_pull_reset(&mut self, now: Instant) {
-        self.puller_meters_pulled = 0.0;
-        self.puller_progress = 0.0;
-        self.puller_progress_last_check = now;
-    }
-
-    pub fn calculate_progress_puller(&mut self, now: Instant) {
-        let steps_per_second = self.puller.get_speed();
-        let angular_velocity = self
-            .puller_speed_controller
-            .converter
-            .steps_to_angular_velocity(steps_per_second as f64);
-
-        let puller_speed = self
-            .puller_speed_controller
-            .angular_velocity_to_speed(angular_velocity);
-
-        let time_since_last_check = now
-            .duration_since(self.puller_progress_last_check)
-            .as_secs_f64()
-            / 60.0;
-
-        let meters_pulled = puller_speed.get::<meter_per_minute>() * time_since_last_check;
-        self.puller_meters_pulled += meters_pulled;
-        self.puller_progress = (self.puller_meters_pulled / self.puller_expected_meters) * 100.0;
-        self.puller_progress_last_check = now;
     }
 
     /// Can wind capability check
@@ -399,6 +349,8 @@ impl Winder2 {
             && self.mode != Winder2Mode::Wind
     }
 }
+
+impl Winder2 {}
 
 /// Implement Mode
 impl Winder2 {
@@ -612,6 +564,65 @@ impl Winder2 {
             .spool_step_converter
             .angular_velocity_to_steps(angular_velocity);
         let _ = self.spool.set_speed(steps_per_second);
+    }
+
+    pub fn set_spool_automatic_required_meters(&mut self, meters: f64) {
+        self.spool_automatic_action.target_length = Length::new::<meter>(meters);
+        self.emit_state();
+    }
+
+    pub fn set_spool_automatic_mode(&mut self, mode: SpoolAutomaticActionMode) {
+        self.spool_automatic_action.mode = mode;
+        self.emit_state();
+    }
+
+    pub fn stop_or_pull_spool(&mut self, now: Instant) {
+        if let SpoolAutomaticActionMode::Disabled = self.spool_automatic_action.mode {
+            self.stop_or_pull_spool_reset(now);
+            return;
+        }
+
+        match self.mode {
+            Winder2Mode::Pull => self.calculate_spool_auto_progress_(now),
+            Winder2Mode::Wind => self.calculate_spool_auto_progress_(now),
+            _ => {
+                self.spool_automatic_action.progress_last_check = now;
+                return;
+            }
+        }
+
+        if self.spool_automatic_action.progress >= self.spool_automatic_action.target_length {
+            self.stop_or_pull_spool_reset(now);
+            match self.spool_automatic_action.mode {
+                SpoolAutomaticActionMode::Disabled => (),
+                SpoolAutomaticActionMode::Pull => self.set_mode(&Winder2Mode::Pull),
+                SpoolAutomaticActionMode::Stop => self.set_mode(&Winder2Mode::Hold),
+            }
+        }
+    }
+
+    pub fn stop_or_pull_spool_reset(&mut self, now: Instant) {
+        self.spool_automatic_action.progress = Length::ZERO;
+        self.spool_automatic_action.progress_last_check = now;
+    }
+
+    pub fn calculate_spool_auto_progress_(&mut self, now: Instant) {
+        // Calculate time elapsed since last progress check (in minutes)
+        let dt = now
+            .duration_since(self.spool_automatic_action.progress_last_check)
+            .as_secs_f64();
+
+        // Calculate distance pulled during this time interval
+        let meters_pulled_this_interval = Length::new::<meter>(
+            self.puller_speed_controller
+                .last_speed
+                .get::<meter_per_second>()
+                * dt,
+        );
+
+        // Update total meters pulled
+        self.spool_automatic_action.progress += meters_pulled_this_interval;
+        self.spool_automatic_action.progress_last_check = now;
     }
 }
 
