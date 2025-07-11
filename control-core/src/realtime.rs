@@ -160,3 +160,20 @@ pub fn lock_memory() -> Result<(), Box<dyn std::error::Error>> {
     log::error!("This platform does not support memory locking");
     Ok(())
 }
+
+pub fn set_core_affinity_first_core() -> Result<(), anyhow::Error> {
+    let binding = core_affinity::get_core_ids().unwrap_or_default();
+    let cores = binding.first();
+    if let Some(core) = cores {
+        core_affinity::set_for_current(*core);
+        debug!(
+            "Set core affinity of threas {:?} to core {:?}",
+            std::thread::current().name(),
+            core
+        );
+        Ok(())
+    } else {
+        error!("No cores available to set affinity");
+        Err(anyhow::anyhow!("No cores available to set affinity"))
+    }
+}

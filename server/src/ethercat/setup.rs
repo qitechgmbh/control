@@ -13,7 +13,7 @@ use control_core::machines::identification::{
     DeviceHardwareIdentification, DeviceHardwareIdentificationEthercat, DeviceIdentification,
 };
 use control_core::machines::new::MachineNewHardwareEthercat;
-use control_core::realtime::set_realtime_priority;
+use control_core::realtime::{set_core_affinity_first_core, set_realtime_priority};
 use control_core::socketio::namespace::NamespaceCacheingLogic;
 use ethercat_hal::devices::devices_from_subdevices;
 use ethercrab::std::{ethercat_now, tx_rx_task};
@@ -44,7 +44,13 @@ pub async fn setup_loop(
         .name("EthercatTxRxThread".to_owned())
         .spawn(move || {
             send_panic(thread_panic_tx_clone);
+
+            // Set core affinity to first core
+            let _ = set_core_affinity_first_core();
+
+            // Set the thread to real-time priority
             let _ = set_realtime_priority();
+
             let rt = smol::LocalExecutor::new();
             let _ = smol::block_on(rt.run(async {
                 tx_rx_task(&interface, tx, rx)
