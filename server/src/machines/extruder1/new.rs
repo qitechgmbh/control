@@ -1,23 +1,15 @@
 use super::{
-    ExtruderV2, ExtruderV2Mode, Heating, api::ExtruderV2Namespace,
-    mitsubishi_inverter_rs485::MitsubishiInverterController,
+    ExtruderV2, ExtruderV2Mode, Heating, api::ExtruderV2Namespace, mitsubishi_cs80::MitsubishiCS80,
     screw_speed_controller::ScrewSpeedController,
 };
 use crate::machines::extruder1::temperature_controller::TemperatureController;
 use anyhow::Error;
-use control_core::{
-    actors::{
-        analog_input_getter::AnalogInputGetter, digital_output_setter::DigitalOutputSetter,
-        temperature_input_getter::TemperatureInputGetter,
-    },
-    machines::{
-        identification::DeviceHardwareIdentification,
-        new::{
-            MachineNewHardware, MachineNewParams, MachineNewTrait,
-            get_device_identification_by_role, get_ethercat_device_by_index,
-            get_subdevice_by_index, validate_no_role_dublicates,
-            validate_same_machine_identification_unique,
-        },
+use control_core::machines::{
+    identification::DeviceHardwareIdentification,
+    new::{
+        MachineNewHardware, MachineNewParams, MachineNewTrait, get_device_identification_by_role,
+        get_ethercat_device_by_index, get_subdevice_by_index, validate_no_role_dublicates,
+        validate_same_machine_identification_unique,
     },
 };
 use ethercat_hal::{
@@ -321,17 +313,13 @@ impl MachineNewTrait for ExtruderV2 {
             let t3 = TemperatureInput::new(el3204.clone(), EL3204Port::T3);
             let t4 = TemperatureInput::new(el3204.clone(), EL3204Port::T4);
 
-            let t1_getter = TemperatureInputGetter::new(t1);
-            let t2_getter = TemperatureInputGetter::new(t2);
-            let t3_getter = TemperatureInputGetter::new(t3);
-            let t4_getter = TemperatureInputGetter::new(t4);
             // For the Relais
             let digital_out_1 = DigitalOutput::new(el2004.clone(), EL2004Port::DO1);
             let digital_out_2 = DigitalOutput::new(el2004.clone(), EL2004Port::DO2);
             let digital_out_3 = DigitalOutput::new(el2004.clone(), EL2004Port::DO3);
             let digital_out_4 = DigitalOutput::new(el2004.clone(), EL2004Port::DO4);
 
-            let pressure_sensor = AnalogInputGetter::new(AnalogInput::new(el3021, EL3021Port::AI1));
+            let pressure_sensor = AnalogInput::new(el3021, EL3021Port::AI1);
             // The Extruders temparature Controllers should disable the relais when the max_temperature is reached
             let extruder_max_temperature = ThermodynamicTemperature::new::<degree_celsius>(300.0);
             // Only front heating on: These values work 0.08, 0.001, 0.007, Overshoot 0.5 undershoot ~0.7 (Problems when starting far away because of integral)
@@ -341,8 +329,8 @@ impl MachineNewTrait for ExtruderV2 {
                 0.008,
                 ThermodynamicTemperature::new::<degree_celsius>(150.0),
                 extruder_max_temperature,
-                t1_getter,
-                DigitalOutputSetter::new(digital_out_1),
+                t1,
+                digital_out_1,
                 Heating::default(),
                 Duration::from_millis(500),
                 700.0,
@@ -356,8 +344,8 @@ impl MachineNewTrait for ExtruderV2 {
                 0.008,
                 ThermodynamicTemperature::new::<degree_celsius>(150.0),
                 extruder_max_temperature,
-                t2_getter,
-                DigitalOutputSetter::new(digital_out_2),
+                t2,
+                digital_out_2,
                 Heating::default(),
                 Duration::from_millis(500),
                 700.0,
@@ -371,8 +359,8 @@ impl MachineNewTrait for ExtruderV2 {
                 0.008,
                 ThermodynamicTemperature::new::<degree_celsius>(150.0),
                 extruder_max_temperature,
-                t3_getter,
-                DigitalOutputSetter::new(digital_out_3),
+                t3,
+                digital_out_3,
                 Heating::default(),
                 Duration::from_millis(500),
                 700.0,
@@ -386,18 +374,16 @@ impl MachineNewTrait for ExtruderV2 {
                 0.008,
                 ThermodynamicTemperature::new::<degree_celsius>(150.0),
                 extruder_max_temperature,
-                t4_getter,
-                DigitalOutputSetter::new(digital_out_4),
+                t4,
+                digital_out_4,
                 Heating::default(),
                 Duration::from_millis(500),
                 200.0,
                 0.95,
             );
 
-            let inverter = MitsubishiInverterController::new(SerialInterface::new(
-                el6021,
-                el6021::EL6021Port::SI1,
-            ));
+            let inverter =
+                MitsubishiCS80::new(SerialInterface::new(el6021, el6021::EL6021Port::SI1));
 
             let target_pressure = Pressure::new::<bar>(0.0);
             let target_rpm = AngularVelocity::new::<revolution_per_minute>(0.0);

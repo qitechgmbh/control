@@ -4,7 +4,6 @@ use crate::{
     helpers::ethercrab_types::EthercrabSubDevicePreoperational,
     io::pulse_train_output::{
         PulseTrainOutputDevice, PulseTrainOutputInput, PulseTrainOutputOutput,
-        PulseTrainOutputState,
     },
     pdo::{
         PredefinedPdoAssignment, RxPdo, TxPdo,
@@ -65,7 +64,7 @@ impl ConfigurableDevice<EL2522Configuration> for EL2522 {
 }
 
 impl PulseTrainOutputDevice<EL2522Port> for EL2522 {
-    fn pulse_train_output_write(&mut self, port: EL2522Port, value: PulseTrainOutputOutput) {
+    fn set_output(&mut self, port: EL2522Port, value: PulseTrainOutputOutput) {
         let (pto_control, pto_target, enc_control) = self.get_rxpdo_mut(port);
 
         pto_control.disble_ramp = value.disble_ramp;
@@ -75,30 +74,31 @@ impl PulseTrainOutputDevice<EL2522Port> for EL2522 {
         enc_control.set_counter_value = value.set_counter_value;
     }
 
-    fn pulse_train_output_state(&self, port: EL2522Port) -> PulseTrainOutputState {
-        let (pto_status, enc_status) = self.get_txpdo(port);
+    fn get_output(&self, port: EL2522Port) -> PulseTrainOutputOutput {
         let (pto_control, pto_target, enc_control) = self.get_rxpdo(port);
 
-        PulseTrainOutputState {
-            input: PulseTrainOutputInput {
-                select_end_counter: pto_status.select_end_counter,
-                ramp_active: pto_status.ramp_active,
-                input_t: pto_status.input_t,
-                input_z: pto_status.input_z,
-                error: pto_status.error,
-                sync_error: pto_status.sync_error,
-                counter_underflow: enc_status.counter_underflow,
-                counter_overflow: enc_status.counter_overflow,
-                counter_value: enc_status.counter_value,
-                set_counter_done: enc_status.set_counter_done,
-            },
-            output: PulseTrainOutputOutput {
-                disble_ramp: pto_control.disble_ramp,
-                frequency_value: pto_control.frequency_value,
-                target_counter_value: pto_target.target_counter_value,
-                set_counter: enc_control.set_counter,
-                set_counter_value: enc_control.set_counter_value,
-            },
+        PulseTrainOutputOutput {
+            disble_ramp: pto_control.disble_ramp,
+            frequency_value: pto_control.frequency_value,
+            target_counter_value: pto_target.target_counter_value,
+            set_counter: enc_control.set_counter,
+            set_counter_value: enc_control.set_counter_value,
+        }
+    }
+    fn get_input(&self, port: EL2522Port) -> PulseTrainOutputInput {
+        let (pto_status, enc_status) = self.get_txpdo(port);
+
+        PulseTrainOutputInput {
+            select_end_counter: pto_status.select_end_counter,
+            ramp_active: pto_status.ramp_active,
+            input_t: pto_status.input_t,
+            input_z: pto_status.input_z,
+            error: pto_status.error,
+            sync_error: pto_status.sync_error,
+            counter_underflow: enc_status.counter_underflow,
+            counter_overflow: enc_status.counter_overflow,
+            counter_value: enc_status.counter_value,
+            set_counter_done: enc_status.set_counter_done,
         }
     }
 }

@@ -1,5 +1,6 @@
-use std::{fmt, future::Future, pin::Pin, sync::Arc};
+use std::{fmt, sync::Arc};
 
+use futures::executor::block_on;
 use smol::lock::RwLock;
 
 /// Digital Input (DI) device
@@ -7,11 +8,7 @@ use smol::lock::RwLock;
 /// Reads digital values (true or false) from the device.
 pub struct DigitalInput {
     /// Read the state of the digital input
-    pub state: Box<
-        dyn Fn() -> Pin<Box<dyn Future<Output = Result<DigitalInputState, anyhow::Error>> + Send>>
-            + Send
-            + Sync,
-    >,
+    get_input: Box<dyn Fn() -> Result<DigitalInputInput, anyhow::Error> + Send + Sync>,
 }
 
 impl fmt::Debug for DigitalInput {
@@ -26,30 +23,22 @@ impl DigitalInput {
     where
         PORT: Clone + Send + Sync + 'static,
     {
-        // build async get closure
+        // build sync get closure
         let port2 = port.clone();
         let device2 = device.clone();
-        let state = Box::new(
-            move || -> Pin<Box<dyn Future<Output = Result<DigitalInputState, anyhow::Error>> + Send>> {
-                let device2 = device2.clone();
-                let port_clone = port2.clone();
-                Box::pin(async move {
-                    let device = device2.read().await;
-                    device.digital_input_state(port_clone)
-                })
-            },
-        );
+        let get_input = Box::new(move || {
+            let device = block_on(device2.read());
+            device.get_input(port2.clone())
+        });
 
-        DigitalInput { state }
+        DigitalInput { get_input }
     }
-}
 
-#[derive(Debug, Clone)]
-pub struct DigitalInputState {
-    /// Input value
-    /// true: high
-    /// false: low
-    pub input: DigitalInputInput,
+    /// Get the current value of the digital input
+    pub fn get_value(&self) -> Result<bool, anyhow::Error> {
+        let input = (self.get_input)()?;
+        Ok(input.value)
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -61,5 +50,5 @@ pub trait DigitalInputDevice<PORTS>: Send + Sync
 where
     PORTS: Clone,
 {
-    fn digital_input_state(&self, port: PORTS) -> Result<DigitalInputState, anyhow::Error>;
+    fn get_input(&self, port: PORTS) -> Result<DigitalInputInput, anyhow::Error>;
 }

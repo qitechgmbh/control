@@ -11,6 +11,8 @@ A functionality can be virtually wired to any device that matches the IO type. E
 
 Functionalities of different machines should not be wired to the same devices because of possibly conflicting configuration and machine identification issues (which devices belong to what machine).
 
+The IO types provide direct synchronous methods for interacting with hardware, eliminating the need for actor patterns while maintaining clean abstractions.
+
 # Implemented IO types
 
 - Digital Output (DO)
@@ -35,13 +37,13 @@ pub enum EL2002Port {
 
 Then the device must implement the respective device trait like `DigitalOutputDevice`.
 
-The `digital_output_write` is used to set the desired level of the output of a given port.
+The `set_output` method is used to set the desired level of the output of a given port.
 
-The `digital_output_state` is used to read the current state of the output of a given port.
+The `get_output` method is used to read the current state of the output of a given port.
 
 ```rust
 impl DigitalOutputDevice<EL2002Port> for EL2002 {
-    fn digital_output_write(&mut self, port: EL2002Port, value: DigitalOutputOutput) {
+    fn set_output(&mut self, port: EL2002Port, value: DigitalOutputOutput) {
         let expect_text = "All channels should be Some(_)";
         match port {
             EL2002Port::DO1 => self.rxpdo.channel1.as_mut().expect(&expect_text).value = value.into(),
@@ -49,84 +51,95 @@ impl DigitalOutputDevice<EL2002Port> for EL2002 {
         }
     }
 
-    fn digital_output_state(&self, port: EL2002Port) -> DigitalOutputState {
+    fn get_output(&self, port: EL2002Port) -> DigitalOutputOutput {
         let expect_text = "All channels should be Some(_)";
-        DigitalOutputState {
-            output: DigitalOutputOutput(match port {
-                EL2002Port::DO1 => self.rxpdo.channel1.as_ref().expect(&expect_text).value,
-                EL2002Port::DO2 => self.rxpdo.channel2.as_ref().expect(&expect_text).value,
-            }),
-        }
+        DigitalOutputOutput(match port {
+            EL2002Port::DO1 => self.rxpdo.channel1.as_ref().expect(&expect_text).value,
+            EL2002Port::DO2 => self.rxpdo.channel2.as_ref().expect(&expect_text).value,
+        })
     }
 }
 ```
 
-## Implementing for an `Actor`
+## Using IO types in machine logic
 
-The `act` function of an `Actor` will be called after the inputs are read from the device and before the outputs are written for the next EtherCAT frame.
+IO types now provide direct synchronous methods for reading and writing values, making them easy to use in machine logic without async/await patterns.
 
-The actor needs to be constructed with the `DigitalOutput` and hold it in its struct.
 ```rust
 #[derive(Debug)]
 pub struct DigitalOutputToggler {
     output: DigitalOutput,
 }
 
-```
-
-Implementing the `act` function which will toggle the output every cycle.
-
-The `state` and `write` values are callbacks and must be wrapped with parentheses to be called.
-```rust
-fn act(&mut self, _now: Instant) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
-    Box::pin(async move {
-        {
-            let state = (self.output.state)().await;
-            match state.output.into() {
-                true => (self.output.write)(false.into()).await,
-                false => (self.output.write)(true.into()).await,
-            }
-        }
-    })
+impl DigitalOutputToggler {
+    pub fn new(output: DigitalOutput) -> Self {
+        Self { output }
+    }
+    
+    pub fn toggle(&mut self) {
+        let current_state = self.output.get();
+        self.output.set(!current_state);
+    }
+    
+    pub fn turn_on(&mut self) {
+        self.output.set(true);
+    }
+    
+    pub fn turn_off(&mut self) {
+        self.output.set(false);
+    }
 }
 ```
 
 ## Getting `DigitalOutput` from a `Device`
-With the `new` function of the `DigitalOutput` struct, you can create a new `DigitalOutput` instance from a device and its port. We can then provide this `DigitalOutput` instance to the `Actor` struct.
+With the `new` function of the `DigitalOutput` struct, you can create a new `DigitalOutput` instance from a device and its port. The IO type provides direct synchronous methods for interaction.
+
 ```rust
-let el2002 = EL2002::new();
+let el2002 = Arc::new(RwLock::new(EL2002::new()));
 let digital_output = DigitalOutput::new(el2002, EL2002Port::DO1);
-let actor = DigitalOutputToggler::new(digital_output);
+let mut toggler = DigitalOutputToggler::new(digital_output);
+
+// Direct usage
+toggler.turn_on();
+toggler.toggle();
 ```
 
 # Creating a new IO type
 To create a new IO type, we must know if it's writable (output) or readable (input), or combined (input/output) type.
 
-We first define the `DigitalOutput` struct with the `write` and `state` fields. Every IO needs a `state` field but only writable types need a `write` field.
-
-The `state` field is an async callback which returns the `DigitalOutputState` struct.
-
-The `write` field is an async callback which takes the value.
+For output types, we define the struct with sync closures for setting and getting values:
 
 ```rust
 pub struct DigitalOutput {
-    pub write: Box<dyn Fn(DigitalOutputOutput) -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>,
-    pub state:
-        Box<dyn Fn() -> Pin<Box<dyn Future<Output = DigitalOutputState> + Send>> + Send + Sync>,
+    set_output: Box<dyn Fn(DigitalOutputOutput) -> () + Send + Sync>,
+    get_output: Box<dyn Fn() -> DigitalOutputOutput + Send + Sync>,
 }
 ```
 
-Next, we need to implement the `DigitalOutputState` and `DigitalOutputOutput` structs.
+For input types, we only need the getter:
 
-The `DigitalOutputState` contains the timestamps of the output (and inputs if applicable) and the `DigitalOutputOutput` struct (and the input struct if applicable). This is the return type of `DigitalOutput::state`.
-
-The `DigitalOutputOutput` is both contained in the `DigitalOutputState` and is the input type of the `DigitalOutput::write` function. It implements the `From` trait in both directions to `bool` to allow easy access to the inner value on this simple type (as seen in the `act` example above).
 ```rust
-#[derive(Debug, Clone)]
-pub struct DigitalOutputState {
-    pub output: DigitalOutputOutput,
+pub struct DigitalInput {
+    get_input: Box<dyn Fn() -> Result<DigitalInputInput, anyhow::Error> + Send + Sync>,
 }
+```
 
+For combined input/output types, we have separate getters for input and output:
+
+```rust
+pub struct StepperVelocityEL70x1 {
+    set_output: Box<dyn Fn(StepperVelocityEL70x1Output) -> Result<(), Error> + Send + Sync>,
+    get_output: Box<dyn Fn() -> Result<StepperVelocityEL70x1Output, Error> + Send + Sync>,
+    get_input: Box<dyn Fn() -> Result<StepperVelocityEL70x1Input, Error> + Send + Sync>,
+    // ... additional closures as needed
+}
+```
+
+Next, we need to implement the input and output structs separately.
+
+For a digital output, we only need the output struct:
+
+```rust
 /// Output value
 /// true: high
 /// false: low
@@ -146,8 +159,35 @@ impl From<DigitalOutputOutput> for bool {
 }
 ```
 
-Now we need to implement the constructor for a `DigitalOutput` instance. The `new` function takes a device and a port and returns a `DigitalOutput` instance.
-We need to construct the async closures which is a bit of type madness since we also need to move the device `Arc` into them.
+For input types, we define input structs:
+
+```rust
+#[derive(Debug, Clone)]
+pub struct DigitalInputInput {
+    pub value: bool,
+}
+```
+
+For combined input/output types, we define both structs separately, avoiding the need for state containers.
+
+```rust
+pub struct DigitalOutputOutput(pub bool);
+
+impl From<bool> for DigitalOutputOutput {
+    fn from(value: bool) -> Self {
+        DigitalOutputOutput(value)
+    }
+}
+
+impl From<DigitalOutputOutput> for bool {
+    fn from(value: DigitalOutputOutput) -> Self {
+        value.0
+    }
+}
+```
+
+Now we implement the constructor for the IO type. The `new` function takes a device and port and returns the IO instance with sync closures:
+
 ```rust
 impl DigitalOutput {
     pub fn new<PORT>(
@@ -157,46 +197,75 @@ impl DigitalOutput {
     where
         PORT: Clone + Send + Sync + 'static,
     {
-        // build async write closure
+        // build sync write closure
         let port1 = port.clone();
         let device1 = device.clone();
-        let write = Box::new(
-            move |value: DigitalOutputOutput| -> Pin<Box<dyn Future<Output = ()> + Send>> {
-                let device_clone = device1.clone();
-                let port_clone = port1.clone();
-                Box::pin(async move {
-                    let mut device = device_clone.write().await;
-                    device.digital_output_write(port_clone, value);
-                })
-            },
-        );
+        let set_output = Box::new(move |value: DigitalOutputOutput| {
+            let mut device = block_on(device1.write());
+            device.set_output(port1.clone(), value);
+        });
 
-        // build async get closure
+        // build sync get closure
         let port2 = port.clone();
         let device2 = device.clone();
-        let state = Box::new(
-            move || -> Pin<Box<dyn Future<Output = DigitalOutputState> + Send>> {
-                let device2 = device2.clone();
-                let port_clone = port2.clone();
-                Box::pin(async move {
-                    let device = device2.read().await;
-                    device.digital_output_state(port_clone)
-                })
-            },
-        );
-        DigitalOutput { write, state }
+        let get_output = Box::new(move || -> DigitalOutputOutput {
+            let device = block_on(device2.read());
+            device.get_output(port2.clone())
+        });
+
+        DigitalOutput {
+            set_output,
+            get_output,
+        }
+    }
+
+    /// Set the digital output value
+    pub fn set(&self, enabled: bool) {
+        (self.set_output)(enabled.into());
+    }
+
+    /// Get the current output value
+    pub fn get(&self) -> bool {
+        let output = (self.get_output)();
+        output.into()
     }
 }
 ```
 
-Lastly, we can create the `DigitalOutputDevice` trait which needs to be implemented by the device.
+Lastly, we create the device trait that needs to be implemented by devices. The trait methods are simplified and separated by input/output:
+
 ```rust
 pub trait DigitalOutputDevice<PORT>: Send + Sync
 where
     PORT: Clone,
 {
-    fn digital_output_write(&mut self, port: PORT, value: DigitalOutputOutput);
-    fn digital_output_state(&self, port: PORT) -> DigitalOutputState;
+    fn set_output(&mut self, port: PORT, value: DigitalOutputOutput);
+    fn get_output(&self, port: PORT) -> DigitalOutputOutput;
 }
+```
 
+For input devices:
+
+```rust
+pub trait DigitalInputDevice<PORT>: Send + Sync
+where
+    PORT: Clone,
+{
+    fn get_input(&self, port: PORT) -> Result<DigitalInputInput, anyhow::Error>;
+}
+```
+
+For combined input/output devices:
+
+```rust
+pub trait StepperVelocityEL70x1Device<PORT>: Send + Sync
+where
+    PORT: Clone,
+{
+    fn set_output(&mut self, port: PORT, value: StepperVelocityEL70x1Output) -> Result<(), Error>;
+    fn get_output(&self, port: PORT) -> Result<StepperVelocityEL70x1Output, Error>;
+    fn get_input(&self, port: PORT) -> Result<StepperVelocityEL70x1Input, Error>;
+    // Additional methods as needed for specific device functionality
+    fn get_speed_range(&self, port: PORT) -> SpeedRange;
+}
 ```

@@ -7,10 +7,6 @@ use crate::machines::winder2::puller_speed_controller::PullerSpeedController;
 use crate::machines::winder2::spool_speed_controller::SpoolSpeedController;
 use crate::machines::winder2::traverse_controller::TraverseController;
 use anyhow::Error;
-use control_core::actors::analog_input_getter::AnalogInputGetter;
-use control_core::actors::digital_input_getter::DigitalInputGetter;
-use control_core::actors::digital_output_setter::DigitalOutputSetter;
-use control_core::actors::stepper_driver_el70x1::StepperDriverEL70x1;
 use control_core::converters::angular_step_converter::AngularStepConverter;
 use control_core::converters::linear_step_converter::LinearStepConverter;
 use control_core::machines::identification::DeviceHardwareIdentification;
@@ -154,7 +150,7 @@ impl MachineNewTrait for Winder2 {
             // Role 2
             // 1x Stepper Spool
             // EL7041-0052
-            let (el7041, el7041_config) = {
+            let (el7041, _el7041_config) = {
                 let device_identification =
                     get_device_identification_by_role(params.device_group, 2)?;
                 let device_hardware_identification_ethercat =
@@ -212,7 +208,7 @@ impl MachineNewTrait for Winder2 {
             // Role 3
             // 1x Stepper Traverse
             // EL7031
-            let (el7031, el7031_config) = {
+            let (el7031, _el7031_config) = {
                 let device_identification =
                     get_device_identification_by_role(params.device_group, 3)?;
                 let device_hardware_identification_ethercat =
@@ -275,7 +271,7 @@ impl MachineNewTrait for Winder2 {
             // Role 4
             // 1x Stepper Puller
             // EL7031
-            let (el7031_0030, el7031_0030_config) = {
+            let (el7031_0030, _el7031_0030_config) = {
                 let device_identification =
                     get_device_identification_by_role(params.device_group, 4)?;
                 let device_hardware_identification_ethercat =
@@ -337,27 +333,18 @@ impl MachineNewTrait for Winder2 {
             let mode = Winder2Mode::Standby;
 
             let mut new = Self {
-                traverse: StepperDriverEL70x1::new(
-                    StepperVelocityEL70x1::new(el7031.clone(), EL7031StepperPort::STM1),
-                    &el7031_config.stm_features.speed_range,
+                traverse: StepperVelocityEL70x1::new(el7031.clone(), EL7031StepperPort::STM1),
+                traverse_end_stop: DigitalInput::new(el7031, EL7031DigitalInputPort::DI1),
+                puller: StepperVelocityEL70x1::new(
+                    el7031_0030.clone(),
+                    EL7031_0030StepperPort::STM1,
                 ),
-                traverse_end_stop: DigitalInputGetter::new(DigitalInput::new(
-                    el7031,
-                    EL7031DigitalInputPort::DI1,
-                )),
-                puller: StepperDriverEL70x1::new(
-                    StepperVelocityEL70x1::new(el7031_0030.clone(), EL7031_0030StepperPort::STM1),
-                    &el7031_0030_config.stm_features.speed_range,
-                ),
-                spool: StepperDriverEL70x1::new(
-                    StepperVelocityEL70x1::new(el7041, EL7041_0052Port::STM1),
-                    &el7041_config.stm_features.speed_range,
-                ),
-                tension_arm: TensionArm::new(AnalogInputGetter::new(AnalogInput::new(
+                spool: StepperVelocityEL70x1::new(el7041, EL7041_0052Port::STM1),
+                tension_arm: TensionArm::new(AnalogInput::new(
                     el7031_0030,
                     EL7031_0030AnalogInputPort::AI1,
-                ))),
-                laser: DigitalOutputSetter::new(DigitalOutput::new(el2002, EL2002Port::DO1)),
+                )),
+                laser: DigitalOutput::new(el2002, EL2002Port::DO1),
                 namespace: Winder2Namespace::new(params.socket_queue_tx.clone()),
                 mode: mode.clone(),
                 spool_step_converter: AngularStepConverter::new(200),

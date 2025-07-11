@@ -1,12 +1,12 @@
 use super::LaserMachine;
-use control_core::actors::Actor;
+use control_core::machines::new::MachineAct;
 use std::{
     future::Future,
     pin::Pin,
     time::{Duration, Instant},
 };
 
-/// Implements the `Actor` trait for the `LaserMachine`.
+/// Implements the `MachineAct` trait for the `LaserMachine`.
 ///
 /// # Parameters
 /// - `_now_ts`: The current timestamp of type `Instant`.
@@ -21,7 +21,7 @@ use std::{
 ///
 /// The method ensures that the diameter value is updated approximately 60 times per second.
 ///
-impl Actor for LaserMachine {
+impl MachineAct for LaserMachine {
     fn act(&mut self, now: Instant) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
         Box::pin(async move {
             // The live values are updated approximately 60 times per second

@@ -8,7 +8,7 @@ use ethercat_hal::{
 use ethercrab::{SubDevice, SubDeviceRef};
 use smol::{channel::Sender, lock::RwLock};
 use socketioxide::extract::SocketRef;
-use std::sync::Arc;
+use std::{pin::Pin, sync::Arc, time::Instant};
 
 use crate::socketio::event::GenericEvent;
 
@@ -18,6 +18,10 @@ pub trait MachineNewTrait {
     ) -> Result<Self, Error>
     where
         Self: Sized;
+}
+
+pub trait MachineAct {
+    fn act(&mut self, now: Instant) -> Pin<Box<dyn Future<Output = ()> + Send + '_>>;
 }
 
 pub struct MachineNewParams<

@@ -17,14 +17,12 @@ use api::{
     TensionArmState, TraverseState, Winder2Events, Winder2Namespace,
 };
 use control_core::{
-    actors::{
-        digital_input_getter::DigitalInputGetter, digital_output_setter::DigitalOutputSetter,
-        stepper_driver_el70x1::StepperDriverEL70x1,
-    },
-    converters::angular_step_converter::AngularStepConverter,
-    machines::Machine,
-    socketio::namespace::NamespaceCacheingLogic,
-    uom_extensions::velocity::meter_per_minute,
+    converters::angular_step_converter::AngularStepConverter, machines::Machine,
+    socketio::namespace::NamespaceCacheingLogic, uom_extensions::velocity::meter_per_minute,
+};
+use ethercat_hal::io::{
+    digital_input::DigitalInput, digital_output::DigitalOutput,
+    stepper_velocity_el70x1::StepperVelocityEL70x1,
 };
 use puller_speed_controller::{PullerRegulationMode, PullerSpeedController};
 use spool_speed_controller::SpoolSpeedController;
@@ -40,15 +38,15 @@ use uom::si::{
 #[derive(Debug)]
 pub struct Winder2 {
     // drivers
-    pub traverse: StepperDriverEL70x1,
-    pub puller: StepperDriverEL70x1,
-    pub spool: StepperDriverEL70x1,
+    pub traverse: StepperVelocityEL70x1,
+    pub puller: StepperVelocityEL70x1,
+    pub spool: StepperVelocityEL70x1,
     pub tension_arm: TensionArm,
-    pub laser: DigitalOutputSetter,
+    pub laser: DigitalOutput,
 
     // controllers
     pub traverse_controller: TraverseController,
-    pub traverse_end_stop: DigitalInputGetter,
+    pub traverse_end_stop: DigitalInput,
 
     // socketio
     namespace: Winder2Namespace,
@@ -278,9 +276,9 @@ impl Winder2 {
     pub fn sync_traverse_speed(&mut self) {
         self.traverse_controller.update_speed(
             &mut self.traverse,
-            &mut self.traverse_end_stop,
+            &self.traverse_end_stop,
             self.spool_speed_controller.get_speed(),
-        );
+        )
     }
 
     /// Can wind capability check
@@ -539,7 +537,7 @@ impl Winder2 {
         let steps_per_second = self
             .spool_step_converter
             .angular_velocity_to_steps(angular_velocity);
-        self.spool.set_speed(steps_per_second);
+        let _ = self.spool.set_speed(steps_per_second);
     }
 }
 
@@ -552,7 +550,7 @@ impl Winder2 {
             .puller_speed_controller
             .converter
             .angular_velocity_to_steps(angular_velocity);
-        self.puller.set_speed(steps_per_second);
+        let _ = self.puller.set_speed(steps_per_second);
     }
 
     pub fn puller_set_regulation(&mut self, puller_regulation_mode: PullerRegulationMode) {

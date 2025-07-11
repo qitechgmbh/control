@@ -1,9 +1,7 @@
-use std::fmt;
-use std::future::Future;
-use std::pin::Pin;
-use std::sync::Arc;
-
+use smol::future::block_on;
 use smol::lock::RwLock;
+use std::fmt;
+use std::sync::Arc;
 
 /// Analog Output (AO) device
 ///
@@ -11,12 +9,10 @@ use smol::lock::RwLock;
 /// device and its range.
 pub struct AnalogOutput {
     /// Write a value to the analog output
-    pub write:
-        Box<dyn Fn(AnalogOutputOutput) -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>,
+    pub set_output: Box<dyn Fn(AnalogOutputOutput) -> () + Send + Sync>,
 
     /// Read the state of the analog output
-    pub state:
-        Box<dyn Fn() -> Pin<Box<dyn Future<Output = AnalogOutputState> + Send>> + Send + Sync>,
+    pub get_output: Box<dyn Fn() -> AnalogOutputOutput + Send + Sync>,
 }
 
 impl fmt::Debug for AnalogOutput {
@@ -31,42 +27,38 @@ impl AnalogOutput {
     where
         PORT: Clone + Send + Sync + 'static,
     {
-        // build async write closure
+        // build sync write closure
         let port1 = port.clone();
         let device1 = device.clone();
-        let write = Box::new(
-            move |value: AnalogOutputOutput| -> Pin<Box<dyn Future<Output = ()> + Send>> {
-                let device_clone = device1.clone();
-                let port_clone = port1.clone();
-                Box::pin(async move {
-                    let mut device = device_clone.write().await;
-                    device.analog_output_write(port_clone, value);
-                })
-            },
-        );
+        let set_output = Box::new(move |value: AnalogOutputOutput| {
+            let mut device = block_on(device1.write());
+            device.set_output(port1.clone(), value);
+        });
 
-        // build async get closure
+        // build sync get closure
         let port2 = port.clone();
         let device2 = device.clone();
-        let state = Box::new(
-            move || -> Pin<Box<dyn Future<Output = AnalogOutputState> + Send>> {
-                let device2 = device2.clone();
-                let port_clone = port2.clone();
-                Box::pin(async move {
-                    let device = device2.read().await;
-                    device.analog_output_state(port_clone)
-                })
-            },
-        );
-        AnalogOutput { write, state }
-    }
-}
+        let get_output = Box::new(move || -> AnalogOutputOutput {
+            let device = block_on(device2.read());
+            device.get_output(port2.clone())
+        });
 
-#[derive(Debug, Clone)]
-pub struct AnalogOutputState {
-    /// Output value from 0.0 to 1.0
-    /// Voltage depends on the device
-    pub output: AnalogOutputOutput,
+        AnalogOutput {
+            set_output,
+            get_output,
+        }
+    }
+
+    /// Set the analog output value
+    pub fn set(&self, value: f32) {
+        (self.set_output)(value.into());
+    }
+
+    /// Get the current output value
+    pub fn get(&self) -> f32 {
+        let output = (self.get_output)();
+        output.into()
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -85,6 +77,6 @@ impl From<AnalogOutputOutput> for f32 {
 }
 
 pub trait AnalogOutputDevice<PORTS>: Send + Sync {
-    fn analog_output_write(&mut self, port: PORTS, value: AnalogOutputOutput);
-    fn analog_output_state(&self, port: PORTS) -> AnalogOutputState;
+    fn set_output(&mut self, port: PORTS, value: AnalogOutputOutput);
+    fn get_output(&self, port: PORTS) -> AnalogOutputOutput;
 }

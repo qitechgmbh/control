@@ -1,4 +1,4 @@
-use crate::actors::Actor;
+use crate::machines::new::MachineAct;
 use api::MachineApi;
 use new::MachineNewTrait;
 use std::any::Any;
@@ -10,4 +10,4 @@ pub mod manager_iter;
 pub mod new;
 pub mod registry;
 
-pub trait Machine: MachineNewTrait + MachineApi + Actor + Any + Debug {}
+pub trait Machine: MachineNewTrait + MachineApi + MachineAct + Any + Send + Sync + Debug {}

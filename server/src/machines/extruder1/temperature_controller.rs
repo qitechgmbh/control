@@ -1,11 +1,6 @@
 use super::Heating;
-use control_core::{
-    actors::{
-        Actor, digital_output_setter::DigitalOutputSetter,
-        temperature_input_getter::TemperatureInputGetter,
-    },
-    controllers::pid::PidController,
-};
+use control_core::controllers::pid::PidController;
+use ethercat_hal::io::{digital_output::DigitalOutput, temperature_input::TemperatureInput};
 use std::time::{Duration, Instant};
 use uom::si::{f64::ThermodynamicTemperature, thermodynamic_temperature::degree_celsius};
 
@@ -13,8 +8,8 @@ use uom::si::{f64::ThermodynamicTemperature, thermodynamic_temperature::degree_c
 
 pub struct TemperatureController {
     pub pid: PidController,
-    temperature_sensor: TemperatureInputGetter,
-    relais: DigitalOutputSetter,
+    temperature_sensor: TemperatureInput,
+    relais: DigitalOutput,
     pub heating: Heating,
     pub target_temp: ThermodynamicTemperature,
     window_start: Instant,
@@ -39,8 +34,8 @@ impl TemperatureController {
         kd: f64,
         target_temp: ThermodynamicTemperature,
         max_temperature: ThermodynamicTemperature,
-        temperature_sensor: TemperatureInputGetter,
-        relais: DigitalOutputSetter,
+        temperature_sensor: TemperatureInput,
+        relais: DigitalOutput,
         heating: Heating,
         pwm_duration: Duration,
         heating_element_wattage: f64,
@@ -78,25 +73,22 @@ impl TemperatureController {
         return self.temperature_pid_output * self.heating_element_wattage;
     }
 
-    pub async fn update(&mut self, now: Instant) -> () {
-        self.temperature_sensor.act(now).await;
+    pub fn update(&mut self, now: Instant) -> () {
         self.temperature_pid_output = 0.0;
 
-        let temperature = ThermodynamicTemperature::new::<degree_celsius>(
-            self.temperature_sensor.get_temperature(),
+        let temperature = self.temperature_sensor.get_temperature();
+        let temperature_celsius = ThermodynamicTemperature::new::<degree_celsius>(
+            temperature.as_ref().unwrap_or(&0.0).to_owned(),
         );
 
-        self.heating.temperature = temperature;
-        self.heating.wiring_error = self.temperature_sensor.get_wiring_error();
+        self.heating.wiring_error = temperature.is_err();
+        self.heating.temperature = temperature_celsius;
 
         if self.heating.temperature > self.max_temperature {
             // disable the relais and return
             self.relais.set(false);
             self.heating.heating = false;
-            self.relais.act(now).await;
             return;
-        } else {
-            self.relais.act(now).await;
         }
 
         if self.heating_allowed {

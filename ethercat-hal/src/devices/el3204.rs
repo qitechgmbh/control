@@ -1,7 +1,7 @@
 use crate::helpers::ethercrab_types::EthercrabSubDevicePreoperational;
 use crate::pdo::TxPdo;
 use crate::{
-    io::temperature_input::{TemperatureInputDevice, TemperatureInputInput, TemperatureInputState},
+    io::temperature_input::{TemperatureInputDevice, TemperatureInputInput},
     pdo::el32xx::RtdInput,
 };
 use ethercat_hal_derive::{EthercatDevice, TxPdo};
@@ -35,7 +35,7 @@ impl NewEthercatDevice for EL3204 {
 }
 
 impl TemperatureInputDevice<EL3204Port> for EL3204 {
-    fn temperature_input_state(&self, port: EL3204Port) -> TemperatureInputState {
+    fn get_input(&self, port: EL3204Port) -> TemperatureInputInput {
         let expect_text = "All channels should be Some(_)";
         let channel = match port {
             EL3204Port::T1 => self.txpdo.channel1.as_ref().expect(&expect_text),
@@ -43,17 +43,15 @@ impl TemperatureInputDevice<EL3204Port> for EL3204 {
             EL3204Port::T3 => self.txpdo.channel3.as_ref().expect(&expect_text),
             EL3204Port::T4 => self.txpdo.channel4.as_ref().expect(&expect_text),
         };
-        TemperatureInputState {
-            input: TemperatureInputInput {
-                temperature: channel.temperature,
-                undervoltage: channel.undervoltage,
-                overvoltage: channel.overvoltage,
-                limit1: channel.limit1,
-                limit2: channel.limit2,
-                error: channel.error,
-                txpdo_state: channel.txpdo_state,
-                txpdo_toggle: channel.txpdo_toggle,
-            },
+        TemperatureInputInput {
+            temperature: channel.temperature,
+            undervoltage: channel.undervoltage,
+            overvoltage: channel.overvoltage,
+            limit1: channel.limit1,
+            limit2: channel.limit2,
+            error: channel.error,
+            txpdo_state: channel.txpdo_state,
+            txpdo_toggle: channel.txpdo_toggle,
         }
     }
 }
