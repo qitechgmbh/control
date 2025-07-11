@@ -1,4 +1,7 @@
-use std::{sync::Arc, time::Duration};
+use std::{
+    sync::Arc,
+    time::{Duration, Instant},
+};
 
 use super::{Winder2, Winder2Mode, puller_speed_controller::PullerRegulationMode};
 use control_core::{
@@ -83,6 +86,11 @@ enum Mutation {
     SetSpoolAdaptiveAccelerationFactor(f64),
     SetSpoolAdaptiveDeaccelerationUrgencyMultiplier(f64),
 
+    // Spool Auto Stop/Pull
+    SetSpoolAutomaticRequiredMeters(f64),
+    SetSpoolAutomaticAction(SpoolAutomaticActionMode),
+    ResetSpoolProgress,
+
     // Tension Arm
     ZeroTensionArmAngle,
 
@@ -102,6 +110,9 @@ pub struct LiveValuesEvent {
     pub spool_diameter: f64,
     /// tension arm angle in degrees
     pub tension_arm_angle: f64,
+
+    // spool progress in meters (pulled distance of filament)
+    pub spool_progress: f64,
 }
 
 impl LiveValuesEvent {
@@ -117,6 +128,8 @@ pub struct StateEvent {
     pub traverse_state: TraverseState,
     /// puller state
     pub puller_state: PullerState,
+    pub spool_automatic_action_state: SpoolAutomaticActionState,
+
     /// mode state
     pub mode_state: ModeState,
     /// tension arm state
@@ -175,6 +188,19 @@ pub struct PullerState {
     pub target_diameter: f64,
     /// forward rotation direction
     pub forward: bool,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub enum SpoolAutomaticActionMode {
+    NoAction,
+    Pull,
+    Hold,
+}
+
+#[derive(Serialize, Debug, Clone)]
+pub struct SpoolAutomaticActionState {
+    pub spool_required_meters: f64,
+    pub spool_automatic_action_mode: SpoolAutomaticActionMode,
 }
 
 #[derive(Serialize, Debug, Clone)]
@@ -292,6 +318,11 @@ impl MachineApi for Winder2 {
             Mutation::SetSpoolAdaptiveDeaccelerationUrgencyMultiplier(value) => {
                 self.spool_set_adaptive_deacceleration_urgency_multiplier(value)
             }
+            Mutation::SetSpoolAutomaticRequiredMeters(meters) => {
+                self.set_spool_automatic_required_meters(meters)
+            }
+            Mutation::SetSpoolAutomaticAction(mode) => self.set_spool_automatic_mode(mode),
+            Mutation::ResetSpoolProgress => self.stop_or_pull_spool_reset(Instant::now()),
             Mutation::ZeroTensionArmAngle => self.tension_arm_zero(),
         }
         Ok(())
