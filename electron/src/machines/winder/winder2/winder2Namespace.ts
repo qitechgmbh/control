@@ -50,17 +50,31 @@ export const modeSchema = z.enum(["Standby", "Hold", "Pull", "Wind"]);
 export type Mode = z.infer<typeof modeSchema>;
 
 /**
+ * Machine operation mode enum
+ */
+export const spoolAutomaticActionModeSchema = z.enum([
+  "Disabled",
+  "Pull",
+  "Stop",
+]);
+export type SpoolAutomaticActionMode = z.infer<
+  typeof spoolAutomaticActionModeSchema
+>;
+
+/**
  * Spool speed controller regulation mode enum
  */
 export const spoolRegulationModeSchema = z.enum(["Adaptive", "MinMax"]);
 export type SpoolRegulationMode = z.infer<typeof spoolRegulationModeSchema>;
 
-export const pullerAutoStopStateSchema = z.object({
-  puller_expected_meters: z.number(),
-  puller_auto_stop: z.boolean(),
-  puller_auto_enabled: z.boolean(),
+export const spoolAutomaticActionStateSchema = z.object({
+  spool_required_meters: z.number(),
+  spool_automatic_action_mode: spoolAutomaticActionModeSchema,
 });
-export type PullerAutoStopState = z.infer<typeof pullerAutoStopStateSchema>;
+
+export type SpoolAutomaticActionState = z.infer<
+  typeof spoolAutomaticActionStateSchema
+>;
 
 /**
  * Traverse state schema
@@ -132,7 +146,7 @@ export const stateEventDataSchema = z.object({
   mode_state: modeStateSchema,
   tension_arm_state: tensionArmStateSchema,
   spool_speed_controller_state: spoolSpeedControllerStateSchema,
-  puller_auto_stop_state: pullerAutoStopStateSchema,
+  spool_automatic_action_state: spoolAutomaticActionStateSchema,
 });
 
 // ========== Event Schemas with Wrappers ==========
@@ -232,7 +246,6 @@ export function winder2MessageHandler(
       if (eventName === "StateEvent") {
         // Parse and validate the state event
         const stateEvent = stateEventSchema.parse(event);
-        console.log("StateEvent", stateEvent);
 
         updateStore((state) => ({
           ...state,
