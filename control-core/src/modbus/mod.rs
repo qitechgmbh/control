@@ -1,3 +1,5 @@
+pub mod modbus_serial_interface;
+
 use anyhow::Error;
 use crc::{CRC_16_MODBUS, Crc};
 use serial;

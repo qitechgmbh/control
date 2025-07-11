@@ -1,7 +1,7 @@
 use bitvec::{order::Lsb0, slice::BitSlice};
-use control_core::{
-    actors::serial_interface_actor::ModbusSerialInterface,
-    modbus::{ModbusFunctionCode, ModbusRequest, ModbusResponse},
+use control_core::modbus::{
+    ModbusFunctionCode, ModbusRequest, ModbusResponse,
+    modbus_serial_interface::ModbusSerialInterface,
 };
 use ethercat_hal::io::serial_interface::SerialInterface;
 use std::time::{Duration, Instant};
