@@ -100,7 +100,6 @@ pub fn set_realtime_priority() -> Result<(), anyhow::Error> {
 /// Important: You only need to call this function ONCE per process, not in each thread.
 /// The memory locking applies to the entire process, including:
 /// - The main thread
-/// - All threads created before the call
 /// - All threads created after the call
 ///
 /// This happens because all threads in a process share the same virtual memory space, and
@@ -140,10 +139,10 @@ pub fn set_realtime_priority() -> Result<(), anyhow::Error> {
 /// [Rest of documentation as before...]
 #[cfg(unix)]
 pub fn lock_memory() -> Result<(), Box<dyn std::error::Error>> {
-    use libc::{MCL_CURRENT, MCL_FUTURE, mlockall};
+    use libc::{MCL_FUTURE, mlockall};
 
     unsafe {
-        if mlockall(MCL_CURRENT | MCL_FUTURE) != 0 {
+        if mlockall(MCL_FUTURE) != 0 {
             error!("Failed to lock memory: {}", std::io::Error::last_os_error());
             return Err(
                 format!("Failed to lock memory: {}", std::io::Error::last_os_error()).into(),
