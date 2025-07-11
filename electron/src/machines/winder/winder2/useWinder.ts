@@ -14,6 +14,8 @@ import {
   spoolRegulationModeSchema,
   pullerRegulationSchema,
   PullerRegulation,
+  SpoolAutomaticActionMode,
+  spoolAutomaticActionModeSchema,
 } from "./winder2Namespace";
 import { useEffect, useMemo } from "react";
 import { produce } from "immer";
@@ -141,17 +143,12 @@ export function useWinder2() {
     useMachineMutation(
       z.object({ SetSpoolAdaptiveDeaccelerationUrgencyMultiplier: z.number() }),
     );
-
-  const { request: requestPullerExpectedMeters } = useMachineMutation(
-    z.object({ SetPullerAutoStopExpectedMeters: z.number() }),
+  const { request: requestSpoolAutomaticRequiredMeters } = useMachineMutation(
+    z.object({ SetSpoolAutomaticRequiredMeters: z.number() }),
   );
 
-  const { request: requestAutoStopEnabled } = useMachineMutation(
-    z.object({ SetPullerAutoStopEnabled: z.boolean() }),
-  );
-
-  const { request: requestPullerAutoStop } = useMachineMutation(
-    z.object({ SetPullerAutoStop: z.boolean() }),
+  const { request: requestSpoolAutomaticAction } = useMachineMutation(
+    z.object({ SetSpoolAutomaticAction: spoolAutomaticActionModeSchema }),
   );
 
   // Helper function for optimistic updates using produce
@@ -349,41 +346,30 @@ export function useWinder2() {
     );
   };
 
-  const setPullerAutoStopExpectedMeters = (meters: number) => {
+  const setSpoolAutomaticRequiredMeters = (meters: number) => {
     updateStateOptimistically(
       (current) => {
-        current.data.puller_auto_stop_state.puller_expected_meters = meters;
+        current.data.spool_automatic_action_state.spool_required_meters =
+          meters;
       },
       () =>
-        requestPullerExpectedMeters({
+        requestSpoolAutomaticRequiredMeters({
           machine_identification_unique: machineIdentification,
-          data: { SetPullerAutoStopExpectedMeters: meters },
+          data: { SetSpoolAutomaticRequiredMeters: meters },
         }),
     );
   };
 
-  const setPullerAutoStopEnabled = (enabled: boolean) => {
+  const setSpoolAutomaticAction = (mode: SpoolAutomaticActionMode) => {
     updateStateOptimistically(
       (current) => {
-        current.data.puller_auto_stop_state.puller_auto_enabled = enabled;
+        current.data.spool_automatic_action_state.spool_automatic_action_mode =
+          mode;
       },
       () =>
-        requestAutoStopEnabled({
+        requestSpoolAutomaticAction({
           machine_identification_unique: machineIdentification,
-          data: { SetPullerAutoStopEnabled: enabled },
-        }),
-    );
-  };
-
-  const setPullerAutoStop = (stop: boolean) => {
-    updateStateOptimistically(
-      (current) => {
-        current.data.puller_auto_stop_state.puller_auto_stop = stop;
-      },
-      () =>
-        requestPullerAutoStop({
-          machine_identification_unique: machineIdentification,
-          data: { SetPullerAutoStop: stop },
+          data: { SetSpoolAutomaticAction: mode },
         }),
     );
   };
@@ -535,9 +521,8 @@ export function useWinder2() {
     setPullerTargetDiameter,
     setPullerRegulationMode,
     setPullerForward,
-    setPullerAutoStopExpectedMeters,
-    setPullerAutoStopEnabled,
-    setPullerAutoStop,
+    setSpoolAutomaticRequiredMeters,
+    setSpoolAutomaticAction,
     setSpoolRegulationMode,
     setSpoolMinMaxMinSpeed,
     setSpoolMinMaxMaxSpeed,

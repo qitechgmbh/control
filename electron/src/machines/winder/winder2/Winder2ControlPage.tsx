@@ -13,7 +13,7 @@ import { Label } from "@/control/Label";
 import { TouchButton } from "@/components/touch/TouchButton";
 import { StatusBadge } from "@/control/StatusBadge";
 import { useWinder2 } from "./useWinder";
-import { Mode } from "./winder2Namespace";
+import { Mode, SpoolAutomaticActionMode } from "./winder2Namespace";
 import { TensionArm } from "../TensionArm";
 import { roundDegreesToDecimals, roundToDecimals } from "@/lib/decimal";
 import { Spool } from "../Spool";
@@ -39,9 +39,8 @@ export function Winder2ControlPage() {
     gotoTraverseLimitInner,
     gotoTraverseLimitOuter,
     gotoTraverseHome,
-    setPullerAutoStopExpectedMeters,
-    setPullerAutoStopEnabled,
-    setPullerAutoStop,
+    setSpoolAutomaticRequiredMeters,
+    setSpoolAutomaticAction,
     isLoading,
     isDisabled,
   } = useWinder2();
@@ -267,47 +266,56 @@ export function Winder2ControlPage() {
           </Label>
         </ControlCard>
 
-        <ControlCard className="bg-red" title="Puller Auto Stop/Pull">
-          <Label label="Meters Until Automatic Action">
-            <EditValue
-              value={state?.puller_auto_stop_state.puller_expected_meters}
-              unit="m"
-              title="Expected Meters"
-              defaultValue={0}
-              min={0}
-              max={100}
-              step={0.1}
-              renderValue={(value) => roundToDecimals(value, 2)}
-              onChange={setPullerAutoStopExpectedMeters}
-            />
-          </Label>
-
-          <Label label="Automatic Action Enabled">
-            <SelectionGroupBoolean
-              value={state?.puller_auto_stop_state.puller_auto_enabled}
-              optionTrue={{ children: "Enabled" }}
-              optionFalse={{ children: "Disabled" }}
-              onChange={setPullerAutoStopEnabled}
-              disabled={isDisabled}
-              loading={isLoading}
-            />
-          </Label>
-          <Label label="Automatic Action">
-            <SelectionGroupBoolean
-              value={state?.puller_auto_stop_state.puller_auto_stop}
-              optionTrue={{ children: "Stop" }}
-              optionFalse={{ children: "Pull" }}
-              onChange={setPullerAutoStop}
-              disabled={isDisabled}
-              loading={isLoading}
-            />{" "}
-          </Label>
-
+        <ControlCard className="bg-red" title="Spool Autostop">
           <TimeSeriesValueNumeric
-            label="Progress"
-            renderValue={(value) => roundToDecimals(value, 2) + "%"}
+            label="Pulled Distance"
+            renderValue={(value) => roundToDecimals(value, 2)}
+            unit="m"
             timeseries={pullerProgress}
           />
+          <Label label="Target Length">
+            <EditValue
+              value={state?.spool_automatic_action_state.spool_required_meters}
+              unit="m"
+              title="Expected Meters"
+              defaultValue={250}
+              min={10}
+              max={10000}
+              step={10}
+              renderValue={(value) => roundToDecimals(value, 2)}
+              onChange={setSpoolAutomaticRequiredMeters}
+            />
+          </Label>
+
+          <Label label="After Target Length Reached">
+            <SelectionGroup<SpoolAutomaticActionMode>
+              value={
+                state?.spool_automatic_action_state.spool_automatic_action_mode
+              }
+              disabled={isDisabled}
+              loading={isLoading}
+              onChange={setSpoolAutomaticAction}
+              orientation="vertical"
+              options={{
+                Stop: {
+                  children: "Hold",
+                  icon: "lu:CirclePause",
+                  className: "h-full",
+                },
+                Pull: {
+                  children: "Pull",
+                  icon: "lu:ChevronsLeft",
+                  className: "h-full",
+                },
+
+                Disabled: {
+                  children: "No Action",
+                  icon: "lu:RefreshCcw",
+                  className: "h-full",
+                },
+              }}
+            />
+          </Label>
         </ControlCard>
       </ControlGrid>
     </Page>
