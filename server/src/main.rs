@@ -46,15 +46,15 @@ fn main() {
     // Initialize panic handling
     let thread_panic_tx = init_panic();
 
+    logging::init_tracing();
+    tracing::info!("Tracing initialized successfully");
+
     // lock memory
     if let Err(e) = lock_memory() {
         tracing::error!("[{}::main] Failed to lock memory: {:?}", module_path!(), e);
     } else {
         tracing::info!("[{}::main] Memory locked successfully", module_path!());
     }
-
-    logging::init_tracing();
-    tracing::info!("Tracing initialized successfully");
 
     #[cfg(all(not(target_env = "msvc"), not(feature = "dhat-heap")))]
     init_jemalloc_stats();
