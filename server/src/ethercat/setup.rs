@@ -45,8 +45,8 @@ pub async fn setup_loop(
         .spawn(move || {
             send_panic(thread_panic_tx_clone);
 
-            // Set core affinity to first core
-            let _ = set_core_affinity_first_core();
+            // Set core affinity to second core
+            let _ = set_core_affinity_first_core(1);
 
             // Set the thread to real-time priority
             let _ = set_realtime_priority();
