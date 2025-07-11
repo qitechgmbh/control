@@ -65,6 +65,7 @@ export const regulationStateSchema = z.object({
 export const pressureStateSchema = z.object({
   bar: z.number(),
   target_bar: z.number(),
+  wiring_error: z.boolean(),
 });
 
 /**

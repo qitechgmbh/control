@@ -43,6 +43,7 @@ export function useExtruder2() {
     defaultState,
     screwRpm,
     pressure,
+
     nozzleTemperature,
     frontTemperature,
     backTemperature,

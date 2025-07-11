@@ -140,6 +140,11 @@ export function Extruder2ControlPage() {
               timeseries={screwRpm}
             />
 
+            {state?.pressure_state?.wiring_error && (
+              <StatusBadge variant="error">
+                Cant Measure Pressure! Check Pressure Sensor Wiring!
+              </StatusBadge>
+            )}
             <TimeSeriesValueNumeric
               label="Pressure"
               unit="bar"
