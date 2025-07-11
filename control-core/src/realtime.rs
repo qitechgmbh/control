@@ -77,7 +77,7 @@ pub fn set_realtime_priority() -> Result<(), anyhow::Error> {
         } else {
             debug!(
                 "Successfully set real-time priority for the thread {}",
-                pthread_self
+                std::thread::current().name().unwrap_or("unknown")
             );
         }
     }
@@ -166,8 +166,8 @@ pub fn set_core_affinity_first_core() -> Result<(), anyhow::Error> {
     if let Some(core) = cores {
         core_affinity::set_for_current(*core);
         debug!(
-            "Set core affinity of threas {:?} to core {:?}",
-            std::thread::current().name(),
+            "Set core affinity of thread {:?} to core {:?}",
+            std::thread::current().name().unwrap_or("unknown"),
             core
         );
         Ok(())
