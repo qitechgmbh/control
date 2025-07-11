@@ -20,6 +20,7 @@ export function Winder2GraphsPage() {
     traversePosition,
     tensionArmAngle,
     pullerSpeed,
+    spoolProgress,
   } = useWinder2();
 
   const syncHook = useGraphSync(30 * 60 * 1000, "winder2-group");
@@ -64,6 +65,13 @@ export function Winder2GraphsPage() {
             newData={spoolDiameter}
             unit="cm"
             renderValue={(value) => roundToDecimals(value, 1)}
+          />
+
+          <SpoolProgressGraph
+            syncHook={syncHook}
+            newData={spoolProgress}
+            unit="m"
+            renderValue={(value) => roundToDecimals(value, 2)}
           />
         </div>
       </div>
@@ -201,6 +209,41 @@ export function TensionArmAngleGraph({
       renderValue={renderValue}
       config={config}
       graphId="tension-arm-angle"
+    />
+  );
+}
+
+export function SpoolProgressGraph({
+  syncHook,
+  newData,
+  unit,
+  renderValue,
+}: {
+  syncHook: ReturnType<typeof useGraphSync>;
+  newData: TimeSeries | null;
+  unit?: Unit;
+  renderValue?: (value: number) => string;
+}) {
+  const config: GraphConfig = {
+    title: "Spool Progress",
+    icon: "lu:RotateCw",
+    colors: {
+      primary: "#f59e0b",
+    },
+    exportFilename: "spool_progress",
+  };
+
+  return (
+    <AutoSyncedBigGraph
+      syncHook={syncHook}
+      newData={{
+        newData,
+        color: "#f59e0b",
+      }}
+      unit={unit}
+      renderValue={renderValue}
+      config={config}
+      graphId="spool-progress"
     />
   );
 }

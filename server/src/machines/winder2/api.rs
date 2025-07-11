@@ -1,4 +1,7 @@
-use std::{sync::Arc, time::Duration};
+use std::{
+    sync::Arc,
+    time::{Duration, Instant},
+};
 
 use super::{Winder2, Winder2Mode, puller_speed_controller::PullerRegulationMode};
 use control_core::{
@@ -86,6 +89,7 @@ enum Mutation {
     // Spool Auto Stop/Pull
     SetSpoolAutomaticRequiredMeters(f64),
     SetSpoolAutomaticAction(SpoolAutomaticActionMode),
+    ResetSpoolProgress,
 
     // Tension Arm
     ZeroTensionArmAngle,
@@ -107,8 +111,8 @@ pub struct LiveValuesEvent {
     /// tension arm angle in degrees
     pub tension_arm_angle: f64,
 
-    // pulling progress
-    pub puller_progress: f64,
+    // spool progress in meters (pulled distance of filament)
+    pub spool_progress: f64,
 }
 
 impl LiveValuesEvent {
@@ -188,9 +192,9 @@ pub struct PullerState {
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub enum SpoolAutomaticActionMode {
-    Disabled,
+    NoAction,
     Pull,
-    Stop,
+    Hold,
 }
 
 #[derive(Serialize, Debug, Clone)]
@@ -318,6 +322,7 @@ impl MachineApi for Winder2 {
                 self.set_spool_automatic_required_meters(meters)
             }
             Mutation::SetSpoolAutomaticAction(mode) => self.set_spool_automatic_mode(mode),
+            Mutation::ResetSpoolProgress => self.stop_or_pull_spool_reset(Instant::now()),
             Mutation::ZeroTensionArmAngle => self.tension_arm_zero(),
         }
         Ok(())
