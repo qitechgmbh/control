@@ -31,7 +31,7 @@ export function PresetCard<T>({
       <div className="min-w-0 flex-1">
         <div>
           <div className="flex flex-row gap-2 truncate text-lg font-semibold">
-              { isActive && <Icon name="lu:Check" className="text-green-500" /> }
+            {isActive && <Icon name="lu:Check" className="text-green-500" />}
             {preset.name}
           </div>
           {!hideDate && (
@@ -39,7 +39,9 @@ export function PresetCard<T>({
               {preset.lastModified?.toLocaleString() || "Unknown date"}
             </div>
           )}
-          { isActive && <span className="text-green-500">This preset is active</span>}
+          {isActive && (
+            <span className="text-green-500">This preset is active</span>
+          )}
         </div>
       </div>
       <div className="flex gap-2">

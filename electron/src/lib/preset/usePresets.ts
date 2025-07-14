@@ -85,20 +85,20 @@ export function usePresets<T>({
     let latestPreset: Preset<T>;
 
     if (latestPresetId === undefined) {
-        latestPreset = store.insert({
-            name: "Latest Machine Stettings",
-            machine_identification,
-            lastModified: new Date(),
-            schemaVersion,
-            data: currentState,
-        });
+      latestPreset = store.insert({
+        name: "Latest Machine Stettings",
+        machine_identification,
+        lastModified: new Date(),
+        schemaVersion,
+        data: currentState,
+      });
 
-        store.setLatestPresetId(machine_identification, latestPreset.id);
+      store.setLatestPresetId(machine_identification, latestPreset.id);
     } else {
-        latestPreset = store.getById(latestPresetId!)!;
-        latestPreset.data = currentState;
-        latestPreset.lastModified = new Date();
-        store.update(latestPreset);
+      latestPreset = store.getById(latestPresetId!)!;
+      latestPreset.data = currentState;
+      latestPreset.lastModified = new Date();
+      store.update(latestPreset);
     }
 
     return latestPreset;
@@ -109,11 +109,11 @@ export function usePresets<T>({
   }, [currentState]);
 
   const isLatest = (preset: Preset<T>) => {
-      return preset.id === store.latestPresetIds.get(machine_identification);
+    return preset.id === store.latestPresetIds.get(machine_identification);
   };
 
   const isActive = (preset: Preset<T>) => {
-      return deepEquals(currentState, preset.data);
+    return deepEquals(currentState, preset.data);
   };
 
   return {
