@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 
 use smol::lock::Mutex;
 
@@ -9,14 +9,14 @@ pub enum MachineManagerIter<'a> {
         iter: std::collections::hash_map::Iter<
             'a,
             MachineIdentificationUnique,
-            Result<Box<Mutex<dyn Machine>>, anyhow::Error>,
+            Result<Arc<Mutex<dyn Machine>>, anyhow::Error>,
         >,
     },
     SerialMachines {
         iter: std::collections::hash_map::Iter<
             'a,
             MachineIdentificationUnique,
-            Result<Box<Mutex<dyn Machine>>, anyhow::Error>,
+            Result<Arc<Mutex<dyn Machine>>, anyhow::Error>,
         >,
     },
     Done,
@@ -25,13 +25,13 @@ pub enum MachineManagerIter<'a> {
 pub struct MachineManagerIterator<'a> {
     iter: MachineManagerIter<'a>,
     serial_machines:
-        &'a HashMap<MachineIdentificationUnique, Result<Box<Mutex<dyn Machine>>, anyhow::Error>>,
+        &'a HashMap<MachineIdentificationUnique, Result<Arc<Mutex<dyn Machine>>, anyhow::Error>>,
 }
 
 impl<'a> Iterator for MachineManagerIterator<'a> {
     type Item = (
         &'a MachineIdentificationUnique,
-        &'a Result<Box<Mutex<dyn Machine>>, anyhow::Error>,
+        &'a Result<Arc<Mutex<dyn Machine>>, anyhow::Error>,
     );
 
     fn next(&mut self) -> Option<Self::Item> {
