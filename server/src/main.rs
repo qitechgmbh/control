@@ -14,6 +14,7 @@ use app_state::AppState;
 use mock::init::init_mock;
 use std::{sync::Arc, time::Duration};
 
+use control_core::realtime::lock_memory;
 use ethercat::init::init_ethercat;
 use r#loop::init_loop;
 use rest::init::init_api;
@@ -47,6 +48,13 @@ fn main() {
 
     logging::init_tracing();
     tracing::info!("Tracing initialized successfully");
+
+    // lock memory (not working thus commented out)
+    // if let Err(e) = lock_memory() {
+    //     tracing::error!("[{}::main] Failed to lock memory: {:?}", module_path!(), e);
+    // } else {
+    //     tracing::info!("[{}::main] Memory locked successfully", module_path!());
+    // }
 
     #[cfg(all(not(target_env = "msvc"), not(feature = "dhat-heap")))]
     init_jemalloc_stats();
