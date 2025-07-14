@@ -1,5 +1,6 @@
 {
-    "typescript.inlayHints.enumMemberValues.enabled": false,
-     "git.detectSubmodules": true,
-     "git.detectSubmodulesLimit": 10,
+  "typescript.inlayHints.enumMemberValues.enabled": false,
+  "git.detectSubmodules": true,
+  "git.detectSubmodulesLimit": 10,
+  "rust-analyzer.cargo.features": ["mock-machine"]
 }
