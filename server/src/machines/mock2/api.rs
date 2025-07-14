@@ -43,7 +43,7 @@ pub struct StateEvent {
     /// mode state
     pub mode_state: ModeState,
     /// connected machine state
-    pub connected_mock_state: Option<ConnectedMachineData>,
+    pub connected_machine_state: Option<ConnectedMachineData>,
 }
 
 impl StateEvent {

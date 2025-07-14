@@ -91,7 +91,7 @@ fn main() {
                 init_serial(thread_panic_tx.clone(), app_state.clone())
                     .expect("Failed to initialize Serial");
 
-                //#[cfg(not(feature = "mock-machine"))]
+                #[cfg(not(feature = "mock-machine"))]
                 init_ethercat(thread_panic_tx.clone(), app_state.clone())
                     .expect("Failed to initialize EtherCAT");
             }

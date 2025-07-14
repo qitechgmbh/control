@@ -7,7 +7,14 @@ import { EditValue } from "@/control/EditValue";
 import { useMock1 } from "./useMock";
 import { SelectionGroup } from "@/control/SelectionGroup";
 import { Mode } from "./mock1Namespace";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Icon } from "@/components/Icon";
 
 export function Mock1ControlPage() {
@@ -110,8 +117,9 @@ export function Mock1ControlPage() {
                     setConnectedMachine(machine.machine_identification_unique)
                   }
                   className={`flex min-h-[48px] items-center gap-2 px-4 py-2 ${
-                    state?.connected_machine_state.machine_identification_unique
-                      ?.machine_identification.machine ===
+                    state?.connected_machine_state
+                      ?.machine_identification_unique.machine_identification
+                      .machine ===
                     machine.machine_identification_unique.machine_identification
                       .machine
                       ? "bg-blue-50"

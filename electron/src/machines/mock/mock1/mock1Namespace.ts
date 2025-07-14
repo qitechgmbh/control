@@ -56,8 +56,9 @@ export const machineIdentificationUniqueSchema = z.object({
 });
 
 export const connectedMachineStateSchema = z.object({
-  machine_identification_unique: machineIdentificationUniqueSchema.nullable(),
-});
+  machine_identification_unique: machineIdentificationUniqueSchema,
+})
+.nullable();
 
 /**
  * Live values event schema (time-series data)

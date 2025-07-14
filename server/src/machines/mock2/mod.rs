@@ -125,7 +125,7 @@ impl Mock2Machine {
             mode_state: ModeState {
                 mode: self.mode.clone(),
             },
-            connected_mock_state: self.connected_mock
+            connected_machine_state: self.connected_mock
                 .as_ref()
                 .map(ConnectedMachineData::from),
         };

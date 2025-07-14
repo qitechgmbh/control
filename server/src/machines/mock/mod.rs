@@ -125,14 +125,13 @@ impl MockMachine {
             mode_state: ModeState {
                 mode: self.mode.clone(),
             },
-            connected_mock2_state: self.connected_mock2
+            connected_machine_state: self.connected_mock2
                 .as_ref()
                 .map(ConnectedMachineData::from),
         };
 
         // Only emit if values have changed or this is the first emission
-        //let should_emit = self.last_emitted_state.as_ref() != Some(&current_state);
-        let should_emit = true;
+        let should_emit = self.last_emitted_state.as_ref() != Some(&current_state);
 
         if should_emit {
             self.namespace
