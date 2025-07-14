@@ -12,6 +12,8 @@ static ALLOC: dhat::Alloc = dhat::Alloc;
 use app_state::AppState;
 #[cfg(feature = "mock-machine")]
 use mock::init::init_mock;
+#[cfg(feature = "mock-machine")]
+use mock2::init::init_mock2;
 use std::{sync::Arc, time::Duration};
 
 use control_core::realtime::lock_memory;
@@ -34,6 +36,8 @@ pub mod r#loop;
 pub mod machines;
 #[cfg(feature = "mock-machine")]
 pub mod mock;
+#[cfg(feature = "mock-machine")]
+pub mod mock2;
 pub mod panic;
 pub mod rest;
 pub mod serial;
@@ -80,11 +84,14 @@ fn main() {
                 #[cfg(feature = "mock-machine")]
                 init_mock(app_state.clone()).expect("Failed to initialize mock machines");
 
+                #[cfg(feature = "mock-machine")]
+                init_mock2(app_state.clone()).expect("Failed to initialize mock2 machines");
+
                 #[cfg(not(feature = "mock-machine"))]
                 init_serial(thread_panic_tx.clone(), app_state.clone())
                     .expect("Failed to initialize Serial");
 
-                #[cfg(not(feature = "mock-machine"))]
+                //#[cfg(not(feature = "mock-machine"))]
                 init_ethercat(thread_panic_tx.clone(), app_state.clone())
                     .expect("Failed to initialize EtherCAT");
             }

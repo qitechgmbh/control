@@ -30,6 +30,10 @@ import { Mock1GraphPage } from "@/machines/mock/mock1/Mock1Graph";
 import { Mock1ManualPage } from "@/machines/mock/mock1/Mock1Manual";
 import { TroubleshootPage } from "@/setup/Trobleshoot";
 import { Extruder2GraphsPage } from "@/machines/extruder/extruder2/Extruder2Graph";
+import { Mock2Page } from "@/machines/mock2/mock2/Mock2Page";
+import { Mock2ControlPage } from "@/machines/mock2/mock2/Mock2ControlPage";
+import { Mock2GraphPage } from "@/machines/mock2/mock2/Mock2Graph";
+import { Mock2ManualPage } from "@/machines/mock2/mock2/Mock2Manual";
 
 // make a route tree like this
 // _mainNavigation/machines/winder2/$serial/control
@@ -152,6 +156,42 @@ export const mock1ManualRoute = createRoute({
   component: () => <Mock1ManualPage />,
 });
 
+export const mock2SerialRoute = createRoute({
+  getParentRoute: () => machinesRoute,
+  path: "mock2/$serial",
+  component: () => <Mock2Page />,
+});
+
+export const mock2ControlRoute = createRoute({
+  getParentRoute: () => mock2SerialRoute,
+  path: "control",
+  component: () => <Mock2ControlPage />,
+});
+
+export const mock2GraphRoute = createRoute({
+  getParentRoute: () => mock2SerialRoute,
+  path: "graph",
+  component: () => <Mock2GraphPage />,
+});
+
+export const mock2ManualRoute = createRoute({
+  getParentRoute: () => mock2SerialRoute,
+  path: "manual",
+  component: () => <Mock2ManualPage />,
+});
+
+export const buffer1SerialRoute = createRoute({
+  getParentRoute: () => machinesRoute,
+  path: "buffer1/$serial",
+  component: () => <Buffer1Page />,
+});
+
+export const buffer1ControlRoute = createRoute({
+  getParentRoute: () => buffer1SerialRoute,
+  path: "control",
+  component: () => <Buffer1ControlPage />,
+});
+
 export const setupRoute = createRoute({
   getParentRoute: () => sidebarRoute,
   path: "setup",
@@ -259,6 +299,14 @@ export const rootTree = RootRoute.addChildren([
         mock1GraphRoute,
         mock1ManualRoute,
       ]),
+
+      mock2SerialRoute.addChildren([
+        mock2ControlRoute,
+        mock2GraphRoute,
+        mock2ManualRoute,
+      ]),
+
+      buffer1SerialRoute.addChildren([buffer1ControlRoute]),
     ]),
   ]),
 ]);

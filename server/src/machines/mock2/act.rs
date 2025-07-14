@@ -1,0 +1,44 @@
+use super::Mock2Machine;
+use control_core::actors::Actor;
+use std::{
+    future::Future,
+    pin::Pin,
+    time::{Duration, Instant},
+};
+
+/// Implements the `Actor` trait for the `Mock2Machine`.
+///
+/// # Parameters
+/// - `_now_ts`: The current timestamp of type `Instant`.
+///
+/// # Returns
+/// A pinned `Future` that resolves to `()` and is `Send`-safe. The future encapsulates the asynchronous behavior of the `act` method.
+///
+/// # Description
+/// This method is called to perform periodic actions for the `Mock2Machine`. Specifically:
+/// - It checks if the time elapsed since the last measurement emission exceeds 16 milliseconds.
+/// - If the condition is met and the machine is in Running mode, it emits a sine wave data event.
+/// - State events (frequency, mode) are only emitted when values change, not continuously.
+///
+/// The method ensures that the sine wave value is updated approximately 60 times per second (16ms intervals) when running.
+///
+impl Actor for Mock2Machine {
+    fn act(&mut self, _now_ts: Instant) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
+        Box::pin(async move {
+            let now = Instant::now();
+
+            // Emit initial state if this is the first call
+            if self.last_emitted_state.is_none() {
+                self.emit_state();
+            }
+
+            // Only emit live values if machine is in Running mode
+            // The live values are updated approximately 60 times per second
+            if now.duration_since(self.last_measurement_emit) > Duration::from_secs_f64(1.0 / 60.0)
+            {
+                self.emit_live_values();
+                self.last_measurement_emit = now;
+            }
+        })
+    }
+}

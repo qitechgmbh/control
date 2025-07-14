@@ -5,6 +5,8 @@ use crate::serial::devices::laser::Laser;
 
 #[cfg(feature = "mock-machine")]
 use crate::serial::devices::mock::MockSerialDevice;
+#[cfg(feature = "mock-machine")]
+use crate::serial::devices::mock2::Mock2SerialDevice;
 
 lazy_static! {
     pub static ref SERIAL_DEVICE_REGISTRY: SerialDeviceRegistry = {
@@ -19,6 +21,13 @@ lazy_static! {
         sdr.register::<MockSerialDevice>(SerialDeviceIdentification {
             vendor_id: 0x0001, // VENDOR_QITECH
             product_id: 0x0007, // MACHINE_MOCK
+        });
+
+        // Register MockSerialDevice when mock-machine feature is enabled
+        #[cfg(feature = "mock-machine")]
+        sdr.register::<Mock2SerialDevice>(SerialDeviceIdentification {
+            vendor_id: 0x0001, // VENDOR_QITECH
+            product_id: 0x0009, // MACHINE_MOCK2
         });
 
         sdr
