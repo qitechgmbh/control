@@ -183,7 +183,7 @@ Operating instructions
 
 # 1 Machine description
 
-
+![maschinenbeschreibung](control/docs/machines/Usermanual Winder picture.jpg)
 
 
 
