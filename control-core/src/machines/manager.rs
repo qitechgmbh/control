@@ -1,3 +1,4 @@
+use anyhow::anyhow;
 use smol::{
     channel::Sender,
     lock::{Mutex, RwLock},
@@ -12,7 +13,7 @@ use crate::{
     serial::SerialDevice,
     socketio::event::GenericEvent,
 };
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, sync::{Arc, Weak}};
 
 use super::{
     Machine,
@@ -23,9 +24,9 @@ use super::{
 #[derive(Debug)]
 pub struct MachineManager {
     pub ethercat_machines:
-        HashMap<MachineIdentificationUnique, Result<Box<Mutex<dyn Machine>>, anyhow::Error>>,
+        HashMap<MachineIdentificationUnique, Result<Arc<Mutex<dyn Machine>>, anyhow::Error>>,
     pub serial_machines:
-        HashMap<MachineIdentificationUnique, Result<Box<Mutex<dyn Machine>>, anyhow::Error>>,
+        HashMap<MachineIdentificationUnique, Result<Arc<Mutex<dyn Machine>>, anyhow::Error>>,
 }
 
 impl MachineManager {
@@ -42,6 +43,7 @@ impl MachineManager {
         machine_registry: &MachineRegistry,
         hardware: &MachineNewHardwareEthercat,
         socket_queue_tx: Sender<(SocketRef, Arc<GenericEvent>)>,
+        machine_manager: Weak<RwLock<MachineManager>>,
     ) {
         // empty ethercat machines
         self.ethercat_machines.clear();
@@ -69,6 +71,7 @@ impl MachineManager {
                 device_group,
                 hardware: &machine_new_hardware,
                 socket_queue_tx: socket_queue_tx.clone(),
+                machine_manager: machine_manager.clone(),
             });
 
             // insert the machine into the ethercat machines map
@@ -82,7 +85,7 @@ impl MachineManager {
     pub fn get(
         &self,
         machine_identification: &MachineIdentificationUnique,
-    ) -> Option<&Result<Box<Mutex<dyn Machine>>, anyhow::Error>> {
+    ) -> Option<&Result<Arc<Mutex<dyn Machine>>, anyhow::Error>> {
         self.ethercat_machines
             .get(machine_identification)
             .or_else(|| self.serial_machines.get(machine_identification))
@@ -94,6 +97,7 @@ impl MachineManager {
         device: Arc<RwLock<dyn SerialDevice>>,
         machine_registry: &MachineRegistry,
         socket_queue_tx: Sender<(SocketRef, Arc<GenericEvent>)>,
+        machine_manager: Weak<RwLock<MachineManager>>,
     ) {
         let hardware = MachineNewHardwareSerial { device };
 
@@ -107,6 +111,7 @@ impl MachineManager {
             device_group: &vec![device_identification_identified.clone()],
             hardware: &MachineNewHardware::Serial(&hardware),
             socket_queue_tx,
+            machine_manager: machine_manager.clone(),
         });
 
         tracing::info!("Adding serial machine {:?}", new_machine);
@@ -136,6 +141,27 @@ impl MachineManager {
                 .device_machine_identification
                 .machine_identification_unique,
         );
+    }
+
+    pub fn get_machine_weak(
+        &self, machine_identification: &MachineIdentificationUnique
+    ) -> Option<Weak<Mutex<dyn Machine>>> {
+        let machine = self.ethercat_machines.get(machine_identification);
+        let machine = match machine {
+            Some(machine) => machine,
+            None => {
+                return None;
+            },
+        };
+        let machine = match machine {
+            Ok(machine) => machine,
+            Err(_) => {
+                return None;
+            },
+        };
+        let machine_weak = Arc::downgrade(machine);
+        return Some(machine_weak);
+
     }
 }
 

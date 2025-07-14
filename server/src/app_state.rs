@@ -30,7 +30,7 @@ pub struct AppState {
     pub socketio_setup: SocketioSetup,
     pub ethercat_setup: Arc<RwLock<Option<EthercatSetup>>>,
     pub serial_setup: Arc<RwLock<SerialSetup>>,
-    pub machines: RwLock<MachineManager>,
+    pub machines: Arc<RwLock<MachineManager>>,
 }
 
 pub type Machines =
@@ -78,7 +78,7 @@ impl AppState {
             serial_setup: Arc::new(RwLock::new(SerialSetup {
                 serial_detection: SerialDetection::new(&SERIAL_DEVICE_REGISTRY),
             })),
-            machines: RwLock::new(MachineManager::new()),
+            machines: Arc::new(RwLock::new(MachineManager::new())),
         }
     }
 }
