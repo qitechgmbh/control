@@ -18,6 +18,9 @@ impl MachineAct for Winder2 {
             // sync the traverse speed
             self.sync_traverse_speed();
 
+            // automatically stops or pulls after N Meters if enabled
+            self.stop_or_pull_spool(now);
+
             // check if traverse state changed
             if self.traverse_controller.did_change_state() {
                 self.emit_state();

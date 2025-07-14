@@ -39,8 +39,9 @@ use ethercat_hal::io::digital_output::DigitalOutput;
 use ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1;
 use ethercat_hal::shared_config;
 use ethercat_hal::shared_config::el70x1::{EL70x1OperationMode, StmMotorConfiguration};
+use uom::ConstZero;
 use uom::si::f64::{Length, Velocity};
-use uom::si::length::{centimeter, millimeter};
+use uom::si::length::{centimeter, meter, millimeter};
 
 impl MachineNewTrait for Winder2 {
     fn new<'maindevice>(params: &MachineNewParams) -> Result<Self, Error> {
@@ -367,6 +368,12 @@ impl MachineNewTrait for Winder2 {
                     64,                              // Microsteps
                 ),
                 emitted_default_state: false,
+                spool_automatic_action: super::SpoolAutomaticAction {
+                    progress: Length::ZERO,
+                    progress_last_check: Instant::now(),
+                    target_length: Length::new::<meter>(250.0),
+                    mode: super::api::SpoolAutomaticActionMode::NoAction,
+                },
             };
 
             // initalize events

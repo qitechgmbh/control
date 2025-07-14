@@ -13,7 +13,7 @@ import { Label } from "@/control/Label";
 import { TouchButton } from "@/components/touch/TouchButton";
 import { StatusBadge } from "@/control/StatusBadge";
 import { useWinder2 } from "./useWinder";
-import { Mode } from "./winder2Namespace";
+import { Mode, SpoolAutomaticActionMode } from "./winder2Namespace";
 import { TensionArm } from "../TensionArm";
 import { roundDegreesToDecimals, roundToDecimals } from "@/lib/decimal";
 import { Spool } from "../Spool";
@@ -30,14 +30,18 @@ export function Winder2ControlPage() {
     spoolDiameter,
     setMode,
     pullerSpeed,
+    spoolProgress,
     setPullerRegulationMode,
     setPullerTargetSpeed,
     traversePosition,
+    resetSpoolProgress,
     setTraverseLimitInner,
     setTraverseLimitOuter,
     gotoTraverseLimitInner,
     gotoTraverseLimitOuter,
     gotoTraverseHome,
+    setSpoolAutomaticRequiredMeters,
+    setSpoolAutomaticAction,
     isLoading,
     isDisabled,
   } = useWinder2();
@@ -259,6 +263,68 @@ export function Winder2ControlPage() {
               step={0.1}
               renderValue={(value) => roundToDecimals(value, 1)}
               onChange={setPullerTargetSpeed}
+            />
+          </Label>
+        </ControlCard>
+
+        <ControlCard className="bg-red" title="Spool Autostop">
+          <TimeSeriesValueNumeric
+            label="Pulled Distance"
+            renderValue={(value) => roundToDecimals(value, 2)}
+            unit="m"
+            timeseries={spoolProgress}
+          />
+
+          <Label label="Target Length">
+            <EditValue
+              value={state?.spool_automatic_action_state.spool_required_meters}
+              unit="m"
+              title="Expected Meters"
+              defaultValue={250}
+              min={10}
+              max={10000}
+              step={10}
+              renderValue={(value) => roundToDecimals(value, 2)}
+              onChange={setSpoolAutomaticRequiredMeters}
+            />
+          </Label>
+
+          <TouchButton
+            variant="outline"
+            onClick={resetSpoolProgress}
+            disabled={isDisabled || !state?.traverse_state?.can_go_out}
+            isLoading={isLoading || state?.traverse_state?.is_going_out}
+          >
+            Reset Progress
+          </TouchButton>
+
+          <Label label="After Target Length Reached">
+            <SelectionGroup<SpoolAutomaticActionMode>
+              value={
+                state?.spool_automatic_action_state.spool_automatic_action_mode
+              }
+              disabled={isDisabled}
+              loading={isLoading}
+              onChange={setSpoolAutomaticAction}
+              orientation="vertical"
+              options={{
+                Hold: {
+                  children: "Hold",
+                  icon: "lu:CirclePause",
+                  className: "h-full",
+                },
+                Pull: {
+                  children: "Pull",
+                  icon: "lu:ChevronsLeft",
+                  className: "h-full",
+                },
+
+                NoAction: {
+                  children: "No Action",
+                  icon: "lu:RefreshCcw",
+                  className: "h-full",
+                },
+              }}
             />
           </Label>
         </ControlCard>

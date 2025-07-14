@@ -34,6 +34,7 @@ export const liveValuesEventDataSchema = z.object({
   spool_rpm: z.number(),
   spool_diameter: z.number(),
   tension_arm_angle: z.number(),
+  spool_progress: z.number(),
 });
 
 /**
@@ -49,10 +50,32 @@ export const modeSchema = z.enum(["Standby", "Hold", "Pull", "Wind"]);
 export type Mode = z.infer<typeof modeSchema>;
 
 /**
+ * Machine operation mode enum
+ */
+export const spoolAutomaticActionModeSchema = z.enum([
+  "NoAction",
+  "Pull",
+  "Hold",
+]);
+
+export type SpoolAutomaticActionMode = z.infer<
+  typeof spoolAutomaticActionModeSchema
+>;
+
+/**
  * Spool speed controller regulation mode enum
  */
 export const spoolRegulationModeSchema = z.enum(["Adaptive", "MinMax"]);
 export type SpoolRegulationMode = z.infer<typeof spoolRegulationModeSchema>;
+
+export const spoolAutomaticActionStateSchema = z.object({
+  spool_required_meters: z.number(),
+  spool_automatic_action_mode: spoolAutomaticActionModeSchema,
+});
+
+export type SpoolAutomaticActionState = z.infer<
+  typeof spoolAutomaticActionStateSchema
+>;
 
 /**
  * Traverse state schema
@@ -124,6 +147,7 @@ export const stateEventDataSchema = z.object({
   mode_state: modeStateSchema,
   tension_arm_state: tensionArmStateSchema,
   spool_speed_controller_state: spoolSpeedControllerStateSchema,
+  spool_automatic_action_state: spoolAutomaticActionStateSchema,
 });
 
 // ========== Event Schemas with Wrappers ==========
@@ -148,6 +172,7 @@ export type Winder2NamespaceStore = {
   spoolRpm: TimeSeries;
   spoolDiameter: TimeSeries;
   tensionArmAngle: TimeSeries;
+  spoolProgress: TimeSeries;
 };
 
 // Constants for time durations
@@ -155,6 +180,9 @@ const TWENTY_MILLISECOND = 20;
 const ONE_SECOND = 1000;
 const FIVE_SECOND = 5 * ONE_SECOND;
 const ONE_HOUR = 60 * 60 * ONE_SECOND;
+
+const { initialTimeSeries: spoolProgress, insert: addSpoolProgress } =
+  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
 const { initialTimeSeries: traversePosition, insert: addTraversePosition } =
   createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
 const { initialTimeSeries: pullerSpeed, insert: addPullerSpeed } =
@@ -188,6 +216,7 @@ export const createWinder2NamespaceStore =
         spoolRpm,
         spoolDiameter,
         tensionArmAngle,
+        spoolProgress,
       };
     });
 /**
@@ -218,7 +247,6 @@ export function winder2MessageHandler(
       if (eventName === "StateEvent") {
         // Parse and validate the state event
         const stateEvent = stateEventSchema.parse(event);
-        console.log("StateEvent", stateEvent);
 
         updateStore((state) => ({
           ...state,
@@ -240,12 +268,12 @@ export function winder2MessageHandler(
           spool_rpm,
           spool_diameter,
           tension_arm_angle,
+          spool_progress,
         } = liveValuesEvent.data;
         const timestamp = liveValuesEvent.ts;
 
         updateStore((state) => {
           const newState = { ...state };
-
           // Add traverse position if not null
           if (traverse_position !== null) {
             const timeseriesValue: TimeSeriesValue = {
@@ -254,6 +282,17 @@ export function winder2MessageHandler(
             };
             newState.traversePosition = addTraversePosition(
               state.traversePosition,
+              timeseriesValue,
+            );
+          }
+
+          if (spoolProgress !== null) {
+            const timeseriesValue: TimeSeriesValue = {
+              value: spool_progress,
+              timestamp,
+            };
+            newState.spoolProgress = addSpoolProgress(
+              state.spoolProgress,
               timeseriesValue,
             );
           }

@@ -14,6 +14,8 @@ import {
   spoolRegulationModeSchema,
   pullerRegulationSchema,
   PullerRegulation,
+  SpoolAutomaticActionMode,
+  spoolAutomaticActionModeSchema,
 } from "./winder2Namespace";
 import { useEffect, useMemo } from "react";
 import { produce } from "immer";
@@ -55,6 +57,7 @@ export function useWinder2() {
     spoolRpm,
     spoolDiameter,
     tensionArmAngle,
+    spoolProgress,
   } = useWinder2Namespace(machineIdentification);
 
   // Single optimistic state for all state management
@@ -140,6 +143,16 @@ export function useWinder2() {
     useMachineMutation(
       z.object({ SetSpoolAdaptiveDeaccelerationUrgencyMultiplier: z.number() }),
     );
+  const { request: requestSpoolAutomaticRequiredMeters } = useMachineMutation(
+    z.object({ SetSpoolAutomaticRequiredMeters: z.number() }),
+  );
+  const { request: requestSpoolResetProgress } = useMachineMutation(
+    z.literal("ResetSpoolProgress"),
+  );
+
+  const { request: requestSpoolAutomaticAction } = useMachineMutation(
+    z.object({ SetSpoolAutomaticAction: spoolAutomaticActionModeSchema }),
+  );
 
   // Helper function for optimistic updates using produce
   const updateStateOptimistically = (
@@ -336,6 +349,41 @@ export function useWinder2() {
     );
   };
 
+  const setSpoolAutomaticRequiredMeters = (meters: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.spool_automatic_action_state.spool_required_meters =
+          meters;
+      },
+      () =>
+        requestSpoolAutomaticRequiredMeters({
+          machine_identification_unique: machineIdentification,
+          data: { SetSpoolAutomaticRequiredMeters: meters },
+        }),
+    );
+  };
+
+  const setSpoolAutomaticAction = (mode: SpoolAutomaticActionMode) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.spool_automatic_action_state.spool_automatic_action_mode =
+          mode;
+      },
+      () =>
+        requestSpoolAutomaticAction({
+          machine_identification_unique: machineIdentification,
+          data: { SetSpoolAutomaticAction: mode },
+        }),
+    );
+  };
+
+  const resetSpoolProgress = () => {
+    requestSpoolResetProgress({
+      machine_identification_unique: machineIdentification,
+      data: "ResetSpoolProgress",
+    });
+  };
+
   const setSpoolRegulationMode = (mode: SpoolRegulationMode) => {
     updateStateOptimistically(
       (current) => {
@@ -462,6 +510,7 @@ export function useWinder2() {
     spoolRpm,
     spoolDiameter,
     tensionArmAngle,
+    spoolProgress,
 
     // Loading states
     isLoading,
@@ -476,12 +525,15 @@ export function useWinder2() {
     gotoTraverseLimitInner,
     gotoTraverseLimitOuter,
     gotoTraverseHome,
+    resetSpoolProgress,
     setTraverseStepSize,
     setTraversePadding,
     setPullerTargetSpeed,
     setPullerTargetDiameter,
     setPullerRegulationMode,
     setPullerForward,
+    setSpoolAutomaticRequiredMeters,
+    setSpoolAutomaticAction,
     setSpoolRegulationMode,
     setSpoolMinMaxMinSpeed,
     setSpoolMinMaxMaxSpeed,
