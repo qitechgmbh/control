@@ -117,9 +117,8 @@ export function Mock1ControlPage() {
                     setConnectedMachine(machine.machine_identification_unique)
                   }
                   className={`flex min-h-[48px] items-center gap-2 px-4 py-2 ${
-                    state?.connected_machine_state
-                      ?.machine_identification_unique.machine_identification
-                      .machine ===
+                    state?.connected_machine_state.machine_identification_unique
+                      ?.machine_identification.machine ===
                     machine.machine_identification_unique.machine_identification
                       .machine
                       ? "bg-blue-50"

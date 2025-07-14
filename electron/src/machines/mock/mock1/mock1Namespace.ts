@@ -5,7 +5,7 @@
 
 import { StoreApi } from "zustand";
 import { create } from "zustand";
-import { z } from "zod";
+import { boolean, z } from "zod";
 import {
   EventHandler,
   eventSchema,
@@ -56,9 +56,9 @@ export const machineIdentificationUniqueSchema = z.object({
 });
 
 export const connectedMachineStateSchema = z.object({
-  machine_identification_unique: machineIdentificationUniqueSchema,
-})
-.nullable();
+  machine_identification_unique: machineIdentificationUniqueSchema.nullable(),
+  is_available: z.boolean(),
+});
 
 /**
  * Live values event schema (time-series data)
