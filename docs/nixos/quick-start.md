@@ -6,31 +6,32 @@ This guide will help you set up a NixOS system with QiTech Control and manage up
 
 ## Initial Setup
 
-### 1. Add Home Manager Channel
+### 1. Install Git
 
 ```bash
-sudo nix-channel --add https://github.com/nix-community/home-manager/archive/master.tar.gz home-manager
-sudo nix-channel --update
+nixos-env -i git
 ```
 
-### 2. Configure System Files
-
-Create the three main configuration files:
-
-- `flake.nix` - Defines inputs, overlays, and system configuration
-- `configuration.nix` - Main NixOS system configuration
-- `home.nix` - Home Manager configuration for the qitech user
-
-### 3. Build and Apply Configuration
+### 2. Clone the Control Repo
 
 ```bash
-# Build and switch to the new configuration
-sudo nixos-rebuild switch --flake .#nixos
+git clone https://github.com/qitechgmbh/control
+cd control
 ```
+
+### 3. Run Install Script
+
+```bash
+# run as admin either with sudo or as root!
+sudo ./nixos-install.sh
+```
+
+After the Installation script is finished the Computer should have rebooted and automatically started the control software.
 
 ### 4. Manual configuration
 
-Disable any power management features or display sleep settings in the GNOME settings. Check that the on-screen keyboard is enabled under accessibility settings.
+Disable any power management features or display sleep settings in the GNOME settings.
+Check that the on-screen keyboard is enabled under accessibility settings.
 
 ## System Configuration Overview
 
