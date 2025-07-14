@@ -37,12 +37,6 @@ export function Mock1PresetsPage() {
   const { setFrequency1, setFrequency2, setFrequency3, defaultState, state } =
     useMock1();
 
-  const toPreset = (s: typeof state) => ({
-    frequency1: s?.frequency1,
-    frequency2: s?.frequency2,
-    frequency3: s?.frequency3,
-  });
-
   const applyPreset = (preset: Preset<Mock1PresetData>) => {
     const frequency1 = preset.data?.frequency1 ?? 100;
     const frequency2 = preset.data?.frequency2 ?? 200;
@@ -53,7 +47,11 @@ export function Mock1PresetsPage() {
     setFrequency3(frequency3);
   };
 
-  const readCurrentState = () => toPreset(state);
+  const toPreset = (s: typeof state) => ({
+    frequency1: s?.frequency1 ?? defaultState?.frequency1,
+    frequency2: s?.frequency2 ?? defaultState?.frequency2,
+    frequency3: s?.frequency3 ?? defaultState?.frequency3,
+  });
 
   const currentState = toPreset(state);
 
