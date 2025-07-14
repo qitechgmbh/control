@@ -51,6 +51,7 @@ pub fn init_serial(
                                         device.clone(),
                                         &MACHINE_REGISTRY,
                                         app_state_clone.socketio_setup.socket_queue_tx.clone(),
+                                        Arc::downgrade(&app_state.machines),
                                     )
                                 }
                                 for device_identification in result.removed {

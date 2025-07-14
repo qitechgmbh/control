@@ -189,6 +189,7 @@ pub async fn setup_loop(
                 subdevices: &identified_subdevices,
             },
             app_state.socketio_setup.socket_queue_tx.clone(),
+            Arc::downgrade(&app_state.machines),
         );
     }
 

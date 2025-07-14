@@ -1,4 +1,4 @@
-use crate::serial::SerialDevice;
+use crate::{machines::manager::MachineManager, serial::SerialDevice};
 
 use super::identification::DeviceIdentificationIdentified;
 use anyhow::Error;
@@ -8,7 +8,7 @@ use ethercat_hal::{
 use ethercrab::{SubDevice, SubDeviceRef};
 use smol::{channel::Sender, lock::RwLock};
 use socketioxide::extract::SocketRef;
-use std::{pin::Pin, sync::Arc, time::Instant};
+use std::sync::{Arc, Weak};
 
 use crate::socketio::event::GenericEvent;
 
@@ -47,6 +47,7 @@ pub struct MachineNewParams<
         'machine_new_hardware_serial,
     >,
     pub socket_queue_tx: Sender<(SocketRef, Arc<GenericEvent>)>,
+    pub machine_manager: Weak<RwLock<MachineManager>>,
 }
 
 pub enum MachineNewHardware<
