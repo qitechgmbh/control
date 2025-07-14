@@ -1,8 +1,3 @@
-use std::{
-    sync::Arc,
-    time::{Duration, Instant},
-};
-
 use super::{Winder2, Winder2Mode, puller_speed_controller::PullerRegulationMode};
 use control_core::{
     machines::api::MachineApi,
@@ -18,6 +13,10 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use smol::channel::Sender;
 use socketioxide::extract::SocketRef;
+use std::{
+    sync::Arc,
+    time::{Duration, Instant},
+};
 use tracing::instrument;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -110,7 +109,6 @@ pub struct LiveValuesEvent {
     pub spool_diameter: f64,
     /// tension arm angle in degrees
     pub tension_arm_angle: f64,
-
     // spool progress in meters (pulled distance of filament)
     pub spool_progress: f64,
 }
@@ -128,8 +126,8 @@ pub struct StateEvent {
     pub traverse_state: TraverseState,
     /// puller state
     pub puller_state: PullerState,
+    /// spool automatic action state and progress
     pub spool_automatic_action_state: SpoolAutomaticActionState,
-
     /// mode state
     pub mode_state: ModeState,
     /// tension arm state
