@@ -1,6 +1,10 @@
 import { toastError } from "@/components/Toast";
 import { useMachineMutate as useMachineMutation } from "@/client/useClient";
-import { MachineIdentificationUnique } from "@/machines/types";
+import {
+  machineIdentification,
+  machineIdentificationUnique,
+  MachineIdentificationUnique,
+} from "@/machines/types";
 import { mock1 } from "@/machines/properties";
 import { mock1SerialRoute } from "@/routes/routes";
 import { z } from "zod";
@@ -8,6 +12,7 @@ import { useMock1Namespace, Mode, StateEvent } from "./mock1Namespace";
 import { useEffect, useMemo } from "react";
 import { useStateOptimistic } from "@/lib/useStateOptimistic";
 import { produce } from "immer";
+import { useMachines } from "@/client/useMachines";
 
 function useMock(machine_identification_unique: MachineIdentificationUnique) {
   // Get consolidated state and live values from namespace
@@ -77,6 +82,31 @@ function useMock(machine_identification_unique: MachineIdentificationUnique) {
     );
   };
 
+  const { request: requestConnectedMachine } = useMachineMutation(
+    z.object({
+      SetConnectedMachine: machineIdentificationUnique,
+    }),
+  );
+  const setConnectedMachine = (machineIdentificationUnique: {
+    machine_identification: {
+      vendor: number;
+      machine: number;
+    };
+    serial: number;
+  }) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.connected_machine_state.machine_identification_unique =
+          machineIdentificationUnique;
+      },
+      () =>
+        requestConnectedMachine({
+          machine_identification_unique: machineIdentificationUnique,
+          data: { SetConnectedMachine: machineIdentificationUnique },
+        }),
+    );
+  };
+
   return {
     // Consolidated state
     state: stateOptimistic.value?.data,
@@ -94,6 +124,7 @@ function useMock(machine_identification_unique: MachineIdentificationUnique) {
     // Action functions (verb-first)
     setFrequency,
     setMode,
+    setConnectedMachine,
   };
 }
 
@@ -127,7 +158,36 @@ export function useMock1() {
 
   const mock = useMock(machineIdentification);
 
+  const machines = useMachines();
+  // Filter machines for the correct type
+  const filteredMachines = useMemo(
+    () =>
+      machines.filter(
+        (m) =>
+          m.machine_identification_unique.machine_identification.vendor ===
+            machineIdentification.machine_identification.vendor &&
+          m.machine_identification_unique.machine_identification.machine ===
+            machineIdentification.machine_identification.machine,
+      ),
+    [machines, machineIdentification],
+  );
+
+  // Get selected machine by serial
+  const selectedMachine = useMemo(() => {
+    const serial =
+      mock.state?.connected_machine_state?.machine_identification_unique
+        ?.serial;
+
+    return (
+      filteredMachines.find(
+        (m) => m.machine_identification_unique.serial === serial,
+      ) ?? null
+    );
+  }, [filteredMachines, mock.state]);
+
   return {
     ...mock,
+    filteredMachines,
+    selectedMachine,
   };
 }

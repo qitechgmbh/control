@@ -1,91 +1,112 @@
-import { ControlCard } from "@/control/ControlCard";
 import { Page } from "@/components/Page";
-import React from "react";
+import { TouchButton } from "@/components/touch/TouchButton";
 import { ControlGrid } from "@/control/ControlGrid";
+import { Label } from "@/control/Label";
+import React, { useEffect, useState } from "react";
+
+import { Mode } from "./buffer1Namespace";
+import { useBuffer1 } from "./useBuffer1";
+import { ControlCard } from "@/control/ControlCard";
+import { SelectionGroup } from "@/control/SelectionGroup";
 import { TimeSeriesValueNumeric } from "@/control/TimeSeriesValue";
 import { EditValue } from "@/control/EditValue";
-import { useMock1 } from "./useMock";
-import { SelectionGroup } from "@/control/SelectionGroup";
-import { Mode } from "./mock1Namespace";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useMachines } from "@/client/useMachines";
 import { Icon } from "@/components/Icon";
+import { VENDOR_QITECH } from "@/machines/properties";
 
-export function Mock1ControlPage() {
+export function Buffer1ControlPage() {
   const {
     state,
-    defaultState,
-    sineWave,
-    selectedMachine,
-    filteredMachines,
-    setFrequency,
-    setMode,
-    isDisabled,
-    setConnectedMachine,
-  } = useMock1();
+    sine_wave,
 
-  // Controlled local states synced with consolidated state
-  const frequency = state?.sine_wave_state?.frequency ?? 1.0;
-  const mode = state?.mode_state?.mode ?? "Standby";
+    filteredMachines,
+    selectedMachine,
+
+    setBufferFrequency,
+    setBufferMode,
+    setConnectedMachine,
+  } = useBuffer1();
 
   return (
     <Page>
       <ControlGrid>
-        <ControlCard title="Sine Wave">
-          <TimeSeriesValueNumeric
-            label="Current Value"
-            timeseries={sineWave}
-            renderValue={(value) => value.toFixed(3)}
-          />
-        </ControlCard>
-        <ControlCard title="Sine Wave">
-          <TimeSeriesValueNumeric
-            label="Current Value"
-            timeseries={sineWave}
-            renderValue={(value) => value.toFixed(3)}
-          />
-        </ControlCard>
-        <ControlCard title="Sine Wave">
-          <TimeSeriesValueNumeric
-            label="Current Value"
-            timeseries={sineWave}
-            renderValue={(value) => value.toFixed(3)}
-          />
-        </ControlCard>
-        <ControlCard title="Sine Wave">
-          <TimeSeriesValueNumeric
-            label="Current Value"
-            timeseries={sineWave}
-            renderValue={(value) => value.toFixed(3)}
+        <ControlCard className="bg-red" title="Mode">
+          <SelectionGroup<"Standby" | "FillingBuffer" | "EmptyingBuffer">
+            value={state?.mode_state.mode}
+            orientation="vertical"
+            className="grid h-full grid-cols-2 gap-2"
+            options={{
+              Standby: {
+                children: "Standby",
+                icon: "lu:CirclePause",
+                isActiveClassName: "bg-green-600",
+                className: "h-full",
+              },
+              FillingBuffer: {
+                children: "FillingBuffer",
+                icon: "lu:Flame",
+                isActiveClassName: "bg-green-600",
+                className: "h-full",
+              },
+              EmptyingBuffer: {
+                children: "EmptyingBuffer",
+                icon: "lu:ArrowBigLeftDash",
+                isActiveClassName: "bg-green-600",
+                className: "h-full",
+              },
+            }}
+            onChange={setBufferMode}
           />
         </ControlCard>
 
+        <ControlCard title="Sine Wave">
+          <TimeSeriesValueNumeric
+            label="Current Value"
+            timeseries={sine_wave}
+            renderValue={(value) => value.toFixed(3)}
+          />
+        </ControlCard>
+        <ControlCard title="Sine Wave">
+          <TimeSeriesValueNumeric
+            label="Current Value"
+            timeseries={sine_wave}
+            renderValue={(value) => value.toFixed(3)}
+          />
+        </ControlCard>
+        <ControlCard title="Sine Wave">
+          <TimeSeriesValueNumeric
+            label="Current Value"
+            timeseries={sine_wave}
+            renderValue={(value) => value.toFixed(3)}
+          />
+        </ControlCard>
+        <ControlCard title="Sine Wave">
+          <TimeSeriesValueNumeric
+            label="Current Value"
+            timeseries={sine_wave}
+            renderValue={(value) => value.toFixed(3)}
+          />
+        </ControlCard>
         <ControlCard title="Frequency">
           <div className="flex flex-col gap-4">
             <EditValue
               title="Frequency"
               unit="mHz"
-              value={frequency}
-              defaultValue={defaultState?.sine_wave_state.frequency}
+              value={state?.sinewave_state.frequency}
+              defaultValue={500}
               min={0.0}
-              max={1000}
+              max={999}
               step={0.1}
-              renderValue={(value) => value.toFixed(0)}
-              onChange={setFrequency}
-            />
-          </div>
-        </ControlCard>
-
-        <ControlCard title="Mode">
-          <div className="flex flex-col gap-2">
-            <div className="text-sm font-medium">Mode</div>
-            <SelectionGroup
-              value={mode}
-              onChange={(newMode: Mode) => setMode(newMode)}
-              disabled={isDisabled}
-              options={{
-                Standby: { children: "Standby" },
-                Running: { children: "Running" },
-              }}
+              renderValue={(value) => value.toFixed(1)}
+              onChange={setBufferFrequency}
             />
           </div>
         </ControlCard>
@@ -105,7 +126,7 @@ export function Mock1ControlPage() {
               <DropdownMenuSeparator />
               {filteredMachines.map((machine) => (
                 <DropdownMenuItem
-                  key={machine.machine_identification_unique.serial}
+                  key={machine.name}
                   onClick={() =>
                     setConnectedMachine(machine.machine_identification_unique)
                   }

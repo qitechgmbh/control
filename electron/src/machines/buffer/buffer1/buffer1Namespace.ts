@@ -1,6 +1,6 @@
 /**
- * @file mock1Namespace.ts
- * @description TypeScript implementation of Mock1 namespace with Zod schema validation.
+ * @file buffer1Namespace.ts
+ * @description TypeScript implementation of Buffer1 namespace with Zod schema validation.
  */
 
 import { StoreApi } from "zustand";
@@ -16,34 +16,37 @@ import {
   ThrottledStoreUpdater,
 } from "../../../client/socketioStore";
 import { MachineIdentificationUnique } from "@/machines/types";
-import {
-  createTimeSeries,
-  TimeSeries,
-  TimeSeriesValue,
-} from "@/lib/timeseries";
+import { createTimeSeries, TimeSeries } from "@/lib/timeseries";
+import { useMemo } from "react";
 
 // ========== Event Schema Definitions ==========
-/**
- * Mode enum for Mock Machine
- */
-export const modeSchema = z.enum(["Standby", "Running"]);
 
 /**
- * Sine wave state schema
+ * Machine operation mode enum
  */
-export const sineWaveStateSchema = z.object({
-  frequency: z.number(),
+export const modeSchema = z.enum([
+  "Standby",
+  "FillingBuffer",
+  "EmptyingBuffer",
+]);
+export type Mode = z.infer<typeof modeSchema>;
+
+/**
+ * Consolidated live values event schema (60FPS data)
+ */
+export const liveValuesEventDataSchema = z.object({
+  sine_wave: z.number(),
 });
 
 /**
- * Mode state schema
+ * Mode state event schema
  */
 export const modeStateSchema = z.object({
   mode: modeSchema,
 });
 
 /**
- * Connected machine state schema
+ * Connected machine event schema
  */
 const machineIdentificationSchema = z.object({
   vendor: z.number(),
@@ -60,40 +63,37 @@ export const connectedMachineStateSchema = z.object({
 });
 
 /**
- * Live values event schema (time-series data)
+ * Sinewave state event schema
  */
-export const liveValuesEventDataSchema = z.object({
-  sine_wave_amplitude: z.number(),
+export const sineWaveStateSchema = z.object({
+  frequency: z.number(),
 });
 
 /**
- * State event schema (consolidated state)
+ * Consolidated state event schema (state changes only)
  */
+
 export const stateEventDataSchema = z.object({
-  is_default_state: z.boolean(),
-  sine_wave_state: sineWaveStateSchema,
   mode_state: modeStateSchema,
   connected_machine_state: connectedMachineStateSchema,
+  sinewave_state: sineWaveStateSchema,
 });
 
 // ========== Event Schemas with Wrappers ==========
+
 export const liveValuesEventSchema = eventSchema(liveValuesEventDataSchema);
 export const stateEventSchema = eventSchema(stateEventDataSchema);
 
 // ========== Type Inferences ==========
-export type Mode = z.infer<typeof modeSchema>;
-export type SineWaveState = z.infer<typeof sineWaveStateSchema>;
-export type ModeState = z.infer<typeof modeStateSchema>;
-export type LiveValuesEvent = z.infer<typeof liveValuesEventSchema>;
+
 export type StateEvent = z.infer<typeof stateEventSchema>;
 
-export type Mock1NamespaceStore = {
-  // Single state event from server
+export type Buffer1NamespaceStore = {
+  // State events (latest only)
   state: StateEvent | null;
-  defaultState: StateEvent | null;
 
   // Time series data for live values
-  sineWave: TimeSeries;
+  sine_wave: TimeSeries;
 };
 
 // Constants for time durations
@@ -110,61 +110,42 @@ const { initialTimeSeries: sineWave, insert: addSineWave } = createTimeSeries(
 );
 
 /**
- * Factory function to create a new Mock1 namespace store
- * @returns A new Zustand store instance for Mock1 namespace
- */
-export const createMock1NamespaceStore = (): StoreApi<Mock1NamespaceStore> =>
-  create<Mock1NamespaceStore>(() => {
-    return {
-      state: null,
-      defaultState: null,
-      sineWave: sineWave,
-    };
-  });
-
-/**
- * Creates a message handler for Mock1 namespace events with validation and appropriate caching strategies
+ * Creates a message handler for Buffer1 namespace events with validation and appropriate caching strategies
  * @param store The store to update when messages are received
  * @param throttledUpdater Throttled updater for batching updates at 60 FPS
  * @returns A message handler function
  */
-export function mock1MessageHandler(
-  store: StoreApi<Mock1NamespaceStore>,
-  throttledUpdater: ThrottledStoreUpdater<Mock1NamespaceStore>,
+export function buffer1MessageHandler(
+  store: StoreApi<Buffer1NamespaceStore>,
+  throttledUpdater: ThrottledStoreUpdater<Buffer1NamespaceStore>,
 ): EventHandler {
   return (event: Event<any>) => {
     const eventName = event.name;
 
     // Helper function to update store through buffer
     const updateStore = (
-      updater: (state: Mock1NamespaceStore) => Mock1NamespaceStore,
+      updater: (state: Buffer1NamespaceStore) => Buffer1NamespaceStore,
     ) => {
       throttledUpdater.updateWith(updater);
     };
-
     try {
-      // State events (latest only)
+      // Apply appropriate caching strategy based on event type
+      // State events (keep only the latest)
       if (eventName === "StateEvent") {
         const stateEvent = stateEventSchema.parse(event);
         updateStore((state) => ({
           ...state,
           state: stateEvent,
-          // only set default state if is_default_state is true
-          defaultState: stateEvent.data.is_default_state
-            ? stateEvent
-            : state.defaultState,
         }));
-      }
-      // Live values events (time-series data)
-      else if (eventName === "LiveValuesEvent") {
+      } else if (eventName === "LiveValuesEvent") {
         const liveValuesEvent = liveValuesEventSchema.parse(event);
-        const timeseriesValue: TimeSeriesValue = {
-          value: liveValuesEvent.data.sine_wave_amplitude ?? 0,
-          timestamp: liveValuesEvent.ts,
-        };
+        const timestamp = event.ts;
         updateStore((state) => ({
           ...state,
-          sineWave: addSineWave(state.sineWave, timeseriesValue),
+          sine_wave: addSineWave(state.sine_wave, {
+            value: liveValuesEvent.data.sine_wave,
+            timestamp,
+          }),
         }));
       } else {
         handleUnhandledEventError(eventName);
@@ -177,17 +158,31 @@ export function mock1MessageHandler(
 }
 
 /**
- * Create the Mock1 namespace implementation
+ * Factory function to create a new Buffer1 namespace store
+ * @returns A new Zustand store instance for Buffer1 namespace
  */
-const useMock1NamespaceImplementation =
-  createNamespaceHookImplementation<Mock1NamespaceStore>({
-    createStore: createMock1NamespaceStore,
-    createEventHandler: mock1MessageHandler,
+export const createBuffer1NamespaceStore =
+  (): StoreApi<Buffer1NamespaceStore> =>
+    create<Buffer1NamespaceStore>(() => {
+      return {
+        state: null,
+        sine_wave: sineWave,
+      };
+    });
+
+/**
+ * Create the Buffer1 namespace implementation
+ */
+
+const useBuffer1NamespaceImplementation =
+  createNamespaceHookImplementation<Buffer1NamespaceStore>({
+    createStore: createBuffer1NamespaceStore,
+    createEventHandler: buffer1MessageHandler,
   });
 
-export function useMock1Namespace(
+export function useBuffer1Namespace(
   machine_identification_unique: MachineIdentificationUnique,
-): Mock1NamespaceStore {
+): Buffer1NamespaceStore {
   // Generate namespace ID from validated machine ID
   const namespaceId: NamespaceId = {
     type: "machine",
@@ -195,5 +190,5 @@ export function useMock1Namespace(
   };
 
   // Use the implementation with validated namespace ID
-  return useMock1NamespaceImplementation(namespaceId);
+  return useBuffer1NamespaceImplementation(namespaceId);
 }
