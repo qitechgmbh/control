@@ -3,6 +3,7 @@
 ## Extruder V2
 
 - [#455](https://github.com/qitechgmbh/control/pull/458) Greatly improved stability and precision of pressure-based regulation for the motor
+- [#121](https://github.com/qitechgmbh/control/pull/121) Use Linux realtime threads for EtherCAT and control loop (PREEMPT_RT)
 
 # `2.1.0`
 
