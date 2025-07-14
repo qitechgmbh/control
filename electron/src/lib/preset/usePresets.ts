@@ -5,6 +5,7 @@ import {
 import { usePresetStore } from "./presetStore";
 import { Preset } from "./preset";
 import { deepEquals } from "@/lib/objects";
+import { useEffect } from "react";
 
 export type Presets<T> = {
   get: () => Preset<T>[];
@@ -12,21 +13,21 @@ export type Presets<T> = {
   updateFromCurrentState: (preset: Preset<T>) => Preset<T>;
   remove: (preset: Preset<T>) => void;
   defaultPreset?: Preset<T>;
-  getLatestPreset: () => Preset<T>;
+  isLatest: (preset: Preset<T>) => boolean;
   isActive: (preset: Preset<T>) => boolean;
 };
 
 export type UsePresetsParams<T> = {
   machine_identification: MachineIdentification;
   schemaVersion: number;
-  readCurrentState: () => Partial<T>;
+  currentState: Partial<T>;
   defaultData: Partial<T>;
 };
 
 export function usePresets<T>({
   machine_identification,
   schemaVersion,
-  readCurrentState,
+  currentState,
   defaultData,
 }: UsePresetsParams<T>): Presets<T> {
   const store = usePresetStore();
@@ -44,22 +45,19 @@ export function usePresets<T>({
         };
 
   const createFromCurrentState = (name: string): Preset<T> => {
-    const data = readCurrentState();
-
     const preset = store.insert({
       name,
       machine_identification,
       lastModified: new Date(),
       schemaVersion,
-      isLatestPreset: false,
-      data,
+      data: currentState,
     });
 
     return preset;
   };
 
   const updateFromCurrentState = (preset: Preset<T>) => {
-    const data = readCurrentState();
+    const data = currentState;
 
     const newPreset = {
       ...preset,
@@ -82,30 +80,41 @@ export function usePresets<T>({
         ),
       );
 
-  const getLatestPreset = () => {
-    let latestPreset = getPresetsForMachine().find(
-      (preset) => preset.isLatestPreset,
-    );
+  const getLatestPreset = (): Preset<T> => {
+    const latestPresetId = store.getLatestPresetId(machine_identification);
+    let latestPreset: Preset<T>;
 
-    if (latestPreset === undefined) {
-      latestPreset = store.insert({
-        name: "Latest Machine Stettings",
-        machine_identification,
-        lastModified: new Date(),
-        schemaVersion,
-        isLatestPreset: true,
-        data: readCurrentState(),
-      });
+    if (latestPresetId === undefined) {
+        latestPreset = store.insert({
+            name: "Latest Machine Stettings",
+            machine_identification,
+            lastModified: new Date(),
+            schemaVersion,
+            data: currentState,
+        });
+
+        store.setLatestPresetId(machine_identification, latestPreset.id);
+    } else {
+        latestPreset = store.getById(latestPresetId!)!;
+        latestPreset.data = currentState;
+        latestPreset.lastModified = new Date();
+        store.update(latestPreset);
     }
 
     return latestPreset;
   };
 
+  useEffect(() => {
+    getLatestPreset();
+  }, [currentState]);
+
+  const isLatest = (preset: Preset<T>) => {
+      return preset.id === store.latestPresetIds.get(machine_identification);
+  };
+
   const isActive = (preset: Preset<T>) => {
-      const state = readCurrentState();
-      // TODO: fill in defaults
-      return deepEquals(state, preset.data);
-  }
+      return deepEquals(currentState, preset.data);
+  };
 
   return {
     get: getPresetsForMachine,
@@ -113,7 +122,7 @@ export function usePresets<T>({
     remove: store.remove,
     updateFromCurrentState,
     defaultPreset,
-    getLatestPreset,
+    isLatest,
     isActive,
   };
 }

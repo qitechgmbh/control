@@ -55,10 +55,12 @@ export function Mock1PresetsPage() {
 
   const readCurrentState = () => toPreset(state);
 
+  const currentState = toPreset(state);
+
   return (
     <PresetsPage
       machine_identification={mock1.machine_identification}
-      readCurrentState={readCurrentState}
+      currentState={currentState}
       schemaVersion={1}
       applyPreset={applyPreset}
       previewEntries={previewEntries}
