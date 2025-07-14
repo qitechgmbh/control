@@ -1,13 +1,18 @@
 use api::{
     LiveValuesEvent, MockEvents, MockMachineNamespace, Mode, ModeState, SineWaveState, StateEvent,
 };
-use control_core::{machines::Machine, socketio::namespace::NamespaceCacheingLogic};
-use std::time::Instant;
+use control_core::{machines::{downcast_machine, identification::{MachineIdentification, MachineIdentificationUnique}, manager::MachineManager, Machine}, socketio::namespace::NamespaceCacheingLogic};
+use futures::executor::block_on;
+use serde::Serialize;
+use smol::lock::{Mutex, RwLock};
 use tracing::info;
+use std::{any::Any, sync::{Arc, Weak}, time::Instant};
 use uom::si::{
     f64::Frequency,
     frequency::{hertz, millihertz},
 };
+
+use crate::machines::{mock2::Mock2Machine, MACHINE_MOCK, VENDOR_QITECH};
 
 pub mod act;
 pub mod api;
@@ -24,6 +29,11 @@ pub struct MockMachine {
     frequency: Frequency,
     mode: Mode,
 
+    pub machine_manager: Weak<RwLock<MachineManager>>,
+
+    // connected machines
+    pub connected_mock2: Option<ConnectedMachine<Weak<Mutex<Mock2Machine>>>>,
+
     // State tracking to only emit when values change
     last_emitted_state: Option<StateEvent>,
 
@@ -32,7 +42,52 @@ pub struct MockMachine {
     emitted_default_state: bool,
 }
 
-impl Machine for MockMachine {}
+pub trait GetStrongCount {
+    fn get_strong_count(&self) -> usize;
+} 
+
+impl<T> GetStrongCount for Weak<Mutex<T>> {
+    fn get_strong_count(&self) -> usize {
+        self.strong_count()
+    }
+}
+
+#[derive(Debug)]
+pub struct ConnectedMachine<T: GetStrongCount> {
+    machine_identification_unique: MachineIdentificationUnique,
+    machine: T,
+}
+
+#[derive(Serialize, Debug, Clone, PartialEq)]
+pub struct ConnectedMachineData {
+    machine_identification_unique: MachineIdentificationUnique,
+    is_available: bool,
+}
+
+impl<T> From<&ConnectedMachine<T>> for ConnectedMachineData
+where T: GetStrongCount
+{
+    fn from(value: &ConnectedMachine<T>) -> Self {
+        Self{
+            machine_identification_unique: value.machine_identification_unique.clone(),
+            is_available: value.machine.get_strong_count() != 0
+
+        }
+    }
+}
+
+impl Machine for MockMachine {
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+}
+
+impl MockMachine {
+    pub const MACHINE_IDENTIFICATION: MachineIdentification = MachineIdentification {
+        vendor: VENDOR_QITECH,
+        machine: MACHINE_MOCK,
+    };
+}
 
 impl MockMachine {
     /// Emit live values data event with the current sine wave amplitude
@@ -70,10 +125,14 @@ impl MockMachine {
             mode_state: ModeState {
                 mode: self.mode.clone(),
             },
+            connected_mock2_state: self.connected_mock2
+                .as_ref()
+                .map(ConnectedMachineData::from),
         };
 
         // Only emit if values have changed or this is the first emission
-        let should_emit = self.last_emitted_state.as_ref() != Some(&current_state);
+        //let should_emit = self.last_emitted_state.as_ref() != Some(&current_state);
+        let should_emit = true;
 
         if should_emit {
             self.namespace
@@ -96,5 +155,44 @@ impl MockMachine {
         self.mode = mode;
         // Emit state change immediately
         self.emit_state();
+    }
+
+    /// Set the connected mock2 machine
+    pub fn set_connected_mock2(&mut self, machine_identification_unique: MachineIdentificationUnique) {
+        if !matches!(machine_identification_unique.machine_identification, Mock2Machine::MACHINE_IDENTIFICATION) {
+            return
+        }
+        let machine_manager_arc = match self.machine_manager.upgrade() {
+            Some(machine_manager_arc) => machine_manager_arc,
+            None => {
+                return
+            },
+        };
+        let machine_manager_guard = block_on(machine_manager_arc.read());
+        let mock2_weak
+            = machine_manager_guard.get_machine_weak(&machine_identification_unique);
+        let mock2_weak = match mock2_weak {
+            Some(mock2_weak) => mock2_weak,
+            None => return,
+        };
+        let mock2_strong = match mock2_weak.upgrade() {
+            Some(mock2_strong) => mock2_strong,
+            None => return,
+        };
+
+        let mock2: Arc<Mutex<Mock2Machine>>
+            = block_on(downcast_machine::<Mock2Machine>(mock2_strong)).expect("failed downcasting machine");
+
+        let machine = Arc::downgrade(&mock2);
+
+        self.connected_mock2 = Some(ConnectedMachine {
+            machine_identification_unique,
+            machine: machine.clone(),
+        });
+
+        info!("Hello there");
+
+        self.emit_state();
+        
     }
 }

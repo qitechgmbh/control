@@ -47,6 +47,8 @@ impl MachineNewTrait for MockMachine {
             mode: Mode::Standby,                     // Start in standby mode
             last_emitted_state: None,                // No previous state emissions
             emitted_default_state: false,
+            connected_mock2: None,
+            machine_manager: params.machine_manager.clone(),
         };
 
         mock_machine.emit_state();

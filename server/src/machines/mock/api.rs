@@ -1,11 +1,12 @@
+use crate::machines::mock::ConnectedMachineData;
+
 use super::MockMachine;
 use control_core::{
-    machines::api::MachineApi,
+    machines::{api::MachineApi, identification::MachineIdentificationUnique},
     socketio::{
         event::{Event, GenericEvent},
         namespace::{
-            CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_duration,
-            cache_first_and_last_event,
+            cache_duration, cache_first_and_last_event, CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic
         },
     },
 };
@@ -41,6 +42,8 @@ pub struct StateEvent {
     pub sine_wave_state: SineWaveState,
     /// mode state
     pub mode_state: ModeState,
+    /// connected machine state
+    pub connected_mock2_state: Option<ConnectedMachineData>,
 }
 
 impl StateEvent {
@@ -104,6 +107,7 @@ enum Mutation {
     /// Set the frequency of the sine wave in millihertz
     SetFrequency(f64),
     SetMode(Mode),
+    SetConnectedMock2(MachineIdentificationUnique),
 }
 
 impl NamespaceCacheingLogic<MockEvents> for MockMachineNamespace {
@@ -124,6 +128,9 @@ impl MachineApi for MockMachine {
             }
             Mutation::SetMode(mode) => {
                 self.set_mode(mode);
+            }
+            Mutation::SetConnectedMock2(machine_identification_unique) => {
+                self.set_connected_mock2(machine_identification_unique);
             }
         }
         Ok(())
