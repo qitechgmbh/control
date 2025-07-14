@@ -16,14 +16,14 @@ type PresetsPageProps<T> = UsePresetsParams<T> & {
 export function PresetsPage<T>({
   applyPreset,
   machine_identification,
-  readCurrentState,
+  currentState,
   schemaVersion,
   previewEntries,
   defaultData,
 }: PresetsPageProps<T>) {
   const presets = usePresets<T>({
     machine_identification,
-    readCurrentState,
+    currentState,
     schemaVersion,
     defaultData,
   });
@@ -68,7 +68,7 @@ export function PresetsPage<T>({
             onApply={applyPreset}
             onDelete={handleDeletePreset}
             previewEntries={previewEntries}
-            isReadOnly={preset.isLatestPreset}
+            isReadOnly={presets.isLatest(preset)}
             isActive={presets.isActive(preset)}
           />
         ))}
