@@ -6,7 +6,7 @@ use api::{
 use control_core::{machines::Machine, socketio::namespace::NamespaceCacheingLogic};
 use screw_speed_controller::ScrewSpeedController;
 use serde::{Deserialize, Serialize};
-use std::time::Instant;
+use std::{any::Any, time::Instant};
 use temperature_controller::TemperatureController;
 use uom::si::{
     angular_velocity::{AngularVelocity, revolution_per_minute},
@@ -75,7 +75,11 @@ impl std::fmt::Display for ExtruderV2 {
         write!(f, "ExtruderV2")
     }
 }
-impl Machine for ExtruderV2 {}
+impl Machine for ExtruderV2 {
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+}
 
 impl ExtruderV2 {
     pub fn emit_live_values(&mut self) {

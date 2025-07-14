@@ -2,7 +2,7 @@ use crate::serial::devices::laser::Laser;
 use api::{LaserEvents, LaserMachineNamespace, LaserState, LiveValuesEvent, StateEvent};
 use control_core::{machines::Machine, socketio::namespace::NamespaceCacheingLogic};
 use smol::lock::RwLock;
-use std::{sync::Arc, time::Instant};
+use std::{any::Any, sync::Arc, time::Instant};
 use uom::si::{f64::Length, length::millimeter};
 
 pub mod act;
@@ -26,7 +26,12 @@ pub struct LaserMachine {
     emitted_default_state: bool,
 }
 
-impl Machine for LaserMachine {}
+impl Machine for LaserMachine {
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+}
+
 
 impl LaserMachine {
     ///diameter in mm

@@ -10,7 +10,7 @@ pub mod spool_speed_controller;
 pub mod tension_arm;
 pub mod traverse_controller;
 
-use std::{fmt::Debug, time::Instant};
+use std::{any::Any, fmt::Debug, time::Instant};
 
 use api::{
     LiveValuesEvent, ModeState, PullerState, SpoolAutomaticActionMode, SpoolAutomaticActionState,
@@ -18,12 +18,14 @@ use api::{
     Winder2Namespace,
 };
 use control_core::{
-    converters::angular_step_converter::AngularStepConverter, machines::Machine,
-    socketio::namespace::NamespaceCacheingLogic, uom_extensions::velocity::meter_per_minute,
-};
-use ethercat_hal::io::{
-    digital_input::DigitalInput, digital_output::DigitalOutput,
-    stepper_velocity_el70x1::StepperVelocityEL70x1,
+    actors::{
+        digital_input_getter::DigitalInputGetter, digital_output_setter::DigitalOutputSetter,
+        stepper_driver_el70x1::StepperDriverEL70x1,
+    },
+    converters::angular_step_converter::AngularStepConverter,
+    machines::{identification::MachineIdentification, Machine},
+    socketio::namespace::NamespaceCacheingLogic,
+    uom_extensions::velocity::meter_per_minute,
 };
 use puller_speed_controller::{PullerRegulationMode, PullerSpeedController};
 use spool_speed_controller::SpoolSpeedController;
@@ -40,13 +42,7 @@ use uom::{
     },
 };
 
-#[derive(Debug)]
-pub struct SpoolAutomaticAction {
-    pub progress: Length,
-    progress_last_check: Instant,
-    pub target_length: Length,
-    pub mode: SpoolAutomaticActionMode,
-}
+use crate::machines::{MACHINE_WINDER_V2, VENDOR_QITECH};
 
 #[derive(Debug)]
 pub struct Winder2 {
@@ -86,7 +82,18 @@ pub struct Winder2 {
     emitted_default_state: bool,
 }
 
-impl Machine for Winder2 {}
+impl Machine for Winder2 {
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+}
+
+impl Winder2 {
+    pub const MACHINE_IDENTIFICATION: MachineIdentification = MachineIdentification{
+        vendor: VENDOR_QITECH,
+        machine: MACHINE_WINDER_V2,
+    };
+}
 
 /// Implement Traverse
 impl Winder2 {
