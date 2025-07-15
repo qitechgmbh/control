@@ -1,28 +1,15 @@
 
-# Operating instructions
-
-# V. 2.0 English
-
-# QiTech Industries
-
-# Landwehrstraße 55, 64293 Darmstadt
-
-# QiTech Winder
+![Titelseite,screenshot from Word doccument](Titelseite.jpeg)
 
 
 
 
 
+<br>
 
 
 
- 1
 
-
-
----
-
-# Operating instructions
 
 # EC Declaration of Conformity
 
@@ -30,31 +17,34 @@
 
 The content of the EC Declaration of Conformity corresponds to Annex II, No. 1 A, of Directive 2006/42/EC.
 
-# Manufacturer of the machine:
+<br><br><br>
+
+**Manufacturer of the machine:**
 
 QiTech Industries GmbH
 
 Landwehrsrtaße 55
 
 64293, Darmstadt
+<br><br><br>
 
-
-# Representative of the manufacturer:
+**Representative of the manufacturer:**
 
 Milan von dem Bussche
 
 Landwehrsrtaße 55
 
 64293, Darmstadt
+<br><br><br>
 
-# under consideration:
-
+**under consideration:**
 | General designation | Filament winding machine           |
 | ------------------- | ---------------------------------- |
 | function            | Winding and rewinding of filaments |
 | Model               | QiTech Winder                      |
 | type                | Filament winding machine           |
 | Trade name          | QiTech Winder                      |
+<br><br>
 
 We hereby declare that the above-mentioned machine is in conformity with all relevant provisions of the EC Machinery Directive 2006/42/EC. The machine is also in compliance with all relevant provisions of the following EC Directives:
 
@@ -68,13 +58,16 @@ The following harmonized standards (or parts of these standards) have been appli
 
 
 
-2
 
----
 
-# Operating instructions
+
+
 
 Note: References of the EC directives, harmonized standards and standards and specifications can be found in the standards search
+
+<br><br><br>
+
+
 
 Darmstadt, 10/06/2025
 
@@ -82,6 +75,7 @@ Darmstadt, 10/06/2025
 
 
 
+![Milans signature]()
 
 
 
@@ -93,14 +87,9 @@ Milan von dem Bussche
 
 
 
+<br><br><br>
 
 
-3
-
-
----
-
-# Operating instructions
 
 
 # Operating instructions based on DIN EN ISO 20607
@@ -115,14 +104,11 @@ Milan von dem Bussche
 
 
 
+<br><br>
 
 
-4
 
 
----
-
-# Operating instructions
 
 
 Read before commissioning!
@@ -151,45 +137,18 @@ Reproduction and reprinting in any form, even in extracts, requires the written 
 
 
 
-5
 
-
----
 Operating instructions
-# Table of contents
 
-1. Machine description ................................................................................................................................. 7
-1. Noise emissions ........................................................................................................................................ 8
-2. General, important safety instructions ..................................................................................................... 9
-3. Description of the pictograms, symbols and warnings used................................................................... 11
-4. Intended use ...........................................................................................................................................14
-5. Reasonably foreseeable misuse ..............................................................................................................14
-6. Significant change / other use ................................................................................................................ 15
-7. Description of the safety devices ............................................................................................................ 16
-8. Instruction and training .......................................................................................................................... 17
-9. Noise emissions from the machine during activities...............................................................................17
-2. Life phases of the machine ..................................................................................................................... 18
-1. Transport and assembly.......................................................................................................................... 18
-2. Assembly, installation and commissioning .............................................................................................18
-3. Operation and control (work sequence)..................................................................................................20
-4. Maintenance, inspection, testing ............................................................................................................ 23
-5. Troubleshooting and fault rectification................................................................................................... 24
-6. Dismantling, decommissioning and disposal .......................................................................................... 25
-3. Hazard warning and information on residual risks.................................................................................. 26
-4. Glossary and definitions.......................................................................................................................... 28
+
+<br><br><br>
 
 
 
-
-
-6
-
----
-# Operating instructions
 
 # 1 Machine description
 
-![maschinenbeschreibung](control/docs/machines/Usermanual Winder picture.jpg)
+![maschinenbeschreibung](description.png)
 
 
 
@@ -198,11 +157,6 @@ Operating instructions
 
 
 
-7
-
----
-
-# Operating instructions
 
 | Item number | Item number Description                   |
 | ----------- | ----------------------------------------- |
@@ -222,6 +176,9 @@ Operating instructions
 | 14          | Power supply cable                        |
 | 15          | Underframe                                |
 
+
+<br><br><br>
+
 # 1.1 Noise emissions
 
 # Sound power level (LWAC)
@@ -229,6 +186,8 @@ Operating instructions
 | Specification | Value | Unit |
 | ------------- | ----- | ---- |
 | Idle mode     | <70   | dB   |
+
+<br><br>
 
 # Workplace-related emission value (LPAC)
 
@@ -239,18 +198,15 @@ Operating instructions
 Noise emission specification according to DIN 45649 Part 1
 
 
+<br><br>
 
 
-
-8
-
----
-
-Operating instructions
 
 # Noise measurement method and operating condition acc: DIN 45635 Part 16 and Part 1605
 
 # Accuracy class: 2
+
+<br>
 
 # 1.2 General, important Safety instructions
 
@@ -275,93 +231,96 @@ Operating instructions
 
 
 
-9
-
----
-# Operating instructions
 
 - Have the machine de-energized by a qualified electrician
 - Earth and short-circuit the machine
 - Cover or isolate neighboring live parts
 
-14. Do not reach into moving parts of the machine.
-15. Keep a safe distance from rotating parts of the machine. Only change the bobbin when the bobbin axis is stationary.
-16. Keep the work area clean. Do not place any objects on the machine.
-17. Always switch off the machine when you are not using it.
-18. Stay with the machine until it has come to a standstill.
-19. Repairs may only be carried out by qualified specialist personnel! Repair work may only be carried out by persons who are qualified for the repair work in question and who are familiar with the relevant occupational safety regulations.
-20. Protect the machine from moisture.
-21. Check the machine regularly for damage. Only replace damaged parts with original parts and have them replaced by qualified specialists. The guarantee and warranty will be invalidated if accessories and spare parts are used that are not authorized for the machine.
-22. To avoid inadequate lighting, we recommend installing light sources in accordance with national health and safety regulations (e.g. workplace directive).
-23. All persons working on the machine must be trained based on these operating instructions before starting work. In particular, persons working on the machine must be familiarized with the safety markings described in chapter 1.3.
-
-# Danger!
-
-Danger to life due to technically faulty machine
-
-The machine may only be used when it is in perfect technical condition and in accordance with its intended use, in a safety-conscious and hazard-conscious manner and in compliance with these operating instructions. All faults, especially those that could impair safety, must be rectified immediately before starting the winder.
-
-Everyone who works on or with the JARVIS Pro Winder is responsible for observing these safety aspects!
+1.  Do not reach into moving parts of the machine.
+2.  Keep a safe distance from rotating parts of the machine. Only change the bobbin when the bobbin axis is stationary.
+3.  Keep the work area clean. Do not place any objects on the machine.
+4.  Always switch off the machine when you are not using it.
+5.  Stay with the machine until it has come to a standstill.
+6.  Repairs may only be carried out by qualified specialist personnel! Repair work may only be carried out by persons who are qualified for the repair work in question and who are familiar with the relevant occupational safety regulations.
+7.  Protect the machine from moisture.
+8.  Check the machine regularly for damage. Only replace damaged parts with original parts and have them replaced by qualified specialists. The guarantee and warranty will be invalidated if accessories and spare parts are used that are not authorized for the machine.
+9.  To avoid inadequate lighting, we recommend installing light sources in accordance with national health and safety regulations (e.g. workplace directive).
+10. All persons working on the machine must be trained based on these operating instructions before starting work. In particular, persons working on the machine must be familiarized with the safety markings described in chapter 1.3.
 
 
+<br>
+
+
+| Danger! |picture|
+|--------------|------|
+|Danger to life due to technically faulty machine.<br><br>The machine may only be used when it is in perfect technical condition and in accordance with its intended use, in a safety-conscious and hazard-conscious manner and in compliance with these operating instructions.<br>All faults, especially those that could impair safety, must be rectified immediately before starting the winder.<br><br>**Everyone who works on or with the Qitech Winder is responsible for observing these safety aspects!** | ![Warnsymbol](w001.jpeg) |
 
 
 
 
-10
 
----
 
-# Operating instructions
+
+
+
+<br><br><br>
+
 
 # 1.3 Description of the pictograms, symbols and warning notices used
 
-| Warning signs                                                                                                                                                                                  | Mandatory sign             |           |                        |
-| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------- | --------- | ---------------------- |
-| Pictogram                                                                                                                                                                                      | Description of pictogram   | Pictogram | Pictogram Description  |
-| W001                                                                                                                                                                                           | General warning sign       | M001      | General warning sign   |
-| The combination of the symbol W001 and the signal word "Danger" indicates an imminently hazardous situation which, if not avoided, may result in death or serious injury if it is not avoided. |                            |           |                        |
-| The combination of the symbol W001 and the signal word "Warning" indicates an imminently hazardous situation which, if not avoided, will result in death or serious injury.                    |                            |           |                        |
-| The combination of the symbol W001 and the signal word "Caution" indicates an imminently hazardous situation which, if not avoided, may result in death or serious injury if not avoided.      |                            |           |                        |
-| W008                                                                                                                                                                                           | Warning of risk of falling | M003      | Use hearing protection |
+
+
+
+|  Pictogram | Description of pictogram                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | Pictogram | Pictogram Description                                                                                      |
+|------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------|-----------------------------------------------------------------------------------------------------------|
+| ![w001](w001.jpeg)   | W001 General warning sign The combination of the symbol W001 and the signal word **"Danger"** indicates an imminently hazardous situation which, if not avoided death or serious injury if it is not avoided. The combination of the symbol W001 and the signal word **"Warning"** indicates an imminently hazardous situation which, if not avoided, will result in death or serious injury. death or serious injury if it is not avoided. The combination of the symbol W001 and the signal word **"Caution"** indicates an imminently hazardous situation which, if not avoided death or serious injury if not avoided. | ![m001](m001.jpeg)    | M001 General warning sign Mandatory sign This combination of symbol and signal word indicates a potentially hazardous situation which, if not avoided, may result in damage to property or the environment. not avoided. |
+| ![w008](w008.jpeg)   | W008 Warning of risk of falling                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | ![m003](m003.jpeg)    | M003 Use hearing protection                                                                                 |
+| ![w011](w011.jpeg)   | W011 Warning of danger of slipping                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | ![m004](m004.jpeg)    | M004 Use eye protection                                                                                      |
+| ![w004](w004.jpeg)   | W004 Warning of laser beam                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | ![m008](m008.jpeg)    | M008 Use foot protection                                                                                     |
+| ![w012](w012.jpeg)   | W012 Warning of electrical voltage                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | ![m009](m009.jpeg)    | M009 Use hand protection                                                                                     |
+| ![w017](w017.jpeg)   | W017 Warning of hot surface                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | ![m010](m010.jpeg)    | M010 Use protective clothing                                                                                 |
+| ![w018](w018.jpeg)   | W018 Warning against automatic start-up                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | ![m012](m012.jpeg)    | M012 Use handrail                                                                                             |
+| ![w019](w019.jpeg)   | W019 Warning of crushing hazard                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | ![m021](m021.jpeg)    | M021 Switch off before maintenance or repair                                                                |
+| ![w024](w024.jpeg)   | W024 Warning against hand injuries                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | ![m014](m014.jpeg)    | M014 Use head protection                                                                                      |
+| ![w025](w025.jpeg)   | W025 Warning against counter-rotating rollers                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |                         |                                                                                                           |
+| ![w016](w016.jpeg)   | W016 Warning of toxic substances                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |                         |                                                                                                           |
 
 
 
 
 
 
-11
-
----
-# Operating instructions
-
-| W011 | Warning of danger of slipping            |
-| ---- | ---------------------------------------- |
-| M004 | Use eye protection                       |
-| W004 | Warning of laser beam                    |
-| M008 | Use foot protection                      |
-| W012 | Warning of electrical voltage            |
-| M009 | Use hand protection                      |
-| W017 | Warning of hot surface                   |
-| M010 | Use protective clothing                  |
-| W018 | Warning against automatic start-up       |
-| W019 | Warning of crushing hazard               |
-| M021 | Switch off before maintenance or repair  |
-| W024 | Warning against hand injuries            |
-| W025 | Warning against counter-rotating rollers |
-| W016 | Warning of toxic substances              |
 
 
 
 
 
 
-12
 
----
-# Operating instructions
+
+<br><br><br>
 
 # Prohibition signs
+
+
+
+
+
+
+| Prohibition signs Pictogram      | Pictogram description                                                                 | International pictograms / other Pictogram | Pictogram Description                                         |
+|----------------------------------|--------------------------------------------------------------------------------------|--------------------------------------------|---------------------------------------------------------------|
+| ![P001](p001.jpeg)               | P001 General prohibition sign                                                        | ![F001](f001.jpeg)                         | F001 Fire extinguisher                                        |
+| ![P002](p002.jpeg)               | P002 No smoking                                                                      | ![danger](ANIS_danger.jpeg)                     | ANSI Z535.3 - DANGER                                          |
+| ![P003](p003.jpeg)               | P003 No open flames; fire, open source of ignition and smoking prohibited            | ![warning](ANIS_warning.jpeg)                   | ANSI Z535.3 - WARNING                                         |
+| ![P006](p006.jpeg)               | P006 Prohibited for industrial trucks                                                | ![caution](ANIS_caution.jpeg)                   | ANSI Z535.3 - CAUTION                                         |
+| ![P009](p009.jpeg)               | P009 Climbing prohibited - In the sense of climbing prohibited for unauthorized persons | ![notice](ANIS_notice.jpeg)                     | ANSI Z535.3 - NOTICE                                          |
+| ![P022](p022.jpeg)               | P022 Eating and drinking prohibited                                                  | ![safetyinstructions](safetyinstructions.jpeg) | ANSI Z535.3 - SAFETY INSTRUCTIONS                         |
+| ![P024](p024.jpeg)               | P024 Entering the area prohibited                                                    | ![waste](waste.jpeg)                       | Symbol for separate collection of waste electrical and electronic equipment |
+| ![P031](p031.jpeg)               | P031 Switching prohibited                                                            |                                            |                                                               |
+| ![D-P006](p006.jpeg)           | D-P006 Access prohibited for unauthorized persons                                    |                                            |                                                               |
+
+
+
 
 | Pictogram                                                                   | Pictogram description                                                | Pictogram | Pictogram Description |
 | --------------------------------------------------------------------------- | -------------------------------------------------------------------- | --------- | --------------------- |
@@ -383,18 +342,16 @@ Everyone who works on or with the JARVIS Pro Winder is responsible for observing
 
 
 
-
-13
-
----
-
-# Operating instructions
+<br><br><br>
 
 # 1.4 Intended use
 
 The QiTech Winder is designed for winding and rewinding filaments between 1 mm and 3 mm. The winder must be placed on a stable, level surface and secured if necessary. The test and work sequence is described in chapter 3.4 Work sequence. When using the winder, it is essential that the work steps described in the chapter "Work sequence" or in the operating instructions are followed. In the event of significant changes or deviations, it is necessary to carry out a new risk assessment in accordance with the Machinery Directive and to document the changes in the corresponding documents.
 
 The machine is designed exclusively for use inside buildings. The machine must not be operated in potentially explosive atmospheres. Use in the area of food production is prohibited. Use of the machine for purposes other than those specified is prohibited. Other intended uses include cleaning and maintenance work as well as troubleshooting, fault rectification and repair.
+
+
+<br><br>
 
 # 1.5 Reasonably foreseeable misuse
 
@@ -415,12 +372,7 @@ In addition, the following procedures must be regarded as misuse:
 
 
 
-
-14
-
----
-
-Operating instructions
+<br><br><br>
 
 
 # Minimal Spool Dimensions
@@ -433,9 +385,13 @@ Operating instructions
 
 # Figure 1: Authorized coil sizes
 
+<br><br><br>
+
 Furthermore, there is always the possibility that existing/provided safety guards are dismantled or the existing sensors are manipulated or triggered by means other than the intended components. The misuse mentioned must be explicitly prohibited with reference to these operating instructions and by written operating instructions, and the use of the winder must also be explicitly restricted in the operating instructions to the intended use mentioned above.
 
 Maintenance and repair of the machine may only be carried out by the manufacturer's employees, trained skilled workers or semi-skilled and trained personnel.
+
+<br><br>
 
 # 1.6 Significant modification / other use
 
@@ -444,11 +400,7 @@ Any use of the machine other than the intended use is prohibited and is consider
 
 
 
-
-15
-
----
-# Operating instructions
+<br><br>
 
 # 1.7 Description of the safety devices
 
@@ -458,13 +410,19 @@ The emergency stop switch is used to quickly stop the machine in the event of da
 
 Figure 2: Emergency stop or emergency stop command device
 
+<br><br>
+
 # Overheating protection
 
 If one of the motor drivers becomes too hot, it switches off automatically and sends an error message to the control system. This then stops all other components of the machine.
 
+<br><br>
+
 # Spool stop in the event of filament breakage
 
 If the filament tears during winding, the spool stops automatically after a short time.
+
+<br><br>
 
 # Separating protective devices:
 
@@ -475,12 +433,7 @@ If guards are opened or removed for maintenance work, they must be closed or ref
 
 
 
-16
-
----
-
-
-# Operating instructions
+<br><br>
 
 # 1.8 Instruction and Training
 
@@ -490,18 +443,16 @@ The operating personnel must have understood the instruction and it must be ensu
 
 As the owner/operator, you must therefore obtain written confirmation from each employee that they have attended an instruction session.
 
+<br><br>
+
 # 1.9 Noise emissions from the machine during activities
 
 The noise emissions of the machine were measured on the same machine types. Under normal operating conditions, the maximum noise emission of the extruder is below the maximum permitted values. Depending on the activity or the duration of the activity, the operator must determine whether suitable hearing protection is required as part of a risk assessment.
 
 
+<br><br><br>
 
 
-
-17
-
----
-Operating instructions
 
 # 2 Life phases of the machine
 
@@ -521,6 +472,8 @@ Risk of injury due to improper transport. Be careful when loading the machine, d
 
 Danger to life due to incorrect installation and commissioning! Errors during installation can lead to life-threatening situations or cause considerable damage to property. Installation and commissioning may only be carried out by the manufacturer's employees.
 
+<br><br>
+
 # 2.2 Assembly, installation and Commissioning
 
 # Basic installation
@@ -532,33 +485,13 @@ The Winder is supplied with a mobile container, the parking brakes must be appli
 
 
 
-
-18
-
----
-
-# Operating instructions
+<br>
 
 # Updating the QiTech Control Software
 
 The machines are delivered with the newest version of the software installed. Updates, as well as previous updates and the software version can be viewed under Setup-> Updates. If a new version of the software is available, it will be displayed here. To perform the update an internet connection is required. In the next step, click the red "Select" button next to the chosen update. The display will now shut down, and when it is turned back on, the latest version of the software will be installed.
 
-| QITECH                                                                               | Back                                                       | Machines           | EtherCat                                 | Update                                            | Troubleshoot           |          |   |   |   |   |   |
-| ------------------------------------------------------------------------------------ | ---------------------------------------------------------- | ------------------ | ---------------------------------------- | ------------------------------------------------- | ---------------------- | -------- | - | - | - | - | - |
-| Winder                                                                               | Current Version                                            | Setup              | 388-improve-spool-speed-controller-again | 2025                                              | 13.14:38               |          |   |   |   |   |   |
-| Changelog                                                                            |                                                            |                    |                                          |                                                   |                        |          |   |   |   |   |   |
-| 2158cd75947502db7f89639168b48546a809515a                                             |                                                            |                    |                                          |                                                   |                        |          |   |   |   |   |   |
-| https Igithub com/qitechgmbh/control                                                 |                                                            |                    |                                          |                                                   |                        |          |   |   |   |   |   |
-| Update                                                                               |                                                            |                    |                                          |                                                   |                        |          |   |   |   |   |   |
-| Update source:                                                                       |                                                            |                    |                                          |                                                   |                        |          |   |   |   |   |   |
-| https Igithub com/qitechgmbh/control                                                 |                                                            |                    |                                          |                                                   |                        |          |   |   |   |   |   |
-| Internet Access Needed                                                               |                                                            |                    |                                          |                                                   |                        |          |   |   |   |   |   |
-| You must connect to the internet to fetch the latest versions and update the system: |                                                            |                    |                                          |                                                   |                        |          |   |   |   |   |   |
-| Choose a Version                                                                     | 2.1.0                                                      | Select             | 2.0.1 (older)                            | Select                                            | 2.0.0 (older)          | Select   |   |   |   |   |   |
-| 30/06 2025                                                                           | 12.26:06                                                   |                    | 10/06/2025                               | 19.04.22                                          | 10/06/2025             | 18:28:41 |   |   |   |   |   |
-| Choose a Branch                                                                      | Choose a Master Commit                                     | Installed Versions | Update 120                               | Select                                            | Delete                 |          |   |   |   |   |   |
-| Update 119 (current)                                                                 | controller-again\_2158cd75947502db7f89639168b48546a809515a | Select             | Delete                                   | e3e7cbb\_e3e7cbbzoff389befea80039cff2895ef6962cdc | 388improve-spool-speed |          |   |   |   |   |   |
-| 27/06 2025                                                                           | 09:09                                                      |                    | Update 118                               |                                                   | Update 117             |          |   |   |   |   |   |
+<br>
 
 # Safety Measures
 
@@ -574,13 +507,7 @@ Some important safety measures must be observed to ensure safe operation of the 
 
 
 
-
-
-
-19
-
----
-# Operating instructions
+<br>
 
 # 2.3 Operation and control (work sequence)
 
@@ -626,14 +553,9 @@ OUT
 |                    |             |             | 1.0 ml/min                  |
 
 
+<br>
 
 
-
-
-20
-
----
-Operating instructions
 
 # 4. Start pulling
 
@@ -655,6 +577,8 @@ Operating instructions
 | Go to                | Abort       | Save        | 1.0 m/min    | Default      |
 | < Pull               | Wind        | 1.0 mmin    |              |              |
 
+<br>
+
 # 5. Start winding
 
 - Rotate the load arm upwards and place it on the puller
@@ -662,11 +586,15 @@ Operating instructions
 - Thread the filament coming out of the puller through the feeder into the spool and fix it there
 - Place the load arm on the filament strand from above
 
+<br>
+
 # 6. Change the spool
 
 - Press the "Pull" button
 - Remove the spool as described above and insert a new spool
 - Continue winding by clicking on "Wind" and repeat the winding process as mentioned above
+
+<br>
 
 # 7. Stopping the winding process
 
@@ -674,16 +602,13 @@ Operating instructions
 - Select "Standby" mode - no current on the motors
 - If the filament gets caught, the spool does not spin or there is a danger to persons, press the emergency stop button
 
-# 8. Switch off the machine by disconnecting the power supply cable
+<br>
 
+# 8. Switch off the machine 
 
+- switch off the machine by disconnecting the power supply cable
 
-
-
-21
-
----
-# Operating instructions
+<br>
 
 # Unwinding filament
 
@@ -693,9 +618,15 @@ Operating instructions
 - Go back to “Control” in the function bar and adjust the “Puller Target Speed” as normal
 - Feed the filament through the puller rollers in the opposite direction to winding (caution, counter-rotating rollers!)
 
+<br>
+
 # Changing process variables during operation
 
 All settings such as the position of the spool sides, the winding speed or the filament diameter can also be adjusted during the winding process without interrupting it. To do this, change the value in the relevant field and click the "Wind" button again to apply it.
+
+
+<br>
+
 
 # Rewinding filament
 
@@ -707,17 +638,14 @@ All settings such as the position of the spool sides, the winding speed or the f
 - Click on “Wind”
 - Adjust the pulling speed using the slider.
 
+<br>
+
 # Danger!
 
 Danger to life due to operation of the machine in faulty condition. If safety-relevant changes or defects occur on the machine, shut down immediately, secure against restarting and report the process to the responsible office/person!
 
+<br><br>
 
-
-
-22
-
----
-# Operating instructions
 
 # 2.4 Maintenance, inspection, Testing
 
@@ -725,15 +653,21 @@ Maintenance and servicing work on the machine may only be carried out by reliabl
 
 Personnel to be trained, instructed or undergoing general training may only work on the Winder under the constant supervision of an experienced person!
 
+<br>
+
 # Updating the Winder software
 
 There are regular updates for the "QiTech Control" software, which may contain bug fixes as well as new functions or security updates. It is therefore recommended that you regularly check if new Updates are available and install them as described in section 2.2.
+
+<br>
 
 # Lubricating the traverse spindle
 
 The threaded spindle must be re-oiled after approx. 20 operating hours, but at the latest when the traverser no longer moves to the desired position because the motor is spinning.
 
 To do this, loosen the plate on the top of the housing with an M5 Allen key and drizzle commercially available lubricating oil or grease, e.g. WD40, over the entire length of the threaded spindle.
+
+<br>
 
 # Retightening screw connections
 
@@ -745,35 +679,42 @@ After approx. 100 operating hours, the rear panel of the winder should be remove
 
 All should be tightened at least hand-tight.
 
+<br>
+
 # Replacing the puller rollers
 
 The polyurethane coating of the puller rollers will inevitably wear out over time. As soon as you notice the filament slipping through the rollers, they should be replaced. Suitable spare parts are available from the dealer. To replace them, unfasten the screws marked red in the picture.
 
 Now remove the black plastic caps and simply pull out the puller rollers. To install the new rollers back on, slide them on the axes, put the plastic cap back on and screw the screws.
 
+<br>
+
 # Caution!
 
 Observe the instructions for maintenance work when servicing the machine!
 
 
+<br>
+<br>
 
-
-23
-
----
-# Operating instructions
 
 # 2.5 Troubleshooting and fault rectification
+
+<br>
 
 # Machine is not recognized by QiTech Control
 
 - Is the LAN-cable connected?
 - Is the latest version of QiTech Control installed?
 
+<br>
+
 # Filament tears off frequently
 
 - Was the filament sufficiently cooled before winding?
 - Is the filament within the permitted diameter range of 1mm - 3mm?
+
+<br>
 
 # Puller rollers are scored
 
@@ -783,6 +724,8 @@ It is normal for the puller rollers to wear out over time. However, some options
 - Is the filament slipping through the rollers instead of being conveyed by them, causing more abrasion?
 - Is the tension of the filament too strong?
 
+<br>
+
 # Filament is not wound perfectly parallel
 
 - How large is the inner diameter of the spool on which the filament is wound? The closer the winding is to the traverse, the better the winding pattern will be.
@@ -791,21 +734,20 @@ It is normal for the puller rollers to wear out over time. However, some options
 - Have you tried to fine-tune the two settings independently of the procedure described here?
 - Does the problem already occur in the first layer, or only afterwards? If the first layer is not perfectly wound (e.g. due to skewed threading), the filament in the subsequent layers always slips into the gaps in the winding below and "perfect winding" can no longer take place.
 
+<br>
+
 # Winder suddenly switches off
 
 One of the motor drivers has probably overheated. To prevent uncontrolled winding behavior, the controller therefore switches off the entire winder. It is advisable to wait approx. 5 minutes and try winding again. If the error occurs frequently, a lower ambient temperature (optionally housing temperature) must be ensured.
+
+<br>
 
 # Load adjustment does not work correctly at high or low speeds
 
 The sensor inside the housing has probably twisted and the load adjustment range has therefore shifted upwards or downwards. To rectify this, turn the angle sensor back and tighten its screws as described in "Tightening screw connections".
 
 
-
-
-24
-
----
-# Operating instructions
+<br><br>
 
 # 2.6 Disassembly, decommissioning and Disposal
 
@@ -819,11 +761,8 @@ Appliances with this logo on the packaging or on the appliance must be disposed 
 
 
 
+<br><br><br>
 
-25
-
----
-Operating instructions
 
 # 3 Hazard warning and information on Residual risks
 
@@ -858,10 +797,7 @@ Automatic speed adjustment of puller, reel and traverse. The bobbin automaticall
 
 
 
-26
 
----
-# Operating instructions
 
 The traverse automatically adjusts its speed to the reel in order to maintain the same travel distance per revolution.
 
@@ -892,12 +828,6 @@ Exercise extreme caution when moving the traverser towards the housing! Do not p
 
 
 
-
-27
-
----
-
-# Operating instructions
 
 # 4 Glossary and Definitions
 
@@ -935,11 +865,6 @@ Risk of injury if insufficiently qualified! Improper handling can lead to consid
 
 
 
-28
-
----
-
-# Operating instructions
 
 # Life phases of the machine / system
 
@@ -963,4 +888,3 @@ Risk of injury if insufficiently qualified! Improper handling can lead to consid
 
 
 
-29
