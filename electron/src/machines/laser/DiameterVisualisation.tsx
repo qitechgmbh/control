@@ -74,7 +74,7 @@ export function DiameterVisualisation({
         pixelMax,
       );
     } else {
-      let dynamicDiameterPxLerp = lerp(
+      const dynamicDiameterPxLerp = lerp(
         actualDiameter,
         maxDia,
         maxDia * 1.5,
