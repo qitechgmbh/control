@@ -12,7 +12,7 @@ use uom::si::{
     frequency::{hertz, millihertz},
 };
 
-use crate::machines::{mock::MockMachine, MACHINE_MOCK2, VENDOR_QITECH};
+use crate::machines::{mock::MockMachine, mock2::api::ConnectedMachineState, MACHINE_MOCK2, VENDOR_QITECH};
 
 pub mod act;
 pub mod api;
@@ -125,9 +125,19 @@ impl Mock2Machine {
             mode_state: ModeState {
                 mode: self.mode.clone(),
             },
-            connected_machine_state: self.connected_mock
-                .as_ref()
-                .map(ConnectedMachineData::from),
+             connected_machine_state: ConnectedMachineState {
+                machine_identification_unique: self
+                    .connected_mock
+                    .as_ref()
+                    .map(|connected_machine| 
+                        ConnectedMachineData::from(connected_machine).machine_identification_unique.clone()),
+                is_available: self
+                    .connected_mock
+                    .as_ref()
+                    .map(|connected_machine| 
+                        ConnectedMachineData::from(connected_machine).is_available)
+                    .unwrap_or(false),
+            },
         };
 
         // Only emit if values have changed or this is the first emission

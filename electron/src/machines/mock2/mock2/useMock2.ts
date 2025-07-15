@@ -1,98 +1,130 @@
 import { toastError } from "@/components/Toast";
 import { useMachineMutate as useMachineMutation } from "@/client/useClient";
-import { MachineIdentificationUnique } from "@/machines/types";
+import {
+  machineIdentification,
+  machineIdentificationUnique,
+  MachineIdentificationUnique,
+} from "@/machines/types";
 import { mock2 } from "@/machines/properties";
 import { mock2SerialRoute } from "@/routes/routes";
 import { z } from "zod";
-import { useMock2Namespace, Mode } from "./mock2Namespace";
+import { useMock2Namespace, Mode, StateEvent } from "./mock2Namespace";
 import { useEffect, useMemo } from "react";
 import { useStateOptimistic } from "@/lib/useStateOptimistic";
+import { produce } from "immer";
+import { useMachines } from "@/client/useMachines";
 
 function useMock(machine_identification_unique: MachineIdentificationUnique) {
-  // Write Path
-  const mockStateOptimistic = useStateOptimistic<{
-    frequency: number;
-  }>();
+  // Get consolidated state and live values from namespace
+  const { state, defaultState, sineWave } = useMock2Namespace(
+    machine_identification_unique,
+  );
 
-  const modeStateOptimistic = useStateOptimistic<{
-    mode: Mode;
-  }>();
+  // Single optimistic state for all state management
+  const stateOptimistic = useStateOptimistic<StateEvent>();
 
+  // Update optimistic state when real state changes
+  useEffect(() => {
+    if (state) {
+      stateOptimistic.setReal(state);
+    }
+  }, [state]);
+
+  // Helper function for optimistic updates using produce
+  const updateStateOptimistically = (
+    producer: (current: StateEvent) => void,
+    serverRequest: () => Promise<any>,
+  ) => {
+    const currentState = stateOptimistic.value;
+    if (currentState) {
+      stateOptimistic.setOptimistic(produce(currentState, producer));
+    }
+    serverRequest()
+      .then((response) => {
+        if (!response.success) stateOptimistic.resetToReal();
+      })
+      .catch(() => stateOptimistic.resetToReal());
+  };
+
+  // Action functions with verb-first names
   const schemaSetFrequency = z.object({ SetFrequency: z.number() });
   const { request: requestSetFrequency } =
     useMachineMutation(schemaSetFrequency);
-  const mockSetFrequency = async (frequency: number) => {
-    if (mockStateOptimistic.value) {
-      mockStateOptimistic.setOptimistic({
-        ...mockStateOptimistic.value,
-        frequency: frequency,
-      });
-    }
-    requestSetFrequency({
-      machine_identification_unique,
-      data: {
-        SetFrequency: frequency,
+  const setFrequency = (frequency: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.sine_wave_state.frequency = frequency;
       },
-    })
-      .then((response) => {
-        if (!response.success) mockStateOptimistic.resetToReal();
-      })
-      .catch(() => mockStateOptimistic.resetToReal());
+      () =>
+        requestSetFrequency({
+          machine_identification_unique,
+          data: {
+            SetFrequency: frequency,
+          },
+        }),
+    );
   };
 
   const schemaSetMode = z.object({ SetMode: z.enum(["Standby", "Running"]) });
   const { request: requestSetMode } = useMachineMutation(schemaSetMode);
-  const mockSetMode = async (mode: Mode) => {
-    if (modeStateOptimistic.value) {
-      modeStateOptimistic.setOptimistic({
-        ...modeStateOptimistic.value,
-        mode: mode,
-      });
-    }
-    requestSetMode({
-      machine_identification_unique,
-      data: {
-        SetMode: mode,
+  const setMode = (mode: Mode) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.mode_state.mode = mode;
       },
-    })
-      .then((response) => {
-        if (!response.success) modeStateOptimistic.resetToReal();
-      })
-      .catch(() => modeStateOptimistic.resetToReal());
+      () =>
+        requestSetMode({
+          machine_identification_unique,
+          data: {
+            SetMode: mode,
+          },
+        }),
+    );
   };
 
-  // Read Path
-  const { sineWave, mockState, modeState } = useMock2Namespace(
-    machine_identification_unique,
+  const { request: requestConnectedMachine } = useMachineMutation(
+    z.object({
+      SetConnectedMachine: machineIdentificationUnique,
+    }),
   );
-
-  // Update real values from server
-  useEffect(() => {
-    if (mockState?.data) {
-      mockStateOptimistic.setReal(mockState.data);
-    }
-  }, [mockState]);
-
-  useEffect(() => {
-    if (modeState?.data) {
-      modeStateOptimistic.setReal(modeState.data);
-    }
-  }, [modeState]);
+  const setConnectedMachine = (machineIdentificationUnique: {
+    machine_identification: {
+      vendor: number;
+      machine: number;
+    };
+    serial: number;
+  }) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.connected_machine_state.machine_identification_unique =
+          machineIdentificationUnique;
+      },
+      () =>
+        requestConnectedMachine({
+          machine_identification_unique: machineIdentificationUnique,
+          data: { SetConnectedMachine: machineIdentificationUnique },
+        }),
+    );
+  };
 
   return {
+    // Consolidated state
+    state: stateOptimistic.value?.data,
+
+    // Default state for initial values
+    defaultState: defaultState?.data,
+
+    // Individual live values (TimeSeries)
     sineWave,
-    mockState,
-    modeState,
-    mockSetFrequency,
-    mockSetMode,
-    mockStateIsLoading:
-      mockStateOptimistic.isOptimistic || !mockStateOptimistic.isInitialized,
-    mockStateIsDisabled:
-      mockStateOptimistic.isOptimistic || !mockStateOptimistic.isInitialized,
-    modeStateIsLoading:
-      modeStateOptimistic.isOptimistic || !modeStateOptimistic.isInitialized,
-    modeStateIsDisabled:
-      modeStateOptimistic.isOptimistic || !modeStateOptimistic.isInitialized,
+
+    // Loading states
+    isLoading: stateOptimistic.isOptimistic,
+    isDisabled: !stateOptimistic.isInitialized,
+
+    // Action functions (verb-first)
+    setFrequency,
+    setMode,
+    setConnectedMachine,
   };
 }
 
@@ -126,7 +158,36 @@ export function useMock2() {
 
   const mock = useMock(machineIdentification);
 
+  const machines = useMachines();
+  // Filter machines for the correct type
+  const filteredMachines = useMemo(
+    () =>
+      machines.filter(
+        (m) =>
+          m.machine_identification_unique.machine_identification.vendor ===
+            machineIdentification.machine_identification.vendor &&
+          m.machine_identification_unique.machine_identification.machine ===
+            machineIdentification.machine_identification.machine,
+      ),
+    [machines, machineIdentification],
+  );
+
+  // Get selected machine by serial
+  const selectedMachine = useMemo(() => {
+    const serial =
+      mock.state?.connected_machine_state?.machine_identification_unique
+        ?.serial;
+
+    return (
+      filteredMachines.find(
+        (m) => m.machine_identification_unique.serial === serial,
+      ) ?? null
+    );
+  }, [filteredMachines, mock.state]);
+
   return {
     ...mock,
+    filteredMachines,
+    selectedMachine,
   };
 }

@@ -7,20 +7,32 @@ import { EditValue } from "@/control/EditValue";
 import { useMock2 } from "./useMock2";
 import { SelectionGroup } from "@/control/SelectionGroup";
 import { Mode } from "./mock2Namespace";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Icon } from "@/components/Icon";
 
 export function Mock2ControlPage() {
   const {
+    state,
+    defaultState,
     sineWave,
-    mockState,
-    modeState,
-    mockSetFrequency,
-    mockSetMode,
-    modeStateIsDisabled,
+    selectedMachine,
+    filteredMachines,
+    setFrequency,
+    setMode,
+    isDisabled,
+    setConnectedMachine,
   } = useMock2();
 
-  // Controlled local states synced with mockState and modeState
-  const frequency = mockState?.data?.frequency ?? 1.0;
-  const mode = modeState?.data?.mode ?? "Standby";
+  // Controlled local states synced with consolidated state
+  const frequency = state?.sine_wave_state?.frequency ?? 1.0;
+  const mode = state?.mode_state?.mode ?? "Standby";
 
   return (
     <Page>
@@ -60,12 +72,12 @@ export function Mock2ControlPage() {
               title="Frequency"
               unit="mHz"
               value={frequency}
-              defaultValue={500}
+              defaultValue={defaultState?.sine_wave_state.frequency}
               min={0.0}
               max={1000}
               step={0.1}
               renderValue={(value) => value.toFixed(0)}
-              onChange={mockSetFrequency}
+              onChange={setFrequency}
             />
           </div>
         </ControlCard>
@@ -75,14 +87,53 @@ export function Mock2ControlPage() {
             <div className="text-sm font-medium">Mode</div>
             <SelectionGroup
               value={mode}
-              onChange={(newMode: Mode) => mockSetMode(newMode)}
-              disabled={modeStateIsDisabled}
+              onChange={(newMode: Mode) => setMode(newMode)}
+              disabled={isDisabled}
               options={{
                 Standby: { children: "Standby" },
                 Running: { children: "Running" },
               }}
             />
           </div>
+        </ControlCard>
+        <ControlCard title="Machine">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex items-center gap-2 rounded border px-4 py-2 text-left">
+                <Icon name="lu:Settings" className="text-xl" />
+                <span>
+                  {selectedMachine?.name ?? "Select a Machine"}{" "}
+                  {selectedMachine?.machine_identification_unique.serial ?? ""}
+                </span>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <DropdownMenuLabel>Available Machines</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {filteredMachines.map((machine) => (
+                <DropdownMenuItem
+                  key={machine.machine_identification_unique.serial}
+                  onClick={() =>
+                    setConnectedMachine(machine.machine_identification_unique)
+                  }
+                  className={`flex min-h-[48px] items-center gap-2 px-4 py-2 ${
+                    state?.connected_machine_state.machine_identification_unique
+                      ?.machine_identification.machine ===
+                    machine.machine_identification_unique.machine_identification
+                      .machine
+                      ? "bg-blue-50"
+                      : ""
+                  }`}
+                >
+                  <Icon name="lu:Settings" className="text-lg" />
+                  <span>
+                    {machine.name} – Serial:{" "}
+                    {machine.machine_identification_unique.serial}
+                  </span>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </ControlCard>
       </ControlGrid>
     </Page>

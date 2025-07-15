@@ -19,7 +19,7 @@ pub fn init_mock(app_state: Arc<AppState>) -> Result<(), anyhow::Error> {
         // Create a mock serial device manually
         let (device_thread_panic_tx, _device_thread_panic_rx) = smol::channel::unbounded();
         let serial_params = SerialDeviceNewParams {
-            path: "/dev/mock-serial".to_string(),
+            path: "/dev/mock-serial1".to_string(),
             device_thread_panic_tx,
         };
 

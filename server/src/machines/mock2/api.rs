@@ -43,7 +43,7 @@ pub struct StateEvent {
     /// mode state
     pub mode_state: ModeState,
     /// connected machine state
-    pub connected_machine_state: Option<ConnectedMachineData>,
+    pub connected_machine_state: ConnectedMachineState,
 }
 
 impl StateEvent {
@@ -62,6 +62,12 @@ pub struct SineWaveState {
 pub struct ModeState {
     /// current mode
     pub mode: Mode,
+}
+
+#[derive(Serialize, Debug, Clone, PartialEq)]
+pub struct ConnectedMachineState {
+    pub machine_identification_unique: Option<MachineIdentificationUnique>,
+    pub is_available: bool,
 }
 
 pub enum Mock2Events {
