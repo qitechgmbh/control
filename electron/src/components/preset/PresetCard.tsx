@@ -1,11 +1,11 @@
 import React from "react";
-import { Preset } from "@/lib/preset/preset";
+import { Preset, PresetData } from "@/lib/preset/preset";
 import { TouchButton } from "@/components/touch/TouchButton";
 import { PresetShowDialog } from "./PresetShowDialog";
 import { Icon } from "../Icon";
 import { PresetPreviewEntry } from "./PresetPreviewTable";
 
-export type PresetCardProps<T> = {
+export type PresetCardProps<T extends PresetData> = {
   preset: Preset<T>;
   onApply: (preset: Preset<T>) => void;
   onOverwrite: (preset: Preset<T>) => void;
@@ -16,7 +16,7 @@ export type PresetCardProps<T> = {
   isActive?: boolean;
 };
 
-export function PresetCard<T>({
+export function PresetCard<T extends PresetData>({
   preset,
   onApply,
   onOverwrite,

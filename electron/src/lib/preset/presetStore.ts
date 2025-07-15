@@ -1,16 +1,16 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { Preset } from "./preset";
+import { Preset, PresetData } from "./preset";
 import { MachineIdentification } from "@/machines/types";
 
 export type PresetStore = {
   presets: Preset<any>[];
   latestPresetIds: Map<MachineIdentification, number>;
 
-  insert: <T>(preset: Omit<Preset<T>, "id">) => Preset<T>;
-  update: <T>(preset: Preset<T>) => void;
-  remove: <T>(preset: Preset<T>) => void;
-  getById: <T>(id: number) => Preset<T> | undefined;
+  insert: <T extends PresetData>(preset: Omit<Preset<T>, "id">) => Preset<T>;
+  update: <T extends PresetData>(preset: Preset<T>) => void;
+  remove: <T extends PresetData>(preset: Preset<T>) => void;
+  getById: <T extends PresetData>(id: number) => Preset<T> | undefined;
 
   setLatestPresetId: (
     machineIdentification: MachineIdentification,
@@ -69,7 +69,7 @@ export const usePresetStore = create<PresetStore>()(
       presets: [],
       latestPresetIds: new Map(),
 
-      insert: <T>(preset: Omit<Preset<T>, "id">) => {
+      insert: <T extends PresetData>(preset: Omit<Preset<T>, "id">) => {
         const state = get();
         const { presets } = state;
         const ids = presets.map((p) => p.id);
@@ -83,22 +83,22 @@ export const usePresetStore = create<PresetStore>()(
         return presetWithId;
       },
 
-      update: <T>(preset: Preset<T>) => {
+      update: <T extends PresetData>(preset: Preset<T>) => {
         const state = get();
-        const presets = state.presets.map((p) =>
+        const presets = state.presets.map((p: Preset<T>) =>
           p.id === preset.id ? preset : p,
         );
         set({ ...state, presets });
       },
 
-      remove: <T>(preset: Preset<T>) => {
+      remove: <T extends PresetData>(preset: Preset<T>) => {
         const state = get();
-        const presets = state.presets.filter((p) => p.id !== preset.id);
+        const presets = state.presets.filter((p: Preset<T>) => p.id !== preset.id);
         set({ ...state, presets });
       },
 
       getById: (id: number) => {
-        return get().presets.find((preset) => preset.id === id);
+        return get().presets.find((preset: Preset<any>) => preset.id === id);
       },
 
       setLatestPresetId: (

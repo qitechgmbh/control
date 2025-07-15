@@ -3,11 +3,11 @@ import {
   machineIdentificationEquals,
 } from "@/machines/types";
 import { usePresetStore } from "./presetStore";
-import { Preset } from "./preset";
+import { Preset, PresetData } from "./preset";
 import { deepEquals } from "@/lib/objects";
 import { useEffect } from "react";
 
-export type Presets<T> = {
+export type Presets<T extends PresetData> = {
   get: () => Preset<T>[];
   createFromCurrentState: (name: string) => Preset<T>;
   updateFromCurrentState: (preset: Preset<T>) => Preset<T>;
@@ -24,7 +24,7 @@ export type UsePresetsParams<T> = {
   defaultData: Partial<T>;
 };
 
-export function usePresets<T>({
+export function usePresets<T extends PresetData>({
   machine_identification,
   schemaVersion,
   currentState,
@@ -32,13 +32,13 @@ export function usePresets<T>({
 }: UsePresetsParams<T>): Presets<T> {
   const store = usePresetStore();
 
-  const defaultPreset =
+  const defaultPreset: Preset<T> | undefined =
     defaultData === undefined
       ? undefined
       : {
           id: -1,
           name: "Machine Defaults",
-          machine_identification,
+          machineIdentificaiton: machine_identification,
           lastModified: new Date(0),
           schemaVersion,
           data: defaultData,
@@ -47,7 +47,7 @@ export function usePresets<T>({
   const createFromCurrentState = (name: string): Preset<T> => {
     const preset = store.insert({
       name,
-      machine_identification,
+      machineIdentificaiton: machine_identification,
       lastModified: new Date(),
       schemaVersion,
       data: currentState,
@@ -75,7 +75,7 @@ export function usePresets<T>({
       .sort((a, b) => b.lastModified.getTime() - a.lastModified.getTime())
       .filter((preset) =>
         machineIdentificationEquals(
-          preset.machine_identification,
+          preset.machineIdentificaiton,
           machine_identification,
         ),
       );
@@ -87,7 +87,7 @@ export function usePresets<T>({
     if (latestPresetId === undefined) {
       latestPreset = store.insert({
         name: "Latest Machine Stettings",
-        machine_identification,
+        machineIdentificaiton: machine_identification,
         lastModified: new Date(),
         schemaVersion,
         data: currentState,
