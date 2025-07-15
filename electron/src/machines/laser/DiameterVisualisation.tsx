@@ -58,6 +58,7 @@ export function DiameterVisualisation({
   };
   const pixelMid = lerp(midDia, minDia, maxDia, pixelMin, pixelMax);
   let dynamicDiameterPx: number | null = null;
+
   const clamp = (value: number, min: number, max: number) =>
     Math.min(Math.max(value, min), max);
 
@@ -73,27 +74,25 @@ export function DiameterVisualisation({
         pixelMax,
       );
     } else {
-      dynamicDiameterPx = lerp(
+      let dynamicDiameterPxLerp = lerp(
         actualDiameter,
         maxDia,
         maxDia * 1.5,
         pixelMax,
         pixelMax * 1.1,
       );
+      dynamicDiameterPx = clamp(
+        dynamicDiameterPxLerp,
+        pixelMin,
+        pixelMax * 1.1,
+      );
     }
-
-    dynamicDiameterPx = clamp(
-      lerp(actualDiameter, minDia, maxDia, pixelMin, pixelMax),
-      pixelMin,
-      pixelMax * 1.1,
-    );
   }
 
   const bigRadius = pixelMax / 2;
   const smallRadius = pixelMin / 2;
   const midRadius = pixelMid / 2;
   const dynamicRadius = dynamicDiameterPx ? dynamicDiameterPx / 2 : 0;
-  console.log(dynamicRadius);
   const inTolerance = actualDiameter >= minDia && actualDiameter <= maxDia;
 
   const centerStyle = (radius: number) => ({
