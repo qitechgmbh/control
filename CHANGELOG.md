@@ -2,11 +2,18 @@
 
 ## Extruder V2
 
-- [#455](https://github.com/qitechgmbh/control/pull/458) Greatly improved stability and precision of pressure-based regulation for the motor
+- [#455](https://github.com/qitechgmbh/control/pull/458), Greatly improved stability and precision of pressure-based regulation for the motor
+- [#467](https://github.com/qitechgmbh/control/pull/468),[#448](https://github.com/qitechgmbh/control/pull/449), [#485](https://github.com/qitechgmbh/control/pull/486) Improved the Responsiveness for motor control and monitoring
+- [#138](https://github.com/qitechgmbh/control/pull/495), Added a Warning in case the Pressure sensor is disconnected or incorrectly wired
+- [#169](https://github.com/qitechgmbh/control/pull/492), Added a Confirmation Dialog when extruder has not reached 90% of target temperature
+
+## Winder V2
+- [#471](https://github.com/qitechgmbh/control/pull/480), Added a live value to track the pulled distance and switching to a different Mode after a given distance.
 
 ## General
 
-- [#121](https://github.com/qitechgmbh/control/pull/121) Use Linux realtime threads for EtherCAT and control loop (PREEMPT_RT)
+- [#121](https://github.com/qitechgmbh/control/pull/121), Use Linux realtime threads for EtherCAT and control loop (PREEMPT_RT)
+- [#138](https://github.com/qitechgmbh/control/pull/495), Updated Quick Start Guide
 
 # `2.1.0`
 
