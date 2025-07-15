@@ -1,10 +1,18 @@
-import { MachineIdentification } from "@/machines/types";
+import { machineIdentificaiton } from "@/machines/types";
+import { z } from "zod";
 
-export type Preset<T> = {
-  id: number;
-  name: string;
-  lastModified: Date;
-  machine_identification: MachineIdentification;
-  schemaVersion: number;
-  data: Partial<T>;
-};
+export type PresetData = z.ZodTypeAny;
+
+export const presetSchema = <S extends PresetData>(dataSchema: S) =>
+  z.object({
+    id: z.number(),
+    name: z.string(),
+    lastModified: z.date(),
+    machineIdentificaiton: machineIdentificaiton,
+    schemaVersion: z.number(),
+    data: dataSchema,
+  });
+
+export type Preset<S extends PresetData> = z.infer<
+  ReturnType<typeof presetSchema<S>>
+>;

@@ -1,19 +1,19 @@
 import React, { Fragment } from "react";
-import { Preset } from "@/lib/preset/preset";
+import { Preset, PresetData } from "@/lib/preset/preset";
 import { renderUnitSymbol, renderUnitSyntax, Unit } from "@/control/units";
 
-export type PresetPreviewEntry<T> = {
+export type PresetPreviewEntry<T extends PresetData> = {
   name: string;
   unit: Unit;
   renderValue: (preset: Preset<T>) => string | undefined;
 };
 
-export type PresetPreviewTableProps<T> = {
+export type PresetPreviewTableProps<T extends PresetData> = {
   preset: Preset<T>;
   entries: PresetPreviewEntry<T>[];
 };
 
-export function PresetPreviewTable<T>({
+export function PresetPreviewTable<T extends PresetData>({
   preset,
   entries,
 }: PresetPreviewTableProps<T>) {

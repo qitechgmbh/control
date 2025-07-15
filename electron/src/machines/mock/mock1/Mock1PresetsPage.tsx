@@ -3,14 +3,17 @@ import { useMock1 } from "./useMock";
 import { mock1 } from "@/machines/properties";
 
 import { PresetsPage } from "@/components/preset/PresetsPage";
-import { Preset } from "@/lib/preset/preset";
+import { Preset, PresetData } from "@/lib/preset/preset";
 import { PresetPreviewEntry } from "@/components/preset/PresetPreviewTable";
+import { z } from "zod";
 
-type Mock1PresetData = {
-  frequency1: number;
-  frequency2: number;
-  frequency3: number;
-};
+const mock1PresetDataSchema: PresetData = z.object({
+  frequency1: z.number(),
+  frequency2: z.number(),
+  frequency3: z.number(),
+});
+
+type Mock1PresetData = z.infer<typeof mock1PresetDataSchema>;
 
 const previewEntries: PresetPreviewEntry<Mock1PresetData>[] = [
   {

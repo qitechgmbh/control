@@ -22,8 +22,8 @@ type EthercatDevice = {
 };
 
 export const machineIdentificaiton = z.object({
-  vendor: z.number(),
-  machine: z.number(),
+  vendor: z.number().int(),
+  machine: z.number().int(),
 });
 
 export type MachineIdentification = z.infer<typeof machineIdentificaiton>;
