@@ -8,7 +8,7 @@
 - [#169](https://github.com/qitechgmbh/control/pull/492), Added a Confirmation Dialog when extruder has not reached 90% of target temperature
 
 ## Winder V2
-- [#471](https://github.com/qitechgmbh/control/pull/480), Added a live value to track the pulled distance and switching to a different Mode after a given distance.
+- [#471](https://github.com/qitechgmbh/control/pull/480), Added a live value to track the pulled distance and the option of switching to a different Mode after a given distance.
 
 ## General
 
