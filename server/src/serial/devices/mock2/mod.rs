@@ -10,7 +10,7 @@ use control_core::{
 };
 use smol::lock::RwLock;
 
-use crate::machines::{MACHINE_MOCK, VENDOR_QITECH};
+use crate::machines::{MACHINE_MOCK2, VENDOR_QITECH};
 
 /// Mock2 serial device for testing Mock2Machine
 /// This provides a minimal SerialDevice implementation that doesn't require actual hardware
@@ -37,7 +37,7 @@ impl SerialDeviceNew for Mock2SerialDevice {
                 machine_identification_unique: MachineIdentificationUnique {
                     machine_identification: MachineIdentification {
                         vendor: VENDOR_QITECH,
-                        machine: MACHINE_MOCK,
+                        machine: MACHINE_MOCK2,
                     },
                     serial: serial,
                 },
