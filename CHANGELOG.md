@@ -3,7 +3,7 @@
 ## Extruder V2
 
 - [#455](https://github.com/qitechgmbh/control/pull/458), Greatly improved stability and precision of pressure-based regulation for the motor
-- [#467](https://github.com/qitechgmbh/control/pull/468),[#448](https://github.com/qitechgmbh/control/pull/449), [#485](https://github.com/qitechgmbh/control/pull/486) Improved the Responsiveness for motor control and monitoring
+- [#467](https://github.com/qitechgmbh/control/pull/468), [#448](https://github.com/qitechgmbh/control/pull/449), [#485](https://github.com/qitechgmbh/control/pull/486) Improved the Responsiveness for motor control and monitoring
 - [#138](https://github.com/qitechgmbh/control/pull/495), Added a Warning in case the Pressure sensor is disconnected or incorrectly wired
 - [#169](https://github.com/qitechgmbh/control/pull/492), Added a Confirmation Dialog when extruder has not reached 90% of target temperature
 
