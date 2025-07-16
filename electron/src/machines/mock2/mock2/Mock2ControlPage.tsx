@@ -17,6 +17,7 @@ export function Mock2ControlPage() {
     selectedMachine,
     filteredMachines,
     setFrequency,
+    setConnectedMachineFrequency,
     setMode,
     isDisabled,
     setConnectedMachine,
@@ -71,6 +72,22 @@ export function Mock2ControlPage() {
               step={0.1}
               renderValue={(value) => value.toFixed(0)}
               onChange={setFrequency}
+            />
+          </div>
+        </ControlCard>
+
+        <ControlCard title="Connected Mock Frequency">
+          <div className="flex flex-col gap-4">
+            <EditValue
+              title="Frequency"
+              unit="mHz"
+              value={frequency}
+              defaultValue={defaultState?.sine_wave_state.frequency}
+              min={0.0}
+              max={1000}
+              step={0.1}
+              renderValue={(value) => value.toFixed(0)}
+              onChange={setConnectedMachineFrequency}
             />
           </div>
         </ControlCard>

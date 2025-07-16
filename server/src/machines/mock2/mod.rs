@@ -166,6 +166,16 @@ impl Mock2Machine {
         self.emit_state();
     }
 
+    /// Testing Connected machine
+    pub fn set_connected_mock_frequency(&mut self, f: f64) {
+        if let Some(connected) = &self.connected_mock {
+            if let Some(mock_arc) = connected.machine.upgrade() {
+                let mut mock = block_on(mock_arc.lock());
+                mock.set_frequency(f);
+            }
+        }
+    }
+
     /// Set the connected mock2 machine
     pub fn set_connected_mock(&mut self, machine_identification_unique: MachineIdentificationUnique) {
         if !matches!(machine_identification_unique.machine_identification, MockMachine::MACHINE_IDENTIFICATION) {

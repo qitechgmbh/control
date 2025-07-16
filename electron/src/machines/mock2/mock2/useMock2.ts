@@ -65,6 +65,27 @@ function useMock(machine_identification_unique: MachineIdentificationUnique) {
     );
   };
 
+  const schemaSetConnectedMachineFrequency = z.object({
+    SetConnectedMachineFrequency: z.number(),
+  });
+  const { request: requestSetConnectedMachineFrequency } = useMachineMutation(
+    schemaSetConnectedMachineFrequency,
+  );
+  const setConnectedMachineFrequency = (frequency: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.sine_wave_state.frequency = frequency;
+      },
+      () =>
+        requestSetConnectedMachineFrequency({
+          machine_identification_unique,
+          data: {
+            SetConnectedMachineFrequency: frequency,
+          },
+        }),
+    );
+  };
+
   const schemaSetMode = z.object({ SetMode: z.enum(["Standby", "Running"]) });
   const { request: requestSetMode } = useMachineMutation(schemaSetMode);
   const setMode = (mode: Mode) => {
@@ -149,6 +170,7 @@ function useMock(machine_identification_unique: MachineIdentificationUnique) {
     // Action functions (verb-first)
     setFrequency,
     setMode,
+    setConnectedMachineFrequency,
     setConnectedMachine,
     disconnectMachine,
   };
