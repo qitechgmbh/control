@@ -7,15 +7,6 @@ import { EditValue } from "@/control/EditValue";
 import { useMock1 } from "./useMock";
 import { SelectionGroup } from "@/control/SelectionGroup";
 import { Mode } from "./mock1Namespace";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Icon } from "@/components/Icon";
 import { MachineSelector } from "@/components/MachineConnectionDropdown";
 
 export function Mock1ControlPage() {
@@ -29,6 +20,7 @@ export function Mock1ControlPage() {
     setMode,
     isDisabled,
     setConnectedMachine,
+    disconnectMachine,
   } = useMock1();
 
   // Controlled local states synced with consolidated state
@@ -102,6 +94,14 @@ export function Mock1ControlPage() {
           selectedMachine={selectedMachine}
           connectedMachineState={state?.connected_machine_state}
           setConnectedMachine={setConnectedMachine}
+          clearConnectedMachine={() => {
+            if (!selectedMachine) return;
+            setConnectedMachine({
+              machine_identification: { vendor: 0, machine: 0 },
+              serial: 0,
+            });
+            disconnectMachine(selectedMachine.machine_identification_unique);
+          }}
         />
       </ControlGrid>
     </Page>

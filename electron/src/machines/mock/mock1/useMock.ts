@@ -107,6 +107,31 @@ function useMock(machine_identification_unique: MachineIdentificationUnique) {
     );
   };
 
+  const { request: requestDisconnectedMachine } = useMachineMutation(
+    z.object({
+      SetDisconnectedMachine: machineIdentificationUnique,
+    }),
+  );
+  const disconnectMachine = (machineIdentificationUnique: {
+    machine_identification: {
+      vendor: number;
+      machine: number;
+    };
+    serial: number;
+  }) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.connected_machine_state.machine_identification_unique =
+          null;
+      },
+      () =>
+        requestDisconnectedMachine({
+          machine_identification_unique: machineIdentificationUnique,
+          data: { SetDisconnectedMachine: machineIdentificationUnique },
+        }),
+    );
+  };
+
   return {
     // Consolidated state
     state: stateOptimistic.value?.data,
@@ -125,6 +150,7 @@ function useMock(machine_identification_unique: MachineIdentificationUnique) {
     setFrequency,
     setMode,
     setConnectedMachine,
+    disconnectMachine,
   };
 }
 
