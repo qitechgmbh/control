@@ -101,7 +101,7 @@ function useMock(machine_identification_unique: MachineIdentificationUnique) {
       },
       () =>
         requestConnectedMachine({
-          machine_identification_unique: machineIdentificationUnique,
+          machine_identification_unique,
           data: { SetConnectedMachine: machineIdentificationUnique },
         }),
     );
@@ -109,7 +109,7 @@ function useMock(machine_identification_unique: MachineIdentificationUnique) {
 
   const { request: requestDisconnectedMachine } = useMachineMutation(
     z.object({
-      SetDisconnectedMachine: machineIdentificationUnique,
+      DisconnectMachine: machineIdentificationUnique,
     }),
   );
   const disconnectMachine = (machineIdentificationUnique: {
@@ -126,8 +126,8 @@ function useMock(machine_identification_unique: MachineIdentificationUnique) {
       },
       () =>
         requestDisconnectedMachine({
-          machine_identification_unique: machineIdentificationUnique,
-          data: { SetDisconnectedMachine: machineIdentificationUnique },
+          machine_identification_unique,
+          data: { DisconnectMachine: machineIdentificationUnique },
         }),
     );
   };

@@ -36,6 +36,7 @@ interface MachineSelectorProps {
       };
       serial: number;
     } | null;
+    is_available: boolean;
   };
   setConnectedMachine: (machine: MachineIdentificationUnique) => void;
   clearConnectedMachine?: () => void;
@@ -82,7 +83,11 @@ export const MachineSelector: React.FC<MachineSelectorProps> = ({
                   isSelected ? "bg-blue-50" : ""
                 }`}
               >
-                <Icon name="lu:Settings" className="text-lg" />
+                {connectedMachineState?.is_available ? (
+                  <Icon name="lu:Power" className="text-lg text-green-600" />
+                ) : (
+                  <Icon name="lu:Power" className="text-lg text-gray-400" />
+                )}
                 <span>
                   {machine.name} – Serial:{" "}
                   {machine.machine_identification_unique.serial}
@@ -96,7 +101,7 @@ export const MachineSelector: React.FC<MachineSelectorProps> = ({
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={clearConnectedMachine}
-                className="flex items-center gap-2 text-red-600 cursor-pointer hover:text-red-600"
+                className="flex cursor-pointer items-center gap-2 text-red-600 hover:text-red-600"
               >
                 <Icon name="lu:Settings" className="text-lg" />
                 <span>Clear Selection</span>
