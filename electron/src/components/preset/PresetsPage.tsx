@@ -19,13 +19,13 @@ export function PresetsPage<T extends PresetData>({
   currentState,
   schemaVersion,
   previewEntries,
-  defaultData,
+  defaultState,
 }: PresetsPageProps<T>) {
   const presets = usePresets<T>({
     machine_identification,
     currentState,
     schemaVersion,
-    defaultData,
+    defaultState,
   });
 
   const [newName, setNewName] = useState("");

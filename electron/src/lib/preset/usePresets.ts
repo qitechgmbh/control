@@ -20,20 +20,20 @@ export type Presets<T extends PresetData> = {
 export type UsePresetsParams<T> = {
   machine_identification: MachineIdentification;
   schemaVersion: number;
-  currentState: Partial<T>;
-  defaultData: Partial<T>;
+  currentState?: T;
+  defaultState?: T;
 };
 
 export function usePresets<T extends PresetData>({
   machine_identification,
   schemaVersion,
   currentState,
-  defaultData,
+  defaultState,
 }: UsePresetsParams<T>): Presets<T> {
   const store = usePresetStore();
 
   const defaultPreset: Preset<T> | undefined =
-    defaultData === undefined
+    defaultState === undefined
       ? undefined
       : {
           id: -1,
@@ -41,7 +41,7 @@ export function usePresets<T extends PresetData>({
           machineIdentificaiton: machine_identification,
           lastModified: new Date(0),
           schemaVersion,
-          data: defaultData,
+          data: defaultState,
         };
 
   const createFromCurrentState = (name: string): Preset<T> => {
