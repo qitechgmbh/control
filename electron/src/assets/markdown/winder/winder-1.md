@@ -13,7 +13,7 @@
 
 # EC Declaration of Conformity
 
-# according to 2006/42/EC, Annex II, No. 1 A
+**according to 2006/42/EC, Annex II, No. 1 A**
 
 The content of the EC Declaration of Conformity corresponds to Annex II, No. 1 A, of Directive 2006/42/EC.
 
@@ -111,7 +111,7 @@ Milan von dem Bussche
 
 
 
-Read before commissioning!
+**Read before commissioning!**
 
 These operating instructions are intended to enable all persons working on the machine to carry out their work safely and correctly.
 
@@ -127,7 +127,11 @@ We therefore ask you to read through the relevant instructions carefully and to 
 
 After unpacking the machine, check for any damage that may have occurred during transport.
 
+<br>
+
 ATTENTION: Before using the machine for the first time, please inform yourself about the national regulations (occupational safety, environment).
+
+<br>
 
 Reproduction and reprinting in any form, even in extracts, requires the written authorization of QiTech Industries.
 
@@ -181,7 +185,7 @@ Operating instructions
 
 # 1.1 Noise emissions
 
-# Sound power level (LWAC)
+ **Sound power level (LWAC)**
 
 | Specification | Value | Unit |
 | ------------- | ----- | ---- |
@@ -189,7 +193,7 @@ Operating instructions
 
 <br><br>
 
-# Workplace-related emission value (LPAC)
+ **Workplace-related emission value (LPAC)**
 
 | Specification | Value | Unit |
 | ------------- | ----- | ---- |
@@ -202,9 +206,9 @@ Noise emission specification according to DIN 45649 Part 1
 
 
 
-# Noise measurement method and operating condition acc: DIN 45635 Part 16 and Part 1605
+Noise measurement method and operating condition acc: DIN 45635 Part 16 and Part 1605
 
-# Accuracy class: 2
+ Accuracy class: 2
 
 <br>
 
@@ -236,16 +240,16 @@ Noise emission specification according to DIN 45649 Part 1
 - Earth and short-circuit the machine
 - Cover or isolate neighboring live parts
 
-1.  Do not reach into moving parts of the machine.
-2.  Keep a safe distance from rotating parts of the machine. Only change the bobbin when the bobbin axis is stationary.
-3.  Keep the work area clean. Do not place any objects on the machine.
-4.  Always switch off the machine when you are not using it.
-5.  Stay with the machine until it has come to a standstill.
-6.  Repairs may only be carried out by qualified specialist personnel! Repair work may only be carried out by persons who are qualified for the repair work in question and who are familiar with the relevant occupational safety regulations.
-7.  Protect the machine from moisture.
-8.  Check the machine regularly for damage. Only replace damaged parts with original parts and have them replaced by qualified specialists. The guarantee and warranty will be invalidated if accessories and spare parts are used that are not authorized for the machine.
-9.  To avoid inadequate lighting, we recommend installing light sources in accordance with national health and safety regulations (e.g. workplace directive).
-10. All persons working on the machine must be trained based on these operating instructions before starting work. In particular, persons working on the machine must be familiarized with the safety markings described in chapter 1.3.
+14.  Do not reach into moving parts of the machine.
+15.  Keep a safe distance from rotating parts of the machine. Only change the bobbin when the bobbin axis is stationary.
+16.  Keep the work area clean. Do not place any objects on the machine.
+17.  Always switch off the machine when you are not using it.
+18.  .  Stay with the machine until it has come to a standstill.
+19. Repairs may only be carried out by qualified specialist personnel! Repair work may only be carried out by persons who are qualified for the repair work in question and who are familiar with the relevant occupational safety regulations.
+20. Protect the machine from moisture.
+21. Check the machine regularly for damage. Only replace damaged parts with original parts and have them replaced by qualified specialists. The guarantee and warranty will be invalidated if accessories and spare parts are used that are not authorized for the machine.
+22. To avoid inadequate lighting, we recommend installing light sources in accordance with national health and safety regulations (e.g. workplace directive).
+23. All persons working on the machine must be trained based on these operating instructions before starting work. In particular, persons working on the machine must be familiarized with the safety markings described in chapter 1.3.
 
 
 <br>
@@ -267,7 +271,6 @@ Noise emission specification according to DIN 45649 Part 1
 
 
 # 1.3 Description of the pictograms, symbols and warning notices used
-
 
 
 
@@ -327,9 +330,16 @@ Noise emission specification according to DIN 45649 Part 1
 
 # 1.4 Intended use
 
-The QiTech Winder is designed for winding and rewinding filaments between 1 mm and 3 mm. The winder must be placed on a stable, level surface and secured if necessary. The test and work sequence is described in chapter 3.4 Work sequence. When using the winder, it is essential that the work steps described in the chapter "Work sequence" or in the operating instructions are followed. In the event of significant changes or deviations, it is necessary to carry out a new risk assessment in accordance with the Machinery Directive and to document the changes in the corresponding documents.
+The QiTech Winder is designed for winding and rewinding filaments between 1 mm and 3 mm.
+ The winder must be placed on a stable, level surface and secured if necessary. The test and work sequence is described in chapter 3.4 Work sequence.
+ When using the winder, it is essential that the work steps described in the chapter "Work sequence" or in the operating instructions are followed. 
+ In the event of significant changes or deviations, it is necessary to carry out a new risk assessment in accordance with the Machinery Directive and to document the changes in the corresponding documents.
 
-The machine is designed exclusively for use inside buildings. The machine must not be operated in potentially explosive atmospheres. Use in the area of food production is prohibited. Use of the machine for purposes other than those specified is prohibited. Other intended uses include cleaning and maintenance work as well as troubleshooting, fault rectification and repair.
+<br>
+
+The machine is designed exclusively for use inside buildings. The machine must not be operated in potentially explosive atmospheres. Use in the area of food production is prohibited. 
+Use of the machine for purposes other than those specified is prohibited.
+ Other intended uses include cleaning and maintenance work as well as troubleshooting, fault rectification and repair.
 
 
 <br><br>
@@ -361,7 +371,9 @@ In addition, the following procedures must be regarded as misuse:
 
 <br><br><br>
 
-Furthermore, there is always the possibility that existing/provided safety guards are dismantled or the existing sensors are manipulated or triggered by means other than the intended components. The misuse mentioned must be explicitly prohibited with reference to these operating instructions and by written operating instructions, and the use of the winder must also be explicitly restricted in the operating instructions to the intended use mentioned above.
+Furthermore, there is always the possibility that existing/provided safety guards are dismantled or the existing sensors are manipulated or triggered by means other than the intended components. 
+
+The misuse mentioned must be explicitly prohibited with reference to these operating instructions and by written operating instructions, and the use of the winder must also be explicitly restricted in the operating instructions to the intended use mentioned above.
 
 Maintenance and repair of the machine may only be carried out by the manufacturer's employees, trained skilled workers or semi-skilled and trained personnel.
 
@@ -378,9 +390,11 @@ Any use of the machine other than the intended use is prohibited and is consider
 
 # 1.7 Description of the safety devices
 
-Emergency stop devices or emergency stop devices
+**Emergency stop devices**
 
-The emergency stop switch is used to quickly stop the machine in the event of danger. It can be reached from all positions in front of the machine. When an emergency stop device is actuated, the entire machine is stopped by disconnecting the mains supply. Hazardous movements are brought to a controlled standstill as quickly as possible. The machine can only be restarted by physically resetting the emergency stop switch and then starting one of the operating modes in the software.
+The emergency stop switch is used to quickly stop the machine in the event of danger. It can be reached from all positions in front of the machine. When an emergency stop device is actuated, the entire machine is stopped by disconnecting the mains supply. 
+
+Hazardous movements are brought to a controlled standstill as quickly as possible. The machine can only be restarted by physically resetting the emergency stop switch and then starting one of the operating modes in the software.
 
 
 
@@ -390,19 +404,19 @@ The emergency stop switch is used to quickly stop the machine in the event of da
 
 
 
-<br><br>
+<br>
 
  **Overheating protection**
 
 If one of the motor drivers becomes too hot, it switches off automatically and sends an error message to the control system. This then stops all other components of the machine.
 
-<br><br>
+<br>
 
  **Spool stop in the event of filament breakage**
 
 If the filament tears during winding, the spool stops automatically after a short time.
 
-<br><br>
+<br>
 
  **Separating protective devices:**
 
@@ -427,7 +441,9 @@ As the owner/operator, you must therefore obtain written confirmation from each 
 
 # 1.9 Noise emissions from the machine during activities
 
-The noise emissions of the machine were measured on the same machine types. Under normal operating conditions, the maximum noise emission of the extruder is below the maximum permitted values. Depending on the activity or the duration of the activity, the operator must determine whether suitable hearing protection is required as part of a risk assessment.
+The noise emissions of the machine were measured on the same machine types. Under normal operating conditions, the maximum noise emission of the extruder is below the maximum permitted values.
+
+ Depending on the activity or the duration of the activity, the operator must determine whether suitable hearing protection is required as part of a risk assessment.
 
 
 <br><br><br>
@@ -449,13 +465,13 @@ The noise emissions of the machine were measured on the same machine types. Unde
 <br><br>
 | Picture | Danger |
 |---------|--------|
-| ![Warning](w001.jpeg)|Risk of injury due to improper transport. Be careful when loading the machine, do not place any limbs under the parts when setting them down, do not stand under suspended loads or between moving loads and walls or machine parts.  Wear personal protective equipment: safety shoes, protective work clothing, protective gloves. 
+| ![Warning](w001.jpeg)|**Risk of injury due to improper transport** <br> Be careful when loading the machine, do not place any limbs under the parts when setting them down, do not stand under suspended loads or between moving loads and walls or machine parts.  Wear personal protective equipment: safety shoes, protective work clothing, protective gloves. 
 
 
 
 | Picture | Caution! |
 |---------|----------|
-| ![Warning](w001.jpeg) |Danger to life due to incorrect installation and commissioning! Errors during installation can lead to life-threatening situations or cause considerable damage to property. Installation and commissioning may only be carried out by the manufacturer's employees. |
+| ![Warning](w001.jpeg) |**Danger to life due to incorrect installation and commissioning!** <brErrors during installation can lead to life-threatening situations or cause considerable damage to property. Installation and commissioning may only be carried out by the manufacturer's employees. |
 
 
 <br><br>
@@ -464,7 +480,9 @@ The noise emissions of the machine were measured on the same machine types. Unde
 
 **Basic installation**
 
-The Winder is supplied with a mobile container, the parking brakes must be applied. The cables must be routed in such a way that they cannot be tripped over.
+The Winder is supplied with a mobile container, the parking brakes must be applied. 
+
+The cables must be routed in such a way that they cannot be tripped over.
 
 
 
@@ -509,11 +527,13 @@ Then start the machine as follows:
 - Make sure that the emergency Stop button is inactive
 - Turn on the display by pressing the button on the right side of the display above the USB connectors
 - Winder then appears in the left column
+  
 **2. Mount the spool on the spool axle**
 - Remove the quick-release fastener
 - Move the driver in the groove to the height of the hole in the spool flank
 - Slide the spool over the axle and the driver
 - Tighten the quick-release fastener again
+  
 **3. Calibrating the spool sides**
 - Select "Control" in the function bar of the software
 - And go to the “Hold” mode
@@ -612,7 +632,7 @@ All settings such as the position of the spool sides, the winding speed or the f
 
 | Picture | Danger! |
 |---------|---------|
-| ![Warning](w001.jpeg) | Danger to life due to operation of the machine in faulty condition. If safety-relevant changes or defects occur on the machine, shut down immediately, secure against restarting and report the process to the responsible office/person! 
+| ![Warning](w001.jpeg) | **Danger to life due to operation of the machine in faulty condition** <br> If safety-relevant changes or defects occur on the machine, shut down immediately, secure against restarting and report the process to the responsible office/person! 
 
 <br><br>
 
@@ -808,7 +828,8 @@ The traverse automatically adjusts its speed to the reel in order to maintain th
 
 
 
-
+<br>
+<br>
 
 
 # 4 Glossary and Definitions
