@@ -1,13 +1,9 @@
 use std::time::{Duration, Instant};
 
 use super::BufferV1;
-use control_core::actors::Actor;
-
-impl Actor for BufferV1 {
-    fn act(
-        &mut self,
-        now: Instant
-    ) -> std::pin::Pin<Box<dyn Future<Output = ()> + Send + '_>> {
+use control_core::machines::new::MachineAct;
+impl MachineAct for BufferV1 {
+    fn act(&mut self, now: Instant) -> std::pin::Pin<Box<dyn Future<Output = ()> + Send + '_>> {
         Box::pin(async move {
             //self.buffer_tower.act(now).await;
 

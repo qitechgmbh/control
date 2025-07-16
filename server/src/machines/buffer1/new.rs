@@ -1,7 +1,6 @@
 use std::time::Instant;
 
 use anyhow::Error;
-use control_core::actors::stepper_driver_el70x1::StepperDriverEL70x1;
 use control_core::converters::linear_step_converter::LinearStepConverter;
 use control_core::machines::identification::DeviceHardwareIdentification;
 use control_core::machines::new::{
@@ -12,15 +11,13 @@ use control_core::machines::new::{
 use control_core::uom_extensions::velocity::meter_per_minute;
 use ethercat_hal::coe::ConfigurableDevice;
 use ethercat_hal::devices::ek1100::EK1100;
+use ethercat_hal::devices::ek1100::EK1100_IDENTITY_A;
 use ethercat_hal::devices::el7031_0030::coe::EL7031_0030Configuration;
 use ethercat_hal::devices::el7031_0030::pdo::EL7031_0030PredefinedPdoAssignment;
-use ethercat_hal::devices::el7031_0030::{
-    self, EL7031_0030, EL7031_0030_IDENTITY_A,
-};
+use ethercat_hal::devices::el7031_0030::{self, EL7031_0030, EL7031_0030_IDENTITY_A};
 use ethercat_hal::devices::el7041_0052::coe::EL7041_0052Configuration;
-use ethercat_hal::devices::el7041_0052::{EL7041_0052Port, EL7041_0052, EL7041_0052_IDENTITY_A};
+use ethercat_hal::devices::el7041_0052::{EL7041_0052, EL7041_0052_IDENTITY_A, EL7041_0052Port};
 use ethercat_hal::devices::{EthercatDeviceUsed, downcast_device, subdevice_identity_to_tuple};
-use ethercat_hal::devices::{ek1100::EK1100_IDENTITY_A};
 use ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1;
 use ethercat_hal::shared_config;
 use ethercat_hal::shared_config::el70x1::{EL70x1OperationMode, StmMotorConfiguration};
@@ -29,13 +26,11 @@ use uom::si::frequency::hertz;
 use uom::si::length::{centimeter, millimeter};
 use uom::si::velocity::Velocity;
 
+use crate::machines::buffer1::BufferV1Mode;
 use crate::machines::buffer1::buffer_tower_controller::BufferTowerController;
 use crate::machines::buffer1::puller_speed_controller::PullerSpeedController;
-use crate::machines::buffer1::BufferV1Mode;
 
-use super::{
-    api::{Buffer1Namespace}, BufferV1
-};
+use super::{BufferV1, api::Buffer1Namespace};
 
 impl MachineNewTrait for BufferV1 {
     fn new<'maindevice>(params: &MachineNewParams) -> Result<Self, Error> {
@@ -158,7 +153,7 @@ impl MachineNewTrait for BufferV1 {
                 (device, config)
             };
 
-           // Role 2
+            // Role 2
             // 1x Stepper Puller
             // EL7031
             let (el7031_0030, el7031_0030_config) = {
@@ -218,29 +213,23 @@ impl MachineNewTrait for BufferV1 {
                     device_guard.set_used(true);
                 }
                 (device, config)
-            }; 
+            };
 
             // LIVE VALUE TESTING
             let t_0 = Instant::now();
             let frequency: Frequency = Frequency::new::<hertz>(0.5);
-            
+
             // Controllers
             let puller_speed_controller = PullerSpeedController::new(
                 Velocity::new::<meter_per_minute>(1.0),
                 Length::new::<millimeter>(1.75),
-                LinearStepConverter::from_diameter(
-                    200,
-                    Length::new::<centimeter>(8.0),
-                ),
+                LinearStepConverter::from_diameter(200, Length::new::<centimeter>(8.0)),
             );
 
             let buffer_tower_controller = BufferTowerController::new(
                 Velocity::new::<meter_per_minute>(1.0),
                 Length::new::<millimeter>(1.75),
-                LinearStepConverter::from_diameter(
-                    200,
-                    Length::new::<centimeter>(8.0),
-                ),
+                LinearStepConverter::from_diameter(200, Length::new::<centimeter>(8.0)),
                 el7041,
                 el7041_config,
             );
@@ -256,7 +245,6 @@ impl MachineNewTrait for BufferV1 {
             };
             buffer.emit_state();
             Ok(buffer)
-            })
-
+        })
     }
 }
