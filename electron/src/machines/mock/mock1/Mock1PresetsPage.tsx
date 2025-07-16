@@ -65,7 +65,7 @@ export function Mock1PresetsPage() {
       schemaVersion={1}
       applyPreset={applyPreset}
       previewEntries={previewEntries}
-      defaultData={toPreset(defaultState)}
+      defaultState={toPreset(defaultState)}
     />
   );
 }
