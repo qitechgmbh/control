@@ -34,7 +34,11 @@ pub struct MockMachine {
     emitted_default_state: bool,
 }
 
-impl Machine for MockMachine {}
+impl Machine for MockMachine {
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+}
 
 impl MockMachine {
     /// Emit live values data event with the current sine wave amplitude
