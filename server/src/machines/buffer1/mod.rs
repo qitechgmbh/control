@@ -1,19 +1,19 @@
 pub mod act;
 pub mod api;
-pub mod new;
 pub mod buffer_tower_controller;
+pub mod new;
 pub mod puller_speed_controller;
 
 use api::{
-    BufferV1Events, Buffer1Namespace, StateEvent, ModeState, SineWaveState, LiveValuesEvent,
+    Buffer1Namespace, BufferV1Events, LiveValuesEvent, ModeState, SineWaveState, StateEvent,
 };
+use buffer_tower_controller::BufferTowerController;
 use control_core::{machines::Machine, socketio::namespace::NamespaceCacheingLogic};
+use puller_speed_controller::PullerSpeedController;
 use serde::{Deserialize, Serialize};
+use std::time::Instant;
 use tracing::info;
 use uom::si::{f64::Frequency, frequency::hertz};
-use std::time::Instant;
-use puller_speed_controller::{PullerSpeedController};
-use buffer_tower_controller::{BufferTowerController};
 
 #[derive(Debug)]
 pub struct BufferV1 {
@@ -38,6 +38,7 @@ impl std::fmt::Display for BufferV1 {
         write!(f, "BufferV1")
     }
 }
+
 impl Machine for BufferV1 {}
 
 impl BufferV1 {
@@ -78,7 +79,7 @@ impl BufferV1 {
             _ => (2.0 * std::f64::consts::PI * freq_hz * elapsed).sin(),
         };
 
-       amplitude
+        amplitude
     }
 
     pub fn change_frequency(&mut self, frequency: f64) {
@@ -98,14 +99,10 @@ impl BufferV1 {
     fn switch_to_standby(&mut self) {
         match self.mode {
             BufferV1Mode::Standby => (),
-            BufferV1Mode::FillingBuffer => {
-
-            }
-            BufferV1Mode::EmptyingBuffer => {
-
-            }
+            BufferV1Mode::FillingBuffer => {}
+            BufferV1Mode::EmptyingBuffer => {}
         };
-    self.mode = BufferV1Mode::Standby;
+        self.mode = BufferV1Mode::Standby;
     }
 
     // Turn on motor and fill buffer
@@ -113,23 +110,19 @@ impl BufferV1 {
         match self.mode {
             BufferV1Mode::Standby => self.fill_buffer(),
             BufferV1Mode::FillingBuffer => (),
-            BufferV1Mode::EmptyingBuffer => {
-
-            }
+            BufferV1Mode::EmptyingBuffer => {}
         };
-    self.mode = BufferV1Mode::FillingBuffer;
+        self.mode = BufferV1Mode::FillingBuffer;
     }
 
     // Turn off motor and empty buffer
     fn switch_to_emptying(&mut self) {
         match self.mode {
             BufferV1Mode::Standby => self.empty_buffer(),
-            BufferV1Mode::FillingBuffer => {
-
-            }
+            BufferV1Mode::FillingBuffer => {}
             BufferV1Mode::EmptyingBuffer => (),
         };
-    self.mode = BufferV1Mode::EmptyingBuffer;
+        self.mode = BufferV1Mode::EmptyingBuffer;
     }
 
     fn switch_mode(&mut self, mode: BufferV1Mode) {
@@ -156,7 +149,7 @@ impl BufferV1 {
         self.emit_state();
     }
     fn set_rpm_state(&mut self, rpm: f64) {
-        //TODO 
+        //TODO
         self.emit_state();
     }
 }
