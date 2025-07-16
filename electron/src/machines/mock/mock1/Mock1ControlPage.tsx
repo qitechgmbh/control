@@ -116,7 +116,7 @@ export function Mock1ControlPage() {
                   onClick={() =>
                     setConnectedMachine(machine.machine_identification_unique)
                   }
-                  className={`flex min-h-[48px] items-center gap-2 px-4 py-2 ${
+                  className={`flex min-h-[48px] cursor-pointer items-center gap-2 px-4 py-2 cursor pointer${
                     state?.connected_machine_state.machine_identification_unique
                       ?.machine_identification.machine ===
                     machine.machine_identification_unique.machine_identification

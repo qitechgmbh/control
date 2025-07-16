@@ -5,7 +5,7 @@ import {
   machineIdentificationUnique,
   MachineIdentificationUnique,
 } from "@/machines/types";
-import { mock1 } from "@/machines/properties";
+import { mock1, VENDOR_QITECH } from "@/machines/properties";
 import { mock1SerialRoute } from "@/routes/routes";
 import { z } from "zod";
 import { useMock1Namespace, Mode, StateEvent } from "./mock1Namespace";
@@ -165,9 +165,9 @@ export function useMock1() {
       machines.filter(
         (m) =>
           m.machine_identification_unique.machine_identification.vendor ===
-            machineIdentification.machine_identification.vendor &&
+            VENDOR_QITECH &&
           m.machine_identification_unique.machine_identification.machine ===
-            machineIdentification.machine_identification.machine,
+            0x0009,
       ),
     [machines, machineIdentification],
   );
