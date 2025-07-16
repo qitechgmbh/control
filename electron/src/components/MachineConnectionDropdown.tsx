@@ -38,6 +38,7 @@ interface MachineSelectorProps {
     } | null;
   };
   setConnectedMachine: (machine: MachineIdentificationUnique) => void;
+  clearConnectedMachine?: () => void;
   title?: string;
 }
 
@@ -46,6 +47,7 @@ export const MachineSelector: React.FC<MachineSelectorProps> = ({
   selectedMachine,
   connectedMachineState,
   setConnectedMachine,
+  clearConnectedMachine,
   title = "Machine",
 }) => {
   return (
@@ -76,7 +78,7 @@ export const MachineSelector: React.FC<MachineSelectorProps> = ({
                 onClick={() =>
                   setConnectedMachine(machine.machine_identification_unique)
                 }
-                className={`flex min-h-[48px] cursor-pointer items-center gap-2 px-4 py-2${
+                className={`flex min-h-[48px] cursor-pointer items-center gap-2 py-2${
                   isSelected ? "bg-blue-50" : ""
                 }`}
               >
@@ -88,6 +90,19 @@ export const MachineSelector: React.FC<MachineSelectorProps> = ({
               </DropdownMenuItem>
             );
           })}
+
+          {clearConnectedMachine && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={clearConnectedMachine}
+                className="flex items-center gap-2 text-red-600 cursor-pointer hover:text-red-600"
+              >
+                <Icon name="lu:Settings" className="text-lg" />
+                <span>Clear Selection</span>
+              </DropdownMenuItem>
+            </>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
     </ControlCard>
