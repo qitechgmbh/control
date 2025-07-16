@@ -49,7 +49,8 @@ export function MachineSelectDropdown({
           <DropdownMenuItem
             key={machine.slug}
             onClick={() => onSelect(machine.slug)}
-            className={selectedMachine === machine.slug ? "bg-blue-50" : ""}
+            className={`cursor-pointer ${
+              selectedMachine === machine.slug ? "bg-blue-50" : ""}`}
           >
             {machine.name}
           </DropdownMenuItem>
