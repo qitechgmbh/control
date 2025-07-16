@@ -75,7 +75,7 @@ Darmstadt, 10/06/2025
 
 
 
-![Milans signature]()
+<img src="signature.jpeg" width="300" height="60"/>
 
 
 
@@ -250,10 +250,10 @@ Noise emission specification according to DIN 45649 Part 1
 
 <br>
 
+| Picture | Danger! |
+|---------|---------|
+| ![Warning](w001.jpeg) | **Danger to life due to technically faulty machine.** <br> The machine may only be used when it is in perfect technical condition and in accordance with its intended use, in a safety-conscious and hazard-conscious manner and in compliance with these operating instructions.  All faults, especially those that could impair safety, must be rectified immediately before starting the winder. Everyone who works on or with the Qitech Winder is responsible for observing these safety aspects! |
 
-| Danger! |picture|
-|--------------|------|
-|Danger to life due to technically faulty machine.<br><br>The machine may only be used when it is in perfect technical condition and in accordance with its intended use, in a safety-conscious and hazard-conscious manner and in compliance with these operating instructions.<br>All faults, especially those that could impair safety, must be rectified immediately before starting the winder.<br><br>**Everyone who works on or with the Qitech Winder is responsible for observing these safety aspects!** | ![Warnsymbol](w001.jpeg) |
 
 
 
@@ -307,38 +307,19 @@ Noise emission specification according to DIN 45649 Part 1
 
 
 
-| Prohibition signs Pictogram      | Pictogram description                                                                 | International pictograms / other Pictogram | Pictogram Description                                         |
+ | Prohibition signs Pictogram      | Pictogram description                                                                 | International pictograms / other Pictogram | Pictogram Description                                         |
 |----------------------------------|--------------------------------------------------------------------------------------|--------------------------------------------|---------------------------------------------------------------|
-| ![P001](p001.jpeg)               | P001 General prohibition sign                                                        | ![F001](f001.jpeg)                         | F001 Fire extinguisher                                        |
-| ![P002](p002.jpeg)               | P002 No smoking                                                                      | ![danger](ANIS_danger.jpeg)                     | ANSI Z535.3 - DANGER                                          |
-| ![P003](p003.jpeg)               | P003 No open flames; fire, open source of ignition and smoking prohibited            | ![warning](ANIS_warning.jpeg)                   | ANSI Z535.3 - WARNING                                         |
-| ![P006](p006.jpeg)               | P006 Prohibited for industrial trucks                                                | ![caution](ANIS_caution.jpeg)                   | ANSI Z535.3 - CAUTION                                         |
-| ![P009](p009.jpeg)               | P009 Climbing prohibited - In the sense of climbing prohibited for unauthorized persons | ![notice](ANIS_notice.jpeg)                     | ANSI Z535.3 - NOTICE                                          |
-| ![P022](p022.jpeg)               | P022 Eating and drinking prohibited                                                  | ![safetyinstructions](safetyinstructions.jpeg) | ANSI Z535.3 - SAFETY INSTRUCTIONS                         |
-| ![P024](p024.jpeg)               | P024 Entering the area prohibited                                                    | ![waste](waste.jpeg)                       | Symbol for separate collection of waste electrical and electronic equipment |
-| ![P031](p031.jpeg)               | P031 Switching prohibited                                                            |                                            |                                                               |
-| ![D-P006](p006.jpeg)           | D-P006 Access prohibited for unauthorized persons                                    |                                            |                                                               |
+| <img src="p001.jpeg" width="158" height="158"/> | P001 General prohibition sign    | <img src="f001.jpeg" width="158" height="158">                      | F001 Fire extinguisher                                        |
+| <img src="p002.jpeg" width="158" height="158"/> | P002 No smoking                                                                      | <img src="ANIS_danger.jpeg" width="232" height="60">                     | ANSI Z535.3 - DANGER                                          |
+| <img src="p003.jpeg" width="158" height="158"/> | P003 No open flames; fire, open source of ignition and smoking prohibited            | <img src="ANIS_warning.jpeg" width="232" height="60">                   | ANSI Z535.3 - WARNING                                         |
+| <img src="p006.jpeg" width="158" height="158"/> | P006 Prohibited for industrial trucks                                                | <img src="ANIS_caution.jpeg" width="232" height="60">                   | ANSI Z535.3 - CAUTION                                         |
+| <img src="p009.jpeg" width="158" height="158"/> | P009 Climbing prohibited - In the sense of climbing prohibited for unauthorized persons | <img src="ANIS_notice.jpeg" width="232" height="60">                     | ANSI Z535.3 - NOTICE                                          |
+| <img src="p022.jpeg" width="158" height="158"/> | P022 Eating and drinking prohibited                                                  | <img src="ANIS_safetyinstructions.jpeg" width="232" height="60"> | ANSI Z535.3 - SAFETY INSTRUCTIONS                         |
+| <img src="p024.jpeg" width="158" height="158"/> | P024 Entering the area prohibited                                                    | <img src="trashcan.jpeg" width="158" height="158">                       | Symbol for separate collection of waste electrical and electronic equipment |
+| <img src="p031.jpeg" width="158" height="158"/> | P031 Switching prohibited                                                            |                                            |                                                               |
+| <img src="D-p006.jpeg" width="158" height="158"/> | D-P006 Access prohibited for unauthorized persons                                    |                                            |                                                               |
 
 
-
-
-| Pictogram                                                                   | Pictogram description                                                | Pictogram | Pictogram Description |
-| --------------------------------------------------------------------------- | -------------------------------------------------------------------- | --------- | --------------------- |
-| P001                                                                        | General prohibition sign                                             | F001      | Fire extinguisher     |
-| P002                                                                        | No smoking                                                           |           |                       |
-| P003                                                                        | No open flames; fire, open source of ignition and smoking prohibited |           |                       |
-| P006                                                                        | Prohibited for industrial trucks                                     |           |                       |
-| ANSI Z535.3 - DANGER                                                        |                                                                      | DANGER    |                       |
-| ANSI Z535.3 - WARNING                                                       |                                                                      | WARNING   |                       |
-| ANSI Z535.3 - CAUTION                                                       |                                                                      | CAUTION   |                       |
-| P009                                                                        | Climbing prohibited                                                  | -         |                       |
-| ANSI Z535.3 - NOTICE                                                        |                                                                      | NOTICE    |                       |
-| In the sense of climbing prohibited for unauthorized persons                |                                                                      |           |                       |
-| P022                                                                        | Eating and drinking prohibited                                       |           |                       |
-| P024                                                                        | Entering the area prohibited                                         |           |                       |
-| Symbol for separate collection of waste electrical and electronic equipment |                                                                      |           |                       |
-| P031                                                                        | Switching prohibited                                                 |           |                       |
-| D-P006                                                                      | Access prohibited for unauthorized persons                           |           |                       |
 
 
 
@@ -375,15 +356,8 @@ In addition, the following procedures must be regarded as misuse:
 <br><br><br>
 
 
-# Minimal Spool Dimensions
+![spool sizes](spools.jpeg)
 
-| 32mm               | 125mm         |
-| ------------------ | ------------- |
-| 50mm               | 70mm          |
-| 10mm               | any size with |
-| 30 printed adapicr |               |
-
-# Figure 1: Authorized coil sizes
 
 <br><br><br>
 
@@ -391,7 +365,7 @@ Furthermore, there is always the possibility that existing/provided safety guard
 
 Maintenance and repair of the machine may only be carried out by the manufacturer's employees, trained skilled workers or semi-skilled and trained personnel.
 
-<br><br>
+<br>
 
 # 1.6 Significant modification / other use
 
@@ -400,7 +374,7 @@ Any use of the machine other than the intended use is prohibited and is consider
 
 
 
-<br><br>
+<br>
 
 # 1.7 Description of the safety devices
 
@@ -408,23 +382,29 @@ Emergency stop devices or emergency stop devices
 
 The emergency stop switch is used to quickly stop the machine in the event of danger. It can be reached from all positions in front of the machine. When an emergency stop device is actuated, the entire machine is stopped by disconnecting the mains supply. Hazardous movements are brought to a controlled standstill as quickly as possible. The machine can only be restarted by physically resetting the emergency stop switch and then starting one of the operating modes in the software.
 
-Figure 2: Emergency stop or emergency stop command device
+
+
+<br>
+
+<img src="emergency_stop.jpeg" width="300" height="300"/>
+
+
 
 <br><br>
 
-# Overheating protection
+ **Overheating protection**
 
 If one of the motor drivers becomes too hot, it switches off automatically and sends an error message to the control system. This then stops all other components of the machine.
 
 <br><br>
 
-# Spool stop in the event of filament breakage
+ **Spool stop in the event of filament breakage**
 
 If the filament tears during winding, the spool stops automatically after a short time.
 
 <br><br>
 
-# Separating protective devices:
+ **Separating protective devices:**
 
 The housing clad with aluminum-dibond plates prevents contact with hot motors, interference with the drive spindle of the traverse and manipulation of the electronics. It also prevents electrostatic charges from jumping from the filament to the electronics.
 
@@ -456,27 +436,33 @@ The noise emissions of the machine were measured on the same machine types. Unde
 
 # 2 Life phases of the machine
 
+<br>
+
 # 2.1 Transport and Assembly
 
-# Requirements for the installation site
+**Requirements for the installation site**
 
 - Installation only in industrial and commercial indoor areas.
 - The surface must be level and solid.
 - The location must be as fire-free as possible and equipped with a fire extinguisher.
 
-# Danger!
+<br><br>
+| Picture | Danger |
+|---------|--------|
+| ![Warning](w001.jpeg)|Risk of injury due to improper transport. Be careful when loading the machine, do not place any limbs under the parts when setting them down, do not stand under suspended loads or between moving loads and walls or machine parts.  Wear personal protective equipment: safety shoes, protective work clothing, protective gloves. 
 
-Risk of injury due to improper transport. Be careful when loading the machine, do not place any limbs under the parts when setting them down, do not stand under suspended loads or between moving loads and walls or machine parts. Wear personal protective equipment: safety shoes, protective work clothing, protective gloves.
 
-# Caution!
 
-Danger to life due to incorrect installation and commissioning! Errors during installation can lead to life-threatening situations or cause considerable damage to property. Installation and commissioning may only be carried out by the manufacturer's employees.
+| Picture | Caution! |
+|---------|----------|
+| ![Warning](w001.jpeg) |Danger to life due to incorrect installation and commissioning! Errors during installation can lead to life-threatening situations or cause considerable damage to property. Installation and commissioning may only be carried out by the manufacturer's employees. |
+
 
 <br><br>
 
 # 2.2 Assembly, installation and Commissioning
 
-# Basic installation
+**Basic installation**
 
 The Winder is supplied with a mobile container, the parking brakes must be applied. The cables must be routed in such a way that they cannot be tripped over.
 
@@ -487,13 +473,17 @@ The Winder is supplied with a mobile container, the parking brakes must be appli
 
 <br>
 
-# Updating the QiTech Control Software
+ **Updating the QiTech Control Software**
 
 The machines are delivered with the newest version of the software installed. Updates, as well as previous updates and the software version can be viewed under Setup-> Updates. If a new version of the software is available, it will be displayed here. To perform the update an internet connection is required. In the next step, click the red "Select" button next to the chosen update. The display will now shut down, and when it is turned back on, the latest version of the software will be installed.
 
 <br>
 
-# Safety Measures
+![screenshot of update tab](screenshot_updates.png)
+
+<br>
+
+**Safety Measures**
 
 Some important safety measures must be observed to ensure safe operation of the QiTech Winder:
 
@@ -515,16 +505,16 @@ A visual inspection must be carried out every working day before the machine is 
 
 Then start the machine as follows:
 
-1. Switch on the machine by plugging in the 220V power supply
+**1. Switch on the machine by plugging in the 220V power supply**
 - Make sure that the emergency Stop button is inactive
 - Turn on the display by pressing the button on the right side of the display above the USB connectors
 - Winder then appears in the left column
-2. Mount the spool on the spool axle
+**2. Mount the spool on the spool axle**
 - Remove the quick-release fastener
 - Move the driver in the groove to the height of the hole in the spool flank
 - Slide the spool over the axle and the driver
 - Tighten the quick-release fastener again
-3. Calibrating the spool sides
+**3. Calibrating the spool sides**
 - Select "Control" in the function bar of the software
 - And go to the “Hold” mode
 - Move the "Outer Limit" slider to the approximate position of the outside of the bobbin
@@ -532,54 +522,32 @@ Then start the machine as follows:
 - Using the laser dot, repeat the previous steps and fine-tune until the dot is exactly on the edge of the inner bobbin flank
 - Repeat the same process for the other outer spool flank
 
-QITECH Back Control Graphs Config
 
-Winder Spool Traverse Tension Arm
 
-Laser Position 78. 78.5 mm
+<br>
 
-% Setup
-
-OUT
-
-| Spool Speed        | Outer Limit | Inner Limit | Tension Arm                 |
-| ------------------ | ----------- | ----------- | --------------------------- |
-| rpm                | 92 mm       | 22 mm       | deg                         |
-| Estimated Diameter | 0.0 cm      | Outer Limit | Set Zero Point              |
-| Mode               | 92          | MILLIMETERS | Puller                      |
-| Speed              | JlhkuHLHHL  | 23 mm       | 11 ml/min                   |
-| Regulation         | OUT         | Speed       | \~8: Diameter               |
-| Pull               | X Abort     | Save        | 680 mm Default Target Speed |
-|                    |             |             | 1.0 ml/min                  |
-
+![screenshot outer limit](screenshot_traverse.png)
 
 <br>
 
 
 
-# 4. Start pulling
+
+
+**4. Start pulling**
 
 - Select “Control” in the function bar
 - Press the "Pull" button
 - Thread the filament through the puller rollers (be careful, counter-rotating rollers!)
 - For extrusion: Use the "Puller, Target Speed" slider to manually adjust the speed until the filament has the desired diameter
 
-| QITECH               | Back        | Control     | Graphs       | Config       |
-| -------------------- | ----------- | ----------- | ------------ | ------------ |
-| Winder               | Spool       | Traverse    |              | Tension Arm  |
-| Setup                | Position    | UU          | 0.0ₘₘ        | 0.0          |
-| OUT                  | Spool Speed | Outer Limit | Inner Limit  | Tension Arm  |
-| rpm                  | 92 mm       | 2           | Target Speed | Ann          |
-| Estimated Diameter   | 0.0cm       |             |              |              |
-| Ik Go to Outer Limit |             | 1           | Mode         | Laserpointer |
-| Off                  |             | On          | numin        |              |
-| Standby              | Hold        | Home        | MAX          |              |
-| Go to                | Abort       | Save        | 1.0 m/min    | Default      |
-| < Pull               | Wind        | 1.0 mmin    |              |              |
+<br>
+
+![screernshot target speed](screenshot_targetspeed.png)
 
 <br>
 
-# 5. Start winding
+ **5. Start winding**
 
 - Rotate the load arm upwards and place it on the puller
 - Press the "Wind" button
@@ -588,7 +556,7 @@ OUT
 
 <br>
 
-# 6. Change the spool
+**6. Change the spool**
 
 - Press the "Pull" button
 - Remove the spool as described above and insert a new spool
@@ -596,7 +564,7 @@ OUT
 
 <br>
 
-# 7. Stopping the winding process
+**7. Stopping the winding process**
 
 - Press the "Hold" button - motors energized but not in motion
 - Select "Standby" mode - no current on the motors
@@ -604,13 +572,15 @@ OUT
 
 <br>
 
-# 8. Switch off the machine 
+ **8. Switch off the machine**
 
 - switch off the machine by disconnecting the power supply cable
 
 <br>
+<br>
 
-# Unwinding filament
+
+**Unwinding filament**
 
 - Mount the filament roll to be unwound onto the spool axle
 - Select “Config” in the function bar
@@ -620,7 +590,7 @@ OUT
 
 <br>
 
-# Changing process variables during operation
+ **Changing process variables during operation**
 
 All settings such as the position of the spool sides, the winding speed or the filament diameter can also be adjusted during the winding process without interrupting it. To do this, change the value in the relevant field and click the "Wind" button again to apply it.
 
@@ -628,7 +598,7 @@ All settings such as the position of the spool sides, the winding speed or the f
 <br>
 
 
-# Rewinding filament
+ **Rewinding filament**
 
 - Mount the full spool in front of the Puller wheels, so that it can spin freely
 - Mount the empty bobbin on the bobbin axle
@@ -640,9 +610,9 @@ All settings such as the position of the spool sides, the winding speed or the f
 
 <br>
 
-# Danger!
-
-Danger to life due to operation of the machine in faulty condition. If safety-relevant changes or defects occur on the machine, shut down immediately, secure against restarting and report the process to the responsible office/person!
+| Picture | Danger! |
+|---------|---------|
+| ![Warning](w001.jpeg) | Danger to life due to operation of the machine in faulty condition. If safety-relevant changes or defects occur on the machine, shut down immediately, secure against restarting and report the process to the responsible office/person! 
 
 <br><br>
 
@@ -655,13 +625,13 @@ Personnel to be trained, instructed or undergoing general training may only work
 
 <br>
 
-# Updating the Winder software
+**Updating the Winder software**
 
 There are regular updates for the "QiTech Control" software, which may contain bug fixes as well as new functions or security updates. It is therefore recommended that you regularly check if new Updates are available and install them as described in section 2.2.
 
 <br>
 
-# Lubricating the traverse spindle
+ **Lubricating the traverse spindle**
 
 The threaded spindle must be re-oiled after approx. 20 operating hours, but at the latest when the traverser no longer moves to the desired position because the motor is spinning.
 
@@ -669,7 +639,7 @@ To do this, loosen the plate on the top of the housing with an M5 Allen key and 
 
 <br>
 
-# Retightening screw connections
+ **Retightening screw connections**
 
 After approx. 100 operating hours, the rear panel of the winder should be removed using an M5 Allen key so that the screw connections inside the housing can be retightened. The following should be checked:
 
@@ -681,17 +651,21 @@ All should be tightened at least hand-tight.
 
 <br>
 
-# Replacing the puller rollers
+**Replacing the puller rollers**
 
 The polyurethane coating of the puller rollers will inevitably wear out over time. As soon as you notice the filament slipping through the rollers, they should be replaced. Suitable spare parts are available from the dealer. To replace them, unfasten the screws marked red in the picture.
 
 Now remove the black plastic caps and simply pull out the puller rollers. To install the new rollers back on, slide them on the axes, put the plastic cap back on and screw the screws.
 
+<img src="swapping_out_rollers.jpeg" width="300" height="400"/>
+
+
+<br>
 <br>
 
-# Caution!
-
-Observe the instructions for maintenance work when servicing the machine!
+| Picture | Caution! |
+|---------|----------|
+| ![w001](w001.jpeg)|Observe the instructions for maintenance work when servicing the machine! |
 
 
 <br>
@@ -702,21 +676,21 @@ Observe the instructions for maintenance work when servicing the machine!
 
 <br>
 
-# Machine is not recognized by QiTech Control
+ **Machine is not recognized by QiTech Control**
 
 - Is the LAN-cable connected?
 - Is the latest version of QiTech Control installed?
 
 <br>
 
-# Filament tears off frequently
+**Filament tears off frequently**
 
 - Was the filament sufficiently cooled before winding?
 - Is the filament within the permitted diameter range of 1mm - 3mm?
 
 <br>
 
-# Puller rollers are scored
+ **Puller rollers are scored**
 
 It is normal for the puller rollers to wear out over time. However, some options can be checked:
 
@@ -726,7 +700,7 @@ It is normal for the puller rollers to wear out over time. However, some options
 
 <br>
 
-# Filament is not wound perfectly parallel
+ **Filament is not wound perfectly parallel**
 
 - How large is the inner diameter of the spool on which the filament is wound? The closer the winding is to the traverse, the better the winding pattern will be.
 - Have the spool sides been calibrated as described?
@@ -736,13 +710,13 @@ It is normal for the puller rollers to wear out over time. However, some options
 
 <br>
 
-# Winder suddenly switches off
+ **Winder suddenly switches off**
 
 One of the motor drivers has probably overheated. To prevent uncontrolled winding behavior, the controller therefore switches off the entire winder. It is advisable to wait approx. 5 minutes and try winding again. If the error occurs frequently, a lower ambient temperature (optionally housing temperature) must be ensured.
 
 <br>
 
-# Load adjustment does not work correctly at high or low speeds
+ **Load adjustment does not work correctly at high or low speeds**
 
 The sensor inside the housing has probably twisted and the load adjustment range has therefore shifted upwards or downwards. To rectify this, turn the angle sensor back and tighten its screws as described in "Tightening screw connections".
 
@@ -757,7 +731,9 @@ To do this, first disconnect the entire power supply. All components must then b
 
 The machine consists largely of aluminum and plastic and can be easily separated by loosening the screw connections. Electrical scrap, plastic, rubber seals, lubricants and other auxiliary materials must be disposed of separately by an authorized specialist company.
 
-Appliances with this logo on the packaging or on the appliance must be disposed of separately. These devices must not be disposed of with normal household waste. You are responsible for ensuring that any electrical or electronic waste is disposed of at the appropriate locations, e.g. recycling centers.
+| Picture | Disposal Instructions |
+|---------|-----------------------|
+|  <img src="trashcan.jpeg" width="158" height="137"/>| Appliances with this logo on the packaging or on the appliance must be disposed of separately. These devices must not be disposed of with normal household waste. You are responsible for ensuring that any electrical or electronic waste is disposed of at the appropriate locations, e.g., recycling centers. |
 
 
 
@@ -766,31 +742,43 @@ Appliances with this logo on the packaging or on the appliance must be disposed 
 
 # 3 Hazard warning and information on Residual risks
 
-Danger!
+| Picture | Danger! |
+|---------|---------|
+| ![Warning](w001.jpeg) | **Danger of getting caught, pulled in or pulled along by moving parts of the machine** <br> Do not wear loose long hair, loose clothing or jewelry! There is always a risk of getting caught, pulled in or pulled along by moving parts! |
 
-Danger of getting caught, pulled in or pulled along by moving parts of the machine. Do not wear loose long hair, loose clothing or jewelry! There is always a risk of getting caught, pulled in or pulled along by moving parts!
+<br>
 
-Danger!
+| Picture | Danger! |
+|---------|---------|
+| ![Warning](w001.jpeg) |**Operation only permitted with protective devices fitted!** <br> The winder may only be operated with properly fitted and functioning safety guards. The operator is responsible for ensuring that all protective devices are properly fitted. |
 
-Operation only permitted with protective devices fitted! The winder may only be operated with properly fitted and functioning safety guards. The operator is responsible for ensuring that all protective devices are properly fitted.
+<br>
 
-Danger!
+| Picture | Danger! |
+|---------|---------|
+| ![Warning](w001.jpeg) | **Danger of cutting tensioned filament** <br> The stretched filament must not be touched between the puller and the spool. Danger of cutting! Do not wind any pointed, sharp-edged or particularly thin materials! |
 
-Danger of cutting tensioned filament. The stretched filament must not be touched between the puller and the spool. Danger of cutting! Do not wind any pointed, sharp-edged or particularly thin materials!
+<br>
 
-Danger!
+| Picture | Danger! |
+|---------|---------|
+| ![Warning](w012.jpeg) | **Electric shock** <br> Before carrying out any repair, set-up or maintenance work, the winder must be de-energised by disconnecting the mains plug! Pull out the mains plug! |
 
-Electric shock. Before carrying out any repair, set-up or maintenance work, the winder must be de-energised by disconnecting the mains plug! Pull out the mains plug!
+<br>
 
-Danger!
+| Picture | Danger! |
+|---------|---------|
+| ![Warning](w012.jpeg) | **Electrostatic charges on the puller and spool** <br> Friction of the filament on the puller rollers and on the spool can lead to electrostatic charges. There is a risk of minor electric shocks! Do not touch the affected areas, but keep a sufficient distance! |
 
-Electrostatic charges on the puller and spool. Friction of the filament on the puller rollers and on the spool can lead to electrostatic charges. There is a risk of minor electric shocks! Do not touch the affected areas, but keep a sufficient distance!
-
-Danger!
-
-Automatic speed adjustment of puller, reel and traverse. The bobbin automatically adjusts its speed to keep the winding pressure constant.
+<br>
 
 
+| Picture | Danger! |
+|---------|---------|
+| ![Warning](w018.jpeg) |**Automatic speed adjustment of puller, reel and traverse** <br> The bobbin automatically adjusts its speed to keep the winding pressure constant. |
+
+<br>
+<br>
 
 
 
@@ -801,28 +789,22 @@ Automatic speed adjustment of puller, reel and traverse. The bobbin automaticall
 
 The traverse automatically adjusts its speed to the reel in order to maintain the same travel distance per revolution.
 
-# Danger!
+| Picture | Danger! |
+|---------|---------|
+| ![Warning](w025.jpeg) | **Feeding of body parts** <br> Extreme caution is required in the area of the puller and spool axle! There is an acute danger of getting caught or pulled in! Make sure you wear close-fitting clothing! Always keep the emergency stop switch within easy reach so that it can be activated immediately in an emergency. |
 
-# Feeding of body parts
 
-Extreme caution is required in the area of the puller and spool axle! There is an acute danger of getting caught or pulled in!
+<br>
 
-Make sure you wear close-fitting clothing!
+| Picture | Danger! |
+|---------|---------|
+| ![Warning](w024.jpeg) | **Risk of crushing when threading the filament** <br> Exercise extreme caution when threading the filament through the puller rollers! There is a risk of crushing between the upper and lower pair of rollers. |
 
-Always keep the emergency stop switch within easy reach so that it can be activated immediately in an emergency!
+<br>
 
-# Danger!
-
-# Risk of crushing when threading the filament
-
-Exercise extreme caution when threading the filament through the puller rollers! There is a risk of crushing between the upper and lower pair of rollers.
-
-# Danger!
-
-# Risk of crushing between the traversing unit and machine housing
-
-Exercise extreme caution when moving the traverser towards the housing! Do not place any limbs in the gap!
-
+| Picture | Danger! |
+|---------|---------|
+| ![Warning](w024.jpeg) | **Risk of crushing between the traversing unit and machine housing** <br> Exercise extreme caution when moving the traverser towards the housing! Do not place any limbs in the gap! |
 
 
 
@@ -831,23 +813,31 @@ Exercise extreme caution when moving the traverser towards the housing! Do not p
 
 # 4 Glossary and Definitions
 
-# Specialized personnel
+ **Specialized personnel**
 
 Due to their specialist training, knowledge and experience as well as knowledge of the relevant regulations, skilled personnel are able to carry out the work assigned to them and to recognize and avoid potential hazards independently. It is assumed that specialized personnel have also been instructed (see definition of instructed person).
 
-# Instructed person
+<br>
+
+ **Instructed person**
 
 The instructed person has been instructed by the operator on the tasks assigned to them and the potential hazards associated with improper behavior. The correct execution of the activities is monitored by specialized personnel.
 
-# Qualified electrician
+<br>
+
+**Qualified electrician**
 
 A qualified electrician is someone who is able to assess the work assigned to them and recognize potential hazards based on their technical training, knowledge and experience as well as knowledge of the relevant regulations.
 
-# Operator
+<br>
+
+ **Operator**
 
 The operator is the person who uses, adjusts and monitors the machine in day-to-day operation. He is characterized by experience in handling the machine as well as in-depth knowledge of its functions and how to proceed in the event of a fault.
 
-# Employment ban
+<br>
+
+**Employment ban**
 
 The following persons may not work on the machine:
 
@@ -856,11 +846,16 @@ The following persons may not work on the machine:
 - Pregnant women and nursing mothers
 - Children under 18 years
 
-# Danger!
+<br>
 
-Risk of injury if insufficiently qualified! Improper handling can lead to considerable personal injury and damage to property. Special activities may only be carried out by the persons specified in the relevant sections of these instructions.
+| Picture | Danger! |
+|---------|---------|
+| ![Warning](w001.jpeg) | **Risk of injury if insufficiently qualified!** <br> Improper handling can lead to considerable personal injury and damage to property. Special activities may only be carried out by the persons specified in the relevant sections of these instructions. |
 
 
+<br>
+<br>
+<br>
 
 
 
