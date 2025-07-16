@@ -16,6 +16,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Icon } from "@/components/Icon";
+import { MachineSelector } from "@/components/MachineConnectionDropdown";
 
 export function Mock2ControlPage() {
   const {
@@ -96,45 +97,12 @@ export function Mock2ControlPage() {
             />
           </div>
         </ControlCard>
-        <ControlCard title="Machine">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="flex items-center gap-2 rounded border px-4 py-2 text-left">
-                <Icon name="lu:Settings" className="text-xl" />
-                <span>
-                  {selectedMachine?.name ?? "Select a Machine"}{" "}
-                  {selectedMachine?.machine_identification_unique.serial ?? ""}
-                </span>
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
-              <DropdownMenuLabel>Available Machines</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              {filteredMachines.map((machine) => (
-                <DropdownMenuItem
-                  key={machine.machine_identification_unique.serial}
-                  onClick={() =>
-                    setConnectedMachine(machine.machine_identification_unique)
-                  }
-                  className={`flex min-h-[48px] items-center gap-2 px-4 py-2 cursor-pointer ${
-                    state?.connected_machine_state.machine_identification_unique
-                      ?.machine_identification.machine ===
-                    machine.machine_identification_unique.machine_identification
-                      .machine
-                      ? "bg-blue-50"
-                      : ""
-                  }`}
-                >
-                  <Icon name="lu:Settings" className="text-lg" />
-                  <span>
-                    {machine.name} – Serial:{" "}
-                    {machine.machine_identification_unique.serial}
-                  </span>
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </ControlCard>
+        <MachineSelector
+          machines={filteredMachines}
+          selectedMachine={selectedMachine}
+          connectedMachineState={state?.connected_machine_state}
+          setConnectedMachine={setConnectedMachine}
+        />
       </ControlGrid>
     </Page>
   );
