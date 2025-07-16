@@ -161,7 +161,26 @@ impl MachineManager {
         };
         let machine_weak = Arc::downgrade(machine);
         return Some(machine_weak);
+    }
 
+    pub fn get_serial_weak(
+        &self, machine_identification: &MachineIdentificationUnique
+    ) -> Option<Weak<Mutex<dyn Machine>>> {
+        let machine = self.serial_machines.get(machine_identification);
+        let machine = match machine {
+            Some(machine) => machine,
+            None => {
+                return None;
+            },
+        };
+        let machine = match machine {
+            Ok(machine) => machine,
+            Err(_) => {
+                return None;
+            },
+        };
+        let machine_weak = Arc::downgrade(machine);
+        return Some(machine_weak);
     }
 }
 
