@@ -1,11 +1,12 @@
 use anyhow::anyhow;
-use crate::actors::Actor;
 use api::MachineApi;
 use new::MachineNewTrait;
 use smol::lock::Mutex;
 use std::any::Any;
 use std::fmt::Debug;
 use std::sync::Arc;
+
+use crate::machines::new::MachineAct;
 pub mod api;
 pub mod identification;
 pub mod manager;
@@ -13,7 +14,7 @@ pub mod manager_iter;
 pub mod new;
 pub mod registry;
 
-pub trait Machine: MachineNewTrait + MachineApi + Actor + Any + Debug {
+pub trait Machine: MachineAct + MachineNewTrait + MachineApi + Any + Debug + Send {
     fn as_any(&self) -> &dyn Any;
 }
 /// Casts a `dyn Machine` to a specific machine type

@@ -1,4 +1,4 @@
-use std::{sync::Arc, time::Instant};
+use std::time::Instant;
 
 use control_core::{
     controllers::second_degree_motion::linear_jerk_speed_controller::LinearJerkSpeedController,
@@ -8,19 +8,18 @@ use control_core::{
         velocity::meter_per_minute,
     },
 };
-use ethercat_hal::devices::el7041_0052::{coe::EL7041_0052Configuration, EL7041_0052};
-use smol::lock::RwLock;
+use serde::{Deserialize, Serialize};
 use uom::{
     ConstZero,
     si::f64::{Acceleration, AngularVelocity, Jerk, Length, Velocity},
 };
 
-
 #[derive(Debug)]
-pub struct BufferSpeedController {
+pub struct PullerSpeedController {
     enabled: bool,
     pub target_speed: Velocity,
     pub target_diameter: Length,
+    pub regulation_mode: PullerRegulationMode,
     /// Forward rotation direction. If false, applies negative sign to speed
     pub forward: bool,
     /// Linear acceleration controller to dampen speed change
@@ -28,16 +27,9 @@ pub struct BufferSpeedController {
     /// Converter for linear to angular transformations
     pub converter: LinearStepConverter,
     pub last_speed: Velocity,
-    /// Current buffer capacity
-    pub percentage_filled: u8, 
-    /// Currently homed . If true position is 0%
-    pub homed: bool,
-    //pub position: Length,
-    //pub limit_top: Length,
-    //pub limit_bottom: Length,
 }
 
-impl BufferSpeedController {
+impl PullerSpeedController {
     pub fn new(
         target_speed: Velocity,
         target_diameter: Length,
@@ -46,10 +38,12 @@ impl BufferSpeedController {
         let acceleration = Acceleration::new::<meter_per_minute_per_second>(5.0);
         let jerk = Jerk::new::<meter_per_minute_per_second_squared>(10.0);
         let speed = Velocity::new::<meter_per_minute>(50.0);
+
         Self {
             enabled: false,
             target_speed,
             target_diameter,
+            regulation_mode: PullerRegulationMode::Speed,
             forward: true,
             acceleration_controller: LinearJerkSpeedController::new_simple(
                 Some(speed),
@@ -58,10 +52,9 @@ impl BufferSpeedController {
             ),
             converter,
             last_speed: Velocity::ZERO,
-            percentage_filled: 0,
-            homed: false,
         }
     }
+
     pub fn set_enabled(&mut self, enabled: bool) {
         self.enabled = enabled;
     }
@@ -74,13 +67,20 @@ impl BufferSpeedController {
         self.target_diameter = target;
     }
 
+    pub fn set_regulation_mode(&mut self, regulation: PullerRegulationMode) {
+        self.regulation_mode = regulation;
+    }
+
     pub fn set_forward(&mut self, forward: bool) {
         self.forward = forward;
     }
 
     fn update_speed(&mut self, t: Instant) -> Velocity {
         let speed = match self.enabled {
-            true => self.target_speed,
+            true => match self.regulation_mode {
+                PullerRegulationMode::Speed => self.target_speed,
+                PullerRegulationMode::Diameter => unimplemented!(),
+            },
             false => Velocity::ZERO,
         };
 
@@ -110,4 +110,10 @@ impl BufferSpeedController {
     pub fn get_target_speed(&self) -> Velocity {
         self.target_speed
     }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub enum PullerRegulationMode {
+    Speed,
+    Diameter,
 }

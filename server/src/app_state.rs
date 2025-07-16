@@ -34,7 +34,7 @@ pub struct AppState {
 }
 
 pub type Machines =
-    HashMap<MachineIdentificationUnique, Result<RwLock<dyn Machine>, anyhow::Error>>;
+    HashMap<MachineIdentificationUnique, Result<Arc<RwLock<dyn Machine>>, anyhow::Error>>;
 
 pub struct EthercatSetup {
     /// All Ethercat devices
