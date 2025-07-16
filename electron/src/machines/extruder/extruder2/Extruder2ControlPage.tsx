@@ -155,7 +155,7 @@ export function Extruder2ControlPage() {
                 unit="bar"
                 title="Target Pressure"
                 min={0.0}
-                max={150.0}
+                max={270.0}
                 renderValue={(value) => roundToDecimals(value, 0)}
                 onChange={setInverterTargetPressure}
               />
