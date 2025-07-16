@@ -14,7 +14,7 @@ tmux split-window -h -t $SESSION
 tmux send-keys -t $SESSION:0.0 'cd server' C-m
 tmux send-keys -t $SESSION:0.0 'cargo watch -x run --features mock-machine' C-m
 tmux send-keys -t $SESSION:0.1 'cd electron' C-m
-tmux send-keys -t $SESSION:0.1 'cd electront' C-m
+tmux send-keys -t $SESSION:0.1 'npm start' C-m
 
 # Create a new window
 tmux new-window -t $SESSION -n 'editors'

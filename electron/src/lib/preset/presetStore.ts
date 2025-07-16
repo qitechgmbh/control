@@ -5,14 +5,12 @@ import { MachineIdentification } from "@/machines/types";
 import { z } from "zod";
 import { toastError } from "@/components/Toast";
 
-const persistedPresetSchema = presetSchema(z.any()).extend({
-  lastModified: z.string(),
-});
-
 const persistedStateSchema = z.object({
-  presets: z.array(persistedPresetSchema),
+  presets: z.array(presetSchema(z.any())),
   latestPresetIds: z.map(z.string(), z.number()),
 });
+
+type PersistedState = z.infer<typeof persistedStateSchema>
 
 const localStoreItemSchema = z.object({
   state: z.object({
@@ -20,6 +18,8 @@ const localStoreItemSchema = z.object({
     latestPresetIds: z.array(z.tuple([z.string(), z.number()])).default([]),
   }),
 });
+
+type LocalStoreItem = z.infer<typeof localStoreItemSchema>
 
 type PresetStoreData = {
   presets: Preset<any>[];
@@ -63,13 +63,14 @@ const storage = {
       };
     } catch (e) {
       console.error(e);
-      return null;
     }
+
+    return null;
   },
 
   setItem: (name: string, newValue: any) => {
     const latestPresetIds = Array.from(
-      newValue.state.latestPresetIds.entries(),
+      newValue.state?.latestPresetIds?.entries(),
     );
 
     const serialized = JSON.stringify({
@@ -150,17 +151,9 @@ export const usePresetStore = create<PresetStore>()(
         try {
           const persistedState = persistedStateSchema.parse(persisted);
 
-          const presets = persistedState.presets.map(
-            (preset): Preset<any> => ({
-              ...preset,
-              lastModified: new Date(preset.lastModified),
-            }),
-          );
-
           return {
             ...store,
-            latestPresetIds: persistedState.latestPresetIds,
-            presets,
+            ...persistedState,
           };
         } catch (e) {
           console.error(e);
