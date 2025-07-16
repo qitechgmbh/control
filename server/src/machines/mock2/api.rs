@@ -113,6 +113,7 @@ enum Mutation {
     /// Set the frequency of the sine wave in millihertz
     SetFrequency(f64),
     SetMode(Mode),
+    SetConnectedMachine(MachineIdentificationUnique),
 }
 
 impl NamespaceCacheingLogic<Mock2Events> for Mock2MachineNamespace {
@@ -133,6 +134,9 @@ impl MachineApi for Mock2Machine {
             }
             Mutation::SetMode(mode) => {
                 self.set_mode(mode);
+            }
+            Mutation::SetConnectedMachine(machine_identification_unique) => {
+                self.set_connected_mock(machine_identification_unique);
             }
         }
         Ok(())
