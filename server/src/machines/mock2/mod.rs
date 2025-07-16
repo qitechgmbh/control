@@ -179,7 +179,7 @@ impl Mock2Machine {
         };
         let machine_manager_guard = block_on(machine_manager_arc.read());
         let mock_weak
-            = machine_manager_guard.get_machine_weak(&machine_identification_unique);
+            = machine_manager_guard.get_serial_weak(&machine_identification_unique);
         let mock_weak = match mock_weak {
             Some(mock_weak) => mock_weak,
             None => return,
@@ -200,6 +200,13 @@ impl Mock2Machine {
         });
 
         self.emit_state();
-        
+    }
+
+    pub fn disconnect_mock(&mut self, machine_identification_unique: MachineIdentificationUnique) {
+        if !matches!(machine_identification_unique.machine_identification, MockMachine::MACHINE_IDENTIFICATION) {
+            return
+        }
+        self.connected_mock = None;
+        self.emit_state();
     }
 }

@@ -116,6 +116,7 @@ enum Mutation {
     SetFrequency(f64),
     SetMode(Mode),
     SetConnectedMachine(MachineIdentificationUnique),
+    DisconnectMachine(MachineIdentificationUnique),
 }
 
 impl NamespaceCacheingLogic<MockEvents> for MockMachineNamespace {
@@ -139,6 +140,9 @@ impl MachineApi for MockMachine {
             }
             Mutation::SetConnectedMachine(machine_identification_unique) => {
                 self.set_connected_mock2(machine_identification_unique);
+            }
+            Mutation::DisconnectMachine(machine_identification_unique) => {
+                self.disconnect_mock(machine_identification_unique);
             }
         }
         Ok(())
