@@ -2,7 +2,7 @@ import {
   MachineIdentification,
   machineIdentificationEquals,
 } from "@/machines/types";
-import { usePresetStore } from "./presetStore";
+import { PersistedPreset, usePresetStore } from "./presetStore";
 import { Preset, PresetData } from "./preset";
 import { deepEquals } from "@/lib/objects";
 import { useEffect } from "react";
@@ -46,14 +46,14 @@ export function usePresets<T extends PresetData>({
 
   const createFromCurrentState = (name: string): Preset<T> => {
     const preset = store.insert({
-      name,
-      machineIdentificaiton: machine_identification,
-      lastModified: new Date(),
-      schemaVersion,
-      data: currentState,
+       name,
+       machineIdentificaiton: machine_identification,
+       lastModified: new Date(0),
+       schemaVersion,
+       data: currentState,
     });
 
-    return preset;
+    return { ...preset, data: currentState };
   };
 
   const updateFromCurrentState = (preset: Preset<T>) => {
@@ -82,7 +82,7 @@ export function usePresets<T extends PresetData>({
 
   const getLatestPreset = (): Preset<T> => {
     const latestPresetId = store.getLatestPresetId(machine_identification);
-    let latestPreset: Preset<T>;
+    let latestPreset: PersistedPreset;
 
     if (latestPresetId === undefined) {
       latestPreset = store.insert({
@@ -95,12 +95,14 @@ export function usePresets<T extends PresetData>({
 
       store.setLatestPresetId(machine_identification, latestPreset.id);
     } else {
+      // TODO: use zod here
       latestPreset = store.getById(latestPresetId!)!;
       latestPreset.data = currentState;
       latestPreset.lastModified = new Date();
       store.update(latestPreset);
     }
 
+    // TODO: zod will fix the types
     return latestPreset;
   };
 
@@ -109,7 +111,7 @@ export function usePresets<T extends PresetData>({
   }, [currentState]);
 
   const isLatest = (preset: Preset<T>) => {
-    return preset.id === store.latestPresetIds.get(machine_identification);
+    return preset.id === store.getLatestPresetId(machine_identification);
   };
 
   const isActive = (preset: Preset<T>) => {
