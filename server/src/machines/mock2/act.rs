@@ -1,5 +1,5 @@
 use super::Mock2Machine;
-use control_core::actors::Actor;
+use control_core::machines::new::MachineAct;
 use std::{
     future::Future,
     pin::Pin,
@@ -22,7 +22,7 @@ use std::{
 ///
 /// The method ensures that the sine wave value is updated approximately 60 times per second (16ms intervals) when running.
 ///
-impl Actor for Mock2Machine {
+impl MachineAct for Mock2Machine {
     fn act(&mut self, _now_ts: Instant) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
         Box::pin(async move {
             let now = Instant::now();

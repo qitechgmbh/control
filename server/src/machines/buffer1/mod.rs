@@ -1,7 +1,7 @@
 use api::{
     BufferV1Events, Buffer1Namespace, StateEvent, ModeState, SineWaveState, LiveValuesEvent,
 };
-use control_core::{actors::stepper_driver_el70x1::StepperDriverEL70x1, machines::{downcast_machine, identification::{MachineIdentification, MachineIdentificationUnique}, manager::MachineManager, Machine}, socketio::namespace::NamespaceCacheingLogic, uom_extensions::velocity::meter_per_minute};
+use control_core::{machines::{downcast_machine, identification::{MachineIdentification, MachineIdentificationUnique}, manager::MachineManager, Machine}, socketio::namespace::NamespaceCacheingLogic, uom_extensions::velocity::meter_per_minute};
 use futures::executor::block_on;
 use serde::{Deserialize, Serialize};
 use smol::lock::{Mutex, RwLock};
@@ -9,21 +9,24 @@ use tracing::info;
 use uom::si::{f64::Frequency, frequency::hertz, length::millimeter};
 use std::{any::Any, fmt::Debug, sync::{Arc, Weak}, time::Instant};
 use puller_speed_controller::{PullerSpeedController};
-use buffer_speed_controller::{BufferSpeedController};
+use buffer_speed_controller::BufferSpeedController;
+use ethercat_hal::io::{
+    stepper_velocity_el70x1::StepperVelocityEL70x1,
+};
 
-use crate::machines::{buffer1::api::{BufferState, ConnectedMachineState, PullerState}, winder2::Winder2, MACHINE_BUFFER_V1, VENDOR_QITECH};
+use crate::machines::{buffer1::api::{BufferState, PullerState}, winder2::Winder2, MACHINE_BUFFER_V1, VENDOR_QITECH};
 
 pub mod act;
 pub mod api;
 pub mod new;
-pub mod buffer_speed_controller;
 pub mod puller_speed_controller;
+pub mod buffer_speed_controller;
 
 #[derive(Debug)]
 pub struct BufferV1 {
     // drivers
-    pub buffer: StepperDriverEL70x1,
-    pub puller: StepperDriverEL70x1,
+    pub buffer: StepperVelocityEL70x1,
+    pub puller: StepperVelocityEL70x1,
 
     // controllers
     pub buffer_speed_controller: BufferSpeedController,

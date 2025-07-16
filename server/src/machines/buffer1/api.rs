@@ -1,6 +1,7 @@
 use std::{sync::Arc, time::Duration};
 
-use crate::machines::{buffer1::{puller_speed_controller::PullerRegulationMode, ConnectedMachine}, winder2::Winder2};
+
+use crate::machines::buffer1::puller_speed_controller::PullerRegulationMode;
 
 use super::{BufferV1, BufferV1Mode, ConnectedMachineData};
 use control_core::{

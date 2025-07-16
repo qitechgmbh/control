@@ -2,6 +2,7 @@ pub mod extruder1;
 pub mod laser;
 pub mod mock;
 pub mod mock2;
+pub mod buffer1;
 pub mod registry;
 pub mod winder2;
 

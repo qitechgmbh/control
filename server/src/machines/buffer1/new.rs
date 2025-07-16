@@ -1,7 +1,6 @@
 use std::time::Instant;
 
 use anyhow::Error;
-use control_core::actors::stepper_driver_el70x1::StepperDriverEL70x1;
 use control_core::converters::linear_step_converter::LinearStepConverter;
 use control_core::machines::identification::DeviceHardwareIdentification;
 use control_core::machines::new::{
@@ -29,8 +28,8 @@ use uom::si::frequency::hertz;
 use uom::si::length::{centimeter, millimeter};
 use uom::si::velocity::Velocity;
 
-use crate::machines::buffer1::buffer_speed_controller::BufferSpeedController;
 use crate::machines::buffer1::puller_speed_controller::PullerSpeedController;
+use crate::machines::buffer1::buffer_speed_controller::BufferSpeedController;
 use crate::machines::buffer1::{BufferMode, BufferV1Mode, PullerMode};
 
 use super::{
@@ -244,13 +243,10 @@ impl MachineNewTrait for BufferV1 {
             );
 
             let mut buffer: BufferV1 = Self {
-                buffer: StepperDriverEL70x1::new(
-                    StepperVelocityEL70x1::new(el7041.clone(), EL7041_0052Port::STM1),
-                    &el7041_config.stm_features.speed_range,
-                ),
-                puller: StepperDriverEL70x1::new(
-                    StepperVelocityEL70x1::new(el7031_0030.clone(), EL7031_0030StepperPort::STM1),
-                    &el7031_0030_config.stm_features.speed_range,
+                buffer: StepperVelocityEL70x1::new(el7041, EL7041_0052Port::STM1),
+                puller: StepperVelocityEL70x1::new(
+                    el7031_0030.clone(),
+                    EL7031_0030StepperPort::STM1,
                 ),
                 namespace: Buffer1Namespace::new(params.socket_queue_tx.clone()),
                 last_measurement_emit: Instant::now(),
