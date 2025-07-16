@@ -5,8 +5,14 @@ import { MachineIdentification } from "@/machines/types";
 import { z } from "zod";
 import { toastError } from "@/components/Toast";
 
+const persistedPresetSchema = presetSchema(z.any()).extend({
+    id: z.number().int().nonnegative(),
+})
+
+export type PersistedPreset = z.infer<typeof persistedPresetSchema>
+
 const persistedStateSchema = z.object({
-  presets: z.array(presetSchema(z.any())),
+  presets: z.array(persistedPresetSchema),
   latestPresetIds: z.map(z.string(), z.number()),
 });
 
@@ -22,15 +28,15 @@ const localStoreItemSchema = z.object({
 type LocalStoreItem = z.infer<typeof localStoreItemSchema>
 
 type PresetStoreData = {
-  presets: Preset<any>[];
+  presets: PersistedPreset[];
   latestPresetIds: Map<string, number>;
 };
 
 export type PresetStore = PresetStoreData & {
-  insert: <T extends PresetData>(preset: Omit<Preset<T>, "id">) => Preset<T>;
+  insert: <T extends PresetData>(preset: Preset<T>) => PersistedPreset;
   update: <T extends PresetData>(preset: Preset<T>) => void;
   remove: <T extends PresetData>(preset: Preset<T>) => void;
-  getById: (id: number) => Preset<any> | undefined;
+  getById: (id: number) => PersistedPreset | undefined;
 
   setLatestPresetId: (
     machineIdentification: MachineIdentification,
@@ -92,24 +98,25 @@ export const usePresetStore = create<PresetStore>()(
       presets: [],
       latestPresetIds: new Map(),
 
-      insert: <T extends PresetData>(preset: Omit<Preset<T>, "id">) => {
+      insert: <T extends PresetData>(preset: Preset<T>) => {
         const state = get();
         const { presets } = state;
-        const ids = presets.map((p: Preset<any>) => p.id);
+        const ids = presets.map((p: PersistedPreset) => p.id);
 
-        const presetWithId = preset as Preset<T>;
-        presetWithId.id = Math.max(0, ...ids) + 1;
-        presets.push(presetWithId);
+        const id = Math.max(0, ...ids) + 1;
+
+        const persistedPreset: PersistedPreset = { ...preset, id };
+        presets.push(persistedPreset);
 
         set({ ...state, presets });
 
-        return presetWithId;
+        return persistedPreset;
       },
 
       update: <T extends PresetData>(preset: Preset<T>) => {
         const state = get();
-        const presets = state.presets.map((p: Preset<any>) =>
-          p.id === preset.id ? preset : p,
+        const presets: PersistedPreset[] = state.presets.map((p: PersistedPreset) =>
+          p.id === preset.id ? preset as PersistedPreset : p,
         );
         set({ ...state, presets });
       },
