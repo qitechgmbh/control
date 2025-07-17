@@ -3,14 +3,14 @@ import { Preset, PresetSchema } from "@/lib/preset/preset";
 import { TouchButton } from "@/components/touch/TouchButton";
 import { PresetShowDialog } from "./PresetShowDialog";
 import { Icon } from "../Icon";
-import { PresetPreviewEntry } from "./PresetPreviewTable";
+import { PresetPreviewEntries } from "./PresetPreviewTable";
 
 export type PresetCardProps<T extends PresetSchema> = {
   preset: Preset<T>;
   onApply: (preset: Preset<T>) => void;
   onOverwrite: (preset: Preset<T>) => void;
   onDelete: (preset: Preset<T>) => void;
-  previewEntries: PresetPreviewEntry<T>[];
+  previewEntries: PresetPreviewEntries<T>;
   isReadOnly?: boolean;
   hideDate?: boolean;
   isActive?: boolean;

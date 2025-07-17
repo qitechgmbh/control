@@ -11,11 +11,11 @@ import { TouchButton } from "../touch/TouchButton";
 import { DialogHeader } from "../ui/dialog";
 import { Icon } from "../Icon";
 import { Separator } from "../ui/separator";
-import { PresetPreviewEntry, PresetPreviewTable } from "./PresetPreviewTable";
+import { PresetPreviewEntries, PresetPreviewTable } from "./PresetPreviewTable";
 
 export type PresetShowDialogProps<T extends PresetSchema> = {
   preset: Preset<T>;
-  previewEntries: PresetPreviewEntry<T>[];
+  previewEntries: PresetPreviewEntries<T>;
   onApply: (preset: Preset<T>) => void;
   hideDate?: boolean;
 };
@@ -56,7 +56,7 @@ export function PresetShowDialog<T extends PresetSchema>({
         <div className="flex flex-col gap-6 text-sm text-gray-500">
           {!hideDate && (
             <div>
-              Last modification: {preset.lastModified.toLocaleString() || "N/A"}
+              Latest modification at {preset.lastModified.toLocaleString() || "N/A"}
             </div>
           )}
           <PresetPreviewTable entries={previewEntries} preset={preset} />

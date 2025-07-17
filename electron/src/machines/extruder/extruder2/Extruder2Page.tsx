@@ -32,6 +32,12 @@ export function Extruder2Page() {
         //   icon: "lu:BookOpen",
         //   activeLink: "manual",
         // },
+        {
+          link: "presets",
+          title: "Presets",
+          icon: "lu:Save",
+          activeLink: "presets",
+        },
       ]}
     />
   );

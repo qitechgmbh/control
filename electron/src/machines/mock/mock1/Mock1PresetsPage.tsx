@@ -17,6 +17,8 @@ const mock1PresetDataSchema = z
 
 type Mock1 = typeof mock1PresetDataSchema;
 
+type Mock1PresetData = z.infer<Mock1>;
+
 const previewEntries: PresetPreviewEntry<Mock1>[] = [
   {
     name: "Frequency 1",
@@ -49,7 +51,7 @@ export function Mock1PresetsPage() {
     setFrequency3(frequency3);
   };
 
-  const toPresetData = (s: typeof state) => ({
+  const toPresetData = (s: typeof state): Mock1PresetData => ({
     frequency1: s?.frequency1 ?? defaultState?.frequency1,
     frequency2: s?.frequency2 ?? defaultState?.frequency2,
     frequency3: s?.frequency3 ?? defaultState?.frequency3,

@@ -9,7 +9,7 @@ import {
   spoolSpeedControllerStateSchema,
 } from "./winder2Namespace";
 import { z } from "zod";
-import { PresetPreviewEntry } from "@/components/preset/PresetPreviewTable";
+import { PresetPreviewEntry, previewSeparator } from "@/components/preset/PresetPreviewTable";
 
 const winder2PresetDataSchema = z
   .object({
@@ -54,7 +54,7 @@ const previewEntries: PresetPreviewEntry<Winder2>[] = [
     renderValue: (preset: Preset<Winder2>) =>
       preset.data?.traverse_state?.padding?.toFixed(1),
   },
-  // TODO: Separators
+  previewSeparator,
   {
     name: "Puller Regulation",
     renderValue: (preset: Preset<Winder2>) =>
@@ -83,7 +83,7 @@ const previewEntries: PresetPreviewEntry<Winder2>[] = [
     renderValue: (preset: Preset<Winder2>) =>
       preset.data.puller_state?.target_diameter?.toFixed(1),
   },
-  // TODO: Separators
+  previewSeparator,
   {
     name: "Spool Regulation",
     renderValue: (preset: Preset<Winder2>) =>
@@ -101,7 +101,7 @@ const previewEntries: PresetPreviewEntry<Winder2>[] = [
     renderValue: (preset: Preset<Winder2>) =>
       preset.data.spool_speed_controller_state?.minmax_max_speed?.toFixed(2),
   },
-  // TODO: Separators
+  previewSeparator,
   {
     name: "Spool Max Speed",
     unit: "rpm",
@@ -139,7 +139,6 @@ export function Winder2PresetsPage() {
     enableTraverseLaserpointer,
   } = useWinder2();
 
-  // TODO: Commented out code needs to be implemented in the backend first
   const applyPreset = (preset: Preset<Winder2>) => {
     setTraverseLimitInner(preset.data?.traverse_state?.limit_inner ?? 22);
     setTraverseLimitOuter(preset.data?.traverse_state?.limit_outer ?? 92);
@@ -149,7 +148,7 @@ export function Winder2PresetsPage() {
     setPullerRegulationMode(preset.data?.puller_state?.regulation ?? "Speed");
     setPullerForward(preset.data?.puller_state?.forward ?? true);
     setPullerTargetSpeed(preset.data?.puller_state?.target_speed ?? 1.0);
-    // setPullerTargetDiameter(preset.data?.puller_state?.target_diameter ?? 1.75);
+    setPullerTargetDiameter(preset.data?.puller_state?.target_diameter ?? 1.75);
 
     setSpoolRegulationMode(
       preset.data?.spool_speed_controller_state?.regulation_mode ?? "MinMax",
@@ -161,25 +160,25 @@ export function Winder2PresetsPage() {
       preset.data?.spool_speed_controller_state?.minmax_max_speed ?? 150.0,
     );
 
-    // setSpoolAdaptiveTensionTarget(
-    //   preset.data?.spool_speed_controller_state?.adaptive_tension_target ?? 0.7,
-    // );
-    // setSpoolAdaptiveRadiusLearningRate(
-    //   preset.data?.spool_speed_controller_state?.adaptive_radius_learning_rate ??
-    //     0.5,
-    // );
-    // setSpoolAdaptiveMaxSpeedMultiplier(
-    //   preset.data?.spool_speed_controller_state?.adaptive_max_speed_multiplier ??
-    //     4,
-    // );
-    // setSpoolAdaptiveAccelerationFactor(
-    //   preset.data?.spool_speed_controller_state?.adaptive_acceleration_factor ??
-    //     0.2,
-    // );
-    // setSpoolAdaptiveDeaccelerationUrgencyMultiplier(
-    //   preset.data?.spool_speed_controller_state
-    //     ?.adaptive_deacceleration_urgency_multiplier ?? 15.0,
-    // );
+    setSpoolAdaptiveTensionTarget(
+      preset.data?.spool_speed_controller_state?.adaptive_tension_target ?? 0.7,
+    );
+    setSpoolAdaptiveRadiusLearningRate(
+      preset.data?.spool_speed_controller_state?.adaptive_radius_learning_rate ??
+        0.5,
+    );
+    setSpoolAdaptiveMaxSpeedMultiplier(
+      preset.data?.spool_speed_controller_state?.adaptive_max_speed_multiplier ??
+        4,
+    );
+    setSpoolAdaptiveAccelerationFactor(
+      preset.data?.spool_speed_controller_state?.adaptive_acceleration_factor ??
+        0.2,
+    );
+    setSpoolAdaptiveDeaccelerationUrgencyMultiplier(
+      preset.data?.spool_speed_controller_state
+        ?.adaptive_deacceleration_urgency_multiplier ?? 15.0,
+    );
 
     enableTraverseLaserpointer(
       preset.data.traverse_state?.laserpointer ?? false,
