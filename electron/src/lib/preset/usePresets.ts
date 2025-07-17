@@ -50,7 +50,7 @@ export function usePresets<T extends PresetSchema>({
       id: undefined,
       name,
       machineIdentificaiton: machine_identification,
-      lastModified: new Date(0),
+      lastModified: new Date(),
       schemaVersion,
       data: currentState,
     });

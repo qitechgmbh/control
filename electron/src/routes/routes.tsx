@@ -34,6 +34,7 @@ import { Buffer1Page } from "@/machines/buffer/buffer1/Buffer1Page";
 import { Buffer1ControlPage } from "@/machines/buffer/buffer1/Buffer1ControlPage";
 import { Mock1PresetsPage } from "@/machines/mock/mock1/Mock1PresetsPage";
 import { Winder2PresetsPage } from "@/machines/winder/winder2/Winder2PresetsPage";
+import { Extruder2PresetsPage } from "@/machines/extruder/extruder2/Extruder2PresetsPage";
 
 // make a route tree like this
 // _mainNavigation/machines/winder2/$serial/control
@@ -82,6 +83,12 @@ export const extruder2GraphsRoute = createRoute({
   getParentRoute: () => extruder2Route,
   path: "graphs",
   component: () => <Extruder2GraphsPage />,
+});
+
+export const extruder2PresetsRoute = createRoute({
+  getParentRoute: () => extruder2Route,
+  path: "presets",
+  component: () => <Extruder2PresetsPage />,
 });
 
 export const winder2SerialRoute = createRoute({
@@ -281,6 +288,7 @@ export const rootTree = RootRoute.addChildren([
         extruder2SettingsRoute,
         extruder2ManualRoute,
         extruder2GraphsRoute,
+        extruder2PresetsRoute,
       ]),
 
       mock1SerialRoute.addChildren([
