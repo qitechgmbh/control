@@ -39,6 +39,14 @@ impl MachineNewTrait for MockMachine {
 
         let now = Instant::now();
 
+        let machine_id = params
+            .device_group
+            .first()
+            .expect("device group must have at least one device")
+            .device_machine_identification
+            .machine_identification_unique
+            .clone();
+
         let mut mock_machine = Self {
             namespace: MockMachineNamespace::new(params.socket_queue_tx.clone()),
             last_measurement_emit: now,
@@ -49,6 +57,7 @@ impl MachineNewTrait for MockMachine {
             emitted_default_state: false,
             connected_mock2: None,
             machine_manager: params.machine_manager.clone(),
+            machine_identification_unique: machine_id,
         };
 
         mock_machine.emit_state();

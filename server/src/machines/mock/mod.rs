@@ -1,18 +1,32 @@
 use api::{
     LiveValuesEvent, MockEvents, MockMachineNamespace, Mode, ModeState, SineWaveState, StateEvent,
 };
-use control_core::{machines::{downcast_machine, identification::{MachineIdentification, MachineIdentificationUnique}, manager::MachineManager, Machine}, socketio::namespace::NamespaceCacheingLogic};
+use control_core::{
+    machines::{
+        Machine, downcast_machine,
+        identification::{MachineIdentification, MachineIdentificationUnique},
+        manager::MachineManager,
+    },
+    socketio::namespace::NamespaceCacheingLogic,
+};
 use futures::executor::block_on;
 use serde::Serialize;
+use serial::Parity::ParityEven;
 use smol::lock::{Mutex, RwLock};
+use std::{
+    any::Any,
+    sync::{Arc, Weak},
+    time::Instant,
+};
 use tracing::info;
-use std::{any::Any, sync::{Arc, Weak}, time::Instant};
 use uom::si::{
     f64::Frequency,
     frequency::{hertz, millihertz},
 };
 
-use crate::machines::{mock::api::ConnectedMachineState, mock2::Mock2Machine, MACHINE_MOCK, VENDOR_QITECH};
+use crate::machines::{
+    MACHINE_MOCK, VENDOR_QITECH, mock::api::ConnectedMachineState, mock2::Mock2Machine,
+};
 
 pub mod act;
 pub mod api;
@@ -30,6 +44,7 @@ pub struct MockMachine {
     mode: Mode,
 
     pub machine_manager: Weak<RwLock<MachineManager>>,
+    pub machine_identification_unique: MachineIdentificationUnique,
 
     // connected machines
     pub connected_mock2: Option<ConnectedMachine<Weak<Mutex<Mock2Machine>>>>,
@@ -44,7 +59,7 @@ pub struct MockMachine {
 
 pub trait GetStrongCount {
     fn get_strong_count(&self) -> usize;
-} 
+}
 
 impl<T> GetStrongCount for Weak<Mutex<T>> {
     fn get_strong_count(&self) -> usize {
@@ -65,13 +80,13 @@ pub struct ConnectedMachineData {
 }
 
 impl<T> From<&ConnectedMachine<T>> for ConnectedMachineData
-where T: GetStrongCount
+where
+    T: GetStrongCount,
 {
     fn from(value: &ConnectedMachine<T>) -> Self {
-        Self{
+        Self {
             machine_identification_unique: value.machine_identification_unique.clone(),
-            is_available: value.machine.get_strong_count() != 0
-
+            is_available: value.machine.get_strong_count() != 0,
         }
     }
 }
@@ -126,16 +141,19 @@ impl MockMachine {
                 mode: self.mode.clone(),
             },
             connected_machine_state: ConnectedMachineState {
-                machine_identification_unique: self
-                    .connected_mock2
-                    .as_ref()
-                    .map(|connected_machine| 
-                        ConnectedMachineData::from(connected_machine).machine_identification_unique.clone()),
+                machine_identification_unique: self.connected_mock2.as_ref().map(
+                    |connected_machine| {
+                        ConnectedMachineData::from(connected_machine)
+                            .machine_identification_unique
+                            .clone()
+                    },
+                ),
                 is_available: self
                     .connected_mock2
                     .as_ref()
-                    .map(|connected_machine| 
-                        ConnectedMachineData::from(connected_machine).is_available)
+                    .map(|connected_machine| {
+                        ConnectedMachineData::from(connected_machine).is_available
+                    })
                     .unwrap_or(false),
             },
         };
@@ -149,6 +167,16 @@ impl MockMachine {
 
             // Update last emitted state
             self.last_emitted_state = Some(current_state);
+        }
+
+        // Only emit connected machine state when machine connected
+        if self.connected_mock2.is_some() {
+            if let Some(connected) = &self.connected_mock2 {
+                if let Some(mock2_arc) = connected.machine.upgrade() {
+                    let mut mock2 = block_on(mock2_arc.lock());
+                    mock2.emit_state();
+                }
+            }
         }
     }
 
@@ -167,19 +195,22 @@ impl MockMachine {
     }
 
     /// Set the connected mock2 machine
-    pub fn set_connected_mock2(&mut self, machine_identification_unique: MachineIdentificationUnique) {
-        if !matches!(machine_identification_unique.machine_identification, Mock2Machine::MACHINE_IDENTIFICATION) {
-            return
+    pub fn set_connected_mock2(
+        &mut self,
+        machine_identification_unique: MachineIdentificationUnique,
+    ) {
+        if !matches!(
+            machine_identification_unique.machine_identification,
+            Mock2Machine::MACHINE_IDENTIFICATION
+        ) {
+            return;
         }
         let machine_manager_arc = match self.machine_manager.upgrade() {
             Some(machine_manager_arc) => machine_manager_arc,
-            None => {
-                return
-            },
+            None => return,
         };
         let machine_manager_guard = block_on(machine_manager_arc.read());
-        let mock2_weak
-            = machine_manager_guard.get_serial_weak(&machine_identification_unique);
+        let mock2_weak = machine_manager_guard.get_serial_weak(&machine_identification_unique);
         let mock2_weak = match mock2_weak {
             Some(mock2_weak) => mock2_weak,
             None => return,
@@ -189,8 +220,9 @@ impl MockMachine {
             None => return,
         };
 
-        let mock2: Arc<Mutex<Mock2Machine>>
-            = block_on(downcast_machine::<Mock2Machine>(mock2_strong)).expect("failed downcasting machine");
+        let mock2: Arc<Mutex<Mock2Machine>> =
+            block_on(downcast_machine::<Mock2Machine>(mock2_strong))
+                .expect("failed downcasting machine");
 
         let machine = Arc::downgrade(&mock2);
 
@@ -202,11 +234,28 @@ impl MockMachine {
         info!("Hello there");
 
         self.emit_state();
-        
+
+        let self_id = self.machine_identification_unique.clone();
+        let maybe_clone = machine.upgrade();
+
+        if let Some(mock2_arc) = maybe_clone {
+            tokio::spawn(async move {
+                let mut mock2 = match mock2_arc.lock().await {
+                    guard => guard,
+                };
+                if mock2.connected_mock.is_none() {
+                    mock2.set_connected_mock(self_id);
+                }
+            });
+        }
     }
+
     pub fn disconnect_mock(&mut self, machine_identification_unique: MachineIdentificationUnique) {
-        if !matches!(machine_identification_unique.machine_identification, Mock2Machine::MACHINE_IDENTIFICATION) {
-            return
+        if !matches!(
+            machine_identification_unique.machine_identification,
+            Mock2Machine::MACHINE_IDENTIFICATION
+        ) {
+            return;
         }
         self.connected_mock2 = None;
         self.emit_state();
