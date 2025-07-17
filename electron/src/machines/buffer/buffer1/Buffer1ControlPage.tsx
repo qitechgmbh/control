@@ -7,10 +7,7 @@ import { ControlCard } from "@/control/ControlCard";
 import { SelectionGroup } from "@/control/SelectionGroup";
 
 export function Buffer1ControlPage() {
-  const {
-    state,
-    setBufferMode,
-  } = useBuffer1();
+  const { state, setBufferMode } = useBuffer1();
 
   return (
     <Page>
