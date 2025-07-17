@@ -1,9 +1,9 @@
 import { machineIdentificaiton } from "@/machines/types";
 import { z } from "zod";
 
-export type PresetData = z.ZodTypeAny;
+export type PresetSchema = z.ZodTypeAny;
 
-export const presetSchema = <S extends PresetData>(dataSchema: S) =>
+export const presetSchema = <S extends PresetSchema>(dataSchema: S) =>
   z.object({
     id: z.number().int().nonnegative().optional(),
     name: z.string().nonempty(),
@@ -13,6 +13,6 @@ export const presetSchema = <S extends PresetData>(dataSchema: S) =>
     data: dataSchema,
   });
 
-export type Preset<S extends PresetData> = z.infer<
+export type Preset<S extends PresetSchema> = z.infer<
   ReturnType<typeof presetSchema<S>>
 >;

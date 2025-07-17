@@ -4,16 +4,16 @@ import { TouchButton } from "@/components/touch/TouchButton";
 import { ControlGrid } from "@/control/ControlGrid";
 import { Page } from "@/components/Page";
 import { usePresets, UsePresetsParams } from "@/lib/preset/usePresets";
-import { Preset, PresetData } from "@/lib/preset/preset";
+import { Preset, PresetSchema } from "@/lib/preset/preset";
 import { PresetCard } from "./PresetCard";
 import { PresetPreviewEntry } from "./PresetPreviewTable";
 
-type PresetsPageProps<T extends PresetData> = UsePresetsParams<T> & {
+type PresetsPageProps<T extends PresetSchema> = UsePresetsParams<T> & {
   applyPreset: (preset: Preset<T>) => void;
   previewEntries: PresetPreviewEntry<T>[];
 };
 
-export function PresetsPage<T extends PresetData>({
+export function PresetsPage<T extends PresetSchema>({
   applyPreset,
   machine_identification,
   currentState,

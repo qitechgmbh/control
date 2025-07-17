@@ -4,60 +4,116 @@ import { winder2 } from "@/machines/properties";
 
 import { PresetsPage } from "@/components/preset/PresetsPage";
 import { Preset } from "@/lib/preset/preset";
-import { StateEvent } from "./winder2Namespace";
+import {
+  pullerStateSchema,
+  spoolSpeedControllerStateSchema,
+} from "./winder2Namespace";
+import { z } from "zod";
+import { PresetPreviewEntry } from "@/components/preset/PresetPreviewTable";
 
-type Winder2PresetData = {
-  traverse_state: {
-    limit_inner: number | undefined;
-    limit_outer: number | undefined;
-    step_size: number | undefined;
-    padding: number | undefined;
-    laserpointer: boolean | undefined;
-  };
-  puller_state: Partial<StateEvent["data"]["puller_state"]>;
-  spool_speed_controller_state: Partial<
-    StateEvent["data"]["spool_speed_controller_state"]
-  >;
-};
+const winder2PresetDataSchema = z
+  .object({
+    traverse_state: z.object({
+      limit_inner: z.number(),
+      limit_outer: z.number(),
+      step_size: z.number(),
+      padding: z.number(),
+      laserpointer: z.boolean(),
+    }),
+    puller_state: pullerStateSchema,
+    spool_speed_controller_state: spoolSpeedControllerStateSchema,
+  })
+  .deepPartial();
 
-function renderPreview(preset: Preset<Winder2PresetData>) {
-  return (
-    <>
-      Inner Traverse Limit = {preset.data.traverse_state?.limit_inner ?? "N/A"}{" "}
-      mm <br />
-      Outer Traverse Limit = {preset.data.traverse_state?.limit_outer ??
-        "N/A"}{" "}
-      mm <br />
-      Traverse Step Size = {preset.data.traverse_state?.step_size ??
-        "N/A"} mm <br />
-      Traverse Padding = {preset.data.traverse_state?.padding ?? "N/A"} mm{" "}
-      <br />
-      <br />
-      Puller Regulation = {preset.data.puller_state?.regulation ?? "N/A"} <br />
-      Puller Direction ={" "}
-      {preset.data.puller_state?.forward ? "Forward" : "Backward"} <br />
-      Puller Target Speed = {preset.data.puller_state?.target_speed ??
-        "N/A"}{" "}
-      m/min <br />
-      Puller Target Diameter ={" "}
-      {preset.data.puller_state?.target_diameter ?? "N/A"} mm <br />
-      <br />
-      Spool Regulation ={" "}
-      {preset.data.spool_speed_controller_state?.regulation_mode ?? "N/A"}{" "}
-      <br />
-      Spool Min Speed ={" "}
-      {preset.data.spool_speed_controller_state?.minmax_min_speed ?? "N/A"}{" "}
-      m/min <br />
-      Spool max Speed ={" "}
-      {preset.data.spool_speed_controller_state?.minmax_max_speed ?? "N/A"}{" "}
-      m/min <br />
-    </>
-  );
-}
+type Winder2 = typeof winder2PresetDataSchema;
+
+type Winder2PresetData = z.infer<Winder2>;
+
+const previewEntries: PresetPreviewEntry<Winder2>[] = [
+  {
+    name: "Inner Traverse Limit",
+    unit: "mm",
+    renderValue: (preset: Preset<Winder2>) =>
+      preset.data?.traverse_state?.limit_inner?.toFixed(1) ?? "N/A",
+  },
+  {
+    name: "Outer Traverse Limit",
+    unit: "mm",
+    renderValue: (preset: Preset<Winder2>) =>
+      preset.data?.traverse_state?.limit_outer?.toFixed(1) ?? "N/A",
+  },
+  {
+    name: "Traverse Step Size",
+    unit: "mm",
+    renderValue: (preset: Preset<Winder2>) =>
+      preset.data?.traverse_state?.step_size?.toFixed(1) ?? "N/A",
+  },
+  {
+    name: "Traverse Padding",
+    unit: "mm",
+    renderValue: (preset: Preset<Winder2>) =>
+      preset.data?.traverse_state?.padding?.toFixed(1),
+  },
+  // TODO: Separators
+  {
+    name: "Puller Regulation",
+    renderValue: (preset: Preset<Winder2>) =>
+      preset.data?.puller_state?.regulation,
+  },
+  {
+    name: "Puller Direction",
+    renderValue: (preset: Preset<Winder2>) =>
+      preset.data.puller_state?.forward ? "Forward" : "Backward",
+  },
+  {
+    name: "Puller Target Speed",
+    unit: "m/min",
+    renderValue: (preset: Preset<Winder2>) =>
+      preset.data.puller_state?.target_speed?.toFixed(2),
+  },
+  {
+    name: "Puller Target Diameter",
+    unit: "mm",
+    renderValue: (preset: Preset<Winder2>) =>
+      preset.data.puller_state?.target_diameter?.toFixed(1),
+  },
+  {
+    name: "Puller Target Diameter",
+    unit: "mm",
+    renderValue: (preset: Preset<Winder2>) =>
+      preset.data.puller_state?.target_diameter?.toFixed(1),
+  },
+  // TODO: Separators
+  {
+    name: "Spool Regulation",
+    renderValue: (preset: Preset<Winder2>) =>
+      preset.data.spool_speed_controller_state?.regulation_mode,
+  },
+  {
+    name: "Spool Min Speed",
+    unit: "rpm",
+    renderValue: (preset: Preset<Winder2>) =>
+      preset.data.spool_speed_controller_state?.minmax_min_speed?.toFixed(2),
+  },
+  {
+    name: "Spool Max Speed",
+    unit: "rpm",
+    renderValue: (preset: Preset<Winder2>) =>
+      preset.data.spool_speed_controller_state?.minmax_max_speed?.toFixed(2),
+  },
+  // TODO: Separators
+  {
+    name: "Spool Max Speed",
+    unit: "rpm",
+    renderValue: (preset: Preset<Winder2>) =>
+      preset.data.spool_speed_controller_state?.minmax_max_speed?.toFixed(2),
+  },
+];
 
 export function Winder2PresetsPage() {
   const {
     state,
+    defaultState,
 
     setTraverseStepSize,
     setTraversePadding,
@@ -84,7 +140,7 @@ export function Winder2PresetsPage() {
   } = useWinder2();
 
   // TODO: Commented out code needs to be implemented in the backend first
-  const applyPreset = (preset: Preset<Winder2PresetData>) => {
+  const applyPreset = (preset: Preset<Winder2>) => {
     setTraverseLimitInner(preset.data?.traverse_state?.limit_inner ?? 22);
     setTraverseLimitOuter(preset.data?.traverse_state?.limit_outer ?? 92);
     setTraverseStepSize(preset.data?.traverse_state?.step_size ?? 1.75);
@@ -130,25 +186,26 @@ export function Winder2PresetsPage() {
     );
   };
 
-  const readCurrentState = (): Winder2PresetData => ({
+  const toPresetData = (s: typeof state): Winder2PresetData => ({
     traverse_state: {
-      limit_inner: state?.traverse_state?.limit_inner,
-      limit_outer: state?.traverse_state?.limit_outer,
-      step_size: state?.traverse_state?.step_size,
-      padding: state?.traverse_state?.padding,
-      laserpointer: state?.traverse_state?.laserpointer,
+      limit_inner: s?.traverse_state?.limit_inner,
+      limit_outer: s?.traverse_state?.limit_outer,
+      step_size: s?.traverse_state?.step_size,
+      padding: s?.traverse_state?.padding,
+      laserpointer: s?.traverse_state?.laserpointer,
     },
-    puller_state: state?.puller_state ?? {},
-    spool_speed_controller_state: state?.spool_speed_controller_state ?? {},
+    puller_state: s?.puller_state ?? {},
+    spool_speed_controller_state: s?.spool_speed_controller_state ?? {},
   });
 
   return (
     <PresetsPage
       machine_identification={winder2.machine_identification}
-      readCurrentState={readCurrentState}
+      currentState={toPresetData(state)}
       schemaVersion={1}
+      defaultState={toPresetData(defaultState)}
       applyPreset={applyPreset}
-      renderPreview={renderPreview}
+      previewEntries={previewEntries}
     />
   );
 }

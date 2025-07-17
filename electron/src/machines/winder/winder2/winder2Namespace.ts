@@ -259,7 +259,6 @@ export function winder2MessageHandler(
       } else if (eventName === "LiveValuesEvent") {
         // Parse and validate the live values event
         const liveValuesEvent = liveValuesEventSchema.parse(event);
-        console.log("LiveValuesEvent", liveValuesEvent);
 
         // Extract values and add to time series
         const {
