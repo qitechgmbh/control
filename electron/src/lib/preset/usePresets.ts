@@ -3,11 +3,12 @@ import {
   machineIdentificationEquals,
 } from "@/machines/types";
 import { PersistedPreset, usePresetStore } from "./presetStore";
-import { Preset, PresetData } from "./preset";
+import { Preset, PresetSchema } from "./preset";
 import { deepEquals } from "@/lib/objects";
 import { useEffect } from "react";
+import { z } from "zod";
 
-export type Presets<T extends PresetData> = {
+export type Presets<T extends PresetSchema> = {
   get: () => Preset<T>[];
   createFromCurrentState: (name: string) => Preset<T>;
   updateFromCurrentState: (preset: Preset<T>) => Preset<T>;
@@ -17,14 +18,14 @@ export type Presets<T extends PresetData> = {
   isActive: (preset: Preset<T>) => boolean;
 };
 
-export type UsePresetsParams<T> = {
+export type UsePresetsParams<T extends PresetSchema> = {
   machine_identification: MachineIdentification;
   schemaVersion: number;
-  currentState?: T;
-  defaultState?: T;
+  currentState?: z.infer<T>;
+  defaultState?: z.infer<T>;
 };
 
-export function usePresets<T extends PresetData>({
+export function usePresets<T extends PresetSchema>({
   machine_identification,
   schemaVersion,
   currentState,
@@ -46,11 +47,12 @@ export function usePresets<T extends PresetData>({
 
   const createFromCurrentState = (name: string): Preset<T> => {
     const preset = store.insert({
-       name,
-       machineIdentificaiton: machine_identification,
-       lastModified: new Date(0),
-       schemaVersion,
-       data: currentState,
+      id: undefined,
+      name,
+      machineIdentificaiton: machine_identification,
+      lastModified: new Date(0),
+      schemaVersion,
+      data: currentState,
     });
 
     return { ...preset, data: currentState };
@@ -70,7 +72,7 @@ export function usePresets<T extends PresetData>({
     return newPreset;
   };
 
-  const getPresetsForMachine = () =>
+  const getPresetsForMachine = (): Preset<T>[] =>
     store.presets
       .sort((a, b) => b.lastModified.getTime() - a.lastModified.getTime())
       .filter((preset) =>
@@ -78,7 +80,7 @@ export function usePresets<T extends PresetData>({
           preset.machineIdentificaiton,
           machine_identification,
         ),
-      );
+      ) as Preset<T>[]; // TODO: here we will also use zod und also handle migration
 
   const getLatestPreset = (): Preset<T> => {
     const latestPresetId = store.getLatestPresetId(machine_identification);
@@ -86,6 +88,7 @@ export function usePresets<T extends PresetData>({
 
     if (latestPresetId === undefined) {
       latestPreset = store.insert({
+        id: undefined,
         name: "Latest Machine Stettings",
         machineIdentificaiton: machine_identification,
         lastModified: new Date(),
@@ -103,7 +106,7 @@ export function usePresets<T extends PresetData>({
     }
 
     // TODO: zod will fix the types
-    return latestPreset;
+    return latestPreset as Preset<T>;
   };
 
   useEffect(() => {
