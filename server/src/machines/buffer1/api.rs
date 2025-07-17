@@ -6,7 +6,8 @@ use control_core::{
     socketio::{
         event::{Event, GenericEvent},
         namespace::{
-            cache_duration, cache_one_event, CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic
+            CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_duration,
+            cache_one_event,
         },
     },
 };
@@ -17,10 +18,7 @@ use socketioxide::extract::SocketRef;
 use tracing::instrument;
 
 #[derive(Serialize, Debug, Clone, Default)]
-pub struct LiveValuesEvent {
-    /// sin wave
-    pub sine_wave: f64,
-}
+pub struct LiveValuesEvent {}
 
 impl LiveValuesEvent {
     pub fn build(&self) -> Event<Self> {
@@ -32,8 +30,6 @@ impl LiveValuesEvent {
 pub struct StateEvent {
     /// mode state
     pub mode_state: ModeState,
-    /// sinewave state
-    pub sinewave_state: SineWaveState,
 }
 
 impl StateEvent {
@@ -59,17 +55,10 @@ pub enum Mode {
     EmptyingBuffer,
 }
 
-#[derive(Serialize, Debug, Clone)]
-pub struct SineWaveState {
-    pub frequency: f64,
-}
-
 #[derive(Deserialize, Serialize)]
 enum Mutation {
     //Mode
     SetBufferMode(BufferV1Mode),
-    //Frequency
-    SetBufferFrequency(f64),
 }
 
 #[derive(Debug)]
@@ -105,7 +94,7 @@ impl CacheableEvents<BufferV1Events> for BufferV1Events {
     fn event_cache_fn(&self) -> CacheFn {
         let cache_one_hour = cache_duration(Duration::from_secs(60 * 60), Duration::from_secs(1));
         let cache_one = cache_one_event();
-        
+
         match self {
             BufferV1Events::LiveValues(_) => cache_one_hour,
             BufferV1Events::State(_) => cache_one,
@@ -118,7 +107,6 @@ impl MachineApi for BufferV1 {
         let mutation: Mutation = serde_json::from_value(request_body)?;
         match mutation {
             Mutation::SetBufferMode(mode) => self.set_mode_state(mode),
-            Mutation::SetBufferFrequency(frequency) => self.set_frequency_state(frequency),
         }
         Ok(())
     }
