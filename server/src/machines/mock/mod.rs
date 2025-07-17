@@ -257,6 +257,13 @@ impl MockMachine {
         ) {
             return;
         }
+
+        if let Some(connected) = &self.connected_mock2 {
+            if let Some(mock2_arc) = connected.machine.upgrade() {
+                let mut mock2 = block_on(mock2_arc.lock());
+                mock2.connected_mock = None;
+            }
+        }
         self.connected_mock2 = None;
         self.emit_state();
     }
