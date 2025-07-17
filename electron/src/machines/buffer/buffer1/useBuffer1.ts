@@ -41,9 +41,7 @@ export function useBuffer1() {
   }, [serialString]); // Only recreate when serialString changes
 
   // Get consolidated state and live values from namespace
-  const { state, sine_wave: sine_wave } = useBuffer1Namespace(
-    machineIdentification,
-  );
+  const { state } = useBuffer1Namespace(machineIdentification);
 
   // Single optimistic state for all state management
   const stateOptimistic = useStateOptimistic<StateEvent>();
@@ -81,29 +79,10 @@ export function useBuffer1() {
     );
   };
 
-  const setBufferFrequency = async (frequency: number) => {
-    updateStateOptimistically(
-      (current) => {
-        current.data.sinewave_state.frequency = frequency;
-      },
-      () =>
-        requestBufferFrequency({
-          machine_identification_unique: machineIdentification,
-          data: { SetBufferFrequency: frequency },
-        }),
-    );
-  };
-
   // Mutation hooks
   const { request: requestBufferMode } = useMachineMutation(
     z.object({
       SetBufferMode: z.enum(["Standby", "FillingBuffer", "EmptyingBuffer"]),
-    }),
-  );
-
-  const { request: requestBufferFrequency } = useMachineMutation(
-    z.object({
-      SetBufferFrequency: z.number(),
     }),
   );
 
@@ -112,10 +91,8 @@ export function useBuffer1() {
     state: stateOptimistic.value?.data,
 
     // Individual live values (TimeSeries)
-    sine_wave,
 
     // Action functions (verb-first)
     setBufferMode,
-    setBufferFrequency,
   };
 }

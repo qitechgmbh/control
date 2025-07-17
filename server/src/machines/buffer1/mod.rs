@@ -2,32 +2,22 @@ pub mod act;
 pub mod api;
 pub mod buffer_tower_controller;
 pub mod new;
-pub mod puller_speed_controller;
 
-use api::{
-    Buffer1Namespace, BufferV1Events, LiveValuesEvent, ModeState, SineWaveState, StateEvent,
-};
+use api::{Buffer1Namespace, BufferV1Events, LiveValuesEvent, ModeState, StateEvent};
 use buffer_tower_controller::BufferTowerController;
 use control_core::{machines::Machine, socketio::namespace::NamespaceCacheingLogic};
-use puller_speed_controller::PullerSpeedController;
 use serde::{Deserialize, Serialize};
 use std::time::Instant;
 use tracing::info;
-use uom::si::{f64::Frequency, frequency::hertz};
 
 #[derive(Debug)]
 pub struct BufferV1 {
     // controllers
     pub buffer_tower_controller: BufferTowerController,
-    pub puller_speed_controller: PullerSpeedController,
 
     // socketio
     namespace: Buffer1Namespace,
     last_measurement_emit: Instant,
-
-    // TESTING LIVE EVENTS
-    t_0: Instant,
-    frequency: Frequency,
 
     // mode
     mode: BufferV1Mode,
@@ -43,9 +33,7 @@ impl Machine for BufferV1 {}
 
 impl BufferV1 {
     pub fn emit_live_values(&mut self) {
-        let live_values = LiveValuesEvent {
-            sine_wave: self.generate_sine_wave(),
-        };
+        let live_values = LiveValuesEvent {};
 
         let event = live_values.build();
         self.namespace.emit(BufferV1Events::LiveValues(event));
@@ -56,9 +44,6 @@ impl BufferV1 {
             mode_state: ModeState {
                 mode: self.mode.clone(),
             },
-            sinewave_state: SineWaveState {
-                frequency: self.frequency.get::<hertz>(),
-            },
         };
 
         let event = state.build();
@@ -67,25 +52,6 @@ impl BufferV1 {
 }
 
 impl BufferV1 {
-    // Testing Live Value
-    pub fn generate_sine_wave(&mut self) -> f64 {
-        let now = Instant::now();
-        let elapsed = now.duration_since(self.t_0).as_secs_f64();
-        let freq_hz = self.frequency.get::<hertz>();
-
-        // Calculate sine wave: sin(2π * frequency * time)
-        let amplitude = match self.mode {
-            BufferV1Mode::Standby => 0.0,
-            _ => (2.0 * std::f64::consts::PI * freq_hz * elapsed).sin(),
-        };
-
-        amplitude
-    }
-
-    pub fn change_frequency(&mut self, frequency: f64) {
-        self.frequency = Frequency::new::<hertz>(frequency);
-    }
-
     // DEBUG MESSAGES
     fn fill_buffer(&mut self) {
         info!("Filling Buffer");
@@ -95,7 +61,7 @@ impl BufferV1 {
         info!("Emptying Buffer");
     }
 
-    // Stop Moving Buffer and do nothing
+    // Turn off motor and do nothing
     fn switch_to_standby(&mut self) {
         match self.mode {
             BufferV1Mode::Standby => (),
@@ -103,6 +69,7 @@ impl BufferV1 {
             BufferV1Mode::EmptyingBuffer => {}
         };
         self.mode = BufferV1Mode::Standby;
+        self.buffer_tower_controller.set_enabled(false);
     }
 
     // Turn on motor and fill buffer
@@ -113,9 +80,10 @@ impl BufferV1 {
             BufferV1Mode::EmptyingBuffer => {}
         };
         self.mode = BufferV1Mode::FillingBuffer;
+        self.buffer_tower_controller.set_enabled(true);
     }
 
-    // Turn off motor and empty buffer
+    // Turn on motor reverse and empty buffer
     fn switch_to_emptying(&mut self) {
         match self.mode {
             BufferV1Mode::Standby => self.empty_buffer(),
@@ -141,15 +109,6 @@ impl BufferV1 {
 impl BufferV1 {
     fn set_mode_state(&mut self, mode: BufferV1Mode) {
         self.switch_mode(mode);
-        self.emit_state();
-    }
-
-    fn set_frequency_state(&mut self, frequency_mhz: f64) {
-        self.change_frequency(frequency_mhz);
-        self.emit_state();
-    }
-    fn set_rpm_state(&mut self, rpm: f64) {
-        //TODO
         self.emit_state();
     }
 }

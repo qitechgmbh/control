@@ -1,14 +1,12 @@
 use std::time::Instant;
 
 use anyhow::Error;
-use control_core::converters::linear_step_converter::LinearStepConverter;
 use control_core::machines::identification::DeviceHardwareIdentification;
 use control_core::machines::new::{
     MachineNewHardware, MachineNewParams, MachineNewTrait, get_device_identification_by_role,
     get_ethercat_device_by_index, get_subdevice_by_index, validate_no_role_dublicates,
     validate_same_machine_identification_unique,
 };
-use control_core::uom_extensions::velocity::meter_per_minute;
 use ethercat_hal::coe::ConfigurableDevice;
 use ethercat_hal::devices::ek1100::EK1100;
 use ethercat_hal::devices::ek1100::EK1100_IDENTITY_A;
@@ -21,14 +19,9 @@ use ethercat_hal::devices::{EthercatDeviceUsed, downcast_device, subdevice_ident
 use ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1;
 use ethercat_hal::shared_config;
 use ethercat_hal::shared_config::el70x1::{EL70x1OperationMode, StmMotorConfiguration};
-use uom::si::f64::{Frequency, Length};
-use uom::si::frequency::hertz;
-use uom::si::length::{centimeter, millimeter};
-use uom::si::velocity::Velocity;
 
 use crate::machines::buffer1::BufferV1Mode;
 use crate::machines::buffer1::buffer_tower_controller::BufferTowerController;
-use crate::machines::buffer1::puller_speed_controller::PullerSpeedController;
 
 use super::{BufferV1, api::Buffer1Namespace};
 
@@ -96,7 +89,7 @@ impl MachineNewTrait for BufferV1 {
             }
 
             // Role 1
-            // 1x Stepper Spool
+            // 1x Stepper Buffer
             // EL7041-0052
             let (el7041, el7041_config) = {
                 let device_identification =
@@ -126,7 +119,7 @@ impl MachineNewTrait for BufferV1 {
                         downcast_device::<EL7041_0052>(ethercat_device).await?
                     }
                     _ => Err(anyhow::anyhow!(
-                        "[{}::MachineNewTrait/Buffer::new] Device with role 2 is not an EL7041-0052",
+                        "[{}::MachineNewTrait/Buffer::new] Device with role 1 is not an EL7041-0052",
                         module_path!()
                     ))?,
                 };
@@ -215,32 +208,17 @@ impl MachineNewTrait for BufferV1 {
                 (device, config)
             };
 
-            // LIVE VALUE TESTING
-            let t_0 = Instant::now();
-            let frequency: Frequency = Frequency::new::<hertz>(0.5);
+            // Controller
+            let buffer_tower_controller = BufferTowerController::new(StepperVelocityEL70x1::new(
+                el7041.clone(),
+                EL7041_0052Port::STM1,
+            ));
 
-            // Controllers
-            let puller_speed_controller = PullerSpeedController::new(
-                Velocity::new::<meter_per_minute>(1.0),
-                Length::new::<millimeter>(1.75),
-                LinearStepConverter::from_diameter(200, Length::new::<centimeter>(8.0)),
-            );
-
-            let buffer_tower_controller = BufferTowerController::new(
-                Velocity::new::<meter_per_minute>(1.0),
-                Length::new::<millimeter>(1.75),
-                LinearStepConverter::from_diameter(200, Length::new::<centimeter>(8.0)),
-                el7041,
-                el7041_config,
-            );
-
+            // create buffer instance
             let mut buffer: BufferV1 = Self {
                 namespace: Buffer1Namespace::new(params.socket_queue_tx.clone()),
                 last_measurement_emit: Instant::now(),
                 mode: BufferV1Mode::Standby,
-                t_0: t_0,
-                frequency: frequency,
-                puller_speed_controller,
                 buffer_tower_controller,
             };
             buffer.emit_state();

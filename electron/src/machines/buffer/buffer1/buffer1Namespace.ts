@@ -16,8 +16,6 @@ import {
   ThrottledStoreUpdater,
 } from "../../../client/socketioStore";
 import { MachineIdentificationUnique } from "@/machines/types";
-import { createTimeSeries, TimeSeries } from "@/lib/timeseries";
-import { useMemo } from "react";
 
 // ========== Event Schema Definitions ==========
 
@@ -34,9 +32,7 @@ export type Mode = z.infer<typeof modeSchema>;
 /**
  * Consolidated live values event schema (60FPS data)
  */
-export const liveValuesEventDataSchema = z.object({
-  sine_wave: z.number(),
-});
+export const liveValuesEventDataSchema = z.object({});
 
 /**
  * Mode state event schema
@@ -46,19 +42,11 @@ export const modeStateSchema = z.object({
 });
 
 /**
- * Sinewave state event schema
- */
-export const sineWaveStateSchema = z.object({
-  frequency: z.number(),
-});
-
-/**
  * Consolidated state event schema (state changes only)
  */
 
 export const stateEventDataSchema = z.object({
   mode_state: modeStateSchema,
-  sinewave_state: sineWaveStateSchema,
 });
 
 // ========== Event Schemas with Wrappers ==========
@@ -73,23 +61,7 @@ export type StateEvent = z.infer<typeof stateEventSchema>;
 export type Buffer1NamespaceStore = {
   // State events (latest only)
   state: StateEvent | null;
-
-  // Time series data for live values
-  sine_wave: TimeSeries;
 };
-
-// Constants for time durations
-const TWENTY_MILLISECOND = 20;
-const ONE_SECOND = 1000;
-const FIVE_SECOND = 5 * ONE_SECOND;
-const ONE_HOUR = 60 * 60 * ONE_SECOND;
-
-const { initialTimeSeries: sineWave, insert: addSineWave } = createTimeSeries(
-  TWENTY_MILLISECOND,
-  ONE_SECOND,
-  FIVE_SECOND,
-  ONE_HOUR,
-);
 
 /**
  * Creates a message handler for Buffer1 namespace events with validation and appropriate caching strategies
@@ -124,10 +96,6 @@ export function buffer1MessageHandler(
         const timestamp = event.ts;
         updateStore((state) => ({
           ...state,
-          sine_wave: addSineWave(state.sine_wave, {
-            value: liveValuesEvent.data.sine_wave,
-            timestamp,
-          }),
         }));
       } else {
         handleUnhandledEventError(eventName);
@@ -148,7 +116,6 @@ export const createBuffer1NamespaceStore =
     create<Buffer1NamespaceStore>(() => {
       return {
         state: null,
-        sine_wave: sineWave,
       };
     });
 
