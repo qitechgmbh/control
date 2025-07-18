@@ -3,10 +3,9 @@ import {
   machineIdentificationEquals,
 } from "@/machines/types";
 import { PersistedPreset, usePresetStore } from "./presetStore";
-import { Preset, PresetSchema } from "./preset";
+import { Preset, PresetData, PresetSchema } from "./preset";
 import { deepEquals } from "@/lib/objects";
 import { useEffect } from "react";
-import { z } from "zod";
 
 export type Presets<T extends PresetSchema> = {
   get: () => Preset<T>[];
@@ -21,8 +20,8 @@ export type Presets<T extends PresetSchema> = {
 export type UsePresetsParams<T extends PresetSchema> = {
   machine_identification: MachineIdentification;
   schemaVersion: number;
-  currentState?: z.infer<T>;
-  defaultState?: z.infer<T>;
+  currentState?: PresetData<T>;
+  defaultState?: PresetData<T>;
 };
 
 export function usePresets<T extends PresetSchema>({

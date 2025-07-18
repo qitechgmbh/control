@@ -16,3 +16,5 @@ export const presetSchema = <S extends PresetSchema>(dataSchema: S) =>
 export type Preset<S extends PresetSchema> = z.infer<
   ReturnType<typeof presetSchema<S>>
 >;
+
+export type PresetData<S extends PresetSchema> = z.infer<S>;

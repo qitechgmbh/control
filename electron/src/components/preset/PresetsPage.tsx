@@ -1,12 +1,11 @@
-import React, { useState } from "react";
-import { TouchInput } from "@/components/touch/TouchInput";
-import { TouchButton } from "@/components/touch/TouchButton";
+import React from "react";
 import { ControlGrid } from "@/control/ControlGrid";
 import { Page } from "@/components/Page";
 import { usePresets, UsePresetsParams } from "@/lib/preset/usePresets";
 import { Preset, PresetSchema } from "@/lib/preset/preset";
 import { PresetCard } from "./PresetCard";
 import { PresetPreviewEntries } from "./PresetPreviewTable";
+import { NewPresetDialog } from "./NewPresetDialog";
 
 type PresetsPageProps<T extends PresetSchema> = UsePresetsParams<T> & {
   applyPreset: (preset: Preset<T>) => void;
@@ -28,8 +27,6 @@ export function PresetsPage<T extends PresetSchema>({
     defaultState,
   });
 
-  const [newName, setNewName] = useState("");
-
   const handleOverwritePreset = (preset: Preset<T>) => {
     const msg = `Are you sure you want to overwrite the preset "${preset.name}" with the current settings? This cannot be undone.`;
 
@@ -50,15 +47,15 @@ export function PresetsPage<T extends PresetSchema>({
     presets.remove(preset);
   };
 
-  const handleNewPreset = () => presets.createFromCurrentState(newName);
+  const saveNewPreset = (name: string) => presets.createFromCurrentState(name);
 
   return (
     <Page>
-      <TouchInput
-        placeholder="Preset Name"
-        onChange={(e) => setNewName(e.target.value)}
+      <NewPresetDialog
+        previewEntries={previewEntries}
+        onSave={saveNewPreset}
+        currentState={currentState}
       />
-      <TouchButton onClick={handleNewPreset}>Create new Preset</TouchButton>
       <ControlGrid columns={2}>
         {presets.get().map((preset) => (
           <PresetCard

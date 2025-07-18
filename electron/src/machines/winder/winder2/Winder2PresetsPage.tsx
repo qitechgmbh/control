@@ -3,13 +3,16 @@ import { useWinder2 } from "./useWinder";
 import { winder2 } from "@/machines/properties";
 
 import { PresetsPage } from "@/components/preset/PresetsPage";
-import { Preset } from "@/lib/preset/preset";
+import { Preset, PresetData } from "@/lib/preset/preset";
 import {
   pullerStateSchema,
   spoolSpeedControllerStateSchema,
 } from "./winder2Namespace";
 import { z } from "zod";
-import { PresetPreviewEntry, previewSeparator } from "@/components/preset/PresetPreviewTable";
+import {
+  PresetPreviewEntries,
+  previewSeparator,
+} from "@/components/preset/PresetPreviewTable";
 
 const winder2PresetDataSchema = z
   .object({
@@ -27,86 +30,83 @@ const winder2PresetDataSchema = z
 
 type Winder2 = typeof winder2PresetDataSchema;
 
-type Winder2PresetData = z.infer<Winder2>;
-
-const previewEntries: PresetPreviewEntry<Winder2>[] = [
+const previewEntries: PresetPreviewEntries<Winder2> = [
   {
     name: "Inner Traverse Limit",
     unit: "mm",
-    renderValue: (preset: Preset<Winder2>) =>
-      preset.data?.traverse_state?.limit_inner?.toFixed(1) ?? "N/A",
+    renderValue: (data: PresetData<Winder2>) =>
+      data?.traverse_state?.limit_inner?.toFixed(1) ?? "N/A",
   },
   {
     name: "Outer Traverse Limit",
     unit: "mm",
-    renderValue: (preset: Preset<Winder2>) =>
-      preset.data?.traverse_state?.limit_outer?.toFixed(1) ?? "N/A",
+    renderValue: (data: PresetData<Winder2>) =>
+      data?.traverse_state?.limit_outer?.toFixed(1) ?? "N/A",
   },
   {
     name: "Traverse Step Size",
     unit: "mm",
-    renderValue: (preset: Preset<Winder2>) =>
-      preset.data?.traverse_state?.step_size?.toFixed(1) ?? "N/A",
+    renderValue: (data: PresetData<Winder2>) =>
+      data?.traverse_state?.step_size?.toFixed(1) ?? "N/A",
   },
   {
     name: "Traverse Padding",
     unit: "mm",
-    renderValue: (preset: Preset<Winder2>) =>
-      preset.data?.traverse_state?.padding?.toFixed(1),
+    renderValue: (data: PresetData<Winder2>) =>
+      data?.traverse_state?.padding?.toFixed(1),
   },
   previewSeparator,
   {
     name: "Puller Regulation",
-    renderValue: (preset: Preset<Winder2>) =>
-      preset.data?.puller_state?.regulation,
+    renderValue: (data: PresetData<Winder2>) => data?.puller_state?.regulation,
   },
   {
     name: "Puller Direction",
-    renderValue: (preset: Preset<Winder2>) =>
-      preset.data.puller_state?.forward ? "Forward" : "Backward",
+    renderValue: (data: PresetData<Winder2>) =>
+      data.puller_state?.forward ? "Forward" : "Backward",
   },
   {
     name: "Puller Target Speed",
     unit: "m/min",
-    renderValue: (preset: Preset<Winder2>) =>
-      preset.data.puller_state?.target_speed?.toFixed(2),
+    renderValue: (data: PresetData<Winder2>) =>
+      data.puller_state?.target_speed?.toFixed(2),
   },
   {
     name: "Puller Target Diameter",
     unit: "mm",
-    renderValue: (preset: Preset<Winder2>) =>
-      preset.data.puller_state?.target_diameter?.toFixed(1),
+    renderValue: (data: PresetData<Winder2>) =>
+      data.puller_state?.target_diameter?.toFixed(1),
   },
   {
     name: "Puller Target Diameter",
     unit: "mm",
-    renderValue: (preset: Preset<Winder2>) =>
-      preset.data.puller_state?.target_diameter?.toFixed(1),
+    renderValue: (data: PresetData<Winder2>) =>
+      data.puller_state?.target_diameter?.toFixed(1),
   },
   previewSeparator,
   {
     name: "Spool Regulation",
-    renderValue: (preset: Preset<Winder2>) =>
-      preset.data.spool_speed_controller_state?.regulation_mode,
+    renderValue: (data: PresetData<Winder2>) =>
+      data.spool_speed_controller_state?.regulation_mode,
   },
   {
     name: "Spool Min Speed",
     unit: "rpm",
-    renderValue: (preset: Preset<Winder2>) =>
-      preset.data.spool_speed_controller_state?.minmax_min_speed?.toFixed(2),
+    renderValue: (data: PresetData<Winder2>) =>
+      data.spool_speed_controller_state?.minmax_min_speed?.toFixed(2),
   },
   {
     name: "Spool Max Speed",
     unit: "rpm",
-    renderValue: (preset: Preset<Winder2>) =>
-      preset.data.spool_speed_controller_state?.minmax_max_speed?.toFixed(2),
+    renderValue: (data: PresetData<Winder2>) =>
+      data.spool_speed_controller_state?.minmax_max_speed?.toFixed(2),
   },
   previewSeparator,
   {
     name: "Spool Max Speed",
     unit: "rpm",
-    renderValue: (preset: Preset<Winder2>) =>
-      preset.data.spool_speed_controller_state?.minmax_max_speed?.toFixed(2),
+    renderValue: (data: PresetData<Winder2>) =>
+      data.spool_speed_controller_state?.minmax_max_speed?.toFixed(2),
   },
 ];
 
@@ -164,12 +164,12 @@ export function Winder2PresetsPage() {
       preset.data?.spool_speed_controller_state?.adaptive_tension_target ?? 0.7,
     );
     setSpoolAdaptiveRadiusLearningRate(
-      preset.data?.spool_speed_controller_state?.adaptive_radius_learning_rate ??
-        0.5,
+      preset.data?.spool_speed_controller_state
+        ?.adaptive_radius_learning_rate ?? 0.5,
     );
     setSpoolAdaptiveMaxSpeedMultiplier(
-      preset.data?.spool_speed_controller_state?.adaptive_max_speed_multiplier ??
-        4,
+      preset.data?.spool_speed_controller_state
+        ?.adaptive_max_speed_multiplier ?? 4,
     );
     setSpoolAdaptiveAccelerationFactor(
       preset.data?.spool_speed_controller_state?.adaptive_acceleration_factor ??
@@ -185,7 +185,7 @@ export function Winder2PresetsPage() {
     );
   };
 
-  const toPresetData = (s: typeof state): Winder2PresetData => ({
+  const toPresetData = (s: typeof state): PresetData<Winder2> => ({
     traverse_state: {
       limit_inner: s?.traverse_state?.limit_inner,
       limit_outer: s?.traverse_state?.limit_outer,
