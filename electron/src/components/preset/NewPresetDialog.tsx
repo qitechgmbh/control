@@ -1,4 +1,4 @@
-import { Preset, PresetSchema } from "@/lib/preset/preset";
+import { PresetData, PresetSchema } from "@/lib/preset/preset";
 import {
   Dialog,
   DialogContent,
@@ -12,55 +12,56 @@ import { DialogHeader } from "../ui/dialog";
 import { Icon } from "../Icon";
 import { Separator } from "../ui/separator";
 import { PresetPreviewEntries, PresetPreviewTable } from "./PresetPreviewTable";
+import { Input } from "../ui/input";
 
-export type PresetShowDialogProps<T extends PresetSchema> = {
-  preset: Preset<T>;
+export type NewPresetDialogProps<T extends PresetSchema> = {
+  currentState?: PresetData<T>;
   previewEntries: PresetPreviewEntries<T>;
-  onApply: (preset: Preset<T>) => void;
-  hideDate?: boolean;
+  onSave: (name: string) => void;
 };
 
-export function PresetShowDialog<T extends PresetSchema>({
-  preset,
-  onApply,
+export function NewPresetDialog<T extends PresetSchema>({
+  currentState,
+  onSave,
   previewEntries,
-  hideDate,
-}: PresetShowDialogProps<T>) {
+}: NewPresetDialogProps<T>) {
   const [open, setOpen] = useState(false);
+  const [name, setName] = useState("");
 
-  const handleApply = (preset: Preset<T>) => {
+  const handleSave = () => {
     setOpen(false);
-    onApply(preset);
+    setName("");
+    onSave(name);
   };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <TouchButton variant="outline" icon="lu:Eye" className="w-max">
-          Show and Apply
+        <TouchButton disabled={!currentState} icon="lu:SquarePlus">
+          Create New Preset
         </TouchButton>
       </DialogTrigger>
 
       <DialogContent>
         <DialogHeader>
           <DialogTitle className="flex flex-row items-center gap-2">
-            <Icon name="lu:Save" />
-            {preset.name}
+            <Icon name="lu:SquarePlus" />
+            Create a New Preset
           </DialogTitle>
           <DialogDescription>
-            Applying presets carelessly might damage machines.
+            Save the configuration of this machine to use it later.
           </DialogDescription>
         </DialogHeader>
         <Separator />
 
+        <Input
+          placeholder="New Preset Name"
+          onChange={(e) => setName(e.target.value)}
+          className="w-full"
+        />
         <div className="flex flex-col gap-6 text-sm">
-          {!hideDate && (
-            <div>
-              Latest modification at{" "}
-              {preset.lastModified.toLocaleString() || "N/A"}
-            </div>
-          )}
-          <PresetPreviewTable entries={previewEntries} data={preset.data} />
+          <span>Current Settings:</span>
+          <PresetPreviewTable entries={previewEntries} data={currentState} />
         </div>
 
         <Separator />
@@ -76,10 +77,11 @@ export function PresetShowDialog<T extends PresetSchema>({
 
           <TouchButton
             className="h-21 flex-1 flex-shrink-0"
-            onClick={() => handleApply(preset)}
-            icon="lu:HardDriveDownload"
+            onClick={handleSave}
+            icon="lu:Save"
+            disabled={!name}
           >
-            Apply to Machine
+            Save
           </TouchButton>
         </div>
       </DialogContent>

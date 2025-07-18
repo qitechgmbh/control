@@ -1,15 +1,15 @@
 import React, { Fragment } from "react";
-import { Preset, PresetSchema } from "@/lib/preset/preset";
+import { PresetData, PresetSchema } from "@/lib/preset/preset";
 import { renderUnitSymbol, renderUnitSyntax, Unit } from "@/control/units";
 
 export const previewSeparator = undefined;
 
 type PreviewSeparator = typeof previewSeparator;
 
-export type PresetPreviewEntry<T extends PresetSchema> = {
+type PresetPreviewEntry<T extends PresetSchema> = {
   name: string;
   unit?: Unit;
-  renderValue: (preset: Preset<T>) => string | undefined;
+  renderValue: (data: PresetData<T>) => string | undefined;
 };
 
 export type PresetPreviewEntries<T extends PresetSchema> = (
@@ -18,16 +18,16 @@ export type PresetPreviewEntries<T extends PresetSchema> = (
 )[];
 
 export type PresetPreviewTableProps<T extends PresetSchema> = {
-  preset: Preset<T>;
+  data: PresetData<T>;
   entries: PresetPreviewEntries<T>;
 };
 
 export function PresetPreviewTable<T extends PresetSchema>({
-  preset,
+  data,
   entries,
 }: PresetPreviewTableProps<T>) {
   return (
-    <div className="grid grid-cols-[60%_10%_30%] ">
+    <div className="grid grid-cols-[60%_10%_30%]">
       {entries.map((entry, i) => {
         if (entry === previewSeparator) {
           return (
@@ -39,7 +39,7 @@ export function PresetPreviewTable<T extends PresetSchema>({
           );
         }
 
-        const value = entry.renderValue(preset);
+        const value = entry.renderValue(data);
         return (
           <Fragment key={entry.name}>
             <div>{entry.name}</div>

@@ -7,7 +7,7 @@ import {
   PresetPreviewEntries,
   previewSeparator,
 } from "@/components/preset/PresetPreviewTable";
-import { Preset } from "@/lib/preset/preset";
+import { Preset, PresetData } from "@/lib/preset/preset";
 
 const extruder1PresetDataSchema = z
   .object({
@@ -33,86 +33,83 @@ const extruder1PresetDataSchema = z
 
 type Extruder2 = typeof extruder1PresetDataSchema;
 
-type Extruder2PresetData = z.infer<Extruder2>;
-
 const previewEntries: PresetPreviewEntries<Extruder2> = [
   {
     name: "Target Front Temperature",
     unit: "deg",
-    renderValue: (preset: Preset<Extruder2>) =>
-      preset.data.targetFrontHeatingTemperature?.toFixed(1),
+    renderValue: (data: PresetData<Extruder2>) =>
+      data.targetFrontHeatingTemperature?.toFixed(1),
   },
   {
     name: "Target Middle Temperature",
     unit: "deg",
-    renderValue: (preset: Preset<Extruder2>) =>
-      preset.data.targetMiddleHeatingTemperature?.toFixed(1),
+    renderValue: (data: PresetData<Extruder2>) =>
+      data.targetMiddleHeatingTemperature?.toFixed(1),
   },
   {
     name: "Target Back Temperature",
     unit: "deg",
-    renderValue: (preset: Preset<Extruder2>) =>
-      preset.data.targetBackHeatingTemperature?.toFixed(1),
+    renderValue: (data: PresetData<Extruder2>) =>
+      data.targetBackHeatingTemperature?.toFixed(1),
   },
   {
     name: "Target Nozzle Temperature",
     unit: "deg",
-    renderValue: (preset: Preset<Extruder2>) =>
-      preset.data.targetNozzleHeatingTemperature?.toFixed(1),
+    renderValue: (data: PresetData<Extruder2>) =>
+      data.targetNozzleHeatingTemperature?.toFixed(1),
   },
   previewSeparator,
   {
     name: "Inverter Regulation",
-    renderValue: (preset: Preset<Extruder2>) =>
-      preset.data.inverterRegulation,
+    renderValue: (data: PresetData<Extruder2>) => data.inverterRegulation,
   },
   {
     name: "Target Inverter RPM",
     unit: "rpm",
-    renderValue: (preset: Preset<Extruder2>) =>
-      preset.data.targetInverterRpm?.toFixed(2),
+    renderValue: (data: PresetData<Extruder2>) =>
+      data.targetInverterRpm?.toFixed(2),
   },
   {
     name: "Target Inverter Pressure",
     unit: "bar",
-    renderValue: (preset: Preset<Extruder2>) =>
-      preset.data.targetInverterPressure?.toFixed(1),
+    renderValue: (data: PresetData<Extruder2>) =>
+      data.targetInverterPressure?.toFixed(1),
   },
   {
     name: "Inverter Direction",
-    renderValue: (preset: Preset<Extruder2>) =>
-      preset.data.inverterRotationDirection,
+    renderValue: (data: PresetData<Extruder2>) =>
+      data.inverterRotationDirection,
   },
   previewSeparator,
   {
     name: "Pressure Limit",
     unit: "bar",
-    renderValue: (preset: Preset<Extruder2>) =>
-      preset.data.pressureLimit?.toFixed(1),
+    renderValue: (data: PresetData<Extruder2>) =>
+      data.pressureLimit?.toFixed(1),
   },
   {
     name: "Enable Pressure Limit",
-    renderValue: (preset: Preset<Extruder2>) =>
-      preset.data.pressureLimitEnabled ? "on" : "off",
+    renderValue: (data: PresetData<Extruder2>) =>
+      data.pressureLimitEnabled ? "on" : "off",
   },
   previewSeparator,
   {
     name: "PID Pressue Kp",
     unit: "bar",
-    renderValue: (preset: Preset<Extruder2>) =>
-      preset.data.pidPressureKp?.toFixed(4),
+    renderValue: (data: PresetData<Extruder2>) =>
+      data.pidPressureKp?.toFixed(4),
   },
   {
     name: "PID Pressue Ki",
     unit: "bar",
-    renderValue: (preset: Preset<Extruder2>) =>
-      preset.data.pidPressureKi?.toFixed(4),
+    renderValue: (data: PresetData<Extruder2>) =>
+      data.pidPressureKi?.toFixed(4),
   },
   {
     name: "PID Pressue Kd",
     unit: "bar",
-    renderValue: (preset: Preset<Extruder2>) =>
-      preset.data.pidPressureKd?.toFixed(4),
+    renderValue: (data: PresetData<Extruder2>) =>
+      data.pidPressureKd?.toFixed(4),
   },
 ];
 
@@ -139,7 +136,7 @@ export function Extruder2PresetsPage() {
     setPressurePidKp,
   } = useExtruder2();
 
-  const toPresetData = (s?: typeof state): Extruder2PresetData => ({
+  const toPresetData = (s?: typeof state): PresetData<Extruder2> => ({
     targetFrontHeatingTemperature: s?.heating_states.front.target_temperature,
     targetMiddleHeatingTemperature: s?.heating_states.middle.target_temperature,
     targetBackHeatingTemperature: s?.heating_states.back.target_temperature,

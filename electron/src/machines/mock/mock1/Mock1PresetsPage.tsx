@@ -3,7 +3,7 @@ import { useMock1 } from "./useMock";
 import { mock1 } from "@/machines/properties";
 
 import { PresetsPage } from "@/components/preset/PresetsPage";
-import { Preset } from "@/lib/preset/preset";
+import { Preset, PresetData } from "@/lib/preset/preset";
 import { PresetPreviewEntry } from "@/components/preset/PresetPreviewTable";
 import { z } from "zod";
 
@@ -17,23 +17,21 @@ const mock1PresetDataSchema = z
 
 type Mock1 = typeof mock1PresetDataSchema;
 
-type Mock1PresetData = z.infer<Mock1>;
-
 const previewEntries: PresetPreviewEntry<Mock1>[] = [
   {
     name: "Frequency 1",
     unit: "mHz",
-    renderValue: (preset: Preset<Mock1>) => preset.data?.frequency1?.toFixed(3),
+    renderValue: (data: PresetData<Mock1>) => data?.frequency1?.toFixed(3),
   },
   {
     name: "Frequency 2",
     unit: "mHz",
-    renderValue: (preset: Preset<Mock1>) => preset.data?.frequency2?.toFixed(3),
+    renderValue: (data: PresetData<Mock1>) => data?.frequency2?.toFixed(3),
   },
   {
     name: "Frequency 3",
     unit: "mHz",
-    renderValue: (preset: Preset<Mock1>) => preset.data?.frequency3?.toFixed(3),
+    renderValue: (data: PresetData<Mock1>) => data?.frequency3?.toFixed(3),
   },
 ];
 
@@ -51,7 +49,7 @@ export function Mock1PresetsPage() {
     setFrequency3(frequency3);
   };
 
-  const toPresetData = (s: typeof state): Mock1PresetData => ({
+  const toPresetData = (s: typeof state): PresetData<Mock1> => ({
     frequency1: s?.frequency1 ?? defaultState?.frequency1,
     frequency2: s?.frequency2 ?? defaultState?.frequency2,
     frequency3: s?.frequency3 ?? defaultState?.frequency3,
