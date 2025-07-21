@@ -1,0 +1,52 @@
+# Environment Setup
+
+Working on this repository requires you to use cargo and npm. In the following document the installation process will be shown
+
+## Ubuntu/Debian Installation
+
+```bash
+    # Just press enter when prompted
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+    apt install npm
+    apt install nodejs
+    # assuming you dont have git already, Git setup not included in here
+    apt install git
+    git clone git@github.com:qitechgmbh/control.git
+    cd control
+    cd electron
+    npm install
+```
+
+# Running Backend and Frontend
+
+## Backend
+
+To Compile backend code and run it on Linux:
+
+```bash
+./cargo_run_linux.sh
+```
+
+The script sets capabilities on the compiled binary like raw socket access.
+
+## Mock-Machine
+
+The Mock-Machine can be used to test code that does not require an actual machine connection.
+Like Frontend Code for example.
+
+Mock machines can be used if the compile feature mock-machine is enabled.
+
+```bash
+# in root git folder
+./cargo_run_linux.sh mock-machine
+```
+
+## Frontend
+
+To run the Frontend Code:
+
+```bash
+# need to be in the electron folder and an additional terminal
+cd electron
+npm run start
+```
