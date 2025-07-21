@@ -36,25 +36,25 @@ type Extruder2 = typeof extruder1PresetDataSchema;
 const previewEntries: PresetPreviewEntries<Extruder2> = [
   {
     name: "Target Front Temperature",
-    unit: "deg",
+    unit: "C",
     renderValue: (data: PresetData<Extruder2>) =>
       data.targetFrontHeatingTemperature?.toFixed(1),
   },
   {
     name: "Target Middle Temperature",
-    unit: "deg",
+    unit: "C",
     renderValue: (data: PresetData<Extruder2>) =>
       data.targetMiddleHeatingTemperature?.toFixed(1),
   },
   {
     name: "Target Back Temperature",
-    unit: "deg",
+    unit: "C",
     renderValue: (data: PresetData<Extruder2>) =>
       data.targetBackHeatingTemperature?.toFixed(1),
   },
   {
     name: "Target Nozzle Temperature",
-    unit: "deg",
+    unit: "C",
     renderValue: (data: PresetData<Extruder2>) =>
       data.targetNozzleHeatingTemperature?.toFixed(1),
   },
@@ -95,19 +95,16 @@ const previewEntries: PresetPreviewEntries<Extruder2> = [
   previewSeparator,
   {
     name: "PID Pressue Kp",
-    unit: "bar",
     renderValue: (data: PresetData<Extruder2>) =>
       data.pidPressureKp?.toFixed(4),
   },
   {
     name: "PID Pressue Ki",
-    unit: "bar",
     renderValue: (data: PresetData<Extruder2>) =>
       data.pidPressureKi?.toFixed(4),
   },
   {
     name: "PID Pressue Kd",
-    unit: "bar",
     renderValue: (data: PresetData<Extruder2>) =>
       data.pidPressureKd?.toFixed(4),
   },
