@@ -1,9 +1,7 @@
 import { toastError } from "@/components/Toast";
 import { useMachineMutate as useMachineMutation } from "@/client/useClient";
 import { buffer1 } from "@/machines/properties";
-import {
-  MachineIdentificationUnique,
-} from "@/machines/types";
+import { MachineIdentificationUnique } from "@/machines/types";
 import { buffer1SerialRoute } from "@/routes/routes";
 import { z } from "zod";
 import { useEffect, useMemo } from "react";
