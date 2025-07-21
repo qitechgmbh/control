@@ -103,10 +103,37 @@ const previewEntries: PresetPreviewEntries<Winder2> = [
   },
   previewSeparator,
   {
-    name: "Spool Max Speed",
-    unit: "rpm",
+    name: "Adaptive Spool Tension Target",
     renderValue: (data: PresetData<Winder2>) =>
-      data.spool_speed_controller_state?.minmax_max_speed?.toFixed(2),
+      data.spool_speed_controller_state?.adaptive_tension_target?.toFixed(2),
+  },
+  {
+    name: "Adaptive Spool Learning Rate",
+    renderValue: (data: PresetData<Winder2>) =>
+      data.spool_speed_controller_state?.adaptive_radius_learning_rate?.toFixed(
+        2,
+      ),
+  },
+  {
+    name: "Adaptive Spool Max Speed Multiplier",
+    renderValue: (data: PresetData<Winder2>) =>
+      data.spool_speed_controller_state?.adaptive_max_speed_multiplier?.toFixed(
+        1,
+      ),
+  },
+  {
+    name: "Adaptive Spool Acceleration Factor",
+    renderValue: (data: PresetData<Winder2>) =>
+      data.spool_speed_controller_state?.adaptive_acceleration_factor?.toFixed(
+        2,
+      ),
+  },
+  {
+    name: "Adaptive Spool Deaccel. Urgency",
+    renderValue: (data: PresetData<Winder2>) =>
+      data.spool_speed_controller_state?.adaptive_deacceleration_urgency_multiplier?.toFixed(
+        1,
+      ),
   },
 ];
 
@@ -148,7 +175,7 @@ export function Winder2PresetsPage() {
     setPullerRegulationMode(preset.data?.puller_state?.regulation ?? "Speed");
     setPullerForward(preset.data?.puller_state?.forward ?? true);
     setPullerTargetSpeed(preset.data?.puller_state?.target_speed ?? 1.0);
-    setPullerTargetDiameter(preset.data?.puller_state?.target_diameter ?? 1.75);
+    // setPullerTargetDiameter(preset.data?.puller_state?.target_diameter ?? 1.75);
 
     setSpoolRegulationMode(
       preset.data?.spool_speed_controller_state?.regulation_mode ?? "MinMax",
@@ -160,25 +187,26 @@ export function Winder2PresetsPage() {
       preset.data?.spool_speed_controller_state?.minmax_max_speed ?? 150.0,
     );
 
-    setSpoolAdaptiveTensionTarget(
-      preset.data?.spool_speed_controller_state?.adaptive_tension_target ?? 0.7,
-    );
-    setSpoolAdaptiveRadiusLearningRate(
-      preset.data?.spool_speed_controller_state
-        ?.adaptive_radius_learning_rate ?? 0.5,
-    );
-    setSpoolAdaptiveMaxSpeedMultiplier(
-      preset.data?.spool_speed_controller_state
-        ?.adaptive_max_speed_multiplier ?? 4,
-    );
-    setSpoolAdaptiveAccelerationFactor(
-      preset.data?.spool_speed_controller_state?.adaptive_acceleration_factor ??
-        0.2,
-    );
-    setSpoolAdaptiveDeaccelerationUrgencyMultiplier(
-      preset.data?.spool_speed_controller_state
-        ?.adaptive_deacceleration_urgency_multiplier ?? 15.0,
-    );
+    // TODO: still not implemented in backend
+    // setSpoolAdaptiveTensionTarget(
+    //   preset.data?.spool_speed_controller_state?.adaptive_tension_target ?? 0.7,
+    // );
+    // setSpoolAdaptiveRadiusLearningRate(
+    //   preset.data?.spool_speed_controller_state
+    //     ?.adaptive_radius_learning_rate ?? 0.5,
+    // );
+    // setSpoolAdaptiveMaxSpeedMultiplier(
+    //   preset.data?.spool_speed_controller_state
+    //     ?.adaptive_max_speed_multiplier ?? 4,
+    // );
+    // setSpoolAdaptiveAccelerationFactor(
+    //   preset.data?.spool_speed_controller_state?.adaptive_acceleration_factor ??
+    //     0.2,
+    // );
+    // setSpoolAdaptiveDeaccelerationUrgencyMultiplier(
+    //   preset.data?.spool_speed_controller_state
+    //     ?.adaptive_deacceleration_urgency_multiplier ?? 15.0,
+    // );
 
     enableTraverseLaserpointer(
       preset.data.traverse_state?.laserpointer ?? false,

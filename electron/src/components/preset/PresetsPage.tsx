@@ -47,13 +47,11 @@ export function PresetsPage<T extends PresetSchema>({
     presets.remove(preset);
   };
 
-  const saveNewPreset = (name: string) => presets.createFromCurrentState(name);
-
   return (
     <Page>
       <NewPresetDialog
         previewEntries={previewEntries}
-        onSave={saveNewPreset}
+        onSave={presets.createFromCurrentState}
         currentState={currentState}
       />
       <ControlGrid columns={2}>
