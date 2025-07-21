@@ -41,6 +41,8 @@ We could combine the code of the frontend and backend using [Doxius](https://dio
 
 # Dev Setup
 
+[Developer Documentation](./docs/developer-docs/)
+
 ## Backend
 
 - Rust stable 1.86^ toolchain (install via [rustup](https://rustup.rs/))
@@ -66,7 +68,6 @@ We could combine the code of the frontend and backend using [Doxius](https://dio
 | Laser        | V1      | ???          | Diameter Measuring Laser    | -                                                      | 1 (Qitech Industries GmbH) | 6          | Not Yet     |                                 |
 | Mock         | -       | ???          | Mock Machine for Testing    | -                                                      | 1 (Qitech Industries GmbH) | 7          | Not Yet     | -                               |
 
-
 # More Docs
 
 - [x] [Architecture & Data Flow](./docs/architecture-overview.md)
@@ -90,8 +91,9 @@ We could combine the code of the frontend and backend using [Doxius](https://dio
     - Write Device Identification
 
 - Server
-  - [X] [Threading](./docs/control-loop.md)
-  - [X] [Logging](./docs/logging.md)
+
+  - [x] [Threading](./docs/control-loop.md)
+  - [x] [Logging](./docs/logging.md)
   - [ ] Control Loop Setup
     - Control Loop Thread
       - [ ] realtime
