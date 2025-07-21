@@ -17,7 +17,7 @@ Working on this repository requires you to use cargo and npm. In the following d
     npm install
 ```
 
-# Running Backend and Frontend
+# Running Backend and Frontend Linux
 
 ## Backend
 
@@ -28,6 +28,8 @@ To Compile backend code and run it on Linux:
 ```
 
 The script sets capabilities on the compiled binary like raw socket access.
+Here it is required that you are connected to atleast one machine that is communicated with over ethercat or usb/serial.
+The Most minimal working setup would be to connect over ethernet to an ek1100 beckhoff terminal.
 
 ## Mock-Machine
 
@@ -76,3 +78,7 @@ git push
 
 6. Open a Pull Request on Github and link the issue by writing fix #issue_number, after the pull request is merged into master the branch is closed automatically
 7. Request a Review and hope for the best :)
+
+# Recommended Editor Setup
+
+We recommend you to use an Editor with rust-analyzer support like VSCode to speed up development and detect errors before compiling.
