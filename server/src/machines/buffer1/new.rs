@@ -220,6 +220,7 @@ impl MachineNewTrait for BufferV1 {
                 last_measurement_emit: Instant::now(),
                 mode: BufferV1Mode::Standby,
                 buffer_tower_controller,
+
             };
             buffer.emit_state();
             Ok(buffer)

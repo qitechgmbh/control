@@ -1,9 +1,9 @@
+pub mod buffer1;
 pub mod extruder1;
 pub mod laser;
 pub mod mock;
 pub mod registry;
 pub mod winder2;
-pub mod buffer1;
 
 pub const VENDOR_QITECH: u16 = 0x0001;
 pub const MACHINE_WINDER_V1: u16 = 0x0002;

@@ -5,9 +5,14 @@ pub mod new;
 
 use api::{Buffer1Namespace, BufferV1Events, LiveValuesEvent, ModeState, StateEvent};
 use buffer_tower_controller::BufferTowerController;
-use control_core::{machines::Machine, socketio::namespace::NamespaceCacheingLogic};
+use control_core::{
+    machines::{Machine, identification::MachineIdentification},
+    socketio::namespace::NamespaceCacheingLogic,
+};
 use serde::{Deserialize, Serialize};
-use std::time::Instant;
+use std::{any::Any, time::Instant};
+
+use crate::machines::{MACHINE_BUFFER_V1, VENDOR_QITECH};
 
 #[derive(Debug)]
 pub struct BufferV1 {
@@ -28,7 +33,18 @@ impl std::fmt::Display for BufferV1 {
     }
 }
 
-impl Machine for BufferV1 {}
+impl Machine for BufferV1 {
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+}
+
+impl BufferV1 {
+    pub const MACHINE_IDENTIFICATION: MachineIdentification = MachineIdentification {
+        vendor: VENDOR_QITECH,
+        machine: MACHINE_BUFFER_V1,
+    };
+}
 
 impl BufferV1 {
     pub fn emit_live_values(&mut self) {
