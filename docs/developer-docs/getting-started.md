@@ -50,3 +50,29 @@ To run the Frontend Code:
 cd electron
 npm run start
 ```
+
+# Contributing
+
+Generally you contribute to the codebase by:
+
+1. Opening or Choosing an existing issue (Bug,Feature,Task etc)
+2. Work on it locally
+3. Commit your changes locally
+4. Before pushing changes, if there were changes on the master branch, rebase your branch like so:
+
+```bash
+git fetch
+git rebase origin/master
+```
+
+5. Push changes
+
+```bash
+# IF you needed to rebase
+git push --force-with-lease
+# ELSE you just push
+git push
+```
+
+6. Open a Pull Request on Github and link the issue by writing fix #issue_number, after the pull request is merged into master the branch is closed automatically
+7. Request a Review and hope for the best :)
