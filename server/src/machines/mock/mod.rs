@@ -97,16 +97,6 @@ impl MockMachine {
             // Update last emitted state
             self.last_emitted_state = Some(current_state);
         }
-
-        // Only emit connected machine state when machine connected
-        if self.connected_mock2.is_some() {
-            if let Some(connected) = &self.connected_mock2 {
-                if let Some(mock2_arc) = connected.machine.upgrade() {
-                    let mut mock2 = block_on(mock2_arc.lock());
-                    mock2.emit_state();
-                }
-            }
-        }
     }
 
     /// Set the frequencies of the sine waves
