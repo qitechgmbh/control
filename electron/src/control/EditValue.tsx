@@ -38,6 +38,7 @@ type Props = {
   step?: number;
   valueSchema?: z.ZodType<number>;
   inverted?: boolean;
+  confirmation?: string;
   renderValue: (value: number) => string;
   onChange?: (value: number) => void;
 };
@@ -96,6 +97,7 @@ export function EditValue({
   maxLabel,
   minSlider,
   maxSlider,
+  confirmation,
   onChange,
 }: Props) {
   const defaultOrZero = defaultValue ?? 0;
@@ -252,10 +254,20 @@ export function EditValue({
 
   const handleSubmit = () => {
     form.handleSubmit((data) => {
-      onChange?.(data.value);
-      setOpen(false);
-      setNumpadExtended(false);
-      resetInput();
+      if (confirmation) {
+        if (window.confirm(confirmation)) {
+          onChange?.(data.value);
+          setOpen(false);
+          setNumpadExtended(false);
+          resetInput();
+        }
+        // else do nothing if user cancels
+      } else {
+        onChange?.(data.value);
+        setOpen(false);
+        setNumpadExtended(false);
+        resetInput();
+      }
     })();
   };
 
