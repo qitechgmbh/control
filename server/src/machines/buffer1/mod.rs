@@ -8,7 +8,6 @@ use buffer_tower_controller::BufferTowerController;
 use control_core::{machines::Machine, socketio::namespace::NamespaceCacheingLogic};
 use serde::{Deserialize, Serialize};
 use std::time::Instant;
-use tracing::info;
 
 #[derive(Debug)]
 pub struct BufferV1 {
@@ -52,13 +51,13 @@ impl BufferV1 {
 }
 
 impl BufferV1 {
-    // DEBUG MESSAGES
+    // To be implemented
     fn fill_buffer(&mut self) {
-        info!("Filling Buffer");
+        todo!();
     }
 
     fn empty_buffer(&mut self) {
-        info!("Emptying Buffer");
+        todo!();
     }
 
     // Turn off motor and do nothing
