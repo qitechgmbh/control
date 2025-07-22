@@ -56,7 +56,4 @@ pub fn init_mock(app_state: Arc<AppState>) -> Result<(), anyhow::Error> {
             }
         }
     });
-
-    tracing::info!("Mock machines initialized successfully");
-    Ok(())
 }

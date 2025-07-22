@@ -91,7 +91,7 @@ impl MachineNewTrait for BufferV1 {
             // Role 1
             // 1x Stepper Buffer
             // EL7041-0052
-            let (el7041, el7041_config) = {
+            let (el7041, _el7041_config) = {
                 let device_identification =
                     get_device_identification_by_role(params.device_group, 1)?;
                 let device_hardware_identification_ethercat =
@@ -149,7 +149,7 @@ impl MachineNewTrait for BufferV1 {
             // Role 2
             // 1x Stepper Puller
             // EL7031
-            let (el7031_0030, el7031_0030_config) = {
+            let (_el7031_0030, _el7031_0030_config) = {
                 let device_identification =
                     get_device_identification_by_role(params.device_group, 2)?;
                 let device_hardware_identification_ethercat =
