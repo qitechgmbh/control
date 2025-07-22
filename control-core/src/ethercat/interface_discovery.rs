@@ -9,7 +9,7 @@ use interfaces::Interface;
 // Constants for EtherCAT configuration
 const IFACE_DISCOVERY_MAX_SUBDEVICES: usize = 16; // Must be power of 2 > 1
 const IFACE_DISCOVERY_MAX_PDU_DATA: usize = PduStorage::element_size(1100);
-const IFACE_DISCOVERY_MAX_FRAMES: usize = 16;
+const IFACE_DISCOVERY_MAX_FRAMES: usize = 64;
 const IFACE_DISCOVERY_MAX_PDI_LEN: usize = 128;
 
 /// Finds an ethernet interface that is suitable for EtherCAT communication.
@@ -147,7 +147,7 @@ fn test_interface(interface: &str) -> Result<(), anyhow::Error> {
                 // Default 10000
                 dc_static_sync_iterations: 10000,
                 // Default None
-                retry_behaviour: ethercrab::RetryBehaviour::None,
+                retry_behaviour: ethercrab::RetryBehaviour::Count(10),
             },
         ));
 
