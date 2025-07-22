@@ -14,12 +14,12 @@ export function Buffer1Page() {
           icon: "lu:CirclePlay",
           activeLink: "control",
         },
-        // {
-        //   link: "manual",
-        //   title: "Manual",
-        //   icon: "lu:BookOpen",
-        //   activeLink: "manual",
-        // },
+        {
+          link: "settings",
+          activeLink: "settings",
+          title: "Config",
+          icon: "lu:Settings",
+        },
       ]}
     />
   );

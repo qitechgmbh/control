@@ -5,17 +5,9 @@ import React from "react";
 import { useBuffer1 } from "./useBuffer1";
 import { ControlCard } from "@/control/ControlCard";
 import { SelectionGroup } from "@/control/SelectionGroup";
-import { MachineSelector } from "@/components/MachineConnectionDropdown";
 
 export function Buffer1ControlPage() {
-  const {
-    state,
-    setBufferMode,
-    selectedMachine,
-    filteredMachines,
-    setConnectedMachine,
-    disconnectMachine,
-  } = useBuffer1();
+  const { state, setBufferMode } = useBuffer1();
 
   return (
     <Page>
@@ -48,20 +40,6 @@ export function Buffer1ControlPage() {
             onChange={setBufferMode}
           />
         </ControlCard>
-        <MachineSelector
-          machines={filteredMachines}
-          selectedMachine={selectedMachine}
-          connectedMachineState={state?.connected_machine_state}
-          setConnectedMachine={setConnectedMachine}
-          clearConnectedMachine={() => {
-            if (!selectedMachine) return;
-            setConnectedMachine({
-              machine_identification: { vendor: 0, machine: 0 },
-              serial: 0,
-            });
-            disconnectMachine(selectedMachine.machine_identification_unique);
-          }}
-        />
       </ControlGrid>
     </Page>
   );
