@@ -830,7 +830,7 @@ impl Winder2 {
     }
 
     /// disconnect buffer
-    pub fn disconnect_winder(
+    pub fn disconnect_buffer(
         &mut self,
         machine_identification_unique: MachineIdentificationUnique,
     ) {

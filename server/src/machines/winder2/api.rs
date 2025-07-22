@@ -98,6 +98,9 @@ enum Mutation {
 
     // Connected Machine
     SetConnectedMachine(MachineIdentificationUnique),
+
+    // Disconnect Machine
+    DisconnectMachine(MachineIdentificationUnique),
 }
 
 #[derive(Serialize, Debug, Clone, Default)]
@@ -336,6 +339,9 @@ impl MachineApi for Winder2 {
             Mutation::ZeroTensionArmAngle => self.tension_arm_zero(),
             Mutation::SetConnectedMachine(machine_identification_unique) => {
                 self.set_connected_buffer(machine_identification_unique)
+            }
+            Mutation::DisconnectMachine(machine_identification_unique) => {
+                self.disconnect_buffer(machine_identification_unique)
             }
         }
         Ok(())

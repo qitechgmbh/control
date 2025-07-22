@@ -71,6 +71,9 @@ enum Mutation {
 
     // Connected Machine
     SetConnectedMachine(MachineIdentificationUnique),
+
+    // Disconnect Machine
+    DisconnectMachine(MachineIdentificationUnique),
 }
 
 #[derive(Debug)]
@@ -121,6 +124,9 @@ impl MachineApi for BufferV1 {
             Mutation::SetBufferMode(mode) => self.set_mode_state(mode),
             Mutation::SetConnectedMachine(machine_identification_unique) => {
                 self.set_connected_winder(machine_identification_unique);
+            }
+            Mutation::DisconnectMachine(machine_identification_unique) => {
+                self.disconnect_winder(machine_identification_unique);
             }
         }
         Ok(())
