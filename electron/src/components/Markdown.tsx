@@ -139,7 +139,7 @@ export function Markdown({ text }: MarkdownProps) {
           },
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           ul: ({ node, ...props }) => (
-            <ul className="markdown-list list-inside list-disc mb-6" {...props} />
+            <ul className="markdown-list list-outside list-disc ml-6 mb-6" {...props} />
           ),
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           li: ({ node, ...props }) => (
