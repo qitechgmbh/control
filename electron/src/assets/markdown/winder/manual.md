@@ -237,7 +237,7 @@ Noise measurement method and operating condition acc: DIN 45635 Part 16 and Part
 15.  Keep a safe distance from rotating parts of the machine. Only change the bobbin when the bobbin axis is stationary.
 16.  Keep the work area clean. Do not place any objects on the machine.
 17.  Always switch off the machine when you are not using it.
-18.  .  Stay with the machine until it has come to a standstill.
+18.  Stay with the machine until it has come to a standstill.
 19. Repairs may only be carried out by qualified specialist personnel! Repair work may only be carried out by persons who are qualified for the repair work in question and who are familiar with the relevant occupational safety regulations.
 20. Protect the machine from moisture.
 21. Check the machine regularly for damage. Only replace damaged parts with original parts and have them replaced by qualified specialists. The guarantee and warranty will be invalidated if accessories and spare parts are used that are not authorized for the machine.
