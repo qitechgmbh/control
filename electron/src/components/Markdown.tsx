@@ -83,11 +83,12 @@ export function Markdown({ text }: MarkdownProps) {
               <>
                 <h1
                   id={id}
-                  className={`${isFirst ? "" : "pt-4"} pb-2 text-2xl`}
+                  className={`${isFirst ? "" : "pt-4"} pb-2 text-2xl font-bold`}
                   {...props}
                 >
                   {children}
                 </h1>
+                <hr className="my-2" />
                 <br />
               </>
             );
@@ -98,13 +99,16 @@ export function Markdown({ text }: MarkdownProps) {
             const id = generateHeadingId(text);
             const isFirst = isFirstHeading(text, 2);
             return (
-              <h2
-                id={id}
-                className={`${isFirst ? "" : "pt-4"} pb-2 text-xl`}
-                {...props}
-              >
-                {children}
-              </h2>
+              <>
+                <h2
+                  id={id}
+                  className={`${isFirst ? "" : "pt-4"} pb-2 text-xl font-bold`}
+                  {...props}
+                >
+                  {children}
+                </h2>
+                <hr className="my-2" />
+              </>
             );
           },
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -113,13 +117,16 @@ export function Markdown({ text }: MarkdownProps) {
             const id = generateHeadingId(text);
             const isFirst = isFirstHeading(text, 3);
             return (
-              <h3
-                id={id}
-                className={`${isFirst ? "" : "pt-4"} pb-2 text-lg`}
-                {...props}
-              >
-                {children}
-              </h3>
+              <>
+                <h3
+                  id={id}
+                  className={`${isFirst ? "" : "pt-4"} pb-2 text-lg font-bold`}
+                  {...props}
+                >
+                  {children}
+                </h3>
+                <hr className="my-2" />
+              </>
             );
           },
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -128,13 +135,16 @@ export function Markdown({ text }: MarkdownProps) {
             const id = generateHeadingId(text);
             const isFirst = isFirstHeading(text, 4);
             return (
-              <h4
-                id={id}
-                className={`${isFirst ? "" : "pt-4"} pb-2 text-lg`}
-                {...props}
-              >
-                {children}
-              </h4>
+              <>
+                <h4
+                  id={id}
+                  className={`${isFirst ? "" : "pt-4"} pb-2 text-lg font-bold`}
+                  {...props}
+                >
+                  {children}
+                </h4>
+                <hr className="my-2" />
+              </>
             );
           },
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
