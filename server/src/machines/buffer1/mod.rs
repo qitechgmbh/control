@@ -7,7 +7,7 @@ use api::{Buffer1Namespace, BufferV1Events, LiveValuesEvent, ModeState, StateEve
 use buffer_tower_controller::BufferTowerController;
 use control_core::{
     machines::{
-        ConnectedMachine, Machine, downcast_machine,
+        ConnectedMachine, ConnectedMachineData, Machine, downcast_machine,
         identification::{MachineIdentification, MachineIdentificationUnique},
         manager::MachineManager,
     },
@@ -22,7 +22,9 @@ use std::{
     time::Instant,
 };
 
-use crate::machines::{MACHINE_BUFFER_V1, VENDOR_QITECH, winder2::Winder2};
+use crate::machines::{
+    MACHINE_BUFFER_V1, VENDOR_QITECH, buffer1::api::ConnectedMachineState, winder2::Winder2,
+};
 
 #[derive(Debug)]
 pub struct BufferV1 {
@@ -75,6 +77,22 @@ impl BufferV1 {
         let state = StateEvent {
             mode_state: ModeState {
                 mode: self.mode.clone(),
+            },
+            connected_machine_state: ConnectedMachineState {
+                machine_identification_unique: self.connected_winder.as_ref().map(
+                    |connected_machine| {
+                        ConnectedMachineData::from(connected_machine)
+                            .machine_identification_unique
+                            .clone()
+                    },
+                ),
+                is_available: self
+                    .connected_winder
+                    .as_ref()
+                    .map(|connected_machine| {
+                        ConnectedMachineData::from(connected_machine).is_available
+                    })
+                    .unwrap_or(false),
             },
         };
 

@@ -30,6 +30,8 @@ impl LiveValuesEvent {
 pub struct StateEvent {
     /// mode state
     pub mode_state: ModeState,
+    /// connected machine state
+    pub connected_machine_state: ConnectedMachineState,
 }
 
 impl StateEvent {
@@ -53,6 +55,13 @@ pub enum Mode {
     Standby,
     FillingBuffer,
     EmptyingBuffer,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct ConnectedMachineState {
+    /// Connected Machine
+    pub machine_identification_unique: Option<MachineIdentificationUnique>,
+    pub is_available: bool,
 }
 
 #[derive(Deserialize, Serialize)]

@@ -10,7 +10,11 @@ pub mod spool_speed_controller;
 pub mod tension_arm;
 pub mod traverse_controller;
 
-use std::{fmt::Debug, sync::{Arc, Weak}, time::Instant};
+use std::{
+    fmt::Debug,
+    sync::{Arc, Weak},
+    time::Instant,
+};
 
 use api::{
     LiveValuesEvent, ModeState, PullerState, SpoolAutomaticActionMode, SpoolAutomaticActionState,
@@ -20,7 +24,9 @@ use api::{
 use control_core::{
     converters::angular_step_converter::AngularStepConverter,
     machines::{
-        downcast_machine, identification::{MachineIdentification, MachineIdentificationUnique}, manager::MachineManager, ConnectedMachine, Machine
+        ConnectedMachine, ConnectedMachineData, Machine, downcast_machine,
+        identification::{MachineIdentification, MachineIdentificationUnique},
+        manager::MachineManager,
     },
     socketio::namespace::NamespaceCacheingLogic,
     uom_extensions::velocity::meter_per_minute,
@@ -46,7 +52,9 @@ use uom::{
     },
 };
 
-use crate::machines::{MACHINE_WINDER_V2, VENDOR_QITECH, buffer1::BufferV1};
+use crate::machines::{
+    MACHINE_WINDER_V2, VENDOR_QITECH, buffer1::BufferV1, winder2::api::ConnectedMachineState,
+};
 
 #[derive(Debug)]
 pub struct SpoolAutomaticAction {
@@ -314,6 +322,22 @@ impl Winder2 {
             spool_automatic_action_state: SpoolAutomaticActionState {
                 spool_required_meters: self.spool_automatic_action.target_length.get::<meter>(),
                 spool_automatic_action_mode: self.spool_automatic_action.mode.clone(),
+            },
+            connected_machine_state: ConnectedMachineState {
+                machine_identification_unique: self.connected_buffer.as_ref().map(
+                    |connected_machine| {
+                        ConnectedMachineData::from(connected_machine)
+                            .machine_identification_unique
+                            .clone()
+                    },
+                ),
+                is_available: self
+                    .connected_buffer
+                    .as_ref()
+                    .map(|connected_machine| {
+                        ConnectedMachineData::from(connected_machine).is_available
+                    })
+                    .unwrap_or(false),
             },
         };
 
@@ -847,7 +871,6 @@ impl Winder2 {
             }
         }
     }
-
 }
 
 #[derive(Debug, Clone, PartialEq)]

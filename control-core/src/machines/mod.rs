@@ -43,6 +43,8 @@ pub async fn downcast_machine<T: Machine>(
         ))
     }
 }
+
+/// Trait to get strong count to see if Weak has reference
 pub trait GetStrongCount {
     fn get_strong_count(&self) -> usize;
 }

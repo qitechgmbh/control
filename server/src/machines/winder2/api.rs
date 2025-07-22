@@ -4,7 +4,8 @@ use control_core::{
     socketio::{
         event::{Event, GenericEvent},
         namespace::{
-            cache_duration, cache_first_and_last_event, CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic
+            CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_duration,
+            cache_first_and_last_event,
         },
     },
 };
@@ -136,6 +137,8 @@ pub struct StateEvent {
     pub tension_arm_state: TensionArmState,
     /// spool speed controller state
     pub spool_speed_controller_state: SpoolSpeedControllerState,
+    /// connected machine state
+    pub connected_machine_state: ConnectedMachineState,
 }
 
 impl StateEvent {
@@ -237,6 +240,13 @@ pub struct SpoolSpeedControllerState {
     pub adaptive_deacceleration_urgency_multiplier: f64,
 }
 
+#[derive(Serialize, Debug, Clone)]
+pub struct ConnectedMachineState {
+    /// Connected Machine
+    pub machine_identification_unique: Option<MachineIdentificationUnique>,
+    pub is_available: bool,
+}
+
 pub enum Winder2Events {
     LiveValues(Event<LiveValuesEvent>),
     State(Event<StateEvent>),
@@ -324,7 +334,9 @@ impl MachineApi for Winder2 {
             Mutation::SetSpoolAutomaticAction(mode) => self.set_spool_automatic_mode(mode),
             Mutation::ResetSpoolProgress => self.stop_or_pull_spool_reset(Instant::now()),
             Mutation::ZeroTensionArmAngle => self.tension_arm_zero(),
-            Mutation::SetConnectedMachine(machine_identification_unique) => self.set_connected_buffer(machine_identification_unique),
+            Mutation::SetConnectedMachine(machine_identification_unique) => {
+                self.set_connected_buffer(machine_identification_unique)
+            }
         }
         Ok(())
     }
