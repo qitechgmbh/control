@@ -10,7 +10,7 @@ import { useMock1 } from "./useMock";
 import { TimeSeriesValue, type Series, TimeSeries } from "@/lib/timeseries";
 
 export function Mock1GraphPage() {
-  const { sineWave } = useMock1();
+  const { sineWaveSum } = useMock1();
 
   const syncHook = useGraphSync(30 * 60 * 1000, "mock-graphs");
 
@@ -23,38 +23,38 @@ export function Mock1GraphPage() {
   };
 
   // Create inverted sine wave (Sine Wave 2)
-  const offsetValues: (TimeSeriesValue | null)[] = sineWave.long.values.map(
+  const offsetValues: (TimeSeriesValue | null)[] = sineWaveSum.long.values.map(
     (v) =>
       v !== null ? { value: v.value * -1, timestamp: v.timestamp } : null,
   );
 
   const series: Series = {
     values: offsetValues,
-    index: sineWave.long.index,
-    size: sineWave.long.size,
-    lastTimestamp: sineWave.long.lastTimestamp,
-    timeWindow: sineWave.long.timeWindow,
-    sampleInterval: sineWave.long.sampleInterval,
-    validCount: sineWave.long.validCount,
+    index: sineWaveSum.long.index,
+    size: sineWaveSum.long.size,
+    lastTimestamp: sineWaveSum.long.lastTimestamp,
+    timeWindow: sineWaveSum.long.timeWindow,
+    sampleInterval: sineWaveSum.long.sampleInterval,
+    validCount: sineWaveSum.long.validCount,
   };
 
   const currentValue: TimeSeriesValue | null =
-    sineWave.current !== null
+    sineWaveSum.current !== null
       ? {
-          value: sineWave.current.value * -1,
-          timestamp: sineWave.current.timestamp,
+          value: sineWaveSum.current.value * -1,
+          timestamp: sineWaveSum.current.timestamp,
         }
       : null;
 
   const sineWave2: TimeSeries = {
     current: currentValue,
     long: series,
-    short: sineWave.short,
+    short: sineWaveSum.short,
   };
 
   const combinedData = [
     {
-      newData: sineWave,
+      newData: sineWaveSum,
       title: "Sine Wave 1",
       color: "#3b82f6",
       lines: [
@@ -85,7 +85,7 @@ export function Mock1GraphPage() {
 
   // Single sine wave data
   const singleData = {
-    newData: sineWave,
+    newData: sineWaveSum,
     title: "Sine Wave",
     color: "#8b5cf6",
   };

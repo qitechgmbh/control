@@ -1,5 +1,5 @@
 use api::{
-    LiveValuesEvent, MockEvents, MockMachineNamespace, Mode, ModeState, SineWaveState, StateEvent,
+    LiveValuesEvent, MockEvents, MockMachineNamespace, Mode, ModeState, StateEvent,
 };
 use control_core::{machines::Machine, socketio::namespace::NamespaceCacheingLogic};
 use std::time::Instant;
@@ -21,7 +21,9 @@ pub struct MockMachine {
 
     // mock machine specific fields
     t_0: Instant,
-    frequency: Frequency,
+    frequency1: Frequency,
+    frequency2: Frequency,
+    frequency3: Frequency,
     mode: Mode,
 
     // State tracking to only emit when values change
@@ -39,16 +41,25 @@ impl MockMachine {
     pub fn emit_live_values(&mut self) {
         let now = Instant::now();
         let elapsed = now.duration_since(self.t_0).as_secs_f64();
-        let freq_hz = self.frequency.get::<hertz>();
+        let freq1_hz = self.frequency1.get::<hertz>();
+        let freq2_hz = self.frequency2.get::<hertz>();
+        let freq3_hz = self.frequency3.get::<hertz>();
 
         // Calculate sine wave: sin(2π * frequency * time)
-        let amplitude = match self.mode {
+        let t = match self.mode {
             Mode::Standby => 0.0,
-            Mode::Running => (2.0 * std::f64::consts::PI * freq_hz * elapsed).sin(),
+            Mode::Running => 2.0 * std::f64::consts::PI * elapsed,
         };
 
+        let amplitude1 = (t * freq1_hz).sin();
+        let amplitude2 = (t * freq2_hz).sin();
+        let amplitude3 = (t * freq3_hz).sin();
+
         let live_values = LiveValuesEvent {
-            sine_wave_amplitude: amplitude,
+            amplitude_sum: amplitude1 + amplitude2 + amplitude3,
+            amplitude1,
+            amplitude2,
+            amplitude3,
         };
 
         self.namespace
@@ -64,9 +75,9 @@ impl MockMachine {
 
         let current_state = StateEvent {
             is_default_state: !std::mem::replace(&mut self.emitted_default_state, true),
-            sine_wave_state: SineWaveState {
-                frequency: self.frequency.get::<millihertz>(),
-            },
+            frequency1: self.frequency1.get::<millihertz>(),
+            frequency2: self.frequency2.get::<millihertz>(),
+            frequency3: self.frequency3.get::<millihertz>(),
             mode_state: ModeState {
                 mode: self.mode.clone(),
             },
@@ -84,9 +95,21 @@ impl MockMachine {
         }
     }
 
-    /// Set the frequency of the sine wave
-    pub fn set_frequency(&mut self, frequency_mhz: f64) {
-        self.frequency = Frequency::new::<millihertz>(frequency_mhz);
+    /// Set the frequencies of the sine waves
+    pub fn set_frequency1(&mut self, frequency_mhz: f64) {
+        self.frequency1 = Frequency::new::<millihertz>(frequency_mhz);
+        // Emit state change immediately
+        self.emit_state();
+    }
+
+    pub fn set_frequency2(&mut self, frequency_mhz: f64) {
+        self.frequency2 = Frequency::new::<millihertz>(frequency_mhz);
+        // Emit state change immediately
+        self.emit_state();
+    }
+
+    pub fn set_frequency3(&mut self, frequency_mhz: f64) {
+        self.frequency3 = Frequency::new::<millihertz>(frequency_mhz);
         // Emit state change immediately
         self.emit_state();
     }

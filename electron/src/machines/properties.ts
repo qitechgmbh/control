@@ -1,4 +1,9 @@
-import { MachineProperties, MachineIdentification, DeviceRole } from "./types";
+import {
+  MachineProperties,
+  MachineIdentification,
+  DeviceRole,
+  machineIdentificationEquals,
+} from "./types";
 
 export const VENDOR_QITECH = 0x0001;
 
@@ -272,10 +277,11 @@ export const machineProperties: MachineProperties[] = [
 export const getMachineProperties = (
   machine_identification: MachineIdentification,
 ) => {
-  return machineProperties.find(
-    (m) =>
-      m.machine_identification.vendor === machine_identification.vendor &&
-      m.machine_identification.machine === machine_identification.machine,
+  return machineProperties.find((m) =>
+    machineIdentificationEquals(
+      m.machine_identification,
+      machine_identification,
+    ),
   );
 };
 
