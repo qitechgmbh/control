@@ -42,11 +42,30 @@ export const modeStateSchema = z.object({
 });
 
 /**
+ *  Connected machine state scheme
+ */
+export const machineIdentificationSchema = z.object({
+  vendor: z.number(),
+  machine: z.number(),
+});
+
+export const machineIdentificationUniqueSchema = z.object({
+  machine_identification: machineIdentificationSchema,
+  serial: z.number(),
+});
+
+export const connectedMachineStateSchema = z.object({
+  machine_identification_unique: machineIdentificationUniqueSchema.nullable(),
+  is_available: z.boolean(),
+});
+
+/**
  * Consolidated state event schema (state changes only)
  */
 
 export const stateEventDataSchema = z.object({
   mode_state: modeStateSchema,
+  connected_machine_state: connectedMachineStateSchema,
 });
 
 // ========== Event Schemas with Wrappers ==========

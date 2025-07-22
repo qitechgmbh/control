@@ -17,6 +17,7 @@ import { Mode, SpoolAutomaticActionMode } from "./winder2Namespace";
 import { TensionArm } from "../TensionArm";
 import { roundDegreesToDecimals, roundToDecimals } from "@/lib/decimal";
 import { Spool } from "../Spool";
+import { MachineSelector } from "@/components/MachineConnectionDropdown";
 
 export function Winder2ControlPage() {
   // use optimistic state
@@ -44,6 +45,10 @@ export function Winder2ControlPage() {
     setSpoolAutomaticAction,
     isLoading,
     isDisabled,
+    selectedMachine,
+    filteredMachines,
+    setConnectedMachine,
+    disconnectMachine,
   } = useWinder2();
 
   return (
@@ -328,6 +333,20 @@ export function Winder2ControlPage() {
             />
           </Label>
         </ControlCard>
+        <MachineSelector
+          machines={filteredMachines}
+          selectedMachine={selectedMachine}
+          connectedMachineState={state?.connected_machine_state}
+          setConnectedMachine={setConnectedMachine}
+          clearConnectedMachine={() => {
+            if (!selectedMachine) return;
+            setConnectedMachine({
+              machine_identification: { vendor: 0, machine: 0 },
+              serial: 0,
+            });
+            disconnectMachine(selectedMachine.machine_identification_unique);
+          }}
+        />
       </ControlGrid>
     </Page>
   );
