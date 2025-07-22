@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { persist, StateStorage } from "zustand/middleware";
 import { Preset, PresetSchema, presetSchema } from "./preset";
 import { MachineIdentification } from "@/machines/types";
 import { z } from "zod";
@@ -47,8 +47,8 @@ export type PresetStore = PresetStoreData & {
   ) => number | undefined;
 };
 
-const storage = {
-  getItem: (name: string) => {
+const storage: StateStorage = {
+  getItem: (name: string): any => {
     const str = localStorage.getItem(name);
 
     if (!str) {
@@ -57,16 +57,16 @@ const storage = {
 
     try {
       const json = JSON.parse(str);
-      const { state } = localStoreItemSchema.parse(json);
+      const { state: item } = localStoreItemSchema.parse(json);
 
-      const latestPresetIds = new Map(state.latestPresetIds);
+      const latestPresetIds = new Map(item.latestPresetIds);
 
-      return {
-        state: {
-          presets: state.presets,
-          latestPresetIds,
-        },
+      const state: PersistedState = {
+        presets: item.presets,
+        latestPresetIds,
       };
+
+      return { state };
     } catch (e) {
       console.error(e);
     }
@@ -79,14 +79,16 @@ const storage = {
       newValue.state?.latestPresetIds?.entries(),
     );
 
-    const serialized = JSON.stringify({
+    const item: LocalStoreItem = {
       state: {
         ...newValue.state,
         latestPresetIds,
       },
-    });
+    };
 
-    localStorage.setItem(name, serialized);
+    const json = JSON.stringify(item);
+
+    localStorage.setItem(name, json);
   },
 
   removeItem: (name: string) => localStorage.removeItem(name),
