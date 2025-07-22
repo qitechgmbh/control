@@ -1,5 +1,4 @@
-
-![Titelseite,screenshot from Word doccument](Titelseite.jpeg)
+![Titelseite,screenshot from Word doccument](src/assets/markdown/winder/Titelseite.jpeg)
 
 
 
@@ -75,7 +74,7 @@ Darmstadt, 10/06/2025
 
 
 
-<img src="signature.jpeg" width="300" height="60"/>
+<img src="src/assets/markdown/winder/signature.jpeg" width="300" height="60"/>
 
 
 
@@ -152,7 +151,7 @@ Operating instructions
 
 # 1 Machine description
 
-![maschinenbeschreibung](description.png)
+![maschinenbeschreibung](src/assets/markdown/winder/description.png)
 
 
 
@@ -256,7 +255,7 @@ Noise measurement method and operating condition acc: DIN 45635 Part 16 and Part
 
 | Picture | Danger! |
 |---------|---------|
-| ![Warning](w001.jpeg) | **Danger to life due to technically faulty machine.** <br> The machine may only be used when it is in perfect technical condition and in accordance with its intended use, in a safety-conscious and hazard-conscious manner and in compliance with these operating instructions.  All faults, especially those that could impair safety, must be rectified immediately before starting the winder. Everyone who works on or with the Qitech Winder is responsible for observing these safety aspects! |
+| ![Warning](src/assets/markdown/winder/w001.jpeg) | **Danger to life due to technically faulty machine.** <br> The machine may only be used when it is in perfect technical condition and in accordance with its intended use, in a safety-conscious and hazard-conscious manner and in compliance with these operating instructions.  All faults, especially those that could impair safety, must be rectified immediately before starting the winder. Everyone who works on or with the Qitech Winder is responsible for observing these safety aspects! |
 
 
 
@@ -276,17 +275,17 @@ Noise measurement method and operating condition acc: DIN 45635 Part 16 and Part
 
 |  Pictogram | Description of pictogram                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | Pictogram | Pictogram Description                                                                                      |
 |------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------|-----------------------------------------------------------------------------------------------------------|
-| ![w001](w001.jpeg)   | W001 General warning sign The combination of the symbol W001 and the signal word **"Danger"** indicates an imminently hazardous situation which, if not avoided death or serious injury if it is not avoided. The combination of the symbol W001 and the signal word **"Warning"** indicates an imminently hazardous situation which, if not avoided, will result in death or serious injury. death or serious injury if it is not avoided. The combination of the symbol W001 and the signal word **"Caution"** indicates an imminently hazardous situation which, if not avoided death or serious injury if not avoided. | ![m001](m001.jpeg)    | M001 General warning sign Mandatory sign This combination of symbol and signal word indicates a potentially hazardous situation which, if not avoided, may result in damage to property or the environment. not avoided. |
-| ![w008](w008.jpeg)   | W008 Warning of risk of falling                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | ![m003](m003.jpeg)    | M003 Use hearing protection                                                                                 |
-| ![w011](w011.jpeg)   | W011 Warning of danger of slipping                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | ![m004](m004.jpeg)    | M004 Use eye protection                                                                                      |
-| ![w004](w004.jpeg)   | W004 Warning of laser beam                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | ![m008](m008.jpeg)    | M008 Use foot protection                                                                                     |
-| ![w012](w012.jpeg)   | W012 Warning of electrical voltage                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | ![m009](m009.jpeg)    | M009 Use hand protection                                                                                     |
-| ![w017](w017.jpeg)   | W017 Warning of hot surface                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | ![m010](m010.jpeg)    | M010 Use protective clothing                                                                                 |
-| ![w018](w018.jpeg)   | W018 Warning against automatic start-up                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | ![m012](m012.jpeg)    | M012 Use handrail                                                                                             |
-| ![w019](w019.jpeg)   | W019 Warning of crushing hazard                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | ![m021](m021.jpeg)    | M021 Switch off before maintenance or repair                                                                |
-| ![w024](w024.jpeg)   | W024 Warning against hand injuries                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | ![m014](m014.jpeg)    | M014 Use head protection                                                                                      |
-| ![w025](w025.jpeg)   | W025 Warning against counter-rotating rollers                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |                         |                                                                                                           |
-| ![w016](w016.jpeg)   | W016 Warning of toxic substances                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |                         |                                                                                                           |
+| ![w001](src/assets/markdown/winder/w001.jpeg)   | W001 General warning sign The combination of the symbol W001 and the signal word **"Danger"** indicates an imminently hazardous situation which, if not avoided death or serious injury if it is not avoided. The combination of the symbol W001 and the signal word **"Warning"** indicates an imminently hazardous situation which, if not avoided, will result in death or serious injury. death or serious injury if it is not avoided. The combination of the symbol W001 and the signal word **"Caution"** indicates an imminently hazardous situation which, if not avoided death or serious injury if not avoided. | ![m001](src/assets/markdown/winder/m001.jpeg)    | M001 General warning sign Mandatory sign This combination of symbol and signal word indicates a potentially hazardous situation which, if not avoided, may result in damage to property or the environment. not avoided. |
+| ![w008](src/assets/markdown/winder/w008.jpeg)   | W008 Warning of risk of falling                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | ![m003](src/assets/markdown/winder/m003.jpeg)    | M003 Use hearing protection                                                                                 |
+| ![w011](src/assets/markdown/winder/w011.jpeg)   | W011 Warning of danger of slipping                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | ![m004](src/assets/markdown/winder/m004.jpeg)    | M004 Use eye protection                                                                                      |
+| ![w004](src/assets/markdown/winder/w004.jpeg)   | W004 Warning of laser beam                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | ![m008](src/assets/markdown/winder/m008.jpeg)    | M008 Use foot protection                                                                                     |
+| ![w012](src/assets/markdown/winder/w012.jpeg)   | W012 Warning of electrical voltage                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | ![m009](src/assets/markdown/winder/m009.jpeg)    | M009 Use hand protection                                                                                     |
+| ![w017](src/assets/markdown/winder/w017.jpeg)   | W017 Warning of hot surface                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | ![m010](src/assets/markdown/winder/m010.jpeg)    | M010 Use protective clothing                                                                                 |
+| ![w018](src/assets/markdown/winder/w018.jpeg)   | W018 Warning against automatic start-up                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | ![m012](src/assets/markdown/winder/m012.jpeg)    | M012 Use handrail                                                                                             |
+| ![w019](src/assets/markdown/winder/w019.jpeg)   | W019 Warning of crushing hazard                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | ![m021](src/assets/markdown/winder/m021.jpeg)    | M021 Switch off before maintenance or repair                                                                |
+| ![w024](src/assets/markdown/winder/w024.jpeg)   | W024 Warning against hand injuries                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | ![m014](src/assets/markdown/winder/m014.jpeg)    | M014 Use head protection                                                                                      |
+| ![w025](src/assets/markdown/winder/w025.jpeg)   | W025 Warning against counter-rotating rollers                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |                         |                                                                                                           |
+| ![w016](src/assets/markdown/winder/w016.jpeg)   | W016 Warning of toxic substances                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |                         |                                                                                                           |
 
 
 
@@ -312,15 +311,15 @@ Noise measurement method and operating condition acc: DIN 45635 Part 16 and Part
 
  | Prohibition signs Pictogram      | Pictogram description                                                                 | International pictograms / other Pictogram | Pictogram Description                                         |
 |----------------------------------|--------------------------------------------------------------------------------------|--------------------------------------------|---------------------------------------------------------------|
-| <img src="p001.jpeg" width="158" height="158"/> | P001 General prohibition sign    | <img src="f001.jpeg" width="158" height="158">                      | F001 Fire extinguisher                                        |
-| <img src="p002.jpeg" width="158" height="158"/> | P002 No smoking                                                                      | <img src="ANIS_danger.jpeg" width="232" height="60">                     | ANSI Z535.3 - DANGER                                          |
-| <img src="p003.jpeg" width="158" height="158"/> | P003 No open flames; fire, open source of ignition and smoking prohibited            | <img src="ANIS_warning.jpeg" width="232" height="60">                   | ANSI Z535.3 - WARNING                                         |
-| <img src="p006.jpeg" width="158" height="158"/> | P006 Prohibited for industrial trucks                                                | <img src="ANIS_caution.jpeg" width="232" height="60">                   | ANSI Z535.3 - CAUTION                                         |
-| <img src="p009.jpeg" width="158" height="158"/> | P009 Climbing prohibited - In the sense of climbing prohibited for unauthorized persons | <img src="ANIS_notice.jpeg" width="232" height="60">                     | ANSI Z535.3 - NOTICE                                          |
-| <img src="p022.jpeg" width="158" height="158"/> | P022 Eating and drinking prohibited                                                  | <img src="ANIS_safetyinstructions.jpeg" width="232" height="60"> | ANSI Z535.3 - SAFETY INSTRUCTIONS                         |
-| <img src="p024.jpeg" width="158" height="158"/> | P024 Entering the area prohibited                                                    | <img src="trashcan.jpeg" width="158" height="158">                       | Symbol for separate collection of waste electrical and electronic equipment |
-| <img src="p031.jpeg" width="158" height="158"/> | P031 Switching prohibited                                                            |                                            |                                                               |
-| <img src="D-p006.jpeg" width="158" height="158"/> | D-P006 Access prohibited for unauthorized persons                                    |                                            |                                                               |
+| <img src="src/assets/markdown/winder/p001.jpeg" width="158" height="158"/> | P001 General prohibition sign    | <img src="src/assets/markdown/winder/f001.jpeg" width="158" height="158">                      | F001 Fire extinguisher                                        |
+| <img src="src/assets/markdown/winder/p002.jpeg" width="158" height="158"/> | P002 No smoking                                                                      | <img src="src/assets/markdown/winder/ANIS_danger.jpeg" width="232" height="60">                     | ANSI Z535.3 - DANGER                                          |
+| <img src="src/assets/markdown/winder/p003.jpeg" width="158" height="158"/> | P003 No open flames; fire, open source of ignition and smoking prohibited            | <img src="src/assets/markdown/winder/ANIS_warning.jpeg" width="232" height="60">                   | ANSI Z535.3 - WARNING                                         |
+| <img src="src/assets/markdown/winder/p006.jpeg" width="158" height="158"/> | P006 Prohibited for industrial trucks                                                | <img src="src/assets/markdown/winder/ANIS_caution.jpeg" width="232" height="60">                   | ANSI Z535.3 - CAUTION                                         |
+| <img src="src/assets/markdown/winder/p009.jpeg" width="158" height="158"/> | P009 Climbing prohibited - In the sense of climbing prohibited for unauthorized persons | <img src="src/assets/markdown/winder/ANIS_notice.jpeg" width="232" height="60">                     | ANSI Z535.3 - NOTICE                                          |
+| <img src="src/assets/markdown/winder/p022.jpeg" width="158" height="158"/> | P022 Eating and drinking prohibited                                                  | <img src="src/assets/markdown/winder/ANIS_safetyinstructions.jpeg" width="232" height="60"> | ANSI Z535.3 - SAFETY INSTRUCTIONS                         |
+| <img src="src/assets/markdown/winder/p024.jpeg" width="158" height="158"/> | P024 Entering the area prohibited                                                    | <img src="src/assets/markdown/winder/trashcan.jpeg" width="158" height="158">                       | Symbol for separate collection of waste electrical and electronic equipment |
+| <img src="src/assets/markdown/winder/p031.jpeg" width="158" height="158"/> | P031 Switching prohibited                                                            |                                            |                                                               |
+| <img src="src/assets/markdown/winder/D-p006.jpeg" width="158" height="158"/> | D-P006 Access prohibited for unauthorized persons                                    |                                            |                                                               |
 
 
 
@@ -366,7 +365,7 @@ In addition, the following procedures must be regarded as misuse:
 <br><br><br>
 
 
-![spool sizes](spools.jpeg)
+![spool sizes](src/assets/markdown/winder/spools.jpeg)
 
 
 <br><br><br>
@@ -400,7 +399,7 @@ Hazardous movements are brought to a controlled standstill as quickly as possibl
 
 <br>
 
-<img src="emergency_stop.jpeg" width="300" height="300"/>
+<img src="src/assets/markdown/winder/emergency_stop.jpeg" width="300" height="300"/>
 
 
 
@@ -465,13 +464,13 @@ The noise emissions of the machine were measured on the same machine types. Unde
 <br><br>
 | Picture | Danger |
 |---------|--------|
-| ![Warning](w001.jpeg)|**Risk of injury due to improper transport** <br> Be careful when loading the machine, do not place any limbs under the parts when setting them down, do not stand under suspended loads or between moving loads and walls or machine parts.  Wear personal protective equipment: safety shoes, protective work clothing, protective gloves. 
+| ![Warning](src/assets/markdown/winder/w001.jpeg)|**Risk of injury due to improper transport** <br> Be careful when loading the machine, do not place any limbs under the parts when setting them down, do not stand under suspended loads or between moving loads and walls or machine parts.  Wear personal protective equipment: safety shoes, protective work clothing, protective gloves. 
 
 
 
 | Picture | Caution! |
 |---------|----------|
-| ![Warning](w001.jpeg) |**Danger to life due to incorrect installation and commissioning!** <brErrors during installation can lead to life-threatening situations or cause considerable damage to property. Installation and commissioning may only be carried out by the manufacturer's employees. |
+| ![Warning](src/assets/markdown/winder/w001.jpeg) |**Danger to life due to incorrect installation and commissioning!** <brErrors during installation can lead to life-threatening situations or cause considerable damage to property. Installation and commissioning may only be carried out by the manufacturer's employees. |
 
 
 <br><br>
@@ -497,7 +496,7 @@ The machines are delivered with the newest version of the software installed. Up
 
 <br>
 
-![screenshot of update tab](screenshot_updates.png)
+![screenshot of update tab](src/assets/markdown/winder/screenshot_updates.png)
 
 <br>
 
@@ -546,7 +545,7 @@ Then start the machine as follows:
 
 <br>
 
-![screenshot outer limit](screenshot_traverse.png)
+![screenshot outer limit](src/assets/markdown/winder/screenshot_traverse.png)
 
 <br>
 
@@ -563,7 +562,7 @@ Then start the machine as follows:
 
 <br>
 
-![screernshot target speed](screenshot_targetspeed.png)
+![screernshot target speed](src/assets/markdown/winder/screenshot_targetspeed.png)
 
 <br>
 
@@ -632,7 +631,7 @@ All settings such as the position of the spool sides, the winding speed or the f
 
 | Picture | Danger! |
 |---------|---------|
-| ![Warning](w001.jpeg) | **Danger to life due to operation of the machine in faulty condition** <br> If safety-relevant changes or defects occur on the machine, shut down immediately, secure against restarting and report the process to the responsible office/person! 
+| ![Warning](src/assets/markdown/winder/w001.jpeg) | **Danger to life due to operation of the machine in faulty condition** <br> If safety-relevant changes or defects occur on the machine, shut down immediately, secure against restarting and report the process to the responsible office/person! 
 
 <br><br>
 
@@ -677,7 +676,7 @@ The polyurethane coating of the puller rollers will inevitably wear out over tim
 
 Now remove the black plastic caps and simply pull out the puller rollers. To install the new rollers back on, slide them on the axes, put the plastic cap back on and screw the screws.
 
-<img src="swapping_out_rollers.jpeg" width="300" height="400"/>
+<img src="src/assets/markdown/winder/swapping_out_rollers.jpeg" width="300" height="400"/>
 
 
 <br>
@@ -685,7 +684,7 @@ Now remove the black plastic caps and simply pull out the puller rollers. To ins
 
 | Picture | Caution! |
 |---------|----------|
-| ![w001](w001.jpeg)|Observe the instructions for maintenance work when servicing the machine! |
+| ![w001](src/assets/markdown/winder/w001.jpeg)|Observe the instructions for maintenance work when servicing the machine! |
 
 
 <br>
@@ -753,7 +752,7 @@ The machine consists largely of aluminum and plastic and can be easily separated
 
 | Picture | Disposal Instructions |
 |---------|-----------------------|
-|  <img src="trashcan.jpeg" width="158" height="137"/>| Appliances with this logo on the packaging or on the appliance must be disposed of separately. These devices must not be disposed of with normal household waste. You are responsible for ensuring that any electrical or electronic waste is disposed of at the appropriate locations, e.g., recycling centers. |
+|  <img src="src/assets/markdown/winder/trashcan.jpeg" width="158" height="137"/>| Appliances with this logo on the packaging or on the appliance must be disposed of separately. These devices must not be disposed of with normal household waste. You are responsible for ensuring that any electrical or electronic waste is disposed of at the appropriate locations, e.g., recycling centers. |
 
 
 
@@ -764,38 +763,38 @@ The machine consists largely of aluminum and plastic and can be easily separated
 
 | Picture | Danger! |
 |---------|---------|
-| ![Warning](w001.jpeg) | **Danger of getting caught, pulled in or pulled along by moving parts of the machine** <br> Do not wear loose long hair, loose clothing or jewelry! There is always a risk of getting caught, pulled in or pulled along by moving parts! |
+| ![Warning](src/assets/markdown/winder/w001.jpeg) | **Danger of getting caught, pulled in or pulled along by moving parts of the machine** <br> Do not wear loose long hair, loose clothing or jewelry! There is always a risk of getting caught, pulled in or pulled along by moving parts! |
 
 <br>
 
 | Picture | Danger! |
 |---------|---------|
-| ![Warning](w001.jpeg) |**Operation only permitted with protective devices fitted!** <br> The winder may only be operated with properly fitted and functioning safety guards. The operator is responsible for ensuring that all protective devices are properly fitted. |
+| ![Warning](src/assets/markdown/winder/w001.jpeg) |**Operation only permitted with protective devices fitted!** <br> The winder may only be operated with properly fitted and functioning safety guards. The operator is responsible for ensuring that all protective devices are properly fitted. |
 
 <br>
 
 | Picture | Danger! |
 |---------|---------|
-| ![Warning](w001.jpeg) | **Danger of cutting tensioned filament** <br> The stretched filament must not be touched between the puller and the spool. Danger of cutting! Do not wind any pointed, sharp-edged or particularly thin materials! |
+| ![Warning](src/assets/markdown/winder/w001.jpeg) | **Danger of cutting tensioned filament** <br> The stretched filament must not be touched between the puller and the spool. Danger of cutting! Do not wind any pointed, sharp-edged or particularly thin materials! |
 
 <br>
 
 | Picture | Danger! |
 |---------|---------|
-| ![Warning](w012.jpeg) | **Electric shock** <br> Before carrying out any repair, set-up or maintenance work, the winder must be de-energised by disconnecting the mains plug! Pull out the mains plug! |
+| ![Warning](src/assets/markdown/winder/w012.jpeg) | **Electric shock** <br> Before carrying out any repair, set-up or maintenance work, the winder must be de-energised by disconnecting the mains plug! Pull out the mains plug! |
 
 <br>
 
 | Picture | Danger! |
 |---------|---------|
-| ![Warning](w012.jpeg) | **Electrostatic charges on the puller and spool** <br> Friction of the filament on the puller rollers and on the spool can lead to electrostatic charges. There is a risk of minor electric shocks! Do not touch the affected areas, but keep a sufficient distance! |
+| ![Warning](src/assets/markdown/winder/w012.jpeg) | **Electrostatic charges on the puller and spool** <br> Friction of the filament on the puller rollers and on the spool can lead to electrostatic charges. There is a risk of minor electric shocks! Do not touch the affected areas, but keep a sufficient distance! |
 
 <br>
 
 
 | Picture | Danger! |
 |---------|---------|
-| ![Warning](w018.jpeg) |**Automatic speed adjustment of puller, reel and traverse** <br> The bobbin automatically adjusts its speed to keep the winding pressure constant. |
+| ![Warning](src/assets/markdown/winder/w018.jpeg) |**Automatic speed adjustment of puller, reel and traverse** <br> The bobbin automatically adjusts its speed to keep the winding pressure constant. |
 
 <br>
 <br>
@@ -811,20 +810,20 @@ The traverse automatically adjusts its speed to the reel in order to maintain th
 
 | Picture | Danger! |
 |---------|---------|
-| ![Warning](w025.jpeg) | **Feeding of body parts** <br> Extreme caution is required in the area of the puller and spool axle! There is an acute danger of getting caught or pulled in! Make sure you wear close-fitting clothing! Always keep the emergency stop switch within easy reach so that it can be activated immediately in an emergency. |
+| ![Warning](src/assets/markdown/winder/w025.jpeg) | **Feeding of body parts** <br> Extreme caution is required in the area of the puller and spool axle! There is an acute danger of getting caught or pulled in! Make sure you wear close-fitting clothing! Always keep the emergency stop switch within easy reach so that it can be activated immediately in an emergency. |
 
 
 <br>
 
 | Picture | Danger! |
 |---------|---------|
-| ![Warning](w024.jpeg) | **Risk of crushing when threading the filament** <br> Exercise extreme caution when threading the filament through the puller rollers! There is a risk of crushing between the upper and lower pair of rollers. |
+| ![Warning](src/assets/markdown/winder/w024.jpeg) | **Risk of crushing when threading the filament** <br> Exercise extreme caution when threading the filament through the puller rollers! There is a risk of crushing between the upper and lower pair of rollers. |
 
 <br>
 
 | Picture | Danger! |
 |---------|---------|
-| ![Warning](w024.jpeg) | **Risk of crushing between the traversing unit and machine housing** <br> Exercise extreme caution when moving the traverser towards the housing! Do not place any limbs in the gap! |
+| ![Warning](src/assets/markdown/winder/w024.jpeg) | **Risk of crushing between the traversing unit and machine housing** <br> Exercise extreme caution when moving the traverser towards the housing! Do not place any limbs in the gap! |
 
 
 
@@ -871,7 +870,7 @@ The following persons may not work on the machine:
 
 | Picture | Danger! |
 |---------|---------|
-| ![Warning](w001.jpeg) | **Risk of injury if insufficiently qualified!** <br> Improper handling can lead to considerable personal injury and damage to property. Special activities may only be carried out by the persons specified in the relevant sections of these instructions. |
+| ![Warning](src/assets/markdown/winder/w001.jpeg) | **Risk of injury if insufficiently qualified!** <br> Improper handling can lead to considerable personal injury and damage to property. Special activities may only be carried out by the persons specified in the relevant sections of these instructions. |
 
 
 <br>
