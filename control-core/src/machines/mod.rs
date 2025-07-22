@@ -1,11 +1,13 @@
 use anyhow::anyhow;
 use api::MachineApi;
 use new::MachineNewTrait;
+use serde::Serialize;
 use smol::lock::Mutex;
 use std::any::Any;
 use std::fmt::Debug;
-use std::sync::Arc;
+use std::sync::{Arc, Weak};
 
+use crate::machines::identification::MachineIdentificationUnique;
 use crate::machines::new::MachineAct;
 pub mod api;
 pub mod identification;
@@ -39,5 +41,38 @@ pub async fn downcast_machine<T: Machine>(
             "[{}::downcast_machine] Downcast failed",
             module_path!()
         ))
+    }
+}
+pub trait GetStrongCount {
+    fn get_strong_count(&self) -> usize;
+}
+
+impl<T> GetStrongCount for Weak<Mutex<T>> {
+    fn get_strong_count(&self) -> usize {
+        self.strong_count()
+    }
+}
+
+#[derive(Debug)]
+pub struct ConnectedMachine<T: GetStrongCount> {
+    pub machine_identification_unique: MachineIdentificationUnique,
+    pub machine: T,
+}
+
+#[derive(Serialize, Debug, Clone, PartialEq)]
+pub struct ConnectedMachineData {
+    pub machine_identification_unique: MachineIdentificationUnique,
+    pub is_available: bool,
+}
+
+impl<T> From<&ConnectedMachine<T>> for ConnectedMachineData
+where
+    T: GetStrongCount,
+{
+    fn from(value: &ConnectedMachine<T>) -> Self {
+        Self {
+            machine_identification_unique: value.machine_identification_unique.clone(),
+            is_available: value.machine.get_strong_count() != 0,
+        }
     }
 }

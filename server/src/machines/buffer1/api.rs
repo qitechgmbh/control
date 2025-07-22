@@ -2,7 +2,7 @@ use std::{sync::Arc, time::Duration};
 
 use super::{BufferV1, BufferV1Mode};
 use control_core::{
-    machines::api::MachineApi,
+    machines::{api::MachineApi, identification::MachineIdentificationUnique},
     socketio::{
         event::{Event, GenericEvent},
         namespace::{
@@ -57,8 +57,11 @@ pub enum Mode {
 
 #[derive(Deserialize, Serialize)]
 enum Mutation {
-    //Mode
+    // Mode
     SetBufferMode(BufferV1Mode),
+
+    // Connected Machine
+    SetConnectedMachine(MachineIdentificationUnique),
 }
 
 #[derive(Debug)]
@@ -107,6 +110,9 @@ impl MachineApi for BufferV1 {
         let mutation: Mutation = serde_json::from_value(request_body)?;
         match mutation {
             Mutation::SetBufferMode(mode) => self.set_mode_state(mode),
+            Mutation::SetConnectedMachine(machine_identification_unique) => {
+                self.set_connected_winder(machine_identification_unique);
+            }
         }
         Ok(())
     }

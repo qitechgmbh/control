@@ -214,13 +214,23 @@ impl MachineNewTrait for BufferV1 {
                 EL7041_0052Port::STM1,
             ));
 
+            let machine_id = params
+                .device_group
+                .first()
+                .expect("device group must have at least one device")
+                .device_machine_identification
+                .machine_identification_unique
+                .clone();
+
             // create buffer instance
             let mut buffer: BufferV1 = Self {
                 namespace: Buffer1Namespace::new(params.socket_queue_tx.clone()),
                 last_measurement_emit: Instant::now(),
                 mode: BufferV1Mode::Standby,
                 buffer_tower_controller,
-
+                machine_manager: params.machine_manager.clone(),
+                machine_identification_unique: machine_id,
+                connected_winder: None,
             };
             buffer.emit_state();
             Ok(buffer)

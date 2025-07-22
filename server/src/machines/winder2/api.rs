@@ -1,11 +1,10 @@
 use super::{Winder2, Winder2Mode, puller_speed_controller::PullerRegulationMode};
 use control_core::{
-    machines::api::MachineApi,
+    machines::{api::MachineApi, identification::MachineIdentificationUnique},
     socketio::{
         event::{Event, GenericEvent},
         namespace::{
-            CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_duration,
-            cache_first_and_last_event,
+            cache_duration, cache_first_and_last_event, CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic
         },
     },
 };
@@ -95,6 +94,9 @@ enum Mutation {
 
     // Mode
     SetMode(Mode),
+
+    // Connected Machine
+    SetConnectedMachine(MachineIdentificationUnique),
 }
 
 #[derive(Serialize, Debug, Clone, Default)]
@@ -322,6 +324,7 @@ impl MachineApi for Winder2 {
             Mutation::SetSpoolAutomaticAction(mode) => self.set_spool_automatic_mode(mode),
             Mutation::ResetSpoolProgress => self.stop_or_pull_spool_reset(Instant::now()),
             Mutation::ZeroTensionArmAngle => self.tension_arm_zero(),
+            Mutation::SetConnectedMachine(machine_identification_unique) => self.set_connected_buffer(machine_identification_unique),
         }
         Ok(())
     }

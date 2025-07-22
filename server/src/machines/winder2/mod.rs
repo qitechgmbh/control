@@ -10,7 +10,7 @@ pub mod spool_speed_controller;
 pub mod tension_arm;
 pub mod traverse_controller;
 
-use std::{fmt::Debug, time::Instant};
+use std::{fmt::Debug, sync::{Arc, Weak}, time::Instant};
 
 use api::{
     LiveValuesEvent, ModeState, PullerState, SpoolAutomaticActionMode, SpoolAutomaticActionState,
@@ -18,14 +18,20 @@ use api::{
     Winder2Namespace,
 };
 use control_core::{
-    converters::angular_step_converter::AngularStepConverter, machines::{identification::MachineIdentification, Machine},
-    socketio::namespace::NamespaceCacheingLogic, uom_extensions::velocity::meter_per_minute,
+    converters::angular_step_converter::AngularStepConverter,
+    machines::{
+        downcast_machine, identification::{MachineIdentification, MachineIdentificationUnique}, manager::MachineManager, ConnectedMachine, Machine
+    },
+    socketio::namespace::NamespaceCacheingLogic,
+    uom_extensions::velocity::meter_per_minute,
 };
 use ethercat_hal::io::{
     digital_input::DigitalInput, digital_output::DigitalOutput,
     stepper_velocity_el70x1::StepperVelocityEL70x1,
 };
+use futures::executor::block_on;
 use puller_speed_controller::{PullerRegulationMode, PullerSpeedController};
+use smol::lock::{Mutex, RwLock};
 use spool_speed_controller::SpoolSpeedController;
 use tension_arm::TensionArm;
 use traverse_controller::TraverseController;
@@ -40,7 +46,7 @@ use uom::{
     },
 };
 
-use crate::machines::{MACHINE_WINDER_V2, VENDOR_QITECH};
+use crate::machines::{MACHINE_WINDER_V2, VENDOR_QITECH, buffer1::BufferV1};
 
 #[derive(Debug)]
 pub struct SpoolAutomaticAction {
@@ -66,6 +72,13 @@ pub struct Winder2 {
     // socketio
     namespace: Winder2Namespace,
     last_measurement_emit: Instant,
+
+    // machine connection
+    pub machine_manager: Weak<RwLock<MachineManager>>,
+    pub machine_identification_unique: MachineIdentificationUnique,
+
+    // connected machines
+    pub connected_buffer: Option<ConnectedMachine<Weak<Mutex<BufferV1>>>>,
 
     // mode
     pub mode: Winder2Mode,
@@ -747,6 +760,94 @@ impl Winder2 {
             .set_adaptive_deacceleration_urgency_multiplier(deacceleration_urgency_multiplier);
         self.emit_state();
     }
+}
+
+/// implement machine connection
+impl Winder2 {
+    /// set connected buffer
+    pub fn set_connected_buffer(
+        &mut self,
+        machine_identification_unique: MachineIdentificationUnique,
+    ) {
+        if !matches!(
+            machine_identification_unique.machine_identification,
+            BufferV1::MACHINE_IDENTIFICATION
+        ) {
+            return;
+        }
+        let machine_manager_arc = match self.machine_manager.upgrade() {
+            Some(machine_manager_arc) => machine_manager_arc,
+            None => return,
+        };
+        let machine_manager_guard = block_on(machine_manager_arc.read());
+        let buffer_weak = machine_manager_guard.get_serial_weak(&machine_identification_unique);
+        let buffer_weak = match buffer_weak {
+            Some(buffer_weak) => buffer_weak,
+            None => return,
+        };
+        let buffer_strong = match buffer_weak.upgrade() {
+            Some(buffer_strong) => buffer_strong,
+            None => return,
+        };
+
+        let buffer: Arc<Mutex<BufferV1>> = block_on(downcast_machine::<BufferV1>(buffer_strong))
+            .expect("failed downcasting machine");
+
+        let machine = Arc::downgrade(&buffer);
+
+        self.connected_buffer = Some(ConnectedMachine {
+            machine_identification_unique,
+            machine: machine.clone(),
+        });
+
+        self.emit_state();
+
+        self.reverse_connect();
+    }
+
+    /// disconnect winder
+    pub fn disconnect_winder(
+        &mut self,
+        machine_identification_unique: MachineIdentificationUnique,
+    ) {
+        if !matches!(
+            machine_identification_unique.machine_identification,
+            Winder2::MACHINE_IDENTIFICATION
+        ) {
+            return;
+        }
+        if let Some(connected) = &self.connected_buffer {
+            if let Some(buffer_arc) = connected.machine.upgrade() {
+                let future = async move {
+                    let mut buffer = buffer_arc.lock().await;
+                    if buffer.connected_winder.is_some() {
+                        buffer.connected_winder = None;
+                        buffer.emit_state();
+                    }
+                };
+                smol::spawn(future).detach();
+            }
+        }
+        self.connected_buffer = None;
+        self.emit_state();
+    }
+
+    /// initiate connection from winder to buffer
+    pub fn reverse_connect(&mut self) {
+        let machine_identification_unique = self.machine_identification_unique.clone();
+        if let Some(connected) = &self.connected_buffer {
+            if let Some(buffer_arc) = connected.machine.upgrade() {
+                let future = async move {
+                    let mut buffer = buffer_arc.lock().await;
+                    if buffer.connected_winder.is_none() {
+                        buffer.set_connected_winder(machine_identification_unique);
+                    }
+                };
+                smol::spawn(future).detach();
+            }
+        }
+    }
+
 }
 
 #[derive(Debug, Clone, PartialEq)]
