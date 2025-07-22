@@ -565,7 +565,7 @@ export function useWinder2() {
           m.machine_identification_unique.machine_identification.vendor ===
             VENDOR_QITECH &&
           m.machine_identification_unique.machine_identification.machine ===
-            0x0002,
+            0x0008,
       ),
     [machines, machineIdentification],
   );

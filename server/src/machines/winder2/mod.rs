@@ -804,7 +804,7 @@ impl Winder2 {
             None => return,
         };
         let machine_manager_guard = block_on(machine_manager_arc.read());
-        let buffer_weak = machine_manager_guard.get_serial_weak(&machine_identification_unique);
+        let buffer_weak = machine_manager_guard.get_machine_weak(&machine_identification_unique);
         let buffer_weak = match buffer_weak {
             Some(buffer_weak) => buffer_weak,
             None => return,
@@ -829,14 +829,14 @@ impl Winder2 {
         self.reverse_connect();
     }
 
-    /// disconnect winder
+    /// disconnect buffer
     pub fn disconnect_winder(
         &mut self,
         machine_identification_unique: MachineIdentificationUnique,
     ) {
         if !matches!(
             machine_identification_unique.machine_identification,
-            Winder2::MACHINE_IDENTIFICATION
+            BufferV1::MACHINE_IDENTIFICATION
         ) {
             return;
         }
@@ -856,7 +856,7 @@ impl Winder2 {
         self.emit_state();
     }
 
-    /// initiate connection from winder to buffer
+    /// initiate connection from buffer to winder
     pub fn reverse_connect(&mut self) {
         let machine_identification_unique = self.machine_identification_unique.clone();
         if let Some(connected) = &self.connected_buffer {

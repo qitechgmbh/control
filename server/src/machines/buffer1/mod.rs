@@ -181,7 +181,7 @@ impl BufferV1 {
             None => return,
         };
         let machine_manager_guard = block_on(machine_manager_arc.read());
-        let winder2_weak = machine_manager_guard.get_serial_weak(&machine_identification_unique);
+        let winder2_weak = machine_manager_guard.get_machine_weak(&machine_identification_unique);
         let winder2_weak = match winder2_weak {
             Some(winder2_weak) => winder2_weak,
             None => return,
