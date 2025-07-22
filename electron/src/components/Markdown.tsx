@@ -80,13 +80,16 @@ export function Markdown({ text }: MarkdownProps) {
             const id = generateHeadingId(text);
             const isFirst = isFirstHeading(text, 1);
             return (
-              <h1
-                id={id}
-                className={`${isFirst ? "" : "pt-4"} pb-2 text-2xl`}
-                {...props}
-              >
-                {children}
-              </h1>
+              <>
+                <h1
+                  id={id}
+                  className={`${isFirst ? "" : "pt-4"} pb-2 text-2xl`}
+                  {...props}
+                >
+                  {children}
+                </h1>
+                <br />
+              </>
             );
           },
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -136,15 +139,15 @@ export function Markdown({ text }: MarkdownProps) {
           },
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           ul: ({ node, ...props }) => (
-            <ul className="markdown-list list-inside list-disc" {...props} />
+            <ul className="markdown-list list-inside list-disc mb-6" {...props} />
           ),
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           li: ({ node, ...props }) => (
-            <li className="markdown-list list-inside list-disc" {...props} />
+            <li className="markdown-list" {...props} />
           ),
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           ol: ({ node, ...props }) => (
-            <ol className="markdown-list list-inside list-decimal" {...props} />
+            <ol className="markdown-list list-outside list-decimal ml-6 mb-6" {...props} />
           ),
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           p: ({ node, ...props }) => <p className="text-base" {...props} />,

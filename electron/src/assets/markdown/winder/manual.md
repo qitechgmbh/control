@@ -226,18 +226,12 @@ Noise measurement method and operating condition acc: DIN 45635 Part 16 and Part
 11. Before using the machine, make sure that it is in perfect condition (carry out a visual inspection before starting work). Pay particular attention to any damage to the earthing contact plug or the electrical connection. Never use the machine with defective, crushed or bare cables.
 12. Insert the earthing contact plug into an earthing contact socket suitable for the machine. The supply cable for the machine may only be connected to a socket outlet with earthing contact or a connection box. Have the socket outlet or connection box checked by a qualified electrician beforehand.
 13. During maintenance and cleaning work, the machine must be switched off and the earthing contact plug disconnected. Work on the electrical equipment of the machine may only be carried out by qualified electricians. The safety regulations for electrical engineering must be observed:
-- Switch off the machine
-- Disconnect the LAN-connection
-- Secure the machine against being switched on again
-
-
-
-
-
-
-- Have the machine de-energized by a qualified electrician
-- Earth and short-circuit the machine
-- Cover or isolate neighboring live parts
+    - Switch off the machine
+    - Disconnect the LAN-connection
+    - Secure the machine against being switched on again
+    - Have the machine de-energized by a qualified electrician
+    - Earth and short-circuit the machine
+    - Cover or isolate neighboring live parts
 
 14.  Do not reach into moving parts of the machine.
 15.  Keep a safe distance from rotating parts of the machine. Only change the bobbin when the bobbin axis is stationary.
