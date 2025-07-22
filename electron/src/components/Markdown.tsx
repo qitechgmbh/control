@@ -1,6 +1,7 @@
 import React from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import rehypeRaw from "rehype-raw";
 import { generateHeadingId } from "@/lib/markdown/heading";
 
 type MarkdownProps = {
@@ -71,6 +72,7 @@ export function Markdown({ text }: MarkdownProps) {
     <div>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
+        rehypePlugins={[rehypeRaw]}
         components={{
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           h1: ({ node, children, ...props }) => {
@@ -219,6 +221,8 @@ export function Markdown({ text }: MarkdownProps) {
           ),
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           hr: ({ node, ...props }) => <hr className="my-4" {...props} />,
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          br: ({ node, ...props }) => <br {...props} />,
         }}
       >
         {text}
