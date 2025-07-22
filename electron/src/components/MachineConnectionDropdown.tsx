@@ -49,7 +49,7 @@ export const MachineSelector: React.FC<MachineSelectorProps> = ({
   connectedMachineState,
   setConnectedMachine,
   clearConnectedMachine,
-  title = "Machine",
+  title = "Machine Connection",
 }) => {
   return (
     <ControlCard title={title}>
