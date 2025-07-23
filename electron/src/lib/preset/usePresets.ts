@@ -38,7 +38,7 @@ export function usePresets<T extends PresetSchema>({
       : {
           id: -1,
           name: "Machine Defaults",
-          machineIdentificaiton: machine_identification,
+          machineIdentification: machine_identification,
           lastModified: new Date(0),
           schemaVersion,
           data: defaultState,
@@ -48,7 +48,7 @@ export function usePresets<T extends PresetSchema>({
     const preset = store.insert({
       id: undefined,
       name,
-      machineIdentificaiton: machine_identification,
+      machineIdentification: machine_identification,
       lastModified: new Date(),
       schemaVersion,
       data: currentState,
@@ -76,7 +76,7 @@ export function usePresets<T extends PresetSchema>({
       .sort((a, b) => b.lastModified.getTime() - a.lastModified.getTime())
       .filter((preset) =>
         machineIdentificationEquals(
-          preset.machineIdentificaiton,
+          preset.machineIdentification,
           machine_identification,
         ),
       ) as Preset<T>[]; // TODO: here we will also use zod und also handle migration
@@ -89,7 +89,7 @@ export function usePresets<T extends PresetSchema>({
       latestPreset = store.insert({
         id: undefined,
         name: "Latest Machine Stettings",
-        machineIdentificaiton: machine_identification,
+        machineIdentification: machine_identification,
         lastModified: new Date(),
         schemaVersion,
         data: currentState,

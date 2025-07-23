@@ -1,4 +1,4 @@
-import { machineIdentificaiton } from "@/machines/types";
+import { machineIdentification } from "@/machines/types";
 import { z } from "zod";
 
 export type PresetSchema = z.ZodTypeAny;
@@ -8,7 +8,7 @@ export const presetSchema = <S extends PresetSchema>(dataSchema: S) =>
     id: z.number().int().nonnegative().optional(),
     name: z.string().nonempty(),
     lastModified: z.coerce.date(),
-    machineIdentificaiton: machineIdentificaiton,
+    machineIdentification: machineIdentification,
     schemaVersion: z.number().int().positive(),
     data: dataSchema,
   });
