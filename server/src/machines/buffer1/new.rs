@@ -22,7 +22,7 @@ use ethercat_hal::{
 };
 
 use crate::machines::buffer1::BufferV1Mode;
-use crate::machines::buffer1::buffer_tower_controller::BufferTowerController;
+use crate::machines::buffer1::buffer_lift_controller::BufferTowerController;
 use crate::machines::get_ethercat_device;
 
 use super::{BufferV1, api::Buffer1Namespace};
