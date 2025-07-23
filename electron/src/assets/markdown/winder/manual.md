@@ -458,13 +458,8 @@ The noise emissions of the machine were measured on the same machine types. Unde
 <br><br>
 | Picture | Danger |
 |---------|--------|
-| ![Warning](src/assets/markdown/winder/w001.jpeg)|**Risk of injury due to improper transport** <br> Be careful when loading the machine, do not place any limbs under the parts when setting them down, do not stand under suspended loads or between moving loads and walls or machine parts.  Wear personal protective equipment: safety shoes, protective work clothing, protective gloves. 
-
-
-
-| Picture | Caution! |
-|---------|----------|
-| ![Warning](src/assets/markdown/winder/w001.jpeg) |**Danger to life due to incorrect installation and commissioning!** <brErrors during installation can lead to life-threatening situations or cause considerable damage to property. Installation and commissioning may only be carried out by the manufacturer's employees. |
+| <img src="src/assets/markdown/winder/w001.jpeg" width="150" height="150"/> | **Risk of injury due to improper transport** <br> Be careful when loading the machine, do not place any limbs under the parts when setting them down, do not stand under suspended loads or between moving loads and walls or machine parts. Wear personal protective equipment: safety shoes, protective work clothing, protective gloves. |
+| <img src="src/assets/markdown/winder/w001.jpeg" width="150" height="150"/> | **Danger to life due to incorrect installation and commissioning!** <br> Errors during installation can lead to life-threatening situations or cause considerable damage to property. Installation and commissioning may only be carried out by the manufacturer's employees. |
 
 
 <br><br>
@@ -625,7 +620,7 @@ All settings such as the position of the spool sides, the winding speed or the f
 
 | Picture | Danger! |
 |---------|---------|
-| ![Warning](src/assets/markdown/winder/w001.jpeg) | **Danger to life due to operation of the machine in faulty condition** <br> If safety-relevant changes or defects occur on the machine, shut down immediately, secure against restarting and report the process to the responsible office/person! 
+| <img src="src/assets/markdown/winder/w001.jpeg" width="150" height="150"/> | **Danger to life due to operation of the machine in faulty condition** <br> If safety-relevant changes or defects occur on the machine, shut down immediately, secure against restarting and report the process to the responsible office/person! |
 
 <br><br>
 
@@ -678,7 +673,7 @@ Now remove the black plastic caps and simply pull out the puller rollers. To ins
 
 | Picture | Caution! |
 |---------|----------|
-| ![w001](src/assets/markdown/winder/w001.jpeg)|Observe the instructions for maintenance work when servicing the machine! |
+| <img src="src/assets/markdown/winder/w001.jpeg" width="150" height="150"/> | Observe the instructions for maintenance work when servicing the machine! |
 
 
 <br>
@@ -746,7 +741,7 @@ The machine consists largely of aluminum and plastic and can be easily separated
 
 | Picture | Disposal Instructions |
 |---------|-----------------------|
-|  <img src="src/assets/markdown/winder/trashcan.jpeg" width="158" height="137"/>| Appliances with this logo on the packaging or on the appliance must be disposed of separately. These devices must not be disposed of with normal household waste. You are responsible for ensuring that any electrical or electronic waste is disposed of at the appropriate locations, e.g., recycling centers. |
+|  <img src="src/assets/markdown/winder/trashcan.jpeg" width="150" height="150"/>| Appliances with this logo on the packaging or on the appliance must be disposed of separately. These devices must not be disposed of with normal household waste. You are responsible for ensuring that any electrical or electronic waste is disposed of at the appropriate locations, e.g., recycling centers. |
 
 
 
@@ -757,72 +752,15 @@ The machine consists largely of aluminum and plastic and can be easily separated
 
 | Picture | Danger! |
 |---------|---------|
-| ![Warning](src/assets/markdown/winder/w001.jpeg) | **Danger of getting caught, pulled in or pulled along by moving parts of the machine** <br> Do not wear loose long hair, loose clothing or jewelry! There is always a risk of getting caught, pulled in or pulled along by moving parts! |
-
-<br>
-
-| Picture | Danger! |
-|---------|---------|
-| ![Warning](src/assets/markdown/winder/w001.jpeg) |**Operation only permitted with protective devices fitted!** <br> The winder may only be operated with properly fitted and functioning safety guards. The operator is responsible for ensuring that all protective devices are properly fitted. |
-
-<br>
-
-| Picture | Danger! |
-|---------|---------|
-| ![Warning](src/assets/markdown/winder/w001.jpeg) | **Danger of cutting tensioned filament** <br> The stretched filament must not be touched between the puller and the spool. Danger of cutting! Do not wind any pointed, sharp-edged or particularly thin materials! |
-
-<br>
-
-| Picture | Danger! |
-|---------|---------|
-| ![Warning](src/assets/markdown/winder/w012.jpeg) | **Electric shock** <br> Before carrying out any repair, set-up or maintenance work, the winder must be de-energised by disconnecting the mains plug! Pull out the mains plug! |
-
-<br>
-
-| Picture | Danger! |
-|---------|---------|
-| ![Warning](src/assets/markdown/winder/w012.jpeg) | **Electrostatic charges on the puller and spool** <br> Friction of the filament on the puller rollers and on the spool can lead to electrostatic charges. There is a risk of minor electric shocks! Do not touch the affected areas, but keep a sufficient distance! |
-
-<br>
-
-
-| Picture | Danger! |
-|---------|---------|
-| ![Warning](src/assets/markdown/winder/w018.jpeg) |**Automatic speed adjustment of puller, reel and traverse** <br> The bobbin automatically adjusts its speed to keep the winding pressure constant. |
-
-<br>
-<br>
-
-
-
-
-
-
-
-
-The traverse automatically adjusts its speed to the reel in order to maintain the same travel distance per revolution.
-
-| Picture | Danger! |
-|---------|---------|
-| ![Warning](src/assets/markdown/winder/w025.jpeg) | **Feeding of body parts** <br> Extreme caution is required in the area of the puller and spool axle! There is an acute danger of getting caught or pulled in! Make sure you wear close-fitting clothing! Always keep the emergency stop switch within easy reach so that it can be activated immediately in an emergency. |
-
-
-<br>
-
-| Picture | Danger! |
-|---------|---------|
-| ![Warning](src/assets/markdown/winder/w024.jpeg) | **Risk of crushing when threading the filament** <br> Exercise extreme caution when threading the filament through the puller rollers! There is a risk of crushing between the upper and lower pair of rollers. |
-
-<br>
-
-| Picture | Danger! |
-|---------|---------|
-| ![Warning](src/assets/markdown/winder/w024.jpeg) | **Risk of crushing between the traversing unit and machine housing** <br> Exercise extreme caution when moving the traverser towards the housing! Do not place any limbs in the gap! |
-
-
-
-<br>
-<br>
+| <img src="src/assets/markdown/winder/w001.jpeg" width="150" height="150"/> | **Danger of getting caught, pulled in or pulled along by moving parts of the machine** <br> Do not wear loose long hair, loose clothing or jewelry! There is always a risk of getting caught, pulled in or pulled along by moving parts! |
+| <img src="src/assets/markdown/winder/w001.jpeg" width="150" height="150"/> | **Operation only permitted with protective devices fitted!** <br> The winder may only be operated with properly fitted and functioning safety guards. The operator is responsible for ensuring that all protective devices are properly fitted. |
+| <img src="src/assets/markdown/winder/w001.jpeg" width="150" height="150"/> | **Danger of cutting tensioned filament** <br> The stretched filament must not be touched between the puller and the spool. Danger of cutting! Do not wind any pointed, sharp-edged or particularly thin materials! |
+| <img src="src/assets/markdown/winder/w012.jpeg" width="150" height="150"/> | **Electric shock** <br> Before carrying out any repair, set-up or maintenance work, the winder must be de-energised by disconnecting the mains plug! Pull out the mains plug! |
+| <img src="src/assets/markdown/winder/w012.jpeg" width="150" height="150"/> | **Electrostatic charges on the puller and spool** <br> Friction of the filament on the puller rollers and on the spool can lead to electrostatic charges. There is a risk of minor electric shocks! Do not touch the affected areas, but keep a sufficient distance! |
+| <img src="src/assets/markdown/winder/w018.jpeg" width="150" height="150"/> | **Automatic speed adjustment of puller, reel and traverse** <br> The bobbin automatically adjusts its speed to keep the winding pressure constant. The traverse automatically adjusts its speed to the reel in order to maintain the same travel distance per revolution. |
+| <img src="src/assets/markdown/winder/w025.jpeg" width="150" height="150"/> | **Feeding of body parts** <br> Extreme caution is required in the area of the puller and spool axle! There is an acute danger of getting caught or pulled in! Make sure you wear close-fitting clothing! Always keep the emergency stop switch within easy reach so that it can be activated immediately in an emergency. |
+| <img src="src/assets/markdown/winder/w024.jpeg" width="150" height="150"/> | **Risk of crushing when threading the filament** <br> Exercise extreme caution when threading the filament through the puller rollers! There is a risk of crushing between the upper and lower pair of rollers. |
+| <img src="src/assets/markdown/winder/w024.jpeg" width="150" height="150"/> | **Risk of crushing between the traversing unit and machine housing** <br> Exercise extreme caution when moving the traverser towards the housing! Do not place any limbs in the gap! |
 
 
 # 4 Glossary and Definitions
@@ -864,7 +802,7 @@ The following persons may not work on the machine:
 
 | Picture | Danger! |
 |---------|---------|
-| ![Warning](src/assets/markdown/winder/w001.jpeg) | **Risk of injury if insufficiently qualified!** <br> Improper handling can lead to considerable personal injury and damage to property. Special activities may only be carried out by the persons specified in the relevant sections of these instructions. |
+| <img src="src/assets/markdown/winder/w001.jpeg" width="150" height="150"/> | **Risk of injury if insufficiently qualified!** <br> Improper handling can lead to considerable personal injury and damage to property. Special activities may only be carried out by the persons specified in the relevant sections of these instructions. |
 
 
 <br>
