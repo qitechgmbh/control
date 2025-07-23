@@ -34,6 +34,7 @@ pub fn init_mock(app_state: Arc<AppState>) -> Result<(), anyhow::Error> {
                         mock_serial_device,
                         &MACHINE_REGISTRY,
                         app_state.socketio_setup.socket_queue_tx.clone(),
+                        Arc::downgrade(&app_state.machines),
                     );
                 }
 
