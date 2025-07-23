@@ -1,10 +1,10 @@
 pub mod act;
 pub mod api;
-pub mod buffer_tower_controller;
+pub mod buffer_lift_controller;
 pub mod new;
 
 use api::{Buffer1Namespace, BufferV1Events, LiveValuesEvent, ModeState, StateEvent};
-use buffer_tower_controller::BufferTowerController;
+use buffer_lift_controller::BufferTowerController;
 use control_core::{
     machines::{
         ConnectedMachine, ConnectedMachineData, downcast_machine,
