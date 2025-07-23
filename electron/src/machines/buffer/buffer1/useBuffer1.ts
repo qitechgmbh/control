@@ -1,13 +1,17 @@
 import { toastError } from "@/components/Toast";
 import { useMachineMutate as useMachineMutation } from "@/client/useClient";
-import { buffer1 } from "@/machines/properties";
-import { MachineIdentificationUnique } from "@/machines/types";
+import { buffer1, VENDOR_QITECH } from "@/machines/properties";
+import {
+  machineIdentificationUnique,
+  MachineIdentificationUnique,
+} from "@/machines/types";
 import { buffer1SerialRoute } from "@/routes/routes";
 import { z } from "zod";
 import { useEffect, useMemo } from "react";
 import { StateEvent, Mode, useBuffer1Namespace } from "./buffer1Namespace";
 import { useStateOptimistic } from "@/lib/useStateOptimistic";
 import { produce } from "immer";
+import { useMachines } from "@/client/useMachines";
 
 export function useBuffer1() {
   const { serial: serialString } = buffer1SerialRoute.useParams();
@@ -36,6 +40,9 @@ export function useBuffer1() {
       serial,
     };
   }, [serialString]); // Only recreate when serialString changes
+
+  // Get machine identification unique
+  const machine_identification_unique = machineIdentification;
 
   // Get consolidated state and live values from namespace
   const { state } = useBuffer1Namespace(machineIdentification);
@@ -76,6 +83,46 @@ export function useBuffer1() {
     );
   };
 
+  const setConnectedMachine = (machineIdentificationUnique: {
+    machine_identification: {
+      vendor: number;
+      machine: number;
+    };
+    serial: number;
+  }) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.connected_machine_state.machine_identification_unique =
+          machineIdentificationUnique;
+      },
+      () =>
+        requestConnectedMachine({
+          machine_identification_unique,
+          data: { SetConnectedMachine: machineIdentificationUnique },
+        }),
+    );
+  };
+
+  const disconnectMachine = (machineIdentificationUnique: {
+    machine_identification: {
+      vendor: number;
+      machine: number;
+    };
+    serial: number;
+  }) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.connected_machine_state.machine_identification_unique =
+          null;
+      },
+      () =>
+        requestDisconnectedMachine({
+          machine_identification_unique,
+          data: { DisconnectMachine: machineIdentificationUnique },
+        }),
+    );
+  };
+
   // Mutation hooks
   const { request: requestBufferMode } = useMachineMutation(
     z.object({
@@ -83,13 +130,58 @@ export function useBuffer1() {
     }),
   );
 
+  const { request: requestConnectedMachine } = useMachineMutation(
+    z.object({
+      SetConnectedMachine: machineIdentificationUnique,
+    }),
+  );
+
+  const { request: requestDisconnectedMachine } = useMachineMutation(
+    z.object({
+      DisconnectMachine: machineIdentificationUnique,
+    }),
+  );
+
+  // General Helper functions
+  const machines = useMachines();
+  // Filter machines for the correct type
+  const filteredMachines = useMemo(
+    () =>
+      machines.filter(
+        (m) =>
+          m.machine_identification_unique.machine_identification.vendor ===
+            VENDOR_QITECH &&
+          m.machine_identification_unique.machine_identification.machine ===
+            0x0002,
+      ),
+    [machines, machineIdentification],
+  );
+
+  // Get selected machine by serial
+  const selectedMachine = useMemo(() => {
+    const serial =
+      state?.data.connected_machine_state?.machine_identification_unique
+        ?.serial;
+
+    return (
+      filteredMachines.find(
+        (m) => m.machine_identification_unique.serial === serial,
+      ) ?? null
+    );
+  }, [filteredMachines, state]);
+
   return {
     // Consolidated state
     state: stateOptimistic.value?.data,
+
+    filteredMachines,
+    selectedMachine,
 
     // Individual live values (TimeSeries)
 
     // Action functions (verb-first)
     setBufferMode,
+    setConnectedMachine,
+    disconnectMachine,
   };
 }

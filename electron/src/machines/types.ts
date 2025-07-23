@@ -21,12 +21,12 @@ type EthercatDevice = {
   revision: number;
 };
 
-export const machineIdentificaiton = z.object({
+export const machineIdentification = z.object({
   vendor: z.number(),
   machine: z.number(),
 });
 
-export type MachineIdentification = z.infer<typeof machineIdentificaiton>;
+export type MachineIdentification = z.infer<typeof machineIdentification>;
 
 export function machineIdentificationEquals(
   a: MachineIdentification,
@@ -36,7 +36,7 @@ export function machineIdentificationEquals(
 }
 
 export const machineIdentificationUnique = z.object({
-  machine_identification: machineIdentificaiton,
+  machine_identification: machineIdentification,
   serial: z.number(),
 });
 

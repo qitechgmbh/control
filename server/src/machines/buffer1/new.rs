@@ -91,7 +91,7 @@ impl MachineNewTrait for BufferV1 {
             // Role 1
             // 1x Stepper Buffer
             // EL7041-0052
-            let (el7041, el7041_config) = {
+            let (el7041, _el7041_config) = {
                 let device_identification =
                     get_device_identification_by_role(params.device_group, 1)?;
                 let device_hardware_identification_ethercat =
@@ -149,7 +149,7 @@ impl MachineNewTrait for BufferV1 {
             // Role 2
             // 1x Stepper Puller
             // EL7031
-            let (el7031_0030, el7031_0030_config) = {
+            let (_el7031_0030, _el7031_0030_config) = {
                 let device_identification =
                     get_device_identification_by_role(params.device_group, 2)?;
                 let device_hardware_identification_ethercat =
@@ -214,12 +214,23 @@ impl MachineNewTrait for BufferV1 {
                 EL7041_0052Port::STM1,
             ));
 
+            let machine_id = params
+                .device_group
+                .first()
+                .expect("device group must have at least one device")
+                .device_machine_identification
+                .machine_identification_unique
+                .clone();
+
             // create buffer instance
             let mut buffer: BufferV1 = Self {
                 namespace: Buffer1Namespace::new(params.socket_queue_tx.clone()),
                 last_measurement_emit: Instant::now(),
                 mode: BufferV1Mode::Standby,
                 buffer_tower_controller,
+                machine_manager: params.machine_manager.clone(),
+                machine_identification_unique: machine_id,
+                connected_winder: None,
             };
             buffer.emit_state();
             Ok(buffer)

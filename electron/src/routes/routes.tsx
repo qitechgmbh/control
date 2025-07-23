@@ -35,6 +35,7 @@ import { Buffer1ControlPage } from "@/machines/buffer/buffer1/Buffer1ControlPage
 import { Mock1PresetsPage } from "@/machines/mock/mock1/Mock1PresetsPage";
 import { Winder2PresetsPage } from "@/machines/winder/winder2/Winder2PresetsPage";
 import { Extruder2PresetsPage } from "@/machines/extruder/extruder2/Extruder2PresetsPage";
+import { Buffer1SettingsPage } from "@/machines/buffer/buffer1/Buffer1Settings";
 
 // make a route tree like this
 // _mainNavigation/machines/winder2/$serial/control
@@ -185,6 +186,12 @@ export const mock1PresetsRoute = createRoute({
   getParentRoute: () => mock1SerialRoute,
   path: "presets",
   component: () => <Mock1PresetsPage />,
+});
+
+export const buffer1SettingsRoute = createRoute({
+  getParentRoute: () => buffer1SerialRoute,
+  path: "settings",
+  component: () => <Buffer1SettingsPage />,
 });
 
 export const setupRoute = createRoute({

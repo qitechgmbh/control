@@ -333,6 +333,14 @@ impl MachineNewTrait for Winder2 {
 
             let mode = Winder2Mode::Standby;
 
+            let machine_id = params
+                .device_group
+                .first()
+                .expect("device group must have at least one device")
+                .device_machine_identification
+                .machine_identification_unique
+                .clone();
+
             let mut new = Self {
                 traverse: StepperVelocityEL70x1::new(el7031.clone(), EL7031StepperPort::STM1),
                 traverse_end_stop: DigitalInput::new(el7031, EL7031DigitalInputPort::DI1),
@@ -374,6 +382,9 @@ impl MachineNewTrait for Winder2 {
                     target_length: Length::new::<meter>(250.0),
                     mode: super::api::SpoolAutomaticActionMode::NoAction,
                 },
+                machine_manager: params.machine_manager.clone(),
+                machine_identification_unique: machine_id,
+                connected_buffer: None,
             };
 
             // initalize events

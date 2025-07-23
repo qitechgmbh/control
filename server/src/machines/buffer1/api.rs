@@ -2,7 +2,7 @@ use std::{sync::Arc, time::Duration};
 
 use super::{BufferV1, BufferV1Mode};
 use control_core::{
-    machines::api::MachineApi,
+    machines::{api::MachineApi, identification::MachineIdentificationUnique},
     socketio::{
         event::{Event, GenericEvent},
         namespace::{
@@ -30,6 +30,8 @@ impl LiveValuesEvent {
 pub struct StateEvent {
     /// mode state
     pub mode_state: ModeState,
+    /// connected machine state
+    pub connected_machine_state: ConnectedMachineState,
 }
 
 impl StateEvent {
@@ -55,10 +57,23 @@ pub enum Mode {
     EmptyingBuffer,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct ConnectedMachineState {
+    /// Connected Machine
+    pub machine_identification_unique: Option<MachineIdentificationUnique>,
+    pub is_available: bool,
+}
+
 #[derive(Deserialize, Serialize)]
 enum Mutation {
-    //Mode
+    // Mode
     SetBufferMode(BufferV1Mode),
+
+    // Connected Machine
+    SetConnectedMachine(MachineIdentificationUnique),
+
+    // Disconnect Machine
+    DisconnectMachine(MachineIdentificationUnique),
 }
 
 #[derive(Debug)]
@@ -107,6 +122,12 @@ impl MachineApi for BufferV1 {
         let mutation: Mutation = serde_json::from_value(request_body)?;
         match mutation {
             Mutation::SetBufferMode(mode) => self.set_mode_state(mode),
+            Mutation::SetConnectedMachine(machine_identification_unique) => {
+                self.set_connected_winder(machine_identification_unique);
+            }
+            Mutation::DisconnectMachine(machine_identification_unique) => {
+                self.disconnect_winder(machine_identification_unique);
+            }
         }
         Ok(())
     }

@@ -22,6 +22,7 @@ import {
   TimeSeries,
   TimeSeriesValue,
 } from "@/lib/timeseries";
+import { connected } from "process";
 
 // ========== Event Schema Definitions ==========
 
@@ -117,6 +118,24 @@ export const modeStateSchema = z.object({
 });
 
 /**
+ *  Connected machine state scheme
+ */
+export const machineIdentificationSchema = z.object({
+  vendor: z.number(),
+  machine: z.number(),
+});
+
+export const machineIdentificationUniqueSchema = z.object({
+  machine_identification: machineIdentificationSchema,
+  serial: z.number(),
+});
+
+export const connectedMachineStateSchema = z.object({
+  machine_identification_unique: machineIdentificationUniqueSchema.nullable(),
+  is_available: z.boolean(),
+});
+
+/**
  * Tension arm state schema
  */
 export const tensionArmStateSchema = z.object({
@@ -148,6 +167,7 @@ export const stateEventDataSchema = z.object({
   tension_arm_state: tensionArmStateSchema,
   spool_speed_controller_state: spoolSpeedControllerStateSchema,
   spool_automatic_action_state: spoolAutomaticActionStateSchema,
+  connected_machine_state: connectedMachineStateSchema,
 });
 
 // ========== Event Schemas with Wrappers ==========

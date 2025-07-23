@@ -1,10 +1,10 @@
 use super::{Machine, identification::MachineIdentification, new::MachineNewParams};
 use anyhow::Error;
 use smol::lock::Mutex;
-use std::{any::TypeId, collections::HashMap};
+use std::{any::TypeId, collections::HashMap, sync::Arc};
 
 pub type MachineNewClosure =
-    Box<dyn Fn(&MachineNewParams) -> Result<Box<Mutex<dyn Machine>>, Error> + Send + Sync>;
+    Box<dyn Fn(&MachineNewParams) -> Result<Arc<Mutex<dyn Machine>>, Error> + Send + Sync>;
 
 pub struct MachineRegistry {
     type_map: HashMap<TypeId, (MachineIdentification, MachineNewClosure)>,
@@ -27,7 +27,7 @@ impl MachineRegistry {
                 machine_identficiation,
                 // create a machine construction closure
                 Box::new(|machine_new_params| {
-                    Ok(Box::new(Mutex::new(T::new(machine_new_params)?)))
+                    Ok(Arc::new(Mutex::new(T::new(machine_new_params)?)))
                 }),
             ),
         );
@@ -36,7 +36,7 @@ impl MachineRegistry {
     pub fn new_machine(
         &self,
         machine_new_params: &MachineNewParams,
-    ) -> Result<Box<Mutex<dyn Machine>>, anyhow::Error> {
+    ) -> Result<Arc<Mutex<dyn Machine>>, anyhow::Error> {
         // get machiine identification
         let device_identification =
             &machine_new_params

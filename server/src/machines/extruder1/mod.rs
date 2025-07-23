@@ -3,10 +3,10 @@ use api::{
     InverterStatusState, LiveValuesEvent, ModeState, PidSettings, PidSettingsStates, PressureState,
     RegulationState, RotationState, ScrewState, StateEvent,
 };
-use control_core::{machines::Machine, socketio::namespace::NamespaceCacheingLogic};
+use control_core::{machines::{identification::MachineIdentification, Machine}, socketio::namespace::NamespaceCacheingLogic};
 use screw_speed_controller::ScrewSpeedController;
 use serde::{Deserialize, Serialize};
-use std::time::Instant;
+use std::{any::Any, time::Instant};
 use temperature_controller::TemperatureController;
 use uom::si::{
     angular_velocity::{AngularVelocity, revolution_per_minute},
@@ -14,6 +14,8 @@ use uom::si::{
     pressure::bar,
     thermodynamic_temperature::degree_celsius,
 };
+
+use crate::machines::{MACHINE_EXTRUDER_V1, VENDOR_QITECH};
 pub mod act;
 pub mod api;
 pub mod mitsubishi_cs80;
@@ -75,7 +77,18 @@ impl std::fmt::Display for ExtruderV2 {
         write!(f, "ExtruderV2")
     }
 }
-impl Machine for ExtruderV2 {}
+impl Machine for ExtruderV2 {
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+}
+
+impl ExtruderV2 {
+    pub const MACHINE_IDENTIFICATION: MachineIdentification = MachineIdentification {
+        vendor: VENDOR_QITECH,
+        machine: MACHINE_EXTRUDER_V1,
+    };
+}
 
 impl ExtruderV2 {
     pub fn emit_live_values(&mut self) {

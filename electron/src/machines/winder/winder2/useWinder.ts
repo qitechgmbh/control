@@ -1,8 +1,11 @@
 import { toastError } from "@/components/Toast";
 import { useMachineMutate as useMachineMutation } from "@/client/useClient";
 import { useStateOptimistic } from "@/lib/useStateOptimistic";
-import { MachineIdentificationUnique } from "@/machines/types";
-import { winder2 } from "@/machines/properties";
+import {
+  machineIdentificationUnique,
+  MachineIdentificationUnique,
+} from "@/machines/types";
+import { VENDOR_QITECH, winder2 } from "@/machines/properties";
 import { winder2SerialRoute } from "@/routes/routes";
 import { z } from "zod";
 import {
@@ -19,6 +22,7 @@ import {
 } from "./winder2Namespace";
 import { useEffect, useMemo } from "react";
 import { produce } from "immer";
+import { useMachines } from "@/client/useMachines";
 
 export function useWinder2() {
   const { serial: serialString } = winder2SerialRoute.useParams();
@@ -47,6 +51,8 @@ export function useWinder2() {
       serial,
     };
   }, [serialString]);
+
+  const machine_identification_unique = machineIdentification;
 
   // Get consolidated state and live values from namespace
   const {
@@ -152,6 +158,18 @@ export function useWinder2() {
 
   const { request: requestSpoolAutomaticAction } = useMachineMutation(
     z.object({ SetSpoolAutomaticAction: spoolAutomaticActionModeSchema }),
+  );
+
+  const { request: requestConnectedMachine } = useMachineMutation(
+    z.object({
+      SetConnectedMachine: machineIdentificationUnique,
+    }),
+  );
+
+  const { request: requestDisconnectedMachine } = useMachineMutation(
+    z.object({
+      DisconnectMachine: machineIdentificationUnique,
+    }),
   );
 
   // Helper function for optimistic updates using produce
@@ -493,13 +511,84 @@ export function useWinder2() {
     );
   };
 
+  const setConnectedMachine = (machineIdentificationUnique: {
+    machine_identification: {
+      vendor: number;
+      machine: number;
+    };
+    serial: number;
+  }) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.connected_machine_state.machine_identification_unique =
+          machineIdentificationUnique;
+      },
+      () =>
+        requestConnectedMachine({
+          machine_identification_unique,
+          data: { SetConnectedMachine: machineIdentificationUnique },
+        }),
+    );
+  };
+
+  const disconnectMachine = (machineIdentificationUnique: {
+    machine_identification: {
+      vendor: number;
+      machine: number;
+    };
+    serial: number;
+  }) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.connected_machine_state.machine_identification_unique =
+          null;
+      },
+      () =>
+        requestDisconnectedMachine({
+          machine_identification_unique,
+          data: { DisconnectMachine: machineIdentificationUnique },
+        }),
+    );
+  };
+
   // Calculate loading states
   const isLoading = stateOptimistic.isOptimistic;
   const isDisabled = !stateOptimistic.isInitialized;
 
+  // General Helper functions
+  const machines = useMachines();
+  // Filter machines for the correct type
+  const filteredMachines = useMemo(
+    () =>
+      machines.filter(
+        (m) =>
+          m.machine_identification_unique.machine_identification.vendor ===
+            VENDOR_QITECH &&
+          m.machine_identification_unique.machine_identification.machine ===
+            0x0008,
+      ),
+    [machines, machineIdentification],
+  );
+
+  // Get selected machine by serial
+  const selectedMachine = useMemo(() => {
+    const serial =
+      state?.data.connected_machine_state?.machine_identification_unique
+        ?.serial;
+
+    return (
+      filteredMachines.find(
+        (m) => m.machine_identification_unique.serial === serial,
+      ) ?? null
+    );
+  }, [filteredMachines, state]);
+
   return {
     // Consolidated state
     state: stateOptimistic.value?.data,
+
+    filteredMachines,
+    selectedMachine,
 
     // Default state for initial values
     defaultState: defaultState?.data,
@@ -542,5 +631,7 @@ export function useWinder2() {
     setSpoolAdaptiveMaxSpeedMultiplier,
     setSpoolAdaptiveAccelerationFactor,
     setSpoolAdaptiveDeaccelerationUrgencyMultiplier,
+    setConnectedMachine,
+    disconnectMachine,
   };
 }

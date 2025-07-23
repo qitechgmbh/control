@@ -1,13 +1,15 @@
 use api::{
     LiveValuesEvent, MockEvents, MockMachineNamespace, Mode, ModeState, StateEvent,
 };
-use control_core::{machines::Machine, socketio::namespace::NamespaceCacheingLogic};
+use control_core::{machines::{identification::MachineIdentification, Machine}, socketio::namespace::NamespaceCacheingLogic};
 use std::time::Instant;
 use tracing::info;
 use uom::si::{
     f64::Frequency,
     frequency::{hertz, millihertz},
 };
+
+use crate::machines::{MACHINE_MOCK, VENDOR_QITECH};
 
 pub mod act;
 pub mod api;
@@ -34,7 +36,17 @@ pub struct MockMachine {
     emitted_default_state: bool,
 }
 
-impl Machine for MockMachine {}
+impl Machine for MockMachine {
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+}
+impl MockMachine {
+    pub const MACHINE_IDENTIFICATION: MachineIdentification = MachineIdentification {
+        vendor: VENDOR_QITECH,
+        machine: MACHINE_MOCK,
+    };
+}
 
 impl MockMachine {
     /// Emit live values data event with the current sine wave amplitude

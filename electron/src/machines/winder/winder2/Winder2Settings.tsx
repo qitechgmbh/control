@@ -8,6 +8,7 @@ import { roundToDecimals } from "@/lib/decimal";
 import { Label } from "@/control/Label";
 import { SelectionGroupBoolean } from "@/control/SelectionGroup";
 import { SelectionGroup } from "@/control/SelectionGroup";
+import { MachineSelector } from "@/components/MachineConnectionDropdown";
 
 export function Winder2SettingPage() {
   const {
@@ -26,6 +27,10 @@ export function Winder2SettingPage() {
     setSpoolAdaptiveDeaccelerationUrgencyMultiplier,
     isLoading,
     isDisabled,
+    selectedMachine,
+    filteredMachines,
+    setConnectedMachine,
+    disconnectMachine,
   } = useWinder2();
 
   return (
@@ -245,6 +250,20 @@ export function Winder2SettingPage() {
             />
           </Label>
         </ControlCard>
+        <MachineSelector
+          machines={filteredMachines}
+          selectedMachine={selectedMachine}
+          connectedMachineState={state?.connected_machine_state}
+          setConnectedMachine={setConnectedMachine}
+          clearConnectedMachine={() => {
+            if (!selectedMachine) return;
+            setConnectedMachine({
+              machine_identification: { vendor: 0, machine: 0 },
+              serial: 0,
+            });
+            disconnectMachine(selectedMachine.machine_identification_unique);
+          }}
+        />
       </ControlGrid>
     </Page>
   );
