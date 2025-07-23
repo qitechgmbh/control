@@ -95,27 +95,6 @@ function useMock(machine_identification_unique: MachineIdentificationUnique) {
     );
   };
 
-  const schemaSetConnectedMachineFrequency = z.object({
-    SetConnectedMachineFrequency: z.number(),
-  });
-  const { request: requestSetConnectedMachineFrequency } = useMachineMutation(
-    schemaSetConnectedMachineFrequency,
-  );
-  const setConnectedMachineFrequency = (frequency: number) => {
-    updateStateOptimistically(
-      (current) => {
-        current.data.mock2_sine_wave_state.frequency = frequency;
-      },
-      () =>
-        requestSetConnectedMachineFrequency({
-          machine_identification_unique,
-          data: {
-            SetConnectedMachineFrequency: frequency,
-          },
-        }),
-    );
-  };
-
   const schemaSetMode = z.object({ SetMode: z.enum(["Standby", "Running"]) });
   const { request: requestSetMode } = useMachineMutation(schemaSetMode);
   const setMode = (mode: Mode) => {
@@ -155,12 +134,6 @@ function useMock(machine_identification_unique: MachineIdentificationUnique) {
     setFrequency2,
     setFrequency3,
     setMode,
-<<<<<<< HEAD
-=======
-    setConnectedMachineFrequency,
-    setConnectedMachine,
-    disconnectMachine,
->>>>>>> a32108e (Added frontend Connection Logic to Mock Machine)
   };
 }
 

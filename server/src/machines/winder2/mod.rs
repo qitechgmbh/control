@@ -53,7 +53,7 @@ use uom::{
 };
 
 use crate::machines::{
-    MACHINE_WINDER_V2, VENDOR_QITECH, buffer1::BufferV1, winder2::api::ConnectedMachineState,
+    MACHINE_WINDER_V1, VENDOR_QITECH, buffer1::BufferV1, winder2::api::ConnectedMachineState,
 };
 
 #[derive(Debug)]
@@ -118,7 +118,7 @@ impl Machine for Winder2 {
 impl Winder2 {
     pub const MACHINE_IDENTIFICATION: MachineIdentification = MachineIdentification {
         vendor: VENDOR_QITECH,
-        machine: MACHINE_WINDER_V2,
+        machine: MACHINE_WINDER_V1,
     };
 }
 
