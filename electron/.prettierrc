@@ -3,6 +3,6 @@
   "trailingComma": "all",
   "tabWidth": 2,
   "semi": true,
-  "endOfLine": "auto",
+  "endOfLine": "lf",
   "plugins": ["prettier-plugin-tailwindcss"]
 }
