@@ -1,6 +1,7 @@
 import React from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import rehypeRaw from "rehype-raw";
 import { generateHeadingId } from "@/lib/markdown/heading";
 
 type MarkdownProps = {
@@ -71,6 +72,7 @@ export function Markdown({ text }: MarkdownProps) {
     <div>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
+        rehypePlugins={[rehypeRaw]}
         components={{
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           h1: ({ node, children, ...props }) => {
@@ -78,13 +80,17 @@ export function Markdown({ text }: MarkdownProps) {
             const id = generateHeadingId(text);
             const isFirst = isFirstHeading(text, 1);
             return (
-              <h1
-                id={id}
-                className={`${isFirst ? "" : "pt-4"} pb-2 text-2xl`}
-                {...props}
-              >
-                {children}
-              </h1>
+              <>
+                <h1
+                  id={id}
+                  className={`${isFirst ? "" : "pt-4"} pb-2 text-2xl font-bold`}
+                  {...props}
+                >
+                  {children}
+                </h1>
+                <hr className="my-2" />
+                <br />
+              </>
             );
           },
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -93,13 +99,16 @@ export function Markdown({ text }: MarkdownProps) {
             const id = generateHeadingId(text);
             const isFirst = isFirstHeading(text, 2);
             return (
-              <h2
-                id={id}
-                className={`${isFirst ? "" : "pt-4"} pb-2 text-xl`}
-                {...props}
-              >
-                {children}
-              </h2>
+              <>
+                <h2
+                  id={id}
+                  className={`${isFirst ? "" : "pt-4"} pb-2 text-xl font-bold`}
+                  {...props}
+                >
+                  {children}
+                </h2>
+                <hr className="my-2" />
+              </>
             );
           },
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -108,13 +117,16 @@ export function Markdown({ text }: MarkdownProps) {
             const id = generateHeadingId(text);
             const isFirst = isFirstHeading(text, 3);
             return (
-              <h3
-                id={id}
-                className={`${isFirst ? "" : "pt-4"} pb-2 text-lg`}
-                {...props}
-              >
-                {children}
-              </h3>
+              <>
+                <h3
+                  id={id}
+                  className={`${isFirst ? "" : "pt-4"} pb-2 text-lg font-bold`}
+                  {...props}
+                >
+                  {children}
+                </h3>
+                <hr className="my-2" />
+              </>
             );
           },
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -123,26 +135,35 @@ export function Markdown({ text }: MarkdownProps) {
             const id = generateHeadingId(text);
             const isFirst = isFirstHeading(text, 4);
             return (
-              <h4
-                id={id}
-                className={`${isFirst ? "" : "pt-4"} pb-2 text-lg`}
-                {...props}
-              >
-                {children}
-              </h4>
+              <>
+                <h4
+                  id={id}
+                  className={`${isFirst ? "" : "pt-4"} pb-2 text-lg font-bold`}
+                  {...props}
+                >
+                  {children}
+                </h4>
+                <hr className="my-2" />
+              </>
             );
           },
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           ul: ({ node, ...props }) => (
-            <ul className="markdown-list list-inside list-disc" {...props} />
+            <ul
+              className="markdown-list mb-6 ml-6 list-outside list-disc"
+              {...props}
+            />
           ),
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           li: ({ node, ...props }) => (
-            <li className="markdown-list list-inside list-disc" {...props} />
+            <li className="markdown-list" {...props} />
           ),
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           ol: ({ node, ...props }) => (
-            <ol className="markdown-list list-inside list-decimal" {...props} />
+            <ol
+              className="markdown-list mb-6 ml-6 list-outside list-decimal"
+              {...props}
+            />
           ),
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           p: ({ node, ...props }) => <p className="text-base" {...props} />,
@@ -219,6 +240,8 @@ export function Markdown({ text }: MarkdownProps) {
           ),
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           hr: ({ node, ...props }) => <hr className="my-4" {...props} />,
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          br: ({ node, ...props }) => <br {...props} />,
         }}
       >
         {text}

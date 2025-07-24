@@ -4,7 +4,7 @@
 
 This is the operating manual for the Mock Machine control system. The Mock Machine is a simulated industrial device used for testing and development purposes.
 
-![Mock Machine Duck](duck.jpg)
+![Mock Machine Duck](src/assets/markdown/mock/duck.jpg)
 _Figure 1: Mock Machine Mascot_
 
 ## Safety Information
@@ -20,7 +20,6 @@ _Figure 1: Mock Machine Mascot_
 ### Starting the Machine
 
 1. **Power On Sequence**
-
    - Check all safety switches
    - Verify emergency stops are released
    - Power on the main controller
