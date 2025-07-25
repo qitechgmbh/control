@@ -111,9 +111,10 @@ export function Extruder2ControlPage() {
           max={300}
         />
         <ControlCard className="bg-red" title="Screw Drive">
-            {state?.inverter_status_state.overload_warning == true ? (
+          {state?.inverter_status_state.overload_warning == true ? (
             <StatusBadge variant="error">
-              Inverter is overloaded! Please check the extruder and reduce load if necessary.
+              Inverter is overloaded! Please check the extruder and reduce load
+              if necessary.
             </StatusBadge>
           ) : state?.inverter_status_state.fault_occurence == true ? (
             <StatusBadge variant="error">
