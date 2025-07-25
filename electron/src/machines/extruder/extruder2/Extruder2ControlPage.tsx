@@ -26,8 +26,12 @@ export function Extruder2ControlPage() {
     backPower,
     middleTemperature,
     middlePower,
-    screwRpm,
     pressure,
+
+    motorCurrent,
+    motorFrequency,
+    motorScrewRpm,
+    motorVoltage,
 
     setExtruderMode,
     setBackHeatingTemperature,
@@ -170,7 +174,7 @@ export function Extruder2ControlPage() {
               label="Rpm"
               unit="rpm"
               renderValue={(value) => roundToDecimals(value, 0)}
-              timeseries={screwRpm}
+              timeseries={motorScrewRpm}
             />
 
             {state?.pressure_state?.wiring_error && (

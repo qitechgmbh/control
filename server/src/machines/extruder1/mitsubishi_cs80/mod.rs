@@ -13,7 +13,7 @@ use uom::si::{
 };
 
 /// Specifies all System environment Variables
-/// Register addresses are calculated as follows: Register-value 40002 -> address: 40002-40001 -> address:0x1
+/// Register addresses are calculated as follows: Register-value 40002 -> address: 40002-40001 -> actual address in request:0x1
 #[derive(Debug, Clone, Copy)]
 enum MitsubishiCS80Register {
     /// Register 40002
