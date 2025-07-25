@@ -5,9 +5,13 @@ import React from "react";
 import { useBuffer1 } from "./useBuffer1";
 import { ControlCard } from "@/control/ControlCard";
 import { SelectionGroup } from "@/control/SelectionGroup";
+import { EditValue } from "@/control/EditValue";
 
 export function Buffer1ControlPage() {
-  const { state, setBufferMode } = useBuffer1();
+  const { state, setBufferMode, setCurrentInputSpeed } = useBuffer1();
+
+  const current_input_speed = state?.current_input_speed_state.current_input_speed ?? 0.0;
+  const default_speed = 0.0;
 
   return (
     <Page>
@@ -38,6 +42,19 @@ export function Buffer1ControlPage() {
               },
             }}
             onChange={setBufferMode}
+          />
+        </ControlCard>
+        <ControlCard title="Set Current Input Speed">
+          <EditValue
+            title="Input Speed"
+            unit="m/min"
+            value={current_input_speed}
+            defaultValue={default_speed}
+            min={0.0}
+            max={60.0}
+            step={0.1}
+            renderValue={(value) => value.toFixed(0.0)}
+            onChange={setCurrentInputSpeed}
           />
         </ControlCard>
       </ControlGrid>
