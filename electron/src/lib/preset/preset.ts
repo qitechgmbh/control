@@ -8,7 +8,7 @@ export const presetSchema = <S extends PresetSchema>(dataSchema: S) =>
     id: z.number().int().nonnegative().optional(),
     name: z.string().nonempty(),
     lastModified: z.coerce.date(),
-    machineIdentification: machineIdentification,
+    machineIdentification,
     schemaVersion: z.number().int().positive(),
     data: dataSchema,
   });

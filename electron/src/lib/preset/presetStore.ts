@@ -158,6 +158,10 @@ export const usePresetStore = create<PresetStore>()(
       name: "preset-storage",
 
       merge: (persisted: any, store: PresetStore): PresetStore => {
+        if (!persisted) {
+          return store;
+        }
+
         try {
           const persistedState = persistedStateSchema.parse(persisted);
 
