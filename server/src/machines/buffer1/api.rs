@@ -32,6 +32,8 @@ pub struct StateEvent {
     pub mode_state: ModeState,
     /// connected machine state
     pub connected_machine_state: ConnectedMachineState,
+    /// CurrentInputSpeed
+    pub current_input_speed_state: CurrentInputSpeedState,
 }
 
 impl StateEvent {
@@ -64,6 +66,11 @@ pub struct ConnectedMachineState {
     pub is_available: bool,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct CurrentInputSpeedState {
+    pub current_input_speed: f64,
+}
+
 #[derive(Deserialize, Serialize)]
 enum Mutation {
     // Mode
@@ -74,6 +81,9 @@ enum Mutation {
 
     // Disconnect Machine
     DisconnectMachine(MachineIdentificationUnique),
+
+    // Set current input speed
+    SetCurrentInputSpeed(f64),
 }
 
 #[derive(Debug)]
@@ -128,6 +138,7 @@ impl MachineApi for BufferV1 {
             Mutation::DisconnectMachine(machine_identification_unique) => {
                 self.disconnect_winder(machine_identification_unique);
             }
+            Mutation::SetCurrentInputSpeed(speed) => self.set_current_input_speed(speed),
         }
         Ok(())
     }
