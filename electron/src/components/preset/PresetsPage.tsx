@@ -16,6 +16,7 @@ export function PresetsPage<T extends PresetSchema>({
   applyPreset,
   machine_identification,
   currentState,
+  schemas,
   schemaVersion,
   previewEntries,
   defaultState,
@@ -23,6 +24,7 @@ export function PresetsPage<T extends PresetSchema>({
   const presets = usePresets<T>({
     machine_identification,
     currentState,
+    schemas,
     schemaVersion,
     defaultState,
   });
