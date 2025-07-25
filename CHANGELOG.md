@@ -1,4 +1,4 @@
-# `Unrealesed`
+# `Unreleased`
 
 ## Extruder V2
 - [#520](https://github.com/qitechgmbh/control/pull/523) added warning message incase inverter is overloaded
