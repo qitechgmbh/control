@@ -111,15 +111,19 @@ export function Extruder2ControlPage() {
           max={300}
         />
         <ControlCard className="bg-red" title="Screw Drive">
-          {state?.inverter_status_state.fault_occurence == true && (
+          {state?.inverter_status_state.overload_warning == true ? (
+            <StatusBadge variant="error">
+              Inverter is overloaded! Please check the extruder and reduce load
+              if necessary.
+            </StatusBadge>
+          ) : state?.inverter_status_state.fault_occurence == true ? (
             <StatusBadge variant="error">
               Inverter encountered an error!! Press the restart button in Config
             </StatusBadge>
-          )}
-          {state?.inverter_status_state.running == true &&
-            state.inverter_status_state.fault_occurence == false && (
-              <StatusBadge variant="success">Running</StatusBadge>
-            )}
+          ) : state?.inverter_status_state.running == true &&
+            state.inverter_status_state.fault_occurence == false ? (
+            <StatusBadge variant="success">Running</StatusBadge>
+          ) : null}
           {state?.inverter_status_state.running == false &&
             state.inverter_status_state.fault_occurence == false && (
               <StatusBadge variant="success">Healthy</StatusBadge>
