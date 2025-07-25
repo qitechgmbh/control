@@ -3,9 +3,10 @@ import {
   machineIdentificationEquals,
 } from "@/machines/types";
 import { PersistedPreset, usePresetStore } from "./presetStore";
-import { Preset, PresetData, PresetSchema } from "./preset";
+import { Preset, PresetData, presetSchema, PresetSchema } from "./preset";
 import { deepEquals } from "@/lib/objects";
 import { useEffect } from "react";
+import { toastError } from "@/components/Toast";
 
 export type Presets<T extends PresetSchema> = {
   get: () => Preset<T>[];
@@ -19,6 +20,7 @@ export type Presets<T extends PresetSchema> = {
 
 export type UsePresetsParams<T extends PresetSchema> = {
   machine_identification: MachineIdentification;
+  schemas: Map<number, T>;
   schemaVersion: number;
   currentState?: PresetData<T>;
   defaultState?: PresetData<T>;
@@ -26,11 +28,43 @@ export type UsePresetsParams<T extends PresetSchema> = {
 
 export function usePresets<T extends PresetSchema>({
   machine_identification,
+  schemas,
   schemaVersion,
   currentState,
   defaultState,
 }: UsePresetsParams<T>): Presets<T> {
   const store = usePresetStore();
+
+  const parsePreset = (preset: PersistedPreset): Preset<T> | undefined => {
+    const schema = schemas.get(preset.schemaVersion);
+
+    if (schema === undefined) {
+      toastError(
+        `Unsupported Preset`,
+        `Cannot load preset "${preset.name}" because version ${preset.schemaVersion} is not supported.`,
+      );
+      return undefined;
+    }
+
+    try {
+      const parsed = presetSchema(schema).parse(preset);
+
+      if (parsed.schemaVersion < schemaVersion) {
+        parsed.schemaVersion = schemaVersion;
+        store.update(parsed);
+      }
+
+      return parsed;
+    } catch (e) {
+      console.error(e);
+      toastError(
+        `Invalid Preset`,
+        `Cannot load preset "${preset.name}" because validation has failed.`,
+      );
+    }
+
+    return undefined;
+  };
 
   const defaultPreset: Preset<T> | undefined =
     defaultState === undefined
@@ -79,14 +113,15 @@ export function usePresets<T extends PresetSchema>({
           preset.machineIdentification,
           machine_identification,
         ),
-      ) as Preset<T>[]; // TODO: here we will also use zod und also handle migration
+      )
+      .map(parsePreset)
+      .filter((p) => p !== undefined);
 
-  const getLatestPreset = (): Preset<T> => {
+  const getLatestPreset = (): Preset<T> | undefined => {
     const latestPresetId = store.getLatestPresetId(machine_identification);
-    let latestPreset: PersistedPreset;
 
     if (latestPresetId === undefined) {
-      latestPreset = store.insert({
+      const preset = store.insert({
         id: undefined,
         name: "Latest Machine Stettings",
         machineIdentification: machine_identification,
@@ -95,17 +130,16 @@ export function usePresets<T extends PresetSchema>({
         data: currentState,
       });
 
-      store.setLatestPresetId(machine_identification, latestPreset.id);
-    } else {
-      // TODO: use zod here
-      latestPreset = store.getById(latestPresetId!)!;
-      latestPreset.data = currentState;
-      latestPreset.lastModified = new Date();
-      store.update(latestPreset);
+      store.setLatestPresetId(machine_identification, preset.id);
+      return parsePreset(preset);
     }
 
-    // TODO: zod will fix the types
-    return latestPreset as Preset<T>;
+    const latestPersist = store.getById(latestPresetId!)!;
+    latestPersist.data = currentState;
+    latestPersist.lastModified = new Date();
+    store.update(latestPersist);
+
+    return parsePreset(latestPersist);
   };
 
   useEffect(() => {
