@@ -41,6 +41,10 @@ export const modeStateSchema = z.object({
   mode: modeSchema,
 });
 
+export const currentInputSpeedSchema = z.object({
+  current_input_speed: z.number(),
+})
+
 /**
  *  Connected machine state scheme
  */
@@ -66,6 +70,7 @@ export const connectedMachineStateSchema = z.object({
 export const stateEventDataSchema = z.object({
   mode_state: modeStateSchema,
   connected_machine_state: connectedMachineStateSchema,
+  current_input_speed_state: currentInputSpeedSchema,
 });
 
 // ========== Event Schemas with Wrappers ==========
