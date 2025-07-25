@@ -11,6 +11,7 @@
     "make": "electron-forge make",
     "publish": "electron-forge publish",
     "lint": "eslint .",
+    "lint:write": "eslint . --fix",
     "format": "prettier --check .",
     "format:write": "prettier --write .",
     "test": "vitest run",
