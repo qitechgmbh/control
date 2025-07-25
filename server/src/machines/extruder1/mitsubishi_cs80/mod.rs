@@ -6,10 +6,10 @@ use control_core::modbus::{
 use ethercat_hal::io::serial_interface::SerialInterface;
 use std::time::{Duration, Instant};
 use uom::si::{
-    electric_current::ampere,
-    electric_potential::volt,
+    electric_current::{ampere, centiampere},
+    electric_potential::{centivolt, volt},
     f64::{AngularVelocity, ElectricCurrent, ElectricPotential, Frequency},
-    frequency::centihertz,
+    frequency::{centihertz, hertz},
 };
 
 /// Specifies all System environment Variables
@@ -359,12 +359,12 @@ impl MitsubishiCS80 {
             let electric_current_bytes = &resp.data[3..5];
             let raw_current =
                 u16::from_be_bytes([electric_current_bytes[0], electric_current_bytes[1]]) as f64;
-            self.motor_status.current = ElectricCurrent::new::<ampere>(raw_current);
+            self.motor_status.current = ElectricCurrent::new::<centiampere>(raw_current);
 
             let voltage_current_bytes = &resp.data[5..7];
             let raw_voltage =
                 u16::from_be_bytes([voltage_current_bytes[0], voltage_current_bytes[1]]) as f64;
-            self.motor_status.voltage = ElectricPotential::new::<volt>(raw_voltage);
+            self.motor_status.voltage = ElectricPotential::new::<centivolt>(raw_voltage);
         }
     }
 
