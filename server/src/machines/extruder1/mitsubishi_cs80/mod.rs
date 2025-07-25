@@ -77,8 +77,8 @@ pub enum MitsubishiCS80Requests {
     ReadRunningFrequency,
     /// Register 40014, Write the frequency
     WriteRunningFrequency,
-    /// Read Register 40201, This contains the actual output frequency
-    ReadMotorFrequency,
+    /// Read Register 40201, 40202 and 40203 frequency,current and voltage
+    ReadMotorStatus,
     /// Write "Arbitrary" Parameters
     WriteParameter,
 }
@@ -105,7 +105,7 @@ impl TryFrom<u32> for MitsubishiCS80Requests {
             8 => Ok(Self::StartReverseRotation),
             9 => Ok(Self::ReadRunningFrequency),
             10 => Ok(Self::WriteRunningFrequency),
-            11 => Ok(Self::ReadMotorFrequency),
+            11 => Ok(Self::ReadMotorStatus),
             12 => Ok(Self::WriteParameter),
             _ => Err(()),
         }
@@ -208,7 +208,7 @@ impl From<MitsubishiCS80Requests> for MitsubishiCS80Request {
                     u16::MAX - 4,
                 )
             }
-            MitsubishiCS80Requests::ReadMotorFrequency => {
+            MitsubishiCS80Requests::ReadMotorStatus => {
                 let reg_bytes = MitsubishiCS80Register::MotorStatus.address_be_bytes();
                 Self::new(
                     ModbusRequest {
@@ -408,7 +408,7 @@ impl MitsubishiCS80 {
             MitsubishiCS80Requests::ReadInverterStatus => {
                 self.handle_read_inverter_status(&response);
             }
-            MitsubishiCS80Requests::ReadMotorFrequency => {
+            MitsubishiCS80Requests::ReadMotorStatus => {
                 self.handle_motor_status(&response);
             }
             // Other request types don't need response handling
@@ -475,7 +475,7 @@ impl MitsubishiCS80 {
         }
 
         self.add_request(MitsubishiCS80Requests::ReadInverterStatus.into());
-        self.add_request(MitsubishiCS80Requests::ReadMotorFrequency.into());
+        self.add_request(MitsubishiCS80Requests::ReadMotorStatus.into());
         self.modbus_serial_interface.act(now).await;
         self.handle_response(self.modbus_serial_interface.last_message_id);
     }
