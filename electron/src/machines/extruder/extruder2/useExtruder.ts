@@ -41,7 +41,10 @@ export function useExtruder2() {
   const {
     state,
     defaultState,
-    screwRpm,
+    motorCurrent,
+    motorFrequency,
+    motorScrewRpm,
+    motorVoltage,
     pressure,
 
     nozzleTemperature,
@@ -364,7 +367,11 @@ export function useExtruder2() {
     defaultState: defaultState?.data,
 
     // Individual live values (TimeSeries)
-    screwRpm,
+    motorCurrent,
+    motorFrequency,
+    motorScrewRpm,
+    motorVoltage,
+
     pressure,
     nozzleTemperature,
     frontTemperature,
