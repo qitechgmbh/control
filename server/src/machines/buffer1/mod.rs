@@ -9,9 +9,7 @@ use buffer_lift_controller::BufferLiftController;
 use control_core::{
     converters::linear_step_converter::LinearStepConverter,
     machines::{
-        ConnectedMachine, ConnectedMachineData, downcast_machine,
-        identification::{MachineIdentification, MachineIdentificationUnique},
-        manager::MachineManager,
+        downcast_machine, identification::{MachineIdentification, MachineIdentificationUnique}, manager::MachineManager, ConnectedMachine, ConnectedMachineData, Machine
     },
     socketio::namespace::NamespaceCacheingLogic,
     uom_extensions::velocity::meter_per_minute,
@@ -24,6 +22,7 @@ use futures::executor::block_on;
 use puller_speed_controller::PullerRegulationMode;
 use serde::{Deserialize, Serialize};
 use smol::lock::{Mutex, RwLock};
+use uom::si::{f64::Velocity, velocity::millimeter_per_second};
 use std::{
     sync::{Arc, Weak},
     time::Instant,
