@@ -79,7 +79,6 @@ export const pressureStateSchema = z.object({
  * Screw state schema
  */
 export const screwStateSchema = z.object({
-  rpm: z.number(),
   target_rpm: z.number(),
 });
 
