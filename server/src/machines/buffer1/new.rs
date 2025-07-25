@@ -1,6 +1,7 @@
 use std::time::Instant;
 
 use anyhow::Error;
+use control_core::converters::linear_step_converter::LinearStepConverter;
 use control_core::machines::connection::MachineCrossConnection;
 use control_core::machines::new::{
     MachineNewHardware, MachineNewParams, MachineNewTrait, validate_no_role_dublicates,
@@ -21,9 +22,11 @@ use ethercat_hal::{
     shared_config,
     shared_config::el70x1::{EL70x1OperationMode, StmMotorConfiguration},
 };
+use uom::si::f64::Length;
+use uom::si::length::centimeter;
 
 use crate::machines::buffer1::BufferV1Mode;
-use crate::machines::buffer1::buffer_lift_controller::BufferTowerController;
+use crate::machines::buffer1::buffer_lift_controller::BufferLiftController;
 use crate::machines::get_ethercat_device;
 
 use super::{BufferV1, api::Buffer1Namespace};
@@ -122,7 +125,7 @@ impl MachineNewTrait for BufferV1 {
             }
 
             // Controller
-            let buffer_tower_controller = BufferTowerController::new(StepperVelocityEL70x1::new(
+            let buffer_lift_controller = BufferLiftController::new(StepperVelocityEL70x1::new(
                 el7041.clone(),
                 EL7041_0052Port::STM1,
             ));
@@ -136,7 +139,7 @@ impl MachineNewTrait for BufferV1 {
                 },
                 last_measurement_emit: Instant::now(),
                 mode: BufferV1Mode::Standby,
-                buffer_tower_controller,
+                buffer_lift_controller,
                 machine_manager: params.machine_manager.clone(),
                 machine_identification_unique: machine_identification_unique.clone(),
                 connected_winder: MachineCrossConnection::new(

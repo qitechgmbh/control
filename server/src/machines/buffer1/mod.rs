@@ -4,25 +4,28 @@ pub mod buffer_lift_controller;
 pub mod new;
 
 use api::{Buffer1Namespace, BufferV1Events, LiveValuesEvent, ModeState, StateEvent};
-use buffer_lift_controller::BufferTowerController;
+use buffer_lift_controller::BufferLiftController;
 use control_core::{
     machines::{
         identification::{MachineIdentification, MachineIdentificationUnique},
         manager::MachineManager,
     },
-    socketio::namespace::NamespaceCacheingLogic,
+    socketio::namespace::NamespaceCacheingLogic, uom_extensions::velocity::meter_per_minute,
 };
 use control_core_derive::Machine;
 use serde::{Deserialize, Serialize};
 use smol::lock::RwLock;
+use uom::si::{f64::Velocity, velocity::millimeter_per_second};
 use std::{sync::Weak, time::Instant};
 
-use crate::machines::{MACHINE_BUFFER_V1, VENDOR_QITECH, winder2::Winder2};
+use crate::machines::{
+    buffer1::api::{ConnectedMachineState, CurrentInputSpeedState}, winder2::Winder2, MACHINE_BUFFER_V1, VENDOR_QITECH
+};
 
 #[derive(Debug, Machine)]
 pub struct BufferV1 {
     // controllers
-    pub buffer_tower_controller: BufferTowerController,
+    pub buffer_lift_controller: BufferLiftController,
 
     // socketio
     namespace: Buffer1Namespace,
@@ -69,6 +72,9 @@ impl BufferV1 {
                 mode: self.mode.clone(),
             },
             connected_machine_state: self.connected_winder.to_state(),
+            current_input_speed_state: CurrentInputSpeedState {
+                current_input_speed: self.buffer_lift_controller.current_input_speed.get::<meter_per_minute>(),
+            } 
         };
 
         let event = state.build();
@@ -77,11 +83,12 @@ impl BufferV1 {
 
     // To be implemented
     fn fill_buffer(&mut self) {
-        todo!();
+        let speed = self.buffer_lift_controller.calculate_buffer_lift_speed();
+        self.buffer_lift_controller.update_speed(speed);
     }
 
     fn empty_buffer(&mut self) {
-        todo!();
+        self.buffer_lift_controller.update_speed(Velocity::new::<millimeter_per_second>(0.0));
     }
 
     // Turn off motor and do nothing
@@ -92,7 +99,8 @@ impl BufferV1 {
             BufferV1Mode::EmptyingBuffer => {}
         };
         self.mode = BufferV1Mode::Standby;
-        self.buffer_tower_controller.set_enabled(false);
+        self.buffer_lift_controller.set_enabled(false);
+        let _ = self.buffer_lift_controller.stepper_driver.set_speed(0.0);
     }
 
     // Turn on motor and fill buffer
@@ -103,7 +111,7 @@ impl BufferV1 {
             BufferV1Mode::EmptyingBuffer => {}
         };
         self.mode = BufferV1Mode::FillingBuffer;
-        self.buffer_tower_controller.set_enabled(true);
+        self.buffer_lift_controller.set_enabled(true);
     }
 
     // Turn on motor reverse and empty buffer
@@ -132,6 +140,13 @@ impl BufferV1 {
         self.switch_mode(mode);
         self.emit_state();
     }
+
+    fn set_current_input_speed(&mut self, speed: f64) {
+        // speed comes as a f64 represents m/min
+        self.buffer_lift_controller.set_current_input_speed(speed);
+        self.emit_state();
+    }
+}
 
     /// Connecting/Disconnecting machine
     /// set connected winder
