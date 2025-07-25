@@ -3,7 +3,10 @@ use api::{
     InverterStatusState, LiveValuesEvent, ModeState, PidSettings, PidSettingsStates, PressureState,
     RegulationState, RotationState, ScrewState, StateEvent,
 };
-use control_core::{machines::{identification::MachineIdentification, Machine}, socketio::namespace::NamespaceCacheingLogic};
+use control_core::{
+    machines::{Machine, identification::MachineIdentification},
+    socketio::namespace::NamespaceCacheingLogic,
+};
 use screw_speed_controller::ScrewSpeedController;
 use serde::{Deserialize, Serialize};
 use std::{any::Any, time::Instant};
@@ -93,10 +96,7 @@ impl ExtruderV2 {
 impl ExtruderV2 {
     pub fn emit_live_values(&mut self) {
         let live_values = LiveValuesEvent {
-            screw_rpm: self
-                .screw_speed_controller
-                .get_screw_rpm()
-                .get::<revolution_per_minute>(),
+            motor_status: self.screw_speed_controller.get_motor_status().into(),
             pressure: self.screw_speed_controller.get_pressure().get::<bar>(),
             nozzle_temperature: self
                 .temperature_controller_nozzle
@@ -157,10 +157,6 @@ impl ExtruderV2 {
                 wiring_error: self.screw_speed_controller.get_wiring_error(),
             },
             screw_state: ScrewState {
-                rpm: self
-                    .screw_speed_controller
-                    .get_screw_rpm()
-                    .get::<revolution_per_minute>(),
                 target_rpm: self
                     .screw_speed_controller
                     .get_target_rpm()
