@@ -1,3 +1,22 @@
+# `Unrealesed`
+
+## Extruder V2
+- [#520](https://github.com/qitechgmbh/control/pull/523) added warning message incase inverter is overloaded
+- [#501](https://github.com/qitechgmbh/control/pull/508) raised pressure limit of pressured PID mode for extruder
+
+## Winder V2 
+- [#64](https://github.com/qitechgmbh/control/pull/504) added winder handbook
+
+## Laser V1
+- [#497](https://github.com/qitechgmbh/control/pull/498) improved diameter visualisation
+
+## General
+- [#62](https://github.com/qitechgmbh/control/pull/514),[#524](https://github.com/qitechgmbh/control/pull/528) added machine presets to load configurations
+
+
+
+
+
 # `2.2.0`
 
 _15.07.2025_
