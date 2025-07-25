@@ -1,6 +1,7 @@
 use std::time::Instant;
 
 use anyhow::Error;
+use control_core::converters::linear_step_converter::LinearStepConverter;
 use control_core::machines::identification::DeviceHardwareIdentification;
 use control_core::machines::new::{
     MachineNewHardware, MachineNewParams, MachineNewTrait, get_device_identification_by_role,
@@ -19,9 +20,11 @@ use ethercat_hal::devices::{EthercatDeviceUsed, downcast_device, subdevice_ident
 use ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1;
 use ethercat_hal::shared_config;
 use ethercat_hal::shared_config::el70x1::{EL70x1OperationMode, StmMotorConfiguration};
+use uom::si::f64::Length;
+use uom::si::length::centimeter;
 
 use crate::machines::buffer1::BufferV1Mode;
-use crate::machines::buffer1::buffer_lift_controller::BufferTowerController;
+use crate::machines::buffer1::buffer_lift_controller::BufferLiftController;
 
 use super::{BufferV1, api::Buffer1Namespace};
 
@@ -205,10 +208,10 @@ impl MachineNewTrait for BufferV1 {
             };
 
             // Controller
-            let buffer_tower_controller = BufferTowerController::new(StepperVelocityEL70x1::new(
-                el7041.clone(),
-                EL7041_0052Port::STM1,
-            ));
+            let buffer_tower_controller = BufferLiftController::new(
+                StepperVelocityEL70x1::new(el7041.clone(), EL7041_0052Port::STM1),
+                LinearStepConverter::from_diameter(200, Length::new::<centimeter>(8.0)),
+            );
 
             let machine_id = params
                 .device_group
@@ -223,7 +226,7 @@ impl MachineNewTrait for BufferV1 {
                 namespace: Buffer1Namespace::new(params.socket_queue_tx.clone()),
                 last_measurement_emit: Instant::now(),
                 mode: BufferV1Mode::Standby,
-                buffer_tower_controller,
+                buffer_lift_controller: buffer_tower_controller,
                 machine_manager: params.machine_manager.clone(),
                 machine_identification_unique: machine_id,
                 connected_winder: None,
