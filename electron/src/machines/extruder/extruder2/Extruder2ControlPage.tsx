@@ -54,7 +54,13 @@ export function Extruder2ControlPage() {
     const middlePowerValue = middlePower?.current?.value ?? 0;
     const backPowerValue = backPower?.current?.value ?? 0;
 
-    return motorPowerValue + nozzlePowerValue + frontPowerValue + middlePowerValue + backPowerValue;
+    return (
+      motorPowerValue +
+      nozzlePowerValue +
+      frontPowerValue +
+      middlePowerValue +
+      backPowerValue
+    );
   }, [motorPower, nozzlePower, frontPower, middlePower, backPower]);
 
   // Create a synthetic TimeSeries for combined power to show the mini graph
@@ -82,7 +88,7 @@ export function Extruder2ControlPage() {
         timeWindow: 3600000,
         sampleInterval: 10000,
         validCount: 1,
-      }
+      },
     };
   }, [combinedPowerValue]);
 
