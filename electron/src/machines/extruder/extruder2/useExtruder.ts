@@ -45,6 +45,7 @@ export function useExtruder2() {
     motorFrequency,
     motorScrewRpm,
     motorVoltage,
+    motorPower,
     pressure,
 
     nozzleTemperature,
@@ -371,6 +372,7 @@ export function useExtruder2() {
     motorFrequency,
     motorScrewRpm,
     motorVoltage,
+    motorPower,
 
     pressure,
     nozzleTemperature,

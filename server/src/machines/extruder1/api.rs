@@ -27,15 +27,20 @@ pub struct MotorStatusValues {
     frequency: f64, // frequency of motor
     voltage: f64,   // volt used for motor
     current: f64,   // current used for the motor
+    power: f64,     // power in watts
 }
 
 impl From<MotorStatus> for MotorStatusValues {
     fn from(status: MotorStatus) -> Self {
+        let voltage = status.voltage.get::<volt>();
+        let current = status.current.get::<ampere>();
+        
         Self {
             screw_rpm: status.rpm.get::<revolution_per_minute>(),
             frequency: status.frequency.get::<hertz>(),
-            voltage: status.voltage.get::<volt>(),
-            current: status.current.get::<ampere>(),
+            voltage,
+            current,
+            power: voltage * current,
         }
     }
 }
