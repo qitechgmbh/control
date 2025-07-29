@@ -17,26 +17,26 @@ import { ExtruderV2ManualPage } from "@/machines/extruder/extruder2/Extruder2Man
 import { ChooseVersionPage } from "@/setup/ChooseVersionPage";
 import { fallback, zodValidator } from "@tanstack/zod-adapter";
 
-import { githubSourceSchema } from "@/setup/GithubSourceDialog";
-import { z } from "zod";
+import { Buffer1ControlPage } from "@/machines/buffer/buffer1/Buffer1ControlPage";
+import { Buffer1Page } from "@/machines/buffer/buffer1/Buffer1Page";
+import { Buffer1SettingsPage } from "@/machines/buffer/buffer1/Buffer1Settings";
 import { ChangelogPage } from "@/setup/ChangelogPage";
-import { UpdateExecutePage } from "@/setup/UpdateExecutePage";
-import { Laser1Page } from "@/machines/laser/laser1/Laser1Page";
+import { Extruder2GraphsPage } from "@/machines/extruder/extruder2/Extruder2Graph";
+import { Extruder2PresetsPage } from "@/machines/extruder/extruder2/Extruder2PresetsPage";
+import { githubSourceSchema } from "@/setup/GithubSourceDialog";
 import { Laser1ControlPage } from "@/machines/laser/laser1/Laser1ControlPage";
-import { Mock1Page } from "@/machines/mock/mock1/Mock1Page";
-import { Mock1ControlPage } from "@/machines/mock/mock1/Mock1ControlPage";
 import { Laser1GraphsPage } from "@/machines/laser/laser1/Laser1Graph";
+import { Laser1Page } from "@/machines/laser/laser1/Laser1Page";
+import { Mock1ControlPage } from "@/machines/mock/mock1/Mock1ControlPage";
 import { Mock1GraphPage } from "@/machines/mock/mock1/Mock1Graph";
 import { Mock1ManualPage } from "@/machines/mock/mock1/Mock1Manual";
-import { TroubleshootPage } from "@/setup/Trobleshoot";
-import { Extruder2GraphsPage } from "@/machines/extruder/extruder2/Extruder2Graph";
-import { Buffer1Page } from "@/machines/buffer/buffer1/Buffer1Page";
-import { Buffer1ControlPage } from "@/machines/buffer/buffer1/Buffer1ControlPage";
+import { Mock1Page } from "@/machines/mock/mock1/Mock1Page";
 import { Mock1PresetsPage } from "@/machines/mock/mock1/Mock1PresetsPage";
+import { TroubleshootPage } from "@/setup/Trobleshoot";
+import { UpdateExecutePage } from "@/setup/UpdateExecutePage";
 import { Winder2PresetsPage } from "@/machines/winder/winder2/Winder2PresetsPage";
-import { Extruder2PresetsPage } from "@/machines/extruder/extruder2/Extruder2PresetsPage";
-import { Buffer1SettingsPage } from "@/machines/buffer/buffer1/Buffer1Settings";
-
+import { z } from "zod";
+import { Laser1PresetsPage } from "@/machines/laser/laser1/Laser1PresetsPage";
 // make a route tree like this
 // _mainNavigation/machines/winder2/$serial/control
 // _mainNavigation/configuration/a
@@ -144,6 +144,12 @@ export const laser1GraphsRoute = createRoute({
   getParentRoute: () => laser1SerialRoute,
   path: "graphs",
   component: () => <Laser1GraphsPage />,
+});
+
+export const laser1PresetsRoute = createRoute({
+  getParentRoute: () => laser1SerialRoute,
+  path: "presets",
+  component: () => <Laser1PresetsPage />,
 });
 
 export const mock1SerialRoute = createRoute({
@@ -280,7 +286,11 @@ export const rootTree = RootRoute.addChildren([
     ]),
 
     machinesRoute.addChildren([
-      laser1SerialRoute.addChildren([laser1ControlRoute, laser1GraphsRoute]),
+      laser1SerialRoute.addChildren([
+        laser1ControlRoute,
+        laser1GraphsRoute,
+        laser1PresetsRoute,
+      ]),
 
       winder2SerialRoute.addChildren([
         winder2ControlRoute,
