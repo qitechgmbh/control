@@ -27,6 +27,10 @@ export function getUnitIcon(unit: Unit): IconName {
       return "lu:AudioWaveform";
     case "W":
       return "lu:Zap";
+    case "V":
+      return "lu:Zap";
+    case "A":
+      return "lu:Zap";
     default:
       return "lu:ChartNoAxesColumn";
   }
@@ -56,6 +60,10 @@ export function renderUnitSymbol(unit: Unit | undefined): string {
       return "mHz";
     case "W":
       return "W";
+    case "V":
+      return "V";
+    case "A":
+      return "A";
     default:
       return "";
   }
@@ -105,6 +113,12 @@ export function renderUnitSymbolLong(unit: Unit): string {
       return "meters/minute";
     case "mHz":
       return "millihertz";
+    case "W":
+      return "watts";
+    case "V":
+      return "volts";
+    case "A":
+      return "amperes";
     default:
       return "";
   }
@@ -122,6 +136,8 @@ export const units = [
   "m/min",
   "mHz",
   "W",
+  "V",
+  "A",
 ] as const;
 
 export type Unit = (typeof units)[number];
