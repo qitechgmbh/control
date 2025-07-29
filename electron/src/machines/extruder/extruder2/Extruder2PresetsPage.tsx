@@ -33,6 +33,8 @@ const extruder1PresetDataSchema = z
 
 type Extruder2 = typeof extruder1PresetDataSchema;
 
+const schemas = new Map([[1, extruder1PresetDataSchema]]);
+
 const previewEntries: PresetPreviewEntries<Extruder2> = [
   {
     name: "Target Front Temperature",
@@ -191,6 +193,7 @@ export function Extruder2PresetsPage() {
     <PresetsPage
       machine_identification={extruder2.machine_identification}
       currentState={toPresetData(state)}
+      schemas={schemas}
       schemaVersion={1}
       applyPreset={applyPreset}
       previewEntries={previewEntries}

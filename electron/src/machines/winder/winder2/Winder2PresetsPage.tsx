@@ -30,6 +30,8 @@ const winder2PresetDataSchema = z
 
 type Winder2 = typeof winder2PresetDataSchema;
 
+const schemas = new Map([[1, winder2PresetDataSchema]]);
+
 const previewEntries: PresetPreviewEntries<Winder2> = [
   {
     name: "Inner Traverse Limit",
@@ -229,6 +231,7 @@ export function Winder2PresetsPage() {
     <PresetsPage
       machine_identification={winder2.machine_identification}
       currentState={toPresetData(state)}
+      schemas={schemas}
       schemaVersion={1}
       defaultState={toPresetData(defaultState)}
       applyPreset={applyPreset}

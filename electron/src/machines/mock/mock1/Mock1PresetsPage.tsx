@@ -4,7 +4,7 @@ import { mock1 } from "@/machines/properties";
 
 import { PresetsPage } from "@/components/preset/PresetsPage";
 import { Preset, PresetData } from "@/lib/preset/preset";
-import { PresetPreviewEntry } from "@/components/preset/PresetPreviewTable";
+import { PresetPreviewEntries } from "@/components/preset/PresetPreviewTable";
 import { z } from "zod";
 
 const mock1PresetDataSchema = z
@@ -17,7 +17,9 @@ const mock1PresetDataSchema = z
 
 type Mock1 = typeof mock1PresetDataSchema;
 
-const previewEntries: PresetPreviewEntry<Mock1>[] = [
+const schemas = new Map([[1, mock1PresetDataSchema]]);
+
+const previewEntries: PresetPreviewEntries<Mock1> = [
   {
     name: "Frequency 1",
     unit: "mHz",
@@ -59,6 +61,7 @@ export function Mock1PresetsPage() {
     <PresetsPage
       machine_identification={mock1.machine_identification}
       currentState={toPresetData(state)}
+      schemas={schemas}
       schemaVersion={1}
       applyPreset={applyPreset}
       previewEntries={previewEntries}
