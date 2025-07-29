@@ -13,6 +13,8 @@ import { roundToDecimals } from "@/lib/decimal";
 import { useExtruder2 } from "./useExtruder";
 import { TimeSeriesValueNumeric } from "@/control/TimeSeriesValue";
 import { StatusBadge } from "@/control/StatusBadge";
+import { useMemo } from "react";
+import { TimeSeries } from "@/lib/timeseries";
 
 export function Extruder2ControlPage() {
   const {
@@ -28,10 +30,8 @@ export function Extruder2ControlPage() {
     middlePower,
     pressure,
 
-    motorCurrent,
-    motorFrequency,
     motorScrewRpm,
-    motorVoltage,
+    motorPower,
 
     setExtruderMode,
     setBackHeatingTemperature,
@@ -45,6 +45,46 @@ export function Extruder2ControlPage() {
     isLoading,
     isDisabled,
   } = useExtruder2();
+
+  // Calculate combined power consumption
+  const combinedPowerValue = useMemo(() => {
+    const motorPowerValue = motorPower?.current?.value ?? 0;
+    const nozzlePowerValue = nozzlePower?.current?.value ?? 0;
+    const frontPowerValue = frontPower?.current?.value ?? 0;
+    const middlePowerValue = middlePower?.current?.value ?? 0;
+    const backPowerValue = backPower?.current?.value ?? 0;
+
+    return motorPowerValue + nozzlePowerValue + frontPowerValue + middlePowerValue + backPowerValue;
+  }, [motorPower, nozzlePower, frontPower, middlePower, backPower]);
+
+  // Create a synthetic TimeSeries for combined power to show the mini graph
+  const combinedPowerTimeSeries = useMemo((): TimeSeries => {
+    const timestamp = Date.now();
+    const value = combinedPowerValue;
+
+    // Create minimal TimeSeries structure
+    return {
+      current: { value, timestamp },
+      short: {
+        values: [{ value, timestamp }],
+        index: 1,
+        size: 100,
+        lastTimestamp: timestamp,
+        timeWindow: 60000,
+        sampleInterval: 1000,
+        validCount: 1,
+      },
+      long: {
+        values: [{ value, timestamp }],
+        index: 1,
+        size: 1000,
+        lastTimestamp: timestamp,
+        timeWindow: 3600000,
+        sampleInterval: 10000,
+        validCount: 1,
+      }
+    };
+  }, [combinedPowerValue]);
 
   function isZoneReadyForExtrusion(
     temperature: number,
@@ -222,6 +262,15 @@ export function Extruder2ControlPage() {
             onChange={setExtruderMode}
             disabled={isDisabled}
             loading={isLoading}
+          />
+        </ControlCard>
+
+        <ControlCard className="bg-blue" title="Total Power Consumption">
+          <TimeSeriesValueNumeric
+            label=""
+            unit="W"
+            renderValue={(value) => roundToDecimals(value, 1)}
+            timeseries={combinedPowerTimeSeries}
           />
         </ControlCard>
       </ControlGrid>
