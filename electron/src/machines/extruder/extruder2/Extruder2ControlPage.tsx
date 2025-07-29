@@ -147,8 +147,8 @@ export function Extruder2ControlPage() {
                 unit="rpm"
                 title="Target Output RPM"
                 min={0}
-                max={106}
-                renderValue={(value) => roundToDecimals(value, 0)}
+                max={106.0}
+                renderValue={(value) => roundToDecimals(value, 1)}
                 onChange={setInverterTargetRpm}
               />
             </Label>
@@ -169,7 +169,7 @@ export function Extruder2ControlPage() {
             <TimeSeriesValueNumeric
               label="Rpm"
               unit="rpm"
-              renderValue={(value) => roundToDecimals(value, 0)}
+              renderValue={(value) => roundToDecimals(value, 1)}
               timeseries={screwRpm}
             />
 
