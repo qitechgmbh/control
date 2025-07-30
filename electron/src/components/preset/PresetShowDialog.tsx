@@ -37,7 +37,7 @@ export function PresetShowDialog<T extends PresetSchema>({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <TouchButton variant="outline" icon="lu:Eye" className="w-max">
-          Show and Apply
+          Show
         </TouchButton>
       </DialogTrigger>
 
