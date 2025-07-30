@@ -6,6 +6,7 @@ import { Preset, PresetSchema } from "@/lib/preset/preset";
 import { PresetCard } from "./PresetCard";
 import { PresetPreviewEntries } from "./PresetPreviewTable";
 import { NewPresetDialog } from "./NewPresetDialog";
+import { downloadJson } from "@/lib/download";
 
 type PresetsPageProps<T extends PresetSchema> = UsePresetsParams<T> & {
   applyPreset: (preset: Preset<T>) => void;
@@ -49,6 +50,12 @@ export function PresetsPage<T extends PresetSchema>({
     presets.remove(preset);
   };
 
+  const handleExport = (preset: Preset<T>) => {
+    const data = { ...preset, id: undefined };
+    const filename = `${preset.name}.preset.json`;
+    downloadJson(data, filename);
+  };
+
   return (
     <Page>
       <NewPresetDialog
@@ -57,18 +64,22 @@ export function PresetsPage<T extends PresetSchema>({
         currentState={currentState}
       />
       <ControlGrid columns={2}>
-        {presets.get().map((preset) => (
-          <PresetCard
-            key={preset.id}
-            preset={preset}
-            onOverwrite={handleOverwritePreset}
-            onApply={applyPreset}
-            onDelete={handleDeletePreset}
-            previewEntries={previewEntries}
-            isReadOnly={presets.isLatest(preset)}
-            isActive={presets.isActive(preset)}
-          />
-        ))}
+        {presets.get().map((preset) => {
+          const isLatest = presets.isLatest(preset);
+          return (
+            <PresetCard
+              key={preset.id}
+              preset={preset}
+              onOverwrite={handleOverwritePreset}
+              onApply={applyPreset}
+              onDelete={handleDeletePreset}
+              onExport={isLatest ? undefined : handleExport}
+              previewEntries={previewEntries}
+              isReadOnly={isLatest}
+              isActive={presets.isActive(preset)}
+            />
+          );
+        })}
 
         {presets.defaultPreset !== undefined && (
           <PresetCard
