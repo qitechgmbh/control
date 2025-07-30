@@ -57,10 +57,6 @@ export function PresetsPage<T extends PresetSchema>({
     downloadJson(data, filename);
   };
 
-  const handlePresetImport = (json: any) => {
-    console.log(json);
-  };
-
   return (
     <Page>
       <ControlGrid columns={2}>
@@ -69,10 +65,9 @@ export function PresetsPage<T extends PresetSchema>({
           onSave={presets.createFromCurrentState}
           currentState={currentState}
         />
-        <JsonFileInput onJson={handlePresetImport} icon="lu:Upload">
+        <JsonFileInput onJson={presets.import} icon="lu:Upload">
           Import Preset from File
         </JsonFileInput>
-        ;
         {presets.get().map((preset) => {
           const isLatest = presets.isLatest(preset);
           return (

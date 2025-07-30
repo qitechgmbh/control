@@ -2,11 +2,12 @@ import {
   MachineIdentification,
   machineIdentificationEquals,
 } from "@/machines/types";
-import { PersistedPreset, usePresetStore } from "./presetStore";
+import { usePresetStore } from "./presetStore";
 import { Preset, PresetData, presetSchema, PresetSchema } from "./preset";
 import { deepEquals } from "@/lib/objects";
 import { useEffect } from "react";
 import { toastError } from "@/components/Toast";
+import { z } from "zod";
 
 export type Presets<T extends PresetSchema> = {
   get: () => Preset<T>[];
@@ -16,6 +17,7 @@ export type Presets<T extends PresetSchema> = {
   defaultPreset?: Preset<T>;
   isLatest: (preset: Preset<T>) => boolean;
   isActive: (preset: Preset<T>) => boolean;
+  import: (json: any) => void;
 };
 
 export type UsePresetsParams<T extends PresetSchema> = {
@@ -35,12 +37,12 @@ export function usePresets<T extends PresetSchema>({
 }: UsePresetsParams<T>): Presets<T> {
   const store = usePresetStore();
 
-  const parsePreset = (preset: PersistedPreset): Preset<T> | undefined => {
+  const parsePreset = (preset: Preset<any>): Preset<T> | undefined => {
     const schema = schemas.get(preset.schemaVersion);
 
     if (schema === undefined) {
       toastError(
-        `Unsupported Preset`,
+        `Unsupported Preset Version`,
         `Cannot load preset "${preset.name}" because version ${preset.schemaVersion} is not supported.`,
       );
       return undefined;
@@ -154,6 +156,37 @@ export function usePresets<T extends PresetSchema>({
     return deepEquals(currentState, preset.data);
   };
 
+  const importPreset = (json: any) => {
+    try {
+      const anyPreset = presetSchema(z.any()).parse(json);
+
+      if (
+        !machineIdentificationEquals(
+          anyPreset.machineIdentification,
+          machine_identification,
+        )
+      ) {
+        toastError(
+          `Wrong Machine`,
+          `The preset you entered is for a different machine`,
+        );
+        return;
+      }
+
+      const preset = parsePreset(anyPreset);
+
+      if (preset !== undefined) {
+        store.insert(preset);
+      }
+    } catch (e) {
+      console.error(e);
+      toastError(
+        `Not a Preset File`,
+        `Cannot import preset from file because validation has failed.`,
+      );
+    }
+  };
+
   return {
     get: getPresetsForMachine,
     createFromCurrentState,
@@ -162,5 +195,6 @@ export function usePresets<T extends PresetSchema>({
     defaultPreset,
     isLatest,
     isActive,
+    import: importPreset,
   };
 }
