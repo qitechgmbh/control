@@ -3,14 +3,14 @@ import { EditValue } from "@/control/EditValue";
 import { Label } from "@/control/Label";
 import { roundToDecimals } from "@/lib/decimal";
 import React from "react";
-import { Heating } from "./extruder2/extruder2Namespace";
+import { HeatingState } from "./extruder2/extruder2Namespace";
 import { TimeSeries } from "@/lib/timeseries";
 import { TimeSeriesValueNumeric } from "@/control/TimeSeriesValue";
 import { StatusBadge } from "@/control/StatusBadge";
 
 type Props = {
   title: string;
-  heatingState: Heating | undefined;
+  heatingState?: HeatingState;
   heatingTimeSeries: TimeSeries;
   heatingPower: TimeSeries;
   min: number;

@@ -36,6 +36,9 @@ jobs:
       - name: Install
         run: npm i
 
+      - name: Build
+        run: tsc
+
       - name: Format
         run: npm run format
 
@@ -45,5 +48,5 @@ jobs:
       - name: Test
         run: npm run test
 
-      - name: Build
+      - name: Package
         run: npm run package
