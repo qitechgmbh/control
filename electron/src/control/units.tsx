@@ -1,4 +1,4 @@
-import { ReactNode } from "@tanstack/react-router";
+import { ReactNode } from "react";
 import { IconName } from "@/components/Icon";
 import React from "react";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
