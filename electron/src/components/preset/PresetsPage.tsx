@@ -7,6 +7,7 @@ import { PresetCard } from "./PresetCard";
 import { PresetPreviewEntries } from "./PresetPreviewTable";
 import { NewPresetDialog } from "./NewPresetDialog";
 import { downloadJson } from "@/lib/download";
+import { JsonFileInput } from "../FileInput";
 
 type PresetsPageProps<T extends PresetSchema> = UsePresetsParams<T> & {
   applyPreset: (preset: Preset<T>) => void;
@@ -56,14 +57,22 @@ export function PresetsPage<T extends PresetSchema>({
     downloadJson(data, filename);
   };
 
+  const handlePresetImport = (json: any) => {
+    console.log(json);
+  };
+
   return (
     <Page>
-      <NewPresetDialog
-        previewEntries={previewEntries}
-        onSave={presets.createFromCurrentState}
-        currentState={currentState}
-      />
       <ControlGrid columns={2}>
+        <NewPresetDialog
+          previewEntries={previewEntries}
+          onSave={presets.createFromCurrentState}
+          currentState={currentState}
+        />
+        <JsonFileInput onJson={handlePresetImport} icon="lu:Upload">
+          Import Preset from File
+        </JsonFileInput>
+        ;
         {presets.get().map((preset) => {
           const isLatest = presets.isLatest(preset);
           return (
@@ -80,7 +89,6 @@ export function PresetsPage<T extends PresetSchema>({
             />
           );
         })}
-
         {presets.defaultPreset !== undefined && (
           <PresetCard
             preset={presets.defaultPreset}
