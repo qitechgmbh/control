@@ -1,5 +1,7 @@
 use std::{sync::Arc, time::Duration};
 
+use crate::machines::buffer1::puller_speed_controller::PullerRegulationMode;
+
 use super::{BufferV1, BufferV1Mode};
 use control_core::{
     machines::{api::MachineApi, identification::MachineIdentificationUnique},
@@ -30,6 +32,8 @@ impl LiveValuesEvent {
 pub struct StateEvent {
     /// mode state
     pub mode_state: ModeState,
+    /// puller state
+    pub puller_state: PullerState,
     /// connected machine state
     pub connected_machine_state: ConnectedMachineState,
     /// CurrentInputSpeed
@@ -64,6 +68,18 @@ pub struct ConnectedMachineState {
     /// Connected Machine
     pub machine_identification_unique: Option<MachineIdentificationUnique>,
     pub is_available: bool,
+}
+
+#[derive(Serialize, Debug, Clone)]
+pub struct PullerState {
+    /// regulation type
+    pub regulation: PullerRegulationMode,
+    /// target speed in m/min
+    pub target_speed: f64,
+    /// target diameter in mm
+    pub target_diameter: f64,
+    /// forward rotation direction
+    pub forward: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
