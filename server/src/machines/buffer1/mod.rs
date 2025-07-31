@@ -9,7 +9,9 @@ use buffer_lift_controller::BufferLiftController;
 use control_core::{
     converters::linear_step_converter::LinearStepConverter,
     machines::{
-        downcast_machine, identification::{MachineIdentification, MachineIdentificationUnique}, manager::MachineManager, ConnectedMachine, ConnectedMachineData, Machine
+        ConnectedMachine, ConnectedMachineData, Machine, downcast_machine,
+        identification::{MachineIdentification, MachineIdentificationUnique},
+        manager::MachineManager,
     },
     socketio::namespace::NamespaceCacheingLogic,
     uom_extensions::velocity::meter_per_minute,
@@ -22,7 +24,6 @@ use futures::executor::block_on;
 use puller_speed_controller::PullerRegulationMode;
 use serde::{Deserialize, Serialize};
 use smol::lock::{Mutex, RwLock};
-use uom::si::{f64::Velocity, velocity::millimeter_per_second};
 use std::{
     sync::{Arc, Weak},
     time::Instant,
@@ -344,71 +345,10 @@ impl BufferV1 {
             .converter
             .angular_velocity_to_steps(angular_velocity);
         let _ = self.puller.set_speed(steps_per_second);
-
-        // sync puller speed to lift input speed
-        let linear_velocity = self
-            .puller_speed_controller
-            .converter
-            .angular_velocity_to_velocity(angular_velocity);
-        self.buffer_lift_controller
-            .set_current_input_speed(linear_velocity.get::<meter_per_minute>());
-    }
-
-    pub fn puller_set_regulation(&mut self, puller_regulation_mode: PullerRegulationMode) {
-        self.puller_speed_controller
-            .set_regulation_mode(puller_regulation_mode);
-        self.emit_state();
-    }
-
-    /// Set target speed in m/min
-    pub fn puller_set_target_speed(&mut self, target_speed: f64) {
-        // Convert m/min to velocity
-        let target_speed = Velocity::new::<meter_per_minute>(target_speed);
-        self.puller_speed_controller.set_target_speed(target_speed);
-        self.emit_state();
-    }
-
-    /// Set target diameter in mm
-    pub fn puller_set_target_diameter(&mut self, target_diameter: f64) {
-        // Convert mm to length
-        let target_diameter = Length::new::<millimeter>(target_diameter);
-        self.puller_speed_controller
-            .set_target_diameter(target_diameter);
-        self.emit_state();
-    }
-
-    /// Set forward direction
-    pub fn puller_set_forward(&mut self, forward: bool) {
-        self.puller_speed_controller.set_forward(forward);
-        self.emit_state();
     }
 }
 
-// Implement Lift
-impl BufferV1 {
-    pub fn sync_lift_speed(&mut self, t: Instant) {
-        let linear_velocity =
-            self.buffer_lift_controller
-                .update_speed(&mut self.lift, &self.lift_end_stop, t);
-        let steps_per_second = self.lift_step_converter.velocity_to_steps(linear_velocity);
-        let _ = self.lift.set_speed(steps_per_second);
-    }
-
-    pub fn lift_set_step_size(&mut self, step_size: f64) {
-        let step_size = Length::new::<millimeter>(step_size);
-        self.buffer_lift_controller.set_step_size(step_size);
-        self.emit_state();
-    }
-
-    pub fn lift_goto_home(&mut self) {
-        if self.can_go_home() {
-            self.buffer_lift_controller.goto_home();
-        }
-        self.emit_state();
-    }
-}
-
-// Connecting/Disconnecting machine
+/// Connecting/Disconnecting machine
 impl BufferV1 {
     /// set connected winder
     pub fn set_connected_winder(
