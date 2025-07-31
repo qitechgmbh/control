@@ -1,6 +1,7 @@
 use super::Winder2;
-use control_core::machines::new::MachineAct;
-use std::time::{Duration, Instant};
+use control_core::{machines::new::MachineAct, uom_extensions::velocity::meter_per_minute};
+use futures::executor::block_on;
+use uom::si::f64::Velocity;
 
 impl MachineAct for Winder2 {
     fn act(&mut self, now: Instant) {
@@ -24,6 +25,21 @@ impl MachineAct for Winder2 {
         if now.duration_since(self.last_measurement_emit) > Duration::from_secs_f64(1.0 / 30.0) {
             self.emit_live_values();
             self.last_measurement_emit = now;
+            // send puller speed to buffer, if connected
+            if let Some(connected) = &self.connected_buffer {
+                if let Some(buffer_arc) = connected.machine.upgrade() {
+                    let mut buffer = block_on(buffer_arc.lock());
+                    buffer
+                        .buffer_lift_controller
+                        .set_target_output_speed(Velocity::get::<meter_per_minute>(
+                            &self.puller_speed_controller.get_target_speed(),
+                        ));
+                }
+            }
+            // check if traverse state changed
+            if self.traverse_controller.did_change_state() {
+                self.emit_state();
+            }
         }
     }
 }

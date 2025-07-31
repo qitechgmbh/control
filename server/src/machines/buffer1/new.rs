@@ -25,8 +25,9 @@ use ethercat_hal::{
 use uom::si::f64::Length;
 use uom::si::length::centimeter;
 
-use crate::machines::buffer1::BufferV1Mode;
 use crate::machines::buffer1::buffer_lift_controller::BufferLiftController;
+use crate::machines::buffer1::puller_speed_controller::PullerSpeedController;
+use crate::machines::buffer1::{BufferV1Mode, puller_speed_controller};
 use crate::machines::get_ethercat_device;
 
 use super::{BufferV1, api::Buffer1Namespace};
@@ -129,17 +130,25 @@ impl MachineNewTrait for BufferV1 {
                 el7041.clone(),
                 EL7041_0052Port::STM1,
             ));
+            let puller_speed_controller = PullerSpeedController::new(
+                Velocity::new::<meter_per_minute>(1.0),
+                Length::new::<millimeter>(1.75),
+                LinearStepConverter::from_diameter(200, Length::new::<centimeter>(8.0)),
+            );
 
             let machine_identification_unique = params.get_machine_identification_unique();
 
             // create buffer instance
             let mut buffer: BufferV1 = Self {
-                namespace: Buffer1Namespace {
-                    namespace: params.namespace.clone(),
-                },
+                puller: StepperVelocityEL70x1::new(
+                    el7031_0030.clone(),
+                    EL7031_0030StepperPort::STM1,
+                ),
+                namespace: Buffer1Namespace::new(params.socket_queue_tx.clone()),
                 last_measurement_emit: Instant::now(),
                 mode: BufferV1Mode::Standby,
                 buffer_lift_controller,
+                puller_speed_controller: puller_speed_controller,
                 machine_manager: params.machine_manager.clone(),
                 machine_identification_unique: machine_identification_unique.clone(),
                 connected_winder: MachineCrossConnection::new(

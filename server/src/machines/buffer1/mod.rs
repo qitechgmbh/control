@@ -2,6 +2,7 @@ pub mod act;
 pub mod api;
 pub mod buffer_lift_controller;
 pub mod new;
+pub mod puller_speed_controller;
 
 use api::{Buffer1Namespace, BufferV1Events, LiveValuesEvent, ModeState, StateEvent};
 use buffer_lift_controller::BufferLiftController;
@@ -10,22 +11,31 @@ use control_core::{
         identification::{MachineIdentification, MachineIdentificationUnique},
         manager::MachineManager,
     },
-    socketio::namespace::NamespaceCacheingLogic, uom_extensions::velocity::meter_per_minute,
+    socketio::namespace::NamespaceCacheingLogic,
+    uom_extensions::velocity::meter_per_minute,
 };
-use control_core_derive::Machine;
+use ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1;
 use serde::{Deserialize, Serialize};
 use smol::lock::RwLock;
-use uom::si::{f64::Velocity, velocity::millimeter_per_second};
 use std::{sync::Weak, time::Instant};
+use uom::si::{f64::Velocity, velocity::millimeter_per_second};
 
 use crate::machines::{
-    buffer1::api::{ConnectedMachineState, CurrentInputSpeedState}, winder2::Winder2, MACHINE_BUFFER_V1, VENDOR_QITECH
+    MACHINE_BUFFER_V1, VENDOR_QITECH,
+    buffer1::{
+        api::{ConnectedMachineState, CurrentInputSpeedState},
+        puller_speed_controller::PullerSpeedController,
+    },
+    winder2::Winder2,
 };
 
 #[derive(Debug, Machine)]
 pub struct BufferV1 {
+    // drivers
+    pub puller: StepperVelocityEL70x1,
     // controllers
     pub buffer_lift_controller: BufferLiftController,
+    pub puller_speed_controller: PullerSpeedController,
 
     // socketio
     namespace: Buffer1Namespace,
@@ -73,8 +83,11 @@ impl BufferV1 {
             },
             connected_machine_state: self.connected_winder.to_state(),
             current_input_speed_state: CurrentInputSpeedState {
-                current_input_speed: self.buffer_lift_controller.current_input_speed.get::<meter_per_minute>(),
-            } 
+                current_input_speed: self
+                    .buffer_lift_controller
+                    .get_current_input_speed()
+                    .get::<meter_per_minute>(),
+            },
         };
 
         let event = state.build();
@@ -88,7 +101,8 @@ impl BufferV1 {
     }
 
     fn empty_buffer(&mut self) {
-        self.buffer_lift_controller.update_speed(Velocity::new::<millimeter_per_second>(0.0));
+        self.buffer_lift_controller
+            .update_speed(Velocity::new::<millimeter_per_second>(0.0));
     }
 
     // Turn off motor and do nothing
@@ -148,7 +162,21 @@ impl BufferV1 {
     }
 }
 
-    /// Connecting/Disconnecting machine
+// Implement Puller
+impl BufferV1 {
+    /// called by `act`
+    pub fn sync_puller_speed(&mut self, t: Instant) {
+        let angular_velocity = self.puller_speed_controller.calc_angular_velocity(t);
+        let steps_per_second = self
+            .puller_speed_controller
+            .converter
+            .angular_velocity_to_steps(angular_velocity);
+        let _ = self.puller.set_speed(steps_per_second);
+    }
+}
+
+/// Connecting/Disconnecting machine
+impl BufferV1 {
     /// set connected winder
     pub fn set_connected_winder(
         &mut self,
