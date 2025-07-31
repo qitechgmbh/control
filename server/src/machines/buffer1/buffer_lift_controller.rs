@@ -21,8 +21,8 @@ pub struct BufferLiftController {
     spool_amount: u8,
 
     /// Variables
-    pub current_input_speed: Velocity,
-    pub target_output_speed: Velocity,
+    current_input_speed: Velocity,
+    target_output_speed: Velocity,
     lift_speed: Velocity,
 }
 
@@ -47,7 +47,8 @@ impl BufferLiftController {
     /// Formula: input_speed / ( 2 * spool_amount )
     pub fn calculate_buffer_lift_speed(&mut self) -> Velocity {
         self.lift_speed = Velocity::new::<millimeter_per_second>(
-            (self.current_input_speed.get::<millimeter_per_second>() - self.target_output_speed.get::<millimeter_per_second>())
+            (self.current_input_speed.get::<millimeter_per_second>()
+                - self.target_output_speed.get::<millimeter_per_second>())
                 / (2.0 * self.spool_amount as f64),
         );
         self.lift_speed
@@ -57,7 +58,7 @@ impl BufferLiftController {
 impl BufferLiftController {
     pub fn set_enabled(&mut self, enabled: bool) {
         self.enabled = enabled;
-        self.stepper_driver.set_enabled(true);
+        self.stepper_driver.set_enabled(enabled);
     }
 
     pub fn update_speed(&mut self, speed: Velocity) {
@@ -67,6 +68,15 @@ impl BufferLiftController {
 
     pub fn set_current_input_speed(&mut self, speed: f64) {
         self.current_input_speed = Velocity::new::<meter_per_minute>(speed);
+    }
+    pub fn set_target_output_speed(&mut self, speed: f64) {
+        self.target_output_speed = Velocity::new::<meter_per_minute>(speed);
+    }
+    pub fn get_current_input_speed(&self) -> Velocity {
+        self.current_input_speed
+    }
+    pub fn get_target_output_speed(&self) -> Velocity {
+        self.target_output_speed
     }
     pub fn get_lift_speed(&self) -> Velocity {
         self.lift_speed
