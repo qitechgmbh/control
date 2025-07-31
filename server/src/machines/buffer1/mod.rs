@@ -7,6 +7,7 @@ pub mod puller_speed_controller;
 use api::{Buffer1Namespace, BufferV1Events, LiveValuesEvent, ModeState, StateEvent};
 use buffer_lift_controller::BufferLiftController;
 use control_core::{
+    converters::linear_step_converter::LinearStepConverter,
     machines::{
         ConnectedMachine, ConnectedMachineData, Machine, downcast_machine,
         identification::{MachineIdentification, MachineIdentificationUnique},
@@ -24,7 +25,6 @@ use std::{
     sync::{Arc, Weak},
     time::Instant,
 };
-use uom::si::{f64::Velocity, velocity::millimeter_per_second};
 
 use crate::machines::{
     MACHINE_BUFFER_V1, VENDOR_QITECH,
@@ -38,10 +38,14 @@ use crate::machines::{
 #[derive(Debug, Machine)]
 pub struct BufferV1 {
     // drivers
+    pub lift: StepperVelocityEL70x1,
     pub puller: StepperVelocityEL70x1,
+
     // controllers
     pub buffer_lift_controller: BufferLiftController,
     pub puller_speed_controller: PullerSpeedController,
+
+    pub lift_step_converter: LinearStepConverter,
 
     // socketio
     namespace: Buffer1Namespace,
@@ -113,15 +117,9 @@ impl BufferV1 {
 
 impl BufferV1 {
     // To be implemented
-    fn fill_buffer(&mut self) {
-        let speed = self.buffer_lift_controller.calculate_buffer_lift_speed();
-        self.buffer_lift_controller.update_speed(speed);
-    }
+    fn fill_buffer(&mut self) {}
 
-    fn empty_buffer(&mut self) {
-        self.buffer_lift_controller
-            .update_speed(Velocity::new::<millimeter_per_second>(0.0));
-    }
+    fn empty_buffer(&mut self) {}
 
     // Turn off motor and do nothing
     fn switch_to_standby(&mut self) {
@@ -192,6 +190,12 @@ impl BufferV1 {
             .converter
             .angular_velocity_to_steps(angular_velocity);
         let _ = self.puller.set_speed(steps_per_second);
+    }
+
+    pub fn sync_lift_speed(&mut self, t: Instant) {
+        let linear_velocity = self.buffer_lift_controller.update_speed(t);
+        let steps_per_second = self.lift_step_converter.velocity_to_steps(linear_velocity);
+        let _ = self.lift.set_speed(steps_per_second);
     }
 }
 
