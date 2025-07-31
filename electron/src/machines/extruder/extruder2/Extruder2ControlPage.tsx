@@ -72,22 +72,22 @@ export function Extruder2ControlPage() {
     return {
       current: { value, timestamp },
       short: {
-        values: [{ value, timestamp }],
-        index: 1,
-        size: 100,
-        lastTimestamp: timestamp,
-        timeWindow: 60000,
-        sampleInterval: 1000,
-        validCount: 1,
+      values: [{ value, timestamp }],
+      index: 1,
+      size: 60,
+      lastTimestamp: timestamp,
+      timeWindow: 60000, // 1 minute
+      sampleInterval: 200, // 200ms sample interval
+      validCount: 1,
       },
       long: {
-        values: [{ value, timestamp }],
-        index: 1,
-        size: 1000,
-        lastTimestamp: timestamp,
-        timeWindow: 3600000,
-        sampleInterval: 10000,
-        validCount: 1,
+      values: [{ value, timestamp }],
+      index: 1,
+      size: 60,
+      lastTimestamp: timestamp,
+      timeWindow: 60000, // 1 minute
+      sampleInterval: 200, // 200ms sample interval
+      validCount: 1,
       },
     };
   }, [combinedPowerValue]);
