@@ -95,6 +95,9 @@ impl BufferLiftController {
         self.enabled = enabled;
         self.stepper_driver.set_enabled(enabled);
     }
+    pub fn set_forward(&mut self, forward: bool) {
+        self.forward = forward;
+    }
 
     pub fn set_current_input_speed(&mut self, speed: f64) {
         self.current_input_speed = Velocity::new::<meter_per_minute>(speed);

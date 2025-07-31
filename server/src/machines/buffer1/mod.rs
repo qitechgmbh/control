@@ -22,6 +22,7 @@ use std::{
     sync::{Arc, Weak},
     time::Instant,
 };
+use uom::{ConstZero, si::f64::Velocity};
 
 use crate::machines::{
     MACHINE_BUFFER_V1, VENDOR_QITECH,
@@ -29,7 +30,7 @@ use crate::machines::{
         api::{ConnectedMachineState, CurrentInputSpeedState},
         puller_speed_controller::PullerSpeedController,
     },
-    winder2::Winder2,
+    winder2::{Winder2, Winder2Mode},
 };
 
 #[derive(Debug, Machine)]
@@ -101,10 +102,27 @@ impl BufferV1 {
         self.namespace.emit(BufferV1Events::State(event));
     }
 
-    // To be implemented
-    fn fill_buffer(&mut self) {}
+impl BufferV1 {
+    fn fill_buffer(&mut self) {
+        self.update_winder2_speed(true);
+    }
 
-    fn empty_buffer(&mut self) {}
+    fn empty_buffer(&mut self) {
+        // FIX: Get the previous Velocity
+        self.update_winder2_speed(false);
+    }
+
+    fn update_winder2_speed(&mut self, hold: bool) {
+        if let Some(connected) = &self.connected_winder {
+            if let Some(winder_arc) = connected.machine.upgrade() {
+                let mut winder = block_on(winder_arc.lock());
+                match hold {
+                    true => winder.mode = Winder2Mode::Hold,
+                    false => winder.mode = Winder2Mode::Pull,
+                }
+            }
+        }
+    }
 
     // Turn off motor and do nothing
     fn switch_to_standby(&mut self) {
@@ -127,6 +145,7 @@ impl BufferV1 {
         };
         self.mode = BufferV1Mode::FillingBuffer;
         self.buffer_lift_controller.set_enabled(true);
+        self.buffer_lift_controller.set_forward(true);
     }
 
     // Turn on motor reverse and empty buffer
@@ -137,6 +156,7 @@ impl BufferV1 {
             BufferV1Mode::EmptyingBuffer => (),
         };
         self.mode = BufferV1Mode::EmptyingBuffer;
+        self.buffer_lift_controller.set_forward(false);
     }
 
     fn switch_mode(&mut self, mode: BufferV1Mode) {
