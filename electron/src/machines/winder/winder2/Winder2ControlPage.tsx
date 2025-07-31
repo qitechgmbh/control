@@ -96,6 +96,7 @@ export function Winder2ControlPage() {
                 maxLabel="OUT"
                 max={180}
                 renderValue={(value) => roundToDecimals(value, 0)}
+                inverted
                 onChange={setTraverseLimitOuter}
               />
               <TouchButton
@@ -125,6 +126,7 @@ export function Winder2ControlPage() {
                 minLabel="IN"
                 maxLabel="OUT"
                 renderValue={(value) => roundToDecimals(value, 0)}
+                inverted
                 onChange={setTraverseLimitInner}
               />
               <TouchButton
