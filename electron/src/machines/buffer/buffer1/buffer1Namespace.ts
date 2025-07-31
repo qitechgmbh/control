@@ -43,7 +43,7 @@ export const modeStateSchema = z.object({
 
 export const currentInputSpeedSchema = z.object({
   current_input_speed: z.number(),
-})
+});
 
 /**
  *  Connected machine state scheme
