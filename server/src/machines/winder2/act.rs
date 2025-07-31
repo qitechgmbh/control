@@ -23,13 +23,9 @@ impl MachineAct for Winder2 {
             // automatically stops or pulls after N Meters if enabled
             self.stop_or_pull_spool(now);
 
-            // send puller speed to buffer, if connected
-            if let Some(connected) = &self.connected_buffer {
-                if let Some(buffer_arc) = connected.machine.upgrade() {
-                    let mut buffer = block_on(buffer_arc.lock());
-                    buffer.buffer_lift_controller.set_target_output_speed(Velocity::get::<meter_per_minute>(&self.puller_speed_controller.get_target_speed()));
-                }
-            }
+            // sync the puller speed to the buffer output speed
+            self.sync_buffer_speed();
+
             // check if traverse state changed
             if self.traverse_controller.did_change_state() {
                 self.emit_state();
