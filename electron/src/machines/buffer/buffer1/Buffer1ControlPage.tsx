@@ -10,7 +10,8 @@ import { EditValue } from "@/control/EditValue";
 export function Buffer1ControlPage() {
   const { state, setBufferMode, setCurrentInputSpeed } = useBuffer1();
 
-  const current_input_speed = state?.current_input_speed_state.current_input_speed ?? 0.0;
+  const current_input_speed =
+    state?.current_input_speed_state.current_input_speed ?? 0.0;
   const default_speed = 0.0;
 
   return (
