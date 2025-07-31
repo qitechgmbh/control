@@ -25,15 +25,13 @@ use std::{
     sync::{Arc, Weak},
     time::Instant,
 };
-use uom::{ConstZero, si::f64::Velocity};
+use uom::{si::{f64::Velocity, length::millimeter}, ConstZero};
 
 use crate::machines::{
-    MACHINE_BUFFER_V1, VENDOR_QITECH,
     buffer1::{
-        api::{ConnectedMachineState, CurrentInputSpeedState},
+        api::{ConnectedMachineState, CurrentInputSpeedState, PullerState},
         puller_speed_controller::PullerSpeedController,
-    },
-    winder2::{Winder2, Winder2Mode},
+    }, winder2::{Winder2, Winder2Mode}, MACHINE_BUFFER_V1, VENDOR_QITECH
 };
 
 #[derive(Debug, Machine)]
@@ -109,6 +107,18 @@ impl BufferV1 {
                     .get_current_input_speed()
                     .get::<meter_per_minute>(),
             },
+            puller_state: PullerState {
+                regulation: self.puller_speed_controller.regulation_mode.clone(),
+                target_speed: self
+                    .puller_speed_controller
+                    .target_speed
+                    .get::<meter_per_minute>(),
+                target_diameter: self
+                    .puller_speed_controller
+                    .target_diameter
+                    .get::<millimeter>(),
+                forward: self.puller_speed_controller.forward,
+            },
         };
 
         let event = state.build();
@@ -118,7 +128,7 @@ impl BufferV1 {
 
 impl BufferV1 {
     fn fill_buffer(&mut self) {
-        // stop the winder until the buffer is full 
+        // stop the winder until the buffer is full
         self.update_winder2_mode(true);
     }
 
