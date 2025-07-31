@@ -43,10 +43,6 @@ impl MachineAct for Winder2 {
             if self.traverse_controller.did_change_state() {
                 self.emit_state();
             }
-            // check if traverse state changed
-            if self.traverse_controller.did_change_state() {
-                self.emit_state();
-            }
         }
     }
 }
