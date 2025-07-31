@@ -6,9 +6,13 @@ import { useBuffer1 } from "./useBuffer1";
 import { ControlCard } from "@/control/ControlCard";
 import { SelectionGroup } from "@/control/SelectionGroup";
 import { EditValue } from "@/control/EditValue";
+import { TimeSeriesValueNumeric } from "@/control/TimeSeriesValue";
+import { roundToDecimals } from "@/lib/decimal";
+import { Label } from "@/control/Label";
 
 export function Buffer1ControlPage() {
-  const { state, setBufferMode, setCurrentInputSpeed } = useBuffer1();
+  const { state, setBufferMode, setCurrentInputSpeed, pullerSpeed } =
+    useBuffer1();
 
   const current_input_speed =
     state?.current_input_speed_state.current_input_speed ?? 0.0;
@@ -56,6 +60,15 @@ export function Buffer1ControlPage() {
             step={0.1}
             renderValue={(value) => value.toFixed(0.0)}
             onChange={setCurrentInputSpeed}
+          />
+        </ControlCard>
+
+        <ControlCard className="bg-red" title="Puller">
+          <TimeSeriesValueNumeric
+            label="Speed"
+            unit="m/min"
+            timeseries={pullerSpeed}
+            renderValue={(value) => roundToDecimals(value, 1)}
           />
         </ControlCard>
       </ControlGrid>
