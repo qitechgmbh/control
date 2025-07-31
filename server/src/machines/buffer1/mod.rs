@@ -117,15 +117,16 @@ impl BufferV1 {
 
 impl BufferV1 {
     fn fill_buffer(&mut self) {
-        self.update_winder2_speed(true);
+        // stop the winder until the buffer is full 
+        self.update_winder2_mode(true);
     }
 
     fn empty_buffer(&mut self) {
-        // FIX: Get the previous Velocity
-        self.update_winder2_speed(false);
+        // Set the winder2 to a mode where its faster than before to empty the buffer slowly
+        self.update_winder2_mode(false);
     }
 
-    fn update_winder2_speed(&mut self, hold: bool) {
+    fn update_winder2_mode(&mut self, hold: bool) {
         if let Some(connected) = &self.connected_winder {
             if let Some(winder_arc) = connected.machine.upgrade() {
                 let mut winder = block_on(winder_arc.lock());
