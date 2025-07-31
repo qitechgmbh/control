@@ -779,8 +779,19 @@ impl Winder2 {
     }
 }
 
-/// implement machine connection
+/// Buffer
 impl Winder2 {
+    /// Sync Puller to Buffer
+    pub fn sync_buffer_speed(&mut self) {
+        // send puller speed to buffer, if connected
+        if let Some(connected) = &self.connected_buffer {
+            if let Some(buffer_arc) = connected.machine.upgrade() {
+                let mut buffer = block_on(buffer_arc.lock());
+                buffer.buffer_lift_controller.set_target_output_speed(Velocity::get::<meter_per_minute>(&self.puller_speed_controller.get_target_speed()));
+            }
+        }
+    } 
+
     /// set connected buffer
     pub fn set_connected_buffer(
         &mut self,
