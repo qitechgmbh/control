@@ -144,9 +144,14 @@ impl MachineNewTrait for BufferV1 {
 
             // create buffer instance
             let mut buffer: BufferV1 = Self {
+                lift: StepperVelocityEL70x1::new(el7041.clone(), EL7041_0052Port::STM1),
                 puller: StepperVelocityEL70x1::new(
                     el7031_0030.clone(),
                     EL7031_0030StepperPort::STM1,
+                ),
+                lift_step_converter: LinearStepConverter::from_diameter(
+                    200,
+                    Length::new::<centimeter>(5.0),
                 ),
                 namespace: Buffer1Namespace::new(params.socket_queue_tx.clone()),
                 last_measurement_emit: Instant::now(),
