@@ -125,12 +125,13 @@ export function useBuffer1() {
   const setCurrentInputSpeed = (current_input_speed: number) => {
     updateStateOptimistically(
       (current) => {
-        current.data.current_input_speed_state.current_input_speed = current_input_speed;
+        current.data.current_input_speed_state.current_input_speed =
+          current_input_speed;
       },
       () =>
         requestSetCurrentInputSpeed({
           machine_identification_unique,
-          data: { SetCurrentInputSpeed: current_input_speed},
+          data: { SetCurrentInputSpeed: current_input_speed },
         }),
     );
   };
@@ -156,8 +157,8 @@ export function useBuffer1() {
 
   const { request: requestSetCurrentInputSpeed } = useMachineMutation(
     z.object({
-      SetCurrentInputSpeed: z.number()
-    })
+      SetCurrentInputSpeed: z.number(),
+    }),
   );
 
   // General Helper functions
