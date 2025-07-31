@@ -45,7 +45,7 @@ export function useBuffer1() {
   const machine_identification_unique = machineIdentification;
 
   // Get consolidated state and live values from namespace
-  const { state } = useBuffer1Namespace(machineIdentification);
+  const { state, pullerSpeed } = useBuffer1Namespace(machineIdentification);
 
   // Single optimistic state for all state management
   const stateOptimistic = useStateOptimistic<StateEvent>();
@@ -197,6 +197,7 @@ export function useBuffer1() {
     selectedMachine,
 
     // Individual live values (TimeSeries)
+    pullerSpeed,
 
     // Action functions (verb-first)
     setBufferMode,

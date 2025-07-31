@@ -16,6 +16,7 @@ import {
   ThrottledStoreUpdater,
 } from "../../../client/socketioStore";
 import { MachineIdentificationUnique } from "@/machines/types";
+import { createTimeSeries, TimeSeries } from "@/lib/timeseries";
 
 // ========== Event Schema Definitions ==========
 
@@ -33,6 +34,22 @@ export type Mode = z.infer<typeof modeSchema>;
  * Consolidated live values event schema (30FPS data)
  */
 export const liveValuesEventDataSchema = z.object({});
+
+/**
+ * Puller regulation type enum
+ */
+export const pullerRegulationSchema = z.enum(["Speed", "Diameter"]);
+export type PullerRegulation = z.infer<typeof pullerRegulationSchema>;
+
+/**
+ * Puller state event schmema
+ */
+export const pullerStateSchema = z.object({
+  regulation: pullerRegulationSchema,
+  target_speed: z.number(),
+  target_diameter: z.number(),
+  forward: z.boolean(),
+});
 
 /**
  * Mode state event schema
@@ -69,6 +86,7 @@ export const connectedMachineStateSchema = z.object({
 
 export const stateEventDataSchema = z.object({
   mode_state: modeStateSchema,
+  puller_state: pullerStateSchema,
   connected_machine_state: connectedMachineStateSchema,
   current_input_speed_state: currentInputSpeedSchema,
 });
@@ -85,7 +103,19 @@ export type StateEvent = z.infer<typeof stateEventSchema>;
 export type Buffer1NamespaceStore = {
   // State events (latest only)
   state: StateEvent | null;
+
+  // Time series data for live values
+  pullerSpeed: TimeSeries;
 };
+
+// Constants for time durations
+const TWENTY_MILLISECOND = 20;
+const ONE_SECOND = 1000;
+const FIVE_SECOND = 5 * ONE_SECOND;
+const ONE_HOUR = 60 * 60 * ONE_SECOND;
+
+const { initialTimeSeries: pullerSpeed, insert: addPullerSpeed } =
+  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
 
 /**
  * Creates a message handler for Buffer1 namespace events with validation and appropriate caching strategies
@@ -139,7 +169,11 @@ export const createBuffer1NamespaceStore =
   (): StoreApi<Buffer1NamespaceStore> =>
     create<Buffer1NamespaceStore>(() => {
       return {
+        // State event from server
         state: null,
+
+        // Time series data for live values
+        pullerSpeed,
       };
     });
 
