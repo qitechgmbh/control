@@ -92,7 +92,7 @@ impl MachineNewTrait for BufferV1 {
             }
 
             // Role 1
-            // 1x Stepper Buffer
+            // 1x Stepper Buffer Lift
             // EL7041-0052
             let (el7041, _el7041_config) = {
                 let device_identification =

@@ -100,6 +100,13 @@ enum Mutation {
 
     // Set current input speed
     SetCurrentInputSpeed(f64),
+
+    // Puller
+    /// on = speed, off = stop
+    SetPullerRegulationMode(PullerRegulationMode),
+    SetPullerTargetSpeed(f64),
+    SetPullerTargetDiameter(f64),
+    SetPullerForward(bool),
 }
 
 #[derive(Debug)]
@@ -155,6 +162,10 @@ impl MachineApi for BufferV1 {
                 self.disconnect_winder(machine_identification_unique);
             }
             Mutation::SetCurrentInputSpeed(speed) => self.set_current_input_speed(speed),
+            Mutation::SetPullerRegulationMode(regulation) => self.puller_set_regulation(regulation),
+            Mutation::SetPullerTargetSpeed(value) => self.puller_set_target_speed(value),
+            Mutation::SetPullerTargetDiameter(_) => todo!(),
+            Mutation::SetPullerForward(value) => self.puller_set_forward(value),
         }
         Ok(())
     }
