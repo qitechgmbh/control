@@ -235,7 +235,7 @@ impl BufferV1 {
 
     /// Set target diameter in mm
     pub fn puller_set_target_diameter(&mut self, target_diameter: f64) {
-        // Convert m/min to velocity
+        // Convert mm to length
         let target_diameter = Length::new::<millimeter>(target_diameter);
         self.puller_speed_controller
             .set_target_diameter(target_diameter);
