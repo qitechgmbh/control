@@ -103,6 +103,7 @@ export type StateEvent = z.infer<typeof stateEventSchema>;
 export type Buffer1NamespaceStore = {
   // State events (latest only)
   state: StateEvent | null;
+  defaultState: StateEvent | null;
 
   // Time series data for live values
   pullerSpeed: TimeSeries;
@@ -171,6 +172,7 @@ export const createBuffer1NamespaceStore =
       return {
         // State event from server
         state: null,
+        defaultState: null,
 
         // Time series data for live values
         pullerSpeed,
