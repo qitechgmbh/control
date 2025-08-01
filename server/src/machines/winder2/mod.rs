@@ -391,7 +391,7 @@ impl Winder2 {}
 
 /// Implement Mode
 impl Winder2 {
-    fn set_mode(&mut self, mode: &Winder2Mode) {
+    pub fn set_mode(&mut self, mode: &Winder2Mode) {
         let should_update = *mode != Winder2Mode::Wind || self.can_wind();
 
         if should_update {
@@ -784,13 +784,10 @@ impl Winder2 {
     /// Sync Puller to Buffer
     pub fn sync_buffer_speed(&mut self) {
         // send puller speed to buffer, if connected
-        if let Some(connected) = &self.connected_buffer {
-            if let Some(buffer_arc) = connected.machine.upgrade() {
-                let mut buffer = block_on(buffer_arc.lock());
-                buffer.buffer_lift_controller.set_target_output_speed(Velocity::get::<meter_per_minute>(&self.puller_speed_controller.get_target_speed()));
-            }
-        }
-    } 
+        self.get_buffer(|buffer| {
+            buffer.buffer_lift_controller.set_target_output_speed(Velocity::get::<meter_per_minute>(&self.puller_speed_controller.get_target_speed()));
+        });
+    }
 
     /// set connected buffer
     pub fn set_connected_buffer(
@@ -873,6 +870,20 @@ impl Winder2 {
                 smol::spawn(future).detach();
             }
         }
+    }
+
+    fn get_buffer<F, R>(&self, func: F) -> Option<R>
+    where
+        F: FnOnce(&mut BufferV1) -> R,
+    {
+        self.connected_buffer
+            .as_ref()?
+            .machine
+            .upgrade()
+            .map(|buffer_arc| {
+                let mut buffer = block_on(buffer_arc.lock());
+                func(&mut buffer)
+            })
     }
 }
 

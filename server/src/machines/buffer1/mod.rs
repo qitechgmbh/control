@@ -128,7 +128,7 @@ impl BufferV1 {
 
 impl BufferV1 {
     fn fill_buffer(&mut self) {
-        // stop the winder until the buffer is full
+        // stop the winder until the buffer is ful
         self.update_winder2_mode(Winder2Mode::Hold);
     }
 
@@ -138,12 +138,11 @@ impl BufferV1 {
     }
 
     fn update_winder2_mode(&mut self, mode: Winder2Mode) {
-        if let Some(connected) = &self.connected_winder {
-            if let Some(winder_arc) = connected.machine.upgrade() {
-                let mut winder = block_on(winder_arc.lock());
-                winder.mode = mode;
+        self.get_winder(|winder2| {
+            if winder2.mode != mode {
+                winder2.mode = mode;
             }
-        }
+        });
     }
 
     // Turn off motor and do nothing
@@ -342,6 +341,19 @@ impl BufferV1 {
                 smol::spawn(future).detach();
             }
         }
+    }
+    fn get_winder<F, R>(&self, func: F) -> Option<R>
+    where
+        F: FnOnce(&mut Winder2) -> R,
+    {
+        self.connected_winder
+            .as_ref()?
+            .machine
+            .upgrade()
+            .map(|winder_arc| {
+                let mut winder = block_on(winder_arc.lock());
+                func(&mut winder)
+            })
     }
 }
 
