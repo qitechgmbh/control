@@ -348,7 +348,40 @@ impl BufferV1 {
     }
 }
 
-/// Connecting/Disconnecting machine
+    /// Set target speed in m/min
+    pub fn puller_set_target_speed(&mut self, target_speed: f64) {
+        // Convert m/min to velocity
+        let target_speed = Velocity::new::<meter_per_minute>(target_speed);
+        self.puller_speed_controller.set_target_speed(target_speed);
+        self.emit_state();
+    }
+
+    /// Set target diameter in mm
+    pub fn puller_set_target_diameter(&mut self, target_diameter: f64) {
+        // Convert mm to length
+        let target_diameter = Length::new::<millimeter>(target_diameter);
+        self.puller_speed_controller
+            .set_target_diameter(target_diameter);
+        self.emit_state();
+    }
+
+    /// Set forward direction
+    pub fn puller_set_forward(&mut self, forward: bool) {
+        self.puller_speed_controller.set_forward(forward);
+        self.emit_state();
+    }
+}
+
+// Implement Lift
+impl BufferV1 {
+    pub fn sync_lift_speed(&mut self, t: Instant) {
+        let linear_velocity = self.buffer_lift_controller.update_speed(t);
+        let steps_per_second = self.lift_step_converter.velocity_to_steps(linear_velocity);
+        let _ = self.lift.set_speed(steps_per_second);
+    }
+}
+
+// Connecting/Disconnecting machine
 impl BufferV1 {
     /// set connected winder
     pub fn set_connected_winder(
