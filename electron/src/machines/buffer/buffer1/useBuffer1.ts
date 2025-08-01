@@ -8,7 +8,7 @@ import {
 import { buffer1SerialRoute } from "@/routes/routes";
 import { z } from "zod";
 import { useEffect, useMemo } from "react";
-import { StateEvent, Mode, useBuffer1Namespace } from "./buffer1Namespace";
+import { StateEvent, Mode, useBuffer1Namespace, pullerRegulationSchema, PullerRegulation } from "./buffer1Namespace";
 import { useStateOptimistic } from "@/lib/useStateOptimistic";
 import { produce } from "immer";
 import { useMachines } from "@/client/useMachines";
@@ -45,7 +45,7 @@ export function useBuffer1() {
   const machine_identification_unique = machineIdentification;
 
   // Get consolidated state and live values from namespace
-  const { state, pullerSpeed } = useBuffer1Namespace(machineIdentification);
+  const { state, defaultState, pullerSpeed } = useBuffer1Namespace(machineIdentification);
 
   // Single optimistic state for all state management
   const stateOptimistic = useStateOptimistic<StateEvent>();
@@ -136,6 +136,58 @@ export function useBuffer1() {
     );
   };
 
+  const setPullerTargetSpeed = (targetSpeed: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.puller_state.target_speed = targetSpeed;
+      },
+      () =>
+        requestPullerSetTargetSpeed({
+          machine_identification_unique: machineIdentification,
+          data: { SetPullerTargetSpeed: targetSpeed },
+        }),
+    );
+  };
+
+  const setPullerTargetDiameter = (targetDiameter: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.puller_state.target_diameter = targetDiameter;
+      },
+      () =>
+        requestPullerSetTargetDiameter({
+          machine_identification_unique: machineIdentification,
+          data: { SetPullerTargetDiameter: targetDiameter },
+        }),
+    );
+  };
+
+  const setPullerRegulationMode = (regulationMode: PullerRegulation) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.puller_state.regulation = regulationMode;
+      },
+      () =>
+        requestPullerSetRegulationMode({
+          machine_identification_unique: machineIdentification,
+          data: { SetPullerRegulationMode: regulationMode },
+        }),
+    );
+  };
+
+  const setPullerForward = (forward: boolean) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.puller_state.forward = forward;
+      },
+      () =>
+        requestPullerSetForward({
+          machine_identification_unique: machineIdentification,
+          data: { SetPullerForward: forward },
+        }),
+    );
+  };
+
   // Mutation hooks
   const { request: requestBufferMode } = useMachineMutation(
     z.object({
@@ -160,6 +212,25 @@ export function useBuffer1() {
       SetCurrentInputSpeed: z.number(),
     }),
   );
+
+  const { request: requestPullerSetTargetSpeed } = useMachineMutation(
+    z.object({ SetPullerTargetSpeed: z.number() }),
+  );
+  const { request: requestPullerSetTargetDiameter } = useMachineMutation(
+    z.object({ SetPullerTargetDiameter: z.number() }),
+  );
+  const { request: requestPullerSetRegulationMode } = useMachineMutation(
+    z.object({
+      SetPullerRegulationMode: pullerRegulationSchema,
+    }),
+  );
+  const { request: requestPullerSetForward } = useMachineMutation(
+    z.object({ SetPullerForward: z.boolean() }),
+  );
+
+  // Calculate loading states
+  const isLoading = stateOptimistic.isOptimistic;
+  const isDisabled = !stateOptimistic.isInitialized;
 
   // General Helper functions
   const machines = useMachines();
@@ -196,13 +267,24 @@ export function useBuffer1() {
     filteredMachines,
     selectedMachine,
 
+    // Default state for initial values
+    defaultState: defaultState?.data,
+
     // Individual live values (TimeSeries)
     pullerSpeed,
+
+    // Loading states
+    isLoading,
+    isDisabled,
 
     // Action functions (verb-first)
     setBufferMode,
     setConnectedMachine,
     disconnectMachine,
     setCurrentInputSpeed,
+    setPullerTargetSpeed,
+    setPullerTargetDiameter,
+    setPullerRegulationMode,
+    setPullerForward,
   };
 }
