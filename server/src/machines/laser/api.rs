@@ -4,7 +4,7 @@ use control_core::{
     socketio::{
         event::{Event, GenericEvent},
         namespace::{
-            CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_duration,
+            CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_n_events,
             cache_first_and_last_event,
         },
     },
@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use smol::channel::Sender;
 use socketioxide::extract::SocketRef;
-use std::{sync::Arc, time::Duration};
+use std::sync::Arc;
 use tracing::instrument;
 
 #[derive(Serialize, Debug, Clone, Default)]
@@ -78,11 +78,13 @@ impl CacheableEvents<LaserEvents> for LaserEvents {
     }
 
     fn event_cache_fn(&self) -> CacheFn {
-        let cache_one_hour = cache_duration(Duration::from_secs(60 * 60), Duration::from_secs(1));
+        // Use rolling buffer of 3600 events (1 hour at 1 event/second)
+        // This maintains a proper rolling buffer instead of clearing all data
+        let cache_rolling_buffer = cache_n_events(3600);
         let cache_first_and_last = cache_first_and_last_event();
 
         match self {
-            LaserEvents::LiveValues(_) => cache_one_hour,
+            LaserEvents::LiveValues(_) => cache_rolling_buffer,
             LaserEvents::State(_) => cache_first_and_last,
         }
     }
