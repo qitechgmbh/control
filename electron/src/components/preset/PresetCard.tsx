@@ -10,6 +10,7 @@ export type PresetCardProps<T extends PresetSchema> = {
   onApply: (preset: Preset<T>) => void;
   onOverwrite: (preset: Preset<T>) => void;
   onDelete: (preset: Preset<T>) => void;
+  onExport?: (preset: Preset<T>) => void;
   previewEntries: PresetPreviewEntries<T>;
   isReadOnly?: boolean;
   hideDate?: boolean;
@@ -21,6 +22,7 @@ export function PresetCard<T extends PresetSchema>({
   onApply,
   onOverwrite,
   onDelete,
+  onExport,
   previewEntries,
   isReadOnly,
   hideDate,
@@ -60,7 +62,17 @@ export function PresetCard<T extends PresetSchema>({
           onApply={onApply}
           previewEntries={previewEntries}
           hideDate={hideDate}
-        ></PresetShowDialog>
+        />
+        {onExport && (
+          <TouchButton
+            className="flex-shrink-0"
+            variant="outline"
+            onClick={() => onExport(preset)}
+          >
+            <Icon name="lu:Download" />
+            Export
+          </TouchButton>
+        )}
         {!isReadOnly && (
           <TouchButton
             className="flex-shrink-0"

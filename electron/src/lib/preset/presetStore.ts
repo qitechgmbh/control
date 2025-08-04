@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { persist, StateStorage } from "zustand/middleware";
+import { persist, PersistStorage, StorageValue } from "zustand/middleware";
 import { Preset, PresetSchema, presetSchema } from "./preset";
 import { MachineIdentification } from "@/machines/types";
 import { z } from "zod";
@@ -47,8 +47,8 @@ export type PresetStore = PresetStoreData & {
   ) => number | undefined;
 };
 
-const storage: StateStorage = {
-  getItem: (name: string): any => {
+const storage: PersistStorage<PersistedState> = {
+  getItem: (name: string): StorageValue<PersistedState> | null => {
     const str = localStorage.getItem(name);
 
     if (!str) {
@@ -74,7 +74,7 @@ const storage: StateStorage = {
     return null;
   },
 
-  setItem: (name: string, newValue: any) => {
+  setItem: (name: string, newValue: StorageValue<PersistedState>) => {
     const latestPresetIds = Array.from(
       newValue.state?.latestPresetIds?.entries(),
     );
