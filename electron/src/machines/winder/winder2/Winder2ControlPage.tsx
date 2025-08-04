@@ -292,7 +292,7 @@ export function Winder2ControlPage() {
           <TouchButton
             variant="outline"
             onClick={resetSpoolProgress}
-            disabled={isDisabled || !state?.traverse_state?.can_go_out}
+            disabled={isDisabled}
             isLoading={isLoading || state?.traverse_state?.is_going_out}
           >
             Reset Progress
