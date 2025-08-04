@@ -196,6 +196,9 @@ export type Extruder2NamespaceStore = {
   frontPower: TimeSeries;
   middlePower: TimeSeries;
   backPower: TimeSeries;
+
+  // Combined power consumption
+  combinedPower: TimeSeries;
 };
 
 // Constants for time durations
@@ -245,6 +248,9 @@ const { initialTimeSeries: backPower, insert: addBackPower } = createTimeSeries(
   FIVE_SECOND,
   ONE_HOUR,
 );
+
+const { initialTimeSeries: combinedPower, insert: addCombinedPower } =
+  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
 
 const { initialTimeSeries: motorCurrent, insert: addMotorCurrent } =
   createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
@@ -347,6 +353,15 @@ export function extruder2MessageHandler(
             value: liveValuesEvent.data.back_power,
             timestamp,
           }),
+          combinedPower: addCombinedPower(state.combinedPower, {
+            value:
+              liveValuesEvent.data.motor_status.power +
+              liveValuesEvent.data.nozzle_power +
+              liveValuesEvent.data.front_power +
+              liveValuesEvent.data.middle_power +
+              liveValuesEvent.data.back_power,
+            timestamp,
+          }),
         }));
       } else {
         handleUnhandledEventError(eventName);
@@ -380,6 +395,7 @@ export const createExtruder2NamespaceStore =
         frontPower,
         backPower,
         middlePower,
+        combinedPower,
       };
     });
 
