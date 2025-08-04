@@ -2,7 +2,7 @@
   "name": "qitech-control-electron",
   "productName": "QiTech Control",
   "version": "1.0.0",
-  "description": "",
+  "description": "QiTech Control Electron Application",
   "main": ".vite/build/main.js",
   "private": true,
   "scripts": {

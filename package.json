@@ -1,0 +1,21 @@
+{
+  "name": "qitech-control",
+  "version": "1.0.0",
+  "description": "QiTech Control workspace",
+  "private": true,
+  "workspaces": [
+    "electron"
+  ],
+  "scripts": {
+    "start": "npm run start --workspace=electron",
+    "build": "npm run build --workspace=electron",
+    "test": "npm run test --workspace=electron",
+    "lint": "npm run lint --workspace=electron",
+    "format": "npm run format --workspace=electron"
+  },
+  "devDependencies": {},
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  }
+}
