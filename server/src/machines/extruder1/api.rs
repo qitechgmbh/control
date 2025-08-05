@@ -1,6 +1,6 @@
 use std::{sync::Arc, time::Duration};
 
-use super::{ExtruderV2, ExtruderV2Mode, HeatingType};
+use super::{ExtruderV2, ExtruderV2Mode, HeatingType, mitsubishi_cs80::MotorStatus};
 use control_core::{
     machines::api::MachineApi,
     socketio::{
@@ -16,11 +16,39 @@ use serde_json::Value;
 use smol::channel::Sender;
 use socketioxide::extract::SocketRef;
 use tracing::instrument;
+use uom::si::{
+    angular_velocity::revolution_per_minute, electric_current::ampere, electric_potential::volt,
+    frequency::hertz,
+};
+
+#[derive(Debug, Clone, Default, Serialize)]
+pub struct MotorStatusValues {
+    screw_rpm: f64, // rpm of motor
+    frequency: f64, // frequency of motor
+    voltage: f64,   // volt used for motor
+    current: f64,   // current used for the motor
+    power: f64,     // power in watts
+}
+
+impl From<MotorStatus> for MotorStatusValues {
+    fn from(status: MotorStatus) -> Self {
+        let voltage = status.voltage.get::<volt>();
+        let current = status.current.get::<ampere>();
+        
+        Self {
+            screw_rpm: status.rpm.get::<revolution_per_minute>(),
+            frequency: status.frequency.get::<hertz>(),
+            voltage,
+            current,
+            power: voltage * current,
+        }
+    }
+}
 
 #[derive(Serialize, Debug, Clone, Default)]
 pub struct LiveValuesEvent {
     /// screw rpm
-    pub screw_rpm: f64,
+    pub motor_status: MotorStatusValues,
     /// pressure in bar
     pub pressure: f64,
     /// nozzle temperature in celsius
@@ -100,7 +128,6 @@ pub struct PressureState {
 
 #[derive(Serialize, Debug, Clone)]
 pub struct ScrewState {
-    pub rpm: f64,
     pub target_rpm: f64,
 }
 

@@ -22,11 +22,19 @@ import { useMemo } from "react";
 export const modeSchema = z.enum(["Standby", "Heat", "Extrude"]);
 export type Mode = z.infer<typeof modeSchema>;
 
+export const liveMotorStatusDataSchema = z.object({
+  screw_rpm: z.number(),
+  frequency: z.number(),
+  voltage: z.number(),
+  current: z.number(),
+  power: z.number(),
+});
+export type MotorStatus = z.infer<typeof liveMotorStatusDataSchema>;
 /**
  * Consolidated live values event schema (60FPS data)
  */
 export const liveValuesEventDataSchema = z.object({
-  screw_rpm: z.number(),
+  motor_status: liveMotorStatusDataSchema,
   pressure: z.number(),
   nozzle_temperature: z.number(),
   front_temperature: z.number(),
@@ -72,7 +80,6 @@ export const pressureStateSchema = z.object({
  * Screw state schema
  */
 export const screwStateSchema = z.object({
-  rpm: z.number(),
   target_rpm: z.number(),
 });
 
@@ -174,7 +181,12 @@ export type Extruder2NamespaceStore = {
   defaultState: StateEvent | null;
 
   // Time series data for live values
-  screwRpm: TimeSeries;
+  motorFrequency: TimeSeries;
+  motorVoltage: TimeSeries;
+  motorCurrent: TimeSeries;
+  motorScrewRpm: TimeSeries;
+  motorPower: TimeSeries;
+
   pressure: TimeSeries;
   nozzleTemperature: TimeSeries;
   frontTemperature: TimeSeries;
@@ -184,6 +196,9 @@ export type Extruder2NamespaceStore = {
   frontPower: TimeSeries;
   middlePower: TimeSeries;
   backPower: TimeSeries;
+
+  // Combined power consumption
+  combinedPower: TimeSeries;
 };
 
 // Constants for time durations
@@ -234,6 +249,24 @@ const { initialTimeSeries: backPower, insert: addBackPower } = createTimeSeries(
   ONE_HOUR,
 );
 
+const { initialTimeSeries: combinedPower, insert: addCombinedPower } =
+  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+
+const { initialTimeSeries: motorCurrent, insert: addMotorCurrent } =
+  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+
+const { initialTimeSeries: motorVoltage, insert: addMotorVoltage } =
+  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+
+const { initialTimeSeries: motorFrequency, insert: addMotorFrequency } =
+  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+
+const { initialTimeSeries: motorScrewRpm, insert: addMotorScrewRpm } =
+  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+
+const { initialTimeSeries: motorPower, insert: addMotorPower } =
+  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+
 export function extruder2MessageHandler(
   store: StoreApi<Extruder2NamespaceStore>,
   throttledUpdater: ThrottledStoreUpdater<Extruder2NamespaceStore>,
@@ -264,8 +297,24 @@ export function extruder2MessageHandler(
         const timestamp = event.ts;
         updateStore((state) => ({
           ...state,
-          screwRpm: addScrewRpm(state.screwRpm, {
-            value: liveValuesEvent.data.screw_rpm,
+          motorScrewRpm: addMotorScrewRpm(state.motorScrewRpm, {
+            value: liveValuesEvent.data.motor_status.screw_rpm,
+            timestamp,
+          }),
+          motorCurrent: addMotorCurrent(state.motorCurrent, {
+            value: liveValuesEvent.data.motor_status.current,
+            timestamp,
+          }),
+          motorVoltage: addMotorVoltage(state.motorVoltage, {
+            value: liveValuesEvent.data.motor_status.voltage,
+            timestamp,
+          }),
+          motorFrequency: addMotorFrequency(state.motorFrequency, {
+            value: liveValuesEvent.data.motor_status.frequency,
+            timestamp,
+          }),
+          motorPower: addMotorPower(state.motorPower, {
+            value: liveValuesEvent.data.motor_status.power,
             timestamp,
           }),
           pressure: addPressure(state.pressure, {
@@ -304,6 +353,15 @@ export function extruder2MessageHandler(
             value: liveValuesEvent.data.back_power,
             timestamp,
           }),
+          combinedPower: addCombinedPower(state.combinedPower, {
+            value:
+              liveValuesEvent.data.motor_status.power +
+              liveValuesEvent.data.nozzle_power +
+              liveValuesEvent.data.front_power +
+              liveValuesEvent.data.middle_power +
+              liveValuesEvent.data.back_power,
+            timestamp,
+          }),
         }));
       } else {
         handleUnhandledEventError(eventName);
@@ -321,7 +379,13 @@ export const createExtruder2NamespaceStore =
       return {
         state: null,
         defaultState: null,
-        screwRpm,
+
+        motorCurrent,
+        motorFrequency,
+        motorScrewRpm,
+        motorVoltage,
+        motorPower,
+
         pressure,
         nozzleTemperature,
         frontTemperature,
@@ -331,6 +395,7 @@ export const createExtruder2NamespaceStore =
         frontPower,
         backPower,
         middlePower,
+        combinedPower,
       };
     });
 

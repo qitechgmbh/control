@@ -41,7 +41,11 @@ export function useExtruder2() {
   const {
     state,
     defaultState,
-    screwRpm,
+    motorCurrent,
+    motorFrequency,
+    motorScrewRpm,
+    motorVoltage,
+    motorPower,
     pressure,
 
     nozzleTemperature,
@@ -52,6 +56,7 @@ export function useExtruder2() {
     frontPower,
     middlePower,
     backPower,
+    combinedPower,
   } = useExtruder2Namespace(machineIdentification);
 
   // Single optimistic state for all state management
@@ -364,7 +369,12 @@ export function useExtruder2() {
     defaultState: defaultState?.data,
 
     // Individual live values (TimeSeries)
-    screwRpm,
+    motorCurrent,
+    motorFrequency,
+    motorScrewRpm,
+    motorVoltage,
+    motorPower,
+
     pressure,
     nozzleTemperature,
     frontTemperature,
@@ -374,6 +384,7 @@ export function useExtruder2() {
     frontPower,
     middlePower,
     backPower,
+    combinedPower,
 
     // Loading states
     isLoading: stateOptimistic.isOptimistic,

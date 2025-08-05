@@ -26,8 +26,11 @@ export function Extruder2ControlPage() {
     backPower,
     middleTemperature,
     middlePower,
-    screwRpm,
     pressure,
+
+    motorScrewRpm,
+    motorPower,
+    combinedPower,
 
     setExtruderMode,
     setBackHeatingTemperature,
@@ -170,7 +173,7 @@ export function Extruder2ControlPage() {
               label="Rpm"
               unit="rpm"
               renderValue={(value) => roundToDecimals(value, 0)}
-              timeseries={screwRpm}
+              timeseries={motorScrewRpm}
             />
 
             {state?.pressure_state?.wiring_error && (
@@ -218,6 +221,15 @@ export function Extruder2ControlPage() {
             onChange={setExtruderMode}
             disabled={isDisabled}
             loading={isLoading}
+          />
+        </ControlCard>
+
+        <ControlCard className="bg-blue" title="Total Power Consumption">
+          <TimeSeriesValueNumeric
+            label=""
+            unit="W"
+            renderValue={(value) => roundToDecimals(value, 1)}
+            timeseries={combinedPower}
           />
         </ControlCard>
       </ControlGrid>

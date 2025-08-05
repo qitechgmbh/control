@@ -20,7 +20,10 @@ export function Extruder2GraphsPage() {
     middleTemperature,
     middlePower,
     pressure,
-    screwRpm,
+    motorScrewRpm,
+    motorCurrent,
+    motorVoltage,
+    motorPower,
   } = useExtruder2();
 
   const syncHook = useGraphSync(30 * 60 * 1000, "extruder-graphs");
@@ -176,6 +179,30 @@ export function Extruder2GraphsPage() {
     },
   };
 
+  const voltageConfig: GraphConfig = {
+    ...baseConfig,
+    title: "Motor Voltage",
+    exportFilename: "motor_voltage_data",
+    colors: {
+      primary: "#ef4444",
+      grid: "#e2e8f0",
+      axis: "#64748b",
+      background: "#ffffff",
+    },
+  };
+
+  const currentConfig: GraphConfig = {
+    ...baseConfig,
+    title: "Motor Current",
+    exportFilename: "motor_current_data",
+    colors: {
+      primary: "#3b82f6",
+      grid: "#e2e8f0",
+      axis: "#64748b",
+      background: "#ffffff",
+    },
+  };
+
   // Pressure Graph with connected target line
   const pressureConfig: GraphConfig = {
     ...baseConfig,
@@ -249,7 +276,31 @@ export function Extruder2GraphsPage() {
         <AutoSyncedBigGraph
           syncHook={syncHook}
           newData={{
-            newData: screwRpm,
+            newData: motorVoltage,
+            color: "#ef4444",
+          }}
+          config={voltageConfig}
+          unit="V"
+          renderValue={(value) => value.toFixed(2)}
+          graphId="motor-voltage"
+        />
+
+        <AutoSyncedBigGraph
+          syncHook={syncHook}
+          newData={{
+            newData: motorCurrent,
+            color: "#3b82f6",
+          }}
+          config={currentConfig}
+          unit="A"
+          renderValue={(value) => value.toFixed(2)}
+          graphId="motor-current"
+        />
+
+        <AutoSyncedBigGraph
+          syncHook={syncHook}
+          newData={{
+            newData: motorScrewRpm,
             color: "#8b5cf6",
             lines:
               state?.screw_state.target_rpm !== undefined

@@ -14,7 +14,7 @@ use uom::si::{
     pressure::bar,
 };
 
-use super::mitsubishi_cs80::MitsubishiCS80;
+use super::mitsubishi_cs80::{MitsubishiCS80, MotorStatus};
 
 #[derive(Debug)]
 pub struct ScrewSpeedController {
@@ -135,15 +135,18 @@ impl ScrewSpeedController {
         self.motor_on = true;
     }
 
-    pub fn get_screw_rpm(&mut self) -> AngularVelocity {
-        let frequency = self.get_frequency();
+    pub fn get_motor_status(&mut self) -> MotorStatus {
+        let frequency = self.inverter.motor_status.frequency;
         let rpm = frequency.get::<cycle_per_minute>();
-        self.transmission_converter
-            .calculate_screw_output_rpm(AngularVelocity::new::<revolution_per_minute>(rpm))
-    }
 
-    pub fn get_frequency(&mut self) -> Frequency {
-        self.inverter.frequency
+        let screw_rpm = self
+            .transmission_converter
+            .calculate_screw_output_rpm(AngularVelocity::new::<revolution_per_minute>(rpm));
+
+        let mut status = self.inverter.motor_status.clone();
+        status.rpm = screw_rpm;
+
+        return status;
     }
 
     pub fn get_target_pressure(&self) -> Pressure {
@@ -247,7 +250,7 @@ impl ScrewSpeedController {
 
     pub fn start_pressure_regulation(&mut self) {
         self.last_update = Instant::now();
-        self.frequency = self.inverter.frequency;
+        self.frequency = self.inverter.motor_status.frequency;
         self.pid.reset();
     }
 

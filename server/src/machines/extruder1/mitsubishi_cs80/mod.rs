@@ -5,13 +5,15 @@ use control_core::modbus::{
 };
 use ethercat_hal::io::serial_interface::SerialInterface;
 use std::time::{Duration, Instant};
-use uom::{
-    ConstZero,
-    si::{f64::Frequency, frequency::centihertz},
+use uom::si::{
+    electric_current::{ampere, centiampere},
+    electric_potential::{centivolt, volt},
+    f64::{AngularVelocity, ElectricCurrent, ElectricPotential, Frequency},
+    frequency::{centihertz, hertz},
 };
 
 /// Specifies all System environment Variables
-/// Register addresses are calculated as follows: Register-value 40002 -> address: 40002-40001 -> address:0x1
+/// Register addresses are calculated as follows: Register-value 40002 -> address: 40002-40001 -> actual address in request:0x1
 #[derive(Debug, Clone, Copy)]
 enum MitsubishiCS80Register {
     /// Register 40002
@@ -33,7 +35,7 @@ enum MitsubishiCS80Register {
     /// Register 40015
     //RunningFrequencyEEPROM,
     /// Register 40201
-    MotorFrequency,
+    MotorStatus,
 }
 
 impl MitsubishiCS80Register {
@@ -42,7 +44,7 @@ impl MitsubishiCS80Register {
             Self::InverterReset => 0x1,
             Self::InverterStatusAndControl => 0x8,
             Self::RunningFrequencyRAM => 0x0d,
-            Self::MotorFrequency => 0x00C8,
+            Self::MotorStatus => 0x00C8, // a0x00C8 = frequency , 0x00C9 = current ,0x00C10 = voltage
         }
     }
 
@@ -75,8 +77,8 @@ pub enum MitsubishiCS80Requests {
     ReadRunningFrequency,
     /// Register 40014, Write the frequency
     WriteRunningFrequency,
-    /// Read Register 40201, This contains the actual output frequency
-    ReadMotorFrequency,
+    /// Read Register 40201, 40202 and 40203 frequency,current and voltage
+    ReadMotorStatus,
     /// Write "Arbitrary" Parameters
     WriteParameter,
 }
@@ -103,7 +105,7 @@ impl TryFrom<u32> for MitsubishiCS80Requests {
             8 => Ok(Self::StartReverseRotation),
             9 => Ok(Self::ReadRunningFrequency),
             10 => Ok(Self::WriteRunningFrequency),
-            11 => Ok(Self::ReadMotorFrequency),
+            11 => Ok(Self::ReadMotorStatus),
             12 => Ok(Self::WriteParameter),
             _ => Err(()),
         }
@@ -206,13 +208,13 @@ impl From<MitsubishiCS80Requests> for MitsubishiCS80Request {
                     u16::MAX - 4,
                 )
             }
-            MitsubishiCS80Requests::ReadMotorFrequency => {
-                let reg_bytes = MitsubishiCS80Register::MotorFrequency.address_be_bytes();
+            MitsubishiCS80Requests::ReadMotorStatus => {
+                let reg_bytes = MitsubishiCS80Register::MotorStatus.address_be_bytes();
                 Self::new(
                     ModbusRequest {
                         slave_id: 1,
                         function_code: ModbusFunctionCode::ReadHoldingRegister,
-                        data: vec![reg_bytes[0], reg_bytes[1], 0x0, 0x1],
+                        data: vec![reg_bytes[0], reg_bytes[1], 0x0, 0x3], // read 3 registers: 0x00C8 = frequency , 0x00C9 = current ,0x00C10 = voltage
                     },
                     request,
                     RequestType::OperationCommand,
@@ -242,6 +244,7 @@ impl From<MitsubishiCS80Requests> for MitsubishiCS80Request {
                 RequestType::ReadWrite,
                 u16::MAX,
             ),
+
             // For unimplemented variants, return a default request
             _ => Self::new(
                 ModbusRequest {
@@ -270,13 +273,21 @@ pub struct MitsubishiCS80Status {
     pub fault_occurence: bool,
 }
 
+#[derive(Debug, Default, Clone, Copy)]
+pub struct MotorStatus {
+    pub rpm: AngularVelocity,
+    pub frequency: Frequency,
+    pub current: ElectricCurrent,
+    pub voltage: ElectricPotential,
+}
+
 #[derive(Debug)]
 pub struct MitsubishiCS80 {
     // Communication
     pub status: MitsubishiCS80Status,
+    pub motor_status: MotorStatus,
     pub modbus_serial_interface: ModbusSerialInterface,
     pub last_ts: Instant,
-    pub frequency: Frequency,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -334,16 +345,26 @@ impl MitsubishiCS80 {
         Self {
             modbus_serial_interface: ModbusSerialInterface::new(serial_interface),
             last_ts: Instant::now(),
-            frequency: Frequency::ZERO,
+            motor_status: MotorStatus::default(),
             status: MitsubishiCS80Status::default(),
         }
     }
 
-    fn handle_motor_frequency(&mut self, resp: &ModbusResponse) {
-        if resp.data.len() >= 3 {
+    fn handle_motor_status(&mut self, resp: &ModbusResponse) {
+        if resp.data.len() >= 7 {
             let freq_bytes = &resp.data[1..3]; // bytes 1 and 2 are needed
             let raw_frequency = u16::from_be_bytes([freq_bytes[0], freq_bytes[1]]) as f64;
-            self.frequency = Frequency::new::<centihertz>(raw_frequency);
+            self.motor_status.frequency = Frequency::new::<centihertz>(raw_frequency);
+
+            let electric_current_bytes = &resp.data[3..5];
+            let raw_current =
+                u16::from_be_bytes([electric_current_bytes[0], electric_current_bytes[1]]) as f64;
+            self.motor_status.current = ElectricCurrent::new::<centiampere>(raw_current);
+
+            let voltage_current_bytes = &resp.data[5..7];
+            let raw_voltage =
+                u16::from_be_bytes([voltage_current_bytes[0], voltage_current_bytes[1]]) as f64;
+            self.motor_status.voltage = ElectricPotential::new::<centivolt>(raw_voltage);
         }
     }
 
@@ -360,6 +381,7 @@ impl MitsubishiCS80 {
         let bits: &BitSlice<u8, Lsb0> = BitSlice::<_, Lsb0>::from_slice(&status_bytes);
         if bits.len() >= 16 {
             self.status = MitsubishiCS80Status {
+                fault_occurence: bits[7],
                 running: bits[8],
                 forward_running: bits[9],
                 reverse_running: bits[10],
@@ -368,7 +390,6 @@ impl MitsubishiCS80 {
                 no_function: bits[13],
                 fu: bits[14],
                 abc_: bits[15],
-                fault_occurence: bits[7],
             };
         }
     }
@@ -387,8 +408,8 @@ impl MitsubishiCS80 {
             MitsubishiCS80Requests::ReadInverterStatus => {
                 self.handle_read_inverter_status(&response);
             }
-            MitsubishiCS80Requests::ReadMotorFrequency => {
-                self.handle_motor_frequency(&response);
+            MitsubishiCS80Requests::ReadMotorStatus => {
+                self.handle_motor_status(&response);
             }
             // Other request types don't need response handling
             _ => {}
@@ -454,7 +475,7 @@ impl MitsubishiCS80 {
         }
 
         self.add_request(MitsubishiCS80Requests::ReadInverterStatus.into());
-        self.add_request(MitsubishiCS80Requests::ReadMotorFrequency.into());
+        self.add_request(MitsubishiCS80Requests::ReadMotorStatus.into());
         self.modbus_serial_interface.act(now).await;
         self.handle_response(self.modbus_serial_interface.last_message_id);
     }
