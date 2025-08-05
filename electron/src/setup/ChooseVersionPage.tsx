@@ -71,26 +71,83 @@ export function ChooseVersionPage() {
   // Fetch master commits
   useEffect(() => {
     setMasterCommits(undefined);
-    fetch(githubApiUrl + `/commits`, fetchOptions)
-      .then(async (res) => {
-        const json = await res.json();
-        setMasterCommits(json);
-      })
-      .catch(() => {
+
+    const fetchAllCommits = async () => {
+      try {
+        const allCommits = [] as any[];
+        let page = 1;
+        const perPage = 100; // Maximum allowed by GitHub API
+
+        while (true) {
+          const response = await fetch(
+            `${githubApiUrl}/commits?per_page=${perPage}&page=${page}`,
+            fetchOptions,
+          );
+          const json = await response.json();
+
+          if (!Array.isArray(json) || json.length === 0) {
+            break;
+          }
+
+          allCommits.push(...json);
+
+          // If we got fewer results than requested, we've reached the end
+          if (json.length < perPage) {
+            break;
+          }
+
+          page++;
+
+          // Limit to reasonable number of commits to avoid excessive API calls
+          if (allCommits.length >= 1000) {
+            break;
+          }
+        }
+
+        setMasterCommits(allCommits);
+      } catch (error) {
+        console.error("Error fetching commits:", error);
         setMasterCommits([]);
-      });
+      }
+    };
+
+    fetchAllCommits();
   }, [githubSource]);
 
   // Fetch branches with their commit data
   useEffect(() => {
     setBranches(undefined);
-    fetch(githubApiUrl + `/branches`, fetchOptions)
-      .then(async (res) => {
-        const json = await res.json();
+
+    const fetchAllBranches = async () => {
+      try {
+        const allBranches = [] as any[];
+        let page = 1;
+        const perPage = 100; // Maximum allowed by GitHub API
+
+        while (true) {
+          const response = await fetch(
+            `${githubApiUrl}/branches?per_page=${perPage}&page=${page}`,
+            fetchOptions,
+          );
+          const json = await response.json();
+
+          if (!Array.isArray(json) || json.length === 0) {
+            break;
+          }
+
+          allBranches.push(...json);
+
+          // If we got fewer results than requested, we've reached the end
+          if (json.length < perPage) {
+            break;
+          }
+
+          page++;
+        }
 
         // Fetch commit data for each branch
         const branchesWithCommitData = await Promise.all(
-          json.map(async (branch) => {
+          allBranches.map(async (branch) => {
             try {
               // Fetch the commit data for this branch
               const commitRes = await fetch(
@@ -121,23 +178,49 @@ export function ChooseVersionPage() {
             );
           }),
         );
-      })
-      .catch((error) => {
+      } catch (error) {
         console.error("Error fetching branches:", error);
         setBranches([]);
-      });
+      }
+    };
+
+    fetchAllBranches();
   }, [githubSource]);
 
   // Fetch tags with their commit data
   useEffect(() => {
     setTags(undefined);
-    fetch(githubApiUrl + `/tags`, fetchOptions)
-      .then(async (res) => {
-        const json = await res.json();
+
+    const fetchAllTags = async () => {
+      try {
+        const allTags = [] as any[];
+        let page = 1;
+        const perPage = 100; // Maximum allowed by GitHub API
+
+        while (true) {
+          const response = await fetch(
+            `${githubApiUrl}/tags?per_page=${perPage}&page=${page}`,
+            fetchOptions,
+          );
+          const json = await response.json();
+
+          if (!Array.isArray(json) || json.length === 0) {
+            break;
+          }
+
+          allTags.push(...json);
+
+          // If we got fewer results than requested, we've reached the end
+          if (json.length < perPage) {
+            break;
+          }
+
+          page++;
+        }
 
         // Fetch commit data for each tag
         const tagsWithCommitData = await Promise.all(
-          json.map(async (tag) => {
+          allTags.map(async (tag) => {
             try {
               // Fetch the commit data for this tag
               const commitRes = await fetch(
@@ -168,11 +251,13 @@ export function ChooseVersionPage() {
             );
           }),
         );
-      })
-      .catch((error) => {
+      } catch (error) {
         console.error("Error fetching tags:", error);
         setTags([]);
-      });
+      }
+    };
+
+    fetchAllTags();
   }, [githubSource]);
 
   // Fetch NixOS generations
