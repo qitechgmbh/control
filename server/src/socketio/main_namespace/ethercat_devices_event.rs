@@ -73,7 +73,7 @@ impl EthercatDevicesEventBuilder {
                     DeviceHardwareIdentification::Ethercat(
                         ref device_hardware_identification_ethercat,
                     ) => device_hardware_identification_ethercat,
-                    _ => continue,//uncommented
+                    _ => continue, //uncommented
                 };
 
             let subdevice = match ethercat_setup.group.subdevice(

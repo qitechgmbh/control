@@ -9,7 +9,7 @@ use crate::machines::{MACHINE_LASER_V1, VENDOR_QITECH};
 use anyhow::anyhow;
 use control_core::{
     helpers::{
-        hashing::{hash_djb2, byte_folding_u16},
+        hashing::{byte_folding_u16, hash_djb2},
         retry::retry_n_times,
     },
     machines::identification::{

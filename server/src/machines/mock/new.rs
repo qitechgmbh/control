@@ -50,12 +50,12 @@ impl MachineNewTrait for MockMachine {
         let mut mock_machine = Self {
             namespace: MockMachineNamespace::new(params.socket_queue_tx.clone()),
             last_measurement_emit: now,
-            t_0: now,                                // Initialize start time to current time
+            t_0: now, // Initialize start time to current time
             frequency1: Frequency::new::<hertz>(0.1), // Default frequency1 of 100 mHz
             frequency2: Frequency::new::<hertz>(0.2), // Default frequency2 of 200 mHz
             frequency3: Frequency::new::<hertz>(0.5), // Default frequency3 of 500 mHz
-            mode: Mode::Standby,                     // Start in standby mode
-            last_emitted_state: None,                // No previous state emissions
+            mode: Mode::Standby, // Start in standby mode
+            last_emitted_state: None, // No previous state emissions
             emitted_default_state: false,
         };
 

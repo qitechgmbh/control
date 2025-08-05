@@ -37,12 +37,15 @@ impl AngularAccelerationSpeedController {
     /// Creates a new angular acceleration speed controller with simplified parameters.
     /// Sets min_acceleration to -max_acceleration for symmetric behavior.
     /// No speed limits are applied.
-    pub fn new_simple(max_acceleration: AngularAcceleration, initial_speed: AngularVelocity) -> Self {
+    pub fn new_simple(
+        max_acceleration: AngularAcceleration,
+        initial_speed: AngularVelocity,
+    ) -> Self {
         Self::new(
-            None,                    // min_speed
-            None,                    // max_speed
-            -max_acceleration,       // min_acceleration (deceleration)
-            max_acceleration,        // max_acceleration
+            None,              // min_speed
+            None,              // max_speed
+            -max_acceleration, // min_acceleration (deceleration)
+            max_acceleration,  // max_acceleration
             initial_speed,
         )
     }

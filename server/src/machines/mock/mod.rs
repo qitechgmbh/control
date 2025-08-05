@@ -1,7 +1,8 @@
-use api::{
-    LiveValuesEvent, MockEvents, MockMachineNamespace, Mode, ModeState, StateEvent,
+use api::{LiveValuesEvent, MockEvents, MockMachineNamespace, Mode, ModeState, StateEvent};
+use control_core::{
+    machines::{Machine, identification::MachineIdentification},
+    socketio::namespace::NamespaceCacheingLogic,
 };
-use control_core::{machines::{identification::MachineIdentification, Machine}, socketio::namespace::NamespaceCacheingLogic};
 use std::time::Instant;
 use tracing::info;
 use uom::si::{

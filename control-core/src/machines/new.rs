@@ -8,7 +8,11 @@ use ethercat_hal::{
 use ethercrab::{SubDevice, SubDeviceRef};
 use smol::{channel::Sender, lock::RwLock};
 use socketioxide::extract::SocketRef;
-use std::{pin::Pin, sync::{Arc, Weak}, time::Instant};
+use std::{
+    pin::Pin,
+    sync::{Arc, Weak},
+    time::Instant,
+};
 
 use crate::socketio::event::GenericEvent;
 
