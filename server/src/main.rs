@@ -14,7 +14,6 @@ use app_state::AppState;
 use mock::init::init_mock;
 use std::{sync::Arc, time::Duration};
 
-use control_core::realtime::lock_memory;
 use ethercat::init::init_ethercat;
 use r#loop::init_loop;
 use rest::init::init_api;
