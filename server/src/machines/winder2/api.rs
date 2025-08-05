@@ -257,7 +257,7 @@ pub enum Winder2Events {
 
 #[derive(Debug)]
 pub struct Winder2Namespace {
-    pub namespace: Namespace,
+    pub namespace: &mut Namespace,
 }
 
 impl NamespaceCacheingLogic<Winder2Events> for Winder2Namespace {
@@ -266,14 +266,6 @@ impl NamespaceCacheingLogic<Winder2Events> for Winder2Namespace {
         let event = Arc::new(events.event_value());
         let buffer_fn = events.event_cache_fn();
         self.namespace.emit(event, &buffer_fn);
-    }
-}
-
-impl Winder2Namespace {
-    pub fn new(socket_queue_tx: Sender<(SocketRef, Arc<GenericEvent>)>) -> Self {
-        Self {
-            namespace: Namespace::new(socket_queue_tx),
-        }
     }
 }
 

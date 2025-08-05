@@ -222,7 +222,7 @@ enum Mutation {
 
 #[derive(Debug)]
 pub struct ExtruderV2Namespace {
-    pub namespace: Namespace,
+    pub namespace: &mut Namespace,
 }
 
 impl NamespaceCacheingLogic<ExtruderV2Events> for ExtruderV2Namespace {
@@ -231,14 +231,6 @@ impl NamespaceCacheingLogic<ExtruderV2Events> for ExtruderV2Namespace {
         let event = Arc::new(events.event_value());
         let buffer_fn = events.event_cache_fn();
         self.namespace.emit(event, &buffer_fn);
-    }
-}
-
-impl ExtruderV2Namespace {
-    pub fn new(socket_queue_tx: Sender<(SocketRef, Arc<GenericEvent>)>) -> Self {
-        Self {
-            namespace: Namespace::new(socket_queue_tx),
-        }
     }
 }
 

@@ -66,7 +66,7 @@ pub enum MockEvents {
 
 #[derive(Debug)]
 pub struct MockMachineNamespace {
-    pub namespace: Namespace,
+    pub namespace: &mut Namespace,
 }
 
 impl MockMachineNamespace {

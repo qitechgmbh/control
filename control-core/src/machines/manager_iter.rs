@@ -1,38 +1,26 @@
-use std::{collections::HashMap, sync::Arc};
+use std::collections::HashMap;
 
-use smol::lock::Mutex;
+use crate::machines::manager::MachineSlot;
 
-use super::{Machine, identification::MachineIdentificationUnique, manager::MachineManager};
+use super::{identification::MachineIdentificationUnique, manager::MachineManager};
 
 pub enum MachineManagerIter<'a> {
     EthercatMachines {
-        iter: std::collections::hash_map::Iter<
-            'a,
-            MachineIdentificationUnique,
-            Result<Arc<Mutex<dyn Machine>>, anyhow::Error>,
-        >,
+        iter: std::collections::hash_map::Iter<'a, MachineIdentificationUnique, MachineSlot>,
     },
     SerialMachines {
-        iter: std::collections::hash_map::Iter<
-            'a,
-            MachineIdentificationUnique,
-            Result<Arc<Mutex<dyn Machine>>, anyhow::Error>,
-        >,
+        iter: std::collections::hash_map::Iter<'a, MachineIdentificationUnique, MachineSlot>,
     },
     Done,
 }
 
 pub struct MachineManagerIterator<'a> {
     iter: MachineManagerIter<'a>,
-    serial_machines:
-        &'a HashMap<MachineIdentificationUnique, Result<Arc<Mutex<dyn Machine>>, anyhow::Error>>,
+    serial_machines: &'a HashMap<MachineIdentificationUnique, MachineSlot>,
 }
 
 impl<'a> Iterator for MachineManagerIterator<'a> {
-    type Item = (
-        &'a MachineIdentificationUnique,
-        &'a Result<Arc<Mutex<dyn Machine>>, anyhow::Error>,
-    );
+    type Item = (&'a MachineIdentificationUnique, &'a MachineSlot);
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {

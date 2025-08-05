@@ -53,7 +53,7 @@ pub async fn setup_loop(
 
             let rt = smol::LocalExecutor::new();
             let _ = smol::block_on(rt.run(async {
-                tx_rx_task(&interface, tx, rx)
+                tx_rx_task(&interface, tx, rx) // Ethercrab
                     .expect("spawn TX/RX task")
                     .await
             }));

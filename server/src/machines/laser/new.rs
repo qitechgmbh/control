@@ -43,7 +43,9 @@ impl MachineNewTrait for LaserMachine {
         };
         let mut laser_machine = Self {
             laser,
-            namespace: LaserMachineNamespace::new(params.socket_queue_tx.clone()),
+            namespace: LaserMachineNamespace {
+                namespace: params.namespace,
+            },
             last_measurement_emit: Instant::now(),
             laser_target,
             emitted_default_state: false,
