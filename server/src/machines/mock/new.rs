@@ -40,7 +40,9 @@ impl MachineNewTrait for MockMachine {
         let now = Instant::now();
 
         let mut mock_machine = Self {
-            namespace: MockMachineNamespace::new(params.socket_queue_tx.clone()),
+            namespace: MockMachineNamespace {
+                namespace: params.namespace,
+            },
             last_measurement_emit: now,
             t_0: now, // Initialize start time to current time
             frequency1: Frequency::new::<hertz>(0.1), // Default frequency1 of 100 mHz

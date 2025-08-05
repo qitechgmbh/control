@@ -10,12 +10,39 @@ use crate::{
         new::{MachineNewHardware, MachineNewHardwareEthercat, MachineNewParams},
     },
     serial::SerialDevice,
-    socketio::event::GenericEvent,
+    socketio::{event::GenericEvent, namespace::Namespace},
 };
 use std::{
     collections::HashMap,
     sync::{Arc, Weak},
 };
+use std::{
+    collections::HashMap,
+    sync::{Arc, Weak},
+};
+
+#[derive(Debug)]
+pub enum MachineConnection {
+    Error(anyhow::Error),
+    Disconnected,
+    Connected(Arc<Mutex<dyn Machine>>),
+}
+
+#[derive(Debug)]
+pub struct MachineSlot {
+    pub machine_connection: MachineConnection,
+    pub namespace: Arc<Mutex<Namespace>>,
+}
+
+impl MachineSlot {
+    pub fn new(socket_queue_tx: Sender<(SocketRef, Arc<GenericEvent>)>) -> Self {
+        let namespace = Namespace::new(socket_queue_tx);
+        Self {
+            machine_connection: MachineConnection::Disconnected,
+            namespace: Arc::new(Mutex::new(namespace)),
+        }
+    }
+}
 
 use super::{
     Machine,
@@ -25,10 +52,8 @@ use super::{
 };
 #[derive(Debug)]
 pub struct MachineManager {
-    pub ethercat_machines:
-        HashMap<MachineIdentificationUnique, Result<Arc<Mutex<dyn Machine>>, anyhow::Error>>,
-    pub serial_machines:
-        HashMap<MachineIdentificationUnique, Result<Arc<Mutex<dyn Machine>>, anyhow::Error>>,
+    pub ethercat_machines: HashMap<MachineIdentificationUnique, MachineSlot>,
+    pub serial_machines: HashMap<MachineIdentificationUnique, MachineSlot>,
 }
 
 impl MachineManager {
@@ -68,18 +93,29 @@ impl MachineManager {
                 None => continue, // Skip this group if empty
             };
 
-            // create the machine
-            let new_machine = machine_registry.new_machine(&MachineNewParams {
-                device_group,
-                hardware: &machine_new_hardware,
-                socket_queue_tx: socket_queue_tx.clone(),
-                machine_manager: machine_manager.clone(),
-            });
+            let mut machine_slot = MachineSlot::new(socket_queue_tx.clone());
+            {
+                let mut namespace = machine_slot.namespace.lock_blocking();
+
+                // create the machine
+                let new_machine = machine_registry.new_machine(&MachineNewParams {
+                    device_group,
+                    hardware: &machine_new_hardware,
+                    socket_queue_tx: socket_queue_tx.clone(),
+                    machine_manager: machine_manager.clone(),
+                    namespace: &mut namespace,
+                });
+
+                machine_slot.machine_connection = match new_machine {
+                    Err(err) => MachineConnection::Error(err),
+                    Ok(machine) => MachineConnection::Connected(machine),
+                };
+            }
 
             // insert the machine into the ethercat machines map
             self.ethercat_machines.insert(
                 machine_identification.machine_identification_unique.clone(),
-                new_machine,
+                machine_slot,
             );
         }
     }
@@ -87,7 +123,7 @@ impl MachineManager {
     pub fn get(
         &self,
         machine_identification: &MachineIdentificationUnique,
-    ) -> Option<&Result<Arc<Mutex<dyn Machine>>, anyhow::Error>> {
+    ) -> Option<&MachineSlot> {
         self.ethercat_machines
             .get(machine_identification)
             .or_else(|| self.serial_machines.get(machine_identification))
@@ -109,20 +145,32 @@ impl MachineManager {
                 .try_into()
                 .expect("Serial devices always have machine identification");
 
-        let new_machine = machine_registry.new_machine(&MachineNewParams {
-            device_group: &vec![device_identification_identified.clone()],
-            hardware: &MachineNewHardware::Serial(&hardware),
-            socket_queue_tx,
-            machine_manager: machine_manager.clone(),
-        });
+        let mut machine_slot = MachineSlot::new(socket_queue_tx.clone());
 
-        tracing::info!("Adding serial machine {:?}", new_machine);
+        {
+            let mut namespace = machine_slot.namespace.lock_blocking();
+
+            let new_machine = machine_registry.new_machine(&MachineNewParams {
+                device_group: &vec![device_identification_identified.clone()],
+                hardware: &MachineNewHardware::Serial(&hardware),
+                socket_queue_tx,
+                machine_manager: machine_manager.clone(),
+                namespace: &mut namespace,
+            });
+
+            machine_slot.machine_connection = match new_machine {
+                Err(err) => MachineConnection::Error(err),
+                Ok(machine) => MachineConnection::Connected(machine),
+            };
+        }
+
+        tracing::info!("Adding serial machine {:?}", machine_slot);
 
         self.serial_machines.insert(
             device_identification_identified
                 .device_machine_identification
                 .machine_identification_unique,
-            new_machine,
+            machine_slot,
         );
     }
 
@@ -145,7 +193,7 @@ impl MachineManager {
         );
     }
 
-    pub fn get_machine_weak(
+    pub fn get_ethercat_weak(
         &self,
         machine_identification: &MachineIdentificationUnique,
     ) -> Option<Weak<Mutex<dyn Machine>>> {
@@ -164,10 +212,19 @@ impl MachineManager {
         };
         let machine_weak = Arc::downgrade(machine);
         return Some(machine_weak);
+        return self.get_weak(&self.ethercat_machines, machine_identification);
     }
 
     pub fn get_serial_weak(
         &self,
+        machine_identification: &MachineIdentificationUnique,
+    ) -> Option<Weak<Mutex<dyn Machine>>> {
+        return self.get_weak(&self.serial_machines, machine_identification);
+    }
+
+    fn get_weak(
+        &self,
+        machines: &HashMap<MachineIdentificationUnique, MachineSlot>,
         machine_identification: &MachineIdentificationUnique,
     ) -> Option<Weak<Mutex<dyn Machine>>> {
         let machine = self.serial_machines.get(machine_identification);
@@ -185,6 +242,13 @@ impl MachineManager {
         };
         let machine_weak = Arc::downgrade(machine);
         return Some(machine_weak);
+        let slot = machines.get(machine_identification);
+
+        return slot.and_then(|slot| match &slot.machine_connection {
+            MachineConnection::Error(_) => None,
+            MachineConnection::Disconnected => None,
+            MachineConnection::Connected(machine) => Some(Arc::downgrade(&machine)),
+        });
     }
 }
 

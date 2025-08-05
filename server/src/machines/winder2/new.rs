@@ -354,7 +354,9 @@ impl MachineNewTrait for Winder2 {
                     EL7031_0030AnalogInputPort::AI1,
                 )),
                 laser: DigitalOutput::new(el2002, EL2002Port::DO1),
-                namespace: Winder2Namespace::new(params.socket_queue_tx.clone()),
+                namespace: Winder2Namespace {
+                    namespace: params.namespace,
+                },
                 mode: mode.clone(),
                 spool_step_converter: AngularStepConverter::new(200),
                 spool_speed_controller: SpoolSpeedController::new(),

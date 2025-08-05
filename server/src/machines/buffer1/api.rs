@@ -6,7 +6,7 @@ use control_core::{
     socketio::{
         event::{Event, GenericEvent},
         namespace::{
-            CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_duration,
+            self, CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_duration,
             cache_one_event,
         },
     },
@@ -78,7 +78,7 @@ enum Mutation {
 
 #[derive(Debug)]
 pub struct Buffer1Namespace {
-    pub namespace: Namespace,
+    pub namespace: &mut Namespace,
 }
 
 impl NamespaceCacheingLogic<BufferV1Events> for Buffer1Namespace {
@@ -87,14 +87,6 @@ impl NamespaceCacheingLogic<BufferV1Events> for Buffer1Namespace {
         let event = Arc::new(events.event_value());
         let buffer_fn = events.event_cache_fn();
         self.namespace.emit(event, &buffer_fn);
-    }
-}
-
-impl Buffer1Namespace {
-    pub fn new(socket_queue_tx: Sender<(SocketRef, Arc<GenericEvent>)>) -> Self {
-        Self {
-            namespace: Namespace::new(socket_queue_tx),
-        }
     }
 }
 

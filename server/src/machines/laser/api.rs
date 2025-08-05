@@ -58,15 +58,7 @@ pub enum LaserEvents {
 
 #[derive(Debug)]
 pub struct LaserMachineNamespace {
-    pub namespace: Namespace,
-}
-
-impl LaserMachineNamespace {
-    pub fn new(socket_queue_tx: Sender<(SocketRef, Arc<GenericEvent>)>) -> Self {
-        Self {
-            namespace: Namespace::new(socket_queue_tx),
-        }
-    }
+    pub namespace: &mut Namespace,
 }
 
 impl CacheableEvents<LaserEvents> for LaserEvents {

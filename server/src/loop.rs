@@ -85,7 +85,7 @@ pub async fn loop_once<'maindevice>(app_state: Arc<AppState>) -> Result<(), anyh
             .enumerate()
         {
             // retrieve inputs
-            let input = subdevice.inputs_raw();
+            let input = subdevice.inputs_raw(); // Ethercrab
             let input_bits = input.view_bits::<Lsb0>();
 
             // get device
@@ -157,7 +157,7 @@ pub async fn loop_once<'maindevice>(app_state: Arc<AppState>) -> Result<(), anyh
             .enumerate()
         {
             // get output buffer for device
-            let mut output = subdevice.outputs_raw_mut();
+            let mut output = subdevice.outputs_raw_mut(); // Ethercrab
             let output_bits = output.view_bits_mut::<Lsb0>();
 
             // get device

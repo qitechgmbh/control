@@ -224,7 +224,9 @@ impl MachineNewTrait for BufferV1 {
 
             // create buffer instance
             let mut buffer: BufferV1 = Self {
-                namespace: Buffer1Namespace::new(params.socket_queue_tx.clone()),
+                namespace: Buffer1Namespace {
+                    namespace: params.namespace,
+                },
                 last_measurement_emit: Instant::now(),
                 mode: BufferV1Mode::Standby,
                 buffer_tower_controller,

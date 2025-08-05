@@ -1,4 +1,6 @@
-use crate::{machines::manager::MachineManager, serial::SerialDevice};
+use crate::{
+    machines::manager::MachineManager, serial::SerialDevice, socketio::namespace::Namespace,
+};
 
 use super::identification::DeviceIdentificationIdentified;
 use anyhow::Error;
@@ -18,7 +20,7 @@ use crate::socketio::event::GenericEvent;
 
 pub trait MachineNewTrait {
     fn new<'maindevice, 'subdevices>(
-        params: &MachineNewParams<'maindevice, 'subdevices, '_, '_, '_, '_, '_>,
+        params: &MachineNewParams<'maindevice, 'subdevices, '_, '_, '_, '_, '_, '_>,
     ) -> Result<Self, Error>
     where
         Self: Sized;
@@ -36,6 +38,7 @@ pub struct MachineNewParams<
     'machine_new_hardware_etehrcat,
     'machine_new_hardware_serial,
     'machine_new_hardware,
+    'namespace,
 > where
     'maindevice: 'machine_new_hardware,
     'subdevices: 'machine_new_hardware,
@@ -52,6 +55,8 @@ pub struct MachineNewParams<
     >,
     pub socket_queue_tx: Sender<(SocketRef, Arc<GenericEvent>)>,
     pub machine_manager: Weak<RwLock<MachineManager>>,
+
+    pub namespace: &'namespace mut Namespace,
 }
 
 pub enum MachineNewHardware<
