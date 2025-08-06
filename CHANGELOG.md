@@ -1,8 +1,10 @@
 # `Unreleased`
+_06.08.2025_
 
 ## Extruder V2
 - [#520](https://github.com/qitechgmbh/control/pull/523) added warning message incase inverter is overloaded
 - [#501](https://github.com/qitechgmbh/control/pull/508) raised pressure limit of pressured PID mode for extruder
+- [#519](https://github.com/qitechgmbh/control/pull/549) added total power consumption monitor and graphs for voltage,current and wattage of the motor
 
 ## Winder V2 
 - [#64](https://github.com/qitechgmbh/control/pull/504) added winder handbook
@@ -12,9 +14,7 @@
 
 ## General
 - [#62](https://github.com/qitechgmbh/control/pull/514),[#524](https://github.com/qitechgmbh/control/pull/528) added machine presets to load configurations
-
-
-
+- [#526](https://github.com/qitechgmbh/control/pull/541) added import and export of presets
 
 
 # `2.2.0`
