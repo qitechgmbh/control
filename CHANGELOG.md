@@ -1,4 +1,4 @@
-# `2.3.0`
+# `Unreleased`
 _06.08.2025_
 
 ## Extruder V2
