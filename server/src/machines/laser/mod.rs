@@ -1,6 +1,12 @@
-use crate::{machines::{MACHINE_LASER_V1, VENDOR_QITECH}, serial::devices::laser::Laser};
+use crate::{
+    machines::{MACHINE_LASER_V1, VENDOR_QITECH},
+    serial::devices::laser::Laser,
+};
 use api::{LaserEvents, LaserMachineNamespace, LaserState, LiveValuesEvent, StateEvent};
-use control_core::{machines::{identification::MachineIdentification, Machine}, socketio::namespace::NamespaceCacheingLogic};
+use control_core::{
+    machines::{Machine, identification::MachineIdentification},
+    socketio::namespace::NamespaceCacheingLogic,
+};
 use smol::lock::RwLock;
 use std::{any::Any, sync::Arc, time::Instant};
 use uom::si::{f64::Length, length::millimeter};
@@ -39,7 +45,6 @@ impl LaserMachine {
     };
 }
 
-
 impl LaserMachine {
     ///diameter in mm
     pub fn emit_live_values(&mut self) {
@@ -68,20 +73,19 @@ impl LaserMachine {
             },
         };
 
-        self.namespace
-            .emit(LaserEvents::State(state.build()));
+        self.namespace.emit(LaserEvents::State(state.build()));
     }
 
     pub fn set_higher_tolerance(&mut self, higher_tolerance: f64) {
         self.laser_target.higher_tolerance = Length::new::<millimeter>(higher_tolerance);
         self.emit_state();
     }
-    
+
     pub fn set_lower_tolerance(&mut self, lower_tolerance: f64) {
         self.laser_target.lower_tolerance = Length::new::<millimeter>(lower_tolerance);
         self.emit_state();
     }
-    
+
     pub fn set_target_diameter(&mut self, target_diameter: f64) {
         self.laser_target.diameter = Length::new::<millimeter>(target_diameter);
         self.emit_state();

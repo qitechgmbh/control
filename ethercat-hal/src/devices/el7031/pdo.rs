@@ -1,10 +1,10 @@
+use crate::helpers::ethercrab_types::EthercrabSubDevicePreoperational;
 use crate::pdo::PredefinedPdoAssignment;
 use crate::pdo::el70x1::{
     EncControl, EncControlCompact, EncStatus, EncStatusCompact, EncTimestampCompact, PosControl,
     PosControl2, PosControlCompact, PosStatus, PosStatusCompact, StmControl, StmExternalPosition,
     StmInternalPosition, StmPosition, StmStatus, StmSynchronInfoData, StmVelocity,
 };
-use crate::helpers::ethercrab_types::EthercrabSubDevicePreoperational;
 use ethercat_hal_derive::{RxPdo, TxPdo};
 
 #[derive(Debug, Clone, TxPdo)]

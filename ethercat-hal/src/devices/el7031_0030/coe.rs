@@ -1,12 +1,12 @@
 use crate::{
     coe::{ConfigurableDevice, Configuration},
+    helpers::ethercrab_types::EthercrabSubDevicePreoperational,
     pdo::PredefinedPdoAssignment,
     shared_config::el70x1::{
         EL70x1InfoData, EL70x1InputFunction, EL70x1OperationMode, EL70x1SpeedRange,
         EL7031_0030AnalogInputChannelConfiguration, EncConfiguration, PosConfiguration,
         PosFeatures, StmControllerConfiguration, StmMotorConfiguration,
     },
-    helpers::ethercrab_types::EthercrabSubDevicePreoperational,
 };
 
 use super::{EL7031_0030, pdo::EL7031_0030PredefinedPdoAssignment};
