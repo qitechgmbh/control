@@ -31,7 +31,7 @@ export function Buffer1ControlPage() {
     <Page>
       <ControlGrid>
         <ControlCard className="bg-red" title="Mode">
-          <SelectionGroup<"Standby" | "FillingBuffer" | "EmptyingBuffer">
+          <SelectionGroup<"Standby" | "Hold" | "Filling" | "Emptying">
             value={state?.mode_state.mode}
             orientation="vertical"
             className="grid h-full grid-cols-2 gap-2"
@@ -42,13 +42,19 @@ export function Buffer1ControlPage() {
                 isActiveClassName: "bg-green-600",
                 className: "h-full",
               },
-              FillingBuffer: {
-                children: "FillingBuffer",
+              Hold: {
+                children: "Hold",
+                icon: "lu:Pause",
+                isActiveClassName: "bg-green-600",
+                className: "h-full",
+              },
+              Filling: {
+                children: "Filling",
                 icon: "lu:Flame",
                 isActiveClassName: "bg-green-600",
                 className: "h-full",
               },
-              EmptyingBuffer: {
+              Emptying: {
                 children: "EmptyingBuffer",
                 icon: "lu:ArrowBigLeftDash",
                 isActiveClassName: "bg-green-600",

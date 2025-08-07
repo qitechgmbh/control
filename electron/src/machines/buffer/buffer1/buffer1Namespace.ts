@@ -27,11 +27,7 @@ import {
 /**
  * Machine operation mode enum
  */
-export const modeSchema = z.enum([
-  "Standby",
-  "FillingBuffer",
-  "EmptyingBuffer",
-]);
+export const modeSchema = z.enum(["Standby", "Hold", "Filling", "Emptying"]);
 export type Mode = z.infer<typeof modeSchema>;
 
 /**
