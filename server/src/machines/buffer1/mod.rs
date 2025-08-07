@@ -16,7 +16,9 @@ use control_core::{
     socketio::namespace::NamespaceCacheingLogic,
     uom_extensions::velocity::meter_per_minute,
 };
-use ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1;
+use ethercat_hal::io::{
+    digital_input::DigitalInput, stepper_velocity_el70x1::StepperVelocityEL70x1,
+};
 use futures::executor::block_on;
 use puller_speed_controller::PullerRegulationMode;
 use serde::{Deserialize, Serialize};
@@ -43,6 +45,7 @@ use crate::machines::{
 pub struct BufferV1 {
     // drivers
     pub lift: StepperVelocityEL70x1,
+    pub end_switch: DigitalInput,
     pub puller: StepperVelocityEL70x1,
 
     // controllers
@@ -206,7 +209,7 @@ impl BufferV1 {
     fn switch_to_emptying(&mut self) {
         match self.mode {
             BufferV1Mode::Standby => self.empty_buffer(),
-            BufferV1Mode::Hold => {},
+            BufferV1Mode::Hold => {}
             BufferV1Mode::Filling => {}
             BufferV1Mode::Emptying => (),
         };
@@ -297,6 +300,20 @@ impl BufferV1 {
         let linear_velocity = self.buffer_lift_controller.update_speed(t);
         let steps_per_second = self.lift_step_converter.velocity_to_steps(linear_velocity);
         let _ = self.lift.set_speed(steps_per_second);
+    }
+
+    pub fn check_can_move(&mut self) {
+        match self.end_switch.get_value() {
+            Ok(reached) => {
+                if reached {
+                    self.set_mode_state(BufferV1Mode::Hold);
+                    self.buffer_lift_controller.set_end_switch(true);
+                } else {
+                    self.buffer_lift_controller.set_end_switch(false);
+                }
+            }
+            Err(_) => return,
+        }
     }
 }
 
