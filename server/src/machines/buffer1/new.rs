@@ -6,27 +6,27 @@ use control_core::machines::new::{
     MachineNewHardware, MachineNewParams, MachineNewTrait, validate_no_role_dublicates,
     validate_same_machine_identification_unique,
 };
-use ethercat_hal::{
-    coe::ConfigurableDevice,
-    devices::el7031_0030::coe::EL7031_0030Configuration,
-    devices::el7031_0030::pdo::EL7031_0030PredefinedPdoAssignment,
-    devices::el7041_0052::coe::EL7041_0052Configuration,
-    devices::{
-        EthercatDeviceUsed,
-        ek1100::{EK1100, EK1100_IDENTITY_A},
-        el7031_0030::{EL7031_0030, EL7031_0030_IDENTITY_A},
-        el7041_0052::{EL7041_0052, EL7041_0052_IDENTITY_A, EL7041_0052Port},
-    },
-    io::stepper_velocity_el70x1::StepperVelocityEL70x1,
-    shared_config,
-    shared_config::el70x1::{EL70x1OperationMode, StmMotorConfiguration},
+use control_core::uom_extensions::velocity::meter_per_minute;
+use ethercat_hal::coe::ConfigurableDevice;
+use ethercat_hal::devices::ek1100::EK1100;
+use ethercat_hal::devices::ek1100::EK1100_IDENTITY_A;
+use ethercat_hal::devices::el7031_0030::coe::EL7031_0030Configuration;
+use ethercat_hal::devices::el7031_0030::pdo::EL7031_0030PredefinedPdoAssignment;
+use ethercat_hal::devices::el7031_0030::{
+    self, EL7031_0030, EL7031_0030_IDENTITY_A, EL7031_0030StepperPort,
 };
-use uom::si::f64::Length;
-use uom::si::length::centimeter;
+use ethercat_hal::devices::el7041_0052::coe::EL7041_0052Configuration;
+use ethercat_hal::devices::el7041_0052::{EL7041_0052, EL7041_0052_IDENTITY_A, EL7041_0052Port};
+use ethercat_hal::devices::{EthercatDeviceUsed, downcast_device, subdevice_identity_to_tuple};
+use ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1;
+use ethercat_hal::shared_config;
+use ethercat_hal::shared_config::el70x1::{EL70x1OperationMode, StmMotorConfiguration};
+use uom::si::f64::{Length, Velocity};
+use uom::si::length::{centimeter, millimeter};
 
+use crate::machines::buffer1::BufferV1Mode;
 use crate::machines::buffer1::buffer_lift_controller::BufferLiftController;
 use crate::machines::buffer1::puller_speed_controller::PullerSpeedController;
-use crate::machines::buffer1::{BufferV1Mode, puller_speed_controller};
 use crate::machines::get_ethercat_device;
 
 use super::{BufferV1, api::Buffer1Namespace};

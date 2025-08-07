@@ -872,6 +872,14 @@ impl Winder2 {
         }
     }
 
+    /// This helper function provides an easy way
+    /// to get the machine out of the Weak Reference
+    ///
+    /// Usage:
+    ///
+    ///    self.get_buffer(|buffer| {
+    ///        buffer.do_something     // Use the Buffer here as usual
+    ///    });
     fn get_buffer<F, R>(&self, func: F) -> Option<R>
     where
         F: FnOnce(&mut BufferV1) -> R,

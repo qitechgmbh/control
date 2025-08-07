@@ -26,7 +26,6 @@ use std::{
     time::Instant,
 };
 use uom::si::{
-    angular_velocity,
     f64::{Length, Velocity},
     length::millimeter,
 };
