@@ -16,7 +16,11 @@ import {
   ThrottledStoreUpdater,
 } from "../../../client/socketioStore";
 import { MachineIdentificationUnique } from "@/machines/types";
-import { createTimeSeries, TimeSeries } from "@/lib/timeseries";
+import {
+  createTimeSeries,
+  TimeSeries,
+  TimeSeriesValue,
+} from "@/lib/timeseries";
 
 // ========== Event Schema Definitions ==========
 
@@ -33,7 +37,9 @@ export type Mode = z.infer<typeof modeSchema>;
 /**
  * Consolidated live values event schema (30FPS data)
  */
-export const liveValuesEventDataSchema = z.object({});
+export const liveValuesEventDataSchema = z.object({
+  puller_speed: z.number(),
+});
 
 /**
  * Puller regulation type enum
@@ -147,11 +153,28 @@ export function buffer1MessageHandler(
           state: stateEvent,
         }));
       } else if (eventName === "LiveValuesEvent") {
+        // Parse and validate the live values event
         const liveValuesEvent = liveValuesEventSchema.parse(event);
-        const timestamp = event.ts;
-        updateStore((state) => ({
-          ...state,
-        }));
+
+        // Extract values and add to time series
+        const { puller_speed } = liveValuesEvent.data;
+
+        const timestamp = liveValuesEvent.ts;
+        updateStore((state) => {
+          const newState = { ...state };
+
+          // Add puller speed
+          const pullerSpeedValue: TimeSeriesValue = {
+            value: puller_speed,
+            timestamp,
+          };
+          newState.pullerSpeed = addPullerSpeed(
+            state.pullerSpeed,
+            pullerSpeedValue,
+          );
+
+          return newState;
+        });
       } else {
         handleUnhandledEventError(eventName);
       }

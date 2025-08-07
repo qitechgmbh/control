@@ -188,16 +188,16 @@ export const buffer1ControlRoute = createRoute({
   component: () => <Buffer1ControlPage />,
 });
 
-export const mock1PresetsRoute = createRoute({
-  getParentRoute: () => mock1SerialRoute,
-  path: "presets",
-  component: () => <Mock1PresetsPage />,
-});
-
 export const buffer1SettingsRoute = createRoute({
   getParentRoute: () => buffer1SerialRoute,
   path: "settings",
   component: () => <Buffer1SettingsPage />,
+});
+
+export const mock1PresetsRoute = createRoute({
+  getParentRoute: () => mock1SerialRoute,
+  path: "presets",
+  component: () => <Mock1PresetsPage />,
 });
 
 export const setupRoute = createRoute({
@@ -315,7 +315,7 @@ export const rootTree = RootRoute.addChildren([
         mock1PresetsRoute,
       ]),
 
-      buffer1SerialRoute.addChildren([buffer1ControlRoute]),
+      buffer1SerialRoute.addChildren([buffer1ControlRoute, buffer1SettingsRoute]),
     ]),
   ]),
 ]);
