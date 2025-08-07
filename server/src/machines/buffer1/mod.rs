@@ -235,6 +235,14 @@ impl BufferV1 {
             .converter
             .angular_velocity_to_steps(angular_velocity);
         let _ = self.puller.set_speed(steps_per_second);
+
+        // sync puller speed to lift input speed
+        let linear_velocity = self
+            .puller_speed_controller
+            .converter
+            .angular_velocity_to_velocity(angular_velocity);
+        self.buffer_lift_controller
+            .set_current_input_speed(linear_velocity.get::<meter_per_minute>());
     }
 
     pub fn puller_set_regulation(&mut self, puller_regulation_mode: PullerRegulationMode) {
@@ -361,6 +369,15 @@ impl BufferV1 {
             }
         }
     }
+
+    /// This helper function provides an easy way
+    /// to get the machine out of the Weak Reference
+    /// 
+    /// Usage:
+    /// 
+    ///    self.get_winder(|winder2| {
+    ///        winder2.                     | Use the Winder here as usual 
+    ///    });
     fn get_winder<F, R>(&self, func: F) -> Option<R>
     where
         F: FnOnce(&mut Winder2) -> R,
