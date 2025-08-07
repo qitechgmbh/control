@@ -191,7 +191,7 @@ export function useBuffer1() {
   // Mutation hooks
   const { request: requestBufferMode } = useMachineMutation(
     z.object({
-      SetBufferMode: z.enum(["Standby", "FillingBuffer", "EmptyingBuffer"]),
+      SetBufferMode: z.enum(["Standby", "Hold", "Filling", "Emptying"]),
     }),
   );
 
