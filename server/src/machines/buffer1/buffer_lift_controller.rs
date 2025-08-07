@@ -99,6 +99,10 @@ impl BufferLiftController {
         self.forward = forward;
     }
 
+    pub fn set_end_switch(&mut self, reached: bool) {
+        self.enabled = !reached;
+    }
+
     pub fn set_current_input_speed(&mut self, speed: f64) {
         self.current_input_speed = Velocity::new::<meter_per_minute>(speed);
     }
