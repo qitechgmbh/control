@@ -156,10 +156,24 @@ impl BufferV1 {
     fn switch_to_standby(&mut self) {
         match self.mode {
             BufferV1Mode::Standby => (),
-            BufferV1Mode::FillingBuffer => {}
-            BufferV1Mode::EmptyingBuffer => {}
+            BufferV1Mode::Hold => {}
+            BufferV1Mode::Filling => {}
+            BufferV1Mode::Emptying => {}
         };
         self.mode = BufferV1Mode::Standby;
+        self.buffer_lift_controller.set_enabled(false);
+        let _ = self.buffer_lift_controller.stepper_driver.set_speed(0.0);
+    }
+
+    // hold motor
+    fn switch_to_hold(&mut self) {
+        match self.mode {
+            BufferV1Mode::Standby => {}
+            BufferV1Mode::Hold => (),
+            BufferV1Mode::Filling => {}
+            BufferV1Mode::Emptying => {}
+        };
+        self.mode = BufferV1Mode::Hold;
         self.buffer_lift_controller.set_enabled(false);
         let _ = self.buffer_lift_controller.stepper_driver.set_speed(0.0);
     }
@@ -168,10 +182,11 @@ impl BufferV1 {
     fn switch_to_filling(&mut self) {
         match self.mode {
             BufferV1Mode::Standby => self.fill_buffer(),
-            BufferV1Mode::FillingBuffer => (),
-            BufferV1Mode::EmptyingBuffer => {}
+            BufferV1Mode::Hold => {}
+            BufferV1Mode::Filling => (),
+            BufferV1Mode::Emptying => {}
         };
-        self.mode = BufferV1Mode::FillingBuffer;
+        self.mode = BufferV1Mode::Filling;
         self.buffer_lift_controller.set_enabled(true);
         self.buffer_lift_controller.set_forward(true);
     }
@@ -180,10 +195,11 @@ impl BufferV1 {
     fn switch_to_emptying(&mut self) {
         match self.mode {
             BufferV1Mode::Standby => self.empty_buffer(),
-            BufferV1Mode::FillingBuffer => {}
-            BufferV1Mode::EmptyingBuffer => (),
+            BufferV1Mode::Hold => {},
+            BufferV1Mode::Filling => {}
+            BufferV1Mode::Emptying => (),
         };
-        self.mode = BufferV1Mode::EmptyingBuffer;
+        self.mode = BufferV1Mode::Emptying;
         self.buffer_lift_controller.set_forward(false);
     }
 
@@ -194,8 +210,9 @@ impl BufferV1 {
 
         match mode {
             BufferV1Mode::Standby => self.switch_to_standby(),
-            BufferV1Mode::FillingBuffer => self.switch_to_filling(),
-            BufferV1Mode::EmptyingBuffer => self.switch_to_emptying(),
+            BufferV1Mode::Hold => self.switch_to_hold(),
+            BufferV1Mode::Filling => self.switch_to_filling(),
+            BufferV1Mode::Emptying => self.switch_to_emptying(),
         }
     }
 
@@ -310,11 +327,11 @@ impl BufferV1 {
 
     /// This helper function provides an easy way
     /// to get the machine out of the Weak Reference
-    /// 
+    ///
     /// Usage:
-    /// 
+    ///
     ///    self.get_winder(|winder2| {
-    ///        winder2.                     | Use the Winder here as usual 
+    ///        winder2.do_something     // Use the Winder here as usual
     ///    });
     fn get_winder<F, R>(&self, func: F) -> Option<R>
     where
@@ -334,6 +351,7 @@ impl BufferV1 {
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Eq)]
 pub enum BufferV1Mode {
     Standby,
-    FillingBuffer,
-    EmptyingBuffer,
+    Hold,
+    Filling,
+    Emptying,
 }

@@ -64,8 +64,9 @@ pub struct ModeState {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub enum Mode {
     Standby,
-    FillingBuffer,
-    EmptyingBuffer,
+    Hold,
+    Filling,
+    Emptying,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
