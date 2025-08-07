@@ -27,9 +27,14 @@ impl MachinesEventBuilder {
         for machine in machines_guard.iter() {
             machine_objs.push(MachineObj {
                 machine_identification_unique: machine.0.clone(),
-                error: match machine.1 {
-                    Ok(_) => None,
-                    Err(e) => Some(e.to_string()),
+                error: match &machine.1.machine_connection {
+                    control_core::machines::manager::MachineConnection::Error(error) => {
+                        Some(error.to_string())
+                    }
+                    control_core::machines::manager::MachineConnection::Disconnected => {
+                        Some(anyhow::anyhow!("Disconnected").to_string())
+                    }
+                    control_core::machines::manager::MachineConnection::Connected(_) => None,
                 },
             });
         }
