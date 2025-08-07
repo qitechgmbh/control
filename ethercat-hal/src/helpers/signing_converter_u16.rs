@@ -45,6 +45,11 @@ impl U16SigningConverter {
             self.raw as i16
         }
     }
+
+    #[inline]
+    pub fn as_absolute(self) -> i16 {
+        self.as_signed().abs()
+    }
 }
 
 // Implement common traits for easier usage
