@@ -46,10 +46,29 @@ impl Namespaces {
                     }
                 };
 
+                Ok(machine) => machine,
+                Err(err) => {
+                    callback(Err(anyhow::anyhow!(
+                        "[{}::Namespaces::appply_mut] Machine {:?} has error: {}",
+                        module_path!(),
+                        machine_identification_unique,
+                        err
+                    )));
+                    return;
+                }
+
                 // check if machine has error
-                let machine = match machine {
-                    Ok(machine) => machine,
-                    Err(err) => {
+                let machine = match machine.machine_connection {
+                    control_core::machines::manager::MachineConnection::Error(error) =>  {
+                        callback(Err(anyhow::anyhow!(
+                            "[{}::Namespaces::appply_mut] Machine {:?} has error: {}",
+                            module_path!(),
+                            machine_identification_unique,
+                            err
+                        )));
+                        return;
+                    },         
+                    control_core::machines::manager::MachineConnection::Disconnected => {
                         callback(Err(anyhow::anyhow!(
                             "[{}::Namespaces::appply_mut] Machine {:?} has error: {}",
                             module_path!(),
@@ -58,8 +77,8 @@ impl Namespaces {
                         )));
                         return;
                     }
+                    control_core::machines::manager::MachineConnection::Connected(mutex) => to,
                 };
-
                 let mut machine_guard = machine.lock().await;
                 let namespace = machine_guard.api_event_namespace();
                 callback(Ok(namespace));
