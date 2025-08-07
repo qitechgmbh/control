@@ -1,20 +1,18 @@
-use super::EthercatDeviceProcessing;
-use super::{NewEthercatDevice, SubDeviceIdentityTuple};
-use crate::io::analog_input::physical::AnalogInputRange;
+use super::{EthercatDeviceProcessing, NewEthercatDevice, SubDeviceIdentityTuple};
 use crate::pdo::RxPdo;
-use crate::pdo::TxPdo;
 use crate::{
     coe::{ConfigurableDevice, Configuration},
     helpers::signing_converter_u16::U16SigningConverter,
+    io::analog_input::physical::AnalogInputRange,
     pdo::{
-        PredefinedPdoAssignment,
+        PredefinedPdoAssignment, TxPdo,
         analog_input::{AiCompact, AiStandard},
     },
     shared_config::el30xx::{EL30XXChannelConfiguration, EL30XXPresentation},
 };
 use crate::{
     helpers::ethercrab_types::EthercrabSubDevicePreoperational,
-    io::analog_input::{AnalogInputDevice, AnalogInputInput, AnalogInputState},
+    io::analog_input::{AnalogInputDevice, AnalogInputInput},
 };
 use ethercat_hal_derive::{EthercatDevice, RxPdo, TxPdo};
 use uom::si::{electric_potential::volt, f64::ElectricPotential};
@@ -22,12 +20,9 @@ use uom::si::{electric_potential::volt, f64::ElectricPotential};
 #[derive(Debug, Clone)]
 pub struct EL3062_0030Configuration {
     pub pdo_assignment: EL3062_0030PredefinedPdoAssignment,
-    // Input1+ and Input1-
-    pub channel1: EL30XXChannelConfiguration,
-    // Input2+ and Input2-
-    pub channel2: EL30XXChannelConfiguration,
+    pub channel_1: EL30XXChannelConfiguration,
+    pub channel_2: EL30XXChannelConfiguration,
 }
-
 #[derive(EthercatDevice)]
 pub struct EL3062_0030 {
     pub configuration: EL3062_0030Configuration,
@@ -44,25 +39,19 @@ impl std::fmt::Debug for EL3062_0030 {
     }
 }
 
-impl Default for EL3062_0030PredefinedPdoAssignment {
-    fn default() -> Self {
-        Self::Standard
-    }
-}
-
 impl Default for EL3062_0030Configuration {
     fn default() -> Self {
         Self {
             pdo_assignment: EL3062_0030PredefinedPdoAssignment::Standard,
-            channel1: EL30XXChannelConfiguration::default(),
-            channel2: EL30XXChannelConfiguration::default(),
+            channel_1: EL30XXChannelConfiguration::default(),
+            channel_2: EL30XXChannelConfiguration::default(),
         }
     }
 }
 
 impl NewEthercatDevice for EL3062_0030 {
     fn new() -> Self {
-        let configuration = EL3062_0030Configuration::default(); // Initialize first
+        let configuration: EL3062_0030Configuration = EL3062_0030Configuration::default();
         Self {
             configuration: configuration.clone(),
             txpdo: configuration.pdo_assignment.txpdo_assignment(),
@@ -73,7 +62,7 @@ impl NewEthercatDevice for EL3062_0030 {
 }
 
 impl AnalogInputDevice<EL3062_0030Port> for EL3062_0030 {
-    fn analog_output_state(&self, port: EL3062_0030Port) -> AnalogInputState {
+    fn get_input(&self, port: EL3062_0030Port) -> AnalogInputInput {
         let raw_value = match port {
             EL3062_0030Port::AI1 => match &self.txpdo {
                 EL3062_0030TxPdo {
@@ -101,28 +90,27 @@ impl AnalogInputDevice<EL3062_0030Port> for EL3062_0030 {
         let raw_value = U16SigningConverter::load_raw(raw_value);
 
         let presentation = match port {
-            EL3062_0030Port::AI1 => self.configuration.channel1.presentation,
-            EL3062_0030Port::AI2 => self.configuration.channel2.presentation,
+            EL3062_0030Port::AI1 => &self.configuration.channel_1.presentation,
+            EL3062_0030Port::AI2 => &self.configuration.channel_2.presentation,
         };
-
         let value: i16 = match presentation {
             EL30XXPresentation::Unsigned => raw_value.as_unsigned() as i16,
             EL30XXPresentation::Signed => raw_value.as_signed(),
             EL30XXPresentation::SignedMagnitude => raw_value.as_signed_magnitude(),
         };
-
         let normalized = f32::from(value) / f32::from(i16::MAX);
-        AnalogInputState {
-            input: AnalogInputInput { normalized },
+        AnalogInputInput {
+            normalized,
+            wiring_error: false,
         }
     }
 
     fn analog_input_range(&self) -> AnalogInputRange {
         AnalogInputRange::Potential {
             min: ElectricPotential::new::<volt>(0.0),
-            max: ElectricPotential::new::<volt>(20.0),
+            max: ElectricPotential::new::<volt>(30.0),
             min_raw: 0,
-            max_raw: 32767,
+            max_raw: i16::MAX,
         }
     }
 }
@@ -171,11 +159,8 @@ impl Configuration for EL3062_0030Configuration {
         &self,
         device: &EthercrabSubDevicePreoperational<'a>,
     ) -> Result<(), anyhow::Error> {
-        // Write configuration for Channel 1
-        self.channel1.write_channel_config(device, 0x8000).await?;
-
-        // Write configuration for Channel 2
-        self.channel2.write_channel_config(device, 0x8010).await?;
+        self.channel_1.write_channel_config(device, 0x8000).await?;
+        self.channel_2.write_channel_config(device, 0x8010).await?;
 
         self.pdo_assignment
             .txpdo_assignment()
@@ -223,9 +208,9 @@ impl PredefinedPdoAssignment<EL3062_0030TxPdo, EL3062_0030RxPdo>
     }
 }
 
-pub const EL3062_0030_VENDOR_ID: u32 = 2;
-pub const EL3062_0030_PRODUCT_ID: u32 = 0xbf63052;
-pub const EL3062_0030_REVISION_A: u32 = 0x17001e;
+pub const EL3062_0030_VENDOR_ID: u32 = 0x2;
+pub const EL3062_0030_PRODUCT_ID: u32 = 0x0bf63052;
+pub const EL3062_0030_REVISION_A: u32 = 0x0017001e;
 pub const EL3062_0030_IDENTITY_A: SubDeviceIdentityTuple = (
     EL3062_0030_VENDOR_ID,
     EL3062_0030_PRODUCT_ID,
