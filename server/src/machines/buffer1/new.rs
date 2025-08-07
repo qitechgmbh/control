@@ -25,6 +25,7 @@ use ethercat_hal::shared_config::el70x1::{EL70x1OperationMode, StmMotorConfigura
 use uom::si::f64::{Length, Velocity};
 use uom::si::length::{centimeter, millimeter};
 
+use crate::machines::buffer1::BufferV1Mode;
 use crate::machines::buffer1::buffer_lift_controller::BufferLiftController;
 use crate::machines::buffer1::puller_speed_controller::PullerSpeedController;
 use crate::machines::get_ethercat_device;
