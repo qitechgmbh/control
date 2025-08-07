@@ -25,13 +25,19 @@ use std::{
     sync::{Arc, Weak},
     time::Instant,
 };
-use uom::{si::{f64::{Length, Velocity}, length::millimeter}, ConstZero};
+use uom::si::{
+    angular_velocity,
+    f64::{Length, Velocity},
+    length::millimeter,
+};
 
 use crate::machines::{
+    MACHINE_BUFFER_V1, VENDOR_QITECH,
     buffer1::{
         api::{ConnectedMachineState, CurrentInputSpeedState, PullerState},
         puller_speed_controller::PullerSpeedController,
-    }, winder2::{Winder2, Winder2Mode}, MACHINE_BUFFER_V1, VENDOR_QITECH
+    },
+    winder2::{Winder2, Winder2Mode},
 };
 
 #[derive(Debug, Machine)]
@@ -76,7 +82,20 @@ impl BufferV1 {
 
 impl BufferV1 {
     pub fn emit_live_values(&mut self) {
-        let live_values = LiveValuesEvent {};
+        // Calculate puller speed from current motor steps
+        let steps_per_second = self.puller.get_speed();
+        let angular_velocity = self
+            .puller_speed_controller
+            .converter
+            .steps_to_angular_velocity(steps_per_second as f64);
+        let puller_speed = self
+            .puller_speed_controller
+            .angular_velocity_to_speed(angular_velocity);
+
+        // live values to be emittet
+        let live_values = LiveValuesEvent {
+            puller_speed: puller_speed.get::<meter_per_minute>(),
+        };
 
         let event = live_values.build();
         self.namespace.emit(BufferV1Events::LiveValues(event));

@@ -11,8 +11,17 @@ import { roundToDecimals } from "@/lib/decimal";
 import { Label } from "@/control/Label";
 
 export function Buffer1ControlPage() {
-  const { state, defaultState, setBufferMode, setCurrentInputSpeed, pullerSpeed, setPullerRegulationMode, setPullerTargetSpeed, isLoading, isDisabled } =
-    useBuffer1();
+  const {
+    state,
+    defaultState,
+    setBufferMode,
+    setCurrentInputSpeed,
+    pullerSpeed,
+    setPullerRegulationMode,
+    setPullerTargetSpeed,
+    isLoading,
+    isDisabled,
+  } = useBuffer1();
 
   const current_input_speed =
     state?.current_input_speed_state.current_input_speed ?? 0.0;
@@ -49,7 +58,7 @@ export function Buffer1ControlPage() {
             onChange={setBufferMode}
           />
         </ControlCard>
-        <ControlCard title="Set Current Input Speed">
+        <ControlCard title="Set Current Input Speed - (For Debugging)">
           <EditValue
             title="Input Speed"
             unit="m/min"
@@ -58,7 +67,7 @@ export function Buffer1ControlPage() {
             min={0.0}
             max={60.0}
             step={0.1}
-            renderValue={(value) => value.toFixed(0.0)}
+            renderValue={(value) => roundToDecimals(value, 1)}
             onChange={setCurrentInputSpeed}
           />
         </ControlCard>
