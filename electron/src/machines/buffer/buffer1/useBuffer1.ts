@@ -8,7 +8,13 @@ import {
 import { buffer1SerialRoute } from "@/routes/routes";
 import { z } from "zod";
 import { useEffect, useMemo } from "react";
-import { StateEvent, Mode, useBuffer1Namespace, pullerRegulationSchema, PullerRegulation } from "./buffer1Namespace";
+import {
+  StateEvent,
+  Mode,
+  useBuffer1Namespace,
+  pullerRegulationSchema,
+  PullerRegulation,
+} from "./buffer1Namespace";
 import { useStateOptimistic } from "@/lib/useStateOptimistic";
 import { produce } from "immer";
 import { useMachines } from "@/client/useMachines";
@@ -45,7 +51,9 @@ export function useBuffer1() {
   const machine_identification_unique = machineIdentification;
 
   // Get consolidated state and live values from namespace
-  const { state, defaultState, pullerSpeed } = useBuffer1Namespace(machineIdentification);
+  const { state, defaultState, pullerSpeed } = useBuffer1Namespace(
+    machineIdentification,
+  );
 
   // Single optimistic state for all state management
   const stateOptimistic = useStateOptimistic<StateEvent>();
