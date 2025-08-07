@@ -1,7 +1,5 @@
 use super::Winder2;
-use control_core::{machines::new::MachineAct, uom_extensions::velocity::meter_per_minute};
-use futures::executor::block_on;
-use uom::si::f64::Velocity;
+use control_core::machines::new::MachineAct;
 
 impl MachineAct for Winder2 {
     fn act(&mut self, now: Instant) {
