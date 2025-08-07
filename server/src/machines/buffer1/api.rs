@@ -20,7 +20,10 @@ use socketioxide::extract::SocketRef;
 use tracing::instrument;
 
 #[derive(Serialize, Debug, Clone, Default)]
-pub struct LiveValuesEvent {}
+pub struct LiveValuesEvent {
+    /// puller speed in m/min
+    pub puller_speed: f64,
+}
 
 impl LiveValuesEvent {
     pub fn build(&self) -> Event<Self> {
