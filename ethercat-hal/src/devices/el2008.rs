@@ -17,7 +17,7 @@ impl EthercatDeviceProcessing for EL2008 {}
 
 impl std::fmt::Debug for EL2008 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "EL2003")
+        write!(f, "EL2008")
     }
 }
 
