@@ -34,7 +34,7 @@ impl From<MotorStatus> for MotorStatusValues {
     fn from(status: MotorStatus) -> Self {
         let voltage = status.voltage.get::<volt>();
         let current = status.current.get::<ampere>();
-        
+
         Self {
             screw_rpm: status.rpm.get::<revolution_per_minute>(),
             frequency: status.frequency.get::<hertz>(),
