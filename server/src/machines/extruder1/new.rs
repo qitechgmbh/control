@@ -40,7 +40,7 @@ use uom::si::{
     thermodynamic_temperature::degree_celsius,
 };
 
-impl MachineNewTrait for ExtruderV2 {
+impl MachineNewTrait for ExtruderV2<'_> {
     fn new<'maindevice>(params: &MachineNewParams) -> Result<Self, Error> {
         // validate general stuff
         let device_identification = params

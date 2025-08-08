@@ -9,7 +9,7 @@ use control_core::{
 };
 use screw_speed_controller::ScrewSpeedController;
 use serde::{Deserialize, Serialize};
-use std::{any::Any, time::Instant};
+use std::time::Instant;
 use temperature_controller::TemperatureController;
 use uom::si::{
     angular_velocity::{AngularVelocity, revolution_per_minute},
@@ -60,8 +60,8 @@ pub enum HeatingType {
 }
 
 #[derive(Debug)]
-pub struct ExtruderV2 {
-    namespace: ExtruderV2Namespace,
+pub struct ExtruderV2<'a> {
+    namespace: ExtruderV2Namespace<'a>,
     last_measurement_emit: Instant,
     mode: ExtruderV2Mode,
     screw_speed_controller: ScrewSpeedController,
@@ -75,25 +75,25 @@ pub struct ExtruderV2 {
     emitted_default_state: bool,
 }
 
-impl std::fmt::Display for ExtruderV2 {
+impl std::fmt::Display for ExtruderV2<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "ExtruderV2")
     }
 }
-impl Machine for ExtruderV2 {
+impl Machine for ExtruderV2<'_> {
     fn as_any(&self) -> &dyn Any {
         self
     }
 }
 
-impl ExtruderV2 {
+impl ExtruderV2<'_> {
     pub const MACHINE_IDENTIFICATION: MachineIdentification = MachineIdentification {
         vendor: VENDOR_QITECH,
         machine: MACHINE_EXTRUDER_V1,
     };
 }
 
-impl ExtruderV2 {
+impl ExtruderV2<'_> {
     pub fn emit_live_values(&mut self) {
         let live_values = LiveValuesEvent {
             motor_status: self.screw_speed_controller.get_motor_status().into(),
@@ -270,7 +270,7 @@ impl ExtruderV2 {
     }
 }
 
-impl ExtruderV2 {
+impl ExtruderV2<'_> {
     // Set all relais to ZERO
     // We dont need a function to enable again though, as the act Loop will detect the mode
     fn turn_heating_off(&mut self) {
@@ -349,7 +349,7 @@ impl ExtruderV2 {
     }
 }
 
-impl ExtruderV2 {
+impl ExtruderV2<'_> {
     fn set_rotation_state(&mut self, forward: bool) {
         self.screw_speed_controller.set_rotation_direction(forward);
         self.emit_state();
@@ -366,7 +366,7 @@ impl ExtruderV2 {
 }
 
 // Motor
-impl ExtruderV2 {
+impl ExtruderV2<'_> {
     fn set_regulation(&mut self, uses_rpm: bool) {
         if self.screw_speed_controller.get_uses_rpm() == false && uses_rpm == true {
             self.screw_speed_controller
@@ -396,7 +396,7 @@ impl ExtruderV2 {
 }
 
 // Heating
-impl ExtruderV2 {
+impl ExtruderV2<'_> {
     fn set_target_temperature(&mut self, target_temperature: f64, heating_type: HeatingType) {
         let target_temp = ThermodynamicTemperature::new::<degree_celsius>(target_temperature);
 
@@ -422,7 +422,7 @@ impl ExtruderV2 {
     }
 }
 
-impl ExtruderV2 {
+impl ExtruderV2<'_> {
     fn configure_pressure_pid(&mut self, settings: PidSettings) {
         self.screw_speed_controller
             .pid

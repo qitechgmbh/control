@@ -16,10 +16,6 @@ use std::{
     collections::HashMap,
     sync::{Arc, Weak},
 };
-use std::{
-    collections::HashMap,
-    sync::{Arc, Weak},
-};
 
 #[derive(Debug)]
 pub enum MachineConnection {
@@ -197,29 +193,14 @@ impl MachineManager {
         &self,
         machine_identification: &MachineIdentificationUnique,
     ) -> Option<Weak<Mutex<dyn Machine>>> {
-        let machine = self.ethercat_machines.get(machine_identification);
-        let machine = match machine {
-            Some(machine) => machine,
-            None => {
-                return None;
-            }
-        };
-        let machine = match machine {
-            Ok(machine) => machine,
-            Err(_) => {
-                return None;
-            }
-        };
-        let machine_weak = Arc::downgrade(machine);
-        return Some(machine_weak);
-        return self.get_weak(&self.ethercat_machines, machine_identification);
+        self.get_weak(&self.ethercat_machines, machine_identification)
     }
 
     pub fn get_serial_weak(
         &self,
         machine_identification: &MachineIdentificationUnique,
     ) -> Option<Weak<Mutex<dyn Machine>>> {
-        return self.get_weak(&self.serial_machines, machine_identification);
+        self.get_weak(&self.serial_machines, machine_identification)
     }
 
     fn get_weak(
@@ -227,21 +208,6 @@ impl MachineManager {
         machines: &HashMap<MachineIdentificationUnique, MachineSlot>,
         machine_identification: &MachineIdentificationUnique,
     ) -> Option<Weak<Mutex<dyn Machine>>> {
-        let machine = self.serial_machines.get(machine_identification);
-        let machine = match machine {
-            Some(machine) => machine,
-            None => {
-                return None;
-            }
-        };
-        let machine = match machine {
-            Ok(machine) => machine,
-            Err(_) => {
-                return None;
-            }
-        };
-        let machine_weak = Arc::downgrade(machine);
-        return Some(machine_weak);
         let slot = machines.get(machine_identification);
 
         return slot.and_then(|slot| match &slot.machine_connection {

@@ -11,8 +11,6 @@ use control_core::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use smol::channel::Sender;
-use socketioxide::extract::SocketRef;
 use std::{
     sync::Arc,
     time::{Duration, Instant},
@@ -256,11 +254,11 @@ pub enum Winder2Events {
 }
 
 #[derive(Debug)]
-pub struct Winder2Namespace {
-    pub namespace: &mut Namespace,
+pub struct Winder2Namespace<'a> {
+    pub namespace: &'a mut Namespace,
 }
 
-impl NamespaceCacheingLogic<Winder2Events> for Winder2Namespace {
+impl NamespaceCacheingLogic<Winder2Events> for Winder2Namespace<'_> {
     #[instrument(skip_all)]
     fn emit(&mut self, events: Winder2Events) {
         let event = Arc::new(events.event_value());
@@ -288,7 +286,7 @@ impl CacheableEvents<Winder2Events> for Winder2Events {
     }
 }
 
-impl MachineApi for Winder2 {
+impl MachineApi for Winder2<'_> {
     fn api_mutate(&mut self, request_body: Value) -> Result<(), anyhow::Error> {
         let mutation: Mutation = serde_json::from_value(request_body)?;
         match mutation {

@@ -25,8 +25,8 @@ use crate::machines::buffer1::buffer_tower_controller::BufferTowerController;
 
 use super::{BufferV1, api::Buffer1Namespace};
 
-impl MachineNewTrait for BufferV1 {
-    fn new<'maindevice>(params: &MachineNewParams) -> Result<Self, Error> {
+impl<'maindevice> MachineNewTrait for BufferV1<'maindevice> {
+    fn new(params: &MachineNewParams<'maindevice, '_, '_, '_, '_, '_, '_, '_>) -> Result<Self, Error> {
         // validate general stuff
         let device_identification = params
             .device_group
@@ -223,7 +223,7 @@ impl MachineNewTrait for BufferV1 {
                 .clone();
 
             // create buffer instance
-            let mut buffer: BufferV1 = Self {
+            let mut buffer: BufferV1<'_> = Self {
                 namespace: Buffer1Namespace {
                     namespace: params.namespace,
                 },

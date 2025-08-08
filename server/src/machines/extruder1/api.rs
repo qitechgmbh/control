@@ -221,11 +221,11 @@ enum Mutation {
 }
 
 #[derive(Debug)]
-pub struct ExtruderV2Namespace {
-    pub namespace: &mut Namespace,
+pub struct ExtruderV2Namespace<'a> {
+    pub namespace: &'a mut Namespace,
 }
 
-impl NamespaceCacheingLogic<ExtruderV2Events> for ExtruderV2Namespace {
+impl NamespaceCacheingLogic<ExtruderV2Events> for ExtruderV2Namespace<'_> {
     #[instrument(skip_all)]
     fn emit(&mut self, events: ExtruderV2Events) {
         let event = Arc::new(events.event_value());
@@ -253,7 +253,7 @@ impl CacheableEvents<ExtruderV2Events> for ExtruderV2Events {
     }
 }
 
-impl MachineApi for ExtruderV2 {
+impl MachineApi for ExtruderV2<'_> {
     fn api_mutate(&mut self, request_body: Value) -> Result<(), anyhow::Error> {
         // there are multiple Modbus Frames that are "prebuilt"
         let control: Mutation = serde_json::from_value(request_body)?;
