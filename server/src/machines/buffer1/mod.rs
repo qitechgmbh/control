@@ -376,8 +376,25 @@ impl BufferV1 {
 impl BufferV1 {
     pub fn sync_lift_speed(&mut self, t: Instant) {
         let linear_velocity = self.buffer_lift_controller.update_speed(t);
-        let steps_per_second = self.lift_step_converter.velocity_to_steps(linear_velocity);
-        let _ = self.lift.set_speed(steps_per_second);
+        if self.can_move() {
+            let steps_per_second = self.lift_step_converter.velocity_to_steps(linear_velocity);
+            let _ = self.lift.set_speed(steps_per_second);
+        } else {
+            let _ = self.lift.set_speed(0.0);
+        }
+    }
+
+    fn can_move(&mut self) -> bool {
+        match self.lift_end_stop.get_value() {
+            Ok(reached) => {
+                if reached {
+                    false
+                } else {
+                    true
+                }
+            }
+            Err(_) => false,
+        }
     }
 }
 
