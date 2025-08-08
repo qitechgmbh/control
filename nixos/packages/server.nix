@@ -9,7 +9,15 @@
 
 let
   # Use crane's source cleaning which is more intelligent for Cargo projects
-  src = craneLib.cleanCargoSource ../..;
+  # src = craneLib.cleanCargoSource ../..;
+
+  # Include the git submodule (./ethercrab) in the source so Cargo path deps resolve in Nix builds
+  src = lib.cleanSourceWith {
+    src = craneLib.path ../..;
+    filter = path: type:
+      (craneLib.filterCargoSources path type)
+      || (builtins.match ".*/ethercrab($|/.*)" (toString path) != null);
+  };
   
   # Common arguments for both dependency and app builds
   commonArgs = {

@@ -1,6 +1,6 @@
 # write the installInfo.nix while
 # we capture information about the current git commit
-sudo touch ./nixos/os/installInfo.nix
+mkdir -p ./nixos/os
 
 # Capture all git information
 GIT_TIMESTAMP=$(git --no-pager show -s --format=%cI HEAD)  # e.g., "2025-06-10T14:30:45+02:00"
@@ -32,9 +32,9 @@ git submodule update --init --recursive
 
 # make sure all submodules are committed
 git add --all
-git commit -m "Update Submodules"
+git commit -m "Update Submodules" || true
 
-sudo tee ./nixos/os/installInfo.nix > /dev/null << EOF
+tee ./nixos/os/installInfo.nix > /dev/null << EOF
 {
   gitTimestamp = "$GIT_TIMESTAMP";
   gitCommit = "$GIT_COMMIT";
@@ -49,7 +49,7 @@ EOF
 # otherwise it will be ignored by nix
 git add ./nixos/os/installInfo.nix
 # commit the changes
-git commit -m "Add installInfo.nix file with current commit information"
+git commit -m "Add installInfo.nix file with current commit information" || true
 # Now we can install the system
 
 # Now we install the new system
