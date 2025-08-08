@@ -7,7 +7,6 @@ impl MachineAct for BufferV1 {
         Box::pin(async move {
             // sync the lift speed
             self.sync_lift_speed(now);
-            self.check_can_move();
 
             // sync the puller speed
             self.sync_puller_speed(now);
