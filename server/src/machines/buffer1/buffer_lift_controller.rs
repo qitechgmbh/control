@@ -1,15 +1,9 @@
 use std::time::Instant;
 
 use control_core::{
-    controllers::{
-        first_degree_motion::linear_acceleration_speed_controller::LinearAccelerationLimitingController,
-        second_degree_motion::linear_jerk_speed_controller::LinearJerkSpeedController,
-    },
+    controllers::first_degree_motion::linear_acceleration_speed_controller::LinearAccelerationLimitingController,
     converters::linear_step_converter::LinearStepConverter,
-    uom_extensions::{
-        acceleration::meter_per_minute_per_second, jerk::meter_per_minute_per_second_squared,
-        velocity::meter_per_minute,
-    },
+    uom_extensions::velocity::meter_per_minute,
 };
 use ethercat_hal::io::{
     digital_input::DigitalInput, stepper_velocity_el70x1::StepperVelocityEL70x1,
@@ -18,9 +12,9 @@ use uom::{
     ConstZero,
     si::{
         acceleration::centimeter_per_second_squared,
-        f64::{Acceleration, Jerk, Length, Velocity},
+        f64::{Acceleration, Length, Velocity},
         length::millimeter,
-        velocity::{mile_per_minute, millimeter_per_second},
+        velocity::millimeter_per_second,
     },
 };
 
@@ -30,6 +24,8 @@ pub struct BufferLiftController {
     enabled: bool,
     position: Length,
     limit_top: Length,
+    limit_bottom: Length,
+    padding: Length,
     /// Stepper driver. Controls buffer stepper motor
     pub stepper_driver: StepperVelocityEL70x1,
     // Step Converter
@@ -50,6 +46,10 @@ pub struct BufferLiftController {
     current_input_speed: Velocity,
     target_output_speed: Velocity,
     lift_speed: Velocity,
+
+    // A sticky flag if the [`State`] changed (not the sub states)
+    // Needed to send state updates to the UI
+    did_change_state: bool,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -118,6 +118,9 @@ impl BufferLiftController {
             enabled: false,
             position: Length::ZERO,
             limit_top,
+            limit_bottom: Length::new::<millimeter>(0.0),
+            padding: Length::new::<millimeter>(0.9), // Default padding
+            did_change_state: false,
             stepper_driver: driver,
             fullstep_converter: LinearStepConverter::from_circumference(
                 200,
@@ -145,18 +148,23 @@ impl BufferLiftController {
     /// Calculate the speed of the buffer lift from current input speed
     ///
     /// Formula: input_speed / ( 2 * spool_amount )
-    pub fn calculate_buffer_lift_speed(&mut self) -> Velocity {
-        self.lift_speed = Velocity::new::<millimeter_per_second>(
+    pub fn calculate_buffer_lift_speed(&self) -> Velocity {
+        let lift_speed = Velocity::new::<millimeter_per_second>(
             (self.current_input_speed.get::<millimeter_per_second>()
                 - self.target_output_speed.get::<millimeter_per_second>())
                 / (2.0 * self.spool_amount as f64 - 1.0),
         );
-        self.lift_speed
+        lift_speed
     }
 
-    pub fn update_speed(&mut self, t: Instant) -> Velocity {
+    pub fn update_speed(
+        &mut self,
+        stepper_driver: &mut StepperVelocityEL70x1,
+        lift_end_stop: &DigitalInput,
+        t: Instant,
+    ) -> Velocity {
         let speed = match self.enabled {
-            true => self.calculate_buffer_lift_speed(),
+            true => self.get_speed(stepper_driver, lift_end_stop),
             false => Velocity::ZERO,
         };
 
@@ -306,27 +314,32 @@ impl BufferLiftController {
             State::NotHomed => {}
             State::Idle => {}
             State::GoingDown => {
-                // If top limit is reached
-                if self.is_at_position(Length::new<centimeter>(0.0),Length::new<millimeter>(0.1)) {
+                // If inner limit is reached
+                if self.is_at_position(
+                    Length::new::<millimeter>(0.0),
+                    Length::new::<millimeter>(0.01),
+                ) {
                     // Put Into Idle
                     self.state = State::Idle;
                 }
             }
             State::GoingUp => {
-                if self.is_at_position(self.limit_top,Length::new::<millimeter>(0.1)) {
+                // If outer limit is reached
+                if self.is_at_position(self.limit_top, Length::new::<millimeter>(0.01)) {
+                    // Put Into Idle
                     self.state = State::Idle;
                 }
             }
             State::Homing(homing_state) => match homing_state {
                 HomingState::Initialize => {
-                                // If endstop is triggered, escape endstop
-                                if lift_end_stop.get_value().unwrap_or(false) == true {
-                                    self.state = State::Homing(HomingState::EscapeEndstop);
-                                } else {
-                                    // If endstop is not triggered, move to the endstop
-                                    self.state = State::Homing(HomingState::FindEndstopCoarse);
-                                }
-                            }
+                    // If endstop is triggered, escape the endstop
+                    if lift_end_stop.get_value().unwrap_or(false) == true {
+                        self.state = State::Homing(HomingState::EscapeEndstop);
+                    } else {
+                        // If endstop is not triggered, move to the endstop
+                        self.state = State::Homing(HomingState::FindEndstopCoarse);
+                    }
+                }
                 HomingState::EscapeEndstop => {
                     // Move out until endstop is not triggered anymore
                     if lift_end_stop.get_value().unwrap_or(false) == false {
@@ -343,21 +356,116 @@ impl BufferLiftController {
                 HomingState::FindEndtopFine => {
                     // If endstop is reached change to idle
                     if lift_end_stop.get_value().unwrap_or(false) == true {
-                        // Set position of lift to 0
+                        // Set poition of traverse to 0
                         stepper_driver.set_position(0);
-                        // Put into Idle
+                        // Put Into Idle
                         self.state = State::Homing(HomingState::Validate(Instant::now()));
                     }
                 }
                 HomingState::FindEndstopCoarse => {
                     // Move to endstop
                     if lift_end_stop.get_value().unwrap_or(false) == true {
-                        // Move away from endstop
-                        self.state = State::Homing(HomingState::FindEnstopFineDistancing)
+                        // Move awaiy from endstop
+                        self.state = State::Homing(HomingState::FindEnstopFineDistancing);
                     }
                 }
-                HomingState::Validate(instant) => todo!(),
-            }
+                HomingState::Validate(instant) => {
+                    // If 100ms have passed check if position is actually 0.0
+                    if instant.elapsed().as_millis() > 100 {
+                        if self.is_at_position(Length::ZERO, Length::new::<millimeter>(0.01)) {
+                            // If position is 0.0, put into idle
+                            self.state = State::Idle;
+                        } else {
+                            // If position is not 0.0, redo homing
+                            self.state = State::Homing(HomingState::Initialize);
+                        }
+                    }
+                }
+            },
+
+            // If state changed we
+            State::Buffering(buffering_state) => match buffering_state {
+                BufferingState::GoingUp => {}
+                BufferingState::Emptying => {}
+                BufferingState::Filling => {}
+            },
         }
+
+        // Set the [`did_change_state`] flag
+        if self.did_change_state == false {
+            self.did_change_state = self.update_did_change_state(&old_state);
+        }
+
+        // Speed
+        let speed = match &self.state {
+            State::NotHomed => Velocity::ZERO, // Not homed, no movement
+            State::Idle => Velocity::ZERO,     // No movement in idle state
+            State::GoingDown => {
+                // Move in at a speed of 10-100 mm/s
+                self.speed_to_position(
+                    self.limit_bottom,
+                    match self.distance_to_position(self.limit_bottom).abs()
+                        > Length::new::<millimeter>(1.0)
+                    {
+                        true => Velocity::new::<millimeter_per_second>(100.0),
+                        false => Velocity::new::<millimeter_per_second>(10.0),
+                    },
+                )
+            }
+            State::GoingUp => {
+                // Move out at a speed of 10-100 mm/s
+                self.speed_to_position(
+                    self.limit_top,
+                    match self.distance_to_position(self.limit_top).abs()
+                        > Length::new::<millimeter>(1.0)
+                    {
+                        true => Velocity::new::<millimeter_per_second>(100.0),
+                        false => Velocity::new::<millimeter_per_second>(10.0),
+                    },
+                )
+            }
+            State::Homing(homing_state) => match homing_state {
+                HomingState::Initialize => Velocity::ZERO,
+                HomingState::EscapeEndstop => {
+                    // Move out at a speed of 10 mm/s
+                    Velocity::new::<millimeter_per_second>(10.0)
+                }
+                HomingState::FindEnstopFineDistancing => {
+                    // Move out at a speed of 2 mm/s
+                    Velocity::new::<millimeter_per_second>(2.0)
+                }
+                HomingState::FindEndstopCoarse => {
+                    // Move in at a speed of -100 mm/s
+                    Velocity::new::<millimeter_per_second>(-100.0)
+                }
+                HomingState::FindEndtopFine => {
+                    // move into the endstop at 2 mm/s
+                    Velocity::new::<millimeter_per_second>(-2.0)
+                }
+                HomingState::Validate(_) => {
+                    // We stand still until the validation cooldown has passed
+                    Velocity::ZERO
+                }
+            }, // Homing speed
+            State::Buffering(buffering_state) => match buffering_state {
+                BufferingState::GoingUp => {
+                    // Move out at a speed of 100 mm/s
+                    self.speed_to_position(
+                        self.limit_top - self.padding + Length::new::<millimeter>(0.01),
+                        Velocity::new::<millimeter_per_second>(100.0),
+                    )
+                }
+                BufferingState::Filling => self.speed_to_position(
+                    self.limit_top + self.padding - Length::new::<millimeter>(0.01),
+                    Self::calculate_buffer_lift_speed(self),
+                ),
+                BufferingState::Emptying => self.speed_to_position(
+                    self.limit_bottom - self.padding + Length::new::<millimeter>(0.01),
+                    Self::calculate_buffer_lift_speed(self),
+                ),
+            },
+        };
+
+        speed
     }
 }
