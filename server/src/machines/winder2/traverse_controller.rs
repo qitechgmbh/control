@@ -88,7 +88,7 @@ pub enum HomingState {
 
     /// Moving out away from the endstop
     /// Then Transition into [`HomingState::FindEndtopFine`]
-    FindEnstopFineDistancing,
+    FindEndstopFineDistancing,
 
     /// In this state the traverse is fast until it reaches the endstop
     FindEndstopCoarse,
@@ -328,10 +328,10 @@ impl TraverseController {
                 HomingState::EscapeEndstop => {
                     // Move out until endstop is not triggered anymore
                     if traverse_end_stop.get_value().unwrap_or(false) == false {
-                        self.state = State::Homing(HomingState::FindEnstopFineDistancing);
+                        self.state = State::Homing(HomingState::FindEndstopFineDistancing);
                     }
                 }
-                HomingState::FindEnstopFineDistancing => {
+                HomingState::FindEndstopFineDistancing => {
                     // Move out until endstop is not triggered anymore
                     if traverse_end_stop.get_value().unwrap_or(false) == false {
                         // Find endstop fine
@@ -351,7 +351,7 @@ impl TraverseController {
                     // Move to endstop
                     if traverse_end_stop.get_value().unwrap_or(false) == true {
                         // Move awaiy from endstop
-                        self.state = State::Homing(HomingState::FindEnstopFineDistancing);
+                        self.state = State::Homing(HomingState::FindEndstopFineDistancing);
                     }
                 }
                 HomingState::Validate(instant) => {
@@ -433,7 +433,7 @@ impl TraverseController {
                     // Move out at a speed of 10 mm/s
                     Velocity::new::<millimeter_per_second>(10.0)
                 }
-                HomingState::FindEnstopFineDistancing => {
+                HomingState::FindEndstopFineDistancing => {
                     // Move out at a speed of 2 mm/s
                     Velocity::new::<millimeter_per_second>(2.0)
                 }
