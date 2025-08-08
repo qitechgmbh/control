@@ -315,7 +315,10 @@ export const rootTree = RootRoute.addChildren([
         mock1PresetsRoute,
       ]),
 
-      buffer1SerialRoute.addChildren([buffer1ControlRoute, buffer1SettingsRoute]),
+      buffer1SerialRoute.addChildren([
+        buffer1ControlRoute,
+        buffer1SettingsRoute,
+      ]),
     ]),
   ]),
 ]);
