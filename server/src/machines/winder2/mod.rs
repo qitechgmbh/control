@@ -65,7 +65,7 @@ pub struct SpoolAutomaticAction {
 }
 
 #[derive(Debug)]
-pub struct Winder2 {
+pub struct Winder2<'a> {
     // drivers
     pub traverse: StepperVelocityEL70x1,
     pub puller: StepperVelocityEL70x1,
@@ -78,7 +78,7 @@ pub struct Winder2 {
     pub traverse_end_stop: DigitalInput,
 
     // socketio
-    namespace: Winder2Namespace,
+    namespace: Winder2Namespace<'a>,
     last_measurement_emit: Instant,
 
     // machine connection
@@ -86,7 +86,7 @@ pub struct Winder2 {
     pub machine_identification_unique: MachineIdentificationUnique,
 
     // connected machines
-    pub connected_buffer: Option<ConnectedMachine<Weak<Mutex<BufferV1>>>>,
+    pub connected_buffer: Option<ConnectedMachine<Weak<Mutex<BufferV1<'a>>>>>,
 
     // mode
     pub mode: Winder2Mode,
@@ -109,13 +109,13 @@ pub struct Winder2 {
     emitted_default_state: bool,
 }
 
-impl Machine for Winder2 {
+impl Machine for Winder2<'_> {
     fn as_any(&self) -> &dyn std::any::Any {
         self
     }
 }
 
-impl Winder2 {
+impl Winder2<'_> {
     pub const MACHINE_IDENTIFICATION: MachineIdentification = MachineIdentification {
         vendor: VENDOR_QITECH,
         machine: MACHINE_WINDER_V1,
@@ -123,7 +123,7 @@ impl Winder2 {
 }
 
 /// Implement Traverse
-impl Winder2 {
+impl Winder2<'_> {
     fn set_laser(&mut self, value: bool) {
         self.laser.set(value);
         self.emit_state();
@@ -398,10 +398,8 @@ impl Winder2 {
     }
 }
 
-impl Winder2 {}
-
 /// Implement Mode
-impl Winder2 {
+impl Winder2<'_> {
     fn set_mode(&mut self, mode: &Winder2Mode) {
         let should_update = *mode != Winder2Mode::Wind || self.can_wind();
 
@@ -591,7 +589,7 @@ impl Winder2 {
 }
 
 /// Implement Tension Arm
-impl Winder2 {
+impl Winder2<'_> {
     fn tension_arm_zero(&mut self) {
         self.tension_arm.zero();
         self.emit_live_values(); // For angle update
@@ -600,7 +598,7 @@ impl Winder2 {
 }
 
 /// Implement Spool
-impl Winder2 {
+impl Winder2<'_> {
     /// called by `act`
     pub fn sync_spool_speed(&mut self, t: Instant) {
         let angular_velocity = self.spool_speed_controller.update_speed(
@@ -680,7 +678,7 @@ impl Winder2 {
 }
 
 /// Implement Puller
-impl Winder2 {
+impl Winder2<'_> {
     /// called by `act`
     pub fn sync_puller_speed(&mut self, t: Instant) {
         let angular_velocity = self.puller_speed_controller.calc_angular_velocity(t);
@@ -787,7 +785,7 @@ impl Winder2 {
 }
 
 /// implement machine connection
-impl Winder2 {
+impl Winder2<'_> {
     /// set connected buffer
     pub fn set_connected_buffer(
         &mut self,
@@ -935,7 +933,7 @@ impl From<Winder2Mode> for PullerMode {
     }
 }
 
-impl std::fmt::Display for Winder2 {
+impl std::fmt::Display for Winder2<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Winder2")
     }

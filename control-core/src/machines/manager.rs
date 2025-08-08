@@ -16,10 +16,6 @@ use std::{
     collections::HashMap,
     sync::{Arc, Weak},
 };
-use std::{
-    collections::HashMap,
-    sync::{Arc, Weak},
-};
 
 #[derive(Debug)]
 pub enum MachineConnection {
@@ -196,9 +192,6 @@ impl MachineManager {
     pub fn get_machine_weak(
         &self,
         machine_identification: &MachineIdentificationUnique,
-    pub fn get_ethercat_weak(
-        &self,
-        machine_identification: &MachineIdentificationUnique,
     ) -> Option<Weak<Mutex<dyn Machine>>> {
         let machine = self.ethercat_machines.get(machine_identification);
         let machine = match machine {
@@ -221,8 +214,6 @@ impl MachineManager {
     pub fn get_serial_weak(
         &self,
         machine_identification: &MachineIdentificationUnique,
-        &self,
-        machine_identification: &MachineIdentificationUnique,
     ) -> Option<Weak<Mutex<dyn Machine>>> {
         return self.get_weak(&self.serial_machines, machine_identification);
     }
@@ -239,7 +230,7 @@ impl MachineManager {
                 return None;
             }
         };
-        let machine = match machine {
+        let machine = match machine.machine_connection {
             Ok(machine) => machine,
             Err(_) => {
                 return None;

@@ -3,7 +3,7 @@ use std::time::{Duration, Instant};
 use super::Winder2;
 use control_core::machines::new::MachineAct;
 
-impl MachineAct for Winder2 {
+impl MachineAct for Winder2<'_> {
     fn act(
         &mut self,
         now: Instant,

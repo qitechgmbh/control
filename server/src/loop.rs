@@ -128,7 +128,7 @@ pub async fn loop_once<'maindevice>(app_state: Arc<AppState>) -> Result<(), anyh
         let now = std::time::Instant::now();
 
         for machine in machine_guard.iter() {
-            if let Ok(machine) = machine.1 {
+            if let machine = machine.1 {
                 // if the machine is currenlty locked (likely processing API call)
                 // we skip the machine
                 match machine.try_lock() {

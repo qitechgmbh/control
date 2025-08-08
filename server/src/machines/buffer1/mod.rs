@@ -27,12 +27,12 @@ use crate::machines::{
 };
 
 #[derive(Debug)]
-pub struct BufferV1 {
+pub struct BufferV1<'a> {
     // controllers
     pub buffer_tower_controller: BufferTowerController,
 
     // socketio
-    namespace: Buffer1Namespace,
+    namespace: Buffer1Namespace<'a>,
     last_measurement_emit: Instant,
 
     // machine connection
@@ -40,32 +40,32 @@ pub struct BufferV1 {
     pub machine_identification_unique: MachineIdentificationUnique,
 
     // connected machines
-    pub connected_winder: Option<ConnectedMachine<Weak<Mutex<Winder2>>>>,
+    pub connected_winder: Option<ConnectedMachine<Weak<Mutex<Winder2<'a>>>>>,
 
     // mode
     mode: BufferV1Mode,
 }
 
-impl std::fmt::Display for BufferV1 {
+impl std::fmt::Display for BufferV1<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "BufferV1")
     }
 }
 
-impl Machine for BufferV1 {
+impl Machine for BufferV1<'_> {
     fn as_any(&self) -> &dyn Any {
         self
     }
 }
 
-impl BufferV1 {
+impl BufferV1<'_> {
     pub const MACHINE_IDENTIFICATION: MachineIdentification = MachineIdentification {
         vendor: VENDOR_QITECH,
         machine: MACHINE_BUFFER_V1,
     };
 }
 
-impl BufferV1 {
+impl BufferV1<'_> {
     pub fn emit_live_values(&mut self) {
         let live_values = LiveValuesEvent {};
 
@@ -101,7 +101,7 @@ impl BufferV1 {
     }
 }
 
-impl BufferV1 {
+impl BufferV1<'_> {
     // To be implemented
     fn fill_buffer(&mut self) {
         todo!();
@@ -156,7 +156,7 @@ impl BufferV1 {
     }
 }
 
-impl BufferV1 {
+impl BufferV1<'_> {
     fn set_mode_state(&mut self, mode: BufferV1Mode) {
         self.switch_mode(mode);
         self.emit_state();
@@ -164,7 +164,7 @@ impl BufferV1 {
 }
 
 /// Connecting/Disconnecting machine
-impl BufferV1 {
+impl BufferV1<'_> {
     /// set connected winder
     pub fn set_connected_winder(
         &mut self,

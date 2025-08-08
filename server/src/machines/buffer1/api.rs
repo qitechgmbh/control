@@ -6,15 +6,13 @@ use control_core::{
     socketio::{
         event::{Event, GenericEvent},
         namespace::{
-            self, CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_duration,
+            CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_duration,
             cache_one_event,
         },
     },
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use smol::channel::Sender;
-use socketioxide::extract::SocketRef;
 use tracing::instrument;
 
 #[derive(Serialize, Debug, Clone, Default)]
@@ -77,11 +75,11 @@ enum Mutation {
 }
 
 #[derive(Debug)]
-pub struct Buffer1Namespace {
-    pub namespace: &mut Namespace,
+pub struct Buffer1Namespace<'a> {
+    pub namespace: &'a mut Namespace,
 }
 
-impl NamespaceCacheingLogic<BufferV1Events> for Buffer1Namespace {
+impl NamespaceCacheingLogic<BufferV1Events> for Buffer1Namespace<'_> {
     #[instrument(skip_all)]
     fn emit(&mut self, events: BufferV1Events) {
         let event = Arc::new(events.event_value());
@@ -109,7 +107,7 @@ impl CacheableEvents<BufferV1Events> for BufferV1Events {
     }
 }
 
-impl MachineApi for BufferV1 {
+impl MachineApi for BufferV1<'_> {
     fn api_mutate(&mut self, request_body: Value) -> Result<(), anyhow::Error> {
         let mutation: Mutation = serde_json::from_value(request_body)?;
         match mutation {
