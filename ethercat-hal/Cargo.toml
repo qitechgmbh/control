@@ -5,7 +5,7 @@ edition = "2024"
 
 [dependencies]
 anyhow = "1.0.98"
-ethercrab = "0.6"
+ethercrab = { path = "../ethercrab" }
 ethercat_hal_derive = { version = "0.1.0", path = "../ethercat-hal-derive" }
 bitvec = { version = "1.0.1", features = ["alloc"] }
 smol = "2.0.2"

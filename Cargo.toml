@@ -6,5 +6,5 @@ members = [
     "control-core",
     "ethercat-eeprom-dump",
 ]
-exclude = []
+exclude = ["ethercrab"]
 resolver = "2"
