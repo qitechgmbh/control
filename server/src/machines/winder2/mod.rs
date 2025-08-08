@@ -84,6 +84,8 @@ pub struct Winder2 {
     // machine connection
     pub machine_manager: Weak<RwLock<MachineManager>>,
     pub machine_identification_unique: MachineIdentificationUnique,
+    // Buffer State
+    pub buffer_state: BufferState,
 
     // connected machines
     pub connected_buffer: Option<ConnectedMachine<Weak<Mutex<BufferV1>>>>,
@@ -785,10 +787,18 @@ impl Winder2 {
     pub fn sync_buffer_speed(&mut self) {
         // send puller speed to buffer, if connected
         self.get_buffer(|buffer| {
-            buffer.buffer_lift_controller.set_target_output_speed(Velocity::get::<meter_per_minute>(&self.puller_speed_controller.get_target_speed()));
+            buffer.buffer_lift_controller.set_target_output_speed(
+                Velocity::get::<meter_per_minute>(&self.puller_speed_controller.get_target_speed()),
+            );
         });
     }
 
+    /// Set Buffer State
+    pub fn set_buffer_state(&mut self, state: BufferState) {
+        self.buffer_state = state;
+    }
+
+    /// Buffer Connection Logic
     /// set connected buffer
     pub fn set_connected_buffer(
         &mut self,
@@ -944,6 +954,14 @@ pub enum PullerMode {
     Standby,
     Hold,
     Pull,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum BufferState {
+    Disconnected,
+    Hold,
+    Buffering,
+    Emptying,
 }
 
 impl From<Winder2Mode> for PullerMode {
