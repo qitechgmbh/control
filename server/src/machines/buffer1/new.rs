@@ -133,7 +133,7 @@ impl MachineNewTrait for BufferV1 {
                         ..Default::default()
                     },
                     stm_motor: StmMotorConfiguration {
-                        max_current: 6000,
+                        max_current: 2800,
                         ..Default::default()
                     },
                     ..Default::default()
