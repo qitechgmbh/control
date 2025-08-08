@@ -6,10 +6,10 @@ use control_core::modbus::{
 use ethercat_hal::io::serial_interface::SerialInterface;
 use std::time::{Duration, Instant};
 use uom::si::{
-    electric_current::{ampere, centiampere},
-    electric_potential::{centivolt, volt},
+    electric_current::centiampere,
+    electric_potential::centivolt,
     f64::{AngularVelocity, ElectricCurrent, ElectricPotential, Frequency},
-    frequency::{centihertz, hertz},
+    frequency::centihertz,
 };
 
 /// Specifies all System environment Variables
