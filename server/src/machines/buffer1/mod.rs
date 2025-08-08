@@ -38,14 +38,14 @@ use crate::machines::{
         api::{ConnectedMachineState, CurrentInputSpeedState, PullerState},
         puller_speed_controller::PullerSpeedController,
     },
-    winder2::{Winder2, Winder2Mode},
+    winder2::{BufferState, Winder2, Winder2Mode},
 };
 
 #[derive(Debug, Machine)]
 pub struct BufferV1 {
     // drivers
     pub lift: StepperVelocityEL70x1,
-    pub end_switch: DigitalInput,
+    pub lift_end_stop: DigitalInput,
     pub puller: StepperVelocityEL70x1,
 
     // controllers
@@ -151,17 +151,27 @@ impl BufferV1 {
     fn fill_buffer(&mut self) {
         // stop the winder until the buffer is ful
         self.update_winder2_mode(Winder2Mode::Hold);
+        self.update_winder2_buffer_state(BufferState::Buffering);
     }
 
     fn empty_buffer(&mut self) {
         // Set the winder2 to a mode where its faster than before to empty the buffer slowly
         self.update_winder2_mode(Winder2Mode::Pull);
+        self.update_winder2_buffer_state(BufferState::Emptying);
     }
 
     fn update_winder2_mode(&mut self, mode: Winder2Mode) {
         self.get_winder(|winder2| {
             if winder2.mode != mode {
                 winder2.mode = mode;
+            }
+        });
+    }
+
+    fn update_winder2_buffer_state(&mut self, state: BufferState) {
+        self.get_winder(|winder2| {
+            if winder2.buffer_state != state {
+                winder2.set_buffer_state(state);
             }
         });
     }
@@ -177,6 +187,7 @@ impl BufferV1 {
         self.mode = BufferV1Mode::Standby;
         self.buffer_lift_controller.set_enabled(false);
         let _ = self.buffer_lift_controller.stepper_driver.set_speed(0.0);
+        self.update_winder2_buffer_state(BufferState::Hold);
     }
 
     // hold motor
@@ -190,6 +201,7 @@ impl BufferV1 {
         self.mode = BufferV1Mode::Hold;
         self.buffer_lift_controller.set_enabled(false);
         let _ = self.buffer_lift_controller.stepper_driver.set_speed(0.0);
+        self.update_winder2_buffer_state(BufferState::Hold);
     }
 
     // Turn on motor and fill buffer
@@ -201,8 +213,8 @@ impl BufferV1 {
             BufferV1Mode::Emptying => {}
         };
         self.mode = BufferV1Mode::Filling;
-        self.buffer_lift_controller.set_enabled(true);
         self.buffer_lift_controller.set_forward(true);
+        self.buffer_lift_controller.set_enabled(true);
     }
 
     // Turn on motor reverse and empty buffer
@@ -298,21 +310,24 @@ impl BufferV1 {
 impl BufferV1 {
     pub fn sync_lift_speed(&mut self, t: Instant) {
         let linear_velocity = self.buffer_lift_controller.update_speed(t);
-        let steps_per_second = self.lift_step_converter.velocity_to_steps(linear_velocity);
-        let _ = self.lift.set_speed(steps_per_second);
+        if self.can_move() {
+            let steps_per_second = self.lift_step_converter.velocity_to_steps(linear_velocity);
+            let _ = self.lift.set_speed(steps_per_second);
+        } else {
+            let _ = self.lift.set_speed(0.0);
+        }
     }
 
-    pub fn check_can_move(&mut self) {
-        match self.end_switch.get_value() {
+    fn can_move(&mut self) -> bool {
+        match self.lift_end_stop.get_value() {
             Ok(reached) => {
                 if reached {
-                    self.set_mode_state(BufferV1Mode::Hold);
-                    self.buffer_lift_controller.set_end_switch(true);
+                    false
                 } else {
-                    self.buffer_lift_controller.set_end_switch(false);
+                    true
                 }
             }
-            Err(_) => return,
+            Err(_) => false,
         }
     }
 }

@@ -4,6 +4,7 @@ use super::api::Winder2Namespace;
 use super::tension_arm::TensionArm;
 use super::{Winder2, Winder2Mode};
 use crate::machines::get_ethercat_device;
+use crate::machines::winder2::BufferState;
 use crate::machines::winder2::puller_speed_controller::PullerSpeedController;
 use crate::machines::winder2::spool_speed_controller::SpoolSpeedController;
 use crate::machines::winder2::traverse_controller::TraverseController;
@@ -228,6 +229,7 @@ impl MachineNewTrait for Winder2 {
                 machine_manager: params.machine_manager.clone(),
                 machine_identification_unique: machine_id,
                 connected_buffer: None,
+                buffer_state: BufferState::Disconnected,
             };
 
             // initalize events
