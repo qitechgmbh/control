@@ -23,6 +23,17 @@ fi
 # Create escaped version for system.nixos.label
 GIT_ABBREVIATION_ESCAPED=$(echo "$GIT_ABBREVIATION" | sed -e 's/+/-/g' -e 's/[^a-zA-Z0-9:_\.-]//g')  # e.g., "2-0-0", "main", "b2c7f6e"
 
+# configure a git user
+git config --global user.name "nixos-install.sh"
+git config --global user.email "nixos-install.sh@localhost"
+
+# pull submodules first, before creating installInfo.nix
+git submodule update --init --recursive
+
+# make sure all submodules are committed
+git add --all
+git commit -m "Update Submodules"
+
 sudo tee ./nixos/os/installInfo.nix > /dev/null << EOF
 {
   gitTimestamp = "$GIT_TIMESTAMP";
@@ -36,10 +47,6 @@ EOF
 
 # make sure the installInfo.nix file is tracked by git
 # otherwise it will be ignored by nix
-# configure a git user
-git config --global user.name "nixos-install.sh"
-git config --global user.email "nixos-install.sh@localhost"
-# add the installInfo.nix file to the git index
 git add ./nixos/os/installInfo.nix
 # commit the changes
 git commit -m "Add installInfo.nix file with current commit information"

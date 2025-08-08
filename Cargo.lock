@@ -1025,8 +1025,6 @@ dependencies = [
 [[package]]
 name = "ethercrab"
 version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fbb13becfa15713adb09b27fdb74468b827cdc78aa99aea638a89c1b0db3ce94"
 dependencies = [
  "async-io",
  "atomic-waker",
@@ -1055,8 +1053,6 @@ dependencies = [
 [[package]]
 name = "ethercrab-wire"
 version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d15828cb020fb44c92ca67e1ee3c122c9621c2e00d383d066e488f0619023ba2"
 dependencies = [
  "ethercrab-wire-derive",
  "heapless",
@@ -1065,8 +1061,6 @@ dependencies = [
 [[package]]
 name = "ethercrab-wire-derive"
 version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0e790b8011211ed70babfcacbd4277b91ee21402ad5ba6a2c293db02e2f12919"
 dependencies = [
  "criterion",
  "proc-macro2",
@@ -1634,9 +1628,9 @@ dependencies = [
 
 [[package]]
 name = "io-uring"
-version = "0.7.6"
+version = "0.7.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3c2f96dfbc20c12b9b4f12eef60472d8c29b9c3f29463570dcb47e4a48551168"
+checksum = "d93587f37623a1a17d94ef2bc9ada592f5465fe7732084ab7beefabe5c77c0c4"
 dependencies = [
  "bitflags 2.9.0",
  "cfg-if",
