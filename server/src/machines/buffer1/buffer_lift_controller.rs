@@ -315,10 +315,7 @@ impl BufferLiftController {
             State::Idle => {}
             State::GoingDown => {
                 // If inner limit is reached
-                if self.is_at_position(
-                    Length::new::<millimeter>(0.0),
-                    Length::new::<millimeter>(0.01),
-                ) {
+                if self.is_at_position(self.limit_bottom, Length::new::<millimeter>(0.01)) {
                     // Put Into Idle
                     self.state = State::Idle;
                 }
