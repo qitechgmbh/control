@@ -71,6 +71,8 @@ pub struct Winder2 {
     // machine connection
     pub machine_manager: Weak<RwLock<MachineManager>>,
     pub machine_identification_unique: MachineIdentificationUnique,
+    // Buffer State
+    pub buffer_state: BufferState,
 
     // connected machines
     pub connected_buffer: MachineCrossConnection<Winder2, BufferV1>,
@@ -355,6 +357,14 @@ pub enum PullerMode {
     Standby,
     Hold,
     Pull,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum BufferState {
+    Disconnected,
+    Hold,
+    Buffering,
+    Emptying,
 }
 
 impl From<Winder2Mode> for PullerMode {

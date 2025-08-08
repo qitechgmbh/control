@@ -20,9 +20,7 @@ use ethercat_hal::devices::el7041_0052::coe::EL7041_0052Configuration;
 use ethercat_hal::devices::el7041_0052::{EL7041_0052, EL7041_0052_IDENTITY_A, EL7041_0052Port};
 use ethercat_hal::devices::{EthercatDeviceUsed, downcast_device, subdevice_identity_to_tuple};
 use ethercat_hal::io::digital_input::DigitalInput;
-use ethercat_hal::io::stepper_velocity_el70x1::{
-    StepperVelocityEL70x1, StepperVelocityEL70x1Device, StepperVelocityEL70x1Input,
-};
+use ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1;
 use ethercat_hal::shared_config;
 use ethercat_hal::shared_config::el70x1::{EL70x1OperationMode, StmMotorConfiguration};
 use uom::si::f64::{Length, Velocity};
@@ -144,7 +142,7 @@ impl MachineNewTrait for BufferV1 {
             // create buffer instance
             let mut buffer: BufferV1 = Self {
                 lift: StepperVelocityEL70x1::new(el7041.clone(), EL7041_0052Port::STM1),
-                end_switch: di1_input,
+                lift_end_stop: DigitalInput::new(el7041, EL7041_0052Port::DI1),
                 puller: StepperVelocityEL70x1::new(
                     el7031_0030.clone(),
                     EL7031_0030StepperPort::STM1,
