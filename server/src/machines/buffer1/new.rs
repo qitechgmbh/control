@@ -26,9 +26,8 @@ use ethercat_hal::shared_config::el70x1::{EL70x1OperationMode, StmMotorConfigura
 use uom::si::f64::{Length, Velocity};
 use uom::si::length::{centimeter, millimeter};
 
+use crate::machines::buffer1::buffer_tower_controller::BufferLiftController;
 use crate::machines::buffer1::BufferV1Mode;
-use crate::machines::buffer1::buffer_lift_controller::BufferLiftController;
-use crate::machines::buffer1::puller_speed_controller::PullerSpeedController;
 use crate::machines::get_ethercat_device;
 
 use super::{BufferV1, api::Buffer1Namespace};
@@ -127,10 +126,11 @@ impl MachineNewTrait for BufferV1 {
             }
 
             // Controller
-            let buffer_lift_controller = BufferLiftController::new(StepperVelocityEL70x1::new(
-                el7041.clone(),
-                EL7041_0052Port::STM1,
-            ));
+            let buffer_lift_controller = BufferLiftController::new(
+                StepperVelocityEL70x1::new(el7041.clone(), EL7041_0052Port::STM1),
+                Length::new::<centimeter>(135.0),
+                64,
+            );
             let puller_speed_controller = PullerSpeedController::new(
                 Velocity::new::<meter_per_minute>(1.0),
                 Length::new::<millimeter>(1.75),
