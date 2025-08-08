@@ -25,7 +25,7 @@ use ethercat_hal::shared_config::el70x1::{EL70x1OperationMode, StmMotorConfigura
 use uom::si::f64::{Length, Velocity};
 use uom::si::length::{centimeter, millimeter};
 
-use crate::machines::buffer1::buffer_tower_controller::BufferLiftController;
+use crate::machines::buffer1::puller_speed_controller::PullerSpeedController;
 use crate::machines::buffer1::BufferV1Mode;
 use crate::machines::buffer1::buffer_lift_controller::BufferLiftController;
 use crate::machines::buffer1::puller_speed_controller::PullerSpeedController;
@@ -158,7 +158,7 @@ impl MachineNewTrait for BufferV1 {
                 last_measurement_emit: Instant::now(),
                 mode: BufferV1Mode::Standby,
                 buffer_lift_controller,
-                puller_speed_controller,
+                puller_speed_controller
                 machine_manager: params.machine_manager.clone(),
                 machine_identification_unique: machine_id,
                 connected_winder: None,
