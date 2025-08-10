@@ -6,8 +6,8 @@ This directory contains electrical wiring diagrams for various machines and syst
 
 ### Extruder
 - **Location**: [`extruder/`](extruder/)
-- **File**: [QiTech Pro Extruder Electrical Diagram 2025.pdf](extruder/QiTech%20Pro%20Extruder%20Electrical%20Diagram%202025.pdf)
+- **File**: [QiTech Pro Extruder Electrical Diagram 2025.pdf](extruder/QiTech_Pro_Extruder_Electrical_Diagram_2025.pdf)
 
 ### Winder
 - **Location**: [`winder/`](winder/)
-- **File**: [QiTech Pro Winder Electrical Diagram.pdf](winder/QiTech%20Pro%20Winder%20Electrical%20Diagram.pdf)
+- **File**: [QiTech Pro Winder Electrical Diagram.pdf](winder/QiTech_Pro_Winder_Electrical_Diagram.pdf)
