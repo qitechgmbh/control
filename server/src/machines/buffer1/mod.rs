@@ -118,25 +118,25 @@ impl BufferV1 {
             lift_state: LiftState {
                 limit_top: self
                     .buffer_lift_controller
-                    .get_limit_inner()
+                    .get_limit_top()
                     .get::<millimeter>(),
                 limit_bottom: self
                     .buffer_lift_controller
-                    .get_limit_outer()
+                    .get_limit_bottom()
                     .get::<millimeter>(),
                 position_in: self
                     .buffer_lift_controller
-                    .get_limit_inner()
+                    .get_limit_top()
                     .get::<millimeter>(),
                 position_out: self
                     .buffer_lift_controller
-                    .get_limit_outer()
+                    .get_limit_bottom()
                     .get::<millimeter>(),
-                is_going_up: self.buffer_lift_controller.is_going_in(),
-                is_going_down: self.buffer_lift_controller.is_going_out(),
+                is_going_up: self.buffer_lift_controller.is_going_up(),
+                is_going_down: self.buffer_lift_controller.is_going_down(),
                 is_homed: self.buffer_lift_controller.is_homed(),
                 is_going_home: self.buffer_lift_controller.is_going_home(),
-                is_buffering: self.buffer_lift_controller.is_traversing(),
+                is_buffering: self.buffer_lift_controller.is_buffering(),
                 step_size: self
                     .buffer_lift_controller
                     .get_step_size()
@@ -145,9 +145,9 @@ impl BufferV1 {
                     .buffer_lift_controller
                     .get_padding()
                     .get::<millimeter>(),
-                can_go_top: self.can_go_in(),
-                can_go_bottom: self.can_go_out(),
-                can_go_home: self.can_go_home(),
+                can_go_top: self.can_move(),
+                can_go_bottom: self.can_move(),
+                can_go_home: self.can_move(),
             },
             current_input_speed_state: CurrentInputSpeedState {
                 current_input_speed: self
