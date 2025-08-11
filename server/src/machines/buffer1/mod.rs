@@ -35,7 +35,7 @@ use uom::si::{
 use crate::machines::{
     MACHINE_BUFFER_V1, VENDOR_QITECH,
     buffer1::{
-        api::{ConnectedMachineState, CurrentInputSpeedState, PullerState},
+        api::{ConnectedMachineState, CurrentInputSpeedState, LiftState, PullerState},
         puller_speed_controller::PullerSpeedController,
     },
     winder2::{BufferState, Winder2, Winder2Mode},
@@ -96,6 +96,10 @@ impl BufferV1 {
 
         // live values to be emittet
         let live_values = LiveValuesEvent {
+            lift_position: self
+                .buffer_lift_controller
+                .get_current_position()
+                .map(|x| x.get::<millimeter>()),
             puller_speed: puller_speed.get::<meter_per_minute>(),
         };
 
@@ -121,6 +125,40 @@ impl BufferV1 {
                         ConnectedMachineData::from(connected_machine).is_available
                     })
                     .unwrap_or(false),
+            },
+            lift_state: LiftState {
+                limit_top: self
+                    .buffer_lift_controller
+                    .get_limit_inner()
+                    .get::<millimeter>(),
+                limit_bottom: self
+                    .buffer_lift_controller
+                    .get_limit_outer()
+                    .get::<millimeter>(),
+                position_in: self
+                    .buffer_lift_controller
+                    .get_limit_inner()
+                    .get::<millimeter>(),
+                position_out: self
+                    .buffer_lift_controller
+                    .get_limit_outer()
+                    .get::<millimeter>(),
+                is_going_up: self.buffer_lift_controller.is_going_in(),
+                is_going_down: self.buffer_lift_controller.is_going_out(),
+                is_homed: self.buffer_lift_controller.is_homed(),
+                is_going_home: self.buffer_lift_controller.is_going_home(),
+                is_buffering: self.buffer_lift_controller.is_traversing(),
+                step_size: self
+                    .buffer_lift_controller
+                    .get_step_size()
+                    .get::<millimeter>(),
+                padding: self
+                    .buffer_lift_controller
+                    .get_padding()
+                    .get::<millimeter>(),
+                can_go_top: self.can_go_in(),
+                can_go_bottom: self.can_go_out(),
+                can_go_home: self.can_go_home(),
             },
             current_input_speed_state: CurrentInputSpeedState {
                 current_input_speed: self
@@ -309,7 +347,9 @@ impl BufferV1 {
 // Implement Lift
 impl BufferV1 {
     pub fn sync_lift_speed(&mut self, t: Instant) {
-        let linear_velocity = self.buffer_lift_controller.update_speed(&mut self.lift, &self.lift_end_stop, t);
+        let linear_velocity =
+            self.buffer_lift_controller
+                .update_speed(&mut self.lift, &self.lift_end_stop, t);
         if self.can_move() {
             let steps_per_second = self.lift_step_converter.velocity_to_steps(linear_velocity);
             let _ = self.lift.set_speed(steps_per_second);
@@ -329,6 +369,67 @@ impl BufferV1 {
             }
             Err(_) => false,
         }
+    }
+
+    fn validate_lift_limits(inner: Length, outer: Length) -> bool {
+        outer > inner + Length::new::<millimeter>(0.9)
+    }
+
+    pub fn lift_set_limit_top(&mut self, limit: f64) {
+        let new_top = Length::new::<millimeter>(limit);
+        let current_bottom = self.buffer_lift_controller.get_limit_bottom();
+
+        if !Self::validate_lift_limits(new_top, current_bottom) {
+            return;
+        }
+
+        self.buffer_lift_controller.set_limit_top(new_top);
+        self.emit_state();
+    }
+
+    pub fn lift_set_limit_bottom(&mut self, limit: f64) {
+        let new_bottom = Length::new::<millimeter>(limit);
+        let current_top = self.buffer_lift_controller.get_limit_top();
+
+        if !Self::validate_lift_limits(current_top, new_bottom) {
+            return;
+        }
+
+        self.buffer_lift_controller.set_limit_bottom(new_bottom);
+        self.emit_state();
+    }
+
+    pub fn lift_set_step_size(&mut self, step_size: f64) {
+        let step_size = Length::new::<millimeter>(step_size);
+        self.buffer_lift_controller.set_step_size(step_size);
+        self.emit_state();
+    }
+
+    pub fn lift_set_padding(&mut self, padding: f64) {
+        let padding = Length::new::<millimeter>(padding);
+        self.buffer_lift_controller.set_padding(padding);
+        self.emit_state();
+    }
+
+    pub fn lift_goto_limit_top(&mut self) {
+        if self.can_move() {
+            self.buffer_lift_controller.goto_limit_top();
+        }
+        self.emit_state();
+    }
+
+    pub fn lift_goto_limit_bottom(&mut self) {
+        if self.can_move() {
+            self.buffer_lift_controller.goto_limit_bottom();
+        }
+        self.emit_state();
+    }
+
+    pub fn lift_goto_home(&mut self) {
+        if self.can_move() {
+            self.buffer_lift_controller.goto_home();
+        }
+        self.emit_state();
     }
 }
 
