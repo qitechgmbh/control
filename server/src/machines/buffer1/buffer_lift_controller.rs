@@ -121,7 +121,7 @@ impl BufferLiftController {
             limit_top,
             limit_bottom: Length::new::<millimeter>(0.0),
             step_size: Length::new::<millimeter>(1.75), // Default padding
-            padding: Length::new::<millimeter>(0.9), // Default padding
+            padding: Length::new::<millimeter>(0.9),    // Default padding
             did_change_state: false,
             stepper_driver: driver,
             fullstep_converter: LinearStepConverter::from_circumference(
@@ -252,12 +252,30 @@ impl BufferLiftController {
 
 /// State management
 impl BufferLiftController {
+    pub fn goto_limit_top(&mut self) {
+        self.state = State::GoingUp
+    }
+
+    pub fn goto_limit_bottom(&mut self) {
+        self.state = State::GoingDown
+    }
+
     pub fn goto_home(&mut self) {
         self.state = State::Homing(HomingState::Initialize);
     }
 
     pub fn start_buffering(&mut self) {
         self.state = State::Buffering(BufferingState::GoingUp);
+    }
+
+    pub fn is_going_up(&self) -> bool {
+        // [`State::GoingUp`]
+        matches!(self.state, State::GoingUp)
+    }
+
+    pub fn is_going_down(&self) -> bool {
+        // [`State::GoingDown`]
+        matches!(self.state, State::GoingDown)
     }
 
     pub fn is_homed(&self) -> bool {
