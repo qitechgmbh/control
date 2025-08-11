@@ -465,7 +465,7 @@ impl BufferLiftController {
             State::NotHomed => Velocity::ZERO, // Not homed, no movement
             State::Idle => Velocity::ZERO,     // No movement in idle state
             State::GoingDown => {
-                // Move in at a speed of 10-100 mm/s
+                // Move down at a speed of 10-100 mm/s
                 self.speed_to_position(
                     self.limit_bottom,
                     match self.distance_to_position(self.limit_bottom).abs()
@@ -477,7 +477,7 @@ impl BufferLiftController {
                 )
             }
             State::GoingUp => {
-                // Move out at a speed of 10-100 mm/s
+                // Move up at a speed of 10-100 mm/s
                 self.speed_to_position(
                     self.limit_top,
                     match self.distance_to_position(self.limit_top).abs()
@@ -491,11 +491,11 @@ impl BufferLiftController {
             State::Homing(homing_state) => match homing_state {
                 HomingState::Initialize => Velocity::ZERO,
                 HomingState::EscapeEndstop => {
-                    // Move out at a speed of 10 mm/s
+                    // Move dowon at a speed of 10 mm/s
                     Velocity::new::<millimeter_per_second>(10.0)
                 }
                 HomingState::FindEnstopFineDistancing => {
-                    // Move out at a speed of 2 mm/s
+                    // Move up at a speed of 2 mm/s
                     Velocity::new::<millimeter_per_second>(2.0)
                 }
                 HomingState::FindEndstopCoarse => {
@@ -513,7 +513,7 @@ impl BufferLiftController {
             }, // Homing speed
             State::Buffering(buffering_state) => match buffering_state {
                 BufferingState::GoingUp => {
-                    // Move out at a speed of 100 mm/s
+                    // Move top at a speed of 100 mm/s
                     self.speed_to_position(
                         self.limit_top - self.padding + Length::new::<millimeter>(0.01),
                         Velocity::new::<millimeter_per_second>(100.0),
