@@ -23,6 +23,8 @@ use tracing::instrument;
 
 #[derive(Serialize, Debug, Clone, Default)]
 pub struct LiveValuesEvent {
+    /// lift position in mm
+    pub lift_position: Option<f64>,
     /// puller speed in m/min
     pub puller_speed: f64,
 }
@@ -37,6 +39,8 @@ impl LiveValuesEvent {
 pub struct StateEvent {
     /// mode state
     pub mode_state: ModeState,
+    /// lift state
+    pub lift_state: LiftState,
     /// puller state
     pub puller_state: PullerState,
     /// connected machine state
@@ -76,7 +80,7 @@ pub struct ConnectedMachineState {
     pub is_available: bool,
 }
 
-#[derive(Serialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct PullerState {
     /// regulation type
     pub regulation: PullerRegulationMode,
@@ -88,6 +92,37 @@ pub struct PullerState {
     pub forward: bool,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct LiftState {
+    /// min position in mm
+    pub limit_top: f64,
+    /// max position in mm
+    pub limit_bottom: f64,
+    /// position in mm
+    pub position_in: f64,
+    /// position out in mm
+    pub position_out: f64,
+    /// is going to position in
+    pub is_going_up: bool,
+    /// is going to position out
+    pub is_going_down: bool,
+    /// if is homed
+    pub is_homed: bool,
+    /// if is homing
+    pub is_going_home: bool,
+    /// if is buffering
+    pub is_buffering: bool,
+    /// step size in mm
+    pub step_size: f64,
+    /// padding in mm
+    pub padding: f64,
+    /// can go top (to top limit)
+    pub can_go_top: bool,
+    /// can go bottom (to bottom limit)
+    pub can_go_bottom: bool,
+    /// can home
+    pub can_go_home: bool,
+}
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct CurrentInputSpeedState {
     pub current_input_speed: f64,
@@ -106,6 +141,19 @@ enum Mutation {
 
     // Set current input speed
     SetCurrentInputSpeed(f64),
+
+    // Lift
+    /// Position in mm from home point
+    SetLiftLimitTop(f64),
+    /// Position in mm from home point
+    SetLiftLimitBottom(f64),
+    /// Step size in mm for traverse movement
+    SetLiftStepSize(f64),
+    /// Padding in mm for traverse movement limits
+    SetLiftPadding(f64),
+    GotoLiftLimitTop,
+    GotoLiftLimitBottom,
+    GotoLiftHome,
 
     // Puller
     /// on = speed, off = stop
@@ -161,12 +209,18 @@ impl MachineApi for BufferV1 {
             Mutation::DisconnectMachine(machine_identification_unique) => {
                 self.disconnect_winder(machine_identification_unique);
             }
-            // Puller Mutations
             Mutation::SetCurrentInputSpeed(speed) => self.set_current_input_speed(speed),
             Mutation::SetPullerRegulationMode(regulation) => self.puller_set_regulation(regulation),
             Mutation::SetPullerTargetSpeed(value) => self.puller_set_target_speed(value),
             Mutation::SetPullerTargetDiameter(_) => todo!(),
             Mutation::SetPullerForward(value) => self.puller_set_forward(value),
+            Mutation::SetLiftLimitTop(limit) => self.lift_set_limit_top(limit),
+            Mutation::SetLiftLimitBottom(limit) => self.lift_set_limit_bottom(limit),
+            Mutation::SetLiftStepSize(step_size) => self.lift_set_step_size(step_size),
+            Mutation::SetLiftPadding(padding) => self.lift_set_padding(padding),
+            Mutation::GotoLiftLimitTop => self.lift_goto_limit_top(),
+            Mutation::GotoLiftLimitBottom => self.lift_goto_limit_bottom(),
+            Mutation::GotoLiftHome => self.lift_goto_home(),
         }
         Ok(())
     }
