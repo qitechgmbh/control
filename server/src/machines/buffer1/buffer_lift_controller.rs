@@ -25,6 +25,7 @@ pub struct BufferLiftController {
     position: Length,
     limit_top: Length,
     limit_bottom: Length,
+    step_size: Length,
     padding: Length,
     /// Stepper driver. Controls buffer stepper motor
     pub stepper_driver: StepperVelocityEL70x1,
@@ -89,12 +90,12 @@ pub enum BufferingState {
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum HomingState {
-    /// In this state the traverse is not moving but checks if the endstop si triggered
+    /// In this state the lift is not moving but checks if the endstop si triggered
     /// If the endstop is triggered we go into [`HomingState::EscapeEndstop`]
     /// If the endstop is not triggered we go into [`HomingState::FindEndstop`]
     Initialize,
 
-    /// In this state the traverse is moving out away from the endstop until it's not triggered anymore
+    /// In this state the lift is moving out away from the endstop until it's not triggered anymore
     /// The it goes into [`HomingState::FindEnstopFineDistancing`]
     EscapeEndstop,
 
@@ -102,10 +103,10 @@ pub enum HomingState {
     /// Then Transition into [`HomingState::FindEndtopFine`]
     FindEnstopFineDistancing,
 
-    /// In this state the traverse is fast until it reaches the endstop
+    /// In this state the lift is fast until it reaches the endstop
     FindEndstopCoarse,
 
-    /// In this state the traverse is moving slowly until it reaches the endstop
+    /// In this state the lift is moving slowly until it reaches the endstop
     FindEndtopFine,
 
     /// In this state we check if th current position is actually 0.0, if not we redo the homing routine
@@ -119,6 +120,7 @@ impl BufferLiftController {
             position: Length::ZERO,
             limit_top,
             limit_bottom: Length::new::<millimeter>(0.0),
+            step_size: Length::new::<millimeter>(1.75), // Default padding
             padding: Length::new::<millimeter>(0.9), // Default padding
             did_change_state: false,
             stepper_driver: driver,
@@ -180,8 +182,55 @@ impl BufferLiftController {
         self.enabled = enabled;
         self.stepper_driver.set_enabled(enabled);
     }
+
+    pub fn set_limit_top(&mut self, limit: Length) {
+        self.limit_top = limit;
+    }
+
+    pub fn set_limit_bottom(&mut self, limit: Length) {
+        self.limit_bottom = limit;
+    }
+
+    pub fn set_step_size(&mut self, step_size: Length) {
+        self.step_size = step_size;
+    }
+
+    pub fn set_padding(&mut self, padding: Length) {
+        self.padding = padding;
+    }
+
+    pub fn get_limit_top(&self) -> Length {
+        self.limit_top
+    }
+
+    pub fn get_limit_bottom(&self) -> Length {
+        self.limit_bottom
+    }
+
+    pub fn get_step_size(&self) -> Length {
+        self.step_size
+    }
+
+    pub fn get_padding(&self) -> Length {
+        self.padding
+    }
+
     pub fn set_forward(&mut self, forward: bool) {
         self.forward = forward;
+    }
+
+    pub fn get_current_position(&self) -> Option<Length> {
+        match self.is_homed() {
+            true => Some(self.position),
+            false => None,
+        }
+    }
+
+    pub fn did_change_state(&mut self) -> bool {
+        let did_change = self.did_change_state;
+        // Reset the flag
+        self.did_change_state = false;
+        did_change
     }
 
     pub fn set_current_input_speed(&mut self, speed: f64) {
@@ -272,7 +321,7 @@ impl BufferLiftController {
         }
     }
 
-    /// Gets the current traverse position as a [`Length`].
+    /// Gets the current lift position as a [`Length`].
     pub fn sync_position(&mut self, stepper_driver: &StepperVelocityEL70x1) {
         let steps = stepper_driver.get_position();
         self.position = self.microstep_converter.steps_to_distance(steps as f64);
@@ -353,7 +402,7 @@ impl BufferLiftController {
                 HomingState::FindEndtopFine => {
                     // If endstop is reached change to idle
                     if lift_end_stop.get_value().unwrap_or(false) == true {
-                        // Set poition of traverse to 0
+                        // Set poition of lift to 0
                         stepper_driver.set_position(0);
                         // Put Into Idle
                         self.state = State::Homing(HomingState::Validate(Instant::now()));
