@@ -9,6 +9,9 @@ import { EditValue } from "@/control/EditValue";
 import { TimeSeriesValueNumeric } from "@/control/TimeSeriesValue";
 import { roundToDecimals } from "@/lib/decimal";
 import { Label } from "@/control/Label";
+import { TouchButton } from "@/components/touch/TouchButton";
+import { StatusBadge } from "@/control/StatusBadge";
+import { TraverseBar } from "@/machines/winder/TraverseBar";
 
 export function Buffer1ControlPage() {
   const {
@@ -19,6 +22,12 @@ export function Buffer1ControlPage() {
     pullerSpeed,
     setPullerRegulationMode,
     setPullerTargetSpeed,
+    liftPosition,
+    setLiftLimitTop,
+    setLiftLimitBottom,
+    gotoLiftLimitTop,
+    gotoLiftLimitBottom,
+    gotoLiftHome,
     isLoading,
     isDisabled,
   } = useBuffer1();
@@ -116,6 +125,94 @@ export function Buffer1ControlPage() {
               renderValue={(value) => roundToDecimals(value, 1)}
               onChange={setPullerTargetSpeed}
             />
+          </Label>
+        </ControlCard>
+
+        <ControlCard className="bg-red" height={2} title="Lift">
+          <TimeSeriesValueNumeric
+            label="Position"
+            unit="mm"
+            timeseries={liftPosition}
+            renderValue={(value) => roundToDecimals(value, 1)}
+          />
+          {state?.lift_state && (
+            <TraverseBar
+              inside={0}
+              outside={180}
+              min={state?.lift_state.limit_bottom}
+              max={state?.lift_state.limit_top}
+              current={liftPosition.current?.value ?? 0}
+            />
+          )}
+          <div className="flex flex-row flex-wrap gap-4">
+            <Label label="Bottom Limit">
+              <EditValue
+                value={state?.lift_state?.limit_bottom}
+                unit="mm"
+                title="Bottom Limit"
+                defaultValue={defaultState?.lift_state?.limit_bottom}
+                // lift limit validation: Bottom limit must be at least 0.9mm greater than inner limit
+                // We use 1mm buffer to ensure the backend validation (which requires >0.9mm) will pass
+                // Formula: min_outer = inner_limit + 1mm
+                min={Math.max(0, (state?.lift_state?.limit_bottom ?? 0) + 1)}
+                minLabel="IN"
+                maxLabel="OUT"
+                max={130}
+                renderValue={(value) => roundToDecimals(value, 0)}
+                inverted
+                onChange={setLiftLimitBottom}
+              />
+              <TouchButton
+                variant="outline"
+                icon="lu:ArrowLeftToLine"
+                onClick={gotoLiftLimitBottom}
+                disabled={isDisabled}
+                isLoading={isLoading || state?.lift_state?.is_going_down}
+              >
+                Go to Bottom Limit
+              </TouchButton>
+            </Label>
+            <Label label="Top Limit">
+              <EditValue
+                value={state?.lift_state?.limit_top}
+                unit="mm"
+                title="Top Limit"
+                min={0}
+                // lift limit validation: Top limit must be at least 0.9mm smaller than outer limit
+                // We use 1mm buffer to ensure the backend validation (which requires outer > inner + 0.9mm) will pass
+                // Formula: max_inner = outer_limit - 1mm
+                max={Math.min(180, (state?.lift_state?.limit_top ?? 180) - 1)}
+                defaultValue={defaultState?.lift_state?.limit_top}
+                minLabel="IN"
+                maxLabel="OUT"
+                renderValue={(value) => roundToDecimals(value, 0)}
+                inverted
+                onChange={setLiftLimitTop}
+              />
+              <TouchButton
+                variant="outline"
+                icon="lu:ArrowRightToLine"
+                onClick={gotoLiftLimitTop}
+                disabled={isDisabled}
+                isLoading={isLoading || state?.lift_state?.is_going_up}
+              >
+                Go to Top Limit
+              </TouchButton>
+            </Label>
+          </div>
+          <Label label="Home">
+            <TouchButton
+              variant="outline"
+              icon="lu:House"
+              onClick={() => gotoLiftHome()}
+              disabled={isDisabled}
+              isLoading={isLoading || state?.lift_state?.is_going_home}
+            >
+              Go to Home
+            </TouchButton>
+            {state?.lift_state?.is_homed !== true ? (
+              <StatusBadge variant={"error"}>{"Not Homed"}</StatusBadge>
+            ) : null}
           </Label>
         </ControlCard>
       </ControlGrid>

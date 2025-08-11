@@ -34,6 +34,7 @@ export type Mode = z.infer<typeof modeSchema>;
  * Consolidated live values event schema (30FPS data)
  */
 export const liveValuesEventDataSchema = z.object({
+  lift_position: z.number().nullable(),
   puller_speed: z.number(),
 });
 
@@ -51,6 +52,21 @@ export const pullerStateSchema = z.object({
   target_speed: z.number(),
   target_diameter: z.number(),
   forward: z.boolean(),
+});
+
+/**
+ * Lift state schema
+ */
+export const liftStateSchema = z.object({
+  limit_top: z.number(),
+  limit_bottom: z.number(),
+  is_going_up: z.boolean(),
+  is_going_down: z.boolean(),
+  is_homed: z.boolean(),
+  is_going_home: z.boolean(),
+  is_buffering: z.boolean(),
+  step_size: z.number(),
+  padding: z.number(),
 });
 
 /**
@@ -88,6 +104,7 @@ export const connectedMachineStateSchema = z.object({
 
 export const stateEventDataSchema = z.object({
   mode_state: modeStateSchema,
+  lift_state: liftStateSchema,
   puller_state: pullerStateSchema,
   connected_machine_state: connectedMachineStateSchema,
   current_input_speed_state: currentInputSpeedSchema,
@@ -108,6 +125,7 @@ export type Buffer1NamespaceStore = {
   defaultState: StateEvent | null;
 
   // Time series data for live values
+  liftPosition: TimeSeries;
   pullerSpeed: TimeSeries;
 };
 
@@ -118,6 +136,8 @@ const FIVE_SECOND = 5 * ONE_SECOND;
 const ONE_HOUR = 60 * 60 * ONE_SECOND;
 
 const { initialTimeSeries: pullerSpeed, insert: addPullerSpeed } =
+  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+const { initialTimeSeries: liftPosition, insert: addLiftPosition } =
   createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
 
 /**
@@ -153,11 +173,22 @@ export function buffer1MessageHandler(
         const liveValuesEvent = liveValuesEventSchema.parse(event);
 
         // Extract values and add to time series
-        const { puller_speed } = liveValuesEvent.data;
+        const { lift_position, puller_speed } = liveValuesEvent.data;
 
         const timestamp = liveValuesEvent.ts;
         updateStore((state) => {
           const newState = { ...state };
+          // Add lift position if not null
+          if (lift_position !== null) {
+            const timeseriesValue: TimeSeriesValue = {
+              value: lift_position,
+              timestamp,
+            };
+            newState.liftPosition = addLiftPosition(
+              state.liftPosition,
+              timeseriesValue,
+            );
+          }
 
           // Add puller speed
           const pullerSpeedValue: TimeSeriesValue = {
@@ -194,6 +225,7 @@ export const createBuffer1NamespaceStore =
         defaultState: null,
 
         // Time series data for live values
+        liftPosition,
         pullerSpeed,
       };
     });
