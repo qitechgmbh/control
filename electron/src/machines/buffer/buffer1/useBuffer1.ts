@@ -51,9 +51,8 @@ export function useBuffer1() {
   const machine_identification_unique = machineIdentification;
 
   // Get consolidated state and live values from namespace
-  const { state, defaultState, pullerSpeed } = useBuffer1Namespace(
-    machineIdentification,
-  );
+  const { state, defaultState, liftPosition, pullerSpeed } =
+    useBuffer1Namespace(machineIdentification);
 
   // Single optimistic state for all state management
   const stateOptimistic = useStateOptimistic<StateEvent>();
@@ -196,6 +195,97 @@ export function useBuffer1() {
     );
   };
 
+  const setLiftLimitTop = (limitTop: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.lift_state.limit_top = limitTop;
+      },
+      () =>
+        requestLiftSetLimitTop({
+          machine_identification_unique: machineIdentification,
+          data: { SetLiftLimitTop: limitTop },
+        }),
+    );
+  };
+
+  const setLiftLimitBottom = (limitBottom: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.lift_state.limit_bottom = limitBottom;
+      },
+      () =>
+        requestLiftSetLimitBottom({
+          machine_identification_unique: machineIdentification,
+          data: { SetLiftLimitBottom: limitBottom },
+        }),
+    );
+  };
+
+  const gotoLiftLimitTop = () => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.lift_state.is_going_up = true;
+      },
+      () =>
+        requestLiftGotoLimitTop({
+          machine_identification_unique: machineIdentification,
+          data: "GotoLiftLimitTop",
+        }),
+    );
+  };
+
+  const gotoLiftLimitBottom = () => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.lift_state.is_going_down = true;
+      },
+      () =>
+        requestLiftGotoLimitBottom({
+          machine_identification_unique: machineIdentification,
+          data: "GotoLiftLimitBottom",
+        }),
+    );
+  };
+
+  const gotoLiftHome = () => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.lift_state.is_going_home = true;
+      },
+      () =>
+        requestLiftGotoHome({
+          machine_identification_unique: machineIdentification,
+          data: "GotoLiftHome",
+        }),
+    );
+  };
+
+  const setLiftStepSize = (stepSize: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.lift_state.step_size = stepSize;
+      },
+      () =>
+        requestLiftSetStepSize({
+          machine_identification_unique: machineIdentification,
+          data: { SetLiftStepSize: stepSize },
+        }),
+    );
+  };
+
+  const setLiftPadding = (padding: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.lift_state.padding = padding;
+      },
+      () =>
+        requestLiftSetPadding({
+          machine_identification_unique: machineIdentification,
+          data: { SetLiftPadding: padding },
+        }),
+    );
+  };
+
   // Mutation hooks
   const { request: requestBufferMode } = useMachineMutation(
     z.object({
@@ -234,6 +324,28 @@ export function useBuffer1() {
   );
   const { request: requestPullerSetForward } = useMachineMutation(
     z.object({ SetPullerForward: z.boolean() }),
+  );
+
+  const { request: requestLiftGotoLimitTop } = useMachineMutation(
+    z.literal("GotoLiftLimitTop"),
+  );
+  const { request: requestLiftGotoLimitBottom } = useMachineMutation(
+    z.literal("GotoLiftLimitBottom"),
+  );
+  const { request: requestLiftGotoHome } = useMachineMutation(
+    z.literal("GotoLiftHome"),
+  );
+  const { request: requestLiftSetLimitTop } = useMachineMutation(
+    z.object({ SetLiftLimitTop: z.number() }),
+  );
+  const { request: requestLiftSetLimitBottom } = useMachineMutation(
+    z.object({ SetLiftLimitBottom: z.number() }),
+  );
+  const { request: requestLiftSetStepSize } = useMachineMutation(
+    z.object({ SetLiftStepSize: z.number() }),
+  );
+  const { request: requestLiftSetPadding } = useMachineMutation(
+    z.object({ SetLiftPadding: z.number() }),
   );
 
   // Calculate loading states
@@ -279,6 +391,7 @@ export function useBuffer1() {
     defaultState: defaultState?.data,
 
     // Individual live values (TimeSeries)
+    liftPosition,
     pullerSpeed,
 
     // Loading states
@@ -287,6 +400,13 @@ export function useBuffer1() {
 
     // Action functions (verb-first)
     setBufferMode,
+    setLiftLimitTop,
+    setLiftLimitBottom,
+    gotoLiftLimitTop,
+    gotoLiftLimitBottom,
+    gotoLiftHome,
+    setLiftStepSize,
+    setLiftPadding,
     setConnectedMachine,
     disconnectMachine,
     setCurrentInputSpeed,
