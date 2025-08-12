@@ -11,7 +11,6 @@ import { roundToDecimals } from "@/lib/decimal";
 import { Label } from "@/control/Label";
 import { TouchButton } from "@/components/touch/TouchButton";
 import { StatusBadge } from "@/control/StatusBadge";
-import { TraverseBar } from "@/machines/winder/TraverseBar";
 
 export function Buffer1ControlPage() {
   const {
@@ -94,15 +93,6 @@ export function Buffer1ControlPage() {
             timeseries={liftPosition}
             renderValue={(value) => roundToDecimals(value, 1)}
           />
-          {state?.lift_state && (
-            <TraverseBar
-              inside={0}
-              outside={180}
-              min={state?.lift_state.limit_top}
-              max={state?.lift_state.limit_bottom}
-              current={liftPosition.current?.value ?? 0}
-            />
-          )}
           <div className="flex flex-row flex-wrap gap-4">
             <Label label="Bottom Limit">
               <EditValue
