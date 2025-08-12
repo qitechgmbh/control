@@ -58,15 +58,12 @@ export const pullerStateSchema = z.object({
  * Lift state schema
  */
 export const liftStateSchema = z.object({
-  limit_top: z.number(),
-  limit_bottom: z.number(),
   is_going_up: z.boolean(),
   is_going_down: z.boolean(),
   is_homed: z.boolean(),
   is_going_home: z.boolean(),
   is_buffering: z.boolean(),
   step_size: z.number(),
-  padding: z.number(),
 });
 
 /**
