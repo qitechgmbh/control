@@ -539,8 +539,8 @@ impl BufferLiftController {
                     match self.distance_to_position(self.limit_bottom).abs()
                         > Length::new::<millimeter>(1.0)
                     {
-                        true => Velocity::new::<millimeter_per_second>(100.0),
-                        false => Velocity::new::<millimeter_per_second>(10.0),
+                        true => Velocity::new::<millimeter_per_second>(20.0),
+                        false => Velocity::new::<millimeter_per_second>(5.0),
                     },
                 )
             }
@@ -551,8 +551,8 @@ impl BufferLiftController {
                     match self.distance_to_position(self.limit_top).abs()
                         > Length::new::<millimeter>(1.0)
                     {
-                        true => Velocity::new::<millimeter_per_second>(100.0),
-                        false => Velocity::new::<millimeter_per_second>(10.0),
+                        true => Velocity::new::<millimeter_per_second>(20.0),
+                        false => Velocity::new::<millimeter_per_second>(5.0),
                     },
                 )
             }
@@ -568,7 +568,7 @@ impl BufferLiftController {
                 }
                 HomingState::FindEndstopCoarse => {
                     // Move in at a speed of -100 mm/s
-                    Velocity::new::<millimeter_per_second>(-100.0)
+                    Velocity::new::<millimeter_per_second>(-20.0)
                 }
                 HomingState::FindEndStopFine => {
                     // move into the endstop at 2 mm/s
@@ -584,7 +584,7 @@ impl BufferLiftController {
                     // Move top at a speed of 100 mm/s
                     self.speed_to_position(
                         self.limit_top - self.padding + Length::new::<millimeter>(0.01),
-                        Velocity::new::<millimeter_per_second>(100.0),
+                        Velocity::new::<millimeter_per_second>(20.0),
                     )
                 }
                 BufferingState::Filling => self.speed_to_position(
