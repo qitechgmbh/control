@@ -22,10 +22,6 @@ export function Buffer1ControlPage() {
     setPullerRegulationMode,
     setPullerTargetSpeed,
     liftPosition,
-    setLiftLimitTop,
-    setLiftLimitBottom,
-    gotoLiftLimitTop,
-    gotoLiftLimitBottom,
     gotoLiftHome,
     isLoading,
     isDisabled,
@@ -93,56 +89,6 @@ export function Buffer1ControlPage() {
             timeseries={liftPosition}
             renderValue={(value) => roundToDecimals(value, 1)}
           />
-          <div className="flex flex-row flex-wrap gap-4">
-            <Label label="Bottom Limit">
-              <EditValue
-                value={state?.lift_state?.limit_bottom}
-                unit="mm"
-                title="Bottom Limit"
-                defaultValue={defaultState?.lift_state?.limit_bottom}
-                min={Math.max(0, (state?.lift_state?.limit_bottom ?? 0) + 1)}
-                minLabel="IN"
-                maxLabel="OUT"
-                max={1300}
-                renderValue={(value) => roundToDecimals(value, 0)}
-                inverted
-                onChange={setLiftLimitBottom}
-              />
-              <TouchButton
-                variant="outline"
-                icon="lu:ArrowLeftToLine"
-                onClick={gotoLiftLimitBottom}
-                disabled={isDisabled}
-                isLoading={isLoading || state?.lift_state?.is_going_down}
-              >
-                Go to Bottom Limit
-              </TouchButton>
-            </Label>
-            <Label label="Top Limit">
-              <EditValue
-                value={state?.lift_state?.limit_top}
-                unit="mm"
-                title="Top Limit"
-                min={0}
-                max={Math.min(1300, (state?.lift_state?.limit_top ?? 1300) - 1)}
-                defaultValue={defaultState?.lift_state?.limit_top}
-                minLabel="IN"
-                maxLabel="OUT"
-                renderValue={(value) => roundToDecimals(value, 0)}
-                inverted
-                onChange={setLiftLimitTop}
-              />
-              <TouchButton
-                variant="outline"
-                icon="lu:ArrowRightToLine"
-                onClick={gotoLiftLimitTop}
-                disabled={isDisabled}
-                isLoading={isLoading || state?.lift_state?.is_going_up}
-              >
-                Go to Top Limit
-              </TouchButton>
-            </Label>
-          </div>
           <Label label="Home">
             <TouchButton
               variant="outline"

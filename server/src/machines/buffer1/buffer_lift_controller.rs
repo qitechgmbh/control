@@ -107,7 +107,7 @@ pub enum HomingState {
     FindEndstopCoarse,
 
     /// In this state the lift is moving slowly until it reaches the endstop
-    FindEndtopFine,
+    FindEndStopFine,
 
     /// In this state we check if th current position is actually 0.0, if not we redo the homing routine
     Validate(Instant),
@@ -149,7 +149,7 @@ impl BufferLiftController {
 impl BufferLiftController {
     /// Calculate the speed of the buffer lift from current input speed
     ///
-    /// Formula: input_speed / ( 2 * spool_amount )
+    /// Formula: input_speed / ( 2 * spool_amount - 1 )
     pub fn calculate_buffer_lift_speed(&self) -> Velocity {
         let lift_speed = Velocity::new::<millimeter_per_second>(
             (self.current_input_speed.get::<millimeter_per_second>()
@@ -285,12 +285,12 @@ impl BufferLiftController {
 
     pub fn is_filling(&self) -> bool {
         // [`State::Filling`]
-        matches!(self.state, State::GoingUp)
+        matches!(self.state, State::Buffering(BufferingState::Filling))
     }
 
     pub fn is_emptying(&self) -> bool {
         // [`State::Emptying`]
-        matches!(self.state, State::GoingDown)
+        matches!(self.state, State::Buffering(BufferingState::Emptying))
     }
 
     pub fn is_going_home(&self) -> bool {
@@ -414,10 +414,10 @@ impl BufferLiftController {
                     // Move out until endstop is not triggered anymore
                     if lift_end_stop.get_value().unwrap_or(false) == false {
                         // Find endstop fine
-                        self.state = State::Homing(HomingState::FindEndtopFine);
+                        self.state = State::Homing(HomingState::FindEndStopFine);
                     }
                 }
-                HomingState::FindEndtopFine => {
+                HomingState::FindEndStopFine => {
                     // If endstop is reached change to idle
                     if lift_end_stop.get_value().unwrap_or(false) == true {
                         // Set poition of lift to 0
@@ -492,7 +492,7 @@ impl BufferLiftController {
                 HomingState::Initialize => Velocity::ZERO,
                 HomingState::EscapeEndstop => {
                     // Move dowon at a speed of 10 mm/s
-                    Velocity::new::<millimeter_per_second>(5.0)
+                    Velocity::new::<millimeter_per_second>(10.0)
                 }
                 HomingState::FindEnstopFineDistancing => {
                     // Move up at a speed of 2 mm/s
@@ -502,7 +502,7 @@ impl BufferLiftController {
                     // Move in at a speed of -100 mm/s
                     Velocity::new::<millimeter_per_second>(-20.0)
                 }
-                HomingState::FindEndtopFine => {
+                HomingState::FindEndStopFine => {
                     // move into the endstop at 2 mm/s
                     Velocity::new::<millimeter_per_second>(-2.0)
                 }

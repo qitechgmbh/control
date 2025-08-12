@@ -23,6 +23,7 @@ use futures::executor::block_on;
 use puller_speed_controller::PullerRegulationMode;
 use serde::{Deserialize, Serialize};
 use smol::lock::{Mutex, RwLock};
+use tracing::info;
 use std::{
     sync::{Arc, Weak},
     time::Instant,
@@ -411,57 +412,9 @@ impl BufferV1 {
         }
     }
 
-    fn validate_lift_limits(inner: Length, outer: Length) -> bool {
-        outer > inner + Length::new::<millimeter>(0.9)
-    }
-
-    pub fn lift_set_limit_top(&mut self, limit: f64) {
-        let new_top = Length::new::<millimeter>(limit);
-        let current_bottom = self.buffer_lift_controller.get_limit_bottom();
-
-        if !Self::validate_lift_limits(new_top, current_bottom) {
-            return;
-        }
-
-        self.buffer_lift_controller.set_limit_top(new_top);
-        self.emit_state();
-    }
-
-    pub fn lift_set_limit_bottom(&mut self, limit: f64) {
-        let new_bottom = Length::new::<millimeter>(limit);
-        let current_top = self.buffer_lift_controller.get_limit_top();
-
-        if !Self::validate_lift_limits(current_top, new_bottom) {
-            return;
-        }
-
-        self.buffer_lift_controller.set_limit_bottom(new_bottom);
-        self.emit_state();
-    }
-
     pub fn lift_set_step_size(&mut self, step_size: f64) {
         let step_size = Length::new::<millimeter>(step_size);
         self.buffer_lift_controller.set_step_size(step_size);
-        self.emit_state();
-    }
-
-    pub fn lift_set_padding(&mut self, padding: f64) {
-        let padding = Length::new::<millimeter>(padding);
-        self.buffer_lift_controller.set_padding(padding);
-        self.emit_state();
-    }
-
-    pub fn lift_goto_limit_top(&mut self) {
-        if self.can_go_up() {
-            self.buffer_lift_controller.goto_limit_top();
-        }
-        self.emit_state();
-    }
-
-    pub fn lift_goto_limit_bottom(&mut self) {
-        if self.can_go_down() {
-            self.buffer_lift_controller.goto_limit_bottom();
-        }
         self.emit_state();
     }
 
