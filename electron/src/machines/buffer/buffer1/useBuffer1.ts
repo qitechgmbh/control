@@ -195,58 +195,6 @@ export function useBuffer1() {
     );
   };
 
-  const setLiftLimitTop = (limitTop: number) => {
-    updateStateOptimistically(
-      (current) => {
-        current.data.lift_state.limit_top = limitTop;
-      },
-      () =>
-        requestLiftSetLimitTop({
-          machine_identification_unique: machineIdentification,
-          data: { SetLiftLimitTop: limitTop },
-        }),
-    );
-  };
-
-  const setLiftLimitBottom = (limitBottom: number) => {
-    updateStateOptimistically(
-      (current) => {
-        current.data.lift_state.limit_bottom = limitBottom;
-      },
-      () =>
-        requestLiftSetLimitBottom({
-          machine_identification_unique: machineIdentification,
-          data: { SetLiftLimitBottom: limitBottom },
-        }),
-    );
-  };
-
-  const gotoLiftLimitTop = () => {
-    updateStateOptimistically(
-      (current) => {
-        current.data.lift_state.is_going_up = true;
-      },
-      () =>
-        requestLiftGotoLimitTop({
-          machine_identification_unique: machineIdentification,
-          data: "GotoLiftLimitTop",
-        }),
-    );
-  };
-
-  const gotoLiftLimitBottom = () => {
-    updateStateOptimistically(
-      (current) => {
-        current.data.lift_state.is_going_down = true;
-      },
-      () =>
-        requestLiftGotoLimitBottom({
-          machine_identification_unique: machineIdentification,
-          data: "GotoLiftLimitBottom",
-        }),
-    );
-  };
-
   const gotoLiftHome = () => {
     updateStateOptimistically(
       (current) => {
@@ -269,19 +217,6 @@ export function useBuffer1() {
         requestLiftSetStepSize({
           machine_identification_unique: machineIdentification,
           data: { SetLiftStepSize: stepSize },
-        }),
-    );
-  };
-
-  const setLiftPadding = (padding: number) => {
-    updateStateOptimistically(
-      (current) => {
-        current.data.lift_state.padding = padding;
-      },
-      () =>
-        requestLiftSetPadding({
-          machine_identification_unique: machineIdentification,
-          data: { SetLiftPadding: padding },
         }),
     );
   };
@@ -326,26 +261,11 @@ export function useBuffer1() {
     z.object({ SetPullerForward: z.boolean() }),
   );
 
-  const { request: requestLiftGotoLimitTop } = useMachineMutation(
-    z.literal("GotoLiftLimitTop"),
-  );
-  const { request: requestLiftGotoLimitBottom } = useMachineMutation(
-    z.literal("GotoLiftLimitBottom"),
-  );
   const { request: requestLiftGotoHome } = useMachineMutation(
     z.literal("GotoLiftHome"),
   );
-  const { request: requestLiftSetLimitTop } = useMachineMutation(
-    z.object({ SetLiftLimitTop: z.number() }),
-  );
-  const { request: requestLiftSetLimitBottom } = useMachineMutation(
-    z.object({ SetLiftLimitBottom: z.number() }),
-  );
   const { request: requestLiftSetStepSize } = useMachineMutation(
     z.object({ SetLiftStepSize: z.number() }),
-  );
-  const { request: requestLiftSetPadding } = useMachineMutation(
-    z.object({ SetLiftPadding: z.number() }),
   );
 
   // Calculate loading states
@@ -400,13 +320,8 @@ export function useBuffer1() {
 
     // Action functions (verb-first)
     setBufferMode,
-    setLiftLimitTop,
-    setLiftLimitBottom,
-    gotoLiftLimitTop,
-    gotoLiftLimitBottom,
     gotoLiftHome,
     setLiftStepSize,
-    setLiftPadding,
     setConnectedMachine,
     disconnectMachine,
     setCurrentInputSpeed,
