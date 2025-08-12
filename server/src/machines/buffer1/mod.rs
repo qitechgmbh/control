@@ -215,14 +215,14 @@ impl BufferV1 {
 
 impl BufferV1 {
     fn fill_buffer(&mut self) {
-        // stop the winder until the buffer is ful
+        // stop the winder until the buffer is full
         self.update_winder2_mode(Winder2Mode::Hold);
         self.update_winder2_buffer_state(BufferState::Buffering);
     }
 
     fn empty_buffer(&mut self) {
         // Set the winder2 to a mode where its faster than before to empty the buffer slowly
-        self.update_winder2_mode(Winder2Mode::Pull);
+        self.update_winder2_mode(Winder2Mode::Wind);
         self.update_winder2_buffer_state(BufferState::Emptying);
     }
 
@@ -293,6 +293,7 @@ impl BufferV1 {
         };
         self.mode = BufferV1Mode::Emptying;
         self.buffer_lift_controller.set_forward(false);
+        self.buffer_lift_controller.set_enabled(true);
     }
 
     fn switch_mode(&mut self, mode: BufferV1Mode) {
