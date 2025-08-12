@@ -37,7 +37,8 @@ craneLib.buildPackage (commonArgs // {
   inherit cargoArtifacts;
   
   # Enable journald logging feature for NixOS systems and build only server package
-  cargoExtraArgs = "-p server --features tracing-journald --no-default-features";
+  # Anbale io_uring support
+  cargoExtraArgs = "-p server --features tracing-journald,io-uring --no-default-features";
 
   # Create a swap file if building on a memory-constrained system
   preBuild = ''
