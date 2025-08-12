@@ -183,6 +183,45 @@ impl BufferV1 {
         let event = state.build();
         self.namespace.emit(BufferV1Events::State(event));
     }
+
+    /// Can buffer capability check
+    pub fn can_buffer(&self) -> bool {
+        // Check if tension arm is zeroed and traverse is homed
+        self.buffer_lift_controller.is_homed() && !self.buffer_lift_controller.is_going_home()
+    }
+
+    /// Can go to upper limit capability check
+    pub fn can_go_up(&self) -> bool {
+        self.buffer_lift_controller.is_homed()
+            && self.mode != BufferV1Mode::Standby
+            && !self.buffer_lift_controller.is_going_up()
+            && !self.buffer_lift_controller.is_going_home()
+            && !self.buffer_lift_controller.is_buffering()
+            && self.mode != BufferV1Mode::Filling
+            && self.mode != BufferV1Mode::Emptying
+    }
+
+    /// Can go to lower limit capability check
+    pub fn can_go_down(&self) -> bool {
+        self.buffer_lift_controller.is_homed()
+            && self.mode != BufferV1Mode::Standby
+            && !self.buffer_lift_controller.is_going_down()
+            && !self.buffer_lift_controller.is_going_home()
+            && !self.buffer_lift_controller.is_buffering()
+            && self.mode != BufferV1Mode::Filling
+            && self.mode != BufferV1Mode::Emptying
+    }
+
+    /// Can go home capability check
+    pub fn can_go_home(&self) -> bool {
+        // Check if not in standby, not traversing
+        // Allow going home even when going in or out
+        self.mode != BufferV1Mode::Standby
+            && !self.buffer_lift_controller.is_going_home()
+            && !self.buffer_lift_controller.is_buffering()
+            && self.mode != BufferV1Mode::Filling
+            && self.mode != BufferV1Mode::Emptying
+    }
 }
 
 impl BufferV1 {
@@ -237,7 +276,7 @@ impl BufferV1 {
             BufferV1Mode::Emptying => {}
         };
         self.mode = BufferV1Mode::Hold;
-        self.buffer_lift_controller.set_enabled(false);
+        self.buffer_lift_controller.set_enabled(true);
         let _ = self.buffer_lift_controller.stepper_driver.set_speed(0.0);
         self.update_winder2_buffer_state(BufferState::Hold);
     }
@@ -412,21 +451,21 @@ impl BufferV1 {
     }
 
     pub fn lift_goto_limit_top(&mut self) {
-        if self.can_move() {
+        if self.can_go_up() {
             self.buffer_lift_controller.goto_limit_top();
         }
         self.emit_state();
     }
 
     pub fn lift_goto_limit_bottom(&mut self) {
-        if self.can_move() {
+        if self.can_go_down() {
             self.buffer_lift_controller.goto_limit_bottom();
         }
         self.emit_state();
     }
 
     pub fn lift_goto_home(&mut self) {
-        if self.can_move() {
+        if self.can_go_home() {
             self.buffer_lift_controller.goto_home();
         }
         self.emit_state();
