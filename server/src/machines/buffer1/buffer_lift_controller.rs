@@ -124,20 +124,20 @@ impl BufferLiftController {
             padding: Length::new::<millimeter>(0.9),    // Default padding
             did_change_state: false,
             stepper_driver: driver,
-            fullstep_converter: LinearStepConverter::from_circumference(
+            fullstep_converter: LinearStepConverter::from_diameter(
                 200,
-                Length::new::<millimeter>(35.0),
+                Length::new::<millimeter>(32.22),
             ),
-            microstep_converter: LinearStepConverter::from_circumference(
+            microstep_converter: LinearStepConverter::from_diameter(
                 200 * microsteps as i16,
-                Length::new::<millimeter>(35.0),
+                Length::new::<millimeter>(32.22),
             ),
             spool_amount: 13,
             state: State::NotHomed,
             forward: true,
             acceleration_controller: LinearAccelerationLimitingController::new_simple(
                 Acceleration::new::<centimeter_per_second_squared>(1.0),
-                Velocity::new::<millimeter_per_second>(10.0),
+                Velocity::new::<millimeter_per_second>(5.0),
             ),
             current_input_speed: Velocity::ZERO,
             target_output_speed: Velocity::ZERO,
@@ -471,8 +471,8 @@ impl BufferLiftController {
                     match self.distance_to_position(self.limit_bottom).abs()
                         > Length::new::<millimeter>(1.0)
                     {
-                        true => Velocity::new::<millimeter_per_second>(100.0),
-                        false => Velocity::new::<millimeter_per_second>(10.0),
+                        true => Velocity::new::<millimeter_per_second>(20.0),
+                        false => Velocity::new::<millimeter_per_second>(5.0),
                     },
                 )
             }
@@ -483,8 +483,8 @@ impl BufferLiftController {
                     match self.distance_to_position(self.limit_top).abs()
                         > Length::new::<millimeter>(1.0)
                     {
-                        true => Velocity::new::<millimeter_per_second>(100.0),
-                        false => Velocity::new::<millimeter_per_second>(10.0),
+                        true => Velocity::new::<millimeter_per_second>(20.0),
+                        false => Velocity::new::<millimeter_per_second>(5.0),
                     },
                 )
             }
@@ -492,7 +492,7 @@ impl BufferLiftController {
                 HomingState::Initialize => Velocity::ZERO,
                 HomingState::EscapeEndstop => {
                     // Move dowon at a speed of 10 mm/s
-                    Velocity::new::<millimeter_per_second>(10.0)
+                    Velocity::new::<millimeter_per_second>(5.0)
                 }
                 HomingState::FindEnstopFineDistancing => {
                     // Move up at a speed of 2 mm/s
@@ -500,7 +500,7 @@ impl BufferLiftController {
                 }
                 HomingState::FindEndstopCoarse => {
                     // Move in at a speed of -100 mm/s
-                    Velocity::new::<millimeter_per_second>(-100.0)
+                    Velocity::new::<millimeter_per_second>(-20.0)
                 }
                 HomingState::FindEndtopFine => {
                     // move into the endstop at 2 mm/s
@@ -516,7 +516,7 @@ impl BufferLiftController {
                     // Move top at a speed of 100 mm/s
                     self.speed_to_position(
                         self.limit_top - self.padding + Length::new::<millimeter>(0.01),
-                        Velocity::new::<millimeter_per_second>(100.0),
+                        Velocity::new::<millimeter_per_second>(20.0),
                     )
                 }
                 BufferingState::Filling => self.speed_to_position(
