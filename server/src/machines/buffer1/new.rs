@@ -26,10 +26,10 @@ use ethercat_hal::shared_config::el70x1::{EL70x1OperationMode, StmMotorConfigura
 use uom::si::f64::{Length, Velocity};
 use uom::si::length::{centimeter, millimeter};
 
-use crate::machines::buffer1::puller_speed_controller::PullerSpeedController;
 use crate::machines::buffer1::BufferV1Mode;
 use crate::machines::get_ethercat_device;
 use crate::machines::buffer1::buffer_lift_controller::BufferLiftController;
+use crate::machines::buffer1::puller_speed_controller::PullerSpeedController;
 
 use super::{BufferV1, api::Buffer1Namespace};
 
@@ -151,7 +151,7 @@ impl MachineNewTrait for BufferV1 {
                 ),
                 lift_step_converter: LinearStepConverter::from_diameter(
                     200,
-                    Length::new::<centimeter>(5.0),
+                    Length::new::<millimeter>(32.22),
                 ),
                 namespace: Buffer1Namespace::new(params.socket_queue_tx.clone()),
                 last_measurement_emit: Instant::now(),
