@@ -141,16 +141,8 @@ enum Mutation {
     SetCurrentInputSpeed(f64),
 
     // Lift
-    /// Position in mm from home point
-    SetLiftLimitTop(f64),
-    /// Position in mm from home point
-    SetLiftLimitBottom(f64),
     /// Step size in mm for traverse movement
     SetLiftStepSize(f64),
-    /// Padding in mm for traverse movement limits
-    SetLiftPadding(f64),
-    GotoLiftLimitTop,
-    GotoLiftLimitBottom,
     GotoLiftHome,
 
     // Puller
@@ -218,12 +210,7 @@ impl MachineApi for BufferV1 {
             Mutation::SetPullerTargetSpeed(value) => self.puller_set_target_speed(value),
             Mutation::SetPullerTargetDiameter(_) => todo!(),
             Mutation::SetPullerForward(value) => self.puller_set_forward(value),
-            Mutation::SetLiftLimitTop(limit) => self.lift_set_limit_top(limit),
-            Mutation::SetLiftLimitBottom(limit) => self.lift_set_limit_bottom(limit),
             Mutation::SetLiftStepSize(step_size) => self.lift_set_step_size(step_size),
-            Mutation::SetLiftPadding(padding) => self.lift_set_padding(padding),
-            Mutation::GotoLiftLimitTop => self.lift_goto_limit_top(),
-            Mutation::GotoLiftLimitBottom => self.lift_goto_limit_bottom(),
             Mutation::GotoLiftHome => self.lift_goto_home(),
         }
         Ok(())
