@@ -1,6 +1,6 @@
 import { ControlCard } from "@/control/ControlCard";
 import { Page } from "@/components/Page";
-import React from "react";
+import React, { useState } from "react";
 import { ControlGrid } from "@/control/ControlGrid";
 import { TimeSeriesValueNumeric } from "@/control/TimeSeriesValue";
 import { TraverseBar } from "../TraverseBar";
@@ -17,8 +17,17 @@ import { Mode, SpoolAutomaticActionMode } from "./winder2Namespace";
 import { TensionArm } from "../TensionArm";
 import { roundDegreesToDecimals, roundToDecimals } from "@/lib/decimal";
 import { Spool } from "../Spool";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export function Winder2ControlPage() {
+  const [showResetConfirmDialog, setShowResetConfirmDialog] = useState(false);
+
   // use optimistic state
   const {
     state,
@@ -45,6 +54,20 @@ export function Winder2ControlPage() {
     isLoading,
     isDisabled,
   } = useWinder2();
+
+  const handleResetProgress = () => {
+    // Check if the machine is currently in Wind mode
+    if (state?.mode_state?.mode === "Wind") {
+      setShowResetConfirmDialog(true);
+    } else {
+      resetSpoolProgress();
+    }
+  };
+
+  const confirmResetProgress = () => {
+    resetSpoolProgress();
+    setShowResetConfirmDialog(false);
+  };
 
   return (
     <Page>
@@ -291,8 +314,8 @@ export function Winder2ControlPage() {
 
           <TouchButton
             variant="outline"
-            onClick={resetSpoolProgress}
-            disabled={isDisabled || !state?.traverse_state?.can_go_out}
+            onClick={handleResetProgress}
+            disabled={isDisabled}
             isLoading={isLoading || state?.traverse_state?.is_going_out}
           >
             Reset Progress
@@ -329,6 +352,39 @@ export function Winder2ControlPage() {
           </Label>
         </ControlCard>
       </ControlGrid>
+
+      {/* Reset Progress Confirmation Dialog */}
+      <Dialog
+        open={showResetConfirmDialog}
+        onOpenChange={setShowResetConfirmDialog}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Reset Spool Progress?</DialogTitle>
+            <DialogDescription>
+              The machine is currently in Wind mode. Are you sure you want to
+              reset the spool progress?
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="mt-4 flex flex-col gap-2">
+            <TouchButton
+              variant="destructive"
+              onClick={confirmResetProgress}
+              disabled={isLoading}
+              isLoading={isLoading}
+            >
+              Yes, Reset Progress
+            </TouchButton>
+            <TouchButton
+              variant="outline"
+              onClick={() => setShowResetConfirmDialog(false)}
+            >
+              Cancel
+            </TouchButton>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Page>
   );
 }
