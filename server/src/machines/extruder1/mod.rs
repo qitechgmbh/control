@@ -90,7 +90,6 @@ impl ExtruderV2 {
                 uses_rpm: self.screw_speed_controller.get_uses_rpm(),
             },
             pressure_state: PressureState {
-                bar: self.screw_speed_controller.get_pressure().get::<bar>(),
                 target_bar: self
                     .screw_speed_controller
                     .get_target_pressure()
@@ -105,11 +104,6 @@ impl ExtruderV2 {
             },
             heating_states: HeatingStates {
                 nozzle: HeatingState {
-                    temperature: self
-                        .temperature_controller_nozzle
-                        .heating
-                        .temperature
-                        .get::<degree_celsius>(),
                     target_temperature: self
                         .temperature_controller_nozzle
                         .heating
@@ -118,11 +112,6 @@ impl ExtruderV2 {
                     wiring_error: self.temperature_controller_nozzle.heating.wiring_error,
                 },
                 front: HeatingState {
-                    temperature: self
-                        .temperature_controller_front
-                        .heating
-                        .temperature
-                        .get::<degree_celsius>(),
                     target_temperature: self
                         .temperature_controller_front
                         .heating
@@ -131,11 +120,6 @@ impl ExtruderV2 {
                     wiring_error: self.temperature_controller_front.heating.wiring_error,
                 },
                 back: HeatingState {
-                    temperature: self
-                        .temperature_controller_back
-                        .heating
-                        .temperature
-                        .get::<degree_celsius>(),
                     target_temperature: self
                         .temperature_controller_back
                         .heating
@@ -144,11 +128,6 @@ impl ExtruderV2 {
                     wiring_error: self.temperature_controller_back.heating.wiring_error,
                 },
                 middle: HeatingState {
-                    temperature: self
-                        .temperature_controller_middle
-                        .heating
-                        .temperature
-                        .get::<degree_celsius>(),
                     target_temperature: self
                         .temperature_controller_middle
                         .heating
@@ -194,14 +173,17 @@ impl ExtruderV2 {
 
     pub fn maybe_emit_state_event(&mut self) {
         let new_state = self.build_state_event();
+
         let should_emit = self
             .last_state_event
             .as_ref()
             .map(|prev| prev != &new_state)
             .unwrap_or(true); // always emit if no previous
-
+        //    println!("{:?}", should_emit);
         if should_emit {
+            println!("Was {:?}\n", self.last_state_event);
             self.last_state_event = Some(new_state.clone());
+            //          println!("Is {:?}\n", self.last_state_event);
             self.namespace
                 .emit(ExtruderV2Events::State(new_state.build()));
         }

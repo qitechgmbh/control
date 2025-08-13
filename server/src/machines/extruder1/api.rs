@@ -121,7 +121,6 @@ pub struct RegulationState {
 
 #[derive(Serialize, Debug, Clone, PartialEq)]
 pub struct PressureState {
-    pub bar: f64,
     pub target_bar: f64,
     pub wiring_error: bool,
 }
@@ -141,7 +140,6 @@ pub struct HeatingStates {
 
 #[derive(Serialize, Debug, Clone, PartialEq)]
 pub struct HeatingState {
-    pub temperature: f64,
     pub target_temperature: f64,
     pub wiring_error: bool,
 }

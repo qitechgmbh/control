@@ -25,15 +25,12 @@ impl MachineAct for ExtruderV2 {
             }
 
             if self.mode == ExtruderV2Mode::Extrude
-                && self.screw_speed_controller.get_motor_enabled() == false
+                && !self.screw_speed_controller.get_motor_enabled()
             {
                 self.switch_to_heat();
             }
 
-            if self.screw_speed_controller.get_wiring_error() {
-                self.emit_state();
-            }
-
+            // emits state if changed
             self.maybe_emit_state_event();
 
             let now = Instant::now();
