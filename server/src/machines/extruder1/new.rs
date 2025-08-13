@@ -401,6 +401,7 @@ impl MachineNewTrait for ExtruderV2 {
                 temperature_controller_nozzle: temperature_controller_nozzle,
                 screw_speed_controller: screw_speed_controller,
                 emitted_default_state: false,
+                last_state_event: None,
             };
             extruder.emit_state();
             Ok(extruder)

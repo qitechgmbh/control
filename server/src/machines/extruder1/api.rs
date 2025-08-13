@@ -75,7 +75,7 @@ impl LiveValuesEvent {
     }
 }
 
-#[derive(Serialize, Debug, Clone)]
+#[derive(Serialize, Debug, Clone, PartialEq)]
 pub struct StateEvent {
     pub is_default_state: bool,
     /// rotation state
@@ -104,34 +104,34 @@ impl StateEvent {
     }
 }
 
-#[derive(Serialize, Debug, Clone)]
+#[derive(Serialize, Debug, Clone, PartialEq)]
 pub struct RotationState {
     pub forward: bool,
 }
 
-#[derive(Serialize, Debug, Clone)]
+#[derive(Serialize, Debug, Clone, PartialEq)]
 pub struct ModeState {
     pub mode: ExtruderV2Mode,
 }
 
-#[derive(Serialize, Debug, Clone)]
+#[derive(Serialize, Debug, Clone, PartialEq)]
 pub struct RegulationState {
     pub uses_rpm: bool,
 }
 
-#[derive(Serialize, Debug, Clone)]
+#[derive(Serialize, Debug, Clone, PartialEq)]
 pub struct PressureState {
     pub bar: f64,
     pub target_bar: f64,
     pub wiring_error: bool,
 }
 
-#[derive(Serialize, Debug, Clone)]
+#[derive(Serialize, Debug, Clone, PartialEq)]
 pub struct ScrewState {
     pub target_rpm: f64,
 }
 
-#[derive(Serialize, Debug, Clone)]
+#[derive(Serialize, Debug, Clone, PartialEq)]
 pub struct HeatingStates {
     pub nozzle: HeatingState,
     pub front: HeatingState,
@@ -139,20 +139,20 @@ pub struct HeatingStates {
     pub middle: HeatingState,
 }
 
-#[derive(Serialize, Debug, Clone)]
+#[derive(Serialize, Debug, Clone, PartialEq)]
 pub struct HeatingState {
     pub temperature: f64,
     pub target_temperature: f64,
     pub wiring_error: bool,
 }
 
-#[derive(Serialize, Debug, Clone)]
+#[derive(Serialize, Debug, Clone, PartialEq)]
 pub struct ExtruderSettingsState {
     pub pressure_limit: f64,
     pub pressure_limit_enabled: bool,
 }
 
-#[derive(Serialize, Debug, Clone)]
+#[derive(Serialize, Debug, Clone, PartialEq)]
 pub struct InverterStatusState {
     /// RUN (Inverter running)
     pub running: bool,
@@ -174,14 +174,14 @@ pub struct InverterStatusState {
     pub fault_occurence: bool,
 }
 
-#[derive(Deserialize, Serialize, Debug, Clone)]
+#[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
 pub struct PidSettings {
     pub ki: f64,
     pub kp: f64,
     pub kd: f64,
 }
 
-#[derive(Serialize, Debug, Clone)]
+#[derive(Serialize, Debug, Clone, PartialEq)]
 pub struct PidSettingsStates {
     pub temperature: PidSettings,
     pub pressure: PidSettings,

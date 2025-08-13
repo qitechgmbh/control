@@ -63,6 +63,7 @@ pub enum HeatingType {
 pub struct ExtruderV2 {
     namespace: ExtruderV2Namespace,
     last_measurement_emit: Instant,
+    last_state_event: Option<StateEvent>,
     mode: ExtruderV2Mode,
     screw_speed_controller: ScrewSpeedController,
     temperature_controller_front: TemperatureController,
@@ -75,69 +76,9 @@ pub struct ExtruderV2 {
     emitted_default_state: bool,
 }
 
-impl std::fmt::Display for ExtruderV2 {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "ExtruderV2")
-    }
-}
-impl Machine for ExtruderV2 {
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
-}
-
 impl ExtruderV2 {
-    pub const MACHINE_IDENTIFICATION: MachineIdentification = MachineIdentification {
-        vendor: VENDOR_QITECH,
-        machine: MACHINE_EXTRUDER_V1,
-    };
-}
-
-impl ExtruderV2 {
-    pub fn emit_live_values(&mut self) {
-        let live_values = LiveValuesEvent {
-            motor_status: self.screw_speed_controller.get_motor_status().into(),
-            pressure: self.screw_speed_controller.get_pressure().get::<bar>(),
-            nozzle_temperature: self
-                .temperature_controller_nozzle
-                .heating
-                .temperature
-                .get::<degree_celsius>(),
-            front_temperature: self
-                .temperature_controller_front
-                .heating
-                .temperature
-                .get::<degree_celsius>(),
-            back_temperature: self
-                .temperature_controller_back
-                .heating
-                .temperature
-                .get::<degree_celsius>(),
-            middle_temperature: self
-                .temperature_controller_middle
-                .heating
-                .temperature
-                .get::<degree_celsius>(),
-            nozzle_power: self
-                .temperature_controller_nozzle
-                .get_heating_element_wattage(),
-            front_power: self
-                .temperature_controller_front
-                .get_heating_element_wattage(),
-            back_power: self
-                .temperature_controller_back
-                .get_heating_element_wattage(),
-            middle_power: self
-                .temperature_controller_middle
-                .get_heating_element_wattage(),
-        };
-
-        let event = live_values.build();
-        self.namespace.emit(ExtruderV2Events::LiveValues(event));
-    }
-
-    pub fn emit_state(&mut self) {
-        let state = StateEvent {
+    pub fn build_state_event(&mut self) -> StateEvent {
+        StateEvent {
             is_default_state: !std::mem::replace(&mut self.emitted_default_state, true),
             rotation_state: RotationState {
                 forward: self.screw_speed_controller.get_rotation_direction(),
@@ -248,8 +189,89 @@ impl ExtruderV2 {
                     kd: self.screw_speed_controller.pid.get_kd(),
                 },
             },
+        }
+    }
+
+    pub fn maybe_emit_state_event(&mut self) {
+        let new_state = self.build_state_event();
+        let should_emit = self
+            .last_state_event
+            .as_ref()
+            .map(|prev| prev != &new_state)
+            .unwrap_or(true); // always emit if no previous
+
+        if should_emit {
+            self.last_state_event = Some(new_state.clone());
+            self.namespace
+                .emit(ExtruderV2Events::State(new_state.build()));
+        }
+    }
+}
+
+impl std::fmt::Display for ExtruderV2 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "ExtruderV2")
+    }
+}
+impl Machine for ExtruderV2 {
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+}
+
+impl ExtruderV2 {
+    pub const MACHINE_IDENTIFICATION: MachineIdentification = MachineIdentification {
+        vendor: VENDOR_QITECH,
+        machine: MACHINE_EXTRUDER_V1,
+    };
+}
+
+impl ExtruderV2 {
+    pub fn emit_live_values(&mut self) {
+        let live_values = LiveValuesEvent {
+            motor_status: self.screw_speed_controller.get_motor_status().into(),
+            pressure: self.screw_speed_controller.get_pressure().get::<bar>(),
+            nozzle_temperature: self
+                .temperature_controller_nozzle
+                .heating
+                .temperature
+                .get::<degree_celsius>(),
+            front_temperature: self
+                .temperature_controller_front
+                .heating
+                .temperature
+                .get::<degree_celsius>(),
+            back_temperature: self
+                .temperature_controller_back
+                .heating
+                .temperature
+                .get::<degree_celsius>(),
+            middle_temperature: self
+                .temperature_controller_middle
+                .heating
+                .temperature
+                .get::<degree_celsius>(),
+            nozzle_power: self
+                .temperature_controller_nozzle
+                .get_heating_element_wattage(),
+            front_power: self
+                .temperature_controller_front
+                .get_heating_element_wattage(),
+            back_power: self
+                .temperature_controller_back
+                .get_heating_element_wattage(),
+            middle_power: self
+                .temperature_controller_middle
+                .get_heating_element_wattage(),
         };
 
+        let event = live_values.build();
+        self.namespace.emit(ExtruderV2Events::LiveValues(event));
+    }
+
+    pub fn emit_state(&mut self) {
+        let state = self.build_state_event();
+        self.last_state_event = Some(state.clone());
         let event = state.build();
         self.namespace.emit(ExtruderV2Events::State(event));
     }
