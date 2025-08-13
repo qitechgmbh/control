@@ -55,6 +55,11 @@ export const winder2: MachineProperties = {
           product_id: 0x7d23052,
           revision: 0x110000,
         },
+        {
+          vendor_id: 2,
+          product_id: 0x7d23052,
+          revision: 0x120000,
+        },
       ],
     },
     {
