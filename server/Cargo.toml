@@ -76,6 +76,7 @@ tracing-otel = [
     "dep:tonic",
 ]
 mock-machine = []
+io-uring = []
 
 [profile.release]
 codegen-units = 1
