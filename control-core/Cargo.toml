@@ -23,7 +23,7 @@ erased-serde = "0.4.6"
 core_affinity = "0.8.3"
 
 [target.'cfg(unix)'.dependencies]
-libc = "0.2.172"
+libc = "0.2.175"
 
 [dev-dependencies]
 approx = "0.5.1"
