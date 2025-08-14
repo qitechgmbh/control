@@ -22,7 +22,7 @@ euclid = "0.22.11"
 # concurrency
 smol = "2.0.2"
 tokio = { version = "1.44.2", features = ["rt-multi-thread"] }
-thread-priority = "1.2.0"
+thread-priority = "2.1.0"
 regex = "1.11.1"
 futures = "0.3.31"
 
