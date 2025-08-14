@@ -44,10 +44,10 @@ impl AccelerationSpeedController {
     /// No speed limits are applied.
     pub fn new_simple(max_acceleration: f64, initial_speed: f64) -> Self {
         Self::new(
-            None,                    // min_speed
-            None,                    // max_speed
-            -max_acceleration,       // min_acceleration (deceleration)
-            max_acceleration,        // max_acceleration
+            None,              // min_speed
+            None,              // max_speed
+            -max_acceleration, // min_acceleration (deceleration)
+            max_acceleration,  // max_acceleration
             initial_speed,
         )
     }

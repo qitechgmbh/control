@@ -1,101 +1,139 @@
 import { toastError } from "@/components/Toast";
 import { useMachineMutate as useMachineMutation } from "@/client/useClient";
-import { mock1, MachineIdentificationUnique } from "@/machines/types";
+import { MachineIdentificationUnique } from "@/machines/types";
+import { mock1 } from "@/machines/properties";
 import { mock1SerialRoute } from "@/routes/routes";
 import { z } from "zod";
-import { useMock1Namespace, Mode } from "./mock1Namespace";
+import { useMock1Namespace, Mode, StateEvent } from "./mock1Namespace";
 import { useEffect, useMemo } from "react";
 import { useStateOptimistic } from "@/lib/useStateOptimistic";
-import { FPS_60, useThrottle } from "@/lib/useThrottle";
+import { produce } from "immer";
 
 function useMock(machine_identification_unique: MachineIdentificationUnique) {
-  // Write Path
-  const mockStateOptimistic = useStateOptimistic<{
-    frequency: number;
-  }>();
+  // Get consolidated state and live values from namespace
+  const { state, defaultState, sineWaveSum, sineWave1, sineWave2, sineWave3 } =
+    useMock1Namespace(machine_identification_unique);
 
-  const modeStateOptimistic = useStateOptimistic<{
-    mode: Mode;
-  }>();
+  // Single optimistic state for all state management
+  const stateOptimistic = useStateOptimistic<StateEvent>();
 
-  const schemaSetFrequency = z.object({ SetFrequency: z.number() });
-  const { request: requestSetFrequency } =
-    useMachineMutation(schemaSetFrequency);
-  const mockSetFrequency = async (frequency: number) => {
-    if (mockStateOptimistic.value) {
-      mockStateOptimistic.setOptimistic({
-        ...mockStateOptimistic.value,
-        frequency: frequency,
-      });
+  // Update optimistic state when real state changes
+  useEffect(() => {
+    if (state) {
+      stateOptimistic.setReal(state);
     }
-    requestSetFrequency({
-      machine_identification_unique,
-      data: {
-        SetFrequency: frequency,
-      },
-    })
+  }, [state]);
+
+  // Helper function for optimistic updates using produce
+  const updateStateOptimistically = (
+    producer: (current: StateEvent) => void,
+    serverRequest: () => Promise<any>,
+  ) => {
+    const currentState = stateOptimistic.value;
+    if (currentState) {
+      stateOptimistic.setOptimistic(produce(currentState, producer));
+    }
+    serverRequest()
       .then((response) => {
-        if (!response.success) mockStateOptimistic.resetToReal();
+        if (!response.success) stateOptimistic.resetToReal();
       })
-      .catch(() => mockStateOptimistic.resetToReal());
+      .catch(() => stateOptimistic.resetToReal());
+  };
+
+  // Action functions with verb-first names
+  const setSchemaFrequency1 = z.object({ SetFrequency1: z.number() });
+  const { request: requestSetFrequency1 } =
+    useMachineMutation(setSchemaFrequency1);
+  const setFrequency1 = (frequency: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.frequency1 = frequency;
+      },
+      () =>
+        requestSetFrequency1({
+          machine_identification_unique,
+          data: {
+            SetFrequency1: frequency,
+          },
+        }),
+    );
+  };
+
+  const setSchemaFrequency2 = z.object({ SetFrequency2: z.number() });
+  const { request: requestSetFrequency2 } =
+    useMachineMutation(setSchemaFrequency2);
+  const setFrequency2 = (frequency: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.frequency2 = frequency;
+      },
+      () =>
+        requestSetFrequency2({
+          machine_identification_unique,
+          data: {
+            SetFrequency2: frequency,
+          },
+        }),
+    );
+  };
+
+  const setSchemaFrequency3 = z.object({ SetFrequency3: z.number() });
+  const { request: requestSetFrequency3 } =
+    useMachineMutation(setSchemaFrequency3);
+  const setFrequency3 = (frequency: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.frequency3 = frequency;
+      },
+      () =>
+        requestSetFrequency3({
+          machine_identification_unique,
+          data: {
+            SetFrequency3: frequency,
+          },
+        }),
+    );
   };
 
   const schemaSetMode = z.object({ SetMode: z.enum(["Standby", "Running"]) });
   const { request: requestSetMode } = useMachineMutation(schemaSetMode);
-  const mockSetMode = async (mode: Mode) => {
-    if (modeStateOptimistic.value) {
-      modeStateOptimistic.setOptimistic({
-        ...modeStateOptimistic.value,
-        mode: mode,
-      });
-    }
-    requestSetMode({
-      machine_identification_unique,
-      data: {
-        SetMode: mode,
+  const setMode = (mode: Mode) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.mode_state.mode = mode;
       },
-    })
-      .then((response) => {
-        if (!response.success) modeStateOptimistic.resetToReal();
-      })
-      .catch(() => modeStateOptimistic.resetToReal());
+      () =>
+        requestSetMode({
+          machine_identification_unique,
+          data: {
+            SetMode: mode,
+          },
+        }),
+    );
   };
 
-  // Read Path
-  const { sineWave, mockState, modeState } = useMock1Namespace(
-    machine_identification_unique,
-  );
-
-  // Throttle UI updates to 60 FPS
-  const debouncedSineWave = useThrottle(sineWave, FPS_60); // 60fps
-
-  // Update real values from server
-  useEffect(() => {
-    if (mockState?.data) {
-      mockStateOptimistic.setReal(mockState.data);
-    }
-  }, [mockState]);
-
-  useEffect(() => {
-    if (modeState?.data) {
-      modeStateOptimistic.setReal(modeState.data);
-    }
-  }, [modeState]);
-
   return {
-    sineWave: debouncedSineWave,
-    mockState,
-    modeState,
-    mockSetFrequency,
-    mockSetMode,
-    mockStateIsLoading:
-      mockStateOptimistic.isOptimistic || !mockStateOptimistic.isInitialized,
-    mockStateIsDisabled:
-      mockStateOptimistic.isOptimistic || !mockStateOptimistic.isInitialized,
-    modeStateIsLoading:
-      modeStateOptimistic.isOptimistic || !modeStateOptimistic.isInitialized,
-    modeStateIsDisabled:
-      modeStateOptimistic.isOptimistic || !modeStateOptimistic.isInitialized,
+    // Consolidated state
+    state: stateOptimistic.value?.data,
+
+    // Default state for initial values
+    defaultState: defaultState?.data,
+
+    // Individual live values (TimeSeries)
+    sineWave1,
+    sineWave2,
+    sineWave3,
+    sineWaveSum,
+
+    // Loading states
+    isLoading: stateOptimistic.isOptimistic,
+    isDisabled: !stateOptimistic.isInitialized,
+
+    // Action functions (verb-first)
+    setFrequency1,
+    setFrequency2,
+    setFrequency3,
+    setMode,
   };
 }
 

@@ -1,3 +1,4 @@
+use crate::helpers::ethercrab_types::EthercrabSubDevicePreoperational;
 use crate::pdo::PredefinedPdoAssignment;
 use crate::pdo::analog_input::{AiCompact, AiStandard};
 use crate::pdo::el70x1::{
@@ -6,7 +7,6 @@ use crate::pdo::el70x1::{
     StmControl, StmExternalPosition, StmInternalPosition, StmPosition, StmStatus,
     StmSynchronInfoData, StmVelocity,
 };
-use crate::helpers::ethercrab_types::EthercrabSubDevicePreoperational;
 use ethercat_hal_derive::{RxPdo, TxPdo};
 
 #[derive(Debug, Clone, TxPdo)]

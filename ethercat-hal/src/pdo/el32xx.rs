@@ -1,7 +1,7 @@
 use bitvec::prelude::*;
 use ethercat_hal_derive::PdoObject;
 
-use super::{basic::Limit, TxPdoObject};
+use super::{TxPdoObject, basic::Limit};
 
 /// PDO Object for EL32xx (temperature sensing) devices
 ///

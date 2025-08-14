@@ -14,9 +14,17 @@ import { useNavigate } from "@tanstack/react-router";
 import { useEffectAsync } from "@/lib/useEffectAsync";
 import { Collapsible, CollapsibleTrigger } from "@radix-ui/react-collapsible";
 import { CollapsibleContent } from "@/components/ui/collapsible";
+import {
+  listNixOSGenerations,
+  setNixOSGeneration,
+  deleteNixOSGeneration,
+  isNixOSAvailable,
+} from "@/helpers/nixos_helpers";
+import { useUpdateStore } from "@/stores/updateStore";
 
 export function ChooseVersionPage() {
   const navigate = useNavigate();
+  const { isUpdating, currentUpdateInfo } = useUpdateStore();
 
   // load environment info
   const [environmentInfo, setEnvironmentInfo] = useState<
@@ -37,6 +45,15 @@ export function ChooseVersionPage() {
   const [branches, setBranches] = useState<any[] | undefined>(undefined);
   const [tags, setTags] = useState<any[] | undefined>(undefined);
 
+  // NixOS generations state
+  const [nixosGenerations, setNixosGenerations] = useState<
+    NixOSGeneration[] | undefined
+  >(undefined);
+  const [nixosError, setNixosError] = useState<string | undefined>(undefined);
+  const [generationActionLoading, setGenerationActionLoading] = useState<
+    string | null
+  >(null);
+
   const [githubSource, setGithubSource] =
     useState<GithubSource>(defaultGithubSource);
 
@@ -54,26 +71,83 @@ export function ChooseVersionPage() {
   // Fetch master commits
   useEffect(() => {
     setMasterCommits(undefined);
-    fetch(githubApiUrl + `/commits`, fetchOptions)
-      .then(async (res) => {
-        const json = await res.json();
-        setMasterCommits(json);
-      })
-      .catch(() => {
+
+    const fetchAllCommits = async () => {
+      try {
+        const allCommits = [] as any[];
+        let page = 1;
+        const perPage = 100; // Maximum allowed by GitHub API
+
+        while (true) {
+          const response = await fetch(
+            `${githubApiUrl}/commits?per_page=${perPage}&page=${page}`,
+            fetchOptions,
+          );
+          const json = await response.json();
+
+          if (!Array.isArray(json) || json.length === 0) {
+            break;
+          }
+
+          allCommits.push(...json);
+
+          // If we got fewer results than requested, we've reached the end
+          if (json.length < perPage) {
+            break;
+          }
+
+          page++;
+
+          // Limit to reasonable number of commits to avoid excessive API calls
+          if (allCommits.length >= 1000) {
+            break;
+          }
+        }
+
+        setMasterCommits(allCommits);
+      } catch (error) {
+        console.error("Error fetching commits:", error);
         setMasterCommits([]);
-      });
+      }
+    };
+
+    fetchAllCommits();
   }, [githubSource]);
 
   // Fetch branches with their commit data
   useEffect(() => {
     setBranches(undefined);
-    fetch(githubApiUrl + `/branches`, fetchOptions)
-      .then(async (res) => {
-        const json = await res.json();
+
+    const fetchAllBranches = async () => {
+      try {
+        const allBranches = [] as any[];
+        let page = 1;
+        const perPage = 100; // Maximum allowed by GitHub API
+
+        while (true) {
+          const response = await fetch(
+            `${githubApiUrl}/branches?per_page=${perPage}&page=${page}`,
+            fetchOptions,
+          );
+          const json = await response.json();
+
+          if (!Array.isArray(json) || json.length === 0) {
+            break;
+          }
+
+          allBranches.push(...json);
+
+          // If we got fewer results than requested, we've reached the end
+          if (json.length < perPage) {
+            break;
+          }
+
+          page++;
+        }
 
         // Fetch commit data for each branch
         const branchesWithCommitData = await Promise.all(
-          json.map(async (branch) => {
+          allBranches.map(async (branch) => {
             try {
               // Fetch the commit data for this branch
               const commitRes = await fetch(
@@ -104,23 +178,49 @@ export function ChooseVersionPage() {
             );
           }),
         );
-      })
-      .catch((error) => {
+      } catch (error) {
         console.error("Error fetching branches:", error);
         setBranches([]);
-      });
+      }
+    };
+
+    fetchAllBranches();
   }, [githubSource]);
 
   // Fetch tags with their commit data
   useEffect(() => {
     setTags(undefined);
-    fetch(githubApiUrl + `/tags`, fetchOptions)
-      .then(async (res) => {
-        const json = await res.json();
+
+    const fetchAllTags = async () => {
+      try {
+        const allTags = [] as any[];
+        let page = 1;
+        const perPage = 100; // Maximum allowed by GitHub API
+
+        while (true) {
+          const response = await fetch(
+            `${githubApiUrl}/tags?per_page=${perPage}&page=${page}`,
+            fetchOptions,
+          );
+          const json = await response.json();
+
+          if (!Array.isArray(json) || json.length === 0) {
+            break;
+          }
+
+          allTags.push(...json);
+
+          // If we got fewer results than requested, we've reached the end
+          if (json.length < perPage) {
+            break;
+          }
+
+          page++;
+        }
 
         // Fetch commit data for each tag
         const tagsWithCommitData = await Promise.all(
-          json.map(async (tag) => {
+          allTags.map(async (tag) => {
             try {
               // Fetch the commit data for this tag
               const commitRes = await fetch(
@@ -151,12 +251,36 @@ export function ChooseVersionPage() {
             );
           }),
         );
-      })
-      .catch((error) => {
+      } catch (error) {
         console.error("Error fetching tags:", error);
         setTags([]);
-      });
+      }
+    };
+
+    fetchAllTags();
   }, [githubSource]);
+
+  // Fetch NixOS generations
+  useEffectAsync(async () => {
+    if (!isNixOSAvailable()) {
+      setNixosGenerations([]);
+      return;
+    }
+
+    try {
+      const result = await listNixOSGenerations();
+      if (result.success) {
+        setNixosGenerations(result.generations);
+        setNixosError(undefined);
+      } else {
+        setNixosError(result.error || "Failed to fetch NixOS generations");
+        setNixosGenerations([]);
+      }
+    } catch (error) {
+      setNixosError(error instanceof Error ? error.message : String(error));
+      setNixosGenerations([]);
+    }
+  }, []);
 
   const isOlderThanCurrent = (date?: string | Date) => {
     if (!date || !currentTimestamp) return false;
@@ -164,10 +288,130 @@ export function ChooseVersionPage() {
     return timestamp <= currentTimestamp;
   };
 
+  // NixOS generation handlers
+  const handleSetGeneration = async (generationId: string) => {
+    setGenerationActionLoading(generationId);
+    try {
+      const result = await setNixOSGeneration(generationId);
+      if (result.success) {
+        // Refresh the generations list to show updated current generation
+        const updatedResult = await listNixOSGenerations();
+        if (updatedResult.success) {
+          setNixosGenerations(updatedResult.generations);
+        }
+        console.log(`Successfully set generation ${generationId}`);
+      } else {
+        console.error(`Failed to set generation: ${result.error}`);
+        setNixosError(result.error || "Failed to set generation");
+      }
+    } catch (error) {
+      console.error("Error setting generation:", error);
+      setNixosError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setGenerationActionLoading(null);
+    }
+  };
+
+  const handleDeleteGeneration = async (generationId: string) => {
+    if (
+      !confirm(
+        `Are you sure you want to delete generation ${generationId}? This will also update the bootloader menu. This action cannot be undone.`,
+      )
+    ) {
+      return;
+    }
+
+    setGenerationActionLoading(generationId);
+    try {
+      const result = await deleteNixOSGeneration(generationId);
+      if (result.success) {
+        // Refresh the generations list
+        const updatedResult = await listNixOSGenerations();
+        if (updatedResult.success) {
+          setNixosGenerations(updatedResult.generations);
+        }
+        console.log(
+          `Successfully deleted generation ${generationId} and updated bootloader`,
+        );
+      } else {
+        console.error(`Failed to delete generation: ${result.error}`);
+        setNixosError(result.error || "Failed to delete generation");
+      }
+    } catch (error) {
+      console.error("Error deleting generation:", error);
+      setNixosError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setGenerationActionLoading(null);
+    }
+  };
+
   return (
     <Page>
       <SectionTitle title="Current Version"></SectionTitle>
       <CurrentVersionCard />
+
+      {/* Current Update Status */}
+      {isUpdating && currentUpdateInfo && (
+        <>
+          <SectionTitle title="Update in Progress"></SectionTitle>
+          <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 p-4">
+            <div className="mb-3 flex items-center gap-2">
+              <LoadingSpinner />
+              <span className="font-semibold text-blue-800">
+                Updating System...
+              </span>
+            </div>
+            <div className="space-y-1 text-sm text-blue-700">
+              <div>
+                <span className="font-medium">Repository:</span>{" "}
+                <span className="font-mono">
+                  {currentUpdateInfo.githubRepoOwner}/
+                  {currentUpdateInfo.githubRepoName}
+                </span>
+              </div>
+              {currentUpdateInfo.tag && (
+                <div>
+                  <span className="font-medium">Tag:</span>{" "}
+                  <span className="font-mono">{currentUpdateInfo.tag}</span>
+                </div>
+              )}
+              {currentUpdateInfo.branch && (
+                <div>
+                  <span className="font-medium">Branch:</span>{" "}
+                  <span className="font-mono">{currentUpdateInfo.branch}</span>
+                </div>
+              )}
+              {currentUpdateInfo.commit && (
+                <div>
+                  <span className="font-medium">Commit:</span>{" "}
+                  <span className="font-mono">
+                    {currentUpdateInfo.commit.substring(0, 8)}
+                  </span>
+                </div>
+              )}
+            </div>
+            <TouchButton
+              className="mt-3 w-max"
+              onClick={() => {
+                navigate({
+                  to: "/_sidebar/setup/update/execute",
+                  search: {
+                    githubRepoOwner: currentUpdateInfo.githubRepoOwner,
+                    githubRepoName: currentUpdateInfo.githubRepoName,
+                    githubToken: currentUpdateInfo.githubToken,
+                    tag: currentUpdateInfo.tag,
+                    branch: currentUpdateInfo.branch,
+                    commit: currentUpdateInfo.commit,
+                  },
+                });
+              }}
+            >
+              View Update Progress
+            </TouchButton>
+          </div>
+        </>
+      )}
+
       <SectionTitle title="Update"></SectionTitle>
       <div className="flex flex-row items-center gap-4">
         <div className="flex flex-col">
@@ -282,7 +526,104 @@ export function ChooseVersionPage() {
           {masterCommits?.length == 0 && <>No Master Commits</>}
         </CollapsibleContent>
       </Collapsible>
+
+      <SectionTitle title="Installed Versions"></SectionTitle>
+
+      {nixosError && (
+        <span className="w-max">
+          <Alert title="Error" variant="error">
+            {nixosError}
+          </Alert>
+        </span>
+      )}
+
+      {nixosGenerations !== undefined && nixosGenerations.length > 0 ? (
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          {nixosGenerations.map((generation) => (
+            <GenerationButton
+              key={generation.id}
+              generation={generation}
+              isLoading={generationActionLoading === generation.id}
+              onSet={() => handleSetGeneration(generation.id)}
+              onDelete={() => handleDeleteGeneration(generation.id)}
+            />
+          ))}
+        </div>
+      ) : null}
+      {nixosGenerations === undefined && isNixOSAvailable() && (
+        <LoadingSpinner />
+      )}
+      {nixosGenerations?.length === 0 && <>No NixOS generations found</>}
+      {!isNixOSAvailable() && (
+        <span className="w-max">
+          <Alert title="NixOS Not Available" variant="warning">
+            NixOS generation management is not available on this system.
+          </Alert>
+        </span>
+      )}
     </Page>
+  );
+}
+
+type GenerationButtonProps = {
+  generation: NixOSGeneration;
+  isLoading: boolean;
+  onSet: () => void;
+  onDelete: () => void;
+};
+
+function GenerationButton({
+  generation,
+  isLoading,
+  onSet,
+  onDelete,
+}: GenerationButtonProps) {
+  return (
+    <div className="flex flex-row items-center gap-2 rounded-3xl border border-gray-200 bg-white p-4 shadow">
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <Icon name="lu:History" />
+          <span className="flex-1 truncate">
+            Update {generation.id}
+            {generation.current && " (current)"}
+          </span>
+        </div>
+        <span className="block truncate font-mono text-sm text-gray-700">
+          {generation.name}
+        </span>
+        <span className="block font-mono text-sm text-gray-700">
+          {generation.date ? new Date(generation.date).toLocaleString() : "N/A"}
+        </span>
+        {generation.kernelVersion && (
+          <span className="font-mono text-sm text-gray-600">
+            Kernel: {generation.kernelVersion}
+          </span>
+        )}
+        {generation.description && (
+          <span className="text-sm text-gray-600">
+            {generation.description}
+          </span>
+        )}
+      </div>
+      <div className="flex gap-2">
+        <TouchButton
+          className="flex-shrink-0"
+          variant="outline"
+          onClick={onSet}
+          disabled={isLoading || generation.current}
+        >
+          {isLoading ? <LoadingSpinner /> : "Select"}
+        </TouchButton>
+        <TouchButton
+          className="flex-shrink-0"
+          variant="destructive"
+          onClick={onDelete}
+          disabled={isLoading || generation.current}
+        >
+          {isLoading ? <LoadingSpinner /> : "Delete"}
+        </TouchButton>
+      </div>
+    </div>
   );
 }
 

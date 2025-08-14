@@ -7,65 +7,88 @@ import { EditValue } from "@/control/EditValue";
 import { useMock1 } from "./useMock";
 import { SelectionGroup } from "@/control/SelectionGroup";
 import { Mode } from "./mock1Namespace";
+import { TimeSeries } from "@/lib/timeseries";
+
+type SineWaveCardProps = {
+  title: string;
+  timeseries: TimeSeries;
+};
+
+function SineWaveCard({ title, timeseries }: SineWaveCardProps) {
+  return (
+    <ControlCard title={title}>
+      <TimeSeriesValueNumeric
+        label="Current Value"
+        timeseries={timeseries}
+        renderValue={(value) => value.toFixed(3)}
+      />
+    </ControlCard>
+  );
+}
 
 export function Mock1ControlPage() {
   const {
-    sineWave,
-    mockState,
-    modeState,
-    mockSetFrequency,
-    mockSetMode,
-    modeStateIsDisabled,
+    state,
+    defaultState,
+    sineWave1,
+    sineWave2,
+    sineWave3,
+    sineWaveSum,
+    setFrequency1,
+    setFrequency2,
+    setFrequency3,
+    setMode,
+    isDisabled,
   } = useMock1();
 
-  // Controlled local states synced with mockState and modeState
-  const frequency = mockState?.data?.frequency ?? 1.0;
-  const mode = modeState?.data?.mode ?? "Standby";
+  // Controlled local states synced with consolidated state
+  const frequency1 = state?.frequency1 ?? 1.0;
+  const frequency2 = state?.frequency2 ?? 2.0;
+  const frequency3 = state?.frequency3 ?? 5.0;
+  const mode = state?.mode_state?.mode ?? "Standby";
 
   return (
     <Page>
-      <ControlGrid>
-        <ControlCard title="Sine Wave">
-          <TimeSeriesValueNumeric
-            label="Current Value"
-            timeseries={sineWave}
-            renderValue={(value) => value.toFixed(3)}
-          />
-        </ControlCard>
-        <ControlCard title="Sine Wave">
-          <TimeSeriesValueNumeric
-            label="Current Value"
-            timeseries={sineWave}
-            renderValue={(value) => value.toFixed(3)}
-          />
-        </ControlCard>
-        <ControlCard title="Sine Wave">
-          <TimeSeriesValueNumeric
-            label="Current Value"
-            timeseries={sineWave}
-            renderValue={(value) => value.toFixed(3)}
-          />
-        </ControlCard>
-        <ControlCard title="Sine Wave">
-          <TimeSeriesValueNumeric
-            label="Current Value"
-            timeseries={sineWave}
-            renderValue={(value) => value.toFixed(3)}
-          />
-        </ControlCard>
+      <ControlGrid columns={2}>
+        <SineWaveCard title="Sine Wave Sum" timeseries={sineWaveSum} />
+        <SineWaveCard title="Sine Wave 1" timeseries={sineWave1} />
+        <SineWaveCard title="Sine Wave 2" timeseries={sineWave2} />
+        <SineWaveCard title="Sine Wave 3" timeseries={sineWave3} />
 
         <ControlCard title="Frequency">
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-row gap-2">
             <EditValue
-              title="Frequency"
+              title="Frequency 1"
               unit="mHz"
-              value={frequency}
-              defaultValue={500}
+              value={frequency1}
+              defaultValue={defaultState?.frequency1}
               min={0.0}
               max={1000}
               step={0.1}
               renderValue={(value) => value.toFixed(0)}
-              onChange={mockSetFrequency}
+              onChange={setFrequency1}
+            />
+            <EditValue
+              title="Frequency 2"
+              unit="mHz"
+              value={frequency2}
+              defaultValue={defaultState?.frequency2}
+              min={0.0}
+              max={1000}
+              step={0.1}
+              renderValue={(value) => value.toFixed(0)}
+              onChange={setFrequency2}
+            />
+            <EditValue
+              title="Frequency 3"
+              unit="mHz"
+              value={frequency3}
+              defaultValue={defaultState?.frequency3}
+              min={0.0}
+              max={1000}
+              step={0.1}
+              renderValue={(value) => value.toFixed(0)}
+              onChange={setFrequency3}
             />
           </div>
         </ControlCard>
@@ -75,8 +98,8 @@ export function Mock1ControlPage() {
             <div className="text-sm font-medium">Mode</div>
             <SelectionGroup
               value={mode}
-              onChange={(newMode: Mode) => mockSetMode(newMode)}
-              disabled={modeStateIsDisabled}
+              onChange={(newMode: Mode) => setMode(newMode)}
+              disabled={isDisabled}
               options={{
                 Standby: { children: "Standby" },
                 Running: { children: "Running" },

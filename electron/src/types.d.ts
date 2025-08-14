@@ -41,6 +41,7 @@ interface UpdateContext {
     branch?: string;
     commit?: string;
   }) => Promise<void>;
+  cancel: () => Promise<{ success: boolean; error?: string }>;
   onLog: (callback: (log: string) => void) => void;
   onEnd: (
     callback: (params: { success: boolean; error?: string }) => void,
@@ -55,10 +56,66 @@ interface TroubleshootContext {
   onLogData: (callback: (log: string) => void) => void;
 }
 
+interface NixOSGeneration {
+  id: string;
+  name: string;
+  version: string;
+  current: boolean;
+  date: string;
+  path: string;
+  kernelVersion?: string;
+  description?: string;
+}
+
+interface NixOSContext {
+  listGenerations: () => Promise<{
+    success: boolean;
+    generations: NixOSGeneration[];
+    error?: string;
+  }>;
+  setGeneration: (
+    generationId: string,
+  ) => Promise<{ success: boolean; error?: string }>;
+  deleteGeneration: (
+    generationId: string,
+  ) => Promise<{ success: boolean; error?: string }>;
+}
 declare interface Window {
   themeMode: ThemeModeContext;
   electronWindow: ElectronWindow;
   environment: EnvironmentContext;
   update: UpdateContext;
   troubleshoot: TroubleshootContext;
+  nixos: NixOSContext;
+}
+
+// Module declarations for Vite imports
+declare module "*.md?raw" {
+  const content: string;
+  export default content;
+}
+
+declare module "*.jpg" {
+  const src: string;
+  export default src;
+}
+
+declare module "*.jpeg" {
+  const src: string;
+  export default src;
+}
+
+declare module "*.png" {
+  const src: string;
+  export default src;
+}
+
+declare module "*.gif" {
+  const src: string;
+  export default src;
+}
+
+declare module "*.svg" {
+  const src: string;
+  export default src;
 }

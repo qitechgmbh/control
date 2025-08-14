@@ -28,7 +28,7 @@ type Props = {
   title: string;
   description?: string;
   icon?: IconName;
-  defaultValue: number;
+  defaultValue?: number;
   min?: number;
   minSlider?: number; // Override the slider min value
   minLabel?: string;
@@ -38,6 +38,7 @@ type Props = {
   step?: number;
   valueSchema?: z.ZodType<number>;
   inverted?: boolean;
+  confirmation?: string;
   renderValue: (value: number) => string;
   onChange?: (value: number) => void;
 };
@@ -96,8 +97,11 @@ export function EditValue({
   maxLabel,
   minSlider,
   maxSlider,
+  confirmation,
   onChange,
 }: Props) {
+  const defaultOrZero = defaultValue ?? 0;
+
   // Form setup
   const formSchema = z.object({
     value: schema ?? z.number(),
@@ -106,7 +110,7 @@ export function EditValue({
 
   const form = useForm<FormSchema>({
     resolver: zodResolver<FormSchema>(formSchema),
-    values: { value: value ?? defaultValue },
+    values: { value: value ?? defaultOrZero },
     defaultValues: { value: defaultValue },
     mode: "all",
   });
@@ -250,10 +254,20 @@ export function EditValue({
 
   const handleSubmit = () => {
     form.handleSubmit((data) => {
-      onChange?.(data.value);
-      setOpen(false);
-      setNumpadExtended(false);
-      resetInput();
+      if (confirmation) {
+        if (window.confirm(confirmation)) {
+          onChange?.(data.value);
+          setOpen(false);
+          setNumpadExtended(false);
+          resetInput();
+        }
+        // else do nothing if user cancels
+      } else {
+        onChange?.(data.value);
+        setOpen(false);
+        setNumpadExtended(false);
+        resetInput();
+      }
     })();
   };
 
@@ -412,26 +426,29 @@ export function EditValue({
   // Continuous increment/decrement functionality
   const intervalRef = React.useRef<NodeJS.Timeout | null>(null);
   const timeoutRef = React.useRef<NodeJS.Timeout | null>(null);
-  
-  const startContinuousChange = React.useCallback((increment: boolean) => {
-    const performChange = () => {
-      const currentValue = form.getValues().value;
-      const newValue = increment
-        ? (max !== undefined
-            ? Math.min(max, roundToStepDecimals(currentValue + step))
-            : roundToStepDecimals(currentValue + step))
-        : (min !== undefined
-            ? Math.max(min, roundToStepDecimals(currentValue - step))
-            : roundToStepDecimals(currentValue - step));
-      setValue(newValue);
-    };
 
-    // Initial delay before starting continuous changes
-    timeoutRef.current = setTimeout(() => {
-      // Start continuous changes at regular intervals
-      intervalRef.current = setInterval(performChange, 100); // Change every 100ms
-    }, 500); // Wait 500ms before starting continuous changes
-  }, [step, min, max, roundToStepDecimals, form]);
+  const startContinuousChange = React.useCallback(
+    (increment: boolean) => {
+      const performChange = () => {
+        const currentValue = form.getValues().value;
+        const newValue = increment
+          ? max !== undefined
+            ? Math.min(max, roundToStepDecimals(currentValue + step))
+            : roundToStepDecimals(currentValue + step)
+          : min !== undefined
+            ? Math.max(min, roundToStepDecimals(currentValue - step))
+            : roundToStepDecimals(currentValue - step);
+        setValue(newValue);
+      };
+
+      // Initial delay before starting continuous changes
+      timeoutRef.current = setTimeout(() => {
+        // Start continuous changes at regular intervals
+        intervalRef.current = setInterval(performChange, 100); // Change every 100ms
+      }, 500); // Wait 500ms before starting continuous changes
+    },
+    [step, min, max, roundToStepDecimals, form],
+  );
 
   const stopContinuousChange = React.useCallback(() => {
     if (timeoutRef.current) {

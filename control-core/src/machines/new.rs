@@ -1,4 +1,4 @@
-use crate::serial::SerialDevice;
+use crate::{machines::manager::MachineManager, serial::SerialDevice};
 
 use super::identification::DeviceIdentificationIdentified;
 use anyhow::Error;
@@ -6,8 +6,15 @@ use ethercat_hal::{
     devices::EthercatDevice, helpers::ethercrab_types::EthercrabSubDevicePreoperational,
 };
 use ethercrab::{SubDevice, SubDeviceRef};
-use smol::lock::RwLock;
-use std::sync::Arc;
+use smol::{channel::Sender, lock::RwLock};
+use socketioxide::extract::SocketRef;
+use std::{
+    pin::Pin,
+    sync::{Arc, Weak},
+    time::Instant,
+};
+
+use crate::socketio::event::GenericEvent;
 
 pub trait MachineNewTrait {
     fn new<'maindevice, 'subdevices>(
@@ -15,6 +22,10 @@ pub trait MachineNewTrait {
     ) -> Result<Self, Error>
     where
         Self: Sized;
+}
+
+pub trait MachineAct {
+    fn act(&mut self, now: Instant) -> Pin<Box<dyn Future<Output = ()> + Send + '_>>;
 }
 
 pub struct MachineNewParams<
@@ -39,6 +50,8 @@ pub struct MachineNewParams<
         'machine_new_hardware_etehrcat,
         'machine_new_hardware_serial,
     >,
+    pub socket_queue_tx: Sender<(SocketRef, Arc<GenericEvent>)>,
+    pub machine_manager: Weak<RwLock<MachineManager>>,
 }
 
 pub enum MachineNewHardware<

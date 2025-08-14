@@ -4,6 +4,7 @@ import { addWindowEventListeners } from "./window/window-listeners";
 import { addEnvironmentEventListeners } from "./environment/environment-listeners";
 import { addUpdateEventListeners } from "./update/update-listeners";
 import { addTroubleshootEventListeners } from "./troubleshoot/troubleshoot-listeners";
+import { addNixOSEventListeners } from "./nixos/nixos-listeners";
 
 export default function registerListeners(mainWindow: BrowserWindow) {
   addWindowEventListeners(mainWindow);
@@ -11,4 +12,5 @@ export default function registerListeners(mainWindow: BrowserWindow) {
   addEnvironmentEventListeners();
   addUpdateEventListeners();
   addTroubleshootEventListeners();
+  addNixOSEventListeners();
 }

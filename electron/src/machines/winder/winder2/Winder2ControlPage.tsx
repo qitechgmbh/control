@@ -1,6 +1,6 @@
 import { ControlCard } from "@/control/ControlCard";
 import { Page } from "@/components/Page";
-import React from "react";
+import React, { useState } from "react";
 import { ControlGrid } from "@/control/ControlGrid";
 import { TimeSeriesValueNumeric } from "@/control/TimeSeriesValue";
 import { TraverseBar } from "../TraverseBar";
@@ -13,45 +13,61 @@ import { Label } from "@/control/Label";
 import { TouchButton } from "@/components/touch/TouchButton";
 import { StatusBadge } from "@/control/StatusBadge";
 import { useWinder2 } from "./useWinder";
-import { Mode } from "./winder2Namespace";
+import { Mode, SpoolAutomaticActionMode } from "./winder2Namespace";
 import { TensionArm } from "../TensionArm";
 import { roundDegreesToDecimals, roundToDecimals } from "@/lib/decimal";
 import { Spool } from "../Spool";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export function Winder2ControlPage() {
+  const [showResetConfirmDialog, setShowResetConfirmDialog] = useState(false);
+
   // use optimistic state
   const {
-    laserpointer,
-    setLaserpointer,
-    laserpointerIsLoading,
-    laserpointerIsDisabled,
+    state,
+    defaultState,
+    enableTraverseLaserpointer,
     tensionArmAngle,
-    tensionArmAngleZero,
-    tensionArmState,
-    tensionArmStateIsLoading,
-    tensionArmStateIsDisabled,
+    zeroTensionArmAngle,
     spoolRpm,
-    mode,
-    ExtruderSetMode,
-    modeIsLoading,
-    modeIsDisabled,
-    pullerState,
+    spoolDiameter,
+    setMode,
     pullerSpeed,
-    pullerSetRegulationMode,
-    pullerSetTargetSpeed,
-    pullerStateIsLoading,
-    pullerStateIsDisabled,
+    spoolProgress,
+    setPullerRegulationMode,
+    setPullerTargetSpeed,
     traversePosition,
-    traverseState,
-    traverseSetLimitInner,
-    traverseSetLimitOuter,
-    traverseGotoLimitInner,
-    traverseGotoLimitOuter,
-    traverseGotoHome,
-    traverseStateIsLoading,
-    traverseStateIsDisabled,
-    modeState,
+    resetSpoolProgress,
+    setTraverseLimitInner,
+    setTraverseLimitOuter,
+    gotoTraverseLimitInner,
+    gotoTraverseLimitOuter,
+    gotoTraverseHome,
+    setSpoolAutomaticRequiredMeters,
+    setSpoolAutomaticAction,
+    isLoading,
+    isDisabled,
   } = useWinder2();
+
+  const handleResetProgress = () => {
+    // Check if the machine is currently in Wind mode
+    if (state?.mode_state?.mode === "Wind") {
+      setShowResetConfirmDialog(true);
+    } else {
+      resetSpoolProgress();
+    }
+  };
+
+  const confirmResetProgress = () => {
+    resetSpoolProgress();
+    setShowResetConfirmDialog(false);
+  };
 
   return (
     <Page>
@@ -64,6 +80,12 @@ export function Winder2ControlPage() {
             timeseries={spoolRpm}
             renderValue={(value) => roundToDecimals(value, 0)}
           />
+          <TimeSeriesValueNumeric
+            label="Estimated Diameter"
+            unit="cm"
+            timeseries={spoolDiameter}
+            renderValue={(value) => roundToDecimals(value, 1)}
+          />
         </ControlCard>
 
         <ControlCard className="bg-red" height={2} title="Traverse">
@@ -73,50 +95,46 @@ export function Winder2ControlPage() {
             timeseries={traversePosition}
             renderValue={(value) => roundToDecimals(value, 1)}
           />
-          {traverseState && (
+          {state?.traverse_state && (
             <TraverseBar
               inside={0}
               outside={180}
-              min={traverseState.data.limit_inner}
-              max={traverseState.data.limit_outer}
+              min={state?.traverse_state.limit_inner}
+              max={state?.traverse_state.limit_outer}
               current={traversePosition.current?.value ?? 0}
             />
           )}
           <div className="flex flex-row flex-wrap gap-4">
             <Label label="Outer Limit">
               <EditValue
-                value={traverseState?.data.limit_outer}
+                value={state?.traverse_state?.limit_outer}
                 unit="mm"
                 title="Outer Limit"
-                defaultValue={80}
+                defaultValue={defaultState?.traverse_state?.limit_outer}
                 // Traverse limit validation: Outer limit must be at least 0.9mm greater than inner limit
                 // We use 1mm buffer to ensure the backend validation (which requires >0.9mm) will pass
                 // Formula: min_outer = inner_limit + 1mm
-                min={Math.max(0, (traverseState?.data.limit_inner ?? 0) + 1)}
+                min={Math.max(0, (state?.traverse_state?.limit_inner ?? 0) + 1)}
                 minLabel="IN"
                 maxLabel="OUT"
                 max={180}
                 renderValue={(value) => roundToDecimals(value, 0)}
                 inverted
-                onChange={traverseSetLimitOuter}
+                onChange={setTraverseLimitOuter}
               />
               <TouchButton
                 variant="outline"
                 icon="lu:ArrowLeftToLine"
-                onClick={traverseGotoLimitOuter}
-                disabled={
-                  traverseStateIsDisabled || !traverseState?.data.can_go_out
-                }
-                isLoading={
-                  traverseStateIsLoading || traverseState?.data.is_going_out
-                }
+                onClick={gotoTraverseLimitOuter}
+                disabled={isDisabled || !state?.traverse_state?.can_go_out}
+                isLoading={isLoading || state?.traverse_state?.is_going_out}
               >
                 Go to Outer Limit
               </TouchButton>
             </Label>
             <Label label="Inner Limit">
               <EditValue
-                value={traverseState?.data.limit_inner}
+                value={state?.traverse_state?.limit_inner}
                 unit="mm"
                 title="Inner Limit"
                 min={0}
@@ -125,25 +143,21 @@ export function Winder2ControlPage() {
                 // Formula: max_inner = outer_limit - 1mm
                 max={Math.min(
                   180,
-                  (traverseState?.data.limit_outer ?? 180) - 1,
+                  (state?.traverse_state?.limit_outer ?? 180) - 1,
                 )}
-                defaultValue={16}
+                defaultValue={defaultState?.traverse_state?.limit_inner}
                 minLabel="IN"
                 maxLabel="OUT"
                 renderValue={(value) => roundToDecimals(value, 0)}
                 inverted
-                onChange={traverseSetLimitInner}
+                onChange={setTraverseLimitInner}
               />
               <TouchButton
                 variant="outline"
                 icon="lu:ArrowRightToLine"
-                onClick={traverseGotoLimitInner}
-                disabled={
-                  traverseStateIsDisabled || !traverseState?.data.can_go_in
-                }
-                isLoading={
-                  traverseStateIsLoading || traverseState?.data.is_going_in
-                }
+                onClick={gotoTraverseLimitInner}
+                disabled={isDisabled || !state?.traverse_state?.can_go_in}
+                isLoading={isLoading || state?.traverse_state?.is_going_in}
               >
                 Go to Inner Limit
               </TouchButton>
@@ -151,33 +165,25 @@ export function Winder2ControlPage() {
           </div>
           <Label label="Laserpointer">
             <SelectionGroupBoolean
-              value={laserpointer}
-              disabled={
-                laserpointerIsLoading ||
-                traverseStateIsLoading ||
-                traverseStateIsDisabled
-              }
-              loading={laserpointerIsDisabled}
+              value={state?.traverse_state.laserpointer}
+              disabled={isLoading || isDisabled}
+              loading={isLoading}
               optionFalse={{ children: "Off", icon: "lu:LightbulbOff" }}
               optionTrue={{ children: "On", icon: "lu:Lightbulb" }}
-              onChange={setLaserpointer}
+              onChange={enableTraverseLaserpointer}
             />
           </Label>
           <Label label="Home">
             <TouchButton
               variant="outline"
               icon="lu:House"
-              onClick={() => traverseGotoHome()}
-              disabled={
-                traverseStateIsDisabled || !traverseState?.data.can_go_home
-              }
-              isLoading={
-                traverseStateIsLoading || traverseState?.data.is_going_home
-              }
+              onClick={() => gotoTraverseHome()}
+              disabled={isDisabled || !state?.traverse_state?.can_go_home}
+              isLoading={isLoading || state?.traverse_state?.is_going_home}
             >
               Go to Home
             </TouchButton>
-            {traverseState?.data.is_homed !== true ? (
+            {state?.traverse_state?.is_homed !== true ? (
               <StatusBadge variant={"error"}>{"Not Homed"}</StatusBadge>
             ) : null}
           </Label>
@@ -194,23 +200,23 @@ export function Winder2ControlPage() {
           <TouchButton
             variant="outline"
             icon="lu:House"
-            onClick={tensionArmAngleZero}
-            disabled={tensionArmStateIsDisabled}
-            isLoading={tensionArmStateIsLoading}
+            onClick={zeroTensionArmAngle}
+            disabled={isDisabled}
+            isLoading={isLoading}
           >
             Set Zero Point
           </TouchButton>
-          {!tensionArmState?.data.zeroed && (
+          {!state?.tension_arm_state?.zeroed && (
             <StatusBadge variant="error">Not Zeroed</StatusBadge>
           )}
         </ControlCard>
 
         <ControlCard className="bg-red" title="Mode">
           <SelectionGroup<Mode>
-            value={mode}
-            disabled={modeIsDisabled}
-            loading={modeIsLoading}
-            onChange={ExtruderSetMode}
+            value={state?.mode_state.mode}
+            disabled={isDisabled}
+            loading={isLoading}
+            onChange={setMode}
             orientation="vertical"
             className="grid h-full grid-cols-2 gap-2"
             options={{
@@ -236,7 +242,7 @@ export function Winder2ControlPage() {
                 children: "Wind",
                 icon: "lu:RefreshCcw",
                 isActiveClassName: "bg-green-600",
-                disabled: !modeState?.data.can_wind,
+                disabled: !state?.mode_state?.can_wind,
                 className: "h-full",
               },
             }}
@@ -252,38 +258,133 @@ export function Winder2ControlPage() {
           />
           <Label label="Regulation">
             <SelectionGroup
-              value={pullerState?.data.regulation}
+              value={state?.puller_state?.regulation}
               options={{
                 Speed: {
                   children: "Speed",
                   icon: "lu:Gauge",
                 },
                 Diameter: {
-                  children: "Diameter (Sync to DRE™)",
-                  icon: "lu:Diameter",
+                  children: "Diameter",
+                  icon: "lu:Sun",
                   disabled: true,
                 },
               }}
-              onChange={pullerSetRegulationMode}
-              disabled={pullerStateIsDisabled}
-              loading={pullerStateIsLoading}
+              onChange={setPullerRegulationMode}
+              disabled={isDisabled}
+              loading={isLoading}
             />
           </Label>
           <Label label="Target Speed">
             <EditValue
-              value={pullerState?.data.target_speed}
+              value={state?.puller_state?.target_speed}
               unit="m/min"
               title="Target Speed"
-              defaultValue={1}
+              defaultValue={defaultState?.puller_state?.target_speed}
               min={0}
               max={75}
               step={0.1}
               renderValue={(value) => roundToDecimals(value, 1)}
-              onChange={pullerSetTargetSpeed}
+              onChange={setPullerTargetSpeed}
+            />
+          </Label>
+        </ControlCard>
+
+        <ControlCard className="bg-red" title="Spool Autostop">
+          <TimeSeriesValueNumeric
+            label="Pulled Distance"
+            renderValue={(value) => roundToDecimals(value, 2)}
+            unit="m"
+            timeseries={spoolProgress}
+          />
+
+          <Label label="Target Length">
+            <EditValue
+              value={state?.spool_automatic_action_state.spool_required_meters}
+              unit="m"
+              title="Expected Meters"
+              defaultValue={250}
+              min={10}
+              max={10000}
+              step={10}
+              renderValue={(value) => roundToDecimals(value, 2)}
+              onChange={setSpoolAutomaticRequiredMeters}
+            />
+          </Label>
+
+          <TouchButton
+            variant="outline"
+            onClick={handleResetProgress}
+            disabled={isDisabled}
+            isLoading={isLoading || state?.traverse_state?.is_going_out}
+          >
+            Reset Progress
+          </TouchButton>
+
+          <Label label="After Target Length Reached">
+            <SelectionGroup<SpoolAutomaticActionMode>
+              value={
+                state?.spool_automatic_action_state.spool_automatic_action_mode
+              }
+              disabled={isDisabled}
+              loading={isLoading}
+              onChange={setSpoolAutomaticAction}
+              orientation="vertical"
+              options={{
+                Hold: {
+                  children: "Hold",
+                  icon: "lu:CirclePause",
+                  className: "h-full",
+                },
+                Pull: {
+                  children: "Pull",
+                  icon: "lu:ChevronsLeft",
+                  className: "h-full",
+                },
+
+                NoAction: {
+                  children: "No Action",
+                  icon: "lu:RefreshCcw",
+                  className: "h-full",
+                },
+              }}
             />
           </Label>
         </ControlCard>
       </ControlGrid>
+
+      {/* Reset Progress Confirmation Dialog */}
+      <Dialog
+        open={showResetConfirmDialog}
+        onOpenChange={setShowResetConfirmDialog}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Reset Spool Progress?</DialogTitle>
+            <DialogDescription>
+              The machine is currently in Wind mode. Are you sure you want to
+              reset the spool progress?
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="mt-4 flex flex-col gap-2">
+            <TouchButton
+              variant="destructive"
+              onClick={confirmResetProgress}
+              disabled={isLoading}
+              isLoading={isLoading}
+            >
+              Yes, Reset Progress
+            </TouchButton>
+            <TouchButton
+              variant="outline"
+              onClick={() => setShowResetConfirmDialog(false)}
+            >
+              Cancel
+            </TouchButton>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Page>
   );
 }

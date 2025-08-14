@@ -13,9 +13,13 @@ use control_core::machines::identification::{
     DeviceHardwareIdentification, DeviceHardwareIdentificationEthercat, DeviceIdentification,
 };
 use control_core::machines::new::MachineNewHardwareEthercat;
+use control_core::realtime::{set_core_affinity_first_core, set_realtime_priority};
 use control_core::socketio::namespace::NamespaceCacheingLogic;
 use ethercat_hal::devices::devices_from_subdevices;
+#[cfg(not(all(target_os = "linux", feature = "io-uring")))]
 use ethercrab::std::{ethercat_now, tx_rx_task};
+#[cfg(all(target_os = "linux", feature = "io-uring"))]
+use ethercrab::std::{ethercat_now, tx_rx_task_io_uring};
 use ethercrab::{MainDevice, MainDeviceConfig, PduStorage, RetryBehaviour, Timeouts};
 use smol::channel::Sender;
 use std::{sync::Arc, time::Duration};
@@ -43,12 +47,23 @@ pub async fn setup_loop(
         .name("EthercatTxRxThread".to_owned())
         .spawn(move || {
             send_panic(thread_panic_tx_clone);
-            let rt = smol::LocalExecutor::new();
-            let _ = smol::block_on(rt.run(async {
-                tx_rx_task(&interface, tx, rx)
-                    .expect("spawn TX/RX task")
-                    .await
-            }));
+
+            // Set core affinity to second core
+            let _ = set_core_affinity_first_core(1);
+
+            // Set the thread to real-time priority
+            let _ = set_realtime_priority();
+
+            #[cfg(not(all(target_os = "linux", feature = "io-uring")))]
+            {
+                let rt = smol::LocalExecutor::new();
+                let _ = rt.run(tx_rx_task(&interface, tx, rx).expect("Failed to spawn TX/RX task"));
+            }
+            #[cfg(all(target_os = "linux", feature = "io-uring"))]
+            {
+                let _ = tx_rx_task_io_uring(&interface, tx, rx)
+                    .expect("Failed to spawn TX/RX task (io_uring)");
+            }
         })
         .expect("Building thread");
 
@@ -59,7 +74,7 @@ pub async fn setup_loop(
             // Default 5000ms
             state_transition: Duration::from_millis(10 * 1000),
             // Default 30_000us
-            pdu: Duration::from_millis(1000),
+            pdu: Duration::from_millis(500),
             // Default 10ms
             eeprom: Duration::from_millis(10),
             // Default 0ms
@@ -71,7 +86,7 @@ pub async fn setup_loop(
         },
         MainDeviceConfig {
             // Default RetryBehaviour::None
-            retry_behaviour: RetryBehaviour::None,
+            retry_behaviour: RetryBehaviour::Count(10), // 100ms * 25 = 2.5s
             // Default 10_000
             dc_static_sync_iterations: 10_000,
         },
@@ -87,7 +102,7 @@ pub async fn setup_loop(
                 .await
                 .main_namespace;
             let event = EthercatDevicesEventBuilder().initializing();
-            main_namespace.emit_cached(MainNamespaceEvents::EthercatDevicesEvent(event));
+            main_namespace.emit(MainNamespaceEvents::EthercatDevicesEvent(event));
         }
     });
 
@@ -180,6 +195,8 @@ pub async fn setup_loop(
                 ethercat_devices: &identified_devices,
                 subdevices: &identified_subdevices,
             },
+            app_state.socketio_setup.socket_queue_tx.clone(),
+            Arc::downgrade(&app_state.machines),
         );
     }
 
@@ -199,7 +216,7 @@ pub async fn setup_loop(
             .await
             .main_namespace;
         let event = MachinesEventBuilder().build(app_state_clone.clone()).await;
-        main_namespace.emit_cached(MainNamespaceEvents::MachinesEvent(event));
+        main_namespace.emit(MainNamespaceEvents::MachinesEvent(event));
     });
 
     // Put group in operational state
@@ -237,7 +254,7 @@ pub async fn setup_loop(
         let event = EthercatDevicesEventBuilder()
             .build(app_state_clone.clone())
             .await;
-        main_namespace.emit_cached(MainNamespaceEvents::EthercatDevicesEvent(event));
+        main_namespace.emit(MainNamespaceEvents::EthercatDevicesEvent(event));
     });
 
     Ok(())

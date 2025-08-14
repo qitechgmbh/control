@@ -33,6 +33,8 @@ pub fn init_mock(app_state: Arc<AppState>) -> Result<(), anyhow::Error> {
                         &device_identification,
                         mock_serial_device,
                         &MACHINE_REGISTRY,
+                        app_state.socketio_setup.socket_queue_tx.clone(),
+                        Arc::downgrade(&app_state.machines),
                     );
                 }
 
@@ -45,7 +47,7 @@ pub fn init_mock(app_state: Arc<AppState>) -> Result<(), anyhow::Error> {
                     .await
                     .main_namespace;
                 let event = MachinesEventBuilder().build(app_state_event.clone()).await;
-                main_namespace.emit_cached(MainNamespaceEvents::MachinesEvent(event));
+                main_namespace.emit(MainNamespaceEvents::MachinesEvent(event));
                 Ok(())
             }
             Err(e) => {
@@ -54,7 +56,4 @@ pub fn init_mock(app_state: Arc<AppState>) -> Result<(), anyhow::Error> {
             }
         }
     });
-
-    tracing::info!("Mock machines initialized successfully");
-    Ok(())
 }

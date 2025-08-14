@@ -1,15 +1,11 @@
-use std::{any, time::Instant};
+use std::time::Instant;
 
 use control_core::{
-    actors::{
-        Actor,
-        analog_input_getter::AnalogInputGetter,
-        mitsubishi_inverter_rs485::{MitsubishiControlRequests, MitsubishiInverterRS485Actor},
-    },
-    controllers::pid::PidController,
-    converters::transmission_converter::TransmissionConverter,
-    helpers::interpolation::normalize,
+    controllers::clamping_timeagnostic_pid::ClampingTimeagnosticPidController,
+    converters::transmission_converter::TransmissionConverter, helpers::interpolation::normalize,
 };
+use ethercat_hal::io::analog_input::AnalogInput;
+use futures::executor::block_on;
 use uom::si::{
     angular_velocity::revolution_per_minute,
     electric_current::milliampere,
@@ -18,21 +14,22 @@ use uom::si::{
     pressure::bar,
 };
 
-/// Clampable frequency limits (in Hz)
-const MIN_FREQ: f64 = 0.0;
-const MAX_FREQ: f64 = 60.0;
+use super::mitsubishi_cs80::{MitsubishiCS80, MotorStatus};
 
 #[derive(Debug)]
 pub struct ScrewSpeedController {
-    pid: PidController,
+    pub pid: ClampingTimeagnosticPidController,
     pub target_pressure: Pressure,
     pub target_rpm: AngularVelocity,
-    pub inverter: MitsubishiInverterRS485Actor,
-    pressure_sensor: AnalogInputGetter,
+    pub inverter: MitsubishiCS80,
+    pressure_sensor: AnalogInput,
     last_update: Instant,
     uses_rpm: bool,
     forward_rotation: bool,
     transmission_converter: TransmissionConverter,
+    frequency: Frequency,
+    maximum_frequency: Frequency,
+    minimum_frequency: Frequency,
     motor_on: bool,
     nozzle_pressure_limit: Pressure,
     nozzle_pressure_limit_enabled: bool,
@@ -40,16 +37,16 @@ pub struct ScrewSpeedController {
 
 impl ScrewSpeedController {
     pub fn new(
-        inverter: MitsubishiInverterRS485Actor,
+        inverter: MitsubishiCS80,
         target_pressure: Pressure,
         target_rpm: AngularVelocity,
-        pressure_sensor: AnalogInputGetter,
+        pressure_sensor: AnalogInput,
     ) -> Self {
         let now = Instant::now();
         Self {
             inverter: inverter,
             // need to tune
-            pid: PidController::new(0.1, 0.1, 0.1),
+            pid: ClampingTimeagnosticPidController::simple_new(0.01, 0.0, 0.02),
             last_update: now,
             target_pressure,
             target_rpm,
@@ -60,6 +57,9 @@ impl ScrewSpeedController {
             motor_on: false,
             nozzle_pressure_limit: Pressure::new::<bar>(100.0),
             nozzle_pressure_limit_enabled: true,
+            frequency: Frequency::new::<hertz>(0.0),
+            maximum_frequency: Frequency::new::<hertz>(60.0),
+            minimum_frequency: Frequency::new::<hertz>(0.0),
         }
     }
 
@@ -94,17 +94,12 @@ impl ScrewSpeedController {
     pub fn set_rotation_direction(&mut self, forward: bool) {
         self.forward_rotation = forward;
         if self.motor_on {
-            if self.forward_rotation {
-                self.inverter
-                    .add_request(MitsubishiControlRequests::StartReverseRotation.into());
-            } else {
-                self.inverter
-                    .add_request(MitsubishiControlRequests::StartForwardRotation.into());
-            }
+            self.inverter.set_rotation(self.forward_rotation);
         }
     }
 
     pub fn set_target_pressure(&mut self, target_pressure: Pressure) {
+        self.reset_pid();
         self.target_pressure = target_pressure;
     }
 
@@ -131,42 +126,50 @@ impl ScrewSpeedController {
 
     // Send Motor Turn Off Request to the Inverter
     pub fn turn_motor_off(&mut self) {
-        self.inverter
-            .add_request(MitsubishiControlRequests::StopMotor.into());
+        self.inverter.stop_motor();
         self.motor_on = false;
     }
 
     pub fn turn_motor_on(&mut self) {
-        if self.forward_rotation {
-            self.inverter
-                .add_request(MitsubishiControlRequests::StartReverseRotation.into());
-        } else {
-            self.inverter
-                .add_request(MitsubishiControlRequests::StartForwardRotation.into());
-        }
+        self.inverter.set_rotation(self.forward_rotation);
         self.motor_on = true;
     }
 
-    pub fn get_screw_rpm(&mut self) -> AngularVelocity {
-        let frequency = self.get_frequency();
+    pub fn get_motor_status(&mut self) -> MotorStatus {
+        let frequency = self.inverter.motor_status.frequency;
         let rpm = frequency.get::<cycle_per_minute>();
-        self.transmission_converter
-            .calculate_screw_output_rpm(AngularVelocity::new::<revolution_per_minute>(rpm))
-    }
 
-    pub fn get_frequency(&mut self) -> Frequency {
-        self.inverter.frequency
+        let screw_rpm = self
+            .transmission_converter
+            .calculate_screw_output_rpm(AngularVelocity::new::<revolution_per_minute>(rpm));
+
+        let mut status = self.inverter.motor_status.clone();
+        status.rpm = screw_rpm;
+
+        return status;
     }
 
     pub fn get_target_pressure(&self) -> Pressure {
         self.target_pressure
     }
 
+    fn clamp_frequency(frequency: Frequency, min: Frequency, max: Frequency) -> Frequency {
+        if frequency < min {
+            min
+        } else if frequency > max {
+            max
+        } else {
+            frequency
+        }
+    }
+
+    pub fn get_wiring_error(&self) -> bool {
+        self.pressure_sensor.get_wiring_error()
+    }
+
     pub fn get_sensor_current(&self) -> Result<ElectricCurrent, anyhow::Error> {
-        let phys: ethercat_hal::io::analog_input::physical::AnalogInputValue = self
-            .pressure_sensor
-            .get_physical()
-            .ok_or_else(|| anyhow::anyhow!("no value"))?;
+        let phys: ethercat_hal::io::analog_input::physical::AnalogInputValue =
+            self.pressure_sensor.get_physical();
 
         match phys {
             ethercat_hal::io::analog_input::physical::AnalogInputValue::Potential(_) => {
@@ -178,44 +181,77 @@ impl ScrewSpeedController {
         }
     }
 
+    pub fn reset_pid(&mut self) {
+        self.pid.reset()
+    }
+
     pub fn get_pressure(&mut self) -> Pressure {
         let current_result = self.get_sensor_current();
         let current = match current_result {
             Ok(current) => current.get::<milliampere>(),
-            Err(_) => todo!(),
+            Err(_) => {
+                tracing::error!("cant get pressure sensor reading");
+                return Pressure::new::<bar>(0.0);
+            }
         };
         let normalized = normalize(current, 4.0, 20.0);
         // Our pressure sensor has a range of Up to 350 Bar
-
         let actual_pressure = (normalized) * 350.0;
-
         return Pressure::new::<bar>(actual_pressure);
     }
 
-    pub async fn update(&mut self, now: Instant) {
-        self.inverter.act(now).await;
-        self.pressure_sensor.act(now).await;
+    pub fn update(&mut self, now: Instant, is_extruding: bool) {
+        // TODO: move this logic elsewhere or make non async
+        block_on(self.inverter.act(now));
+
+        let wiring_error = self.get_wiring_error();
+        if wiring_error {
+            // emit in act
+        }
 
         let measured_pressure = self.get_pressure();
+
+        if !self.uses_rpm && !is_extruding && self.motor_on {
+            let frequency = Frequency::new::<hertz>(0.0);
+            self.inverter.set_frequency_target(frequency);
+            self.turn_motor_off();
+            self.last_update = now;
+            return;
+        }
+
         if (measured_pressure >= self.nozzle_pressure_limit)
             && self.nozzle_pressure_limit_enabled
             && self.motor_on
         {
             self.turn_motor_off();
+            self.last_update = now;
             return;
         }
-        if !self.uses_rpm {
-            let error = self.target_pressure - measured_pressure;
-            let freq = self
-                .pid
-                .update(error.get::<bar>(), now)
-                .clamp(MIN_FREQ, MAX_FREQ);
 
-            let frequency = Frequency::new::<hertz>(freq);
-
-            self.last_update = now;
-            self.inverter.set_frequency_target(frequency);
+        if is_extruding == true && self.motor_on == false {
+            self.turn_motor_on();
         }
+
+        if !self.uses_rpm && is_extruding == true {
+            let error = self.target_pressure - measured_pressure;
+            let freq_change = self.pid.update(error.get::<bar>(), now);
+
+            self.frequency += Frequency::new::<hertz>(freq_change);
+            self.frequency = Self::clamp_frequency(
+                self.frequency,
+                self.minimum_frequency,
+                self.maximum_frequency,
+            );
+
+            self.inverter.set_frequency_target(self.frequency);
+        }
+        self.last_update = now;
+    }
+
+    pub fn start_pressure_regulation(&mut self) {
+        self.last_update = Instant::now();
+        self.frequency = self.inverter.motor_status.frequency;
+        self.pid.reset();
     }
 
     pub fn reset(&mut self) {

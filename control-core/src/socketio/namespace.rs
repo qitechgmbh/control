@@ -1,24 +1,64 @@
 use crate::socketio::event::GenericEvent;
-use socketioxide::{extract::SocketRef, socket::Sid};
-use std::{collections::HashMap, time::Duration};
+use smol::channel::Sender;
+use socketioxide::extract::SocketRef;
+use std::{collections::HashMap, sync::Arc, time::Duration};
 use tracing::instrument;
 
-use super::socket_queue::SocketQueue;
+#[derive(Debug)]
+pub struct Namespace {
+    pub sockets: Vec<SocketRef>,
+    pub events: HashMap<String, Vec<Arc<GenericEvent>>>,
+    pub socket_queue_tx: Sender<(SocketRef, Arc<GenericEvent>)>,
+}
 
-pub trait NamespaceInterface {
+impl Namespace {
+    pub fn new(socket_queue_tx: Sender<(SocketRef, Arc<GenericEvent>)>) -> Self {
+        Self {
+            sockets: vec![],
+            events: HashMap::new(),
+            socket_queue_tx,
+        }
+    }
+}
+
+impl Namespace {
     /// Adds a socket to the namespace.
     ///
     /// # Arguments
     ///
     /// * `socket` - A reference to the socket to be added
-    fn subscribe(&mut self, socket: SocketRef);
+    #[instrument(skip_all)]
+    pub fn subscribe(&mut self, socket: SocketRef) {
+        // add the socket to the list
+        self.sockets.push(socket.clone());
+    }
 
     /// Removes a socket from the namespace.
     ///
     /// # Arguments
     ///
     /// * `socket` - A reference to the socket to be removed
-    fn unsubscribe(&mut self, socket: SocketRef);
+    #[instrument(skip_all)]
+    pub fn unsubscribe(&mut self, socket: SocketRef) {
+        // remove the socket from the list
+        self.sockets.retain(|s| s.id != socket.id);
+    }
+
+    /// Disconnects all clients in the namespace.
+    ///
+    /// This will forcefully disconnect all sockets and clear the socket list.
+    #[instrument(skip_all)]
+    pub fn disconnect_all(&mut self) {
+        tracing::info!("Disconnecting {} sockets in namespace", self.sockets.len());
+
+        // Disconnect each socket
+        for socket in &self.sockets {
+            let _ = socket.clone().disconnect(); // Ignore errors if socket is already disconnected
+        }
+
+        // Clear the socket list
+        self.sockets.clear();
+    }
 
     /// Re-emits cached events to a specific socket.
     ///
@@ -28,14 +68,23 @@ pub trait NamespaceInterface {
     /// # Arguments
     ///
     /// * `socket` - A reference to the socket that will receive the cached events
-    fn reemit(&mut self, socket: SocketRef);
+    #[instrument(skip_all)]
+    pub fn reemit(&mut self, socket: SocketRef) {
+        // Collect events grouped by name/kind with their counts for sorting
+        let mut event_groups: Vec<(&String, &Vec<Arc<GenericEvent>>)> =
+            self.events.iter().collect();
 
-    /// Emits an event to all sockets in the namespace.
-    ///
-    /// # Arguments
-    ///
-    /// * `event` - The event to be emitted
-    fn emit(&mut self, event: &GenericEvent);
+        // Sort by event count (ascending - lowest count first)
+        event_groups.sort_by(|a, b| a.1.len().cmp(&b.1.len()));
+
+        // Emit events in order of lowest count first
+        for (_event_name, events) in event_groups {
+            for event in events {
+                // Send to global queue instead of per-socket queue
+                self.send_to_queue(&socket, &event, "reemit");
+            }
+        }
+    }
 
     /// Caches an event with a specific key for later retrieval.
     ///
@@ -44,118 +93,85 @@ pub trait NamespaceInterface {
     /// * `cache_key` - A string key to identify the cache
     /// * `event` - The event to be cached
     /// * `buffer_fn` - A function that defines how the event should be added to the cache buffer
-    fn cache(
-        &mut self,
-        event: &GenericEvent,
-        buffer_fn: &Box<dyn Fn(&mut Vec<GenericEvent>, &GenericEvent) -> ()>,
-    );
-
-    /// Emits an event to all sockets in the namespace and caches it.
-    ///
-    /// This is a convenience method that combines the functionality of
-    /// [`Namespace::emit`] and [`Namespace::cache`].
-    ///
-    /// # Arguments
-    ///
-    /// * `event` - The event to be emitted and cached
-    /// * `cache_key` - A string key to identify the cache
-    /// * `buffer_fn` - A function that defines how the event should be added to the cache buffer
-    fn emit_cached(
-        &mut self,
-        event: &GenericEvent,
-        buffer_fn: &Box<dyn Fn(&mut Vec<GenericEvent>, &GenericEvent) -> ()>,
-    );
-}
-
-#[derive(Debug)]
-pub struct Namespace {
-    sockets: Vec<SocketRef>,
-    events: HashMap<String, Vec<GenericEvent>>,
-    socket_queues: HashMap<Sid, SocketQueue>,
-}
-
-impl Namespace {
-    pub fn new() -> Self {
-        Self {
-            sockets: vec![],
-            events: HashMap::new(),
-            socket_queues: HashMap::new(),
-        }
-    }
-}
-
-impl NamespaceInterface for Namespace {
-    #[instrument(skip_all)]
-    fn subscribe(&mut self, socket: SocketRef) {
-        // add the socket to the list
-        self.sockets.push(socket.clone());
-        // create a new queue for this socket
-        self.socket_queues.insert(socket.id, SocketQueue::new());
-    }
-
-    #[instrument(skip_all)]
-    fn unsubscribe(&mut self, socket: SocketRef) {
-        // remove the socket from the list
-        self.sockets.retain(|s| s.id != socket.id);
-        // remove the socket's queue
-        self.socket_queues.remove(&socket.id);
-    }
-
-    #[instrument(skip_all)]
-    fn reemit(&mut self, socket: SocketRef) {
-        if let Some(queue) = self.socket_queues.get(&socket.id) {
-            // Collect events grouped by name/kind with their counts for sorting
-            let mut event_groups: Vec<(&String, &Vec<GenericEvent>)> = self.events.iter().collect();
-
-            // Sort by event count (ascending - lowest count first)
-            event_groups.sort_by(|a, b| a.1.len().cmp(&b.1.len()));
-
-            // Emit events in order of lowest count first
-            for (_event_name, events) in event_groups {
-                for event in events {
-                    queue.push(event.clone());
-                }
-            }
-
-            queue.flush(socket.clone());
-        }
-    }
-
-    #[instrument(skip_all)]
-    fn emit(&mut self, event: &GenericEvent) {
-        // Use the new emit function which combines push and flush
-        for socket in self.sockets.clone() {
-            if let Some(queue) = self.socket_queues.get(&socket.id) {
-                queue.push(event.clone());
-                queue.flush(socket.clone());
-            }
-        }
-    }
-
     #[instrument(skip_all)]
     fn cache(
         &mut self,
-        event: &GenericEvent,
-        buffer_fn: &Box<dyn Fn(&mut Vec<GenericEvent>, &GenericEvent) -> ()>,
+        event: Arc<GenericEvent>,
+        buffer_fn: &Box<dyn Fn(&mut Vec<Arc<GenericEvent>>, &Arc<GenericEvent>) -> ()>,
     ) {
         let mut cached_events_for_key = self
             .events
             .entry(event.name.clone())
             .or_insert_with(Vec::new);
-        buffer_fn(&mut cached_events_for_key, event);
+        buffer_fn(&mut cached_events_for_key, &event);
     }
 
+    /// Emits an event to all sockets in the namespace and caches it.
+    ///
+    ///
+    /// # Arguments
+    ///
+    /// * `event` - The event to be emitted and cached
+    /// * `buffer_fn` - A function that defines how the event should be added to the cache buffer
     #[instrument(skip_all)]
-    fn emit_cached(
+    pub fn emit(
         &mut self,
-        event: &GenericEvent,
-        buffer_fn: &Box<dyn Fn(&mut Vec<GenericEvent>, &GenericEvent) -> ()>,
+        event: Arc<GenericEvent>,
+        buffer_fn: &Box<dyn Fn(&mut Vec<Arc<GenericEvent>>, &Arc<GenericEvent>) -> ()>,
     ) {
         // cache the event
-        self.cache(event, buffer_fn);
+        self.cache(event.clone(), &buffer_fn);
 
-        // emit the event
-        self.emit(event);
+        // emit the event - inlined from emit function
+        // Send to global queue for each socket in the namespace
+        for socket in self.sockets.clone() {
+            self.send_to_queue(&socket, &event, "emit");
+        }
+    }
+
+    /// Sends an event to the global queue for a specific socket.
+    ///
+    /// # Arguments
+    ///
+    /// * `socket` - The socket to send the event to
+    /// * `event` - The event to be sent
+    /// * `operation` - A description of the operation for logging purposes (e.g., "reemit", "emit")
+    #[instrument(skip_all)]
+    fn send_to_queue(&self, socket: &SocketRef, event: &Arc<GenericEvent>, operation: &str) {
+        tracing::trace!(
+            socket_id = ?socket.id,
+            event = %event.name,
+            operation = %operation,
+            "Sending event to global queue"
+        );
+        match self
+            .socket_queue_tx
+            .try_send((socket.clone(), event.clone()))
+        {
+            Ok(_) => {
+                tracing::trace!(
+                    socket_id = ?socket.id,
+                    event = %event.name,
+                    operation = %operation,
+                    "Successfully sent event to global queue"
+                );
+            }
+            Err(e) => {
+                tracing::error!(
+                    socket_id = ?socket.id,
+                    event = %event.name,
+                    operation = %operation,
+                    error = %e,
+                    "Failed to send event to global queue"
+                );
+            }
+        }
+    }
+}
+
+impl Drop for Namespace {
+    fn drop(&mut self) {
+        self.disconnect_all();
     }
 }
 
@@ -167,17 +183,17 @@ pub trait NamespaceCacheingLogic<V>
 where
     V: CacheableEvents<V>,
 {
-    fn emit_cached(&mut self, event: V);
+    fn emit(&mut self, event: V);
 }
 
 pub trait CacheableEvents<Events> {
-    fn event_value(&self) -> Result<GenericEvent, serde_json::Error>;
+    fn event_value(&self) -> GenericEvent;
     fn event_cache_fn(&self) -> CacheFn;
 }
 
-pub type CacheFn = Box<dyn Fn(&mut Vec<GenericEvent>, &GenericEvent) -> ()>;
+pub type CacheFn = Box<dyn Fn(&mut Vec<Arc<GenericEvent>>, &Arc<GenericEvent>) -> ()>;
 
-/// [BufferFn] that stores the last n events
+/// [`BufferFn`] that stores the last n events
 pub fn cache_n_events(n: usize) -> CacheFn {
     Box::new(move |events, event| {
         if events.len() >= n {
@@ -187,21 +203,42 @@ pub fn cache_n_events(n: usize) -> CacheFn {
     })
 }
 
-/// [BufferFn] that stores only one event
+/// [`BufferFn`] that stores only one event
 pub fn cache_one_event() -> CacheFn {
     cache_n_events(1)
 }
 
-/// [BufferFn] that stores events for a certain duration
+/// [`BufferFn`] that stores first and last event
+///
+/// The primary use case of this function is to cache both the default state of a machine, which should be emitted first,
+/// and the last event, which is the most recent state of the machine.
+pub fn cache_first_and_last_event() -> CacheFn {
+    Box::new(move |events, event| {
+        // if the events length 0 or 1, we just push the event
+        if events.is_empty() || events.len() == 1 {
+            events.push(event.clone());
+            return;
+        }
+        // if the event length is 2 we remove the last event and append a new one
+        if events.len() == 2 {
+            events.remove(1);
+            events.push(event.clone());
+            return;
+        }
+    })
+}
+
+/// [`BufferFn`] that stores events for a certain duration
 pub fn cache_duration(duration: Duration, bucket_size: Duration) -> CacheFn {
     Box::new(move |events, event| {
         // Use event.ts instead of system time
         let current_time = event.ts as u128;
 
         // calculate current bucket & last bucket
-        let bucket = current_time / bucket_size.as_millis();
+        let bucket_size_ms = bucket_size.as_millis().max(1);
+        let bucket = current_time / bucket_size_ms; // Avoid division by zero
         let last_bucket = match events.last() {
-            Some(last_event) => last_event.ts as u128 / bucket_size.as_millis(),
+            Some(last_event) => last_event.ts as u128 / bucket_size_ms,
             None => 0,
         };
 
@@ -231,24 +268,32 @@ pub fn cache_duration(duration: Duration, bucket_size: Duration) -> CacheFn {
 mod tests {
     use std::cmp::min;
 
+    use serde::Serialize;
+
     use super::*;
+
+    #[derive(Debug, Clone, Serialize)]
+    struct TestEventData {
+        value: usize,
+    }
 
     #[test]
     fn test_cache_n_events() {
         // Create a cache function that stores the last 2 events
         let cache_fn = cache_n_events(2);
 
-        // Create namespace
-        let mut namespace = Namespace::new();
+        // Create namespace with dummy queue_tx
+        let (queue_tx, _queue_rx) = smol::channel::unbounded();
+        let mut namespace = Namespace::new(queue_tx);
         assert!(namespace.events.is_empty());
 
         // Add event
-        let event1 = GenericEvent {
+        let event1 = Arc::new(GenericEvent {
             name: "test_event".to_string(),
-            data: serde_json::json!({"value": 1}),
+            data: Box::new(TestEventData { value: 1 }),
             ts: 0,
-        };
-        namespace.cache(&event1, &cache_fn);
+        });
+        namespace.cache(event1, &cache_fn);
 
         // Check that we have one event name in the map
         assert_eq!(namespace.events.len(), 1);
@@ -257,12 +302,12 @@ mod tests {
         assert_eq!(namespace.events.get("test_event").unwrap()[0].ts, 0);
 
         // Add another event
-        let event2 = GenericEvent {
+        let event2 = Arc::new(GenericEvent {
             name: "test_event".to_string(),
-            data: serde_json::json!({"value": 2}),
+            data: Box::new(TestEventData { value: 2 }),
             ts: 1,
-        };
-        namespace.cache(&event2, &cache_fn);
+        });
+        namespace.cache(event2, &cache_fn);
 
         // Still one event name
         assert_eq!(namespace.events.len(), 1);
@@ -272,12 +317,12 @@ mod tests {
         assert_eq!(namespace.events.get("test_event").unwrap()[1].ts, 1);
 
         // Add a third event, which should remove the first one
-        let event3 = GenericEvent {
+        let event3 = Arc::new(GenericEvent {
             name: "test_event".to_string(),
-            data: serde_json::json!({"value": 3}),
+            data: Box::new(TestEventData { value: 3 }),
             ts: 2,
-        };
-        namespace.cache(&event3, &cache_fn);
+        });
+        namespace.cache(event3, &cache_fn);
 
         // Still one event name
         assert_eq!(namespace.events.len(), 1);
@@ -296,19 +341,20 @@ mod tests {
         let duration = Duration::new(10, 0);
         let bucket_size = Duration::new(1, 0);
         let cache_fn = cache_duration(duration, bucket_size);
+        let (queue_tx, _queue_rx) = smol::channel::unbounded();
 
         // Create namespace
-        let mut namespace = Namespace::new();
+        let mut namespace = Namespace::new(queue_tx);
         assert!(namespace.events.is_empty());
 
         // Add events every 100ms for 20 seconds
         for i in 0..200 {
-            let event = GenericEvent {
+            let event = Arc::new(GenericEvent {
                 name: "test_event".to_string(),
-                data: serde_json::json!({"value": i}),
+                data: Box::new(TestEventData { value: i }),
                 ts: (i * 100) as u64,
-            };
-            namespace.cache(&event, &cache_fn);
+            });
+            namespace.cache(event, &cache_fn);
 
             let should_have_events = min(i / 10, 11);
             assert_eq!(

@@ -1,4 +1,4 @@
-import { ReactNode } from "@tanstack/react-router";
+import { ReactNode } from "react";
 import { IconName } from "@/components/Icon";
 import React from "react";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
@@ -8,6 +8,8 @@ export function getUnitIcon(unit: Unit): IconName {
     case "m/s":
       return "lu:Gauge";
     case "mm":
+      return "lu:Ruler";
+    case "cm":
       return "lu:Ruler";
     case "m":
       return "lu:Ruler";
@@ -25,6 +27,10 @@ export function getUnitIcon(unit: Unit): IconName {
       return "lu:AudioWaveform";
     case "W":
       return "lu:Zap";
+    case "V":
+      return "lu:Zap";
+    case "A":
+      return "lu:Zap";
     default:
       return "lu:ChartNoAxesColumn";
   }
@@ -36,6 +42,8 @@ export function renderUnitSymbol(unit: Unit | undefined): string {
       return "m/s";
     case "mm":
       return "mm";
+    case "cm":
+      return "cm";
     case "m":
       return "m";
     case "rpm":
@@ -52,6 +60,10 @@ export function renderUnitSymbol(unit: Unit | undefined): string {
       return "mHz";
     case "W":
       return "W";
+    case "V":
+      return "V";
+    case "A":
+      return "A";
     default:
       return "";
   }
@@ -85,6 +97,8 @@ export function renderUnitSymbolLong(unit: Unit): string {
       return "meters/second";
     case "mm":
       return "millimeters";
+    case "cm":
+      return "centimeters";
     case "m":
       return "meters";
     case "rpm":
@@ -99,6 +113,12 @@ export function renderUnitSymbolLong(unit: Unit): string {
       return "meters/minute";
     case "mHz":
       return "millihertz";
+    case "W":
+      return "watts";
+    case "V":
+      return "volts";
+    case "A":
+      return "amperes";
     default:
       return "";
   }
@@ -107,6 +127,7 @@ export function renderUnitSymbolLong(unit: Unit): string {
 export const units = [
   "m/s",
   "mm",
+  "cm",
   "rpm",
   "deg",
   "m",
@@ -115,6 +136,8 @@ export const units = [
   "m/min",
   "mHz",
   "W",
+  "V",
+  "A",
 ] as const;
 
 export type Unit = (typeof units)[number];

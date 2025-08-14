@@ -1,4 +1,3 @@
-use ethercrab::error;
 #[cfg(all(not(target_env = "msvc"), not(feature = "dhat-heap")))]
 use tikv_jemallocator::Jemalloc;
 
@@ -25,6 +24,7 @@ use serial::init::init_serial;
 use jemalloc_stats::init_jemalloc_stats;
 
 use crate::panic::init_panic;
+use crate::socketio::queue::init_socketio_queue;
 
 pub mod app_state;
 pub mod ethercat;
@@ -48,6 +48,13 @@ fn main() {
     logging::init_tracing();
     tracing::info!("Tracing initialized successfully");
 
+    // lock memory (not working thus commented out)
+    // if let Err(e) = lock_memory() {
+    //     tracing::error!("[{}::main] Failed to lock memory: {:?}", module_path!(), e);
+    // } else {
+    //     tracing::info!("[{}::main] Memory locked successfully", module_path!());
+    // }
+
     #[cfg(all(not(target_env = "msvc"), not(feature = "dhat-heap")))]
     init_jemalloc_stats();
 
@@ -60,20 +67,25 @@ fn main() {
             let thread_panic_tx = thread_panic_tx.clone();
             let app_state = app_state.clone();
             move || {
+                #[cfg(feature = "dhat-heap")]
+                init_dhat_heap_profiling();
+
+                init_socketio_queue(thread_panic_tx.clone(), app_state.clone());
                 init_api(thread_panic_tx.clone(), app_state.clone())
                     .expect("Failed to initialize API");
+                init_loop(thread_panic_tx.clone(), app_state.clone())
+                    .expect("Failed to initialize loop");
+
+                #[cfg(feature = "mock-machine")]
+                init_mock(app_state.clone()).expect("Failed to initialize mock machines");
+
                 #[cfg(not(feature = "mock-machine"))]
                 init_serial(thread_panic_tx.clone(), app_state.clone())
                     .expect("Failed to initialize Serial");
+
                 #[cfg(not(feature = "mock-machine"))]
                 init_ethercat(thread_panic_tx.clone(), app_state.clone())
                     .expect("Failed to initialize EtherCAT");
-                #[cfg(feature = "mock-machine")]
-                init_mock(app_state.clone()).expect("Failed to initialize mock machines");
-                init_loop(thread_panic_tx, app_state).expect("Failed to initialize loop");
-
-                #[cfg(feature = "dhat-heap")]
-                init_dhat_heap_profiling();
             }
         })
         .expect("Failed to spawn init thread");

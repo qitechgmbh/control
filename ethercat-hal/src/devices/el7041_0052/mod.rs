@@ -5,10 +5,9 @@ use super::{EthercatDeviceProcessing, NewEthercatDevice, SubDeviceIdentityTuple}
 use crate::{
     helpers::counter_wrapper_u16_i128::CounterWrapperU16U128,
     io::{
-        digital_input::{DigitalInputDevice, DigitalInputInput, DigitalInputState},
+        digital_input::{DigitalInputDevice, DigitalInputInput},
         stepper_velocity_el70x1::{
             StepperVelocityEL70x1Device, StepperVelocityEL70x1Input, StepperVelocityEL70x1Output,
-            StepperVelocityEL70x1State,
         },
     },
     pdo::{PredefinedPdoAssignment, RxPdo, TxPdo},
@@ -109,7 +108,7 @@ impl EthercatDeviceProcessing for EL7041_0052 {
 }
 
 impl StepperVelocityEL70x1Device<EL7041_0052Port> for EL7041_0052 {
-    fn stepper_velocity_write(
+    fn set_output(
         &mut self,
         port: EL7041_0052Port,
         value: StepperVelocityEL70x1Output,
@@ -158,10 +157,10 @@ impl StepperVelocityEL70x1Device<EL7041_0052Port> for EL7041_0052 {
         }
     }
 
-    fn stepper_velocity_state(
+    fn get_input(
         &self,
         port: EL7041_0052Port,
-    ) -> Result<StepperVelocityEL70x1State, anyhow::Error> {
+    ) -> Result<StepperVelocityEL70x1Input, anyhow::Error> {
         // check if operating mode is velocity
         if self.configuration.stm_features.operation_mode != EL70x1OperationMode::DirectVelocity {
             return Err(anyhow!(
@@ -177,35 +176,16 @@ impl StepperVelocityEL70x1Device<EL7041_0052Port> for EL7041_0052 {
                     None => return Err(anyhow!("stm_status is None")),
                 };
 
-                let stm_control = match &self.rxpdo.stm_control {
-                    Some(value) => value,
-                    None => return Err(anyhow!("stm_control is None")),
-                };
-
-                let stm_velocity = match &self.rxpdo.stm_velocity {
-                    Some(value) => value,
-                    None => return Err(anyhow!("stm_velocity is None")),
-                };
-
-                Ok(StepperVelocityEL70x1State {
-                    input: StepperVelocityEL70x1Input {
-                        // Use the counter wrapper to get the current counter value
-                        counter_value: self.counter_wrapper.current(),
-                        ready_to_enable: stm_status.ready_to_enable,
-                        ready: stm_status.ready,
-                        warning: stm_status.warning,
-                        error: stm_status.error,
-                        moving_positive: stm_status.moving_positive,
-                        moving_negative: stm_status.moving_negative,
-                        torque_reduced: stm_status.torque_reduced,
-                    },
-                    output: StepperVelocityEL70x1Output {
-                        velocity: stm_velocity.velocity,
-                        enable: stm_control.enable,
-                        reduce_torque: stm_control.reduce_torque,
-                        reset: stm_control.reset,
-                        set_counter: self.counter_wrapper.get_override(),
-                    },
+                Ok(StepperVelocityEL70x1Input {
+                    // Use the counter wrapper to get the current counter value
+                    counter_value: self.counter_wrapper.current(),
+                    ready_to_enable: stm_status.ready_to_enable,
+                    ready: stm_status.ready,
+                    warning: stm_status.warning,
+                    error: stm_status.error,
+                    moving_positive: stm_status.moving_positive,
+                    moving_negative: stm_status.moving_negative,
+                    torque_reduced: stm_status.torque_reduced,
                 })
             }
             _ => {
@@ -216,39 +196,82 @@ impl StepperVelocityEL70x1Device<EL7041_0052Port> for EL7041_0052 {
             }
         }
     }
+
+    fn get_output(
+        &self,
+        port: EL7041_0052Port,
+    ) -> Result<StepperVelocityEL70x1Output, anyhow::Error> {
+        // check if operating mode is velocity
+        if self.configuration.stm_features.operation_mode != EL70x1OperationMode::DirectVelocity {
+            return Err(anyhow!(
+                "Operation mode is not velocity, but {:?}",
+                self.configuration.stm_features.operation_mode
+            ));
+        }
+
+        match port {
+            EL7041_0052Port::STM1 => {
+                let stm_control = match &self.rxpdo.stm_control {
+                    Some(value) => value,
+                    None => return Err(anyhow!("stm_control is None")),
+                };
+
+                let stm_velocity = match &self.rxpdo.stm_velocity {
+                    Some(value) => value,
+                    None => return Err(anyhow!("stm_velocity is None")),
+                };
+
+                Ok(StepperVelocityEL70x1Output {
+                    velocity: stm_velocity.velocity,
+                    enable: stm_control.enable,
+                    reduce_torque: stm_control.reduce_torque,
+                    reset: stm_control.reset,
+                    set_counter: self.counter_wrapper.get_override(),
+                })
+            }
+            _ => {
+                return Err(anyhow!(
+                    "Port {:?} is not supported for stepper velocity",
+                    port
+                ));
+            }
+        }
+    }
+
+    fn get_speed_range(
+        &self,
+        _port: EL7041_0052Port,
+    ) -> crate::shared_config::el70x1::EL70x1SpeedRange {
+        self.configuration.stm_features.speed_range
+    }
 }
 
 impl DigitalInputDevice<EL7041_0052Port> for EL7041_0052 {
-    fn digital_input_state(
-        &self,
-        port: EL7041_0052Port,
-    ) -> Result<DigitalInputState, anyhow::Error> {
+    fn get_input(&self, port: EL7041_0052Port) -> Result<DigitalInputInput, anyhow::Error> {
         let error1 = anyhow::anyhow!("stm_status is None");
 
-        Ok(DigitalInputState {
-            input: DigitalInputInput {
-                value: match port {
-                    EL7041_0052Port::DI1 => {
-                        self.txpdo
-                            .stm_status
-                            .as_ref()
-                            .ok_or(error1)?
-                            .digital_input_1
-                    }
-                    EL7041_0052Port::DI2 => {
-                        self.txpdo
-                            .stm_status
-                            .as_ref()
-                            .ok_or(error1)?
-                            .digital_input_2
-                    }
-                    _ => {
-                        return Err(anyhow!(
-                            "Port {:?} is not supported for digital input",
-                            port
-                        ));
-                    }
-                },
+        Ok(DigitalInputInput {
+            value: match port {
+                EL7041_0052Port::DI1 => {
+                    self.txpdo
+                        .stm_status
+                        .as_ref()
+                        .ok_or(error1)?
+                        .digital_input_1
+                }
+                EL7041_0052Port::DI2 => {
+                    self.txpdo
+                        .stm_status
+                        .as_ref()
+                        .ok_or(error1)?
+                        .digital_input_2
+                }
+                _ => {
+                    return Err(anyhow!(
+                        "Port {:?} is not supported for digital input",
+                        port
+                    ));
+                }
             },
         })
     }

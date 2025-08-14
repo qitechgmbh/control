@@ -14,6 +14,24 @@ export function Mock1Page() {
           title: "Control",
           icon: "lu:CirclePlay",
         },
+        {
+          link: "graph",
+          activeLink: "graph",
+          title: "Graph",
+          icon: "lu:CirclePlay",
+        },
+        {
+          link: "manual",
+          activeLink: "manual",
+          title: "Manual",
+          icon: "lu:BookOpen",
+        },
+        {
+          link: "presets",
+          activeLink: "presets",
+          title: "Presets",
+          icon: "lu:Save",
+        },
       ]}
     />
   );

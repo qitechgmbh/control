@@ -50,6 +50,8 @@ pub fn init_serial(
                                         &device_identifiaction,
                                         device.clone(),
                                         &MACHINE_REGISTRY,
+                                        app_state_clone.socketio_setup.socket_queue_tx.clone(),
+                                        Arc::downgrade(&app_state.machines),
                                     )
                                 }
                                 for device_identification in result.removed {
@@ -68,8 +70,7 @@ pub fn init_serial(
                                     .main_namespace;
                                 let event =
                                     MachinesEventBuilder().build(app_state_event.clone()).await;
-                                main_namespace
-                                    .emit_cached(MainNamespaceEvents::MachinesEvent(event));
+                                main_namespace.emit(MainNamespaceEvents::MachinesEvent(event));
                             });
                         }
                         smol::Timer::after(Duration::from_millis(300)).await;

@@ -5,16 +5,15 @@
 
 import { StoreApi } from "zustand";
 import { create } from "zustand";
-import { produce } from "immer";
 import { z } from "zod";
 import {
   EventHandler,
   eventSchema,
   Event,
-  handleEventValidationError,
   handleUnhandledEventError,
   NamespaceId,
   createNamespaceHookImplementation,
+  ThrottledStoreUpdater,
 } from "../../../client/socketioStore";
 import { MachineIdentificationUnique } from "@/machines/types";
 import {
@@ -30,43 +29,53 @@ import {
 export const modeSchema = z.enum(["Standby", "Running"]);
 
 /**
- * Sine wave data from Mock Machine (only amplitude)
+ * Mode state schema
  */
-export const sineWaveEventDataSchema = z.object({
-  amplitude: z.number(),
-});
-
-/**
- * Sine wave state event (frequency only)
- */
-export const mockStateEventDataSchema = z.object({
-  frequency: z.number(),
-});
-
-/**
- * Mode state event schema
- */
-export const modeStateEventDataSchema = z.object({
+export const modeStateSchema = z.object({
   mode: modeSchema,
 });
 
+/**
+ * Live values event schema (time-series data)
+ */
+export const liveValuesEventDataSchema = z.object({
+  amplitude_sum: z.number(),
+  amplitude1: z.number(),
+  amplitude2: z.number(),
+  amplitude3: z.number(),
+});
+
+/**
+ * State event schema (consolidated state)
+ */
+export const stateEventDataSchema = z.object({
+  is_default_state: z.boolean(),
+  frequency1: z.number(),
+  frequency2: z.number(),
+  frequency3: z.number(),
+  mode_state: modeStateSchema,
+});
+
 // ========== Event Schemas with Wrappers ==========
-export const sineWaveEventSchema = eventSchema(sineWaveEventDataSchema);
-export const mockStateEventSchema = eventSchema(mockStateEventDataSchema);
-export const modeStateEventSchema = eventSchema(modeStateEventDataSchema);
+export const liveValuesEventSchema = eventSchema(liveValuesEventDataSchema);
+export const stateEventSchema = eventSchema(stateEventDataSchema);
 
 // ========== Type Inferences ==========
 export type Mode = z.infer<typeof modeSchema>;
-export type SineWaveEvent = z.infer<typeof sineWaveEventSchema>;
-export type MockStateEvent = z.infer<typeof mockStateEventSchema>;
-export type ModeStateEvent = z.infer<typeof modeStateEventSchema>;
+export type ModeState = z.infer<typeof modeStateSchema>;
+export type LiveValuesEvent = z.infer<typeof liveValuesEventSchema>;
+export type StateEvent = z.infer<typeof stateEventSchema>;
 
 export type Mock1NamespaceStore = {
-  // State events (latest only)
-  mockState: MockStateEvent | null;
-  modeState: ModeStateEvent | null;
-  // Metric events (cached for 1 hour)
-  sineWave: TimeSeries;
+  // Single state event from server
+  state: StateEvent | null;
+  defaultState: StateEvent | null;
+
+  // Time series data for live values
+  sineWaveSum: TimeSeries;
+  sineWave1: TimeSeries;
+  sineWave2: TimeSeries;
+  sineWave3: TimeSeries;
 };
 
 // Constants for time durations
@@ -86,73 +95,85 @@ const { initialTimeSeries: sineWave, insert: addSineWave } = createTimeSeries(
  * Factory function to create a new Mock1 namespace store
  * @returns A new Zustand store instance for Mock1 namespace
  */
-export const createMock1NamespaceStore = (): StoreApi<Mock1NamespaceStore> =>
-  create<Mock1NamespaceStore>(() => {
+export const createMock1NamespaceStore = (): StoreApi<Mock1NamespaceStore> => {
+  return create<Mock1NamespaceStore>(() => {
     return {
-      mockState: null,
-      modeState: null,
-      sineWave: sineWave,
+      state: null,
+      defaultState: null,
+      sineWaveSum: sineWave,
+      sineWave1: sineWave,
+      sineWave2: sineWave,
+      sineWave3: sineWave,
     };
   });
+};
 
 /**
  * Creates a message handler for Mock1 namespace events with validation and appropriate caching strategies
  * @param store The store to update when messages are received
+ * @param throttledUpdater Throttled updater for batching updates at 60 FPS
  * @returns A message handler function
  */
 export function mock1MessageHandler(
   store: StoreApi<Mock1NamespaceStore>,
+  throttledUpdater: ThrottledStoreUpdater<Mock1NamespaceStore>,
 ): EventHandler {
   return (event: Event<any>) => {
     const eventName = event.name;
 
+    // Helper function to update store through buffer
+    const updateStore = (
+      updater: (state: Mock1NamespaceStore) => Mock1NamespaceStore,
+    ) => {
+      throttledUpdater.updateWith(updater);
+    };
+
     try {
-      // Apply appropriate caching strategy based on event type
-      if (eventName === "MockStateEvent") {
-        store.setState(
-          produce(store.getState(), (state) => {
-            state.mockState = {
-              name: event.name,
-              data: mockStateEventDataSchema.parse(event.data),
-              ts: event.ts,
-            };
-          }),
-        );
+      // State events (latest only)
+      if (eventName === "StateEvent") {
+        const stateEvent = stateEventSchema.parse(event);
+        console.log("StateEvent", stateEvent);
+        updateStore((state) => ({
+          ...state,
+          state: stateEvent,
+          // only set default state if is_default_state is true
+          defaultState: stateEvent.data.is_default_state
+            ? stateEvent
+            : state.defaultState,
+        }));
       }
-      // Mode state events (latest only)
-      else if (eventName === "ModeStateEvent") {
-        store.setState(
-          produce(store.getState(), (state) => {
-            state.modeState = {
-              name: event.name,
-              data: modeStateEventDataSchema.parse(event.data),
-              ts: event.ts,
-            };
-          }),
-        );
-      }
-      // Metric events (keep for 1 hour)
-      else if (eventName === "SineWaveEvent") {
-        const parsed = sineWaveEventSchema.parse(event);
-        const timeseriesValue: TimeSeriesValue = {
-          value: parsed.data.amplitude,
-          timestamp: event.ts,
+      // Live values events (time-series data)
+      else if (eventName === "LiveValuesEvent") {
+        const liveValuesEvent = liveValuesEventSchema.parse(event);
+        const wave1Value: TimeSeriesValue = {
+          value: liveValuesEvent.data.amplitude1 ?? 0,
+          timestamp: liveValuesEvent.ts,
         };
-        store.setState(
-          produce(store.getState(), (state) => {
-            state.sineWave = addSineWave(state.sineWave, timeseriesValue);
-          }),
-        );
+        const wave2Value: TimeSeriesValue = {
+          value: liveValuesEvent.data.amplitude2 ?? 0,
+          timestamp: liveValuesEvent.ts,
+        };
+        const wave3Value: TimeSeriesValue = {
+          value: liveValuesEvent.data.amplitude3 ?? 0,
+          timestamp: liveValuesEvent.ts,
+        };
+        const waveSumValue: TimeSeriesValue = {
+          value: liveValuesEvent.data.amplitude_sum ?? 0,
+          timestamp: liveValuesEvent.ts,
+        };
+        updateStore((state) => ({
+          ...state,
+          sineWaveSum: addSineWave(state.sineWaveSum, waveSumValue),
+          sineWave1: addSineWave(state.sineWave1, wave1Value),
+          sineWave2: addSineWave(state.sineWave2, wave2Value),
+          sineWave3: addSineWave(state.sineWave3, wave3Value),
+        }));
       } else {
         handleUnhandledEventError(eventName);
       }
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        handleEventValidationError(error, eventName);
-      } else {
-        console.error(`Unexpected error processing ${eventName} event:`, error);
-        throw error;
-      }
+      console.error(`Unexpected error processing ${eventName} event:`, error);
+      throw error;
     }
   };
 }

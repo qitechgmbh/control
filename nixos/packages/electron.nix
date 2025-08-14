@@ -60,7 +60,7 @@ stdenv.mkDerivation rec {
     find out -type f -name "*.js" | sort
   '';
 
-  installPhase = ''
+installPhase = ''
     mkdir -p $out/share/qitech-control-electron $out/bin $out/share/applications $out/share/icons/hicolor/256x256/apps
     
     # First check for a full distribution in the 'out/make' directory
@@ -91,11 +91,12 @@ stdenv.mkDerivation rec {
       ln -sf $out/share/icons/hicolor/256x256/apps/de.qitech.control-electron.png $out/share/pixmaps/qitech-control-electron.png
     fi
 
-    # Create the executable wrapper with proper app ID
+    # Create the executable wrapper with proper app ID and niceness
+    # electron needs a little bit of niceness, otherwise it will lag
     cat > $out/bin/qitech-control-electron << EOF
     #!/bin/sh
     cd $out/share/qitech-control-electron
-    exec ${electron}/bin/electron "$out/share/qitech-control-electron" \
+    exec nice -n -12 ${electron}/bin/electron "$out/share/qitech-control-electron" \
       --no-sandbox \
       --class=de.qitech.control-electron \
       --name="QiTech Control" \
@@ -119,6 +120,7 @@ stdenv.mkDerivation rec {
     X-GNOME-UsesNotifications=true
     EOF
   '';
+
 
   meta = with lib; {
     description = "QiTech Control Electron";

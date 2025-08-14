@@ -4,6 +4,7 @@ use ethercat_hal::devices::ek1100::EK1100_IDENTITY_A;
 use ethercat_hal::devices::el1002::EL1002_IDENTITY_A;
 use ethercat_hal::devices::el1008::EL1008_IDENTITY_A;
 use ethercat_hal::devices::el2002::EL2002_IDENTITY_A;
+use ethercat_hal::devices::el2002::EL2002_IDENTITY_B;
 use ethercat_hal::devices::el2004::EL2004_IDENTITY_A;
 use ethercat_hal::devices::el2008::EL2008_IDENTITY_A;
 use ethercat_hal::devices::el2521::{
@@ -13,13 +14,12 @@ use ethercat_hal::devices::el2522::EL2522_IDENTITY_A;
 use ethercat_hal::devices::el3001::EL3001_IDENTITY_A;
 use ethercat_hal::devices::el3021::EL3021_IDENTITY_A;
 use ethercat_hal::devices::el3024::EL3024_IDENTITY_A;
+use ethercat_hal::devices::el3062_0030::EL3062_0030_IDENTITY_A;
 use ethercat_hal::devices::el3204::EL3204_IDENTITY_A;
-use ethercat_hal::devices::el6021::EL6021_IDENTITY_A;
-use ethercat_hal::devices::el6021::EL6021_IDENTITY_B;
-
 use ethercat_hal::devices::el3204::EL3204_IDENTITY_B;
-
-use ethercat_hal::devices::el6021::EL6021_IDENTITY_C;
+use ethercat_hal::devices::el6021::{
+    EL6021_IDENTITY_A, EL6021_IDENTITY_B, EL6021_IDENTITY_C, EL6021_IDENTITY_D,
+};
 use ethercat_hal::devices::el7031::{EL7031_IDENTITY_A, EL7031_IDENTITY_B};
 use ethercat_hal::devices::el7031_0030::EL7031_0030_IDENTITY_A;
 use ethercat_hal::devices::el7041_0052::EL7041_0052_IDENTITY_A;
@@ -230,7 +230,7 @@ pub fn get_identification_addresses<'maindevice>(
         EK1100_IDENTITY_A => MachineIdentificationAddresses::default(),
         EL1002_IDENTITY_A => MachineIdentificationAddresses::default(),
         EL1008_IDENTITY_A => MachineIdentificationAddresses::default(),
-        EL2002_IDENTITY_A => MachineIdentificationAddresses::default(),
+        EL2002_IDENTITY_A | EL2002_IDENTITY_B => MachineIdentificationAddresses::default(),
         EL2004_IDENTITY_A => MachineIdentificationAddresses::default(),
         EL3204_IDENTITY_A | EL3204_IDENTITY_B => MachineIdentificationAddresses::default(),
         EL2008_IDENTITY_A => MachineIdentificationAddresses::default(),
@@ -239,12 +239,13 @@ pub fn get_identification_addresses<'maindevice>(
             MachineIdentificationAddresses::default()
         }
         EL2522_IDENTITY_A => MachineIdentificationAddresses::default(),
-        EL3024_IDENTITY_A => MachineIdentificationAddresses::default(),
         EL3021_IDENTITY_A => MachineIdentificationAddresses::default(),
+        EL3024_IDENTITY_A => MachineIdentificationAddresses::default(),
+        EL3062_0030_IDENTITY_A => MachineIdentificationAddresses::default(),
         EL7031_IDENTITY_A | EL7031_IDENTITY_B => MachineIdentificationAddresses::default(),
         EL7031_0030_IDENTITY_A => MachineIdentificationAddresses::default(),
         EL7041_0052_IDENTITY_A => MachineIdentificationAddresses::default(),
-        EL6021_IDENTITY_A | EL6021_IDENTITY_B | EL6021_IDENTITY_C => {
+        EL6021_IDENTITY_A | EL6021_IDENTITY_B | EL6021_IDENTITY_C | EL6021_IDENTITY_D => {
             MachineIdentificationAddresses::default()
         }
         _ => {

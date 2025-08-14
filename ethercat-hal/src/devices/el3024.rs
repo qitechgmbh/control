@@ -14,7 +14,7 @@ use crate::{
 };
 use crate::{
     helpers::ethercrab_types::EthercrabSubDevicePreoperational,
-    io::analog_input::{AnalogInputDevice, AnalogInputInput, AnalogInputState},
+    io::analog_input::{AnalogInputDevice, AnalogInputInput},
 };
 use ethercat_hal_derive::{EthercatDevice, RxPdo, TxPdo};
 use uom::si::electric_current::milliampere;
@@ -80,7 +80,7 @@ impl NewEthercatDevice for EL3024 {
 }
 
 impl AnalogInputDevice<EL3024Port> for EL3024 {
-    fn analog_output_state(&self, port: EL3024Port) -> AnalogInputState {
+    fn get_input(&self, port: EL3024Port) -> AnalogInputInput {
         let raw_value = match port {
             EL3024Port::AI1 => match &self.txpdo {
                 EL3024TxPdo {
@@ -143,8 +143,9 @@ impl AnalogInputDevice<EL3024Port> for EL3024 {
         };
 
         let normalized = f32::from(value) / f32::from(i16::MAX);
-        AnalogInputState {
-            input: AnalogInputInput { normalized },
+        AnalogInputInput {
+            normalized,
+            wiring_error: false,
         }
     }
 

@@ -1,8 +1,11 @@
+pub mod modbus_serial_interface;
+
 use anyhow::Error;
 use crc::{CRC_16_MODBUS, Crc};
 use serial;
 use std::time::Duration;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+
 pub enum ParityType {
     Even,
     Odd,
@@ -20,6 +23,58 @@ pub enum ModbusFunctionCode {
     PresetHoldingRegister,
     /// The response should echo back your request
     DiagnoseFunction,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(u8)]
+pub enum ModbusExceptionCode {
+    None = 0,
+    IllegalFunction = 1,
+    IllegalDataAddress = 2,
+    IllegalDataValue = 3,
+    SlaveDeviceFailure = 4,
+    Acknowledge = 5,
+    SlaveDeviceBusy = 6,
+    MemoryParityError = 8,
+    GatewayPathUnavailable = 10,
+    GatewayTargetDeviceFailedToRespond = 11,
+    Unknown(u8), // For any unknown exception codes
+}
+
+impl From<ModbusExceptionCode> for u8 {
+    fn from(code: ModbusExceptionCode) -> Self {
+        match code {
+            ModbusExceptionCode::None => 0,
+            ModbusExceptionCode::IllegalFunction => 1,
+            ModbusExceptionCode::IllegalDataAddress => 2,
+            ModbusExceptionCode::IllegalDataValue => 3,
+            ModbusExceptionCode::SlaveDeviceFailure => 4,
+            ModbusExceptionCode::Acknowledge => 5,
+            ModbusExceptionCode::SlaveDeviceBusy => 6,
+            ModbusExceptionCode::MemoryParityError => 8,
+            ModbusExceptionCode::GatewayPathUnavailable => 10,
+            ModbusExceptionCode::GatewayTargetDeviceFailedToRespond => 11,
+            ModbusExceptionCode::Unknown(code) => code,
+        }
+    }
+}
+
+impl From<u8> for ModbusExceptionCode {
+    fn from(value: u8) -> Self {
+        match value {
+            0 => ModbusExceptionCode::None,
+            1 => ModbusExceptionCode::IllegalFunction,
+            2 => ModbusExceptionCode::IllegalDataAddress,
+            3 => ModbusExceptionCode::IllegalDataValue,
+            4 => ModbusExceptionCode::SlaveDeviceFailure,
+            5 => ModbusExceptionCode::Acknowledge,
+            6 => ModbusExceptionCode::SlaveDeviceBusy,
+            8 => ModbusExceptionCode::MemoryParityError,
+            10 => ModbusExceptionCode::GatewayPathUnavailable,
+            11 => ModbusExceptionCode::GatewayTargetDeviceFailedToRespond,
+            other => ModbusExceptionCode::Unknown(other),
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -139,7 +194,7 @@ fn validate_modbus_response(raw_data: Vec<u8>) -> Result<Vec<u8>, Error> {
 
 // expects to be given the entire raw message
 fn extract_crc(raw_data: &Vec<u8>) -> Result<u16, Error> {
-    if raw_data.len() < 2 {
+    if raw_data.len() < 5 {
         return Err(anyhow::anyhow!("Not enough data to extract CRC"));
     }
 

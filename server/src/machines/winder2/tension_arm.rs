@@ -1,23 +1,18 @@
-use control_core::actors::analog_input_getter::AnalogInputGetter;
-use ethercat_hal::io::analog_input::physical::AnalogInputValue;
-use uom::si::{
-    angle::revolution,
-    electric_potential::{ElectricPotential, volt},
-    f64::Angle,
-};
+use ethercat_hal::io::analog_input::{AnalogInput, physical::AnalogInputValue};
+use uom::si::{angle::revolution, electric_potential::volt, f64::Angle};
 
 #[derive(Debug)]
 pub struct TensionArm {
-    pub analog_input_getter: AnalogInputGetter,
+    pub analog_input: AnalogInput,
     pub zero: Angle,
     /// was zeroed at least once
     pub zeroed: bool,
 }
 
 impl TensionArm {
-    pub fn new(analog_input_getter: AnalogInputGetter) -> Self {
+    pub fn new(analog_input: AnalogInput) -> Self {
         Self {
-            analog_input_getter,
+            analog_input,
             zero: Angle::new::<revolution>(0.0),
             zeroed: false,
         }
@@ -31,12 +26,7 @@ impl TensionArm {
 
     fn get_volts(&self) -> f64 {
         // get the normalized value from the analog input
-        let value = self
-            .analog_input_getter
-            .get_physical()
-            .unwrap_or(AnalogInputValue::Potential(ElectricPotential::new::<volt>(
-                0.0,
-            )));
+        let value = self.analog_input.get_physical();
 
         let volts = match value {
             AnalogInputValue::Potential(v) => v.get::<volt>(),
@@ -78,17 +68,17 @@ impl TensionArm {
 mod tests {
     use super::*;
     use approx::assert_relative_eq;
-    use control_core::actors::Actor;
     use core::f64;
     use ethercat_hal::io::{
         analog_input::{AnalogInputInput, physical::AnalogInputRange},
         analog_input_dummy::AnalogInputDummy,
     };
-    use std::{i16, time::Instant};
+    use std::i16;
+    use uom::si::f64::ElectricPotential;
 
     #[test]
     fn volts_to_angle() {
-        let tension_arm = TensionArm::new(AnalogInputGetter::new(
+        let tension_arm = TensionArm::new(
             AnalogInputDummy::new(AnalogInputRange::Potential {
                 min: ElectricPotential::new::<volt>(0.0),
                 max: ElectricPotential::new::<volt>(10.0),
@@ -96,7 +86,7 @@ mod tests {
                 max_raw: i16::MAX,
             })
             .analog_input(),
-        ));
+        );
 
         // 0V = 0deg
         assert_relative_eq!(
@@ -128,8 +118,8 @@ mod tests {
             min_raw: 0,
             max_raw: i16::MAX,
         });
-        let analog_input_getter = AnalogInputGetter::new(analog_input_dummy.analog_input());
-        let mut tension_arm = TensionArm::new(analog_input_getter);
+        let analog_input = analog_input_dummy.analog_input();
+        let tension_arm = TensionArm::new(analog_input);
 
         // 0.0 normalized = 0V
         let volts = tension_arm.get_volts();
@@ -137,14 +127,13 @@ mod tests {
 
         //  0.5 normalized = 5V
         analog_input_dummy.set_input(AnalogInputInput {
-            normalized: (5.0 / 10.0), // 5V of 10V in positive range
+            // 5V of 10V in positive range
+            normalized: (5.0 / 10.0),
+            wiring_error: false,
         });
-        smol::block_on(async {
-            tension_arm.analog_input_getter.act(Instant::now()).await;
-        });
-        let physical = tension_arm.analog_input_getter.get_physical();
+        let physical = tension_arm.analog_input.get_physical();
         match physical {
-            Some(AnalogInputValue::Potential(v)) => {
+            AnalogInputValue::Potential(v) => {
                 assert_relative_eq!(v.get::<volt>(), 5.0, epsilon = f64::EPSILON);
             }
             _ => panic!("Expected a potential value"),
@@ -160,8 +149,7 @@ mod tests {
             max_raw: i16::MAX,
         });
         let analog_input = analog_input_dummy.analog_input();
-        let analog_input_getter = AnalogInputGetter::new(analog_input);
-        let mut tension_arm = TensionArm::new(analog_input_getter);
+        let tension_arm = TensionArm::new(analog_input);
 
         // 0V = 0.25 = 0 revolution
         let angle = tension_arm.get_angle();
@@ -170,9 +158,7 @@ mod tests {
         // 1.25V = 0.25 revolution
         analog_input_dummy.set_input(AnalogInputInput {
             normalized: (1.25 / 10.0),
-        });
-        smol::block_on(async {
-            tension_arm.analog_input_getter.act(Instant::now()).await;
+            wiring_error: false,
         });
         let angle = tension_arm.raw_angle();
         assert_relative_eq!(angle.get::<revolution>(), 0.25, epsilon = f64::EPSILON);
@@ -180,9 +166,7 @@ mod tests {
         // 2.5V = 0.5 revolution
         analog_input_dummy.set_input(AnalogInputInput {
             normalized: (2.5 / 10.0),
-        });
-        smol::block_on(async {
-            tension_arm.analog_input_getter.act(Instant::now()).await;
+            wiring_error: false,
         });
         let angle = tension_arm.raw_angle();
         assert_relative_eq!(angle.get::<revolution>(), 0.5, epsilon = f64::EPSILON);
@@ -190,9 +174,7 @@ mod tests {
         // 3.75V = 0.75 revolution
         analog_input_dummy.set_input(AnalogInputInput {
             normalized: (3.75 / 10.0),
-        });
-        smol::block_on(async {
-            tension_arm.analog_input_getter.act(Instant::now()).await;
+            wiring_error: false,
         });
         let angle = tension_arm.raw_angle();
         assert_relative_eq!(angle.get::<revolution>(), 0.75, epsilon = f64::EPSILON);
@@ -200,9 +182,7 @@ mod tests {
         // 5V = 1 revolution
         analog_input_dummy.set_input(AnalogInputInput {
             normalized: (5.0 / 10.0),
-        });
-        smol::block_on(async {
-            tension_arm.analog_input_getter.act(Instant::now()).await;
+            wiring_error: false,
         });
         let angle = tension_arm.raw_angle();
         assert_relative_eq!(angle.get::<revolution>(), 0.0, epsilon = f64::EPSILON);
@@ -210,9 +190,7 @@ mod tests {
         // 6.25V = 0.25 revolution
         analog_input_dummy.set_input(AnalogInputInput {
             normalized: (6.25 / 10.0),
-        });
-        smol::block_on(async {
-            tension_arm.analog_input_getter.act(Instant::now()).await;
+            wiring_error: false,
         });
         let angle = tension_arm.raw_angle();
         assert_relative_eq!(angle.get::<revolution>(), 0.25, epsilon = f64::EPSILON);

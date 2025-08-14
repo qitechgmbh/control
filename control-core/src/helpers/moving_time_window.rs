@@ -56,7 +56,7 @@ impl DivideByCount for u64 {
 /// let mut window = MovingTimeWindow::new(Duration::from_secs(10), 100);
 /// window.update(1.5, Instant::now());
 /// window.update(2.5, Instant::now());
-/// 
+///
 /// let average = window.average();
 /// println!("Average: {}", average);
 /// ```

@@ -4,7 +4,6 @@ use crate::{
     helpers::ethercrab_types::EthercrabSubDevicePreoperational,
     io::pulse_train_output::{
         PulseTrainOutputDevice, PulseTrainOutputInput, PulseTrainOutputOutput,
-        PulseTrainOutputState,
     },
     pdo::{
         PredefinedPdoAssignment, RxPdo, TxPdo,
@@ -47,7 +46,7 @@ impl NewEthercatDevice for EL2521 {
 }
 
 impl PulseTrainOutputDevice<EL2521Port> for EL2521 {
-    fn pulse_train_output_write(&mut self, _port: EL2521Port, value: PulseTrainOutputOutput) {
+    fn set_output(&mut self, _port: EL2521Port, value: PulseTrainOutputOutput) {
         self.rxpdo.pto_control.as_mut().unwrap().disble_ramp = value.disble_ramp;
         self.rxpdo.pto_control.as_mut().unwrap().frequency_value = value.frequency_value;
         self.rxpdo.pto_target.as_mut().unwrap().target_counter_value = value.target_counter_value;
@@ -55,27 +54,28 @@ impl PulseTrainOutputDevice<EL2521Port> for EL2521 {
         self.rxpdo.enc_control.as_mut().unwrap().set_counter_value = value.set_counter_value;
     }
 
-    fn pulse_train_output_state(&self, _port: EL2521Port) -> PulseTrainOutputState {
-        PulseTrainOutputState {
-            input: PulseTrainOutputInput {
-                select_end_counter: self.txpdo.pto_status.as_ref().unwrap().select_end_counter,
-                ramp_active: self.txpdo.pto_status.as_ref().unwrap().ramp_active,
-                input_t: self.txpdo.pto_status.as_ref().unwrap().input_t,
-                input_z: self.txpdo.pto_status.as_ref().unwrap().input_z,
-                error: self.txpdo.pto_status.as_ref().unwrap().error,
-                sync_error: self.txpdo.pto_status.as_ref().unwrap().sync_error,
-                counter_underflow: self.txpdo.enc_status.as_ref().unwrap().counter_underflow,
-                counter_overflow: self.txpdo.enc_status.as_ref().unwrap().counter_overflow,
-                counter_value: self.txpdo.enc_status.as_ref().unwrap().counter_value,
-                set_counter_done: self.txpdo.enc_status.as_ref().unwrap().set_counter_done,
-            },
-            output: PulseTrainOutputOutput {
-                disble_ramp: self.rxpdo.pto_control.as_ref().unwrap().disble_ramp,
-                frequency_value: self.rxpdo.pto_control.as_ref().unwrap().frequency_value,
-                target_counter_value: self.rxpdo.pto_target.as_ref().unwrap().target_counter_value,
-                set_counter: self.rxpdo.enc_control.as_ref().unwrap().set_counter,
-                set_counter_value: self.rxpdo.enc_control.as_ref().unwrap().set_counter_value,
-            },
+    fn get_output(&self, _port: EL2521Port) -> PulseTrainOutputOutput {
+        PulseTrainOutputOutput {
+            disble_ramp: self.rxpdo.pto_control.as_ref().unwrap().disble_ramp,
+            frequency_value: self.rxpdo.pto_control.as_ref().unwrap().frequency_value,
+            target_counter_value: self.rxpdo.pto_target.as_ref().unwrap().target_counter_value,
+            set_counter: self.rxpdo.enc_control.as_ref().unwrap().set_counter,
+            set_counter_value: self.rxpdo.enc_control.as_ref().unwrap().set_counter_value,
+        }
+    }
+
+    fn get_input(&self, _port: EL2521Port) -> PulseTrainOutputInput {
+        PulseTrainOutputInput {
+            select_end_counter: self.txpdo.pto_status.as_ref().unwrap().select_end_counter,
+            ramp_active: self.txpdo.pto_status.as_ref().unwrap().ramp_active,
+            input_t: self.txpdo.pto_status.as_ref().unwrap().input_t,
+            input_z: self.txpdo.pto_status.as_ref().unwrap().input_z,
+            error: self.txpdo.pto_status.as_ref().unwrap().error,
+            sync_error: self.txpdo.pto_status.as_ref().unwrap().sync_error,
+            counter_underflow: self.txpdo.enc_status.as_ref().unwrap().counter_underflow,
+            counter_overflow: self.txpdo.enc_status.as_ref().unwrap().counter_overflow,
+            counter_value: self.txpdo.enc_status.as_ref().unwrap().counter_value,
+            set_counter_done: self.txpdo.enc_status.as_ref().unwrap().set_counter_done,
         }
     }
 }

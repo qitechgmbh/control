@@ -38,10 +38,10 @@ impl LinearAccelerationLimitingController {
     /// No speed limits are applied.
     pub fn new_simple(acceleration: Acceleration, initial_speed: Velocity) -> Self {
         Self::new(
-            None,           // min_speed
-            None,           // max_speed
-            acceleration,   // acceleration
-            -acceleration,  // deceleration (negative for deceleration)
+            None,          // min_speed
+            None,          // max_speed
+            acceleration,  // acceleration
+            -acceleration, // deceleration (negative for deceleration)
             initial_speed,
         )
     }

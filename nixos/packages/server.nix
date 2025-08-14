@@ -1,62 +1,50 @@
 { lib
-, fetchFromGitHub
-, rustPlatform
+, pkgs
 , pkg-config
 , libudev-zero
 , libpcap
 , commitHash
-, rust-bin ? null
+, craneLib
 }:
 
 let
-  rustStable = if rust-bin != null then
-    rust-bin.stable.latest.default.override {
-      extensions = [ "rust-src" "rust-analyzer" ];
-      targets = [ "x86_64-unknown-linux-gnu" ];
-    }
-  else
-    rustPlatform.rust.rustc;
-    
-  # Create a custom rustPlatform with stable
-  customRustPlatform = rustPlatform // {
-    rust = rustPlatform.rust // {
-      rustc = rustStable;
-      cargo = rustStable;
-    };
-  };
-in
-
-customRustPlatform.buildRustPackage rec {
-  pname = "qitech-control-server";
-  version = commitHash;
-
-  src = lib.cleanSource ../..;
-
-  cargoLock = {
-    lockFile = "${src}/Cargo.lock";
-    outputHashes = {
-      # You might need to add dependency hashes here if they're not in the registry
-    };
-  };
-
-  nativeBuildInputs = [ pkg-config ];
-  buildInputs = [ libpcap libudev-zero ];
-
-  # Build only the server package with journald logging for NixOS
-  buildAndTestSubdir = "server";
+  # Use crane's source cleaning which is more intelligent for Cargo projects
+  src = craneLib.cleanCargoSource ../..;
   
-  # Enable journald logging feature for NixOS systems
-  buildFeatures = [ "tracing-journald" ];
-  buildNoDefaultFeatures = true;
+  # Common arguments for both dependency and app builds
+  commonArgs = {
+    inherit src;
+    strictDeps = true;
+    
+    nativeBuildInputs = [ pkg-config ];
+    buildInputs = [ libpcap libudev-zero ];
+    
+    # Build only the server package with journald logging for NixOS
+    pname = "server";
+    version = commitHash;
+    
+    # Reduce memory usage during build
+    CARGO_BUILD_JOBS = "2";
+  };
+  
+  # Build *just* the cargo dependencies (of the entire workspace),
+  # so we can reuse all of that work when running in CI
+  cargoArtifacts = craneLib.buildDepsOnly commonArgs;
 
-  # Reduce memory usage during build
-  CARGO_BUILD_JOBS = "1";
+in
+# Uses Rust 1.86 stable from nixpkgs 25.05 with Crane for dependency caching
+craneLib.buildPackage (commonArgs // {
+  inherit cargoArtifacts;
+  
+  # Enable journald logging feature for NixOS systems and build only server package
+  # Anbale io_uring support
+  cargoExtraArgs = "-p server --features tracing-journald,io-uring --no-default-features";
 
   # Create a swap file if building on a memory-constrained system
   preBuild = ''
-      if [ $(free -m | grep Mem | awk '{print $2}') -lt 8000 ]; then
+      if [ $(free -m | grep Mem | awk '{print $2}') -lt 6000 ]; then
         mkdir -p $TMPDIR/swap
-        dd if=/dev/zero of=$TMPDIR/swap/swapfile bs=1M count=4096
+        dd if=/dev/zero of=$TMPDIR/swap/swapfile bs=1M count=8192
         chmod 600 $TMPDIR/swap/swapfile
         mkswap $TMPDIR/swap/swapfile
         swapon $TMPDIR/swap/swapfile
@@ -75,4 +63,4 @@ customRustPlatform.buildRustPackage rec {
     homepage = "https://qitech.de";
     platforms = platforms.linux;
   };
-}
+})

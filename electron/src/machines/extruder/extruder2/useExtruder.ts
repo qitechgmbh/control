@@ -1,20 +1,20 @@
 import { toastError } from "@/components/Toast";
 import { useMachineMutate as useMachineMutation } from "@/client/useClient";
 import { useStateOptimistic } from "@/lib/useStateOptimistic";
-import { MachineIdentificationUnique, extruder2 } from "@/machines/types";
+import { MachineIdentificationUnique } from "@/machines/types";
+import { extruder2 } from "@/machines/properties";
 import { extruder2Route } from "@/routes/routes";
 import { z } from "zod";
-import { Heating, Mode, useExtruder2Namespace } from "./extruder2Namespace";
+import { StateEvent, Mode, useExtruder2Namespace } from "./extruder2Namespace";
 import { useEffect, useMemo } from "react";
-import { TimeSeries } from "@/lib/timeseries";
-import { FPS_60, useThrottle } from "@/lib/useThrottle";
+import { produce } from "immer";
 
 export function useExtruder2() {
   const { serial: serialString } = extruder2Route.useParams();
 
   // Memoize the machine identification to keep it stable between renders
   const machineIdentification: MachineIdentificationUnique = useMemo(() => {
-    const serial = parseInt(serialString); // Use 0 as fallback if NaN
+    const serial = parseInt(serialString);
 
     if (isNaN(serial)) {
       toastError(
@@ -35,476 +35,376 @@ export function useExtruder2() {
       machine_identification: extruder2.machine_identification,
       serial,
     };
-  }, [serialString]); // Only recreate when serialString changes
+  }, [serialString]);
 
-  const inverter = useInverter(machineIdentification);
-  const mode = useMode(machineIdentification);
-  const motor = useMotor(machineIdentification);
-  const heating = useHeatingTemperature(machineIdentification);
-  const heatingPower = useHeatingPower(machineIdentification);
-  const settings = useSettings(machineIdentification);
-  return {
-    ...inverter,
-    ...mode,
-    ...motor,
-    ...heating,
-    ...settings,
-    ...heatingPower,
-  };
-}
-
-export function useHeatingPower(
-  machine_identification_unique: MachineIdentificationUnique,
-): {
-  nozzlePower: TimeSeries;
-  frontPower: TimeSeries;
-  middlePower: TimeSeries;
-  backPower: TimeSeries;
-} {
-  const { nozzlePower, frontPower, middlePower, backPower } =
-    useExtruder2Namespace(machine_identification_unique);
-
-  return { nozzlePower, frontPower, middlePower, backPower };
-}
-
-export function useSettings(
-  machine_identification_unique: MachineIdentificationUnique,
-): {
-  extruderSetPressureLimit: (pressure_limit: number) => void;
-  extruderSetPressureLimitIsEnabled: (
-    pressure_limit_is_enabled: boolean,
-  ) => void;
-  pressureLimitState: number | undefined;
-  pressureLimitEnabledState: boolean | undefined;
-} {
-  const pressureLimitState = useStateOptimistic();
-  const pressureLimitEnabledState = useStateOptimistic();
-  // Define schemas
-  const pressureLimitSchema = z.object({
-    ExtruderSetPressureLimit: z.number(),
-  });
-  const pressureLimitEnabledSchema = z.object({
-    ExtruderSetPressureLimitIsEnabled: z.boolean(),
-  });
-
-  // Create mutation hooks
-  const { request: pressureLimit } = useMachineMutation(pressureLimitSchema);
-  const { request: pressureLimitIsEnabled } = useMachineMutation(
-    pressureLimitEnabledSchema,
-  );
-
-  const { extruderSettingsState } = useExtruder2Namespace(
-    machine_identification_unique,
-  );
-
-  // Set pressure limit value
-  const extruderSetPressureLimit = async (pressure: number) => {
-    pressureLimitState.setOptimistic(pressure);
-    pressureLimit({
-      machine_identification_unique,
-      data: { ExtruderSetPressureLimit: pressure },
-    });
-  };
-
-  // Enable/disable pressure limit
-  const extruderSetPressureLimitIsEnabled = (enabled: boolean) => {
-    pressureLimitEnabledState.setOptimistic(enabled);
-    pressureLimitIsEnabled({
-      machine_identification_unique,
-      data: { ExtruderSetPressureLimitIsEnabled: enabled },
-    });
-  };
-
-  useEffect(() => {
-    if (extruderSettingsState?.data) {
-      pressureLimitState.setReal(extruderSettingsState.data.pressure_limit);
-      pressureLimitEnabledState.setReal(
-        extruderSettingsState.data.pressure_limit,
-      );
-    }
-  }, [
-    extruderSettingsState?.data.pressure_limit,
-    extruderSettingsState?.data.pressure_limit_enabled,
-  ]);
-
-  return {
-    extruderSetPressureLimit,
-    extruderSetPressureLimitIsEnabled,
-    pressureLimitState: extruderSettingsState?.data.pressure_limit,
-    pressureLimitEnabledState:
-      extruderSettingsState?.data.pressure_limit_enabled,
-  };
-}
-
-export function useInverter(
-  machine_identification_unique: MachineIdentificationUnique,
-): {
-  inverterSetRotation: (forward: boolean) => void;
-  rotationState: boolean | undefined;
-} {
-  const state = useStateOptimistic();
-
-  const schema = z.object({ InverterRotationSetDirection: z.boolean() });
-  const { request: requestRotation } = useMachineMutation(schema);
-  const inverterSetRotation = async (forward: boolean) => {
-    state.setOptimistic(forward);
-    requestRotation({
-      machine_identification_unique,
-      data: { InverterRotationSetDirection: forward },
-    });
-  };
-
-  const { rotationState } = useExtruder2Namespace(
-    machine_identification_unique,
-  );
-
-  useEffect(() => {
-    if (rotationState?.data) {
-      state.setReal(rotationState.data.forward);
-    }
-  }, [rotationState?.data.forward]);
-
-  return { inverterSetRotation, rotationState: rotationState?.data.forward };
-}
-
-export function useMode(
-  machine_identification_unique: MachineIdentificationUnique,
-): {
-  mode: Mode | undefined;
-  extruderSetMode: (value: Mode) => void;
-  modeIsLoading: boolean;
-  modeIsDisabled: boolean;
-} {
-  const state = useStateOptimistic<Mode>();
-
-  // Write path
-  const schema = z.object({
-    ExtruderSetMode: z.enum(["Heat", "Extrude", "Standby"]),
-  });
-
-  const { request } = useMachineMutation(schema);
-
-  const extruderSetMode = async (value: Mode) => {
-    state.setOptimistic(value);
-    request({
-      machine_identification_unique,
-      data: { ExtruderSetMode: value },
-    })
-      .then((response) => {
-        if (!response.success) state.resetToReal();
-      })
-      .catch(() => state.resetToReal());
-  };
-
-  // Read path
-  const { modeState } = useExtruder2Namespace(machine_identification_unique);
-  useEffect(() => {
-    if (modeState?.data) {
-      state.setReal(modeState.data.mode);
-    }
-  }, [modeState]);
-
-  return {
-    mode: state.value,
-    extruderSetMode,
-    modeIsLoading: state.isOptimistic || !state.isInitialized,
-    modeIsDisabled: state.isOptimistic || !state.isInitialized,
-  };
-}
-
-export function useMotor(
-  machine_identification_unique: MachineIdentificationUnique,
-): {
-  uses_rpm: boolean | undefined;
-  rpm: TimeSeries;
-  targetRpm: number | undefined;
-  bar: TimeSeries;
-  targetBar: number | undefined;
-  screwSetTargetRpm: (rpm: number) => void;
-  screwSetRegulation: (usesRpm: boolean) => void;
-  screwSetTargetPressure: (bar: number) => void;
-} {
-  const SetTargetRpmSchema = z.object({
-    InverterSetTargetRpm: z.number(),
-  });
-
-  const SetRegulationSchema = z.object({
-    InverterSetRegulation: z.boolean(),
-  });
-
-  const SetTargetPressureSchema = z.object({
-    InverterSetTargetPressure: z.number(),
-  });
-
-  const { motorRpmState, motorBarState, motorRegulationState, rpm, bar } =
-    useExtruder2Namespace(machine_identification_unique);
-
-  const rpmState = useStateOptimistic<number>();
-  const rpmTargetState = useStateOptimistic<number>();
-
-  const regulationState = useStateOptimistic<boolean>();
-  const { request: regulationRequest } =
-    useMachineMutation(SetRegulationSchema);
-
-  const screwSetRegulation = async (value: boolean) => {
-    regulationState.setOptimistic(value);
-    regulationRequest({
-      machine_identification_unique,
-      data: { InverterSetRegulation: value },
-    })
-      .then((response) => {
-        if (!response.success) regulationState.resetToReal();
-      })
-      .catch(() => regulationState.resetToReal());
-  };
-
-  const { request: reqestTargetRpm } = useMachineMutation(SetTargetRpmSchema);
-  const screwSetTargetRpm = async (value: number) => {
-    rpmTargetState.setOptimistic(value);
-    reqestTargetRpm({
-      machine_identification_unique,
-      data: { InverterSetTargetRpm: value },
-    })
-      .then((response) => {
-        if (!response.success) rpmTargetState.resetToReal();
-      })
-      .catch(() => rpmTargetState.resetToReal());
-  };
-
-  const pressureState = useStateOptimistic<number>();
-  const targetPressureState = useStateOptimistic<number>();
-
-  const { request: targetPressureRequest } = useMachineMutation(
-    SetTargetPressureSchema,
-  );
-
-  const screwSetTargetPressure = async (value: number) => {
-    targetPressureState.setOptimistic(value);
-    targetPressureRequest({
-      machine_identification_unique,
-      data: { InverterSetTargetPressure: value },
-    })
-      .then((response) => {
-        if (!response.success) targetPressureState.resetToReal();
-      })
-      .catch(() => targetPressureState.resetToReal());
-  };
-
-  useEffect(() => {
-    if (motorRpmState?.data) {
-      rpmState.setReal(motorRpmState.data.rpm);
-      rpmTargetState.setReal(motorRpmState.data.target_rpm);
-    }
-
-    if (motorBarState?.data) {
-      pressureState.setReal(motorBarState.data.bar);
-      targetPressureState.setReal(motorBarState.data.target_bar);
-    }
-
-    if (motorRegulationState?.data) {
-      regulationState.setReal(motorRegulationState.data.uses_rpm);
-    }
-  }, [motorRpmState, motorBarState, motorRegulationState]);
-
-  // debounce rpm and bar to 60fps
-  const rpmThrottled = useThrottle(rpm, FPS_60);
-  const barThrottled = useThrottle(bar, FPS_60);
-
-  return {
-    rpm: rpmThrottled,
-    uses_rpm: regulationState.value,
-    targetRpm: rpmTargetState.value,
-    targetBar: targetPressureState.value,
-    bar: barThrottled,
-
-    screwSetTargetRpm,
-    screwSetTargetPressure,
-    screwSetRegulation,
-  };
-}
-
-export function useHeatingTemperature(
-  machine_identification_unique: MachineIdentificationUnique,
-): {
-  heatingSetNozzleTemp: (value: number) => void;
-  heatingSetFrontTemp: (value: number) => void;
-  heatingSetBackTemp: (value: number) => void;
-  heatingSetMiddleTemp: (value: number) => void;
-
-  nozzleHeatingTarget: number | undefined;
-  frontHeatingTarget: number | undefined;
-  backHeatingTarget: number | undefined;
-  middleHeatingTarget: number | undefined;
-
-  nozzleHeatingState: Heating | undefined;
-  frontHeatingState: Heating | undefined;
-  backHeatingState: Heating | undefined;
-  middleHeatingState: Heating | undefined;
-
-  nozzleTemperature: TimeSeries;
-  frontTemperature: TimeSeries;
-  backTemperature: TimeSeries;
-  middleTemperature: TimeSeries;
-} {
-  const nozzleHeatingTargetState = useStateOptimistic<number>();
-  const frontHeatingTargetState = useStateOptimistic<number>();
-  const backHeatingTargetState = useStateOptimistic<number>();
-  const middleHeatingTargetState = useStateOptimistic<number>();
-
-  const SetNozzleHeatingSchema = z.object({
-    NozzleSetHeatingTemperature: z.number(),
-  });
-
-  const SetFrontHeatingSchema = z.object({
-    FrontHeatingSetTargetTemperature: z.number(),
-  });
-
-  const SetBackHeatingSchema = z.object({
-    BackHeatingSetTargetTemperature: z.number(),
-  });
-
-  const SetMiddleHeatingSchema = z.object({
-    MiddleSetHeatingTemperature: z.number(),
-  });
-
-  const { request: HeatingNozzleRequest } = useMachineMutation(
-    SetNozzleHeatingSchema,
-  );
-
-  const heatingSetNozzleTemp = async (value: number) => {
-    frontHeatingTargetState.setOptimistic(value);
-    HeatingNozzleRequest({
-      machine_identification_unique,
-      data: { NozzleSetHeatingTemperature: value },
-    })
-      .then((response) => {
-        if (!response.success) nozzleHeatingTargetState.resetToReal();
-      })
-      .catch(() => nozzleHeatingTargetState.resetToReal());
-  };
-
-  const { request: HeatiingFrontRequest } = useMachineMutation(
-    SetFrontHeatingSchema,
-  );
-
-  const heatingSetFrontTemp = async (value: number) => {
-    frontHeatingTargetState.setOptimistic(value);
-    HeatiingFrontRequest({
-      machine_identification_unique,
-      data: { FrontHeatingSetTargetTemperature: value },
-    })
-      .then((response) => {
-        if (!response.success) frontHeatingTargetState.resetToReal();
-      })
-      .catch(() => frontHeatingTargetState.resetToReal());
-  };
-
-  const { request: HeatingBackRequest } =
-    useMachineMutation(SetBackHeatingSchema);
-
-  const heatingSetBackTemp = async (value: number) => {
-    backHeatingTargetState.setOptimistic(value);
-    HeatingBackRequest({
-      machine_identification_unique,
-      data: { BackHeatingSetTargetTemperature: value },
-    })
-      .then((response) => {
-        if (!response.success) backHeatingTargetState.resetToReal();
-      })
-      .catch(() => backHeatingTargetState.resetToReal());
-  };
-
-  const { request: HeatingMiddleRequest } = useMachineMutation(
-    SetMiddleHeatingSchema,
-  );
-
-  const heatingSetMiddleTemp = async (value: number) => {
-    middleHeatingTargetState.setOptimistic(value);
-    HeatingMiddleRequest({
-      machine_identification_unique,
-      data: { MiddleSetHeatingTemperature: value },
-    })
-      .then((response) => {
-        if (!response.success) middleHeatingTargetState.resetToReal();
-      })
-      .catch(() => middleHeatingTargetState.resetToReal());
-  };
-
-  // Read path
+  // Get consolidated state and live values from namespace
   const {
-    heatingFrontState,
-    heatingBackState,
-    heatingMiddleState,
-    heatingNozzleState,
+    state,
+    defaultState,
+    motorCurrent,
+    motorFrequency,
+    motorScrewRpm,
+    motorVoltage,
+    motorPower,
+    pressure,
+
+    nozzleTemperature,
     frontTemperature,
     backTemperature,
     middleTemperature,
-    nozzleTemperature,
-  } = useExtruder2Namespace(machine_identification_unique);
+    nozzlePower,
+    frontPower,
+    middlePower,
+    backPower,
+    combinedPower,
+  } = useExtruder2Namespace(machineIdentification);
 
+  // Single optimistic state for all state management
+  const stateOptimistic = useStateOptimistic<StateEvent>();
+
+  // Update optimistic state when real state changes
   useEffect(() => {
-    if (heatingFrontState?.data) {
-      frontHeatingTargetState.setReal(
-        heatingFrontState.data.target_temperature,
-      );
+    if (state) {
+      stateOptimistic.setReal(state);
     }
-    if (heatingBackState?.data) {
-      backHeatingTargetState.setReal(heatingBackState.data.target_temperature);
-    }
-    if (heatingMiddleState?.data) {
-      middleHeatingTargetState.setReal(
-        heatingMiddleState.data.target_temperature,
-      );
-    }
-    if (heatingNozzleState?.data) {
-      nozzleHeatingTargetState.setReal(
-        heatingNozzleState.data.target_temperature,
-      );
-    }
-  }, [
-    frontHeatingTargetState,
-    backHeatingTargetState,
-    middleHeatingTargetState,
-    nozzleHeatingTargetState,
-  ]);
+  }, [state, stateOptimistic]);
 
-  // debounce fast changeing values to 60fps
-  const nozzleHeatingStateThrottled = useThrottle(
-    heatingNozzleState?.data,
-    FPS_60,
+  // Helper function for optimistic updates using produce
+  const updateStateOptimistically = (
+    producer: (current: StateEvent) => void,
+    serverRequest: () => void,
+  ) => {
+    const currentState = stateOptimistic.value;
+    if (currentState) {
+      stateOptimistic.setOptimistic(produce(currentState, producer));
+    }
+    serverRequest();
+  };
+
+  // Action functions with verb-first names
+  const setInverterRotationDirection = (forward: boolean) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.rotation_state.forward = forward;
+      },
+      () =>
+        requestInverterRotationDirection({
+          machine_identification_unique: machineIdentification,
+          data: { SetInverterRotationDirection: forward },
+        }),
+    );
+  };
+
+  const setExtruderMode = (mode: Mode) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.mode_state.mode = mode;
+      },
+      () =>
+        requestExtruderMode({
+          machine_identification_unique: machineIdentification,
+          data: { SetExtruderMode: mode },
+        }),
+    );
+  };
+
+  const setInverterRegulation = (usesRpm: boolean) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.regulation_state.uses_rpm = usesRpm;
+      },
+      () =>
+        requestInverterRegulation({
+          machine_identification_unique: machineIdentification,
+          data: { SetInverterRegulation: usesRpm },
+        }),
+    );
+  };
+
+  const setInverterTargetRpm = (rpm: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.screw_state.target_rpm = rpm;
+      },
+      () =>
+        requestInverterTargetRpm({
+          machine_identification_unique: machineIdentification,
+          data: { SetInverterTargetRpm: rpm },
+        }),
+    );
+  };
+
+  const setInverterTargetPressure = (pressure: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.pressure_state.target_bar = pressure;
+      },
+      () =>
+        requestInverterTargetPressure({
+          machine_identification_unique: machineIdentification,
+          data: { SetInverterTargetPressure: pressure },
+        }),
+    );
+  };
+
+  const setNozzleHeatingTemperature = (temperature: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.heating_states.nozzle.target_temperature = temperature;
+      },
+      () =>
+        requestNozzleHeatingTemperature({
+          machine_identification_unique: machineIdentification,
+          data: { SetNozzleHeatingTemperature: temperature },
+        }),
+    );
+  };
+
+  const setFrontHeatingTemperature = (temperature: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.heating_states.front.target_temperature = temperature;
+      },
+      () =>
+        requestFrontHeatingTemperature({
+          machine_identification_unique: machineIdentification,
+          data: { SetFrontHeatingTargetTemperature: temperature },
+        }),
+    );
+  };
+
+  const setBackHeatingTemperature = (temperature: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.heating_states.back.target_temperature = temperature;
+      },
+      () =>
+        requestBackHeatingTemperature({
+          machine_identification_unique: machineIdentification,
+          data: { SetBackHeatingTargetTemperature: temperature },
+        }),
+    );
+  };
+
+  const setMiddleHeatingTemperature = (temperature: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.heating_states.middle.target_temperature = temperature;
+      },
+      () =>
+        requestMiddleHeatingTemperature({
+          machine_identification_unique: machineIdentification,
+          data: { SetMiddleHeatingTemperature: temperature },
+        }),
+    );
+  };
+
+  const setExtruderPressureLimit = (pressureLimit: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.extruder_settings_state.pressure_limit = pressureLimit;
+      },
+      () =>
+        requestExtruderPressureLimit({
+          machine_identification_unique: machineIdentification,
+          data: { SetExtruderPressureLimit: pressureLimit },
+        }),
+    );
+  };
+
+  const setExtruderPressureLimitEnabled = (enabled: boolean) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.extruder_settings_state.pressure_limit_enabled = enabled;
+      },
+      () =>
+        requestExtruderPressureLimitEnabled({
+          machine_identification_unique: machineIdentification,
+          data: { SetExtruderPressureLimitIsEnabled: enabled },
+        }),
+    );
+  };
+
+  const setPressurePidKp = (kp: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.pid_settings.pressure.kp = kp;
+      },
+      () => {
+        const currentState = stateOptimistic.value;
+        if (currentState) {
+          const settings = produce(
+            currentState.data.pid_settings.pressure,
+            (draft) => {
+              draft.kp = kp;
+            },
+          );
+          requestPressurePidSettings({
+            machine_identification_unique: machineIdentification,
+            data: { SetPressurePidSettings: settings },
+          });
+        }
+      },
+    );
+  };
+
+  const setPressurePidKi = (ki: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.pid_settings.pressure.ki = ki;
+      },
+      () => {
+        const currentState = stateOptimistic.value;
+        if (currentState) {
+          const settings = produce(
+            currentState.data.pid_settings.pressure,
+            (draft) => {
+              draft.ki = ki;
+            },
+          );
+          requestPressurePidSettings({
+            machine_identification_unique: machineIdentification,
+            data: { SetPressurePidSettings: settings },
+          });
+        }
+      },
+    );
+  };
+
+  const setPressurePidKd = (kd: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.pid_settings.pressure.kd = kd;
+      },
+      () => {
+        const currentState = stateOptimistic.value;
+        if (currentState) {
+          const settings = produce(
+            currentState.data.pid_settings.pressure,
+            (draft) => {
+              draft.kd = kd;
+            },
+          );
+          requestPressurePidSettings({
+            machine_identification_unique: machineIdentification,
+            data: { SetPressurePidSettings: settings },
+          });
+        }
+      },
+    );
+  };
+
+  const resetInverter = () => {
+    // No optimistic update needed for reset
+    requestResetInverter({
+      machine_identification_unique: machineIdentification,
+      data: { ResetInverter: true },
+    });
+  };
+
+  // Mutation hooks
+  const { request: requestInverterRotationDirection } = useMachineMutation(
+    z.object({ SetInverterRotationDirection: z.boolean() }),
   );
-  const frontHeatingStateThrottled = useThrottle(
-    heatingFrontState?.data,
-    FPS_60,
+
+  const { request: requestExtruderMode } = useMachineMutation(
+    z.object({ SetExtruderMode: z.enum(["Heat", "Extrude", "Standby"]) }),
   );
-  const backHeatingStateThrottled = useThrottle(heatingBackState?.data, FPS_60);
-  const middleHeatingStateThrottled = useThrottle(
-    heatingMiddleState?.data,
-    FPS_60,
+
+  const { request: requestInverterRegulation } = useMachineMutation(
+    z.object({ SetInverterRegulation: z.boolean() }),
   );
-  const nozzleTemperatureThrottled = useThrottle(nozzleTemperature, FPS_60);
-  const frontTemperatureThrottled = useThrottle(frontTemperature, FPS_60);
-  const backTemperatureThrottled = useThrottle(backTemperature, FPS_60);
-  const middleTemperatureThrottled = useThrottle(middleTemperature, FPS_60);
+
+  const { request: requestInverterTargetRpm } = useMachineMutation(
+    z.object({ SetInverterTargetRpm: z.number() }),
+  );
+
+  const { request: requestInverterTargetPressure } = useMachineMutation(
+    z.object({ SetInverterTargetPressure: z.number() }),
+  );
+
+  const { request: requestNozzleHeatingTemperature } = useMachineMutation(
+    z.object({ SetNozzleHeatingTemperature: z.number() }),
+  );
+
+  const { request: requestFrontHeatingTemperature } = useMachineMutation(
+    z.object({ SetFrontHeatingTargetTemperature: z.number() }),
+  );
+
+  const { request: requestBackHeatingTemperature } = useMachineMutation(
+    z.object({ SetBackHeatingTargetTemperature: z.number() }),
+  );
+
+  const { request: requestMiddleHeatingTemperature } = useMachineMutation(
+    z.object({ SetMiddleHeatingTemperature: z.number() }),
+  );
+
+  const { request: requestExtruderPressureLimit } = useMachineMutation(
+    z.object({ SetExtruderPressureLimit: z.number() }),
+  );
+
+  const { request: requestExtruderPressureLimitEnabled } = useMachineMutation(
+    z.object({ SetExtruderPressureLimitIsEnabled: z.boolean() }),
+  );
+
+  const { request: requestPressurePidSettings } = useMachineMutation(
+    z.object({
+      SetPressurePidSettings: z.object({
+        ki: z.number(),
+        kp: z.number(),
+        kd: z.number(),
+      }),
+    }),
+  );
+
+  const { request: requestResetInverter } = useMachineMutation(
+    z.object({ ResetInverter: z.boolean() }),
+  );
 
   return {
-    heatingSetNozzleTemp,
-    heatingSetFrontTemp,
-    heatingSetBackTemp,
-    heatingSetMiddleTemp,
-    nozzleHeatingTarget: nozzleHeatingTargetState.value,
-    frontHeatingTarget: frontHeatingTargetState.value,
-    backHeatingTarget: backHeatingTargetState.value,
-    middleHeatingTarget: middleHeatingTargetState.value,
+    // Consolidated state
+    state: stateOptimistic.value?.data,
 
-    nozzleHeatingState: nozzleHeatingStateThrottled,
-    frontHeatingState: frontHeatingStateThrottled,
-    backHeatingState: backHeatingStateThrottled,
-    middleHeatingState: middleHeatingStateThrottled,
+    // Default state for initial values
+    defaultState: defaultState?.data,
 
-    nozzleTemperature: nozzleTemperatureThrottled,
-    frontTemperature: frontTemperatureThrottled,
-    backTemperature: backTemperatureThrottled,
-    middleTemperature: middleTemperatureThrottled,
+    // Individual live values (TimeSeries)
+    motorCurrent,
+    motorFrequency,
+    motorScrewRpm,
+    motorVoltage,
+    motorPower,
+
+    pressure,
+    nozzleTemperature,
+    frontTemperature,
+    backTemperature,
+    middleTemperature,
+    nozzlePower,
+    frontPower,
+    middlePower,
+    backPower,
+    combinedPower,
+
+    // Loading states
+    isLoading: stateOptimistic.isOptimistic,
+    isDisabled: !stateOptimistic.isInitialized,
+
+    // Action functions (verb-first)
+    setInverterRotationDirection,
+    setExtruderMode,
+    setInverterRegulation,
+    setInverterTargetRpm,
+    setInverterTargetPressure,
+    setNozzleHeatingTemperature,
+    setFrontHeatingTemperature,
+    setBackHeatingTemperature,
+    setMiddleHeatingTemperature,
+    setExtruderPressureLimit,
+    setExtruderPressureLimitEnabled,
+    setPressurePidKp,
+    setPressurePidKi,
+    setPressurePidKd,
+    resetInverter,
   };
 }

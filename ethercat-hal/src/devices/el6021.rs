@@ -372,8 +372,8 @@ pub struct EL6021 {
     is_used: bool,
     pub output_ts: u64,
     pub input_ts: u64,
-    pub has_messages_last_toggle: bool,
     pub initialized: bool,
+    pub has_messages_last_toggle: bool,
 }
 
 impl EthercatDeviceProcessing for EL6021 {}
@@ -421,53 +421,79 @@ pub enum EL6021Port {
 
 impl SerialInterfaceDevice<EL6021Port> for EL6021 {
     fn serial_interface_has_messages(&mut self, _port: EL6021Port) -> bool {
-        if let Some(tx_pdo) = &self.txpdo.com_tx_pdo_map_22_byte {
-            return tx_pdo.status.receive_request;
+        if let Some(tx_pdo) = &mut self.txpdo.com_tx_pdo_map_22_byte {
+            // Only check if the bit has changed, don't update our state yet
+            return tx_pdo.status.receive_request != self.has_messages_last_toggle;
         }
         return false;
     }
 
     fn serial_interface_read_message(&mut self, _port: EL6021Port) -> Option<Vec<u8>> {
         if !self.serial_interface_has_messages(_port) {
-            //return None;
-        }
-
-        if let Some(tx_pdo) = &mut self.txpdo.com_tx_pdo_map_22_byte {
-            let valid_length = tx_pdo.length as usize;
-            let received_data = tx_pdo.data[..valid_length.min(22)].to_vec();
-            if let Some(rx_pdo) = &mut self.rxpdo.com_rx_pdo_map_22_byte {
-                rx_pdo.control.received_acepted = !rx_pdo.control.received_acepted;
-            }
-            return Some(received_data);
-        } else {
             return None;
         }
+
+        let tx_pdo_opt = &mut self.txpdo.com_tx_pdo_map_22_byte;
+        let tx_pdo = match tx_pdo_opt {
+            Some(tx_pdo_opt) => tx_pdo_opt,
+            None => return None,
+        };
+
+        let rx_pdo_opt = &mut self.rxpdo.com_rx_pdo_map_22_byte;
+        let rx_pdo = match rx_pdo_opt {
+            Some(rx_pdo_opt) => rx_pdo_opt,
+            None => return None,
+        };
+
+        let valid_length = tx_pdo.length as usize;
+        let received_data = tx_pdo.data[..valid_length.min(22)].to_vec();
+
+        if received_data.is_empty() {
+            return None;
+        }
+
+        // Update our stored state of the toggle bit AFTER reading the data
+        self.has_messages_last_toggle = tx_pdo.status.receive_request;
+        rx_pdo.control.received_acepted = !rx_pdo.control.received_acepted;
+
+        return Some(received_data);
     }
 
     fn serial_interface_write_message(
         &mut self,
         _port: EL6021Port,
         message: Vec<u8>,
-    ) -> Result<(), Error> {
-        if let Some(rx_pdo) = &mut self.rxpdo.com_rx_pdo_map_22_byte {
-            // perhaps the 22 could be a constant
-            if message.len() > 22 {
-                return Err(anyhow::anyhow!(
-                    "Message is too long for RxPdo Buffer of 22 bytes!"
-                ));
-            }
+    ) -> Result<bool, Error> {
+        let tx_pdo_opt = &mut self.txpdo.com_tx_pdo_map_22_byte;
+        let tx_pdo = match tx_pdo_opt {
+            Some(tx_pdo_opt) => tx_pdo_opt,
+            None => return Err(anyhow::anyhow!("TXPDO Unavailable!!")),
+        };
 
-            let mut data_buffer = [0u8; 22];
-            let bytes = message.as_slice();
-            data_buffer[..message.len()].copy_from_slice(&bytes[..message.len()]);
-            rx_pdo.length = message.len() as u8;
-            rx_pdo.data = data_buffer;
-            rx_pdo.control.transmit_request = !rx_pdo.control.transmit_request;
+        let rx_pdo_opt = &mut self.rxpdo.com_rx_pdo_map_22_byte;
+        let rx_pdo = match rx_pdo_opt {
+            Some(rx_pdo_opt) => rx_pdo_opt,
+            None => return Err(anyhow::anyhow!("RXPDO Unavailable!!")),
+        };
 
-            return Ok(());
-        } else {
-            return Err(anyhow::anyhow!("Error: RxPdo is not available"));
+        // perhaps the 22 could be a constant
+        if message.len() > 22 {
+            return Err(anyhow::anyhow!(
+                "Message is too long for RxPdo Buffer of 22 bytes!"
+            ));
         }
+        // If we write a message of len zero, then this means we are waiting for our write_message to finish on the EL6021
+        if message.len() == 0 {
+            return Ok(rx_pdo.control.transmit_request == tx_pdo.status.transmit_accepted);
+        }
+
+        let mut data_buffer = [0u8; 22];
+        let bytes = message.as_slice();
+        data_buffer[..message.len()].copy_from_slice(&bytes[..message.len()]);
+        rx_pdo.length = message.len() as u8;
+        rx_pdo.data = data_buffer;
+        rx_pdo.control.transmit_request = !rx_pdo.control.transmit_request;
+        return Ok(true);
     }
 
     fn get_baudrate(&self, _port: EL6021Port) -> Option<u32> {
@@ -478,29 +504,45 @@ impl SerialInterfaceDevice<EL6021Port> for EL6021 {
     fn get_serial_encoding(&self, _port: EL6021Port) -> Option<SerialEncoding> {
         return Some(self.configuration.data_frame);
     }
+
     /// For el6021 this returns false for as long as the Initialization takes
     /// When its finished it returns true    
+    /// Every step of the init has to be done in an EtherCatCycle
     fn serial_interface_initialize(&mut self, port: EL6021Port) -> bool {
         match port {
             EL6021Port::SI1 => {
                 let rxpdo_opt = &mut self.rxpdo.com_rx_pdo_map_22_byte;
-                let txpdo_opt = &mut self.txpdo.com_tx_pdo_map_22_byte;
 
                 let rxpdo = match rxpdo_opt {
                     Some(rxpdo_opt) => rxpdo_opt,
                     None => return false,
                 };
-
+                let txpdo_opt = &mut self.txpdo.com_tx_pdo_map_22_byte;
                 let txpdo = match txpdo_opt {
                     Some(txpdo_opt) => txpdo_opt,
                     None => return false,
                 };
 
+                /*
+                Initialization was accepted
+                init_accepted 1: Initialization was completed by the terminal.
+                init_request 1: The controller requests terminal for initialization. The
+                    transmit and receive functions will be blocked, the FIFO
+                    pointer will be reset and the interface will be initialized with
+                    the values of the responsible Settings object. The execution
+                    of the initialization will be acknowledged by the terminal
+                    with the ‘Init accepted’ bit.
+                */
                 if rxpdo.control.init_request && txpdo.status.init_accepted {
                     rxpdo.control.init_request = false;
                     return false;
                 }
 
+                /*
+                    This is the initial state
+                    init_accepted 0: Initialization was completed by the terminal.
+                    init_request 0: The terminal is ready again for serial data exchange.
+                */
                 if rxpdo.control.init_request == false
                     && txpdo.status.init_accepted == false
                     && self.initialized == false
@@ -510,14 +552,25 @@ impl SerialInterfaceDevice<EL6021Port> for EL6021 {
                     return false;
                 }
 
+                /*
+                    init_accepted 1: Initialization was completed by the terminal.
+                    init_request 0: The terminal is ready again for serial data exchange.
+                */
                 if rxpdo.control.init_request == false && txpdo.status.init_accepted == true {
                     return false;
                 }
 
+                /*
+                    If both init_request and init_accepted == false, initialization is complete
+                    init_accepted 0: The controller once again requests the terminal to prepare for serial data exchange.
+                    init_request 0: The terminal is ready again for serial data exchange.
+                */
                 if rxpdo.control.init_request == false
                     && txpdo.status.init_accepted == false
                     && self.initialized == true
                 {
+                    // set inital state of the toggle
+                    self.has_messages_last_toggle = txpdo.status.receive_request;
                     return true;
                 }
 
@@ -594,6 +647,7 @@ pub const EL6021_PRODUCT_ID: u32 = 0x17853052;
 pub const EL6021_REVISION_A: u32 = 0x150000;
 pub const EL6021_REVISION_B: u32 = 0x140000;
 pub const EL6021_REVISION_C: u32 = 0x160000;
+pub const EL6021_REVISION_D: u32 = 0x100000;
 
 pub const EL6021_IDENTITY_A: SubDeviceIdentityTuple =
     (EL6021_VENDOR_ID, EL6021_PRODUCT_ID, EL6021_REVISION_A);
@@ -603,3 +657,6 @@ pub const EL6021_IDENTITY_B: SubDeviceIdentityTuple =
 
 pub const EL6021_IDENTITY_C: SubDeviceIdentityTuple =
     (EL6021_VENDOR_ID, EL6021_PRODUCT_ID, EL6021_REVISION_C);
+
+pub const EL6021_IDENTITY_D: SubDeviceIdentityTuple =
+    (EL6021_VENDOR_ID, EL6021_PRODUCT_ID, EL6021_REVISION_D);

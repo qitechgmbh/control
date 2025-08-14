@@ -1,12 +1,9 @@
 use std::time::Instant;
 
-use control_core::{
-    actors::{
-        digital_input_getter::DigitalInputGetter, stepper_driver_el70x1::StepperDriverEL70x1,
-    },
-    converters::linear_step_converter::LinearStepConverter,
+use control_core::converters::linear_step_converter::LinearStepConverter;
+use ethercat_hal::io::{
+    digital_input::DigitalInput, stepper_velocity_el70x1::StepperVelocityEL70x1,
 };
-use tracing::info;
 use uom::{
     ConstZero,
     si::{
@@ -91,7 +88,7 @@ pub enum HomingState {
 
     /// Moving out away from the endstop
     /// Then Transition into [`HomingState::FindEndtopFine`]
-    FindEnstopFineDistancing,
+    FindEndstopFineDistancing,
 
     /// In this state the traverse is fast until it reaches the endstop
     FindEndstopCoarse,
@@ -175,7 +172,7 @@ impl TraverseController {
         self.enabled
     }
 
-    pub fn dif_change_state(&mut self) -> bool {
+    pub fn did_change_state(&mut self) -> bool {
         let did_change = self.did_change_state;
         // Reset the flag
         self.did_change_state = false;
@@ -263,7 +260,7 @@ impl TraverseController {
     }
 
     /// Gets the current traverse position as a [`Length`].
-    pub fn sync_position(&mut self, traverse: &StepperDriverEL70x1) {
+    pub fn sync_position(&mut self, traverse: &StepperVelocityEL70x1) {
         let steps = traverse.get_position();
         self.position = self.microstep_converter.steps_to_distance(steps as f64);
     }
@@ -286,8 +283,8 @@ impl TraverseController {
     /// Positive speed moved out, negative speed moves in.
     fn get_speed(
         &mut self,
-        traverse: &mut StepperDriverEL70x1,
-        traverse_end_stop: &DigitalInputGetter,
+        traverse: &mut StepperVelocityEL70x1,
+        traverse_end_stop: &DigitalInput,
         spool_speed: AngularVelocity,
     ) -> Velocity {
         // Don't move if not enabled or in a state that doesn't result in movement
@@ -321,7 +318,7 @@ impl TraverseController {
             State::Homing(homing_state) => match homing_state {
                 HomingState::Initialize => {
                     // If endstop is triggered, escape the endstop
-                    if traverse_end_stop.value() == true {
+                    if traverse_end_stop.get_value().unwrap_or(false) == true {
                         self.state = State::Homing(HomingState::EscapeEndstop);
                     } else {
                         // If endstop is not triggered, move to the endstop
@@ -330,20 +327,20 @@ impl TraverseController {
                 }
                 HomingState::EscapeEndstop => {
                     // Move out until endstop is not triggered anymore
-                    if traverse_end_stop.value() == false {
-                        self.state = State::Homing(HomingState::FindEnstopFineDistancing);
+                    if traverse_end_stop.get_value().unwrap_or(false) == false {
+                        self.state = State::Homing(HomingState::FindEndstopFineDistancing);
                     }
                 }
-                HomingState::FindEnstopFineDistancing => {
+                HomingState::FindEndstopFineDistancing => {
                     // Move out until endstop is not triggered anymore
-                    if traverse_end_stop.value() == false {
+                    if traverse_end_stop.get_value().unwrap_or(false) == false {
                         // Find endstop fine
                         self.state = State::Homing(HomingState::FindEndtopFine);
                     }
                 }
                 HomingState::FindEndtopFine => {
                     // If endstop is reached change to idle
-                    if traverse_end_stop.value() == true {
+                    if traverse_end_stop.get_value().unwrap_or(false) == true {
                         // Set poition of traverse to 0
                         traverse.set_position(0);
                         // Put Into Idle
@@ -352,9 +349,9 @@ impl TraverseController {
                 }
                 HomingState::FindEndstopCoarse => {
                     // Move to endstop
-                    if traverse_end_stop.value() == true {
+                    if traverse_end_stop.get_value().unwrap_or(false) == true {
                         // Move awaiy from endstop
-                        self.state = State::Homing(HomingState::FindEnstopFineDistancing);
+                        self.state = State::Homing(HomingState::FindEndstopFineDistancing);
                     }
                 }
                 HomingState::Validate(instant) => {
@@ -436,7 +433,7 @@ impl TraverseController {
                     // Move out at a speed of 10 mm/s
                     Velocity::new::<millimeter_per_second>(10.0)
                 }
-                HomingState::FindEnstopFineDistancing => {
+                HomingState::FindEndstopFineDistancing => {
                     // Move out at a speed of 2 mm/s
                     Velocity::new::<millimeter_per_second>(2.0)
                 }
@@ -497,13 +494,14 @@ impl TraverseController {
 
     pub fn update_speed(
         &mut self,
-        traverse: &mut StepperDriverEL70x1,
-        traverse_end_stop: &DigitalInputGetter,
+        traverse: &mut StepperVelocityEL70x1,
+        traverse_end_stop: &DigitalInput,
         spool_speed: AngularVelocity,
     ) {
         let speed = self.get_speed(traverse, traverse_end_stop, spool_speed);
         let steps_per_second = self.fullstep_converter.velocity_to_steps(speed);
-        traverse.set_speed(steps_per_second as i32);
+        // ignore if we can't set speed
+        let _ = traverse.set_speed(steps_per_second);
     }
 }
 

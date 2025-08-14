@@ -5,7 +5,7 @@ use std::{fmt, future::Future, pin::Pin, sync::Arc};
 pub struct SerialInterface {
     pub has_message: Box<dyn Fn() -> Pin<Box<dyn Future<Output = bool> + Send>> + Send + Sync>,
     pub write_message: Box<
-        dyn Fn(Vec<u8>) -> Pin<Box<dyn Future<Output = Result<(), Error>> + Send>> + Send + Sync,
+        dyn Fn(Vec<u8>) -> Pin<Box<dyn Future<Output = Result<bool, Error>> + Send>> + Send + Sync,
     >,
     pub read_message:
         Box<dyn Fn() -> Pin<Box<dyn Future<Output = Option<Vec<u8>>> + Send>> + Send + Sync>,
@@ -33,7 +33,6 @@ impl SerialInterface {
     where
         PORT: Clone + Send + Sync + 'static,
     {
-        // build async get closure
         let mut port2 = port.clone();
         let mut device2 = device.clone();
 
@@ -53,7 +52,7 @@ impl SerialInterface {
         device2 = device.clone();
 
         let write_message = Box::new(
-            move |message: Vec<u8>| -> Pin<Box<dyn Future<Output = Result<(), Error>> + Send>> {
+            move |message: Vec<u8>| -> Pin<Box<dyn Future<Output = Result<bool, Error>> + Send>> {
                 let device2 = device2.clone();
                 let port_clone = port2.clone();
                 let message2 = message.to_owned();
@@ -120,6 +119,7 @@ impl SerialInterface {
                 device.serial_interface_initialize(port_clone)
             })
         });
+
         SerialInterface {
             has_message,
             write_message,
@@ -140,7 +140,7 @@ where
         &mut self,
         port: PORTS,
         message: Vec<u8>,
-    ) -> Result<(), Error>;
+    ) -> Result<bool, Error>;
     fn serial_interface_has_messages(&mut self, port: PORTS) -> bool;
     fn get_serial_encoding(&self, port: PORTS) -> Option<SerialEncoding>;
     fn get_baudrate(&self, port: PORTS) -> Option<u32>;

@@ -1,6 +1,6 @@
 use super::{EthercatDeviceProcessing, NewEthercatDevice, SubDeviceIdentityTuple};
 use crate::helpers::ethercrab_types::EthercrabSubDevicePreoperational;
-use crate::io::digital_output::{DigitalOutputDevice, DigitalOutputOutput, DigitalOutputState};
+use crate::io::digital_output::{DigitalOutputDevice, DigitalOutputOutput};
 use crate::pdo::{RxPdo, basic::BoolPdoObject};
 use ethercat_hal_derive::{EthercatDevice, RxPdo};
 
@@ -17,7 +17,7 @@ impl EthercatDeviceProcessing for EL2008 {}
 
 impl std::fmt::Debug for EL2008 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "EL2003")
+        write!(f, "EL2008")
     }
 }
 
@@ -31,7 +31,7 @@ impl NewEthercatDevice for EL2008 {
 }
 
 impl DigitalOutputDevice<EL2008Port> for EL2008 {
-    fn digital_output_write(&mut self, port: EL2008Port, value: DigitalOutputOutput) {
+    fn set_output(&mut self, port: EL2008Port, value: DigitalOutputOutput) {
         let expect_text = "All channels should be Some(_)";
         match port {
             EL2008Port::DO1 => {
@@ -61,20 +61,18 @@ impl DigitalOutputDevice<EL2008Port> for EL2008 {
         }
     }
 
-    fn digital_output_state(&self, port: EL2008Port) -> DigitalOutputState {
+    fn get_output(&self, port: EL2008Port) -> DigitalOutputOutput {
         let expect_text = "All channels should be Some(_)";
-        DigitalOutputState {
-            output: DigitalOutputOutput(match port {
-                EL2008Port::DO1 => self.rxpdo.channel1.as_ref().expect(&expect_text).value,
-                EL2008Port::DO2 => self.rxpdo.channel2.as_ref().expect(&expect_text).value,
-                EL2008Port::DO3 => self.rxpdo.channel3.as_ref().expect(&expect_text).value,
-                EL2008Port::DO4 => self.rxpdo.channel4.as_ref().expect(&expect_text).value,
-                EL2008Port::DO5 => self.rxpdo.channel5.as_ref().expect(&expect_text).value,
-                EL2008Port::DO6 => self.rxpdo.channel6.as_ref().expect(&expect_text).value,
-                EL2008Port::DO7 => self.rxpdo.channel7.as_ref().expect(&expect_text).value,
-                EL2008Port::DO8 => self.rxpdo.channel8.as_ref().expect(&expect_text).value,
-            }),
-        }
+        DigitalOutputOutput(match port {
+            EL2008Port::DO1 => self.rxpdo.channel1.as_ref().expect(&expect_text).value,
+            EL2008Port::DO2 => self.rxpdo.channel2.as_ref().expect(&expect_text).value,
+            EL2008Port::DO3 => self.rxpdo.channel3.as_ref().expect(&expect_text).value,
+            EL2008Port::DO4 => self.rxpdo.channel4.as_ref().expect(&expect_text).value,
+            EL2008Port::DO5 => self.rxpdo.channel5.as_ref().expect(&expect_text).value,
+            EL2008Port::DO6 => self.rxpdo.channel6.as_ref().expect(&expect_text).value,
+            EL2008Port::DO7 => self.rxpdo.channel7.as_ref().expect(&expect_text).value,
+            EL2008Port::DO8 => self.rxpdo.channel8.as_ref().expect(&expect_text).value,
+        })
     }
 }
 

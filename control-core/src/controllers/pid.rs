@@ -9,7 +9,6 @@ pub struct PidController {
     ki: f64,
     /// Derivative gain
     kd: f64,
-
     // State
     /// Proportional error
     ep: f64,
@@ -34,6 +33,25 @@ impl PidController {
         }
     }
 
+    pub fn configure(&mut self, ki: f64, kp: f64, kd: f64) {
+        self.reset();
+        self.kp = kp;
+        self.ki = ki;
+        self.kd = kd;
+    }
+
+    pub fn get_kp(&self) -> f64 {
+        self.kp
+    }
+
+    pub fn get_ki(&self) -> f64 {
+        self.ki
+    }
+
+    pub fn get_kd(&self) -> f64 {
+        self.kd
+    }
+
     pub fn update(&mut self, error: f64, t: Instant) -> f64 {
         let signal = match self.last {
             // First update
@@ -47,6 +65,7 @@ impl PidController {
                 // Set values
                 self.ep = ep;
                 self.ei = 0.0;
+
                 self.ed = 0.0;
                 self.last = Some(t);
 

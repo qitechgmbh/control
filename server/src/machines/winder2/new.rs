@@ -1,17 +1,12 @@
 use std::time::Instant;
 
-use crate::machines::winder2::puller_speed_controller::PullerSpeedController;
-use crate::machines::winder2::traverse_controller::TraverseController;
-
 use super::api::Winder2Namespace;
-use super::spool_speed_controller::SpoolSpeedController;
 use super::tension_arm::TensionArm;
 use super::{Winder2, Winder2Mode};
+use crate::machines::winder2::puller_speed_controller::PullerSpeedController;
+use crate::machines::winder2::spool_speed_controller::SpoolSpeedController;
+use crate::machines::winder2::traverse_controller::TraverseController;
 use anyhow::Error;
-use control_core::actors::analog_input_getter::AnalogInputGetter;
-use control_core::actors::digital_input_getter::DigitalInputGetter;
-use control_core::actors::digital_output_setter::DigitalOutputSetter;
-use control_core::actors::stepper_driver_el70x1::StepperDriverEL70x1;
 use control_core::converters::angular_step_converter::AngularStepConverter;
 use control_core::converters::linear_step_converter::LinearStepConverter;
 use control_core::machines::identification::DeviceHardwareIdentification;
@@ -23,7 +18,7 @@ use control_core::machines::new::{
 use control_core::uom_extensions::velocity::meter_per_minute;
 use ethercat_hal::coe::ConfigurableDevice;
 use ethercat_hal::devices::ek1100::EK1100;
-use ethercat_hal::devices::el2002::{EL2002, EL2002Port};
+use ethercat_hal::devices::el2002::{EL2002, EL2002_IDENTITY_B, EL2002Port};
 use ethercat_hal::devices::el7031::coe::EL7031Configuration;
 use ethercat_hal::devices::el7031::pdo::EL7031PredefinedPdoAssignment;
 use ethercat_hal::devices::el7031::{
@@ -44,8 +39,9 @@ use ethercat_hal::io::digital_output::DigitalOutput;
 use ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1;
 use ethercat_hal::shared_config;
 use ethercat_hal::shared_config::el70x1::{EL70x1OperationMode, StmMotorConfiguration};
+use uom::ConstZero;
 use uom::si::f64::{Length, Velocity};
-use uom::si::length::{centimeter, millimeter};
+use uom::si::length::{centimeter, meter, millimeter};
 
 impl MachineNewTrait for Winder2 {
     fn new<'maindevice>(params: &MachineNewParams) -> Result<Self, Error> {
@@ -133,7 +129,7 @@ impl MachineNewTrait for Winder2 {
                 let subdevice = get_subdevice_by_index(hardware.subdevices, subdevice_index)?;
                 let subdevice_identity = subdevice.identity();
                 let device = match subdevice_identity_to_tuple(&subdevice_identity) {
-                    EL2002_IDENTITY_A => {
+                    EL2002_IDENTITY_A | EL2002_IDENTITY_B => {
                         let ethercat_device = get_ethercat_device_by_index(
                             &hardware.ethercat_devices,
                             subdevice_index,
@@ -155,7 +151,7 @@ impl MachineNewTrait for Winder2 {
             // Role 2
             // 1x Stepper Spool
             // EL7041-0052
-            let (el7041, el7041_config) = {
+            let (el7041, _el7041_config) = {
                 let device_identification =
                     get_device_identification_by_role(params.device_group, 2)?;
                 let device_hardware_identification_ethercat =
@@ -213,7 +209,7 @@ impl MachineNewTrait for Winder2 {
             // Role 3
             // 1x Stepper Traverse
             // EL7031
-            let (el7031, el7031_config) = {
+            let (el7031, _el7031_config) = {
                 let device_identification =
                     get_device_identification_by_role(params.device_group, 3)?;
                 let device_hardware_identification_ethercat =
@@ -276,7 +272,7 @@ impl MachineNewTrait for Winder2 {
             // Role 4
             // 1x Stepper Puller
             // EL7031
-            let (el7031_0030, el7031_0030_config) = {
+            let (el7031_0030, _el7031_0030_config) = {
                 let device_identification =
                     get_device_identification_by_role(params.device_group, 4)?;
                 let device_hardware_identification_ethercat =
@@ -337,29 +333,28 @@ impl MachineNewTrait for Winder2 {
 
             let mode = Winder2Mode::Standby;
 
+            let machine_id = params
+                .device_group
+                .first()
+                .expect("device group must have at least one device")
+                .device_machine_identification
+                .machine_identification_unique
+                .clone();
+
             let mut new = Self {
-                traverse: StepperDriverEL70x1::new(
-                    StepperVelocityEL70x1::new(el7031.clone(), EL7031StepperPort::STM1),
-                    &el7031_config.stm_features.speed_range,
+                traverse: StepperVelocityEL70x1::new(el7031.clone(), EL7031StepperPort::STM1),
+                traverse_end_stop: DigitalInput::new(el7031, EL7031DigitalInputPort::DI1),
+                puller: StepperVelocityEL70x1::new(
+                    el7031_0030.clone(),
+                    EL7031_0030StepperPort::STM1,
                 ),
-                traverse_end_stop: DigitalInputGetter::new(DigitalInput::new(
-                    el7031,
-                    EL7031DigitalInputPort::DI1,
-                )),
-                puller: StepperDriverEL70x1::new(
-                    StepperVelocityEL70x1::new(el7031_0030.clone(), EL7031_0030StepperPort::STM1),
-                    &el7031_0030_config.stm_features.speed_range,
-                ),
-                spool: StepperDriverEL70x1::new(
-                    StepperVelocityEL70x1::new(el7041, EL7041_0052Port::STM1),
-                    &el7041_config.stm_features.speed_range,
-                ),
-                tension_arm: TensionArm::new(AnalogInputGetter::new(AnalogInput::new(
+                spool: StepperVelocityEL70x1::new(el7041, EL7041_0052Port::STM1),
+                tension_arm: TensionArm::new(AnalogInput::new(
                     el7031_0030,
                     EL7031_0030AnalogInputPort::AI1,
-                ))),
-                laser: DigitalOutputSetter::new(DigitalOutput::new(el2002, EL2002Port::DO1)),
-                namespace: Winder2Namespace::new(),
+                )),
+                laser: DigitalOutput::new(el2002, EL2002Port::DO1),
+                namespace: Winder2Namespace::new(params.socket_queue_tx.clone()),
                 mode: mode.clone(),
                 spool_step_converter: AngularStepConverter::new(200),
                 spool_speed_controller: SpoolSpeedController::new(),
@@ -380,15 +375,20 @@ impl MachineNewTrait for Winder2 {
                     Length::new::<millimeter>(92.0), // Default outer limit
                     64,                              // Microsteps
                 ),
+                emitted_default_state: false,
+                spool_automatic_action: super::SpoolAutomaticAction {
+                    progress: Length::ZERO,
+                    progress_last_check: Instant::now(),
+                    target_length: Length::new::<meter>(250.0),
+                    mode: super::api::SpoolAutomaticActionMode::NoAction,
+                },
+                machine_manager: params.machine_manager.clone(),
+                machine_identification_unique: machine_id,
+                connected_buffer: None,
             };
 
             // initalize events
-            new.emit_traverse_state();
-            new.emit_traverse_position();
-            new.emit_mode_state();
-            new.emit_tension_arm_state();
-            new.emit_puller_state();
-
+            new.emit_state();
             Ok(new)
         })
     }

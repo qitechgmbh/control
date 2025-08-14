@@ -5,16 +5,21 @@ use control_core::machines::Machine;
 use control_core::machines::identification::{DeviceIdentification, MachineIdentificationUnique};
 use control_core::machines::manager::MachineManager;
 use control_core::serial::serial_detection::SerialDetection;
+use control_core::socketio::event::GenericEvent;
 use ethercat_hal::devices::EthercatDevice;
 use ethercrab::{MainDevice, SubDeviceGroup, subdevice_group::Op};
+use smol::channel::{Receiver, Sender};
 use smol::lock::RwLock;
 use socketioxide::SocketIo;
+use socketioxide::extract::SocketRef;
 use std::collections::HashMap;
 use std::sync::Arc;
 
 pub struct SocketioSetup {
     pub socketio: RwLock<Option<SocketIo>>,
     pub namespaces: RwLock<Namespaces>,
+    pub socket_queue_tx: Sender<(SocketRef, Arc<GenericEvent>)>,
+    pub socket_queue_rx: Receiver<(SocketRef, Arc<GenericEvent>)>,
 }
 
 pub struct SerialSetup {
@@ -25,11 +30,11 @@ pub struct AppState {
     pub socketio_setup: SocketioSetup,
     pub ethercat_setup: Arc<RwLock<Option<EthercatSetup>>>,
     pub serial_setup: Arc<RwLock<SerialSetup>>,
-    pub machines: RwLock<MachineManager>,
+    pub machines: Arc<RwLock<MachineManager>>,
 }
 
 pub type Machines =
-    HashMap<MachineIdentificationUnique, Result<RwLock<dyn Machine>, anyhow::Error>>;
+    HashMap<MachineIdentificationUnique, Result<Arc<RwLock<dyn Machine>>, anyhow::Error>>;
 
 pub struct EthercatSetup {
     /// All Ethercat devices
@@ -61,16 +66,19 @@ impl EthercatSetup {
 
 impl AppState {
     pub fn new() -> Self {
+        let (socket_queue_tx, socket_queue_rx) = smol::channel::unbounded();
         Self {
             socketio_setup: SocketioSetup {
                 socketio: RwLock::new(None),
-                namespaces: RwLock::new(Namespaces::new()),
+                namespaces: RwLock::new(Namespaces::new(socket_queue_tx.clone())),
+                socket_queue_tx,
+                socket_queue_rx,
             },
             ethercat_setup: Arc::new(RwLock::new(None)),
             serial_setup: Arc::new(RwLock::new(SerialSetup {
                 serial_detection: SerialDetection::new(&SERIAL_DEVICE_REGISTRY),
             })),
-            machines: RwLock::new(MachineManager::new()),
+            machines: Arc::new(RwLock::new(MachineManager::new())),
         }
     }
 }

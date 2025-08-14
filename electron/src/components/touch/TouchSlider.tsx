@@ -92,7 +92,7 @@ export function TouchSlider({
           <SliderPrimitive.Thumb
             data-slot="slider-thumb"
             key={index}
-            className="block size-14 shrink-0 rounded-2xl bg-black shadow-sm ring-gray-950/50 transition-[color,box-shadow] hover:ring-8 focus-visible:ring-8 focus-visible:outline-hidden disabled:pointer-events-none disabled:opacity-50 dark:border-gray-50 dark:border-gray-800 dark:bg-gray-950 dark:ring-gray-300/50"
+            className="block size-14 shrink-0 rounded-2xl bg-black shadow-sm ring-gray-950/50 transition-[color,box-shadow] focus-visible:ring-8 focus-visible:outline-hidden disabled:pointer-events-none disabled:opacity-50 dark:border-gray-50 dark:border-gray-800 dark:bg-gray-950 dark:ring-gray-300/50"
           >
             <div className="flex h-full w-full items-center justify-center">
               <Icon name="lu:Pointer" className="text-white" />

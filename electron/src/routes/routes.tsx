@@ -17,17 +17,26 @@ import { ExtruderV2ManualPage } from "@/machines/extruder/extruder2/Extruder2Man
 import { ChooseVersionPage } from "@/setup/ChooseVersionPage";
 import { fallback, zodValidator } from "@tanstack/zod-adapter";
 
-import { githubSourceSchema } from "@/setup/GithubSourceDialog";
-import { z } from "zod";
+import { Buffer1ControlPage } from "@/machines/buffer/buffer1/Buffer1ControlPage";
+import { Buffer1Page } from "@/machines/buffer/buffer1/Buffer1Page";
+import { Buffer1SettingsPage } from "@/machines/buffer/buffer1/Buffer1Settings";
 import { ChangelogPage } from "@/setup/ChangelogPage";
-import { UpdateExecutePage } from "@/setup/UpdateExecutePage";
-import { Dre1Page } from "@/machines/dre/dre1/Dre1Page";
-import { Dre1ControlPage } from "@/machines/dre/dre1/Dre1ControlPage";
-import { Mock1Page } from "@/machines/mock/mock1/Mock1Page";
+import { Extruder2GraphsPage } from "@/machines/extruder/extruder2/Extruder2Graph";
+import { Extruder2PresetsPage } from "@/machines/extruder/extruder2/Extruder2PresetsPage";
+import { githubSourceSchema } from "@/setup/GithubSourceDialog";
+import { Laser1ControlPage } from "@/machines/laser/laser1/Laser1ControlPage";
+import { Laser1GraphsPage } from "@/machines/laser/laser1/Laser1Graph";
+import { Laser1Page } from "@/machines/laser/laser1/Laser1Page";
 import { Mock1ControlPage } from "@/machines/mock/mock1/Mock1ControlPage";
-import { Dre1GraphsPage } from "@/machines/dre/dre1/Dre1Graph";
+import { Mock1GraphPage } from "@/machines/mock/mock1/Mock1Graph";
+import { Mock1ManualPage } from "@/machines/mock/mock1/Mock1Manual";
+import { Mock1Page } from "@/machines/mock/mock1/Mock1Page";
+import { Mock1PresetsPage } from "@/machines/mock/mock1/Mock1PresetsPage";
 import { TroubleshootPage } from "@/setup/Trobleshoot";
-
+import { UpdateExecutePage } from "@/setup/UpdateExecutePage";
+import { Winder2PresetsPage } from "@/machines/winder/winder2/Winder2PresetsPage";
+import { z } from "zod";
+import { Laser1PresetsPage } from "@/machines/laser/laser1/Laser1PresetsPage";
 // make a route tree like this
 // _mainNavigation/machines/winder2/$serial/control
 // _mainNavigation/configuration/a
@@ -71,6 +80,18 @@ export const extruder2ManualRoute = createRoute({
   component: () => <ExtruderV2ManualPage />,
 });
 
+export const extruder2GraphsRoute = createRoute({
+  getParentRoute: () => extruder2Route,
+  path: "graphs",
+  component: () => <Extruder2GraphsPage />,
+});
+
+export const extruder2PresetsRoute = createRoute({
+  getParentRoute: () => extruder2Route,
+  path: "presets",
+  component: () => <Extruder2PresetsPage />,
+});
+
 export const winder2SerialRoute = createRoute({
   getParentRoute: () => machinesRoute,
   path: "winder2/$serial",
@@ -101,22 +122,34 @@ export const winder2GraphsRoute = createRoute({
   component: () => <Winder2GraphsPage />,
 });
 
-export const dre1SerialRoute = createRoute({
+export const winder2PresetsRoute = createRoute({
+  getParentRoute: () => winder2SerialRoute,
+  path: "presets",
+  component: () => <Winder2PresetsPage />,
+});
+
+export const laser1SerialRoute = createRoute({
   getParentRoute: () => machinesRoute,
-  path: "dre1/$serial",
-  component: () => <Dre1Page />,
+  path: "laser1/$serial",
+  component: () => <Laser1Page />,
 });
 
-export const dre1ControlRoute = createRoute({
-  getParentRoute: () => dre1SerialRoute,
+export const laser1ControlRoute = createRoute({
+  getParentRoute: () => laser1SerialRoute,
   path: "control",
-  component: () => <Dre1ControlPage />,
+  component: () => <Laser1ControlPage />,
 });
 
-export const dre1GraphsRoute = createRoute({
-  getParentRoute: () => dre1SerialRoute,
+export const laser1GraphsRoute = createRoute({
+  getParentRoute: () => laser1SerialRoute,
   path: "graphs",
-  component: () => <Dre1GraphsPage />,
+  component: () => <Laser1GraphsPage />,
+});
+
+export const laser1PresetsRoute = createRoute({
+  getParentRoute: () => laser1SerialRoute,
+  path: "presets",
+  component: () => <Laser1PresetsPage />,
 });
 
 export const mock1SerialRoute = createRoute({
@@ -129,6 +162,42 @@ export const mock1ControlRoute = createRoute({
   getParentRoute: () => mock1SerialRoute,
   path: "control",
   component: () => <Mock1ControlPage />,
+});
+
+export const mock1GraphRoute = createRoute({
+  getParentRoute: () => mock1SerialRoute,
+  path: "graph",
+  component: () => <Mock1GraphPage />,
+});
+
+export const mock1ManualRoute = createRoute({
+  getParentRoute: () => mock1SerialRoute,
+  path: "manual",
+  component: () => <Mock1ManualPage />,
+});
+
+export const buffer1SerialRoute = createRoute({
+  getParentRoute: () => machinesRoute,
+  path: "buffer1/$serial",
+  component: () => <Buffer1Page />,
+});
+
+export const buffer1ControlRoute = createRoute({
+  getParentRoute: () => buffer1SerialRoute,
+  path: "control",
+  component: () => <Buffer1ControlPage />,
+});
+
+export const mock1PresetsRoute = createRoute({
+  getParentRoute: () => mock1SerialRoute,
+  path: "presets",
+  component: () => <Mock1PresetsPage />,
+});
+
+export const buffer1SettingsRoute = createRoute({
+  getParentRoute: () => buffer1SerialRoute,
+  path: "settings",
+  component: () => <Buffer1SettingsPage />,
 });
 
 export const setupRoute = createRoute({
@@ -217,21 +286,36 @@ export const rootTree = RootRoute.addChildren([
     ]),
 
     machinesRoute.addChildren([
-      dre1SerialRoute.addChildren([dre1ControlRoute, dre1GraphsRoute]),
+      laser1SerialRoute.addChildren([
+        laser1ControlRoute,
+        laser1GraphsRoute,
+        laser1PresetsRoute,
+      ]),
+
       winder2SerialRoute.addChildren([
         winder2ControlRoute,
         winder2ManualRoute,
         winder2SettingsRoute,
         winder2GraphsRoute,
+        winder2PresetsRoute,
       ]),
 
       extruder2Route.addChildren([
         extruder2ControlRoute,
         extruder2SettingsRoute,
         extruder2ManualRoute,
+        extruder2GraphsRoute,
+        extruder2PresetsRoute,
       ]),
 
-      mock1SerialRoute.addChildren([mock1ControlRoute]),
+      mock1SerialRoute.addChildren([
+        mock1ControlRoute,
+        mock1GraphRoute,
+        mock1ManualRoute,
+        mock1PresetsRoute,
+      ]),
+
+      buffer1SerialRoute.addChildren([buffer1ControlRoute]),
     ]),
   ]),
 ]);

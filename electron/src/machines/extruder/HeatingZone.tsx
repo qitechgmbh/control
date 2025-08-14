@@ -3,20 +3,24 @@ import { EditValue } from "@/control/EditValue";
 import { Label } from "@/control/Label";
 import { roundToDecimals } from "@/lib/decimal";
 import React from "react";
-import { Heating } from "./extruder2/extruder2Namespace";
+import { HeatingState } from "./extruder2/extruder2Namespace";
 import { TimeSeries } from "@/lib/timeseries";
 import { TimeSeriesValueNumeric } from "@/control/TimeSeriesValue";
 import { StatusBadge } from "@/control/StatusBadge";
 
 type Props = {
   title: string;
-  heatingState: Heating | undefined;
+  heatingState?: HeatingState;
   heatingTimeSeries: TimeSeries;
   heatingPower: TimeSeries;
+  min: number;
+  max: number;
   onChangeTargetTemp?: (temperature: number) => void;
 };
 export function HeatingZone({
   title,
+  min,
+  max,
   heatingState,
   heatingTimeSeries,
   heatingPower,
@@ -42,8 +46,8 @@ export function HeatingZone({
           <EditValue
             value={targetTemperature}
             defaultValue={150}
-            min={50}
-            max={300}
+            min={min}
+            max={max}
             unit="C"
             title="Target Temperature"
             renderValue={(value) => roundToDecimals(value, 1)}

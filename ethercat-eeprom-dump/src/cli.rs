@@ -42,14 +42,12 @@ pub fn cli() -> Command {
                 ),
         )
         .subcommand(
-            Command::new("read")
-                .about("Read a dumped EEPROM file")
-                .arg(
-                    arg!(--file <FILE> "File to parse")
-                        .required(true)
-                        .short('f')
-                        .value_parser(clap::value_parser!(String))
-                        .help("File to parse"),
-                ),
+            Command::new("read").about("Read a dumped EEPROM file").arg(
+                arg!(--file <FILE> "File to parse")
+                    .required(true)
+                    .short('f')
+                    .value_parser(clap::value_parser!(String))
+                    .help("File to parse"),
+            ),
         )
 }

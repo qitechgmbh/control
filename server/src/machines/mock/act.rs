@@ -1,12 +1,13 @@
+use control_core::machines::new::MachineAct;
+
 use super::MockMachine;
-use control_core::actors::Actor;
 use std::{
     future::Future,
     pin::Pin,
     time::{Duration, Instant},
 };
 
-/// Implements the `Actor` trait for the `MockMachine`.
+/// Implements the `MachineAct` trait for the `MockMachine`.
 ///
 /// # Parameters
 /// - `_now_ts`: The current timestamp of type `Instant`.
@@ -22,21 +23,21 @@ use std::{
 ///
 /// The method ensures that the sine wave value is updated approximately 60 times per second (16ms intervals) when running.
 ///
-impl Actor for MockMachine {
+impl MachineAct for MockMachine {
     fn act(&mut self, _now_ts: Instant) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
         Box::pin(async move {
             let now = Instant::now();
 
             // Emit initial state if this is the first call
-            if self.last_emitted_frequency.is_none() || self.last_emitted_mode.is_none() {
-                self.emit_sine_wave_state();
-                self.emit_mode_state();
+            if self.last_emitted_state.is_none() {
+                self.emit_state();
             }
 
-            // Only emit sine wave if machine is in Running mode
-            // The sine wave value is updated approximately 60 times per second
-            if now.duration_since(self.last_measurement_emit) > Duration::from_millis(16) {
-                self.emit_sine_wave();
+            // Only emit live values if machine is in Running mode
+            // The live values are updated approximately 60 times per second
+            if now.duration_since(self.last_measurement_emit) > Duration::from_secs_f64(1.0 / 60.0)
+            {
+                self.emit_live_values();
                 self.last_measurement_emit = now;
             }
         })

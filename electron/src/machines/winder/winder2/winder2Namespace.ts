@@ -5,16 +5,15 @@
 
 import { StoreApi } from "zustand";
 import { create } from "zustand";
-import { produce } from "immer";
 import { z } from "zod";
 import {
   EventHandler,
   eventSchema,
   Event,
-  handleEventValidationError,
   handleUnhandledEventError,
   NamespaceId,
   createNamespaceHookImplementation,
+  ThrottledStoreUpdater,
 } from "../../../client/socketioStore";
 import { MachineIdentificationUnique } from "@/machines/types";
 import { useMemo } from "react";
@@ -23,20 +22,66 @@ import {
   TimeSeries,
   TimeSeriesValue,
 } from "@/lib/timeseries";
+import { connected } from "process";
 
 // ========== Event Schema Definitions ==========
 
 /**
- * Traverse position event schema
+ * Consolidated live values event schema (60FPS data)
  */
-export const traversePositionEventDataSchema = z.object({
-  position: z.number().nullable(),
+export const liveValuesEventDataSchema = z.object({
+  traverse_position: z.number().nullable(),
+  puller_speed: z.number(),
+  spool_rpm: z.number(),
+  spool_diameter: z.number(),
+  tension_arm_angle: z.number(),
+  spool_progress: z.number(),
 });
 
 /**
- * Traverse state event schema
+ * Puller regulation type enum
  */
-export const traverseStateEventDataSchema = z.object({
+export const pullerRegulationSchema = z.enum(["Speed", "Diameter"]);
+export type PullerRegulation = z.infer<typeof pullerRegulationSchema>;
+
+/**
+ * Machine operation mode enum
+ */
+export const modeSchema = z.enum(["Standby", "Hold", "Pull", "Wind"]);
+export type Mode = z.infer<typeof modeSchema>;
+
+/**
+ * Machine operation mode enum
+ */
+export const spoolAutomaticActionModeSchema = z.enum([
+  "NoAction",
+  "Pull",
+  "Hold",
+]);
+
+export type SpoolAutomaticActionMode = z.infer<
+  typeof spoolAutomaticActionModeSchema
+>;
+
+/**
+ * Spool speed controller regulation mode enum
+ */
+export const spoolRegulationModeSchema = z.enum(["Adaptive", "MinMax"]);
+export type SpoolRegulationMode = z.infer<typeof spoolRegulationModeSchema>;
+
+export const spoolAutomaticActionStateSchema = z.object({
+  spool_required_meters: z.number(),
+  spool_automatic_action_mode: spoolAutomaticActionModeSchema,
+});
+
+export type SpoolAutomaticActionState = z.infer<
+  typeof spoolAutomaticActionStateSchema
+>;
+
+/**
+ * Traverse state schema
+ */
+export const traverseStateSchema = z.object({
   limit_inner: z.number(),
   limit_outer: z.number(),
   position_in: z.number(),
@@ -55,14 +100,9 @@ export const traverseStateEventDataSchema = z.object({
 });
 
 /**
- * Puller regulation type enum
+ * Puller state schema
  */
-export const pullerRegulationSchema = z.enum(["Speed", "Diameter"]);
-
-/**
- * Puller state event schema
- */
-export const pullerStateEventDataSchema = z.object({
+export const pullerStateSchema = z.object({
   regulation: pullerRegulationSchema,
   target_speed: z.number(),
   target_diameter: z.number(),
@@ -70,134 +110,89 @@ export const pullerStateEventDataSchema = z.object({
 });
 
 /**
- * Puller speed event schema
+ * Mode state schema
  */
-export const pullerSpeedEventDataSchema = z.object({
-  speed: z.number(),
-});
-
-/**
- * Autostop wounded length event schema
- */
-export const autostopWoundedLengthEventDataSchema = z.object({
-  wounded_length: z.number(),
-});
-
-/**
- * Autostop transition state enum
- */
-export const autostopTransitionSchema = z.enum(["Standby", "Pull"]);
-
-/**
- * Autostop state event schema
- */
-export const autostopStateEventDataSchema = z.object({
-  enabled: z.boolean(),
-  enabled_alarm: z.boolean(),
-  limit: z.number(),
-  transition: autostopTransitionSchema,
-});
-
-/**
- * Machine operation mode enum
- */
-export const modeSchema = z.enum(["Standby", "Hold", "Pull", "Wind"]);
-
-/**
- * Mode state event schema
- */
-export const modeStateEventDataSchema = z.object({
+export const modeStateSchema = z.object({
   mode: modeSchema,
   can_wind: z.boolean(),
 });
 
 /**
- * Measurements winding RPM event schema
+ *  Connected machine state scheme
  */
-export const spoolRpmEventDataSchema = z.object({
-  rpm: z.number(),
+export const machineIdentificationSchema = z.object({
+  vendor: z.number(),
+  machine: z.number(),
 });
 
-export const spoolStateEventDataSchema = z.object({
-  speed_min: z.number(),
-  speed_max: z.number(),
+export const machineIdentificationUniqueSchema = z.object({
+  machine_identification: machineIdentificationSchema,
+  serial: z.number(),
+});
+
+export const connectedMachineStateSchema = z.object({
+  machine_identification_unique: machineIdentificationUniqueSchema.nullable(),
+  is_available: z.boolean(),
 });
 
 /**
- * Measurements tension arm event schema
+ * Tension arm state schema
  */
-export const tensionArmAngleEventDataSchema = z.object({
-  degree: z.number(),
+export const tensionArmStateSchema = z.object({
+  zeroed: z.boolean(),
 });
 
-export const tensionArmStateEventDataSchema = z.object({
-  zeroed: z.boolean(),
+/**
+ * Spool speed controller state schema
+ */
+export const spoolSpeedControllerStateSchema = z.object({
+  regulation_mode: spoolRegulationModeSchema,
+  minmax_min_speed: z.number(),
+  minmax_max_speed: z.number(),
+  adaptive_tension_target: z.number(),
+  adaptive_radius_learning_rate: z.number(),
+  adaptive_max_speed_multiplier: z.number(),
+  adaptive_acceleration_factor: z.number(),
+  adaptive_deacceleration_urgency_multiplier: z.number(),
+});
+
+/**
+ * Consolidated state event schema (state changes only)
+ */
+export const stateEventDataSchema = z.object({
+  is_default_state: z.boolean(),
+  traverse_state: traverseStateSchema,
+  puller_state: pullerStateSchema,
+  mode_state: modeStateSchema,
+  tension_arm_state: tensionArmStateSchema,
+  spool_speed_controller_state: spoolSpeedControllerStateSchema,
+  spool_automatic_action_state: spoolAutomaticActionStateSchema,
+  connected_machine_state: connectedMachineStateSchema,
 });
 
 // ========== Event Schemas with Wrappers ==========
 
-export const traversePositionEventSchema = eventSchema(
-  traversePositionEventDataSchema,
-);
-export const traverseStateEventSchema = eventSchema(
-  traverseStateEventDataSchema,
-);
-export const pullerStateEventSchema = eventSchema(pullerStateEventDataSchema);
-export const pullerSpeedEventSchema = eventSchema(pullerSpeedEventDataSchema);
-export const autostopWoundedLengthEventSchema = eventSchema(
-  autostopWoundedLengthEventDataSchema,
-);
-export const autostopStateEventSchema = eventSchema(
-  autostopStateEventDataSchema,
-);
-export const modeStateEventSchema = eventSchema(modeStateEventDataSchema);
-export const spoolRpmEventSchema = eventSchema(spoolRpmEventDataSchema);
-export const spoolStateEventSchema = eventSchema(spoolStateEventDataSchema);
-export const tensionArmAngleEventSchema = eventSchema(
-  tensionArmAngleEventDataSchema,
-);
-export const tensionArmStateEventSchema = eventSchema(
-  tensionArmStateEventDataSchema,
-);
+export const liveValuesEventSchema = eventSchema(liveValuesEventDataSchema);
+export const stateEventSchema = eventSchema(stateEventDataSchema);
 
 // ========== Type Inferences ==========
 
-export type TraversePositionEvent = z.infer<
-  typeof traversePositionEventDataSchema
->;
-export type TraverseStateEvent = z.infer<typeof traverseStateEventSchema>;
-export type PullerStateEvent = z.infer<typeof pullerStateEventSchema>;
-export type PullerSpeedEvent = z.infer<typeof pullerSpeedEventSchema>;
-export type AutostopWoundedLengthEvent = z.infer<
-  typeof autostopWoundedLengthEventDataSchema
->;
-export type AutostopTransition = z.infer<typeof autostopTransitionSchema>;
-export type AutostopStateEvent = z.infer<typeof autostopStateEventSchema>;
-export type Mode = z.infer<typeof modeSchema>;
-export type ModeStateEvent = z.infer<typeof modeStateEventSchema>;
-export type SpoolStateEvent = z.infer<typeof spoolStateEventSchema>;
-export type MeasurementsWindingRpmEvent = z.infer<
-  typeof spoolRpmEventDataSchema
->;
-export type MeasurementsTensionArmEvent = z.infer<
-  typeof tensionArmAngleEventDataSchema
->;
-export type TensionArmStateEvent = z.infer<typeof tensionArmStateEventSchema>;
+export type StateEvent = z.infer<typeof stateEventSchema>;
+
+// Individual type exports for backward compatibility
 
 export type Winder2NamespaceStore = {
-  // State events (latest only)
-  traverseState: TraverseStateEvent | null;
-  pullerState: PullerStateEvent | null;
-  autostopState: AutostopStateEvent | null;
-  modeState: ModeStateEvent | null;
-  tensionArmState: TensionArmStateEvent | null;
+  // State event from server
+  state: StateEvent | null;
+  defaultState: StateEvent | null;
 
-  // Metric events (cached for 1 hour)
+  // Time series data for live values
   traversePosition: TimeSeries;
   pullerSpeed: TimeSeries;
-  autostopWoundedLength: TimeSeries;
   spoolRpm: TimeSeries;
+  spoolDiameter: TimeSeries;
   tensionArmAngle: TimeSeries;
+  spoolProgress: TimeSeries;
 };
 
 // Constants for time durations
@@ -205,12 +200,11 @@ const TWENTY_MILLISECOND = 20;
 const ONE_SECOND = 1000;
 const FIVE_SECOND = 5 * ONE_SECOND;
 const ONE_HOUR = 60 * 60 * ONE_SECOND;
+
+const { initialTimeSeries: spoolProgress, insert: addSpoolProgress } =
+  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
 const { initialTimeSeries: traversePosition, insert: addTraversePosition } =
   createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
-const {
-  initialTimeSeries: autostopWoundedLength,
-  insert: addAutostopWoundedLength,
-} = createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
 const { initialTimeSeries: pullerSpeed, insert: addPullerSpeed } =
   createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
 const { initialTimeSeries: spoolRpm, insert: addSpoolRpm } = createTimeSeries(
@@ -219,6 +213,8 @@ const { initialTimeSeries: spoolRpm, insert: addSpoolRpm } = createTimeSeries(
   FIVE_SECOND,
   ONE_HOUR,
 );
+const { initialTimeSeries: spoolDiameter, insert: addSpoolDiameter } =
+  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
 const { initialTimeSeries: tensionArmAngle, insert: addTensionArmAngle } =
   createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
 
@@ -230,19 +226,17 @@ export const createWinder2NamespaceStore =
   (): StoreApi<Winder2NamespaceStore> =>
     create<Winder2NamespaceStore>(() => {
       return {
-        // State events (latest only)
-        traverseState: null,
-        pullerState: null,
-        autostopState: null,
-        modeState: null,
-        tensionArmState: null,
+        // State event from server
+        state: null,
+        defaultState: null,
 
-        // Metric events (cached for 1 hour)
+        // Time series data for live values
         traversePosition,
         pullerSpeed,
-        autostopWoundedLength,
         spoolRpm,
+        spoolDiameter,
         tensionArmAngle,
+        spoolProgress,
       };
     });
 /**
@@ -252,136 +246,121 @@ export const createWinder2NamespaceStore =
 /**
  * Creates a message handler for Winder2 namespace events with validation and appropriate caching strategies
  * @param store The store to update when messages are received
+ * @param throttledUpdater Throttled updater for batching updates at 60 FPS
  * @returns A message handler function
  */
 export function winder2MessageHandler(
   store: StoreApi<Winder2NamespaceStore>,
+  throttledUpdater: ThrottledStoreUpdater<Winder2NamespaceStore>,
 ): EventHandler {
   return (event: Event<any>) => {
     const eventName = event.name;
 
+    // Helper function to update store through buffer
+    const updateStore = (
+      updater: (state: Winder2NamespaceStore) => Winder2NamespaceStore,
+    ) => {
+      throttledUpdater.updateWith(updater);
+    };
+
     try {
-      // Apply appropriate caching strategy based on event type
-      // State events (keep only the latest)
-      if (eventName === "TraverseStateEvent") {
-        const parsed = traverseStateEventSchema.parse(event);
-        console.log("TraverseStateEvent", parsed);
-        store.setState(
-          produce(store.getState(), (state) => {
-            state.traverseState = parsed;
-          }),
-        );
-      } else if (eventName === "PullerStateEvent") {
-        const parsed = pullerStateEventSchema.parse(event);
-        console.log("PullerStateEvent", parsed);
-        store.setState(
-          produce(store.getState(), (state) => {
-            state.pullerState = parsed;
-          }),
-        );
-      } else if (eventName === "AutostopStateEvent") {
-        const parsed = autostopStateEventSchema.parse(event);
-        console.log("AutostopStateEvent", parsed);
-        store.setState(
-          produce(store.getState(), (state) => {
-            state.autostopState = parsed;
-          }),
-        );
-      } else if (eventName === "ModeStateEvent") {
-        const parsed = modeStateEventSchema.parse(event);
-        console.log("ModeStateEvent", parsed);
-        store.setState(
-          produce(store.getState(), (state) => {
-            state.modeState = parsed;
-          }),
-        );
-      } else if (eventName === "TensionArmStateEvent") {
-        const parsed = tensionArmStateEventSchema.parse(event);
-        console.log("TensionArmStateEvent", parsed);
-        store.setState(
-          produce(store.getState(), (state) => {
-            state.tensionArmState = parsed;
-          }),
-        );
-      }
-      // Metric events (keep for 1 hour)
-      else if (eventName === "TraversePositionEvent") {
-        const parsed = traversePositionEventSchema.parse(event);
-        const timeseriesValue: TimeSeriesValue = {
-          value: parsed.data.position ?? 0,
-          timestamp: event.ts,
-        };
-        store.setState(
-          produce(store.getState(), (state) => {
-            state.traversePosition = addTraversePosition(
+      if (eventName === "StateEvent") {
+        // Parse and validate the state event
+        const stateEvent = stateEventSchema.parse(event);
+
+        updateStore((state) => ({
+          ...state,
+          state: stateEvent,
+          // only set default state if is_default_state is true
+          defaultState: stateEvent.data.is_default_state
+            ? stateEvent
+            : state.defaultState,
+        }));
+      } else if (eventName === "LiveValuesEvent") {
+        // Parse and validate the live values event
+        const liveValuesEvent = liveValuesEventSchema.parse(event);
+
+        // Extract values and add to time series
+        const {
+          traverse_position,
+          puller_speed,
+          spool_rpm,
+          spool_diameter,
+          tension_arm_angle,
+          spool_progress,
+        } = liveValuesEvent.data;
+        const timestamp = liveValuesEvent.ts;
+
+        updateStore((state) => {
+          const newState = { ...state };
+          // Add traverse position if not null
+          if (traverse_position !== null) {
+            const timeseriesValue: TimeSeriesValue = {
+              value: traverse_position,
+              timestamp,
+            };
+            newState.traversePosition = addTraversePosition(
               state.traversePosition,
               timeseriesValue,
             );
-          }),
-        );
-      } else if (eventName === "PullerSpeedEvent") {
-        const parsed = pullerSpeedEventSchema.parse(event);
-        const timeseriesValue: TimeSeriesValue = {
-          value: parsed.data.speed,
-          timestamp: event.ts,
-        };
-        store.setState(
-          produce(store.getState(), (state) => {
-            state.pullerSpeed = addPullerSpeed(
-              state.pullerSpeed,
+          }
+
+          if (spoolProgress !== null) {
+            const timeseriesValue: TimeSeriesValue = {
+              value: spool_progress,
+              timestamp,
+            };
+            newState.spoolProgress = addSpoolProgress(
+              state.spoolProgress,
               timeseriesValue,
             );
-          }),
-        );
-      } else if (eventName === "AutostopWoundedLengthEvent") {
-        const parsed = autostopWoundedLengthEventSchema.parse(event);
-        const timeseriesValue: TimeSeriesValue = {
-          value: parsed.data.wounded_length,
-          timestamp: event.ts,
-        };
-        store.setState(
-          produce(store.getState(), (state) => {
-            state.autostopWoundedLength = addAutostopWoundedLength(
-              state.autostopWoundedLength,
-              timeseriesValue,
-            );
-          }),
-        );
-      } else if (eventName === "SpoolRpmEvent") {
-        const parsed = spoolRpmEventSchema.parse(event);
-        const timeseriesValue: TimeSeriesValue = {
-          value: parsed.data.rpm,
-          timestamp: event.ts,
-        };
-        store.setState(
-          produce(store.getState(), (state) => {
-            state.spoolRpm = addSpoolRpm(state.spoolRpm, timeseriesValue);
-          }),
-        );
-      } else if (eventName === "TensionArmAngleEvent") {
-        const parsed = tensionArmAngleEventSchema.parse(event);
-        const timeseriesValue: TimeSeriesValue = {
-          value: parsed.data.degree,
-          timestamp: event.ts,
-        };
-        store.setState(
-          produce(store.getState(), (state) => {
-            state.tensionArmAngle = addTensionArmAngle(
-              state.tensionArmAngle,
-              timeseriesValue,
-            );
-          }),
-        );
+          }
+
+          // Add puller speed
+          const pullerSpeedValue: TimeSeriesValue = {
+            value: puller_speed,
+            timestamp,
+          };
+          newState.pullerSpeed = addPullerSpeed(
+            state.pullerSpeed,
+            pullerSpeedValue,
+          );
+
+          // Add spool RPM
+          const spoolRpmValue: TimeSeriesValue = {
+            value: spool_rpm,
+            timestamp,
+          };
+          newState.spoolRpm = addSpoolRpm(state.spoolRpm, spoolRpmValue);
+
+          // Add spool diameter
+          const spoolDiameterValue: TimeSeriesValue = {
+            value: spool_diameter,
+            timestamp,
+          };
+          newState.spoolDiameter = addSpoolDiameter(
+            state.spoolDiameter,
+            spoolDiameterValue,
+          );
+
+          // Add tension arm angle
+          const tensionArmAngleValue: TimeSeriesValue = {
+            value: tension_arm_angle,
+            timestamp,
+          };
+          newState.tensionArmAngle = addTensionArmAngle(
+            state.tensionArmAngle,
+            tensionArmAngleValue,
+          );
+
+          return newState;
+        });
       } else {
         handleUnhandledEventError(eventName);
       }
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        handleEventValidationError(error, eventName);
-      } else {
-        console.error(`Unexpected error processing ${eventName} event:`, error);
-        throw error;
-      }
+      console.error(`Unexpected error processing ${eventName} event:`, error);
+      throw error;
     }
   };
 }
