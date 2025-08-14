@@ -31,7 +31,7 @@ export const liveMotorStatusDataSchema = z.object({
 });
 export type MotorStatus = z.infer<typeof liveMotorStatusDataSchema>;
 /**
- * Consolidated live values event schema (60FPS data)
+ * Consolidated live values event schema (30FPS data)
  */
 export const liveValuesEventDataSchema = z.object({
   motor_status: liveMotorStatusDataSchema,

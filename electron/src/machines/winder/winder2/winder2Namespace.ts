@@ -27,7 +27,7 @@ import { connected } from "process";
 // ========== Event Schema Definitions ==========
 
 /**
- * Consolidated live values event schema (60FPS data)
+ * Consolidated live values event schema (30FPS data)
  */
 export const liveValuesEventDataSchema = z.object({
   traverse_position: z.number().nullable(),
@@ -246,7 +246,7 @@ export const createWinder2NamespaceStore =
 /**
  * Creates a message handler for Winder2 namespace events with validation and appropriate caching strategies
  * @param store The store to update when messages are received
- * @param throttledUpdater Throttled updater for batching updates at 60 FPS
+ * @param throttledUpdater Throttled updater for batching updates at 30 FPS
  * @returns A message handler function
  */
 export function winder2MessageHandler(

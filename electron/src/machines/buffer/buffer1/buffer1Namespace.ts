@@ -30,7 +30,7 @@ export const modeSchema = z.enum([
 export type Mode = z.infer<typeof modeSchema>;
 
 /**
- * Consolidated live values event schema (60FPS data)
+ * Consolidated live values event schema (30FPS data)
  */
 export const liveValuesEventDataSchema = z.object({});
 
@@ -85,7 +85,7 @@ export type Buffer1NamespaceStore = {
 /**
  * Creates a message handler for Buffer1 namespace events with validation and appropriate caching strategies
  * @param store The store to update when messages are received
- * @param throttledUpdater Throttled updater for batching updates at 60 FPS
+ * @param throttledUpdater Throttled updater for batching updates at 30 FPS
  * @returns A message handler function
  */
 export function buffer1MessageHandler(

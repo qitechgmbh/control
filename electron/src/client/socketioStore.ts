@@ -7,16 +7,17 @@ import { useSyncExternalStore } from "react";
 import { z } from "zod";
 import { toastError, toastZodError } from "@/components/Toast";
 import { MachineIdentificationUnique } from "@/machines/types";
+import { FPS_30 } from "@/lib/constants";
 
 /**
- * Simple buffer-based store updater to limit React re-renders to ~60 FPS
- * Writes events to a plain JS object and syncs to store every 16ms
+ * Simple buffer-based store updater to limit React re-renders to ~30 FPS
+ * Writes events to a plain JS object and syncs to store every 33ms
  */
 export class ThrottledStoreUpdater<S> {
   private store: StoreApi<S>;
   private buffer: S;
   private syncTimer: NodeJS.Timeout | null = null;
-  private readonly syncDelay = 1000 / 60; // ~60 FPS (16.67ms)
+  private readonly syncDelay = FPS_30; // ~30 FPS (33.33ms)
 
   constructor(store: StoreApi<S>) {
     this.store = store;

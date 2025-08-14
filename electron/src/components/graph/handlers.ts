@@ -1,6 +1,7 @@
 import { RefObject } from "react";
 import uPlot from "uplot";
 import { GraphConfig, HandlerRefs } from "./types";
+import { FPS_30 } from "@/lib/constants";
 
 export interface HandlerCallbacks {
   updateYAxisScale: (xMin?: number, xMax?: number) => void;
@@ -40,13 +41,13 @@ export function createEventHandlers(
       if (callbackTimeouts.zoom) clearTimeout(callbackTimeouts.zoom);
       callbackTimeouts.zoom = setTimeout(() => {
         callbacks.onZoomChange?.(graphId, range);
-      }, 16); // ~60fps
+      }, FPS_30);
     },
     onViewModeChange: (mode: "default" | "all" | "manual", isLive: boolean) => {
       if (callbackTimeouts.viewMode) clearTimeout(callbackTimeouts.viewMode);
       callbackTimeouts.viewMode = setTimeout(() => {
         callbacks.onViewModeChange?.(graphId, mode, isLive);
-      }, 16);
+      }, FPS_30);
     },
   };
 
