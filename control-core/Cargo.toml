@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+uom = "0.37.0"
 anyhow = "1.0.98"
 axum = "0.8.4"
 ethercat_hal = { path = "../ethercat-hal" }
