@@ -160,7 +160,7 @@ pub fn lock_memory() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-pub fn set_core_affinity_first_core(core_id: usize) -> Result<(), anyhow::Error> {
+pub fn set_core_affinity(core_id: usize) -> Result<(), anyhow::Error> {
     let cores = core_affinity::get_core_ids().unwrap_or_default();
     let core = cores.get(core_id);
     if let Some(core) = core {

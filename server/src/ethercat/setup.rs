@@ -13,7 +13,7 @@ use control_core::machines::identification::{
     DeviceHardwareIdentification, DeviceHardwareIdentificationEthercat, DeviceIdentification,
 };
 use control_core::machines::new::MachineNewHardwareEthercat;
-use control_core::realtime::{set_core_affinity_first_core, set_realtime_priority};
+use control_core::realtime::{set_core_affinity, set_realtime_priority};
 use control_core::socketio::namespace::NamespaceCacheingLogic;
 use ethercat_hal::devices::devices_from_subdevices;
 #[cfg(not(all(target_os = "linux", feature = "io-uring")))]
@@ -49,7 +49,7 @@ pub async fn setup_loop(
             send_panic(thread_panic_tx_clone);
 
             // Set core affinity to second core
-            let _ = set_core_affinity_first_core(1);
+            let _ = set_core_affinity(3);
 
             // Set the thread to real-time priority
             let _ = set_realtime_priority();

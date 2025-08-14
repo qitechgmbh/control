@@ -56,6 +56,10 @@
     "oops=panic"            # Treat kernel oops as panic for auto-recovery
     "usbcore.autosuspend=-1"     # Possibly fixes dre disconnect issue?
 
+    "isolcpus=2,3"
+    "nohz_full=2,3"
+    "rcu_nocbs=2,3"
+
   ];
 
   # Add these system settings for a more comprehensive kiosk setup
