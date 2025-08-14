@@ -45,7 +45,7 @@ export function PresetShowDialog<T extends PresetSchema>({
         <DialogHeader>
           <DialogTitle className="flex flex-row items-center gap-2">
             <Icon name="lu:Save" />
-            {preset.name}
+            <span className="w-100 text-center">{preset.name}</span>
           </DialogTitle>
           <DialogDescription>
             Applying presets carelessly might damage machines.

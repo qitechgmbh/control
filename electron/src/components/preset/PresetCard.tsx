@@ -1,9 +1,64 @@
-import React from "react";
+import React, { useState } from "react";
 import { Preset, PresetSchema } from "@/lib/preset/preset";
 import { TouchButton } from "@/components/touch/TouchButton";
 import { PresetShowDialog } from "./PresetShowDialog";
 import { Icon } from "../Icon";
 import { PresetPreviewEntries } from "./PresetPreviewTable";
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
+
+type PresetCardMenu = {
+  onOverwrite?: () => void;
+  onDelete?: () => void;
+  onExport?: () => void;
+};
+
+export function PresetCardMenu({
+  onOverwrite,
+  onDelete,
+  onExport,
+}: PresetCardMenu) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <TouchButton variant="outline" icon="lu:Menu" />
+      </PopoverTrigger>
+
+      <PopoverContent className="flex flex-col gap-4">
+        {onOverwrite && (
+          <TouchButton
+            className="flex-shrink-0"
+            variant="outline"
+            onClick={onOverwrite}
+          >
+            <Icon name="lu:HardDriveUpload" />
+            Overwrite
+          </TouchButton>
+        )}
+        {onExport && (
+          <TouchButton
+            className="flex-shrink-0"
+            variant="outline"
+            onClick={onExport}
+          >
+            <Icon name="lu:Download" />
+            Export
+          </TouchButton>
+        )}
+        {onDelete && (
+          <TouchButton
+            className="flex-shrink-0"
+            variant="destructive"
+            onClick={onDelete}
+          >
+            Delete
+          </TouchButton>
+        )}
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 export type PresetCardProps<T extends PresetSchema> = {
   preset: Preset<T>;
@@ -32,9 +87,11 @@ export function PresetCard<T extends PresetSchema>({
     <div className="flex flex-row items-center gap-4 rounded-3xl border border-gray-200 bg-white p-4 shadow">
       <div className="min-w-0 flex-1">
         <div>
-          <div className="flex flex-row gap-2 truncate text-lg font-semibold">
+          <div className="flex flex-row gap-2 text-lg font-semibold">
             {isActive && <Icon name="lu:Check" className="text-green-500" />}
-            {preset.name}
+            <span title={preset.name} className="w-60 truncate">
+              {preset.name}
+            </span>
           </div>
           {!hideDate && (
             <div className="text-sm text-gray-500">
@@ -47,40 +104,20 @@ export function PresetCard<T extends PresetSchema>({
         </div>
       </div>
       <div className="flex gap-2">
-        {!isReadOnly && (
-          <TouchButton
-            className="flex-shrink-0"
-            variant="outline"
-            onClick={() => onOverwrite(preset)}
-          >
-            <Icon name="lu:HardDriveUpload" />
-            Overwrite
-          </TouchButton>
-        )}
         <PresetShowDialog
           preset={preset}
           onApply={onApply}
           previewEntries={previewEntries}
           hideDate={hideDate}
         />
-        {onExport && (
-          <TouchButton
-            className="flex-shrink-0"
-            variant="outline"
-            onClick={() => onExport(preset)}
-          >
-            <Icon name="lu:Download" />
-            Export
-          </TouchButton>
-        )}
-        {!isReadOnly && (
-          <TouchButton
-            className="flex-shrink-0"
-            variant="destructive"
-            onClick={() => onDelete(preset)}
-          >
-            Delete
-          </TouchButton>
+        {isReadOnly ? (
+          <TouchButton variant="outline" icon="lu:Menu" disabled />
+        ) : (
+          <PresetCardMenu
+            onOverwrite={() => onOverwrite(preset)}
+            onDelete={() => onDelete(preset)}
+            onExport={() => onExport && onExport(preset)}
+          />
         )}
       </div>
     </div>
