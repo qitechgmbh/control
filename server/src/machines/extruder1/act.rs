@@ -36,9 +36,9 @@ impl MachineAct for ExtruderV2 {
 
             let now = Instant::now();
 
-            if now.duration_since(self.last_measurement_emit) > Duration::from_secs_f64(1.0 / 60.0)
+            if now.duration_since(self.last_measurement_emit) > Duration::from_secs_f64(1.0 / 30.0)
             {
-                // Emit live values at 60 FPS
+                // Emit live values at 30 FPS
                 self.emit_live_values();
                 self.last_measurement_emit = now;
             }

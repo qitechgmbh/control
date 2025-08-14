@@ -25,7 +25,7 @@ impl MachineAct for LaserMachine {
     fn act(&mut self, now: Instant) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
         Box::pin(async move {
             // The live values are updated approximately 60 times per second
-            if now.duration_since(self.last_measurement_emit) > Duration::from_secs_f64(1.0 / 60.0)
+            if now.duration_since(self.last_measurement_emit) > Duration::from_secs_f64(1.0 / 30.0)
             {
                 self.emit_live_values();
                 self.last_measurement_emit = now;
