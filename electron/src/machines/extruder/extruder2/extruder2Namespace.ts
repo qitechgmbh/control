@@ -92,6 +92,8 @@ export const heatingStateSchema = z.object({
   wiring_error: z.boolean(),
 });
 
+export type HeatingState = z.infer<typeof heatingStateSchema>;
+
 /**
  * Heating states schema
  */

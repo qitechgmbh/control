@@ -4,6 +4,7 @@
     "target": "ESNext",
     "module": "CommonJS",
     "lib": ["dom", "ESNext"],
+    "skipLibCheck": true,
     "experimentalDecorators": true,
     "composite": true,
     "declaration": true,

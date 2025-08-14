@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import {
   processMarkdownImages,
   createImageImports,
-} from "@/utils/markdownImages";
+} from "@/lib/markdown/images";
 
 /**
  * Hook for processing markdown content with image imports
