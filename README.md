@@ -4,6 +4,9 @@
 
 QiTech Control is an industrial control panel software for the next generation of QiTech recycling machines built on top of Beckhoff Automation hardware.
 
+[![](https://img.youtube.com/vi/KI3YeBwfV-s/maxresdefault.jpg)](https://www.youtube.com/watch?v=KI3YeBwfV-s)
+*Click here to watch a video demo of our software.*
+
 # Repo Structure
 
 Frontend
