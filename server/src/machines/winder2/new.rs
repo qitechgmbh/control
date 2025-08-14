@@ -18,7 +18,7 @@ use control_core::machines::new::{
 use control_core::uom_extensions::velocity::meter_per_minute;
 use ethercat_hal::coe::ConfigurableDevice;
 use ethercat_hal::devices::ek1100::EK1100;
-use ethercat_hal::devices::el2002::{EL2002, EL2002Port};
+use ethercat_hal::devices::el2002::{EL2002, EL2002_IDENTITY_B, EL2002Port};
 use ethercat_hal::devices::el7031::coe::EL7031Configuration;
 use ethercat_hal::devices::el7031::pdo::EL7031PredefinedPdoAssignment;
 use ethercat_hal::devices::el7031::{
@@ -129,7 +129,7 @@ impl MachineNewTrait for Winder2 {
                 let subdevice = get_subdevice_by_index(hardware.subdevices, subdevice_index)?;
                 let subdevice_identity = subdevice.identity();
                 let device = match subdevice_identity_to_tuple(&subdevice_identity) {
-                    EL2002_IDENTITY_A => {
+                    EL2002_IDENTITY_A | EL2002_IDENTITY_B => {
                         let ethercat_device = get_ethercat_device_by_index(
                             &hardware.ethercat_devices,
                             subdevice_index,
