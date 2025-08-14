@@ -24,7 +24,7 @@ import {
 
 // ========== Event Schema Definitions ==========
 /**
- * Live values from Laser (60 FPS)
+ * Live values from Laser (30 FPS)
  */
 export const liveValuesEventDataSchema = z.object({
   diameter: z.number(),
@@ -86,7 +86,7 @@ export const createLaser1NamespaceStore = (): StoreApi<Laser1NamespaceStore> =>
 /**
  * Creates a message handler for Laser1 namespace events with validation and appropriate caching strategies
  * @param store The store to update when messages are received
- * @param throttledUpdater Throttled updater for batching updates at 60 FPS
+ * @param throttledUpdater Throttled updater for batching updates at 30 FPS
  * @returns A message handler function
  */
 export function laser1MessageHandler(
