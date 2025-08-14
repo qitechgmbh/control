@@ -5,13 +5,15 @@ updates:
     schedule:
       interval: "monthly"
     ignore:
-      - dependency-type: "all"
-        update-types: ["version-update:semver-minor"]
+    - dependency-name: "*"
+      update-types:
+        - "version-update:semver-minor"
 
   - package-ecosystem: "cargo"
     directory: "/"
     schedule:
       interval: "monthly"
     ignore:
-      - dependency-type: "all"
-        update-types: ["version-update:semver-minor"]
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-minor"
