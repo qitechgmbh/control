@@ -32,9 +32,9 @@ export function PresetCard<T extends PresetSchema>({
     <div className="flex flex-row items-center gap-4 rounded-3xl border border-gray-200 bg-white p-4 shadow">
       <div className="min-w-0 flex-1">
         <div>
-          <div className="flex flex-row gap-2 truncate text-lg font-semibold">
+          <div className="flex flex-row gap-2 text-lg font-semibold">
             {isActive && <Icon name="lu:Check" className="text-green-500" />}
-            {preset.name}
+            <span className="w-60 truncate">{preset.name}</span>
           </div>
           {!hideDate && (
             <div className="text-sm text-gray-500">
