@@ -56,9 +56,9 @@
     "oops=panic"            # Treat kernel oops as panic for auto-recovery
     "usbcore.autosuspend=-1"     # Possibly fixes dre disconnect issue?
 
-    "isolcpus=2,3"
-    "nohz_full=2,3"
-    "rcu_nocbs=2,3"
+    "isolcpus=2,3" # Isolate cpus 2 and 3 from scheduler for better latency, 2 runs ethercatthread and 3 runs server control-loop
+    "nohz_full=2,3" # In this mode, the periodic scheduler tick is stopped when only one task is running, reducing kernel interruptions on those CPUs.
+    "rcu_nocbs=2,3" # Moves RCU (Read-Copy Update) callback processing away from CPUs 2 and 3.
 
   ];
 

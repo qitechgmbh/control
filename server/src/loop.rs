@@ -20,7 +20,7 @@ pub fn init_loop(
             let rt = smol::LocalExecutor::new();
             let mut throttle = LoopThrottle::new(Duration::from_millis(1), 10, None);
 
-            // Set core affinity to first core
+            // Set core affinity to third core
             let _ = set_core_affinity(2);
 
             // Set the thread to real-time priority
