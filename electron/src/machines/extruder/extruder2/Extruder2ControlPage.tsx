@@ -30,7 +30,9 @@ export function Extruder2ControlPage() {
 
     motorScrewRpm,
     motorPower,
+    motorCurrent,
     combinedPower,
+    totalEnergyKWh,
 
     setExtruderMode,
     setBackHeatingTemperature,
@@ -224,13 +226,33 @@ export function Extruder2ControlPage() {
           />
         </ControlCard>
 
-        <ControlCard className="bg-blue" title="Total Power Consumption">
+        <ControlCard className="bg-blue" title="Power Consumption">
           <TimeSeriesValueNumeric
-            label=""
+            label="Total Power"
             unit="W"
             renderValue={(value) => roundToDecimals(value, 1)}
             timeseries={combinedPower}
           />
+          <TimeSeriesValueNumeric
+            label="Motor Power"
+            unit="W"
+            renderValue={(value) => roundToDecimals(value, 1)}
+            timeseries={motorPower}
+          />
+          <TimeSeriesValueNumeric
+            label="Motor Current"
+            unit="A"
+            renderValue={(value) => roundToDecimals(value, 1)}
+            timeseries={motorCurrent}
+          />
+          <Label label="Total Energy">
+            <div className="flex flex-row items-center gap-4">
+              <span className="font-mono text-4xl font-bold">
+                {roundToDecimals(totalEnergyKWh ?? 0, 3)}
+              </span>
+              <span>kWh</span>
+            </div>
+          </Label>
         </ControlCard>
       </ControlGrid>
     </Page>
