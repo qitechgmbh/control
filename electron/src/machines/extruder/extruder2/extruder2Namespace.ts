@@ -202,8 +202,14 @@ export type Extruder2NamespaceStore = {
   // Combined power consumption
   combinedPower: TimeSeries;
 
+<<<<<<< HEAD
   // Total energy consumption time series in kWh
   totalEnergyKWh: TimeSeries;
+=======
+  // Cumulative total energy (session) derived from combinedPower in kWh
+  totalEnergyKWh: number;
+  lastEnergyTimestamp: number | null;
+>>>>>>> 6801adc (Add support for kWh unit and track total energy consumption in extruder control. Add Motor Power and Current to Control Page)
 };
 
 // Constants for time durations
