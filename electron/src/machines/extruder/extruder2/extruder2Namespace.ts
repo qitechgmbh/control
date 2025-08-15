@@ -43,6 +43,7 @@ export const liveValuesEventDataSchema = z.object({
   front_power: z.number(),
   back_power: z.number(),
   middle_power: z.number(),
+  total_power: z.number(),
 });
 
 /**
@@ -303,13 +304,8 @@ export function extruder2MessageHandler(
         const liveValuesEvent = liveValuesEventSchema.parse(event);
         const timestamp = event.ts;
         updateStore((state) => {
-          // Compute instantaneous total combined power (W)
-          const totalPowerW =
-            liveValuesEvent.data.motor_status.power +
-            liveValuesEvent.data.nozzle_power +
-            liveValuesEvent.data.front_power +
-            liveValuesEvent.data.middle_power +
-            liveValuesEvent.data.back_power;
+          // Use total power from the backend (already calculated in Rust)
+          const totalPowerW = liveValuesEvent.data.total_power;
 
           // Integrate energy since last timestamp (convert to kWh)
           let cumulativeEnergyKWh = state.cumulativeEnergyKWh ?? 0;

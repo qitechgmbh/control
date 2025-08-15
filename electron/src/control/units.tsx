@@ -32,7 +32,7 @@ export function getUnitIcon(unit: Unit): IconName {
     case "A":
       return "lu:Zap";
     case "kWh":
-      return "lu:Zap";
+      return "lu:BatteryFull";
     default:
       return "lu:ChartNoAxesColumn";
   }

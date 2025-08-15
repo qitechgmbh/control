@@ -1,6 +1,6 @@
 use api::{
     ExtruderSettingsState, ExtruderV2Events, ExtruderV2Namespace, HeatingState, HeatingStates,
-    InverterStatusState, LiveValuesEvent, ModeState, PidSettings, PidSettingsStates, PressureState,
+    InverterStatusState, LiveValuesEvent, ModeState, MotorStatusValues, PidSettings, PidSettingsStates, PressureState,
     RegulationState, RotationState, ScrewState, StateEvent,
 };
 use control_core::{
@@ -95,8 +95,25 @@ impl ExtruderV2 {
 
 impl ExtruderV2 {
     pub fn emit_live_values(&mut self) {
+        let motor_status: MotorStatusValues = self.screw_speed_controller.get_motor_status().into();
+        let nozzle_power = self
+            .temperature_controller_nozzle
+            .get_heating_element_wattage();
+        let front_power = self
+            .temperature_controller_front
+            .get_heating_element_wattage();
+        let back_power = self
+            .temperature_controller_back
+            .get_heating_element_wattage();
+        let middle_power = self
+            .temperature_controller_middle
+            .get_heating_element_wattage();
+
+        // Calculate total power combining motor power and all heating powers
+        let total_power = motor_status.power + nozzle_power + front_power + back_power + middle_power;
+
         let live_values = LiveValuesEvent {
-            motor_status: self.screw_speed_controller.get_motor_status().into(),
+            motor_status,
             pressure: self.screw_speed_controller.get_pressure().get::<bar>(),
             nozzle_temperature: self
                 .temperature_controller_nozzle
@@ -118,18 +135,11 @@ impl ExtruderV2 {
                 .heating
                 .temperature
                 .get::<degree_celsius>(),
-            nozzle_power: self
-                .temperature_controller_nozzle
-                .get_heating_element_wattage(),
-            front_power: self
-                .temperature_controller_front
-                .get_heating_element_wattage(),
-            back_power: self
-                .temperature_controller_back
-                .get_heating_element_wattage(),
-            middle_power: self
-                .temperature_controller_middle
-                .get_heating_element_wattage(),
+            nozzle_power,
+            front_power,
+            back_power,
+            middle_power,
+            total_power,
         };
 
         let event = live_values.build();

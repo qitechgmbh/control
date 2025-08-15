@@ -23,11 +23,11 @@ use uom::si::{
 
 #[derive(Debug, Clone, Default, Serialize)]
 pub struct MotorStatusValues {
-    screw_rpm: f64, // rpm of motor
-    frequency: f64, // frequency of motor
-    voltage: f64,   // volt used for motor
-    current: f64,   // current used for the motor
-    power: f64,     // power in watts
+    pub screw_rpm: f64, // rpm of motor
+    pub frequency: f64, // frequency of motor
+    pub voltage: f64,   // volt used for motor
+    pub current: f64,   // current used for the motor
+    pub power: f64,     // power in watts
 }
 
 impl From<MotorStatus> for MotorStatusValues {
@@ -67,6 +67,8 @@ pub struct LiveValuesEvent {
     pub back_power: f64,
     /// middle heating power in watts
     pub middle_power: f64,
+    /// total combined power in watts
+    pub total_power: f64,
 }
 
 impl LiveValuesEvent {
