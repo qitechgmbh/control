@@ -24,6 +24,7 @@ export function Extruder2GraphsPage() {
     motorCurrent,
     motorVoltage,
     motorPower,
+    combinedPower,
   } = useExtruder2();
 
   const syncHook = useGraphSync(30 * 60 * 1000, "extruder-graphs");
@@ -147,6 +148,15 @@ export function Extruder2GraphsPage() {
           },
         ]
       : []),
+    ...(middlePower
+      ? [
+          {
+            newData: middlePower,
+            title: "Middle",
+            color: "#8b5cf6",
+          },
+        ]
+      : []),
     ...(backPower
       ? [
           {
@@ -156,12 +166,21 @@ export function Extruder2GraphsPage() {
           },
         ]
       : []),
-    ...(middlePower
+    ...(motorPower
       ? [
           {
-            newData: middlePower,
-            title: "Middle",
-            color: "#8b5cf6",
+            newData: motorPower,
+            title: "Motor",
+            color: "#10b981",
+          },
+        ]
+      : []),
+    ...(combinedPower
+      ? [
+          {
+            newData: combinedPower,
+            title: "Total",
+            color: "#000000",
           },
         ]
       : []),
