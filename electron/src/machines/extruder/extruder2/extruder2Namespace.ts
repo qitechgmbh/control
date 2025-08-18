@@ -204,7 +204,7 @@ export type Extruder2NamespaceStore = {
 
   // Total energy consumption time series in kWh
   totalEnergyKWh: TimeSeries;
-  
+
   // Internal tracking for cumulative energy calculation
   cumulativeEnergyKWh: number;
   lastEnergyTimestamp: number | null;
