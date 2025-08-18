@@ -230,8 +230,6 @@
   hardware.graphics = {
     enable = true;
     extraPackages = with pkgs; [mesa ];
-    driSupport = true;
-    driSupport32Bit = true;
   };
 
 
