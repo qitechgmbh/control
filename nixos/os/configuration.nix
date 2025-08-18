@@ -204,7 +204,7 @@
 
   hardware.opengl = {
     enable = true;
-    extraPackages = with pkgs; [mesa mesa_drivers];
+    extraPackages = with pkgs; [mesa];
   };
 
   # Enable touchpad support (enabled default in most desktopManager).
