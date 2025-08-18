@@ -96,16 +96,18 @@ installPhase = ''
     cat > $out/bin/qitech-control-electron << EOF
     #!/bin/sh
     cd $out/share/qitech-control-electron
-    exec nice -n -12 ${electron}/bin/electron "$out/share/qitech-control-electron" \
+    # enable gpu and ignore driver blacklists for electron
+    # gpu drivers may be blacklisted because of the usage of PREEMPT_RT Kernel
+    exec nice -n -20 ${electron}/bin/electron "$out/share/qitech-control-electron" \
       --no-sandbox \
       --class=de.qitech.control-electron \
       --name="QiTech Control" \
       --single-instance \
       --winrm-class="de.qitech.control-electron" \
-      --enable-gpu \
+      --enable-gpu \ 
       --ignore-gpu-blocklist \
       --enable-gpu-rasterization \
-      --disable-software-rasterizer \
+      --disable-software-rasterizer \ 
       --use-gl=desktop \
       "\$@"
     EOF
