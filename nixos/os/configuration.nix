@@ -17,7 +17,7 @@
   };
   boot.loader.efi.canTouchEfiVariables = true;
 
-  boot.kernelPackages = pkgs.linuxPackages-rt_latest;
+  boot.kernelPackages = pkgs.linuxPackagesFor pkgs.linuxPackages-rt;
   boot.kernelModules = [ "i915" ];
 
   # Force-enable Intel i915 DRM render node support in PREEMPT_RT kernel
@@ -178,8 +178,13 @@
   systemd.targets.hibernate.enable = false;
   systemd.targets.hybrid-sleep.enable = false;
 
-  # removed deprecated powermanagement
-  hardware.cpuFreqGovernor = lib.mkDefault "performance";
+  # Additional power management settings
+  powerManagement = {
+    enable = true;
+    cpuFreqGovernor = "performance";
+    # Disable power throttling for peripheral devices
+    powertop.enable = false;
+  };
 
   # Ensure all power management is disabled
   services.logind = {
