@@ -23,6 +23,33 @@ boot.kernelPackages = pkgs.linuxPackagesFor (pkgs.linuxPackages-rt_latest.kernel
   '';
 });
   boot.kernelModules = [ "i915" ];
+
+  # Force-enable Intel i915 DRM render node support in PREEMPT_RT kernel
+  boot.kernelPatches = [
+    {
+      name = "enable-i915-drm-render";
+      patch = null;
+      extraConfig = ''
+        DRM y
+        DRM_KMS_HELPER y
+        DRM_FBDEV_EMULATION y
+        DRM_I915 y
+        DRM_I915_GVT y
+        DRM_I915_CAPTURE_ERROR y
+        DRM_I915_USERPTR y
+        DRM_I915_REQUEST_TIMEOUT y
+        DRM_RENDER y
+        DRM_MINOR y
+        AGP y
+        AGP_INTEL y
+        DRM_TTM y
+        DRM_TTM_HELPER y
+        DRM_GEM_SHMEM_HELPER y
+        DRM_SCHED y
+      '';
+    }
+  ];
+
   boot.kernelParams = [
     # Graphical
     "logo.nologo" # Remove kernel logo during boot
