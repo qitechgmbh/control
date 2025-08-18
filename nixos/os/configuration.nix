@@ -17,7 +17,11 @@
   };
   boot.loader.efi.canTouchEfiVariables = true;
 
-  boot.kernelPackages = pkgs.linuxPackages-rt;
+boot.kernelPackages = pkgs.linuxPackagesFor (pkgs.linuxPackages-rt_latest.kernel.override {
+  extraConfig = ''
+    DRM_RENDER y
+  '';
+});
   boot.kernelModules = [ "i915" ];
   boot.kernelParams = [
     # Graphical
