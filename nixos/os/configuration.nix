@@ -18,7 +18,7 @@
   boot.loader.efi.canTouchEfiVariables = true;
 
   boot.kernelPackages = pkgs.linuxPackages-rt;
-
+  boot.kernelModules = [ "i915" ];
   boot.kernelParams = [
     # Graphical
     "logo.nologo" # Remove kernel logo during boot
