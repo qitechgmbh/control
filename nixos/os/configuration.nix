@@ -259,6 +259,8 @@
     pkgs.qitechPackages.electron
     htop
     wireshark
+    pciutils    
+    neofetch
   ];
 
   xdg.portal.enable = true;
