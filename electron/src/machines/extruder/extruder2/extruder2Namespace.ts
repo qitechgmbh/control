@@ -202,8 +202,11 @@ export type Extruder2NamespaceStore = {
   // Combined power consumption
   combinedPower: TimeSeries;
 
-  // Cumulative total energy (session) derived from combinedPower in kWh
-  totalEnergyKWh: number;
+  // Total energy consumption time series in kWh
+  totalEnergyKWh: TimeSeries;
+  
+  // Internal tracking for cumulative energy calculation
+  cumulativeEnergyKWh: number;
   lastEnergyTimestamp: number | null;
 };
 
@@ -256,6 +259,9 @@ const { initialTimeSeries: backPower, insert: addBackPower } = createTimeSeries(
 );
 
 const { initialTimeSeries: combinedPower, insert: addCombinedPower } =
+  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+
+const { initialTimeSeries: totalEnergyKWh, insert: addTotalEnergyKWh } =
   createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
 
 const { initialTimeSeries: motorCurrent, insert: addMotorCurrent } =
@@ -311,11 +317,11 @@ export function extruder2MessageHandler(
             liveValuesEvent.data.back_power;
 
           // Integrate energy since last timestamp (convert to kWh)
-          let totalEnergyKWh = state.totalEnergyKWh ?? 0;
+          let cumulativeEnergyKWh = state.cumulativeEnergyKWh ?? 0;
           const lastTs = state.lastEnergyTimestamp;
           if (typeof lastTs === "number" && lastTs > 0 && timestamp > lastTs) {
             const dtHours = (timestamp - lastTs) / 3_600_000; // ms to hours
-            totalEnergyKWh += (totalPowerW / 1000) * dtHours; // W to kW * h
+            cumulativeEnergyKWh += (totalPowerW / 1000) * dtHours; // W to kW * h
           }
 
           return {
@@ -380,7 +386,11 @@ export function extruder2MessageHandler(
               value: totalPowerW,
               timestamp,
             }),
-            totalEnergyKWh,
+            totalEnergyKWh: addTotalEnergyKWh(state.totalEnergyKWh, {
+              value: cumulativeEnergyKWh,
+              timestamp,
+            }),
+            cumulativeEnergyKWh,
             lastEnergyTimestamp: timestamp,
           };
         });
@@ -418,7 +428,8 @@ export const createExtruder2NamespaceStore =
         middlePower,
         combinedPower,
 
-        totalEnergyKWh: 0,
+        totalEnergyKWh,
+        cumulativeEnergyKWh: 0,
         lastEnergyTimestamp: null,
       };
     });

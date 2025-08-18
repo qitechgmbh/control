@@ -230,13 +230,13 @@ export function Extruder2ControlPage() {
           <TimeSeriesValueNumeric
             label="Total Power"
             unit="W"
-            renderValue={(value) => roundToDecimals(value, 1)}
+            renderValue={(value) => roundToDecimals(value, 0)}
             timeseries={combinedPower}
           />
           <TimeSeriesValueNumeric
             label="Motor Power"
             unit="W"
-            renderValue={(value) => roundToDecimals(value, 1)}
+            renderValue={(value) => roundToDecimals(value, 0)}
             timeseries={motorPower}
           />
           <TimeSeriesValueNumeric
@@ -245,14 +245,12 @@ export function Extruder2ControlPage() {
             renderValue={(value) => roundToDecimals(value, 1)}
             timeseries={motorCurrent}
           />
-          <Label label="Total Energy">
-            <div className="flex flex-row items-center gap-4">
-              <span className="font-mono text-4xl font-bold">
-                {roundToDecimals(totalEnergyKWh ?? 0, 3)}
-              </span>
-              <span>kWh</span>
-            </div>
-          </Label>
+          <TimeSeriesValueNumeric
+            label="Total Energy"
+            unit="kWh"
+            renderValue={(value) => roundToDecimals(value, 3)}
+            timeseries={totalEnergyKWh}
+          />
         </ControlCard>
       </ControlGrid>
     </Page>
