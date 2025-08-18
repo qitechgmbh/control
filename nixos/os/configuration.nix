@@ -179,11 +179,8 @@
   systemd.targets.hybrid-sleep.enable = false;
 
   # removed deprecated powermanagement
-  services.cpupower = {
-    enable = true;
-    governor = "performance";
-    setOnBoot = true;
-  };
+  hardware.cpuFreqGovernor = lib.mkDefault "performance";
+
   # Ensure all power management is disabled
   services.logind = {
     lidSwitch = "ignore";
