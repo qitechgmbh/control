@@ -231,11 +231,9 @@ boot.kernelPackages = pkgs.linuxPackagesFor (pkgs.linuxPackages-rt_latest.kernel
   };
 
   # Enable graphics acceleration
-  hardware.graphics.enable = true;
-
-  hardware.opengl = {
+  hardware.graphics = {
     enable = true;
-    extraPackages = with pkgs; [mesa];
+    extraPackages = with pkgs; [mesa ];
   };
 
   # Enable touchpad support (enabled default in most desktopManager).
