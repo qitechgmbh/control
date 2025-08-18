@@ -202,6 +202,11 @@
   # Enable graphics acceleration
   hardware.graphics.enable = true;
 
+  hardware.opengl = {
+    enable = true;
+    extraPackages = with pkgs; [mesa mesa_drivers];
+  };
+
   # Enable touchpad support (enabled default in most desktopManager).
   services.libinput.enable = true;
   services.libinput.touchpad.tapping = true;
