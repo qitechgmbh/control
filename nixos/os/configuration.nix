@@ -17,11 +17,7 @@
   };
   boot.loader.efi.canTouchEfiVariables = true;
 
-boot.kernelPackages = pkgs.linuxPackagesFor (pkgs.linuxPackages-rt_latest.kernel.override {
-  extraConfig = ''
-    DRM_RENDER y
-  '';
-});
+  boot.kernelPackages = pkgs.linuxPackagesFor pkgs.linuxPackages-rt_latest;
   boot.kernelModules = [ "i915" ];
 
   # Force-enable Intel i915 DRM render node support in PREEMPT_RT kernel
@@ -32,7 +28,7 @@ boot.kernelPackages = pkgs.linuxPackagesFor (pkgs.linuxPackages-rt_latest.kernel
   #     extraConfig = ''
   #       DRM y
   #       DRM_KMS_HELPER y
-  #       DRM_FBDEV_EMULATION y
+  #       DRM_FBDEV_EMULATION ya
   #       DRM_I915 y
   #       DRM_I915_GVT y
   #       DRM_I915_CAPTURE_ERROR y
@@ -234,9 +230,11 @@ boot.kernelPackages = pkgs.linuxPackagesFor (pkgs.linuxPackages-rt_latest.kernel
   hardware.graphics = {
     enable = true;
     extraPackages = with pkgs; [mesa ];
+    driSupport = true;
+    driSupport32Bit = true;
   };
 
-  # Enable touchpad support (enabled default in most desktopManager).
+
   services.libinput.enable = true;
   services.libinput.touchpad.tapping = true;
   services.touchegg.enable = true;
