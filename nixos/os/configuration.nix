@@ -178,14 +178,12 @@
   systemd.targets.hibernate.enable = false;
   systemd.targets.hybrid-sleep.enable = false;
 
-  # Additional power management settings
-  powerManagement = {
+  # removed deprecated powermanagement
+  services.cpupower = {
     enable = true;
-    cpuFreqGovernor = "performance";
-    # Disable power throttling for peripheral devices
-    powertop.enable = false;
+    governor = "performance";
+    setOnBoot = true;
   };
-
   # Ensure all power management is disabled
   services.logind = {
     lidSwitch = "ignore";
