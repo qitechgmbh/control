@@ -43,7 +43,7 @@ use uom::ConstZero;
 use uom::si::f64::{Length, Velocity};
 use uom::si::length::{centimeter, meter, millimeter};
 
-impl MachineNewTrait for Winder2 {
+impl MachineNewTrait for Winder2<'_, '_> {
     fn new<'maindevice>(params: &MachineNewParams) -> Result<Self, Error> {
         // validate general stuff
         let device_identification = params

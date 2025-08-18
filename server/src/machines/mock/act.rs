@@ -23,7 +23,7 @@ use std::{
 ///
 /// The method ensures that the sine wave value is updated approximately 60 times per second (16ms intervals) when running.
 ///
-impl MachineAct for MockMachine {
+impl MachineAct for MockMachine<'_> {
     fn act(&mut self, _now_ts: Instant) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
         Box::pin(async move {
             let now = Instant::now();

@@ -3,7 +3,7 @@ use crate::{
     rest::util::{ResponseUtil, ResponseUtilError},
 };
 use axum::{Json, body::Body, extract::State, http::Response};
-use control_core::rest::mutation::{MachineMutationBody, MutationResponse};
+use control_core::{machines::manager::MachineConnection, rest::mutation::{MachineMutationBody, MutationResponse}};
 use serde_json::Value;
 use std::sync::Arc;
 
@@ -27,7 +27,7 @@ async fn _post_machine_mutate(
     let machines_guard = app_state.machines.read().await;
 
     // find machine with given identification in hashmap
-    let machine = machines_guard
+    let slot = machines_guard
         .get(&body.machine_identification_unique)
         .ok_or(anyhow::anyhow!(
             "[{}::_post_machine_mutate] Machine not found {:?}",
@@ -35,16 +35,22 @@ async fn _post_machine_mutate(
             body.machine_identification_unique,
         ))?;
 
-    // check machine for error
-    let machine = match machine {
-        Ok(m) => m,
-        Err(e) => {
+    // check machine for valid connection
+    let machine = match &slot.machine_connection {
+        MachineConnection::Connected(m) => m,
+        MachineConnection::Error(error) => {
             return Err(anyhow::anyhow!(
                 "[{}::_post_machine_mutate] Machine has error: {}",
                 module_path!(),
-                e
+                error
             ));
-        }
+        },
+        MachineConnection::Disconnected => {
+            return Err(anyhow::anyhow!(
+                "[{}::_post_machine_mutate] Machine has disconnected",
+                module_path!()
+            ));
+        },
     };
 
     // log

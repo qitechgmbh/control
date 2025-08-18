@@ -7,11 +7,12 @@ use anyhow::Error;
 use control_core::machines::new::MachineNewTrait;
 use uom::si::{f64::Length, length::millimeter};
 
-impl MachineNewTrait for LaserMachine {
+impl MachineNewTrait for LaserMachine<'_> {
     fn new<'maindevice, 'subdevices>(
         params: &control_core::machines::new::MachineNewParams<
             'maindevice,
             'subdevices,
+            '_,
             '_,
             '_,
             '_,

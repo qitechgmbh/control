@@ -3,7 +3,7 @@ use control_core::machines::new::MachineAct;
 use super::{ExtruderV2, ExtruderV2Mode};
 use std::time::{Duration, Instant};
 
-impl MachineAct for ExtruderV2 {
+impl MachineAct for ExtruderV2<'_> {
     fn act(
         &mut self,
         now_ts: Instant,

@@ -17,7 +17,6 @@ use futures::executor::block_on;
 use serde::{Deserialize, Serialize};
 use smol::lock::{Mutex, RwLock};
 use std::{
-    any::Any,
     sync::{Arc, Weak},
     time::Instant,
 };
@@ -52,20 +51,13 @@ impl std::fmt::Display for BufferV1<'_> {
     }
 }
 
-impl Machine for BufferV1<'_> {
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
-}
+impl Machine for BufferV1<'_> {}
 
 impl BufferV1<'_> {
     pub const MACHINE_IDENTIFICATION: MachineIdentification = MachineIdentification {
         vendor: VENDOR_QITECH,
         machine: MACHINE_BUFFER_V1,
     };
-}
-
-impl BufferV1<'_> {
     pub fn emit_live_values(&mut self) {
         let live_values = LiveValuesEvent {};
 
@@ -99,9 +91,7 @@ impl BufferV1<'_> {
         let event = state.build();
         self.namespace.emit(BufferV1Events::State(event));
     }
-}
 
-impl BufferV1<'_> {
     // To be implemented
     fn fill_buffer(&mut self) {
         todo!();
@@ -154,17 +144,13 @@ impl BufferV1<'_> {
             BufferV1Mode::EmptyingBuffer => self.switch_to_emptying(),
         }
     }
-}
 
-impl BufferV1<'_> {
     fn set_mode_state(&mut self, mode: BufferV1Mode) {
         self.switch_mode(mode);
         self.emit_state();
     }
-}
 
 /// Connecting/Disconnecting machine
-impl BufferV1<'_> {
     /// set connected winder
     pub fn set_connected_winder(
         &mut self,

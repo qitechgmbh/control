@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use control_core::{machines::identification::MachineIdentificationUnique, socketio::event::Event};
+use control_core::{machines::{identification::MachineIdentificationUnique, manager::MachineConnection}, socketio::event::Event};
 use serde::{Deserialize, Serialize};
 
 use crate::app_state::AppState;
@@ -22,19 +22,14 @@ impl MachinesEventBuilder {
 
     pub async fn build(&self, app_state: Arc<AppState>) -> Event<MachinesEvent> {
         let mut machine_objs: Vec<_> = vec![];
-        // add machines
+        // TODO: some filter map action
         let machines_guard = app_state.machines.read().await;
         for machine in machines_guard.iter() {
             machine_objs.push(MachineObj {
                 machine_identification_unique: machine.0.clone(),
                 error: match &machine.1.machine_connection {
-                    control_core::machines::manager::MachineConnection::Error(error) => {
-                        Some(error.to_string())
-                    }
-                    control_core::machines::manager::MachineConnection::Disconnected => {
-                        Some(anyhow::anyhow!("Disconnected").to_string())
-                    }
-                    control_core::machines::manager::MachineConnection::Connected(_) => None,
+                    MachineConnection::Error(error) => Some(error.to_string()),
+                    _ => None,
                 },
             });
         }

@@ -8,7 +8,7 @@ use control_core::{
     socketio::namespace::NamespaceCacheingLogic,
 };
 use smol::lock::RwLock;
-use std::{any::Any, sync::Arc, time::Instant};
+use std::{sync::Arc, time::Instant};
 use uom::si::{f64::Length, length::millimeter};
 
 pub mod act;
@@ -16,12 +16,12 @@ pub mod api;
 pub mod new;
 
 #[derive(Debug)]
-pub struct LaserMachine {
+pub struct LaserMachine<'a> {
     // drivers
     laser: Arc<RwLock<Laser>>,
 
     // socketio
-    namespace: LaserMachineNamespace,
+    namespace: LaserMachineNamespace<'a>,
     last_measurement_emit: Instant,
 
     //laser target configuration
@@ -32,20 +32,14 @@ pub struct LaserMachine {
     emitted_default_state: bool,
 }
 
-impl Machine for LaserMachine {
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
-}
+impl Machine for LaserMachine<'_> {}
 
-impl LaserMachine {
+impl LaserMachine<'_> {
     pub const MACHINE_IDENTIFICATION: MachineIdentification = MachineIdentification {
         vendor: VENDOR_QITECH,
         machine: MACHINE_LASER_V1,
     };
-}
 
-impl LaserMachine {
     ///diameter in mm
     pub fn emit_live_values(&mut self) {
         let diameter = smol::block_on(async {

@@ -11,8 +11,6 @@ use control_core::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use smol::channel::Sender;
-use socketioxide::extract::SocketRef;
 use std::{sync::Arc, time::Duration};
 use tracing::instrument;
 
@@ -65,16 +63,8 @@ pub enum MockEvents {
 }
 
 #[derive(Debug)]
-pub struct MockMachineNamespace {
-    pub namespace: &mut Namespace,
-}
-
-impl MockMachineNamespace {
-    pub fn new(socket_queue_tx: Sender<(SocketRef, Arc<GenericEvent>)>) -> Self {
-        Self {
-            namespace: Namespace::new(socket_queue_tx),
-        }
-    }
+pub struct MockMachineNamespace<'a> {
+    pub namespace: &'a mut Namespace,
 }
 
 impl CacheableEvents<MockEvents> for MockEvents {
@@ -106,7 +96,7 @@ enum Mutation {
     SetMode(Mode),
 }
 
-impl NamespaceCacheingLogic<MockEvents> for MockMachineNamespace {
+impl NamespaceCacheingLogic<MockEvents> for MockMachineNamespace<'_> {
     #[instrument(skip_all)]
     fn emit(&mut self, events: MockEvents) {
         let event = Arc::new(events.event_value());
@@ -115,7 +105,7 @@ impl NamespaceCacheingLogic<MockEvents> for MockMachineNamespace {
     }
 }
 
-impl MachineApi for MockMachine {
+impl MachineApi for MockMachine<'_> {
     fn api_mutate(&mut self, request_body: Value) -> Result<(), anyhow::Error> {
         let mutation: Mutation = serde_json::from_value(request_body)?;
         match mutation {

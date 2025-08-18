@@ -17,9 +17,9 @@ pub mod api;
 pub mod new;
 
 #[derive(Debug)]
-pub struct MockMachine {
+pub struct MockMachine<'a> {
     // socketio
-    namespace: MockMachineNamespace,
+    namespace: MockMachineNamespace<'a>,
     last_measurement_emit: Instant,
 
     // mock machine specific fields
@@ -37,19 +37,14 @@ pub struct MockMachine {
     emitted_default_state: bool,
 }
 
-impl Machine for MockMachine {
-    fn as_any(&self) -> &dyn std::any::Any {
-        self
-    }
-}
-impl MockMachine {
+impl Machine for MockMachine<'_> {}
+
+impl MockMachine<'_> {
     pub const MACHINE_IDENTIFICATION: MachineIdentification = MachineIdentification {
         vendor: VENDOR_QITECH,
         machine: MACHINE_MOCK,
     };
-}
 
-impl MockMachine {
     /// Emit live values data event with the current sine wave amplitude
     pub fn emit_live_values(&mut self) {
         let now = Instant::now();

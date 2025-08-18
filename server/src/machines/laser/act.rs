@@ -21,7 +21,7 @@ use std::{
 ///
 /// The method ensures that the diameter value is updated approximately 60 times per second.
 ///
-impl MachineAct for LaserMachine {
+impl MachineAct for LaserMachine<'_> {
     fn act(&mut self, now: Instant) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
         Box::pin(async move {
             // The live values are updated approximately 60 times per second

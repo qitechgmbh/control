@@ -13,8 +13,6 @@ use control_core::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use smol::channel::Sender;
-use socketioxide::extract::SocketRef;
 use tracing::instrument;
 use uom::si::{
     angular_velocity::revolution_per_minute, electric_current::ampere, electric_potential::volt,

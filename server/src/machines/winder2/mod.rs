@@ -109,21 +109,15 @@ pub struct Winder2<'a> {
     emitted_default_state: bool,
 }
 
-impl Machine for Winder2<'_> {
-    fn as_any(&self) -> &dyn std::any::Any {
-        self
-    }
-}
+impl Machine for Winder2<'_> {}
 
 impl Winder2<'_> {
     pub const MACHINE_IDENTIFICATION: MachineIdentification = MachineIdentification {
         vendor: VENDOR_QITECH,
         machine: MACHINE_WINDER_V1,
     };
-}
 
 /// Implement Traverse
-impl Winder2<'_> {
     fn set_laser(&mut self, value: bool) {
         self.laser.set(value);
         self.emit_state();
@@ -396,10 +390,8 @@ impl Winder2<'_> {
             && !self.traverse_controller.is_traversing()
             && self.mode != Winder2Mode::Wind
     }
-}
 
 /// Implement Mode
-impl Winder2<'_> {
     fn set_mode(&mut self, mode: &Winder2Mode) {
         let should_update = *mode != Winder2Mode::Wind || self.can_wind();
 
@@ -586,19 +578,15 @@ impl Winder2<'_> {
         // Update the internal state
         self.puller_mode = mode;
     }
-}
 
 /// Implement Tension Arm
-impl Winder2<'_> {
     fn tension_arm_zero(&mut self) {
         self.tension_arm.zero();
         self.emit_live_values(); // For angle update
         self.emit_state(); // For state update
     }
-}
 
 /// Implement Spool
-impl Winder2<'_> {
     /// called by `act`
     pub fn sync_spool_speed(&mut self, t: Instant) {
         let angular_velocity = self.spool_speed_controller.update_speed(
@@ -675,10 +663,8 @@ impl Winder2<'_> {
         self.spool_automatic_action.progress += meters_pulled_this_interval;
         self.spool_automatic_action.progress_last_check = now;
     }
-}
 
 /// Implement Puller
-impl Winder2<'_> {
     /// called by `act`
     pub fn sync_puller_speed(&mut self, t: Instant) {
         let angular_velocity = self.puller_speed_controller.calc_angular_velocity(t);
@@ -782,10 +768,8 @@ impl Winder2<'_> {
             .set_adaptive_deacceleration_urgency_multiplier(deacceleration_urgency_multiplier);
         self.emit_state();
     }
-}
 
 /// implement machine connection
-impl Winder2<'_> {
     /// set connected buffer
     pub fn set_connected_buffer(
         &mut self,

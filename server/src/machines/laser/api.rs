@@ -11,8 +11,6 @@ use control_core::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use smol::channel::Sender;
-use socketioxide::extract::SocketRef;
 use std::{sync::Arc, time::Duration};
 use tracing::instrument;
 
@@ -57,8 +55,8 @@ pub enum LaserEvents {
 }
 
 #[derive(Debug)]
-pub struct LaserMachineNamespace {
-    pub namespace: &mut Namespace,
+pub struct LaserMachineNamespace<'a> {
+    pub namespace: &'a mut Namespace,
 }
 
 impl CacheableEvents<LaserEvents> for LaserEvents {
@@ -90,7 +88,7 @@ enum Mutation {
     SetHigherTolerance(f64),
 }
 
-impl NamespaceCacheingLogic<LaserEvents> for LaserMachineNamespace {
+impl NamespaceCacheingLogic<LaserEvents> for LaserMachineNamespace<'_> {
     #[instrument(skip_all)]
     fn emit(&mut self, events: LaserEvents) {
         let event = Arc::new(events.event_value());
@@ -99,7 +97,7 @@ impl NamespaceCacheingLogic<LaserEvents> for LaserMachineNamespace {
     }
 }
 
-impl MachineApi for LaserMachine {
+impl MachineApi for LaserMachine<'_> {
     fn api_mutate(&mut self, request_body: Value) -> Result<(), anyhow::Error> {
         let mutation: Mutation = serde_json::from_value(request_body)?;
         match mutation {

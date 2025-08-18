@@ -16,9 +16,8 @@ pub mod manager_iter;
 pub mod new;
 pub mod registry;
 
-pub trait Machine: MachineAct + MachineNewTrait + MachineApi + Any + Debug + Send {
-    fn as_any(&self) -> &dyn Any;
-}
+pub trait Machine : MachineAct + MachineNewTrait + MachineApi + Any + Debug + Send {}
+
 /// Casts a `dyn Machine` to a specific machine type
 pub async fn downcast_machine<T: Machine>(
     machine: Arc<Mutex<dyn Machine>>,
@@ -27,7 +26,8 @@ pub async fn downcast_machine<T: Machine>(
     let read_lock = machine.lock().await;
 
     // Check if the inner type can be downcasted to T
-    if read_lock.as_any().is::<T>() {
+    let read_any: &dyn Any = &*read_lock;
+    if read_any.is::<T>() {
         // Clone the Arc and return it as the desired type
         let cloned_machine = Arc::clone(&machine);
         // Transmute the Arc to the desired type
