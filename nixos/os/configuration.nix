@@ -17,7 +17,7 @@
   };
   boot.loader.efi.canTouchEfiVariables = true;
 
-  boot.kernelPackages = pkgs.linuxPackagesFor pkgs.linuxPackages-rt_latest;
+  boot.kernelPackages = pkgs.linuxPackages-rt_latest;
   boot.kernelModules = [ "i915" ];
 
   # Force-enable Intel i915 DRM render node support in PREEMPT_RT kernel
