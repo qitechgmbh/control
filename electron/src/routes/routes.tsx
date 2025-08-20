@@ -35,6 +35,9 @@ import { Mock1PresetsPage } from "@/machines/mock/mock1/Mock1PresetsPage";
 import { TroubleshootPage } from "@/setup/Trobleshoot";
 import { UpdateExecutePage } from "@/setup/UpdateExecutePage";
 import { Winder2PresetsPage } from "@/machines/winder/winder2/Winder2PresetsPage";
+import { Aquapath1ControlPage } from "@/machines/aquapath/aquapath1/Aquapath1ControlPage";
+import { Aquapath1Page } from "@/machines/aquapath/aquapath1/Aquapath1Page";
+
 import { z } from "zod";
 import { Laser1PresetsPage } from "@/machines/laser/laser1/Laser1PresetsPage";
 // make a route tree like this
@@ -194,6 +197,18 @@ export const mock1PresetsRoute = createRoute({
   component: () => <Mock1PresetsPage />,
 });
 
+export const aquapath1SerialRoute = createRoute({
+  getParentRoute: () => machinesRoute,
+  path: "aquapath1/$serial",
+  component: () => <Aquapath1Page />,
+});
+
+export const aquapath1ControlRoute = createRoute({
+  getParentRoute: () => aquapath1SerialRoute,
+  path: "control",
+  component: () => <Aquapath1ControlPage />,
+});
+
 export const buffer1SettingsRoute = createRoute({
   getParentRoute: () => buffer1SerialRoute,
   path: "settings",
@@ -291,6 +306,8 @@ export const rootTree = RootRoute.addChildren([
         laser1GraphsRoute,
         laser1PresetsRoute,
       ]),
+
+      aquapath1SerialRoute.addChildren([aquapath1ControlRoute]),
 
       winder2SerialRoute.addChildren([
         winder2ControlRoute,
