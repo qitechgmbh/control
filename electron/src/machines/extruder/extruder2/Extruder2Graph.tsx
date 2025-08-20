@@ -42,6 +42,7 @@ export function Extruder2GraphsPage() {
       ? [
           {
             newData: nozzleTemperature,
+            title: "Nozzle",
             color: "#ef4444",
             lines:
               state?.heating_states.nozzle?.target_temperature !== undefined
@@ -61,6 +62,7 @@ export function Extruder2GraphsPage() {
       ? [
           {
             newData: frontTemperature,
+            title: "Front",
             color: "#f59e0b",
             lines:
               state?.heating_states.front?.target_temperature !== undefined
@@ -80,6 +82,7 @@ export function Extruder2GraphsPage() {
       ? [
           {
             newData: middleTemperature,
+            title: "Middle",
             color: "#8b5cf6",
             lines:
               state?.heating_states.middle?.target_temperature !== undefined
@@ -99,6 +102,7 @@ export function Extruder2GraphsPage() {
       ? [
           {
             newData: backTemperature,
+            title: "Back",
             color: "#3b82f6",
             lines:
               state?.heating_states.back?.target_temperature !== undefined
