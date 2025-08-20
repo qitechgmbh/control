@@ -11,6 +11,11 @@ impl MachineAct for BufferV1 {
             // sync the puller speed
             self.sync_puller_speed(now);
 
+            // check if lift state changed
+            if self.buffer_lift_controller.did_change_state() {
+                self.emit_state();
+            }
+
             // if last measurement is older than 1 second, emit a new measurement
             if now.duration_since(self.last_measurement_emit) > Duration::from_secs_f64(1.0 / 60.0)
             {

@@ -131,6 +131,7 @@ impl MachineNewTrait for BufferV1 {
             let buffer_lift_controller = BufferLiftController::new(
                 StepperVelocityEL70x1::new(el7041.clone(), EL7041_0052Port::STM1),
                 Length::new::<centimeter>(135.0),
+                Length::new::<centimeter>(0.0),
                 64,
             );
             let puller_speed_controller = PullerSpeedController::new(

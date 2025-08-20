@@ -22,7 +22,6 @@ use futures::executor::block_on;
 use puller_speed_controller::PullerRegulationMode;
 use serde::{Deserialize, Serialize};
 use smol::lock::{Mutex, RwLock};
-use tracing::info;
 use std::{
     sync::{Arc, Weak},
     time::Instant,
@@ -146,9 +145,9 @@ impl BufferV1 {
                     .buffer_lift_controller
                     .get_padding()
                     .get::<millimeter>(),
-                can_go_top: self.can_move(),
-                can_go_bottom: self.can_move(),
-                can_go_home: self.can_move(),
+                can_go_top: self.can_go_up(),
+                can_go_bottom: self.can_go_down(),
+                can_go_home: self.can_go_home(),
             },
             current_input_speed_state: CurrentInputSpeedState {
                 current_input_speed: self
@@ -378,25 +377,8 @@ impl BufferV1 {
         let linear_velocity =
             self.buffer_lift_controller
                 .update_speed(&mut self.lift, &self.lift_end_stop, t);
-        if self.can_move() {
-            let steps_per_second = self.lift_step_converter.velocity_to_steps(linear_velocity);
-            let _ = self.lift.set_speed(steps_per_second);
-        } else {
-            let _ = self.lift.set_speed(0.0);
-        }
-    }
-
-    fn can_move(&mut self) -> bool {
-        match self.lift_end_stop.get_value() {
-            Ok(reached) => {
-                if reached {
-                    false
-                } else {
-                    true
-                }
-            }
-            Err(_) => false,
-        }
+        let steps_per_second = self.lift_step_converter.velocity_to_steps(linear_velocity);
+        let _ = self.lift.set_speed(steps_per_second);
     }
 
     pub fn lift_set_step_size(&mut self, step_size: f64) {

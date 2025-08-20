@@ -8,6 +8,7 @@ use control_core::{
 use ethercat_hal::io::{
     digital_input::DigitalInput, stepper_velocity_el70x1::StepperVelocityEL70x1,
 };
+use tracing::info;
 use uom::{
     ConstZero,
     si::{
@@ -114,12 +115,17 @@ pub enum HomingState {
 }
 
 impl BufferLiftController {
-    pub fn new(driver: StepperVelocityEL70x1, limit_top: Length, microsteps: u8) -> Self {
+    pub fn new(
+        driver: StepperVelocityEL70x1,
+        limit_top: Length,
+        limit_bot: Length,
+        microsteps: u8,
+    ) -> Self {
         Self {
             enabled: false,
             position: Length::ZERO,
             limit_top,
-            limit_bottom: Length::new::<millimeter>(0.0),
+            limit_bottom: limit_bot,
             step_size: Length::new::<millimeter>(1.75), // Default padding
             padding: Length::new::<millimeter>(0.9),    // Default padding
             did_change_state: false,
@@ -170,7 +176,8 @@ impl BufferLiftController {
             false => Velocity::ZERO,
         };
 
-        let speed = if self.forward { speed } else { -speed };
+        // Stepper is installed in reverse direction so we change to sign
+        let speed = speed;
 
         self.acceleration_controller.update(speed, t)
     }
@@ -381,14 +388,14 @@ impl BufferLiftController {
             State::NotHomed => {}
             State::Idle => {}
             State::GoingDown => {
-                // If inner limit is reached
+                // If lower limit is reached
                 if self.is_at_position(self.limit_bottom, Length::new::<millimeter>(0.01)) {
                     // Put Into Idle
                     self.state = State::Idle;
                 }
             }
             State::GoingUp => {
-                // If outer limit is reached
+                // If upper limit is reached
                 if self.is_at_position(self.limit_top, Length::new::<millimeter>(0.01)) {
                     // Put Into Idle
                     self.state = State::Idle;
@@ -458,6 +465,7 @@ impl BufferLiftController {
         // Set the [`did_change_state`] flag
         if self.did_change_state == false {
             self.did_change_state = self.update_did_change_state(&old_state);
+            info!("{:?}", self.state);
         }
 
         // Speed
@@ -471,8 +479,8 @@ impl BufferLiftController {
                     match self.distance_to_position(self.limit_bottom).abs()
                         > Length::new::<millimeter>(1.0)
                     {
-                        true => Velocity::new::<millimeter_per_second>(20.0),
-                        false => Velocity::new::<millimeter_per_second>(5.0),
+                        true => Velocity::new::<millimeter_per_second>(100.0),
+                        false => Velocity::new::<millimeter_per_second>(10.0),
                     },
                 )
             }
@@ -483,15 +491,15 @@ impl BufferLiftController {
                     match self.distance_to_position(self.limit_top).abs()
                         > Length::new::<millimeter>(1.0)
                     {
-                        true => Velocity::new::<millimeter_per_second>(20.0),
-                        false => Velocity::new::<millimeter_per_second>(5.0),
+                        true => Velocity::new::<millimeter_per_second>(100.0),
+                        false => Velocity::new::<millimeter_per_second>(10.0),
                     },
                 )
             }
             State::Homing(homing_state) => match homing_state {
                 HomingState::Initialize => Velocity::ZERO,
                 HomingState::EscapeEndstop => {
-                    // Move dowon at a speed of 10 mm/s
+                    // Move down at a speed of 10 mm/s
                     Velocity::new::<millimeter_per_second>(10.0)
                 }
                 HomingState::FindEnstopFineDistancing => {
@@ -500,7 +508,7 @@ impl BufferLiftController {
                 }
                 HomingState::FindEndstopCoarse => {
                     // Move in at a speed of -100 mm/s
-                    Velocity::new::<millimeter_per_second>(-20.0)
+                    Velocity::new::<millimeter_per_second>(-100.0)
                 }
                 HomingState::FindEndStopFine => {
                     // move into the endstop at 2 mm/s
@@ -516,7 +524,7 @@ impl BufferLiftController {
                     // Move top at a speed of 100 mm/s
                     self.speed_to_position(
                         self.limit_top - self.padding + Length::new::<millimeter>(0.01),
-                        Velocity::new::<millimeter_per_second>(20.0),
+                        Velocity::new::<millimeter_per_second>(100.0),
                     )
                 }
                 BufferingState::Filling => self.speed_to_position(
@@ -529,7 +537,7 @@ impl BufferLiftController {
                 ),
             },
         };
-
+        info!("{}", speed.get::<millimeter_per_second>());
         speed
     }
 }
