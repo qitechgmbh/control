@@ -271,6 +271,19 @@ export const buffer1: MachineProperties = {
     },
   ],
 };
+
+export const aquapath1: MachineProperties = {
+  name: "Aquapath",
+  version: "V1",
+  slug: "aquapath1",
+  icon: "lu:Sun",
+  machine_identification: {
+    vendor: VENDOR_QITECH,
+    machine: 0x0009,
+  },
+  device_roles: [],
+};
+
 export const machineProperties: MachineProperties[] = [
   winder2,
   extruder2,

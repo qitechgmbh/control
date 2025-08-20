@@ -188,6 +188,18 @@ export const buffer1ControlRoute = createRoute({
   component: () => <Buffer1ControlPage />,
 });
 
+export const aquapath1SerialRoute = createRoute({
+  getParentRoute: () => machinesRoute,
+  path: "buffer1/$serial",
+  component: () => <Buffer1Page />,
+});
+
+export const aquapath1ControlRoute = createRoute({
+  getParentRoute: () => buffer1SerialRoute,
+  path: "control",
+  component: () => <Buffer1ControlPage />,
+});
+
 export const mock1PresetsRoute = createRoute({
   getParentRoute: () => mock1SerialRoute,
   path: "presets",
@@ -316,6 +328,8 @@ export const rootTree = RootRoute.addChildren([
       ]),
 
       buffer1SerialRoute.addChildren([buffer1ControlRoute]),
+
+      aquapath1SerialRoute.addChildren([aquapath1ControlRoute]),
     ]),
   ]),
 ]);
