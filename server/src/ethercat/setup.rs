@@ -53,17 +53,13 @@ pub async fn setup_loop(
 
             // Set the thread to real-time priority
             let _ = set_realtime_priority();
+            let rt = smol::LocalExecutor::new();
 
-            #[cfg(not(all(target_os = "linux", feature = "io-uring")))]
-            {
-                let rt = smol::LocalExecutor::new();
-                let _ = rt.run(tx_rx_task(&interface, tx, rx).expect("Failed to spawn TX/RX task"));
-            }
-            #[cfg(all(target_os = "linux", feature = "io-uring"))]
-            {
-                let _ = tx_rx_task_io_uring(&interface, tx, rx)
-                    .expect("Failed to spawn TX/RX task (io_uring)");
-            }
+            let _ = smol::block_on(rt.run(async {
+                tx_rx_task(&interface, tx, rx)
+                    .expect("spawn TX/RX task")
+                    .await
+            }));
         })
         .expect("Building thread");
 
