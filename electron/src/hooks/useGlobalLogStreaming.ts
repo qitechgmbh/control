@@ -10,6 +10,10 @@ import {
 /**
  * Hook to manage global log streaming
  * This should be used once at the app level to start log streaming
+ * 
+ * @deprecated Use useLocalLogStreaming instead for better performance
+ * This hook starts streaming immediately and globally, which can cause
+ * performance issues when not on the troubleshooting page.
  */
 export function useGlobalLogStreaming() {
   const { isStreaming, addLogEntry, setStreaming } = useLogsStore();
