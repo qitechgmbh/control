@@ -22,7 +22,6 @@ export function Extruder2GraphsPage() {
     pressure,
     motorScrewRpm,
     motorCurrent,
-    motorVoltage,
     motorPower,
     combinedPower,
   } = useExtruder2();
@@ -202,18 +201,6 @@ export function Extruder2GraphsPage() {
     },
   };
 
-  const voltageConfig: GraphConfig = {
-    ...baseConfig,
-    title: "Motor Voltage",
-    exportFilename: "motor_voltage_data",
-    colors: {
-      primary: "#ef4444",
-      grid: "#e2e8f0",
-      axis: "#64748b",
-      background: "#ffffff",
-    },
-  };
-
   const currentConfig: GraphConfig = {
     ...baseConfig,
     title: "Motor Current",
@@ -294,18 +281,6 @@ export function Extruder2GraphsPage() {
           unit="W"
           renderValue={(value) => value.toFixed(1)}
           graphId="combined-power"
-        />
-
-        <AutoSyncedBigGraph
-          syncHook={syncHook}
-          newData={{
-            newData: motorVoltage,
-            color: "#ef4444",
-          }}
-          config={voltageConfig}
-          unit="V"
-          renderValue={(value) => value.toFixed(2)}
-          graphId="motor-voltage"
         />
 
         <AutoSyncedBigGraph

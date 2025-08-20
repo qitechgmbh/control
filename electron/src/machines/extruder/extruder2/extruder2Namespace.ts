@@ -25,7 +25,6 @@ export type Mode = z.infer<typeof modeSchema>;
 export const liveMotorStatusDataSchema = z.object({
   screw_rpm: z.number(),
   frequency: z.number(),
-  voltage: z.number(),
   current: z.number(),
   power: z.number(),
 });
@@ -184,7 +183,6 @@ export type Extruder2NamespaceStore = {
 
   // Time series data for live values
   motorFrequency: TimeSeries;
-  motorVoltage: TimeSeries;
   motorCurrent: TimeSeries;
   motorScrewRpm: TimeSeries;
   motorPower: TimeSeries;
@@ -257,9 +255,6 @@ const { initialTimeSeries: combinedPower, insert: addCombinedPower } =
 const { initialTimeSeries: motorCurrent, insert: addMotorCurrent } =
   createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
 
-const { initialTimeSeries: motorVoltage, insert: addMotorVoltage } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
-
 const { initialTimeSeries: motorFrequency, insert: addMotorFrequency } =
   createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
 
@@ -305,10 +300,6 @@ export function extruder2MessageHandler(
           }),
           motorCurrent: addMotorCurrent(state.motorCurrent, {
             value: liveValuesEvent.data.motor_status.current,
-            timestamp,
-          }),
-          motorVoltage: addMotorVoltage(state.motorVoltage, {
-            value: liveValuesEvent.data.motor_status.voltage,
             timestamp,
           }),
           motorFrequency: addMotorFrequency(state.motorFrequency, {
@@ -385,7 +376,6 @@ export const createExtruder2NamespaceStore =
         motorCurrent,
         motorFrequency,
         motorScrewRpm,
-        motorVoltage,
         motorPower,
 
         pressure,
