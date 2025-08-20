@@ -34,6 +34,7 @@ pub mod machines;
 #[cfg(feature = "mock-machine")]
 pub mod mock;
 pub mod panic;
+pub mod performance_metrics;
 pub mod rest;
 pub mod serial;
 pub mod socketio;
