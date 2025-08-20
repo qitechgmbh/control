@@ -31,6 +31,8 @@ export function getUnitIcon(unit: Unit): IconName {
       return "lu:Zap";
     case "A":
       return "lu:Zap";
+    case "l/min":
+      return "lu:Waves";
     default:
       return "lu:ChartNoAxesColumn";
   }
@@ -64,6 +66,8 @@ export function renderUnitSymbol(unit: Unit | undefined): string {
       return "V";
     case "A":
       return "A";
+    case "l/min":
+      return "l/min";
     default:
       return "";
   }
@@ -119,6 +123,8 @@ export function renderUnitSymbolLong(unit: Unit): string {
       return "volts";
     case "A":
       return "amperes";
+    case "l/min":
+      return "liters/minute";
     default:
       return "";
   }
@@ -138,6 +144,7 @@ export const units = [
   "W",
   "V",
   "A",
+  "l/min",
 ] as const;
 
 export type Unit = (typeof units)[number];

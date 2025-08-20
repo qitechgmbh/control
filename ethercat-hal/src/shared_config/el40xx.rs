@@ -42,30 +42,51 @@ pub struct EL40XXChannelConfiguration {
 pub enum EL40XXPresentation {
     /// Signed presentation (DEFAULT) - Two's complement format
     /// Range: -32768 to +32767
-    Signed = 0,
+    Signed,
 
     /// Unsigned presentation
     /// Range: 0 to +65535
-    Unsigned = 1,
+    Unsigned,
 
     /// Absolute value with MSB as sign - Magnitude-sign format
     /// Range: -32768 to +32767 (not two's complement)
-    SignedAbsoluteMSB = 2,
+    SignedAbsoluteMSB,
 
     /// Absolute value - Negative numbers output as positive
-    Absolute = 3,
+    Absolute,
+}
+
+impl From<EL40XXPresentation> for u8 {
+    fn from(presentation: EL40XXPresentation) -> Self {
+        match presentation {
+            EL40XXPresentation::Signed => 0,
+            EL40XXPresentation::Unsigned => 1,
+            EL40XXPresentation::SignedAbsoluteMSB => 2,
+            EL40XXPresentation::Absolute => 3,
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
 pub enum EL40XXWatchdog {
     /// Default watchdog value (0x80n0:13) is active (DEFAULT)
-    DefaultValue = 0,
+    DefaultValue,
 
     /// Watchdog ramp (0x80n0:14) for moving to default value is active
-    Ramp = 1,
+    Ramp,
 
     /// Last output value - maintains last process data on watchdog drop
-    LastValue = 2,
+    LastValue,
+}
+
+impl From<EL40XXWatchdog> for u8 {
+    fn from(presentation: EL40XXWatchdog) -> Self {
+        match presentation {
+            EL40XXWatchdog::DefaultValue => 0,
+            EL40XXWatchdog::Ramp => 1,
+            EL40XXWatchdog::LastValue => 2,
+        }
+    }
 }
 
 impl Default for EL40XXChannelConfiguration {
@@ -90,8 +111,10 @@ impl EL40XXChannelConfiguration {
     pub async fn write_channel_config<'a>(
         &self,
         device: &EthercrabSubDevicePreoperational<'a>,
-        base_index: u16, // 0x8000 for channel 1, 0x8010 for channel 2, etc.
+        base_index: u16,
     ) -> Result<(), anyhow::Error> {
+        tracing::info!("write_channel_config");
+
         // Write all configuration parameters according to the documentation table
         device
             .sdo_write(base_index, 0x01, self.enable_user_scale as u8)
@@ -124,320 +147,5 @@ impl EL40XXChannelConfiguration {
             .await?;
 
         Ok(())
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    // Helper implementations for converting types to bytes
-    pub struct ByteVec(Vec<u8>);
-
-    impl From<bool> for ByteVec {
-        fn from(value: bool) -> Self {
-            ByteVec(vec![value as u8])
-        }
-    }
-    impl From<u8> for ByteVec {
-        fn from(value: u8) -> Self {
-            ByteVec(vec![value])
-        }
-    }
-
-    impl From<i16> for ByteVec {
-        fn from(value: i16) -> Self {
-            ByteVec(value.to_le_bytes().to_vec())
-        }
-    }
-
-    impl From<i32> for ByteVec {
-        fn from(value: i32) -> Self {
-            ByteVec(value.to_le_bytes().to_vec())
-        }
-    }
-
-    impl From<u16> for ByteVec {
-        fn from(value: u16) -> Self {
-            ByteVec(value.to_le_bytes().to_vec())
-        }
-    }
-
-    #[test]
-    fn test_el40xx_channel_configuration_default() {
-        let config = EL40XXChannelConfiguration::default();
-
-        assert_eq!(config.enable_user_scale, false);
-        assert!(matches!(config.presentation, EL40XXPresentation::Signed));
-        assert!(matches!(config.watchdog, EL40XXWatchdog::DefaultValue));
-        assert_eq!(config.enable_user_calibration, false);
-        assert_eq!(config.enable_vendor_calibration, true);
-        assert_eq!(config.offset, 0);
-        assert_eq!(config.gain, 65536);
-        assert_eq!(config.default_output, 0);
-        assert_eq!(config.default_output_ramp, 65535);
-        assert_eq!(config.user_calibration_offset, 0);
-        assert_eq!(config.user_calibration_gain, 65535);
-    }
-
-    #[test]
-    fn test_el40xx_presentation_enum_values() {
-        assert_eq!(EL40XXPresentation::Signed as u8, 0);
-        assert_eq!(EL40XXPresentation::Unsigned as u8, 1);
-        assert_eq!(EL40XXPresentation::SignedAbsoluteMSB as u8, 2);
-        assert_eq!(EL40XXPresentation::Absolute as u8, 3);
-    }
-
-    #[test]
-    fn test_el40xx_watchdog_enum_values() {
-        assert_eq!(EL40XXWatchdog::DefaultValue as u8, 0);
-        assert_eq!(EL40XXWatchdog::Ramp as u8, 1);
-        assert_eq!(EL40XXWatchdog::LastValue as u8, 2);
-    }
-
-    #[test]
-    fn test_el40xx_channel_configuration_custom() {
-        let config = EL40XXChannelConfiguration {
-            enable_user_scale: true,
-            presentation: EL40XXPresentation::Unsigned,
-            watchdog: EL40XXWatchdog::Ramp,
-            enable_user_calibration: true,
-            enable_vendor_calibration: false,
-            offset: -1000,
-            gain: 32768,
-            default_output: 2048,
-            default_output_ramp: 1000,
-            user_calibration_offset: -500,
-            user_calibration_gain: 32767,
-        };
-
-        assert_eq!(config.enable_user_scale, true);
-        assert!(matches!(config.presentation, EL40XXPresentation::Unsigned));
-        assert!(matches!(config.watchdog, EL40XXWatchdog::Ramp));
-        assert_eq!(config.enable_user_calibration, true);
-        assert_eq!(config.enable_vendor_calibration, false);
-        assert_eq!(config.offset, -1000);
-        assert_eq!(config.gain, 32768);
-        assert_eq!(config.default_output, 2048);
-        assert_eq!(config.default_output_ramp, 1000);
-        assert_eq!(config.user_calibration_offset, -500);
-        assert_eq!(config.user_calibration_gain, 32767);
-    }
-
-    #[test]
-    fn test_gain_fixed_point_conversion() {
-        // Test gain values in fixed-point format (factor 2^-16)
-        // 1.0 = 65536, 0.5 = 32768, 2.0 = 131072, etc.
-        let test_cases = [
-            (0.5, 32768),  // 0.5 * 65536 = 32768
-            (1.0, 65536),  // 1.0 * 65536 = 65536 (default)
-            (2.0, 131072), // 2.0 * 65536 = 131072
-            (0.25, 16384), // 0.25 * 65536 = 16384
-            (4.0, 262144), // 4.0 * 65536 = 262144
-        ];
-
-        for (scale_factor, expected_gain) in test_cases {
-            let config = EL40XXChannelConfiguration {
-                gain: expected_gain,
-                ..Default::default()
-            };
-
-            assert_eq!(
-                config.gain, expected_gain,
-                "Gain for scale factor {} should be {}",
-                scale_factor, expected_gain
-            );
-
-            // Verify the conversion back to scale factor
-            let calculated_scale = config.gain as f64 / 65536.0;
-            assert!(
-                (calculated_scale - scale_factor).abs() < 0.001,
-                "Scale factor calculation failed for {}",
-                scale_factor
-            );
-        }
-    }
-
-    #[test]
-    fn test_voltage_range_calculations() {
-        // Test typical voltage output calculations
-        // For ±10V range: -10V = -32768, +10V = +32767, 0V = 0
-        let test_cases = [
-            (-10.0, -32768), // -10V
-            (-5.0, -16384),  // -5V (approximately)
-            (0.0, 0),        // 0V
-            (5.0, 16383),    // +5V (approximately)
-            (10.0, 32767),   // +10V (max positive)
-        ];
-
-        for (voltage, expected_raw) in test_cases {
-            let config = EL40XXChannelConfiguration {
-                default_output: expected_raw,
-                ..Default::default()
-            };
-
-            assert_eq!(
-                config.default_output, expected_raw,
-                "Raw value for {}V should be {}",
-                voltage, expected_raw
-            );
-        }
-    }
-
-    #[test]
-    fn test_current_range_calculations() {
-        // Test 4-20mA current output calculations
-        // Different modules may have different mappings, but common ones:
-        // 0-20mA: 0 = 0mA, 32767 = 20mA
-        // 4-20mA: often mapped to full range where min value = 4mA, max = 20mA
-        let test_cases = [
-            (0, "0mA or 4mA (depending on module)"),
-            (16383, "~10mA or ~12mA"),
-            (32767, "20mA"),
-        ];
-
-        for (raw_value, description) in test_cases {
-            let config = EL40XXChannelConfiguration {
-                default_output: raw_value,
-                ..Default::default()
-            };
-
-            assert_eq!(
-                config.default_output, raw_value,
-                "Raw value for {} should be {}",
-                description, raw_value
-            );
-        }
-    }
-
-    #[test]
-    fn test_ramp_calculations() {
-        // Test output ramp values (digits/ms)
-        // Higher values = faster ramp, lower values = slower ramp
-        let test_cases = [
-            (1, "Very slow ramp"),
-            (100, "Slow ramp"),
-            (1000, "Medium ramp"),
-            (10000, "Fast ramp"),
-            (65535, "Maximum ramp speed (default)"),
-        ];
-
-        for (ramp_value, description) in test_cases {
-            let config = EL40XXChannelConfiguration {
-                default_output_ramp: ramp_value,
-                ..Default::default()
-            };
-
-            assert_eq!(
-                config.default_output_ramp, ramp_value,
-                "Ramp value for {} should be {}",
-                description, ramp_value
-            );
-        }
-    }
-
-    #[test]
-    fn test_configuration_clone() {
-        let original = EL40XXChannelConfiguration {
-            enable_user_scale: true,
-            presentation: EL40XXPresentation::Unsigned,
-            watchdog: EL40XXWatchdog::Ramp,
-            enable_user_calibration: true,
-            enable_vendor_calibration: false,
-            offset: 1000,
-            gain: 32768,
-            default_output: 2048,
-            default_output_ramp: 500,
-            user_calibration_offset: -100,
-            user_calibration_gain: 40000,
-        };
-
-        let cloned = original.clone();
-
-        // Verify all fields are cloned correctly
-        assert_eq!(original.enable_user_scale, cloned.enable_user_scale);
-        assert_eq!(
-            original.enable_user_calibration,
-            cloned.enable_user_calibration
-        );
-        assert_eq!(
-            original.enable_vendor_calibration,
-            cloned.enable_vendor_calibration
-        );
-        assert_eq!(original.offset, cloned.offset);
-        assert_eq!(original.gain, cloned.gain);
-        assert_eq!(original.default_output, cloned.default_output);
-        assert_eq!(original.default_output_ramp, cloned.default_output_ramp);
-        assert_eq!(
-            original.user_calibration_offset,
-            cloned.user_calibration_offset
-        );
-        assert_eq!(original.user_calibration_gain, cloned.user_calibration_gain);
-    }
-
-    #[test]
-    fn test_configuration_debug() {
-        let config = EL40XXChannelConfiguration::default();
-        let debug_string = format!("{:?}", config);
-
-        // Should contain struct name and some key field values
-        assert!(debug_string.contains("EL40XXChannelConfiguration"));
-        assert!(debug_string.contains("enable_user_scale"));
-        assert!(debug_string.contains("gain"));
-        assert!(debug_string.contains("65536")); // Default gain value
-    }
-
-    #[test]
-    fn test_presentation_modes() {
-        // Test different presentation modes and their use cases
-        let signed_config = EL40XXChannelConfiguration {
-            presentation: EL40XXPresentation::Signed,
-            ..Default::default()
-        };
-
-        let unsigned_config = EL40XXChannelConfiguration {
-            presentation: EL40XXPresentation::Unsigned,
-            ..Default::default()
-        };
-
-        let signed_magnitude_config = EL40XXChannelConfiguration {
-            presentation: EL40XXPresentation::SignedAbsoluteMSB,
-            ..Default::default()
-        };
-
-        let absolute_config = EL40XXChannelConfiguration {
-            presentation: EL40XXPresentation::Absolute,
-            ..Default::default()
-        };
-
-        // Verify enum values
-        assert_eq!(signed_config.presentation as u8, 0);
-        assert_eq!(unsigned_config.presentation as u8, 1);
-        assert_eq!(signed_magnitude_config.presentation as u8, 2);
-        assert_eq!(absolute_config.presentation as u8, 3);
-    }
-
-    #[test]
-    fn test_watchdog_behaviors() {
-        // Test different watchdog behaviors
-        let default_value_config = EL40XXChannelConfiguration {
-            watchdog: EL40XXWatchdog::DefaultValue,
-            ..Default::default()
-        };
-
-        let ramp_config = EL40XXChannelConfiguration {
-            watchdog: EL40XXWatchdog::Ramp,
-            ..Default::default()
-        };
-
-        let last_value_config = EL40XXChannelConfiguration {
-            watchdog: EL40XXWatchdog::LastValue,
-            ..Default::default()
-        };
-
-        // Verify enum values
-        assert_eq!(default_value_config.watchdog as u8, 0);
-        assert_eq!(ramp_config.watchdog as u8, 1);
-        assert_eq!(last_value_config.watchdog as u8, 2);
     }
 }

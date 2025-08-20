@@ -38,11 +38,7 @@ pub fn init_loop(
             }
 
             loop {
-                tracing::info!("Loop started");
-
                 let res = smol::block_on(rt.run(async {
-                    tracing::info!("Loop iteration started");
-
                     throttle.sleep().await;
 
                     loop_once(app_state.clone()).await
