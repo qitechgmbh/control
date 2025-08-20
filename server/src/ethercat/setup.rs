@@ -16,10 +16,8 @@ use control_core::machines::new::MachineNewHardwareEthercat;
 use control_core::realtime::{set_core_affinity, set_realtime_priority};
 use control_core::socketio::namespace::NamespaceCacheingLogic;
 use ethercat_hal::devices::devices_from_subdevices;
-#[cfg(not(all(target_os = "linux", feature = "io-uring")))]
 use ethercrab::std::{ethercat_now, tx_rx_task};
-#[cfg(all(target_os = "linux", feature = "io-uring"))]
-use ethercrab::std::{ethercat_now, tx_rx_task_io_uring};
+
 use ethercrab::{MainDevice, MainDeviceConfig, PduStorage, RetryBehaviour, Timeouts};
 use smol::channel::Sender;
 use std::{sync::Arc, time::Duration};
