@@ -5,7 +5,7 @@ use control_core::helpers::loop_trottle::LoopThrottle;
 use control_core::realtime::{set_core_affinity, set_realtime_priority};
 use smol::channel::Sender;
 use std::sync::Arc;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use tracing::{instrument, trace_span};
 
 pub fn init_loop(
@@ -64,6 +64,12 @@ pub fn init_loop(
 
 #[instrument(skip(app_state))]
 pub async fn loop_once<'maindevice>(app_state: Arc<AppState>) -> Result<(), anyhow::Error> {
+    // Record cycle start for performance metrics
+    {
+        let mut metrics = app_state.performance_metrics.write().await;
+        metrics.cycle_start();
+    }
+
     let ethercat_setup_guard = app_state.ethercat_setup.read().await;
 
     // only if we have an ethercat setup
@@ -73,10 +79,19 @@ pub async fn loop_once<'maindevice>(app_state: Arc<AppState>) -> Result<(), anyh
         let span = trace_span!("loop_once_inputs");
         let _enter = span.enter();
 
+        // Measure tx_rx performance
+        let txrx_start = Instant::now();
         ethercat_setup
             .group
             .tx_rx(&ethercat_setup.maindevice)
             .await?;
+        let txrx_duration = txrx_start.elapsed();
+
+        // Record tx_rx performance metrics
+        {
+            let mut metrics = app_state.performance_metrics.write().await;
+            metrics.record_txrx_time(txrx_duration);
+        }
 
         // copy inputs to devices
         for (i, subdevice) in ethercat_setup

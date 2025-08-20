@@ -1,4 +1,5 @@
 use crate::ethercat::config::{MAX_SUBDEVICES, PDI_LEN};
+use crate::performance_metrics::EthercatPerformanceMetrics;
 use crate::serial::registry::SERIAL_DEVICE_REGISTRY;
 use crate::socketio::namespaces::Namespaces;
 use control_core::machines::Machine;
@@ -31,6 +32,7 @@ pub struct AppState {
     pub ethercat_setup: Arc<RwLock<Option<EthercatSetup>>>,
     pub serial_setup: Arc<RwLock<SerialSetup>>,
     pub machines: Arc<RwLock<MachineManager>>,
+    pub performance_metrics: Arc<RwLock<EthercatPerformanceMetrics>>,
 }
 
 pub type Machines =
@@ -79,6 +81,7 @@ impl AppState {
                 serial_detection: SerialDetection::new(&SERIAL_DEVICE_REGISTRY),
             })),
             machines: Arc::new(RwLock::new(MachineManager::new())),
+            performance_metrics: Arc::new(RwLock::new(EthercatPerformanceMetrics::new())),
         }
     }
 }
