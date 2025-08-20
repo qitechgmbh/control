@@ -1,16 +1,16 @@
-use std::time::{Duration, Instant};
 use std::collections::VecDeque;
+use std::time::{Duration, Instant};
 use tracing::info;
 
 /// Configuration for performance metrics collection
-const METRICS_WINDOW_SIZE: usize = 10000; // Keep last 10k measurements
-const METRICS_LOG_INTERVAL_SECS: u64 = 5; // Log every 5 seconds
+const METRICS_WINDOW_SIZE: usize = 1000 * 30; // Keep last 30k measurements
+const METRICS_LOG_INTERVAL_SECS: u64 = 30; // Log every 30 seconds
 
 /// Collects and manages EtherCAT performance metrics
 pub struct EthercatPerformanceMetrics {
     txrx_times: VecDeque<Duration>,
-    cycle_times: VecDeque<Duration>,
-    last_cycle_start: Option<Instant>,
+    loop_times: VecDeque<Duration>,
+    last_loop_start: Option<Instant>,
     last_log_time: Instant,
 }
 
@@ -19,8 +19,8 @@ impl EthercatPerformanceMetrics {
     pub fn new() -> Self {
         Self {
             txrx_times: VecDeque::with_capacity(METRICS_WINDOW_SIZE),
-            cycle_times: VecDeque::with_capacity(METRICS_WINDOW_SIZE),
-            last_cycle_start: None,
+            loop_times: VecDeque::with_capacity(METRICS_WINDOW_SIZE),
+            last_loop_start: None,
             last_log_time: Instant::now(),
         }
     }
@@ -28,14 +28,14 @@ impl EthercatPerformanceMetrics {
     /// Records the start of a new cycle
     pub fn cycle_start(&mut self) {
         let now = Instant::now();
-        
+
         // Record cycle time if we have a previous cycle start
-        if let Some(last_start) = self.last_cycle_start {
+        if let Some(last_start) = self.last_loop_start {
             let cycle_time = now - last_start;
             self.add_cycle_time(cycle_time);
         }
-        
-        self.last_cycle_start = Some(now);
+
+        self.last_loop_start = Some(now);
     }
 
     /// Records the duration of a tx_rx operation
@@ -54,10 +54,10 @@ impl EthercatPerformanceMetrics {
 
     /// Adds a cycle time measurement
     fn add_cycle_time(&mut self, duration: Duration) {
-        if self.cycle_times.len() >= METRICS_WINDOW_SIZE {
-            self.cycle_times.pop_front();
+        if self.loop_times.len() >= METRICS_WINDOW_SIZE {
+            self.loop_times.pop_front();
         }
-        self.cycle_times.push_back(duration);
+        self.loop_times.push_back(duration);
     }
 
     /// Logs metrics if enough time has passed
@@ -74,7 +74,7 @@ impl EthercatPerformanceMetrics {
         if !self.txrx_times.is_empty() {
             let txrx_stats = calculate_stats(&self.txrx_times);
             info!(
-                "EtherCAT TX/RX metrics - avg: {:.3}ms, 99.99th: {:.3}ms, stddev: {:.3}ms, samples: {}",
+                "TxRx metrics - avg: {:.3}ms, 99.99th: {:.3}ms, stddev: {:.3}ms, samples: {}",
                 txrx_stats.average_ms,
                 txrx_stats.percentile_9999_ms,
                 txrx_stats.stddev_ms,
@@ -82,14 +82,14 @@ impl EthercatPerformanceMetrics {
             );
         }
 
-        if !self.cycle_times.is_empty() {
-            let cycle_stats = calculate_stats(&self.cycle_times);
+        if !self.loop_times.is_empty() {
+            let cycle_stats = calculate_stats(&self.loop_times);
             info!(
-                "EtherCAT cycle metrics - avg: {:.3}ms, 99.99th: {:.3}ms, stddev: {:.3}ms, samples: {}",
+                "Loop metrics - avg: {:.3}ms, 99.99th: {:.3}ms, stddev: {:.3}ms, samples: {}",
                 cycle_stats.average_ms,
                 cycle_stats.percentile_9999_ms,
                 cycle_stats.stddev_ms,
-                self.cycle_times.len()
+                self.loop_times.len()
             );
         }
     }
@@ -127,7 +127,8 @@ fn calculate_stats(durations: &VecDeque<Duration>) -> MetricsStats {
     let variance = values_us
         .iter()
         .map(|x| (x - average_us).powi(2))
-        .sum::<f64>() / count;
+        .sum::<f64>()
+        / count;
     let stddev_us = variance.sqrt();
 
     // Calculate 99.99th percentile
@@ -169,12 +170,12 @@ mod tests {
     #[test]
     fn test_metrics_collection() {
         let mut metrics = EthercatPerformanceMetrics::new();
-        
+
         // Record some measurements
         metrics.record_txrx_time(Duration::from_millis(1));
         metrics.record_txrx_time(Duration::from_millis(2));
         metrics.record_txrx_time(Duration::from_millis(3));
-        
+
         assert_eq!(metrics.txrx_times.len(), 3);
     }
 }
