@@ -79,8 +79,16 @@ impl AnalogOutputDevice<EL4002Port> for EL4002 {
     fn set_output(&mut self, port: EL4002Port, value: AnalogOutputOutput) {
         let value = normalize_voltage_to_int(value.0);
         match port {
-            EL4002Port::AO1 => self.rxpdo.ao_channel1.as_mut().unwrap().value = value,
-            EL4002Port::AO2 => self.rxpdo.ao_channel2.as_mut().unwrap().value = value,
+            EL4002Port::AO1 => {
+                if let Some(channel) = self.rxpdo.ao_channel1.as_mut() {
+                    channel.value = value
+                }
+            }
+            EL4002Port::AO2 => {
+                if let Some(channel) = self.rxpdo.ao_channel2.as_mut() {
+                    channel.value = value
+                }
+            }
         }
     }
 
