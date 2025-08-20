@@ -6,6 +6,8 @@
 import { StoreApi } from "zustand";
 import { create } from "zustand";
 import { z } from "zod";
+// ========== Event Schema Definitions ==========
+
 import {
   EventHandler,
   eventSchema,
