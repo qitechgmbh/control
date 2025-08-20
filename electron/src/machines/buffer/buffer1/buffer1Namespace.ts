@@ -165,6 +165,7 @@ export function buffer1MessageHandler(
           ...state,
           state: stateEvent,
         }));
+        console.log(stateEvent);
       } else if (eventName === "LiveValuesEvent") {
         // Parse and validate the live values event
         const liveValuesEvent = liveValuesEventSchema.parse(event);
