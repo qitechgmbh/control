@@ -1,7 +1,10 @@
 use std::time::Instant;
 
 use control_core::{
-    controllers::second_degree_motion::linear_jerk_speed_controller::LinearJerkSpeedController,
+    controllers::{
+        clamping_timeagnostic_pid::ClampingTimeagnosticPidController,
+        second_degree_motion::linear_jerk_speed_controller::LinearJerkSpeedController,
+    },
     converters::linear_step_converter::LinearStepConverter,
     uom_extensions::{
         acceleration::meter_per_minute_per_second, jerk::meter_per_minute_per_second_squared,
@@ -11,7 +14,10 @@ use control_core::{
 use serde::{Deserialize, Serialize};
 use uom::{
     ConstZero,
-    si::f64::{Acceleration, AngularVelocity, Jerk, Length, Velocity},
+    si::{
+        f64::{Acceleration, AngularVelocity, Jerk, Length, Velocity},
+        length::millimeter,
+    },
 };
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
@@ -43,6 +49,7 @@ pub struct PullerSpeedController {
     enabled: bool,
     pub target_speed: Velocity,
     pub target_diameter: Length,
+    pub measured_diameter: Length,
     pub regulation_mode: PullerRegulationMode,
     /// Forward rotation direction. If false, applies negative sign to speed
     pub forward: bool,
@@ -53,6 +60,7 @@ pub struct PullerSpeedController {
     /// Converter for linear to angular transformations
     pub converter: LinearStepConverter,
     pub last_speed: Velocity,
+    pub pid: ClampingTimeagnosticPidController,
 }
 
 impl PullerSpeedController {
@@ -69,6 +77,7 @@ impl PullerSpeedController {
             enabled: false,
             target_speed,
             target_diameter,
+            measured_diameter: Length::ZERO,
             regulation_mode: PullerRegulationMode::Speed,
             forward: true,
             gear_ratio: GearRatio::default(),
@@ -79,6 +88,7 @@ impl PullerSpeedController {
             ),
             converter,
             last_speed: Velocity::ZERO,
+            pid: ClampingTimeagnosticPidController::simple_new(0.01, 0.0, 0.02),
         }
     }
 
@@ -114,7 +124,7 @@ impl PullerSpeedController {
         let base_speed = match self.enabled {
             true => match self.regulation_mode {
                 PullerRegulationMode::Speed => self.target_speed,
-                PullerRegulationMode::Diameter => unimplemented!(),
+                PullerRegulationMode::Diameter => self.speed_from_diameter(t),
             },
             false => Velocity::ZERO,
         };
@@ -128,6 +138,28 @@ impl PullerSpeedController {
 
         self.last_speed = speed;
         speed
+    }
+
+    fn speed_from_diameter(&mut self, now: Instant) -> Velocity {
+        let error = self.target_diameter - self.measured_diameter;
+        let speed_change = self.pid.update(error.get::<millimeter>(), now);
+
+        self.target_speed += Velocity::new::<meter_per_minute>(speed_change);
+        Self::clamp_speed(
+            self.target_speed,
+            Velocity::new::<meter_per_minute>(0.0),
+            Velocity::new::<meter_per_minute>(100.0),
+        )
+    }
+
+    fn clamp_speed(speed: Velocity, min: Velocity, max: Velocity) -> Velocity {
+        if speed < min {
+            min
+        } else if speed > max {
+            max
+        } else {
+            speed
+        }
     }
 
     pub fn speed_to_angular_velocity(&self, speed: Velocity) -> AngularVelocity {
