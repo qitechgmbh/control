@@ -100,9 +100,11 @@ enum Mutation {
 
     // Connected Machine
     SetConnectedMachine(MachineIdentificationUnique),
+    SetConnectedLaser(MachineIdentificationUnique),
 
     // Disconnect Machine
     DisconnectMachine(MachineIdentificationUnique),
+    DisconnectLaser(MachineIdentificationUnique),
 }
 
 #[derive(Serialize, Debug, Clone, Default)]
@@ -144,6 +146,8 @@ pub struct StateEvent {
     pub spool_speed_controller_state: SpoolSpeedControllerState,
     /// connected machine state
     pub connected_machine_state: ConnectedMachineState,
+    /// connected laser state
+    pub connected_laser_state: ConnectedMachineState,
 }
 
 #[derive(Serialize, Debug, Clone)]
@@ -338,6 +342,12 @@ impl MachineApi for Winder2 {
             }
             Mutation::DisconnectMachine(machine_identification_unique) => {
                 self.disconnect_buffer(machine_identification_unique)
+            }
+            Mutation::SetConnectedLaser(machine_identification_unique) => {
+                self.set_connected_laser(machine_identification_unique)
+            }
+            Mutation::DisconnectLaser(machine_identification_unique) => {
+                self.disconnect_laser(machine_identification_unique)
             }
         }
         Ok(())

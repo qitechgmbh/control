@@ -52,8 +52,12 @@ use uom::{
     },
 };
 
-use crate::machines::{
-    MACHINE_WINDER_V1, VENDOR_QITECH, buffer1::BufferV1, winder2::api::ConnectedMachineState,
+use crate::{
+    machines::{
+        MACHINE_WINDER_V1, VENDOR_QITECH, buffer1::BufferV1, laser::LaserMachine,
+        winder2::api::ConnectedMachineState,
+    },
+    serial::devices::laser::Laser,
 };
 
 #[derive(Debug)]
@@ -87,6 +91,7 @@ pub struct Winder2 {
 
     // connected machines
     pub connected_buffer: Option<ConnectedMachine<Weak<Mutex<BufferV1>>>>,
+    pub connected_laser: Option<ConnectedMachine<Weak<Mutex<LaserMachine>>>>,
 
     // mode
     pub mode: Winder2Mode,
@@ -326,6 +331,22 @@ impl Winder2 {
                 ),
                 is_available: self
                     .connected_buffer
+                    .as_ref()
+                    .map(|connected_machine| {
+                        ConnectedMachineData::from(connected_machine).is_available
+                    })
+                    .unwrap_or(false),
+            },
+            connected_laser_state: ConnectedMachineState {
+                machine_identification_unique: self.connected_laser.as_ref().map(
+                    |connected_machine| {
+                        ConnectedMachineData::from(connected_machine)
+                            .machine_identification_unique
+                            .clone()
+                    },
+                ),
+                is_available: self
+                    .connected_laser
                     .as_ref()
                     .map(|connected_machine| {
                         ConnectedMachineData::from(connected_machine).is_available
@@ -787,7 +808,7 @@ impl Winder2 {
     }
 }
 
-/// implement machine connection
+/// implement buffer connection
 impl Winder2 {
     /// set connected buffer
     pub fn set_connected_buffer(
@@ -863,6 +884,91 @@ impl Winder2 {
                     let mut buffer = buffer_arc.lock().await;
                     if buffer.connected_winder.is_none() {
                         buffer.set_connected_winder(machine_identification_unique);
+                    }
+                };
+                smol::spawn(future).detach();
+            }
+        }
+    }
+}
+
+/// implement laser connection
+impl Winder2 {
+    /// set connected buffer
+    pub fn set_connected_laser(
+        &mut self,
+        machine_identification_unique: MachineIdentificationUnique,
+    ) {
+        if !matches!(
+            machine_identification_unique.machine_identification,
+            LaserMachine::MACHINE_IDENTIFICATION
+        ) {
+            return;
+        }
+        let machine_manager_arc = match self.machine_manager.upgrade() {
+            Some(machine_manager_arc) => machine_manager_arc,
+            None => return,
+        };
+        let machine_manager_guard = block_on(machine_manager_arc.read());
+        let laser_weak = machine_manager_guard.get_machine_weak(&machine_identification_unique);
+        let laser_weak = match laser_weak {
+            Some(laser_weak) => laser_weak,
+            None => return,
+        };
+        let laser_strong = match laser_weak.upgrade() {
+            Some(laser_strong) => laser_strong,
+            None => return,
+        };
+
+        let laser: Arc<Mutex<LaserMachine>> =
+            block_on(downcast_machine::<LaserMachine>(laser_strong))
+                .expect("failed downcasting machine");
+
+        let machine = Arc::downgrade(&laser);
+
+        self.connected_laser = Some(ConnectedMachine {
+            machine_identification_unique,
+            machine: machine.clone(),
+        });
+
+        self.emit_state();
+
+        self.reverse_connect_laser();
+    }
+
+    /// disconnect laser
+    pub fn disconnect_laser(&mut self, machine_identification_unique: MachineIdentificationUnique) {
+        if !matches!(
+            machine_identification_unique.machine_identification,
+            LaserMachine::MACHINE_IDENTIFICATION
+        ) {
+            return;
+        }
+        if let Some(connected) = &self.connected_laser {
+            if let Some(laser_arc) = connected.machine.upgrade() {
+                let future = async move {
+                    let mut laser = laser_arc.lock().await;
+                    if laser.connected_winder.is_some() {
+                        laser.connected_winder = None;
+                        laser.emit_state();
+                    }
+                };
+                smol::spawn(future).detach();
+            }
+        }
+        self.connected_laser = None;
+        self.emit_state();
+    }
+
+    /// initiate connection from laser to winder
+    pub fn reverse_connect_laser(&mut self) {
+        let machine_identification_unique = self.machine_identification_unique.clone();
+        if let Some(connected) = &self.connected_laser {
+            if let Some(laser_arc) = connected.machine.upgrade() {
+                let future = async move {
+                    let mut laser = laser_arc.lock().await;
+                    if laser.connected_winder.is_none() {
+                        laser.set_connected_winder(machine_identification_unique);
                     }
                 };
                 smol::spawn(future).detach();
