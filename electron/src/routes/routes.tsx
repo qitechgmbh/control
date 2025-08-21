@@ -41,6 +41,7 @@ import { Aquapath1GraphPage } from "@/machines/aquapath/aquapath1/Aquapath1Graph
 
 import { z } from "zod";
 import { Laser1PresetsPage } from "@/machines/laser/laser1/Laser1PresetsPage";
+import { Laser1SettingsPage } from "@/machines/laser/laser1/Laser1Settings";
 // make a route tree like this
 // _mainNavigation/machines/winder2/$serial/control
 // _mainNavigation/configuration/a
@@ -154,6 +155,12 @@ export const laser1PresetsRoute = createRoute({
   getParentRoute: () => laser1SerialRoute,
   path: "presets",
   component: () => <Laser1PresetsPage />,
+});
+
+export const laser1SettingsRoute = createRoute({
+  getParentRoute: () => laser1SerialRoute,
+  path: "manual",
+  component: () => <Laser1SettingsPage />,
 });
 
 export const mock1SerialRoute = createRoute({
@@ -312,6 +319,7 @@ export const rootTree = RootRoute.addChildren([
         laser1ControlRoute,
         laser1GraphsRoute,
         laser1PresetsRoute,
+        laser1SettingsRoute,
       ]),
 
       aquapath1SerialRoute.addChildren([
