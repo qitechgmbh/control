@@ -758,7 +758,7 @@ impl Winder2 {
             None => return,
         };
         let machine_manager_guard = block_on(machine_manager_arc.read());
-        let laser_weak = machine_manager_guard.get_machine_weak(&machine_identification_unique);
+        let laser_weak = machine_manager_guard.get_serial_weak(&machine_identification_unique);
         let laser_weak = match laser_weak {
             Some(laser_weak) => laser_weak,
             None => return,
