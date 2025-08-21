@@ -42,6 +42,8 @@ mod winder2_imports {
         },
     };
 
+    pub use crate::machines::laser::api::PidSettingsStates;
+    pub use crate::machines::laser::api::PidSettings;
     pub use control_core_derive::BuildEvent;
     pub use serde::{Deserialize, Serialize};
     pub use serde_json::Value;
@@ -135,6 +137,9 @@ pub enum Mutation {
     // Mode
     SetMode(Mode),
 
+    // Pid Configure
+    SetSpeedPidSettings(PidSettings),
+
     // Connected Machine
     SetConnectedMachine(MachineIdentificationUnique),
     SetConnectedLaser(MachineIdentificationUnique),
@@ -181,6 +186,8 @@ pub struct StateEvent {
     pub spool_speed_controller_state: SpoolSpeedControllerState,
     /// connected machine state
     pub connected_machine_state: MachineCrossConnectionState,
+    /// pid settings
+    pub pid_settings: PidSettingsStates,
 }
 
 #[derive(Serialize, Debug, Clone, Default)]
@@ -376,6 +383,9 @@ impl MachineApi for Winder2 {
             }
             Mutation::DisconnectLaser(machine_identification_unique) => {
                 self.disconnect_laser(machine_identification_unique)
+            }
+            Mutation::SetSpeedPidSettings(settings) => {
+                self.configure_speed_pid(settings);
             }
         }
         Ok(())

@@ -1,6 +1,8 @@
 use crate::{
     machines::{
-        laser::api::{ConnectedMachineState, PidSettings}, winder2::{self, Winder2}, MACHINE_LASER_V1, VENDOR_QITECH
+        MACHINE_LASER_V1, VENDOR_QITECH,
+        laser::api::{ConnectedMachineState, PidSettings, PidSettingsStates},
+        winder2::Winder2,
     },
     serial::devices::laser::Laser,
 };
@@ -114,6 +116,14 @@ impl LaserMachine {
                         ConnectedMachineData::from(connected_machine).is_available
                     })
                     .unwrap_or(false),
+            },
+            pid_settings: PidSettingsStates {
+                speed: PidSettings {
+                    ki: 0.0,
+                    kp: 0.0,
+                    kd: 0.0,
+                    dead: 0.0,
+                },
             },
         };
 
@@ -266,12 +276,36 @@ impl LaserMachine {
             }
         }
     }
+
+    /// This helper function provides an easy way
+    /// to get the machine out of the Weak Reference
+    ///
+    /// Usage:
+    ///
+    ///    self.get_winder(|winder2| {
+    ///        winder2.do_something     // Use the Winder here as usual
+    ///    });
+    fn get_winder<F, R>(&self, func: F) -> Option<R>
+    where
+        F: FnOnce(&mut Winder2) -> R,
+    {
+        self.connected_winder
+            .as_ref()?
+            .machine
+            .upgrade()
+            .map(|winder_arc| {
+                let mut winder = block_on(winder_arc.lock());
+                func(&mut winder)
+            })
+    }
 }
 
 impl LaserMachine {
     fn configure_speed_pid(&mut self, settings: PidSettings) {
         // Implement pid to controll speed of winder
-        !todo!();
+        self.get_winder(|winder2| {
+            winder2.configure_speed_pid(settings);
+        });
         self.emit_state();
     }
 }
