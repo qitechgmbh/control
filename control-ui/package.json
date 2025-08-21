@@ -15,6 +15,16 @@
       "import": "./dist/*.js",
       "require": "./dist/*.js"
     },
+    "./components/*": {
+      "types": "./dist/components/*.d.ts",
+      "import": "./dist/components/*.js",
+      "require": "./dist/components/*.js"
+    },
+    "./components/ui/*": {
+      "types": "./dist/components/ui/*.d.ts",
+      "import": "./dist/components/ui/*.js",
+      "require": "./dist/components/ui/*.js"
+    },
     "./utils": {
       "types": "./dist/utils/index.d.ts",
       "import": "./dist/utils/index.js",

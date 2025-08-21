@@ -34,3 +34,7 @@ pids
 *.pid
 *.seed
 *.pid.lock
+
+
+# TS build
+tsconfig.tsbuildinfo
