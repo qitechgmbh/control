@@ -742,7 +742,7 @@ impl Winder2 {
 
 /// implement laser connection
 impl Winder2 {
-    /// set connected buffer
+    /// set connected laser
     pub fn set_connected_laser(
         &mut self,
         machine_identification_unique: MachineIdentificationUnique,
