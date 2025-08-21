@@ -227,7 +227,7 @@ function useLaser(machine_identification_unique: MachineIdentificationUnique) {
   }) => {
     updateStateOptimistically(
       (current) => {
-        current.data.connected_machine_state.machine_identification_unique =
+        current.data.connected_winder_state.machine_identification_unique =
           machineIdentificationUnique;
       },
       () =>
@@ -247,7 +247,7 @@ function useLaser(machine_identification_unique: MachineIdentificationUnique) {
   }) => {
     updateStateOptimistically(
       (current) => {
-        current.data.connected_machine_state.machine_identification_unique =
+        current.data.connected_winder_state.machine_identification_unique =
           null;
       },
       () =>
@@ -276,8 +276,7 @@ function useLaser(machine_identification_unique: MachineIdentificationUnique) {
   // Get selected machine by serial
   const selectedMachine = useMemo(() => {
     const serial =
-      state?.data.connected_machine_state?.machine_identification_unique
-        ?.serial;
+      state?.data.connected_winder_state?.machine_identification_unique?.serial;
 
     return (
       filteredMachines.find(
