@@ -57,6 +57,14 @@ pub struct LaserState {
     pub target_diameter: f64,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct PidSettings {
+    pub ki: f64,
+    pub kp: f64,
+    pub kd: f64,
+    pub dead: f64,
+}
+
 #[derive(Serialize, Debug, Clone)]
 pub struct ConnectedMachineState {
     /// Connected Machine
@@ -110,6 +118,9 @@ enum Mutation {
     SetLowerTolerance(f64),
     SetHigherTolerance(f64),
 
+    // Pid Configure
+    SetSpeedPidSettings(PidSettings),
+
     // Connect Machine
     SetConnectedWinder(MachineIdentificationUnique),
     // Disconnect Machine
@@ -143,6 +154,9 @@ impl MachineApi for LaserMachine {
             }
             Mutation::DisconnectWinder(machine_identification_unique) => {
                 self.disconnect_winder(machine_identification_unique);
+            }
+            Mutation::SetSpeedPidSettings(settings) => {
+                self.configure_speed_pid(settings);
             }
         }
         Ok(())
