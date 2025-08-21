@@ -1,7 +1,7 @@
 // every device has multiple roles to identify the function of a subdevice
 // each role can only be given once
 
-import { IconName } from "@/components/Icon";
+import { IconName } from "control-ui/components/Icon";
 import { rustEnumSchema } from "@/lib/types";
 import { z } from "zod";
 

@@ -30,12 +30,36 @@ export default [
   { languageOptions: { globals: globals.browser } },
   pluginJs.configs.recommended,
   pluginReact.configs.flat.recommended,
-  eslintPluginPrettierRecommended,
-  ...tseslint.configs.recommended,
   {
+    settings: {
+      react: {
+        version: "detect",
+      },
+    },
+  },
+  eslintPluginPrettierRecommended,
+  ...tseslint.configs.recommended.map((config) => ({
+    ...config,
+    files: ["**/*.{ts,tsx}"], // Only apply TypeScript parsing to .ts and .tsx files
+    languageOptions: {
+      ...config.languageOptions,
+      parserOptions: {
+        ...config.languageOptions?.parserOptions,
+        tsconfigRootDir: __dirname,
+        project: "./tsconfig.json",
+      },
+    },
+  })),
+  {
+    files: ["**/*.{ts,tsx}"], // TypeScript-specific rules
     rules: {
       "@typescript-eslint/no-explicit-any": "off",
       "@typescript-eslint/no-unused-vars": "warn",
+    },
+  },
+  {
+    files: ["**/*.{js,jsx,tsx}"], // General React rules
+    rules: {
       "react/no-unknown-property": "warn",
     },
   },
