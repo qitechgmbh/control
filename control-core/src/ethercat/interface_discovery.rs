@@ -123,7 +123,7 @@ fn test_interface(interface: &str) -> Result<(), anyhow::Error> {
 
     let result = rt.run(async {
         let tx_rx_handle = rt.spawn(
-            tx_rx_task(&interface, tx, rx)
+            tx_rx_task(interface, tx, rx)
                 .map_err(|e| anyhow::anyhow!("Failed to spawn TX/RX task: {}", e))?,
         );
 
