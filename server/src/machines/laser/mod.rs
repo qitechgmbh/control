@@ -261,7 +261,7 @@ impl LaserMachine {
         self.emit_state();
     }
 
-    /// initiate connection from laser to winder
+    /// initiate connection from winder to laser
     pub fn reverse_connect_winder(&mut self) {
         let machine_identification_unique = self.machine_identification_unique.clone();
         if let Some(connected) = &self.connected_winder {
