@@ -52,12 +52,14 @@ use uom::{
     },
 };
 
-use crate::{
-    machines::{
-        MACHINE_WINDER_V1, VENDOR_QITECH, buffer1::BufferV1, laser::LaserMachine,
-        winder2::api::ConnectedMachineState,
+use crate::machines::{
+    MACHINE_WINDER_V1, VENDOR_QITECH,
+    buffer1::BufferV1,
+    laser::{
+        LaserMachine,
+        api::{PidSettings, PidSettingsStates},
     },
-    serial::devices::laser::Laser,
+    winder2::api::ConnectedMachineState,
 };
 
 #[derive(Debug)]
@@ -350,6 +352,14 @@ impl Winder2 {
                         ConnectedMachineData::from(connected_machine).is_available
                     })
                     .unwrap_or(false),
+            },
+            pid_settings: PidSettingsStates {
+                speed: PidSettings {
+                    ki: 0.0,
+                    kp: 0.0,
+                    kd: 0.0,
+                    dead: 0.0,
+                },
             },
         }
     }
@@ -975,6 +985,16 @@ impl Winder2 {
                 smol::spawn(future).detach();
             }
         }
+    }
+}
+
+impl Winder2 {
+    pub fn configure_speed_pid(&mut self, settings: PidSettings) {
+        // Implement pid to controll speed of winder
+        self.puller_speed_controller
+            .pid
+            .configure(settings.ki, settings.kp, settings.kd);
+        self.emit_state();
     }
 }
 
