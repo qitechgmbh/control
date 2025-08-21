@@ -172,6 +172,18 @@ export function useWinder2() {
     }),
   );
 
+  const { request: requestConnectedLaser } = useMachineMutation(
+    z.object({
+      SetConnectedLaser: machineIdentificationUnique,
+    }),
+  );
+
+  const { request: requestDisconnectLaser } = useMachineMutation(
+    z.object({
+      DisconnectLaser: machineIdentificationUnique,
+    }),
+  );
+
   // Helper function for optimistic updates using produce
   const updateStateOptimistically = (
     producer: (current: StateEvent) => void,
@@ -551,6 +563,45 @@ export function useWinder2() {
     );
   };
 
+  const setConnectedLaser = (machineIdentificationUnique: {
+    machine_identification: {
+      vendor: number;
+      machine: number;
+    };
+    serial: number;
+  }) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.connected_laser_state.machine_identification_unique =
+          machineIdentificationUnique;
+      },
+      () =>
+        requestConnectedLaser({
+          machine_identification_unique,
+          data: { SetConnectedLaser: machineIdentificationUnique },
+        }),
+    );
+  };
+
+  const disconnectLaser = (machineIdentificationUnique: {
+    machine_identification: {
+      vendor: number;
+      machine: number;
+    };
+    serial: number;
+  }) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.connected_laser_state.machine_identification_unique = null;
+      },
+      () =>
+        requestDisconnectLaser({
+          machine_identification_unique,
+          data: { DisconnectLaser: machineIdentificationUnique },
+        }),
+    );
+  };
+
   // Calculate loading states
   const isLoading = stateOptimistic.isOptimistic;
   const isDisabled = !stateOptimistic.isInitialized;
@@ -633,5 +684,7 @@ export function useWinder2() {
     setSpoolAdaptiveDeaccelerationUrgencyMultiplier,
     setConnectedMachine,
     disconnectMachine,
+    setConnectedLaser,
+    disconnectLaser,
   };
 }
