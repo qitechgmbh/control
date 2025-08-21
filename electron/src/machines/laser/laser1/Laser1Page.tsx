@@ -21,11 +21,17 @@ export function Laser1Page() {
           icon: "lu:ChartSpline",
         },
         {
-          link: "manual",
-          activeLink: "manual",
-          title: "Manual",
-          icon: "lu:BookOpen",
+          link: "settings",
+          activeLink: "settings",
+          title: "Config",
+          icon: "lu:Settings",
         },
+        // {
+        //     link: "manual",
+        //     activeLink: "manual",
+        //     title: "Manual",
+        //     icon: "lu:BookOpen",
+        // },
         {
           link: "presets",
           activeLink: "presets",
