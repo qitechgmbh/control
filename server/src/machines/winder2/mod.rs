@@ -96,6 +96,7 @@ pub struct Winder2 {
 
     // connected machines
     pub connected_buffer: MachineCrossConnection<Winder2, BufferV1>,
+    pub connected_laser: Option<ConnectedMachine<Weak<Mutex<LaserMachine>>>>,
 
     // mode
     pub mode: Winder2Mode,
@@ -137,6 +138,226 @@ impl Winder2 {
     /// - At least 0.9mm difference between inner and outer limits
     fn validate_traverse_limits(inner: Length, outer: Length) -> bool {
         outer > inner + Length::new::<millimeter>(0.9)
+    }
+
+    pub fn traverse_set_limit_inner(&mut self, limit: f64) {
+        let new_inner = Length::new::<millimeter>(limit);
+        let current_outer = self.traverse_controller.get_limit_outer();
+
+        // Validate the new inner limit against current outer limit
+        if !Self::validate_traverse_limits(new_inner, current_outer) {
+            // Don't update if validation fails - keep the current value
+            return;
+        }
+        self.traverse_controller.set_limit_inner(new_inner);
+        self.emit_state();
+    }
+
+    pub fn traverse_set_limit_outer(&mut self, limit: f64) {
+        let new_outer = Length::new::<millimeter>(limit);
+        let current_inner = self.traverse_controller.get_limit_inner();
+
+        // Validate the new outer limit against current inner limit
+        if !Self::validate_traverse_limits(current_inner, new_outer) {
+            // Don't update if validation fails - keep the current value
+            return;
+        }
+
+        self.traverse_controller.set_limit_outer(new_outer);
+        self.emit_state();
+    }
+
+    pub fn traverse_set_step_size(&mut self, step_size: f64) {
+        let step_size = Length::new::<millimeter>(step_size);
+        self.traverse_controller.set_step_size(step_size);
+        self.emit_state();
+    }
+
+    pub fn traverse_set_padding(&mut self, padding: f64) {
+        let padding = Length::new::<millimeter>(padding);
+        self.traverse_controller.set_padding(padding);
+        self.emit_state();
+    }
+
+    pub fn traverse_goto_limit_inner(&mut self) {
+        if self.can_go_in() {
+            self.traverse_controller.goto_limit_inner();
+        }
+        self.emit_state();
+    }
+
+    pub fn traverse_goto_limit_outer(&mut self) {
+        if self.can_go_out() {
+            self.traverse_controller.goto_limit_outer();
+        }
+        self.emit_state();
+    }
+
+    pub fn traverse_goto_home(&mut self) {
+        if self.can_go_home() {
+            self.traverse_controller.goto_home();
+        }
+        self.emit_state();
+    }
+
+    pub fn emit_live_values(&mut self) {
+        let angle_deg = self.tension_arm.get_angle().get::<degree>();
+
+        // Wrap [270;<360] to [-90; 0]
+        // This is done to reduce flicker in the graphs around the zero point
+        let angle_deg = if angle_deg >= 270.0 {
+            angle_deg - 360.0
+        } else {
+            angle_deg
+        };
+
+        // Calculate puller speed from current motor steps
+        let steps_per_second = self.puller.get_speed();
+        let angular_velocity = self
+            .puller_speed_controller
+            .converter
+            .steps_to_angular_velocity(steps_per_second as f64);
+        let puller_speed = self
+            .puller_speed_controller
+            .angular_velocity_to_speed(angular_velocity);
+
+        // Calculate spool RPM from current motor steps
+        let spool_rpm = self
+            .spool_step_converter
+            .steps_to_angular_velocity(self.spool.get_speed() as f64)
+            .get::<revolution_per_minute>();
+
+        let live_values = LiveValuesEvent {
+            traverse_position: self
+                .traverse_controller
+                .get_current_position()
+                .map(|x| x.get::<millimeter>()),
+            puller_speed: puller_speed.get::<meter_per_minute>(),
+            spool_rpm,
+            tension_arm_angle: angle_deg,
+            spool_progress: self.spool_automatic_action.progress.get::<meter>(),
+        };
+
+        let event = live_values.build();
+        self.namespace.emit(Winder2Events::LiveValues(event));
+    }
+
+    pub fn build_state_event(&mut self) -> StateEvent {
+        StateEvent {
+            is_default_state: !std::mem::replace(&mut self.emitted_default_state, true),
+            traverse_state: TraverseState {
+                limit_inner: self
+                    .traverse_controller
+                    .get_limit_inner()
+                    .get::<millimeter>(),
+                limit_outer: self
+                    .traverse_controller
+                    .get_limit_outer()
+                    .get::<millimeter>(),
+                position_in: self
+                    .traverse_controller
+                    .get_limit_inner()
+                    .get::<millimeter>(),
+                position_out: self
+                    .traverse_controller
+                    .get_limit_outer()
+                    .get::<millimeter>(),
+                is_going_in: self.traverse_controller.is_going_in(),
+                is_going_out: self.traverse_controller.is_going_out(),
+                is_homed: self.traverse_controller.is_homed(),
+                is_going_home: self.traverse_controller.is_going_home(),
+                is_traversing: self.traverse_controller.is_traversing(),
+                laserpointer: self.laser.get(),
+                step_size: self.traverse_controller.get_step_size().get::<millimeter>(),
+                padding: self.traverse_controller.get_padding().get::<millimeter>(),
+                can_go_in: self.can_go_in(),
+                can_go_out: self.can_go_out(),
+                can_go_home: self.can_go_home(),
+            },
+            puller_state: PullerState {
+                regulation: self.puller_speed_controller.regulation_mode.clone(),
+                target_speed: self
+                    .puller_speed_controller
+                    .target_speed
+                    .get::<meter_per_minute>(),
+                target_diameter: self
+                    .puller_speed_controller
+                    .target_diameter
+                    .get::<millimeter>(),
+                forward: self.puller_speed_controller.forward,
+            },
+            mode_state: ModeState {
+                mode: self.mode.clone().into(),
+                can_wind: self.can_wind(),
+            },
+            tension_arm_state: TensionArmState {
+                zeroed: self.tension_arm.zeroed,
+            },
+            spool_speed_controller_state: SpoolSpeedControllerState {
+                regulation_mode: self.spool_speed_controller.get_type().clone(),
+                minmax_min_speed: self
+                    .spool_speed_controller
+                    .get_minmax_min_speed()
+                    .get::<revolution_per_minute>(),
+                minmax_max_speed: self
+                    .spool_speed_controller
+                    .get_minmax_max_speed()
+                    .get::<revolution_per_minute>(),
+                adaptive_tension_target: self.spool_speed_controller.get_adaptive_tension_target(),
+                adaptive_radius_learning_rate: self
+                    .spool_speed_controller
+                    .get_adaptive_radius_learning_rate(),
+                adaptive_max_speed_multiplier: self
+                    .spool_speed_controller
+                    .get_adaptive_max_speed_multiplier(),
+                adaptive_acceleration_factor: self
+                    .spool_speed_controller
+                    .get_adaptive_acceleration_factor(),
+                adaptive_deacceleration_urgency_multiplier: self
+                    .spool_speed_controller
+                    .get_adaptive_deacceleration_urgency_multiplier(),
+            },
+            spool_automatic_action_state: SpoolAutomaticActionState {
+                spool_required_meters: self.spool_automatic_action.target_length.get::<meter>(),
+                spool_automatic_action_mode: self.spool_automatic_action.mode.clone(),
+            },
+            connected_machine_state: ConnectedMachineState {
+                machine_identification_unique: self.connected_buffer.as_ref().map(
+                    |connected_machine| {
+                        ConnectedMachineData::from(connected_machine).machine_identification_unique
+                    },
+                ),
+                is_available: self
+                    .connected_buffer
+                    .as_ref()
+                    .map(|connected_machine| {
+                        ConnectedMachineData::from(connected_machine).is_available
+                    })
+                    .unwrap_or(false),
+            },
+            connected_laser_state: ConnectedMachineState {
+                machine_identification_unique: self.connected_laser.as_ref().map(
+                    |connected_machine| {
+                        ConnectedMachineData::from(connected_machine)
+                            .machine_identification_unique
+                            .clone()
+                    },
+                ),
+                is_available: self
+                    .connected_laser
+                    .as_ref()
+                    .map(|connected_machine| {
+                        ConnectedMachineData::from(connected_machine).is_available
+                    })
+                    .unwrap_or(false),
+            },
+        }
+    }
+
+    pub fn emit_state(&mut self) {
+        let state_event = self.build_state_event();
+        let event = state_event.build();
+        self.namespace.emit(Winder2Events::State(event));
     }
 
     pub fn sync_traverse_speed(&mut self) {
@@ -329,9 +550,274 @@ impl Winder2 {
             .angular_velocity_to_steps(angular_velocity);
         let _ = self.puller.set_speed(steps_per_second);
     }
+
+    pub fn puller_set_regulation(&mut self, puller_regulation_mode: PullerRegulationMode) {
+        self.puller_speed_controller
+            .set_regulation_mode(puller_regulation_mode);
+        self.emit_state();
+    }
+
+    /// Set target speed in m/min
+    pub fn puller_set_target_speed(&mut self, target_speed: f64) {
+        // Convert m/min to velocity
+        let target_speed = Velocity::new::<meter_per_minute>(target_speed);
+        self.puller_speed_controller.set_target_speed(target_speed);
+        self.emit_state();
+    }
+
+    /// Set target diameter in mm
+    pub fn puller_set_target_diameter(&mut self, target_diameter: f64) {
+        // Convert m/min to velocity
+        let target_diameter = Length::new::<millimeter>(target_diameter);
+        self.puller_speed_controller
+            .set_target_diameter(target_diameter);
+        self.emit_state();
+    }
+
+    /// Set forward direction
+    pub fn puller_set_forward(&mut self, forward: bool) {
+        self.puller_speed_controller.set_forward(forward);
+        self.emit_state();
+    }
+
+    // Spool Speed Controller API methods
+    pub fn spool_set_regulation_mode(
+        &mut self,
+        regulation_mode: spool_speed_controller::SpoolSpeedControllerType,
+    ) {
+        self.spool_speed_controller.set_type(regulation_mode);
+        self.emit_state();
+    }
+
+    /// Set minimum speed for minmax mode in RPM
+    pub fn spool_set_minmax_min_speed(&mut self, min_speed_rpm: f64) {
+        let min_speed = uom::si::f64::AngularVelocity::new::<revolution_per_minute>(min_speed_rpm);
+        if let Err(e) = self.spool_speed_controller.set_minmax_min_speed(min_speed) {
+            tracing::error!("Failed to set spool min speed: {:?}", e);
+        }
+        self.emit_state();
+    }
+
+    /// Set maximum speed for minmax mode in RPM
+    pub fn spool_set_minmax_max_speed(&mut self, max_speed_rpm: f64) {
+        let max_speed = uom::si::f64::AngularVelocity::new::<revolution_per_minute>(max_speed_rpm);
+        if let Err(e) = self.spool_speed_controller.set_minmax_max_speed(max_speed) {
+            tracing::error!("Failed to set spool max speed: {:?}", e);
+        }
+        self.emit_state();
+    }
+
+    /// Set tension target for adaptive mode (0.0-1.0)
+    pub fn spool_set_adaptive_tension_target(&mut self, tension_target: f64) {
+        self.spool_speed_controller
+            .set_adaptive_tension_target(tension_target);
+        self.emit_state();
+    }
+
+    /// Set radius learning rate for adaptive mode
+    pub fn spool_set_adaptive_radius_learning_rate(&mut self, radius_learning_rate: f64) {
+        self.spool_speed_controller
+            .set_adaptive_radius_learning_rate(radius_learning_rate);
+        self.emit_state();
+    }
+
+    /// Set max speed multiplier for adaptive mode
+    pub fn spool_set_adaptive_max_speed_multiplier(&mut self, max_speed_multiplier: f64) {
+        self.spool_speed_controller
+            .set_adaptive_max_speed_multiplier(max_speed_multiplier);
+        self.emit_state();
+    }
+
+    /// Set acceleration factor for adaptive mode
+    pub fn spool_set_adaptive_acceleration_factor(&mut self, acceleration_factor: f64) {
+        self.spool_speed_controller
+            .set_adaptive_acceleration_factor(acceleration_factor);
+        self.emit_state();
+    }
+
+    /// Set deacceleration urgency multiplier for adaptive mode
+    pub fn spool_set_adaptive_deacceleration_urgency_multiplier(
+        &mut self,
+        deacceleration_urgency_multiplier: f64,
+    ) {
+        self.spool_speed_controller
+            .set_adaptive_deacceleration_urgency_multiplier(deacceleration_urgency_multiplier);
+        self.emit_state();
+    }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+/// implement buffer connection
+impl Winder2 {
+    /// set connected buffer
+    pub fn set_connected_buffer(
+        &mut self,
+        machine_identification_unique: MachineIdentificationUnique,
+    ) {
+        if !matches!(
+            machine_identification_unique.machine_identification,
+            BufferV1::MACHINE_IDENTIFICATION
+        ) {
+            return;
+        }
+        let machine_manager_arc = match self.machine_manager.upgrade() {
+            Some(machine_manager_arc) => machine_manager_arc,
+            None => return,
+        };
+        let machine_manager_guard = block_on(machine_manager_arc.read());
+        let buffer_weak = machine_manager_guard.get_machine_weak(&machine_identification_unique);
+        let buffer_weak = match buffer_weak {
+            Some(buffer_weak) => buffer_weak,
+            None => return,
+        };
+        let buffer_strong = match buffer_weak.upgrade() {
+            Some(buffer_strong) => buffer_strong,
+            None => return,
+        };
+
+        let buffer: Arc<Mutex<BufferV1>> = block_on(downcast_machine::<BufferV1>(buffer_strong))
+            .expect("failed downcasting machine");
+
+        let machine = Arc::downgrade(&buffer);
+
+        self.connected_buffer = Some(ConnectedMachine {
+            machine_identification_unique,
+            machine,
+        });
+        self.emit_state();
+
+        self.reverse_connect();
+    }
+
+    /// disconnect buffer
+    pub fn disconnect_buffer(
+        &mut self,
+        machine_identification_unique: MachineIdentificationUnique,
+    ) {
+        if !matches!(
+            machine_identification_unique.machine_identification,
+            BufferV1::MACHINE_IDENTIFICATION
+        ) {
+            return;
+        }
+        if let Some(connected) = &self.connected_buffer {
+            if let Some(buffer_arc) = connected.machine.upgrade() {
+                let future = async move {
+                    let mut buffer = buffer_arc.lock().await;
+                    if buffer.connected_winder.is_some() {
+                        buffer.connected_winder = None;
+                        buffer.emit_state();
+                    }
+                };
+                smol::spawn(future).detach();
+            }
+        }
+        self.connected_buffer = None;
+        self.emit_state();
+    }
+
+    /// initiate connection from buffer to winder
+    pub fn reverse_connect(&mut self) {
+        let machine_identification_unique = self.machine_identification_unique.clone();
+        if let Some(connected) = &self.connected_buffer {
+            if let Some(buffer_arc) = connected.machine.upgrade() {
+                let future = async move {
+                    let mut buffer = buffer_arc.lock().await;
+                    if buffer.connected_winder.is_none() {
+                        buffer.set_connected_winder(machine_identification_unique);
+                    }
+                };
+                smol::spawn(future).detach();
+            }
+        }
+    }
+}
+
+/// implement laser connection
+impl Winder2 {
+    /// set connected buffer
+    pub fn set_connected_laser(
+        &mut self,
+        machine_identification_unique: MachineIdentificationUnique,
+    ) {
+        if !matches!(
+            machine_identification_unique.machine_identification,
+            LaserMachine::MACHINE_IDENTIFICATION
+        ) {
+            return;
+        }
+        let machine_manager_arc = match self.machine_manager.upgrade() {
+            Some(machine_manager_arc) => machine_manager_arc,
+            None => return,
+        };
+        let machine_manager_guard = block_on(machine_manager_arc.read());
+        let laser_weak = machine_manager_guard.get_machine_weak(&machine_identification_unique);
+        let laser_weak = match laser_weak {
+            Some(laser_weak) => laser_weak,
+            None => return,
+        };
+        let laser_strong = match laser_weak.upgrade() {
+            Some(laser_strong) => laser_strong,
+            None => return,
+        };
+
+        let laser: Arc<Mutex<LaserMachine>> =
+            block_on(downcast_machine::<LaserMachine>(laser_strong))
+                .expect("failed downcasting machine");
+
+        let machine = Arc::downgrade(&laser);
+
+        self.connected_laser = Some(ConnectedMachine {
+            machine_identification_unique,
+            machine: machine.clone(),
+        });
+
+        self.emit_state();
+
+        self.reverse_connect_laser();
+    }
+
+    /// disconnect laser
+    pub fn disconnect_laser(&mut self, machine_identification_unique: MachineIdentificationUnique) {
+        if !matches!(
+            machine_identification_unique.machine_identification,
+            LaserMachine::MACHINE_IDENTIFICATION
+        ) {
+            return;
+        }
+        if let Some(connected) = &self.connected_laser {
+            if let Some(laser_arc) = connected.machine.upgrade() {
+                let future = async move {
+                    let mut laser = laser_arc.lock().await;
+                    if laser.connected_winder.is_some() {
+                        laser.connected_winder = None;
+                        laser.emit_state();
+                    }
+                };
+                smol::spawn(future).detach();
+            }
+        }
+        self.connected_laser = None;
+        self.emit_state();
+    }
+
+    /// initiate connection from laser to winder
+    pub fn reverse_connect_laser(&mut self) {
+        let machine_identification_unique = self.machine_identification_unique.clone();
+        if let Some(connected) = &self.connected_laser {
+            if let Some(laser_arc) = connected.machine.upgrade() {
+                let future = async move {
+                    let mut laser = laser_arc.lock().await;
+                    if laser.connected_winder.is_none() {
+                        laser.set_connected_winder(machine_identification_unique);
+                    }
+                };
+                smol::spawn(future).detach();
+            }
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub enum Winder2Mode {
     Standby,
     Hold,

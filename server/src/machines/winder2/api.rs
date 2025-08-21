@@ -137,9 +137,11 @@ pub enum Mutation {
 
     // Connected Machine
     SetConnectedMachine(MachineIdentificationUnique),
+    SetConnectedLaser(MachineIdentificationUnique),
 
     // Disconnect Machine
     DisconnectMachine(MachineIdentificationUnique),
+    DisconnectLaser(MachineIdentificationUnique),
 }
 
 #[derive(Serialize, Debug, Clone, Default)]
@@ -368,6 +370,12 @@ impl MachineApi for Winder2 {
             }
             Mutation::DisconnectMachine(machine_identification_unique) => {
                 self.disconnect_buffer(machine_identification_unique)
+            }
+            Mutation::SetConnectedLaser(machine_identification_unique) => {
+                self.set_connected_laser(machine_identification_unique)
+            }
+            Mutation::DisconnectLaser(machine_identification_unique) => {
+                self.disconnect_laser(machine_identification_unique)
             }
         }
         Ok(())

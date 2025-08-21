@@ -24,6 +24,24 @@ import {
 
 // ========== Event Schema Definitions ==========
 /**
+ * Connected machine state schema 
+ */
+export const machineIdentificationSchema = z.object({
+  vendor: z.number(),
+  machine: z.number(),
+});
+
+export const machineIdentificationUniqueSchema = z.object({
+  machine_identification: machineIdentificationSchema,
+  serial: z.number(),
+});
+
+export const connectedMachineStateSchema = z.object({
+  machine_identification_unique: machineIdentificationUniqueSchema.nullable(),
+  is_available: z.boolean(),
+});
+
+/**
  * Live values from Laser (30 FPS)
  */
 export const liveValuesEventDataSchema = z.object({
@@ -43,6 +61,7 @@ export const stateEventDataSchema = z.object({
     lower_tolerance: z.number(),
     target_diameter: z.number(),
   }),
+  connected_winder_state: connectedMachineStateSchema,
 });
 
 // ========== Event Schemas with Wrappers ==========

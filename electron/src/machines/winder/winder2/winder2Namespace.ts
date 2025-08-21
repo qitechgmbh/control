@@ -141,7 +141,7 @@ export const modeStateSchema = z.object({
 });
 
 /**
- *  Connected machine state scheme
+ *  Connected machine state schema
  */
 export const machineIdentificationSchema = z.object({
   vendor: z.number(),
@@ -192,6 +192,7 @@ export const stateEventDataSchema = z.object({
   spool_speed_controller_state: spoolSpeedControllerStateSchema,
   spool_automatic_action_state: spoolAutomaticActionStateSchema,
   connected_machine_state: connectedMachineStateSchema,
+  connected_laser_state: connectedMachineStateSchema,
 });
 
 // ========== Event Schemas with Wrappers ==========

@@ -247,6 +247,8 @@ impl MachineNewTrait for Winder2 {
                     params.machine_manager.clone(),
                     &params.get_machine_identification_unique(),
                 ),
+                last_state_event: None,
+                connected_laser: None,
             };
 
             // initalize events

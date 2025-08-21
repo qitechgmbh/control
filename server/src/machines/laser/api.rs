@@ -1,6 +1,6 @@
 use super::LaserMachine;
 use control_core::{
-    machines::api::MachineApi,
+    machines::{api::MachineApi, identification::MachineIdentificationUnique},
     socketio::{
         event::{Event, GenericEvent},
         namespace::{
@@ -36,6 +36,8 @@ pub struct StateEvent {
     pub is_default_state: bool,
     /// laser state
     pub laser_state: LaserState,
+    /// connected winder state
+    pub connected_winder_state: ConnectedMachineState,
 }
 
 impl StateEvent {
@@ -52,6 +54,13 @@ pub struct LaserState {
     pub lower_tolerance: f64,
     /// target diameter in mm
     pub target_diameter: f64,
+}
+
+#[derive(Serialize, Debug, Clone)]
+pub struct ConnectedMachineState {
+    /// Connected Machine
+    pub machine_identification_unique: Option<MachineIdentificationUnique>,
+    pub is_available: bool,
 }
 
 pub enum LaserEvents {
@@ -91,6 +100,11 @@ enum Mutation {
     SetTargetDiameter(f64),
     SetLowerTolerance(f64),
     SetHigherTolerance(f64),
+
+    // Connect Machine
+    SetConnectedWinder(MachineIdentificationUnique),
+    // Disconnect Machine
+    DisconnectWinder(MachineIdentificationUnique),
 }
 
 impl NamespaceCacheingLogic<LaserEvents> for LaserMachineNamespace {
@@ -116,6 +130,12 @@ impl MachineApi for LaserMachine {
             }
             Mutation::SetTargetDiameter(target_diameter) => {
                 self.set_target_diameter(target_diameter);
+            }
+            Mutation::SetConnectedWinder(machine_identification_unique) => {
+                self.set_connected_winder(machine_identification_unique);
+            }
+            Mutation::DisconnectWinder(machine_identification_unique) => {
+                self.disconnect_winder(machine_identification_unique);
             }
         }
         Ok(())
