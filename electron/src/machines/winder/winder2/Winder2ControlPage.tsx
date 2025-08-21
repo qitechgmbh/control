@@ -29,6 +29,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { getWinder2TraverseMax } from "./winder2Config";
+import { MachineSelector } from "@/components/MachineConnectionDropdown";
 
 export function Winder2ControlPage() {
   const [showResetConfirmDialog, setShowResetConfirmDialog] = useState(false);
@@ -58,6 +59,10 @@ export function Winder2ControlPage() {
     setSpoolAutomaticAction,
     isLoading,
     isDisabled,
+    selectedMachine,
+    filteredMachines,
+    setConnectedLaser,
+    disconnectLaser,
   } = useWinder2();
 
   // Calculate max speed based on gear ratio
@@ -272,13 +277,31 @@ export function Winder2ControlPage() {
                 Diameter: {
                   children: "Diameter",
                   icon: "lu:Sun",
-                  disabled: true,
+                  disabled: false,
                 },
               }}
               onChange={setPullerRegulationMode}
               disabled={isDisabled}
               loading={isLoading}
             />
+            {state?.puller_state?.regulation === "Diameter" && (
+              <MachineSelector
+                machines={filteredMachines}
+                selectedMachine={selectedMachine}
+                connectedMachineState={state?.connected_machine_state}
+                setConnectedMachine={setConnectedLaser}
+                clearConnectedMachine={() => {
+                  if (!selectedMachine) return;
+                  setConnectedLaser({
+                    machine_identification: { vendor: 0, machine: 0 },
+                    serial: 0,
+                  });
+                  disconnectLaser(
+                    selectedMachine.machine_identification_unique,
+                  );
+                }}
+              />
+            )}
           </Label>
           <Label label="Target Speed">
             <EditValue
