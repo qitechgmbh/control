@@ -32,7 +32,7 @@ export function Laser1SettingsPage() {
             value={showAdvanced}
             optionTrue={{
               children: "Show",
-              disabled: true || state?.connected_machine_state.is_available,
+              disabled: true || state?.connected_winder_state.is_available,
             }}
             optionFalse={{ children: "Hide" }}
             onChange={setShowAdvanced}
@@ -92,11 +92,12 @@ export function Laser1SettingsPage() {
               />
             </Label>
           </ControlCard>
+
           <ControlCard title="Connect Winder">
             <MachineSelector
               machines={filteredMachines}
               selectedMachine={selectedMachine}
-              connectedMachineState={state?.connected_machine_state}
+              connectedMachineState={state?.connected_winder_state}
               setConnectedMachine={setConnectedWinder}
               clearConnectedMachine={() => {
                 if (!selectedMachine) return;
