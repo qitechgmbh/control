@@ -1,6 +1,6 @@
 import React from "react";
-import { Popover, PopoverContent } from "../ui/popover";
-import { Button } from "../ui/button";
+import { Popover, PopoverContent } from "control-ui/src/components/ui/popover";
+import { Button } from "control-ui/src/components/ui/button";
 import { Icon } from "control-ui/src/components/Icon";
 
 export type TouchNumpadProps = {

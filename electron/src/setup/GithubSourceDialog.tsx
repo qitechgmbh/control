@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button";
+import { Button } from "control-ui/src/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -6,7 +6,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
+} from "control-ui/src/components/ui/dialog";
 import React, { useMemo } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -19,10 +19,10 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
-import { Icon } from "@/components/Icon";
+} from "control-ui/src/components/ui/form";
+import { Input } from "control-ui/src/components/ui/input";
+import { Separator } from "control-ui/src/components/ui/separator";
+import { Icon } from "control-ui/src/components/Icon";
 import { TouchButton } from "@/components/touch/TouchButton";
 import { fallback } from "@tanstack/zod-adapter";
 

@@ -1,5 +1,6 @@
 {
     "workspaces": [
-        "./electron"
+        "./electron",
+        "./control-ui"
     ]
 }

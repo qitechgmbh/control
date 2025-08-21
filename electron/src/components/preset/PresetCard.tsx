@@ -4,7 +4,11 @@ import { TouchButton } from "@/components/touch/TouchButton";
 import { PresetShowDialog } from "./PresetShowDialog";
 import { Icon } from "control-ui/src/components/Icon";
 import { PresetPreviewEntries } from "./PresetPreviewTable";
-import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "control-ui/src/components/ui/popover";
 
 type PresetCardMenu = {
   onOverwrite?: () => void;

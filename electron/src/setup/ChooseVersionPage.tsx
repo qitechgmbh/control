@@ -1,4 +1,4 @@
-import { Icon } from "@/components/Icon";
+import { Icon } from "control-ui/src/components/Icon";
 import { Page } from "@/components/Page";
 import { SectionTitle } from "@/components/SectionTitle";
 import { TouchButton } from "@/components/touch/TouchButton";
@@ -13,7 +13,7 @@ import { Alert } from "@/components/Alert";
 import { useNavigate } from "@tanstack/react-router";
 import { useEffectAsync } from "@/lib/useEffectAsync";
 import { Collapsible, CollapsibleTrigger } from "@radix-ui/react-collapsible";
-import { CollapsibleContent } from "@/components/ui/collapsible";
+import { CollapsibleContent } from "control-ui/src/components/ui/collapsible";
 import {
   listNixOSGenerations,
   setNixOSGeneration,

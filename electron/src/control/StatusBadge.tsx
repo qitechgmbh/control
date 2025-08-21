@@ -1,5 +1,5 @@
-import { Icon, IconName } from "@/components/Icon";
-import { Badge } from "@/components/ui/badge";
+import { Icon, IconName } from "control-ui/src/components/Icon";
+import { Badge } from "control-ui/src/components/ui/badge";
 import { cva } from "class-variance-authority";
 import React from "react";
 

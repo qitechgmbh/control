@@ -1,4 +1,4 @@
-import { Icon, IconName } from "@/components/Icon";
+import { Icon, IconName } from "control-ui/src/components/Icon";
 import React from "react";
 import {
   getUnitIcon,

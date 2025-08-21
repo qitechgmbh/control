@@ -2,7 +2,7 @@ import {
   Alert as UIAlert,
   AlertDescription,
   AlertTitle,
-} from "@/components/ui/alert";
+} from "control-ui/src/components/ui/alert";
 import React from "react";
 import { Icon, IconName, IconNameMap } from "control-ui/src/components/Icon";
 import { cva } from "class-variance-authority";

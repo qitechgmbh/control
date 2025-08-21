@@ -1,4 +1,4 @@
-import { Icon, IconName } from "@/components/Icon";
+import { Icon, IconName } from "control-ui/src/components/Icon";
 import React, { useEffect, useMemo } from "react";
 import {
   getUnitIcon,
@@ -9,8 +9,8 @@ import {
   Unit,
 } from "./units";
 import { TouchButton } from "@/components/touch/TouchButton";
-import { Separator } from "@/components/ui/separator";
-import { Popover, PopoverContent } from "@/components/ui/popover";
+import { Separator } from "control-ui/src/components/ui/separator";
+import { Popover, PopoverContent } from "control-ui/src/components/ui/popover";
 import { PopoverTrigger } from "@radix-ui/react-popover";
 import { TouchSlider } from "@/components/touch/TouchSlider";
 import { useForm } from "react-hook-form";
