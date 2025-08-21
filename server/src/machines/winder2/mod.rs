@@ -327,6 +327,14 @@ impl Winder2 {
                     })
                     .unwrap_or(false),
             },
+            pid_settings: PidSettingsStates {
+                speed: PidSettings {
+                    ki: 0.0,
+                    kp: 0.0,
+                    kd: 0.0,
+                    dead: 0.0,
+                },
+            },
         }
     }
 
@@ -789,6 +797,16 @@ impl Winder2 {
                 smol::spawn(future).detach();
             }
         }
+    }
+}
+
+impl Winder2 {
+    pub fn configure_speed_pid(&mut self, settings: PidSettings) {
+        // Implement pid to controll speed of winder
+        self.puller_speed_controller
+            .pid
+            .configure(settings.ki, settings.kp, settings.kd);
+        self.emit_state();
     }
 }
 
