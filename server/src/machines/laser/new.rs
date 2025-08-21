@@ -36,12 +36,25 @@ impl MachineNewTrait for LaserMachine {
             lower_tolerance: Length::new::<millimeter>(0.05),
             diameter: Length::new::<millimeter>(1.75),
         };
+        // get machine identification unique
+        let machine_id = params
+            .device_group
+            .first()
+            .expect("device group must have at least one device")
+            .device_machine_identification
+            .machine_identification_unique
+            .clone();
+
         let mut laser_machine = Self {
             laser,
             namespace: LaserMachineNamespace::new(params.socket_queue_tx.clone()),
             last_measurement_emit: Instant::now(),
             laser_target,
             emitted_default_state: false,
+            last_state_event: None,
+            machine_manager: params.machine_manager.clone(),
+            machine_identification_unique: machine_id,
+            connected_winder: None,
             diameter: Length::ZERO,
             x_diameter: None,
             y_diameter: None,

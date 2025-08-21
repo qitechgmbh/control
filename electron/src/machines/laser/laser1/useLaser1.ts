@@ -1,6 +1,9 @@
 import { toastError } from "@/components/Toast";
 import { useMachineMutate as useMachineMutation } from "@/client/useClient";
-import { MachineIdentificationUnique } from "@/machines/types";
+import {
+  machineIdentificationUnique,
+  MachineIdentificationUnique,
+} from "@/machines/types";
 import { laser1 } from "@/machines/properties";
 import { laser1SerialRoute } from "@/routes/routes";
 import { z } from "zod";
@@ -54,6 +57,16 @@ function useLaser(machine_identification_unique: MachineIdentificationUnique) {
   const { request: requestHigherTolerance } = useMachineMutation(
     schemaHigherTolerance,
   );
+  const { request: requestConnectedWinder } = useMachineMutation(
+    z.object({
+      SetConnectedWinder: machineIdentificationUnique,
+    }),
+  );
+  const { request: requestDisconnectWinder } = useMachineMutation(
+    z.object({
+      DisconnectWinder: machineIdentificationUnique,
+    }),
+  );
 
   // Action functions with verb-first names
   const setTargetDiameter = (target_diameter: number) => {
@@ -101,6 +114,46 @@ function useLaser(machine_identification_unique: MachineIdentificationUnique) {
     );
   };
 
+  const setConnectedWinder = (machineIdentificationUnique: {
+    machine_identification: {
+      vendor: number;
+      machine: number;
+    };
+    serial: number;
+  }) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.connected_winder_state.machine_identification_unique =
+          machineIdentificationUnique;
+      },
+      () =>
+        requestConnectedWinder({
+          machine_identification_unique,
+          data: { SetConnectedWinder: machineIdentificationUnique },
+        }),
+    );
+  };
+
+  const disconnectWinder = (machineIdentificationUnique: {
+    machine_identification: {
+      vendor: number;
+      machine: number;
+    };
+    serial: number;
+  }) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.connected_winder_state.machine_identification_unique =
+          null;
+      },
+      () =>
+        requestDisconnectWinder({
+          machine_identification_unique,
+          data: { DisconnectWinder: machineIdentificationUnique },
+        }),
+    );
+  };
+
   return {
     // Consolidated state
     state: stateOptimistic.value?.data,
@@ -122,6 +175,8 @@ function useLaser(machine_identification_unique: MachineIdentificationUnique) {
     setTargetDiameter,
     setLowerTolerance,
     setHigherTolerance,
+    setConnectedWinder,
+    disconnectWinder,
   };
 }
 
