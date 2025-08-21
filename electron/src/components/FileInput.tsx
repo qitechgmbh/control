@@ -1,5 +1,5 @@
 import React, { useId } from "react";
-import { Icon, IconName } from "./Icon";
+import { Icon, IconName } from "control-ui/src/components/Icon";
 
 export type FileInputProps = {
   children: React.ReactNode;

@@ -4,7 +4,7 @@ import {
   AlertTitle,
 } from "@/components/ui/alert";
 import React from "react";
-import { Icon, IconName, IconNameMap } from "./Icon";
+import { Icon, IconName, IconNameMap } from "control-ui/src/components/Icon";
 import { cva } from "class-variance-authority";
 
 type Props = {

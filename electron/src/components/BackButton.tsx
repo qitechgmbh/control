@@ -3,7 +3,7 @@
 import React from "react";
 import { Button } from "./ui/button";
 import { useRouter } from "@tanstack/react-router";
-import { Icon } from "./Icon";
+import { Icon } from "control-ui/src/components/Icon";
 
 export function BackButton() {
   const router = useRouter();

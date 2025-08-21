@@ -4,7 +4,7 @@ import { useOnSubpath } from "@/lib/useOnSubpath";
 import { Link, Outlet } from "@tanstack/react-router";
 import { Fragment } from "react";
 import React from "react";
-import { Icon, IconName } from "./Icon";
+import { Icon, IconName } from "control-ui/src/components/Icon";
 
 type SidebarItemContent = {
   link: string;

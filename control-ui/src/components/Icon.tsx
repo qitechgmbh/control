@@ -1,6 +1,6 @@
 import { icons as lucideIcons } from "lucide-react";
 import React from "react";
-import { qitechIcons } from "./QitechIcon";
+import { qitechIcons } from "control-ui/src/components/QitechIcon";
 
 type QitechIconName = `qi:${keyof typeof qitechIcons}`;
 

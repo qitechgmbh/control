@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Button } from "./ui/button";
-import { Icon } from "./Icon";
+import { Icon } from "control-ui/src/components/Icon";
 import { useEffectAsync } from "@/lib/useEffectAsync";
 
 export function FullscreenButton() {

@@ -1,7 +1,7 @@
 import React from "react";
 import { Popover, PopoverContent } from "../ui/popover";
 import { Button } from "../ui/button";
-import { Icon } from "../Icon";
+import { Icon } from "control-ui/src/components/Icon";
 
 export type TouchNumpadProps = {
   isOpen: boolean;
