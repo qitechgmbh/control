@@ -5,13 +5,14 @@ import {
   machineIdentificationUnique,
   MachineIdentificationUnique,
 } from "@/machines/types";
-import { laser1 } from "@/machines/properties";
+import { laser1, VENDOR_QITECH } from "@/machines/properties";
 import { laser1SerialRoute } from "@/routes/routes";
 import { z } from "zod";
 import { useLaser1Namespace, StateEvent } from "./laser1Namespace";
 import { useEffect, useMemo } from "react";
 import { useStateOptimistic } from "@/lib/useStateOptimistic";
 import { produce } from "immer";
+import { useMachines } from "@/client/useMachines";
 
 function useLaser(machine_identification_unique: MachineIdentificationUnique) {
   // Get consolidated state and live values from namespace
@@ -225,7 +226,7 @@ function useLaser(machine_identification_unique: MachineIdentificationUnique) {
   }) => {
     updateStateOptimistically(
       (current) => {
-        current.data.connected_winder_state.machine_identification_unique =
+        current.data.connected_machine_state.machine_identification_unique =
           machineIdentificationUnique;
       },
       () =>
@@ -245,7 +246,7 @@ function useLaser(machine_identification_unique: MachineIdentificationUnique) {
   }) => {
     updateStateOptimistically(
       (current) => {
-        current.data.connected_winder_state.machine_identification_unique =
+        current.data.connected_machine_state.machine_identification_unique =
           null;
       },
       () =>
@@ -256,9 +257,40 @@ function useLaser(machine_identification_unique: MachineIdentificationUnique) {
     );
   };
 
+  // General Helper functions
+  const machines = useMachines();
+  // Filter machines for the correct type
+  const filteredMachines = useMemo(
+    () =>
+      machines.filter(
+        (m) =>
+          m.machine_identification_unique.machine_identification.vendor ===
+            VENDOR_QITECH &&
+          m.machine_identification_unique.machine_identification.machine ===
+            0x0002,
+      ),
+    [machines, machineIdentification],
+  );
+
+  // Get selected machine by serial
+  const selectedMachine = useMemo(() => {
+    const serial =
+      state?.data.connected_machine_state?.machine_identification_unique
+        ?.serial;
+
+    return (
+      filteredMachines.find(
+        (m) => m.machine_identification_unique.serial === serial,
+      ) ?? null
+    );
+  }, [filteredMachines, state]);
+
   return {
     // Consolidated state
     state: stateOptimistic.value?.data,
+
+    filteredMachines,
+    selectedMachine,
 
     // Default state for initial values
     defaultState: defaultState?.data,

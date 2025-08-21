@@ -6,6 +6,7 @@ import { SelectionGroupBoolean } from "@/control/SelectionGroup";
 import { EditValue } from "@/control/EditValue";
 import { roundToDecimals } from "@/lib/decimal";
 import { useLaser1 } from "./useLaser1";
+import { MachineSelector } from "@/components/MachineConnectionDropdown";
 
 export function Laser1SettingsPage() {
   const {
@@ -15,6 +16,10 @@ export function Laser1SettingsPage() {
     setSpeedPidKi,
     setSpeedPidKd,
     setSpeedPidDead,
+    selectedMachine,
+    filteredMachines,
+    setConnectedWinder,
+    disconnectWinder,
   } = useLaser1();
 
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -25,7 +30,10 @@ export function Laser1SettingsPage() {
         <Label label="Show Advanced PID Settings">
           <SelectionGroupBoolean
             value={showAdvanced}
-            optionTrue={{ children: "Show" }}
+            optionTrue={{
+              children: "Show",
+              disabled: true || state?.connected_machine_state.is_available,
+            }}
             optionFalse={{ children: "Hide" }}
             onChange={setShowAdvanced}
           />
@@ -83,6 +91,22 @@ export function Laser1SettingsPage() {
                 title="Speed PID Dead"
               />
             </Label>
+          </ControlCard>
+          <ControlCard title="Connect Winder">
+            <MachineSelector
+              machines={filteredMachines}
+              selectedMachine={selectedMachine}
+              connectedMachineState={state?.connected_machine_state}
+              setConnectedMachine={setConnectedWinder}
+              clearConnectedMachine={() => {
+                if (!selectedMachine) return;
+                setConnectedWinder({
+                  machine_identification: { vendor: 0, machine: 0 },
+                  serial: 0,
+                });
+                disconnectWinder(selectedMachine.machine_identification_unique);
+              }}
+            />
           </ControlCard>
         </>
       )}

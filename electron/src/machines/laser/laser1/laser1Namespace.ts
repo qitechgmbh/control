@@ -73,7 +73,7 @@ export const stateEventDataSchema = z.object({
     lower_tolerance: z.number(),
     target_diameter: z.number(),
   }),
-  connected_winder_state: connectedMachineStateSchema,
+  connected_machine_state: connectedMachineStateSchema,
   pid_settings: pidSettingsSchema,
 });
 
