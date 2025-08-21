@@ -1,4 +1,4 @@
-import { IconName } from "@/components/Icon";
+import { IconName } from "control-ui/components/Icon";
 import { Unit } from "@/control/units";
 import { TimeSeries } from "@/lib/timeseries";
 import { RefObject } from "react";

@@ -1,5 +1,5 @@
 import React from "react";
-import { Icon, IconName } from "./Icon";
+import { Icon, IconName } from "control-ui/components/Icon";
 import { cva } from "class-variance-authority";
 
 export type Props = {

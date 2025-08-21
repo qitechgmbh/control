@@ -1,7 +1,7 @@
 import React from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "control-ui/components/ui/button";
 import { toggleTheme } from "@/helpers/theme_helpers";
-import { Icon } from "./Icon";
+import { Icon } from "control-ui/components/Icon";
 
 export default function ToggleTheme() {
   return (

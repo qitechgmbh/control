@@ -1,9 +1,9 @@
 "use client";
 
 import React from "react";
-import { Button } from "./ui/button";
+import { Button } from "control-ui/components/ui/button";
 import { useRouter } from "@tanstack/react-router";
-import { Icon } from "./Icon";
+import { Icon } from "control-ui/components/Icon";
 
 export function BackButton() {
   const router = useRouter();

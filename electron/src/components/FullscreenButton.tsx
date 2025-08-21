@@ -1,8 +1,8 @@
 "use client";
 
 import React from "react";
-import { Button } from "./ui/button";
-import { Icon } from "./Icon";
+import { Button } from "control-ui/components/ui/button";
+import { Icon } from "control-ui/components/Icon";
 import { useEffectAsync } from "@/lib/useEffectAsync";
 
 export function FullscreenButton() {

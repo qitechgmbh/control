@@ -1,0 +1,6 @@
+{
+    "workspaces": [
+        "./electron",
+        "./control-ui"
+    ]
+}
