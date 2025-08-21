@@ -1,6 +1,6 @@
 use crate::{
     machines::{
-        laser::api::ConnectedMachineState, winder2::{self, Winder2}, MACHINE_LASER_V1, VENDOR_QITECH
+        laser::api::{ConnectedMachineState, PidSettings}, winder2::{self, Winder2}, MACHINE_LASER_V1, VENDOR_QITECH
     },
     serial::devices::laser::Laser,
 };
@@ -265,6 +265,14 @@ impl LaserMachine {
                 smol::spawn(future).detach();
             }
         }
+    }
+}
+
+impl LaserMachine {
+    fn configure_speed_pid(&mut self, settings: PidSettings) {
+        // Implement pid to controll speed of winder
+        !todo!();
+        self.emit_state();
     }
 }
 

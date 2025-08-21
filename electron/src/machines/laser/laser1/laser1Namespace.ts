@@ -24,7 +24,7 @@ import {
 
 // ========== Event Schema Definitions ==========
 /**
- * Connected machine state schema 
+ * Connected machine state schema
  */
 export const machineIdentificationSchema = z.object({
   vendor: z.number(),
@@ -39,6 +39,18 @@ export const machineIdentificationUniqueSchema = z.object({
 export const connectedMachineStateSchema = z.object({
   machine_identification_unique: machineIdentificationUniqueSchema.nullable(),
   is_available: z.boolean(),
+});
+
+/**
+ * PID settings schema
+ */
+export const pidSettingsSchema = z.object({
+  speed: z.object({
+    ki: z.number(),
+    kp: z.number(),
+    kd: z.number(),
+    dead: z.number(),
+  }),
 });
 
 /**
@@ -62,6 +74,7 @@ export const stateEventDataSchema = z.object({
     target_diameter: z.number(),
   }),
   connected_winder_state: connectedMachineStateSchema,
+  pid_settings: pidSettingsSchema,
 });
 
 // ========== Event Schemas with Wrappers ==========
