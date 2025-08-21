@@ -1,5 +1,5 @@
 import { ComponentProps } from "react";
-import { Input } from "control-ui/src/components/ui/input";
+import { Input } from "control-ui/components/ui/input";
 import React from "react";
 import { cva } from "class-variance-authority";
 

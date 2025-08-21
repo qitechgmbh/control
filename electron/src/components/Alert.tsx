@@ -2,9 +2,9 @@ import {
   Alert as UIAlert,
   AlertDescription,
   AlertTitle,
-} from "control-ui/src/components/ui/alert";
+} from "control-ui/components/ui/alert";
 import React from "react";
-import { Icon, IconName, IconNameMap } from "control-ui/src/components/Icon";
+import { Icon, IconName, IconNameMap } from "control-ui/components/Icon";
 import { cva } from "class-variance-authority";
 
 type Props = {

@@ -2,7 +2,7 @@ import React, { useRef, useState, useCallback, useEffect } from "react";
 import uPlot from "uplot";
 import "uplot/dist/uPlot.min.css";
 import { renderUnitSymbol, getUnitIcon } from "@/control/units";
-import { Icon } from "control-ui/src/components/Icon";
+import { Icon } from "control-ui/components/Icon";
 import { BigGraphProps, HandlerRefs, SeriesData } from "./types";
 import { GraphExportData } from "./excelExport";
 import { DEFAULT_COLORS } from "./constants";

@@ -1,6 +1,6 @@
-import { Button } from "control-ui/src/components/ui/button";
+import { Button } from "control-ui/components/ui/button";
 import React, { ComponentProps } from "react";
-import { Icon, IconName } from "control-ui/src/components/Icon";
+import { Icon, IconName } from "control-ui/components/Icon";
 import { cva } from "class-variance-authority";
 import { LoadingSpinner } from "../LoadingSpinner";
 

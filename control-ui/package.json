@@ -10,20 +10,10 @@
       "import": "./dist/index.js",
       "require": "./dist/index.js"
     },
-    "./components/*": {
-      "types": "./dist/components/*.d.ts",
-      "import": "./dist/components/*.js",
-      "require": "./dist/components/*.js"
-    },
-    "./src/components/ui/*": {
-      "types": "./dist/components/ui/*.d.ts",
-      "import": "./dist/components/ui/*.js",
-      "require": "./dist/components/ui/*.js"
-    },
-    "./src/components/*": {
-      "types": "./dist/components/*.d.ts",
-      "import": "./dist/components/*.js",
-      "require": "./dist/components/*.js"
+    "./*": {
+      "types": "./dist/*.d.ts",
+      "import": "./dist/*.js",
+      "require": "./dist/*.js"
     },
     "./utils": {
       "types": "./dist/utils/index.d.ts",

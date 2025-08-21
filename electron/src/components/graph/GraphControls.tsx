@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { TouchButton } from "@/components/touch/TouchButton";
-import { Icon } from "control-ui/src/components/Icon";
+import { Icon } from "control-ui/components/Icon";
 import { ControlCard } from "@/control/ControlCard";
 import {
   DropdownMenu,
@@ -9,7 +9,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "control-ui/src/components/ui/dropdown-menu";
+} from "control-ui/components/ui/dropdown-menu";
 import { ControlProps } from "./types";
 import { DEFAULT_TIME_WINDOW_OPTIONS } from "./constants";
 

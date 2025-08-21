@@ -5,11 +5,11 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuItem,
-} from "control-ui/src/components/ui/dropdown-menu";
+} from "control-ui/components/ui/dropdown-menu";
 
 import React from "react";
 
-import { Icon } from "control-ui/src/components/Icon";
+import { Icon } from "control-ui/components/Icon";
 import { ControlCard } from "@/control/ControlCard";
 
 interface MachineIdentificationUnique {

@@ -2,7 +2,7 @@ import React from "react";
 import {
   ToggleGroup,
   ToggleGroupItem,
-} from "control-ui/src/components/ui/toggle-group";
+} from "control-ui/components/ui/toggle-group";
 import langs from "@/localization/langs";
 import { useTranslation } from "react-i18next";
 import { setAppLanguage } from "@/helpers/language_helpers";

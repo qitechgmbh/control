@@ -1,6 +1,6 @@
 import { cva } from "class-variance-authority";
 import React, { useEffect, useRef, useState } from "react";
-import { Icon } from "control-ui/src/components/Icon";
+import { Icon } from "control-ui/components/Icon";
 
 type Props = {
   lines: string[];

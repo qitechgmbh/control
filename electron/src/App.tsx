@@ -6,7 +6,7 @@ import "./localization/i18n";
 import { updateAppLanguage } from "./helpers/language_helpers";
 import { router } from "./routes/router";
 import { RouterProvider } from "@tanstack/react-router";
-import { Toaster } from "control-ui/src/components/ui/sonner";
+import { Toaster } from "control-ui/components/ui/sonner";
 import { enableMapSet } from "immer";
 import { useGlobalLogStreaming } from "./hooks/useGlobalLogStreaming";
 

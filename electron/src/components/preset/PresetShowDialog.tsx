@@ -5,12 +5,12 @@ import {
   DialogDescription,
   DialogTitle,
   DialogTrigger,
-} from "control-ui/src/components/ui/dialog";
+} from "control-ui/components/ui/dialog";
 import React, { useState } from "react";
 import { TouchButton } from "../touch/TouchButton";
-import { DialogHeader } from "control-ui/src/components/ui/dialog";
-import { Icon } from "control-ui/src/components/Icon";
-import { Separator } from "control-ui/src/components/ui/separator";
+import { DialogHeader } from "control-ui/components/ui/dialog";
+import { Icon } from "control-ui/components/Icon";
+import { Separator } from "control-ui/components/ui/separator";
 import { PresetPreviewEntries, PresetPreviewTable } from "./PresetPreviewTable";
 
 export type PresetShowDialogProps<T extends PresetSchema> = {

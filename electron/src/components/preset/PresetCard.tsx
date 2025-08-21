@@ -2,13 +2,13 @@ import React, { useState } from "react";
 import { Preset, PresetSchema } from "@/lib/preset/preset";
 import { TouchButton } from "@/components/touch/TouchButton";
 import { PresetShowDialog } from "./PresetShowDialog";
-import { Icon } from "control-ui/src/components/Icon";
+import { Icon } from "control-ui/components/Icon";
 import { PresetPreviewEntries } from "./PresetPreviewTable";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "control-ui/src/components/ui/popover";
+} from "control-ui/components/ui/popover";
 
 type PresetCardMenu = {
   onOverwrite?: () => void;

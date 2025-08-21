@@ -7,7 +7,7 @@ import {
   TableBody,
   TableCell,
   Table as UiTable,
-} from "control-ui/src/components/ui/table";
+} from "control-ui/components/ui/table";
 
 type Props<T> = {
   table: Table<T>;

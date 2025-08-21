@@ -4,7 +4,7 @@ import { OutsideCorner } from "./OutsideCorner";
 import { BackButton } from "./BackButton";
 import { Link, Outlet } from "@tanstack/react-router";
 import { useOnSubpath } from "@/lib/useOnSubpath";
-import { Icon, IconName } from "control-ui/src/components/Icon";
+import { Icon, IconName } from "control-ui/components/Icon";
 import { FullscreenButton } from "./FullscreenButton";
 import { useSidebarlessWidth } from "./SidebarLayout";
 

@@ -1,4 +1,4 @@
-import { Button } from "control-ui/src/components/ui/button";
+import { Button } from "control-ui/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -6,7 +6,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "control-ui/src/components/ui/dialog";
+} from "control-ui/components/ui/dialog";
 import { Hex } from "@/components/Value";
 import { useClient } from "@/client/useClient";
 import {
@@ -27,21 +27,21 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "control-ui/src/components/ui/form";
-import { Input } from "control-ui/src/components/ui/input";
+} from "control-ui/components/ui/form";
+import { Input } from "control-ui/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "control-ui/src/components/ui/select";
+} from "control-ui/components/ui/select";
 import { useFormValues } from "@/lib/useFormValues";
 import { validateU16 } from "@/lib/validation";
 import { DeviceRoleComponent } from "@/components/DeviceRole";
 import { Alert } from "@/components/Alert";
-import { Separator } from "control-ui/src/components/ui/separator";
-import { Icon } from "control-ui/src/components/Icon";
+import { Separator } from "control-ui/components/ui/separator";
+import { Icon } from "control-ui/components/Icon";
 import { toast } from "sonner";
 import { Toast } from "@/components/Toast";
 import { EthercatDevicesEventData } from "@/client/mainNamespace";

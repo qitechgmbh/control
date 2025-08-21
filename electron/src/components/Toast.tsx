@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Icon, IconName } from "control-ui/src/components/Icon";
+import { Icon, IconName } from "control-ui/components/Icon";
 import React from "react";
 import { toast } from "sonner";
 import { fromError } from "zod-validation-error";
