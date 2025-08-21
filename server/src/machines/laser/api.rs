@@ -35,6 +35,8 @@ pub struct StateEvent {
     pub laser_state: LaserState,
     /// connected winder state
     pub connected_winder_state: ConnectedMachineState,
+    /// pid settings
+    pub pid_settings: PidSettingsStates,
 }
 
 impl StateEvent {
@@ -66,6 +68,11 @@ pub struct ConnectedMachineState {
     /// Connected Machine
     pub machine_identification_unique: Option<MachineIdentificationUnique>,
     pub is_available: bool,
+}
+
+#[derive(Serialize, Debug, Clone)]
+pub struct PidSettingsStates {
+    pub speed: PidSettings,
 }
 
 pub enum LaserEvents {

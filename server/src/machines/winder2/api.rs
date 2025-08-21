@@ -1,3 +1,5 @@
+use crate::machines::laser::api::{PidSettings, PidSettingsStates};
+
 use super::{Winder2, Winder2Mode, puller_speed_controller::PullerRegulationMode};
 use control_core::{
     machines::{api::MachineApi, identification::MachineIdentificationUnique},
@@ -96,6 +98,9 @@ enum Mutation {
     // Mode
     SetMode(Mode),
 
+    // Pid Configure
+    SetSpeedPidSettings(PidSettings),
+
     // Connected Machine
     SetConnectedMachine(MachineIdentificationUnique),
     SetConnectedLaser(MachineIdentificationUnique),
@@ -146,6 +151,8 @@ pub struct StateEvent {
     pub connected_machine_state: ConnectedMachineState,
     /// connected laser state
     pub connected_laser_state: ConnectedMachineState,
+    /// pid settings
+    pub pid_settings: PidSettingsStates,
 }
 
 impl StateEvent {
@@ -352,6 +359,9 @@ impl MachineApi for Winder2 {
             }
             Mutation::DisconnectLaser(machine_identification_unique) => {
                 self.disconnect_laser(machine_identification_unique)
+            }
+            Mutation::SetSpeedPidSettings(settings) => {
+                self.configure_speed_pid(settings);
             }
         }
         Ok(())
