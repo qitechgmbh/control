@@ -155,7 +155,7 @@ export const laser1PresetsRoute = createRoute({
 
 export const laser1SettingsRoute = createRoute({
   getParentRoute: () => laser1SerialRoute,
-  path: "manual",
+  path: "settings",
   component: () => <Laser1SettingsPage />,
 });
 
