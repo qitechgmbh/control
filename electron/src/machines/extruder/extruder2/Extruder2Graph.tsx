@@ -22,8 +22,8 @@ export function Extruder2GraphsPage() {
     pressure,
     motorScrewRpm,
     motorCurrent,
-    motorVoltage,
     motorPower,
+    combinedPower,
   } = useExtruder2();
 
   const syncHook = useGraphSync(30 * 60 * 1000, "extruder-graphs");
@@ -41,6 +41,7 @@ export function Extruder2GraphsPage() {
       ? [
           {
             newData: nozzleTemperature,
+            title: "Nozzle",
             color: "#ef4444",
             lines:
               state?.heating_states.nozzle?.target_temperature !== undefined
@@ -60,6 +61,7 @@ export function Extruder2GraphsPage() {
       ? [
           {
             newData: frontTemperature,
+            title: "Front",
             color: "#f59e0b",
             lines:
               state?.heating_states.front?.target_temperature !== undefined
@@ -79,6 +81,7 @@ export function Extruder2GraphsPage() {
       ? [
           {
             newData: middleTemperature,
+            title: "Middle",
             color: "#8b5cf6",
             lines:
               state?.heating_states.middle?.target_temperature !== undefined
@@ -98,6 +101,7 @@ export function Extruder2GraphsPage() {
       ? [
           {
             newData: backTemperature,
+            title: "Back",
             color: "#3b82f6",
             lines:
               state?.heating_states.back?.target_temperature !== undefined
@@ -147,6 +151,15 @@ export function Extruder2GraphsPage() {
           },
         ]
       : []),
+    ...(middlePower
+      ? [
+          {
+            newData: middlePower,
+            title: "Middle",
+            color: "#8b5cf6",
+          },
+        ]
+      : []),
     ...(backPower
       ? [
           {
@@ -156,12 +169,21 @@ export function Extruder2GraphsPage() {
           },
         ]
       : []),
-    ...(middlePower
+    ...(motorPower
       ? [
           {
-            newData: middlePower,
-            title: "Middle",
-            color: "#8b5cf6",
+            newData: motorPower,
+            title: "Motor",
+            color: "#10b981",
+          },
+        ]
+      : []),
+    ...(combinedPower
+      ? [
+          {
+            newData: combinedPower,
+            title: "Total",
+            color: "#000000",
           },
         ]
       : []),
@@ -173,18 +195,6 @@ export function Extruder2GraphsPage() {
     exportFilename: "power_data",
     colors: {
       primary: "#10b981",
-      grid: "#e2e8f0",
-      axis: "#64748b",
-      background: "#ffffff",
-    },
-  };
-
-  const voltageConfig: GraphConfig = {
-    ...baseConfig,
-    title: "Motor Voltage",
-    exportFilename: "motor_voltage_data",
-    colors: {
-      primary: "#ef4444",
       grid: "#e2e8f0",
       axis: "#64748b",
       background: "#ffffff",
@@ -271,18 +281,6 @@ export function Extruder2GraphsPage() {
           unit="W"
           renderValue={(value) => value.toFixed(1)}
           graphId="combined-power"
-        />
-
-        <AutoSyncedBigGraph
-          syncHook={syncHook}
-          newData={{
-            newData: motorVoltage,
-            color: "#ef4444",
-          }}
-          config={voltageConfig}
-          unit="V"
-          renderValue={(value) => value.toFixed(2)}
-          graphId="motor-voltage"
         />
 
         <AutoSyncedBigGraph
