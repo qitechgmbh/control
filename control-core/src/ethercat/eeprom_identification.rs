@@ -28,6 +28,7 @@ use ethercat_hal::helpers::ethercrab_types::{
     EthercrabSubDeviceOperational, EthercrabSubDevicePreoperational,
 };
 use ethercrab::MainDevice;
+use ethercrab::SubDeviceGroup;
 use ethercrab::SubDeviceIdentity;
 
 use crate::machines::identification::DeviceMachineIdentification;
@@ -68,11 +69,11 @@ impl Default for MachineIdentificationAddresses {
 ///
 /// Returns a vector of MachineDeviceIdentification for all subdevices
 pub async fn read_device_identifications<'maindevice>(
-    subdevices: &Vec<EthercrabSubDevicePreoperational<'maindevice>>,
+    group: &SubDeviceGroup<16, 256>,
     maindevice: &MainDevice<'maindevice>,
 ) -> Vec<Result<DeviceMachineIdentification, Error>> {
     let mut result = Vec::new();
-    for subdevice in subdevices.iter() {
+    for subdevice in group.iter(maindevice) {
         let identification = machine_device_identification(&subdevice, maindevice).await;
         result.push(identification);
     }
