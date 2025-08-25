@@ -19,33 +19,38 @@ pub mod el7031;
 pub mod el7031_0030;
 pub mod el7041_0052;
 // pub mod el4008;
-use super::devices::el1008::EL1008;
 use crate::{
-    devices::{el2521::EL2521, el3062_0030::EL3062_0030_IDENTITY_A},
+    devices::{
+        ek1100::{EK1100, EK1100_IDENTITY_A},
+        el1002::{EL1002, EL1002_IDENTITY_A},
+        el1008::{EL1008, EL1008_IDENTITY_A},
+        el2002::{EL2002, EL2002_IDENTITY_A, EL2002_IDENTITY_B},
+        el2004::{EL2004, EL2004_IDENTITY_A},
+        el2008::{EL2008, EL2008_IDENTITY_A},
+        el2521::{EL2521, EL2521_IDENTITY_0000_A, EL2521_IDENTITY_0000_B, EL2521_IDENTITY_0024_A},
+        el2522::{EL2522, EL2522_IDENTITY_A},
+        el3001::{EL3001, EL3001_IDENTITY_A},
+        el3021::{EL3021, EL3021_IDENTITY_A},
+        el3024::{EL3024, EL3024_IDENTITY_A},
+        el3062_0030::{EL3062_0030, EL3062_0030_IDENTITY_A},
+        el3204::{EL3204, EL3204_IDENTITY_A, EL3204_IDENTITY_B},
+        el6021::{
+            EL6021, EL6021_IDENTITY_A, EL6021_IDENTITY_B, EL6021_IDENTITY_C, EL6021_IDENTITY_D,
+        },
+        el7031::{EL7031, EL7031_IDENTITY_A, EL7031_IDENTITY_B},
+        el7031_0030::{EL7031_0030, EL7031_0030_IDENTITY_A},
+        el7041_0052::{EL7041_0052, EL7041_0052_IDENTITY_A},
+    },
     helpers::ethercrab_types::EthercrabSubDeviceGroupPreoperational,
+    registry::{
+        EthercatDeviceRegistrar,
+        arc_smol_rwlock::{ArcSmolRwlockDeviceRegistry, create_default_registry},
+    },
 };
 use anyhow::anyhow;
 use bitvec::{order::Lsb0, slice::BitSlice};
-use ek1100::{EK1100, EK1100_IDENTITY_A};
-use el1002::{EL1002, EL1002_IDENTITY_A};
-use el1008::EL1008_IDENTITY_A;
-use el2002::{EL2002, EL2002_IDENTITY_A, EL2002_IDENTITY_B};
-use el2004::{EL2004, EL2004_IDENTITY_A};
-use el2008::{EL2008, EL2008_IDENTITY_A};
-use el2521::{EL2521_IDENTITY_0000_A, EL2521_IDENTITY_0000_B, EL2521_IDENTITY_0024_A};
-use el2522::{EL2522, EL2522_IDENTITY_A};
-use el3001::EL3001_IDENTITY_A;
-use el3021::EL3021_IDENTITY_A;
-use el3024::EL3024_IDENTITY_A;
-use el3204::EL3204_IDENTITY_A;
-use el6021::{EL6021_IDENTITY_A, EL6021_IDENTITY_B, EL6021_IDENTITY_C, EL6021_IDENTITY_D};
-
-use el3204::EL3204_IDENTITY_B;
-
-use el7031::{EL7031_IDENTITY_A, EL7031_IDENTITY_B};
-use el7031_0030::EL7031_0030_IDENTITY_A;
-use el7041_0052::EL7041_0052_IDENTITY_A;
 use ethercrab::{MainDevice, SubDeviceIdentity};
+use once_cell::sync::Lazy;
 use smol::lock::RwLock;
 use std::{any::Any, fmt::Debug, sync::Arc};
 
@@ -176,49 +181,49 @@ pub async fn downcast_device<T: EthercatDevice>(
     }
 }
 
-/// Construct a device from a subdevice name
+/// Internal implementation for populating any registry
+pub fn register_default_devices<R: EthercatDeviceRegistrar>(registry: &mut R) {
+    // Register all known devices
+    registry.register::<EK1100>(EK1100_IDENTITY_A);
+    registry.register::<EL1002>(EL1002_IDENTITY_A);
+    registry.register::<EL1008>(EL1008_IDENTITY_A);
+    registry.register_multiple::<EL2002>(vec![EL2002_IDENTITY_A, EL2002_IDENTITY_B]);
+    registry.register::<EL2004>(EL2004_IDENTITY_A);
+    registry.register::<EL2008>(EL2008_IDENTITY_A);
+    // TODO: implement EL2024 identity
+    registry.register_multiple::<EL2521>(vec![
+        EL2521_IDENTITY_0000_A,
+        EL2521_IDENTITY_0000_B,
+        EL2521_IDENTITY_0024_A,
+    ]);
+    registry.register::<EL2522>(EL2522_IDENTITY_A);
+    // TODO: implement EL2634 identity
+    // TODO: implement EL2809 identity
+    registry.register::<EL3001>(EL3001_IDENTITY_A);
+    registry.register::<EL3021>(EL3021_IDENTITY_A);
+    registry.register::<EL3024>(EL3024_IDENTITY_A);
+    registry.register::<EL3062_0030>(EL3062_0030_IDENTITY_A);
+    registry.register_multiple::<EL3204>(vec![EL3204_IDENTITY_A, EL3204_IDENTITY_B]);
+    registry.register_multiple::<EL6021>(vec![
+        EL6021_IDENTITY_A,
+        EL6021_IDENTITY_B,
+        EL6021_IDENTITY_C,
+        EL6021_IDENTITY_D,
+    ]);
+    registry.register_multiple::<EL7031>(vec![EL7031_IDENTITY_A, EL7031_IDENTITY_B]);
+    registry.register::<EL7031_0030>(EL7031_0030_IDENTITY_A);
+    registry.register::<EL7041_0052>(EL7041_0052_IDENTITY_A);
+}
+
+/// Static registry instance for efficient device creation
+static DEFAULT_DEVICE_REGISTRY: Lazy<ArcSmolRwlockDeviceRegistry> =
+    Lazy::new(|| create_default_registry());
+
+/// Construct a device from a subdevice name using the default registry
 pub fn device_from_subdevice_identity_tuple(
     subdevice_identity_tuple: SubDeviceIdentityTuple,
 ) -> Result<Arc<RwLock<dyn EthercatDevice>>, anyhow::Error> {
-    match subdevice_identity_tuple {
-        EK1100_IDENTITY_A => Ok(Arc::new(RwLock::new(EK1100::new()))),
-        EL1002_IDENTITY_A => Ok(Arc::new(RwLock::new(EL1002::new()))),
-        EL1008_IDENTITY_A => Ok(Arc::new(RwLock::new(EL1008::new()))),
-        EL2002_IDENTITY_A | EL2002_IDENTITY_B => Ok(Arc::new(RwLock::new(EL2002::new()))),
-        EL2004_IDENTITY_A => Ok(Arc::new(RwLock::new(EL2004::new()))),
-        EL2008_IDENTITY_A => Ok(Arc::new(RwLock::new(EL2008::new()))),
-        // TODO: implement EL2024 identity
-        // EL2024 => Ok(Arc::new(RwLock::new(EL2024::new()))),
-        EL2521_IDENTITY_0000_A | EL2521_IDENTITY_0000_B | EL2521_IDENTITY_0024_A => {
-            Ok(Arc::new(RwLock::new(EL2521::new())))
-        }
-        EL2522_IDENTITY_A => Ok(Arc::new(RwLock::new(EL2522::new()))),
-        // TODO: implement EL2634 identity
-        // "EL2634" => Ok(Arc::new(RwLock::new(EL2634::new()))),
-        // TODO: implement EL2809 identity
-        // "EL2809" => Ok(Arc::new(RwLock::new(EL2809::new()))),
-        EL3001_IDENTITY_A => Ok(Arc::new(RwLock::new(el3001::EL3001::new()))),
-        EL3021_IDENTITY_A => Ok(Arc::new(RwLock::new(el3021::EL3021::new()))),
-        EL3024_IDENTITY_A => Ok(Arc::new(RwLock::new(el3024::EL3024::new()))),
-        EL3062_0030_IDENTITY_A => Ok(Arc::new(RwLock::new(el3062_0030::EL3062_0030::new()))),
-        EL6021_IDENTITY_A | EL6021_IDENTITY_B | EL6021_IDENTITY_C | EL6021_IDENTITY_D => {
-            Ok(Arc::new(RwLock::new(el6021::EL6021::new())))
-        }
-        EL3204_IDENTITY_A | EL3204_IDENTITY_B => Ok(Arc::new(RwLock::new(el3204::EL3204::new()))),
-        // "EL4008" => Ok(Arc::new(RwLock::new(EL4008::new()))),
-        // TODO: implement EL3204 identity
-        // "EL3204" => Ok(Arc::new(RwLock::new(EL3204::new()))),
-        EL7031_IDENTITY_A | EL7031_IDENTITY_B => Ok(Arc::new(RwLock::new(el7031::EL7031::new()))),
-        EL7031_0030_IDENTITY_A => Ok(Arc::new(RwLock::new(el7031_0030::EL7031_0030::new()))),
-        EL7041_0052_IDENTITY_A => Ok(Arc::new(RwLock::new(el7041_0052::EL7041_0052::new()))),
-        _ => Err(anyhow::anyhow!(
-            "[{}::device_from_subdevice] No Driver: vendor_id: {:?}, product_id: {:?}, revision: {:?}",
-            module_path!(),
-            subdevice_identity_tuple.0,
-            subdevice_identity_tuple.1,
-            subdevice_identity_tuple.2,
-        )),
-    }
+    DEFAULT_DEVICE_REGISTRY.new_device(subdevice_identity_tuple)
 }
 
 /// Construct a device from a subdevice
