@@ -16,8 +16,7 @@ use control_core::machines::new::MachineNewHardwareEthercat;
 use control_core::realtime::{set_core_affinity, set_realtime_priority};
 use control_core::socketio::namespace::NamespaceCacheingLogic;
 use ethercat_hal::devices::devices_from_subdevices;
-use ethercrab::std::{ethercat_now, tx_rx_task};
-
+use ethercrab::std::ethercat_now;
 use ethercrab::{MainDevice, MainDeviceConfig, PduStorage, RetryBehaviour, Timeouts};
 use smol::channel::Sender;
 use std::{sync::Arc, time::Duration};
@@ -51,13 +50,26 @@ pub async fn setup_loop(
 
             // Set the thread to real-time priority
             let _ = set_realtime_priority();
-            let rt = smol::LocalExecutor::new();
 
-            let _ = smol::block_on(rt.run(async {
-                tx_rx_task(&interface, tx, rx)
-                    .expect("spawn TX/RX task")
-                    .await
-            }));
+            #[cfg(not(all(target_os = "linux", feature = "io-uring")))]
+            {
+                use ethercrab::std::tx_rx_task;
+                use futures::executor::block_on;
+
+                let rt = smol::LocalExecutor::new();
+                let _ = block_on(rt.run(async {
+                    tx_rx_task(&interface, tx, rx)
+                        .expect("spawn TX/RX task")
+                        .await
+                }));
+            }
+            #[cfg(all(target_os = "linux", feature = "io-uring"))]
+            {
+                use ethercrab::std::tx_rx_task_io_uring;
+
+                let _ = tx_rx_task_io_uring(&interface, tx, rx)
+                    .expect("Failed to spawn TX/RX task (io_uring)");
+            }
         })
         .expect("Building thread");
 
