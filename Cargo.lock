@@ -1007,6 +1007,7 @@ dependencies = [
  "ethercat_hal_derive",
  "ethercrab",
  "futures",
+ "once_cell",
  "rand",
  "smol",
  "uom",
