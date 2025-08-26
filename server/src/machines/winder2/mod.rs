@@ -10,11 +10,7 @@ pub mod spool_speed_controller;
 pub mod tension_arm;
 pub mod traverse_controller;
 
-use std::{
-    fmt::Debug,
-    sync::{Arc, Weak},
-    time::Instant,
-};
+use std::{fmt::Debug, sync::Weak, time::Instant};
 
 use api::{
     LiveValuesEvent, ModeState, PullerState, SpoolAutomaticActionMode, SpoolAutomaticActionState,
@@ -24,7 +20,8 @@ use api::{
 use control_core::{
     converters::angular_step_converter::AngularStepConverter,
     machines::{
-        ConnectedMachine, ConnectedMachineData, Machine, downcast_machine,
+        Machine,
+        connection::{CrossConnectableMachine, MachineCrossConnection},
         identification::{MachineIdentification, MachineIdentificationUnique},
         manager::MachineManager,
     },
@@ -35,9 +32,8 @@ use ethercat_hal::io::{
     digital_input::DigitalInput, digital_output::DigitalOutput,
     stepper_velocity_el70x1::StepperVelocityEL70x1,
 };
-use futures::executor::block_on;
 use puller_speed_controller::{PullerRegulationMode, PullerSpeedController};
-use smol::lock::{Mutex, RwLock};
+use smol::lock::RwLock;
 use spool_speed_controller::SpoolSpeedController;
 use tension_arm::TensionArm;
 use traverse_controller::TraverseController;
@@ -52,9 +48,7 @@ use uom::{
     },
 };
 
-use crate::machines::{
-    MACHINE_WINDER_V1, VENDOR_QITECH, buffer1::BufferV1, winder2::api::ConnectedMachineState,
-};
+use crate::machines::{MACHINE_WINDER_V1, VENDOR_QITECH, buffer1::BufferV1};
 
 #[derive(Debug)]
 pub struct SpoolAutomaticAction {
@@ -86,7 +80,7 @@ pub struct Winder2 {
     pub machine_identification_unique: MachineIdentificationUnique,
 
     // connected machines
-    pub connected_buffer: Option<ConnectedMachine<Weak<Mutex<BufferV1>>>>,
+    pub connected_buffer: MachineCrossConnection<Winder2, BufferV1>,
 
     // mode
     pub mode: Winder2Mode,
@@ -110,8 +104,14 @@ pub struct Winder2 {
 }
 
 impl Machine for Winder2 {
-    fn as_any(&self) -> &dyn std::any::Any {
-        self
+    fn get_machine_identification_unique(&self) -> MachineIdentificationUnique {
+        self.machine_identification_unique.clone()
+    }
+}
+
+impl CrossConnectableMachine<Winder2, BufferV1> for Winder2 {
+    fn get_cross_connection(&mut self) -> &mut MachineCrossConnection<Winder2, BufferV1> {
+        &mut self.connected_buffer
     }
 }
 
@@ -120,10 +120,8 @@ impl Winder2 {
         vendor: VENDOR_QITECH,
         machine: MACHINE_WINDER_V1,
     };
-}
 
-/// Implement Traverse
-impl Winder2 {
+    /// Implement Traverse
     fn set_laser(&mut self, value: bool) {
         self.laser.set(value);
         self.emit_state();
@@ -323,22 +321,7 @@ impl Winder2 {
                 spool_required_meters: self.spool_automatic_action.target_length.get::<meter>(),
                 spool_automatic_action_mode: self.spool_automatic_action.mode.clone(),
             },
-            connected_machine_state: ConnectedMachineState {
-                machine_identification_unique: self.connected_buffer.as_ref().map(
-                    |connected_machine| {
-                        ConnectedMachineData::from(connected_machine)
-                            .machine_identification_unique
-                            .clone()
-                    },
-                ),
-                is_available: self
-                    .connected_buffer
-                    .as_ref()
-                    .map(|connected_machine| {
-                        ConnectedMachineData::from(connected_machine).is_available
-                    })
-                    .unwrap_or(false),
-            },
+            connected_machine_state: self.connected_buffer.to_state(),
         };
 
         let event = state.build();
@@ -396,12 +379,8 @@ impl Winder2 {
             && !self.traverse_controller.is_traversing()
             && self.mode != Winder2Mode::Wind
     }
-}
 
-impl Winder2 {}
-
-/// Implement Mode
-impl Winder2 {
+    /// Implement Mode
     fn set_mode(&mut self, mode: &Winder2Mode) {
         let should_update = *mode != Winder2Mode::Wind || self.can_wind();
 
@@ -588,19 +567,15 @@ impl Winder2 {
         // Update the internal state
         self.puller_mode = mode;
     }
-}
 
-/// Implement Tension Arm
-impl Winder2 {
+    /// Implement Tension Arm
     fn tension_arm_zero(&mut self) {
         self.tension_arm.zero();
         self.emit_live_values(); // For angle update
         self.emit_state(); // For state update
     }
-}
 
-/// Implement Spool
-impl Winder2 {
+    /// Implement Spool
     /// called by `act`
     pub fn sync_spool_speed(&mut self, t: Instant) {
         let angular_velocity = self.spool_speed_controller.update_speed(
@@ -677,10 +652,8 @@ impl Winder2 {
         self.spool_automatic_action.progress += meters_pulled_this_interval;
         self.spool_automatic_action.progress_last_check = now;
     }
-}
 
-/// Implement Puller
-impl Winder2 {
+    /// Implement Puller
     /// called by `act`
     pub fn sync_puller_speed(&mut self, t: Instant) {
         let angular_velocity = self.puller_speed_controller.calc_angular_velocity(t);
@@ -784,10 +757,8 @@ impl Winder2 {
             .set_adaptive_deacceleration_urgency_multiplier(deacceleration_urgency_multiplier);
         self.emit_state();
     }
-}
 
-/// implement machine connection
-impl Winder2 {
+    /// implement machine connection
     /// set connected buffer
     pub fn set_connected_buffer(
         &mut self,
@@ -799,34 +770,12 @@ impl Winder2 {
         ) {
             return;
         }
-        let machine_manager_arc = match self.machine_manager.upgrade() {
-            Some(machine_manager_arc) => machine_manager_arc,
-            None => return,
-        };
-        let machine_manager_guard = block_on(machine_manager_arc.read());
-        let buffer_weak = machine_manager_guard.get_machine_weak(&machine_identification_unique);
-        let buffer_weak = match buffer_weak {
-            Some(buffer_weak) => buffer_weak,
-            None => return,
-        };
-        let buffer_strong = match buffer_weak.upgrade() {
-            Some(buffer_strong) => buffer_strong,
-            None => return,
-        };
 
-        let buffer: Arc<Mutex<BufferV1>> = block_on(downcast_machine::<BufferV1>(buffer_strong))
-            .expect("failed downcasting machine");
-
-        let machine = Arc::downgrade(&buffer);
-
-        self.connected_buffer = Some(ConnectedMachine {
-            machine_identification_unique,
-            machine: machine.clone(),
-        });
+        self.connected_buffer
+            .set_connected_machine(&machine_identification_unique);
+        self.connected_buffer.reverse_connect();
 
         self.emit_state();
-
-        self.reverse_connect();
     }
 
     /// disconnect buffer
@@ -840,36 +789,11 @@ impl Winder2 {
         ) {
             return;
         }
-        if let Some(connected) = &self.connected_buffer {
-            if let Some(buffer_arc) = connected.machine.upgrade() {
-                let future = async move {
-                    let mut buffer = buffer_arc.lock().await;
-                    if buffer.connected_winder.is_some() {
-                        buffer.connected_winder = None;
-                        buffer.emit_state();
-                    }
-                };
-                smol::spawn(future).detach();
-            }
-        }
-        self.connected_buffer = None;
-        self.emit_state();
-    }
 
-    /// initiate connection from buffer to winder
-    pub fn reverse_connect(&mut self) {
-        let machine_identification_unique = self.machine_identification_unique.clone();
-        if let Some(connected) = &self.connected_buffer {
-            if let Some(buffer_arc) = connected.machine.upgrade() {
-                let future = async move {
-                    let mut buffer = buffer_arc.lock().await;
-                    if buffer.connected_winder.is_none() {
-                        buffer.set_connected_winder(machine_identification_unique);
-                    }
-                };
-                smol::spawn(future).detach();
-            }
-        }
+        self.connected_buffer.reverse_connect();
+        self.connected_buffer.disconnect();
+
+        self.emit_state();
     }
 }
 
