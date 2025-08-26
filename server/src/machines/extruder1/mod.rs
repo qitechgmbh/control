@@ -1,14 +1,21 @@
-use crate::machines::{MACHINE_EXTRUDER_V1, VENDOR_QITECH};
-use api::ExtruderV2Namespace;
-use control_core::machines::identification::MachineIdentification;
-use control_core_derive::Machine;
-use screw_speed_controller::ScrewSpeedController;
-use serde::{Deserialize, Serialize};
+#[cfg(not(feature = "mock-machine"))]
 use std::time::Instant;
-use temperature_controller::TemperatureController;
-use uom::si::{
-    electric_current::ampere, electric_potential::volt, f64::ThermodynamicTemperature,
-    thermodynamic_temperature::degree_celsius,
+
+#[cfg(not(feature = "mock-machine"))]
+use control_core::machines::{
+    Machine,
+    identification::{MachineIdentification, MachineIdentificationUnique},
+};
+use serde::{Deserialize, Serialize};
+use uom::si::{f64::ThermodynamicTemperature, thermodynamic_temperature::degree_celsius};
+
+#[cfg(not(feature = "mock-machine"))]
+use crate::machines::{
+    MACHINE_EXTRUDER_V1, VENDOR_QITECH,
+    extruder1::{
+        api::ExtruderV2Namespace, screw_speed_controller::ScrewSpeedController,
+        temperature_controller::TemperatureController,
+    },
 };
 pub mod act;
 pub mod api;
@@ -18,6 +25,8 @@ pub mod mock;
 pub mod new;
 pub mod screw_speed_controller;
 pub mod temperature_controller;
+use uom::si::electric_current::ampere;
+use uom::si::electric_potential::volt;
 
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Eq)]
 pub enum ExtruderV2Mode {
@@ -52,9 +61,10 @@ pub enum HeatingType {
     Middle,
 }
 
-#[derive(Debug, Machine)]
 #[cfg(not(feature = "mock-machine"))]
+#[derive(Debug)]
 pub struct ExtruderV2 {
+    machine_identificttion_unique: MachineIdentificationUnique,
     namespace: ExtruderV2Namespace,
     last_measurement_emit: Instant,
     last_status_hash: Option<u64>,
@@ -72,6 +82,13 @@ pub struct ExtruderV2 {
     /// will be initalized as false and set to true by `emit_state`
     /// This way we can signal to the client that the first state emission is a default state
     emitted_default_state: bool,
+}
+
+#[cfg(not(feature = "mock-machine"))]
+impl Machine for ExtruderV2 {
+    fn get_machine_identification_unique(&self) -> MachineIdentificationUnique {
+        self.machine_identificttion_unique.clone()
+    }
 }
 
 #[cfg(not(feature = "mock-machine"))]
@@ -126,6 +143,9 @@ impl ExtruderV2 {
     }
 
     // Funktionen ohne emit_state bleiben hier
+
+    // Set all relais to ZERO
+    // We dont need a function to enable again though, as the act Loop will detect the mode
     fn turn_heating_off(&mut self) {
         self.temperature_controller_back.disable();
         self.temperature_controller_front.disable();

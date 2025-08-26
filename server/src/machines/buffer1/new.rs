@@ -1,6 +1,7 @@
 use std::time::Instant;
 
 use anyhow::Error;
+use control_core::machines::connection::MachineCrossConnection;
 use control_core::machines::new::{
     MachineNewHardware, MachineNewParams, MachineNewTrait, validate_no_role_dublicates,
     validate_same_machine_identification_unique,
@@ -28,7 +29,9 @@ use crate::machines::get_ethercat_device;
 use super::{BufferV1, api::Buffer1Namespace};
 
 impl MachineNewTrait for BufferV1 {
-    fn new<'maindevice>(params: &MachineNewParams) -> Result<Self, Error> {
+    fn new<'maindevice>(
+        params: &MachineNewParams<'maindevice, '_, '_, '_, '_, '_, '_>,
+    ) -> Result<Self, Error> {
         // validate general stuff
         let device_identification = params.device_group.to_vec();
         validate_same_machine_identification_unique(&device_identification)?;
@@ -124,23 +127,22 @@ impl MachineNewTrait for BufferV1 {
                 EL7041_0052Port::STM1,
             ));
 
-            let machine_id = params
-                .device_group
-                .first()
-                .expect("device group must have at least one device")
-                .device_machine_identification
-                .machine_identification_unique
-                .clone();
+            let machine_identification_unique = params.get_machine_identification_unique();
 
             // create buffer instance
-            let mut buffer: Self = Self {
-                namespace: Buffer1Namespace::new(params.socket_queue_tx.clone()),
+            let mut buffer: BufferV1 = Self {
+                namespace: Buffer1Namespace {
+                    namespace: params.namespace.clone(),
+                },
                 last_measurement_emit: Instant::now(),
                 mode: BufferV1Mode::Standby,
                 buffer_tower_controller,
                 machine_manager: params.machine_manager.clone(),
-                machine_identification_unique: machine_id,
-                connected_winder: None,
+                machine_identification_unique: machine_identification_unique.clone(),
+                connected_winder: MachineCrossConnection::new(
+                    params.machine_manager.clone(),
+                    &machine_identification_unique,
+                ),
             };
             buffer.emit_state();
             Ok(buffer)

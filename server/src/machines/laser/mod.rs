@@ -4,9 +4,12 @@ use crate::{
 };
 use api::{LaserEvents, LaserMachineNamespace, LaserState, LiveValuesEvent, StateEvent};
 use control_core::{
-    machines::identification::MachineIdentification, socketio::namespace::NamespaceCacheingLogic,
+    machines::{
+        Machine,
+        identification::{MachineIdentification, MachineIdentificationUnique},
+    },
+    socketio::namespace::NamespaceCacheingLogic,
 };
-use control_core_derive::Machine;
 use smol::lock::RwLock;
 use std::{sync::Arc, time::Instant};
 use uom::si::{f64::Length, length::millimeter};
@@ -15,8 +18,10 @@ pub mod act;
 pub mod api;
 pub mod new;
 
-#[derive(Debug, Machine)]
+#[derive(Debug)]
 pub struct LaserMachine {
+    machine_identification_unique: MachineIdentificationUnique,
+
     // drivers
     laser: Arc<RwLock<Laser>>,
 
@@ -38,14 +43,18 @@ pub struct LaserMachine {
     emitted_default_state: bool,
 }
 
+impl Machine for LaserMachine {
+    fn get_machine_identification_unique(&self) -> MachineIdentificationUnique {
+        self.machine_identification_unique.clone()
+    }
+}
+
 impl LaserMachine {
     pub const MACHINE_IDENTIFICATION: MachineIdentification = MachineIdentification {
         vendor: VENDOR_QITECH,
         machine: MACHINE_LASER_V1,
     };
-}
 
-impl LaserMachine {
     ///diameter in mm
     pub fn emit_live_values(&mut self) {
         let diameter = self.diameter.get::<millimeter>();

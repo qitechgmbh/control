@@ -338,7 +338,10 @@ impl MachineNewTrait for AquaPathV1 {
             );
 
             let mut water_cooling = Self {
-                namespace: AquaPathV1Namespace::new(params.socket_queue_tx.clone()),
+                machine_identification_unique: params.get_machine_identification_unique(),
+                namespace: AquaPathV1Namespace {
+                    namespace: params.namespace.clone(),
+                },
                 mode: AquaPathV1Mode::Standby,
                 last_measurement_emit: Instant::now(),
                 front_controller,

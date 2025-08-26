@@ -8,16 +8,14 @@ use crate::machines::extruder1::{
         RotationState, ScrewState, StateEvent,
     },
 };
-use control_core::{
-    helpers::hasher_serializer::hash_with_serde_model,
-    socketio::{event::BuildEvent, namespace::NamespaceCacheingLogic},
-};
-use uom::si::{
-    angular_velocity::revolution_per_minute,
-    f64::{AngularVelocity, Pressure, ThermodynamicTemperature},
-    pressure::bar,
-    thermodynamic_temperature::degree_celsius,
-};
+use control_core::helpers::hasher_serializer::hash_with_serde_model;
+use control_core::socketio::event::BuildEvent;
+use control_core::socketio::namespace::NamespaceCacheingLogic;
+use uom::si::{angular_velocity::revolution_per_minute, thermodynamic_temperature::degree_celsius};
+
+use uom::si::angular_velocity::AngularVelocity;
+use uom::si::pressure::{Pressure, bar};
+use uom::si::thermodynamic_temperature::ThermodynamicTemperature;
 
 #[cfg(not(feature = "mock-machine"))]
 impl ExtruderV2 {
@@ -199,7 +197,6 @@ impl ExtruderV2 {
     }
 
     pub fn set_nozzle_pressure_limit(&mut self, pressure: f64) {
-        use uom::si::pressure::bar;
         self.screw_speed_controller
             .set_nozzle_pressure_limit(Pressure::new::<bar>(pressure));
         self.emit_state();
@@ -244,7 +241,6 @@ impl ExtruderV2 {
     }
 
     pub fn set_target_rpm(&mut self, rpm: f64) {
-        use uom::si::angular_velocity::revolution_per_minute;
         self.screw_speed_controller
             .set_target_screw_rpm(AngularVelocity::new::<revolution_per_minute>(rpm));
         self.emit_state();

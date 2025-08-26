@@ -1,7 +1,10 @@
 use control_core::{
-    machines::identification::MachineIdentification, socketio::namespace::NamespaceCacheingLogic,
+    machines::{
+        Machine,
+        identification::{MachineIdentification, MachineIdentificationUnique},
+    },
+    socketio::namespace::NamespaceCacheingLogic,
 };
-use control_core_derive::Machine;
 
 use serde::{Deserialize, Serialize};
 use std::time::Instant;
@@ -77,8 +80,9 @@ impl Default for Flow {
     }
 }
 
-#[derive(Debug, Machine)]
+#[derive(Debug)]
 pub struct AquaPathV1 {
+    machine_identification_unique: MachineIdentificationUnique,
     namespace: AquaPathV1Namespace,
     mode: AquaPathV1Mode,
     last_measurement_emit: Instant,
@@ -90,6 +94,12 @@ impl AquaPathV1 {
         vendor: VENDOR_QITECH,
         machine: MACHINE_AQUAPATH_V1,
     };
+}
+
+impl Machine for AquaPathV1 {
+    fn get_machine_identification_unique(&self) -> MachineIdentificationUnique {
+        self.machine_identification_unique.clone()
+    }
 }
 
 impl std::fmt::Display for AquaPathV1 {
