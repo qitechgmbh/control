@@ -5,28 +5,22 @@ pub mod new;
 
 use api::{Buffer1Namespace, BufferV1Events, LiveValuesEvent, ModeState, StateEvent};
 use buffer_tower_controller::BufferTowerController;
+use control_core::machines::connection::{CrossConnectableMachine, MachineCrossConnection};
 use control_core::{
     machines::{
-        ConnectedMachine, ConnectedMachineData, downcast_machine,
+        Machine,
         identification::{MachineIdentification, MachineIdentificationUnique},
         manager::MachineManager,
     },
     socketio::namespace::NamespaceCacheingLogic,
 };
-use control_core_derive::Machine;
-use futures::executor::block_on;
 use serde::{Deserialize, Serialize};
-use smol::lock::{Mutex, RwLock};
-use std::{
-    sync::{Arc, Weak},
-    time::Instant,
-};
+use smol::lock::RwLock;
+use std::{sync::Weak, time::Instant};
 
-use crate::machines::{
-    MACHINE_BUFFER_V1, VENDOR_QITECH, buffer1::api::ConnectedMachineState, winder2::Winder2,
-};
+use crate::machines::{MACHINE_BUFFER_V1, VENDOR_QITECH, winder2::Winder2};
 
-#[derive(Debug, Machine)]
+#[derive(Debug)]
 pub struct BufferV1 {
     // controllers
     pub buffer_tower_controller: BufferTowerController,
@@ -40,10 +34,22 @@ pub struct BufferV1 {
     pub machine_identification_unique: MachineIdentificationUnique,
 
     // connected machines
-    pub connected_winder: Option<ConnectedMachine<Weak<Mutex<Winder2>>>>,
+    pub connected_winder: MachineCrossConnection<BufferV1, Winder2>,
 
     // mode
     mode: BufferV1Mode,
+}
+
+impl Machine for BufferV1 {
+    fn get_machine_identification_unique(&self) -> MachineIdentificationUnique {
+        self.machine_identification_unique.clone()
+    }
+}
+
+impl CrossConnectableMachine<BufferV1, Winder2> for BufferV1 {
+    fn get_cross_connection(&mut self) -> &mut MachineCrossConnection<BufferV1, Winder2> {
+        &mut self.connected_winder
+    }
 }
 
 impl std::fmt::Display for BufferV1 {
@@ -57,9 +63,6 @@ impl BufferV1 {
         vendor: VENDOR_QITECH,
         machine: MACHINE_BUFFER_V1,
     };
-}
-
-impl BufferV1 {
     pub fn emit_live_values(&mut self) {
         let live_values = LiveValuesEvent {};
 
@@ -72,28 +75,13 @@ impl BufferV1 {
             mode_state: ModeState {
                 mode: self.mode.clone(),
             },
-            connected_machine_state: ConnectedMachineState {
-                machine_identification_unique: self.connected_winder.as_ref().map(
-                    |connected_machine| {
-                        ConnectedMachineData::from(connected_machine).machine_identification_unique
-                    },
-                ),
-                is_available: self
-                    .connected_winder
-                    .as_ref()
-                    .map(|connected_machine| {
-                        ConnectedMachineData::from(connected_machine).is_available
-                    })
-                    .unwrap_or(false),
-            },
+            connected_machine_state: self.connected_winder.to_state(),
         };
 
         let event = state.build();
         self.namespace.emit(BufferV1Events::State(event));
     }
-}
 
-impl BufferV1 {
     // To be implemented
     fn fill_buffer(&mut self) {
         todo!();
@@ -146,17 +134,13 @@ impl BufferV1 {
             BufferV1Mode::EmptyingBuffer => self.switch_to_emptying(),
         }
     }
-}
 
-impl BufferV1 {
     fn set_mode_state(&mut self, mode: BufferV1Mode) {
         self.switch_mode(mode);
         self.emit_state();
     }
-}
 
-/// Connecting/Disconnecting machine
-impl BufferV1 {
+    /// Connecting/Disconnecting machine
     /// set connected winder
     pub fn set_connected_winder(
         &mut self,
@@ -168,34 +152,13 @@ impl BufferV1 {
         ) {
             return;
         }
-        let machine_manager_arc = match self.machine_manager.upgrade() {
-            Some(machine_manager_arc) => machine_manager_arc,
-            None => return,
-        };
-        let machine_manager_guard = block_on(machine_manager_arc.read());
-        let winder2_weak = machine_manager_guard.get_machine_weak(&machine_identification_unique);
-        let winder2_weak = match winder2_weak {
-            Some(winder2_weak) => winder2_weak,
-            None => return,
-        };
-        let winder2_strong = match winder2_weak.upgrade() {
-            Some(winder2_strong) => winder2_strong,
-            None => return,
-        };
 
-        let winder2: Arc<Mutex<Winder2>> = block_on(downcast_machine::<Winder2>(winder2_strong))
-            .expect("failed downcasting machine");
-
-        let machine = Arc::downgrade(&winder2);
-
-        self.connected_winder = Some(ConnectedMachine {
-            machine_identification_unique,
-            machine,
-        });
+        self.connected_winder
+            .set_connected_machine(&machine_identification_unique);
 
         self.emit_state();
 
-        self.reverse_connect();
+        self.connected_winder.reverse_connect();
     }
 
     /// disconnect winder
@@ -209,36 +172,9 @@ impl BufferV1 {
         ) {
             return;
         }
-        if let Some(connected) = &self.connected_winder {
-            if let Some(winder2_arc) = connected.machine.upgrade() {
-                let future = async move {
-                    let mut winder2 = winder2_arc.lock().await;
-                    if winder2.connected_buffer.is_some() {
-                        winder2.connected_buffer = None;
-                        winder2.emit_state();
-                    }
-                };
-                smol::spawn(future).detach();
-            }
-        }
-        self.connected_winder = None;
-        self.emit_state();
-    }
 
-    /// initiate connection from winder to buffer
-    pub fn reverse_connect(&mut self) {
-        let machine_identification_unique = self.machine_identification_unique.clone();
-        if let Some(connected) = &self.connected_winder {
-            if let Some(winder2_arc) = connected.machine.upgrade() {
-                let future = async move {
-                    let mut winder2 = winder2_arc.lock().await;
-                    if winder2.connected_buffer.is_none() {
-                        winder2.set_connected_buffer(machine_identification_unique);
-                    }
-                };
-                smol::spawn(future).detach();
-            }
-        }
+        self.connected_winder.disconnect();
+        self.emit_state();
     }
 }
 

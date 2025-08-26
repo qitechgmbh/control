@@ -1,10 +1,11 @@
 use crate::machines::{MACHINE_MOCK, VENDOR_QITECH};
 use api::{LiveValuesEvent, MockEvents, MockMachineNamespace, Mode, ModeState, StateEvent};
+use control_core::machines::Machine;
+use control_core::machines::identification::MachineIdentificationUnique;
 use control_core::socketio::event::BuildEvent;
 use control_core::{
     machines::identification::MachineIdentification, socketio::namespace::NamespaceCacheingLogic,
 };
-use control_core_derive::Machine;
 
 use std::time::Instant;
 use tracing::info;
@@ -17,8 +18,10 @@ pub mod act;
 pub mod api;
 pub mod new;
 
-#[derive(Debug, Machine)]
+#[derive(Debug)]
 pub struct MockMachine {
+    machine_identifaction_unique: MachineIdentificationUnique,
+
     // socketio
     namespace: MockMachineNamespace,
     last_measurement_emit: Instant,
@@ -38,14 +41,18 @@ pub struct MockMachine {
     emitted_default_state: bool,
 }
 
-impl MockMachine {
-    pub const MACHINE_IDENTIFICATION: MachineIdentification = MachineIdentification {
-        vendor: VENDOR_QITECH,
-        machine: MACHINE_MOCK,
-    };
+impl Machine for MockMachine {
+    fn get_machine_identification_unique(&self) -> MachineIdentificationUnique {
+        self.machine_identifaction_unique.clone()
+    }
 }
 
 impl MockMachine {
+    pub const MACHINE_IDENTIFICATION: MachineIdentification = MachineIdentification {
+        machine: MACHINE_MOCK,
+        vendor: VENDOR_QITECH,
+    };
+
     /// Emit live values data event with the current sine wave amplitude
     pub fn emit_live_values(&mut self) {
         let now = Instant::now();

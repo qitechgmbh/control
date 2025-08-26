@@ -1,5 +1,6 @@
 pub mod controllers;
 pub mod converters;
+pub mod downcast;
 pub mod ethercat;
 pub mod helpers;
 pub mod irq_handling;
