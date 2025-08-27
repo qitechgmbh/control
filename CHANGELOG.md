@@ -12,8 +12,6 @@ _27.08.2025_
 - [#540](https://github.com/qitechgmbh/control/pull/592) Improved readability of the presets
 - [#591](https://github.com/qitechgmbh/control/pull/626) Significantly improved user interface performance and stability
 
-
-
 # `2.4.0`
 _14.08.2025_
 
@@ -21,12 +19,8 @@ _14.08.2025_
 - [#550](https://github.com/qitechgmbh/control/pull/551) Can now reset wound distance while winding
   
 ## General
-- [#568](https://github.com/qitechgmbh/control/pull/569) switched to a Realtime Linuxkernel on nixos
-- [#574](https://github.com/qitechgmbh/control/pull/587) isolated cores 2 and 3 on nixos to guarentee strict timings for ethercat
-- [#588](https://github.com/qitechgmbh/control/pull/589) limited frontend to 30 fps to reduce cpu usage
-- [#572](https://github.com/qitechgmbh/control/pull/572) switched to io_uring to reduce latency
-
-
+- [#568](https://github.com/qitechgmbh/control/pull/569),[#572](https://github.com/qitechgmbh/control/pull/572), [#574](https://github.com/qitechgmbh/control/pull/587) Improved EtherCAT performance 
+- [#588](https://github.com/qitechgmbh/control/pull/589) Improved frontend performance
 
 # `2.3.0`
 _06.08.2025_
@@ -45,7 +39,6 @@ _06.08.2025_
 ## General
 - [#62](https://github.com/qitechgmbh/control/pull/514),[#524](https://github.com/qitechgmbh/control/pull/528) added machine presets to load configurations
 - [#526](https://github.com/qitechgmbh/control/pull/541) added import and export of presets
-
 
 # `2.2.0`
 
