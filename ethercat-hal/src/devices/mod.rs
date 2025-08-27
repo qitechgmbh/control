@@ -212,7 +212,7 @@ pub fn device_from_subdevice_identity_tuple(
         EL7031_0030_IDENTITY_A => Ok(Arc::new(RwLock::new(el7031_0030::EL7031_0030::new()))),
         EL7041_0052_IDENTITY_A => Ok(Arc::new(RwLock::new(el7041_0052::EL7041_0052::new()))),
         _ => Err(anyhow::anyhow!(
-            "[{}::device_from_subdevice] No Driver: vendor_id: {:?}, product_id: {:?}, revision: {:?}",
+            "[{}::device_from_subdevice] No Driver: vendor_id: 0x{:x}, product_id: 0x{:x}, revision: 0x{:x}",
             module_path!(),
             subdevice_identity_tuple.0,
             subdevice_identity_tuple.1,
