@@ -4,7 +4,7 @@ use std::{
     sync::{Arc, RwLock},
     time::{Duration, Instant},
 };
-use uom::si::{f32::Volume, f64::VolumeRate, volume_rate::liter_per_minute};
+use uom::si::{f64::VolumeRate, volume_rate::liter_per_minute};
 
 use crate::machines::aquapath1::Flow;
 
@@ -136,8 +136,8 @@ impl FlowController {
         }
 
         if self.pump_allowed {
-            let error: f64 = self.target_flow.get::<liter_per_minute>();
-            -current_flow.get::<liter_per_minute>();
+            let error: f64 =
+                self.target_flow.get::<liter_per_minute>() - current_flow.get::<liter_per_minute>();
 
             let control = self.pid.update(error, now); // PID output
             // Clamp PID output to 0.0 – 1.0 (as duty cycle)

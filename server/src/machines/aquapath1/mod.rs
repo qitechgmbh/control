@@ -130,11 +130,11 @@ impl AquaPathV1 {
 
     pub fn emit_state(&mut self) {
         let state = StateEvent {
-            is_default_state: false, // Placeholder for default state;
+            is_default_state: false,
             mode_state: ModeState {
                 mode: self.mode.clone(),
             },
-            temp_states: TempStates {
+            temperature_states: TempStates {
                 front: TempState {
                     temperature: self
                         .temp_controller_front
@@ -230,57 +230,14 @@ impl AquaPathV1 {
     fn switch_to_standby(&mut self) {
         match self.mode {
             AquaPathV1Mode::Standby => (),
-            // AquaPathV1Mode::Cool => self.turn_off_all(),
-            // AquaPathV1Mode::Heat => self.turn_off_all(),
             AquaPathV1Mode::Auto => self.turn_off_all(),
         };
         self.mode = AquaPathV1Mode::Standby;
     }
 
-    // turn on motor and cool
-    // fn switch_to_cool(&mut self) {
-    //     match self.mode {
-    //         AquaPathV1Mode::Standby => {
-    //             self.turn_cooling_on();
-    //             self.turn_heating_off();
-    //         }
-    //         // AquaPathV1Mode::Cool => (),
-    //         // AquaPathV1Mode::Heat => {
-    //         //     self.turn_cooling_on();
-    //         //     self.turn_heating_off();
-    //         // }
-    //         AquaPathV1Mode::Auto => {
-    //             self.turn_cooling_on();
-    //             self.turn_heating_off();
-    //         }
-    //     }
-    //     self.mode = AquaPathV1Mode::Cool;
-    // }
-
-    // fn switch_to_heat(&mut self) {
-    //     match self.mode {
-    //         AquaPathV1Mode::Standby => {
-    //             self.turn_cooling_off();
-    //             self.turn_heating_on();
-    //         }
-    //         // AquaPathV1Mode::Cool => {
-    //         //     self.turn_cooling_off();
-    //         //     self.turn_heating_on();
-    //         // }
-    //         // AquaPathV1Mode::Heat => (),
-    //         AquaPathV1Mode::Auto => {
-    //             self.turn_cooling_off();
-    //             self.turn_heating_on();
-    //         }
-    //     }
-    //     self.mode = AquaPathV1Mode::Heat;
-    // }
-
     fn switch_to_auto(&mut self) {
         match self.mode {
             AquaPathV1Mode::Auto => (),
-            // AquaPathV1Mode::Cool => self.turn_on_all(),
-            // AquaPathV1Mode::Heat => self.turn_on_all(),
             AquaPathV1Mode::Standby => self.turn_on_all(),
         }
         self.mode = AquaPathV1Mode::Auto;
@@ -294,8 +251,6 @@ impl AquaPathV1 {
 
         match mode {
             AquaPathV1Mode::Standby => self.switch_to_standby(),
-            // AquaPathV1Mode::Cool => self.switch_to_cool(),
-            // AquaPathV1Mode::Heat => self.switch_to_heat(),
             AquaPathV1Mode::Auto => self.switch_to_auto(),
         }
     }

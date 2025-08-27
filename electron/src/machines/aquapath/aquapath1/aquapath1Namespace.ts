@@ -16,11 +16,7 @@ import {
   ThrottledStoreUpdater,
 } from "../../../client/socketioStore";
 import { MachineIdentificationUnique } from "@/machines/types";
-import {
-  createTimeSeries,
-  TimeSeries,
-  TimeSeriesValue,
-} from "@/lib/timeseries";
+import { createTimeSeries, TimeSeries } from "@/lib/timeseries";
 
 // ========== Event Schema Definitions ==========
 /**
@@ -164,7 +160,6 @@ export function aquapath1MessageHandler(
       // State events (latest only)
       if (eventName === "StateEvent") {
         const stateEvent = stateEventSchema.parse(event);
-        console.log("StateEvent", stateEvent);
         updateStore((state) => ({
           ...state,
           state: stateEvent,

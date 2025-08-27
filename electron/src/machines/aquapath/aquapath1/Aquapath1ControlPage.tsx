@@ -98,7 +98,7 @@ export function Aquapath1ControlPage() {
           </div>
 
           <div className="flex flex-row items-center gap-6">
-            <Label label="Set Front Target Diameter">
+            <Label label="Set Front Target Temperature">
               <EditValue
                 title="Set Front Target Temperature"
                 value={frontTargetTemperature}
@@ -112,7 +112,7 @@ export function Aquapath1ControlPage() {
                 }
               />
             </Label>
-            <Label label="Set Back Target Diameter">
+            <Label label="Set Back Target Temperature">
               <EditValue
                 title="Set Back Target Temperature"
                 value={backTargetTemperature}
@@ -140,18 +140,6 @@ export function Aquapath1ControlPage() {
                 isActiveClassName: "bg-green-600",
                 className: "h-full",
               },
-              // Cool: {
-              //   children: "Cooling",
-              //   icon: "lu:Snowflake",
-              //   isActiveClassName: "bg-green-600",
-              //   className: "h-full",
-              // },
-              // Heat: {
-              //   children: "Heating",
-              //   icon: "lu:Flame",
-              //   isActiveClassName: "bg-green-600",
-              //   className: "h-full",
-              // },
               Auto: {
                 children: "Auto",
                 icon: "lu:Flame",
