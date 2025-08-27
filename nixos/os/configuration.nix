@@ -17,7 +17,9 @@
   };
   boot.loader.efi.canTouchEfiVariables = true;
 
-  boot.kernelPackages = pkgs.linuxPackages-rt;
+  boot.kernelPackages = pkgs.linuxPackages-rt_latest;
+  boot.kernelModules = [ "i915" ];
+
 
   boot.kernelParams = [
     # Graphical
@@ -136,7 +138,7 @@
 
   # Enable the X11 windowing system.
   services.xserver.enable = true;
-
+  #services.xserver.videoDrivers = [ "intel" ];
   services.xserver.displayManager.gdm = {
     enable = true;
     autoSuspend = false;
@@ -200,9 +202,12 @@
   };
 
   # Enable graphics acceleration
-  hardware.graphics.enable = true;
+  hardware.graphics = {
+    enable = true;
+    extraPackages = with pkgs; [ mesa ];
+  };
 
-  # Enable touchpad support (enabled default in most desktopManager).
+
   services.libinput.enable = true;
   services.libinput.touchpad.tapping = true;
   services.touchegg.enable = true;
@@ -254,6 +259,8 @@
     pkgs.qitechPackages.electron
     htop
     wireshark
+    pciutils    
+    neofetch
   ];
 
   xdg.portal.enable = true;
