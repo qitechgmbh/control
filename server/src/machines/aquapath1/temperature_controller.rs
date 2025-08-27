@@ -1,64 +1,116 @@
-use crate::machines::extruder1::Heating;
+use crate::machines::aquapath1::{Flow, Temperature};
 use control_core::controllers::pid::PidController;
-use ethercat_hal::io::{digital_output::DigitalOutput, temperature_input::TemperatureInput};
-use std::time::{Duration, Instant};
-use uom::si::{f64::ThermodynamicTemperature, thermodynamic_temperature::degree_celsius};
+use ethercat_hal::io::{
+    analog_output::AnalogOutput, digital_output::DigitalOutput, temperature_input::TemperatureInput,
+};
+use std::{
+    sync::{Arc, RwLock},
+    time::{Duration, Instant},
+};
+use uom::si::{
+    f64::{ThermodynamicTemperature, VolumeRate},
+    thermodynamic_temperature::degree_celsius,
+    volume_rate::liter_per_minute,
+};
 
 #[derive(Debug)]
 
 pub struct TemperatureController {
     pub pid: PidController,
-    temperature_sensor: TemperatureInput,
-    relais: DigitalOutput,
-    pub heating: Heating,
-    pub target_temp: ThermodynamicTemperature,
-    window_start: Instant,
-    heating_allowed: bool,
-    pwm_period: Duration,
-    max_temperature: ThermodynamicTemperature,
     temperature_pid_output: f64,
-    heating_element_wattage: f64,
-    max_clamp: f64,
+    window_start: Instant,
+    pwm_period: Duration,
+
+    //pub temperature_sensor: TemperatureInput,
+    pub temp: Temperature,
+    pub flow: Arc<RwLock<Flow>>,
+    pub target_temperature: ThermodynamicTemperature,
+    pub current_temperature: ThermodynamicTemperature,
+    pub min_temperature: ThermodynamicTemperature,
+    pub max_temperature: ThermodynamicTemperature,
+
+    pub cooling_controller: AnalogOutput,
+    pub cooling_relais: DigitalOutput,
+
+    pub heating_relais_1: DigitalOutput,
+    pub heating_relais_2: DigitalOutput,
+
+    pub cooling_allowed: bool,
+    pub heating_allowed: bool,
 }
 
 impl TemperatureController {
-    pub fn disable(&mut self) {
-        self.relais.set(false);
-        self.heating.heating = false;
+    pub fn disable_cooling(&mut self) {
+        self.temp.cooling = false;
+        self.turn_cooling_off();
+        self.disallow_cooling();
+    }
+
+    pub fn disable_heating(&mut self) {
+        self.temp.heating = false;
+        self.turn_heating_off();
         self.disallow_heating();
     }
 
+    pub fn enable_cooling(&mut self) {
+        self.temp.cooling = true;
+        self.turn_cooling_off();
+        self.allow_cooling();
+    }
+
+    pub fn enable_heating(&mut self) {
+        self.temp.heating = true;
+        self.turn_heating_on();
+        self.allow_heating();
+    }
     pub fn new(
         kp: f64,
         ki: f64,
         kd: f64,
-        target_temp: ThermodynamicTemperature,
-        max_temperature: ThermodynamicTemperature,
-        temperature_sensor: TemperatureInput,
-        relais: DigitalOutput,
-        heating: Heating,
         pwm_duration: Duration,
-        heating_element_wattage: f64,
-        max_clamp: f64,
+        temp: Temperature,
+        flow: Arc<RwLock<Flow>>,
+        target_tempetature: ThermodynamicTemperature,
+        cooling_controller: AnalogOutput,
+        cooling_relais: DigitalOutput,
+        heating_relais_1: DigitalOutput,
+        heating_relais_2: DigitalOutput,
     ) -> Self {
         Self {
             pid: PidController::new(kp, ki, kd),
-            target_temp,
-            window_start: Instant::now(),
-            temperature_sensor: temperature_sensor,
-            relais: relais,
-            heating: heating,
-            heating_allowed: false,
-            pwm_period: pwm_duration,
-            max_temperature: max_temperature,
             temperature_pid_output: 0.0,
-            heating_element_wattage: heating_element_wattage,
-            max_clamp: max_clamp,
+            window_start: Instant::now(),
+            pwm_period: pwm_duration,
+            target_temperature: target_tempetature,
+            current_temperature: ThermodynamicTemperature::new::<degree_celsius>(25.0),
+            min_temperature: ThermodynamicTemperature::new::<degree_celsius>(10.0),
+            max_temperature: ThermodynamicTemperature::new::<degree_celsius>(50.0),
+
+            temp: temp,
+            flow: flow,
+            cooling_controller: cooling_controller,
+            cooling_relais: cooling_relais,
+            heating_relais_1: heating_relais_1,
+            heating_relais_2: heating_relais_2,
+            cooling_allowed: false,
+            heating_allowed: false,
         }
     }
 
-    pub fn set_target_temperature(&mut self, temp: ThermodynamicTemperature) {
-        self.heating.target_temperature = temp;
+    pub fn reset_pid(&mut self) {
+        self.pid.reset()
+    }
+    pub fn set_target_temperature(&mut self, temperature: ThermodynamicTemperature) {
+        self.reset_pid();
+        self.target_temperature = temperature;
+    }
+
+    pub fn disallow_cooling(&mut self) {
+        self.cooling_allowed = false;
+    }
+
+    pub fn allow_cooling(&mut self) {
+        self.cooling_allowed = true;
     }
 
     pub fn disallow_heating(&mut self) {
@@ -69,51 +121,96 @@ impl TemperatureController {
         self.heating_allowed = true;
     }
 
-    pub fn get_heating_element_wattage(&mut self) -> f64 {
-        return self.temperature_pid_output * self.heating_element_wattage;
+    pub fn turn_cooling_on(&mut self) {
+        self.cooling_controller.set(10.0);
+        self.cooling_relais.set(true);
+        self.temp.cooling = true;
+    }
+
+    pub fn turn_cooling_off(&mut self) {
+        self.cooling_controller.set(0.0);
+        self.cooling_relais.set(false);
+        self.temp.cooling = false;
+    }
+
+    pub fn turn_heating_on(&mut self) {
+        self.heating_relais_1.set(true);
+        self.heating_relais_2.set(true);
+        self.temp.heating = true;
+    }
+
+    pub fn turn_heating_off(&mut self) {
+        self.heating_relais_1.set(false);
+        self.heating_relais_2.set(false);
+        self.temp.heating = false;
     }
 
     pub fn update(&mut self, now: Instant) -> () {
-        self.temperature_pid_output = 0.0;
-
-        let temperature = self.temperature_sensor.get_temperature();
-        let temperature_celsius = ThermodynamicTemperature::new::<degree_celsius>(
-            temperature.as_ref().unwrap_or(&0.0).to_owned(),
-        );
-
-        self.heating.wiring_error = temperature.is_err();
-        self.heating.temperature = temperature_celsius;
-
-        if self.heating.temperature > self.max_temperature {
-            // disable the relais and return
-            self.relais.set(false);
-            self.heating.heating = false;
+        // if !self.flow.pump {
+        //     self.disallow_heating();
+        // } else {
+        //     self.allow_heating();
+        // }
+        if self.current_temperature < self.min_temperature {
+            self.turn_cooling_off();
             return;
         }
 
-        if self.heating_allowed {
-            let error: f64 = self.heating.target_temperature.get::<degree_celsius>()
-                - self.heating.temperature.get::<degree_celsius>();
+        if self.current_temperature > self.max_temperature {
+            self.turn_heating_off();
+            return;
+        }
 
-            let control = self.pid.update(error, now); // PID output
-            // Clamp PID output to 0.0 – 1.0 (as duty cycle)
-            let duty = control.clamp(0.0, self.max_clamp);
+        // Calculate PID error once
+        let error = self.target_temperature.get::<degree_celsius>()
+            - self.current_temperature.get::<degree_celsius>();
 
-            self.temperature_pid_output = duty;
+        let control = self.pid.update(error, now);
+        self.temperature_pid_output = control;
 
-            let elapsed = now.duration_since(self.window_start);
+        let elapsed = now.duration_since(self.window_start);
+        if elapsed >= self.pwm_period {
+            self.window_start = now;
+        }
+        let is_pump;
+        {
+            let flow = self.flow.read();
+            is_pump = match flow {
+                Ok(val) => val.pump,
+                Err(_) => false,
+            };
+        }
+        // Decide whether to heat or cool based on error
+        if error > 0.0 && self.heating_allowed && is_pump {
+            // Need heating (current < target)
+            self.turn_cooling_off();
 
-            // Restart window if needed
-            if elapsed >= self.pwm_period {
-                self.window_start = now;
-            }
-            // Compare duty cycle to elapsed time
+            let duty = control.clamp(0.0, 1.0);
             let on_time = self.pwm_period.mul_f64(duty);
-
-            // Relay is ON if within duty cycle window
             let on = elapsed < on_time;
-            self.relais.set(on);
-            self.heating.heating = on;
+            self.heating_relais_1.set(on);
+            self.heating_relais_2.set(on);
+            self.temp.heating = on;
+        } else if error < 0.0 && self.cooling_allowed {
+            // Need cooling (current > target)
+            self.turn_heating_off();
+
+            let duty = (-control).clamp(0.0, 1.0);
+            let on_time = self.pwm_period.mul_f64(duty);
+            let on = elapsed < on_time;
+            self.cooling_relais.set(on);
+
+            if on {
+                let cooling_speed = duty * 10.0;
+                self.cooling_controller.set(cooling_speed as f32);
+            } else {
+                self.cooling_controller.set(0.0);
+            }
+
+            self.temp.cooling = on;
+        } else {
+            self.turn_heating_off();
+            self.turn_cooling_off();
         }
     }
 }

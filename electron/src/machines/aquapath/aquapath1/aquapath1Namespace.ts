@@ -26,7 +26,7 @@ import {
 /**
  * Mode enum for Aquapath Machine
  */
-export const modeSchema = z.enum(["Standby", "Cool", "Heat"]);
+export const modeSchema = z.enum(["Standby", "Auto"]);
 
 /**
  * Mode state schema
@@ -34,31 +34,35 @@ export const modeSchema = z.enum(["Standby", "Cool", "Heat"]);
 export const modeStateSchema = z.object({
   mode: modeSchema,
 });
-export const coolingStateSchema = z.object({
+export const tempStateSchema = z.object({
   temperature: z.number(),
   target_temperature: z.number(),
-  wiring_error: z.boolean(),
 });
 /**
  * Cooling states schema
  */
-export const coolingStatesSchema = z.object({
-  front: coolingStateSchema,
-  back: coolingStateSchema,
+export const tempStatesSchema = z.object({
+  front: tempStateSchema,
+  back: tempStateSchema,
 });
 
-// export const flowStateSchema = z.object({
-//   flow: z.number(),
-// });
+export const flowStateSchema = z.object({
+  flow: z.number(),
+  target_flow: z.number(),
+});
+export const flowStatesSchema = z.object({
+  front: flowStateSchema,
+  back: flowStateSchema,
+});
+
 /**
  * Live values event schema (time-series data)
  */
 export const liveValuesEventDataSchema = z.object({
+  front_flow: z.number(),
+  back_flow: z.number(),
   front_temperature: z.number(),
   back_temperature: z.number(),
-
-  flow_sensor1: z.number(),
-  flow_sensor2: z.number(),
 });
 
 /**
@@ -67,8 +71,8 @@ export const liveValuesEventDataSchema = z.object({
 export const stateEventDataSchema = z.object({
   is_default_state: z.boolean(),
   mode_state: modeStateSchema,
-  //flow_state: flowStateSchema,
-  cooling_states: coolingStatesSchema,
+  flow_states: flowStatesSchema,
+  temperature_states: tempStatesSchema,
 });
 
 // ========== Event Schemas with Wrappers ==========
@@ -86,11 +90,11 @@ export type Aquapath1NamespaceStore = {
   state: StateEvent | null;
   defaultState: StateEvent | null;
 
-  flow_sensor1: TimeSeries;
-  flow_sensor2: TimeSeries;
+  front_flow: TimeSeries;
+  back_flow: TimeSeries;
 
-  temperature_sensor1: TimeSeries;
-  temperature_sensor2: TimeSeries;
+  front_temperature: TimeSeries;
+  back_temperature: TimeSeries;
 };
 
 // Constants for time durations
@@ -99,20 +103,20 @@ const ONE_SECOND = 1000;
 const FIVE_SECOND = 5 * ONE_SECOND;
 const ONE_HOUR = 60 * 60 * ONE_SECOND;
 
-const { initialTimeSeries: temperature_sensor1, insert: addTemperature1 } =
+const { initialTimeSeries: front_temperature, insert: addTemperature1 } =
   createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
 
-const { initialTimeSeries: temperature_sensor2, insert: addTemperature2 } =
+const { initialTimeSeries: back_temperature, insert: addTemperature2 } =
   createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
 
-const { initialTimeSeries: flow_sensor1, insert: addFlow1 } = createTimeSeries(
+const { initialTimeSeries: front_flow, insert: addFlow1 } = createTimeSeries(
   TWENTY_MILLISECOND,
   ONE_SECOND,
   FIVE_SECOND,
   ONE_HOUR,
 );
 
-const { initialTimeSeries: flow_sensor2, insert: addFlow2 } = createTimeSeries(
+const { initialTimeSeries: back_flow, insert: addFlow2 } = createTimeSeries(
   TWENTY_MILLISECOND,
   ONE_SECOND,
   FIVE_SECOND,
@@ -128,10 +132,10 @@ export const createAquapath1NamespaceStore =
       return {
         state: null,
         defaultState: null,
-        temperature_sensor1: temperature_sensor1,
-        temperature_sensor2: temperature_sensor2,
-        flow_sensor1: flow_sensor1,
-        flow_sensor2: flow_sensor2,
+        front_temperature: front_temperature,
+        back_temperature: back_temperature,
+        front_flow: front_flow,
+        back_flow: back_flow,
       };
     });
   };
@@ -176,20 +180,20 @@ export function aquapath1MessageHandler(
 
         updateStore((state) => ({
           ...state,
-          temperature_sensor1: addTemperature1(state.temperature_sensor1, {
+          front_temperature: addTemperature1(state.front_temperature, {
             value: liveValuesEvent.data.front_temperature,
             timestamp: event.ts,
           }),
-          temperature_sensor2: addTemperature2(state.temperature_sensor2, {
+          back_temperature: addTemperature2(state.back_temperature, {
             value: liveValuesEvent.data.back_temperature,
             timestamp: event.ts,
           }),
-          flow_sensor1: addFlow1(state.flow_sensor1, {
-            value: liveValuesEvent.data.flow_sensor1,
+          front_flow: addFlow1(state.front_flow, {
+            value: liveValuesEvent.data.front_flow,
             timestamp: event.ts,
           }),
-          flow_sensor2: addFlow2(state.flow_sensor2, {
-            value: liveValuesEvent.data.flow_sensor2,
+          back_flow: addFlow2(state.back_flow, {
+            value: liveValuesEvent.data.back_flow,
             timestamp: event.ts,
           }),
         }));

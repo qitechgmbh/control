@@ -5,33 +5,36 @@ use control_core::{
 use serde::{Deserialize, Serialize};
 use std::time::Instant;
 use uom::si::{
-    f64::ThermodynamicTemperature, thermodynamic_temperature::degree_celsius,
+    f64::{ThermodynamicTemperature, VolumeRate},
+    thermodynamic_temperature::degree_celsius,
     volume_rate::liter_per_minute,
 };
 
 use crate::machines::{
     MACHINE_AQUAPATH_V1, VENDOR_QITECH,
-    aquapath1::api::{
-        AquaPathV1Events, AquaPathV1Namespace, CoolingState, CoolingStates, LiveValuesEvent,
-        ModeState, StateEvent,
+    aquapath1::{
+        api::{
+            AquaPathV1Events, AquaPathV1Namespace, FlowState, FlowStates, LiveValuesEvent,
+            ModeState, StateEvent, TempState, TempStates,
+        },
+        flow_controller::FlowController,
+        temperature_controller::TemperatureController,
     },
 };
 
 pub mod act;
 pub mod api;
-pub mod cooling_controller;
-pub mod flow_sensor;
+pub mod flow_controller;
 pub mod new;
-//pub mod temperature_controller;
+pub mod temperature_controller;
 
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
 pub enum AquaPathV1Mode {
     Standby,
-    Cool,
-    Heat,
+    Auto,
 }
 
-pub enum CoolingType {
+pub enum AquaPathSideType {
     Front,
     Back,
 }
@@ -43,18 +46,37 @@ impl Machine for AquaPathV1 {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct Cooling {
+pub struct Temperature {
     pub temperature: ThermodynamicTemperature,
     pub cooling: bool,
+    pub heating: bool,
     pub target_temperature: ThermodynamicTemperature,
 }
 
-impl Default for Cooling {
+impl Default for Temperature {
     fn default() -> Self {
         Self {
             temperature: ThermodynamicTemperature::new::<degree_celsius>(0.0),
             cooling: false,
+            heating: false,
             target_temperature: ThermodynamicTemperature::new::<degree_celsius>(0.0),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Flow {
+    pub flow: VolumeRate,
+    pub pump: bool,
+    pub target_flow: VolumeRate,
+}
+
+impl Default for Flow {
+    fn default() -> Self {
+        Self {
+            flow: VolumeRate::new::<liter_per_minute>(0.0),
+            pump: false,
+            target_flow: VolumeRate::new::<liter_per_minute>(0.0),
         }
     }
 }
@@ -64,10 +86,10 @@ pub struct AquaPathV1 {
     namespace: AquaPathV1Namespace,
     mode: AquaPathV1Mode,
     last_measurement_emit: Instant,
-    flow_sensor1: flow_sensor::FlowSensor,
-    flow_sensor2: flow_sensor::FlowSensor,
-    cooling_controller_front: cooling_controller::CoolingController,
-    cooling_controller_back: cooling_controller::CoolingController,
+    flow_controller_front: FlowController,
+    flow_controller_back: FlowController,
+    temp_controller_front: TemperatureController,
+    temp_controller_back: TemperatureController,
 }
 impl AquaPathV1 {
     pub const MACHINE_IDENTIFICATION: MachineIdentification = MachineIdentification {
@@ -86,15 +108,21 @@ impl AquaPathV1 {
     pub fn emit_live_values(&mut self) {
         let live_values = LiveValuesEvent {
             front_temperature: self
-                .cooling_controller_front
-                .current_tempetature
+                .temp_controller_front
+                .current_temperature
                 .get::<degree_celsius>(),
             back_temperature: self
-                .cooling_controller_back
-                .current_tempetature
+                .temp_controller_back
+                .current_temperature
                 .get::<degree_celsius>(),
-            flow_sensor1: self.flow_sensor1.current_flow.get::<liter_per_minute>(),
-            flow_sensor2: self.flow_sensor2.current_flow.get::<liter_per_minute>(),
+            front_flow: self
+                .flow_controller_front
+                .current_flow
+                .get::<liter_per_minute>(),
+            back_flow: self
+                .flow_controller_back
+                .current_flow
+                .get::<liter_per_minute>(),
         };
         let event = live_values.build();
         self.namespace.emit(AquaPathV1Events::LiveValues(event));
@@ -106,26 +134,48 @@ impl AquaPathV1 {
             mode_state: ModeState {
                 mode: self.mode.clone(),
             },
-            cooling_states: CoolingStates {
-                front: CoolingState {
+            temp_states: TempStates {
+                front: TempState {
                     temperature: self
-                        .cooling_controller_front
-                        .current_tempetature
+                        .temp_controller_front
+                        .current_temperature
                         .get::<degree_celsius>(),
                     target_temperature: self
-                        .cooling_controller_front
-                        .target_tempetature
+                        .temp_controller_front
+                        .target_temperature
                         .get::<degree_celsius>(),
                 },
-                back: CoolingState {
+                back: TempState {
                     temperature: self
-                        .cooling_controller_back
-                        .current_tempetature
+                        .temp_controller_back
+                        .current_temperature
                         .get::<degree_celsius>(),
                     target_temperature: self
-                        .cooling_controller_back
-                        .target_tempetature
+                        .temp_controller_back
+                        .target_temperature
                         .get::<degree_celsius>(),
+                },
+            },
+            flow_states: FlowStates {
+                front: FlowState {
+                    flow: self
+                        .flow_controller_front
+                        .current_flow
+                        .get::<liter_per_minute>(),
+                    target_flow: self
+                        .flow_controller_front
+                        .target_flow
+                        .get::<liter_per_minute>(),
+                },
+                back: FlowState {
+                    flow: self
+                        .flow_controller_back
+                        .current_flow
+                        .get::<liter_per_minute>(),
+                    target_flow: self
+                        .flow_controller_back
+                        .target_flow
+                        .get::<liter_per_minute>(),
                 },
             },
         };
@@ -136,104 +186,153 @@ impl AquaPathV1 {
 }
 impl AquaPathV1 {
     fn turn_cooling_off(&mut self) {
-        self.cooling_controller_front.disable();
-        self.cooling_controller_back.disable();
+        self.temp_controller_front.disable_cooling();
+        self.temp_controller_back.disable_cooling();
     }
 
     fn turn_cooling_on(&mut self) {
-        self.cooling_controller_front.allow_cooling();
-        self.cooling_controller_back.allow_cooling();
+        self.temp_controller_front.enable_cooling();
+        self.temp_controller_back.enable_cooling();
     }
 
     fn turn_heating_off(&mut self) {
-        //turn off heating
+        self.temp_controller_front.disable_heating();
+        self.temp_controller_back.disable_heating();
     }
 
     fn turn_heating_on(&mut self) {
-        //turn on heating
+        self.temp_controller_front.enable_heating();
+        self.temp_controller_back.enable_heating();
     }
 
+    fn turn_pump_on(&mut self) {
+        self.flow_controller_front.enable();
+        self.flow_controller_back.enable();
+    }
+
+    fn turn_pump_off(&mut self) {
+        self.flow_controller_front.disable();
+        self.flow_controller_back.disable();
+    }
+
+    fn turn_off_all(&mut self) {
+        self.turn_cooling_off();
+        self.turn_heating_off();
+        self.turn_pump_off();
+    }
+
+    fn turn_on_all(&mut self) {
+        self.turn_cooling_on();
+        self.turn_heating_on();
+        self.turn_pump_on();
+    }
     // Turn all OFF and do nothing
     fn switch_to_standby(&mut self) {
         match self.mode {
             AquaPathV1Mode::Standby => (),
-            AquaPathV1Mode::Cool => {
-                self.turn_heating_off();
-                self.turn_cooling_off();
-            }
-            AquaPathV1Mode::Heat => {
-                self.turn_heating_off();
-                self.turn_cooling_off();
-            }
+            // AquaPathV1Mode::Cool => self.turn_off_all(),
+            // AquaPathV1Mode::Heat => self.turn_off_all(),
+            AquaPathV1Mode::Auto => self.turn_off_all(),
         };
         self.mode = AquaPathV1Mode::Standby;
     }
 
     // turn on motor and cool
-    fn switch_to_cool(&mut self) {
-        match self.mode {
-            AquaPathV1Mode::Standby => {
-                self.turn_cooling_on();
-                self.turn_heating_off();
-            }
-            AquaPathV1Mode::Cool => (),
-            AquaPathV1Mode::Heat => {
-                self.turn_cooling_on();
-                self.turn_heating_off();
-            }
-        }
-        self.mode = AquaPathV1Mode::Cool;
-    }
+    // fn switch_to_cool(&mut self) {
+    //     match self.mode {
+    //         AquaPathV1Mode::Standby => {
+    //             self.turn_cooling_on();
+    //             self.turn_heating_off();
+    //         }
+    //         // AquaPathV1Mode::Cool => (),
+    //         // AquaPathV1Mode::Heat => {
+    //         //     self.turn_cooling_on();
+    //         //     self.turn_heating_off();
+    //         // }
+    //         AquaPathV1Mode::Auto => {
+    //             self.turn_cooling_on();
+    //             self.turn_heating_off();
+    //         }
+    //     }
+    //     self.mode = AquaPathV1Mode::Cool;
+    // }
 
-    fn switch_to_heat(&mut self) {
+    // fn switch_to_heat(&mut self) {
+    //     match self.mode {
+    //         AquaPathV1Mode::Standby => {
+    //             self.turn_cooling_off();
+    //             self.turn_heating_on();
+    //         }
+    //         // AquaPathV1Mode::Cool => {
+    //         //     self.turn_cooling_off();
+    //         //     self.turn_heating_on();
+    //         // }
+    //         // AquaPathV1Mode::Heat => (),
+    //         AquaPathV1Mode::Auto => {
+    //             self.turn_cooling_off();
+    //             self.turn_heating_on();
+    //         }
+    //     }
+    //     self.mode = AquaPathV1Mode::Heat;
+    // }
+
+    fn switch_to_auto(&mut self) {
         match self.mode {
-            AquaPathV1Mode::Standby => {
-                self.turn_cooling_off();
-                self.turn_heating_on();
-            }
-            AquaPathV1Mode::Cool => {
-                self.turn_cooling_off();
-                self.turn_heating_on();
-            }
-            AquaPathV1Mode::Heat => (),
+            AquaPathV1Mode::Auto => (),
+            // AquaPathV1Mode::Cool => self.turn_on_all(),
+            // AquaPathV1Mode::Heat => self.turn_on_all(),
+            AquaPathV1Mode::Standby => self.turn_on_all(),
         }
-        self.mode = AquaPathV1Mode::Heat;
+        self.mode = AquaPathV1Mode::Auto;
     }
 
     fn switch_mode(&mut self, mode: AquaPathV1Mode) {
         if self.mode == mode {
             return;
         }
+        tracing::info!("mode {:?}", self.mode);
+
         match mode {
             AquaPathV1Mode::Standby => self.switch_to_standby(),
-            AquaPathV1Mode::Cool => self.switch_to_cool(),
-            AquaPathV1Mode::Heat => self.switch_to_heat(),
+            // AquaPathV1Mode::Cool => self.switch_to_cool(),
+            // AquaPathV1Mode::Heat => self.switch_to_heat(),
+            AquaPathV1Mode::Auto => self.switch_to_auto(),
         }
     }
 }
 
 impl AquaPathV1 {
     fn set_mode_state(&mut self, mode: AquaPathV1Mode) {
-        self.switch_mode(mode);
+        tracing::info!("mode {:?}", mode);
 
+        self.switch_mode(mode.clone());
         self.emit_state();
     }
 }
 
-// Cooling
 impl AquaPathV1 {
-    fn set_temperature(&mut self, temperature: f64, cooling_type: CoolingType) {
-        // Placeholder for setting temperature
+    fn set_target_temperature(&mut self, temperature: f64, cooling_type: AquaPathSideType) {
         let target_temp = ThermodynamicTemperature::new::<degree_celsius>(temperature);
 
         match cooling_type {
-            CoolingType::Back => self
-                .cooling_controller_back
+            AquaPathSideType::Back => self
+                .temp_controller_back
                 .set_target_temperature(target_temp),
 
-            CoolingType::Front => self
-                .cooling_controller_front
+            AquaPathSideType::Front => self
+                .temp_controller_front
                 .set_target_temperature(target_temp),
+        }
+
+        self.emit_state();
+    }
+    fn set_target_flow(&mut self, flow: f64, cooling_type: AquaPathSideType) {
+        let target_flow = VolumeRate::new::<liter_per_minute>(flow);
+
+        match cooling_type {
+            AquaPathSideType::Back => self.flow_controller_back.set_target_flow(target_flow),
+
+            AquaPathSideType::Front => self.flow_controller_front.set_target_flow(target_flow),
         }
 
         self.emit_state();
