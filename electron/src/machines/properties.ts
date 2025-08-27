@@ -318,12 +318,12 @@ export const aquapath1: MachineProperties = {
     },
     {
       role: 3,
-      role_label: "EL3062-0030",
+      role_label: "EL1002",
       allowed_devices: [
         {
           vendor_id: 2,
-          product_id: 0xbf63052,
-          revision: 0x17001e,
+          product_id: 65679442,
+          revision: 1179648,
         },
       ],
     },

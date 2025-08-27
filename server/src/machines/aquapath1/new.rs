@@ -1,9 +1,7 @@
 use super::{AquaPathV1, AquaPathV1Mode};
 use crate::machines::aquapath1::{
-    Cooling,
-    api::AquaPathV1Namespace,
-    cooling_controller::{self, CoolingController},
-    flow_sensor,
+    Flow, Temperature, api::AquaPathV1Namespace, flow_controller::FlowController,
+    temperature_controller::TemperatureController,
 };
 use anyhow::Error;
 use control_core::machines::{
@@ -15,32 +13,24 @@ use control_core::machines::{
     },
 };
 use ethercat_hal::{
-    coe::ConfigurableDevice,
     devices::{
         EthercatDeviceUsed, downcast_device,
         ek1100::{EK1100, EK1100_IDENTITY_A},
+        el1002::{EL1002, EL1002_IDENTITY_A, EL1002Port},
         el2008::{EL2008, EL2008_IDENTITY_A, EL2008Port},
-        el3062_0030::{self, EL3062_0030, EL3062_0030_IDENTITY_A, EL3062_0030Port},
-        el3204::{EL3204, EL3204_IDENTITY_A, EL3204_IDENTITY_B, EL3204Port},
-        el4002::{EL4002, EL4002_IDENTITY_A, EL4002Port, EL4002PredefinedPdoAssignment},
+        el4002::{EL4002, EL4002_IDENTITY_A, EL4002Port},
         subdevice_identity_to_tuple,
     },
-    io::{
-        analog_input::{AnalogInput, AnalogInputDevice},
-        analog_output::{AnalogOutput, AnalogOutputDevice, AnalogOutputOutput},
-        digital_output::DigitalOutput,
-        temperature_input::TemperatureInput,
-    },
+    io::{analog_output::AnalogOutput, digital_input::DigitalInput, digital_output::DigitalOutput},
 };
-use ethercat_hal::{coe::Configuration, devices::el4002::EL4002Configuration};
-use ethercat_hal::{
-    devices::el3062_0030::EL3062_0030Configuration,
-    shared_config::el40xx::EL40XXChannelConfiguration,
+use std::{
+    sync::{Arc, RwLock},
+    time::{Duration, Instant},
 };
-use std::time::{Duration, Instant};
 use uom::si::{
-    electric_potential::volt, f32::ElectricPotential, f64::ThermodynamicTemperature,
+    f64::{ThermodynamicTemperature, VolumeRate},
     thermodynamic_temperature::degree_celsius,
+    volume_rate::liter_per_minute,
 };
 
 impl MachineNewTrait for AquaPathV1 {
@@ -189,8 +179,55 @@ impl MachineNewTrait for AquaPathV1 {
                 device
             };
 
-            // Role 3 - EL3062_0030 Analog Input Module
-            let el3062_0030 = {
+            // // Role 3 - EL3062_0030 Analog Input Module
+            // let el3062_0030 = {
+            //     let device_identification =
+            //         get_device_identification_by_role(params.device_group, 3)?;
+            //     let device_hardware_identification_ethercat = match &device_identification
+            //         .device_hardware_identification
+            //     {
+            //         DeviceHardwareIdentification::Ethercat(
+            //             device_hardware_identification_ethercat,
+            //         ) => device_hardware_identification_ethercat,
+            //         _ => Err(anyhow::anyhow!(
+            //             "[{}::MachineNewTrait/AquaPath::new] Device with role 3 is not Ethercat",
+            //             module_path!()
+            //         ))?,
+            //     };
+            //     let subdevice_index = device_hardware_identification_ethercat.subdevice_index;
+            //     let subdevice = get_subdevice_by_index(hardware.subdevices, subdevice_index)?;
+            //     let subdevice_identity = subdevice.identity();
+            //     let device = match subdevice_identity_to_tuple(&subdevice_identity) {
+            //         EL3062_0030_IDENTITY_A => {
+            //             let ethercat_device = get_ethercat_device_by_index(
+            //                 &hardware.ethercat_devices,
+            //                 subdevice_index,
+            //             )?;
+            //             downcast_device::<EL3062_0030>(ethercat_device).await?
+            //         }
+            //         _ => {
+            //             return Err(anyhow::anyhow!(
+            //                 "[{}::MachineNewTrait/WaterCooling::new] Device with role 3 is not an EL3062_0030",
+            //                 module_path!()
+            //             ));
+            //         }
+            //     };
+            //     let config = EL3062_0030Configuration {
+            //         ..Default::default()
+            //     };
+            //     device
+            //         .write()
+            //         .await
+            //         .write_config(&subdevice, &config)
+            //         .await?;
+            //     {
+            //         let mut device_guard = device.write().await;
+            //         device_guard.set_used(true);
+            //     }
+            //     device
+            // };
+
+            let el1002 = {
                 let device_identification =
                     get_device_identification_by_role(params.device_group, 3)?;
                 let device_hardware_identification_ethercat = match &device_identification
@@ -200,36 +237,28 @@ impl MachineNewTrait for AquaPathV1 {
                         device_hardware_identification_ethercat,
                     ) => device_hardware_identification_ethercat,
                     _ => Err(anyhow::anyhow!(
-                        "[{}::MachineNewTrait/AquaPath::new] Device with role 3 is not Ethercat",
+                        "[{}::MachineNewTrait/ExtruderV2::new] Device with role 3 is not Ethercat",
                         module_path!()
-                    ))?,
+                    ))?, //uncommented
                 };
                 let subdevice_index = device_hardware_identification_ethercat.subdevice_index;
                 let subdevice = get_subdevice_by_index(hardware.subdevices, subdevice_index)?;
                 let subdevice_identity = subdevice.identity();
                 let device = match subdevice_identity_to_tuple(&subdevice_identity) {
-                    EL3062_0030_IDENTITY_A => {
+                    EL1002_IDENTITY_A => {
                         let ethercat_device = get_ethercat_device_by_index(
                             &hardware.ethercat_devices,
                             subdevice_index,
                         )?;
-                        downcast_device::<EL3062_0030>(ethercat_device).await?
+                        downcast_device::<EL1002>(ethercat_device).await?
                     }
                     _ => {
                         return Err(anyhow::anyhow!(
-                            "[{}::MachineNewTrait/WaterCooling::new] Device with role 3 is not an EL3062_0030",
+                            "[{}::MachineNewTrait/ExtruderV2::new] Device with role 1 is not an EL1002",
                             module_path!()
                         ));
                     }
                 };
-                let config = EL3062_0030Configuration {
-                    ..Default::default()
-                };
-                device
-                    .write()
-                    .await
-                    .write_config(&subdevice, &config)
-                    .await?;
                 {
                     let mut device_guard = device.write().await;
                     device_guard.set_used(true);
@@ -275,48 +304,89 @@ impl MachineNewTrait for AquaPathV1 {
             //     }
             //     device
             // };
-            let ao1 = AnalogOutput::new(el4002.clone(), EL4002Port::AO1);
-            let ao2 = AnalogOutput::new(el4002.clone(), EL4002Port::AO2);
-            let cooling_controller_front = CoolingController::new(
-                0.16,
-                0.0,
-                0.008,
-                Duration::from_millis(500),
-                Cooling::default(),
-                ThermodynamicTemperature::new::<degree_celsius>(10.0),
-                ao1,
-                1.0,
-            );
-            let cooling_controller_back = CoolingController::new(
-                0.16,
-                0.0,
-                0.008,
-                Duration::from_millis(500),
-                Cooling::default(),
-                ThermodynamicTemperature::new::<degree_celsius>(10.0),
-                ao2,
-                1.0,
-            );
+
             // let t1 = TemperatureInput::new(el3204.clone(), EL3204Port::T1);
             // let t2 = TemperatureInput::new(el3204.clone(), EL3204Port::T2);
             // let t3 = TemperatureInput::new(el3204.clone(), EL3204Port::T3);
             // let t4 = TemperatureInput::new(el3204.clone(), EL3204Port::T4);
+            //pump flow control
+            //phys 1
+            let do1 = DigitalOutput::new(el2008.clone(), EL2008Port::DO1);
+            //phys 5
+            let do2 = DigitalOutput::new(el2008.clone(), EL2008Port::DO2);
+            //heating
+            //phys 2
+            let do3 = DigitalOutput::new(el2008.clone(), EL2008Port::DO3);
+            //phys 6
+            let do4 = DigitalOutput::new(el2008.clone(), EL2008Port::DO4);
+            //phys 3
+            let do5 = DigitalOutput::new(el2008.clone(), EL2008Port::DO5);
+            //phys 7
+            let do6 = DigitalOutput::new(el2008.clone(), EL2008Port::DO6);
+            //cooling power cut
+            //phys 4
+            let do7 = DigitalOutput::new(el2008.clone(), EL2008Port::DO7);
+            //phys 8
+            let do8 = DigitalOutput::new(el2008.clone(), EL2008Port::DO8);
 
-            // let digital_out_1 = DigitalOutput::new(el2008.clone(), EL2008Port::DO1);
-            // let digital_out_2 = DigitalOutput::new(el2008.clone(), EL2008Port::DO2);
-            // let digital_out_3 = DigitalOutput::new(el2008.clone(), EL2008Port::DO3);
-            // let digital_out_4 = DigitalOutput::new(el2008.clone(), EL2008Port::DO4);
-            // let digital_out_5 = DigitalOutput::new(el2008.clone(), EL2008Port::DO5);
-            // let digital_out_6 = DigitalOutput::new(el2008.clone(), EL2008Port::DO6);
-            // let digital_out_7 = DigitalOutput::new(el2008.clone(), EL2008Port::DO7);
-            // let digital_out_8 = DigitalOutput::new(el2008.clone(), EL2008Port::DO8);
+            let ao1 = AnalogOutput::new(el4002.clone(), EL4002Port::AO1);
+            let ao2 = AnalogOutput::new(el4002.clone(), EL4002Port::AO2);
 
-            let a1 = AnalogInput::new(el3062_0030.clone(), EL3062_0030Port::AI1);
-            let a2 = AnalogInput::new(el3062_0030.clone(), EL3062_0030Port::AI2);
-            let mut flow_sensor1 = flow_sensor::FlowSensor::new(a1, 0.0);
-            let mut flow_sensor2 = flow_sensor::FlowSensor::new(a2, 0.0);
-            flow_sensor1.update(Instant::now());
-            flow_sensor2.update(Instant::now());
+            let flow_front = Arc::new(RwLock::new(Flow::default()));
+            let flow_back = Arc::new(RwLock::new(Flow::default()));
+
+            let cooling_controller_front = TemperatureController::new(
+                0.16,
+                0.0,
+                0.008,
+                Duration::from_millis(500),
+                Temperature::default(),
+                flow_front.clone(),
+                ThermodynamicTemperature::new::<degree_celsius>(35.0),
+                ao1,
+                do7,
+                do3,
+                do5,
+            );
+            let cooling_controller_back = TemperatureController::new(
+                0.16,
+                0.0,
+                0.008,
+                Duration::from_millis(500),
+                Temperature::default(),
+                flow_back.clone(),
+                ThermodynamicTemperature::new::<degree_celsius>(35.0),
+                ao2,
+                do8,
+                do4,
+                do6,
+            );
+            let di1 = DigitalInput::new(el1002.clone(), EL1002Port::DI1);
+            let di2 = DigitalInput::new(el1002.clone(), EL1002Port::DI2);
+            // let a1 = AnalogInput::new(el3062_0030.clone(), EL3062_0030Port::AI1);
+            // let a2 = AnalogInput::new(el3062_0030.clone(), EL3062_0030Port::AI2);
+            let mut flow_controller_front = FlowController::new(
+                0.16,
+                0.0,
+                0.008,
+                Duration::from_millis(500),
+                di1,
+                do1,
+                VolumeRate::new::<liter_per_minute>(0.0),
+                flow_front,
+            );
+            let mut flow_controller_back = FlowController::new(
+                0.16,
+                0.0,
+                0.008,
+                Duration::from_millis(500),
+                di2,
+                do2,
+                VolumeRate::new::<liter_per_minute>(0.0),
+                flow_back,
+            );
+            flow_controller_front.update(Instant::now());
+            flow_controller_back.update(Instant::now());
 
             // let aquapath_max_temperature = ThermodynamicTemperature::new::<degree_celsius>(100.0);
 
@@ -383,10 +453,10 @@ impl MachineNewTrait for AquaPathV1 {
                 namespace: AquaPathV1Namespace::new(params.socket_queue_tx.clone()),
                 mode: AquaPathV1Mode::Standby,
                 last_measurement_emit: Instant::now(),
-                flow_sensor1,
-                flow_sensor2,
-                cooling_controller_front,
-                cooling_controller_back,
+                flow_controller_front,
+                flow_controller_back,
+                temp_controller_front: cooling_controller_front,
+                temp_controller_back: cooling_controller_back,
             };
             water_cooling.emit_state();
 

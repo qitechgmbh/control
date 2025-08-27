@@ -16,15 +16,18 @@ use serde_json::Value;
 use smol::channel::Sender;
 use socketioxide::extract::SocketRef;
 use tracing::instrument;
-use uom::si::{f64::ThermodynamicTemperature, thermodynamic_temperature::degree_celsius};
+use uom::si::{
+    f64::{ThermodynamicTemperature, VolumeRate},
+    thermodynamic_temperature::degree_celsius,
+    volume_rate::liter_per_minute,
+};
 
 #[derive(Serialize, Debug, Clone, Default)]
 pub struct LiveValuesEvent {
-    pub flow_sensor1: f64,
-    pub flow_sensor2: f64,
-
-    pub back_temperature: f64,
+    pub front_flow: f64,
+    pub back_flow: f64,
     pub front_temperature: f64,
+    pub back_temperature: f64,
 }
 
 impl LiveValuesEvent {
@@ -38,8 +41,8 @@ pub struct StateEvent {
     pub is_default_state: bool,
     /// mode state
     pub mode_state: ModeState,
-    //pub flow_state: FlowState,
-    pub cooling_states: CoolingStates,
+    pub flow_states: FlowStates,
+    pub temp_states: TempStates,
 }
 
 impl StateEvent {
@@ -49,13 +52,13 @@ impl StateEvent {
 }
 
 #[derive(Serialize, Debug, Clone)]
-pub struct CoolingStates {
-    pub front: CoolingState,
-    pub back: CoolingState,
+pub struct TempStates {
+    pub front: TempState,
+    pub back: TempState,
 }
 
 #[derive(Serialize, Debug, Clone)]
-pub struct CoolingState {
+pub struct TempState {
     pub temperature: f64,
     pub target_temperature: f64,
 }
@@ -64,11 +67,16 @@ pub struct CoolingState {
 pub struct ModeState {
     pub mode: AquaPathV1Mode,
 }
-
-// #[derive(Serialize, Debug, Clone)]
-// pub struct FlowState {
-//     pub flow: f64,
-// }
+#[derive(Serialize, Debug, Clone)]
+pub struct FlowStates {
+    pub front: FlowState,
+    pub back: FlowState,
+}
+#[derive(Serialize, Debug, Clone)]
+pub struct FlowState {
+    pub flow: f64,
+    pub target_flow: f64,
+}
 
 pub enum AquaPathV1Events {
     LiveValues(Event<LiveValuesEvent>),
@@ -82,6 +90,9 @@ enum Mutation {
 
     SetFrontTemperature(f64),
     SetBackTemperature(f64),
+
+    SetFrontFlow(f64),
+    SetBackFlow(f64),
 }
 
 #[derive(Debug)]
@@ -132,15 +143,23 @@ impl MachineApi for AquaPathV1 {
         match control {
             Mutation::SetAquaPathMode(mode) => self.set_mode_state(mode),
             Mutation::SetBackTemperature(temperature) => {
-                self.cooling_controller_back.set_target_temperature(
-                    ThermodynamicTemperature::new::<degree_celsius>(temperature),
-                );
+                self.temp_controller_back
+                    .set_target_temperature(ThermodynamicTemperature::new::<degree_celsius>(
+                        temperature,
+                    ));
             }
             Mutation::SetFrontTemperature(temperature) => {
-                self.cooling_controller_front.set_target_temperature(
-                    ThermodynamicTemperature::new::<degree_celsius>(temperature),
-                );
+                self.temp_controller_front
+                    .set_target_temperature(ThermodynamicTemperature::new::<degree_celsius>(
+                        temperature,
+                    ));
             }
+            Mutation::SetBackFlow(flow) => self
+                .flow_controller_back
+                .set_target_flow(VolumeRate::new::<liter_per_minute>(flow)),
+            Mutation::SetFrontFlow(flow) => self
+                .flow_controller_front
+                .set_target_flow(VolumeRate::new::<liter_per_minute>(flow)),
         }
         Ok(())
     }
