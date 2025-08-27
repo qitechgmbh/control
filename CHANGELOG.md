@@ -1,3 +1,19 @@
+# `2.5.0`
+_27.08.2025_
+
+## Extruder V2
+- [#595](https://github.com/qitechgmbh/control/pull/600) Simplified power graphs
+- [#593](https://github.com/qitechgmbh/control/pull/599) Added identifiers for temperature sensors in temperature graph
+
+## Winder V2
+- [#598](https://github.com/qitechgmbh/control/pull/601) Images now load properly in the manual
+
+## General
+- [#540](https://github.com/qitechgmbh/control/pull/592) Improved readability of the presets
+- [#591](https://github.com/qitechgmbh/control/pull/626) Significantly improved user interface performance and stability
+
+
+
 # `2.4.0`
 _14.08.2025_
 
