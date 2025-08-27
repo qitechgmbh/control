@@ -42,10 +42,10 @@ export function useAquapath1() {
   const {
     state,
     defaultState,
-    temperature_sensor1,
-    temperature_sensor2,
-    flow_sensor1,
-    flow_sensor2,
+    front_temperature: front_temperature,
+    back_temperature: back_temperature,
+    front_flow: front_flow,
+    back_flow: back_flow,
   } = useAquapath1Namespace(machineIdentification);
 
   // Single optimistic state for all state management
@@ -71,41 +71,73 @@ export function useAquapath1() {
     );
   };
 
-  const setFrontCoolingTemperature = (temperature: number) => {
+  const setFrontTemperature = (temperature: number) => {
     updateStateOptimistically(
       (current) => {
-        current.data.cooling_states.front.target_temperature = temperature;
+        current.data.temperature_states.front.target_temperature = temperature;
       },
       () =>
-        requestFrontCoolingTemperature({
+        requestFrontTemperature({
           machine_identification_unique: machineIdentification,
           data: { SetFrontTemperature: temperature },
         }),
     );
   };
 
-  const setBackCoolingTemperature = (temperature: number) => {
+  const setBackTemperature = (temperature: number) => {
     updateStateOptimistically(
       (current) => {
-        current.data.cooling_states.back.target_temperature = temperature;
+        current.data.temperature_states.back.target_temperature = temperature;
       },
       () =>
-        requestBackCoolingTemperature({
+        requestBackTemperature({
           machine_identification_unique: machineIdentification,
           data: { SetBackTemperature: temperature },
         }),
     );
   };
 
+  const setFrontFlow = (flow: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.flow_states.front.target_flow = flow;
+      },
+      () =>
+        requestFrontFlow({
+          machine_identification_unique: machineIdentification,
+          data: { SetFrontFlow: flow },
+        }),
+    );
+  };
+
+  const setBackFlow = (flow: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.flow_states.back.target_flow = flow;
+      },
+      () =>
+        requestBackFlow({
+          machine_identification_unique: machineIdentification,
+          data: { SetBackFlow: flow },
+        }),
+    );
+  };
+
   // Mutation hooks
   const { request: requestAquapathMode } = useMachineMutation(
-    z.object({ SetAquaPathMode: z.enum(["Standby", "Cool", "Heat"]) }),
+    z.object({ SetAquaPathMode: z.enum(["Standby", "Auto"]) }),
   );
-  const { request: requestFrontCoolingTemperature } = useMachineMutation(
+  const { request: requestFrontTemperature } = useMachineMutation(
     z.object({ SetFrontTemperature: z.number() }),
   );
-  const { request: requestBackCoolingTemperature } = useMachineMutation(
+  const { request: requestBackTemperature } = useMachineMutation(
     z.object({ SetBackTemperature: z.number() }),
+  );
+  const { request: requestFrontFlow } = useMachineMutation(
+    z.object({ SetFrontFlow: z.number() }),
+  );
+  const { request: requestBackFlow } = useMachineMutation(
+    z.object({ SetBackFlow: z.number() }),
   );
   // Helper function for optimistic updates using produce
   const updateStateOptimistically = (
@@ -125,13 +157,15 @@ export function useAquapath1() {
 
     // Default state for initial values
     defaultState: defaultState?.data,
-    flow_sensor1,
-    flow_sensor2,
-    temperature_sensor1,
-    temperature_sensor2,
+    front_flow,
+    back_flow,
+    front_temperature,
+    back_temperature,
 
     setAquapathMode,
-    setFrontCoolingTemperature,
-    setBackCoolingTemperature,
+    setFrontTemperature,
+    setBackTemperature,
+    setFrontFlow,
+    setBackFlow,
   };
 }
