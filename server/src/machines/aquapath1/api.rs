@@ -16,11 +16,6 @@ use serde_json::Value;
 use smol::channel::Sender;
 use socketioxide::extract::SocketRef;
 use tracing::instrument;
-use uom::si::{
-    f64::{ThermodynamicTemperature, VolumeRate},
-    thermodynamic_temperature::degree_celsius,
-    volume_rate::liter_per_minute,
-};
 
 #[derive(Serialize, Debug, Clone, Default)]
 pub struct LiveValuesEvent {
@@ -42,7 +37,7 @@ pub struct StateEvent {
     /// mode state
     pub mode_state: ModeState,
     pub flow_states: FlowStates,
-    pub temp_states: TempStates,
+    pub temperature_states: TempStates,
 }
 
 impl StateEvent {
@@ -143,23 +138,19 @@ impl MachineApi for AquaPathV1 {
         match control {
             Mutation::SetAquaPathMode(mode) => self.set_mode_state(mode),
             Mutation::SetBackTemperature(temperature) => {
-                self.temp_controller_back
-                    .set_target_temperature(ThermodynamicTemperature::new::<degree_celsius>(
-                        temperature,
-                    ));
+                self.set_target_temperature(temperature, super::AquaPathSideType::Back)
             }
+
             Mutation::SetFrontTemperature(temperature) => {
-                self.temp_controller_front
-                    .set_target_temperature(ThermodynamicTemperature::new::<degree_celsius>(
-                        temperature,
-                    ));
+                self.set_target_temperature(temperature, super::AquaPathSideType::Front)
             }
-            Mutation::SetBackFlow(flow) => self
-                .flow_controller_back
-                .set_target_flow(VolumeRate::new::<liter_per_minute>(flow)),
-            Mutation::SetFrontFlow(flow) => self
-                .flow_controller_front
-                .set_target_flow(VolumeRate::new::<liter_per_minute>(flow)),
+
+            Mutation::SetBackFlow(flow) => {
+                self.set_target_flow(flow, super::AquaPathSideType::Back)
+            }
+            Mutation::SetFrontFlow(flow) => {
+                self.set_target_flow(flow, super::AquaPathSideType::Front)
+            }
         }
         Ok(())
     }
