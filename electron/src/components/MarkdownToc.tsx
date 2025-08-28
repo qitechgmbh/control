@@ -138,7 +138,7 @@ export function MarkdownToc({
       } else {
         // Fallback: find last heading above viewport
         const lastAbove = headingElements
-          .filter(el => el.getBoundingClientRect().top <= 0)
+          .filter((el) => el.getBoundingClientRect().top <= 0)
           .pop();
         if (lastAbove) {
           activeHeadingIds.add(lastAbove.id);
@@ -156,9 +156,12 @@ export function MarkdownToc({
       document.querySelector("[data-scroll-container]") ||
       document.querySelector(".overflow-y-auto") ||
       window;
-    
-    scrollContainer.addEventListener("scroll", updateActiveHeadings, { passive: true });
-    return () => scrollContainer.removeEventListener("scroll", updateActiveHeadings);
+
+    scrollContainer.addEventListener("scroll", updateActiveHeadings, {
+      passive: true,
+    });
+    return () =>
+      scrollContainer.removeEventListener("scroll", updateActiveHeadings);
   }, [allHeadingIds]);
 
   // Additional effect to ensure immediate highlighting on mount and content changes
@@ -178,7 +181,7 @@ export function MarkdownToc({
         setActiveIds(new Set(visibleHeadings.map((h) => h.id)));
       } else {
         const lastAbove = headingElements
-          .filter(el => el.getBoundingClientRect().top <= 0)
+          .filter((el) => el.getBoundingClientRect().top <= 0)
           .pop();
         setActiveIds(new Set([lastAbove?.id || headingElements[0].id]));
       }
@@ -210,9 +213,13 @@ export function MarkdownToc({
     const btnBottomInContainer = btnTopInContainer + bRect.height;
 
     // Keep the active item within a comfortable band (middle 40%)
-    const comfortOffset = Math.max(32, Math.round(container.clientHeight * 0.3));
+    const comfortOffset = Math.max(
+      32,
+      Math.round(container.clientHeight * 0.3),
+    );
     const upperComfort = container.scrollTop + comfortOffset;
-    const lowerComfort = container.scrollTop + container.clientHeight - comfortOffset;
+    const lowerComfort =
+      container.scrollTop + container.clientHeight - comfortOffset;
 
     let newTop: number | null = null;
 
@@ -226,7 +233,10 @@ export function MarkdownToc({
 
     if (newTop !== null) {
       // Clamp scroll position to valid range
-      const maxTop = Math.max(0, container.scrollHeight - container.clientHeight);
+      const maxTop = Math.max(
+        0,
+        container.scrollHeight - container.clientHeight,
+      );
       const clampedTop = Math.min(Math.max(newTop, 0), maxTop);
       container.scrollTo({ top: clampedTop, behavior: "auto" });
     }
