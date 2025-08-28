@@ -73,6 +73,11 @@ pub struct ExtruderV2 {
     /// will be initalized as false and set to true by `emit_state`
     /// This way we can signal to the client that the first state emission is a default state
     emitted_default_state: bool,
+
+    /// Cumulative energy consumption in kWh
+    cumulative_energy_kwh: f64,
+    /// Last timestamp used for energy integration in milliseconds since Unix epoch
+    last_energy_timestamp: Option<u64>,
 }
 
 impl std::fmt::Display for ExtruderV2 {
@@ -112,6 +117,20 @@ impl ExtruderV2 {
         // Calculate total power combining motor power and all heating powers
         let total_power = motor_status.power + nozzle_power + front_power + back_power + middle_power;
 
+        // Integrate energy since last timestamp (convert to kWh)
+        let current_timestamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_millis() as u64;
+
+        if let Some(last_ts) = self.last_energy_timestamp {
+            if current_timestamp > last_ts {
+                let dt_hours = (current_timestamp - last_ts) as f64 / 3_600_000.0; // ms to hours
+                self.cumulative_energy_kwh += (total_power / 1000.0) * dt_hours; // W to kW * h
+            }
+        }
+        self.last_energy_timestamp = Some(current_timestamp);
+
         let live_values = LiveValuesEvent {
             motor_status,
             pressure: self.screw_speed_controller.get_pressure().get::<bar>(),
@@ -140,6 +159,7 @@ impl ExtruderV2 {
             back_power,
             middle_power,
             total_power,
+            cumulative_energy_kwh: self.cumulative_energy_kwh,
         };
 
         let event = live_values.build();

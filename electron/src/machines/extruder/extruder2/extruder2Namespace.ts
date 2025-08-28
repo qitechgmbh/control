@@ -44,6 +44,7 @@ export const liveValuesEventDataSchema = z.object({
   back_power: z.number(),
   middle_power: z.number(),
   total_power: z.number(),
+  cumulative_energy_kwh: z.number(),
 });
 
 /**
@@ -203,10 +204,6 @@ export type Extruder2NamespaceStore = {
 
   // Total energy consumption time series in kWh
   totalEnergyKWh: TimeSeries;
-
-  // Internal tracking for cumulative energy calculation
-  cumulativeEnergyKWh: number;
-  lastEnergyTimestamp: number | null;
 };
 
 // Constants for time durations
@@ -304,16 +301,9 @@ export function extruder2MessageHandler(
         const liveValuesEvent = liveValuesEventSchema.parse(event);
         const timestamp = event.ts;
         updateStore((state) => {
-          // Use total power from the backend (already calculated in Rust)
           const totalPowerW = liveValuesEvent.data.total_power;
-
-          // Integrate energy since last timestamp (convert to kWh)
-          let cumulativeEnergyKWh = state.cumulativeEnergyKWh ?? 0;
-          const lastTs = state.lastEnergyTimestamp;
-          if (typeof lastTs === "number" && lastTs > 0 && timestamp > lastTs) {
-            const dtHours = (timestamp - lastTs) / 3_600_000; // ms to hours
-            cumulativeEnergyKWh += (totalPowerW / 1000) * dtHours; // W to kW * h
-          }
+          const cumulativeEnergyKWh =
+            liveValuesEvent.data.cumulative_energy_kwh;
 
           return {
             ...state,
@@ -377,8 +367,6 @@ export function extruder2MessageHandler(
               value: cumulativeEnergyKWh,
               timestamp,
             }),
-            cumulativeEnergyKWh,
-            lastEnergyTimestamp: timestamp,
           };
         });
       } else {
@@ -415,8 +403,6 @@ export const createExtruder2NamespaceStore =
         combinedPower,
 
         totalEnergyKWh,
-        cumulativeEnergyKWh: 0,
-        lastEnergyTimestamp: null,
       };
     });
 

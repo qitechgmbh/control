@@ -69,6 +69,8 @@ pub struct LiveValuesEvent {
     pub middle_power: f64,
     /// total combined power in watts
     pub total_power: f64,
+    /// cumulative energy consumption in kWh
+    pub cumulative_energy_kwh: f64,
 }
 
 impl LiveValuesEvent {
