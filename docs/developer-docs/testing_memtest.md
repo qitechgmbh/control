@@ -1,5 +1,7 @@
 # Testing Ram and Cpu (Hardware)
 
+There were instability problems on one of the hmi panel pc's related to ram.
+
 To test Ram and Cpu for stability problems we use memtest86.
 
 You can download it here: https://www.memtest86.com/download.htm
