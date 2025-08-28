@@ -1,7 +1,7 @@
 use api::{
     ExtruderSettingsState, ExtruderV2Events, ExtruderV2Namespace, HeatingState, HeatingStates,
-    InverterStatusState, LiveValuesEvent, ModeState, MotorStatusValues, PidSettings, PidSettingsStates, PressureState,
-    RegulationState, RotationState, ScrewState, StateEvent,
+    InverterStatusState, LiveValuesEvent, ModeState, MotorStatusValues, PidSettings,
+    PidSettingsStates, PressureState, RegulationState, RotationState, ScrewState, StateEvent,
 };
 use control_core::{
     machines::{Machine, identification::MachineIdentification},
@@ -115,7 +115,8 @@ impl ExtruderV2 {
             .get_heating_element_wattage();
 
         // Calculate total power combining motor power and all heating powers
-        let total_power = motor_status.power + nozzle_power + front_power + back_power + middle_power;
+        let total_power =
+            motor_status.power + nozzle_power + front_power + back_power + middle_power;
 
         // Integrate energy since last timestamp (convert to kWh)
         let current_timestamp = std::time::SystemTime::now()
