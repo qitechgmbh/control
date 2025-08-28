@@ -110,7 +110,6 @@ export function MarkdownToc({
 
   // Set up intersection observer for active heading detection
   useLayoutEffect(() => {
-    // Update active headings
     const updateActiveHeadings = () => {
       const headingElements = allHeadingIds
         .map((id) => document.getElementById(id))
@@ -121,76 +120,117 @@ export function MarkdownToc({
         return;
       }
 
+      const viewportHeight = window.innerHeight;
       const visibleHeadings = headingElements.filter((element) => {
         const rect = element.getBoundingClientRect();
-        const viewportHeight = window.innerHeight;
-        // Consider element visible if it's in the top 95% of viewport
-        return rect.top >= 0 && rect.top <= viewportHeight * 0.95;
+        return rect.bottom > 0 && rect.top < viewportHeight;
       });
 
       const activeHeadingIds = new Set<string>();
 
       if (visibleHeadings.length > 0) {
-        // Add all visible headings
         visibleHeadings.forEach((h) => activeHeadingIds.add(h.id));
-
-        // Find the heading that comes before the first visible one
-        const firstVisibleId = visibleHeadings[0].id;
-        const firstVisibleIndex = allHeadingIds.indexOf(firstVisibleId);
-
-        // If there's a heading before the first visible one, add it too
+        // Add previous heading if available
+        const firstVisibleIndex = allHeadingIds.indexOf(visibleHeadings[0].id);
         if (firstVisibleIndex > 0) {
-          const previousHeadingId = allHeadingIds[firstVisibleIndex - 1];
-          activeHeadingIds.add(previousHeadingId);
+          activeHeadingIds.add(allHeadingIds[firstVisibleIndex - 1]);
+        }
+      } else {
+        // Fallback: find last heading above viewport
+        const lastAbove = headingElements
+          .filter(el => el.getBoundingClientRect().top <= 0)
+          .pop();
+        if (lastAbove) {
+          activeHeadingIds.add(lastAbove.id);
+        } else {
+          activeHeadingIds.add(headingElements[0].id);
         }
       }
 
       setActiveIds(activeHeadingIds);
     };
 
-    // Set initial active headings immediately
     updateActiveHeadings();
 
-    // Scroll listener for instant responsiveness
-    const handleScroll = () => {
-      updateActiveHeadings();
-    };
-
-    // Add scroll listener to the scroll container
     const scrollContainer =
       document.querySelector("[data-scroll-container]") ||
       document.querySelector(".overflow-y-auto") ||
       window;
-    scrollContainer.addEventListener("scroll", handleScroll, { passive: true });
-
-    return () => {
-      scrollContainer.removeEventListener("scroll", handleScroll);
-    };
+    
+    scrollContainer.addEventListener("scroll", updateActiveHeadings, { passive: true });
+    return () => scrollContainer.removeEventListener("scroll", updateActiveHeadings);
   }, [allHeadingIds]);
 
   // Additional effect to ensure immediate highlighting on mount and content changes
   useEffect(() => {
-    // Use requestAnimationFrame to ensure DOM is fully rendered
-    const checkVisible = () => {
-      const headingElements = allHeadingIds
-        .map((id) => document.getElementById(id))
-        .filter(Boolean) as HTMLElement[];
+    const headingElements = allHeadingIds
+      .map((id) => document.getElementById(id))
+      .filter(Boolean) as HTMLElement[];
 
-      if (headingElements.length > 0) {
-        const visibleHeadings = headingElements.filter((element) => {
-          const rect = element.getBoundingClientRect();
-          const viewportHeight = window.innerHeight;
-          return rect.top >= 0 && rect.top <= viewportHeight * 0.95;
-        });
+    if (headingElements.length > 0) {
+      const viewportHeight = window.innerHeight;
+      const visibleHeadings = headingElements.filter((element) => {
+        const rect = element.getBoundingClientRect();
+        return rect.bottom > 0 && rect.top < viewportHeight;
+      });
 
-        if (visibleHeadings.length > 0) {
-          setActiveIds(new Set(visibleHeadings.map((h) => h.id)));
-        }
+      if (visibleHeadings.length > 0) {
+        setActiveIds(new Set(visibleHeadings.map((h) => h.id)));
+      } else {
+        const lastAbove = headingElements
+          .filter(el => el.getBoundingClientRect().top <= 0)
+          .pop();
+        setActiveIds(new Set([lastAbove?.id || headingElements[0].id]));
       }
-    };
-
-    requestAnimationFrame(checkVisible);
+    }
   }, [markdownContent, allHeadingIds]);
+
+  // Auto-scroll the TOC so the active heading stays comfortably in view within the TOC scroll container
+  useEffect(() => {
+    const targetId = firstActiveId ?? lastActiveId;
+    if (!targetId) return;
+
+    const btn = document.querySelector(
+      `button[data-toc-id="${targetId}"]`,
+    ) as HTMLElement | null;
+    if (!btn) return;
+
+    // Prefer an explicitly marked container, else fall back to nearest overflow container
+    const container =
+      (btn.closest("[data-toc-scroll-container]") as HTMLElement | null) ||
+      (btn.closest(".overflow-y-auto") as HTMLElement | null);
+
+    if (!container) return;
+
+    const cRect = container.getBoundingClientRect();
+    const bRect = btn.getBoundingClientRect();
+
+    // Compute the button's top in container's scroll coordinates
+    const btnTopInContainer = bRect.top - cRect.top + container.scrollTop;
+    const btnBottomInContainer = btnTopInContainer + bRect.height;
+
+    // Keep the active item within a comfortable band (middle 40%)
+    const comfortOffset = Math.max(32, Math.round(container.clientHeight * 0.3));
+    const upperComfort = container.scrollTop + comfortOffset;
+    const lowerComfort = container.scrollTop + container.clientHeight - comfortOffset;
+
+    let newTop: number | null = null;
+
+    if (btnTopInContainer < upperComfort) {
+      // Active item is too close to the top, move it down a bit (towards 30% from top)
+      newTop = btnTopInContainer - comfortOffset;
+    } else if (btnBottomInContainer > lowerComfort) {
+      // Active item is too close to the bottom, move it up (towards 70% from top)
+      newTop = btnBottomInContainer - (container.clientHeight - comfortOffset);
+    }
+
+    if (newTop !== null) {
+      // Clamp scroll position to valid range
+      const maxTop = Math.max(0, container.scrollHeight - container.clientHeight);
+      const clampedTop = Math.min(Math.max(newTop, 0), maxTop);
+      container.scrollTo({ top: clampedTop, behavior: "auto" });
+    }
+  }, [firstActiveId, lastActiveId]);
 
   // Helper function to determine rounded corner variant
   const getRoundedCorners = useCallback(
@@ -242,6 +282,7 @@ export function MarkdownToc({
                       depth: depthVariant,
                     })}
                     style={{ paddingLeft: `${leftPadding}px` }}
+                    data-toc-id={item.id}
                   >
                     {item.title}
                   </button>
@@ -331,7 +372,7 @@ function stripMarkdownInlineFormatting(text: string): string {
       // Remove images ![alt](url) -> alt
       .replace(/!\[([^\]]*)\]\([^)]+\)/g, "$1")
       // Clean up any remaining markdown characters
-      .replace(/[*_`~]/g, "")
+      .replace(/[\*_`~]/g, "")
       .trim()
   );
 }
