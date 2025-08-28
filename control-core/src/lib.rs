@@ -8,6 +8,7 @@ pub mod realtime;
 pub mod rest;
 pub mod serial;
 pub mod socketio;
+pub mod transmission;
 pub mod uom_extensions;
 
 #[macro_use]
