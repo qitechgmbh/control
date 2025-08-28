@@ -2,7 +2,8 @@ use std::time::Instant;
 
 use control_core::{
     controllers::clamping_timeagnostic_pid::ClampingTimeagnosticPidController,
-    converters::transmission_converter::TransmissionConverter, helpers::interpolation::normalize,
+    helpers::interpolation::normalize,
+    transmission::{Transmission, fixed::FixedTransmission},
 };
 use ethercat_hal::io::analog_input::AnalogInput;
 use futures::executor::block_on;
@@ -26,7 +27,7 @@ pub struct ScrewSpeedController {
     last_update: Instant,
     uses_rpm: bool,
     forward_rotation: bool,
-    transmission_converter: TransmissionConverter,
+    transmission: FixedTransmission,
     frequency: Frequency,
     maximum_frequency: Frequency,
     minimum_frequency: Frequency,
@@ -53,7 +54,7 @@ impl ScrewSpeedController {
             pressure_sensor,
             uses_rpm: true,
             forward_rotation: true,
-            transmission_converter: TransmissionConverter::new(),
+            transmission: FixedTransmission::new(1.0 / 34.0),
             motor_on: false,
             nozzle_pressure_limit: Pressure::new::<bar>(100.0),
             nozzle_pressure_limit_enabled: true,
@@ -106,8 +107,8 @@ impl ScrewSpeedController {
     pub fn set_target_screw_rpm(&mut self, target_rpm: AngularVelocity) {
         // Use uom here and perhaps clamp it
         let target_motor_rpm = self
-            .transmission_converter
-            .calculate_screw_input_rpm(target_rpm);
+            .transmission
+            .calculate_angular_velocity_input(target_rpm);
 
         self.target_rpm = target_rpm;
         let target_frequency =
@@ -137,11 +138,10 @@ impl ScrewSpeedController {
 
     pub fn get_motor_status(&mut self) -> MotorStatus {
         let frequency = self.inverter.motor_status.frequency;
-        let rpm = frequency.get::<cycle_per_minute>();
+        let rpm =
+            AngularVelocity::new::<revolution_per_minute>(frequency.get::<cycle_per_minute>());
 
-        let screw_rpm = self
-            .transmission_converter
-            .calculate_screw_output_rpm(AngularVelocity::new::<revolution_per_minute>(rpm));
+        let screw_rpm = self.transmission.calculate_angular_velocity_output(rpm);
 
         let mut status = self.inverter.motor_status.clone();
         status.rpm = screw_rpm;
