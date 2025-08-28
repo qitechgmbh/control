@@ -48,7 +48,7 @@ const tocButtonVariants = cva(
     variants: {
       isActive: {
         true: "pr-4",
-        false: "",
+        false: "pr-4", // keep same padding to avoid layout shift
       },
       depth: {
         0: "",
