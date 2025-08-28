@@ -1,7 +1,7 @@
 use api::{
     ExtruderSettingsState, ExtruderV2Events, ExtruderV2Namespace, HeatingState, HeatingStates,
-    InverterStatusState, LiveValuesEvent, ModeState, PidSettings, PidSettingsStates, PressureState,
-    RegulationState, RotationState, ScrewState, StateEvent,
+    InverterStatusState, LiveValuesEvent, ModeState, MotorStatusValues, PidSettings,
+    PidSettingsStates, PressureState, RegulationState, RotationState, ScrewState, StateEvent,
 };
 use control_core::{
     machines::{Machine, identification::MachineIdentification},
@@ -73,6 +73,11 @@ pub struct ExtruderV2 {
     /// will be initalized as false and set to true by `emit_state`
     /// This way we can signal to the client that the first state emission is a default state
     emitted_default_state: bool,
+
+    /// Cumulative energy consumption in kWh
+    cumulative_energy_kwh: f64,
+    /// Last timestamp used for energy integration in milliseconds since Unix epoch
+    last_energy_timestamp: Option<u64>,
 }
 
 impl std::fmt::Display for ExtruderV2 {
@@ -95,8 +100,40 @@ impl ExtruderV2 {
 
 impl ExtruderV2 {
     pub fn emit_live_values(&mut self) {
+        let motor_status: MotorStatusValues = self.screw_speed_controller.get_motor_status().into();
+        let nozzle_power = self
+            .temperature_controller_nozzle
+            .get_heating_element_wattage();
+        let front_power = self
+            .temperature_controller_front
+            .get_heating_element_wattage();
+        let back_power = self
+            .temperature_controller_back
+            .get_heating_element_wattage();
+        let middle_power = self
+            .temperature_controller_middle
+            .get_heating_element_wattage();
+
+        // Calculate total power combining motor power and all heating powers
+        let total_power =
+            motor_status.power + nozzle_power + front_power + back_power + middle_power;
+
+        // Integrate energy since last timestamp (convert to kWh)
+        let current_timestamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_millis() as u64;
+
+        if let Some(last_ts) = self.last_energy_timestamp {
+            if current_timestamp > last_ts {
+                let dt_hours = (current_timestamp - last_ts) as f64 / 3_600_000.0; // ms to hours
+                self.cumulative_energy_kwh += (total_power / 1000.0) * dt_hours; // W to kW * h
+            }
+        }
+        self.last_energy_timestamp = Some(current_timestamp);
+
         let live_values = LiveValuesEvent {
-            motor_status: self.screw_speed_controller.get_motor_status().into(),
+            motor_status,
             pressure: self.screw_speed_controller.get_pressure().get::<bar>(),
             nozzle_temperature: self
                 .temperature_controller_nozzle
@@ -118,18 +155,12 @@ impl ExtruderV2 {
                 .heating
                 .temperature
                 .get::<degree_celsius>(),
-            nozzle_power: self
-                .temperature_controller_nozzle
-                .get_heating_element_wattage(),
-            front_power: self
-                .temperature_controller_front
-                .get_heating_element_wattage(),
-            back_power: self
-                .temperature_controller_back
-                .get_heating_element_wattage(),
-            middle_power: self
-                .temperature_controller_middle
-                .get_heating_element_wattage(),
+            nozzle_power,
+            front_power,
+            back_power,
+            middle_power,
+            total_power,
+            cumulative_energy_kwh: self.cumulative_energy_kwh,
         };
 
         let event = live_values.build();

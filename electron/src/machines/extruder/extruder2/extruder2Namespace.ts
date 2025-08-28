@@ -43,6 +43,8 @@ export const liveValuesEventDataSchema = z.object({
   front_power: z.number(),
   back_power: z.number(),
   middle_power: z.number(),
+  total_power: z.number(),
+  cumulative_energy_kwh: z.number(),
 });
 
 /**
@@ -199,6 +201,9 @@ export type Extruder2NamespaceStore = {
 
   // Combined power consumption
   combinedPower: TimeSeries;
+
+  // Total energy consumption time series in kWh
+  totalEnergyKWh: TimeSeries;
 };
 
 // Constants for time durations
@@ -252,6 +257,9 @@ const { initialTimeSeries: backPower, insert: addBackPower } = createTimeSeries(
 const { initialTimeSeries: combinedPower, insert: addCombinedPower } =
   createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
 
+const { initialTimeSeries: totalEnergyKWh, insert: addTotalEnergyKWh } =
+  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+
 const { initialTimeSeries: motorCurrent, insert: addMotorCurrent } =
   createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
 
@@ -292,70 +300,75 @@ export function extruder2MessageHandler(
       } else if (eventName === "LiveValuesEvent") {
         const liveValuesEvent = liveValuesEventSchema.parse(event);
         const timestamp = event.ts;
-        updateStore((state) => ({
-          ...state,
-          motorScrewRpm: addMotorScrewRpm(state.motorScrewRpm, {
-            value: liveValuesEvent.data.motor_status.screw_rpm,
-            timestamp,
-          }),
-          motorCurrent: addMotorCurrent(state.motorCurrent, {
-            value: liveValuesEvent.data.motor_status.current,
-            timestamp,
-          }),
-          motorFrequency: addMotorFrequency(state.motorFrequency, {
-            value: liveValuesEvent.data.motor_status.frequency,
-            timestamp,
-          }),
-          motorPower: addMotorPower(state.motorPower, {
-            value: liveValuesEvent.data.motor_status.power,
-            timestamp,
-          }),
-          pressure: addPressure(state.pressure, {
-            value: liveValuesEvent.data.pressure,
-            timestamp,
-          }),
-          nozzleTemperature: addNozzleTemperature(state.nozzleTemperature, {
-            value: liveValuesEvent.data.nozzle_temperature,
-            timestamp,
-          }),
-          frontTemperature: addFrontTemperature(state.frontTemperature, {
-            value: liveValuesEvent.data.front_temperature,
-            timestamp,
-          }),
-          backTemperature: addBackTemperature(state.backTemperature, {
-            value: liveValuesEvent.data.back_temperature,
-            timestamp,
-          }),
-          middleTemperature: addMiddleTemperature(state.middleTemperature, {
-            value: liveValuesEvent.data.middle_temperature,
-            timestamp,
-          }),
-          nozzlePower: addNozzlePower(state.nozzlePower, {
-            value: liveValuesEvent.data.nozzle_power,
-            timestamp,
-          }),
-          frontPower: addFrontPower(state.frontPower, {
-            value: liveValuesEvent.data.front_power,
-            timestamp,
-          }),
-          middlePower: addMiddlePower(state.middlePower, {
-            value: liveValuesEvent.data.middle_power,
-            timestamp,
-          }),
-          backPower: addBackPower(state.backPower, {
-            value: liveValuesEvent.data.back_power,
-            timestamp,
-          }),
-          combinedPower: addCombinedPower(state.combinedPower, {
-            value:
-              liveValuesEvent.data.motor_status.power +
-              liveValuesEvent.data.nozzle_power +
-              liveValuesEvent.data.front_power +
-              liveValuesEvent.data.middle_power +
-              liveValuesEvent.data.back_power,
-            timestamp,
-          }),
-        }));
+        updateStore((state) => {
+          const totalPowerW = liveValuesEvent.data.total_power;
+          const cumulativeEnergyKWh =
+            liveValuesEvent.data.cumulative_energy_kwh;
+
+          return {
+            ...state,
+            motorScrewRpm: addMotorScrewRpm(state.motorScrewRpm, {
+              value: liveValuesEvent.data.motor_status.screw_rpm,
+              timestamp,
+            }),
+            motorCurrent: addMotorCurrent(state.motorCurrent, {
+              value: liveValuesEvent.data.motor_status.current,
+              timestamp,
+            }),
+            motorFrequency: addMotorFrequency(state.motorFrequency, {
+              value: liveValuesEvent.data.motor_status.frequency,
+              timestamp,
+            }),
+            motorPower: addMotorPower(state.motorPower, {
+              value: liveValuesEvent.data.motor_status.power,
+              timestamp,
+            }),
+            pressure: addPressure(state.pressure, {
+              value: liveValuesEvent.data.pressure,
+              timestamp,
+            }),
+            nozzleTemperature: addNozzleTemperature(state.nozzleTemperature, {
+              value: liveValuesEvent.data.nozzle_temperature,
+              timestamp,
+            }),
+            frontTemperature: addFrontTemperature(state.frontTemperature, {
+              value: liveValuesEvent.data.front_temperature,
+              timestamp,
+            }),
+            backTemperature: addBackTemperature(state.backTemperature, {
+              value: liveValuesEvent.data.back_temperature,
+              timestamp,
+            }),
+            middleTemperature: addMiddleTemperature(state.middleTemperature, {
+              value: liveValuesEvent.data.middle_temperature,
+              timestamp,
+            }),
+            nozzlePower: addNozzlePower(state.nozzlePower, {
+              value: liveValuesEvent.data.nozzle_power,
+              timestamp,
+            }),
+            frontPower: addFrontPower(state.frontPower, {
+              value: liveValuesEvent.data.front_power,
+              timestamp,
+            }),
+            middlePower: addMiddlePower(state.middlePower, {
+              value: liveValuesEvent.data.middle_power,
+              timestamp,
+            }),
+            backPower: addBackPower(state.backPower, {
+              value: liveValuesEvent.data.back_power,
+              timestamp,
+            }),
+            combinedPower: addCombinedPower(state.combinedPower, {
+              value: totalPowerW,
+              timestamp,
+            }),
+            totalEnergyKWh: addTotalEnergyKWh(state.totalEnergyKWh, {
+              value: cumulativeEnergyKWh,
+              timestamp,
+            }),
+          };
+        });
       } else {
         handleUnhandledEventError(eventName);
       }
@@ -388,6 +401,8 @@ export const createExtruder2NamespaceStore =
         backPower,
         middlePower,
         combinedPower,
+
+        totalEnergyKWh,
       };
     });
 
