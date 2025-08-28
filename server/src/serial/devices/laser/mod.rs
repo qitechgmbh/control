@@ -18,7 +18,8 @@ use control_core::{
     },
     modbus::{self, ModbusRequest, ModbusResponse},
     serial::{
-        panic::send_serial_device_panic, serial_detection::SerialDeviceRemoval, SerialDevice, SerialDeviceNew, SerialDeviceNewParams
+        SerialDevice, SerialDeviceNew, SerialDeviceNewParams, panic::send_serial_device_panic,
+        serial_detection::SerialDeviceRemoval,
     },
 };
 use serialport::SerialPort;
@@ -119,7 +120,7 @@ impl SerialDeviceNew for Laser {
 
                     let removal = match process_result {
                         Ok(_) => SerialDeviceRemoval::Disconnect(path),
-                        Err(e) => SerialDeviceRemoval::Error(path, e)
+                        Err(e) => SerialDeviceRemoval::Error(path, e),
                     };
 
                     // if the task exists we want to remove the device
@@ -162,15 +163,14 @@ impl Laser {
         let request_buffer: Vec<u8> = request.into();
 
         // port configuration
-        let mut port: Box<dyn SerialPort> =
-            serialport::new(&path, 38_400)
-                .data_bits(DataBits::Eight)
-                .parity(Parity::None)
-                .stop_bits(StopBits::One)
-                .flow_control(FlowControl::None)
-                .timeout(Duration::from_millis(500)) // start with something forgiving
-                .open()
-                .map_err(|e| anyhow!("Failed to open port {}: {}", path, e))?;
+        let mut port: Box<dyn SerialPort> = serialport::new(&path, 38_400)
+            .data_bits(DataBits::Eight)
+            .parity(Parity::None)
+            .stop_bits(StopBits::One)
+            .flow_control(FlowControl::None)
+            .timeout(Duration::from_millis(500)) // start with something forgiving
+            .open()
+            .map_err(|e| anyhow!("Failed to open port {}: {}", path, e))?;
 
         port.write_data_terminal_ready(true).ok();
         port.write_request_to_send(true).ok();

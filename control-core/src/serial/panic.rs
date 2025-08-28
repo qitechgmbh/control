@@ -40,9 +40,11 @@ pub fn send_serial_device_panic<T>(
         // Send device panic info through channel
         smol::block_on(async {
             let _ = thread_panic_tx
-                .send(SerialDeviceRemoval::Error(device_identifier.clone(),
-                    anyhow::anyhow!("{}", panic_message))
-                ).await;
+                .send(SerialDeviceRemoval::Error(
+                    device_identifier.clone(),
+                    anyhow::anyhow!("{}", panic_message),
+                ))
+                .await;
         });
 
         // Note: We don't call old_hook to avoid duplicate logging

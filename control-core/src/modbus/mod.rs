@@ -143,9 +143,7 @@ impl From<ModbusRequest> for Vec<u8> {
 /// # Returns
 /// A `Result` containing an `Option` with the raw Modbus response as a `Vec<u8>` if successful,
 /// or `None` if the response is invalid or an error occurs.
-pub fn receive_data_modbus(
-    port: &mut dyn SerialPort
-) -> Result<Option<Vec<u8>>, anyhow::Error> {
+pub fn receive_data_modbus(port: &mut dyn SerialPort) -> Result<Option<Vec<u8>>, anyhow::Error> {
     let mut buf: [u8; 256] = [0; 256];
     let data_length = port.read(&mut buf)?;
     if data_length == 0 {

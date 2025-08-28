@@ -3,7 +3,9 @@ use std::{any::Any, sync::Arc};
 use smol::{channel::Sender, lock::RwLock};
 use std::fmt::Debug;
 
-use crate::{machines::identification::DeviceIdentification, serial::serial_detection::SerialDeviceRemoval};
+use crate::{
+    machines::identification::DeviceIdentification, serial::serial_detection::SerialDeviceRemoval,
+};
 
 pub mod panic;
 pub mod registry;
