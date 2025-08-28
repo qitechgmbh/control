@@ -12,7 +12,7 @@ use socketioxide::extract::SocketRef;
 
 use crate::{
     machines::{
-        connection::{MachineConnectionGeneric, MachineSlot, MachineSlotGeneric},
+        connection::{MachineConnection, MachineConnectionGeneric, MachineSlot, MachineSlotGeneric},
         identification::MachineIdentificationUnique,
         new::{MachineNewHardware, MachineNewHardwareEthercat, MachineNewParams},
     },
@@ -169,11 +169,15 @@ impl MachineManager {
             device_identification_identified
         );
 
-        self.serial_machines.remove(
+        let machine_identification_unique =
             &device_identification_identified
                 .device_machine_identification
-                .machine_identification_unique,
-        );
+                .machine_identification_unique;
+
+        if let Some(slot) = self.serial_machines.get(machine_identification_unique) {
+            let mut slot = slot.lock_blocking();
+            slot.machine_connection = MachineConnection::Disconnected;
+        }
     }
 
     pub fn get_ethercat_weak(
