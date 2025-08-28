@@ -1,6 +1,9 @@
 use api::{LiveValuesEvent, MockEvents, MockMachineNamespace, Mode, ModeState, StateEvent};
 use control_core::{
-    machines::{Machine, identification::MachineIdentification},
+    machines::{
+        Machine,
+        identification::{MachineIdentification, MachineIdentificationUnique},
+    },
     socketio::namespace::NamespaceCacheingLogic,
 };
 use std::time::Instant;
@@ -18,6 +21,8 @@ pub mod new;
 
 #[derive(Debug)]
 pub struct MockMachine {
+    machine_identifaction_unique: MachineIdentificationUnique,
+
     // socketio
     namespace: MockMachineNamespace,
     last_measurement_emit: Instant,
@@ -38,18 +43,17 @@ pub struct MockMachine {
 }
 
 impl Machine for MockMachine {
-    fn as_any(&self) -> &dyn std::any::Any {
-        self
+    fn get_machine_identification_unique(&self) -> MachineIdentificationUnique {
+        self.machine_identifaction_unique.clone()
     }
-}
-impl MockMachine {
-    pub const MACHINE_IDENTIFICATION: MachineIdentification = MachineIdentification {
-        vendor: VENDOR_QITECH,
-        machine: MACHINE_MOCK,
-    };
 }
 
 impl MockMachine {
+    pub const MACHINE_IDENTIFICATION: MachineIdentification = MachineIdentification {
+        machine: MACHINE_MOCK,
+        vendor: VENDOR_QITECH,
+    };
+
     /// Emit live values data event with the current sine wave amplitude
     pub fn emit_live_values(&mut self) {
         let now = Instant::now();
