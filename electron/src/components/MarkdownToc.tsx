@@ -382,7 +382,7 @@ function stripMarkdownInlineFormatting(text: string): string {
       // Remove images ![alt](url) -> alt
       .replace(/!\[([^\]]*)\]\([^)]+\)/g, "$1")
       // Clean up any remaining markdown characters
-      .replace(/[\*_`~]/g, "")
+      .replace(/[*_`~]/g, "")
       .trim()
   );
 }
