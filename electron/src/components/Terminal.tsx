@@ -1,5 +1,5 @@
 import { cva } from "class-variance-authority";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { Icon } from "./Icon";
 
 type Props = {
@@ -8,6 +8,7 @@ type Props = {
   className?: string; // Optional prop to control terminal height
   title?: string;
   exportPrefix?: string; // Optional prefix for exported log files
+  maxLines?: number; // Maximum number of lines to display for performance
 };
 
 const terminalStyle = cva([
@@ -43,7 +44,7 @@ const colorMap: Record<string, string> = {
   "47": "bg-gray-200",
 };
 
-// Parse ANSI color codes in text
+// Parse ANSI color codes in text - memoized for performance
 const parseColorCodes = (text: string) => {
   // Split by ANSI escape sequences
   // eslint-disable-next-line no-control-regex
@@ -74,31 +75,66 @@ const stripColorCodes = (text: string): string => {
   return text.replace(/\x1b\[\d+m/g, "");
 };
 
+// Memoized line component for better performance
+const TerminalLine = React.memo(({ line, index }: { line: string; index: number }) => {
+  const colorParts = useMemo(() => parseColorCodes(line), [line]);
+
+  return (
+    <div key={index} className="whitespace-pre-wrap">
+      {colorParts.length > 0
+        ? colorParts.map((part, partIndex) => (
+            <span key={partIndex} className={part.className}>
+              {part.text || " "}
+            </span>
+          ))
+        : line || " "}
+    </div>
+  );
+});
+
+TerminalLine.displayName = "TerminalLine";
+
 export function Terminal({
   lines,
   autoScroll = true,
   className,
   title = "Terminal",
   exportPrefix,
+  maxLines = 5000, // Default maximum lines for performance
 }: Props) {
   const terminalRef = useRef<HTMLDivElement>(null);
   const [isScrolledToBottom, setIsScrolledToBottom] = useState(true);
   const [copySuccess, setCopySuccess] = useState(false);
   const [exportSuccess, setExportSuccess] = useState(false);
 
-  // Handle scrolling
-  useEffect(() => {
-    const terminal = terminalRef.current;
-    if (!terminal) return;
+  // Limit lines for performance - show only the most recent lines
+  const displayLines = useMemo(() => {
+    if (lines.length <= maxLines) return lines;
+    return lines.slice(-maxLines);
+  }, [lines, maxLines]);
 
-    // If auto-scroll is enabled and user was at bottom, scroll to bottom when lines change
-    if (autoScroll && isScrolledToBottom) {
-      terminal.scrollTop = terminal.scrollHeight;
+  // Throttled scroll to bottom function to improve performance
+  const scrollToBottomThrottled = useCallback(() => {
+    const terminal = terminalRef.current;
+    if (terminal && autoScroll && isScrolledToBottom) {
+      // Use requestAnimationFrame for smooth scrolling
+      requestAnimationFrame(() => {
+        terminal.scrollTop = terminal.scrollHeight;
+      });
     }
-  }, [lines, autoScroll, isScrolledToBottom]);
+  }, [autoScroll, isScrolledToBottom]);
+
+  // Handle scrolling with throttling
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      scrollToBottomThrottled();
+    }, 100);
+
+    return () => clearTimeout(timeoutId);
+  }, [displayLines, scrollToBottomThrottled]);
 
   // Handle scroll events to detect if user is at bottom
-  const handleScroll = () => {
+  const handleScroll = useCallback(() => {
     const terminal = terminalRef.current;
     if (!terminal) return;
 
@@ -108,7 +144,7 @@ export function Terminal({
       ) < 10; // Small threshold to account for rounding errors
 
     setIsScrolledToBottom(isAtBottom);
-  };
+  }, []);
 
   // Handle copy to clipboard
   const handleCopy = async () => {
@@ -220,7 +256,6 @@ export function Terminal({
         }}
       >
         <style>{`
-          Add commentMore actions
           /* For Webkit browsers (Chrome, Safari) */
           .scrollbar-thin::-webkit-scrollbar {
             width: 6px;
@@ -241,26 +276,21 @@ export function Terminal({
             scrollbar-color: rgb(82 82 91) transparent;
           }
         `}</style>
-        {lines.map((line, index) => {
-          const colorParts = parseColorCodes(line);
-
-          return (
-            <div key={index} className="whitespace-pre-wrap">
-              {colorParts.length > 0
-                ? colorParts.map((part, partIndex) => (
-                    <span key={partIndex} className={part.className}>
-                      {part.text || " "}
-                    </span>
-                  ))
-                : line || " "}
-            </div>
-          );
-        })}
+        {displayLines.map((line, index) => (
+          <TerminalLine key={`${index}-${line.substring(0, 50)}`} line={line} index={index} />
+        ))}
       </div>
 
       {/* Status bar */}
       <div className="flex items-center justify-between bg-neutral-800 px-4 py-1 text-xs text-neutral-400">
-        <div>{lines.length} lines</div>
+        <div>
+          {displayLines.length} / {lines.length} lines
+          {lines.length > maxLines && (
+            <span className="ml-2 text-yellow-400">
+              (showing last {maxLines} for performance)
+            </span>
+          )}
+        </div>
         <div>
           {isScrolledToBottom ? "At bottom" : "Scrolled up"} |
           {autoScroll ? " Auto-scroll enabled" : " Auto-scroll disabled"}

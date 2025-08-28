@@ -5,7 +5,8 @@ import { Terminal } from "@/components/Terminal";
 import { TouchButton } from "@/components/touch/TouchButton";
 import { useLogsStore } from "@/stores/logsStore";
 import { rebootHmi, restartBackend } from "@/helpers/troubleshoot_helpers";
-import React, { useState } from "react";
+import { useLocalLogStreaming } from "@/hooks/useLocalLogStreaming";
+import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 export function TroubleshootPage() {
@@ -13,6 +14,24 @@ export function TroubleshootPage() {
   const [isRestartLoading, setIsRestartLoading] = useState(false);
 
   const { getLogsBySource } = useLogsStore();
+  const { isStreaming, startStreaming, stopStreaming, error } = useLocalLogStreaming();
+
+  // Start log streaming when component mounts, stop when unmounts
+  useEffect(() => {
+    startStreaming();
+    
+    // Cleanup function will stop streaming when component unmounts
+    return () => {
+      stopStreaming();
+    };
+  }, [startStreaming, stopStreaming]);
+
+  // Show error toast if log streaming fails
+  useEffect(() => {
+    if (error) {
+      toast.error(`Log streaming error: ${error}`);
+    }
+  }, [error]);
 
   // Get backend logs for display
   const backendLogs = getLogsBySource("qitech-control-server");
@@ -82,7 +101,13 @@ export function TroubleshootPage() {
         only restart the control service. Use with caution during production.
       </Alert>
 
-      <h2 className="text-lg font-semibold">Backend Service Logs</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold">Backend Service Logs</h2>
+        <div className="flex items-center gap-2 text-sm text-neutral-500">
+          <div className={`h-2 w-2 rounded-full ${isStreaming ? 'bg-green-500' : 'bg-red-500'}`} />
+          {isStreaming ? 'Live streaming' : 'Not streaming'}
+        </div>
+      </div>
 
       <Terminal
         lines={logLines}
