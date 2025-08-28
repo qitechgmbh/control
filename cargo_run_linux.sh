@@ -22,6 +22,9 @@ fi
 if [ "$1" != "mock-machine" ]; then
     echo "Setting capabilities for server executable"
     sudo setcap 'cap_net_raw,cap_sys_nice=eip' ./target/debug/server
+
+    echo "Setting permissions for serial ports"
+    sudo chown "root:$USER" /dev/ttyUSB*
 fi
 
 # run

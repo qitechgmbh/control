@@ -2,10 +2,10 @@ pub mod modbus_serial_interface;
 
 use anyhow::Error;
 use crc::{CRC_16_MODBUS, Crc};
-use serial;
+use serialport::SerialPort;
 use std::time::Duration;
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ParityType {
     Even,
     Odd,
@@ -143,9 +143,7 @@ impl From<ModbusRequest> for Vec<u8> {
 /// # Returns
 /// A `Result` containing an `Option` with the raw Modbus response as a `Vec<u8>` if successful,
 /// or `None` if the response is invalid or an error occurs.
-pub fn receive_data_modbus(
-    port: &mut dyn serial::SerialPort,
-) -> Result<Option<Vec<u8>>, anyhow::Error> {
+pub fn receive_data_modbus(port: &mut dyn SerialPort) -> Result<Option<Vec<u8>>, anyhow::Error> {
     let mut buf: [u8; 256] = [0; 256];
     let data_length = port.read(&mut buf)?;
     if data_length == 0 {

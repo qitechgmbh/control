@@ -19,9 +19,11 @@ use control_core::{
     modbus::{self, ModbusRequest, ModbusResponse},
     serial::{
         SerialDevice, SerialDeviceNew, SerialDeviceNewParams, panic::send_serial_device_panic,
+        serial_detection::SerialDeviceRemoval,
     },
 };
-use serial::SerialPort;
+use serialport::SerialPort;
+use serialport::{ClearBuffer, DataBits, FlowControl, Parity, StopBits};
 use smol::lock::RwLock;
 use uom::si::f64::Length;
 
@@ -107,24 +109,23 @@ impl SerialDeviceNew for Laser {
 
         // Spawn the device thread
         let device_thread_panic_tx = params.device_thread_panic_tx.clone();
-        let path_for_panic = params.path.clone();
-        let path_for_removal = params.path.clone();
         let _self_clone = _self.clone();
+        let path = params.path.clone();
         thread::Builder::new()
             .name("laser".to_owned())
             .spawn(move || {
-                send_serial_device_panic(path_for_panic, device_thread_panic_tx.clone());
+                send_serial_device_panic(path.clone(), device_thread_panic_tx.clone());
                 let _ = smol::block_on(async {
                     let process_result = Self::process(_self_clone).await;
 
-                    let exit_reason = match process_result {
-                        Ok(_) => anyhow!("`process` function exited normally"),
-                        Err(e) => anyhow!("`process` function exited with error: {}", e),
+                    let removal = match process_result {
+                        Ok(_) => SerialDeviceRemoval::Disconnect(path),
+                        Err(e) => SerialDeviceRemoval::Error(path, e),
                     };
 
                     // if the task exists we want to remove the device
                     device_thread_panic_tx
-                        .send((path_for_removal, exit_reason))
+                        .send(removal)
                         .await
                         .expect("Failed to send device removal signal");
                 });
@@ -162,17 +163,19 @@ impl Laser {
         let request_buffer: Vec<u8> = request.into();
 
         // port configuration
-        let mut port =
-            serial::open(&path).map_err(|e| anyhow!("Failed to open port {}: {}", path, e))?;
-        let _ = port.reconfigure(&|settings| {
-            let _ = settings.set_baud_rate(serial::Baud38400);
-            settings.set_char_size(serial::Bits8);
-            settings.set_parity(serial::ParityNone);
-            settings.set_stop_bits(serial::Stop1);
-            settings.set_flow_control(serial::FlowNone);
-            Ok(())
-        });
-        let _ = port.set_timeout(Duration::from_millis(100));
+        let mut port: Box<dyn SerialPort> = serialport::new(&path, 38_400)
+            .data_bits(DataBits::Eight)
+            .parity(Parity::None)
+            .stop_bits(StopBits::One)
+            .flow_control(FlowControl::None)
+            .timeout(Duration::from_millis(500)) // start with something forgiving
+            .open()
+            .map_err(|e| anyhow!("Failed to open port {}: {}", path, e))?;
+
+        port.write_data_terminal_ready(true).ok();
+        port.write_request_to_send(true).ok();
+
+        port.clear(ClearBuffer::All).ok();
 
         loop {
             // send diameter request
@@ -189,7 +192,7 @@ impl Laser {
                     8,
                 ));
 
-                modbus::receive_data_modbus(&mut port)?
+                modbus::receive_data_modbus(&mut *port)?
                     .map(ModbusResponse::try_from)
                     .transpose()
             })?;
