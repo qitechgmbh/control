@@ -21,6 +21,11 @@ use super::{
     SerialDevice, SerialDeviceIdentification, SerialDeviceNewParams, registry::SerialDeviceRegistry,
 };
 
+pub enum SerialDeviceRemoval<T> {
+    Disconnect(T),
+    Error(T, anyhow::Error)
+}
+
 pub struct SerialDetection<'serialdeviceregistry> {
     pub serial_device_registry: &'serialdeviceregistry SerialDeviceRegistry,
     pub ports: HashMap<
@@ -31,14 +36,14 @@ pub struct SerialDetection<'serialdeviceregistry> {
             Arc<RwLock<dyn SerialDevice>>,
         ),
     >,
-    pub device_removal_signal_rx: Receiver<(String, anyhow::Error)>,
-    pub device_removal_signal_tx: Sender<(String, anyhow::Error)>,
+    pub device_removal_signal_rx: Receiver<SerialDeviceRemoval<String>>,
+    pub device_removal_signal_tx: Sender<SerialDeviceRemoval<String>>,
 }
 
 impl<'serialdeviceregistry> SerialDetection<'serialdeviceregistry> {
     pub fn new(serial_device_registry: &'serialdeviceregistry SerialDeviceRegistry) -> Self {
         let (device_removal_signal_tx, device_removal_signal_rx) =
-            unbounded::<(String, anyhow::Error)>();
+            unbounded();
         SerialDetection {
             serial_device_registry,
             ports: HashMap::new(),
@@ -158,18 +163,34 @@ impl<'serialdeviceregistry> SerialDetection<'serialdeviceregistry> {
 
     pub async fn check_remove_signals(&mut self) -> Vec<DeviceIdentification> {
         let mut removed_signals: Vec<DeviceIdentification> = Vec::new();
-        match self.device_removal_signal_rx.try_recv() {
-            Ok((path, error)) => {
-                // remove the device when the tuple positon 1 equals signal
-                if let Some(info) = self.ports.get(&path.clone()) {
-                    removed_signals.push(info.1.clone());
-                };
-                self.ports.remove(&path);
 
-                tracing::trace!("Removed device: {:?}: {}", path, error);
-            }
-            Err(_) => {}
+        let mut add_removal_signal = |path: &String| {
+            if let Some(info) = self.ports.get(path) {
+                removed_signals.push(info.1.clone());
+            };
+            self.ports.remove(path);
+        };
+
+        if self.device_removal_signal_rx.is_empty() {
+            return removed_signals
         }
+
+        let removal = self.device_removal_signal_rx.recv()
+            .await
+            .expect("Failed to receive removal signals");
+
+        match removal {
+            SerialDeviceRemoval::Disconnect(path) => {
+                add_removal_signal(&path);
+                tracing::trace!("Removed serial device after disconnect: {:?}", path);
+            },
+
+            SerialDeviceRemoval::Error(path, error) => {
+                add_removal_signal(&path);
+                tracing::error!("Removed erroring serial device: {:?}: {}", path, error);
+            }
+        }
+
         removed_signals
     }
 }

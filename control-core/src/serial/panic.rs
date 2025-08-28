@@ -1,11 +1,13 @@
 use smol::channel::Sender;
 
+use crate::serial::serial_detection::SerialDeviceRemoval;
+
 /// Device-level panic handler for individual device crashes
 /// Sends device identifier and error information for cleanup
 /// Used by serial devices and other individual components that need to be removed on panic
 pub fn send_serial_device_panic<T>(
     device_identifier: T,
-    thread_panic_tx: Sender<(T, anyhow::Error)>,
+    thread_panic_tx: Sender<SerialDeviceRemoval<T>>,
 ) where
     T: Send + Sync + Clone + 'static,
 {
@@ -16,7 +18,6 @@ pub fn send_serial_device_panic<T>(
         }
     }
 
-    let device_id_clone = device_identifier.clone();
     std::panic::set_hook(Box::new(move |panic_info| {
         let thread_name = std::thread::current()
             .name()
@@ -39,11 +40,9 @@ pub fn send_serial_device_panic<T>(
         // Send device panic info through channel
         smol::block_on(async {
             let _ = thread_panic_tx
-                .send((
-                    device_id_clone.clone(),
-                    anyhow::anyhow!("{}", panic_message),
-                ))
-                .await;
+                .send(SerialDeviceRemoval::Error(device_identifier.clone(),
+                    anyhow::anyhow!("{}", panic_message))
+                ).await;
         });
 
         // Note: We don't call old_hook to avoid duplicate logging

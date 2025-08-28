@@ -1,9 +1,9 @@
 use std::{any::Any, sync::Arc};
 
-use smol::lock::RwLock;
+use smol::{channel::Sender, lock::RwLock};
 use std::fmt::Debug;
 
-use crate::machines::identification::DeviceIdentification;
+use crate::{machines::identification::DeviceIdentification, serial::serial_detection::SerialDeviceRemoval};
 
 pub mod panic;
 pub mod registry;
@@ -25,7 +25,7 @@ pub trait SerialDeviceThread {
 
 pub struct SerialDeviceNewParams {
     pub path: String,
-    pub device_thread_panic_tx: smol::channel::Sender<(String, anyhow::Error)>,
+    pub device_thread_panic_tx: Sender<SerialDeviceRemoval<String>>,
 }
 
 #[derive(PartialEq, Clone, Debug)]

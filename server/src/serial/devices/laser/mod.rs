@@ -18,7 +18,7 @@ use control_core::{
     },
     modbus::{self, ModbusRequest, ModbusResponse},
     serial::{
-        SerialDevice, SerialDeviceNew, SerialDeviceNewParams, panic::send_serial_device_panic,
+        panic::send_serial_device_panic, serial_detection::SerialDeviceRemoval, SerialDevice, SerialDeviceNew, SerialDeviceNewParams
     },
 };
 use serialport::SerialPort;
@@ -108,24 +108,23 @@ impl SerialDeviceNew for Laser {
 
         // Spawn the device thread
         let device_thread_panic_tx = params.device_thread_panic_tx.clone();
-        let path_for_panic = params.path.clone();
-        let path_for_removal = params.path.clone();
         let _self_clone = _self.clone();
+        let path = params.path.clone();
         thread::Builder::new()
             .name("laser".to_owned())
             .spawn(move || {
-                send_serial_device_panic(path_for_panic, device_thread_panic_tx.clone());
+                send_serial_device_panic(path.clone(), device_thread_panic_tx.clone());
                 let _ = smol::block_on(async {
                     let process_result = Self::process(_self_clone).await;
 
-                    let exit_reason = match process_result {
-                        Ok(_) => anyhow!("`process` function exited normally"),
-                        Err(e) => anyhow!("`process` function exited with error: {}", e),
+                    let removal = match process_result {
+                        Ok(_) => SerialDeviceRemoval::Disconnect(path),
+                        Err(e) => SerialDeviceRemoval::Error(path, e)
                     };
 
                     // if the task exists we want to remove the device
                     device_thread_panic_tx
-                        .send((path_for_removal, exit_reason))
+                        .send(removal)
                         .await
                         .expect("Failed to send device removal signal");
                 });
