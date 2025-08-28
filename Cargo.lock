@@ -2723,7 +2723,6 @@ dependencies = [
  "regex",
  "serde",
  "serde_json",
- "serial",
  "serialport",
  "smol",
  "socketioxide",
