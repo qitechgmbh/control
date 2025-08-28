@@ -43,6 +43,8 @@ export const liveValuesEventDataSchema = z.object({
   front_power: z.number(),
   back_power: z.number(),
   middle_power: z.number(),
+  combined_power: z.number(),
+  total_energy_kwh: z.number(),
 });
 
 /**
@@ -197,8 +199,9 @@ export type Extruder2NamespaceStore = {
   middlePower: TimeSeries;
   backPower: TimeSeries;
 
-  // Combined power consumption
+  // Combined power consumption and energy
   combinedPower: TimeSeries;
+  totalEnergyKWh: TimeSeries;
 };
 
 // Constants for time durations
@@ -206,13 +209,6 @@ const TWENTY_MILLISECOND = 20;
 const ONE_SECOND = 1000;
 const FIVE_SECOND = 5 * ONE_SECOND;
 const ONE_HOUR = 60 * 60 * ONE_SECOND;
-
-const { initialTimeSeries: screwRpm, insert: addScrewRpm } = createTimeSeries(
-  TWENTY_MILLISECOND,
-  ONE_SECOND,
-  FIVE_SECOND,
-  ONE_HOUR,
-);
 
 const { initialTimeSeries: pressure, insert: addPressure } = createTimeSeries(
   TWENTY_MILLISECOND,
@@ -250,6 +246,9 @@ const { initialTimeSeries: backPower, insert: addBackPower } = createTimeSeries(
 );
 
 const { initialTimeSeries: combinedPower, insert: addCombinedPower } =
+  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+
+const { initialTimeSeries: totalEnergyKWh, insert: addTotalEnergyKWh } =
   createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
 
 const { initialTimeSeries: motorCurrent, insert: addMotorCurrent } =
@@ -347,12 +346,11 @@ export function extruder2MessageHandler(
             timestamp,
           }),
           combinedPower: addCombinedPower(state.combinedPower, {
-            value:
-              liveValuesEvent.data.motor_status.power +
-              liveValuesEvent.data.nozzle_power +
-              liveValuesEvent.data.front_power +
-              liveValuesEvent.data.middle_power +
-              liveValuesEvent.data.back_power,
+            value: liveValuesEvent.data.combined_power,
+            timestamp,
+          }),
+          totalEnergyKWh: addTotalEnergyKWh(state.totalEnergyKWh, {
+            value: liveValuesEvent.data.total_energy_kwh,
             timestamp,
           }),
         }));
@@ -388,6 +386,7 @@ export const createExtruder2NamespaceStore =
         backPower,
         middlePower,
         combinedPower,
+        totalEnergyKWh,
       };
     });
 

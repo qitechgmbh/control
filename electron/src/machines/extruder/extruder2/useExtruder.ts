@@ -56,6 +56,7 @@ export function useExtruder2() {
     middlePower,
     backPower,
     combinedPower,
+    totalEnergyKWh,
   } = useExtruder2Namespace(machineIdentification);
 
   // Single optimistic state for all state management
@@ -383,6 +384,7 @@ export function useExtruder2() {
     middlePower,
     backPower,
     combinedPower,
+    totalEnergyKWh,
 
     // Loading states
     isLoading: stateOptimistic.isOptimistic,

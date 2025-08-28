@@ -400,6 +400,8 @@ impl MachineNewTrait for ExtruderV2 {
                 temperature_controller_back: temperature_controller_back,
                 temperature_controller_nozzle: temperature_controller_nozzle,
                 screw_speed_controller: screw_speed_controller,
+                total_energy_kwh: 0.0,
+                last_energy_calculation_time: None,
                 emitted_default_state: false,
             };
             extruder.emit_state();
