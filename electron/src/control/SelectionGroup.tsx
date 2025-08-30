@@ -82,6 +82,7 @@ type SelectionGroupBooleanProps = {
   loading?: boolean;
   optionTrue: Option;
   optionFalse: Option;
+  reverse?: boolean;
 };
 
 export function SelectionGroupBoolean({
@@ -91,16 +92,24 @@ export function SelectionGroupBoolean({
   loading,
   optionTrue,
   optionFalse,
+  reverse,
 }: SelectionGroupBooleanProps) {
   return (
     <SelectionGroup<"on" | "off">
       value={value ? "on" : "off"}
       disabled={disabled}
       loading={loading}
-      options={{
-        off: optionFalse,
-        on: optionTrue,
-      }}
+      options={
+        reverse
+          ? {
+              on: optionFalse,
+              off: optionTrue,
+            }
+          : {
+              off: optionFalse,
+              on: optionTrue,
+            }
+      }
       onChange={(value) => onChange?.(value === "on")}
     />
   );
