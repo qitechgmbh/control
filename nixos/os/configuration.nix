@@ -6,9 +6,13 @@
 
 {
   imports =
-    [ # Include the results of the hardware scan.
+    [ # Include the results of the hardware scan, if they exist, if they dont we are in CI/CD
       /etc/nixos/hardware-configuration.nix
-    ];
+    ] ++ (
+    if builtins.pathExists /etc/nixos/hardware-configuration.nix
+    then [ /etc/nixos/hardware-configuration.nix ]
+    else []
+  ); 
 
   # Bootloader.
   boot.loader.systemd-boot = {
