@@ -12,7 +12,7 @@ import { TimeSeriesValue, type Series, TimeSeries } from "@/lib/timeseries";
 export function Mock1GraphPage() {
   const { sineWaveSum } = useMock1();
 
-  const syncHook = useGraphSync(30 * 60 * 1000, "mock-graphs");
+  const syncHook = useGraphSync("mock-graphs");
 
   const config: GraphConfig = {
     title: "Sine Wave",
