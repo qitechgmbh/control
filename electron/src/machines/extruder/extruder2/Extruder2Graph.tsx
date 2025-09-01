@@ -26,7 +26,7 @@ export function Extruder2GraphsPage() {
     combinedPower,
   } = useExtruder2();
 
-  const syncHook = useGraphSync(30 * 60 * 1000, "extruder-graphs");
+  const syncHook = useGraphSync("extruder-graphs");
 
   // Base config
   const baseConfig: GraphConfig = {
