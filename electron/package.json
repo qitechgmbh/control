@@ -110,6 +110,6 @@
     "xlsx": "^0.18.5",
     "zod": "^3.24.2",
     "zod-validation-error": "^3.4.0",
-    "zustand": "^5.0.3"
+    "zustand": "^5.0.8"
   }
 }
