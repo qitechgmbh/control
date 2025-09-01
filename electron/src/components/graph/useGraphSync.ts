@@ -4,9 +4,9 @@ import { GraphExportData, exportGraphsToExcel } from "./excelExport";
 import { useGraphSettingsStore } from "@/stores/graphSettingsStore";
 
 export function useGraphSync(exportGroupId?: string) {
-  let store = useGraphSettingsStore();
+  const store = useGraphSettingsStore();
   // not reactive but works :)
-  let timeWindow = store.getTimeframe();
+  const timeWindow = store.getTimeframe();
 
   const [viewMode, setViewMode] = useState<"default" | "all" | "manual">(
     "default",
