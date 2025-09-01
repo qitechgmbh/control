@@ -140,6 +140,7 @@ export function Extruder2ControlPage() {
               onChange={setInverterRegulation}
               disabled={isDisabled}
               loading={isLoading}
+              reverse
             />
           </Label>
           <div className="flex flex-row flex-wrap gap-4">
