@@ -1,16 +1,19 @@
+use crate::machines::{MACHINE_MOCK, VENDOR_QITECH};
 use api::{LiveValuesEvent, MockEvents, MockMachineNamespace, Mode, ModeState, StateEvent};
+use control_core::socketio::event::BuildEvent;
 use control_core::{
+    helpers::hasher_serializer::check_hash_different,
+    helpers::hasher_serializer::hash_with_serde_model,
     machines::{Machine, identification::MachineIdentification},
-    socketio::namespace::NamespaceCacheingLogic,
+    socketio::{event::GenericEvent, namespace::NamespaceCacheingLogic},
 };
-use std::time::Instant;
+use serde_json::{Value, to_value};
+use std::{hash::DefaultHasher, time::Instant};
 use tracing::info;
 use uom::si::{
     f64::Frequency,
     frequency::{hertz, millihertz},
 };
-
-use crate::machines::{MACHINE_MOCK, VENDOR_QITECH};
 
 pub mod act;
 pub mod api;
@@ -30,7 +33,7 @@ pub struct MockMachine {
     mode: Mode,
 
     // State tracking to only emit when values change
-    last_emitted_state: Option<StateEvent>,
+    last_emitted_event: Option<StateEvent>,
 
     /// Will be initialized as false and set to true by emit_state
     /// This way we can signal to the client that the first state emission is a default state
@@ -96,41 +99,52 @@ impl MockMachine {
             },
         };
 
-        // Only emit if values have changed or this is the first emission
-        let should_emit = self.last_emitted_state.as_ref() != Some(&current_state);
+        self.namespace
+            .emit(MockEvents::State(current_state.build()));
+        self.last_emitted_event = Some(current_state);
+    }
 
+    pub fn maybe_emit_state_event(&mut self) {
+        let new_state = StateEvent {
+            is_default_state: !std::mem::replace(&mut self.emitted_default_state, true),
+            frequency1: self.frequency1.get::<millihertz>(),
+            frequency2: self.frequency2.get::<millihertz>(),
+            frequency3: self.frequency3.get::<millihertz>(),
+            mode_state: ModeState {
+                mode: self.mode.clone(),
+            },
+        };
+
+        let old_event = match &self.last_emitted_event {
+            Some(old_event) => old_event,
+            None => {
+                self.emit_state();
+                return;
+            }
+        };
+
+        let should_emit = check_hash_different(&new_state, old_event);
         if should_emit {
-            self.namespace
-                .emit(MockEvents::State(current_state.build()));
-
-            // Update last emitted state
-            self.last_emitted_state = Some(current_state);
+            self.last_emitted_event = Some(new_state.clone());
+            self.namespace.emit(MockEvents::State(new_state.build()));
         }
     }
 
     /// Set the frequencies of the sine waves
     pub fn set_frequency1(&mut self, frequency_mhz: f64) {
         self.frequency1 = Frequency::new::<millihertz>(frequency_mhz);
-        // Emit state change immediately
-        self.emit_state();
     }
 
     pub fn set_frequency2(&mut self, frequency_mhz: f64) {
         self.frequency2 = Frequency::new::<millihertz>(frequency_mhz);
-        // Emit state change immediately
-        self.emit_state();
     }
 
     pub fn set_frequency3(&mut self, frequency_mhz: f64) {
         self.frequency3 = Frequency::new::<millihertz>(frequency_mhz);
-        // Emit state change immediately
-        self.emit_state();
     }
 
     /// Set the mode of the mock machine
     pub fn set_mode(&mut self, mode: Mode) {
         self.mode = mode;
-        // Emit state change immediately
-        self.emit_state();
     }
 }
