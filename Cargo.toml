@@ -4,7 +4,7 @@ members = [
     "ethercat-hal",
     "ethercat-hal-derive",
     "control-core",
-    "ethercat-eeprom-dump",
+    "ethercat-eeprom-dump", "control-core-derive",
 ]
 exclude = []
 resolver = "2"

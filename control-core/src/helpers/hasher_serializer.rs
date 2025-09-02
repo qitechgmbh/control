@@ -1,10 +1,11 @@
+use serde::Serialize;
 use serde::ser::{
-    Serialize, SerializeMap, SerializeSeq, SerializeStruct, SerializeStructVariant, SerializeTuple,
+    SerializeMap, SerializeSeq, SerializeStruct, SerializeStructVariant, SerializeTuple,
     SerializeTupleStruct, SerializeTupleVariant, Serializer,
 };
 use std::error::Error;
 use std::fmt::Display;
-use std::hash::{DefaultHasher, Hash, Hasher};
+use std::hash::{DefaultHasher, Hasher};
 
 #[derive(Debug)]
 pub struct HashSerializerError {}
@@ -328,7 +329,7 @@ impl<'a, H: Hasher> Serializer for HashSerializer<'a, H> {
 }
 
 // A helper that uses Serialize to feed into a Hasher without allocating a buffer:
-pub fn hash_with_serde_model<T: Serialize, H: Hasher>(value: &T, mut hasher: H) -> u64 {
+pub fn hash_with_serde_model<T: Serialize, H: Hasher>(value: T, mut hasher: H) -> u64 {
     let mut h = hasher;
     let ser = HashSerializer(&mut h);
     value.serialize(ser).expect("serialize to hasher failed");
@@ -337,9 +338,23 @@ pub fn hash_with_serde_model<T: Serialize, H: Hasher>(value: &T, mut hasher: H) 
 
 /// if hash of a and b are different this function returns true
 /// a and b need to impl Serialize
-pub fn check_hash_different<T: Serialize>(a: &T, b: &T) -> bool {
-    let mut hasher = DefaultHasher::new();
-    let hash = hash_with_serde_model(a, &mut hasher);
-    let hash_old = hash_with_serde_model(b, &mut hasher);
+pub fn check_hash_different<T: Serialize>(a: T, b: T) -> bool {
+    // Yes DefaultHasher has to be defined multiple times
+    // If you use one for both the results will never match even if they are the same value
+    let hasher = DefaultHasher::new();
+    let hash = hash_with_serde_model(a, hasher);
+    let hasher = DefaultHasher::new();
+    let hash_old = hash_with_serde_model(b, hasher);
     return hash != hash_old;
+}
+
+#[test]
+fn test_same_values() {
+    let a = 10;
+    let b = 10;
+    assert_eq!(
+        check_hash_different(a, b),
+        false,
+        "Hashes should be equal for identical values"
+    );
 }
