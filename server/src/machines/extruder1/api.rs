@@ -1,6 +1,5 @@
-use std::{sync::Arc, time::Duration};
-
 use super::{ExtruderV2, ExtruderV2Mode, HeatingType, mitsubishi_cs80::MotorStatus};
+use control_core::socketio::event::BuildEvent;
 use control_core::{
     machines::api::MachineApi,
     socketio::{
@@ -11,10 +10,12 @@ use control_core::{
         },
     },
 };
+use control_core_derive::BuildEvent;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use smol::channel::Sender;
 use socketioxide::extract::SocketRef;
+use std::{sync::Arc, time::Duration};
 use tracing::instrument;
 use uom::si::{
     angular_velocity::revolution_per_minute, electric_current::ampere, electric_potential::volt,
@@ -75,7 +76,7 @@ impl LiveValuesEvent {
     }
 }
 
-#[derive(Serialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Debug, Clone, PartialEq, BuildEvent)]
 pub struct StateEvent {
     pub is_default_state: bool,
     /// rotation state
@@ -96,12 +97,6 @@ pub struct StateEvent {
     pub inverter_status_state: InverterStatusState,
     /// pid settings
     pub pid_settings: PidSettingsStates,
-}
-
-impl StateEvent {
-    pub fn build(&self) -> Event<Self> {
-        Event::new("StateEvent", self.clone())
-    }
 }
 
 #[derive(Serialize, Debug, Clone, PartialEq)]

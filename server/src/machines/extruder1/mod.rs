@@ -1,14 +1,18 @@
+use crate::machines::{MACHINE_EXTRUDER_V1, VENDOR_QITECH};
 use api::{
     ExtruderSettingsState, ExtruderV2Events, ExtruderV2Namespace, HeatingState, HeatingStates,
     InverterStatusState, LiveValuesEvent, ModeState, PidSettings, PidSettingsStates, PressureState,
     RegulationState, RotationState, ScrewState, StateEvent,
 };
+use control_core::helpers::hasher_serializer::check_hash_different;
+use control_core::socketio::event::BuildEvent;
 use control_core::{
     machines::{Machine, identification::MachineIdentification},
-    socketio::namespace::NamespaceCacheingLogic,
+    socketio::{event::Event, namespace::NamespaceCacheingLogic},
 };
 use screw_speed_controller::ScrewSpeedController;
 use serde::{Deserialize, Serialize};
+use serde_json::{Value, to_value};
 use std::{any::Any, time::Instant};
 use temperature_controller::TemperatureController;
 use uom::si::{
@@ -17,8 +21,6 @@ use uom::si::{
     pressure::bar,
     thermodynamic_temperature::degree_celsius,
 };
-
-use crate::machines::{MACHINE_EXTRUDER_V1, VENDOR_QITECH};
 pub mod act;
 pub mod api;
 pub mod mitsubishi_cs80;
@@ -173,19 +175,18 @@ impl ExtruderV2 {
 
     pub fn maybe_emit_state_event(&mut self) {
         let new_state = self.build_state_event();
-
-        let should_emit = self
-            .last_state_event
-            .as_ref()
-            .map(|prev| prev != &new_state)
-            .unwrap_or(true); // always emit if no previous
-        //    println!("{:?}", should_emit);
+        let old_state = match &self.last_state_event {
+            Some(event) => event,
+            None => {
+                self.emit_state();
+                return;
+            }
+        };
+        let should_emit = check_hash_different(&new_state, &old_state);
         if should_emit {
-            println!("Was {:?}\n", self.last_state_event);
-            self.last_state_event = Some(new_state.clone());
-            //          println!("Is {:?}\n", self.last_state_event);
             self.namespace
                 .emit(ExtruderV2Events::State(new_state.build()));
+            self.last_state_event = Some(new_state);
         }
     }
 }
@@ -262,7 +263,6 @@ impl ExtruderV2 {
     fn set_nozzle_pressure_limit_is_enabled(&mut self, enabled: bool) {
         self.screw_speed_controller
             .set_nozzle_pressure_limit_is_enabled(enabled);
-        self.emit_state();
     }
 
     /// pressure is represented as bar
@@ -270,7 +270,6 @@ impl ExtruderV2 {
         let nozzle_pressure_limit = Pressure::new::<bar>(pressure);
         self.screw_speed_controller
             .set_nozzle_pressure_limit(nozzle_pressure_limit);
-        self.emit_state();
     }
 }
 
@@ -356,7 +355,6 @@ impl ExtruderV2 {
 impl ExtruderV2 {
     fn set_rotation_state(&mut self, forward: bool) {
         self.screw_speed_controller.set_rotation_direction(forward);
-        self.emit_state();
     }
 
     fn reset_inverter(&mut self) {
@@ -365,7 +363,6 @@ impl ExtruderV2 {
 
     fn set_mode_state(&mut self, mode: ExtruderV2Mode) {
         self.switch_mode(mode);
-        self.emit_state();
     }
 }
 
@@ -382,20 +379,17 @@ impl ExtruderV2 {
             self.screw_speed_controller.set_uses_rpm(uses_rpm);
             self.screw_speed_controller.start_pressure_regulation();
         }
-        self.emit_state();
     }
 
     fn set_target_pressure(&mut self, pressure: f64) {
         let pressure = Pressure::new::<bar>(pressure);
         self.screw_speed_controller.set_target_pressure(pressure);
-        self.emit_state();
     }
 
     fn set_target_rpm(&mut self, rpm: f64) {
         let revolution_per_minutes = AngularVelocity::new::<revolution_per_minute>(rpm);
         self.screw_speed_controller
             .set_target_screw_rpm(revolution_per_minutes);
-        self.emit_state();
     }
 }
 
@@ -421,8 +415,6 @@ impl ExtruderV2 {
                 .temperature_controller_middle
                 .set_target_temperature(target_temp),
         }
-
-        self.emit_state();
     }
 }
 
@@ -431,6 +423,5 @@ impl ExtruderV2 {
         self.screw_speed_controller
             .pid
             .configure(settings.ki, settings.kp, settings.kd);
-        self.emit_state();
     }
 }

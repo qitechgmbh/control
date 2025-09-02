@@ -9,6 +9,8 @@ rust-version = "1.86"
 ethercrab = "0.6"
 ethercat_hal = { path = "../ethercat-hal" }
 control_core = { path = "../control-core" }
+control_core_derive = { path = "../control-core-derive" }
+
 uom = { version = "0.36.0", default-features = false, features = ["f64"] }
 serde = "1.0.217"
 anyhow = "1.0.99"
