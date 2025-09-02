@@ -34,7 +34,6 @@ use futures::executor::block_on;
 use puller_speed_controller::{PullerRegulationMode, PullerSpeedController};
 use smol::lock::{Mutex, RwLock};
 use spool_speed_controller::SpoolSpeedController;
-use std::os::linux::raw::stat;
 use std::{
     fmt::Debug,
     sync::{Arc, Weak},

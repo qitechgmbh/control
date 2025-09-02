@@ -3,12 +3,11 @@ use api::{LiveValuesEvent, MockEvents, MockMachineNamespace, Mode, ModeState, St
 use control_core::socketio::event::BuildEvent;
 use control_core::{
     helpers::hasher_serializer::check_hash_different,
-    helpers::hasher_serializer::hash_with_serde_model,
     machines::{Machine, identification::MachineIdentification},
-    socketio::{event::GenericEvent, namespace::NamespaceCacheingLogic},
+    socketio::namespace::NamespaceCacheingLogic,
 };
-use serde_json::{Value, to_value};
-use std::{hash::DefaultHasher, time::Instant};
+
+use std::time::Instant;
 use tracing::info;
 use uom::si::{
     f64::Frequency,

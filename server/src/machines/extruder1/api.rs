@@ -1,5 +1,4 @@
 use super::{ExtruderV2, ExtruderV2Mode, HeatingType, mitsubishi_cs80::MotorStatus};
-use control_core::socketio::event::BuildEvent;
 use control_core::{
     machines::api::MachineApi,
     socketio::{

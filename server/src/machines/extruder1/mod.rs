@@ -8,11 +8,10 @@ use control_core::helpers::hasher_serializer::check_hash_different;
 use control_core::socketio::event::BuildEvent;
 use control_core::{
     machines::{Machine, identification::MachineIdentification},
-    socketio::{event::Event, namespace::NamespaceCacheingLogic},
+    socketio::namespace::NamespaceCacheingLogic,
 };
 use screw_speed_controller::ScrewSpeedController;
 use serde::{Deserialize, Serialize};
-use serde_json::{Value, to_value};
 use std::{any::Any, time::Instant};
 use temperature_controller::TemperatureController;
 use uom::si::{
