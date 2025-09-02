@@ -21,7 +21,7 @@ impl std::fmt::Display for HashSerializerError {
 impl Error for HashSerializerError {}
 
 impl serde::ser::Error for HashSerializerError {
-    fn custom<T>(msg: T) -> Self
+    fn custom<T>(_msg: T) -> Self
     where
         T: Display,
     {
@@ -329,7 +329,7 @@ impl<'a, H: Hasher> Serializer for HashSerializer<'a, H> {
 }
 
 // A helper that uses Serialize to feed into a Hasher without allocating a buffer:
-pub fn hash_with_serde_model<T: Serialize, H: Hasher>(value: T, mut hasher: H) -> u64 {
+pub fn hash_with_serde_model<T: Serialize, H: Hasher>(value: T, hasher: H) -> u64 {
     let mut h = hasher;
     let ser = HashSerializer(&mut h);
     value.serialize(ser).expect("serialize to hasher failed");
