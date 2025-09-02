@@ -30,9 +30,6 @@ impl MachineAct for ExtruderV2 {
                 self.switch_to_heat();
             }
 
-            // emits state if changed
-            self.maybe_emit_state_event();
-
             let now = Instant::now();
 
             if now.duration_since(self.last_measurement_emit) > Duration::from_secs_f64(1.0 / 30.0)
