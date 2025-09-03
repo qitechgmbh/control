@@ -26,12 +26,12 @@ export function Extruder2Page() {
           icon: "lu:Settings",
           activeLink: "settings",
         },
-        // {
-        //   link: "manual",
-        //   title: "Manual",
-        //   icon: "lu:BookOpen",
-        //   activeLink: "manual",
-        // },
+        {
+          link: "manual",
+          title: "Manual",
+          icon: "lu:BookOpen",
+          activeLink: "manual",
+        },
         {
           link: "presets",
           title: "Presets",
