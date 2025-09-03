@@ -154,7 +154,7 @@ impl PullerSpeedController {
         Self::clamp_speed(
             self.target_speed,
             Velocity::new::<meter_per_minute>(0.0),
-            Velocity::new::<meter_per_minute>(100.0),
+            Velocity::new::<meter_per_minute>(20.0),
         )
     }
 
