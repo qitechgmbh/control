@@ -14,12 +14,12 @@ use control_core::{
 use futures::executor::block_on;
 use smol::lock::Mutex;
 use smol::lock::RwLock;
-use tracing::info;
 use std::{
     any::Any,
     sync::{Arc, Weak},
     time::Instant,
 };
+use tracing::info;
 use uom::si::{f64::Length, length::millimeter};
 
 pub mod act;
@@ -43,6 +43,7 @@ pub struct LaserMachine {
 
     // connected machines
     pub connected_winder: Option<ConnectedMachine<Weak<Mutex<Winder2>>>>,
+    pub pid_settings: PidSettings,
 
     // laser values
     diameter: Length,
@@ -119,12 +120,7 @@ impl LaserMachine {
                     .unwrap_or(false),
             },
             pid_settings: PidSettingsStates {
-                speed: PidSettings {
-                    ki: 0.0,
-                    kp: 0.0,
-                    kd: 0.0,
-                    dead: 0.0,
-                },
+                speed: self.pid_settings.clone(),
             },
         };
 
@@ -210,8 +206,8 @@ impl LaserMachine {
             Some(machine_manager_arc) => machine_manager_arc,
             None => {
                 info!("Setting Connected Winder | Failed to upgrade machine manager");
-                return
-            },
+                return;
+            }
         };
         let machine_manager_guard = block_on(machine_manager_arc.read());
         let winder2_weak = machine_manager_guard.get_machine_weak(&machine_identification_unique);
@@ -219,15 +215,15 @@ impl LaserMachine {
             Some(winder2_weak) => winder2_weak,
             None => {
                 info!("Setting Connected Winder | Failed to get machine weak");
-                return
-            },
+                return;
+            }
         };
         let winder2_strong = match winder2_weak.upgrade() {
             Some(winder2_strong) => winder2_strong,
             None => {
                 info!("Setting Connected Winder | Failed to upgrade to strong");
-                return
-            },
+                return;
+            }
         };
 
         let winder2: Arc<Mutex<Winder2>> = block_on(downcast_machine::<Winder2>(winder2_strong))
@@ -314,9 +310,19 @@ impl LaserMachine {
 impl LaserMachine {
     fn configure_speed_pid(&mut self, settings: PidSettings) {
         // Implement pid to control speed of winder
+        // Temporarily hold pid_settings outside the closure
+        let mut new_pid_settings = None;
+
         self.get_winder(|winder2| {
-            winder2.configure_speed_pid(settings);
+            winder2.configure_speed_pid(settings.clone());
+            new_pid_settings = Some(winder2.puller_speed_controller.get_pid_params());
         });
+
+        if let Some(params) = new_pid_settings {
+            self.pid_settings = params;
+        }
+        // TODO: REMOVE THIS LINE
+        self.pid_settings.dead = settings.dead;
         self.emit_state();
     }
 }

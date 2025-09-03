@@ -43,6 +43,7 @@ impl Default for GearRatio {
         GearRatio::OneToOne
     }
 }
+use crate::machines::laser::api::PidSettings;
 
 #[derive(Debug)]
 pub struct PullerSpeedController {
@@ -179,6 +180,15 @@ impl PullerSpeedController {
 
     pub fn get_target_speed(&self) -> Velocity {
         self.target_speed
+    }
+
+    pub fn get_pid_params(&self) -> PidSettings {
+        PidSettings {
+            ki: self.pid.get_ki(),
+            kp: self.pid.get_kp(),
+            kd: self.pid.get_kd(),
+            dead: 0.0,
+        }
     }
 }
 
