@@ -21,7 +21,7 @@ use uom::{
     },
 };
 
-use crate::machines::laser::api::PidSettings;
+use crate::machines::winder2::api::PidSettings;
 
 #[derive(Debug)]
 pub struct PullerSpeedController {
