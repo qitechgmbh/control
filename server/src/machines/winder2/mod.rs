@@ -353,9 +353,9 @@ impl Winder2 {
             },
             pid_settings: PidSettingsStates {
                 speed: PidSettings {
-                    ki: 0.0,
+                    ki: 0.1,
                     kp: 0.0,
-                    kd: 0.0,
+                    kd: 0.2,
                     dead: 0.0,
                 },
             },
@@ -751,13 +751,13 @@ impl Winder2 {
             machine_identification_unique.machine_identification,
             LaserMachine::MACHINE_IDENTIFICATION
         ) {
-            info!("Setting Connected Laser | did not match ID");
+            tracing::trace!("Setting Connected Laser | did not match ID");
             return;
         }
         let machine_manager_arc = match self.machine_manager.upgrade() {
             Some(machine_manager_arc) => machine_manager_arc,
             None => {
-                info!("Setting Connected Laser | Failed to upgrade machine manager");
+                tracing::trace!("Setting Connected Laser | Failed to upgrade machine manager");
                 return;
             }
         };
@@ -766,14 +766,14 @@ impl Winder2 {
         let laser_weak = match laser_weak {
             Some(laser_weak) => laser_weak,
             None => {
-                info!("Setting Connected Laser | Failed to get serial weak");
+                tracing::trace!("Setting Connected Laser | Failed to get serial weak");
                 return;
             }
         };
         let laser_strong = match laser_weak.upgrade() {
             Some(laser_strong) => laser_strong,
             None => {
-                info!("Setting Connected Laser | Failed to upgrade to Strong");
+                tracing::trace!("Setting Connected Laser | Failed to upgrade to Strong");
                 return;
             }
         };
@@ -788,8 +788,6 @@ impl Winder2 {
             machine_identification_unique,
             machine: machine.clone(),
         });
-
-        info!("Laser connected to winder. Emitting state...");
 
         self.emit_state();
 

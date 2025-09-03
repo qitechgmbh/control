@@ -60,9 +60,9 @@ impl MachineNewTrait for LaserMachine {
             machine_identification_unique: machine_id,
             connected_winder: None,
             pid_settings: PidSettings {
-                ki: 0.0,
+                ki: 0.1,
                 kp: 0.0,
-                kd: 0.0,
+                kd: 0.2,
                 dead: 0.0,
             },
             diameter: Length::ZERO,
