@@ -183,6 +183,8 @@ impl ExtruderV2 {
         };
         let should_emit = check_hash_different(&new_state, &old_state);
         if should_emit {
+            println!("extruder: {}", should_emit);
+
             self.namespace
                 .emit(ExtruderV2Events::State(new_state.build()));
             self.last_state_event = Some(new_state);

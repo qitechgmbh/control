@@ -347,6 +347,7 @@ impl Winder2 {
         };
 
         let should_emit = check_hash_different(&new_state, &old_state);
+
         if should_emit {
             let event = &new_state.build();
             self.last_state_event = Some(new_state);

@@ -172,19 +172,21 @@ export function useWinder2() {
     }),
   );
 
-  // Helper function for optimistic updates using produce
-  const updateStateOptimistically = (
+  const updateStateOptimistically = <T>(
     producer: (current: StateEvent) => void,
     serverRequest: () => void,
+    shouldSkip?: (current: StateEvent) => boolean,
   ) => {
     const currentState = stateOptimistic.value;
-    if (currentState) {
-      stateOptimistic.setOptimistic(produce(currentState, producer));
-    }
+    if (!currentState) return;
+
+    // Skip if nothing changes
+    if (shouldSkip?.(currentState)) return;
+
+    stateOptimistic.setOptimistic(produce(currentState, producer));
     serverRequest();
   };
-
-  // Action functions
+  // Action functions with value checks to skip no-op updates
   const zeroTensionArmAngle = () => {
     updateStateOptimistically(
       (current) => {
@@ -195,6 +197,7 @@ export function useWinder2() {
           machine_identification_unique: machineIdentification,
           data: "ZeroTensionArmAngle",
         }),
+      (current) => current.data.tension_arm_state.zeroed === true,
     );
   };
 
@@ -208,6 +211,7 @@ export function useWinder2() {
           machine_identification_unique: machineIdentification,
           data: { SetTraverseLimitInner: limitInner },
         }),
+      (current) => current.data.traverse_state.limit_inner === limitInner,
     );
   };
 
@@ -221,6 +225,7 @@ export function useWinder2() {
           machine_identification_unique: machineIdentification,
           data: { SetTraverseLimitOuter: limitOuter },
         }),
+      (current) => current.data.traverse_state.limit_outer === limitOuter,
     );
   };
 
@@ -234,6 +239,7 @@ export function useWinder2() {
           machine_identification_unique: machineIdentification,
           data: "GotoTraverseLimitInner",
         }),
+      (current) => current.data.traverse_state.is_going_in === true,
     );
   };
 
@@ -247,6 +253,7 @@ export function useWinder2() {
           machine_identification_unique: machineIdentification,
           data: "GotoTraverseLimitOuter",
         }),
+      (current) => current.data.traverse_state.is_going_out === true,
     );
   };
 
@@ -260,6 +267,7 @@ export function useWinder2() {
           machine_identification_unique: machineIdentification,
           data: "GotoTraverseHome",
         }),
+      (current) => current.data.traverse_state.is_going_home === true,
     );
   };
 
@@ -273,6 +281,7 @@ export function useWinder2() {
           machine_identification_unique: machineIdentification,
           data: { EnableTraverseLaserpointer: enabled },
         }),
+      (current) => current.data.traverse_state.laserpointer === enabled,
     );
   };
 
@@ -286,6 +295,7 @@ export function useWinder2() {
           machine_identification_unique: machineIdentification,
           data: { SetMode: mode },
         }),
+      (current) => current.data.mode_state.mode === mode,
     );
   };
 
@@ -299,6 +309,7 @@ export function useWinder2() {
           machine_identification_unique: machineIdentification,
           data: { SetTraverseStepSize: stepSize },
         }),
+      (current) => current.data.traverse_state.step_size === stepSize,
     );
   };
 
@@ -312,6 +323,7 @@ export function useWinder2() {
           machine_identification_unique: machineIdentification,
           data: { SetTraversePadding: padding },
         }),
+      (current) => current.data.traverse_state.padding === padding,
     );
   };
 
@@ -325,6 +337,7 @@ export function useWinder2() {
           machine_identification_unique: machineIdentification,
           data: { SetPullerTargetSpeed: targetSpeed },
         }),
+      (current) => current.data.puller_state.target_speed === targetSpeed,
     );
   };
 
@@ -338,6 +351,7 @@ export function useWinder2() {
           machine_identification_unique: machineIdentification,
           data: { SetPullerTargetDiameter: targetDiameter },
         }),
+      (current) => current.data.puller_state.target_diameter === targetDiameter,
     );
   };
 
@@ -351,6 +365,7 @@ export function useWinder2() {
           machine_identification_unique: machineIdentification,
           data: { SetPullerRegulationMode: regulationMode },
         }),
+      (current) => current.data.puller_state.regulation === regulationMode,
     );
   };
 
@@ -364,6 +379,7 @@ export function useWinder2() {
           machine_identification_unique: machineIdentification,
           data: { SetPullerForward: forward },
         }),
+      (current) => current.data.puller_state.forward === forward,
     );
   };
 
@@ -378,6 +394,9 @@ export function useWinder2() {
           machine_identification_unique: machineIdentification,
           data: { SetSpoolAutomaticRequiredMeters: meters },
         }),
+      (current) =>
+        current.data.spool_automatic_action_state.spool_required_meters ===
+        meters,
     );
   };
 
@@ -392,6 +411,9 @@ export function useWinder2() {
           machine_identification_unique: machineIdentification,
           data: { SetSpoolAutomaticAction: mode },
         }),
+      (current) =>
+        current.data.spool_automatic_action_state
+          .spool_automatic_action_mode === mode,
     );
   };
 
@@ -412,6 +434,8 @@ export function useWinder2() {
           machine_identification_unique: machineIdentification,
           data: { SetSpoolRegulationMode: mode },
         }),
+      (current) =>
+        current.data.spool_speed_controller_state.regulation_mode === mode,
     );
   };
 
@@ -425,6 +449,8 @@ export function useWinder2() {
           machine_identification_unique: machineIdentification,
           data: { SetSpoolMinMaxMinSpeed: speed },
         }),
+      (current) =>
+        current.data.spool_speed_controller_state.minmax_min_speed === speed,
     );
   };
 
@@ -438,6 +464,8 @@ export function useWinder2() {
           machine_identification_unique: machineIdentification,
           data: { SetSpoolMinMaxMaxSpeed: speed },
         }),
+      (current) =>
+        current.data.spool_speed_controller_state.minmax_max_speed === speed,
     );
   };
 
@@ -452,6 +480,9 @@ export function useWinder2() {
           machine_identification_unique: machineIdentification,
           data: { SetSpoolAdaptiveTensionTarget: value },
         }),
+      (current) =>
+        current.data.spool_speed_controller_state.adaptive_tension_target ===
+        value,
     );
   };
 
@@ -466,6 +497,9 @@ export function useWinder2() {
           machine_identification_unique: machineIdentification,
           data: { SetSpoolAdaptiveRadiusLearningRate: value },
         }),
+      (current) =>
+        current.data.spool_speed_controller_state
+          .adaptive_radius_learning_rate === value,
     );
   };
 
@@ -480,6 +514,9 @@ export function useWinder2() {
           machine_identification_unique: machineIdentification,
           data: { SetSpoolAdaptiveMaxSpeedMultiplier: value },
         }),
+      (current) =>
+        current.data.spool_speed_controller_state
+          .adaptive_max_speed_multiplier === value,
     );
   };
 
@@ -494,6 +531,9 @@ export function useWinder2() {
           machine_identification_unique: machineIdentification,
           data: { SetSpoolAdaptiveAccelerationFactor: value },
         }),
+      (current) =>
+        current.data.spool_speed_controller_state
+          .adaptive_acceleration_factor === value,
     );
   };
 
@@ -508,14 +548,14 @@ export function useWinder2() {
           machine_identification_unique: machineIdentification,
           data: { SetSpoolAdaptiveDeaccelerationUrgencyMultiplier: value },
         }),
+      (current) =>
+        current.data.spool_speed_controller_state
+          .adaptive_deacceleration_urgency_multiplier === value,
     );
   };
 
   const setConnectedMachine = (machineIdentificationUnique: {
-    machine_identification: {
-      vendor: number;
-      machine: number;
-    };
+    machine_identification: { vendor: number; machine: number };
     serial: number;
   }) => {
     updateStateOptimistically(
@@ -528,14 +568,14 @@ export function useWinder2() {
           machine_identification_unique,
           data: { SetConnectedMachine: machineIdentificationUnique },
         }),
+      (current) =>
+        current.data.connected_machine_state.machine_identification_unique ===
+        machineIdentificationUnique,
     );
   };
 
   const disconnectMachine = (machineIdentificationUnique: {
-    machine_identification: {
-      vendor: number;
-      machine: number;
-    };
+    machine_identification: { vendor: number; machine: number };
     serial: number;
   }) => {
     updateStateOptimistically(
@@ -548,6 +588,9 @@ export function useWinder2() {
           machine_identification_unique,
           data: { DisconnectMachine: machineIdentificationUnique },
         }),
+      (current) =>
+        current.data.connected_machine_state.machine_identification_unique ===
+        null,
     );
   };
 

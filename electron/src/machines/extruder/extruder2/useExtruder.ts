@@ -360,6 +360,9 @@ export function useExtruder2() {
     z.object({ ResetInverter: z.boolean() }),
   );
 
+  const isLoading = stateOptimistic.isOptimistic;
+  const isDisabled = !stateOptimistic.isInitialized;
+
   return {
     // Consolidated state
     state: stateOptimistic.value?.data,
@@ -385,8 +388,8 @@ export function useExtruder2() {
     combinedPower,
 
     // Loading states
-    isLoading: stateOptimistic.isOptimistic,
-    isDisabled: !stateOptimistic.isInitialized,
+    isLoading,
+    isDisabled,
 
     // Action functions (verb-first)
     setInverterRotationDirection,
