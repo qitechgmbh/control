@@ -75,6 +75,7 @@ function useLaser(machine_identification_unique: MachineIdentificationUnique) {
         ki: z.number(),
         kp: z.number(),
         kd: z.number(),
+        dead: z.number(),
       }),
     }),
   );
