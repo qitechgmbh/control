@@ -32,7 +32,7 @@ export function Laser1SettingsPage() {
             value={showAdvanced}
             optionTrue={{
               children: "Show",
-              disabled: false || !state?.connected_winder_state?.is_available,
+              disabled: !state?.connected_winder_state?.is_available || false,
             }}
             optionFalse={{ children: "Hide" }}
             onChange={setShowAdvanced}

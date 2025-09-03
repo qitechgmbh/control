@@ -60,7 +60,6 @@ pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(),
                     .expect("spawn TX/RX task")
                     .await
             }));
-
         })
         .expect("Building thread");
 
