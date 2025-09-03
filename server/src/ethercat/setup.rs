@@ -64,7 +64,6 @@ pub async fn setup_loop(
                     .expect("spawn TX/RX task")
                     .await
             }));
-
         })
         .expect("Building thread");
 
