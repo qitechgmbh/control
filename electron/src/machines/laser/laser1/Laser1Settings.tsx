@@ -32,7 +32,7 @@ export function Laser1SettingsPage() {
             value={showAdvanced}
             optionTrue={{
               children: "Show",
-              disabled: false,
+              disabled: false || !state?.connected_winder_state?.is_available,
             }}
             optionFalse={{ children: "Hide" }}
             onChange={setShowAdvanced}
@@ -87,7 +87,7 @@ export function Laser1SettingsPage() {
                 max={100}
                 step={0.01}
                 renderValue={(v) => roundToDecimals(v, 2)}
-                onChange={setSpeedPidKd}
+                onChange={setSpeedPidDead}
                 title="Speed PID Dead"
               />
             </Label>
