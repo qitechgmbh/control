@@ -75,7 +75,7 @@ impl LiveValuesEvent {
     }
 }
 
-#[derive(Serialize, Debug, Clone, PartialEq, BuildEvent)]
+#[derive(Serialize, Debug, Clone, BuildEvent)]
 pub struct StateEvent {
     pub is_default_state: bool,
     /// rotation state
@@ -144,8 +144,16 @@ pub struct ExtruderSettingsState {
     pub pressure_limit_enabled: bool,
 }
 
-#[derive(Serialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Debug, Clone)]
+pub struct FaultState {
+    pub fault_code: u16,
+    pub fault_description: String,
+    pub time_stamp: u64,
+}
+
+#[derive(Serialize, Debug, Clone)]
 pub struct InverterStatusState {
+    pub fault: Option<FaultState>,
     /// RUN (Inverter running)
     pub running: bool,
     /// Forward running motor spins forward

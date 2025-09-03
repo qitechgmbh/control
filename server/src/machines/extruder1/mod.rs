@@ -1,3 +1,4 @@
+use crate::machines::extruder1::api::FaultState;
 use crate::machines::{MACHINE_EXTRUDER_V1, VENDOR_QITECH};
 use api::{
     ExtruderSettingsState, ExtruderV2Events, ExtruderV2Namespace, HeatingState, HeatingStates,
@@ -12,7 +13,10 @@ use control_core::{
 };
 use screw_speed_controller::ScrewSpeedController;
 use serde::{Deserialize, Serialize};
-use std::{any::Any, time::Instant};
+use std::{
+    any::Any,
+    time::{Instant, UNIX_EPOCH},
+};
 use temperature_controller::TemperatureController;
 use uom::si::{
     angular_velocity::{AngularVelocity, revolution_per_minute},
@@ -20,6 +24,7 @@ use uom::si::{
     pressure::bar,
     thermodynamic_temperature::degree_celsius,
 };
+
 pub mod act;
 pub mod api;
 pub mod mitsubishi_cs80;
@@ -79,6 +84,15 @@ pub struct ExtruderV2 {
 
 impl ExtruderV2 {
     pub fn build_state_event(&mut self) -> StateEvent {
+        let fault = match self.screw_speed_controller.get_last_fault() {
+            Some(fault) => Some(FaultState {
+                fault_code: fault.fault_code.into(),
+                fault_description: fault.fault_description,
+                time_stamp: fault.ts,
+            }),
+            None => None,
+        };
+
         StateEvent {
             is_default_state: !std::mem::replace(&mut self.emitted_default_state, true),
             rotation_state: RotationState {
@@ -156,6 +170,7 @@ impl ExtruderV2 {
                 output_frequency_detection: self.screw_speed_controller.inverter.status.fu,
                 abc_fault: self.screw_speed_controller.inverter.status.abc_,
                 fault_occurence: self.screw_speed_controller.inverter.status.fault_occurence,
+                fault,
             },
             pid_settings: PidSettingsStates {
                 temperature: PidSettings {
@@ -252,8 +267,108 @@ impl ExtruderV2 {
     }
 
     pub fn emit_state(&mut self) {
-        let state = self.build_state_event();
-        self.last_state_event = Some(state.clone());
+        let fault = match self.screw_speed_controller.get_last_fault() {
+            Some(fault) => Some(FaultState {
+                fault_code: fault.fault_code.into(),
+                fault_description: fault.fault_description,
+                time_stamp: fault.ts,
+            }),
+            None => None,
+        };
+
+        let state = StateEvent {
+            is_default_state: !std::mem::replace(&mut self.emitted_default_state, true),
+            rotation_state: RotationState {
+                forward: self.screw_speed_controller.get_rotation_direction(),
+            },
+            mode_state: ModeState {
+                mode: self.mode.clone(),
+            },
+            regulation_state: RegulationState {
+                uses_rpm: self.screw_speed_controller.get_uses_rpm(),
+            },
+            pressure_state: PressureState {
+                target_bar: self
+                    .screw_speed_controller
+                    .get_target_pressure()
+                    .get::<bar>(),
+                wiring_error: self.screw_speed_controller.get_wiring_error(),
+            },
+            screw_state: ScrewState {
+                target_rpm: self
+                    .screw_speed_controller
+                    .get_target_rpm()
+                    .get::<revolution_per_minute>(),
+            },
+            heating_states: HeatingStates {
+                nozzle: HeatingState {
+                    target_temperature: self
+                        .temperature_controller_nozzle
+                        .heating
+                        .target_temperature
+                        .get::<degree_celsius>(),
+                    wiring_error: self.temperature_controller_nozzle.heating.wiring_error,
+                },
+                front: HeatingState {
+                    target_temperature: self
+                        .temperature_controller_front
+                        .heating
+                        .target_temperature
+                        .get::<degree_celsius>(),
+                    wiring_error: self.temperature_controller_front.heating.wiring_error,
+                },
+                back: HeatingState {
+                    target_temperature: self
+                        .temperature_controller_back
+                        .heating
+                        .target_temperature
+                        .get::<degree_celsius>(),
+                    wiring_error: self.temperature_controller_back.heating.wiring_error,
+                },
+                middle: HeatingState {
+                    target_temperature: self
+                        .temperature_controller_middle
+                        .heating
+                        .target_temperature
+                        .get::<degree_celsius>(),
+                    wiring_error: self.temperature_controller_middle.heating.wiring_error,
+                },
+            },
+            extruder_settings_state: ExtruderSettingsState {
+                pressure_limit: self
+                    .screw_speed_controller
+                    .get_nozzle_pressure_limit()
+                    .get::<bar>(),
+                pressure_limit_enabled: self
+                    .screw_speed_controller
+                    .get_nozzle_pressure_limit_enabled(),
+            },
+            inverter_status_state: InverterStatusState {
+                running: self.screw_speed_controller.inverter.status.running,
+                forward_running: self.screw_speed_controller.inverter.status.forward_running,
+                reverse_running: self.screw_speed_controller.inverter.status.reverse_running,
+                up_to_frequency: self.screw_speed_controller.inverter.status.su,
+                overload_warning: self.screw_speed_controller.inverter.status.ol,
+                no_function: self.screw_speed_controller.inverter.status.no_function,
+                output_frequency_detection: self.screw_speed_controller.inverter.status.fu,
+                abc_fault: self.screw_speed_controller.inverter.status.abc_,
+                fault_occurence: self.screw_speed_controller.inverter.status.fault_occurence,
+                fault: fault,
+            },
+            pid_settings: PidSettingsStates {
+                temperature: PidSettings {
+                    ki: 0.0, // TODO: Add temperature PID settings when available
+                    kp: 0.0,
+                    kd: 0.0,
+                },
+                pressure: PidSettings {
+                    ki: self.screw_speed_controller.pid.get_ki(),
+                    kp: self.screw_speed_controller.pid.get_kp(),
+                    kd: self.screw_speed_controller.pid.get_kd(),
+                },
+            },
+        };
+
         let event = state.build();
         self.namespace.emit(ExtruderV2Events::State(event));
     }

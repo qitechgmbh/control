@@ -15,6 +15,8 @@ use uom::si::{
     pressure::bar,
 };
 
+use crate::machines::extruder1::mitsubishi_cs80::Fault;
+
 use super::mitsubishi_cs80::{MitsubishiCS80, MotorStatus};
 
 #[derive(Debug)]
@@ -23,15 +25,21 @@ pub struct ScrewSpeedController {
     pub target_pressure: Pressure,
     pub target_rpm: AngularVelocity,
     pub inverter: MitsubishiCS80,
+
     pressure_sensor: AnalogInput,
     last_update: Instant,
+
     uses_rpm: bool,
     forward_rotation: bool,
+
     transmission: FixedTransmission,
     frequency: Frequency,
+
     maximum_frequency: Frequency,
     minimum_frequency: Frequency,
+
     motor_on: bool,
+
     nozzle_pressure_limit: Pressure,
     nozzle_pressure_limit_enabled: bool,
 }
@@ -61,6 +69,14 @@ impl ScrewSpeedController {
             frequency: Frequency::new::<hertz>(0.0),
             maximum_frequency: Frequency::new::<hertz>(60.0),
             minimum_frequency: Frequency::new::<hertz>(0.0),
+        }
+    }
+
+    pub fn get_last_fault(&mut self) -> Option<Fault> {
+        if self.inverter.status.fault_occurence {
+            return self.inverter.last_fault.clone();
+        } else {
+            return None;
         }
     }
 
@@ -200,18 +216,18 @@ impl ScrewSpeedController {
         return Pressure::new::<bar>(actual_pressure);
     }
 
+    /// check if current pressure exceeds our limit if enabled
+    pub fn check_pressure_exceed_limit(&mut self, pressure: Pressure) -> bool {
+        return (pressure >= self.nozzle_pressure_limit)
+            && self.nozzle_pressure_limit_enabled
+            && self.motor_on;
+    }
+
     pub fn update(&mut self, now: Instant, is_extruding: bool) {
-        // TODO: move this logic elsewhere or make non async
         block_on(self.inverter.act(now));
 
-        let wiring_error = self.get_wiring_error();
-        if wiring_error {
-            // emit in act
-        }
-
         let measured_pressure = self.get_pressure();
-
-        if !self.uses_rpm && !is_extruding && self.motor_on {
+        if !self.uses_rpm && !is_extruding {
             let frequency = Frequency::new::<hertz>(0.0);
             self.inverter.set_frequency_target(frequency);
             self.turn_motor_off();
@@ -219,20 +235,17 @@ impl ScrewSpeedController {
             return;
         }
 
-        if (measured_pressure >= self.nozzle_pressure_limit)
-            && self.nozzle_pressure_limit_enabled
-            && self.motor_on
-        {
+        if self.check_pressure_exceed_limit(measured_pressure) {
             self.turn_motor_off();
             self.last_update = now;
             return;
         }
 
-        if is_extruding == true && self.motor_on == false {
+        if is_extruding && !self.motor_on {
             self.turn_motor_on();
         }
 
-        if !self.uses_rpm && is_extruding == true {
+        if !self.uses_rpm && is_extruding {
             let error = self.target_pressure - measured_pressure;
             let freq_change = self.pid.update(error.get::<bar>(), now);
 

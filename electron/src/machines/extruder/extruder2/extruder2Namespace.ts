@@ -100,6 +100,15 @@ export const heatingStatesSchema = z.object({
   back: heatingStateSchema,
   middle: heatingStateSchema,
 });
+// pub fault_code: FaultCode,
+// pub fault_description: String,
+// pub ts: Instant,
+
+export const faultStateSchema = z.object({
+  fault_code: z.number(),
+  fault_description: z.string(),
+  time_stamp: z.number(),
+});
 
 /**
  * Extruder settings state schema
@@ -113,6 +122,7 @@ export const extruderSettingsStateSchema = z.object({
  * Inverter status state schema
  */
 export const inverterStatusStateSchema = z.object({
+  fault: faultStateSchema,
   running: z.boolean(),
   forward_running: z.boolean(),
   reverse_running: z.boolean(),
