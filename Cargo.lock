@@ -581,6 +581,7 @@ dependencies = [
  "approx",
  "axum",
  "bitvec",
+ "control_core_derive",
  "core_affinity",
  "crc",
  "erased-serde",
@@ -597,6 +598,15 @@ dependencies = [
  "textplots",
  "tracing",
  "uom",
+]
+
+[[package]]
+name = "control_core_derive"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.105",
 ]
 
 [[package]]
@@ -2687,6 +2697,7 @@ dependencies = [
  "axum",
  "bitvec",
  "control_core",
+ "control_core_derive",
  "crc",
  "dhat",
  "ethercat_hal",
