@@ -666,8 +666,7 @@ export function useWinder2() {
   // Get selected machine by serial
   const selectedMachine = useMemo(() => {
     const serial =
-      state?.data.connected_laser_state?.machine_identification_unique
-        ?.serial;
+      state?.data.connected_laser_state?.machine_identification_unique?.serial;
 
     return (
       filteredMachines.find(
