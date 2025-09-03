@@ -3,15 +3,12 @@ use control_core::controllers::pid::PidController;
 use ethercat_hal::io::{
     analog_output::AnalogOutput, digital_output::DigitalOutput, temperature_input::TemperatureInput,
 };
+use serde::de::value;
 use std::{
     sync::{Arc, RwLock},
     time::{Duration, Instant},
 };
-use uom::si::{
-    f64::{ThermodynamicTemperature, VolumeRate},
-    thermodynamic_temperature::degree_celsius,
-    volume_rate::liter_per_minute,
-};
+use uom::si::{f64::ThermodynamicTemperature, thermodynamic_temperature::degree_celsius};
 
 #[derive(Debug)]
 
@@ -26,6 +23,7 @@ pub struct TemperatureController {
     pub flow: Arc<RwLock<Flow>>,
     pub target_temperature: ThermodynamicTemperature,
     pub current_temperature: ThermodynamicTemperature,
+    pub temp_reservoir: ThermodynamicTemperature,
     pub min_temperature: ThermodynamicTemperature,
     pub max_temperature: ThermodynamicTemperature,
 
@@ -34,6 +32,9 @@ pub struct TemperatureController {
 
     pub heating_relais_1: DigitalOutput,
     pub heating_relais_2: DigitalOutput,
+
+    pub temp_sensor_in: TemperatureInput,
+    pub temp_sensor_out: TemperatureInput,
 
     pub cooling_allowed: bool,
     pub heating_allowed: bool,
@@ -75,6 +76,8 @@ impl TemperatureController {
         cooling_relais: DigitalOutput,
         heating_relais_1: DigitalOutput,
         heating_relais_2: DigitalOutput,
+        temp_sensor_in: TemperatureInput,
+        temp_sensor_out: TemperatureInput,
     ) -> Self {
         Self {
             pid: PidController::new(kp, ki, kd),
@@ -83,6 +86,7 @@ impl TemperatureController {
             pwm_period: pwm_duration,
             target_temperature: target_tempetature,
             current_temperature: ThermodynamicTemperature::new::<degree_celsius>(25.0),
+            temp_reservoir: ThermodynamicTemperature::new::<degree_celsius>(25.0),
             min_temperature: ThermodynamicTemperature::new::<degree_celsius>(10.0),
             max_temperature: ThermodynamicTemperature::new::<degree_celsius>(50.0),
 
@@ -94,6 +98,8 @@ impl TemperatureController {
             heating_relais_2: heating_relais_2,
             cooling_allowed: false,
             heating_allowed: false,
+            temp_sensor_in: temp_sensor_in,
+            temp_sensor_out: temp_sensor_out,
         }
     }
 
@@ -103,6 +109,22 @@ impl TemperatureController {
     pub fn set_target_temperature(&mut self, temperature: ThermodynamicTemperature) {
         self.reset_pid();
         self.target_temperature = temperature;
+    }
+
+    pub fn get_temp_in(&mut self) -> ThermodynamicTemperature {
+        let temp = self.temp_sensor_in.get_temperature();
+        match temp {
+            Ok(value) => ThermodynamicTemperature::new::<degree_celsius>(value),
+            Err(_) => ThermodynamicTemperature::new::<degree_celsius>(0.0),
+        }
+    }
+
+    pub fn get_temp_out(&mut self) -> ThermodynamicTemperature {
+        let temp = self.temp_sensor_out.get_temperature();
+        match temp {
+            Ok(value) => ThermodynamicTemperature::new::<degree_celsius>(value),
+            Err(_) => ThermodynamicTemperature::new::<degree_celsius>(0.0),
+        }
     }
 
     pub fn disallow_cooling(&mut self) {
@@ -146,11 +168,8 @@ impl TemperatureController {
     }
 
     pub fn update(&mut self, now: Instant) -> () {
-        // if !self.flow.pump {
-        //     self.disallow_heating();
-        // } else {
-        //     self.allow_heating();
-        // }
+        self.current_temperature = self.get_temp_in();
+        self.temp_reservoir = self.get_temp_out();
         if self.current_temperature < self.min_temperature {
             self.turn_cooling_off();
             return;
