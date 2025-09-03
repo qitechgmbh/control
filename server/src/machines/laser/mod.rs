@@ -14,6 +14,7 @@ use control_core::{
 use futures::executor::block_on;
 use smol::lock::Mutex;
 use smol::lock::RwLock;
+use tracing::info;
 use std::{
     any::Any,
     sync::{Arc, Weak},
@@ -202,13 +203,13 @@ impl LaserMachine {
             machine_identification_unique.machine_identification,
             Winder2::MACHINE_IDENTIFICATION
         ) {
-            info!("Setting Connected Winder  | did not match ID");
+            info!("Setting Connected Winder | did not match ID");
             return;
         }
         let machine_manager_arc = match self.machine_manager.upgrade() {
             Some(machine_manager_arc) => machine_manager_arc,
             None => {
-                info!("Setting Connected Winder  | Failed to upgrade machine manager");
+                info!("Setting Connected Winder | Failed to upgrade machine manager");
                 return
             },
         };
@@ -217,14 +218,14 @@ impl LaserMachine {
         let winder2_weak = match winder2_weak {
             Some(winder2_weak) => winder2_weak,
             None => {
-                info!("Setting Connected Winder  | Failed to get machine weak");
+                info!("Setting Connected Winder | Failed to get machine weak");
                 return
             },
         };
         let winder2_strong = match winder2_weak.upgrade() {
             Some(winder2_strong) => winder2_strong,
             None => {
-                info!("Setting Connected Winder  | Failed to upgrade to strong");
+                info!("Setting Connected Winder | Failed to upgrade to strong");
                 return
             },
         };
