@@ -1,10 +1,14 @@
+use anyhow::anyhow;
 use bitvec::{order::Lsb0, slice::BitSlice};
 use control_core::modbus::{
     ModbusFunctionCode, ModbusRequest, ModbusResponse,
     modbus_serial_interface::ModbusSerialInterface,
 };
 use ethercat_hal::io::serial_interface::SerialInterface;
-use std::time::{Duration, Instant};
+use std::{
+    error::Error,
+    time::{Duration, Instant, SystemTime, UNIX_EPOCH},
+};
 use uom::si::{
     electric_current::centiampere,
     electric_potential::centivolt,
@@ -36,6 +40,8 @@ enum MitsubishiCS80Register {
     //RunningFrequencyEEPROM,
     /// Register 40201
     MotorStatus,
+    /// Register 40501
+    FaultHistory,
 }
 
 impl MitsubishiCS80Register {
@@ -45,6 +51,7 @@ impl MitsubishiCS80Register {
             Self::InverterStatusAndControl => 0x8,
             Self::RunningFrequencyRAM => 0x0d,
             Self::MotorStatus => 0x00C8, // a0x00C8 = frequency , 0x00C9 = current ,0x00C10 = voltage
+            Self::FaultHistory => 0x01F4,
         }
     }
 
@@ -54,35 +61,39 @@ impl MitsubishiCS80Register {
 }
 
 /// These Requests Serve as Templates for controlling the inverter
+/// i added None = 0 ... and so on  so its clearer how the impl From works
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum MitsubishiCS80Requests {
-    None,
+    None = 0,
     /// Register 40002, Reset/Restart the Inverter
-    ResetInverter,
+    ResetInverter = 1,
     /// Register 40004, Clear ALL parameters
-    ClearAllParameters,
+    ClearAllParameters = 2,
     /// Register 40006, Clear a non communication parameter
-    ClearNonCommunicationParameter,
+    ClearNonCommunicationParameter = 3,
     /// Register 40007, Clear all Non Communication related Parameters
-    ClearNonCommunicationParameters,
+    ClearNonCommunicationParameters = 4,
     /// Register 40009, Read Inverter Status
-    ReadInverterStatus,
+    ReadInverterStatus = 5,
     /// Register 40009, Stops the Motor
-    StopMotor,
+    StopMotor = 6,
     /// Register 40009, Starts the Motor in Forward Rotation
-    StartForwardRotation,
+    StartForwardRotation = 7,
     /// Register 40009, Starts the Motor in Reverse Rotation
-    StartReverseRotation,
+    StartReverseRotation = 8,
     /// Register 40014, Read the current frequency the motor runs at (RAM)
-    ReadRunningFrequency,
+    ReadRunningFrequency = 9,
     /// Register 40014, Write the frequency
-    WriteRunningFrequency,
+    WriteRunningFrequency = 10,
     /// Read Register 40201, 40202 and 40203 frequency,current and voltage
-    ReadMotorStatus,
+    ReadMotorStatus = 11,
     /// Write "Arbitrary" Parameters
-    WriteParameter,
+    WriteParameter = 12,
+    /// Read Last 3 Inverter Faults (including the current one)
+    ReadFaults = 13,
 }
 
+/// None = 0, ResetInverter = 1 ... like its defined in the enum
 impl From<MitsubishiCS80Requests> for u32 {
     fn from(request: MitsubishiCS80Requests) -> Self {
         request as u32
@@ -107,6 +118,7 @@ impl TryFrom<u32> for MitsubishiCS80Requests {
             10 => Ok(Self::WriteRunningFrequency),
             11 => Ok(Self::ReadMotorStatus),
             12 => Ok(Self::WriteParameter),
+            13 => Ok(Self::ReadFaults),
             _ => Err(()),
         }
     }
@@ -244,6 +256,19 @@ impl From<MitsubishiCS80Requests> for MitsubishiCS80Request {
                 RequestType::ReadWrite,
                 u16::MAX,
             ),
+            MitsubishiCS80Requests::ReadFaults => {
+                let reg_bytes = MitsubishiCS80Register::FaultHistory.address_be_bytes();
+                Self::new(
+                    ModbusRequest {
+                        slave_id: 1,
+                        function_code: ModbusFunctionCode::ReadHoldingRegister,
+                        data: vec![reg_bytes[0], reg_bytes[1], 0x0, 0x3], // read 3 registers
+                    },
+                    request,
+                    RequestType::OperationCommand,
+                    u16::MAX, // MAX because we want it to be sent asap when it is added to the "queue"
+                )
+            }
 
             // For unimplemented variants, return a default request
             _ => Self::new(
@@ -281,6 +306,167 @@ pub struct MotorStatus {
     pub voltage: ElectricPotential,
 }
 
+#[derive(Debug, Clone)]
+pub enum FaultCode {
+    ExcessivePressure = 0x9, // This is a custom FaultCode for our Pressure limit
+    OvercurrentTripAcceleration = 0x10,
+    OvercurrentTripConstSpeed = 0x11,
+    OvercurrentTripDeceleration = 0x12,
+    RegenerativeOvervoltageTripAcceleration = 0x20,
+    RegenerativeOvervoltageTripConstSpeed = 0x21,
+    RegenerativeOvervoltageTripDeceleration = 0x22,
+    InverterOverloadTrip = 0x30, // electronic thermal O/L
+    MotorOverloadTrip = 0x31, // electronic thermal O/L, not really sure what the difference is ...
+    HeatsinkOverheat = 0x40,
+    Undervoltage = 0x51,
+    InputPhaseLoss = 0x52,
+    StallPreventionStop = 0x60,
+    OutputSideEarthFaulOverCurrent = 0x80,
+    OutputPhaseLoss = 0x81,
+    ExternalThermalRelayOperation = 0x90,
+    ParamStorageFault1 = 0xb0,
+    ParamStorageFault2 = 0xb3,
+    ParamUnitDisconnect = 0xb1,
+    RetryCountExcess = 0xb2,
+    CPUFAULT1 = 0xc0,
+    CPUFAULT2 = 0xf5,
+    AbnormalOutputCurrentDetection = 0xc4,
+    InrushCurrentLimitCircuitFault = 0xc5,
+    FourMilliAmpereInputFault = 0xe4,
+    InverterOutputFault = 0xfa,
+}
+
+impl From<FaultCode> for u16 {
+    fn from(fault: FaultCode) -> Self {
+        fault as u16
+    }
+}
+
+impl TryFrom<u16> for FaultCode {
+    type Error = anyhow::Error;
+
+    fn try_from(value: u16) -> Result<Self, Self::Error> {
+        match value {
+            0x9 => Ok(FaultCode::ExcessivePressure),
+            0x10 => Ok(FaultCode::OvercurrentTripAcceleration),
+            0x11 => Ok(FaultCode::OvercurrentTripConstSpeed),
+            0x12 => Ok(FaultCode::OvercurrentTripDeceleration),
+            0x20 => Ok(FaultCode::RegenerativeOvervoltageTripAcceleration),
+            0x21 => Ok(FaultCode::RegenerativeOvervoltageTripConstSpeed),
+            0x22 => Ok(FaultCode::RegenerativeOvervoltageTripDeceleration),
+            0x30 => Ok(FaultCode::InverterOverloadTrip),
+            0x31 => Ok(FaultCode::MotorOverloadTrip),
+            0x40 => Ok(FaultCode::HeatsinkOverheat),
+            0x51 => Ok(FaultCode::Undervoltage),
+            0x52 => Ok(FaultCode::InputPhaseLoss),
+            0x60 => Ok(FaultCode::StallPreventionStop),
+            0x80 => Ok(FaultCode::OutputSideEarthFaulOverCurrent),
+            0x81 => Ok(FaultCode::OutputPhaseLoss),
+            0x90 => Ok(FaultCode::ExternalThermalRelayOperation),
+            0xb0 => Ok(FaultCode::ParamStorageFault1),
+            0xb1 => Ok(FaultCode::ParamUnitDisconnect),
+            0xb2 => Ok(FaultCode::RetryCountExcess),
+            0xb3 => Ok(FaultCode::ParamStorageFault2),
+            0xc0 => Ok(FaultCode::CPUFAULT1),
+            0xc4 => Ok(FaultCode::AbnormalOutputCurrentDetection),
+            0xc5 => Ok(FaultCode::InrushCurrentLimitCircuitFault),
+            0xe4 => Ok(FaultCode::FourMilliAmpereInputFault),
+            0xf5 => Ok(FaultCode::CPUFAULT2),
+            0xfa => Ok(FaultCode::InverterOutputFault),
+            _ => Err(anyhow::anyhow!(
+                "FAULTCODE IS UNKNOWN! Could indicate a defect"
+            )),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct Fault {
+    pub fault_code: FaultCode,
+    pub fault_description: String,
+    pub ts: u64,
+}
+
+impl FaultCode {
+    fn description(&self) -> String {
+        match self {
+            FaultCode::ExcessivePressure => {
+                "Pressure exceeds limit, try more heat or less rpm".to_owned()
+            }
+            FaultCode::OvercurrentTripAcceleration => {
+                "Overcurrent trip during acceleration".to_owned()
+            }
+            FaultCode::OvercurrentTripConstSpeed => {
+                "Overcurrent trip during constant speed".to_owned()
+            }
+            FaultCode::OvercurrentTripDeceleration => {
+                "Overcurrent trip during deceleration or stop".to_owned()
+            }
+            FaultCode::RegenerativeOvervoltageTripAcceleration => {
+                "Regenerative overvoltage trip during acceleration".to_owned()
+            }
+            FaultCode::RegenerativeOvervoltageTripConstSpeed => {
+                "Regenerative overvoltage trip during constant speed".to_owned()
+            }
+            FaultCode::RegenerativeOvervoltageTripDeceleration => {
+                "Regenerative overvoltage trip during deceleration or stop".to_owned()
+            }
+            FaultCode::InverterOverloadTrip => {
+                "Inverter overload trip (electronic thermal O/L)".to_owned()
+            }
+            FaultCode::MotorOverloadTrip => {
+                "Motor overload trip (electronic thermal O/L)".to_owned()
+            }
+            FaultCode::HeatsinkOverheat => "Heatsink overheat".to_owned(),
+            FaultCode::Undervoltage => "Undervoltage".to_owned(),
+            FaultCode::InputPhaseLoss => "Input phase loss".to_owned(),
+            FaultCode::StallPreventionStop => "Stall prevention stop".to_owned(),
+            FaultCode::OutputSideEarthFaulOverCurrent => {
+                "Output side earth (ground) fault overcurrent".to_owned()
+            }
+            FaultCode::OutputPhaseLoss => "Output phase loss".to_owned(),
+            FaultCode::ExternalThermalRelayOperation => {
+                "External thermal relay operation".to_owned()
+            }
+            FaultCode::ParamStorageFault1 => "Parameter storage device fault".to_owned(),
+            FaultCode::ParamStorageFault2 => "Parameter storage device fault".to_owned(),
+            FaultCode::ParamUnitDisconnect => "PU disconnection".to_owned(),
+            FaultCode::RetryCountExcess => "Retry count excess".to_owned(),
+            FaultCode::CPUFAULT1 => "CPU fault".to_owned(),
+            FaultCode::CPUFAULT2 => "CPU fault".to_owned(),
+            FaultCode::AbnormalOutputCurrentDetection => {
+                "Abnormal output current detection".to_owned()
+            }
+            FaultCode::InrushCurrentLimitCircuitFault => {
+                "Inrush current limit circuit fault".to_owned()
+            }
+            FaultCode::FourMilliAmpereInputFault => "4 mA input fault".to_owned(),
+            FaultCode::InverterOutputFault => "Inverter output fault".to_owned(),
+
+            _ => "UNKNOWN INVERTER FAULT".to_owned(),
+        }
+    }
+}
+
+pub fn build_fault(fault_code: u16) -> Option<Fault> {
+    let fault_code: Result<FaultCode, anyhow::Error> = fault_code.try_into();
+    let fault_code = match fault_code {
+        Ok(fault_code) => fault_code,
+        Err(_) => return None,
+    };
+    let fault_description = fault_code.description();
+    let fault = Fault {
+        fault_code,
+        fault_description,
+        ts: SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_millis() as u64,
+    };
+
+    return Some(fault);
+}
+
 #[derive(Debug)]
 pub struct MitsubishiCS80 {
     // Communication
@@ -288,6 +474,7 @@ pub struct MitsubishiCS80 {
     pub motor_status: MotorStatus,
     pub modbus_serial_interface: ModbusSerialInterface,
     pub last_ts: Instant,
+    pub last_fault: Option<Fault>,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -347,6 +534,7 @@ impl MitsubishiCS80 {
             last_ts: Instant::now(),
             motor_status: MotorStatus::default(),
             status: MitsubishiCS80Status::default(),
+            last_fault: None,
         }
     }
 
@@ -379,19 +567,36 @@ impl MitsubishiCS80 {
         };
 
         let bits: &BitSlice<u8, Lsb0> = BitSlice::<_, Lsb0>::from_slice(&status_bytes);
-        if bits.len() >= 16 {
-            self.status = MitsubishiCS80Status {
-                fault_occurence: bits[7],
-                running: bits[8],
-                forward_running: bits[9],
-                reverse_running: bits[10],
-                su: bits[11],
-                ol: bits[12],
-                no_function: bits[13],
-                fu: bits[14],
-                abc_: bits[15],
-            };
+        if bits.len() < 16 {
+            return;
         }
+
+        self.status = MitsubishiCS80Status {
+            fault_occurence: bits[7],
+            running: bits[8],
+            forward_running: bits[9],
+            reverse_running: bits[10],
+            su: bits[11],
+            ol: bits[12],
+            no_function: bits[13],
+            fu: bits[14],
+            abc_: bits[15],
+        };
+
+        if self.status.fault_occurence {
+            // add request to check the specific fault
+            self.add_request(MitsubishiCS80Requests::ReadFaults.into());
+        }
+    }
+
+    fn handle_read_fault(&mut self, resp: &ModbusResponse) {
+        if resp.data[0] % 2 == 1 {
+            // if data length is odd, dont continue
+            return;
+        }
+        let fault_code = u16::from_le_bytes([resp.data[1], resp.data[2]]);
+        let fault = build_fault(fault_code);
+        self.last_fault = fault;
     }
 
     fn handle_response(&mut self, control_request_type: u32) {
@@ -406,11 +611,11 @@ impl MitsubishiCS80 {
 
         match response_type {
             MitsubishiCS80Requests::ReadInverterStatus => {
-                self.handle_read_inverter_status(&response);
+                self.handle_read_inverter_status(&response)
             }
-            MitsubishiCS80Requests::ReadMotorStatus => {
-                self.handle_motor_status(&response);
-            }
+            MitsubishiCS80Requests::ReadMotorStatus => self.handle_motor_status(&response),
+            MitsubishiCS80Requests::ReadFaults => self.handle_read_fault(&response),
+
             // Other request types don't need response handling
             _ => {}
         }
@@ -474,8 +679,10 @@ impl MitsubishiCS80 {
             return;
         }
 
-        self.add_request(MitsubishiCS80Requests::ReadInverterStatus.into());
-        self.add_request(MitsubishiCS80Requests::ReadMotorStatus.into());
+        // self.add_request(MitsubishiCS80Requests::ReadInverterStatus.into());
+        // self.add_request(MitsubishiCS80Requests::ReadMotorStatus.into());
+        self.add_request(MitsubishiCS80Requests::ReadFaults.into());
+
         self.modbus_serial_interface.act(now).await;
         self.handle_response(self.modbus_serial_interface.last_message_id);
     }
