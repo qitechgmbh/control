@@ -288,7 +288,7 @@ export function Winder2ControlPage() {
               <MachineSelector
                 machines={filteredMachines}
                 selectedMachine={selectedMachine}
-                connectedMachineState={state?.connected_machine_state}
+                connectedMachineState={state?.connected_laser_state}
                 setConnectedMachine={setConnectedLaser}
                 clearConnectedMachine={() => {
                   if (!selectedMachine) return;
