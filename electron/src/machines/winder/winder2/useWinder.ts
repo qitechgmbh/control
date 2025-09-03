@@ -183,6 +183,17 @@ export function useWinder2() {
     }),
   );
 
+  const { request: requestSpeedPidSettings } = useMachineMutation(
+    z.object({
+      SetSpeedPidSettings: z.object({
+        ki: z.number(),
+        kp: z.number(),
+        kd: z.number(),
+        dead: z.number(),
+      }),
+    }),
+  );
+
   // Helper function for optimistic updates using produce
   const updateStateOptimistically = (
     producer: (current: StateEvent) => void,
@@ -562,6 +573,99 @@ export function useWinder2() {
     );
   };
 
+  const setSpeedPidKp = (kp: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.pid_settings.speed.kp = kp;
+      },
+      () => {
+        const currentState = stateOptimistic.value;
+        if (currentState) {
+          const settings = produce(
+            currentState.data.pid_settings.speed,
+            (draft) => {
+              draft.kp = kp;
+            },
+          );
+          requestSpeedPidSettings({
+            machine_identification_unique,
+            data: { SetSpeedPidSettings: settings },
+          });
+        }
+      },
+    );
+  };
+
+  const setSpeedPidKi = (ki: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.pid_settings.speed.ki = ki;
+      },
+      () => {
+        const currentState = stateOptimistic.value;
+        if (currentState) {
+          const settings = produce(
+            currentState.data.pid_settings.speed,
+            (draft) => {
+              draft.ki = ki;
+            },
+          );
+          requestSpeedPidSettings({
+            machine_identification_unique,
+            data: { SetSpeedPidSettings: settings },
+          });
+        }
+      },
+    );
+  };
+
+  const setSpeedPidKd = (kd: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.pid_settings.speed.kd = kd;
+      },
+      () => {
+        const currentState = stateOptimistic.value;
+        if (currentState) {
+          const settings = produce(
+            currentState.data.pid_settings.speed,
+            (draft) => {
+              draft.kd = kd;
+            },
+          );
+          requestSpeedPidSettings({
+            machine_identification_unique,
+            data: { SetSpeedPidSettings: settings },
+          });
+        }
+      },
+    );
+  };
+
+  const setSpeedPidDead = (dead: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.pid_settings.speed.dead = dead;
+      },
+      () => {
+        const currentState = stateOptimistic.value;
+        if (currentState) {
+          const settings = produce(
+            currentState.data.pid_settings.speed,
+            (draft) => {
+              draft.dead = dead;
+            },
+          );
+          requestSpeedPidSettings({
+            machine_identification_unique,
+            data: { SetSpeedPidSettings: settings },
+          });
+        }
+      },
+    );
+  };
+
+
   const setConnectedLaser = (machineIdentificationUnique: {
     machine_identification: {
       vendor: number;
@@ -679,6 +783,10 @@ export function useWinder2() {
     setSpoolAdaptiveMaxSpeedMultiplier,
     setSpoolAdaptiveAccelerationFactor,
     setSpoolAdaptiveDeaccelerationUrgencyMultiplier,
+    setSpeedPidKp,
+    setSpeedPidKi,
+    setSpeedPidKd,
+    setSpeedPidDead,
     setConnectedMachine,
     disconnectMachine,
     setConnectedLaser,
