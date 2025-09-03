@@ -122,7 +122,7 @@ export const extruderSettingsStateSchema = z.object({
  * Inverter status state schema
  */
 export const inverterStatusStateSchema = z.object({
-  fault: faultStateSchema,
+  fault: faultStateSchema.nullable(),
   running: z.boolean(),
   forward_running: z.boolean(),
   reverse_running: z.boolean(),

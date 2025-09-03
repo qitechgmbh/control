@@ -121,8 +121,8 @@ export function Extruder2ControlPage() {
           ) : state?.inverter_status_state.fault_occurence == true &&
             state?.inverter_status_state.fault ? (
             <StatusBadge variant="error">
-              "Inverter stopped:"
-              state?.inverter_status_state.fault.fault_description
+              Inverter stopped:
+              {state?.inverter_status_state.fault?.fault_description}
             </StatusBadge>
           ) : state?.inverter_status_state.running == true &&
             state.inverter_status_state.fault_occurence == false ? (
