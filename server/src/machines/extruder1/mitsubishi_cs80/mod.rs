@@ -589,11 +589,24 @@ impl MitsubishiCS80 {
 
     fn handle_read_fault(&mut self, resp: &ModbusResponse) {
         if resp.data[0] % 2 == 1 {
+            tracing::error!(
+                "[{}::handle_read_fault] invalid fault data received",
+                module_path!()
+            );
+
             // if data length is odd, dont continue
             return;
         }
-        let fault_code = u16::from_le_bytes([resp.data[1], resp.data[2]]);
+
+        let fault_code = u16::from_be_bytes([resp.data[1], resp.data[2]]);
         let fault = build_fault(fault_code);
+
+        if !fault.is_none() {
+            tracing::info!(
+                "inverter fault occured: {}",
+                &fault.clone().unwrap().fault_description,
+            );
+        }
         self.last_fault = fault;
     }
 

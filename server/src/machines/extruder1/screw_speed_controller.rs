@@ -73,11 +73,7 @@ impl ScrewSpeedController {
     }
 
     pub fn get_last_fault(&mut self) -> Option<Fault> {
-        if self.inverter.status.fault_occurence {
-            return self.inverter.last_fault.clone();
-        } else {
-            return None;
-        }
+        return self.inverter.last_fault.clone();
     }
 
     pub fn get_motor_enabled(&mut self) -> bool {
