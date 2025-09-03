@@ -92,6 +92,25 @@ impl LaserMachine {
         StateEvent {
             is_default_state: false,
             laser_state: laser,
+            connected_winder_state: ConnectedMachineState {
+                machine_identification_unique: self.connected_winder.as_ref().map(
+                    |connected_machine| {
+                        ConnectedMachineData::from(connected_machine)
+                            .machine_identification_unique
+                            .clone()
+                    },
+                ),
+                is_available: self
+                    .connected_winder
+                    .as_ref()
+                    .map(|connected_machine| {
+                        ConnectedMachineData::from(connected_machine).is_available
+                    })
+                    .unwrap_or(false),
+            },
+            pid_settings: PidSettingsStates {
+                speed: self.pid_settings.clone(),
+            },
         }
     }
 
