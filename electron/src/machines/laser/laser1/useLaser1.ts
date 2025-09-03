@@ -69,16 +69,6 @@ function useLaser(machine_identification_unique: MachineIdentificationUnique) {
       DisconnectWinder: machineIdentificationUnique,
     }),
   );
-  const { request: requestSpeedPidSettings } = useMachineMutation(
-    z.object({
-      SetSpeedPidSettings: z.object({
-        ki: z.number(),
-        kp: z.number(),
-        kd: z.number(),
-        dead: z.number(),
-      }),
-    }),
-  );
 
   // Action functions with verb-first names
   const setTargetDiameter = (target_diameter: number) => {
@@ -123,98 +113,6 @@ function useLaser(machine_identification_unique: MachineIdentificationUnique) {
             SetHigherTolerance: higher_tolerance,
           },
         }),
-    );
-  };
-
-  const setSpeedPidKp = (kp: number) => {
-    updateStateOptimistically(
-      (current) => {
-        current.data.pid_settings.speed.kp = kp;
-      },
-      () => {
-        const currentState = stateOptimistic.value;
-        if (currentState) {
-          const settings = produce(
-            currentState.data.pid_settings.speed,
-            (draft) => {
-              draft.kp = kp;
-            },
-          );
-          requestSpeedPidSettings({
-            machine_identification_unique,
-            data: { SetSpeedPidSettings: settings },
-          });
-        }
-      },
-    );
-  };
-
-  const setSpeedPidKi = (ki: number) => {
-    updateStateOptimistically(
-      (current) => {
-        current.data.pid_settings.speed.ki = ki;
-      },
-      () => {
-        const currentState = stateOptimistic.value;
-        if (currentState) {
-          const settings = produce(
-            currentState.data.pid_settings.speed,
-            (draft) => {
-              draft.ki = ki;
-            },
-          );
-          requestSpeedPidSettings({
-            machine_identification_unique,
-            data: { SetSpeedPidSettings: settings },
-          });
-        }
-      },
-    );
-  };
-
-  const setSpeedPidKd = (kd: number) => {
-    updateStateOptimistically(
-      (current) => {
-        current.data.pid_settings.speed.kd = kd;
-      },
-      () => {
-        const currentState = stateOptimistic.value;
-        if (currentState) {
-          const settings = produce(
-            currentState.data.pid_settings.speed,
-            (draft) => {
-              draft.kd = kd;
-            },
-          );
-          requestSpeedPidSettings({
-            machine_identification_unique,
-            data: { SetSpeedPidSettings: settings },
-          });
-        }
-      },
-    );
-  };
-
-  const setSpeedPidDead = (dead: number) => {
-    updateStateOptimistically(
-      (current) => {
-        current.data.pid_settings.speed.dead = dead;
-      },
-      () => {
-        const currentState = stateOptimistic.value;
-        if (currentState) {
-          const settings = produce(
-            currentState.data.pid_settings.speed,
-            (draft) => {
-              draft.dead = dead;
-            },
-          );
-          requestSpeedPidSettings({
-            machine_identification_unique,
-            data: { SetSpeedPidSettings: settings },
-          });
-        }
-      },
     );
   };
 
@@ -309,10 +207,6 @@ function useLaser(machine_identification_unique: MachineIdentificationUnique) {
     setTargetDiameter,
     setLowerTolerance,
     setHigherTolerance,
-    setSpeedPidKp,
-    setSpeedPidKi,
-    setSpeedPidKd,
-    setSpeedPidDead,
     setConnectedWinder,
     disconnectWinder,
   };

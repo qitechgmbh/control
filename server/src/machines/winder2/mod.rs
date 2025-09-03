@@ -31,7 +31,6 @@ use puller_speed_controller::PullerSpeedController;
 use smol::lock::RwLock;
 use spool_speed_controller::SpoolSpeedController;
 use tension_arm::TensionArm;
-use tracing::info;
 use traverse_controller::TraverseController;
 use uom::{
     ConstZero,
@@ -76,6 +75,8 @@ pub struct Winder2 {
     // connected machines
     pub connected_buffer: MachineCrossConnection<Winder2, BufferV1>,
     pub connected_laser: Option<ConnectedMachine<Weak<Mutex<LaserMachine>>>>,
+
+    pub pid_settings: PidSettings,
 
     // mode
     pub mode: Winder2Mode,
@@ -329,12 +330,7 @@ impl Winder2 {
                     .unwrap_or(false),
             },
             pid_settings: PidSettingsStates {
-                speed: PidSettings {
-                    ki: 0.1,
-                    kp: 0.0,
-                    kd: 0.2,
-                    dead: 0.0,
-                },
+                speed: self.pid_settings.clone(),
             },
         }
     }
