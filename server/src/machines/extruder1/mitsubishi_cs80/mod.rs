@@ -442,8 +442,6 @@ impl FaultCode {
             }
             FaultCode::FourMilliAmpereInputFault => "4 mA input fault".to_owned(),
             FaultCode::InverterOutputFault => "Inverter output fault".to_owned(),
-
-            _ => "UNKNOWN INVERTER FAULT".to_owned(),
         }
     }
 }
