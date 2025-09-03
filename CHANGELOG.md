@@ -1,3 +1,18 @@
+# `2.6.0`
+_03.09.2025_
+
+## Extruder V2
+- [#658](https://github.com/qitechgmbh/control/pull/658) Added manual
+- [#639](https://github.com/qitechgmbh/control/pull/639) Swapped order of screw speed regulation buttons
+
+
+## Laser V1
+- [#642](https://github.com/qitechgmbh/control/pull/642) Improved stability of laser connection
+
+## General
+- [#657](https://github.com/qitechgmbh/control/pull/657) Time frame for graphs is now remembered
+- [#641](https://github.com/qitechgmbh/control/pull/641) Removed duplicate scrollbar from manuals
+
 # `2.5.0`
 _27.08.2025_
 
