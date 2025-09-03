@@ -92,25 +92,24 @@ export function Laser1SettingsPage() {
               />
             </Label>
           </ControlCard>
-
-          <ControlCard title="Connect Winder">
-            <MachineSelector
-              machines={filteredMachines}
-              selectedMachine={selectedMachine}
-              connectedMachineState={state?.connected_winder_state}
-              setConnectedMachine={setConnectedWinder}
-              clearConnectedMachine={() => {
-                if (!selectedMachine) return;
-                setConnectedWinder({
-                  machine_identification: { vendor: 0, machine: 0 },
-                  serial: 0,
-                });
-                disconnectWinder(selectedMachine.machine_identification_unique);
-              }}
-            />
-          </ControlCard>
         </>
       )}
+      <ControlCard title="Connect Winder">
+        <MachineSelector
+          machines={filteredMachines}
+          selectedMachine={selectedMachine}
+          connectedMachineState={state?.connected_winder_state}
+          setConnectedMachine={setConnectedWinder}
+          clearConnectedMachine={() => {
+            if (!selectedMachine) return;
+            setConnectedWinder({
+              machine_identification: { vendor: 0, machine: 0 },
+              serial: 0,
+            });
+            disconnectWinder(selectedMachine.machine_identification_unique);
+          }}
+        />
+      </ControlCard>
     </Page>
   );
 }
