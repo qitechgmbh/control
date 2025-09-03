@@ -227,6 +227,14 @@ pub struct ModeState {
     pub can_wind: bool,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct PidSettings {
+    pub ki: f64,
+    pub kp: f64,
+    pub kd: f64,
+    pub dead: f64,
+}
+
 #[derive(Serialize, Debug, Clone)]
 pub struct TensionArmState {
     /// is zeroed
@@ -253,6 +261,18 @@ pub struct SpoolSpeedControllerState {
     pub adaptive_deacceleration_urgency_multiplier: f64,
     /// forward rotation direction
     pub forward: bool,
+}
+
+#[derive(Serialize, Debug, Clone)]
+pub struct ConnectedMachineState {
+    /// Connected Machine
+    pub machine_identification_unique: Option<MachineIdentificationUnique>,
+    pub is_available: bool,
+}
+
+#[derive(Serialize, Debug, Clone)]
+pub struct PidSettingsStates {
+    pub speed: PidSettings,
 }
 
 pub enum Winder2Events {

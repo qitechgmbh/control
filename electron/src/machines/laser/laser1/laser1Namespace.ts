@@ -42,18 +42,6 @@ export const connectedMachineStateSchema = z.object({
 });
 
 /**
- * PID settings schema
- */
-export const pidSettingsSchema = z.object({
-  speed: z.object({
-    ki: z.number(),
-    kp: z.number(),
-    kd: z.number(),
-    dead: z.number(),
-  }),
-});
-
-/**
  * Live values from Laser (30 FPS)
  */
 export const liveValuesEventDataSchema = z.object({
@@ -74,7 +62,6 @@ export const stateEventDataSchema = z.object({
     target_diameter: z.number(),
   }),
   connected_winder_state: connectedMachineStateSchema,
-  pid_settings: pidSettingsSchema,
 });
 
 // ========== Event Schemas with Wrappers ==========
