@@ -12,8 +12,6 @@ use crate::machines::aquapath1::Flow;
 pub struct FlowController {
     pub pid: PidController,
     pump_pid_output: f64,
-    window_start: Instant,
-    pwm_period: Duration,
 
     pub flow: Arc<RwLock<Flow>>,
 
@@ -35,7 +33,6 @@ impl FlowController {
         kp: f64,
         ki: f64,
         kd: f64,
-        pwm_duration: Duration,
         flow_sensor: DigitalInput,
         pump_relais: DigitalOutput,
         target_flow: VolumeRate,
@@ -46,8 +43,6 @@ impl FlowController {
             // need to tune
             pid: PidController::new(kp, ki, kd),
             pump_pid_output: 0.0,
-            window_start: Instant::now(),
-            pwm_period: pwm_duration,
             flow: flow,
             last_update: now,
             flow_sensor: flow_sensor,
@@ -136,30 +131,30 @@ impl FlowController {
         }
 
         if self.pump_allowed {
-            let error: f64 =
-                self.target_flow.get::<liter_per_minute>() - current_flow.get::<liter_per_minute>();
+            // let error: f64 =
+            //     self.target_flow.get::<liter_per_minute>() - current_flow.get::<liter_per_minute>();
 
-            let control = self.pid.update(error, now); // PID output
-            // Clamp PID output to 0.0 – 1.0 (as duty cycle)
-            let duty = control.clamp(0.0, 1.0);
+            // let control = self.pid.update(error, now); // PID output
+            // // Clamp PID output to 0.0 – 1.0 (as duty cycle)
+            // let duty = control.clamp(0.0, 1.0);
 
-            self.pump_pid_output = duty;
+            // self.pump_pid_output = duty;
 
-            let elapsed = now.duration_since(self.window_start);
+            // let elapsed = now.duration_since(self.window_start);
 
-            // Restart window if needed
-            if elapsed >= self.pwm_period {
-                self.window_start = now;
-            }
-            // Compare duty cycle to elapsed time
-            let on_time = self.pwm_period.mul_f64(duty);
+            // // Restart window if needed
+            // if elapsed >= self.pwm_period {
+            //     self.window_start = now;
+            // }
+            // // Compare duty cycle to elapsed time
+            // let on_time = self.pwm_period.mul_f64(duty);
 
-            // Relay is ON if within duty cycle window
-            let on = elapsed < on_time;
+            // // Relay is ON if within duty cycle window
+            // let on = elapsed < on_time;
 
-            self.pump_relais.set(on);
+            self.pump_relais.set(true);
             if let Ok(mut flow) = self.flow.write() {
-                flow.pump = on;
+                flow.pump = true;
             }
         }
     }
