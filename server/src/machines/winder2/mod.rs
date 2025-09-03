@@ -40,7 +40,6 @@ use std::{
     time::Instant,
 };
 use tension_arm::TensionArm;
-use tracing::info;
 use traverse_controller::TraverseController;
 use uom::{
     ConstZero,
@@ -53,13 +52,9 @@ use uom::{
     },
 };
 
+use crate::machines::winder2::api::{PidSettings, PidSettingsStates};
 use crate::machines::{
-    MACHINE_WINDER_V1, VENDOR_QITECH,
-    buffer1::BufferV1,
-    laser::{
-        LaserMachine,
-        api::{PidSettings, PidSettingsStates},
-    },
+    MACHINE_WINDER_V1, VENDOR_QITECH, buffer1::BufferV1, laser::LaserMachine,
     winder2::api::ConnectedMachineState,
 };
 
@@ -95,6 +90,8 @@ pub struct Winder2 {
     // connected machines
     pub connected_buffer: Option<ConnectedMachine<Weak<Mutex<BufferV1>>>>,
     pub connected_laser: Option<ConnectedMachine<Weak<Mutex<LaserMachine>>>>,
+
+    pub pid_settings: PidSettings,
 
     // mode
     pub mode: Winder2Mode,
@@ -357,12 +354,7 @@ impl Winder2 {
                     .unwrap_or(false),
             },
             pid_settings: PidSettingsStates {
-                speed: PidSettings {
-                    ki: 0.1,
-                    kp: 0.0,
-                    kd: 0.2,
-                    dead: 0.0,
-                },
+                speed: self.pid_settings.clone(),
             },
         }
     }
