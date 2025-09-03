@@ -12,6 +12,7 @@ use control_core::{
     },
 };
 use serde::{Deserialize, Serialize};
+use tracing::info;
 use uom::{
     ConstZero,
     si::{
@@ -150,6 +151,7 @@ impl PullerSpeedController {
             self.target_diameter.get::<millimeter>() - self.measured_diameter.get::<millimeter>();
         let speed_change = self.pid.update(error, now);
 
+        info!("Diameter: {}", self.measured_diameter.get::<millimeter>());
         self.target_speed += Velocity::new::<meter_per_minute>(speed_change);
         Self::clamp_speed(
             self.target_speed,
