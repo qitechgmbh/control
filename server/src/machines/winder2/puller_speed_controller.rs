@@ -130,7 +130,10 @@ impl PullerSpeedController {
         let base_speed = match self.enabled {
             true => match self.regulation_mode {
                 PullerRegulationMode::Speed => self.target_speed,
-                PullerRegulationMode::Diameter => self.speed_from_diameter(t),
+                PullerRegulationMode::Diameter => {
+                    self.speed_from_diameter(t);
+                    self.target_speed
+                }
             },
             false => Velocity::ZERO,
         };
@@ -146,18 +149,17 @@ impl PullerSpeedController {
         speed
     }
 
-    fn speed_from_diameter(&mut self, now: Instant) -> Velocity {
+    fn speed_from_diameter(&mut self, now: Instant) {
         let error =
             self.target_diameter.get::<millimeter>() - self.measured_diameter.get::<millimeter>();
         let speed_change = self.pid.update(error, now);
 
-        info!("Diameter: {}", self.measured_diameter.get::<millimeter>());
-        self.target_speed += Velocity::new::<meter_per_minute>(speed_change);
-        Self::clamp_speed(
+        self.target_speed -= Velocity::new::<meter_per_minute>(speed_change);
+        self.target_speed = Self::clamp_speed(
             self.target_speed,
             Velocity::new::<meter_per_minute>(0.0),
             Velocity::new::<meter_per_minute>(20.0),
-        )
+        );
     }
 
     fn clamp_speed(speed: Velocity, min: Velocity, max: Velocity) -> Velocity {

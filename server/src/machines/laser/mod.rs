@@ -353,7 +353,6 @@ impl LaserMachine {
                 .await
                 .map(|laser_data| laser_data.diameter.get::<millimeter>())
         });
-        //info!("Measured Diameter: {}", diameter.unwrap());
         self.get_winder(|winder2| {
             winder2
                 .puller_speed_controller
