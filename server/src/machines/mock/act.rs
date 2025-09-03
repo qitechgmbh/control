@@ -17,7 +17,7 @@ use std::{
 ///
 /// # Description
 /// This method is called to perform periodic actions for the `MockMachine`. Specifically:
-/// - It checks if the time elapsed since the last measurement emission exceeds 16 milliseconds.
+/// - It checks if the time elapsed since the last measurement emission exceeds 33 milliseconds.
 /// - If the condition is met and the machine is in Running mode, it emits a sine wave data event.
 /// - State events (frequency, mode) are only emitted when values change, not continuously.
 ///
@@ -28,15 +28,11 @@ impl MachineAct for MockMachine {
         Box::pin(async move {
             let now = Instant::now();
 
-            // Emit initial state if this is the first call
-            if self.last_emitted_state.is_none() {
-                self.emit_state();
-            }
-
             // Only emit live values if machine is in Running mode
-            // The live values are updated approximately 60 times per second
-            if now.duration_since(self.last_measurement_emit) > Duration::from_secs_f64(1.0 / 60.0)
+            // The live values are updated approximately 30 times per second
+            if now.duration_since(self.last_measurement_emit) > Duration::from_secs_f64(1.0 / 30.0)
             {
+                self.maybe_emit_state_event();
                 self.emit_live_values();
                 self.last_measurement_emit = now;
             }

@@ -47,6 +47,7 @@ impl MachineNewTrait for LaserMachine {
             last_measurement_emit: Instant::now(),
             laser_target,
             emitted_default_state: false,
+            last_state_event: None,
         };
 
         // Emit initial state
