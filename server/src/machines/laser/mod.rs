@@ -325,6 +325,22 @@ impl LaserMachine {
         self.pid_settings.dead = settings.dead;
         self.emit_state();
     }
+
+    fn set_measured_diameter(&self) {
+        let diameter = smol::block_on(async {
+            self.laser
+                .read()
+                .await
+                .get_data()
+                .await
+                .map(|laser_data| laser_data.diameter.get::<millimeter>())
+        });
+        self.get_winder(|winder2| {
+            winder2
+                .puller_speed_controller
+                .set_measured_diameter(diameter.unwrap_or(0.0));
+        });
+    }
 }
 
 #[derive(Debug, Clone)]
