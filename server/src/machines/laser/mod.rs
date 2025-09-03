@@ -310,7 +310,6 @@ impl LaserMachine {
 impl LaserMachine {
     fn configure_speed_pid(&mut self, settings: PidSettings) {
         // Implement pid to control speed of winder
-        // Temporarily hold pid_settings outside the closure
         let mut new_pid_settings = None;
 
         self.get_winder(|winder2| {
@@ -335,10 +334,11 @@ impl LaserMachine {
                 .await
                 .map(|laser_data| laser_data.diameter.get::<millimeter>())
         });
+        //info!("Measured Diameter: {}", diameter.unwrap());
         self.get_winder(|winder2| {
             winder2
                 .puller_speed_controller
-                .set_measured_diameter(diameter.unwrap_or(0.0));
+                .set_measured_diameter(diameter.unwrap());
         });
     }
 }
