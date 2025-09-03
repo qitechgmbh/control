@@ -1,9 +1,6 @@
 use std::time::Instant;
 
-use crate::{
-    machines::laser::api::PidSettings,
-    serial::{devices::laser::Laser, registry::SERIAL_DEVICE_REGISTRY},
-};
+use crate::serial::{devices::laser::Laser, registry::SERIAL_DEVICE_REGISTRY};
 
 use super::{LaserMachine, LaserTarget, api::LaserMachineNamespace};
 use anyhow::Error;
@@ -59,12 +56,6 @@ impl MachineNewTrait for LaserMachine {
             machine_manager: params.machine_manager.clone(),
             machine_identification_unique: machine_id,
             connected_winder: None,
-            pid_settings: PidSettings {
-                ki: 0.0,
-                kp: 0.1,
-                kd: 0.2,
-                dead: 0.0,
-            },
             diameter: Length::ZERO,
             x_diameter: None,
             y_diameter: None,

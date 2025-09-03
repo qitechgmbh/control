@@ -159,6 +159,18 @@ export const connectedMachineStateSchema = z.object({
 });
 
 /**
+ * PID settings schema
+ */
+export const pidSettingsSchema = z.object({
+  speed: z.object({
+    ki: z.number(),
+    kp: z.number(),
+    kd: z.number(),
+    dead: z.number(),
+  }),
+});
+
+/**
  * Tension arm state schema
  */
 export const tensionArmStateSchema = z.object({
@@ -193,6 +205,7 @@ export const stateEventDataSchema = z.object({
   spool_automatic_action_state: spoolAutomaticActionStateSchema,
   connected_machine_state: connectedMachineStateSchema,
   connected_laser_state: connectedMachineStateSchema,
+  pid_settings: pidSettingsSchema,
 });
 
 // ========== Event Schemas with Wrappers ==========

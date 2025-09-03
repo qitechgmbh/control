@@ -98,6 +98,8 @@ pub struct Winder2 {
     pub connected_buffer: MachineCrossConnection<Winder2, BufferV1>,
     pub connected_laser: Option<ConnectedMachine<Weak<Mutex<LaserMachine>>>>,
 
+    pub pid_settings: PidSettings,
+
     // mode
     pub mode: Winder2Mode,
     pub spool_mode: SpoolMode,
@@ -352,12 +354,7 @@ impl Winder2 {
                     .unwrap_or(false),
             },
             pid_settings: PidSettingsStates {
-                speed: PidSettings {
-                    ki: 0.1,
-                    kp: 0.0,
-                    kd: 0.2,
-                    dead: 0.0,
-                },
+                speed: self.pid_settings.clone(),
             },
         }
     }

@@ -1,8 +1,6 @@
 use crate::{
     machines::{
-        MACHINE_LASER_V1, VENDOR_QITECH,
-        laser::api::{ConnectedMachineState, PidSettings, PidSettingsStates},
-        winder2::Winder2,
+        MACHINE_LASER_V1, VENDOR_QITECH, laser::api::ConnectedMachineState, winder2::Winder2,
     },
     serial::devices::laser::Laser,
 };
@@ -19,7 +17,6 @@ use std::{
     sync::{Arc, Weak},
     time::Instant,
 };
-use tracing::info;
 use uom::si::{f64::Length, length::millimeter};
 
 pub mod act;
@@ -43,7 +40,6 @@ pub struct LaserMachine {
 
     // connected machines
     pub connected_winder: Option<ConnectedMachine<Weak<Mutex<Winder2>>>>,
-    pub pid_settings: PidSettings,
 
     // laser values
     diameter: Length,
@@ -108,9 +104,6 @@ impl LaserMachine {
                     })
                     .unwrap_or(false),
             },
-            pid_settings: PidSettingsStates {
-                speed: self.pid_settings.clone(),
-            },
         }
     }
 
@@ -137,9 +130,6 @@ impl LaserMachine {
                         ConnectedMachineData::from(connected_machine).is_available
                     })
                     .unwrap_or(false),
-            },
-            pid_settings: PidSettingsStates {
-                speed: self.pid_settings.clone(),
             },
         };
 
@@ -327,23 +317,6 @@ impl LaserMachine {
 }
 
 impl LaserMachine {
-    fn configure_speed_pid(&mut self, settings: PidSettings) {
-        // Implement pid to control speed of winder
-        let mut new_pid_settings = None;
-
-        self.get_winder(|winder2| {
-            winder2.configure_speed_pid(settings.clone());
-            new_pid_settings = Some(winder2.puller_speed_controller.get_pid_params());
-        });
-
-        if let Some(params) = new_pid_settings {
-            self.pid_settings = params;
-        }
-        // TODO: REMOVE THIS LINE
-        self.pid_settings.dead = settings.dead;
-        self.emit_state();
-    }
-
     fn set_measured_diameter(&self) {
         let diameter = smol::block_on(async {
             self.laser
