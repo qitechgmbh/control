@@ -29,7 +29,6 @@ export function Extruder2ControlPage() {
     pressure,
 
     motorScrewRpm,
-    motorPower,
     combinedPower,
 
     setExtruderMode,
@@ -119,9 +118,11 @@ export function Extruder2ControlPage() {
               Inverter is overloaded! Please check the extruder and reduce load
               if necessary.
             </StatusBadge>
-          ) : state?.inverter_status_state.fault_occurence == true ? (
+          ) : state?.inverter_status_state.fault_occurence == true &&
+            state?.inverter_status_state.fault ? (
             <StatusBadge variant="error">
-              Inverter encountered an error!! Press the restart button in Config
+              "Inverter stopped:"
+              state?.inverter_status_state.fault.fault_description
             </StatusBadge>
           ) : state?.inverter_status_state.running == true &&
             state.inverter_status_state.fault_occurence == false ? (
