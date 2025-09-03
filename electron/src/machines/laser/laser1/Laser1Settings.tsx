@@ -32,7 +32,7 @@ export function Laser1SettingsPage() {
             value={showAdvanced}
             optionTrue={{
               children: "Show",
-              disabled: true || state?.connected_winder_state.is_available,
+              disabled: false,
             }}
             optionFalse={{ children: "Hide" }}
             onChange={setShowAdvanced}
@@ -75,7 +75,7 @@ export function Laser1SettingsPage() {
                 max={100}
                 step={0.01}
                 renderValue={(v) => roundToDecimals(v, 2)}
-                onChange={setSpeedPidDead}
+                onChange={setSpeedPidKd}
                 title="Speed PID KD"
               />
             </Label>
@@ -94,22 +94,20 @@ export function Laser1SettingsPage() {
           </ControlCard>
         </>
       )}
-      <ControlCard title="Connect Winder">
-        <MachineSelector
-          machines={filteredMachines}
-          selectedMachine={selectedMachine}
-          connectedMachineState={state?.connected_winder_state}
-          setConnectedMachine={setConnectedWinder}
-          clearConnectedMachine={() => {
-            if (!selectedMachine) return;
-            setConnectedWinder({
-              machine_identification: { vendor: 0, machine: 0 },
-              serial: 0,
-            });
-            disconnectWinder(selectedMachine.machine_identification_unique);
-          }}
-        />
-      </ControlCard>
+      <MachineSelector
+        machines={filteredMachines}
+        selectedMachine={selectedMachine}
+        connectedMachineState={state?.connected_winder_state}
+        setConnectedMachine={setConnectedWinder}
+        clearConnectedMachine={() => {
+          if (!selectedMachine) return;
+          setConnectedWinder({
+            machine_identification: { vendor: 0, machine: 0 },
+            serial: 0,
+          });
+          disconnectWinder(selectedMachine.machine_identification_unique);
+        }}
+      />
     </Page>
   );
 }
