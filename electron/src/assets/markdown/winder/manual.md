@@ -687,3 +687,18 @@ The following persons may not work on the machine:
 | K Cleaning, maintenance                   |                                                                                                           |
 | L Maintenance                             | Trained and instructed specialized personnel of the operator or service technicians of the manufacturer   |
 | M Decommissioning                         | Trained and instructed specialized personnel of the operator                                              |
+
+<br>
+<br>
+
+## Electrical Diagrams
+
+![QiTech Pro Winder Electrical Diagram - Sheet 1](images/manuals/winder/QiTech_Pro_Winder_Electrical_Diagram-001.png)
+
+![QiTech Pro Winder Electrical Diagram - Sheet 2](images/manuals/winder/QiTech_Pro_Winder_Electrical_Diagram_2-002.png)
+
+![QiTech Pro Winder Electrical Diagram - Sheet 3](images/manuals/winder/QiTech_Pro_Winder_Electrical_Diagram_3-003.png)
+
+![QiTech Pro Winder Electrical Diagram - Sheet 4](images/manuals/winder/QiTech_Pro_Winder_Electrical_Diagram_4-004.png)
+
+![QiTech Pro Winder Electrical Diagram - Sheet 5](images/manuals/winder/QiTech_Pro_Winder_Electrical_Diagram_5-005.png)
