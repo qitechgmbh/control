@@ -18,10 +18,14 @@ use ethercat_hal::{
         ek1100::{EK1100, EK1100_IDENTITY_A},
         el1002::{EL1002, EL1002_IDENTITY_A, EL1002Port},
         el2008::{EL2008, EL2008_IDENTITY_A, EL2008Port},
+        el3204::{EL3204, EL3204_IDENTITY_A, EL3204_IDENTITY_B, EL3204Port},
         el4002::{EL4002, EL4002_IDENTITY_A, EL4002Port},
         subdevice_identity_to_tuple,
     },
-    io::{analog_output::AnalogOutput, digital_input::DigitalInput, digital_output::DigitalOutput},
+    io::{
+        analog_output::AnalogOutput, digital_input::DigitalInput, digital_output::DigitalOutput,
+        temperature_input::TemperatureInput,
+    },
 };
 use std::{
     sync::{Arc, RwLock},
@@ -83,7 +87,7 @@ impl MachineNewTrait for AquaPathV1 {
                     }
                     _ => {
                         return Err(anyhow::anyhow!(
-                            "[{}::MachineNewTrait/WaterCooling::new] Device with role 0 is not an EK1100",
+                            "[{}::MachineNewTrait/AquaPath1::new] Device with role 0 is not an EK1100",
                             module_path!()
                         ));
                     }
@@ -122,7 +126,7 @@ impl MachineNewTrait for AquaPathV1 {
                     }
                     _ => {
                         return Err(anyhow::anyhow!(
-                            "[{}::MachineNewTrait/WaterCooling::new] Device with role 1 is not an EL2008",
+                            "[{}::MachineNewTrait/AquaPath1::new] Device with role 1 is not an EL2008",
                             module_path!()
                         ));
                     }
@@ -167,7 +171,7 @@ impl MachineNewTrait for AquaPathV1 {
                         downcast_device::<EL4002>(ethercat_device).await?
                     }
                     _ => Err(anyhow::anyhow!(
-                        "[{}::MachineNewTrait/WaterCooling::new] Device with role 2 is not an EL4002",
+                        "[{}::MachineNewTrait/AquaPath1::new] Device with role 2 is not an EL4002",
                         module_path!()
                     ))?,
                 };
@@ -178,56 +182,7 @@ impl MachineNewTrait for AquaPathV1 {
                 }
                 device
             };
-
-            // // Role 3 - EL3062_0030 Analog Input Module
-            // let el3062_0030 = {
-            //     let device_identification =
-            //         get_device_identification_by_role(params.device_group, 3)?;
-            //     let device_hardware_identification_ethercat = match &device_identification
-            //         .device_hardware_identification
-            //     {
-            //         DeviceHardwareIdentification::Ethercat(
-            //             device_hardware_identification_ethercat,
-            //         ) => device_hardware_identification_ethercat,
-            //         _ => Err(anyhow::anyhow!(
-            //             "[{}::MachineNewTrait/AquaPath::new] Device with role 3 is not Ethercat",
-            //             module_path!()
-            //         ))?,
-            //     };
-            //     let subdevice_index = device_hardware_identification_ethercat.subdevice_index;
-            //     let subdevice = get_subdevice_by_index(hardware.subdevices, subdevice_index)?;
-            //     let subdevice_identity = subdevice.identity();
-            //     let device = match subdevice_identity_to_tuple(&subdevice_identity) {
-            //         EL3062_0030_IDENTITY_A => {
-            //             let ethercat_device = get_ethercat_device_by_index(
-            //                 &hardware.ethercat_devices,
-            //                 subdevice_index,
-            //             )?;
-            //             downcast_device::<EL3062_0030>(ethercat_device).await?
-            //         }
-            //         _ => {
-            //             return Err(anyhow::anyhow!(
-            //                 "[{}::MachineNewTrait/WaterCooling::new] Device with role 3 is not an EL3062_0030",
-            //                 module_path!()
-            //             ));
-            //         }
-            //     };
-            //     let config = EL3062_0030Configuration {
-            //         ..Default::default()
-            //     };
-            //     device
-            //         .write()
-            //         .await
-            //         .write_config(&subdevice, &config)
-            //         .await?;
-            //     {
-            //         let mut device_guard = device.write().await;
-            //         device_guard.set_used(true);
-            //     }
-            //     device
-            // };
-
-            let el1002 = {
+            let el3204 = {
                 let device_identification =
                     get_device_identification_by_role(params.device_group, 3)?;
                 let device_hardware_identification_ethercat = match &device_identification
@@ -237,7 +192,46 @@ impl MachineNewTrait for AquaPathV1 {
                         device_hardware_identification_ethercat,
                     ) => device_hardware_identification_ethercat,
                     _ => Err(anyhow::anyhow!(
-                        "[{}::MachineNewTrait/ExtruderV2::new] Device with role 3 is not Ethercat",
+                        "[{}::MachineNewTrait/AquaPath1::new] Device with role 3 is not Ethercat",
+                        module_path!()
+                    ))?, //uncommented
+                };
+                let subdevice_index = device_hardware_identification_ethercat.subdevice_index;
+                let subdevice = get_subdevice_by_index(hardware.subdevices, subdevice_index)?;
+                let subdevice_identity = subdevice.identity();
+                let device = match subdevice_identity_to_tuple(&subdevice_identity) {
+                    EL3204_IDENTITY_A | EL3204_IDENTITY_B => {
+                        let ethercat_device = get_ethercat_device_by_index(
+                            &hardware.ethercat_devices,
+                            subdevice_index,
+                        )?;
+                        downcast_device::<EL3204>(ethercat_device).await?
+                    }
+                    _ => {
+                        return Err(anyhow::anyhow!(
+                            "[{}::MachineNewTrait/AquaPath1::new] Device with role 3 is not an EL3204",
+                            module_path!()
+                        ));
+                    }
+                };
+                {
+                    let mut device_guard = device.write().await;
+                    device_guard.set_used(true);
+                }
+                device
+            };
+
+            let el1002 = {
+                let device_identification =
+                    get_device_identification_by_role(params.device_group, 4)?;
+                let device_hardware_identification_ethercat = match &device_identification
+                    .device_hardware_identification
+                {
+                    DeviceHardwareIdentification::Ethercat(
+                        device_hardware_identification_ethercat,
+                    ) => device_hardware_identification_ethercat,
+                    _ => Err(anyhow::anyhow!(
+                        "[{}::MachineNewTrait/ExtruderV2::new] Device with role 4 is not Ethercat",
                         module_path!()
                     ))?, //uncommented
                 };
@@ -254,7 +248,7 @@ impl MachineNewTrait for AquaPathV1 {
                     }
                     _ => {
                         return Err(anyhow::anyhow!(
-                            "[{}::MachineNewTrait/ExtruderV2::new] Device with role 1 is not an EL1002",
+                            "[{}::MachineNewTrait/AquaPath1::new] Device with role 4 is not an EL1002",
                             module_path!()
                         ));
                     }
@@ -265,50 +259,16 @@ impl MachineNewTrait for AquaPathV1 {
                 }
                 device
             };
-
-            // let el3204 = {
-            //     let device_identification =
-            //         get_device_identification_by_role(params.device_group, 4)?;
-            //     let device_hardware_identification_ethercat = match &device_identification
-            //         .device_hardware_identification
-            //     {
-            //         DeviceHardwareIdentification::Ethercat(
-            //             device_hardware_identification_ethercat,
-            //         ) => device_hardware_identification_ethercat,
-            //         _ => Err(anyhow::anyhow!(
-            //             "[{}::MachineNewTrait/ExtruderV2::new] Device with role 4 is not Ethercat",
-            //             module_path!()
-            //         ))?, //uncommented
-            //     };
-            //     let subdevice_index = device_hardware_identification_ethercat.subdevice_index;
-            //     let subdevice = get_subdevice_by_index(hardware.subdevices, subdevice_index)?;
-            //     let subdevice_identity = subdevice.identity();
-            //     let device = match subdevice_identity_to_tuple(&subdevice_identity) {
-            //         EL3204_IDENTITY_A | EL3204_IDENTITY_B => {
-            //             let ethercat_device = get_ethercat_device_by_index(
-            //                 &hardware.ethercat_devices,
-            //                 subdevice_index,
-            //             )?;
-            //             downcast_device::<EL3204>(ethercat_device).await?
-            //         }
-            //         _ => {
-            //             return Err(anyhow::anyhow!(
-            //                 "[{}::MachineNewTrait/ExtruderV2::new] Device with role 5 is not an EL3204",
-            //                 module_path!()
-            //             ));
-            //         }
-            //     };
-            //     {
-            //         let mut device_guard = device.write().await;
-            //         device_guard.set_used(true);
-            //     }
-            //     device
-            // };
-
-            // let t1 = TemperatureInput::new(el3204.clone(), EL3204Port::T1);
-            // let t2 = TemperatureInput::new(el3204.clone(), EL3204Port::T2);
-            // let t3 = TemperatureInput::new(el3204.clone(), EL3204Port::T3);
-            // let t4 = TemperatureInput::new(el3204.clone(), EL3204Port::T4);
+            let di1 = DigitalInput::new(el1002.clone(), EL1002Port::DI1);
+            let di2 = DigitalInput::new(el1002.clone(), EL1002Port::DI2);
+            //after heating
+            let t1 = TemperatureInput::new(el3204.clone(), EL3204Port::T1);
+            //in reservoir
+            let t2 = TemperatureInput::new(el3204.clone(), EL3204Port::T2);
+            //after heating
+            let t3 = TemperatureInput::new(el3204.clone(), EL3204Port::T3);
+            //in reservoir
+            let t4 = TemperatureInput::new(el3204.clone(), EL3204Port::T4);
             //pump flow control
             //phys 1
             let do1 = DigitalOutput::new(el2008.clone(), EL2008Port::DO1);
@@ -347,6 +307,8 @@ impl MachineNewTrait for AquaPathV1 {
                 do7,
                 do3,
                 do5,
+                t1,
+                t2,
             );
             let cooling_controller_back = TemperatureController::new(
                 0.16,
@@ -360,16 +322,16 @@ impl MachineNewTrait for AquaPathV1 {
                 do8,
                 do4,
                 do6,
+                t3,
+                t4,
             );
-            let di1 = DigitalInput::new(el1002.clone(), EL1002Port::DI1);
-            let di2 = DigitalInput::new(el1002.clone(), EL1002Port::DI2);
+
             // let a1 = AnalogInput::new(el3062_0030.clone(), EL3062_0030Port::AI1);
             // let a2 = AnalogInput::new(el3062_0030.clone(), EL3062_0030Port::AI2);
             let mut flow_controller_front = FlowController::new(
                 0.16,
                 0.0,
                 0.008,
-                Duration::from_millis(500),
                 di1,
                 do1,
                 VolumeRate::new::<liter_per_minute>(0.0),
@@ -379,7 +341,6 @@ impl MachineNewTrait for AquaPathV1 {
                 0.16,
                 0.0,
                 0.008,
-                Duration::from_millis(500),
                 di2,
                 do2,
                 VolumeRate::new::<liter_per_minute>(0.0),
