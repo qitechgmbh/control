@@ -7,7 +7,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: cachix/install-nix-action@v31
         with:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
-      - run: nix flake check --impure
+
+      - name: Validate NixOS configuration
+        run: |
+          nix-instantiate ./configuration.nix
+          nix-build '<nixpkgs/nixos>' -A config.system.build.toplevel -I nixos-config=./configuration.nix
