@@ -697,3 +697,26 @@ The following persons must not work on the machine:
 | Cleaning, maintenance                   |                                                                                                           |
 | Maintenance                             | Trained and instructed specialised personnel of the operator or service technicians of the manufacturer   |
 | Decommissioning                         | Trained and instructed specialised personnel of the operator                                              |
+
+<br>
+<br>
+
+## Electrical Diagrams
+
+![QiTech Pro Extruder Electrical Diagram 2025 - Sheet 1](images/manuals/extruder/QiTech_Pro_Extruder_Electrical_Diagram_2025-001.png)
+
+![QiTech Pro Extruder Electrical Diagram 2025 - Sheet 2](images/manuals/extruder/QiTech_Pro_Extruder_Electrical_Diagram_2025_2-002.png)
+
+![QiTech Pro Extruder Electrical Diagram 2025 - Sheet 3](images/manuals/extruder/QiTech_Pro_Extruder_Electrical_Diagram_2025_3-003.png)
+
+![QiTech Pro Extruder Electrical Diagram 2025 - Sheet 4](images/manuals/extruder/QiTech_Pro_Extruder_Electrical_Diagram_2025_4-004.png)
+
+![QiTech Pro Extruder Electrical Diagram 2025 - Sheet 5](images/manuals/extruder/QiTech_Pro_Extruder_Electrical_Diagram_2025_5-005.png)
+
+![QiTech Pro Extruder Electrical Diagram 2025 - Sheet 6](images/manuals/extruder/QiTech_Pro_Extruder_Electrical_Diagram_2025_6-006.png)
+
+![QiTech Pro Extruder Electrical Diagram 2025 - Sheet 7](images/manuals/extruder/QiTech_Pro_Extruder_Electrical_Diagram_2025_7-007.png)
+
+![QiTech Pro Extruder Electrical Diagram 2025 - Sheet 8](images/manuals/extruder/QiTech_Pro_Extruder_Electrical_Diagram_2025_8-008.png)
+
+![QiTech Pro Extruder Electrical Diagram 2025 - Sheet 9](images/manuals/extruder/QiTech_Pro_Extruder_Electrical_Diagram_2025_9-009.png)
