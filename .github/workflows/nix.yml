@@ -14,5 +14,14 @@ jobs:
 
       - name: Validate NixOS configuration
         run: |
-          nix-instantiate ./configuration.nix
-          nix-build '<nixpkgs/nixos>' -A config.system.build.toplevel -I nixos-config=./configuration.nix
+          # Show directory contents for debugging
+          pwd
+          ls -R
+
+          # Evaluate the configuration
+          nix-instantiate ./control/nixos/os/configuration.nix
+
+          # Build the system derivation
+          nix-build '<nixpkgs/nixos>' \
+            -A config.system.build.toplevel \
+            -I nixos-config=./control/nixos/os/configuration.nix
