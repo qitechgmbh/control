@@ -13,10 +13,7 @@ use control_core::{
 };
 use screw_speed_controller::ScrewSpeedController;
 use serde::{Deserialize, Serialize};
-use std::{
-    any::Any,
-    time::{Instant, UNIX_EPOCH},
-};
+use std::{any::Any, time::Instant};
 use temperature_controller::TemperatureController;
 use uom::si::{
     angular_velocity::{AngularVelocity, revolution_per_minute},

@@ -1,14 +1,10 @@
-use anyhow::anyhow;
 use bitvec::{order::Lsb0, slice::BitSlice};
 use control_core::modbus::{
     ModbusFunctionCode, ModbusRequest, ModbusResponse,
     modbus_serial_interface::ModbusSerialInterface,
 };
 use ethercat_hal::io::serial_interface::SerialInterface;
-use std::{
-    error::Error,
-    time::{Duration, Instant, SystemTime, UNIX_EPOCH},
-};
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use uom::si::{
     electric_current::centiampere,
     electric_potential::centivolt,
