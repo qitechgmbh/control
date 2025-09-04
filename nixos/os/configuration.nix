@@ -4,14 +4,11 @@ let
   gitInfo = import ../gitInfo.nix { inherit pkgs; };
 in
 {
-  imports =
-    [ # Include the results of the hardware scan, if they exist, if they dont we are in CI/CD
-      /etc/nixos/hardware-configuration.nix
-    ] ++ (
-    if builtins.pathExists /etc/nixos/hardware-configuration.nix
-    then [ /etc/nixos/hardware-configuration.nix ]
-    else []
-  ); 
+ imports = [
+  (if builtins.pathExists "/etc/nixos/hardware-configuration.nix"
+   then /etc/nixos/hardware-configuration.nix
+   else ./ci-hardware-configuration.nix)
+  ];
 
   # Bootloader.
   boot.loader.systemd-boot = {
