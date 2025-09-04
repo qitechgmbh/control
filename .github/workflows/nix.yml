@@ -14,7 +14,6 @@ jobs:
 
       - name: Validate NixOS configuration
         run: |
-          cd control
           pwd
           ls -R
           nix-instantiate ./nixos/os/configuration.nix
