@@ -56,7 +56,7 @@ async fn get_device_ident<'maindevice>(
     return Ok(device_hardware_identification_ethercat.clone());
 }
 
-async fn get_ethercat_device_<'maindevice, T>(
+async fn get_ethercat_device<'maindevice, T>(
     hardware: &&control_core::machines::new::MachineNewHardwareEthercat<
         'maindevice,
         'maindevice,
@@ -81,7 +81,7 @@ async fn get_ethercat_device_<'maindevice, T>(
     anyhow::Error,
 >
 where
-    T: 'static + Send + Sync + EthercatDevice,
+    T: 'static + Send + Sync + EthercatDevice, //
 {
     let device_hardware_identification_ethercat = get_device_ident(params, role).await?;
     let subdevice_index = device_hardware_identification_ethercat.subdevice_index;

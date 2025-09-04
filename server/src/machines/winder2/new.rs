@@ -3,7 +3,7 @@ use std::time::Instant;
 use super::api::Winder2Namespace;
 use super::tension_arm::TensionArm;
 use super::{Winder2, Winder2Mode};
-use crate::machines::get_ethercat_device_;
+use crate::machines::get_ethercat_device;
 use crate::machines::winder2::puller_speed_controller::PullerSpeedController;
 use crate::machines::winder2::spool_speed_controller::SpoolSpeedController;
 use crate::machines::winder2::traverse_controller::TraverseController;
@@ -65,11 +65,10 @@ impl MachineNewTrait for Winder2 {
         smol::block_on(async {
             // Role 0: Buscoupler EK1100
             let _ek1100 =
-                get_ethercat_device_::<EK1100>(hardware, params, 0, vec![EK1100_IDENTITY_A])
-                    .await?;
+                get_ethercat_device::<EK1100>(hardware, params, 0, vec![EK1100_IDENTITY_A]).await?;
 
             // Role 1: 2x Digital outputs EL2002
-            let el2002 = get_ethercat_device_::<EL2002>(
+            let el2002 = get_ethercat_device::<EL2002>(
                 hardware,
                 params,
                 1,
@@ -80,7 +79,7 @@ impl MachineNewTrait for Winder2 {
 
             // Role 2: Stepper Spool EL7041-0052
             let el7041 = {
-                let device = get_ethercat_device_::<EL7041_0052>(
+                let device = get_ethercat_device::<EL7041_0052>(
                     hardware,
                     params,
                     2,
@@ -111,7 +110,7 @@ impl MachineNewTrait for Winder2 {
 
             // Role 3: Stepper Traverse EL7031
             let el7031 = {
-                let device = get_ethercat_device_::<EL7031>(
+                let device = get_ethercat_device::<EL7031>(
                     hardware,
                     params,
                     3,
@@ -145,7 +144,7 @@ impl MachineNewTrait for Winder2 {
 
             // Role 4: Stepper Puller EL7031-0030
             let el7031_0030 = {
-                let device = get_ethercat_device_::<EL7031_0030>(
+                let device = get_ethercat_device::<EL7031_0030>(
                     hardware,
                     params,
                     4,
