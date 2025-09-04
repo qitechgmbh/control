@@ -21,9 +21,17 @@ If a Terminal is somehow defective it can disrupt the communication flow expecte
 
 To identify the defective terminal start unplugging terminals starting from the End terminal. Working your way backwards. Every time you unplug a terminal restart the backend process.
 
-Youll know that you have removed the defective terminal when the ethercat tab suddenly shows devices.
+You know that you have removed the defective terminal when the ethercat tab shows devices after your restart.
 
 Replace that terminal with an appropriate one and repeat this if the error persists.
+
+## 3: Corrupt Firmware on EtherCAT Terminal
+
+Another reason, that an Ethercat Terminal doesnt work properly, is that the firmware is corrupt. This could happen due to overvoltage,undervoltage or shorts, in some cases this is recoverable by reflashing the firmware.
+
+Our repository contains dumps for all of the EtherCAT Terminals, that we have used. To upload the firmware you can follow this guide: https://infosys.beckhoff.com/english.php?content=../content/1033/ethercatsystem/402909835.html&id=
+
+To follow this guide, you need to have TwinCat installed and a License.
 
 # Motor does not start!
 
