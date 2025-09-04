@@ -4,7 +4,7 @@ use super::{
     screw_speed_controller::ScrewSpeedController,
 };
 use crate::machines::{
-    extruder1::temperature_controller::TemperatureController, get_ethercat_device_,
+    extruder1::temperature_controller::TemperatureController, get_ethercat_device,
 };
 use anyhow::Error;
 use control_core::machines::new::{
@@ -66,11 +66,11 @@ impl MachineNewTrait for ExtruderV2 {
             // Buscoupler
             // EK1100
             let _ek1100 =
-                get_ethercat_device_::<EK1100>(hardware, params, 0, [EK1100_IDENTITY_A].to_vec());
+                get_ethercat_device::<EK1100>(hardware, params, 0, [EK1100_IDENTITY_A].to_vec());
 
             // What is its use ?
             let _el1002 =
-                get_ethercat_device_::<EL1002>(hardware, params, 1, [EL1002_IDENTITY_A].to_vec())
+                get_ethercat_device::<EL1002>(hardware, params, 1, [EL1002_IDENTITY_A].to_vec())
                     .await?;
 
             let el6021 = {
@@ -81,8 +81,7 @@ impl MachineNewTrait for ExtruderV2 {
                     EL6021_IDENTITY_D,
                 ]
                 .to_vec();
-                let device =
-                    get_ethercat_device_::<EL6021>(hardware, params, 2, identities).await?;
+                let device = get_ethercat_device::<EL6021>(hardware, params, 2, identities).await?;
 
                 device
                     .0
@@ -98,16 +97,16 @@ impl MachineNewTrait for ExtruderV2 {
             };
 
             let el2004 =
-                get_ethercat_device_::<EL2004>(hardware, params, 3, [EL2004_IDENTITY_A].to_vec())
+                get_ethercat_device::<EL2004>(hardware, params, 3, [EL2004_IDENTITY_A].to_vec())
                     .await?
                     .0;
 
             let el3021 =
-                get_ethercat_device_::<EL3021>(hardware, params, 4, [EL3021_IDENTITY_A].to_vec())
+                get_ethercat_device::<EL3021>(hardware, params, 4, [EL3021_IDENTITY_A].to_vec())
                     .await?
                     .0;
 
-            let el3204 = get_ethercat_device_::<EL3204>(
+            let el3204 = get_ethercat_device::<EL3204>(
                 hardware,
                 params,
                 5,
