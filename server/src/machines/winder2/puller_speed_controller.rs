@@ -91,7 +91,7 @@ impl PullerSpeedController {
             ),
             converter,
             last_speed: Velocity::ZERO,
-            p_dead_controller: TimeAgnosticDeadTimePController::new(0.01, Duration::ZERO),
+            p_dead_controller: TimeAgnosticDeadTimePController::new(0.1 / 10000.0, Duration::ZERO),
         }
     }
 
@@ -178,16 +178,26 @@ impl PullerSpeedController {
     fn speed_from_diameter(&mut self, now: Instant) -> Velocity {
         // get current error
         let error =
-            self.target_diameter.get::<millimeter>() - self.measured_diameter.get::<millimeter>();
+            self.measured_diameter.get::<millimeter>() - self.target_diameter.get::<millimeter>();
+
+        tracing::info!("Error: {}", error);
 
         // calculate/set deadtime based of speed and distance
         let deadtime = Self::calc_deadtime(self.last_speed, Length::new::<meter>(2.0));
         self.p_dead_controller.set_dead(deadtime);
+
+        tracing::info!("deadtime: {}", deadtime.as_secs_f64());
         // get speed change from p controller
         let speed_change = self.p_dead_controller.update(error, now);
 
         // apply speed change to target speed
         let next_speed = self.last_speed + Velocity::new::<meter_per_minute>(speed_change);
+
+        tracing::info!(
+            "Speed_change: {}, next_speed: {}",
+            speed_change,
+            next_speed.get::<meter_per_minute>()
+        );
 
         // clamp the speed to 0 - 50 for safety
         Self::clamp_speed(
