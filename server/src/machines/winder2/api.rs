@@ -365,14 +365,4 @@ impl MachineApi for Winder2 {
             Mutation::DisconnectLaser(machine_identification_unique) => {
                 self.disconnect_laser(machine_identification_unique)
             }
-            Mutation::SetSpeedPidSettings(settings) => {
-                self.configure_speed_pid(settings);
-            }
-        }
-        Ok(())
-    }
-
-    fn api_event_namespace(&mut self) -> &mut Namespace {
-        &mut self.namespace.namespace
-    }
 }
