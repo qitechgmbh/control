@@ -59,10 +59,6 @@ export function Winder2ControlPage() {
     setSpoolAutomaticAction,
     isLoading,
     isDisabled,
-    selectedMachine,
-    filteredMachines,
-    setConnectedLaser,
-    disconnectLaser,
   } = useWinder2();
 
   // Calculate max speed based on gear ratio
@@ -277,31 +273,18 @@ export function Winder2ControlPage() {
                 Diameter: {
                   children: "Diameter",
                   icon: "lu:Sun",
-                  disabled: false,
+                  disabled: !state?.connected_laser_state.is_available,
                 },
               }}
               onChange={setPullerRegulationMode}
               disabled={isDisabled}
               loading={isLoading}
             />
-            {state?.puller_state?.regulation === "Diameter" && (
-              <MachineSelector
-                machines={filteredMachines}
-                selectedMachine={selectedMachine}
-                connectedMachineState={state?.connected_laser_state}
-                setConnectedMachine={setConnectedLaser}
-                clearConnectedMachine={() => {
-                  if (!selectedMachine) return;
-                  setConnectedLaser({
-                    machine_identification: { vendor: 0, machine: 0 },
-                    serial: 0,
-                  });
-                  disconnectLaser(
-                    selectedMachine.machine_identification_unique,
-                  );
-                }}
-              />
-            )}
+            {state?.connected_laser_state?.is_available !== true ? (
+              <StatusBadge variant={"info"}>
+                {"No associated Laser found"}
+              </StatusBadge>
+            ) : null}
           </Label>
           <Label label="Target Speed">
             <EditValue

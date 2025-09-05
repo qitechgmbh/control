@@ -40,14 +40,12 @@ export function Winder2SettingPage() {
     setSpoolAdaptiveDeaccelerationUrgencyMultiplier,
     isLoading,
     isDisabled,
-    setSpeedPidKp,
-    setSpeedPidKi,
-    setSpeedPidKd,
-    setSpeedPidDead,
+    setPDeadKp,
     selectedMachine,
     filteredMachines,
+    setConnectedLaser,
+    disconnectLaser,
     setConnectedMachine,
-    disconnectMachine,
   } = useWinder2();
 
   const handleXlModeChange = (enabled: boolean) => {
@@ -358,74 +356,36 @@ export function Winder2SettingPage() {
             />
           </Label>
         </ControlCard>
-        <ControlCard>
-          <Label label="PID Settings">
-            <Label label="Kp">
-              <EditValue
-                value={state?.pid_settings.speed.kp}
-                defaultValue={defaultState?.pid_settings.speed.kp}
-                min={0}
-                max={100}
-                step={0.01}
-                renderValue={(v) => roundToDecimals(v, 2)}
-                onChange={setSpeedPidKp}
-                title="Speed PID KP"
-              />
-            </Label>
-            <Label label="Ki">
-              <EditValue
-                value={state?.pid_settings.speed.ki}
-                defaultValue={defaultState?.pid_settings.speed.ki}
-                min={0}
-                max={100}
-                step={0.01}
-                renderValue={(v) => roundToDecimals(v, 2)}
-                onChange={setSpeedPidKi}
-                title="Speed PID KI"
-              />
-            </Label>
-            <Label label="Kd">
-              <EditValue
-                value={state?.pid_settings.speed.kd}
-                defaultValue={defaultState?.pid_settings.speed.kd}
-                min={0}
-                max={100}
-                step={0.01}
-                renderValue={(v) => roundToDecimals(v, 2)}
-                onChange={setSpeedPidKd}
-                title="Speed PID KD"
-              />
-            </Label>
-            <Label label="Dead">
-              <EditValue
-                value={state?.pid_settings.speed.dead}
-                defaultValue={defaultState?.pid_settings.speed.dead}
-                min={0}
-                max={100}
-                step={0.01}
-                renderValue={(v) => roundToDecimals(v, 2)}
-                onChange={setSpeedPidDead}
-                title="Speed PID Dead"
-              />
-            </Label>
+        <ControlCard title="Diameter-Based Winder Control">
+          <Label label="Associated Laser">
+            <MachineSelector
+              machines={filteredMachines}
+              selectedMachine={selectedMachine}
+              connectedMachineState={state?.connected_laser_state}
+              setConnectedMachine={setConnectedLaser}
+              clearConnectedMachine={() => {
+                if (!selectedMachine) return;
+                setConnectedMachine({
+                  machine_identification: { vendor: 0, machine: 0 },
+                  serial: 0,
+                });
+                disconnectLaser(selectedMachine.machine_identification_unique);
+              }}
+            />
+          </Label>
+          <Label label="P Controller Kp Factor">
+            <EditValue
+              value={state?.pdead_settings_state.kp}
+              defaultValue={defaultState?.pdead_settings_state.kp}
+              min={0}
+              max={10000}
+              step={0.001}
+              renderValue={(v) => roundToDecimals(v, 2)}
+              onChange={setPDeadKp}
+              title="Speed PID KP"
+            />
           </Label>
         </ControlCard>
-        <Label label="Associated Laser">
-          <MachineSelector
-            machines={filteredMachines}
-            selectedMachine={selectedMachine}
-            connectedMachineState={state?.connected_machine_state}
-            setConnectedMachine={setConnectedMachine}
-            clearConnectedMachine={() => {
-              if (!selectedMachine) return;
-              setConnectedMachine({
-                machine_identification: { vendor: 0, machine: 0 },
-                serial: 0,
-              });
-              disconnectMachine(selectedMachine.machine_identification_unique);
-            }}
-          />
-        </Label>
       </ControlGrid>
     </Page>
   );
