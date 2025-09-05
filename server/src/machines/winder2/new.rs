@@ -387,7 +387,7 @@ impl MachineNewTrait for Winder2 {
                 connected_buffer: None,
                 last_state_event: None,
                 connected_laser: None,
-                kp: 0.0,
+                kp: 0.1,
             };
 
             // initalize events
