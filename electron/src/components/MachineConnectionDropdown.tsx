@@ -10,7 +10,7 @@ import {
 import React from "react";
 
 import { Icon } from "@/components/Icon";
-import { ControlCard } from "@/control/ControlCard";
+import { TouchButton } from "./touch/TouchButton";
 
 interface MachineIdentificationUnique {
   machine_identification: {
@@ -49,18 +49,17 @@ export const MachineSelector: React.FC<MachineSelectorProps> = ({
   connectedMachineState,
   setConnectedMachine,
   clearConnectedMachine,
-  title = "Machine Connection",
 }) => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button className="flex items-center gap-2 rounded border px-4 py-2 text-left">
-          <Icon name="lu:Link2" className="text-xl" />
-          <span>
+        <TouchButton className="text-md h-max px-6 py-6" variant="outline">
+          <div className="flex flex-row items-center gap-2 text-wrap">
+            <Icon name="lu:Link2" className="size-6" />
             {selectedMachine?.name ?? "Select a Machine"}{" "}
             {selectedMachine?.machine_identification_unique.serial ?? ""}
-          </span>
-        </button>
+          </div>
+        </TouchButton>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start">
         <DropdownMenuLabel>Available Machines</DropdownMenuLabel>
@@ -78,14 +77,14 @@ export const MachineSelector: React.FC<MachineSelectorProps> = ({
               onClick={() =>
                 setConnectedMachine(machine.machine_identification_unique)
               }
-              className={`flex min-h-[48px] cursor-pointer items-center gap-2 py-2${
+              className={`flex h-max cursor-pointer items-center gap-2 px-6 py-6${
                 isSelected ? "bg-blue-50" : ""
               }`}
             >
               {connectedMachineState?.is_available ? (
-                <Icon name="lu:Link2" className="text-lg text-green-600" />
+                <Icon name="lu:Link2" className="size-6 text-green-600" />
               ) : (
-                <Icon name="lu:Link2Off" className="text-lg text-gray-400" />
+                <Icon name="lu:Link2Off" className="size-6 text-black" />
               )}
               <span>
                 {machine.name} – Serial:{" "}
@@ -102,8 +101,8 @@ export const MachineSelector: React.FC<MachineSelectorProps> = ({
               onClick={clearConnectedMachine}
               className="flex cursor-pointer items-center gap-2 text-red-600 hover:text-red-600"
             >
-              <Icon name="lu:Settings" className="text-lg" />
-              <span>Clear Selection</span>
+              <Icon name="lu:X" className="size-6 text-red-600" />
+              <span>Disconnect Machine</span>
             </DropdownMenuItem>
           </>
         )}

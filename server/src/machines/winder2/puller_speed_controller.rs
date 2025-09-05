@@ -1,8 +1,8 @@
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use control_core::{
     controllers::{
-        clamping_timeagnostic_pid::ClampingTimeagnosticPidController,
+        deadtime_p_controller::TimeAgnosticDeadTimePController,
         second_degree_motion::linear_jerk_speed_controller::LinearJerkSpeedController,
     },
     converters::linear_step_converter::LinearStepConverter,
@@ -12,12 +12,12 @@ use control_core::{
     },
 };
 use serde::{Deserialize, Serialize};
-use tracing::info;
 use uom::{
     ConstZero,
     si::{
         f64::{Acceleration, AngularVelocity, Jerk, Length, Velocity},
-        length::millimeter,
+        length::{meter, millimeter},
+        time::second,
     },
 };
 
@@ -63,7 +63,7 @@ pub struct PullerSpeedController {
     /// Converter for linear to angular transformations
     pub converter: LinearStepConverter,
     pub last_speed: Velocity,
-    pub pid: ClampingTimeagnosticPidController,
+    pub p_dead_controller: TimeAgnosticDeadTimePController,
 }
 
 impl PullerSpeedController {
@@ -91,7 +91,7 @@ impl PullerSpeedController {
             ),
             converter,
             last_speed: Velocity::ZERO,
-            pid: ClampingTimeagnosticPidController::simple_new(0.01, 0.0, 0.02),
+            p_dead_controller: TimeAgnosticDeadTimePController::new(0.01, Duration::ZERO),
         }
     }
 
@@ -128,17 +128,38 @@ impl PullerSpeedController {
     }
 
     fn update_speed(&mut self, t: Instant) -> Velocity {
+<<<<<<< HEAD
         let base_speed = match self.enabled {
             true => match self.regulation_mode {
                 PullerRegulationMode::Speed => self.target_speed,
                 PullerRegulationMode::Diameter => {
                     self.speed_from_diameter(t);
+=======
+        if !self.enabled {
+            return Velocity::ZERO;
+        }
+
+        let target_speed = match self.regulation_mode {
+            PullerRegulationMode::Speed => {
+                let directional_target = if self.forward {
+>>>>>>> 78962097 (Implemented deadtime_p_controller to regulate puller speed by filament)
                     self.target_speed
+                } else {
+                    -self.target_speed
+                };
+                self.acceleration_controller.update(directional_target, t)
+            }
+            PullerRegulationMode::Diameter => {
+                let diameter_speed = self.speed_from_diameter(t);
+                if self.forward {
+                    diameter_speed
+                } else {
+                    -diameter_speed
                 }
-            },
-            false => Velocity::ZERO,
+            }
         };
 
+<<<<<<< HEAD
         // Apply gear ratio multiplier
         let speed = base_speed * self.gear_ratio.multiplier();
 
@@ -148,19 +169,42 @@ impl PullerSpeedController {
 
         self.last_speed = speed;
         speed
+=======
+        self.last_speed = target_speed;
+        target_speed
+>>>>>>> 78962097 (Implemented deadtime_p_controller to regulate puller speed by filament)
     }
 
-    fn speed_from_diameter(&mut self, now: Instant) {
+    fn speed_from_diameter(&mut self, now: Instant) -> Velocity {
+        // get current error
         let error =
             self.target_diameter.get::<millimeter>() - self.measured_diameter.get::<millimeter>();
-        let speed_change = self.pid.update(error, now);
 
-        self.target_speed -= Velocity::new::<meter_per_minute>(speed_change);
-        self.target_speed = Self::clamp_speed(
-            self.target_speed,
+        // calculate/set deadtime based of speed and distance
+        let deadtime = Self::calc_deadtime(self.last_speed, Length::new::<meter>(2.0));
+        self.p_dead_controller.set_dead(deadtime);
+        // get speed change from p controller
+        let speed_change = self.p_dead_controller.update(error, now);
+
+        // apply speed change to target speed
+        let next_speed = self.last_speed + Velocity::new::<meter_per_minute>(speed_change);
+
+        // clamp the speed to 0 - 50 for safety
+        Self::clamp_speed(
+            next_speed,
             Velocity::new::<meter_per_minute>(0.0),
-            Velocity::new::<meter_per_minute>(20.0),
-        );
+            Velocity::new::<meter_per_minute>(50.0),
+        )
+    }
+
+    fn calc_deadtime(speed: Velocity, distance: Length) -> Duration {
+        // check if speed is 0 => This should not happen
+        if speed <= Velocity::ZERO {
+            return Duration::from_secs(180);
+        }
+        // get the duration based of distance and speed
+        let secs = (distance / speed).get::<second>().max(0.0);
+        Duration::from_secs_f64(secs)
     }
 
     fn clamp_speed(speed: Velocity, min: Velocity, max: Velocity) -> Velocity {
@@ -190,15 +234,6 @@ impl PullerSpeedController {
 
     pub fn get_target_speed(&self) -> Velocity {
         self.target_speed
-    }
-
-    pub fn get_pid_params(&self) -> PidSettings {
-        PidSettings {
-            ki: self.pid.get_ki(),
-            kp: self.pid.get_kp(),
-            kd: self.pid.get_kd(),
-            dead: 0.0,
-        }
     }
 }
 
