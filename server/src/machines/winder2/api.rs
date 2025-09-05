@@ -138,7 +138,7 @@ pub enum Mutation {
     SetMode(Mode),
 
     // Pid Configure
-    SetSpeedPidSettings(PidSettings),
+    SetDeadPKp(f64),
 
     // Connected Machine
     SetConnectedMachine(MachineIdentificationUnique),
@@ -187,7 +187,7 @@ pub struct StateEvent {
     /// connected machine state
     pub connected_machine_state: MachineCrossConnectionState,
     /// pid settings
-    pub pid_settings: PidSettingsStates,
+    pub pdead_settings_state: PDeadSettingsStates,
 }
 
 #[derive(Serialize, Debug, Clone, Default)]
@@ -260,14 +260,6 @@ pub struct ModeState {
     pub can_wind: bool,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct PidSettings {
-    pub ki: f64,
-    pub kp: f64,
-    pub kd: f64,
-    pub dead: f64,
-}
-
 #[derive(Serialize, Debug, Clone)]
 pub struct TensionArmState {
     /// is zeroed
@@ -304,8 +296,8 @@ pub struct ConnectedMachineState {
 }
 
 #[derive(Serialize, Debug, Clone)]
-pub struct PidSettingsStates {
-    pub speed: PidSettings,
+pub struct PDeadSettingsStates {
+    pub kp: f64,
 }
 
 pub enum Winder2Events {
@@ -404,14 +396,14 @@ impl MachineApi for Winder2 {
             Mutation::DisconnectLaser(machine_identification_unique) => {
                 self.disconnect_laser(machine_identification_unique)
             }
-            Mutation::SetSpeedPidSettings(settings) => {
-                self.configure_speed_pid(settings);
+            Mutation::SetDeadPKp(kp) => {
+                self.configure_p_dead(kp);
             }
         }
         Ok(())
     }
 
-    fn api_event_namespace(&mut self) -> Arc<Mutex<Namespace>> {
-        self.namespace.namespace.clone()
+    fn api_event_namespace(&mut self) -> &mut Namespace {
+        &mut self.namespace.namespace
     }
 }
