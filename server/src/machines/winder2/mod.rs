@@ -52,7 +52,7 @@ use uom::{
     },
 };
 
-use crate::machines::winder2::api::{PidSettings, PidSettingsStates};
+use crate::machines::winder2::api::PDeadSettingsStates;
 use crate::machines::{
     MACHINE_WINDER_V1, VENDOR_QITECH, buffer1::BufferV1, laser::LaserMachine,
     winder2::api::ConnectedMachineState,
@@ -91,7 +91,8 @@ pub struct Winder2 {
     pub connected_buffer: Option<ConnectedMachine<Weak<Mutex<BufferV1>>>>,
     pub connected_laser: Option<ConnectedMachine<Weak<Mutex<LaserMachine>>>>,
 
-    pub pid_settings: PidSettings,
+    // pid settings
+    pub kp: f64,
 
     // mode
     pub mode: Winder2Mode,
@@ -351,9 +352,7 @@ impl Winder2 {
                     })
                     .unwrap_or(false),
             },
-            pid_settings: PidSettingsStates {
-                speed: self.pid_settings.clone(),
-            },
+            pdead_settings_state: PDeadSettingsStates { kp: self.kp },
         }
     }
 
@@ -992,11 +991,12 @@ impl Winder2 {
 }
 
 impl Winder2 {
-    pub fn configure_speed_pid(&mut self, settings: PidSettings) {
+    pub fn configure_p_dead(&mut self, kp: f64) {
         // Implement pid to controll speed of winder
         self.puller_speed_controller
-            .pid
-            .configure(settings.ki, settings.kp, settings.kd);
+            .p_dead_controller
+            .configure(kp / 10000.0);
+        self.kp = kp;
         self.emit_state();
     }
 }
