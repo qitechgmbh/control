@@ -3,7 +3,6 @@ use std::time::Instant;
 use super::api::Winder2Namespace;
 use super::tension_arm::TensionArm;
 use super::{Winder2, Winder2Mode};
-use crate::machines::winder2::api::PidSettings;
 use crate::machines::winder2::puller_speed_controller::PullerSpeedController;
 use crate::machines::winder2::spool_speed_controller::SpoolSpeedController;
 use crate::machines::winder2::traverse_controller::TraverseController;
@@ -388,12 +387,7 @@ impl MachineNewTrait for Winder2 {
                 connected_buffer: None,
                 last_state_event: None,
                 connected_laser: None,
-                pid_settings: PidSettings {
-                    kp: 0.1,
-                    ki: 0.0,
-                    kd: 0.0,
-                    dead: 0.0,
-                },
+                kp: 0.0,
             };
 
             // initalize events
