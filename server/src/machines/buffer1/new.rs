@@ -19,6 +19,7 @@ use ethercat_hal::devices::{EthercatDeviceUsed, downcast_device, subdevice_ident
 use ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1;
 use ethercat_hal::shared_config;
 use ethercat_hal::shared_config::el70x1::{EL70x1OperationMode, StmMotorConfiguration};
+use smol::future;
 
 use crate::machines::buffer1::BufferV1Mode;
 use crate::machines::buffer1::buffer_tower_controller::BufferTowerController;
@@ -231,6 +232,7 @@ impl MachineNewTrait for BufferV1 {
                 machine_manager: params.machine_manager.clone(),
                 machine_identification_unique: machine_id,
                 connected_winder: None,
+                future_slot: future::ready(()),
             };
             buffer.emit_state();
             Ok(buffer)

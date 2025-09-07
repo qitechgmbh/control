@@ -39,6 +39,7 @@ use ethercat_hal::io::digital_output::DigitalOutput;
 use ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1;
 use ethercat_hal::shared_config;
 use ethercat_hal::shared_config::el70x1::{EL70x1OperationMode, StmMotorConfiguration};
+use smol::future;
 use uom::ConstZero;
 use uom::si::f64::{Length, Velocity};
 use uom::si::length::{centimeter, meter, millimeter};
@@ -386,6 +387,7 @@ impl MachineNewTrait for Winder2 {
                 machine_identification_unique: machine_id,
                 connected_buffer: None,
                 last_state_event: None,
+                future_slot: future::ready(()),
             };
 
             // initalize events

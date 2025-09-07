@@ -32,6 +32,7 @@ use ethercat_hal::io::{
 };
 use futures::executor::block_on;
 use puller_speed_controller::{PullerRegulationMode, PullerSpeedController};
+use smol::future;
 use smol::lock::{Mutex, RwLock};
 use spool_speed_controller::SpoolSpeedController;
 use std::{
@@ -66,6 +67,8 @@ pub struct SpoolAutomaticAction {
 
 #[derive(Debug)]
 pub struct Winder2 {
+    future_slot: future::Ready<()>,
+
     // drivers
     pub traverse: StepperVelocityEL70x1,
     pub puller: StepperVelocityEL70x1,
