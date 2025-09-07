@@ -32,6 +32,7 @@ use ethercat_hal::{
         serial_interface::SerialInterface, temperature_input::TemperatureInput,
     },
 };
+use smol::future;
 use std::time::{Duration, Instant};
 use uom::si::{
     angular_velocity::revolution_per_minute,
@@ -392,6 +393,7 @@ impl MachineNewTrait for ExtruderV2 {
                 ScrewSpeedController::new(inverter, target_pressure, target_rpm, pressure_sensor);
 
             let mut extruder: ExtruderV2 = Self {
+                future_slot: future::ready(()),
                 namespace: ExtruderV2Namespace::new(params.socket_queue_tx.clone()),
                 last_measurement_emit: Instant::now(),
                 mode: ExtruderV2Mode::Standby,
