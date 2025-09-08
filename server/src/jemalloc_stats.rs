@@ -1,19 +1,15 @@
-use std::time::Duration;
-
-use control_core::helpers::loop_trottle::LoopThrottle;
+use std::{thread::sleep, time::Duration};
 
 pub fn init_jemalloc_stats() {
     std::thread::Builder::new()
         .name("jemalloc-stats".to_string())
         .spawn(|| {
-            let mut throttle = LoopThrottle::new(Duration::from_secs(10), 1, None);
             let mut last_allocated = 0usize;
             let mut last_time = std::time::Instant::now();
 
             loop {
                 smol::block_on(async {
-                    throttle.sleep().await;
-
+                    sleep(Duration::from_secs(10));
                     // Advance epoch and get allocated bytes
                     let _ = tikv_jemalloc_ctl::epoch::advance();
 
