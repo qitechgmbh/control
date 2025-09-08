@@ -78,9 +78,9 @@ pub async fn setup_loop(
         pdu,
         Timeouts {
             // Default 5000ms
-            state_transition: Duration::from_millis(10 * 1000),
+            state_transition: Duration::from_millis(5000),
             // Default 30_000us
-            pdu: Duration::from_millis(500),
+            pdu: Duration::from_micros(30_000),
             // Default 10ms
             eeprom: Duration::from_millis(10),
             // Default 0ms
@@ -92,7 +92,7 @@ pub async fn setup_loop(
         },
         MainDeviceConfig {
             // Default RetryBehaviour::None
-            retry_behaviour: RetryBehaviour::Count(10), // 100ms * 25 = 2.5s
+            retry_behaviour: RetryBehaviour::None, // 100ms * 25 = 2.5s
             // Default 10_000
             dc_static_sync_iterations: 10_000,
         },
