@@ -25,6 +25,20 @@ export async function rebootHmi(): Promise<{
   }
 }
 
+export async function restartBackendDebug(): Promise<{
+  success: boolean;
+  error?: string;
+}> {
+  try {
+    return await window.troubleshoot.restartBackendDebug();
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
 export async function restartBackend(): Promise<{
   success: boolean;
   error?: string;

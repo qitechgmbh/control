@@ -6,8 +6,9 @@ import {
   TROUBLESHOOT_START_LOG_STREAM,
   TROUBLESHOOT_STOP_LOG_STREAM,
   TROUBLESHOOT_LOG_DATA,
+  TROUBLESHOOT_RESTART_BACKEND_DEBUG,
 } from "./troubleshoot-channels";
-
+import { exec } from "child_process";
 let logStreamProcess: ChildProcess | null = null;
 
 export function addTroubleshootEventListeners() {
@@ -22,6 +23,24 @@ export function addTroubleshootEventListeners() {
         error: error instanceof Error ? error.message : String(error),
       };
     }
+  });
+
+  ipcMain.handle(TROUBLESHOOT_RESTART_BACKEND_DEBUG, async () => {
+    return new Promise<{ success: boolean; error?: string }>((resolve) => {
+      exec(
+        `sudo systemctl set-environment RUST_LOG=debug && sudo systemctl restart qitech-control-server`,
+        (error, stdout, stderr) => {
+          if (error) {
+            resolve({
+              success: false,
+              error: stderr || error.message,
+            });
+          } else {
+            resolve({ success: true });
+          }
+        },
+      );
+    });
   });
 
   ipcMain.handle(TROUBLESHOOT_RESTART_BACKEND, async () => {

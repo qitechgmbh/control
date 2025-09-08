@@ -4,7 +4,11 @@ import { SectionTitle } from "@/components/SectionTitle";
 import { Terminal } from "@/components/Terminal";
 import { TouchButton } from "@/components/touch/TouchButton";
 import { useLogsStore } from "@/stores/logsStore";
-import { rebootHmi, restartBackend } from "@/helpers/troubleshoot_helpers";
+import {
+  rebootHmi,
+  restartBackend,
+  restartBackendDebug,
+} from "@/helpers/troubleshoot_helpers";
 import React, { useState } from "react";
 import { toast } from "sonner";
 
@@ -50,6 +54,22 @@ export function TroubleshootPage() {
     }
   };
 
+  const handleRestartBackendDebug = async () => {
+    setIsRestartLoading(true);
+    try {
+      const result = await restartBackendDebug();
+      if (result.success) {
+        toast.success("Backend service restart initiated");
+      } else {
+        toast.error(`Failed to restart backend: ${result.error}`);
+      }
+    } catch (error) {
+      toast.error(`Failed to restart backend: ${error}`);
+    } finally {
+      setIsRestartLoading(false);
+    }
+  };
+
   return (
     <Page>
       <SectionTitle title="System Troubleshoot" />
@@ -73,6 +93,16 @@ export function TroubleshootPage() {
           className="w-max"
         >
           Restart Backend Process
+        </TouchButton>
+
+        <TouchButton
+          variant="outline"
+          icon="lu:RotateCcw"
+          isLoading={isRestartLoading}
+          onClick={handleRestartBackendDebug}
+          className="w-max"
+        >
+          Restart Backend With Debug Logging
         </TouchButton>
       </div>
 

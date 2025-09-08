@@ -51,6 +51,7 @@ interface UpdateContext {
 interface TroubleshootContext {
   rebootHmi: () => Promise<{ success: boolean; error?: string }>;
   restartBackend: () => Promise<{ success: boolean; error?: string }>;
+  restartBackendDebug: () => Promise<{ success: boolean; error?: string }>;
   startLogStream: () => Promise<{ success: boolean; error?: string }>;
   stopLogStream: () => Promise<{ success: boolean; error?: string }>;
   onLogData: (callback: (log: string) => void) => void;
