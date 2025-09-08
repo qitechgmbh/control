@@ -15,7 +15,10 @@ use control_core::{
 };
 use futures::executor::block_on;
 use serde::{Deserialize, Serialize};
-use smol::lock::{Mutex, RwLock};
+use smol::{
+    future,
+    lock::{Mutex, RwLock},
+};
 use std::{
     any::Any,
     sync::{Arc, Weak},
@@ -28,6 +31,7 @@ use crate::machines::{
 
 #[derive(Debug)]
 pub struct BufferV1 {
+    future_slot: future::Ready<()>,
     // controllers
     pub buffer_tower_controller: BufferTowerController,
 

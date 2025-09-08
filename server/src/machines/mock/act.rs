@@ -1,4 +1,5 @@
 use control_core::machines::new::MachineAct;
+use smol::future;
 
 use super::MockMachine;
 use std::{
@@ -24,18 +25,19 @@ use std::{
 /// The method ensures that the sine wave value is updated approximately 60 times per second (16ms intervals) when running.
 ///
 impl MachineAct for MockMachine {
-    fn act(&mut self, _now_ts: Instant) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
-        Box::pin(async move {
-            let now = Instant::now();
+    fn act(&mut self, now: Instant) -> Pin<&mut (dyn Future<Output = ()> + Send + '_)> {
+        // Only emit live values if machine is in Running mode
+        // The live values are updated approximately 30 times per second
+        if now.duration_since(self.last_measurement_emit) > Duration::from_secs_f64(1.0 / 30.0) {
+            self.maybe_emit_state_event();
+            self.emit_live_values();
+            self.last_measurement_emit = now;
+        }
 
-            // Only emit live values if machine is in Running mode
-            // The live values are updated approximately 30 times per second
-            if now.duration_since(self.last_measurement_emit) > Duration::from_secs_f64(1.0 / 30.0)
-            {
-                self.maybe_emit_state_event();
-                self.emit_live_values();
-                self.last_measurement_emit = now;
-            }
-        })
+        // refresh the slot so it's a "completed" Ready future again
+        self.future_slot = future::ready(());
+
+        // return pinned &mut reference as a trait object
+        Pin::new(&mut self.future_slot) as Pin<&mut (dyn Future<Output = ()> + Send + '_)>
     }
 }

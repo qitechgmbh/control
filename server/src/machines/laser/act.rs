@@ -1,5 +1,6 @@
 use super::LaserMachine;
 use control_core::machines::new::MachineAct;
+use smol::future;
 use std::{
     future::Future,
     pin::Pin,
@@ -22,15 +23,18 @@ use std::{
 /// The method ensures that the diameter value is updated approximately 60 times per second.
 ///
 impl MachineAct for LaserMachine {
-    fn act(&mut self, now: Instant) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
-        Box::pin(async move {
-            // more than 33ms have passed since last emit (30 "fps" target)
-            if now.duration_since(self.last_measurement_emit) > Duration::from_secs_f64(1.0 / 30.0)
-            {
-                self.maybe_emit_state_event();
-                self.emit_live_values();
-                self.last_measurement_emit = now;
-            }
-        })
+    fn act(&mut self, now: Instant) -> Pin<&mut (dyn Future<Output = ()> + Send + '_)> {
+        // more than 33ms have passed since last emit (30 "fps" target)
+        if now.duration_since(self.last_measurement_emit) > Duration::from_secs_f64(1.0 / 30.0) {
+            self.maybe_emit_state_event();
+            self.emit_live_values();
+            self.last_measurement_emit = now;
+        }
+
+        // refresh the slot so it's a "completed" Ready future again
+        self.future_slot = future::ready(());
+
+        // return pinned &mut reference as a trait object
+        Pin::new(&mut self.future_slot) as Pin<&mut (dyn Future<Output = ()> + Send + '_)>
     }
 }
