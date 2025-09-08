@@ -84,7 +84,7 @@ pub async fn setup_loop(
             // Default 10ms
             eeprom: Duration::from_millis(10),
             // Default 0ms
-            wait_loop_delay: Duration::from_millis(1),
+            wait_loop_delay: Duration::from_millis(0),
             // Default 100ms
             mailbox_echo: Duration::from_millis(100),
             // Default 1000ms
