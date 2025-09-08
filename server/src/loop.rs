@@ -4,7 +4,7 @@ use bitvec::prelude::*;
 use control_core::realtime::{set_core_affinity, set_realtime_priority};
 use smol::channel::Sender;
 use std::sync::Arc;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 use tracing::{instrument, trace_span};
 
 pub fn init_loop(
@@ -127,6 +127,8 @@ pub async fn loop_once<'maindevice>(app_state: Arc<AppState>) -> Result<(), anyh
                 ))
             })?;
         }
+
+        smol::Timer::after(Duration::from_millis(1)).await;
     }
 
     // execute machines
