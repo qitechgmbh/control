@@ -103,7 +103,7 @@ in {
       
       environment = {
         RUST_BACKTRACE = "full";
-        RUST_LOG = "info";
+        RUST_LOG = "debug";
       };
     };
     
