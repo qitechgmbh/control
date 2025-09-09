@@ -1,5 +1,6 @@
 {
     "typescript.inlayHints.enumMemberValues.enabled": false,
-     "git.detectSubmodules": true,
-     "git.detectSubmodulesLimit": 10,
+    "git.detectSubmodules": true,
+    "git.detectSubmodulesLimit": 10,
+    "rust-analyzer.check.command": "clippy",
 }

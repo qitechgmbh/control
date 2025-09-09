@@ -3,6 +3,9 @@ name = "ethercat_hal"
 version = "0.1.0"
 edition = "2024"
 
+[lints]
+workspace = true
+
 [dependencies]
 anyhow = "1.0.99"
 ethercrab = "0.6"

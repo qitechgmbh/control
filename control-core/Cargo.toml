@@ -3,6 +3,9 @@ name = "control_core"
 version = "0.1.0"
 edition = "2024"
 
+[lints]
+workspace = true
+
 [dependencies]
 anyhow = "1.0.99"
 axum = "0.8.4"
@@ -10,7 +13,7 @@ ethercat_hal = { path = "../ethercat-hal" }
 ethercrab = "0.6"
 interfaces = "0.0.9"
 serde = "1.0.219"
-serde_json =  "1.0.143"
+serde_json = "1.0.143"
 serialport = "4.7.3"
 smol = "2.0.2"
 socketioxide = "0.17.2"
