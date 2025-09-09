@@ -50,10 +50,8 @@ export function useBuffer1() {
   // Single optimistic state for all state management
   const stateOptimistic = useStateOptimistic<StateEvent>();
 
-  // Update optimistic state to real when real state changes
   useEffect(() => {
-    // Only update if the optimistic state is currently optimistic
-    if (state && stateOptimistic.isOptimistic) {
+    if (state) {
       stateOptimistic.setReal(state);
     }
   }, [state]);
@@ -64,7 +62,7 @@ export function useBuffer1() {
     serverRequest: () => void,
   ) => {
     const currentState = stateOptimistic.value;
-    if (currentState) {
+    if (currentState && !stateOptimistic.isOptimistic) {
       stateOptimistic.setOptimistic(produce(currentState, producer));
     }
     serverRequest();

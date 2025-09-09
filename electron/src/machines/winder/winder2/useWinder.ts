@@ -71,8 +71,7 @@ export function useWinder2() {
 
   // Update optimistic state to real when real state changes
   useEffect(() => {
-    // Only update if the optimistic state is currently optimistic
-    if (state && stateOptimistic.isOptimistic) {
+    if (state) {
       stateOptimistic.setReal(state);
     }
   }, [state]);
@@ -179,7 +178,7 @@ export function useWinder2() {
     serverRequest: () => void,
   ) => {
     const currentState = stateOptimistic.value;
-    if (currentState) {
+    if (currentState && !stateOptimistic.isOptimistic) {
       stateOptimistic.setOptimistic(produce(currentState, producer));
     }
     serverRequest();
