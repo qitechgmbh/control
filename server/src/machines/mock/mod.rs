@@ -6,7 +6,6 @@ use control_core::{
     machines::{Machine, identification::MachineIdentification},
     socketio::namespace::NamespaceCacheingLogic,
 };
-use smol::future;
 
 use std::time::Instant;
 use tracing::info;
@@ -21,8 +20,6 @@ pub mod new;
 
 #[derive(Debug)]
 pub struct MockMachine {
-    future_slot: future::Ready<()>,
-
     // socketio
     namespace: MockMachineNamespace,
     last_measurement_emit: Instant,

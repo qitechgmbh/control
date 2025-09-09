@@ -71,7 +71,7 @@ impl<'a> Iterator for MachineManagerIterator<'a> {
 
 impl MachineManager {
     // Returns an iterator over all machines (both ethercat and serial)
-    pub fn iter(&self) -> MachineManagerIterator {
+    pub fn iter(&'_ self) -> MachineManagerIterator<'_> {
         MachineManagerIterator {
             iter: MachineManagerIter::EthercatMachines {
                 iter: self.ethercat_machines.iter(),

@@ -8,7 +8,7 @@ use control_core::{
     machines::{Machine, identification::MachineIdentification},
     socketio::namespace::NamespaceCacheingLogic,
 };
-use smol::{future, lock::RwLock};
+use smol::lock::RwLock;
 use std::{any::Any, sync::Arc, time::Instant};
 use uom::si::{f64::Length, length::millimeter};
 
@@ -18,8 +18,6 @@ pub mod new;
 
 #[derive(Debug)]
 pub struct LaserMachine {
-    future_slot: future::Ready<()>,
-
     // drivers
     laser: Arc<RwLock<Laser>>,
 
