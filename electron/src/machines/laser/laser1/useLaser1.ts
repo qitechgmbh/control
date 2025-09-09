@@ -18,12 +18,13 @@ function useLaser(machine_identification_unique: MachineIdentificationUnique) {
   // Single optimistic state for all state management
   const stateOptimistic = useStateOptimistic<StateEvent>();
 
-  // Update optimistic state when real state changes
+  // Update optimistic state to real when real state changes
   useEffect(() => {
-    if (state && !stateOptimistic.isOptimistic) {
+    // Only update if the optimistic state is currently optimistic
+    if (state && stateOptimistic.isOptimistic) {
       stateOptimistic.setReal(state);
     }
-  }, [state, stateOptimistic]);
+  }, [state]);
 
   // Helper function for optimistic updates using produce
   const updateStateOptimistically = (
