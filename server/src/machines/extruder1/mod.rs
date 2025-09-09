@@ -1,3 +1,4 @@
+use crate::machines::extruder1::api::FaultState;
 use crate::machines::{MACHINE_EXTRUDER_V1, VENDOR_QITECH};
 use api::{
     ExtruderSettingsState, ExtruderV2Events, ExtruderV2Namespace, HeatingState, HeatingStates,
@@ -20,6 +21,7 @@ use uom::si::{
     pressure::bar,
     thermodynamic_temperature::degree_celsius,
 };
+
 pub mod act;
 pub mod api;
 pub mod mitsubishi_cs80;
@@ -79,6 +81,15 @@ pub struct ExtruderV2 {
 
 impl ExtruderV2 {
     pub fn build_state_event(&mut self) -> StateEvent {
+        let fault = match self.screw_speed_controller.get_last_fault() {
+            Some(fault) => Some(FaultState {
+                fault_code: fault.fault_code.into(),
+                fault_description: fault.fault_description,
+                time_stamp: fault.ts,
+            }),
+            None => None,
+        };
+
         StateEvent {
             is_default_state: !std::mem::replace(&mut self.emitted_default_state, true),
             rotation_state: RotationState {
@@ -156,6 +167,7 @@ impl ExtruderV2 {
                 output_frequency_detection: self.screw_speed_controller.inverter.status.fu,
                 abc_fault: self.screw_speed_controller.inverter.status.abc_,
                 fault_occurence: self.screw_speed_controller.inverter.status.fault_occurence,
+                fault: fault,
             },
             pid_settings: PidSettingsStates {
                 temperature: PidSettings {
@@ -252,10 +264,10 @@ impl ExtruderV2 {
     }
 
     pub fn emit_state(&mut self) {
-        let state = self.build_state_event();
-        self.last_state_event = Some(state.clone());
-        let event = state.build();
-        self.namespace.emit(ExtruderV2Events::State(event));
+        let event = self.build_state_event();
+        self.namespace
+            .emit(ExtruderV2Events::State(event.clone().build()));
+        self.last_state_event = Some(event);
     }
 
     // Extruder Settings Api Impl
