@@ -12,14 +12,17 @@ export function TroubleshootPage() {
   const [isRebootLoading, setIsRebootLoading] = useState(false);
   const [isRestartLoading, setIsRestartLoading] = useState(false);
 
-  const { getLogsBySource } = useLogsStore();
+  const { getLogsBySource, clearLogs } = useLogsStore();
 
+  // Perhaps we just need to clear the logs ?
+  clearLogs();
   // Get backend logs for display
   const backendLogs = getLogsBySource("qitech-control-server");
   const logLines = backendLogs.map((log) => log.raw);
 
   const handleRebootHmi = async () => {
     setIsRebootLoading(true);
+
     try {
       const result = await rebootHmi();
       if (result.success) {

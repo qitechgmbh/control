@@ -22,6 +22,7 @@ export function UpdateExecutePage() {
     startUpdate,
     stopUpdate,
     addTerminalLine,
+    clearTerminalLines,
   } = useUpdateStore();
 
   // Set update info from search params when component mounts or search changes
@@ -49,6 +50,8 @@ export function UpdateExecutePage() {
     };
 
     startUpdate();
+    // Perhaps we just need to clear the logs ?
+    clearTerminalLines();
     const res = await updateExecute(updateInfo, addTerminalLine);
     stopUpdate();
 
