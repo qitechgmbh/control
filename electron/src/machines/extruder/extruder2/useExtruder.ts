@@ -61,9 +61,8 @@ export function useExtruder2() {
   // Single optimistic state for all state management
   const stateOptimistic = useStateOptimistic<StateEvent>();
 
-  // Update optimistic state when real state changes
   useEffect(() => {
-    if (state && !stateOptimistic.isOptimistic) {
+    if (state) {
       stateOptimistic.setReal(state);
     }
   }, [state, stateOptimistic]);
@@ -74,7 +73,7 @@ export function useExtruder2() {
     serverRequest: () => void,
   ) => {
     const currentState = stateOptimistic.value;
-    if (currentState) {
+    if (currentState && !stateOptimistic.isOptimistic) {
       stateOptimistic.setOptimistic(produce(currentState, producer));
     }
     serverRequest();
