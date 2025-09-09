@@ -37,7 +37,7 @@ impl NewEthercatDevice for EL2521 {
         let txpdo = configuration.pdo_assignment.txpdo_assignment();
         let rxpdo = configuration.pdo_assignment.rxpdo_assignment();
         Self {
-            configuration: configuration,
+            configuration,
             txpdo,
             rxpdo,
             is_used: false,
@@ -354,7 +354,7 @@ pub enum EL2521PredefinedPdoAssignment {
 impl PredefinedPdoAssignment<EL2521TxPdo, EL2521RxPdo> for EL2521PredefinedPdoAssignment {
     fn txpdo_assignment(&self) -> EL2521TxPdo {
         match self {
-            EL2521PredefinedPdoAssignment::EnhancedOperatingMode32Bit => EL2521TxPdo {
+            Self::EnhancedOperatingMode32Bit => EL2521TxPdo {
                 pto_status: Some(PtoStatus::default()),
                 enc_status: Some(EncStatus::default()),
             },
@@ -363,7 +363,7 @@ impl PredefinedPdoAssignment<EL2521TxPdo, EL2521RxPdo> for EL2521PredefinedPdoAs
 
     fn rxpdo_assignment(&self) -> EL2521RxPdo {
         match self {
-            EL2521PredefinedPdoAssignment::EnhancedOperatingMode32Bit => EL2521RxPdo {
+            Self::EnhancedOperatingMode32Bit => EL2521RxPdo {
                 pto_control: Some(PtoControl::default()),
                 pto_target: Some(PtoTarget::default()),
                 enc_control: Some(EncControl::default()),

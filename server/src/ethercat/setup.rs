@@ -98,7 +98,7 @@ pub async fn setup_loop(
         },
     );
 
-    let _ = smol::block_on({
+    smol::block_on({
         let app_state_clone = app_state.clone();
         async move {
             let main_namespace = &mut app_state_clone
@@ -214,7 +214,7 @@ pub async fn setup_loop(
 
     // Notify client via socketio
     let app_state_clone = app_state.clone();
-    let _ = smol::block_on(async move {
+    smol::block_on(async move {
         let main_namespace = &mut app_state_clone
             .socketio_setup
             .namespaces
@@ -250,7 +250,7 @@ pub async fn setup_loop(
 
     // Notify client via socketio
     let app_state_clone = app_state.clone();
-    let _ = smol::block_on(async move {
+    smol::block_on(async move {
         let main_namespace = &mut app_state_clone
             .socketio_setup
             .namespaces

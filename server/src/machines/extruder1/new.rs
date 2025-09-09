@@ -43,11 +43,7 @@ use uom::si::{
 impl MachineNewTrait for ExtruderV2 {
     fn new<'maindevice>(params: &MachineNewParams) -> Result<Self, Error> {
         // validate general stuff
-        let device_identification = params
-            .device_group
-            .iter()
-            .map(|device_identification| device_identification.clone())
-            .collect::<Vec<_>>();
+        let device_identification = params.device_group.to_vec();
 
         validate_same_machine_identification_unique(&device_identification)?;
         validate_no_role_dublicates(&device_identification)?;
@@ -88,7 +84,7 @@ impl MachineNewTrait for ExtruderV2 {
                 let device = match subdevice_identity_to_tuple(&subdevice_identity) {
                     EK1100_IDENTITY_A => {
                         let ethercat_device = get_ethercat_device_by_index(
-                            &hardware.ethercat_devices,
+                            hardware.ethercat_devices,
                             subdevice_index,
                         )?;
                         downcast_device::<EK1100>(ethercat_device).await?
@@ -127,7 +123,7 @@ impl MachineNewTrait for ExtruderV2 {
                 let device = match subdevice_identity_to_tuple(&subdevice_identity) {
                     EL1002_IDENTITY_A => {
                         let ethercat_device = get_ethercat_device_by_index(
-                            &hardware.ethercat_devices,
+                            hardware.ethercat_devices,
                             subdevice_index,
                         )?;
                         downcast_device::<EL1002>(ethercat_device).await?
@@ -167,7 +163,7 @@ impl MachineNewTrait for ExtruderV2 {
                     EL6021_IDENTITY_A | EL6021_IDENTITY_B | EL6021_IDENTITY_C
                     | EL6021_IDENTITY_D => {
                         let ethercat_device = get_ethercat_device_by_index(
-                            &hardware.ethercat_devices,
+                            hardware.ethercat_devices,
                             subdevice_index,
                         )?;
                         downcast_device::<EL6021>(ethercat_device).await?
@@ -182,7 +178,7 @@ impl MachineNewTrait for ExtruderV2 {
                 device
                     .write()
                     .await
-                    .write_config(&subdevice, &EL6021Configuration::default())
+                    .write_config(subdevice, &EL6021Configuration::default())
                     .await?;
                 {
                     let mut device_guard = device.write().await;
@@ -211,7 +207,7 @@ impl MachineNewTrait for ExtruderV2 {
                 let device = match subdevice_identity_to_tuple(&subdevice_identity) {
                     EL2004_IDENTITY_A => {
                         let ethercat_device = get_ethercat_device_by_index(
-                            &hardware.ethercat_devices,
+                            hardware.ethercat_devices,
                             subdevice_index,
                         )?;
                         downcast_device::<EL2004>(ethercat_device).await?
@@ -250,7 +246,7 @@ impl MachineNewTrait for ExtruderV2 {
                 let device = match subdevice_identity_to_tuple(&subdevice_identity) {
                     EL3021_IDENTITY_A => {
                         let ethercat_device = get_ethercat_device_by_index(
-                            &hardware.ethercat_devices,
+                            hardware.ethercat_devices,
                             subdevice_index,
                         )?;
                         downcast_device::<EL3021>(ethercat_device).await?
@@ -289,7 +285,7 @@ impl MachineNewTrait for ExtruderV2 {
                 let device = match subdevice_identity_to_tuple(&subdevice_identity) {
                     EL3204_IDENTITY_A | EL3204_IDENTITY_B => {
                         let ethercat_device = get_ethercat_device_by_index(
-                            &hardware.ethercat_devices,
+                            hardware.ethercat_devices,
                             subdevice_index,
                         )?;
                         downcast_device::<EL3204>(ethercat_device).await?
@@ -311,7 +307,7 @@ impl MachineNewTrait for ExtruderV2 {
             let t1 = TemperatureInput::new(el3204.clone(), EL3204Port::T1);
             let t2 = TemperatureInput::new(el3204.clone(), EL3204Port::T2);
             let t3 = TemperatureInput::new(el3204.clone(), EL3204Port::T3);
-            let t4 = TemperatureInput::new(el3204.clone(), EL3204Port::T4);
+            let t4 = TemperatureInput::new(el3204, EL3204Port::T4);
 
             // For the Relais
             let digital_out_1 = DigitalOutput::new(el2004.clone(), EL2004Port::DO1);
@@ -391,15 +387,15 @@ impl MachineNewTrait for ExtruderV2 {
             let screw_speed_controller =
                 ScrewSpeedController::new(inverter, target_pressure, target_rpm, pressure_sensor);
 
-            let mut extruder: ExtruderV2 = Self {
+            let mut extruder: Self = Self {
                 namespace: ExtruderV2Namespace::new(params.socket_queue_tx.clone()),
                 last_measurement_emit: Instant::now(),
                 mode: ExtruderV2Mode::Standby,
-                temperature_controller_front: temperature_controller_front,
-                temperature_controller_middle: temperature_controller_middle,
-                temperature_controller_back: temperature_controller_back,
-                temperature_controller_nozzle: temperature_controller_nozzle,
-                screw_speed_controller: screw_speed_controller,
+                temperature_controller_front,
+                temperature_controller_middle,
+                temperature_controller_back,
+                temperature_controller_nozzle,
+                screw_speed_controller,
                 emitted_default_state: false,
                 last_state_event: None,
             };

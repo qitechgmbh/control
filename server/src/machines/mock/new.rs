@@ -9,16 +9,8 @@ use control_core::machines::new::{MachineNewHardware, MachineNewTrait};
 use uom::si::{f64::Frequency, frequency::hertz};
 
 impl MachineNewTrait for MockMachine {
-    fn new<'maindevice, 'subdevices>(
-        params: &control_core::machines::new::MachineNewParams<
-            'maindevice,
-            'subdevices,
-            '_,
-            '_,
-            '_,
-            '_,
-            '_,
-        >,
+    fn new(
+        params: &control_core::machines::new::MachineNewParams<'_, '_, '_, '_, '_, '_, '_>,
     ) -> Result<Self, Error>
     where
         Self: Sized,

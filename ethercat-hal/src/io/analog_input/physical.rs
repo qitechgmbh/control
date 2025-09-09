@@ -23,34 +23,34 @@ pub enum AnalogInputRange {
 }
 
 impl AnalogInputRange {
-    pub fn get_min_raw(&self) -> i16 {
-        return match self {
-            AnalogInputRange::Potential { min_raw, .. } => *min_raw,
-            AnalogInputRange::Current { min_raw, .. } => *min_raw,
-        };
+    pub const fn get_min_raw(&self) -> i16 {
+        match self {
+            Self::Potential { min_raw, .. } => *min_raw,
+            Self::Current { min_raw, .. } => *min_raw,
+        }
     }
 
-    pub fn get_max_raw(&self) -> i16 {
-        return match self {
-            AnalogInputRange::Potential { max_raw, .. } => *max_raw,
-            AnalogInputRange::Current { max_raw, .. } => *max_raw,
-        };
+    pub const fn get_max_raw(&self) -> i16 {
+        match self {
+            Self::Potential { max_raw, .. } => *max_raw,
+            Self::Current { max_raw, .. } => *max_raw,
+        }
     }
 
     pub fn raw_to_normalized(&self, raw_value: i16) -> f64 {
         let range = (self.get_max_raw() as i32 - self.get_min_raw() as i32) as f64;
-        return (raw_value as i32 - self.get_min_raw() as i32) as f64 / range;
+        (raw_value as i32 - self.get_min_raw() as i32) as f64 / range
     }
 
     pub fn raw_to_physical(&self, raw_value: i16) -> AnalogInputValue {
         let normalized = self.raw_to_normalized(raw_value);
         match self {
-            AnalogInputRange::Potential { min, max, .. } => {
-                let value = *min + (*max - *min).abs() * normalized as f64;
+            Self::Potential { min, max, .. } => {
+                let value = *min + (*max - *min).abs() * normalized;
                 AnalogInputValue::Potential(value)
             }
-            AnalogInputRange::Current { min, max, .. } => {
-                let value = *min + (*max - *min).abs() * normalized as f64;
+            Self::Current { min, max, .. } => {
+                let value = *min + (*max - *min).abs() * normalized;
                 AnalogInputValue::Current(value)
             }
         }
@@ -59,11 +59,11 @@ impl AnalogInputRange {
     /// Convert a normalized value (0 to 1.0) to a physical value
     pub fn normalized_to_physical(&self, normalized: f32) -> AnalogInputValue {
         match self {
-            AnalogInputRange::Potential { min, max, .. } => {
+            Self::Potential { min, max, .. } => {
                 let value = *min + (*max - *min).abs() * normalized as f64;
                 AnalogInputValue::Potential(value)
             }
-            AnalogInputRange::Current { min, max, .. } => {
+            Self::Current { min, max, .. } => {
                 let value = *min + (*max - *min).abs() * normalized as f64;
                 AnalogInputValue::Current(value)
             }

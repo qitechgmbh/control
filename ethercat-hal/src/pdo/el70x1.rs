@@ -4,7 +4,7 @@ use ethercat_hal_derive::PdoObject;
 
 /// # `EncStatusCompact`
 /// 48 bits / 6 bytes
-#[derive(Debug, Clone, Default, PdoObject, PartialEq)]
+#[derive(Debug, Clone, Default, PdoObject, PartialEq, Eq)]
 #[pdo_object(bits = 48)]
 pub struct EncStatusCompact {
     /// # 6000:01
@@ -78,7 +78,7 @@ impl TxPdoObject for EncStatusCompact {
 
 /// # `EncStatus`
 /// 80 bits / 10 bytes
-#[derive(Debug, Clone, Default, PdoObject, PartialEq)]
+#[derive(Debug, Clone, Default, PdoObject, PartialEq, Eq)]
 #[pdo_object(bits = 80)]
 pub struct EncStatus {
     /// # 6000:01
@@ -151,7 +151,7 @@ impl TxPdoObject for EncStatus {
 
 /// # `EncTimestampCompact`
 /// 32 bits / 4 bytes
-#[derive(Debug, Clone, Default, PdoObject, PartialEq)]
+#[derive(Debug, Clone, Default, PdoObject, PartialEq, Eq)]
 #[pdo_object(bits = 32)]
 pub struct EncTimestampCompact {
     /// # 6000:16
@@ -168,7 +168,7 @@ impl TxPdoObject for EncTimestampCompact {
 
 /// # `EncTimestamp`
 /// 16 bits / 2 bytes
-#[derive(Debug, Clone, Default, PdoObject, PartialEq)]
+#[derive(Debug, Clone, Default, PdoObject, PartialEq, Eq)]
 #[pdo_object(bits = 16)]
 pub struct StmStatus {
     /// # 6010:01
@@ -249,7 +249,7 @@ impl TxPdoObject for StmStatus {
 
 /// # `StmSynchronInfoData`
 /// 32 bits / 4 bytes
-#[derive(Debug, Clone, Default, PdoObject, PartialEq)]
+#[derive(Debug, Clone, Default, PdoObject, PartialEq, Eq)]
 #[pdo_object(bits = 32)]
 pub struct StmSynchronInfoData {
     /// # 6010:11
@@ -272,7 +272,7 @@ impl TxPdoObject for StmSynchronInfoData {
 
 /// # `PosStatusCompact`
 /// 16 bits / 2 bytes
-#[derive(Debug, Clone, Default, PdoObject, PartialEq)]
+#[derive(Debug, Clone, Default, PdoObject, PartialEq, Eq)]
 #[pdo_object(bits = 16)]
 pub struct PosStatusCompact {
     /// # 6020:01
@@ -331,7 +331,7 @@ impl TxPdoObject for PosStatusCompact {
 
 /// # `PosStatus`
 /// 96 bits / 12 bytes
-#[derive(Debug, Clone, Default, PdoObject, PartialEq)]
+#[derive(Debug, Clone, Default, PdoObject, PartialEq, Eq)]
 #[pdo_object(bits = 96)]
 pub struct PosStatus {
     /// # 6020:01
@@ -407,7 +407,7 @@ impl TxPdoObject for PosStatus {
 
 /// # `StmInternalPosition`
 /// 32 bits / 4 bytes
-#[derive(Debug, Clone, Default, PdoObject, PartialEq)]
+#[derive(Debug, Clone, Default, PdoObject, PartialEq, Eq)]
 #[pdo_object(bits = 32)]
 pub struct StmInternalPosition {
     /// # 6010:14
@@ -424,7 +424,7 @@ impl TxPdoObject for StmInternalPosition {
 
 /// # `StmExternalPosition`
 /// 32 bits / 4 bytes
-#[derive(Debug, Clone, Default, PdoObject, PartialEq)]
+#[derive(Debug, Clone, Default, PdoObject, PartialEq, Eq)]
 #[pdo_object(bits = 32)]
 pub struct StmExternalPosition {
     /// # 6010:15
@@ -441,7 +441,7 @@ impl TxPdoObject for StmExternalPosition {
 
 /// # `PosActualPositionLag`
 /// 32 bits / 4 bytes
-#[derive(Debug, Clone, Default, PdoObject, PartialEq)]
+#[derive(Debug, Clone, Default, PdoObject, PartialEq, Eq)]
 #[pdo_object(bits = 32)]
 pub struct PosActualPositionLag {
     /// # 6020:23
@@ -458,7 +458,7 @@ impl TxPdoObject for PosActualPositionLag {
 
 /// # `EncControlCompact`
 /// 32 bits / 4 bytes
-#[derive(Debug, Clone, Default, PdoObject, PartialEq)]
+#[derive(Debug, Clone, Default, PdoObject, PartialEq, Eq)]
 #[pdo_object(bits = 32)]
 pub struct EncControlCompact {
     /// # 7000:01
@@ -496,7 +496,7 @@ impl RxPdoObject for EncControlCompact {
 
 /// # `EncControl`
 /// 48 bits / 6 bytes
-#[derive(Debug, Clone, Default, PdoObject, PartialEq)]
+#[derive(Debug, Clone, Default, PdoObject, PartialEq, Eq)]
 #[pdo_object(bits = 48)]
 pub struct EncControl {
     /// # 7000:01
@@ -535,7 +535,7 @@ impl RxPdoObject for EncControl {
 
 /// # `StmControl`
 /// 16 bits / 2 bytes
-#[derive(Debug, Clone, Default, PdoObject, PartialEq)]
+#[derive(Debug, Clone, Default, PdoObject, PartialEq, Eq)]
 #[pdo_object(bits = 16)]
 pub struct StmControl {
     /// # 7010:01
@@ -564,7 +564,7 @@ impl RxPdoObject for StmControl {
 
 /// # `StmPosition`
 /// 32 bits / 4 bytes
-#[derive(Debug, Clone, Default, PdoObject, PartialEq)]
+#[derive(Debug, Clone, Default, PdoObject, PartialEq, Eq)]
 #[pdo_object(bits = 32)]
 pub struct StmPosition {
     /// # 7010:11
@@ -581,7 +581,7 @@ impl RxPdoObject for StmPosition {
 
 /// # `StmVelocity`
 /// 16 bits / 2 bytes
-#[derive(Debug, Clone, Default, PdoObject, PartialEq)]
+#[derive(Debug, Clone, Default, PdoObject, PartialEq, Eq)]
 #[pdo_object(bits = 16)]
 pub struct StmVelocity {
     /// # 7010:21
@@ -598,7 +598,7 @@ impl RxPdoObject for StmVelocity {
 
 /// # `PosControlCompact`
 /// 48 bits / 6 bytes
-#[derive(Debug, Clone, Default, PdoObject, PartialEq)]
+#[derive(Debug, Clone, Default, PdoObject, PartialEq, Eq)]
 #[pdo_object(bits = 48)]
 pub struct PosControlCompact {
     /// # 7020:01
@@ -627,7 +627,7 @@ impl RxPdoObject for PosControlCompact {
 
 /// # `PosControl`
 /// 112 bits / 14 bytes
-#[derive(Debug, Clone, Default, PdoObject, PartialEq)]
+#[derive(Debug, Clone, Default, PdoObject, PartialEq, Eq)]
 #[pdo_object(bits = 112)]
 pub struct PosControl {
     /// # 7020:01
@@ -680,7 +680,7 @@ impl RxPdoObject for PosControl {
 
 /// # `PosControl2`
 /// 112 bits / 14 bytes
-#[derive(Debug, Clone, Default, PdoObject, PartialEq)]
+#[derive(Debug, Clone, Default, PdoObject, PartialEq, Eq)]
 #[pdo_object(bits = 112)]
 pub struct PosControl2 {
     /// # 7021:01

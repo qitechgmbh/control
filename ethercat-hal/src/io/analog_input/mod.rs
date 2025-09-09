@@ -25,7 +25,7 @@ impl fmt::Debug for AnalogInput {
 
 /// Implement on device that have analog inputs
 impl AnalogInput {
-    pub fn new<PORT>(device: Arc<RwLock<dyn AnalogInputDevice<PORT>>>, port: PORT) -> AnalogInput
+    pub fn new<PORT>(device: Arc<RwLock<dyn AnalogInputDevice<PORT>>>, port: PORT) -> Self
     where
         PORT: Clone + Send + Sync + 'static,
     {
@@ -46,7 +46,7 @@ impl AnalogInput {
             })
         });
 
-        AnalogInput { get_input, range }
+        Self { get_input, range }
     }
 
     /// Value from -1.0 to 1.0

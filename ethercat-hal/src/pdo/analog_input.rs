@@ -6,7 +6,7 @@ use super::{TxPdoObject, basic::Limit};
 /// PDO Object for EL30xx devices
 ///
 /// The value is accompanied by some metadata.
-#[derive(Debug, Clone, Default, PdoObject, PartialEq)]
+#[derive(Debug, Clone, Default, PdoObject, PartialEq, Eq)]
 #[pdo_object(bits = 32)]
 pub struct AiStandard {
     /// The signal voltage is over the defined operating range of the device
@@ -54,7 +54,7 @@ impl TxPdoObject for AiStandard {
 /// PDO Object for EL30xx devices
 ///
 /// The value without metadata.
-#[derive(Debug, Clone, Default, PdoObject, PartialEq)]
+#[derive(Debug, Clone, Default, PdoObject, PartialEq, Eq)]
 #[pdo_object(bits = 16)]
 pub struct AiCompact {
     /// The 16bit analog value is unsigned here but devices could write signed value with different signing strategies.

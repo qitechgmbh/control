@@ -6,7 +6,7 @@ use super::RxPdoObject;
 /// PDO Object for EL40xx (analog output) devices
 ///
 /// The "Analog Output" holds the output value and status information.
-#[derive(Debug, Clone, Default, PdoObject, PartialEq)]
+#[derive(Debug, Clone, Default, PdoObject, PartialEq, Eq)]
 #[pdo_object(bits = 16)]
 pub struct AnalogOutput {
     /// Output value (-32768-32767 typically corresponds to -10 -10V or 0mA-20mA (from 4-20mA for EL402x))

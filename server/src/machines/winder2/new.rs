@@ -46,11 +46,7 @@ use uom::si::length::{centimeter, meter, millimeter};
 impl MachineNewTrait for Winder2 {
     fn new<'maindevice>(params: &MachineNewParams) -> Result<Self, Error> {
         // validate general stuff
-        let device_identification = params
-            .device_group
-            .iter()
-            .map(|device_identification| device_identification.clone())
-            .collect::<Vec<_>>();
+        let device_identification = params.device_group.to_vec();
 
         validate_same_machine_identification_unique(&device_identification)?;
         validate_no_role_dublicates(&device_identification)?;
@@ -91,7 +87,7 @@ impl MachineNewTrait for Winder2 {
                 let device = match subdevice_identity_to_tuple(&subdevice_identity) {
                     EK1100_IDENTITY_A => {
                         let ethercat_device = get_ethercat_device_by_index(
-                            &hardware.ethercat_devices,
+                            hardware.ethercat_devices,
                             subdevice_index,
                         )?;
                         downcast_device::<EK1100>(ethercat_device).await?
@@ -131,7 +127,7 @@ impl MachineNewTrait for Winder2 {
                 let device = match subdevice_identity_to_tuple(&subdevice_identity) {
                     EL2002_IDENTITY_A | EL2002_IDENTITY_B => {
                         let ethercat_device = get_ethercat_device_by_index(
-                            &hardware.ethercat_devices,
+                            hardware.ethercat_devices,
                             subdevice_index,
                         )?;
                         downcast_device::<EL2002>(ethercat_device).await?
@@ -173,7 +169,7 @@ impl MachineNewTrait for Winder2 {
                 let device = match subdevice_identity_to_tuple(&subdevice_identity) {
                     EL7041_0052_IDENTITY_A => {
                         let ethercat_device = get_ethercat_device_by_index(
-                            &hardware.ethercat_devices,
+                            hardware.ethercat_devices,
                             subdevice_index,
                         )?;
                         downcast_device::<EL7041_0052>(ethercat_device).await?
@@ -197,7 +193,7 @@ impl MachineNewTrait for Winder2 {
                 device
                     .write()
                     .await
-                    .write_config(&subdevice, &config)
+                    .write_config(subdevice, &config)
                     .await?;
                 {
                     let mut device_guard = device.write().await;
@@ -231,7 +227,7 @@ impl MachineNewTrait for Winder2 {
                 let device = match subdevice_identity_to_tuple(&subdevice_identity) {
                     EL7031_IDENTITY_A | EL7031_IDENTITY_B => {
                         let ethercat_device = get_ethercat_device_by_index(
-                            &hardware.ethercat_devices,
+                            hardware.ethercat_devices,
                             subdevice_index,
                         )?;
                         downcast_device::<EL7031>(ethercat_device).await?
@@ -260,7 +256,7 @@ impl MachineNewTrait for Winder2 {
                 device
                     .write()
                     .await
-                    .write_config(&subdevice, &config)
+                    .write_config(subdevice, &config)
                     .await?;
                 {
                     let mut device_guard = device.write().await;
@@ -294,7 +290,7 @@ impl MachineNewTrait for Winder2 {
                 let device = match subdevice_identity_to_tuple(&subdevice_identity) {
                     EL7031_0030_IDENTITY_A => {
                         let ethercat_device = get_ethercat_device_by_index(
-                            &hardware.ethercat_devices,
+                            hardware.ethercat_devices,
                             subdevice_index,
                         )?;
                         downcast_device::<EL7031_0030>(ethercat_device).await?
@@ -322,7 +318,7 @@ impl MachineNewTrait for Winder2 {
                 device
                     .write()
                     .await
-                    .write_config(&subdevice, &config)
+                    .write_config(subdevice, &config)
                     .await?;
                 {
                     let mut device_guard = device.write().await;

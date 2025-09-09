@@ -37,7 +37,7 @@ pub enum EL6021Baudrate {
 
 // Every Preset has 2 bytes at the beginning
 // Standard98ByteMdp600 for example is 100bytes big  but has 98 bytes of data
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum EL6021PdoPreset {
     /// Legacy 22 Byte MDP 600
     Legacy22ByteMdp600,
@@ -59,13 +59,13 @@ impl TryFrom<u8> for EL6021Baudrate {
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         match value {
-            4 => Ok(EL6021Baudrate::B2400),
-            5 => Ok(EL6021Baudrate::B4800),
-            6 => Ok(EL6021Baudrate::B9600),
-            7 => Ok(EL6021Baudrate::B19200),
-            8 => Ok(EL6021Baudrate::B38400),
-            9 => Ok(EL6021Baudrate::B57600),
-            10 => Ok(EL6021Baudrate::B115200),
+            4 => Ok(Self::B2400),
+            5 => Ok(Self::B4800),
+            6 => Ok(Self::B9600),
+            7 => Ok(Self::B19200),
+            8 => Ok(Self::B38400),
+            9 => Ok(Self::B57600),
+            10 => Ok(Self::B115200),
             _ => Err(anyhow::anyhow!(
                 "Error: specified Baudrate is not supported!"
             )),
@@ -75,7 +75,7 @@ impl TryFrom<u8> for EL6021Baudrate {
 
 impl From<EL6021Baudrate> for u8 {
     fn from(baudrate: EL6021Baudrate) -> Self {
-        baudrate as u8
+        baudrate as Self
     }
 }
 
@@ -130,7 +130,7 @@ impl ConfigurableDevice<EL6021Configuration> for EL6021 {
 }
 
 /// Configuration structure for the EL6021 module.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct EL6021Configuration {
     /// # 0x8000:01 - Enables Request to Send (RTS) flow control.
     /// - `true` = RTS flow control enabled
@@ -198,7 +198,7 @@ pub struct EL6021Configuration {
     pub pdo_assignment: EL6021PdoPreset,
 }
 
-fn convert_serial_encoding(encoding: SerialEncoding) -> u8 {
+const fn convert_serial_encoding(encoding: SerialEncoding) -> u8 {
     match encoding {
         SerialEncoding::Coding7E1 => 1,
         SerialEncoding::Coding7O1 => 2,
@@ -282,7 +282,7 @@ impl Configuration for EL6021Configuration {
     }
 }
 
-#[derive(Default, Debug, Clone, PdoObject, PartialEq)]
+#[derive(Default, Debug, Clone, PdoObject, PartialEq, Eq)]
 #[pdo_object(bits = 192)]
 pub struct Standard22ByteMdp600Output {
     pub control: EL6021Control,
@@ -290,7 +290,7 @@ pub struct Standard22ByteMdp600Output {
     pub data: [u8; 22],
 }
 
-#[derive(Default, Debug, PartialEq, Clone)]
+#[derive(Default, Debug, PartialEq, Eq, Clone)]
 pub struct EL6021Status {
     pub transmit_accepted: bool,
     pub receive_request: bool,
@@ -301,7 +301,7 @@ pub struct EL6021Status {
     pub overrun_error: bool,
 }
 
-#[derive(Default, Debug, PartialEq, Clone)]
+#[derive(Default, Debug, PartialEq, Eq, Clone)]
 pub struct EL6021Control {
     pub transmit_request: bool,
     pub received_acepted: bool,
@@ -309,7 +309,7 @@ pub struct EL6021Control {
 }
 
 /// The value is accompanied by some metadata.
-#[derive(Default, Debug, Clone, PdoObject, PartialEq)]
+#[derive(Default, Debug, Clone, PdoObject, PartialEq, Eq)]
 #[pdo_object(bits = 192)]
 pub struct Standard22ByteMdp600Input {
     pub status: EL6021Status,
@@ -328,7 +328,7 @@ impl TxPdoObject for Standard22ByteMdp600Input {
         self.status.overrun_error = bits[6];
         // Bit7 is reserved/unused
         self.length = bits[8..8 + 8].load_le::<u8>();
-        let serial_bytes = bits[16..(16 + 22 * 8 as usize)].chunks_exact(8);
+        let serial_bytes = bits[16..(16 + 22 * 8_usize)].chunks_exact(8);
         for (i, val) in serial_bytes.enumerate() {
             self.data[i] = val.load_le();
         }
@@ -381,7 +381,7 @@ impl EthercatDeviceProcessing for EL6021 {}
 impl PredefinedPdoAssignment<EL6021TxPdo, EL6021RxPdo> for EL6021PdoPreset {
     fn txpdo_assignment(&self) -> EL6021TxPdo {
         match self {
-            EL6021PdoPreset::Standard22ByteMdp600 => EL6021TxPdo {
+            Self::Standard22ByteMdp600 => EL6021TxPdo {
                 com_tx_pdo_map_22_byte: Some(Standard22ByteMdp600Input::default()),
             },
             _ => todo!(),
@@ -390,7 +390,7 @@ impl PredefinedPdoAssignment<EL6021TxPdo, EL6021RxPdo> for EL6021PdoPreset {
 
     fn rxpdo_assignment(&self) -> EL6021RxPdo {
         match self {
-            EL6021PdoPreset::Standard22ByteMdp600 => EL6021RxPdo {
+            Self::Standard22ByteMdp600 => EL6021RxPdo {
                 com_rx_pdo_map_22_byte: Some(Standard22ByteMdp600Output::default()),
             },
             _ => todo!(),
@@ -425,7 +425,7 @@ impl SerialInterfaceDevice<EL6021Port> for EL6021 {
             // Only check if the bit has changed, don't update our state yet
             return tx_pdo.status.receive_request != self.has_messages_last_toggle;
         }
-        return false;
+        false
     }
 
     fn serial_interface_read_message(&mut self, _port: EL6021Port) -> Option<Vec<u8>> {
@@ -456,7 +456,7 @@ impl SerialInterfaceDevice<EL6021Port> for EL6021 {
         self.has_messages_last_toggle = tx_pdo.status.receive_request;
         rx_pdo.control.received_acepted = !rx_pdo.control.received_acepted;
 
-        return Some(received_data);
+        Some(received_data)
     }
 
     fn serial_interface_write_message(
@@ -483,7 +483,7 @@ impl SerialInterfaceDevice<EL6021Port> for EL6021 {
             ));
         }
         // If we write a message of len zero, then this means we are waiting for our write_message to finish on the EL6021
-        if message.len() == 0 {
+        if message.is_empty() {
             return Ok(rx_pdo.control.transmit_request == tx_pdo.status.transmit_accepted);
         }
 
@@ -493,16 +493,16 @@ impl SerialInterfaceDevice<EL6021Port> for EL6021 {
         rx_pdo.length = message.len() as u8;
         rx_pdo.data = data_buffer;
         rx_pdo.control.transmit_request = !rx_pdo.control.transmit_request;
-        return Ok(true);
+        Ok(true)
     }
 
     fn get_baudrate(&self, _port: EL6021Port) -> Option<u32> {
         let baudrate: u32 = self.configuration.baud_rate.into();
-        return Some(baudrate);
+        Some(baudrate)
     }
 
     fn get_serial_encoding(&self, _port: EL6021Port) -> Option<SerialEncoding> {
-        return Some(self.configuration.data_frame);
+        Some(self.configuration.data_frame)
     }
 
     /// For el6021 this returns false for as long as the Initialization takes
@@ -543,10 +543,7 @@ impl SerialInterfaceDevice<EL6021Port> for EL6021 {
                     init_accepted 0: Initialization was completed by the terminal.
                     init_request 0: The terminal is ready again for serial data exchange.
                 */
-                if rxpdo.control.init_request == false
-                    && txpdo.status.init_accepted == false
-                    && self.initialized == false
-                {
+                if !rxpdo.control.init_request && !txpdo.status.init_accepted && !self.initialized {
                     rxpdo.control.init_request = true;
                     self.initialized = true;
                     return false;
@@ -556,7 +553,7 @@ impl SerialInterfaceDevice<EL6021Port> for EL6021 {
                     init_accepted 1: Initialization was completed by the terminal.
                     init_request 0: The terminal is ready again for serial data exchange.
                 */
-                if rxpdo.control.init_request == false && txpdo.status.init_accepted == true {
+                if !rxpdo.control.init_request && txpdo.status.init_accepted {
                     return false;
                 }
 
@@ -565,16 +562,13 @@ impl SerialInterfaceDevice<EL6021Port> for EL6021 {
                     init_accepted 0: The controller once again requests the terminal to prepare for serial data exchange.
                     init_request 0: The terminal is ready again for serial data exchange.
                 */
-                if rxpdo.control.init_request == false
-                    && txpdo.status.init_accepted == false
-                    && self.initialized == true
-                {
+                if !rxpdo.control.init_request && !txpdo.status.init_accepted && self.initialized {
                     // set inital state of the toggle
                     self.has_messages_last_toggle = txpdo.status.receive_request;
                     return true;
                 }
 
-                return false;
+                false
             }
         }
     }

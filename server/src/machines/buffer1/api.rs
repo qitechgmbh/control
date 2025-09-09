@@ -50,14 +50,14 @@ pub struct ModeState {
     pub mode: BufferV1Mode,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub enum Mode {
     Standby,
     FillingBuffer,
     EmptyingBuffer,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct ConnectedMachineState {
     /// Connected Machine
     pub machine_identification_unique: Option<MachineIdentificationUnique>,
@@ -98,11 +98,11 @@ impl Buffer1Namespace {
     }
 }
 
-impl CacheableEvents<BufferV1Events> for BufferV1Events {
+impl CacheableEvents<Self> for BufferV1Events {
     fn event_value(&self) -> GenericEvent {
         match self {
-            BufferV1Events::LiveValues(event) => event.into(),
-            BufferV1Events::State(event) => event.into(),
+            Self::LiveValues(event) => event.into(),
+            Self::State(event) => event.into(),
         }
     }
 
@@ -111,8 +111,8 @@ impl CacheableEvents<BufferV1Events> for BufferV1Events {
         let cache_one = cache_one_event();
 
         match self {
-            BufferV1Events::LiveValues(_) => cache_one_hour,
-            BufferV1Events::State(_) => cache_one,
+            Self::LiveValues(_) => cache_one_hour,
+            Self::State(_) => cache_one,
         }
     }
 }

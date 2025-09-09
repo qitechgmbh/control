@@ -27,7 +27,7 @@ pub mod new;
 pub mod screw_speed_controller;
 pub mod temperature_controller;
 
-#[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
+#[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Eq)]
 pub enum ExtruderV2Mode {
     Standby,
     Heat,
@@ -181,7 +181,7 @@ impl ExtruderV2 {
                 return;
             }
         };
-        let should_emit = check_hash_different(&new_state, &old_state);
+        let should_emit = check_hash_different(&new_state, old_state);
         if should_emit {
             self.namespace
                 .emit(ExtruderV2Events::State(new_state.build()));
@@ -259,7 +259,7 @@ impl ExtruderV2 {
     }
 
     // Extruder Settings Api Impl
-    fn set_nozzle_pressure_limit_is_enabled(&mut self, enabled: bool) {
+    const fn set_nozzle_pressure_limit_is_enabled(&mut self, enabled: bool) {
         self.screw_speed_controller
             .set_nozzle_pressure_limit_is_enabled(enabled);
     }
@@ -282,7 +282,7 @@ impl ExtruderV2 {
         self.temperature_controller_nozzle.disable();
     }
 
-    fn enable_heating(&mut self) {
+    const fn enable_heating(&mut self) {
         self.temperature_controller_back.allow_heating();
         self.temperature_controller_front.allow_heating();
         self.temperature_controller_middle.allow_heating();
@@ -368,13 +368,13 @@ impl ExtruderV2 {
 // Motor
 impl ExtruderV2 {
     fn set_regulation(&mut self, uses_rpm: bool) {
-        if self.screw_speed_controller.get_uses_rpm() == false && uses_rpm == true {
+        if !self.screw_speed_controller.get_uses_rpm() && uses_rpm {
             self.screw_speed_controller
                 .set_target_screw_rpm(self.screw_speed_controller.target_rpm);
             self.screw_speed_controller.set_uses_rpm(uses_rpm);
         }
 
-        if self.screw_speed_controller.get_uses_rpm() == true && uses_rpm == false {
+        if self.screw_speed_controller.get_uses_rpm() && !uses_rpm {
             self.screw_speed_controller.set_uses_rpm(uses_rpm);
             self.screw_speed_controller.start_pressure_regulation();
         }
@@ -418,7 +418,7 @@ impl ExtruderV2 {
 }
 
 impl ExtruderV2 {
-    fn configure_pressure_pid(&mut self, settings: PidSettings) {
+    const fn configure_pressure_pid(&mut self, settings: PidSettings) {
         self.screw_speed_controller
             .pid
             .configure(settings.ki, settings.kp, settings.kd);

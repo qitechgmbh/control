@@ -262,6 +262,6 @@ pub async fn specific_device_from_devices<DEVICE: EthercatDevice>(
 
 pub type SubDeviceIdentityTuple = (u32, u32, u32);
 /// function that converts SubDeviceIdentity to tuple
-pub fn subdevice_identity_to_tuple(identity: &SubDeviceIdentity) -> SubDeviceIdentityTuple {
+pub const fn subdevice_identity_to_tuple(identity: &SubDeviceIdentity) -> SubDeviceIdentityTuple {
     (identity.vendor_id, identity.product_id, identity.revision)
 }

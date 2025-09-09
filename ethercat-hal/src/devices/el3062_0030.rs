@@ -185,13 +185,13 @@ impl PredefinedPdoAssignment<EL3062_0030TxPdo, EL3062_0030RxPdo>
 {
     fn txpdo_assignment(&self) -> EL3062_0030TxPdo {
         match self {
-            EL3062_0030PredefinedPdoAssignment::Standard => EL3062_0030TxPdo {
+            Self::Standard => EL3062_0030TxPdo {
                 ai_standard_channel1: Some(AiStandard::default()),
                 ai_compact_channel1: None,
                 ai_standard_channel2: Some(AiStandard::default()),
                 ai_compact_channel2: None,
             },
-            EL3062_0030PredefinedPdoAssignment::Compact => EL3062_0030TxPdo {
+            Self::Compact => EL3062_0030TxPdo {
                 ai_standard_channel1: None,
                 ai_compact_channel1: Some(AiCompact::default()),
                 ai_standard_channel2: None,
@@ -202,8 +202,8 @@ impl PredefinedPdoAssignment<EL3062_0030TxPdo, EL3062_0030RxPdo>
 
     fn rxpdo_assignment(&self) -> EL3062_0030RxPdo {
         match self {
-            EL3062_0030PredefinedPdoAssignment::Standard => EL3062_0030RxPdo {},
-            EL3062_0030PredefinedPdoAssignment::Compact => EL3062_0030RxPdo {},
+            Self::Standard => EL3062_0030RxPdo {},
+            Self::Compact => EL3062_0030RxPdo {},
         }
     }
 }

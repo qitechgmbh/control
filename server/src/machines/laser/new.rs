@@ -8,16 +8,8 @@ use control_core::machines::new::MachineNewTrait;
 use uom::si::{f64::Length, length::millimeter};
 
 impl MachineNewTrait for LaserMachine {
-    fn new<'maindevice, 'subdevices>(
-        params: &control_core::machines::new::MachineNewParams<
-            'maindevice,
-            'subdevices,
-            '_,
-            '_,
-            '_,
-            '_,
-            '_,
-        >,
+    fn new(
+        params: &control_core::machines::new::MachineNewParams<'_, '_, '_, '_, '_, '_, '_>,
     ) -> Result<Self, Error>
     where
         Self: Sized,

@@ -12,7 +12,7 @@ pub struct MachineIdentificationUnique {
 
 impl MachineIdentificationUnique {
     /// Check if values are non-zero
-    pub fn is_valid(&self) -> bool {
+    pub const fn is_valid(&self) -> bool {
         self.machine_identification.is_valid() && self.serial != 0
     }
 }
@@ -36,12 +36,12 @@ pub struct MachineIdentification {
 
 impl MachineIdentification {
     /// Check if values are non-zero
-    pub fn is_valid(&self) -> bool {
+    pub const fn is_valid(&self) -> bool {
         self.vendor != 0 && self.machine != 0
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct DeviceMachineIdentification {
     pub machine_identification_unique: MachineIdentificationUnique,
     pub role: u16,
@@ -49,7 +49,7 @@ pub struct DeviceMachineIdentification {
 
 impl DeviceMachineIdentification {
     /// Check if values are non-zero
-    pub fn is_valid(&self) -> bool {
+    pub const fn is_valid(&self) -> bool {
         self.machine_identification_unique.is_valid()
             && self
                 .machine_identification_unique
@@ -59,7 +59,7 @@ impl DeviceMachineIdentification {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct DeviceIdentification {
     pub device_machine_identification: Option<DeviceMachineIdentification>,
     pub device_hardware_identification: DeviceHardwareIdentification,
@@ -67,14 +67,14 @@ pub struct DeviceIdentification {
 
 impl From<DeviceIdentificationIdentified> for DeviceIdentification {
     fn from(value: DeviceIdentificationIdentified) -> Self {
-        DeviceIdentification {
+        Self {
             device_machine_identification: Some(value.device_machine_identification),
             device_hardware_identification: value.device_hardware_identification,
         }
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct DeviceIdentificationIdentified {
     pub device_machine_identification: DeviceMachineIdentification,
     pub device_hardware_identification: DeviceHardwareIdentification,
@@ -90,24 +90,24 @@ impl TryFrom<DeviceIdentification> for DeviceIdentificationIdentified {
                 module_path!()
             ))?;
 
-        Ok(DeviceIdentificationIdentified {
+        Ok(Self {
             device_machine_identification,
             device_hardware_identification: value.device_hardware_identification,
         })
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum DeviceHardwareIdentification {
     Ethercat(DeviceHardwareIdentificationEthercat),
     Serial(DeviceHardwareIdentificationSerial),
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct DeviceHardwareIdentificationEthercat {
     pub subdevice_index: usize,
 }
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct DeviceHardwareIdentificationSerial {
     pub path: String,
 }

@@ -195,14 +195,14 @@ impl LinearJerkSpeedController {
     pub fn get_min_speed(&self) -> Option<Velocity> {
         self.controller
             .get_min_speed()
-            .map(|speed| Velocity::new::<meter_per_second>(speed))
+            .map(Velocity::new::<meter_per_second>)
     }
 
     /// Get the maximum velocity limit
     pub fn get_max_speed(&self) -> Option<Velocity> {
         self.controller
             .get_max_speed()
-            .map(|speed| Velocity::new::<meter_per_second>(speed))
+            .map(Velocity::new::<meter_per_second>)
     }
 
     /// Set the minimum velocity limit

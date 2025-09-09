@@ -28,7 +28,7 @@ impl fmt::Debug for StepperVelocityEL70x1 {
 }
 
 impl<'device> StepperVelocityEL70x1 {
-    pub fn new<PORT, DEVICE>(device: Arc<RwLock<DEVICE>>, port: PORT) -> StepperVelocityEL70x1
+    pub fn new<PORT, DEVICE>(device: Arc<RwLock<DEVICE>>, port: PORT) -> Self
     where
         PORT: Clone + Copy + Send + Sync + 'static,
         DEVICE: StepperVelocityEL70x1Device<PORT> + Send + Sync + 'static,
@@ -62,7 +62,7 @@ impl<'device> StepperVelocityEL70x1 {
         });
 
         // build async get speed range closure
-        let device3 = device.clone();
+        let device3 = device;
         let get_speed_range = Box::new(
             move || -> Result<crate::shared_config::el70x1::EL70x1SpeedRange, Error> {
                 block_on(async {
@@ -72,7 +72,7 @@ impl<'device> StepperVelocityEL70x1 {
             },
         );
 
-        StepperVelocityEL70x1 {
+        Self {
             set_output,
             get_input,
             get_output,

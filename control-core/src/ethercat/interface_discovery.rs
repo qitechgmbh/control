@@ -42,7 +42,7 @@ pub async fn discover_ethercat_interface() -> Result<String, anyhow::Error> {
 
     // Get eligible interfaces
     let mut interfaces = Interface::get_all()
-        .or_else(|e| Err(anyhow::anyhow!("Failed to get network interfaces: {}", e)))?
+        .map_err(|e| anyhow::anyhow!("Failed to get network interfaces: {}", e))?
         .into_iter()
         .filter(|iface| {
             iface.is_up()
@@ -90,10 +90,7 @@ pub async fn discover_ethercat_interface() -> Result<String, anyhow::Error> {
     // Wait for all tasks to complete and collect successful results
     let successful_interfaces: Vec<String> = tasks
         .into_iter()
-        .filter_map(|task| match task.join().expect("Should join thread") {
-            Some(name) => Some(name),
-            None => None,
-        })
+        .filter_map(|task| task.join().expect("Should join thread"))
         .collect();
 
     // Return the first successful interface (they're sorted by name)

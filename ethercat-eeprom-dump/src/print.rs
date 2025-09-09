@@ -52,7 +52,7 @@ pub fn print_markdown_table(table: &Vec<Vec<String>>, header_line: bool) {
         if row_idx == 0 && header_line && table.len() > 1 {
             print!("|");
             for (i, width) in col_widths.iter().enumerate() {
-                print!("{}:{}", "", "-".repeat(*width + 1));
+                print!(":{}", "-".repeat(*width + 1));
                 if i < max_cols - 1 {
                     print!("|");
                 }
@@ -107,7 +107,13 @@ pub fn print_buffer(buffer: &[u8]) {
         // Add ASCII representation
         let ascii: String = chunk
             .iter()
-            .map(|&b| if b >= 32 && b <= 126 { b as char } else { '.' })
+            .map(|&b| {
+                if (32..=126).contains(&b) {
+                    b as char
+                } else {
+                    '.'
+                }
+            })
             .collect();
         row.push(ascii);
 

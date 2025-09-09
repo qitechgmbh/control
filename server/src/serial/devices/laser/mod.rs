@@ -55,7 +55,7 @@ impl TryFrom<ModbusResponse> for LaserDiameterResponse {
             ));
         }
         let diameter = u16::from_be_bytes([value.data[1], value.data[2]]) as f64 / 1000.0;
-        Ok(LaserDiameterResponse {
+        Ok(Self {
             diameter: Length::new::<uom::si::length::millimeter>(diameter),
         })
     }
@@ -64,7 +64,7 @@ impl TryFrom<ModbusResponse> for LaserDiameterResponse {
 impl From<LaserModbusRequsts> for modbus::ModbusRequest {
     fn from(request: LaserModbusRequsts) -> Self {
         match request {
-            LaserModbusRequsts::ReadDiameter => modbus::ModbusRequest {
+            LaserModbusRequsts::ReadDiameter => Self {
                 slave_id: 1,
                 function_code: modbus::ModbusFunctionCode::ReadInputRegister,
                 data: vec![(0 >> 8) as u8, (0 & 0xFF) as u8],
@@ -76,7 +76,7 @@ impl From<LaserModbusRequsts> for modbus::ModbusRequest {
 impl SerialDeviceNew for Laser {
     fn new_serial(
         params: &SerialDeviceNewParams,
-    ) -> Result<(DeviceIdentification, Arc<RwLock<Laser>>), anyhow::Error> {
+    ) -> Result<(DeviceIdentification, Arc<RwLock<Self>>), anyhow::Error> {
         let laser_data = Some(LaserData {
             diameter: Length::new::<uom::si::length::millimeter>(0.0),
             last_timestamp: Instant::now(),
@@ -90,7 +90,7 @@ impl SerialDeviceNew for Laser {
                         vendor: VENDOR_QITECH,
                         machine: MACHINE_LASER_V1,
                     },
-                    serial: serial,
+                    serial,
                 },
                 role: 0,
             }),
@@ -102,7 +102,7 @@ impl SerialDeviceNew for Laser {
         };
 
         // Create a new Laser instance
-        let _self = Arc::new(RwLock::new(Laser {
+        let _self = Arc::new(RwLock::new(Self {
             data: laser_data,
             path: params.path.clone(),
         }));
@@ -115,7 +115,7 @@ impl SerialDeviceNew for Laser {
             .name("laser".to_owned())
             .spawn(move || {
                 send_serial_device_panic(path.clone(), device_thread_panic_tx.clone());
-                let _ = smol::block_on(async {
+                smol::block_on(async {
                     let process_result = Self::process(_self_clone).await;
 
                     let removal = match process_result {

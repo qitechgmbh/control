@@ -139,7 +139,7 @@ fn extract_string_sections(bytes: &[u8]) -> Vec<String> {
     let mut in_string = false;
 
     for &byte in bytes {
-        if byte >= 32 && byte < 127 {
+        if (32..127).contains(&byte) {
             // Printable ASCII character
             current_string.push(byte);
             in_string = true;
@@ -184,7 +184,7 @@ fn extract_string_sections(bytes: &[u8]) -> Vec<String> {
         if s.len() > 30 {
             // Try to split at common separators
             let parts: Vec<&str> = s
-                .split(|c| c == '!' || c == '(' || c == ')' || c == '.' || c == ',')
+                .split(['!', '(', ')', '.', ','])
                 .map(|p| p.trim())
                 .filter(|p| !p.is_empty() && p.len() >= MIN_STRING_LENGTH)
                 .collect();
@@ -215,7 +215,7 @@ impl std::fmt::Display for EepromData {
         let device_name = if let Some(repo) = &self.extended_information.string_repository {
             repo.strings
                 .iter()
-                .find(|s| s.contains("EL") && s.chars().any(|c| c.is_digit(10)))
+                .find(|s| s.contains("EL") && s.chars().any(|c| c.is_ascii_digit()))
                 .cloned()
                 .unwrap_or_else(|| "Unknown Device".to_string())
         } else {
@@ -732,11 +732,11 @@ impl From<&[u8]> for EepromData {
         };
 
         // Construct the final EEPROM data object with bounds checking
-        EepromData {
+        Self {
             device_machine_identification: device_info,
             identity,
             esc_configuration: EscConfiguratoin {
-                pdi_control: if words.len() > 0x0 { words[0x0] } else { 0 },
+                pdi_control: if !words.is_empty() { words[0x0] } else { 0 },
                 pdi_configuration: if words.len() > 0x1 { words[0x1] } else { 0 },
                 sync_impulse_length: if words.len() > 0x2 { words[0x2] } else { 0 },
                 pdi_configuration2: if words.len() > 0x3 { words[0x3] } else { 0 },
@@ -788,7 +788,7 @@ pub async fn read_eeprom(file: &str) -> Result<(), Box<dyn std::error::Error>> {
 }
 
 /// turn &[u16, u16] little endian into u32
-pub fn u32_from_u16(start_word: u16, end_word: u16) -> u32 {
+pub const fn u32_from_u16(start_word: u16, end_word: u16) -> u32 {
     let start_bytes = start_word.to_le_bytes();
     let end_bytes = end_word.to_le_bytes();
     u32::from_le_bytes([start_bytes[0], start_bytes[1], end_bytes[0], end_bytes[1]])
