@@ -2,6 +2,7 @@ use crate::app_state::AppState;
 use crate::panic::{PanicDetails, send_panic};
 use bitvec::prelude::*;
 use control_core::realtime::{set_core_affinity, set_realtime_priority};
+use smol::Timer;
 use smol::channel::Sender;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -35,17 +36,26 @@ pub fn init_loop(
                     module_path!()
                 );
             }
-            let mut tick_interval = tokio::time::interval(Duration::from_millis(1));
-            tick_interval.set_missed_tick_behavior(MissedTickBehavior::Skip);
 
-            loop {
-                let res = smol::block_on(rt.run(async { loop_once(app_state.clone()).await }));
-                if let Err(err) = res {
-                    tracing::error!("Loop failed\n{:?}", err);
-                    break;
+            smol::block_on(rt.run(async move {
+                let tick_duration = Duration::from_millis(1);
+
+                loop {
+                    let loop_start = Instant::now();
+
+                    if let Err(err) = loop_once(app_state.clone()).await {
+                        tracing::error!("Loop failed: {:?}", err);
+                        break;
+                    }
+
+                    // Sleep until next tick
+                    let elapsed = loop_start.elapsed();
+                    if elapsed < tick_duration {
+                        smol::Timer::after(tick_duration - elapsed).await;
+                    }
                 }
-                smol::block_on(rt.run(async { tick_interval.tick().await }));
-            }
+            }));
+
             // Exit the entire program if the Loop fails (gets restarted by systemd if running on NixOS)
             std::process::exit(1);
         })
