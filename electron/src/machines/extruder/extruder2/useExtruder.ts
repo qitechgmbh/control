@@ -63,7 +63,7 @@ export function useExtruder2() {
 
   // Update optimistic state when real state changes
   useEffect(() => {
-    if (state) {
+    if (state && !stateOptimistic.isOptimistic) {
       stateOptimistic.setReal(state);
     }
   }, [state, stateOptimistic]);
