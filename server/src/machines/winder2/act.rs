@@ -1,13 +1,9 @@
 use super::Winder2;
 use control_core::machines::new::MachineAct;
-use smol::future;
-use std::{
-    pin::Pin,
-    time::{Duration, Instant},
-};
+use std::time::{Duration, Instant};
 
 impl MachineAct for Winder2 {
-    fn act(&mut self, now: Instant) -> Pin<&mut (dyn Future<Output = ()> + Send + '_)> {
+    fn act(&mut self, now: Instant) {
         // sync the spool speed
         self.sync_spool_speed(now);
 
@@ -26,10 +22,5 @@ impl MachineAct for Winder2 {
             self.emit_live_values();
             self.last_measurement_emit = now;
         }
-
-        self.future_slot = future::ready(());
-
-        // return pinned &mut reference as a trait object
-        Pin::new(&mut self.future_slot) as Pin<&mut (dyn Future<Output = ()> + Send + '_)>
     }
 }

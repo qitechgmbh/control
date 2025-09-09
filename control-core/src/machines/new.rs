@@ -9,7 +9,6 @@ use ethercrab::{SubDevice, SubDeviceRef};
 use smol::{channel::Sender, lock::RwLock};
 use socketioxide::extract::SocketRef;
 use std::{
-    pin::Pin,
     sync::{Arc, Weak},
     time::Instant,
 };
@@ -25,7 +24,7 @@ pub trait MachineNewTrait {
 }
 
 pub trait MachineAct {
-    fn act(&mut self, now: Instant) -> Pin<&mut (dyn Future<Output = ()> + Send + '_)>;
+    fn act(&mut self, now: Instant);
 }
 
 pub struct MachineNewParams<

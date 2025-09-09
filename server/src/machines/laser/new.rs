@@ -5,7 +5,6 @@ use crate::serial::{devices::laser::Laser, registry::SERIAL_DEVICE_REGISTRY};
 use super::{LaserMachine, LaserTarget, api::LaserMachineNamespace};
 use anyhow::Error;
 use control_core::machines::new::MachineNewTrait;
-use smol::future;
 use uom::si::{f64::Length, length::millimeter};
 
 impl MachineNewTrait for LaserMachine {
@@ -43,7 +42,6 @@ impl MachineNewTrait for LaserMachine {
             diameter: Length::new::<millimeter>(1.75),
         };
         let mut laser_machine = Self {
-            future_slot: future::ready(()),
             laser,
             namespace: LaserMachineNamespace::new(params.socket_queue_tx.clone()),
             last_measurement_emit: Instant::now(),

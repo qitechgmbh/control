@@ -1,12 +1,10 @@
 use control_core::machines::new::MachineAct;
-use smol::future;
-use std::pin::Pin;
 use std::time::{Duration, Instant};
 
 use crate::machines::extruder1::ExtruderV2;
 
 impl MachineAct for ExtruderV2 {
-    fn act(&mut self, now: Instant) -> Pin<&mut (dyn Future<Output = ()> + Send + '_)> {
+    fn act(&mut self, now: Instant) {
         self.temperature_controller_back.update(now);
         self.temperature_controller_nozzle.update(now);
         self.temperature_controller_front.update(now);
@@ -37,11 +35,5 @@ impl MachineAct for ExtruderV2 {
             self.emit_live_values();
             self.last_measurement_emit = now;
         }
-
-        // refresh the slot so it's a "completed" Ready future again
-        self.future_slot = future::ready(());
-
-        // return pinned &mut reference as a trait object
-        Pin::new(&mut self.future_slot) as Pin<&mut (dyn Future<Output = ()> + Send + '_)>
     }
 }

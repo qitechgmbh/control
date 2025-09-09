@@ -148,7 +148,7 @@ pub async fn loop_once<'maindevice>(app_state: Arc<AppState>) -> Result<(), anyh
                         let span = trace_span!("loop_once_act_machine",);
                         let _enter = span.enter();
                         // execute machine
-                        machine_guard.act(now).await;
+                        machine_guard.act(now);
                     }
                     None => {}
                 }

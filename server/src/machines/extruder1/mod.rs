@@ -12,7 +12,6 @@ use control_core::{
 };
 use screw_speed_controller::ScrewSpeedController;
 use serde::{Deserialize, Serialize};
-use smol::future;
 use std::{any::Any, time::Instant};
 use temperature_controller::TemperatureController;
 use uom::si::{
@@ -63,7 +62,6 @@ pub enum HeatingType {
 
 #[derive(Debug)]
 pub struct ExtruderV2 {
-    future_slot: future::Ready<()>,
     namespace: ExtruderV2Namespace,
     last_measurement_emit: Instant,
     last_state_event: Option<StateEvent>,
