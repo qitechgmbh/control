@@ -128,7 +128,7 @@ pub async fn loop_once<'maindevice>(app_state: Arc<AppState>) -> Result<(), anyh
             })?;
         }
         // Apparently 500 Microseconds is a safe starting point for ethercat
-        smol::Timer::after(Duration::from_micros(500)).await;
+        smol::Timer::after(Duration::from_micros(1000)).await;
     }
 
     // execute machines
