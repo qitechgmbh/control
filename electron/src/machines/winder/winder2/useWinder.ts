@@ -71,10 +71,10 @@ export function useWinder2() {
 
   // Update optimistic state when real state changes
   useEffect(() => {
-    if (state && !stateOptimistic.isOptimistic) {
+    if (state) {
       stateOptimistic.setReal(state);
     }
-  }, [state, stateOptimistic]);
+  }, [state]);
 
   // Request functions for all operations
   const { request: requestTraverseGotoLimitInner } = useMachineMutation(
@@ -178,7 +178,7 @@ export function useWinder2() {
     serverRequest: () => void,
   ) => {
     const currentState = stateOptimistic.value;
-    if (currentState) {
+    if (currentState && !stateOptimistic.isOptimistic) {
       stateOptimistic.setOptimistic(produce(currentState, producer));
     }
     serverRequest();
