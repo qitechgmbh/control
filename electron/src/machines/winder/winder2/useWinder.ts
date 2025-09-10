@@ -74,7 +74,7 @@ export function useWinder2() {
     if (state) {
       stateOptimistic.setReal(state);
     }
-  }, [state, stateOptimistic]);
+  }, [state]);
 
   // Request functions for all operations
   const { request: requestTraverseGotoLimitInner } = useMachineMutation(

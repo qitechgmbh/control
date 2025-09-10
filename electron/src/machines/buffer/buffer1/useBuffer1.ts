@@ -54,7 +54,7 @@ export function useBuffer1() {
     if (state) {
       stateOptimistic.setReal(state);
     }
-  }, [state, stateOptimistic]);
+  }, [state]);
 
   // Helper function for optimistic updates using produce
   const updateStateOptimistically = (

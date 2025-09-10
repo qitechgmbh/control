@@ -21,7 +21,7 @@ function useMock(machine_identification_unique: MachineIdentificationUnique) {
     if (state) {
       stateOptimistic.setReal(state);
     }
-  }, [state, stateOptimistic]);
+  }, [state]);
 
   // Helper function for optimistic updates using produce
   const updateStateOptimistically = (

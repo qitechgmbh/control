@@ -65,7 +65,7 @@ export function useExtruder2() {
     if (state) {
       stateOptimistic.setReal(state);
     }
-  }, [state, stateOptimistic]);
+  }, [state]);
 
   // Helper function for optimistic updates using produce
   const updateStateOptimistically = (
