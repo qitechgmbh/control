@@ -1,8 +1,6 @@
 use tracing::debug;
 use tracing::error;
 
-use libc;
-
 #[cfg(unix)]
 /// Makes the current thread a real-time thread using the PREEMPT_RT capabilities of Linux.
 ///

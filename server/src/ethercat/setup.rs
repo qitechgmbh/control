@@ -45,6 +45,8 @@ pub async fn setup_loop(
         .name("EthercatTxRxThread".to_owned())
         .spawn(move || {
             send_panic(thread_panic_tx_clone);
+
+            #[cfg(unix)]
             if let Err(e) = set_irq_handler_affinity(&interface, 3) {
                 tracing::error!("set_irq_handler_affinity failed: {:?}", e);
             } else {

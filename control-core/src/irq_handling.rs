@@ -1,3 +1,6 @@
+#[cfg(unix)]
+use libc;
+
 use std::ffi::CString;
 use std::io;
 use std::str;
