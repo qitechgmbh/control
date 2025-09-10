@@ -4,11 +4,6 @@
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-25.05";
 
-    # Crane for Rust builds with dependency caching
-    crane = {
-      url = "github:ipetkov/crane";
-    };
-
     home-manager = {
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -26,16 +21,14 @@
     };
   };
 
-  outputs = { self, nixpkgs, crane, flake-utils, qitech-control, home-manager, ... }:
+  outputs = { self, nixpkgs, flake-utils, qitech-control, home-manager, ... }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         overlays = [
           # Add our own overlay for QiTech packages
           (final: prev: {
             qitechPackages = {
-              server = final.callPackage ./nixos/packages/server.nix {
-                craneLib = crane.mkLib final;
-              };
+              server = final.callPackage ./nixos/packages/server.nix {};
               electron = final.callPackage ./nixos/packages/electron.nix {
                 nodejs = final.nodejs_22;
               };
@@ -45,9 +38,6 @@
 
         pkgs = import nixpkgs { inherit system overlays; };
         gitInfo = import ./nixos/gitInfo.nix { inherit pkgs; };
-
-        craneLib = crane.mkLib pkgs;
-
         # Use Rust 1.86 stable from nixpkgs
         rust = pkgs.rustc;
       in {
@@ -57,9 +47,11 @@
           default = self.packages.${system}.server;
         };
 
-        devShells.default = craneLib.devShell {
+        devShells.default = pkgs.mkShell {
           packages = with pkgs; [
             pkg-config
+            rustc
+            cargo
             libudev-zero
             libpcap
             nodejs_22
@@ -98,9 +90,7 @@
                 # Add our own overlay for QiTech packages with commit hash support
                 (final: prev: {
                   qitechPackages = {
-                    server = final.callPackage ./nixos/packages/server.nix {
-                      craneLib = crane.mkLib final;
-                    };
+                    server = final.callPackage ./nixos/packages/server.nix {};
                     electron = final.callPackage ./nixos/packages/electron.nix {
                       nodejs = final.nodejs_22;
                     };
