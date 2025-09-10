@@ -79,8 +79,8 @@ in {
         RestartSec = "10s";
         
         # Grant specific capabilities needed for EtherCAT
-        CapabilityBoundingSet = "CAP_NET_RAW CAP_NET_ADMIN CAP_SYS_NICE";
-        AmbientCapabilities = "CAP_NET_RAW CAP_NET_ADMIN CAP_SYS_NICE";
+        CapabilityBoundingSet = "CAP_NET_RAW CAP_NET_ADMIN CAP_SYS_NICE CAP_DAC_OVERRIDE";
+        AmbientCapabilities = "CAP_NET_RAW CAP_NET_ADMIN CAP_SYS_NICE CAP_DAC_OVERRIDE";
         
         # Hardening options
         NoNewPrivileges = true;
