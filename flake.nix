@@ -4,11 +4,6 @@
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-25.05";
 
-    # Crane for Rust builds with dependency caching
-    crane = {
-      url = "github:ipetkov/crane";
-    };
-
     home-manager = {
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -26,7 +21,7 @@
     };
   };
 
-  outputs = { self, nixpkgs, crane, flake-utils, qitech-control, home-manager, ... }:
+  outputs = { self, nixpkgs, flake-utils, qitech-control, home-manager, ... }:
     let
       # Import git info at the top level so it's available everywhere
       installInfo = import ./nixos/os/installInfo.nix;
@@ -39,7 +34,6 @@
             qitechPackages = {
               server = final.callPackage ./nixos/packages/server.nix { 
                 commitHash = builtins.getEnv "QITECH_COMMIT_HASH";
-                craneLib = crane.mkLib final;
               };
               electron = final.callPackage ./nixos/packages/electron.nix { 
                 commitHash = builtins.getEnv "QITECH_COMMIT_HASH";
@@ -49,9 +43,6 @@
           })
         ];
         pkgs = import nixpkgs { inherit system overlays; };
-
-        craneLib = crane.mkLib pkgs;
-
         # Use Rust 1.86 stable from nixpkgs
         rust = pkgs.rustc;
       in {
@@ -61,9 +52,11 @@
           default = self.packages.${system}.server;
         };
 
-        devShells.default = craneLib.devShell {
+        devShells.default = pkgs.mkShell {
           packages = with pkgs; [
             pkg-config
+            rustc
+            cargo
             libudev-zero
             libpcap
             nodejs_22
@@ -99,7 +92,6 @@
                   qitechPackages = {
                     server = final.callPackage ./nixos/packages/server.nix { 
                       commitHash = installInfo.gitCommit;
-                      craneLib = crane.mkLib final;
                     };
                     electron = final.callPackage ./nixos/packages/electron.nix {
                       commitHash = installInfo.gitCommit;

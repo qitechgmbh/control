@@ -1,44 +1,28 @@
 { lib
 , pkgs
+, rustPlatform
 , pkg-config
 , libudev-zero
 , libpcap
 , commitHash
-, craneLib
 }:
 
-let
-  # Use crane's source cleaning which is more intelligent for Cargo projects
-  src = craneLib.cleanCargoSource ../..;
-  
-  # Common arguments for both dependency and app builds
-  commonArgs = {
-    inherit src;
-    strictDeps = true;
-    
-    nativeBuildInputs = [ pkg-config ];
-    buildInputs = [ libpcap libudev-zero ];
-    
-    # Build only the server package with journald logging for NixOS
-    pname = "server";
-    version = commitHash;
-    
-    # Reduce memory usage during build
-    CARGO_BUILD_JOBS = "2";
-  };
-  
-  # Build *just* the cargo dependencies (of the entire workspace),
-  # so we can reuse all of that work when running in CI
-  cargoArtifacts = craneLib.buildDepsOnly commonArgs;
+rustPlatform.buildRustPackage {
+  pname = "server";
+  version = commitHash;
 
-in
-# Uses Rust 1.86 stable from nixpkgs 25.05 with Crane for dependency caching
-craneLib.buildPackage (commonArgs // {
-  inherit cargoArtifacts;
-  
-  # Enable journald logging feature for NixOS systems and build only server package
-  # Anbale io_uring support
-  cargoExtraArgs = "-p server --features tracing-journald,io-uring --no-default-features";
+  src = pkgs.lib.cleanSource ../..;
+
+  cargoLock.lockFile = ../.. + "/Cargo.lock";
+
+  nativeBuildInputs = [ pkg-config ];
+  buildInputs = [ libpcap libudev-zero ];
+
+  cargoBuildFlags = [
+    "--package" "server"
+    "--features" "tracing-journald,io-uring"
+    "--no-default-features"
+  ];
 
   # Create a swap file if building on a memory-constrained system
   preBuild = ''
@@ -50,6 +34,7 @@ craneLib.buildPackage (commonArgs // {
         swapon $TMPDIR/swap/swapfile
       fi
   '';
+  CARGO_BUILD_JOBS = "2";
 
   postBuild = ''
     if [ -f $TMPDIR/swap/swapfile ]; then
@@ -63,4 +48,4 @@ craneLib.buildPackage (commonArgs // {
     homepage = "https://qitech.de";
     platforms = platforms.linux;
   };
-})
+}
