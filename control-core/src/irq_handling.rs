@@ -61,6 +61,7 @@ fn set_irq_affinity_raw(irq: u32, cpu: &str) -> Result<(), io::Error> {
     let file_descriptor = unsafe { libc::open(cpath.as_ptr(), libc::O_WRONLY) };
 
     if file_descriptor < 0 {
+        tracing::info!("Permission denied to write: {}", path);
         return Err(io::Error::new(
             io::ErrorKind::PermissionDenied,
             format!("failed to open {}: errno {}", path, -file_descriptor),
