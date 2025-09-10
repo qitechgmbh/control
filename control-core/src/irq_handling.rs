@@ -49,19 +49,21 @@ fn get_interface_irq(proc_content: &str, interface_name: &str) -> Option<u32> {
     None
 }
 
-// Since kernel 3.0 it’s possible to use the /proc/irq/<IRQ-NUMBER>/smp_affinity_list
-// With comma seperated values
+/// Since kernel 3.0 it’s possible to use the /proc/irq/<IRQ-NUMBER>/smp_affinity_list
+/// With comma seperated values
+/// This function takes the irq identifier and writes the cpu string
+/// into /proc/irq/irq_number/smp_affinity_list
 #[cfg(unix)]
-fn set_irq_affinity_list(irq: u32, cpu: &str) -> Result<(), io::Error> {
+fn set_irq_affinity_raw(irq: u32, cpu: &str) -> Result<(), io::Error> {
     let path: String = format!("/proc/irq/{}/smp_affinity_list", irq);
     let cpath = CString::new(path.clone()).unwrap();
     // We want to completely overwrite the smp affinities, so that we guarentee execution on the specified cores
-    let fd = unsafe { libc::open(cpath.as_ptr(), libc::O_WRONLY) };
+    let file_descriptor = unsafe { libc::open(cpath.as_ptr(), libc::O_WRONLY) };
 
-    if fd < 0 {
+    if file_descriptor < 0 {
         return Err(io::Error::new(
             io::ErrorKind::PermissionDenied,
-            format!("failed to open {}: errno {}", path, -fd),
+            format!("failed to open {}: errno {}", path, -file_descriptor),
         ));
     }
     // convert to "raw bytes"
@@ -71,16 +73,21 @@ fn set_irq_affinity_list(irq: u32, cpu: &str) -> Result<(), io::Error> {
 
     while bytes_written_total < bytes.len() {
         let to_write = &bytes[bytes_written_total..];
-        let bytes_written =
-            unsafe { libc::write(fd, to_write.as_ptr() as *const _, to_write.len()) };
+        let bytes_written = unsafe {
+            libc::write(
+                file_descriptor,
+                to_write.as_ptr() as *const _,
+                to_write.len(),
+            )
+        };
         if bytes_written < 0 {
             let e = io::Error::from_raw_os_error(-bytes_written as i32);
-            unsafe { libc::close(fd) };
+            unsafe { libc::close(file_descriptor) };
             return Err(e);
         }
         bytes_written_total += bytes_written as usize;
     }
-    unsafe { libc::close(fd) };
+    unsafe { libc::close(file_descriptor) };
     Ok(())
 }
 
@@ -91,13 +98,13 @@ fn set_irq_affinity_list(irq: u32, cpu: &str) -> Result<(), io::Error> {
 /// Example input: irq_name: "eno1" , cpu: 2
 /// Remember that cpu cores are counted from 0
 #[cfg(unix)]
-pub fn set_irq_handler_affinity(irq_name: &str, cpu: u32) -> Result<(), anyhow::Error> {
+pub fn set_irq_affinity(irq_name: &str, cpu: u32) -> Result<(), anyhow::Error> {
     let proc_contents = read_proc_interrupts()?;
     let irq = get_interface_irq(&proc_contents, irq_name);
     if irq.is_none() {
         return Err(anyhow::anyhow!("Couldnt find irq number!"));
     }
-    let res = set_irq_affinity_list(irq.unwrap(), &cpu.to_string());
+    let res = set_irq_affinity_raw(irq.unwrap(), &cpu.to_string());
     if res.is_err() {
         return Err(anyhow::anyhow!("Couldnt write affinity list!"));
     } else {
