@@ -8,7 +8,7 @@ use crate::{
 };
 use control_core::{
     ethercat::interface_discovery::discover_ethercat_interface,
-    socketio::namespace::NamespaceCacheingLogic,
+    irq_handling::set_irq_handler_affinity, socketio::namespace::NamespaceCacheingLogic,
 };
 use smol::channel::Sender;
 use std::sync::Arc;

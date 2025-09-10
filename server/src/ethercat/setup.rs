@@ -9,6 +9,7 @@ use crate::{
     ethercat::config::{MAX_FRAMES, MAX_PDU_DATA, MAX_SUBDEVICES, PDI_LEN},
 };
 use control_core::ethercat::eeprom_identification::read_device_identifications;
+use control_core::irq_handling::set_irq_handler_affinity;
 use control_core::machines::identification::{
     DeviceHardwareIdentification, DeviceHardwareIdentificationEthercat, DeviceIdentification,
 };
@@ -44,6 +45,11 @@ pub async fn setup_loop(
         .name("EthercatTxRxThread".to_owned())
         .spawn(move || {
             send_panic(thread_panic_tx_clone);
+            if let Err(e) = set_irq_handler_affinity(&interface, 3) {
+                tracing::error!("set_irq_handler_affinity failed: {:?}", e);
+            } else {
+                tracing::info!("ethernet interrupt handler now runs on cpu:{}", 3);
+            }
 
             // Set core affinity to 4th core
             let _ = set_core_affinity(3);
