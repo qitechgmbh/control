@@ -56,6 +56,12 @@ pub struct AdaptiveSpoolSpeedController {
     deacceleration_urgency_multiplier: f64,
 }
 
+impl Default for AdaptiveSpoolSpeedController {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl AdaptiveSpoolSpeedController {
     /// Maximum speed limit (in RPM) used to initialize the acceleration controller
     const INITIAL_MAX_SPEED_RPM: f64 = 150.0;
@@ -202,13 +208,12 @@ impl AdaptiveSpoolSpeedController {
         self.update_radius(filament_tension, t);
 
         // Calculate speed based on inverted tension (lower tension = higher speed)
-        let speed = AngularVelocity::new::<radian_per_second>(scale(
+
+        AngularVelocity::new::<radian_per_second>(scale(
             1.0 - filament_tension,
             min_speed.get::<radian_per_second>(),
             max_speed.get::<radian_per_second>(),
-        ));
-
-        speed
+        ))
     }
 
     /// Simplified urgency-weighted acceleration that adapts to current operating conditions.
@@ -361,7 +366,7 @@ impl AdaptiveSpoolSpeedController {
     ///
     /// # Parameters
     /// - `enabled`: True to enable speed control, false to disable
-    pub fn set_enabled(&mut self, enabled: bool) {
+    pub const fn set_enabled(&mut self, enabled: bool) {
         self.enabled = enabled;
     }
 
@@ -369,7 +374,7 @@ impl AdaptiveSpoolSpeedController {
     ///
     /// # Returns
     /// True if the controller is enabled, false if disabled
-    pub fn is_enabled(&self) -> bool {
+    pub const fn is_enabled(&self) -> bool {
         self.enabled
     }
 
@@ -379,7 +384,7 @@ impl AdaptiveSpoolSpeedController {
     /// process changes that would invalidate learned parameters.
     pub fn reset(&mut self) {
         self.last_speed = AngularVelocity::ZERO;
-        let _ = self.acceleration_controller.reset(AngularVelocity::ZERO);
+        self.acceleration_controller.reset(AngularVelocity::ZERO);
         self.radius = Length::new::<centimeter>(4.25);
         self.last_max_speed_factor_update = None;
         self.tension_target = Self::TENSION_TARGET;
@@ -406,7 +411,7 @@ impl AdaptiveSpoolSpeedController {
     /// - `speed`: The angular velocity to set as the current speed
     pub fn set_speed(&mut self, speed: AngularVelocity) {
         self.last_speed = speed;
-        let _ = self.acceleration_controller.reset(speed);
+        self.acceleration_controller.reset(speed);
     }
 
     pub fn get_radius(&self) -> Length {
@@ -414,43 +419,43 @@ impl AdaptiveSpoolSpeedController {
     }
 
     // Getters and setters for the new configurable parameters
-    pub fn get_tension_target(&self) -> f64 {
+    pub const fn get_tension_target(&self) -> f64 {
         self.tension_target
     }
 
-    pub fn set_tension_target(&mut self, tension_target: f64) {
+    pub const fn set_tension_target(&mut self, tension_target: f64) {
         self.tension_target = tension_target.clamp(0.0, 1.0);
     }
 
-    pub fn get_radius_learning_rate(&self) -> f64 {
+    pub const fn get_radius_learning_rate(&self) -> f64 {
         self.radius_learning_rate
     }
 
-    pub fn set_radius_learning_rate(&mut self, radius_learning_rate: f64) {
+    pub const fn set_radius_learning_rate(&mut self, radius_learning_rate: f64) {
         self.radius_learning_rate = radius_learning_rate.max(0.0);
     }
 
-    pub fn get_max_speed_multiplier(&self) -> f64 {
+    pub const fn get_max_speed_multiplier(&self) -> f64 {
         self.max_speed_multiplier
     }
 
-    pub fn set_max_speed_multiplier(&mut self, max_speed_multiplier: f64) {
+    pub const fn set_max_speed_multiplier(&mut self, max_speed_multiplier: f64) {
         self.max_speed_multiplier = max_speed_multiplier.max(0.1);
     }
 
-    pub fn get_acceleration_factor(&self) -> f64 {
+    pub const fn get_acceleration_factor(&self) -> f64 {
         self.acceleration_factor
     }
 
-    pub fn set_acceleration_factor(&mut self, acceleration_factor: f64) {
+    pub const fn set_acceleration_factor(&mut self, acceleration_factor: f64) {
         self.acceleration_factor = acceleration_factor.clamp(0.01, 1.0);
     }
 
-    pub fn get_deacceleration_urgency_multiplier(&self) -> f64 {
+    pub const fn get_deacceleration_urgency_multiplier(&self) -> f64 {
         self.deacceleration_urgency_multiplier
     }
 
-    pub fn set_deacceleration_urgency_multiplier(
+    pub const fn set_deacceleration_urgency_multiplier(
         &mut self,
         deacceleration_urgency_multiplier: f64,
     ) {

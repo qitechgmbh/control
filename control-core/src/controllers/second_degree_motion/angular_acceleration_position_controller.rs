@@ -102,16 +102,12 @@ impl AngularAccelerationPositionController {
 
     /// Get the minimum angle position limit
     pub fn get_min_position(&self) -> Option<Angle> {
-        self.controller
-            .get_min_position()
-            .map(|angle| Angle::new::<radian>(angle))
+        self.controller.get_min_position().map(Angle::new::<radian>)
     }
 
     /// Get the maximum angle position limit
     pub fn get_max_position(&self) -> Option<Angle> {
-        self.controller
-            .get_max_position()
-            .map(|angle| Angle::new::<radian>(angle))
+        self.controller.get_max_position().map(Angle::new::<radian>)
     }
 
     /// Set the minimum angle position limit

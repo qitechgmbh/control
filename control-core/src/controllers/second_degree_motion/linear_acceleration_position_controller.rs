@@ -205,9 +205,7 @@ impl LinearAccelerationPositionController {
     /// # Returns
     /// Minimum position limit as an Option<Length>, None if no limit is set
     pub fn get_min_position(&self) -> Option<Length> {
-        self.controller
-            .get_min_position()
-            .map(|length| Length::new::<meter>(length))
+        self.controller.get_min_position().map(Length::new::<meter>)
     }
 
     /// Get the maximum position limit
@@ -217,9 +215,7 @@ impl LinearAccelerationPositionController {
     /// # Returns  
     /// Maximum position limit as an Option<Length>, None if no limit is set
     pub fn get_max_position(&self) -> Option<Length> {
-        self.controller
-            .get_max_position()
-            .map(|length| Length::new::<meter>(length))
+        self.controller.get_max_position().map(Length::new::<meter>)
     }
 
     /// Set the minimum position limit

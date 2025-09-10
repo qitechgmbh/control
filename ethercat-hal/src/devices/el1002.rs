@@ -52,10 +52,10 @@ pub enum EL1002Port {
 }
 
 impl EL1002Port {
-    pub fn to_bit_index(&self) -> usize {
+    pub const fn to_bit_index(&self) -> usize {
         match self {
-            EL1002Port::DI1 => 0,
-            EL1002Port::DI2 => 1,
+            Self::DI1 => 0,
+            Self::DI2 => 1,
         }
     }
 }
@@ -85,14 +85,14 @@ pub enum EL1002PredefinedPdoAssignment {
 impl PredefinedPdoAssignment<EL1002TxPdo, ()> for EL1002PredefinedPdoAssignment {
     fn txpdo_assignment(&self) -> EL1002TxPdo {
         match self {
-            EL1002PredefinedPdoAssignment::All => EL1002TxPdo {
+            Self::All => EL1002TxPdo {
                 channel1: Some(BoolPdoObject::default()),
                 channel2: Some(BoolPdoObject::default()),
             },
         }
     }
 
-    fn rxpdo_assignment(&self) -> () {
+    fn rxpdo_assignment(&self) {
         unreachable!()
     }
 }

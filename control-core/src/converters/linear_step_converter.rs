@@ -60,7 +60,7 @@ impl LinearStepConverter {
     }
 
     /// Get the steps per revolution
-    pub fn steps_per_revolution(&self) -> i16 {
+    pub const fn steps_per_revolution(&self) -> i16 {
         self.angular_step_converter.steps_per_revolution
     }
 }

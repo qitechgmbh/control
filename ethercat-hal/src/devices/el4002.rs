@@ -139,7 +139,7 @@ pub struct EL4002TxPdo {}
 impl PredefinedPdoAssignment<EL4002TxPdo, EL4002RxPdo> for EL4002PredefinedPdoAssignment {
     fn rxpdo_assignment(&self) -> EL4002RxPdo {
         match self {
-            EL4002PredefinedPdoAssignment::Standard => EL4002RxPdo {
+            Self::Standard => EL4002RxPdo {
                 ao_channel1: Some(AnalogOutput::default()),
                 ao_channel2: Some(AnalogOutput::default()),
             },

@@ -70,11 +70,11 @@ impl LaserMachineNamespace {
     }
 }
 
-impl CacheableEvents<LaserEvents> for LaserEvents {
+impl CacheableEvents<Self> for LaserEvents {
     fn event_value(&self) -> GenericEvent {
         match self {
-            LaserEvents::LiveValues(event) => event.into(),
-            LaserEvents::State(event) => event.into(),
+            Self::LiveValues(event) => event.into(),
+            Self::State(event) => event.into(),
         }
     }
 
@@ -83,8 +83,8 @@ impl CacheableEvents<LaserEvents> for LaserEvents {
         let cache_first_and_last = cache_first_and_last_event();
 
         match self {
-            LaserEvents::LiveValues(_) => cache_one_hour,
-            LaserEvents::State(_) => cache_first_and_last,
+            Self::LiveValues(_) => cache_one_hour,
+            Self::State(_) => cache_first_and_last,
         }
     }
 }

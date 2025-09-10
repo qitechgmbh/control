@@ -11,13 +11,13 @@ pub struct MutationResponse {
 }
 
 impl MutationResponse {
-    pub fn success() -> Self {
+    pub const fn success() -> Self {
         Self {
             success: true,
             error: None,
         }
     }
-    pub fn error(error: String) -> Self {
+    pub const fn error(error: String) -> Self {
         Self {
             success: false,
             error: Some(error),

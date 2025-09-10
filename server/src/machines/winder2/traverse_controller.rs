@@ -125,7 +125,7 @@ impl TraverseController {
 
 // Getter & Setter
 impl TraverseController {
-    pub fn set_enabled(&mut self, enabled: bool) {
+    pub const fn set_enabled(&mut self, enabled: bool) {
         self.enabled = enabled;
     }
 
@@ -168,11 +168,11 @@ impl TraverseController {
         }
     }
 
-    pub fn is_enabled(&self) -> bool {
+    pub const fn is_enabled(&self) -> bool {
         self.enabled
     }
 
-    pub fn did_change_state(&mut self) -> bool {
+    pub const fn did_change_state(&mut self) -> bool {
         let did_change = self.did_change_state;
         // Reset the flag
         self.did_change_state = false;
@@ -182,43 +182,43 @@ impl TraverseController {
 
 // State management
 impl TraverseController {
-    pub fn goto_limit_inner(&mut self) {
+    pub const fn goto_limit_inner(&mut self) {
         self.state = State::GoingIn;
     }
 
-    pub fn goto_limit_outer(&mut self) {
+    pub const fn goto_limit_outer(&mut self) {
         self.state = State::GoingOut;
     }
 
-    pub fn goto_home(&mut self) {
+    pub const fn goto_home(&mut self) {
         self.state = State::Homing(HomingState::Initialize);
     }
 
-    pub fn start_traversing(&mut self) {
+    pub const fn start_traversing(&mut self) {
         self.state = State::Traversing(TraversingState::GoingOut);
     }
 
-    pub fn is_homed(&self) -> bool {
+    pub const fn is_homed(&self) -> bool {
         // if not [`State::NotHomed`], then it is homed
         !matches!(self.state, State::NotHomed)
     }
 
-    pub fn is_going_in(&self) -> bool {
+    pub const fn is_going_in(&self) -> bool {
         // [`State::GoingIn`]
         matches!(self.state, State::GoingIn)
     }
 
-    pub fn is_going_out(&self) -> bool {
+    pub const fn is_going_out(&self) -> bool {
         // [`State::GoingOut`]
         matches!(self.state, State::GoingOut)
     }
 
-    pub fn is_going_home(&self) -> bool {
+    pub const fn is_going_home(&self) -> bool {
         // [`State::Homing`]
         matches!(self.state, State::Homing(_))
     }
 
-    pub fn is_traversing(&self) -> bool {
+    pub const fn is_traversing(&self) -> bool {
         // [`State::Traversing`]
         matches!(self.state, State::Traversing(_))
     }
@@ -229,21 +229,17 @@ impl TraverseController {
     fn is_at_position(&self, target_position: Length, tolerance: Length) -> bool {
         let upper_tolerance = target_position + tolerance.abs();
         let lower_tolerance = target_position - tolerance.abs();
-        if self.position >= lower_tolerance && self.position <= upper_tolerance {
-            return true;
-        } else {
-            return false;
-        }
+        self.position >= lower_tolerance && self.position <= upper_tolerance
     }
 
     /// Calculate distance to position
     fn distance_to_position(&self, target_position: Length) -> Length {
         if self.position > target_position {
-            return self.position - target_position;
+            self.position - target_position
         } else if self.position < target_position {
-            return target_position - self.position;
+            target_position - self.position
         } else {
-            return Length::ZERO;
+            Length::ZERO
         }
     }
 
@@ -251,11 +247,11 @@ impl TraverseController {
     fn speed_to_position(&self, target_position: Length, absolute_speed: Velocity) -> Velocity {
         // If we are over the target position we need to move negative
         if self.position > target_position {
-            return -absolute_speed.abs();
+            -absolute_speed.abs()
         } else if self.position < target_position {
-            return absolute_speed.abs();
+            absolute_speed.abs()
         } else {
-            return Velocity::ZERO;
+            Velocity::ZERO
         }
     }
 
@@ -267,7 +263,7 @@ impl TraverseController {
 
     /// Update the [`did_change_state`] flag
     /// Only considers the major state not the sub states
-    fn update_did_change_state(&mut self, old_state: &State) -> bool {
+    const fn update_did_change_state(&mut self, old_state: &State) -> bool {
         match self.state {
             State::NotHomed => !matches!(old_state, State::NotHomed),
             State::Idle => !matches!(old_state, State::Idle),
@@ -318,7 +314,7 @@ impl TraverseController {
             State::Homing(homing_state) => match homing_state {
                 HomingState::Initialize => {
                     // If endstop is triggered, escape the endstop
-                    if traverse_end_stop.get_value().unwrap_or(false) == true {
+                    if traverse_end_stop.get_value().unwrap_or(false) {
                         self.state = State::Homing(HomingState::EscapeEndstop);
                     } else {
                         // If endstop is not triggered, move to the endstop
@@ -327,20 +323,20 @@ impl TraverseController {
                 }
                 HomingState::EscapeEndstop => {
                     // Move out until endstop is not triggered anymore
-                    if traverse_end_stop.get_value().unwrap_or(false) == false {
+                    if !traverse_end_stop.get_value().unwrap_or(false) {
                         self.state = State::Homing(HomingState::FindEndstopFineDistancing);
                     }
                 }
                 HomingState::FindEndstopFineDistancing => {
                     // Move out until endstop is not triggered anymore
-                    if traverse_end_stop.get_value().unwrap_or(false) == false {
+                    if !traverse_end_stop.get_value().unwrap_or(false) {
                         // Find endstop fine
                         self.state = State::Homing(HomingState::FindEndtopFine);
                     }
                 }
                 HomingState::FindEndtopFine => {
                     // If endstop is reached change to idle
-                    if traverse_end_stop.get_value().unwrap_or(false) == true {
+                    if traverse_end_stop.get_value().unwrap_or(false) {
                         // Set poition of traverse to 0
                         traverse.set_position(0);
                         // Put Into Idle
@@ -349,7 +345,7 @@ impl TraverseController {
                 }
                 HomingState::FindEndstopCoarse => {
                     // Move to endstop
-                    if traverse_end_stop.get_value().unwrap_or(false) == true {
+                    if traverse_end_stop.get_value().unwrap_or(false) {
                         // Move awaiy from endstop
                         self.state = State::Homing(HomingState::FindEndstopFineDistancing);
                     }
@@ -395,12 +391,13 @@ impl TraverseController {
         }
 
         // Set the [`did_change_state`] flag
-        if self.did_change_state == false {
+        if !self.did_change_state {
             self.did_change_state = self.update_did_change_state(&old_state);
         }
 
         // Speed
-        let speed = match &self.state {
+
+        match &self.state {
             State::NotHomed => Velocity::ZERO, // Not homed, no movement
             State::Idle => Velocity::ZERO,     // No movement in idle state
             State::GoingIn => {
@@ -467,9 +464,7 @@ impl TraverseController {
                     Self::calculate_traverse_speed(spool_speed, self.step_size),
                 ),
             },
-        };
-
-        speed
+        }
     }
 
     /// Calculate the traverse speed

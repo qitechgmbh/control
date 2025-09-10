@@ -17,7 +17,7 @@ use socketioxide::extract::SocketRef;
 use std::{sync::Arc, time::Duration};
 use tracing::instrument;
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub enum Mode {
     Standby,
     Running,
@@ -48,7 +48,7 @@ pub struct StateEvent {
     pub mode_state: ModeState,
 }
 
-#[derive(Serialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Debug, Clone, PartialEq, Eq)]
 pub struct ModeState {
     /// current mode
     pub mode: Mode,
@@ -72,11 +72,11 @@ impl MockMachineNamespace {
     }
 }
 
-impl CacheableEvents<MockEvents> for MockEvents {
+impl CacheableEvents<Self> for MockEvents {
     fn event_value(&self) -> GenericEvent {
         match self {
-            MockEvents::LiveValues(event) => event.into(),
-            MockEvents::State(event) => event.into(),
+            Self::LiveValues(event) => event.into(),
+            Self::State(event) => event.into(),
         }
     }
 
@@ -85,8 +85,8 @@ impl CacheableEvents<MockEvents> for MockEvents {
         let cache_first_and_last = cache_first_and_last_event();
 
         match self {
-            MockEvents::LiveValues(_) => cache_one_hour,
-            MockEvents::State(_) => cache_first_and_last,
+            Self::LiveValues(_) => cache_one_hour,
+            Self::State(_) => cache_first_and_last,
         }
     }
 }

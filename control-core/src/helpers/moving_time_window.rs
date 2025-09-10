@@ -11,37 +11,37 @@ pub trait DivideByCount {
 
 impl DivideByCount for f64 {
     fn divide_by_count(self, count: usize) -> Self {
-        self / (count as f64)
+        self / (count as Self)
     }
 }
 
 impl DivideByCount for f32 {
     fn divide_by_count(self, count: usize) -> Self {
-        self / (count as f32)
+        self / (count as Self)
     }
 }
 
 impl DivideByCount for i32 {
     fn divide_by_count(self, count: usize) -> Self {
-        self / (count as i32)
+        self / (count as Self)
     }
 }
 
 impl DivideByCount for i64 {
     fn divide_by_count(self, count: usize) -> Self {
-        self / (count as i64)
+        self / (count as Self)
     }
 }
 
 impl DivideByCount for u32 {
     fn divide_by_count(self, count: usize) -> Self {
-        self / (count as u32)
+        self / (count as Self)
     }
 }
 
 impl DivideByCount for u64 {
     fn divide_by_count(self, count: usize) -> Self {
-        self / (count as u64)
+        self / (count as Self)
     }
 }
 

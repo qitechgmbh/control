@@ -60,12 +60,12 @@ async fn _post_machine_mutate(
     let mut machine_guard = machine.lock().await;
 
     // write data to machine
-    machine_guard.api_mutate(body.data).or_else(|e| {
-        Err(anyhow::anyhow!(
+    machine_guard.api_mutate(body.data).map_err(|e| {
+        anyhow::anyhow!(
             "[{}::_post_machine_mutate] Machine api_mutate error: {}",
             module_path!(),
             e
-        ))
+        )
     })?;
 
     Ok(())

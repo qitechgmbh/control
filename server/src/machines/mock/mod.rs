@@ -143,7 +143,7 @@ impl MockMachine {
     }
 
     /// Set the mode of the mock machine
-    pub fn set_mode(&mut self, mode: Mode) {
+    pub const fn set_mode(&mut self, mode: Mode) {
         self.mode = mode;
     }
 }

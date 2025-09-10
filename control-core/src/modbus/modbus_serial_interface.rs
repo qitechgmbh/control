@@ -66,7 +66,7 @@ impl ModbusSerialInterface {
         }
     }
 
-    pub fn is_initialized(&self) -> bool {
+    pub const fn is_initialized(&self) -> bool {
         !matches!(self.state, State::Uninitialized)
     }
 
@@ -199,7 +199,7 @@ impl ModbusSerialInterface {
         Some(Duration::from_nanos(total_timeout))
     }
 
-    pub fn get_response(&self) -> Option<&ModbusResponse> {
+    pub const fn get_response(&self) -> Option<&ModbusResponse> {
         self.response.as_ref()
     }
 

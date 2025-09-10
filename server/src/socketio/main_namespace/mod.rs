@@ -46,20 +46,20 @@ pub enum MainNamespaceEvents {
     EthercatInterfaceDiscoveryEvent(Event<EthercatInterfaceDiscoveryEvent>),
 }
 
-impl CacheableEvents<MainNamespaceEvents> for MainNamespaceEvents {
+impl CacheableEvents<Self> for MainNamespaceEvents {
     fn event_value(&self) -> GenericEvent {
         match self {
-            MainNamespaceEvents::EthercatDevicesEvent(event) => event.into(),
-            MainNamespaceEvents::EthercatInterfaceDiscoveryEvent(event) => event.into(),
-            MainNamespaceEvents::MachinesEvent(event) => event.into(),
+            Self::EthercatDevicesEvent(event) => event.into(),
+            Self::EthercatInterfaceDiscoveryEvent(event) => event.into(),
+            Self::MachinesEvent(event) => event.into(),
         }
     }
 
     fn event_cache_fn(&self) -> CacheFn {
         match self {
-            MainNamespaceEvents::EthercatDevicesEvent(_) => cache_one_event(),
-            MainNamespaceEvents::EthercatInterfaceDiscoveryEvent(_) => cache_one_event(),
-            MainNamespaceEvents::MachinesEvent(_) => cache_one_event(),
+            Self::EthercatDevicesEvent(_) => cache_one_event(),
+            Self::EthercatInterfaceDiscoveryEvent(_) => cache_one_event(),
+            Self::MachinesEvent(_) => cache_one_event(),
         }
     }
 }

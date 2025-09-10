@@ -14,8 +14,14 @@ pub struct CounterWrapperU16U128 {
     set_counter: Option<i128>,
 }
 
+impl Default for CounterWrapperU16U128 {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CounterWrapperU16U128 {
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self {
             counter: 0,
             last_counter: 0,
@@ -25,7 +31,7 @@ impl CounterWrapperU16U128 {
         }
     }
 
-    pub fn update(&mut self, counter: u16, counter_underflow: bool, counter_overflow: bool) {
+    pub const fn update(&mut self, counter: u16, counter_underflow: bool, counter_overflow: bool) {
         // Only process rising edges of the underflow and overflow flags
         let counter_underflow_rising = counter_underflow && !self.last_counter_underflow;
         let counter_overflow_rising = counter_overflow && !self.last_counter_overflow;
@@ -42,19 +48,19 @@ impl CounterWrapperU16U128 {
         self.last_counter_overflow = counter_overflow;
     }
 
-    pub fn current(&self) -> i128 {
+    pub const fn current(&self) -> i128 {
         self.counter
     }
 
     /// Schedules a counter override
     ///
     /// The value is only set when `pop_set` is called.
-    pub fn push_override(&mut self, new_counter: i128) {
+    pub const fn push_override(&mut self, new_counter: i128) {
         self.set_counter = Some(new_counter);
     }
 
     /// Return the override value as an u16 and overrides the current counter.
-    pub fn pop_override(&mut self) -> Option<u16> {
+    pub const fn pop_override(&mut self) -> Option<u16> {
         match self.set_counter {
             Some(counter) => {
                 // set our coutner to the new value
@@ -73,12 +79,12 @@ impl CounterWrapperU16U128 {
     }
 
     /// Returns the override value as an i128
-    pub fn get_override(&self) -> Option<i128> {
+    pub const fn get_override(&self) -> Option<i128> {
         self.set_counter
     }
 }
 
-fn counter_change(
+const fn counter_change(
     last_counter: u16,
     counter: u16,
     counter_underflow: bool,
@@ -109,15 +115,15 @@ fn counter_change(
     }
 }
 
-fn set_counter_u16_to_i128(new_counter: i128) -> u16 {
+const fn set_counter_u16_to_i128(new_counter: i128) -> u16 {
     // Use modulo arithmetic to handle both positive and negative values
     let modulo = (new_counter % (U16_MAX + 1)) as i32;
 
     if modulo < 0 {
         // If negative, wrap around from the end
-        return (modulo + (U16_MAX + 1) as i32) as u16;
+        (modulo + (U16_MAX + 1) as i32) as u16
     } else {
-        return modulo as u16;
+        modulo as u16
     }
 }
 

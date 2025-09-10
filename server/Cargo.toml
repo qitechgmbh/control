@@ -4,6 +4,9 @@ version = "0.1.0"
 edition = "2024"
 rust-version = "1.86"
 
+[lints]
+workspace = true
+
 
 [dependencies]
 ethercrab = "0.6"

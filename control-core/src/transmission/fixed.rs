@@ -21,7 +21,7 @@ impl FixedTransmission {
     /// # Returns
     ///
     /// A new instance of FixedTransmission.
-    pub fn new(ratio: f64) -> Self {
+    pub const fn new(ratio: f64) -> Self {
         Self { ratio }
     }
 }

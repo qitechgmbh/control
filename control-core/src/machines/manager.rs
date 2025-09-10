@@ -31,6 +31,12 @@ pub struct MachineManager {
         HashMap<MachineIdentificationUnique, Result<Arc<Mutex<dyn Machine>>, anyhow::Error>>,
 }
 
+impl Default for MachineManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MachineManager {
     pub fn new() -> Self {
         Self {
@@ -45,7 +51,7 @@ impl MachineManager {
         machine_registry: &MachineRegistry,
         hardware: &MachineNewHardwareEthercat,
         socket_queue_tx: Sender<(SocketRef, Arc<GenericEvent>)>,
-        machine_manager: Weak<RwLock<MachineManager>>,
+        machine_manager: Weak<RwLock<Self>>,
     ) {
         // empty ethercat machines
         self.ethercat_machines.clear();
@@ -99,7 +105,7 @@ impl MachineManager {
         device: Arc<RwLock<dyn SerialDevice>>,
         machine_registry: &MachineRegistry,
         socket_queue_tx: Sender<(SocketRef, Arc<GenericEvent>)>,
-        machine_manager: Weak<RwLock<MachineManager>>,
+        machine_manager: Weak<RwLock<Self>>,
     ) {
         let hardware = MachineNewHardwareSerial { device };
 
@@ -113,7 +119,7 @@ impl MachineManager {
             device_group: &vec![device_identification_identified.clone()],
             hardware: &MachineNewHardware::Serial(&hardware),
             socket_queue_tx,
-            machine_manager: machine_manager.clone(),
+            machine_manager,
         });
 
         tracing::info!("Adding serial machine {:?}", new_machine);
@@ -163,7 +169,7 @@ impl MachineManager {
             }
         };
         let machine_weak = Arc::downgrade(machine);
-        return Some(machine_weak);
+        Some(machine_weak)
     }
 
     pub fn get_serial_weak(
@@ -184,7 +190,7 @@ impl MachineManager {
             }
         };
         let machine_weak = Arc::downgrade(machine);
-        return Some(machine_weak);
+        Some(machine_weak)
     }
 }
 

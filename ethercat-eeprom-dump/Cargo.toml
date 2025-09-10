@@ -3,6 +3,9 @@ name = "ethercat-eeprom-dump"
 version = "0.1.0"
 edition = "2024"
 
+[lints]
+workspace = true
+
 [dependencies]
 clap = { version = "4.5.40", features = ["derive"] }
 ethercrab = "0.6.0"

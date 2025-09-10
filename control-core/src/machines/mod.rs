@@ -61,7 +61,7 @@ pub struct ConnectedMachine<T: GetStrongCount> {
     pub machine: T,
 }
 
-#[derive(Serialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Debug, Clone, PartialEq, Eq)]
 pub struct ConnectedMachineData {
     pub machine_identification_unique: MachineIdentificationUnique,
     pub is_available: bool,

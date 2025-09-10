@@ -19,19 +19,19 @@ impl fmt::Debug for DigitalInput {
 
 /// Implement on device that have digital inputs
 impl DigitalInput {
-    pub fn new<PORT>(device: Arc<RwLock<dyn DigitalInputDevice<PORT>>>, port: PORT) -> DigitalInput
+    pub fn new<PORT>(device: Arc<RwLock<dyn DigitalInputDevice<PORT>>>, port: PORT) -> Self
     where
         PORT: Clone + Send + Sync + 'static,
     {
         // build sync get closure
-        let port2 = port.clone();
+        let port2 = port;
         let device2 = device.clone();
         let get_input = Box::new(move || {
             let device = block_on(device2.read());
             device.get_input(port2.clone())
         });
 
-        DigitalInput { get_input }
+        Self { get_input }
     }
 
     /// Get the current value of the digital input

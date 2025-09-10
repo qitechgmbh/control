@@ -98,17 +98,17 @@ pub struct StateEvent {
     pub pid_settings: PidSettingsStates,
 }
 
-#[derive(Serialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Debug, Clone, PartialEq, Eq)]
 pub struct RotationState {
     pub forward: bool,
 }
 
-#[derive(Serialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Debug, Clone, PartialEq, Eq)]
 pub struct ModeState {
     pub mode: ExtruderV2Mode,
 }
 
-#[derive(Serialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Debug, Clone, PartialEq, Eq)]
 pub struct RegulationState {
     pub uses_rpm: bool,
 }
@@ -144,7 +144,7 @@ pub struct ExtruderSettingsState {
     pub pressure_limit_enabled: bool,
 }
 
-#[derive(Serialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Debug, Clone, PartialEq, Eq)]
 pub struct InverterStatusState {
     /// RUN (Inverter running)
     pub running: bool,
@@ -234,11 +234,11 @@ impl ExtruderV2Namespace {
     }
 }
 
-impl CacheableEvents<ExtruderV2Events> for ExtruderV2Events {
+impl CacheableEvents<Self> for ExtruderV2Events {
     fn event_value(&self) -> GenericEvent {
         match self {
-            ExtruderV2Events::LiveValues(event) => event.into(),
-            ExtruderV2Events::State(event) => event.into(),
+            Self::LiveValues(event) => event.into(),
+            Self::State(event) => event.into(),
         }
     }
 
@@ -247,8 +247,8 @@ impl CacheableEvents<ExtruderV2Events> for ExtruderV2Events {
         let cache_first_and_last = cache_first_and_last_event();
 
         match self {
-            ExtruderV2Events::LiveValues(_) => cache_one_hour,
-            ExtruderV2Events::State(_) => cache_first_and_last,
+            Self::LiveValues(_) => cache_one_hour,
+            Self::State(_) => cache_first_and_last,
         }
     }
 }

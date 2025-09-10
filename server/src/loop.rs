@@ -46,12 +46,12 @@ pub fn init_loop(
             // Exit the entire program if the Loop fails (gets restarted by systemd if running on NixOS)
             std::process::exit(1);
         })
-        .or_else(|e| {
-            Err(anyhow::anyhow!(
+        .map_err(|e| {
+            anyhow::anyhow!(
                 "[{}::init_loop] Failed to spawn loop thread\n{:?}",
                 module_path!(),
                 e
-            ))
+            )
         })?;
 
     Ok(())
@@ -108,23 +108,23 @@ pub async fn loop_once<'maindevice>(app_state: Arc<AppState>) -> Result<(), anyh
             }
 
             // put inputs into device
-            device.input_checked(input_bits).or_else(|e| {
-                Err(anyhow::anyhow!(
+            device.input_checked(input_bits).map_err(|e| {
+                anyhow::anyhow!(
                     "[{}::loop_once] SubDevice with index {} failed to copy inputs\n{:?}",
                     module_path!(),
                     i,
                     e
-                ))
+                )
             })?;
 
             // post process inputs
-            device.input_post_process().or_else(|e| {
-                Err(anyhow::anyhow!(
+            device.input_post_process().map_err(|e| {
+                anyhow::anyhow!(
                     "[{}::loop_once] SubDevice with index {} failed to copy post_process\n{:?}",
                     module_path!(),
                     i,
                     e
-                ))
+                )
             })?;
         }
         // Apparently 500 Microseconds is a safe starting point for ethercat
@@ -143,14 +143,11 @@ pub async fn loop_once<'maindevice>(app_state: Arc<AppState>) -> Result<(), anyh
             if let Ok(machine) = machine.1 {
                 // if the machine is currenlty locked (likely processing API call)
                 // we skip the machine
-                match machine.try_lock() {
-                    Some(mut machine_guard) => {
-                        let span = trace_span!("loop_once_act_machine",);
-                        let _enter = span.enter();
-                        // execute machine
-                        machine_guard.act(now);
-                    }
-                    None => {}
+                if let Some(mut machine_guard) = machine.try_lock() {
+                    let span = trace_span!("loop_once_act_machine",);
+                    let _enter = span.enter();
+                    // execute machine
+                    machine_guard.act(now);
                 }
             }
         }
@@ -182,23 +179,23 @@ pub async fn loop_once<'maindevice>(app_state: Arc<AppState>) -> Result<(), anyh
             }
 
             // pre process outputs
-            device.output_pre_process().or_else(|e| {
-                Err(anyhow::anyhow!(
+            device.output_pre_process().map_err(|e| {
+                anyhow::anyhow!(
                     "[{}::loop_once] SubDevice with index {} failed to pre process outputs \n{:?}",
                     module_path!(),
                     i,
                     e
-                ))
+                )
             })?;
 
             // put outputs into device
-            device.output_checked(output_bits).or_else(|e| {
-                Err(anyhow::anyhow!(
+            device.output_checked(output_bits).map_err(|e| {
+                anyhow::anyhow!(
                     "[{}::loop_once] SubDevice with index {} failed to copy outputs\n{:?}",
                     module_path!(),
                     i,
                     e
-                ))
+                )
             })?;
         }
     }

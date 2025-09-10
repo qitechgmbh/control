@@ -25,12 +25,12 @@ impl serde::ser::Error for HashSerializerError {
     where
         T: Display,
     {
-        HashSerializerError {}
+        Self {}
     }
 }
 
 pub struct HashSerializer<'a, H: Hasher>(&'a mut H);
-impl<'a, H: Hasher> SerializeSeq for HashSerializer<'a, H> {
+impl<H: Hasher> SerializeSeq for HashSerializer<'_, H> {
     type Ok = ();
     type Error = HashSerializerError;
 
@@ -46,7 +46,7 @@ impl<'a, H: Hasher> SerializeSeq for HashSerializer<'a, H> {
     }
 }
 
-impl<'a, H: Hasher> SerializeTuple for HashSerializer<'a, H> {
+impl<H: Hasher> SerializeTuple for HashSerializer<'_, H> {
     type Ok = ();
     type Error = HashSerializerError;
 
@@ -62,7 +62,7 @@ impl<'a, H: Hasher> SerializeTuple for HashSerializer<'a, H> {
     }
 }
 
-impl<'a, H: Hasher> SerializeTupleStruct for HashSerializer<'a, H> {
+impl<H: Hasher> SerializeTupleStruct for HashSerializer<'_, H> {
     type Ok = ();
     type Error = HashSerializerError;
 
@@ -78,7 +78,7 @@ impl<'a, H: Hasher> SerializeTupleStruct for HashSerializer<'a, H> {
     }
 }
 
-impl<'a, H: Hasher> SerializeTupleVariant for HashSerializer<'a, H> {
+impl<H: Hasher> SerializeTupleVariant for HashSerializer<'_, H> {
     type Ok = ();
     type Error = HashSerializerError;
 
@@ -94,7 +94,7 @@ impl<'a, H: Hasher> SerializeTupleVariant for HashSerializer<'a, H> {
     }
 }
 
-impl<'a, H: Hasher> SerializeMap for HashSerializer<'a, H> {
+impl<H: Hasher> SerializeMap for HashSerializer<'_, H> {
     type Ok = ();
     type Error = HashSerializerError;
 
@@ -117,7 +117,7 @@ impl<'a, H: Hasher> SerializeMap for HashSerializer<'a, H> {
     }
 }
 
-impl<'a, H: Hasher> SerializeStruct for HashSerializer<'a, H> {
+impl<H: Hasher> SerializeStruct for HashSerializer<'_, H> {
     type Ok = ();
     type Error = HashSerializerError;
 
@@ -135,7 +135,7 @@ impl<'a, H: Hasher> SerializeStruct for HashSerializer<'a, H> {
     }
 }
 
-impl<'a, H: Hasher> SerializeStructVariant for HashSerializer<'a, H> {
+impl<H: Hasher> SerializeStructVariant for HashSerializer<'_, H> {
     type Ok = ();
     type Error = HashSerializerError;
 
@@ -152,7 +152,7 @@ impl<'a, H: Hasher> SerializeStructVariant for HashSerializer<'a, H> {
     }
 }
 
-impl<'a, H: Hasher> Serializer for HashSerializer<'a, H> {
+impl<H: Hasher> Serializer for HashSerializer<'_, H> {
     type Ok = ();
     type Error = HashSerializerError;
     type SerializeSeq = Self;
@@ -345,7 +345,7 @@ pub fn check_hash_different<T: Serialize>(a: T, b: T) -> bool {
     let hash = hash_with_serde_model(a, hasher);
     let hasher = DefaultHasher::new();
     let hash_old = hash_with_serde_model(b, hasher);
-    return hash != hash_old;
+    hash != hash_old
 }
 
 #[test]
