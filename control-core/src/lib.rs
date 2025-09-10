@@ -2,6 +2,7 @@ pub mod controllers;
 pub mod converters;
 pub mod ethercat;
 pub mod helpers;
+pub mod irq_handling;
 pub mod machines;
 pub mod modbus;
 pub mod realtime;

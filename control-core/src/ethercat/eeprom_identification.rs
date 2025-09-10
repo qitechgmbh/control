@@ -227,7 +227,7 @@ pub async fn write_machine_device_identification<'maindevice, const MAX_PDI: usi
 
 /// Returns the EEPROM addresses for the machine device identification
 /// based on the subdevice's identity
-pub fn get_identification_addresses<'maindevice>(
+pub fn get_identification_addresses(
     subdevice_identity: &SubDeviceIdentity,
     subdevice_name: &str,
 ) -> Result<MachineIdentificationAddresses, Error> {
