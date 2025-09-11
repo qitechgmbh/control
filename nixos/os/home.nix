@@ -6,18 +6,18 @@
   ];
 
   # Add autostart entry for the QiTech electron app
-  xdg.configFile."autostart/de.qitech.control-electron.desktop".text = ''
-    [Desktop Entry]
-    Type=Application
-    Name=QiTech Control
-    Comment=QiTech Control
-    Exec=qitech-control-electron
-    Icon=de.qitech.control-electron
-    Terminal=false
-    StartupWMClass=QiTech Control
-    X-GNOME-Autostart-enabled=true
-    X-GNOME-Autostart-Phase=Applications
-  '';
+  # xdg.configFile."autostart/de.qitech.control-electron.desktop".text = ''
+  #   [Desktop Entry]
+  #   Type=Application
+  #   Name=QiTech Control
+  #   Comment=QiTech Control
+  #   Exec=qitech-control-electron
+  #   Icon=de.qitech.control-electron
+  #   Terminal=false
+  #   StartupWMClass=QiTech Control
+  #   X-GNOME-Autostart-enabled=true
+  #   X-GNOME-Autostart-Phase=Applications
+  # '';
   
   dconf.settings = {
     # Set GNOME wallpaper
@@ -29,7 +29,7 @@
 
     # Enable on-screen keyboard 
     "org/gnome/desktop/a11y/applications" = {
-      screen-keyboard-enabled = true;
+      screen-keyboard-enabled = false;
     };
     
     # Configure on-screen keyboard (optional)
