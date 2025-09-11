@@ -1,6 +1,6 @@
 use crate::machines::{
-    buffer1::BufferV1, extruder1::ExtruderV2, laser::LaserMachine, mock::MockMachine,
-    winder2::Winder2,
+    aquapath1::AquaPathV1, buffer1::BufferV1, extruder1::ExtruderV2, laser::LaserMachine,
+    mock::MockMachine, winder2::Winder2,
 };
 use control_core::machines::registry::MachineRegistry;
 use lazy_static::lazy_static;
@@ -13,6 +13,7 @@ lazy_static! {
         mc.register::<ExtruderV2>(ExtruderV2::MACHINE_IDENTIFICATION);
         mc.register::<MockMachine>(MockMachine::MACHINE_IDENTIFICATION);
         mc.register::<BufferV1>(BufferV1::MACHINE_IDENTIFICATION);
+        mc.register::<AquaPathV1>(AquaPathV1::MACHINE_IDENTIFICATION);
         mc
     };
 }
