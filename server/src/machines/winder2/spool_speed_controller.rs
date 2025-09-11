@@ -42,7 +42,7 @@ impl SpoolSpeedController {
             adaptive_controller: AdaptiveSpoolSpeedController::new(),
             minmax_controller: MinMaxSpoolSpeedController::new(),
             radius_history: MovingTimeWindow::new(Duration::from_secs(10), 40), // Example size, adjust as needed
-            r#type: SpoolSpeedControllerType::MinMax,
+            r#type: SpoolSpeedControllerType::Adaptive,
         }
     }
 
