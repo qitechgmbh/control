@@ -24,7 +24,7 @@
 
     # Enable on-screen keyboard
     "org/gnome/desktop/a11y/applications" = {
-      screen-keyboard-enabled = true;
+      screen-keyboard-enabled = false;
     };
 
     # Configure on-screen keyboard (optional)
