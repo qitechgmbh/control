@@ -1,9 +1,8 @@
-# Edit this configuration file to define what should be installed on
-# your system.  Help is available in the configuration.nix(5) man page
-# and in the NixOS manual (accessible by running ‘nixos-help’).
+{ config, pkgs, ... }:
 
-{ config, pkgs, installInfo, ... }:
-
+let
+  gitInfo = import ../gitInfo.nix { inherit pkgs; };
+in
 {
   imports =
     [ # Include the results of the hardware scan.
@@ -20,13 +19,12 @@
   boot.kernelPackages = pkgs.linuxPackages-rt_latest;
   boot.kernelModules = [ "i915" ];
 
-
   boot.kernelParams = [
     # Graphical
     "logo.nologo" # Remove kernel logo during boot
 
-    # Performance 
-    
+    # Performance
+
     # Specific Vulnerabilities Addressed by Mitigations:
     # - Spectre variants (V1, V2, V4, SWAPGS, SpectreRSB, etc.)
     # - Meltdown (Rogue Data Cache Load)
@@ -36,7 +34,7 @@
     # - TSX Asynchronous Abort (TAA)
     # - iTLB Multihit
     # - And others as they're discovered and mitigated
-    # 
+    #
     # With mitigations=off
     # - PROS: Maximum performance, equivalent to pre-2018 behavior
     # - CONS: Vulnerable to Spectre, Meltdown, Foreshadow, ZombieLoad, etc.
@@ -48,7 +46,7 @@
     # Memory Management
     "transparent_hugepage=always" # Use larger memory pages for memory intense applications
     "nmi_watchdog=0"              # Disable NMI watchdog for reduced CPU overhead and realtime execution
-    
+
     # High-throughput ethernet parameters
     "pcie_aspm=off"         # Disable PCIe power management for NICs
     "intel_iommu=off"       # Disable IOMMU (performance gain)
@@ -144,7 +142,7 @@
     autoSuspend = false;
     wayland = true;
   };
-  
+
   services.xserver.desktopManager.gnome.enable = true;
 
   # Disable sleep/suspend
@@ -217,7 +215,7 @@
     enable = true;
     openFirewall = true;
     user = "qitech-service";
-    group = "qitech-service"; 
+    group = "qitech-service";
     package = pkgs.qitechPackages.server;
   };
 
@@ -259,7 +257,7 @@
     pkgs.qitechPackages.electron
     htop
     wireshark
-    pciutils    
+    pciutils
     neofetch
   ];
 
@@ -295,15 +293,15 @@
   # Set system wide env variables
   environment.variables = {
     QITECH_OS = "true";
-    QITECH_OS_GIT_TIMESTAMP = installInfo.gitTimestamp;
-    QITECH_OS_GIT_COMMIT = installInfo.gitCommit;
-    QITECH_OS_GIT_ABBREVIATION = installInfo.gitAbbreviation;
-    QITECH_OS_GIT_URL = installInfo.gitUrl;
+    QITECH_OS_GIT_TIMESTAMP = gitInfo.gitTimestamp;
+    QITECH_OS_GIT_COMMIT = gitInfo.gitCommit;
+    QITECH_OS_GIT_ABBREVIATION = gitInfo.gitAbbreviation;
+    QITECH_OS_GIT_URL = gitInfo.gitUrl;
   };
 
   # Set revision labe;
-  system.nixos.label = "${installInfo.gitAbbreviationEscaped}_${installInfo.gitCommit}";
-  
+  system.nixos.label = "${gitInfo.gitAbbreviationEscaped}_${gitInfo.gitCommit}";
+
   # Some programs need SUID wrappers, can be configured further or are
   # started in user sessions.
   # programs.mtr.enable = true;
