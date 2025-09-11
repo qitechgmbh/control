@@ -10,12 +10,8 @@ use crate::machines::aquapath1::Flow;
 
 #[derive(Debug)]
 pub struct FlowController {
-    pub pid: PidController,
-    pump_pid_output: f64,
-
     pub flow: Arc<RwLock<Flow>>,
-
-    flow_sensor: DigitalInput,
+    // flow_sensor: DigitalInput,
     pump_relais: DigitalOutput,
 
     pub target_flow: VolumeRate,
@@ -30,10 +26,7 @@ pub struct FlowController {
 
 impl FlowController {
     pub fn new(
-        kp: f64,
-        ki: f64,
-        kd: f64,
-        flow_sensor: DigitalInput,
+        //flow_sensor: DigitalInput,
         pump_relais: DigitalOutput,
         target_flow: VolumeRate,
         flow: Arc<RwLock<Flow>>,
@@ -41,11 +34,9 @@ impl FlowController {
         let now = Instant::now();
         Self {
             // need to tune
-            pid: PidController::new(kp, ki, kd),
-            pump_pid_output: 0.0,
             flow: flow,
             last_update: now,
-            flow_sensor: flow_sensor,
+            // flow_sensor: flow_sensor,
             pump_relais: pump_relais,
             target_flow: target_flow,
             last_value: false,
@@ -71,6 +62,7 @@ impl FlowController {
 
         self.allow_pump();
     }
+
     pub fn disallow_pump(&mut self) {
         self.pump_allowed = false;
     }
@@ -80,7 +72,6 @@ impl FlowController {
     }
 
     pub fn set_target_flow(&mut self, target_flow: VolumeRate) {
-        self.reset_pid();
         if let Ok(mut flow) = self.flow.write() {
             flow.target_flow = target_flow;
         }
@@ -89,18 +80,16 @@ impl FlowController {
     pub fn get_target_flow(&mut self) -> VolumeRate {
         self.target_flow
     }
-    pub fn reset_pid(&mut self) {
-        self.pid.reset()
-    }
 
     pub fn get_flow(&mut self, now: Instant) -> VolumeRate {
-        let value = match self.flow_sensor.get_value() {
-            Ok(val) => val,
-            Err(e) => {
-                tracing::debug!("Error calculating frequency: {}", e);
-                return VolumeRate::new::<liter_per_minute>(0.0);
-            }
-        };
+        let value = false;
+        // match self.flow_sensor.get_value() {
+        //     Ok(val) => val,
+        //     Err(e) => {
+        //         tracing::debug!("Error calculating frequency: {}", e);
+        //         return VolumeRate::new::<liter_per_minute>(0.0);
+        //     }
+        // };
         if value == self.last_value {
             return self.current_flow;
         } else {
@@ -116,12 +105,12 @@ impl FlowController {
     pub fn update(&mut self, now: Instant) {
         let current_flow = self.get_flow(now);
         self.current_flow = current_flow;
-        self.pump_pid_output = 0.0;
         if let Ok(mut flow) = self.flow.write() {
             flow.flow = current_flow;
         }
         if self.current_flow > self.max_flow
             || self.target_flow == VolumeRate::new::<liter_per_minute>(0.0)
+            || !self.pump_allowed
         {
             self.pump_relais.set(false);
             if let Ok(mut flow) = self.flow.write() {
@@ -131,36 +120,10 @@ impl FlowController {
         }
 
         if self.pump_allowed {
-            // let error: f64 =
-            //     self.target_flow.get::<liter_per_minute>() - current_flow.get::<liter_per_minute>();
-
-            // let control = self.pid.update(error, now); // PID output
-            // // Clamp PID output to 0.0 – 1.0 (as duty cycle)
-            // let duty = control.clamp(0.0, 1.0);
-
-            // self.pump_pid_output = duty;
-
-            // let elapsed = now.duration_since(self.window_start);
-
-            // // Restart window if needed
-            // if elapsed >= self.pwm_period {
-            //     self.window_start = now;
-            // }
-            // // Compare duty cycle to elapsed time
-            // let on_time = self.pwm_period.mul_f64(duty);
-
-            // // Relay is ON if within duty cycle window
-            // let on = elapsed < on_time;
-
             self.pump_relais.set(true);
             if let Ok(mut flow) = self.flow.write() {
                 flow.pump = true;
             }
         }
-    }
-
-    pub fn reset(&mut self) {
-        self.pid.reset();
-        self.last_update = Instant::now();
     }
 }

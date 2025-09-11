@@ -23,6 +23,8 @@ pub struct LiveValuesEvent {
     pub back_flow: f64,
     pub front_temperature: f64,
     pub back_temperature: f64,
+    pub front_temp_reservoir: f64,
+    pub back_temp_reservoir: f64,
 }
 
 impl LiveValuesEvent {

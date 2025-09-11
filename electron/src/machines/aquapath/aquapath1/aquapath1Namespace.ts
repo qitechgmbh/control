@@ -59,6 +59,8 @@ export const liveValuesEventDataSchema = z.object({
   back_flow: z.number(),
   front_temperature: z.number(),
   back_temperature: z.number(),
+  front_temp_reservoir: z.number(),
+  back_temp_reservoir: z.number(),
 });
 
 /**
@@ -91,6 +93,9 @@ export type Aquapath1NamespaceStore = {
 
   front_temperature: TimeSeries;
   back_temperature: TimeSeries;
+
+  front_temp_reservoir: TimeSeries;
+  back_temp_reservoir: TimeSeries;
 };
 
 // Constants for time durations
@@ -103,6 +108,12 @@ const { initialTimeSeries: front_temperature, insert: addTemperature1 } =
   createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
 
 const { initialTimeSeries: back_temperature, insert: addTemperature2 } =
+  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+
+const { initialTimeSeries: front_temp_reservoir, insert: addTempReserv1 } =
+  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+
+const { initialTimeSeries: back_temp_reservoir, insert: addTempReserv2 } =
   createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
 
 const { initialTimeSeries: front_flow, insert: addFlow1 } = createTimeSeries(
@@ -132,6 +143,8 @@ export const createAquapath1NamespaceStore =
         back_temperature: back_temperature,
         front_flow: front_flow,
         back_flow: back_flow,
+        front_temp_reservoir: front_temp_reservoir,
+        back_temp_reservoir: back_temp_reservoir,
       };
     });
   };
@@ -189,6 +202,14 @@ export function aquapath1MessageHandler(
           }),
           back_flow: addFlow2(state.back_flow, {
             value: liveValuesEvent.data.back_flow,
+            timestamp: event.ts,
+          }),
+          front_temp_reservoir: addTempReserv1(state.front_temp_reservoir, {
+            value: liveValuesEvent.data.front_temp_reservoir,
+            timestamp: event.ts,
+          }),
+          back_temp_reservoir: addTempReserv2(state.back_temp_reservoir, {
+            value: liveValuesEvent.data.back_temp_reservoir,
             timestamp: event.ts,
           }),
         }));

@@ -6,6 +6,7 @@ use ethercat_hal::io::{
 use serde::de::value;
 use std::{
     sync::{Arc, RwLock},
+    thread::sleep,
     time::{Duration, Instant},
 };
 use uom::si::{f64::ThermodynamicTemperature, thermodynamic_temperature::degree_celsius};
@@ -55,7 +56,7 @@ impl TemperatureController {
 
     pub fn enable_cooling(&mut self) {
         self.temp.cooling = true;
-        self.turn_cooling_off();
+        self.turn_cooling_on();
         self.allow_cooling();
     }
 
@@ -144,13 +145,13 @@ impl TemperatureController {
     }
 
     pub fn turn_cooling_on(&mut self) {
-        self.cooling_controller.set(10.0);
         self.cooling_relais.set(true);
+
+        self.cooling_controller.set(10.0);
         self.temp.cooling = true;
     }
 
     pub fn turn_cooling_off(&mut self) {
-        self.cooling_controller.set(0.0);
         self.cooling_relais.set(false);
         self.temp.cooling = false;
     }
@@ -170,6 +171,7 @@ impl TemperatureController {
     pub fn update(&mut self, now: Instant) -> () {
         self.current_temperature = self.get_temp_in();
         self.temp_reservoir = self.get_temp_out();
+
         if self.current_temperature < self.min_temperature {
             self.turn_cooling_off();
             return;
@@ -191,28 +193,30 @@ impl TemperatureController {
         if elapsed >= self.pwm_period {
             self.window_start = now;
         }
-        let is_pump;
-        {
-            let flow = self.flow.read();
-            is_pump = match flow {
-                Ok(val) => val.pump,
-                Err(_) => false,
-            };
-        }
-        // Decide whether to heat or cool based on error
-        if error > 0.0 && self.heating_allowed && is_pump {
-            // Need heating (current < target)
-            self.turn_cooling_off();
 
-            let duty = control.clamp(0.0, 1.0);
-            let on_time = self.pwm_period.mul_f64(duty);
-            let on = elapsed < on_time;
-            self.heating_relais_1.set(on);
-            self.heating_relais_2.set(on);
-            self.temp.heating = on;
+        // Get pump status from flow controller
+        let is_pump_on = self.flow.read().map(|f| f.pump).unwrap_or(false);
+
+        // Decide whether to heat or cool based on error
+        if error > 0.0 {
+            // Need heating (current < target)
+            self.turn_cooling_off(); // Always turn off cooling when heating is needed
+
+            if self.heating_allowed && is_pump_on {
+                // Only start heating if pump is on
+                let duty = control.clamp(0.0, 1.0);
+                let on_time = self.pwm_period.mul_f64(duty);
+                let on = elapsed < on_time;
+                self.heating_relais_1.set(on);
+                self.heating_relais_2.set(on);
+                self.temp.heating = on;
+            } else {
+                // Pump is off or heating not allowed - don't heat
+                self.turn_heating_off();
+            }
         } else if error < 0.0 && self.cooling_allowed {
             // Need cooling (current > target)
-            self.turn_heating_off();
+            self.turn_heating_off(); // Always turn off heating when cooling is needed
 
             let duty = (-control).clamp(0.0, 1.0);
             let on_time = self.pwm_period.mul_f64(duty);
@@ -228,6 +232,7 @@ impl TemperatureController {
 
             self.temp.cooling = on;
         } else {
+            // No heating or cooling needed
             self.turn_heating_off();
             self.turn_cooling_off();
         }

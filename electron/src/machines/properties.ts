@@ -327,17 +327,17 @@ export const aquapath1: MachineProperties = {
         },
       ],
     },
-    {
-      role: 4,
-      role_label: "EL1002",
-      allowed_devices: [
-        {
-          vendor_id: 2,
-          product_id: 0x3ea3052,
-          revision: 0x120000,
-        },
-      ],
-    },
+    // {
+    //   role: 4,
+    //   role_label: "EL1002",
+    //   allowed_devices: [
+    //     {
+    //       vendor_id: 2,
+    //       product_id: 0x3ea3052,
+    //       revision: 0x120000,
+    //     },
+    //   ],
+    // },
   ],
 };
 export const machineProperties: MachineProperties[] = [
