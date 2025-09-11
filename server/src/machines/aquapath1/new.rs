@@ -221,46 +221,46 @@ impl MachineNewTrait for AquaPathV1 {
                 device
             };
 
-            let el1002 = {
-                let device_identification =
-                    get_device_identification_by_role(params.device_group, 4)?;
-                let device_hardware_identification_ethercat = match &device_identification
-                    .device_hardware_identification
-                {
-                    DeviceHardwareIdentification::Ethercat(
-                        device_hardware_identification_ethercat,
-                    ) => device_hardware_identification_ethercat,
-                    _ => Err(anyhow::anyhow!(
-                        "[{}::MachineNewTrait/ExtruderV2::new] Device with role 4 is not Ethercat",
-                        module_path!()
-                    ))?, //uncommented
-                };
-                let subdevice_index = device_hardware_identification_ethercat.subdevice_index;
-                let subdevice = get_subdevice_by_index(hardware.subdevices, subdevice_index)?;
-                let subdevice_identity = subdevice.identity();
-                let device = match subdevice_identity_to_tuple(&subdevice_identity) {
-                    EL1002_IDENTITY_A => {
-                        let ethercat_device = get_ethercat_device_by_index(
-                            &hardware.ethercat_devices,
-                            subdevice_index,
-                        )?;
-                        downcast_device::<EL1002>(ethercat_device).await?
-                    }
-                    _ => {
-                        return Err(anyhow::anyhow!(
-                            "[{}::MachineNewTrait/AquaPath1::new] Device with role 4 is not an EL1002",
-                            module_path!()
-                        ));
-                    }
-                };
-                {
-                    let mut device_guard = device.write().await;
-                    device_guard.set_used(true);
-                }
-                device
-            };
-            let di1 = DigitalInput::new(el1002.clone(), EL1002Port::DI1);
-            let di2 = DigitalInput::new(el1002.clone(), EL1002Port::DI2);
+            // let el1002 = {
+            //     let device_identification =
+            //         get_device_identification_by_role(params.device_group, 4)?;
+            //     let device_hardware_identification_ethercat = match &device_identification
+            //         .device_hardware_identification
+            //     {
+            //         DeviceHardwareIdentification::Ethercat(
+            //             device_hardware_identification_ethercat,
+            //         ) => device_hardware_identification_ethercat,
+            //         _ => Err(anyhow::anyhow!(
+            //             "[{}::MachineNewTrait/ExtruderV2::new] Device with role 4 is not Ethercat",
+            //             module_path!()
+            //         ))?, //uncommented
+            //     };
+            //     let subdevice_index = device_hardware_identification_ethercat.subdevice_index;
+            //     let subdevice = get_subdevice_by_index(hardware.subdevices, subdevice_index)?;
+            //     let subdevice_identity = subdevice.identity();
+            //     let device = match subdevice_identity_to_tuple(&subdevice_identity) {
+            //         EL1002_IDENTITY_A => {
+            //             let ethercat_device = get_ethercat_device_by_index(
+            //                 &hardware.ethercat_devices,
+            //                 subdevice_index,
+            //             )?;
+            //             downcast_device::<EL1002>(ethercat_device).await?
+            //         }
+            //         _ => {
+            //             return Err(anyhow::anyhow!(
+            //                 "[{}::MachineNewTrait/AquaPath1::new] Device with role 4 is not an EL1002",
+            //                 module_path!()
+            //             ));
+            //         }
+            //     };
+            //     {
+            //         let mut device_guard = device.write().await;
+            //         device_guard.set_used(true);
+            //     }
+            //     device
+            // };
+            // let di1 = DigitalInput::new(el1002.clone(), EL1002Port::DI1);
+            // let di2 = DigitalInput::new(el1002.clone(), EL1002Port::DI2);
             //after heating
             let t1 = TemperatureInput::new(el3204.clone(), EL3204Port::T1);
             //in reservoir
@@ -310,6 +310,7 @@ impl MachineNewTrait for AquaPathV1 {
                 t1,
                 t2,
             );
+
             let cooling_controller_back = TemperatureController::new(
                 0.16,
                 0.0,
@@ -329,26 +330,19 @@ impl MachineNewTrait for AquaPathV1 {
             // let a1 = AnalogInput::new(el3062_0030.clone(), EL3062_0030Port::AI1);
             // let a2 = AnalogInput::new(el3062_0030.clone(), EL3062_0030Port::AI2);
             let mut flow_controller_front = FlowController::new(
-                0.16,
-                0.0,
-                0.008,
-                di1,
+                //di1,
                 do1,
                 VolumeRate::new::<liter_per_minute>(0.0),
                 flow_front,
             );
             let mut flow_controller_back = FlowController::new(
-                0.16,
-                0.0,
-                0.008,
-                di2,
+                //di2,
                 do2,
                 VolumeRate::new::<liter_per_minute>(0.0),
                 flow_back,
             );
             flow_controller_front.update(Instant::now());
             flow_controller_back.update(Instant::now());
-
             // let aquapath_max_temperature = ThermodynamicTemperature::new::<degree_celsius>(100.0);
 
             // let temperature_controller_front = TemperatureController::new(

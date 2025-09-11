@@ -46,6 +46,8 @@ export function useAquapath1() {
     back_temperature: back_temperature,
     front_flow: front_flow,
     back_flow: back_flow,
+    front_temp_reservoir: front_temp_reservoir,
+    back_temp_reservoir: back_temp_reservoir,
   } = useAquapath1Namespace(machineIdentification);
 
   // Single optimistic state for all state management
@@ -161,6 +163,8 @@ export function useAquapath1() {
     back_flow,
     front_temperature,
     back_temperature,
+    front_temp_reservoir,
+    back_temp_reservoir,
 
     setAquapathMode,
     setFrontTemperature,

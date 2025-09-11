@@ -123,6 +123,14 @@ impl AquaPathV1 {
                 .flow_controller_back
                 .current_flow
                 .get::<liter_per_minute>(),
+            front_temp_reservoir: self
+                .temp_controller_front
+                .temp_reservoir
+                .get::<degree_celsius>(),
+            back_temp_reservoir: self
+                .temp_controller_back
+                .temp_reservoir
+                .get::<degree_celsius>(),
         };
         let event = live_values.build();
         self.namespace.emit(AquaPathV1Events::LiveValues(event));
@@ -140,6 +148,7 @@ impl AquaPathV1 {
                         .temp_controller_front
                         .current_temperature
                         .get::<degree_celsius>(),
+
                     target_temperature: self
                         .temp_controller_front
                         .target_temperature
@@ -258,8 +267,6 @@ impl AquaPathV1 {
 
 impl AquaPathV1 {
     fn set_mode_state(&mut self, mode: AquaPathV1Mode) {
-        tracing::info!("mode {:?}", mode);
-
         self.switch_mode(mode.clone());
         self.emit_state();
     }
