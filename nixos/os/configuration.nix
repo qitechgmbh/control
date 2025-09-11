@@ -232,13 +232,13 @@ in
 
   security.sudo.wheelNeedsPassword = false;
 
-  # Enable automatic login for the user.
-  services.displayManager.autoLogin.enable = true;
-  services.displayManager.autoLogin.user = "qitech";
+  # Enable automatic login for the user. (Disabled for rdp to work)
+  # services.displayManager.autoLogin.enable = true;
+  # services.displayManager.autoLogin.user = "qitech";
 
   # Workaround for GNOME autologin: https://github.com/NixOS/nixpkgs/issues/103746#issuecomment-945091229
-  systemd.services."getty@tty1".enable = false;
-  systemd.services."autovt@tty1".enable = false;
+  systemd.services."getty@tty1".enable = true;
+  systemd.services."autovt@tty1".enable = true;
 
   # Install firefox.
   programs.firefox.enable = true;
@@ -317,13 +317,24 @@ in
   # List services that you want to enable:
 
   # Enable the OpenSSH daemon.
-  # services.openssh.enable = true;
+  services.openssh.enable = true;
 
   # Open ports in the firewall.
   # networking.firewall.allowedTCPPorts = [ ... ];
   # networking.firewall.allowedUDPPorts = [ ... ];
   # Or disable the firewall altogether.
   # networking.firewall.enable = false;
+
+  services.xrdp.enable = true;
+
+  # Use the GNOME Wayland session
+  services.xrdp.defaultWindowManager = "${pkgs.gnome-session}/bin/gnome-session";
+  
+  # XRDP needs the GNOME remote desktop backend to function
+  services.gnome.gnome-remote-desktop.enable = true;
+  
+  # Open the default RDP port (3389)
+  services.xrdp.openFirewall = true;
 
   # This value determines the NixOS release from which the default
   # settings for stateful data, like file locations and database versions
