@@ -82,11 +82,11 @@
 
       substituters = [
         http://192.168.179.24:4040
-      ]
+      ];
   
       trusted-public-keys = [
         "192.168.179.24:Ir7N6GAdCZh2+fwelWaygoTspdZxvWy6kXFniTCKW0Q="
-      ]
+      ];
     };
   };
 

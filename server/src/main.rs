@@ -127,15 +127,3 @@ fn init_dhat_heap_profiling() {
         }
     })
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_main() {
-        // setup logging
-        logging::init_tracing();
-        ::tracing::info!("Running main test");
-    }
-}
