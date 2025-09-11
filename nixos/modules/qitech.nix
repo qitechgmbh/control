@@ -70,36 +70,40 @@ in {
       wantedBy = [ "multi-user.target" ];
       after = [ "network.target" ];
       
-      serviceConfig = {
-        Type = "simple";
-        User = cfg.user;
-        Group = cfg.group;
-        ExecStart = "${cfg.package}/bin/server";
-        Restart = "always";
-        RestartSec = "10s";
-        
-        # Grant specific capabilities needed for EtherCAT
-        CapabilityBoundingSet = "CAP_NET_RAW CAP_NET_ADMIN CAP_SYS_NICE CAP_DAC_OVERRIDE";
-        AmbientCapabilities = "CAP_NET_RAW CAP_NET_ADMIN CAP_SYS_NICE CAP_DAC_OVERRIDE";
-        
-        # Hardening options
-        NoNewPrivileges = true;
-        ProtectSystem = "strict";
-        ProtectHome = true;
-        PrivateTmp = true;
-        PrivateDevices = false;  # Need access to devices
-        ProtectKernelTunables = true;
-        ProtectControlGroups = true;
-        RestrictAddressFamilies = "AF_UNIX AF_INET AF_INET6 AF_NETLINK AF_PACKET";
-        RestrictNamespaces = true;
-        LockPersonality = true;
-        MemoryDenyWriteExecute = false;
+serviceConfig = {
+  Type = "simple";
+  User = cfg.user;
+  Group = cfg.group;
+  ExecStart = "${cfg.package}/bin/server";
+  Restart = "always";
+  RestartSec = "10s";
 
-        # Logging
-        StandardOutput = "journal";
-        StandardError = "journal";
-        SyslogIdentifier = "qitech-control-server";
-      };
+  # Capabilities (unchanged, as you wanted)
+  CapabilityBoundingSet = "CAP_NET_RAW CAP_NET_ADMIN CAP_SYS_NICE CAP_DAC_OVERRIDE";
+  AmbientCapabilities     = "CAP_NET_RAW CAP_NET_ADMIN CAP_SYS_NICE CAP_DAC_OVERRIDE";
+
+  # Hardening options
+  NoNewPrivileges = true;
+  ProtectSystem = "strict";
+  # Open only /proc/irq explicitly
+  ReadWritePaths = [ "/proc/irq" ];
+  ProtectHome = true;
+  PrivateTmp = true;
+  PrivateDevices = false;
+  # Must disable this to allow /proc/irq writes
+  ProtectKernelTunables = false;
+  ProtectControlGroups = true;
+  RestrictAddressFamilies = "AF_UNIX AF_INET AF_INET6 AF_NETLINK AF_PACKET";
+  RestrictNamespaces = true;
+  LockPersonality = true;
+  MemoryDenyWriteExecute = false;
+
+  # Logging
+  StandardOutput = "journal";
+  StandardError = "journal";
+  SyslogIdentifier = "qitech-control-server";
+};
+
       
       environment = {
         RUST_BACKTRACE = "full";
