@@ -3,14 +3,13 @@
 , pkg-config
 , libudev-zero
 , libpcap
-, commitHash
 , craneLib
 }:
 
 let
   # Bind variables so they can be inherited inside inner calls
   pname = "server";
-  version = commitHash;
+  version = "1.0.0";
   strictDeps = true;
   nativeBuildInputs = [ pkg-config ];
   buildInputs = [ libpcap libudev-zero ];
