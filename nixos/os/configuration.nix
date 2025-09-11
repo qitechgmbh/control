@@ -19,13 +19,6 @@
   boot.kernelPackages = pkgs.linuxPackages-rt_latest;
   boot.kernelModules = [ "i915" ];
 
-  substituters = [
-    http://192.168.179.24:4040
-  ]
-  
-  trusted-public-keys = [
-    "192.168.179.24:Ir7N6GAdCZh2+fwelWaygoTspdZxvWy6kXFniTCKW0Q="
-  ]
 
 
   boot.kernelParams = [
@@ -86,6 +79,14 @@
     '';
     settings = {
       sandbox = false;
+
+      substituters = [
+        http://192.168.179.24:4040
+      ]
+  
+      trusted-public-keys = [
+        "192.168.179.24:Ir7N6GAdCZh2+fwelWaygoTspdZxvWy6kXFniTCKW0Q="
+      ]
     };
   };
 
