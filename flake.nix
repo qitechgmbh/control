@@ -3,23 +3,23 @@
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-25.05";
-    
+
     # Crane for Rust builds with dependency caching
     crane = {
       url = "github:ipetkov/crane";
     };
-    
+
     home-manager = {
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    
+
     # Add the QiTech Control repository
     qitech-control = {
       url = "github:qitechgmbh/control";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    
+
     # Add flake-utils which was missing
     flake-utils = {
       url = "github:numtide/flake-utils";
@@ -51,7 +51,7 @@
         pkgs = import nixpkgs { inherit system overlays; };
 
         craneLib = crane.mkLib pkgs;
-        
+
         # Use Rust 1.86 stable from nixpkgs
         rust = pkgs.rustc;
       in {
@@ -60,7 +60,7 @@
           electron = pkgs.qitechPackages.electron;
           default = self.packages.${system}.server;
         };
-        
+
         devShells.default = craneLib.devShell {
           packages = with pkgs; [
             pkg-config
@@ -69,7 +69,9 @@
             nodejs_22
             nodePackages.npm
           ];
-          
+
+          hardeningDisable = [ "fortify" ];
+
           shellHook = ''
             echo "QiTech Control Development Environment"
             echo "Rust version: $(rustc --version)"
@@ -80,7 +82,7 @@
     ) // {
       nixosModules.qitech = import ./nixos/modules/qitech.nix;
       nixosModules.default = self.nixosModules.qitech;
-      
+
       # Define nixosConfigurations outside of eachDefaultSystem
       nixosConfigurations = {
         # Replace "nixos" with your actual hostname
@@ -107,12 +109,12 @@
                 })
               ];
             }
-            
+
             ./nixos/os/configuration.nix
-            
+
             # QiTech Control module
             self.nixosModules.qitech
-            
+
             # Home Manager module
             home-manager.nixosModules.home-manager
             {
