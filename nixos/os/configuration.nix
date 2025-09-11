@@ -205,13 +205,13 @@ in
     });
   '';
 
-  # Enable automatic login for the user.
-  services.displayManager.autoLogin.enable = true;
-  services.displayManager.autoLogin.user = "qitech";
+  # Enable automatic login for the user. (Disabled for rdp to work)
+  # services.displayManager.autoLogin.enable = true;
+  # services.displayManager.autoLogin.user = "qitech";
 
   # Workaround for GNOME autologin: https://github.com/NixOS/nixpkgs/issues/103746#issuecomment-945091229
-  systemd.services."getty@tty1".enable = false;
-  systemd.services."autovt@tty1".enable = false;
+  systemd.services."getty@tty1".enable = true;
+  systemd.services."autovt@tty1".enable = true;
 
   # Install firefox.
   programs.firefox.enable = true;
@@ -267,6 +267,13 @@ in
   networking.firewall.allowedTCPPorts = [ 443 ];
 
   i18n.supportedLocales = [ "all" ];
+
+  services.openssh.enable = true;
+  services.gnome.gnome-remote-desktop.enable = true;
+
+  services.xrdp.enable = true;
+  services.xrdp.defaultWindowManager = "${pkgs.gnome-session}/bin/gnome-session";
+  services.xrdp.openFirewall = true;
 
   # Dont edit
   system.stateVersion = "24.11";
