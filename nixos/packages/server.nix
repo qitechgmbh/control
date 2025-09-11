@@ -10,7 +10,7 @@
 let
   # Bind variables so they can be inherited inside inner calls
   pname = "server";
-  version = commitHash;
+  version = builtins.getEnv "COMMIT_HASH";
   strictDeps = true;
   nativeBuildInputs = [ pkg-config ];
   buildInputs = [ libpcap libudev-zero ];
