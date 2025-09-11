@@ -31,7 +31,7 @@
     "org/gnome/desktop/a11y/applications" = {
       screen-keyboard-enabled = true;
     };
-    
+
     # Configure on-screen keyboard (optional)
     "org/gnome/desktop/a11y" = {
       always-show-universal-access-status = true;
@@ -41,7 +41,7 @@
     "org/gnome/desktop/session" = {
       idle-delay = lib.gvariant.mkUint32 0;  # Use uint32 format to ensure proper type
     };
-    
+
   # Disable automatic suspend and screen dimming
   "org/gnome/settings-daemon/plugins/power" = {
     sleep-inactive-ac-type = "nothing";
