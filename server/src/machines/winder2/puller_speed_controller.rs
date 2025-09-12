@@ -1,4 +1,7 @@
-use std::time::{Duration, Instant};
+use std::{
+    f64::consts::PI,
+    time::{Duration, Instant},
+};
 
 use control_core::{
     controllers::{
@@ -184,10 +187,9 @@ impl PullerSpeedController {
     }
 
     fn calculate_target_speed(&self) -> Velocity {
-        let q_meas = std::f64::consts::PI * self.measured_diameter * self.measured_diameter / 4.0
-            * self.last_speed;
+        let q_meas = PI * self.measured_diameter * self.measured_diameter / 4.0 * self.last_speed;
 
-        (4.0 * q_meas) / (std::f64::consts::PI * self.target_diameter * self.target_diameter)
+        (4.0 * q_meas) / (PI * self.target_diameter * self.target_diameter)
     }
 
     fn speed_from_diameter(&mut self, now: Instant) -> Velocity {
