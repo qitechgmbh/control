@@ -40,7 +40,11 @@ export const liveValuesEventDataSchema = z.object({
 /**
  * Puller regulation type enum
  */
-export const pullerRegulationSchema = z.enum(["Speed", "Diameter"]);
+export const pullerRegulationSchema = z.enum([
+  "Speed",
+  "Diameter",
+  "DiameterNoPid",
+]);
 export type PullerRegulation = z.infer<typeof pullerRegulationSchema>;
 
 /**
@@ -139,6 +143,8 @@ export const connectedMachineStateSchema = z.object({
  */
 export const pDeadSettingsSchema = z.object({
   kp: z.number(),
+  ki: z.number(),
+  kd: z.number(),
 });
 
 /**
