@@ -1,6 +1,8 @@
 use super::LaserMachine;
 use control_core::machines::new::MachineAct;
-use std::time::{Duration, Instant};
+use std::{
+    time::{Duration, Instant},
+};
 
 /// Implements the `MachineAct` trait for the `LaserMachine`.
 ///
@@ -18,7 +20,7 @@ use std::time::{Duration, Instant};
 /// The method ensures that the diameter value is updated approximately 60 times per second.
 ///
 impl MachineAct for LaserMachine {
-    fn act(&mut self, now: Instant) -> Pin<Box<dyn Future<Output = ()> + Send + '_>> {
+    fn act(&mut self, now: Instant) {
         Box::pin(async move {
             // sync the diameter
             self.set_measured_diameter();
@@ -29,6 +31,6 @@ impl MachineAct for LaserMachine {
                 self.emit_live_values();
                 self.last_measurement_emit = now;
             }
-        })
+        });
     }
 }
