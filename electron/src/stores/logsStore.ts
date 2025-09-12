@@ -46,9 +46,10 @@ export const useLogsStore = create<LogsStore>((set, get) => ({
         state.entries.push(newEntry);
         state.sources.add(entry.source);
 
-        // Keep only last 10000 entries to prevent memory issues
-        if (state.entries.length > 10000) {
-          state.entries.splice(0, state.entries.length - 10000);
+        // Keep only last 5000 entries to prevent memory issues
+        // Reduced from 10000 since logs are now only streamed on-demand
+        if (state.entries.length > 5000) {
+          state.entries.splice(0, state.entries.length - 5000);
         }
       }),
     ),
