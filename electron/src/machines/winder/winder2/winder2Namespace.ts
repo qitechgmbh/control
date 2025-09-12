@@ -167,8 +167,6 @@ export const connectedMachineStateSchema = z.object({
  */
 export const pDeadSettingsSchema = z.object({
   kp: z.number(),
-  ki: z.number(),
-  kd: z.number(),
 });
 
 /**
