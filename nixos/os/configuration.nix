@@ -2,7 +2,7 @@
 # your system.  Help is available in the configuration.nix(5) man page
 # and in the NixOS manual (accessible by running ‘nixos-help’).
 
-{ config, pkgs, installInfo, ... }:
+{ config, pkgs, gitInfo, ... }:
 
 {
   imports =
@@ -295,14 +295,14 @@
   # Set system wide env variables
   environment.variables = {
     QITECH_OS = "true";
-    QITECH_OS_GIT_TIMESTAMP = installInfo.gitTimestamp;
-    QITECH_OS_GIT_COMMIT = installInfo.gitCommit;
-    QITECH_OS_GIT_ABBREVIATION = installInfo.gitAbbreviation;
-    QITECH_OS_GIT_URL = installInfo.gitUrl;
+    QITECH_OS_GIT_TIMESTAMP = gitInfo.gitTimestamp;
+    QITECH_OS_GIT_COMMIT = gitInfo.gitCommit;
+    QITECH_OS_GIT_ABBREVIATION = gitInfo.gitAbbreviation;
+    QITECH_OS_GIT_URL = gitInfo.gitUrl;
   };
 
   # Set revision labe;
-  system.nixos.label = "${installInfo.gitAbbreviationEscaped}_${installInfo.gitCommit}";
+  system.nixos.label = "${gitInfo.gitAbbreviationEscaped}_${gitInfo.gitCommit}";
   
   # Some programs need SUID wrappers, can be configured further or are
   # started in user sessions.
