@@ -31,10 +31,8 @@ export function createChart({
   setCursorValue,
   setCursorValues,
   visibleSeries,
-}: CreateChartParams & {
-  setCursorValues?: React.Dispatch<React.SetStateAction<(number | null)[]>>;
-  visibleSeries?: boolean[];
-}): (() => void) | undefined {
+  showFromTimestamp,
+}: CreateChartParams): (() => void) | undefined {
   if (!containerRef.current) return;
 
   // Get ALL series from original data
@@ -73,7 +71,7 @@ export function createChart({
     initialMin = manualScaleRef.current.x.min;
     initialMax = manualScaleRef.current.x.max;
   } else if (selectedTimeWindow === "all") {
-    initialMin = fullStart;
+    initialMin = showFromTimestamp ?? fullStart;
     initialMax = getHistoricalEndTimestamp();
   } else {
     const endTimestamp = getHistoricalEndTimestamp();
@@ -83,9 +81,9 @@ export function createChart({
         endTimestamp - (selectedTimeWindow as number),
         fullStart,
       );
-      initialMin = defaultViewStart;
+      initialMin = showFromTimestamp ?? defaultViewStart;
     } else {
-      initialMin = endTimestamp - (selectedTimeWindow as number);
+      initialMin = showFromTimestamp ?? (endTimestamp - (selectedTimeWindow as number));
     }
 
     initialMax = endTimestamp;
