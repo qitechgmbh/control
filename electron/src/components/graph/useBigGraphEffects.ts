@@ -41,6 +41,7 @@ interface UseBigGraphEffectsProps {
   isLiveMode: boolean;
   selectedTimeWindow: number | "all";
   visibleSeries: boolean[];
+  showFromTimestamp?: number | null;
 
   // State setters
   setSelectedTimeWindow: (value: number | "all") => void;
@@ -90,6 +91,7 @@ export function useBigGraphEffects({
   isLiveMode,
   selectedTimeWindow,
   visibleSeries,
+  showFromTimestamp,
 
   setSelectedTimeWindow,
   setViewMode,
@@ -275,6 +277,7 @@ export function useBigGraphEffects({
       setCursorValue,
       setCursorValues,
       visibleSeries,
+      showFromTimestamp,
     });
 
     setIsChartCreated(true);
