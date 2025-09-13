@@ -236,7 +236,7 @@ impl AngularJerkSpeedController {
     pub fn get_min_speed(&self) -> Option<AngularVelocity> {
         self.controller
             .get_min_speed()
-            .map(|speed| AngularVelocity::new::<radian_per_second>(speed))
+            .map(AngularVelocity::new::<radian_per_second>)
     }
 
     /// Get the maximum angular velocity limit
@@ -248,7 +248,7 @@ impl AngularJerkSpeedController {
     pub fn get_max_speed(&self) -> Option<AngularVelocity> {
         self.controller
             .get_max_speed()
-            .map(|speed| AngularVelocity::new::<radian_per_second>(speed))
+            .map(AngularVelocity::new::<radian_per_second>)
     }
 
     /// Set the minimum angular velocity limit

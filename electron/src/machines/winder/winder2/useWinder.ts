@@ -178,7 +178,7 @@ export function useWinder2() {
     serverRequest: () => void,
   ) => {
     const currentState = stateOptimistic.value;
-    if (currentState) {
+    if (currentState && !stateOptimistic.isOptimistic) {
       stateOptimistic.setOptimistic(produce(currentState, producer));
     }
     serverRequest();

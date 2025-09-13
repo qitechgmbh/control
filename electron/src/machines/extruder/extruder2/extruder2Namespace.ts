@@ -72,7 +72,6 @@ export const regulationStateSchema = z.object({
  * Pressure state schema
  */
 export const pressureStateSchema = z.object({
-  bar: z.number(),
   target_bar: z.number(),
   wiring_error: z.boolean(),
 });
@@ -88,7 +87,6 @@ export const screwStateSchema = z.object({
  * Heating state schema
  */
 export const heatingStateSchema = z.object({
-  temperature: z.number(),
   target_temperature: z.number(),
   wiring_error: z.boolean(),
 });
@@ -279,6 +277,7 @@ export function extruder2MessageHandler(
 
     try {
       if (eventName === "StateEvent") {
+        console.log(event);
         const stateEvent = stateEventSchema.parse(event);
         updateStore((state) => ({
           ...state,

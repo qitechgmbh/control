@@ -14,6 +14,7 @@ pub mod el3021;
 pub mod el3024;
 pub mod el3062_0030;
 pub mod el3204;
+pub mod el4002;
 pub mod el6021;
 pub mod el7031;
 pub mod el7031_0030;
@@ -38,6 +39,7 @@ use el3001::EL3001_IDENTITY_A;
 use el3021::EL3021_IDENTITY_A;
 use el3024::EL3024_IDENTITY_A;
 use el3204::EL3204_IDENTITY_A;
+use el4002::EL4002_IDENTITY_A;
 use el6021::{EL6021_IDENTITY_A, EL6021_IDENTITY_B, EL6021_IDENTITY_C, EL6021_IDENTITY_D};
 
 use el3204::EL3204_IDENTITY_B;
@@ -201,6 +203,7 @@ pub fn device_from_subdevice_identity_tuple(
         EL3021_IDENTITY_A => Ok(Arc::new(RwLock::new(el3021::EL3021::new()))),
         EL3024_IDENTITY_A => Ok(Arc::new(RwLock::new(el3024::EL3024::new()))),
         EL3062_0030_IDENTITY_A => Ok(Arc::new(RwLock::new(el3062_0030::EL3062_0030::new()))),
+        EL4002_IDENTITY_A => Ok(Arc::new(RwLock::new(el4002::EL4002::new()))),
         EL6021_IDENTITY_A | EL6021_IDENTITY_B | EL6021_IDENTITY_C | EL6021_IDENTITY_D => {
             Ok(Arc::new(RwLock::new(el6021::EL6021::new())))
         }
@@ -259,6 +262,6 @@ pub async fn specific_device_from_devices<DEVICE: EthercatDevice>(
 
 pub type SubDeviceIdentityTuple = (u32, u32, u32);
 /// function that converts SubDeviceIdentity to tuple
-pub fn subdevice_identity_to_tuple(identity: &SubDeviceIdentity) -> SubDeviceIdentityTuple {
+pub const fn subdevice_identity_to_tuple(identity: &SubDeviceIdentity) -> SubDeviceIdentityTuple {
     (identity.vendor_id, identity.product_id, identity.revision)
 }

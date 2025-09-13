@@ -9,7 +9,6 @@ use ethercrab::{SubDevice, SubDeviceRef};
 use smol::{channel::Sender, lock::RwLock};
 use socketioxide::extract::SocketRef;
 use std::{
-    pin::Pin,
     sync::{Arc, Weak},
     time::Instant,
 };
@@ -17,15 +16,13 @@ use std::{
 use crate::socketio::event::GenericEvent;
 
 pub trait MachineNewTrait {
-    fn new<'maindevice, 'subdevices>(
-        params: &MachineNewParams<'maindevice, 'subdevices, '_, '_, '_, '_, '_>,
-    ) -> Result<Self, Error>
+    fn new(params: &MachineNewParams<'_, '_, '_, '_, '_, '_, '_>) -> Result<Self, Error>
     where
         Self: Sized;
 }
 
 pub trait MachineAct {
-    fn act(&mut self, now: Instant) -> Pin<Box<dyn Future<Output = ()> + Send + '_>>;
+    fn act(&mut self, now: Instant);
 }
 
 pub struct MachineNewParams<

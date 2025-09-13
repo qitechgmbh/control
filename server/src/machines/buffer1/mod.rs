@@ -81,9 +81,7 @@ impl BufferV1 {
             connected_machine_state: ConnectedMachineState {
                 machine_identification_unique: self.connected_winder.as_ref().map(
                     |connected_machine| {
-                        ConnectedMachineData::from(connected_machine)
-                            .machine_identification_unique
-                            .clone()
+                        ConnectedMachineData::from(connected_machine).machine_identification_unique
                     },
                 ),
                 is_available: self
@@ -198,7 +196,7 @@ impl BufferV1 {
 
         self.connected_winder = Some(ConnectedMachine {
             machine_identification_unique,
-            machine: machine.clone(),
+            machine,
         });
 
         self.emit_state();
@@ -250,7 +248,7 @@ impl BufferV1 {
     }
 }
 
-#[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
+#[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Eq)]
 pub enum BufferV1Mode {
     Standby,
     FillingBuffer,

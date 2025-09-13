@@ -30,7 +30,7 @@ impl Namespace {
     #[instrument(skip_all)]
     pub fn subscribe(&mut self, socket: SocketRef) {
         // add the socket to the list
-        self.sockets.push(socket.clone());
+        self.sockets.push(socket);
     }
 
     /// Removes a socket from the namespace.
@@ -81,7 +81,7 @@ impl Namespace {
         for (_event_name, events) in event_groups {
             for event in events {
                 // Send to global queue instead of per-socket queue
-                self.send_to_queue(&socket, &event, "reemit");
+                self.send_to_queue(&socket, event, "reemit");
             }
         }
     }
@@ -97,13 +97,10 @@ impl Namespace {
     fn cache(
         &mut self,
         event: Arc<GenericEvent>,
-        buffer_fn: &Box<dyn Fn(&mut Vec<Arc<GenericEvent>>, &Arc<GenericEvent>) -> ()>,
+        buffer_fn: &Box<dyn Fn(&mut Vec<Arc<GenericEvent>>, &Arc<GenericEvent>)>,
     ) {
-        let mut cached_events_for_key = self
-            .events
-            .entry(event.name.clone())
-            .or_insert_with(Vec::new);
-        buffer_fn(&mut cached_events_for_key, &event);
+        let cached_events_for_key = self.events.entry(event.name.clone()).or_default();
+        buffer_fn(cached_events_for_key, &event);
     }
 
     /// Emits an event to all sockets in the namespace and caches it.
@@ -117,10 +114,10 @@ impl Namespace {
     pub fn emit(
         &mut self,
         event: Arc<GenericEvent>,
-        buffer_fn: &Box<dyn Fn(&mut Vec<Arc<GenericEvent>>, &Arc<GenericEvent>) -> ()>,
+        buffer_fn: &Box<dyn Fn(&mut Vec<Arc<GenericEvent>>, &Arc<GenericEvent>)>,
     ) {
         // cache the event
-        self.cache(event.clone(), &buffer_fn);
+        self.cache(event.clone(), buffer_fn);
 
         // emit the event - inlined from emit function
         // Send to global queue for each socket in the namespace
@@ -191,7 +188,7 @@ pub trait CacheableEvents<Events> {
     fn event_cache_fn(&self) -> CacheFn;
 }
 
-pub type CacheFn = Box<dyn Fn(&mut Vec<Arc<GenericEvent>>, &Arc<GenericEvent>) -> ()>;
+pub type CacheFn = Box<dyn Fn(&mut Vec<Arc<GenericEvent>>, &Arc<GenericEvent>)>;
 
 /// [`BufferFn`] that stores the last n events
 pub fn cache_n_events(n: usize) -> CacheFn {
@@ -223,7 +220,6 @@ pub fn cache_first_and_last_event() -> CacheFn {
         if events.len() == 2 {
             events.remove(1);
             events.push(event.clone());
-            return;
         }
     })
 }

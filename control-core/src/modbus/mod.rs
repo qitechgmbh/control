@@ -2,10 +2,10 @@ pub mod modbus_serial_interface;
 
 use anyhow::Error;
 use crc::{CRC_16_MODBUS, Crc};
-use serial;
+use serialport::SerialPort;
 use std::time::Duration;
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ParityType {
     Even,
     Odd,
@@ -62,17 +62,17 @@ impl From<ModbusExceptionCode> for u8 {
 impl From<u8> for ModbusExceptionCode {
     fn from(value: u8) -> Self {
         match value {
-            0 => ModbusExceptionCode::None,
-            1 => ModbusExceptionCode::IllegalFunction,
-            2 => ModbusExceptionCode::IllegalDataAddress,
-            3 => ModbusExceptionCode::IllegalDataValue,
-            4 => ModbusExceptionCode::SlaveDeviceFailure,
-            5 => ModbusExceptionCode::Acknowledge,
-            6 => ModbusExceptionCode::SlaveDeviceBusy,
-            8 => ModbusExceptionCode::MemoryParityError,
-            10 => ModbusExceptionCode::GatewayPathUnavailable,
-            11 => ModbusExceptionCode::GatewayTargetDeviceFailedToRespond,
-            other => ModbusExceptionCode::Unknown(other),
+            0 => Self::None,
+            1 => Self::IllegalFunction,
+            2 => Self::IllegalDataAddress,
+            3 => Self::IllegalDataValue,
+            4 => Self::SlaveDeviceFailure,
+            5 => Self::Acknowledge,
+            6 => Self::SlaveDeviceBusy,
+            8 => Self::MemoryParityError,
+            10 => Self::GatewayPathUnavailable,
+            11 => Self::GatewayTargetDeviceFailedToRespond,
+            other => Self::Unknown(other),
         }
     }
 }
@@ -97,10 +97,10 @@ impl TryFrom<u8> for ModbusFunctionCode {
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         match value {
-            0x03 => Ok(ModbusFunctionCode::ReadHoldingRegister),
-            0x04 => Ok(ModbusFunctionCode::ReadInputRegister),
-            0x06 => Ok(ModbusFunctionCode::PresetHoldingRegister),
-            0x08 => Ok(ModbusFunctionCode::DiagnoseFunction),
+            0x03 => Ok(Self::ReadHoldingRegister),
+            0x04 => Ok(Self::ReadInputRegister),
+            0x06 => Ok(Self::PresetHoldingRegister),
+            0x08 => Ok(Self::DiagnoseFunction),
             _ => Err(anyhow::anyhow!("Error: Modbus Function Code doesnt exist!")),
         }
     }
@@ -119,7 +119,7 @@ impl From<ModbusFunctionCode> for u8 {
 
 impl From<ModbusRequest> for Vec<u8> {
     fn from(request: ModbusRequest) -> Self {
-        let mut buffer = Vec::new();
+        let mut buffer = Self::new();
 
         buffer.push(request.slave_id);
         buffer.push(request.function_code.into()); // convert functioncode into u8 and push it
@@ -132,7 +132,7 @@ impl From<ModbusRequest> for Vec<u8> {
         // convert u16 value to le_bytes and add it to the end of the frame
         buffer.extend_from_slice(&result_crc.to_le_bytes());
 
-        return buffer;
+        buffer
     }
 }
 /// Reads data from a Modbus device via a serial port.
@@ -143,9 +143,7 @@ impl From<ModbusRequest> for Vec<u8> {
 /// # Returns
 /// A `Result` containing an `Option` with the raw Modbus response as a `Vec<u8>` if successful,
 /// or `None` if the response is invalid or an error occurs.
-pub fn receive_data_modbus(
-    port: &mut dyn serial::SerialPort,
-) -> Result<Option<Vec<u8>>, anyhow::Error> {
+pub fn receive_data_modbus(port: &mut dyn SerialPort) -> Result<Option<Vec<u8>>, anyhow::Error> {
     let mut buf: [u8; 256] = [0; 256];
     let data_length = port.read(&mut buf)?;
     if data_length == 0 {
@@ -155,7 +153,7 @@ pub fn receive_data_modbus(
 }
 
 /// Computes Modbus CRC-16 using `crc` crate.
-pub fn modbus_crc16(data: &[u8]) -> u16 {
+pub const fn modbus_crc16(data: &[u8]) -> u16 {
     let modbus: Crc<u16> = Crc::<u16>::new(&CRC_16_MODBUS);
     modbus.checksum(data)
 }
@@ -206,23 +204,17 @@ fn extract_crc(raw_data: &Vec<u8>) -> Result<u16, Error> {
 }
 impl TryFrom<Vec<u8>> for ModbusResponse {
     type Error = anyhow::Error;
-    fn try_from(value: Vec<u8>) -> Result<ModbusResponse, Error> {
-        let crc = match extract_crc(&value) {
-            Ok(crc_value) => crc_value,
-            Err(err) => return Err(err),
-        };
+    fn try_from(value: Vec<u8>) -> Result<Self, Error> {
+        let crc = extract_crc(&value)?;
 
         let function_code_res = ModbusFunctionCode::try_from(value[1]);
-        let function_code = match function_code_res {
-            Ok(code) => code,
-            Err(err) => return Err(err),
-        };
+        let function_code = function_code_res?;
 
-        Ok(ModbusResponse {
+        Ok(Self {
             slave_id: value[0],
-            function_code: function_code,
+            function_code,
             data: value[2..value.len() - 2].to_vec(), // get data without the crc
-            crc: crc,
+            crc,
         })
     }
 }
@@ -234,23 +226,23 @@ impl TryFrom<Vec<u8>> for ModbusResponse {
 /// machine_operation_delay_nano: Delay for the given operation in nanoseconds as specified by the slaves datasheet (example: mitsubishi csfr84 has 12ms for read write in RAM)
 /// baudrate: bits per second
 /// message_size: size of original message in bytes
-pub fn calculate_modbus_rtu_timeout(
+pub const fn calculate_modbus_rtu_timeout(
     bits: u8,
     machine_operation_delay_nano: Duration,
     baudrate: u32,
     message_size: usize,
 ) -> Duration {
     let nanoseconds_per_bit: u64 = (1000000 / baudrate) as u64;
-    let nanoseconds_per_byte: u64 = bits as u64 * nanoseconds_per_bit as u64;
+    let nanoseconds_per_byte: u64 = bits as u64 * nanoseconds_per_bit;
 
     let transmission_timeout: u64 = nanoseconds_per_byte * message_size as u64;
-    let silent_time: u64 = (nanoseconds_per_byte * (35)) / 10 as u64; // silent_time is 3.5x of character length,which is 11 bit for 8E1
+    let silent_time: u64 = (nanoseconds_per_byte * (35)) / 10_u64; // silent_time is 3.5x of character length,which is 11 bit for 8E1
 
     let mut full_timeout: u64 = transmission_timeout;
     full_timeout += machine_operation_delay_nano.as_nanos() as u64;
     full_timeout += silent_time;
 
-    return Duration::from_nanos(full_timeout);
+    Duration::from_nanos(full_timeout)
 }
 
 #[cfg(test)]

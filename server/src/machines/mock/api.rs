@@ -9,6 +9,7 @@ use control_core::{
         },
     },
 };
+use control_core_derive::BuildEvent;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use smol::channel::Sender;
@@ -16,7 +17,7 @@ use socketioxide::extract::SocketRef;
 use std::{sync::Arc, time::Duration};
 use tracing::instrument;
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub enum Mode {
     Standby,
     Running,
@@ -36,7 +37,7 @@ impl LiveValuesEvent {
     }
 }
 
-#[derive(Serialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Debug, Clone, PartialEq, BuildEvent)]
 pub struct StateEvent {
     pub is_default_state: bool,
     /// sine wave frequencies in millihertz
@@ -47,13 +48,7 @@ pub struct StateEvent {
     pub mode_state: ModeState,
 }
 
-impl StateEvent {
-    pub fn build(&self) -> Event<Self> {
-        Event::new("StateEvent", self.clone())
-    }
-}
-
-#[derive(Serialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Debug, Clone, PartialEq, Eq)]
 pub struct ModeState {
     /// current mode
     pub mode: Mode,
@@ -77,11 +72,11 @@ impl MockMachineNamespace {
     }
 }
 
-impl CacheableEvents<MockEvents> for MockEvents {
+impl CacheableEvents<Self> for MockEvents {
     fn event_value(&self) -> GenericEvent {
         match self {
-            MockEvents::LiveValues(event) => event.into(),
-            MockEvents::State(event) => event.into(),
+            Self::LiveValues(event) => event.into(),
+            Self::State(event) => event.into(),
         }
     }
 
@@ -90,8 +85,8 @@ impl CacheableEvents<MockEvents> for MockEvents {
         let cache_first_and_last = cache_first_and_last_event();
 
         match self {
-            MockEvents::LiveValues(_) => cache_one_hour,
-            MockEvents::State(_) => cache_first_and_last,
+            Self::LiveValues(_) => cache_one_hour,
+            Self::State(_) => cache_first_and_last,
         }
     }
 }

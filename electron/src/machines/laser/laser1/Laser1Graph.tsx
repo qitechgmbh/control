@@ -12,7 +12,7 @@ import { useLaser1 } from "./useLaser1";
 export function Laser1GraphsPage() {
   const { diameter, state } = useLaser1();
 
-  const syncHook = useGraphSync(30 * 60 * 1000, "diameter-group");
+  const syncHook = useGraphSync("diameter-group");
   const targetDiameter = state?.laser_state?.target_diameter ?? 0;
   const lowerTolerance = state?.laser_state?.lower_tolerance ?? 0;
   const higherTolerance = state?.laser_state?.higher_tolerance ?? 0;

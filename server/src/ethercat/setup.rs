@@ -9,6 +9,8 @@ use crate::{
     ethercat::config::{MAX_FRAMES, MAX_PDU_DATA, MAX_SUBDEVICES, PDI_LEN},
 };
 use control_core::ethercat::eeprom_identification::read_device_identifications;
+#[cfg(unix)]
+use control_core::irq_handling::set_irq_affinity;
 use control_core::machines::identification::{
     DeviceHardwareIdentification, DeviceHardwareIdentificationEthercat, DeviceIdentification,
 };
@@ -45,6 +47,12 @@ pub async fn setup_loop(
         .spawn(move || {
             send_panic(thread_panic_tx_clone);
 
+            #[cfg(unix)]
+            match set_irq_affinity(&interface, 3) {
+                Ok(_) => tracing::info!("ethernet interrupt handler now runs on cpu:{}", 3),
+                Err(e) => tracing::error!("set_irq_handler_affinity failed: {:?}", e),
+            }
+
             // Set core affinity to 4th core
             let _ = set_core_affinity(3);
 
@@ -78,13 +86,13 @@ pub async fn setup_loop(
         pdu,
         Timeouts {
             // Default 5000ms
-            state_transition: Duration::from_millis(10 * 1000),
+            state_transition: Duration::from_millis(5000),
             // Default 30_000us
-            pdu: Duration::from_millis(500),
+            pdu: Duration::from_micros(30_000),
             // Default 10ms
             eeprom: Duration::from_millis(10),
             // Default 0ms
-            wait_loop_delay: Duration::from_millis(0),
+            wait_loop_delay: Duration::from_millis(1),
             // Default 100ms
             mailbox_echo: Duration::from_millis(100),
             // Default 1000ms
@@ -92,13 +100,13 @@ pub async fn setup_loop(
         },
         MainDeviceConfig {
             // Default RetryBehaviour::None
-            retry_behaviour: RetryBehaviour::Count(10), // 100ms * 25 = 2.5s
+            retry_behaviour: RetryBehaviour::Count(5),
             // Default 10_000
             dc_static_sync_iterations: 10_000,
         },
     );
 
-    let _ = smol::block_on({
+    smol::block_on({
         let app_state_clone = app_state.clone();
         async move {
             let main_namespace = &mut app_state_clone
@@ -214,7 +222,7 @@ pub async fn setup_loop(
 
     // Notify client via socketio
     let app_state_clone = app_state.clone();
-    let _ = smol::block_on(async move {
+    smol::block_on(async move {
         let main_namespace = &mut app_state_clone
             .socketio_setup
             .namespaces
@@ -250,7 +258,7 @@ pub async fn setup_loop(
 
     // Notify client via socketio
     let app_state_clone = app_state.clone();
-    let _ = smol::block_on(async move {
+    smol::block_on(async move {
         let main_namespace = &mut app_state_clone
             .socketio_setup
             .namespaces

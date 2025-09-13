@@ -37,7 +37,7 @@ impl NewEthercatDevice for EL2522 {
         let txpdo = configuration.pdo_assignment.txpdo_assignment();
         let rxpdo = configuration.pdo_assignment.rxpdo_assignment();
         Self {
-            configuration: configuration,
+            configuration,
             txpdo,
             rxpdo,
             is_used: false,
@@ -104,7 +104,7 @@ impl PulseTrainOutputDevice<EL2522Port> for EL2522 {
 }
 
 impl EL2522 {
-    fn get_txpdo(&self, port: EL2522Port) -> (&PtoStatus, &EncStatus) {
+    const fn get_txpdo(&self, port: EL2522Port) -> (&PtoStatus, &EncStatus) {
         match port {
             EL2522Port::PTO1 => (
                 self.txpdo.pto_status_channel1.as_ref().unwrap(),
@@ -117,7 +117,7 @@ impl EL2522 {
         }
     }
 
-    fn get_rxpdo(&self, port: EL2522Port) -> (&PtoControl, &PtoTarget, &EncControl) {
+    const fn get_rxpdo(&self, port: EL2522Port) -> (&PtoControl, &PtoTarget, &EncControl) {
         match port {
             EL2522Port::PTO1 => (
                 self.rxpdo.pto_control_channel1.as_ref().unwrap(),
@@ -131,7 +131,7 @@ impl EL2522 {
             ),
         }
     }
-    fn get_rxpdo_mut(
+    const fn get_rxpdo_mut(
         &mut self,
         port: EL2522Port,
     ) -> (&mut PtoControl, &mut PtoTarget, &mut EncControl) {
@@ -478,7 +478,7 @@ pub enum EL2522PredefinedPdoAssignment {
 impl PredefinedPdoAssignment<EL2522TxPdo, EL2522RxPdo> for EL2522PredefinedPdoAssignment {
     fn txpdo_assignment(&self) -> EL2522TxPdo {
         match self {
-            EL2522PredefinedPdoAssignment::Standart32Bit => EL2522TxPdo {
+            Self::Standart32Bit => EL2522TxPdo {
                 pto_status_channel1: Some(PtoStatus::default()),
                 pto_status_channel2: Some(PtoStatus::default()),
                 enc_status_channel1: Some(EncStatus::default()),
@@ -489,7 +489,7 @@ impl PredefinedPdoAssignment<EL2522TxPdo, EL2522RxPdo> for EL2522PredefinedPdoAs
 
     fn rxpdo_assignment(&self) -> EL2522RxPdo {
         match self {
-            EL2522PredefinedPdoAssignment::Standart32Bit => EL2522RxPdo {
+            Self::Standart32Bit => EL2522RxPdo {
                 pto_control_channel1: Some(PtoControl::default()),
                 pto_target_channel1: Some(PtoTarget::default()),
                 enc_control_channel1: Some(EncControl::default()),

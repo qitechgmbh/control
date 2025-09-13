@@ -9,16 +9,8 @@ use control_core::machines::new::{MachineNewHardware, MachineNewTrait};
 use uom::si::{f64::Frequency, frequency::hertz};
 
 impl MachineNewTrait for MockMachine {
-    fn new<'maindevice, 'subdevices>(
-        params: &control_core::machines::new::MachineNewParams<
-            'maindevice,
-            'subdevices,
-            '_,
-            '_,
-            '_,
-            '_,
-            '_,
-        >,
+    fn new(
+        params: &control_core::machines::new::MachineNewParams<'_, '_, '_, '_, '_, '_, '_>,
     ) -> Result<Self, Error>
     where
         Self: Sized,
@@ -47,8 +39,8 @@ impl MachineNewTrait for MockMachine {
             frequency2: Frequency::new::<hertz>(0.2), // Default frequency2 of 200 mHz
             frequency3: Frequency::new::<hertz>(0.5), // Default frequency3 of 500 mHz
             mode: Mode::Standby, // Start in standby mode
-            last_emitted_state: None, // No previous state emissions
             emitted_default_state: false,
+            last_emitted_event: None,
         };
 
         mock_machine.emit_state();

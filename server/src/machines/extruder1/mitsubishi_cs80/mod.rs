@@ -85,7 +85,7 @@ pub enum MitsubishiCS80Requests {
 
 impl From<MitsubishiCS80Requests> for u32 {
     fn from(request: MitsubishiCS80Requests) -> Self {
-        request as u32
+        request as Self
     }
 }
 

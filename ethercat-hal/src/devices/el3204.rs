@@ -38,10 +38,10 @@ impl TemperatureInputDevice<EL3204Port> for EL3204 {
     fn get_input(&self, port: EL3204Port) -> TemperatureInputInput {
         let expect_text = "All channels should be Some(_)";
         let channel = match port {
-            EL3204Port::T1 => self.txpdo.channel1.as_ref().expect(&expect_text),
-            EL3204Port::T2 => self.txpdo.channel2.as_ref().expect(&expect_text),
-            EL3204Port::T3 => self.txpdo.channel3.as_ref().expect(&expect_text),
-            EL3204Port::T4 => self.txpdo.channel4.as_ref().expect(&expect_text),
+            EL3204Port::T1 => self.txpdo.channel1.as_ref().expect(expect_text),
+            EL3204Port::T2 => self.txpdo.channel2.as_ref().expect(expect_text),
+            EL3204Port::T3 => self.txpdo.channel3.as_ref().expect(expect_text),
+            EL3204Port::T4 => self.txpdo.channel4.as_ref().expect(expect_text),
         };
         TemperatureInputInput {
             temperature: channel.temperature,
@@ -65,12 +65,12 @@ pub enum EL3204Port {
 }
 
 impl EL3204Port {
-    pub fn to_byte_offset(&self) -> usize {
+    pub const fn to_byte_offset(&self) -> usize {
         match self {
-            EL3204Port::T1 => 0,
-            EL3204Port::T2 => 4,
-            EL3204Port::T3 => 8,
-            EL3204Port::T4 => 12,
+            Self::T1 => 0,
+            Self::T2 => 4,
+            Self::T3 => 8,
+            Self::T4 => 12,
         }
     }
 }

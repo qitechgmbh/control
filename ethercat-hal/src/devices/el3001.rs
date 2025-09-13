@@ -155,11 +155,11 @@ pub enum EL3001PredefinedPdoAssignment {
 impl PredefinedPdoAssignment<EL3001TxPdo, EL3001RxPdo> for EL3001PredefinedPdoAssignment {
     fn txpdo_assignment(&self) -> EL3001TxPdo {
         match self {
-            EL3001PredefinedPdoAssignment::Standard => EL3001TxPdo {
+            Self::Standard => EL3001TxPdo {
                 ai_standard: Some(AiStandard::default()),
                 ai_compact: None,
             },
-            EL3001PredefinedPdoAssignment::Compact => EL3001TxPdo {
+            Self::Compact => EL3001TxPdo {
                 ai_standard: None,
                 ai_compact: Some(AiCompact::default()),
             },
@@ -168,8 +168,8 @@ impl PredefinedPdoAssignment<EL3001TxPdo, EL3001RxPdo> for EL3001PredefinedPdoAs
 
     fn rxpdo_assignment(&self) -> EL3001RxPdo {
         match self {
-            EL3001PredefinedPdoAssignment::Standard => EL3001RxPdo {},
-            EL3001PredefinedPdoAssignment::Compact => EL3001RxPdo {},
+            Self::Standard => EL3001RxPdo {},
+            Self::Compact => EL3001RxPdo {},
         }
     }
 }

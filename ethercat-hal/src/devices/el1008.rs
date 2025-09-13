@@ -65,16 +65,16 @@ pub enum EL1008Port {
 }
 
 impl EL1008Port {
-    pub fn to_bit_index(&self) -> usize {
+    pub const fn to_bit_index(&self) -> usize {
         match self {
-            EL1008Port::DI1 => 0,
-            EL1008Port::DI2 => 1,
-            EL1008Port::DI3 => 2,
-            EL1008Port::DI4 => 3,
-            EL1008Port::DI5 => 4,
-            EL1008Port::DI6 => 5,
-            EL1008Port::DI7 => 6,
-            EL1008Port::DI8 => 7,
+            Self::DI1 => 0,
+            Self::DI2 => 1,
+            Self::DI3 => 2,
+            Self::DI4 => 3,
+            Self::DI5 => 4,
+            Self::DI6 => 5,
+            Self::DI7 => 6,
+            Self::DI8 => 7,
         }
     }
 }
@@ -122,7 +122,7 @@ pub enum EL1008PredefinedPdoAssignment {
 impl PredefinedPdoAssignment<EL1008TxPdo, ()> for EL1008PredefinedPdoAssignment {
     fn txpdo_assignment(&self) -> EL1008TxPdo {
         match self {
-            EL1008PredefinedPdoAssignment::All => EL1008TxPdo {
+            Self::All => EL1008TxPdo {
                 channel1: Some(BoolPdoObject::default()),
                 channel2: Some(BoolPdoObject::default()),
                 channel3: Some(BoolPdoObject::default()),
@@ -135,7 +135,7 @@ impl PredefinedPdoAssignment<EL1008TxPdo, ()> for EL1008PredefinedPdoAssignment 
         }
     }
 
-    fn rxpdo_assignment(&self) -> () {
+    fn rxpdo_assignment(&self) {
         unreachable!()
     }
 }

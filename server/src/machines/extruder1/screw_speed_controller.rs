@@ -45,7 +45,7 @@ impl ScrewSpeedController {
     ) -> Self {
         let now = Instant::now();
         Self {
-            inverter: inverter,
+            inverter,
             // need to tune
             pid: ClampingTimeagnosticPidController::simple_new(0.01, 0.0, 0.02),
             last_update: now,
@@ -64,8 +64,8 @@ impl ScrewSpeedController {
         }
     }
 
-    pub fn get_motor_enabled(&mut self) -> bool {
-        return self.motor_on;
+    pub const fn get_motor_enabled(&mut self) -> bool {
+        self.motor_on
     }
 
     pub fn set_nozzle_pressure_limit(&mut self, pressure: Pressure) {
@@ -73,14 +73,14 @@ impl ScrewSpeedController {
     }
 
     pub fn get_nozzle_pressure_limit(&mut self) -> Pressure {
-        return self.nozzle_pressure_limit;
+        self.nozzle_pressure_limit
     }
 
-    pub fn get_nozzle_pressure_limit_enabled(&mut self) -> bool {
-        return self.nozzle_pressure_limit_enabled;
+    pub const fn get_nozzle_pressure_limit_enabled(&mut self) -> bool {
+        self.nozzle_pressure_limit_enabled
     }
 
-    pub fn set_nozzle_pressure_limit_is_enabled(&mut self, enabled: bool) {
+    pub const fn set_nozzle_pressure_limit_is_enabled(&mut self, enabled: bool) {
         self.nozzle_pressure_limit_enabled = enabled;
     }
 
@@ -88,7 +88,7 @@ impl ScrewSpeedController {
         self.target_rpm
     }
 
-    pub fn get_rotation_direction(&mut self) -> bool {
+    pub const fn get_rotation_direction(&mut self) -> bool {
         self.forward_rotation
     }
 
@@ -117,11 +117,11 @@ impl ScrewSpeedController {
         self.inverter.set_frequency_target(target_frequency);
     }
 
-    pub fn get_uses_rpm(&mut self) -> bool {
+    pub const fn get_uses_rpm(&mut self) -> bool {
         self.uses_rpm
     }
 
-    pub fn set_uses_rpm(&mut self, uses_rpm: bool) {
+    pub const fn set_uses_rpm(&mut self, uses_rpm: bool) {
         self.uses_rpm = uses_rpm;
     }
 
@@ -143,10 +143,10 @@ impl ScrewSpeedController {
 
         let screw_rpm = self.transmission.calculate_angular_velocity_output(rpm);
 
-        let mut status = self.inverter.motor_status.clone();
+        let mut status = self.inverter.motor_status;
         status.rpm = screw_rpm;
 
-        return status;
+        status
     }
 
     pub fn get_target_pressure(&self) -> Pressure {
@@ -181,7 +181,7 @@ impl ScrewSpeedController {
         }
     }
 
-    pub fn reset_pid(&mut self) {
+    pub const fn reset_pid(&mut self) {
         self.pid.reset()
     }
 
@@ -197,7 +197,7 @@ impl ScrewSpeedController {
         let normalized = normalize(current, 4.0, 20.0);
         // Our pressure sensor has a range of Up to 350 Bar
         let actual_pressure = (normalized) * 350.0;
-        return Pressure::new::<bar>(actual_pressure);
+        Pressure::new::<bar>(actual_pressure)
     }
 
     pub fn update(&mut self, now: Instant, is_extruding: bool) {
@@ -228,11 +228,11 @@ impl ScrewSpeedController {
             return;
         }
 
-        if is_extruding == true && self.motor_on == false {
+        if is_extruding && !self.motor_on {
             self.turn_motor_on();
         }
 
-        if !self.uses_rpm && is_extruding == true {
+        if !self.uses_rpm && is_extruding {
             let error = self.target_pressure - measured_pressure;
             let freq_change = self.pid.update(error.get::<bar>(), now);
 

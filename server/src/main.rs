@@ -65,8 +65,8 @@ fn main() {
     let init_thread = std::thread::Builder::new()
         .name("init".to_string())
         .spawn({
-            let thread_panic_tx = thread_panic_tx.clone();
-            let app_state = app_state.clone();
+            let thread_panic_tx = thread_panic_tx;
+            let app_state = app_state;
             move || {
                 #[cfg(feature = "dhat-heap")]
                 init_dhat_heap_profiling();
@@ -85,7 +85,7 @@ fn main() {
                     .expect("Failed to initialize Serial");
 
                 #[cfg(not(feature = "mock-machine"))]
-                init_ethercat(thread_panic_tx.clone(), app_state.clone())
+                init_ethercat(thread_panic_tx.clone(), app_state)
                     .expect("Failed to initialize EtherCAT");
             }
         })

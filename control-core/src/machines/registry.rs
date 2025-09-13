@@ -10,6 +10,12 @@ pub struct MachineRegistry {
     type_map: HashMap<TypeId, (MachineIdentification, MachineNewClosure)>,
 }
 
+impl Default for MachineRegistry {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MachineRegistry {
     pub fn new() -> Self {
         Self {

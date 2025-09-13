@@ -18,6 +18,7 @@ use ethercat_hal::devices::el3024::EL3024_IDENTITY_A;
 use ethercat_hal::devices::el3062_0030::EL3062_0030_IDENTITY_A;
 use ethercat_hal::devices::el3204::EL3204_IDENTITY_A;
 use ethercat_hal::devices::el3204::EL3204_IDENTITY_B;
+use ethercat_hal::devices::el4002::EL4002_IDENTITY_A;
 use ethercat_hal::devices::el6021::{
     EL6021_IDENTITY_A, EL6021_IDENTITY_B, EL6021_IDENTITY_C, EL6021_IDENTITY_D,
 };
@@ -44,7 +45,12 @@ pub struct MachineIdentificationAddresses {
 }
 
 impl MachineIdentificationAddresses {
-    pub fn new(vendor_word: u16, serial_word: u16, machine_word: u16, device_word: u16) -> Self {
+    pub const fn new(
+        vendor_word: u16,
+        serial_word: u16,
+        machine_word: u16,
+        device_word: u16,
+    ) -> Self {
         Self {
             vendor_word,
             serial_word,
@@ -74,7 +80,7 @@ pub async fn read_device_identifications<'maindevice>(
 ) -> Vec<Result<DeviceMachineIdentification, Error>> {
     let mut result = Vec::new();
     for subdevice in subdevices.iter() {
-        let identification = machine_device_identification(&subdevice, maindevice).await;
+        let identification = machine_device_identification(subdevice, maindevice).await;
         result.push(identification);
     }
     result
@@ -221,11 +227,11 @@ pub async fn write_machine_device_identification<'maindevice, const MAX_PDI: usi
 
 /// Returns the EEPROM addresses for the machine device identification
 /// based on the subdevice's identity
-pub fn get_identification_addresses<'maindevice>(
+pub fn get_identification_addresses(
     subdevice_identity: &SubDeviceIdentity,
     subdevice_name: &str,
 ) -> Result<MachineIdentificationAddresses, Error> {
-    let identity_tuple = subdevice_identity_to_tuple(&subdevice_identity);
+    let identity_tuple = subdevice_identity_to_tuple(subdevice_identity);
 
     Ok(match identity_tuple {
         EK1100_IDENTITY_A => MachineIdentificationAddresses::default(),
@@ -243,6 +249,7 @@ pub fn get_identification_addresses<'maindevice>(
         EL3021_IDENTITY_A => MachineIdentificationAddresses::default(),
         EL3024_IDENTITY_A => MachineIdentificationAddresses::default(),
         EL3062_0030_IDENTITY_A => MachineIdentificationAddresses::default(),
+        EL4002_IDENTITY_A => MachineIdentificationAddresses::default(),
         EL7031_IDENTITY_A | EL7031_IDENTITY_B => MachineIdentificationAddresses::default(),
         EL7031_0030_IDENTITY_A => MachineIdentificationAddresses::default(),
         EL7041_0052_IDENTITY_A => MachineIdentificationAddresses::default(),
@@ -274,8 +281,8 @@ async fn u16dump<'maindevice>(
         words.push(subdevice.eeprom_read(maindevice, word).await?);
     }
 
-    print!(
-        "EEPROM dump for {} from 0x{:04x} to 0x{:04x}\n",
+    println!(
+        "EEPROM dump for {} from 0x{:04x} to 0x{:04x}",
         subdevice.name(),
         start_byte / 2,
         end_byte / 2
@@ -290,7 +297,7 @@ fn u16print(start_byte: u16, end_byte: u16, data: Vec<u16>) {
     let table_start_word = start_byte & 0xfff0;
     let table_end_word = (end_byte & 0xfff0_u16) + 0x10_u16;
 
-    let rows = table_end_word - table_start_word >> 4;
+    let rows = (table_end_word - table_start_word) >> 4;
 
     for row in 0..rows {
         print!("0x{:04x} | ", (table_start_word + row * 0x10) / 2);
@@ -307,7 +314,7 @@ fn u16print(start_byte: u16, end_byte: u16, data: Vec<u16>) {
                 }
             }
         }
-        print!("\n");
+        println!();
     }
 }
 

@@ -5,6 +5,23 @@ members = [
     "ethercat-hal-derive",
     "control-core",
     "ethercat-eeprom-dump",
+    "control-core-derive",
 ]
 exclude = []
 resolver = "2"
+
+[workspace.lints.clippy]
+# Individual lints (priority 0)
+
+# don't lint poissbilities for let chains because they were introduces after Rust 1.86
+collapsible_if = "allow"
+
+# Lint groups (priority -1)
+correctness = { level = "warn", priority = -1 }
+suspicious = { level = "warn", priority = -1 }
+complexity = { level = "warn", priority = -1 }
+perf = { level = "warn", priority = -1 }
+style = { level = "warn", priority = -1 }
+pendantic = { level = "warn", priority = -1 }
+cargo = { level = "warn", priority = -1 }
+nursery = { level = "warn", priority = -1 }

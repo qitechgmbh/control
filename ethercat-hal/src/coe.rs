@@ -40,9 +40,9 @@ where
     ///     }
     /// }
     /// ```
-    fn write_config<'maindevice>(
+    fn write_config(
         &mut self,
-        device: &EthercrabSubDevicePreoperational<'maindevice>,
+        device: &EthercrabSubDevicePreoperational<'_>,
         config: &C,
     ) -> impl Future<Output = Result<(), anyhow::Error>> + Send;
 

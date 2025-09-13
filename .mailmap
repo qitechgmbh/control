@@ -1,0 +1,49 @@
+# Canonical identities on the left, aliases on the right.
+# Format options:
+#   Canon Name <canon@example.com> <alias@example.com>
+#   Canon Name <canon@example.com> Alias Name <alias@example.com>
+
+# Icedsoda -> Philipp
+Philipp <29167146+1cedsoda@users.noreply.github.com> <29167146+1cedsoda@users.noreply.github.com>
+
+# kraemr / Robin Krämer -> Robin
+Robin <93094049+kraemr@users.noreply.github.com> <93094049+kraemr@users.noreply.github.com>
+Robin <93094049+kraemr@users.noreply.github.com> Robin Krämer <93094049+kraemr@users.noreply.github.com>
+
+# Oshgnacknak -> Josh
+Josh <osh@oshgnacknak.de> <osh@oshgnacknak.de>
+
+# Milan
+Milan <61654753+MilanVDB@users.noreply.github.com>
+
+# dependabot stays as bot
+Dependabot <49699333+dependabot[bot]@users.noreply.github.com> <49699333+dependabot[bot]@users.noreply.github.com>
+
+# Medformatik / Florian -> Florian
+Florian <dev@fwcr.de> <dev@fwcr.de>
+Florian <dev@fwcr.de> Medformatik <dev@fwcr.de>
+
+# Anatomik5 -> Alisher (merge noreply + gmail under Alisher)
+Alisher <115714693+Anatomik5@users.noreply.github.com> <115714693+Anatomik5@users.noreply.github.com>
+Alisher <115714693+Anatomik5@users.noreply.github.com> Anatomik5 <darmenovalisher@gmail.com>
+Alisher <115714693+Anatomik5@users.noreply.github.com> Darmenov Alisher <115714693+Anatomik5@users.noreply.github.com>
+
+# snacj -> Melvin
+Melvin <0xsnacj@proton.me> <0xsnacj@proton.me>
+Melvin <0xsnacj@proton.me> snacj <bbmelvin@gmx.de>
+Melvin <0xsnacj@proton.me> Melvin Spieß <0xsnacj@proton.me>
+
+# Janhegerq -> Jan
+Jan <219994445+Janhegerq@users.noreply.github.com> <219994445+Janhegerq@users.noreply.github.com>
+Jan <219994445+Janhegerq@users.noreply.github.com> <19994445+Janhegerq@users.noreply.github.com>
+
+# Christian / TheBest6337 -> christian
+Christian <christian.zschoegner@outlook.de> <christian.zschoegner@outlook.de>
+Christian <christian.zschoegner@outlook.de> TheBest6337 <christian.zschoegner@outlook.de>
+Christian <christian.zschoegner@outlook.de> Christian <80114847+TheBest6337@users.noreply.github.com>
+
+# nixos-install.sh
+nixos-install.sh <nixos-install.sh@localhost> <nixos-install.sh@localhost>
+
+# copilot-swe-agent bot
+Copilot <198982749+Copilot@users.noreply.github.com> <198982749+Copilot@users.noreply.github.com>

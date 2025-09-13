@@ -1,0 +1,49 @@
+#!/bin/sh
+#
+# Pre-commit hook to generate Rust documentation
+#
+# This hook runs the rustdoc.sh script to update documentation
+# before each commit.
+
+echo "Running rustdoc generation..."
+
+# Get the repository root
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+
+# iteralte all directories thst contain a Cargo.toml file
+for dir in $(find "$REPO_ROOT" -name "Cargo.toml" -exec dirname {} \;); do
+    echo "Generating documentation in $dir"
+
+    # cargotoml conatains workspace members, skip this directory
+    # HAS_MEMBERS=$(grep -c '\[workspace\]' "$dir/Cargo.toml")
+    # if [ "$HAS_MEMBERS" -gt 0 ]; then
+    #     echo "Skipping workspace directory $dir"
+    #     continue
+    # fi
+
+    # get package name from Cargo.toml using cargo metadata
+    PACKAGE_NAME=$(cargo metadata --format-version 1 --no-deps --manifest-path "$dir/Cargo.toml" | jq -r '.packages[0].name')
+    if [ -z "$PACKAGE_NAME" ]; then
+        echo "Could not determine package name for $dir"
+        continue
+    fi
+
+    # go into the directory
+    cd "$dir" || continue
+
+    # generate the documentation using rustdoc-md
+    cargo install rustdoc-md --git https://github.com/qitechgmbh/rustdoc-md --rev 6dc34f9c9d878799d9c1b4f2d2bcbb1f2757ede7
+    RUSTC_BOOTSTRAP=1 RUSTDOCFLAGS="-Z unstable-options --output-format json" cargo doc --no-deps
+    rustdoc-md --path "${REPO_ROOT}/target/doc/${PACKAGE_NAME}.json" --output ./rustdoc.md
+
+    # stage the generated documentation file
+    git add "rustdoc.md"
+
+    # go back to the repository root
+    cd "$REPO_ROOT" || exit
+done
+
+git rm --cached rustdoc.md 2>/dev/null
+rm rustdoc.md
+
+exit 0

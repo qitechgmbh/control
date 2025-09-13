@@ -1,6 +1,6 @@
 use uom::si::{angle::revolution, f64::Angle};
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Clamping {
     None,
     Min,
@@ -79,9 +79,8 @@ pub fn scale_revolution_to_range(value: f64, min: f64, max: f64) -> f64 {
     let distance = revolution_distance(min, max);
 
     // we scale the value to the distance
-    let normalized = (value - min) / distance;
 
-    return normalized;
+    (value - min) / distance
 }
 
 /// Clamps a revolution value to be within the specified range [min, max].
@@ -144,7 +143,7 @@ pub fn clamp_revolution(value: f64, min: f64, max: f64) -> (f64, Clamping) {
     // at this point our input value should be either retured (cause in spec) or clamped to min or max
     // so this point should never be reached
     // in case it does we just clamp to min
-    return (min, Clamping::Min);
+    (min, Clamping::Min)
 }
 
 /// Calculates the clamping ranges for min and max values in a circular context.
@@ -282,13 +281,13 @@ fn revolution_in_range(value: f64, min: f64, max: f64) -> bool {
         if value >= min || value <= max {
             return true;
         }
-        return false;
+        false
     } else {
         // check if value is in range for non-crossing ranges
         if value >= min && value <= max {
             return true;
         }
-        return false;
+        false
     }
 }
 
@@ -755,27 +754,27 @@ mod tests {
     #[test]
     fn test_revolution_in_range() {
         // in range (corrected from 0.5 to 0.05)
-        assert_eq!(revolution_in_range(0.05, 0.0, 0.1), true);
+        assert!(revolution_in_range(0.05, 0.0, 0.1));
         // over range
-        assert_eq!(revolution_in_range(0.15, 0.0, 0.1), false);
+        assert!(!revolution_in_range(0.15, 0.0, 0.1));
         // under range
-        assert_eq!(revolution_in_range(0.05, 0.1, 0.2), false);
+        assert!(!revolution_in_range(0.05, 0.1, 0.2));
         // cross 0 in range
-        assert_eq!(revolution_in_range(0.0, 0.97, 0.03), true);
+        assert!(revolution_in_range(0.0, 0.97, 0.03));
         // cross 0 over range
-        assert_eq!(revolution_in_range(0.06, 0.97, 0.03), false);
+        assert!(!revolution_in_range(0.06, 0.97, 0.03));
         // cross 0 under range
-        assert_eq!(revolution_in_range(0.94, 0.97, 0.03), false);
+        assert!(!revolution_in_range(0.94, 0.97, 0.03));
 
         // Boundary values
-        assert_eq!(revolution_in_range(0.0, 0.0, 0.1), true); // value equals min
-        assert_eq!(revolution_in_range(0.1, 0.0, 0.1), true); // value equals max
-        assert_eq!(revolution_in_range(0.97, 0.97, 0.03), true); // value equals min in cross-zero
-        assert_eq!(revolution_in_range(0.03, 0.97, 0.03), true); // value equals max in cross-zero
+        assert!(revolution_in_range(0.0, 0.0, 0.1)); // value equals min
+        assert!(revolution_in_range(0.1, 0.0, 0.1)); // value equals max
+        assert!(revolution_in_range(0.97, 0.97, 0.03)); // value equals min in cross-zero
+        assert!(revolution_in_range(0.03, 0.97, 0.03)); // value equals max in cross-zero
 
         // Edge cases
-        assert_eq!(revolution_in_range(0.05, 0.05, 0.05), true); // min equals max equals value
-        assert_eq!(revolution_in_range(0.06, 0.05, 0.05), false); // min equals max but not equal to value
-        assert_eq!(revolution_in_range(0.5, 0.003, 0.997), true); // almost full circle
+        assert!(revolution_in_range(0.05, 0.05, 0.05)); // min equals max equals value
+        assert!(!revolution_in_range(0.06, 0.05, 0.05)); // min equals max but not equal to value
+        assert!(revolution_in_range(0.5, 0.003, 0.997)); // almost full circle
     }
 }

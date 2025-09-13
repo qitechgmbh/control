@@ -9,6 +9,8 @@ use control_core::{
         },
     },
 };
+
+use control_core_derive::BuildEvent;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use smol::channel::Sender;
@@ -30,10 +32,10 @@ pub enum Mode {
 impl From<Winder2Mode> for Mode {
     fn from(mode: Winder2Mode) -> Self {
         match mode {
-            Winder2Mode::Standby => Mode::Standby,
-            Winder2Mode::Hold => Mode::Hold,
-            Winder2Mode::Pull => Mode::Pull,
-            Winder2Mode::Wind => Mode::Wind,
+            Winder2Mode::Standby => Self::Standby,
+            Winder2Mode::Hold => Self::Hold,
+            Winder2Mode::Pull => Self::Pull,
+            Winder2Mode::Wind => Self::Wind,
         }
     }
 }
@@ -41,10 +43,10 @@ impl From<Winder2Mode> for Mode {
 impl From<Mode> for Winder2Mode {
     fn from(mode: Mode) -> Self {
         match mode {
-            Mode::Standby => Winder2Mode::Standby,
-            Mode::Hold => Winder2Mode::Hold,
-            Mode::Pull => Winder2Mode::Pull,
-            Mode::Wind => Winder2Mode::Wind,
+            Mode::Standby => Self::Standby,
+            Mode::Hold => Self::Hold,
+            Mode::Pull => Self::Pull,
+            Mode::Wind => Self::Wind,
         }
     }
 }
@@ -125,7 +127,7 @@ impl LiveValuesEvent {
     }
 }
 
-#[derive(Serialize, Debug, Clone)]
+#[derive(Serialize, Debug, Clone, BuildEvent)]
 pub struct StateEvent {
     pub is_default_state: bool,
     /// traverse state
@@ -142,12 +144,6 @@ pub struct StateEvent {
     pub spool_speed_controller_state: SpoolSpeedControllerState,
     /// connected machine state
     pub connected_machine_state: ConnectedMachineState,
-}
-
-impl StateEvent {
-    pub fn build(&self) -> Event<Self> {
-        Event::new("StateEvent", self.clone())
-    }
 }
 
 #[derive(Serialize, Debug, Clone)]
@@ -277,11 +273,11 @@ impl Winder2Namespace {
     }
 }
 
-impl CacheableEvents<Winder2Events> for Winder2Events {
+impl CacheableEvents<Self> for Winder2Events {
     fn event_value(&self) -> GenericEvent {
         match self {
-            Winder2Events::LiveValues(event) => event.into(),
-            Winder2Events::State(event) => event.into(),
+            Self::LiveValues(event) => event.into(),
+            Self::State(event) => event.into(),
         }
     }
 
@@ -290,8 +286,8 @@ impl CacheableEvents<Winder2Events> for Winder2Events {
         let cache_first_and_last = cache_first_and_last_event();
 
         match self {
-            Winder2Events::LiveValues(_) => cache_one_hour,
-            Winder2Events::State(_) => cache_first_and_last,
+            Self::LiveValues(_) => cache_one_hour,
+            Self::State(_) => cache_first_and_last,
         }
     }
 }

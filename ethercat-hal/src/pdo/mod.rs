@@ -2,8 +2,8 @@ pub mod analog_input;
 pub mod basic;
 pub mod el252x;
 pub mod el32xx;
+pub mod el40xx;
 pub mod el70x1;
-
 use crate::coe::Configuration;
 use bitvec::prelude::*;
 
@@ -141,7 +141,7 @@ pub trait RxPdo: Configuration {
             0 => 0,
             _ => 8 - used_bits % 8,
         };
-        return used_bits + padding;
+        used_bits + padding
     }
 
     /// Will give the mutable PDU bit array to the PDO objects to encode the data
@@ -215,7 +215,7 @@ pub trait TxPdo: Configuration {
             0 => 0,
             _ => 8 - used_bits % 8,
         };
-        return used_bits + padding;
+        used_bits + padding
     }
 
     /// Will give the PDU bit array to the PDO objects to decode the data

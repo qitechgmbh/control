@@ -20,6 +20,12 @@ pub struct SerialDeviceRegistry {
     pub type_map: HashMap<TypeId, (SerialDeviceIdentification, SerialDeviceNewClosure)>,
 }
 
+impl Default for SerialDeviceRegistry {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SerialDeviceRegistry {
     pub fn new() -> Self {
         Self {

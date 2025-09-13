@@ -6,7 +6,7 @@ pub struct EL70x1VelocityConverter {
 }
 
 impl EL70x1VelocityConverter {
-    pub fn new(speed_range: &EL70x1SpeedRange) -> Self {
+    pub const fn new(speed_range: &EL70x1SpeedRange) -> Self {
         let speed_range_value = match speed_range {
             EL70x1SpeedRange::Steps1000 => 1000,
             EL70x1SpeedRange::Steps2000 => 2000,

@@ -1,5 +1,3 @@
-use std::{sync::Arc, time::Duration};
-
 use super::{ExtruderV2, ExtruderV2Mode, HeatingType, mitsubishi_cs80::MotorStatus};
 use control_core::{
     machines::api::MachineApi,
@@ -11,10 +9,12 @@ use control_core::{
         },
     },
 };
+use control_core_derive::BuildEvent;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use smol::channel::Sender;
 use socketioxide::extract::SocketRef;
+use std::{sync::Arc, time::Duration};
 use tracing::instrument;
 use uom::si::{
     angular_velocity::revolution_per_minute, electric_current::ampere, electric_potential::volt,
@@ -79,7 +79,7 @@ impl LiveValuesEvent {
     }
 }
 
-#[derive(Serialize, Debug, Clone)]
+#[derive(Serialize, Debug, Clone, PartialEq, BuildEvent)]
 pub struct StateEvent {
     pub is_default_state: bool,
     /// rotation state
@@ -102,40 +102,33 @@ pub struct StateEvent {
     pub pid_settings: PidSettingsStates,
 }
 
-impl StateEvent {
-    pub fn build(&self) -> Event<Self> {
-        Event::new("StateEvent", self.clone())
-    }
-}
-
-#[derive(Serialize, Debug, Clone)]
+#[derive(Serialize, Debug, Clone, PartialEq, Eq)]
 pub struct RotationState {
     pub forward: bool,
 }
 
-#[derive(Serialize, Debug, Clone)]
+#[derive(Serialize, Debug, Clone, PartialEq, Eq)]
 pub struct ModeState {
     pub mode: ExtruderV2Mode,
 }
 
-#[derive(Serialize, Debug, Clone)]
+#[derive(Serialize, Debug, Clone, PartialEq, Eq)]
 pub struct RegulationState {
     pub uses_rpm: bool,
 }
 
-#[derive(Serialize, Debug, Clone)]
+#[derive(Serialize, Debug, Clone, PartialEq)]
 pub struct PressureState {
-    pub bar: f64,
     pub target_bar: f64,
     pub wiring_error: bool,
 }
 
-#[derive(Serialize, Debug, Clone)]
+#[derive(Serialize, Debug, Clone, PartialEq)]
 pub struct ScrewState {
     pub target_rpm: f64,
 }
 
-#[derive(Serialize, Debug, Clone)]
+#[derive(Serialize, Debug, Clone, PartialEq)]
 pub struct HeatingStates {
     pub nozzle: HeatingState,
     pub front: HeatingState,
@@ -143,20 +136,19 @@ pub struct HeatingStates {
     pub middle: HeatingState,
 }
 
-#[derive(Serialize, Debug, Clone)]
+#[derive(Serialize, Debug, Clone, PartialEq)]
 pub struct HeatingState {
-    pub temperature: f64,
     pub target_temperature: f64,
     pub wiring_error: bool,
 }
 
-#[derive(Serialize, Debug, Clone)]
+#[derive(Serialize, Debug, Clone, PartialEq)]
 pub struct ExtruderSettingsState {
     pub pressure_limit: f64,
     pub pressure_limit_enabled: bool,
 }
 
-#[derive(Serialize, Debug, Clone)]
+#[derive(Serialize, Debug, Clone, PartialEq, Eq)]
 pub struct InverterStatusState {
     /// RUN (Inverter running)
     pub running: bool,
@@ -178,14 +170,14 @@ pub struct InverterStatusState {
     pub fault_occurence: bool,
 }
 
-#[derive(Deserialize, Serialize, Debug, Clone)]
+#[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
 pub struct PidSettings {
     pub ki: f64,
     pub kp: f64,
     pub kd: f64,
 }
 
-#[derive(Serialize, Debug, Clone)]
+#[derive(Serialize, Debug, Clone, PartialEq)]
 pub struct PidSettingsStates {
     pub temperature: PidSettings,
     pub pressure: PidSettings,
@@ -246,11 +238,11 @@ impl ExtruderV2Namespace {
     }
 }
 
-impl CacheableEvents<ExtruderV2Events> for ExtruderV2Events {
+impl CacheableEvents<Self> for ExtruderV2Events {
     fn event_value(&self) -> GenericEvent {
         match self {
-            ExtruderV2Events::LiveValues(event) => event.into(),
-            ExtruderV2Events::State(event) => event.into(),
+            Self::LiveValues(event) => event.into(),
+            Self::State(event) => event.into(),
         }
     }
 
@@ -259,8 +251,8 @@ impl CacheableEvents<ExtruderV2Events> for ExtruderV2Events {
         let cache_first_and_last = cache_first_and_last_event();
 
         match self {
-            ExtruderV2Events::LiveValues(_) => cache_one_hour,
-            ExtruderV2Events::State(_) => cache_first_and_last,
+            Self::LiveValues(_) => cache_one_hour,
+            Self::State(_) => cache_first_and_last,
         }
     }
 }

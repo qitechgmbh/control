@@ -1,14 +1,13 @@
 import { useState, useCallback, useRef } from "react";
 import { PropGraphSync } from "./types";
 import { GraphExportData, exportGraphsToExcel } from "./excelExport";
+import { useGraphSettingsStore } from "@/stores/graphSettingsStore";
 
-export function useGraphSync(
-  defaultTimeWindow: number | "all" = 30 * 60 * 1000,
-  exportGroupId?: string,
-) {
-  const [timeWindow, setTimeWindow] = useState<number | "all">(
-    defaultTimeWindow,
-  );
+export function useGraphSync(exportGroupId?: string) {
+  const store = useGraphSettingsStore();
+  // not reactive but works :)
+  const timeWindow = store.getTimeframe();
+
   const [viewMode, setViewMode] = useState<"default" | "all" | "manual">(
     "default",
   );
@@ -86,7 +85,8 @@ export function useGraphSync(
         }
 
         // Batch all state updates together
-        if (updates.timeWindow !== undefined) setTimeWindow(updates.timeWindow);
+        if (updates.timeWindow !== undefined)
+          store.setTimeframe(updates.timeWindow);
         if (updates.viewMode !== undefined) setViewMode(updates.viewMode);
         if (updates.isLiveMode !== undefined) setIsLiveMode(updates.isLiveMode);
         if (updates.xRange !== undefined) setXRange(updates.xRange);

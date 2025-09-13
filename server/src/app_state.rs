@@ -66,6 +66,12 @@ impl EthercatSetup {
     }
 }
 
+impl Default for AppState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl AppState {
     pub fn new() -> Self {
         let (socket_queue_tx, socket_queue_rx) = smol::channel::unbounded();

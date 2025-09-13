@@ -21,6 +21,10 @@ impl std::fmt::Debug for GenericEvent {
     }
 }
 
+pub trait BuildEvent: Serialize + Send + Sync + Clone {
+    fn build(&self) -> Event<Self>;
+}
+
 #[derive(Debug, Clone, Serialize)]
 pub struct Event<T>
 where

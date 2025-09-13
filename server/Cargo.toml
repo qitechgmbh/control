@@ -4,14 +4,19 @@ version = "0.1.0"
 edition = "2024"
 rust-version = "1.86"
 
+[lints]
+workspace = true
+
 
 [dependencies]
 ethercrab = "0.6"
 ethercat_hal = { path = "../ethercat-hal" }
 control_core = { path = "../control-core" }
+control_core_derive = { path = "../control-core-derive" }
+
 uom = { version = "0.36.0", default-features = false, features = ["f64"] }
 serde = "1.0.217"
-anyhow = "1.0.98"
+anyhow = "1.0.99"
 
 open = "5.3.2"
 bitvec = "1.0.1"
@@ -23,25 +28,24 @@ euclid = "0.22.11"
 smol = "2.0.2"
 tokio = { version = "1.45.1", features = ["rt-multi-thread"] }
 thread-priority = "2.1.0"
-regex = "1.11.1"
+regex = "1.11.2"
 futures = "0.3.31"
 
 # web
-serde_json = "1.0.140"
+serde_json = "1.0.143"
 socketioxide = { version = "0.17.2", features = ["msgpack"] }
 tower-http = { version = "0.6.6", features = ["cors", "trace", "fs"] }
 axum = { version = "0.8.4", features = ["macros"] }
 
 # serial
 crc = "3.3.0"
-serial = "0.4.0"
-serialport = "4.7.2"
+serialport = "4.7.3"
 
 #tracing
 tracing = { version = "0.1.41", features = ["attributes"] }
 tracing-journald = { version = "0.3.1", optional = true }
 tracing-futures = "0.2.5"
-tracing-subscriber = { version = "0.3.19", features = [
+tracing-subscriber = { version = "0.3.20", features = [
     "env-filter",
     "chrono",
     "registry",

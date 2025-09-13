@@ -23,7 +23,7 @@ export function Winder2GraphsPage() {
     spoolProgress,
   } = useWinder2();
 
-  const syncHook = useGraphSync(30 * 60 * 1000, "winder2-group");
+  const syncHook = useGraphSync("winder2-group");
 
   return (
     <Page className="pb-27">
