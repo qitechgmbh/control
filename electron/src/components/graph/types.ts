@@ -10,6 +10,7 @@ export type PropGraphSync = {
   isLiveMode: boolean;
   xRange?: { min: number; max: number };
   historicalFreezeTimestamp?: number | null;
+  showFromTimestamp?: number | null;
   onTimeWindowChange?: (graphId: string, timeWindow: number | "all") => void;
   onViewModeChange?: (
     graphId: string,
@@ -81,6 +82,8 @@ export type ControlProps = {
   onSwitchToHistorical: () => void;
   onExport?: () => void;
   timeWindowOptions?: TimeWindowOption[];
+  showFromTimestamp?: number | null;
+  onShowFromChange?: (timestamp: number | null) => void;
 };
 
 export interface LiveModeHandlers {
@@ -128,6 +131,9 @@ export interface CreateChartParams {
   >;
   setIsLiveMode: React.Dispatch<React.SetStateAction<boolean>>;
   setCursorValue: React.Dispatch<React.SetStateAction<number | null>>;
+  setCursorValues: React.Dispatch<React.SetStateAction<(number | null)[]>>;
+  visibleSeries: boolean[];
+  showFromTimestamp?: number | null;
 }
 
 export interface AnimationState {
