@@ -83,7 +83,8 @@ export function createChart({
       );
       initialMin = showFromTimestamp ?? defaultViewStart;
     } else {
-      initialMin = showFromTimestamp ?? (endTimestamp - (selectedTimeWindow as number));
+      initialMin =
+        showFromTimestamp ?? endTimestamp - (selectedTimeWindow as number);
     }
 
     initialMax = endTimestamp;

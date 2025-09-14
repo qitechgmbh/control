@@ -15,7 +15,9 @@ export function useGraphSync(exportGroupId?: string) {
   const [xRange, setXRange] = useState<
     { min: number; max: number } | undefined
   >();
-  const [showFromTimestamp, setShowFromTimestamp] = useState<number | null>(null);
+  const [showFromTimestamp, setShowFromTimestamp] = useState<number | null>(
+    null,
+  );
 
   const historicalFreezeTimestampRef = useRef<number | null>(null);
   const graphDataRef = useRef<Map<string, () => GraphExportData | null>>(
@@ -92,7 +94,8 @@ export function useGraphSync(exportGroupId?: string) {
         if (updates.viewMode !== undefined) setViewMode(updates.viewMode);
         if (updates.isLiveMode !== undefined) setIsLiveMode(updates.isLiveMode);
         if (updates.xRange !== undefined) setXRange(updates.xRange);
-        if (updates.showFromTimestamp !== undefined) setShowFromTimestamp(updates.showFromTimestamp);
+        if (updates.showFromTimestamp !== undefined)
+          setShowFromTimestamp(updates.showFromTimestamp);
 
         // Handle historical freeze timestamp
         if (updates.clearHistoricalFreeze) {
@@ -198,6 +201,7 @@ export function useGraphSync(exportGroupId?: string) {
       viewMode: timeWindow === "all" ? "all" : "default",
       xRange: undefined,
       clearHistoricalFreeze: true,
+      showFromTimestamp: null, // Clear the show from timestamp when switching to live
     });
   }, [updateSyncState, timeWindow]);
 
