@@ -58,15 +58,10 @@ export function MarkdownWithToc({
           className={`sticky ${stickyTop}`}
           style={{ maxHeight: "calc(100vh - 6rem)" }}
         >
-          {/* Hide scrollbar for the TOC container across browsers */}
-          <style>{`
-            [data-toc-scroll-container] { -ms-overflow-style: none; scrollbar-width: none; }
-            [data-toc-scroll-container]::-webkit-scrollbar { display: none; }
-          `}</style>
+          {/* Table of Contents with hidden scrollbar */}
           <div
-            className="overflow-y-auto"
+            className="scrollbar-hidden overflow-y-auto"
             style={{ maxHeight: "calc(100vh - 8rem)" }}
-            data-toc-scroll-container
           >
             <MarkdownToc
               markdownContent={markdownContent}
