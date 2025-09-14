@@ -43,7 +43,7 @@ export function GraphControls({
               <TouchButton
                 variant="outline"
                 className={`h-auto border-gray-300 bg-white px-3 py-3 text-base text-gray-900 hover:bg-gray-50 ${
-                  showFromTimestamp ? "opacity-50 cursor-not-allowed" : ""
+                  showFromTimestamp ? "cursor-not-allowed opacity-50" : ""
                 }`}
                 disabled={!!showFromTimestamp}
               >
@@ -160,7 +160,7 @@ export function FloatingControlPanel({
                 <TouchButton
                   variant="outline"
                   className={`h-auto border-gray-300 bg-white px-3 py-3 text-base text-gray-900 hover:bg-gray-50 ${
-                    showFromTimestamp ? "opacity-50 cursor-not-allowed" : ""
+                    showFromTimestamp ? "cursor-not-allowed opacity-50" : ""
                   }`}
                   disabled={!!showFromTimestamp}
                 >

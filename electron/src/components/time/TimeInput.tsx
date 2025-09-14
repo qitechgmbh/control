@@ -21,7 +21,11 @@ const timeSchema = z.object({
 
 type TimeFormData = z.infer<typeof timeSchema>;
 
-export function TimeInput({ timestamp, onTimeChange, onClear }: TimeInputProps) {
+export function TimeInput({
+  timestamp,
+  onTimeChange,
+  onClear,
+}: TimeInputProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   // Get current time for initial values
@@ -66,8 +70,14 @@ export function TimeInput({ timestamp, onTimeChange, onClear }: TimeInputProps) 
   // Convert time components to timestamp (today's date)
   const timeToTimestamp = useCallback((time: TimeFormData) => {
     const now = new Date();
-    const date = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 
-                         time.hours, time.minutes, time.seconds);
+    const date = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+      time.hours,
+      time.minutes,
+      time.seconds,
+    );
     return date.getTime();
   }, []);
 
@@ -82,57 +92,64 @@ export function TimeInput({ timestamp, onTimeChange, onClear }: TimeInputProps) 
   const formatTimeDisplay = useCallback(() => {
     if (!timestamp) return "Show from Time";
     const time = timestampToTime(timestamp);
-    return `${time.hours.toString().padStart(2, '0')}:${time.minutes.toString().padStart(2, '0')}:${time.seconds.toString().padStart(2, '0')}`;
+    return `${time.hours.toString().padStart(2, "0")}:${time.minutes.toString().padStart(2, "0")}:${time.seconds.toString().padStart(2, "0")}`;
   }, [timestamp, timestampToTime]);
 
   // Increment/decrement functions with bounds checking and cascading
-  const adjustTimeValue = useCallback((field: 'hours' | 'minutes' | 'seconds', increment: boolean) => {
-    const currentValue = form.getValues(field);
-    let newValue: number;
-    let max: number;
-    let shouldCascade = false;
-    
-    switch (field) {
-      case 'hours':
-        max = 23;
-        break;
-      case 'minutes':
-      case 'seconds':
-        max = 59;
-        break;
-    }
-    
-    if (increment) {
-      if (currentValue >= max) {
-        newValue = 0;
-        shouldCascade = true;
+  const adjustTimeValue = useCallback(
+    (field: "hours" | "minutes" | "seconds", increment: boolean) => {
+      const currentValue = form.getValues(field);
+      let newValue: number;
+      let max: number;
+      let shouldCascade = false;
+
+      switch (field) {
+        case "hours":
+          max = 23;
+          break;
+        case "minutes":
+        case "seconds":
+          max = 59;
+          break;
+      }
+
+      if (increment) {
+        if (currentValue >= max) {
+          newValue = 0;
+          shouldCascade = true;
+        } else {
+          newValue = currentValue + 1;
+        }
       } else {
-        newValue = currentValue + 1;
+        if (currentValue <= 0) {
+          newValue = max;
+          shouldCascade = true;
+        } else {
+          newValue = currentValue - 1;
+        }
       }
-    } else {
-      if (currentValue <= 0) {
-        newValue = max;
-        shouldCascade = true;
-      } else {
-        newValue = currentValue - 1;
+
+      // Set the current field value
+      form.setValue(field, newValue, {
+        shouldValidate: true,
+        shouldDirty: true,
+        shouldTouch: true,
+      });
+
+      // Handle cascading to the next higher unit
+      if (shouldCascade) {
+        if (field === "seconds") {
+          // Seconds rolled over, adjust minutes
+          adjustTimeValue("minutes", increment);
+        } else if (field === "minutes") {
+          // Minutes rolled over, adjust hours
+          adjustTimeValue("hours", increment);
+        }
+        // Hours rollover doesn't cascade (we stay within 24-hour format)
       }
-    }
-    
-    // Set the current field value
-    form.setValue(field, newValue, { shouldValidate: true, shouldDirty: true, shouldTouch: true });
-    
-    // Handle cascading to the next higher unit
-    if (shouldCascade) {
-      if (field === 'seconds') {
-        // Seconds rolled over, adjust minutes
-        adjustTimeValue('minutes', increment);
-      } else if (field === 'minutes') {
-        // Minutes rolled over, adjust hours
-        adjustTimeValue('hours', increment);
-      }
-      // Hours rollover doesn't cascade (we stay within 24-hour format)
-    }
-  }, [form]);
+    },
+    [form],
+  );
 
   const handleSubmit = () => {
     form.handleSubmit((data) => {
@@ -161,20 +178,20 @@ export function TimeInput({ timestamp, onTimeChange, onClear }: TimeInputProps) 
   // Watch individual form fields for real-time updates
   const hours = useWatch({
     control: form.control,
-    name: 'hours',
-    defaultValue: getInitialValues().hours
+    name: "hours",
+    defaultValue: getInitialValues().hours,
   });
-  
+
   const minutes = useWatch({
     control: form.control,
-    name: 'minutes',
-    defaultValue: getInitialValues().minutes
+    name: "minutes",
+    defaultValue: getInitialValues().minutes,
   });
-  
+
   const seconds = useWatch({
     control: form.control,
-    name: 'seconds',
-    defaultValue: getInitialValues().seconds
+    name: "seconds",
+    defaultValue: getInitialValues().seconds,
   });
 
   // Get current form values with fallback
@@ -185,14 +202,14 @@ export function TimeInput({ timestamp, onTimeChange, onClear }: TimeInputProps) 
   };
 
   // TimeValueInput component for individual time fields
-  const TimeValueInput = ({ 
-    field, 
-    label, 
-    value 
-  }: { 
-    field: 'hours' | 'minutes' | 'seconds'; 
-    label: string; 
-    value: number 
+  const TimeValueInput = ({
+    field,
+    label,
+    value,
+  }: {
+    field: "hours" | "minutes" | "seconds";
+    label: string;
+    value: number;
   }) => (
     <div className="flex flex-col items-center gap-3">
       <label className="text-sm font-medium text-gray-700">{label}</label>
@@ -209,8 +226,8 @@ export function TimeInput({ timestamp, onTimeChange, onClear }: TimeInputProps) 
         >
           <Icon name="lu:ChevronUp" className="size-4" />
         </TouchButton>
-        <div className="w-20 h-16 flex items-center justify-center text-3xl font-mono border-2 border-gray-300 rounded bg-white">
-          {value.toString().padStart(2, '0')}
+        <div className="flex h-16 w-20 items-center justify-center rounded border-2 border-gray-300 bg-white font-mono text-3xl">
+          {value.toString().padStart(2, "0")}
         </div>
         <TouchButton
           variant="outline"
@@ -239,11 +256,11 @@ export function TimeInput({ timestamp, onTimeChange, onClear }: TimeInputProps) 
           {formatTimeDisplay()}
         </TouchButton>
       </DialogTrigger>
-      
+
       <DialogContent className="max-w-2xl p-8">
         <div className="flex flex-col gap-8">
           {/* Header */}
-          <div className="flex items-center justify-between min-h-[2.5rem]">
+          <div className="flex min-h-[2.5rem] items-center justify-between">
             <div className="flex items-center gap-3">
               <Icon name="lu:Clock" className="size-6" />
               <h3 className="text-xl font-semibold">Show from Time</h3>
@@ -255,37 +272,38 @@ export function TimeInput({ timestamp, onTimeChange, onClear }: TimeInputProps) 
                 onClick={handleClear}
                 className="text-red-600 hover:text-red-700"
               >
-                <Icon name="lu:X" className="size-4 mr-2" />
+                <Icon name="lu:X" className="mr-2 size-4" />
                 Clear
               </TouchButton>
             )}
           </div>
 
           {/* Description */}
-          <div className="text-gray-600 text-base -mt-4">
-            Set a specific time to display data from that point forward in the graph.
+          <div className="-mt-4 text-base text-gray-600">
+            Set a specific time to display data from that point forward in the
+            graph.
           </div>
 
           <Separator />
 
           {/* Time inputs */}
           <div className="flex items-center justify-center gap-8">
-            <TimeValueInput 
-              field="hours" 
-              label="Hours" 
-              value={currentValues.hours} 
+            <TimeValueInput
+              field="hours"
+              label="Hours"
+              value={currentValues.hours}
             />
-            <div className="text-4xl font-bold mt-8">:</div>
-            <TimeValueInput 
-              field="minutes" 
-              label="Minutes" 
-              value={currentValues.minutes} 
+            <div className="mt-8 text-4xl font-bold">:</div>
+            <TimeValueInput
+              field="minutes"
+              label="Minutes"
+              value={currentValues.minutes}
             />
-            <div className="text-4xl font-bold mt-8">:</div>
-            <TimeValueInput 
-              field="seconds" 
-              label="Seconds" 
-              value={currentValues.seconds} 
+            <div className="mt-8 text-4xl font-bold">:</div>
+            <TimeValueInput
+              field="seconds"
+              label="Seconds"
+              value={currentValues.seconds}
             />
           </div>
 
@@ -295,14 +313,14 @@ export function TimeInput({ timestamp, onTimeChange, onClear }: TimeInputProps) 
           <div className="flex gap-4">
             <TouchButton
               variant="outline"
-              className="flex-1 h-14"
+              className="h-14 flex-1"
               onClick={handleAbort}
             >
               <Icon name="lu:X" className="mr-2 size-4" />
               Cancel
             </TouchButton>
             <TouchButton
-              className="flex-1 h-14 bg-blue-600 text-white hover:bg-blue-700"
+              className="h-14 flex-1 bg-blue-600 text-white hover:bg-blue-700"
               onClick={handleSubmit}
             >
               <Icon name="lu:Check" className="mr-2 size-4" />
