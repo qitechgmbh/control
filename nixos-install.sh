@@ -23,15 +23,15 @@ fi
 # Create escaped version for system.nixos.label
 export GIT_ABBREVIATION_ESCAPED=$(echo "$GIT_ABBREVIATION" | sed -e 's/+/-/g' -e 's/[^a-zA-Z0-9:_\.-]//g')  # e.g., "2-0-0", "main", "b2c7f6e"
 
-sudo bash -c 'cat > /etc/nixos/gitInfo.nix <<EOF
+sudo bash -c "cat > /etc/nixos/gitInfo.nix <<EOF
 {
-  gitTimestamp = "'$(date +%s)'";
-  gitCommit = "'$(git rev-parse HEAD)'";
-  gitAbbreviation = "'$(git rev-parse --short HEAD)'";
-  gitUrl = "'$(git config --get remote.origin.url)'";
-  gitAbbreviationEscaped = "'$(git rev-parse --short HEAD | sed 's/[^A-Za-z0-9]/-/g')'";
+  gitTimestamp = \"$GIT_TIMESTAMP\";
+  gitCommit = \"$GIT_COMMIT\";
+  gitAbbreviation = \"${GIT_ABBREVIATION_ESCAPED}\";
+  gitUrl = \"$GIT_URL\";
+  gitAbbreviationEscaped = \"$GIT_ABBREVIATION_ESCAPED\";
 }
-EOF'
+EOF"
 
 env
 
