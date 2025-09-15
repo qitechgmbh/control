@@ -15,7 +15,7 @@ let
   gitCommit = "$gitCommit";
   gitAbbreviation = "$gitAbbreviation";
   gitUrl = "$gitUrl";
-    gitAbbreviationEscaped=$(echo "$gitAbbreviation" | sed 's/["\\]/\\&/g')
+  gitAbbreviationEscaped=$(echo "$gitAbbreviation" | sed 's/["\\]/\\&/g')
 }
 EOF
   '';
@@ -24,6 +24,7 @@ in
   imports =
     [ # Include the results of the hardware scan.
       /etc/nixos/hardware-configuration.nix
+      gitInfo
     ];
 
   # Bootloader.
@@ -36,6 +37,14 @@ in
   boot.kernelPackages = pkgs.linuxPackages-rt_latest;
   boot.kernelModules = [ "i915" ];
 
+
+
+  environment.variables = {
+    QITECH_OS_GIT_TIMESTAMP = gitInfo.gitTimestamp;
+    QITECH_OS_GIT_COMMIT = gitInfo.gitCommit;
+    QITECH_OS_GIT_ABBREVIATION = gitInfo.gitAbbreviation;
+    QITECH_OS_GIT_URL = gitInfo.gitUrl;
+  };
 
   boot.kernelParams = [
     # Graphical
