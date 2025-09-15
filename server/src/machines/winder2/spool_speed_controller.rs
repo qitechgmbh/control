@@ -3,9 +3,7 @@ use crate::machines::winder2::{
     minmax_spool_speed_controller::MinMaxSpoolSpeedController,
     puller_speed_controller::PullerSpeedController,
 };
-use control_core::
-    controllers::second_degree_motion::acceleration_position_controller::MotionControllerError
-;
+use control_core::controllers::second_degree_motion::acceleration_position_controller::MotionControllerError;
 
 use super::tension_arm::TensionArm;
 use serde::{Deserialize, Serialize};
@@ -125,8 +123,6 @@ impl SpoolSpeedController {
         tension_arm: &TensionArm,
         puller_speed_controller: &PullerSpeedController,
     ) -> AngularVelocity {
-        
-
         match self.r#type {
             SpoolSpeedControllerType::Adaptive => {
                 self.adaptive_controller
