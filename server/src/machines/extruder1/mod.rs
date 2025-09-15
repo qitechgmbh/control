@@ -7,12 +7,12 @@ use api::{
 use control_core::helpers::hasher_serializer::check_hash_different;
 use control_core::socketio::event::BuildEvent;
 use control_core::{
-    machines::{Machine, identification::MachineIdentification},
-    socketio::namespace::NamespaceCacheingLogic,
+    machines::identification::MachineIdentification, socketio::namespace::NamespaceCacheingLogic,
 };
+use control_core_derive::Machine;
 use screw_speed_controller::ScrewSpeedController;
 use serde::{Deserialize, Serialize};
-use std::{any::Any, time::Instant};
+use std::time::Instant;
 use temperature_controller::TemperatureController;
 use uom::si::{
     angular_velocity::{AngularVelocity, revolution_per_minute},
@@ -60,7 +60,7 @@ pub enum HeatingType {
     Middle,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Machine)]
 pub struct ExtruderV2 {
     namespace: ExtruderV2Namespace,
     last_measurement_emit: Instant,
@@ -193,11 +193,6 @@ impl ExtruderV2 {
 impl std::fmt::Display for ExtruderV2 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "ExtruderV2")
-    }
-}
-impl Machine for ExtruderV2 {
-    fn as_any(&self) -> &dyn Any {
-        self
     }
 }
 

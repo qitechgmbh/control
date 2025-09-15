@@ -5,18 +5,18 @@ use crate::{
 use api::{LaserEvents, LaserMachineNamespace, LaserState, LiveValuesEvent, StateEvent};
 use control_core::{
     helpers::hasher_serializer::check_hash_different,
-    machines::{Machine, identification::MachineIdentification},
-    socketio::namespace::NamespaceCacheingLogic,
+    machines::identification::MachineIdentification, socketio::namespace::NamespaceCacheingLogic,
 };
+use control_core_derive::Machine;
 use smol::lock::RwLock;
-use std::{any::Any, sync::Arc, time::Instant};
+use std::{sync::Arc, time::Instant};
 use uom::si::{f64::Length, length::millimeter};
 
 pub mod act;
 pub mod api;
 pub mod new;
 
-#[derive(Debug)]
+#[derive(Debug, Machine)]
 pub struct LaserMachine {
     // drivers
     laser: Arc<RwLock<Laser>>,
@@ -32,12 +32,6 @@ pub struct LaserMachine {
     /// This way we can signal to the client that the first state emission is a default state
     emitted_default_state: bool,
     last_state_event: Option<StateEvent>,
-}
-
-impl Machine for LaserMachine {
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
 }
 
 impl LaserMachine {
