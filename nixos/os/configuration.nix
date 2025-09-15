@@ -2,8 +2,18 @@
 # your system.  Help is available in the configuration.nix(5) man page
 # and in the NixOS manual (accessible by running ‘nixos-help’).
 
-{ config, pkgs, gitInfo, ... }:
+{ config, pkgs, ... }:
 
+let
+  gitInfoPath = /etc/nixos/gitInfo.nix;
+  gitInfo = if builtins.pathExists gitInfoPath then import gitInfoPath else {
+    gitTimestamp = "unknown";
+    gitCommit = "unknown";
+    gitAbbreviation = "unknown";
+    gitUrl = "";
+    gitAbbreviationEscaped = "unknown";
+  };
+in
 {
   imports =
     [ # Include the results of the hardware scan.
