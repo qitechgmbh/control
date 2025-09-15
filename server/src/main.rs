@@ -46,6 +46,8 @@ fn main() {
     // Initialize panic handling
     let thread_panic_tx = init_panic();
 
+    println!("osh was here, alwedjh");
+
     logging::init_tracing();
     tracing::info!("Tracing initialized successfully");
 

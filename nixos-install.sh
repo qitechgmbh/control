@@ -30,4 +30,4 @@ sudo nixos-rebuild boot \
     --option sandbox false \
     --option eval-cache false
 
-reboot
+sudo reboot
