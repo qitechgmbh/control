@@ -19,13 +19,14 @@ use control_core::socketio::event::BuildEvent;
 use control_core::{
     converters::angular_step_converter::AngularStepConverter,
     machines::{
-        ConnectedMachine, ConnectedMachineData, Machine, downcast_machine,
+        ConnectedMachine, ConnectedMachineData, downcast_machine,
         identification::{MachineIdentification, MachineIdentificationUnique},
         manager::MachineManager,
     },
     socketio::namespace::NamespaceCacheingLogic,
     uom_extensions::velocity::meter_per_minute,
 };
+use control_core_derive::Machine;
 use ethercat_hal::io::{
     digital_input::DigitalInput, digital_output::DigitalOutput,
     stepper_velocity_el70x1::StepperVelocityEL70x1,
@@ -64,7 +65,7 @@ pub struct SpoolAutomaticAction {
     pub mode: SpoolAutomaticActionMode,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Machine)]
 pub struct Winder2 {
     // drivers
     pub traverse: StepperVelocityEL70x1,
@@ -108,12 +109,6 @@ pub struct Winder2 {
     /// This way we can signal to the client that the first state emission is a default state
     emitted_default_state: bool,
     last_state_event: Option<StateEvent>,
-}
-
-impl Machine for Winder2 {
-    fn as_any(&self) -> &dyn std::any::Any {
-        self
-    }
 }
 
 impl Winder2 {

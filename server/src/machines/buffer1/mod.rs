@@ -7,17 +7,17 @@ use api::{Buffer1Namespace, BufferV1Events, LiveValuesEvent, ModeState, StateEve
 use buffer_tower_controller::BufferTowerController;
 use control_core::{
     machines::{
-        ConnectedMachine, ConnectedMachineData, Machine, downcast_machine,
+        ConnectedMachine, ConnectedMachineData, downcast_machine,
         identification::{MachineIdentification, MachineIdentificationUnique},
         manager::MachineManager,
     },
     socketio::namespace::NamespaceCacheingLogic,
 };
+use control_core_derive::Machine;
 use futures::executor::block_on;
 use serde::{Deserialize, Serialize};
 use smol::lock::{Mutex, RwLock};
 use std::{
-    any::Any,
     sync::{Arc, Weak},
     time::Instant,
 };
@@ -26,7 +26,7 @@ use crate::machines::{
     MACHINE_BUFFER_V1, VENDOR_QITECH, buffer1::api::ConnectedMachineState, winder2::Winder2,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Machine)]
 pub struct BufferV1 {
     // controllers
     pub buffer_tower_controller: BufferTowerController,
@@ -49,12 +49,6 @@ pub struct BufferV1 {
 impl std::fmt::Display for BufferV1 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "BufferV1")
-    }
-}
-
-impl Machine for BufferV1 {
-    fn as_any(&self) -> &dyn Any {
-        self
     }
 }
 

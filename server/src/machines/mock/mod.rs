@@ -3,9 +3,9 @@ use api::{LiveValuesEvent, MockEvents, MockMachineNamespace, Mode, ModeState, St
 use control_core::socketio::event::BuildEvent;
 use control_core::{
     helpers::hasher_serializer::check_hash_different,
-    machines::{Machine, identification::MachineIdentification},
-    socketio::namespace::NamespaceCacheingLogic,
+    machines::identification::MachineIdentification, socketio::namespace::NamespaceCacheingLogic,
 };
+use control_core_derive::Machine;
 
 use std::time::Instant;
 use tracing::info;
@@ -18,7 +18,7 @@ pub mod act;
 pub mod api;
 pub mod new;
 
-#[derive(Debug)]
+#[derive(Debug, Machine)]
 pub struct MockMachine {
     // socketio
     namespace: MockMachineNamespace,
@@ -39,11 +39,6 @@ pub struct MockMachine {
     emitted_default_state: bool,
 }
 
-impl Machine for MockMachine {
-    fn as_any(&self) -> &dyn std::any::Any {
-        self
-    }
-}
 impl MockMachine {
     pub const MACHINE_IDENTIFICATION: MachineIdentification = MachineIdentification {
         vendor: VENDOR_QITECH,

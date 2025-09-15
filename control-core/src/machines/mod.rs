@@ -16,9 +16,12 @@ pub mod manager_iter;
 pub mod new;
 pub mod registry;
 
-pub trait Machine: MachineAct + MachineNewTrait + MachineApi + Any + Debug + Send {
+pub trait Machine: MachineAct + MachineNewTrait + MachineApi + AnyGetters + Debug + Send {}
+pub trait AnyGetters: Any {
     fn as_any(&self) -> &dyn Any;
+    fn as_any_mut(&mut self) -> &mut dyn Any;
 }
+
 /// Casts a `dyn Machine` to a specific machine type
 pub async fn downcast_machine<T: Machine>(
     machine: Arc<Mutex<dyn Machine>>,
