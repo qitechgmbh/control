@@ -28,7 +28,7 @@
 
   outputs = { self, nixpkgs, crane, flake-utils, qitech-control, home-manager, ... }:
     let
-      gitInfo = import ./nixos/gitInfo.nix;
+      gitInfo = import /etc/nixos/gitInfo.nix;
     in
     flake-utils.lib.eachDefaultSystem (system:
       let
