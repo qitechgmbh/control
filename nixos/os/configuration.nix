@@ -1,18 +1,22 @@
-# Edit this configuration file to define what should be installed on
-# your system.  Help is available in the configuration.nix(5) man page
-# and in the NixOS manual (accessible by running ‘nixos-help’).
-
-{ config, pkgs, ... }:
-
 let
-  gitInfoPath = /etc/nixos/gitInfo.nix;
-  gitInfo = if builtins.pathExists gitInfoPath then import gitInfoPath else {
-    gitTimestamp = "unknown";
-    gitCommit = "unknown";
-    gitAbbreviation = "unknown";
-    gitUrl = "";
-    gitAbbreviationEscaped = "unknown";
-  };
+  gitInfo = pkgs.runCommand "git-info" {
+    buildInputs = [ pkgs.git ];
+  } ''
+    gitTimestamp=$(git log -1 --format=%ct)
+    gitCommit=$(git rev-parse HEAD)
+    gitAbbreviation=$(git rev-parse --short HEAD)
+    gitUrl=$(git config --get remote.origin.url || echo "")
+
+    cat > $out <<EOF
+{
+  gitTimestamp = "$gitTimestamp";
+  gitCommit = "$gitCommit";
+  gitAbbreviation = "$gitAbbreviation";
+  gitUrl = "$gitUrl";
+  gitAbbreviationEscaped = "$gitAbbreviation"
+}
+EOF
+  '';
 in
 {
   imports =
