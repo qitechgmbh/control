@@ -909,8 +909,9 @@ impl Winder2 {
                 return;
             }
         };
-        let machine_manager_guard = block_on(machine_manager_arc.read());
-        let laser_weak = machine_manager_guard.get_serial_weak(&machine_identification_unique);
+        
+        let laser_weak = block_on(machine_manager_arc.read()).get_serial_weak(&machine_identification_unique);
+        
         let laser_weak = match laser_weak {
             Some(laser_weak) => laser_weak,
             None => {
@@ -934,7 +935,7 @@ impl Winder2 {
 
         self.connected_laser = Some(ConnectedMachine {
             machine_identification_unique,
-            machine: machine.clone(),
+            machine,
         });
 
         self.emit_state();
