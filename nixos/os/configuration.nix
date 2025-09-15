@@ -1,27 +1,7 @@
 { config, pkgs, ... }:
 
 let
-  # Generate Git info in the store
-  gitInfoDerivation = pkgs.runCommand "git-info" {
-    src = ./.;  # your repo root
-    buildInputs = [ pkgs.git pkgs.gawk ];
-  } ''
-    cd $src
-    gitTimestamp=$(git log -1 --format=%ct)
-    gitCommit=$(git rev-parse HEAD)
-    gitAbbreviation=$(git rev-parse --short HEAD)
-    gitUrl=$(git config --get remote.origin.url || echo "")
-
-    # Escape abbreviation for Nix string
-    gitAbbreviationEscaped=$(echo "$gitAbbreviation" | sed 's/["\\]/\\&/g')
-
-    # Write each value to a separate file
-    echo "$gitTimestamp" > $out-timestamp
-    echo "$gitCommit" > $out-commit
-    echo "$gitAbbreviation" > $out-abbr
-    echo "$gitUrl" > $out-url
-    echo "$gitAbbreviationEscaped" > $out-abbr-escaped
-  '';
+  gitInfo = import ../gitInfo.nix { inherit pkgs; };
 in
 {
   imports =
@@ -313,14 +293,14 @@ in
   # Set system wide env variables
   environment.variables = {
     QITECH_OS = "true";
-    QITECH_OS_GIT_TIMESTAMP = builtins.readFile "${gitInfoDerivation}/out-timestamp";
-    QITECH_OS_GIT_COMMIT = builtins.readFile "${gitInfoDerivation}/out-commit";
-    QITECH_OS_GIT_ABBREVIATION = builtins.readFile "${gitInfoDerivation}/out-abbr";
-    QITECH_OS_GIT_URL = builtins.readFile "${gitInfoDerivation}/out-url";
+    QITECH_OS_GIT_TIMESTAMP = gitInfo.gitTimestamp;
+    QITECH_OS_GIT_COMMIT = gitInfo.gitCommit;
+    QITECH_OS_GIT_ABBREVIATION = gitInfo.gitAbbreviation;
+    QITECH_OS_GIT_URL = gitInfo.gitUrl;
   };
 
   # Set revision labe;
-  system.nixos.label = "${builtins.readFile "${gitInfoDerivation}/out-abbr-escaped"}_${builtins.readFile "${gitInfoDerivation}/out-commit"}";
+  system.nixos.label = "${gitInfo.gitAbbreviationEscaped}_${gitInfo.gitCommit}";
     
   # Some programs need SUID wrappers, can be configured further or are
   # started in user sessions.
