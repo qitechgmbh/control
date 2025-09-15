@@ -4,7 +4,7 @@ use api::{
     InverterStatusState, LiveValuesEvent, ModeState, PidSettings, PidSettingsStates, PressureState,
     RegulationState, RotationState, ScrewState, StateEvent,
 };
-use control_core::helpers::hasher_serializer::check_hash_different;
+use control_core::helpers::hasher_serializer::hash_with_serde_model;
 use control_core::socketio::event::BuildEvent;
 use control_core::{
     machines::identification::MachineIdentification, socketio::namespace::NamespaceCacheingLogic,
@@ -66,7 +66,7 @@ pub enum HeatingType {
 pub struct ExtruderV2 {
     namespace: ExtruderV2Namespace,
     last_measurement_emit: Instant,
-    last_state_event: Option<StateEvent>,
+    last_state_event_hash: Option<u64>,
     mode: ExtruderV2Mode,
     screw_speed_controller: ScrewSpeedController,
     temperature_controller_front: TemperatureController,
@@ -179,19 +179,20 @@ impl ExtruderV2 {
     }
 
     pub fn maybe_emit_state_event(&mut self) {
-        let new_state = self.build_state_event();
-        let old_state = match &self.last_state_event {
+        let old_state_hash = match self.last_state_event_hash.clone() {
             Some(event) => event,
             None => {
                 self.emit_state();
                 return;
             }
         };
-        let should_emit = check_hash_different(&new_state, old_state);
+        let mut new_state = self.build_state_event();
+        let new_state_hash = hash_with_serde_model(&mut new_state);
+        let should_emit = new_state_hash != old_state_hash;
         if should_emit {
             self.namespace
                 .emit(ExtruderV2Events::State(new_state.build()));
-            self.last_state_event = Some(new_state);
+            self.last_state_event_hash = Some(new_state_hash);
         }
     }
 }
@@ -296,7 +297,8 @@ impl ExtruderV2 {
 
     pub fn emit_state(&mut self) {
         let state = self.build_state_event();
-        self.last_state_event = Some(state.clone());
+        let hash = hash_with_serde_model(state.clone());
+        self.last_state_event_hash = Some(hash);
         let event = state.build();
         self.namespace.emit(ExtruderV2Events::State(event));
     }
@@ -421,6 +423,7 @@ impl ExtruderV2 {
             self.screw_speed_controller.set_uses_rpm(uses_rpm);
             self.screw_speed_controller.start_pressure_regulation();
         }
+        self.emit_state();
     }
 
     fn set_target_pressure(&mut self, pressure: f64) {

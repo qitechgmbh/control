@@ -98,32 +98,6 @@ impl MockMachine {
         self.last_emitted_event = Some(current_state);
     }
 
-    pub fn maybe_emit_state_event(&mut self) {
-        let new_state = StateEvent {
-            is_default_state: !std::mem::replace(&mut self.emitted_default_state, true),
-            frequency1: self.frequency1.get::<millihertz>(),
-            frequency2: self.frequency2.get::<millihertz>(),
-            frequency3: self.frequency3.get::<millihertz>(),
-            mode_state: ModeState {
-                mode: self.mode.clone(),
-            },
-        };
-
-        let old_event = match &self.last_emitted_event {
-            Some(old_event) => old_event,
-            None => {
-                self.emit_state();
-                return;
-            }
-        };
-
-        let should_emit = check_hash_different(&new_state, old_event);
-        if should_emit {
-            self.last_emitted_event = Some(new_state.clone());
-            self.namespace.emit(MockEvents::State(new_state.build()));
-        }
-    }
-
     /// Set the frequencies of the sine waves
     pub fn set_frequency1(&mut self, frequency_mhz: f64) {
         self.frequency1 = Frequency::new::<millihertz>(frequency_mhz);

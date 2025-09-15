@@ -4,7 +4,6 @@ use crate::{
 };
 use api::{LaserEvents, LaserMachineNamespace, LaserState, LiveValuesEvent, StateEvent};
 use control_core::{
-    helpers::hasher_serializer::check_hash_different,
     machines::identification::MachineIdentification, socketio::namespace::NamespaceCacheingLogic,
 };
 use control_core_derive::Machine;
@@ -69,24 +68,6 @@ impl LaserMachine {
         StateEvent {
             is_default_state: false,
             laser_state: laser,
-        }
-    }
-
-    pub fn maybe_emit_state_event(&mut self) {
-        let new_state: StateEvent = self.build_state_event();
-        let old_state: &StateEvent = match &self.last_state_event {
-            Some(old_state) => old_state,
-            None => {
-                self.emit_state();
-                return;
-            }
-        };
-
-        let should_emit = check_hash_different(&new_state, old_state);
-        if should_emit {
-            let event = &new_state.build();
-            self.last_state_event = Some(new_state);
-            self.namespace.emit(LaserEvents::State(event.clone()));
         }
     }
 

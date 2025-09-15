@@ -14,7 +14,6 @@ use api::{
     SpoolSpeedControllerState, StateEvent, TensionArmState, TraverseState, Winder2Events,
     Winder2Namespace,
 };
-use control_core::helpers::hasher_serializer::check_hash_different;
 use control_core::socketio::event::BuildEvent;
 use control_core::{
     converters::angular_step_converter::AngularStepConverter,
@@ -108,7 +107,6 @@ pub struct Winder2 {
     /// Will be initialized as false and set to true by emit_state
     /// This way we can signal to the client that the first state emission is a default state
     emitted_default_state: bool,
-    last_state_event: Option<StateEvent>,
 }
 
 impl Winder2 {
@@ -323,30 +321,9 @@ impl Winder2 {
         }
     }
 
-    pub fn maybe_emit_state_event(&mut self) {
-        let new_state = self.build_state_event();
-
-        let old_state = match &self.last_state_event {
-            Some(old_state) => old_state,
-            None => {
-                self.emit_state();
-                return;
-            }
-        };
-
-        let should_emit = check_hash_different(&new_state, old_state);
-        if should_emit {
-            let event = &new_state.build();
-            self.last_state_event = Some(new_state);
-            self.namespace.emit(Winder2Events::State(event.clone()));
-        }
-    }
-
     pub fn emit_state(&mut self) {
         let state_event = self.build_state_event();
         let event = state_event.build();
-
-        self.last_state_event = Some(state_event);
         self.namespace.emit(Winder2Events::State(event));
     }
 
