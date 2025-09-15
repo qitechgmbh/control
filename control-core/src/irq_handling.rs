@@ -1,11 +1,10 @@
-#[cfg(unix)]
+#[cfg(target_os = "linux")]
 use libc;
-
 use std::ffi::CString;
 use std::io;
 use std::str;
 
-#[cfg(unix)]
+#[cfg(target_os = "linux")]
 fn read_proc_interrupts() -> Result<String, io::Error> {
     let path = CString::new("/proc/interrupts").unwrap();
     // O_RDONLY
@@ -33,7 +32,7 @@ fn read_proc_interrupts() -> Result<String, io::Error> {
     Ok(String::from_utf8_lossy(&buf).into_owned())
 }
 
-#[cfg(unix)]
+#[cfg(target_os = "linux")]
 fn get_interface_irq(proc_content: &str, interface_name: &str) -> Option<u32> {
     for line in proc_content.lines() {
         if line.contains(interface_name) {
@@ -53,7 +52,7 @@ fn get_interface_irq(proc_content: &str, interface_name: &str) -> Option<u32> {
 /// With comma seperated values
 /// This function takes the irq identifier and writes the cpu string
 /// into /proc/irq/irq_number/smp_affinity_list
-#[cfg(unix)]
+#[cfg(target_os = "linux")]
 fn set_irq_affinity_raw(irq: u32, cpu: &str) -> Result<(), io::Error> {
     let path: String = format!("/proc/irq/{}/smp_affinity_list", irq);
     let cpath = CString::new(path.clone()).unwrap();
@@ -98,7 +97,7 @@ fn set_irq_affinity_raw(irq: u32, cpu: &str) -> Result<(), io::Error> {
 /// After pinning the ethernet irq to the core that the ethercat code ran on 99.99th percentile went down to ~200us (microseconds)
 /// Example input: irq_name: "eno1" , cpu: 2
 /// Remember that cpu cores are counted from 0
-#[cfg(unix)]
+#[cfg(target_os = "linux")]
 pub fn set_irq_affinity(irq_name: &str, cpu: u32) -> Result<(), anyhow::Error> {
     let proc_contents = read_proc_interrupts()?;
     let irq = get_interface_irq(&proc_contents, irq_name);
