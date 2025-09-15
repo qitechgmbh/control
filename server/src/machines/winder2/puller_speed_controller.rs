@@ -190,7 +190,7 @@ impl PullerSpeedController {
         //
         // Q_measured = (PI*d^2 / 4) * v
         // v_new = (4 * Q) / PI * d^2
-        // 2.405
+        // 
         if self.measured_diameter < Length::new::<millimeter>(0.1) {
             return Velocity::new::<meter_per_minute>(0.5);
         }
