@@ -4,7 +4,6 @@ use crate::{
 };
 use api::{LaserEvents, LaserMachineNamespace, LaserState, LiveValuesEvent, StateEvent};
 use control_core::{
-    helpers::hasher_serializer::check_hash_different,
     machines::identification::MachineIdentification, socketio::namespace::NamespaceCacheingLogic,
 };
 use control_core_derive::Machine;
@@ -31,7 +30,6 @@ pub struct LaserMachine {
     /// Will be initialized as false and set to true by emit_state
     /// This way we can signal to the client that the first state emission is a default state
     emitted_default_state: bool,
-    last_state_event: Option<StateEvent>,
 }
 
 impl LaserMachine {
@@ -72,24 +70,6 @@ impl LaserMachine {
         }
     }
 
-    pub fn maybe_emit_state_event(&mut self) {
-        let new_state: StateEvent = self.build_state_event();
-        let old_state: &StateEvent = match &self.last_state_event {
-            Some(old_state) => old_state,
-            None => {
-                self.emit_state();
-                return;
-            }
-        };
-
-        let should_emit = check_hash_different(&new_state, old_state);
-        if should_emit {
-            let event = &new_state.build();
-            self.last_state_event = Some(new_state);
-            self.namespace.emit(LaserEvents::State(event.clone()));
-        }
-    }
-
     pub fn emit_state(&mut self) {
         let state = StateEvent {
             is_default_state: !std::mem::replace(&mut self.emitted_default_state, true),
@@ -105,14 +85,17 @@ impl LaserMachine {
 
     pub fn set_higher_tolerance(&mut self, higher_tolerance: f64) {
         self.laser_target.higher_tolerance = Length::new::<millimeter>(higher_tolerance);
+        self.emit_state();
     }
 
     pub fn set_lower_tolerance(&mut self, lower_tolerance: f64) {
         self.laser_target.lower_tolerance = Length::new::<millimeter>(lower_tolerance);
+        self.emit_state();
     }
 
     pub fn set_target_diameter(&mut self, target_diameter: f64) {
         self.laser_target.diameter = Length::new::<millimeter>(target_diameter);
+        self.emit_state();
     }
 }
 #[derive(Debug, Clone)]

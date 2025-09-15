@@ -18,7 +18,6 @@ impl MachineAct for Winder2 {
 
         // more than 33ms have passed since last emit (30 "fps" target)
         if now.duration_since(self.last_measurement_emit) > Duration::from_secs_f64(1.0 / 30.0) {
-            self.maybe_emit_state_event();
             self.emit_live_values();
             self.last_measurement_emit = now;
         }

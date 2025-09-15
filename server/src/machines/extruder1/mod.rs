@@ -4,7 +4,7 @@ use api::{
     InverterStatusState, LiveValuesEvent, ModeState, PidSettings, PidSettingsStates, PressureState,
     RegulationState, RotationState, ScrewState, StateEvent,
 };
-use control_core::helpers::hasher_serializer::check_hash_different;
+use control_core::helpers::hasher_serializer::hash_with_serde_model;
 use control_core::socketio::event::BuildEvent;
 use control_core::{
     machines::identification::MachineIdentification, socketio::namespace::NamespaceCacheingLogic,
@@ -66,7 +66,7 @@ pub enum HeatingType {
 pub struct ExtruderV2 {
     namespace: ExtruderV2Namespace,
     last_measurement_emit: Instant,
-    last_state_event: Option<StateEvent>,
+    last_status_hash: Option<u64>,
     mode: ExtruderV2Mode,
     screw_speed_controller: ScrewSpeedController,
     temperature_controller_front: TemperatureController,
@@ -179,19 +179,18 @@ impl ExtruderV2 {
     }
 
     pub fn maybe_emit_state_event(&mut self) {
-        let new_state = self.build_state_event();
-        let old_state = match &self.last_state_event {
+        let old_status_hash = match self.last_status_hash {
             Some(event) => event,
             None => {
                 self.emit_state();
                 return;
             }
         };
-        let should_emit = check_hash_different(&new_state, old_state);
+        let mut status = self.screw_speed_controller.get_inverter_status();
+        let new_status_hash = hash_with_serde_model(&mut status);
+        let should_emit = new_status_hash != old_status_hash;
         if should_emit {
-            self.namespace
-                .emit(ExtruderV2Events::State(new_state.build()));
-            self.last_state_event = Some(new_state);
+            self.emit_state();
         }
     }
 }
@@ -296,15 +295,17 @@ impl ExtruderV2 {
 
     pub fn emit_state(&mut self) {
         let state = self.build_state_event();
-        self.last_state_event = Some(state.clone());
+        let hash = hash_with_serde_model(self.screw_speed_controller.get_inverter_status());
+        self.last_status_hash = Some(hash);
         let event = state.build();
         self.namespace.emit(ExtruderV2Events::State(event));
     }
 
     // Extruder Settings Api Impl
-    const fn set_nozzle_pressure_limit_is_enabled(&mut self, enabled: bool) {
+    fn set_nozzle_pressure_limit_is_enabled(&mut self, enabled: bool) {
         self.screw_speed_controller
             .set_nozzle_pressure_limit_is_enabled(enabled);
+        self.emit_state();
     }
 
     /// pressure is represented as bar
@@ -312,6 +313,7 @@ impl ExtruderV2 {
         let nozzle_pressure_limit = Pressure::new::<bar>(pressure);
         self.screw_speed_controller
             .set_nozzle_pressure_limit(nozzle_pressure_limit);
+        self.emit_state();
     }
 }
 
@@ -323,13 +325,15 @@ impl ExtruderV2 {
         self.temperature_controller_front.disable();
         self.temperature_controller_middle.disable();
         self.temperature_controller_nozzle.disable();
+        self.emit_state();
     }
 
-    const fn enable_heating(&mut self) {
+    fn enable_heating(&mut self) {
         self.temperature_controller_back.allow_heating();
         self.temperature_controller_front.allow_heating();
         self.temperature_controller_middle.allow_heating();
         self.temperature_controller_nozzle.allow_heating();
+        self.emit_state();
     }
 
     // Turn heating OFF and do nothing
@@ -397,6 +401,7 @@ impl ExtruderV2 {
 impl ExtruderV2 {
     fn set_rotation_state(&mut self, forward: bool) {
         self.screw_speed_controller.set_rotation_direction(forward);
+        self.emit_state();
     }
 
     fn reset_inverter(&mut self) {
@@ -405,6 +410,7 @@ impl ExtruderV2 {
 
     fn set_mode_state(&mut self, mode: ExtruderV2Mode) {
         self.switch_mode(mode);
+        self.emit_state();
     }
 }
 
@@ -421,17 +427,20 @@ impl ExtruderV2 {
             self.screw_speed_controller.set_uses_rpm(uses_rpm);
             self.screw_speed_controller.start_pressure_regulation();
         }
+        self.emit_state();
     }
 
     fn set_target_pressure(&mut self, pressure: f64) {
         let pressure = Pressure::new::<bar>(pressure);
         self.screw_speed_controller.set_target_pressure(pressure);
+        self.emit_state();
     }
 
     fn set_target_rpm(&mut self, rpm: f64) {
         let revolution_per_minutes = AngularVelocity::new::<revolution_per_minute>(rpm);
         self.screw_speed_controller
             .set_target_screw_rpm(revolution_per_minutes);
+        self.emit_state();
     }
 }
 
@@ -457,13 +466,15 @@ impl ExtruderV2 {
                 .temperature_controller_middle
                 .set_target_temperature(target_temp),
         }
+        self.emit_state();
     }
 }
 
 impl ExtruderV2 {
-    const fn configure_pressure_pid(&mut self, settings: PidSettings) {
+    fn configure_pressure_pid(&mut self, settings: PidSettings) {
         self.screw_speed_controller
             .pid
             .configure(settings.ki, settings.kp, settings.kd);
+        self.emit_state();
     }
 }

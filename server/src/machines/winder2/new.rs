@@ -381,7 +381,6 @@ impl MachineNewTrait for Winder2 {
                 machine_manager: params.machine_manager.clone(),
                 machine_identification_unique: machine_id,
                 connected_buffer: None,
-                last_state_event: None,
             };
 
             // initalize events
