@@ -320,8 +320,8 @@ in
   };
 
   # Set revision labe;
-  system.nixos.label = "${gitInfo.gitAbbreviationEscaped}_${gitInfo.gitCommit}";
-  
+  system.nixos.label = "${builtins.readFile "${gitInfoDerivation}/out-abbr-escaped"}_${builtins.readFile "${gitInfoDerivation}/out-commit"}";
+    
   # Some programs need SUID wrappers, can be configured further or are
   # started in user sessions.
   # programs.mtr.enable = true;
