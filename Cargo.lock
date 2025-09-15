@@ -596,6 +596,7 @@ dependencies = [
  "smol",
  "socketioxide",
  "textplots",
+ "tokio",
  "tracing",
  "uom",
 ]
