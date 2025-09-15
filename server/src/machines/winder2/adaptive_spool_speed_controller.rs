@@ -87,9 +87,9 @@ impl AdaptiveSpoolSpeedController {
     /// Proportional control gain for adaptive learning (negative: higher tension reduces speed)
     const RADIUS_LEARNING_RATE: f64 = 0.5;
 
-    const RADIUS_MIN: f64 = 4.25;
+    const FACTOR_MIN: f64 = 4.25;
 
-    const RADIUS_MAX: f64 = 20.0;
+    const FACTOR_MAX: f64 = 20.0;
 
     /// if the tension is the lowest, the speed can be up to 2x the puller speed
     const MAX_SPEED_MULTIPLIER: f64 = 4.0;
@@ -313,13 +313,13 @@ impl AdaptiveSpoolSpeedController {
 
         // Calculate proportional control adjustment
         let proportional_gain = self.radius_learning_rate * delta_t;
-        let radius_change = tension_error * proportional_gain;
+        let factor_change = tension_error * proportional_gain;
 
         // Update the speed factor directly
-        let new_radius = (self.speed_factor.get::<centimeter>() + radius_change)
-            .clamp(Self::RADIUS_MIN, Self::RADIUS_MAX);
+        let new_factor = (self.speed_factor.get::<centimeter>() + factor_change)
+            .clamp(Self::FACTOR_MIN, Self::FACTOR_MAX);
 
-        self.speed_factor = Length::new::<centimeter>(new_radius); // Convert to cm
+        self.speed_factor = Length::new::<centimeter>(new_factor); // Convert to cm
 
         self.last_max_speed_factor_update = Some(t);
     }
