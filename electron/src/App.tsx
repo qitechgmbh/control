@@ -30,6 +30,7 @@ enableMapSet();
 const root = createRoot(document.getElementById("app")!);
 root.render(
   <React.StrictMode>
+    <h1>Osh was here</h1>
     <App />
     <Toaster />
   </React.StrictMode>,
