@@ -27,28 +27,26 @@
   };
 
   outputs = { self, nixpkgs, crane, flake-utils, qitech-control, home-manager, ... }:
-    let
-      # Import git info at the top level so it's available everywhere
-      installInfo = import ./nixos/os/installInfo.nix;
-    in
     flake-utils.lib.eachDefaultSystem (system:
       let
-        overlays = [ 
+        overlays = [
           # Add our own overlay for QiTech packages
           (final: prev: {
             qitechPackages = {
-              server = final.callPackage ./nixos/packages/server.nix { 
+              server = final.callPackage ./nixos/packages/server.nix {
                 commitHash = builtins.getEnv "QITECH_COMMIT_HASH";
                 craneLib = crane.mkLib final;
               };
-              electron = final.callPackage ./nixos/packages/electron.nix { 
+              electron = final.callPackage ./nixos/packages/electron.nix {
                 commitHash = builtins.getEnv "QITECH_COMMIT_HASH";
                 nodejs = final.nodejs_22;
               };
             };
           })
         ];
+
         pkgs = import nixpkgs { inherit system overlays; };
+        gitInfo = import ./nixos/gitInfo.nix { inherit pkgs; };
 
         craneLib = crane.mkLib pkgs;
 
@@ -84,12 +82,17 @@
       nixosModules.default = self.nixosModules.qitech;
 
       # Define nixosConfigurations outside of eachDefaultSystem
-      nixosConfigurations = {
+      nixosConfigurations =
+      let
+        system = builtins.currentSystem;
+        pkgs = import nixpkgs { inherit system; };
+        gitInfo = import ./nixos/gitInfo.nix { inherit pkgs; };
+      in {
         # Replace "nixos" with your actual hostname
         nixos = nixpkgs.lib.nixosSystem {
-          system = "x86_64-linux"; # Specify the correct system
+          system = system;
           specialArgs = {
-            installInfo = installInfo; # Pass installInfo to modules
+            gitInfo = gitInfo; # Pass gitInfo to modules
           };
           modules = [
             # Apply the overlays to the system
@@ -97,12 +100,12 @@
                 # Add our own overlay for QiTech packages with commit hash support
                 (final: prev: {
                   qitechPackages = {
-                    server = final.callPackage ./nixos/packages/server.nix { 
-                      commitHash = installInfo.gitCommit;
+                    server = final.callPackage ./nixos/packages/server.nix {
+                      commitHash = gitInfo.gitCommit;
                       craneLib = crane.mkLib final;
                     };
                     electron = final.callPackage ./nixos/packages/electron.nix {
-                      commitHash = installInfo.gitCommit;
+                      commitHash = gitInfo.gitCommit;
                       nodejs = final.nodejs_22;
                     };
                   };
