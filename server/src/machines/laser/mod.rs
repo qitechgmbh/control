@@ -8,17 +8,17 @@ use api::{LaserEvents, LaserMachineNamespace, LaserState, LiveValuesEvent, State
 use control_core::{
     helpers::hasher_serializer::check_hash_different,
     machines::{
-        ConnectedMachine, ConnectedMachineData, Machine, downcast_machine,
+        ConnectedMachine, ConnectedMachineData, downcast_machine,
         identification::{MachineIdentification, MachineIdentificationUnique},
         manager::MachineManager,
     },
     socketio::namespace::NamespaceCacheingLogic,
 };
+use control_core_derive::Machine;
 use futures::executor::block_on;
 use smol::lock::Mutex;
 use smol::lock::RwLock;
 use std::{
-    any::Any,
     sync::{Arc, Weak},
     time::Instant,
 };
