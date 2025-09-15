@@ -375,8 +375,8 @@ export function Winder2SettingPage() {
           </Label>
           <Label label="P Controller Kp Factor">
             <EditValue
-              value={state?.pdead_settings_state.kp}
-              defaultValue={defaultState?.pdead_settings_state.kp}
+              value={state?.pdead_settings_state?.kp}
+              defaultValue={defaultState?.pdead_settings_state?.kp}
               min={0}
               max={10000}
               step={0.001}
