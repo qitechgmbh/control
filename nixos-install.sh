@@ -33,10 +33,11 @@ cat > /etc/nixos/gitInfo.nix <<EOF
   gitAbbreviationEscaped = "$(git rev-parse --short HEAD | sed 's/[^A-Za-z0-9]/-/g')";
 }
 EOF
-exit
+
+env
 
 
-sudo nixos-rebuild boot \
+nixos-rebuild boot \
     --flake .#nixos \
     --show-trace \
     --impure \
