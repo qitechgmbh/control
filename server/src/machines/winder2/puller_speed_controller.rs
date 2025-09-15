@@ -94,7 +94,11 @@ impl PullerSpeedController {
             ),
             converter,
             last_speed: Velocity::ZERO,
-            p_dead_controller: TimeAgnosticDeadTimePController::new(0.1 / 10000.0, Duration::ZERO),
+            p_dead_controller: TimeAgnosticDeadTimePController::new(
+                0.1 / 10000.0,
+                0.0,
+                Duration::ZERO,
+            ),
         }
     }
 
@@ -190,9 +194,9 @@ impl PullerSpeedController {
         //
         // Q_measured = (PI*d^2 / 4) * v
         // v_new = (4 * Q) / PI * d^2
-        // 
+        //
         if self.measured_diameter < Length::new::<millimeter>(0.1) {
-            return Velocity::new::<meter_per_minute>(0.5);
+            return self.target_speed;
         }
         let q_meas = (PI * self.measured_diameter * self.measured_diameter / 4.0) * self.last_speed;
 

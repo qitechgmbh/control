@@ -40,7 +40,8 @@ export function Winder2SettingPage() {
     setSpoolAdaptiveDeaccelerationUrgencyMultiplier,
     isLoading,
     isDisabled,
-    setPDeadKp,
+    setSpeedPiKp,
+    setSpeedPiKi,
     selectedMachine,
     filteredMachines,
     setConnectedLaser,
@@ -373,16 +374,28 @@ export function Winder2SettingPage() {
               }}
             />
           </Label>
-          <Label label="P Controller Kp Factor">
+          <Label label="PI Controller Kp Factor">
             <EditValue
-              value={state?.pdead_settings_state?.kp}
-              defaultValue={defaultState?.pdead_settings_state?.kp}
+              value={state?.pi_settings?.kp}
+              defaultValue={defaultState?.pi_settings?.kp}
               min={0}
               max={10000}
               step={0.001}
               renderValue={(v) => roundToDecimals(v, 2)}
-              onChange={setPDeadKp}
+              onChange={setSpeedPiKp}
               title="Speed P KP"
+            />
+          </Label>
+          <Label label="PI Controller Ki Factor">
+            <EditValue
+              value={state?.pi_settings?.ki}
+              defaultValue={defaultState?.pi_settings?.ki}
+              min={0}
+              max={10000}
+              step={0.001}
+              renderValue={(v) => roundToDecimals(v, 2)}
+              onChange={setSpeedPiKi}
+              title="Speed P KI"
             />
           </Label>
         </ControlCard>
