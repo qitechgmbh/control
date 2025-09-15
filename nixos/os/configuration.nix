@@ -1,3 +1,5 @@
+{ config, pkgs, ... }:
+
 let
   gitInfo = pkgs.runCommand "git-info" {
     buildInputs = [ pkgs.git ];
