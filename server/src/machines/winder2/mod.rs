@@ -219,11 +219,6 @@ impl Winder2 {
                 .map(|x| x.get::<millimeter>()),
             puller_speed: puller_speed.get::<meter_per_minute>(),
             spool_rpm,
-            spool_diameter: self
-                .spool_speed_controller
-                .get_estimated_radius()
-                .get::<millimeter>()
-                * 2.0,
             tension_arm_angle: angle_deg,
             spool_progress: self.spool_automatic_action.progress.get::<meter>(),
         };
