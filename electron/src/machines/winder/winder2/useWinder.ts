@@ -61,7 +61,6 @@ export function useWinder2() {
     traversePosition,
     pullerSpeed,
     spoolRpm,
-    spoolDiameter,
     tensionArmAngle,
     spoolProgress,
   } = useWinder2Namespace(machineIdentification);
@@ -597,7 +596,6 @@ export function useWinder2() {
     traversePosition,
     pullerSpeed,
     spoolRpm,
-    spoolDiameter,
     tensionArmAngle,
     spoolProgress,
 

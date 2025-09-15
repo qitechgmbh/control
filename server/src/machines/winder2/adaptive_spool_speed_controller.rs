@@ -39,8 +39,8 @@ pub struct AdaptiveSpoolSpeedController {
     filament_calc: FilamentTensionCalculator,
     /// Moving window of recent speeds (in rad/s) used for dynamic acceleration limit calculation
     speed_time_window: MovingTimeWindow<f64>,
-    /// Estimated diameter in cm
-    radius: Length,
+    /// Factor to control/calculate the feed speed based on filament tension
+    speed_factor: Length,
     /// Timestamp of last max speed factor update, used for time-aware learning rate calculation
     last_max_speed_factor_update: Option<Instant>,
 
@@ -87,9 +87,9 @@ impl AdaptiveSpoolSpeedController {
     /// Proportional control gain for adaptive learning (negative: higher tension reduces speed)
     const RADIUS_LEARNING_RATE: f64 = 0.5;
 
-    const RADIUS_MIN: f64 = 4.25;
+    const FACTOR_MIN: f64 = 4.25;
 
-    const RADIUS_MAX: f64 = 20.0;
+    const FACTOR_MAX: f64 = 20.0;
 
     /// if the tension is the lowest, the speed can be up to 2x the puller speed
     const MAX_SPEED_MULTIPLIER: f64 = 4.0;
@@ -130,7 +130,7 @@ impl AdaptiveSpoolSpeedController {
                 std::time::Duration::from_secs(Self::SPEED_WINDOW_DURATION_SECS),
                 Self::SPEED_WINDOW_MAX_SAMPLES,
             ),
-            radius: Length::new::<centimeter>(4.25),
+            speed_factor: Length::new::<centimeter>(4.25),
             last_max_speed_factor_update: None,
             tension_target: Self::TENSION_TARGET,
             radius_learning_rate: Self::RADIUS_LEARNING_RATE,
@@ -162,7 +162,7 @@ impl AdaptiveSpoolSpeedController {
     fn get_max_speed(&self, puller_speed_controller: &PullerSpeedController) -> AngularVelocity {
         AngularVelocity::new::<radian_per_second>(
             (puller_speed_controller.last_speed.get::<meter_per_second>()
-                / self.radius.get::<meter>())
+                / self.speed_factor.get::<meter>())
                 * self.max_speed_multiplier,
         )
     }
@@ -205,7 +205,7 @@ impl AdaptiveSpoolSpeedController {
         // 0.0 means minimum tension (low angle, high speed)
         let filament_tension = self.filament_calc.calc_filament_tension(clamped_angle);
 
-        self.update_radius(filament_tension, t);
+        self.update_speed_factor(filament_tension, t);
 
         // Calculate speed based on inverted tension (lower tension = higher speed)
 
@@ -281,7 +281,7 @@ impl AdaptiveSpoolSpeedController {
     ///
     /// # Returns
     /// Speed guaranteed to be within safe operational limits
-    fn clamp_speed(&mut self, speed: AngularVelocity) -> AngularVelocity {
+    fn clamp_speed(&self, speed: AngularVelocity) -> AngularVelocity {
         let min_speed = AngularVelocity::ZERO;
         let max_speed = AngularVelocity::new::<revolution_per_minute>(Self::SAFETY_MAX_SPEED_RPM);
 
@@ -297,7 +297,7 @@ impl AdaptiveSpoolSpeedController {
     /// # Parameters
     /// - `filament_tension`: Normalized tension value
     /// - `t`: Current timestamp for time-aware learning rate
-    fn update_radius(&mut self, filament_tension: f64, t: Instant) {
+    fn update_speed_factor(&mut self, filament_tension: f64, t: Instant) {
         let delta_t = match self.last_max_speed_factor_update {
             Some(last_update) => t.duration_since(last_update).as_secs_f64(),
             None => {
@@ -313,13 +313,13 @@ impl AdaptiveSpoolSpeedController {
 
         // Calculate proportional control adjustment
         let proportional_gain = self.radius_learning_rate * delta_t;
-        let radius_change = tension_error * proportional_gain;
+        let factor_change = tension_error * proportional_gain;
 
         // Update the speed factor directly
-        let new_radius = (self.radius.get::<centimeter>() + radius_change)
-            .clamp(Self::RADIUS_MIN, Self::RADIUS_MAX);
+        let new_factor = (self.speed_factor.get::<centimeter>() + factor_change)
+            .clamp(Self::FACTOR_MIN, Self::FACTOR_MAX);
 
-        self.radius = Length::new::<centimeter>(new_radius); // Convert to cm
+        self.speed_factor = Length::new::<centimeter>(new_factor); // Convert to cm
 
         self.last_max_speed_factor_update = Some(t);
     }
@@ -385,7 +385,7 @@ impl AdaptiveSpoolSpeedController {
     pub fn reset(&mut self) {
         self.last_speed = AngularVelocity::ZERO;
         self.acceleration_controller.reset(AngularVelocity::ZERO);
-        self.radius = Length::new::<centimeter>(4.25);
+        self.speed_factor = Length::new::<centimeter>(4.25);
         self.last_max_speed_factor_update = None;
         self.tension_target = Self::TENSION_TARGET;
         self.radius_learning_rate = Self::RADIUS_LEARNING_RATE;
@@ -414,8 +414,8 @@ impl AdaptiveSpoolSpeedController {
         self.acceleration_controller.reset(speed);
     }
 
-    pub fn get_radius(&self) -> Length {
-        self.radius
+    pub fn get_speed_factor(&self) -> Length {
+        self.speed_factor
     }
 
     // Getters and setters for the new configurable parameters

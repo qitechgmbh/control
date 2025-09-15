@@ -113,8 +113,6 @@ pub struct LiveValuesEvent {
     pub puller_speed: f64,
     /// spool rpm
     pub spool_rpm: f64,
-    /// spool diameter in mm
-    pub spool_diameter: f64,
     /// tension arm angle in degrees
     pub tension_arm_angle: f64,
     // spool progress in meters (pulled distance of filament)

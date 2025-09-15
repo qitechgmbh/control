@@ -3,18 +3,12 @@ use crate::machines::winder2::{
     minmax_spool_speed_controller::MinMaxSpoolSpeedController,
     puller_speed_controller::PullerSpeedController,
 };
-use control_core::{
-    controllers::second_degree_motion::acceleration_position_controller::MotionControllerError,
-    helpers::moving_time_window::MovingTimeWindow,
-};
+use control_core::controllers::second_degree_motion::acceleration_position_controller::MotionControllerError;
 
 use super::tension_arm::TensionArm;
 use serde::{Deserialize, Serialize};
-use std::time::{Duration, Instant};
-use uom::si::{
-    f64::{AngularVelocity, Length},
-    length::meter,
-};
+use std::time::Instant;
+use uom::si::f64::AngularVelocity;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum SpoolSpeedControllerType {
@@ -27,7 +21,6 @@ pub struct SpoolSpeedController {
     adaptive_controller: AdaptiveSpoolSpeedController,
     minmax_controller: MinMaxSpoolSpeedController,
     r#type: SpoolSpeedControllerType,
-    radius_history: MovingTimeWindow<f64>,
 }
 
 impl Default for SpoolSpeedController {
@@ -41,7 +34,6 @@ impl SpoolSpeedController {
         Self {
             adaptive_controller: AdaptiveSpoolSpeedController::new(),
             minmax_controller: MinMaxSpoolSpeedController::new(),
-            radius_history: MovingTimeWindow::new(Duration::from_secs(10), 40), // Example size, adjust as needed
             r#type: SpoolSpeedControllerType::Adaptive,
         }
     }
@@ -131,32 +123,13 @@ impl SpoolSpeedController {
         tension_arm: &TensionArm,
         puller_speed_controller: &PullerSpeedController,
     ) -> AngularVelocity {
-        let angular_velocity = match self.r#type {
+        match self.r#type {
             SpoolSpeedControllerType::Adaptive => {
                 self.adaptive_controller
                     .update_speed(t, tension_arm, puller_speed_controller)
             }
             SpoolSpeedControllerType::MinMax => self.minmax_controller.update_speed(t, tension_arm),
-        };
-
-        {
-            let radius = match self.r#type {
-                SpoolSpeedControllerType::Adaptive => self.adaptive_controller.get_radius(),
-                SpoolSpeedControllerType::MinMax => {
-                    self.minmax_controller.get_radius(puller_speed_controller)
-                }
-            };
-
-            // add radius to history
-            self.radius_history.update(radius.get::<meter>(), t);
         }
-
-        angular_velocity
-    }
-
-    pub fn get_estimated_radius(&mut self) -> Length {
-        // Use the average of the last 10 radius measurements
-        Length::new::<meter>(self.radius_history.average())
     }
 
     // Adaptive controller parameter getters and setters

@@ -36,7 +36,6 @@ export function Winder2ControlPage() {
     tensionArmAngle,
     zeroTensionArmAngle,
     spoolRpm,
-    spoolDiameter,
     setMode,
     pullerSpeed,
     spoolProgress,
@@ -79,12 +78,6 @@ export function Winder2ControlPage() {
             unit="rpm"
             timeseries={spoolRpm}
             renderValue={(value) => roundToDecimals(value, 0)}
-          />
-          <TimeSeriesValueNumeric
-            label="Estimated Diameter"
-            unit="cm"
-            timeseries={spoolDiameter}
-            renderValue={(value) => roundToDecimals(value, 1)}
           />
         </ControlCard>
 
