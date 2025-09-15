@@ -145,7 +145,7 @@ async function deleteNixOSGeneration(generationId: string): Promise<{
     const process = spawn("sudo", [
       "sh",
       "-c",
-      `nix-env --delete-generations ${generationId} -p /nix/var/nix/profiles/system && nix collect-garbage -d && /nix/var/nix/profiles/system/bin/switch-to-configuration boot`,
+      `nix-env --delete-generations ${generationId} -p /nix/var/nix/profiles/system && nix store gc && /nix/var/nix/profiles/system/bin/switch-to-configuration boot`,
     ]);
 
     let stderr = "";
