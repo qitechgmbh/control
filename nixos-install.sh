@@ -36,7 +36,7 @@ EOF'
 env
 
 
-nixos-rebuild boot \
+sudo nixos-rebuild boot \
     --flake .#nixos \
     --show-trace \
     --impure \
