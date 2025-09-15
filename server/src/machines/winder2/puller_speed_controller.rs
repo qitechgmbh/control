@@ -114,7 +114,7 @@ impl PullerSpeedController {
         self.measured_diameter = Length::new::<millimeter>(target);
     }
 
-    pub fn set_regulation_mode(&mut self, regulation: PullerRegulationMode) {
+    pub const fn set_regulation_mode(&mut self, regulation: PullerRegulationMode) {
         self.regulation_mode = regulation;
     }
 
@@ -187,7 +187,14 @@ impl PullerSpeedController {
     }
 
     fn calculate_target_speed(&self) -> Velocity {
-        let q_meas = PI * self.measured_diameter * self.measured_diameter / 4.0 * self.last_speed;
+        //
+        // Q_measured = (PI*d^2 / 4) * v
+        // v_new = (4 * Q) / PI * d^2
+        // 2.405
+        if self.measured_diameter < Length::new::<millimeter>(0.1) {
+            return Velocity::new::<meter_per_minute>(0.5);
+        }
+        let q_meas = (PI * self.measured_diameter * self.measured_diameter / 4.0) * self.last_speed;
 
         (4.0 * q_meas) / (PI * self.target_diameter * self.target_diameter)
     }

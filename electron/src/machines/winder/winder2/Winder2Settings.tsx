@@ -382,7 +382,7 @@ export function Winder2SettingPage() {
               step={0.001}
               renderValue={(v) => roundToDecimals(v, 2)}
               onChange={setPDeadKp}
-              title="Speed PID KP"
+              title="Speed P KP"
             />
           </Label>
         </ControlCard>
