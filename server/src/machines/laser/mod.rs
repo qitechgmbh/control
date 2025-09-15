@@ -91,8 +91,7 @@ impl LaserMachine {
             connected_winder_state: ConnectedMachineState {
                 machine_identification_unique: self.connected_winder.as_ref().map(
                     |connected_machine| {
-                        ConnectedMachineData::from(connected_machine)
-                            .machine_identification_unique
+                        ConnectedMachineData::from(connected_machine).machine_identification_unique
                     },
                 ),
                 is_available: self
@@ -117,8 +116,7 @@ impl LaserMachine {
             connected_winder_state: ConnectedMachineState {
                 machine_identification_unique: self.connected_winder.as_ref().map(
                     |connected_machine| {
-                        ConnectedMachineData::from(connected_machine)
-                            .machine_identification_unique
+                        ConnectedMachineData::from(connected_machine).machine_identification_unique
                     },
                 ),
                 is_available: self
@@ -216,9 +214,10 @@ impl LaserMachine {
                 return;
             }
         };
-        
-        let winder2_weak = block_on(machine_manager_arc.read()).get_machine_weak(&machine_identification_unique);
-        
+
+        let winder2_weak =
+            block_on(machine_manager_arc.read()).get_machine_weak(&machine_identification_unique);
+
         let winder2_weak = match winder2_weak {
             Some(winder2_weak) => winder2_weak,
             None => {

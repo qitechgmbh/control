@@ -341,9 +341,7 @@ impl Winder2 {
             connected_laser_state: ConnectedMachineState {
                 machine_identification_unique: self.connected_laser.as_ref().map(
                     |connected_machine| {
-                        ConnectedMachineData::from(connected_machine)
-                            .machine_identification_unique
-                            .clone()
+                        ConnectedMachineData::from(connected_machine).machine_identification_unique
                     },
                 ),
                 is_available: self
@@ -667,8 +665,10 @@ impl Winder2 {
             Some(machine_manager_arc) => machine_manager_arc,
             None => return,
         };
-        let machine_manager_guard = block_on(machine_manager_arc.read());
-        let buffer_weak = machine_manager_guard.get_machine_weak(&machine_identification_unique);
+
+        let buffer_weak =
+            block_on(machine_manager_arc.read()).get_machine_weak(&machine_identification_unique);
+
         let buffer_weak = match buffer_weak {
             Some(buffer_weak) => buffer_weak,
             None => return,
@@ -757,9 +757,10 @@ impl Winder2 {
                 return;
             }
         };
-        
-        let laser_weak = block_on(machine_manager_arc.read()).get_serial_weak(&machine_identification_unique);
-        
+
+        let laser_weak =
+            block_on(machine_manager_arc.read()).get_serial_weak(&machine_identification_unique);
+
         let laser_weak = match laser_weak {
             Some(laser_weak) => laser_weak,
             None => {
@@ -843,7 +844,7 @@ impl Winder2 {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Winder2Mode {
     Standby,
     Hold,
