@@ -69,41 +69,43 @@ impl TimeAgnosticDeadTimePController {
         }
     }
 
-    // todo: add ki value to calculation
     pub fn update(&mut self, error: f64, t: Instant) -> f64 {
-        // Only update internal state every `update_interval` cycles
         let signal = match self.last {
             // First update
             None => {
-                // Calculate error
                 let ep = error;
 
-                // Calculate signal
-                let signal = self.kp * ep;
+                // Initialize integral error
+                self.ei = 0.0;
 
-                // Set values
+                // Proportional + Integral
+                let signal = self.kp * ep + self.ki * self.ei;
+
+                // Save state
                 self.ep = ep;
-
                 self.last = Some(t);
 
                 -signal
             }
             // Subsequent updates
             Some(last) => {
-                // Calculate the time delta in seconds
+                // Calculate elapsed time
                 let dt = t.duration_since(last).as_secs_f64();
 
                 // Dead-time scaling factor
                 let dead_secs = self.dead.as_secs_f64();
                 let scale = (dt / dead_secs).min(1.0);
 
-                // Calculate errors
+                // Smoothed proportional error
                 let ep = self.ep + (error - self.ep) * scale;
 
-                // Calculate signal
-                let signal = self.kp * ep;
+                // Integrate error over time
+                self.ei += error * dt;
 
-                // Set values
+                // Proportional + Integral
+                let signal = self.kp * ep + self.ki * self.ei;
+
+                // Save state
                 self.ep = ep;
                 self.last = Some(t);
 
