@@ -138,7 +138,7 @@ pub enum Mutation {
     SetMode(Mode),
 
     // Pid Configure
-    SetDeadPKp(f64),
+    SetSpeedPiSettings(PiSettings),
 
     // Connected Machine
     SetConnectedMachine(MachineIdentificationUnique),
@@ -186,8 +186,8 @@ pub struct StateEvent {
     pub spool_speed_controller_state: SpoolSpeedControllerState,
     /// connected machine state
     pub connected_machine_state: MachineCrossConnectionState,
-    /// pid settings
-    pub pdead_settings_state: PDeadSettingsStates,
+    /// pi settings
+    pub pi_settings: PiSettingsStates,
 }
 
 #[derive(Serialize, Debug, Clone, Default)]
@@ -295,9 +295,15 @@ pub struct ConnectedMachineState {
     pub is_available: bool,
 }
 
-#[derive(Serialize, Debug, Clone)]
-pub struct PDeadSettingsStates {
+#[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
+pub struct PiSettings {
     pub kp: f64,
+    pub ki: f64,
+}
+
+#[derive(Serialize, Debug, Clone)]
+pub struct PiSettingsStates {
+    pub speed: PiSettings,
 }
 
 pub enum Winder2Events {
@@ -396,8 +402,8 @@ impl MachineApi for Winder2 {
             Mutation::DisconnectLaser(machine_identification_unique) => {
                 self.disconnect_laser(machine_identification_unique)
             }
-            Mutation::SetDeadPKp(kp) => {
-                self.configure_p_dead(kp);
+            Mutation::SetSpeedPiSettings(settings) => {
+                self.configure_pi_controller(settings);
             }
         }
         Ok(())

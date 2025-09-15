@@ -191,9 +191,12 @@ export function useWinder2() {
     }),
   );
 
-  const { request: requestSpeedPDeadSettings } = useMachineMutation(
+  const { request: requestSpeedPiSettings } = useMachineMutation(
     z.object({
-      SetDeadPKp: z.number(),
+      SetSpeedPiSettings: z.object({
+        kp: z.number(),
+        ki: z.number(),
+      }),
     }),
   );
 
@@ -611,16 +614,43 @@ export function useWinder2() {
     );
   };
 
-  const setPDeadKp = (kp: number) => {
+  const setSpeedPiKp = (kp: number) => {
     updateStateOptimistically(
       (current) => {
-        current.data.pdead_settings_state.kp = kp;
+        current.data.pi_settings.kp = kp;
       },
-      () =>
-        requestSpeedPDeadSettings({
-          machine_identification_unique: machineIdentification,
-          data: { SetDeadPKp: kp },
-        }),
+      () => {
+        const currentState = stateOptimistic.value;
+        if (currentState) {
+          const settings = produce(currentState.data.pi_settings, (draft) => {
+            draft.kp = kp;
+          });
+          requestSpeedPiSettings({
+            machine_identification_unique: machineIdentification,
+            data: { SetSpeedPiSettings: settings },
+          });
+        }
+      },
+    );
+  };
+
+  const setSpeedPiKi = (ki: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.pi_settings.ki = ki;
+      },
+      () => {
+        const currentState = stateOptimistic.value;
+        if (currentState) {
+          const settings = produce(currentState.data.pi_settings, (draft) => {
+            draft.ki = ki;
+          });
+          requestSpeedPiSettings({
+            machine_identification_unique: machineIdentification,
+            data: { SetSpeedPiSettings: settings },
+          });
+        }
+      },
     );
   };
 
@@ -743,7 +773,8 @@ export function useWinder2() {
     setSpoolAdaptiveMaxSpeedMultiplier,
     setSpoolAdaptiveAccelerationFactor,
     setSpoolAdaptiveDeaccelerationUrgencyMultiplier,
-    setPDeadKp,
+    setSpeedPiKp,
+    setSpeedPiKi,
     setConnectedMachine,
     disconnectMachine,
     setConnectedLaser,

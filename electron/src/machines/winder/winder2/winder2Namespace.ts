@@ -163,10 +163,11 @@ export const connectedMachineStateSchema = z.object({
 });
 
 /**
- * P Controller with dead time settings schema
+ * PI Controller settings schema
  */
-export const pDeadSettingsSchema = z.object({
+export const piSettingsSchema = z.object({
   kp: z.number(),
+  ki: z.number(),
 });
 
 /**
@@ -204,7 +205,7 @@ export const stateEventDataSchema = z.object({
   spool_automatic_action_state: spoolAutomaticActionStateSchema,
   connected_machine_state: connectedMachineStateSchema,
   connected_laser_state: connectedMachineStateSchema,
-  pdead_settings_state: pDeadSettingsSchema,
+  pi_settings: piSettingsSchema,
 });
 
 // ========== Event Schemas with Wrappers ==========

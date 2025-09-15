@@ -5,9 +5,13 @@ pub struct TimeAgnosticDeadTimePController {
     // Params
     /// Proportional gain
     kp: f64,
+    /// Integral gain
+    ki: f64,
     // State
     /// Proportional error
     ep: f64,
+    /// Integral error
+    ei: f64,
     /// Dead Time
     dead: Duration,
 
@@ -15,22 +19,29 @@ pub struct TimeAgnosticDeadTimePController {
 }
 
 impl TimeAgnosticDeadTimePController {
-    pub fn new(kp: f64, dead: Duration) -> Self {
+    pub fn new(kp: f64, ki: f64, dead: Duration) -> Self {
         Self {
             kp,
+            ki,
             dead,
             ep: 0.0,
+            ei: 0.0,
             last: None,
         }
     }
 
-    pub fn configure(&mut self, kp: f64) {
+    pub fn configure(&mut self, kp: f64, ki: f64) {
         self.reset();
         self.kp = kp;
+        self.ki = ki;
     }
 
     pub fn get_kp(&self) -> f64 {
         self.kp
+    }
+
+    pub fn get_ki(&self) -> f64 {
+        self.ki
     }
 
     pub fn get_dead(&self) -> Duration {
@@ -39,6 +50,10 @@ impl TimeAgnosticDeadTimePController {
 
     pub fn set_kp(&mut self, kp: f64) {
         self.kp = kp;
+    }
+
+    pub fn set_ki(&mut self, ki: f64) {
+        self.ki = ki;
     }
 
     pub fn set_dead(&mut self, dead: Duration) {
@@ -54,6 +69,7 @@ impl TimeAgnosticDeadTimePController {
         }
     }
 
+    // todo: add ki value to calculation
     pub fn update(&mut self, error: f64, t: Instant) -> f64 {
         // Only update internal state every `update_interval` cycles
         let signal = match self.last {
