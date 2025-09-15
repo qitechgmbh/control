@@ -16,6 +16,8 @@ use std::time::Instant;
 use temperature_controller::TemperatureController;
 use uom::si::{
     angular_velocity::{AngularVelocity, revolution_per_minute},
+    electric_current::ampere,
+    electric_potential::volt,
     f64::{Pressure, ThermodynamicTemperature},
     pressure::bar,
     thermodynamic_temperature::degree_celsius,
@@ -71,6 +73,10 @@ pub struct ExtruderV2 {
     temperature_controller_middle: TemperatureController,
     temperature_controller_back: TemperatureController,
     temperature_controller_nozzle: TemperatureController,
+
+    /// Energy tracking for total consumption calculation
+    total_energy_kwh: f64,
+    last_energy_calculation_time: Option<Instant>,
 
     /// will be initalized as false and set to true by `emit_state`
     /// This way we can signal to the client that the first state emission is a default state
@@ -204,7 +210,47 @@ impl ExtruderV2 {
 }
 
 impl ExtruderV2 {
+    /// Calculate combined power consumption in watts
+    fn calculate_combined_power(&mut self) -> f64 {
+        let motor_power = {
+            let motor_status = &self.screw_speed_controller.inverter.motor_status;
+            let voltage = motor_status.voltage.get::<volt>();
+            let current = motor_status.current.get::<ampere>();
+            voltage * current
+        };
+        let nozzle_power = self
+            .temperature_controller_nozzle
+            .get_heating_element_wattage();
+        let front_power = self
+            .temperature_controller_front
+            .get_heating_element_wattage();
+        let back_power = self
+            .temperature_controller_back
+            .get_heating_element_wattage();
+        let middle_power = self
+            .temperature_controller_middle
+            .get_heating_element_wattage();
+
+        motor_power + nozzle_power + front_power + back_power + middle_power
+    }
+
+    /// Update total energy consumption in kWh
+    fn update_total_energy(&mut self, current_power_watts: f64, now: Instant) {
+        if let Some(last_time) = self.last_energy_calculation_time {
+            let time_delta_hours = now.duration_since(last_time).as_secs_f64() / 3600.0;
+            let energy_delta_kwh = (current_power_watts / 1000.0) * time_delta_hours;
+            self.total_energy_kwh += energy_delta_kwh;
+        }
+        self.last_energy_calculation_time = Some(now);
+    }
+
     pub fn emit_live_values(&mut self) {
+        let now = Instant::now();
+        let combined_power = self.calculate_combined_power();
+
+        // Update energy consumption
+        self.update_total_energy(combined_power, now);
+
         let live_values = LiveValuesEvent {
             motor_status: self.screw_speed_controller.get_motor_status().into(),
             pressure: self.screw_speed_controller.get_pressure().get::<bar>(),
@@ -240,6 +286,8 @@ impl ExtruderV2 {
             middle_power: self
                 .temperature_controller_middle
                 .get_heating_element_wattage(),
+            combined_power,
+            total_energy_kwh: self.total_energy_kwh,
         };
 
         let event = live_values.build();

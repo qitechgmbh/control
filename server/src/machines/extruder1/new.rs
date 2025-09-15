@@ -391,6 +391,8 @@ impl MachineNewTrait for ExtruderV2 {
                 namespace: ExtruderV2Namespace::new(params.socket_queue_tx.clone()),
                 last_measurement_emit: Instant::now(),
                 mode: ExtruderV2Mode::Standby,
+                total_energy_kwh: 0.0,
+                last_energy_calculation_time: None,
                 temperature_controller_front,
                 temperature_controller_middle,
                 temperature_controller_back,
