@@ -326,10 +326,11 @@ impl LaserMachine {
                 .await
                 .map(|laser_data| laser_data.diameter.get::<millimeter>())
         });
+
         self.get_winder(|winder2| {
             winder2
                 .puller_speed_controller
-                .set_measured_diameter(diameter.unwrap());
+                .set_measured_diameter(diameter.unwrap_or(0.0));
         });
     }
 }
