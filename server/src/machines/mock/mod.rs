@@ -2,7 +2,6 @@ use crate::machines::{MACHINE_MOCK, VENDOR_QITECH};
 use api::{LiveValuesEvent, MockEvents, MockMachineNamespace, Mode, ModeState, StateEvent};
 use control_core::socketio::event::BuildEvent;
 use control_core::{
-    helpers::hasher_serializer::check_hash_different,
     machines::identification::MachineIdentification, socketio::namespace::NamespaceCacheingLogic,
 };
 use control_core_derive::Machine;
@@ -101,18 +100,22 @@ impl MockMachine {
     /// Set the frequencies of the sine waves
     pub fn set_frequency1(&mut self, frequency_mhz: f64) {
         self.frequency1 = Frequency::new::<millihertz>(frequency_mhz);
+        self.emit_state();
     }
 
     pub fn set_frequency2(&mut self, frequency_mhz: f64) {
         self.frequency2 = Frequency::new::<millihertz>(frequency_mhz);
+        self.emit_state();
     }
 
     pub fn set_frequency3(&mut self, frequency_mhz: f64) {
         self.frequency3 = Frequency::new::<millihertz>(frequency_mhz);
+        self.emit_state();
     }
 
     /// Set the mode of the mock machine
-    pub const fn set_mode(&mut self, mode: Mode) {
+    pub fn set_mode(&mut self, mode: Mode) {
         self.mode = mode;
+        self.emit_state();
     }
 }

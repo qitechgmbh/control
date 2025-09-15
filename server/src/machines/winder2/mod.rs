@@ -120,6 +120,7 @@ impl Winder2 {
 impl Winder2 {
     fn set_laser(&mut self, value: bool) {
         self.laser.set(value);
+        self.emit_state();
     }
 
     /// Validates that traverse limits maintain proper constraints:
@@ -138,8 +139,8 @@ impl Winder2 {
             // Don't update if validation fails - keep the current value
             return;
         }
-
         self.traverse_controller.set_limit_inner(new_inner);
+        self.emit_state();
     }
 
     pub fn traverse_set_limit_outer(&mut self, limit: f64) {
@@ -153,34 +154,40 @@ impl Winder2 {
         }
 
         self.traverse_controller.set_limit_outer(new_outer);
+        self.emit_state();
     }
 
     pub fn traverse_set_step_size(&mut self, step_size: f64) {
         let step_size = Length::new::<millimeter>(step_size);
         self.traverse_controller.set_step_size(step_size);
+        self.emit_state();
     }
 
     pub fn traverse_set_padding(&mut self, padding: f64) {
         let padding = Length::new::<millimeter>(padding);
         self.traverse_controller.set_padding(padding);
+        self.emit_state();
     }
 
     pub fn traverse_goto_limit_inner(&mut self) {
         if self.can_go_in() {
             self.traverse_controller.goto_limit_inner();
         }
+        self.emit_state();
     }
 
     pub fn traverse_goto_limit_outer(&mut self) {
         if self.can_go_out() {
             self.traverse_controller.goto_limit_outer();
         }
+        self.emit_state();
     }
 
     pub fn traverse_goto_home(&mut self) {
         if self.can_go_home() {
             self.traverse_controller.goto_home();
         }
+        self.emit_state();
     }
 
     pub fn emit_live_values(&mut self) {
@@ -396,6 +403,7 @@ impl Winder2 {
             self.set_puller_mode(mode);
             self.set_traverse_mode(mode);
         }
+        self.emit_state();
     }
 
     /// Apply the mode changes to the spool
@@ -448,6 +456,7 @@ impl Winder2 {
 
         // Update the internal state
         self.spool_mode = mode;
+        self.emit_state();
     }
 
     /// Apply the mode changes to the spool
@@ -516,6 +525,7 @@ impl Winder2 {
 
         // Update the internal state
         self.traverse_mode = mode;
+        self.emit_state();
     }
 
     /// Apply the mode changes to the puller
@@ -567,6 +577,7 @@ impl Winder2 {
 
         // Update the internal state
         self.puller_mode = mode;
+        self.emit_state();
     }
 }
 
@@ -576,6 +587,7 @@ impl Winder2 {
         self.tension_arm.zero();
         self.emit_live_values(); // For angle update
         // For state update
+        self.emit_state();
     }
 }
 

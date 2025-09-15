@@ -15,6 +15,8 @@ use uom::si::{
     pressure::bar,
 };
 
+use crate::machines::extruder1::mitsubishi_cs80::MitsubishiCS80Status;
+
 use super::mitsubishi_cs80::{MitsubishiCS80, MotorStatus};
 
 #[derive(Debug)]
@@ -62,6 +64,10 @@ impl ScrewSpeedController {
             maximum_frequency: Frequency::new::<hertz>(60.0),
             minimum_frequency: Frequency::new::<hertz>(0.0),
         }
+    }
+
+    pub const fn get_inverter_status(&mut self) -> MitsubishiCS80Status {
+        self.inverter.status
     }
 
     pub const fn get_motor_enabled(&mut self) -> bool {

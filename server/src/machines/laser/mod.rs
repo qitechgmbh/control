@@ -30,7 +30,6 @@ pub struct LaserMachine {
     /// Will be initialized as false and set to true by emit_state
     /// This way we can signal to the client that the first state emission is a default state
     emitted_default_state: bool,
-    last_state_event: Option<StateEvent>,
 }
 
 impl LaserMachine {
@@ -86,14 +85,17 @@ impl LaserMachine {
 
     pub fn set_higher_tolerance(&mut self, higher_tolerance: f64) {
         self.laser_target.higher_tolerance = Length::new::<millimeter>(higher_tolerance);
+        self.emit_state();
     }
 
     pub fn set_lower_tolerance(&mut self, lower_tolerance: f64) {
         self.laser_target.lower_tolerance = Length::new::<millimeter>(lower_tolerance);
+        self.emit_state();
     }
 
     pub fn set_target_diameter(&mut self, target_diameter: f64) {
         self.laser_target.diameter = Length::new::<millimeter>(target_diameter);
+        self.emit_state();
     }
 }
 #[derive(Debug, Clone)]

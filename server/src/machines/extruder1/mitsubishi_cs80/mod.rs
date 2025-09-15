@@ -4,6 +4,7 @@ use control_core::modbus::{
     modbus_serial_interface::ModbusSerialInterface,
 };
 use ethercat_hal::io::serial_interface::SerialInterface;
+use serde::Serialize;
 use std::time::{Duration, Instant};
 use uom::si::{
     electric_current::centiampere,
@@ -260,7 +261,8 @@ impl From<MitsubishiCS80Requests> for MitsubishiCS80Request {
     }
 }
 
-#[derive(Debug, Default)]
+// Serialize is needed so we can hash it
+#[derive(Debug, Default, Clone, Copy, Serialize)]
 pub struct MitsubishiCS80Status {
     pub running: bool,
     pub forward_running: bool,
