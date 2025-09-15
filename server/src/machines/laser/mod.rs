@@ -9,11 +9,11 @@ use control_core::{
     machines::identification::{MachineIdentification, MachineIdentificationUnique},
     socketio::namespace::NamespaceCacheingLogic,
 };
+use control_core_derive::Machine;
 use futures::executor::block_on;
 use smol::lock::Mutex;
 use smol::lock::RwLock;
 use std::{
-    any::Any,
     sync::{Arc, Weak},
     time::Instant,
 };
