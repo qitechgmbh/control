@@ -15,7 +15,7 @@ let
   gitCommit = "$gitCommit";
   gitAbbreviation = "$gitAbbreviation";
   gitUrl = "$gitUrl";
-  gitAbbreviationEscaped = "$gitAbbreviation"
+    gitAbbreviationEscaped=$(echo "$gitAbbreviation" | sed 's/["\\]/\\&/g')
 }
 EOF
   '';
