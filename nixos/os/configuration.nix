@@ -1,30 +1,32 @@
 { config, pkgs, ... }:
 
 let
-  gitInfo = pkgs.runCommand "git-info" {
-    buildInputs = [ pkgs.git ];
+  # Generate Git info in the store
+  gitInfoDerivation = pkgs.runCommand "git-info" {
+    src = ./.;  # your repo root
+    buildInputs = [ pkgs.git pkgs.gawk ];
   } ''
+    cd $src
     gitTimestamp=$(git log -1 --format=%ct)
     gitCommit=$(git rev-parse HEAD)
     gitAbbreviation=$(git rev-parse --short HEAD)
     gitUrl=$(git config --get remote.origin.url || echo "")
 
-    cat > $out <<EOF
-{
-  gitTimestamp = "$gitTimestamp";
-  gitCommit = "$gitCommit";
-  gitAbbreviation = "$gitAbbreviation";
-  gitUrl = "$gitUrl";
-  gitAbbreviationEscaped=$(echo "$gitAbbreviation" | sed 's/["\\]/\\&/g')
-}
-EOF
+    # Escape abbreviation for Nix string
+    gitAbbreviationEscaped=$(echo "$gitAbbreviation" | sed 's/["\\]/\\&/g')
+
+    # Write each value to a separate file
+    echo "$gitTimestamp" > $out-timestamp
+    echo "$gitCommit" > $out-commit
+    echo "$gitAbbreviation" > $out-abbr
+    echo "$gitUrl" > $out-url
+    echo "$gitAbbreviationEscaped" > $out-abbr-escaped
   '';
 in
 {
   imports =
     [ # Include the results of the hardware scan.
       /etc/nixos/hardware-configuration.nix
-      gitInfo
     ];
 
   # Bootloader.
@@ -311,10 +313,10 @@ in
   # Set system wide env variables
   environment.variables = {
     QITECH_OS = "true";
-    QITECH_OS_GIT_TIMESTAMP = gitInfo.gitTimestamp;
-    QITECH_OS_GIT_COMMIT = gitInfo.gitCommit;
-    QITECH_OS_GIT_ABBREVIATION = gitInfo.gitAbbreviation;
-    QITECH_OS_GIT_URL = gitInfo.gitUrl;
+    QITECH_OS_GIT_TIMESTAMP = builtins.readFile "${gitInfoDerivation}/out-timestamp";
+    QITECH_OS_GIT_COMMIT = builtins.readFile "${gitInfoDerivation}/out-commit";
+    QITECH_OS_GIT_ABBREVIATION = builtins.readFile "${gitInfoDerivation}/out-abbr";
+    QITECH_OS_GIT_URL = builtins.readFile "${gitInfoDerivation}/out-url";
   };
 
   # Set revision labe;
