@@ -104,13 +104,13 @@ export function TimeInput({
         "minutes",
         "hours",
       ];
-      let startIndex = fields.indexOf(field);
+      const startIndex = fields.indexOf(field);
       let carry = increment ? 1 : -1;
 
       for (let i = startIndex; i < fields.length; i++) {
         const currentField = fields[i];
         const currentValue = form.getValues(currentField);
-        let max = currentField === "hours" ? 23 : 59;
+        const max = currentField === "hours" ? 23 : 59;
         let newValue = currentValue + carry;
         carry = 0;
 
