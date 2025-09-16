@@ -47,7 +47,7 @@ pub async fn setup_loop(
         .spawn(move || {
             send_panic(thread_panic_tx_clone);
 
-            #[cfg(unix)]
+            #[cfg(target_os = "linux")]
             match set_irq_affinity(&interface, 3) {
                 Ok(_) => tracing::info!("ethernet interrupt handler now runs on cpu:{}", 3),
                 Err(e) => tracing::error!("set_irq_handler_affinity failed: {:?}", e),
