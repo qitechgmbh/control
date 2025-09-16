@@ -7,13 +7,10 @@
 , git
 , cacert
 , fetchFromGitHub
-, commitHash
 }:
 
 stdenv.mkDerivation rec {
   pname = "qitech-control-electron";
-  version = commitHash;
-
   src = lib.cleanSource ../../electron;
 
   nativeBuildInputs = [

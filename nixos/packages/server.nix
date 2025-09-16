@@ -3,7 +3,6 @@
 , pkg-config
 , libudev-zero
 , libpcap
-, commitHash
 , craneLib
 }:
 
@@ -20,9 +19,7 @@ let
     buildInputs = [ libpcap libudev-zero ];
     
     # Build only the server package with journald logging for NixOS
-    pname = "server";
-    version = commitHash;
-    
+    pname = "server";    
     # Reduce memory usage during build
     CARGO_BUILD_JOBS = "2";
   };
