@@ -99,7 +99,11 @@ export function TimeInput({
   const adjustTimeValue = useCallback(
     (field: "hours" | "minutes" | "seconds", increment: boolean) => {
       // Define the order of fields for cascading
-      const fields: ("hours" | "minutes" | "seconds")[] = ["seconds", "minutes", "hours"];
+      const fields: ("hours" | "minutes" | "seconds")[] = [
+        "seconds",
+        "minutes",
+        "hours",
+      ];
       let startIndex = fields.indexOf(field);
       let carry = increment ? 1 : -1;
 
