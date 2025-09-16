@@ -36,6 +36,8 @@ export function Laser1ControlPage() {
             lowTolerance={lowerTolerance}
             highTolerance={higherTolerance}
             diameter={diameter}
+            x_value={x_value}
+            y_value={y_value}
           />
           <div className="flex flex-row items-center gap-6">
             <TimeSeriesValueNumeric
