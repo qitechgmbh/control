@@ -61,7 +61,6 @@ impl TryFrom<ModbusResponse> for LaserDiameterResponse {
         let (x_axis, y_axis) = if value.data.len() >= 7 {
             let x = u16::from_be_bytes([value.data[3], value.data[4]]) as f64 / 1000.0;
             let y = u16::from_be_bytes([value.data[5], value.data[6]]) as f64 / 1000.0;
-            tracing::info!("X: {}, Y: {}", x, y);
             (
                 Some(Length::new::<uom::si::length::millimeter>(x)),
                 Some(Length::new::<uom::si::length::millimeter>(y)),
