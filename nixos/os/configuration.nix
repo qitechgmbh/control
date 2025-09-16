@@ -15,9 +15,10 @@ in
     consoleMode = "max";  # Use the highest available resolution
   };
   boot.loader.efi.canTouchEfiVariables = true;
-
   boot.kernelPackages = pkgs.linuxPackages-rt_latest;
   boot.kernelModules = [ "i915" ];
+
+
 
   boot.kernelParams = [
     # Graphical
@@ -76,7 +77,7 @@ in
       experimental-features = nix-command flakes
     '';
     settings = {
-      sandbox = false;
+      sandbox = false;  
     };
   };
 

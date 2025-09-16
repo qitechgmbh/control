@@ -34,11 +34,9 @@
           (final: prev: {
             qitechPackages = {
               server = final.callPackage ./nixos/packages/server.nix {
-                commitHash = builtins.getEnv "QITECH_COMMIT_HASH";
                 craneLib = crane.mkLib final;
               };
               electron = final.callPackage ./nixos/packages/electron.nix {
-                commitHash = builtins.getEnv "QITECH_COMMIT_HASH";
                 nodejs = final.nodejs_22;
               };
             };
@@ -101,11 +99,9 @@
                 (final: prev: {
                   qitechPackages = {
                     server = final.callPackage ./nixos/packages/server.nix {
-                      commitHash = gitInfo.gitCommit;
                       craneLib = crane.mkLib final;
                     };
                     electron = final.callPackage ./nixos/packages/electron.nix {
-                      commitHash = gitInfo.gitCommit;
                       nodejs = final.nodejs_22;
                     };
                   };
