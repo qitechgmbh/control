@@ -5,7 +5,7 @@ use std::{
 
 use control_core::{
     controllers::{
-        deadtime_p_controller::TimeAgnosticDeadTimePController,
+        deadtime_pi_controller::TimeAgnosticDeadTimePiController,
         second_degree_motion::linear_jerk_speed_controller::LinearJerkSpeedController,
     },
     converters::linear_step_converter::LinearStepConverter,
@@ -66,7 +66,7 @@ pub struct PullerSpeedController {
     /// Converter for linear to angular transformations
     pub converter: LinearStepConverter,
     pub last_speed: Velocity,
-    pub p_dead_controller: TimeAgnosticDeadTimePController,
+    pub p_dead_controller: TimeAgnosticDeadTimePiController,
 }
 
 impl PullerSpeedController {
@@ -94,7 +94,7 @@ impl PullerSpeedController {
             ),
             converter,
             last_speed: Velocity::ZERO,
-            p_dead_controller: TimeAgnosticDeadTimePController::new(
+            p_dead_controller: TimeAgnosticDeadTimePiController::new(
                 0.1 / 10000.0,
                 0.0,
                 Duration::ZERO,
