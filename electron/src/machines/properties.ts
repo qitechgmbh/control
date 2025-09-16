@@ -293,17 +293,17 @@ export const aquapath1: MachineProperties = {
         },
       ],
     },
-    {
-      role: 1,
-      role_label: "EL2008",
-      allowed_devices: [
-        {
-          vendor_id: 2,
-          product_id: 0x7d83052,
-          revision: 0x110000,
-        },
-      ],
-    },
+    // {
+    //   role: 1,
+    //   role_label: "EL2008",
+    //   allowed_devices: [
+    //     {
+    //       vendor_id: 2,
+    //       product_id: 0x7d83052,
+    //       revision: 0x110000,
+    //     },
+    //   ],
+    // },
 
     {
       role: 2,
@@ -329,17 +329,18 @@ export const aquapath1: MachineProperties = {
     },
     // {
     //   role: 4,
-    //   role_label: "EL1002",
+    //   role_label: "EL5152",
     //   allowed_devices: [
     //     {
     //       vendor_id: 2,
-    //       product_id: 0x3ea3052,
-    //       revision: 0x120000,
+    //       product_id: 0x14203052,
+    //       revision: 0x140000,
     //     },
     //   ],
     // },
   ],
 };
+
 export const machineProperties: MachineProperties[] = [
   winder2,
   extruder2,

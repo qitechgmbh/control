@@ -37,6 +37,7 @@ import { UpdateExecutePage } from "@/setup/UpdateExecutePage";
 import { Winder2PresetsPage } from "@/machines/winder/winder2/Winder2PresetsPage";
 import { Aquapath1ControlPage } from "@/machines/aquapath/aquapath1/Aquapath1ControlPage";
 import { Aquapath1Page } from "@/machines/aquapath/aquapath1/Aquapath1Page";
+import { Aquapath1GraphPage } from "@/machines/aquapath/aquapath1/Aquapath1Graph";
 
 import { z } from "zod";
 import { Laser1PresetsPage } from "@/machines/laser/laser1/Laser1PresetsPage";
@@ -203,6 +204,12 @@ export const aquapath1SerialRoute = createRoute({
   component: () => <Aquapath1Page />,
 });
 
+export const aquapath1GraphRoute = createRoute({
+  getParentRoute: () => aquapath1SerialRoute,
+  path: "graph",
+  component: () => <Aquapath1GraphPage />,
+});
+
 export const aquapath1ControlRoute = createRoute({
   getParentRoute: () => aquapath1SerialRoute,
   path: "control",
@@ -307,7 +314,10 @@ export const rootTree = RootRoute.addChildren([
         laser1PresetsRoute,
       ]),
 
-      aquapath1SerialRoute.addChildren([aquapath1ControlRoute]),
+      aquapath1SerialRoute.addChildren([
+        aquapath1ControlRoute,
+        aquapath1GraphRoute,
+      ]),
 
       winder2SerialRoute.addChildren([
         winder2ControlRoute,

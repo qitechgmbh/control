@@ -1,7 +1,6 @@
 use super::{AquaPathV1, AquaPathV1Mode};
 use crate::machines::aquapath1::{
-    Flow, Temperature, api::AquaPathV1Namespace, flow_controller::FlowController,
-    temperature_controller::TemperatureController,
+    Flow, Temperature, api::AquaPathV1Namespace, controller::Controller,
 };
 use anyhow::Error;
 use control_core::machines::{
@@ -13,6 +12,7 @@ use control_core::machines::{
     },
 };
 use ethercat_hal::{
+    coe::ConfigurableDevice,
     devices::{
         EthercatDeviceUsed, downcast_device,
         ek1100::{EK1100, EK1100_IDENTITY_A},
@@ -20,6 +20,10 @@ use ethercat_hal::{
         el2008::{EL2008, EL2008_IDENTITY_A, EL2008Port},
         el3204::{EL3204, EL3204_IDENTITY_A, EL3204_IDENTITY_B, EL3204Port},
         el4002::{EL4002, EL4002_IDENTITY_A, EL4002Port},
+        el5152::{
+            EL5152, EL5152_IDENTITY_A, EL5152Configuration, EL5152Port,
+            EL5152PredefinedPdoAssignment,
+        },
         subdevice_identity_to_tuple,
     },
     io::{
@@ -98,45 +102,45 @@ impl MachineNewTrait for AquaPathV1 {
                 }
             }
 
-            // Role 1 - EL2008 Digital Output Module
-            let el2008 = {
-                let device_identification =
-                    get_device_identification_by_role(params.device_group, 1)?;
-                let device_hardware_identification_ethercat = match &device_identification
-                    .device_hardware_identification
-                {
-                    DeviceHardwareIdentification::Ethercat(
-                        device_hardware_identification_ethercat,
-                    ) => device_hardware_identification_ethercat,
-                    _ => Err(anyhow::anyhow!(
-                        "[{}::MachineNewTrait/AquaPath1::new] Device with role 1 is not Ethercat",
-                        module_path!()
-                    ))?,
-                };
-                let subdevice_index = device_hardware_identification_ethercat.subdevice_index;
-                let subdevice = get_subdevice_by_index(hardware.subdevices, subdevice_index)?;
-                let subdevice_identity = subdevice.identity();
-                let device = match subdevice_identity_to_tuple(&subdevice_identity) {
-                    EL2008_IDENTITY_A => {
-                        let ethercat_device = get_ethercat_device_by_index(
-                            &hardware.ethercat_devices,
-                            subdevice_index,
-                        )?;
-                        downcast_device::<EL2008>(ethercat_device).await?
-                    }
-                    _ => {
-                        return Err(anyhow::anyhow!(
-                            "[{}::MachineNewTrait/AquaPath1::new] Device with role 1 is not an EL2008",
-                            module_path!()
-                        ));
-                    }
-                };
-                {
-                    let mut device_guard = device.write().await;
-                    device_guard.set_used(true);
-                }
-                device
-            };
+            // // Role 1 - EL2008 Digital Output Module
+            // let el2008 = {
+            //     let device_identification =
+            //         get_device_identification_by_role(params.device_group, 1)?;
+            //     let device_hardware_identification_ethercat = match &device_identification
+            //         .device_hardware_identification
+            //     {
+            //         DeviceHardwareIdentification::Ethercat(
+            //             device_hardware_identification_ethercat,
+            //         ) => device_hardware_identification_ethercat,
+            //         _ => Err(anyhow::anyhow!(
+            //             "[{}::MachineNewTrait/AquaPath1::new] Device with role 1 is not Ethercat",
+            //             module_path!()
+            //         ))?,
+            //     };
+            //     let subdevice_index = device_hardware_identification_ethercat.subdevice_index;
+            //     let subdevice = get_subdevice_by_index(hardware.subdevices, subdevice_index)?;
+            //     let subdevice_identity = subdevice.identity();
+            //     let device = match subdevice_identity_to_tuple(&subdevice_identity) {
+            //         EL2008_IDENTITY_A => {
+            //             let ethercat_device = get_ethercat_device_by_index(
+            //                 &hardware.ethercat_devices,
+            //                 subdevice_index,
+            //             )?;
+            //             downcast_device::<EL2008>(ethercat_device).await?
+            //         }
+            //         _ => {
+            //             return Err(anyhow::anyhow!(
+            //                 "[{}::MachineNewTrait/AquaPath1::new] Device with role 1 is not an EL2008",
+            //                 module_path!()
+            //             ));
+            //         }
+            //     };
+            //     {
+            //         let mut device_guard = device.write().await;
+            //         device_guard.set_used(true);
+            //     }
+            //     device
+            // };
 
             // Role 2 - EL4002 Analog Output Module
             let el4002 = {
@@ -221,7 +225,7 @@ impl MachineNewTrait for AquaPathV1 {
                 device
             };
 
-            // let el1002 = {
+            // let el5152 = {
             //     let device_identification =
             //         get_device_identification_by_role(params.device_group, 4)?;
             //     let device_hardware_identification_ethercat = match &device_identification
@@ -231,36 +235,47 @@ impl MachineNewTrait for AquaPathV1 {
             //             device_hardware_identification_ethercat,
             //         ) => device_hardware_identification_ethercat,
             //         _ => Err(anyhow::anyhow!(
-            //             "[{}::MachineNewTrait/ExtruderV2::new] Device with role 4 is not Ethercat",
+            //             "[{}::MachineNewTrait/AquaPath1::new] Device with role 4 is not Ethercat",
             //             module_path!()
             //         ))?, //uncommented
             //     };
+
             //     let subdevice_index = device_hardware_identification_ethercat.subdevice_index;
             //     let subdevice = get_subdevice_by_index(hardware.subdevices, subdevice_index)?;
             //     let subdevice_identity = subdevice.identity();
             //     let device = match subdevice_identity_to_tuple(&subdevice_identity) {
-            //         EL1002_IDENTITY_A => {
+            //         EL5152_IDENTITY_A => {
             //             let ethercat_device = get_ethercat_device_by_index(
             //                 &hardware.ethercat_devices,
             //                 subdevice_index,
             //             )?;
-            //             downcast_device::<EL1002>(ethercat_device).await?
+            //             downcast_device::<EL5152>(ethercat_device).await?
             //         }
             //         _ => {
             //             return Err(anyhow::anyhow!(
-            //                 "[{}::MachineNewTrait/AquaPath1::new] Device with role 4 is not an EL1002",
+            //                 "[{}::MachineNewTrait/AquaPath1::new] Device with role 4 is not an EL5152",
             //                 module_path!()
             //             ));
             //         }
             //     };
+            //     let config = EL5152Configuration {
+            //         pdo_assignment: EL5152PredefinedPdoAssignment::Frequency,
+            //         ..Default::default()
+            //     };
+            //     tracing::info!("config");
+            //     device
+            //         .write()
+            //         .await
+            //         .write_config(&subdevice, &EL5152Configuration::default())
+            //         .await?;
+
             //     {
             //         let mut device_guard = device.write().await;
             //         device_guard.set_used(true);
             //     }
             //     device
             // };
-            // let di1 = DigitalInput::new(el1002.clone(), EL1002Port::DI1);
-            // let di2 = DigitalInput::new(el1002.clone(), EL1002Port::DI2);
+
             //after heating
             let t1 = TemperatureInput::new(el3204.clone(), EL3204Port::T1);
             //in reservoir
@@ -270,79 +285,112 @@ impl MachineNewTrait for AquaPathV1 {
             //in reservoir
             let t4 = TemperatureInput::new(el3204.clone(), EL3204Port::T4);
             //pump flow control
-            //phys 1
-            let do1 = DigitalOutput::new(el2008.clone(), EL2008Port::DO1);
-            //phys 5
-            let do2 = DigitalOutput::new(el2008.clone(), EL2008Port::DO2);
-            //heating
-            //phys 2
-            let do3 = DigitalOutput::new(el2008.clone(), EL2008Port::DO3);
-            //phys 6
-            let do4 = DigitalOutput::new(el2008.clone(), EL2008Port::DO4);
-            //phys 3
-            let do5 = DigitalOutput::new(el2008.clone(), EL2008Port::DO5);
-            //phys 7
-            let do6 = DigitalOutput::new(el2008.clone(), EL2008Port::DO6);
-            //cooling power cut
-            //phys 4
-            let do7 = DigitalOutput::new(el2008.clone(), EL2008Port::DO7);
-            //phys 8
-            let do8 = DigitalOutput::new(el2008.clone(), EL2008Port::DO8);
+            // //phys 1
+            // let do1 = DigitalOutput::new(el2008.clone(), EL2008Port::DO1);
+            // //phys 5
+            // let do2 = DigitalOutput::new(el2008.clone(), EL2008Port::DO2);
+            // //heating
+            // //phys 2
+            // let do3 = DigitalOutput::new(el2008.clone(), EL2008Port::DO3);
+            // //phys 6
+            // let do4 = DigitalOutput::new(el2008.clone(), EL2008Port::DO4);
+            // //phys 3
+            // let do5 = DigitalOutput::new(el2008.clone(), EL2008Port::DO5);
+            // //phys 7
+            // let do6 = DigitalOutput::new(el2008.clone(), EL2008Port::DO6);
+            // //cooling power cut
+            // //phys 4
+            // let do7 = DigitalOutput::new(el2008.clone(), EL2008Port::DO7);
+            // //phys 8
+            // let do8 = DigitalOutput::new(el2008.clone(), EL2008Port::DO8);
 
             let ao1 = AnalogOutput::new(el4002.clone(), EL4002Port::AO1);
             let ao2 = AnalogOutput::new(el4002.clone(), EL4002Port::AO2);
 
-            let flow_front = Arc::new(RwLock::new(Flow::default()));
-            let flow_back = Arc::new(RwLock::new(Flow::default()));
-
-            let cooling_controller_front = TemperatureController::new(
+            let front_controller = Controller::new(
                 0.16,
                 0.0,
                 0.008,
                 Duration::from_millis(500),
                 Temperature::default(),
-                flow_front.clone(),
-                ThermodynamicTemperature::new::<degree_celsius>(35.0),
+                ThermodynamicTemperature::new::<degree_celsius>(25.0),
                 ao1,
-                do7,
-                do3,
-                do5,
+                // do7,
+                // do3,
+                // do5,
                 t1,
                 t2,
+                Flow::default(),
+                //do1,
+                VolumeRate::new::<liter_per_minute>(0.0),
             );
 
-            let cooling_controller_back = TemperatureController::new(
+            let back_controller = Controller::new(
                 0.16,
                 0.0,
                 0.008,
                 Duration::from_millis(500),
                 Temperature::default(),
-                flow_back.clone(),
-                ThermodynamicTemperature::new::<degree_celsius>(35.0),
+                ThermodynamicTemperature::new::<degree_celsius>(25.0),
                 ao2,
-                do8,
-                do4,
-                do6,
+                // do8,
+                // do4,
+                // do6,
                 t3,
                 t4,
+                Flow::default(),
+                // do2,
+                VolumeRate::new::<liter_per_minute>(0.0),
             );
+            // let flow_front = Arc::new(RwLock::new(Flow::default()));
+            // let flow_back = Arc::new(RwLock::new(Flow::default()));
 
-            // let a1 = AnalogInput::new(el3062_0030.clone(), EL3062_0030Port::AI1);
-            // let a2 = AnalogInput::new(el3062_0030.clone(), EL3062_0030Port::AI2);
-            let mut flow_controller_front = FlowController::new(
-                //di1,
-                do1,
-                VolumeRate::new::<liter_per_minute>(0.0),
-                flow_front,
-            );
-            let mut flow_controller_back = FlowController::new(
-                //di2,
-                do2,
-                VolumeRate::new::<liter_per_minute>(0.0),
-                flow_back,
-            );
-            flow_controller_front.update(Instant::now());
-            flow_controller_back.update(Instant::now());
+            // let cooling_controller_front = TemperatureController::new(
+            //     0.16,
+            //     0.0,
+            //     0.008,
+            //     Duration::from_millis(500),
+            //     Temperature::default(),
+            //     flow_front.clone(),
+            //     ThermodynamicTemperature::new::<degree_celsius>(35.0),
+            //     ao1,
+            //     do7,
+            //     do3,
+            //     do5,
+            //     t1,
+            //     t2,
+            // );
+
+            // let cooling_controller_back = TemperatureController::new(
+            //     0.16,
+            //     0.0,
+            //     0.008,
+            //     Duration::from_millis(500),
+            //     Temperature::default(),
+            //     flow_back.clone(),
+            //     ThermodynamicTemperature::new::<degree_celsius>(35.0),
+            //     ao2,
+            //     do8,
+            //     do4,
+            //     do6,
+            //     t3,
+            //     t4,
+            // );
+
+            // let mut flow_controller_front = FlowController::new(
+            //     //di1,
+            //     do1,
+            //     VolumeRate::new::<liter_per_minute>(0.0),
+            //     flow_front,
+            // );
+            // let mut flow_controller_back = FlowController::new(
+            //     //di2,
+            //     do2,
+            //     VolumeRate::new::<liter_per_minute>(0.0),
+            //     flow_back,
+            // );
+            // flow_controller_front.update(Instant::now());
+            // flow_controller_back.update(Instant::now());
             // let aquapath_max_temperature = ThermodynamicTemperature::new::<degree_celsius>(100.0);
 
             // let temperature_controller_front = TemperatureController::new(
@@ -408,10 +456,9 @@ impl MachineNewTrait for AquaPathV1 {
                 namespace: AquaPathV1Namespace::new(params.socket_queue_tx.clone()),
                 mode: AquaPathV1Mode::Standby,
                 last_measurement_emit: Instant::now(),
-                flow_controller_front,
-                flow_controller_back,
-                temp_controller_front: cooling_controller_front,
-                temp_controller_back: cooling_controller_back,
+                controller: true,
+                front_controller,
+                back_controller,
             };
             water_cooling.emit_state();
 

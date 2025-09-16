@@ -3,33 +3,23 @@ use control_core::machines::new::MachineAct;
 use std::time::{Duration, Instant};
 
 impl MachineAct for AquaPathV1 {
-    fn act(
-        &mut self,
-        now_ts: Instant,
-    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send + '_>> {
-        Box::pin(async move {
-            self.flow_controller_front.update(now_ts);
-            self.flow_controller_back.update(now_ts);
-
-            self.temp_controller_back.update(now_ts);
-            self.temp_controller_front.update(now_ts);
-
-            match self.mode {
-                AquaPathV1Mode::Standby => {
-                    self.switch_to_standby();
-                }
-                AquaPathV1Mode::Auto => {
-                    self.switch_to_auto();
-                }
+    fn act(&mut self, now_ts: Instant) {
+        match self.mode {
+            AquaPathV1Mode::Standby => {
+                self.switch_to_standby();
             }
-
-            let now = Instant::now();
-
-            if now.duration_since(self.last_measurement_emit) > Duration::from_secs_f64(1.0 / 60.0)
-            {
-                self.emit_live_values();
-                self.last_measurement_emit = now;
+            AquaPathV1Mode::Auto => {
+                self.switch_to_auto();
             }
-        })
+        }
+
+        let now = Instant::now();
+
+        if now.duration_since(self.last_measurement_emit) > Duration::from_secs_f64(1.0 / 60.0) {
+            self.front_controller.update(now_ts);
+            self.back_controller.update(now_ts);
+            self.emit_live_values();
+            self.last_measurement_emit = now;
+        }
     }
 }

@@ -3,6 +3,7 @@ pub mod analog_input_dummy;
 pub mod analog_output;
 pub mod digital_input;
 pub mod digital_output;
+pub mod encoder_input;
 pub mod pulse_train_output;
 pub mod serial_interface;
 pub mod stepper_velocity_el70x1;

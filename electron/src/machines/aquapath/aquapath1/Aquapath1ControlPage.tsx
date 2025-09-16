@@ -7,7 +7,6 @@ import { useAquapath1 } from "./useAquapath";
 import { SelectionGroup } from "@/control/SelectionGroup";
 import { EditValue } from "@/control/EditValue";
 import { Label } from "@/control/Label";
-import { b } from "vitest/dist/chunks/suite.d.FvehnV49";
 
 export function Aquapath1ControlPage() {
   const {
@@ -38,7 +37,6 @@ export function Aquapath1ControlPage() {
       <ControlGrid columns={2}>
         <ControlCard title="Flow Measurements">
           <div className="grid grid-cols-2 gap-6">
-            {/* Front Column */}
             <div className="flex flex-col gap-8">
               <TimeSeriesValueNumeric
                 label="Front Flow"
@@ -48,7 +46,6 @@ export function Aquapath1ControlPage() {
               />
             </div>
 
-            {/* Back Column */}
             <div className="flex flex-col gap-8">
               <TimeSeriesValueNumeric
                 label="Back Flow"
@@ -59,7 +56,6 @@ export function Aquapath1ControlPage() {
             </div>
           </div>
 
-          {/* Flow Settings - Keep original layout */}
           <div className="mt-8">
             <Label label="Set Front Target Flow">
               <SelectionGroup<"On" | "Off">
@@ -123,7 +119,6 @@ export function Aquapath1ControlPage() {
 
         <ControlCard title="Temperature Measurements">
           <div className="grid grid-cols-2 gap-6">
-            {/* Front Column */}
             <div className="flex flex-col gap-8">
               <TimeSeriesValueNumeric
                 label="Front in"
@@ -153,7 +148,6 @@ export function Aquapath1ControlPage() {
               </Label>
             </div>
 
-            {/* Back Column */}
             <div className="flex flex-col gap-8">
               <TimeSeriesValueNumeric
                 label="Back in"

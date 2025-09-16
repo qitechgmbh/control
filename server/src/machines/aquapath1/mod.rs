@@ -1,7 +1,8 @@
 use control_core::{
-    machines::{Machine, identification::MachineIdentification},
-    socketio::namespace::NamespaceCacheingLogic,
+    machines::identification::MachineIdentification, socketio::namespace::NamespaceCacheingLogic,
 };
+use control_core_derive::Machine;
+
 use serde::{Deserialize, Serialize};
 use std::time::Instant;
 use uom::si::{
@@ -17,16 +18,17 @@ use crate::machines::{
             AquaPathV1Events, AquaPathV1Namespace, FlowState, FlowStates, LiveValuesEvent,
             ModeState, StateEvent, TempState, TempStates,
         },
-        flow_controller::FlowController,
-        temperature_controller::TemperatureController,
+        controller::Controller,
+        // flow_controller::FlowController,
+        // temperature_controller::TemperatureController,
     },
 };
-
 pub mod act;
 pub mod api;
-pub mod flow_controller;
+pub mod controller;
+// pub mod flow_controller;
 pub mod new;
-pub mod temperature_controller;
+// pub mod temperature_controller;
 
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
 pub enum AquaPathV1Mode {
@@ -37,12 +39,6 @@ pub enum AquaPathV1Mode {
 pub enum AquaPathSideType {
     Front,
     Back,
-}
-
-impl Machine for AquaPathV1 {
-    fn as_any(&self) -> &dyn std::any::Any {
-        self
-    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -81,15 +77,18 @@ impl Default for Flow {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Machine)]
 pub struct AquaPathV1 {
     namespace: AquaPathV1Namespace,
     mode: AquaPathV1Mode,
     last_measurement_emit: Instant,
-    flow_controller_front: FlowController,
-    flow_controller_back: FlowController,
-    temp_controller_front: TemperatureController,
-    temp_controller_back: TemperatureController,
+    controller: bool,
+    front_controller: Controller,
+    back_controller: Controller,
+    // flow_controller_front: FlowController,
+    // flow_controller_back: FlowController,
+    // temp_controller_front: TemperatureController,
+    // temp_controller_back: TemperatureController,
 }
 impl AquaPathV1 {
     pub const MACHINE_IDENTIFICATION: MachineIdentification = MachineIdentification {
@@ -108,29 +107,17 @@ impl AquaPathV1 {
     pub fn emit_live_values(&mut self) {
         let live_values = LiveValuesEvent {
             front_temperature: self
-                .temp_controller_front
+                .front_controller
                 .current_temperature
                 .get::<degree_celsius>(),
             back_temperature: self
-                .temp_controller_back
+                .back_controller
                 .current_temperature
                 .get::<degree_celsius>(),
-            front_flow: self
-                .flow_controller_front
-                .current_flow
-                .get::<liter_per_minute>(),
-            back_flow: self
-                .flow_controller_back
-                .current_flow
-                .get::<liter_per_minute>(),
-            front_temp_reservoir: self
-                .temp_controller_front
-                .temp_reservoir
-                .get::<degree_celsius>(),
-            back_temp_reservoir: self
-                .temp_controller_back
-                .temp_reservoir
-                .get::<degree_celsius>(),
+            front_flow: self.front_controller.current_flow.get::<liter_per_minute>(),
+            back_flow: self.back_controller.current_flow.get::<liter_per_minute>(),
+            front_temp_reservoir: self.front_controller.temp_reservoir.get::<degree_celsius>(),
+            back_temp_reservoir: self.back_controller.temp_reservoir.get::<degree_celsius>(),
         };
         let event = live_values.build();
         self.namespace.emit(AquaPathV1Events::LiveValues(event));
@@ -145,46 +132,34 @@ impl AquaPathV1 {
             temperature_states: TempStates {
                 front: TempState {
                     temperature: self
-                        .temp_controller_front
+                        .front_controller
                         .current_temperature
                         .get::<degree_celsius>(),
 
                     target_temperature: self
-                        .temp_controller_front
+                        .front_controller
                         .target_temperature
                         .get::<degree_celsius>(),
                 },
                 back: TempState {
                     temperature: self
-                        .temp_controller_back
+                        .back_controller
                         .current_temperature
                         .get::<degree_celsius>(),
                     target_temperature: self
-                        .temp_controller_back
+                        .back_controller
                         .target_temperature
                         .get::<degree_celsius>(),
                 },
             },
             flow_states: FlowStates {
                 front: FlowState {
-                    flow: self
-                        .flow_controller_front
-                        .current_flow
-                        .get::<liter_per_minute>(),
-                    target_flow: self
-                        .flow_controller_front
-                        .target_flow
-                        .get::<liter_per_minute>(),
+                    flow: self.front_controller.current_flow.get::<liter_per_minute>(),
+                    target_flow: self.front_controller.target_flow.get::<liter_per_minute>(),
                 },
                 back: FlowState {
-                    flow: self
-                        .flow_controller_back
-                        .current_flow
-                        .get::<liter_per_minute>(),
-                    target_flow: self
-                        .flow_controller_back
-                        .target_flow
-                        .get::<liter_per_minute>(),
+                    flow: self.back_controller.current_flow.get::<liter_per_minute>(),
+                    target_flow: self.back_controller.target_flow.get::<liter_per_minute>(),
                 },
             },
         };
@@ -195,33 +170,33 @@ impl AquaPathV1 {
 }
 impl AquaPathV1 {
     fn turn_cooling_off(&mut self) {
-        self.temp_controller_front.disable_cooling();
-        self.temp_controller_back.disable_cooling();
+        self.front_controller.disable_cooling();
+        self.back_controller.disable_cooling();
     }
 
     fn turn_cooling_on(&mut self) {
-        self.temp_controller_front.enable_cooling();
-        self.temp_controller_back.enable_cooling();
+        self.front_controller.allow_cooling();
+        self.back_controller.allow_cooling();
     }
 
     fn turn_heating_off(&mut self) {
-        self.temp_controller_front.disable_heating();
-        self.temp_controller_back.disable_heating();
+        self.front_controller.disallow_heating();
+        self.back_controller.disallow_heating();
     }
 
     fn turn_heating_on(&mut self) {
-        self.temp_controller_front.enable_heating();
-        self.temp_controller_back.enable_heating();
+        self.front_controller.allow_heating();
+        self.back_controller.allow_heating();
     }
 
     fn turn_pump_on(&mut self) {
-        self.flow_controller_front.enable();
-        self.flow_controller_back.enable();
+        self.front_controller.allow_pump();
+        self.back_controller.allow_pump();
     }
 
     fn turn_pump_off(&mut self) {
-        self.flow_controller_front.disable();
-        self.flow_controller_back.disable();
+        self.front_controller.disallow_pump();
+        self.back_controller.disallow_pump();
     }
 
     fn turn_off_all(&mut self) {
@@ -256,8 +231,6 @@ impl AquaPathV1 {
         if self.mode == mode {
             return;
         }
-        tracing::info!("mode {:?}", self.mode);
-
         match mode {
             AquaPathV1Mode::Standby => self.switch_to_standby(),
             AquaPathV1Mode::Auto => self.switch_to_auto(),
@@ -277,26 +250,18 @@ impl AquaPathV1 {
         let target_temp = ThermodynamicTemperature::new::<degree_celsius>(temperature);
 
         match cooling_type {
-            AquaPathSideType::Back => self
-                .temp_controller_back
-                .set_target_temperature(target_temp),
-
-            AquaPathSideType::Front => self
-                .temp_controller_front
-                .set_target_temperature(target_temp),
+            AquaPathSideType::Back => self.back_controller.set_target_temperature(target_temp),
+            AquaPathSideType::Front => self.front_controller.set_target_temperature(target_temp),
         }
-
         self.emit_state();
     }
+
     fn set_target_flow(&mut self, flow: f64, cooling_type: AquaPathSideType) {
         let target_flow = VolumeRate::new::<liter_per_minute>(flow);
-
         match cooling_type {
-            AquaPathSideType::Back => self.flow_controller_back.set_target_flow(target_flow),
-
-            AquaPathSideType::Front => self.flow_controller_front.set_target_flow(target_flow),
+            AquaPathSideType::Back => self.back_controller.set_target_flow(target_flow),
+            AquaPathSideType::Front => self.front_controller.set_target_flow(target_flow),
         }
-
         self.emit_state();
     }
 }
