@@ -33,3 +33,19 @@ where
     pub machine_identification_unique: MachineIdentificationUnique,
     pub data: T,
 }
+
+#[derive(Debug, serde::Deserialize)]
+pub struct MachineVideoStreamListBody {
+    pub machine_identification_unique: MachineIdentificationUnique,
+}
+
+#[derive(Debug, serde::Deserialize)]
+pub struct MachineVideoStreamBody {
+    pub machine_identification_unique: MachineIdentificationUnique,
+    pub stream_id: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct VideoStreamListResponse {
+    pub streams: Vec<String>,
+}

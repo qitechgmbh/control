@@ -12,5 +12,8 @@ pub mod socketio;
 pub mod transmission;
 pub mod uom_extensions;
 
+#[cfg(feature = "video-streaming")]
+pub mod video_streaming;
+
 #[macro_use]
 extern crate uom;

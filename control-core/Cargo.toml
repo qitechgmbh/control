@@ -25,6 +25,7 @@ tracing = "0.1.41"
 erased-serde = "0.4.6"
 core_affinity = "0.8.3"
 control_core_derive = { version = "0.1.0", path = "../control-core-derive" }
+tokio = { version = "1.45.1", features = ["sync"], optional = true }
 
 
 [target.'cfg(unix)'.dependencies]
@@ -33,3 +34,9 @@ libc = "0.2.175"
 [dev-dependencies]
 approx = "0.5.1"
 textplots = "0.8"
+tokio = { version = "1.45.1", features = ["rt-multi-thread", "macros", "time"] }
+
+
+[features]
+default = []
+video-streaming = ["dep:tokio"]
