@@ -57,21 +57,21 @@ export function Aquapath1ControlPage() {
           </div>
 
           <div className="mt-8">
-            <Label label="Set Front Target Flow">
+            <Label label="Front Pump">
               <SelectionGroup<"On" | "Off">
                 value={frontTargetFlow > 0 ? "On" : "Off"}
                 orientation="vertical"
                 className="grid h-full grid-cols-2 gap-2"
                 options={{
-                  On: {
-                    children: "On",
+                  Off: {
+                    children: "Off",
                     icon: "lu:CirclePause",
                     isActiveClassName: "bg-green-600",
                     className: "h-full",
                   },
-                  Off: {
-                    children: "Off",
-                    icon: "lu:Flame",
+                  On: {
+                    children: "On",
+                    icon: "lu:CirclePlay",
                     isActiveClassName: "bg-green-600",
                     className: "h-full",
                   },
@@ -86,21 +86,21 @@ export function Aquapath1ControlPage() {
               />
             </Label>
 
-            <Label label="Set Back Target Flow">
+            <Label label="Back Pump">
               <SelectionGroup<"On" | "Off">
                 value={backTargetFlow > 0 ? "On" : "Off"}
                 orientation="vertical"
                 className="grid h-full grid-cols-2 gap-2"
                 options={{
-                  On: {
-                    children: "On",
+                  Off: {
+                    children: "Off",
                     icon: "lu:CirclePause",
                     isActiveClassName: "bg-green-600",
                     className: "h-full",
                   },
-                  Off: {
-                    children: "Off",
-                    icon: "lu:Flame",
+                  On: {
+                    children: "On",
+                    icon: "lu:CirclePlay",
                     isActiveClassName: "bg-green-600",
                     className: "h-full",
                   },
@@ -193,7 +193,7 @@ export function Aquapath1ControlPage() {
               },
               Auto: {
                 children: "Auto",
-                icon: "lu:Flame",
+                icon: "lu:CirclePlay",
                 isActiveClassName: "bg-green-600",
                 className: "h-full",
               },
