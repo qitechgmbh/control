@@ -14,6 +14,8 @@ import { DiameterVisualisation } from "../DiameterVisualisation";
 export function Laser1ControlPage() {
   const {
     diameter,
+    x_value,
+    y_value,
     state,
     defaultState,
     setTargetDiameter,
@@ -43,6 +45,26 @@ export function Laser1ControlPage() {
               renderValue={(value) => value.toFixed(3)}
             />
           </div>
+          {x_value?.current && (
+            <div className="flex flex-row items-center gap-6">
+              <TimeSeriesValueNumeric
+                label="Current X-Value"
+                unit="mm"
+                timeseries={x_value}
+                renderValue={(value) => value.toFixed(3)}
+              />
+            </div>
+          )}
+          {y_value?.current && (
+            <div className="flex flex-row items-center gap-6">
+              <TimeSeriesValueNumeric
+                label="Current Y-Value"
+                unit="mm"
+                timeseries={y_value}
+                renderValue={(value) => value.toFixed(3)}
+              />
+            </div>
+          )}
         </ControlCard>
         <ControlCard title="Settings">
           <Label label="Set Target Diameter">

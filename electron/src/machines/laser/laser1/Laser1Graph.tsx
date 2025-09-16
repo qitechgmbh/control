@@ -10,7 +10,7 @@ import React from "react";
 import { useLaser1 } from "./useLaser1";
 
 export function Laser1GraphsPage() {
-  const { diameter, state } = useLaser1();
+  const { diameter, x_value, y_value, state } = useLaser1();
 
   const syncHook = useGraphSync("diameter-group");
   const targetDiameter = state?.laser_state?.target_diameter ?? 0;
@@ -65,6 +65,34 @@ export function Laser1GraphsPage() {
           config={config}
           graphId="diameter-graph"
         />
+
+        {x_value?.current && (
+          <AutoSyncedBigGraph
+            syncHook={syncHook}
+            newData={{
+              newData: x_value,
+              color: "#3b82f6",
+            }}
+            unit="mm"
+            renderValue={(value) => value.toFixed(3)}
+            config={{ ...config, title: "X Axis" }}
+            graphId="x-graph"
+          />
+        )}
+
+        {y_value?.current && (
+          <AutoSyncedBigGraph
+            syncHook={syncHook}
+            newData={{
+              newData: y_value,
+              color: "#3b82f6",
+            }}
+            unit="mm"
+            renderValue={(value) => value.toFixed(3)}
+            config={{ ...config, title: "Y Axis" }}
+            graphId="y-graph"
+          />
+        )}
       </div>
       <SyncedFloatingControlPanel controlProps={syncHook.controlProps} />
     </Page>

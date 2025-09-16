@@ -28,6 +28,8 @@ import {
  */
 export const liveValuesEventDataSchema = z.object({
   diameter: z.number(),
+  x_value: z.number().nullable(),
+  y_value: z.number().nullable(),
 });
 
 /**
@@ -57,6 +59,8 @@ export type Laser1NamespaceStore = {
 
   // Time series data for live values
   diameter: TimeSeries;
+  x_value: TimeSeries;
+  y_value: TimeSeries;
 };
 
 // Constants for time durations
@@ -65,6 +69,20 @@ const ONE_SECOND = 1000;
 const FIVE_SECOND = 5 * ONE_SECOND;
 const ONE_HOUR = 60 * 60 * ONE_SECOND;
 const { initialTimeSeries: diameter, insert: addDiameter } = createTimeSeries(
+  TWENTY_MILLISECOND,
+  ONE_SECOND,
+  FIVE_SECOND,
+  ONE_HOUR,
+);
+
+const { initialTimeSeries: x_value, insert: addXValue } = createTimeSeries(
+  TWENTY_MILLISECOND,
+  ONE_SECOND,
+  FIVE_SECOND,
+  ONE_HOUR,
+);
+
+const { initialTimeSeries: y_value, insert: addYValue } = createTimeSeries(
   TWENTY_MILLISECOND,
   ONE_SECOND,
   FIVE_SECOND,
@@ -80,6 +98,8 @@ export const createLaser1NamespaceStore = (): StoreApi<Laser1NamespaceStore> =>
       state: null,
       defaultState: null,
       diameter: diameter,
+      x_value: x_value,
+      y_value: y_value,
     };
   });
 
@@ -119,13 +139,34 @@ export function laser1MessageHandler(
       // Live values events (keep for 1 hour)
       else if (eventName === "LiveValuesEvent") {
         const liveValuesEvent = liveValuesEventSchema.parse(event);
-        const timeseriesValue: TimeSeriesValue = {
+        const diameterValue: TimeSeriesValue = {
           value: liveValuesEvent.data.diameter,
           timestamp: event.ts,
         };
+        if (liveValuesEvent.data.x_value !== null) {
+          const xValue: TimeSeriesValue = {
+            value: liveValuesEvent.data.x_value,
+            timestamp: event.ts,
+          };
+          updateStore((state) => ({
+            ...state,
+            x_value: addXValue(state.x_value, xValue),
+          }));
+        }
+
+        if (liveValuesEvent.data.y_value !== null) {
+          const yValue: TimeSeriesValue = {
+            value: liveValuesEvent.data.y_value,
+            timestamp: event.ts,
+          };
+          updateStore((state) => ({
+            ...state,
+            y_value: addYValue(state.y_value, yValue),
+          }));
+        }
         updateStore((state) => ({
           ...state,
-          diameter: addDiameter(state.diameter, timeseriesValue),
+          diameter: addDiameter(state.diameter, diameterValue),
         }));
       } else {
         handleUnhandledEventError(eventName);
