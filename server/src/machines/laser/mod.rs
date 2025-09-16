@@ -42,16 +42,26 @@ impl LaserMachine {
 impl LaserMachine {
     ///diameter in mm
     pub fn emit_live_values(&mut self) {
-        let diameter = smol::block_on(async {
-            self.laser
-                .read()
-                .await
-                .get_data()
-                .await
-                .map(|laser_data| laser_data.diameter.get::<millimeter>())
-        });
+        let laser_data = smol::block_on(async { self.laser.read().await.get_data().await });
+        let diameter = laser_data
+            .as_ref()
+            .map(|data| data.diameter.get::<millimeter>())
+            .unwrap_or(0.0);
+
+        let x_value = laser_data
+            .as_ref()
+            .and_then(|data| data.x_axis.as_ref())
+            .map(|x| x.get::<millimeter>());
+
+        let y_value = laser_data
+            .as_ref()
+            .and_then(|data| data.y_axis.as_ref())
+            .map(|y| y.get::<millimeter>());
+
         let live_values = LiveValuesEvent {
-            diameter: diameter.unwrap_or(0.0),
+            diameter,
+            x_value,
+            y_value,
         };
         self.namespace
             .emit(LaserEvents::LiveValues(live_values.build()));

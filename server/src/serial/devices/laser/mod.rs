@@ -42,6 +42,8 @@ enum LaserModbusRequsts {
 
 struct LaserDiameterResponse {
     pub diameter: Length,
+    pub x_axis: Option<Length>,
+    pub y_axis: Option<Length>,
 }
 
 impl TryFrom<ModbusResponse> for LaserDiameterResponse {
@@ -55,8 +57,23 @@ impl TryFrom<ModbusResponse> for LaserDiameterResponse {
             ));
         }
         let diameter = u16::from_be_bytes([value.data[1], value.data[2]]) as f64 / 1000.0;
+        // Depending on if its a 2 axis Laser we get more values out of the data
+        let (x_axis, y_axis) = if value.data.len() >= 7 {
+            let x = u16::from_be_bytes([value.data[3], value.data[4]]) as f64 / 1000.0;
+            let y = u16::from_be_bytes([value.data[5], value.data[6]]) as f64 / 1000.0;
+            tracing::info!("X: {}, Y: {}", x, y);
+            (
+                Some(Length::new::<uom::si::length::millimeter>(x)),
+                Some(Length::new::<uom::si::length::millimeter>(y)),
+            )
+        } else {
+            (None, None)
+        };
+
         Ok(Self {
             diameter: Length::new::<uom::si::length::millimeter>(diameter),
+            x_axis,
+            y_axis,
         })
     }
 }
@@ -79,6 +96,8 @@ impl SerialDeviceNew for Laser {
     ) -> Result<(DeviceIdentification, Arc<RwLock<Self>>), anyhow::Error> {
         let laser_data = Some(LaserData {
             diameter: Length::new::<uom::si::length::millimeter>(0.0),
+            x_axis: None,
+            y_axis: None,
             last_timestamp: Instant::now(),
         });
         let hash = hash_djb2(params.path.as_bytes());
@@ -138,6 +157,8 @@ impl SerialDeviceNew for Laser {
 #[derive(Debug, Clone)]
 pub struct LaserData {
     pub diameter: Length,
+    pub x_axis: Option<Length>,
+    pub y_axis: Option<Length>,
     pub last_timestamp: Instant,
 }
 
@@ -145,6 +166,20 @@ impl Laser {
     pub async fn get_diameter(&self) -> Result<Length, String> {
         match &self.data {
             Some(data) => Ok(data.diameter),
+            None => Err("No data from Laser".to_string()),
+        }
+    }
+
+    pub async fn get_x(&self) -> Result<Option<Length>, String> {
+        match &self.data {
+            Some(data) => Ok(data.x_axis),
+            None => Err("No data from Laser".to_string()),
+        }
+    }
+
+    pub async fn get_y(&self) -> Result<Option<Length>, String> {
+        match &self.data {
+            Some(data) => Ok(data.y_axis),
             None => Err("No data from Laser".to_string()),
         }
     }
@@ -204,6 +239,8 @@ impl Laser {
                 let mut self_guard = _self.write().await;
                 self_guard.data = Some(LaserData {
                     diameter: diameter_response.diameter,
+                    x_axis: diameter_response.x_axis,
+                    y_axis: diameter_response.y_axis,
                     last_timestamp: Instant::now(),
                 });
             }
