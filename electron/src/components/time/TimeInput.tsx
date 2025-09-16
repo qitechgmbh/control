@@ -98,54 +98,40 @@ export function TimeInput({
   // Increment/decrement functions with bounds checking and cascading
   const adjustTimeValue = useCallback(
     (field: "hours" | "minutes" | "seconds", increment: boolean) => {
-      const currentValue = form.getValues(field);
-      let newValue: number;
-      let max: number;
-      let shouldCascade = false;
+      // Define the order of fields for cascading
+      const fields: ("hours" | "minutes" | "seconds")[] = ["seconds", "minutes", "hours"];
+      let startIndex = fields.indexOf(field);
+      let carry = increment ? 1 : -1;
 
-      switch (field) {
-        case "hours":
-          max = 23;
-          break;
-        case "minutes":
-        case "seconds":
-          max = 59;
-          break;
-      }
+      for (let i = startIndex; i < fields.length; i++) {
+        const currentField = fields[i];
+        const currentValue = form.getValues(currentField);
+        let max = currentField === "hours" ? 23 : 59;
+        let newValue = currentValue + carry;
+        carry = 0;
 
-      if (increment) {
-        if (currentValue >= max) {
-          newValue = 0;
-          shouldCascade = true;
+        if (increment) {
+          if (newValue > max) {
+            newValue = 0;
+            carry = 1;
+          }
         } else {
-          newValue = currentValue + 1;
+          if (newValue < 0) {
+            newValue = max;
+            carry = -1;
+          }
         }
-      } else {
-        if (currentValue <= 0) {
-          newValue = max;
-          shouldCascade = true;
-        } else {
-          newValue = currentValue - 1;
-        }
-      }
 
-      // Set the current field value
-      form.setValue(field, newValue, {
-        shouldValidate: true,
-        shouldDirty: true,
-        shouldTouch: true,
-      });
+        form.setValue(currentField, newValue, {
+          shouldValidate: true,
+          shouldDirty: true,
+          shouldTouch: true,
+        });
 
-      // Handle cascading to the next higher unit
-      if (shouldCascade) {
-        if (field === "seconds") {
-          // Seconds rolled over, adjust minutes
-          adjustTimeValue("minutes", increment);
-        } else if (field === "minutes") {
-          // Minutes rolled over, adjust hours
-          adjustTimeValue("hours", increment);
+        // If no carry, stop cascading
+        if (carry === 0) {
+          break;
         }
-        // Hours rollover doesn't cascade (we stay within 24-hour format)
       }
     },
     [form],
