@@ -17,14 +17,16 @@ export function Laser1GraphsPage() {
   const lowerTolerance = state?.laser_state?.lower_tolerance ?? 0;
   const higherTolerance = state?.laser_state?.higher_tolerance ?? 0;
 
-  const graphColor = "#3b82f6";
+  const diameterColor = "#3b82f6";
+  const xDiameterColor = "#ef4444";
+  const yDiamterColor = "#22c55e";
 
   const config: GraphConfig = {
     title: "Diameter",
     defaultTimeWindow: 30 * 60 * 1000, // 30 minutes
     exportFilename: "diameter_data",
     colors: {
-      primary: graphColor,
+      primary: diameterColor,
       grid: "#e2e8f0",
       axis: "#64748b",
       background: "#ffffff",
@@ -36,65 +38,50 @@ export function Laser1GraphsPage() {
       <div className="flex flex-col gap-4">
         <AutoSyncedBigGraph
           syncHook={syncHook}
-          newData={{
-            newData: diameter,
-            color: graphColor,
-            lines: [
-              {
-                type: "threshold",
-                value: targetDiameter + higherTolerance,
-                label: "Upper Threshold",
-                color: graphColor,
-                dash: [5, 5],
-              },
-              {
-                type: "threshold",
-                value: targetDiameter - lowerTolerance,
-                label: "Lower Threshold",
-                color: graphColor,
-                dash: [5, 5],
-              },
-              {
-                type: "target",
-                value: targetDiameter,
-                label: "Target",
-                color: graphColor,
-              },
-            ],
-          }}
+          newData={[
+            {
+              newData: diameter,
+              color: diameterColor,
+              title: "Diameter",
+              lines: [
+                {
+                  type: "threshold",
+                  value: targetDiameter + higherTolerance,
+                  label: "Upper Threshold",
+                  color: diameterColor,
+                  dash: [5, 5],
+                },
+                {
+                  type: "threshold",
+                  value: targetDiameter - lowerTolerance,
+                  label: "Lower Threshold",
+                  color: diameterColor,
+                  dash: [5, 5],
+                },
+                {
+                  type: "target",
+                  value: targetDiameter,
+                  label: "Target",
+                  color: diameterColor,
+                },
+              ],
+            },
+            {
+              newData: x_value,
+              color: xDiameterColor,
+              title: "X-Diameter",
+            },
+            {
+              newData: y_value,
+              color: yDiamterColor,
+              title: "Y-Diameter",
+            },
+          ]}
           unit="mm"
           renderValue={(value) => value.toFixed(3)}
           config={config}
           graphId="diameter-graph"
         />
-
-        {x_value?.current && (
-          <AutoSyncedBigGraph
-            syncHook={syncHook}
-            newData={{
-              newData: x_value,
-              color: graphColor,
-            }}
-            unit="mm"
-            renderValue={(value) => value.toFixed(3)}
-            config={{ ...config, title: "X Axis" }}
-            graphId="x-graph"
-          />
-        )}
-
-        {y_value?.current && (
-          <AutoSyncedBigGraph
-            syncHook={syncHook}
-            newData={{
-              newData: y_value,
-              color: graphColor,
-            }}
-            unit="mm"
-            renderValue={(value) => value.toFixed(3)}
-            config={{ ...config, title: "Y Axis" }}
-            graphId="y-graph"
-          />
-        )}
       </div>
       <SyncedFloatingControlPanel controlProps={syncHook.controlProps} />
     </Page>

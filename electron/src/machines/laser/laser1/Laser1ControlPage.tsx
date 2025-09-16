@@ -41,7 +41,7 @@ export function Laser1ControlPage() {
           />
           <div className="flex flex-row items-center gap-6">
             <TimeSeriesValueNumeric
-              label="Current Diameter"
+              label="Diameter"
               unit="mm"
               timeseries={diameter}
               renderValue={(value) => value.toFixed(3)}
@@ -50,7 +50,7 @@ export function Laser1ControlPage() {
           {x_value?.current && (
             <div className="flex flex-row items-center gap-6">
               <TimeSeriesValueNumeric
-                label="Current X-Value"
+                label="X-Diameter"
                 unit="mm"
                 timeseries={x_value}
                 renderValue={(value) => value.toFixed(3)}
@@ -60,7 +60,7 @@ export function Laser1ControlPage() {
           {y_value?.current && (
             <div className="flex flex-row items-center gap-6">
               <TimeSeriesValueNumeric
-                label="Current Y-Value"
+                label="Y-Diameter"
                 unit="mm"
                 timeseries={y_value}
                 renderValue={(value) => value.toFixed(3)}
