@@ -17,12 +17,14 @@ export function Laser1GraphsPage() {
   const lowerTolerance = state?.laser_state?.lower_tolerance ?? 0;
   const higherTolerance = state?.laser_state?.higher_tolerance ?? 0;
 
+  const graphColor = "#3b82f6";
+
   const config: GraphConfig = {
     title: "Diameter",
     defaultTimeWindow: 30 * 60 * 1000, // 30 minutes
     exportFilename: "diameter_data",
     colors: {
-      primary: "#3b82f6",
+      primary: graphColor,
       grid: "#e2e8f0",
       axis: "#64748b",
       background: "#ffffff",
@@ -36,27 +38,27 @@ export function Laser1GraphsPage() {
           syncHook={syncHook}
           newData={{
             newData: diameter,
-            color: "#3b82f6",
+            color: graphColor,
             lines: [
               {
                 type: "threshold",
                 value: targetDiameter + higherTolerance,
                 label: "Upper Threshold",
-                color: "#3b82f6",
+                color: graphColor,
                 dash: [5, 5],
               },
               {
                 type: "threshold",
                 value: targetDiameter - lowerTolerance,
                 label: "Lower Threshold",
-                color: "#3b82f6",
+                color: graphColor,
                 dash: [5, 5],
               },
               {
                 type: "target",
                 value: targetDiameter,
                 label: "Target",
-                color: "#3b82f6",
+                color: graphColor,
               },
             ],
           }}
@@ -71,7 +73,7 @@ export function Laser1GraphsPage() {
             syncHook={syncHook}
             newData={{
               newData: x_value,
-              color: "#3b82f6",
+              color: graphColor,
             }}
             unit="mm"
             renderValue={(value) => value.toFixed(3)}
@@ -85,7 +87,7 @@ export function Laser1GraphsPage() {
             syncHook={syncHook}
             newData={{
               newData: y_value,
-              color: "#3b82f6",
+              color: graphColor,
             }}
             unit="mm"
             renderValue={(value) => value.toFixed(3)}
