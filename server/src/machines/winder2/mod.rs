@@ -456,7 +456,6 @@ impl Winder2 {
 
         // Update the internal state
         self.spool_mode = mode;
-        self.emit_state();
     }
 
     /// Apply the mode changes to the spool
@@ -525,7 +524,6 @@ impl Winder2 {
 
         // Update the internal state
         self.traverse_mode = mode;
-        self.emit_state();
     }
 
     /// Apply the mode changes to the puller
@@ -577,7 +575,6 @@ impl Winder2 {
 
         // Update the internal state
         self.puller_mode = mode;
-        self.emit_state();
     }
 }
 
@@ -608,10 +605,12 @@ impl Winder2 {
 
     pub fn set_spool_automatic_required_meters(&mut self, meters: f64) {
         self.spool_automatic_action.target_length = Length::new::<meter>(meters);
+        self.emit_state();
     }
 
-    pub const fn set_spool_automatic_mode(&mut self, mode: SpoolAutomaticActionMode) {
+    pub fn set_spool_automatic_mode(&mut self, mode: SpoolAutomaticActionMode) {
         self.spool_automatic_action.mode = mode;
+        self.emit_state();
     }
 
     pub fn stop_or_pull_spool(&mut self, now: Instant) {
@@ -684,9 +683,10 @@ impl Winder2 {
         let _ = self.puller.set_speed(steps_per_second);
     }
 
-    pub const fn puller_set_regulation(&mut self, puller_regulation_mode: PullerRegulationMode) {
+    pub fn puller_set_regulation(&mut self, puller_regulation_mode: PullerRegulationMode) {
         self.puller_speed_controller
             .set_regulation_mode(puller_regulation_mode);
+        self.emit_state();
     }
 
     /// Set target speed in m/min
@@ -694,6 +694,7 @@ impl Winder2 {
         // Convert m/min to velocity
         let target_speed = Velocity::new::<meter_per_minute>(target_speed);
         self.puller_speed_controller.set_target_speed(target_speed);
+        self.emit_state();
     }
 
     /// Set target diameter in mm
@@ -702,11 +703,13 @@ impl Winder2 {
         let target_diameter = Length::new::<millimeter>(target_diameter);
         self.puller_speed_controller
             .set_target_diameter(target_diameter);
+        self.emit_state();
     }
 
     /// Set forward direction
-    pub const fn puller_set_forward(&mut self, forward: bool) {
+    pub fn puller_set_forward(&mut self, forward: bool) {
         self.puller_speed_controller.set_forward(forward);
+        self.emit_state();
     }
 
     // Spool Speed Controller API methods
@@ -715,6 +718,7 @@ impl Winder2 {
         regulation_mode: spool_speed_controller::SpoolSpeedControllerType,
     ) {
         self.spool_speed_controller.set_type(regulation_mode);
+        self.emit_state();
     }
 
     /// Set minimum speed for minmax mode in RPM
@@ -723,6 +727,7 @@ impl Winder2 {
         if let Err(e) = self.spool_speed_controller.set_minmax_min_speed(min_speed) {
             tracing::error!("Failed to set spool min speed: {:?}", e);
         }
+        self.emit_state();
     }
 
     /// Set maximum speed for minmax mode in RPM
@@ -731,39 +736,45 @@ impl Winder2 {
         if let Err(e) = self.spool_speed_controller.set_minmax_max_speed(max_speed) {
             tracing::error!("Failed to set spool max speed: {:?}", e);
         }
+        self.emit_state();
     }
 
     /// Set tension target for adaptive mode (0.0-1.0)
-    pub const fn spool_set_adaptive_tension_target(&mut self, tension_target: f64) {
+    pub fn spool_set_adaptive_tension_target(&mut self, tension_target: f64) {
         self.spool_speed_controller
             .set_adaptive_tension_target(tension_target);
+        self.emit_state();
     }
 
     /// Set radius learning rate for adaptive mode
-    pub const fn spool_set_adaptive_radius_learning_rate(&mut self, radius_learning_rate: f64) {
+    pub fn spool_set_adaptive_radius_learning_rate(&mut self, radius_learning_rate: f64) {
         self.spool_speed_controller
             .set_adaptive_radius_learning_rate(radius_learning_rate);
+        self.emit_state();
     }
 
     /// Set max speed multiplier for adaptive mode
-    pub const fn spool_set_adaptive_max_speed_multiplier(&mut self, max_speed_multiplier: f64) {
+    pub fn spool_set_adaptive_max_speed_multiplier(&mut self, max_speed_multiplier: f64) {
         self.spool_speed_controller
             .set_adaptive_max_speed_multiplier(max_speed_multiplier);
+        self.emit_state();
     }
 
     /// Set acceleration factor for adaptive mode
-    pub const fn spool_set_adaptive_acceleration_factor(&mut self, acceleration_factor: f64) {
+    pub fn spool_set_adaptive_acceleration_factor(&mut self, acceleration_factor: f64) {
         self.spool_speed_controller
             .set_adaptive_acceleration_factor(acceleration_factor);
+        self.emit_state();
     }
 
     /// Set deacceleration urgency multiplier for adaptive mode
-    pub const fn spool_set_adaptive_deacceleration_urgency_multiplier(
+    pub fn spool_set_adaptive_deacceleration_urgency_multiplier(
         &mut self,
         deacceleration_urgency_multiplier: f64,
     ) {
         self.spool_speed_controller
             .set_adaptive_deacceleration_urgency_multiplier(deacceleration_urgency_multiplier);
+        self.emit_state();
     }
 }
 
@@ -804,6 +815,7 @@ impl Winder2 {
             machine_identification_unique,
             machine,
         });
+        self.emit_state();
 
         self.reverse_connect();
     }
@@ -832,6 +844,7 @@ impl Winder2 {
             }
         }
         self.connected_buffer = None;
+        self.emit_state();
     }
 
     /// initiate connection from buffer to winder
