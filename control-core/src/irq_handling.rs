@@ -48,7 +48,6 @@ fn get_interface_irq(proc_content: &str, interface_name: &str) -> Option<u32> {
     None
 }
 
-/// TEST 2
 /// Since kernel 3.0 it’s possible to use the /proc/irq/<IRQ-NUMBER>/smp_affinity_list
 /// With comma seperated values
 /// This function takes the irq identifier and writes the cpu string
