@@ -9,7 +9,7 @@ use buffer_lift_controller::BufferLiftController;
 use control_core::{
     converters::linear_step_converter::LinearStepConverter,
     machines::{
-        ConnectedMachine, ConnectedMachineData, Machine, downcast_machine,
+        ConnectedMachine, ConnectedMachineData, downcast_machine,
         identification::{MachineIdentification, MachineIdentificationUnique},
         manager::MachineManager,
     },
