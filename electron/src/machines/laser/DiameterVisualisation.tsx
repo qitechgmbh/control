@@ -2,11 +2,13 @@ import React from "react";
 import { TimeSeries } from "@/lib/timeseries";
 import { cva } from "class-variance-authority";
 
-type AnimateCableProps = {
+type DiameterVisualisationProps = {
   targetDiameter: number;
   lowTolerance: number;
   highTolerance: number;
   diameter: TimeSeries;
+  x_value?: TimeSeries;
+  y_value?: TimeSeries;
 };
 
 // Ring color depending on tolerance
@@ -24,7 +26,7 @@ const dashedRingClass = cva(
   "absolute rounded-full border border-dashed border-black z-15",
 );
 
-// Dynamic animated circle
+// Dynamic animated circle/ellipse
 const dynamicCircleClass = cva(
   "absolute rounded-full border-2 border-black bg-transparent z-30 transition-all duration-300 ease-in-out",
 );
@@ -34,103 +36,86 @@ export function DiameterVisualisation({
   lowTolerance,
   highTolerance,
   diameter,
-}: AnimateCableProps) {
+  x_value,
+  y_value,
+}: DiameterVisualisationProps) {
   const actualDiameter = diameter.current?.value ?? 0.0;
+  const actualX = x_value?.current?.value ?? actualDiameter;
+  const actualY = y_value?.current?.value ?? actualDiameter;
 
   const minDia = targetDiameter - lowTolerance;
   const maxDia = targetDiameter + highTolerance;
-  const totalTolerance = lowTolerance + highTolerance;
-  const midDia = minDia + (maxDia - minDia) * (lowTolerance / totalTolerance);
 
   const pixelMin = 100;
   const pixelMax = 200;
+
   const lerp = (
     value: number,
     inputMin: number,
     inputMax: number,
     outputMin: number,
     outputMax: number,
-  ) => {
-    return (
-      outputMin +
-      ((value - inputMin) * (outputMax - outputMin)) / (inputMax - inputMin)
-    );
-  };
-  const pixelMid = lerp(midDia, minDia, maxDia, pixelMin, pixelMax);
-  let dynamicDiameterPx: number | null = null;
+  ) =>
+    outputMin +
+    ((value - inputMin) * (outputMax - outputMin)) / (inputMax - inputMin);
 
   const clamp = (value: number, min: number, max: number) =>
     Math.min(Math.max(value, min), max);
 
-  if (actualDiameter > 0) {
-    if (actualDiameter < minDia) {
-      dynamicDiameterPx = lerp(actualDiameter, 0, minDia, 0, pixelMin);
-    } else if (actualDiameter <= maxDia) {
-      dynamicDiameterPx = lerp(
-        actualDiameter,
-        minDia,
-        maxDia,
-        pixelMin,
-        pixelMax,
-      );
-    } else {
-      const dynamicDiameterPxLerp = lerp(
-        actualDiameter,
-        maxDia,
-        maxDia * 1.5,
-        pixelMax,
-        pixelMax * 1.1,
-      );
-      dynamicDiameterPx = clamp(
-        dynamicDiameterPxLerp,
-        pixelMin,
-        pixelMax * 1.1,
-      );
-    }
-  }
+  const radiusX = clamp(
+    lerp(actualX, minDia, maxDia, pixelMin / 2, pixelMax / 2),
+    pixelMin / 2,
+    pixelMax / 2,
+  );
+
+  const radiusY = clamp(
+    lerp(actualY, minDia, maxDia, pixelMin / 2, pixelMax / 2),
+    pixelMin / 2,
+    pixelMax / 2,
+  );
 
   const bigRadius = pixelMax / 2;
-  const smallRadius = pixelMin / 2;
-  const midRadius = pixelMid / 2;
-  const dynamicRadius = dynamicDiameterPx ? dynamicDiameterPx / 2 : 0;
-  const inTolerance = actualDiameter >= minDia && actualDiameter <= maxDia;
 
-  const centerStyle = (radius: number) => ({
-    width: radius * 2,
-    height: radius * 2,
-    top: `${bigRadius - radius}px`,
-    left: `${bigRadius - radius}px`,
+  // Center the shape
+  const centerStyle = (rx: number, ry: number) => ({
+    width: rx * 2,
+    height: ry * 2,
+    top: `${bigRadius - ry}px`,
+    left: `${bigRadius - rx}px`,
   });
+
+  // Check if current measurement is in tolerance
+  const inTolerance =
+    actualX >= minDia &&
+    actualX <= maxDia &&
+    actualY >= minDia &&
+    actualY <= maxDia;
 
   return (
     <div
       className="relative mx-auto"
       style={{ width: pixelMax, height: pixelMax }}
     >
-      {/* Outer ring background */}
       <div
-        className={`${ringClass({
-          state: inTolerance ? "inRange" : "outOfRange",
-        })} top-0 left-0 z-10`}
+        className={`${ringClass({ state: inTolerance ? "inRange" : "outOfRange" })} top-0 left-0 z-10`}
         style={{ width: pixelMax, height: pixelMax }}
       />
-
-      {/* Inner white circle to cut out the center */}
       <div
         className="absolute z-20 rounded-full bg-white"
-        style={centerStyle(smallRadius)}
+        style={centerStyle(pixelMin / 2, pixelMin / 2)}
       />
-
-      {/* Dashed ring in the middle */}
-      <div className={dashedRingClass()} style={centerStyle(midRadius)} />
-
-      {/* Dynamic circle */}
-      {dynamicDiameterPx !== null && (
-        <div
-          className={dynamicCircleClass()}
-          style={centerStyle(dynamicRadius)}
-        />
-      )}
+      <div
+        className={dashedRingClass()}
+        style={centerStyle(pixelMax / 2, pixelMax / 2)}
+      />
+      <div
+        className={dynamicCircleClass()}
+        style={{
+          ...centerStyle(radiusX, radiusY),
+          /* rotate by 45deg to mimic the rotated axis of the Laser */
+          transform: "rotate(45deg)",
+        }}
+      />
     </div>
   );
 }

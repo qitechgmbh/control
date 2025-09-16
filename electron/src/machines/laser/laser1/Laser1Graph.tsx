@@ -10,63 +10,124 @@ import React from "react";
 import { useLaser1 } from "./useLaser1";
 
 export function Laser1GraphsPage() {
-  const { diameter, state } = useLaser1();
+  const { diameter, x_value, y_value, state } = useLaser1();
 
   const syncHook = useGraphSync("diameter-group");
   const targetDiameter = state?.laser_state?.target_diameter ?? 0;
   const lowerTolerance = state?.laser_state?.lower_tolerance ?? 0;
   const higherTolerance = state?.laser_state?.higher_tolerance ?? 0;
 
+  const isTwoAxis = !!x_value?.current || !!y_value?.current;
+
+  const diameterColor = "#3b82f6";
+  const xDiameterColor = "#ef4444";
+  const yDiameterColor = "#22c55e";
+
   const config: GraphConfig = {
     title: "Diameter",
     defaultTimeWindow: 30 * 60 * 1000, // 30 minutes
     exportFilename: "diameter_data",
     colors: {
-      primary: "#3b82f6",
+      primary: diameterColor,
       grid: "#e2e8f0",
       axis: "#64748b",
       background: "#ffffff",
     },
   };
-
-  return (
-    <Page className="pb-27">
-      <div className="flex flex-col gap-4">
-        <AutoSyncedBigGraph
-          syncHook={syncHook}
-          newData={{
-            newData: diameter,
-            color: "#3b82f6",
-            lines: [
+  if (!isTwoAxis) {
+    return (
+      <Page className="pb-27">
+        <div className="flex flex-col gap-4">
+          <AutoSyncedBigGraph
+            syncHook={syncHook}
+            newData={{
+              newData: diameter,
+              color: diameterColor,
+              lines: [
+                {
+                  type: "threshold",
+                  value: targetDiameter + higherTolerance,
+                  label: "Upper Threshold",
+                  color: diameterColor,
+                  dash: [5, 5],
+                },
+                {
+                  type: "threshold",
+                  value: targetDiameter - lowerTolerance,
+                  label: "Lower Threshold",
+                  color: diameterColor,
+                  dash: [5, 5],
+                },
+                {
+                  type: "target",
+                  value: targetDiameter,
+                  label: "Target",
+                  color: diameterColor,
+                },
+              ],
+            }}
+            unit="mm"
+            renderValue={(value) => value.toFixed(3)}
+            config={config}
+            graphId="diameter-graph"
+          />
+        </div>
+        <SyncedFloatingControlPanel controlProps={syncHook.controlProps} />
+      </Page>
+    );
+  } else {
+    return (
+      <Page className="pb-27">
+        <div className="flex flex-col gap-4">
+          <AutoSyncedBigGraph
+            syncHook={syncHook}
+            newData={[
               {
-                type: "threshold",
-                value: targetDiameter + higherTolerance,
-                label: "Upper Threshold",
-                color: "#3b82f6",
-                dash: [5, 5],
+                newData: diameter,
+                color: diameterColor,
+                title: "Diameter",
+                lines: [
+                  {
+                    type: "threshold",
+                    value: targetDiameter + higherTolerance,
+                    label: "Upper Threshold",
+                    color: diameterColor,
+                    dash: [5, 5],
+                  },
+                  {
+                    type: "threshold",
+                    value: targetDiameter - lowerTolerance,
+                    label: "Lower Threshold",
+                    color: diameterColor,
+                    dash: [5, 5],
+                  },
+                  {
+                    type: "target",
+                    value: targetDiameter,
+                    label: "Target",
+                    color: diameterColor,
+                  },
+                ],
               },
               {
-                type: "threshold",
-                value: targetDiameter - lowerTolerance,
-                label: "Lower Threshold",
-                color: "#3b82f6",
-                dash: [5, 5],
+                newData: x_value,
+                color: xDiameterColor,
+                title: "X-Diameter",
               },
               {
-                type: "target",
-                value: targetDiameter,
-                label: "Target",
-                color: "#3b82f6",
+                newData: y_value,
+                color: yDiameterColor,
+                title: "Y-Diameter",
               },
-            ],
-          }}
-          unit="mm"
-          renderValue={(value) => value.toFixed(3)}
-          config={config}
-          graphId="diameter-graph"
-        />
-      </div>
-      <SyncedFloatingControlPanel controlProps={syncHook.controlProps} />
-    </Page>
-  );
+            ]}
+            unit="mm"
+            renderValue={(value) => value.toFixed(3)}
+            config={config}
+            graphId="diameter-graph"
+          />
+        </div>
+        <SyncedFloatingControlPanel controlProps={syncHook.controlProps} />
+      </Page>
+    );
+  }
 }
