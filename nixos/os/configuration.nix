@@ -17,7 +17,6 @@ in
   boot.loader.efi.canTouchEfiVariables = true;
 
   boot.kernelPackages = pkgs.linuxPackages-rt_latest;
-  boot.kernelModules = [ "i915" ];
 
   boot.kernelParams = [
     # Graphical
