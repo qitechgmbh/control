@@ -112,6 +112,7 @@ export function DiameterVisualisation({
         className={dynamicCircleClass()}
         style={{
           ...centerStyle(radiusX, radiusY),
+          /* rotate by 45deg to mimic the rotated axis of the Laser */
           transform: "rotate(45deg)",
         }}
       />
