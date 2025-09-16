@@ -1,7 +1,7 @@
 use std::time::{Duration, Instant};
 
 #[derive(Debug)]
-pub struct TimeAgnosticDeadTimePController {
+pub struct TimeAgnosticDeadTimePiController {
     // Params
     /// Proportional gain
     kp: f64,
@@ -18,7 +18,7 @@ pub struct TimeAgnosticDeadTimePController {
     last: Option<Instant>,
 }
 
-impl TimeAgnosticDeadTimePController {
+impl TimeAgnosticDeadTimePiController {
     pub fn new(kp: f64, ki: f64, dead: Duration) -> Self {
         Self {
             kp,
