@@ -185,7 +185,7 @@ impl MachineNewTrait for Winder2 {
                         ..Default::default()
                     },
                     stm_motor: StmMotorConfiguration {
-                        max_current: 6000,
+                        max_current: 2800,
                         ..Default::default()
                     },
                     ..Default::default()
@@ -309,7 +309,7 @@ impl MachineNewTrait for Winder2 {
                         ..Default::default()
                     },
                     stm_motor: StmMotorConfiguration {
-                        max_current: 1500,
+                        max_current: 2700,
                         ..Default::default()
                     },
                     pdo_assignment: EL7031_0030PredefinedPdoAssignment::VelocityControlCompact,
