@@ -55,6 +55,7 @@ const colorMap: Record<string, string> = {
 };
 
 const parseColorCodes = (text: string) => {
+  /* eslint-disable-next-line no-control-regex */
   const parts = text.split(/(\x1b\[\d+m)/g);
   let currentClass = "";
   const result: { text: string; className: string }[] = [];
