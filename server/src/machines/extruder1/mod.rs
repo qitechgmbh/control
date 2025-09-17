@@ -186,8 +186,8 @@ impl ExtruderV2 {
                 return;
             }
         };
-        let mut status = self.screw_speed_controller.get_inverter_status();
-        let new_status_hash = hash_with_serde_model(&mut status);
+        let status = self.screw_speed_controller.get_inverter_status();
+        let new_status_hash = hash_with_serde_model(status);
         let should_emit = new_status_hash != old_status_hash;
         if should_emit {
             self.emit_state();
@@ -325,7 +325,6 @@ impl ExtruderV2 {
         self.temperature_controller_front.disable();
         self.temperature_controller_middle.disable();
         self.temperature_controller_nozzle.disable();
-        self.emit_state();
     }
 
     fn enable_heating(&mut self) {
