@@ -1,57 +1,94 @@
+# `2.7.0`
+
+_17.09.2025_
+
+## Extruder V2
+
+- [#695](https://github.com/qitechgmbh/control/pull/695) Pressure and Rpm Regulation properly switch again
+
+## Winder V2
+
+- [#727](https://github.com/qitechgmbh/control/pull/727) Removed estimated diameter
+
+## Laser V1/V2
+
+- [#731](https://github.com/qitechgmbh/control/pull/731) Added LaserV2 with two-axis measurements
+
+## General
+
+- [#679](https://github.com/qitechgmbh/control/pull/679),[#677](https://github.com/qitechgmbh/control/pull/677),[#698](https://github.com/qitechgmbh/control/pull/698), [#684](https://github.com/qitechgmbh/control/pull/684),[#706](https://github.com/qitechgmbh/control/pull/706) Greatly improved overall system latency and stability
+
+- [#720](https://github.com/qitechgmbh/control/pull/720), [#686](https://github.com/qitechgmbh/control/pull/686) Improved User Interface
+
 # `2.6.0`
+
 _03.09.2025_
 
 ## Extruder V2
+
 - [#658](https://github.com/qitechgmbh/control/pull/658) Added manual
 - [#639](https://github.com/qitechgmbh/control/pull/639) Swapped order of screw speed regulation buttons
 
-
 ## Laser V1
+
 - [#642](https://github.com/qitechgmbh/control/pull/642) Improved stability of laser connection
 
 ## General
+
 - [#657](https://github.com/qitechgmbh/control/pull/657) Time frame for graphs is now remembered
 - [#641](https://github.com/qitechgmbh/control/pull/641) Removed duplicate scrollbar from manuals
 
 # `2.5.0`
+
 _27.08.2025_
 
 ## Extruder V2
+
 - [#595](https://github.com/qitechgmbh/control/pull/600) Simplified power graphs
 - [#593](https://github.com/qitechgmbh/control/pull/599) Added identifiers for temperature sensors in temperature graph
 
 ## Winder V2
+
 - [#598](https://github.com/qitechgmbh/control/pull/601) Images now load properly in the manual
 
 ## General
+
 - [#540](https://github.com/qitechgmbh/control/pull/592) Improved readability of the presets
 - [#591](https://github.com/qitechgmbh/control/pull/626) Significantly improved user interface performance and stability
 
 # `2.4.0`
+
 _14.08.2025_
 
-## Winder V2 
+## Winder V2
+
 - [#550](https://github.com/qitechgmbh/control/pull/551) Can now reset wound distance while winding
-  
+
 ## General
-- [#568](https://github.com/qitechgmbh/control/pull/569),[#572](https://github.com/qitechgmbh/control/pull/572), [#574](https://github.com/qitechgmbh/control/pull/587) Improved EtherCAT performance 
+
+- [#568](https://github.com/qitechgmbh/control/pull/569),[#572](https://github.com/qitechgmbh/control/pull/572), [#574](https://github.com/qitechgmbh/control/pull/587) Improved EtherCAT performance
 - [#588](https://github.com/qitechgmbh/control/pull/589) Improved frontend performance
 
 # `2.3.0`
+
 _06.08.2025_
 
 ## Extruder V2
+
 - [#520](https://github.com/qitechgmbh/control/pull/523) added warning message incase inverter is overloaded
 - [#501](https://github.com/qitechgmbh/control/pull/508) raised pressure limit of pressured PID mode for extruder
 - [#519](https://github.com/qitechgmbh/control/pull/549) added total power consumption monitor and graphs for voltage,current and wattage of the motor
 
-## Winder V2 
+## Winder V2
+
 - [#64](https://github.com/qitechgmbh/control/pull/504) added winder handbook
 
 ## Laser V1
+
 - [#497](https://github.com/qitechgmbh/control/pull/498) improved diameter visualisation
 
 ## General
+
 - [#62](https://github.com/qitechgmbh/control/pull/514),[#524](https://github.com/qitechgmbh/control/pull/528) added machine presets to load configurations
 - [#526](https://github.com/qitechgmbh/control/pull/541) added import and export of presets
 
@@ -67,6 +104,7 @@ _15.07.2025_
 - [#169](https://github.com/qitechgmbh/control/pull/492), Added a Confirmation Dialog when extruder has not reached 90% of target temperature
 
 ## Winder V2
+
 - [#471](https://github.com/qitechgmbh/control/pull/480), Added a live value to track the pulled distance and the option of switching to a different Mode after a given distance.
 
 ## General
