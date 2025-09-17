@@ -9,7 +9,7 @@ use crate::{
     ethercat::config::{MAX_FRAMES, MAX_PDU_DATA, MAX_SUBDEVICES, PDI_LEN},
 };
 use control_core::ethercat::eeprom_identification::read_device_identifications;
-#[cfg(unix)]
+#[cfg(target_os = "linux")]
 use control_core::irq_handling::set_irq_affinity;
 use control_core::machines::identification::{
     DeviceHardwareIdentification, DeviceHardwareIdentificationEthercat, DeviceIdentification,

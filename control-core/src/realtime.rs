@@ -1,7 +1,7 @@
 use tracing::debug;
 use tracing::error;
 
-#[cfg(unix)]
+#[cfg(target_os = "linux")]
 /// Makes the current thread a real-time thread using the PREEMPT_RT capabilities of Linux.
 ///
 /// This function configures the current thread with real-time scheduling properties by:
@@ -47,7 +47,7 @@ use tracing::error;
 ///
 /// - `Ok(())` if the real-time priority was successfully set
 /// - `Err` with the error message if setting the priority failed
-#[cfg(unix)]
+#[cfg(target_os = "linux")]
 pub fn set_realtime_priority() -> Result<(), anyhow::Error> {
     use anyhow::anyhow;
     use libc::{SCHED_FIFO, pthread_setschedparam, sched_param};
@@ -84,7 +84,7 @@ pub fn set_realtime_priority() -> Result<(), anyhow::Error> {
     Ok(())
 }
 
-#[cfg(not(unix))]
+#[cfg(not(target_os = "linux"))]
 pub fn set_realtime_priority() -> Result<(), anyhow::Error> {
     log::error!("This platform does not support realtime threads");
     Ok(())
@@ -137,7 +137,7 @@ pub fn set_realtime_priority() -> Result<(), anyhow::Error> {
 /// # How it works
 ///
 /// [Rest of documentation as before...]
-#[cfg(unix)]
+#[cfg(target_os = "linux")]
 pub fn lock_memory() -> Result<(), Box<dyn std::error::Error>> {
     use libc::{MCL_FUTURE, mlockall};
 
@@ -154,7 +154,7 @@ pub fn lock_memory() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-#[cfg(not(unix))]
+#[cfg(not(target_os = "linux"))]
 pub fn lock_memory() -> Result<(), Box<dyn std::error::Error>> {
     log::error!("This platform does not support memory locking");
     Ok(())
