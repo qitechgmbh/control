@@ -86,7 +86,7 @@ pub fn set_realtime_priority() -> Result<(), anyhow::Error> {
 
 #[cfg(not(target_os = "linux"))]
 pub fn set_realtime_priority() -> Result<(), anyhow::Error> {
-    log::error!("This platform does not support realtime threads");
+    tracing::error!("This platform does not support realtime threads");
     Ok(())
 }
 
@@ -156,7 +156,7 @@ pub fn lock_memory() -> Result<(), Box<dyn std::error::Error>> {
 
 #[cfg(not(target_os = "linux"))]
 pub fn lock_memory() -> Result<(), Box<dyn std::error::Error>> {
-    log::error!("This platform does not support memory locking");
+    tracing::error!("This platform does not support memory locking");
     Ok(())
 }
 
