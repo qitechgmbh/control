@@ -524,6 +524,7 @@ impl Winder2 {
 
         // Update the internal state
         self.traverse_mode = mode;
+        self.emit_state();
     }
 
     /// Apply the mode changes to the puller

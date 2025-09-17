@@ -259,6 +259,7 @@ export function winder2MessageHandler(
 
     try {
       if (eventName === "StateEvent") {
+        console.log(event);
         // Parse and validate the state event
         const stateEvent = stateEventSchema.parse(event);
 
