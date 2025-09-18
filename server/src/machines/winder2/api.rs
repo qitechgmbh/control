@@ -1,6 +1,9 @@
 use super::{Winder2, Winder2Mode, puller_speed_controller::PullerRegulationMode};
 use control_core::{
-    machines::{api::MachineApi, identification::MachineIdentificationUnique},
+    machines::{
+        api::MachineApi, connection::MachineCrossConnectionState,
+        identification::MachineIdentificationUnique,
+    },
     socketio::{
         event::{Event, GenericEvent},
         namespace::{
@@ -13,8 +16,7 @@ use control_core::{
 use control_core_derive::BuildEvent;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use smol::channel::Sender;
-use socketioxide::extract::SocketRef;
+use smol::lock::Mutex;
 use std::{
     sync::Arc,
     time::{Duration, Instant},
@@ -141,7 +143,7 @@ pub struct StateEvent {
     /// spool speed controller state
     pub spool_speed_controller_state: SpoolSpeedControllerState,
     /// connected machine state
-    pub connected_machine_state: ConnectedMachineState,
+    pub connected_machine_state: MachineCrossConnectionState,
 }
 
 #[derive(Serialize, Debug, Clone)]
@@ -237,13 +239,6 @@ pub struct SpoolSpeedControllerState {
     pub adaptive_deacceleration_urgency_multiplier: f64,
 }
 
-#[derive(Serialize, Debug, Clone)]
-pub struct ConnectedMachineState {
-    /// Connected Machine
-    pub machine_identification_unique: Option<MachineIdentificationUnique>,
-    pub is_available: bool,
-}
-
 pub enum Winder2Events {
     LiveValues(Event<LiveValuesEvent>),
     State(Event<StateEvent>),
@@ -251,7 +246,7 @@ pub enum Winder2Events {
 
 #[derive(Debug)]
 pub struct Winder2Namespace {
-    pub namespace: Namespace,
+    pub namespace: Arc<Mutex<Namespace>>,
 }
 
 impl NamespaceCacheingLogic<Winder2Events> for Winder2Namespace {
@@ -259,15 +254,9 @@ impl NamespaceCacheingLogic<Winder2Events> for Winder2Namespace {
     fn emit(&mut self, events: Winder2Events) {
         let event = Arc::new(events.event_value());
         let buffer_fn = events.event_cache_fn();
-        self.namespace.emit(event, &buffer_fn);
-    }
-}
 
-impl Winder2Namespace {
-    pub fn new(socket_queue_tx: Sender<(SocketRef, Arc<GenericEvent>)>) -> Self {
-        Self {
-            namespace: Namespace::new(socket_queue_tx),
-        }
+        let mut namespace = self.namespace.lock_blocking();
+        namespace.emit(event, &buffer_fn);
     }
 }
 
@@ -341,7 +330,7 @@ impl MachineApi for Winder2 {
         Ok(())
     }
 
-    fn api_event_namespace(&mut self) -> &mut Namespace {
-        &mut self.namespace.namespace
+    fn api_event_namespace(&mut self) -> Arc<Mutex<Namespace>> {
+        self.namespace.namespace.clone()
     }
 }

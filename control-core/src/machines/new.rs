@@ -1,4 +1,8 @@
-use crate::{machines::manager::MachineManager, serial::SerialDevice};
+use crate::{
+    machines::{identification::MachineIdentificationUnique, manager::MachineManager},
+    serial::SerialDevice,
+    socketio::namespace::Namespace,
+};
 
 use super::identification::DeviceIdentificationIdentified;
 use anyhow::Error;
@@ -6,7 +10,10 @@ use ethercat_hal::{
     devices::EthercatDevice, helpers::ethercrab_types::EthercrabSubDevicePreoperational,
 };
 use ethercrab::{SubDevice, SubDeviceRef};
-use smol::{channel::Sender, lock::RwLock};
+use smol::{
+    channel::Sender,
+    lock::{Mutex, RwLock},
+};
 use socketioxide::extract::SocketRef;
 use std::{
     sync::{Arc, Weak},
@@ -49,6 +56,19 @@ pub struct MachineNewParams<
     >,
     pub socket_queue_tx: Sender<(SocketRef, Arc<GenericEvent>)>,
     pub machine_manager: Weak<RwLock<MachineManager>>,
+
+    pub namespace: Arc<Mutex<Namespace>>,
+}
+
+impl MachineNewParams<'_, '_, '_, '_, '_, '_, '_> {
+    pub fn get_machine_identification_unique(&self) -> MachineIdentificationUnique {
+        self.device_group
+            .first()
+            .expect("device group must have at least one device")
+            .device_machine_identification
+            .machine_identification_unique
+            .clone()
+    }
 }
 
 pub enum MachineNewHardware<

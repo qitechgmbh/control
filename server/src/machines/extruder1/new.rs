@@ -387,8 +387,11 @@ impl MachineNewTrait for ExtruderV2 {
             let screw_speed_controller =
                 ScrewSpeedController::new(inverter, target_pressure, target_rpm, pressure_sensor);
 
-            let mut extruder: Self = Self {
-                namespace: ExtruderV2Namespace::new(params.socket_queue_tx.clone()),
+            let mut extruder: ExtruderV2 = Self {
+                machine_identificttion_unique: params.get_machine_identification_unique(),
+                namespace: ExtruderV2Namespace {
+                    namespace: params.namespace.clone(),
+                },
                 last_measurement_emit: Instant::now(),
                 mode: ExtruderV2Mode::Standby,
                 total_energy_kwh: 0.0,
