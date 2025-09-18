@@ -18,8 +18,6 @@ in
   boot.kernelPackages = pkgs.linuxPackages_6_13;
   boot.kernelModules = [ "i915" ];
 
-
-
   boot.kernelParams = [
     # Realtime Preemption
     "preempt=full"
@@ -70,8 +68,54 @@ in
   boot.kernel.sysctl = {
     "kernel.panic_on_oops" = 1;          # Reboot on kernel oops
     "kernel.panic" = 10;                 # Reboot after 10 seconds on panic
-    "vm.swappiness" = 10;                # Reduce swap usage
+    # "vm.swappiness" = 10;                # Reduce swap usage
     "kernel.sysrq" = 1;                  # Enable SysRq for emergency control
+  };
+
+  # Create a 6 GiB swapfile at /swapfile
+  systemd.tmpfiles.rules = [
+    # Ensure parent directory exists with proper perms (root dir already exists)
+    # Create the swapfile with exact size: 6G
+    "f /swapfile - - - - -"
+  ];
+
+  # Custom service to allocate and format the swapfile early in boot
+  systemd.services.create-swapfile = {
+    description = "Create and enable /swapfile swap";
+    wants = [ "local-fs.target" ];
+    before = [ "swap.target" ];
+    path = [ pkgs.coreutils pkgs.util-linux pkgs.systemd ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = "yes";
+    };
+    script = ''
+      set -e
+      # If swapfile already exists and is a swap, enable it
+      if swapon --show=NAME | grep -q '^/swapfile$'; then
+        exit 0
+      fi
+
+      # If file exists but not swap, remove it to recreate
+      if [ -f /swapfile ]; then
+        swapuuid=$(/sbin/blkid -o value -s UUID /swapfile 2>/dev/null || true)
+        if [ -n "$swapuuid" ]; then
+          swapoff /swapfile || true
+        fi
+        rm -f /swapfile
+      fi
+
+      # Allocate 6 GiB (sparse then fallocate to ensure space)
+      fallocate -l 6G /swapfile || dd if=/dev/zero of=/swapfile bs=1M count=6144
+
+      # Set strict permissions
+      chown 0:0 /swapfile
+      chmod 600 /swapfile
+
+      # Setup swap space and enable it
+      mkswap /swapfile
+      swapon /swapfile
+    '';
   };
 
   nix = {
