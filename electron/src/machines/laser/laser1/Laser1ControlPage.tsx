@@ -2,7 +2,10 @@ import { ControlCard } from "@/control/ControlCard";
 import { Page } from "@/components/Page";
 import React from "react";
 import { ControlGrid } from "@/control/ControlGrid";
-import { TimeSeriesValueNumeric, NumericValue } from "@/control/TimeSeriesValue";
+import {
+  TimeSeriesValueNumeric,
+  NumericValue,
+} from "@/control/TimeSeriesValue";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -147,7 +150,9 @@ export function Laser1ControlPage() {
                       { value: 30 * 60 * 1000, label: "30m" },
                       { value: 1 * 60 * 60 * 1000, label: "1h" },
                     ];
-                    const option = timeWindowOptions.find((opt) => opt.value === minMaxTimeWindow);
+                    const option = timeWindowOptions.find(
+                      (opt) => opt.value === minMaxTimeWindow,
+                    );
                     return option ? option.label : "5m";
                   })()}
                   <Icon name="lu:ChevronDown" className="ml-2 size-4" />

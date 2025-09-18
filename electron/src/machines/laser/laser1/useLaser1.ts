@@ -20,7 +20,9 @@ function useLaser(machine_identification_unique: MachineIdentificationUnique) {
 
   // Configurable time window for min/max calculations (in milliseconds)
   // Default to 5 minutes
-  const [minMaxTimeWindow, setMinMaxTimeWindow] = useState<number>(5 * 60 * 1000);
+  const [minMaxTimeWindow, setMinMaxTimeWindow] = useState<number>(
+    5 * 60 * 1000,
+  );
 
   // Calculate min/max values for diameter over the specified time window
   const diameterMinMax = useMemo(() => {
