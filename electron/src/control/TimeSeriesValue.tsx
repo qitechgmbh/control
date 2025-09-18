@@ -74,6 +74,52 @@ function _TimeSeriesValue({
   );
 }
 
+type NumericValueProps = {
+  label: string;
+  unit?: Unit;
+  value: number;
+  icon?: IconName;
+  renderValue?: (value: number) => string;
+};
+
+export function NumericValue({
+  unit,
+  value,
+  icon,
+  label,
+  renderValue,
+}: NumericValueProps) {
+  const leftRef = React.useRef<HTMLDivElement>(null);
+
+  // observe max width of left side
+  const { maxWidth: leftMaxWidth } = useMaxContainerMaxDimension(leftRef);
+
+  return (
+    <div className="flex w-full flex-row items-center gap-4">
+      <div
+        ref={leftRef}
+        className="h-16"
+        style={{ minWidth: `${leftMaxWidth}px` }}
+      >
+        <Label label={label}>
+          <div className="flex flex-row items-center gap-4">
+            <Icon
+              name={icon ?? (unit ? getUnitIcon(unit) : undefined)}
+              className="size-7"
+            />
+            <div className="flex flex-row items-center gap-2">
+              <span className="font-mono text-4xl font-bold">
+                {renderValueToReactNode(value, unit, renderValue)}
+              </span>
+              <span>{renderUnitSymbol(unit)}</span>
+            </div>
+          </div>
+        </Label>
+      </div>
+    </div>
+  );
+}
+
 export function TimeSeriesValueNumeric(props: Props) {
   return <_TimeSeriesValue {...props} />;
 }

@@ -2,7 +2,17 @@ import { ControlCard } from "@/control/ControlCard";
 import { Page } from "@/components/Page";
 import React from "react";
 import { ControlGrid } from "@/control/ControlGrid";
-import { TimeSeriesValueNumeric } from "@/control/TimeSeriesValue";
+import { TimeSeriesValueNumeric, NumericValue } from "@/control/TimeSeriesValue";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { TouchButton } from "@/components/touch/TouchButton";
+import { Icon } from "@/components/Icon";
 
 import { EditValue } from "@/control/EditValue";
 import { Label } from "@/control/Label";
@@ -21,6 +31,11 @@ export function Laser1ControlPage() {
     setTargetDiameter,
     setLowerTolerance,
     setHigherTolerance,
+    diameterMinMax,
+    xValueMinMax,
+    yValueMinMax,
+    minMaxTimeWindow,
+    setMinMaxTimeWindow,
   } = useLaser1();
 
   // Extract values from consolidated state
@@ -47,28 +62,124 @@ export function Laser1ControlPage() {
               renderValue={(value) => value.toFixed(3)}
             />
           </div>
+          <div className="flex flex-row items-center gap-6">
+            <NumericValue
+              label="Min Diameter"
+              unit="mm"
+              value={diameterMinMax.min}
+              renderValue={(value) => value.toFixed(3)}
+            />
+            <NumericValue
+              label="Max Diameter"
+              unit="mm"
+              value={diameterMinMax.max}
+              renderValue={(value) => value.toFixed(3)}
+            />
+          </div>
           {x_value?.current && (
-            <div className="flex flex-row items-center gap-6">
-              <TimeSeriesValueNumeric
-                label="X-Diameter"
-                unit="mm"
-                timeseries={x_value}
-                renderValue={(value) => value.toFixed(3)}
-              />
-            </div>
+            <>
+              <div className="flex flex-row items-center gap-6">
+                <TimeSeriesValueNumeric
+                  label="X-Diameter"
+                  unit="mm"
+                  timeseries={x_value}
+                  renderValue={(value) => value.toFixed(3)}
+                />
+              </div>
+              <div className="flex flex-row items-center gap-6">
+                <NumericValue
+                  label="Min X-Diameter"
+                  unit="mm"
+                  value={xValueMinMax.min}
+                  renderValue={(value) => value.toFixed(3)}
+                />
+                <NumericValue
+                  label="Max X-Diameter"
+                  unit="mm"
+                  value={xValueMinMax.max}
+                  renderValue={(value) => value.toFixed(3)}
+                />
+              </div>
+            </>
           )}
           {y_value?.current && (
-            <div className="flex flex-row items-center gap-6">
-              <TimeSeriesValueNumeric
-                label="Y-Diameter"
-                unit="mm"
-                timeseries={y_value}
-                renderValue={(value) => value.toFixed(3)}
-              />
-            </div>
+            <>
+              <div className="flex flex-row items-center gap-6">
+                <TimeSeriesValueNumeric
+                  label="Y-Diameter"
+                  unit="mm"
+                  timeseries={y_value}
+                  renderValue={(value) => value.toFixed(3)}
+                />
+              </div>
+              <div className="flex flex-row items-center gap-6">
+                <NumericValue
+                  label="Min Y-Diameter"
+                  unit="mm"
+                  value={yValueMinMax.min}
+                  renderValue={(value) => value.toFixed(3)}
+                />
+                <NumericValue
+                  label="Max Y-Diameter"
+                  unit="mm"
+                  value={yValueMinMax.max}
+                  renderValue={(value) => value.toFixed(3)}
+                />
+              </div>
+            </>
           )}
         </ControlCard>
         <ControlCard title="Settings">
+          <Label label="Min/Max Time Window">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <TouchButton
+                  variant="outline"
+                  className="h-auto w-full justify-between border-gray-300 bg-white px-3 py-3 text-base text-gray-900 hover:bg-gray-50"
+                >
+                  {(() => {
+                    const timeWindowOptions = [
+                      { value: 10 * 1000, label: "10s" },
+                      { value: 30 * 1000, label: "30s" },
+                      { value: 1 * 60 * 1000, label: "1m" },
+                      { value: 5 * 60 * 1000, label: "5m" },
+                      { value: 10 * 60 * 1000, label: "10m" },
+                      { value: 30 * 60 * 1000, label: "30m" },
+                      { value: 1 * 60 * 60 * 1000, label: "1h" },
+                    ];
+                    const option = timeWindowOptions.find((opt) => opt.value === minMaxTimeWindow);
+                    return option ? option.label : "5m";
+                  })()}
+                  <Icon name="lu:ChevronDown" className="ml-2 size-4" />
+                </TouchButton>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel className="text-base font-medium">
+                  Time Window for Min/Max
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {[
+                  { value: 10 * 1000, label: "10s" },
+                  { value: 30 * 1000, label: "30s" },
+                  { value: 1 * 60 * 1000, label: "1m" },
+                  { value: 5 * 60 * 1000, label: "5m" },
+                  { value: 10 * 60 * 1000, label: "10m" },
+                  { value: 30 * 60 * 1000, label: "30m" },
+                  { value: 1 * 60 * 60 * 1000, label: "1h" },
+                ].map((option) => (
+                  <DropdownMenuItem
+                    key={option.value}
+                    onClick={() => setMinMaxTimeWindow(option.value)}
+                    className={`min-h-[48px] px-4 py-3 text-base ${
+                      minMaxTimeWindow === option.value ? "bg-blue-50" : ""
+                    }`}
+                  >
+                    {option.label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </Label>
           <Label label="Set Target Diameter">
             <EditValue
               title="Set Target Diameter"

@@ -5,9 +5,10 @@ import { laser1 } from "@/machines/properties";
 import { laser1SerialRoute } from "@/routes/routes";
 import { z } from "zod";
 import { useLaser1Namespace, StateEvent } from "./laser1Namespace";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useStateOptimistic } from "@/lib/useStateOptimistic";
 import { produce } from "immer";
+import { getSeriesMinMax } from "@/lib/timeseries";
 
 function useLaser(machine_identification_unique: MachineIdentificationUnique) {
   // Get consolidated state and live values from namespace
@@ -16,6 +17,28 @@ function useLaser(machine_identification_unique: MachineIdentificationUnique) {
 
   // Single optimistic state for all state management
   const stateOptimistic = useStateOptimistic<StateEvent>();
+
+  // Configurable time window for min/max calculations (in milliseconds)
+  // Default to 5 minutes
+  const [minMaxTimeWindow, setMinMaxTimeWindow] = useState<number>(5 * 60 * 1000);
+
+  // Calculate min/max values for diameter over the specified time window
+  const diameterMinMax = useMemo(() => {
+    if (!diameter.short) return { min: 0, max: 0 };
+    return getSeriesMinMax(diameter.short, minMaxTimeWindow);
+  }, [diameter.short, minMaxTimeWindow]);
+
+  // Calculate min/max values for x_value over the specified time window
+  const xValueMinMax = useMemo(() => {
+    if (!x_value?.short) return { min: 0, max: 0 };
+    return getSeriesMinMax(x_value.short, minMaxTimeWindow);
+  }, [x_value?.short, minMaxTimeWindow]);
+
+  // Calculate min/max values for y_value over the specified time window
+  const yValueMinMax = useMemo(() => {
+    if (!y_value?.short) return { min: 0, max: 0 };
+    return getSeriesMinMax(y_value.short, minMaxTimeWindow);
+  }, [y_value?.short, minMaxTimeWindow]);
 
   useEffect(() => {
     if (state) {
@@ -112,6 +135,13 @@ function useLaser(machine_identification_unique: MachineIdentificationUnique) {
     diameter,
     x_value,
     y_value,
+
+    // Min/Max values over configurable time window
+    diameterMinMax,
+    xValueMinMax,
+    yValueMinMax,
+    minMaxTimeWindow,
+    setMinMaxTimeWindow,
 
     // Loading states
     isLoading: stateOptimistic.isOptimistic,
