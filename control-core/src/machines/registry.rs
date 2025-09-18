@@ -30,13 +30,14 @@ impl MachineRegistry {
         self.type_map.insert(
             TypeId::of::<T>(),
             (
-                machine_identficiation,
+                machine_identficiation.clone(),
                 // create a machine construction closure
                 Box::new(|machine_new_params| {
                     Ok(Arc::new(Mutex::new(T::new(machine_new_params)?)))
                 }),
             ),
         );
+        println!("{:?}", machine_identficiation);
     }
 
     pub fn new_machine(
@@ -53,6 +54,7 @@ impl MachineRegistry {
                     module_path!()
                 ))?;
 
+        println!("{:?}", device_identification);
         // find machine new function by comparing MachineIdentification
         let (_, machine_new_closure) = self
             .type_map

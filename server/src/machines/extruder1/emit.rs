@@ -1,3 +1,4 @@
+#[cfg(not(feature = "mock-machine"))]
 // Contains Implementations for All functions that use emit_state
 use crate::machines::extruder1::{
     ExtruderV2, ExtruderV2Mode, HeatingType,
@@ -18,6 +19,7 @@ use uom::si::{
     thermodynamic_temperature::degree_celsius,
 };
 
+#[cfg(not(feature = "mock-machine"))]
 impl ExtruderV2 {
     pub fn build_state_event(&mut self) -> StateEvent {
         StateEvent {
@@ -114,6 +116,7 @@ impl ExtruderV2 {
     }
 }
 
+#[cfg(not(feature = "mock-machine"))]
 impl ExtruderV2 {
     pub fn emit_state(&mut self) {
         let state = self.build_state_event();
