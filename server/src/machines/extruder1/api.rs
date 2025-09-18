@@ -1,4 +1,11 @@
-use super::{ExtruderV2, ExtruderV2Mode, HeatingType, mitsubishi_cs80::MotorStatus};
+use super::{ExtruderV2Mode, HeatingType, mitsubishi_cs80::MotorStatus};
+
+#[cfg(not(feature = "mock-machine"))]
+use super::ExtruderV2;
+
+#[cfg(feature = "mock-machine")]
+use super::mock::ExtruderV2;
+
 use control_core::{
     machines::api::MachineApi,
     socketio::{
@@ -23,11 +30,11 @@ use uom::si::{
 
 #[derive(Debug, Clone, Default, Serialize)]
 pub struct MotorStatusValues {
-    screw_rpm: f64, // rpm of motor
-    frequency: f64, // frequency of motor
-    voltage: f64,   // volt used for motor
-    current: f64,   // current used for the motor
-    power: f64,     // power in watts
+    pub screw_rpm: f64, // rpm of motor
+    pub frequency: f64, // frequency of motor
+    pub voltage: f64,   // volt used for motor
+    pub current: f64,   // current used for the motor
+    pub power: f64,     // power in watts
 }
 
 impl From<MotorStatus> for MotorStatusValues {
@@ -189,7 +196,7 @@ pub enum ExtruderV2Events {
 }
 
 #[derive(Deserialize, Serialize)]
-enum Mutation {
+pub enum Mutation {
     /// INVERTER
     /// Frequency Control
     // Set Rotation also starts the motor
@@ -257,6 +264,7 @@ impl CacheableEvents<Self> for ExtruderV2Events {
     }
 }
 
+#[cfg(not(feature = "mock-machine"))]
 impl MachineApi for ExtruderV2 {
     fn api_mutate(&mut self, request_body: Value) -> Result<(), anyhow::Error> {
         // there are multiple Modbus Frames that are "prebuilt"

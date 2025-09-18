@@ -14,7 +14,7 @@ pub mod act;
 pub mod api;
 pub mod emit;
 pub mod mitsubishi_cs80;
-pub mod mock_emit;
+pub mod mock;
 pub mod new;
 pub mod screw_speed_controller;
 pub mod temperature_controller;
@@ -53,6 +53,7 @@ pub enum HeatingType {
 }
 
 #[derive(Debug, Machine)]
+#[cfg(not(feature = "mock-machine"))]
 pub struct ExtruderV2 {
     namespace: ExtruderV2Namespace,
     last_measurement_emit: Instant,
@@ -73,12 +74,14 @@ pub struct ExtruderV2 {
     emitted_default_state: bool,
 }
 
+#[cfg(not(feature = "mock-machine"))]
 impl std::fmt::Display for ExtruderV2 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "ExtruderV2")
     }
 }
 
+#[cfg(not(feature = "mock-machine"))]
 impl ExtruderV2 {
     pub const MACHINE_IDENTIFICATION: MachineIdentification = MachineIdentification {
         vendor: VENDOR_QITECH,
@@ -86,6 +89,7 @@ impl ExtruderV2 {
     };
 }
 
+#[cfg(not(feature = "mock-machine"))]
 impl ExtruderV2 {
     /// Calculate combined power consumption in watts
     fn calculate_combined_power(&mut self) -> f64 {

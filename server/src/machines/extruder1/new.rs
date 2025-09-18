@@ -1,3 +1,4 @@
+#[cfg(not(feature = "mock-machine"))]
 use super::{
     ExtruderV2, ExtruderV2Mode, Heating, api::ExtruderV2Namespace, mitsubishi_cs80::MitsubishiCS80,
     screw_speed_controller::ScrewSpeedController,
@@ -40,6 +41,7 @@ use uom::si::{
     thermodynamic_temperature::degree_celsius,
 };
 
+#[cfg(not(feature = "mock-machine"))]
 impl MachineNewTrait for ExtruderV2 {
     fn new<'maindevice>(params: &MachineNewParams) -> Result<Self, Error> {
         // validate general stuff

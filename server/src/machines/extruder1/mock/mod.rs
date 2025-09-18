@@ -1,0 +1,93 @@
+use std::time::Instant;
+
+use control_core::machines::identification::MachineIdentification;
+use control_core_derive::Machine;
+
+use crate::machines::{
+    MACHINE_EXTRUDER_V1, VENDOR_QITECH,
+    extruder1::{
+        ExtruderV2Mode,
+        api::{
+            ExtruderSettingsState, ExtruderV2Namespace, HeatingStates, InverterStatusState,
+            ModeState, MotorStatusValues, PidSettingsStates, PressureState, RegulationState,
+            RotationState, ScrewState,
+        },
+    },
+};
+
+pub mod act;
+pub mod api;
+pub mod mock_emit;
+pub mod new;
+
+#[derive(Debug, Machine)]
+pub struct ExtruderV2 {
+    namespace: ExtruderV2Namespace,
+    last_measurement_emit: Instant,
+    last_status_hash: Option<u64>,
+    mode: ExtruderV2Mode,
+    /// Energy tracking for total consumption calculation
+    pub total_energy_kwh: f64,
+    pub last_energy_calculation_time: Option<Instant>,
+    /// will be initalized as false and set to true by `emit_state`
+    /// This way we can signal to the client that the first state emission is a default state
+    emitted_default_state: bool,
+    pub target_pressure: f64,
+
+    pub is_default_state: bool,
+    /// rotation state
+    pub rotation_state: RotationState,
+    /// mode state
+    pub mode_state: ModeState,
+    /// regulation state
+    pub regulation_state: RegulationState,
+    /// pressure state
+    pub pressure_state: PressureState,
+    /// screw state
+    pub screw_state: ScrewState,
+    /// heating states
+    pub heating_states: HeatingStates,
+    /// extruder settings state
+    pub extruder_settings_state: ExtruderSettingsState,
+    /// inverter status state
+    pub inverter_status_state: InverterStatusState,
+    /// pid settings
+    pub pid_settings: PidSettingsStates,
+
+    pub motor_status: MotorStatusValues,
+    /// pressure in bar
+    pub pressure: f64,
+    /// nozzle temperature in celsius
+    pub nozzle_temperature: f64,
+    /// front temperature in celsius
+    pub front_temperature: f64,
+    /// back temperature in celsius
+    pub back_temperature: f64,
+    /// middle temperature in celsius
+    pub middle_temperature: f64,
+    /// nozzle heating power in watts
+    pub nozzle_power: f64,
+    /// front heating power in watts
+    pub front_power: f64,
+    /// back heating power in watts
+    pub back_power: f64,
+    /// middle heating power in watts
+    pub middle_power: f64,
+    /// combined power consumption in watts
+    pub combined_power: f64,
+
+    pub nozzle_heating_allowed: bool,
+
+    pub front_heating_allowed: bool,
+
+    pub back_heating_allowed: bool,
+
+    pub middle_heating_allowed: bool,
+}
+
+impl ExtruderV2 {
+    pub const MACHINE_IDENTIFICATION: MachineIdentification = MachineIdentification {
+        vendor: VENDOR_QITECH,
+        machine: MACHINE_EXTRUDER_V1,
+    };
+}
