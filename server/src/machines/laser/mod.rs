@@ -28,7 +28,7 @@ pub struct LaserMachine {
     diameter: Length,
     x_diameter: Option<Length>,
     y_diameter: Option<Length>,
-    roundness: Option<Length>,
+    roundness: Option<f64>,
 
     //laser target configuration
     laser_target: LaserTarget,
@@ -51,7 +51,7 @@ impl LaserMachine {
         let diameter = self.diameter.get::<millimeter>();
         let x_diameter = self.x_diameter.map(|x| x.get::<millimeter>());
         let y_diameter = self.y_diameter.map(|y| y.get::<millimeter>());
-        let roundness = self.roundness.map(|r| r.get::<millimeter>());
+        let roundness = self.roundness.map(|r| r);
 
         let live_values = LiveValuesEvent {
             diameter,
@@ -107,7 +107,7 @@ impl LaserMachine {
     ///
     /// Roundness = min(x, y) / max(x, y)
     ///
-    fn calculate_roundness(&mut self) -> Option<Length> {
+    fn calculate_roundness(&mut self) -> Option<f64> {
         match (self.x_diameter, self.y_diameter) {
             (Some(x), Some(y)) => {
                 let x_val = x.get::<millimeter>();
@@ -115,9 +115,9 @@ impl LaserMachine {
 
                 if x_val > 0.0 && y_val > 0.0 {
                     let roundness = f64::min(x_val, y_val) / f64::max(x_val, y_val);
-                    Some(Length::new::<millimeter>(roundness))
+                    Some(roundness)
                 } else if x_val == 0.0 && y_val == 0.0 {
-                    Some(Length::new::<millimeter>(0.0))
+                    Some(0.0)
                 } else {
                     None
                 }
