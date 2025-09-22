@@ -11,6 +11,13 @@ import {
 // Set consistent app ID for Windows taskbar and GNOME dock integration
 app.setAppUserModelId("de.qitech.control-electron");
 
+
+app.getGPUInfo('complete').then(function(data)
+{
+    console.log(data);
+});
+
+
 // Ensure single instance
 const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock) {
