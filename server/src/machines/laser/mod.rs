@@ -138,12 +138,12 @@ impl LaserMachine {
         self.x_diameter = laser_data
             .as_ref()
             .and_then(|data| data.x_axis.as_ref())
-            .map(|x| Length::new::<millimeter>(x.get::<millimeter>()));
+            .cloned();
 
         self.y_diameter = laser_data
             .as_ref()
             .and_then(|data| data.y_axis.as_ref())
-            .map(|y| Length::new::<millimeter>(y.get::<millimeter>()));
+            .cloned();
 
         self.roundness = self.calculate_roundness();
     }
