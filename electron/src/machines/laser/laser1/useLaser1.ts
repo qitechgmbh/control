@@ -11,7 +11,7 @@ import { produce } from "immer";
 
 function useLaser(machine_identification_unique: MachineIdentificationUnique) {
   // Get consolidated state and live values from namespace
-  const { state, defaultState, diameter, x_diameter, y_diameter, roundness } =
+  const { state, defaultState, diameter, x_value, y_value } =
     useLaser1Namespace(machine_identification_unique);
 
   // Single optimistic state for all state management
@@ -110,9 +110,8 @@ function useLaser(machine_identification_unique: MachineIdentificationUnique) {
 
     // Live values (TimeSeries)
     diameter,
-    x_diameter,
-    y_diameter,
-    roundness,
+    x_value,
+    y_value,
 
     // Loading states
     isLoading: stateOptimistic.isOptimistic,

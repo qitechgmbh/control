@@ -5,10 +5,7 @@ use crate::serial::{devices::laser::Laser, registry::SERIAL_DEVICE_REGISTRY};
 use super::{LaserMachine, LaserTarget, api::LaserMachineNamespace};
 use anyhow::Error;
 use control_core::machines::new::MachineNewTrait;
-use uom::{
-    ConstZero,
-    si::{f64::Length, length::millimeter},
-};
+use uom::si::{f64::Length, length::millimeter};
 
 impl MachineNewTrait for LaserMachine {
     fn new(
@@ -42,10 +39,6 @@ impl MachineNewTrait for LaserMachine {
             last_measurement_emit: Instant::now(),
             laser_target,
             emitted_default_state: false,
-            diameter: Length::ZERO,
-            x_diameter: None,
-            y_diameter: None,
-            roundness: None,
         };
 
         // Emit initial state

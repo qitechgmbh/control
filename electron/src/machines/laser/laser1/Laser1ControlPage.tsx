@@ -14,9 +14,8 @@ import { DiameterVisualisation } from "../DiameterVisualisation";
 export function Laser1ControlPage() {
   const {
     diameter,
-    x_diameter,
-    y_diameter,
-    roundness,
+    x_value,
+    y_value,
     state,
     defaultState,
     setTargetDiameter,
@@ -37,8 +36,8 @@ export function Laser1ControlPage() {
             lowTolerance={lowerTolerance}
             highTolerance={higherTolerance}
             diameter={diameter}
-            x_diameter={x_diameter}
-            y_diameter={y_diameter}
+            x_value={x_value}
+            y_value={y_value}
           />
           <div className="flex flex-row items-center gap-6">
             <TimeSeriesValueNumeric
@@ -48,32 +47,22 @@ export function Laser1ControlPage() {
               renderValue={(value) => value.toFixed(3)}
             />
           </div>
-          {x_diameter?.current && (
+          {x_value?.current && (
             <div className="flex flex-row items-center gap-6">
               <TimeSeriesValueNumeric
                 label="X-Diameter"
                 unit="mm"
-                timeseries={x_diameter}
+                timeseries={x_value}
                 renderValue={(value) => value.toFixed(3)}
               />
             </div>
           )}
-          {y_diameter?.current && (
+          {y_value?.current && (
             <div className="flex flex-row items-center gap-6">
               <TimeSeriesValueNumeric
                 label="Y-Diameter"
                 unit="mm"
-                timeseries={y_diameter}
-                renderValue={(value) => value.toFixed(3)}
-              />
-            </div>
-          )}
-          {roundness?.current && (
-            <div className="flex flex-row items-center gap-6">
-              <TimeSeriesValueNumeric
-                label="Roundness"
-                unit="mm"
-                timeseries={roundness}
+                timeseries={y_value}
                 renderValue={(value) => value.toFixed(3)}
               />
             </div>

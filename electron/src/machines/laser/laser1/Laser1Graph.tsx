@@ -10,19 +10,18 @@ import React from "react";
 import { useLaser1 } from "./useLaser1";
 
 export function Laser1GraphsPage() {
-  const { diameter, x_diameter, y_diameter, roundness, state } = useLaser1();
+  const { diameter, x_value, y_value, state } = useLaser1();
 
   const syncHook = useGraphSync("diameter-group");
   const targetDiameter = state?.laser_state?.target_diameter ?? 0;
   const lowerTolerance = state?.laser_state?.lower_tolerance ?? 0;
   const higherTolerance = state?.laser_state?.higher_tolerance ?? 0;
 
-  const isTwoAxis = !!x_diameter?.current || !!y_diameter?.current;
+  const isTwoAxis = !!x_value?.current || !!y_value?.current;
 
   const diameterColor = "#3b82f6";
   const xDiameterColor = "#ef4444";
   const yDiameterColor = "#22c55e";
-  const roundnessColor = "#eab308";
 
   const config: GraphConfig = {
     title: "Diameter",
@@ -111,19 +110,14 @@ export function Laser1GraphsPage() {
                 ],
               },
               {
-                newData: x_diameter,
+                newData: x_value,
                 color: xDiameterColor,
                 title: "X-Diameter",
               },
               {
-                newData: y_diameter,
+                newData: y_value,
                 color: yDiameterColor,
                 title: "Y-Diameter",
-              },
-              {
-                newData: roundness,
-                color: roundnessColor,
-                title: "Roundness",
               },
             ]}
             unit="mm"

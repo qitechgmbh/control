@@ -7,8 +7,8 @@ type DiameterVisualisationProps = {
   lowTolerance: number;
   highTolerance: number;
   diameter: TimeSeries;
-  x_diameter?: TimeSeries;
-  y_diameter?: TimeSeries;
+  x_value?: TimeSeries;
+  y_value?: TimeSeries;
 };
 
 // Ring color depending on tolerance
@@ -36,12 +36,12 @@ export function DiameterVisualisation({
   lowTolerance,
   highTolerance,
   diameter,
-  x_diameter,
-  y_diameter,
+  x_value,
+  y_value,
 }: DiameterVisualisationProps) {
   const actualDiameter = diameter.current?.value ?? 0.0;
-  const actualX = x_diameter?.current?.value ?? actualDiameter;
-  const actualY = y_diameter?.current?.value ?? actualDiameter;
+  const actualX = x_value?.current?.value ?? actualDiameter;
+  const actualY = y_value?.current?.value ?? actualDiameter;
 
   const minDia = targetDiameter - lowTolerance;
   const maxDia = targetDiameter + highTolerance;
@@ -55,15 +55,9 @@ export function DiameterVisualisation({
     inputMax: number,
     outputMin: number,
     outputMax: number,
-  ) => {
-    if (inputMax === inputMin) {
-      return (outputMin + outputMax) / 2;
-    }
-    return (
-      outputMin +
-      ((value - inputMin) * (outputMax - outputMin)) / (inputMax - inputMin)
-    );
-  };
+  ) =>
+    outputMin +
+    ((value - inputMin) * (outputMax - outputMin)) / (inputMax - inputMin);
 
   const clamp = (value: number, min: number, max: number) =>
     Math.min(Math.max(value, min), max);
