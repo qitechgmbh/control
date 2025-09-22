@@ -278,7 +278,7 @@ export function Winder2ControlPage() {
                 DiameterNoPid: {
                   children: "DiameterNoPid",
                   icon: "lu:Sun",
-                  disabled: !state?.connected_laser_state.is_available,
+                  disabled: !state?.connected_laser_state.is_available || true,
                 },
               }}
               onChange={setPullerRegulationMode}
