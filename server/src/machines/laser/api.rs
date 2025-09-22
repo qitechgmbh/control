@@ -21,8 +21,9 @@ use tracing::instrument;
 pub struct LiveValuesEvent {
     /// diameter measurement in mm
     pub diameter: f64,
-    pub x_value: Option<f64>,
-    pub y_value: Option<f64>,
+    pub x_diameter: Option<f64>,
+    pub y_diameter: Option<f64>,
+    pub roundness: Option<f64>,
 }
 
 impl LiveValuesEvent {

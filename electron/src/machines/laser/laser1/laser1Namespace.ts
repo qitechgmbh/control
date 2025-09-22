@@ -28,8 +28,9 @@ import {
  */
 export const liveValuesEventDataSchema = z.object({
   diameter: z.number(),
-  x_value: z.number().nullable(),
-  y_value: z.number().nullable(),
+  x_diameter: z.number().nullable(),
+  y_diameter: z.number().nullable(),
+  roundness: z.number().nullable(),
 });
 
 /**
@@ -59,8 +60,9 @@ export type Laser1NamespaceStore = {
 
   // Time series data for live values
   diameter: TimeSeries;
-  x_value: TimeSeries;
-  y_value: TimeSeries;
+  x_diameter: TimeSeries;
+  y_diameter: TimeSeries;
+  roundness: TimeSeries;
 };
 
 // Constants for time durations
@@ -75,19 +77,19 @@ const { initialTimeSeries: diameter, insert: addDiameter } = createTimeSeries(
   ONE_HOUR,
 );
 
-const { initialTimeSeries: x_value, insert: addXValue } = createTimeSeries(
+const { initialTimeSeries: x_diameter, insert: addXDiameter } =
+  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+
+const { initialTimeSeries: y_diameter, insert: addYDiameter } =
+  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+
+const { initialTimeSeries: roundness, insert: addRoundness } = createTimeSeries(
   TWENTY_MILLISECOND,
   ONE_SECOND,
   FIVE_SECOND,
   ONE_HOUR,
 );
 
-const { initialTimeSeries: y_value, insert: addYValue } = createTimeSeries(
-  TWENTY_MILLISECOND,
-  ONE_SECOND,
-  FIVE_SECOND,
-  ONE_HOUR,
-);
 /**
  * Factory function to create a new Laser1 namespace store
  * @returns A new Zustand store instance for Laser1 namespace
@@ -98,8 +100,9 @@ export const createLaser1NamespaceStore = (): StoreApi<Laser1NamespaceStore> =>
       state: null,
       defaultState: null,
       diameter: diameter,
-      x_value: x_value,
-      y_value: y_value,
+      x_diameter,
+      y_diameter,
+      roundness: roundness,
     };
   });
 
@@ -143,31 +146,43 @@ export function laser1MessageHandler(
           value: liveValuesEvent.data.diameter,
           timestamp: event.ts,
         };
-        if (liveValuesEvent.data.x_value !== null) {
-          const xValue: TimeSeriesValue = {
-            value: liveValuesEvent.data.x_value,
-            timestamp: event.ts,
-          };
-          updateStore((state) => ({
-            ...state,
-            x_value: addXValue(state.x_value, xValue),
-          }));
-        }
-
-        if (liveValuesEvent.data.y_value !== null) {
-          const yValue: TimeSeriesValue = {
-            value: liveValuesEvent.data.y_value,
-            timestamp: event.ts,
-          };
-          updateStore((state) => ({
-            ...state,
-            y_value: addYValue(state.y_value, yValue),
-          }));
-        }
         updateStore((state) => ({
           ...state,
           diameter: addDiameter(state.diameter, diameterValue),
         }));
+
+        if (liveValuesEvent.data.x_diameter !== null) {
+          const xValue: TimeSeriesValue = {
+            value: liveValuesEvent.data.x_diameter,
+            timestamp: event.ts,
+          };
+          updateStore((state) => ({
+            ...state,
+            x_diameter: addXDiameter(state.x_diameter, xValue),
+          }));
+        }
+
+        if (liveValuesEvent.data.y_diameter !== null) {
+          const yValue: TimeSeriesValue = {
+            value: liveValuesEvent.data.y_diameter,
+            timestamp: event.ts,
+          };
+          updateStore((state) => ({
+            ...state,
+            y_diameter: addYDiameter(state.y_diameter, yValue),
+          }));
+        }
+
+        if (liveValuesEvent.data.roundness !== null) {
+          const roundnessValue: TimeSeriesValue = {
+            value: liveValuesEvent.data.roundness,
+            timestamp: event.ts,
+          };
+          updateStore((state) => ({
+            ...state,
+            roundness: addRoundness(state.roundness, roundnessValue),
+          }));
+        }
       } else {
         handleUnhandledEventError(eventName);
       }
