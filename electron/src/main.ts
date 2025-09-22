@@ -7,16 +7,23 @@ import {
   installExtension,
   REACT_DEVELOPER_TOOLS,
 } from "electron-devtools-installer";
-
-// Set consistent app ID for Windows taskbar and GNOME dock integration
+const fs = require('fs');
+const path = require('path');
+// Set consistent app ID for Windows 
+//taskbar and GNOME dock integration
 app.setAppUserModelId("de.qitech.control-electron");
 
 
-app.getGPUInfo('complete').then(function(data)
-{
-    console.log(data);
+app.getGPUInfo('complete').then((data) => {
+  const filePath = path.join('/tmp', 'gpu_info.json');
+  fs.writeFile(filePath, JSON.stringify(data, null, 2), (err) => {
+    if (err) {
+      console.error('Failed to write GPU info:', err);
+    } else {
+      console.log('GPU info written to', filePath);
+    }
+  });
 });
-
 
 // Ensure single instance
 const gotTheLock = app.requestSingleInstanceLock();
