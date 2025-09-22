@@ -14,7 +14,7 @@ export function StatusBadge({ variant, children }: Props) {
       variant: {
         error: "bg-red-500",
         success: "bg-green-600",
-        info: "bg-yellow-400 text-black", // Yellow with readable text
+        info: "bg-yellow-400 text-black",
       },
     },
   });
