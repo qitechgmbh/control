@@ -6,7 +6,6 @@ use crate::{
 };
 use api::{LaserEvents, LaserMachineNamespace, LaserState, LiveValuesEvent, StateEvent};
 use control_core::{
-    helpers::hasher_serializer::check_hash_different,
     machines::{
         ConnectedMachine, ConnectedMachineData, downcast_machine,
         identification::{MachineIdentification, MachineIdentificationUnique},
