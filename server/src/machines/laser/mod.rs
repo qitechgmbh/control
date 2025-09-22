@@ -24,6 +24,12 @@ pub struct LaserMachine {
     namespace: LaserMachineNamespace,
     last_measurement_emit: Instant,
 
+    // laser values
+    diameter: Length,
+    x_diameter: Option<Length>,
+    y_diameter: Option<Length>,
+    roundness: Option<f64>,
+
     //laser target configuration
     laser_target: LaserTarget,
 
@@ -42,26 +48,16 @@ impl LaserMachine {
 impl LaserMachine {
     ///diameter in mm
     pub fn emit_live_values(&mut self) {
-        let laser_data = smol::block_on(async { self.laser.read().await.get_data().await });
-        let diameter = laser_data
-            .as_ref()
-            .map(|data| data.diameter.get::<millimeter>())
-            .unwrap_or(0.0);
-
-        let x_value = laser_data
-            .as_ref()
-            .and_then(|data| data.x_axis.as_ref())
-            .map(|x| x.get::<millimeter>());
-
-        let y_value = laser_data
-            .as_ref()
-            .and_then(|data| data.y_axis.as_ref())
-            .map(|y| y.get::<millimeter>());
+        let diameter = self.diameter.get::<millimeter>();
+        let x_diameter = self.x_diameter.map(|x| x.get::<millimeter>());
+        let y_diameter = self.y_diameter.map(|y| y.get::<millimeter>());
+        let roundness = self.roundness;
 
         let live_values = LiveValuesEvent {
             diameter,
-            x_value,
-            y_value,
+            x_diameter,
+            y_diameter,
+            roundness,
         };
         self.namespace
             .emit(LaserEvents::LiveValues(live_values.build()));
@@ -107,7 +103,52 @@ impl LaserMachine {
         self.laser_target.diameter = Length::new::<millimeter>(target_diameter);
         self.emit_state();
     }
+
+    ///
+    /// Roundness = min(x, y) / max(x, y)
+    ///
+    fn calculate_roundness(&mut self) -> Option<f64> {
+        match (self.x_diameter, self.y_diameter) {
+            (Some(x), Some(y)) => {
+                let x_val = x.get::<millimeter>();
+                let y_val = y.get::<millimeter>();
+
+                if x_val > 0.0 && y_val > 0.0 {
+                    let roundness = f64::min(x_val, y_val) / f64::max(x_val, y_val);
+                    Some(roundness)
+                } else if x_val == 0.0 && y_val == 0.0 {
+                    Some(0.0)
+                } else {
+                    None
+                }
+            }
+            _ => None,
+        }
+    }
+
+    pub fn update(&mut self) {
+        let laser_data = smol::block_on(async { self.laser.read().await.get_data().await });
+        self.diameter = Length::new::<millimeter>(
+            laser_data
+                .as_ref()
+                .map(|data| data.diameter.get::<millimeter>())
+                .unwrap_or(0.0),
+        );
+
+        self.x_diameter = laser_data
+            .as_ref()
+            .and_then(|data| data.x_axis.as_ref())
+            .cloned();
+
+        self.y_diameter = laser_data
+            .as_ref()
+            .and_then(|data| data.y_axis.as_ref())
+            .cloned();
+
+        self.roundness = self.calculate_roundness();
+    }
 }
+
 #[derive(Debug, Clone)]
 pub struct LaserTarget {
     diameter: Length,
