@@ -51,7 +51,7 @@ impl LaserMachine {
         let diameter = self.diameter.get::<millimeter>();
         let x_diameter = self.x_diameter.map(|x| x.get::<millimeter>());
         let y_diameter = self.y_diameter.map(|y| y.get::<millimeter>());
-        let roundness = self.roundness.map(|r| r);
+        let roundness = self.roundness;
 
         let live_values = LiveValuesEvent {
             diameter,
