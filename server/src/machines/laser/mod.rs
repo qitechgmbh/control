@@ -196,7 +196,6 @@ impl LaserMachine {
     }
 }
 
-
 /// implement machine connection
 impl LaserMachine {
     /// set connected winder
