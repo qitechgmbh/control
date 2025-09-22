@@ -52,7 +52,6 @@ impl MachineNewTrait for LaserMachine {
             last_measurement_emit: Instant::now(),
             laser_target,
             emitted_default_state: false,
-            last_state_event: None,
             machine_manager: params.machine_manager.clone(),
             machine_identification_unique: machine_id,
             connected_winder: None,

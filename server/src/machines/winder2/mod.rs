@@ -555,7 +555,7 @@ impl Winder2 {
         let _ = self.puller.set_speed(steps_per_second);
     }
 
-    pub const fn puller_set_regulation(&mut self, puller_regulation_mode: PullerRegulationMode) {
+    pub fn puller_set_regulation(&mut self, puller_regulation_mode: PullerRegulationMode) {
         self.puller_speed_controller
             .set_regulation_mode(puller_regulation_mode);
         self.emit_state();
