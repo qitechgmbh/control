@@ -72,6 +72,7 @@ export function Laser1ControlPage() {
             <div className="flex flex-row items-center gap-6">
               <TimeSeriesValueNumeric
                 label="Roundness"
+                icon="lu:Circle"
                 timeseries={roundness}
                 renderValue={(value) => value.toFixed(3)}
               />
