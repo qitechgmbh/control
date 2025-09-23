@@ -1,25 +1,25 @@
 pub mod act;
 pub mod api;
-pub mod buffer_lift_controller;
+pub mod buffer_tower_controller;
 pub mod new;
 pub mod puller_speed_controller;
 
 use api::{Buffer1Namespace, BufferV1Events, LiveValuesEvent, ModeState, StateEvent};
-use buffer_lift_controller::BufferLiftController;
+use buffer_tower_controller::BufferTowerController;
 use control_core::{
     converters::linear_step_converter::LinearStepConverter,
     machines::{
-        ConnectedMachine, ConnectedMachineData, Machine, downcast_machine,
+        ConnectedMachine, ConnectedMachineData, downcast_machine,
         identification::{MachineIdentification, MachineIdentificationUnique},
         manager::MachineManager,
     },
     socketio::namespace::NamespaceCacheingLogic,
     uom_extensions::velocity::meter_per_minute,
 };
+use control_core_derive::Machine;
 use ethercat_hal::io::{
     digital_input::DigitalInput, stepper_velocity_el70x1::StepperVelocityEL70x1,
 };
-use control_core_derive::Machine;
 use futures::executor::block_on;
 use puller_speed_controller::PullerRegulationMode;
 use serde::{Deserialize, Serialize};
@@ -50,7 +50,7 @@ pub struct BufferV1 {
     pub puller: StepperVelocityEL70x1,
 
     // controllers
-    pub buffer_lift_controller: BufferLiftController,
+    pub buffer_tower_controller: BufferTowerController,
     pub puller_speed_controller: PullerSpeedController,
 
     pub lift_step_converter: LinearStepConverter,

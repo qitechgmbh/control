@@ -18,7 +18,7 @@ use uom::{
 };
 
 #[derive(Debug)]
-pub struct BufferLiftController {
+pub struct BufferTowerController {
     /// Whether the speed controller is enabled or not
     enabled: bool,
     /// Stepper driver. Controls buffer stepper motor
@@ -65,7 +65,7 @@ impl BufferTowerController {
     }
 }
 
-impl BufferLiftController {
+impl BufferTowerontroller {
     /// Calculate the speed of the buffer lift from current input speed
     ///
     /// Formula: input_speed / ( 2 * spool_amount )
@@ -90,7 +90,7 @@ impl BufferLiftController {
     }
 }
 
-impl BufferLiftController {
+impl BufferTowerController {
     pub fn set_enabled(&mut self, enabled: bool) {
         self.enabled = enabled;
         self.stepper_driver.set_enabled(enabled);

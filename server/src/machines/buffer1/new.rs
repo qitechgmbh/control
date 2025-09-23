@@ -28,7 +28,7 @@ use uom::si::f64::{Length, Velocity};
 use uom::si::length::{centimeter, millimeter};
 
 use crate::machines::buffer1::BufferV1Mode;
-use crate::machines::buffer1::buffer_lift_controller::BufferLiftController;
+use crate::machines::buffer1::buffer_tower_controller::BufferLiftController;
 use crate::machines::buffer1::puller_speed_controller::PullerSpeedController;
 
 use super::{BufferV1, api::Buffer1Namespace};
