@@ -8,19 +8,16 @@ import { rebootHmi, restartBackend } from "@/helpers/troubleshoot_helpers";
 import React, { useState } from "react";
 import { toast } from "sonner";
 
-
-
 export function TroubleshootPage() {
   const [isRebootLoading, setIsRebootLoading] = useState(false);
   const [isRestartLoading, setIsRestartLoading] = useState(false);
   const { getLogsBySource, clearLogs } = useLogsStore();
 
-
   // Perhaps we just need to clear the logs ?
   // Get backend logs for display
   const backendLogs = getLogsBySource("qitech-control-server");
   const logLines = backendLogs.map((log) => log.raw);
-
+  console.log(backendLogs);
   const handleRebootHmi = async () => {
     setIsRebootLoading(true);
 

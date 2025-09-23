@@ -72,6 +72,7 @@ const parseColorCodes = (text: string) => {
 };
 
 const stripColorCodes = (text: string): string =>
+  // eslint-disable-next-line no-control-regex
   text.replace(/\x1b\[\d+m/g, "");
 
 export function Terminal({

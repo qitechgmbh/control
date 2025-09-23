@@ -23,6 +23,7 @@ export function UpdateExecutePage() {
     stopUpdate,
     addTerminalLine,
     clearTerminalLines,
+    resetUpdateState,
   } = useUpdateStore();
 
   // Set update info from search params when component mounts or search changes
@@ -51,7 +52,6 @@ export function UpdateExecutePage() {
 
     startUpdate();
     // Perhaps we just need to clear the logs ?
-    clearTerminalLines();
     const res = await updateExecute(updateInfo, addTerminalLine);
     stopUpdate();
 
@@ -69,12 +69,14 @@ export function UpdateExecutePage() {
       const res = await updateCancelWithStore();
       if (res.success) {
         toast.info("Update cancelled successfully");
+        clearTerminalLines();
       } else {
         toast.error("Failed to cancel update: " + res.error);
       }
     } catch (error: any) {
       toast.error("Failed to cancel update: " + error.message);
     }
+    resetUpdateState();
   };
 
   return (
