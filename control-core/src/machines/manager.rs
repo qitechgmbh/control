@@ -54,9 +54,6 @@ impl MachineManager {
         socket_queue_tx: Sender<(SocketRef, Arc<GenericEvent>)>,
         machine_manager: Weak<RwLock<Self>>,
     ) {
-        // empty ethercat machines
-        self.ethercat_machines.clear();
-
         // group devices by machine device identification
         let device_grouping_result = group_devices_by_identification(device_identifications);
 
