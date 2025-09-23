@@ -8,7 +8,9 @@ workspace = true
 
 [dependencies]
 anyhow = "1.0.99"
+
 axum = "0.8.4"
+
 ethercat_hal = { path = "../ethercat-hal" }
 ethercrab = "0.6"
 interfaces = "0.0.9"
@@ -40,3 +42,6 @@ tokio = { version = "1.45.1", features = ["rt-multi-thread", "macros", "time"] }
 [features]
 default = []
 video-streaming = ["dep:tokio"]
+
+[package.metadata.cargo-machete]
+ignored =  ["axum","bitvec","control_core_derive"]
