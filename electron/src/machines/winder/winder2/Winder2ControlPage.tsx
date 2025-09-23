@@ -50,6 +50,7 @@ export function Winder2ControlPage() {
     gotoTraverseHome,
     setSpoolAutomaticRequiredMeters,
     setSpoolAutomaticAction,
+    startBuffering,
     isLoading,
     isDisabled,
   } = useWinder2();
@@ -343,6 +344,18 @@ export function Winder2ControlPage() {
             />
           </Label>
         </ControlCard>
+        {state?.connected_machine_state.is_available && (
+          <ControlCard>
+            <TouchButton
+              variant="outline"
+              onClick={startBuffering}
+              disabled={isDisabled}
+              isLoading={isLoading}
+            >
+              Change Spool
+            </TouchButton>
+          </ControlCard>
+        )}
       </ControlGrid>
 
       {/* Reset Progress Confirmation Dialog */}

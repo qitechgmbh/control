@@ -103,6 +103,9 @@ enum Mutation {
 
     // Disconnect Machine
     DisconnectMachine(MachineIdentificationUnique),
+
+    // Connected Buffer
+    StartBuffering(),
 }
 
 #[derive(Serialize, Debug, Clone, Default)]
@@ -343,6 +346,9 @@ impl MachineApi for Winder2 {
             }
             Mutation::DisconnectMachine(machine_identification_unique) => {
                 self.disconnect_buffer(machine_identification_unique)
+            }
+            Mutation::StartBuffering() => {
+                tracing::info!("Started Buffering!");
             }
         }
         Ok(())

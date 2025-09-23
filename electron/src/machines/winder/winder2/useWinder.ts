@@ -154,21 +154,21 @@ export function useWinder2() {
   const { request: requestSpoolResetProgress } = useMachineMutation(
     z.literal("ResetSpoolProgress"),
   );
-
   const { request: requestSpoolAutomaticAction } = useMachineMutation(
     z.object({ SetSpoolAutomaticAction: spoolAutomaticActionModeSchema }),
   );
-
   const { request: requestConnectedMachine } = useMachineMutation(
     z.object({
       SetConnectedMachine: machineIdentificationUnique,
     }),
   );
-
   const { request: requestDisconnectedMachine } = useMachineMutation(
     z.object({
       DisconnectMachine: machineIdentificationUnique,
     }),
+  );
+  const { request: requestStartBuffering } = useMachineMutation(
+    z.literal("StartBuffering"),
   );
 
   // Helper function for optimistic updates using produce
@@ -550,6 +550,19 @@ export function useWinder2() {
     );
   };
 
+  const startBuffering = () => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.buffer_state.buffering = true;
+      },
+      () =>
+        requestStartBuffering({
+          machine_identification_unique: machineIdentification,
+          data: "StartBuffering",
+        }),
+    );
+  };
+
   // Calculate loading states
   const isLoading = stateOptimistic.isOptimistic;
   const isDisabled = !stateOptimistic.isInitialized;
@@ -631,5 +644,6 @@ export function useWinder2() {
     setSpoolAdaptiveDeaccelerationUrgencyMultiplier,
     setConnectedMachine,
     disconnectMachine,
+    startBuffering,
   };
 }

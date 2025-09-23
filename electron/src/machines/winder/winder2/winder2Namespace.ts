@@ -134,6 +134,13 @@ export const connectedMachineStateSchema = z.object({
 });
 
 /**
+ * Buffer state schema
+ */
+export const bufferStateSchema = z.object({
+  buffering: z.boolean(),
+});
+
+/**
  * Tension arm state schema
  */
 export const tensionArmStateSchema = z.object({
@@ -166,6 +173,7 @@ export const stateEventDataSchema = z.object({
   spool_speed_controller_state: spoolSpeedControllerStateSchema,
   spool_automatic_action_state: spoolAutomaticActionStateSchema,
   connected_machine_state: connectedMachineStateSchema,
+  buffer_state: bufferStateSchema,
 });
 
 // ========== Event Schemas with Wrappers ==========
