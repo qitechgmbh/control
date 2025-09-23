@@ -43,8 +43,6 @@ pub struct StateEvent {
     pub puller_state: PullerState,
     /// connected machine state
     pub connected_machine_state: ConnectedMachineState,
-    /// CurrentInputSpeed
-    pub current_input_speed_state: CurrentInputSpeedState,
 }
 
 impl StateEvent {
@@ -121,10 +119,6 @@ pub struct LiftState {
     /// can home
     pub can_go_home: bool,
 }
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct CurrentInputSpeedState {
-    pub current_input_speed: f64,
-}
 
 #[derive(Deserialize, Serialize)]
 enum Mutation {
@@ -137,16 +131,13 @@ enum Mutation {
     // Disconnect Machine
     DisconnectMachine(MachineIdentificationUnique),
 
-    // Set current input speed
-    SetCurrentInputSpeed(f64),
-
     // Lift
-    /// Step size in mm for traverse movement
+    // Step size in mm for traverse movement
     SetLiftStepSize(f64),
     GotoLiftHome,
 
     // Puller
-    /// on = speed, off = stop
+    // on = speed, off = stop
     SetPullerRegulationMode(PullerRegulationMode),
     SetPullerTargetSpeed(f64),
     SetPullerTargetDiameter(f64),
@@ -205,7 +196,6 @@ impl MachineApi for BufferV1 {
             Mutation::DisconnectMachine(machine_identification_unique) => {
                 self.disconnect_winder(machine_identification_unique);
             }
-            Mutation::SetCurrentInputSpeed(speed) => self.set_current_input_speed(speed),
             Mutation::SetPullerRegulationMode(regulation) => self.puller_set_regulation(regulation),
             Mutation::SetPullerTargetSpeed(value) => self.puller_set_target_speed(value),
             Mutation::SetPullerTargetDiameter(_) => todo!(),

@@ -19,6 +19,7 @@ pub struct PullerSpeedController {
     enabled: bool,
     pub target_speed: Velocity,
     pub target_diameter: Length,
+    pub buffer_speed: Velocity,
     pub regulation_mode: PullerRegulationMode,
     /// Forward rotation direction. If false, applies negative sign to speed
     pub forward: bool,
@@ -43,6 +44,7 @@ impl PullerSpeedController {
             enabled: false,
             target_speed,
             target_diameter,
+            buffer_speed: Velocity::ZERO,
             regulation_mode: PullerRegulationMode::Speed,
             forward: true,
             acceleration_controller: LinearJerkSpeedController::new_simple(
@@ -67,6 +69,10 @@ impl PullerSpeedController {
         self.target_diameter = target;
     }
 
+    pub fn set_buffer_speed(&mut self, speed: Velocity) {
+        self.buffer_speed = speed;
+    }
+
     pub const fn set_regulation_mode(&mut self, regulation: PullerRegulationMode) {
         self.regulation_mode = regulation;
     }
@@ -80,6 +86,7 @@ impl PullerSpeedController {
             true => match self.regulation_mode {
                 PullerRegulationMode::Speed => self.target_speed,
                 PullerRegulationMode::Diameter => unimplemented!(),
+                PullerRegulationMode::Buffer => self.buffer_speed,
             },
             false => Velocity::ZERO,
         };
@@ -116,4 +123,5 @@ impl PullerSpeedController {
 pub enum PullerRegulationMode {
     Speed,
     Diameter,
+    Buffer,
 }

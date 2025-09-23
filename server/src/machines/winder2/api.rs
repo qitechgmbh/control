@@ -309,11 +309,6 @@ impl MachineApi for Winder2 {
             Mutation::SetPullerRegulationMode(regulation) => self.puller_set_regulation(regulation),
             Mutation::SetPullerTargetSpeed(value) => {
                 self.puller_set_target_speed(value);
-                if self.connected_buffer.is_some() {
-                    self.get_buffer(|buffer| {
-                        buffer.buffer_lift_controller.set_current_input_speed(value);
-                    });
-                }
             }
             Mutation::SetPullerTargetDiameter(_) => todo!(),
             Mutation::SetPullerForward(value) => self.puller_set_forward(value),
@@ -347,9 +342,7 @@ impl MachineApi for Winder2 {
             Mutation::DisconnectMachine(machine_identification_unique) => {
                 self.disconnect_buffer(machine_identification_unique)
             }
-            Mutation::StartBuffering() => {
-                tracing::info!("Started Buffering!");
-            }
+            Mutation::StartBuffering() => self.start_buffering(),
         }
         Ok(())
     }

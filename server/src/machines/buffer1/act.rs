@@ -14,6 +14,9 @@ impl MachineAct for BufferV1 {
         // sync the puller speed
         self.sync_puller_speed(now);
 
+        // sync the puller speed of winder
+        self.sync_winder_puller();
+
         // check if lift state changed
         if self.buffer_lift_controller.did_change_state() {
             self.emit_state();

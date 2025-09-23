@@ -36,7 +36,7 @@ use uom::si::{
 use crate::machines::{
     MACHINE_BUFFER_V1, VENDOR_QITECH,
     buffer1::{
-        api::{ConnectedMachineState, CurrentInputSpeedState, LiftState, PullerState},
+        api::{ConnectedMachineState, LiftState, PullerState},
         puller_speed_controller::PullerSpeedController,
     },
     winder2::{BufferState, Winder2, Winder2Mode},
@@ -160,12 +160,6 @@ impl BufferV1 {
                 can_go_top: self.can_go_up(),
                 can_go_bottom: self.can_go_down(),
                 can_go_home: self.can_go_home(),
-            },
-            current_input_speed_state: CurrentInputSpeedState {
-                current_input_speed: self
-                    .buffer_lift_controller
-                    .get_current_input_speed()
-                    .get::<meter_per_minute>(),
             },
             puller_state: PullerState {
                 regulation: self.puller_speed_controller.regulation_mode.clone(),
@@ -323,15 +317,21 @@ impl BufferV1 {
 }
 
 impl BufferV1 {
-    fn set_mode_state(&mut self, mode: BufferV1Mode) {
+    pub fn set_mode_state(&mut self, mode: BufferV1Mode) {
         self.switch_mode(mode);
         self.emit_state();
     }
 
-    fn set_current_input_speed(&mut self, speed: f64) {
-        // speed comes as a f64 represents m/min
-        self.buffer_lift_controller.set_current_input_speed(speed);
-        self.emit_state();
+}
+
+// impl Winder
+impl BufferV1 {
+    pub fn sync_winder_puller(&mut self) {
+        self.get_winder(|winder| {
+            winder.puller_speed_controller.set_buffer_speed(
+                self.buffer_lift_controller.get_target_output_speed()
+            );
+        });
     }
 }
 
@@ -345,8 +345,21 @@ impl BufferV1 {
             .converter
             .angular_velocity_to_steps(angular_velocity);
         let _ = self.puller.set_speed(steps_per_second);
+
+        // sync puller speed to lift input speed
+        let linear_velocity = self
+            .puller_speed_controller
+            .converter
+            .angular_velocity_to_velocity(angular_velocity);
+        self.buffer_lift_controller
+            .set_current_input_speed(linear_velocity);
     }
-}
+
+    pub fn puller_set_regulation(&mut self, puller_regulation_mode: PullerRegulationMode) {
+        self.puller_speed_controller
+            .set_regulation_mode(puller_regulation_mode);
+        self.emit_state();
+    }
 
     /// Set target speed in m/min
     pub fn puller_set_target_speed(&mut self, target_speed: f64) {

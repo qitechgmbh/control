@@ -788,8 +788,21 @@ impl Winder2 {
         // send puller speed to buffer, if connected
         self.get_buffer(|buffer| {
             buffer.buffer_lift_controller.set_target_output_speed(
-                Velocity::get::<meter_per_minute>(&self.puller_speed_controller.get_target_speed()),
+                self.puller_speed_controller.get_target_speed(),
             );
+        });
+    }
+
+    /// Start Buffering Process
+    pub fn start_buffering(&mut self) {
+        // change winder's Buffer state to Buffering
+        self.set_buffer_state(BufferState::Buffering);
+
+        self.puller_speed_controller
+            .set_regulation_mode(PullerRegulationMode::Buffer);
+        // change Buffer state to Filling
+        self.get_buffer(|buffer| {
+            buffer.set_mode_state(super::buffer1::BufferV1Mode::Filling);
         });
     }
 
@@ -956,14 +969,6 @@ pub enum PullerMode {
     Pull,
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub enum BufferState {
-    Disconnected,
-    Hold,
-    Buffering,
-    Emptying,
-}
-
 impl From<Winder2Mode> for PullerMode {
     fn from(mode: Winder2Mode) -> Self {
         match mode {
@@ -973,6 +978,14 @@ impl From<Winder2Mode> for PullerMode {
             Winder2Mode::Wind => Self::Pull,
         }
     }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum BufferState {
+    Disconnected,
+    Hold,
+    Buffering,
+    Emptying,
 }
 
 impl std::fmt::Display for Winder2 {

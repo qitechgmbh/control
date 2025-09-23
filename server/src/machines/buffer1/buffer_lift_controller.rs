@@ -3,7 +3,6 @@ use std::time::Instant;
 use control_core::{
     controllers::first_degree_motion::linear_acceleration_speed_controller::LinearAccelerationLimitingController,
     converters::linear_step_converter::LinearStepConverter,
-    uom_extensions::velocity::meter_per_minute,
 };
 use ethercat_hal::io::{
     digital_input::DigitalInput, stepper_velocity_el70x1::StepperVelocityEL70x1,
@@ -91,7 +90,7 @@ pub enum BufferingState {
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum HomingState {
-    /// In this state the lift is not moving but checks if the endstop si triggered
+    /// In this state the lift is not moving but checks if the endstop is triggered
     /// If the endstop is triggered we go into [`HomingState::EscapeEndstop`]
     /// If the endstop is not triggered we go into [`HomingState::FindEndstop`]
     Initialize,
@@ -300,11 +299,11 @@ impl BufferLiftController {
         did_change
     }
 
-    pub fn set_current_input_speed(&mut self, speed: f64) {
-        self.current_input_speed = Velocity::new::<meter_per_minute>(speed);
+    pub fn set_current_input_speed(&mut self, speed: Velocity) {
+        self.current_input_speed = speed;
     }
-    pub fn set_target_output_speed(&mut self, speed: f64) {
-        self.target_output_speed = Velocity::new::<meter_per_minute>(speed);
+    pub fn set_target_output_speed(&mut self, speed: Velocity) {
+        self.target_output_speed = speed;
     }
     pub fn get_current_input_speed(&self) -> Velocity {
         self.current_input_speed
