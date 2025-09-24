@@ -229,12 +229,14 @@
   }
 
   /* Firefox */
-  html, body {  
-    scrollbar-width: thin;  
-    scrollbar-color: rgba(0, 0, 0, 0.2) transparent;  
-  }  
+  html,
+  body {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+  }
 
-  .dark html, .dark body {  
+  .dark html,
+  .dark body {
     scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
   }
 
@@ -251,7 +253,7 @@
     }
 
     /* Container hover shows scrollbars */
-    .scrollbar-visible:hover::-webkit-scrollbar {  
+    .scrollbar-visible:hover::-webkit-scrollbar {
       width: 8px;
       height: 8px;
     }
