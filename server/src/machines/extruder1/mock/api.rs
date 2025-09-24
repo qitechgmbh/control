@@ -40,6 +40,6 @@ impl MachineApi for ExtruderV2 {
     }
 
     fn api_event_namespace(&mut self) -> &mut control_core::socketio::namespace::Namespace {
-        todo!()
+        &mut self.namespace.namespace
     }
 }

@@ -21,7 +21,6 @@ impl MachineNewTrait for ExtruderV2 {
     where
         Self: Sized,
     {
-        println!("starting mockmachine extruder");
         // Mock machine can work with either Serial or Ethercat hardware
         // For the mock machine, we don't need to actually use the hardware
         // We just validate that we have the expected hardware type

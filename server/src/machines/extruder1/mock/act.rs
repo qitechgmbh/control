@@ -2,12 +2,6 @@ use crate::machines::extruder1::mock::ExtruderV2;
 use control_core::machines::new::MachineAct;
 use std::time::{Duration, Instant};
 
-/*
-TODO Extract Machine behaviour and simulate it
-*/
-
-pub fn simulate() {}
-
 impl MachineAct for ExtruderV2 {
     fn act(&mut self, now: Instant) {
         // more than 33ms have passed since last emit (30 "fps" target)

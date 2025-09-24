@@ -37,7 +37,6 @@ impl MachineRegistry {
                 }),
             ),
         );
-        println!("{:?}", machine_identficiation);
     }
 
     pub fn new_machine(
@@ -54,7 +53,6 @@ impl MachineRegistry {
                     module_path!()
                 ))?;
 
-        println!("{:?}", device_identification);
         // find machine new function by comparing MachineIdentification
         let (_, machine_new_closure) = self
             .type_map
