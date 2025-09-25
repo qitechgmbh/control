@@ -1,5 +1,3 @@
-use std::time::Instant;
-
 use crate::machines::extruder1::{
     ExtruderV2Mode,
     api::{
@@ -10,14 +8,10 @@ use crate::machines::extruder1::{
     mock::ExtruderV2,
 };
 
-use anyhow::Error;
-use control_core::machines::new::{MachineNewHardware, MachineNewTrait};
-
-//#[cfg(feature = "mock-machine")]
-impl MachineNewTrait for ExtruderV2 {
+impl control_core::machines::new::MachineNewTrait for ExtruderV2 {
     fn new(
         params: &control_core::machines::new::MachineNewParams<'_, '_, '_, '_, '_, '_, '_>,
-    ) -> Result<Self, Error>
+    ) -> Result<Self, anyhow::Error>
     where
         Self: Sized,
     {
@@ -25,17 +19,17 @@ impl MachineNewTrait for ExtruderV2 {
         // For the mock machine, we don't need to actually use the hardware
         // We just validate that we have the expected hardware type
         match params.hardware {
-            MachineNewHardware::Serial(_) => {
+            control_core::machines::new::MachineNewHardware::Serial(_) => {
                 // For serial mode, we could potentially use the serial device if needed
                 // but for a mock machine, we'll just note it and proceed
             }
-            MachineNewHardware::Ethercat(_) => {
+            control_core::machines::new::MachineNewHardware::Ethercat(_) => {
                 // For ethercat mode, we could potentially use the ethercat devices
                 // but for a mock machine, we'll just note it and proceed
             }
         }
 
-        let now = Instant::now();
+        let now = std::time::Instant::now();
 
         let mut extruder_mock_machine = Self {
             namespace: ExtruderV2Namespace::new(params.socket_queue_tx.clone()),

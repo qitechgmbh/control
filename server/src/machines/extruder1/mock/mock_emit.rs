@@ -1,17 +1,13 @@
-// imitates the api behaviours of an ExtruderV2
-
+use crate::machines::extruder1::{
+    ExtruderV2Mode, HeatingType,
+    api::{ExtruderV2Events, LiveValuesEvent, ModeState, PidSettings, StateEvent},
+    mock::ExtruderV2,
+};
 use control_core::{
     helpers::hasher_serializer::hash_with_serde_model,
     socketio::{event::BuildEvent, namespace::NamespaceCacheingLogic},
 };
 
-use crate::machines::extruder1::{
-    ExtruderV2Mode, HeatingType,
-    api::{ExtruderV2Events, LiveValuesEvent, PidSettings, StateEvent},
-    mock::ExtruderV2,
-};
-
-//#[cfg(feature = "mock-machine")]
 impl ExtruderV2 {
     pub fn build_state_event(&mut self) -> StateEvent {
         // bad performance wise, but doesnt matter its only a mock machine
@@ -30,7 +26,6 @@ impl ExtruderV2 {
     }
 }
 
-//#[cfg(feature = "mock-machine")]
 impl ExtruderV2 {
     pub fn emit_state(&mut self) {
         let state = self.build_state_event();
@@ -99,27 +94,16 @@ impl ExtruderV2 {
     }
 
     pub fn set_mode_state(&mut self, mode: ExtruderV2Mode) {
-        self.mode = mode;
+        self.mode_state = ModeState { mode };
         self.emit_state();
     }
 
     pub fn set_regulation(&mut self, uses_rpm: bool) {
         self.regulation_state.uses_rpm = uses_rpm;
-
-        // if !self.regulation_state.uses_rpm && uses_rpm {
-        //     self.regulation_state.uses_rpm = uses_rpm;
-        // }
-
-        // if self.regulation_state.uses_rpm && !uses_rpm {
-        //     self.regulation_state.uses_rpm = uses_rpm;
-        //     //self.screw_speed_controller.start_pressure_regulation();
-        // }
         self.emit_state();
     }
 
     pub fn set_target_pressure(&mut self, pressure: f64) {
-        // self.screw_speed_controller
-        //     .set_target_pressure(Pressure::new::<bar>(pressure));
         self.target_pressure = pressure;
         self.emit_state();
     }
@@ -144,10 +128,6 @@ impl ExtruderV2 {
     }
 
     pub fn configure_pressure_pid(&mut self, settings: PidSettings) {
-        // self.screw_speed_controller
-        //     .pid
-        //     .configure(settings.ki, settings.kp, settings.kd);
-
         self.pid_settings.pressure.ki = settings.ki;
         self.pid_settings.pressure.kp = settings.kp;
         self.pid_settings.pressure.kd = settings.kd;

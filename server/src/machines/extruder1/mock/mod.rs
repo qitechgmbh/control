@@ -1,8 +1,11 @@
+#[cfg(feature = "mock-machine")]
+use control_core::machines::identification::MachineIdentification;
+#[cfg(feature = "mock-machine")]
+use control_core_derive::Machine;
+#[cfg(feature = "mock-machine")]
 use std::time::Instant;
 
-use control_core::machines::identification::MachineIdentification;
-use control_core_derive::Machine;
-
+#[cfg(feature = "mock-machine")]
 use crate::machines::{
     MACHINE_EXTRUDER_V1, VENDOR_QITECH,
     extruder1::{
@@ -15,11 +18,17 @@ use crate::machines::{
     },
 };
 
+// Just checking mock-machine feature here to exclude these modules from compilation entirely
+#[cfg(feature = "mock-machine")]
 pub mod act;
+#[cfg(feature = "mock-machine")]
 pub mod api;
+#[cfg(feature = "mock-machine")]
 pub mod mock_emit;
+#[cfg(feature = "mock-machine")]
 pub mod new;
 
+#[cfg(feature = "mock-machine")]
 #[derive(Debug, Machine)]
 pub struct ExtruderV2 {
     namespace: ExtruderV2Namespace,
@@ -85,6 +94,7 @@ pub struct ExtruderV2 {
     pub middle_heating_allowed: bool,
 }
 
+#[cfg(feature = "mock-machine")]
 impl ExtruderV2 {
     pub const MACHINE_IDENTIFICATION: MachineIdentification = MachineIdentification {
         vendor: VENDOR_QITECH,

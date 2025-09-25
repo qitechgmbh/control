@@ -1,9 +1,8 @@
 use crate::machines::extruder1::{HeatingType, api::Mutation, mock::ExtruderV2};
 use control_core::machines::api::MachineApi;
-use serde_json::Value;
 
 impl MachineApi for ExtruderV2 {
-    fn api_mutate(&mut self, request_body: Value) -> Result<(), anyhow::Error> {
+    fn api_mutate(&mut self, request_body: serde_json::Value) -> Result<(), anyhow::Error> {
         // there are multiple Modbus Frames that are "prebuilt"
         let control: Mutation = serde_json::from_value(request_body)?;
         match control {
