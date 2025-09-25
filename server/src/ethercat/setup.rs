@@ -9,7 +9,7 @@ use crate::{
     ethercat::config::{MAX_FRAMES, MAX_PDU_DATA, MAX_SUBDEVICES, PDI_LEN},
 };
 use control_core::ethercat::eeprom_identification::read_device_identifications;
-#[cfg(target_os = "linux")]
+#[cfg(all(target_os = "linux", not(feature = "development-build")))]
 use control_core::irq_handling::set_irq_affinity;
 use control_core::machines::identification::{
     DeviceHardwareIdentification, DeviceHardwareIdentificationEthercat, DeviceIdentification,
@@ -47,7 +47,7 @@ pub async fn setup_loop(
         .spawn(move || {
             send_panic(thread_panic_tx_clone);
 
-            #[cfg(target_os = "linux")]
+            #[cfg(all(target_os = "linux", not(feature = "development-build")))]
             match set_irq_affinity(&interface, 3) {
                 Ok(_) => tracing::info!("ethernet interrupt handler now runs on cpu:{}", 3),
                 Err(e) => tracing::error!("set_irq_handler_affinity failed: {:?}", e),
