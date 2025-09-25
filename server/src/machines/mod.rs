@@ -29,15 +29,23 @@ pub const MACHINE_MOCK: u16 = 0x0007;
 pub const MACHINE_BUFFER_V1: u16 = 0x0008;
 pub const MACHINE_AQUAPATH_V1: u16 = 0x0009;
 
-async fn get_device_ident<'maindevice>(
+async fn get_device_ident<
+    'maindevice,
+    'subdevices,
+    'device_identifications_identified,
+    'ethercat_devices,
+    'machine_new_hardware_etehrcat,
+    'machine_new_hardware_serial,
+    'machine_new_hardware,
+>(
     params: &MachineNewParams<
         'maindevice,
-        'maindevice,
-        'maindevice,
-        'maindevice,
-        'maindevice,
-        'maindevice,
-        'maindevice,
+        'subdevices,
+        'device_identifications_identified,
+        'ethercat_devices,
+        'machine_new_hardware_etehrcat,
+        'machine_new_hardware_serial,
+        'machine_new_hardware,
     >,
     role: u16,
 ) -> Result<DeviceHardwareIdentificationEthercat, anyhow::Error> {
@@ -58,42 +66,51 @@ async fn get_device_ident<'maindevice>(
     return Ok(device_hardware_identification_ethercat.clone());
 }
 
-async fn get_ethercat_device<'maindevice, T>(
+async fn get_ethercat_device<
+    'maindevice,
+    'subdevices,
+    'device_identifications_identified,
+    'ethercat_devices,
+    'machine_new_hardware_etehrcat,
+    'machine_new_hardware_serial,
+    'machine_new_hardware,
+    T,
+>(
     hardware: &&control_core::machines::new::MachineNewHardwareEthercat<
         'maindevice,
-        'maindevice,
-        'maindevice,
+        'subdevices,
+        'ethercat_devices,
     >,
     params: &MachineNewParams<
         'maindevice,
-        'maindevice,
-        'maindevice,
-        'maindevice,
-        'maindevice,
-        'maindevice,
-        'maindevice,
+        'subdevices,
+        'device_identifications_identified,
+        'ethercat_devices,
+        'machine_new_hardware_etehrcat,
+        'machine_new_hardware_serial,
+        'machine_new_hardware,
     >,
     role: u16,
     expected_identities: Vec<SubDeviceIdentityTuple>,
 ) -> Result<
     (
         Arc<RwLock<T>>,
-        &'maindevice SubDeviceRef<'maindevice, &'maindevice SubDevice>,
+        &'subdevices SubDeviceRef<'subdevices, &'subdevices SubDevice>,
     ),
     anyhow::Error,
 >
 where
-    T: 'static + Send + Sync + EthercatDevice, //
+    T: 'static + Send + Sync + EthercatDevice,
 {
     let device_hardware_identification_ethercat = get_device_ident(params, role).await?;
     let subdevice_index = device_hardware_identification_ethercat.subdevice_index;
+
     let subdevice = get_subdevice_by_index(hardware.subdevices, subdevice_index)?;
     let subdevice_identity = subdevice.identity();
 
     let actual_identity = subdevice_identity_to_tuple(&subdevice_identity);
 
     let mut matched_any_identity = false;
-
     for identity in expected_identities.clone() {
         if actual_identity == identity {
             matched_any_identity = true;
