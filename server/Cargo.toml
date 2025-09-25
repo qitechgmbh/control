@@ -78,6 +78,7 @@ tracing-otel = [
 ]
 mock-machine = []
 io-uring = []
+development-build = []
 
 [profile.release]
 codegen-units = 1
