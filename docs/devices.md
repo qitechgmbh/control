@@ -115,3 +115,130 @@ pub fn (
     }
 }
 ```
+
+
+# Device Implementation Guide
+
+This section describes how to implement EtherCAT devices in the framework used by the QiTech Control project (via `ethercat-hal`, `server`, etc.). We include a running example of a simple digital output device (EL2004) and discuss how it fits into the larger architecture.
+
+## Architecture & Context
+
+The QiTech Control system is built as:
+
+- `ethercat-hal` / `ethercat-hal-derive`: Hardware abstraction, PDO / CoE handling, device traits.  
+- `server`: Glue code that reads device identities, instantiates the correct device types, performs CoE configuration, and runs cyclic process data.  
+- The `docs` directory documents APIs and device patterns.  
+  :contentReference[oaicite:0]{index=0}  
+
+In this architecture:
+
+1. During initialization, subdevice identity tuples (Vendor ID, Product ID, Revision) are read.
+2. The `server` matches identity tuples to concrete `Device` types and constructs them (via `NewEthercatDevice`).
+3. The device instance then handles PDO exchange, and optional CoE (configuration) writes.
+4. Higher-level application code interacts with devices via traits like `DigitalOutputDevice`, `DigitalInputDevice`, etc.
+
+---
+
+## Example: Simple Digital Output Device (EL2004)
+
+Below is a minimal example of a digital-output-only EtherCAT device. It shows how to map PDOs, implement traits, and define identity constants.
+
+```rust
+use super::{EthercatDeviceProcessing, NewEthercatDevice, SubDeviceIdentityTuple};
+use crate::helpers::ethercrab_types::EthercrabSubDevicePreoperational;
+use crate::io::digital_output::{DigitalOutputDevice, DigitalOutputOutput};
+use crate::pdo::{RxPdo, basic::BoolPdoObject};
+use ethercat_hal_derive::{EthercatDevice, RxPdo};
+
+/// EL2004 4-channel digital output device — 24 V DC, 0.5 A per channel
+#[derive(EthercatDevice)]
+pub struct EL2004 {
+    /// The Rx PDO where output bits are written by the master
+    pub rxpdo: EL2004RxPdo,
+    is_used: bool,
+}
+
+impl EthercatDeviceProcessing for EL2004 {}
+
+impl std::fmt::Debug for EL2004 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "EL2004")
+    }
+}
+
+impl NewEthercatDevice for EL2004 {
+    fn new() -> Self {
+        Self {
+            rxpdo: EL2004RxPdo::default(),
+            is_used: false,
+        }
+    }
+}
+
+impl DigitalOutputDevice<EL2004Port> for EL2004 {
+    fn set_output(&mut self, port: EL2004Port, value: DigitalOutputOutput) {
+        let expect_text = "All channels should be Some(_)";
+        match port {
+            EL2004Port::DO1 => {
+                self.rxpdo.channel1.as_mut().expect(expect_text).value = value.into()
+            }
+            EL2004Port::DO2 => {
+                self.rxpdo.channel2.as_mut().expect(expect_text).value = value.into()
+            }
+            EL2004Port::DO3 => {
+                self.rxpdo.channel3.as_mut().expect(expect_text).value = value.into()
+            }
+            EL2004Port::DO4 => {
+                self.rxpdo.channel4.as_mut().expect(expect_text).value = value.into()
+            }
+        }
+    }
+
+    fn get_output(&self, port: EL2004Port) -> DigitalOutputOutput {
+        let expect_text = "All channels should be Some(_)";
+        DigitalOutputOutput(match port {
+            EL2004Port::DO1 => self.rxpdo.channel1.as_ref().expect(expect_text).value,
+            EL2004Port::DO2 => self.rxpdo.channel2.as_ref().expect(expect_text).value,
+            EL2004Port::DO3 => self.rxpdo.channel3.as_ref().expect(expect_text).value,
+            EL2004Port::DO4 => self.rxpdo.channel4.as_ref().expect(expect_text).value,
+        })
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum EL2004Port {
+    DO1,
+    DO2,
+    DO3,
+    DO4,
+}
+
+#[derive(Debug, Clone, RxPdo)]
+pub struct EL2004RxPdo {
+    #[pdo_object_index(0x1600)]
+    pub channel1: Option<BoolPdoObject>,
+    #[pdo_object_index(0x1601)]
+    pub channel2: Option<BoolPdoObject>,
+    #[pdo_object_index(0x1602)]
+    pub channel3: Option<BoolPdoObject>,
+    #[pdo_object_index(0x1603)]
+    pub channel4: Option<BoolPdoObject>,
+}
+
+impl Default for EL2004RxPdo {
+    fn default() -> Self {
+        Self {
+            channel1: Some(BoolPdoObject::default()),
+            channel2: Some(BoolPdoObject::default()),
+            channel3: Some(BoolPdoObject::default()),
+            channel4: Some(BoolPdoObject::default()),
+        }
+    }
+}
+
+/// Identity constants for EL2004
+pub const EL2004_VENDOR_ID: u32 = 0x2;
+pub const EL2004_PRODUCT_ID: u32 = 131346514;
+pub const EL2004_REVISION_A: u32 = 1179648;
+pub const EL2004_IDENTITY_A: SubDeviceIdentityTuple =
+    (EL2004_VENDOR_ID, EL2004_PRODUCT_ID, EL2004_REVISION_A);
