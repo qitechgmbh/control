@@ -57,7 +57,7 @@ impl<M: Machine + ?Sized> MachineConnection<M> {
 
     pub fn to_machine(&self) -> Option<Arc<Mutex<M>>> {
         match self {
-            MachineConnection::Connected(machine) => Some(machine.clone()),
+            Self::Connected(machine) => Some(machine.clone()),
             _ => None,
         }
     }
@@ -72,11 +72,8 @@ impl<M: Machine + ?Sized> MachineSlot<M> {
         }
     }
 
-    pub fn is_connected(&self) -> bool {
-        match self.machine_connection {
-            MachineConnection::Connected(_) => true,
-            _ => false,
-        }
+    pub const fn is_connected(&self) -> bool {
+        matches!(self.machine_connection, MachineConnection::Connected(_))
     }
 }
 
@@ -96,7 +93,13 @@ pub struct MachineCrossConnection<
     machine_manager: Weak<RwLock<MachineManager>>,
     machine_identification_unique: MachineIdentificationUnique,
     connected_machine: Weak<Mutex<MachineSlot<T>>>,
-    _make_compiler_happy: std::marker::PhantomData<F>,
+    _make_compiler_happy: std::marker::PhantomData<F>, // This marks tells the typechecker, that we
+                                                       // need F in our type arguemnts. We are ok with
+                                                       // it being used only in a fake field. Without
+                                                       // F being fixed, we would not be anble to implement
+                                                       // reverse connecting and disconnecting properly,
+                                                       // as the type on the other side would decay
+                                                       // to an unknown type. See also https://github.com/qitechgmbh/control/pull/625#discussion_r2379566315
 }
 
 #[derive(Serialize, Debug, Clone)]
@@ -113,7 +116,7 @@ impl<F: CrossConnectableMachine<F, T>, T: CrossConnectableMachine<T, F>>
         manager: Weak<RwLock<MachineManager>>,
         machine_identification_unique: &MachineIdentificationUnique,
     ) -> Self {
-        MachineCrossConnection {
+        Self {
             machine_manager: manager,
             connected_machine: Weak::new(),
             machine_identification_unique: machine_identification_unique.clone(),

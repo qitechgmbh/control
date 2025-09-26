@@ -235,7 +235,7 @@ pub async fn setup_loop(
             .write()
             .await
             .main_namespace;
-        let event = MachinesEventBuilder().build(app_state_clone.clone()).await;
+        let event = MachinesEventBuilder().build(app_state_clone.clone());
         main_namespace.emit(MainNamespaceEvents::MachinesEvent(event));
     });
 

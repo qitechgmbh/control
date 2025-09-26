@@ -1,6 +1,7 @@
 use crate::ethercat::config::{MAX_SUBDEVICES, PDI_LEN};
 use crate::performance_metrics::EthercatPerformanceMetrics;
 use crate::serial::registry::SERIAL_DEVICE_REGISTRY;
+use crate::socketio::main_namespace::machines_event::MachineObj;
 use crate::socketio::namespaces::Namespaces;
 use control_core::machines::Machine;
 use control_core::machines::identification::{DeviceIdentification, MachineIdentificationUnique};
@@ -89,5 +90,23 @@ impl AppState {
             machines: Arc::new(RwLock::new(MachineManager::new())),
             performance_metrics: Arc::new(RwLock::new(EthercatPerformanceMetrics::new())),
         }
+    }
+
+    pub fn get_machine_objs(&self) -> Vec<MachineObj> {
+        let machines = self.machines.read_blocking();
+        machines
+            .iter()
+            .map(|machine| {
+                let error = {
+                    let slot = machine.1.lock_blocking();
+                    slot.machine_connection.to_error().map(|e| e.to_string())
+                };
+
+                MachineObj {
+                    machine_identification_unique: machine.0.clone(),
+                    error,
+                }
+            })
+            .collect()
     }
 }
