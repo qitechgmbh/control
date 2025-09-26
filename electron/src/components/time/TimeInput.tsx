@@ -67,7 +67,21 @@ export function TimeInput({
     };
   }, []);
 
-  // Convert time components to timestamp (today's date)
+  // Check if the selected time would be in the future (today)
+  const isTimeInFuture = useCallback((time: TimeFormData) => {
+    const now = new Date();
+    const date = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+      time.hours,
+      time.minutes,
+      time.seconds,
+    );
+    return date.getTime() > now.getTime();
+  }, []);
+
+  // Convert time components to timestamp (today's date only)
   const timeToTimestamp = useCallback((time: TimeFormData) => {
     const now = new Date();
     const date = new Date(
@@ -78,6 +92,7 @@ export function TimeInput({
       time.minutes,
       time.seconds,
     );
+    
     return date.getTime();
   }, []);
 
@@ -143,6 +158,11 @@ export function TimeInput({
 
   const handleSubmit = () => {
     form.handleSubmit((data) => {
+      // Prevent submission if time is in the future
+      if (isTimeInFuture(data)) {
+        return;
+      }
+      
       const newTimestamp = timeToTimestamp(data);
       onTimeChange?.(newTimestamp);
       setIsOpen(false);
@@ -274,6 +294,23 @@ export function TimeInput({
             graph.
           </div>
 
+          {/* Error for future time */}
+          {isTimeInFuture(currentValues) && (
+            <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+              <div className="flex items-start gap-3">
+                <Icon name="lu:X" className="mt-0.5 size-5 text-red-600" />
+                <div>
+                  <div className="font-medium text-red-800">
+                    Cannot set future time
+                  </div>
+                  <div className="mt-1 text-sm text-red-700">
+                    The selected time is in the future. Please choose a time that has already occurred today.
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           <Separator />
 
           {/* Time inputs */}
@@ -310,8 +347,13 @@ export function TimeInput({
               Cancel
             </TouchButton>
             <TouchButton
-              className="h-14 flex-1 bg-blue-600 text-white hover:bg-blue-700"
+              className={`h-14 flex-1 ${
+                isTimeInFuture(currentValues)
+                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                  : "bg-blue-600 text-white hover:bg-blue-700"
+              }`}
               onClick={handleSubmit}
+              disabled={isTimeInFuture(currentValues)}
             >
               <Icon name="lu:Check" className="mr-2 size-4" />
               Apply
