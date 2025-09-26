@@ -92,7 +92,7 @@ export function TimeInput({
       time.minutes,
       time.seconds,
     );
-    
+
     return date.getTime();
   }, []);
 
@@ -162,7 +162,7 @@ export function TimeInput({
       if (isTimeInFuture(data)) {
         return;
       }
-      
+
       const newTimestamp = timeToTimestamp(data);
       onTimeChange?.(newTimestamp);
       setIsOpen(false);
@@ -304,7 +304,8 @@ export function TimeInput({
                     Cannot set future time
                   </div>
                   <div className="mt-1 text-sm text-red-700">
-                    The selected time is in the future. Please choose a time that has already occurred today.
+                    The selected time is in the future. Please choose a time
+                    that has already occurred today.
                   </div>
                 </div>
               </div>
@@ -349,7 +350,7 @@ export function TimeInput({
             <TouchButton
               className={`h-14 flex-1 ${
                 isTimeInFuture(currentValues)
-                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                  ? "cursor-not-allowed bg-gray-300 text-gray-500"
                   : "bg-blue-600 text-white hover:bg-blue-700"
               }`}
               onClick={handleSubmit}
