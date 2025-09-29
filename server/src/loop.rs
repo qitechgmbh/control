@@ -127,7 +127,11 @@ pub async fn loop_once<'maindevice>(app_state: Arc<AppState>) -> Result<(), anyh
                 )
             })?;
         }
-        // Apparently 500 Microseconds is a safe starting point for ethercat
+
+        #[cfg(feature = "development-build")]
+        smol::Timer::after(Duration::from_micros(2000)).await;
+
+        #[cfg(not(feature = "development-build"))]
         smol::Timer::after(Duration::from_micros(500)).await;
     }
 
