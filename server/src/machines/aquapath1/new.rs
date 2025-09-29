@@ -228,7 +228,7 @@ impl MachineNewTrait for AquaPathV1 {
                     _ => Err(anyhow::anyhow!(
                         "[{}::MachineNewTrait/AquaPath1::new] Device with role 4 is not Ethercat",
                         module_path!()
-                    )),
+                    ))?,
                 };
 
                 let subdevice_index = device_hardware_identification_ethercat.subdevice_index;
