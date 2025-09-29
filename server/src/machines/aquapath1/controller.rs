@@ -18,7 +18,7 @@ pub struct Controller {
     window_start: Instant,
     pwm_period: Duration,
 
-    pub temp: Temperature,
+    pub temperature: Temperature,
     pub target_temperature: ThermodynamicTemperature,
     pub current_temperature: ThermodynamicTemperature,
     pub temp_reservoir: ThermodynamicTemperature,
@@ -30,8 +30,8 @@ pub struct Controller {
 
     pub heating_relais_1: DigitalOutput,
     pub heating_relais_2: DigitalOutput,
-    pub temp_sensor_in: TemperatureInput,
-    pub temp_sensor_out: TemperatureInput,
+    pub temperature_sensor_in: TemperatureInput,
+    pub temperature_sensor_out: TemperatureInput,
 
     pub cooling_allowed: bool,
     pub heating_allowed: bool,
@@ -75,15 +75,15 @@ impl Controller {
             min_temperature: ThermodynamicTemperature::new::<degree_celsius>(10.0),
             max_temperature: ThermodynamicTemperature::new::<degree_celsius>(50.0),
 
-            temp: temp,
+            temperature: temp,
             cooling_controller: cooling_controller,
             cooling_relais: cooling_relais,
             heating_relais_1: heating_relais_1,
             heating_relais_2: heating_relais_2,
             cooling_allowed: false,
             heating_allowed: false,
-            temp_sensor_in: temp_sensor_in,
-            temp_sensor_out: temp_sensor_out,
+            temperature_sensor_in: temp_sensor_in,
+            temperature_sensor_out: temp_sensor_out,
 
             flow: flow,
             pump_relais: pump_relais,
@@ -149,7 +149,7 @@ impl Controller {
     }
 
     pub fn get_temp_in(&mut self) -> ThermodynamicTemperature {
-        let temp = self.temp_sensor_in.get_temperature();
+        let temp = self.temperature_sensor_in.get_temperature();
         match temp {
             Ok(value) => ThermodynamicTemperature::new::<degree_celsius>(value),
             Err(_) => ThermodynamicTemperature::new::<degree_celsius>(0.0),
@@ -157,7 +157,7 @@ impl Controller {
     }
 
     pub fn get_temp_out(&mut self) -> ThermodynamicTemperature {
-        let temp = self.temp_sensor_out.get_temperature();
+        let temp = self.temperature_sensor_out.get_temperature();
         match temp {
             Ok(value) => ThermodynamicTemperature::new::<degree_celsius>(value),
             Err(_) => ThermodynamicTemperature::new::<degree_celsius>(0.0),
@@ -184,14 +184,14 @@ impl Controller {
         tracing::info!("turn_cooling_on");
         self.cooling_relais.set(true);
         self.cooling_controller.set(10.0);
-        self.temp.cooling = true;
+        self.temperature.cooling = true;
     }
 
     pub fn turn_cooling_off(&mut self) {
         tracing::info!("turn_cooling_off");
 
         self.cooling_relais.set(false);
-        self.temp.cooling = false;
+        self.temperature.cooling = false;
     }
 
     pub fn turn_heating_on(&mut self) {
@@ -199,7 +199,7 @@ impl Controller {
 
         self.heating_relais_1.set(true);
         self.heating_relais_2.set(true);
-        self.temp.heating = true;
+        self.temperature.heating = true;
     }
 
     pub fn turn_heating_off(&mut self) {
@@ -207,7 +207,7 @@ impl Controller {
 
         self.heating_relais_1.set(false);
         self.heating_relais_2.set(false);
-        self.temp.heating = false;
+        self.temperature.heating = false;
     }
 
     pub fn set_should_pump(&mut self, should_pump: bool) {
@@ -259,9 +259,9 @@ impl Controller {
         self.current_temperature = self.get_temp_in();
         self.temp_reservoir = self.get_temp_out();
 
-        if self.current_temperature < self.min_temperature && self.temp.cooling {
+        if self.current_temperature < self.min_temperature && self.temperature.cooling {
             self.turn_cooling_off();
-        } else if self.current_temperature > self.max_temperature && self.temp.heating {
+        } else if self.current_temperature > self.max_temperature && self.temperature.heating {
             self.turn_heating_off();
         }
 
@@ -279,7 +279,7 @@ impl Controller {
         // Decide whether to heat or cool based on error
         if error > 0.0 {
             // Need heating (current < target)
-            if self.temp.cooling {
+            if self.temperature.cooling {
                 self.turn_cooling_off();
             }
             if self.heating_allowed && current_flow > VolumeRate::new::<liter_per_minute>(0.0) {
@@ -287,23 +287,23 @@ impl Controller {
                 let duty = control.clamp(0.0, 1.0);
                 let on_time = self.pwm_period.mul_f64(duty);
                 let on = elapsed < on_time;
-                if on && !self.temp.heating {
+                if on && !self.temperature.heating {
                     self.turn_heating_on();
-                } else if !on && self.temp.heating {
+                } else if !on && self.temperature.heating {
                     self.turn_heating_off();
                 }
             } else {
                 // Pump is off or heating not allowed - don't heat
-                if self.temp.heating {
+                if self.temperature.heating {
                     self.turn_heating_off();
                 }
             }
         } else {
             // Need cooling (current > target)
-            if self.temp.heating {
+            if self.temperature.heating {
                 self.turn_heating_off();
             }
-            if self.cooling_allowed && !self.temp.cooling {
+            if self.cooling_allowed && !self.temperature.cooling {
                 self.turn_cooling_on();
             }
         }

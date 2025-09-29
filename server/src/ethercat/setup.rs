@@ -23,6 +23,9 @@ use ethercrab::{MainDevice, MainDeviceConfig, PduStorage, RetryBehaviour, Timeou
 use smol::channel::Sender;
 use std::{sync::Arc, time::Duration};
 
+const SM_OUTPUT: u16 = 0x1C32;
+const SM_INPUT: u16 = 0x1C33;
+
 pub async fn setup_loop(
     thread_panic_tx: Sender<PanicDetails>,
     interface: &str,
@@ -216,10 +219,11 @@ pub async fn setup_loop(
         .iter()
         .map(|(device_identification, device, _)| (device_identification.clone(), device.clone()))
         .collect::<Vec<_>>();
+
     for subdevice in subdevices.iter() {
         if subdevice.name() == "EL5152" {
-            subdevice.sdo_write(0x1C32, 0x1, 0x00u16).await?;
-            subdevice.sdo_write(0x1C33, 0x1, 0x00u16).await?;
+            subdevice.sdo_write(SM_OUTPUT, 0x1, 0x00u16).await?; //set sync mode (1) for free run (0)
+            subdevice.sdo_write(SM_INPUT, 0x1, 0x00u16).await?; //set sync mode (1) for free run (0)
         }
     }
     // Notify client via socketio

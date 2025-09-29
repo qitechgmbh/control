@@ -15,9 +15,10 @@ impl MachineAct for AquaPathV1 {
 
         let now = Instant::now();
 
-        if now.duration_since(self.last_measurement_emit) > Duration::from_secs_f64(1.0 / 60.0) {
-            self.front_controller.update(now_ts);
-            self.back_controller.update(now_ts);
+        self.front_controller.update(now_ts);
+        self.back_controller.update(now_ts);
+
+        if now.duration_since(self.last_measurement_emit) > Duration::from_secs_f64(1.0 / 30.0) {
             self.emit_live_values();
             self.last_measurement_emit = now;
         }

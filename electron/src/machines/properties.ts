@@ -233,7 +233,7 @@ export const buffer1: MachineProperties = {
   icon: "lu:Disc3",
   machine_identification: {
     vendor: VENDOR_QITECH,
-    machine: 0x0009,
+    machine: 0x0008,
   },
   device_roles: [
     {
@@ -279,7 +279,7 @@ export const aquapath1: MachineProperties = {
   icon: "lu:Waves",
   machine_identification: {
     vendor: VENDOR_QITECH,
-    machine: 0x0008,
+    machine: 0x0009,
   },
   device_roles: [
     {
