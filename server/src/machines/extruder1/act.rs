@@ -1,8 +1,11 @@
+#[cfg(not(feature = "mock-machine"))]
+use crate::machines::extruder1::ExtruderV2;
+#[cfg(not(feature = "mock-machine"))]
 use control_core::machines::new::MachineAct;
+#[cfg(not(feature = "mock-machine"))]
 use std::time::{Duration, Instant};
 
-use crate::machines::extruder1::ExtruderV2;
-
+#[cfg(not(feature = "mock-machine"))]
 impl MachineAct for ExtruderV2 {
     fn act(&mut self, now: Instant) {
         self.temperature_controller_back.update(now);
