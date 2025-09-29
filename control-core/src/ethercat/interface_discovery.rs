@@ -144,7 +144,7 @@ fn test_interface(interface: &str) -> Result<(), anyhow::Error> {
                 // Default 10000
                 dc_static_sync_iterations: 10000,
                 // Default None
-                retry_behaviour: ethercrab::RetryBehaviour::None,
+                retry_behaviour: ethercrab::RetryBehaviour::Count(5),
             },
         ));
 
