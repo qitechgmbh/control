@@ -1,3 +1,20 @@
+# `2.8.0`
+_30.09.2025_
+
+
+## Laser V1
+- [#741](https://github.com/qitechgmbh/control/pull/741) Added roundness measurement to two-axis Laser
+
+
+## Winder V2
+- [#745](https://github.com/qitechgmbh/control/pull/745), [#756](https://github.com/qitechgmbh/control/pull/756) improved Winder Frontend
+
+## General
+- [#447](https://github.com/qitechgmbh/control/pull/447) added AquaPath Machine
+
+
+
+
 # `2.7.0`
 
 _17.09.2025_
@@ -10,9 +27,9 @@ _17.09.2025_
 
 - [#727](https://github.com/qitechgmbh/control/pull/727) Removed estimated diameter
 
-## Laser V1/V2
+## Laser V1
 
-- [#731](https://github.com/qitechgmbh/control/pull/731) Added LaserV2 with two-axis measurements
+- [#731](https://github.com/qitechgmbh/control/pull/731) Added Laser with two-axis measurements
 
 ## General
 
