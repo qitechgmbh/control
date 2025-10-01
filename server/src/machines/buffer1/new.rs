@@ -158,7 +158,7 @@ impl MachineNewTrait for BufferV1 {
                 last_measurement_emit: Instant::now(),
                 mode: BufferV1Mode::Standby,
                 buffer_lift_controller,
-                puller_speed_controller
+                puller_speed_controller,
                 machine_manager: params.machine_manager.clone(),
                 machine_identification_unique: machine_id,
                 connected_winder: None,

@@ -787,9 +787,9 @@ impl Winder2 {
     pub fn sync_buffer_speed(&mut self) {
         // send puller speed to buffer, if connected
         self.get_buffer(|buffer| {
-            buffer.buffer_lift_controller.set_target_output_speed(
-                self.puller_speed_controller.get_target_speed(),
-            );
+            buffer
+                .buffer_lift_controller
+                .set_target_output_speed(self.puller_speed_controller.get_target_speed());
         });
     }
 

@@ -28,10 +28,13 @@ use std::{
     sync::{Arc, Weak},
     time::Instant,
 };
-use uom::{si::{
-    f64::{Length, Velocity},
-    length::millimeter,
-}, ConstZero};
+use uom::{
+    ConstZero,
+    si::{
+        f64::{Length, Velocity},
+        length::millimeter,
+    },
+};
 
 use crate::machines::{
     MACHINE_BUFFER_V1, VENDOR_QITECH,
@@ -225,7 +228,9 @@ impl BufferV1 {
         self.update_winder2_mode(Winder2Mode::Hold);
         self.update_winder2_buffer_state(BufferState::Buffering);
         self.get_winder(|winder| {
-            winder.puller_speed_controller.set_buffer_speed(Velocity::ZERO);
+            winder
+                .puller_speed_controller
+                .set_buffer_speed(Velocity::ZERO);
         });
     }
 
@@ -234,7 +239,9 @@ impl BufferV1 {
         self.update_winder2_mode(Winder2Mode::Wind);
         self.update_winder2_buffer_state(BufferState::Emptying);
         self.get_winder(|winder| {
-            winder.puller_speed_controller.set_buffer_speed(self.puller_speed_controller.last_speed);
+            winder
+                .puller_speed_controller
+                .set_buffer_speed(self.puller_speed_controller.last_speed);
         });
     }
 
@@ -243,7 +250,9 @@ impl BufferV1 {
         self.update_winder2_mode(Winder2Mode::Wind);
         self.update_winder2_buffer_state(BufferState::Hold);
         self.get_winder(|winder| {
-            winder.puller_speed_controller.set_buffer_speed(self.puller_speed_controller.last_speed);
+            winder
+                .puller_speed_controller
+                .set_buffer_speed(self.puller_speed_controller.last_speed);
         });
     }
 
@@ -335,16 +344,15 @@ impl BufferV1 {
         self.switch_mode(mode);
         self.emit_state();
     }
-
 }
 
 // impl Winder
 impl BufferV1 {
     pub fn sync_winder_puller(&mut self) {
         self.get_winder(|winder| {
-            winder.puller_speed_controller.set_buffer_speed(
-                self.buffer_lift_controller.get_target_output_speed()
-            );
+            winder
+                .puller_speed_controller
+                .set_buffer_speed(self.buffer_lift_controller.get_target_output_speed());
         });
     }
 }
