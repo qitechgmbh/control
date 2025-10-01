@@ -24,7 +24,7 @@ pub struct PullerSpeedController {
     /// Forward rotation direction. If false, applies negative sign to speed
     pub forward: bool,
     /// Linear acceleration controller to dampen speed change
-    acceleration_controller: LinearJerkSpeedController,
+    pub acceleration_controller: LinearJerkSpeedController,
     /// Converter for linear to angular transformations
     pub converter: LinearStepConverter,
     pub last_speed: Velocity,

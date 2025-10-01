@@ -28,10 +28,10 @@ use std::{
     sync::{Arc, Weak},
     time::Instant,
 };
-use uom::si::{
+use uom::{si::{
     f64::{Length, Velocity},
     length::millimeter,
-};
+}, ConstZero};
 
 use crate::machines::{
     MACHINE_BUFFER_V1, VENDOR_QITECH,
@@ -224,12 +224,27 @@ impl BufferV1 {
         // stop the winder until the buffer is full
         self.update_winder2_mode(Winder2Mode::Hold);
         self.update_winder2_buffer_state(BufferState::Buffering);
+        self.get_winder(|winder| {
+            winder.puller_speed_controller.set_buffer_speed(Velocity::ZERO);
+        });
     }
 
     fn empty_buffer(&mut self) {
         // Set the winder2 to a mode where its faster than before to empty the buffer slowly
         self.update_winder2_mode(Winder2Mode::Wind);
         self.update_winder2_buffer_state(BufferState::Emptying);
+        self.get_winder(|winder| {
+            winder.puller_speed_controller.set_buffer_speed(self.puller_speed_controller.last_speed);
+        });
+    }
+
+    fn hold_buffer(&mut self) {
+        // Hold buffer in current state input speed = output speed
+        self.update_winder2_mode(Winder2Mode::Wind);
+        self.update_winder2_buffer_state(BufferState::Hold);
+        self.get_winder(|winder| {
+            winder.puller_speed_controller.set_buffer_speed(self.puller_speed_controller.last_speed);
+        });
     }
 
     fn update_winder2_mode(&mut self, mode: Winder2Mode) {
@@ -265,7 +280,7 @@ impl BufferV1 {
     // hold motor
     fn switch_to_hold(&mut self) {
         match self.mode {
-            BufferV1Mode::Standby => {}
+            BufferV1Mode::Standby => self.hold_buffer(),
             BufferV1Mode::Hold => (),
             BufferV1Mode::Filling => {}
             BufferV1Mode::Emptying => {}
@@ -273,7 +288,6 @@ impl BufferV1 {
         self.mode = BufferV1Mode::Hold;
         self.buffer_lift_controller.set_enabled(true);
         let _ = self.buffer_lift_controller.stepper_driver.set_speed(0.0);
-        self.update_winder2_buffer_state(BufferState::Hold);
     }
 
     // Turn on motor and fill buffer
