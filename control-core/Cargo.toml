@@ -9,7 +9,7 @@ workspace = true
 [dependencies]
 anyhow = "1.0.100"
 
-axum = "0.8.4"
+axum = "0.8.6"
 
 ethercat_hal = { path = "../ethercat-hal" }
 ethercrab = "0.6"
