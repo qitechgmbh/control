@@ -1,11 +1,7 @@
 use std::time::{Duration, Instant};
 
-use crate::machines::buffer1::BufferV1Mode;
-
 use super::BufferV1;
 use control_core::machines::new::MachineAct;
-use tracing::info;
-use uom::si::velocity::millimeter_per_second;
 impl MachineAct for BufferV1 {
     fn act(&mut self, now: Instant) {
         // sync the lift speed

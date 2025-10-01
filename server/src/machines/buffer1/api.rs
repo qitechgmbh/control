@@ -132,12 +132,9 @@ enum Mutation {
     DisconnectMachine(MachineIdentificationUnique),
 
     // Lift
-    // Step size in mm for traverse movement
-    SetLiftStepSize(f64),
     GotoLiftHome,
 
     // Puller
-    // on = speed, off = stop
     SetPullerRegulationMode(PullerRegulationMode),
     SetPullerTargetSpeed(f64),
     SetPullerTargetDiameter(f64),
@@ -200,8 +197,7 @@ impl MachineApi for BufferV1 {
             Mutation::SetPullerTargetSpeed(value) => self.puller_set_target_speed(value),
             Mutation::SetPullerTargetDiameter(_) => todo!(),
             Mutation::SetPullerForward(value) => self.puller_set_forward(value),
-            Mutation::SetLiftStepSize(step_size) => self.lift_set_step_size(step_size),
-            Mutation::GotoLiftHome => self.lift_goto_home(),
+            Mutation::GotoLiftHome => self.buffer_lift_controller.goto_home(),
         }
         Ok(())
     }

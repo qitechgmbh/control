@@ -113,66 +113,6 @@ pub enum HomingState {
     Validate(Instant),
 }
 
-#[derive(Debug, PartialEq, Eq, Clone)]
-pub enum State {
-    /// Initial state
-    NotHomed,
-
-    /// Doing nothing
-    /// Already homed
-    Idle,
-
-    /// Going to upper limit
-    ///
-    /// After reaching the upper limit, the state will change to [`State::Idle`]
-    GoingUp,
-
-    /// Going to lower limit
-    ///
-    /// After reaching the lower limit, the state will change to [`State::Idle`]
-    GoingDown,
-
-    /// Homing in progress
-    ///
-    /// After homing is done, the state will change to [`State::Idle`]
-    Homing(HomingState),
-
-    /// Move at target speed to Buffer
-    Buffering(BufferingState),
-}
-
-#[derive(Debug, PartialEq, Eq, Clone)]
-pub enum BufferingState {
-    GoingUp,
-    Filling,
-    Emptying,
-}
-
-#[derive(Debug, PartialEq, Eq, Clone)]
-pub enum HomingState {
-    /// In this state the traverse is not moving but checks if the endstop si triggered
-    /// If the endstop is triggered we go into [`HomingState::EscapeEndstop`]
-    /// If the endstop is not triggered we go into [`HomingState::FindEndstop`]
-    Initialize,
-
-    /// In this state the traverse is moving out away from the endstop until it's not triggered anymore
-    /// The it goes into [`HomingState::FindEnstopFineDistancing`]
-    EscapeEndstop,
-
-    /// Moving out away from the endstop
-    /// Then Transition into [`HomingState::FindEndtopFine`]
-    FindEnstopFineDistancing,
-
-    /// In this state the traverse is fast until it reaches the endstop
-    FindEndstopCoarse,
-
-    /// In this state the traverse is moving slowly until it reaches the endstop
-    FindEndtopFine,
-
-    /// In this state we check if th current position is actually 0.0, if not we redo the homing routine
-    Validate(Instant),
-}
-
 impl BufferLiftController {
     pub fn new(
         driver: StepperVelocityEL70x1,

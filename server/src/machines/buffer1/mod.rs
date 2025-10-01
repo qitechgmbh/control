@@ -9,7 +9,7 @@ use buffer_lift_controller::BufferLiftController;
 use control_core::{
     converters::linear_step_converter::LinearStepConverter,
     machines::{
-        ConnectedMachine, ConnectedMachineData, Machine, downcast_machine,
+        ConnectedMachine, ConnectedMachineData, downcast_machine,
         identification::{MachineIdentification, MachineIdentificationUnique},
         manager::MachineManager,
     },
@@ -410,7 +410,7 @@ impl BufferV1 {
 // Implement Lift
 impl BufferV1 {
     pub fn sync_lift_speed(&mut self, t: Instant) {
-        let linear_velocity = self.buffer_lift_controller.update_speed(t);
+        let linear_velocity = self.buffer_lift_controller.update_speed(&mut self.lift, &self.lift_end_stop, t);
         if self.can_move() {
             let steps_per_second = self.lift_step_converter.velocity_to_steps(linear_velocity);
             let _ = self.lift.set_speed(steps_per_second);
