@@ -209,38 +209,12 @@ export function Terminal({
         </div>
       </div>
 
-      {/* Terminal content with custom scrollbar styling */}
+      {/* Terminal content */}
       <div
         ref={terminalRef}
         onScroll={handleScroll}
-        className={`scrollbar-thin scrollbar-thumb-neutral-600 scrollbar-track-transparent flex-grow overflow-y-auto bg-neutral-900 p-4 text-neutral-300`}
-        style={{
-          scrollbarWidth: "thin",
-          scrollbarColor: "rgb(82 82 91) transparent",
-        }}
+        className="flex-grow overflow-y-auto bg-neutral-900 p-4 text-neutral-300"
       >
-        <style>{`
-          Add commentMore actions
-          /* For Webkit browsers (Chrome, Safari) */
-          .scrollbar-thin::-webkit-scrollbar {
-            width: 6px;
-          }
-
-          .scrollbar-thin::-webkit-scrollbar-track {
-            background: transparent;
-          }
-
-          .scrollbar-thin::-webkit-scrollbar-thumb {
-            background-color: rgb(82 82 91);
-            border-radius: 3px;
-          }
-
-          /* For Firefox */
-          .scrollbar-thin {
-            scrollbar-width: thin;
-            scrollbar-color: rgb(82 82 91) transparent;
-          }
-        `}</style>
         {lines.map((line, index) => {
           const colorParts = parseColorCodes(line);
 
