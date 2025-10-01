@@ -7,7 +7,7 @@ edition = "2024"
 workspace = true
 
 [dependencies]
-anyhow = "1.0.99"
+anyhow = "1.0.100"
 ethercrab = "0.6"
 ethercat_hal_derive = { version = "0.1.0", path = "../ethercat-hal-derive" }
 bitvec = { version = "1.0.1", features = ["alloc"] }
