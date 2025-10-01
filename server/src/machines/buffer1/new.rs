@@ -14,11 +14,11 @@ use ethercat_hal::devices::ek1100::EK1100_IDENTITY_A;
 use ethercat_hal::devices::el7031_0030::coe::EL7031_0030Configuration;
 use ethercat_hal::devices::el7031_0030::pdo::EL7031_0030PredefinedPdoAssignment;
 use ethercat_hal::devices::el7031_0030::{
-    self, EL7031_0030, EL7031_0030_IDENTITY_A, EL7031_0030StepperPort,
+    EL7031_0030, EL7031_0030_IDENTITY_A, EL7031_0030StepperPort,
 };
 use ethercat_hal::devices::el7041_0052::coe::EL7041_0052Configuration;
 use ethercat_hal::devices::el7041_0052::{EL7041_0052, EL7041_0052_IDENTITY_A, EL7041_0052Port};
-use ethercat_hal::devices::{EthercatDeviceUsed, downcast_device, subdevice_identity_to_tuple};
+use ethercat_hal::devices::EthercatDeviceUsed;
 use ethercat_hal::io::digital_input::DigitalInput;
 use ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1;
 use ethercat_hal::shared_config;
@@ -147,7 +147,7 @@ impl MachineNewTrait for BufferV1 {
                 lift: StepperVelocityEL70x1::new(el7041.clone(), EL7041_0052Port::STM1),
                 lift_end_stop: DigitalInput::new(el7041, EL7041_0052Port::DI1),
                 puller: StepperVelocityEL70x1::new(
-                    el7031_0030.clone(),
+                    el7031.clone(),
                     EL7031_0030StepperPort::STM1,
                 ),
                 lift_step_converter: LinearStepConverter::from_diameter(
