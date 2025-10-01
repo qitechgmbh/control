@@ -8,6 +8,7 @@ use control_core::machines::new::{
 };
 use control_core::uom_extensions::velocity::meter_per_minute;
 use ethercat_hal::coe::ConfigurableDevice;
+use ethercat_hal::devices::EthercatDeviceUsed;
 use ethercat_hal::devices::ek1100::EK1100;
 use ethercat_hal::devices::ek1100::EK1100_IDENTITY_A;
 use ethercat_hal::devices::el7031_0030::coe::EL7031_0030Configuration;
@@ -17,7 +18,6 @@ use ethercat_hal::devices::el7031_0030::{
 };
 use ethercat_hal::devices::el7041_0052::coe::EL7041_0052Configuration;
 use ethercat_hal::devices::el7041_0052::{EL7041_0052, EL7041_0052_IDENTITY_A, EL7041_0052Port};
-use ethercat_hal::devices::EthercatDeviceUsed;
 use ethercat_hal::io::digital_input::DigitalInput;
 use ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1;
 use ethercat_hal::shared_config;
@@ -26,9 +26,9 @@ use uom::si::f64::{Length, Velocity};
 use uom::si::length::{centimeter, millimeter};
 
 use crate::machines::buffer1::BufferV1Mode;
-use crate::machines::get_ethercat_device;
 use crate::machines::buffer1::buffer_lift_controller::BufferLiftController;
 use crate::machines::buffer1::puller_speed_controller::PullerSpeedController;
+use crate::machines::get_ethercat_device;
 
 use super::{BufferV1, api::Buffer1Namespace};
 
@@ -81,7 +81,7 @@ impl MachineNewTrait for BufferV1 {
             el7041
                 .write()
                 .await
-                .write_config(&subdevice, &el7041_config)
+                .write_config(subdevice, &el7041_config)
                 .await?;
             {
                 let mut device_guard = el7041.write().await;
@@ -116,7 +116,7 @@ impl MachineNewTrait for BufferV1 {
             el7031
                 .write()
                 .await
-                .write_config(&subdevice, &el7031_config)
+                .write_config(subdevice, &el7031_config)
                 .await?;
             {
                 let mut device_guard = el7031.write().await;
@@ -146,13 +146,10 @@ impl MachineNewTrait for BufferV1 {
                 .clone();
 
             // create buffer instance
-            let mut buffer: BufferV1 = Self {
+            let mut buffer = Self {
                 lift: StepperVelocityEL70x1::new(el7041.clone(), EL7041_0052Port::STM1),
                 lift_end_stop: DigitalInput::new(el7041, EL7041_0052Port::DI1),
-                puller: StepperVelocityEL70x1::new(
-                    el7031.clone(),
-                    EL7031_0030StepperPort::STM1,
-                ),
+                puller: StepperVelocityEL70x1::new(el7031.clone(), EL7031_0030StepperPort::STM1),
                 lift_step_converter: LinearStepConverter::from_diameter(
                     200,
                     Length::new::<millimeter>(32.22),
@@ -160,8 +157,8 @@ impl MachineNewTrait for BufferV1 {
                 namespace: Buffer1Namespace::new(params.socket_queue_tx.clone()),
                 last_measurement_emit: Instant::now(),
                 mode: BufferV1Mode::Standby,
-                buffer_lift_controller: buffer_lift_controller,
-                puller_speed_controller: puller_speed_controller,
+                buffer_lift_controller,
+                puller_speed_controller,
                 machine_manager: params.machine_manager.clone(),
                 machine_identification_unique: machine_id,
                 connected_winder: None,
