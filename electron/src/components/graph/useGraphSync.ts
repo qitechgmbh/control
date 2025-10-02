@@ -15,6 +15,9 @@ export function useGraphSync(exportGroupId?: string) {
   const [xRange, setXRange] = useState<
     { min: number; max: number } | undefined
   >();
+  const [showFromTimestamp, setShowFromTimestamp] = useState<number | null>(
+    null,
+  );
 
   const historicalFreezeTimestampRef = useRef<number | null>(null);
   const graphDataRef = useRef<Map<string, () => GraphExportData | null>>(
@@ -59,6 +62,7 @@ export function useGraphSync(exportGroupId?: string) {
         viewMode?: "default" | "all" | "manual";
         isLiveMode?: boolean;
         xRange?: { min: number; max: number } | undefined;
+        showFromTimestamp?: number | null;
         clearHistoricalFreeze?: boolean;
         setHistoricalFreeze?: boolean;
       },
@@ -90,6 +94,8 @@ export function useGraphSync(exportGroupId?: string) {
         if (updates.viewMode !== undefined) setViewMode(updates.viewMode);
         if (updates.isLiveMode !== undefined) setIsLiveMode(updates.isLiveMode);
         if (updates.xRange !== undefined) setXRange(updates.xRange);
+        if (updates.showFromTimestamp !== undefined)
+          setShowFromTimestamp(updates.showFromTimestamp);
 
         // Handle historical freeze timestamp
         if (updates.clearHistoricalFreeze) {
@@ -195,6 +201,7 @@ export function useGraphSync(exportGroupId?: string) {
       viewMode: timeWindow === "all" ? "all" : "default",
       xRange: undefined,
       clearHistoricalFreeze: true,
+      showFromTimestamp: null, // Clear the show from timestamp when switching to live
     });
   }, [updateSyncState, timeWindow]);
 
@@ -205,6 +212,15 @@ export function useGraphSync(exportGroupId?: string) {
       setHistoricalFreeze: true,
     });
   }, [updateSyncState]);
+
+  const handleShowFromChange = useCallback(
+    (timestamp: number | null) => {
+      updateSyncState("control", {
+        showFromTimestamp: timestamp,
+      });
+    },
+    [updateSyncState],
+  );
 
   const handleControlTimeWindowChange = useCallback(
     (newTimeWindow: number | "all") => {
@@ -225,6 +241,7 @@ export function useGraphSync(exportGroupId?: string) {
     isLiveMode,
     xRange,
     historicalFreezeTimestamp: historicalFreezeTimestampRef.current,
+    showFromTimestamp,
     onTimeWindowChange: handleTimeWindowChange,
     onViewModeChange: handleViewModeChange,
     onZoomChange: handleZoomChangeThrottled,
@@ -237,6 +254,8 @@ export function useGraphSync(exportGroupId?: string) {
     onSwitchToLive: handleSwitchToLive,
     onSwitchToHistorical: handleSwitchToHistorical,
     onExport: handleExport,
+    showFromTimestamp,
+    onShowFromChange: handleShowFromChange,
   };
 
   return {
@@ -250,5 +269,6 @@ export function useGraphSync(exportGroupId?: string) {
     isLiveMode,
     xRange,
     historicalFreezeTimestamp: historicalFreezeTimestampRef.current,
+    showFromTimestamp,
   };
 }
