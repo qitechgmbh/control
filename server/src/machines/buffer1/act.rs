@@ -2,6 +2,7 @@ use std::time::{Duration, Instant};
 
 use super::BufferV1;
 use control_core::machines::new::MachineAct;
+
 impl MachineAct for BufferV1 {
     fn act(&mut self, now: Instant) {
         // if last measurement is older than 1 second, emit a new measurement

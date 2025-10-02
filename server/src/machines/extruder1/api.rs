@@ -1,26 +1,25 @@
-use super::{ExtruderV2Mode, HeatingType, mitsubishi_cs80::MotorStatus};
+use super::{ExtruderV2Mode, mitsubishi_cs80::MotorStatus};
 
 #[cfg(not(feature = "mock-machine"))]
 use super::ExtruderV2;
 
-#[cfg(feature = "mock-machine")]
-use super::mock::ExtruderV2;
+#[cfg(not(feature = "mock-machine"))]
+use crate::machines::extruder1::HeatingType;
 
-use control_core::{
-    machines::api::MachineApi,
-    socketio::{
-        event::{Event, GenericEvent},
-        namespace::{
-            CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_duration,
-            cache_first_and_last_event,
-        },
+#[cfg(not(feature = "mock-machine"))]
+use control_core::machines::api::MachineApi;
+use control_core::socketio::{
+    event::{Event, GenericEvent},
+    namespace::{
+        CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_duration,
+        cache_first_and_last_event,
     },
 };
 use control_core_derive::BuildEvent;
 use serde::{Deserialize, Serialize};
+#[cfg(not(feature = "mock-machine"))]
 use serde_json::Value;
-use smol::channel::Sender;
-use socketioxide::extract::SocketRef;
+use smol::lock::Mutex;
 use std::{sync::Arc, time::Duration};
 use tracing::instrument;
 use uom::si::{
@@ -225,7 +224,7 @@ pub enum Mutation {
 
 #[derive(Debug)]
 pub struct ExtruderV2Namespace {
-    pub namespace: Namespace,
+    pub namespace: Arc<Mutex<Namespace>>,
 }
 
 impl NamespaceCacheingLogic<ExtruderV2Events> for ExtruderV2Namespace {
@@ -233,15 +232,9 @@ impl NamespaceCacheingLogic<ExtruderV2Events> for ExtruderV2Namespace {
     fn emit(&mut self, events: ExtruderV2Events) {
         let event = Arc::new(events.event_value());
         let buffer_fn = events.event_cache_fn();
-        self.namespace.emit(event, &buffer_fn);
-    }
-}
 
-impl ExtruderV2Namespace {
-    pub fn new(socket_queue_tx: Sender<(SocketRef, Arc<GenericEvent>)>) -> Self {
-        Self {
-            namespace: Namespace::new(socket_queue_tx),
-        }
+        let mut namespace = self.namespace.lock_blocking();
+        namespace.emit(event, &buffer_fn);
     }
 }
 
@@ -303,7 +296,7 @@ impl MachineApi for ExtruderV2 {
         Ok(())
     }
 
-    fn api_event_namespace(&mut self) -> &mut Namespace {
-        &mut self.namespace.namespace
+    fn api_event_namespace(&mut self) -> Arc<Mutex<Namespace>> {
+        self.namespace.namespace.clone()
     }
 }

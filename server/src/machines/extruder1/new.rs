@@ -1,47 +1,71 @@
 #[cfg(not(feature = "mock-machine"))]
-use super::{
-    ExtruderV2, ExtruderV2Mode, Heating, api::ExtruderV2Namespace, mitsubishi_cs80::MitsubishiCS80,
-    screw_speed_controller::ScrewSpeedController,
-};
-use crate::machines::{
-    extruder1::temperature_controller::TemperatureController, get_ethercat_device,
-};
+use crate::machines::get_ethercat_device;
+#[cfg(not(feature = "mock-machine"))]
 use anyhow::Error;
+#[cfg(not(feature = "mock-machine"))]
+use control_core::machines::new::MachineNewHardware;
+#[cfg(not(feature = "mock-machine"))]
+use control_core::machines::new::{MachineNewParams, MachineNewTrait};
+#[cfg(not(feature = "mock-machine"))]
 use control_core::machines::new::{
-    MachineNewHardware, MachineNewParams, MachineNewTrait, validate_no_role_dublicates,
-    validate_same_machine_identification_unique,
+    validate_no_role_dublicates, validate_same_machine_identification_unique,
 };
+#[cfg(not(feature = "mock-machine"))]
+use ethercat_hal::coe::ConfigurableDevice;
+#[cfg(not(feature = "mock-machine"))]
+use ethercat_hal::devices::{
+    EthercatDeviceUsed,
+    ek1100::EK1100,
+    ek1100::EK1100_IDENTITY_A,
+    el1002::EL1002,
+    el1002::EL1002_IDENTITY_A,
+    el6021::EL6021,
+    el6021::EL6021Configuration,
+    el6021::EL6021Port,
+    el6021::{EL6021_IDENTITY_A, EL6021_IDENTITY_B, EL6021_IDENTITY_C, EL6021_IDENTITY_D},
+};
+#[cfg(not(feature = "mock-machine"))]
+use std::time::Duration;
+#[cfg(not(feature = "mock-machine"))]
+use std::time::Instant;
+#[cfg(not(feature = "mock-machine"))]
+use uom::si::angular_velocity::AngularVelocity;
+#[cfg(not(feature = "mock-machine"))]
+use uom::si::angular_velocity::revolution_per_minute;
+#[cfg(not(feature = "mock-machine"))]
+use uom::si::pressure::Pressure;
+#[cfg(not(feature = "mock-machine"))]
+use uom::si::pressure::bar;
+
+#[cfg(not(feature = "mock-machine"))]
 use ethercat_hal::{
-    coe::ConfigurableDevice,
     devices::{
-        EthercatDeviceUsed,
-        ek1100::{EK1100, EK1100_IDENTITY_A},
-        el1002::{EL1002, EL1002_IDENTITY_A},
         el2004::{EL2004, EL2004_IDENTITY_A, EL2004Port},
         el3021::{EL3021, EL3021_IDENTITY_A, EL3021Port},
         el3204::{EL3204, EL3204_IDENTITY_A, EL3204_IDENTITY_B, EL3204Port},
-        el6021::{
-            self, EL6021, EL6021_IDENTITY_A, EL6021_IDENTITY_B, EL6021_IDENTITY_C,
-            EL6021_IDENTITY_D, EL6021Configuration,
-        },
     },
     io::{
         analog_input::AnalogInput, digital_output::DigitalOutput,
         serial_interface::SerialInterface, temperature_input::TemperatureInput,
     },
 };
-use std::time::{Duration, Instant};
-use uom::si::{
-    angular_velocity::revolution_per_minute,
-    f64::{AngularVelocity, Pressure, ThermodynamicTemperature},
-    pressure::bar,
-    thermodynamic_temperature::degree_celsius,
+#[cfg(not(feature = "mock-machine"))]
+use uom::si::thermodynamic_temperature::{ThermodynamicTemperature, degree_celsius};
+
+#[cfg(not(feature = "mock-machine"))]
+use crate::machines::extruder1::temperature_controller::TemperatureController;
+
+#[cfg(not(feature = "mock-machine"))]
+use super::{
+    ExtruderV2, ExtruderV2Mode, Heating, api::ExtruderV2Namespace, mitsubishi_cs80::MitsubishiCS80,
+    screw_speed_controller::ScrewSpeedController,
 };
 
 #[cfg(not(feature = "mock-machine"))]
 impl MachineNewTrait for ExtruderV2 {
     fn new<'maindevice>(params: &MachineNewParams) -> Result<Self, Error> {
         // validate general stuff
+
         let device_identification = params.device_group.to_vec();
 
         validate_same_machine_identification_unique(&device_identification)?;
@@ -189,8 +213,7 @@ impl MachineNewTrait for ExtruderV2 {
                 0.95,
             );
 
-            let inverter =
-                MitsubishiCS80::new(SerialInterface::new(el6021, el6021::EL6021Port::SI1));
+            let inverter = MitsubishiCS80::new(SerialInterface::new(el6021, EL6021Port::SI1));
 
             let target_pressure = Pressure::new::<bar>(0.0);
             let target_rpm = AngularVelocity::new::<revolution_per_minute>(0.0);
@@ -198,8 +221,11 @@ impl MachineNewTrait for ExtruderV2 {
             let screw_speed_controller =
                 ScrewSpeedController::new(inverter, target_pressure, target_rpm, pressure_sensor);
 
-            let mut extruder: Self = Self {
-                namespace: ExtruderV2Namespace::new(params.socket_queue_tx.clone()),
+            let mut extruder: ExtruderV2 = Self {
+                machine_identification_unique: params.get_machine_identification_unique(),
+                namespace: ExtruderV2Namespace {
+                    namespace: params.namespace.clone(),
+                },
                 last_measurement_emit: Instant::now(),
                 mode: ExtruderV2Mode::Standby,
                 total_energy_kwh: 0.0,

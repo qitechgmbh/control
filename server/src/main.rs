@@ -14,7 +14,6 @@ use app_state::AppState;
 use mock::init::init_mock;
 use std::{sync::Arc, time::Duration};
 
-use ethercat::init::init_ethercat;
 use r#loop::init_loop;
 use rest::init::init_api;
 #[cfg(not(feature = "mock-machine"))]
@@ -23,6 +22,8 @@ use serial::init::init_serial;
 #[cfg(all(not(target_env = "msvc"), not(feature = "dhat-heap")))]
 use jemalloc_stats::init_jemalloc_stats;
 
+#[cfg(not(feature = "mock-machine"))]
+use crate::ethercat::init::init_ethercat;
 use crate::panic::init_panic;
 use crate::socketio::queue::init_socketio_queue;
 

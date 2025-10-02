@@ -68,8 +68,7 @@ pub fn init_serial(
                                     .write()
                                     .await
                                     .main_namespace;
-                                let event =
-                                    MachinesEventBuilder().build(app_state_event.clone()).await;
+                                let event = MachinesEventBuilder().build(app_state_event.clone());
                                 main_namespace.emit(MainNamespaceEvents::MachinesEvent(event));
                             });
                         }

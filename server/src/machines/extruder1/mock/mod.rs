@@ -1,6 +1,8 @@
 #[cfg(feature = "mock-machine")]
 use control_core::machines::identification::MachineIdentification;
 #[cfg(feature = "mock-machine")]
+use control_core::machines::identification::MachineIdentificationUnique;
+#[cfg(feature = "mock-machine")]
 use control_core_derive::Machine;
 #[cfg(feature = "mock-machine")]
 use std::time::Instant;
@@ -31,6 +33,7 @@ pub mod new;
 #[cfg(feature = "mock-machine")]
 #[derive(Debug, Machine)]
 pub struct ExtruderV2 {
+    machine_identification_unique: MachineIdentificationUnique,
     namespace: ExtruderV2Namespace,
     last_measurement_emit: Instant,
     last_status_hash: Option<u64>,

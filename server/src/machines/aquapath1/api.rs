@@ -13,8 +13,7 @@ use control_core::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use smol::channel::Sender;
-use socketioxide::extract::SocketRef;
+use smol::lock::Mutex;
 use tracing::instrument;
 
 #[derive(Serialize, Debug, Clone, Default)]
@@ -94,7 +93,7 @@ enum Mutation {
 
 #[derive(Debug)]
 pub struct AquaPathV1Namespace {
-    pub namespace: Namespace,
+    pub namespace: Arc<Mutex<Namespace>>,
 }
 
 impl NamespaceCacheingLogic<AquaPathV1Events> for AquaPathV1Namespace {
@@ -102,15 +101,9 @@ impl NamespaceCacheingLogic<AquaPathV1Events> for AquaPathV1Namespace {
     fn emit(&mut self, events: AquaPathV1Events) {
         let event = Arc::new(events.event_value());
         let buffer_fn = events.event_cache_fn();
-        self.namespace.emit(event, &buffer_fn);
-    }
-}
 
-impl AquaPathV1Namespace {
-    pub fn new(socket_queue_tx: Sender<(SocketRef, Arc<GenericEvent>)>) -> Self {
-        Self {
-            namespace: Namespace::new(socket_queue_tx),
-        }
+        let mut namespace = self.namespace.lock_blocking();
+        namespace.emit(event, &buffer_fn);
     }
 }
 
@@ -156,7 +149,7 @@ impl MachineApi for AquaPathV1 {
         Ok(())
     }
 
-    fn api_event_namespace(&mut self) -> &mut Namespace {
-        &mut self.namespace.namespace
+    fn api_event_namespace(&mut self) -> Arc<Mutex<Namespace>> {
+        self.namespace.namespace.clone()
     }
 }

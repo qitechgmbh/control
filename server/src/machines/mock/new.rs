@@ -5,12 +5,12 @@ use super::{
     api::{MockMachineNamespace, Mode},
 };
 use anyhow::Error;
-use control_core::machines::new::{MachineNewHardware, MachineNewTrait};
+use control_core::machines::new::{MachineNewHardware, MachineNewParams, MachineNewTrait};
 use uom::si::{f64::Frequency, frequency::hertz};
 
 impl MachineNewTrait for MockMachine {
-    fn new(
-        params: &control_core::machines::new::MachineNewParams<'_, '_, '_, '_, '_, '_, '_>,
+    fn new<'maindevice, 'subdevices>(
+        params: &MachineNewParams<'maindevice, 'subdevices, '_, '_, '_, '_, '_>,
     ) -> Result<Self, Error>
     where
         Self: Sized,
@@ -32,7 +32,10 @@ impl MachineNewTrait for MockMachine {
         let now = Instant::now();
 
         let mut mock_machine = Self {
-            namespace: MockMachineNamespace::new(params.socket_queue_tx.clone()),
+            machine_identification_unique: params.get_machine_identification_unique(),
+            namespace: MockMachineNamespace {
+                namespace: params.namespace.clone(),
+            },
             last_measurement_emit: now,
             t_0: now, // Initialize start time to current time
             frequency1: Frequency::new::<hertz>(0.1), // Default frequency1 of 100 mHz

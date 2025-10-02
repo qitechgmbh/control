@@ -1,15 +1,26 @@
-use crate::machines::{MACHINE_EXTRUDER_V1, VENDOR_QITECH};
-use api::ExtruderV2Namespace;
-use control_core::machines::identification::MachineIdentification;
-use control_core_derive::Machine;
-use screw_speed_controller::ScrewSpeedController;
-use serde::{Deserialize, Serialize};
+#[cfg(not(feature = "mock-machine"))]
 use std::time::Instant;
-use temperature_controller::TemperatureController;
-use uom::si::{
-    electric_current::ampere, electric_potential::volt, f64::ThermodynamicTemperature,
-    thermodynamic_temperature::degree_celsius,
+
+#[cfg(not(feature = "mock-machine"))]
+use control_core::machines::identification::{MachineIdentification, MachineIdentificationUnique};
+#[cfg(not(feature = "mock-machine"))]
+use control_core_derive::Machine;
+use serde::{Deserialize, Serialize};
+#[cfg(not(feature = "mock-machine"))]
+use uom::si::electric_current::ampere;
+#[cfg(not(feature = "mock-machine"))]
+use uom::si::electric_potential::volt;
+use uom::si::{f64::ThermodynamicTemperature, thermodynamic_temperature::degree_celsius};
+
+#[cfg(not(feature = "mock-machine"))]
+use crate::machines::{
+    MACHINE_EXTRUDER_V1, VENDOR_QITECH,
+    extruder1::{
+        api::ExtruderV2Namespace, screw_speed_controller::ScrewSpeedController,
+        temperature_controller::TemperatureController,
+    },
 };
+
 pub mod act;
 pub mod api;
 pub mod emit;
@@ -52,9 +63,10 @@ pub enum HeatingType {
     Middle,
 }
 
-#[derive(Debug, Machine)]
 #[cfg(not(feature = "mock-machine"))]
+#[derive(Debug, Machine)]
 pub struct ExtruderV2 {
+    machine_identification_unique: MachineIdentificationUnique,
     namespace: ExtruderV2Namespace,
     last_measurement_emit: Instant,
     last_status_hash: Option<u64>,
@@ -126,6 +138,9 @@ impl ExtruderV2 {
     }
 
     // Funktionen ohne emit_state bleiben hier
+
+    // Set all relais to ZERO
+    // We dont need a function to enable again though, as the act Loop will detect the mode
     fn turn_heating_off(&mut self) {
         self.temperature_controller_back.disable();
         self.temperature_controller_front.disable();

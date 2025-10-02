@@ -1,6 +1,7 @@
 use crate::app_state::AppState;
 use crate::panic::{PanicDetails, send_panic};
 use bitvec::prelude::*;
+use control_core::machines::connection::MachineConnection;
 use control_core::realtime::{set_core_affinity, set_realtime_priority};
 use smol::channel::Sender;
 use std::sync::Arc;
@@ -144,7 +145,8 @@ pub async fn loop_once<'maindevice>(app_state: Arc<AppState>) -> Result<(), anyh
         let now = std::time::Instant::now();
 
         for machine in machine_guard.iter() {
-            if let Ok(machine) = machine.1 {
+            let connection = &machine.1.lock_blocking().machine_connection;
+            if let MachineConnection::Connected(machine) = connection {
                 // if the machine is currenlty locked (likely processing API call)
                 // we skip the machine
                 if let Some(mut machine_guard) = machine.try_lock() {

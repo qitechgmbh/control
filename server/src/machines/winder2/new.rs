@@ -10,6 +10,7 @@ use crate::machines::winder2::traverse_controller::TraverseController;
 use anyhow::Error;
 use control_core::converters::angular_step_converter::AngularStepConverter;
 use control_core::converters::linear_step_converter::LinearStepConverter;
+use control_core::machines::connection::MachineCrossConnection;
 use control_core::machines::new::{
     MachineNewHardware, MachineNewParams, MachineNewTrait, validate_no_role_dublicates,
     validate_same_machine_identification_unique,
@@ -197,7 +198,9 @@ impl MachineNewTrait for Winder2 {
                     EL7031_0030AnalogInputPort::AI1,
                 )),
                 laser: DigitalOutput::new(el2002, EL2002Port::DO1),
-                namespace: Winder2Namespace::new(params.socket_queue_tx.clone()),
+                namespace: Winder2Namespace {
+                    namespace: params.namespace.clone(),
+                },
                 mode: mode.clone(),
                 spool_step_converter: AngularStepConverter::new(200),
                 spool_speed_controller: SpoolSpeedController::new(),
@@ -227,7 +230,10 @@ impl MachineNewTrait for Winder2 {
                 },
                 machine_manager: params.machine_manager.clone(),
                 machine_identification_unique: machine_id,
-                connected_buffer: None,
+                connected_buffer: MachineCrossConnection::new(
+                    params.machine_manager.clone(),
+                    &params.get_machine_identification_unique(),
+                ),
             };
 
             // initalize events

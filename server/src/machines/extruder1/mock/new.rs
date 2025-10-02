@@ -32,7 +32,10 @@ impl control_core::machines::new::MachineNewTrait for ExtruderV2 {
         let now = std::time::Instant::now();
 
         let mut extruder_mock_machine = Self {
-            namespace: ExtruderV2Namespace::new(params.socket_queue_tx.clone()),
+            machine_identification_unique: params.get_machine_identification_unique(),
+            namespace: ExtruderV2Namespace {
+                namespace: params.namespace.clone(),
+            },
             last_measurement_emit: now,
 
             mode: ExtruderV2Mode::Standby, // Start in standby mode
