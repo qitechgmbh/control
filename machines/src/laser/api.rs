@@ -49,6 +49,8 @@ pub struct LaserState {
     pub lower_tolerance: f64,
     /// target diameter in mm
     pub target_diameter: f64,
+    /// tolerance bool
+    pub in_tolerance: bool,
 }
 
 pub enum LaserEvents {

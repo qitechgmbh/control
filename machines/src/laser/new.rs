@@ -50,6 +50,9 @@ impl MachineNewTrait for LaserMachine {
             x_diameter: None,
             y_diameter: None,
             roundness: None,
+            lower_tolerance: Length::new::<millimeter>(0.05),
+            higher_tolerance: Length::new::<millimeter>(0.05),
+            in_tolerance: true,
         };
 
         Ok(laser_machine)

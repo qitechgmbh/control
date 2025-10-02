@@ -42,6 +42,7 @@ export const stateEventDataSchema = z.object({
     higher_tolerance: z.number(),
     lower_tolerance: z.number(),
     target_diameter: z.number(),
+    in_tolerance: z.boolean(),
   }),
 });
 
@@ -102,7 +103,7 @@ export const createLaser1NamespaceStore = (): StoreApi<Laser1NamespaceStore> =>
       diameter: diameter,
       x_diameter,
       y_diameter,
-      roundness: roundness,
+      roundness,
     };
   });
 
