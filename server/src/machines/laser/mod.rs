@@ -4,12 +4,10 @@ use crate::{
 };
 use api::{LaserEvents, LaserMachineNamespace, LaserState, LiveValuesEvent, StateEvent};
 use control_core::{
-    machines::{
-        Machine,
-        identification::{MachineIdentification, MachineIdentificationUnique},
-    },
+    machines::identification::{MachineIdentification, MachineIdentificationUnique},
     socketio::namespace::NamespaceCacheingLogic,
 };
+use control_core_derive::Machine;
 use smol::lock::RwLock;
 use std::{sync::Arc, time::Instant};
 use uom::si::{f64::Length, length::millimeter};
@@ -18,7 +16,7 @@ pub mod act;
 pub mod api;
 pub mod new;
 
-#[derive(Debug)]
+#[derive(Debug, Machine)]
 pub struct LaserMachine {
     machine_identification_unique: MachineIdentificationUnique,
 
@@ -41,12 +39,6 @@ pub struct LaserMachine {
     /// Will be initialized as false and set to true by emit_state
     /// This way we can signal to the client that the first state emission is a default state
     emitted_default_state: bool,
-}
-
-impl Machine for LaserMachine {
-    fn get_machine_identification_unique(&self) -> MachineIdentificationUnique {
-        self.machine_identification_unique.clone()
-    }
 }
 
 impl LaserMachine {

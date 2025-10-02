@@ -1,11 +1,9 @@
 use control_core::{
-    machines::{
-        Machine,
-        identification::{MachineIdentification, MachineIdentificationUnique},
-    },
+    machines::identification::{MachineIdentification, MachineIdentificationUnique},
     socketio::namespace::NamespaceCacheingLogic,
 };
 
+use control_core_derive::Machine;
 use serde::{Deserialize, Serialize};
 use std::time::Instant;
 use uom::si::{
@@ -80,7 +78,7 @@ impl Default for Flow {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Machine)]
 pub struct AquaPathV1 {
     machine_identification_unique: MachineIdentificationUnique,
     namespace: AquaPathV1Namespace,
@@ -89,17 +87,12 @@ pub struct AquaPathV1 {
     front_controller: Controller,
     back_controller: Controller,
 }
+
 impl AquaPathV1 {
     pub const MACHINE_IDENTIFICATION: MachineIdentification = MachineIdentification {
         vendor: VENDOR_QITECH,
         machine: MACHINE_AQUAPATH_V1,
     };
-}
-
-impl Machine for AquaPathV1 {
-    fn get_machine_identification_unique(&self) -> MachineIdentificationUnique {
-        self.machine_identification_unique.clone()
-    }
 }
 
 impl std::fmt::Display for AquaPathV1 {

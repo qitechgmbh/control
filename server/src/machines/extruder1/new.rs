@@ -1,30 +1,43 @@
+#[cfg(not(feature = "mock-machine"))]
 use crate::machines::get_ethercat_device;
+#[cfg(not(feature = "mock-machine"))]
 use anyhow::Error;
+#[cfg(not(feature = "mock-machine"))]
 use control_core::machines::new::MachineNewHardware;
 #[cfg(not(feature = "mock-machine"))]
 use control_core::machines::new::{MachineNewParams, MachineNewTrait};
+#[cfg(not(feature = "mock-machine"))]
 use control_core::machines::new::{
     validate_no_role_dublicates, validate_same_machine_identification_unique,
 };
+#[cfg(not(feature = "mock-machine"))]
 use ethercat_hal::coe::ConfigurableDevice;
-use ethercat_hal::devices::EthercatDeviceUsed;
-use ethercat_hal::devices::ek1100::EK1100;
-use ethercat_hal::devices::ek1100::EK1100_IDENTITY_A;
-use ethercat_hal::devices::el1002::EL1002;
-use ethercat_hal::devices::el1002::EL1002_IDENTITY_A;
-use ethercat_hal::devices::el6021::EL6021;
-use ethercat_hal::devices::el6021::EL6021Configuration;
-use ethercat_hal::devices::el6021::EL6021Port;
-use ethercat_hal::devices::el6021::{
-    EL6021_IDENTITY_A, EL6021_IDENTITY_B, EL6021_IDENTITY_C, EL6021_IDENTITY_D,
+#[cfg(not(feature = "mock-machine"))]
+use ethercat_hal::devices::{
+    EthercatDeviceUsed,
+    ek1100::EK1100,
+    ek1100::EK1100_IDENTITY_A,
+    el1002::EL1002,
+    el1002::EL1002_IDENTITY_A,
+    el6021::EL6021,
+    el6021::EL6021Configuration,
+    el6021::EL6021Port,
+    el6021::{EL6021_IDENTITY_A, EL6021_IDENTITY_B, EL6021_IDENTITY_C, EL6021_IDENTITY_D},
 };
+#[cfg(not(feature = "mock-machine"))]
 use std::time::Duration;
+#[cfg(not(feature = "mock-machine"))]
 use std::time::Instant;
+#[cfg(not(feature = "mock-machine"))]
 use uom::si::angular_velocity::AngularVelocity;
+#[cfg(not(feature = "mock-machine"))]
 use uom::si::angular_velocity::revolution_per_minute;
+#[cfg(not(feature = "mock-machine"))]
 use uom::si::pressure::Pressure;
+#[cfg(not(feature = "mock-machine"))]
 use uom::si::pressure::bar;
 
+#[cfg(not(feature = "mock-machine"))]
 use ethercat_hal::{
     devices::{
         el2004::{EL2004, EL2004_IDENTITY_A, EL2004Port},
@@ -36,8 +49,10 @@ use ethercat_hal::{
         serial_interface::SerialInterface, temperature_input::TemperatureInput,
     },
 };
+#[cfg(not(feature = "mock-machine"))]
 use uom::si::thermodynamic_temperature::{ThermodynamicTemperature, degree_celsius};
 
+#[cfg(not(feature = "mock-machine"))]
 use crate::machines::extruder1::temperature_controller::TemperatureController;
 
 #[cfg(not(feature = "mock-machine"))]
@@ -207,7 +222,7 @@ impl MachineNewTrait for ExtruderV2 {
                 ScrewSpeedController::new(inverter, target_pressure, target_rpm, pressure_sensor);
 
             let mut extruder: ExtruderV2 = Self {
-                machine_identificttion_unique: params.get_machine_identification_unique(),
+                machine_identification_unique: params.get_machine_identification_unique(),
                 namespace: ExtruderV2Namespace {
                     namespace: params.namespace.clone(),
                 },

@@ -8,13 +8,20 @@ use crate::machines::extruder1::{
         RotationState, ScrewState, StateEvent,
     },
 };
+#[cfg(not(feature = "mock-machine"))]
 use control_core::helpers::hasher_serializer::hash_with_serde_model;
+#[cfg(not(feature = "mock-machine"))]
 use control_core::socketio::event::BuildEvent;
+#[cfg(not(feature = "mock-machine"))]
 use control_core::socketio::namespace::NamespaceCacheingLogic;
+#[cfg(not(feature = "mock-machine"))]
 use uom::si::{angular_velocity::revolution_per_minute, thermodynamic_temperature::degree_celsius};
 
+#[cfg(not(feature = "mock-machine"))]
 use uom::si::angular_velocity::AngularVelocity;
+#[cfg(not(feature = "mock-machine"))]
 use uom::si::pressure::{Pressure, bar};
+#[cfg(not(feature = "mock-machine"))]
 use uom::si::thermodynamic_temperature::ThermodynamicTemperature;
 
 #[cfg(not(feature = "mock-machine"))]

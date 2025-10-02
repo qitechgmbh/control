@@ -21,7 +21,6 @@ use control_core::socketio::event::BuildEvent;
 use control_core::{
     converters::angular_step_converter::AngularStepConverter,
     machines::{
-        Machine,
         connection::{CrossConnectableMachine, MachineCrossConnection},
         identification::{MachineIdentification, MachineIdentificationUnique},
         manager::MachineManager,
@@ -29,6 +28,7 @@ use control_core::{
     socketio::namespace::NamespaceCacheingLogic,
     uom_extensions::velocity::meter_per_minute,
 };
+use control_core_derive::Machine;
 use ethercat_hal::io::{
     digital_input::DigitalInput, digital_output::DigitalOutput,
     stepper_velocity_el70x1::StepperVelocityEL70x1,
@@ -59,7 +59,7 @@ pub struct SpoolAutomaticAction {
     pub mode: SpoolAutomaticActionMode,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Machine)]
 pub struct Winder2 {
     // drivers
     pub traverse: StepperVelocityEL70x1,
@@ -102,12 +102,6 @@ pub struct Winder2 {
     /// Will be initialized as false and set to true by emit_state
     /// This way we can signal to the client that the first state emission is a default state
     emitted_default_state: bool,
-}
-
-impl Machine for Winder2 {
-    fn get_machine_identification_unique(&self) -> MachineIdentificationUnique {
-        self.machine_identification_unique.clone()
-    }
 }
 
 impl CrossConnectableMachine<Winder2, BufferV1> for Winder2 {

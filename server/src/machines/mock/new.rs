@@ -5,10 +5,7 @@ use super::{
     api::{MockMachineNamespace, Mode},
 };
 use anyhow::Error;
-use control_core::machines::{
-    identification::MachineIdentificationUnique,
-    new::{MachineNewHardware, MachineNewParams, MachineNewTrait},
-};
+use control_core::machines::new::{MachineNewHardware, MachineNewParams, MachineNewTrait};
 use uom::si::{f64::Frequency, frequency::hertz};
 
 impl MachineNewTrait for MockMachine {
@@ -32,15 +29,10 @@ impl MachineNewTrait for MockMachine {
             }
         }
 
-        let machine_identifaction_unique: MachineIdentificationUnique = params.device_group[0]
-            .device_machine_identification
-            .machine_identification_unique
-            .clone();
-
         let now = Instant::now();
 
         let mut mock_machine = Self {
-            machine_identifaction_unique: machine_identifaction_unique,
+            machine_identification_unique: params.get_machine_identification_unique(),
             namespace: MockMachineNamespace {
                 namespace: params.namespace.clone(),
             },

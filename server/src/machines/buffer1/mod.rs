@@ -8,19 +8,19 @@ use buffer_tower_controller::BufferTowerController;
 use control_core::machines::connection::{CrossConnectableMachine, MachineCrossConnection};
 use control_core::{
     machines::{
-        Machine,
         identification::{MachineIdentification, MachineIdentificationUnique},
         manager::MachineManager,
     },
     socketio::namespace::NamespaceCacheingLogic,
 };
+use control_core_derive::Machine;
 use serde::{Deserialize, Serialize};
 use smol::lock::RwLock;
 use std::{sync::Weak, time::Instant};
 
 use crate::machines::{MACHINE_BUFFER_V1, VENDOR_QITECH, winder2::Winder2};
 
-#[derive(Debug)]
+#[derive(Debug, Machine)]
 pub struct BufferV1 {
     // controllers
     pub buffer_tower_controller: BufferTowerController,
@@ -38,12 +38,6 @@ pub struct BufferV1 {
 
     // mode
     mode: BufferV1Mode,
-}
-
-impl Machine for BufferV1 {
-    fn get_machine_identification_unique(&self) -> MachineIdentificationUnique {
-        self.machine_identification_unique.clone()
-    }
 }
 
 impl CrossConnectableMachine<BufferV1, Winder2> for BufferV1 {

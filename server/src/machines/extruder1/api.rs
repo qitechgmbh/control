@@ -3,6 +3,7 @@ use super::{ExtruderV2Mode, mitsubishi_cs80::MotorStatus};
 #[cfg(not(feature = "mock-machine"))]
 use super::ExtruderV2;
 
+#[cfg(not(feature = "mock-machine"))]
 use crate::machines::extruder1::HeatingType;
 
 #[cfg(not(feature = "mock-machine"))]

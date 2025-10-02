@@ -1,9 +1,9 @@
 #[cfg(feature = "mock-machine")]
-use control_core::machines::Machine;
-#[cfg(feature = "mock-machine")]
 use control_core::machines::identification::MachineIdentification;
 #[cfg(feature = "mock-machine")]
 use control_core::machines::identification::MachineIdentificationUnique;
+#[cfg(feature = "mock-machine")]
+use control_core_derive::Machine;
 #[cfg(feature = "mock-machine")]
 use std::time::Instant;
 
@@ -31,7 +31,7 @@ pub mod mock_emit;
 pub mod new;
 
 #[cfg(feature = "mock-machine")]
-#[derive(Debug)]
+#[derive(Debug, Machine)]
 pub struct ExtruderV2 {
     machine_identification_unique: MachineIdentificationUnique,
     namespace: ExtruderV2Namespace,
@@ -103,11 +103,4 @@ impl ExtruderV2 {
         vendor: VENDOR_QITECH,
         machine: MACHINE_EXTRUDER_V1,
     };
-}
-
-#[cfg(feature = "mock-machine")]
-impl Machine for ExtruderV2 {
-    fn get_machine_identification_unique(&self) -> MachineIdentificationUnique {
-        self.machine_identification_unique.clone()
-    }
 }

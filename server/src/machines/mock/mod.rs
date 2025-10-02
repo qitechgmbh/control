@@ -1,11 +1,11 @@
 use crate::machines::{MACHINE_MOCK, VENDOR_QITECH};
 use api::{LiveValuesEvent, MockEvents, MockMachineNamespace, Mode, ModeState, StateEvent};
-use control_core::machines::Machine;
 use control_core::machines::identification::MachineIdentificationUnique;
 use control_core::socketio::event::BuildEvent;
 use control_core::{
     machines::identification::MachineIdentification, socketio::namespace::NamespaceCacheingLogic,
 };
+use control_core_derive::Machine;
 
 use std::time::Instant;
 use tracing::info;
@@ -18,9 +18,9 @@ pub mod act;
 pub mod api;
 pub mod new;
 
-#[derive(Debug)]
+#[derive(Debug, Machine)]
 pub struct MockMachine {
-    machine_identifaction_unique: MachineIdentificationUnique,
+    machine_identification_unique: MachineIdentificationUnique,
 
     // socketio
     namespace: MockMachineNamespace,
@@ -39,12 +39,6 @@ pub struct MockMachine {
     /// Will be initialized as false and set to true by emit_state
     /// This way we can signal to the client that the first state emission is a default state
     emitted_default_state: bool,
-}
-
-impl Machine for MockMachine {
-    fn get_machine_identification_unique(&self) -> MachineIdentificationUnique {
-        self.machine_identifaction_unique.clone()
-    }
 }
 
 impl MockMachine {

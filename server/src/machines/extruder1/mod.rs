@@ -2,11 +2,14 @@
 use std::time::Instant;
 
 #[cfg(not(feature = "mock-machine"))]
-use control_core::machines::{
-    Machine,
-    identification::{MachineIdentification, MachineIdentificationUnique},
-};
+use control_core::machines::identification::{MachineIdentification, MachineIdentificationUnique};
+#[cfg(not(feature = "mock-machine"))]
+use control_core_derive::Machine;
 use serde::{Deserialize, Serialize};
+#[cfg(not(feature = "mock-machine"))]
+use uom::si::electric_current::ampere;
+#[cfg(not(feature = "mock-machine"))]
+use uom::si::electric_potential::volt;
 use uom::si::{f64::ThermodynamicTemperature, thermodynamic_temperature::degree_celsius};
 
 #[cfg(not(feature = "mock-machine"))]
@@ -17,6 +20,7 @@ use crate::machines::{
         temperature_controller::TemperatureController,
     },
 };
+
 pub mod act;
 pub mod api;
 pub mod emit;
@@ -25,8 +29,6 @@ pub mod mock;
 pub mod new;
 pub mod screw_speed_controller;
 pub mod temperature_controller;
-use uom::si::electric_current::ampere;
-use uom::si::electric_potential::volt;
 
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Eq)]
 pub enum ExtruderV2Mode {
@@ -62,9 +64,9 @@ pub enum HeatingType {
 }
 
 #[cfg(not(feature = "mock-machine"))]
-#[derive(Debug)]
+#[derive(Debug, Machine)]
 pub struct ExtruderV2 {
-    machine_identificttion_unique: MachineIdentificationUnique,
+    machine_identification_unique: MachineIdentificationUnique,
     namespace: ExtruderV2Namespace,
     last_measurement_emit: Instant,
     last_status_hash: Option<u64>,
@@ -82,13 +84,6 @@ pub struct ExtruderV2 {
     /// will be initalized as false and set to true by `emit_state`
     /// This way we can signal to the client that the first state emission is a default state
     emitted_default_state: bool,
-}
-
-#[cfg(not(feature = "mock-machine"))]
-impl Machine for ExtruderV2 {
-    fn get_machine_identification_unique(&self) -> MachineIdentificationUnique {
-        self.machine_identificttion_unique.clone()
-    }
 }
 
 #[cfg(not(feature = "mock-machine"))]

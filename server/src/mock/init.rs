@@ -25,7 +25,7 @@ pub fn init_mock(app_state: Arc<AppState>) -> Result<(), anyhow::Error> {
         };
 
         // Create the mock serial device
-        match MockSerialDevice::new_serial(&serial_params) {
+        let _ = match MockSerialDevice::new_serial(&serial_params) {
             Ok((device_identification, mock_serial_device)) => {
                 // Add the mock device to the machine manager
                 {
@@ -47,7 +47,7 @@ pub fn init_mock(app_state: Arc<AppState>) -> Result<(), anyhow::Error> {
                     .write()
                     .await
                     .main_namespace;
-                let event = MachinesEventBuilder().build(app_state_event.clone()).await;
+                let event = MachinesEventBuilder().build(app_state_event.clone());
                 main_namespace.emit(MainNamespaceEvents::MachinesEvent(event));
                 Ok::<(), anyhow::Error>(())
             }
@@ -79,7 +79,7 @@ pub fn init_mock(app_state: Arc<AppState>) -> Result<(), anyhow::Error> {
                     .write()
                     .await
                     .main_namespace;
-                let event = MachinesEventBuilder().build(app_state_event.clone()).await;
+                let event = MachinesEventBuilder().build(app_state_event.clone());
                 main_namespace.emit(MainNamespaceEvents::MachinesEvent(event));
                 Ok(())
             }
