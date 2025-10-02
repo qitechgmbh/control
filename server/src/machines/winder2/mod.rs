@@ -9,36 +9,33 @@ pub mod puller_speed_controller;
 pub mod spool_speed_controller;
 pub mod tension_arm;
 pub mod traverse_controller;
+
+use std::{fmt::Debug, sync::Weak, time::Instant};
+
 use api::{
     LiveValuesEvent, ModeState, PullerState, SpoolAutomaticActionMode, SpoolAutomaticActionState,
     SpoolSpeedControllerState, StateEvent, TensionArmState, TraverseState, Winder2Events,
     Winder2Namespace,
 };
-use control_core::helpers::hasher_serializer::check_hash_different;
 use control_core::socketio::event::BuildEvent;
 use control_core::{
     converters::angular_step_converter::AngularStepConverter,
     machines::{
-        ConnectedMachine, ConnectedMachineData, Machine, downcast_machine,
+        connection::{CrossConnectableMachine, MachineCrossConnection},
         identification::{MachineIdentification, MachineIdentificationUnique},
         manager::MachineManager,
     },
     socketio::namespace::NamespaceCacheingLogic,
     uom_extensions::velocity::meter_per_minute,
 };
+use control_core_derive::Machine;
 use ethercat_hal::io::{
     digital_input::DigitalInput, digital_output::DigitalOutput,
     stepper_velocity_el70x1::StepperVelocityEL70x1,
 };
-use futures::executor::block_on;
 use puller_speed_controller::{PullerRegulationMode, PullerSpeedController};
-use smol::lock::{Mutex, RwLock};
+use smol::lock::RwLock;
 use spool_speed_controller::SpoolSpeedController;
-use std::{
-    fmt::Debug,
-    sync::{Arc, Weak},
-    time::Instant,
-};
 use tension_arm::TensionArm;
 use traverse_controller::TraverseController;
 use uom::{
@@ -52,9 +49,7 @@ use uom::{
     },
 };
 
-use crate::machines::{
-    MACHINE_WINDER_V1, VENDOR_QITECH, buffer1::BufferV1, winder2::api::ConnectedMachineState,
-};
+use crate::machines::{MACHINE_WINDER_V1, VENDOR_QITECH, buffer1::BufferV1};
 
 #[derive(Debug)]
 pub struct SpoolAutomaticAction {
@@ -64,7 +59,7 @@ pub struct SpoolAutomaticAction {
     pub mode: SpoolAutomaticActionMode,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Machine)]
 pub struct Winder2 {
     // drivers
     pub traverse: StepperVelocityEL70x1,
@@ -86,7 +81,7 @@ pub struct Winder2 {
     pub machine_identification_unique: MachineIdentificationUnique,
 
     // connected machines
-    pub connected_buffer: Option<ConnectedMachine<Weak<Mutex<BufferV1>>>>,
+    pub connected_buffer: MachineCrossConnection<Winder2, BufferV1>,
 
     // mode
     pub mode: Winder2Mode,
@@ -107,12 +102,11 @@ pub struct Winder2 {
     /// Will be initialized as false and set to true by emit_state
     /// This way we can signal to the client that the first state emission is a default state
     emitted_default_state: bool,
-    last_state_event: Option<StateEvent>,
 }
 
-impl Machine for Winder2 {
-    fn as_any(&self) -> &dyn std::any::Any {
-        self
+impl CrossConnectableMachine<Winder2, BufferV1> for Winder2 {
+    fn get_cross_connection(&mut self) -> &mut MachineCrossConnection<Winder2, BufferV1> {
+        &mut self.connected_buffer
     }
 }
 
@@ -121,12 +115,11 @@ impl Winder2 {
         vendor: VENDOR_QITECH,
         machine: MACHINE_WINDER_V1,
     };
-}
 
-/// Implement Traverse
-impl Winder2 {
+    /// Implement Traverse
     fn set_laser(&mut self, value: bool) {
         self.laser.set(value);
+        self.emit_state();
     }
 
     /// Validates that traverse limits maintain proper constraints:
@@ -145,8 +138,8 @@ impl Winder2 {
             // Don't update if validation fails - keep the current value
             return;
         }
-
         self.traverse_controller.set_limit_inner(new_inner);
+        self.emit_state();
     }
 
     pub fn traverse_set_limit_outer(&mut self, limit: f64) {
@@ -160,34 +153,40 @@ impl Winder2 {
         }
 
         self.traverse_controller.set_limit_outer(new_outer);
+        self.emit_state();
     }
 
     pub fn traverse_set_step_size(&mut self, step_size: f64) {
         let step_size = Length::new::<millimeter>(step_size);
         self.traverse_controller.set_step_size(step_size);
+        self.emit_state();
     }
 
     pub fn traverse_set_padding(&mut self, padding: f64) {
         let padding = Length::new::<millimeter>(padding);
         self.traverse_controller.set_padding(padding);
+        self.emit_state();
     }
 
     pub fn traverse_goto_limit_inner(&mut self) {
         if self.can_go_in() {
             self.traverse_controller.goto_limit_inner();
         }
+        self.emit_state();
     }
 
     pub fn traverse_goto_limit_outer(&mut self) {
         if self.can_go_out() {
             self.traverse_controller.goto_limit_outer();
         }
+        self.emit_state();
     }
 
     pub fn traverse_goto_home(&mut self) {
         if self.can_go_home() {
             self.traverse_controller.goto_home();
         }
+        self.emit_state();
     }
 
     pub fn emit_live_values(&mut self) {
@@ -224,11 +223,6 @@ impl Winder2 {
                 .map(|x| x.get::<millimeter>()),
             puller_speed: puller_speed.get::<meter_per_minute>(),
             spool_rpm,
-            spool_diameter: self
-                .spool_speed_controller
-                .get_estimated_radius()
-                .get::<millimeter>()
-                * 2.0,
             tension_arm_angle: angle_deg,
             spool_progress: self.spool_automatic_action.progress.get::<meter>(),
         };
@@ -316,49 +310,13 @@ impl Winder2 {
                 spool_required_meters: self.spool_automatic_action.target_length.get::<meter>(),
                 spool_automatic_action_mode: self.spool_automatic_action.mode.clone(),
             },
-            connected_machine_state: ConnectedMachineState {
-                machine_identification_unique: self.connected_buffer.as_ref().map(
-                    |connected_machine| {
-                        ConnectedMachineData::from(connected_machine)
-                            .machine_identification_unique
-                            .clone()
-                    },
-                ),
-                is_available: self
-                    .connected_buffer
-                    .as_ref()
-                    .map(|connected_machine| {
-                        ConnectedMachineData::from(connected_machine).is_available
-                    })
-                    .unwrap_or(false),
-            },
-        }
-    }
-
-    pub fn maybe_emit_state_event(&mut self) {
-        let new_state = self.build_state_event();
-
-        let old_state = match &self.last_state_event {
-            Some(old_state) => old_state,
-            None => {
-                self.emit_state();
-                return;
-            }
-        };
-
-        let should_emit = check_hash_different(&new_state, &old_state);
-        if should_emit {
-            let event = &new_state.build();
-            self.last_state_event = Some(new_state);
-            self.namespace.emit(Winder2Events::State(event.clone()));
+            connected_machine_state: self.connected_buffer.to_state(),
         }
     }
 
     pub fn emit_state(&mut self) {
         let state_event = self.build_state_event();
         let event = state_event.build();
-
-        self.last_state_event = Some(state_event);
         self.namespace.emit(Winder2Events::State(event));
     }
 
@@ -371,7 +329,7 @@ impl Winder2 {
     }
 
     /// Can wind capability check
-    pub fn can_wind(&self) -> bool {
+    pub const fn can_wind(&self) -> bool {
         // Check if tension arm is zeroed and traverse is homed
         self.tension_arm.zeroed
             && self.traverse_controller.is_homed()
@@ -413,12 +371,8 @@ impl Winder2 {
             && !self.traverse_controller.is_traversing()
             && self.mode != Winder2Mode::Wind
     }
-}
 
-impl Winder2 {}
-
-/// Implement Mode
-impl Winder2 {
+    /// Implement Mode
     fn set_mode(&mut self, mode: &Winder2Mode) {
         let should_update = *mode != Winder2Mode::Wind || self.can_wind();
 
@@ -431,6 +385,7 @@ impl Winder2 {
             self.set_puller_mode(mode);
             self.set_traverse_mode(mode);
         }
+        self.emit_state();
     }
 
     /// Apply the mode changes to the spool
@@ -551,6 +506,7 @@ impl Winder2 {
 
         // Update the internal state
         self.traverse_mode = mode;
+        self.emit_state();
     }
 
     /// Apply the mode changes to the puller
@@ -603,19 +559,16 @@ impl Winder2 {
         // Update the internal state
         self.puller_mode = mode;
     }
-}
 
-/// Implement Tension Arm
-impl Winder2 {
+    /// Implement Tension Arm
     fn tension_arm_zero(&mut self) {
         self.tension_arm.zero();
         self.emit_live_values(); // For angle update
         // For state update
+        self.emit_state();
     }
-}
 
-/// Implement Spool
-impl Winder2 {
+    /// Implement Spool
     /// called by `act`
     pub fn sync_spool_speed(&mut self, t: Instant) {
         let angular_velocity = self.spool_speed_controller.update_speed(
@@ -631,14 +584,19 @@ impl Winder2 {
 
     pub fn set_spool_automatic_required_meters(&mut self, meters: f64) {
         self.spool_automatic_action.target_length = Length::new::<meter>(meters);
+        self.emit_state();
     }
 
     pub fn set_spool_automatic_mode(&mut self, mode: SpoolAutomaticActionMode) {
         self.spool_automatic_action.mode = mode;
+        self.emit_state();
     }
 
     pub fn stop_or_pull_spool(&mut self, now: Instant) {
-        if let SpoolAutomaticActionMode::NoAction = self.spool_automatic_action.mode {
+        if matches!(
+            self.spool_automatic_action.mode,
+            SpoolAutomaticActionMode::NoAction
+        ) {
             self.calculate_spool_auto_progress_(now);
             return;
         }
@@ -667,7 +625,7 @@ impl Winder2 {
         }
     }
 
-    pub fn stop_or_pull_spool_reset(&mut self, now: Instant) {
+    pub const fn stop_or_pull_spool_reset(&mut self, now: Instant) {
         self.spool_automatic_action.progress = Length::ZERO;
         self.spool_automatic_action.progress_last_check = now;
     }
@@ -690,10 +648,8 @@ impl Winder2 {
         self.spool_automatic_action.progress += meters_pulled_this_interval;
         self.spool_automatic_action.progress_last_check = now;
     }
-}
 
-/// Implement Puller
-impl Winder2 {
+    /// Implement Puller
     /// called by `act`
     pub fn sync_puller_speed(&mut self, t: Instant) {
         let angular_velocity = self.puller_speed_controller.calc_angular_velocity(t);
@@ -707,6 +663,7 @@ impl Winder2 {
     pub fn puller_set_regulation(&mut self, puller_regulation_mode: PullerRegulationMode) {
         self.puller_speed_controller
             .set_regulation_mode(puller_regulation_mode);
+        self.emit_state();
     }
 
     /// Set target speed in m/min
@@ -714,6 +671,7 @@ impl Winder2 {
         // Convert m/min to velocity
         let target_speed = Velocity::new::<meter_per_minute>(target_speed);
         self.puller_speed_controller.set_target_speed(target_speed);
+        self.emit_state();
     }
 
     /// Set target diameter in mm
@@ -722,11 +680,13 @@ impl Winder2 {
         let target_diameter = Length::new::<millimeter>(target_diameter);
         self.puller_speed_controller
             .set_target_diameter(target_diameter);
+        self.emit_state();
     }
 
     /// Set forward direction
     pub fn puller_set_forward(&mut self, forward: bool) {
         self.puller_speed_controller.set_forward(forward);
+        self.emit_state();
     }
 
     // Spool Speed Controller API methods
@@ -735,6 +695,7 @@ impl Winder2 {
         regulation_mode: spool_speed_controller::SpoolSpeedControllerType,
     ) {
         self.spool_speed_controller.set_type(regulation_mode);
+        self.emit_state();
     }
 
     /// Set minimum speed for minmax mode in RPM
@@ -743,6 +704,7 @@ impl Winder2 {
         if let Err(e) = self.spool_speed_controller.set_minmax_min_speed(min_speed) {
             tracing::error!("Failed to set spool min speed: {:?}", e);
         }
+        self.emit_state();
     }
 
     /// Set maximum speed for minmax mode in RPM
@@ -751,30 +713,35 @@ impl Winder2 {
         if let Err(e) = self.spool_speed_controller.set_minmax_max_speed(max_speed) {
             tracing::error!("Failed to set spool max speed: {:?}", e);
         }
+        self.emit_state();
     }
 
     /// Set tension target for adaptive mode (0.0-1.0)
     pub fn spool_set_adaptive_tension_target(&mut self, tension_target: f64) {
         self.spool_speed_controller
             .set_adaptive_tension_target(tension_target);
+        self.emit_state();
     }
 
     /// Set radius learning rate for adaptive mode
     pub fn spool_set_adaptive_radius_learning_rate(&mut self, radius_learning_rate: f64) {
         self.spool_speed_controller
             .set_adaptive_radius_learning_rate(radius_learning_rate);
+        self.emit_state();
     }
 
     /// Set max speed multiplier for adaptive mode
     pub fn spool_set_adaptive_max_speed_multiplier(&mut self, max_speed_multiplier: f64) {
         self.spool_speed_controller
             .set_adaptive_max_speed_multiplier(max_speed_multiplier);
+        self.emit_state();
     }
 
     /// Set acceleration factor for adaptive mode
     pub fn spool_set_adaptive_acceleration_factor(&mut self, acceleration_factor: f64) {
         self.spool_speed_controller
             .set_adaptive_acceleration_factor(acceleration_factor);
+        self.emit_state();
     }
 
     /// Set deacceleration urgency multiplier for adaptive mode
@@ -784,11 +751,10 @@ impl Winder2 {
     ) {
         self.spool_speed_controller
             .set_adaptive_deacceleration_urgency_multiplier(deacceleration_urgency_multiplier);
+        self.emit_state();
     }
-}
 
-/// implement machine connection
-impl Winder2 {
+    /// implement machine connection
     /// set connected buffer
     pub fn set_connected_buffer(
         &mut self,
@@ -800,32 +766,12 @@ impl Winder2 {
         ) {
             return;
         }
-        let machine_manager_arc = match self.machine_manager.upgrade() {
-            Some(machine_manager_arc) => machine_manager_arc,
-            None => return,
-        };
-        let machine_manager_guard = block_on(machine_manager_arc.read());
-        let buffer_weak = machine_manager_guard.get_machine_weak(&machine_identification_unique);
-        let buffer_weak = match buffer_weak {
-            Some(buffer_weak) => buffer_weak,
-            None => return,
-        };
-        let buffer_strong = match buffer_weak.upgrade() {
-            Some(buffer_strong) => buffer_strong,
-            None => return,
-        };
 
-        let buffer: Arc<Mutex<BufferV1>> = block_on(downcast_machine::<BufferV1>(buffer_strong))
-            .expect("failed downcasting machine");
+        self.connected_buffer
+            .set_connected_machine(&machine_identification_unique);
+        self.connected_buffer.reverse_connect();
 
-        let machine = Arc::downgrade(&buffer);
-
-        self.connected_buffer = Some(ConnectedMachine {
-            machine_identification_unique,
-            machine: machine.clone(),
-        });
-
-        self.reverse_connect();
+        self.emit_state();
     }
 
     /// disconnect buffer
@@ -839,39 +785,15 @@ impl Winder2 {
         ) {
             return;
         }
-        if let Some(connected) = &self.connected_buffer {
-            if let Some(buffer_arc) = connected.machine.upgrade() {
-                let future = async move {
-                    let mut buffer = buffer_arc.lock().await;
-                    if buffer.connected_winder.is_some() {
-                        buffer.connected_winder = None;
-                        buffer.emit_state();
-                    }
-                };
-                smol::spawn(future).detach();
-            }
-        }
-        self.connected_buffer = None;
-    }
 
-    /// initiate connection from buffer to winder
-    pub fn reverse_connect(&mut self) {
-        let machine_identification_unique = self.machine_identification_unique.clone();
-        if let Some(connected) = &self.connected_buffer {
-            if let Some(buffer_arc) = connected.machine.upgrade() {
-                let future = async move {
-                    let mut buffer = buffer_arc.lock().await;
-                    if buffer.connected_winder.is_none() {
-                        buffer.set_connected_winder(machine_identification_unique);
-                    }
-                };
-                smol::spawn(future).detach();
-            }
-        }
+        self.connected_buffer.reverse_disconnect();
+        self.connected_buffer.disconnect();
+
+        self.emit_state();
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Winder2Mode {
     Standby,
     Hold,
@@ -879,7 +801,7 @@ pub enum Winder2Mode {
     Wind,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SpoolMode {
     Standby,
     Hold,
@@ -889,15 +811,15 @@ pub enum SpoolMode {
 impl From<Winder2Mode> for SpoolMode {
     fn from(mode: Winder2Mode) -> Self {
         match mode {
-            Winder2Mode::Standby => SpoolMode::Standby,
-            Winder2Mode::Hold => SpoolMode::Hold,
-            Winder2Mode::Pull => SpoolMode::Hold,
-            Winder2Mode::Wind => SpoolMode::Wind,
+            Winder2Mode::Standby => Self::Standby,
+            Winder2Mode::Hold => Self::Hold,
+            Winder2Mode::Pull => Self::Hold,
+            Winder2Mode::Wind => Self::Wind,
         }
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TraverseMode {
     Standby,
     Hold,
@@ -907,15 +829,15 @@ pub enum TraverseMode {
 impl From<Winder2Mode> for TraverseMode {
     fn from(mode: Winder2Mode) -> Self {
         match mode {
-            Winder2Mode::Standby => TraverseMode::Standby,
-            Winder2Mode::Hold => TraverseMode::Hold,
-            Winder2Mode::Pull => TraverseMode::Hold,
-            Winder2Mode::Wind => TraverseMode::Traverse,
+            Winder2Mode::Standby => Self::Standby,
+            Winder2Mode::Hold => Self::Hold,
+            Winder2Mode::Pull => Self::Hold,
+            Winder2Mode::Wind => Self::Traverse,
         }
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PullerMode {
     Standby,
     Hold,
@@ -925,10 +847,10 @@ pub enum PullerMode {
 impl From<Winder2Mode> for PullerMode {
     fn from(mode: Winder2Mode) -> Self {
         match mode {
-            Winder2Mode::Standby => PullerMode::Standby,
-            Winder2Mode::Hold => PullerMode::Hold,
-            Winder2Mode::Pull => PullerMode::Pull,
-            Winder2Mode::Wind => PullerMode::Pull,
+            Winder2Mode::Standby => Self::Standby,
+            Winder2Mode::Hold => Self::Hold,
+            Winder2Mode::Pull => Self::Pull,
+            Winder2Mode::Wind => Self::Pull,
         }
     }
 }

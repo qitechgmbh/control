@@ -175,11 +175,11 @@ pub enum EL3021PredefinedPdoAssignment {
 impl PredefinedPdoAssignment<EL3021TxPdo, EL3021RxPdo> for EL3021PredefinedPdoAssignment {
     fn txpdo_assignment(&self) -> EL3021TxPdo {
         match self {
-            EL3021PredefinedPdoAssignment::Standard => EL3021TxPdo {
+            Self::Standard => EL3021TxPdo {
                 ai_standard_channel1: Some(AiStandard::default()),
                 ai_compact_channel1: None,
             },
-            EL3021PredefinedPdoAssignment::Compact => EL3021TxPdo {
+            Self::Compact => EL3021TxPdo {
                 ai_standard_channel1: None,
                 ai_compact_channel1: Some(AiCompact::default()),
             },
@@ -188,8 +188,8 @@ impl PredefinedPdoAssignment<EL3021TxPdo, EL3021RxPdo> for EL3021PredefinedPdoAs
 
     fn rxpdo_assignment(&self) -> EL3021RxPdo {
         match self {
-            EL3021PredefinedPdoAssignment::Standard => EL3021RxPdo {},
-            EL3021PredefinedPdoAssignment::Compact => EL3021RxPdo {},
+            Self::Standard => EL3021RxPdo {},
+            Self::Compact => EL3021RxPdo {},
         }
     }
 }

@@ -14,6 +14,12 @@ pub struct EthercatPerformanceMetrics {
     last_log_time: Instant,
 }
 
+impl Default for EthercatPerformanceMetrics {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl EthercatPerformanceMetrics {
     /// Creates a new metrics collector
     pub fn new() -> Self {
@@ -132,7 +138,7 @@ fn calculate_stats(durations: &VecDeque<Duration>) -> MetricsStats {
     let stddev_us = variance.sqrt();
 
     // Calculate 99.99th percentile
-    let mut sorted_values = values_us.clone();
+    let mut sorted_values = values_us;
     sorted_values.sort_by(|a, b| a.partial_cmp(b).unwrap());
     let percentile_index = ((count * 0.9999) as usize).min(sorted_values.len() - 1);
     let percentile_9999_us = sorted_values[percentile_index];

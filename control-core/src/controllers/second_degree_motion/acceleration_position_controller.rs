@@ -3,7 +3,7 @@ use std::fmt;
 // Remove the anyhow::Ok import as it conflicts with std::result::Ok
 
 /// Errors that can occur when creating or using the motion controller
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum MotionControllerError {
     InvalidSpeedLimits,
     InvalidAccelerationLimits,
@@ -14,25 +14,25 @@ pub enum MotionControllerError {
 impl fmt::Display for MotionControllerError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            MotionControllerError::InvalidSpeedLimits => {
+            Self::InvalidSpeedLimits => {
                 write!(
                     f,
                     "Invalid speed limits: min_speed must be ≤ 0 and max_speed must be ≥ 0"
                 )
             }
-            MotionControllerError::InvalidAccelerationLimits => {
+            Self::InvalidAccelerationLimits => {
                 write!(
                     f,
                     "Invalid acceleration limits: min_acceleration must be < 0 and max_acceleration must be > 0"
                 )
             }
-            MotionControllerError::InvalidPositionLimits => {
+            Self::InvalidPositionLimits => {
                 write!(
                     f,
                     "Invalid position limits: min_position must be ≤ max_position"
                 )
             }
-            MotionControllerError::ZeroDeceleration => {
+            Self::ZeroDeceleration => {
                 write!(
                     f,
                     "Zero deceleration rate: cannot plan motion without deceleration capability"
@@ -148,7 +148,7 @@ struct MotionConstants {
 }
 
 /// Represents the current phase of motion
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MotionPhase {
     Idle,
     IncreasingSpeed,
@@ -170,7 +170,7 @@ pub struct ControllerBuilder {
 
 impl ControllerBuilder {
     /// Create a new builder
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self {
             min_speed: None,
             max_speed: None,
@@ -184,28 +184,36 @@ impl ControllerBuilder {
     }
 
     /// Set speed limits (min_speed ≤ 0, max_speed ≥ 0)
-    pub fn speed_limits(mut self, min_speed: f64, max_speed: f64) -> Self {
+    pub const fn speed_limits(mut self, min_speed: f64, max_speed: f64) -> Self {
         self.min_speed = Some(min_speed);
         self.max_speed = Some(max_speed);
         self
     }
 
     /// Set acceleration limits (min_acceleration < 0, max_acceleration > 0)
-    pub fn acceleration_limits(mut self, min_acceleration: f64, max_acceleration: f64) -> Self {
+    pub const fn acceleration_limits(
+        mut self,
+        min_acceleration: f64,
+        max_acceleration: f64,
+    ) -> Self {
         self.min_acceleration = Some(min_acceleration);
         self.max_acceleration = Some(max_acceleration);
         self
     }
 
     /// Set position limits (optional)
-    pub fn position_limits(mut self, min_position: Option<f64>, max_position: Option<f64>) -> Self {
+    pub const fn position_limits(
+        mut self,
+        min_position: Option<f64>,
+        max_position: Option<f64>,
+    ) -> Self {
         self.min_position = min_position;
         self.max_position = max_position;
         self
     }
 
     /// Set tolerances for position and speed comparisons
-    pub fn tolerances(mut self, position_tolerance: f64, speed_tolerance: f64) -> Self {
+    pub const fn tolerances(mut self, position_tolerance: f64, speed_tolerance: f64) -> Self {
         self.position_tolerance = position_tolerance;
         self.speed_tolerance = speed_tolerance;
         self
@@ -322,7 +330,7 @@ impl AccelerationPositionController {
 
         let motion_constants = Self::calculate_motion_constants(&config);
 
-        Ok(AccelerationPositionController {
+        Ok(Self {
             config,
             current_position: 0.0,
             current_speed: 0.0,
@@ -366,19 +374,19 @@ impl AccelerationPositionController {
         }
 
         Self::new(
-            -speed,               // min_speed
-            speed,                // max_speed
-            -acceleration,        // min_acceleration
-            acceleration,         // max_acceleration
-            position.map(|p| -p), // min_position
-            position.map(|p| p),  // max_position
-            1e-6,                 // position_tolerance (default)
-            1e-6,                 // speed_tolerance (default)
+            -speed,                     // min_speed
+            speed,                      // max_speed
+            -acceleration,              // min_acceleration
+            acceleration,               // max_acceleration
+            position.map(|p| -p.abs()), // min_position
+            position.map(|p| p.abs()),  // max_position
+            1e-6,                       // position_tolerance (default)
+            1e-6,                       // speed_tolerance (default)
         )
     }
 
     /// Create a new builder for the controller
-    pub fn builder() -> ControllerBuilder {
+    pub const fn builder() -> ControllerBuilder {
         ControllerBuilder::new()
     }
 
@@ -564,8 +572,10 @@ impl AccelerationPositionController {
 
         // Calculate distance needed to reach cruise speed from current speed
         let speed_change_distance = if current_speed_in_direction < cruise_speed.abs() {
-            (cruise_speed.abs().powi(2) - current_speed_in_direction.max(0.0).powi(2))
-                / (2.0 * acceleration_rate)
+            current_speed_in_direction.max(0.0).mul_add(
+                -current_speed_in_direction.max(0.0),
+                cruise_speed.abs().powi(2),
+            ) / (2.0 * acceleration_rate)
         } else {
             0.0
         };
@@ -579,8 +589,10 @@ impl AccelerationPositionController {
             // Using corrected kinematic equation: v_peak² = v_current² + 2*a*d_total*a_accel*a_decel/(a_accel + a_decel)
             let accel_decel_factor =
                 (acceleration_rate * deceleration_rate) / (acceleration_rate + deceleration_rate);
-            let discriminant = current_speed_in_direction.max(0.0).powi(2)
-                + 2.0 * abs_position_change * accel_decel_factor;
+            let discriminant = current_speed_in_direction.max(0.0).mul_add(
+                current_speed_in_direction.max(0.0),
+                2.0 * abs_position_change * accel_decel_factor,
+            );
 
             if discriminant >= 0.0 {
                 self.peak_speed = discriminant.sqrt() * cruise_speed.signum();
@@ -634,7 +646,7 @@ impl AccelerationPositionController {
                 self.current_acceleration = self.config.max_acceleration * self.direction as f64;
 
                 // Update speed
-                let new_speed = self.current_speed + self.current_acceleration * dt;
+                let new_speed = self.current_acceleration.mul_add(dt, self.current_speed);
 
                 // Check if we've reached peak speed
                 if (self.direction > 0 && new_speed >= self.peak_speed)
@@ -665,7 +677,7 @@ impl AccelerationPositionController {
                 self.current_acceleration = self.config.min_acceleration * self.direction as f64;
 
                 // Update speed
-                let new_speed = self.current_speed + self.current_acceleration * dt;
+                let new_speed = self.current_acceleration.mul_add(dt, self.current_speed);
 
                 // Check if we've reached zero speed or target
                 if (self.current_speed > 0.0 && new_speed <= 0.0)
@@ -689,7 +701,7 @@ impl AccelerationPositionController {
         }
 
         // Update position based on current speed
-        let new_position = self.current_position + self.current_speed * dt;
+        let new_position = self.current_speed.mul_add(dt, self.current_position);
 
         // Check position limits and handle violations
         let mut position_limited = false;
@@ -742,7 +754,7 @@ impl AccelerationPositionController {
     ///
     /// Returns the current position of the controlled object.
     /// This value is updated with each call to `update()`.
-    pub fn get_position(&self) -> f64 {
+    pub const fn get_position(&self) -> f64 {
         self.current_position
     }
 
@@ -751,7 +763,7 @@ impl AccelerationPositionController {
     /// Returns the current speed (velocity) of the controlled object.
     /// Positive values indicate motion towards increasing position,
     /// negative values indicate motion towards decreasing position.
-    pub fn get_speed(&self) -> f64 {
+    pub const fn get_speed(&self) -> f64 {
         self.current_speed
     }
 
@@ -759,32 +771,32 @@ impl AccelerationPositionController {
     ///
     /// Returns the current acceleration of the controlled object.
     /// Positive values indicate increasing speed, negative values indicate decreasing speed.
-    pub fn get_acceleration(&self) -> f64 {
+    pub const fn get_acceleration(&self) -> f64 {
         self.current_acceleration
     }
 
     /// Get the target position
-    pub fn get_target_position(&self) -> f64 {
+    pub const fn get_target_position(&self) -> f64 {
         self.target_position
     }
 
     /// Get the current motion phase
-    pub fn get_motion_phase(&self) -> MotionPhase {
+    pub const fn get_motion_phase(&self) -> MotionPhase {
         self.motion_phase
     }
 
     /// Get the direction of motion
-    pub fn get_direction(&self) -> i8 {
+    pub const fn get_direction(&self) -> i8 {
         self.direction
     }
 
     /// Get the calculated peak speed for current motion
-    pub fn get_peak_speed(&self) -> f64 {
+    pub const fn get_peak_speed(&self) -> f64 {
         self.peak_speed
     }
 
     /// Get the position at which deceleration will begin
-    pub fn get_deceleration_position(&self) -> f64 {
+    pub const fn get_deceleration_position(&self) -> f64 {
         self.deceleration_position
     }
 
@@ -837,7 +849,7 @@ impl AccelerationPositionController {
     }
 
     /// Force the controller to stop at current position
-    pub fn emergency_stop(&mut self) {
+    pub const fn emergency_stop(&mut self) {
         self.target_position = self.current_position;
         self.current_speed = 0.0;
         self.current_acceleration = 0.0;
@@ -1006,32 +1018,32 @@ impl AccelerationPositionController {
     }
 
     /// Get the minimum speed limit
-    pub fn get_min_speed(&self) -> f64 {
+    pub const fn get_min_speed(&self) -> f64 {
         self.config.min_speed
     }
 
     /// Get the maximum speed limit
-    pub fn get_max_speed(&self) -> f64 {
+    pub const fn get_max_speed(&self) -> f64 {
         self.config.max_speed
     }
 
     /// Get the minimum acceleration limit
-    pub fn get_min_acceleration(&self) -> f64 {
+    pub const fn get_min_acceleration(&self) -> f64 {
         self.config.min_acceleration
     }
 
     /// Get the maximum acceleration limit
-    pub fn get_max_acceleration(&self) -> f64 {
+    pub const fn get_max_acceleration(&self) -> f64 {
         self.config.max_acceleration
     }
 
     /// Get the minimum position limit
-    pub fn get_min_position(&self) -> Option<f64> {
+    pub const fn get_min_position(&self) -> Option<f64> {
         self.config.min_position
     }
 
     /// Get the maximum position limit
-    pub fn get_max_position(&self) -> Option<f64> {
+    pub const fn get_max_position(&self) -> Option<f64> {
         self.config.max_position
     }
 
@@ -1068,17 +1080,17 @@ impl AccelerationPositionController {
     }
 
     /// Get the position tolerance
-    pub fn get_position_tolerance(&self) -> f64 {
+    pub const fn get_position_tolerance(&self) -> f64 {
         self.config.position_tolerance
     }
 
     /// Get the speed tolerance
-    pub fn get_speed_tolerance(&self) -> f64 {
+    pub const fn get_speed_tolerance(&self) -> f64 {
         self.config.speed_tolerance
     }
 
     /// Set tolerances for position and speed comparisons
-    pub fn set_tolerances(&mut self, position_tolerance: f64, speed_tolerance: f64) {
+    pub const fn set_tolerances(&mut self, position_tolerance: f64, speed_tolerance: f64) {
         self.config.position_tolerance = position_tolerance;
         self.config.speed_tolerance = speed_tolerance;
     }

@@ -34,7 +34,7 @@ impl DeviceObj {
         subdevice: &SubDeviceRef<'_, SubDevicePdi<'_, PDI_LEN>>,
         device_identification: DeviceIdentification,
     ) -> Self {
-        DeviceObj {
+        Self {
             name: subdevice.name().to_string(),
             configured_address: subdevice.configured_address(),
             product_id: subdevice.identity().product_id,

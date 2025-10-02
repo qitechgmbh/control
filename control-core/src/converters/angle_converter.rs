@@ -1,8 +1,6 @@
-use std::f32::consts::PI;
-
 use uom::si::angle::radian;
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct AngleConverter {
     pub flip_x: bool, // true to flip X-axis (mirror horizontally)
     pub flip_y: bool, // true to flip Y-axis (mirror vertically)
@@ -11,7 +9,7 @@ pub struct AngleConverter {
 
 impl AngleConverter {
     /// Create a custom coordinate system
-    pub fn new(flip_x: bool, flip_y: bool, is_cw: bool) -> Self {
+    pub const fn new(flip_x: bool, flip_y: bool, is_cw: bool) -> Self {
         Self {
             flip_x,
             flip_y,
@@ -20,47 +18,47 @@ impl AngleConverter {
     }
 
     /// Standard mathematical coordinate system (CCW positive, 0° at positive X)
-    pub fn mathematical() -> Self {
+    pub const fn mathematical() -> Self {
         Self::new(false, false, false)
     }
 
     /// Screen/graphics coordinate system (CW positive, 0° at positive X, Y-flipped)
-    pub fn screen() -> Self {
+    pub const fn screen() -> Self {
         Self::new(false, true, false)
     }
 
     /// System where 0° points up, clockwise positive
-    pub fn y_up_cw() -> Self {
+    pub const fn y_up_cw() -> Self {
         Self::new(false, false, true)
     }
 
     /// System where 0° points down, counter-clockwise positive
-    pub fn y_down_ccw() -> Self {
+    pub const fn y_down_ccw() -> Self {
         Self::new(false, true, true)
     }
 
     /// System where 0° points left, clockwise positive
-    pub fn x_left_cw() -> Self {
+    pub const fn x_left_cw() -> Self {
         Self::new(true, false, false)
     }
 
     /// System where 0° points right, counter-clockwise positive (same as mathematical)
-    pub fn x_right_ccw() -> Self {
+    pub const fn x_right_ccw() -> Self {
         Self::mathematical()
     }
 
     /// System where 0° points up, counter-clockwise positive
-    pub fn y_up_ccw() -> Self {
+    pub const fn y_up_ccw() -> Self {
         Self::new(false, false, false)
     }
 
     /// System where 0° points down, clockwise positive
-    pub fn y_down_cw() -> Self {
+    pub const fn y_down_cw() -> Self {
         Self::new(false, true, false)
     }
 
     /// System where 0° points left, counter-clockwise positive
-    pub fn x_left_ccw() -> Self {
+    pub const fn x_left_ccw() -> Self {
         Self::new(true, false, true)
     }
 
@@ -75,7 +73,7 @@ impl AngleConverter {
             (false, false) => {}                      // No change
             (true, false) => result = 180.0 - result, // X-flip: mirror across Y-axis
             (false, true) => result = -result,        // Y-flip: mirror across X-axis
-            (true, true) => result = 180.0 + result,  // Both flips: 180° rotation
+            (true, true) => result += 180.0,          // Both flips: 180° rotation
         }
 
         // Handle rotation direction
@@ -102,7 +100,7 @@ impl AngleConverter {
             (false, false) => {}                      // No change
             (true, false) => result = 180.0 - result, // X-flip: mirror across Y-axis
             (false, true) => result = -result,        // Y-flip: mirror across X-axis
-            (true, true) => result = result - 180.0,  // Both flips: inverse 180° rotation
+            (true, true) => result -= 180.0,          // Both flips: inverse 180° rotation
         }
 
         self.normalize_angle(result)
@@ -110,16 +108,16 @@ impl AngleConverter {
 
     /// Convert angle in radians from mathematical system to this system (f32)
     pub fn radians_encode(&self, math_angle_radians: f32) -> f32 {
-        let degrees = math_angle_radians * 180.0 / PI;
+        let degrees = math_angle_radians.to_degrees();
         let converted_degrees = self.degrees_encode(degrees);
-        converted_degrees * PI / 180.0
+        converted_degrees.to_radians()
     }
 
     /// Convert angle in radians from this system to mathematical system (f32)
     pub fn radians_decode(&self, system_angle_radians: f32) -> f32 {
-        let degrees = system_angle_radians * 180.0 / PI;
+        let degrees = system_angle_radians.to_degrees();
         let converted_degrees = self.degrees_decode(degrees);
-        converted_degrees * PI / 180.0
+        converted_degrees.to_radians()
     }
 
     /// Convert angle from mathematical system to this system (f64)
@@ -133,7 +131,7 @@ impl AngleConverter {
             (false, false) => {}                      // No change
             (true, false) => result = 180.0 - result, // X-flip: mirror across Y-axis
             (false, true) => result = -result,        // Y-flip: mirror across X-axis
-            (true, true) => result = 180.0 + result,  // Both flips: 180° rotation
+            (true, true) => result += 180.0,          // Both flips: 180° rotation
         }
 
         // Handle rotation direction
@@ -160,7 +158,7 @@ impl AngleConverter {
             (false, false) => {}                      // No change
             (true, false) => result = 180.0 - result, // X-flip: mirror across Y-axis
             (false, true) => result = -result,        // Y-flip: mirror across X-axis
-            (true, true) => result = result - 180.0,  // Both flips: inverse 180° rotation
+            (true, true) => result -= 180.0,          // Both flips: inverse 180° rotation
         }
 
         self.normalize_angle_f64(result)
@@ -168,16 +166,16 @@ impl AngleConverter {
 
     /// Convert angle in radians from mathematical system to this system (f64)
     pub fn radians_encode_f64(&self, math_angle_radians: f64) -> f64 {
-        let degrees = math_angle_radians * 180.0 / std::f64::consts::PI;
+        let degrees = math_angle_radians.to_degrees();
         let converted_degrees = self.degrees_encode_f64(degrees);
-        converted_degrees * std::f64::consts::PI / 180.0
+        converted_degrees.to_radians()
     }
 
     /// Convert angle in radians from this system to mathematical system (f64)
     pub fn radians_decode_f64(&self, system_angle_radians: f64) -> f64 {
-        let degrees = system_angle_radians * 180.0 / std::f64::consts::PI;
+        let degrees = system_angle_radians.to_degrees();
         let converted_degrees = self.degrees_decode_f64(degrees);
-        converted_degrees * std::f64::consts::PI / 180.0
+        converted_degrees.to_radians()
     }
 
     /// Normalize angle to [0, 360) range (f32)
@@ -205,7 +203,7 @@ pub struct AngleConverterUom {
 }
 
 impl AngleConverterUom {
-    pub fn new(angle_converter: AngleConverter) -> Self {
+    pub const fn new(angle_converter: AngleConverter) -> Self {
         Self { angle_converter }
     }
 
@@ -238,6 +236,8 @@ impl AngleConverterUom {
 
 #[cfg(test)]
 mod tests {
+    use std::f32::consts::PI;
+
     use super::*;
 
     #[test]

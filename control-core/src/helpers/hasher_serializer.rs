@@ -25,12 +25,12 @@ impl serde::ser::Error for HashSerializerError {
     where
         T: Display,
     {
-        HashSerializerError {}
+        Self {}
     }
 }
 
 pub struct HashSerializer<'a, H: Hasher>(&'a mut H);
-impl<'a, H: Hasher> SerializeSeq for HashSerializer<'a, H> {
+impl<H: Hasher> SerializeSeq for HashSerializer<'_, H> {
     type Ok = ();
     type Error = HashSerializerError;
 
@@ -46,7 +46,7 @@ impl<'a, H: Hasher> SerializeSeq for HashSerializer<'a, H> {
     }
 }
 
-impl<'a, H: Hasher> SerializeTuple for HashSerializer<'a, H> {
+impl<H: Hasher> SerializeTuple for HashSerializer<'_, H> {
     type Ok = ();
     type Error = HashSerializerError;
 
@@ -62,7 +62,7 @@ impl<'a, H: Hasher> SerializeTuple for HashSerializer<'a, H> {
     }
 }
 
-impl<'a, H: Hasher> SerializeTupleStruct for HashSerializer<'a, H> {
+impl<H: Hasher> SerializeTupleStruct for HashSerializer<'_, H> {
     type Ok = ();
     type Error = HashSerializerError;
 
@@ -78,7 +78,7 @@ impl<'a, H: Hasher> SerializeTupleStruct for HashSerializer<'a, H> {
     }
 }
 
-impl<'a, H: Hasher> SerializeTupleVariant for HashSerializer<'a, H> {
+impl<H: Hasher> SerializeTupleVariant for HashSerializer<'_, H> {
     type Ok = ();
     type Error = HashSerializerError;
 
@@ -94,7 +94,7 @@ impl<'a, H: Hasher> SerializeTupleVariant for HashSerializer<'a, H> {
     }
 }
 
-impl<'a, H: Hasher> SerializeMap for HashSerializer<'a, H> {
+impl<H: Hasher> SerializeMap for HashSerializer<'_, H> {
     type Ok = ();
     type Error = HashSerializerError;
 
@@ -117,7 +117,7 @@ impl<'a, H: Hasher> SerializeMap for HashSerializer<'a, H> {
     }
 }
 
-impl<'a, H: Hasher> SerializeStruct for HashSerializer<'a, H> {
+impl<H: Hasher> SerializeStruct for HashSerializer<'_, H> {
     type Ok = ();
     type Error = HashSerializerError;
 
@@ -135,7 +135,7 @@ impl<'a, H: Hasher> SerializeStruct for HashSerializer<'a, H> {
     }
 }
 
-impl<'a, H: Hasher> SerializeStructVariant for HashSerializer<'a, H> {
+impl<H: Hasher> SerializeStructVariant for HashSerializer<'_, H> {
     type Ok = ();
     type Error = HashSerializerError;
 
@@ -152,7 +152,7 @@ impl<'a, H: Hasher> SerializeStructVariant for HashSerializer<'a, H> {
     }
 }
 
-impl<'a, H: Hasher> Serializer for HashSerializer<'a, H> {
+impl<H: Hasher> Serializer for HashSerializer<'_, H> {
     type Ok = ();
     type Error = HashSerializerError;
     type SerializeSeq = Self;
@@ -329,32 +329,9 @@ impl<'a, H: Hasher> Serializer for HashSerializer<'a, H> {
 }
 
 // A helper that uses Serialize to feed into a Hasher without allocating a buffer:
-pub fn hash_with_serde_model<T: Serialize, H: Hasher>(value: T, hasher: H) -> u64 {
-    let mut h = hasher;
+pub fn hash_with_serde_model<T: Serialize>(value: T) -> u64 {
+    let mut h = DefaultHasher::new();
     let ser = HashSerializer(&mut h);
     value.serialize(ser).expect("serialize to hasher failed");
     h.finish()
-}
-
-/// if hash of a and b are different this function returns true
-/// a and b need to impl Serialize
-pub fn check_hash_different<T: Serialize>(a: T, b: T) -> bool {
-    // Yes DefaultHasher has to be defined multiple times
-    // If you use one for both the results will never match even if they are the same value
-    let hasher = DefaultHasher::new();
-    let hash = hash_with_serde_model(a, hasher);
-    let hasher = DefaultHasher::new();
-    let hash_old = hash_with_serde_model(b, hasher);
-    return hash != hash_old;
-}
-
-#[test]
-fn test_same_values() {
-    let a = 10;
-    let b = 10;
-    assert_eq!(
-        check_hash_different(a, b),
-        false,
-        "Hashes should be equal for identical values"
-    );
 }

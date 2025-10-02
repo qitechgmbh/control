@@ -36,7 +36,6 @@ export function Winder2ControlPage() {
     tensionArmAngle,
     zeroTensionArmAngle,
     spoolRpm,
-    spoolDiameter,
     setMode,
     pullerSpeed,
     spoolProgress,
@@ -80,12 +79,6 @@ export function Winder2ControlPage() {
             timeseries={spoolRpm}
             renderValue={(value) => roundToDecimals(value, 0)}
           />
-          <TimeSeriesValueNumeric
-            label="Estimated Diameter"
-            unit="cm"
-            timeseries={spoolDiameter}
-            renderValue={(value) => roundToDecimals(value, 1)}
-          />
         </ControlCard>
 
         <ControlCard className="bg-red" height={2} title="Traverse">
@@ -119,15 +112,14 @@ export function Winder2ControlPage() {
                 maxLabel="OUT"
                 max={180}
                 renderValue={(value) => roundToDecimals(value, 0)}
-                inverted
                 onChange={setTraverseLimitOuter}
               />
               <TouchButton
                 variant="outline"
                 icon="lu:ArrowLeftToLine"
                 onClick={gotoTraverseLimitOuter}
-                disabled={isDisabled || !state?.traverse_state?.can_go_out}
-                isLoading={isLoading || state?.traverse_state?.is_going_out}
+                disabled={isDisabled}
+                isLoading={isLoading}
               >
                 Go to Outer Limit
               </TouchButton>
@@ -156,8 +148,8 @@ export function Winder2ControlPage() {
                 variant="outline"
                 icon="lu:ArrowRightToLine"
                 onClick={gotoTraverseLimitInner}
-                disabled={isDisabled || !state?.traverse_state?.can_go_in}
-                isLoading={isLoading || state?.traverse_state?.is_going_in}
+                disabled={isDisabled}
+                isLoading={isLoading}
               >
                 Go to Inner Limit
               </TouchButton>
@@ -178,8 +170,8 @@ export function Winder2ControlPage() {
               variant="outline"
               icon="lu:House"
               onClick={() => gotoTraverseHome()}
-              disabled={isDisabled || !state?.traverse_state?.can_go_home}
-              isLoading={isLoading || state?.traverse_state?.is_going_home}
+              disabled={isDisabled}
+              isLoading={isLoading}
             >
               Go to Home
             </TouchButton>

@@ -9,6 +9,8 @@ use crate::{
     ethercat::config::{MAX_FRAMES, MAX_PDU_DATA, MAX_SUBDEVICES, PDI_LEN},
 };
 use control_core::ethercat::eeprom_identification::read_device_identifications;
+#[cfg(all(target_os = "linux", not(feature = "development-build")))]
+use control_core::irq_handling::set_irq_affinity;
 use control_core::machines::identification::{
     DeviceHardwareIdentification, DeviceHardwareIdentificationEthercat, DeviceIdentification,
 };
@@ -20,6 +22,9 @@ use ethercrab::std::ethercat_now;
 use ethercrab::{MainDevice, MainDeviceConfig, PduStorage, RetryBehaviour, Timeouts};
 use smol::channel::Sender;
 use std::{sync::Arc, time::Duration};
+
+const SM_OUTPUT: u16 = 0x1C32;
+const SM_INPUT: u16 = 0x1C33;
 
 pub async fn setup_loop(
     thread_panic_tx: Sender<PanicDetails>,
@@ -44,6 +49,12 @@ pub async fn setup_loop(
         .name("EthercatTxRxThread".to_owned())
         .spawn(move || {
             send_panic(thread_panic_tx_clone);
+
+            #[cfg(all(target_os = "linux", not(feature = "development-build")))]
+            match set_irq_affinity(&interface, 3) {
+                Ok(_) => tracing::info!("ethernet interrupt handler now runs on cpu:{}", 3),
+                Err(e) => tracing::error!("set_irq_handler_affinity failed: {:?}", e),
+            }
 
             // Set core affinity to 4th core
             let _ = set_core_affinity(3);
@@ -82,13 +93,13 @@ pub async fn setup_loop(
             // Default 30_000us
             pdu: Duration::from_micros(30_000),
             // Default 10ms
-            eeprom: Duration::from_millis(10),
+            eeprom: Duration::from_millis(100),
             // Default 0ms
-            wait_loop_delay: Duration::from_millis(1),
+            wait_loop_delay: Duration::from_millis(0),
             // Default 100ms
-            mailbox_echo: Duration::from_millis(100),
+            mailbox_echo: Duration::from_millis(1000),
             // Default 1000ms
-            mailbox_response: Duration::from_millis(1000),
+            mailbox_response: Duration::from_millis(10000),
         },
         MainDeviceConfig {
             // Default RetryBehaviour::None
@@ -98,7 +109,7 @@ pub async fn setup_loop(
         },
     );
 
-    let _ = smol::block_on({
+    smol::block_on({
         let app_state_clone = app_state.clone();
         async move {
             let main_namespace = &mut app_state_clone
@@ -149,14 +160,12 @@ pub async fn setup_loop(
             },
         )
         .collect::<Vec<_>>();
-
     let devices = device_identifications
         .into_iter()
         .zip(devices)
         .zip(&subdevices)
         .map(|((a, b), c)| (a, b, c))
         .collect::<Vec<_>>();
-
     // filter devices and if Option<DeviceMachineIdentification> is Some
     // return identified_devices, identified_device_identifications, identified_subdevices
     let (identified_device_identifications, identified_devices, identified_subdevices): (
@@ -190,7 +199,6 @@ pub async fn setup_loop(
                 acc
             },
         );
-
     // construct machines
     {
         let mut machines_guard = app_state.machines.write().await;
@@ -212,16 +220,22 @@ pub async fn setup_loop(
         .map(|(device_identification, device, _)| (device_identification.clone(), device.clone()))
         .collect::<Vec<_>>();
 
+    for subdevice in subdevices.iter() {
+        if subdevice.name() == "EL5152" {
+            subdevice.sdo_write(SM_OUTPUT, 0x1, 0x00u16).await?; //set sync mode (1) for free run (0)
+            subdevice.sdo_write(SM_INPUT, 0x1, 0x00u16).await?; //set sync mode (1) for free run (0)
+        }
+    }
     // Notify client via socketio
     let app_state_clone = app_state.clone();
-    let _ = smol::block_on(async move {
+    smol::block_on(async move {
         let main_namespace = &mut app_state_clone
             .socketio_setup
             .namespaces
             .write()
             .await
             .main_namespace;
-        let event = MachinesEventBuilder().build(app_state_clone.clone()).await;
+        let event = MachinesEventBuilder().build(app_state_clone.clone());
         main_namespace.emit(MainNamespaceEvents::MachinesEvent(event));
     });
 
@@ -250,7 +264,7 @@ pub async fn setup_loop(
 
     // Notify client via socketio
     let app_state_clone = app_state.clone();
-    let _ = smol::block_on(async move {
+    smol::block_on(async move {
         let main_namespace = &mut app_state_clone
             .socketio_setup
             .namespaces

@@ -278,8 +278,9 @@ impl StmFeatures {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub enum EL7031_0030DigitalInputEmulation {
+    #[default]
     Off,
     /// Uin > Limit 1 (threshold)
     Threshold1,
@@ -299,24 +300,18 @@ pub enum EL7031_0030DigitalInputEmulation {
     Hysteresis2,
 }
 
-impl Default for EL7031_0030DigitalInputEmulation {
-    fn default() -> Self {
-        EL7031_0030DigitalInputEmulation::Off
-    }
-}
-
 impl TryFrom<u8> for EL7031_0030DigitalInputEmulation {
     type Error = anyhow::Error;
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         match value {
-            0 => Ok(EL7031_0030DigitalInputEmulation::Off),
-            1 => Ok(EL7031_0030DigitalInputEmulation::Threshold1),
-            2 => Ok(EL7031_0030DigitalInputEmulation::Threshold2),
-            3 => Ok(EL7031_0030DigitalInputEmulation::Band1),
-            4 => Ok(EL7031_0030DigitalInputEmulation::Band2),
-            5 => Ok(EL7031_0030DigitalInputEmulation::Hysteresis1),
-            6 => Ok(EL7031_0030DigitalInputEmulation::Hysteresis2),
+            0 => Ok(Self::Off),
+            1 => Ok(Self::Threshold1),
+            2 => Ok(Self::Threshold2),
+            3 => Ok(Self::Band1),
+            4 => Ok(Self::Band2),
+            5 => Ok(Self::Hysteresis1),
+            6 => Ok(Self::Hysteresis2),
             _ => Err(anyhow::anyhow!(
                 "Invalid value for EL7031_0030DigitalInputEmulation: {}",
                 value

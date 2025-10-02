@@ -14,7 +14,6 @@ use app_state::AppState;
 use mock::init::init_mock;
 use std::{sync::Arc, time::Duration};
 
-use ethercat::init::init_ethercat;
 use r#loop::init_loop;
 use rest::init::init_api;
 #[cfg(not(feature = "mock-machine"))]
@@ -23,6 +22,8 @@ use serial::init::init_serial;
 #[cfg(all(not(target_env = "msvc"), not(feature = "dhat-heap")))]
 use jemalloc_stats::init_jemalloc_stats;
 
+#[cfg(not(feature = "mock-machine"))]
+use crate::ethercat::init::init_ethercat;
 use crate::panic::init_panic;
 use crate::socketio::queue::init_socketio_queue;
 
@@ -45,7 +46,6 @@ pub mod jemalloc_stats;
 fn main() {
     // Initialize panic handling
     let thread_panic_tx = init_panic();
-
     logging::init_tracing();
     tracing::info!("Tracing initialized successfully");
 
@@ -65,8 +65,8 @@ fn main() {
     let init_thread = std::thread::Builder::new()
         .name("init".to_string())
         .spawn({
-            let thread_panic_tx = thread_panic_tx.clone();
-            let app_state = app_state.clone();
+            let thread_panic_tx = thread_panic_tx;
+            let app_state = app_state;
             move || {
                 #[cfg(feature = "dhat-heap")]
                 init_dhat_heap_profiling();
@@ -85,7 +85,7 @@ fn main() {
                     .expect("Failed to initialize Serial");
 
                 #[cfg(not(feature = "mock-machine"))]
-                init_ethercat(thread_panic_tx.clone(), app_state.clone())
+                init_ethercat(thread_panic_tx.clone(), app_state)
                     .expect("Failed to initialize EtherCAT");
             }
         })
@@ -126,16 +126,4 @@ fn init_dhat_heap_profiling() {
             }
         }
     })
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_main() {
-        // setup logging
-        logging::init_tracing();
-        ::tracing::info!("Running main test");
-    }
 }

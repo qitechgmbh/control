@@ -1,6 +1,9 @@
 use super::{Winder2, Winder2Mode, puller_speed_controller::PullerRegulationMode};
 use control_core::{
-    machines::{api::MachineApi, identification::MachineIdentificationUnique},
+    machines::{
+        api::MachineApi, connection::MachineCrossConnectionState,
+        identification::MachineIdentificationUnique,
+    },
     socketio::{
         event::{Event, GenericEvent},
         namespace::{
@@ -13,8 +16,7 @@ use control_core::{
 use control_core_derive::BuildEvent;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use smol::channel::Sender;
-use socketioxide::extract::SocketRef;
+use smol::lock::Mutex;
 use std::{
     sync::Arc,
     time::{Duration, Instant},
@@ -32,10 +34,10 @@ pub enum Mode {
 impl From<Winder2Mode> for Mode {
     fn from(mode: Winder2Mode) -> Self {
         match mode {
-            Winder2Mode::Standby => Mode::Standby,
-            Winder2Mode::Hold => Mode::Hold,
-            Winder2Mode::Pull => Mode::Pull,
-            Winder2Mode::Wind => Mode::Wind,
+            Winder2Mode::Standby => Self::Standby,
+            Winder2Mode::Hold => Self::Hold,
+            Winder2Mode::Pull => Self::Pull,
+            Winder2Mode::Wind => Self::Wind,
         }
     }
 }
@@ -43,10 +45,10 @@ impl From<Winder2Mode> for Mode {
 impl From<Mode> for Winder2Mode {
     fn from(mode: Mode) -> Self {
         match mode {
-            Mode::Standby => Winder2Mode::Standby,
-            Mode::Hold => Winder2Mode::Hold,
-            Mode::Pull => Winder2Mode::Pull,
-            Mode::Wind => Winder2Mode::Wind,
+            Mode::Standby => Self::Standby,
+            Mode::Hold => Self::Hold,
+            Mode::Pull => Self::Pull,
+            Mode::Wind => Self::Wind,
         }
     }
 }
@@ -113,8 +115,6 @@ pub struct LiveValuesEvent {
     pub puller_speed: f64,
     /// spool rpm
     pub spool_rpm: f64,
-    /// spool diameter in mm
-    pub spool_diameter: f64,
     /// tension arm angle in degrees
     pub tension_arm_angle: f64,
     // spool progress in meters (pulled distance of filament)
@@ -143,7 +143,7 @@ pub struct StateEvent {
     /// spool speed controller state
     pub spool_speed_controller_state: SpoolSpeedControllerState,
     /// connected machine state
-    pub connected_machine_state: ConnectedMachineState,
+    pub connected_machine_state: MachineCrossConnectionState,
 }
 
 #[derive(Serialize, Debug, Clone)]
@@ -239,13 +239,6 @@ pub struct SpoolSpeedControllerState {
     pub adaptive_deacceleration_urgency_multiplier: f64,
 }
 
-#[derive(Serialize, Debug, Clone)]
-pub struct ConnectedMachineState {
-    /// Connected Machine
-    pub machine_identification_unique: Option<MachineIdentificationUnique>,
-    pub is_available: bool,
-}
-
 pub enum Winder2Events {
     LiveValues(Event<LiveValuesEvent>),
     State(Event<StateEvent>),
@@ -253,7 +246,7 @@ pub enum Winder2Events {
 
 #[derive(Debug)]
 pub struct Winder2Namespace {
-    pub namespace: Namespace,
+    pub namespace: Arc<Mutex<Namespace>>,
 }
 
 impl NamespaceCacheingLogic<Winder2Events> for Winder2Namespace {
@@ -261,23 +254,17 @@ impl NamespaceCacheingLogic<Winder2Events> for Winder2Namespace {
     fn emit(&mut self, events: Winder2Events) {
         let event = Arc::new(events.event_value());
         let buffer_fn = events.event_cache_fn();
-        self.namespace.emit(event, &buffer_fn);
+
+        let mut namespace = self.namespace.lock_blocking();
+        namespace.emit(event, &buffer_fn);
     }
 }
 
-impl Winder2Namespace {
-    pub fn new(socket_queue_tx: Sender<(SocketRef, Arc<GenericEvent>)>) -> Self {
-        Self {
-            namespace: Namespace::new(socket_queue_tx),
-        }
-    }
-}
-
-impl CacheableEvents<Winder2Events> for Winder2Events {
+impl CacheableEvents<Self> for Winder2Events {
     fn event_value(&self) -> GenericEvent {
         match self {
-            Winder2Events::LiveValues(event) => event.into(),
-            Winder2Events::State(event) => event.into(),
+            Self::LiveValues(event) => event.into(),
+            Self::State(event) => event.into(),
         }
     }
 
@@ -286,8 +273,8 @@ impl CacheableEvents<Winder2Events> for Winder2Events {
         let cache_first_and_last = cache_first_and_last_event();
 
         match self {
-            Winder2Events::LiveValues(_) => cache_one_hour,
-            Winder2Events::State(_) => cache_first_and_last,
+            Self::LiveValues(_) => cache_one_hour,
+            Self::State(_) => cache_first_and_last,
         }
     }
 }
@@ -343,7 +330,7 @@ impl MachineApi for Winder2 {
         Ok(())
     }
 
-    fn api_event_namespace(&mut self) -> &mut Namespace {
-        &mut self.namespace.namespace
+    fn api_event_namespace(&mut self) -> Arc<Mutex<Namespace>> {
+        self.namespace.namespace.clone()
     }
 }

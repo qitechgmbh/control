@@ -30,7 +30,7 @@ pub struct SerialDeviceNewParams {
     pub device_thread_panic_tx: Sender<SerialDeviceRemoval<String>>,
 }
 
-#[derive(PartialEq, Clone, Debug)]
+#[derive(PartialEq, Eq, Clone, Debug)]
 pub struct SerialDeviceIdentification {
     pub vendor_id: u16,
     pub product_id: u16,

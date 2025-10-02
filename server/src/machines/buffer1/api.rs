@@ -2,7 +2,10 @@ use std::{sync::Arc, time::Duration};
 
 use super::{BufferV1, BufferV1Mode};
 use control_core::{
-    machines::{api::MachineApi, identification::MachineIdentificationUnique},
+    machines::{
+        api::MachineApi, connection::MachineCrossConnectionState,
+        identification::MachineIdentificationUnique,
+    },
     socketio::{
         event::{Event, GenericEvent},
         namespace::{
@@ -13,8 +16,7 @@ use control_core::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use smol::channel::Sender;
-use socketioxide::extract::SocketRef;
+use smol::lock::Mutex;
 use tracing::instrument;
 
 #[derive(Serialize, Debug, Clone, Default)]
@@ -31,7 +33,7 @@ pub struct StateEvent {
     /// mode state
     pub mode_state: ModeState,
     /// connected machine state
-    pub connected_machine_state: ConnectedMachineState,
+    pub connected_machine_state: MachineCrossConnectionState,
 }
 
 impl StateEvent {
@@ -50,14 +52,14 @@ pub struct ModeState {
     pub mode: BufferV1Mode,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub enum Mode {
     Standby,
     FillingBuffer,
     EmptyingBuffer,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct ConnectedMachineState {
     /// Connected Machine
     pub machine_identification_unique: Option<MachineIdentificationUnique>,
@@ -78,7 +80,7 @@ enum Mutation {
 
 #[derive(Debug)]
 pub struct Buffer1Namespace {
-    pub namespace: Namespace,
+    pub namespace: Arc<Mutex<Namespace>>,
 }
 
 impl NamespaceCacheingLogic<BufferV1Events> for Buffer1Namespace {
@@ -86,23 +88,17 @@ impl NamespaceCacheingLogic<BufferV1Events> for Buffer1Namespace {
     fn emit(&mut self, events: BufferV1Events) {
         let event = Arc::new(events.event_value());
         let buffer_fn = events.event_cache_fn();
-        self.namespace.emit(event, &buffer_fn);
+
+        let mut namespace = self.namespace.lock_blocking();
+        namespace.emit(event, &buffer_fn);
     }
 }
 
-impl Buffer1Namespace {
-    pub fn new(socket_queue_tx: Sender<(SocketRef, Arc<GenericEvent>)>) -> Self {
-        Self {
-            namespace: Namespace::new(socket_queue_tx),
-        }
-    }
-}
-
-impl CacheableEvents<BufferV1Events> for BufferV1Events {
+impl CacheableEvents<Self> for BufferV1Events {
     fn event_value(&self) -> GenericEvent {
         match self {
-            BufferV1Events::LiveValues(event) => event.into(),
-            BufferV1Events::State(event) => event.into(),
+            Self::LiveValues(event) => event.into(),
+            Self::State(event) => event.into(),
         }
     }
 
@@ -111,8 +107,8 @@ impl CacheableEvents<BufferV1Events> for BufferV1Events {
         let cache_one = cache_one_event();
 
         match self {
-            BufferV1Events::LiveValues(_) => cache_one_hour,
-            BufferV1Events::State(_) => cache_one,
+            Self::LiveValues(_) => cache_one_hour,
+            Self::State(_) => cache_one,
         }
     }
 }
@@ -132,7 +128,7 @@ impl MachineApi for BufferV1 {
         Ok(())
     }
 
-    fn api_event_namespace(&mut self) -> &mut Namespace {
-        &mut self.namespace.namespace
+    fn api_event_namespace(&mut self) -> Arc<Mutex<Namespace>> {
+        self.namespace.namespace.clone()
     }
 }

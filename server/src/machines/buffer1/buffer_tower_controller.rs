@@ -8,7 +8,7 @@ pub struct BufferTowerController {
 }
 
 impl BufferTowerController {
-    pub fn new(driver: StepperVelocityEL70x1) -> Self {
+    pub const fn new(driver: StepperVelocityEL70x1) -> Self {
         Self {
             enabled: false,
             stepper_driver: driver,

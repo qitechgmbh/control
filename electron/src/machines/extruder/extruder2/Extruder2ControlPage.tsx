@@ -30,6 +30,8 @@ export function Extruder2ControlPage() {
 
     motorScrewRpm,
     motorPower,
+    motorCurrent,
+    totalEnergyKWh,
     combinedPower,
 
     setExtruderMode,
@@ -140,7 +142,6 @@ export function Extruder2ControlPage() {
               onChange={setInverterRegulation}
               disabled={isDisabled}
               loading={isLoading}
-              reverse
             />
           </Label>
           <div className="flex flex-row flex-wrap gap-4">
@@ -225,12 +226,30 @@ export function Extruder2ControlPage() {
           />
         </ControlCard>
 
-        <ControlCard className="bg-blue" title="Total Power Consumption">
+        <ControlCard className="bg-blue" title="Power Consumption">
           <TimeSeriesValueNumeric
-            label=""
+            label="Total Power"
             unit="W"
-            renderValue={(value) => roundToDecimals(value, 1)}
+            renderValue={(value) => roundToDecimals(value, 0)}
             timeseries={combinedPower}
+          />
+          <TimeSeriesValueNumeric
+            label="Motor Power"
+            unit="W"
+            renderValue={(value) => roundToDecimals(value, 0)}
+            timeseries={motorPower}
+          />
+          <TimeSeriesValueNumeric
+            label="Motor Current"
+            unit="A"
+            renderValue={(value) => roundToDecimals(value, 1)}
+            timeseries={motorCurrent}
+          />
+          <TimeSeriesValueNumeric
+            label="Total Energy Consumption"
+            unit="kWh"
+            renderValue={(value) => roundToDecimals(value, 3)}
+            timeseries={totalEnergyKWh}
           />
         </ControlCard>
       </ControlGrid>

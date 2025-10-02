@@ -33,7 +33,6 @@ const initialState: LogsState = {
 
 export const useLogsStore = create<LogsStore>((set, get) => ({
   ...initialState,
-
   addLogEntry: (entry) =>
     set(
       produce((state: LogsState) => {
@@ -69,6 +68,7 @@ export const useLogsStore = create<LogsStore>((set, get) => ({
     ),
 
   getLogsBySource: (source) => {
+    console.log(source);
     const state = get();
     return state.entries.filter((entry) => entry.source === source);
   },

@@ -3,18 +3,12 @@ use crate::machines::winder2::{
     minmax_spool_speed_controller::MinMaxSpoolSpeedController,
     puller_speed_controller::PullerSpeedController,
 };
-use control_core::{
-    controllers::second_degree_motion::acceleration_position_controller::MotionControllerError,
-    helpers::moving_time_window::MovingTimeWindow,
-};
+use control_core::controllers::second_degree_motion::acceleration_position_controller::MotionControllerError;
 
 use super::tension_arm::TensionArm;
 use serde::{Deserialize, Serialize};
-use std::time::{Duration, Instant};
-use uom::si::{
-    f64::{AngularVelocity, Length},
-    length::meter,
-};
+use std::time::Instant;
+use uom::si::f64::AngularVelocity;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum SpoolSpeedControllerType {
@@ -27,7 +21,12 @@ pub struct SpoolSpeedController {
     adaptive_controller: AdaptiveSpoolSpeedController,
     minmax_controller: MinMaxSpoolSpeedController,
     r#type: SpoolSpeedControllerType,
-    radius_history: MovingTimeWindow<f64>,
+}
+
+impl Default for SpoolSpeedController {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl SpoolSpeedController {
@@ -35,8 +34,7 @@ impl SpoolSpeedController {
         Self {
             adaptive_controller: AdaptiveSpoolSpeedController::new(),
             minmax_controller: MinMaxSpoolSpeedController::new(),
-            radius_history: MovingTimeWindow::new(Duration::from_secs(10), 40), // Example size, adjust as needed
-            r#type: SpoolSpeedControllerType::MinMax,
+            r#type: SpoolSpeedControllerType::Adaptive,
         }
     }
 
@@ -54,12 +52,12 @@ impl SpoolSpeedController {
         }
     }
 
-    pub fn set_enabled(&mut self, enabled: bool) {
+    pub const fn set_enabled(&mut self, enabled: bool) {
         self.adaptive_controller.set_enabled(enabled);
         self.minmax_controller.set_enabled(enabled);
     }
 
-    pub fn is_enabled(&self) -> bool {
+    pub const fn is_enabled(&self) -> bool {
         match self.r#type {
             SpoolSpeedControllerType::Adaptive => self.adaptive_controller.is_enabled(),
             SpoolSpeedControllerType::MinMax => self.minmax_controller.is_enabled(),
@@ -93,7 +91,7 @@ impl SpoolSpeedController {
         self.r#type = r#type;
     }
 
-    pub fn get_type(&self) -> &SpoolSpeedControllerType {
+    pub const fn get_type(&self) -> &SpoolSpeedControllerType {
         &self.r#type
     }
 
@@ -125,76 +123,57 @@ impl SpoolSpeedController {
         tension_arm: &TensionArm,
         puller_speed_controller: &PullerSpeedController,
     ) -> AngularVelocity {
-        let angular_velocity = match self.r#type {
+        match self.r#type {
             SpoolSpeedControllerType::Adaptive => {
                 self.adaptive_controller
                     .update_speed(t, tension_arm, puller_speed_controller)
             }
             SpoolSpeedControllerType::MinMax => self.minmax_controller.update_speed(t, tension_arm),
-        };
-
-        {
-            let radius = match self.r#type {
-                SpoolSpeedControllerType::Adaptive => self.adaptive_controller.get_radius(),
-                SpoolSpeedControllerType::MinMax => {
-                    self.minmax_controller.get_radius(puller_speed_controller)
-                }
-            };
-
-            // add radius to history
-            self.radius_history.update(radius.get::<meter>(), t);
         }
-
-        angular_velocity
-    }
-
-    pub fn get_estimated_radius(&mut self) -> Length {
-        // Use the average of the last 10 radius measurements
-        Length::new::<meter>(self.radius_history.average())
     }
 
     // Adaptive controller parameter getters and setters
-    pub fn get_adaptive_tension_target(&self) -> f64 {
+    pub const fn get_adaptive_tension_target(&self) -> f64 {
         self.adaptive_controller.get_tension_target()
     }
 
-    pub fn set_adaptive_tension_target(&mut self, tension_target: f64) {
+    pub const fn set_adaptive_tension_target(&mut self, tension_target: f64) {
         self.adaptive_controller.set_tension_target(tension_target);
     }
 
-    pub fn get_adaptive_radius_learning_rate(&self) -> f64 {
+    pub const fn get_adaptive_radius_learning_rate(&self) -> f64 {
         self.adaptive_controller.get_radius_learning_rate()
     }
 
-    pub fn set_adaptive_radius_learning_rate(&mut self, radius_learning_rate: f64) {
+    pub const fn set_adaptive_radius_learning_rate(&mut self, radius_learning_rate: f64) {
         self.adaptive_controller
             .set_radius_learning_rate(radius_learning_rate);
     }
 
-    pub fn get_adaptive_max_speed_multiplier(&self) -> f64 {
+    pub const fn get_adaptive_max_speed_multiplier(&self) -> f64 {
         self.adaptive_controller.get_max_speed_multiplier()
     }
 
-    pub fn set_adaptive_max_speed_multiplier(&mut self, max_speed_multiplier: f64) {
+    pub const fn set_adaptive_max_speed_multiplier(&mut self, max_speed_multiplier: f64) {
         self.adaptive_controller
             .set_max_speed_multiplier(max_speed_multiplier);
     }
 
-    pub fn get_adaptive_acceleration_factor(&self) -> f64 {
+    pub const fn get_adaptive_acceleration_factor(&self) -> f64 {
         self.adaptive_controller.get_acceleration_factor()
     }
 
-    pub fn set_adaptive_acceleration_factor(&mut self, acceleration_factor: f64) {
+    pub const fn set_adaptive_acceleration_factor(&mut self, acceleration_factor: f64) {
         self.adaptive_controller
             .set_acceleration_factor(acceleration_factor);
     }
 
-    pub fn get_adaptive_deacceleration_urgency_multiplier(&self) -> f64 {
+    pub const fn get_adaptive_deacceleration_urgency_multiplier(&self) -> f64 {
         self.adaptive_controller
             .get_deacceleration_urgency_multiplier()
     }
 
-    pub fn set_adaptive_deacceleration_urgency_multiplier(
+    pub const fn set_adaptive_deacceleration_urgency_multiplier(
         &mut self,
         deacceleration_urgency_multiplier: f64,
     ) {

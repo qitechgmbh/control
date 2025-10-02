@@ -1,19 +1,25 @@
-use super::{ExtruderV2, ExtruderV2Mode, HeatingType, mitsubishi_cs80::MotorStatus};
-use control_core::{
-    machines::api::MachineApi,
-    socketio::{
-        event::{Event, GenericEvent},
-        namespace::{
-            CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_duration,
-            cache_first_and_last_event,
-        },
+use super::{ExtruderV2Mode, mitsubishi_cs80::MotorStatus};
+
+#[cfg(not(feature = "mock-machine"))]
+use super::ExtruderV2;
+
+#[cfg(not(feature = "mock-machine"))]
+use crate::machines::extruder1::HeatingType;
+
+#[cfg(not(feature = "mock-machine"))]
+use control_core::machines::api::MachineApi;
+use control_core::socketio::{
+    event::{Event, GenericEvent},
+    namespace::{
+        CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_duration,
+        cache_first_and_last_event,
     },
 };
 use control_core_derive::BuildEvent;
 use serde::{Deserialize, Serialize};
+#[cfg(not(feature = "mock-machine"))]
 use serde_json::Value;
-use smol::channel::Sender;
-use socketioxide::extract::SocketRef;
+use smol::lock::Mutex;
 use std::{sync::Arc, time::Duration};
 use tracing::instrument;
 use uom::si::{
@@ -23,11 +29,11 @@ use uom::si::{
 
 #[derive(Debug, Clone, Default, Serialize)]
 pub struct MotorStatusValues {
-    screw_rpm: f64, // rpm of motor
-    frequency: f64, // frequency of motor
-    voltage: f64,   // volt used for motor
-    current: f64,   // current used for the motor
-    power: f64,     // power in watts
+    pub screw_rpm: f64, // rpm of motor
+    pub frequency: f64, // frequency of motor
+    pub voltage: f64,   // volt used for motor
+    pub current: f64,   // current used for the motor
+    pub power: f64,     // power in watts
 }
 
 impl From<MotorStatus> for MotorStatusValues {
@@ -67,6 +73,10 @@ pub struct LiveValuesEvent {
     pub back_power: f64,
     /// middle heating power in watts
     pub middle_power: f64,
+    /// combined power consumption in watts
+    pub combined_power: f64,
+    /// total energy consumption in kWh
+    pub total_energy_kwh: f64,
 }
 
 impl LiveValuesEvent {
@@ -98,17 +108,17 @@ pub struct StateEvent {
     pub pid_settings: PidSettingsStates,
 }
 
-#[derive(Serialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Debug, Clone, PartialEq, Eq)]
 pub struct RotationState {
     pub forward: bool,
 }
 
-#[derive(Serialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Debug, Clone, PartialEq, Eq)]
 pub struct ModeState {
     pub mode: ExtruderV2Mode,
 }
 
-#[derive(Serialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Debug, Clone, PartialEq, Eq)]
 pub struct RegulationState {
     pub uses_rpm: bool,
 }
@@ -144,7 +154,7 @@ pub struct ExtruderSettingsState {
     pub pressure_limit_enabled: bool,
 }
 
-#[derive(Serialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Debug, Clone, PartialEq, Eq)]
 pub struct InverterStatusState {
     /// RUN (Inverter running)
     pub running: bool,
@@ -185,7 +195,7 @@ pub enum ExtruderV2Events {
 }
 
 #[derive(Deserialize, Serialize)]
-enum Mutation {
+pub enum Mutation {
     /// INVERTER
     /// Frequency Control
     // Set Rotation also starts the motor
@@ -214,7 +224,7 @@ enum Mutation {
 
 #[derive(Debug)]
 pub struct ExtruderV2Namespace {
-    pub namespace: Namespace,
+    pub namespace: Arc<Mutex<Namespace>>,
 }
 
 impl NamespaceCacheingLogic<ExtruderV2Events> for ExtruderV2Namespace {
@@ -222,23 +232,17 @@ impl NamespaceCacheingLogic<ExtruderV2Events> for ExtruderV2Namespace {
     fn emit(&mut self, events: ExtruderV2Events) {
         let event = Arc::new(events.event_value());
         let buffer_fn = events.event_cache_fn();
-        self.namespace.emit(event, &buffer_fn);
+
+        let mut namespace = self.namespace.lock_blocking();
+        namespace.emit(event, &buffer_fn);
     }
 }
 
-impl ExtruderV2Namespace {
-    pub fn new(socket_queue_tx: Sender<(SocketRef, Arc<GenericEvent>)>) -> Self {
-        Self {
-            namespace: Namespace::new(socket_queue_tx),
-        }
-    }
-}
-
-impl CacheableEvents<ExtruderV2Events> for ExtruderV2Events {
+impl CacheableEvents<Self> for ExtruderV2Events {
     fn event_value(&self) -> GenericEvent {
         match self {
-            ExtruderV2Events::LiveValues(event) => event.into(),
-            ExtruderV2Events::State(event) => event.into(),
+            Self::LiveValues(event) => event.into(),
+            Self::State(event) => event.into(),
         }
     }
 
@@ -247,12 +251,13 @@ impl CacheableEvents<ExtruderV2Events> for ExtruderV2Events {
         let cache_first_and_last = cache_first_and_last_event();
 
         match self {
-            ExtruderV2Events::LiveValues(_) => cache_one_hour,
-            ExtruderV2Events::State(_) => cache_first_and_last,
+            Self::LiveValues(_) => cache_one_hour,
+            Self::State(_) => cache_first_and_last,
         }
     }
 }
 
+#[cfg(not(feature = "mock-machine"))]
 impl MachineApi for ExtruderV2 {
     fn api_mutate(&mut self, request_body: Value) -> Result<(), anyhow::Error> {
         // there are multiple Modbus Frames that are "prebuilt"
@@ -291,7 +296,7 @@ impl MachineApi for ExtruderV2 {
         Ok(())
     }
 
-    fn api_event_namespace(&mut self) -> &mut Namespace {
-        &mut self.namespace.namespace
+    fn api_event_namespace(&mut self) -> Arc<Mutex<Namespace>> {
+        self.namespace.namespace.clone()
     }
 }

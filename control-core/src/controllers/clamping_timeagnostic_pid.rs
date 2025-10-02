@@ -33,7 +33,7 @@ pub struct ClampingTimeagnosticPidController {
 }
 
 impl ClampingTimeagnosticPidController {
-    pub fn new(
+    pub const fn new(
         kp: f64,
         ki: f64,
         kd: f64,
@@ -65,7 +65,7 @@ impl ClampingTimeagnosticPidController {
         }
     }
 
-    pub fn simple_new(kp: f64, ki: f64, kd: f64) -> Self {
+    pub const fn simple_new(kp: f64, ki: f64, kd: f64) -> Self {
         Self {
             kp,
             ki,
@@ -85,26 +85,26 @@ impl ClampingTimeagnosticPidController {
         }
     }
 
-    pub fn get_kp(&self) -> f64 {
+    pub const fn get_kp(&self) -> f64 {
         self.kp
     }
 
-    pub fn get_ki(&self) -> f64 {
+    pub const fn get_ki(&self) -> f64 {
         self.ki
     }
 
-    pub fn get_kd(&self) -> f64 {
+    pub const fn get_kd(&self) -> f64 {
         self.kd
     }
 
-    pub fn configure(&mut self, ki: f64, kp: f64, kd: f64) {
+    pub const fn configure(&mut self, ki: f64, kp: f64, kd: f64) {
         self.reset();
         self.kp = kp;
         self.ki = ki;
         self.kd = kd;
     }
 
-    pub fn optional_clamp(value: f64, min: Option<f64>, max: Option<f64>) -> f64 {
+    pub const fn optional_clamp(value: f64, min: Option<f64>, max: Option<f64>) -> f64 {
         match (min, max) {
             (Some(min), Some(max)) => value.clamp(min, max),
             (Some(min), None) => value.max(min),
@@ -114,7 +114,7 @@ impl ClampingTimeagnosticPidController {
     }
 
     pub fn update(&mut self, error: f64, t: Instant) -> f64 {
-        let signal = match self.last {
+        match self.last {
             // First update
             None => {
                 // Calculate error
@@ -122,15 +122,10 @@ impl ClampingTimeagnosticPidController {
 
                 // Calculate signal
                 let signal = self.kp * ep;
-                let clamped_signal = ClampingTimeagnosticPidController::optional_clamp(
-                    signal,
-                    self.min_signal,
-                    self.max_signal,
-                );
+                let clamped_signal = Self::optional_clamp(signal, self.min_signal, self.max_signal);
 
                 // Set values
-                self.ep =
-                    ClampingTimeagnosticPidController::optional_clamp(ep, self.min_ep, self.max_ep);
+                self.ep = Self::optional_clamp(ep, self.min_ep, self.max_ep);
                 self.ei = 0.0;
                 self.ed = 0.0;
                 self.last = Some(t);
@@ -143,23 +138,11 @@ impl ClampingTimeagnosticPidController {
                 let dt = t.duration_since(last).as_secs_f64();
 
                 // Calculate errors
-                let ep = ClampingTimeagnosticPidController::optional_clamp(
-                    error,
-                    self.min_ep,
-                    self.max_ep,
-                );
+                let ep = Self::optional_clamp(error, self.min_ep, self.max_ep);
 
-                let ei = ClampingTimeagnosticPidController::optional_clamp(
-                    self.ei + ep * dt,
-                    self.min_ei,
-                    self.max_ei,
-                );
+                let ei = Self::optional_clamp(ep.mul_add(dt, self.ei), self.min_ei, self.max_ei);
 
-                let ed = ClampingTimeagnosticPidController::optional_clamp(
-                    (ep - self.ep) / dt,
-                    self.min_ed,
-                    self.max_ed,
-                );
+                let ed = Self::optional_clamp((ep - self.ep) / dt, self.min_ed, self.max_ed);
 
                 // Make factors timeagnostic
                 let kp = self.kp * dt;
@@ -167,12 +150,8 @@ impl ClampingTimeagnosticPidController {
                 let kd = self.kd * dt;
 
                 // Calculate signal
-                let signal = kp * ep + ki * ei + kd * ed;
-                let clamped_signal = ClampingTimeagnosticPidController::optional_clamp(
-                    signal,
-                    self.min_signal,
-                    self.max_signal,
-                );
+                let signal = kd.mul_add(ed, kp.mul_add(ep, ki * ei));
+                let clamped_signal = Self::optional_clamp(signal, self.min_signal, self.max_signal);
 
                 // Set values
                 self.ep = ep;
@@ -182,12 +161,10 @@ impl ClampingTimeagnosticPidController {
 
                 clamped_signal
             }
-        };
-
-        signal
+        }
     }
 
-    pub fn reset(&mut self) {
+    pub const fn reset(&mut self) {
         self.ep = 0.0;
         self.ei = 0.0;
         self.ed = 0.0;

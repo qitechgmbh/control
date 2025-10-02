@@ -42,6 +42,12 @@ pub struct MinMaxSpoolSpeedController {
     speed_time_window: MovingTimeWindow<f64>,
 }
 
+impl Default for MinMaxSpoolSpeedController {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MinMaxSpoolSpeedController {
     /// Parameters:
     /// - `min_speed`: Minimum speed
@@ -134,14 +140,13 @@ impl MinMaxSpoolSpeedController {
         let filament_tension_exponential = interpolate_exponential(filament_tension_inverted, 2.0);
 
         // interpolate speed linear
-        let speed = AngularVelocity::new::<radian_per_second>(scale(
+
+        // save speed
+        AngularVelocity::new::<radian_per_second>(scale(
             filament_tension_exponential,
             min_speed.get::<radian_per_second>(),
             max_speed.get::<radian_per_second>(),
-        ));
-
-        // save speed
-        return speed;
+        ))
     }
 
     /// Accelerates the speed using the acceleration controller.
@@ -175,7 +180,7 @@ impl MinMaxSpoolSpeedController {
         self.speed_time_window
             .update(new_speed.get::<radian_per_second>(), t);
 
-        return new_speed;
+        new_speed
     }
 
     /// Clamps the speed to the defined minimum and maximum speed.
@@ -190,11 +195,11 @@ impl MinMaxSpoolSpeedController {
         let max_speed = self.max_speed();
 
         if speed < min_speed {
-            return AngularVelocity::ZERO;
+            AngularVelocity::ZERO
         } else if speed > max_speed {
-            return max_speed;
+            max_speed
         } else {
-            return speed;
+            speed
         }
     }
 }
@@ -214,17 +219,17 @@ impl MinMaxSpoolSpeedController {
         self.clamp_speed(speed)
     }
 
-    pub fn set_enabled(&mut self, enabled: bool) {
+    pub const fn set_enabled(&mut self, enabled: bool) {
         self.enabled = enabled;
     }
 
-    pub fn is_enabled(&self) -> bool {
+    pub const fn is_enabled(&self) -> bool {
         self.enabled
     }
 
     pub fn reset(&mut self) {
         self.last_speed = AngularVelocity::ZERO;
-        let _ = self.acceleration_controller.reset(AngularVelocity::ZERO);
+        self.acceleration_controller.reset(AngularVelocity::ZERO);
     }
 
     fn update_acceleration(&mut self) -> Result<(), MotionControllerError> {
@@ -276,7 +281,7 @@ impl MinMaxSpoolSpeedController {
     pub fn set_speed(&mut self, speed: AngularVelocity) {
         self.last_speed = speed;
         // Also update the acceleration controller's current speed to ensure smooth transitions
-        let _ = self.acceleration_controller.reset(speed);
+        self.acceleration_controller.reset(speed);
     }
 
     /// derive the radius from the puller speed and the current angular speed

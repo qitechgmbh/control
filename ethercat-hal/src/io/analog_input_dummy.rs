@@ -35,7 +35,7 @@ impl AnalogInputDummy {
 
     pub fn analog_input(&self) -> AnalogInput {
         let device: Arc<RwLock<dyn AnalogInputDevice<AnalogInputDummyPort>>> =
-            Arc::new(RwLock::new(AnalogInputDummy {
+            Arc::new(RwLock::new(Self {
                 state: self.state.clone(),
                 range: self.range.clone(),
             }));

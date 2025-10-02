@@ -11,13 +11,13 @@ pub struct MutationResponse {
 }
 
 impl MutationResponse {
-    pub fn success() -> Self {
+    pub const fn success() -> Self {
         Self {
             success: true,
             error: None,
         }
     }
-    pub fn error(error: String) -> Self {
+    pub const fn error(error: String) -> Self {
         Self {
             success: false,
             error: Some(error),
@@ -32,4 +32,20 @@ where
 {
     pub machine_identification_unique: MachineIdentificationUnique,
     pub data: T,
+}
+
+#[derive(Debug, serde::Deserialize)]
+pub struct MachineVideoStreamListBody {
+    pub machine_identification_unique: MachineIdentificationUnique,
+}
+
+#[derive(Debug, serde::Deserialize)]
+pub struct MachineVideoStreamBody {
+    pub machine_identification_unique: MachineIdentificationUnique,
+    pub stream_id: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct VideoStreamListResponse {
+    pub streams: Vec<String>,
 }

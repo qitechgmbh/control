@@ -45,15 +45,15 @@ impl TemperatureController {
             pid: PidController::new(kp, ki, kd),
             target_temp,
             window_start: Instant::now(),
-            temperature_sensor: temperature_sensor,
-            relais: relais,
-            heating: heating,
+            temperature_sensor,
+            relais,
+            heating,
             heating_allowed: false,
             pwm_period: pwm_duration,
-            max_temperature: max_temperature,
+            max_temperature,
             temperature_pid_output: 0.0,
-            heating_element_wattage: heating_element_wattage,
-            max_clamp: max_clamp,
+            heating_element_wattage,
+            max_clamp,
         }
     }
 
@@ -61,19 +61,19 @@ impl TemperatureController {
         self.heating.target_temperature = temp;
     }
 
-    pub fn disallow_heating(&mut self) {
+    pub const fn disallow_heating(&mut self) {
         self.heating_allowed = false;
     }
 
-    pub fn allow_heating(&mut self) {
+    pub const fn allow_heating(&mut self) {
         self.heating_allowed = true;
     }
 
     pub fn get_heating_element_wattage(&mut self) -> f64 {
-        return self.temperature_pid_output * self.heating_element_wattage;
+        self.temperature_pid_output * self.heating_element_wattage
     }
 
-    pub fn update(&mut self, now: Instant) -> () {
+    pub fn update(&mut self, now: Instant) {
         self.temperature_pid_output = 0.0;
 
         let temperature = self.temperature_sensor.get_temperature();

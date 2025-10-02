@@ -8,7 +8,7 @@ use smol::lock::RwLock;
 /// Generates digital puleses with a given frequency (not PWM) and counts them.
 pub struct PulseTrainOutput {
     /// Write to the pulse train output
-    set_output: Box<dyn Fn(PulseTrainOutputOutput) -> () + Send + Sync>,
+    set_output: Box<dyn Fn(PulseTrainOutputOutput) + Send + Sync>,
     /// Read the state of the pulse train output
     get_output: Box<dyn Fn() -> PulseTrainOutputOutput + Send + Sync>,
     get_input: Box<dyn Fn() -> PulseTrainOutputInput + Send + Sync>,
@@ -21,7 +21,7 @@ impl fmt::Debug for PulseTrainOutput {
 }
 
 impl<'device> PulseTrainOutput {
-    pub fn new<PORT, DEVICE>(device: Arc<RwLock<DEVICE>>, port: PORT) -> PulseTrainOutput
+    pub fn new<PORT, DEVICE>(device: Arc<RwLock<DEVICE>>, port: PORT) -> Self
     where
         PORT: Clone + Copy + Send + Sync + 'static,
         DEVICE: PulseTrainOutputDevice<PORT> + Send + Sync + 'static,
@@ -41,13 +41,13 @@ impl<'device> PulseTrainOutput {
         });
 
         // build sync get closure
-        let device2 = device.clone();
+        let device2 = device;
         let get_input = Box::new(move || -> PulseTrainOutputInput {
             let device = block_on(device2.read());
             device.get_input(port)
         });
 
-        PulseTrainOutput {
+        Self {
             set_output,
             get_output,
             get_input,

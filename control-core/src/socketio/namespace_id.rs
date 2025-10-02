@@ -17,8 +17,8 @@ impl Serialize for NamespaceId {
         S: Serializer,
     {
         match self {
-            NamespaceId::Main => serializer.serialize_str("/main"),
-            NamespaceId::Machine(id) => {
+            Self::Main => serializer.serialize_str("/main"),
+            Self::Machine(id) => {
                 let path = format!(
                     "/machine/{}/{}/{}",
                     id.machine_identification.vendor, id.machine_identification.machine, id.serial
@@ -36,7 +36,7 @@ impl<'de> Deserialize<'de> for NamespaceId {
     {
         struct NamespaceIdVisitor;
 
-        impl<'de> Visitor<'de> for NamespaceIdVisitor {
+        impl Visitor<'_> for NamespaceIdVisitor {
             type Value = NamespaceId;
 
             fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
@@ -85,7 +85,7 @@ impl FromStr for NamespaceId {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if s == "/main" {
-            return Ok(NamespaceId::Main);
+            return Ok(Self::Main);
         }
 
         if let Some(machine_path) = s.strip_prefix("/machine/") {
@@ -101,7 +101,7 @@ impl FromStr for NamespaceId {
                     .parse::<u16>()
                     .map_err(|_| "Invalid serial id".to_string())?;
 
-                return Ok(NamespaceId::Machine(MachineIdentificationUnique {
+                return Ok(Self::Machine(MachineIdentificationUnique {
                     machine_identification: MachineIdentification { vendor, machine },
                     serial,
                 }));
@@ -116,8 +116,8 @@ impl FromStr for NamespaceId {
 impl fmt::Display for NamespaceId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            NamespaceId::Main => write!(f, "/main"),
-            NamespaceId::Machine(id) => {
+            Self::Main => write!(f, "/main"),
+            Self::Machine(id) => {
                 write!(
                     f,
                     "/machine/{}/{}/{}",

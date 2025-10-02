@@ -563,21 +563,21 @@ impl TryFrom<u16> for StartType {
 
     fn try_from(value: u16) -> Result<Self, Self::Error> {
         match value {
-            0 => Ok(StartType::Idle),
-            1 => Ok(StartType::Absolute),
-            2 => Ok(StartType::Relative),
-            3 => Ok(StartType::EndlessPlus),
-            4 => Ok(StartType::EndlessMinus),
-            6 => Ok(StartType::Additive),
-            1029 => Ok(StartType::ModuloCurrent),
-            773 => Ok(StartType::ModuloMinus),
-            517 => Ok(StartType::ModuloPlus),
-            261 => Ok(StartType::ModuloShort),
-            24832 => Ok(StartType::CalibrationHardwareSync),
-            24576 => Ok(StartType::CalibrationPlcCam),
-            28416 => Ok(StartType::CalibrationClearManual),
-            28160 => Ok(StartType::CalibrationSetManual),
-            28161 => Ok(StartType::CalibrationSetManualAuto),
+            0 => Ok(Self::Idle),
+            1 => Ok(Self::Absolute),
+            2 => Ok(Self::Relative),
+            3 => Ok(Self::EndlessPlus),
+            4 => Ok(Self::EndlessMinus),
+            6 => Ok(Self::Additive),
+            1029 => Ok(Self::ModuloCurrent),
+            773 => Ok(Self::ModuloMinus),
+            517 => Ok(Self::ModuloPlus),
+            261 => Ok(Self::ModuloShort),
+            24832 => Ok(Self::CalibrationHardwareSync),
+            24576 => Ok(Self::CalibrationPlcCam),
+            28416 => Ok(Self::CalibrationClearManual),
+            28160 => Ok(Self::CalibrationSetManual),
+            28161 => Ok(Self::CalibrationSetManualAuto),
             _ => Err(anyhow::anyhow!("Invalid value for StartType: {}", value)),
         }
     }
@@ -585,7 +585,7 @@ impl TryFrom<u16> for StartType {
 
 impl From<StartType> for u16 {
     fn from(start_type: StartType) -> Self {
-        start_type as u16
+        start_type as Self
     }
 }
 
@@ -723,7 +723,7 @@ impl TryFrom<u8> for EL70x1OperationMode {
 
 impl From<EL70x1OperationMode> for u8 {
     fn from(value: EL70x1OperationMode) -> Self {
-        value as u8
+        value as Self
     }
 }
 
@@ -778,7 +778,7 @@ impl TryFrom<u8> for EL70x1SpeedRange {
 
 impl From<EL70x1SpeedRange> for u8 {
     fn from(value: EL70x1SpeedRange) -> Self {
-        value as u8
+        value as Self
     }
 }
 
@@ -869,7 +869,7 @@ impl TryFrom<u8> for EL70x1InfoData {
 
 impl From<EL70x1InfoData> for u8 {
     fn from(value: EL70x1InfoData) -> Self {
-        value as u8
+        value as Self
     }
 }
 
@@ -916,7 +916,7 @@ impl TryFrom<u8> for EL70x1InputFunction {
 
 impl From<EL70x1InputFunction> for u8 {
     fn from(value: EL70x1InputFunction) -> Self {
-        value as u8
+        value as Self
     }
 }
 

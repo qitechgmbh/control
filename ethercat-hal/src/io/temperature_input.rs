@@ -19,15 +19,12 @@ impl fmt::Debug for TemperatureInput {
 }
 
 impl TemperatureInput {
-    pub fn new<PORTS>(
-        device: Arc<RwLock<dyn TemperatureInputDevice<PORTS>>>,
-        port: PORTS,
-    ) -> TemperatureInput
+    pub fn new<PORTS>(device: Arc<RwLock<dyn TemperatureInputDevice<PORTS>>>, port: PORTS) -> Self
     where
         PORTS: Clone + Send + Sync + 'static,
     {
         // build sync get closure
-        let port2 = port.clone();
+        let port2 = port;
         let device2 = device.clone();
         let get_input = Box::new(move || {
             let device2 = device2.clone();
@@ -37,7 +34,7 @@ impl TemperatureInput {
                 device.get_input(port_clone)
             })
         });
-        TemperatureInput { get_input }
+        Self { get_input }
     }
 
     /// Get the current temperature in degrees Celsius

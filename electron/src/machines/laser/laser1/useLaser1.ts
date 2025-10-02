@@ -11,19 +11,17 @@ import { produce } from "immer";
 
 function useLaser(machine_identification_unique: MachineIdentificationUnique) {
   // Get consolidated state and live values from namespace
-  const { state, defaultState, diameter } = useLaser1Namespace(
-    machine_identification_unique,
-  );
+  const { state, defaultState, diameter, x_diameter, y_diameter, roundness } =
+    useLaser1Namespace(machine_identification_unique);
 
   // Single optimistic state for all state management
   const stateOptimistic = useStateOptimistic<StateEvent>();
 
-  // Update optimistic state when real state changes
   useEffect(() => {
-    if (state && !stateOptimistic.isOptimistic) {
+    if (state) {
       stateOptimistic.setReal(state);
     }
-  }, [state, stateOptimistic]);
+  }, [state]);
 
   // Helper function for optimistic updates using produce
   const updateStateOptimistically = (
@@ -31,7 +29,7 @@ function useLaser(machine_identification_unique: MachineIdentificationUnique) {
     serverRequest: () => void,
   ) => {
     const currentState = stateOptimistic.value;
-    if (currentState) {
+    if (currentState && !stateOptimistic.isOptimistic) {
       stateOptimistic.setOptimistic(produce(currentState, producer));
     }
     serverRequest();
@@ -112,6 +110,9 @@ function useLaser(machine_identification_unique: MachineIdentificationUnique) {
 
     // Live values (TimeSeries)
     diameter,
+    x_diameter,
+    y_diameter,
+    roundness,
 
     // Loading states
     isLoading: stateOptimistic.isOptimistic,

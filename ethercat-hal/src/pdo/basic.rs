@@ -14,7 +14,7 @@ pub struct BoolPdoObject {
 
 impl TxPdoObject for BoolPdoObject {
     fn read(&mut self, buffer: &BitSlice<u8, Lsb0>) {
-        self.value = buffer[0].into();
+        self.value = buffer[0];
     }
 }
 
@@ -50,8 +50,9 @@ impl RxPdoObject for F32PdoObject {
 /// A u8 is used to map represent 4 states of a configured limit.
 /// The type of limit depends on the device.
 /// The threshhold value is configured via CoE and is commonly deactivated in the base configuration.
-#[derive(Debug, Clone, PartialEq, Copy)]
+#[derive(Debug, Clone, PartialEq, Eq, Copy, Default)]
 pub enum Limit {
+    #[default]
     NotActive,
     Greater,
     Smaller,
@@ -61,18 +62,12 @@ pub enum Limit {
 impl From<u8> for Limit {
     fn from(value: u8) -> Self {
         match value {
-            0b00 => Limit::NotActive,
-            0b01 => Limit::Greater,
-            0b10 => Limit::Smaller,
-            0b11 => Limit::Equal,
+            0b00 => Self::NotActive,
+            0b01 => Self::Greater,
+            0b10 => Self::Smaller,
+            0b11 => Self::Equal,
             _ => unreachable!(),
         }
-    }
-}
-
-impl Default for Limit {
-    fn default() -> Self {
-        Limit::NotActive
     }
 }
 

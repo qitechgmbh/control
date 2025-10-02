@@ -18,17 +18,39 @@ type UpdateExecuteInvokeParams = {
 
 export function exposeUpdateContext() {
   const { contextBridge, ipcRenderer } = window.require("electron");
+
+  let currentLogListener: ((event: any, log: string) => void) | null = null;
+  let currentEndListener: ((event: any, params: any) => void) | null = null;
+
   contextBridge.exposeInMainWorld("update", {
     execute: (params: UpdateExecuteInvokeParams) =>
       ipcRenderer.invoke(UPDATE_EXECUTE, params),
     cancel: () => ipcRenderer.invoke(UPDATE_CANCEL),
-    onLog: (callback: (log: string) => void) =>
-      ipcRenderer.on(UPDATE_LOG, (_event, log: string) => {
+
+    onLog: (callback: (log: string) => void) => {
+      if (currentLogListener) {
+        ipcRenderer.removeListener(UPDATE_LOG, currentLogListener);
+      }
+
+      currentLogListener = (_event, log: string) => {
         callback(log);
-      }),
-    onEnd: (callback: (params: { success: boolean; error?: string }) => void) =>
-      ipcRenderer.on(UPDATE_END, (_event, params) => {
+      };
+
+      ipcRenderer.on(UPDATE_LOG, currentLogListener);
+    },
+
+    onEnd: (
+      callback: (params: { success: boolean; error?: string }) => void,
+    ) => {
+      if (currentEndListener) {
+        ipcRenderer.removeListener(UPDATE_END, currentEndListener);
+      }
+
+      currentEndListener = (_event, params) => {
         callback(params);
-      }),
+      };
+
+      ipcRenderer.on(UPDATE_END, currentEndListener);
+    },
   });
 }

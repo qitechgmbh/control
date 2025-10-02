@@ -22,7 +22,6 @@ import {
   TimeSeries,
   TimeSeriesValue,
 } from "@/lib/timeseries";
-import { connected } from "process";
 
 // ========== Event Schema Definitions ==========
 
@@ -33,7 +32,6 @@ export const liveValuesEventDataSchema = z.object({
   traverse_position: z.number().nullable(),
   puller_speed: z.number(),
   spool_rpm: z.number(),
-  spool_diameter: z.number(),
   tension_arm_angle: z.number(),
   spool_progress: z.number(),
 });
@@ -190,7 +188,6 @@ export type Winder2NamespaceStore = {
   traversePosition: TimeSeries;
   pullerSpeed: TimeSeries;
   spoolRpm: TimeSeries;
-  spoolDiameter: TimeSeries;
   tensionArmAngle: TimeSeries;
   spoolProgress: TimeSeries;
 };
@@ -213,8 +210,6 @@ const { initialTimeSeries: spoolRpm, insert: addSpoolRpm } = createTimeSeries(
   FIVE_SECOND,
   ONE_HOUR,
 );
-const { initialTimeSeries: spoolDiameter, insert: addSpoolDiameter } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
 const { initialTimeSeries: tensionArmAngle, insert: addTensionArmAngle } =
   createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
 
@@ -234,7 +229,6 @@ export const createWinder2NamespaceStore =
         traversePosition,
         pullerSpeed,
         spoolRpm,
-        spoolDiameter,
         tensionArmAngle,
         spoolProgress,
       };
@@ -265,6 +259,7 @@ export function winder2MessageHandler(
 
     try {
       if (eventName === "StateEvent") {
+        console.log(event);
         // Parse and validate the state event
         const stateEvent = stateEventSchema.parse(event);
 
@@ -285,7 +280,6 @@ export function winder2MessageHandler(
           traverse_position,
           puller_speed,
           spool_rpm,
-          spool_diameter,
           tension_arm_angle,
           spool_progress,
         } = liveValuesEvent.data;
@@ -332,16 +326,6 @@ export function winder2MessageHandler(
             timestamp,
           };
           newState.spoolRpm = addSpoolRpm(state.spoolRpm, spoolRpmValue);
-
-          // Add spool diameter
-          const spoolDiameterValue: TimeSeriesValue = {
-            value: spool_diameter,
-            timestamp,
-          };
-          newState.spoolDiameter = addSpoolDiameter(
-            state.spoolDiameter,
-            spoolDiameterValue,
-          );
 
           // Add tension arm angle
           const tensionArmAngleValue: TimeSeriesValue = {

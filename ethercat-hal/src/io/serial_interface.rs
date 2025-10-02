@@ -26,10 +26,7 @@ impl fmt::Debug for SerialInterface {
 }
 
 impl SerialInterface {
-    pub fn new<PORT>(
-        device: Arc<RwLock<dyn SerialInterfaceDevice<PORT>>>,
-        port: PORT,
-    ) -> SerialInterface
+    pub fn new<PORT>(device: Arc<RwLock<dyn SerialInterfaceDevice<PORT>>>, port: PORT) -> Self
     where
         PORT: Clone + Send + Sync + 'static,
     {
@@ -55,7 +52,7 @@ impl SerialInterface {
             move |message: Vec<u8>| -> Pin<Box<dyn Future<Output = Result<bool, Error>> + Send>> {
                 let device2 = device2.clone();
                 let port_clone = port2.clone();
-                let message2 = message.to_owned();
+                let message2 = message;
 
                 Box::pin(async move {
                     let mut device = device2.write().await;
@@ -107,7 +104,7 @@ impl SerialInterface {
             },
         );
 
-        port2 = port.clone();
+        port2 = port;
         device2 = device.clone();
 
         let initialize = Box::new(move || -> Pin<Box<dyn Future<Output = bool> + Send>> {
@@ -120,7 +117,7 @@ impl SerialInterface {
             })
         });
 
-        SerialInterface {
+        Self {
             has_message,
             write_message,
             read_message,
@@ -173,7 +170,7 @@ pub enum SerialEncoding {
 
 impl SerialEncoding {
     /// Get the number of data bits
-    pub fn data_bits(&self) -> u8 {
+    pub const fn data_bits(&self) -> u8 {
         match self {
             Self::Coding7E1 | Self::Coding7O1 | Self::Coding7E2 | Self::Coding7O2 => 7,
             _ => 8,
@@ -181,7 +178,7 @@ impl SerialEncoding {
     }
 
     /// Get the number of parity bits (0 or 1)
-    pub fn parity_bits(&self) -> u8 {
+    pub const fn parity_bits(&self) -> u8 {
         match self {
             Self::Coding8N1 | Self::Coding8N2 => 0,
             _ => 1,
@@ -189,7 +186,7 @@ impl SerialEncoding {
     }
 
     /// Get the parity type
-    pub fn parity_type(&self) -> Option<ParityType> {
+    pub const fn parity_type(&self) -> Option<ParityType> {
         match self {
             Self::Coding7E1 | Self::Coding7E2 | Self::Coding8E1 | Self::Coding8E2 => {
                 Some(ParityType::Even)
@@ -204,7 +201,7 @@ impl SerialEncoding {
     }
 
     /// Get the number of stop bits
-    pub fn stop_bits(&self) -> u8 {
+    pub const fn stop_bits(&self) -> u8 {
         match self {
             Self::Coding7E1
             | Self::Coding7O1
@@ -223,7 +220,7 @@ impl SerialEncoding {
 
     /// Get the total number of bits sent per byte according to the SerialEncoding (including start bit)
     /// For Example: With 8n1 transferring 1 byte over Serial actually transfers 10 bits -> 8 data bits, 0 parity, 1 start bit and 1 stop bit
-    pub fn total_bits(&self) -> u8 {
+    pub const fn total_bits(&self) -> u8 {
         // We always have 1 start bit
         1 + self.data_bits() + self.parity_bits() + self.stop_bits()
     }

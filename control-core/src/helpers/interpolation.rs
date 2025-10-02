@@ -63,11 +63,11 @@ pub fn scale<T>(normalized_value: f64, new_min: T, new_max: T) -> T
 where
     T: Into<f64> + From<f64>,
 {
-    let normalized_value: f64 = normalized_value.into();
+    let normalized_value: f64 = normalized_value;
     let new_min: f64 = new_min.into();
     let new_max: f64 = new_max.into();
 
-    let result = normalized_value * (new_max - new_min) + new_min;
+    let result = normalized_value.mul_add(new_max - new_min, new_min);
     T::from(result)
 }
 
@@ -128,11 +128,11 @@ where
     // If we are under X we scale linearly from 0 to y
     // If we are over X we scale linearly from y to 1
     if value_f64 < x_f64 {
-        return normalize(value_f64, 0.0, x_f64) * y_f64;
+        normalize(value_f64, 0.0, x_f64) * y_f64
     } else if value_f64 > x_f64 {
-        return normalize(value_f64, x_f64, 1.0) * (1.0 - y_f64) + y_f64;
+        normalize(value_f64, x_f64, 1.0).mul_add(1.0 - y_f64, y_f64)
     } else {
-        return y_f64;
+        y_f64
     }
 }
 
@@ -273,7 +273,7 @@ pub fn interpolate_exponential(normalized_value: f64, steepness: f64) -> f64 {
         return normalized_value;
     }
     let numerator = steepness.exp().powf(normalized_value) - 1.0;
-    let denominator = steepness.exp() - 1.0;
+    let denominator = steepness.exp_m1();
 
     clip(numerator / denominator)
 }
@@ -414,7 +414,7 @@ pub fn interpolate_inflected_exponential(x: f64, steepness: f64) -> f64 {
 
         // Use standard exponential interpolation
         let result = interpolate_exponential(x_norm, steepness);
-        0.5 + 0.5 * result
+        0.5f64.mul_add(result, 0.5)
     }
 }
 

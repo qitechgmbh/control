@@ -5,7 +5,7 @@ use ethercat_hal_derive::PdoObject;
 /// PDO Object for EL252x devices
 ///
 /// "PTO Status" contains status information about the pulse train output.
-#[derive(Debug, Clone, Default, PdoObject, PartialEq)]
+#[derive(Debug, Clone, Default, PdoObject, PartialEq, Eq)]
 #[pdo_object(bits = 16)]
 pub struct PtoStatus {
     pub select_end_counter: bool,
@@ -48,7 +48,7 @@ impl TxPdoObject for PtoStatus {
 /// PDO Object for EL252x devices
 ///
 /// "Encoder Status" contains the encoder status information.
-#[derive(Debug, Clone, Default, PdoObject, PartialEq)]
+#[derive(Debug, Clone, Default, PdoObject, PartialEq, Eq)]
 #[pdo_object(bits = 48)]
 pub struct EncStatus {
     /// Acknowedges the set counter command of the last cycle

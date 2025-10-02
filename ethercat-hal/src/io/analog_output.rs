@@ -9,7 +9,7 @@ use std::sync::Arc;
 /// device and its range.
 pub struct AnalogOutput {
     /// Write a value to the analog output
-    pub set_output: Box<dyn Fn(AnalogOutputOutput) -> () + Send + Sync>,
+    pub set_output: Box<dyn Fn(AnalogOutputOutput) + Send + Sync>,
 
     /// Read the state of the analog output
     pub get_output: Box<dyn Fn() -> AnalogOutputOutput + Send + Sync>,
@@ -23,7 +23,7 @@ impl fmt::Debug for AnalogOutput {
 
 /// Implement on device that have analog outputs
 impl AnalogOutput {
-    pub fn new<PORT>(device: Arc<RwLock<dyn AnalogOutputDevice<PORT>>>, port: PORT) -> AnalogOutput
+    pub fn new<PORT>(device: Arc<RwLock<dyn AnalogOutputDevice<PORT>>>, port: PORT) -> Self
     where
         PORT: Clone + Send + Sync + 'static,
     {
@@ -36,14 +36,14 @@ impl AnalogOutput {
         });
 
         // build sync get closure
-        let port2 = port.clone();
+        let port2 = port;
         let device2 = device.clone();
         let get_output = Box::new(move || -> AnalogOutputOutput {
             let device = block_on(device2.read());
             device.get_output(port2.clone())
         });
 
-        AnalogOutput {
+        Self {
             set_output,
             get_output,
         }
@@ -66,7 +66,7 @@ pub struct AnalogOutputOutput(pub f32);
 
 impl From<f32> for AnalogOutputOutput {
     fn from(value: f32) -> Self {
-        AnalogOutputOutput(value)
+        Self(value)
     }
 }
 

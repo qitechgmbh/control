@@ -40,7 +40,7 @@ pub async fn init_socketio(app_state: &Arc<AppState>) -> SocketIoLayer {
     let mut socketio_guard = app_state.socketio_setup.socketio.write().await;
     socketio_guard.replace(io);
 
-    return socketio_layer;
+    socketio_layer
 }
 
 fn handle_socket_connection(socket: SocketRef, app_state: Arc<AppState>) {
@@ -101,7 +101,7 @@ fn setup_connection(socket: SocketRef, namespace_id: NamespaceId, app_state: Arc
     // Spawn async task to avoid blocking and potential deadlocks
     let socket_clone = socket.clone();
     let namespace_id_clone = namespace_id.clone();
-    let app_state_clone = app_state.clone();
+    let app_state_clone = app_state;
 
     let span = info_span!(
         "socketio_connection",
@@ -125,7 +125,7 @@ fn setup_connection(socket: SocketRef, namespace_id: NamespaceId, app_state: Arc
                                 namespace_interface.subscribe(socket_clone.clone());
 
                                 // Then re-emit cached events
-                                namespace_interface.reemit(socket_clone.clone());
+                                namespace_interface.reemit(socket_clone);
                             }
                             Err(err) => {
                                 tracing::warn!(

@@ -113,6 +113,8 @@ impl EL40XXChannelConfiguration {
         device: &EthercrabSubDevicePreoperational<'a>,
         base_index: u16,
     ) -> Result<(), anyhow::Error> {
+        tracing::info!("write_channel_config");
+
         // Write all configuration parameters according to the documentation table
         device
             .sdo_write(base_index, 0x01, self.enable_user_scale as u8)

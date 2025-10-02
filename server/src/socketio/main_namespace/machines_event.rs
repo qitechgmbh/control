@@ -20,20 +20,8 @@ pub struct MachinesEventBuilder();
 impl MachinesEventBuilder {
     const NAME: &'static str = "MachinesEvent";
 
-    pub async fn build(&self, app_state: Arc<AppState>) -> Event<MachinesEvent> {
-        let mut machine_objs: Vec<_> = vec![];
-        // add machines
-        let machines_guard = app_state.machines.read().await;
-        for machine in machines_guard.iter() {
-            machine_objs.push(MachineObj {
-                machine_identification_unique: machine.0.clone(),
-                error: match machine.1 {
-                    Ok(_) => None,
-                    Err(e) => Some(e.to_string()),
-                },
-            });
-        }
-
+    pub fn build(&self, app_state: Arc<AppState>) -> Event<MachinesEvent> {
+        let machine_objs = app_state.get_machine_objs();
         Event::new(
             Self::NAME,
             MachinesEvent {

@@ -78,11 +78,16 @@ export const useUpdateStore = create<UpdateStore>((set) => ({
   addTerminalLine: (line) =>
     set(
       produce((state: UpdateState) => {
-        state.terminalLines.push(line);
+        console.log(state.terminalLines);
 
-        // Keep only last 10000 lines to prevent memory issues
-        if (state.terminalLines.length > 10000) {
-          state.terminalLines.splice(0, state.terminalLines.length - 10000);
+        const lastLine = state.terminalLines[state.terminalLines.length - 1];
+        if (line !== lastLine) {
+          state.terminalLines.push(line);
+
+          // Keep only last 10000 lines to prevent memory issues
+          if (state.terminalLines.length > 10000) {
+            state.terminalLines.splice(0, state.terminalLines.length - 10000);
+          }
         }
       }),
     ),

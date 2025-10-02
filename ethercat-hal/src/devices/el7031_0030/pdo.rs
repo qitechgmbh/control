@@ -81,11 +81,12 @@ pub struct EL7031_0030RxPdo {
     pub pos_control_2: Option<PosControl2>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub enum EL7031_0030PredefinedPdoAssignment {
     VelocityControlCompact,
     VelocityControlCompactWithInfoData,
     VelocityControl,
+    #[default]
     PositionControl,
     PositionInterfaceCompact,
     PositionInterface,
@@ -99,7 +100,7 @@ impl PredefinedPdoAssignment<EL7031_0030TxPdo, EL7031_0030RxPdo>
 {
     fn txpdo_assignment(&self) -> EL7031_0030TxPdo {
         match self {
-            EL7031_0030PredefinedPdoAssignment::VelocityControlCompact => EL7031_0030TxPdo {
+            Self::VelocityControlCompact => EL7031_0030TxPdo {
                 enc_status_compact: Some(EncStatusCompact::default()),
                 enc_status: None,
                 enc_timestamp_compact: None,
@@ -115,25 +116,23 @@ impl PredefinedPdoAssignment<EL7031_0030TxPdo, EL7031_0030RxPdo>
                 ai_standard_channel_2: Some(AiStandard::default()),
                 ai_compact_channel_2: None,
             },
-            EL7031_0030PredefinedPdoAssignment::VelocityControlCompactWithInfoData => {
-                EL7031_0030TxPdo {
-                    enc_status_compact: Some(EncStatusCompact::default()),
-                    enc_status: None,
-                    enc_timestamp_compact: None,
-                    stm_status: Some(StmStatus::default()),
-                    stm_synchron_info_data: Some(StmSynchronInfoData::default()),
-                    pos_status_compact: None,
-                    pos_status: None,
-                    stm_internal_position: None,
-                    stm_external_position: None,
-                    pos_actual_position_lag: None,
-                    ai_standard_channel_1: Some(AiStandard::default()),
-                    ai_compact_channel_1: None,
-                    ai_standard_channel_2: Some(AiStandard::default()),
-                    ai_compact_channel_2: None,
-                }
-            }
-            EL7031_0030PredefinedPdoAssignment::VelocityControl => EL7031_0030TxPdo {
+            Self::VelocityControlCompactWithInfoData => EL7031_0030TxPdo {
+                enc_status_compact: Some(EncStatusCompact::default()),
+                enc_status: None,
+                enc_timestamp_compact: None,
+                stm_status: Some(StmStatus::default()),
+                stm_synchron_info_data: Some(StmSynchronInfoData::default()),
+                pos_status_compact: None,
+                pos_status: None,
+                stm_internal_position: None,
+                stm_external_position: None,
+                pos_actual_position_lag: None,
+                ai_standard_channel_1: Some(AiStandard::default()),
+                ai_compact_channel_1: None,
+                ai_standard_channel_2: Some(AiStandard::default()),
+                ai_compact_channel_2: None,
+            },
+            Self::VelocityControl => EL7031_0030TxPdo {
                 enc_status_compact: None,
                 enc_status: Some(EncStatus::default()),
                 enc_timestamp_compact: None,
@@ -149,7 +148,7 @@ impl PredefinedPdoAssignment<EL7031_0030TxPdo, EL7031_0030RxPdo>
                 ai_standard_channel_2: Some(AiStandard::default()),
                 ai_compact_channel_2: None,
             },
-            EL7031_0030PredefinedPdoAssignment::PositionControl => EL7031_0030TxPdo {
+            Self::PositionControl => EL7031_0030TxPdo {
                 enc_status_compact: None,
                 enc_status: Some(EncStatus::default()),
                 enc_timestamp_compact: None,
@@ -165,7 +164,7 @@ impl PredefinedPdoAssignment<EL7031_0030TxPdo, EL7031_0030RxPdo>
                 ai_standard_channel_2: Some(AiStandard::default()),
                 ai_compact_channel_2: None,
             },
-            EL7031_0030PredefinedPdoAssignment::PositionInterfaceCompact => EL7031_0030TxPdo {
+            Self::PositionInterfaceCompact => EL7031_0030TxPdo {
                 enc_status_compact: None,
                 enc_status: Some(EncStatus::default()),
                 enc_timestamp_compact: None,
@@ -181,7 +180,7 @@ impl PredefinedPdoAssignment<EL7031_0030TxPdo, EL7031_0030RxPdo>
                 ai_standard_channel_2: Some(AiStandard::default()),
                 ai_compact_channel_2: None,
             },
-            EL7031_0030PredefinedPdoAssignment::PositionInterface => EL7031_0030TxPdo {
+            Self::PositionInterface => EL7031_0030TxPdo {
                 enc_status_compact: None,
                 enc_status: Some(EncStatus::default()),
                 enc_timestamp_compact: None,
@@ -197,7 +196,7 @@ impl PredefinedPdoAssignment<EL7031_0030TxPdo, EL7031_0030RxPdo>
                 ai_standard_channel_2: Some(AiStandard::default()),
                 ai_compact_channel_2: None,
             },
-            EL7031_0030PredefinedPdoAssignment::PositionInterfaceWithInfoData => EL7031_0030TxPdo {
+            Self::PositionInterfaceWithInfoData => EL7031_0030TxPdo {
                 enc_status_compact: None,
                 enc_status: Some(EncStatus::default()),
                 enc_timestamp_compact: None,
@@ -213,7 +212,7 @@ impl PredefinedPdoAssignment<EL7031_0030TxPdo, EL7031_0030RxPdo>
                 ai_standard_channel_2: Some(AiStandard::default()),
                 ai_compact_channel_2: None,
             },
-            EL7031_0030PredefinedPdoAssignment::PositionInterfaceAutoStart => EL7031_0030TxPdo {
+            Self::PositionInterfaceAutoStart => EL7031_0030TxPdo {
                 enc_status_compact: None,
                 enc_status: Some(EncStatus::default()),
                 enc_timestamp_compact: None,
@@ -229,31 +228,28 @@ impl PredefinedPdoAssignment<EL7031_0030TxPdo, EL7031_0030RxPdo>
                 ai_standard_channel_2: Some(AiStandard::default()),
                 ai_compact_channel_2: None,
             },
-            EL7031_0030PredefinedPdoAssignment::PositionInterfaceAutoStartWithInfoData => {
-                EL7031_0030TxPdo {
-                    enc_status_compact: None,
-                    enc_status: Some(EncStatus::default()),
-                    enc_timestamp_compact: None,
-                    stm_status: Some(StmStatus::default()),
-                    stm_synchron_info_data: Some(StmSynchronInfoData::default()),
-                    pos_status_compact: None,
-                    pos_status: Some(PosStatus::default()),
-                    stm_internal_position: None,
-                    stm_external_position: None,
-                    pos_actual_position_lag: None,
-                    ai_standard_channel_1: Some(AiStandard::default()),
-                    ai_compact_channel_1: None,
-                    ai_standard_channel_2: Some(AiStandard::default()),
-                    ai_compact_channel_2: None,
-                }
-            }
+            Self::PositionInterfaceAutoStartWithInfoData => EL7031_0030TxPdo {
+                enc_status_compact: None,
+                enc_status: Some(EncStatus::default()),
+                enc_timestamp_compact: None,
+                stm_status: Some(StmStatus::default()),
+                stm_synchron_info_data: Some(StmSynchronInfoData::default()),
+                pos_status_compact: None,
+                pos_status: Some(PosStatus::default()),
+                stm_internal_position: None,
+                stm_external_position: None,
+                pos_actual_position_lag: None,
+                ai_standard_channel_1: Some(AiStandard::default()),
+                ai_compact_channel_1: None,
+                ai_standard_channel_2: Some(AiStandard::default()),
+                ai_compact_channel_2: None,
+            },
         }
     }
 
     fn rxpdo_assignment(&self) -> EL7031_0030RxPdo {
         match self {
-            EL7031_0030PredefinedPdoAssignment::VelocityControlCompact
-            | EL7031_0030PredefinedPdoAssignment::VelocityControlCompactWithInfoData => {
+            Self::VelocityControlCompact | Self::VelocityControlCompactWithInfoData => {
                 EL7031_0030RxPdo {
                     enc_control_compact: Some(EncControlCompact::default()),
                     enc_control: None,
@@ -265,7 +261,7 @@ impl PredefinedPdoAssignment<EL7031_0030TxPdo, EL7031_0030RxPdo>
                     pos_control_2: None,
                 }
             }
-            EL7031_0030PredefinedPdoAssignment::VelocityControl => EL7031_0030RxPdo {
+            Self::VelocityControl => EL7031_0030RxPdo {
                 enc_control_compact: None,
                 enc_control: Some(EncControl::default()),
                 stm_control: Some(StmControl::default()),
@@ -275,7 +271,7 @@ impl PredefinedPdoAssignment<EL7031_0030TxPdo, EL7031_0030RxPdo>
                 pos_control: None,
                 pos_control_2: None,
             },
-            EL7031_0030PredefinedPdoAssignment::PositionControl => EL7031_0030RxPdo {
+            Self::PositionControl => EL7031_0030RxPdo {
                 enc_control_compact: None,
                 enc_control: Some(EncControl::default()),
                 stm_control: Some(StmControl::default()),
@@ -285,7 +281,7 @@ impl PredefinedPdoAssignment<EL7031_0030TxPdo, EL7031_0030RxPdo>
                 pos_control: None,
                 pos_control_2: None,
             },
-            EL7031_0030PredefinedPdoAssignment::PositionInterfaceCompact => EL7031_0030RxPdo {
+            Self::PositionInterfaceCompact => EL7031_0030RxPdo {
                 enc_control_compact: None,
                 enc_control: Some(EncControl::default()),
                 stm_control: Some(StmControl::default()),
@@ -295,21 +291,17 @@ impl PredefinedPdoAssignment<EL7031_0030TxPdo, EL7031_0030RxPdo>
                 pos_control: None,
                 pos_control_2: None,
             },
-            EL7031_0030PredefinedPdoAssignment::PositionInterface
-            | EL7031_0030PredefinedPdoAssignment::PositionInterfaceWithInfoData => {
-                EL7031_0030RxPdo {
-                    enc_control_compact: None,
-                    enc_control: Some(EncControl::default()),
-                    stm_control: Some(StmControl::default()),
-                    stm_position: None,
-                    stm_velocity: None,
-                    pos_control_compact: None,
-                    pos_control: Some(PosControl::default()),
-                    pos_control_2: None,
-                }
-            }
-            EL7031_0030PredefinedPdoAssignment::PositionInterfaceAutoStart
-            | EL7031_0030PredefinedPdoAssignment::PositionInterfaceAutoStartWithInfoData => {
+            Self::PositionInterface | Self::PositionInterfaceWithInfoData => EL7031_0030RxPdo {
+                enc_control_compact: None,
+                enc_control: Some(EncControl::default()),
+                stm_control: Some(StmControl::default()),
+                stm_position: None,
+                stm_velocity: None,
+                pos_control_compact: None,
+                pos_control: Some(PosControl::default()),
+                pos_control_2: None,
+            },
+            Self::PositionInterfaceAutoStart | Self::PositionInterfaceAutoStartWithInfoData => {
                 EL7031_0030RxPdo {
                     enc_control_compact: None,
                     enc_control: Some(EncControl::default()),
@@ -322,12 +314,6 @@ impl PredefinedPdoAssignment<EL7031_0030TxPdo, EL7031_0030RxPdo>
                 }
             }
         }
-    }
-}
-
-impl Default for EL7031_0030PredefinedPdoAssignment {
-    fn default() -> Self {
-        EL7031_0030PredefinedPdoAssignment::PositionControl
     }
 }
 

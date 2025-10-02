@@ -11,6 +11,7 @@ use uom::{
 };
 
 /// The "tension" of the filament is not linear regarding the angle of the tension arm since it moves in an angular motion.
+///
 /// With this calculator we can calculate the filament length and tension based on the angle of the tension arm using geometry.
 ///
 /// ⠉⠢⢄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇ 0.0
@@ -81,8 +82,10 @@ impl FilamentTensionCalculator {
 
         // Calculate tension arm tip position (flipped Y-axis: 0° = down, 90° = left)
         let tension_arm_tip = Point2D::<f64, ()>::new(
-            self.tension_arm_origin.x + self.arm_length * tension_arm_angle_rad.sin(),
-            self.tension_arm_origin.y + self.arm_length * tension_arm_angle_rad.cos(),
+            self.arm_length
+                .mul_add(tension_arm_angle_rad.sin(), self.tension_arm_origin.x),
+            self.arm_length
+                .mul_add(tension_arm_angle_rad.cos(), self.tension_arm_origin.y),
         );
 
         // translate the tip 2cm down to account for the wheel diameter

@@ -17,19 +17,19 @@ impl U16SigningConverter {
     /// assert_eq!(value.into_unsigned(), 42);
     /// ```
     #[inline]
-    pub fn load_raw(value: u16) -> Self {
+    pub const fn load_raw(value: u16) -> Self {
         Self { raw: value }
     }
 
     /// Converts the value to an unsigned 16-bit integer.
     #[inline]
-    pub fn as_unsigned(self) -> u16 {
+    pub const fn as_unsigned(self) -> u16 {
         self.raw
     }
 
     /// Converts the value to a signed 16-bit integer using two's complement.
     #[inline]
-    pub fn as_signed(self) -> i16 {
+    pub const fn as_signed(self) -> i16 {
         self.raw as i16
     }
 
@@ -38,7 +38,7 @@ impl U16SigningConverter {
     /// In sign-magnitude representation, the most significant bit represents the sign
     /// (0 for positive, 1 for negative) and the remaining bits represent the magnitude.
     #[inline]
-    pub fn as_signed_magnitude(self) -> i16 {
+    pub const fn as_signed_magnitude(self) -> i16 {
         if self.raw & 0x8000 != 0 {
             -((self.raw & 0x7FFF) as i16)
         } else {
@@ -47,7 +47,7 @@ impl U16SigningConverter {
     }
 
     #[inline]
-    pub fn as_absolute(self) -> i16 {
+    pub const fn as_absolute(self) -> i16 {
         self.as_signed().abs()
     }
 }

@@ -18,7 +18,7 @@ pub struct AngularStepConverter {
 
 impl AngularStepConverter {
     /// Create a new converter with the specified steps per revolution
-    pub fn new(steps_per_revolution: i16) -> Self {
+    pub const fn new(steps_per_revolution: i16) -> Self {
         Self {
             steps_per_revolution,
         }

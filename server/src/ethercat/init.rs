@@ -17,8 +17,8 @@ pub fn init_ethercat(
     thread_panic_tx: Sender<PanicDetails>,
     app_state: Arc<AppState>,
 ) -> Result<(), anyhow::Error> {
-    let thread_panic_tx_clone = thread_panic_tx.clone();
-    let app_state_clone = app_state.clone();
+    let thread_panic_tx_clone = thread_panic_tx;
+    let app_state_clone = app_state;
 
     std::thread::Builder::new()
         .name("init_ethercat".to_string())
@@ -27,7 +27,7 @@ pub fn init_ethercat(
 
             // Notify client via socketio
             let app_state_socketio = app_state_clone.clone();
-            let _ = smol::block_on(async move {
+            smol::block_on(async move {
                 let main_namespace = &mut app_state_socketio
                     .socketio_setup
                     .namespaces
@@ -58,7 +58,7 @@ pub fn init_ethercat(
             // Notify client via socketio
             let interface_clone = interface.clone();
             let app_state_socketio = app_state_clone.clone();
-            let _ = smol::block_on(async move {
+            smol::block_on(async move {
                 let main_namespace = &mut app_state_socketio
                     .socketio_setup
                     .namespaces

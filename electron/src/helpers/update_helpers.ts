@@ -1,16 +1,28 @@
 import type { UpdateInfo } from "@/stores/updateStore";
 import { useUpdateStore } from "@/stores/updateStore";
 
+let currentLogListener: ((line: string) => void) | null = null;
+
 export async function updateExecute(
   source: UpdateInfo,
   onLog: (log: string) => void,
 ): Promise<{ success: boolean; error?: string }> {
   return new Promise((resolve) => {
-    window.update.onLog(onLog);
+    // Remove previous listener if exists
+    if (currentLogListener) {
+      window.update.onLog(() => {}); // clear previous
+      currentLogListener = null;
+    }
+
+    currentLogListener = onLog;
+    window.update.onLog(currentLogListener);
+
     window.update.execute(source);
+
     window.update.onEnd((params) => {
-      window.update.onLog(() => {});
+      window.update.onLog(() => {}); // remove listener
       window.update.onEnd(() => {});
+      currentLogListener = null;
       resolve(params);
     });
   });
@@ -40,7 +52,10 @@ export async function updateCancel(): Promise<{
   success: boolean;
   error?: string;
 }> {
-  return window.update.cancel();
+  const result = await window.update.cancel();
+  window.update.onLog(() => {}); // remove listener
+  window.update.onEnd(() => {}); // remove listener
+  return result;
 }
 
 // Enhanced helper that automatically manages store state

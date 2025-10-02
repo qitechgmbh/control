@@ -4,26 +4,19 @@ use crate::serial::{devices::laser::Laser, registry::SERIAL_DEVICE_REGISTRY};
 
 use super::{LaserMachine, LaserTarget, api::LaserMachineNamespace};
 use anyhow::Error;
-use control_core::machines::new::MachineNewTrait;
+use control_core::machines::new::{MachineNewHardware, MachineNewTrait};
+use uom::ConstZero;
 use uom::si::{f64::Length, length::millimeter};
 
 impl MachineNewTrait for LaserMachine {
-    fn new<'maindevice, 'subdevices>(
-        params: &control_core::machines::new::MachineNewParams<
-            'maindevice,
-            'subdevices,
-            '_,
-            '_,
-            '_,
-            '_,
-            '_,
-        >,
+    fn new(
+        params: &control_core::machines::new::MachineNewParams<'_, '_, '_, '_, '_, '_, '_>,
     ) -> Result<Self, Error>
     where
         Self: Sized,
     {
         let hardware_serial = match params.hardware {
-            control_core::machines::new::MachineNewHardware::Serial(serial) => *serial,
+            MachineNewHardware::Serial(serial) => *serial,
             _ => return Err(Error::msg("Invalid hardware type for LaserMachine")),
         };
 
@@ -42,12 +35,18 @@ impl MachineNewTrait for LaserMachine {
             diameter: Length::new::<millimeter>(1.75),
         };
         let mut laser_machine = Self {
+            machine_identification_unique: params.get_machine_identification_unique(),
             laser,
-            namespace: LaserMachineNamespace::new(params.socket_queue_tx.clone()),
+            namespace: LaserMachineNamespace {
+                namespace: params.namespace.clone(),
+            },
             last_measurement_emit: Instant::now(),
             laser_target,
             emitted_default_state: false,
-            last_state_event: None,
+            diameter: Length::ZERO,
+            x_diameter: None,
+            y_diameter: None,
+            roundness: None,
         };
 
         // Emit initial state

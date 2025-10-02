@@ -32,7 +32,7 @@ pub struct EL7041_0052 {
 impl NewEthercatDevice for EL7041_0052 {
     fn new() -> Self {
         let configuration = EL7041_0052Configuration::default();
-        EL7041_0052 {
+        Self {
             txpdo: configuration.pdo_assignment.txpdo_assignment(),
             rxpdo: configuration.pdo_assignment.rxpdo_assignment(),
             is_used: false,
@@ -148,12 +148,10 @@ impl StepperVelocityEL70x1Device<EL7041_0052Port> for EL7041_0052 {
                 }
                 Ok(())
             }
-            _ => {
-                return Err(anyhow!(
-                    "Port {:?} is not supported for stepper velocity",
-                    port
-                ));
-            }
+            _ => Err(anyhow!(
+                "Port {:?} is not supported for stepper velocity",
+                port
+            )),
         }
     }
 
@@ -188,12 +186,10 @@ impl StepperVelocityEL70x1Device<EL7041_0052Port> for EL7041_0052 {
                     torque_reduced: stm_status.torque_reduced,
                 })
             }
-            _ => {
-                return Err(anyhow!(
-                    "Port {:?} is not supported for stepper velocity",
-                    port
-                ));
-            }
+            _ => Err(anyhow!(
+                "Port {:?} is not supported for stepper velocity",
+                port
+            )),
         }
     }
 
@@ -229,12 +225,10 @@ impl StepperVelocityEL70x1Device<EL7041_0052Port> for EL7041_0052 {
                     set_counter: self.counter_wrapper.get_override(),
                 })
             }
-            _ => {
-                return Err(anyhow!(
-                    "Port {:?} is not supported for stepper velocity",
-                    port
-                ));
-            }
+            _ => Err(anyhow!(
+                "Port {:?} is not supported for stepper velocity",
+                port
+            )),
         }
     }
 

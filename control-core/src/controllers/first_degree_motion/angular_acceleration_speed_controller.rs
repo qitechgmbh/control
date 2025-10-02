@@ -53,7 +53,7 @@ impl AngularAccelerationSpeedController {
     pub fn update(&mut self, target_speed: AngularVelocity, t: Instant) -> AngularVelocity {
         let target_speed = target_speed.get::<radian_per_second>();
         let new_speed = self.controller.update(target_speed, t);
-        return AngularVelocity::new::<radian_per_second>(new_speed);
+        AngularVelocity::new::<radian_per_second>(new_speed)
     }
 
     pub fn reset(&mut self, initial_speed: AngularVelocity) {
@@ -73,13 +73,13 @@ impl AngularAccelerationSpeedController {
     pub fn get_min_speed(&self) -> Option<AngularVelocity> {
         self.controller
             .get_min_speed()
-            .map(|s| AngularVelocity::new::<radian_per_second>(s))
+            .map(AngularVelocity::new::<radian_per_second>)
     }
 
     pub fn get_max_speed(&self) -> Option<AngularVelocity> {
         self.controller
             .get_max_speed()
-            .map(|s| AngularVelocity::new::<radian_per_second>(s))
+            .map(AngularVelocity::new::<radian_per_second>)
     }
 
     pub fn set_min_speed(&mut self, min_speed: Option<AngularVelocity>) {

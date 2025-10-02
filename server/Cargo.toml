@@ -4,6 +4,9 @@ version = "0.1.0"
 edition = "2024"
 rust-version = "1.86"
 
+[lints]
+workspace = true
+
 
 [dependencies]
 ethercrab = "0.6"
@@ -13,9 +16,8 @@ control_core_derive = { path = "../control-core-derive" }
 
 uom = { version = "0.36.0", default-features = false, features = ["f64"] }
 serde = "1.0.217"
-anyhow = "1.0.99"
+anyhow = "1.0.100"
 
-open = "5.3.2"
 bitvec = "1.0.1"
 lazy_static = "1.5.0"
 dhat = { version = "0.3.3", optional = true }
@@ -24,18 +26,16 @@ euclid = "0.22.11"
 # concurrency
 smol = "2.0.2"
 tokio = { version = "1.45.1", features = ["rt-multi-thread"] }
-thread-priority = "2.1.0"
-regex = "1.11.2"
+regex = "1.11.3"
 futures = "0.3.31"
 
 # web
 serde_json = "1.0.143"
 socketioxide = { version = "0.17.2", features = ["msgpack"] }
 tower-http = { version = "0.6.6", features = ["cors", "trace", "fs"] }
-axum = { version = "0.8.4", features = ["macros"] }
+axum = { version = "0.8.6", features = ["macros"] }
 
 # serial
-crc = "3.3.0"
 serialport = "4.7.3"
 
 #tracing
@@ -78,7 +78,11 @@ tracing-otel = [
 ]
 mock-machine = []
 io-uring = []
+development-build = []
 
 [profile.release]
 codegen-units = 1
 lto = "fat"
+
+[package.metadata.cargo-machete]
+ignored =  ["tonic"]

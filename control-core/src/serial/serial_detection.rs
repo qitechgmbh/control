@@ -82,15 +82,12 @@ impl<'serialdeviceregistry> SerialDetection<'serialdeviceregistry> {
         let mut usb_ports: Vec<(String, UsbPortInfo)> = Vec::new();
 
         for port in port_list {
-            match &port.port_type {
-                SerialPortType::UsbPort(usb_info) => {
-                    usb_ports.push((port.port_name.to_string(), usb_info.clone()));
-                }
-                _ => {}
+            if let SerialPortType::UsbPort(usb_info) = &port.port_type {
+                usb_ports.push((port.port_name.to_string(), usb_info.clone()));
             };
         }
 
-        return usb_ports;
+        usb_ports
     }
 
     pub async fn check_ports(&mut self) -> CheckPortsResult {

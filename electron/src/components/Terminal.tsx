@@ -1,20 +1,32 @@
 import { cva } from "class-variance-authority";
 import React, { useEffect, useRef, useState } from "react";
 import { Icon } from "./Icon";
+import {
+  List,
+  CellMeasurer,
+  CellMeasurerCache,
+  ListRowRenderer,
+  AutoSizer,
+} from "react-virtualized";
+
+// Create cache (outside the component so it persists across renders)
+const cache = new CellMeasurerCache({
+  defaultHeight: 20,
+  fixedWidth: true,
+});
 
 type Props = {
   lines: string[];
-  autoScroll?: boolean; // Optional prop to control if terminal should auto-scroll
-  className?: string; // Optional prop to control terminal height
+  autoScroll?: boolean;
+  className?: string;
   title?: string;
-  exportPrefix?: string; // Optional prefix for exported log files
+  exportPrefix?: string;
 };
 
 const terminalStyle = cva([
   "flex flex-col overflow-hidden rounded-md border border-neutral-700 font-mono text-sm",
 ]);
 
-// Color mapping for ANSI color codes
 const colorMap: Record<string, string> = {
   "30": "text-gray-900",
   "31": "text-red-600",
@@ -32,7 +44,6 @@ const colorMap: Record<string, string> = {
   "95": "text-purple-400",
   "96": "text-cyan-400",
   "97": "text-white",
-  // Background colors
   "40": "bg-gray-900",
   "41": "bg-red-600",
   "42": "bg-green-600",
@@ -43,36 +54,26 @@ const colorMap: Record<string, string> = {
   "47": "bg-gray-200",
 };
 
-// Parse ANSI color codes in text
 const parseColorCodes = (text: string) => {
-  // Split by ANSI escape sequences
-  // eslint-disable-next-line no-control-regex
+  /* eslint-disable-next-line no-control-regex */
   const parts = text.split(/(\x1b\[\d+m)/g);
-
   let currentClass = "";
   const result: { text: string; className: string }[] = [];
-
   for (let i = 0; i < parts.length; i++) {
     const part = parts[i];
-
     if (part.startsWith("\x1b[")) {
-      // This is a color code
-      const code = part.slice(2, -1); // Extract the number from \x1b[XXm
+      const code = part.slice(2, -1);
       currentClass = colorMap[code] || "";
     } else if (part) {
-      // This is text content
       result.push({ text: part, className: currentClass });
     }
   }
-
   return result;
 };
 
-// Function to strip ANSI color codes for plain text copy
-const stripColorCodes = (text: string): string => {
+const stripColorCodes = (text: string): string =>
   // eslint-disable-next-line no-control-regex
-  return text.replace(/\x1b\[\d+m/g, "");
-};
+  text.replace(/\x1b\[\d+m/g, "");
 
 export function Terminal({
   lines,
@@ -81,99 +82,88 @@ export function Terminal({
   title = "Terminal",
   exportPrefix,
 }: Props) {
-  const terminalRef = useRef<HTMLDivElement>(null);
-  const [isScrolledToBottom, setIsScrolledToBottom] = useState(true);
+  const listRef = useRef<List>(null);
   const [copySuccess, setCopySuccess] = useState(false);
   const [exportSuccess, setExportSuccess] = useState(false);
 
-  // Handle scrolling
+  // Auto-scroll to bottom when new lines arrive
   useEffect(() => {
-    const terminal = terminalRef.current;
-    if (!terminal) return;
-
-    // If auto-scroll is enabled and user was at bottom, scroll to bottom when lines change
-    if (autoScroll && isScrolledToBottom) {
-      terminal.scrollTop = terminal.scrollHeight;
+    if (autoScroll && listRef.current) {
+      listRef.current.scrollToRow(lines.length - 1);
     }
-  }, [lines, autoScroll, isScrolledToBottom]);
+  }, [lines, autoScroll]);
 
-  // Handle scroll events to detect if user is at bottom
-  const handleScroll = () => {
-    const terminal = terminalRef.current;
-    if (!terminal) return;
-
-    const isAtBottom =
-      Math.abs(
-        terminal.scrollHeight - terminal.clientHeight - terminal.scrollTop,
-      ) < 10; // Small threshold to account for rounding errors
-
-    setIsScrolledToBottom(isAtBottom);
-  };
-
-  // Handle copy to clipboard
   const handleCopy = async () => {
-    // Strip ANSI color codes and join lines
-    const plainText = lines.map((line) => stripColorCodes(line)).join("\n");
-
+    const plainText = lines.map(stripColorCodes).join("\n");
     try {
       await navigator.clipboard.writeText(plainText);
       setCopySuccess(true);
-
-      // Reset copy success message after 2 seconds
-      setTimeout(() => {
-        setCopySuccess(false);
-      }, 2000);
+      setTimeout(() => setCopySuccess(false), 2000);
     } catch (err) {
       console.error("Failed to copy text: ", err);
     }
   };
 
-  // Handle export to file
   const handleExport = () => {
     if (!exportPrefix) return;
-
-    // Strip ANSI color codes and join lines
-    const plainText = lines.map((line) => stripColorCodes(line)).join("\n");
-
-    // Create timestamp for filename
+    const plainText = lines.map(stripColorCodes).join("\n");
     const timestamp = new Date()
       .toISOString()
       .replace(/[:.]/g, "-")
       .slice(0, -5);
     const filename = `${exportPrefix}_${timestamp}.log`;
-
-    // Create blob and download
     const blob = new Blob([plainText], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
-
-    // Create temporary link element and trigger download
     const link = document.createElement("a");
     link.href = url;
     link.download = filename;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-
-    // Clean up
     URL.revokeObjectURL(url);
-
-    // Show success feedback
     setExportSuccess(true);
-    setTimeout(() => {
-      setExportSuccess(false);
-    }, 2000);
+    setTimeout(() => setExportSuccess(false), 2000);
+  };
+
+  const rowRenderer: ListRowRenderer = ({ index, key, parent, style }) => {
+    const colorParts = parseColorCodes(lines[index] || "");
+
+    return (
+      <CellMeasurer
+        key={key}
+        cache={cache}
+        parent={parent}
+        columnIndex={0}
+        rowIndex={index}
+      >
+        <div
+          style={style}
+          className="bg-black px-2 py-1 whitespace-pre-wrap text-white"
+        >
+          {colorParts.length > 0
+            ? colorParts.map((part, partIndex) => (
+                <span
+                  key={partIndex}
+                  className={part.className || "text-white"}
+                >
+                  {part.text || " "}
+                </span>
+              ))
+            : lines[index] || " "}
+        </div>
+      </CellMeasurer>
+    );
   };
 
   return (
     <div className={terminalStyle({ className })}>
-      {/* Terminal header */}
+      {/* Header */}
       <div className="flex items-center justify-between border-b border-neutral-700 bg-neutral-800 px-4 py-2">
         <div className="text-xs text-neutral-400">{title}</div>
         <div className="flex items-center gap-2">
           <button
             onClick={handleCopy}
             className="flex items-center text-xs text-neutral-400 transition-colors hover:text-neutral-200"
-            title="Copy to clipboard"
           >
             {copySuccess ? (
               <>
@@ -191,7 +181,6 @@ export function Terminal({
             <button
               onClick={handleExport}
               className="flex items-center text-xs text-neutral-400 transition-colors hover:text-neutral-200"
-              title="Export logs to file"
             >
               {exportSuccess ? (
                 <>
@@ -209,62 +198,28 @@ export function Terminal({
         </div>
       </div>
 
-      {/* Terminal content with custom scrollbar styling */}
-      <div
-        ref={terminalRef}
-        onScroll={handleScroll}
-        className={`scrollbar-thin scrollbar-thumb-neutral-600 scrollbar-track-transparent flex-grow overflow-y-auto bg-neutral-900 p-4 text-neutral-300`}
-        style={{
-          scrollbarWidth: "thin",
-          scrollbarColor: "rgb(82 82 91) transparent",
-        }}
-      >
-        <style>{`
-          Add commentMore actions
-          /* For Webkit browsers (Chrome, Safari) */
-          .scrollbar-thin::-webkit-scrollbar {
-            width: 6px;
-          }
-
-          .scrollbar-thin::-webkit-scrollbar-track {
-            background: transparent;
-          }
-
-          .scrollbar-thin::-webkit-scrollbar-thumb {
-            background-color: rgb(82 82 91);
-            border-radius: 3px;
-          }
-
-          /* For Firefox */
-          .scrollbar-thin {
-            scrollbar-width: thin;
-            scrollbar-color: rgb(82 82 91) transparent;
-          }
-        `}</style>
-        {lines.map((line, index) => {
-          const colorParts = parseColorCodes(line);
-
-          return (
-            <div key={index} className="whitespace-pre-wrap">
-              {colorParts.length > 0
-                ? colorParts.map((part, partIndex) => (
-                    <span key={partIndex} className={part.className}>
-                      {part.text || " "}
-                    </span>
-                  ))
-                : line || " "}
-            </div>
-          );
-        })}
+      {/* Virtualized List */}
+      <div className="flex-grow bg-black text-white">
+        <AutoSizer>
+          {({ width, height }) => (
+            <List
+              ref={listRef}
+              width={width}
+              height={height}
+              deferredMeasurementCache={cache}
+              rowHeight={cache.rowHeight}
+              rowCount={lines.length}
+              rowRenderer={rowRenderer}
+              overscanRowCount={5}
+            />
+          )}
+        </AutoSizer>
       </div>
 
-      {/* Status bar */}
+      {/* Footer */}
       <div className="flex items-center justify-between bg-neutral-800 px-4 py-1 text-xs text-neutral-400">
         <div>{lines.length} lines</div>
-        <div>
-          {isScrolledToBottom ? "At bottom" : "Scrolled up"} |
-          {autoScroll ? " Auto-scroll enabled" : " Auto-scroll disabled"}
-        </div>
+        <div>{autoScroll ? "Auto-scroll enabled" : "Auto-scroll disabled"}</div>
       </div>
     </div>
   );

@@ -10,6 +10,12 @@ pub struct MachineRegistry {
     type_map: HashMap<TypeId, (MachineIdentification, MachineNewClosure)>,
 }
 
+impl Default for MachineRegistry {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MachineRegistry {
     pub fn new() -> Self {
         Self {
@@ -24,7 +30,7 @@ impl MachineRegistry {
         self.type_map.insert(
             TypeId::of::<T>(),
             (
-                machine_identficiation,
+                machine_identficiation.clone(),
                 // create a machine construction closure
                 Box::new(|machine_new_params| {
                     Ok(Arc::new(Mutex::new(T::new(machine_new_params)?)))

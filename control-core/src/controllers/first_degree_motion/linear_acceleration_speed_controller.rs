@@ -48,7 +48,7 @@ impl LinearAccelerationLimitingController {
     pub fn update(&mut self, target_speed: Velocity, t: Instant) -> Velocity {
         let target_speed = target_speed.get::<meter_per_second>();
         let new_speed = self.controller.update(target_speed, t);
-        return Velocity::new::<meter_per_second>(new_speed);
+        Velocity::new::<meter_per_second>(new_speed)
     }
     pub fn reset(&mut self, initial_speed: Velocity) {
         let initial_speed = initial_speed.get::<meter_per_second>();
@@ -65,12 +65,12 @@ impl LinearAccelerationLimitingController {
     pub fn get_min_speed(&self) -> Option<Velocity> {
         self.controller
             .get_min_speed()
-            .map(|s| Velocity::new::<meter_per_second>(s))
+            .map(Velocity::new::<meter_per_second>)
     }
     pub fn get_max_speed(&self) -> Option<Velocity> {
         self.controller
             .get_max_speed()
-            .map(|s| Velocity::new::<meter_per_second>(s))
+            .map(Velocity::new::<meter_per_second>)
     }
     pub fn set_min_speed(&mut self, min_speed: Option<Velocity>) {
         self.controller

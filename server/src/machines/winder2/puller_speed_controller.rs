@@ -55,7 +55,7 @@ impl PullerSpeedController {
         }
     }
 
-    pub fn set_enabled(&mut self, enabled: bool) {
+    pub const fn set_enabled(&mut self, enabled: bool) {
         self.enabled = enabled;
     }
 
@@ -67,11 +67,11 @@ impl PullerSpeedController {
         self.target_diameter = target;
     }
 
-    pub fn set_regulation_mode(&mut self, regulation: PullerRegulationMode) {
+    pub const fn set_regulation_mode(&mut self, regulation: PullerRegulationMode) {
         self.regulation_mode = regulation;
     }
 
-    pub fn set_forward(&mut self, forward: bool) {
+    pub const fn set_forward(&mut self, forward: bool) {
         self.forward = forward;
     }
 

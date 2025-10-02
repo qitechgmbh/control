@@ -25,7 +25,7 @@ impl std::fmt::Display for PanicDetailsLocation {
 
 impl From<&std::panic::Location<'_>> for PanicDetailsLocation {
     fn from(location: &std::panic::Location<'_>) -> Self {
-        PanicDetailsLocation {
+        Self {
             file: location.file().to_string(),
             line: location.line(),
             column: location.column(),
@@ -74,7 +74,7 @@ impl PanicDetails {
         let mut result = Vec::new();
         let mut highlight_next = false;
 
-        for (_, line) in lines.iter().enumerate() {
+        for line in lines.iter() {
             if let Some(captures) = line_regex.captures(line) {
                 let line_num = &captures[1];
                 let content = &captures[2];
@@ -123,15 +123,13 @@ pub fn send_panic(thread_panic_tx: Sender<PanicDetails>) {
 
         let message = if let Some(s) = panic_info.payload().downcast_ref::<&str>() {
             Some(s.to_string())
-        } else if let Some(s) = panic_info.payload().downcast_ref::<String>() {
-            Some(s.clone())
         } else {
-            None
+            panic_info.payload().downcast_ref::<String>().cloned()
         };
 
         let panic_details = PanicDetails {
-            thread_name: thread_name,
-            message: message,
+            thread_name,
+            message,
             location: panic_info.location().map(|loc| loc.into()),
             backtrace: backtrace.to_string(),
         };
@@ -148,7 +146,7 @@ pub fn init_panic() -> Sender<PanicDetails> {
     send_panic(thread_panic_tx.clone());
 
     // Start panic monitoring thread
-    let thread_panic_rx_clone = thread_panic_rx.clone();
+    let thread_panic_rx_clone = thread_panic_rx;
     std::thread::Builder::new()
         .name("panic".to_string())
         .spawn(move || {

@@ -28,12 +28,10 @@ impl TensionArm {
         // get the normalized value from the analog input
         let value = self.analog_input.get_physical();
 
-        let volts = match value {
+        match value {
             AnalogInputValue::Potential(v) => v.get::<volt>(),
             _ => panic!("Expected a potential value"),
-        };
-
-        volts
+        }
     }
 
     fn raw_angle(&self) -> Angle {

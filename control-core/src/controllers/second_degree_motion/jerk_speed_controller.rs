@@ -88,7 +88,7 @@ impl JerkSpeedController {
         )
         .expect("Failed to create AccelerationPositionController");
 
-        JerkSpeedController { base_controller }
+        Self { base_controller }
     }
 
     /// Create a new speed controller with simple symmetric limits
@@ -183,7 +183,7 @@ impl JerkSpeedController {
     ///
     /// # Returns
     /// Current speed as a floating-point value
-    pub fn get_speed(&self) -> f64 {
+    pub const fn get_speed(&self) -> f64 {
         self.base_controller.get_position()
     }
 
@@ -193,7 +193,7 @@ impl JerkSpeedController {
     ///
     /// # Returns
     /// Current acceleration as a floating-point value
-    pub fn get_acceleration(&self) -> f64 {
+    pub const fn get_acceleration(&self) -> f64 {
         self.base_controller.get_speed()
     }
 
@@ -203,7 +203,7 @@ impl JerkSpeedController {
     ///
     /// # Returns
     /// Current jerk as a floating-point value
-    pub fn get_jerk(&self) -> f64 {
+    pub const fn get_jerk(&self) -> f64 {
         self.base_controller.get_acceleration()
     }
 
@@ -213,7 +213,7 @@ impl JerkSpeedController {
     ///
     /// # Returns
     /// Target speed as a floating-point value
-    pub fn get_target_speed(&self) -> f64 {
+    pub const fn get_target_speed(&self) -> f64 {
         self.base_controller.get_target_position()
     }
 
@@ -223,7 +223,7 @@ impl JerkSpeedController {
     ///
     /// # Returns
     /// Minimum speed limit as an Option<f64>, None if no limit is set
-    pub fn get_min_speed(&self) -> Option<f64> {
+    pub const fn get_min_speed(&self) -> Option<f64> {
         self.base_controller.get_min_position()
     }
 
@@ -233,7 +233,7 @@ impl JerkSpeedController {
     ///
     /// # Returns
     /// Maximum speed limit as an Option<f64>, None if no limit is set
-    pub fn get_max_speed(&self) -> Option<f64> {
+    pub const fn get_max_speed(&self) -> Option<f64> {
         self.base_controller.get_max_position()
     }
 

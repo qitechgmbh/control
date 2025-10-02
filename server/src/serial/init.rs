@@ -10,7 +10,7 @@ pub fn init_serial(
     thread_panic_tx: Sender<PanicDetails>,
     app_state: Arc<AppState>,
 ) -> Result<(), anyhow::Error> {
-    let thread_panic_tx_clone = thread_panic_tx.clone();
+    let thread_panic_tx_clone = thread_panic_tx;
 
     let app_state_clone = app_state.clone();
 
@@ -61,15 +61,14 @@ pub fn init_serial(
 
                             // Notify client via socketio
                             let app_state_event = app_state.clone();
-                            let _ = smol::block_on(async {
+                            smol::block_on(async {
                                 let main_namespace = &mut app_state_event
                                     .socketio_setup
                                     .namespaces
                                     .write()
                                     .await
                                     .main_namespace;
-                                let event =
-                                    MachinesEventBuilder().build(app_state_event.clone()).await;
+                                let event = MachinesEventBuilder().build(app_state_event.clone());
                                 main_namespace.emit(MainNamespaceEvents::MachinesEvent(event));
                             });
                         }

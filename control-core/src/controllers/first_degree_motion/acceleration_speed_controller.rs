@@ -22,7 +22,7 @@ pub struct AccelerationSpeedController {
 }
 
 impl AccelerationSpeedController {
-    pub fn new(
+    pub const fn new(
         min_speed: Option<f64>,
         max_speed: Option<f64>,
         min_acceleration: f64,
@@ -98,16 +98,16 @@ impl AccelerationSpeedController {
         new_speed
     }
 
-    pub fn reset(&mut self, initial_speed: f64) {
+    pub const fn reset(&mut self, initial_speed: f64) {
         self.last_speed = initial_speed;
         self.last_t = None; // Reset the last update time
     }
 
-    pub fn set_max_acceleration(&mut self, acceleration: f64) {
+    pub const fn set_max_acceleration(&mut self, acceleration: f64) {
         self.max_acceleration = acceleration;
     }
 
-    fn apply_speed_limits(&self, speed: f64) -> f64 {
+    const fn apply_speed_limits(&self, speed: f64) -> f64 {
         let mut limited_speed = speed;
 
         if let Some(min) = self.min_speed {
@@ -121,23 +121,23 @@ impl AccelerationSpeedController {
         limited_speed
     }
 
-    pub fn get_min_speed(&self) -> Option<f64> {
+    pub const fn get_min_speed(&self) -> Option<f64> {
         self.min_speed
     }
 
-    pub fn get_max_speed(&self) -> Option<f64> {
+    pub const fn get_max_speed(&self) -> Option<f64> {
         self.max_speed
     }
 
-    pub fn set_min_speed(&mut self, min_speed: Option<f64>) {
+    pub const fn set_min_speed(&mut self, min_speed: Option<f64>) {
         self.min_speed = min_speed;
     }
 
-    pub fn set_max_speed(&mut self, max_speed: Option<f64>) {
+    pub const fn set_max_speed(&mut self, max_speed: Option<f64>) {
         self.max_speed = max_speed;
     }
 
-    pub fn set_min_acceleration(&mut self, deceleration: f64) {
+    pub const fn set_min_acceleration(&mut self, deceleration: f64) {
         self.min_acceleration = deceleration;
     }
 }

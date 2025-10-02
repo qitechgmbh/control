@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use dump::dump_eeprom;
-use ethercrab::{MainDevice, MainDeviceConfig, PduStorage, Timeouts, std::ethercat_now};
+use ethercrab::{MainDevice, MainDeviceConfig, PduStorage, std::ethercat_now};
 use futures::executor::block_on;
 use read::read_eeprom;
 use restore::restore_eeoprom;
@@ -36,21 +36,19 @@ async fn main() {
     // Setup Maindevice
     let maindevice = Arc::new(MainDevice::new(
         pdu_loop,
-        Timeouts {
-            ..Default::default()
-        },
+        Default::default(),
         MainDeviceConfig::default(),
     ));
 
     // Setup TX/RX task
     #[cfg(not(target_os = "windows"))]
-    tokio::spawn(ethercrab::std::tx_rx_task(&interface, tx, rx).expect("spawn TX/RX task"));
+    tokio::spawn(ethercrab::std::tx_rx_task(interface, tx, rx).expect("spawn TX/RX task"));
 
     // Init ethercat
     let group = maindevice
         .init_single_group::<MAX_SUBDEVICES, PDI_LEN>(ethercat_now)
         .await
-        .expect(format!("Failed to initalize group").as_str());
+        .unwrap_or_else(|_| panic!("{}", "Failed to initalize group".to_string()));
 
     match matches.subcommand() {
         Some(("ls", _)) => ls::ls(group, &maindevice),

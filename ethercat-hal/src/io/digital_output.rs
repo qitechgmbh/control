@@ -8,7 +8,7 @@ use smol::lock::RwLock;
 /// Writes digital values (true or false) to the device.
 pub struct DigitalOutput {
     /// Write a value to the digital output
-    set_output: Box<dyn Fn(DigitalOutputOutput) -> () + Send + Sync>,
+    set_output: Box<dyn Fn(DigitalOutputOutput) + Send + Sync>,
 
     /// Read the state of the digital output
     get_output: Box<dyn Fn() -> DigitalOutputOutput + Send + Sync>,
@@ -21,10 +21,7 @@ impl fmt::Debug for DigitalOutput {
 }
 
 impl DigitalOutput {
-    pub fn new<PORT>(
-        device: Arc<RwLock<dyn DigitalOutputDevice<PORT>>>,
-        port: PORT,
-    ) -> DigitalOutput
+    pub fn new<PORT>(device: Arc<RwLock<dyn DigitalOutputDevice<PORT>>>, port: PORT) -> Self
     where
         PORT: Clone + Send + Sync + 'static,
     {
@@ -37,14 +34,14 @@ impl DigitalOutput {
         });
 
         // build sync get closure
-        let port2 = port.clone();
+        let port2 = port;
         let device2 = device.clone();
         let get_output = Box::new(move || -> DigitalOutputOutput {
             let device = block_on(device2.read());
             device.get_output(port2.clone())
         });
 
-        DigitalOutput {
+        Self {
             set_output,
             get_output,
         }
@@ -70,7 +67,7 @@ pub struct DigitalOutputOutput(pub bool);
 
 impl From<bool> for DigitalOutputOutput {
     fn from(value: bool) -> Self {
-        DigitalOutputOutput(value)
+        Self(value)
     }
 }
 

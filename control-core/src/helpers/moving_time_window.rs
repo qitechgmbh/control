@@ -11,55 +11,39 @@ pub trait DivideByCount {
 
 impl DivideByCount for f64 {
     fn divide_by_count(self, count: usize) -> Self {
-        self / (count as f64)
+        self / (count as Self)
     }
 }
 
 impl DivideByCount for f32 {
     fn divide_by_count(self, count: usize) -> Self {
-        self / (count as f32)
+        self / (count as Self)
     }
 }
 
 impl DivideByCount for i32 {
     fn divide_by_count(self, count: usize) -> Self {
-        self / (count as i32)
+        self / (count as Self)
     }
 }
 
 impl DivideByCount for i64 {
     fn divide_by_count(self, count: usize) -> Self {
-        self / (count as i64)
+        self / (count as Self)
     }
 }
 
 impl DivideByCount for u32 {
     fn divide_by_count(self, count: usize) -> Self {
-        self / (count as u32)
+        self / (count as Self)
     }
 }
 
 impl DivideByCount for u64 {
     fn divide_by_count(self, count: usize) -> Self {
-        self / (count as u64)
+        self / (count as Self)
     }
 }
-
-/// A generic moving time window that works with numeric types.
-///
-/// # Examples
-///
-/// ```rust
-/// use std::time::{Duration, Instant};
-/// use control_core::helpers::moving_time_window::MovingTimeWindow;
-///
-/// let mut window = MovingTimeWindow::new(Duration::from_secs(10), 100);
-/// window.update(1.5, Instant::now());
-/// window.update(2.5, Instant::now());
-///
-/// let average = window.average();
-/// println!("Average: {}", average);
-/// ```
 
 // Type aliases for common use cases
 pub type F64Window = MovingTimeWindow<f64>;
@@ -194,15 +178,14 @@ where
             .samples
             .iter()
             .map(|(v, _)| *v)
-            .fold(None, |acc, val| match acc {
-                None => Some(val),
-                Some(current_max) => {
+            .fold(None, |acc, val| {
+                acc.map_or(Some(val), |current_max| {
                     if val > current_max {
                         Some(val)
                     } else {
                         Some(current_max)
                     }
-                }
+                })
             })
             .unwrap_or_default();
 
@@ -229,15 +212,14 @@ where
             .samples
             .iter()
             .map(|(v, _)| *v)
-            .fold(None, |acc, val| match acc {
-                None => Some(val),
-                Some(current_min) => {
+            .fold(None, |acc, val| {
+                acc.map_or(Some(val), |current_min| {
                     if val < current_min {
                         Some(val)
                     } else {
                         Some(current_min)
                     }
-                }
+                })
             })
             .unwrap_or_default();
 

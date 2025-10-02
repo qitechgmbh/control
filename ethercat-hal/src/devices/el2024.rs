@@ -36,16 +36,16 @@ impl DigitalOutputDevice<EL2024Port> for EL2024 {
         let expect_text = "All channels should be Some(_)";
         match port {
             EL2024Port::DO1 => {
-                self.rxpdo.channel1.as_mut().expect(&expect_text).value = value.into()
+                self.rxpdo.channel1.as_mut().expect(expect_text).value = value.into()
             }
             EL2024Port::DO2 => {
-                self.rxpdo.channel2.as_mut().expect(&expect_text).value = value.into()
+                self.rxpdo.channel2.as_mut().expect(expect_text).value = value.into()
             }
             EL2024Port::DO3 => {
-                self.rxpdo.channel3.as_mut().expect(&expect_text).value = value.into()
+                self.rxpdo.channel3.as_mut().expect(expect_text).value = value.into()
             }
             EL2024Port::DO4 => {
-                self.rxpdo.channel4.as_mut().expect(&expect_text).value = value.into()
+                self.rxpdo.channel4.as_mut().expect(expect_text).value = value.into()
             }
         }
     }
@@ -53,10 +53,10 @@ impl DigitalOutputDevice<EL2024Port> for EL2024 {
     fn get_output(&self, port: EL2024Port) -> DigitalOutputOutput {
         let expect_text = "All channels should be Some(_)";
         DigitalOutputOutput(match port {
-            EL2024Port::DO1 => self.rxpdo.channel1.as_ref().expect(&expect_text).value,
-            EL2024Port::DO2 => self.rxpdo.channel2.as_ref().expect(&expect_text).value,
-            EL2024Port::DO3 => self.rxpdo.channel3.as_ref().expect(&expect_text).value,
-            EL2024Port::DO4 => self.rxpdo.channel4.as_ref().expect(&expect_text).value,
+            EL2024Port::DO1 => self.rxpdo.channel1.as_ref().expect(expect_text).value,
+            EL2024Port::DO2 => self.rxpdo.channel2.as_ref().expect(expect_text).value,
+            EL2024Port::DO3 => self.rxpdo.channel3.as_ref().expect(expect_text).value,
+            EL2024Port::DO4 => self.rxpdo.channel4.as_ref().expect(expect_text).value,
         })
     }
 }

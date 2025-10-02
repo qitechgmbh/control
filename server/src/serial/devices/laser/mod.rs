@@ -42,6 +42,8 @@ enum LaserModbusRequsts {
 
 struct LaserDiameterResponse {
     pub diameter: Length,
+    pub x_axis: Option<Length>,
+    pub y_axis: Option<Length>,
 }
 
 impl TryFrom<ModbusResponse> for LaserDiameterResponse {
@@ -55,8 +57,22 @@ impl TryFrom<ModbusResponse> for LaserDiameterResponse {
             ));
         }
         let diameter = u16::from_be_bytes([value.data[1], value.data[2]]) as f64 / 1000.0;
-        Ok(LaserDiameterResponse {
+        // Depending on if its a 2 axis Laser we get more values out of the data
+        let (x_axis, y_axis) = if value.data.len() >= 7 {
+            let x = u16::from_be_bytes([value.data[3], value.data[4]]) as f64 / 1000.0;
+            let y = u16::from_be_bytes([value.data[5], value.data[6]]) as f64 / 1000.0;
+            (
+                Some(Length::new::<uom::si::length::millimeter>(x)),
+                Some(Length::new::<uom::si::length::millimeter>(y)),
+            )
+        } else {
+            (None, None)
+        };
+
+        Ok(Self {
             diameter: Length::new::<uom::si::length::millimeter>(diameter),
+            x_axis,
+            y_axis,
         })
     }
 }
@@ -64,7 +80,7 @@ impl TryFrom<ModbusResponse> for LaserDiameterResponse {
 impl From<LaserModbusRequsts> for modbus::ModbusRequest {
     fn from(request: LaserModbusRequsts) -> Self {
         match request {
-            LaserModbusRequsts::ReadDiameter => modbus::ModbusRequest {
+            LaserModbusRequsts::ReadDiameter => Self {
                 slave_id: 1,
                 function_code: modbus::ModbusFunctionCode::ReadInputRegister,
                 data: vec![(0 >> 8) as u8, (0 & 0xFF) as u8],
@@ -76,9 +92,11 @@ impl From<LaserModbusRequsts> for modbus::ModbusRequest {
 impl SerialDeviceNew for Laser {
     fn new_serial(
         params: &SerialDeviceNewParams,
-    ) -> Result<(DeviceIdentification, Arc<RwLock<Laser>>), anyhow::Error> {
+    ) -> Result<(DeviceIdentification, Arc<RwLock<Self>>), anyhow::Error> {
         let laser_data = Some(LaserData {
             diameter: Length::new::<uom::si::length::millimeter>(0.0),
+            x_axis: None,
+            y_axis: None,
             last_timestamp: Instant::now(),
         });
         let hash = hash_djb2(params.path.as_bytes());
@@ -90,7 +108,7 @@ impl SerialDeviceNew for Laser {
                         vendor: VENDOR_QITECH,
                         machine: MACHINE_LASER_V1,
                     },
-                    serial: serial,
+                    serial,
                 },
                 role: 0,
             }),
@@ -102,7 +120,7 @@ impl SerialDeviceNew for Laser {
         };
 
         // Create a new Laser instance
-        let _self = Arc::new(RwLock::new(Laser {
+        let _self = Arc::new(RwLock::new(Self {
             data: laser_data,
             path: params.path.clone(),
         }));
@@ -115,7 +133,7 @@ impl SerialDeviceNew for Laser {
             .name("laser".to_owned())
             .spawn(move || {
                 send_serial_device_panic(path.clone(), device_thread_panic_tx.clone());
-                let _ = smol::block_on(async {
+                smol::block_on(async {
                     let process_result = Self::process(_self_clone).await;
 
                     let removal = match process_result {
@@ -138,6 +156,8 @@ impl SerialDeviceNew for Laser {
 #[derive(Debug, Clone)]
 pub struct LaserData {
     pub diameter: Length,
+    pub x_axis: Option<Length>,
+    pub y_axis: Option<Length>,
     pub last_timestamp: Instant,
 }
 
@@ -145,6 +165,20 @@ impl Laser {
     pub async fn get_diameter(&self) -> Result<Length, String> {
         match &self.data {
             Some(data) => Ok(data.diameter),
+            None => Err("No data from Laser".to_string()),
+        }
+    }
+
+    pub async fn get_x(&self) -> Result<Option<Length>, String> {
+        match &self.data {
+            Some(data) => Ok(data.x_axis),
+            None => Err("No data from Laser".to_string()),
+        }
+    }
+
+    pub async fn get_y(&self) -> Result<Option<Length>, String> {
+        match &self.data {
+            Some(data) => Ok(data.y_axis),
             None => Err("No data from Laser".to_string()),
         }
     }
@@ -204,6 +238,8 @@ impl Laser {
                 let mut self_guard = _self.write().await;
                 self_guard.data = Some(LaserData {
                     diameter: diameter_response.diameter,
+                    x_axis: diameter_response.x_axis,
+                    y_axis: diameter_response.y_axis,
                     last_timestamp: Instant::now(),
                 });
             }

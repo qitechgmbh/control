@@ -30,7 +30,7 @@ impl ResponseUtil {
             Ok(json) => json,
             Err(e) => {
                 tracing::error!("Failed to serialize response data: {}", e);
-                return ResponseUtil::error("Failed to serialize response data");
+                return Self::error("Failed to serialize response data");
             }
         };
 
@@ -46,7 +46,7 @@ impl ResponseUtil {
             Ok(json) => json,
             Err(e) => {
                 tracing::error!("Failed to serialize not found message: {}", e);
-                return ResponseUtil::error("Failed to serialize not found message");
+                return Self::error("Failed to serialize not found message");
             }
         };
         Response::builder()

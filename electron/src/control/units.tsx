@@ -31,6 +31,10 @@ export function getUnitIcon(unit: Unit): IconName {
       return "lu:Zap";
     case "A":
       return "lu:Zap";
+    case "kWh":
+      return "lu:BatteryFull";
+    case "l/min":
+      return "lu:Waves";
     default:
       return "lu:ChartNoAxesColumn";
   }
@@ -64,6 +68,10 @@ export function renderUnitSymbol(unit: Unit | undefined): string {
       return "V";
     case "A":
       return "A";
+    case "kWh":
+      return "kWh";
+    case "l/min":
+      return "l/min";
     default:
       return "";
   }
@@ -119,6 +127,10 @@ export function renderUnitSymbolLong(unit: Unit): string {
       return "volts";
     case "A":
       return "amperes";
+    case "kWh":
+      return "kilowatt-hours";
+    case "l/min":
+      return "liters/minute";
     default:
       return "";
   }
@@ -138,6 +150,8 @@ export const units = [
   "W",
   "V",
   "A",
+  "kWh",
+  "l/min",
 ] as const;
 
 export type Unit = (typeof units)[number];
