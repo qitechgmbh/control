@@ -1,4 +1,4 @@
-use std::{thread::sleep, time::Duration};
+/*use std::{thread::sleep, time::Duration};
 
 pub fn init_jemalloc_stats() {
     std::thread::Builder::new()
@@ -62,3 +62,4 @@ fn format_bytes(bytes: i64) -> String {
         .rev()
         .collect::<String>()
 }
+*/

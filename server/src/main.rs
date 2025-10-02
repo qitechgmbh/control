@@ -1,10 +1,3 @@
-#[cfg(all(not(target_env = "msvc"), not(feature = "dhat-heap")))]
-use tikv_jemallocator::Jemalloc;
-
-#[cfg(all(not(target_env = "msvc"), not(feature = "dhat-heap")))]
-#[global_allocator]
-static GLOBAL: Jemalloc = Jemalloc;
-
 #[cfg(feature = "dhat-heap")]
 #[global_allocator]
 static ALLOC: dhat::Alloc = dhat::Alloc;
@@ -19,9 +12,6 @@ use r#loop::init_loop;
 use rest::init::init_api;
 #[cfg(not(feature = "mock-machine"))]
 use serial::init::init_serial;
-
-#[cfg(all(not(target_env = "msvc"), not(feature = "dhat-heap")))]
-use jemalloc_stats::init_jemalloc_stats;
 
 use crate::panic::init_panic;
 use crate::socketio::queue::init_socketio_queue;
@@ -54,9 +44,6 @@ fn main() {
     // } else {
     //     tracing::info!("[{}::main] Memory locked successfully", module_path!());
     // }
-
-    #[cfg(all(not(target_env = "msvc"), not(feature = "dhat-heap")))]
-    init_jemalloc_stats();
 
     let app_state = Arc::new(AppState::new());
 
