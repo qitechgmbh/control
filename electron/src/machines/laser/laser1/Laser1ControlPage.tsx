@@ -1,6 +1,6 @@
 import { ControlCard } from "@/control/ControlCard";
 import { Page } from "@/components/Page";
-import React from "react";
+import React, { useEffect } from "react";
 import { ControlGrid } from "@/control/ControlGrid";
 import { TimeSeriesValueNumeric } from "@/control/TimeSeriesValue";
 
@@ -10,6 +10,7 @@ import { Label } from "@/control/Label";
 import { useLaser1 } from "./useLaser1";
 
 import { DiameterVisualisation } from "../DiameterVisualisation";
+import { toast } from "sonner";
 
 export function Laser1ControlPage() {
   const {
@@ -28,6 +29,29 @@ export function Laser1ControlPage() {
   const targetDiameter = state?.laser_state?.target_diameter ?? 0;
   const lowerTolerance = state?.laser_state?.lower_tolerance ?? 0;
   const higherTolerance = state?.laser_state?.higher_tolerance ?? 0;
+
+  useEffect(() => {
+    if (state?.laser_state?.in_tolerance === false) {
+      const toastId = toast(
+        <div className="bg-red-500 text-white p-4 rounded-lg shadow-lg w-80 flex flex-col gap-1">
+          <strong>Warning!</strong>
+          <span>Diameter out of tolerance!</span>
+          <button
+            className="self-end text-white font-bold mt-2 hover:text-gray-200"
+            onClick={() => toast.dismiss(toastId)}
+          >
+            ×
+          </button>
+        </div>,
+        {
+          duration: Infinity,
+          position: "top-center",
+          style: { background: "transparent", padding: 0, boxShadow: "none" },
+        }
+      );
+    }
+  }, [state?.laser_state?.in_tolerance]);
+
   return (
     <Page>
       <ControlGrid columns={2}>
