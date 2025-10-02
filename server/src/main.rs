@@ -1,10 +1,3 @@
-#[cfg(all(not(target_env = "msvc"), not(feature = "dhat-heap")))]
-use tikv_jemallocator::Jemalloc;
-
-#[cfg(all(not(target_env = "msvc"), not(feature = "dhat-heap")))]
-#[global_allocator]
-static GLOBAL: Jemalloc = Jemalloc;
-
 #[cfg(feature = "dhat-heap")]
 #[global_allocator]
 static ALLOC: dhat::Alloc = dhat::Alloc;
@@ -19,11 +12,6 @@ use rest::init::init_api;
 #[cfg(not(feature = "mock-machine"))]
 use serial::init::init_serial;
 
-#[cfg(all(not(target_env = "msvc"), not(feature = "dhat-heap")))]
-use jemalloc_stats::init_jemalloc_stats;
-
-#[cfg(not(feature = "mock-machine"))]
-use crate::ethercat::init::init_ethercat;
 use crate::panic::init_panic;
 use crate::socketio::queue::init_socketio_queue;
 
@@ -40,24 +28,13 @@ pub mod rest;
 pub mod serial;
 pub mod socketio;
 
-#[cfg(all(not(target_env = "msvc"), not(feature = "dhat-heap")))]
-pub mod jemalloc_stats;
+use crate::ethercat::init::init_ethercat;
 
 fn main() {
     // Initialize panic handling
     let thread_panic_tx = init_panic();
     logging::init_tracing();
     tracing::info!("Tracing initialized successfully");
-
-    // lock memory (not working thus commented out)
-    // if let Err(e) = lock_memory() {
-    //     tracing::error!("[{}::main] Failed to lock memory: {:?}", module_path!(), e);
-    // } else {
-    //     tracing::info!("[{}::main] Memory locked successfully", module_path!());
-    // }
-
-    #[cfg(all(not(target_env = "msvc"), not(feature = "dhat-heap")))]
-    init_jemalloc_stats();
 
     let app_state = Arc::new(AppState::new());
 

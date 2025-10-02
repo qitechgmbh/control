@@ -1,4 +1,4 @@
-use uom::si::angle::radian;
+use uom::si::{angle::radian, f64::Angle};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct AngleConverter {
@@ -63,7 +63,7 @@ impl AngleConverter {
     }
 
     /// Convert angle from mathematical system to this system (f32)
-    pub fn degrees_encode(&self, math_angle_degrees: f32) -> f32 {
+    pub fn degrees_encode(&self, math_angle_degrees: f64) -> f64 {
         let normalized_input = self.normalize_angle(math_angle_degrees);
 
         let mut result = normalized_input;
@@ -85,7 +85,7 @@ impl AngleConverter {
     }
 
     /// Convert angle from this system to mathematical system (f32)
-    pub fn degrees_decode(&self, system_angle_degrees: f32) -> f32 {
+    pub fn degrees_decode(&self, system_angle_degrees: f64) -> f64 {
         let normalized_input = self.normalize_angle(system_angle_degrees);
 
         let mut result = normalized_input;
@@ -107,14 +107,14 @@ impl AngleConverter {
     }
 
     /// Convert angle in radians from mathematical system to this system (f32)
-    pub fn radians_encode(&self, math_angle_radians: f32) -> f32 {
+    pub fn radians_encode(&self, math_angle_radians: f64) -> f64 {
         let degrees = math_angle_radians.to_degrees();
         let converted_degrees = self.degrees_encode(degrees);
         converted_degrees.to_radians()
     }
 
     /// Convert angle in radians from this system to mathematical system (f32)
-    pub fn radians_decode(&self, system_angle_radians: f32) -> f32 {
+    pub fn radians_decode(&self, system_angle_radians: f64) -> f64 {
         let degrees = system_angle_radians.to_degrees();
         let converted_degrees = self.degrees_decode(degrees);
         converted_degrees.to_radians()
@@ -179,7 +179,7 @@ impl AngleConverter {
     }
 
     /// Normalize angle to [0, 360) range (f32)
-    fn normalize_angle(&self, angle: f32) -> f32 {
+    fn normalize_angle(&self, angle: f64) -> f64 {
         let mut normalized = angle % 360.0;
         if normalized < 0.0 {
             normalized += 360.0;
@@ -207,30 +207,12 @@ impl AngleConverterUom {
         Self { angle_converter }
     }
 
-    pub fn encode(&self, angle: uom::si::f32::Angle) -> uom::si::f32::Angle {
-        uom::si::f32::Angle::new::<radian>(
-            self.angle_converter.radians_encode(angle.get::<radian>()),
-        )
+    pub fn encode(&self, angle: Angle) -> Angle {
+        Angle::new::<radian>(self.angle_converter.radians_encode(angle.get::<radian>()))
     }
 
-    pub fn decode(&self, angle: uom::si::f32::Angle) -> uom::si::f32::Angle {
-        uom::si::f32::Angle::new::<radian>(
-            self.angle_converter.radians_decode(angle.get::<radian>()),
-        )
-    }
-
-    pub fn encode_f64(&self, angle: uom::si::f64::Angle) -> uom::si::f64::Angle {
-        uom::si::f64::Angle::new::<radian>(
-            self.angle_converter
-                .radians_encode_f64(angle.get::<radian>()),
-        )
-    }
-
-    pub fn decode_f64(&self, angle: uom::si::f64::Angle) -> uom::si::f64::Angle {
-        uom::si::f64::Angle::new::<radian>(
-            self.angle_converter
-                .radians_decode_f64(angle.get::<radian>()),
-        )
+    pub fn decode(&self, angle: Angle) -> Angle {
+        Angle::new::<radian>(self.angle_converter.radians_decode(angle.get::<radian>()))
     }
 }
 
@@ -297,8 +279,8 @@ mod tests {
         let converter = AngleConverter::screen();
 
         // Test radians_encode
-        let result = converter.radians_encode(PI / 2.0); // 90° in radians
-        let expected = 270.0 * PI / 180.0; // 270° in radians
+        let result = converter.radians_encode(PI as f64 / 2.0) as f64; // 90° in radians
+        let expected: f64 = 270.0f64 * PI as f64 / 180.0f64; // 270° in radians
         assert!((result - expected).abs() < 1e-6);
     }
 
@@ -306,10 +288,10 @@ mod tests {
     fn test_roundtrip_conversion() {
         let converter = AngleConverter::new(true, false, true); // X-flip + CW
 
-        let original = 75.0_f32;
+        let original = 75.0_f64;
         let converted = converter.degrees_encode(original);
         let roundtrip = converter.degrees_decode(converted);
 
-        assert!((original - roundtrip).abs() < 1e-6);
+        assert!((original - roundtrip as f64).abs() < 1e-6);
     }
 }
