@@ -427,7 +427,8 @@ The **padding** parameter creates a safety margin that prevents the filament fro
 - This prevents the filament from overlapping or winding beyond the spool edges
 
 **Example:**
-- Outer limit: 90mm, Inner limit: 22mm  
+
+- Outer limit: 90mm, Inner limit: 22mm
 - Padding: 1mm
 - **Actual winding area:** 89mm to 23mm (reduced by 1mm on each side)
 - This ensures the filament stays within the spool boundaries with a safe margin
