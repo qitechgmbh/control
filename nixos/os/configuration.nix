@@ -15,7 +15,7 @@ in
     consoleMode = "max";  # Use the highest available resolution
   };
   boot.loader.efi.canTouchEfiVariables = true;
-  boot.kernelPackages = pkgs.linuxPackages-rt_latest;
+  boot.kernelPackages = pkgs.linuxPackages_6_13;
   boot.kernelModules = [ "i915" ];
 
 
