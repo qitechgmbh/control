@@ -1,3 +1,14 @@
+# `2.9.0`
+_06.10.2025_
+
+## Winder V2
+- [#778](https://github.com/qitechgmbh/control/pull/778) Increased Winder Traverse Step size limit
+
+## General
+- [#725](https://github.com/qitechgmbh/control/pull/725) Improved troubleshooting and update page
+- [#625](https://github.com/qitechgmbh/control/pull/625) Improved stability of Machine-Connections
+
+
 # `2.8.0`
 _30.09.2025_
 
