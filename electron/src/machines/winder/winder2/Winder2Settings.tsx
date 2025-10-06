@@ -44,7 +44,7 @@ export function Winder2SettingPage() {
               unit="mm"
               step={0.05}
               min={0.1}
-              max={10}
+              max={75}
               defaultValue={defaultState?.traverse_state?.step_size}
               renderValue={(value) => roundToDecimals(value, 2)}
               onChange={(value) => setTraverseStepSize(value)}
