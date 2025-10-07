@@ -1,4 +1,4 @@
-{ config, pkgs, ... }:
+{ pkgs, ... }:
 
 let
   lib = pkgs.lib;
@@ -50,4 +50,4 @@ let
   };
 in
   # 3) Turn that kernel into a kernelPackages set (so modules, ZFS, etc. match your kernel)
-  pkgs.linuxPackagesFor kernel-rt;
+  pkgs.linuxPackagesFor kernel-rt
