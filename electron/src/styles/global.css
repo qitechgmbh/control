@@ -177,3 +177,107 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* macOS-style scrollbars */
+@layer base {
+  /* WebKit browsers (Safari, Chrome, newer Edge) */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 16px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+    transition: background-color 0.2s ease;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.4);
+    background-clip: content-box;
+  }
+
+  ::-webkit-scrollbar-thumb:active {
+    background: rgba(0, 0, 0, 0.6);
+    background-clip: content-box;
+  }
+
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  /* Dark mode adjustments */
+  .dark ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    background-clip: content-box;
+  }
+
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.4);
+    background-clip: content-box;
+  }
+
+  .dark ::-webkit-scrollbar-thumb:active {
+    background: rgba(255, 255, 255, 0.6);
+    background-clip: content-box;
+  }
+
+  /* Firefox */
+  html,
+  body {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+  }
+
+  .dark html,
+  .dark body {
+    scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+  }
+
+  /* Auto-hide behavior for overlay scrollbars */
+  @media (pointer: fine) {
+    ::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+
+    ::-webkit-scrollbar:hover {
+      width: 8px;
+      height: 8px;
+    }
+
+    /* Container hover shows scrollbars */
+    .scrollbar-visible:hover::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+  }
+
+  /* Utility classes for scrollbar customization */
+  .scrollbar-hidden {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hidden::-webkit-scrollbar {
+    display: none;
+  }
+
+  .scrollbar-always-visible::-webkit-scrollbar {
+    width: 8px !important;
+    height: 8px !important;
+  }
+
+  @media (pointer: fine) {
+    .scrollbar-always-visible::-webkit-scrollbar {
+      width: 8px !important;
+      height: 8px !important;
+    }
+  }
+}

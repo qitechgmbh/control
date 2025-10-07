@@ -199,7 +199,7 @@ export function Terminal({
       </div>
 
       {/* Virtualized List */}
-      <div className="flex-grow bg-black text-white">
+      <div className="flex-grow overflow-y-auto bg-neutral-900 p-4 text-neutral-300">
         <AutoSizer>
           {({ width, height }) => (
             <List
