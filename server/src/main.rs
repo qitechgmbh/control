@@ -3,14 +3,13 @@
 static ALLOC: dhat::Alloc = dhat::Alloc;
 
 use app_state::AppState;
+use r#loop::init_loop;
 #[cfg(feature = "mock-machine")]
 use mock::init::init_mock;
-use std::{sync::Arc, time::Duration};
-
-use r#loop::init_loop;
 use rest::init::init_api;
 #[cfg(not(feature = "mock-machine"))]
 use serial::init::init_serial;
+use std::sync::Arc;
 
 use crate::panic::init_panic;
 use crate::socketio::queue::init_socketio_queue;
@@ -35,7 +34,11 @@ fn main() {
     let thread_panic_tx = init_panic();
     logging::init_tracing();
     tracing::info!("Tracing initialized successfully");
-
+    if let Err(e) = control_core::realtime::lock_memory() {
+        tracing::error!("[{}::main] Failed to lock memory: {:?}", module_path!(), e);
+    } else {
+        tracing::info!("[{}::main] Memory locked successfully", module_path!());
+    }
     let app_state = Arc::new(AppState::new());
 
     // Spawn init thread
@@ -74,7 +77,8 @@ fn main() {
     // Keep the main thread alive indefinitely
     // The program should only exit via panic handling or external signals
     loop {
-        std::thread::sleep(Duration::from_secs(u64::MAX));
+        // better way to "sleep", uses basically
+        std::thread::park();
     }
 }
 
