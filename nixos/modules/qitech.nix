@@ -78,18 +78,20 @@ serviceConfig = {
   Restart = "always";
   RestartSec = "10s";
 
-  # Capabilities (unchanged, as you wanted)
-  CapabilityBoundingSet = "CAP_NET_RAW CAP_NET_ADMIN CAP_SYS_NICE CAP_DAC_OVERRIDE";
-  AmbientCapabilities     = "CAP_NET_RAW CAP_NET_ADMIN CAP_SYS_NICE CAP_DAC_OVERRIDE";
+  # Capabilities
+  CapabilityBoundingSet = "CAP_NET_RAW CAP_IPC_LOCK CAP_NET_ADMIN CAP_SYS_NICE CAP_DAC_OVERRIDE";
+  AmbientCapabilities     = "CAP_NET_RAW CAP_IPC_LOCK CAP_NET_ADMIN CAP_SYS_NICE CAP_DAC_OVERRIDE";
 
   # Hardening options
   NoNewPrivileges = true;
   ProtectSystem = "strict";
+
   # Open only /proc/irq explicitly
   ReadWritePaths = [ "/proc/irq" ];
   ProtectHome = true;
   PrivateTmp = true;
   PrivateDevices = false;
+
   # Must disable this to allow /proc/irq writes
   ProtectKernelTunables = false;
   ProtectControlGroups = true;
