@@ -2,6 +2,7 @@
 
 let
   gitInfo = import ../gitInfo.nix { inherit pkgs; };
+  lib = pkgs.lib;
 in
 {
   imports =
@@ -14,8 +15,23 @@ in
     enable = true;
     consoleMode = "max";  # Use the highest available resolution
   };
+
   boot.loader.efi.canTouchEfiVariables = true;
-  boot.kernelPackages = pkgs.linuxPackages-rt_latest;
+  boot.kernelPackages = pkgs.linuxPackagesFor (pkgs.linux_6_12.override {
+    argsOverride = rec {
+      src = pkgs.fetchurl {
+            url = "https://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git/snapshot/linux-stable-rt-6.12.49-rt13.tar.gz";
+            sha256 = "sha256-kQWgxqLrOtOnNqLkeqKwsMO/AW6FSxDwm++bOgKqPDQ=";
+      };
+      structuredExtraConfig = with lib.kernel; {
+        PREEMPT = lib.mkForce yes;
+        PREEMPT_VOLUNTARY = lib.mkForce no;
+        PREEMPT_RT = yes;
+      };
+      version = "6.12.49";
+      modDirVersion = "6.12.49-rt13";
+      };
+  });
   boot.kernelModules = [ "i915" ];
 
 
