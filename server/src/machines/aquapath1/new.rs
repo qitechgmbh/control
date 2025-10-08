@@ -1,16 +1,12 @@
 use super::{AquaPathV1, AquaPathV1Mode};
 use crate::machines::{
+    aquapath1::{Flow, Temperature, api::AquaPathV1Namespace, controller::Controller},
     get_ethercat_device,
-    aquapath1::{
-        Flow, Temperature, api::AquaPathV1Namespace, controller::Controller,
-    }
 };
 use anyhow::Error;
-use control_core::machines::{
-    new::{
-        MachineNewHardware, MachineNewParams, MachineNewTrait, get_subdevice_by_index, validate_no_role_dublicates,
-        validate_same_machine_identification_unique,
-    },
+use control_core::machines::new::{
+    MachineNewHardware, MachineNewParams, MachineNewTrait, get_subdevice_by_index,
+    validate_no_role_dublicates, validate_same_machine_identification_unique,
 };
 use ethercat_hal::{
     coe::ConfigurableDevice,
@@ -57,9 +53,9 @@ impl MachineNewTrait for AquaPathV1 {
             // Role 0 - Buscoupler EK1100
             let _ek1100 =
                 get_ethercat_device::<EK1100>(hardware, params, 0, [EK1100_IDENTITY_A].to_vec());
-            
+
             // Role 1 - EL2008 Digital Output Module
-            let el2008 = 
+            let el2008 =
                 get_ethercat_device::<EL2008>(hardware, params, 1, [EL2008_IDENTITY_A].to_vec())
                     .await?
                     .0;
@@ -70,21 +66,20 @@ impl MachineNewTrait for AquaPathV1 {
                     .await?
                     .0;
 
-            let el3204 =
-                get_ethercat_device::<EL3204>(
-                    hardware,
-                    params,
-                    3,
-                    [EL3204_IDENTITY_A, EL3204_IDENTITY_B].to_vec()
-                )
-                .await?
-                .0;
+            let el3204 = get_ethercat_device::<EL3204>(
+                hardware,
+                params,
+                3,
+                [EL3204_IDENTITY_A, EL3204_IDENTITY_B].to_vec(),
+            )
+            .await?
+            .0;
 
             let el5152 =
                 get_ethercat_device::<EL5152>(hardware, params, 4, [EL5152_IDENTITY_A].to_vec())
                     .await?
                     .0;
-            
+
             let config = EL5152Configuration {
                 pdo_assignment: EL5152PredefinedPdoAssignment::Frequency,
                 ..Default::default()
@@ -93,10 +88,7 @@ impl MachineNewTrait for AquaPathV1 {
             el5152
                 .write()
                 .await
-                .write_config(
-                    &subdevice,
-                    &config,
-                )
+                .write_config(&subdevice, &config)
                 .await?;
 
             let enc1 = EncoderInput::new(el5152.clone(), EL5152Port::ENC1);
