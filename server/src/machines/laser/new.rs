@@ -1,6 +1,12 @@
 use std::time::Instant;
 
-use crate::serial::{devices::laser::Laser, registry::SERIAL_DEVICE_REGISTRY};
+use crate::serial::registry::SERIAL_DEVICE_REGISTRY;
+
+#[cfg(not(feature = "laser-mock"))]
+use crate::serial::devices::laser::Laser;
+
+#[cfg(feature = "laser-mock")]
+use crate::serial::devices::mock_laser::MockLaserDevice;
 
 use super::{LaserMachine, LaserTarget, api::LaserMachineNamespace};
 use anyhow::Error;
@@ -22,14 +28,23 @@ impl MachineNewTrait for LaserMachine {
             _ => return Err(Error::msg("Invalid hardware type for LaserMachine")),
         };
 
-        // downcast the hardware_serial to Arc<RwLock<Laser>>
-
+        // downcast the hardware_serial to Arc<RwLock<Laser>> or Arc<RwLock<MockLaserDevice>>
+        #[cfg(not(feature = "laser-mock"))]
         let laser = match smol::block_on(
             SERIAL_DEVICE_REGISTRY.downcast_arc_rwlock::<Laser>(hardware_serial.device.clone()),
         ) {
             Ok(laser) => laser,
             Err(_) => return Err(Error::msg("Failed to downcast to Laser")),
         };
+
+        #[cfg(feature = "laser-mock")]
+        let laser = match smol::block_on(
+            SERIAL_DEVICE_REGISTRY.downcast_arc_rwlock::<MockLaserDevice>(hardware_serial.device.clone()),
+        ) {
+            Ok(laser) => laser,
+            Err(_) => return Err(Error::msg("Failed to downcast to MockLaserDevice")),
+        };
+
         // set laser target configuration
         let laser_target = LaserTarget {
             higher_tolerance: Length::new::<millimeter>(0.05),
