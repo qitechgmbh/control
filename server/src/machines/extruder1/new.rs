@@ -86,9 +86,7 @@ impl MachineNewTrait for ExtruderV2 {
         // if its async the compiler thinks &subdevices is persisted in the future which might never execute
         // so we can't drop subdevices unless this machine is dropped, which is bad
         smol::block_on(async {
-            // Role 0
-            // Buscoupler
-            // EK1100
+            // Role 0 - Buscoupler EK1100
             let _ek1100 =
                 get_ethercat_device::<EK1100>(hardware, params, 0, [EK1100_IDENTITY_A].to_vec());
 
