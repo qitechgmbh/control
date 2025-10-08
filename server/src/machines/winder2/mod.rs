@@ -290,7 +290,7 @@ impl Winder2 {
         );
 
         // Update total meters pulled
-        self.spool_automatic_action.progress += meters_pulled_this_interval;
+        self.spool_automatic_action.progress += meters_pulled_this_interval.abs();
         self.spool_automatic_action.progress_last_check = now;
     }
 
