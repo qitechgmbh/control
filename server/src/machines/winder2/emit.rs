@@ -182,7 +182,7 @@ impl Winder2 {
                 .traverse_controller
                 .get_current_position()
                 .map(|x| x.get::<millimeter>()),
-            puller_speed: puller_speed.get::<meter_per_minute>(),
+            puller_speed: puller_speed.get::<meter_per_minute>().abs(),
             spool_rpm,
             tension_arm_angle: angle_deg,
             spool_progress: self.spool_automatic_action.progress.get::<meter>(),
