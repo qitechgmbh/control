@@ -435,6 +435,8 @@ The **padding** parameter creates a safety margin that prevents the filament fro
 
 The default padding is 0.88mm, but you can adjust this value in the Control settings based on your filament diameter and winding requirements. Larger filaments may require more padding, while smaller filaments can use less padding for maximum spool utilization.
 
+![Padding example](images/manuals/winder/winder_padding_example_image.jpg)
+
 <br>
 
 **4. Start pulling**
