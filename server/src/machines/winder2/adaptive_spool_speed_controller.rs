@@ -186,7 +186,7 @@ impl AdaptiveSpoolSpeedController {
         puller_speed_controller: &PullerSpeedController,
     ) -> AngularVelocity {
         let min_speed = AngularVelocity::ZERO;
-        let max_speed = self.get_max_speed(puller_speed_controller);
+        let max_speed = self.get_max_speed(puller_speed_controller).abs();
 
         // Calculate filament tension from arm angle
         let tension_arm_angle = tension_arm.get_angle();
