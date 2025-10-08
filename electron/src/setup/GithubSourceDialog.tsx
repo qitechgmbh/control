@@ -114,12 +114,12 @@ export function GithubSourceDialogContent({
             name="githubRepoOwner"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Github Repository Owner</FormLabel>
+                <FormLabel>GitHub Repository Owner</FormLabel>
                 <FormControl>
                   <Input placeholder="qitechgmbh" {...field} />
                 </FormControl>
                 <FormDescription>
-                  Name of the Github repository owner.
+                  Name of the GitHub repository owner.
                 </FormDescription>
                 <FormMessage />
               </FormItem>
