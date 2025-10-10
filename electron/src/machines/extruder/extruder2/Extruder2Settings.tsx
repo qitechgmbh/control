@@ -13,6 +13,7 @@ export function Extruder2SettingsPage() {
     defaultState,
     setInverterRotationDirection,
     resetInverter,
+    resetInverterSettings,
     setExtruderPressureLimit,
     setExtruderPressureLimitEnabled,
     setPressurePidKp,
@@ -43,6 +44,17 @@ export function Extruder2SettingsPage() {
             Reset Inverter
           </button>
         </Label>
+
+         <Label label="Reset Inverter Settings">
+          <button
+            onClick={resetInverterSettings}
+            className="inline-block w-fit max-w-max rounded bg-red-600 px-4 py-4 text-base whitespace-nowrap text-white hover:bg-red-700"
+            style={{ minWidth: "auto", width: "fit-content" }}
+          >
+            Reset Inverter Settings
+          </button>
+        </Label>
+
       </ControlCard>
 
       <ControlCard className="bg-red" title="Extruder Settings">

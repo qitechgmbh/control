@@ -34,11 +34,7 @@ fn main() {
     let thread_panic_tx = init_panic();
     logging::init_tracing();
     tracing::info!("Tracing initialized successfully");
-    if let Err(e) = control_core::realtime::lock_memory() {
-        tracing::error!("[{}::main] Failed to lock memory: {:?}", module_path!(), e);
-    } else {
-        tracing::info!("[{}::main] Memory locked successfully", module_path!());
-    }
+
     let app_state = Arc::new(AppState::new());
 
     // Spawn init thread

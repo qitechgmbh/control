@@ -103,6 +103,12 @@ impl ExtruderV2 {
 
 #[cfg(not(feature = "mock-machine"))]
 impl ExtruderV2 {
+    pub fn reset_inverter_settings_to_default(&mut self) {
+        self.screw_speed_controller
+            .inverter
+            .reset_settings_to_default();
+    }
+
     /// Calculate combined power consumption in watts
     fn calculate_combined_power(&mut self) -> f64 {
         let motor_power = {

@@ -301,6 +301,16 @@ export function useExtruder2() {
     });
   };
 
+  const resetInverterSettings = () => {
+    // No optimistic update needed for reset
+    requestResetInverterSettings({
+      machine_identification_unique: machineIdentification,
+      data: { ResetInverterSettingsToDefault: true },
+    });
+  };
+
+
+
   // Mutation hooks
   const { request: requestInverterRotationDirection } = useMachineMutation(
     z.object({ SetInverterRotationDirection: z.boolean() }),
@@ -360,6 +370,12 @@ export function useExtruder2() {
     z.object({ ResetInverter: z.boolean() }),
   );
 
+  const { request: requestResetInverterSettings } = useMachineMutation(
+    z.object({ ResetInverterSettingsToDefault: z.boolean() }),
+  );
+
+
+
   return {
     // Consolidated state
     state: stateOptimistic.value?.data,
@@ -405,5 +421,6 @@ export function useExtruder2() {
     setPressurePidKi,
     setPressurePidKd,
     resetInverter,
+    resetInverterSettings
   };
 }

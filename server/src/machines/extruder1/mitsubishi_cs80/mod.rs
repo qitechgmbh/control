@@ -5,7 +5,10 @@ use control_core::modbus::{
 };
 use ethercat_hal::io::serial_interface::SerialInterface;
 use serde::Serialize;
-use std::time::{Duration, Instant};
+use std::{
+    collections::VecDeque,
+    time::{Duration, Instant},
+};
 use uom::si::{
     electric_current::centiampere,
     electric_potential::centivolt,
@@ -289,6 +292,8 @@ pub struct MitsubishiCS80 {
     pub status: MitsubishiCS80Status,
     pub motor_status: MotorStatus,
     pub modbus_serial_interface: ModbusSerialInterface,
+    pub interrupt_normal_operation: bool,
+    pub parameter_writes_queued: VecDeque<MitsubishiCS80Request>,
     pub last_ts: Instant,
 }
 
@@ -342,6 +347,15 @@ impl MitsubishiCS80Request {
     }
 }
 
+pub struct CS80Param {
+    pub parameter_number: u16,
+    pub val: u16,
+}
+
+pub fn convert_param_to_reg(param: u16) -> u16 {
+    return param + 999;
+}
+
 impl MitsubishiCS80 {
     pub fn new(serial_interface: SerialInterface) -> Self {
         Self {
@@ -349,7 +363,105 @@ impl MitsubishiCS80 {
             last_ts: Instant::now(),
             motor_status: MotorStatus::default(),
             status: MitsubishiCS80Status::default(),
+            interrupt_normal_operation: false,
+            parameter_writes_queued: VecDeque::new(),
         }
+    }
+
+    pub fn build_write_parameter_request(&mut self, setting: CS80Param) -> MitsubishiCS80Request {
+        let mut base_req: MitsubishiCS80Request = MitsubishiCS80Requests::WriteParameter.into();
+        let register = convert_param_to_reg(setting.parameter_number);
+        let register_be_bytes = register.to_be_bytes();
+        let val_be_bytes = setting.val.to_be_bytes();
+
+        base_req.request.data[0] = register_be_bytes[0];
+        base_req.request.data[1] = register_be_bytes[1];
+
+        base_req.request.data[2] = val_be_bytes[0];
+        base_req.request.data[3] = val_be_bytes[1];
+        return base_req;
+    }
+
+    pub fn reset_settings_to_default(&mut self) {
+        // pr 71, Applied Motor, 0
+        let applied_motor: CS80Param = CS80Param {
+            parameter_number: 71,
+            val: 0,
+        };
+
+        // pr 80, Motor Capacity, 15
+        let motor_capacity: CS80Param = CS80Param {
+            parameter_number: 80,
+            val: 150,
+        };
+
+        // pr 96, Auto tuning setting/status, 1
+        let auto_tuning: CS80Param = CS80Param {
+            parameter_number: 96,
+            val: 1,
+        };
+
+        // pr 1, Max Frequency, 12000
+        let max_freq: CS80Param = CS80Param {
+            parameter_number: 1,
+            val: 12000,
+        };
+
+        // pr 2, Min Frequency, 0
+        let min_freq: CS80Param = CS80Param {
+            parameter_number: 2,
+            val: 0,
+        };
+
+        let base_freq: CS80Param = CS80Param {
+            parameter_number: 3,
+            val: 5000,
+        };
+
+        // pr 9, Electronic Thermal O/L Relay, 3.30 Ampere -> TODO what is the format
+        let electronic_thermal_o_l_relay: CS80Param = CS80Param {
+            parameter_number: 9,
+            val: 330,
+        };
+
+        // pr 19, Base frequency voltage, 400(volt) -> TODO what is the format
+        let base_freq_voltage: CS80Param = CS80Param {
+            parameter_number: 19,
+            val: 4000,
+        };
+
+        self.interrupt_normal_operation = true;
+
+        let motor_capacity_write_req = self.build_write_parameter_request(motor_capacity);
+        let base_freq_write_req = self.build_write_parameter_request(base_freq_voltage);
+        let electronic_thermal_o_l_relay_req =
+            self.build_write_parameter_request(electronic_thermal_o_l_relay);
+        let applied_motor_req = self.build_write_parameter_request(applied_motor);
+        let auto_tuning_req = self.build_write_parameter_request(auto_tuning);
+
+        let max_freq_req = self.build_write_parameter_request(max_freq);
+        let min_freq_req = self.build_write_parameter_request(min_freq);
+        let base_freq_req = self.build_write_parameter_request(base_freq);
+
+        self.parameter_writes_queued
+            .push_back(motor_capacity_write_req);
+
+        self.parameter_writes_queued.push_back(base_freq_write_req);
+
+        self.parameter_writes_queued
+            .push_back(electronic_thermal_o_l_relay_req);
+
+        self.parameter_writes_queued.push_back(applied_motor_req);
+
+        //  self.parameter_writes_queued.push_back(auto_tuning_req);
+
+        self.parameter_writes_queued.push_back(min_freq_req);
+
+        self.parameter_writes_queued.push_back(max_freq_req);
+
+        self.parameter_writes_queued.push_back(base_freq_req);
+
+        self.parameter_writes_queued.push_back(auto_tuning_req);
     }
 
     fn handle_motor_status(&mut self, resp: &ModbusResponse) {
@@ -399,12 +511,17 @@ impl MitsubishiCS80 {
     fn handle_response(&mut self, control_request_type: u32) {
         let response_type = match MitsubishiCS80Requests::try_from(control_request_type) {
             Ok(request_type) => request_type,
-            Err(_) => return,
+            Err(e) => {
+                tracing::info!("{:?}", e);
+                return;
+            }
         };
 
         let Some(response) = self.modbus_serial_interface.get_response().cloned() else {
             return;
         };
+
+        println!("{:?}", response);
 
         match response_type {
             MitsubishiCS80Requests::ReadInverterStatus => {
@@ -476,8 +593,31 @@ impl MitsubishiCS80 {
             return;
         }
 
+        if self.interrupt_normal_operation {
+            if !self.parameter_writes_queued.is_empty()
+                && !self.modbus_serial_interface.is_request_queued()
+            {
+                let request = self.parameter_writes_queued.pop_front();
+                let request = request.unwrap();
+                self.add_request(request.clone());
+                println!("interrupt_normal_operation : {:?}", request);
+            } else if self.parameter_writes_queued.is_empty() {
+                println!("queue empty");
+                // when queue empty we are done
+                self.interrupt_normal_operation = false;
+                self.add_request(MitsubishiCS80Requests::ReadInverterStatus.into());
+                self.add_request(MitsubishiCS80Requests::ReadMotorStatus.into());
+            }
+
+            self.modbus_serial_interface.act(now).await;
+            self.handle_response(self.modbus_serial_interface.last_message_id);
+
+            return;
+        }
+
         self.add_request(MitsubishiCS80Requests::ReadInverterStatus.into());
         self.add_request(MitsubishiCS80Requests::ReadMotorStatus.into());
+
         self.modbus_serial_interface.act(now).await;
         self.handle_response(self.modbus_serial_interface.last_message_id);
     }
