@@ -3,11 +3,7 @@ import { Page } from "@/components/Page";
 import { SectionTitle } from "@/components/SectionTitle";
 import { TouchButton } from "@/components/touch/TouchButton";
 import React, { useEffect, useState } from "react";
-import {
-  defaultGithubSource,
-  GithubSource,
-  GithubSourceDialog,
-} from "./GithubSourceDialog";
+import { GithubSourceDialog } from "./GithubSourceDialog";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Alert } from "@/components/Alert";
 import { useNavigate } from "@tanstack/react-router";
@@ -21,6 +17,7 @@ import {
   isNixOSAvailable,
 } from "@/helpers/nixos_helpers";
 import { useUpdateStore } from "@/stores/updateStore";
+import { useGithubSourceStore } from "@/stores/githubSourceStore";
 
 export function ChooseVersionPage() {
   const navigate = useNavigate();
@@ -54,8 +51,7 @@ export function ChooseVersionPage() {
     string | null
   >(null);
 
-  const [githubSource, setGithubSource] =
-    useState<GithubSource>(defaultGithubSource);
+  const { githubSource, setGithubSource } = useGithubSourceStore();
 
   const githubApiUrl = `https://api.github.com/repos/${githubSource.githubRepoOwner}/${githubSource.githubRepoName}`;
 
