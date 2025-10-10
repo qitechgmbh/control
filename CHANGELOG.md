@@ -1,3 +1,13 @@
+# `2.9.1`
+_10.10.2025_
+
+## Winder V2
+- [#796](https://github.com/qitechgmbh/control/pull/796) Winding in adaptive mode, while puller is in reverse mode is now possible
+
+## General
+- [#780](https://github.com/qitechgmbh/control/pull/780) Updates are faster now
+- [#746](https://github.com/qitechgmbh/control/pull/746) Improved scrollbar styling for manuals
+
 # `2.9.0`
 _06.10.2025_
 
