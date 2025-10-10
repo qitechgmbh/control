@@ -23,6 +23,8 @@ pub enum ModbusFunctionCode {
     PresetHoldingRegister,
     /// The response should echo back your request
     DiagnoseFunction,
+
+    Unknown(u8),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -113,6 +115,7 @@ impl From<ModbusFunctionCode> for u8 {
             ModbusFunctionCode::ReadInputRegister => 0x04,
             ModbusFunctionCode::PresetHoldingRegister => 0x06,
             ModbusFunctionCode::DiagnoseFunction => 0x08,
+            ModbusFunctionCode::Unknown(other) => other,
         }
     }
 }
@@ -192,7 +195,11 @@ fn validate_modbus_response(raw_data: Vec<u8>) -> Result<Vec<u8>, Error> {
 
 // expects to be given the entire raw message
 fn extract_crc(raw_data: &Vec<u8>) -> Result<u16, Error> {
-    if raw_data.len() < 5 {
+    if raw_data.len() == 0 {
+        return Ok(0);
+    }
+
+    if raw_data.len() < 3 {
         return Err(anyhow::anyhow!("Not enough data to extract CRC"));
     }
 
@@ -206,7 +213,6 @@ impl TryFrom<Vec<u8>> for ModbusResponse {
     type Error = anyhow::Error;
     fn try_from(value: Vec<u8>) -> Result<Self, Error> {
         let crc = extract_crc(&value)?;
-
         let function_code_res = ModbusFunctionCode::try_from(value[1]);
         let function_code = function_code_res?;
 

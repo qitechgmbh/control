@@ -444,6 +444,9 @@ impl MitsubishiCS80 {
         let base_freq_req = self.build_write_parameter_request(base_freq);
 
         self.parameter_writes_queued
+            .push_back(MitsubishiCS80Requests::ResetInverter.into());
+
+        self.parameter_writes_queued
             .push_back(motor_capacity_write_req);
 
         self.parameter_writes_queued.push_back(base_freq_write_req);
@@ -453,8 +456,6 @@ impl MitsubishiCS80 {
 
         self.parameter_writes_queued.push_back(applied_motor_req);
 
-        //  self.parameter_writes_queued.push_back(auto_tuning_req);
-
         self.parameter_writes_queued.push_back(min_freq_req);
 
         self.parameter_writes_queued.push_back(max_freq_req);
@@ -462,6 +463,9 @@ impl MitsubishiCS80 {
         self.parameter_writes_queued.push_back(base_freq_req);
 
         self.parameter_writes_queued.push_back(auto_tuning_req);
+
+        self.parameter_writes_queued
+            .push_back(MitsubishiCS80Requests::ResetInverter.into());
     }
 
     fn handle_motor_status(&mut self, resp: &ModbusResponse) {
@@ -518,6 +522,7 @@ impl MitsubishiCS80 {
         let Some(response) = self.modbus_serial_interface.get_response().cloned() else {
             return;
         };
+
         match response_type {
             MitsubishiCS80Requests::ReadInverterStatus => {
                 self.handle_read_inverter_status(&response);
@@ -525,6 +530,7 @@ impl MitsubishiCS80 {
             MitsubishiCS80Requests::ReadMotorStatus => {
                 self.handle_motor_status(&response);
             }
+
             // Other request types don't need response handling
             _ => {}
         }
