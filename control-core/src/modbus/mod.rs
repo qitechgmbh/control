@@ -195,10 +195,6 @@ fn validate_modbus_response(raw_data: Vec<u8>) -> Result<Vec<u8>, Error> {
 
 // expects to be given the entire raw message
 fn extract_crc(raw_data: &Vec<u8>) -> Result<u16, Error> {
-    if raw_data.len() == 0 {
-        return Ok(0);
-    }
-
     if raw_data.len() < 3 {
         return Err(anyhow::anyhow!("Not enough data to extract CRC"));
     }
