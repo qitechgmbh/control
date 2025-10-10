@@ -48,7 +48,7 @@ export function Extruder2SettingsPage() {
 <Label label="Reset Inverter Settings">
   <button
     onClick={() => {
-      if (window.confirm("Are you sure you want to reset the inverter to our default settings? This can not be undone!! Before resetting make sure that the motor is not running (Extruder in Standby). After pressing wait about 5 seconds, afterwards inverter will run with our settings")) {
+      if (window.confirm("Are you sure you want to reset the inverter to our default settings? This can not be undone!! Before resetting make sure that the motor is not running (Extruder in Standby).\nAfter pressing wait about 5 seconds, then set rpm to 0 and switch to Extrude Mode, this will tune the motor. This will make a weird noise, wait until its gone, then afterwards simply go back to standby. Now you can use the inverter normally")) {
         resetInverterSettings();
       }
     }}
