@@ -24,7 +24,7 @@ pub struct LaserMachine {
     // drivers
     #[cfg(not(feature = "laser-mock"))]
     laser: Arc<RwLock<Laser>>,
-    
+
     #[cfg(feature = "laser-mock")]
     laser: Arc<RwLock<MockLaserDevice>>,
 

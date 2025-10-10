@@ -88,7 +88,7 @@ pub fn init_laser_mock(app_state: Arc<AppState>) -> Result<(), anyhow::Error> {
             Ok((device_identification, mock_laser_device)) => {
                 // Clone the device for the background task before moving it
                 let mock_laser_clone = mock_laser_device.clone();
-                
+
                 // Add the mock device to the machine manager
                 {
                     let mut machine_guard = app_state.machines.write().await;
@@ -111,7 +111,7 @@ pub fn init_laser_mock(app_state: Arc<AppState>) -> Result<(), anyhow::Error> {
                     .main_namespace;
                 let event = MachinesEventBuilder().build(app_state_event.clone()).await;
                 main_namespace.emit(MainNamespaceEvents::MachinesEvent(event));
-                
+
                 // Spawn background task to update laser data periodically
                 smol::spawn(async move {
                     loop {
@@ -132,4 +132,3 @@ pub fn init_laser_mock(app_state: Arc<AppState>) -> Result<(), anyhow::Error> {
         }
     });
 }
-

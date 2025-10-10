@@ -39,7 +39,8 @@ impl MachineNewTrait for LaserMachine {
 
         #[cfg(feature = "laser-mock")]
         let laser = match smol::block_on(
-            SERIAL_DEVICE_REGISTRY.downcast_arc_rwlock::<MockLaserDevice>(hardware_serial.device.clone()),
+            SERIAL_DEVICE_REGISTRY
+                .downcast_arc_rwlock::<MockLaserDevice>(hardware_serial.device.clone()),
         ) {
             Ok(laser) => laser,
             Err(_) => return Err(Error::msg("Failed to downcast to MockLaserDevice")),

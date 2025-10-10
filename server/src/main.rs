@@ -10,10 +10,10 @@ static GLOBAL: Jemalloc = Jemalloc;
 static ALLOC: dhat::Alloc = dhat::Alloc;
 
 use app_state::AppState;
-#[cfg(feature = "mock-machine")]
-use mock::init::init_mock;
 #[cfg(feature = "laser-mock")]
 use mock::init::init_laser_mock;
+#[cfg(feature = "mock-machine")]
+use mock::init::init_mock;
 use std::{sync::Arc, time::Duration};
 
 #[cfg(not(any(feature = "mock-machine", feature = "laser-mock")))]

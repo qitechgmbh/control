@@ -90,23 +90,23 @@ impl MockLaserDevice {
     pub fn update_data(&mut self) {
         let now = Instant::now();
         let elapsed_secs = now.duration_since(self.start_time).as_secs_f64();
-        
+
         // Base diameter
         let base_diameter = 1.7;
-        
+
         // Slow wave component (smooth up and down over time)
         // Period of about 60 seconds - slower changes
         // Keep amplitude small so it mostly stays around 1.75mm
         let slow_wave = 0.15 * (elapsed_secs / 30.0).sin();
-        
+
         // Medium wave component (adds more variation)
         // Period of about 20 seconds
         let medium_wave = 0.08 * (elapsed_secs / 10.0).sin();
-        
+
         // Fast wave component (small rapid fluctuations)
         // Period of about 3 seconds
         let fast_wave = 0.05 * (elapsed_secs / 1.5).sin();
-        
+
         // Random spike component
         // Use a combination of sine waves to create periodic but somewhat random spikes
         // This creates spikes roughly every minute but with some variation
@@ -120,24 +120,24 @@ impl MockLaserDevice {
         } else {
             0.0
         };
-        
+
         // Apply smoothing to spike magnitude to avoid sudden jumps
         let smoothed_spike = spike_magnitude * 0.05; // Gradual application, very smooth
-        
+
         // Combine all components
         let diameter = base_diameter + slow_wave + medium_wave + fast_wave + smoothed_spike;
-        
+
         // Clamp to reasonable bounds (0.5mm to 4.0mm)
         let diameter = diameter.max(0.5).min(4.0);
-        
+
         // Add small random variation to x and y to create slight elliptical shape
         // but keep them close to the diameter
         let x_variation = 0.01 * ((elapsed_secs * 2.7).sin());
         let y_variation = 0.01 * ((elapsed_secs * 3.1).cos());
-        
+
         let x_diameter = diameter + x_variation;
         let y_diameter = diameter + y_variation;
-        
+
         self.data = Some(MockLaserData {
             diameter: Length::new::<millimeter>(diameter),
             x_axis: Some(Length::new::<millimeter>(x_diameter)),
