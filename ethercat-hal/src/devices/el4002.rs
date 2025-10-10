@@ -102,6 +102,7 @@ impl EL4002 {
         &mut self,
         subdevice: &EthercrabSubDevicePreoperational<'a>,
     ) -> Result<(), anyhow::Error> {
+        tracing::info!("el4002");
         self.configuration
             .channel1
             .write_channel_config(subdevice, 0x8000)

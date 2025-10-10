@@ -1,22 +1,25 @@
-use std::{collections::HashMap, sync::Arc};
+use std::collections::HashMap;
+use std::sync::Arc;
 
 use smol::lock::Mutex;
 
-use super::{Machine, identification::MachineIdentificationUnique, manager::MachineManager};
+use crate::machines::connection::MachineSlotGeneric;
+
+use super::{identification::MachineIdentificationUnique, manager::MachineManager};
 
 pub enum MachineManagerIter<'a> {
     EthercatMachines {
         iter: std::collections::hash_map::Iter<
             'a,
             MachineIdentificationUnique,
-            Result<Arc<Mutex<dyn Machine>>, anyhow::Error>,
+            Arc<Mutex<MachineSlotGeneric>>,
         >,
     },
     SerialMachines {
         iter: std::collections::hash_map::Iter<
             'a,
             MachineIdentificationUnique,
-            Result<Arc<Mutex<dyn Machine>>, anyhow::Error>,
+            Arc<Mutex<MachineSlotGeneric>>,
         >,
     },
     Done,
@@ -24,14 +27,13 @@ pub enum MachineManagerIter<'a> {
 
 pub struct MachineManagerIterator<'a> {
     iter: MachineManagerIter<'a>,
-    serial_machines:
-        &'a HashMap<MachineIdentificationUnique, Result<Arc<Mutex<dyn Machine>>, anyhow::Error>>,
+    serial_machines: &'a HashMap<MachineIdentificationUnique, Arc<Mutex<MachineSlotGeneric>>>,
 }
 
 impl<'a> Iterator for MachineManagerIterator<'a> {
     type Item = (
         &'a MachineIdentificationUnique,
-        &'a Result<Arc<Mutex<dyn Machine>>, anyhow::Error>,
+        &'a Arc<Mutex<MachineSlotGeneric>>,
     );
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -71,7 +73,7 @@ impl<'a> Iterator for MachineManagerIterator<'a> {
 
 impl MachineManager {
     // Returns an iterator over all machines (both ethercat and serial)
-    pub fn iter(&'_ self) -> MachineManagerIterator<'_> {
+    pub fn iter(&self) -> MachineManagerIterator<'_> {
         MachineManagerIterator {
             iter: MachineManagerIter::EthercatMachines {
                 iter: self.ethercat_machines.iter(),

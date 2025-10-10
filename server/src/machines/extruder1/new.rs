@@ -1,308 +1,141 @@
-use super::{
-    ExtruderV2, ExtruderV2Mode, Heating, api::ExtruderV2Namespace, mitsubishi_cs80::MitsubishiCS80,
-    screw_speed_controller::ScrewSpeedController,
-};
-use crate::machines::extruder1::temperature_controller::TemperatureController;
+#[cfg(not(feature = "mock-machine"))]
+use crate::machines::get_ethercat_device;
+#[cfg(not(feature = "mock-machine"))]
 use anyhow::Error;
-use control_core::machines::{
-    identification::DeviceHardwareIdentification,
-    new::{
-        MachineNewHardware, MachineNewParams, MachineNewTrait, get_device_identification_by_role,
-        get_ethercat_device_by_index, get_subdevice_by_index, validate_no_role_dublicates,
-        validate_same_machine_identification_unique,
-    },
+#[cfg(not(feature = "mock-machine"))]
+use control_core::machines::new::MachineNewHardware;
+#[cfg(not(feature = "mock-machine"))]
+use control_core::machines::new::{MachineNewParams, MachineNewTrait};
+#[cfg(not(feature = "mock-machine"))]
+use control_core::machines::new::{
+    validate_no_role_dublicates, validate_same_machine_identification_unique,
 };
+#[cfg(not(feature = "mock-machine"))]
+use ethercat_hal::coe::ConfigurableDevice;
+#[cfg(not(feature = "mock-machine"))]
+use ethercat_hal::devices::{
+    EthercatDeviceUsed,
+    ek1100::EK1100,
+    ek1100::EK1100_IDENTITY_A,
+    el1002::EL1002,
+    el1002::EL1002_IDENTITY_A,
+    el6021::EL6021,
+    el6021::EL6021Configuration,
+    el6021::EL6021Port,
+    el6021::{EL6021_IDENTITY_A, EL6021_IDENTITY_B, EL6021_IDENTITY_C, EL6021_IDENTITY_D},
+};
+#[cfg(not(feature = "mock-machine"))]
+use std::time::Duration;
+#[cfg(not(feature = "mock-machine"))]
+use std::time::Instant;
+#[cfg(not(feature = "mock-machine"))]
+use uom::si::angular_velocity::AngularVelocity;
+#[cfg(not(feature = "mock-machine"))]
+use uom::si::angular_velocity::revolution_per_minute;
+#[cfg(not(feature = "mock-machine"))]
+use uom::si::pressure::Pressure;
+#[cfg(not(feature = "mock-machine"))]
+use uom::si::pressure::bar;
+
+#[cfg(not(feature = "mock-machine"))]
 use ethercat_hal::{
-    coe::ConfigurableDevice,
     devices::{
-        EthercatDeviceUsed, downcast_device,
-        ek1100::{EK1100, EK1100_IDENTITY_A},
-        el1002::{EL1002, EL1002_IDENTITY_A},
         el2004::{EL2004, EL2004_IDENTITY_A, EL2004Port},
         el3021::{EL3021, EL3021_IDENTITY_A, EL3021Port},
         el3204::{EL3204, EL3204_IDENTITY_A, EL3204_IDENTITY_B, EL3204Port},
-        el6021::{
-            self, EL6021, EL6021_IDENTITY_A, EL6021_IDENTITY_B, EL6021_IDENTITY_C,
-            EL6021_IDENTITY_D, EL6021Configuration,
-        },
-        subdevice_identity_to_tuple,
     },
     io::{
         analog_input::AnalogInput, digital_output::DigitalOutput,
         serial_interface::SerialInterface, temperature_input::TemperatureInput,
     },
 };
-use std::time::{Duration, Instant};
-use uom::si::{
-    angular_velocity::revolution_per_minute,
-    f64::{AngularVelocity, Pressure, ThermodynamicTemperature},
-    pressure::bar,
-    thermodynamic_temperature::degree_celsius,
+#[cfg(not(feature = "mock-machine"))]
+use uom::si::thermodynamic_temperature::{ThermodynamicTemperature, degree_celsius};
+
+#[cfg(not(feature = "mock-machine"))]
+use crate::machines::extruder1::temperature_controller::TemperatureController;
+
+#[cfg(not(feature = "mock-machine"))]
+use super::{
+    ExtruderV2, ExtruderV2Mode, Heating, api::ExtruderV2Namespace, mitsubishi_cs80::MitsubishiCS80,
+    screw_speed_controller::ScrewSpeedController,
 };
 
+#[cfg(not(feature = "mock-machine"))]
 impl MachineNewTrait for ExtruderV2 {
     fn new<'maindevice>(params: &MachineNewParams) -> Result<Self, Error> {
         // validate general stuff
+
         let device_identification = params.device_group.to_vec();
 
         validate_same_machine_identification_unique(&device_identification)?;
         validate_no_role_dublicates(&device_identification)?;
 
-        let hardware = match &params.hardware {
-            MachineNewHardware::Ethercat(x) => x,
-            _ => {
-                return Err(anyhow::anyhow!(
-                    "[{}::MachineNewTrait/Extruder2::new] MachineNewHardware is not Ethercat",
-                    module_path!()
-                ));
-            }
-        };
+        let hardware: &&control_core::machines::new::MachineNewHardwareEthercat<'_, '_, '_> =
+            match &params.hardware {
+                MachineNewHardware::Ethercat(x) => x,
+                _ => {
+                    return Err(anyhow::anyhow!(
+                        "[{}::MachineNewTrait/Extruder2::new] MachineNewHardware is not Ethercat",
+                        module_path!()
+                    ));
+                }
+            };
+
         // using block_on because making this funciton async creates a lifetime issue
         // if its async the compiler thinks &subdevices is persisted in the future which might never execute
         // so we can't drop subdevices unless this machine is dropped, which is bad
         smol::block_on(async {
-            // Role 0
-            // Buscoupler
-            // EK1100
-            {
-                let device_identification =
-                    get_device_identification_by_role(params.device_group, 0)?;
-                let device_hardware_identification_ethercat = match &device_identification
-                    .device_hardware_identification
-                {
-                    DeviceHardwareIdentification::Ethercat(
-                        device_hardware_identification_ethercat,
-                    ) => device_hardware_identification_ethercat,
-                    _ => Err(anyhow::anyhow!(
-                        "[{}::MachineNewTrait/ExtruderV2::new] Device with role 0 is not Ethercat",
-                        module_path!()
-                    ))?, //uncommented
-                };
-                let subdevice_index = device_hardware_identification_ethercat.subdevice_index;
-                let subdevice = get_subdevice_by_index(hardware.subdevices, subdevice_index)?;
-                let subdevice_identity = subdevice.identity();
-                let device = match subdevice_identity_to_tuple(&subdevice_identity) {
-                    EK1100_IDENTITY_A => {
-                        let ethercat_device = get_ethercat_device_by_index(
-                            hardware.ethercat_devices,
-                            subdevice_index,
-                        )?;
-                        downcast_device::<EK1100>(ethercat_device).await?
-                    }
-                    _ => {
-                        return Err(anyhow::anyhow!(
-                            "[{}::MachineNewTrait/ExtruderV2::new] Device with role 0 is not an EK1100",
-                            module_path!()
-                        ));
-                    }
-                };
-                {
-                    let mut device_guard = device.write().await;
-                    device_guard.set_used(true);
-                }
-            }
+            // Role 0 - Buscoupler EK1100
+            let _ek1100 =
+                get_ethercat_device::<EK1100>(hardware, params, 0, [EK1100_IDENTITY_A].to_vec());
 
             // What is its use ?
-            let _el1002 = {
-                let device_identification =
-                    get_device_identification_by_role(params.device_group, 1)?;
-                let device_hardware_identification_ethercat = match &device_identification
-                    .device_hardware_identification
-                {
-                    DeviceHardwareIdentification::Ethercat(
-                        device_hardware_identification_ethercat,
-                    ) => device_hardware_identification_ethercat,
-                    _ => Err(anyhow::anyhow!(
-                        "[{}::MachineNewTrait/ExtruderV2::new] Device with role 1 is not Ethercat",
-                        module_path!()
-                    ))?, //uncommented
-                };
-                let subdevice_index = device_hardware_identification_ethercat.subdevice_index;
-                let subdevice = get_subdevice_by_index(hardware.subdevices, subdevice_index)?;
-                let subdevice_identity = subdevice.identity();
-                let device = match subdevice_identity_to_tuple(&subdevice_identity) {
-                    EL1002_IDENTITY_A => {
-                        let ethercat_device = get_ethercat_device_by_index(
-                            hardware.ethercat_devices,
-                            subdevice_index,
-                        )?;
-                        downcast_device::<EL1002>(ethercat_device).await?
-                    }
-                    _ => {
-                        return Err(anyhow::anyhow!(
-                            "[{}::MachineNewTrait/ExtruderV2::new] Device with role 1 is not an EL1002",
-                            module_path!()
-                        ));
-                    }
-                };
-                {
-                    let mut device_guard = device.write().await;
-                    device_guard.set_used(true);
-                }
-                device
-            };
+            let _el1002 =
+                get_ethercat_device::<EL1002>(hardware, params, 1, [EL1002_IDENTITY_A].to_vec())
+                    .await?;
 
             let el6021 = {
-                let device_identification =
-                    get_device_identification_by_role(params.device_group, 2)?;
-                let device_hardware_identification_ethercat = match &device_identification
-                    .device_hardware_identification
-                {
-                    DeviceHardwareIdentification::Ethercat(
-                        device_hardware_identification_ethercat,
-                    ) => device_hardware_identification_ethercat,
-                    _ => Err(anyhow::anyhow!(
-                        "[{}::MachineNewTrait/ExtruderV2::new] Device with role 2 is not Ethercat",
-                        module_path!()
-                    ))?, //uncommented
-                };
-                let subdevice_index = device_hardware_identification_ethercat.subdevice_index;
-                let subdevice = get_subdevice_by_index(hardware.subdevices, subdevice_index)?;
-                let subdevice_identity = subdevice.identity();
-                let device = match subdevice_identity_to_tuple(&subdevice_identity) {
-                    EL6021_IDENTITY_A | EL6021_IDENTITY_B | EL6021_IDENTITY_C
-                    | EL6021_IDENTITY_D => {
-                        let ethercat_device = get_ethercat_device_by_index(
-                            hardware.ethercat_devices,
-                            subdevice_index,
-                        )?;
-                        downcast_device::<EL6021>(ethercat_device).await?
-                    }
-                    _ => {
-                        return Err(anyhow::anyhow!(
-                            "[{}::MachineNewTrait/ExtruderV2::new] Device with role 2 is not an EL6021",
-                            module_path!()
-                        ));
-                    }
-                };
+                let identities = [
+                    EL6021_IDENTITY_A,
+                    EL6021_IDENTITY_B,
+                    EL6021_IDENTITY_C,
+                    EL6021_IDENTITY_D,
+                ]
+                .to_vec();
+                let device = get_ethercat_device::<EL6021>(hardware, params, 2, identities).await?;
+
                 device
+                    .0
                     .write()
                     .await
-                    .write_config(subdevice, &EL6021Configuration::default())
+                    .write_config(&device.1, &EL6021Configuration::default())
                     .await?;
                 {
-                    let mut device_guard = device.write().await;
+                    let mut device_guard = device.0.write().await;
                     device_guard.set_used(true);
                 }
-                device
+                device.0
             };
 
-            let el2004 = {
-                let device_identification =
-                    get_device_identification_by_role(params.device_group, 3)?;
-                let device_hardware_identification_ethercat = match &device_identification
-                    .device_hardware_identification
-                {
-                    DeviceHardwareIdentification::Ethercat(
-                        device_hardware_identification_ethercat,
-                    ) => device_hardware_identification_ethercat,
-                    _ => Err(anyhow::anyhow!(
-                        "[{}::MachineNewTrait/ExtruderV2::new] Device with role 3 is not Ethercat",
-                        module_path!()
-                    ))?, //uncommented
-                };
-                let subdevice_index = device_hardware_identification_ethercat.subdevice_index;
-                let subdevice = get_subdevice_by_index(hardware.subdevices, subdevice_index)?;
-                let subdevice_identity = subdevice.identity();
-                let device = match subdevice_identity_to_tuple(&subdevice_identity) {
-                    EL2004_IDENTITY_A => {
-                        let ethercat_device = get_ethercat_device_by_index(
-                            hardware.ethercat_devices,
-                            subdevice_index,
-                        )?;
-                        downcast_device::<EL2004>(ethercat_device).await?
-                    }
-                    _ => {
-                        return Err(anyhow::anyhow!(
-                            "[{}::MachineNewTrait/ExtruderV2::new] Device with role 3 is not an EL2004",
-                            module_path!()
-                        ));
-                    }
-                };
-                {
-                    let mut device_guard = device.write().await;
-                    device_guard.set_used(true);
-                }
-                device
-            };
+            let el2004 =
+                get_ethercat_device::<EL2004>(hardware, params, 3, [EL2004_IDENTITY_A].to_vec())
+                    .await?
+                    .0;
 
-            let el3021 = {
-                let device_identification =
-                    get_device_identification_by_role(params.device_group, 4)?;
-                let device_hardware_identification_ethercat = match &device_identification
-                    .device_hardware_identification
-                {
-                    DeviceHardwareIdentification::Ethercat(
-                        device_hardware_identification_ethercat,
-                    ) => device_hardware_identification_ethercat,
-                    _ => Err(anyhow::anyhow!(
-                        "[{}::MachineNewTrait/ExtruderV2::new] Device with role 4 is not Ethercat",
-                        module_path!()
-                    ))?, //uncommented
-                };
-                let subdevice_index = device_hardware_identification_ethercat.subdevice_index;
-                let subdevice = get_subdevice_by_index(hardware.subdevices, subdevice_index)?;
-                let subdevice_identity = subdevice.identity();
-                let device = match subdevice_identity_to_tuple(&subdevice_identity) {
-                    EL3021_IDENTITY_A => {
-                        let ethercat_device = get_ethercat_device_by_index(
-                            hardware.ethercat_devices,
-                            subdevice_index,
-                        )?;
-                        downcast_device::<EL3021>(ethercat_device).await?
-                    }
-                    _ => {
-                        return Err(anyhow::anyhow!(
-                            "[{}::MachineNewTrait/ExtruderV2::new] Device with role 4 is not an EL3021",
-                            module_path!()
-                        ));
-                    }
-                };
-                {
-                    let mut device_guard = device.write().await;
-                    device_guard.set_used(true);
-                }
-                device
-            };
+            let el3021 =
+                get_ethercat_device::<EL3021>(hardware, params, 4, [EL3021_IDENTITY_A].to_vec())
+                    .await?
+                    .0;
 
-            let el3204 = {
-                let device_identification =
-                    get_device_identification_by_role(params.device_group, 5)?;
-                let device_hardware_identification_ethercat = match &device_identification
-                    .device_hardware_identification
-                {
-                    DeviceHardwareIdentification::Ethercat(
-                        device_hardware_identification_ethercat,
-                    ) => device_hardware_identification_ethercat,
-                    _ => Err(anyhow::anyhow!(
-                        "[{}::MachineNewTrait/ExtruderV2::new] Device with role 5 is not Ethercat",
-                        module_path!()
-                    ))?, //uncommented
-                };
-                let subdevice_index = device_hardware_identification_ethercat.subdevice_index;
-                let subdevice = get_subdevice_by_index(hardware.subdevices, subdevice_index)?;
-                let subdevice_identity = subdevice.identity();
-                let device = match subdevice_identity_to_tuple(&subdevice_identity) {
-                    EL3204_IDENTITY_A | EL3204_IDENTITY_B => {
-                        let ethercat_device = get_ethercat_device_by_index(
-                            hardware.ethercat_devices,
-                            subdevice_index,
-                        )?;
-                        downcast_device::<EL3204>(ethercat_device).await?
-                    }
-                    _ => {
-                        return Err(anyhow::anyhow!(
-                            "[{}::MachineNewTrait/ExtruderV2::new] Device with role 5 is not an EL3204",
-                            module_path!()
-                        ));
-                    }
-                };
-                {
-                    let mut device_guard = device.write().await;
-                    device_guard.set_used(true);
-                }
-                device
-            };
+            let el3204 = get_ethercat_device::<EL3204>(
+                hardware,
+                params,
+                5,
+                [EL3204_IDENTITY_A, EL3204_IDENTITY_B].to_vec(),
+            )
+            .await?
+            .0;
 
             let t1 = TemperatureInput::new(el3204.clone(), EL3204Port::T1);
             let t2 = TemperatureInput::new(el3204.clone(), EL3204Port::T2);
@@ -378,8 +211,7 @@ impl MachineNewTrait for ExtruderV2 {
                 0.95,
             );
 
-            let inverter =
-                MitsubishiCS80::new(SerialInterface::new(el6021, el6021::EL6021Port::SI1));
+            let inverter = MitsubishiCS80::new(SerialInterface::new(el6021, EL6021Port::SI1));
 
             let target_pressure = Pressure::new::<bar>(0.0);
             let target_rpm = AngularVelocity::new::<revolution_per_minute>(0.0);
@@ -387,8 +219,11 @@ impl MachineNewTrait for ExtruderV2 {
             let screw_speed_controller =
                 ScrewSpeedController::new(inverter, target_pressure, target_rpm, pressure_sensor);
 
-            let mut extruder: Self = Self {
-                namespace: ExtruderV2Namespace::new(params.socket_queue_tx.clone()),
+            let mut extruder: ExtruderV2 = Self {
+                machine_identification_unique: params.get_machine_identification_unique(),
+                namespace: ExtruderV2Namespace {
+                    namespace: params.namespace.clone(),
+                },
                 last_measurement_emit: Instant::now(),
                 mode: ExtruderV2Mode::Standby,
                 total_energy_kwh: 0.0,

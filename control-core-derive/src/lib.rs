@@ -40,10 +40,15 @@ fn machine_derive2(item: TokenStream2) -> Result<TokenStream2, Error> {
     let ast: DeriveInput = syn::parse2(item)?;
 
     let ident = &ast.ident;
+
     let (impl_generics, ty_generics, where_clause) = ast.generics.split_for_impl();
 
     let expanded = quote! {
-        impl #impl_generics control_core::machines::Machine for #ident #ty_generics #where_clause {}
+        impl #impl_generics control_core::machines::Machine for #ident #ty_generics #where_clause {
+            fn get_machine_identification_unique(&self) -> control_core::machines::identification::MachineIdentificationUnique {
+                self.machine_identification_unique.clone()
+            }
+        }
 
         impl #impl_generics control_core::machines::AnyGetters for #ident #ty_generics #where_clause {
             fn as_any(&self) -> &dyn std::any::Any {

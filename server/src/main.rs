@@ -1,10 +1,3 @@
-#[cfg(all(not(target_env = "msvc"), not(feature = "dhat-heap")))]
-use tikv_jemallocator::Jemalloc;
-
-#[cfg(all(not(target_env = "msvc"), not(feature = "dhat-heap")))]
-#[global_allocator]
-static GLOBAL: Jemalloc = Jemalloc;
-
 #[cfg(feature = "dhat-heap")]
 #[global_allocator]
 static ALLOC: dhat::Alloc = dhat::Alloc;
@@ -22,9 +15,7 @@ use r#loop::init_loop;
 use rest::init::init_api;
 #[cfg(not(any(feature = "mock-machine", feature = "laser-mock")))]
 use serial::init::init_serial;
-
-#[cfg(all(not(target_env = "msvc"), not(feature = "dhat-heap")))]
-use jemalloc_stats::init_jemalloc_stats;
+use std::sync::Arc;
 
 use crate::panic::init_panic;
 use crate::socketio::queue::init_socketio_queue;
@@ -42,25 +33,18 @@ pub mod rest;
 pub mod serial;
 pub mod socketio;
 
-#[cfg(all(not(target_env = "msvc"), not(feature = "dhat-heap")))]
-pub mod jemalloc_stats;
+use crate::ethercat::init::init_ethercat;
 
 fn main() {
     // Initialize panic handling
     let thread_panic_tx = init_panic();
     logging::init_tracing();
     tracing::info!("Tracing initialized successfully");
-
-    // lock memory (not working thus commented out)
-    // if let Err(e) = lock_memory() {
-    //     tracing::error!("[{}::main] Failed to lock memory: {:?}", module_path!(), e);
-    // } else {
-    //     tracing::info!("[{}::main] Memory locked successfully", module_path!());
-    // }
-
-    #[cfg(all(not(target_env = "msvc"), not(feature = "dhat-heap")))]
-    init_jemalloc_stats();
-
+    if let Err(e) = control_core::realtime::lock_memory() {
+        tracing::error!("[{}::main] Failed to lock memory: {:?}", module_path!(), e);
+    } else {
+        tracing::info!("[{}::main] Memory locked successfully", module_path!());
+    }
     let app_state = Arc::new(AppState::new());
 
     // Spawn init thread
@@ -102,7 +86,8 @@ fn main() {
     // Keep the main thread alive indefinitely
     // The program should only exit via panic handling or external signals
     loop {
-        std::thread::sleep(Duration::from_secs(u64::MAX));
+        // better way to "sleep", uses basically
+        std::thread::park();
     }
 }
 

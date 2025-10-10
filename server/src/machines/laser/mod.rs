@@ -8,7 +8,8 @@ use crate::serial::devices::mock_laser::MockLaserDevice;
 
 use api::{LaserEvents, LaserMachineNamespace, LaserState, LiveValuesEvent, StateEvent};
 use control_core::{
-    machines::identification::MachineIdentification, socketio::namespace::NamespaceCacheingLogic,
+    machines::identification::{MachineIdentification, MachineIdentificationUnique},
+    socketio::namespace::NamespaceCacheingLogic,
 };
 use control_core_derive::Machine;
 use smol::lock::RwLock;
@@ -21,6 +22,8 @@ pub mod new;
 
 #[derive(Debug, Machine)]
 pub struct LaserMachine {
+    machine_identification_unique: MachineIdentificationUnique,
+
     // drivers
     #[cfg(not(feature = "laser-mock"))]
     laser: Arc<RwLock<Laser>>,
@@ -51,9 +54,7 @@ impl LaserMachine {
         vendor: VENDOR_QITECH,
         machine: MACHINE_LASER_V1,
     };
-}
 
-impl LaserMachine {
     ///diameter in mm
     pub fn emit_live_values(&mut self) {
         let diameter = self.diameter.get::<millimeter>();

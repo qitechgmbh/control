@@ -1,7 +1,8 @@
 use std::sync::Arc;
 
-use control_core::socketio::{
-    event::GenericEvent, namespace::Namespace, namespace_id::NamespaceId,
+use control_core::{
+    machines::connection::MachineConnection,
+    socketio::{event::GenericEvent, namespace::Namespace, namespace_id::NamespaceId},
 };
 use smol::channel::Sender;
 use socketioxide::extract::SocketRef;
@@ -34,8 +35,8 @@ impl Namespaces {
                 let machines_guard = app_state.machines.read().await;
 
                 // get machine
-                let machine = match machines_guard.get(&machine_identification_unique) {
-                    Some(machine) => machine,
+                let slot = match machines_guard.get(&machine_identification_unique) {
+                    Some(slot) => slot,
                     None => {
                         callback(Err(anyhow::anyhow!(
                             "[{}::Namespaces::appply_mut] Machine {:?} not found",
@@ -45,24 +46,32 @@ impl Namespaces {
                         return;
                     }
                 };
+                let slot = slot.lock_blocking();
 
                 // check if machine has error
-                let machine = match machine {
-                    Ok(machine) => machine,
-                    Err(err) => {
+                let machine = match &slot.machine_connection {
+                    MachineConnection::Error(error) => {
                         callback(Err(anyhow::anyhow!(
                             "[{}::Namespaces::appply_mut] Machine {:?} has error: {}",
                             module_path!(),
                             machine_identification_unique,
-                            err
+                            error
                         )));
                         return;
                     }
+                    MachineConnection::Disconnected => {
+                        callback(Err(anyhow::anyhow!(
+                            "[{}::Namespaces::appply_mut] Machine {:?} has disconnected",
+                            module_path!(),
+                            machine_identification_unique
+                        )));
+                        return;
+                    }
+                    MachineConnection::Connected(mutex) => mutex,
                 };
-
                 let mut machine_guard = machine.lock().await;
                 let namespace = machine_guard.api_event_namespace();
-                callback(Ok(namespace));
+                callback(Ok(&mut namespace.lock_blocking()));
             }
         }
     }

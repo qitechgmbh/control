@@ -32,7 +32,7 @@ Other
 
 ## Backend
 
-To interface with Beckhoff and other EtherCAT devices we need an EtherCAY master stoftware. Possibilities are [PySOEM](https://github.com/bnjmnp/pysoem) (Python), [SOEM](https://github.com/OpenEtherCATsociety/SOEM) (C) and [Ethercrab](https://github.com/ethercrab-rs/ethercrab) (Rust). For realtime operation only C and Rust are suitable. We chose Rust because of safety and confidence in the written code.
+To interface with Beckhoff and other EtherCAT devices we need an EtherCAT master stoftware. Possibilities are [PySOEM](https://github.com/bnjmnp/pysoem) (Python), [SOEM](https://github.com/OpenEtherCATsociety/SOEM) (C) and [Ethercrab](https://github.com/ethercrab-rs/ethercrab) (Rust). For realtime operation only C and Rust are suitable. We chose Rust because of safety and confidence in the written code.
 
 [SocketIO](https://socket.io/) was chosen for performant event driven communication from the backend to the server. But we still use REST with [axum](https://docs.rs/axum/latest/axum/) for the communication thet benefits from the request/response model.
 
@@ -64,12 +64,12 @@ We could combine the code of the frontend and backend using [Doxius](https://dio
 | Machine Type | Version | Release Date | Description                 | Change to Previous Version                             | Vendor ID                  | Machine ID | Implemented | Docs                            |
 | ------------ | ------- | ------------ | --------------------------- | ------------------------------------------------------ | -------------------------- | ---------- | ----------- | ------------------------------- |
 | Winder       | V1      | ???          | Winding Filaments & Similar | -                                                      | 1 (Qitech Industries GmbH) | 1          | Reserved    | -                               |
-| Winder       | V2      | 2025         | Winding Filaments & Similar | Reengineered Traverse                                  | 1 (Qitech Industries GmbH) | 2          | In Progress | [](./docs/machines/winder-1.md) |
+| Winder       | V2      | 2025         | Winding Filaments & Similar | Reengineered Traverse                                  | 1 (Qitech Industries GmbH) | 2          | Yes         | [](./docs/machines/winder-1.md) |
 | Extruder     | V1      | ???          | Single Screw Extruder       | -                                                      | 1 (Qitech Industries GmbH) | 3          | Reserved    | -                               |
-| Extruder     | V2      | 2025         | Single Screw Extruder       | PT100 Thermometers, Optional Additional Heating Zone 4 | 1 (Qitech Industries GmbH) | 4          | Not Yet     |                                 |
-| Waterway     | V1      | 2025         | Filament Water Cooling      | -                                                      | 1 (Qitech Industries GmbH) | 5          | Not Yet     |                                 |
-| Laser        | V1      | ???          | Diameter Measuring Laser    | -                                                      | 1 (Qitech Industries GmbH) | 6          | Not Yet     |                                 |
-| Mock         | -       | ???          | Mock Machine for Testing    | -                                                      | 1 (Qitech Industries GmbH) | 7          | Not Yet     | -                               |
+| Extruder     | V2      | 2025         | Single Screw Extruder       | PT100 Thermometers, Optional Additional Heating Zone 4 | 1 (Qitech Industries GmbH) | 4          | Yes         |                                 |
+| Waterway     | V1      | 2025         | Filament Water Cooling      | -                                                      | 1 (Qitech Industries GmbH) | 5          | In Progress     |                                 |
+| Laser        | V1      | ???          | Diameter Measuring Laser    | -                                                      | 1 (Qitech Industries GmbH) | 6          | Yes         |                                 |
+| Mock         | -       | ???          | Mock Machine for Testing    | -                                                      | 1 (Qitech Industries GmbH) | 7          | Yes         | -                               |
 
 # More Docs
 

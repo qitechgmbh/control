@@ -77,7 +77,7 @@ impl FilamentTensionCalculator {
     pub fn calc_filament_length(&self, tension_arm_angle: Angle) -> Length {
         let tension_arm_angle_rad = self
             .angle_converter
-            .decode_f64(tension_arm_angle)
+            .decode(tension_arm_angle)
             .get::<radian>();
 
         // Calculate tension arm tip position (flipped Y-axis: 0° = down, 90° = left)

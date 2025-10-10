@@ -1,3 +1,41 @@
+# `2.9.1`
+_10.10.2025_
+
+## Winder V2
+- [#796](https://github.com/qitechgmbh/control/pull/796) Winding in adaptive mode, while puller is in reverse mode is now possible
+
+## General
+- [#780](https://github.com/qitechgmbh/control/pull/780) Updates are faster now
+- [#746](https://github.com/qitechgmbh/control/pull/746) Improved scrollbar styling for manuals
+
+# `2.9.0`
+_06.10.2025_
+
+## Winder V2
+- [#778](https://github.com/qitechgmbh/control/pull/778) Increased Winder Traverse Step size limit
+
+## General
+- [#725](https://github.com/qitechgmbh/control/pull/725) Improved troubleshooting and update page
+- [#625](https://github.com/qitechgmbh/control/pull/625) Improved stability of Machine-Connections
+
+
+# `2.8.0`
+_30.09.2025_
+
+
+## Laser V1
+- [#741](https://github.com/qitechgmbh/control/pull/741) Added roundness measurement to two-axis Laser
+
+
+## Winder V2
+- [#745](https://github.com/qitechgmbh/control/pull/745), [#756](https://github.com/qitechgmbh/control/pull/756) improved Winder Frontend
+
+## General
+- [#447](https://github.com/qitechgmbh/control/pull/447) added AquaPath Machine
+
+
+
+
 # `2.7.0`
 
 _17.09.2025_
@@ -10,9 +48,9 @@ _17.09.2025_
 
 - [#727](https://github.com/qitechgmbh/control/pull/727) Removed estimated diameter
 
-## Laser V1/V2
+## Laser V1
 
-- [#731](https://github.com/qitechgmbh/control/pull/731) Added LaserV2 with two-axis measurements
+- [#731](https://github.com/qitechgmbh/control/pull/731) Added Laser with two-axis measurements
 
 ## General
 
