@@ -220,6 +220,7 @@ pub enum Mutation {
 
     // Reset
     ResetInverter(bool),
+    ResetInverterSettingsToDefault(bool),
 }
 
 #[derive(Debug)]
@@ -269,6 +270,9 @@ impl MachineApi for ExtruderV2 {
             Mutation::SetInverterTargetPressure(bar) => self.set_target_pressure(bar),
             Mutation::SetInverterTargetRpm(rpm) => self.set_target_rpm(rpm),
             Mutation::ResetInverter(_) => self.reset_inverter(),
+            Mutation::ResetInverterSettingsToDefault(_) => {
+                self.reset_inverter_settings_to_default()
+            }
 
             Mutation::SetFrontHeatingTargetTemperature(temp) => {
                 self.set_target_temperature(temp, HeatingType::Front)

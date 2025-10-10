@@ -13,6 +13,7 @@ export function Extruder2SettingsPage() {
     defaultState,
     setInverterRotationDirection,
     resetInverter,
+    resetInverterSettings,
     setExtruderPressureLimit,
     setExtruderPressureLimitEnabled,
     setPressurePidKp,
@@ -43,6 +44,22 @@ export function Extruder2SettingsPage() {
             Reset Inverter
           </button>
         </Label>
+
+<Label label="Reset Inverter Settings">
+  <button
+    onClick={() => {
+      if (window.confirm("Are you sure you want to reset the inverter to our default settings? This can not be undone!! Before resetting make sure that the motor is not running (Extruder in Standby).\nAfter pressing wait about 5 seconds, then set rpm to 0 and switch to Extrude Mode, this will tune the motor. This will make a weird noise, wait until its gone, then afterwards simply go back to standby. Now you can use the inverter normally")) {
+        resetInverterSettings();
+      }
+    }}
+    className="inline-block w-fit max-w-max rounded bg-red-600 px-4 py-4 text-base whitespace-nowrap text-white hover:bg-red-700"
+    style={{ minWidth: "auto", width: "fit-content" }}
+  >
+    Reset Inverter Settings
+  </button>
+</Label>
+
+
       </ControlCard>
 
       <ControlCard className="bg-red" title="Extruder Settings">

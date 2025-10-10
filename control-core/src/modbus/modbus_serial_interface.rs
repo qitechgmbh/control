@@ -70,6 +70,10 @@ impl ModbusSerialInterface {
         !matches!(self.state, State::Uninitialized)
     }
 
+    pub fn is_request_queued(&self) -> bool {
+        return !self.request_map.is_empty();
+    }
+
     pub fn add_request(
         &mut self,
         request_id: u32,
@@ -196,6 +200,7 @@ impl ModbusSerialInterface {
 
         let total_timeout =
             transmission_timeout + machine_operation_delay.as_nanos() as u64 + silent_time;
+
         Some(Duration::from_nanos(total_timeout))
     }
 
@@ -230,7 +235,7 @@ impl ModbusSerialInterface {
                 Ok(response) => {
                     self.response = Some(response);
                 }
-                Err(_) => {
+                Err(e) => {
                     self.response = None;
                     if self.no_response_expected {
                         self.state = State::ReadyToSend;
