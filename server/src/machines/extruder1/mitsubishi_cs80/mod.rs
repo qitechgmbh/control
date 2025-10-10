@@ -511,18 +511,13 @@ impl MitsubishiCS80 {
     fn handle_response(&mut self, control_request_type: u32) {
         let response_type = match MitsubishiCS80Requests::try_from(control_request_type) {
             Ok(request_type) => request_type,
-            Err(e) => {
-                tracing::info!("{:?}", e);
+            Err(_) => {
                 return;
             }
         };
-
         let Some(response) = self.modbus_serial_interface.get_response().cloned() else {
             return;
         };
-
-        println!("{:?}", response);
-
         match response_type {
             MitsubishiCS80Requests::ReadInverterStatus => {
                 self.handle_read_inverter_status(&response);
