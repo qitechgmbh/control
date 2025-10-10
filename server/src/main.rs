@@ -3,11 +3,17 @@
 static ALLOC: dhat::Alloc = dhat::Alloc;
 
 use app_state::AppState;
-use r#loop::init_loop;
+#[cfg(feature = "laser-mock")]
+use mock::init::init_laser_mock;
 #[cfg(feature = "mock-machine")]
 use mock::init::init_mock;
+use std::{sync::Arc, time::Duration};
+
+#[cfg(not(any(feature = "mock-machine", feature = "laser-mock")))]
+use ethercat::init::init_ethercat;
+use r#loop::init_loop;
 use rest::init::init_api;
-#[cfg(not(feature = "mock-machine"))]
+#[cfg(not(any(feature = "mock-machine", feature = "laser-mock")))]
 use serial::init::init_serial;
 use std::sync::Arc;
 
@@ -19,7 +25,7 @@ pub mod ethercat;
 pub mod logging;
 pub mod r#loop;
 pub mod machines;
-#[cfg(feature = "mock-machine")]
+#[cfg(any(feature = "mock-machine", feature = "laser-mock"))]
 pub mod mock;
 pub mod panic;
 pub mod performance_metrics;
@@ -60,11 +66,14 @@ fn main() {
                 #[cfg(feature = "mock-machine")]
                 init_mock(app_state.clone()).expect("Failed to initialize mock machines");
 
-                #[cfg(not(feature = "mock-machine"))]
+                #[cfg(feature = "laser-mock")]
+                init_laser_mock(app_state.clone()).expect("Failed to initialize laser mock");
+
+                #[cfg(not(any(feature = "mock-machine", feature = "laser-mock")))]
                 init_serial(thread_panic_tx.clone(), app_state.clone())
                     .expect("Failed to initialize Serial");
 
-                #[cfg(not(feature = "mock-machine"))]
+                #[cfg(not(any(feature = "mock-machine", feature = "laser-mock")))]
                 init_ethercat(thread_panic_tx.clone(), app_state)
                     .expect("Failed to initialize EtherCAT");
             }
