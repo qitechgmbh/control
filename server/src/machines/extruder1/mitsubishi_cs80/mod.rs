@@ -600,9 +600,7 @@ impl MitsubishiCS80 {
                 let request = self.parameter_writes_queued.pop_front();
                 let request = request.unwrap();
                 self.add_request(request.clone());
-                println!("interrupt_normal_operation : {:?}", request);
             } else if self.parameter_writes_queued.is_empty() {
-                println!("queue empty");
                 // when queue empty we are done
                 self.interrupt_normal_operation = false;
                 self.add_request(MitsubishiCS80Requests::ReadInverterStatus.into());

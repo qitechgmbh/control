@@ -200,10 +200,7 @@ impl ModbusSerialInterface {
 
         let total_timeout =
             transmission_timeout + machine_operation_delay.as_nanos() as u64 + silent_time;
-        println!(
-            "calculate_modbus_rtu_timeout: {}",
-            Duration::from_nanos(total_timeout).as_millis()
-        );
+
         Some(Duration::from_nanos(total_timeout))
     }
 
@@ -236,12 +233,10 @@ impl ModbusSerialInterface {
         match self.state {
             State::WaitingForResponse => match self.read_modbus_response().await {
                 Ok(response) => {
-                    println!("{:?}", response);
                     self.response = Some(response);
                 }
                 Err(e) => {
                     self.response = None;
-                    println!("{:?}", e);
                     if self.no_response_expected {
                         self.state = State::ReadyToSend;
                     }
