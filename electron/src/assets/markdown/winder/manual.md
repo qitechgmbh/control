@@ -416,6 +416,29 @@ Then start the machine as follows:
 
 <br>
 
+**Understanding Padding**
+
+The **padding** parameter creates a safety margin that prevents the filament from winding too close to the spool edges. When you set the inner and outer limits during calibration, the padding value is automatically subtracted from the actual travel distance.
+
+**How padding works:**
+
+- When you have a 1.75mm diameter filament and the traverse moves to a flank position, the **center** of the filament aligns with that flank
+- If you set 1mm padding, the system automatically maintains at least 1mm distance from the flanks
+- This prevents the filament from overlapping or winding beyond the spool edges
+
+**Example:**
+
+- Outer limit: 90mm, Inner limit: 22mm
+- Padding: 1mm
+- **Actual winding area:** 89mm to 23mm (reduced by 1mm on each side)
+- This ensures the filament stays within the spool boundaries with a safe margin
+
+The default padding is 0.88mm, but you can adjust this value in the Control settings based on your filament diameter and winding requirements. Larger filaments may require more padding, while smaller filaments can use less padding for maximum spool utilization.
+
+![Padding example](images/manuals/winder/winder_padding_example_image.jpg)
+
+<br>
+
 **4. Start pulling**
 
 - Select “Control” in the function bar
