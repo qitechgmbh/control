@@ -167,9 +167,12 @@ impl Winder2 {
             .puller_speed_controller
             .converter
             .steps_to_angular_velocity(steps_per_second as f64);
-        let puller_speed = self
+        let motor_speed = self
             .puller_speed_controller
             .angular_velocity_to_speed(angular_velocity);
+        
+        // Divide by gear ratio to get actual puller/material speed
+        let puller_speed = motor_speed / self.puller_speed_controller.get_gear_ratio().multiplier();
 
         // Calculate spool RPM from current motor steps
         let spool_rpm = self

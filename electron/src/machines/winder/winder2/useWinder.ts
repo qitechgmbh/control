@@ -375,12 +375,21 @@ export function useWinder2() {
     updateStateOptimistically(
       (current) => {
         current.data.puller_state.gear_ratio = gearRatio;
+        // Reset target speed to 0 to prevent sudden speed changes
+        current.data.puller_state.target_speed = 0;
       },
-      () =>
-        requestPullerSetGearRatio({
+      async () => {
+        // First set the gear ratio
+        await requestPullerSetGearRatio({
           machine_identification_unique: machineIdentification,
           data: { SetPullerGearRatio: gearRatio },
-        }),
+        });
+        // Then set the target speed to 0
+        await requestPullerSetTargetSpeed({
+          machine_identification_unique: machineIdentification,
+          data: { SetPullerTargetSpeed: 0 },
+        });
+      },
     );
   };
 
