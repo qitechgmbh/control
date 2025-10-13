@@ -49,6 +49,24 @@ export const gearRatioSchema = z.enum(["OneToOne", "OneToFive", "OneToTen"]);
 export type GearRatio = z.infer<typeof gearRatioSchema>;
 
 /**
+ * Get the multiplier for a gear ratio
+ */
+export function getGearRatioMultiplier(
+  gearRatio: GearRatio | undefined,
+): number {
+  switch (gearRatio) {
+    case "OneToOne":
+      return 1.0;
+    case "OneToFive":
+      return 5.0;
+    case "OneToTen":
+      return 10.0;
+    default:
+      return 1.0;
+  }
+}
+
+/**
  * Machine operation mode enum
  */
 export const modeSchema = z.enum(["Standby", "Hold", "Pull", "Wind"]);

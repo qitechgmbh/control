@@ -68,6 +68,16 @@ const previewEntries: PresetPreviewEntries<Winder2> = [
       data.puller_state?.forward ? "Forward" : "Backward",
   },
   {
+    name: "Puller Gear Ratio",
+    renderValue: (data: PresetData<Winder2>) => {
+      const ratio = data.puller_state?.gear_ratio;
+      if (ratio === "OneToOne") return "1:1";
+      if (ratio === "OneToFive") return "1:5";
+      if (ratio === "OneToTen") return "1:10";
+      return "N/A";
+    },
+  },
+  {
     name: "Puller Target Speed",
     unit: "m/min",
     renderValue: (data: PresetData<Winder2>) =>

@@ -13,7 +13,11 @@ import { Label } from "@/control/Label";
 import { TouchButton } from "@/components/touch/TouchButton";
 import { StatusBadge } from "@/control/StatusBadge";
 import { useWinder2 } from "./useWinder";
-import { Mode, SpoolAutomaticActionMode } from "./winder2Namespace";
+import {
+  Mode,
+  SpoolAutomaticActionMode,
+  getGearRatioMultiplier,
+} from "./winder2Namespace";
 import { TensionArm } from "../TensionArm";
 import { roundDegreesToDecimals, roundToDecimals } from "@/lib/decimal";
 import { Spool } from "../Spool";
@@ -53,6 +57,13 @@ export function Winder2ControlPage() {
     isLoading,
     isDisabled,
   } = useWinder2();
+
+  // Calculate max speed based on gear ratio
+  const gearRatioMultiplier = getGearRatioMultiplier(
+    state?.puller_state?.gear_ratio,
+  );
+  const maxMotorSpeed = 75; // Maximum motor speed in m/min
+  const maxTargetSpeed = maxMotorSpeed / gearRatioMultiplier;
 
   const handleResetProgress = () => {
     // Check if the machine is currently in Wind mode
@@ -274,7 +285,7 @@ export function Winder2ControlPage() {
               title="Target Speed"
               defaultValue={defaultState?.puller_state?.target_speed}
               min={0}
-              max={75}
+              max={maxTargetSpeed}
               step={0.1}
               renderValue={(value) => roundToDecimals(value, 1)}
               onChange={setPullerTargetSpeed}

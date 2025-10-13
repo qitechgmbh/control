@@ -1,5 +1,5 @@
-use super::{Winder2, Winder2Mode, puller_speed_controller::PullerRegulationMode};
 use super::puller_speed_controller::GearRatio;
+use super::{Winder2, Winder2Mode, puller_speed_controller::PullerRegulationMode};
 use control_core::{
     machines::{
         api::MachineApi, connection::MachineCrossConnectionState,
