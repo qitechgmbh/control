@@ -170,7 +170,7 @@ impl Winder2 {
         let motor_speed = self
             .puller_speed_controller
             .angular_velocity_to_speed(angular_velocity);
-        
+
         // Divide by gear ratio to get actual puller/material speed
         let puller_speed = motor_speed / self.puller_speed_controller.get_gear_ratio().multiplier();
 
