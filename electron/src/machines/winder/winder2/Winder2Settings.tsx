@@ -17,6 +17,7 @@ export function Winder2SettingPage() {
     setTraverseStepSize,
     setTraversePadding,
     setPullerForward,
+    setPullerGearRatio,
     setSpoolRegulationMode,
     setSpoolMinMaxMinSpeed,
     setSpoolMinMaxMaxSpeed,
@@ -247,6 +248,32 @@ export function Winder2SettingPage() {
                 icon: "lu:RotateCw",
               }}
               onChange={(value) => setPullerForward(value)}
+            />
+          </Label>
+          <Label label="Gear Ratio">
+            <SelectionGroup
+              value={state?.puller_state?.gear_ratio}
+              disabled={isDisabled}
+              loading={isLoading}
+              options={{
+                OneToOne: {
+                  children: "1:1",
+                  icon: "lu:Circle",
+                },
+                OneToFive: {
+                  children: "1:5",
+                  icon: "lu:Cog",
+                },
+                OneToTen: {
+                  children: "1:10",
+                  icon: "lu:Cog",
+                },
+              }}
+              onChange={(value) =>
+                setPullerGearRatio(
+                  value as "OneToOne" | "OneToFive" | "OneToTen",
+                )
+              }
             />
           </Label>
         </ControlCard>

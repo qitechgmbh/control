@@ -1,4 +1,5 @@
 use super::{Winder2, Winder2Mode, puller_speed_controller::PullerRegulationMode};
+use super::puller_speed_controller::GearRatio;
 use control_core::{
     machines::{
         api::MachineApi, connection::MachineCrossConnectionState,
@@ -76,6 +77,7 @@ enum Mutation {
     SetPullerTargetSpeed(f64),
     SetPullerTargetDiameter(f64),
     SetPullerForward(bool),
+    SetPullerGearRatio(GearRatio),
 
     // Spool Speed Controller
     SetSpoolRegulationMode(super::spool_speed_controller::SpoolSpeedControllerType),
@@ -190,6 +192,8 @@ pub struct PullerState {
     pub target_diameter: f64,
     /// forward rotation direction
     pub forward: bool,
+    /// gear ratio for winding speed
+    pub gear_ratio: GearRatio,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -296,6 +300,7 @@ impl MachineApi for Winder2 {
             Mutation::SetPullerTargetSpeed(value) => self.puller_set_target_speed(value),
             Mutation::SetPullerTargetDiameter(_) => todo!(),
             Mutation::SetPullerForward(value) => self.puller_set_forward(value),
+            Mutation::SetPullerGearRatio(gear_ratio) => self.puller_set_gear_ratio(gear_ratio),
             Mutation::SetSpoolRegulationMode(mode) => self.spool_set_regulation_mode(mode),
             Mutation::SetSpoolMinMaxMinSpeed(speed) => self.spool_set_minmax_min_speed(speed),
             Mutation::SetSpoolMinMaxMaxSpeed(speed) => self.spool_set_minmax_max_speed(speed),

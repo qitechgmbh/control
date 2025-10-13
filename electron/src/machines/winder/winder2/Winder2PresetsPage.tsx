@@ -153,6 +153,7 @@ export function Winder2PresetsPage() {
     setPullerTargetDiameter,
     setPullerForward,
     setPullerTargetSpeed,
+    setPullerGearRatio,
 
     setSpoolRegulationMode,
 
@@ -177,6 +178,7 @@ export function Winder2PresetsPage() {
     setPullerRegulationMode(preset.data?.puller_state?.regulation ?? "Speed");
     setPullerForward(preset.data?.puller_state?.forward ?? true);
     setPullerTargetSpeed(preset.data?.puller_state?.target_speed ?? 1.0);
+    setPullerGearRatio(preset.data?.puller_state?.gear_ratio ?? "OneToOne");
     // setPullerTargetDiameter(preset.data?.puller_state?.target_diameter ?? 1.75);
 
     setSpoolRegulationMode(

@@ -235,6 +235,7 @@ impl Winder2 {
                     .target_diameter
                     .get::<millimeter>(),
                 forward: self.puller_speed_controller.forward,
+                gear_ratio: self.puller_speed_controller.gear_ratio,
             },
             mode_state: ModeState {
                 mode: self.mode.clone().into(),
@@ -394,6 +395,12 @@ impl Winder2 {
     /// Set forward direction
     pub fn puller_set_forward(&mut self, forward: bool) {
         self.puller_speed_controller.set_forward(forward);
+        self.emit_state();
+    }
+
+    /// Set gear ratio for winding speed
+    pub fn puller_set_gear_ratio(&mut self, gear_ratio: super::puller_speed_controller::GearRatio) {
+        self.puller_speed_controller.set_gear_ratio(gear_ratio);
         self.emit_state();
     }
 

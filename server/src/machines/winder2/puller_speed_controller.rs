@@ -14,6 +14,30 @@ use uom::{
     si::f64::{Acceleration, AngularVelocity, Jerk, Length, Velocity},
 };
 
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
+pub enum GearRatio {
+    OneToOne,
+    OneToFive,
+    OneToTen,
+}
+
+impl GearRatio {
+    /// Get the speed multiplier for this gear ratio
+    pub fn multiplier(&self) -> f64 {
+        match self {
+            GearRatio::OneToOne => 1.0,
+            GearRatio::OneToFive => 5.0,
+            GearRatio::OneToTen => 10.0,
+        }
+    }
+}
+
+impl Default for GearRatio {
+    fn default() -> Self {
+        GearRatio::OneToOne
+    }
+}
+
 #[derive(Debug)]
 pub struct PullerSpeedController {
     enabled: bool,
@@ -22,6 +46,8 @@ pub struct PullerSpeedController {
     pub regulation_mode: PullerRegulationMode,
     /// Forward rotation direction. If false, applies negative sign to speed
     pub forward: bool,
+    /// Gear ratio for winding speed (1:5 or 1:10)
+    pub gear_ratio: GearRatio,
     /// Linear acceleration controller to dampen speed change
     acceleration_controller: LinearJerkSpeedController,
     /// Converter for linear to angular transformations
@@ -45,6 +71,7 @@ impl PullerSpeedController {
             target_diameter,
             regulation_mode: PullerRegulationMode::Speed,
             forward: true,
+            gear_ratio: GearRatio::default(),
             acceleration_controller: LinearJerkSpeedController::new_simple(
                 Some(speed),
                 acceleration,
@@ -75,14 +102,25 @@ impl PullerSpeedController {
         self.forward = forward;
     }
 
+    pub const fn set_gear_ratio(&mut self, gear_ratio: GearRatio) {
+        self.gear_ratio = gear_ratio;
+    }
+
+    pub const fn get_gear_ratio(&self) -> GearRatio {
+        self.gear_ratio
+    }
+
     fn update_speed(&mut self, t: Instant) -> Velocity {
-        let speed = match self.enabled {
+        let base_speed = match self.enabled {
             true => match self.regulation_mode {
                 PullerRegulationMode::Speed => self.target_speed,
                 PullerRegulationMode::Diameter => unimplemented!(),
             },
             false => Velocity::ZERO,
         };
+
+        // Apply gear ratio multiplier
+        let speed = base_speed * self.gear_ratio.multiplier();
 
         let speed = if self.forward { speed } else { -speed };
 
