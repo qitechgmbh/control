@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { TouchButton } from "@/components/touch/TouchButton";
 import { Icon } from "@/components/Icon";
 import { ControlCard } from "@/control/ControlCard";
+import { TimeInput } from "@/components/time/TimeInput";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,8 +22,14 @@ export function GraphControls({
   onSwitchToHistorical,
   onExport,
   timeWindowOptions = DEFAULT_TIME_WINDOW_OPTIONS,
+  showFromTimestamp,
+  onShowFromChange,
 }: ControlProps) {
   const getSelectedTimeWindowLabel = () => {
+    // If Show from Time is set, display "Show All" for the time window
+    if (showFromTimestamp) {
+      return "Show All";
+    }
     const option = timeWindowOptions.find((opt) => opt.value === timeWindow);
     return option ? option.label : "1m";
   };
@@ -35,7 +42,10 @@ export function GraphControls({
             <DropdownMenuTrigger asChild>
               <TouchButton
                 variant="outline"
-                className="h-auto border-gray-300 bg-white px-3 py-3 text-base text-gray-900 hover:bg-gray-50"
+                className={`h-auto border-gray-300 bg-white px-3 py-3 text-base text-gray-900 hover:bg-gray-50 ${
+                  showFromTimestamp ? "cursor-not-allowed opacity-50" : ""
+                }`}
+                disabled={!!showFromTimestamp}
               >
                 {getSelectedTimeWindowLabel()}
                 <Icon name="lu:ChevronDown" className="ml-2 size-4" />
@@ -59,6 +69,15 @@ export function GraphControls({
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
+
+          {/* Show From Time Input - only visible in historical mode */}
+          {!isLiveMode && onShowFromChange && (
+            <TimeInput
+              timestamp={showFromTimestamp}
+              onTimeChange={onShowFromChange}
+              onClear={() => onShowFromChange(null)}
+            />
+          )}
 
           <TouchButton
             onClick={onSwitchToHistorical}
@@ -109,10 +128,16 @@ export function FloatingControlPanel({
   onSwitchToHistorical,
   onExport,
   timeWindowOptions = DEFAULT_TIME_WINDOW_OPTIONS,
+  showFromTimestamp,
+  onShowFromChange,
 }: ControlProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const getSelectedTimeWindowLabel = () => {
+    // If Show from Time is set, display "Show All" for the time window
+    if (showFromTimestamp) {
+      return "Show All";
+    }
     const option = timeWindowOptions.find((opt) => opt.value === timeWindow);
     return option ? option.label : "1m";
   };
@@ -134,7 +159,10 @@ export function FloatingControlPanel({
               <DropdownMenuTrigger asChild>
                 <TouchButton
                   variant="outline"
-                  className="h-auto border-gray-300 bg-white px-3 py-3 text-base text-gray-900 hover:bg-gray-50"
+                  className={`h-auto border-gray-300 bg-white px-3 py-3 text-base text-gray-900 hover:bg-gray-50 ${
+                    showFromTimestamp ? "cursor-not-allowed opacity-50" : ""
+                  }`}
+                  disabled={!!showFromTimestamp}
                 >
                   {getSelectedTimeWindowLabel()}
                   <Icon name="lu:ChevronDown" className="ml-2 size-4" />
@@ -158,6 +186,15 @@ export function FloatingControlPanel({
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
+
+            {/* Show From Time Input - only visible in historical mode */}
+            {!isLiveMode && onShowFromChange && (
+              <TimeInput
+                timestamp={showFromTimestamp}
+                onTimeChange={onShowFromChange}
+                onClear={() => onShowFromChange(null)}
+              />
+            )}
 
             <TouchButton
               onClick={onSwitchToHistorical}

@@ -474,6 +474,7 @@ export function BigGraph({
     isLiveMode,
     selectedTimeWindow,
     visibleSeries, // Keep for initial creation
+    showFromTimestamp: syncGraph?.showFromTimestamp,
     setSelectedTimeWindow,
     setViewMode,
     setIsLiveMode,
