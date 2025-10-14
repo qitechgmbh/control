@@ -342,7 +342,6 @@ impl Winder2 {
     }
 }
 
-
 impl Winder2 {
     pub fn configure_pi_controller(&mut self, settings: PiSettings) {
         // Implement pid to controll speed of winder
