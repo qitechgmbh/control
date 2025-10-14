@@ -4,7 +4,6 @@ use super::api::Winder2Namespace;
 use super::tension_arm::TensionArm;
 use super::{Winder2, Winder2Mode};
 use crate::machines::get_ethercat_device;
-use crate::machines::winder2::api::PidSettings;
 use crate::machines::winder2::puller_speed_controller::PullerSpeedController;
 use crate::machines::winder2::spool_speed_controller::SpoolSpeedController;
 use crate::machines::winder2::traverse_controller::TraverseController;
@@ -178,14 +177,6 @@ impl MachineNewTrait for Winder2 {
 
             let mode = Winder2Mode::Standby;
 
-            let machine_id = params
-                .device_group
-                .first()
-                .expect("device group must have at least one device")
-                .device_machine_identification
-                .machine_identification_unique
-                .clone();
-
             let mut new = Self {
                 traverse: StepperVelocityEL70x1::new(el7031.clone(), EL7031StepperPort::STM1),
                 traverse_end_stop: DigitalInput::new(el7031, EL7031DigitalInputPort::DI1),
@@ -230,13 +221,15 @@ impl MachineNewTrait for Winder2 {
                     mode: super::api::SpoolAutomaticActionMode::NoAction,
                 },
                 machine_manager: params.machine_manager.clone(),
-                machine_identification_unique: machine_id,
+                machine_identification_unique: params.get_machine_identification_unique(),
                 connected_buffer: MachineCrossConnection::new(
                     params.machine_manager.clone(),
                     &params.get_machine_identification_unique(),
                 ),
-                last_state_event: None,
-                connected_laser: None,
+                connected_laser: MachineCrossConnection::new(
+                    params.machine_manager.clone(),
+                    &params.get_machine_identification_unique(),
+                ),
             };
 
             // initalize events

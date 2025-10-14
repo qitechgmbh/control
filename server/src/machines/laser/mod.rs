@@ -1,17 +1,15 @@
 use crate::{
     machines::{
-        MACHINE_LASER_V1, VENDOR_QITECH, laser::api::ConnectedMachineState, winder2::Winder2,
+        MACHINE_LASER_V1, VENDOR_QITECH, winder2::Winder2,
     },
     serial::devices::laser::Laser,
 };
 use api::{LaserEvents, LaserMachineNamespace, LaserState, LiveValuesEvent, StateEvent};
 use control_core::{
-    machines::identification::{MachineIdentification, MachineIdentificationUnique},
+    machines::{connection::{CrossConnectableMachine, MachineConnection, MachineCrossConnection}, identification::{MachineIdentification, MachineIdentificationUnique}, manager::MachineManager},
     socketio::namespace::NamespaceCacheingLogic,
 };
 use control_core_derive::Machine;
-use futures::executor::block_on;
-use smol::lock::Mutex;
 use smol::lock::RwLock;
 use std::{
     sync::{Arc, Weak},
@@ -25,7 +23,6 @@ pub mod new;
 
 #[derive(Debug, Machine)]
 pub struct LaserMachine {
-    machine_identification_unique: MachineIdentificationUnique,
 
     // drivers
     laser: Arc<RwLock<Laser>>,
@@ -39,7 +36,7 @@ pub struct LaserMachine {
     pub machine_identification_unique: MachineIdentificationUnique,
 
     // connected machines
-    pub connected_winder: Option<ConnectedMachine<Weak<Mutex<Winder2>>>>,
+    pub connected_winder: MachineCrossConnection<LaserMachine, Winder2>,
 
     // laser values
     diameter: Length,
@@ -53,6 +50,12 @@ pub struct LaserMachine {
     /// Will be initialized as false and set to true by emit_state
     /// This way we can signal to the client that the first state emission is a default state
     emitted_default_state: bool,
+}
+
+impl CrossConnectableMachine<LaserMachine, Winder2> for LaserMachine {
+    fn get_cross_connection(&mut self) -> &mut MachineCrossConnection<LaserMachine, Winder2> {
+        &mut self.connected_winder
+    }
 }
 
 impl LaserMachine {
@@ -88,20 +91,7 @@ impl LaserMachine {
         StateEvent {
             is_default_state: false,
             laser_state: laser,
-            connected_winder_state: ConnectedMachineState {
-                machine_identification_unique: self.connected_winder.as_ref().map(
-                    |connected_machine| {
-                        ConnectedMachineData::from(connected_machine).machine_identification_unique
-                    },
-                ),
-                is_available: self
-                    .connected_winder
-                    .as_ref()
-                    .map(|connected_machine| {
-                        ConnectedMachineData::from(connected_machine).is_available
-                    })
-                    .unwrap_or(false),
-            },
+            connected_winder_state: self.connected_winder.to_state(),
         }
     }
 
@@ -113,20 +103,7 @@ impl LaserMachine {
                 lower_tolerance: self.laser_target.lower_tolerance.get::<millimeter>(),
                 target_diameter: self.laser_target.diameter.get::<millimeter>(),
             },
-            connected_winder_state: ConnectedMachineState {
-                machine_identification_unique: self.connected_winder.as_ref().map(
-                    |connected_machine| {
-                        ConnectedMachineData::from(connected_machine).machine_identification_unique
-                    },
-                ),
-                is_available: self
-                    .connected_winder
-                    .as_ref()
-                    .map(|connected_machine| {
-                        ConnectedMachineData::from(connected_machine).is_available
-                    })
-                    .unwrap_or(false),
-            },
+            connected_winder_state: self.connected_winder.to_state(),
         };
 
         self.namespace.emit(LaserEvents::State(state.build()));
@@ -203,50 +180,15 @@ impl LaserMachine {
             machine_identification_unique.machine_identification,
             Winder2::MACHINE_IDENTIFICATION
         ) {
-            tracing::trace!("Setting Connected Winder | did not match ID");
             return;
         }
-        let machine_manager_arc = match self.machine_manager.upgrade() {
-            Some(machine_manager_arc) => machine_manager_arc,
-            None => {
-                tracing::trace!("Setting Connected Winder | Failed to upgrade machine manager");
-                return;
-            }
-        };
 
-        let winder2_weak =
-            block_on(machine_manager_arc.read()).get_machine_weak(&machine_identification_unique);
-
-        let winder2_weak = match winder2_weak {
-            Some(winder2_weak) => winder2_weak,
-            None => {
-                tracing::trace!("Setting Connected Winder | Failed to get machine weak");
-                return;
-            }
-        };
-        let winder2_strong = match winder2_weak.upgrade() {
-            Some(winder2_strong) => winder2_strong,
-            None => {
-                tracing::trace!("Setting Connected Winder | Failed to upgrade to strong");
-                return;
-            }
-        };
-
-        let winder2: Arc<Mutex<Winder2>> = block_on(downcast_machine::<Winder2>(winder2_strong))
-            .expect("failed downcasting machine");
-
-        let machine = Arc::downgrade(&winder2);
-
-        self.connected_winder = Some(ConnectedMachine {
-            machine_identification_unique,
-            machine,
-        });
+        self.connected_winder
+            .set_connected_machine(&machine_identification_unique);
+        self.connected_winder.reverse_connect();
 
         self.emit_state();
-
-        self.reverse_connect_winder();
     }
-
     /// disconnect winder
     pub fn disconnect_winder(
         &mut self,
@@ -258,63 +200,17 @@ impl LaserMachine {
         ) {
             return;
         }
-        if let Some(connected) = &self.connected_winder {
-            if let Some(winder_arc) = connected.machine.upgrade() {
-                let future = async move {
-                    let mut winder = winder_arc.lock().await;
-                    if winder.connected_laser.is_some() {
-                        winder.connected_laser = None;
-                        winder.emit_state();
-                    }
-                };
-                smol::spawn(future).detach();
-            }
-        }
-        self.connected_winder = None;
+
+        self.connected_winder.reverse_disconnect();
+        self.connected_winder.disconnect();
+
         self.emit_state();
     }
 
-    /// initiate connection from winder to laser
-    pub fn reverse_connect_winder(&mut self) {
-        let machine_identification_unique = self.machine_identification_unique.clone();
-        if let Some(connected) = &self.connected_winder {
-            if let Some(winder_arc) = connected.machine.upgrade() {
-                let future = async move {
-                    let mut winder = winder_arc.lock().await;
-                    if winder.connected_laser.is_none() {
-                        winder.set_connected_laser(machine_identification_unique);
-                    }
-                };
-                smol::spawn(future).detach();
-            }
-        }
-    }
-
-    /// This helper function provides an easy way
-    /// to get the machine out of the Weak Reference
-    ///
-    /// Usage:
-    ///
-    ///    self.get_winder(|winder2| {
-    ///        winder2.do_something     // Use the Winder here as usual
-    ///    });
-    fn get_winder<F, R>(&self, func: F) -> Option<R>
-    where
-        F: FnOnce(&mut Winder2) -> R,
-    {
-        self.connected_winder
-            .as_ref()?
-            .machine
-            .upgrade()
-            .map(|winder_arc| {
-                let mut winder = block_on(winder_arc.lock());
-                func(&mut winder)
-            })
-    }
 }
 
 impl LaserMachine {
-    fn set_measured_diameter(&self) {
+    fn set_measured_diameter(&mut self) {
         let diameter = smol::block_on(async {
             self.laser
                 .read()
@@ -324,11 +220,20 @@ impl LaserMachine {
                 .map(|laser_data| laser_data.diameter.get::<millimeter>())
         });
 
-        self.get_winder(|winder2| {
-            winder2
-                .puller_speed_controller
-                .set_measured_diameter(diameter.unwrap_or(0.0));
-        });
+        if let Some(slot) = self
+            .get_cross_connection()
+            .connected_machine
+            .upgrade()
+        {
+            let slot = slot.lock_blocking();
+
+            if let MachineConnection::Connected(machine) = &slot.machine_connection {
+                let mut winder = machine.lock_blocking();
+
+                winder.puller_speed_controller
+                    .set_measured_diameter(diameter.unwrap_or(0.0));
+            }
+        }
     }
 }
 

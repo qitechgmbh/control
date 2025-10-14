@@ -4,6 +4,7 @@ use crate::serial::{devices::laser::Laser, registry::SERIAL_DEVICE_REGISTRY};
 
 use super::{LaserMachine, LaserTarget, api::LaserMachineNamespace};
 use anyhow::Error;
+use control_core::machines::connection::MachineCrossConnection;
 use control_core::machines::new::{MachineNewHardware, MachineNewTrait};
 use uom::ConstZero;
 use uom::si::{f64::Length, length::millimeter};
@@ -34,14 +35,6 @@ impl MachineNewTrait for LaserMachine {
             lower_tolerance: Length::new::<millimeter>(0.05),
             diameter: Length::new::<millimeter>(1.75),
         };
-        // get machine identification unique
-        let machine_id = params
-            .device_group
-            .first()
-            .expect("device group must have at least one device")
-            .device_machine_identification
-            .machine_identification_unique
-            .clone();
 
         let mut laser_machine = Self {
             machine_identification_unique: params.get_machine_identification_unique(),
@@ -53,8 +46,10 @@ impl MachineNewTrait for LaserMachine {
             laser_target,
             emitted_default_state: false,
             machine_manager: params.machine_manager.clone(),
-            machine_identification_unique: machine_id,
-            connected_winder: None,
+            connected_winder: MachineCrossConnection::new(
+                params.machine_manager.clone(),
+                &params.get_machine_identification_unique(),
+            ),
             diameter: Length::ZERO,
             x_diameter: None,
             y_diameter: None,
