@@ -409,7 +409,7 @@ impl MachineApi for Winder2 {
         Ok(())
     }
 
-    fn api_event_namespace(&mut self) -> &mut Namespace {
-        &mut self.namespace.namespace
+    fn api_event_namespace(&mut self) -> Arc<Mutex<Namespace>> {
+        self.namespace.namespace.clone()
     }
 }

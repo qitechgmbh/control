@@ -4,6 +4,8 @@ mod winder2_imports {
 
     pub use super::super::{TraverseMode, Winder2, Winder2Mode, api, spool_speed_controller};
     pub use crate::machines::buffer1::BufferV1;
+    pub use crate::machines::laser::LaserMachine;
+    pub use crate::machines::winder2::api::{PiSettings, PiSettingsStates};
 
     pub use api::{
         LiveValuesEvent, ModeState, PullerState, SpoolAutomaticActionMode,
@@ -293,6 +295,12 @@ impl Winder2 {
                 spool_automatic_action_mode: self.spool_automatic_action.mode.clone(),
             },
             connected_machine_state: self.connected_buffer.to_state(),
+            pi_settings: PiSettingsStates {
+                speed: PiSettings {
+                    kp: self.puller_speed_controller.p_dead_controller.get_kp(),
+                    ki: self.puller_speed_controller.p_dead_controller.get_ki(),
+                },
+            },
         }
     }
 
@@ -529,6 +537,42 @@ impl Winder2 {
 
         self.connected_buffer.reverse_disconnect();
         self.connected_buffer.disconnect();
+
+        self.emit_state();
+    }
+    /// set connected laser
+    pub fn set_connected_laser(
+        &mut self,
+        machine_identification_unique: MachineIdentificationUnique,
+    ) {
+        if !matches!(
+            machine_identification_unique.machine_identification,
+            LaserMachine::MACHINE_IDENTIFICATION
+        ) {
+            return;
+        }
+
+        self.connected_laser
+            .set_connected_machine(&machine_identification_unique);
+        self.connected_laser.reverse_connect();
+
+        self.emit_state();
+    }
+
+    /// disconnect laser
+    pub fn disconnect_laser(
+        &mut self,
+        machine_identification_unique: MachineIdentificationUnique,
+    ) {
+        if !matches!(
+            machine_identification_unique.machine_identification,
+            LaserMachine::MACHINE_IDENTIFICATION
+        ) {
+            return;
+        }
+
+        self.connected_laser.reverse_disconnect();
+        self.connected_laser.disconnect();
 
         self.emit_state();
     }

@@ -52,6 +52,46 @@ pub use winder2_imports::*;
 
 #[cfg(not(feature = "mock-machine"))]
 use crate::machines::get_ethercat_device;
+<<<<<<< HEAD
+=======
+use crate::machines::winder2::puller_speed_controller::PullerSpeedController;
+use crate::machines::winder2::spool_speed_controller::SpoolSpeedController;
+use crate::machines::winder2::traverse_controller::TraverseController;
+use anyhow::Error;
+use control_core::converters::angular_step_converter::AngularStepConverter;
+use control_core::converters::linear_step_converter::LinearStepConverter;
+use control_core::machines::connection::MachineCrossConnection;
+use control_core::machines::new::{
+    MachineNewHardware, MachineNewParams, MachineNewTrait, validate_no_role_dublicates,
+    validate_same_machine_identification_unique,
+};
+use control_core::uom_extensions::velocity::meter_per_minute;
+use ethercat_hal::coe::ConfigurableDevice;
+use ethercat_hal::devices::ek1100::EK1100;
+use ethercat_hal::devices::el2002::{EL2002, EL2002_IDENTITY_B, EL2002Port};
+use ethercat_hal::devices::el7031::coe::EL7031Configuration;
+use ethercat_hal::devices::el7031::pdo::EL7031PredefinedPdoAssignment;
+use ethercat_hal::devices::el7031::{
+    EL7031, EL7031_IDENTITY_A, EL7031_IDENTITY_B, EL7031DigitalInputPort, EL7031StepperPort,
+};
+use ethercat_hal::devices::el7031_0030::coe::EL7031_0030Configuration;
+use ethercat_hal::devices::el7031_0030::pdo::EL7031_0030PredefinedPdoAssignment;
+use ethercat_hal::devices::el7031_0030::{
+    self, EL7031_0030, EL7031_0030_IDENTITY_A, EL7031_0030AnalogInputPort, EL7031_0030StepperPort,
+};
+use ethercat_hal::devices::el7041_0052::coe::EL7041_0052Configuration;
+use ethercat_hal::devices::el7041_0052::{EL7041_0052, EL7041_0052_IDENTITY_A, EL7041_0052Port};
+use ethercat_hal::devices::{ek1100::EK1100_IDENTITY_A, el2002::EL2002_IDENTITY_A};
+use ethercat_hal::io::analog_input::AnalogInput;
+use ethercat_hal::io::digital_input::DigitalInput;
+use ethercat_hal::io::digital_output::DigitalOutput;
+use ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1;
+use ethercat_hal::shared_config;
+use ethercat_hal::shared_config::el70x1::{EL70x1OperationMode, StmMotorConfiguration};
+use uom::ConstZero;
+use uom::si::f64::{Length, Velocity};
+use uom::si::length::{centimeter, meter, millimeter};
+>>>>>>> 4bca956e (Fixed merge issues.)
 
 #[cfg(not(feature = "mock-machine"))]
 impl MachineNewTrait for Winder2 {
@@ -190,14 +230,6 @@ impl MachineNewTrait for Winder2 {
 
             let mode = Winder2Mode::Standby;
 
-            let machine_id = params
-                .device_group
-                .first()
-                .expect("device group must have at least one device")
-                .device_machine_identification
-                .machine_identification_unique
-                .clone();
-
             let mut new = Self {
                 traverse: StepperVelocityEL70x1::new(el7031.clone(), EL7031StepperPort::STM1),
                 traverse_end_stop: DigitalInput::new(el7031, EL7031DigitalInputPort::DI1),
@@ -242,13 +274,15 @@ impl MachineNewTrait for Winder2 {
                     mode: super::api::SpoolAutomaticActionMode::NoAction,
                 },
                 machine_manager: params.machine_manager.clone(),
-                machine_identification_unique: machine_id,
+                machine_identification_unique: params.get_machine_identification_unique(),
                 connected_buffer: MachineCrossConnection::new(
                     params.machine_manager.clone(),
                     &params.get_machine_identification_unique(),
                 ),
-                last_state_event: None,
-                connected_laser: None,
+                connected_laser: MachineCrossConnection::new(
+                    params.machine_manager.clone(),
+                    &params.get_machine_identification_unique(),
+                ),
             };
 
             // initalize events
