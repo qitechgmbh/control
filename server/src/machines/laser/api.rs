@@ -1,11 +1,10 @@
 use super::LaserMachine;
 use control_core::{
-    machines::{api::MachineApi, identification::MachineIdentificationUnique},
+    machines::{api::MachineApi, connection::MachineCrossConnectionState, identification::MachineIdentificationUnique},
     socketio::{
         event::{Event, GenericEvent},
         namespace::{
-            CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_duration,
-            cache_first_and_last_event,
+            cache_duration, cache_first_and_last_event, CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic
         },
     },
 };
@@ -37,7 +36,7 @@ pub struct StateEvent {
     /// laser state
     pub laser_state: LaserState,
     /// connected winder state
-    pub connected_winder_state: ConnectedMachineState,
+    pub connected_winder_state: MachineCrossConnectionState,
 }
 
 impl StateEvent {
