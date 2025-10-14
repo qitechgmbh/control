@@ -41,7 +41,10 @@ use uom::{
     },
 };
 
-use crate::machines::{buffer1::BufferV1, laser::LaserMachine, winder2::api::PiSettings, MACHINE_WINDER_V1, VENDOR_QITECH};
+use crate::machines::{
+    MACHINE_WINDER_V1, VENDOR_QITECH, buffer1::BufferV1, laser::LaserMachine,
+    winder2::api::PiSettings,
+};
 
 #[derive(Debug)]
 pub struct SpoolAutomaticAction {
@@ -312,7 +315,6 @@ impl Winder2 {
         let _ = self.puller.set_speed(steps_per_second);
     }
 }
-
 
 impl Winder2 {
     pub fn configure_pi_controller(&mut self, settings: PiSettings) {

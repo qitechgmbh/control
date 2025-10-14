@@ -1,12 +1,14 @@
 use crate::{
-    machines::{
-        MACHINE_LASER_V1, VENDOR_QITECH, winder2::Winder2,
-    },
+    machines::{MACHINE_LASER_V1, VENDOR_QITECH, winder2::Winder2},
     serial::devices::laser::Laser,
 };
 use api::{LaserEvents, LaserMachineNamespace, LaserState, LiveValuesEvent, StateEvent};
 use control_core::{
-    machines::{connection::{CrossConnectableMachine, MachineConnection, MachineCrossConnection}, identification::{MachineIdentification, MachineIdentificationUnique}, manager::MachineManager},
+    machines::{
+        connection::{CrossConnectableMachine, MachineConnection, MachineCrossConnection},
+        identification::{MachineIdentification, MachineIdentificationUnique},
+        manager::MachineManager,
+    },
     socketio::namespace::NamespaceCacheingLogic,
 };
 use control_core_derive::Machine;
@@ -23,7 +25,6 @@ pub mod new;
 
 #[derive(Debug, Machine)]
 pub struct LaserMachine {
-
     // drivers
     laser: Arc<RwLock<Laser>>,
 
@@ -206,7 +207,6 @@ impl LaserMachine {
 
         self.emit_state();
     }
-
 }
 
 impl LaserMachine {
@@ -220,17 +220,14 @@ impl LaserMachine {
                 .map(|laser_data| laser_data.diameter.get::<millimeter>())
         });
 
-        if let Some(slot) = self
-            .get_cross_connection()
-            .connected_machine
-            .upgrade()
-        {
+        if let Some(slot) = self.get_cross_connection().connected_machine.upgrade() {
             let slot = slot.lock_blocking();
 
             if let MachineConnection::Connected(machine) = &slot.machine_connection {
                 let mut winder = machine.lock_blocking();
 
-                winder.puller_speed_controller
+                winder
+                    .puller_speed_controller
                     .set_measured_diameter(diameter.unwrap_or(0.0));
             }
         }

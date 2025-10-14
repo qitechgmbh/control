@@ -1,10 +1,14 @@
 use super::LaserMachine;
 use control_core::{
-    machines::{api::MachineApi, connection::MachineCrossConnectionState, identification::MachineIdentificationUnique},
+    machines::{
+        api::MachineApi, connection::MachineCrossConnectionState,
+        identification::MachineIdentificationUnique,
+    },
     socketio::{
         event::{Event, GenericEvent},
         namespace::{
-            cache_duration, cache_first_and_last_event, CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic
+            CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_duration,
+            cache_first_and_last_event,
         },
     },
 };
