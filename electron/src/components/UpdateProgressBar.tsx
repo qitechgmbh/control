@@ -98,7 +98,11 @@ export function UpdateProgressBar({
                   <span
                     className={cn("text-xs text-gray-400 dark:text-gray-600")}
                   >
-                    ({step.subsector})
+                    (
+                    {step.id === "rust-build"
+                      ? "rust & electron"
+                      : step.subsector}
+                    )
                   </span>
                 </div>
                 {/* Progress percentage for in-progress steps */}
