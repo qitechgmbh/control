@@ -48,18 +48,21 @@ const defaultSteps: UpdateStep[] = [
     label: "Clone repository",
     status: "pending",
     subsector: "general",
+    progress: 0,
   },
   {
     id: "rust-build",
     label: "Build system packages",
     status: "pending",
     subsector: "rust",
+    progress: 0,
   },
   {
     id: "system-install",
     label: "Install system updates",
     status: "pending",
     subsector: "nixos",
+    progress: 0,
   },
 ];
 
@@ -80,18 +83,17 @@ const calculateOverallProgress = (steps: UpdateStep[]): number => {
     if (step.status === "completed") {
       // Completed steps contribute their full weight
       totalProgress += weight;
-    } else if (step.status === "in-progress" && step.progress !== undefined) {
-      // In-progress steps with progress tracking
+    } else if (step.status === "in-progress") {
+      // In-progress steps: use progress value or 0 if not yet set
+      const stepProgress = step.progress ?? 0;
+
       if (step.id === "rust-build") {
         // Rust build progress is 0-90%, map it to 0-100% of its weight
-        totalProgress += (step.progress / 90) * weight;
+        totalProgress += (stepProgress / 90) * weight;
       } else {
         // Other steps: progress is 0-100%
-        totalProgress += (step.progress / 100) * weight;
+        totalProgress += (stepProgress / 100) * weight;
       }
-    } else if (step.status === "in-progress") {
-      // In-progress steps without specific progress: assume 50%
-      totalProgress += weight * 0.5;
     }
     // Pending and error steps contribute 0
   });
@@ -202,9 +204,13 @@ export const useUpdateStore = create<UpdateStore>((set) => ({
         if (stepIndex !== -1) {
           state.steps[stepIndex].status = status;
 
-          // Update current step index if this step is in progress
+          // Update current step index and ensure progress is initialized
           if (status === "in-progress") {
             state.currentStepIndex = stepIndex;
+            // Initialize progress to 0 if not already set
+            if (state.steps[stepIndex].progress === undefined) {
+              state.steps[stepIndex].progress = 0;
+            }
           }
 
           // Calculate overall progress based on step weights and progress
