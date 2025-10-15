@@ -34,6 +34,8 @@ fn main() {
     let thread_panic_tx = init_panic();
     logging::init_tracing();
     tracing::info!("Tracing initialized successfully");
+
+    #[cfg(feature = "memory-locking")]
     if let Err(e) = control_core::realtime::lock_memory() {
         tracing::error!("[{}::main] Failed to lock memory: {:?}", module_path!(), e);
     } else {
