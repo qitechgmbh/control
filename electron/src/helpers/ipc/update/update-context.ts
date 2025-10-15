@@ -3,6 +3,7 @@ import {
   UPDATE_END,
   UPDATE_EXECUTE,
   UPDATE_LOG,
+  UPDATE_STEP,
 } from "./update-channels";
 
 type UpdateExecuteInvokeParams = {
@@ -16,11 +17,20 @@ type UpdateExecuteInvokeParams = {
   };
 };
 
+type UpdateStepParams = {
+  stepId: string;
+  status: "pending" | "in-progress" | "completed" | "error";
+  progress?: number;
+};
+
 export function exposeUpdateContext() {
   const { contextBridge, ipcRenderer } = window.require("electron");
 
   let currentLogListener: ((event: any, log: string) => void) | null = null;
   let currentEndListener: ((event: any, params: any) => void) | null = null;
+  let currentStepListener:
+    | ((event: any, params: UpdateStepParams) => void)
+    | null = null;
 
   contextBridge.exposeInMainWorld("update", {
     execute: (params: UpdateExecuteInvokeParams) =>
@@ -51,6 +61,18 @@ export function exposeUpdateContext() {
       };
 
       ipcRenderer.on(UPDATE_END, currentEndListener);
+    },
+
+    onStep: (callback: (params: UpdateStepParams) => void) => {
+      if (currentStepListener) {
+        ipcRenderer.removeListener(UPDATE_STEP, currentStepListener);
+      }
+
+      currentStepListener = (_event, params) => {
+        callback(params);
+      };
+
+      ipcRenderer.on(UPDATE_STEP, currentStepListener);
     },
   });
 }
