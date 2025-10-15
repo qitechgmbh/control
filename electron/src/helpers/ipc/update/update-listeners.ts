@@ -117,6 +117,13 @@ async function update(
           commit,
         });
 
+        // Reset NixOS build progress tracking
+        nixosBuildProgress = {
+          totalDerivations: 0,
+          builtDerivations: 0,
+          maxPercent: 0,
+        };
+
         const qitechControlEnv = process.env.QITECH_CONTROL_ENV;
         const homeDir =
           qitechControlEnv === "control-os" ? "/home/qitech" : process.env.HOME;
@@ -427,6 +434,70 @@ async function runCommand(
   }
 }
 
+// Track NixOS build progress
+let nixosBuildProgress = {
+  totalDerivations: 0,
+  builtDerivations: 0,
+  maxPercent: 0, // Track max to prevent backward movement
+};
+
+// Parse NixOS build output for progress
+function parseNixosBuildOutput(
+  log: string,
+  event: Electron.IpcMainInvokeEvent,
+): void {
+  // Track derivations to build
+  const derivationsMatch = log.match(/these (\d+) derivations? will be built/i);
+  if (derivationsMatch) {
+    nixosBuildProgress.totalDerivations = parseInt(derivationsMatch[1], 10);
+    nixosBuildProgress.builtDerivations = 0;
+    nixosBuildProgress.maxPercent = 0;
+    event.sender.send(UPDATE_STEP, {
+      stepId: "nixos-build",
+      status: "in-progress",
+      progress: 0,
+    });
+    return;
+  }
+
+  // Track building packages
+  if (
+    log.includes("building '/nix/store/") ||
+    log.includes("building /nix/store/")
+  ) {
+    nixosBuildProgress.builtDerivations++;
+
+    let percent = 15;
+    if (nixosBuildProgress.totalDerivations > 0) {
+      const derivationProgress =
+        nixosBuildProgress.builtDerivations /
+        nixosBuildProgress.totalDerivations;
+      percent = 15 + Math.floor(derivationProgress * 70); // Map to 15-85%
+    }
+
+    // Only move forward
+    percent = Math.max(percent, nixosBuildProgress.maxPercent);
+    nixosBuildProgress.maxPercent = percent;
+
+    event.sender.send(UPDATE_STEP, {
+      stepId: "nixos-build",
+      status: "in-progress",
+      progress: percent,
+    });
+  }
+
+  // Track installing phase
+  if (log.includes("installing") || log.includes("Installing")) {
+    const percent = Math.max(88, nixosBuildProgress.maxPercent);
+    nixosBuildProgress.maxPercent = percent;
+    event.sender.send(UPDATE_STEP, {
+      stepId: "nixos-build",
+      status: "in-progress",
+      progress: percent,
+    });
+  }
+}
+
 // Enhanced version of runCommand that tracks build steps based on log output
 async function runCommandWithStepTracking(
   cmd: string,
@@ -458,6 +529,9 @@ async function runCommandWithStepTracking(
     // Function to process log output and update steps
     const processLogForSteps = (log: string) => {
       const logLower = log.toLowerCase();
+
+      // Parse NixOS build progress
+      parseNixosBuildOutput(log, event);
 
       // Check for Rust build indicators
       if (

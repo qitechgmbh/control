@@ -15,6 +15,7 @@ export type UpdateStep = {
   label: string;
   status: "pending" | "in-progress" | "completed" | "error";
   subsector: "nixos" | "rust" | "electron" | "general";
+  progress?: number; // 0-100 for steps with detailed progress tracking
 };
 
 export type UpdateState = {
@@ -34,6 +35,7 @@ export type UpdateActions = {
   clearTerminalLines: () => void;
   resetUpdateState: () => void;
   setStepStatus: (stepId: string, status: UpdateStep["status"]) => void;
+  setStepProgress: (stepId: string, progress: number) => void;
   initializeSteps: () => void;
   updateProgress: (progress: number) => void;
 };
@@ -187,6 +189,19 @@ export const useUpdateStore = create<UpdateStore>((set) => ({
           ).length;
           state.overallProgress = Math.round(
             (completedSteps / state.steps.length) * 100,
+          );
+        }
+      }),
+    ),
+
+  setStepProgress: (stepId: string, progress: number) =>
+    set(
+      produce((state: UpdateState) => {
+        const stepIndex = state.steps.findIndex((s) => s.id === stepId);
+        if (stepIndex !== -1) {
+          state.steps[stepIndex].progress = Math.min(
+            100,
+            Math.max(0, progress),
           );
         }
       }),

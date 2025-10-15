@@ -6,6 +6,7 @@ let currentStepListener:
   | ((params: {
       stepId: string;
       status: "pending" | "in-progress" | "completed" | "error";
+      progress?: number;
     }) => void)
   | null = null;
 
@@ -30,8 +31,11 @@ export async function updateExecute(
 
     // Set up step listener
     currentStepListener = (params) => {
-      const { setStepStatus } = useUpdateStore.getState();
+      const { setStepStatus, setStepProgress } = useUpdateStore.getState();
       setStepStatus(params.stepId, params.status);
+      if (params.progress !== undefined) {
+        setStepProgress(params.stepId, params.progress);
+      }
     };
     window.update.onStep(currentStepListener);
 

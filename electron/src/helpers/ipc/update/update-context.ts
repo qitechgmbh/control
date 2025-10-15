@@ -20,6 +20,7 @@ type UpdateExecuteInvokeParams = {
 type UpdateStepParams = {
   stepId: string;
   status: "pending" | "in-progress" | "completed" | "error";
+  progress?: number;
 };
 
 export function exposeUpdateContext() {

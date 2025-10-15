@@ -50,6 +50,7 @@ interface UpdateContext {
     callback: (params: {
       stepId: string;
       status: "pending" | "in-progress" | "completed" | "error";
+      progress?: number;
     }) => void,
   ) => void;
 }

@@ -77,29 +77,53 @@ export function UpdateProgressBar({
 
             {/* Step Content */}
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <span
-                  className={cn(
-                    "text-sm",
-                    step.status === "completed" &&
-                      "text-gray-600 dark:text-gray-400",
-                    step.status === "error" &&
-                      "font-medium text-red-700 dark:text-red-400",
-                    step.status === "in-progress" &&
-                      "font-medium text-gray-900 dark:text-gray-100",
-                    step.status === "pending" &&
-                      "text-gray-500 dark:text-gray-500",
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <span
+                    className={cn(
+                      "text-sm",
+                      step.status === "completed" &&
+                        "text-gray-600 dark:text-gray-400",
+                      step.status === "error" &&
+                        "font-medium text-red-700 dark:text-red-400",
+                      step.status === "in-progress" &&
+                        "font-medium text-gray-900 dark:text-gray-100",
+                      step.status === "pending" &&
+                        "text-gray-500 dark:text-gray-500",
+                    )}
+                  >
+                    {step.label}
+                  </span>
+                  {/* Subsector Badge - minimal inline display */}
+                  <span
+                    className={cn("text-xs text-gray-400 dark:text-gray-600")}
+                  >
+                    ({step.subsector})
+                  </span>
+                </div>
+                {/* Progress percentage for in-progress steps */}
+                {step.status === "in-progress" &&
+                  step.progress !== undefined &&
+                  step.progress > 0 && (
+                    <span className="text-xs font-medium text-gray-600 tabular-nums dark:text-gray-400">
+                      {Math.round(step.progress)}%
+                    </span>
                   )}
-                >
-                  {step.label}
-                </span>
-                {/* Subsector Badge - minimal inline display */}
-                <span
-                  className={cn("text-xs text-gray-400 dark:text-gray-600")}
-                >
-                  ({step.subsector})
-                </span>
               </div>
+
+              {/* Progress bar for steps with detailed tracking */}
+              {step.status === "in-progress" &&
+                step.progress !== undefined &&
+                step.progress > 0 && (
+                  <div className="mt-2">
+                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+                      <div
+                        className="h-full rounded-full bg-gray-700 transition-all duration-500 dark:bg-gray-300"
+                        style={{ width: `${step.progress}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
             </div>
           </div>
         ))}
