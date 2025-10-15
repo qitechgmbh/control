@@ -102,11 +102,10 @@ installPhase = ''
       --name="QiTech Control" \
       --single-instance \
       --winrm-class="de.qitech.control-electron" \
-      --enable-gpu \ 
+      --enable-gpu \
       --ignore-gpu-blocklist \
       --enable-gpu-rasterization \
-      --disable-software-rasterizer \ 
-      --use-gl=desktop \
+      --disable-software-rasterizer \
       "\$@"
     EOF
     chmod +x $out/bin/qitech-control-electron
