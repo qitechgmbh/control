@@ -128,7 +128,6 @@ impl MachineNewTrait for BufferV1 {
 
             // Controller
             let buffer_lift_controller = BufferLiftController::new(
-            let buffer_lift_controller = BufferLiftController::new(
                 StepperVelocityEL70x1::new(el7041.clone(), EL7041_0052Port::STM1),
                 Length::new::<centimeter>(135.0),
                 Length::new::<centimeter>(0.0),
@@ -151,7 +150,9 @@ impl MachineNewTrait for BufferV1 {
                     200,
                     Length::new::<millimeter>(32.22),
                 ),
-                namespace: Buffer1Namespace::new(params.socket_queue_tx.clone()),
+                namespace: Buffer1Namespace {
+                    namespace: params.namespace.clone(),
+                },
                 last_measurement_emit: Instant::now(),
                 mode: BufferV1Mode::Standby,
                 buffer_lift_controller,

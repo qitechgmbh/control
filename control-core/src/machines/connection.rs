@@ -92,7 +92,7 @@ pub struct MachineCrossConnection<
 > {
     machine_manager: Weak<RwLock<MachineManager>>,
     machine_identification_unique: MachineIdentificationUnique,
-    connected_machine: Weak<Mutex<MachineSlot<T>>>,
+    pub connected_machine: Weak<Mutex<MachineSlot<T>>>,
     _make_compiler_happy: std::marker::PhantomData<F>, // This marks tells the typechecker, that we
                                                        // need F in our type arguemnts. We are ok with
                                                        // it being used only in a fake field. Without

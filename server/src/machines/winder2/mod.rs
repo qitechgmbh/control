@@ -306,6 +306,15 @@ impl Winder2 {
             .angular_velocity_to_steps(angular_velocity);
         let _ = self.puller.set_speed(steps_per_second);
     }
+
+    /// Implement Buffer
+    pub fn sync_buffer_speed(&mut self) {
+        todo!();
+    }
+
+    pub fn set_buffer_state(&mut self, state: BufferState) {
+        self.buffer_state = state;
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

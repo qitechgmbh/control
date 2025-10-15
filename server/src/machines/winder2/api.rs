@@ -293,14 +293,7 @@ impl MachineApi for Winder2 {
             Mutation::GotoTraverseLimitInner => self.traverse_goto_limit_inner(),
             Mutation::GotoTraverseHome => self.traverse_goto_home(),
             Mutation::SetPullerRegulationMode(regulation) => self.puller_set_regulation(regulation),
-            Mutation::SetPullerTargetSpeed(value) => {
-                self.puller_set_target_speed(value);
-                if self.connected_buffer.is_some() {
-                    self.get_buffer(|buffer| {
-                        buffer.buffer_lift_controller.set_current_input_speed(value);
-                    });
-                }
-            }
+            Mutation::SetPullerTargetSpeed(value) => self.puller_set_target_speed(value),
             Mutation::SetPullerTargetDiameter(_) => todo!(),
             Mutation::SetPullerForward(value) => self.puller_set_forward(value),
             Mutation::SetSpoolRegulationMode(mode) => self.spool_set_regulation_mode(mode),

@@ -9,6 +9,7 @@ use buffer_lift_controller::BufferLiftController;
 use control_core::{
     converters::linear_step_converter::LinearStepConverter,
     machines::{
+        connection::{CrossConnectableMachine, MachineConnection, MachineCrossConnection},
         identification::{MachineIdentification, MachineIdentificationUnique},
         manager::MachineManager,
     },
@@ -19,14 +20,10 @@ use control_core_derive::Machine;
 use ethercat_hal::io::{
     digital_input::DigitalInput, stepper_velocity_el70x1::StepperVelocityEL70x1,
 };
-use futures::executor::block_on;
 use puller_speed_controller::PullerRegulationMode;
 use serde::{Deserialize, Serialize};
-use smol::lock::{Mutex, RwLock};
-use std::{
-    sync::{Arc, Weak},
-    time::Instant,
-};
+use smol::lock::RwLock;
+use std::{sync::Weak, time::Instant};
 use uom::si::{
     f64::{Length, Velocity},
     length::millimeter,
@@ -35,7 +32,7 @@ use uom::si::{
 use crate::machines::{
     MACHINE_BUFFER_V1, VENDOR_QITECH,
     buffer1::{
-        api::{ConnectedMachineState, CurrentInputSpeedState, LiftState, PullerState},
+        api::{CurrentInputSpeedState, LiftState, PullerState},
         puller_speed_controller::PullerSpeedController,
     },
     winder2::{BufferState, Winder2, Winder2Mode},
@@ -228,19 +225,29 @@ impl BufferV1 {
     }
 
     fn update_winder2_mode(&mut self, mode: Winder2Mode) {
-        self.get_winder(|winder2| {
-            if winder2.mode != mode {
-                winder2.mode = mode;
+        if let Some(slot) = self.get_cross_connection().connected_machine.upgrade() {
+            let slot = slot.lock_blocking();
+
+            if let MachineConnection::Connected(machine) = &slot.machine_connection {
+                let mut winder = machine.lock_blocking();
+                if winder.mode != mode {
+                    winder.mode = mode;
+                }
             }
-        });
+        }
     }
 
     fn update_winder2_buffer_state(&mut self, state: BufferState) {
-        self.get_winder(|winder2| {
-            if winder2.buffer_state != state {
-                winder2.set_buffer_state(state);
+        if let Some(slot) = self.get_cross_connection().connected_machine.upgrade() {
+            let slot = slot.lock_blocking();
+
+            if let MachineConnection::Connected(machine) = &slot.machine_connection {
+                let mut winder = machine.lock_blocking();
+                if winder.buffer_state != state {
+                    winder.set_buffer_state(state);
+                }
             }
-        });
+        }
     }
 
     // Turn off motor and do nothing
@@ -432,28 +439,6 @@ impl BufferV1 {
 
         self.connected_winder.disconnect();
         self.emit_state();
-    }
-
-    /// This helper function provides an easy way
-    /// to get the machine out of the Weak Reference
-    ///
-    /// Usage:
-    ///
-    ///    self.get_winder(|winder2| {
-    ///        winder2.do_something     // Use the Winder here as usual
-    ///    });
-    fn get_winder<F, R>(&self, func: F) -> Option<R>
-    where
-        F: FnOnce(&mut Winder2) -> R,
-    {
-        self.connected_winder
-            .as_ref()?
-            .machine
-            .upgrade()
-            .map(|winder_arc| {
-                let mut winder = block_on(winder_arc.lock());
-                func(&mut winder)
-            })
     }
 }
 
