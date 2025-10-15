@@ -9,131 +9,100 @@ interface UpdateProgressBarProps {
   className?: string;
 }
 
-const subsectorColors = {
-  nixos: "text-blue-600 dark:text-blue-400",
-  rust: "text-orange-600 dark:text-orange-400",
-  electron: "text-purple-600 dark:text-purple-400",
-  general: "text-gray-600 dark:text-gray-400",
-};
-
-const subsectorBgColors = {
-  nixos: "bg-blue-100 dark:bg-blue-950",
-  rust: "bg-orange-100 dark:bg-orange-950",
-  electron: "bg-purple-100 dark:bg-purple-950",
-  general: "bg-gray-100 dark:bg-gray-950",
-};
-
-const subsectorBorderColors = {
-  nixos: "border-blue-200 dark:border-blue-900",
-  rust: "border-orange-200 dark:border-orange-900",
-  electron: "border-purple-200 dark:border-purple-900",
-  general: "border-gray-200 dark:border-gray-900",
-};
-
 export function UpdateProgressBar({
   steps,
   overallProgress,
   className,
 }: UpdateProgressBarProps) {
   return (
-    <div className={cn("space-y-6", className)}>
+    <div className={cn("space-y-4", className)}>
       {/* Overall Progress Bar */}
-      <div className="space-y-3">
+      <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <span className="text-base font-semibold">Overall Progress</span>
-          <span className="text-lg font-bold tabular-nums">
+          <span className="text-sm font-medium">Overall Progress</span>
+          <span className="text-sm font-semibold tabular-nums">
             {overallProgress}%
           </span>
         </div>
-        <div className="relative h-4 w-full overflow-hidden rounded-full bg-gray-200 shadow-inner dark:bg-gray-800">
+        <div className="relative h-2.5 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-800">
           <div
-            className="h-full rounded-full bg-gradient-to-r from-blue-500 via-orange-500 to-purple-500 shadow-sm transition-all duration-500 ease-out"
+            className="h-full rounded-full bg-gray-900 transition-all duration-500 ease-out dark:bg-gray-100"
             style={{ width: `${overallProgress}%` }}
           />
         </div>
       </div>
 
       {/* Steps List */}
-      <div className="space-y-3">
-        <h3 className="text-sm font-semibold tracking-wide text-gray-700 uppercase dark:text-gray-300">
-          Update Steps
-        </h3>
-        <div className="space-y-2">
-          {steps.map((step, index) => (
-            <div
-              key={step.id}
-              className={cn(
-                "flex items-start gap-3 rounded-lg border-2 p-3 transition-all duration-300",
-                step.status === "in-progress" &&
-                  "border-blue-400 bg-blue-50 shadow-md dark:border-blue-600 dark:bg-blue-950/50",
-                step.status === "completed" &&
-                  "border-green-400 bg-green-50 dark:border-green-600 dark:bg-green-950/50",
-                step.status === "error" &&
-                  "border-red-400 bg-red-50 dark:border-red-600 dark:bg-red-950/50",
-                step.status === "pending" &&
-                  "border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900/50",
+      <div className="space-y-2">
+        {steps.map((step) => (
+          <div
+            key={step.id}
+            className={cn(
+              "flex items-center gap-3 rounded border px-3 py-2.5 transition-all duration-200",
+              step.status === "in-progress" &&
+                "border-gray-400 bg-gray-50 dark:border-gray-600 dark:bg-gray-900",
+              step.status === "completed" &&
+                "border-gray-300 bg-white dark:border-gray-700 dark:bg-gray-950",
+              step.status === "error" &&
+                "border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950/30",
+              step.status === "pending" &&
+                "border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-950",
+            )}
+          >
+            {/* Status Icon */}
+            <div className="flex-shrink-0">
+              {step.status === "pending" && (
+                <div className="size-5 rounded-full border-2 border-gray-300 dark:border-gray-700" />
               )}
-            >
-              {/* Status Icon */}
-              <div className="flex-shrink-0 pt-0.5">
-                {step.status === "pending" && (
-                  <div className="size-6 rounded-full border-2 border-gray-300 dark:border-gray-700" />
-                )}
-                {step.status === "in-progress" && (
+              {step.status === "in-progress" && (
+                <Icon
+                  name="lu:Loader"
+                  className="size-5 animate-spin text-gray-600 dark:text-gray-400"
+                />
+              )}
+              {step.status === "completed" && (
+                <div className="flex size-5 items-center justify-center rounded-full bg-gray-700 dark:bg-gray-300">
                   <Icon
-                    name="lu:Loader"
-                    className="size-6 animate-spin text-blue-500"
+                    name="lu:Check"
+                    className="size-3 text-white dark:text-gray-900"
                   />
-                )}
-                {step.status === "completed" && (
-                  <div className="flex size-6 items-center justify-center rounded-full bg-green-500">
-                    <Icon name="lu:Check" className="size-4 text-white" />
-                  </div>
-                )}
-                {step.status === "error" && (
-                  <div className="flex size-6 items-center justify-center rounded-full bg-red-500">
-                    <Icon name="lu:X" className="size-4 text-white" />
-                  </div>
-                )}
-              </div>
-
-              {/* Step Content */}
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <span
-                    className={cn(
-                      "text-sm font-medium",
-                      step.status === "completed" &&
-                        "text-green-700 dark:text-green-300",
-                      step.status === "error" &&
-                        "text-red-700 dark:text-red-300",
-                      step.status === "in-progress" &&
-                        "font-semibold text-blue-700 dark:text-blue-300",
-                      step.status === "pending" &&
-                        "text-gray-600 dark:text-gray-400",
-                    )}
-                  >
-                    {step.label}
-                  </span>
                 </div>
-
-                {/* Subsector Badge */}
-                <div className="mt-1.5">
-                  <span
-                    className={cn(
-                      "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold",
-                      subsectorBgColors[step.subsector],
-                      subsectorColors[step.subsector],
-                      subsectorBorderColors[step.subsector],
-                    )}
-                  >
-                    {step.subsector.toUpperCase()}
-                  </span>
+              )}
+              {step.status === "error" && (
+                <div className="flex size-5 items-center justify-center rounded-full bg-red-600 dark:bg-red-500">
+                  <Icon name="lu:X" className="size-3 text-white" />
                 </div>
+              )}
+            </div>
+
+            {/* Step Content */}
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <span
+                  className={cn(
+                    "text-sm",
+                    step.status === "completed" &&
+                      "text-gray-600 dark:text-gray-400",
+                    step.status === "error" &&
+                      "font-medium text-red-700 dark:text-red-400",
+                    step.status === "in-progress" &&
+                      "font-medium text-gray-900 dark:text-gray-100",
+                    step.status === "pending" &&
+                      "text-gray-500 dark:text-gray-500",
+                  )}
+                >
+                  {step.label}
+                </span>
+                {/* Subsector Badge - minimal inline display */}
+                <span
+                  className={cn("text-xs text-gray-400 dark:text-gray-600")}
+                >
+                  ({step.subsector})
+                </span>
               </div>
             </div>
-          ))}
-        </div>
+          </div>
+        ))}
       </div>
     </div>
   );

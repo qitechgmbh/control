@@ -184,30 +184,21 @@ async function update(
 
         // 4. run the nixos-install.sh script
         // This script will handle nixos-build, rust-build, electron-build, and system-install
+        // Start with nixos-build
         event.sender.send(UPDATE_STEP, {
           stepId: "nixos-build",
           status: "in-progress",
         });
-        event.sender.send(UPDATE_STEP, {
-          stepId: "rust-build",
-          status: "in-progress",
-        });
-        event.sender.send(UPDATE_STEP, {
-          stepId: "electron-build",
-          status: "in-progress",
-        });
-        event.sender.send(UPDATE_STEP, {
-          stepId: "system-install",
-          status: "in-progress",
-        });
 
-        const installResult = await runCommand(
+        const installResult = await runCommandWithStepTracking(
           "./nixos-install.sh",
           [],
           repoDir,
           event,
         );
+
         if (!installResult.success) {
+          // Mark current and remaining steps as error
           event.sender.send(UPDATE_STEP, {
             stepId: "nixos-build",
             status: "error",
@@ -227,23 +218,8 @@ async function update(
           event.sender.send(UPDATE_LOG, installResult.error);
           return;
         }
-        event.sender.send(UPDATE_STEP, {
-          stepId: "nixos-build",
-          status: "completed",
-        });
-        event.sender.send(UPDATE_STEP, {
-          stepId: "rust-build",
-          status: "completed",
-        });
-        event.sender.send(UPDATE_STEP, {
-          stepId: "electron-build",
-          status: "completed",
-        });
-        event.sender.send(UPDATE_STEP, {
-          stepId: "system-install",
-          status: "completed",
-        });
 
+        // Success - steps are already marked as completed by runCommandWithStepTracking
         resolve();
       } catch (error: any) {
         reject(error);
@@ -443,6 +419,205 @@ async function runCommand(
           terminalError(`Command error: ${err.message}`),
         );
         reject({ success: false, error: err.message });
+      });
+    });
+  } catch (error: any) {
+    event.sender.send(UPDATE_LOG, terminalError(`Error: ${error.toString()}`));
+    return { success: false, error: error.toString() };
+  }
+}
+
+// Enhanced version of runCommand that tracks build steps based on log output
+async function runCommandWithStepTracking(
+  cmd: string,
+  args: string[],
+  workingDir: string,
+  event: Electron.IpcMainInvokeEvent,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const completeCommand = `${cmd} ${args.join(" ")}`;
+    const workingDirText = terminalGray(workingDir);
+    event.sender.send(
+      UPDATE_LOG,
+      `🚀 ${workingDirText} ${terminalColor("blue", completeCommand)}`,
+    );
+
+    const childProcess = spawn(cmd, args, {
+      cwd: workingDir,
+    });
+
+    // Store reference to current process for cancellation
+    currentUpdateProcess = childProcess;
+
+    // Track which steps have been marked as in-progress
+    // Note: nixos-build is already marked as in-progress before calling this function
+    let rustBuildStarted = false;
+    let electronBuildStarted = false;
+    let systemInstallStarted = false;
+
+    // Function to process log output and update steps
+    const processLogForSteps = (log: string) => {
+      const logLower = log.toLowerCase();
+
+      // Check for Rust build indicators
+      if (
+        !rustBuildStarted &&
+        (logLower.includes("building rust") ||
+          logLower.includes("cargo build") ||
+          (logLower.includes("compiling") && logLower.includes("server")))
+      ) {
+        // Mark nixos as complete, start rust
+        event.sender.send(UPDATE_STEP, {
+          stepId: "nixos-build",
+          status: "completed",
+        });
+        event.sender.send(UPDATE_STEP, {
+          stepId: "rust-build",
+          status: "in-progress",
+        });
+        rustBuildStarted = true;
+      }
+
+      // Check for Electron build indicators
+      if (
+        rustBuildStarted &&
+        !electronBuildStarted &&
+        (logLower.includes("building electron") ||
+          (logLower.includes("npm") &&
+            (logLower.includes("build") || logLower.includes("install"))) ||
+          (logLower.includes("vite") && logLower.includes("build")))
+      ) {
+        // Mark rust as complete, start electron
+        event.sender.send(UPDATE_STEP, {
+          stepId: "rust-build",
+          status: "completed",
+        });
+        event.sender.send(UPDATE_STEP, {
+          stepId: "electron-build",
+          status: "in-progress",
+        });
+        electronBuildStarted = true;
+      }
+
+      // Check for system install indicators
+      if (
+        electronBuildStarted &&
+        !systemInstallStarted &&
+        (logLower.includes("installing") ||
+          logLower.includes("nixos-rebuild") ||
+          logLower.includes("system install") ||
+          logLower.includes("activating"))
+      ) {
+        // Mark electron as complete, start system install
+        event.sender.send(UPDATE_STEP, {
+          stepId: "electron-build",
+          status: "completed",
+        });
+        event.sender.send(UPDATE_STEP, {
+          stepId: "system-install",
+          status: "in-progress",
+        });
+        systemInstallStarted = true;
+      }
+    };
+
+    // Stream stdout logs back to renderer
+    childProcess.stdout.on("data", (data) => {
+      const log = data.toString();
+      console.log(log);
+      event.sender.send(UPDATE_LOG, log);
+      processLogForSteps(log);
+    });
+
+    // Stream stderr logs back to renderer
+    childProcess.stderr.on("data", (data) => {
+      const log = data.toString();
+      console.error(log);
+      event.sender.send(UPDATE_LOG, log);
+      processLogForSteps(log);
+    });
+
+    // Handle process completion
+    return new Promise((resolve, reject) => {
+      childProcess.on("close", (code, signal) => {
+        // Clear process reference when completed
+        if (currentUpdateProcess === childProcess) {
+          currentUpdateProcess = null;
+        }
+
+        if (signal === "SIGTERM" || signal === "SIGKILL") {
+          event.sender.send(UPDATE_LOG, terminalInfo("Command was cancelled"));
+          reject({
+            success: false,
+            error: "Command was cancelled",
+          });
+        } else if (code === 0) {
+          // Mark all remaining steps as completed on success
+          if (!rustBuildStarted) {
+            event.sender.send(UPDATE_STEP, {
+              stepId: "nixos-build",
+              status: "completed",
+            });
+            event.sender.send(UPDATE_STEP, {
+              stepId: "rust-build",
+              status: "completed",
+            });
+          } else if (!electronBuildStarted) {
+            event.sender.send(UPDATE_STEP, {
+              stepId: "rust-build",
+              status: "completed",
+            });
+            event.sender.send(UPDATE_STEP, {
+              stepId: "electron-build",
+              status: "completed",
+            });
+          } else if (!systemInstallStarted) {
+            event.sender.send(UPDATE_STEP, {
+              stepId: "electron-build",
+              status: "completed",
+            });
+            event.sender.send(UPDATE_STEP, {
+              stepId: "system-install",
+              status: "completed",
+            });
+          } else {
+            event.sender.send(UPDATE_STEP, {
+              stepId: "system-install",
+              status: "completed",
+            });
+          }
+
+          event.sender.send(
+            UPDATE_LOG,
+            terminalSuccess("Command completed successfully"),
+          );
+          resolve({ success: true, error: undefined });
+        } else {
+          event.sender.send(
+            UPDATE_LOG,
+            terminalError(`Command failed with code ${code}`),
+          );
+          reject({
+            success: false,
+            error: terminalError(code?.toString() ?? "NO_CODE"),
+          });
+        }
+      });
+
+      childProcess.on("error", (err) => {
+        // Clear process reference on error
+        if (currentUpdateProcess === childProcess) {
+          currentUpdateProcess = null;
+        }
+
+        event.sender.send(
+          UPDATE_LOG,
+          terminalError(`Command error: ${err.message}`),
+        );
+        reject({
+          success: false,
+          error: terminalError(err.message),
+        });
       });
     });
   } catch (error: any) {
