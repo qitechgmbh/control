@@ -63,6 +63,42 @@ const defaultSteps: UpdateStep[] = [
   },
 ];
 
+// Helper function to calculate overall progress based on step weights and individual progress
+const calculateOverallProgress = (steps: UpdateStep[]): number => {
+  // Define weights for each step (should sum to 100)
+  const stepWeights: Record<string, number> = {
+    "clone-repo": 10, // 10% for cloning
+    "rust-build": 80, // 80% for building (goes up to 90% internally)
+    "system-install": 10, // 10% for system installation
+  };
+
+  let totalProgress = 0;
+
+  steps.forEach((step) => {
+    const weight = stepWeights[step.id] || 0;
+
+    if (step.status === "completed") {
+      // Completed steps contribute their full weight
+      totalProgress += weight;
+    } else if (step.status === "in-progress" && step.progress !== undefined) {
+      // In-progress steps with progress tracking
+      if (step.id === "rust-build") {
+        // Rust build progress is 0-90%, map it to 0-100% of its weight
+        totalProgress += (step.progress / 90) * weight;
+      } else {
+        // Other steps: progress is 0-100%
+        totalProgress += (step.progress / 100) * weight;
+      }
+    } else if (step.status === "in-progress") {
+      // In-progress steps without specific progress: assume 50%
+      totalProgress += weight * 0.5;
+    }
+    // Pending and error steps contribute 0
+  });
+
+  return Math.round(Math.min(100, Math.max(0, totalProgress)));
+};
+
 const initialState: UpdateState = {
   isUpdating: false,
   terminalLines: [],
@@ -171,13 +207,8 @@ export const useUpdateStore = create<UpdateStore>((set) => ({
             state.currentStepIndex = stepIndex;
           }
 
-          // Calculate overall progress
-          const completedSteps = state.steps.filter(
-            (s) => s.status === "completed",
-          ).length;
-          state.overallProgress = Math.round(
-            (completedSteps / state.steps.length) * 100,
-          );
+          // Calculate overall progress based on step weights and progress
+          state.overallProgress = calculateOverallProgress(state.steps);
         }
       }),
     ),
@@ -191,6 +222,9 @@ export const useUpdateStore = create<UpdateStore>((set) => ({
             100,
             Math.max(0, progress),
           );
+
+          // Recalculate overall progress when step progress changes
+          state.overallProgress = calculateOverallProgress(state.steps);
         }
       }),
     ),
