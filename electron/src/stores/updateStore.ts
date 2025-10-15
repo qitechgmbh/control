@@ -10,10 +10,20 @@ export type UpdateInfo = {
   commit?: string;
 };
 
+export type UpdateStep = {
+  id: string;
+  label: string;
+  status: "pending" | "in-progress" | "completed" | "error";
+  subsector: "nixos" | "rust" | "electron" | "general";
+};
+
 export type UpdateState = {
   isUpdating: boolean;
   terminalLines: string[];
   currentUpdateInfo: UpdateInfo | null;
+  steps: UpdateStep[];
+  currentStepIndex: number;
+  overallProgress: number; // 0-100
 };
 
 export type UpdateActions = {
@@ -23,14 +33,53 @@ export type UpdateActions = {
   addTerminalLine: (line: string) => void;
   clearTerminalLines: () => void;
   resetUpdateState: () => void;
+  setStepStatus: (stepId: string, status: UpdateStep["status"]) => void;
+  initializeSteps: () => void;
+  updateProgress: (progress: number) => void;
 };
 
 export type UpdateStore = UpdateState & UpdateActions;
+
+const defaultSteps: UpdateStep[] = [
+  {
+    id: "clone-repo",
+    label: "Clone repository",
+    status: "pending",
+    subsector: "general",
+  },
+  {
+    id: "nixos-build",
+    label: "Build NixOS configuration",
+    status: "pending",
+    subsector: "nixos",
+  },
+  {
+    id: "rust-build",
+    label: "Build Rust server",
+    status: "pending",
+    subsector: "rust",
+  },
+  {
+    id: "electron-build",
+    label: "Build Electron frontend",
+    status: "pending",
+    subsector: "electron",
+  },
+  {
+    id: "system-install",
+    label: "Install system updates",
+    status: "pending",
+    subsector: "nixos",
+  },
+];
 
 const initialState: UpdateState = {
   isUpdating: false,
   terminalLines: [],
   currentUpdateInfo: null,
+  steps: defaultSteps,
+  currentStepIndex: 0,
+  overallProgress: 0,
 };
 
 export const useUpdateStore = create<UpdateStore>((set) => ({
@@ -105,6 +154,48 @@ export const useUpdateStore = create<UpdateStore>((set) => ({
         state.isUpdating = false;
         state.terminalLines = [];
         state.currentUpdateInfo = null;
+        state.steps = defaultSteps.map((step) => ({ ...step }));
+        state.currentStepIndex = 0;
+        state.overallProgress = 0;
+      }),
+    ),
+
+  initializeSteps: () =>
+    set(
+      produce((state: UpdateState) => {
+        state.steps = defaultSteps.map((step) => ({ ...step }));
+        state.currentStepIndex = 0;
+        state.overallProgress = 0;
+      }),
+    ),
+
+  setStepStatus: (stepId: string, status: UpdateStep["status"]) =>
+    set(
+      produce((state: UpdateState) => {
+        const stepIndex = state.steps.findIndex((s) => s.id === stepId);
+        if (stepIndex !== -1) {
+          state.steps[stepIndex].status = status;
+
+          // Update current step index if this step is in progress
+          if (status === "in-progress") {
+            state.currentStepIndex = stepIndex;
+          }
+
+          // Calculate overall progress
+          const completedSteps = state.steps.filter(
+            (s) => s.status === "completed",
+          ).length;
+          state.overallProgress = Math.round(
+            (completedSteps / state.steps.length) * 100,
+          );
+        }
+      }),
+    ),
+
+  updateProgress: (progress: number) =>
+    set(
+      produce((state: UpdateState) => {
+        state.overallProgress = Math.min(100, Math.max(0, progress));
       }),
     ),
 }));

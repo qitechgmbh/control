@@ -46,6 +46,12 @@ interface UpdateContext {
   onEnd: (
     callback: (params: { success: boolean; error?: string }) => void,
   ) => void;
+  onStep: (
+    callback: (params: {
+      stepId: string;
+      status: "pending" | "in-progress" | "completed" | "error";
+    }) => void,
+  ) => void;
 }
 
 interface TroubleshootContext {
