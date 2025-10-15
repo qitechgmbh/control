@@ -1,22 +1,16 @@
 use crate::app_state::AppState;
-use crate::panic::{PanicDetails, send_panic};
 use bitvec::prelude::*;
 use control_core::machines::connection::MachineConnection;
 use control_core::realtime::{set_core_affinity, set_realtime_priority};
-use smol::channel::Sender;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tracing::{instrument, trace_span};
 
-pub fn init_loop(
-    thread_panic_tx: Sender<PanicDetails>,
-    app_state: Arc<AppState>,
-) -> Result<(), anyhow::Error> {
+pub fn init_loop(app_state: Arc<AppState>) -> Result<(), anyhow::Error> {
     // Start control loop
     std::thread::Builder::new()
         .name("loop".to_owned())
         .spawn(move || {
-            send_panic(thread_panic_tx.clone());
             let rt = smol::LocalExecutor::new();
 
             // Set core affinity to third core

@@ -1,8 +1,4 @@
-use crate::{
-    app_state::AppState,
-    panic::{PanicDetails, send_panic},
-};
-use smol::channel::Sender;
+use crate::app_state::AppState;
 use std::{sync::Arc, time::Instant};
 use tracing::{debug, error, info, instrument, trace};
 
@@ -62,11 +58,10 @@ async fn send_event_with_retry(
     }
 }
 
-pub fn init_socketio_queue(thread_panic_tx: Sender<PanicDetails>, app_state: Arc<AppState>) {
+pub fn init_socketio_queue(app_state: Arc<AppState>) {
     std::thread::Builder::new()
         .name("socketio-queue".to_string())
         .spawn(move || {
-            send_panic(thread_panic_tx);
 
             let rt = tokio::runtime::Builder::new_current_thread()
                 .enable_io()

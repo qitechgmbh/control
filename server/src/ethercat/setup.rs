@@ -1,6 +1,5 @@
 use crate::app_state::EthercatSetup;
 use crate::machines::registry::MACHINE_REGISTRY;
-use crate::panic::{PanicDetails, send_panic};
 use crate::socketio::main_namespace::MainNamespaceEvents;
 use crate::socketio::main_namespace::ethercat_devices_event::EthercatDevicesEventBuilder;
 use crate::socketio::main_namespace::machines_event::MachinesEventBuilder;
@@ -20,17 +19,12 @@ use control_core::socketio::namespace::NamespaceCacheingLogic;
 use ethercat_hal::devices::devices_from_subdevices;
 use ethercrab::std::ethercat_now;
 use ethercrab::{MainDevice, MainDeviceConfig, PduStorage, RetryBehaviour, Timeouts};
-use smol::channel::Sender;
 use std::{sync::Arc, time::Duration};
 
 const SM_OUTPUT: u16 = 0x1C32;
 const SM_INPUT: u16 = 0x1C33;
 
-pub async fn setup_loop(
-    thread_panic_tx: Sender<PanicDetails>,
-    interface: &str,
-    app_state: Arc<AppState>,
-) -> Result<(), anyhow::Error> {
+pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(), anyhow::Error> {
     tracing::info!("Starting Ethercat PDU loop");
 
     // Erase all all setup data from `app_state`
@@ -44,12 +38,10 @@ pub async fn setup_loop(
     let pdu_storage = Box::leak(Box::new(PduStorage::<MAX_FRAMES, MAX_PDU_DATA>::new()));
     let (tx, rx, pdu) = pdu_storage.try_split().expect("can only split once");
     let interface = interface.to_string();
-    let thread_panic_tx_clone = thread_panic_tx.clone();
+
     std::thread::Builder::new()
         .name("EthercatTxRxThread".to_owned())
         .spawn(move || {
-            send_panic(thread_panic_tx_clone);
-
             #[cfg(all(target_os = "linux", not(feature = "development-build")))]
             match set_irq_affinity(&interface, 3) {
                 Ok(_) => tracing::info!("ethernet interrupt handler now runs on cpu:{}", 3),
