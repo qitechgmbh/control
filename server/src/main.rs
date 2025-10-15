@@ -11,7 +11,7 @@ use rest::init::init_api;
 use serial::init::init_serial;
 use std::sync::Arc;
 
-use crate::panic::init_panic;
+use crate::panic::init_panic_handling;
 use crate::socketio::queue::init_socketio_queue;
 
 pub mod app_state;
@@ -30,10 +30,10 @@ pub mod socketio;
 use crate::ethercat::init::init_ethercat;
 
 fn main() {
-    // Initialize panic handling
-    let thread_panic_tx = init_panic();
     logging::init_tracing();
     tracing::info!("Tracing initialized successfully");
+
+    init_panic_handling();
 
     #[cfg(feature = "memory-locking")]
     if let Err(e) = control_core::realtime::lock_memory() {
@@ -47,28 +47,22 @@ fn main() {
     let init_thread = std::thread::Builder::new()
         .name("init".to_string())
         .spawn({
-            let thread_panic_tx = thread_panic_tx;
-            let app_state = app_state;
             move || {
                 #[cfg(feature = "dhat-heap")]
                 init_dhat_heap_profiling();
 
-                init_socketio_queue(thread_panic_tx.clone(), app_state.clone());
-                init_api(thread_panic_tx.clone(), app_state.clone())
-                    .expect("Failed to initialize API");
-                init_loop(thread_panic_tx.clone(), app_state.clone())
-                    .expect("Failed to initialize loop");
+                init_socketio_queue(app_state.clone());
+                init_api(app_state.clone()).expect("Failed to initialize API");
+                init_loop(app_state.clone()).expect("Failed to initialize loop");
 
                 #[cfg(feature = "mock-machine")]
                 init_mock(app_state.clone()).expect("Failed to initialize mock machines");
 
                 #[cfg(not(feature = "mock-machine"))]
-                init_serial(thread_panic_tx.clone(), app_state.clone())
-                    .expect("Failed to initialize Serial");
+                init_serial(app_state.clone()).expect("Failed to initialize Serial");
 
                 #[cfg(not(feature = "mock-machine"))]
-                init_ethercat(thread_panic_tx.clone(), app_state)
-                    .expect("Failed to initialize EtherCAT");
+                init_ethercat(app_state).expect("Failed to initialize EtherCAT");
             }
         })
         .expect("Failed to spawn init thread");

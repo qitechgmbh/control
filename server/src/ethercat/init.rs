@@ -1,7 +1,6 @@
 use super::setup::setup_loop;
 use crate::{
     app_state::AppState,
-    panic::{PanicDetails, send_panic},
     socketio::main_namespace::{
         MainNamespaceEvents, ethercat_interface_discovery_event::EthercatInterfaceDiscoveryEvent,
     },
@@ -10,21 +9,14 @@ use control_core::{
     ethercat::interface_discovery::discover_ethercat_interface,
     socketio::namespace::NamespaceCacheingLogic,
 };
-use smol::channel::Sender;
 use std::sync::Arc;
 
-pub fn init_ethercat(
-    thread_panic_tx: Sender<PanicDetails>,
-    app_state: Arc<AppState>,
-) -> Result<(), anyhow::Error> {
-    let thread_panic_tx_clone = thread_panic_tx;
+pub fn init_ethercat(app_state: Arc<AppState>) -> Result<(), anyhow::Error> {
     let app_state_clone = app_state;
 
     std::thread::Builder::new()
         .name("init_ethercat".to_string())
         .spawn(move || {
-            send_panic(thread_panic_tx_clone.clone());
-
             // Notify client via socketio
             let app_state_socketio = app_state_clone.clone();
             smol::block_on(async move {
@@ -69,11 +61,7 @@ pub fn init_ethercat(
                 main_namespace.emit(MainNamespaceEvents::EthercatInterfaceDiscoveryEvent(event));
             });
 
-            if let Err(e) = smol::block_on(setup_loop(
-                thread_panic_tx_clone,
-                &interface,
-                app_state_clone,
-            )) {
+            if let Err(e) = smol::block_on(setup_loop(&interface, app_state_clone)) {
                 tracing::error!("EtherCAT setup failed: {:?}", e);
             }
         })?;
