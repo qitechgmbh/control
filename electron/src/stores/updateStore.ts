@@ -51,15 +51,9 @@ const defaultSteps: UpdateStep[] = [
   },
   {
     id: "rust-build",
-    label: "Build Rust server",
+    label: "Build system packages",
     status: "pending",
     subsector: "rust",
-  },
-  {
-    id: "electron-build",
-    label: "Build Electron frontend",
-    status: "pending",
-    subsector: "electron",
   },
   {
     id: "system-install",

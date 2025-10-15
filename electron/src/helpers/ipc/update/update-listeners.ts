@@ -211,10 +211,6 @@ async function update(
             status: "error",
           });
           event.sender.send(UPDATE_STEP, {
-            stepId: "electron-build",
-            status: "error",
-          });
-          event.sender.send(UPDATE_STEP, {
             stepId: "system-install",
             status: "error",
           });
@@ -495,11 +491,16 @@ function parseRustBuildOutput(
   ) {
     rustBuildProgress.builtDerivations++;
 
+    // Check if this is the server-deps package (one of the last builds)
+    const isServerDeps = log.includes("-server-deps");
+
     let percent = 15;
-    if (rustBuildProgress.totalDerivations > 0) {
+    if (isServerDeps) {
+      // server-deps indicates we're at 85%
+      percent = 85;
+    } else if (rustBuildProgress.totalDerivations > 0) {
       const derivationProgress =
-        rustBuildProgress.builtDerivations /
-        rustBuildProgress.totalDerivations;
+        rustBuildProgress.builtDerivations / rustBuildProgress.totalDerivations;
       percent = 15 + Math.floor(derivationProgress * 70); // Map to 15-85%
     }
 
@@ -514,9 +515,9 @@ function parseRustBuildOutput(
     });
   }
 
-  // Track installing phase
+  // Track installing phase - go up to 90%
   if (log.includes("installing") || log.includes("Installing")) {
-    const percent = Math.max(88, rustBuildProgress.maxPercent);
+    const percent = Math.max(90, rustBuildProgress.maxPercent);
     rustBuildProgress.maxPercent = percent;
     event.sender.send(UPDATE_STEP, {
       stepId: "rust-build",
@@ -550,7 +551,6 @@ async function runCommandWithStepTracking(
 
     // Track which steps have been marked as in-progress
     // Note: rust-build is already marked as in-progress before calling this function
-    let electronBuildStarted = false;
     let systemInstallStarted = false;
 
     // Function to process log output and update steps
@@ -560,55 +560,23 @@ async function runCommandWithStepTracking(
       // Parse Rust build progress
       parseRustBuildOutput(log, event);
 
-      // Check for Electron build indicators
-      // Look for npm/electron specific logs that indicate the Electron build phase
-      if (
-        !electronBuildStarted &&
-        (logLower.includes("building qitech-control-electron") ||
-          logLower.includes("electron-builder") ||
-          logLower.includes("installing dependencies") &&
-            logLower.includes("npm") ||
-          logLower.includes("npm ci") ||
-          logLower.includes("npm install") ||
-          logLower.includes("npm run make") ||
-          logLower.includes("npm run package") ||
-          logLower.includes("creating distributable") ||
-          (logLower.includes("electron") &&
-            (logLower.includes("forge") || logLower.includes("vite"))))
-      ) {
-        console.log("🔵 Detected Electron build start:", log.substring(0, 100));
-        // Mark rust as complete, start electron
-        event.sender.send(UPDATE_STEP, {
-          stepId: "rust-build",
-          status: "completed",
-        });
-        event.sender.send(UPDATE_STEP, {
-          stepId: "electron-build",
-          status: "in-progress",
-        });
-        electronBuildStarted = true;
-      }
-
       // Check for system install indicators
-      // System install happens after Electron build completes
+      // System install happens after Rust build completes (at ~90%)
       // Look for bootloader/activation messages that indicate final system installation
       if (
-        electronBuildStarted &&
         !systemInstallStarted &&
+        rustBuildProgress.maxPercent >= 90 &&
         (logLower.includes("updating grub") ||
           logLower.includes("installing bootloader") ||
           logLower.includes("updating bootloader") ||
           logLower.includes("activating the configuration") ||
           logLower.includes("building the system configuration") ||
-          logLower.includes("these 0 derivations") && electronBuildStarted)
+          logLower.includes("these 0 derivations"))
       ) {
-        console.log(
-          "🟢 Detected system install start:",
-          log.substring(0, 100),
-        );
-        // Mark electron as complete, start system install
+        console.log("🟢 Detected system install start:", log.substring(0, 100));
+        // Mark rust as complete, start system install
         event.sender.send(UPDATE_STEP, {
-          stepId: "electron-build",
+          stepId: "rust-build",
           status: "completed",
         });
         event.sender.send(UPDATE_STEP, {
@@ -651,22 +619,9 @@ async function runCommandWithStepTracking(
           });
         } else if (code === 0) {
           // Mark all remaining steps as completed on success
-          if (!electronBuildStarted) {
+          if (!systemInstallStarted) {
             event.sender.send(UPDATE_STEP, {
               stepId: "rust-build",
-              status: "completed",
-            });
-            event.sender.send(UPDATE_STEP, {
-              stepId: "electron-build",
-              status: "completed",
-            });
-            event.sender.send(UPDATE_STEP, {
-              stepId: "system-install",
-              status: "completed",
-            });
-          } else if (!systemInstallStarted) {
-            event.sender.send(UPDATE_STEP, {
-              stepId: "electron-build",
               status: "completed",
             });
             event.sender.send(UPDATE_STEP, {
