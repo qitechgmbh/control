@@ -288,7 +288,7 @@ async function cloneRepository(
     : `https://github.com/${githubRepoOwner}/${githubRepoName}.git`;
 
   // Determine clone arguments based on whether tag, branch, or commit is specified
-  const cloneArgs = ["clone", repoUrl];
+  const cloneArgs = ["clone", "--progress", repoUrl];
 
   if (tag) {
     // Clone a specific tag
@@ -377,6 +377,11 @@ async function runCommand(
       const log = data.toString();
       console.error(log);
       event.sender.send(UPDATE_LOG, log);
+
+      // Git outputs progress to stderr
+      if (cmd === "git" && args.includes("--progress")) {
+        parseGitProgress(log, event);
+      }
     });
 
     // Handle process completion
@@ -427,6 +432,33 @@ async function runCommand(
   } catch (error: any) {
     event.sender.send(UPDATE_LOG, terminalError(`Error: ${error.toString()}`));
     return { success: false, error: error.toString() };
+  }
+}
+
+// Parse Git clone progress
+function parseGitProgress(
+  log: string,
+  event: Electron.IpcMainInvokeEvent,
+): void {
+  // Git progress format: "Receiving objects: 45% (234/520)"
+  // or "Resolving deltas: 100% (150/150)"
+  const receivingMatch = log.match(/Receiving objects:\s*(\d+)%/);
+  const resolvingMatch = log.match(/Resolving deltas:\s*(\d+)%/);
+
+  if (receivingMatch) {
+    const percent = parseInt(receivingMatch[1], 10);
+    event.sender.send(UPDATE_STEP, {
+      stepId: "clone-repo",
+      status: "in-progress",
+      progress: Math.floor(percent * 0.8), // Receiving is 80% of clone
+    });
+  } else if (resolvingMatch) {
+    const percent = parseInt(resolvingMatch[1], 10);
+    event.sender.send(UPDATE_STEP, {
+      stepId: "clone-repo",
+      status: "in-progress",
+      progress: Math.floor(80 + percent * 0.2), // Resolving is last 20%
+    });
   }
 }
 
@@ -529,13 +561,22 @@ async function runCommandWithStepTracking(
       parseRustBuildOutput(log, event);
 
       // Check for Electron build indicators
+      // Look for npm/electron specific logs that indicate the Electron build phase
       if (
         !electronBuildStarted &&
-        (logLower.includes("building electron") ||
-          (logLower.includes("npm") &&
-            (logLower.includes("build") || logLower.includes("install"))) ||
-          (logLower.includes("vite") && logLower.includes("build")))
+        (logLower.includes("building qitech-control-electron") ||
+          logLower.includes("electron-builder") ||
+          logLower.includes("installing dependencies") &&
+            logLower.includes("npm") ||
+          logLower.includes("npm ci") ||
+          logLower.includes("npm install") ||
+          logLower.includes("npm run make") ||
+          logLower.includes("npm run package") ||
+          logLower.includes("creating distributable") ||
+          (logLower.includes("electron") &&
+            (logLower.includes("forge") || logLower.includes("vite"))))
       ) {
+        console.log("🔵 Detected Electron build start:", log.substring(0, 100));
         // Mark rust as complete, start electron
         event.sender.send(UPDATE_STEP, {
           stepId: "rust-build",
@@ -549,14 +590,22 @@ async function runCommandWithStepTracking(
       }
 
       // Check for system install indicators
+      // System install happens after Electron build completes
+      // Look for bootloader/activation messages that indicate final system installation
       if (
         electronBuildStarted &&
         !systemInstallStarted &&
-        (logLower.includes("installing") ||
-          logLower.includes("nixos-rebuild") ||
-          logLower.includes("system install") ||
-          logLower.includes("activating"))
+        (logLower.includes("updating grub") ||
+          logLower.includes("installing bootloader") ||
+          logLower.includes("updating bootloader") ||
+          logLower.includes("activating the configuration") ||
+          logLower.includes("building the system configuration") ||
+          logLower.includes("these 0 derivations") && electronBuildStarted)
       ) {
+        console.log(
+          "🟢 Detected system install start:",
+          log.substring(0, 100),
+        );
         // Mark electron as complete, start system install
         event.sender.send(UPDATE_STEP, {
           stepId: "electron-build",
