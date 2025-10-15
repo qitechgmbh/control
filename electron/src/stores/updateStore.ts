@@ -59,7 +59,7 @@ const defaultSteps: UpdateStep[] = [
   },
   {
     id: "system-install",
-    label: "Install system updates",
+    label: "Install system update",
     status: "pending",
     subsector: "nixos",
     progress: 0,
