@@ -1,7 +1,11 @@
-use crate::{
-    machines::{MACHINE_LASER_V1, VENDOR_QITECH},
-    serial::devices::laser::Laser,
-};
+use crate::machines::{MACHINE_LASER_V1, VENDOR_QITECH};
+
+#[cfg(not(feature = "laser-mock"))]
+use crate::serial::devices::laser::Laser;
+
+#[cfg(feature = "laser-mock")]
+use crate::serial::devices::mock_laser::MockLaserDevice;
+
 use api::{LaserEvents, LaserMachineNamespace, LaserState, LiveValuesEvent, StateEvent};
 use control_core::{
     machines::identification::{MachineIdentification, MachineIdentificationUnique},
@@ -21,7 +25,11 @@ pub struct LaserMachine {
     machine_identification_unique: MachineIdentificationUnique,
 
     // drivers
+    #[cfg(not(feature = "laser-mock"))]
     laser: Arc<RwLock<Laser>>,
+
+    #[cfg(feature = "laser-mock")]
+    laser: Arc<RwLock<MockLaserDevice>>,
 
     // socketio
     namespace: LaserMachineNamespace,
