@@ -2,7 +2,12 @@ import type { UpdateInfo } from "@/stores/updateStore";
 import { useUpdateStore } from "@/stores/updateStore";
 
 let currentLogListener: ((line: string) => void) | null = null;
-let currentStepListener: ((params: { stepId: string; status: "pending" | "in-progress" | "completed" | "error" }) => void) | null = null;
+let currentStepListener:
+  | ((params: {
+      stepId: string;
+      status: "pending" | "in-progress" | "completed" | "error";
+    }) => void)
+  | null = null;
 
 export async function updateExecute(
   source: UpdateInfo,

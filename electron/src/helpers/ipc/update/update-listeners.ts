@@ -130,7 +130,7 @@ async function update(
 
         // 1. first make sure the clone path is empty by deleting it if it containsa .git folder
         const repoDir = `${homeDir}/${githubRepoName}`;
-        
+
         // Clear repo (not tracked in progress UI)
         const clearResult = await clearRepoDirectory(
           `${homeDir}/${githubRepoName}`,
@@ -142,7 +142,10 @@ async function update(
         }
 
         // 2. clone the repository
-        event.sender.send(UPDATE_STEP, { stepId: "clone-repo", status: "in-progress" });
+        event.sender.send(UPDATE_STEP, {
+          stepId: "clone-repo",
+          status: "in-progress",
+        });
         const cloneResult = await cloneRepository(
           {
             githubRepoOwner,
@@ -155,11 +158,17 @@ async function update(
           event,
         );
         if (!cloneResult.success) {
-          event.sender.send(UPDATE_STEP, { stepId: "clone-repo", status: "error" });
+          event.sender.send(UPDATE_STEP, {
+            stepId: "clone-repo",
+            status: "error",
+          });
           event.sender.send(UPDATE_LOG, cloneResult.error);
           return;
         }
-        event.sender.send(UPDATE_STEP, { stepId: "clone-repo", status: "completed" });
+        event.sender.send(UPDATE_STEP, {
+          stepId: "clone-repo",
+          status: "completed",
+        });
 
         // 3. make the nixos-install.sh script executable (not tracked in progress UI)
         const chmodResult = await runCommand(
@@ -175,11 +184,23 @@ async function update(
 
         // 4. run the nixos-install.sh script
         // This script will handle nixos-build, rust-build, electron-build, and system-install
-        event.sender.send(UPDATE_STEP, { stepId: "nixos-build", status: "in-progress" });
-        event.sender.send(UPDATE_STEP, { stepId: "rust-build", status: "in-progress" });
-        event.sender.send(UPDATE_STEP, { stepId: "electron-build", status: "in-progress" });
-        event.sender.send(UPDATE_STEP, { stepId: "system-install", status: "in-progress" });
-        
+        event.sender.send(UPDATE_STEP, {
+          stepId: "nixos-build",
+          status: "in-progress",
+        });
+        event.sender.send(UPDATE_STEP, {
+          stepId: "rust-build",
+          status: "in-progress",
+        });
+        event.sender.send(UPDATE_STEP, {
+          stepId: "electron-build",
+          status: "in-progress",
+        });
+        event.sender.send(UPDATE_STEP, {
+          stepId: "system-install",
+          status: "in-progress",
+        });
+
         const installResult = await runCommand(
           "./nixos-install.sh",
           [],
@@ -187,17 +208,41 @@ async function update(
           event,
         );
         if (!installResult.success) {
-          event.sender.send(UPDATE_STEP, { stepId: "nixos-build", status: "error" });
-          event.sender.send(UPDATE_STEP, { stepId: "rust-build", status: "error" });
-          event.sender.send(UPDATE_STEP, { stepId: "electron-build", status: "error" });
-          event.sender.send(UPDATE_STEP, { stepId: "system-install", status: "error" });
+          event.sender.send(UPDATE_STEP, {
+            stepId: "nixos-build",
+            status: "error",
+          });
+          event.sender.send(UPDATE_STEP, {
+            stepId: "rust-build",
+            status: "error",
+          });
+          event.sender.send(UPDATE_STEP, {
+            stepId: "electron-build",
+            status: "error",
+          });
+          event.sender.send(UPDATE_STEP, {
+            stepId: "system-install",
+            status: "error",
+          });
           event.sender.send(UPDATE_LOG, installResult.error);
           return;
         }
-        event.sender.send(UPDATE_STEP, { stepId: "nixos-build", status: "completed" });
-        event.sender.send(UPDATE_STEP, { stepId: "rust-build", status: "completed" });
-        event.sender.send(UPDATE_STEP, { stepId: "electron-build", status: "completed" });
-        event.sender.send(UPDATE_STEP, { stepId: "system-install", status: "completed" });
+        event.sender.send(UPDATE_STEP, {
+          stepId: "nixos-build",
+          status: "completed",
+        });
+        event.sender.send(UPDATE_STEP, {
+          stepId: "rust-build",
+          status: "completed",
+        });
+        event.sender.send(UPDATE_STEP, {
+          stepId: "electron-build",
+          status: "completed",
+        });
+        event.sender.send(UPDATE_STEP, {
+          stepId: "system-install",
+          status: "completed",
+        });
 
         resolve();
       } catch (error: any) {

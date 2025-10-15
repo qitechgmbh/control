@@ -41,7 +41,9 @@ export function UpdateProgressBar({
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <span className="text-base font-semibold">Overall Progress</span>
-          <span className="text-lg font-bold tabular-nums">{overallProgress}%</span>
+          <span className="text-lg font-bold tabular-nums">
+            {overallProgress}%
+          </span>
         </div>
         <div className="relative h-4 w-full overflow-hidden rounded-full bg-gray-200 shadow-inner dark:bg-gray-800">
           <div
@@ -53,7 +55,7 @@ export function UpdateProgressBar({
 
       {/* Steps List */}
       <div className="space-y-3">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-700 dark:text-gray-300">
+        <h3 className="text-sm font-semibold tracking-wide text-gray-700 uppercase dark:text-gray-300">
           Update Steps
         </h3>
         <div className="space-y-2">
@@ -85,10 +87,7 @@ export function UpdateProgressBar({
                 )}
                 {step.status === "completed" && (
                   <div className="flex size-6 items-center justify-center rounded-full bg-green-500">
-                    <Icon
-                      name="lu:Check"
-                      className="size-4 text-white"
-                    />
+                    <Icon name="lu:Check" className="size-4 text-white" />
                   </div>
                 )}
                 {step.status === "error" && (
@@ -99,21 +98,25 @@ export function UpdateProgressBar({
               </div>
 
               {/* Step Content */}
-              <div className="flex-1 min-w-0">
+              <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <span
                     className={cn(
                       "text-sm font-medium",
-                      step.status === "completed" && "text-green-700 dark:text-green-300",
-                      step.status === "error" && "text-red-700 dark:text-red-300",
-                      step.status === "in-progress" && "font-semibold text-blue-700 dark:text-blue-300",
-                      step.status === "pending" && "text-gray-600 dark:text-gray-400",
+                      step.status === "completed" &&
+                        "text-green-700 dark:text-green-300",
+                      step.status === "error" &&
+                        "text-red-700 dark:text-red-300",
+                      step.status === "in-progress" &&
+                        "font-semibold text-blue-700 dark:text-blue-300",
+                      step.status === "pending" &&
+                        "text-gray-600 dark:text-gray-400",
                     )}
                   >
                     {step.label}
                   </span>
                 </div>
-                
+
                 {/* Subsector Badge */}
                 <div className="mt-1.5">
                   <span
