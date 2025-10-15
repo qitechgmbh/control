@@ -50,12 +50,6 @@ const defaultSteps: UpdateStep[] = [
     subsector: "general",
   },
   {
-    id: "nixos-build",
-    label: "Build NixOS configuration",
-    status: "pending",
-    subsector: "nixos",
-  },
-  {
     id: "rust-build",
     label: "Build Rust server",
     status: "pending",

@@ -117,8 +117,8 @@ async function update(
           commit,
         });
 
-        // Reset NixOS build progress tracking
-        nixosBuildProgress = {
+        // Reset Rust build progress tracking
+        rustBuildProgress = {
           totalDerivations: 0,
           builtDerivations: 0,
           maxPercent: 0,
@@ -190,10 +190,10 @@ async function update(
         }
 
         // 4. run the nixos-install.sh script
-        // This script will handle nixos-build, rust-build, electron-build, and system-install
-        // Start with nixos-build
+        // This script will handle rust-build, electron-build, and system-install
+        // Start with rust-build (cargo builds)
         event.sender.send(UPDATE_STEP, {
-          stepId: "nixos-build",
+          stepId: "rust-build",
           status: "in-progress",
         });
 
@@ -206,10 +206,6 @@ async function update(
 
         if (!installResult.success) {
           // Mark current and remaining steps as error
-          event.sender.send(UPDATE_STEP, {
-            stepId: "nixos-build",
-            status: "error",
-          });
           event.sender.send(UPDATE_STEP, {
             stepId: "rust-build",
             status: "error",
@@ -434,26 +430,26 @@ async function runCommand(
   }
 }
 
-// Track NixOS build progress
-let nixosBuildProgress = {
+// Track Rust build progress
+let rustBuildProgress = {
   totalDerivations: 0,
   builtDerivations: 0,
   maxPercent: 0, // Track max to prevent backward movement
 };
 
-// Parse NixOS build output for progress
-function parseNixosBuildOutput(
+// Parse Rust build output for progress
+function parseRustBuildOutput(
   log: string,
   event: Electron.IpcMainInvokeEvent,
 ): void {
   // Track derivations to build
   const derivationsMatch = log.match(/these (\d+) derivations? will be built/i);
   if (derivationsMatch) {
-    nixosBuildProgress.totalDerivations = parseInt(derivationsMatch[1], 10);
-    nixosBuildProgress.builtDerivations = 0;
-    nixosBuildProgress.maxPercent = 0;
+    rustBuildProgress.totalDerivations = parseInt(derivationsMatch[1], 10);
+    rustBuildProgress.builtDerivations = 0;
+    rustBuildProgress.maxPercent = 0;
     event.sender.send(UPDATE_STEP, {
-      stepId: "nixos-build",
+      stepId: "rust-build",
       status: "in-progress",
       progress: 0,
     });
@@ -465,22 +461,22 @@ function parseNixosBuildOutput(
     log.includes("building '/nix/store/") ||
     log.includes("building /nix/store/")
   ) {
-    nixosBuildProgress.builtDerivations++;
+    rustBuildProgress.builtDerivations++;
 
     let percent = 15;
-    if (nixosBuildProgress.totalDerivations > 0) {
+    if (rustBuildProgress.totalDerivations > 0) {
       const derivationProgress =
-        nixosBuildProgress.builtDerivations /
-        nixosBuildProgress.totalDerivations;
+        rustBuildProgress.builtDerivations /
+        rustBuildProgress.totalDerivations;
       percent = 15 + Math.floor(derivationProgress * 70); // Map to 15-85%
     }
 
     // Only move forward
-    percent = Math.max(percent, nixosBuildProgress.maxPercent);
-    nixosBuildProgress.maxPercent = percent;
+    percent = Math.max(percent, rustBuildProgress.maxPercent);
+    rustBuildProgress.maxPercent = percent;
 
     event.sender.send(UPDATE_STEP, {
-      stepId: "nixos-build",
+      stepId: "rust-build",
       status: "in-progress",
       progress: percent,
     });
@@ -488,10 +484,10 @@ function parseNixosBuildOutput(
 
   // Track installing phase
   if (log.includes("installing") || log.includes("Installing")) {
-    const percent = Math.max(88, nixosBuildProgress.maxPercent);
-    nixosBuildProgress.maxPercent = percent;
+    const percent = Math.max(88, rustBuildProgress.maxPercent);
+    rustBuildProgress.maxPercent = percent;
     event.sender.send(UPDATE_STEP, {
-      stepId: "nixos-build",
+      stepId: "rust-build",
       status: "in-progress",
       progress: percent,
     });
@@ -521,8 +517,7 @@ async function runCommandWithStepTracking(
     currentUpdateProcess = childProcess;
 
     // Track which steps have been marked as in-progress
-    // Note: nixos-build is already marked as in-progress before calling this function
-    let rustBuildStarted = false;
+    // Note: rust-build is already marked as in-progress before calling this function
     let electronBuildStarted = false;
     let systemInstallStarted = false;
 
@@ -530,31 +525,11 @@ async function runCommandWithStepTracking(
     const processLogForSteps = (log: string) => {
       const logLower = log.toLowerCase();
 
-      // Parse NixOS build progress
-      parseNixosBuildOutput(log, event);
-
-      // Check for Rust build indicators
-      if (
-        !rustBuildStarted &&
-        (logLower.includes("building rust") ||
-          logLower.includes("cargo build") ||
-          (logLower.includes("compiling") && logLower.includes("server")))
-      ) {
-        // Mark nixos as complete, start rust
-        event.sender.send(UPDATE_STEP, {
-          stepId: "nixos-build",
-          status: "completed",
-        });
-        event.sender.send(UPDATE_STEP, {
-          stepId: "rust-build",
-          status: "in-progress",
-        });
-        rustBuildStarted = true;
-      }
+      // Parse Rust build progress
+      parseRustBuildOutput(log, event);
 
       // Check for Electron build indicators
       if (
-        rustBuildStarted &&
         !electronBuildStarted &&
         (logLower.includes("building electron") ||
           (logLower.includes("npm") &&
@@ -627,22 +602,17 @@ async function runCommandWithStepTracking(
           });
         } else if (code === 0) {
           // Mark all remaining steps as completed on success
-          if (!rustBuildStarted) {
-            event.sender.send(UPDATE_STEP, {
-              stepId: "nixos-build",
-              status: "completed",
-            });
-            event.sender.send(UPDATE_STEP, {
-              stepId: "rust-build",
-              status: "completed",
-            });
-          } else if (!electronBuildStarted) {
+          if (!electronBuildStarted) {
             event.sender.send(UPDATE_STEP, {
               stepId: "rust-build",
               status: "completed",
             });
             event.sender.send(UPDATE_STEP, {
               stepId: "electron-build",
+              status: "completed",
+            });
+            event.sender.send(UPDATE_STEP, {
+              stepId: "system-install",
               status: "completed",
             });
           } else if (!systemInstallStarted) {
