@@ -1,4 +1,4 @@
-use std::{sync::Arc, time::Duration};
+use std::{process::Command, sync::Arc, time::Duration};
 
 use ethercrab::{
     MainDevice, MainDeviceConfig, PduStorage, Timeouts,
@@ -12,14 +12,46 @@ const IFACE_DISCOVERY_MAX_PDU_DATA: usize = PduStorage::element_size(1100);
 const IFACE_DISCOVERY_MAX_FRAMES: usize = 16;
 const IFACE_DISCOVERY_MAX_PDI_LEN: usize = 128;
 
-/// Finds an ethernet interface that is suitable for EtherCAT communication.
-///
-/// ```ignore
-/// match discover_ethercat_interface().await {
-///     Ok(interface) => println!("Found working interface: {}", interface),
-///     Err(_) => println!("No working interface found"),
-/// }
-/// ```
+/// Sets a network interface to unmanaged by NetworkManager.
+/// Returns true if the command succeeded.
+pub fn set_interface_managed(interface: &str, managed: bool) -> bool {
+    let managed_str = match managed {
+        true => "yes",
+        false => "no",
+    };
+    tracing::info!(
+        "set_interface_managed for {} managed was set to: {}",
+        interface,
+        managed_str
+    );
+    let status = Command::new("nmcli")
+        .args(["dev", "set", interface, "managed", managed_str])
+        .status();
+
+    matches!(status, Ok(s) if s.success())
+}
+
+/// Returns true if the given network interface is Ethernet.
+/// Prevents testing wlan,loopback and other non ethernet devices
+fn is_ethernet(interface: &str) -> std::io::Result<bool> {
+    #[cfg(target_os = "linux")]
+    {
+        let base_path = format!("/sys/class/net/{}", interface);
+        let type_path = std::path::Path::new(&base_path).join("type");
+        let iface_type = std::fs::read_to_string(&type_path)?.trim().to_string();
+        // 1 means Ethernet
+        let reports_as_ethernet = iface_type == "1";
+        // Double-check that it's not a wireless interface
+        let uevent_path = std::path::Path::new(&base_path).join("uevent");
+        let uevent = std::fs::read_to_string(&uevent_path).unwrap_or_default();
+        // If "DEVTYPE=wlan" appears, it's lying
+        let actually_wifi = uevent.contains("DEVTYPE=wlan");
+        return Ok(reports_as_ethernet && !actually_wifi);
+    }
+    #[cfg(not(target_os = "linux"))]
+    return Ok(true);
+}
+
 pub async fn discover_ethercat_interface() -> Result<String, anyhow::Error> {
     tracing::info!("Discovering EtherCAT interface...");
 
@@ -37,7 +69,6 @@ pub async fn discover_ethercat_interface() -> Result<String, anyhow::Error> {
         } else {
             tracing::debug!("Suppressed panic in interface test: {}", panic_info);
         }
-        // Don't call the default hook, which would print the backtrace
     }));
 
     // Get eligible interfaces
@@ -48,6 +79,7 @@ pub async fn discover_ethercat_interface() -> Result<String, anyhow::Error> {
             iface.is_up()
                 && iface.is_running()
                 && !iface.is_loopback()
+                && is_ethernet(&iface.name).unwrap_or(false)
                 && !iface.name.starts_with("bridge")
                 && !iface.name.starts_with("utun")   // Exclude tunnel interfaces
                 && !iface.name.starts_with("awdl")   // Exclude Apple Wireless Direct Link
@@ -56,57 +88,42 @@ pub async fn discover_ethercat_interface() -> Result<String, anyhow::Error> {
         })
         .collect::<Vec<_>>();
 
-    // Sort interfaces by name
     interfaces.sort_by(|a, b| a.name.cmp(&b.name));
+    let mut interface: Option<&str> = None;
 
-    // Try all interfaces concurrently
-    let tasks = interfaces
-        .iter()
-        .map(|iface| {
-            let name = iface.name.clone();
-            std::thread::Builder::new()
-                .name(format!("ethercat-test-{}", name))
-                .spawn(move || {
-                    std::panic::catch_unwind(|| {
-                        smol::block_on(async {
-                            match test_interface(&name) {
-                                Ok(_) => {
-                                    tracing::info!("Found working EtherCAT interface: {}", name);
-                                    Some(name.clone())
-                                }
-                                Err(_) => {
-                                    tracing::debug!("Interface {} failed", name);
-                                    None
-                                }
-                            }
-                        })
-                    })
-                    .unwrap_or(None)
-                })
-                .expect("Failed to spawn thread")
-        })
-        .collect::<Vec<_>>();
+    for i in 0..interfaces.len() {
+        // Avoid NetworkManager hangups
+        set_interface_managed(&interfaces[i].name, false);
 
-    // Wait for all tasks to complete and collect successful results
-    let successful_interfaces: Vec<String> = tasks
-        .into_iter()
-        .filter_map(|task| task.join().expect("Should join thread"))
-        .collect();
+        match test_interface(&interfaces[i].name) {
+            Ok(_) => {
+                // if interface found with ethercat Exit early, we expect only one interface with ethercat
+                interface = Some(&interfaces[i].name);
+                break;
+            }
+            Err(_) => (),
+        }
+    }
 
-    // Return the first successful interface (they're sorted by name)
-    let result = successful_interfaces.into_iter().next();
+    for i in 0..interfaces.len() {
+        if interface.is_some() && interface.unwrap() == &interfaces[i].name {
+            continue;
+        } else {
+            set_interface_managed(&interfaces[i].name, true);
+        }
+    }
 
     // Restore the default panic hook
     std::panic::set_hook(default_hook);
 
-    match result {
-        Some(name) => Ok(name),
-        None => Err(anyhow::anyhow!("No suitable EtherCAT interface found")),
+    match interface {
+        Some(interface) => return Ok(interface.to_string()),
+        None => return Err(anyhow::anyhow!("No suitable EtherCAT interface found")),
     }
 }
 
 fn test_interface(interface: &str) -> Result<(), anyhow::Error> {
-    tracing::trace!("Testing interface: {}", interface);
+    tracing::info!("Testing interface: {}", interface);
 
     let pdu_storage = Box::leak(Box::new(PduStorage::<
         IFACE_DISCOVERY_MAX_FRAMES,
@@ -144,7 +161,7 @@ fn test_interface(interface: &str) -> Result<(), anyhow::Error> {
                 // Default 10000
                 dc_static_sync_iterations: 10000,
                 // Default None
-                retry_behaviour: ethercrab::RetryBehaviour::Count(5),
+                retry_behaviour: ethercrab::RetryBehaviour::Count(3),
             },
         ));
 
