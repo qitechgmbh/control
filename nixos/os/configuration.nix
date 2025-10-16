@@ -144,6 +144,14 @@ in
     wayland = true;
   };
 
+  # Ensure GDM starts reliably
+  systemd.services.display-manager = {
+    serviceConfig = {
+      Restart = "always";
+      RestartSec = "5s";
+    };
+  };
+
   services.xserver.desktopManager.gnome.enable = true;
 
   # Disable sleep/suspend
@@ -236,6 +244,18 @@ in
   # Workaround for GNOME autologin: https://github.com/NixOS/nixpkgs/issues/103746#issuecomment-945091229
   systemd.services."getty@tty1".enable = false;
   systemd.services."autovt@tty1".enable = false;
+
+  # Ensure USB devices are settled before starting services
+  systemd.services.usb-settle = {
+    description = "Wait for USB devices to settle";
+    wantedBy = [ "multi-user.target" ];
+    before = [ "display-manager.service" ];
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = "${pkgs.systemd}/bin/udevadm settle --timeout=10";
+      RemainAfterExit = true;
+    };
+  };
 
   # Install firefox.
   programs.firefox.enable = true;

@@ -60,15 +60,20 @@ in {
       # Allow access to network devices for ethercrab
       SUBSYSTEM=="net", ACTION=="add", ATTR{address}=="*", TAG+="uaccess", TAG+="udev-acl", GROUP="${cfg.group}"
       
-      # USB device access if needed
+      # USB device access if needed - with power management disabled
       SUBSYSTEM=="usb", ATTRS{idVendor}=="*", ATTRS{idProduct}=="*", MODE="0660", GROUP="${cfg.group}"
+      SUBSYSTEM=="usb", ATTR{power/control}="on"
+      
+      # Ensure USB devices are fully initialized
+      ACTION=="add", SUBSYSTEM=="usb", RUN+="/bin/sh -c 'echo on > /sys$devpath/power/control'"
     '';
     
     # Configure the systemd service
     systemd.services.qitech-control-server = {
       description = "QiTech Control Server";
       wantedBy = [ "multi-user.target" ];
-      after = [ "network.target" ];
+      after = [ "network.target" "systemd-udev-settle.service" "display-manager.service" ];
+      wants = [ "systemd-udev-settle.service" ];
       
 serviceConfig = {
   Type = "simple";
