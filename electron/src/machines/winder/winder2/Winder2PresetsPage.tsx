@@ -68,6 +68,16 @@ const previewEntries: PresetPreviewEntries<Winder2> = [
       data.puller_state?.forward ? "Forward" : "Backward",
   },
   {
+    name: "Puller Gear Ratio",
+    renderValue: (data: PresetData<Winder2>) => {
+      const ratio = data.puller_state?.gear_ratio;
+      if (ratio === "OneToOne") return "1:1";
+      if (ratio === "OneToFive") return "1:5";
+      if (ratio === "OneToTen") return "1:10";
+      return "N/A";
+    },
+  },
+  {
     name: "Puller Target Speed",
     unit: "m/min",
     renderValue: (data: PresetData<Winder2>) =>
@@ -153,6 +163,7 @@ export function Winder2PresetsPage() {
     setPullerTargetDiameter,
     setPullerForward,
     setPullerTargetSpeed,
+    setPullerGearRatio,
 
     setSpoolRegulationMode,
 
@@ -177,6 +188,7 @@ export function Winder2PresetsPage() {
     setPullerRegulationMode(preset.data?.puller_state?.regulation ?? "Speed");
     setPullerForward(preset.data?.puller_state?.forward ?? true);
     setPullerTargetSpeed(preset.data?.puller_state?.target_speed ?? 1.0);
+    setPullerGearRatio(preset.data?.puller_state?.gear_ratio ?? "OneToOne");
     // setPullerTargetDiameter(preset.data?.puller_state?.target_diameter ?? 1.75);
 
     setSpoolRegulationMode(

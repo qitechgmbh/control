@@ -43,6 +43,30 @@ export const pullerRegulationSchema = z.enum(["Speed", "Diameter"]);
 export type PullerRegulation = z.infer<typeof pullerRegulationSchema>;
 
 /**
+ * Gear ratio enum for winding speed
+ */
+export const gearRatioSchema = z.enum(["OneToOne", "OneToFive", "OneToTen"]);
+export type GearRatio = z.infer<typeof gearRatioSchema>;
+
+/**
+ * Get the multiplier for a gear ratio
+ */
+export function getGearRatioMultiplier(
+  gearRatio: GearRatio | undefined,
+): number {
+  switch (gearRatio) {
+    case "OneToOne":
+      return 1.0;
+    case "OneToFive":
+      return 5.0;
+    case "OneToTen":
+      return 10.0;
+    default:
+      return 1.0;
+  }
+}
+
+/**
  * Machine operation mode enum
  */
 export const modeSchema = z.enum(["Standby", "Hold", "Pull", "Wind"]);
@@ -105,6 +129,7 @@ export const pullerStateSchema = z.object({
   target_speed: z.number(),
   target_diameter: z.number(),
   forward: z.boolean(),
+  gear_ratio: gearRatioSchema,
 });
 
 /**

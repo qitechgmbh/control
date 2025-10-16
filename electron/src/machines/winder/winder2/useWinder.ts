@@ -19,6 +19,8 @@ import {
   PullerRegulation,
   SpoolAutomaticActionMode,
   spoolAutomaticActionModeSchema,
+  gearRatioSchema,
+  GearRatio,
 } from "./winder2Namespace";
 import { useEffect, useMemo } from "react";
 import { produce } from "immer";
@@ -119,6 +121,9 @@ export function useWinder2() {
   );
   const { request: requestPullerSetForward } = useMachineMutation(
     z.object({ SetPullerForward: z.boolean() }),
+  );
+  const { request: requestPullerSetGearRatio } = useMachineMutation(
+    z.object({ SetPullerGearRatio: gearRatioSchema }),
   );
   const { request: requestSpoolSetRegulationMode } = useMachineMutation(
     z.object({ SetSpoolRegulationMode: spoolRegulationModeSchema }),
@@ -363,6 +368,28 @@ export function useWinder2() {
           machine_identification_unique: machineIdentification,
           data: { SetPullerForward: forward },
         }),
+    );
+  };
+
+  const setPullerGearRatio = (gearRatio: GearRatio) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.puller_state.gear_ratio = gearRatio;
+        // Reset target speed to 0 to prevent sudden speed changes
+        current.data.puller_state.target_speed = 0;
+      },
+      async () => {
+        // First set the target speed to 0
+        await requestPullerSetTargetSpeed({
+          machine_identification_unique: machineIdentification,
+          data: { SetPullerTargetSpeed: 0 },
+        });
+        // Then set the gear ratio
+        await requestPullerSetGearRatio({
+          machine_identification_unique: machineIdentification,
+          data: { SetPullerGearRatio: gearRatio },
+        });
+      },
     );
   };
 
@@ -619,6 +646,7 @@ export function useWinder2() {
     setPullerTargetDiameter,
     setPullerRegulationMode,
     setPullerForward,
+    setPullerGearRatio,
     setSpoolAutomaticRequiredMeters,
     setSpoolAutomaticAction,
     setSpoolRegulationMode,
