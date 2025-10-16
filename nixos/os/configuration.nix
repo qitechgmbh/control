@@ -144,15 +144,13 @@ in
     wayland = true;
   };
 
-  # Ensure GDM starts reliably
-  systemd.services.display-manager = {
-    serviceConfig = {
-      Restart = "always";
-      RestartSec = "5s";
-    };
-  };
-
   services.xserver.desktopManager.gnome.enable = true;
+  
+  # Ensure GDM starts reliably by modifying the systemd unit after it's been defined
+  systemd.services.display-manager.serviceConfig = {
+    Restart = "always";
+    RestartSec = "5s";
+  };
 
   # Disable sleep/suspend
   systemd.targets.sleep.enable = false;
