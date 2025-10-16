@@ -16,6 +16,7 @@ use socketioxide::SocketIo;
 use socketioxide::extract::SocketRef;
 use std::collections::HashMap;
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 pub struct SocketioSetup {
     pub socketio: RwLock<Option<SocketIo>>,
@@ -34,6 +35,7 @@ pub struct AppState {
     pub serial_setup: Arc<RwLock<SerialSetup>>,
     pub machines: Arc<RwLock<MachineManager>>,
     pub performance_metrics: Arc<RwLock<EthercatPerformanceMetrics>>,
+    pub machine_api_enabled: AtomicBool,
 }
 
 pub type Machines =
@@ -89,6 +91,7 @@ impl AppState {
             })),
             machines: Arc::new(RwLock::new(MachineManager::new())),
             performance_metrics: Arc::new(RwLock::new(EthercatPerformanceMetrics::new())),
+            machine_api_enabled: AtomicBool::new(true),
         }
     }
 
@@ -108,5 +111,13 @@ impl AppState {
                 }
             })
             .collect()
+    }
+
+    pub fn is_machine_api_enabled(&self) -> bool {
+        self.machine_api_enabled.load(Ordering::SeqCst)
+    }
+
+    pub fn set_machine_api_enabled(&self, enabled: bool) {
+        self.machine_api_enabled.store(enabled, Ordering::SeqCst);
     }
 }

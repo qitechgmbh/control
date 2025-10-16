@@ -53,6 +53,7 @@ export const machinesEventDataSchema = z.object({
       error: z.string().nullable(),
     }),
   ),
+  machine_api_enabled: z.boolean(),
 });
 
 export type MachinesEventData = z.infer<typeof machinesEventDataSchema>;

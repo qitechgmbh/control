@@ -1,9 +1,15 @@
+use super::handlers::machine_api_settings::{get_machine_api_enabled, post_machine_api_enabled};
 use super::handlers::machine_mutation::post_machine_mutate;
+use super::handlers::machine_read::{
+    get_machine_live_simple, get_machine_live_simple_with_serial, get_machine_snapshot_simple,
+    get_machine_snapshot_simple_with_serial, get_machine_state_simple,
+    get_machine_state_simple_with_serial,
+};
 use super::handlers::write_machine_device_identification::post_write_machine_device_identification;
 use crate::app_state::AppState;
 use crate::socketio::init::init_socketio;
 use anyhow::anyhow;
-use axum::routing::post;
+use axum::routing::{get, post};
 use std::sync::Arc;
 use std::thread::JoinHandle;
 use tower_http::cors::CorsLayer;
@@ -48,6 +54,25 @@ pub fn init_api(app_state: Arc<AppState>) -> Result<JoinHandle<()>, anyhow::Erro
                         post(post_write_machine_device_identification),
                     )
                     .route("/api/v1/machine/mutate", post(post_machine_mutate))
+                    .route("/api/:identifier/state", get(get_machine_state_simple))
+                    .route(
+                        "/api/:identifier/:serial/state",
+                        get(get_machine_state_simple_with_serial),
+                    )
+                    .route("/api/:identifier/live", get(get_machine_live_simple))
+                    .route(
+                        "/api/:identifier/:serial/live",
+                        get(get_machine_live_simple_with_serial),
+                    )
+                    .route("/api/:identifier", get(get_machine_snapshot_simple))
+                    .route(
+                        "/api/:identifier/:serial",
+                        get(get_machine_snapshot_simple_with_serial),
+                    )
+                    .route(
+                        "/api/v1/machine/api/enabled",
+                        get(get_machine_api_enabled).post(post_machine_api_enabled),
+                    )
                     .layer(socketio_layer)
                     .layer(cors)
                     .layer(trace_layer)

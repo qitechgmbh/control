@@ -57,7 +57,7 @@ type Client = {
   }) => Promise<MutationResponseSchema>;
 };
 
-const baseUrl = "http://localhost:3001";
+export const API_BASE_URL = "http://localhost:3001";
 
 export const getClient = () => {
   const client: Client = {
@@ -98,7 +98,7 @@ export const getClient = () => {
       }
 
       // send request
-      const response = await fetch(`${baseUrl}${path}`, {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
         method,
         headers: {
           "Content-Type": "application/json",

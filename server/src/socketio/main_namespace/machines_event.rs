@@ -8,6 +8,7 @@ use crate::app_state::AppState;
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct MachinesEvent {
     pub machines: Vec<MachineObj>,
+    pub machine_api_enabled: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -26,6 +27,7 @@ impl MachinesEventBuilder {
             Self::NAME,
             MachinesEvent {
                 machines: machine_objs,
+                machine_api_enabled: app_state.is_machine_api_enabled(),
             },
         )
     }
