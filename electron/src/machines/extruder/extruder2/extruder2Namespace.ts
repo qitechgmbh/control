@@ -131,9 +131,21 @@ export const inverterStatusStateSchema = z.object({
  */
 export const pidSettingsSchema = z.object({
   temperature: z.object({
-    ki: z.number(),
-    kp: z.number(),
-    kd: z.number(),
+    front: z.object({
+      ki: z.number(),
+      kp: z.number(),
+      kd: z.number(),
+    }),
+    middle: z.object({
+      ki: z.number(),
+      kp: z.number(),
+      kd: z.number(),
+    }),
+    back: z.object({
+      ki: z.number(),
+      kp: z.number(),
+      kd: z.number(),
+    }),
   }),
   pressure: z.object({
     ki: z.number(),

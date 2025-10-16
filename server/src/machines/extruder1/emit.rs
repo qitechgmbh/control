@@ -27,6 +27,8 @@ use uom::si::thermodynamic_temperature::ThermodynamicTemperature;
 #[cfg(not(feature = "mock-machine"))]
 impl ExtruderV2 {
     pub fn build_state_event(&mut self) -> StateEvent {
+        use crate::machines::extruder1::api::TemperaturePid;
+
         StateEvent {
             is_default_state: !std::mem::replace(&mut self.emitted_default_state, true),
             rotation_state: RotationState {
@@ -106,10 +108,22 @@ impl ExtruderV2 {
                 fault_occurence: self.screw_speed_controller.inverter.status.fault_occurence,
             },
             pid_settings: PidSettingsStates {
-                temperature: PidSettings {
-                    ki: 0.0,
-                    kp: 0.0,
-                    kd: 0.0,
+                temperature: TemperaturePid {
+                    front: PidSettings {
+                        ki: self.temperature_controller_front.pid.get_ki(),
+                        kp: self.temperature_controller_front.pid.get_kp(),
+                        kd: self.temperature_controller_front.pid.get_kd(),
+                    },
+                    middle: PidSettings {
+                        ki: self.temperature_controller_middle.pid.get_ki(),
+                        kp: self.temperature_controller_middle.pid.get_kp(),
+                        kd: self.temperature_controller_middle.pid.get_kd(),
+                    },
+                    back: PidSettings {
+                        ki: self.temperature_controller_back.pid.get_ki(),
+                        kp: self.temperature_controller_back.pid.get_kp(),
+                        kd: self.temperature_controller_back.pid.get_kd(),
+                    },
                 },
                 pressure: PidSettings {
                     ki: self.screw_speed_controller.pid.get_ki(),
@@ -277,6 +291,34 @@ impl ExtruderV2 {
         self.screw_speed_controller
             .pid
             .configure(settings.ki, settings.kp, settings.kd);
+        self.emit_state();
+    }
+
+    pub fn configure_temperature_pid(&mut self, settings: PidSettings, zone: String) {
+        match zone.as_str() {
+            "front" => {
+                self.temperature_controller_front.pid.configure(
+                    settings.ki,
+                    settings.kp,
+                    settings.kd,
+                );
+            }
+            "middle" => {
+                self.temperature_controller_middle.pid.configure(
+                    settings.ki,
+                    settings.kp,
+                    settings.kd,
+                );
+            }
+            "back" => {
+                self.temperature_controller_back.pid.configure(
+                    settings.ki,
+                    settings.kp,
+                    settings.kd,
+                );
+            }
+            _ => tracing::warn!("Unknown zone: {}", zone),
+        }
         self.emit_state();
     }
 }
