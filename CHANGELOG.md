@@ -1,3 +1,16 @@
+# `2.10.0`
+_16.10.2025_
+
+## Winder V2
+- [#776](https://github.com/qitechgmbh/control/pull/776) Added explanation for padding in winder manual
+- [#804](https://github.com/qitechgmbh/control/pull/804) Added gearbox conversion
+
+## General 
+- [#717](https://github.com/qitechgmbh/control/pull/717) Show from option for graphs added
+- [#805](https://github.com/qitechgmbh/control/pull/805) Graphs run better now
+
+
+
 # `2.9.1`
 _10.10.2025_
 
