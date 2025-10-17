@@ -3,7 +3,8 @@ use crate::machines::extruder1::{
     api::{
         ExtruderSettingsState, ExtruderV2Namespace, HeatingState, HeatingStates,
         InverterStatusState, ModeState, MotorStatusValues, PidSettings, PidSettingsStates,
-        PressureState, RegulationState, RotationState, ScrewState,
+        PressureState, RegulationState, RotationState, ScrewState, TemperaturePid,
+        TemperaturePidStates,
     },
     mock::ExtruderV2,
 };
@@ -88,10 +89,25 @@ impl control_core::machines::new::MachineNewTrait for ExtruderV2 {
                 fault_occurence: false,
             },
             pid_settings: PidSettingsStates {
-                temperature: PidSettings {
-                    ki: 0.0,
-                    kp: 0.0,
-                    kd: 0.0,
+                temperature: TemperaturePidStates {
+                    front: TemperaturePid {
+                        ki: 0.0,
+                        kp: 0.0,
+                        kd: 0.0,
+                        zone: String::from("front"),
+                    },
+                    middle: TemperaturePid {
+                        ki: 0.0,
+                        kp: 0.0,
+                        kd: 0.0,
+                        zone: String::from("middle"),
+                    },
+                    back: TemperaturePid {
+                        ki: 0.0,
+                        kp: 0.0,
+                        kd: 0.0,
+                        zone: String::from("back"),
+                    },
                 },
                 pressure: PidSettings {
                     ki: 0.0,

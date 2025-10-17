@@ -183,9 +183,24 @@ pub struct PidSettings {
     pub kd: f64,
 }
 
+#[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
+pub struct TemperaturePidStates {
+    pub front: TemperaturePid,
+    pub middle: TemperaturePid,
+    pub back: TemperaturePid,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
+pub struct TemperaturePid {
+    pub ki: f64,
+    pub kp: f64,
+    pub kd: f64,
+    pub zone: String,
+}
+
 #[derive(Serialize, Debug, Clone, PartialEq)]
 pub struct PidSettingsStates {
-    pub temperature: PidSettings,
+    pub temperature: TemperaturePidStates,
     pub pressure: PidSettings,
 }
 
@@ -217,6 +232,7 @@ pub enum Mutation {
 
     // Pid Configure
     SetPressurePidSettings(PidSettings),
+    SetTemperaturePidSettings(TemperaturePid),
 
     // Reset
     ResetInverter(bool),
@@ -291,6 +307,10 @@ impl MachineApi for ExtruderV2 {
 
             Mutation::SetPressurePidSettings(settings) => {
                 self.configure_pressure_pid(settings);
+            }
+
+            Mutation::SetTemperaturePidSettings(settings) => {
+                self.configure_temperature_pid(settings);
             }
         }
         Ok(())
