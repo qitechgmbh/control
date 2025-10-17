@@ -15,16 +15,9 @@ import {
 } from "@/machines/properties";
 import { IconText } from "@/components/IconText";
 import { MachinesEventData, useMainNamespace } from "@/client/mainNamespace";
-import { API_BASE_URL, extractError } from "@/client/useClient";
-import { toastHttpNotOk, toastZodError } from "@/components/Toast";
-import { z } from "zod";
+import { MachineApi } from "@/client/machineApi";
+import { toastHttpNotOk } from "@/components/Toast";
 import { TouchButton } from "@/components/touch/TouchButton";
-
-const machineApiToggleRequestSchema = z.object({ enabled: z.boolean() });
-const machineApiToggleResponseSchema = z.object({
-  enabled: z.boolean(),
-  ip_addresses: z.array(z.string()),
-});
 
 export const columns: ColumnDef<
   NonNullable<MachinesEventData>["machines"][number]
@@ -103,22 +96,13 @@ export function MachinesPage() {
   useEffect(() => {
     const fetchIpAddresses = async () => {
       try {
-        const response = await fetch(
-          `${API_BASE_URL}/api/v1/machine/api/enabled`,
-        );
-        if (response.ok) {
-          const body = await response.json();
-          const parsedResponse = machineApiToggleResponseSchema.safeParse(body);
-          if (parsedResponse.success) {
-            setIpAddresses(parsedResponse.data.ip_addresses);
-          }
-        }
+        const data = await MachineApi.fetchApiStatus();
+        setIpAddresses(data.ip_addresses);
       } catch (error) {
         // Silently fail - IP addresses are not critical
         console.error("Failed to fetch IP addresses:", error);
       }
     };
-
     if (machineApiEnabled) {
       fetchIpAddresses();
     }
@@ -126,53 +110,12 @@ export function MachinesPage() {
 
   const handleToggle = useCallback(
     async (next: boolean) => {
-      if (updating) {
-        return;
-      }
-
-      const parsedBody = machineApiToggleRequestSchema.safeParse({
-        enabled: next,
-      });
-      if (!parsedBody.success) {
-        toastZodError(parsedBody.error, "API Anfrage falsch formatiert");
-        return;
-      }
-
+      if (updating) return;
       setUpdating(true);
       try {
-        const response = await fetch(
-          `${API_BASE_URL}/api/v1/machine/api/enabled`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(parsedBody.data),
-          },
-        );
-
-        if (
-          !response.headers.get("content-type")?.includes("application/json")
-        ) {
-          const errorText = await response.text();
-          toastHttpNotOk(response.status, errorText);
-          return;
-        }
-
-        const body = await response.json();
-        if (!response.ok) {
-          toastHttpNotOk(response.status, extractError(response.status, body));
-          return;
-        }
-
-        const parsedResponse = machineApiToggleResponseSchema.safeParse(body);
-        if (!parsedResponse.success) {
-          toastZodError(parsedResponse.error, "API Antwort falsch formatiert");
-          return;
-        }
-
-        setMachineApiEnabled(parsedResponse.data.enabled);
-        setIpAddresses(parsedResponse.data.ip_addresses);
+        const data = await MachineApi.setApiEnabled(next);
+        setMachineApiEnabled(data.enabled);
+        setIpAddresses(data.ip_addresses);
       } catch (error) {
         const message =
           error instanceof Error ? error.message : String(error ?? "");
