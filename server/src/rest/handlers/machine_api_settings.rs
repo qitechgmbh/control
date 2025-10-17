@@ -25,7 +25,7 @@ fn get_local_ip_addresses() -> Vec<String> {
                 && !iface.name.starts_with("llw")
         })
         .flat_map(|iface| {
-            iface.addresses.into_iter().filter_map(|addr| {
+            iface.addresses.clone().into_iter().filter_map(|addr| {
                 // Only include IPv4 addresses
                 if addr.addr.is_some() && addr.addr.unwrap().is_ipv4() {
                     Some(addr.addr.unwrap().ip().to_string())
