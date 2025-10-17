@@ -121,7 +121,6 @@ installPhase = ''
     Terminal=false
     StartupWMClass=QiTech Control
     Categories=Development;Engineering;
-    X-GNOME-UsesNotifications=true
     EOF
   '';
 
