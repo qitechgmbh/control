@@ -1,4 +1,4 @@
-use super::handlers::machine_api_settings::{get_machine_api_enabled, post_machine_api_enabled};
+use super::handlers::machine_api_settings::get_machine_api_enabled;
 use super::handlers::machine_mutation::post_machine_mutate;
 use super::handlers::machine_read::{
     get_machine_live_simple, get_machine_live_simple_with_serial, get_machine_snapshot_simple,
@@ -71,7 +71,7 @@ pub fn init_api(app_state: Arc<AppState>) -> Result<JoinHandle<()>, anyhow::Erro
                     )
                     .route(
                         "/api/v1/machine/api/enabled",
-                        get(get_machine_api_enabled).post(post_machine_api_enabled),
+                        get(get_machine_api_enabled),
                     )
                     .layer(socketio_layer)
                     .layer(cors)
