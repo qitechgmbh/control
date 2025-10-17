@@ -1,6 +1,6 @@
 use crate::machines::extruder1::{
     ExtruderV2Mode, HeatingType,
-    api::{ExtruderV2Events, LiveValuesEvent, ModeState, PidSettings, StateEvent},
+    api::{ExtruderV2Events, LiveValuesEvent, ModeState, PidSettings, StateEvent, TemperaturePid},
     mock::ExtruderV2,
 };
 use control_core::{
@@ -131,6 +131,28 @@ impl ExtruderV2 {
         self.pid_settings.pressure.ki = settings.ki;
         self.pid_settings.pressure.kp = settings.kp;
         self.pid_settings.pressure.kd = settings.kd;
+        self.emit_state();
+    }
+
+    pub fn configure_temperature_pid(&mut self, settings: TemperaturePid) {
+        match settings.zone.as_str() {
+            "front" => {
+                self.pid_settings.temperature.front.ki = settings.ki;
+                self.pid_settings.temperature.front.kp = settings.kp;
+                self.pid_settings.temperature.front.kd = settings.kd;
+            }
+            "middle" => {
+                self.pid_settings.temperature.middle.ki = settings.ki;
+                self.pid_settings.temperature.middle.kp = settings.kp;
+                self.pid_settings.temperature.middle.kd = settings.kd;
+            }
+            "back" => {
+                self.pid_settings.temperature.back.ki = settings.ki;
+                self.pid_settings.temperature.back.kp = settings.kp;
+                self.pid_settings.temperature.back.kd = settings.kd;
+            }
+            _ => tracing::warn!("Unknown zone: {}", settings.zone),
+        }
         self.emit_state();
     }
 }
