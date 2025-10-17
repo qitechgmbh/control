@@ -20,8 +20,7 @@ pub mod el6021;
 pub mod el7031;
 pub mod el7031_0030;
 pub mod el7041_0052;
-pub mod wago_730_1506;
-
+pub mod wago_750_354;
 // pub mod el4008;
 use super::devices::el1008::EL1008;
 use crate::{
@@ -55,7 +54,7 @@ use el7041_0052::EL7041_0052_IDENTITY_A;
 use ethercrab::{MainDevice, SubDeviceIdentity};
 use smol::lock::RwLock;
 use std::{any::Any, fmt::Debug, sync::Arc};
-use wago_730_1506::{WAGO_730_1506, WAGO_730_1506_IDENTITY};
+use wago_750_354::{WAGO_750_354, WAGO_750_354_IDENTITY, WAGO_750_354_REVISION};
 
 /// A trait for all devices
 ///
@@ -221,7 +220,7 @@ pub fn device_from_subdevice_identity_tuple(
         EL2521_IDENTITY_0000_A | EL2521_IDENTITY_0000_B | EL2521_IDENTITY_0024_A => {
             Ok(Arc::new(RwLock::new(EL2521::new())))
         }
-        WAGO_730_1506_IDENTITY => Ok(Arc::new(RwLock::new(WAGO_730_1506::new()))),
+        WAGO_750_354_IDENTITY => Ok(Arc::new(RwLock::new(WAGO_750_354::new()))),
 
         _ => Err(anyhow::anyhow!(
             "[{}::device_from_subdevice] No Driver: vendor_id: 0x{:x}, product_id: 0x{:x}, revision: 0x{:x}",
