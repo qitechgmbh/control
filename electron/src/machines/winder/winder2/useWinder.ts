@@ -588,10 +588,7 @@ export function useWinder2() {
     () =>
       machines.filter(
         (m) =>
-          m.machine_identification_unique.machine_identification.vendor ===
-            VENDOR_QITECH &&
-          m.machine_identification_unique.machine_identification.machine ===
-            0x0008,
+          m.machine_identification_unique.machine_identification.vendor === VENDOR_QITECH && m.slug.startsWith("buffer"),
       ),
     [machines, machineIdentification],
   );

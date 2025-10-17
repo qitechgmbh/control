@@ -482,6 +482,7 @@ impl Winder2 {
             machine_identification_unique.machine_identification,
             BufferV1::MACHINE_IDENTIFICATION
         ) {
+            tracing::warn!("Trying to connect unsupported machine {} to winder", machine_identification_unique);
             return;
         }
 
@@ -489,6 +490,7 @@ impl Winder2 {
             .set_connected_machine(&machine_identification_unique);
         self.connected_buffer.reverse_connect();
 
+        tracing::info!("Buffer connnected");
         self.emit_state();
     }
 

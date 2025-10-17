@@ -148,10 +148,7 @@ export function useBuffer1() {
     () =>
       machines.filter(
         (m) =>
-          m.machine_identification_unique.machine_identification.vendor ===
-            VENDOR_QITECH &&
-          m.machine_identification_unique.machine_identification.machine ===
-            0x0002,
+          m.machine_identification_unique.machine_identification.vendor === VENDOR_QITECH && m.slug.startsWith("winder"),
       ),
     [machines, machineIdentification],
   );
