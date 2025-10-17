@@ -62,11 +62,13 @@ export function Winder2SettingPage() {
         defaultOuter !== undefined
       ) {
         setTraverseLimitOuter(defaultOuter);
+        setTraverseLimitInner(defaultInner);
       }
       if (
         currentInner > WINDER2_TRAVERSE_MAX_STANDARD &&
         defaultInner !== undefined
       ) {
+        setTraverseLimitOuter(defaultOuter);
         setTraverseLimitInner(defaultInner);
       }
 
