@@ -28,9 +28,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { getWinder2TraverseMax } from "./winder2Config";
 
 export function Winder2ControlPage() {
   const [showResetConfirmDialog, setShowResetConfirmDialog] = useState(false);
+  const traverseMax = getWinder2TraverseMax();
 
   // use optimistic state
   const {
@@ -102,7 +104,7 @@ export function Winder2ControlPage() {
           {state?.traverse_state && (
             <TraverseBar
               inside={0}
-              outside={180}
+              outside={traverseMax}
               min={state?.traverse_state.limit_inner}
               max={state?.traverse_state.limit_outer}
               current={traversePosition.current?.value ?? 0}
@@ -121,7 +123,7 @@ export function Winder2ControlPage() {
                 min={Math.max(0, (state?.traverse_state?.limit_inner ?? 0) + 1)}
                 minLabel="IN"
                 maxLabel="OUT"
-                max={180}
+                max={traverseMax}
                 renderValue={(value) => roundToDecimals(value, 0)}
                 onChange={setTraverseLimitOuter}
               />
@@ -145,8 +147,8 @@ export function Winder2ControlPage() {
                 // We use 1mm buffer to ensure the backend validation (which requires outer > inner + 0.9mm) will pass
                 // Formula: max_inner = outer_limit - 1mm
                 max={Math.min(
-                  180,
-                  (state?.traverse_state?.limit_outer ?? 180) - 1,
+                  traverseMax,
+                  (state?.traverse_state?.limit_outer ?? traverseMax) - 1,
                 )}
                 defaultValue={defaultState?.traverse_state?.limit_inner}
                 minLabel="IN"

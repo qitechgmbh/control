@@ -2,15 +2,28 @@ import { Page } from "@/components/Page";
 import { ControlCard } from "@/control/ControlCard";
 import { ControlGrid } from "@/control/ControlGrid";
 import { EditValue } from "@/control/EditValue";
-import React from "react";
+import React, { useState } from "react";
 import { useWinder2 } from "./useWinder";
 import { roundToDecimals } from "@/lib/decimal";
 import { Label } from "@/control/Label";
 import { SelectionGroupBoolean } from "@/control/SelectionGroup";
 import { SelectionGroup } from "@/control/SelectionGroup";
 import { MachineSelector } from "@/components/MachineConnectionDropdown";
+import {
+  getWinder2XLMode,
+  setWinder2XLMode,
+  WINDER2_TRAVERSE_MAX_STANDARD,
+  WINDER2_TRAVERSE_MAX_XL,
+} from "./winder2Config";
 
 export function Winder2SettingPage() {
+  const [xlMode, setXlMode] = useState(getWinder2XLMode());
+
+  const handleXlModeChange = (enabled: boolean) => {
+    setWinder2XLMode(enabled);
+    setXlMode(enabled);
+  };
+
   const {
     state,
     defaultState,
@@ -38,6 +51,22 @@ export function Winder2SettingPage() {
     <Page>
       <ControlGrid>
         <ControlCard title="Traverse">
+          <Label label="Traverse Size">
+            <SelectionGroupBoolean
+              value={xlMode}
+              disabled={isDisabled}
+              loading={isLoading}
+              optionFalse={{
+                children: `Standard (${WINDER2_TRAVERSE_MAX_STANDARD}mm)`,
+                icon: "lu:Settings",
+              }}
+              optionTrue={{
+                children: `XL (${WINDER2_TRAVERSE_MAX_XL}mm)`,
+                icon: "lu:Maximize2",
+              }}
+              onChange={handleXlModeChange}
+            />
+          </Label>
           <Label label="Step Size">
             <EditValue
               value={state?.traverse_state?.step_size}
