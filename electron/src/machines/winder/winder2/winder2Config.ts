@@ -5,7 +5,7 @@
 const WINDER2_XL_MODE_KEY = "winder2_xl_mode";
 
 export const WINDER2_TRAVERSE_MAX_STANDARD = 180; // mm
-export const WINDER2_TRAVERSE_MAX_XL = 360; // mm
+export const WINDER2_TRAVERSE_MAX_XL = 385; // mm
 
 /**
  * Get the XL mode setting from localStorage
