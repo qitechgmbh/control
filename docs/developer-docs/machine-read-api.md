@@ -412,15 +412,6 @@ Used for testing and development. Provides sample data structures.
 - State values change less frequently and don't need rapid polling
 - Use snapshots (`/api/{identifier}`) to reduce request count
 
-### Socket.io Alternative
-
-For real-time updates, consider using Socket.io instead:
-- Namespace: `/machine/{vendor}/{machine}/{serial}`
-- Events: `StateEvent` and `LiveValuesEvent`
-- Provides push-based updates rather than polling
-
-See the Socket.io documentation for details.
-
 ## Related Documentation
 
 - [Architecture Overview](../architecture-overview.md)
