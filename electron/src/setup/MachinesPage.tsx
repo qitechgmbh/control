@@ -15,13 +15,17 @@ import {
 } from "@/machines/properties";
 import { IconText } from "@/components/IconText";
 import { MachinesEventData, useMainNamespace } from "@/client/mainNamespace";
-import { Toggle } from "@/components/ui/toggle";
 import { API_BASE_URL, extractError } from "@/client/useClient";
 import { toastHttpNotOk, toastZodError } from "@/components/Toast";
 import { z } from "zod";
+import { TouchButton } from "@/components/touch/TouchButton";
+import { Label } from "@/control/Label";
 
 const machineApiToggleRequestSchema = z.object({ enabled: z.boolean() });
-const machineApiToggleResponseSchema = z.object({ enabled: z.boolean() });
+const machineApiToggleResponseSchema = z.object({
+  enabled: z.boolean(),
+  ip_addresses: z.array(z.string()),
+});
 
 export const columns: ColumnDef<
   NonNullable<MachinesEventData>["machines"][number]
@@ -87,6 +91,7 @@ export function MachinesPage() {
   const [machineApiEnabled, setMachineApiEnabled] = useState<
     boolean | undefined
   >(machines?.data?.machine_api_enabled);
+  const [ipAddresses, setIpAddresses] = useState<string[]>([]);
   const [updating, setUpdating] = useState(false);
 
   useEffect(() => {
@@ -94,6 +99,31 @@ export function MachinesPage() {
       setMachineApiEnabled(machines.data.machine_api_enabled);
     }
   }, [machines?.data?.machine_api_enabled]);
+
+  // Fetch IP addresses on mount and when API is enabled
+  useEffect(() => {
+    const fetchIpAddresses = async () => {
+      try {
+        const response = await fetch(
+          `${API_BASE_URL}/api/v1/machine/api/enabled`,
+        );
+        if (response.ok) {
+          const body = await response.json();
+          const parsedResponse = machineApiToggleResponseSchema.safeParse(body);
+          if (parsedResponse.success) {
+            setIpAddresses(parsedResponse.data.ip_addresses);
+          }
+        }
+      } catch (error) {
+        // Silently fail - IP addresses are not critical
+        console.error("Failed to fetch IP addresses:", error);
+      }
+    };
+
+    if (machineApiEnabled) {
+      fetchIpAddresses();
+    }
+  }, [machineApiEnabled]);
 
   const handleToggle = useCallback(
     async (next: boolean) => {
@@ -143,6 +173,7 @@ export function MachinesPage() {
         }
 
         setMachineApiEnabled(parsedResponse.data.enabled);
+        setIpAddresses(parsedResponse.data.ip_addresses);
       } catch (error) {
         const message =
           error instanceof Error ? error.message : String(error ?? "");
@@ -170,7 +201,7 @@ export function MachinesPage() {
         <RefreshIndicator ts={machines?.ts} />
       </SectionTitle>
       <div className="bg-background mb-6 rounded-lg border border-zinc-200 p-4 shadow-sm">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-4">
           <div>
             <div className="text-sm font-semibold tracking-wide text-zinc-500 uppercase">
               Host Machine API
@@ -182,19 +213,50 @@ export function MachinesPage() {
               Allow other hosts to query state and live values via HTTP.
             </p>
           </div>
-          <Toggle
-            pressed={machineApiEnabled ?? false}
-            disabled={machineApiEnabled === undefined || updating}
-            onPressedChange={handleToggle}
-            aria-label="Expose machine read API"
-            className="h-10 min-w-[6.5rem] px-4"
-          >
-            {updating
-              ? "Saving..."
-              : machineApiEnabled
-                ? "Enabled"
-                : "Disabled"}
-          </Toggle>
+
+          <Label label="API Status">
+            <div className="flex gap-2">
+              <TouchButton
+                variant={machineApiEnabled ? "default" : "outline"}
+                onClick={() => handleToggle(true)}
+                disabled={
+                  machineApiEnabled === undefined ||
+                  updating ||
+                  machineApiEnabled === true
+                }
+                isLoading={updating && machineApiEnabled !== true}
+              >
+                Enabled
+              </TouchButton>
+              <TouchButton
+                variant={!machineApiEnabled ? "default" : "outline"}
+                onClick={() => handleToggle(false)}
+                disabled={
+                  machineApiEnabled === undefined ||
+                  updating ||
+                  machineApiEnabled === false
+                }
+                isLoading={updating && machineApiEnabled !== false}
+              >
+                Disabled
+              </TouchButton>
+            </div>
+          </Label>
+
+          {machineApiEnabled && ipAddresses.length > 0 && (
+            <div className="border-t border-zinc-200 pt-4">
+              <div className="mb-2 text-sm font-medium text-zinc-700">
+                Available at:
+              </div>
+              <div className="flex flex-col gap-1">
+                {ipAddresses.map((ip) => (
+                  <div key={ip} className="font-mono text-sm text-zinc-600">
+                    http://{ip}:3001/api
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
       <MyTable table={table} key={data.toString()} />

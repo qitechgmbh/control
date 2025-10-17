@@ -22,6 +22,7 @@ bitvec = "1.0.1"
 lazy_static = "1.5.0"
 dhat = { version = "0.3.3", optional = true }
 euclid = "0.22.11"
+interfaces = "0.0.9"
 
 # concurrency
 smol = "2.0.2"

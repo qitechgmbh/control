@@ -2678,6 +2678,7 @@ dependencies = [
  "ethercrab",
  "euclid",
  "futures",
+ "interfaces",
  "lazy_static",
  "opentelemetry",
  "opentelemetry-otlp",
