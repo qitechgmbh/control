@@ -26,6 +26,7 @@ export function Winder2SettingPage() {
     setTraversePadding,
     setTraverseLimitInner,
     setTraverseLimitOuter,
+    gotoTraverseHome,
     setPullerForward,
     setPullerGearRatio,
     setSpoolRegulationMode,
@@ -68,6 +69,9 @@ export function Winder2SettingPage() {
       ) {
         setTraverseLimitInner(defaultInner);
       }
+
+      // Home the traverse when switching from XL to normal mode
+      gotoTraverseHome();
     }
   };
 
