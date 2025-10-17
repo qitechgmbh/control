@@ -27,6 +27,7 @@ use ethercat_hal::devices::el7031::{EL7031_IDENTITY_A, EL7031_IDENTITY_B};
 use ethercat_hal::devices::el7031_0030::EL7031_0030_IDENTITY_A;
 use ethercat_hal::devices::el7041_0052::EL7041_0052_IDENTITY_A;
 use ethercat_hal::devices::subdevice_identity_to_tuple;
+use ethercat_hal::devices::wago_730_1506::WAGO_730_1506_IDENTITY;
 use ethercat_hal::helpers::ethercrab_types::{
     EthercrabSubDeviceOperational, EthercrabSubDevicePreoperational,
 };
@@ -258,6 +259,7 @@ pub fn get_identification_addresses(
         EL7031_IDENTITY_A | EL7031_IDENTITY_B => MachineIdentificationAddresses::default(),
         EL7031_0030_IDENTITY_A => MachineIdentificationAddresses::default(),
         EL7041_0052_IDENTITY_A => MachineIdentificationAddresses::default(),
+        WAGO_730_1506_IDENTITY => MachineIdentificationAddresses::default(),
 
         _ => {
             // block_on(u16dump(&subdevice, maindevice, 0x00, 0xff))?;
