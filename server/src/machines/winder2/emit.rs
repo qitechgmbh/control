@@ -182,11 +182,12 @@ impl Winder2 {
         // Divide by gear ratio to get actual puller/material speed
         let puller_speed = motor_speed / self.puller_speed_controller.get_gear_ratio().multiplier();
 
-        // Calculate spool RPM from current motor steps
+        // Calculate spool RPM from current motor steps (always positive regardless of direction)
         let spool_rpm = self
             .spool_step_converter
             .steps_to_angular_velocity(self.spool.get_speed() as f64)
-            .get::<revolution_per_minute>();
+            .get::<revolution_per_minute>()
+            .abs();
 
         let live_values = LiveValuesEvent {
             traverse_position: self

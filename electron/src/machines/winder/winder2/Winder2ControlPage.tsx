@@ -90,7 +90,7 @@ export function Winder2ControlPage() {
             label="Spool Speed"
             unit="rpm"
             timeseries={spoolRpm}
-            renderValue={(value) => roundToDecimals(Math.abs(value), 0)}
+            renderValue={(value) => roundToDecimals(value, 0)}
           />
         </ControlCard>
 
