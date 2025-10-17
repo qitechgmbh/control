@@ -1,6 +1,6 @@
 import { ControlCard } from "@/control/ControlCard";
 import { Page } from "@/components/Page";
-import React, { useEffect } from "react";
+import React from "react";
 import { ControlGrid } from "@/control/ControlGrid";
 import { TimeSeriesValueNumeric } from "@/control/TimeSeriesValue";
 import { MinMaxValue, TIMEFRAME_OPTIONS } from "@/control/MinMaxValue";
@@ -11,7 +11,6 @@ import { Label } from "@/control/Label";
 import { useLaser1 } from "./useLaser1";
 
 import { DiameterVisualisation } from "../DiameterVisualisation";
-import { toast } from "sonner";
 
 export function Laser1ControlPage() {
   const {
