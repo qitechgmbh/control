@@ -19,15 +19,7 @@ export function Extruder2SettingsPage() {
     setPressurePidKp,
     setPressurePidKi,
     setPressurePidKd,
-    setTemperaturePidKpFront,
-    setTemperaturePidKiFront,
-    setTemperaturePidKdFront,
-    setTemperaturePidKpMiddle,
-    setTemperaturePidKiMiddle,
-    setTemperaturePidKdMiddle,
-    setTemperaturePidKpBack,
-    setTemperaturePidKiBack,
-    setTemperaturePidKdBack,
+    setTemperaturePidValue,
   } = useExtruder2();
 
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -136,7 +128,7 @@ export function Extruder2SettingsPage() {
                   max={100}
                   step={0.01}
                   renderValue={(v) => roundToDecimals(v, 2)}
-                  onChange={setTemperaturePidKpFront}
+                  onChange={(v) => setTemperaturePidValue("front", "kp", v)}
                   title="Temperature PID KP"
                 />
               </Label>
@@ -148,7 +140,7 @@ export function Extruder2SettingsPage() {
                   max={100}
                   step={0.01}
                   renderValue={(v) => roundToDecimals(v, 2)}
-                  onChange={setTemperaturePidKiFront}
+                  onChange={(v) => setTemperaturePidValue("front", "ki", v)}
                   title="Temperature PID KI"
                 />
               </Label>
@@ -160,7 +152,7 @@ export function Extruder2SettingsPage() {
                   max={100}
                   step={0.01}
                   renderValue={(v) => roundToDecimals(v, 2)}
-                  onChange={setTemperaturePidKdFront}
+                  onChange={(v) => setTemperaturePidValue("front", "kd", v)}
                   title="Temperature PID KD"
                 />
               </Label>
@@ -176,7 +168,7 @@ export function Extruder2SettingsPage() {
                   max={100}
                   step={0.01}
                   renderValue={(v) => roundToDecimals(v, 2)}
-                  onChange={setTemperaturePidKpMiddle}
+                  onChange={(v) => setTemperaturePidValue("middle", "kp", v)}
                   title="Temperature PID KP"
                 />
               </Label>
@@ -190,7 +182,7 @@ export function Extruder2SettingsPage() {
                   max={100}
                   step={0.01}
                   renderValue={(v) => roundToDecimals(v, 2)}
-                  onChange={setTemperaturePidKiMiddle}
+                  onChange={(v) => setTemperaturePidValue("middle", "ki", v)}
                   title="Temperature PID KI"
                 />
               </Label>
@@ -204,7 +196,7 @@ export function Extruder2SettingsPage() {
                   max={100}
                   step={0.01}
                   renderValue={(v) => roundToDecimals(v, 2)}
-                  onChange={setTemperaturePidKdMiddle}
+                  onChange={(v) => setTemperaturePidValue("middle", "kd", v)}
                   title="Temperature PID KD"
                 />
               </Label>
@@ -218,7 +210,7 @@ export function Extruder2SettingsPage() {
                   max={100}
                   step={0.01}
                   renderValue={(v) => roundToDecimals(v, 2)}
-                  onChange={setTemperaturePidKpBack}
+                  onChange={(v) => setTemperaturePidValue("back", "kp", v)}
                   title="Temperature PID KP"
                 />
               </Label>
@@ -230,7 +222,7 @@ export function Extruder2SettingsPage() {
                   max={100}
                   step={0.01}
                   renderValue={(v) => roundToDecimals(v, 2)}
-                  onChange={setTemperaturePidKiBack}
+                  onChange={(v) => setTemperaturePidValue("back", "ki", v)}
                   title="Temperature PID KI"
                 />
               </Label>
@@ -242,7 +234,7 @@ export function Extruder2SettingsPage() {
                   max={100}
                   step={0.01}
                   renderValue={(v) => roundToDecimals(v, 2)}
-                  onChange={setTemperaturePidKdBack}
+                  onChange={(v) => setTemperaturePidValue("back", "kd", v)}
                   title="Temperature PID KD"
                 />
               </Label>
