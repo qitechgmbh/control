@@ -83,6 +83,7 @@ enum Mutation {
     SetSpoolRegulationMode(super::spool_speed_controller::SpoolSpeedControllerType),
     SetSpoolMinMaxMinSpeed(f64),
     SetSpoolMinMaxMaxSpeed(f64),
+    SetSpoolForward(bool),
 
     // Adaptive Spool Speed Controller Parameters
     SetSpoolAdaptiveTensionTarget(f64),
@@ -241,6 +242,8 @@ pub struct SpoolSpeedControllerState {
     pub adaptive_acceleration_factor: f64,
     /// deacceleration urgency multiplier for adaptive mode
     pub adaptive_deacceleration_urgency_multiplier: f64,
+    /// forward rotation direction
+    pub forward: bool,
 }
 
 pub enum Winder2Events {
@@ -304,6 +307,7 @@ impl MachineApi for Winder2 {
             Mutation::SetSpoolRegulationMode(mode) => self.spool_set_regulation_mode(mode),
             Mutation::SetSpoolMinMaxMinSpeed(speed) => self.spool_set_minmax_min_speed(speed),
             Mutation::SetSpoolMinMaxMaxSpeed(speed) => self.spool_set_minmax_max_speed(speed),
+            Mutation::SetSpoolForward(value) => self.spool_set_forward(value),
             Mutation::SetSpoolAdaptiveTensionTarget(value) => {
                 self.spool_set_adaptive_tension_target(value)
             }

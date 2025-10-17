@@ -102,6 +102,11 @@ const previewEntries: PresetPreviewEntries<Winder2> = [
       data.spool_speed_controller_state?.regulation_mode,
   },
   {
+    name: "Spool Direction",
+    renderValue: (data: PresetData<Winder2>) =>
+      data.spool_speed_controller_state?.forward ? "Forward" : "Reverse",
+  },
+  {
     name: "Spool Min Speed",
     unit: "rpm",
     renderValue: (data: PresetData<Winder2>) =>
@@ -166,6 +171,7 @@ export function Winder2PresetsPage() {
     setPullerGearRatio,
 
     setSpoolRegulationMode,
+    setSpoolForward,
 
     setSpoolMinMaxMinSpeed,
     setSpoolMinMaxMaxSpeed,
@@ -194,6 +200,7 @@ export function Winder2PresetsPage() {
     setSpoolRegulationMode(
       preset.data?.spool_speed_controller_state?.regulation_mode ?? "MinMax",
     );
+    setSpoolForward(preset.data?.spool_speed_controller_state?.forward ?? true);
     setSpoolMinMaxMinSpeed(
       preset.data?.spool_speed_controller_state?.minmax_min_speed ?? 0,
     );

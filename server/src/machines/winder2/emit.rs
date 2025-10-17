@@ -30,9 +30,17 @@ impl Winder2 {
             &self.tension_arm,
             &self.puller_speed_controller,
         );
+
+        // Apply direction based on forward setting
+        let directed_angular_velocity = if self.spool_speed_controller.get_forward() {
+            angular_velocity
+        } else {
+            -angular_velocity
+        };
+
         let steps_per_second = self
             .spool_step_converter
-            .angular_velocity_to_steps(angular_velocity);
+            .angular_velocity_to_steps(directed_angular_velocity);
         let _ = self.spool.set_speed(steps_per_second);
     }
 
@@ -270,6 +278,7 @@ impl Winder2 {
                 adaptive_deacceleration_urgency_multiplier: self
                     .spool_speed_controller
                     .get_adaptive_deacceleration_urgency_multiplier(),
+                forward: self.spool_speed_controller.get_forward(),
             },
             spool_automatic_action_state: SpoolAutomaticActionState {
                 spool_required_meters: self.spool_automatic_action.target_length.get::<meter>(),
@@ -469,6 +478,12 @@ impl Winder2 {
     ) {
         self.spool_speed_controller
             .set_adaptive_deacceleration_urgency_multiplier(deacceleration_urgency_multiplier);
+        self.emit_state();
+    }
+
+    /// Set forward rotation direction
+    pub fn spool_set_forward(&mut self, forward: bool) {
+        self.spool_speed_controller.set_forward(forward);
         self.emit_state();
     }
 
