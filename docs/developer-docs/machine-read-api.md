@@ -1,11 +1,10 @@
 # Machine Read API
 
-The Machine Read API provides HTTP endpoints to query machine state and live data from external clients. This API is disabled by default and must be explicitly enabled via the frontend UI.
+The Machine Read API provides HTTP endpoints to query machine state and live data from external clients. This API is enabled by default and must be explicitly disabled via the frontend UI.
 
 ## Table of Contents
 
 - [Overview](#overview)
-- [Enabling the API](#enabling-the-api)
 - [Authentication & Security](#authentication--security)
 - [Machine Identification](#machine-identification)
 - [API Endpoints](#api-endpoints)
@@ -23,21 +22,19 @@ The Machine Read API allows external systems to:
 
 All endpoints are read-only. 
 
-## Enabling the API
-
-The API must be enabled before use. By default, it is **disabled** for security reasons.
-
-Navigate to **Setup → Machines** in the Electron application and toggle the "Host Machine API" setting. The UI will display the IP addresses where the API is available once enabled.
-
 ## Authentication & Security
 
 ⚠️ **Important Security Considerations:**
 
 - The API has **no authentication** by default
-- It is exposed on all network interfaces when enabled
-- Only enable on trusted networks
-- Consider implementing firewall rules to restrict access
-- The API is read-only, but exposes operational data
+- It is exposed to all **local** network devices when enabled
+- The API is read-only, but exposes measured and operational data from the machines, to your local network
+
+🔒 **API Enable/Disable Control:**
+
+- The API can be enabled or disabled via the frontend UI in the Machines settings page
+- **Only localhost requests** can toggle the API enabled state (requests from other network devices will be rejected)
+- This prevents unauthorized remote control of the API availability
 
 ## Machine Identification
 
@@ -45,7 +42,7 @@ Machines are identified using a flexible addressing scheme:
 
 ### Identifier Formats
 
-1. **Known Slugs** (recommended):
+1. **Known Identifiers** (recommended):
    - `winder2` → Winder V1 (vendor: 1, machine: 2)
    - `extruder2` → Extruder V1 (vendor: 1, machine: 4)
    - `laser1` → Laser V1 (vendor: 1, machine: 6)
@@ -53,11 +50,7 @@ Machines are identified using a flexible addressing scheme:
    - `aquapath1` → Aquapath V1 (vendor: 1, machine: 9)
    - `mock1` → Mock Machine (vendor: 1, machine: 7)
 
-2. **Vendor-Machine Format**:
-   - `1-2`, `1:2`, `1.2`, or `1_2` (all valid separators)
-   - Format: `<vendor_id><separator><machine_id>`
-
-3. **With Serial Number**:
+2. **With Serial Number**:
    - `winder2-42` → Winder with serial 42
    - `1-2-42` → Same, using vendor-machine format
    - Separators: `-`, `:`, `.`, `_`
@@ -74,7 +67,7 @@ If you don't specify a serial and only one machine of that type is connected, th
 
 ## API Endpoints
 
-Base URL: `http://<host>:3000`
+Base URL: `http://<host>:3001`
 
 ### 1. Get Machine State
 
@@ -87,8 +80,8 @@ GET /api/{identifier}/{serial}/state
 
 **Example:**
 ```bash
-curl http://localhost:3000/api/winder2/state
-curl http://localhost:3000/api/winder2/42/state
+curl http://localhost:3001/api/winder2/state
+curl http://localhost:3001/api/winder2/42/state
 ```
 
 ### 2. Get Live Values
@@ -102,8 +95,8 @@ GET /api/{identifier}/{serial}/live
 
 **Example:**
 ```bash
-curl http://localhost:3000/api/laser1/live
-curl http://localhost:3000/api/1-6/100/live
+curl http://localhost:3001/api/laser1/live
+curl http://localhost:3001/api/laser1/live
 ```
 
 ### 3. Get Complete Snapshot
@@ -117,8 +110,8 @@ GET /api/{identifier}/{serial}
 
 **Example:**
 ```bash
-curl http://localhost:3000/api/extruder2
-curl http://localhost:3000/api/buffer1/1
+curl http://localhost:3001/api/extruder2
+curl http://localhost:3001/api/buffer1/1
 ```
 
 ## Response Format
@@ -175,7 +168,7 @@ import requests
 import json
 
 # Get winder state
-response = requests.get('http://192.168.1.100:3000/api/winder2/state')
+response = requests.get('http://192.168.130.195:3001/api/winder2/state')
 if response.status_code == 200:
     data = response.json()
     state = data['state']['data']
@@ -185,7 +178,7 @@ else:
     print(f"Error: {response.status_code}")
 
 # Get laser live values
-response = requests.get('http://192.168.1.100:3000/api/laser1/live')
+response = requests.get('http://192.168.130.195:3001/api/laser1/live')
 if response.status_code == 200:
     data = response.json()
     live = data['live']['data']
@@ -195,7 +188,7 @@ else:
     print(f"Error: {response.status_code}")
 
 # Get complete snapshot
-response = requests.get('http://192.168.1.100:3000/api/extruder2')
+response = requests.get('http://192.168.130.195:3001/api/extruder2')
 snapshot = response.json()
 print(json.dumps(snapshot, indent=2))
 ```
@@ -205,7 +198,7 @@ print(json.dumps(snapshot, indent=2))
 ```javascript
 const axios = require('axios');
 
-const BASE_URL = 'http://192.168.1.100:3000';
+const BASE_URL = 'http://192.168.1.100:3001';
 
 async function getWinderState() {
   try {
@@ -253,85 +246,22 @@ setInterval(async () => {
 }, 100);
 ```
 
-### Rust
-
-```rust
-use serde::{Deserialize, Serialize};
-use reqwest;
-use anyhow::Result;
-
-#[derive(Debug, Deserialize)]
-struct MachineSnapshot {
-    machine_identification_unique: MachineIdentificationUnique,
-    state: Option<EventPayload>,
-    live: Option<EventPayload>,
-}
-
-#[derive(Debug, Deserialize)]
-struct MachineIdentificationUnique {
-    machine_identification: MachineIdentification,
-    serial: u16,
-}
-
-#[derive(Debug, Deserialize)]
-struct MachineIdentification {
-    vendor: u16,
-    machine: u16,
-}
-
-#[derive(Debug, Deserialize)]
-struct EventPayload {
-    name: String,
-    ts: u64,
-    data: serde_json::Value,
-}
-
-#[tokio::main]
-async fn main() -> Result<()> {
-    let client = reqwest::Client::new();
-    
-    // Get winder snapshot
-    let snapshot: MachineSnapshot = client
-        .get("http://192.168.1.100:3000/api/winder2")
-        .send()
-        .await?
-        .json()
-        .await?;
-    
-    println!("Machine: {}/{}/{}", 
-        snapshot.machine_identification_unique.machine_identification.vendor,
-        snapshot.machine_identification_unique.machine_identification.machine,
-        snapshot.machine_identification_unique.serial
-    );
-    
-    if let Some(state) = snapshot.state {
-        println!("State at {}: {:?}", state.ts, state.data);
-    }
-    
-    if let Some(live) = snapshot.live {
-        println!("Live at {}: {:?}", live.ts, live.data);
-    }
-    
-    Ok(())
-}
-```
-
 ### curl
 
 ```bash
 # Get state (pretty-printed)
-curl -s http://localhost:3000/api/winder2/state | jq '.'
+curl -s http://localhost:3001/api/winder2/state | jq '.'
 
 # Get live values with specific serial
-curl -s http://localhost:3000/api/laser1/42/live | jq '.live.data'
+curl -s http://localhost:3001/api/laser1/42/live | jq '.live.data'
 
 # Get snapshot and extract specific field
-curl -s http://localhost:3000/api/extruder2 | \
+curl -s http://localhost:3001/api/extruder2 | \
   jq '.state.data.puller_state'
 
 # Monitor live diameter in a loop
 while true; do
-  curl -s http://localhost:3000/api/laser1/live | \
+  curl -s http://localhost:3001/api/laser1/live | \
     jq -r '.live.data.diameter'
   sleep 0.1
 done

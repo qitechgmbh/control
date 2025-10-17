@@ -342,7 +342,7 @@ fn parse_identifier(
     }
 
     Err(anyhow!(
-        "Unable to parse machine identifier '{}'. Expected a known slug or 'vendor-machine' format, optionally followed by a serial (e.g. 'winder2-42').",
+        "Unable to parse machine identifier '{}'. Expected a known identifier or 'vendor-machine' format, optionally followed by a serial (e.g. 'winder2-42').",
         identifier
     ))
 }
@@ -392,7 +392,7 @@ fn parse_vendor_machine_identifier(
     }
 
     Err(anyhow!(
-        "Unable to parse machine identifier '{}'. Expected a known slug or 'vendor-machine' format.",
+        "Unable to parse machine identifier '{}'. Expected a known identifier or 'vendor-machine' format.",
         identifier
     ))
 }
@@ -416,7 +416,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn parse_identifier_known_slug() {
+    fn parse_identifier_known_identifier() {
         let (id, serial) = parse_identifier("winder2").unwrap();
         assert_eq!(id.vendor, crate::machines::VENDOR_QITECH);
         assert_eq!(id.machine, crate::machines::MACHINE_WINDER_V1);
@@ -424,7 +424,7 @@ mod tests {
     }
 
     #[test]
-    fn parse_identifier_slug_with_serial_suffix() {
+    fn parse_identifier_with_serial_suffix() {
         let (id, serial) = parse_identifier("winder2-7").unwrap();
         assert_eq!(id.vendor, crate::machines::VENDOR_QITECH);
         assert_eq!(id.machine, crate::machines::MACHINE_WINDER_V1);
@@ -448,7 +448,7 @@ mod tests {
     }
 
     #[test]
-    fn parses_known_slugs() {
+    fn parses_known_identifiers() {
         let id = resolve_machine_identifier("winder2").unwrap();
         assert_eq!(id.vendor, crate::machines::VENDOR_QITECH);
         assert_eq!(id.machine, crate::machines::MACHINE_WINDER_V1);

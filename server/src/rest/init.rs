@@ -1,4 +1,4 @@
-use super::handlers::machine_api_settings::get_machine_api_enabled;
+use super::handlers::machine_api_settings::{get_machine_api_enabled, post_machine_api_enabled};
 use super::handlers::machine_mutation::post_machine_mutate;
 use super::handlers::machine_read::{
     get_machine_live_simple, get_machine_live_simple_with_serial, get_machine_snapshot_simple,
@@ -10,6 +10,7 @@ use crate::app_state::AppState;
 use crate::socketio::init::init_socketio;
 use anyhow::anyhow;
 use axum::routing::{get, post};
+use std::net::SocketAddr;
 use std::sync::Arc;
 use std::thread::JoinHandle;
 use tower_http::cors::CorsLayer;
@@ -69,7 +70,10 @@ pub fn init_api(app_state: Arc<AppState>) -> Result<JoinHandle<()>, anyhow::Erro
                         "/api/{identifier}/{serial}",
                         get(get_machine_snapshot_simple_with_serial),
                     )
-                    .route("/api/v1/machine/api/enabled", get(get_machine_api_enabled))
+                    .route(
+                        "/api/v1/machine/api/enabled",
+                        get(get_machine_api_enabled).post(post_machine_api_enabled),
+                    )
                     .layer(socketio_layer)
                     .layer(cors)
                     .layer(trace_layer)
@@ -80,7 +84,12 @@ pub fn init_api(app_state: Arc<AppState>) -> Result<JoinHandle<()>, anyhow::Erro
                     .expect("Failed to bind to port 3001");
 
                 tracing::info!("Starting HTTP server on 0.0.0.0:3001");
-                axum::serve(listener, app).await.expect("Failed to serve");
+                axum::serve(
+                    listener,
+                    app.into_make_service_with_connect_info::<SocketAddr>(),
+                )
+                .await
+                .expect("Failed to serve");
             });
         })
         .map_err(|e| anyhow!("Failed to spawn API thread: {}", e))

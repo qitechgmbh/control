@@ -95,6 +95,7 @@ We could combine the code of the frontend and backend using [Doxius](https://dio
   - [ ] REST
     - Machine Mutations
     - Write Device Identification
+    - [x] [Machine Read API](./docs/developer-docs/machine-read-api.md)
 
 - Server
 
