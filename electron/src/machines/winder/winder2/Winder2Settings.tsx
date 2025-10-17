@@ -19,16 +19,13 @@ import {
 export function Winder2SettingPage() {
   const [xlMode, setXlMode] = useState(getWinder2XLMode());
 
-  const handleXlModeChange = (enabled: boolean) => {
-    setWinder2XLMode(enabled);
-    setXlMode(enabled);
-  };
-
   const {
     state,
     defaultState,
     setTraverseStepSize,
     setTraversePadding,
+    setTraverseLimitInner,
+    setTraverseLimitOuter,
     setPullerForward,
     setPullerGearRatio,
     setSpoolRegulationMode,
@@ -46,6 +43,33 @@ export function Winder2SettingPage() {
     setConnectedMachine,
     disconnectMachine,
   } = useWinder2();
+
+  const handleXlModeChange = (enabled: boolean) => {
+    setWinder2XLMode(enabled);
+    setXlMode(enabled);
+
+    // When switching from XL to normal mode, reset traverse limits to default values
+    if (!enabled && defaultState) {
+      // Only reset if current values exceed the standard max
+      const currentOuter = state?.traverse_state?.limit_outer ?? 0;
+      const currentInner = state?.traverse_state?.limit_inner ?? 0;
+      const defaultOuter = defaultState.traverse_state?.limit_outer;
+      const defaultInner = defaultState.traverse_state?.limit_inner;
+
+      if (
+        currentOuter > WINDER2_TRAVERSE_MAX_STANDARD &&
+        defaultOuter !== undefined
+      ) {
+        setTraverseLimitOuter(defaultOuter);
+      }
+      if (
+        currentInner > WINDER2_TRAVERSE_MAX_STANDARD &&
+        defaultInner !== undefined
+      ) {
+        setTraverseLimitInner(defaultInner);
+      }
+    }
+  };
 
   return (
     <Page>
