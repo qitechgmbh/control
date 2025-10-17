@@ -301,7 +301,6 @@ export function useExtruder2() {
     updateStateOptimistically(
       (current) => {
         current.data.pid_settings.temperature[zone][key] = value;
-        current.data.pid_settings.temperature[zone].zone = zone;
       },
       () => {
         const currentState = stateOptimistic.value;
@@ -310,7 +309,6 @@ export function useExtruder2() {
             currentState.data.pid_settings.temperature[zone],
             (draft) => {
               draft[key] = value;
-              draft.zone = zone;
             },
           );
           requestTemperaturePidSettings({

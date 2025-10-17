@@ -100,13 +100,13 @@ impl control_core::machines::new::MachineNewTrait for ExtruderV2 {
                         ki: 0.0,
                         kp: 0.0,
                         kd: 0.0,
-                        zone: String::from("front"),
+                        zone: String::from("middle"),
                     },
                     back: TemperaturePid {
                         ki: 0.0,
                         kp: 0.0,
                         kd: 0.0,
-                        zone: String::from("front"),
+                        zone: String::from("back"),
                     },
                 },
                 pressure: PidSettings {
