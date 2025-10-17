@@ -21,6 +21,7 @@ pub struct SpoolSpeedController {
     adaptive_controller: AdaptiveSpoolSpeedController,
     minmax_controller: MinMaxSpoolSpeedController,
     r#type: SpoolSpeedControllerType,
+    forward: bool,
 }
 
 impl Default for SpoolSpeedController {
@@ -35,6 +36,7 @@ impl SpoolSpeedController {
             adaptive_controller: AdaptiveSpoolSpeedController::new(),
             minmax_controller: MinMaxSpoolSpeedController::new(),
             r#type: SpoolSpeedControllerType::Adaptive,
+            forward: true,
         }
     }
 
@@ -179,5 +181,13 @@ impl SpoolSpeedController {
     ) {
         self.adaptive_controller
             .set_deacceleration_urgency_multiplier(deacceleration_urgency_multiplier);
+    }
+
+    pub const fn get_forward(&self) -> bool {
+        self.forward
+    }
+
+    pub const fn set_forward(&mut self, forward: bool) {
+        self.forward = forward;
     }
 }
