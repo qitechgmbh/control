@@ -1,9 +1,10 @@
 use crate::app_state::AppState;
+use crate::ethercat::setup::{EtherCatBackend, setup_loop};
 use bitvec::prelude::*;
 use control_core::machines::connection::MachineConnection;
 use control_core::realtime::{set_core_affinity, set_realtime_priority};
 use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 use tracing::{instrument, trace_span};
 
 pub fn init_loop(app_state: Arc<AppState>) -> Result<(), anyhow::Error> {
@@ -11,12 +12,20 @@ pub fn init_loop(app_state: Arc<AppState>) -> Result<(), anyhow::Error> {
     std::thread::Builder::new()
         .name("loop".to_owned())
         .spawn(move || {
+            // Before we do anything else setup the Ethercat Network
+            let res: Result<EtherCatBackend, anyhow::Error> =
+                smol::block_on(async { setup_loop("eno1", app_state.clone()).await });
+
+            let ethercat_backend: EtherCatBackend = match res {
+                Ok(ethercat_backend) => ethercat_backend,
+                Err(e) => return e,
+            };
+            let mut tx = ethercat_backend.tx;
+            let mut rx = ethercat_backend.rx;
+
             let rt = smol::LocalExecutor::new();
-
-            // Set core affinity to third core
-            let _ = set_core_affinity(2);
-
-            // Set the thread to real-time priority
+            // Set core affinity to fourth core
+            let _ = set_core_affinity(3);
             if let Err(e) = set_realtime_priority() {
                 tracing::error!(
                     "[{}::init_loop] Failed to set real-time priority \n{:?}",
@@ -31,8 +40,19 @@ pub fn init_loop(app_state: Arc<AppState>) -> Result<(), anyhow::Error> {
             }
 
             loop {
-                let res = smol::block_on(rt.run(async { loop_once(app_state.clone()).await }));
+                let tuple = match ethercrab::std::tx_rx_task_io_uring(
+                    &ethercat_backend.interface,
+                    tx,
+                    rx,
+                ) {
+                    Ok((tx, rx)) => (tx, rx),
+                    Err(_) => return anyhow::anyhow!("tx_rx_task_io_uring failed"),
+                };
 
+                tx = tuple.0;
+                rx = tuple.1;
+
+                let res = smol::block_on(rt.run(async { loop_once(app_state.clone()).await }));
                 if let Err(err) = res {
                     tracing::error!("Loop failed\n{:?}", err);
                     break;
@@ -54,34 +74,16 @@ pub fn init_loop(app_state: Arc<AppState>) -> Result<(), anyhow::Error> {
 
 #[instrument(skip(app_state))]
 pub async fn loop_once<'maindevice>(app_state: Arc<AppState>) -> Result<(), anyhow::Error> {
-    // Record cycle start for performance metrics
-    {
-        let mut metrics = app_state.performance_metrics.write().await;
-        metrics.cycle_start();
-    }
-
     let ethercat_setup_guard = app_state.ethercat_setup.read().await;
 
-    // only if we have an ethercat setup
-    // - tx/rx cycle
-    // - copy inputs to devices
     if let Some(ethercat_setup) = ethercat_setup_guard.as_ref() {
         let span = trace_span!("loop_once_inputs");
         let _enter = span.enter();
 
-        // Measure tx_rx performance
-        let txrx_start = Instant::now();
         ethercat_setup
             .group
             .tx_rx(&ethercat_setup.maindevice)
             .await?;
-        let txrx_duration = txrx_start.elapsed();
-
-        // Record tx_rx performance metrics
-        {
-            let mut metrics = app_state.performance_metrics.write().await;
-            metrics.record_txrx_time(txrx_duration);
-        }
 
         // copy inputs to devices
         for (i, subdevice) in ethercat_setup
