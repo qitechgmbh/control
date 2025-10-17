@@ -54,19 +54,19 @@ pub fn init_api(app_state: Arc<AppState>) -> Result<JoinHandle<()>, anyhow::Erro
                         post(post_write_machine_device_identification),
                     )
                     .route("/api/v1/machine/mutate", post(post_machine_mutate))
-                    .route("/api/:identifier/state", get(get_machine_state_simple))
+                    .route("/api/{identifier}/state", get(get_machine_state_simple))
                     .route(
-                        "/api/:identifier/:serial/state",
+                        "/api/{identifier}/{serial}/state",
                         get(get_machine_state_simple_with_serial),
                     )
-                    .route("/api/:identifier/live", get(get_machine_live_simple))
+                    .route("/api/{identifier}/live", get(get_machine_live_simple))
                     .route(
-                        "/api/:identifier/:serial/live",
+                        "/api/{identifier}/{serial}/live",
                         get(get_machine_live_simple_with_serial),
                     )
-                    .route("/api/:identifier", get(get_machine_snapshot_simple))
+                    .route("/api/{identifier}", get(get_machine_snapshot_simple))
                     .route(
-                        "/api/:identifier/:serial",
+                        "/api/{identifier}/{serial}",
                         get(get_machine_snapshot_simple_with_serial),
                     )
                     .route(

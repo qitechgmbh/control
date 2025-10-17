@@ -17,7 +17,7 @@ Each machine is addressed through a short identifier. The server accepts the fol
 
 | Identifier | Example | Notes |
 | --- | --- | --- |
-| Slug | `winder2` | Slugs map to known machine types. If multiple machines of the same type are connected you must add a serial. |
+| Slug | `extruder2`, `winder2` | Slugs map to known machine types. If multiple machines of the same type are connected you must add a serial. |
 | Slug with serial suffix | `winder2-42` | Attach the serial using `-`, `_`, `.`, or `:`. |
 | Slug with path serial | `winder2/42` | Supply the serial as an additional path segment (`/api/winder2/42/state`). |
 | Vendor/Machine | `1-8` | Numeric vendor/machine IDs in decimal or hex (`0x01-0x08`). |
@@ -25,13 +25,20 @@ Each machine is addressed through a short identifier. The server accepts the fol
 
 If the resolved identifier matches multiple machines, the API returns an error asking for the serial number.
 
+**Available slugs:** `winder2`, `extruder2`, `laser1`, `buffer1`, `aquapath1`, `mock1`.
+
 ## Endpoints
+
+All routes use brace-delimited path parameters such as `{identifier}` and `{serial}`.
 
 | Route | Description |
 | --- | --- |
 | `GET /api/{identifier}/state` | Latest cached state event (`StateEvent`). |
 | `GET /api/{identifier}/live` | Latest cached live values event (`LiveValuesEvent`). |
 | `GET /api/{identifier}` | Aggregated snapshot containing both state and live events (when available). |
+| `GET /api/{identifier}/{serial}/state` | Same as `/state`, but forces a specific serial when multiple machines share the same identifier. |
+| `GET /api/{identifier}/{serial}/live` | Same as `/live`, but forces a specific serial. |
+| `GET /api/{identifier}/{serial}` | Combined snapshot for an explicit serial. |
 
 Responses share the same shape:
 

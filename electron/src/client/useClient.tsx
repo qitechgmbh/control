@@ -98,7 +98,7 @@ export const getClient = () => {
       }
 
       // send request
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+      const response = await fetch(`${API_BASE_URL}${path}`, {
         method,
         headers: {
           "Content-Type": "application/json",

@@ -111,15 +111,20 @@ export function MachinesPage() {
 
       setUpdating(true);
       try {
-        const response = await fetch(`${API_BASE_URL}/api/v1/machine/api/enabled`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
+        const response = await fetch(
+          `${API_BASE_URL}/api/v1/machine/api/enabled`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(parsedBody.data),
           },
-          body: JSON.stringify(parsedBody.data),
-        });
+        );
 
-        if (!response.headers.get("content-type")?.includes("application/json")) {
+        if (
+          !response.headers.get("content-type")?.includes("application/json")
+        ) {
           const errorText = await response.text();
           toastHttpNotOk(response.status, errorText);
           return;
@@ -164,16 +169,16 @@ export function MachinesPage() {
       <SectionTitle title="Machines">
         <RefreshIndicator ts={machines?.ts} />
       </SectionTitle>
-      <div className="mb-6 rounded-lg border border-zinc-200 bg-background p-4 shadow-sm">
+      <div className="bg-background mb-6 rounded-lg border border-zinc-200 p-4 shadow-sm">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <div className="text-sm font-semibold uppercase tracking-wide text-zinc-500">
+            <div className="text-sm font-semibold tracking-wide text-zinc-500 uppercase">
               Host Machine API
             </div>
-            <div className="text-base font-medium text-foreground">
+            <div className="text-foreground text-base font-medium">
               Expose machine read endpoints
             </div>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-muted-foreground text-sm">
               Allow other hosts to query state and live values via HTTP.
             </p>
           </div>
