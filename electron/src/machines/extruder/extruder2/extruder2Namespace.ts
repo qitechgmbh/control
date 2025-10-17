@@ -135,16 +135,19 @@ export const pidSettingsSchema = z.object({
       ki: z.number(),
       kp: z.number(),
       kd: z.number(),
+      zone: z.string(),
     }),
     middle: z.object({
       ki: z.number(),
       kp: z.number(),
       kd: z.number(),
+      zone: z.string(),
     }),
     back: z.object({
       ki: z.number(),
       kp: z.number(),
       kd: z.number(),
+      zone: z.string(),
     }),
   }),
   pressure: z.object({

@@ -37,6 +37,10 @@ impl MachineApi for ExtruderV2 {
             Mutation::SetPressurePidSettings(settings) => {
                 self.configure_pressure_pid(settings);
             }
+
+            Mutation::SetTemperaturePidSettings(settings) => {
+                self.configure_temperature_pid(settings);
+            }
         }
         Ok(())
     }
