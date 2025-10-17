@@ -134,12 +134,18 @@ impl<F: CrossConnectableMachine<F, T>, T: CrossConnectableMachine<T, F>>
             let slot: Arc<Mutex<MachineSlotGeneric>> =
                 match machine_manager.get(&machine_identification_unique) {
                     Some(c) => c,
-                    None => return,
+                    None => {
+                        tracing::warn!("Machine not found: {}", machine_identification_unique);
+                        return;
+                    }
                 };
 
             let slot: Arc<Mutex<MachineSlot<T>>> = match Downcast::downcast(&slot) {
                 Ok(s) => s,
-                Err(_) => return,
+                Err(e) => {
+                    tracing::error!("Machine downcast failed: {}", e);
+                    return;
+                },
             };
 
             self.connected_machine = Arc::downgrade(&slot);
