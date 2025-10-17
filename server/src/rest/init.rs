@@ -69,10 +69,7 @@ pub fn init_api(app_state: Arc<AppState>) -> Result<JoinHandle<()>, anyhow::Erro
                         "/api/{identifier}/{serial}",
                         get(get_machine_snapshot_simple_with_serial),
                     )
-                    .route(
-                        "/api/v1/machine/api/enabled",
-                        get(get_machine_api_enabled),
-                    )
+                    .route("/api/v1/machine/api/enabled", get(get_machine_api_enabled))
                     .layer(socketio_layer)
                     .layer(cors)
                     .layer(trace_layer)
