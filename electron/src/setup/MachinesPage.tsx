@@ -19,7 +19,6 @@ import { API_BASE_URL, extractError } from "@/client/useClient";
 import { toastHttpNotOk, toastZodError } from "@/components/Toast";
 import { z } from "zod";
 import { TouchButton } from "@/components/touch/TouchButton";
-import { Label } from "@/control/Label";
 
 const machineApiToggleRequestSchema = z.object({ enabled: z.boolean() });
 const machineApiToggleResponseSchema = z.object({
@@ -202,46 +201,51 @@ export function MachinesPage() {
       </SectionTitle>
       <div className="bg-background mb-6 rounded-lg border border-zinc-200 p-4 shadow-sm">
         <div className="flex flex-col gap-4">
-          <div>
-            <div className="text-sm font-semibold tracking-wide text-zinc-500 uppercase">
-              Host Machine API
+          <div className="flex flex-row items-start justify-between gap-4">
+            <div className="flex-1">
+              <div className="text-sm font-semibold tracking-wide text-zinc-500 uppercase">
+                Host Machine API
+              </div>
+              <div className="text-foreground text-base font-medium">
+                Expose machine read endpoints
+              </div>
+              <p className="text-muted-foreground text-sm">
+                Allow other hosts to query state and live values via HTTP.
+              </p>
             </div>
-            <div className="text-foreground text-base font-medium">
-              Expose machine read endpoints
-            </div>
-            <p className="text-muted-foreground text-sm">
-              Allow other hosts to query state and live values via HTTP.
-            </p>
-          </div>
 
-          <Label label="API Status">
-            <div className="flex gap-2">
-              <TouchButton
-                variant={machineApiEnabled ? "default" : "outline"}
-                onClick={() => handleToggle(true)}
-                disabled={
-                  machineApiEnabled === undefined ||
-                  updating ||
-                  machineApiEnabled === true
-                }
-                isLoading={updating && machineApiEnabled !== true}
-              >
-                Enabled
-              </TouchButton>
-              <TouchButton
-                variant={!machineApiEnabled ? "default" : "outline"}
-                onClick={() => handleToggle(false)}
-                disabled={
-                  machineApiEnabled === undefined ||
-                  updating ||
-                  machineApiEnabled === false
-                }
-                isLoading={updating && machineApiEnabled !== false}
-              >
-                Disabled
-              </TouchButton>
+            <div className="flex flex-col gap-2">
+              <div className="text-sm font-medium text-zinc-700">
+                API Status
+              </div>
+              <div className="flex gap-2">
+                <TouchButton
+                  variant={machineApiEnabled ? "default" : "outline"}
+                  onClick={() => handleToggle(true)}
+                  disabled={
+                    machineApiEnabled === undefined ||
+                    updating ||
+                    machineApiEnabled === true
+                  }
+                  isLoading={updating && machineApiEnabled !== true}
+                >
+                  Enabled
+                </TouchButton>
+                <TouchButton
+                  variant={!machineApiEnabled ? "default" : "outline"}
+                  onClick={() => handleToggle(false)}
+                  disabled={
+                    machineApiEnabled === undefined ||
+                    updating ||
+                    machineApiEnabled === false
+                  }
+                  isLoading={updating && machineApiEnabled !== false}
+                >
+                  Disabled
+                </TouchButton>
+              </div>
             </div>
-          </Label>
+          </div>
 
           {machineApiEnabled && ipAddresses.length > 0 && (
             <div className="border-t border-zinc-200 pt-4">
