@@ -64,6 +64,7 @@
             libpcap
             nodejs_22
             nodePackages.npm
+            lldb
           ];
 
           hardeningDisable = [ "fortify" ];
