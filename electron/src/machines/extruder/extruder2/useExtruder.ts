@@ -293,220 +293,24 @@ export function useExtruder2() {
     );
   };
 
-  const setTemperaturePidKdFront = (kd: number) => {
+  const setTemperaturePidValue = (
+    zone: "front" | "middle" | "back",
+    key: "kp" | "ki" | "kd",
+    value: number,
+  ) => {
     updateStateOptimistically(
       (current) => {
-        current.data.pid_settings.temperature.front.kd = kd;
-        current.data.pid_settings.temperature.front.zone = "front";
+        current.data.pid_settings.temperature[zone][key] = value;
+        current.data.pid_settings.temperature[zone].zone = zone;
       },
       () => {
         const currentState = stateOptimistic.value;
         if (currentState) {
           const settings = produce(
-            currentState.data.pid_settings.temperature.front,
+            currentState.data.pid_settings.temperature[zone],
             (draft) => {
-              draft.kd = kd;
-              draft.zone = "front";
-            },
-          );
-          requestTemperaturePidSettings({
-            machine_identification_unique: machineIdentification,
-            data: { SetTemperaturePidSettings: settings },
-          });
-        }
-      },
-    );
-  };
-
-  const setTemperaturePidKiFront = (ki: number) => {
-    updateStateOptimistically(
-      (current) => {
-        current.data.pid_settings.temperature.front.ki = ki;
-        current.data.pid_settings.temperature.front.zone = "front";
-      },
-      () => {
-        const currentState = stateOptimistic.value;
-        if (currentState) {
-          const settings = produce(
-            currentState.data.pid_settings.temperature.front,
-            (draft) => {
-              draft.ki = ki;
-              draft.zone = "front";
-            },
-          );
-          requestTemperaturePidSettings({
-            machine_identification_unique: machineIdentification,
-            data: { SetTemperaturePidSettings: settings },
-          });
-        }
-      },
-    );
-  };
-
-  const setTemperaturePidKpFront = (kp: number) => {
-    updateStateOptimistically(
-      (current) => {
-        current.data.pid_settings.temperature.front.kp = kp;
-        current.data.pid_settings.temperature.front.zone = "front";
-      },
-      () => {
-        const currentState = stateOptimistic.value;
-        if (currentState) {
-          const settings = produce(
-            currentState.data.pid_settings.temperature.front,
-            (draft) => {
-              draft.kp = kp;
-              draft.zone = "front";
-            },
-          );
-          requestTemperaturePidSettings({
-            machine_identification_unique: machineIdentification,
-            data: { SetTemperaturePidSettings: settings },
-          });
-        }
-      },
-    );
-  };
-
-  const setTemperaturePidKdMiddle = (kd: number) => {
-    updateStateOptimistically(
-      (current) => {
-        current.data.pid_settings.temperature.middle.kd = kd;
-        current.data.pid_settings.temperature.middle.zone = "middle";
-      },
-      () => {
-        const currentState = stateOptimistic.value;
-        if (currentState) {
-          const settings = produce(
-            currentState.data.pid_settings.temperature.middle,
-            (draft) => {
-              draft.kd = kd;
-              draft.zone = "middle";
-            },
-          );
-          requestTemperaturePidSettings({
-            machine_identification_unique: machineIdentification,
-            data: { SetTemperaturePidSettings: settings },
-          });
-        }
-      },
-    );
-  };
-
-  const setTemperaturePidKiMiddle = (ki: number) => {
-    updateStateOptimistically(
-      (current) => {
-        current.data.pid_settings.temperature.middle.ki = ki;
-        current.data.pid_settings.temperature.middle.zone = "middle";
-      },
-      () => {
-        const currentState = stateOptimistic.value;
-        if (currentState) {
-          const settings = produce(
-            currentState.data.pid_settings.temperature.middle,
-            (draft) => {
-              draft.ki = ki;
-              draft.zone = "middle";
-            },
-          );
-          requestTemperaturePidSettings({
-            machine_identification_unique: machineIdentification,
-            data: { SetTemperaturePidSettings: settings },
-          });
-        }
-      },
-    );
-  };
-
-  const setTemperaturePidKpMiddle = (kp: number) => {
-    updateStateOptimistically(
-      (current) => {
-        current.data.pid_settings.temperature.middle.kp = kp;
-        current.data.pid_settings.temperature.middle.zone = "middle";
-      },
-      () => {
-        const currentState = stateOptimistic.value;
-        if (currentState) {
-          const settings = produce(
-            currentState.data.pid_settings.temperature.middle,
-            (draft) => {
-              draft.kp = kp;
-              draft.zone = "middle";
-            },
-          );
-          requestTemperaturePidSettings({
-            machine_identification_unique: machineIdentification,
-            data: { SetTemperaturePidSettings: settings },
-          });
-        }
-      },
-    );
-  };
-
-  const setTemperaturePidKdBack = (kd: number) => {
-    updateStateOptimistically(
-      (current) => {
-        current.data.pid_settings.temperature.back.kd = kd;
-        current.data.pid_settings.temperature.back.zone = "back";
-      },
-      () => {
-        const currentState = stateOptimistic.value;
-        if (currentState) {
-          const settings = produce(
-            currentState.data.pid_settings.temperature.back,
-            (draft) => {
-              draft.kd = kd;
-              draft.zone = "back";
-            },
-          );
-          requestTemperaturePidSettings({
-            machine_identification_unique: machineIdentification,
-            data: { SetTemperaturePidSettings: settings },
-          });
-        }
-      },
-    );
-  };
-
-  const setTemperaturePidKiBack = (ki: number) => {
-    updateStateOptimistically(
-      (current) => {
-        current.data.pid_settings.temperature.back.ki = ki;
-        current.data.pid_settings.temperature.back.zone = "back";
-      },
-      () => {
-        const currentState = stateOptimistic.value;
-        if (currentState) {
-          const settings = produce(
-            currentState.data.pid_settings.temperature.back,
-            (draft) => {
-              draft.ki = ki;
-              draft.zone = "back";
-            },
-          );
-          requestTemperaturePidSettings({
-            machine_identification_unique: machineIdentification,
-            data: { SetTemperaturePidSettings: settings },
-          });
-        }
-      },
-    );
-  };
-
-  const setTemperaturePidKpBack = (kp: number) => {
-    updateStateOptimistically(
-      (current) => {
-        current.data.pid_settings.temperature.back.kp = kp;
-        current.data.pid_settings.temperature.back.zone = "back";
-      },
-      () => {
-        const currentState = stateOptimistic.value;
-        if (currentState) {
-          const settings = produce(
-            currentState.data.pid_settings.temperature.back,
-            (draft) => {
-              draft.kp = kp;
-              draft.zone = "back";
+              draft[key] = value;
+              draft.zone = zone;
             },
           );
           requestTemperaturePidSettings({
@@ -640,15 +444,7 @@ export function useExtruder2() {
     setPressurePidKp,
     setPressurePidKi,
     setPressurePidKd,
-    setTemperaturePidKpFront,
-    setTemperaturePidKiFront,
-    setTemperaturePidKdFront,
-    setTemperaturePidKpMiddle,
-    setTemperaturePidKiMiddle,
-    setTemperaturePidKdMiddle,
-    setTemperaturePidKpBack,
-    setTemperaturePidKiBack,
-    setTemperaturePidKdBack,
+    setTemperaturePidValue,
     resetInverter,
   };
 }
