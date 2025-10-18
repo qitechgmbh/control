@@ -25,3 +25,6 @@ style = { level = "warn", priority = -1 }
 pendantic = { level = "warn", priority = -1 }
 cargo = { level = "warn", priority = -1 }
 nursery = { level = "warn", priority = -1 }
+
+[patch.crates-io]
+ethercrab = { git = "https://github.com/kraemr/ethercrab-deterministic.git",rev = "53533ee42d11a32f6b8638233b59c402f3eb1998"  }

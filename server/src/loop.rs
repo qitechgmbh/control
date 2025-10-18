@@ -39,9 +39,16 @@ pub fn init_loop(app_state: Arc<AppState>) -> Result<(), anyhow::Error> {
                 );
             }
 
+            let result = ethercrab::std::io_uring_one_cycle::setup_tx_rx_task("eno1");
+
+            let mut tx_rx_conf = match result {
+                Ok(tx_rx_conf) => tx_rx_conf,
+                Err(_) => todo!(),
+            };
+
             loop {
-                let tuple = match ethercrab::std::tx_rx_task_io_uring(
-                    &ethercat_backend.interface,
+                let tuple = match ethercrab::std::io_uring_one_cycle::tx_rx_task_io_uring_cycle(
+                    &mut tx_rx_conf,
                     tx,
                     rx,
                 ) {
