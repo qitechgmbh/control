@@ -1036,8 +1036,7 @@ dependencies = [
 [[package]]
 name = "ethercrab"
 version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fbb13becfa15713adb09b27fdb74468b827cdc78aa99aea638a89c1b0db3ce94"
+source = "git+https://github.com/kraemr/ethercrab-deterministic.git?rev=53533ee42d11a32f6b8638233b59c402f3eb1998#53533ee42d11a32f6b8638233b59c402f3eb1998"
 dependencies = [
  "async-io",
  "atomic-waker",
@@ -1066,8 +1065,7 @@ dependencies = [
 [[package]]
 name = "ethercrab-wire"
 version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d15828cb020fb44c92ca67e1ee3c122c9621c2e00d383d066e488f0619023ba2"
+source = "git+https://github.com/kraemr/ethercrab-deterministic.git?rev=53533ee42d11a32f6b8638233b59c402f3eb1998#53533ee42d11a32f6b8638233b59c402f3eb1998"
 dependencies = [
  "ethercrab-wire-derive",
  "heapless",
@@ -1076,8 +1074,7 @@ dependencies = [
 [[package]]
 name = "ethercrab-wire-derive"
 version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0e790b8011211ed70babfcacbd4277b91ee21402ad5ba6a2c293db02e2f12919"
+source = "git+https://github.com/kraemr/ethercrab-deterministic.git?rev=53533ee42d11a32f6b8638233b59c402f3eb1998#53533ee42d11a32f6b8638233b59c402f3eb1998"
 dependencies = [
  "criterion",
  "proc-macro2",
