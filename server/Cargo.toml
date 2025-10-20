@@ -9,7 +9,7 @@ workspace = true
 
 
 [dependencies]
-ethercrab = "0.6"
+ethercrab = { git = "https://github.com/ethercrab-rs/ethercrab", branch = "main", features = ["xdp"] }
 ethercat_hal = { path = "../ethercat-hal" }
 control_core = { path = "../control-core" }
 control_core_derive = { path = "../control-core-derive" }
@@ -79,6 +79,7 @@ tracing-otel = [
 mock-machine = []
 memory-locking = []
 io-uring = []
+xdp = []
 development-build = []
 
 [profile.release]

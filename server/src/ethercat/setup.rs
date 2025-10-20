@@ -54,7 +54,10 @@ pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(),
             // Set the thread to real-time priority
             let _ = set_realtime_priority();
 
-            #[cfg(not(all(target_os = "linux", feature = "io-uring")))]
+            #[cfg(not(any(
+                all(target_os = "linux", feature = "io-uring"),
+                all(target_os = "linux", feature = "xdp")
+            )))]
             {
                 use ethercrab::std::tx_rx_task;
                 use futures::executor::block_on;
@@ -71,6 +74,14 @@ pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(),
                 use ethercrab::std::tx_rx_task_io_uring;
 
                 let _ = tx_rx_task_io_uring(&interface, tx, rx)
+                    .expect("Failed to spawn TX/RX task (io_uring)");
+            }
+
+            #[cfg(all(target_os = "linux", feature = "xdp"))]
+            {
+                use ethercrab::std::tx_rx_task_xdp;
+
+                let _ = tx_rx_task_xdp(&interface, tx, rx)
                     .expect("Failed to spawn TX/RX task (io_uring)");
             }
         })
