@@ -3,7 +3,7 @@ use bitvec::prelude::*;
 use control_core::machines::connection::MachineConnection;
 use control_core::realtime::{set_core_affinity, set_realtime_priority};
 use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 use tracing::{instrument, trace_span};
 
 pub fn init_loop(app_state: Arc<AppState>) -> Result<(), anyhow::Error> {
@@ -122,12 +122,6 @@ pub async fn loop_once<'maindevice>(app_state: Arc<AppState>) -> Result<(), anyh
                 )
             })?;
         }
-
-        #[cfg(feature = "development-build")]
-        smol::Timer::after(Duration::from_micros(2000)).await;
-
-        #[cfg(not(feature = "development-build"))]
-        smol::Timer::after(Duration::from_micros(500)).await;
     }
 
     // execute machines
