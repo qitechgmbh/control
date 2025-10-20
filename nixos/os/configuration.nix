@@ -15,12 +15,15 @@ in
     consoleMode = "max";  # Use the highest available resolution
   };
   boot.loader.efi.canTouchEfiVariables = true;
-  boot.kernelPackages = pkgs.linuxPackages-rt_latest;
+  boot.kernelPackages = pkgs.linuxPackages_6_13;
   boot.kernelModules = [ "i915" ];
 
 
 
   boot.kernelParams = [
+    # Realtime Preemption
+    "preempt=full"
+
     # Graphical
     "logo.nologo" # Remove kernel logo during boot
 
