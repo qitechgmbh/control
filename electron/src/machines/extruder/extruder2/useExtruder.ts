@@ -293,6 +293,33 @@ export function useExtruder2() {
     );
   };
 
+  const setTemperaturePidValue = (
+    zone: "front" | "middle" | "back",
+    key: "kp" | "ki" | "kd",
+    value: number,
+  ) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.pid_settings.temperature[zone][key] = value;
+      },
+      () => {
+        const currentState = stateOptimistic.value;
+        if (currentState) {
+          const settings = produce(
+            currentState.data.pid_settings.temperature[zone],
+            (draft) => {
+              draft[key] = value;
+            },
+          );
+          requestTemperaturePidSettings({
+            machine_identification_unique: machineIdentification,
+            data: { SetTemperaturePidSettings: settings },
+          });
+        }
+      },
+    );
+  };
+
   const resetInverter = () => {
     // No optimistic update needed for reset
     requestResetInverter({
@@ -356,6 +383,17 @@ export function useExtruder2() {
     }),
   );
 
+  const { request: requestTemperaturePidSettings } = useMachineMutation(
+    z.object({
+      SetTemperaturePidSettings: z.object({
+        ki: z.number(),
+        kp: z.number(),
+        kd: z.number(),
+        zone: z.string(),
+      }),
+    }),
+  );
+
   const { request: requestResetInverter } = useMachineMutation(
     z.object({ ResetInverter: z.boolean() }),
   );
@@ -404,6 +442,7 @@ export function useExtruder2() {
     setPressurePidKp,
     setPressurePidKi,
     setPressurePidKd,
+    setTemperaturePidValue,
     resetInverter,
   };
 }
