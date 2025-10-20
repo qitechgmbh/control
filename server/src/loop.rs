@@ -134,7 +134,7 @@ pub async fn loop_once<'maindevice>(app_state: Arc<AppState>) -> Result<(), anyh
     {
         let cycle = LOOP_COUNTER.fetch_add(1, Ordering::Relaxed);
 
-        let start = if cycle % 100 == 0 {
+        let start = if cycle % 1000 == 0 {
             Some(Instant::now())
         } else {
             None
