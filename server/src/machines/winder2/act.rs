@@ -1,29 +1,36 @@
 use super::Winder2;
 use control_core::machines::new::MachineAct;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, Instant};
 
 impl MachineAct for Winder2 {
     fn act(&mut self, now: Instant) {
-        // sync the spool speed
+        static CYCLE_COUNTER: AtomicU64 = AtomicU64::new(0);
+        let start = Instant::now();
+
+        // original act code
         self.sync_spool_speed(now);
-
-        // sync the puller speed
         self.sync_puller_speed(now);
-
-        // sync the traverse speed
         self.sync_traverse_speed();
-
-        // automatically stops or pulls after N Meters if enabled
         self.stop_or_pull_spool(now);
 
         if self.traverse_controller.did_change_state() {
             self.emit_state();
         }
 
-        // more than 33ms have passed since last emit (30 "fps" target)
         if now.duration_since(self.last_measurement_emit) > Duration::from_secs_f64(1.0 / 30.0) {
             self.emit_live_values();
             self.last_measurement_emit = now;
+        }
+
+        // increment and check counter
+        let cycle = CYCLE_COUNTER.fetch_add(1, Ordering::Relaxed);
+        if cycle % 1000 == 0 {
+            let duration = start.elapsed();
+            tracing::info!(
+                "[Winder2::act] Duration of act(): {} ns",
+                duration.as_nanos()
+            );
         }
     }
 }

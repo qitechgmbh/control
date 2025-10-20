@@ -17,13 +17,32 @@ use std::time::{Duration, Instant};
 ///
 /// The method ensures that the diameter value is updated approximately 60 times per second.
 ///
+use std::sync::atomic::{AtomicU64, Ordering};
+
 impl MachineAct for LaserMachine {
     fn act(&mut self, now: Instant) {
+        // Start high-resolution timer
+        let start = Instant::now();
+
         self.update();
-        // more than 33ms have passed since last emit (30 "fps" target)
+
+        // emit live values every ~33ms
         if now.duration_since(self.last_measurement_emit) > Duration::from_secs_f64(1.0 / 30.0) {
             self.emit_live_values();
             self.last_measurement_emit = now;
+        }
+
+        // End timer
+        let elapsed = start.elapsed();
+        static COUNTER: AtomicU64 = AtomicU64::new(0);
+        let count = COUNTER.fetch_add(1, Ordering::Relaxed);
+
+        // Log every 10th call to reduce spam
+        if count % 1000 == 0 {
+            tracing::info!(
+                "[LaserMachine::act] Duration of act(): {} ns",
+                elapsed.as_nanos()
+            );
         }
     }
 }

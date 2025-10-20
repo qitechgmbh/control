@@ -12,6 +12,7 @@ pub struct EthercatPerformanceMetrics {
     loop_times: VecDeque<Duration>,
     last_loop_start: Option<Instant>,
     last_log_time: Instant,
+    pub loop_count: u32,
 }
 
 impl Default for EthercatPerformanceMetrics {
@@ -27,6 +28,7 @@ impl EthercatPerformanceMetrics {
             txrx_times: VecDeque::with_capacity(METRICS_WINDOW_SIZE),
             loop_times: VecDeque::with_capacity(METRICS_WINDOW_SIZE),
             last_loop_start: None,
+            loop_count: 0,
             last_log_time: Instant::now(),
         }
     }

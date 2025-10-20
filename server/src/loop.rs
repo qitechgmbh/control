@@ -3,9 +3,10 @@ use bitvec::prelude::*;
 use control_core::machines::connection::MachineConnection;
 use control_core::realtime::{set_core_affinity, set_realtime_priority};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, Instant};
 use tracing::{instrument, trace_span};
-
+static LOOP_COUNTER: AtomicU64 = AtomicU64::new(0);
 pub fn init_loop(app_state: Arc<AppState>) -> Result<(), anyhow::Error> {
     // Start control loop
     std::thread::Builder::new()
@@ -130,8 +131,15 @@ pub async fn loop_once<'maindevice>(app_state: Arc<AppState>) -> Result<(), anyh
         smol::Timer::after(Duration::from_micros(500)).await;
     }
 
-    // execute machines
     {
+        let cycle = LOOP_COUNTER.fetch_add(1, Ordering::Relaxed);
+
+        let start = if cycle % 100 == 0 {
+            Some(Instant::now())
+        } else {
+            None
+        };
+
         let span = trace_span!("loop_once_act");
         let _enter = span.enter();
 
@@ -141,15 +149,21 @@ pub async fn loop_once<'maindevice>(app_state: Arc<AppState>) -> Result<(), anyh
         for machine in machine_guard.iter() {
             let connection = &machine.1.lock_blocking().machine_connection;
             if let MachineConnection::Connected(machine) = connection {
-                // if the machine is currenlty locked (likely processing API call)
-                // we skip the machine
                 if let Some(mut machine_guard) = machine.try_lock() {
-                    let span = trace_span!("loop_once_act_machine",);
+                    let span = trace_span!("loop_once_act_machine");
                     let _enter = span.enter();
-                    // execute machine
                     machine_guard.act(now);
                 }
             }
+        }
+
+        if let Some(start) = start {
+            let elapsed = start.elapsed();
+            tracing::info!(
+                "loop_once_act duration on cycle {}: {} ns",
+                cycle,
+                elapsed.as_nanos()
+            );
         }
     }
 
