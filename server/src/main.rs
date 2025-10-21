@@ -7,7 +7,7 @@ use r#loop::init_loop;
 #[cfg(feature = "mock-machine")]
 use mock::init::init_mock;
 use rest::init::init_api;
-#[cfg(not(feature = "mock-machine"))]
+//#[cfg(not(feature = "mock-machine"))]
 use serial::init::init_serial;
 use std::sync::Arc;
 
