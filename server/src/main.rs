@@ -26,6 +26,10 @@ pub mod performance_metrics;
 pub mod rest;
 pub mod serial;
 pub mod socketio;
+pub mod units;
+
+#[macro_use]
+extern crate uom;
 
 use crate::ethercat::init::init_ethercat;
 
