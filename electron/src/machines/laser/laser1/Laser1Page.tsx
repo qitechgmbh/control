@@ -1,13 +1,10 @@
 import { Topbar } from "@/components/Topbar";
 import { laser1SerialRoute } from "@/routes/routes";
 import React from "react";
-import { LaserToastManager } from "../LaserToastManager";
 
 export function Laser1Page() {
   const { serial } = laser1SerialRoute.useParams();
   return (
-    <>
-    <LaserToastManager/>
     <Topbar
       pathname={`/_sidebar/machines/laser1/${serial}`}
       items={[
@@ -37,6 +34,5 @@ export function Laser1Page() {
         },
       ]}
     />
-    </>
   );
 }
