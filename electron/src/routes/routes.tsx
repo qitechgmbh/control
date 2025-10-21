@@ -42,6 +42,7 @@ import { Buffer1SettingsPage } from "@/machines/buffer/buffer1/Buffer1Settings";
 import { Laser1ControlPage } from "@/machines/laser/laser1/Laser1ControlPage";
 import { Laser1GraphsPage } from "@/machines/laser/laser1/Laser1Graph";
 import { Laser1Page } from "@/machines/laser/laser1/Laser1Page";
+import { Laser1SettingsPage } from "@/machines/laser/laser1/Laser1Settings";
 
 import { Mock1ControlPage } from "@/machines/mock/mock1/Mock1ControlPage";
 import { Mock1GraphPage } from "@/machines/mock/mock1/Mock1Graph";
@@ -223,6 +224,12 @@ export const laser1PresetsRoute = createRoute({
   component: () => <Laser1PresetsPage />,
 });
 
+export const laser1SettingsPage = createRoute({
+  getParentRoute: () => laser1SerialRoute,
+  path: "settings",
+  component: () => <Laser1SettingsPage />,
+});
+
 export const mock1SerialRoute = createRoute({
   getParentRoute: () => machinesRoute,
   path: "mock1/$serial",
@@ -389,6 +396,7 @@ export const rootTree = RootRoute.addChildren([
         laser1ControlRoute,
         laser1GraphsRoute,
         laser1PresetsRoute,
+        laser1SettingsPage,
       ]),
       testMachineSerialRoute.addChildren([testMachineControlRoute]),
 

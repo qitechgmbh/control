@@ -18,7 +18,8 @@ export function GlobalLaserToastManager({
   machineIdentification?: MachineIdentificationUnique;
 }) {
   const main = useMainNamespace();
-  const [discovered, setDiscovered] = useState<MachineIdentificationUnique | null>(null);
+  const [discovered, setDiscovered] =
+    useState<MachineIdentificationUnique | null>(null);
 
   // Prefer explicit prop, otherwise use discovered id
   const effectiveId = machineIdentification ?? discovered;
@@ -34,11 +35,15 @@ export function GlobalLaserToastManager({
 
     // Defensive shapes: try common structures
     let list: any[] = [];
-    if (Array.isArray(machinesEvent?.data?.machines)) list = machinesEvent.data.machines;
+    if (Array.isArray(machinesEvent?.data?.machines))
+      list = machinesEvent.data.machines;
     else if (Array.isArray(machinesEvent?.data)) list = machinesEvent.data;
-    else if (Array.isArray(machinesEvent?.machines)) list = machinesEvent.machines;
+    else if (Array.isArray(machinesEvent?.machines))
+      list = machinesEvent.machines;
     else if (machinesEvent && typeof machinesEvent === "object") {
-      list = Object.values(machinesEvent).filter((v) => v && typeof v === "object");
+      list = Object.values(machinesEvent).filter(
+        (v) => v && typeof v === "object",
+      );
     }
 
     const match = list.find((entry) => {
@@ -57,7 +62,8 @@ export function GlobalLaserToastManager({
       const serial =
         match?.serial ??
         match?.machine_identification_unique?.serial ??
-        match?.device_machine_identification?.machine_identification_unique?.serial ??
+        match?.device_machine_identification?.machine_identification_unique
+          ?.serial ??
         null;
       if (serial != null && !Number.isNaN(Number(serial))) {
         setDiscovered({
@@ -71,14 +77,20 @@ export function GlobalLaserToastManager({
     setDiscovered(null);
   }, [main, machineIdentification]);
 
-  return effectiveId ? <LaserToastWatcher machineIdentification={effectiveId} /> : null;
+  return effectiveId ? (
+    <LaserToastWatcher machineIdentification={effectiveId} />
+  ) : null;
 }
 
 /**
  * Watches StateEvent for the laser namespace and shows toasts for non-default states.
  * Component is non-visual.
  */
-function LaserToastWatcher({ machineIdentification }: { machineIdentification: MachineIdentificationUnique }) {
+function LaserToastWatcher({
+  machineIdentification,
+}: {
+  machineIdentification: MachineIdentificationUnique;
+}) {
   const { state } = useLaser1Namespace(machineIdentification);
 
   // Deduplicate toasts by event timestamp
@@ -108,11 +120,16 @@ function LaserToastWatcher({ machineIdentification }: { machineIdentification: M
         <div className="flex w-100 flex-col gap-3 rounded-xl border border-red-400 bg-red-600 p-4 text-white shadow-xl backdrop-blur-sm transition-all duration-300">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Icon name="lu:TriangleAlert" className="h-5 w-5 text-yellow-200"/>
-              <strong className="text-lg font-semibold tracking-wide">Warning</strong>
+              <Icon
+                name="lu:TriangleAlert"
+                className="h-5 w-5 text-yellow-200"
+              />
+              <strong className="text-lg font-semibold tracking-wide">
+                Warning
+              </strong>
             </div>
             <button
-              className="rounded-md p-1 text-2xl font-bold text-white/80 hover:bg-red-500 hover:text-white focus:outline-none focus:ring-2 focus:ring-white/30"
+              className="rounded-md p-1 text-2xl font-bold text-white/80 hover:bg-red-500 hover:text-white focus:ring-2 focus:ring-white/30 focus:outline-none"
               onClick={() => {
                 toast.dismiss(toastId);
                 lastToastTs.current = null;
@@ -124,7 +141,7 @@ function LaserToastWatcher({ machineIdentification }: { machineIdentification: M
           </div>
 
           <p className="text-base leading-snug text-red-50">
-            Laser diameter is <strong>out of tolerance</strong>.<br/>
+            Laser diameter is <strong>out of tolerance</strong>.<br />
             Please check the Filament immediately.
           </p>
         </div>,
@@ -138,7 +155,7 @@ function LaserToastWatcher({ machineIdentification }: { machineIdentification: M
             boxShadow: "none",
             border: "none",
           },
-        }
+        },
       );
     } catch (err) {
       console.error("GlobalLaserToastManager: failed to build toast", err);

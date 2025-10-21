@@ -23,11 +23,11 @@ export default function App() {
   }, [i18n]);
 
   return (
-     <>
-       <GlobalLaserToastManager/>
-       <RouterProvider router={router} />;
-     </>
-  )
+    <>
+      <GlobalLaserToastManager />
+      <RouterProvider router={router} />;
+    </>
+  );
 }
 
 // enable immer MapSet plugin
