@@ -2,20 +2,31 @@ import { Page } from "@/components/Page";
 import { ControlCard } from "@/control/ControlCard";
 import { ControlGrid } from "@/control/ControlGrid";
 import { EditValue } from "@/control/EditValue";
-import React from "react";
+import React, { useState } from "react";
 import { useWinder2 } from "./useWinder";
 import { roundToDecimals } from "@/lib/decimal";
 import { Label } from "@/control/Label";
 import { SelectionGroupBoolean } from "@/control/SelectionGroup";
 import { SelectionGroup } from "@/control/SelectionGroup";
 import { MachineSelector } from "@/components/MachineConnectionDropdown";
+import {
+  getWinder2XLMode,
+  setWinder2XLMode,
+  WINDER2_TRAVERSE_MAX_STANDARD,
+  WINDER2_TRAVERSE_MAX_XL,
+} from "./winder2Config";
 
 export function Winder2SettingPage() {
+  const [xlMode, setXlMode] = useState(getWinder2XLMode());
+
   const {
     state,
     defaultState,
     setTraverseStepSize,
     setTraversePadding,
+    setTraverseLimitInner,
+    setTraverseLimitOuter,
+    gotoTraverseHome,
     setPullerForward,
     setPullerGearRatio,
     setSpoolRegulationMode,
@@ -34,10 +45,58 @@ export function Winder2SettingPage() {
     disconnectMachine,
   } = useWinder2();
 
+  const handleXlModeChange = (enabled: boolean) => {
+    setWinder2XLMode(enabled);
+    setXlMode(enabled);
+
+    // When switching from XL to normal mode, reset traverse limits to default values
+    if (!enabled && defaultState) {
+      // Only reset if current values exceed the standard max
+      const currentOuter = state?.traverse_state?.limit_outer ?? 0;
+      const currentInner = state?.traverse_state?.limit_inner ?? 0;
+      const defaultOuter = defaultState.traverse_state?.limit_outer;
+      const defaultInner = defaultState.traverse_state?.limit_inner;
+
+      if (
+        currentOuter > WINDER2_TRAVERSE_MAX_STANDARD &&
+        defaultOuter !== undefined
+      ) {
+        setTraverseLimitOuter(defaultOuter);
+        setTraverseLimitInner(defaultInner);
+      }
+      if (
+        currentInner > WINDER2_TRAVERSE_MAX_STANDARD &&
+        defaultInner !== undefined
+      ) {
+        setTraverseLimitOuter(defaultOuter);
+        setTraverseLimitInner(defaultInner);
+      }
+
+      // Home the traverse when switching from XL to normal mode
+      gotoTraverseHome();
+    }
+  };
+
   return (
     <Page>
       <ControlGrid>
         <ControlCard title="Traverse">
+          <Label label="Traverse Size">
+            <SelectionGroupBoolean
+              value={xlMode}
+              disabled={isDisabled}
+              loading={isLoading}
+              optionFalse={{
+                children: `Standard (${WINDER2_TRAVERSE_MAX_STANDARD}mm)`,
+                icon: "lu:Settings",
+              }}
+              optionTrue={{
+                children: `XL (${WINDER2_TRAVERSE_MAX_XL}mm)`,
+                icon: "lu:Maximize2",
+              }}
+              onChange={handleXlModeChange}
+            />
+          </Label>
           <Label label="Step Size">
             <EditValue
               value={state?.traverse_state?.step_size}
