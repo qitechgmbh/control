@@ -32,6 +32,7 @@ export function Winder2SettingPage() {
     setSpoolRegulationMode,
     setSpoolMinMaxMinSpeed,
     setSpoolMinMaxMaxSpeed,
+    setSpoolForward,
     setSpoolAdaptiveTensionTarget,
     setSpoolAdaptiveRadiusLearningRate,
     setSpoolAdaptiveMaxSpeedMultiplier,
@@ -144,6 +145,23 @@ export function Winder2SettingPage() {
               onChange={(value) =>
                 setSpoolRegulationMode(value as "Adaptive" | "MinMax")
               }
+            />
+          </Label>
+
+          <Label label="Rotation Direction">
+            <SelectionGroupBoolean
+              value={state?.spool_speed_controller_state?.forward}
+              disabled={isDisabled}
+              loading={isLoading}
+              optionFalse={{
+                children: "Reverse",
+                icon: "lu:RotateCcw",
+              }}
+              optionTrue={{
+                children: "Forward",
+                icon: "lu:RotateCw",
+              }}
+              onChange={(value) => setSpoolForward(value)}
             />
           </Label>
 

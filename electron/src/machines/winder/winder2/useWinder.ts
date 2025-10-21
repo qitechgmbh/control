@@ -134,6 +134,9 @@ export function useWinder2() {
   const { request: requestSpoolSetMinMaxMaxSpeed } = useMachineMutation(
     z.object({ SetSpoolMinMaxMaxSpeed: z.number() }),
   );
+  const { request: requestSpoolSetForward } = useMachineMutation(
+    z.object({ SetSpoolForward: z.boolean() }),
+  );
   const { request: requestSpoolSetAdaptiveTensionTarget } = useMachineMutation(
     z.object({ SetSpoolAdaptiveTensionTarget: z.number() }),
   );
@@ -467,6 +470,19 @@ export function useWinder2() {
     );
   };
 
+  const setSpoolForward = (forward: boolean) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.spool_speed_controller_state.forward = forward;
+      },
+      () =>
+        requestSpoolSetForward({
+          machine_identification_unique: machineIdentification,
+          data: { SetSpoolForward: forward },
+        }),
+    );
+  };
+
   const setSpoolAdaptiveTensionTarget = (value: number) => {
     updateStateOptimistically(
       (current) => {
@@ -652,6 +668,7 @@ export function useWinder2() {
     setSpoolRegulationMode,
     setSpoolMinMaxMinSpeed,
     setSpoolMinMaxMaxSpeed,
+    setSpoolForward,
     setSpoolAdaptiveTensionTarget,
     setSpoolAdaptiveRadiusLearningRate,
     setSpoolAdaptiveMaxSpeedMultiplier,

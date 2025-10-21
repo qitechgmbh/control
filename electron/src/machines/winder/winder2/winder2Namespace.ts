@@ -177,6 +177,7 @@ export const spoolSpeedControllerStateSchema = z.object({
   adaptive_max_speed_multiplier: z.number(),
   adaptive_acceleration_factor: z.number(),
   adaptive_deacceleration_urgency_multiplier: z.number(),
+  forward: z.boolean(),
 });
 
 /**
