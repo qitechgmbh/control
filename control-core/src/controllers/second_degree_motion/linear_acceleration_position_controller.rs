@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use uom::si::{
+use units::{
     acceleration::meter_per_second_squared,
     f64::{Acceleration, Length, Velocity},
     length::meter,
@@ -22,8 +22,8 @@ use super::acceleration_position_controller::{
 ///
 /// # Example
 /// ```ignore
-/// use uom::si::{length::meter, velocity::meter_per_second, acceleration::meter_per_second_squared};
-/// use uom::si::f64::{Length, Velocity, Acceleration};
+/// use units::{length::meter, velocity::meter_per_second, acceleration::meter_per_second_squared};
+/// use units::f64::{Length, Velocity, Acceleration};
 ///
 /// let position_limit = Length::new::<meter>(10.0);
 /// let max_speed = Velocity::new::<meter_per_second>(2.0);
@@ -101,8 +101,8 @@ impl LinearAccelerationPositionController {
     ///
     /// # Example
     /// ```ignore
-    /// use uom::si::{length::meter, velocity::meter_per_second, acceleration::meter_per_second_squared};
-    /// use uom::si::f64::{Length, Velocity, Acceleration};
+    /// use units::{length::meter, velocity::meter_per_second, acceleration::meter_per_second_squared};
+    /// use units::f64::{Length, Velocity, Acceleration};
     ///
     /// let position_limit = Length::new::<meter>(5.0);  // Creates [-5.0, +5.0] meter range
     /// let max_speed = Velocity::new::<meter_per_second>(1.0);  // Creates [-1.0, +1.0] m/s range
@@ -150,7 +150,7 @@ impl LinearAccelerationPositionController {
     /// # Example
     /// ```ignore
     /// use std::time::Instant;
-    /// use uom::si::{length::meter, f64::Length};
+    /// use units::{length::meter, f64::Length};
     ///
     /// let mut controller = LinearAccelerationPositionController::new_simple(
     ///     Some(Length::new::<meter>(10.0)),
@@ -375,7 +375,7 @@ impl LinearAccelerationPositionController {
     ///
     /// # Example
     /// ```ignore
-    /// use uom::si::{length::meter, velocity::meter_per_second, f64::{Length, Velocity}};
+    /// use units::{length::meter, velocity::meter_per_second, f64::{Length, Velocity}};
     ///
     /// let new_position = Length::new::<meter>(0.0);
     ///

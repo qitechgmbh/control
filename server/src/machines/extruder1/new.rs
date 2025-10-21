@@ -29,13 +29,13 @@ use std::time::Duration;
 #[cfg(not(feature = "mock-machine"))]
 use std::time::Instant;
 #[cfg(not(feature = "mock-machine"))]
-use uom::si::angular_velocity::AngularVelocity;
+use units::angular_velocity::AngularVelocity;
 #[cfg(not(feature = "mock-machine"))]
-use uom::si::angular_velocity::revolution_per_minute;
+use units::angular_velocity::revolution_per_minute;
 #[cfg(not(feature = "mock-machine"))]
-use uom::si::pressure::Pressure;
+use units::pressure::Pressure;
 #[cfg(not(feature = "mock-machine"))]
-use uom::si::pressure::bar;
+use units::pressure::bar;
 
 #[cfg(not(feature = "mock-machine"))]
 use ethercat_hal::{
@@ -50,7 +50,7 @@ use ethercat_hal::{
     },
 };
 #[cfg(not(feature = "mock-machine"))]
-use uom::si::thermodynamic_temperature::{ThermodynamicTemperature, degree_celsius};
+use units::thermodynamic_temperature::{ThermodynamicTemperature, degree_celsius};
 
 #[cfg(not(feature = "mock-machine"))]
 use crate::machines::extruder1::temperature_controller::TemperatureController;

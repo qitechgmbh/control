@@ -4,15 +4,11 @@ use control_core::converters::linear_step_converter::LinearStepConverter;
 use ethercat_hal::io::{
     digital_input::DigitalInput, stepper_velocity_el70x1::StepperVelocityEL70x1,
 };
-use uom::{
-    ConstZero,
-    si::{
-        angular_velocity::revolution_per_second,
-        f64::{AngularVelocity, Length, Velocity},
-        length::millimeter,
-        velocity::millimeter_per_second,
-    },
-};
+use units::ConstZero;
+use units::angular_velocity::revolution_per_second;
+use units::f64::{AngularVelocity, Length, Velocity};
+use units::length::millimeter;
+use units::velocity::millimeter_per_second;
 
 #[derive(Debug)]
 pub struct TraverseController {

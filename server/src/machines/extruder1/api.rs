@@ -22,10 +22,10 @@ use serde_json::Value;
 use smol::lock::Mutex;
 use std::{sync::Arc, time::Duration};
 use tracing::instrument;
-use uom::si::{
-    angular_velocity::revolution_per_minute, electric_current::ampere, electric_potential::volt,
-    frequency::hertz,
-};
+use units::angular_velocity::revolution_per_minute;
+use units::electric_current::ampere;
+use units::electric_potential::volt;
+use units::frequency::hertz;
 
 #[derive(Debug, Clone, Default, Serialize)]
 pub struct MotorStatusValues {

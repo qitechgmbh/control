@@ -6,6 +6,7 @@ members = [
     "control-core",
     "ethercat-eeprom-dump",
     "control-core-derive",
+    "units",
 ]
 exclude = []
 resolver = "2"

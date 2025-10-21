@@ -8,7 +8,7 @@ use control_core::controllers::second_degree_motion::acceleration_position_contr
 use super::tension_arm::TensionArm;
 use serde::{Deserialize, Serialize};
 use std::time::Instant;
-use uom::si::f64::AngularVelocity;
+use units::f64::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub enum SpoolSpeedControllerType {

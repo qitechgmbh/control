@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use uom::si::{
+use units::{
     acceleration::meter_per_second_squared,
     f64::{Acceleration, Velocity},
     velocity::meter_per_second,

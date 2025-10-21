@@ -57,7 +57,7 @@ impl AnalogInputDummy {
 
 #[cfg(test)]
 mod tests {
-    use uom::si::{electric_potential::volt, f64::ElectricPotential};
+    use units::{electric_potential::volt, f64::ElectricPotential};
 
     use super::*;
 

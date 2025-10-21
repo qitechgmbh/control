@@ -22,7 +22,8 @@ use control_core::{
 use serialport::SerialPort;
 use serialport::{ClearBuffer, DataBits, FlowControl, Parity, StopBits};
 use smol::lock::RwLock;
-use uom::si::f64::Length;
+use units::f64::Length;
+use units::length::millimeter;
 
 /// The struct of Laser Device
 #[derive(Debug)]
@@ -59,15 +60,15 @@ impl TryFrom<ModbusResponse> for LaserDiameterResponse {
             let x = u16::from_be_bytes([value.data[3], value.data[4]]) as f64 / 1000.0;
             let y = u16::from_be_bytes([value.data[5], value.data[6]]) as f64 / 1000.0;
             (
-                Some(Length::new::<uom::si::length::millimeter>(x)),
-                Some(Length::new::<uom::si::length::millimeter>(y)),
+                Some(Length::new::<millimeter>(x)),
+                Some(Length::new::<millimeter>(y)),
             )
         } else {
             (None, None)
         };
 
         Ok(Self {
-            diameter: Length::new::<uom::si::length::millimeter>(diameter),
+            diameter: Length::new::<millimeter>(diameter),
             x_axis,
             y_axis,
         })
@@ -94,7 +95,7 @@ impl SerialDeviceNew for Laser {
         params: &SerialDeviceNewParams,
     ) -> Result<(DeviceIdentification, Arc<RwLock<Self>>), anyhow::Error> {
         let laser_data = Some(LaserData {
-            diameter: Length::new::<uom::si::length::millimeter>(0.0),
+            diameter: Length::new::<millimeter>(0.0),
             x_axis: None,
             y_axis: None,
             last_timestamp: Instant::now(),

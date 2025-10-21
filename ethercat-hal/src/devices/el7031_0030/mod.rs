@@ -5,7 +5,7 @@ use anyhow::anyhow;
 use coe::EL7031_0030Configuration;
 use ethercat_hal_derive::EthercatDevice;
 use pdo::{EL7031_0030RxPdo, EL7031_0030TxPdo};
-use uom::si::{electric_potential::volt, f64::ElectricPotential};
+use units::{electric_potential::volt, f64::ElectricPotential};
 
 use crate::{
     helpers::{
