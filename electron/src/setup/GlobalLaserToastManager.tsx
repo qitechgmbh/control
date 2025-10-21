@@ -4,6 +4,8 @@ import { useMainNamespace } from "@/client/mainNamespace";
 import { useLaser1Namespace } from "@/machines/laser/laser1/laser1Namespace";
 import { laser1 } from "@/machines/properties";
 import type { MachineIdentificationUnique } from "@/machines/types";
+import { AlertTriangle } from "lucide-react";
+import { Icon } from "@/components/Icon";
 
 /**
  * Global manager that toasts laser StateEvent changes.
@@ -16,8 +18,7 @@ export function GlobalLaserToastManager({
   machineIdentification?: MachineIdentificationUnique;
 }) {
   const main = useMainNamespace();
-  const [discovered, setDiscovered] =
-    useState<MachineIdentificationUnique | null>(null);
+  const [discovered, setDiscovered] = useState<MachineIdentificationUnique | null>(null);
 
   // Prefer explicit prop, otherwise use discovered id
   const effectiveId = machineIdentification ?? discovered;
@@ -25,53 +26,59 @@ export function GlobalLaserToastManager({
   // Attempt to discover the single laser machine from the main namespace
   useEffect(() => {
     if (machineIdentification) return;
-
     const machinesEvent = (main as any)?.machines;
-    if (!machinesEvent?.data?.machines) {
+    if (!machinesEvent) {
       setDiscovered(null);
       return;
     }
 
-    const machines: any[] = machinesEvent.data.machines;
+    // Defensive shapes: try common structures
+    let list: any[] = [];
+    if (Array.isArray(machinesEvent?.data?.machines)) list = machinesEvent.data.machines;
+    else if (Array.isArray(machinesEvent?.data)) list = machinesEvent.data;
+    else if (Array.isArray(machinesEvent?.machines)) list = machinesEvent.machines;
+    else if (machinesEvent && typeof machinesEvent === "object") {
+      list = Object.values(machinesEvent).filter((v) => v && typeof v === "object");
+    }
 
-    const match = machines.find((entry) => {
-      const mi = entry?.machine_identification;
+    const match = list.find((entry) => {
+      const mi =
+        entry?.machine_identification ||
+        entry?.machine_identification_unique?.machine_identification ||
+        entry?.device_machine_identification?.machine_identification;
+      if (!mi) return false;
       return (
-        mi?.vendor === laser1.machine_identification.vendor &&
-        mi?.machine === laser1.machine_identification.machine
+        mi.vendor === (laser1.machine_identification as any).vendor &&
+        mi.machine === (laser1.machine_identification as any).machine
       );
     });
 
-    if (!match) {
-      setDiscovered(null);
-      return;
+    if (match) {
+      const serial =
+        match?.serial ??
+        match?.machine_identification_unique?.serial ??
+        match?.device_machine_identification?.machine_identification_unique?.serial ??
+        null;
+      if (serial != null && !Number.isNaN(Number(serial))) {
+        setDiscovered({
+          machine_identification: laser1.machine_identification,
+          serial: Number(serial),
+        });
+        return;
+      }
     }
 
-    const serial = Number(match?.serial);
-    if (!Number.isNaN(serial)) {
-      setDiscovered({
-        machine_identification: laser1.machine_identification,
-        serial,
-      });
-    } else {
-      setDiscovered(null);
-    }
+    setDiscovered(null);
   }, [main, machineIdentification]);
 
-  return effectiveId ? (
-    <LaserToastWatcher machineIdentification={effectiveId} />
-  ) : null;
+  return effectiveId ? <LaserToastWatcher machineIdentification={effectiveId} /> : null;
 }
 
 /**
  * Watches StateEvent for the laser namespace and shows toasts for non-default states.
  * Component is non-visual.
  */
-function LaserToastWatcher({
-  machineIdentification,
-}: {
-  machineIdentification: MachineIdentificationUnique;
-}) {
+function LaserToastWatcher({ machineIdentification }: { machineIdentification: MachineIdentificationUnique }) {
   const { state } = useLaser1Namespace(machineIdentification);
 
   // Deduplicate toasts by event timestamp
@@ -91,7 +98,6 @@ function LaserToastWatcher({
     if (eventTs != null && lastToastTs.current === eventTs) return;
     lastToastTs.current = eventTs;
 
-    // skip if diameter is inside Tolerance
     if (inTolereance) return;
 
     const toastId = eventTs?.toString() ?? String(Date.now());
@@ -99,18 +105,28 @@ function LaserToastWatcher({
     try {
       // Sonner toast call
       toast(
-        <div className="flex w-80 flex-col gap-1 rounded-lg bg-red-500 p-4 text-base text-white shadow-lg">
-          <strong>Warning</strong>
-          <span>Laser Diameter out of Tolerance!</span>
-          <button
-            className="mt-4 self-end text-2xl font-bold hover:text-gray-200"
-            onClick={() => {
-              toast.dismiss(toastId);
-              lastToastTs.current = null;
-            }}
-          >
-            ×
-          </button>
+        <div className="flex w-100 flex-col gap-3 rounded-xl border border-red-400 bg-red-600 p-4 text-white shadow-xl backdrop-blur-sm transition-all duration-300">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Icon name="lu:TriangleAlert" className="h-5 w-5 text-yellow-200"/>
+              <strong className="text-lg font-semibold tracking-wide">Warning</strong>
+            </div>
+            <button
+              className="rounded-md p-1 text-2xl font-bold text-white/80 hover:bg-red-500 hover:text-white focus:outline-none focus:ring-2 focus:ring-white/30"
+              onClick={() => {
+                toast.dismiss(toastId);
+                lastToastTs.current = null;
+              }}
+              aria-label="Close"
+            >
+              ×
+            </button>
+          </div>
+
+          <p className="text-base leading-snug text-red-50">
+            Laser diameter is <strong>out of tolerance</strong>.<br/>
+            Please check the Filament immediately.
+          </p>
         </div>,
         {
           id: toastId,
@@ -122,7 +138,7 @@ function LaserToastWatcher({
             boxShadow: "none",
             border: "none",
           },
-        },
+        }
       );
     } catch (err) {
       console.error("GlobalLaserToastManager: failed to build toast", err);
