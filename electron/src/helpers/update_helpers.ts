@@ -2,6 +2,13 @@ import type { UpdateInfo } from "@/stores/updateStore";
 import { useUpdateStore } from "@/stores/updateStore";
 
 let currentLogListener: ((line: string) => void) | null = null;
+let currentStepListener:
+  | ((params: {
+      stepId: string;
+      status: "pending" | "in-progress" | "completed" | "error";
+      progress?: number;
+    }) => void)
+  | null = null;
 
 export async function updateExecute(
   source: UpdateInfo,
@@ -14,15 +21,32 @@ export async function updateExecute(
       currentLogListener = null;
     }
 
+    if (currentStepListener) {
+      window.update.onStep(() => {}); // clear previous
+      currentStepListener = null;
+    }
+
     currentLogListener = onLog;
     window.update.onLog(currentLogListener);
+
+    // Set up step listener
+    currentStepListener = (params) => {
+      const { setStepStatus, setStepProgress } = useUpdateStore.getState();
+      setStepStatus(params.stepId, params.status);
+      if (params.progress !== undefined) {
+        setStepProgress(params.stepId, params.progress);
+      }
+    };
+    window.update.onStep(currentStepListener);
 
     window.update.execute(source);
 
     window.update.onEnd((params) => {
       window.update.onLog(() => {}); // remove listener
       window.update.onEnd(() => {});
+      window.update.onStep(() => {}); // remove step listener
       currentLogListener = null;
+      currentStepListener = null;
       resolve(params);
     });
   });
@@ -55,6 +79,7 @@ export async function updateCancel(): Promise<{
   const result = await window.update.cancel();
   window.update.onLog(() => {}); // remove listener
   window.update.onEnd(() => {}); // remove listener
+  window.update.onStep(() => {}); // remove step listener
   return result;
 }
 
