@@ -1,3 +1,17 @@
+# `2.11.0`
+_21.10.2025_
+
+## General 
+- [#829](https://github.com/qitechgmbh/control/pull/829), [#834](https://github.com/qitechgmbh/control/pull/834), Improved overall system stability
+
+## Winder V2 
+- [#840](https://github.com/qitechgmbh/control/pull/840) Added XL Winder option
+- [#827](https://github.com/qitechgmbh/control/pull/827) Spool can now be run in reverse
+
+## Extruder V2
+- [#826](https://github.com/qitechgmbh/control/pull/826) Fine grained Temperature-PID configuration now possible
+
+
 # `2.10.0`
 _16.10.2025_
 
