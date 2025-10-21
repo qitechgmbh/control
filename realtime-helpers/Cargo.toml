@@ -1,0 +1,9 @@
+[package]
+name = "realtime-helpers"
+version = "0.1.0"
+edition = "2024"
+build = "build.rs"
+
+[lib]
+name = "realtime_helpers"
+path = "src/lib.rs"  # can be empty if you just want build.rs

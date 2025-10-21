@@ -5,6 +5,7 @@ use ethercrab::{
     std::{ethercat_now, tx_rx_task},
 };
 use interfaces::Interface;
+use realtime_helpers::xdp_obj_path;
 
 // Constants for EtherCAT configuration
 const IFACE_DISCOVERY_MAX_SUBDEVICES: usize = 16; // Must be power of 2 > 1
@@ -90,6 +91,9 @@ pub async fn discover_ethercat_interface() -> Result<String, anyhow::Error> {
 
     interfaces.sort_by(|a, b| a.name.cmp(&b.name));
     let mut interface: Option<&str> = None;
+
+    let path = xdp_obj_path();
+    println!("{}", path);
 
     for i in 0..interfaces.len() {
         // Avoid NetworkManager hangups
