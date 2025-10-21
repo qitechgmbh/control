@@ -15,7 +15,6 @@ mod winder2_imports {
         validate_same_machine_identification_unique,
     };
 
-    pub use control_core::uom_extensions::velocity::meter_per_minute;
     pub use ethercat_hal::coe::ConfigurableDevice;
     pub use ethercat_hal::devices::ek1100::EK1100;
     pub use ethercat_hal::devices::el2002::{EL2002, EL2002_IDENTITY_B, EL2002Port};
@@ -42,9 +41,10 @@ mod winder2_imports {
     pub use ethercat_hal::shared_config;
     pub use ethercat_hal::shared_config::el70x1::{EL70x1OperationMode, StmMotorConfiguration};
     pub use std::time::Instant;
-    pub use uom::ConstZero;
-    pub use uom::si::f64::{Length, Velocity};
-    pub use uom::si::length::{centimeter, meter, millimeter};
+    pub use units::ConstZero;
+    pub use units::f64::*;
+    pub use units::length::{centimeter, meter, millimeter};
+    pub use units::velocity::meter_per_minute;
 }
 
 #[cfg(not(feature = "mock-machine"))]

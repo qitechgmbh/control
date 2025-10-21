@@ -15,7 +15,7 @@ use crate::{
     io::analog_input::{AnalogInputDevice, AnalogInputInput},
 };
 use ethercat_hal_derive::EthercatDevice;
-use uom::si::{electric_potential::volt, f64::ElectricPotential};
+use units::{electric_potential::volt, f64::ElectricPotential};
 
 #[derive(Debug, Clone)]
 pub struct EL3062_0030Configuration {

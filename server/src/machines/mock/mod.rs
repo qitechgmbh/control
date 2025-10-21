@@ -9,10 +9,8 @@ use control_core_derive::Machine;
 
 use std::time::Instant;
 use tracing::info;
-use uom::si::{
-    f64::Frequency,
-    frequency::{hertz, millihertz},
-};
+use units::f64::*;
+use units::frequency::{hertz, millihertz};
 
 pub mod act;
 pub mod api;

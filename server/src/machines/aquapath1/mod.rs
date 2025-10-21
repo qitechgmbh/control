@@ -6,11 +6,8 @@ use control_core::{
 use control_core_derive::Machine;
 use serde::{Deserialize, Serialize};
 use std::time::Instant;
-use uom::si::{
-    f64::{ThermodynamicTemperature, VolumeRate},
-    thermodynamic_temperature::degree_celsius,
-    volume_rate::liter_per_minute,
-};
+use units::f64::*;
+use units::{thermodynamic_temperature::degree_celsius, volume_rate::liter_per_minute};
 
 use crate::machines::{
     MACHINE_AQUAPATH_V1, VENDOR_QITECH,

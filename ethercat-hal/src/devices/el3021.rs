@@ -17,8 +17,8 @@ use crate::{
     io::analog_input::{AnalogInputDevice, AnalogInputInput},
 };
 use ethercat_hal_derive::{EthercatDevice, RxPdo, TxPdo};
-use uom::si::electric_current::milliampere;
-use uom::si::f64::ElectricCurrent;
+use units::electric_current::milliampere;
+use units::f64::ElectricCurrent;
 
 #[derive(Debug, Clone)]
 pub struct EL3021Configuration {

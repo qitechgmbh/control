@@ -7,13 +7,11 @@ use control_core::{
 };
 use ethercat_hal::io::analog_input::AnalogInput;
 use futures::executor::block_on;
-use uom::si::{
-    angular_velocity::revolution_per_minute,
-    electric_current::milliampere,
-    f64::{AngularVelocity, ElectricCurrent, Frequency, Pressure},
-    frequency::{cycle_per_minute, hertz},
-    pressure::bar,
-};
+use units::angular_velocity::revolution_per_minute;
+use units::electric_current::milliampere;
+use units::f64::*;
+use units::frequency::{cycle_per_minute, hertz};
+use units::pressure::bar;
 
 use crate::machines::extruder1::mitsubishi_cs80::MitsubishiCS80Status;
 

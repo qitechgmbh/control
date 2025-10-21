@@ -1,5 +1,7 @@
 use ethercat_hal::io::analog_input::{AnalogInput, physical::AnalogInputValue};
-use uom::si::{angle::revolution, electric_potential::volt, f64::Angle};
+use units::angle::revolution;
+use units::electric_potential::volt;
+use units::f64::*;
 
 #[derive(Debug)]
 pub struct TensionArm {
@@ -72,7 +74,6 @@ mod tests {
         analog_input_dummy::AnalogInputDummy,
     };
     use std::i16;
-    use uom::si::f64::ElectricPotential;
 
     #[test]
     fn volts_to_angle() {

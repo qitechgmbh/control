@@ -1,4 +1,4 @@
-use uom::si::f64::{ElectricCurrent, ElectricPotential};
+use units::f64::{ElectricCurrent, ElectricPotential};
 
 #[derive(Debug, Clone)]
 pub enum AnalogInputValue {
@@ -77,9 +77,9 @@ mod tests {
 
     use super::*;
     use approx::assert_relative_eq;
-    use uom::si::electric_current::milliampere;
-    use uom::si::electric_potential::volt;
-    use uom::si::f64::{ElectricCurrent, ElectricPotential};
+    use units::electric_current::milliampere;
+    use units::electric_potential::volt;
+    use units::f64::{ElectricCurrent, ElectricPotential};
 
     #[test]
     fn test_analog_input_getter_voltage() {

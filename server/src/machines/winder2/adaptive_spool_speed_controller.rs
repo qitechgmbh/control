@@ -10,17 +10,13 @@ use control_core::{
 };
 use core::f64;
 use std::time::Instant;
-use uom::{
-    ConstZero,
-    si::{
-        angle::degree,
-        angular_acceleration::radian_per_second_squared,
-        angular_velocity::{radian_per_second, revolution_per_minute},
-        f64::{Angle, AngularAcceleration, AngularVelocity, Length},
-        length::{centimeter, meter},
-        velocity::meter_per_second,
-    },
-};
+use units::ConstZero;
+use units::angle::degree;
+use units::angular_acceleration::radian_per_second_squared;
+use units::angular_velocity::{radian_per_second, revolution_per_minute};
+use units::f64::*;
+use units::length::{centimeter, meter};
+use units::velocity::meter_per_second;
 
 /// Adaptive spool speed controller that automatically adjusts to maintain optimal filament tension.
 ///

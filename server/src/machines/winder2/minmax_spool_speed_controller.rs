@@ -13,20 +13,16 @@ use control_core::{
         interpolation::{interpolate_exponential, scale},
         moving_time_window::MovingTimeWindow,
     },
-    uom_extensions::angular_acceleration::revolution_per_minute_per_second,
 };
 use std::time::Instant;
-use uom::{
-    ConstZero,
-    si::{
-        angle::degree,
-        angular_acceleration::radian_per_second_squared,
-        angular_velocity::{radian_per_second, revolution_per_minute, revolution_per_second},
-        f64::{Angle, AngularAcceleration, AngularVelocity, Length, Velocity},
-        length::meter,
-        velocity::meter_per_second,
-    },
-};
+
+use units::ConstZero;
+use units::angle::degree;
+use units::angular_acceleration::{radian_per_second_squared, revolution_per_minute_per_second};
+use units::angular_velocity::{radian_per_second, revolution_per_minute, revolution_per_second};
+use units::f64::*;
+use units::length::meter;
+use units::velocity::meter_per_second;
 
 #[derive(Debug)]
 pub struct MinMaxSpoolSpeedController {

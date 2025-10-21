@@ -1,4 +1,4 @@
-use uom::si::{
+use units::{
     angle::revolution,
     angular_acceleration::radian_per_second_squared,
     angular_velocity::revolution_per_second,
@@ -90,7 +90,7 @@ mod tests {
     use super::*;
     use approx::assert_relative_eq;
     use std::f64::EPSILON;
-    use uom::si::{
+    use units::{
         angle::degree, angular_acceleration::degree_per_second_squared,
         angular_velocity::degree_per_second,
     };
