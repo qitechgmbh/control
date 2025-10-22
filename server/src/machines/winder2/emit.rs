@@ -1,26 +1,33 @@
-use std::time::Instant;
+#[cfg(not(feature = "mock-machine"))]
+mod winder2_imports {
+    pub use super::super::puller_speed_controller::PullerRegulationMode;
 
-use crate::machines::buffer1::BufferV1;
+    pub use super::super::{TraverseMode, Winder2, Winder2Mode, api, spool_speed_controller};
+    pub use crate::machines::buffer1::BufferV1;
 
-use super::puller_speed_controller::PullerRegulationMode;
-use super::{TraverseMode, Winder2, Winder2Mode, api, spool_speed_controller};
-use api::{
-    LiveValuesEvent, ModeState, PullerState, SpoolAutomaticActionMode, SpoolAutomaticActionState,
-    SpoolSpeedControllerState, StateEvent, TensionArmState, TraverseState, Winder2Events,
-};
-use control_core::socketio::event::BuildEvent;
-use control_core::{
-    machines::identification::MachineIdentificationUnique,
-    socketio::namespace::NamespaceCacheingLogic, uom_extensions::velocity::meter_per_minute,
-};
+    pub use api::{
+        LiveValuesEvent, ModeState, PullerState, SpoolAutomaticActionMode,
+        SpoolAutomaticActionState, SpoolSpeedControllerState, StateEvent, TensionArmState,
+        TraverseState, Winder2Events,
+    };
+    pub use control_core::socketio::event::BuildEvent;
+    pub use control_core::{
+        machines::identification::MachineIdentificationUnique,
+        socketio::namespace::NamespaceCacheingLogic, uom_extensions::velocity::meter_per_minute,
+    };
+    pub use std::time::Instant;
+    pub use uom::si::{
+        angle::degree,
+        angular_velocity::revolution_per_minute,
+        f64::{Length, Velocity},
+        length::{meter, millimeter},
+    };
+}
 
-use uom::si::{
-    angle::degree,
-    angular_velocity::revolution_per_minute,
-    f64::{Length, Velocity},
-    length::{meter, millimeter},
-};
+#[cfg(not(feature = "mock-machine"))]
+pub use winder2_imports::*;
 
+#[cfg(not(feature = "mock-machine"))]
 impl Winder2 {
     /// Implement Spool
     /// called by `act`
