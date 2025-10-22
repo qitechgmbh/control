@@ -10,8 +10,9 @@ use serde::{Deserialize, Serialize};
 use std::time::Instant;
 use uom::si::f64::AngularVelocity;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub enum SpoolSpeedControllerType {
+    #[default]
     Adaptive,
     MinMax,
 }
