@@ -15,7 +15,7 @@ if [[ "$1" == "release" ]]; then
     cargo build --release
 else
     echo "Building Debug Code"
-    cargo build $FEATURE
+    cargo build $FEATURE --features development-build
 fi
 
 # Only setcap if not building with mock-machine

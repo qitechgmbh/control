@@ -1,25 +1,20 @@
-use crate::socketio::main_namespace::MainNamespaceEvents;
-use crate::socketio::main_namespace::machines_event::MachinesEventBuilder;
-use crate::{app_state::AppState, machines::registry::MACHINE_REGISTRY};
-use anyhow::Result;
-use control_core::serial::SerialDeviceIdentification;
 use control_core::serial::serial_detection::SerialDetection;
-use control_core::socketio::namespace::NamespaceCacheingLogic;
 use serialport::UsbPortInfo;
-use smol::Timer;
-use std::{sync::Arc, thread, time::Duration};
+use smol::Task;
+use std::{collections::HashMap, time::Duration};
 
-// Returns a completed future, when atleast ONE serial devices were found
+// Async function that runs until at least one serial device is found.
+pub async fn find_serial() -> Option<HashMap<String, UsbPortInfo>> {
+    smol::Timer::after(Duration::from_secs(1)).await;
+    let devices = SerialDetection::detect_devices();
+    if !devices.is_empty() {
+        return Some(devices);
+    } else {
+        return None;
+    }
+}
 
-pub fn find_serial_future()
--> impl future::Future<Output = HashMap<SerialDeviceIdentification, UsbPortInfo>> {
-    future::lazy(|_| async {
-        loop {
-            let devices = SerialDetection::detect_devices().await;
-            if !devices.is_empty() {
-                return devices;
-            }
-            Timer::after(Duration::from_secs(1)).await;
-        }
-    })
+// Returns a smol::Task that resolves when atleast one device is found.
+pub fn start_serial_discovery() -> Task<Option<HashMap<String, UsbPortInfo>>> {
+    smol::spawn(find_serial())
 }

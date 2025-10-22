@@ -1,31 +1,33 @@
 use crate::app_state::AppState;
 use bitvec::prelude::*;
 use control_core::machines::connection::MachineConnection;
-use control_core::realtime::{set_core_affinity, set_realtime_priority};
+use control_core::realtime::set_core_affinity;
+#[cfg(not(feature = "development-build"))]
+use control_core::realtime::set_realtime_priority;
 use std::sync::Arc;
 use std::time::Instant;
 use tracing::{instrument, trace_span};
 
-pub fn init_loop(app_state: Arc<AppState>) -> Result<(), anyhow::Error> {
+pub fn start_loop_thread(
+    app_state: Arc<AppState>,
+) -> Result<std::thread::JoinHandle<()>, std::io::Error> {
     // Start control loop
-    std::thread::Builder::new()
+    let res = std::thread::Builder::new()
         .name("loop".to_owned())
         .spawn(move || {
             let rt = smol::LocalExecutor::new();
-
-            // Set core affinity to third core
             let _ = set_core_affinity(2);
 
-            // Set the thread to real-time priority
+            #[cfg(not(feature = "development-build"))]
             if let Err(e) = set_realtime_priority() {
                 tracing::error!(
-                    "[{}::init_loop] Failed to set real-time priority \n{:?}",
+                    "[{}::init_loop] Failed to set thread to real-time priority \n{:?}",
                     module_path!(),
                     e
                 );
             } else {
                 tracing::info!(
-                    "[{}::init_loop] Real-time priority set successfully",
+                    "[{}::init_loop] Real-time priority set successfully for current thread",
                     module_path!()
                 );
             }
@@ -37,19 +39,14 @@ pub fn init_loop(app_state: Arc<AppState>) -> Result<(), anyhow::Error> {
                     tracing::error!("Loop failed\n{:?}", err);
                     break;
                 }
+
+                #[cfg(feature = "development-build")]
+                std::thread::park_timeout(std::time::Duration::from_millis(600));
             }
             // Exit the entire program if the Loop fails (gets restarted by systemd if running on NixOS)
             std::process::exit(1);
-        })
-        .map_err(|e| {
-            anyhow::anyhow!(
-                "[{}::init_loop] Failed to spawn loop thread\n{:?}",
-                module_path!(),
-                e
-            )
-        })?;
-
-    Ok(())
+        });
+    return res;
 }
 
 #[instrument(skip(app_state))]

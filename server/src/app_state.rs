@@ -6,7 +6,6 @@ use crate::socketio::namespaces::Namespaces;
 use control_core::machines::Machine;
 use control_core::machines::identification::{DeviceIdentification, MachineIdentificationUnique};
 use control_core::machines::manager::MachineManager;
-use control_core::serial::serial_detection::SerialDetection;
 use control_core::socketio::event::GenericEvent;
 use ethercat_hal::devices::EthercatDevice;
 use ethercrab::{MainDevice, SubDeviceGroup, subdevice_group::Op};
@@ -25,7 +24,7 @@ pub struct SocketioSetup {
 }
 
 pub struct SerialSetup {
-    pub serial_detection: SerialDetection<'static>,
+    pub serial_registry: &'static SERIAL_DEVICE_REGISTRY,
 }
 
 pub struct AppState {
@@ -85,7 +84,7 @@ impl AppState {
             },
             ethercat_setup: Arc::new(RwLock::new(None)),
             serial_setup: Arc::new(RwLock::new(SerialSetup {
-                serial_detection: SerialDetection::new(&SERIAL_DEVICE_REGISTRY),
+                serial_registry: &SERIAL_DEVICE_REGISTRY,
             })),
             machines: Arc::new(RwLock::new(MachineManager::new())),
             performance_metrics: Arc::new(RwLock::new(EthercatPerformanceMetrics::new())),
