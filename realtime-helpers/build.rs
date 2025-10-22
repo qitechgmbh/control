@@ -1,17 +1,15 @@
 use std::env;
+use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
 
 fn main() {
     eprintln!("Running XDP build.rs now!");
 
-    // Path to your C source
     let src = "src/xdp/xdp_filter_ethercat.c";
-
-    // Output object path in current directory
     let out_obj = PathBuf::from("xdp_eth_filter.o");
 
-    // Run clang to compile eBPF object
+    // Compile the XDP object
     let status = Command::new("clang")
         .args([
             "-O2",
@@ -35,17 +33,16 @@ fn main() {
 
     println!("cargo:rerun-if-changed={}", src);
 
-    let abs_out_obj = env::current_dir()
-        .unwrap()
-        .join(&out_obj)
-        .canonicalize()
-        .unwrap();
+    // Compute absolute path
+    let abs_out_obj = env::current_dir().unwrap().join(&out_obj).canonicalize().unwrap();
+
+    // Export path as environment variable (runtime access)
     println!("cargo:rustc-env=XDP_OBJ_PATH={}", abs_out_obj.display());
 
-    // In build.rs
-    use std::fs;
-    use std::path::PathBuf;
-
-    let out_file = PathBuf::from(env::var("OUT_DIR").unwrap()).join("xdp_obj_path.txt");
-    fs::write(&out_file, abs_out_obj.to_str().unwrap()).unwrap();
+    // Also generate a Rust file with a constant (compile-time access)
+    let out_file = PathBuf::from(env::var("OUT_DIR").unwrap()).join("xdp_obj_path.rs");
+    fs::write(
+        &out_file,
+        format!("pub const XDP_OBJ_PATH: &str = {:?};", abs_out_obj),
+    ).unwrap();
 }

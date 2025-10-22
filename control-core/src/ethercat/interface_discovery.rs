@@ -92,8 +92,8 @@ pub async fn discover_ethercat_interface() -> Result<String, anyhow::Error> {
     interfaces.sort_by(|a, b| a.name.cmp(&b.name));
     let mut interface: Option<&str> = None;
 
-    let path = xdp_obj_path();
-    println!("{}", path);
+//    let path = xdp_obj_path();
+//   println!("{}", path);
 
     for i in 0..interfaces.len() {
         // Avoid NetworkManager hangups

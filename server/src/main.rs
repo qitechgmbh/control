@@ -42,7 +42,6 @@ fn main() {
         tracing::info!("[{}::main] Memory locked successfully", module_path!());
     }
     let app_state = Arc::new(AppState::new());
-
     // Spawn init thread
     let init_thread = std::thread::Builder::new()
         .name("init".to_string())
