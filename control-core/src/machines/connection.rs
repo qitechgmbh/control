@@ -102,7 +102,7 @@ pub struct MachineCrossConnection<
                                                        // to an unknown type. See also https://github.com/qitechgmbh/control/pull/625#discussion_r2379566315
 }
 
-#[derive(Serialize, Debug, Clone)]
+#[derive(Serialize, Debug, Clone, Default)]
 pub struct MachineCrossConnectionState {
     /// Connected Machine
     pub machine_identification_unique: Option<MachineIdentificationUnique>,
