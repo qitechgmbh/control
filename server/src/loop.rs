@@ -1,4 +1,4 @@
-use crate::app_state::AppState;
+use crate::{app_state::AppState, ethercat::setup::setup_loop};
 use bitvec::prelude::*;
 use control_core::machines::connection::MachineConnection;
 use control_core::realtime::set_core_affinity;
@@ -9,8 +9,20 @@ use std::time::Instant;
 use tracing::{instrument, trace_span};
 
 pub fn start_loop_thread(
+    interface: &str,
     app_state: Arc<AppState>,
 ) -> Result<std::thread::JoinHandle<()>, std::io::Error> {
+    let res = smol::block_on(async { setup_loop(interface, app_state.clone()).await });
+    match res {
+        Ok(_) => tracing::info!("Successfully initialized EtherCAT network"),
+        Err(e) => {
+            tracing::error!(
+                "[{}::init_loop] Failed to initialize EtherCAT network \n{:?}",
+                module_path!(),
+                e
+            );
+        }
+    }
     // Start control loop
     let res = std::thread::Builder::new()
         .name("loop".to_owned())
@@ -43,7 +55,8 @@ pub fn start_loop_thread(
                 #[cfg(feature = "development-build")]
                 std::thread::park_timeout(std::time::Duration::from_millis(600));
             }
-            // Exit the entire program if the Loop fails (gets restarted by systemd if running on NixOS)
+            // Exit the entire program if the Loop fails
+            // gets restarted by systemd if running on NixOS, or different distro wtih the same sysd service
             std::process::exit(1);
         });
     return res;

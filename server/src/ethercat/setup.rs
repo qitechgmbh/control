@@ -52,6 +52,7 @@ pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(),
             let _ = set_core_affinity(3);
 
             // Set the thread to real-time priority
+            #[cfg(not(feature = "development-build"))]
             let _ = set_realtime_priority();
 
             #[cfg(not(all(target_os = "linux", feature = "io-uring")))]
@@ -85,13 +86,13 @@ pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(),
             // Default 30_000us
             pdu: Duration::from_micros(30_000),
             // Default 10ms
-            eeprom: Duration::from_millis(100),
+            eeprom: Duration::from_millis(10),
             // Default 0ms
             wait_loop_delay: Duration::from_millis(0),
             // Default 100ms
-            mailbox_echo: Duration::from_millis(1000),
+            mailbox_echo: Duration::from_millis(100),
             // Default 1000ms
-            mailbox_response: Duration::from_millis(10000),
+            mailbox_response: Duration::from_millis(1000),
         },
         MainDeviceConfig {
             // Default RetryBehaviour::None
