@@ -118,7 +118,6 @@ impl Namespace {
     ) {
         // cache the event
         self.cache(event.clone(), buffer_fn);
-
         // emit the event - inlined from emit function
         // Send to global queue for each socket in the namespace
         for socket in self.sockets.clone() {

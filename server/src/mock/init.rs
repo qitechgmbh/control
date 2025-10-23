@@ -18,10 +18,8 @@ pub fn init_mock(app_state: Arc<AppState>) -> Result<(), anyhow::Error> {
     // since they won't be detected by the serial detection loop
     return smol::block_on(async {
         // Create a mock serial device manually
-        let (device_thread_panic_tx, _device_thread_panic_rx) = smol::channel::unbounded();
         let serial_params = SerialDeviceNewParams {
             path: "/dev/mock-serial".to_string(),
-            device_thread_panic_tx,
         };
 
         // Create the mock serial device

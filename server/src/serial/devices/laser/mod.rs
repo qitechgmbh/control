@@ -17,10 +17,7 @@ use control_core::{
         DeviceMachineIdentification, MachineIdentification, MachineIdentificationUnique,
     },
     modbus::{self, ModbusRequest, ModbusResponse},
-    serial::{
-        SerialDevice, SerialDeviceNew, SerialDeviceNewParams, panic::send_serial_device_panic,
-        serial_detection::SerialDeviceRemoval,
-    },
+    serial::{SerialDevice, SerialDeviceNew, SerialDeviceNewParams},
 };
 use serialport::SerialPort;
 use serialport::{ClearBuffer, DataBits, FlowControl, Parity, StopBits};
@@ -125,27 +122,13 @@ impl SerialDeviceNew for Laser {
             path: params.path.clone(),
         }));
 
-        // Spawn the device thread
-        let device_thread_panic_tx = params.device_thread_panic_tx.clone();
+        //// Spawn the device thread
         let _self_clone = _self.clone();
-        let path = params.path.clone();
         thread::Builder::new()
             .name("laser".to_owned())
             .spawn(move || {
-                send_serial_device_panic(path.clone(), device_thread_panic_tx.clone());
                 smol::block_on(async {
-                    let process_result = Self::process(_self_clone).await;
-
-                    let removal = match process_result {
-                        Ok(_) => SerialDeviceRemoval::Disconnect(path),
-                        Err(e) => SerialDeviceRemoval::Error(path, e),
-                    };
-
-                    // if the task exists we want to remove the device
-                    device_thread_panic_tx
-                        .send(removal)
-                        .await
-                        .expect("Failed to send device removal signal");
+                    let _ = Self::process(_self_clone).await;
                 });
             })?;
 
