@@ -195,6 +195,7 @@ impl Laser {
         port.clear(ClearBuffer::All).ok();
 
         loop {
+            let loop_start = Instant::now();
             // send diameter request
             let response = retry_n_times(10, || {
                 if let Err(e) = port.write_all(&request_buffer) {
@@ -226,6 +227,10 @@ impl Laser {
                     last_timestamp: Instant::now(),
                 });
             }
+
+            let loop_end = Instant::now();
+            let duration = loop_end.duration_since(loop_start);
+            println!("Loop took: {:.3}ms", duration.as_secs_f64() * 1000.0);
         }
     }
 }
