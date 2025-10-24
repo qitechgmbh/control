@@ -47,8 +47,6 @@ impl Default for GearRatio {
         GearRatio::OneToOne
     }
 }
-use crate::machines::laser::api::PidSettings;
-use crate::machines::winder2::api::PidSettings;
 
 #[derive(Debug)]
 pub struct PullerSpeedController {
@@ -135,21 +133,13 @@ impl PullerSpeedController {
     }
 
     fn update_speed(&mut self, t: Instant) -> Velocity {
-<<<<<<< HEAD
-        let base_speed = match self.enabled {
-            true => match self.regulation_mode {
-                PullerRegulationMode::Speed => self.target_speed,
-                PullerRegulationMode::Diameter => {
-                    self.speed_from_diameter(t);
-=======
         if !self.enabled {
             return Velocity::ZERO;
         }
 
-        let target_speed = match self.regulation_mode {
+        let base_speed = match self.regulation_mode {
             PullerRegulationMode::Speed => {
                 let directional_target = if self.forward {
->>>>>>> 78962097 (Implemented deadtime_p_controller to regulate puller speed by filament)
                     self.target_speed
                 } else {
                     -self.target_speed
@@ -174,7 +164,6 @@ impl PullerSpeedController {
             }
         };
 
-<<<<<<< HEAD
         // Apply gear ratio multiplier
         let speed = base_speed * self.gear_ratio.multiplier();
 
@@ -184,10 +173,6 @@ impl PullerSpeedController {
 
         self.last_speed = speed;
         speed
-=======
-        self.last_speed = target_speed;
-        target_speed
->>>>>>> 78962097 (Implemented deadtime_p_controller to regulate puller speed by filament)
     }
 
     fn calculate_target_speed(&self) -> Velocity {

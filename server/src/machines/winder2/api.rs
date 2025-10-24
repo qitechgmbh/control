@@ -1,5 +1,4 @@
 use super::puller_speed_controller::GearRatio;
-use crate::machines::laser::api::{PidSettings, PidSettingsStates};
 
 use super::{Winder2, Winder2Mode, puller_speed_controller::PullerRegulationMode};
 use control_core::{
