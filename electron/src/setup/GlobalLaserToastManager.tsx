@@ -135,7 +135,7 @@ function LaserToastWatcher({
 
           <p className="text-base leading-snug text-red-50">
             Laser diameter is <strong>out of tolerance</strong>.<br />
-            Please check the Filament immediately.
+            Please check the filament immediately.
           </p>
         </div>,
         {
