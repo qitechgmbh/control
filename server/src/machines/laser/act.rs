@@ -21,7 +21,6 @@ impl MachineAct for LaserMachine {
     fn act(&mut self, now: Instant) {
         self.update();
         if self.did_change_state {
-            tracing::info!("State changed: {}", self.did_change_state);
             self.emit_state();
         }
         // more than 33ms have passed since last emit (30 "fps" target)

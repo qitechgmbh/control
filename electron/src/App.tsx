@@ -25,7 +25,7 @@ export default function App() {
   return (
     <>
       <GlobalLaserToastManager />
-      <RouterProvider router={router} />;
+      <RouterProvider router={router} />
     </>
   );
 }
