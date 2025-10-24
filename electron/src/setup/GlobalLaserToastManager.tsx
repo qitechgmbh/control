@@ -4,7 +4,6 @@ import { useMainNamespace } from "@/client/mainNamespace";
 import { useLaser1Namespace } from "@/machines/laser/laser1/laser1Namespace";
 import { laser1 } from "@/machines/properties";
 import type { MachineIdentificationUnique } from "@/machines/types";
-import { AlertTriangle } from "lucide-react";
 import { Icon } from "@/components/Icon";
 
 /**
@@ -94,27 +93,21 @@ function LaserToastWatcher({
   const { state } = useLaser1Namespace(machineIdentification);
 
   // Deduplicate toasts by event timestamp
-  const lastToastTs = useRef<number | string | null>(null);
+    const lastToastTs = useRef<number | string | null>(null);
 
-  useEffect(() => {
-    if (!state) return;
+useEffect(() => {
+  if (!state) return;
 
-    const eventTs = (state as any)?.ts ?? null;
-    const isDefault = !!(state as any)?.data?.is_default_state;
-    const inTolereance = (state as any)?.data?.laser_state.in_tolerance;
+  const eventTs = (state as any)?.ts ?? null;
+  const inTolerance = (state as any)?.data?.laser_state.in_tolerance;
+  const isDefault = !!(state as any)?.data?.is_default_state;
+  const toastId = eventTs?.toString() ?? String(Date.now());
 
-    // skip the default snapshot emitted on connect
-    if (isDefault) return;
+  if (isDefault) return;
 
-    // dedupe identical events
-    if (eventTs != null && lastToastTs.current === eventTs) return;
+  // Only show toast if laser is out of tolerance and not already shown for this timestamp
+  if (!inTolerance && lastToastTs.current !== eventTs) {
     lastToastTs.current = eventTs;
-
-    if (inTolereance) return;
-
-    const toastId = eventTs?.toString() ?? String(Date.now());
-
-    try {
       // Sonner toast call
       toast(
         <div className="flex w-100 flex-col gap-3 rounded-xl border border-red-400 bg-red-600 p-4 text-white shadow-xl backdrop-blur-sm transition-all duration-300">
@@ -157,11 +150,12 @@ function LaserToastWatcher({
           },
         },
       );
-    } catch (err) {
-      console.error("GlobalLaserToastManager: failed to build toast", err);
-      toast("Laser state changed");
     }
-  }, [state]);
+   if (inTolerance) {
+    lastToastTs.current = null;
+  }
+}, [state]);
+
 
   return null;
 }
