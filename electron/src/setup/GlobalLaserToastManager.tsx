@@ -93,21 +93,21 @@ function LaserToastWatcher({
   const { state } = useLaser1Namespace(machineIdentification);
 
   // Deduplicate toasts by event timestamp
-    const lastToastTs = useRef<number | string | null>(null);
+  const lastToastTs = useRef<number | string | null>(null);
 
-useEffect(() => {
-  if (!state) return;
+  useEffect(() => {
+    if (!state) return;
 
-  const eventTs = (state as any)?.ts ?? null;
-  const inTolerance = (state as any)?.data?.laser_state.in_tolerance;
-  const isDefault = !!(state as any)?.data?.is_default_state;
-  const toastId = eventTs?.toString() ?? String(Date.now());
+    const eventTs = (state as any)?.ts ?? null;
+    const inTolerance = (state as any)?.data?.laser_state.in_tolerance;
+    const isDefault = !!(state as any)?.data?.is_default_state;
+    const toastId = eventTs?.toString() ?? String(Date.now());
 
-  if (isDefault) return;
+    if (isDefault) return;
 
-  // Only show toast if laser is out of tolerance and not already shown for this timestamp
-  if (!inTolerance && lastToastTs.current !== eventTs) {
-    lastToastTs.current = eventTs;
+    // Only show toast if laser is out of tolerance and not already shown for this timestamp
+    if (!inTolerance && lastToastTs.current !== eventTs) {
+      lastToastTs.current = eventTs;
       // Sonner toast call
       toast(
         <div className="flex w-100 flex-col gap-3 rounded-xl border border-red-400 bg-red-600 p-4 text-white shadow-xl backdrop-blur-sm transition-all duration-300">
@@ -151,11 +151,10 @@ useEffect(() => {
         },
       );
     }
-   if (inTolerance) {
-    lastToastTs.current = null;
-  }
-}, [state]);
-
+    if (inTolerance) {
+      lastToastTs.current = null;
+    }
+  }, [state]);
 
   return null;
 }
