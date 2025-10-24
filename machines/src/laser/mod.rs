@@ -197,9 +197,11 @@ impl LaserMachine {
     /// Calculates if the current diameter is inside of the tolerance
     ///
     fn calculate_in_tolerance(&mut self) -> bool {
-        // return true if the diameter is 0 to prevent warning happening before start
-        if self.diameter == Length::ZERO {
+        let diameter_epsilon: f64 = 0.0001; // 0.0001 mm
+        // early return true if the diameter is 0 to prevent warning happening before start
+        if self.diameter.get::<millimeter>() < diameter_epsilon {
             self.in_tolerance = true;
+            return true;
         }
 
         let top = self.target_diameter + self.higher_tolerance;
@@ -240,7 +242,7 @@ impl LaserMachine {
         }
 
         if !self.in_tolerance && self.auto_stop_on_out_of_tolerance && self.did_change_state {
-            tracing::info!("Disabling Winder...");
+            todo!();
         }
     }
 }
