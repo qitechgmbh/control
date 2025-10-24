@@ -9,28 +9,27 @@ interface CheckboxProps extends React.ComponentProps<"input"> {
 const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
   ({ className, label, ...props }, ref) => {
     return (
-      <label className="inline-flex items-center gap-2 cursor-pointer text-sm text-foreground">
+      <label className="text-foreground inline-flex cursor-pointer items-center gap-2 text-sm">
         <span className="relative flex h-4 w-4 items-center justify-center">
           <input
             ref={ref}
             type="checkbox"
             className={cn(
-              "peer appearance-none h-4 w-4 rounded border border-input bg-background shadow-xs transition-colors",
-              "focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50",
+              "peer border-input bg-background h-4 w-4 appearance-none rounded border shadow-xs transition-colors",
+              "focus-visible:ring-ring/50 focus-visible:ring-[3px] focus-visible:outline-none",
               "checked:bg-primary checked:border-primary",
-              className
+              className,
             )}
             {...props}
           />
-          <CheckIcon className="absolute size-3 text-primary-foreground opacity-0 peer-checked:opacity-100 transition-opacity" />
+          <CheckIcon className="text-primary-foreground absolute size-3 opacity-0 transition-opacity peer-checked:opacity-100" />
         </span>
         {label && <span>{label}</span>}
       </label>
     );
-  }
+  },
 );
 
 Checkbox.displayName = "Checkbox";
 
 export { Checkbox };
-

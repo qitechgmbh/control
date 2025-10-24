@@ -38,7 +38,8 @@ const previewEntries: PresetPreviewEntries<Laser1> = [
   },
   {
     name: "Auto Stop On Out Of Tolerance",
-    renderValue: (data: PresetData<Laser1>) => data?.autoStopOnOutOfTolerance?.toString(),
+    renderValue: (data: PresetData<Laser1>) =>
+      data?.autoStopOnOutOfTolerance?.toString(),
   },
 ];
 
@@ -56,7 +57,8 @@ export function Laser1PresetsPage() {
     const targetDiameter = preset.data.targetDiameter ?? 1.75;
     const lowerTolerance = preset.data?.lowerTolerance ?? 0.05;
     const higherTolerance = preset.data?.higherTolerance ?? 0.05;
-    const autoStopOnOutOfTolerance = preset.data?.autoStopOnOutOfTolerance ?? false;
+    const autoStopOnOutOfTolerance =
+      preset.data?.autoStopOnOutOfTolerance ?? false;
 
     setTargetDiameter(targetDiameter);
     setLowerTolerance(lowerTolerance);
