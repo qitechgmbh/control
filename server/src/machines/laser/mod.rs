@@ -33,12 +33,20 @@ pub struct LaserMachine {
     y_diameter: Option<Length>,
     roundness: Option<f64>,
 
+    target_diameter: Length,
+    higher_tolerance: Length,
+    lower_tolerance: Length,
+    in_tolerance: bool,
+
+    auto_stop_on_out_of_tolerance: bool,
+
     //laser target configuration
     laser_target: LaserTarget,
 
     /// Will be initialized as false and set to true by emit_state
     /// This way we can signal to the client that the first state emission is a default state
     emitted_default_state: bool,
+    did_change_state: bool,
 }
 
 impl LaserMachine {
@@ -66,9 +74,11 @@ impl LaserMachine {
 
     pub fn build_state_event(&self) -> StateEvent {
         let laser = LaserState {
-            higher_tolerance: self.laser_target.higher_tolerance.get::<millimeter>(),
-            lower_tolerance: self.laser_target.lower_tolerance.get::<millimeter>(),
+            higher_tolerance: self.higher_tolerance.get::<millimeter>(),
+            lower_tolerance: self.lower_tolerance.get::<millimeter>(),
             target_diameter: self.laser_target.diameter.get::<millimeter>(),
+            in_tolerance: self.in_tolerance,
+            auto_stop_on_out_of_tolerance: self.auto_stop_on_out_of_tolerance,
         };
 
         StateEvent {
@@ -84,24 +94,35 @@ impl LaserMachine {
                 higher_tolerance: self.laser_target.higher_tolerance.get::<millimeter>(),
                 lower_tolerance: self.laser_target.lower_tolerance.get::<millimeter>(),
                 target_diameter: self.laser_target.diameter.get::<millimeter>(),
+                in_tolerance: self.in_tolerance,
+                auto_stop_on_out_of_tolerance: self.auto_stop_on_out_of_tolerance,
             },
         };
 
         self.namespace.emit(LaserEvents::State(state.build()));
+        self.did_change_state = false;
     }
 
     pub fn set_higher_tolerance(&mut self, higher_tolerance: f64) {
-        self.laser_target.higher_tolerance = Length::new::<millimeter>(higher_tolerance);
+        self.higher_tolerance = Length::new::<millimeter>(higher_tolerance);
+        self.laser_target.higher_tolerance = self.higher_tolerance;
         self.emit_state();
     }
 
     pub fn set_lower_tolerance(&mut self, lower_tolerance: f64) {
-        self.laser_target.lower_tolerance = Length::new::<millimeter>(lower_tolerance);
+        self.lower_tolerance = Length::new::<millimeter>(lower_tolerance);
+        self.laser_target.lower_tolerance = self.lower_tolerance;
         self.emit_state();
     }
 
     pub fn set_target_diameter(&mut self, target_diameter: f64) {
+        self.target_diameter = Length::new::<millimeter>(target_diameter);
         self.laser_target.diameter = Length::new::<millimeter>(target_diameter);
+        self.emit_state();
+    }
+
+    pub fn set_auto_stop_on_out_of_tolerance(&mut self, auto_stop_on_out_of_tolerance: bool) {
+        self.auto_stop_on_out_of_tolerance = auto_stop_on_out_of_tolerance;
         self.emit_state();
     }
 
@@ -127,6 +148,29 @@ impl LaserMachine {
         }
     }
 
+    ///
+    /// Calculates if the current diameter is inside of the tolerance
+    ///
+    fn calculate_in_tolerance(&mut self) -> bool {
+        let diameter_epsilon: f64 = 0.0001; // 0.0001 mm
+        // early return true if the diameter is 0 to prevent warning happening before start
+        if self.diameter.get::<millimeter>() < diameter_epsilon {
+            self.in_tolerance = true;
+            return true;
+        }
+
+        let top = self.target_diameter + self.higher_tolerance;
+        let bottom = self.target_diameter - self.lower_tolerance;
+
+        if self.diameter > top || self.diameter < bottom {
+            self.in_tolerance = false;
+        } else {
+            self.in_tolerance = true;
+        }
+
+        self.in_tolerance
+    }
+
     pub fn update(&mut self) {
         let laser_data = smol::block_on(async { self.laser.read().await.get_data().await });
         self.diameter = Length::new::<millimeter>(
@@ -147,6 +191,15 @@ impl LaserMachine {
             .cloned();
 
         self.roundness = self.calculate_roundness();
+
+        if self.in_tolerance != self.calculate_in_tolerance() {
+            self.did_change_state = true;
+        }
+
+        if !self.in_tolerance && self.auto_stop_on_out_of_tolerance && self.did_change_state {
+            unimplemented!();
+            // Stop the Winder over Laser Winder connection
+        }
     }
 }
 

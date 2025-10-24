@@ -44,9 +44,15 @@ impl MachineNewTrait for LaserMachine {
             laser_target,
             emitted_default_state: false,
             diameter: Length::ZERO,
+            target_diameter: Length::ZERO,
             x_diameter: None,
             y_diameter: None,
             roundness: None,
+            lower_tolerance: Length::new::<millimeter>(0.05),
+            higher_tolerance: Length::new::<millimeter>(0.05),
+            in_tolerance: true,
+            auto_stop_on_out_of_tolerance: false,
+            did_change_state: true,
         };
 
         // Emit initial state
