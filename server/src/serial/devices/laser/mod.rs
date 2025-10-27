@@ -66,6 +66,8 @@ impl TryFrom<ModbusResponse> for LaserDiameterResponse {
             (None, None)
         };
 
+        tracing::info!("SlaveID: {}", value.slave_id);
+
         Ok(Self {
             diameter: Length::new::<uom::si::length::millimeter>(diameter),
             x_axis,
@@ -198,6 +200,7 @@ impl Laser {
             let loop_start = Instant::now();
             // send diameter request
             let response = retry_n_times(10, || {
+                tracing::info!("Retrying");
                 if let Err(e) = port.write_all(&request_buffer) {
                     return Err(anyhow!("Failed to write to port: {}", e));
                 }
@@ -227,7 +230,6 @@ impl Laser {
                     last_timestamp: Instant::now(),
                 });
             }
-
             let loop_end = Instant::now();
             let duration = loop_end.duration_since(loop_start);
             println!("Loop took: {:.3}ms", duration.as_secs_f64() * 1000.0);
