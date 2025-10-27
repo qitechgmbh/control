@@ -386,7 +386,7 @@ const useSocketioStore = create<SocketioStore>()((set, get) => ({
 
     // check if the namespace exists
     const namespace = get().namespaces[namespace_path];
-    if (namespace) {
+    /*if (namespace) {
       set(
         produce((state: SocketioStore) => {
           // decrement the count
@@ -430,7 +430,7 @@ const useSocketioStore = create<SocketioStore>()((set, get) => ({
           }
         }),
       );
-    }
+    }*/
   },
 }));
 
