@@ -94,7 +94,6 @@ pub async fn handle_serial_device_hotplug(
             _ => (),
         };
     } else if laser.is_none() && unique_ident.is_some() {
-        tracing::info!("hello non existing laser");
         let serial_params = SerialDeviceNewParams {
             path: "".to_string(),
         };
@@ -131,7 +130,6 @@ pub async fn handle_serial_device_hotplug(
                     .await
                     .main_namespace;
 
-                tracing::info!("{:?}", app_state.machines);
                 let event = MachinesEventBuilder().build(app_state.clone());
                 main_namespace.emit(MainNamespaceEvents::MachinesEvent(event));
             }
