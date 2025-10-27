@@ -65,7 +65,6 @@ fn main() {
                     // In theory it should never finish
                     tracing::warn!("SocketIO task finished: {:?}", res);
                 },
-                _ = smol::Timer::after(std::time::Duration::from_millis(250)).fuse() => {} // Nothing to do just sleep
             }
         }
     });

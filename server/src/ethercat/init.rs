@@ -7,7 +7,6 @@ pub async fn find_ethercat_interface() -> Result<String, anyhow::Error> {
         match discover_ethercat_interface().await {
             Ok(interface) => {
                 tracing::info!("Found EtherCAT Interface at: {}", interface);
-                tracing::info!("Found working interface: {}", interface);
                 return Ok(interface);
             }
             Err(e) => {

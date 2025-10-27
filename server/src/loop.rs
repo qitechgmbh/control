@@ -27,9 +27,7 @@ pub fn start_loop_thread(
     let res = std::thread::Builder::new()
         .name("loop".to_owned())
         .spawn(move || {
-            let rt = smol::LocalExecutor::new();
             let _ = set_core_affinity(2);
-
             #[cfg(not(feature = "development-build"))]
             if let Err(e) = set_realtime_priority() {
                 tracing::error!(
@@ -44,16 +42,34 @@ pub fn start_loop_thread(
                 );
             }
 
-            loop {
-                let res = smol::block_on(rt.run(async { loop_once(app_state.clone()).await }));
+            let rt = smol::LocalExecutor::new();
+            // Instead of creating a NEW async task every iteration of our realtime txrx loop, create it ONCE
+            smol::block_on(async {
+                rt.run(async {
+                    loop {
+                        if let Err(e) = loop_once(app_state.clone()).await {
+                            tracing::error!("Loop failed\n{:?}", e);
+                            std::process::exit(1);
+                        }
+                    }
+                })
+                .await;
+            });
 
-                if let Err(err) = res {
-                    tracing::error!("Loop failed\n{:?}", err);
-                    break;
+            /*
+                // If timeouts keep happenning do a spin_sleep, better then thread_sleep and allows for more deterministic timing
+                let elapsed = start.elapsed();
+                if elapsed < target_cycle {
+                    spin_sleep::sleep(target_cycle - elapsed);
                 }
+            */
 
-                #[cfg(feature = "development-build")]
-                std::thread::park_timeout(std::time::Duration::from_millis(600));
+            if let Some(last_loop_start) = app_state
+                .performance_metrics
+                .read_arc_blocking()
+                .last_loop_start
+            {
+                tracing::info!("Failing Loop Took {:?}", last_loop_start.elapsed());
             }
             // Exit the entire program if the Loop fails
             // gets restarted by systemd if running on NixOS, or different distro wtih the same sysd service
