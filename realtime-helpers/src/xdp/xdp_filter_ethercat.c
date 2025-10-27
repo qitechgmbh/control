@@ -25,9 +25,10 @@ int xtreme_filter(struct xdp_md *ctx) {
     return XDP_PASS;
 
   if (filter_eth_type(eth, ETH_P_ETHERCAT)) {
+            return XDP_PASS;
   }
 
-  return XDP_PASS;
+  return XDP_DROP;
 }
 
 char _license[] SEC("license") = "GPL";

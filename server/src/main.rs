@@ -1,6 +1,7 @@
 use futures::{FutureExt, select};
 #[cfg(feature = "mock-machine")]
 use mock::init::init_mock;
+use realtime_helpers::xdp::{load_xdp, unload_xdp};
 
 #[cfg(feature = "mock-machine")]
 pub mod mock;
@@ -31,7 +32,7 @@ fn main() {
     logging::init_tracing();
     tracing::info!("Tracing initialized successfully");
     init_panic_handling();
-
+    let p = realtime_helpers::xdp_obj_path();
     let app_state = Arc::new(AppState::new());
 
     let _ = start_api_thread(app_state.clone());
@@ -51,6 +52,10 @@ fn main() {
                         Ok(interface) =>
                         {
                             send_ethercat_found(app_state.clone(), &interface).await;
+                            unload_xdp(&interface);
+                            load_xdp(&interface,realtime_helpers::xdp_obj_path());
+
+
                             let _ = start_loop_thread(&interface, app_state.clone());
                         },
                         Err(_) => (),
@@ -60,6 +65,7 @@ fn main() {
                 res = serial_fut => {
                     let _ = handle_serial_device_hotplug(app_state.clone(),res).await;
                     serial_fut = start_serial_discovery().fuse();
+
                 },
                 res = socketio_fut => {
                     // In theory it should never finish
