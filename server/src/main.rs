@@ -1,106 +1,71 @@
-#[cfg(feature = "dhat-heap")]
-#[global_allocator]
-static ALLOC: dhat::Alloc = dhat::Alloc;
-
-use app_state::AppState;
-use r#loop::init_loop;
+use futures::{FutureExt, select};
 #[cfg(feature = "mock-machine")]
 use mock::init::init_mock;
-use rest::init::init_api;
-#[cfg(not(feature = "mock-machine"))]
-use serial::init::init_serial;
-use std::sync::Arc;
+
+#[cfg(feature = "mock-machine")]
+pub mod mock;
 
 use crate::panic::init_panic_handling;
-use crate::socketio::queue::init_socketio_queue;
-
+use app_state::AppState;
+use ethercat::{
+    ethercat_discovery_info::{send_ethercat_discovering, send_ethercat_found},
+    init::start_interface_discovery,
+};
+use r#loop::start_loop_thread;
+use rest::init::start_api_thread;
+use serial::init::{handle_serial_device_hotplug, start_serial_discovery};
+use socketio::queue::start_socketio_queue;
+use std::sync::Arc;
 pub mod app_state;
 pub mod ethercat;
 pub mod logging;
 pub mod r#loop;
 pub mod machines;
-#[cfg(feature = "mock-machine")]
-pub mod mock;
 pub mod panic;
 pub mod performance_metrics;
 pub mod rest;
 pub mod serial;
 pub mod socketio;
 
-use crate::ethercat::init::init_ethercat;
-
 fn main() {
     logging::init_tracing();
     tracing::info!("Tracing initialized successfully");
-
     init_panic_handling();
 
-    #[cfg(feature = "memory-locking")]
-    if let Err(e) = control_core::realtime::lock_memory() {
-        tracing::error!("[{}::main] Failed to lock memory: {:?}", module_path!(), e);
-    } else {
-        tracing::info!("[{}::main] Memory locked successfully", module_path!());
-    }
     let app_state = Arc::new(AppState::new());
 
-    // Spawn init thread
-    let init_thread = std::thread::Builder::new()
-        .name("init".to_string())
-        .spawn({
-            move || {
-                #[cfg(feature = "dhat-heap")]
-                init_dhat_heap_profiling();
+    let _ = start_api_thread(app_state.clone());
+    let mut socketio_fut = start_socketio_queue(app_state.clone()).fuse();
+    let mut ethercat_fut = start_interface_discovery().fuse();
+    let mut serial_fut = start_serial_discovery().fuse();
 
-                init_socketio_queue(app_state.clone());
-                init_api(app_state.clone()).expect("Failed to initialize API");
-                init_loop(app_state.clone()).expect("Failed to initialize loop");
-
-                #[cfg(feature = "mock-machine")]
-                init_mock(app_state.clone()).expect("Failed to initialize mock machines");
-
-                #[cfg(not(feature = "mock-machine"))]
-                init_serial(app_state.clone()).expect("Failed to initialize Serial");
-
-                #[cfg(not(feature = "mock-machine"))]
-                init_ethercat(app_state).expect("Failed to initialize EtherCAT");
-            }
-        })
-        .expect("Failed to spawn init thread");
-
-    // Wait for init thread to complete
-    init_thread.join().expect("Init thread panicked");
-
-    // Keep the main thread alive indefinitely
-    // The program should only exit via panic handling or external signals
-    loop {
-        // better way to "sleep", uses basically
-        std::thread::park();
-    }
-}
-
-#[cfg(feature = "dhat-heap")]
-fn init_dhat_heap_profiling() {
-    use std::{process::exit, time::Duration};
-
-    let profiler = dhat::Profiler::new_heap();
+    smol::block_on(async { send_ethercat_discovering(app_state.clone()).await });
 
     smol::block_on(async {
-        let dhat_analysis_time = std::time::Duration::from_secs(60);
-        let dhat_analysis_start = std::time::Instant::now();
-        tracing::info!(
-            "Starting dhat heap profiler for {} seconds",
-            dhat_analysis_time.as_secs()
-        );
-
         loop {
-            use std::time::Duration;
-            smol::Timer::after(Duration::from_secs(1)).await;
+            // lets the async runtime decide which future to run next
+            select! {
+                res = ethercat_fut => {
+                    tracing::info!("EtherCAT task finished: {:?}", res);
+                    match res {
+                        Ok(interface) =>
+                        {
+                            send_ethercat_found(app_state.clone(), &interface).await;
+                            let _ = start_loop_thread(&interface, app_state.clone());
+                        },
+                        Err(_) => (),
+                    };
 
-            // if `dhat-heap` is enabled, we will analyze the heap for 60 seconds and then exit
-            if dhat_analysis_start.elapsed() > dhat_analysis_time {
-                drop(profiler);
-                exit(0)
+                },
+                res = serial_fut => {
+                    let _ = handle_serial_device_hotplug(app_state.clone(),res).await;
+                    serial_fut = start_serial_discovery().fuse();
+                },
+                res = socketio_fut => {
+                    // In theory it should never finish
+                    tracing::warn!("SocketIO task finished: {:?}", res);
+                },
             }
         }
-    })
+    });
 }

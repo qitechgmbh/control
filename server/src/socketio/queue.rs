@@ -1,6 +1,7 @@
 use crate::app_state::AppState;
+use smol::Task;
 use std::{sync::Arc, time::Instant};
-use tracing::{debug, error, info, instrument, trace};
+use tracing::{debug, info, instrument, trace};
 
 /// Send a single event with retry logic
 #[instrument(skip_all)]
@@ -58,55 +59,36 @@ async fn send_event_with_retry(
     }
 }
 
-pub fn init_socketio_queue(app_state: Arc<AppState>) {
-    std::thread::Builder::new()
-        .name("socketio-queue".to_string())
-        .spawn(move || {
+async fn socketio_queue_worker(app_state: Arc<AppState>) {
+    tracing::info!("SocketIO global queue listener started");
+    let mut event_count = 0;
+    let mut batch_start = Instant::now();
 
-            let rt = tokio::runtime::Builder::new_current_thread()
-                .enable_io()
-                .enable_time()
-                .build()
-                .expect("Failed to create runtime");
+    while let Ok((socket, event)) = app_state.socketio_setup.socket_queue_rx.recv().await {
+        event_count += 1;
 
-            rt.block_on(async {
-                info!("SocketIO global queue listener started");
+        send_event_with_retry(&socket, &event).await;
 
-                let mut event_count = 0;
-                let mut batch_start = Instant::now();
+        if batch_start.elapsed().as_secs() >= 5 {
+            let elapsed = batch_start.elapsed();
+            if event_count > 0 {
+                debug!(
+                    "[{}::socketio_queue_worker] Processed {} events in {:.2?} ({:.1} events/s)",
+                    module_path!(),
+                    event_count,
+                    elapsed,
+                    event_count as f64 / elapsed.as_secs_f64(),
+                );
+            }
+            event_count = 0;
+            batch_start = Instant::now();
+        }
+    }
 
-                loop {
-                    match app_state.socketio_setup.socket_queue_rx.recv().await {
-                        Ok((socket, event)) => {
-                            event_count += 1;
+    info!("SocketIO global queue listener stopped");
+}
 
-                            // Handle the received message with retry logic
-                            send_event_with_retry(&socket, &event).await;
-
-                            // Log batch statistics every 5 seconds
-                            if batch_start.elapsed().as_secs() >= 5 {
-                                let elapsed = batch_start.elapsed();
-                                if event_count > 0 {
-                                    debug!(
-                                        "[{}::init_socketio_queue] Processed {} events in {:.2?} ({:.1} events/s)",
-                                        module_path!(),
-                                        event_count,
-                                        elapsed,
-                                        event_count as f64 / elapsed.as_secs_f64(),
-                                    );
-                                }
-                                event_count = 0;
-                                batch_start = Instant::now();
-                            }
-                        }
-                        Err(e) => {
-                            error!(error = %e, "Error receiving from global socketio queue");
-                            info!("SocketIO global queue listener stopping");
-                            break;
-                        }
-                    }
-                }
-            });
-        })
-        .expect("Failed to spawn socketio queue thread");
+/// Returns a spawned async task handling the Socket.IO event queue
+pub fn start_socketio_queue(app_state: Arc<AppState>) -> Task<()> {
+    smol::spawn(socketio_queue_worker(app_state))
 }

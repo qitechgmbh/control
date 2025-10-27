@@ -10,8 +10,8 @@ const METRICS_LOG_INTERVAL_SECS: u64 = 30; // Log every 30 seconds
 pub struct EthercatPerformanceMetrics {
     txrx_times: VecDeque<Duration>,
     loop_times: VecDeque<Duration>,
-    last_loop_start: Option<Instant>,
-    last_log_time: Instant,
+    pub last_loop_start: Option<Instant>,
+    pub last_log_time: Instant,
 }
 
 impl Default for EthercatPerformanceMetrics {

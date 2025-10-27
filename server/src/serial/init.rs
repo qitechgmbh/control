@@ -1,74 +1,139 @@
-use crate::socketio::main_namespace::MainNamespaceEvents;
-use crate::socketio::main_namespace::machines_event::MachinesEventBuilder;
-use crate::{app_state::AppState, machines::registry::MACHINE_REGISTRY};
-use control_core::socketio::namespace::NamespaceCacheingLogic;
-use std::{sync::Arc, thread, time::Duration};
+use control_core::{
+    machines::identification::MachineIdentificationUnique,
+    serial::{
+        SerialDeviceIdentification, SerialDeviceNew, SerialDeviceNewParams,
+        serial_detection::SerialDetection,
+    },
+    socketio::namespace::NamespaceCacheingLogic,
+};
+use serialport::UsbPortInfo;
+use smol::Task;
+use std::{collections::HashMap, sync::Arc, time::Duration};
 
-pub fn init_serial(app_state: Arc<AppState>) -> Result<(), anyhow::Error> {
-    let app_state_clone = app_state.clone();
+use crate::{
+    app_state::AppState,
+    machines::{laser::LaserMachine, registry::MACHINE_REGISTRY},
+    socketio::main_namespace::{MainNamespaceEvents, machines_event::MachinesEventBuilder},
+};
 
-    thread::Builder::new()
-        .name("SerialDetectionThread".to_owned())
-        .spawn(move || {
-            let app_state_clone = app_state_clone;
-            smol::block_on(async move {
-                let rt = smol::LocalExecutor::new();
-                rt.run(async {
-                    loop {
-                        let result = {
-                            let mut serial_setup_guard = app_state_clone.serial_setup.write().await;
+use super::devices::laser::Laser;
 
-                            let mut port_result =
-                                serial_setup_guard.serial_detection.check_ports().await;
+// Async function that runs until at least one serial device is found.
+pub async fn find_serial() -> Option<HashMap<String, UsbPortInfo>> {
+    smol::Timer::after(Duration::from_secs(1)).await;
+    let devices = SerialDetection::detect_devices();
+    if !devices.is_empty() {
+        return Some(devices);
+    } else {
+        return None;
+    }
+}
 
-                            let mut removed_signals = serial_setup_guard
-                                .serial_detection
-                                .check_remove_signals()
-                                .await;
+// Returns a smol::Task that resolves when atleast one device is found.
+pub fn start_serial_discovery() -> Task<Option<HashMap<String, UsbPortInfo>>> {
+    smol::spawn(find_serial())
+}
 
-                            port_result.removed.append(&mut removed_signals);
+// This function handles a disconnection and or reconnection of Laser
+// You can easily rewrite it when we have more serialdevices
+// TODO: Add A static list of known SeriadeviceIdents
+pub async fn handle_serial_device_hotplug(
+    app_state: Arc<AppState>,
+    map: Option<HashMap<String, UsbPortInfo>>,
+) {
+    let laser_ident = SerialDeviceIdentification {
+        vendor_id: 0x0403,
+        product_id: 0x6001,
+    };
 
-                            port_result
-                        };
+    let laser = match map {
+        Some(map) => SerialDetection::get_path_by_id(laser_ident, map),
+        None => None,
+    };
 
-                        if !result.added.is_empty() || !result.removed.is_empty() {
-                            // sync serial device discovery to machine manager
-                            {
-                                let mut machine_guard = app_state_clone.machines.write().await;
-                                // turn added devices into machines
-                                for (device_identifiaction, device) in result.added {
-                                    machine_guard.add_serial_device(
-                                        &device_identifiaction,
-                                        device.clone(),
-                                        &MACHINE_REGISTRY,
-                                        app_state_clone.socketio_setup.socket_queue_tx.clone(),
-                                        Arc::downgrade(&app_state.machines),
-                                    )
-                                }
-                                for device_identification in result.removed {
-                                    machine_guard.remove_serial_device(&device_identification)
-                                }
-                            }
+    let mut unique_ident: Option<MachineIdentificationUnique> = None;
 
-                            // Notify client via socketio
-                            let app_state_event = app_state.clone();
-                            smol::block_on(async {
-                                let main_namespace = &mut app_state_event
-                                    .socketio_setup
-                                    .namespaces
-                                    .write()
-                                    .await
-                                    .main_namespace;
-                                let event = MachinesEventBuilder().build(app_state_event.clone());
-                                main_namespace.emit(MainNamespaceEvents::MachinesEvent(event));
-                            });
-                        }
-                        smol::Timer::after(Duration::from_millis(300)).await;
-                    }
-                })
-                .await;
-            });
-        })
-        .expect("Failed to spawn SerialTxRxThread");
-    Ok(())
+    {
+        let machines = app_state.machines.read_arc_blocking();
+        for (id, _) in machines.iter() {
+            if id.machine_identification == LaserMachine::MACHINE_IDENTIFICATION {
+                unique_ident = Some(id.clone());
+                break;
+            }
+        }
+    }
+
+    // Machine isnt connected, so add it back
+    if laser.is_some() && unique_ident.is_none() {
+        let serial_params = SerialDeviceNewParams {
+            path: laser.unwrap(),
+        };
+        let _ = match Laser::new_serial(&serial_params) {
+            Ok((device_identification, serial_device)) => {
+                {
+                    let mut machines = app_state.machines.write().await;
+                    machines.add_serial_device(
+                        &device_identification,
+                        serial_device,
+                        &MACHINE_REGISTRY,
+                        app_state.socketio_setup.socket_queue_tx.clone(),
+                        Arc::downgrade(&app_state.machines),
+                    );
+                }
+
+                let app_state_event = app_state.clone();
+                let main_namespace = &mut app_state_event
+                    .socketio_setup
+                    .namespaces
+                    .write()
+                    .await
+                    .main_namespace;
+                let event = MachinesEventBuilder().build(app_state_event.clone());
+                main_namespace.emit(MainNamespaceEvents::MachinesEvent(event));
+            }
+            _ => (),
+        };
+    } else if laser.is_none() && unique_ident.is_some() {
+        let serial_params = SerialDeviceNewParams {
+            path: "".to_string(),
+        };
+
+        let _ = match Laser::new_serial(&serial_params) {
+            Ok((device_identification, _)) => {
+                app_state
+                    .machines
+                    .write()
+                    .await
+                    .remove_serial_device(&device_identification);
+                drop(app_state.machines.clone());
+
+                app_state
+                    .machines
+                    .write_arc()
+                    .await
+                    .serial_machines
+                    .remove(&unique_ident.clone().unwrap());
+
+                app_state
+                    .machines
+                    .write_arc()
+                    .await
+                    .ethercat_machines
+                    .remove(&unique_ident.clone().unwrap());
+
+                drop(app_state.machines.clone());
+
+                let main_namespace = &mut app_state
+                    .socketio_setup
+                    .namespaces
+                    .write()
+                    .await
+                    .main_namespace;
+
+                let event = MachinesEventBuilder().build(app_state.clone());
+                main_namespace.emit(MainNamespaceEvents::MachinesEvent(event));
+            }
+            _ => (),
+        };
+    }
 }
