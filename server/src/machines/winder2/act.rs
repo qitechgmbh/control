@@ -1,7 +1,11 @@
+#[cfg(not(feature = "mock-machine"))]
 use super::Winder2;
+#[cfg(not(feature = "mock-machine"))]
 use control_core::machines::new::MachineAct;
+#[cfg(not(feature = "mock-machine"))]
 use std::time::{Duration, Instant};
 
+#[cfg(not(feature = "mock-machine"))]
 impl MachineAct for Winder2 {
     fn act(&mut self, now: Instant) {
         // sync the spool speed

@@ -1,31 +1,63 @@
-use super::puller_speed_controller::GearRatio;
-use super::{Winder2, Winder2Mode, puller_speed_controller::PullerRegulationMode};
-use control_core::{
-    machines::{
-        api::MachineApi, connection::MachineCrossConnectionState,
-        identification::MachineIdentificationUnique,
-    },
-    socketio::{
-        event::{Event, GenericEvent},
-        namespace::{
-            CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_duration,
-            cache_first_and_last_event,
+#[cfg(feature = "mock-machine")]
+mod winder2_imports {
+    pub use super::super::Winder2Mode;
+    pub use super::super::puller_speed_controller::{GearRatio, PullerRegulationMode};
+    pub use serde::Deserialize;
+    pub use serde::Serialize;
+
+    pub use std::{sync::Arc, time::Duration};
+
+    pub use control_core::{
+        machines::{
+            connection::MachineCrossConnectionState, identification::MachineIdentificationUnique,
         },
-    },
-};
+        socketio::{
+            event::{Event, GenericEvent},
+            namespace::{
+                CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_duration,
+                cache_first_and_last_event,
+            },
+        },
+    };
+    pub use control_core_derive::BuildEvent;
+    pub use smol::lock::Mutex;
+    pub use tracing::instrument;
+}
 
-use control_core_derive::BuildEvent;
-use serde::{Deserialize, Serialize};
-use serde_json::Value;
-use smol::lock::Mutex;
-use std::{
-    sync::Arc,
-    time::{Duration, Instant},
-};
-use tracing::instrument;
+#[cfg(not(feature = "mock-machine"))]
+mod winder2_imports {
+    pub use super::super::puller_speed_controller::{GearRatio, PullerRegulationMode};
+    pub use super::super::{Winder2, Winder2Mode};
+    pub use control_core::{
+        machines::{
+            api::MachineApi, connection::MachineCrossConnectionState,
+            identification::MachineIdentificationUnique,
+        },
+        socketio::{
+            event::{Event, GenericEvent},
+            namespace::{
+                CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_duration,
+                cache_first_and_last_event,
+            },
+        },
+    };
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+    pub use control_core_derive::BuildEvent;
+    pub use serde::{Deserialize, Serialize};
+    pub use serde_json::Value;
+    pub use smol::lock::Mutex;
+    pub use std::{
+        sync::Arc,
+        time::{Duration, Instant},
+    };
+    pub use tracing::instrument;
+}
+
+pub use winder2_imports::*;
+
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub enum Mode {
+    #[default]
     Standby,
     Hold,
     Pull,
@@ -55,7 +87,7 @@ impl From<Mode> for Winder2Mode {
 }
 
 #[derive(Deserialize, Serialize)]
-enum Mutation {
+pub enum Mutation {
     // Traverse
     /// Position in mm from home point
     SetTraverseLimitOuter(f64),
@@ -149,7 +181,7 @@ pub struct StateEvent {
     pub connected_machine_state: MachineCrossConnectionState,
 }
 
-#[derive(Serialize, Debug, Clone)]
+#[derive(Serialize, Debug, Clone, Default)]
 pub struct TraverseState {
     /// min position in mm
     pub limit_inner: f64,
@@ -183,7 +215,7 @@ pub struct TraverseState {
     pub can_go_home: bool,
 }
 
-#[derive(Serialize, Debug, Clone)]
+#[derive(Serialize, Debug, Clone, Default)]
 pub struct PullerState {
     /// regulation type
     pub regulation: PullerRegulationMode,
@@ -197,20 +229,21 @@ pub struct PullerState {
     pub gear_ratio: GearRatio,
 }
 
-#[derive(Deserialize, Serialize, Debug, Clone)]
+#[derive(Deserialize, Serialize, Debug, Clone, Default)]
 pub enum SpoolAutomaticActionMode {
+    #[default]
     NoAction,
     Pull,
     Hold,
 }
 
-#[derive(Serialize, Debug, Clone)]
+#[derive(Serialize, Debug, Clone, Default)]
 pub struct SpoolAutomaticActionState {
     pub spool_required_meters: f64,
     pub spool_automatic_action_mode: SpoolAutomaticActionMode,
 }
 
-#[derive(Serialize, Debug, Clone)]
+#[derive(Serialize, Debug, Clone, Default)]
 pub struct ModeState {
     /// mode
     pub mode: Mode,
@@ -218,13 +251,13 @@ pub struct ModeState {
     pub can_wind: bool,
 }
 
-#[derive(Serialize, Debug, Clone)]
+#[derive(Serialize, Debug, Clone, Default)]
 pub struct TensionArmState {
     /// is zeroed
     pub zeroed: bool,
 }
 
-#[derive(Serialize, Debug, Clone)]
+#[derive(Serialize, Debug, Clone, Default)]
 pub struct SpoolSpeedControllerState {
     /// regulation mode
     pub regulation_mode: super::spool_speed_controller::SpoolSpeedControllerType,
@@ -286,6 +319,7 @@ impl CacheableEvents<Self> for Winder2Events {
     }
 }
 
+#[cfg(not(feature = "mock-machine"))]
 impl MachineApi for Winder2 {
     fn api_mutate(&mut self, request_body: Value) -> Result<(), anyhow::Error> {
         let mutation: Mutation = serde_json::from_value(request_body)?;

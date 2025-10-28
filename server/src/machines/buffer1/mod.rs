@@ -3,6 +3,8 @@ pub mod api;
 pub mod buffer_tower_controller;
 pub mod new;
 
+#[cfg(not(feature = "mock-machine"))]
+use crate::machines::{MACHINE_BUFFER_V1, VENDOR_QITECH, winder2::Winder2};
 use api::{Buffer1Namespace, BufferV1Events, LiveValuesEvent, ModeState, StateEvent};
 use buffer_tower_controller::BufferTowerController;
 use control_core::machines::connection::{CrossConnectableMachine, MachineCrossConnection};
@@ -17,8 +19,6 @@ use control_core_derive::Machine;
 use serde::{Deserialize, Serialize};
 use smol::lock::RwLock;
 use std::{sync::Weak, time::Instant};
-
-use crate::machines::{MACHINE_BUFFER_V1, VENDOR_QITECH, winder2::Winder2};
 
 #[derive(Debug, Machine)]
 pub struct BufferV1 {

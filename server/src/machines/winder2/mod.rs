@@ -11,37 +11,47 @@ pub mod spool_speed_controller;
 pub mod tension_arm;
 pub mod traverse_controller;
 
-use std::{fmt::Debug, sync::Weak, time::Instant};
+#[cfg(feature = "mock-machine")]
+pub mod mock;
 
-use api::{SpoolAutomaticActionMode, Winder2Namespace};
-use control_core::{
-    converters::angular_step_converter::AngularStepConverter,
-    machines::{
-        connection::{CrossConnectableMachine, MachineCrossConnection},
-        identification::{MachineIdentification, MachineIdentificationUnique},
-        manager::MachineManager,
-    },
-};
-use control_core_derive::Machine;
-use ethercat_hal::io::{
-    digital_input::DigitalInput, digital_output::DigitalOutput,
-    stepper_velocity_el70x1::StepperVelocityEL70x1,
-};
-use puller_speed_controller::PullerSpeedController;
-use smol::lock::RwLock;
-use spool_speed_controller::SpoolSpeedController;
-use tension_arm::TensionArm;
-use traverse_controller::TraverseController;
-use uom::{
-    ConstZero,
-    si::{
-        f64::Length,
-        length::{meter, millimeter},
-        velocity::meter_per_second,
-    },
-};
+#[cfg(feature = "mock-machine")]
+mod winder2_imports {
+    pub use super::api::SpoolAutomaticActionMode;
+    pub use std::time::Instant;
+    pub use uom::si::f64::Length;
+}
 
-use crate::machines::{MACHINE_WINDER_V1, VENDOR_QITECH, buffer1::BufferV1};
+#[cfg(not(feature = "mock-machine"))]
+mod winder2_imports {
+    pub use super::api::SpoolAutomaticActionMode;
+    pub use super::api::Winder2Namespace;
+    pub use super::puller_speed_controller::PullerSpeedController;
+    pub use super::spool_speed_controller::SpoolSpeedController;
+    pub use super::tension_arm::TensionArm;
+    pub use super::traverse_controller::TraverseController;
+    pub use control_core::{
+        converters::angular_step_converter::AngularStepConverter,
+        machines::{
+            connection::{CrossConnectableMachine, MachineCrossConnection},
+            identification::{MachineIdentification, MachineIdentificationUnique},
+            manager::MachineManager,
+        },
+    };
+    pub use control_core_derive::Machine;
+    pub use ethercat_hal::io::{
+        digital_input::DigitalInput, digital_output::DigitalOutput,
+        stepper_velocity_el70x1::StepperVelocityEL70x1,
+    };
+    pub use smol::lock::RwLock;
+    pub use std::{fmt::Debug, sync::Weak, time::Instant};
+    pub use uom::si::f64::Length;
+
+    pub use crate::machines::{MACHINE_WINDER_V1, VENDOR_QITECH, buffer1::BufferV1};
+    pub use uom::ConstZero;
+    pub use uom::si::{length::meter, length::millimeter, velocity::meter_per_second};
+}
+
+pub use winder2_imports::*;
 
 #[derive(Debug)]
 pub struct SpoolAutomaticAction {
@@ -51,6 +61,18 @@ pub struct SpoolAutomaticAction {
     pub mode: SpoolAutomaticActionMode,
 }
 
+impl Default for SpoolAutomaticAction {
+    fn default() -> Self {
+        SpoolAutomaticAction {
+            progress: Length::new::<uom::si::length::meter>(0.0),
+            progress_last_check: Instant::now(),
+            target_length: Length::new::<uom::si::length::meter>(0.0),
+            mode: SpoolAutomaticActionMode::default(),
+        }
+    }
+}
+
+#[cfg(not(feature = "mock-machine"))]
 #[derive(Debug, Machine)]
 pub struct Winder2 {
     // drivers
@@ -96,12 +118,14 @@ pub struct Winder2 {
     emitted_default_state: bool,
 }
 
+#[cfg(not(feature = "mock-machine"))]
 impl CrossConnectableMachine<Winder2, BufferV1> for Winder2 {
     fn get_cross_connection(&mut self) -> &mut MachineCrossConnection<Winder2, BufferV1> {
         &mut self.connected_buffer
     }
 }
 
+#[cfg(not(feature = "mock-machine"))]
 impl Winder2 {
     pub const MACHINE_IDENTIFICATION: MachineIdentification = MachineIdentification {
         vendor: VENDOR_QITECH,
@@ -277,6 +301,7 @@ impl Winder2 {
 
     pub fn calculate_spool_auto_progress_(&mut self, now: Instant) {
         // Calculate time elapsed since last progress check (in minutes)
+
         let dt = now
             .duration_since(self.spool_automatic_action.progress_last_check)
             .as_secs_f64();
@@ -368,12 +393,14 @@ impl From<Winder2Mode> for PullerMode {
     }
 }
 
+#[cfg(not(feature = "mock-machine"))]
 impl std::fmt::Display for Winder2 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Winder2")
     }
 }
 
+#[cfg(not(feature = "mock-machine"))]
 #[cfg(test)]
 mod tests {
     use super::*;
