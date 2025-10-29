@@ -116,11 +116,10 @@ impl CacheableEvents<AquaPathV1Events> for AquaPathV1Events {
     }
 
     fn event_cache_fn(&self) -> CacheFn {
-        let cache_one_hour = cache_duration(Duration::from_secs(60 * 60), Duration::from_secs(1));
         let cache_first_and_last = cache_first_and_last_event();
 
         match self {
-            AquaPathV1Events::LiveValues(_) => cache_one_hour,
+            AquaPathV1Events::LiveValues(_) => cache_first_and_last,
             AquaPathV1Events::State(_) => cache_first_and_last,
         }
     }

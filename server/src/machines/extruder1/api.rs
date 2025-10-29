@@ -12,7 +12,7 @@ use control_core::socketio::{
     event::{Event, GenericEvent},
     namespace::{
         CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_duration,
-        cache_first_and_last_event,
+        cache_first_and_last_event, cache_one_event,
     },
 };
 use control_core_derive::BuildEvent;
@@ -263,11 +263,9 @@ impl CacheableEvents<Self> for ExtruderV2Events {
     }
 
     fn event_cache_fn(&self) -> CacheFn {
-        let cache_one_hour = cache_duration(Duration::from_secs(1 * 60), Duration::from_secs(1));
         let cache_first_and_last = cache_first_and_last_event();
-
         match self {
-            Self::LiveValues(_) => cache_one_hour,
+            Self::LiveValues(_) => cache_one_event(),
             Self::State(_) => cache_first_and_last,
         }
     }
