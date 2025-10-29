@@ -25,7 +25,9 @@ pub mod wago_750_354;
 use super::devices::el1008::EL1008;
 use crate::{
     devices::{el2521::EL2521, el4002::EL4002},
-    helpers::ethercrab_types::EthercrabSubDeviceGroupPreoperational,
+    helpers::ethercrab_types::{
+        EthercrabSubDeviceGroupPreoperational, EthercrabSubDeviceGroupSafeOperational,
+    },
 };
 use anyhow::anyhow;
 use bitvec::{order::Lsb0, slice::BitSlice};
@@ -243,7 +245,7 @@ pub fn device_from_subdevice_identity(
 
 /// Array equivalent of [`device_from_subdevice`]
 pub fn devices_from_subdevices<'maindevice, const MAX_SUBDEVICES: usize, const PDI_LEN: usize>(
-    group: &mut EthercrabSubDeviceGroupPreoperational<MAX_SUBDEVICES, PDI_LEN>,
+    group: &mut EthercrabSubDeviceGroupSafeOperational<MAX_SUBDEVICES, PDI_LEN>,
     maindevice: &MainDevice,
 ) -> Result<Vec<Arc<RwLock<dyn EthercatDevice>>>, anyhow::Error> {
     group

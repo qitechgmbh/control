@@ -52,7 +52,7 @@ pub fn set_realtime_priority() -> Result<(), anyhow::Error> {
     use anyhow::anyhow;
     use libc::{SCHED_FIFO, pthread_setschedparam, sched_param};
     use std::mem;
-
+    /*
     unsafe {
         // Get the pthread_t of the current thread using pthread_self()
         let pthread_self = libc::pthread_self();
@@ -80,7 +80,7 @@ pub fn set_realtime_priority() -> Result<(), anyhow::Error> {
                 std::thread::current().name().unwrap_or("unknown")
             );
         }
-    }
+    }*/
     Ok(())
 }
 

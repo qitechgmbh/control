@@ -1,4 +1,7 @@
-use ethercrab::{SubDevice, SubDeviceGroup, SubDevicePdi, SubDeviceRef, subdevice_group::Op};
+use ethercrab::{
+    SubDevice, SubDeviceGroup, SubDevicePdi, SubDeviceRef,
+    subdevice_group::{Op, SafeOp},
+};
 pub type EthercrabSubDevicePreoperational<'maindevice> =
     SubDeviceRef<'maindevice, &'maindevice SubDevice>;
 pub type EthercrabSubDeviceOperational<'maindevice, const MAX_PDI: usize> =
@@ -6,6 +9,9 @@ pub type EthercrabSubDeviceOperational<'maindevice, const MAX_PDI: usize> =
 
 pub type EthercrabSubDeviceGroupOperational<const MAX_SUBDEVICES: usize, const MAX_PDI: usize> =
     SubDeviceGroup<MAX_SUBDEVICES, MAX_PDI, Op>;
+
+pub type EthercrabSubDeviceGroupSafeOperational<const MAX_SUBDEVICES: usize, const MAX_PDI: usize> =
+    SubDeviceGroup<MAX_SUBDEVICES, MAX_PDI, SafeOp>;
 
 pub type EthercrabSubDeviceGroupPreoperational<const MAX_SUBDEVICES: usize, const MAX_PDI: usize> =
     SubDeviceGroup<MAX_SUBDEVICES, MAX_PDI>;

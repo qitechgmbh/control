@@ -153,13 +153,13 @@ fn test_interface(interface: &str) -> Result<(), anyhow::Error> {
                 // Default 0ms
                 wait_loop_delay: Duration::from_millis(0),
                 // Default 100ms
-                mailbox_echo: Duration::from_millis(100),
+                mailbox_echo: Duration::from_millis(1000),
                 // Default 1000ms
-                mailbox_response: Duration::from_millis(1000),
+                mailbox_response: Duration::from_millis(2000),
             },
             MainDeviceConfig {
                 // Default 10000
-                dc_static_sync_iterations: 10000,
+                dc_static_sync_iterations: 0,
                 // Default None
                 retry_behaviour: ethercrab::RetryBehaviour::Count(3),
             },
