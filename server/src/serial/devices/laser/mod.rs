@@ -85,7 +85,6 @@ impl From<LaserModbusRequsts> for modbus::ModbusRequest {
                     0x00, 0x0E, // Start register = 0x000E
                     0x00, 0x03, // Read 3 registers (AvgDiameter, X, Y)
                 ],
-
             },
         }
     }
