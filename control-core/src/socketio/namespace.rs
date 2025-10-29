@@ -76,7 +76,7 @@ impl Namespace {
 
         // Sort by event count (ascending - lowest count first)
         event_groups.sort_by(|a, b| a.1.len().cmp(&b.1.len()));
-
+        tracing::info!("reemit: {:?}", self.events);
         // Emit events in order of lowest count first
         for (_event_name, events) in event_groups {
             for event in events {
@@ -114,10 +114,10 @@ impl Namespace {
     pub fn emit(
         &mut self,
         event: Arc<GenericEvent>,
-        buffer_fn: &Box<dyn Fn(&mut Vec<Arc<GenericEvent>>, &Arc<GenericEvent>)>,
+        _buffer_fn: &Box<dyn Fn(&mut Vec<Arc<GenericEvent>>, &Arc<GenericEvent>)>,
     ) {
         // cache the event
-        self.cache(event.clone(), buffer_fn);
+        //self.cache(event.clone(), buffer_fn);
         // emit the event - inlined from emit function
         // Send to global queue for each socket in the namespace
         for socket in self.sockets.clone() {

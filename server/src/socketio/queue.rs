@@ -5,12 +5,18 @@ use tracing::{debug, info, instrument, trace};
 
 /// Send a single event with retry logic
 #[instrument(skip_all)]
-async fn send_event_with_retry(
+fn send_event_with_retry(
     socket: &socketioxide::extract::SocketRef,
     event: &Arc<control_core::socketio::event::GenericEvent>,
 ) {
+    let mut i = 0;
+    const MAX_RETRY: i32 = 10;
     // retry loop for each event
     loop {
+        if i >= MAX_RETRY {
+            return;
+        }
+        i += 1;
         // check if socket is still connected
         if !socket.connected() {
             trace!(
@@ -66,9 +72,7 @@ async fn socketio_queue_worker(app_state: Arc<AppState>) {
 
     while let Ok((socket, event)) = app_state.socketio_setup.socket_queue_rx.recv().await {
         event_count += 1;
-
-        send_event_with_retry(&socket, &event).await;
-
+        send_event_with_retry(&socket, &event);
         if batch_start.elapsed().as_secs() >= 5 {
             let elapsed = batch_start.elapsed();
             if event_count > 0 {
