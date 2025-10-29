@@ -67,8 +67,6 @@ impl TryFrom<ModbusResponse> for LaserDiameterResponse {
             (None, None)
         };
 
-        tracing::info!("SlaveID: {}", value.slave_id);
-
         Ok(Self {
             diameter: Length::new::<millimeter>(diameter),
             x_axis,
@@ -213,7 +211,6 @@ impl Laser {
         while !_self.read().await.shutdown_flag.load(Ordering::SeqCst) {
             // send diameter request
             let response = retry_n_times(10, || {
-                tracing::info!("Retrying");
                 if let Err(e) = port.write_all(&request_buffer) {
                     return Err(anyhow!("Failed to write to port: {}", e));
                 }
