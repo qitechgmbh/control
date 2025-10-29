@@ -43,3 +43,27 @@ The device uses **Modbus RTU** over the USB Serial connection. Key points for co
 - **Master/Slave Model:** The Laser DRE acts as a Modbus slave device.
 - **Function Codes:** Supports standard Modbus RTU function codes for reading measurements.
 - **Data Format:** Diameter measurements are transmitted in the format specified by the manufacturer (consult the device manual for exact register addresses and scaling).
+
+---
+
+## Settings
+
+The device includes a small display that allows changing several operational settings:
+
+- **Unit:**
+  The laser can operate in **millimeters (mm)** or **inches (in)**.
+  Our software uses **millimeters**.
+
+- **Alarm:**
+  The laser can emit an audible alarm if the measured diameter is out of tolerance.
+  ⚠️ **Note:** The tolerance settings on the laser may differ from the tolerance configured in our software.
+
+- **Communication:**
+  Several communication parameters can be configured:
+  - **Set UART:** Configure **parity (8N1)** and **baud rate (38400)**.
+  - **Set Protocol:** Choose the communication protocol. *(We use **Modbus RTU**.)*
+  - **Set Slave Address:** The slave address of our laser is **1**.
+
+- **Calibration:**
+  The laser can be calibrated using **4 mm** and **8 mm** reference rods.
+
