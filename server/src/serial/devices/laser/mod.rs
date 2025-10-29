@@ -80,7 +80,10 @@ impl From<LaserModbusRequsts> for modbus::ModbusRequest {
             LaserModbusRequsts::ReadDiameter => Self {
                 slave_id: 1,
                 function_code: modbus::ModbusFunctionCode::ReadInputRegister,
-                data: vec![(0 >> 8) as u8, (0 & 0xFF) as u8],
+                data: vec![
+                    0x00, 0x0E, // Start register = 0x000E
+                    0x00, 0x03, // Read 3 registers (AvgDiameter, X, Y)
+                ],
             },
         }
     }
