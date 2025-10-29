@@ -92,9 +92,6 @@ pub async fn discover_ethercat_interface() -> Result<String, anyhow::Error> {
     let mut interface: Option<&str> = None;
 
     for i in 0..interfaces.len() {
-        // Avoid NetworkManager hangups
-        set_interface_managed(&interfaces[i].name, false);
-
         match test_interface(&interfaces[i].name) {
             Ok(_) => {
                 // if interface found with ethercat Exit early, we expect only one interface with ethercat
@@ -107,6 +104,7 @@ pub async fn discover_ethercat_interface() -> Result<String, anyhow::Error> {
 
     for i in 0..interfaces.len() {
         if interface.is_some() && interface.unwrap() == &interfaces[i].name {
+            set_interface_managed(&interfaces[i].name, false);
             continue;
         } else {
             set_interface_managed(&interfaces[i].name, true);
