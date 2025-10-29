@@ -1,11 +1,11 @@
 use super::MockMachine;
+use control_core::socketio::namespace::cache_one_event;
 use control_core::{
     machines::api::MachineApi,
     socketio::{
         event::{Event, GenericEvent},
         namespace::{
-            CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_duration,
-            cache_first_and_last_event,
+            CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_first_and_last_event,
         },
     },
 };
@@ -13,9 +13,8 @@ use control_core_derive::BuildEvent;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use smol::lock::Mutex;
-use std::{sync::Arc, time::Duration};
+use std::sync::Arc;
 use tracing::instrument;
-
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub enum Mode {
     Standby,

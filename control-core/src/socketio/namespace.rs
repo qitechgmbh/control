@@ -114,10 +114,10 @@ impl Namespace {
     pub fn emit(
         &mut self,
         event: Arc<GenericEvent>,
-        _buffer_fn: &Box<dyn Fn(&mut Vec<Arc<GenericEvent>>, &Arc<GenericEvent>)>,
+        buffer_fn: &Box<dyn Fn(&mut Vec<Arc<GenericEvent>>, &Arc<GenericEvent>)>,
     ) {
         // cache the event
-        //self.cache(event.clone(), buffer_fn);
+        self.cache(event.clone(), buffer_fn);
         // emit the event - inlined from emit function
         // Send to global queue for each socket in the namespace
         for socket in self.sockets.clone() {

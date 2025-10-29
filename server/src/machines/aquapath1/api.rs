@@ -1,4 +1,4 @@
-use std::{sync::Arc, time::Duration};
+use std::sync::Arc;
 
 use super::{AquaPathV1, AquaPathV1Mode};
 use control_core::{
@@ -6,8 +6,7 @@ use control_core::{
     socketio::{
         event::{Event, GenericEvent},
         namespace::{
-            CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_duration,
-            cache_first_and_last_event,
+            CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_first_and_last_event,
         },
     },
 };

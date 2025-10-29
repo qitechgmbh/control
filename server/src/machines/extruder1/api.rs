@@ -11,8 +11,8 @@ use control_core::machines::api::MachineApi;
 use control_core::socketio::{
     event::{Event, GenericEvent},
     namespace::{
-        CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_duration,
-        cache_first_and_last_event, cache_one_event,
+        CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_first_and_last_event,
+        cache_one_event,
     },
 };
 use control_core_derive::BuildEvent;
@@ -20,7 +20,7 @@ use serde::{Deserialize, Serialize};
 #[cfg(not(feature = "mock-machine"))]
 use serde_json::Value;
 use smol::lock::Mutex;
-use std::{sync::Arc, time::Duration};
+use std::sync::Arc;
 use tracing::instrument;
 use uom::si::{
     angular_velocity::revolution_per_minute, electric_current::ampere, electric_potential::volt,

@@ -1,4 +1,4 @@
-use std::{sync::Arc, time::Duration};
+use std::sync::Arc;
 
 use super::{BufferV1, BufferV1Mode};
 use control_core::{
@@ -8,10 +8,7 @@ use control_core::{
     },
     socketio::{
         event::{Event, GenericEvent},
-        namespace::{
-            CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_duration,
-            cache_one_event,
-        },
+        namespace::{CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_one_event},
     },
 };
 use serde::{Deserialize, Serialize};

@@ -4,7 +4,7 @@ use control_core::{
     socketio::{
         event::{Event, GenericEvent},
         namespace::{
-            CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_duration,
+            CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic,
             cache_first_and_last_event, cache_one_event,
         },
     },
@@ -13,7 +13,7 @@ use control_core_derive::BuildEvent;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use smol::lock::Mutex;
-use std::{sync::Arc, time::Duration};
+use std::sync::Arc;
 use tracing::instrument;
 
 #[derive(Serialize, Debug, Clone, Default)]

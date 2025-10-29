@@ -53,6 +53,7 @@ mod winder2_imports {
     pub use tracing::instrument;
 }
 
+use control_core::socketio::namespace::cache_one_event;
 pub use winder2_imports::*;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
