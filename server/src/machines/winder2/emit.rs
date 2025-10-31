@@ -554,7 +554,10 @@ impl Winder2 {
 
         self.emit_state();
 
-        tracing::info!("Laser should be connected now. {}", self.connected_laser.to_state().is_available);
+        tracing::info!(
+            "Laser should be connected now. {}",
+            self.connected_laser.to_state().is_available
+        );
     }
 
     /// disconnect laser

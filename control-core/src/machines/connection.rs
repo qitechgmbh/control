@@ -144,8 +144,8 @@ impl<F: CrossConnectableMachine<F, T>, T: CrossConnectableMachine<T, F>>
                 Ok(s) => s,
                 Err(_) => {
                     tracing::info!("Failed at second slot.");
-                    return
-                },
+                    return;
+                }
             };
 
             self.connected_machine = Arc::downgrade(&slot);
