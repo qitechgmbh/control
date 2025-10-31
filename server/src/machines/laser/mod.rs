@@ -6,7 +6,10 @@ use api::{LaserEvents, LaserMachineNamespace, LaserState, LiveValuesEvent, State
 #[cfg(not(feature = "mock-machine"))]
 use control_core::machines::connection::CrossConnectableMachine;
 use control_core::{
-    machines::{connection::MachineCrossConnection, identification::{MachineIdentification, MachineIdentificationUnique}},
+    machines::{
+        connection::MachineCrossConnection,
+        identification::{MachineIdentification, MachineIdentificationUnique},
+    },
     socketio::namespace::NamespaceCacheingLogic,
 };
 use control_core_derive::Machine;

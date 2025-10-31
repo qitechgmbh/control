@@ -191,7 +191,8 @@ export const stateEventDataSchema = z.object({
   tension_arm_state: tensionArmStateSchema,
   spool_speed_controller_state: spoolSpeedControllerStateSchema,
   spool_automatic_action_state: spoolAutomaticActionStateSchema,
-  connected_machine_state: connectedMachineStateSchema,
+  connected_buffer_state: connectedMachineStateSchema,
+  connected_laser_state: connectedMachineStateSchema,
 });
 
 // ========== Event Schemas with Wrappers ==========

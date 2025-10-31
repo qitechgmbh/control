@@ -113,3 +113,46 @@ export const MachineSelector: React.FC<MachineSelectorProps> = ({
     </ControlCard>
   );
 };
+
+import { useMemo } from "react";
+
+interface UseFilteredMachineProps {
+  machines: any[];
+  state: any;
+  vendor: number;
+  machineType: number;
+  connectedStateKey: string;
+}
+
+export function useFilteredMachine({
+  machines,
+  state,
+  vendor,
+  machineType,
+  connectedStateKey,
+}: UseFilteredMachineProps) {
+  const filteredMachines = useMemo(
+    () =>
+      machines.filter(
+        (m) =>
+          m.machine_identification_unique.machine_identification.vendor ===
+            vendor &&
+          m.machine_identification_unique.machine_identification.machine ===
+            machineType,
+      ),
+    [machines, vendor, machineType],
+  );
+
+  const selectedMachine = useMemo(() => {
+    const serial =
+      state?.data?.[connectedStateKey]?.machine_identification_unique?.serial;
+
+    return (
+      filteredMachines.find(
+        (m) => m.machine_identification_unique.serial === serial,
+      ) ?? null
+    );
+  }, [filteredMachines, state, connectedStateKey]);
+
+  return { filteredMachines, selectedMachine };
+}

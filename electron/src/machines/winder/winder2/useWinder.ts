@@ -25,6 +25,7 @@ import {
 import { useEffect, useMemo } from "react";
 import { produce } from "immer";
 import { useMachines } from "@/client/useMachines";
+import { useFilteredMachine } from "@/components/MachineConnectionDropdown";
 
 export function useWinder2() {
   const { serial: serialString } = winder2SerialRoute.useParams();
@@ -167,15 +168,27 @@ export function useWinder2() {
     z.object({ SetSpoolAutomaticAction: spoolAutomaticActionModeSchema }),
   );
 
-  const { request: requestConnectedMachine } = useMachineMutation(
+  const { request: requestConnectedBuffer } = useMachineMutation(
     z.object({
-      SetConnectedMachine: machineIdentificationUnique,
+      SetConnectedBuffer: machineIdentificationUnique,
     }),
   );
 
-  const { request: requestDisconnectedMachine } = useMachineMutation(
+  const { request: requestDisconnectedBuffer } = useMachineMutation(
     z.object({
-      DisconnectMachine: machineIdentificationUnique,
+      DisconnectBuffer: machineIdentificationUnique,
+    }),
+  );
+
+  const { request: requestConnectedLaser } = useMachineMutation(
+    z.object({
+      SetConnectedLaser: machineIdentificationUnique,
+    }),
+  );
+
+  const { request: requestDisconnectedLaser } = useMachineMutation(
+    z.object({
+      DisconnectLaser: machineIdentificationUnique,
     }),
   );
 
@@ -553,7 +566,7 @@ export function useWinder2() {
     );
   };
 
-  const setConnectedMachine = (machineIdentificationUnique: {
+  const setConnectedBuffer = (machineIdentificationUnique: {
     machine_identification: {
       vendor: number;
       machine: number;
@@ -562,18 +575,18 @@ export function useWinder2() {
   }) => {
     updateStateOptimistically(
       (current) => {
-        current.data.connected_machine_state.machine_identification_unique =
+        current.data.connected_buffer_state.machine_identification_unique =
           machineIdentificationUnique;
       },
       () =>
-        requestConnectedMachine({
+        requestConnectedBuffer({
           machine_identification_unique,
-          data: { SetConnectedMachine: machineIdentificationUnique },
+          data: { SetConnectedBuffer: machineIdentificationUnique },
         }),
     );
   };
 
-  const disconnectMachine = (machineIdentificationUnique: {
+  const disconnectBuffer = (machineIdentificationUnique: {
     machine_identification: {
       vendor: number;
       machine: number;
@@ -582,13 +595,52 @@ export function useWinder2() {
   }) => {
     updateStateOptimistically(
       (current) => {
-        current.data.connected_machine_state.machine_identification_unique =
+        current.data.connected_buffer_state.machine_identification_unique =
           null;
       },
       () =>
-        requestDisconnectedMachine({
+        requestDisconnectedBuffer({
           machine_identification_unique,
-          data: { DisconnectMachine: machineIdentificationUnique },
+          data: { DisconnectBuffer: machineIdentificationUnique },
+        }),
+    );
+  };
+
+  const setConnectedLaser = (machineIdentificationUnique: {
+    machine_identification: {
+      vendor: number;
+      machine: number;
+    };
+    serial: number;
+  }) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.connected_laser_state.machine_identification_unique =
+          machineIdentificationUnique;
+      },
+      () =>
+        requestConnectedLaser({
+          machine_identification_unique,
+          data: { SetConnectedLaser: machineIdentificationUnique },
+        }),
+    );
+  };
+
+  const disconnectLaser = (machineIdentificationUnique: {
+    machine_identification: {
+      vendor: number;
+      machine: number;
+    };
+    serial: number;
+  }) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.connected_laser_state.machine_identification_unique = null;
+      },
+      () =>
+        requestDisconnectedLaser({
+          machine_identification_unique,
+          data: { DisconnectLaser: machineIdentificationUnique },
         }),
     );
   };
@@ -599,38 +651,38 @@ export function useWinder2() {
 
   // General Helper functions
   const machines = useMachines();
-  // Filter machines for the correct type
-  const filteredMachines = useMemo(
-    () =>
-      machines.filter(
-        (m) =>
-          m.machine_identification_unique.machine_identification.vendor ===
-            VENDOR_QITECH &&
-          m.machine_identification_unique.machine_identification.machine ===
-            0x0008,
-      ),
-    [machines, machineIdentification],
-  );
+  // Laser (0x0008)
+  const {
+    filteredMachines: filteredLaserMachines,
+    selectedMachine: selectedLaser,
+  } = useFilteredMachine({
+    machines,
+    state,
+    vendor: VENDOR_QITECH,
+    machineType: 0x0008,
+    connectedStateKey: "connected_laser_state",
+  });
 
-  // Get selected machine by serial
-  const selectedMachine = useMemo(() => {
-    const serial =
-      state?.data.connected_machine_state?.machine_identification_unique
-        ?.serial;
-
-    return (
-      filteredMachines.find(
-        (m) => m.machine_identification_unique.serial === serial,
-      ) ?? null
-    );
-  }, [filteredMachines, state]);
+  // Buffer (for example, 0x0007)
+  const {
+    filteredMachines: filteredBufferMachines,
+    selectedMachine: selectedBuffer,
+  } = useFilteredMachine({
+    machines,
+    state,
+    vendor: VENDOR_QITECH,
+    machineType: 0x0007,
+    connectedStateKey: "connected_buffer_state",
+  });
 
   return {
     // Consolidated state
     state: stateOptimistic.value?.data,
 
-    filteredMachines,
-    selectedMachine,
+    filteredBufferMachines,
+    filteredLaserMachines,
+    selectedBuffer,
+    selectedLaser,
 
     // Default state for initial values
     defaultState: defaultState?.data,
@@ -674,7 +726,9 @@ export function useWinder2() {
     setSpoolAdaptiveMaxSpeedMultiplier,
     setSpoolAdaptiveAccelerationFactor,
     setSpoolAdaptiveDeaccelerationUrgencyMultiplier,
-    setConnectedMachine,
-    disconnectMachine,
+    setConnectedBuffer,
+    disconnectBuffer,
+    setConnectedLaser,
+    disconnectLaser,
   };
 }

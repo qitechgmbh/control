@@ -40,10 +40,14 @@ export function Winder2SettingPage() {
     setSpoolAdaptiveDeaccelerationUrgencyMultiplier,
     isLoading,
     isDisabled,
-    selectedMachine,
-    filteredMachines,
-    setConnectedMachine,
-    disconnectMachine,
+    selectedLaser,
+    selectedBuffer,
+    filteredLaserMachines,
+    filteredBufferMachines,
+    setConnectedBuffer,
+    disconnectBuffer,
+    setConnectedLaser,
+    disconnectLaser,
   } = useWinder2();
 
   const handleXlModeChange = (enabled: boolean) => {
@@ -354,20 +358,40 @@ export function Winder2SettingPage() {
             />
           </Label>
         </ControlCard>
-        <MachineSelector
-          machines={filteredMachines}
-          selectedMachine={selectedMachine}
-          connectedMachineState={state?.connected_machine_state}
-          setConnectedMachine={setConnectedMachine}
-          clearConnectedMachine={() => {
-            if (!selectedMachine) return;
-            setConnectedMachine({
-              machine_identification: { vendor: 0, machine: 0 },
-              serial: 0,
-            });
-            disconnectMachine(selectedMachine.machine_identification_unique);
-          }}
-        />
+        <ControlCard title="Buffer Connection">
+          <MachineSelector
+            machines={filteredBufferMachines}
+            selectedMachine={selectedBuffer}
+            connectedMachineState={state?.connected_buffer_state}
+            setConnectedMachine={setConnectedBuffer}
+            clearConnectedMachine={() => {
+              if (!selectedBuffer) return;
+              setConnectedBuffer({
+                machine_identification: { vendor: 0, machine: 0 },
+                serial: 0,
+              });
+              disconnectBuffer(selectedBuffer.machine_identification_unique);
+            }}
+          />
+        </ControlCard>
+        <ControlCard title="Diameter-Based Winder Control">
+          <Label label="Associated Laser">
+            <MachineSelector
+              machines={filteredLaserMachines}
+              selectedMachine={selectedLaser}
+              connectedMachineState={state?.connected_laser_state}
+              setConnectedMachine={setConnectedLaser}
+              clearConnectedMachine={() => {
+                if (!selectedLaser) return;
+                setConnectedLaser({
+                  machine_identification: { vendor: 0, machine: 0 },
+                  serial: 0,
+                });
+                disconnectLaser(selectedLaser.machine_identification_unique);
+              }}
+            />
+          </Label>
+        </ControlCard>
       </ControlGrid>
     </Page>
   );

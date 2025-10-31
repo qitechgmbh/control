@@ -555,10 +555,7 @@ impl Winder2 {
     }
 
     /// disconnect laser
-    pub fn disconnect_laser(
-        &mut self,
-        machine_identification_unique: MachineIdentificationUnique,
-    ) {
+    pub fn disconnect_laser(&mut self, machine_identification_unique: MachineIdentificationUnique) {
         if !matches!(
             machine_identification_unique.machine_identification,
             BufferV1::MACHINE_IDENTIFICATION
