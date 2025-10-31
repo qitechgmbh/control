@@ -28,6 +28,7 @@ export function Laser1ControlPage() {
   const targetDiameter = state?.laser_state?.target_diameter ?? 0;
   const lowerTolerance = state?.laser_state?.lower_tolerance ?? 0;
   const higherTolerance = state?.laser_state?.higher_tolerance ?? 0;
+
   return (
     <Page>
       <ControlGrid columns={2}>

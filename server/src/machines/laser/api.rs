@@ -52,6 +52,10 @@ pub struct LaserState {
     pub lower_tolerance: f64,
     /// target diameter in mm
     pub target_diameter: f64,
+    /// tolerance bool
+    pub in_tolerance: bool,
+    /// auto stop on out of tolerance bool
+    pub auto_stop_on_out_of_tolerance: bool,
 }
 
 pub enum LaserEvents {
@@ -91,6 +95,7 @@ enum Mutation {
     SetTargetDiameter(f64),
     SetLowerTolerance(f64),
     SetHigherTolerance(f64),
+    SetAutoStopOnOutOfTolerance(bool),
 }
 
 impl NamespaceCacheingLogic<LaserEvents> for LaserMachineNamespace {
@@ -116,6 +121,9 @@ impl MachineApi for LaserMachine {
             }
             Mutation::SetTargetDiameter(target_diameter) => {
                 self.set_target_diameter(target_diameter);
+            }
+            Mutation::SetAutoStopOnOutOfTolerance(auto_stop_on_out_of_tolerance) => {
+                self.set_auto_stop_on_out_of_tolerance(auto_stop_on_out_of_tolerance);
             }
         }
         Ok(())
