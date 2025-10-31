@@ -109,7 +109,7 @@ export function EditValue({
   type FormSchema = z.infer<typeof formSchema>;
 
   const form = useForm<FormSchema>({
-    resolver: zodResolver<FormSchema>(formSchema),
+    resolver: zodResolver(formSchema),
     values: { value: value ?? defaultOrZero },
     defaultValues: { value: defaultValue },
     mode: "all",
