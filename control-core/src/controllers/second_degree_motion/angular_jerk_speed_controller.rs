@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use uom::si::{
+use units::{
     angular_acceleration::radian_per_second_squared,
     angular_jerk::radian_per_second_cubed,
     angular_velocity::radian_per_second,
@@ -23,7 +23,7 @@ use super::jerk_speed_controller::JerkSpeedController;
 ///
 /// # Example
 /// ```ignore
-/// use uom::si::{
+/// use units::{
 ///     angular_velocity::revolution_per_minute,
 ///     angular_acceleration::revolution_per_minute_per_second,
 ///     angular_jerk::revolution_per_minute_per_second_squared,
@@ -65,7 +65,7 @@ impl AngularJerkSpeedController {
     ///
     /// # Example
     /// ```ignore
-    /// use uom::si::{
+    /// use units::{
     ///     angular_velocity::revolution_per_minute,
     ///     angular_acceleration::revolution_per_minute_per_second,
     ///     angular_jerk::revolution_per_minute_per_second_squared,
@@ -127,7 +127,7 @@ impl AngularJerkSpeedController {
     ///
     /// # Example
     /// ```ignore
-    /// use uom::si::{
+    /// use units::{
     ///     angular_velocity::revolution_per_minute,
     ///     angular_acceleration::revolution_per_minute_per_second,
     ///     angular_jerk::revolution_per_minute_per_second_squared,
@@ -185,7 +185,7 @@ impl AngularJerkSpeedController {
     /// # Example
     /// ```ignore
     /// use std::time::Instant;
-    /// use uom::si::{angular_velocity::revolution_per_minute, f64::AngularVelocity};
+    /// use units::{angular_velocity::revolution_per_minute, f64::AngularVelocity};
     ///
     /// let mut controller = AngularJerkSpeedController::new_simple(/* ... */);
     /// let target = AngularVelocity::new::<revolution_per_minute>(1500.0);

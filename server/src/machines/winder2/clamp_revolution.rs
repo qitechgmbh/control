@@ -1,4 +1,5 @@
-use uom::si::{angle::revolution, f64::Angle};
+use units::angle::revolution;
+use units::f64::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Clamping {
@@ -24,7 +25,7 @@ pub enum Clamping {
 /// # Examples
 ///
 /// ```ignore
-/// use uom::si::{angle::revolution, f64::Angle};
+/// units::angle::{revolution, Angle};
 ///
 /// let value = Angle::new::<revolution>(0.15);
 /// let min = Angle::new::<revolution>(0.1);

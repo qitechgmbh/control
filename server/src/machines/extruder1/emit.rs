@@ -15,14 +15,13 @@ use control_core::socketio::event::BuildEvent;
 #[cfg(not(feature = "mock-machine"))]
 use control_core::socketio::namespace::NamespaceCacheingLogic;
 #[cfg(not(feature = "mock-machine"))]
-use uom::si::{angular_velocity::revolution_per_minute, thermodynamic_temperature::degree_celsius};
-
+use units::angular_velocity::AngularVelocity;
 #[cfg(not(feature = "mock-machine"))]
-use uom::si::angular_velocity::AngularVelocity;
+use units::pressure::{Pressure, bar};
 #[cfg(not(feature = "mock-machine"))]
-use uom::si::pressure::{Pressure, bar};
+use units::thermodynamic_temperature::ThermodynamicTemperature;
 #[cfg(not(feature = "mock-machine"))]
-use uom::si::thermodynamic_temperature::ThermodynamicTemperature;
+use units::{angular_velocity::revolution_per_minute, thermodynamic_temperature::degree_celsius};
 
 #[cfg(not(feature = "mock-machine"))]
 impl ExtruderV2 {

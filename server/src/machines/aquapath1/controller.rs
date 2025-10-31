@@ -1,4 +1,3 @@
-use crate::machines::aquapath1::VolumeRate;
 use crate::machines::aquapath1::{Flow, Temperature};
 use control_core::controllers::pid::PidController;
 use ethercat_hal::io::encoder_input::EncoderInput;
@@ -7,9 +6,9 @@ use ethercat_hal::io::{
 };
 use std::time::{Duration, Instant};
 
-use uom::si::f64::ThermodynamicTemperature;
-use uom::si::thermodynamic_temperature::degree_celsius;
-use uom::si::volume_rate::liter_per_minute;
+use units::f64::{ThermodynamicTemperature, VolumeRate};
+use units::thermodynamic_temperature::degree_celsius;
+use units::volume_rate::liter_per_minute;
 #[derive(Debug)]
 
 pub struct Controller {

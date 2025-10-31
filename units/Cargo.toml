@@ -1,0 +1,11 @@
+[package]
+name = "units"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.86"
+
+[lints]
+workspace = true
+
+[dependencies]
+uom = { version = "0.37.0", default-features = false, features = [ "f64" ] }

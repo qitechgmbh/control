@@ -18,7 +18,7 @@ pub mod mock;
 mod winder2_imports {
     pub use super::api::SpoolAutomaticActionMode;
     pub use std::time::Instant;
-    pub use uom::si::f64::Length;
+    pub use units::f64::Length;
 }
 
 #[cfg(not(feature = "mock-machine"))]
@@ -44,11 +44,11 @@ mod winder2_imports {
     };
     pub use smol::lock::RwLock;
     pub use std::{fmt::Debug, sync::Weak, time::Instant};
-    pub use uom::si::f64::Length;
+    pub use units::f64::Length;
 
     pub use crate::machines::{MACHINE_WINDER_V1, VENDOR_QITECH, buffer1::BufferV1};
-    pub use uom::ConstZero;
-    pub use uom::si::{length::meter, length::millimeter, velocity::meter_per_second};
+    pub use units::ConstZero;
+    pub use units::{length::meter, length::millimeter, velocity::meter_per_second};
 }
 
 pub use winder2_imports::*;
@@ -64,9 +64,9 @@ pub struct SpoolAutomaticAction {
 impl Default for SpoolAutomaticAction {
     fn default() -> Self {
         SpoolAutomaticAction {
-            progress: Length::new::<uom::si::length::meter>(0.0),
+            progress: Length::new::<meter>(0.0),
             progress_last_check: Instant::now(),
-            target_length: Length::new::<uom::si::length::meter>(0.0),
+            target_length: Length::new::<meter>(0.0),
             mode: SpoolAutomaticActionMode::default(),
         }
     }
@@ -404,7 +404,6 @@ impl std::fmt::Display for Winder2 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use uom::si::{f64::Length, length::millimeter};
 
     #[test]
     fn test_validate_traverse_limits() {

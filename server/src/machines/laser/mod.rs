@@ -10,7 +10,8 @@ use control_core::{
 use control_core_derive::Machine;
 use smol::lock::RwLock;
 use std::{sync::Arc, time::Instant};
-use uom::si::{f64::Length, length::millimeter};
+use units::f64::*;
+use units::length::millimeter;
 
 pub mod act;
 pub mod api;

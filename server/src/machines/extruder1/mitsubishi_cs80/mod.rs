@@ -6,12 +6,10 @@ use control_core::modbus::{
 use ethercat_hal::io::serial_interface::SerialInterface;
 use serde::Serialize;
 use std::time::{Duration, Instant};
-use uom::si::{
-    electric_current::centiampere,
-    electric_potential::centivolt,
-    f64::{AngularVelocity, ElectricCurrent, ElectricPotential, Frequency},
-    frequency::centihertz,
-};
+use units::electric_current::centiampere;
+use units::electric_potential::centivolt;
+use units::f64::*;
+use units::frequency::centihertz;
 
 /// Specifies all System environment Variables
 /// Register addresses are calculated as follows: Register-value 40002 -> address: 40002-40001 -> actual address in request:0x1

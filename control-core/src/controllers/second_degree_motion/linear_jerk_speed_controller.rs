@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use uom::si::{
+use units::{
     acceleration::meter_per_second_squared,
     f64::{Acceleration, Jerk, Velocity},
     jerk::meter_per_second_cubed,
@@ -23,7 +23,7 @@ use super::jerk_speed_controller::JerkSpeedController;
 ///
 /// # Example
 /// ```ignore
-/// use uom::si::{
+/// use units::{
 ///     velocity::meter_per_second,
 ///     acceleration::meter_per_second_squared,
 ///     jerk::meter_per_second_cubed,
@@ -65,7 +65,7 @@ impl LinearJerkSpeedController {
     ///
     /// # Example
     /// ```ignore
-    /// use uom::si::{
+    /// use units::{
     ///     velocity::meter_per_second,
     ///     acceleration::meter_per_second_squared,
     ///     jerk::meter_per_second_cubed,
@@ -127,7 +127,7 @@ impl LinearJerkSpeedController {
     ///
     /// # Example
     /// ```ignore
-    /// use uom::si::{
+    /// use units::{
     ///     velocity::meter_per_second,
     ///     acceleration::meter_per_second_squared,
     ///     jerk::meter_per_second_cubed,

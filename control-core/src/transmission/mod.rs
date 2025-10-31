@@ -1,4 +1,4 @@
-use uom::si::{
+use units::{
     angle::radian,
     angular_velocity::radian_per_second,
     f64::{Angle, AngularVelocity, Length, Velocity},

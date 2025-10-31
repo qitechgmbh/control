@@ -5,8 +5,8 @@ use crate::serial::{devices::laser::Laser, registry::SERIAL_DEVICE_REGISTRY};
 use super::{LaserMachine, LaserTarget, api::LaserMachineNamespace};
 use anyhow::Error;
 use control_core::machines::new::{MachineNewHardware, MachineNewTrait};
-use uom::ConstZero;
-use uom::si::{f64::Length, length::millimeter};
+use units::ConstZero;
+use units::length::{Length, millimeter};
 
 impl MachineNewTrait for LaserMachine {
     fn new(

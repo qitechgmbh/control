@@ -1,14 +1,10 @@
 use control_core::converters::angle_converter::{AngleConverter, AngleConverterUom};
 use euclid::Point2D;
-use uom::{
-    ConstZero,
-    si::{
-        angle::radian,
-        f64::{Angle, Length},
-        length::centimeter,
-        ratio::ratio,
-    },
-};
+use units::ConstZero;
+use units::angle::radian;
+use units::f64::*;
+use units::length::centimeter;
+use units::ratio::ratio;
 
 /// The "tension" of the filament is not linear regarding the angle of the tension arm since it moves in an angular motion.
 ///
@@ -148,7 +144,8 @@ impl FilamentTensionCalculator {
 #[cfg(test)]
 mod tests {
     use textplots::{Chart, Plot, Shape};
-    use uom::si::angle::degree;
+
+    use units::angle::degree;
 
     use super::*;
 

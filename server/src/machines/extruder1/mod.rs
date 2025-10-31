@@ -7,10 +7,11 @@ use control_core::machines::identification::{MachineIdentification, MachineIdent
 use control_core_derive::Machine;
 use serde::{Deserialize, Serialize};
 #[cfg(not(feature = "mock-machine"))]
-use uom::si::electric_current::ampere;
+use units::electric_current::ampere;
 #[cfg(not(feature = "mock-machine"))]
-use uom::si::electric_potential::volt;
-use uom::si::{f64::ThermodynamicTemperature, thermodynamic_temperature::degree_celsius};
+use units::electric_potential::volt;
+use units::f64::*;
+use units::thermodynamic_temperature::degree_celsius;
 
 #[cfg(not(feature = "mock-machine"))]
 use crate::machines::{
