@@ -292,7 +292,8 @@ impl Winder2 {
                 spool_required_meters: self.spool_automatic_action.target_length.get::<meter>(),
                 spool_automatic_action_mode: self.spool_automatic_action.mode.clone(),
             },
-            connected_machine_state: self.connected_buffer.to_state(),
+            connected_buffer_state: self.connected_buffer.to_state(),
+            connected_laser_state: self.connected_laser.to_state(),
         }
     }
 
@@ -552,6 +553,8 @@ impl Winder2 {
         self.connected_laser.reverse_connect();
 
         self.emit_state();
+
+        tracing::info!("Laser should be connected now. {}", self.connected_laser.to_state().is_available);
     }
 
     /// disconnect laser

@@ -30,6 +30,7 @@ impl<T: 'static, U: Any + 'static> Downcast<Arc<Mutex<T>>> for Arc<Mutex<U>> {
                 Ok(arc)
             }
         } else {
+            tracing::info!("Downcast Failed");
             Err(anyhow!("[{}::downcast] Downcast failed", module_path!()))
         }
     }
