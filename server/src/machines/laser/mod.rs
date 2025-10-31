@@ -1,10 +1,12 @@
 use crate::{
-    machines::{MACHINE_LASER_V1, VENDOR_QITECH},
+    machines::{MACHINE_LASER_V1, VENDOR_QITECH, winder2::Winder2},
     serial::devices::laser::Laser,
 };
 use api::{LaserEvents, LaserMachineNamespace, LaserState, LiveValuesEvent, StateEvent};
+#[cfg(not(feature = "mock-machine"))]
+use control_core::machines::connection::CrossConnectableMachine;
 use control_core::{
-    machines::identification::{MachineIdentification, MachineIdentificationUnique},
+    machines::{connection::MachineCrossConnection, identification::{MachineIdentification, MachineIdentificationUnique}},
     socketio::namespace::NamespaceCacheingLogic,
 };
 use control_core_derive::Machine;
@@ -33,12 +35,22 @@ pub struct LaserMachine {
     y_diameter: Option<Length>,
     roundness: Option<f64>,
 
-    //laser target configuration
+    // laser target configuration
     laser_target: LaserTarget,
+
+    // machine connections
+    pub connected_winder: MachineCrossConnection<LaserMachine, Winder2>,
 
     /// Will be initialized as false and set to true by emit_state
     /// This way we can signal to the client that the first state emission is a default state
     emitted_default_state: bool,
+}
+
+#[cfg(not(feature = "mock-machine"))]
+impl CrossConnectableMachine<LaserMachine, Winder2> for LaserMachine {
+    fn get_cross_connection(&mut self) -> &mut MachineCrossConnection<LaserMachine, Winder2> {
+        &mut self.connected_winder
+    }
 }
 
 impl LaserMachine {
@@ -155,4 +167,43 @@ pub struct LaserTarget {
     diameter: Length,
     lower_tolerance: Length,
     higher_tolerance: Length,
+}
+
+impl LaserMachine {
+    /// Connecting/Disconnecting machine
+    /// set connected winder
+    pub fn set_connected_winder(
+        &mut self,
+        machine_identification_unique: MachineIdentificationUnique,
+    ) {
+        if !matches!(
+            machine_identification_unique.machine_identification,
+            Winder2::MACHINE_IDENTIFICATION
+        ) {
+            return;
+        }
+
+        self.connected_winder
+            .set_connected_machine(&machine_identification_unique);
+
+        self.emit_state();
+
+        self.connected_winder.reverse_connect();
+    }
+
+    /// disconnect winder
+    pub fn disconnect_winder(
+        &mut self,
+        machine_identification_unique: MachineIdentificationUnique,
+    ) {
+        if !matches!(
+            machine_identification_unique.machine_identification,
+            Winder2::MACHINE_IDENTIFICATION
+        ) {
+            return;
+        }
+
+        self.connected_winder.disconnect();
+        self.emit_state();
+    }
 }

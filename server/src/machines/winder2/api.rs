@@ -136,10 +136,12 @@ pub enum Mutation {
     SetMode(Mode),
 
     // Connected Machine
-    SetConnectedMachine(MachineIdentificationUnique),
+    SetConnectedBuffer(MachineIdentificationUnique),
+    SetConnectedLaser(MachineIdentificationUnique),
 
     // Disconnect Machine
-    DisconnectMachine(MachineIdentificationUnique),
+    DisconnectBuffer(MachineIdentificationUnique),
+    DisconnectLaser(MachineIdentificationUnique),
 }
 
 #[derive(Serialize, Debug, Clone, Default)]
@@ -363,11 +365,17 @@ impl MachineApi for Winder2 {
             Mutation::SetSpoolAutomaticAction(mode) => self.set_spool_automatic_mode(mode),
             Mutation::ResetSpoolProgress => self.stop_or_pull_spool_reset(Instant::now()),
             Mutation::ZeroTensionArmAngle => self.tension_arm_zero(),
-            Mutation::SetConnectedMachine(machine_identification_unique) => {
+            Mutation::SetConnectedBuffer(machine_identification_unique) => {
                 self.set_connected_buffer(machine_identification_unique)
             }
-            Mutation::DisconnectMachine(machine_identification_unique) => {
+            Mutation::DisconnectBuffer(machine_identification_unique) => {
                 self.disconnect_buffer(machine_identification_unique)
+            }
+            Mutation::SetConnectedLaser(machine_identification_unique) => {
+                self.set_connected_laser(machine_identification_unique)
+            }
+            Mutation::DisconnectLaser(machine_identification_unique) => {
+                self.disconnect_laser(machine_identification_unique)
             }
         }
         Ok(())

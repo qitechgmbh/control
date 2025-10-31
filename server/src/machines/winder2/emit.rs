@@ -532,4 +532,43 @@ impl Winder2 {
 
         self.emit_state();
     }
+
+    /// set connected laser
+    pub fn set_connected_laser(
+        &mut self,
+        machine_identification_unique: MachineIdentificationUnique,
+    ) {
+        use crate::machines::laser::LaserMachine;
+
+        if !matches!(
+            machine_identification_unique.machine_identification,
+            LaserMachine::MACHINE_IDENTIFICATION
+        ) {
+            return;
+        }
+
+        self.connected_laser
+            .set_connected_machine(&machine_identification_unique);
+        self.connected_laser.reverse_connect();
+
+        self.emit_state();
+    }
+
+    /// disconnect laser
+    pub fn disconnect_laser(
+        &mut self,
+        machine_identification_unique: MachineIdentificationUnique,
+    ) {
+        if !matches!(
+            machine_identification_unique.machine_identification,
+            BufferV1::MACHINE_IDENTIFICATION
+        ) {
+            return;
+        }
+
+        self.connected_laser.reverse_disconnect();
+        self.connected_laser.disconnect();
+
+        self.emit_state();
+    }
 }

@@ -53,6 +53,9 @@ mod winder2_imports {
 
 pub use winder2_imports::*;
 
+#[cfg(not(feature = "mock-machine"))]
+use crate::machines::laser::LaserMachine;
+
 #[derive(Debug)]
 pub struct SpoolAutomaticAction {
     pub progress: Length,
@@ -96,6 +99,7 @@ pub struct Winder2 {
 
     // connected machines
     pub connected_buffer: MachineCrossConnection<Winder2, BufferV1>,
+    pub connected_laser: MachineCrossConnection<Winder2, LaserMachine>,
 
     // mode
     pub mode: Winder2Mode,
@@ -122,6 +126,13 @@ pub struct Winder2 {
 impl CrossConnectableMachine<Winder2, BufferV1> for Winder2 {
     fn get_cross_connection(&mut self) -> &mut MachineCrossConnection<Winder2, BufferV1> {
         &mut self.connected_buffer
+    }
+}
+
+#[cfg(not(feature = "mock-machine"))]
+impl CrossConnectableMachine<Winder2, LaserMachine> for Winder2 {
+    fn get_cross_connection(&mut self) -> &mut MachineCrossConnection<Winder2, LaserMachine> {
+        &mut self.connected_laser
     }
 }
 

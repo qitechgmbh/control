@@ -247,6 +247,10 @@ impl MachineNewTrait for Winder2 {
                     params.machine_manager.clone(),
                     &params.get_machine_identification_unique(),
                 ),
+                connected_laser: MachineCrossConnection::new(
+                    params.machine_manager.clone(),
+                    &params.get_machine_identification_unique(),
+                ),
             };
 
             // initalize events
