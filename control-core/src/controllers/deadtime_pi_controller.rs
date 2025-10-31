@@ -70,6 +70,8 @@ impl TimeAgnosticDeadTimePiController {
     }
 
     pub fn update(&mut self, error: f64, t: Instant) -> f64 {
+        let kp = self.kp / 10000.0;
+        let ki = self.ki / 10000.0;
         let signal = match self.last {
             // First update
             None => {
@@ -79,7 +81,7 @@ impl TimeAgnosticDeadTimePiController {
                 self.ei = 0.0;
 
                 // Proportional + Integral
-                let signal = self.kp * ep + self.ki * self.ei;
+                let signal = kp * ep + ki * self.ei;
 
                 // Save state
                 self.ep = ep;
@@ -103,7 +105,7 @@ impl TimeAgnosticDeadTimePiController {
                 self.ei += error * dt;
 
                 // Proportional + Integral
-                let signal = self.kp * ep + self.ki * self.ei;
+                let signal = kp * ep + ki * self.ei;
 
                 // Save state
                 self.ep = ep;

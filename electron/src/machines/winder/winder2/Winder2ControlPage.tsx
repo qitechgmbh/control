@@ -29,7 +29,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { getWinder2TraverseMax } from "./winder2Config";
-import { MachineSelector } from "@/components/MachineConnectionDropdown";
 
 export function Winder2ControlPage() {
   const [showResetConfirmDialog, setShowResetConfirmDialog] = useState(false);
@@ -274,11 +273,6 @@ export function Winder2ControlPage() {
                   children: "Diameter",
                   icon: "lu:Sun",
                   disabled: !state?.connected_laser_state.is_available,
-                },
-                DiameterNoPid: {
-                  children: "DiameterNoPid",
-                  icon: "lu:Sun",
-                  disabled: !state?.connected_laser_state.is_available || true,
                 },
               }}
               onChange={setPullerRegulationMode}

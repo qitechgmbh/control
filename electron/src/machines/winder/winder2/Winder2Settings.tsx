@@ -379,9 +379,9 @@ export function Winder2SettingPage() {
               value={state?.pi_settings?.kp}
               defaultValue={defaultState?.pi_settings?.kp}
               min={0}
-              max={10000}
+              max={1000}
               step={0.001}
-              renderValue={(v) => roundToDecimals(v, 2)}
+              renderValue={(v) => roundToDecimals(v, 3)}
               onChange={setSpeedPiKp}
               title="Speed P KP"
             />
@@ -391,9 +391,9 @@ export function Winder2SettingPage() {
               value={state?.pi_settings?.ki}
               defaultValue={defaultState?.pi_settings?.ki}
               min={0}
-              max={10000}
+              max={1000}
               step={0.001}
-              renderValue={(v) => roundToDecimals(v, 2)}
+              renderValue={(v) => roundToDecimals(v, 3)}
               onChange={setSpeedPiKi}
               title="Speed P KI"
             />

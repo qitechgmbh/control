@@ -295,11 +295,10 @@ impl Winder2 {
                 spool_automatic_action_mode: self.spool_automatic_action.mode.clone(),
             },
             connected_machine_state: self.connected_buffer.to_state(),
+            connected_laser_state: self.connected_laser.to_state(),
             pi_settings: PiSettingsStates {
-                speed: PiSettings {
                     kp: self.puller_speed_controller.p_dead_controller.get_kp(),
                     ki: self.puller_speed_controller.p_dead_controller.get_ki(),
-                },
             },
         }
     }

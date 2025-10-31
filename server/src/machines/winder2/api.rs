@@ -42,8 +42,6 @@ mod winder2_imports {
         },
     };
 
-    pub use crate::machines::laser::api::PidSettingsStates;
-    pub use crate::machines::laser::api::PidSettings;
     pub use control_core_derive::BuildEvent;
     pub use serde::{Deserialize, Serialize};
     pub use serde_json::Value;
@@ -184,8 +182,10 @@ pub struct StateEvent {
     pub tension_arm_state: TensionArmState,
     /// spool speed controller state
     pub spool_speed_controller_state: SpoolSpeedControllerState,
-    /// connected machine state
+    /// connected machine state (Buffer)
     pub connected_machine_state: MachineCrossConnectionState,
+    /// connected laser state
+    pub connected_laser_state: MachineCrossConnectionState,
     /// pi settings
     pub pi_settings: PiSettingsStates,
 }
@@ -303,7 +303,8 @@ pub struct PiSettings {
 
 #[derive(Serialize, Debug, Clone)]
 pub struct PiSettingsStates {
-    pub speed: PiSettings,
+    pub kp: f64,
+    pub ki: f64,
 }
 
 pub enum Winder2Events {

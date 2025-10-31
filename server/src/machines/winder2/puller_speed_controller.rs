@@ -1,5 +1,4 @@
 use std::{
-    f64::consts::PI,
     time::{Duration, Instant},
 };
 
@@ -154,14 +153,6 @@ impl PullerSpeedController {
                     -diameter_speed
                 }
             }
-            PullerRegulationMode::DiameterNoPid => {
-                let diameter_speed = self.calculate_target_speed();
-                if self.forward {
-                    diameter_speed
-                } else {
-                    -diameter_speed
-                }
-            }
         };
 
         // Apply gear ratio multiplier
@@ -173,20 +164,6 @@ impl PullerSpeedController {
 
         self.last_speed = speed;
         speed
-    }
-
-    fn calculate_target_speed(&self) -> Velocity {
-        //
-        // Q_measured = (PI*d^2 / 4) * v
-        // v_new = (4 * Q) / PI * d^2
-        //
-        if self.measured_diameter < Length::new::<millimeter>(0.1) {
-            return self.target_speed;
-        }
-        let q_meas =
-            (PI * (self.measured_diameter * self.measured_diameter) / 4.0) * self.last_speed;
-
-        (4.0 * q_meas) / (PI * (self.target_diameter * self.target_diameter))
     }
 
     fn speed_from_diameter(&mut self, now: Instant) -> Velocity {
@@ -257,5 +234,4 @@ pub enum PullerRegulationMode {
     #[default]
     Speed,
     Diameter,
-    DiameterNoPid,
 }

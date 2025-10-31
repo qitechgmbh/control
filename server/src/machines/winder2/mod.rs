@@ -46,7 +46,6 @@ mod winder2_imports {
     pub use std::{fmt::Debug, sync::Weak, time::Instant};
     pub use uom::si::f64::Length;
 
-    pub use crate::machines::{MACHINE_WINDER_V1, VENDOR_QITECH, buffer1::BufferV1};
     pub use uom::ConstZero;
     pub use uom::si::{length::meter, length::millimeter, velocity::meter_per_second};
     pub use crate::machines::{buffer1::BufferV1, laser::LaserMachine, winder2::api::PiSettings, MACHINE_WINDER_V1, VENDOR_QITECH};
@@ -127,16 +126,13 @@ impl CrossConnectableMachine<Winder2, BufferV1> for Winder2 {
     }
 }
 
-<<<<<<< HEAD
 #[cfg(not(feature = "mock-machine"))]
-=======
 impl CrossConnectableMachine<Winder2, LaserMachine> for Winder2 {
     fn get_cross_connection(&mut self) -> &mut MachineCrossConnection<Winder2, LaserMachine> {
         &mut self.connected_laser
     }
 }
 
->>>>>>> 4bca956e (Fixed merge issues.)
 impl Winder2 {
     pub const MACHINE_IDENTIFICATION: MachineIdentification = MachineIdentification {
         vendor: VENDOR_QITECH,
@@ -347,7 +343,7 @@ impl Winder2 {
         // Implement pid to controll speed of winder
         self.puller_speed_controller
             .p_dead_controller
-            .configure(settings.kp / 10000.0, settings.ki);
+            .configure(settings.kp, settings.ki);
 
         self.emit_state();
     }

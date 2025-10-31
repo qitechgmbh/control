@@ -42,7 +42,6 @@ export const liveValuesEventDataSchema = z.object({
 export const pullerRegulationSchema = z.enum([
   "Speed",
   "Diameter",
-  "DiameterNoPid",
 ]);
 export type PullerRegulation = z.infer<typeof pullerRegulationSchema>;
 
