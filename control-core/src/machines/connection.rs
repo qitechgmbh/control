@@ -135,15 +135,15 @@ impl<F: CrossConnectableMachine<F, T>, T: CrossConnectableMachine<T, F>>
                 match machine_manager.get(&machine_identification_unique) {
                     Some(c) => c,
                     None => {
-                        tracing::info!("Fail at first slot.");
+                        tracing::error!("Machine not  found.");
                         return;
                     }
                 };
 
-            let slot: Arc<Mutex<MachineSlot<T>>> = match Downcast::downcast(&slot) {
+            let slot: Arc<Mutex<MachineSlot<T>>> = match Downcast::<Arc<Mutex<MachineSlot<T>>>>::downcast(&slot) {
                 Ok(s) => s,
                 Err(_) => {
-                    tracing::info!("Failed at second slot.");
+                    tracing::error!("Downcast failed");
                     return;
                 }
             };

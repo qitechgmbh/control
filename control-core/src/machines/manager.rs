@@ -76,8 +76,11 @@ impl MachineManager {
                     None => continue, // Skip this group if empty
                 };
 
-            let slot =
-                self.get_or_create_slot(socket_queue_tx.clone(), machine_identification_unique);
+            let slot = self.get_or_create_slot(
+                socket_queue_tx.clone(),
+                machine_identification_unique,
+                false,
+            );
             let mut slot = slot.lock_blocking();
 
             // create the machine
@@ -100,14 +103,20 @@ impl MachineManager {
         &mut self,
         socket_queue_tx: Sender<(SocketRef, Arc<GenericEvent>)>,
         machine_identification: MachineIdentificationUnique,
+        is_serial: bool,
     ) -> Arc<Mutex<MachineSlotGeneric>> {
         if let Some(slot) = self.get(&machine_identification) {
             return slot;
         }
 
         let slot = Arc::new(Mutex::new(MachineSlot::new(socket_queue_tx)));
-        self.ethercat_machines
-            .insert(machine_identification, slot.clone());
+        if is_serial {
+            self.serial_machines
+                .insert(machine_identification, slot.clone());
+        } else {
+            self.ethercat_machines
+                .insert(machine_identification, slot.clone());
+        }
 
         return slot;
     }
@@ -143,7 +152,7 @@ impl MachineManager {
             .machine_identification_unique
             .clone();
 
-        let slot = self.get_or_create_slot(socket_queue_tx.clone(), machine_identification);
+        let slot = self.get_or_create_slot(socket_queue_tx.clone(), machine_identification, true);
         let mut slot = slot.lock_blocking();
 
         let new_machine = machine_registry.new_machine(&MachineNewParams {
