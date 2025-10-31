@@ -359,20 +359,22 @@ export function Winder2SettingPage() {
           </Label>
         </ControlCard>
         <ControlCard title="Buffer Connection">
-          <MachineSelector
-            machines={filteredBufferMachines}
-            selectedMachine={selectedBuffer}
-            connectedMachineState={state?.connected_buffer_state}
-            setConnectedMachine={setConnectedBuffer}
-            clearConnectedMachine={() => {
-              if (!selectedBuffer) return;
-              setConnectedBuffer({
-                machine_identification: { vendor: 0, machine: 0 },
-                serial: 0,
-              });
-              disconnectBuffer(selectedBuffer.machine_identification_unique);
-            }}
-          />
+          <Label label="Associated Buffer">
+            <MachineSelector
+              machines={filteredBufferMachines}
+              selectedMachine={selectedBuffer}
+              connectedMachineState={state?.connected_buffer_state}
+              setConnectedMachine={setConnectedBuffer}
+              clearConnectedMachine={() => {
+                if (!selectedBuffer) return;
+                setConnectedBuffer({
+                  machine_identification: { vendor: 0, machine: 0 },
+                  serial: 0,
+                });
+                disconnectBuffer(selectedBuffer.machine_identification_unique);
+              }}
+            />
+          </Label>
         </ControlCard>
         <ControlCard title="Diameter-Based Winder Control">
           <Label label="Associated Laser">

@@ -651,7 +651,7 @@ export function useWinder2() {
 
   // General Helper functions
   const machines = useMachines();
-  // Laser (0x0008)
+  // Laser (0x0006)
   const {
     filteredMachines: filteredLaserMachines,
     selectedMachine: selectedLaser,
@@ -659,11 +659,11 @@ export function useWinder2() {
     machines,
     state,
     vendor: VENDOR_QITECH,
-    machineType: 0x0008,
+    machineType: 0x0006,
     connectedStateKey: "connected_laser_state",
   });
 
-  // Buffer (for example, 0x0007)
+  // Buffer (0x0008)
   const {
     filteredMachines: filteredBufferMachines,
     selectedMachine: selectedBuffer,
@@ -671,7 +671,7 @@ export function useWinder2() {
     machines,
     state,
     vendor: VENDOR_QITECH,
-    machineType: 0x0007,
+    machineType: 0x0008,
     connectedStateKey: "connected_buffer_state",
   });
 

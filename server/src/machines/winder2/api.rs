@@ -179,8 +179,10 @@ pub struct StateEvent {
     pub tension_arm_state: TensionArmState,
     /// spool speed controller state
     pub spool_speed_controller_state: SpoolSpeedControllerState,
-    /// connected machine state
-    pub connected_machine_state: MachineCrossConnectionState,
+    /// connected buffer state
+    pub connected_buffer_state: MachineCrossConnectionState,
+    /// connected laser state
+    pub connected_laser_state: MachineCrossConnectionState,
 }
 
 #[derive(Serialize, Debug, Clone, Default)]
