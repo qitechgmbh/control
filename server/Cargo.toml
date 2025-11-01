@@ -50,7 +50,7 @@ tracing-subscriber = { version = "0.3.20", features = [
 tracing-opentelemetry = { version = "0.31.0", optional = true }
 opentelemetry = { version = "0.30.0", optional = true }
 opentelemetry_sdk = { version = "0.30.0", optional = true }
-opentelemetry-otlp = { version = "0.30.0", features = [
+opentelemetry-otlp = { version = "0.31.0", features = [
     "grpc-tonic",
 ], optional = true }
 tonic = { version = "0.13.1", optional = true }
