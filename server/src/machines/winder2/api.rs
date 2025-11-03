@@ -376,4 +376,59 @@ impl MachineApi for Winder2 {
     fn api_event_namespace(&mut self) -> Arc<Mutex<Namespace>> {
         self.namespace.namespace.clone()
     }
+
+    fn api_query(&mut self, fields: &[String]) -> Result<Value, anyhow::Error> {
+        use control_core::uom_extensions::velocity::meter_per_minute;
+        use uom::si::angle::degree;
+        use uom::si::angular_velocity::revolution_per_minute;
+        use uom::si::length::{meter, millimeter};
+
+        let angle_deg = self.tension_arm.get_angle().get::<degree>();
+
+        // Wrap [270;<360] to [-90; 0]
+        let angle_deg = if angle_deg >= 270.0 {
+            angle_deg - 360.0
+        } else {
+            angle_deg
+        };
+
+        // Calculate puller speed from current motor steps
+        let steps_per_second = self.puller.get_speed();
+        let angular_velocity = self
+            .puller_speed_controller
+            .converter
+            .steps_to_angular_velocity(steps_per_second as f64);
+        let motor_speed = self
+            .puller_speed_controller
+            .angular_velocity_to_speed(angular_velocity);
+        let puller_speed = motor_speed / self.puller_speed_controller.get_gear_ratio().multiplier();
+
+        // Calculate spool RPM
+        let spool_rpm = self
+            .spool_step_converter
+            .steps_to_angular_velocity(self.spool.get_speed() as f64)
+            .get::<revolution_per_minute>()
+            .abs();
+
+        let live_values = LiveValuesEvent {
+            traverse_position: self
+                .traverse_controller
+                .get_current_position()
+                .map(|x| x.get::<millimeter>()),
+            puller_speed: puller_speed.get::<meter_per_minute>().abs(),
+            spool_rpm,
+            tension_arm_angle: angle_deg,
+            spool_progress: self.spool_automatic_action.progress.get::<meter>(),
+        };
+
+        let state = self.build_state_event();
+
+        let full_data = serde_json::json!({
+            "live_values": live_values,
+            "state": state,
+        });
+
+        // Filter based on requested fields
+        crate::rest::field_filter::filter_fields(full_data, fields)
+    }
 }

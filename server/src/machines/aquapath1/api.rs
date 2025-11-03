@@ -152,4 +152,71 @@ impl MachineApi for AquaPathV1 {
     fn api_event_namespace(&mut self) -> Arc<Mutex<Namespace>> {
         self.namespace.namespace.clone()
     }
+
+    fn api_query(&mut self, fields: &[String]) -> Result<Value, anyhow::Error> {
+        use uom::si::thermodynamic_temperature::degree_celsius;
+        use uom::si::volume_rate::liter_per_minute;
+
+        let live_values = LiveValuesEvent {
+            front_flow: self.front_controller.current_flow.get::<liter_per_minute>(),
+            back_flow: self.back_controller.current_flow.get::<liter_per_minute>(),
+            front_temperature: self
+                .front_controller
+                .current_temperature
+                .get::<degree_celsius>(),
+            back_temperature: self
+                .back_controller
+                .current_temperature
+                .get::<degree_celsius>(),
+            front_temp_reservoir: self.front_controller.temp_reservoir.get::<degree_celsius>(),
+            back_temp_reservoir: self.back_controller.temp_reservoir.get::<degree_celsius>(),
+        };
+
+        let state = StateEvent {
+            is_default_state: false,
+            mode_state: ModeState {
+                mode: self.mode.clone(),
+            },
+            temperature_states: TempStates {
+                front: TempState {
+                    temperature: self
+                        .front_controller
+                        .current_temperature
+                        .get::<degree_celsius>(),
+                    target_temperature: self
+                        .front_controller
+                        .target_temperature
+                        .get::<degree_celsius>(),
+                },
+                back: TempState {
+                    temperature: self
+                        .back_controller
+                        .current_temperature
+                        .get::<degree_celsius>(),
+                    target_temperature: self
+                        .back_controller
+                        .target_temperature
+                        .get::<degree_celsius>(),
+                },
+            },
+            flow_states: FlowStates {
+                front: FlowState {
+                    flow: self.front_controller.current_flow.get::<liter_per_minute>(),
+                    should_flow: self.front_controller.should_pump,
+                },
+                back: FlowState {
+                    flow: self.back_controller.current_flow.get::<liter_per_minute>(),
+                    should_flow: self.back_controller.should_pump,
+                },
+            },
+        };
+
+        let full_data = serde_json::json!({
+            "live_values": live_values,
+            "state": state,
+        });
+
+        // Filter based on requested fields
+        crate::rest::field_filter::filter_fields(full_data, fields)
+    }
 }

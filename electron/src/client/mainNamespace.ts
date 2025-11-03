@@ -16,6 +16,7 @@ import {
 } from "@/machines/types";
 import { useRef } from "react";
 import { rustEnumSchema } from "@/lib/types";
+import { readOnlyApiStatusSchema, ReadOnlyApiStatus } from "./readOnlyApi";
 
 // Update the EthercatDevicesEventData schema
 export const ethercatDevicesEventDataSchema = rustEnumSchema({
@@ -79,11 +80,21 @@ export type EthercatInterfaceDiscoveryEvent = z.infer<
   typeof ethercatInterfaceDiscoveryEventSchema
 >;
 
+// Read-only API status event
+export const readOnlyApiStatusEventSchema = eventSchema(
+  readOnlyApiStatusSchema,
+);
+
+export type ReadOnlyApiStatusEvent = z.infer<
+  typeof readOnlyApiStatusEventSchema
+>;
+
 // Update the main namespace store schema
 export const mainNamespaceStoreSchema = z.object({
   ethercatDevices: ethercatDevicesEventSchema.nullable(),
   machines: machinesEventSchema.nullable(),
   ethercatInterfaceDiscovery: ethercatInterfaceDiscoveryEventSchema.nullable(),
+  readOnlyApiStatus: readOnlyApiStatusEventSchema.nullable(),
 });
 
 export type MainNamespaceStore = z.infer<typeof mainNamespaceStoreSchema>;
@@ -93,6 +104,7 @@ export const createMainNamespaceStore = (): StoreApi<MainNamespaceStore> => {
     ethercatDevices: null,
     machines: null,
     ethercatInterfaceDiscovery: null,
+    readOnlyApiStatus: null,
   }));
 };
 
@@ -130,6 +142,13 @@ export function mainMessageHandler(
         store.setState((state) => ({
           ...state,
           ethercatInterfaceDiscovery: validatedEvent,
+        }));
+      } else if (eventName === "ReadOnlyApiStatusEvent") {
+        const validatedEvent = readOnlyApiStatusEventSchema.parse(event);
+        console.log("ReadOnlyApiStatusEvent", validatedEvent);
+        store.setState((state) => ({
+          ...state,
+          readOnlyApiStatus: validatedEvent,
         }));
       } else {
         handleUnhandledEventError(eventName);

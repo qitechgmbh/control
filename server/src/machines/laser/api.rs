@@ -124,4 +124,25 @@ impl MachineApi for LaserMachine {
     fn api_event_namespace(&mut self) -> Arc<Mutex<Namespace>> {
         self.namespace.namespace.clone()
     }
+
+    fn api_query(&mut self, fields: &[String]) -> Result<Value, anyhow::Error> {
+        use uom::si::length::millimeter;
+
+        let live_values = LiveValuesEvent {
+            diameter: self.diameter.get::<millimeter>(),
+            x_diameter: self.x_diameter.map(|d| d.get::<millimeter>()),
+            y_diameter: self.y_diameter.map(|d| d.get::<millimeter>()),
+            roundness: self.roundness,
+        };
+
+        let state = self.build_state_event();
+
+        let full_data = serde_json::json!({
+            "live_values": live_values,
+            "state": state,
+        });
+
+        // Filter based on requested fields
+        crate::rest::field_filter::filter_fields(full_data, fields)
+    }
 }

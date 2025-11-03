@@ -15,6 +15,12 @@ import {
 } from "@/machines/properties";
 import { IconText } from "@/components/IconText";
 import { MachinesEventData, useMainNamespace } from "@/client/mainNamespace";
+import { setReadOnlyApiEnabled } from "@/client/readOnlyApi";
+import { ControlCard } from "@/control/ControlCard";
+import { Label } from "@/control/Label";
+import { SelectionGroupBoolean } from "@/control/SelectionGroup";
+import { useState } from "react";
+import { toast } from "sonner";
 
 export const columns: ColumnDef<
   NonNullable<MachinesEventData>["machines"][number]
@@ -75,7 +81,8 @@ export const columns: ColumnDef<
 ];
 
 export function MachinesPage() {
-  const { machines } = useMainNamespace();
+  const { machines, readOnlyApiStatus } = useMainNamespace();
+  const [isLoading, setIsLoading] = useState(false);
 
   const data = useMemo(() => {
     return machines?.data?.machines || [];
@@ -87,12 +94,64 @@ export function MachinesPage() {
     getCoreRowModel: getCoreRowModel(),
   });
 
+  const handleReadOnlyApiToggle = async (enabled: boolean) => {
+    setIsLoading(true);
+    try {
+      await setReadOnlyApiEnabled(enabled);
+      toast.success(
+        enabled
+          ? "Read-only API enabled successfully"
+          : "Read-only API disabled successfully",
+      );
+    } catch (error) {
+      console.error("Failed to set read-only API:", error);
+      toast.error("Failed to update read-only API setting");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <Page>
       <SectionTitle title="Machines">
         <RefreshIndicator ts={machines?.ts} />
       </SectionTitle>
       <MyTable table={table} key={data.toString()} />
+
+      <SectionTitle title="API Configuration" />
+      <ControlCard title="Read-Only API">
+        <Label label="Enable Remote Monitoring">
+          <SelectionGroupBoolean
+            value={readOnlyApiStatus?.data?.enabled ?? false}
+            disabled={isLoading}
+            loading={isLoading}
+            optionFalse={{
+              children: "Disabled",
+              icon: "lu:Lock",
+            }}
+            optionTrue={{
+              children: "Enabled",
+              icon: "lu:LockOpen",
+            }}
+            onChange={handleReadOnlyApiToggle}
+          />
+        </Label>
+        <p className="text-sm text-gray-600">
+          When enabled, external applications can query machine state and live
+          data through the read-only API endpoint (/api/v1/machine/query). You
+          must specify which fields to retrieve (e.g.,
+          "live_values.temperature", "state.mode_state"). Mutations are not
+          allowed through this endpoint.
+        </p>
+        <div className="mt-2 rounded bg-gray-50 p-3">
+          <p className="text-xs font-semibold text-gray-700">Example Usage:</p>
+          <code className="mt-1 block text-xs text-gray-600">
+            POST /api/v1/machine/query
+            <br />
+            {`{ "machine_identification_unique": {...}, "fields": ["live_values.spool_rpm", "state.mode_state"] }`}
+          </code>
+        </div>
+      </ControlCard>
     </Page>
   );
 }

@@ -64,4 +64,24 @@ impl MachineApi for Winder2 {
     fn api_event_namespace(&mut self) -> Arc<Mutex<Namespace>> {
         self.namespace.namespace.clone()
     }
+
+    fn api_query(&mut self, fields: &[String]) -> Result<Value, anyhow::Error> {
+        let live_values = super::super::api::LiveValuesEvent {
+            traverse_position: Some(0.0),
+            puller_speed: 0.0,
+            spool_rpm: 0.0,
+            tension_arm_angle: 0.0,
+            spool_progress: 0.0,
+        };
+
+        let state = self.build_state_event();
+
+        let full_data = serde_json::json!({
+            "live_values": live_values,
+            "state": state,
+        });
+
+        // Filter based on requested fields
+        crate::rest::field_filter::filter_fields(full_data, fields)
+    }
 }

@@ -15,6 +15,7 @@ use serde_json::Value;
 use smol::lock::Mutex;
 use std::{sync::Arc, time::Duration};
 use tracing::instrument;
+use uom::si::frequency::hertz;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub enum Mode {
@@ -125,5 +126,40 @@ impl MachineApi for MockMachine {
 
     fn api_event_namespace(&mut self) -> Arc<Mutex<Namespace>> {
         self.namespace.namespace.clone()
+    }
+
+    fn api_query(&mut self, fields: &[String]) -> Result<Value, anyhow::Error> {
+        let now = std::time::Instant::now();
+        let t = now.duration_since(self.t_0).as_secs_f64();
+
+        let amplitude1 = (2.0 * std::f64::consts::PI * self.frequency1.get::<hertz>() * t).sin();
+        let amplitude2 = (2.0 * std::f64::consts::PI * self.frequency2.get::<hertz>() * t).sin();
+        let amplitude3 = (2.0 * std::f64::consts::PI * self.frequency3.get::<hertz>() * t).sin();
+
+        let live_values = LiveValuesEvent {
+            amplitude_sum: amplitude1 + amplitude2 + amplitude3,
+            amplitude1,
+            amplitude2,
+            amplitude3,
+        };
+
+        use uom::si::frequency::millihertz;
+        let state = StateEvent {
+            is_default_state: false, // Always false for queries
+            frequency1: self.frequency1.get::<millihertz>(),
+            frequency2: self.frequency2.get::<millihertz>(),
+            frequency3: self.frequency3.get::<millihertz>(),
+            mode_state: ModeState {
+                mode: self.mode.clone(),
+            },
+        };
+
+        let full_data = serde_json::json!({
+            "live_values": live_values,
+            "state": state,
+        });
+
+        // Filter based on requested fields
+        crate::rest::field_filter::filter_fields(full_data, fields)
     }
 }

@@ -15,6 +15,7 @@ use socketioxide::SocketIo;
 use socketioxide::extract::SocketRef;
 use std::collections::HashMap;
 use std::sync::Arc;
+use std::sync::atomic::AtomicBool;
 
 pub struct SocketioSetup {
     pub socketio: RwLock<Option<SocketIo>>,
@@ -33,6 +34,8 @@ pub struct AppState {
     pub serial_setup: Arc<RwLock<SerialSetup>>,
     pub machines: Arc<RwLock<MachineManager>>,
     pub performance_metrics: Arc<RwLock<EthercatPerformanceMetrics>>,
+    /// Read-only API enable/disable flag
+    pub read_only_api_enabled: Arc<AtomicBool>,
 }
 
 pub type Machines =
@@ -88,6 +91,7 @@ impl AppState {
             })),
             machines: Arc::new(RwLock::new(MachineManager::new())),
             performance_metrics: Arc::new(RwLock::new(EthercatPerformanceMetrics::new())),
+            read_only_api_enabled: Arc::new(AtomicBool::new(false)),
         }
     }
 

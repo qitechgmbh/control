@@ -282,7 +282,7 @@ impl MachineApi for ExtruderV2 {
             Mutation::SetExtruderMode(mode) => self.set_mode_state(mode),
             Mutation::SetInverterRotationDirection(forward) => self.set_rotation_state(forward),
             Mutation::SetInverterRegulation(uses_rpm) => self.set_regulation(uses_rpm),
-            Mutation::SetInverterTargetPressure(bar) => self.set_target_pressure(bar),
+            Mutation::SetInverterTargetPressure(pressure) => self.set_target_pressure(pressure),
             Mutation::SetInverterTargetRpm(rpm) => self.set_target_rpm(rpm),
             Mutation::ResetInverter(_) => self.reset_inverter(),
 
@@ -318,5 +318,81 @@ impl MachineApi for ExtruderV2 {
 
     fn api_event_namespace(&mut self) -> Arc<Mutex<Namespace>> {
         self.namespace.namespace.clone()
+    }
+
+    fn api_query(&mut self, fields: &[String]) -> Result<Value, anyhow::Error> {
+        use uom::si::electric_current::ampere;
+        use uom::si::electric_potential::volt;
+        use uom::si::pressure::bar;
+        use uom::si::thermodynamic_temperature::degree_celsius;
+
+        let combined_power = {
+            let motor_status = &self.screw_speed_controller.inverter.motor_status;
+            let voltage = motor_status.voltage.get::<volt>();
+            let current = motor_status.current.get::<ampere>();
+            let motor_power = voltage * current;
+            motor_power
+                + self
+                    .temperature_controller_nozzle
+                    .get_heating_element_wattage()
+                + self
+                    .temperature_controller_front
+                    .get_heating_element_wattage()
+                + self
+                    .temperature_controller_back
+                    .get_heating_element_wattage()
+                + self
+                    .temperature_controller_middle
+                    .get_heating_element_wattage()
+        };
+
+        let live_values = LiveValuesEvent {
+            motor_status: self.screw_speed_controller.get_motor_status().into(),
+            pressure: self.screw_speed_controller.get_pressure().get::<bar>(),
+            nozzle_temperature: self
+                .temperature_controller_nozzle
+                .heating
+                .temperature
+                .get::<degree_celsius>(),
+            front_temperature: self
+                .temperature_controller_front
+                .heating
+                .temperature
+                .get::<degree_celsius>(),
+            back_temperature: self
+                .temperature_controller_back
+                .heating
+                .temperature
+                .get::<degree_celsius>(),
+            middle_temperature: self
+                .temperature_controller_middle
+                .heating
+                .temperature
+                .get::<degree_celsius>(),
+            nozzle_power: self
+                .temperature_controller_nozzle
+                .get_heating_element_wattage(),
+            front_power: self
+                .temperature_controller_front
+                .get_heating_element_wattage(),
+            back_power: self
+                .temperature_controller_back
+                .get_heating_element_wattage(),
+            middle_power: self
+                .temperature_controller_middle
+                .get_heating_element_wattage(),
+            combined_power,
+            total_energy_kwh: self.total_energy_kwh,
+        };
+
+        let state = self.build_state_event();
+
+        let full_data = serde_json::json!({
+            "live_values": live_values,
+            "state": state,
+        });
+
+        // Filter based on requested fields
+        crate::rest::field_filter::filter_fields(full_data, fields)
     }
 }

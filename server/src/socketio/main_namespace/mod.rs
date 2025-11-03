@@ -7,6 +7,7 @@ use control_core::socketio::{
 use ethercat_devices_event::EthercatDevicesEvent;
 use ethercat_interface_discovery_event::EthercatInterfaceDiscoveryEvent;
 use machines_event::MachinesEvent;
+use read_only_api_status_event::ReadOnlyApiStatusEvent;
 use smol::channel::Sender;
 use socketioxide::extract::SocketRef;
 use tracing::instrument;
@@ -14,6 +15,7 @@ use tracing::instrument;
 pub mod ethercat_devices_event;
 pub mod ethercat_interface_discovery_event;
 pub mod machines_event;
+pub mod read_only_api_status_event;
 
 pub struct MainRoom {
     pub namespace: Namespace,
@@ -44,6 +46,7 @@ pub enum MainNamespaceEvents {
     MachinesEvent(Event<MachinesEvent>),
     EthercatDevicesEvent(Event<EthercatDevicesEvent>),
     EthercatInterfaceDiscoveryEvent(Event<EthercatInterfaceDiscoveryEvent>),
+    ReadOnlyApiStatusEvent(Event<ReadOnlyApiStatusEvent>),
 }
 
 impl CacheableEvents<Self> for MainNamespaceEvents {
@@ -52,6 +55,7 @@ impl CacheableEvents<Self> for MainNamespaceEvents {
             Self::EthercatDevicesEvent(event) => event.into(),
             Self::EthercatInterfaceDiscoveryEvent(event) => event.into(),
             Self::MachinesEvent(event) => event.into(),
+            Self::ReadOnlyApiStatusEvent(event) => event.into(),
         }
     }
 
@@ -60,6 +64,7 @@ impl CacheableEvents<Self> for MainNamespaceEvents {
             Self::EthercatDevicesEvent(_) => cache_one_event(),
             Self::EthercatInterfaceDiscoveryEvent(_) => cache_one_event(),
             Self::MachinesEvent(_) => cache_one_event(),
+            Self::ReadOnlyApiStatusEvent(_) => cache_one_event(),
         }
     }
 }

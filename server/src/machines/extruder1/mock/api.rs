@@ -48,4 +48,31 @@ impl MachineApi for ExtruderV2 {
     fn api_event_namespace(&mut self) -> Arc<Mutex<Namespace>> {
         self.namespace.namespace.clone()
     }
+
+    fn api_query(&mut self, fields: &[String]) -> Result<serde_json::Value, anyhow::Error> {
+        let live_values = super::super::api::LiveValuesEvent {
+            motor_status: Default::default(),
+            pressure: 0.0,
+            nozzle_temperature: 0.0,
+            front_temperature: 0.0,
+            back_temperature: 0.0,
+            middle_temperature: 0.0,
+            nozzle_power: 0.0,
+            front_power: 0.0,
+            back_power: 0.0,
+            middle_power: 0.0,
+            combined_power: 0.0,
+            total_energy_kwh: 0.0,
+        };
+
+        let state = self.build_state_event();
+
+        let full_data = serde_json::json!({
+            "live_values": live_values,
+            "state": state,
+        });
+
+        // Filter based on requested fields
+        crate::rest::field_filter::filter_fields(full_data, fields)
+    }
 }
