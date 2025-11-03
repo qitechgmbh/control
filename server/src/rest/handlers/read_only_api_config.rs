@@ -35,7 +35,7 @@ pub async fn post_read_only_api_config(
     // Emit event to notify clients
     let event_builder = ReadOnlyApiStatusEventBuilder();
     let event = event_builder.build(app_state.clone());
-    let mut namespaces = app_state.socketio_setup.namespaces.write_blocking();
+    let mut namespaces = app_state.socketio_setup.namespaces.write().await;
     namespaces
         .main_namespace
         .emit(MainNamespaceEvents::ReadOnlyApiStatusEvent(event));
