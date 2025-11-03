@@ -47,7 +47,6 @@ fn main() {
 
     smol::block_on(async {
         loop {
-
             // lets the async runtime decide which future to run next
             select! {
                 res = ethercat_fut => {
