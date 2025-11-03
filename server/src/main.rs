@@ -32,10 +32,10 @@ fn main() {
     tracing::info!("Tracing initialized successfully");
     init_panic_handling();
 
+    let app_state = Arc::new(AppState::new());
+
     #[cfg(feature = "mock-machine")]
     init_mock(app_state.clone()).expect("Failed to initialize mock machines");
-
-    let app_state = Arc::new(AppState::new());
 
     let _ = start_api_thread(app_state.clone());
     let mut socketio_fut = start_socketio_queue(app_state.clone()).fuse();
