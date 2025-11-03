@@ -105,7 +105,8 @@ export function MachinesPage() {
       );
     } catch (error) {
       console.error("Failed to set read-only API:", error);
-      toast.error("Failed to update read-only API setting");
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      toast.error(`Failed to update read-only API setting: ${errorMessage}`);
     } finally {
       setIsLoading(false);
     }

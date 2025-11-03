@@ -26,6 +26,11 @@ pub async fn post_read_only_api_config(
     State(app_state): State<Arc<AppState>>,
     Json(body): Json<ReadOnlyApiConfigBody>,
 ) -> Response<Body> {
+    tracing::info!(
+        "Received read-only API config request: enabled={}",
+        body.enabled
+    );
+
     app_state
         .read_only_api_enabled
         .store(body.enabled, std::sync::atomic::Ordering::Relaxed);
@@ -35,10 +40,16 @@ pub async fn post_read_only_api_config(
     // Emit event to notify clients
     let event_builder = ReadOnlyApiStatusEventBuilder();
     let event = event_builder.build(app_state.clone());
+
+    tracing::debug!("Attempting to acquire write lock on namespaces");
     let mut namespaces = app_state.socketio_setup.namespaces.write().await;
+    tracing::debug!("Successfully acquired write lock on namespaces");
+
     namespaces
         .main_namespace
         .emit(MainNamespaceEvents::ReadOnlyApiStatusEvent(event));
+
+    tracing::info!("Read-only API event emitted successfully");
 
     ResponseUtil::ok(MutationResponse::success())
 }
