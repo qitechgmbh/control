@@ -5,7 +5,7 @@ use mock::init::init_mock;
 #[cfg(feature = "mock-machine")]
 pub mod mock;
 
-use crate::panic::init_panic_handling;
+use crate::{ethercat::setup::setup_loop, panic::init_panic_handling};
 use app_state::AppState;
 use ethercat::{
     ethercat_discovery_info::{send_ethercat_discovering, send_ethercat_found},
@@ -52,6 +52,17 @@ fn main() {
                         {
                             send_ethercat_found(app_state.clone(), &interface).await;
                             let _ = start_loop_thread(&interface, app_state.clone());
+                            //let res = smol::block_on(async { setup_loop(&interface, app_state.clone()).await });
+                            //match res {
+                            //    Ok(_) => tracing::info!("Successfully initialized EtherCAT network"),
+                            //    Err(e) => {
+                            //        tracing::error!(
+                            //            "[{}::init_loop] Failed to initialize EtherCAT network \n{:?}",
+                            //            module_path!(),
+                            //            e
+                            //        );
+                            //    }
+                            //}
                         },
                         Err(_) => (),
                     };
