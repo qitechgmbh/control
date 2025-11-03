@@ -3,6 +3,7 @@ import { z } from "zod";
 // Schema for read-only API status event
 export const readOnlyApiStatusSchema = z.object({
   enabled: z.boolean(),
+  ip_addresses: z.array(z.string()),
 });
 
 export type ReadOnlyApiStatus = z.infer<typeof readOnlyApiStatusSchema>;
@@ -41,6 +42,7 @@ export interface ReadOnlyApiConfigRequest {
 
 export interface ReadOnlyApiStatusResponse {
   enabled: boolean;
+  ip_addresses: string[];
 }
 
 export interface MutationResponse {
@@ -54,7 +56,7 @@ const API_BASE_URL = "http://localhost:3001";
 // API functions
 export async function setReadOnlyApiEnabled(enabled: boolean): Promise<void> {
   console.log(`[ReadOnlyAPI] Setting read-only API to: ${enabled}`);
-  
+
   const response = await fetch(`${API_BASE_URL}/api/v1/read_only_api/config`, {
     method: "POST",
     headers: {
@@ -63,22 +65,26 @@ export async function setReadOnlyApiEnabled(enabled: boolean): Promise<void> {
     body: JSON.stringify({ enabled } as ReadOnlyApiConfigRequest),
   });
 
-  console.log(`[ReadOnlyAPI] Response status: ${response.status} ${response.statusText}`);
+  console.log(
+    `[ReadOnlyAPI] Response status: ${response.status} ${response.statusText}`,
+  );
 
   if (!response.ok) {
     const errorText = await response.text();
     console.error(`[ReadOnlyAPI] HTTP Error Response:`, errorText);
-    throw new Error(`Failed to set read-only API: ${response.statusText} - ${errorText}`);
+    throw new Error(
+      `Failed to set read-only API: ${response.statusText} - ${errorText}`,
+    );
   }
 
   const data: MutationResponse = await response.json();
   console.log(`[ReadOnlyAPI] Response data:`, data);
-  
+
   if (!data.success) {
     console.error(`[ReadOnlyAPI] API returned success=false:`, data.error);
     throw new Error(data.error || "Failed to set read-only API");
   }
-  
+
   console.log(`[ReadOnlyAPI] Successfully set read-only API to: ${enabled}`);
 }
 

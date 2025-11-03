@@ -38,6 +38,9 @@ axum = { version = "0.8.6", features = ["macros"] }
 # serial
 serialport = "4.7.3"
 
+# network
+local-ip-address = "0.6.3"
+
 #tracing
 tracing = { version = "0.1.41", features = ["attributes"] }
 tracing-journald = { version = "0.3.1", optional = true }

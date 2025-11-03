@@ -105,7 +105,8 @@ export function MachinesPage() {
       );
     } catch (error) {
       console.error("Failed to set read-only API:", error);
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       toast.error(`Failed to update read-only API setting: ${errorMessage}`);
     } finally {
       setIsLoading(false);
@@ -137,6 +138,22 @@ export function MachinesPage() {
             onChange={handleReadOnlyApiToggle}
           />
         </Label>
+        {readOnlyApiStatus?.data?.enabled &&
+          readOnlyApiStatus?.data?.ip_addresses &&
+          readOnlyApiStatus.data.ip_addresses.length > 0 && (
+            <div className="mt-3 rounded bg-blue-50 p-3">
+              <p className="text-xs font-semibold text-blue-900">
+                API Available At:
+              </p>
+              <div className="mt-1 space-y-1">
+                {readOnlyApiStatus.data.ip_addresses.map((ip) => (
+                  <code key={ip} className="block text-xs text-blue-700">
+                    http://{ip}:3001/api/v1/machine/query
+                  </code>
+                ))}
+              </div>
+            </div>
+          )}
         <p className="text-sm text-gray-600">
           When enabled, external applications can query machine state and live
           data through the read-only API endpoint (/api/v1/machine/query). You

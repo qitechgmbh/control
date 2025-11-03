@@ -19,6 +19,27 @@ pub struct ReadOnlyApiConfigBody {
 #[derive(Debug, Serialize)]
 pub struct ReadOnlyApiStatusResponse {
     pub enabled: bool,
+    pub ip_addresses: Vec<String>,
+}
+
+/// Get all local IP addresses (excluding loopback)
+fn get_local_ip_addresses() -> Vec<String> {
+    use local_ip_address::list_afinet_netifas;
+
+    let mut ip_addresses = Vec::new();
+
+    if let Ok(network_interfaces) = list_afinet_netifas() {
+        for (_name, ip) in network_interfaces {
+            // Only include non-loopback addresses
+            if !ip.is_loopback() {
+                ip_addresses.push(ip.to_string());
+            }
+        }
+    }
+
+    // Sort for consistent ordering
+    ip_addresses.sort();
+    ip_addresses
 }
 
 #[axum::debug_handler]
@@ -60,5 +81,10 @@ pub async fn get_read_only_api_status(State(app_state): State<Arc<AppState>>) ->
         .read_only_api_enabled
         .load(std::sync::atomic::Ordering::Relaxed);
 
-    ResponseUtil::ok(ReadOnlyApiStatusResponse { enabled })
+    let ip_addresses = get_local_ip_addresses();
+
+    ResponseUtil::ok(ReadOnlyApiStatusResponse {
+        enabled,
+        ip_addresses,
+    })
 }
