@@ -41,12 +41,12 @@ fn main() {
     let mut socketio_fut = start_socketio_queue(app_state.clone()).fuse();
     let mut ethercat_fut = start_interface_discovery().fuse();
     let mut serial_fut = start_serial_discovery().fuse();
+    let _ = start_loop_thread(app_state.clone());
 
     smol::block_on(async { send_ethercat_discovering(app_state.clone()).await });
 
     smol::block_on(async {
         loop {
-            let _ = start_loop_thread(app_state.clone());
 
             // lets the async runtime decide which future to run next
             select! {
