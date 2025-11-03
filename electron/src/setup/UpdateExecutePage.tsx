@@ -3,6 +3,7 @@ import { Page } from "@/components/Page";
 import { SectionTitle } from "@/components/SectionTitle";
 import { Terminal } from "@/components/Terminal";
 import { TouchButton } from "@/components/touch/TouchButton";
+import { UpdateProgressBar } from "@/components/UpdateProgressBar";
 import { updateExecute, updateCancelWithStore } from "@/helpers/update_helpers";
 import { useUpdateStore } from "@/stores/updateStore";
 import { useSearch } from "@tanstack/react-router";
@@ -18,12 +19,15 @@ export function UpdateExecutePage() {
     isUpdating,
     terminalLines,
     currentUpdateInfo,
+    steps,
+    overallProgress,
     setUpdateInfo,
     startUpdate,
     stopUpdate,
     addTerminalLine,
     clearTerminalLines,
     resetUpdateState,
+    initializeSteps,
   } = useUpdateStore();
 
   // Set update info from search params when component mounts or search changes
@@ -50,6 +54,7 @@ export function UpdateExecutePage() {
       commit: search.commit,
     };
 
+    initializeSteps();
     startUpdate();
     // Perhaps we just need to clear the logs ?
     const res = await updateExecute(updateInfo, addTerminalLine);
@@ -136,6 +141,15 @@ export function UpdateExecutePage() {
             </div>
           </div>
         </Alert>
+      )}
+
+      {/* Progress Bar */}
+      {isUpdating && (
+        <UpdateProgressBar
+          steps={steps}
+          overallProgress={overallProgress}
+          className="mb-4"
+        />
       )}
 
       <Terminal
