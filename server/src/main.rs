@@ -38,10 +38,10 @@ fn main() {
     init_mock(app_state.clone()).expect("Failed to initialize mock machines");
 
     let _ = start_api_thread(app_state.clone());
+    let _ = start_loop_thread(app_state.clone());
     let mut socketio_fut = start_socketio_queue(app_state.clone()).fuse();
     let mut ethercat_fut = start_interface_discovery().fuse();
     let mut serial_fut = start_serial_discovery().fuse();
-    let _ = start_loop_thread(app_state.clone());
 
     smol::block_on(async { send_ethercat_discovering(app_state.clone()).await });
 
@@ -56,7 +56,7 @@ fn main() {
                         Ok(interface) =>
                         {
                             tracing::info!("Calling setup_loop");
-                            let res = smol::block_on(async { setup_loop(&interface, app_state.clone()).await });
+                            let res = setup_loop(&interface, app_state.clone()).await;
                             match res {
                                 Ok(_) => tracing::info!("Successfully initialized EtherCAT network"),
                                 Err(e) => {
