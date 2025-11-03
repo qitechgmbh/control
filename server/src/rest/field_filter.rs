@@ -192,7 +192,7 @@ mod tests {
         });
 
         let fields = vec!["*".to_string()];
-        let result = filter_fields(data, &fields).unwrap();
+        let result = filter_fields(data.clone(), &fields).unwrap();
 
         assert_eq!(result, data);
     }

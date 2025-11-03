@@ -140,7 +140,7 @@ export function MachinesPage() {
           When enabled, external applications can query machine state and live
           data through the read-only API endpoint (/api/v1/machine/query). You
           must specify which fields to retrieve (e.g.,
-          "live_values.temperature", "state.mode_state"). Mutations are not
+          &quot;live_values.temperature&quot;, &quot;state.mode_state&quot;). Mutations are not
           allowed through this endpoint.
         </p>
         <div className="mt-2 rounded bg-gray-50 p-3">
