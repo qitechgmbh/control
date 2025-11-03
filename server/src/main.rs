@@ -32,6 +32,9 @@ fn main() {
     tracing::info!("Tracing initialized successfully");
     init_panic_handling();
 
+    #[cfg(feature = "mock-machine")]
+    init_mock(app_state.clone()).expect("Failed to initialize mock machines");
+
     let app_state = Arc::new(AppState::new());
 
     let _ = start_api_thread(app_state.clone());
@@ -43,6 +46,8 @@ fn main() {
 
     smol::block_on(async {
         loop {
+            let _ = start_loop_thread(app_state.clone());
+
             // lets the async runtime decide which future to run next
             select! {
                 res = ethercat_fut => {
@@ -50,19 +55,19 @@ fn main() {
                     match res {
                         Ok(interface) =>
                         {
+                            tracing::info!("Calling setup_loop");
+                            let res = smol::block_on(async { setup_loop(&interface, app_state.clone()).await });
+                            match res {
+                                Ok(_) => tracing::info!("Successfully initialized EtherCAT network"),
+                                Err(e) => {
+                                    tracing::error!(
+                                        "[{}::init_loop] Failed to initialize EtherCAT network \n{:?}",
+                                        module_path!(),
+                                        e
+                                    );
+                                }
+                            }
                             send_ethercat_found(app_state.clone(), &interface).await;
-                            let _ = start_loop_thread(&interface, app_state.clone());
-                            //let res = smol::block_on(async { setup_loop(&interface, app_state.clone()).await });
-                            //match res {
-                            //    Ok(_) => tracing::info!("Successfully initialized EtherCAT network"),
-                            //    Err(e) => {
-                            //        tracing::error!(
-                            //            "[{}::init_loop] Failed to initialize EtherCAT network \n{:?}",
-                            //            module_path!(),
-                            //            e
-                            //        );
-                            //    }
-                            //}
                         },
                         Err(_) => (),
                     };
