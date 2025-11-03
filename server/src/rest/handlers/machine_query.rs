@@ -10,18 +10,18 @@ use control_core::{
 use std::sync::Arc;
 
 #[axum::debug_handler]
-pub async fn get_machine_query(
+pub async fn post_machine_query(
     State(app_state): State<Arc<AppState>>,
     Json(body): Json<MachineQueryBody>,
 ) -> Response<Body> {
-    let result = _get_machine_query(State(app_state), Json(body)).await;
+    let result = _post_machine_query(State(app_state), Json(body)).await;
     match result {
         Ok(data) => ResponseUtil::ok(MachineQueryResponse::success(data)),
         Err(e) => ResponseUtilError::Error(e).into(),
     }
 }
 
-async fn _get_machine_query(
+async fn _post_machine_query(
     State(app_state): State<Arc<AppState>>,
     Json(body): Json<MachineQueryBody>,
 ) -> Result<serde_json::Value, anyhow::Error> {
@@ -50,7 +50,7 @@ async fn _get_machine_query(
         Some(slot) => slot,
         None => {
             return Err(anyhow::anyhow!(
-                "[{}::_get_machine_query] Machine not found",
+                "[{}::_post_machine_query] Machine not found",
                 module_path!()
             ));
         }
@@ -63,13 +63,13 @@ async fn _get_machine_query(
         MachineConnection::Connected(machine) => machine,
         MachineConnection::Disconnected => {
             return Err(anyhow::anyhow!(
-                "[{}::_get_machine_query] Machine is disconnected",
+                "[{}::_post_machine_query] Machine is disconnected",
                 module_path!(),
             ));
         }
         MachineConnection::Error(e) => {
             return Err(anyhow::anyhow!(
-                "[{}::_get_machine_query] Machine connection error: {}",
+                "[{}::_post_machine_query] Machine connection error: {}",
                 module_path!(),
                 e
             ));
@@ -90,7 +90,7 @@ async fn _get_machine_query(
     // Call api_query with the requested fields
     machine_guard.api_query(&body.fields).map_err(|e| {
         anyhow::anyhow!(
-            "[{}::_get_machine_query] Machine api_query error: {}",
+            "[{}::_post_machine_query] Machine api_query error: {}",
             module_path!(),
             e
         )

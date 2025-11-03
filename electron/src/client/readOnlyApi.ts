@@ -92,7 +92,7 @@ export async function queryMachineData(
   fields: string[],
 ): Promise<any> {
   const response = await fetch("/api/v1/machine/query", {
-    method: "GET",
+    method: "POST",
     headers: {
       "Content-Type": "application/json",
     },

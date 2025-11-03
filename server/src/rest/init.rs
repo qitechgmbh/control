@@ -7,7 +7,7 @@ use tower_http::trace::{DefaultMakeSpan, DefaultOnRequest, DefaultOnResponse, Tr
 use tracing::Level;
 
 use super::handlers::machine_mutation::post_machine_mutate;
-use super::handlers::machine_query::get_machine_query;
+use super::handlers::machine_query::post_machine_query;
 use super::handlers::read_only_api_config::{get_read_only_api_status, post_read_only_api_config};
 use super::handlers::write_machine_device_identification::post_write_machine_device_identification;
 use crate::app_state::AppState;
@@ -28,7 +28,7 @@ async fn init_api(app_state: Arc<AppState>) -> Result<()> {
             post(post_write_machine_device_identification),
         )
         .route("/api/v1/machine/mutate", post(post_machine_mutate))
-        .route("/api/v1/machine/query", get(get_machine_query))
+        .route("/api/v1/machine/query", post(post_machine_query))
         .route(
             "/api/v1/read_only_api/config",
             post(post_read_only_api_config),
