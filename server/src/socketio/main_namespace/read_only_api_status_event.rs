@@ -11,16 +11,17 @@ pub struct ReadOnlyApiStatusEvent {
     pub ip_addresses: Vec<String>,
 }
 
-/// Get all local IP addresses (excluding loopback)
+/// Get all local IPv4 addresses (excluding loopback)
 fn get_local_ip_addresses() -> Vec<String> {
     use local_ip_address::list_afinet_netifas;
+    use std::net::IpAddr;
 
     let mut ip_addresses = Vec::new();
 
     if let Ok(network_interfaces) = list_afinet_netifas() {
         for (_name, ip) in network_interfaces {
-            // Only include non-loopback addresses
-            if !ip.is_loopback() {
+            // Only include non-loopback IPv4 addresses
+            if !ip.is_loopback() && matches!(ip, IpAddr::V4(_)) {
                 ip_addresses.push(ip.to_string());
             }
         }
