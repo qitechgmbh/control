@@ -48,11 +48,14 @@ export interface MutationResponse {
   error?: string;
 }
 
+// Base URL for API requests
+const API_BASE_URL = "http://localhost:3001";
+
 // API functions
 export async function setReadOnlyApiEnabled(enabled: boolean): Promise<void> {
   console.log(`[ReadOnlyAPI] Setting read-only API to: ${enabled}`);
   
-  const response = await fetch("/api/v1/read_only_api/config", {
+  const response = await fetch(`${API_BASE_URL}/api/v1/read_only_api/config`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -80,7 +83,7 @@ export async function setReadOnlyApiEnabled(enabled: boolean): Promise<void> {
 }
 
 export async function getReadOnlyApiStatus(): Promise<boolean> {
-  const response = await fetch("/api/v1/read_only_api/status");
+  const response = await fetch(`${API_BASE_URL}/api/v1/read_only_api/status`);
 
   if (!response.ok) {
     throw new Error(
@@ -102,7 +105,7 @@ export async function queryMachineData(
   machineIdentification: MachineQueryRequest["machine_identification_unique"],
   fields: string[],
 ): Promise<any> {
-  const response = await fetch("/api/v1/machine/query", {
+  const response = await fetch(`${API_BASE_URL}/api/v1/machine/query`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
