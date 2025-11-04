@@ -60,7 +60,7 @@ fn main() {
                                 Ok(_) => tracing::info!("Successfully initialized EtherCAT network"),
                                 Err(e) => {
                                     tracing::error!(
-                                        "[{}::init_loop] Failed to initialize EtherCAT network \n{:?}",
+                                        "[{}::main] Failed to initialize EtherCAT network \n{:?}",
                                         module_path!(),
                                         e
                                     );
