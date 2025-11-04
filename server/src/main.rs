@@ -5,7 +5,7 @@ use mock::init::init_mock;
 #[cfg(feature = "mock-machine")]
 pub mod mock;
 
-use crate::panic::init_panic_handling;
+use crate::{ethercat::setup::setup_loop, panic::init_panic_handling};
 use app_state::AppState;
 use ethercat::{
     ethercat_discovery_info::{send_ethercat_discovering, send_ethercat_found},
@@ -34,7 +34,11 @@ fn main() {
 
     let app_state = Arc::new(AppState::new());
 
+    #[cfg(feature = "mock-machine")]
+    init_mock(app_state.clone()).expect("Failed to initialize mock machines");
+
     let _ = start_api_thread(app_state.clone());
+    let _ = start_loop_thread(app_state.clone());
     let mut socketio_fut = start_socketio_queue(app_state.clone()).fuse();
     let mut ethercat_fut = start_interface_discovery().fuse();
     let mut serial_fut = start_serial_discovery().fuse();
@@ -50,8 +54,19 @@ fn main() {
                     match res {
                         Ok(interface) =>
                         {
+                            tracing::info!("Calling setup_loop");
+                            let res = setup_loop(&interface, app_state.clone()).await;
+                            match res {
+                                Ok(_) => tracing::info!("Successfully initialized EtherCAT network"),
+                                Err(e) => {
+                                    tracing::error!(
+                                        "[{}::main] Failed to initialize EtherCAT network \n{:?}",
+                                        module_path!(),
+                                        e
+                                    );
+                                }
+                            }
                             send_ethercat_found(app_state.clone(), &interface).await;
-                            let _ = start_loop_thread(&interface, app_state.clone());
                         },
                         Err(_) => (),
                     };
