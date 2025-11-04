@@ -9,7 +9,7 @@ export const readOnlyApiStatusSchema = z.object({
 export type ReadOnlyApiStatus = z.infer<typeof readOnlyApiStatusSchema>;
 
 // API request/response types
-export interface MachineQueryRequest {
+export interface MachineEventRequest {
   machine_identification_unique: {
     machine_identification: {
       vendor: number;
@@ -18,25 +18,29 @@ export interface MachineQueryRequest {
     serial: number;
   };
   /**
-   * Fields to query from the machine. Use dot notation.
-   * Examples:
-   * - "live_values.temperature" - get only temperature
-   * - "live_values.spool_rpm" - get only spool RPM
-   * - "state.mode_state" - get only mode state
-   * - "live_values" - get all live values
-   * - "state" - get all state
-   * - "*" - get everything
+   * Optional event field specification.
+   * - undefined/null: returns all available events with all fields
+   * - { LiveValues: ["field1", "field2"], State: null }: returns LiveValues with specific fields and all State fields
+   * - { LiveValues: null, State: ["field1"] }: returns all LiveValues fields and specific State fields
+   * - { LiveValues: [], State: null }: returns no LiveValues, all State fields
+   * 
+   * Each event type appears at most once in the response.
    */
-  fields: string[];
+  events?: {
+    LiveValues?: string[];
+    State?: string[];
+  };
 }
 
-export interface MachineQueryResponse {
+export interface MachineEventResponse {
   success: boolean;
   error?: string;
-  data?: any; // The filtered data based on requested fields
-}
-
-export interface ReadOnlyApiConfigRequest {
+  data?: {
+    State?: any;
+    LiveValues?: any;
+    [key: string]: any;
+  };
+}export interface ReadOnlyApiConfigRequest {
   enabled: boolean;
 }
 
@@ -102,31 +106,35 @@ export async function getReadOnlyApiStatus(): Promise<boolean> {
 }
 
 /**
- * Query machine data through the read-only API
+ * Query machine events through the read-only API
  * @param machineIdentification - The machine to query
- * @param fields - Array of field paths to retrieve (e.g., ["live_values.temperature", "state.mode_state"])
- * @returns The filtered machine data
+ * @param events - Optional event field specification. If omitted, returns all events with all fields.
+ *                 Example: { LiveValues: ["temperature", "pressure"], State: null } returns specific LiveValues fields and all State fields
+ * @returns Object with event types as keys (e.g., { "State": {...}, "LiveValues": {...} })
  */
 export async function queryMachineData(
-  machineIdentification: MachineQueryRequest["machine_identification_unique"],
-  fields: string[],
+  machineIdentification: MachineEventRequest["machine_identification_unique"],
+  events?: {
+    LiveValues?: string[];
+    State?: string[];
+  },
 ): Promise<any> {
-  const response = await fetch(`${API_BASE_URL}/api/v1/machine/query`, {
+  const response = await fetch(`${API_BASE_URL}/api/v1/machine/event`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
       machine_identification_unique: machineIdentification,
-      fields,
-    } as MachineQueryRequest),
+      events,
+    } as MachineEventRequest),
   });
 
   if (!response.ok) {
     throw new Error(`Failed to query machine data: ${response.statusText}`);
   }
 
-  const data: MachineQueryResponse = await response.json();
+  const data: MachineEventResponse = await response.json();
   if (!data.success) {
     throw new Error(data.error || "Failed to query machine data");
   }

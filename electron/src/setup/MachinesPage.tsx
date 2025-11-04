@@ -148,25 +148,28 @@ export function MachinesPage() {
               <div className="mt-1 space-y-1">
                 {readOnlyApiStatus.data.ip_addresses.map((ip) => (
                   <code key={ip} className="block text-xs text-blue-700">
-                    http://{ip}:3001/api/v1/machine/query
+                    http://{ip}:3001/api/v1/machine/event
                   </code>
                 ))}
               </div>
             </div>
           )}
         <p className="text-sm text-gray-600">
-          When enabled, external applications can query machine state and live
-          data through the read-only API endpoint (/api/v1/machine/query). You
-          must specify which fields to retrieve (e.g.,
-          &quot;live_values.temperature&quot;, &quot;state.mode_state&quot;).
-          Mutations are not allowed through this endpoint.
+          When enabled, external applications can query machine events through
+          the read-only API endpoint (/api/v1/machine/event). You can specify
+          exactly which fields you want from each event type (LiveValues,
+          State). Mutations are not allowed through this endpoint.
         </p>
         <div className="mt-2 rounded bg-gray-50 p-3">
           <p className="text-xs font-semibold text-gray-700">Example Usage:</p>
           <code className="mt-1 block text-xs text-gray-600">
-            POST /api/v1/machine/query
+            POST /api/v1/machine/event
             <br />
-            {`{ "machine_identification_unique": {...}, "fields": ["live_values.spool_rpm", "state.mode_state"] }`}
+            {`{ "machine_identification_unique": {...}, "events": { "LiveValues": ["pressure", "nozzle_temperature"], "State": null } }`}
+            <br />
+            <span className="text-xs text-gray-500">
+              {`{ "LiveValues": { "pressure": 25.3, "nozzle_temperature": 180.5 }, "State": {...} }`}
+            </span>
           </code>
         </div>
       </ControlCard>

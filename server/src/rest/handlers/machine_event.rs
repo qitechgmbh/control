@@ -5,25 +5,25 @@ use crate::{
 use axum::{Json, body::Body, extract::State, http::Response};
 use control_core::{
     machines::connection::MachineConnection,
-    rest::mutation::{MachineQueryBody, MachineQueryResponse},
+    rest::mutation::{MachineEventBody, MachineEventResponse},
 };
 use std::sync::Arc;
 
 #[axum::debug_handler]
-pub async fn post_machine_query(
+pub async fn post_machine_event(
     State(app_state): State<Arc<AppState>>,
-    Json(body): Json<MachineQueryBody>,
+    Json(body): Json<MachineEventBody>,
 ) -> Response<Body> {
-    let result = _post_machine_query(State(app_state), Json(body)).await;
+    let result = _post_machine_event(State(app_state), Json(body)).await;
     match result {
-        Ok(data) => ResponseUtil::ok(MachineQueryResponse::success(data)),
+        Ok(data) => ResponseUtil::ok(MachineEventResponse::success(data)),
         Err(e) => ResponseUtilError::Error(e).into(),
     }
 }
 
-async fn _post_machine_query(
+async fn _post_machine_event(
     State(app_state): State<Arc<AppState>>,
-    Json(body): Json<MachineQueryBody>,
+    Json(body): Json<MachineEventBody>,
 ) -> Result<serde_json::Value, anyhow::Error> {
     // Check if read-only API is enabled
     let read_only_enabled = app_state
@@ -35,13 +35,6 @@ async fn _post_machine_query(
         ));
     }
 
-    // Validate that fields are specified
-    if body.fields.is_empty() {
-        return Err(anyhow::anyhow!(
-            "No fields specified. Please specify which fields to query (e.g., 'live_values.temperature', 'state.mode_state')"
-        ));
-    }
-
     // Get machine
     let machines = app_state.machines.read().await;
     let machine_slot = machines.get(&body.machine_identification_unique);
@@ -50,7 +43,7 @@ async fn _post_machine_query(
         Some(slot) => slot,
         None => {
             return Err(anyhow::anyhow!(
-                "[{}::_post_machine_query] Machine not found",
+                "[{}::_post_machine_event] Machine not found",
                 module_path!()
             ));
         }
@@ -63,13 +56,13 @@ async fn _post_machine_query(
         MachineConnection::Connected(machine) => machine,
         MachineConnection::Disconnected => {
             return Err(anyhow::anyhow!(
-                "[{}::_post_machine_query] Machine is disconnected",
+                "[{}::_post_machine_event] Machine is disconnected",
                 module_path!(),
             ));
         }
         MachineConnection::Error(e) => {
             return Err(anyhow::anyhow!(
-                "[{}::_post_machine_query] Machine connection error: {}",
+                "[{}::_post_machine_event] Machine connection error: {}",
                 module_path!(),
                 e
             ));
@@ -78,19 +71,19 @@ async fn _post_machine_query(
 
     // Log
     tracing::info!(
-        "Querying machine (read-only) machine={}",
+        "Querying machine events (read-only) machine={}",
         body.machine_identification_unique,
     );
-    let span = tracing::info_span!("machine_query", machine = %body.machine_identification_unique);
+    let span = tracing::info_span!("machine_event", machine = %body.machine_identification_unique);
     let _span = span.enter();
 
-    // Lock the machine and call api_query
+    // Lock the machine and call api_event
     let mut machine_guard = machine.lock().await;
 
-    // Call api_query with the requested fields
-    machine_guard.api_query(&body.fields).map_err(|e| {
+    // Call api_event with the requested event fields
+    machine_guard.api_event(body.events.as_ref()).map_err(|e| {
         anyhow::anyhow!(
-            "[{}::_post_machine_query] Machine api_query error: {}",
+            "[{}::_post_machine_event] Machine api_event error: {}",
             module_path!(),
             e
         )

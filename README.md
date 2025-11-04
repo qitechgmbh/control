@@ -80,6 +80,8 @@ We could combine the code of the frontend and backend using [Doxius](https://dio
 
   - [x] Example Winder V2
 
+- [x] [Read-Only API](./docs/read-only-api.md) - External access to machine data
+
 - [ ] Electron
 
   - Folder Structure
