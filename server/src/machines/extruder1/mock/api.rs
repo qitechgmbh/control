@@ -49,7 +49,10 @@ impl MachineApi for ExtruderV2 {
         self.namespace.namespace.clone()
     }
 
-    fn api_event(&mut self, events: Option<&control_core::rest::mutation::EventFields>) -> Result<serde_json::Value, anyhow::Error> {
+    fn api_event(
+        &mut self,
+        events: Option<&control_core::rest::mutation::EventFields>,
+    ) -> Result<serde_json::Value, anyhow::Error> {
         let live_values = super::super::api::LiveValuesEvent {
             motor_status: Default::default(),
             pressure: 0.0,
@@ -84,7 +87,10 @@ impl MachineApi for ExtruderV2 {
         // Add LiveValues if requested
         if include_live_values {
             let live_values_json = serde_json::to_value(live_values)?;
-            let filtered = crate::rest::event_filter::filter_event_fields(live_values_json, live_values_fields)?;
+            let filtered = crate::rest::event_filter::filter_event_fields(
+                live_values_json,
+                live_values_fields,
+            )?;
             if !filtered.is_null() {
                 result.insert("LiveValues".to_string(), filtered);
             }
@@ -93,7 +99,8 @@ impl MachineApi for ExtruderV2 {
         // Add State if requested
         if include_state {
             let state_json = serde_json::to_value(state)?;
-            let filtered = crate::rest::event_filter::filter_event_fields(state_json, state_fields)?;
+            let filtered =
+                crate::rest::event_filter::filter_event_fields(state_json, state_fields)?;
             if !filtered.is_null() {
                 result.insert("State".to_string(), filtered);
             }

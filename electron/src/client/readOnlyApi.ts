@@ -23,7 +23,7 @@ export interface MachineEventRequest {
    * - { LiveValues: ["field1", "field2"], State: null }: returns LiveValues with specific fields and all State fields
    * - { LiveValues: null, State: ["field1"] }: returns all LiveValues fields and specific State fields
    * - { LiveValues: [], State: null }: returns no LiveValues, all State fields
-   * 
+   *
    * Each event type appears at most once in the response.
    */
   events?: {
@@ -40,7 +40,8 @@ export interface MachineEventResponse {
     LiveValues?: any;
     [key: string]: any;
   };
-}export interface ReadOnlyApiConfigRequest {
+}
+export interface ReadOnlyApiConfigRequest {
   enabled: boolean;
 }
 
