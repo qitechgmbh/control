@@ -102,19 +102,18 @@ pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(),
         },
     );
 
-    smol::block_on({
-        let app_state_clone = app_state.clone();
-        async move {
-            let main_namespace = &mut app_state_clone
-                .socketio_setup
-                .namespaces
-                .write()
-                .await
-                .main_namespace;
-            let event = EthercatDevicesEventBuilder().initializing();
-            main_namespace.emit(MainNamespaceEvents::EthercatDevicesEvent(event));
-        }
-    });
+    let app_state_clone = app_state.clone();
+    {
+        let main_namespace = &mut app_state_clone
+            .socketio_setup
+            .namespaces
+            .write()
+            .await
+            .main_namespace;
+
+        let event = EthercatDevicesEventBuilder().initializing();
+        main_namespace.emit(MainNamespaceEvents::EthercatDevicesEvent(event));
+    }
 
     // Initalize subdevices
     // Fails if DC setup detects a mispatching working copunter, then just try again in loop

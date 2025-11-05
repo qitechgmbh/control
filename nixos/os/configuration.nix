@@ -2,6 +2,11 @@
 
 let
   gitInfo = import ../gitInfo.nix { inherit pkgs; };
+  hailortDriver = import ../modules/hailort-driver.nix {
+    stdenv = pkgs.stdenv;
+    fetchFromGitHub = pkgs.fetchFromGitHub;
+    makeWrapper = pkgs.makeWrapper;
+  };
 in
 {
   imports =
