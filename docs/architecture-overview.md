@@ -1,4 +1,9 @@
 # Architecture Overview
+
+For detailed information about repository organization and component separation, see:
+- [Repository Organization](./repository-organization.md) - Monorepo structure and modularization options
+- [Component Interfaces](./component-interfaces.md) - How components interact and interface boundaries
+
 ![](./assets/architecture-overview.png)
 
 ## The Application is Split Into 3 Main Layers
