@@ -114,10 +114,6 @@ in
     }
   ];
 
-environment.systemPackages = with pkgs; [
-  # existing packages...
-  hailortDriver
-];
 
 
   networking.hostName = "nixos"; # Define your hostname.
@@ -274,7 +270,10 @@ environment.systemPackages = with pkgs; [
     wireshark
     pciutils
     neofetch
+    hailortDriver
   ];
+
+  
 
   xdg.portal.enable = true;
   xdg.portal.extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
