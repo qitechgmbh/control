@@ -71,10 +71,7 @@ The control panel will display all available IP addresses where the API can be r
     },
     "serial": <number>
   },
-  "events": {
-    "LiveValues": <array of field names | null>,
-    "State": <array of field names | null>
-  }
+  "events": ["LiveValues", "State"]
 }
 ```
 
@@ -86,21 +83,18 @@ The control panel will display all available IP addresses where the API can be r
 | `machine_identification_unique.machine_identification.vendor` | Number | Yes | Vendor ID (e.g., 1 for QiTech) |
 | `machine_identification_unique.machine_identification.machine` | Number | Yes | Machine type ID (see machine types below) |
 | `machine_identification_unique.serial` | Number | Yes | Machine serial number |
-| `events` | Object | No | Event field specification. If omitted, returns all events with all fields |
-| `events.LiveValues` | Array<String> \| null | No | Fields to retrieve from LiveValues event. `null` = all fields, `[]` = exclude event, `["field1", "field2"]` = specific fields |
-| `events.State` | Array<String> \| null | No | Fields to retrieve from State event. `null` = all fields, `[]` = exclude event, `["field1", "field2"]` = specific fields |
+| `events` | Array<String> | No | Array of event type names to retrieve. If omitted, returns all events (LiveValues and State). Valid values: "LiveValues", "State" |
 
-### Event Field Specification
+### Event Type Specification
 
-The `events` object allows you to specify exactly which fields you want from each event type:
+The `events` field is a simple array of event type names. Only include the names of the event types you want to retrieve.
 
 **Examples:**
-- Omit `events` entirely → Returns all events with all fields
-- `"events": { "LiveValues": null, "State": null }` → Returns both events with all fields
-- `"events": { "LiveValues": ["pressure", "nozzle_temperature"], "State": null }` → Returns specific LiveValues fields and all State fields
-- `"events": { "LiveValues": null, "State": ["mode_state"] }` → Returns all LiveValues fields and specific State fields
-- `"events": { "LiveValues": ["pressure"], "State": [] }` → Returns only pressure from LiveValues, no State
-- `"events": { "LiveValues": [], "State": null }` → Returns no LiveValues, all State fields
+- Omit `events` entirely → Returns both LiveValues and State with all fields
+- `"events": ["LiveValues"]` → Returns only LiveValues with all fields
+- `"events": ["State"]` → Returns only State with all fields
+- `"events": ["LiveValues", "State"]` → Returns both events with all fields
+- `"events": []` → Returns no events (empty data object)
 
 ### Machine Types
 
@@ -243,7 +237,7 @@ import requests
 
 API_URL = "http://192.168.1.100:3001/api/v1/machine/event"
 
-# Request only specific fields from LiveValues
+# Request only LiveValues, exclude State
 request_body = {
     "machine_identification_unique": {
         "machine_identification": {
@@ -252,10 +246,7 @@ request_body = {
         },
         "serial": 2001
     },
-    "events": {
-        "LiveValues": ["puller_speed", "spool_rpm", "tension_arm_angle"],
-        "State": []  # Exclude State event
-    }
+    "events": ["LiveValues"]
 }
 
 response = requests.post(API_URL, json=request_body)
@@ -285,10 +276,7 @@ machine_id = {
         },
         "serial": 1001
     },
-    "events": {
-        "LiveValues": ["nozzle_temperature", "front_temperature", "pressure"],
-        "State": []  # Don't need state for monitoring
-    }
+    "events": ["LiveValues"]
 }
 
 def monitor_temperature():
@@ -335,16 +323,7 @@ machine_id = {
         },
         "serial": 1001
     },
-    "events": {
-        "LiveValues": [
-            "nozzle_temperature",
-            "front_temperature",
-            "pressure",
-            "motor_status",
-            "combined_power"
-        ],
-        "State": []
-    }
+    "events": ["LiveValues"]
 }
 
 def log_to_csv(filename="machine_data.csv", interval=10, duration=3600):
@@ -443,10 +422,7 @@ async function getLiveValues() {
       },
       serial: 2001
     },
-    events: {
-      LiveValues: ['puller_speed', 'spool_rpm', 'tension_arm_angle'],
-      State: []  // Exclude State
-    }
+    events: ["LiveValues"]
   };
 
   try {
@@ -487,10 +463,7 @@ const machineId = {
     },
     serial: 1001
   },
-  events: {
-    LiveValues: ['nozzle_temperature', 'front_temperature', 'pressure'],
-    State: []
-  }
+  events: ["LiveValues"]
 };
 
 async function monitorTemperature() {
@@ -542,11 +515,8 @@ function MachineMonitor() {
         machine: 1
       },
       serial: 1001
-    },
-    events: {
-      LiveValues: ['nozzle_temperature', 'front_temperature', 'pressure', 'combined_power'],
-      State: ['mode_state']
     }
+    // events omitted = get both LiveValues and State
   };
 
   useEffect(() => {
@@ -762,13 +732,10 @@ Avoid polling faster than necessary to reduce network and server load.
 
 ### Request Optimization
 
-1. **Request only needed fields:**
+1. **Request only needed event types:**
    ```json
    {
-     "events": {
-       "LiveValues": ["pressure", "temperature"],  // Only specific fields
-       "State": []  // Don't request State if not needed
-     }
+     "events": ["LiveValues"]
    }
    ```
 

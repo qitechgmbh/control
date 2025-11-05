@@ -2,7 +2,6 @@ use serde_json::Value;
 use smol::lock::Mutex;
 use std::sync::Arc;
 
-use crate::rest::mutation::EventFields;
 use crate::socketio::namespace::Namespace;
 
 pub trait MachineApi {
@@ -14,13 +13,14 @@ pub trait MachineApi {
     /// Example: { "State": {...}, "LiveValues": {...} }
     ///
     /// events parameter:
-    /// - None: returns all available events with all fields
-    /// - Some(EventFields): returns specified events with specified fields
-    ///   - live_values: None = all LiveValues fields, Some([]) = no LiveValues, Some(["field"]) = specific fields
-    ///   - state: None = all State fields, Some([]) = no State, Some(["field"]) = specific fields
+    /// - None: returns all available events (LiveValues and State) with all fields
+    /// - Some(vec): returns only the event types listed in the array
+    ///   - Contains "LiveValues" = include all LiveValues fields
+    ///   - Contains "State" = include all State fields
+    ///   - Empty array = no events returned
     ///
     /// Note: Takes &mut self to allow reading from hardware sensors and cached values
-    fn api_event(&mut self, events: Option<&EventFields>) -> Result<Value, anyhow::Error>;
+    fn api_event(&mut self, events: Option<&Vec<String>>) -> Result<Value, anyhow::Error>;
 
     /// Returns a list of available video stream identifiers for this machine
     #[cfg(feature = "video-streaming")]

@@ -18,18 +18,14 @@ export interface MachineEventRequest {
     serial: number;
   };
   /**
-   * Optional event field specification.
-   * - undefined/null: returns all available events with all fields
-   * - { LiveValues: ["field1", "field2"], State: null }: returns LiveValues with specific fields and all State fields
-   * - { LiveValues: null, State: ["field1"] }: returns all LiveValues fields and specific State fields
-   * - { LiveValues: [], State: null }: returns no LiveValues, all State fields
-   *
-   * Each event type appears at most once in the response.
+   * Optional array of event type names to retrieve.
+   * - undefined/null: returns all available events (LiveValues and State) with all fields
+   * - ["LiveValues"]: returns only LiveValues with all fields
+   * - ["State"]: returns only State with all fields
+   * - ["LiveValues", "State"]: returns both events with all fields
+   * - []: returns no events (empty data object)
    */
-  events?: {
-    LiveValues?: string[];
-    State?: string[];
-  };
+  events?: string[];
 }
 
 export interface MachineEventResponse {
@@ -109,16 +105,13 @@ export async function getReadOnlyApiStatus(): Promise<boolean> {
 /**
  * Query machine events through the read-only API
  * @param machineIdentification - The machine to query
- * @param events - Optional event field specification. If omitted, returns all events with all fields.
- *                 Example: { LiveValues: ["temperature", "pressure"], State: null } returns specific LiveValues fields and all State fields
+ * @param events - Optional array of event type names. Only include the event types you want.
+ *                 Example: ["LiveValues"] returns all LiveValues fields, excludes State
  * @returns Object with event types as keys (e.g., { "State": {...}, "LiveValues": {...} })
  */
 export async function queryMachineData(
   machineIdentification: MachineEventRequest["machine_identification_unique"],
-  events?: {
-    LiveValues?: string[];
-    State?: string[];
-  },
+  events?: string[],
 ): Promise<any> {
   const response = await fetch(`${API_BASE_URL}/api/v1/machine/event`, {
     method: "POST",

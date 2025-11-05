@@ -50,28 +50,19 @@ pub struct VideoStreamListResponse {
     pub streams: Vec<String>,
 }
 
-/// Event field specification for querying specific fields from an event type
-#[derive(Debug, serde::Deserialize, Clone)]
-pub struct EventFields {
-    /// Fields to retrieve from LiveValues event
-    /// None = all fields, Some([]) = no fields, Some(["field1", "field2"]) = specific fields
-    #[serde(rename = "LiveValues")]
-    pub live_values: Option<Vec<String>>,
-    /// Fields to retrieve from State event
-    /// None = all fields, Some([]) = no fields, Some(["field1", "field2"]) = specific fields
-    #[serde(rename = "State")]
-    pub state: Option<Vec<String>>,
-}
-
 /// Request body for querying machine events (read-only)
 #[derive(Debug, serde::Deserialize)]
 pub struct MachineEventBody {
     pub machine_identification_unique: MachineIdentificationUnique,
-    /// Event types and their requested fields.
-    /// - None: returns all available events with all fields
-    /// - Some(EventFields { live_values: Some([...]), state: None }): returns LiveValues with specific fields, no State
-    /// - Some(EventFields { live_values: None, state: None }): returns both events with all fields
-    pub events: Option<EventFields>,
+    /// Event types to retrieve as an array of event names.
+    /// - None: returns all available events (LiveValues and State)
+    /// - Some(["LiveValues"]): returns only LiveValues with all fields
+    /// - Some(["State"]): returns only State with all fields
+    /// - Some(["LiveValues", "State"]): returns both events with all fields
+    /// - Some([]): returns no events (empty data object)
+    ///
+    /// Example JSON: { "events": ["LiveValues"] } - returns only LiveValues
+    pub events: Option<Vec<String>>,
 }
 
 /// Response for read-only machine event queries
