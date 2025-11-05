@@ -55,6 +55,13 @@ function useLaser(machine_identification_unique: MachineIdentificationUnique) {
     schemaHigherTolerance,
   );
 
+  const schemaAutoStopOnOutOfTolerance = z.object({
+    SetAutoStopOnOutOfTolerance: z.boolean(),
+  });
+  const { request: requestAutoStopOnOutOfTolerance } = useMachineMutation(
+    schemaAutoStopOnOutOfTolerance,
+  );
+
   // Action functions with verb-first names
   const setTargetDiameter = (target_diameter: number) => {
     updateStateOptimistically(
@@ -101,6 +108,24 @@ function useLaser(machine_identification_unique: MachineIdentificationUnique) {
     );
   };
 
+  const setAutoStopOnOutOfTolerance = (
+    auto_stop_on_out_of_tolerance: boolean,
+  ) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.laser_state.auto_stop_on_out_of_tolerance =
+          auto_stop_on_out_of_tolerance;
+      },
+      () =>
+        requestAutoStopOnOutOfTolerance({
+          machine_identification_unique,
+          data: {
+            SetAutoStopOnOutOfTolerance: auto_stop_on_out_of_tolerance,
+          },
+        }),
+    );
+  };
+
   return {
     // Consolidated state
     state: stateOptimistic.value?.data,
@@ -122,6 +147,7 @@ function useLaser(machine_identification_unique: MachineIdentificationUnique) {
     setTargetDiameter,
     setLowerTolerance,
     setHigherTolerance,
+    setAutoStopOnOutOfTolerance,
   };
 }
 
