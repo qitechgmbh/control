@@ -1,4 +1,4 @@
-{ stdenv, fetchFromGitHub, makeWrapper }:
+{ stdenv, fetchFromGitHub, makeWrapper, lib ? (import <nixpkgs> {}).lib }:
 
 stdenv.mkDerivation rec {
   pname = "hailort-driver";
@@ -8,7 +8,7 @@ stdenv.mkDerivation rec {
   src = fetchFromGitHub {
     owner = "hailo-ai";       # Replace with the correct GitHub org/user
     repo = "hailort-drivers";  # Repo name
-    rev = "ce1087bfe8132c99b41374e3128fc78612a3f492";           # Git tag or commit hash
+    rev = "ce1087bfe8132c99b41374e3128fc78612a3f492"; # Git tag or commit hash
     sha256 = "0000000000000000000000000000000000000000000000000000"; # Update with actual hash
   };
 
@@ -28,9 +28,9 @@ stdenv.mkDerivation rec {
     cp -v *.ko $out/lib/modules/
   '';
 
-  meta = with stdenv.lib; {
+  meta = with lib; {
     description = "HailoRT kernel driver";
-    license = licenses.mit;  # Update license accordingly
-    maintainers = with maintainers; [ ];
+    license = lib.licenses.mit;  # Update license accordingly
+    maintainers = [ ];
   };
 }
