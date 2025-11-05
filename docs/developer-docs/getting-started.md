@@ -1,4 +1,16 @@
-# Environment Setup
+# Getting Started
+
+This guide will help you set up your development environment for QiTech Control.
+
+## Understanding the Repository
+
+Before starting, it's recommended to understand the repository organization:
+
+- [Repository Organization](../repository-organization.md) - Monorepo structure and component boundaries
+- [Architecture Overview](../architecture-overview.md) - System architecture and data flow
+- [Component Interfaces](../component-interfaces.md) - How components interact
+
+## Environment Setup
 
 Working on this repository requires you to use cargo and npm. In the following document the installation process will be shown
 

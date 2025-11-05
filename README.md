@@ -89,9 +89,14 @@ We could combine the code of the frontend and backend using [Doxius](https://dio
 
 # More Docs
 
-- [x] [Architecture & Data Flow](./docs/architecture-overview.md)
+## Architecture & Organization
 
-  - [x] Example Winder V2
+- [x] [Architecture & Data Flow](./docs/architecture-overview.md) - System architecture overview with diagrams
+- [x] [Repository Organization](./docs/repository-organization.md) - Monorepo structure, component boundaries, and modularization options
+- [x] [Component Interfaces](./docs/component-interfaces.md) - How components interact and interface boundaries
+- [x] [Migration Guide for Splitting](./docs/migration-guide-splitting.md) - Step-by-step guide for splitting into multiple repositories (if needed)
+
+## Component Documentation
 
 - [ ] Electron
 
