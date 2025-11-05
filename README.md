@@ -91,6 +91,7 @@ We could combine the code of the frontend and backend using [Doxius](https://dio
 
 ## Architecture & Organization
 
+- [x] [**Organization Summary**](./docs/organization-summary.md) - **Quick reference** for understanding the repository structure
 - [x] [Architecture & Data Flow](./docs/architecture-overview.md) - System architecture overview with diagrams
 - [x] [Repository Organization](./docs/repository-organization.md) - Monorepo structure, component boundaries, and modularization options
 - [x] [Component Interfaces](./docs/component-interfaces.md) - How components interact and interface boundaries
