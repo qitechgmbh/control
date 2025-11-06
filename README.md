@@ -12,24 +12,37 @@ QiTech Control is an industrial control panel software for the next generation o
 
 # Repo Structure
 
-Frontend
+This repository is organized as a monorepo with clear separation of concerns. See [Repository Organization](./docs/repository-organization.md) for detailed architecture information.
 
-- `/electron`: Frontend code for the control software built with React and Electron.
+## Hardware Abstraction Layer (Framework)
 
-Backend
+- `/ethercat-hal`: Hardware abstraction layer for Beckhoff and other EtherCAT devices and protocols
+- `/ethercat-hal-derive`: Derive macros for `ethercat-hal`
 
-- `/server`: Glue between Beckhoff and Electron. Implements machine logic.
-- `/ethercat-hal`: Hardware abstraction layer for Beckhoff (and possibly other EtherCat) devices and protocols.
-- `/ethercat-hal-derive`: Macros for `ethercat-hal`
-- `/control-core`: Core control logic for the server.
+## Control Framework (Framework)
 
-Operating System
+- `/control-core`: Generic control logic, actor system, and API abstractions
+- `/control-core-derive`: Derive macros for `control-core`
 
-- `/nixos`: Custom Linux with realtime kernel & preconfigured for touchscreens.
+## Machine Implementations (QiTech-Specific)
 
-Other
+- `/server`: QiTech-specific machine implementations and glue code that ties everything together
 
-- `/docs`: Documentation for the project.
+## User Interface
+
+- `/electron`: Electron-based control panel UI built with React and TypeScript
+
+## Operating System
+
+- `/nixos`: Custom NixOS configuration with real-time kernel & touchscreen support
+
+## Utilities
+
+- `/ethercat-eeprom-dump`: CLI tool for dumping EtherCAT device EEPROM data
+
+## Documentation
+
+- `/docs`: Project documentation, architecture guides, and developer resources
 
 # Technology Choices
 
@@ -76,9 +89,15 @@ We could combine the code of the frontend and backend using [Doxius](https://dio
 
 # More Docs
 
-- [x] [Architecture & Data Flow](./docs/architecture-overview.md)
+## Architecture & Organization
 
-  - [x] Example Winder V2
+- [x] [**Organization Summary**](./docs/organization-summary.md) - **Quick reference** for understanding the repository structure
+- [x] [Architecture & Data Flow](./docs/architecture-overview.md) - System architecture overview with diagrams
+- [x] [Repository Organization](./docs/repository-organization.md) - Monorepo structure, component boundaries, and modularization options
+- [x] [Component Interfaces](./docs/component-interfaces.md) - How components interact and interface boundaries
+- [x] [Migration Guide for Splitting](./docs/migration-guide-splitting.md) - Step-by-step guide for splitting into multiple repositories (if needed)
+
+## Component Documentation
 
 - [ ] Electron
 

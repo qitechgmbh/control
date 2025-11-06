@@ -1,11 +1,18 @@
 [workspace]
 members = [
-    "server",
+    # Hardware Abstraction Layer (Framework)
     "ethercat-hal",
     "ethercat-hal-derive",
+    
+    # Control Framework (Framework)
     "control-core",
-    "ethercat-eeprom-dump",
     "control-core-derive",
+    
+    # Machine Implementations (QiTech-Specific)
+    "server",
+    
+    # Utilities
+    "ethercat-eeprom-dump",
 ]
 exclude = []
 resolver = "2"
