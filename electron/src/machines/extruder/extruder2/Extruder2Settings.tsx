@@ -243,7 +243,9 @@ export function Extruder2SettingsPage() {
               <Label label="Kp">
                 <EditValue
                   value={state?.pid_settings.temperature.nozzle.kp}
-                  defaultValue={defaultState?.pid_settings.temperature.nozzle.kp}
+                  defaultValue={
+                    defaultState?.pid_settings.temperature.nozzle.kp
+                  }
                   min={0}
                   max={100}
                   step={0.001}
@@ -255,7 +257,9 @@ export function Extruder2SettingsPage() {
               <Label label="Ki">
                 <EditValue
                   value={state?.pid_settings.temperature.nozzle.ki}
-                  defaultValue={defaultState?.pid_settings.temperature.nozzle.ki}
+                  defaultValue={
+                    defaultState?.pid_settings.temperature.nozzle.ki
+                  }
                   min={0}
                   max={100}
                   step={0.001}
@@ -267,7 +271,9 @@ export function Extruder2SettingsPage() {
               <Label label="Kd">
                 <EditValue
                   value={state?.pid_settings.temperature.nozzle.kd}
-                  defaultValue={defaultState?.pid_settings.temperature.nozzle.kd}
+                  defaultValue={
+                    defaultState?.pid_settings.temperature.nozzle.kd
+                  }
                   min={0}
                   max={100}
                   step={0.001}
