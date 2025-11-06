@@ -239,6 +239,50 @@ export function Extruder2SettingsPage() {
                 />
               </Label>
             </ControlCard>
+            <ControlCard title="Temperature PID Settings (Nozzle) ">
+              <Label label="Kp">
+                <EditValue
+                  value={state?.pid_settings.temperature.nozzle.kp}
+                  defaultValue={
+                    defaultState?.pid_settings.temperature.nozzle.kp
+                  }
+                  min={0}
+                  max={100}
+                  step={0.001}
+                  renderValue={(v) => roundToDecimals(v, 3)}
+                  onChange={(v) => setTemperaturePidValue("nozzle", "kp", v)}
+                  title="Temperature PID KP"
+                />
+              </Label>
+              <Label label="Ki">
+                <EditValue
+                  value={state?.pid_settings.temperature.nozzle.ki}
+                  defaultValue={
+                    defaultState?.pid_settings.temperature.nozzle.ki
+                  }
+                  min={0}
+                  max={100}
+                  step={0.001}
+                  renderValue={(v) => roundToDecimals(v, 3)}
+                  onChange={(v) => setTemperaturePidValue("nozzle", "ki", v)}
+                  title="Temperature PID KI"
+                />
+              </Label>
+              <Label label="Kd">
+                <EditValue
+                  value={state?.pid_settings.temperature.nozzle.kd}
+                  defaultValue={
+                    defaultState?.pid_settings.temperature.nozzle.kd
+                  }
+                  min={0}
+                  max={100}
+                  step={0.001}
+                  renderValue={(v) => roundToDecimals(v, 3)}
+                  onChange={(v) => setTemperaturePidValue("nozzle", "kd", v)}
+                  title="Temperature PID KD"
+                />
+              </Label>
+            </ControlCard>
           </ControlGrid>
         </>
       )}

@@ -151,6 +151,11 @@ impl ExtruderV2 {
                 self.pid_settings.temperature.back.kp = settings.kp;
                 self.pid_settings.temperature.back.kd = settings.kd;
             }
+            "nozzle" => {
+                self.pid_settings.temperature.nozzle.ki = settings.ki;
+                self.pid_settings.temperature.nozzle.kp = settings.kp;
+                self.pid_settings.temperature.nozzle.kd = settings.kd;
+            }
             _ => tracing::warn!("Unknown zone: {}", settings.zone),
         }
         self.emit_state();
