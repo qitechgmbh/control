@@ -1,11 +1,9 @@
 use crate::app_state::AppState;
 use bitvec::prelude::*;
 use control_core::machines::connection::MachineConnection;
-use control_core::machines::manager::MachineManager;
 use control_core::realtime::set_core_affinity;
 #[cfg(not(feature = "development-build"))]
 use control_core::realtime::set_realtime_priority;
-use smol::lock::RwLockReadGuard;
 use spin_sleep::SpinSleeper;
 use std::time::Instant;
 use std::{sync::Arc, time::Duration};
@@ -178,10 +176,11 @@ pub async fn copy_ethercat_outputs(app_state: Arc<AppState>) -> Result<(), anyho
     Ok(())
 }
 
-pub async fn execute_machines(machine_guard: &RwLockReadGuard<'_, MachineManager>) {
+pub async fn execute_machines(app_state: Arc<AppState>) {
     let now = std::time::Instant::now();
+    let machine_guard = app_state.machines.write().await;
     for machine in machine_guard.iter() {
-        let connection = &machine.1.lock_blocking().machine_connection;
+        let connection = &machine.1.lock().await.machine_connection;
         if let MachineConnection::Connected(machine) = connection {
             // if the machine is currenlty locked (likely processing API call)
             // we skip the machine
@@ -219,8 +218,7 @@ pub async fn loop_once<'maindevice>(
     {
         let span = trace_span!("loop_once_act");
         let _enter = span.enter();
-        let machine_guard = app_state.machines.read().await;
-        execute_machines(&machine_guard).await;
+        execute_machines(app_state.clone()).await;
     }
 
     {
