@@ -188,6 +188,7 @@ pub struct TemperaturePidStates {
     pub front: TemperaturePid,
     pub middle: TemperaturePid,
     pub back: TemperaturePid,
+    pub nozzle: TemperaturePid,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]

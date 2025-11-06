@@ -127,6 +127,13 @@ impl ExtruderV2 {
                         kd: self.temperature_controller_back.pid.get_kd(),
                         zone: String::from("back"),
                     },
+                    nozzle: TemperaturePid {
+                        ki: self.temperature_controller_nozzle.pid.get_ki(),
+                        kp: self.temperature_controller_nozzle.pid.get_kp(),
+                        kd: self.temperature_controller_nozzle.pid.get_kd(),
+                        zone: String::from("nozzle"),
+                    },
+
                 },
                 pressure: PidSettings {
                     ki: self.screw_speed_controller.pid.get_ki(),
@@ -315,6 +322,13 @@ impl ExtruderV2 {
             }
             "back" => {
                 self.temperature_controller_back.pid.configure(
+                    settings.ki,
+                    settings.kp,
+                    settings.kd,
+                );
+            }
+            "nozzle" => {
+                self.temperature_controller_nozzle.pid.configure(
                     settings.ki,
                     settings.kp,
                     settings.kd,

@@ -91,22 +91,28 @@ impl control_core::machines::new::MachineNewTrait for ExtruderV2 {
             pid_settings: PidSettingsStates {
                 temperature: TemperaturePidStates {
                     front: TemperaturePid {
-                        ki: 0.0,
-                        kp: 0.0,
-                        kd: 0.0,
+                        ki: 0.1,
+                        kp: 0.1,
+                        kd: 0.1,
                         zone: String::from("front"),
                     },
                     middle: TemperaturePid {
-                        ki: 0.0,
-                        kp: 0.0,
-                        kd: 0.0,
+                        ki: 0.1,
+                        kp: 0.1,
+                        kd: 0.1,
                         zone: String::from("middle"),
                     },
                     back: TemperaturePid {
-                        ki: 0.0,
-                        kp: 0.0,
-                        kd: 0.0,
+                        ki: 0.1,
+                        kp: 0.1,
+                        kd: 0.1,
                         zone: String::from("back"),
+                    },
+                    nozzle: TemperaturePid {
+                        ki: 0.1,
+                        kp: 0.1,
+                        kd: 0.1,
+                        zone: String::from("nozzle"),
                     },
                 },
                 pressure: PidSettings {

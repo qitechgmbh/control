@@ -294,7 +294,7 @@ export function useExtruder2() {
   };
 
   const setTemperaturePidValue = (
-    zone: "front" | "middle" | "back",
+    zone: "front" | "middle" | "back" | "nozzle",
     key: "kp" | "ki" | "kd",
     value: number,
   ) => {

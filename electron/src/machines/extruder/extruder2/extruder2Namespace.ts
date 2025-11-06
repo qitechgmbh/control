@@ -149,6 +149,12 @@ export const pidSettingsSchema = z.object({
       kd: z.number(),
       zone: z.string(),
     }),
+    nozzle: z.object({
+      ki: z.number(),
+      kp: z.number(),
+      kd: z.number(),
+      zone: z.string(),
+    }),
   }),
   pressure: z.object({
     ki: z.number(),
