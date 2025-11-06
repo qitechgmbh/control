@@ -133,7 +133,6 @@ impl ExtruderV2 {
                         kd: self.temperature_controller_nozzle.pid.get_kd(),
                         zone: String::from("nozzle"),
                     },
-
                 },
                 pressure: PidSettings {
                     ki: self.screw_speed_controller.pid.get_ki(),
