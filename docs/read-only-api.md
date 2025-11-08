@@ -13,7 +13,6 @@ The Read-Only API provides external applications with safe, read-only access to 
 - [Code Examples](#code-examples)
   - [Python Examples](#python-examples)
   - [JavaScript Examples](#javascript-examples)
-- [Error Handling](#error-handling)
 - [Best Practices](#best-practices)
 
 ## Overview
@@ -43,14 +42,12 @@ When enabled, the API is available at:
 http://<machine-ip>:3001/api/v1/machine/event
 ```
 
-The control panel will display all available IP addresses where the API can be reached.
+The control panel will display an IP addresses where the API can be reached.
 
 ### Security Considerations
 
 - The API provides unrestricted read access to machine data
 - Enable only when needed and in trusted networks
-- Consider firewall rules to restrict access to specific clients
-- Monitor API usage in production environments
 
 ## API Endpoint
 
@@ -82,18 +79,17 @@ The control panel will display all available IP addresses where the API can be r
 | `machine_identification_unique` | Object | Yes | Unique identifier for the target machine |
 | `machine_identification_unique.machine_identification.vendor` | Number | Yes | Vendor ID (e.g., 1 for QiTech) |
 | `machine_identification_unique.machine_identification.machine` | Number | Yes | Machine type ID (see machine types below) |
-| `machine_identification_unique.serial` | Number | Yes | Machine serial number |
-| `events` | Array<String> | No | Array of event type names to retrieve. If omitted, returns all events (LiveValues and State). Valid values: "LiveValues", "State" |
+| `machine_identification_unique.serial` | Number | Yes | Machine serial number (displayed in Setup → Machines) |
+| `events` | Array<String> | Yes | Array of event type names to retrieve. Valid values: "LiveValues", "State" |
 
 ### Event Type Specification
 
-The `events` field is a simple array of event type names. Only include the names of the event types you want to retrieve.
+The `events` field is a required array of event type names. Include the names of the event types you want to retrieve.
 
 **Examples:**
-- Omit `events` entirely → Returns both LiveValues and State with all fields
+- `"events": ["LiveValues", "State"]` → Returns both LiveValues and State with all fields
 - `"events": ["LiveValues"]` → Returns only LiveValues with all fields
 - `"events": ["State"]` → Returns only State with all fields
-- `"events": ["LiveValues", "State"]` → Returns both events with all fields
 - `"events": []` → Returns no events (empty data object)
 
 ### Machine Types
@@ -212,8 +208,9 @@ machine_id = {
             "vendor": 1,  # QiTech
             "machine": 1   # Extruder V2
         },
-        "serial": 1001
-    }
+        "serial": 4
+    },
+    "events": ["LiveValues", "State"]
 }
 
 # Request all events
@@ -244,7 +241,7 @@ request_body = {
             "vendor": 1,
             "machine": 2  # Winder V2
         },
-        "serial": 2001
+        "serial": 2
     },
     "events": ["LiveValues"]
 }
@@ -274,7 +271,7 @@ machine_id = {
             "vendor": 1,
             "machine": 1  # Extruder V2
         },
-        "serial": 1001
+        "serial": 4
     },
     "events": ["LiveValues"]
 }
@@ -321,7 +318,7 @@ machine_id = {
             "vendor": 1,
             "machine": 1
         },
-        "serial": 1001
+        "serial": 4
     },
     "events": ["LiveValues"]
 }
@@ -378,8 +375,9 @@ const machineId = {
       vendor: 1,  // QiTech
       machine: 1   // Extruder V2
     },
-    serial: 1001
-  }
+    serial: 4
+  },
+  events: ["LiveValues", "State"]
 };
 
 async function getMachineData() {
@@ -420,7 +418,7 @@ async function getLiveValues() {
         vendor: 1,
         machine: 2  // Winder V2
       },
-      serial: 2001
+      serial: 2
     },
     events: ["LiveValues"]
   };
@@ -461,7 +459,7 @@ const machineId = {
       vendor: 1,
       machine: 1
     },
-    serial: 1001
+    serial: 4
   },
   events: ["LiveValues"]
 };
@@ -514,9 +512,9 @@ function MachineMonitor() {
         vendor: 1,
         machine: 1
       },
-      serial: 1001
-    }
-    // events omitted = get both LiveValues and State
+      serial: 4
+    },
+    events: ["LiveValues", "State"]
   };
 
   useEffect(() => {
@@ -588,18 +586,9 @@ const machineId = {
       vendor: 1,
       machine: 1
     },
-    serial: 1001
+    serial: 4
   },
-  events: {
-    LiveValues: [
-      'nozzle_temperature',
-      'front_temperature',
-      'pressure',
-      'motor_status',
-      'combined_power'
-    ],
-    State: []
-  }
+  events: ["LiveValues"]
 };
 
 async function logToFile(filename = 'machine_data.csv', intervalMs = 10000, durationMs = 3600000) {
@@ -651,75 +640,6 @@ async function logToFile(filename = 'machine_data.csv', intervalMs = 10000, dura
 logToFile('extruder_log.csv', 5000, 3600000);
 ```
 
-## Error Handling
-
-### Common Error Responses
-
-| Error Message | Cause | Solution |
-|---------------|-------|----------|
-| "Read-only API is disabled" | API not enabled in control panel | Enable the API in Setup → Machines |
-| "Machine not found" | Invalid machine identification | Verify vendor, machine type, and serial number |
-| "Machine is disconnected" | Machine not connected to system | Check machine connection and power |
-| "Machine connection error" | Machine in error state | Check machine status in control panel |
-| "Field 'xxx' not found in event" | Requested field doesn't exist | Check available fields for the machine type |
-
-### Example Error Response
-
-```json
-{
-  "success": false,
-  "error": "Read-only API is disabled. Enable it in the configuration to use this endpoint.",
-  "data": null
-}
-```
-
-### Handling Errors in Code
-
-**Python:**
-```python
-try:
-    response = requests.post(API_URL, json=request_body, timeout=5)
-    response.raise_for_status()  # Raise exception for HTTP errors
-    
-    data = response.json()
-    if not data["success"]:
-        print(f"API Error: {data['error']}")
-    else:
-        # Process data
-        pass
-except requests.exceptions.Timeout:
-    print("Request timed out")
-except requests.exceptions.ConnectionError:
-    print("Failed to connect to API")
-except Exception as e:
-    print(f"Unexpected error: {e}")
-```
-
-**JavaScript:**
-```javascript
-try {
-  const response = await fetch(API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(requestBody)
-  });
-
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-  }
-
-  const data = await response.json();
-  
-  if (!data.success) {
-    throw new Error(`API Error: ${data.error}`);
-  }
-
-  // Process data
-} catch (error) {
-  console.error('Error:', error.message);
-}
-```
-
 ## Best Practices
 
 ### Polling Frequency
@@ -732,42 +652,12 @@ Avoid polling faster than necessary to reduce network and server load.
 
 ### Request Optimization
 
-1. **Request only needed event types:**
+**Request only needed event types:**
    ```json
    {
      "events": ["LiveValues"]
    }
    ```
-
-2. **Handle connection failures gracefully:**
-   - Implement retry logic with exponential backoff
-   - Log connection errors for debugging
-   - Use timeouts to prevent hanging requests
-
-3. **Cache machine identification:**
-   - Store the machine identification object to avoid recreating it for each request
-
-### Production Considerations
-
-1. **Monitoring:**
-   - Log API errors and connection failures
-   - Monitor response times
-   - Track data gaps in continuous logging
-
-2. **Data Storage:**
-   - For long-term storage, consider using a time-series database (InfluxDB, TimescaleDB)
-   - Implement data rotation/archival policies
-   - Compress historical data
-
-3. **Network:**
-   - Use a dedicated network interface for API access in production
-   - Consider using a reverse proxy (nginx) for SSL/TLS encryption
-   - Implement rate limiting if multiple clients are accessing the API
-
-4. **Error Recovery:**
-   - Implement automatic reconnection logic
-   - Buffer data during connection failures if critical
-   - Send alerts on extended API unavailability
 
 ### Example Production-Ready Python Logger
 
@@ -796,13 +686,7 @@ class MachineDataLogger:
         """Fetch data with retry logic"""
         request_body = {
             **self.machine_id,
-            "events": {
-                "LiveValues": [
-                    "nozzle_temperature",
-                    "pressure"
-                ],
-                "State": []
-            }
+            "events": ["LiveValues"]
         }
         
         try:
@@ -866,7 +750,7 @@ if __name__ == "__main__":
                     "vendor": 1,
                     "machine": 1
                 },
-                "serial": 1001
+                "serial": 4
             }
         },
         interval=10
@@ -881,14 +765,3 @@ For issues, questions, or feature requests related to the Read-Only API:
 - Check the [main documentation](./README.md)
 - Review the [troubleshooting guide](./troubleshooting.md)
 - Contact QiTech support
-
-## Changelog
-
-### Version 2.0 (Current)
-- Renamed endpoint from `/api/v1/machine/query` to `/api/v1/machine/event`
-- Changed request parameter from `fields` to `events` (now optional)
-- Response now returns event-typed data structure
-- Improved type safety by removing field-level filtering
-
-### Version 1.0
-- Initial release with field-based filtering

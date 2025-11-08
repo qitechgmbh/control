@@ -81,7 +81,7 @@ async fn _post_machine_event(
     let mut machine_guard = machine.lock().await;
 
     // Call api_event with the requested event fields
-    machine_guard.api_event(body.events.as_ref()).map_err(|e| {
+    machine_guard.api_event(Some(&body.events)).map_err(|e| {
         anyhow::anyhow!(
             "[{}::_post_machine_event] Machine api_event error: {}",
             module_path!(),

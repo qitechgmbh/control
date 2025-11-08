@@ -55,14 +55,13 @@ pub struct VideoStreamListResponse {
 pub struct MachineEventBody {
     pub machine_identification_unique: MachineIdentificationUnique,
     /// Event types to retrieve as an array of event names.
-    /// - None: returns all available events (LiveValues and State)
-    /// - Some(["LiveValues"]): returns only LiveValues with all fields
-    /// - Some(["State"]): returns only State with all fields
-    /// - Some(["LiveValues", "State"]): returns both events with all fields
-    /// - Some([]): returns no events (empty data object)
+    /// - ["LiveValues"]: returns only LiveValues with all fields
+    /// - ["State"]: returns only State with all fields
+    /// - ["LiveValues", "State"]: returns both events with all fields
+    /// - []: returns no events (empty data object)
     ///
     /// Example JSON: { "events": ["LiveValues"] } - returns only LiveValues
-    pub events: Option<Vec<String>>,
+    pub events: Vec<String>,
 }
 
 /// Response for read-only machine event queries
