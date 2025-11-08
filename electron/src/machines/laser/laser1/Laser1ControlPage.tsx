@@ -85,23 +85,6 @@ export function Laser1ControlPage() {
             </div>
           )}
           <div className="mt-4 border-t pt-4">
-            {/* Shared timeframe selector for diameter/roundness */}
-            <div className="mb-3 flex flex-row flex-wrap gap-2">
-              {TIMEFRAME_OPTIONS.map((option) => (
-                <button
-                  key={option.value}
-                  onClick={() => setTimeframe(option.value)}
-                  className={`rounded-md px-3 py-1 text-sm transition-colors ${
-                    timeframe === option.value
-                      ? "bg-blue-500 text-white"
-                      : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                  }`}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-
             {isTwoAxis ? (
               // For 2-axis lasers: show diameter and roundness min/max side by side
               <div className="grid grid-cols-2 gap-4">
@@ -124,14 +107,33 @@ export function Laser1ControlPage() {
                 )}
               </div>
             ) : (
-              // For single-axis lasers: show only diameter min/max
+              // For single-axis lasers: show only diameter min/max with shared selector
               <MinMaxValue
                 label="Diameter Range"
                 unit="mm"
                 timeseries={diameter}
                 renderValue={(value) => value.toFixed(3)}
+                timeframe={timeframe}
+                hideSelector
               />
             )}
+
+            {/* Shared timeframe selector for diameter/roundness */}
+            <div className="mt-3 flex flex-row flex-wrap gap-2">
+              {TIMEFRAME_OPTIONS.map((option) => (
+                <button
+                  key={option.value}
+                  onClick={() => setTimeframe(option.value)}
+                  className={`rounded-md px-3 py-1 text-sm transition-colors ${
+                    timeframe === option.value
+                      ? "bg-blue-500 text-white"
+                      : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
           </div>
         </ControlCard>
         <ControlCard title="Settings">
