@@ -3,6 +3,7 @@ import { Page } from "@/components/Page";
 import React from "react";
 import { ControlGrid } from "@/control/ControlGrid";
 import { TimeSeriesValueNumeric } from "@/control/TimeSeriesValue";
+import { MinMaxValue } from "@/control/MinMaxValue";
 
 import { EditValue } from "@/control/EditValue";
 import { Label } from "@/control/Label";
@@ -73,6 +74,34 @@ export function Laser1ControlPage() {
               <TimeSeriesValueNumeric
                 label="Roundness"
                 timeseries={roundness}
+                renderValue={(value) => value.toFixed(3)}
+              />
+            </div>
+          )}
+          <div className="mt-4 border-t pt-4">
+            <MinMaxValue
+              label="Diameter Range"
+              unit="mm"
+              timeseries={diameter}
+              renderValue={(value) => value.toFixed(3)}
+            />
+          </div>
+          {x_diameter?.current && (
+            <div className="mt-4 border-t pt-4">
+              <MinMaxValue
+                label="X-Diameter Range"
+                unit="mm"
+                timeseries={x_diameter}
+                renderValue={(value) => value.toFixed(3)}
+              />
+            </div>
+          )}
+          {y_diameter?.current && (
+            <div className="mt-4 border-t pt-4">
+              <MinMaxValue
+                label="Y-Diameter Range"
+                unit="mm"
+                timeseries={y_diameter}
                 renderValue={(value) => value.toFixed(3)}
               />
             </div>
