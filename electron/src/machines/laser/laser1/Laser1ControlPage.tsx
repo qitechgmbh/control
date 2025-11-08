@@ -3,7 +3,7 @@ import { Page } from "@/components/Page";
 import React from "react";
 import { ControlGrid } from "@/control/ControlGrid";
 import { TimeSeriesValueNumeric } from "@/control/TimeSeriesValue";
-import { MinMaxValue } from "@/control/MinMaxValue";
+import { MinMaxValue, TIMEFRAME_OPTIONS } from "@/control/MinMaxValue";
 
 import { EditValue } from "@/control/EditValue";
 import { Label } from "@/control/Label";
@@ -32,6 +32,8 @@ export function Laser1ControlPage() {
 
   // Detect if this is a 2-axis laser
   const isTwoAxis = !!x_diameter?.current || !!y_diameter?.current;
+  // Shared timeframe state (default 5 minutes)
+  const [timeframe, setTimeframe] = React.useState<number>(5 * 60 * 1000);
 
   return (
     <Page>
@@ -83,6 +85,23 @@ export function Laser1ControlPage() {
             </div>
           )}
           <div className="mt-4 border-t pt-4">
+            {/* Shared timeframe selector for diameter/roundness */}
+            <div className="mb-3 flex flex-row flex-wrap gap-2">
+              {TIMEFRAME_OPTIONS.map((option) => (
+                <button
+                  key={option.value}
+                  onClick={() => setTimeframe(option.value)}
+                  className={`rounded-md px-3 py-1 text-sm transition-colors ${
+                    timeframe === option.value
+                      ? "bg-blue-500 text-white"
+                      : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+
             {isTwoAxis ? (
               // For 2-axis lasers: show diameter and roundness min/max side by side
               <div className="grid grid-cols-2 gap-4">
@@ -91,12 +110,16 @@ export function Laser1ControlPage() {
                   unit="mm"
                   timeseries={diameter}
                   renderValue={(value) => value.toFixed(3)}
+                  timeframe={timeframe}
+                  hideSelector
                 />
                 {roundness?.current && (
                   <MinMaxValue
                     label="Roundness Range"
                     timeseries={roundness}
                     renderValue={(value) => value.toFixed(3)}
+                    timeframe={timeframe}
+                    hideSelector
                   />
                 )}
               </div>
