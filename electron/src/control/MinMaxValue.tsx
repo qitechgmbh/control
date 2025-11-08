@@ -15,7 +15,7 @@ type TimeframeOption = {
   value: number; // in milliseconds
 };
 
-const TIMEFRAME_OPTIONS: TimeframeOption[] = [
+export const TIMEFRAME_OPTIONS: TimeframeOption[] = [
   { label: "1 min", value: 1 * 60 * 1000 },
   { label: "5 min", value: 5 * 60 * 1000 },
   { label: "10 min", value: 10 * 60 * 1000 },
@@ -30,6 +30,12 @@ type Props = {
   icon?: IconName;
   renderValue?: (value: number) => string;
   defaultTimeframe?: number; // in milliseconds, defaults to 5 minutes
+  /** Optional externally-controlled timeframe (ms). When provided, component becomes controlled. */
+  timeframe?: number;
+  /** Optional callback when timeframe is changed via this component's selector */
+  onTimeframeChange?: (t: number) => void;
+  /** When true, hide the built-in timeframe selector (useful when sharing a selector outside) */
+  hideSelector?: boolean;
 };
 
 export function MinMaxValue({
@@ -39,8 +45,12 @@ export function MinMaxValue({
   label,
   renderValue,
   defaultTimeframe = 5 * 60 * 1000, // 5 minutes default
+  timeframe,
+  onTimeframeChange,
+  hideSelector = false,
 }: Props) {
-  const [selectedTimeframe, setSelectedTimeframe] = useState(defaultTimeframe);
+  const [internalTimeframe, setInternalTimeframe] = useState(defaultTimeframe);
+  const selectedTimeframe = timeframe ?? internalTimeframe;
 
   // Calculate min/max from the timeseries using the selected timeframe
   const { min, max, hasData } = useMemo(() => {
@@ -154,22 +164,27 @@ export function MinMaxValue({
         </div>
       </Label>
 
-      {/* Timeframe Selector */}
-      <div className="flex flex-row flex-wrap gap-2">
-        {TIMEFRAME_OPTIONS.map((option) => (
-          <button
-            key={option.value}
-            onClick={() => setSelectedTimeframe(option.value)}
-            className={`rounded-md px-3 py-1 text-sm transition-colors ${
-              selectedTimeframe === option.value
-                ? "bg-blue-500 text-white"
-                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-            }`}
-          >
-            {option.label}
-          </button>
-        ))}
-      </div>
+      {/* Timeframe Selector (hidden when sharing selector externally) */}
+      {!hideSelector && (
+        <div className="flex flex-row flex-wrap gap-2">
+          {TIMEFRAME_OPTIONS.map((option) => (
+            <button
+              key={option.value}
+              onClick={() => {
+                if (onTimeframeChange) onTimeframeChange(option.value);
+                else setInternalTimeframe(option.value);
+              }}
+              className={`rounded-md px-3 py-1 text-sm transition-colors ${
+                selectedTimeframe === option.value
+                  ? "bg-blue-500 text-white"
+                  : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+              }`}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
