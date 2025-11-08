@@ -29,6 +29,10 @@ export function Laser1ControlPage() {
   const targetDiameter = state?.laser_state?.target_diameter ?? 0;
   const lowerTolerance = state?.laser_state?.lower_tolerance ?? 0;
   const higherTolerance = state?.laser_state?.higher_tolerance ?? 0;
+
+  // Detect if this is a 2-axis laser
+  const isTwoAxis = !!x_diameter?.current || !!y_diameter?.current;
+
   return (
     <Page>
       <ControlGrid columns={2}>
@@ -79,33 +83,33 @@ export function Laser1ControlPage() {
             </div>
           )}
           <div className="mt-4 border-t pt-4">
-            <MinMaxValue
-              label="Diameter Range"
-              unit="mm"
-              timeseries={diameter}
-              renderValue={(value) => value.toFixed(3)}
-            />
+            {isTwoAxis ? (
+              // For 2-axis lasers: show diameter and roundness min/max side by side
+              <div className="grid grid-cols-2 gap-4">
+                <MinMaxValue
+                  label="Diameter Range"
+                  unit="mm"
+                  timeseries={diameter}
+                  renderValue={(value) => value.toFixed(3)}
+                />
+                {roundness?.current && (
+                  <MinMaxValue
+                    label="Roundness Range"
+                    timeseries={roundness}
+                    renderValue={(value) => value.toFixed(3)}
+                  />
+                )}
+              </div>
+            ) : (
+              // For single-axis lasers: show only diameter min/max
+              <MinMaxValue
+                label="Diameter Range"
+                unit="mm"
+                timeseries={diameter}
+                renderValue={(value) => value.toFixed(3)}
+              />
+            )}
           </div>
-          {x_diameter?.current && (
-            <div className="mt-4 border-t pt-4">
-              <MinMaxValue
-                label="X-Diameter Range"
-                unit="mm"
-                timeseries={x_diameter}
-                renderValue={(value) => value.toFixed(3)}
-              />
-            </div>
-          )}
-          {y_diameter?.current && (
-            <div className="mt-4 border-t pt-4">
-              <MinMaxValue
-                label="Y-Diameter Range"
-                unit="mm"
-                timeseries={y_diameter}
-                renderValue={(value) => value.toFixed(3)}
-              />
-            </div>
-          )}
         </ControlCard>
         <ControlCard title="Settings">
           <Label label="Set Target Diameter">
