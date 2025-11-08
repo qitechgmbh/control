@@ -98,12 +98,12 @@ Common machine type IDs:
 
 | Machine Type | ID |
 |--------------|-----|
-| Mock Machine | 0 |
-| Extruder V2 | 1 |
 | Winder V2 | 2 |
-| Buffer V1 | 3 |
-| AquaPath V1 | 4 |
-| Laser | 5 |
+| Extruder V1/V2 | 4 |
+| Laser V1 | 6 |
+| Mock Machine | 7 |
+| Buffer V1 | 8 |
+| AquaPath V1 | 9 |
 
 ## Response Format
 
@@ -206,7 +206,7 @@ machine_id = {
     "machine_identification_unique": {
         "machine_identification": {
             "vendor": 1,  # QiTech
-            "machine": 1   # Extruder V2
+            "machine": 4   # Extruder V1/V2
         },
         "serial": 4
     },
@@ -269,7 +269,7 @@ machine_id = {
     "machine_identification_unique": {
         "machine_identification": {
             "vendor": 1,
-            "machine": 1  # Extruder V2
+            "machine": 4  # Extruder V1/V2
         },
         "serial": 4
     },
@@ -316,11 +316,11 @@ machine_id = {
     "machine_identification_unique": {
         "machine_identification": {
             "vendor": 1,
-            "machine": 1
+            "machine": 4
         },
         "serial": 4
     },
-    "events": ["LiveValues"]
+    "events": ["LiveValues", "State"]
 }
 
 def log_to_csv(filename="machine_data.csv", interval=10, duration=3600):
@@ -373,7 +373,7 @@ const machineId = {
   machine_identification_unique: {
     machine_identification: {
       vendor: 1,  // QiTech
-      machine: 1   // Extruder V2
+      machine: 4   // Extruder V1/V2
     },
     serial: 4
   },
@@ -457,7 +457,7 @@ const machineId = {
   machine_identification_unique: {
     machine_identification: {
       vendor: 1,
-      machine: 1
+      machine: 4
     },
     serial: 4
   },
@@ -510,7 +510,7 @@ function MachineMonitor() {
     machine_identification_unique: {
       machine_identification: {
         vendor: 1,
-        machine: 1
+        machine: 4
       },
       serial: 4
     },
@@ -584,7 +584,7 @@ const machineId = {
   machine_identification_unique: {
     machine_identification: {
       vendor: 1,
-      machine: 1
+      machine: 4
     },
     serial: 4
   },
