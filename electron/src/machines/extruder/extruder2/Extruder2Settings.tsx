@@ -2,7 +2,10 @@ import React, { useState } from "react";
 import { Page } from "@/components/Page";
 import { ControlCard } from "@/control/ControlCard";
 import { Label } from "@/control/Label";
-import { SelectionGroupBoolean } from "@/control/SelectionGroup";
+import {
+  SelectionGroup,
+  SelectionGroupBoolean,
+} from "@/control/SelectionGroup";
 import { EditValue } from "@/control/EditValue";
 import { roundToDecimals } from "@/lib/decimal";
 import { useExtruder2 } from "./useExtruder";
@@ -16,6 +19,7 @@ export function Extruder2SettingsPage() {
     resetInverter,
     setExtruderPressureLimit,
     setExtruderPressureLimitEnabled,
+    setExtruderGearRatio,
     setPressurePidKp,
     setPressurePidKi,
     setPressurePidKd,
@@ -48,6 +52,24 @@ export function Extruder2SettingsPage() {
       </ControlCard>
 
       <ControlCard className="bg-red" title="Extruder Settings">
+        <Label label="Gear Ratio">
+          <SelectionGroup
+            value={state?.screw_state?.gear_ratio}
+            options={{
+              ThirtyFourToOne: {
+                children: "34:1",
+                icon: "lu:Cog",
+              },
+              ThirtyToOne: {
+                children: "30:1",
+                icon: "lu:Cog",
+              },
+            }}
+            onChange={(value) =>
+              setExtruderGearRatio(value as "ThirtyToOne" | "ThirtyFourToOne")
+            }
+          />
+        </Label>
         <Label label="Nozzle Pressure Limit">
           <EditValue
             value={state?.extruder_settings_state.pressure_limit}

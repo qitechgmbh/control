@@ -7,6 +7,7 @@ use control_core::{
 };
 use ethercat_hal::io::analog_input::AnalogInput;
 use futures::executor::block_on;
+use serde::{Deserialize, Serialize};
 use uom::si::{
     angular_velocity::revolution_per_minute,
     electric_current::milliampere,
@@ -19,6 +20,28 @@ use crate::machines::extruder1::mitsubishi_cs80::MitsubishiCS80Status;
 
 use super::mitsubishi_cs80::{MitsubishiCS80, MotorStatus};
 
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
+pub enum GearRatio {
+    ThirtyToOne,
+    ThirtyFourToOne,
+}
+
+impl GearRatio {
+    /// Get the gear ratio value (screw turns per motor turn)
+    pub fn ratio(&self) -> f64 {
+        match self {
+            GearRatio::ThirtyToOne => 1.0 / 30.0,
+            GearRatio::ThirtyFourToOne => 1.0 / 34.0,
+        }
+    }
+}
+
+impl Default for GearRatio {
+    fn default() -> Self {
+        GearRatio::ThirtyFourToOne
+    }
+}
+
 #[derive(Debug)]
 pub struct ScrewSpeedController {
     pub pid: ClampingTimeagnosticPidController,
@@ -29,6 +52,7 @@ pub struct ScrewSpeedController {
     last_update: Instant,
     uses_rpm: bool,
     forward_rotation: bool,
+    gear_ratio: GearRatio,
     transmission: FixedTransmission,
     frequency: Frequency,
     maximum_frequency: Frequency,
@@ -46,6 +70,7 @@ impl ScrewSpeedController {
         pressure_sensor: AnalogInput,
     ) -> Self {
         let now = Instant::now();
+        let gear_ratio = GearRatio::default();
         Self {
             inverter,
             // need to tune
@@ -56,7 +81,8 @@ impl ScrewSpeedController {
             pressure_sensor,
             uses_rpm: true,
             forward_rotation: true,
-            transmission: FixedTransmission::new(1.0 / 34.0),
+            gear_ratio,
+            transmission: FixedTransmission::new(gear_ratio.ratio()),
             motor_on: false,
             nozzle_pressure_limit: Pressure::new::<bar>(100.0),
             nozzle_pressure_limit_enabled: true,
@@ -103,6 +129,15 @@ impl ScrewSpeedController {
         if self.motor_on {
             self.inverter.set_rotation(self.forward_rotation);
         }
+    }
+
+    pub fn set_gear_ratio(&mut self, gear_ratio: GearRatio) {
+        self.gear_ratio = gear_ratio;
+        self.transmission = FixedTransmission::new(gear_ratio.ratio());
+    }
+
+    pub const fn get_gear_ratio(&self) -> GearRatio {
+        self.gear_ratio
     }
 
     pub fn set_target_pressure(&mut self, target_pressure: Pressure) {

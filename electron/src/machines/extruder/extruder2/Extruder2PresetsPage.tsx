@@ -22,6 +22,8 @@ const extruder1PresetDataSchema = z
 
     inverterRotationDirection: z.enum(["Forward", "Backward"]),
 
+    gearRatio: z.enum(["ThirtyToOne", "ThirtyFourToOne"]),
+
     pressureLimit: z.number(),
     pressureLimitEnabled: z.boolean(),
 
@@ -78,6 +80,15 @@ const previewEntries: PresetPreviewEntries<Extruder2> = [
       data.targetInverterPressure?.toFixed(1),
   },
   {
+    name: "Gear Ratio",
+    renderValue: (data: PresetData<Extruder2>) => {
+      const ratio = data.gearRatio;
+      if (ratio === "ThirtyToOne") return "30:1";
+      if (ratio === "ThirtyFourToOne") return "34:1";
+      return "N/A";
+    },
+  },
+  {
     name: "Inverter Direction",
     renderValue: (data: PresetData<Extruder2>) =>
       data.inverterRotationDirection,
@@ -127,6 +138,7 @@ export function Extruder2PresetsPage() {
     setInverterRegulation,
     setInverterRotationDirection,
 
+    setExtruderGearRatio,
     setExtruderPressureLimit,
     setExtruderPressureLimitEnabled,
 
@@ -148,6 +160,8 @@ export function Extruder2PresetsPage() {
     inverterRotationDirection: s?.rotation_state?.forward
       ? "Forward"
       : "Backward",
+
+    gearRatio: s?.screw_state?.gear_ratio,
 
     pressureLimit: s?.extruder_settings_state.pressure_limit,
     pressureLimitEnabled: s?.extruder_settings_state.pressure_limit_enabled,
@@ -180,6 +194,8 @@ export function Extruder2PresetsPage() {
     setInverterRotationDirection(
       preset.data.inverterRotationDirection === "Forward",
     );
+
+    setExtruderGearRatio(preset.data.gearRatio ?? "ThirtyFourToOne");
 
     setExtruderPressureLimit(preset.data.pressureLimit ?? 100.0);
     setExtruderPressureLimitEnabled(preset.data.pressureLimitEnabled ?? true);

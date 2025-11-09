@@ -77,10 +77,17 @@ export const pressureStateSchema = z.object({
 });
 
 /**
+ * Gear ratio enum for extruder gearbox
+ */
+export const gearRatioSchema = z.enum(["ThirtyToOne", "ThirtyFourToOne"]);
+export type GearRatio = z.infer<typeof gearRatioSchema>;
+
+/**
  * Screw state schema
  */
 export const screwStateSchema = z.object({
   target_rpm: z.number(),
+  gear_ratio: gearRatioSchema,
 });
 
 /**

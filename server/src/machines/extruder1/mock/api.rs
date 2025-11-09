@@ -34,6 +34,10 @@ impl MachineApi for ExtruderV2 {
                 self.set_nozzle_pressure_limit_is_enabled(enabled);
             }
 
+            Mutation::SetExtruderGearRatio(gear_ratio) => {
+                self.set_gear_ratio(gear_ratio);
+            }
+
             Mutation::SetPressurePidSettings(settings) => {
                 self.configure_pressure_pid(settings);
             }

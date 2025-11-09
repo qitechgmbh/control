@@ -52,6 +52,7 @@ impl ExtruderV2 {
                     .screw_speed_controller
                     .get_target_rpm()
                     .get::<revolution_per_minute>(),
+                gear_ratio: self.screw_speed_controller.get_gear_ratio(),
             },
             heating_states: HeatingStates {
                 nozzle: HeatingState {
@@ -273,6 +274,11 @@ impl ExtruderV2 {
     pub fn set_target_rpm(&mut self, rpm: f64) {
         self.screw_speed_controller
             .set_target_screw_rpm(AngularVelocity::new::<revolution_per_minute>(rpm));
+        self.emit_state();
+    }
+
+    pub fn set_gear_ratio(&mut self, gear_ratio: super::screw_speed_controller::GearRatio) {
+        self.screw_speed_controller.set_gear_ratio(gear_ratio);
         self.emit_state();
     }
 

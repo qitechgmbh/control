@@ -224,6 +224,21 @@ export function useExtruder2() {
     );
   };
 
+  const setExtruderGearRatio = (
+    gearRatio: "ThirtyToOne" | "ThirtyFourToOne",
+  ) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.screw_state.gear_ratio = gearRatio;
+      },
+      () =>
+        requestExtruderGearRatio({
+          machine_identification_unique: machineIdentification,
+          data: { SetExtruderGearRatio: gearRatio },
+        }),
+    );
+  };
+
   const setPressurePidKp = (kp: number) => {
     updateStateOptimistically(
       (current) => {
@@ -373,6 +388,12 @@ export function useExtruder2() {
     z.object({ SetExtruderPressureLimitIsEnabled: z.boolean() }),
   );
 
+  const { request: requestExtruderGearRatio } = useMachineMutation(
+    z.object({
+      SetExtruderGearRatio: z.enum(["ThirtyToOne", "ThirtyFourToOne"]),
+    }),
+  );
+
   const { request: requestPressurePidSettings } = useMachineMutation(
     z.object({
       SetPressurePidSettings: z.object({
@@ -439,6 +460,7 @@ export function useExtruder2() {
     setMiddleHeatingTemperature,
     setExtruderPressureLimit,
     setExtruderPressureLimitEnabled,
+    setExtruderGearRatio,
     setPressurePidKp,
     setPressurePidKi,
     setPressurePidKd,

@@ -113,6 +113,11 @@ impl ExtruderV2 {
         self.emit_state();
     }
 
+    pub fn set_gear_ratio(&mut self, gear_ratio: super::super::screw_speed_controller::GearRatio) {
+        self.screw_state.gear_ratio = gear_ratio;
+        self.emit_state();
+    }
+
     pub fn set_target_temperature(&mut self, target_temperature: f64, heating_type: HeatingType) {
         match heating_type {
             HeatingType::Nozzle => {

@@ -132,6 +132,7 @@ pub struct PressureState {
 #[derive(Serialize, Debug, Clone, PartialEq)]
 pub struct ScrewState {
     pub target_rpm: f64,
+    pub gear_ratio: super::screw_speed_controller::GearRatio,
 }
 
 #[derive(Serialize, Debug, Clone, PartialEq)]
@@ -231,6 +232,9 @@ pub enum Mutation {
     SetExtruderPressureLimit(f64),
     SetExtruderPressureLimitIsEnabled(bool),
 
+    // Gear Ratio
+    SetExtruderGearRatio(super::screw_speed_controller::GearRatio),
+
     // Pid Configure
     SetPressurePidSettings(PidSettings),
     SetTemperaturePidSettings(TemperaturePid),
@@ -304,6 +308,10 @@ impl MachineApi for ExtruderV2 {
             }
             Mutation::SetExtruderPressureLimitIsEnabled(enabled) => {
                 self.set_nozzle_pressure_limit_is_enabled(enabled);
+            }
+
+            Mutation::SetExtruderGearRatio(gear_ratio) => {
+                self.set_gear_ratio(gear_ratio);
             }
 
             Mutation::SetPressurePidSettings(settings) => {
