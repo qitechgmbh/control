@@ -1,38 +1,177 @@
-use crate::app_state::EthercatSetup;
-use crate::machines::registry::MACHINE_REGISTRY;
+use crate::app_state::{EtherCatDeviceMetaData, EthercatSetup};
 use crate::socketio::main_namespace::MainNamespaceEvents;
 use crate::socketio::main_namespace::ethercat_devices_event::EthercatDevicesEventBuilder;
-use crate::socketio::main_namespace::machines_event::MachinesEventBuilder;
+use crate::socketio::main_namespace::machines_event::{MachineObj, MachinesEventBuilder};
 use crate::{
-    app_state::AppState,
+    app_state::SharedState,
     ethercat::config::{MAX_FRAMES, MAX_PDU_DATA, MAX_SUBDEVICES, PDI_LEN},
 };
-use control_core::ethercat::eeprom_identification::read_device_identifications;
 #[cfg(all(target_os = "linux", not(feature = "development-build")))]
 use control_core::irq_handling::set_irq_affinity;
-use control_core::machines::identification::{
+use machines::machine_identification::{
     DeviceHardwareIdentification, DeviceHardwareIdentificationEthercat, DeviceIdentification,
+    DeviceIdentificationIdentified, MachineIdentificationUnique, read_device_identifications,
 };
-use control_core::machines::new::MachineNewHardwareEthercat;
+
 use control_core::realtime::{set_core_affinity, set_realtime_priority};
 use control_core::socketio::namespace::NamespaceCacheingLogic;
 use ethercat_hal::devices::devices_from_subdevices;
 use ethercrab::std::ethercat_now;
 use ethercrab::{MainDevice, MainDeviceConfig, PduStorage, RetryBehaviour, Timeouts};
+use machines::registry::{MACHINE_REGISTRY, MachineRegistry};
+use machines::{Machine, MachineNewHardware, MachineNewHardwareEthercat, MachineNewParams};
+use smol::channel::Sender;
+use socketioxide::extract::SocketRef;
 use std::{sync::Arc, time::Duration};
 
 const SM_OUTPUT: u16 = 0x1C32;
 const SM_INPUT: u16 = 0x1C33;
 
-pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(), anyhow::Error> {
-    tracing::info!("Starting Ethercat PDU loop");
+/// Structure to hold the result of grouping devices by identification
+#[derive(Debug)]
+pub struct DeviceGroupingResult {
+    /// Devices grouped by machine identification
+    pub device_groups: Vec<Vec<DeviceIdentificationIdentified>>,
+    /// Devices that could not be identified
+    pub unidentified_devices: Vec<DeviceIdentification>,
+}
 
-    // Erase all all setup data from `app_state`
-    {
-        tracing::debug!("Setting up Ethercat network");
-        let mut ethercat_setup_guard = app_state.ethercat_setup.write().await;
-        *ethercat_setup_guard = None;
+pub fn group_devices_by_identification(
+    device_identifications: &Vec<DeviceIdentification>,
+) -> DeviceGroupingResult {
+    let mut device_groups: Vec<Vec<DeviceIdentificationIdentified>> = Vec::new();
+    let mut unidentified_devices: Vec<DeviceIdentification> = Vec::new();
+
+    for device_identification in device_identifications {
+        // if vendor or serial or machine is 0, it is not a valid machine device
+        if let Some(device_machine_identification) =
+            device_identification.device_machine_identification.as_ref()
+        {
+            if !device_machine_identification.is_valid() {
+                unidentified_devices.push(device_identification.clone());
+
+                continue;
+            }
+        } else {
+            unidentified_devices.push(device_identification.clone());
+            continue;
+        }
+
+        // scan over all deice groups
+        // get the first DeviceMachineIdentification
+        // compare and append to the group
+        let mut found = false;
+        for check_group in device_groups.iter_mut() {
+            // get first device in group
+            let first_device = check_group.first().expect("group to not be empty");
+            let first_device_machine_identification = &first_device
+                .device_machine_identification
+                .machine_identification_unique;
+
+            // chek if it has machine identification
+            if let Some(device_machine_identification) =
+                device_identification.device_machine_identification.as_ref()
+            {
+                // compare with the current device
+                if first_device_machine_identification
+                    == &device_machine_identification.machine_identification_unique
+                {
+                    let device_identification_identified = device_identification
+                        .clone()
+                        .try_into()
+                        .expect("should have Some(DeviceMachineIdentification)");
+                    check_group.push(device_identification_identified);
+                    found = true;
+                    break;
+                }
+            }
+        }
+
+        if !found {
+            let device_identification_identified = device_identification
+                .clone()
+                .try_into()
+                .expect("should have Some(DeviceMachineIdentification)");
+            device_groups.push(vec![device_identification_identified]);
+        }
     }
+
+    DeviceGroupingResult {
+        device_groups,
+        unidentified_devices,
+    }
+}
+
+pub async fn set_ethercat_devices<const MAX_SUBDEVICES: usize, const MAX_PDI: usize>(
+    device_identifications: &Vec<DeviceIdentification>,
+    machine_registry: &MachineRegistry,
+    hardware: &MachineNewHardwareEthercat<'_, '_, '_>,
+    shared_state: Arc<SharedState>,
+    socket_queue_tx: Sender<(SocketRef, Arc<control_core::socketio::event::GenericEvent>)>,
+) -> Result<(), anyhow::Error> {
+    tracing::info!("set_ethercat_devices");
+    let device_grouping_result = group_devices_by_identification(device_identifications);
+    tracing::info!("{:?}",device_grouping_result.unidentified_devices);
+    let machine_new_hardware = MachineNewHardware::Ethercat(hardware);
+
+    let mut machines: Vec<Box<dyn Machine>> = vec![];
+    let mut machine_objs: Vec<MachineObj> = vec![];
+
+    for device_group in device_grouping_result.device_groups.iter() {
+        let machine_identification_unique: MachineIdentificationUnique = match device_group.first()
+        {
+            Some(device_identification) => device_identification
+                .device_machine_identification
+                .machine_identification_unique
+                .clone(),
+            None => continue, // Skip this group if empty
+        };
+
+        let new_machine = machine_registry.new_machine(&MachineNewParams {
+            device_group,
+            hardware: &machine_new_hardware,
+            socket_queue_tx: socket_queue_tx.clone(),
+            namespace: None,
+            main_thread_channel: Some(shared_state.main_channel.clone()),
+        });
+
+        match new_machine {
+            Ok(machine) => 
+            {
+                shared_state.clone().api_machines.lock().await.insert(
+                    machine_identification_unique.clone(),
+                    machine.api_get_sender(),
+                );
+                machine_objs.push(MachineObj {
+                    machine_identification_unique,
+                    error: None,
+                });
+                machines.push(machine);
+            }
+            Err(e) => machine_objs.push(MachineObj {
+                machine_identification_unique,
+                error: Some(e.to_string()),
+            }),
+        }        
+
+
+    }
+
+    let _ = shared_state
+        .rt_machine_creation_channel
+        .send(crate::app_state::HotThreadMessage::AddMachines(machines))
+        .await;
+    shared_state.add_machines_if_not_exists(machine_objs).await;
+    shared_state.clone().send_machines_event().await;
+
+    Ok(())
+}
+
+pub async fn setup_loop(
+    interface: &str,
+    app_state: Arc<SharedState>,
+) -> Result<EthercatSetup, anyhow::Error> {
+    tracing::info!("Starting Ethercat PDU loop");
 
     // Setup ethercrab tx/rx task
     let pdu_storage = Box::leak(Box::new(PduStorage::<MAX_FRAMES, MAX_PDU_DATA>::new()));
@@ -101,20 +240,17 @@ pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(),
             dc_static_sync_iterations: 10_000,
         },
     );
-
-    smol::block_on({
+    {
         let app_state_clone = app_state.clone();
-        async move {
-            let main_namespace = &mut app_state_clone
-                .socketio_setup
-                .namespaces
-                .write()
-                .await
-                .main_namespace;
-            let event = EthercatDevicesEventBuilder().initializing();
-            main_namespace.emit(MainNamespaceEvents::EthercatDevicesEvent(event));
-        }
-    });
+        let main_namespace = &mut app_state_clone
+            .socketio_setup
+            .namespaces
+            .write()
+            .await
+            .main_namespace;
+        let event = EthercatDevicesEventBuilder().initializing();
+        main_namespace.emit(MainNamespaceEvents::EthercatDevicesEvent(event));
+    }
 
     // Initalize subdevices
     // Fails if DC setup detects a mispatching working copunter, then just try again in loop
@@ -159,6 +295,10 @@ pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(),
         .zip(&subdevices)
         .map(|((a, b), c)| (a, b, c))
         .collect::<Vec<_>>();
+
+    let mut ethercat_meta_devices = app_state.ethercat_meta_data.write().await;
+    ethercat_meta_devices.clear();
+
     // filter devices and if Option<DeviceMachineIdentification> is Some
     // return identified_devices, identified_device_identifications, identified_subdevices
     let (identified_device_identifications, identified_devices, identified_subdevices): (
@@ -186,32 +326,16 @@ pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(),
         .fold(
             (Vec::new(), Vec::new(), Vec::new()),
             |mut acc, (identified_device_identification, identified_device, identified_subdevice)| {
-                acc.0.push(identified_device_identification);
+                acc.0.push(identified_device_identification.clone());
                 acc.1.push(identified_device);
                 acc.2.push(identified_subdevice);
+                ethercat_meta_devices.push(EtherCatDeviceMetaData::from_subdevice(identified_subdevice,identified_device_identification));
+
                 acc
             },
         );
-    // construct machines
-    {
-        let mut machines_guard = app_state.machines.write().await;
-        machines_guard.set_ethercat_devices::<MAX_SUBDEVICES, PDI_LEN>(
-            &identified_device_identifications,
-            &MACHINE_REGISTRY,
-            &MachineNewHardwareEthercat {
-                ethercat_devices: &identified_devices,
-                subdevices: &identified_subdevices,
-            },
-            app_state.socketio_setup.socket_queue_tx.clone(),
-            Arc::downgrade(&app_state.machines),
-        );
-    }
-
-    // remove subdevice from devices tuple
-    let devices = devices
-        .iter()
-        .map(|(device_identification, device, _)| (device_identification.clone(), device.clone()))
-        .collect::<Vec<_>>();
+    tracing::info!("Found Devices: {:?}", ethercat_meta_devices);
+    drop(ethercat_meta_devices);
 
     for subdevice in subdevices.iter() {
         if subdevice.name() == "EL5152" {
@@ -219,18 +343,33 @@ pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(),
             subdevice.sdo_write(SM_INPUT, 0x1, 0x00u16).await?; //set sync mode (1) for free run (0)
         }
     }
+
+    // remove subdevice from devices tuple
+    let devices = devices
+        .iter()
+        .map(|(device_identification, device, _)| (device_identification.clone(), device.clone()))
+        .collect::<Vec<_>>();
     // Notify client via socketio
-    let app_state_clone = app_state.clone();
-    smol::block_on(async move {
-        let main_namespace = &mut app_state_clone
-            .socketio_setup
-            .namespaces
-            .write()
-            .await
-            .main_namespace;
-        let event = MachinesEventBuilder().build(app_state_clone.clone());
-        main_namespace.emit(MainNamespaceEvents::MachinesEvent(event));
-    });
+
+    set_ethercat_devices::<MAX_SUBDEVICES, PDI_LEN>(
+        &identified_device_identifications,
+        &MACHINE_REGISTRY,
+        &MachineNewHardwareEthercat {
+            ethercat_devices: &identified_devices,
+            subdevices: &identified_subdevices,
+        },
+        app_state.clone(),
+        app_state.clone().socketio_setup.socket_queue_tx.clone(),
+    )
+    .await?;
+    /*let main_namespace = &mut app_state_clone
+        .socketio_setup
+        .namespaces
+        .write()
+        .await
+        .main_namespace;
+    let event = MachinesEventBuilder().build(app_state_clone.clone());
+    main_namespace.emit(MainNamespaceEvents::MachinesEvent(event));*/
 
     // Put group in operational state
     let group_op = match group_preop.into_op(&maindevice).await {
@@ -244,20 +383,9 @@ pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(),
             err
         ))?,
     };
-
-    // Write all this stuff to `app_state`
     {
-        let mut ethercat_setup_guard = app_state.ethercat_setup.write().await;
-        *ethercat_setup_guard = Some(EthercatSetup {
-            devices,
-            group: group_op,
-            maindevice,
-        });
-    }
-
-    // Notify client via socketio
-    let app_state_clone = app_state.clone();
-    smol::block_on(async move {
+        // Notify client via socketio
+        let app_state_clone = app_state.clone();
         let main_namespace = &mut app_state_clone
             .socketio_setup
             .namespaces
@@ -268,7 +396,12 @@ pub async fn setup_loop(interface: &str, app_state: Arc<AppState>) -> Result<(),
             .build(app_state_clone.clone())
             .await;
         main_namespace.emit(MainNamespaceEvents::EthercatDevicesEvent(event));
-    });
+    }
+    tracing::info!("DONE WITH INIT");
 
-    Ok(())
+    return Ok(EthercatSetup {
+        devices,
+        group: group_op,
+        maindevice,
+    });
 }

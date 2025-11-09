@@ -1,11 +1,10 @@
-use std::{any::Any, sync::Arc};
+/*use std::{any::Any, sync::Arc};
 
 use smol::lock::RwLock;
 use std::fmt::Debug;
 
 use crate::machines::identification::DeviceIdentification;
 
-pub mod registry;
 pub mod serial_detection;
 
 pub trait SerialDevice: Any + Send + Sync + SerialDeviceNew + Debug {}
@@ -31,3 +30,4 @@ pub struct SerialDeviceIdentification {
     pub vendor_id: u16,
     pub product_id: u16,
 }
+*/

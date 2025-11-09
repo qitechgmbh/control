@@ -1,19 +1,23 @@
 use crate::ethercat::config::{MAX_SUBDEVICES, PDI_LEN};
 use crate::performance_metrics::EthercatPerformanceMetrics;
-use crate::serial::registry::SERIAL_DEVICE_REGISTRY;
-use crate::socketio::main_namespace::machines_event::MachineObj;
+use crate::rest::handlers::write_machine_device_identification::MachineDeviceInfoRequest;
+use crate::socketio::main_namespace::MainNamespaceEvents;
+use crate::socketio::main_namespace::machines_event::{MachineObj, MachinesEventBuilder};
 use crate::socketio::namespaces::Namespaces;
-use control_core::machines::Machine;
-use control_core::machines::identification::{DeviceIdentification, MachineIdentificationUnique};
-use control_core::machines::manager::MachineManager;
 use control_core::socketio::event::GenericEvent;
 use ethercat_hal::devices::EthercatDevice;
+use ethercrab::SubDeviceRef;
 use ethercrab::{MainDevice, SubDeviceGroup, subdevice_group::Op};
+use machines::machine_identification::{DeviceIdentification, MachineIdentificationUnique};
+use machines::serial::registry::SERIAL_DEVICE_REGISTRY;
+use machines::{Machine, MachineMessage};
+use serde::{Deserialize, Serialize};
 use smol::channel::{Receiver, Sender};
-use smol::lock::RwLock;
+use smol::lock::{Mutex, RwLock};
 use socketioxide::SocketIo;
 use socketioxide::extract::SocketRef;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
+use std::fmt;
 use std::sync::Arc;
 
 pub struct SocketioSetup {
@@ -27,16 +31,74 @@ pub struct SerialSetup {
     pub serial_registry: &'static SERIAL_DEVICE_REGISTRY,
 }
 
-pub struct AppState {
-    pub socketio_setup: SocketioSetup,
-    pub ethercat_setup: Arc<RwLock<Option<EthercatSetup>>>,
-    pub serial_setup: Arc<RwLock<SerialSetup>>,
-    pub machines: Arc<RwLock<MachineManager>>,
-    pub performance_metrics: Arc<RwLock<EthercatPerformanceMetrics>>,
+/*
+Maybe better name needed ...
+Essentially isntead of changing machines with locks, we send messages to our "HOT" thread wehere the machines are executed.
+In there the Machines are built, destroyed, inspected etcetera.
+
+Only Machines requiring RT capabilities (Mostly EtherCat machines) should be added
+*/
+pub enum HotThreadMessage {
+    NoMsg,
+    AddMachines(Vec<Box<dyn Machine>>),
+    AddEtherCatSetup(EthercatSetup),
+    WriteMachineDeviceInfo(MachineDeviceInfoRequest),
+    DeleteMachine(MachineIdentificationUnique),
 }
 
-pub type Machines =
-    HashMap<MachineIdentificationUnique, Result<Arc<RwLock<dyn Machine>>, anyhow::Error>>;
+
+
+ use crate::AsyncThreadMessage;
+
+/*
+    Instead of locking, etc only capture metadata on setup
+*/
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct EtherCatDeviceMetaData {
+    pub configured_address: u16,
+    pub name: String,
+    pub vendor_id: u32,
+    pub product_id: u32,
+    pub revision: u32,
+    pub device_identification: DeviceIdentification,
+}
+
+impl EtherCatDeviceMetaData {
+    pub fn from_subdevice(
+        subdevice: &SubDeviceRef<'_, &ethercrab::SubDevice>,
+        device_identification: DeviceIdentification,
+    ) -> Self {
+        Self {
+            name: subdevice.name().to_string(),
+            configured_address: subdevice.configured_address(),
+            product_id: subdevice.identity().product_id,
+            revision: subdevice.identity().revision,
+            vendor_id: subdevice.identity().vendor_id,
+            device_identification,
+        }
+    }
+}
+
+pub struct SharedState {
+    pub socketio_setup: SocketioSetup,
+    pub senders_receivers_list: Vec<(Receiver<MachineMessage>, Sender<MachineMessage>)>,
+    pub api_machines: Mutex<HashMap<MachineIdentificationUnique, Sender<MachineMessage>>>,
+    pub current_machines_meta: Mutex<Vec<MachineObj>>,
+    
+    pub rt_machine_creation_channel: Sender<HotThreadMessage>,
+    pub main_channel : Sender<AsyncThreadMessage>,
+
+    pub performance_metrics: Arc<RwLock<EthercatPerformanceMetrics>>,
+    pub ethercat_meta_data: RwLock<Vec<EtherCatDeviceMetaData>>,
+}
+
+impl fmt::Debug for EthercatSetup {
+    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        Ok(())
+    }
+}
+
+use control_core::socketio::namespace::NamespaceCacheingLogic;
 
 pub struct EthercatSetup {
     /// All Ethercat devices
@@ -66,46 +128,54 @@ impl EthercatSetup {
     }
 }
 
-impl Default for AppState {
-    fn default() -> Self {
-        Self::new()
+impl SharedState {
+    pub async fn send_machines_event(&self) {
+        let event = MachinesEventBuilder().build(self.current_machines_meta.lock().await.clone());
+        let main_namespace = &mut self.socketio_setup.namespaces.write().await.main_namespace;
+        main_namespace.emit(MainNamespaceEvents::MachinesEvent(event));
     }
-}
 
-impl AppState {
-    pub fn new() -> Self {
+    /// Removes a machine by its unique identifier
+    pub async fn remove_machine(&self, machine_id: &MachineIdentificationUnique) {
+        let mut current_machines = self.current_machines_meta.lock().await;
+        // Retain only machines that do not match the given ID
+        current_machines.retain(|m| &m.machine_identification_unique != machine_id);
+    }
+
+    pub async fn add_machines_if_not_exists(&self, machines: Vec<MachineObj>) {
+        let mut current_machines = self.current_machines_meta.lock().await;
+
+        // Track existing machine identifiers for quick lookup
+        let existing_ids: HashSet<_> = current_machines
+            .iter()
+            .map(|m| m.machine_identification_unique.clone())
+            .collect();
+
+        for machine in machines {
+            if !existing_ids.contains(&machine.machine_identification_unique) {
+                current_machines.push(machine);
+            }
+        }
+    }
+
+    pub fn new(sender: Sender<HotThreadMessage>, main_async_channel : Sender<AsyncThreadMessage>) -> Self {
         let (socket_queue_tx, socket_queue_rx) = smol::channel::unbounded();
         Self {
+
+            current_machines_meta: vec![].into(),
+            ethercat_meta_data: vec![].into(),
             socketio_setup: SocketioSetup {
                 socketio: RwLock::new(None),
                 namespaces: RwLock::new(Namespaces::new(socket_queue_tx.clone())),
                 socket_queue_tx,
                 socket_queue_rx,
             },
-            ethercat_setup: Arc::new(RwLock::new(None)),
-            serial_setup: Arc::new(RwLock::new(SerialSetup {
-                serial_registry: &SERIAL_DEVICE_REGISTRY,
-            })),
-            machines: Arc::new(RwLock::new(MachineManager::new())),
+
             performance_metrics: Arc::new(RwLock::new(EthercatPerformanceMetrics::new())),
+            api_machines: Mutex::new(HashMap::new()),
+            rt_machine_creation_channel: sender,
+            senders_receivers_list: vec![],
+            main_channel: main_async_channel,
         }
-    }
-
-    pub fn get_machine_objs(&self) -> Vec<MachineObj> {
-        let machines = self.machines.read_blocking();
-        machines
-            .iter()
-            .map(|machine| {
-                let error = {
-                    let slot = machine.1.lock_blocking();
-                    slot.machine_connection.to_error().map(|e| e.to_string())
-                };
-
-                MachineObj {
-                    machine_identification_unique: machine.0.clone(),
-                    error,
-                }
-            })
-            .collect()
     }
 }

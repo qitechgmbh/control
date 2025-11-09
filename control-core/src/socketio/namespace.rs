@@ -4,7 +4,7 @@ use socketioxide::extract::SocketRef;
 use std::{collections::HashMap, sync::Arc, time::Duration};
 use tracing::instrument;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Namespace {
     pub sockets: Vec<SocketRef>,
     pub events: HashMap<String, Vec<Arc<GenericEvent>>>,
@@ -167,7 +167,7 @@ impl Namespace {
 
 impl Drop for Namespace {
     fn drop(&mut self) {
-        self.disconnect_all();
+        //self.disconnect_all();
     }
 }
 
