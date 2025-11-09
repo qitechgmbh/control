@@ -88,22 +88,6 @@ export function MinMaxValue({
       }
     }
 
-    console.log("MinMaxValue Debug:", {
-      selectedTimeframe,
-      seriesType: selectedTimeframe <= 5000 ? "short" : "long",
-      validCount: series.validCount,
-      lastTimestamp: series.lastTimestamp,
-      cutoffTime,
-      dataCount,
-      min: hasValidData ? min : 0,
-      max: hasValidData ? max : 0,
-      currentValue: timeseries.current?.value,
-      sampleData: series.values
-        .slice(0, 5)
-        .filter((v): v is TimeSeriesValue => v !== null && v.timestamp > 0)
-        .map((v) => ({ value: v.value, timestamp: v.timestamp })),
-    });
-
     if (!hasValidData) {
       return { min: 0, max: 0, hasData: false };
     }
