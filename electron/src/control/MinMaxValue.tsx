@@ -8,7 +8,6 @@ import {
 } from "./units";
 import { Label } from "./Label";
 import { TimeSeries, TimeSeriesValue } from "@/lib/timeseries";
-import { getSeriesMinMax } from "@/lib/timeseries";
 
 type TimeframeOption = {
   label: string;
