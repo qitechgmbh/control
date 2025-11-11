@@ -2377,7 +2377,6 @@ dependencies = [
  "spin_sleep",
  "textplots",
  "tokio",
- "tonic",
  "tower-http",
  "tracing",
  "tracing-futures",

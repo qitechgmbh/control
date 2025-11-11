@@ -44,7 +44,6 @@ tracing-subscriber = { version = "0.3.20", features = [
     "registry",
 ] }
 utils = { version = "0.1.0", path="../utils" }
-tonic = { version = "0.13.1", optional = true }
 spin_sleep = "1.3.3"
 dhat = { version = "0.3.3", optional = true }
 ctrlc = { version = "3.3", optional = true }
@@ -71,6 +70,3 @@ heap-profile = ["dhat"]
 [profile.release]
 codegen-units = 1
 lto = "fat"
-
-[package.metadata.cargo-machete]
-ignored =  ["tonic"]
