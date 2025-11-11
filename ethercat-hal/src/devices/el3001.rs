@@ -14,7 +14,7 @@ use crate::{
     io::analog_input::{AnalogInputDevice, AnalogInputInput},
 };
 use ethercat_hal_derive::{EthercatDevice, RxPdo, TxPdo};
-use uom::si::{electric_potential::volt, f64::ElectricPotential};
+use units::{electric_potential::volt, f64::ElectricPotential};
 
 #[derive(EthercatDevice)]
 pub struct EL3001 {

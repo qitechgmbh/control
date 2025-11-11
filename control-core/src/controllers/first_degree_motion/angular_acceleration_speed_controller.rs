@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use uom::si::{
+use units::{
     angular_acceleration::radian_per_second_squared,
     angular_velocity::radian_per_second,
     f64::{AngularAcceleration, AngularVelocity},

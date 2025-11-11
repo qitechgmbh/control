@@ -6,7 +6,7 @@ use super::{
 };
 use anyhow::Error;
 use control_core::machines::new::{MachineNewHardware, MachineNewParams, MachineNewTrait};
-use uom::si::{f64::Frequency, frequency::hertz};
+use units::frequency::{Frequency, hertz};
 
 impl MachineNewTrait for MockMachine {
     fn new<'maindevice, 'subdevices>(

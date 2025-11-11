@@ -2,7 +2,8 @@ use super::Heating;
 use control_core::controllers::pid::PidController;
 use ethercat_hal::io::{digital_output::DigitalOutput, temperature_input::TemperatureInput};
 use std::time::{Duration, Instant};
-use uom::si::{f64::ThermodynamicTemperature, thermodynamic_temperature::degree_celsius};
+use units::f64::*;
+use units::thermodynamic_temperature::degree_celsius;
 
 #[derive(Debug)]
 

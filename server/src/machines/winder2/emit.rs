@@ -13,14 +13,15 @@ mod winder2_imports {
     pub use control_core::socketio::event::BuildEvent;
     pub use control_core::{
         machines::identification::MachineIdentificationUnique,
-        socketio::namespace::NamespaceCacheingLogic, uom_extensions::velocity::meter_per_minute,
+        socketio::namespace::NamespaceCacheingLogic,
     };
     pub use std::time::Instant;
-    pub use uom::si::{
+    pub use units::{
         angle::degree,
         angular_velocity::revolution_per_minute,
-        f64::{Length, Velocity},
+        f64::*,
         length::{meter, millimeter},
+        velocity::meter_per_minute,
     };
 }
 
@@ -435,7 +436,7 @@ impl Winder2 {
 
     /// Set minimum speed for minmax mode in RPM
     pub fn spool_set_minmax_min_speed(&mut self, min_speed_rpm: f64) {
-        let min_speed = uom::si::f64::AngularVelocity::new::<revolution_per_minute>(min_speed_rpm);
+        let min_speed = AngularVelocity::new::<revolution_per_minute>(min_speed_rpm);
         if let Err(e) = self.spool_speed_controller.set_minmax_min_speed(min_speed) {
             tracing::error!("Failed to set spool min speed: {:?}", e);
         }
@@ -444,7 +445,7 @@ impl Winder2 {
 
     /// Set maximum speed for minmax mode in RPM
     pub fn spool_set_minmax_max_speed(&mut self, max_speed_rpm: f64) {
-        let max_speed = uom::si::f64::AngularVelocity::new::<revolution_per_minute>(max_speed_rpm);
+        let max_speed = AngularVelocity::new::<revolution_per_minute>(max_speed_rpm);
         if let Err(e) = self.spool_speed_controller.set_minmax_max_speed(max_speed) {
             tracing::error!("Failed to set spool max speed: {:?}", e);
         }

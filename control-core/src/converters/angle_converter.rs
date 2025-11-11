@@ -1,4 +1,4 @@
-use uom::si::{angle::radian, f64::Angle};
+use units::{angle::radian, f64::Angle};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct AngleConverter {

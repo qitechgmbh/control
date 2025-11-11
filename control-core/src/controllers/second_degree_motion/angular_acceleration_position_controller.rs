@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use uom::si::{
+use units::{
     angle::radian,
     angular_acceleration::radian_per_second_squared,
     angular_velocity::radian_per_second,
@@ -199,8 +199,8 @@ impl AngularAccelerationPositionController {
     /// # Example
     /// ```ignore
     /// use control_core::controllers::second_degree_motion::angular_acceleration_position_controller::AngularAccelerationPositionController;
-    /// use uom::si::f64::Angle;
-    /// use uom::si::angle::degree;
+    /// use units::f64::Angle;
+    /// use units::angle::degree;
     ///
     /// let mut controller = AngularAccelerationPositionController::new_simple(
     ///     Some(Angle::new::<degree>(180.0)),

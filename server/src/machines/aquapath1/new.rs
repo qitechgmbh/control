@@ -26,7 +26,7 @@ use ethercat_hal::{
     },
 };
 use std::time::{Duration, Instant};
-use uom::si::{f64::ThermodynamicTemperature, thermodynamic_temperature::degree_celsius};
+use units::thermodynamic_temperature::{ThermodynamicTemperature, degree_celsius};
 
 impl MachineNewTrait for AquaPathV1 {
     fn new<'maindevice>(params: &MachineNewParams) -> Result<Self, Error> {

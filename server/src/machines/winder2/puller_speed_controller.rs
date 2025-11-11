@@ -3,16 +3,13 @@ use std::time::Instant;
 use control_core::{
     controllers::second_degree_motion::linear_jerk_speed_controller::LinearJerkSpeedController,
     converters::linear_step_converter::LinearStepConverter,
-    uom_extensions::{
-        acceleration::meter_per_minute_per_second, jerk::meter_per_minute_per_second_squared,
-        velocity::meter_per_minute,
-    },
 };
 use serde::{Deserialize, Serialize};
-use uom::{
-    ConstZero,
-    si::f64::{Acceleration, AngularVelocity, Jerk, Length, Velocity},
-};
+use units::ConstZero;
+use units::acceleration::meter_per_minute_per_second;
+use units::f64::*;
+use units::jerk::meter_per_minute_per_second_squared;
+use units::velocity::meter_per_minute;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
 pub enum GearRatio {
