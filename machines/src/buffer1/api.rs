@@ -118,8 +118,8 @@ impl MachineApi for BufferV1 {
         let mutation: Mutation = serde_json::from_value(request_body)?;
         match mutation {
             Mutation::SetBufferMode(mode) => self.set_mode_state(mode),
-            Mutation::SetConnectedMachine(machine_identification_unique) => {}
-            Mutation::DisconnectMachine(machine_identification_unique) => {}
+            Mutation::SetConnectedMachine(_machine_identification_unique) => {}
+            Mutation::DisconnectMachine(_machine_identification_unique) => {}
         }
         Ok(())
     }

@@ -25,5 +25,14 @@ pub async fn post_write_machine_device_identification(
             body,
         ))
         .await;
+
+    match res {
+        Ok(_) => (),
+        Err(e) => tracing::error!(
+            "Failed to send HotThreadMessage::WriteMachineDeviceInfo {}",
+            e
+        ),
+    }
+
     ResponseUtil::ok(MutationResponse::success())
 }

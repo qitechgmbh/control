@@ -1,11 +1,18 @@
 use futures::{FutureExt, select};
 use machines::{
-     AsyncThreadMessage, MachineConnection, MachineNewHardware, MachineNewHardwareSerial, MachineNewParams, SerialDevice, SerialDeviceIdentification, SerialDeviceNew, SerialDeviceNewParams, laser::LaserMachine, machine_identification::{
+    AsyncThreadMessage, MachineConnection, MachineNewHardware, MachineNewHardwareSerial,
+    MachineNewParams, SerialDevice, SerialDeviceIdentification, SerialDeviceNew,
+    SerialDeviceNewParams,
+    laser::LaserMachine,
+    machine_identification::{
         DeviceIdentification, DeviceIdentificationIdentified, MachineIdentificationUnique,
-    }, registry::{MACHINE_REGISTRY, MachineRegistry}, serial::{
+    },
+    registry::{MACHINE_REGISTRY, MachineRegistry},
+    serial::{
         devices::laser::Laser,
         init::{SerialDetection, start_serial_discovery},
-    }, winder2::api::GenericEvent
+    },
+    winder2::api::GenericEvent,
 };
 
 #[cfg(feature = "mock-machine")]
@@ -14,7 +21,7 @@ use mock::init::init_mock;
 #[cfg(feature = "mock-machine")]
 pub mod mock;
 
-use app_state::{ HotThreadMessage, SharedState};
+use app_state::{HotThreadMessage, SharedState};
 use ethercat::{
     ethercat_discovery_info::{send_ethercat_discovering, send_ethercat_found},
     init::start_interface_discovery,
@@ -24,7 +31,10 @@ use r#loop::start_loop_thread;
 use panic::init_panic_handling;
 use rest::init::start_api_thread;
 use serialport::UsbPortInfo;
-use smol::{channel::{Receiver, Sender}, lock::RwLock};
+use smol::{
+    channel::{Receiver, Sender},
+    lock::RwLock,
+};
 use socketio::{main_namespace::machines_event::MachineObj, queue::start_socketio_queue};
 use socketioxide::extract::SocketRef;
 use std::{collections::HashMap, sync::Arc, time::Duration};
@@ -37,8 +47,7 @@ pub mod performance_metrics;
 pub mod rest;
 pub mod socketio;
 
-
-pub async fn send_empty_machines_event(    shared_state: Arc<SharedState>){
+pub async fn send_empty_machines_event(shared_state: Arc<SharedState>) {
     shared_state.current_machines_meta.lock().await.clear();
     shared_state.clone().send_machines_event().await;
 }
@@ -187,12 +196,11 @@ pub async fn handle_serial_device_hotplug(
     }
 }
 
-async fn handle_async_requests(recv : Receiver<AsyncThreadMessage>, shared_state: Arc<SharedState>)  {
-    let sender = shared_state.main_channel.clone();
+async fn handle_async_requests(recv: Receiver<AsyncThreadMessage>, shared_state: Arc<SharedState>) {
     while let Ok(message) = recv.recv().await {
         match message {
             AsyncThreadMessage::NoMsg => (),
-            AsyncThreadMessage::ConnectOneWayRequest(cross_connection) => {                
+            AsyncThreadMessage::ConnectOneWayRequest(cross_connection) => {
                 let api_machines_guard = shared_state.api_machines.lock().await;
                 // The Src Connection is from the machine that recvs the request to connect
                 // The Dest Connection the machine to which should be connected
@@ -207,18 +215,18 @@ async fn handle_async_requests(recv : Receiver<AsyncThreadMessage>, shared_state
                     Some(sender) => sender,
                     None => continue,
                 };
-                let connection = MachineConnection{
-                    ident : dest_ident,
-                    connection : dest_sender.clone(),
+                let connection = MachineConnection {
+                    ident: dest_ident,
+                    connection: dest_sender.clone(),
                 };
-                let res = src_sender.send(machines::MachineMessage::ConnectToMachine(connection)).await;
+                let res = src_sender
+                    .send(machines::MachineMessage::ConnectToMachine(connection))
+                    .await;
                 match res {
                     Ok(_) => (),
                     Err(_) => tracing::error!("Failed to send MachineConnection"),
                 }
-
-
-            },
+            }
             AsyncThreadMessage::DisconnectMachines(cross_connection) => {
                 let api_machines_guard = shared_state.api_machines.lock().await;
                 // The Src Connection is from the machine that recvs the request to connect
@@ -235,13 +243,23 @@ async fn handle_async_requests(recv : Receiver<AsyncThreadMessage>, shared_state
                     None => continue,
                 };
 
-                let connection = MachineConnection{
-                    ident : dest_ident,
-                    connection : dest_sender.clone(),
+                let connection = MachineConnection {
+                    ident: dest_ident.clone(),
+                    connection: dest_sender.clone(),
                 };
-                
-                let res = src_sender.send(machines::MachineMessage::DisconnectMachine(connection)).await;
 
+                let res = src_sender
+                    .send(machines::MachineMessage::DisconnectMachine(connection))
+                    .await;
+                match res {
+                    Ok(_) => (),
+                    Err(e) => tracing::error!(
+                        "AsyncThreadMessage::DisconnectMachines src:{:?} dest:{:?} error:{:?}",
+                        src_ident,
+                        dest_ident,
+                        e
+                    ),
+                }
             }
         }
     }
@@ -252,12 +270,11 @@ fn main() {
     tracing::info!("Tracing initialized successfully");
     init_panic_handling();
     const CYCLE_TARGET_TIME: Duration = Duration::from_micros(300);
-    
+
     // for the "hot thread"
     let (sender, receiver) = smol::channel::unbounded();
-    let (main_sender,main_receiver) = smol::channel::unbounded();
-    let shared_state = SharedState::new(sender.clone(),main_sender.clone());
-
+    let (main_sender, main_receiver) = smol::channel::unbounded();
+    let shared_state = SharedState::new(sender.clone(), main_sender.clone());
 
     let app_state = Arc::new(shared_state);
     let _loop_thread = start_loop_thread(app_state.clone(), receiver, CYCLE_TARGET_TIME);
@@ -269,13 +286,14 @@ fn main() {
     let mut socketio_fut = start_socketio_queue(app_state.clone()).fuse();
     let mut ethercat_fut = start_interface_discovery().fuse();
     let mut serial_fut = start_serial_discovery().fuse();
-    let mut handle_async_machine_requests = smol::spawn(handle_async_requests(main_receiver,app_state.clone())).fuse(); 
+    let mut handle_async_machine_requests =
+        smol::spawn(handle_async_requests(main_receiver, app_state.clone())).fuse();
 
-    smol::block_on(async {     
+    smol::block_on(async {
         send_empty_machines_event(app_state.clone()).await;
-        send_ethercat_discovering(app_state.clone()).await; 
+        send_ethercat_discovering(app_state.clone()).await;
     });
-    
+
     smol::block_on(async {
         loop {
             // lets the async runtime decide which future to run next

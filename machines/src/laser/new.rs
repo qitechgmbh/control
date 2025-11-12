@@ -34,7 +34,7 @@ impl MachineNewTrait for LaserMachine {
         };
         let (sender, receiver) = smol::channel::unbounded();
 
-        let mut laser_machine = Self {
+        let laser_machine = Self {
             main_sender: params.main_thread_channel.clone(),
             api_receiver: receiver,
             api_sender: sender,

@@ -9,7 +9,7 @@ use control_core::socketio::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use smol::{channel::Sender, lock::Mutex};
+use smol::channel::Sender;
 use std::{sync::Arc, time::Duration};
 use tracing::instrument;
 

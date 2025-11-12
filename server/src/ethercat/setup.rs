@@ -1,7 +1,7 @@
 use crate::app_state::{EtherCatDeviceMetaData, EthercatSetup};
 use crate::socketio::main_namespace::MainNamespaceEvents;
 use crate::socketio::main_namespace::ethercat_devices_event::EthercatDevicesEventBuilder;
-use crate::socketio::main_namespace::machines_event::{MachineObj, MachinesEventBuilder};
+use crate::socketio::main_namespace::machines_event::MachineObj;
 use crate::{
     app_state::SharedState,
     ethercat::config::{MAX_FRAMES, MAX_PDU_DATA, MAX_SUBDEVICES, PDI_LEN},
@@ -111,7 +111,7 @@ pub async fn set_ethercat_devices<const MAX_SUBDEVICES: usize, const MAX_PDI: us
 ) -> Result<(), anyhow::Error> {
     tracing::info!("set_ethercat_devices");
     let device_grouping_result = group_devices_by_identification(device_identifications);
-    tracing::info!("{:?}",device_grouping_result.unidentified_devices);
+    tracing::info!("{:?}", device_grouping_result.unidentified_devices);
     let machine_new_hardware = MachineNewHardware::Ethercat(hardware);
 
     let mut machines: Vec<Box<dyn Machine>> = vec![];
@@ -136,8 +136,7 @@ pub async fn set_ethercat_devices<const MAX_SUBDEVICES: usize, const MAX_PDI: us
         });
 
         match new_machine {
-            Ok(machine) => 
-            {
+            Ok(machine) => {
                 shared_state.clone().api_machines.lock().await.insert(
                     machine_identification_unique.clone(),
                     machine.api_get_sender(),
@@ -152,9 +151,7 @@ pub async fn set_ethercat_devices<const MAX_SUBDEVICES: usize, const MAX_PDI: us
                 machine_identification_unique,
                 error: Some(e.to_string()),
             }),
-        }        
-
-
+        }
     }
 
     let _ = shared_state

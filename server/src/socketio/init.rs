@@ -1,11 +1,9 @@
 use std::str::FromStr;
 use std::sync::Arc;
-
 use socketioxide::ParserConfig;
 use socketioxide::extract::SocketRef;
 use socketioxide::layer::SocketIoLayer;
-use tracing::info_span;
-use tracing_futures::Instrument;
+
 
 use crate::app_state::SharedState;
 
@@ -113,53 +111,36 @@ fn setup_connection(socket: SocketRef, namespace_id: NamespaceId, app_state: Arc
     let socket_clone = socket.clone();
     let namespace_id_clone = namespace_id.clone();
     let app_state_clone = app_state.clone();
+    smol::spawn(async move {
+        let guard = app_state_clone.socketio_setup.namespaces.read().await;
+        let socket_queue_tx =  guard.main_namespace.namespace.socket_queue_tx.clone();
+        drop(guard);
 
-    let span = info_span!(
-        "socketio_connection",
-        socket = ?socket_clone.id,
-        namespace = %namespace_id_clone,
-        "Connecting socket to namespace"
-    );
-
-        smol::spawn(async move {
-
-
-            let guard = app_state_clone.socketio_setup.namespaces.read().await;
-            let socket_queue_tx =  guard.main_namespace.namespace.socket_queue_tx.clone();
-            drop(guard);
-
-            let mut namespaces_guard = app_state_clone.socketio_setup.namespaces.write().await;
-
-            // Ensure machine namespace exists before applying
-            if let NamespaceId::Machine(_) = namespace_id_clone {
-                let map = &mut namespaces_guard.machine_namespaces;
-                if !map.contains_key(&namespace_id_clone) {
-                    tracing::info!(
-                        "Registering new machine namespace: {}",
-                        namespace_id_clone
-                    );
-                    // Clone the sender from your main namespace
-                    // Now create the namespace
-                    let ns = control_core::socketio::namespace::Namespace::new(socket_queue_tx);
-                    map.insert(namespace_id_clone.clone(), ns);
-                }
+        let mut namespaces_guard = app_state_clone.socketio_setup.namespaces.write().await;
+        // Ensure machine namespace exists before applying
+        if let NamespaceId::Machine(_) = namespace_id_clone {
+            let map = &mut namespaces_guard.machine_namespaces;
+            if !map.contains_key(&namespace_id_clone) {
+                tracing::info!(
+                    "Registering new machine namespace: {}",
+                    namespace_id_clone
+                );
+                // Clone the sender from your main namespace
+                // Now create the namespace
+                let ns = control_core::socketio::namespace::Namespace::new(socket_queue_tx);
+                map.insert(namespace_id_clone.clone(), ns);
             }
+        }
 
-            // Apply and subscribe the socket
-            match  namespaces_guard
-                .apply_mut(namespace_id_clone.clone())
-                .await
-            {
-                Ok(namespace) => {
-                    namespace.subscribe(socket_clone.clone());
-                    namespace.reemit(socket_clone);
-                if let NamespaceId::Machine(ident) = namespace_id_clone {
-
-                    {
-                        tracing::info!("{:?}",app_state.clone().api_machines.lock().await);
-                    }
-                    
-                    
+        // Apply and subscribe the socket
+        match  namespaces_guard
+            .apply_mut(namespace_id_clone.clone())
+            .await
+        {
+            Ok(namespace) => {
+                namespace.subscribe(socket_clone.clone());
+                namespace.reemit(socket_clone);
+            if let NamespaceId::Machine(ident) = namespace_id_clone {                                                
                     match app_state.clone().api_machines.lock().await.get(&ident) {
                         Some(sender) => {
                             tracing::info!("subscribing namespace to {}",ident);

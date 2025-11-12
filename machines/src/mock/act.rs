@@ -47,12 +47,12 @@ impl MachineAct for MockMachine {
 
                 let _res = self.api_mutate(value);
             }
-            MachineMessage::ConnectToMachine(machine_connection) =>
+            MachineMessage::ConnectToMachine(_machine_connection) =>
             /*Doesnt connec to any Macine do nothing*/
             {
                 ()
             }
-            MachineMessage::DisconnectMachine(machine_connection) =>
+            MachineMessage::DisconnectMachine(_machine_connection) =>
             /*Doesnt connec to any Machine do nothing*/
             {
                 ()

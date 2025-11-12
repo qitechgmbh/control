@@ -13,7 +13,7 @@ impl MachineAct for ExtruderV2 {
             Ok(msg) => {
                 let _res = self.act_machine_message(msg);
             }
-            Err(e) => (),
+            Err(_) => (),
         };
 
         self.temperature_controller_back.update(now);
@@ -61,8 +61,8 @@ impl MachineAct for ExtruderV2 {
 
                 let _res = self.api_mutate(value);
             }
-            MachineMessage::ConnectToMachine(machine_connection) => todo!(),
-            MachineMessage::DisconnectMachine(machine_connection) =>
+            MachineMessage::ConnectToMachine(_machine_connection) => (),
+            MachineMessage::DisconnectMachine(_machine_connection) =>
             /*Doesnt connec to any Machine do nothing*/
             {
                 ()

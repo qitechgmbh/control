@@ -6,9 +6,6 @@ pub mod fmt;
 #[cfg(feature = "tracing-journald")]
 pub mod journald;
 
-#[cfg(feature = "tracing-otel")]
-pub mod opentelemetry;
-
 /// Initialize the basic tracing system (without OpenTelemetry if enabled)
 /// OpenTelemetry layer is deferred until async runtime is available
 pub fn init_tracing() {
@@ -51,22 +48,6 @@ pub fn init_tracing() {
             subscriber.with(journald::init_journald_tracing())
         }
         #[cfg(not(feature = "tracing-journald"))]
-        {
-            subscriber
-        }
-    };
-
-    // Add OpenTelemetry layer if enabled, using a dedicated Tokio thread
-    let subscriber = {
-        #[cfg(feature = "tracing-otel")]
-        {
-            // First add a filter layer to block events from the OtelExporter thread
-            let subscriber = subscriber.with(opentelemetry::create_thread_filter_layer());
-
-            // Then add the OpenTelemetry layer
-            subscriber.with(opentelemetry::init_opentelemetry_tracing_with_tokio())
-        }
-        #[cfg(not(feature = "tracing-otel"))]
         {
             subscriber
         }
