@@ -21,6 +21,8 @@ mod winder2_imports {
     pub use units::f64::Length;
 }
 
+use units::Length;
+
 #[cfg(not(feature = "mock-machine"))]
 mod winder2_imports {
     pub use super::api::SpoolAutomaticActionMode;
@@ -37,7 +39,7 @@ mod winder2_imports {
     pub use smol::lock::RwLock;
     pub use std::{fmt::Debug, sync::Weak, time::Instant};
 
-    pub use crate::machines::{MACHINE_WINDER_V1, VENDOR_QITECH, buffer1::BufferV1};
+    pub use crate::buffer1::BufferV1;
     pub use units::ConstZero;
     pub use units::{length::meter, length::millimeter, velocity::meter_per_second};
 }

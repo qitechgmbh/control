@@ -6,7 +6,8 @@ use super::{
 };
 use crate::{MachineNewHardware, MachineNewParams, MachineNewTrait};
 use anyhow::Error;
-use units::frequency::{f64::Frequency, hertz};
+use units::f64::Frequency;
+use units::frequency::hertz;
 
 impl MachineNewTrait for MockMachine {
     fn new<'maindevice, 'subdevices>(

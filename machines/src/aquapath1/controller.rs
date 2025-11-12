@@ -6,8 +6,7 @@ use ethercat_hal::io::{
     analog_output::AnalogOutput, digital_output::DigitalOutput, temperature_input::TemperatureInput,
 };
 use std::time::{Duration, Instant};
-
-use units::f64::{ThermodynamicTemperature, VolumeRate};
+use units::f64::ThermodynamicTemperature;
 use units::thermodynamic_temperature::degree_celsius;
 use units::volume_rate::liter_per_minute;
 #[derive(Debug)]

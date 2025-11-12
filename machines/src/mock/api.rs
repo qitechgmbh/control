@@ -11,7 +11,7 @@ use control_core::socketio::{
 use control_core_derive::BuildEvent;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use smol::{channel::Sender, lock::Mutex};
+use smol::channel::Sender;
 use std::{sync::Arc, time::Duration};
 use tracing::instrument;
 

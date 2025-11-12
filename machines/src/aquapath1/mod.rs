@@ -1,13 +1,11 @@
-use control_core::{
-    machines::identification::{MachineIdentification, MachineIdentificationUnique},
-    socketio::namespace::NamespaceCacheingLogic,
-};
+use control_core::socketio::namespace::NamespaceCacheingLogic;
 use serde::{Deserialize, Serialize};
 use std::time::Instant;
 use units::f64::*;
 use units::{thermodynamic_temperature::degree_celsius, volume_rate::liter_per_minute};
 
-use crate::machines::{
+use crate::{AsyncThreadMessage, Machine, MachineMessage};
+use crate::{
     MACHINE_AQUAPATH_V1, VENDOR_QITECH,
     aquapath1::{
         api::{
@@ -18,10 +16,8 @@ use crate::machines::{
     },
     machine_identification::MachineIdentification,
 };
-use control_core::socketio::namespace::NamespaceCacheingLogic;
-use serde::{Deserialize, Serialize};
+
 use smol::channel::{Receiver, Sender};
-use std::time::Instant;
 
 use super::machine_identification::MachineIdentificationUnique;
 pub mod act;

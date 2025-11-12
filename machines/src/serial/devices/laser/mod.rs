@@ -12,7 +12,7 @@ use std::{
     thread,
     time::{Duration, Instant},
 };
-use uom::si::f64::Length;
+use units::f64::Length;
 
 use crate::machine_identification::{
     DeviceHardwareIdentification, DeviceHardwareIdentificationSerial, DeviceIdentification,
@@ -21,10 +21,6 @@ use crate::machine_identification::{
 use crate::{
     MACHINE_LASER_V1, SerialDevice, SerialDeviceNew, SerialDeviceNewParams, VENDOR_QITECH,
 };
-use serialport::SerialPort;
-use serialport::{ClearBuffer, DataBits, FlowControl, Parity, StopBits};
-use smol::lock::RwLock;
-use units::f64::Length;
 use units::length::millimeter;
 
 /// The struct of Laser Device
