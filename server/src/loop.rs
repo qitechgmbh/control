@@ -68,22 +68,26 @@ pub fn start_loop_thread(
                                 match &ethercat {
                                     Some(ethercat_setup) => {
                                         match ethercat_setup.group.subdevice(
+                                            &ethercat_setup.maindevice,
+                                            machine_device_info_request
+                                                .hardware_identification_ethercat
+                                                .subdevice_index,
+                                        ) {
+                                            Ok(subdevice) => {
+                                                let _ = write_machine_device_identification(
+                                                    &subdevice,
                                                     &ethercat_setup.maindevice,
-                                                    machine_device_info_request.hardware_identification_ethercat.subdevice_index,
-                                            ) {
-                                                Ok(subdevice) => {
-                                                    let _ = write_machine_device_identification(
-                                                        &subdevice,
-                                                        &ethercat_setup.maindevice,
-                                                        &machine_device_info_request.device_machine_identification,
-                                                    ).await;                                                    
-                                                },
-                                                Err(_) => (),
-                                            };
-                                    },
+                                                    &machine_device_info_request
+                                                        .device_machine_identification,
+                                                )
+                                                .await;
+                                            }
+                                            Err(_) => (),
+                                        };
+                                    }
                                     None => (),
                                 };
-                            },                                                                                        
+                            }
                             HotThreadMessage::DeleteMachine(machine_identification_unique) => {
                                 machines.retain(|m| {
                                     m.get_machine_identification_unique()

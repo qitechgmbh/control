@@ -9,9 +9,7 @@ mod winder2_imports {
         TraverseState, Winder2Events,
     };
     pub use control_core::socketio::event::BuildEvent;
-    pub use control_core::{
-        socketio::namespace::NamespaceCacheingLogic,
-    };
+    pub use control_core::socketio::namespace::NamespaceCacheingLogic;
     pub use std::time::Instant;
     pub use units::{
         angle::degree,

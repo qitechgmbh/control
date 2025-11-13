@@ -3,10 +3,10 @@ use std::time::Instant;
 
 #[cfg(not(feature = "mock-machine"))]
 use serde::{Deserialize, Serialize};
-#[cfg(not(feature = "mock-machine"))]
-use units::electric_current::ampere;
 use smol::channel::Receiver;
 use smol::channel::Sender;
+#[cfg(not(feature = "mock-machine"))]
+use units::electric_current::ampere;
 #[cfg(not(feature = "mock-machine"))]
 use units::electric_potential::volt;
 use units::f64::*;

@@ -1,9 +1,8 @@
-use std::str::FromStr;
-use std::sync::Arc;
 use socketioxide::ParserConfig;
 use socketioxide::extract::SocketRef;
 use socketioxide::layer::SocketIoLayer;
-
+use std::str::FromStr;
+use std::sync::Arc;
 
 use crate::app_state::SharedState;
 
@@ -94,7 +93,6 @@ fn setup_disconnection(socket: SocketRef, namespace_id: NamespaceId, app_state: 
                 }
             }
             if let NamespaceId::Machine(ident) = namespace_id.clone() {
-                    
                     match app_state.clone().api_machines.lock().await.get(&ident) {
                         Some(sender) => {let _ = sender.send(machines::MachineMessage::UnsubscribeNamespace).await;},
                         None => tracing::info!("sender doesnt exist for: {}",ident),
@@ -140,7 +138,8 @@ fn setup_connection(socket: SocketRef, namespace_id: NamespaceId, app_state: Arc
             Ok(namespace) => {
                 namespace.subscribe(socket_clone.clone());
                 namespace.reemit(socket_clone);
-            if let NamespaceId::Machine(ident) = namespace_id_clone {                                                
+
+                if let NamespaceId::Machine(ident) = namespace_id_clone {
                     match app_state.clone().api_machines.lock().await.get(&ident) {
                         Some(sender) => {
                             tracing::info!("subscribing namespace to {}",ident);
@@ -162,9 +161,7 @@ fn setup_connection(socket: SocketRef, namespace_id: NamespaceId, app_state: Arc
                     let _ = socket_clone.disconnect();
                 }
             }
-          
         }
-        
     ).detach();
 
     tracing::info!(

@@ -46,9 +46,7 @@ pub enum HotThreadMessage {
     DeleteMachine(MachineIdentificationUnique),
 }
 
-
-
- use crate::AsyncThreadMessage;
+use crate::AsyncThreadMessage;
 
 /*
     Instead of locking, etc only capture metadata on setup
@@ -84,9 +82,9 @@ pub struct SharedState {
     pub senders_receivers_list: Vec<(Receiver<MachineMessage>, Sender<MachineMessage>)>,
     pub api_machines: Mutex<HashMap<MachineIdentificationUnique, Sender<MachineMessage>>>,
     pub current_machines_meta: Mutex<Vec<MachineObj>>,
-    
+
     pub rt_machine_creation_channel: Sender<HotThreadMessage>,
-    pub main_channel : Sender<AsyncThreadMessage>,
+    pub main_channel: Sender<AsyncThreadMessage>,
 
     pub performance_metrics: Arc<RwLock<EthercatPerformanceMetrics>>,
     pub ethercat_meta_data: RwLock<Vec<EtherCatDeviceMetaData>>,
@@ -158,10 +156,12 @@ impl SharedState {
         }
     }
 
-    pub fn new(sender: Sender<HotThreadMessage>, main_async_channel : Sender<AsyncThreadMessage>) -> Self {
+    pub fn new(
+        sender: Sender<HotThreadMessage>,
+        main_async_channel: Sender<AsyncThreadMessage>,
+    ) -> Self {
         let (socket_queue_tx, socket_queue_rx) = smol::channel::unbounded();
         Self {
-
             current_machines_meta: vec![].into(),
             ethercat_meta_data: vec![].into(),
             socketio_setup: SocketioSetup {
