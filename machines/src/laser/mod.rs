@@ -10,6 +10,7 @@ use smol::{
     channel::{Receiver, Sender},
     lock::RwLock,
 };
+use socketioxide::extract::SocketRef;
 
 use crate::AsyncThreadMessage;
 use std::{sync::Arc, time::Instant};
@@ -58,6 +59,32 @@ impl Machine for LaserMachine {
     }
 }
 
+impl LaserMachineNamespace {
+    pub async fn disconnect_all(&self) {
+        for socket in self.connected_sockets().await {
+            let _ = socket.disconnect();
+        }
+    }
+
+    async fn connected_sockets(&self) -> Vec<SocketRef> {
+        if self.namespace.is_none() {
+            return vec![];
+        }
+        let sockets = self.namespace.clone().unwrap().sockets.clone();
+        sockets
+    }
+}
+
+impl Drop for LaserMachine {
+    fn drop(&mut self) {
+        tracing::info!(
+            "[LaserMachine::{:?}] Dropping machine and disconnecting clients...",
+            self.machine_identification_unique
+        );
+        smol::block_on(self.namespace.disconnect_all());
+    }
+}
+
 impl LaserMachine {
     pub const MACHINE_IDENTIFICATION: MachineIdentification = MachineIdentification {
         vendor: VENDOR_QITECH,
@@ -77,6 +104,7 @@ impl LaserMachine {
             y_diameter,
             roundness,
         };
+
         self.namespace
             .emit(LaserEvents::LiveValues(live_values.build()));
     }

@@ -6,6 +6,7 @@ use control_core::modbus::{self, ModbusRequest};
 use serialport::SerialPort;
 use serialport::{ClearBuffer, DataBits, FlowControl, Parity, StopBits};
 use smol::lock::RwLock;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::{
     io::Write,
     sync::Arc,
@@ -28,6 +29,7 @@ use units::length::millimeter;
 pub struct Laser {
     pub data: Option<LaserData>,
     pub path: String,
+    pub shutdown_flag: Arc<AtomicBool>,
 }
 
 impl SerialDevice for Laser {}
@@ -118,15 +120,17 @@ impl SerialDeviceNew for Laser {
             ),
         };
 
+        let shutdown_flag: Arc<AtomicBool> = AtomicBool::new(false).into();
         // Create a new Laser instance
         let _self = Arc::new(RwLock::new(Self {
             data: laser_data,
             path: params.path.clone(),
+            shutdown_flag: shutdown_flag.clone(),
         }));
-
         //// Spawn the device thread
         let _self_clone = _self.clone();
-        thread::Builder::new()
+
+        let _ = thread::Builder::new()
             .name("laser".to_owned())
             .spawn(move || {
                 smol::block_on(async {
@@ -135,6 +139,14 @@ impl SerialDeviceNew for Laser {
             })?;
 
         Ok((device_identification, _self))
+    }
+}
+
+impl Drop for Laser {
+    fn drop(&mut self) {
+        // Signal shutdown
+        self.shutdown_flag.store(true, Ordering::SeqCst);
+        println!("Laser struct dropped, thread stopped");
     }
 }
 
@@ -196,7 +208,7 @@ impl Laser {
 
         port.clear(ClearBuffer::All).ok();
 
-        loop {
+        while !_self.read().await.shutdown_flag.load(Ordering::SeqCst) {
             // send diameter request
             let response = retry_n_times(10, || {
                 if let Err(e) = port.write_all(&request_buffer) {
@@ -210,7 +222,6 @@ impl Laser {
                     38400,
                     8,
                 ));
-
                 modbus::receive_data_modbus(&mut *port)?
                     .map(ModbusResponse::try_from)
                     .transpose()
@@ -229,5 +240,6 @@ impl Laser {
                 });
             }
         }
+        Ok(())
     }
 }

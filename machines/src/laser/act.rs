@@ -37,12 +37,21 @@ impl MachineAct for LaserMachine {
     }
 
     fn act_machine_message(&mut self, msg: MachineMessage) {
+        tracing::info!("{:?}", msg);
         match msg {
             MachineMessage::SubscribeNamespace(namespace) => {
                 self.namespace.namespace = Some(namespace);
                 self.emit_state();
             }
-            MachineMessage::UnsubscribeNamespace => self.namespace.namespace = None,
+            MachineMessage::UnsubscribeNamespace => match &mut self.namespace.namespace {
+                Some(namespace) => {
+                    tracing::info!("UnsubscribeNamespace");
+                    namespace.socket_queue_tx.close();
+                    namespace.sockets.clear();
+                    namespace.events.clear();
+                }
+                None => todo!(),
+            },
             MachineMessage::HttpApiJsonRequest(value) => {
                 use crate::MachineApi;
                 let _res = self.api_mutate(value);
