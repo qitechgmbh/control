@@ -122,6 +122,30 @@ export function useHistoricalMode({
   // Switch to historical mode
   const switchToHistoricalMode = useCallback(() => {
     isInHistoricalModeRef.current = true;
+
+    // Preserve current scale
+    try {
+      if (uplotRef.current) {
+        const xScale = uplotRef.current.scales.x;
+        const yScale = uplotRef.current.scales.y;
+        manualScaleRef.current = {
+          x: {
+            min: xScale?.min ?? 0,
+            max: xScale?.max ?? 0,
+          },
+          y: {
+            min: yScale?.min ?? 0,
+            max: yScale?.max ?? 1,
+          },
+        };
+      }
+    } catch (err) {
+      console.warn(
+        "Error preserving chart scales when switching to historical mode:",
+        err,
+      );
+    }
+
     captureHistoricalFreezeTimestamp();
     stopAnimations(animationRefs);
     lastProcessedCountRef.current = 0; // Reset processed count
