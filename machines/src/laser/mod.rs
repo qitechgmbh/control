@@ -11,7 +11,6 @@ use smol::{
     lock::RwLock,
 };
 use socketioxide::extract::SocketRef;
-use socketioxide::socket;
 
 use crate::AsyncThreadMessage;
 use std::{sync::Arc, time::Instant};
