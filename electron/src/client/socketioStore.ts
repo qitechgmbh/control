@@ -307,12 +307,11 @@ const useSocketioStore = create<SocketioStore>()((set, get) => ({
     // add handlers
     socket.on("connect", () => {
       console.log(`Connected to ${namespace_path}`);
-
-      // reset the store
-      //      resetStore(set);
+      resetStore(set);
     });
     socket.on("disconnect", (reason) => {
       socket.disconnect();
+      resetStore(set);
       // Its hacky but i do not care, electron + react is annoying ...
       window.location.reload();
     });

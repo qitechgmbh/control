@@ -65,7 +65,7 @@ fn setup_disconnection(socket: SocketRef, namespace_id: NamespaceId, app_state: 
 
         // Spawn async task to avoid blocking
         smol::spawn(async move {
-            tracing::debug!(
+            tracing::info!(
                 "Socket disconnected from namespace socket={:?} namespace={}",
                 socket.id,
                 namespace_id,
@@ -77,14 +77,14 @@ fn setup_disconnection(socket: SocketRef, namespace_id: NamespaceId, app_state: 
             match namespaces_guard.apply_mut(namespace_id.clone()).await {
                 Ok(namespace) => {
                     namespace.unsubscribe(socket.clone());
-                    tracing::debug!(
+                    tracing::info!(
                         "Socket unsubscribed from namespace socket={:?} namespace={}",
                         socket.id,
                         namespace_id
                     );
                 }
                 Err(err) => {
-                    tracing::debug!(
+                    tracing::info!(
                         "Failed to unsubscribe socket from namespace socket={:?} namespace={} err={:?}",
                         socket.id,
                         namespace_id,
@@ -94,7 +94,9 @@ fn setup_disconnection(socket: SocketRef, namespace_id: NamespaceId, app_state: 
             }
             if let NamespaceId::Machine(ident) = namespace_id.clone() {
                     match app_state.clone().api_machines.lock().await.get(&ident) {
-                        Some(sender) => {let _ = sender.send(machines::MachineMessage::UnsubscribeNamespace).await;},
+                        Some(sender) => {
+                            let _ = sender.send(machines::MachineMessage::UnsubscribeNamespace).await;
+                        },
                         None => tracing::info!("sender doesnt exist for: {}",ident),
                     };
                 }else{

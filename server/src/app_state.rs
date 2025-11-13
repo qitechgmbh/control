@@ -138,6 +138,11 @@ impl SharedState {
         let mut current_machines = self.current_machines_meta.lock().await;
         // Retain only machines that do not match the given ID
         current_machines.retain(|m| &m.machine_identification_unique != machine_id);
+        tracing::info!(
+            "remove_machine {:?} {:?}",
+            self.current_machines_meta,
+            self.api_machines
+        );
     }
 
     pub async fn add_machines_if_not_exists(&self, machines: Vec<MachineObj>) {

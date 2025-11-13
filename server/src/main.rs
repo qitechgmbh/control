@@ -163,7 +163,7 @@ pub async fn handle_serial_device_hotplug(
         let serial_params = SerialDeviceNewParams {
             path: laser.unwrap(),
         };
-        let _ = match Laser::new_serial(&serial_params) {
+        match Laser::new_serial(&serial_params) {
             Ok((device_identification, serial_device)) => {
                 add_serial_device(
                     app_state.clone(),
@@ -178,15 +178,12 @@ pub async fn handle_serial_device_hotplug(
         };
     } else if laser.is_none() && unique_ident.is_some() {
         let unique_ident = unique_ident.unwrap();
-        app_state.clone().remove_machine(&unique_ident).await;
-
         app_state
             .clone()
             .api_machines
             .lock()
             .await
             .remove(&unique_ident);
-
         app_state.clone().remove_machine(&unique_ident).await;
 
         let _ = app_state
@@ -272,6 +269,7 @@ fn main() {
     logging::init_tracing();
     tracing::info!("Tracing initialized successfully");
     init_panic_handling();
+
     const CYCLE_TARGET_TIME: Duration = Duration::from_micros(300);
 
     // for the "hot thread"
