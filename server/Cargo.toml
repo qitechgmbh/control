@@ -23,7 +23,7 @@ bitvec = "1.0.1"
 # concurrency
 smol = "2.0.2"
 tokio = { version = "1.45.1", features = ["rt-multi-thread"] }
-futures = "0.3.31"
+regex = "1.11.3"
 
 # web
 serde_json = "1.0.143"
@@ -37,7 +37,6 @@ serialport = "4.7.3"
 #tracing
 tracing = { version = "0.1.41", features = ["attributes"] }
 tracing-journald = { version = "0.3.1", optional = true }
-tracing-futures = "0.2.5"
 tracing-subscriber = { version = "0.3.20", features = [
     "env-filter",
     "chrono",

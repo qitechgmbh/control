@@ -1,7 +1,6 @@
 use std::fmt;
 use std::sync::Arc;
 
-use futures::executor::block_on;
 use physical::{AnalogInputRange, AnalogInputValue};
 use smol::lock::RwLock;
 
@@ -40,7 +39,7 @@ impl AnalogInput {
         let get_input = Box::new(move || -> AnalogInputInput {
             let device2 = Arc::clone(&device);
             let port_clone = port.clone();
-            block_on(async move {
+            smol::block_on(async move {
                 let device = device2.read().await;
                 device.get_input(port_clone)
             })
