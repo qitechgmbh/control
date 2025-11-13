@@ -2,7 +2,6 @@ use std::{fmt, sync::Arc};
 
 use crate::helpers::el70xx_velocity_converter::EL70x1VelocityConverter;
 use anyhow::Error;
-use futures::executor::block_on;
 use smol::lock::RwLock;
 
 /// Pulse Train Output (PTO) device
@@ -47,7 +46,7 @@ impl<'device> StepperVelocityEL70x1 {
         // build sync get closure
         let device2 = device.clone();
         let get_input = Box::new(move || -> Result<StepperVelocityEL70x1Input, Error> {
-            block_on(async {
+            smol::block_on(async {
                 let device = device2.read().await;
                 device.get_input(port)
             })
@@ -55,7 +54,7 @@ impl<'device> StepperVelocityEL70x1 {
 
         let device3 = device.clone();
         let get_output = Box::new(move || -> Result<StepperVelocityEL70x1Output, Error> {
-            block_on(async {
+            smol::block_on(async {
                 let device = device3.read().await;
                 device.get_output(port)
             })
@@ -65,7 +64,7 @@ impl<'device> StepperVelocityEL70x1 {
         let device3 = device;
         let get_speed_range = Box::new(
             move || -> Result<crate::shared_config::el70x1::EL70x1SpeedRange, Error> {
-                block_on(async {
+                smol::block_on(async {
                     let device = device3.read().await;
                     Ok(device.get_speed_range(port))
                 })

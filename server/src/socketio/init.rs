@@ -1,12 +1,10 @@
+use super::namespace_id::NamespaceId;
+use crate::app_state::SharedState;
 use socketioxide::ParserConfig;
 use socketioxide::extract::SocketRef;
 use socketioxide::layer::SocketIoLayer;
 use std::str::FromStr;
 use std::sync::Arc;
-
-use crate::app_state::SharedState;
-
-use super::namespace_id::NamespaceId;
 
 pub async fn init_socketio(app_state: Arc<SharedState>) -> SocketIoLayer {
     // create

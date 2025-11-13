@@ -17,6 +17,7 @@ pub async fn send_ethercat_discovering(app_state: Arc<SharedState>) {
             .write()
             .await
             .main_namespace;
+
         let event = EthercatInterfaceDiscoveryEvent::Discovering(true).build();
         main_namespace.emit(MainNamespaceEvents::EthercatInterfaceDiscoveryEvent(event));
     }
@@ -31,6 +32,7 @@ pub async fn send_ethercat_found(app_state: Arc<SharedState>, interface: &str) {
         .write()
         .await
         .main_namespace;
+
     let event = EthercatInterfaceDiscoveryEvent::Done(interface).build();
     main_namespace.emit(MainNamespaceEvents::EthercatInterfaceDiscoveryEvent(event));
 }
