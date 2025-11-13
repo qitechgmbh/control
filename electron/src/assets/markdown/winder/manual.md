@@ -2,6 +2,91 @@
 
 <br>
 
+# Data sheet: QiTech Pro Winder
+
+![datasheet header illustration](images/manuals/winder/datasheet/header.png)
+
+Short description:
+
+The QiTech Pro Winder is a machine for winding and rewinding 3D printing filaments and other strand materials. It is an improvement upon the proven QiTech Winder with support for multiple filament diameters, spools up to 5 kg, angular speeds up to 20 m/min and automatic adjustment of the winding speed depending on the filament tension.
+
+It consists of a pulling unit, a tension arm, a filament guiding traverse and the spool axis. It is controlled by a computer using the QiTech Control software. The traverse movement ensures a clean wind of the filament on the spool. Automatic load adjustment allows for tight winding without having to manually readjust the winding speed each layer. A laser in the traverse allows for easy calibration of the spool width.
+
+<br>
+
+## Scope of delivery
+
+| # | Item                                      |
+| - | ----------------------------------------- |
+| 1 | QiTech Pro Winder                         |
+| 2 | 2x Spool Carrier-Pins                     |
+| 3 | 4x Weights for tension arm                |
+| 4 | 230V/110V to 24V Power Supply             |
+| 5 | USB C to USB A cable                      |
+| 6 | USB Drive with QiTech Control software    |
+| 7 | Operating manual                          |
+| 8 | optional: wheeled frame                   |
+
+<br>
+
+## Dimensions and Weight
+
+![dimensions top view](images/manuals/winder/datasheet/dimensions-top.png)
+![dimensions side view](images/manuals/winder/datasheet/dimensions-side.png)
+![dimensions front view](images/manuals/winder/datasheet/gestell.png)
+
+|                | no frame | incl. frame |
+| -------------- | -------- | ----------- |
+| Weight         | 20 kg    | 35 kg       |
+| Length (1)     | 91 cm    | 91 cm       |
+| Width (2)      | 50 cm    | 50 cm       |
+| Height (3)     | 42 cm    | 134 cm      |
+
+<br>
+
+## Requirements of the Spool
+
+The QiTech Pro Winder is compatible with almost all spools. The spool is rotated by a Carrier-Pin and secured against lateral slipping by a quick release mechanism. The maximum spool weight is 5 kg.
+
+![min/max spool dimensions](images/manuals/winder/datasheet/spool-min-max.png)
+
+<br>
+
+## Winding Speed
+
+How many meters of filament can be wound per minute at maximum speed depends on the inner diameter of the spool/how much filament has already been wound. The resulting path speed determines how much filament can be wound up in a given time. We take a usual spool with an inner diameter of 100 mm to calculate an expected maximum speed. If the inner diameter is larger, the maximum speed shifts upwards.
+
+Winding Speed:
+
+- Min.: 0.5 Meters/Minute
+- Max.: 20 Meters/Minute
+
+<br>
+
+## Friction of the puller rolls
+
+Since the diameter of the extruded filament depends primarily on the pulling speed of the Pro Winder, it is important that it remains constant. This is ensured on the one hand by the use of a stepper motor as drive. At the same time, a vulcanized PU coating of the rolls and a spring-increased contact pressure make the filament only slip through from approx. 30 N tension.
+
+<br>
+
+## Auto-Stop function
+
+When extruding or rewinding, it is often the case that a specific amount of meters must be wound onto a spool. The QiTech Pro Winder has an integrated filament length measurement. For example, after 100 m, it can automatically switch from "wind" to "pull" mode. In addition, the operator is alerted acoustically that the spool has finished winding.
+
+![auto stop ui placeholder](images/manuals/winder/datasheet/autostop-ui.svg)
+
+<br>
+
+## Electronics / Power consumption
+
+| Specification         | Value                      |
+| --------------------- | -------------------------- |
+| Mains connection      | 230V/50Hz or 110V/60Hz     |
+| Ø Load in operation   | 3A at 24V                  |
+| Ø Consumption in use  | 72 Wh                      |
+
+<br>
+
 # EC Declaration of Conformity
 
 **according to 2006/42/EC, Annex II, No. 1 A**
