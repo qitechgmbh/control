@@ -1,9 +1,6 @@
-use std::sync::Arc;
-
-use control_core::{machines::identification::MachineIdentificationUnique, socketio::event::Event};
+use control_core::socketio::event::Event;
+use machines::machine_identification::MachineIdentificationUnique;
 use serde::{Deserialize, Serialize};
-
-use crate::app_state::AppState;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct MachinesEvent {
@@ -20,8 +17,7 @@ pub struct MachinesEventBuilder();
 impl MachinesEventBuilder {
     const NAME: &'static str = "MachinesEvent";
 
-    pub fn build(&self, app_state: Arc<AppState>) -> Event<MachinesEvent> {
-        let machine_objs = app_state.get_machine_objs();
+    pub fn build(&self, machine_objs: Vec<MachineObj>) -> Event<MachinesEvent> {
         Event::new(
             Self::NAME,
             MachinesEvent {

@@ -8,6 +8,8 @@ import { z } from "zod";
 import { toastError, toastZodError } from "@/components/Toast";
 import { MachineIdentificationUnique } from "@/machines/types";
 import { FPS_30 } from "@/lib/constants";
+import { mainNamespaceStore, createMainNamespaceStore } from "./mainNamespace";
+import { softReloadMainNamespaceStore } from "./softReload";
 
 /**
  * Simple buffer-based store updater to limit React re-renders to ~30 FPS
@@ -307,25 +309,12 @@ const useSocketioStore = create<SocketioStore>()((set, get) => ({
       console.log(`Connected to ${namespace_path}`);
 
       // reset the store
-      resetStore(set);
+      //      resetStore(set);
     });
     socket.on("disconnect", (reason) => {
       socket.disconnect();
-      console.warn(`Disconnected from ${namespace_path}, reason: ${reason}`);
-
-      // reset the store
-      resetStore(set);
-
-      // Attempt to reconnect after a short delay for any disconnect reason
-      console.log(
-        `Disconnected from ${namespace_path}, attempting reconnect in 1s...`,
-      );
-      setTimeout(() => {
-        if (get().hasNamespace(namespaceId) && !socket.connected) {
-          console.log(`Reconnecting to ${namespace_path}...`);
-          socket.connect();
-        }
-      }, 1000);
+      // Its hacky but i do not care, electron + react is annoying ...
+      window.location.reload();
     });
 
     socket.on("event", (event: unknown) => {
@@ -334,11 +323,9 @@ const useSocketioStore = create<SocketioStore>()((set, get) => ({
       if (!event_parsed.success) {
         toastZodError(event_parsed.error, "Invalid event");
         return;
-      }
-      // handle the event
+      } // handle the event
       get().namespaces[namespace_path].handler(event_parsed.data);
     });
-
     // store the namespace initally
     set(
       produce((state: SocketioStore) => {
@@ -356,8 +343,26 @@ const useSocketioStore = create<SocketioStore>()((set, get) => ({
       }),
     );
 
-    // finally connect
-    socket.connect();
+    if (namespace_path !== "/main") {
+      const intervalId = setInterval(() => {
+        const mainState = mainNamespaceStore.getState();
+        const machineExists =
+          namespaceId.type === "machine" &&
+          mainState.machines?.data?.machines.some(
+            (m) =>
+              m.machine_identification_unique.serial ===
+              namespaceId.machine_identification_unique.serial,
+          );
+        //console.log(machineExists);
+        socket.connect();
+        if (machineExists && !socket.connected) {
+          socket.connect();
+          clearInterval(intervalId); // stop polling
+        }
+      }, 500);
+    } else {
+      socket.connect();
+    }
   },
   incrementNamespace: (namespaceId: NamespaceId) => {
     const namespace_path = serializeNamespaceId(namespaceId);

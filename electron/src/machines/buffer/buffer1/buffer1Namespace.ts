@@ -62,7 +62,6 @@ export const connectedMachineStateSchema = z.object({
 /**
  * Consolidated state event schema (state changes only)
  */
-
 export const stateEventDataSchema = z.object({
   mode_state: modeStateSchema,
   connected_machine_state: connectedMachineStateSchema,

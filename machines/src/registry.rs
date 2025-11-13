@@ -1,0 +1,103 @@
+#[cfg(feature = "mock-machine")]
+use crate::machines::{extruder1::mock::ExtruderV2, mock::MockMachine, winder2::mock::Winder2};
+
+use crate::{Machine, MachineNewParams, machine_identification::MachineIdentification};
+#[cfg(not(feature = "mock-machine"))]
+use crate::{
+    aquapath1::AquaPathV1, buffer1::BufferV1, extruder1::ExtruderV2, laser::LaserMachine,
+    winder2::Winder2,
+};
+
+use lazy_static::lazy_static;
+
+use anyhow::Error;
+use std::{any::TypeId, collections::HashMap};
+
+pub type MachineNewClosure =
+    Box<dyn Fn(&MachineNewParams) -> Result<Box<dyn Machine>, Error> + Send + Sync>;
+
+pub struct MachineRegistry {
+    type_map: HashMap<TypeId, (MachineIdentification, MachineNewClosure)>,
+}
+
+impl Default for MachineRegistry {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl MachineRegistry {
+    pub fn new() -> Self {
+        Self {
+            type_map: HashMap::new(),
+        }
+    }
+
+    pub fn register<T: Machine + 'static>(
+        &mut self,
+        machine_identficiation: MachineIdentification,
+    ) {
+        self.type_map.insert(
+            TypeId::of::<T>(),
+            (
+                machine_identficiation.clone(),
+                // create a machine construction closure
+                Box::new(|machine_new_params| Ok(Box::new(T::new(machine_new_params)?))),
+            ),
+        );
+    }
+
+    pub fn new_machine(
+        &self,
+        machine_new_params: &MachineNewParams,
+    ) -> Result<Box<dyn Machine>, anyhow::Error> {
+        // get machiine identification
+        let device_identification =
+            &machine_new_params
+                .device_group
+                .first()
+                .ok_or(anyhow::anyhow!(
+                    "[{}::MachineConstructor::new_machine] No device in group",
+                    module_path!()
+                ))?;
+
+        // find machine new function by comparing MachineIdentification
+        let (_, machine_new_closure) = self
+            .type_map
+            .values()
+            .find(|(mi, _)| {
+                mi == &device_identification
+                    .device_machine_identification
+                    .machine_identification_unique
+                    .machine_identification
+            })
+            .ok_or(anyhow::anyhow!(
+                "[{}::MachineConstructor::new_machine] Machine not found",
+                module_path!()
+            ))?;
+
+        // call machine new function by reference
+        (machine_new_closure)(machine_new_params)
+    }
+}
+
+lazy_static! {
+    pub static ref MACHINE_REGISTRY: MachineRegistry = {
+        let mut mc = MachineRegistry::new();
+        mc.register::<Winder2>(Winder2::MACHINE_IDENTIFICATION);
+        mc.register::<ExtruderV2>(ExtruderV2::MACHINE_IDENTIFICATION);
+
+        #[cfg(feature = "mock-machine")]
+        mc.register::<MockMachine>(MockMachine::MACHINE_IDENTIFICATION);
+
+        #[cfg(not(feature = "mock-machine"))]
+        mc.register::<LaserMachine>(LaserMachine::MACHINE_IDENTIFICATION);
+
+        #[cfg(not(feature = "mock-machine"))]
+        mc.register::<BufferV1>(BufferV1::MACHINE_IDENTIFICATION);
+
+        #[cfg(not(feature = "mock-machine"))]
+        mc.register::<AquaPathV1>(AquaPathV1::MACHINE_IDENTIFICATION);
+        mc
+    };
+}

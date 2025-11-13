@@ -1,18 +1,16 @@
+use super::mutation::MachineMutationBody;
+use super::mutation::MutationResponse;
 use crate::{
-    app_state::AppState,
+    app_state::SharedState,
     rest::util::{ResponseUtil, ResponseUtilError},
 };
 use axum::{Json, body::Body, extract::State, http::Response};
-use control_core::{
-    machines::connection::MachineConnection,
-    rest::mutation::{MachineMutationBody, MutationResponse},
-};
 use serde_json::Value;
 use std::sync::Arc;
 
 #[axum::debug_handler]
 pub async fn post_machine_mutate(
-    State(app_state): State<Arc<AppState>>,
+    State(app_state): State<Arc<SharedState>>,
     Json(body): Json<MachineMutationBody<Value>>,
 ) -> Response<Body> {
     let result = _post_machine_mutate(State(app_state), Json(body)).await;
@@ -23,60 +21,48 @@ pub async fn post_machine_mutate(
 }
 
 async fn _post_machine_mutate(
-    State(app_state): State<Arc<AppState>>,
+    State(app_state): State<Arc<SharedState>>,
     Json(body): Json<MachineMutationBody<Value>>,
 ) -> Result<(), anyhow::Error> {
-    // lock machines
-    let machines_guard = app_state.machines.read().await;
-
-    // find machine with given identification in hashmap
-    let slot = machines_guard
-        .get(&body.machine_identification_unique)
-        .ok_or(anyhow::anyhow!(
-            "[{}::_post_machine_mutate] Machine not found {:?}",
-            module_path!(),
-            body.machine_identification_unique,
-        ))?;
-
-    // check machine for valid connection
-    let connection = &slot.lock_blocking().machine_connection;
-    let machine = match connection {
-        MachineConnection::Connected(m) => m,
-        MachineConnection::Error(error) => {
-            return Err(anyhow::anyhow!(
-                "[{}::_post_machine_mutate] Machine has error: {}",
-                module_path!(),
-                error
-            ));
-        }
-        MachineConnection::Disconnected => {
-            return Err(anyhow::anyhow!(
-                "[{}::_post_machine_mutate] Machine is disconnected",
-                module_path!()
-            ));
-        }
-    };
-
-    // log
     tracing::info!(
         "Mutating machine machine={} data={:?}",
         body.machine_identification_unique,
         body.data,
     );
+
     let span = tracing::info_span!("machine_mutate", machine = %body.machine_identification_unique);
     let _span = span.enter();
 
-    // lock machine
-    let mut machine_guard = machine.lock().await;
+    match app_state
+        .api_machines
+        .lock()
+        .await
+        .get(&body.machine_identification_unique)
+    {
+        Some(sender) => {
+            let res = sender
+                .clone()
+                .send(machines::MachineMessage::HttpApiJsonRequest(
+                    body.data.clone(),
+                ))
+                .await;
+            match res {
+                Ok(_) => (),
+                Err(e) => tracing::error!(
+                    "[{}::_post_machine_mutate] Sending MachineMessage::HttpApiJsonRequest to {} failed {}",
+                    module_path!(),
+                    body.machine_identification_unique,
+                    e
+                ),
+            };
+            Ok(())
+        }
 
-    // write data to machine
-    machine_guard.api_mutate(body.data).map_err(|e| {
-        anyhow::anyhow!(
-            "[{}::_post_machine_mutate] Machine api_mutate error: {}",
+        None => Err(anyhow::anyhow!(
+            "[{}::_post_machine_mutate] Machine api_mutate error {} {}",
             module_path!(),
-            e
-        )
-    })?;
-
-    Ok(())
+            "No Machine found with id: ",
+            body.machine_identification_unique
+        )),
+    }
 }

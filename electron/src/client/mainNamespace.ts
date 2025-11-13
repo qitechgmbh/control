@@ -145,8 +145,17 @@ export function mainMessageHandler(
   };
 }
 
+// Create the store instance once and export it
+export const mainNamespaceStore: StoreApi<MainNamespaceStore> =
+  createMainNamespaceStore();
+
+// Message handler stays the same
+export const mainMessageHandlerInstance: EventHandler =
+  mainMessageHandler(mainNamespaceStore);
+
+// Hook that uses the exported store
 const mainRoomImplementation = createNamespaceHookImplementation({
-  createStore: createMainNamespaceStore,
+  createStore: () => mainNamespaceStore, // use the exported store
   createEventHandler: mainMessageHandler,
 });
 

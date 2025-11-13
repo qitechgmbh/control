@@ -1,10 +1,9 @@
-use std::{process::Command, sync::Arc, time::Duration};
-
 use ethercrab::{
     MainDevice, MainDeviceConfig, PduStorage, Timeouts,
     std::{ethercat_now, tx_rx_task},
 };
 use interfaces::Interface;
+use std::{process::Command, sync::Arc, time::Duration};
 
 // Constants for EtherCAT configuration
 const IFACE_DISCOVERY_MAX_SUBDEVICES: usize = 16; // Must be power of 2 > 1
@@ -92,9 +91,6 @@ pub async fn discover_ethercat_interface() -> Result<String, anyhow::Error> {
     let mut interface: Option<&str> = None;
 
     for i in 0..interfaces.len() {
-        // Avoid NetworkManager hangups
-        set_interface_managed(&interfaces[i].name, false);
-
         match test_interface(&interfaces[i].name) {
             Ok(_) => {
                 // if interface found with ethercat Exit early, we expect only one interface with ethercat
@@ -107,7 +103,7 @@ pub async fn discover_ethercat_interface() -> Result<String, anyhow::Error> {
 
     for i in 0..interfaces.len() {
         if interface.is_some() && interface.unwrap() == &interfaces[i].name {
-            continue;
+            set_interface_managed(&interfaces[i].name, false);
         } else {
             set_interface_managed(&interfaces[i].name, true);
         }

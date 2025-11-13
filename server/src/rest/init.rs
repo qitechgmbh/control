@@ -8,12 +8,12 @@ use tracing::Level;
 
 use super::handlers::machine_mutation::post_machine_mutate;
 use super::handlers::write_machine_device_identification::post_write_machine_device_identification;
-use crate::app_state::AppState;
+use crate::app_state::SharedState;
 use crate::socketio::init::init_socketio;
 
-async fn init_api(app_state: Arc<AppState>) -> Result<()> {
+async fn init_api(app_state: Arc<SharedState>) -> Result<()> {
     let cors = CorsLayer::permissive();
-    let socketio_layer = init_socketio(&app_state).await;
+    let socketio_layer = init_socketio(app_state.clone()).await;
 
     let trace_layer = TraceLayer::new_for_http()
         .make_span_with(DefaultMakeSpan::new().level(Level::DEBUG))
@@ -29,7 +29,7 @@ async fn init_api(app_state: Arc<AppState>) -> Result<()> {
         .layer(socketio_layer)
         .layer(cors)
         .layer(trace_layer)
-        .with_state(app_state);
+        .with_state(app_state.clone());
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3001")
         .await
@@ -43,14 +43,14 @@ async fn init_api(app_state: Arc<AppState>) -> Result<()> {
 }
 
 /// Starts the API server in its own thread with a single-threaded Tokio runtime
-pub fn start_api_thread(app_state: Arc<AppState>) -> std::thread::JoinHandle<()> {
+pub fn start_api_thread(app_state: Arc<SharedState>) -> std::thread::JoinHandle<()> {
     thread::spawn(move || {
         let rt = tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()
             .expect("Failed to create Tokio runtime");
 
-        if let Err(err) = rt.block_on(init_api(app_state)) {
+        if let Err(err) = rt.block_on(init_api(app_state.clone())) {
             eprintln!("API server exited with error: {err:?}");
         }
     })

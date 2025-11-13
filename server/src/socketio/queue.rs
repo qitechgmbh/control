@@ -1,7 +1,8 @@
-use crate::app_state::AppState;
 use smol::Task;
 use std::{sync::Arc, time::Instant};
 use tracing::{debug, info, instrument, trace};
+
+use crate::app_state::SharedState;
 
 /// Send a single event with retry logic
 #[instrument(skip_all)]
@@ -59,7 +60,7 @@ async fn send_event_with_retry(
     }
 }
 
-async fn socketio_queue_worker(app_state: Arc<AppState>) {
+async fn socketio_queue_worker(app_state: Arc<SharedState>) {
     tracing::info!("SocketIO global queue listener started");
     let mut event_count = 0;
     let mut batch_start = Instant::now();
@@ -89,6 +90,6 @@ async fn socketio_queue_worker(app_state: Arc<AppState>) {
 }
 
 /// Returns a spawned async task handling the Socket.IO event queue
-pub fn start_socketio_queue(app_state: Arc<AppState>) -> Task<()> {
+pub fn start_socketio_queue(app_state: Arc<SharedState>) -> Task<()> {
     smol::spawn(socketio_queue_worker(app_state))
 }
