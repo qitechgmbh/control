@@ -79,7 +79,7 @@ impl EtherCatDeviceMetaData {
 
 pub struct SharedState {
     pub socketio_setup: SocketioSetup,
-    pub senders_receivers_list: Vec<(Receiver<MachineMessage>, Sender<MachineMessage>)>,
+
     pub api_machines: Mutex<HashMap<MachineIdentificationUnique, Sender<MachineMessage>>>,
     pub current_machines_meta: Mutex<Vec<MachineObj>>,
 
@@ -174,7 +174,6 @@ impl SharedState {
             performance_metrics: Arc::new(RwLock::new(EthercatPerformanceMetrics::new())),
             api_machines: Mutex::new(HashMap::new()),
             rt_machine_creation_channel: sender,
-            senders_receivers_list: vec![],
             main_channel: main_async_channel,
         }
     }

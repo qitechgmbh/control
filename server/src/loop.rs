@@ -142,7 +142,6 @@ pub fn start_loop_thread(
 pub async fn copy_ethercat_inputs(
     ethercat_setup: Option<&EthercatSetup>,
 ) -> Result<(), anyhow::Error> {
-    //println!("copy_ethercat_intputs");
     // only if we have an ethercat setup
     // - tx/rx cycle
     // - copy inputs to devices

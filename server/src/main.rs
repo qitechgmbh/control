@@ -187,11 +187,14 @@ pub async fn handle_serial_device_hotplug(
             .await
             .remove(&unique_ident);
 
+        app_state.clone().remove_machine(&unique_ident).await;
+
         let _ = app_state
             .clone()
             .rt_machine_creation_channel
             .send(HotThreadMessage::DeleteMachine(unique_ident))
             .await;
+
         app_state.clone().send_machines_event().await;
     }
 }
