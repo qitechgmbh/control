@@ -19,6 +19,8 @@ mod winder2_imports {
     pub use super::api::SpoolAutomaticActionMode;
     pub use crate::winder2::mock::Winder2;
     pub use std::time::Instant;
+    pub use units::f64::Length;
+    pub use units::length::meter;
 }
 
 use units::f64::Length;

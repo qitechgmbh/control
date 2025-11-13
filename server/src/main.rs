@@ -1,5 +1,4 @@
 use control_core::socketio::event::GenericEvent;
-use futures::{FutureExt, select};
 use machines::{
     AsyncThreadMessage, MachineConnection, MachineNewHardware, MachineNewHardwareSerial,
     MachineNewParams, SerialDevice, SerialDeviceIdentification, SerialDeviceNew,
@@ -11,9 +10,13 @@ use machines::{
     registry::{MACHINE_REGISTRY, MachineRegistry},
     serial::{
         devices::laser::Laser,
-        init::{SerialDetection, start_serial_discovery},
+        init::{SerialDetection},
     },
 };
+use crate::{ethercat::{ethercat_discovery_info::send_ethercat_found, init::find_ethercat_interface, setup::setup_loop}, socketio::queue::socketio_queue_worker};
+
+#[cfg(feature = "development-build")]
+use std::sync::atomic::{AtomicBool, Ordering};
 
 #[cfg(feature = "mock-machine")]
 use mock::init::init_mock;
@@ -23,19 +26,16 @@ pub mod mock;
 
 use app_state::{HotThreadMessage, SharedState};
 use ethercat::{
-    ethercat_discovery_info::{send_ethercat_discovering, send_ethercat_found},
-    init::start_interface_discovery,
-    setup::setup_loop,
+    ethercat_discovery_info::send_ethercat_discovering,
 };
 use r#loop::start_loop_thread;
 use panic::init_panic_handling;
 use rest::init::start_api_thread;
 use serialport::UsbPortInfo;
 use smol::{
-    channel::{Receiver, Sender},
-    lock::RwLock,
+    LocalExecutor, channel::{Receiver, Sender}, lock::RwLock
 };
-use socketio::{main_namespace::machines_event::MachineObj, queue::start_socketio_queue};
+use socketio::{main_namespace::machines_event::MachineObj};
 use socketioxide::extract::SocketRef;
 use std::{collections::HashMap, sync::Arc, time::Duration};
 
@@ -107,13 +107,24 @@ pub async fn add_serial_device(
     shared_state.clone().send_machines_event().await;
 }
 
-async fn setup_ethercat(
-    interface: &str,
-    app_state: Arc<SharedState>,
-    sender: Sender<HotThreadMessage>,
-) {
-    tracing::info!("Calling setup_loop");
+pub async fn start_serial_discovery(app_state: Arc<SharedState>) {
+    loop {
+        let devices = SerialDetection::detect_devices();
+
+        if !devices.is_empty() {
+            handle_serial_device_hotplug(app_state.clone(), devices).await;
+        }
+
+        smol::Timer::after(Duration::from_secs(1)).await;
+    }
+}
+
+pub async fn start_interface_discovery(app_state: Arc<SharedState>, sender: Sender<HotThreadMessage>) {
+    let interface = find_ethercat_interface().await;
+    tracing::info!("Inferface found {}, setting up EtherCat loop", interface);
+
     let res = setup_loop(&interface, app_state.clone()).await;
+
     match res {
         Ok(setup) => {
             let _ = sender.send(HotThreadMessage::AddEtherCatSetup(setup)).await;
@@ -128,23 +139,20 @@ async fn setup_ethercat(
             );
         }
     }
+
     send_ethercat_found(app_state.clone(), &interface).await;
 }
 
 pub async fn handle_serial_device_hotplug(
     app_state: Arc<SharedState>,
-    map: Option<HashMap<String, UsbPortInfo>>,
+    map: HashMap<String, UsbPortInfo>,
 ) {
     let laser_ident = SerialDeviceIdentification {
         vendor_id: 0x0403,
         product_id: 0x6001,
     };
 
-    let laser = match map {
-        Some(map) => SerialDetection::get_path_by_id(laser_ident, map),
-        None => None,
-    };
-
+    let laser = SerialDetection::get_path_by_id(laser_ident, map);
     let mut unique_ident: Option<MachineIdentificationUnique> = None;
 
     {
@@ -264,10 +272,18 @@ async fn handle_async_requests(recv: Receiver<AsyncThreadMessage>, shared_state:
             }
         }
     }
+
+    tracing::warn!("Async handler task finished");
 }
 
-#[cfg(feature = "development-build")]
-use std::sync::atomic::{AtomicBool, Ordering};
+pub async fn start_socketio_queue(app_state: Arc<SharedState>) {
+    let app_state = app_state.as_ref();
+    loop {
+        let res = socketio_queue_worker(app_state).await;
+        tracing::error!("SocketIO task finished, but should never finish: {:?}", res);
+        tracing::error!("Restarting SocketIO...");
+    }
+}
 
 #[cfg(feature = "development-build")]
 fn setup_ctrlc_handler() -> Arc<AtomicBool> {
@@ -303,7 +319,7 @@ fn main() {
     // for the "hot thread"
     let (sender, receiver) = smol::channel::unbounded();
     let (main_sender, main_receiver) = smol::channel::unbounded();
-    let shared_state = SharedState::new(sender.clone(), main_sender.clone());
+    let shared_state = SharedState::new(sender.clone(), main_sender);
 
     let app_state = Arc::new(shared_state);
     let _loop_thread = start_loop_thread(receiver, CYCLE_TARGET_TIME);
@@ -312,50 +328,28 @@ fn main() {
     init_mock(app_state.clone()).expect("Failed to initialize mock machines");
 
     let _ = start_api_thread(app_state.clone());
-    let mut socketio_fut = start_socketio_queue(app_state.clone()).fuse();
-    let mut ethercat_fut = start_interface_discovery().fuse();
-    let mut serial_fut = start_serial_discovery().fuse();
-    let mut handle_async_machine_requests =
-        smol::spawn(handle_async_requests(main_receiver, app_state.clone())).fuse();
 
     smol::block_on(async {
         send_empty_machines_event(app_state.clone()).await;
         send_ethercat_discovering(app_state.clone()).await;
     });
 
-    smol::block_on(async {
-        loop {
-            #[cfg(feature = "development-build")]
-            if !running.load(Ordering::SeqCst) {
-                tracing::info!("Shutdown signal received, exiting main loop.");
-                break;
-            }
-            // lets the async runtime decide which future to run next
-            select! {
-                res = ethercat_fut => {
-                    tracing::info!("EtherCAT task finished: {:?}", res);
-                    match res {
-                        Ok(interface) =>
-                        {
-                            setup_ethercat(&interface,app_state.clone(),sender.clone()).await;
-                        },
-                        Err(_) => (),
-                    };
+    let ex = LocalExecutor::new();
+    let _socketio_queue_task = ex.spawn(start_socketio_queue(app_state.clone()));
+    let _interface_discovery_task = ex.spawn(start_interface_discovery(app_state.clone(), sender));
+    let _serial_discovery_task = ex.spawn(start_serial_discovery(app_state.clone()));
+    let _handle_async_requests_task = ex.spawn(handle_async_requests(main_receiver, app_state));
 
-                },
-                res = serial_fut => {
-                    let _ = handle_serial_device_hotplug(app_state.clone(),res).await;
-                    serial_fut = start_serial_discovery().fuse();
-                },
-                res = socketio_fut => {
-                    // In theory it should never finish
-                    tracing::warn!("SocketIO task finished: {:?}", res);
-                },
-                res = handle_async_machine_requests => {
-                    tracing::warn!("Async handler task finished: {:?}", res);
-                },
-
-            }
+    while !ex.is_empty() {
+        #[cfg(feature = "development-build")]
+        if !running.load(Ordering::SeqCst) {
+            tracing::info!("Shutdown signal received, exiting main loop.");
+            break;
         }
-    });
+
+        ex.try_tick();
+    }
+
+    tracing::error!("All tasks in main have finished, but some should run forever.");
+    tracing::error!("SystemD shall restart us. Better luck next time.");
 }

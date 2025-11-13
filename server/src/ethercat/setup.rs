@@ -194,10 +194,9 @@ pub async fn setup_loop(
             #[cfg(not(all(target_os = "linux", feature = "io-uring")))]
             {
                 use ethercrab::std::tx_rx_task;
-                use futures::executor::block_on;
 
                 let rt = smol::LocalExecutor::new();
-                let _ = block_on(rt.run(async {
+                let _ = smol::block_on(rt.run(async {
                     tx_rx_task(&interface, tx, rx)
                         .expect("spawn TX/RX task")
                         .await

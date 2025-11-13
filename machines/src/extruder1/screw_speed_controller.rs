@@ -6,7 +6,6 @@ use control_core::{
     transmission::{Transmission, fixed::FixedTransmission},
 };
 use ethercat_hal::io::analog_input::AnalogInput;
-use futures::executor::block_on;
 use units::angular_velocity::revolution_per_minute;
 use units::electric_current::milliampere;
 use units::f64::*;
@@ -206,7 +205,7 @@ impl ScrewSpeedController {
 
     pub fn update(&mut self, now: Instant, is_extruding: bool) {
         // TODO: move this logic elsewhere or make non async
-        block_on(self.inverter.act(now));
+        smol::block_on(self.inverter.act(now));
 
         let wiring_error = self.get_wiring_error();
         if wiring_error {
