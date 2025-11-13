@@ -1,5 +1,66 @@
 ![Titelseite,screenshot from Word doccument](images/manuals/extruder/Titelseite.jpeg)
 
+<!-- Datasheet: Added below Titelseite. Placeholder images to be replaced with final exports. -->
+
+# QiTech Pro Extruder – Datasheet
+
+![Datasheet Header](images/manuals/extruder/datasheet/header.png)
+
+## Included Assemblies
+Electrical cabinet · Temperature controller · Frequency inverter · Cable routing + connection to QiTech Control (digital control)
+
+## Motor
+| Specification | Value |
+| ------------- | ----- |
+| Motor power | 1.5 kW |
+| Output speed | 41 rpm |
+| Output torque | 336 Nm |
+| Transmission ratio | 34:2 |
+| Service factor cG | 1.4 |
+| Voltage / Frequency | 400 V / 50 Hz |
+| Efficiency class | IE3 (Premium Efficiency) |
+| Efficiency @ 100% rated load / % rated current (std. voltage) | 5.98 / 3.45 A |
+| Protection class | IP55, Insulation class F |
+| Construction design | Flange design, terminal box top |
+| Shaft end (d×L) | 40 × 80 mm |
+
+## Melt Pressure Sensor (DSI1-1/2-500-F-15)
+| Specification | Value |
+| ------------- | ----- |
+| Output signal | 4–20 mA (2-conductor) |
+| Sensor system | Mercury-free |
+| Sensor | DMS Vollbrückentechnik |
+| Measuring accuracy | 0.5 % |
+| Calibration signal | 80 % |
+| Supply voltage | 15–32 VDC |
+| Measuring range | 0–500 bar |
+| Temperature range (membrane) | max. 410 °C |
+| Temperature range (sensor head) | max. 85 °C |
+| Screw-in thread | 1/2"–20 UNF |
+
+## Extruder Barrel & Screw
+Nitrided extruder barrel (Ø 65 mm). Screw hardened from high‑alloyed steel (Ø 25 mm).
+
+## Heating Elements & Temperature Sensors
+3 heating zones (max. 350 °C), Heater 415 V, 3 × 750 W. 3× Type K temperature sensors, 1/8" NPT.
+
+## Hopper
+Volume: 4 L · Material: Aluminum · Easily detachable.
+
+## Dimensions
+
+![Dimensions](images/manuals/extruder/datasheet/dimensions.png)
+
+Overall length 1365 mm · Width 220 mm · Height 384 mm.
+
+Fully wired and assembled (raised on 2 aluminum profiles).
+
+Delivery time after completion: 2–5 working days.
+
+Warranty: 24 months after delivery (excluding wearing parts).
+
+<br>
+
 <br>
 
 # EC Declaration of Conformity
