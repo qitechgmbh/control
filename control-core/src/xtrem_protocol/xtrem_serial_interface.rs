@@ -40,7 +40,7 @@ impl Function {
 /// ID-D      | Network address of the destination device | 2
 /// F         | Function, action to perform | 1
 /// D_ADDRESS | Data address: Identification code of the data register on which the action will be
-/// carried out | 4
+///           | carried out | 4
 /// D_L       | data_length (number of byte) | 2
 /// DATA      | Date sent | Variable
 /// LRC       | Longitudinal redundancy check | 2
@@ -105,7 +105,7 @@ impl XtremFrame {
     }
 
     /// Parses an XTREM frame and validates its LRC
-     pub fn decode(&self, frame: &[u8]) -> Option<Self> {
+    pub fn decode(&self, frame: &[u8]) -> Option<Self> {
         if frame.len() < 10 || frame[0] != 0x02 || *frame.last()? != 0x03 {
             return None;
         }
@@ -122,20 +122,22 @@ impl XtremFrame {
 
         // Helper: take N chars as a &str slice, then advance
         let mut take = |n: usize| {
-            if pos + n > text.len() { return None; }
+            if pos + n > text.len() {
+                return None;
+            }
             let s = &text[pos..pos + n];
             pos += n;
             Some(s)
         };
 
         let id_origin = u8::from_str_radix(take(2)?, 16).ok()?;
-        let id_dest   = u8::from_str_radix(take(2)?, 16).ok()?;
-        let function  = Function::from_char(take(1)?.chars().next()?)?;
+        let id_dest = u8::from_str_radix(take(2)?, 16).ok()?;
+        let function = Function::from_char(take(1)?.chars().next()?)?;
         let data_address = u16::from_str_radix(take(4)?, 16).ok()?;
-        let data_len     = usize::from_str_radix(take(2)?, 16).ok()?;
+        let data_len = usize::from_str_radix(take(2)?, 16).ok()?;
 
         let data_start = pos;
-        let data_end   = data_start + data_len;
+        let data_end = data_start + data_len;
         if data_end + 2 > text.len() {
             return None;
         }
@@ -151,4 +153,3 @@ impl XtremFrame {
         })
     }
 }
-
