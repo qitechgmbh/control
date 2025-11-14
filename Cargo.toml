@@ -8,6 +8,7 @@ members = [
     #"ethercat-eeprom-dump",
     "control-core-derive",
     "units",
+    "utils",
 ]
 exclude = []
 resolver = "2"

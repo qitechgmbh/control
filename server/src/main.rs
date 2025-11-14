@@ -38,6 +38,7 @@ use smol::{
 use socketio::{main_namespace::machines_event::MachineObj, queue::start_socketio_queue};
 use socketioxide::extract::SocketRef;
 use std::{collections::HashMap, sync::Arc, time::Duration};
+
 pub mod app_state;
 pub mod ethercat;
 pub mod logging;
@@ -265,10 +266,37 @@ async fn handle_async_requests(recv: Receiver<AsyncThreadMessage>, shared_state:
     }
 }
 
+#[cfg(feature = "development-build")]
+use std::sync::atomic::{AtomicBool, Ordering};
+
+#[cfg(feature = "development-build")]
+fn setup_ctrlc_handler() -> Arc<AtomicBool> {
+    let running = Arc::new(AtomicBool::new(true));
+    let r = running.clone();
+
+    ctrlc::set_handler(move || {
+        eprintln!("Ctrl-C pressed, shutting down...");
+        r.store(false, Ordering::SeqCst);
+    })
+    .expect("Error setting Ctrl-C handler");
+
+    running
+}
+
+#[cfg(feature = "heap-profile")]
+#[global_allocator]
+static ALLOC: dhat::Alloc = dhat::Alloc;
+
 fn main() {
     logging::init_tracing();
     tracing::info!("Tracing initialized successfully");
     init_panic_handling();
+
+    #[cfg(feature = "heap-profile")]
+    let _profiler = dhat::Profiler::new_heap();
+
+    #[cfg(feature = "development-build")]
+    let running = setup_ctrlc_handler();
 
     const CYCLE_TARGET_TIME: Duration = Duration::from_micros(300);
 
@@ -297,6 +325,11 @@ fn main() {
 
     smol::block_on(async {
         loop {
+            #[cfg(feature = "development-build")]
+            if !running.load(Ordering::SeqCst) {
+                tracing::info!("Shutdown signal received, exiting main loop.");
+                break;
+            }
             // lets the async runtime decide which future to run next
             select! {
                 res = ethercat_fut => {
