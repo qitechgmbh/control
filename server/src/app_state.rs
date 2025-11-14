@@ -1,5 +1,4 @@
 use crate::ethercat::config::{MAX_SUBDEVICES, PDI_LEN};
-use crate::performance_metrics::EthercatPerformanceMetrics;
 use crate::rest::handlers::write_machine_device_identification::MachineDeviceInfoRequest;
 use crate::socketio::main_namespace::MainNamespaceEvents;
 use crate::socketio::main_namespace::machines_event::{MachineObj, MachinesEventBuilder};
@@ -79,14 +78,10 @@ impl EtherCatDeviceMetaData {
 
 pub struct SharedState {
     pub socketio_setup: SocketioSetup,
-
     pub api_machines: Mutex<HashMap<MachineIdentificationUnique, Sender<MachineMessage>>>,
     pub current_machines_meta: Mutex<Vec<MachineObj>>,
-
     pub rt_machine_creation_channel: Sender<HotThreadMessage>,
     pub main_channel: Sender<AsyncThreadMessage>,
-
-    pub performance_metrics: Arc<RwLock<EthercatPerformanceMetrics>>,
     pub ethercat_meta_data: RwLock<Vec<EtherCatDeviceMetaData>>,
 }
 
@@ -175,8 +170,6 @@ impl SharedState {
                 socket_queue_tx,
                 socket_queue_rx,
             },
-
-            performance_metrics: Arc::new(RwLock::new(EthercatPerformanceMetrics::new())),
             api_machines: Mutex::new(HashMap::new()),
             rt_machine_creation_channel: sender,
             main_channel: main_async_channel,
