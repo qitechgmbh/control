@@ -5,6 +5,7 @@ pub mod ethercat;
 pub mod helpers;
 pub mod irq_handling;
 pub mod modbus;
+pub mod xtrem_protocol;
 pub mod realtime;
 pub mod serial;
 pub mod socketio;
