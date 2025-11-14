@@ -1,18 +1,13 @@
-use std::{sync::Arc, time::Duration};
-
-use crate::{MachineApi, MachineMessage, machine_identification::MachineIdentificationUnique};
-
 use super::{BufferV1, BufferV1Mode};
+use crate::{MachineApi, MachineMessage, machine_identification::MachineIdentificationUnique};
 use control_core::socketio::{
     event::{Event, GenericEvent},
-    namespace::{
-        CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_duration,
-        cache_one_event,
-    },
+    namespace::{CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_one_event},
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use smol::channel::Sender;
+use std::sync::Arc;
 use tracing::instrument;
 
 #[derive(Serialize, Debug, Clone, Default)]

@@ -3,14 +3,13 @@ use crate::{MachineApi, MachineMessage};
 use control_core::socketio::{
     event::{Event, GenericEvent},
     namespace::{
-        CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_duration,
-        cache_first_and_last_event,
+        CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_first_and_last_event,
     },
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use smol::channel::Sender;
-use std::{sync::Arc, time::Duration};
+use std::sync::Arc;
 use tracing::instrument;
 
 #[derive(Serialize, Debug, Clone, Default)]
