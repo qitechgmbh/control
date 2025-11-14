@@ -267,11 +267,9 @@ impl CacheableEvents<Self> for ExtruderV2Events {
     }
 
     fn event_cache_fn(&self) -> CacheFn {
-        let cache_one_hour = cache_duration(Duration::from_secs(60 * 60), Duration::from_secs(1));
         let cache_first_and_last = cache_first_and_last_event();
-
         match self {
-            Self::LiveValues(_) => cache_one_hour,
+            Self::LiveValues(_) => cache_first_and_last,
             Self::State(_) => cache_first_and_last,
         }
     }

@@ -99,11 +99,10 @@ impl CacheableEvents<Self> for BufferV1Events {
     }
 
     fn event_cache_fn(&self) -> CacheFn {
-        let cache_one_hour = cache_duration(Duration::from_secs(60 * 60), Duration::from_secs(1));
         let cache_one = cache_one_event();
 
         match self {
-            Self::LiveValues(_) => cache_one_hour,
+            Self::LiveValues(_) => cache_one,
             Self::State(_) => cache_one,
         }
     }
