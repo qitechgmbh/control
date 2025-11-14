@@ -9,7 +9,6 @@ use smol::channel::Receiver;
 use spin_sleep::SpinSleeper;
 use std::time::Instant;
 use std::{sync::Arc, time::Duration};
-use tracing::{instrument, trace_span};
 
 // 300 us loop cycle target
 // SharedState is mostly read from and rarely locked, but does not contain any machine,ethercat devices etc
@@ -42,96 +41,69 @@ pub fn start_loop_thread(
                 );
             }
 
-            let rt = smol::LocalExecutor::new();
-            // Instead of creating a NEW async task every iteration of our realtime txrx loop, create it ONCE
-            let mut ethercat: Option<Box<EthercatSetup>> = None;
-            // We need the vec in a box due to Mutably borrowing
-            let mut machines: Vec<Box<dyn Machine>> = vec![];
+            // Wrap the whole async loop in a future
+            let loop_future = async {
+                let mut ethercat: Option<Box<EthercatSetup>> = None;
+                let mut machines: Vec<Box<dyn Machine>> = vec![];
 
-            smol::block_on(async {
-                rt.run(async {
-                    loop {
-                        let res = rt_receiver.try_recv();
-                        let msg = match res {
-                            Ok(msg) => msg,
-                            Err(_) => HotThreadMessage::NoMsg,
-                        };
+                loop {
+                    let msg = match rt_receiver.try_recv() {
+                        Ok(msg) => msg,
+                        Err(_) => HotThreadMessage::NoMsg,
+                    };
 
-                        match msg {
-                            HotThreadMessage::NoMsg => (),
-                            HotThreadMessage::AddEtherCatSetup(ethercat_setup) => {
-                                ethercat = Some(Box::new(ethercat_setup));
-                            }
-                            HotThreadMessage::WriteMachineDeviceInfo(
-                                machine_device_info_request,
-                            ) => {
-                                match &ethercat {
-                                    Some(ethercat_setup) => {
-                                        match ethercat_setup.group.subdevice(
-                                            &ethercat_setup.maindevice,
-                                            machine_device_info_request
-                                                .hardware_identification_ethercat
-                                                .subdevice_index,
-                                        ) {
-                                            Ok(subdevice) => {
-                                                let _ = write_machine_device_identification(
-                                                    &subdevice,
-                                                    &ethercat_setup.maindevice,
-                                                    &machine_device_info_request
-                                                        .device_machine_identification,
-                                                )
-                                                .await;
-                                            }
-                                            Err(_) => (),
-                                        };
-                                    }
-                                    None => (),
-                                };
-                            }
-                            HotThreadMessage::DeleteMachine(machine_identification_unique) => {
-                                machines.retain(|m| {
-                                    m.get_machine_identification_unique()
-                                        != machine_identification_unique
-                                });
-                            }
-                            HotThreadMessage::AddMachines(machine_vec) => {
-                                for new_machine in machine_vec {
-                                    let id = new_machine.get_machine_identification_unique();
-                                    // Only add if a machine with the same ID doesn't exist
-                                    if !machines
-                                        .iter()
-                                        .any(|m| m.get_machine_identification_unique() == id)
-                                    {
-                                        machines.push(new_machine);
-                                    }
+                    match msg {
+                        HotThreadMessage::NoMsg => {}
+                        HotThreadMessage::AddEtherCatSetup(ethercat_setup) => {
+                            ethercat = Some(Box::new(ethercat_setup));
+                        }
+                        HotThreadMessage::WriteMachineDeviceInfo(info_request) => {
+                            if let Some(ethercat_setup) = &ethercat {
+                                if let Ok(subdevice) = ethercat_setup.group.subdevice(
+                                    &ethercat_setup.maindevice,
+                                    info_request
+                                        .hardware_identification_ethercat
+                                        .subdevice_index,
+                                ) {
+                                    let _res = write_machine_device_identification(
+                                        &subdevice,
+                                        &ethercat_setup.maindevice,
+                                        &info_request.device_machine_identification,
+                                    )
+                                    .await;
                                 }
                             }
-                        };
-
-                        if let Err(e) = loop_once(
-                            shared_state.clone(),
-                            &mut machines,
-                            &sleeper,
-                            cycle_target,
-                            ethercat.as_deref(),
-                        )
-                        .await
-                        {
-                            tracing::error!("Loop failed\n{:?}", e);
-                            break;
+                        }
+                        HotThreadMessage::DeleteMachine(unique_id) => {
+                            machines.retain(|m| m.get_machine_identification_unique() != unique_id);
+                        }
+                        HotThreadMessage::AddMachines(machine_vec) => {
+                            for new_machine in machine_vec {
+                                let id = new_machine.get_machine_identification_unique();
+                                if !machines
+                                    .iter()
+                                    .any(|m| m.get_machine_identification_unique() == id)
+                                {
+                                    machines.push(new_machine);
+                                }
+                            }
                         }
                     }
-                })
-                .await;
-            });
 
-            if let Some(last_loop_start) = shared_state
-                .performance_metrics
-                .read_arc_blocking()
-                .last_loop_start
-            {
-                tracing::info!("Failing Loop Took {:?}", last_loop_start.elapsed());
-            }
+                    if let Err(e) = smol::block_on(loop_once(
+                        shared_state.clone(),
+                        &mut machines,
+                        &sleeper,
+                        cycle_target,
+                        ethercat.as_deref(),
+                    )) {
+                        tracing::error!("Loop failed\n{:?}", e);
+                        break;
+                    }
+                }
+            };
+            smol::block_on(loop_future);
+
             // Exit the entire program if the Loop fails
             // gets restarted by systemd if running on NixOS, or different distro wtih the same sysd service
             std::process::exit(1);
@@ -145,11 +117,7 @@ pub async fn copy_ethercat_inputs(
     // only if we have an ethercat setup
     // - tx/rx cycle
     // - copy inputs to devices
-
     if let Some(ethercat_setup) = ethercat_setup {
-        let span = trace_span!("loop_once_inputs");
-        let _enter = span.enter();
-        // Measure tx_rx performance
         ethercat_setup
             .group
             .tx_rx(&ethercat_setup.maindevice)
@@ -202,9 +170,6 @@ pub async fn copy_ethercat_outputs(
     ethercat_setup: Option<&EthercatSetup>,
 ) -> Result<(), anyhow::Error> {
     if let Some(ethercat_setup) = ethercat_setup {
-        let span = trace_span!("loop_once_outputs");
-        let _enter = span.enter();
-
         // copy outputs from devices
         for (i, subdevice) in ethercat_setup
             .group
@@ -248,16 +213,14 @@ pub async fn copy_ethercat_outputs(
     Ok(())
 }
 
-pub async fn execute_machines(machines: &mut Vec<Box<dyn Machine>>) {
+pub fn execute_machines(machines: &mut Vec<Box<dyn Machine>>) {
     let now = Instant::now();
     for machine in machines.iter_mut() {
-        let span = trace_span!("loop_once_act_machine",);
-        let _enter = span.enter();
         machine.act(now);
     }
 }
 
-#[instrument(skip(app_state, machines))]
+// No more logging in loop_once
 pub async fn loop_once<'maindevice>(
     app_state: Arc<SharedState>,
     machines: &mut Vec<Box<dyn Machine>>,
@@ -271,24 +234,10 @@ pub async fn loop_once<'maindevice>(
         let mut metrics = app_state.performance_metrics.write().await;
         metrics.cycle_start();
     }
-    {
-        let txrx_start = Instant::now();
-        copy_ethercat_inputs(ethercat_setup).await?;
-        let txrx_duration = txrx_start.elapsed();
-        let mut metrics = app_state.performance_metrics.write().await;
-        metrics.record_txrx_time(txrx_duration);
-    }
 
-    // execute machines
-    {
-        let span = trace_span!("loop_once_act");
-        let _enter = span.enter();
-        execute_machines(machines).await;
-    }
-
-    {
-        copy_ethercat_outputs(ethercat_setup).await?;
-    }
+    smol::block_on(copy_ethercat_inputs(ethercat_setup))?;
+    execute_machines(machines);
+    smol::block_on(copy_ethercat_outputs(ethercat_setup))?;
 
     if ethercat_setup.is_some() {
         // spin_sleep so we have a cycle time of ~300us
@@ -302,5 +251,6 @@ pub async fn loop_once<'maindevice>(
             smol::Timer::after(cycle_target - loop_duration).await;
         }
     }
+
     Ok(())
 }
