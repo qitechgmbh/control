@@ -278,7 +278,7 @@ fn main() {
     let shared_state = SharedState::new(sender.clone(), main_sender.clone());
 
     let app_state = Arc::new(shared_state);
-    let _loop_thread = start_loop_thread(app_state.clone(), receiver, CYCLE_TARGET_TIME);
+    let _loop_thread = start_loop_thread(receiver, CYCLE_TARGET_TIME);
 
     #[cfg(feature = "mock-machine")]
     init_mock(app_state.clone()).expect("Failed to initialize mock machines");
