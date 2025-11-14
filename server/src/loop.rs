@@ -106,7 +106,14 @@ pub fn start_loop_thread(
                 }
 
                 if let Err(e) = smol::block_on(loop_once(&mut rt_loop_inputs)) {
-                    tracing::error!("Loop failed\n{:?}", e);
+                    tracing::error!(
+                        "Loop failed\n {:?} \n Last Loop Took: {:?}",
+                        e,
+                        rt_loop_inputs
+                            .ethercat_perf_metrics
+                            .unwrap()
+                            .last_loop_start
+                    );
                     break;
                 }
             }
@@ -231,6 +238,12 @@ pub fn execute_machines(machines: &mut Vec<Box<dyn Machine>>) {
 pub async fn loop_once<'maindevice>(inputs: &mut RtLoopInputs<'_>) -> Result<(), anyhow::Error> {
     let loop_once_start = std::time::Instant::now();
     if inputs.ethercat_setup.is_some() && inputs.ethercat_perf_metrics.is_some() {
+        inputs
+            .ethercat_perf_metrics
+            .as_deref_mut()
+            .unwrap()
+            .cycle_start();
+
         let res = smol::block_on(copy_ethercat_inputs(inputs.ethercat_setup.as_deref()));
         match res {
             Ok(_) => (),
