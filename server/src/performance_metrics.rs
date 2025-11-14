@@ -44,14 +44,8 @@ impl EthercatPerformanceMetrics {
         self.last_loop_start = Some(now);
     }
 
-    /// Records the duration of a tx_rx operation
-    pub fn record_txrx_time(&mut self, duration: Duration) {
-        self.add_txrx_time(duration);
-        self.maybe_log_metrics();
-    }
-
     /// Adds a tx_rx time measurement
-    fn add_txrx_time(&mut self, duration: Duration) {
+    pub fn add_txrx_time(&mut self, duration: Duration) {
         if self.txrx_times.len() >= METRICS_WINDOW_SIZE {
             self.txrx_times.pop_front();
         }
@@ -67,7 +61,7 @@ impl EthercatPerformanceMetrics {
     }
 
     /// Logs metrics if enough time has passed
-    fn maybe_log_metrics(&mut self) {
+    pub fn maybe_log_metrics(&mut self) {
         let now = Instant::now();
         if now.duration_since(self.last_log_time).as_secs() >= METRICS_LOG_INTERVAL_SECS {
             self.log_metrics();
@@ -178,9 +172,9 @@ mod tests {
         let mut metrics = EthercatPerformanceMetrics::new();
 
         // Record some measurements
-        metrics.record_txrx_time(Duration::from_millis(1));
-        metrics.record_txrx_time(Duration::from_millis(2));
-        metrics.record_txrx_time(Duration::from_millis(3));
+        metrics.add_txrx_time(Duration::from_millis(1));
+        metrics.add_txrx_time(Duration::from_millis(2));
+        metrics.add_txrx_time(Duration::from_millis(3));
 
         assert_eq!(metrics.txrx_times.len(), 3);
     }
