@@ -1,18 +1,13 @@
-use std::{sync::Arc, time::Duration};
-
-use crate::{MachineApi, MachineMessage, machine_identification::MachineIdentificationUnique};
-
 use super::{BufferV1, BufferV1Mode};
+use crate::{MachineApi, MachineMessage, machine_identification::MachineIdentificationUnique};
 use control_core::socketio::{
     event::{Event, GenericEvent},
-    namespace::{
-        CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_duration,
-        cache_one_event,
-    },
+    namespace::{CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_one_event},
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use smol::channel::Sender;
+use std::sync::Arc;
 use tracing::instrument;
 
 #[derive(Serialize, Debug, Clone, Default)]
@@ -99,11 +94,10 @@ impl CacheableEvents<Self> for BufferV1Events {
     }
 
     fn event_cache_fn(&self) -> CacheFn {
-        let cache_one_hour = cache_duration(Duration::from_secs(60 * 60), Duration::from_secs(1));
         let cache_one = cache_one_event();
 
         match self {
-            Self::LiveValues(_) => cache_one_hour,
+            Self::LiveValues(_) => cache_one,
             Self::State(_) => cache_one,
         }
     }

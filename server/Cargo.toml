@@ -43,8 +43,12 @@ tracing-subscriber = { version = "0.3.20", features = [
     "chrono",
     "registry",
 ] }
+utils = { version = "0.1.0", path="../utils" }
 tonic = { version = "0.13.1", optional = true }
 spin_sleep = "1.3.3"
+dhat = { version = "0.3.3", optional = true }
+ctrlc = { version = "3.3", optional = true }
+
 
 [dev-dependencies]
 approx = "0.5.1"
@@ -58,7 +62,11 @@ tracing-journald = ["dep:tracing-journald"]
 mock-machine = []
 memory-locking = []
 io-uring = []
-development-build = []
+development-build = ["ctrlc"]
+heap-profile = ["dhat"]
+
+
+
 
 [profile.release]
 codegen-units = 1

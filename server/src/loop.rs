@@ -105,7 +105,7 @@ pub fn start_loop_thread(
                     }
                 }
 
-                if let Err(e) = smol::block_on(loop_once(&mut rt_loop_inputs)) {
+                if let Err(e) = loop_once(&mut rt_loop_inputs) {
                     tracing::error!(
                         "Loop failed\n {:?} \n Last Loop Took: {:?}",
                         e,
@@ -237,7 +237,7 @@ pub fn execute_machines(machines: &mut Vec<Box<dyn Machine>>) {
 }
 
 // No more logging in loop_once
-pub async fn loop_once<'maindevice>(inputs: &mut RtLoopInputs<'_>) -> Result<(), anyhow::Error> {
+pub fn loop_once<'maindevice>(inputs: &mut RtLoopInputs<'_>) -> Result<(), anyhow::Error> {
     let loop_once_start = std::time::Instant::now();
     if inputs.ethercat_setup.is_some() && inputs.ethercat_perf_metrics.is_some() {
         inputs
@@ -278,7 +278,7 @@ pub async fn loop_once<'maindevice>(inputs: &mut RtLoopInputs<'_>) -> Result<(),
         // We do this, so that when no rt relevant code runs the cpu doesnt spin at 100% for no reason
         let loop_duration = loop_once_start.elapsed();
         if inputs.cycle_target > loop_once_start.elapsed() {
-            smol::Timer::after(inputs.cycle_target - loop_duration).await;
+            smol::block_on(smol::Timer::after(inputs.cycle_target - loop_duration));
         }
     }
 

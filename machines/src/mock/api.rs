@@ -4,15 +4,14 @@ use super::MockMachine;
 use control_core::socketio::{
     event::{Event, GenericEvent},
     namespace::{
-        CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_duration,
-        cache_first_and_last_event,
+        CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_first_and_last_event,
     },
 };
 use control_core_derive::BuildEvent;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use smol::channel::Sender;
-use std::{sync::Arc, time::Duration};
+use std::sync::Arc;
 use tracing::instrument;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
@@ -71,11 +70,10 @@ impl CacheableEvents<Self> for MockEvents {
     }
 
     fn event_cache_fn(&self) -> CacheFn {
-        let cache_one_hour = cache_duration(Duration::from_secs(60 * 60), Duration::from_secs(1));
         let cache_first_and_last = cache_first_and_last_event();
 
         match self {
-            Self::LiveValues(_) => cache_one_hour,
+            Self::LiveValues(_) => cache_first_and_last,
             Self::State(_) => cache_first_and_last,
         }
     }

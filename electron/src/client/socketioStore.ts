@@ -353,7 +353,6 @@ const useSocketioStore = create<SocketioStore>()((set, get) => ({
               namespaceId.machine_identification_unique.serial,
           );
         //console.log(machineExists);
-        socket.connect();
         if (machineExists && !socket.connected) {
           socket.connect();
           clearInterval(intervalId); // stop polling
