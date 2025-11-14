@@ -113,6 +113,8 @@ pub fn start_loop_thread(
                             .ethercat_perf_metrics
                             .unwrap()
                             .last_loop_start
+                            .unwrap()
+                            .elapsed()
                     );
                     break;
                 }
