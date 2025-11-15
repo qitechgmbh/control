@@ -356,6 +356,12 @@ export const gluetexAddonsRoute = createRoute({
   component: () => <GluetexAddonsPage />,
 });
 
+export const gluetexHeatersRoute = createRoute({
+  getParentRoute: () => gluetexRoute,
+  path: "heaters",
+  component: () => <GluetexHeatersPage />,
+});
+
 export const laser1SerialRoute = createRoute({
   getParentRoute: () => machinesRoute,
   path: "laser1/$serial",
@@ -623,6 +629,7 @@ export const rootTree = RootRoute.addChildren([
         gluetexGraphsRoute,
         gluetexPresetsRoute,
         gluetexAddonsRoute,
+        gluetexHeatersRoute,
       ]),
 
       extruder2Route.addChildren([

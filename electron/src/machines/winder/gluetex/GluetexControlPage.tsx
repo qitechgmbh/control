@@ -45,7 +45,6 @@ export function GluetexControlPage() {
     setMode,
     pullerSpeed,
     spoolProgress,
-    setPullerRegulationMode,
     setPullerTargetSpeed,
     traversePosition,
     resetSpoolProgress,
