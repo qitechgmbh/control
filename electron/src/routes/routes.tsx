@@ -20,6 +20,13 @@ import { Winder2SettingPage } from "@/machines/winder/winder2/Winder2Settings";
 import { Winder2GraphsPage } from "@/machines/winder/winder2/Winder2Graphs";
 import { Winder2PresetsPage } from "@/machines/winder/winder2/Winder2PresetsPage";
 
+import { GluetexPage } from "@/machines/winder/gluetex/GluetexPage";
+import { GluetexControlPage } from "@/machines/winder/gluetex/GluetexControlPage";
+import { GluetexManualPage } from "@/machines/winder/gluetex/GluetexManual";
+import { GluetexSettingPage } from "@/machines/winder/gluetex/GluetexSettings";
+import { GluetexGraphsPage } from "@/machines/winder/gluetex/GluetexGraphs";
+import { GluetexPresetsPage } from "@/machines/winder/gluetex/GluetexPresetsPage";
+
 import { Extruder2Page } from "@/machines/extruder/extruder2/Extruder2Page";
 import { Extruder2ControlPage } from "@/machines/extruder/extruder2/Extruder2ControlPage";
 import { Extruder2SettingsPage } from "@/machines/extruder/extruder2/Extruder2Settings";
@@ -291,6 +298,42 @@ export const winder2PresetsRoute = createRoute({
   component: () => <Winder2PresetsPage />,
 });
 
+export const gluetexRoute = createRoute({
+  getParentRoute: () => machinesRoute,
+  path: "gluetex",
+  component: () => <GluetexPage />,
+});
+
+export const gluetexControlRoute = createRoute({
+  getParentRoute: () => gluetexRoute,
+  path: "control",
+  component: () => <GluetexControlPage />,
+});
+
+export const gluetexManualRoute = createRoute({
+  getParentRoute: () => gluetexRoute,
+  path: "manual",
+  component: () => <GluetexManualPage />,
+});
+
+export const gluetexSettingsRoute = createRoute({
+  getParentRoute: () => gluetexRoute,
+  path: "settings",
+  component: () => <GluetexSettingPage />,
+});
+
+export const gluetexGraphsRoute = createRoute({
+  getParentRoute: () => gluetexRoute,
+  path: "graphs",
+  component: () => <GluetexGraphsPage />,
+});
+
+export const gluetexPresetsRoute = createRoute({
+  getParentRoute: () => gluetexRoute,
+  path: "presets",
+  component: () => <GluetexPresetsPage />,
+});
+
 export const laser1SerialRoute = createRoute({
   getParentRoute: () => machinesRoute,
   path: "laser1/$serial",
@@ -545,6 +588,14 @@ export const rootTree = RootRoute.addChildren([
         winder2SettingsRoute,
         winder2GraphsRoute,
         winder2PresetsRoute,
+      ]),
+
+      gluetexRoute.addChildren([
+        gluetexControlRoute,
+        gluetexManualRoute,
+        gluetexSettingsRoute,
+        gluetexGraphsRoute,
+        gluetexPresetsRoute,
       ]),
 
       extruder2Route.addChildren([
