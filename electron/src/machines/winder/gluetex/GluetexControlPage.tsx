@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { ControlGrid } from "@/control/ControlGrid";
 import { TimeSeriesValueNumeric } from "@/control/TimeSeriesValue";
 import { TraverseBar } from "../TraverseBar";
+import { TemperatureBar } from "../TemperatureBar";
 import {
   SelectionGroup,
   SelectionGroupBoolean,
@@ -17,6 +18,8 @@ import {
   Mode,
   SpoolAutomaticActionMode,
   getGearRatioMultiplier,
+  StepperMode,
+  HeatingMode,
 } from "./gluetexNamespace";
 import { TensionArm } from "../TensionArm";
 import { roundDegreesToDecimals, roundToDecimals } from "@/lib/decimal";
@@ -58,6 +61,16 @@ export function GluetexControlPage() {
     setSpoolAutomaticAction,
     isLoading,
     isDisabled,
+    setStepper2Mode,
+    setStepper34Mode,
+    setCuttingUnitMode,
+    setHeatingMode,
+    temperature1,
+    temperature2,
+    setTemperature1Min,
+    setTemperature1Max,
+    setTemperature2Min,
+    setTemperature2Max,
   } = useGluetex();
 
   // Calculate max speed based on gear ratio
@@ -194,6 +207,98 @@ export function GluetexControlPage() {
           </Label>
         </ControlCard>
 
+        <ControlCard className="bg-red" title="Motors">
+          <Label label="Stepper 2">
+            <SelectionGroup<StepperMode>
+              value={state?.stepper_state?.stepper2_mode}
+              disabled={isDisabled}
+              loading={isLoading}
+              onChange={setStepper2Mode}
+              orientation="horizontal"
+              className="grid grid-cols-2 gap-2"
+              options={{
+                Standby: {
+                  children: "Standby",
+                  icon: "lu:Power",
+                  isActiveClassName: "bg-green-600",
+                },
+                Run: {
+                  children: "Run",
+                  icon: "lu:Play",
+                  isActiveClassName: "bg-green-600",
+                },
+              }}
+            />
+          </Label>
+          <Label label="Stepper 3&4">
+            <SelectionGroup<StepperMode>
+              value={state?.stepper_state?.stepper34_mode}
+              disabled={isDisabled}
+              loading={isLoading}
+              onChange={setStepper34Mode}
+              orientation="horizontal"
+              className="grid grid-cols-2 gap-2"
+              options={{
+                Standby: {
+                  children: "Standby",
+                  icon: "lu:Power",
+                  isActiveClassName: "bg-green-600",
+                },
+                Run: {
+                  children: "Run",
+                  icon: "lu:Play",
+                  isActiveClassName: "bg-green-600",
+                },
+              }}
+            />
+          </Label>
+          <Label label="Cutting Unit">
+            <SelectionGroup<StepperMode>
+              value={state?.stepper_state?.cutting_unit_mode}
+              disabled={isDisabled}
+              loading={isLoading}
+              onChange={setCuttingUnitMode}
+              orientation="horizontal"
+              className="grid grid-cols-2 gap-2"
+              options={{
+                Standby: {
+                  children: "Standby",
+                  icon: "lu:Power",
+                  isActiveClassName: "bg-green-600",
+                },
+                Run: {
+                  children: "Run",
+                  icon: "lu:Play",
+                  isActiveClassName: "bg-green-600",
+                },
+              }}
+            />
+          </Label>
+        </ControlCard>
+
+        <ControlCard className="bg-red" title="Heating Mode">
+          <SelectionGroup<HeatingMode>
+            value={state?.heating_state?.heating_mode}
+            disabled={isDisabled}
+            loading={isLoading}
+            onChange={setHeatingMode}
+            orientation="horizontal"
+            className="grid grid-cols-2 gap-2"
+            options={{
+              Standby: {
+                children: "Standby",
+                icon: "lu:Power",
+                isActiveClassName: "bg-green-600",
+              },
+              Heating: {
+                children: "Heating",
+                icon: "lu:Flame",
+                isActiveClassName: "bg-green-600",
+              },
+            }}
+          />
+        </ControlCard>
+
         <ControlCard title="Tension Arm">
           <TensionArm degrees={tensionArmAngle.current?.value} />
           <TimeSeriesValueNumeric
@@ -216,7 +321,7 @@ export function GluetexControlPage() {
           )}
         </ControlCard>
 
-        <ControlCard className="bg-red" title="Mode">
+        <ControlCard className="bg-red" title="Winder Mode">
           <SelectionGroup<Mode>
             value={state?.mode_state.mode}
             disabled={isDisabled}
@@ -336,6 +441,104 @@ export function GluetexControlPage() {
               }}
             />
           </Label>
+        </ControlCard>
+
+        <ControlCard className="bg-red" height={2} title="Quality Control">
+          <div className="space-y-6">
+            {/* Temperature 1 */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <TimeSeriesValueNumeric
+                  label="Temperature 1"
+                  unit="C"
+                  timeseries={temperature1}
+                  renderValue={(value) => roundToDecimals(value, 1)}
+                />
+              </div>
+              
+              <TemperatureBar
+                min={0}
+                max={150}
+                minLimit={state?.quality_control_state?.temperature1.min_temperature ?? 0}
+                maxLimit={state?.quality_control_state?.temperature1.max_temperature ?? 150}
+                current={temperature1.current?.value ?? 0}
+              />
+
+              <div className="flex flex-row flex-wrap gap-4">
+                <Label label="Min Temperature">
+                  <EditValue
+                    value={state?.quality_control_state?.temperature1.min_temperature}
+                    unit="C"
+                    title="Min Temperature 1"
+                    defaultValue={defaultState?.quality_control_state?.temperature1.min_temperature}
+                    min={0}
+                    max={Math.min(149, (state?.quality_control_state?.temperature1.max_temperature ?? 150) - 1)}
+                    renderValue={(value) => roundToDecimals(value, 1)}
+                    onChange={setTemperature1Min}
+                  />
+                </Label>
+                <Label label="Max Temperature">
+                  <EditValue
+                    value={state?.quality_control_state?.temperature1.max_temperature}
+                    unit="C"
+                    title="Max Temperature 1"
+                    defaultValue={defaultState?.quality_control_state?.temperature1.max_temperature}
+                    min={Math.max(1, (state?.quality_control_state?.temperature1.min_temperature ?? 0) + 1)}
+                    max={150}
+                    renderValue={(value) => roundToDecimals(value, 1)}
+                    onChange={setTemperature1Max}
+                  />
+                </Label>
+              </div>
+            </div>
+
+            {/* Temperature 2 */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <TimeSeriesValueNumeric
+                  label="Temperature 2"
+                  unit="C"
+                  timeseries={temperature2}
+                  renderValue={(value) => roundToDecimals(value, 1)}
+                />
+              </div>
+              
+              <TemperatureBar
+                min={0}
+                max={200}
+                minLimit={state?.quality_control_state?.temperature2.min_temperature ?? 0}
+                maxLimit={state?.quality_control_state?.temperature2.max_temperature ?? 200}
+                current={temperature2.current?.value ?? 0}
+              />
+
+              <div className="flex flex-row flex-wrap gap-4">
+                <Label label="Min Temperature">
+                  <EditValue
+                    value={state?.quality_control_state?.temperature2.min_temperature}
+                    unit="C"
+                    title="Min Temperature 2"
+                    defaultValue={defaultState?.quality_control_state?.temperature2.min_temperature}
+                    min={0}
+                    max={Math.min(199, (state?.quality_control_state?.temperature2.max_temperature ?? 200) - 1)}
+                    renderValue={(value) => roundToDecimals(value, 1)}
+                    onChange={setTemperature2Min}
+                  />
+                </Label>
+                <Label label="Max Temperature">
+                  <EditValue
+                    value={state?.quality_control_state?.temperature2.max_temperature}
+                    unit="C"
+                    title="Max Temperature 2"
+                    defaultValue={defaultState?.quality_control_state?.temperature2.max_temperature}
+                    min={Math.max(1, (state?.quality_control_state?.temperature2.min_temperature ?? 0) + 1)}
+                    max={200}
+                    renderValue={(value) => roundToDecimals(value, 1)}
+                    onChange={setTemperature2Max}
+                  />
+                </Label>
+              </div>
+            </div>
+          </div>
         </ControlCard>
       </ControlGrid>
 

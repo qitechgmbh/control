@@ -17,6 +17,8 @@ export type GearRatio = "OneToOne" | "OneToFive" | "OneToTen";
 export type Mode = "Standby" | "Hold" | "Pull" | "Wind";
 export type SpoolAutomaticActionMode = "NoAction" | "Pull" | "Hold";
 export type SpoolRegulationMode = "Adaptive" | "MinMax";
+export type StepperMode = "Standby" | "Run";
+export type HeatingMode = "Standby" | "Heating";
 
 export function getGearRatioMultiplier(
   gearRatio: GearRatio | undefined,
@@ -96,6 +98,27 @@ export type ConnectedMachineState = {
   is_available: boolean;
 };
 
+export type StepperState = {
+  stepper2_mode: StepperMode;
+  stepper34_mode: StepperMode;
+  cutting_unit_mode: StepperMode;
+};
+
+export type HeatingState = {
+  heating_mode: HeatingMode;
+};
+
+export type TemperatureState = {
+  current_temperature: number;
+  min_temperature: number;
+  max_temperature: number;
+};
+
+export type QualityControlState = {
+  temperature1: TemperatureState;
+  temperature2: TemperatureState;
+};
+
 export type StateEvent = {
   is_default_state: boolean;
   traverse_state: TraverseState;
@@ -105,6 +128,9 @@ export type StateEvent = {
   spool_speed_controller_state: SpoolSpeedControllerState;
   spool_automatic_action_state: SpoolAutomaticActionState;
   connected_machine_state: ConnectedMachineState;
+  stepper_state: StepperState;
+  heating_state: HeatingState;
+  quality_control_state: QualityControlState;
 };
 
 export type GluetexNamespaceStore = {
@@ -115,6 +141,8 @@ export type GluetexNamespaceStore = {
   spoolRpm: TimeSeries;
   tensionArmAngle: TimeSeries;
   spoolProgress: TimeSeries;
+  temperature1: TimeSeries;
+  temperature2: TimeSeries;
 };
 
 // ========== Hardcoded Test Data ==========
@@ -171,6 +199,26 @@ const HARDCODED_STATE: StateEvent = {
     machine_identification_unique: null,
     is_available: false,
   },
+  stepper_state: {
+    stepper2_mode: "Standby",
+    stepper34_mode: "Standby",
+    cutting_unit_mode: "Standby",
+  },
+  heating_state: {
+    heating_mode: "Standby",
+  },
+  quality_control_state: {
+    temperature1: {
+      current_temperature: 85.0,
+      min_temperature: 80.0,
+      max_temperature: 90.0,
+    },
+    temperature2: {
+      current_temperature: 125.0,
+      min_temperature: 120.0,
+      max_temperature: 130.0,
+    },
+  },
 };
 
 const DEFAULT_STATE: StateEvent = {
@@ -224,6 +272,26 @@ const DEFAULT_STATE: StateEvent = {
   connected_machine_state: {
     machine_identification_unique: null,
     is_available: false,
+  },
+  stepper_state: {
+    stepper2_mode: "Standby",
+    stepper34_mode: "Standby",
+    cutting_unit_mode: "Standby",
+  },
+  heating_state: {
+    heating_mode: "Standby",
+  },
+  quality_control_state: {
+    temperature1: {
+      current_temperature: 85.0,
+      min_temperature: 75.0,
+      max_temperature: 95.0,
+    },
+    temperature2: {
+      current_temperature: 125.0,
+      min_temperature: 115.0,
+      max_temperature: 135.0,
+    },
   },
 };
 
@@ -339,6 +407,44 @@ export function useGluetexNamespace(
     return series;
   }, []);
 
+  const temperature1 = useMemo(() => {
+    const { initialTimeSeries, insert } = createTimeSeries(
+      TWENTY_MILLISECOND,
+      ONE_SECOND,
+      FIVE_SECOND,
+      ONE_HOUR,
+    );
+    let series = initialTimeSeries;
+    
+    const now = Date.now();
+    for (let i = 0; i < 50; i++) {
+      const timestamp = now - (50 - i) * 100;
+      const value = 85.0 + Math.sin(i / 10) * 3; // Oscillating around 85°C
+      series = insert(series, { value, timestamp });
+    }
+    
+    return series;
+  }, []);
+
+  const temperature2 = useMemo(() => {
+    const { initialTimeSeries, insert } = createTimeSeries(
+      TWENTY_MILLISECOND,
+      ONE_SECOND,
+      FIVE_SECOND,
+      ONE_HOUR,
+    );
+    let series = initialTimeSeries;
+    
+    const now = Date.now();
+    for (let i = 0; i < 50; i++) {
+      const timestamp = now - (50 - i) * 100;
+      const value = 125.0 + Math.sin(i / 8) * 2; // Oscillating around 125°C
+      series = insert(series, { value, timestamp });
+    }
+    
+    return series;
+  }, []);
+
   // Simulate live data updates
   useEffect(() => {
     const interval = setInterval(() => {
@@ -364,5 +470,7 @@ export function useGluetexNamespace(
     spoolRpm,
     tensionArmAngle,
     spoolProgress,
+    temperature1,
+    temperature2,
   };
 }
