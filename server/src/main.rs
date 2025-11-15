@@ -1,3 +1,10 @@
+use crate::{
+    ethercat::{
+        ethercat_discovery_info::send_ethercat_found, init::find_ethercat_interface,
+        setup::setup_loop,
+    },
+    socketio::queue::socketio_queue_worker,
+};
 use control_core::socketio::event::GenericEvent;
 use machines::{
     AsyncThreadMessage, MachineConnection, MachineNewHardware, MachineNewHardwareSerial,
@@ -8,12 +15,8 @@ use machines::{
         DeviceIdentification, DeviceIdentificationIdentified, MachineIdentificationUnique,
     },
     registry::{MACHINE_REGISTRY, MachineRegistry},
-    serial::{
-        devices::laser::Laser,
-        init::{SerialDetection},
-    },
+    serial::{devices::laser::Laser, init::SerialDetection},
 };
-use crate::{ethercat::{ethercat_discovery_info::send_ethercat_found, init::find_ethercat_interface, setup::setup_loop}, socketio::queue::socketio_queue_worker};
 
 #[cfg(feature = "development-build")]
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -25,17 +28,17 @@ use mock::init::init_mock;
 pub mod mock;
 
 use app_state::{HotThreadMessage, SharedState};
-use ethercat::{
-    ethercat_discovery_info::send_ethercat_discovering,
-};
+use ethercat::ethercat_discovery_info::send_ethercat_discovering;
 use r#loop::start_loop_thread;
 use panic::init_panic_handling;
 use rest::init::start_api_thread;
 use serialport::UsbPortInfo;
 use smol::{
-    LocalExecutor, channel::{Receiver, Sender}, lock::RwLock
+    channel::{Receiver, Sender},
+    future,
+    lock::RwLock,
 };
-use socketio::{main_namespace::machines_event::MachineObj};
+use socketio::main_namespace::machines_event::MachineObj;
 use socketioxide::extract::SocketRef;
 use std::{collections::HashMap, sync::Arc, time::Duration};
 
@@ -119,7 +122,10 @@ pub async fn start_serial_discovery(app_state: Arc<SharedState>) {
     }
 }
 
-pub async fn start_interface_discovery(app_state: Arc<SharedState>, sender: Sender<HotThreadMessage>) {
+pub async fn start_interface_discovery(
+    app_state: Arc<SharedState>,
+    sender: Sender<HotThreadMessage>,
+) {
     let interface = find_ethercat_interface().await;
     tracing::info!("Inferface found {}, setting up EtherCat loop", interface);
 
@@ -286,17 +292,16 @@ pub async fn start_socketio_queue(app_state: Arc<SharedState>) {
 }
 
 #[cfg(feature = "development-build")]
-fn setup_ctrlc_handler() -> Arc<AtomicBool> {
-    let running = Arc::new(AtomicBool::new(true));
-    let r = running.clone();
-
+fn setup_ctrlc_handler() {
     ctrlc::set_handler(move || {
+        use std::process;
+
         eprintln!("Ctrl-C pressed, shutting down...");
         r.store(false, Ordering::SeqCst);
+
+        process::exit(1);
     })
     .expect("Error setting Ctrl-C handler");
-
-    running
 }
 
 #[cfg(feature = "heap-profile")]
@@ -312,7 +317,7 @@ fn main() {
     let _profiler = dhat::Profiler::new_heap();
 
     #[cfg(feature = "development-build")]
-    let running = setup_ctrlc_handler();
+    setup_ctrlc_handler();
 
     const CYCLE_TARGET_TIME: Duration = Duration::from_micros(300);
 
@@ -334,21 +339,16 @@ fn main() {
         send_ethercat_discovering(app_state.clone()).await;
     });
 
-    let ex = LocalExecutor::new();
-    let _socketio_queue_task = ex.spawn(start_socketio_queue(app_state.clone()));
-    let _interface_discovery_task = ex.spawn(start_interface_discovery(app_state.clone(), sender));
-    let _serial_discovery_task = ex.spawn(start_serial_discovery(app_state.clone()));
-    let _handle_async_requests_task = ex.spawn(handle_async_requests(main_receiver, app_state));
+    let ethercat_fut = start_interface_discovery(app_state.clone(), sender);
+    let socketio_fut = start_socketio_queue(app_state.clone());
+    let serial_fut = start_serial_discovery(app_state.clone());
+    let requests_fut = handle_async_requests(main_receiver, app_state);
 
-    while !ex.is_empty() {
-        #[cfg(feature = "development-build")]
-        if !running.load(Ordering::SeqCst) {
-            tracing::info!("Shutdown signal received, exiting main loop.");
-            break;
-        }
+    let fut = future::zip(ethercat_fut, socketio_fut);
+    let fut = future::zip(fut, serial_fut);
+    let fut = future::zip(fut, requests_fut);
 
-        ex.try_tick();
-    }
+    smol::block_on(fut);
 
     tracing::error!("All tasks in main have finished, but some should run forever.");
     tracing::error!("SystemD shall restart us. Better luck next time.");

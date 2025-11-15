@@ -109,9 +109,11 @@ pub async fn set_ethercat_devices<const MAX_SUBDEVICES: usize, const MAX_PDI: us
     shared_state: Arc<SharedState>,
     socket_queue_tx: Sender<(SocketRef, Arc<control_core::socketio::event::GenericEvent>)>,
 ) -> Result<(), anyhow::Error> {
-    tracing::info!("set_ethercat_devices");
     let device_grouping_result = group_devices_by_identification(device_identifications);
-    tracing::info!("{:?}", device_grouping_result.unidentified_devices);
+    tracing::info!(
+        "set_ethercat_devices: {:?}",
+        device_grouping_result.unidentified_devices
+    );
     let machine_new_hardware = MachineNewHardware::Ethercat(hardware);
 
     let mut machines: Vec<Box<dyn Machine>> = vec![];
@@ -244,6 +246,7 @@ pub async fn setup_loop(
             .write()
             .await
             .main_namespace;
+
         let event = EthercatDevicesEventBuilder().initializing();
         main_namespace.emit(MainNamespaceEvents::EthercatDevicesEvent(event));
     }

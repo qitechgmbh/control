@@ -2,7 +2,6 @@ use crate::app_state::SharedState;
 use std::{sync::Arc, time::Instant};
 use tracing::{debug, info, instrument, trace};
 
-
 /// Send a single event with retry logic
 #[instrument(skip_all)]
 async fn send_event_with_retry(

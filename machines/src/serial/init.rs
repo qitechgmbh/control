@@ -1,5 +1,5 @@
 use serialport::UsbPortInfo;
-use std::{collections::HashMap};
+use std::collections::HashMap;
 /*
 *@author: Alisher Darmenov
 *@company: QiTech
@@ -73,7 +73,6 @@ impl SerialDetection {
         return None;
     }
 }
-
 
 /*
 
