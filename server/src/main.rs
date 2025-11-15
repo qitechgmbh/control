@@ -1,3 +1,4 @@
+use control_core::socketio::event::GenericEvent;
 use machines::{
     AsyncThreadMessage, MachineConnection, MachineNewHardware, MachineNewHardwareSerial,
     MachineNewParams, SerialDevice, SerialDeviceIdentification, SerialDeviceNew,
@@ -8,7 +9,6 @@ use machines::{
     },
     registry::{MACHINE_REGISTRY, MachineRegistry},
     serial::{devices::laser::Laser, init::SerialDetection},
-    winder2::api::GenericEvent,
 };
 
 #[cfg(feature = "development-build")]

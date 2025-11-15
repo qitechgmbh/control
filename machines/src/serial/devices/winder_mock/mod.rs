@@ -1,5 +1,6 @@
+use crate::{MACHINE_WINDER_V1, VENDOR_QITECH};
 use crate::{
-    MACHINE_WINDER_V1, SerialDevice, SerialDeviceNew, SerialDeviceNewParams, VENDOR_QITECH,
+    SerialDevice, SerialDeviceNew, SerialDeviceNewParams,
     machine_identification::{
         DeviceHardwareIdentification, DeviceHardwareIdentificationSerial, DeviceIdentification,
         DeviceMachineIdentification, MachineIdentification, MachineIdentificationUnique,

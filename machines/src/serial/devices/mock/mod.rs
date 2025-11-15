@@ -1,15 +1,14 @@
-use std::sync::Arc;
-
-use control_core::helpers::hashing::{byte_folding_u16, hash_djb2};
-use smol::lock::RwLock;
-
+use crate::{MACHINE_MOCK, VENDOR_QITECH};
 use crate::{
-    MACHINE_MOCK, SerialDevice, SerialDeviceNew, SerialDeviceNewParams, VENDOR_QITECH,
+    SerialDevice, SerialDeviceNew, SerialDeviceNewParams,
     machine_identification::{
         DeviceHardwareIdentification, DeviceHardwareIdentificationSerial, DeviceIdentification,
         DeviceMachineIdentification, MachineIdentification, MachineIdentificationUnique,
     },
 };
+use control_core::helpers::hashing::{byte_folding_u16, hash_djb2};
+use smol::lock::RwLock;
+use std::sync::Arc;
 
 /// Mock serial device for testing MockMachine
 /// This provides a minimal SerialDevice implementation that doesn't require actual hardware

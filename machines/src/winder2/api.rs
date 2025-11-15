@@ -1,56 +1,41 @@
 #[cfg(feature = "mock-machine")]
 mod winder2_imports {
     pub use super::super::Winder2Mode;
-    pub use super::super::puller_speed_controller::{GearRatio, PullerRegulationMode};
-    pub use control_core::socketio::{
-        event::{Event, GenericEvent},
-        namespace::{
-            CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_duration,
-            cache_first_and_last_event,
-        },
-    };
+    pub use control_core::socketio::namespace::cache_duration;
 
     pub use control_core_derive::BuildEvent;
-    pub use serde::{Deserialize, Serialize};
     pub use serde_json::Value;
     pub use smol::lock::Mutex;
-    pub use std::{
-        sync::Arc,
-        time::{Duration, Instant},
-    };
-    pub use tracing::instrument;
+    pub use std::{sync::Arc, time::Duration};
 }
 
 #[cfg(not(feature = "mock-machine"))]
 mod winder2_imports {
-    pub use super::super::puller_speed_controller::{GearRatio, PullerRegulationMode};
     pub use super::super::{Winder2, Winder2Mode};
-    pub use control_core::socketio::{
-        event::{Event, GenericEvent},
-        namespace::{
-            CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_duration,
-            cache_first_and_last_event,
-        },
-    };
 
+    pub use crate::{MachineApi, MachineMessage};
     pub use control_core_derive::BuildEvent;
-    pub use serde::{Deserialize, Serialize};
     pub use serde_json::Value;
+    pub use smol::channel::Sender;
     pub use smol::lock::Mutex;
     pub use std::{
         sync::Arc,
         time::{Duration, Instant},
     };
-    pub use tracing::instrument;
 }
 
-#[cfg(not(feature = "mock-machine"))]
-use smol::channel::Sender;
 pub use winder2_imports::*;
 
-#[cfg(not(feature = "mock-machine"))]
-use crate::{MachineApi, MachineMessage};
+use crate::winder2::puller_speed_controller::{GearRatio, PullerRegulationMode};
 use crate::{MachineCrossConnectionState, machine_identification::MachineIdentificationUnique};
+use control_core::socketio::{
+    event::{Event, GenericEvent},
+    namespace::{
+        CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_first_and_last_event,
+    },
+};
+use serde::{Deserialize, Serialize};
+use tracing::instrument;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub enum Mode {

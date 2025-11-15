@@ -1,12 +1,9 @@
-use crate::{
-    MachineNewParams, MachineNewTrait,
-    winder2::api::{
-        ModeState, PullerState, SpoolAutomaticActionState, SpoolSpeedControllerState,
-        TensionArmState, TraverseState, Winder2Namespace,
-    },
+use super::{
+    ModeState, PullerState, SpoolAutomaticActionState, SpoolSpeedControllerState, TensionArmState,
+    TraverseState, Winder2,
 };
-
-use super::Winder2;
+use crate::winder2::api::Winder2Namespace;
+use crate::{MachineNewHardware, MachineNewParams, MachineNewTrait};
 
 impl MachineNewTrait for Winder2 {
     fn new(params: &MachineNewParams<'_, '_, '_, '_, '_, '_, '_>) -> Result<Self, anyhow::Error>
@@ -17,11 +14,11 @@ impl MachineNewTrait for Winder2 {
         // For the mock machine, we don't need to actually use the hardware
         // We just validate that we have the expected hardware type
         match params.hardware {
-            crate::MachineNewHardware::Serial(_) => {
+            MachineNewHardware::Serial(_) => {
                 // For serial mode, we could potentially use the serial device if needed
                 // but for a mock machine, we'll just note it and proceed
             }
-            crate::MachineNewHardware::Ethercat(_) => {
+            MachineNewHardware::Ethercat(_) => {
                 // For ethercat mode, we could potentially use the ethercat devices
                 // but for a mock machine, we'll just note it and proceed
             }

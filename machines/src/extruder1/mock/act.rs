@@ -21,7 +21,7 @@ impl MachineAct for ExtruderV2 {
         }
     }
 
-    fn act_machine_message(&mut self, msg: crate::MachineMessage) {
+    fn act_machine_message(&mut self, msg: MachineMessage) {
         match msg {
             MachineMessage::SubscribeNamespace(namespace) => {
                 self.namespace.namespace = Some(namespace);
@@ -36,7 +36,7 @@ impl MachineAct for ExtruderV2 {
             }
             MachineMessage::ConnectToMachine(_machine_connection) => (),
             MachineMessage::DisconnectMachine(_machine_connection) =>
-            /*Doesnt connec to any Machine do nothing*/
+            /* Doesn't connect to any Machine do nothing */
             {
                 ()
             }

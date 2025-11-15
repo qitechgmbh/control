@@ -1,20 +1,4 @@
-#[cfg(feature = "mock-machine")]
-use smol::channel::Receiver;
-
-#[cfg(feature = "mock-machine")]
-use smol::channel::Sender;
-
-#[cfg(feature = "mock-machine")]
-use crate::{AsyncThreadMessage, Machine};
-
-#[cfg(feature = "mock-machine")]
-use crate::{
-    MachineIdentificationUnique, MachineMessage, machine_identification::MachineIdentification,
-};
-#[cfg(feature = "mock-machine")]
-use std::time::Instant;
-
-#[cfg(feature = "mock-machine")]
+use crate::AsyncThreadMessage;
 use crate::{
     MACHINE_EXTRUDER_V1, VENDOR_QITECH,
     extruder1::{
@@ -26,29 +10,20 @@ use crate::{
         },
     },
 };
+use crate::{
+    Machine, MachineIdentificationUnique, MachineMessage,
+    machine_identification::MachineIdentification,
+};
+use smol::channel::Receiver;
+use smol::channel::Sender;
+use std::time::Instant;
 
 // Just checking mock-machine feature here to exclude these modules from compilation entirely
-#[cfg(feature = "mock-machine")]
 pub mod act;
-#[cfg(feature = "mock-machine")]
 pub mod api;
-#[cfg(feature = "mock-machine")]
 pub mod mock_emit;
-#[cfg(feature = "mock-machine")]
 pub mod new;
 
-#[cfg(feature = "mock-machine")]
-impl Machine for ExtruderV2 {
-    fn get_machine_identification_unique(&self) -> MachineIdentificationUnique {
-        self.machine_identification_unique.clone()
-    }
-
-    fn get_main_sender(&self) -> Option<Sender<AsyncThreadMessage>> {
-        self.main_sender.clone()
-    }
-}
-
-#[cfg(feature = "mock-machine")]
 #[derive(Debug)]
 pub struct ExtruderV2 {
     api_receiver: Receiver<MachineMessage>,
@@ -120,7 +95,22 @@ pub struct ExtruderV2 {
     pub middle_heating_allowed: bool,
 }
 
-#[cfg(feature = "mock-machine")]
+impl Machine for ExtruderV2 {
+    fn get_machine_identification_unique(&self) -> MachineIdentificationUnique {
+        self.machine_identification_unique.clone()
+    }
+
+    fn get_main_sender(&self) -> Option<Sender<AsyncThreadMessage>> {
+        self.main_sender.clone()
+    }
+}
+
+impl std::fmt::Display for ExtruderV2 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "ExtruderV2")
+    }
+}
+
 impl ExtruderV2 {
     pub const MACHINE_IDENTIFICATION: MachineIdentification = MachineIdentification {
         vendor: VENDOR_QITECH,

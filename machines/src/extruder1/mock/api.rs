@@ -3,6 +3,8 @@ use crate::{
     MachineApi,
     extruder1::{HeatingType, api::Mutation},
 };
+use crate::{MachineMessage, Sender};
+use control_core::socketio::namespace::Namespace;
 
 impl MachineApi for ExtruderV2 {
     fn api_mutate(&mut self, request_body: serde_json::Value) -> Result<(), anyhow::Error> {
@@ -45,13 +47,11 @@ impl MachineApi for ExtruderV2 {
         Ok(())
     }
 
-    fn api_event_namespace(
-        &mut self,
-    ) -> std::option::Option<control_core::socketio::namespace::Namespace> {
+    fn api_event_namespace(&mut self) -> Option<Namespace> {
         self.namespace.namespace.clone()
     }
 
-    fn api_get_sender(&self) -> smol::channel::Sender<crate::MachineMessage> {
+    fn api_get_sender(&self) -> Sender<MachineMessage> {
         self.api_sender.clone()
     }
 }
