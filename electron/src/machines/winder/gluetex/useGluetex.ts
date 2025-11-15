@@ -13,6 +13,8 @@ import {
   PullerRegulation,
   SpoolAutomaticActionMode,
   GearRatio,
+  StepperMode,
+  HeatingMode,
 } from "./gluetexNamespace";
 
 export function useGluetex() {
@@ -37,6 +39,8 @@ export function useGluetex() {
     spoolRpm,
     tensionArmAngle,
     spoolProgress,
+    temperature1,
+    temperature2,
   } = useGluetexNamespace(machineIdentification);
 
   // Use local state for testing changes
@@ -434,6 +438,118 @@ export function useGluetex() {
     });
   };
 
+  const setStepper2Mode = (mode: StepperMode) => {
+    console.log("Mock: Set stepper 2 mode:", mode);
+    setLocalState((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        stepper_state: { ...prev.stepper_state, stepper2_mode: mode },
+      };
+    });
+  };
+
+  const setStepper34Mode = (mode: StepperMode) => {
+    console.log("Mock: Set stepper 3&4 mode:", mode);
+    setLocalState((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        stepper_state: { ...prev.stepper_state, stepper34_mode: mode },
+      };
+    });
+  };
+
+  const setCuttingUnitMode = (mode: StepperMode) => {
+    console.log("Mock: Set cutting unit mode:", mode);
+    setLocalState((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        stepper_state: { ...prev.stepper_state, cutting_unit_mode: mode },
+      };
+    });
+  };
+
+  const setHeatingMode = (mode: HeatingMode) => {
+    console.log("Mock: Set heating mode:", mode);
+    setLocalState((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        heating_state: { heating_mode: mode },
+      };
+    });
+  };
+
+  const setTemperature1Min = (min: number) => {
+    console.log("Mock: Set temperature 1 min:", min);
+    setLocalState((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        quality_control_state: {
+          ...prev.quality_control_state,
+          temperature1: {
+            ...prev.quality_control_state.temperature1,
+            min_temperature: min,
+          },
+        },
+      };
+    });
+  };
+
+  const setTemperature1Max = (max: number) => {
+    console.log("Mock: Set temperature 1 max:", max);
+    setLocalState((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        quality_control_state: {
+          ...prev.quality_control_state,
+          temperature1: {
+            ...prev.quality_control_state.temperature1,
+            max_temperature: max,
+          },
+        },
+      };
+    });
+  };
+
+  const setTemperature2Min = (min: number) => {
+    console.log("Mock: Set temperature 2 min:", min);
+    setLocalState((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        quality_control_state: {
+          ...prev.quality_control_state,
+          temperature2: {
+            ...prev.quality_control_state.temperature2,
+            min_temperature: min,
+          },
+        },
+      };
+    });
+  };
+
+  const setTemperature2Max = (max: number) => {
+    console.log("Mock: Set temperature 2 max:", max);
+    setLocalState((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        quality_control_state: {
+          ...prev.quality_control_state,
+          temperature2: {
+            ...prev.quality_control_state.temperature2,
+            max_temperature: max,
+          },
+        },
+      };
+    });
+  };
+
   // Mock loading states
   const isLoading = false;
   const isDisabled = false;
@@ -455,6 +571,8 @@ export function useGluetex() {
     spoolRpm,
     tensionArmAngle,
     spoolProgress,
+    temperature1,
+    temperature2,
 
     // Loading states
     isLoading,
@@ -490,5 +608,13 @@ export function useGluetex() {
     setSpoolAdaptiveDeaccelerationUrgencyMultiplier,
     setConnectedMachine,
     disconnectMachine,
+    setStepper2Mode,
+    setStepper34Mode,
+    setCuttingUnitMode,
+    setHeatingMode,
+    setTemperature1Min,
+    setTemperature1Max,
+    setTemperature2Min,
+    setTemperature2Max,
   };
 }
