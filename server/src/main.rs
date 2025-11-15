@@ -1,3 +1,4 @@
+use control_core::socketio::event::GenericEvent;
 use futures::{FutureExt, select};
 use machines::{
     AsyncThreadMessage, MachineConnection, MachineNewHardware, MachineNewHardwareSerial,
@@ -12,7 +13,6 @@ use machines::{
         devices::laser::Laser,
         init::{SerialDetection, start_serial_discovery},
     },
-    winder2::api::GenericEvent,
 };
 
 use app_state::{HotThreadMessage, SharedState};

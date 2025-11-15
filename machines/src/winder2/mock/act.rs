@@ -1,6 +1,5 @@
-use super::Winder2;
-use crate::MachineAct;
-use crate::MachineMessage;
+use crate::winder2::mock::Winder2;
+use crate::{MachineAct, MachineMessage};
 use std::time::{Duration, Instant};
 
 impl MachineAct for Winder2 {
@@ -19,7 +18,7 @@ impl MachineAct for Winder2 {
         }
     }
 
-    fn act_machine_message(&mut self, msg: crate::MachineMessage) {
+    fn act_machine_message(&mut self, msg: MachineMessage) {
         match msg {
             MachineMessage::SubscribeNamespace(namespace) => {
                 self.namespace.namespace = Some(namespace);
@@ -34,7 +33,7 @@ impl MachineAct for Winder2 {
             }
             MachineMessage::ConnectToMachine(_machine_connection) => (),
             MachineMessage::DisconnectMachine(_machine_connection) =>
-            /*Doesnt connec to any Machine do nothing*/
+            /* Doesn't connect to any Machine do nothing */
             {
                 ()
             }
