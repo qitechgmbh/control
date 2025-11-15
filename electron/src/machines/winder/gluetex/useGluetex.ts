@@ -36,6 +36,7 @@ export function useGluetex() {
     defaultState: namespaceDefaultState,
     traversePosition,
     pullerSpeed,
+    slavePullerSpeed,
     spoolRpm,
     tensionArmAngle,
     spoolProgress,
@@ -550,6 +551,62 @@ export function useGluetex() {
     });
   };
 
+  const setStepper3Master = (value: number) => {
+    console.log("Mock: Set stepper 3 master:", value);
+    setLocalState((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        motor_ratios_state: {
+          ...prev.motor_ratios_state,
+          stepper3_master: value,
+        },
+      };
+    });
+  };
+
+  const setStepper3Slave = (value: number) => {
+    console.log("Mock: Set stepper 3 slave:", value);
+    setLocalState((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        motor_ratios_state: {
+          ...prev.motor_ratios_state,
+          stepper3_slave: value,
+        },
+      };
+    });
+  };
+
+  const setStepper4Master = (value: number) => {
+    console.log("Mock: Set stepper 4 master:", value);
+    setLocalState((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        motor_ratios_state: {
+          ...prev.motor_ratios_state,
+          stepper4_master: value,
+        },
+      };
+    });
+  };
+
+  const setStepper4Slave = (value: number) => {
+    console.log("Mock: Set stepper 4 slave:", value);
+    setLocalState((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        motor_ratios_state: {
+          ...prev.motor_ratios_state,
+          stepper4_slave: value,
+        },
+      };
+    });
+  };
+
   // Mock loading states
   const isLoading = false;
   const isDisabled = false;
@@ -568,6 +625,7 @@ export function useGluetex() {
     // Live values (TimeSeries)
     traversePosition,
     pullerSpeed,
+    slavePullerSpeed,
     spoolRpm,
     tensionArmAngle,
     spoolProgress,
@@ -616,5 +674,9 @@ export function useGluetex() {
     setTemperature1Max,
     setTemperature2Min,
     setTemperature2Max,
+    setStepper3Master,
+    setStepper3Slave,
+    setStepper4Master,
+    setStepper4Slave,
   };
 }

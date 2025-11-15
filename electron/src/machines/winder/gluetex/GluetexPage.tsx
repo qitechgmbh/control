@@ -13,6 +13,12 @@ export function GluetexPage() {
           icon: "lu:CirclePlay",
         },
         {
+          link: "addons",
+          activeLink: "addons",
+          title: "Addons",
+          icon: "lu:Puzzle",
+        },
+        {
           link: "graphs",
           activeLink: "graphs",
           title: "Graphs",
