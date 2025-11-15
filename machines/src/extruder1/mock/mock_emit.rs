@@ -1,4 +1,4 @@
-use crate::machines::extruder1::{
+use crate::extruder1::{
     ExtruderV2Mode, HeatingType,
     api::{ExtruderV2Events, LiveValuesEvent, ModeState, PidSettings, StateEvent, TemperaturePid},
     mock::ExtruderV2,

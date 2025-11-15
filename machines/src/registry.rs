@@ -1,5 +1,5 @@
 #[cfg(feature = "mock-machine")]
-use crate::machines::{extruder1::mock::ExtruderV2, mock::MockMachine, winder2::mock::Winder2};
+use crate::{extruder1::mock::ExtruderV2, mock::MockMachine, winder2::mock::Winder2};
 
 use crate::{Machine, MachineNewParams, machine_identification::MachineIdentification};
 #[cfg(not(feature = "mock-machine"))]

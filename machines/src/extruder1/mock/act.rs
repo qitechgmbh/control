@@ -1,5 +1,5 @@
-use crate::machines::extruder1::mock::ExtruderV2;
-use control_core::machines::new::MachineAct;
+use crate::extruder1::mock::ExtruderV2;
+use crate::{MachineAct, MachineMessage};
 use std::time::{Duration, Instant};
 
 impl MachineAct for ExtruderV2 {
@@ -10,6 +10,28 @@ impl MachineAct for ExtruderV2 {
             // Emit live values at 30 FPS
             self.emit_live_values();
             self.last_measurement_emit = now;
+        }
+    }
+
+    fn act_machine_message(&mut self, msg: MachineMessage) {
+        match msg {
+            MachineMessage::SubscribeNamespace(namespace) => {
+                self.namespace.namespace = Some(namespace);
+                self.emit_state();
+                tracing::info!("extruder1 received subscribe");
+            }
+            MachineMessage::UnsubscribeNamespace => self.namespace.namespace = None,
+            MachineMessage::HttpApiJsonRequest(value) => {
+                use crate::MachineApi;
+
+                let _res = self.api_mutate(value);
+            }
+            MachineMessage::ConnectToMachine(_machine_connection) => (),
+            MachineMessage::DisconnectMachine(_machine_connection) =>
+            /*Doesnt connect to any Machine do nothing*/
+            {
+                ()
+            }
         }
     }
 }

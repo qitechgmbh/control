@@ -1,6 +1,5 @@
 use serialport::UsbPortInfo;
-use smol::Task;
-use std::{collections::HashMap, time::Duration};
+use std::collections::HashMap;
 /*
 *@author: Alisher Darmenov
 *@company: QiTech
@@ -75,38 +74,30 @@ impl SerialDetection {
     }
 }
 
-// Async function that runs until at least one serial device is found.
-pub async fn find_serial() -> Option<HashMap<String, UsbPortInfo>> {
-    smol::Timer::after(Duration::from_secs(1)).await;
+/*
 
-    let devices = SerialDetection::detect_devices();
-    if !devices.is_empty() {
-        return Some(devices);
-    } else {
-        return None;
+pub async fn start_serial_discovery(app_state: Arc<>) {
+    loop {
+        let devices = SerialDetection::detect_devices();
+
+        if !devices.is_empty() {
+            handle_serial_device_hotplug(app_state.clone(), devices).await;
+        }
+
+        smol::Timer::after(Duration::from_secs(1)).await;
     }
 }
 
-// Returns a smol::Task that resolves when atleast one device is found.
-pub fn start_serial_discovery() -> Task<Option<HashMap<String, UsbPortInfo>>> {
-    smol::spawn(find_serial())
-}
-
-/*
-
 pub async fn handle_serial_device_hotplug(
     app_state: Arc<SharedState>,
-    map: Option<HashMap<String, UsbPortInfo>>,
+    map: HashMap<String, UsbPortInfo>,
 ) {
     let laser_ident = SerialDeviceIdentification {
         vendor_id: 0x0403,
         product_id: 0x6001,
     };
 
-    let laser = match map {
-        Some(map) => SerialDetection::get_path_by_id(laser_ident, map),
-        None => None,
-    };
+    let laser = SerialDetection::get_path_by_id(laser_ident, map);
 
     let mut unique_ident: Option<MachineIdentificationUnique> = None;
 

@@ -1,4 +1,3 @@
-use futures::executor::block_on;
 use smol::lock::RwLock;
 
 use crate::pdo::basic::Limit;
@@ -29,10 +28,9 @@ impl TemperatureInput {
         let get_input = Box::new(move || {
             let device2 = device2.clone();
             let port_clone = port2.clone();
-            block_on(async move {
-                let device = device2.read().await;
-                device.get_input(port_clone)
-            })
+
+            let device = device2.read_blocking();
+            device.get_input(port_clone)
         });
         Self { get_input }
     }

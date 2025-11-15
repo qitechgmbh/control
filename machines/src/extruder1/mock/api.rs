@@ -1,10 +1,12 @@
-use crate::machines::extruder1::{HeatingType, api::Mutation, mock::ExtruderV2};
-use control_core::machines::api::MachineApi;
+use crate::extruder1::{HeatingType, api::Mutation, mock::ExtruderV2};
+use crate::{MachineApi, MachineMessage, Sender};
 use control_core::socketio::namespace::Namespace;
-use smol::lock::Mutex;
-use std::sync::Arc;
 
 impl MachineApi for ExtruderV2 {
+    fn api_get_sender(&self) -> Sender<MachineMessage> {
+        self.api_sender.clone()
+    }
+
     fn api_mutate(&mut self, request_body: serde_json::Value) -> Result<(), anyhow::Error> {
         // there are multiple Modbus Frames that are "prebuilt"
         let control: Mutation = serde_json::from_value(request_body)?;
@@ -45,7 +47,7 @@ impl MachineApi for ExtruderV2 {
         Ok(())
     }
 
-    fn api_event_namespace(&mut self) -> Arc<Mutex<Namespace>> {
+    fn api_event_namespace(&mut self) -> Option<Namespace> {
         self.namespace.namespace.clone()
     }
 }

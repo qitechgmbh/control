@@ -7,7 +7,7 @@ use ethercat_hal::{
     helpers::ethercrab_types::EthercrabSubDeviceGroupPreoperational,
 };
 use ethercrab::MainDevice;
-use futures::executor::block_on;
+use smol;
 
 use crate::{MAX_SUBDEVICES, PDI_LEN, print::print_markdown_table};
 
@@ -34,7 +34,7 @@ pub fn ls(
         let driver = device_from_subdevice_identity(&identity);
         let identification_adresses = get_identification_addresses(&identity, device.name());
         let identification = match identification_adresses {
-            Ok(_) => block_on(machine_device_identification(&device, maindevice)),
+            Ok(_) => smol::block_on(machine_device_identification(&device, maindevice)),
             Err(_) => Err(anyhow!("")),
         };
 
@@ -122,7 +122,7 @@ pub fn ls(
     print_markdown_table(&table, true);
 
     // Put group into op state
-    match block_on(group.into_op(maindevice)) {
+    match smol::block_on(group.into_op(maindevice)) {
         Ok(_) => println!("Successfully put group into OP state"),
         Err(e) => println!("Failed to put group into OP state: {}", e),
     }
