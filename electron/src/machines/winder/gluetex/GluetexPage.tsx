@@ -19,6 +19,12 @@ export function GluetexPage() {
           icon: "lu:Puzzle",
         },
         {
+          link: "heaters",
+          activeLink: "heaters",
+          title: "Heaters",
+          icon: "lu:Flame",
+        },
+        {
           link: "graphs",
           activeLink: "graphs",
           title: "Graphs",
