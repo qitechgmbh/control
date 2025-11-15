@@ -10,7 +10,11 @@ import { Label } from "@/control/Label";
 import { TouchButton } from "@/components/touch/TouchButton";
 import { StatusBadge } from "@/control/StatusBadge";
 import { useGluetex } from "./useGluetex";
-import { StepperMode, HeatingMode, getGearRatioMultiplier } from "./gluetexNamespace";
+import {
+  StepperMode,
+  HeatingMode,
+  getGearRatioMultiplier,
+} from "./gluetexNamespace";
 import { roundToDecimals, roundDegreesToDecimals } from "@/lib/decimal";
 import { TensionArm } from "../TensionArm";
 import { RatioInput } from "@/components/ratio/RatioInput";
@@ -44,8 +48,6 @@ export function GluetexAddonsPage() {
   const gearRatioMultiplier = getGearRatioMultiplier(
     state?.puller_state?.gear_ratio,
   );
-  const maxMotorSpeed = 75; // Maximum motor speed in m/min
-  const maxTargetSpeed = maxMotorSpeed / gearRatioMultiplier;
 
   return (
     <Page>
@@ -154,35 +156,59 @@ export function GluetexAddonsPage() {
                   renderValue={(value) => roundToDecimals(value, 1)}
                 />
               </div>
-              
+
               <TemperatureBar
                 min={0}
                 max={150}
-                minLimit={state?.quality_control_state?.temperature1.min_temperature ?? 0}
-                maxLimit={state?.quality_control_state?.temperature1.max_temperature ?? 150}
+                minLimit={
+                  state?.quality_control_state?.temperature1.min_temperature ??
+                  0
+                }
+                maxLimit={
+                  state?.quality_control_state?.temperature1.max_temperature ??
+                  150
+                }
                 current={temperature1.current?.value ?? 0}
               />
 
               <div className="flex flex-row flex-wrap gap-4">
                 <Label label="Min Temperature">
                   <EditValue
-                    value={state?.quality_control_state?.temperature1.min_temperature}
+                    value={
+                      state?.quality_control_state?.temperature1.min_temperature
+                    }
                     unit="C"
                     title="Min Temperature 1"
-                    defaultValue={defaultState?.quality_control_state?.temperature1.min_temperature}
+                    defaultValue={
+                      defaultState?.quality_control_state?.temperature1
+                        .min_temperature
+                    }
                     min={0}
-                    max={Math.min(149, (state?.quality_control_state?.temperature1.max_temperature ?? 150) - 1)}
+                    max={Math.min(
+                      149,
+                      (state?.quality_control_state?.temperature1
+                        .max_temperature ?? 150) - 1,
+                    )}
                     renderValue={(value) => roundToDecimals(value, 1)}
                     onChange={setTemperature1Min}
                   />
                 </Label>
                 <Label label="Max Temperature">
                   <EditValue
-                    value={state?.quality_control_state?.temperature1.max_temperature}
+                    value={
+                      state?.quality_control_state?.temperature1.max_temperature
+                    }
                     unit="C"
                     title="Max Temperature 1"
-                    defaultValue={defaultState?.quality_control_state?.temperature1.max_temperature}
-                    min={Math.max(1, (state?.quality_control_state?.temperature1.min_temperature ?? 0) + 1)}
+                    defaultValue={
+                      defaultState?.quality_control_state?.temperature1
+                        .max_temperature
+                    }
+                    min={Math.max(
+                      1,
+                      (state?.quality_control_state?.temperature1
+                        .min_temperature ?? 0) + 1,
+                    )}
                     max={150}
                     renderValue={(value) => roundToDecimals(value, 1)}
                     onChange={setTemperature1Max}
@@ -201,35 +227,59 @@ export function GluetexAddonsPage() {
                   renderValue={(value) => roundToDecimals(value, 1)}
                 />
               </div>
-              
+
               <TemperatureBar
                 min={0}
                 max={200}
-                minLimit={state?.quality_control_state?.temperature2.min_temperature ?? 0}
-                maxLimit={state?.quality_control_state?.temperature2.max_temperature ?? 200}
+                minLimit={
+                  state?.quality_control_state?.temperature2.min_temperature ??
+                  0
+                }
+                maxLimit={
+                  state?.quality_control_state?.temperature2.max_temperature ??
+                  200
+                }
                 current={temperature2.current?.value ?? 0}
               />
 
               <div className="flex flex-row flex-wrap gap-4">
                 <Label label="Min Temperature">
                   <EditValue
-                    value={state?.quality_control_state?.temperature2.min_temperature}
+                    value={
+                      state?.quality_control_state?.temperature2.min_temperature
+                    }
                     unit="C"
                     title="Min Temperature 2"
-                    defaultValue={defaultState?.quality_control_state?.temperature2.min_temperature}
+                    defaultValue={
+                      defaultState?.quality_control_state?.temperature2
+                        .min_temperature
+                    }
                     min={0}
-                    max={Math.min(199, (state?.quality_control_state?.temperature2.max_temperature ?? 200) - 1)}
+                    max={Math.min(
+                      199,
+                      (state?.quality_control_state?.temperature2
+                        .max_temperature ?? 200) - 1,
+                    )}
                     renderValue={(value) => roundToDecimals(value, 1)}
                     onChange={setTemperature2Min}
                   />
                 </Label>
                 <Label label="Max Temperature">
                   <EditValue
-                    value={state?.quality_control_state?.temperature2.max_temperature}
+                    value={
+                      state?.quality_control_state?.temperature2.max_temperature
+                    }
                     unit="C"
                     title="Max Temperature 2"
-                    defaultValue={defaultState?.quality_control_state?.temperature2.max_temperature}
-                    min={Math.max(1, (state?.quality_control_state?.temperature2.min_temperature ?? 0) + 1)}
+                    defaultValue={
+                      defaultState?.quality_control_state?.temperature2
+                        .max_temperature
+                    }
+                    min={Math.max(
+                      1,
+                      (state?.quality_control_state?.temperature2
+                        .min_temperature ?? 0) + 1,
+                    )}
                     max={200}
                     renderValue={(value) => roundToDecimals(value, 1)}
                     onChange={setTemperature2Max}

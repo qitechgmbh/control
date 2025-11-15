@@ -4,10 +4,7 @@
  */
 
 import { useMemo, useState, useEffect } from "react";
-import {
-  createTimeSeries,
-  TimeSeries,
-} from "@/lib/timeseries";
+import { createTimeSeries, TimeSeries } from "@/lib/timeseries";
 import { MachineIdentificationUnique } from "@/machines/types";
 
 // ========== Type Definitions ==========
@@ -351,7 +348,7 @@ export function useGluetexNamespace(
       ONE_HOUR,
     );
     let series = initialTimeSeries;
-    
+
     // Add some initial simulated values
     const now = Date.now();
     for (let i = 0; i < 50; i++) {
@@ -359,7 +356,7 @@ export function useGluetexNamespace(
       const value = 90 + Math.sin(i / 5) * 30; // Oscillating between 60 and 120
       series = insert(series, { value, timestamp });
     }
-    
+
     return series;
   }, []);
 
@@ -371,14 +368,14 @@ export function useGluetexNamespace(
       ONE_HOUR,
     );
     let series = initialTimeSeries;
-    
+
     const now = Date.now();
     for (let i = 0; i < 50; i++) {
       const timestamp = now - (50 - i) * 100;
       const value = 14.5 + Math.random() * 1; // Around 15 m/min with variation
       series = insert(series, { value, timestamp });
     }
-    
+
     return series;
   }, []);
 
@@ -390,14 +387,14 @@ export function useGluetexNamespace(
       ONE_HOUR,
     );
     let series = initialTimeSeries;
-    
+
     const now = Date.now();
     for (let i = 0; i < 50; i++) {
       const timestamp = now - (50 - i) * 100;
       const value = 25 + Math.random() * 5; // Around 25-30 rpm
       series = insert(series, { value, timestamp });
     }
-    
+
     return series;
   }, []);
 
@@ -409,14 +406,14 @@ export function useGluetexNamespace(
       ONE_HOUR,
     );
     let series = initialTimeSeries;
-    
+
     const now = Date.now();
     for (let i = 0; i < 50; i++) {
       const timestamp = now - (50 - i) * 100;
       const value = 35 + Math.sin(i / 3) * 10; // Oscillating around 35 degrees
       series = insert(series, { value, timestamp });
     }
-    
+
     return series;
   }, []);
 
@@ -428,14 +425,14 @@ export function useGluetexNamespace(
       ONE_HOUR,
     );
     let series = initialTimeSeries;
-    
+
     const now = Date.now();
     for (let i = 0; i < 50; i++) {
       const timestamp = now - (50 - i) * 100;
       const value = i * 0.5; // Gradually increasing progress
       series = insert(series, { value, timestamp });
     }
-    
+
     return series;
   }, []);
 
@@ -447,14 +444,14 @@ export function useGluetexNamespace(
       ONE_HOUR,
     );
     let series = initialTimeSeries;
-    
+
     const now = Date.now();
     for (let i = 0; i < 50; i++) {
       const timestamp = now - (50 - i) * 100;
       const value = 85.0 + Math.sin(i / 10) * 3; // Oscillating around 85°C
       series = insert(series, { value, timestamp });
     }
-    
+
     return series;
   }, []);
 
@@ -466,14 +463,14 @@ export function useGluetexNamespace(
       ONE_HOUR,
     );
     let series = initialTimeSeries;
-    
+
     const now = Date.now();
     for (let i = 0; i < 50; i++) {
       const timestamp = now - (50 - i) * 100;
       const value = 125.0 + Math.sin(i / 8) * 2; // Oscillating around 125°C
       series = insert(series, { value, timestamp });
     }
-    
+
     return series;
   }, []);
 
@@ -485,14 +482,14 @@ export function useGluetexNamespace(
       ONE_HOUR,
     );
     let series = initialTimeSeries;
-    
+
     const now = Date.now();
     for (let i = 0; i < 50; i++) {
       const timestamp = now - (50 - i) * 100;
       const value = 11.5 + Math.random() * 1; // Around 12 m/min with variation
       series = insert(series, { value, timestamp });
     }
-    
+
     return series;
   }, []);
 
