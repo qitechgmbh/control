@@ -61,6 +61,17 @@ export type PullerState = {
   gear_ratio: GearRatio;
 };
 
+export type SlavePullerState = {
+  forward: boolean;
+};
+
+export type MotorRatiosState = {
+  stepper3_master: number;
+  stepper3_slave: number;
+  stepper4_master: number;
+  stepper4_slave: number;
+};
+
 export type ModeState = {
   mode: Mode;
   can_wind: boolean;
@@ -123,6 +134,8 @@ export type StateEvent = {
   is_default_state: boolean;
   traverse_state: TraverseState;
   puller_state: PullerState;
+  slave_puller_state: SlavePullerState;
+  motor_ratios_state: MotorRatiosState;
   mode_state: ModeState;
   tension_arm_state: TensionArmState;
   spool_speed_controller_state: SpoolSpeedControllerState;
@@ -138,6 +151,7 @@ export type GluetexNamespaceStore = {
   defaultState: StateEvent | null;
   traversePosition: TimeSeries;
   pullerSpeed: TimeSeries;
+  slavePullerSpeed: TimeSeries;
   spoolRpm: TimeSeries;
   tensionArmAngle: TimeSeries;
   spoolProgress: TimeSeries;
@@ -172,6 +186,15 @@ const HARDCODED_STATE: StateEvent = {
     target_diameter: 50.0,
     forward: true,
     gear_ratio: "OneToOne",
+  },
+  slave_puller_state: {
+    forward: true,
+  },
+  motor_ratios_state: {
+    stepper3_master: 1.0,
+    stepper3_slave: 1.0,
+    stepper4_master: 1.0,
+    stepper4_slave: 1.0,
   },
   mode_state: {
     mode: "Standby",
@@ -246,6 +269,15 @@ const DEFAULT_STATE: StateEvent = {
     target_diameter: 40.0,
     forward: true,
     gear_ratio: "OneToOne",
+  },
+  slave_puller_state: {
+    forward: true,
+  },
+  motor_ratios_state: {
+    stepper3_master: 1.0,
+    stepper3_slave: 1.0,
+    stepper4_master: 1.0,
+    stepper4_slave: 1.0,
   },
   mode_state: {
     mode: "Standby",
@@ -445,6 +477,25 @@ export function useGluetexNamespace(
     return series;
   }, []);
 
+  const slavePullerSpeed = useMemo(() => {
+    const { initialTimeSeries, insert } = createTimeSeries(
+      TWENTY_MILLISECOND,
+      ONE_SECOND,
+      FIVE_SECOND,
+      ONE_HOUR,
+    );
+    let series = initialTimeSeries;
+    
+    const now = Date.now();
+    for (let i = 0; i < 50; i++) {
+      const timestamp = now - (50 - i) * 100;
+      const value = 11.5 + Math.random() * 1; // Around 12 m/min with variation
+      series = insert(series, { value, timestamp });
+    }
+    
+    return series;
+  }, []);
+
   // Simulate live data updates
   useEffect(() => {
     const interval = setInterval(() => {
@@ -467,6 +518,7 @@ export function useGluetexNamespace(
     defaultState: DEFAULT_STATE,
     traversePosition,
     pullerSpeed,
+    slavePullerSpeed,
     spoolRpm,
     tensionArmAngle,
     spoolProgress,
