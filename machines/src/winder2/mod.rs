@@ -17,11 +17,11 @@ pub mod mock;
 #[cfg(feature = "mock-machine")]
 mod winder2_imports {
     pub use super::api::SpoolAutomaticActionMode;
+    pub use crate::winder2::mock::Winder2;
     pub use std::time::Instant;
-    pub use units::f64::Length;
 }
 
-use units::Length;
+use units::f64::Length;
 
 #[cfg(not(feature = "mock-machine"))]
 mod winder2_imports {
@@ -36,24 +36,24 @@ mod winder2_imports {
         digital_input::DigitalInput, digital_output::DigitalOutput,
         stepper_velocity_el70x1::StepperVelocityEL70x1,
     };
-    pub use smol::lock::RwLock;
-    pub use std::{fmt::Debug, sync::Weak, time::Instant};
+    pub use smol::channel::Receiver;
+    pub use std::{fmt::Debug, time::Instant};
 
-    pub use crate::buffer1::BufferV1;
     pub use units::ConstZero;
-    pub use units::{length::meter, length::millimeter, velocity::meter_per_second};
+    pub use units::{length::millimeter, velocity::meter_per_second};
+
+    pub use crate::{
+        MACHINE_WINDER_V1, MachineConnection, MachineMessage, VENDOR_QITECH,
+        machine_identification::MachineIdentification,
+    };
 }
 
-#[cfg(not(feature = "mock-machine"))]
-use smol::channel::{Receiver, Sender};
-pub use winder2_imports::*;
+use crate::MachineIdentificationUnique;
+use smol::channel::Sender;
+use units::length::meter;
+use winder2_imports::*;
 
 use crate::{AsyncThreadMessage, Machine};
-#[cfg(not(feature = "mock-machine"))]
-use crate::{
-    MACHINE_WINDER_V1, MachineConnection, MachineMessage, VENDOR_QITECH,
-    machine_identification::{MachineIdentification, MachineIdentificationUnique},
-};
 
 #[derive(Debug)]
 pub struct SpoolAutomaticAction {

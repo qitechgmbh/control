@@ -1,18 +1,14 @@
-use std::time::Instant;
-
-use crate::machines::winder2::Winder2Mode;
-use crate::machines::winder2::api::LiveValuesEvent;
-use crate::machines::winder2::api::{
-    ModeState, SpoolAutomaticActionMode, StateEvent, Winder2Events,
-};
-use crate::machines::winder2::puller_speed_controller::{GearRatio, PullerRegulationMode};
-use crate::machines::winder2::spool_speed_controller::SpoolSpeedControllerType;
-use crate::machines::{MACHINE_WINDER_V1, VENDOR_QITECH};
-use control_core::machines::identification::{MachineIdentification, MachineIdentificationUnique};
-use control_core::socketio::event::BuildEvent;
-use control_core::socketio::namespace::NamespaceCacheingLogic;
-
 use super::Winder2;
+use crate::machine_identification::{MachineIdentification, MachineIdentificationUnique};
+use crate::winder2::Winder2Mode;
+use crate::winder2::api::{
+    LiveValuesEvent, Mode, ModeState, SpoolAutomaticActionMode, StateEvent, Winder2Events,
+};
+use crate::winder2::puller_speed_controller::{GearRatio, PullerRegulationMode};
+use crate::winder2::spool_speed_controller::SpoolSpeedControllerType;
+use crate::{MACHINE_WINDER_V1, VENDOR_QITECH};
+use control_core::socketio::{event::BuildEvent, namespace::NamespaceCacheingLogic};
+use std::time::Instant;
 
 impl Winder2 {
     pub const MACHINE_IDENTIFICATION: MachineIdentification = MachineIdentification {
@@ -20,7 +16,7 @@ impl Winder2 {
         machine: MACHINE_WINDER_V1,
     };
 
-    pub fn stop_or_pull_spool_reset(&mut self, now: Instant) {}
+    pub fn stop_or_pull_spool_reset(&mut self, _now: Instant) {}
     /// Implement Mode
     pub fn set_mode(&mut self, mode: &Winder2Mode) {
         self.mode_state = ModeState {
@@ -108,9 +104,9 @@ impl Winder2 {
     ///
     /// It contains a transition matrix for atomic changes.
     /// It will set [`Self::spool_mode`]
-    fn set_traverse_mode(&mut self, mode: &Winder2Mode) {
+    fn set_traverse_mode(&mut self, _mode: &Winder2Mode) {
         self.mode_state = ModeState {
-            mode: crate::machines::winder2::api::Mode::Standby,
+            mode: Mode::Standby,
             can_wind: true,
         };
         self.emit_state();
@@ -227,7 +223,7 @@ impl Winder2 {
     /// set connected buffer
     pub fn set_connected_buffer(
         &mut self,
-        machine_identification_unique: MachineIdentificationUnique,
+        _machine_identification_unique: MachineIdentificationUnique,
     ) {
         self.emit_state();
     }
@@ -235,7 +231,7 @@ impl Winder2 {
     /// disconnect buffer
     pub fn disconnect_buffer(
         &mut self,
-        machine_identification_unique: MachineIdentificationUnique,
+        _machine_identification_unique: MachineIdentificationUnique,
     ) {
         self.emit_state();
     }

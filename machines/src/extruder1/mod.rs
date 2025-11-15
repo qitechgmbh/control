@@ -1,32 +1,40 @@
 #[cfg(not(feature = "mock-machine"))]
-use std::time::Instant;
+mod imports {
+    pub use std::time::Instant;
 
-#[cfg(not(feature = "mock-machine"))]
+    pub use smol::channel::Receiver;
+    pub use units::electric_current::ampere;
+    pub use units::electric_potential::volt;
+
+    pub use crate::{
+        MACHINE_EXTRUDER_V1, MachineMessage, VENDOR_QITECH,
+        extruder1::{
+            api::ExtruderV2Namespace, screw_speed_controller::ScrewSpeedController,
+            temperature_controller::TemperatureController,
+        },
+        machine_identification::MachineIdentification,
+    };
+}
+
+#[cfg(feature = "mock-machine")]
+mod imports {
+    pub use crate::extruder1::mock::ExtruderV2;
+}
+
+use imports::*;
+
+use crate::machine_identification::MachineIdentificationUnique;
+use crate::{AsyncThreadMessage, Machine};
 use serde::{Deserialize, Serialize};
-use smol::channel::Receiver;
 use smol::channel::Sender;
-#[cfg(not(feature = "mock-machine"))]
-use units::electric_current::ampere;
-#[cfg(not(feature = "mock-machine"))]
-use units::electric_potential::volt;
 use units::f64::*;
 use units::thermodynamic_temperature::degree_celsius;
-
-use crate::{AsyncThreadMessage, Machine};
-#[cfg(not(feature = "mock-machine"))]
-use crate::{
-    MACHINE_EXTRUDER_V1, MachineMessage, VENDOR_QITECH,
-    extruder1::{
-        api::ExtruderV2Namespace, screw_speed_controller::ScrewSpeedController,
-        temperature_controller::TemperatureController,
-    },
-    machine_identification::{MachineIdentification, MachineIdentificationUnique},
-};
 
 pub mod act;
 pub mod api;
 pub mod emit;
 pub mod mitsubishi_cs80;
+#[cfg(feature = "mock-machine")]
 pub mod mock;
 pub mod new;
 pub mod screw_speed_controller;
