@@ -16,6 +16,7 @@ import { GluetexManualPage } from "@/machines/winder/gluetex/GluetexManual";
 import { GluetexSettingPage } from "@/machines/winder/gluetex/GluetexSettings";
 import { GluetexGraphsPage } from "@/machines/winder/gluetex/GluetexGraphs";
 import { GluetexPresetsPage } from "@/machines/winder/gluetex/GluetexPresetsPage";
+import { GluetexAddonsPage } from "@/machines/winder/gluetex/GluetexAddonsPage";
 import { Extruder2Page } from "@/machines/extruder/extruder2/Extruder2Page";
 import { Extruder2ControlPage } from "@/machines/extruder/extruder2/Extruder2ControlPage";
 import { Extruder2SettingsPage } from "@/machines/extruder/extruder2/Extruder2Settings";
@@ -172,6 +173,12 @@ export const gluetexPresetsRoute = createRoute({
   getParentRoute: () => gluetexRoute,
   path: "presets",
   component: () => <GluetexPresetsPage />,
+});
+
+export const gluetexAddonsRoute = createRoute({
+  getParentRoute: () => gluetexRoute,
+  path: "addons",
+  component: () => <GluetexAddonsPage />,
 });
 
 export const laser1SerialRoute = createRoute({
@@ -375,6 +382,7 @@ export const rootTree = RootRoute.addChildren([
         gluetexSettingsRoute,
         gluetexGraphsRoute,
         gluetexPresetsRoute,
+        gluetexAddonsRoute,
       ]),
 
       extruder2Route.addChildren([
