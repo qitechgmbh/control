@@ -96,7 +96,7 @@ export function RatioInput({
   const handleNumpadClick = (digit: string) => {
     if (activeField === null) return;
 
-    let newValue = inputValue + digit;
+    const newValue = inputValue + digit;
     setInputValue(newValue);
   };
 
@@ -216,7 +216,8 @@ export function RatioInput({
     value: number;
   }) => {
     const isActive = activeField === field;
-    const displayValue = isActive && inputValue !== "" ? inputValue : value.toFixed(1);
+    const displayValue =
+      isActive && inputValue !== "" ? inputValue : value.toFixed(1);
 
     return (
       <div className="flex flex-col items-center gap-3">
@@ -312,7 +313,7 @@ export function RatioInput({
       <div className="flex gap-2">
         <TouchButton
           variant="outline"
-          className="flex-1 h-10"
+          className="h-10 flex-1"
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -322,7 +323,7 @@ export function RatioInput({
           C
         </TouchButton>
         <TouchButton
-          className="flex-1 h-10 bg-green-600 text-white hover:bg-green-700"
+          className="h-10 flex-1 bg-green-600 text-white hover:bg-green-700"
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
