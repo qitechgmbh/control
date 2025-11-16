@@ -22,7 +22,7 @@ use crate::extruder1::ExtruderV2;
 #[cfg(not(feature = "mock-machine"))]
 use crate::{
     aquapath1::AquaPathV1, buffer1::BufferV1, extruder2::ExtruderV3, laser::LaserMachine,
-    winder2::Winder2,
+    winder2::Winder2, gluetex::Gluetex,
 };
 
 use crate::minimal_machines::{
@@ -154,7 +154,13 @@ lazy_static! {
 
         mc.register::<WagoSerialMachine>(WagoSerialMachine::MACHINE_IDENTIFICATION);
 
+        mc.register::<WagoSerialMachine>(WagoSerialMachine::MACHINE_IDENTIFICATION);
+
+        #[cfg(not(feature = "mock-machine"))]
+        mc.register::<Gluetex>(Gluetex::MACHINE_IDENTIFICATION);
+
         mc.register::<TestMachineStepper>(TestMachineStepper::MACHINE_IDENTIFICATION);
+        
         mc.register::<Wago750_430DiMachine>(Wago750_430DiMachine::MACHINE_IDENTIFICATION);
         mc
     };
