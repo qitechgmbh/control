@@ -16,7 +16,7 @@ use crate::extruder1::ExtruderV2;
 #[cfg(not(feature = "mock-machine"))]
 use crate::{
     aquapath1::AquaPathV1, buffer1::BufferV1, extruder2::ExtruderV3, laser::LaserMachine,
-    winder2::Winder2,
+    winder2::Winder2, gluetex::Gluetex,
 };
 
 use crate::test_machine::TestMachine;
@@ -131,6 +131,9 @@ lazy_static! {
 
         mc.register::<WagoAiTestMachine>(WagoAiTestMachine::MACHINE_IDENTIFICATION);
 
+
+        #[cfg(not(feature = "mock-machine"))]
+        mc.register::<Gluetex>(Gluetex::MACHINE_IDENTIFICATION);
         mc
     };
 }
