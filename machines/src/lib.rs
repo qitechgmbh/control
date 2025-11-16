@@ -25,6 +25,7 @@ pub mod digital_input_test_machine;
 pub mod extruder1;
 pub mod extruder2;
 pub mod ip20_test_machine;
+pub mod gluetex;
 pub mod laser;
 pub mod machine_identification;
 pub mod mock;
@@ -51,6 +52,7 @@ pub const TEST_MACHINE: u16 = 0x0033;
 pub const IP20_TEST_MACHINE: u16 = 0x0034;
 pub const ANALOG_INPUT_TEST_MACHINE: u16 = 0x0035;
 pub const WAGO_AI_TEST_MACHINE: u16 = 0x0036;
+pub const MACHINE_GLUETEX_V1: u16 = 0x000A;
 pub const DIGITAL_INPUT_TEST_MACHINE: u16 = 0x0040;
 pub const WAGO_8CH_IO_TEST_MACHINE: u16 = 0x0041;
 

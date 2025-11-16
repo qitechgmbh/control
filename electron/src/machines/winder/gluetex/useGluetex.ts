@@ -1,39 +1,53 @@
 /**
  * @file useGluetex.ts
- * @description Hook for Gluetex machine with hardcoded test data (no backend integration).
+ * @description Hook for Gluetex machine with real backend connection.
+ * Standard winder features connect to backend, addon features remain local.
  */
 
-import { useMemo, useState } from "react";
+import { toastError } from "@/components/Toast";
+import { useMachineMutate as useMachineMutation } from "@/client/useClient";
+import { useStateOptimistic } from "@/lib/useStateOptimistic";
 import { MachineIdentificationUnique } from "@/machines/types";
+import { VENDOR_QITECH } from "@/machines/properties";
+import { useEffect, useMemo } from "react";
+import { produce } from "immer";
+import { useMachines } from "@/client/useMachines";
+import { z } from "zod";
 import {
   SpoolRegulationMode,
-  StateEvent,
+  ExtendedStateEvent,
   useGluetexNamespace,
+  modeSchema,
   Mode,
+  spoolRegulationModeSchema,
+  pullerRegulationSchema,
   PullerRegulation,
   SpoolAutomaticActionMode,
+  spoolAutomaticActionModeSchema,
+  gearRatioSchema,
   GearRatio,
   StepperMode,
   HeatingMode,
 } from "./gluetexNamespace";
+import { machineIdentificationUnique } from "@/machines/types";
 
 export function useGluetex() {
-  // For testing, we use a dummy machine identification
-  const machineIdentification: MachineIdentificationUnique = useMemo(
-    () => ({
+  // Use hardcoded machine identification for testing
+  // TODO: Get this from route params like winder2 does
+  const machineIdentification: MachineIdentificationUnique = useMemo(() => {
+    return {
       machine_identification: {
-        vendor: 1,
-        machine: 3,
+        vendor: VENDOR_QITECH,
+        machine: 0x000a, // Gluetex machine ID
       },
       serial: 999,
-    }),
-    [],
-  );
+    };
+  }, []);
 
-  // Get state and live values from namespace (hardcoded)
+  // Get consolidated state and live values from namespace
   const {
-    state: namespaceState,
-    defaultState: namespaceDefaultState,
+    state,
+    defaultState,
     traversePosition,
     pullerSpeed,
     slavePullerSpeed,
@@ -44,583 +58,648 @@ export function useGluetex() {
     temperature2,
   } = useGluetexNamespace(machineIdentification);
 
-  // Use local state for testing changes
-  const [localState, setLocalState] = useState<StateEvent | null>(
-    namespaceState,
+  // Single optimistic state for all state management
+  const stateOptimistic = useStateOptimistic<ExtendedStateEvent>();
+
+  // Update optimistic state when real state changes
+  useEffect(() => {
+    if (state) {
+      stateOptimistic.setReal(state);
+    }
+  }, [state]);
+
+  // ========== Backend Mutation Requests (Standard Winder Features) ==========
+
+  const { request: requestTraverseGotoLimitInner } = useMachineMutation(
+    z.literal("GotoTraverseLimitInner"),
+  );
+  const { request: requestTraverseGotoLimitOuter } = useMachineMutation(
+    z.literal("GotoTraverseLimitOuter"),
+  );
+  const { request: requestTraverseGotoHome } = useMachineMutation(
+    z.literal("GotoTraverseHome"),
+  );
+  const { request: requestSetLaserpointer } = useMachineMutation(
+    z.object({ EnableTraverseLaserpointer: z.boolean() }),
+  );
+  const { request: requestModeSet } = useMachineMutation(
+    z.object({ SetMode: modeSchema }),
+  );
+  const { request: requestTensionArmZero } = useMachineMutation(
+    z.literal("ZeroTensionArmAngle"),
+  );
+  const { request: requestTraverseSetLimitInner } = useMachineMutation(
+    z.object({ SetTraverseLimitInner: z.number() }),
+  );
+  const { request: requestTraverseSetLimitOuter } = useMachineMutation(
+    z.object({ SetTraverseLimitOuter: z.number() }),
+  );
+  const { request: requestTraverseSetStepSize } = useMachineMutation(
+    z.object({ SetTraverseStepSize: z.number() }),
+  );
+  const { request: requestTraverseSetPadding } = useMachineMutation(
+    z.object({ SetTraversePadding: z.number() }),
+  );
+  const { request: requestPullerSetTargetSpeed } = useMachineMutation(
+    z.object({ SetPullerTargetSpeed: z.number() }),
+  );
+  const { request: requestPullerSetTargetDiameter } = useMachineMutation(
+    z.object({ SetPullerTargetDiameter: z.number() }),
+  );
+  const { request: requestPullerSetRegulationMode } = useMachineMutation(
+    z.object({
+      SetPullerRegulationMode: pullerRegulationSchema,
+    }),
+  );
+  const { request: requestPullerSetForward } = useMachineMutation(
+    z.object({ SetPullerForward: z.boolean() }),
+  );
+  const { request: requestPullerSetGearRatio } = useMachineMutation(
+    z.object({ SetPullerGearRatio: gearRatioSchema }),
+  );
+  const { request: requestSpoolSetRegulationMode } = useMachineMutation(
+    z.object({ SetSpoolRegulationMode: spoolRegulationModeSchema }),
+  );
+  const { request: requestSpoolSetMinMaxMinSpeed } = useMachineMutation(
+    z.object({ SetSpoolMinMaxMinSpeed: z.number() }),
+  );
+  const { request: requestSpoolSetMinMaxMaxSpeed } = useMachineMutation(
+    z.object({ SetSpoolMinMaxMaxSpeed: z.number() }),
+  );
+  const { request: requestSpoolSetForward } = useMachineMutation(
+    z.object({ SetSpoolForward: z.boolean() }),
+  );
+  const { request: requestSpoolSetAdaptiveTensionTarget } = useMachineMutation(
+    z.object({ SetSpoolAdaptiveTensionTarget: z.number() }),
+  );
+  const { request: requestSpoolSetAdaptiveRadiusLearningRate } =
+    useMachineMutation(
+      z.object({ SetSpoolAdaptiveRadiusLearningRate: z.number() }),
+    );
+  const { request: requestSpoolSetAdaptiveMaxSpeedMultiplier } =
+    useMachineMutation(
+      z.object({ SetSpoolAdaptiveMaxSpeedMultiplier: z.number() }),
+    );
+  const { request: requestSpoolSetAdaptiveAccelerationFactor } =
+    useMachineMutation(
+      z.object({ SetSpoolAdaptiveAccelerationFactor: z.number() }),
+    );
+  const { request: requestSpoolSetAdaptiveDeaccelerationUrgencyMultiplier } =
+    useMachineMutation(
+      z.object({ SetSpoolAdaptiveDeaccelerationUrgencyMultiplier: z.number() }),
+    );
+  const { request: requestSpoolAutomaticRequiredMeters } = useMachineMutation(
+    z.object({ SetSpoolAutomaticRequiredMeters: z.number() }),
+  );
+  const { request: requestSpoolResetProgress } = useMachineMutation(
+    z.literal("ResetSpoolProgress"),
+  );
+  const { request: requestSpoolAutomaticAction } = useMachineMutation(
+    z.object({ SetSpoolAutomaticAction: spoolAutomaticActionModeSchema }),
+  );
+  const { request: requestConnectedMachine } = useMachineMutation(
+    z.object({
+      SetConnectedMachine: machineIdentificationUnique,
+    }),
+  );
+  const { request: requestDisconnectedMachine } = useMachineMutation(
+    z.object({
+      DisconnectMachine: machineIdentificationUnique,
+    }),
   );
 
-  // Mock action functions - these update local state instead of calling backend
+  // ========== Helper Functions ==========
+
+  // Helper function for optimistic updates using produce
+  const updateStateOptimistically = (
+    producer: (current: ExtendedStateEvent) => void,
+    serverRequest: () => void,
+  ) => {
+    const currentState = stateOptimistic.value;
+    if (currentState && !stateOptimistic.isOptimistic) {
+      stateOptimistic.setOptimistic(produce(currentState, producer));
+    }
+    serverRequest();
+  };
+
+  // Helper for local-only updates (addon features)
+  const updateStateLocally = (
+    producer: (current: ExtendedStateEvent) => void,
+  ) => {
+    const currentState = stateOptimistic.value;
+    if (currentState) {
+      stateOptimistic.setOptimistic(produce(currentState, producer));
+    }
+  };
+
+  // ========== Action Functions (Standard Winder - Backend Connected) ==========
+
   const zeroTensionArmAngle = () => {
-    console.log("Mock: Zero tension arm angle");
-    setLocalState((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        tension_arm_state: { ...prev.tension_arm_state, zeroed: true },
-      };
-    });
+    updateStateOptimistically(
+      (current) => {
+        current.data.tension_arm_state.zeroed = true;
+      },
+      () =>
+        requestTensionArmZero({
+          machine_identification_unique: machineIdentification,
+          data: "ZeroTensionArmAngle",
+        }),
+    );
   };
 
   const setTraverseLimitInner = (limitInner: number) => {
-    console.log("Mock: Set traverse limit inner:", limitInner);
-    setLocalState((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        traverse_state: { ...prev.traverse_state, limit_inner: limitInner },
-      };
-    });
+    updateStateOptimistically(
+      (current) => {
+        current.data.traverse_state.limit_inner = limitInner;
+      },
+      () =>
+        requestTraverseSetLimitInner({
+          machine_identification_unique: machineIdentification,
+          data: { SetTraverseLimitInner: limitInner },
+        }),
+    );
   };
 
   const setTraverseLimitOuter = (limitOuter: number) => {
-    console.log("Mock: Set traverse limit outer:", limitOuter);
-    setLocalState((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        traverse_state: { ...prev.traverse_state, limit_outer: limitOuter },
-      };
-    });
+    updateStateOptimistically(
+      (current) => {
+        current.data.traverse_state.limit_outer = limitOuter;
+      },
+      () =>
+        requestTraverseSetLimitOuter({
+          machine_identification_unique: machineIdentification,
+          data: { SetTraverseLimitOuter: limitOuter },
+        }),
+    );
   };
 
   const gotoTraverseLimitInner = () => {
-    console.log("Mock: Go to traverse limit inner");
-    setLocalState((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        traverse_state: { ...prev.traverse_state, is_going_in: true },
-      };
-    });
-    setTimeout(() => {
-      setLocalState((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          traverse_state: { ...prev.traverse_state, is_going_in: false },
-        };
-      });
-    }, 2000);
+    updateStateOptimistically(
+      (current) => {
+        current.data.traverse_state.is_going_in = true;
+      },
+      () =>
+        requestTraverseGotoLimitInner({
+          machine_identification_unique: machineIdentification,
+          data: "GotoTraverseLimitInner",
+        }),
+    );
   };
 
   const gotoTraverseLimitOuter = () => {
-    console.log("Mock: Go to traverse limit outer");
-    setLocalState((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        traverse_state: { ...prev.traverse_state, is_going_out: true },
-      };
-    });
-    setTimeout(() => {
-      setLocalState((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          traverse_state: { ...prev.traverse_state, is_going_out: false },
-        };
-      });
-    }, 2000);
+    updateStateOptimistically(
+      (current) => {
+        current.data.traverse_state.is_going_out = true;
+      },
+      () =>
+        requestTraverseGotoLimitOuter({
+          machine_identification_unique: machineIdentification,
+          data: "GotoTraverseLimitOuter",
+        }),
+    );
   };
 
   const gotoTraverseHome = () => {
-    console.log("Mock: Go to traverse home");
-    setLocalState((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        traverse_state: { ...prev.traverse_state, is_going_home: true },
-      };
-    });
-    setTimeout(() => {
-      setLocalState((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          traverse_state: {
-            ...prev.traverse_state,
-            is_going_home: false,
-            is_homed: true,
-          },
-        };
-      });
-    }, 2000);
+    updateStateOptimistically(
+      (current) => {
+        current.data.traverse_state.is_going_home = true;
+      },
+      () =>
+        requestTraverseGotoHome({
+          machine_identification_unique: machineIdentification,
+          data: "GotoTraverseHome",
+        }),
+    );
   };
 
   const enableTraverseLaserpointer = (enabled: boolean) => {
-    console.log("Mock: Enable traverse laserpointer:", enabled);
-    setLocalState((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        traverse_state: { ...prev.traverse_state, laserpointer: enabled },
-      };
-    });
+    updateStateOptimistically(
+      (current) => {
+        current.data.traverse_state.laserpointer = enabled;
+      },
+      () =>
+        requestSetLaserpointer({
+          machine_identification_unique: machineIdentification,
+          data: { EnableTraverseLaserpointer: enabled },
+        }),
+    );
   };
 
   const setMode = (mode: Mode) => {
-    console.log("Mock: Set mode:", mode);
-    setLocalState((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        mode_state: { ...prev.mode_state, mode },
-      };
-    });
+    updateStateOptimistically(
+      (current) => {
+        current.data.mode_state.mode = mode;
+      },
+      () =>
+        requestModeSet({
+          machine_identification_unique: machineIdentification,
+          data: { SetMode: mode },
+        }),
+    );
   };
 
   const setTraverseStepSize = (stepSize: number) => {
-    console.log("Mock: Set traverse step size:", stepSize);
-    setLocalState((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        traverse_state: { ...prev.traverse_state, step_size: stepSize },
-      };
-    });
+    updateStateOptimistically(
+      (current) => {
+        current.data.traverse_state.step_size = stepSize;
+      },
+      () =>
+        requestTraverseSetStepSize({
+          machine_identification_unique: machineIdentification,
+          data: { SetTraverseStepSize: stepSize },
+        }),
+    );
   };
 
   const setTraversePadding = (padding: number) => {
-    console.log("Mock: Set traverse padding:", padding);
-    setLocalState((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        traverse_state: { ...prev.traverse_state, padding },
-      };
-    });
+    updateStateOptimistically(
+      (current) => {
+        current.data.traverse_state.padding = padding;
+      },
+      () =>
+        requestTraverseSetPadding({
+          machine_identification_unique: machineIdentification,
+          data: { SetTraversePadding: padding },
+        }),
+    );
   };
 
   const setPullerTargetSpeed = (targetSpeed: number) => {
-    console.log("Mock: Set puller target speed:", targetSpeed);
-    setLocalState((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        puller_state: { ...prev.puller_state, target_speed: targetSpeed },
-      };
-    });
+    updateStateOptimistically(
+      (current) => {
+        current.data.puller_state.target_speed = targetSpeed;
+      },
+      () =>
+        requestPullerSetTargetSpeed({
+          machine_identification_unique: machineIdentification,
+          data: { SetPullerTargetSpeed: targetSpeed },
+        }),
+    );
   };
 
   const setPullerTargetDiameter = (targetDiameter: number) => {
-    console.log("Mock: Set puller target diameter:", targetDiameter);
-    setLocalState((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        puller_state: { ...prev.puller_state, target_diameter: targetDiameter },
-      };
-    });
+    updateStateOptimistically(
+      (current) => {
+        current.data.puller_state.target_diameter = targetDiameter;
+      },
+      () =>
+        requestPullerSetTargetDiameter({
+          machine_identification_unique: machineIdentification,
+          data: { SetPullerTargetDiameter: targetDiameter },
+        }),
+    );
   };
 
   const setPullerRegulationMode = (regulationMode: PullerRegulation) => {
-    console.log("Mock: Set puller regulation mode:", regulationMode);
-    setLocalState((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        puller_state: { ...prev.puller_state, regulation: regulationMode },
-      };
-    });
+    updateStateOptimistically(
+      (current) => {
+        current.data.puller_state.regulation = regulationMode;
+      },
+      () =>
+        requestPullerSetRegulationMode({
+          machine_identification_unique: machineIdentification,
+          data: { SetPullerRegulationMode: regulationMode },
+        }),
+    );
   };
 
   const setPullerForward = (forward: boolean) => {
-    console.log("Mock: Set puller forward:", forward);
-    setLocalState((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        puller_state: { ...prev.puller_state, forward },
-      };
-    });
+    updateStateOptimistically(
+      (current) => {
+        current.data.puller_state.forward = forward;
+      },
+      () =>
+        requestPullerSetForward({
+          machine_identification_unique: machineIdentification,
+          data: { SetPullerForward: forward },
+        }),
+    );
   };
 
   const setPullerGearRatio = (gearRatio: GearRatio) => {
-    console.log("Mock: Set puller gear ratio:", gearRatio);
-    setLocalState((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        puller_state: {
-          ...prev.puller_state,
-          gear_ratio: gearRatio,
-          target_speed: 0,
-        },
-      };
-    });
+    updateStateOptimistically(
+      (current) => {
+        current.data.puller_state.gear_ratio = gearRatio;
+        current.data.puller_state.target_speed = 0;
+      },
+      async () => {
+        await requestPullerSetTargetSpeed({
+          machine_identification_unique: machineIdentification,
+          data: { SetPullerTargetSpeed: 0 },
+        });
+        await requestPullerSetGearRatio({
+          machine_identification_unique: machineIdentification,
+          data: { SetPullerGearRatio: gearRatio },
+        });
+      },
+    );
   };
 
   const setSpoolAutomaticRequiredMeters = (meters: number) => {
-    console.log("Mock: Set spool automatic required meters:", meters);
-    setLocalState((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        spool_automatic_action_state: {
-          ...prev.spool_automatic_action_state,
-          spool_required_meters: meters,
-        },
-      };
-    });
+    updateStateOptimistically(
+      (current) => {
+        current.data.spool_automatic_action_state.spool_required_meters =
+          meters;
+      },
+      () =>
+        requestSpoolAutomaticRequiredMeters({
+          machine_identification_unique: machineIdentification,
+          data: { SetSpoolAutomaticRequiredMeters: meters },
+        }),
+    );
   };
 
   const setSpoolAutomaticAction = (mode: SpoolAutomaticActionMode) => {
-    console.log("Mock: Set spool automatic action:", mode);
-    setLocalState((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        spool_automatic_action_state: {
-          ...prev.spool_automatic_action_state,
-          spool_automatic_action_mode: mode,
-        },
-      };
-    });
+    updateStateOptimistically(
+      (current) => {
+        current.data.spool_automatic_action_state.spool_automatic_action_mode =
+          mode;
+      },
+      () =>
+        requestSpoolAutomaticAction({
+          machine_identification_unique: machineIdentification,
+          data: { SetSpoolAutomaticAction: mode },
+        }),
+    );
   };
 
   const resetSpoolProgress = () => {
-    console.log("Mock: Reset spool progress");
+    requestSpoolResetProgress({
+      machine_identification_unique: machineIdentification,
+      data: "ResetSpoolProgress",
+    });
   };
 
   const setSpoolRegulationMode = (mode: SpoolRegulationMode) => {
-    console.log("Mock: Set spool regulation mode:", mode);
-    setLocalState((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        spool_speed_controller_state: {
-          ...prev.spool_speed_controller_state,
-          regulation_mode: mode,
-        },
-      };
-    });
+    updateStateOptimistically(
+      (current) => {
+        current.data.spool_speed_controller_state.regulation_mode = mode;
+      },
+      () =>
+        requestSpoolSetRegulationMode({
+          machine_identification_unique: machineIdentification,
+          data: { SetSpoolRegulationMode: mode },
+        }),
+    );
   };
 
   const setSpoolMinMaxMinSpeed = (speed: number) => {
-    console.log("Mock: Set spool min max min speed:", speed);
-    setLocalState((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        spool_speed_controller_state: {
-          ...prev.spool_speed_controller_state,
-          minmax_min_speed: speed,
-        },
-      };
-    });
+    updateStateOptimistically(
+      (current) => {
+        current.data.spool_speed_controller_state.minmax_min_speed = speed;
+      },
+      () =>
+        requestSpoolSetMinMaxMinSpeed({
+          machine_identification_unique: machineIdentification,
+          data: { SetSpoolMinMaxMinSpeed: speed },
+        }),
+    );
   };
 
   const setSpoolMinMaxMaxSpeed = (speed: number) => {
-    console.log("Mock: Set spool min max max speed:", speed);
-    setLocalState((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        spool_speed_controller_state: {
-          ...prev.spool_speed_controller_state,
-          minmax_max_speed: speed,
-        },
-      };
-    });
+    updateStateOptimistically(
+      (current) => {
+        current.data.spool_speed_controller_state.minmax_max_speed = speed;
+      },
+      () =>
+        requestSpoolSetMinMaxMaxSpeed({
+          machine_identification_unique: machineIdentification,
+          data: { SetSpoolMinMaxMaxSpeed: speed },
+        }),
+    );
   };
 
   const setSpoolForward = (forward: boolean) => {
-    console.log("Mock: Set spool forward:", forward);
-    setLocalState((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        spool_speed_controller_state: {
-          ...prev.spool_speed_controller_state,
-          forward,
-        },
-      };
-    });
+    updateStateOptimistically(
+      (current) => {
+        current.data.spool_speed_controller_state.forward = forward;
+      },
+      () =>
+        requestSpoolSetForward({
+          machine_identification_unique: machineIdentification,
+          data: { SetSpoolForward: forward },
+        }),
+    );
   };
 
   const setSpoolAdaptiveTensionTarget = (value: number) => {
-    console.log("Mock: Set spool adaptive tension target:", value);
-    setLocalState((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        spool_speed_controller_state: {
-          ...prev.spool_speed_controller_state,
-          adaptive_tension_target: value,
-        },
-      };
-    });
+    updateStateOptimistically(
+      (current) => {
+        current.data.spool_speed_controller_state.adaptive_tension_target =
+          value;
+      },
+      () =>
+        requestSpoolSetAdaptiveTensionTarget({
+          machine_identification_unique: machineIdentification,
+          data: { SetSpoolAdaptiveTensionTarget: value },
+        }),
+    );
   };
 
   const setSpoolAdaptiveRadiusLearningRate = (value: number) => {
-    console.log("Mock: Set spool adaptive radius learning rate:", value);
-    setLocalState((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        spool_speed_controller_state: {
-          ...prev.spool_speed_controller_state,
-          adaptive_radius_learning_rate: value,
-        },
-      };
-    });
+    updateStateOptimistically(
+      (current) => {
+        current.data.spool_speed_controller_state.adaptive_radius_learning_rate =
+          value;
+      },
+      () =>
+        requestSpoolSetAdaptiveRadiusLearningRate({
+          machine_identification_unique: machineIdentification,
+          data: { SetSpoolAdaptiveRadiusLearningRate: value },
+        }),
+    );
   };
 
   const setSpoolAdaptiveMaxSpeedMultiplier = (value: number) => {
-    console.log("Mock: Set spool adaptive max speed multiplier:", value);
-    setLocalState((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        spool_speed_controller_state: {
-          ...prev.spool_speed_controller_state,
-          adaptive_max_speed_multiplier: value,
-        },
-      };
-    });
+    updateStateOptimistically(
+      (current) => {
+        current.data.spool_speed_controller_state.adaptive_max_speed_multiplier =
+          value;
+      },
+      () =>
+        requestSpoolSetAdaptiveMaxSpeedMultiplier({
+          machine_identification_unique: machineIdentification,
+          data: { SetSpoolAdaptiveMaxSpeedMultiplier: value },
+        }),
+    );
   };
 
   const setSpoolAdaptiveAccelerationFactor = (value: number) => {
-    console.log("Mock: Set spool adaptive acceleration factor:", value);
-    setLocalState((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        spool_speed_controller_state: {
-          ...prev.spool_speed_controller_state,
-          adaptive_acceleration_factor: value,
-        },
-      };
-    });
+    updateStateOptimistically(
+      (current) => {
+        current.data.spool_speed_controller_state.adaptive_acceleration_factor =
+          value;
+      },
+      () =>
+        requestSpoolSetAdaptiveAccelerationFactor({
+          machine_identification_unique: machineIdentification,
+          data: { SetSpoolAdaptiveAccelerationFactor: value },
+        }),
+    );
   };
 
   const setSpoolAdaptiveDeaccelerationUrgencyMultiplier = (value: number) => {
-    console.log(
-      "Mock: Set spool adaptive deacceleration urgency multiplier:",
-      value,
+    updateStateOptimistically(
+      (current) => {
+        current.data.spool_speed_controller_state.adaptive_deacceleration_urgency_multiplier =
+          value;
+      },
+      () =>
+        requestSpoolSetAdaptiveDeaccelerationUrgencyMultiplier({
+          machine_identification_unique: machineIdentification,
+          data: { SetSpoolAdaptiveDeaccelerationUrgencyMultiplier: value },
+        }),
     );
-    setLocalState((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        spool_speed_controller_state: {
-          ...prev.spool_speed_controller_state,
-          adaptive_deacceleration_urgency_multiplier: value,
-        },
-      };
-    });
   };
 
-  const setConnectedMachine = (machineIdentificationUnique: any) => {
-    console.log("Mock: Set connected machine:", machineIdentificationUnique);
-    setLocalState((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        connected_machine_state: {
-          ...prev.connected_machine_state,
-          machine_identification_unique: machineIdentificationUnique,
-        },
-      };
-    });
+  const setConnectedMachine = (
+    machineIdentificationUnique: MachineIdentificationUnique,
+  ) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.connected_machine_state.machine_identification_unique =
+          machineIdentificationUnique;
+      },
+      () =>
+        requestConnectedMachine({
+          machine_identification_unique: machineIdentification,
+          data: { SetConnectedMachine: machineIdentificationUnique },
+        }),
+    );
   };
 
-  const disconnectMachine = (machineIdentificationUnique: any) => {
-    console.log("Mock: Disconnect machine:", machineIdentificationUnique);
-    setLocalState((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        connected_machine_state: {
-          ...prev.connected_machine_state,
-          machine_identification_unique: null,
-        },
-      };
-    });
+  const disconnectMachine = (
+    machineIdentificationUnique: MachineIdentificationUnique,
+  ) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.connected_machine_state.machine_identification_unique =
+          null;
+      },
+      () =>
+        requestDisconnectedMachine({
+          machine_identification_unique: machineIdentification,
+          data: { DisconnectMachine: machineIdentificationUnique },
+        }),
+    );
   };
+
+  // ========== Action Functions (Addon Features - Local Only) ==========
 
   const setStepper2Mode = (mode: StepperMode) => {
-    console.log("Mock: Set stepper 2 mode:", mode);
-    setLocalState((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        stepper_state: { ...prev.stepper_state, stepper2_mode: mode },
-      };
+    updateStateLocally((current) => {
+      current.data.stepper_state.stepper2_mode = mode;
     });
   };
 
   const setStepper34Mode = (mode: StepperMode) => {
-    console.log("Mock: Set stepper 3&4 mode:", mode);
-    setLocalState((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        stepper_state: { ...prev.stepper_state, stepper34_mode: mode },
-      };
+    updateStateLocally((current) => {
+      current.data.stepper_state.stepper34_mode = mode;
     });
   };
 
   const setCuttingUnitMode = (mode: StepperMode) => {
-    console.log("Mock: Set cutting unit mode:", mode);
-    setLocalState((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        stepper_state: { ...prev.stepper_state, cutting_unit_mode: mode },
-      };
+    updateStateLocally((current) => {
+      current.data.stepper_state.cutting_unit_mode = mode;
     });
   };
 
   const setHeatingMode = (mode: HeatingMode) => {
-    console.log("Mock: Set heating mode:", mode);
-    setLocalState((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        heating_state: { heating_mode: mode },
-      };
+    updateStateLocally((current) => {
+      current.data.heating_state.heating_mode = mode;
     });
   };
 
   const setTemperature1Min = (min: number) => {
-    console.log("Mock: Set temperature 1 min:", min);
-    setLocalState((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        quality_control_state: {
-          ...prev.quality_control_state,
-          temperature1: {
-            ...prev.quality_control_state.temperature1,
-            min_temperature: min,
-          },
-        },
-      };
+    updateStateLocally((current) => {
+      current.data.quality_control_state.temperature1.min_temperature = min;
     });
   };
 
   const setTemperature1Max = (max: number) => {
-    console.log("Mock: Set temperature 1 max:", max);
-    setLocalState((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        quality_control_state: {
-          ...prev.quality_control_state,
-          temperature1: {
-            ...prev.quality_control_state.temperature1,
-            max_temperature: max,
-          },
-        },
-      };
+    updateStateLocally((current) => {
+      current.data.quality_control_state.temperature1.max_temperature = max;
     });
   };
 
   const setTemperature2Min = (min: number) => {
-    console.log("Mock: Set temperature 2 min:", min);
-    setLocalState((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        quality_control_state: {
-          ...prev.quality_control_state,
-          temperature2: {
-            ...prev.quality_control_state.temperature2,
-            min_temperature: min,
-          },
-        },
-      };
+    updateStateLocally((current) => {
+      current.data.quality_control_state.temperature2.min_temperature = min;
     });
   };
 
   const setTemperature2Max = (max: number) => {
-    console.log("Mock: Set temperature 2 max:", max);
-    setLocalState((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        quality_control_state: {
-          ...prev.quality_control_state,
-          temperature2: {
-            ...prev.quality_control_state.temperature2,
-            max_temperature: max,
-          },
-        },
-      };
+    updateStateLocally((current) => {
+      current.data.quality_control_state.temperature2.max_temperature = max;
     });
   };
 
   const setStepper3Master = (value: number) => {
-    console.log("Mock: Set stepper 3 master:", value);
-    setLocalState((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        motor_ratios_state: {
-          ...prev.motor_ratios_state,
-          stepper3_master: value,
-        },
-      };
+    updateStateLocally((current) => {
+      current.data.motor_ratios_state.stepper3_master = value;
     });
   };
 
   const setStepper3Slave = (value: number) => {
-    console.log("Mock: Set stepper 3 slave:", value);
-    setLocalState((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        motor_ratios_state: {
-          ...prev.motor_ratios_state,
-          stepper3_slave: value,
-        },
-      };
+    updateStateLocally((current) => {
+      current.data.motor_ratios_state.stepper3_slave = value;
     });
   };
 
   const setStepper4Master = (value: number) => {
-    console.log("Mock: Set stepper 4 master:", value);
-    setLocalState((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        motor_ratios_state: {
-          ...prev.motor_ratios_state,
-          stepper4_master: value,
-        },
-      };
+    updateStateLocally((current) => {
+      current.data.motor_ratios_state.stepper4_master = value;
     });
   };
 
   const setStepper4Slave = (value: number) => {
-    console.log("Mock: Set stepper 4 slave:", value);
-    setLocalState((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        motor_ratios_state: {
-          ...prev.motor_ratios_state,
-          stepper4_slave: value,
-        },
-      };
+    updateStateLocally((current) => {
+      current.data.motor_ratios_state.stepper4_slave = value;
     });
   };
 
-  // Mock loading states
-  const isLoading = false;
-  const isDisabled = false;
+  // ========== Machine Filtering ==========
 
-  // Mock filtered machines
-  const filteredMachines: any[] = [];
-  const selectedMachine = null;
+  const machines = useMachines();
+  const filteredMachines = useMemo(
+    () =>
+      machines.filter(
+        (m) =>
+          m.machine_identification_unique.machine_identification.vendor ===
+            VENDOR_QITECH &&
+          m.machine_identification_unique.machine_identification.machine ===
+            0x0008,
+      ),
+    [machines],
+  );
+
+  const selectedMachine = useMemo(() => {
+    const serial =
+      state?.data.connected_machine_state?.machine_identification_unique
+        ?.serial;
+
+    return (
+      filteredMachines.find(
+        (m) => m.machine_identification_unique.serial === serial,
+      ) ?? null
+    );
+  }, [filteredMachines, state]);
+
+  // ========== Loading States ==========
+
+  const isLoading = stateOptimistic.isOptimistic;
+  const isDisabled = !stateOptimistic.isInitialized;
+
+  // ========== Return Hook Result ==========
 
   return {
-    // State (use local state if available, fallback to namespace state)
-    state: localState || namespaceState,
+    // State
+    state: stateOptimistic.value?.data,
+    defaultState: defaultState?.data,
+
+    // Machine filtering
     filteredMachines,
     selectedMachine,
-    defaultState: namespaceDefaultState,
 
     // Live values (TimeSeries)
     traversePosition,
@@ -636,7 +715,7 @@ export function useGluetex() {
     isLoading,
     isDisabled,
 
-    // Action functions (all mocked)
+    // Standard winder action functions (backend connected)
     enableTraverseLaserpointer,
     setMode,
     zeroTensionArmAngle,
@@ -666,6 +745,8 @@ export function useGluetex() {
     setSpoolAdaptiveDeaccelerationUrgencyMultiplier,
     setConnectedMachine,
     disconnectMachine,
+
+    // Addon action functions (local only)
     setStepper2Mode,
     setStepper34Mode,
     setCuttingUnitMode,
