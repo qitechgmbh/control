@@ -1,22 +1,57 @@
 /**
  * @file gluetexNamespace.ts
- * @description TypeScript implementation of Gluetex namespace with hardcoded test data (no backend).
+ * @description TypeScript implementation of Gluetex namespace with real backend connection
+ * Standard winder features connect to backend, addon features use local state
  */
 
-import { useMemo, useState, useEffect } from "react";
-import { createTimeSeries, TimeSeries } from "@/lib/timeseries";
+import { StoreApi } from "zustand";
+import { create } from "zustand";
+import { z } from "zod";
+import {
+  EventHandler,
+  eventSchema,
+  Event,
+  handleUnhandledEventError,
+  NamespaceId,
+  createNamespaceHookImplementation,
+  ThrottledStoreUpdater,
+} from "../../../client/socketioStore";
 import { MachineIdentificationUnique } from "@/machines/types";
+import { useMemo } from "react";
+import {
+  createTimeSeries,
+  TimeSeries,
+  TimeSeriesValue,
+} from "@/lib/timeseries";
 
-// ========== Type Definitions ==========
+// ========== Event Schema Definitions (Backend) ==========
 
-export type PullerRegulation = "Speed" | "Diameter";
-export type GearRatio = "OneToOne" | "OneToFive" | "OneToTen";
-export type Mode = "Standby" | "Hold" | "Pull" | "Wind";
-export type SpoolAutomaticActionMode = "NoAction" | "Pull" | "Hold";
-export type SpoolRegulationMode = "Adaptive" | "MinMax";
-export type StepperMode = "Standby" | "Run";
-export type HeatingMode = "Standby" | "Heating";
+/**
+ * Consolidated live values event schema (30FPS data)
+ */
+export const liveValuesEventDataSchema = z.object({
+  traverse_position: z.number().nullable(),
+  puller_speed: z.number(),
+  spool_rpm: z.number(),
+  tension_arm_angle: z.number(),
+  spool_progress: z.number(),
+});
 
+/**
+ * Puller regulation type enum
+ */
+export const pullerRegulationSchema = z.enum(["Speed", "Diameter"]);
+export type PullerRegulation = z.infer<typeof pullerRegulationSchema>;
+
+/**
+ * Gear ratio enum for winding speed
+ */
+export const gearRatioSchema = z.enum(["OneToOne", "OneToFive", "OneToTen"]);
+export type GearRatio = z.infer<typeof gearRatioSchema>;
+
+/**
+ * Get the multiplier for a gear ratio
+ */
 export function getGearRatioMultiplier(
   gearRatio: GearRatio | undefined,
 ): number {
@@ -32,31 +67,146 @@ export function getGearRatioMultiplier(
   }
 }
 
-export type TraverseState = {
-  limit_inner: number;
-  limit_outer: number;
-  position_in: number;
-  position_out: number;
-  is_going_in: boolean;
-  is_going_out: boolean;
-  is_homed: boolean;
-  is_going_home: boolean;
-  is_traversing: boolean;
-  laserpointer: boolean;
-  step_size: number;
-  padding: number;
-  can_go_in: boolean;
-  can_go_out: boolean;
-  can_go_home: boolean;
-};
+/**
+ * Machine operation mode enum
+ */
+export const modeSchema = z.enum(["Standby", "Hold", "Pull", "Wind"]);
+export type Mode = z.infer<typeof modeSchema>;
 
-export type PullerState = {
-  regulation: PullerRegulation;
-  target_speed: number;
-  target_diameter: number;
-  forward: boolean;
-  gear_ratio: GearRatio;
-};
+/**
+ * Machine operation mode enum
+ */
+export const spoolAutomaticActionModeSchema = z.enum([
+  "NoAction",
+  "Pull",
+  "Hold",
+]);
+
+export type SpoolAutomaticActionMode = z.infer<
+  typeof spoolAutomaticActionModeSchema
+>;
+
+/**
+ * Spool speed controller regulation mode enum
+ */
+export const spoolRegulationModeSchema = z.enum(["Adaptive", "MinMax"]);
+export type SpoolRegulationMode = z.infer<typeof spoolRegulationModeSchema>;
+
+export const spoolAutomaticActionStateSchema = z.object({
+  spool_required_meters: z.number(),
+  spool_automatic_action_mode: spoolAutomaticActionModeSchema,
+});
+
+export type SpoolAutomaticActionState = z.infer<
+  typeof spoolAutomaticActionStateSchema
+>;
+
+/**
+ * Traverse state schema
+ */
+export const traverseStateSchema = z.object({
+  limit_inner: z.number(),
+  limit_outer: z.number(),
+  position_in: z.number(),
+  position_out: z.number(),
+  is_going_in: z.boolean(),
+  is_going_out: z.boolean(),
+  is_homed: z.boolean(),
+  is_going_home: z.boolean(),
+  is_traversing: z.boolean(),
+  laserpointer: z.boolean(),
+  step_size: z.number(),
+  padding: z.number(),
+  can_go_in: z.boolean(),
+  can_go_out: z.boolean(),
+  can_go_home: z.boolean(),
+});
+
+/**
+ * Puller state schema
+ */
+export const pullerStateSchema = z.object({
+  regulation: pullerRegulationSchema,
+  target_speed: z.number(),
+  target_diameter: z.number(),
+  forward: z.boolean(),
+  gear_ratio: gearRatioSchema,
+});
+
+/**
+ * Mode state schema
+ */
+export const modeStateSchema = z.object({
+  mode: modeSchema,
+  can_wind: z.boolean(),
+});
+
+/**
+ *  Connected machine state scheme
+ */
+export const machineIdentificationSchema = z.object({
+  vendor: z.number(),
+  machine: z.number(),
+});
+
+export const machineIdentificationUniqueSchema = z.object({
+  machine_identification: machineIdentificationSchema,
+  serial: z.number(),
+});
+
+export const connectedMachineStateSchema = z.object({
+  machine_identification_unique: machineIdentificationUniqueSchema.nullable(),
+  is_available: z.boolean(),
+});
+
+/**
+ * Tension arm state schema
+ */
+export const tensionArmStateSchema = z.object({
+  zeroed: z.boolean(),
+});
+
+/**
+ * Spool speed controller state schema
+ */
+export const spoolSpeedControllerStateSchema = z.object({
+  regulation_mode: spoolRegulationModeSchema,
+  minmax_min_speed: z.number(),
+  minmax_max_speed: z.number(),
+  adaptive_tension_target: z.number(),
+  adaptive_radius_learning_rate: z.number(),
+  adaptive_max_speed_multiplier: z.number(),
+  adaptive_acceleration_factor: z.number(),
+  adaptive_deacceleration_urgency_multiplier: z.number(),
+  forward: z.boolean(),
+});
+
+/**
+ * Consolidated state event schema (state changes only) - from backend
+ */
+export const stateEventDataSchema = z.object({
+  is_default_state: z.boolean(),
+  traverse_state: traverseStateSchema,
+  puller_state: pullerStateSchema,
+  mode_state: modeStateSchema,
+  tension_arm_state: tensionArmStateSchema,
+  spool_speed_controller_state: spoolSpeedControllerStateSchema,
+  spool_automatic_action_state: spoolAutomaticActionStateSchema,
+  connected_machine_state: connectedMachineStateSchema,
+});
+
+// ========== Event Schemas with Wrappers ==========
+
+export const liveValuesEventSchema = eventSchema(liveValuesEventDataSchema);
+export const stateEventSchema = eventSchema(stateEventDataSchema);
+
+export type StateEvent = z.infer<typeof stateEventSchema>;
+export type StateEventData = z.infer<typeof stateEventDataSchema>;
+
+// ========== Addon Types (Local State Only) ==========
+
+export type StepperMode = "Standby" | "Run";
+export type HeatingMode = "Standby" | "Heating";
 
 export type SlavePullerState = {
   forward: boolean;
@@ -67,43 +217,6 @@ export type MotorRatiosState = {
   stepper3_slave: number;
   stepper4_master: number;
   stepper4_slave: number;
-};
-
-export type ModeState = {
-  mode: Mode;
-  can_wind: boolean;
-};
-
-export type TensionArmState = {
-  zeroed: boolean;
-};
-
-export type SpoolSpeedControllerState = {
-  regulation_mode: SpoolRegulationMode;
-  minmax_min_speed: number;
-  minmax_max_speed: number;
-  adaptive_tension_target: number;
-  adaptive_radius_learning_rate: number;
-  adaptive_max_speed_multiplier: number;
-  adaptive_acceleration_factor: number;
-  adaptive_deacceleration_urgency_multiplier: number;
-  forward: boolean;
-};
-
-export type SpoolAutomaticActionState = {
-  spool_required_meters: number;
-  spool_automatic_action_mode: SpoolAutomaticActionMode;
-};
-
-export type ConnectedMachineState = {
-  machine_identification_unique: {
-    machine_identification: {
-      vendor: number;
-      machine: number;
-    };
-    serial: number;
-  } | null;
-  is_available: boolean;
 };
 
 export type StepperState = {
@@ -127,63 +240,78 @@ export type QualityControlState = {
   temperature2: TemperatureState;
 };
 
-export type StateEvent = {
-  is_default_state: boolean;
-  traverse_state: TraverseState;
-  puller_state: PullerState;
+/**
+ * Extended state event data with addon fields
+ */
+export type ExtendedStateEventData = StateEventData & {
   slave_puller_state: SlavePullerState;
   motor_ratios_state: MotorRatiosState;
-  mode_state: ModeState;
-  tension_arm_state: TensionArmState;
-  spool_speed_controller_state: SpoolSpeedControllerState;
-  spool_automatic_action_state: SpoolAutomaticActionState;
-  connected_machine_state: ConnectedMachineState;
   stepper_state: StepperState;
   heating_state: HeatingState;
   quality_control_state: QualityControlState;
 };
 
+/**
+ * Extended state event with addon fields
+ */
+export type ExtendedStateEvent = {
+  name: string;
+  ts: number;
+  data: ExtendedStateEventData;
+};
+
+// ========== Store Definition ==========
+
 export type GluetexNamespaceStore = {
-  state: StateEvent | null;
-  defaultState: StateEvent | null;
+  // State event from server (extended with addon fields)
+  state: ExtendedStateEvent | null;
+  defaultState: ExtendedStateEvent | null;
+
+  // Time series data for live values (from backend)
   traversePosition: TimeSeries;
   pullerSpeed: TimeSeries;
-  slavePullerSpeed: TimeSeries;
   spoolRpm: TimeSeries;
   tensionArmAngle: TimeSeries;
   spoolProgress: TimeSeries;
+
+  // Time series data for addons (local)
+  slavePullerSpeed: TimeSeries;
   temperature1: TimeSeries;
   temperature2: TimeSeries;
 };
 
-// ========== Hardcoded Test Data ==========
+// Constants for time durations
+const TWENTY_MILLISECOND = 20;
+const ONE_SECOND = 1000;
+const FIVE_SECOND = 5 * ONE_SECOND;
+const ONE_HOUR = 60 * 60 * ONE_SECOND;
 
-const HARDCODED_STATE: StateEvent = {
-  is_default_state: false,
-  traverse_state: {
-    limit_inner: 20,
-    limit_outer: 160,
-    position_in: 0,
-    position_out: 180,
-    is_going_in: false,
-    is_going_out: false,
-    is_homed: true,
-    is_going_home: false,
-    is_traversing: false,
-    laserpointer: false,
-    step_size: 1.5,
-    padding: 5,
-    can_go_in: true,
-    can_go_out: true,
-    can_go_home: true,
-  },
-  puller_state: {
-    regulation: "Speed",
-    target_speed: 15.0,
-    target_diameter: 50.0,
-    forward: true,
-    gear_ratio: "OneToOne",
-  },
+// Create time series for backend values
+const { initialTimeSeries: spoolProgress, insert: addSpoolProgress } =
+  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+const { initialTimeSeries: traversePosition, insert: addTraversePosition } =
+  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+const { initialTimeSeries: pullerSpeed, insert: addPullerSpeed } =
+  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+const { initialTimeSeries: spoolRpm, insert: addSpoolRpm } = createTimeSeries(
+  TWENTY_MILLISECOND,
+  ONE_SECOND,
+  FIVE_SECOND,
+  ONE_HOUR,
+);
+const { initialTimeSeries: tensionArmAngle, insert: addTensionArmAngle } =
+  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+
+// Create time series for addon values (local)
+const { initialTimeSeries: slavePullerSpeed, insert: addSlavePullerSpeed } =
+  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+const { initialTimeSeries: temperature1, insert: addTemperature1 } =
+  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+const { initialTimeSeries: temperature2, insert: addTemperature2 } =
+  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+
+// Default addon state
+const DEFAULT_ADDON_STATE = {
   slave_puller_state: {
     forward: true,
   },
@@ -193,122 +321,13 @@ const HARDCODED_STATE: StateEvent = {
     stepper4_master: 1.0,
     stepper4_slave: 1.0,
   },
-  mode_state: {
-    mode: "Standby",
-    can_wind: true,
-  },
-  tension_arm_state: {
-    zeroed: true,
-  },
-  spool_speed_controller_state: {
-    regulation_mode: "Adaptive",
-    minmax_min_speed: 5.0,
-    minmax_max_speed: 50.0,
-    adaptive_tension_target: 35.0,
-    adaptive_radius_learning_rate: 0.1,
-    adaptive_max_speed_multiplier: 2.0,
-    adaptive_acceleration_factor: 0.5,
-    adaptive_deacceleration_urgency_multiplier: 1.5,
-    forward: true,
-  },
-  spool_automatic_action_state: {
-    spool_required_meters: 100.0,
-    spool_automatic_action_mode: "NoAction",
-  },
-  connected_machine_state: {
-    machine_identification_unique: null,
-    is_available: false,
-  },
   stepper_state: {
-    stepper2_mode: "Standby",
-    stepper34_mode: "Standby",
-    cutting_unit_mode: "Standby",
+    stepper2_mode: "Standby" as StepperMode,
+    stepper34_mode: "Standby" as StepperMode,
+    cutting_unit_mode: "Standby" as StepperMode,
   },
   heating_state: {
-    heating_mode: "Standby",
-  },
-  quality_control_state: {
-    temperature1: {
-      current_temperature: 85.0,
-      min_temperature: 80.0,
-      max_temperature: 90.0,
-    },
-    temperature2: {
-      current_temperature: 125.0,
-      min_temperature: 120.0,
-      max_temperature: 130.0,
-    },
-  },
-};
-
-const DEFAULT_STATE: StateEvent = {
-  is_default_state: true,
-  traverse_state: {
-    limit_inner: 10,
-    limit_outer: 170,
-    position_in: 0,
-    position_out: 180,
-    is_going_in: false,
-    is_going_out: false,
-    is_homed: false,
-    is_going_home: false,
-    is_traversing: false,
-    laserpointer: false,
-    step_size: 1.0,
-    padding: 3,
-    can_go_in: true,
-    can_go_out: true,
-    can_go_home: true,
-  },
-  puller_state: {
-    regulation: "Speed",
-    target_speed: 10.0,
-    target_diameter: 40.0,
-    forward: true,
-    gear_ratio: "OneToOne",
-  },
-  slave_puller_state: {
-    forward: true,
-  },
-  motor_ratios_state: {
-    stepper3_master: 1.0,
-    stepper3_slave: 1.0,
-    stepper4_master: 1.0,
-    stepper4_slave: 1.0,
-  },
-  mode_state: {
-    mode: "Standby",
-    can_wind: true,
-  },
-  tension_arm_state: {
-    zeroed: false,
-  },
-  spool_speed_controller_state: {
-    regulation_mode: "Adaptive",
-    minmax_min_speed: 5.0,
-    minmax_max_speed: 40.0,
-    adaptive_tension_target: 30.0,
-    adaptive_radius_learning_rate: 0.1,
-    adaptive_max_speed_multiplier: 2.0,
-    adaptive_acceleration_factor: 0.5,
-    adaptive_deacceleration_urgency_multiplier: 1.5,
-    forward: true,
-  },
-  spool_automatic_action_state: {
-    spool_required_meters: 50.0,
-    spool_automatic_action_mode: "NoAction",
-  },
-  connected_machine_state: {
-    machine_identification_unique: null,
-    is_available: false,
-  },
-  stepper_state: {
-    stepper2_mode: "Standby",
-    stepper34_mode: "Standby",
-    cutting_unit_mode: "Standby",
-  },
-  heating_state: {
-    heating_mode: "Standby",
+    heating_mode: "Standby" as HeatingMode,
   },
   quality_control_state: {
     temperature1: {
@@ -324,202 +343,247 @@ const DEFAULT_STATE: StateEvent = {
   },
 };
 
-// Constants for time durations
-const TWENTY_MILLISECOND = 20;
-const ONE_SECOND = 1000;
-const FIVE_SECOND = 5 * ONE_SECOND;
-const ONE_HOUR = 60 * 60 * ONE_SECOND;
+/**
+ * Factory function to create a new Gluetex namespace store
+ * @returns A new Zustand store instance for Gluetex namespace
+ */
+export const createGluetexNamespaceStore =
+  (): StoreApi<GluetexNamespaceStore> =>
+    create<GluetexNamespaceStore>(() => {
+      return {
+        // State event from server (will be extended with addon state)
+        state: null,
+        defaultState: null,
+
+        // Time series data for live values
+        traversePosition,
+        pullerSpeed,
+        spoolRpm,
+        tensionArmAngle,
+        spoolProgress,
+
+        // Time series data for addons
+        slavePullerSpeed,
+        temperature1,
+        temperature2,
+      };
+    });
 
 /**
- * Hook for Gluetex namespace with hardcoded test data
- * This simulates the backend behavior with fake data for testing
+ * Creates a message handler for Gluetex namespace events with validation and appropriate caching strategies
+ * @param store The store to update when messages are received
+ * @param throttledUpdater Throttled updater for batching updates at 30 FPS
+ * @returns A message handler function
+ */
+export function gluetexMessageHandler(
+  store: StoreApi<GluetexNamespaceStore>,
+  throttledUpdater: ThrottledStoreUpdater<GluetexNamespaceStore>,
+): EventHandler {
+  return (event: Event<any>) => {
+    const eventName = event.name;
+
+    // Helper function to update store through buffer
+    const updateStore = (
+      updater: (state: GluetexNamespaceStore) => GluetexNamespaceStore,
+    ) => {
+      throttledUpdater.updateWith(updater);
+    };
+
+    try {
+      if (eventName === "StateEvent") {
+        console.log(event);
+        // Parse and validate the state event
+        const stateEvent = stateEventSchema.parse(event);
+
+        updateStore((state) => {
+          // Extend backend state with addon state
+          const extendedData: ExtendedStateEventData = {
+            ...stateEvent.data,
+            // Preserve existing addon state or use defaults
+            slave_puller_state:
+              state.state?.data.slave_puller_state ||
+              DEFAULT_ADDON_STATE.slave_puller_state,
+            motor_ratios_state:
+              state.state?.data.motor_ratios_state ||
+              DEFAULT_ADDON_STATE.motor_ratios_state,
+            stepper_state:
+              state.state?.data.stepper_state ||
+              DEFAULT_ADDON_STATE.stepper_state,
+            heating_state:
+              state.state?.data.heating_state ||
+              DEFAULT_ADDON_STATE.heating_state,
+            quality_control_state:
+              state.state?.data.quality_control_state ||
+              DEFAULT_ADDON_STATE.quality_control_state,
+          };
+
+          const extendedState: ExtendedStateEvent = {
+            name: stateEvent.name,
+            ts: stateEvent.ts,
+            data: extendedData,
+          };
+
+          return {
+            ...state,
+            state: extendedState,
+            // only set default state if is_default_state is true
+            defaultState: stateEvent.data.is_default_state
+              ? extendedState
+              : state.defaultState,
+          };
+        });
+      } else if (eventName === "LiveValuesEvent") {
+        // Parse and validate the live values event
+        const liveValuesEvent = liveValuesEventSchema.parse(event);
+
+        // Extract values and add to time series
+        const {
+          traverse_position,
+          puller_speed,
+          spool_rpm,
+          tension_arm_angle,
+          spool_progress,
+        } = liveValuesEvent.data;
+        const timestamp = liveValuesEvent.ts;
+
+        updateStore((state) => {
+          const newState = { ...state };
+
+          // Add traverse position if not null
+          if (traverse_position !== null) {
+            const timeseriesValue: TimeSeriesValue = {
+              value: traverse_position,
+              timestamp,
+            };
+            newState.traversePosition = addTraversePosition(
+              state.traversePosition,
+              timeseriesValue,
+            );
+          }
+
+          if (spool_progress !== null) {
+            const timeseriesValue: TimeSeriesValue = {
+              value: spool_progress,
+              timestamp,
+            };
+            newState.spoolProgress = addSpoolProgress(
+              state.spoolProgress,
+              timeseriesValue,
+            );
+          }
+
+          // Add puller speed
+          const pullerSpeedValue: TimeSeriesValue = {
+            value: puller_speed,
+            timestamp,
+          };
+          newState.pullerSpeed = addPullerSpeed(
+            state.pullerSpeed,
+            pullerSpeedValue,
+          );
+
+          // Add spool RPM
+          const spoolRpmValue: TimeSeriesValue = {
+            value: spool_rpm,
+            timestamp,
+          };
+          newState.spoolRpm = addSpoolRpm(state.spoolRpm, spoolRpmValue);
+
+          // Add tension arm angle
+          const tensionArmAngleValue: TimeSeriesValue = {
+            value: tension_arm_angle,
+            timestamp,
+          };
+          newState.tensionArmAngle = addTensionArmAngle(
+            state.tensionArmAngle,
+            tensionArmAngleValue,
+          );
+
+          // Simulate addon live values (these would come from backend in the future)
+          // For now, generate synthetic data based on puller speed
+          const slavePullerValue: TimeSeriesValue = {
+            value: puller_speed * 0.95, // Slave runs slightly slower
+            timestamp,
+          };
+          newState.slavePullerSpeed = addSlavePullerSpeed(
+            state.slavePullerSpeed,
+            slavePullerValue,
+          );
+
+          // Simulate temperature readings
+          const temp1Value: TimeSeriesValue = {
+            value:
+              state.state?.data.quality_control_state?.temperature1
+                .current_temperature || 85.0,
+            timestamp,
+          };
+          newState.temperature1 = addTemperature1(
+            state.temperature1,
+            temp1Value,
+          );
+
+          const temp2Value: TimeSeriesValue = {
+            value:
+              state.state?.data.quality_control_state?.temperature2
+                .current_temperature || 125.0,
+            timestamp,
+          };
+          newState.temperature2 = addTemperature2(
+            state.temperature2,
+            temp2Value,
+          );
+
+          return newState;
+        });
+      } else {
+        handleUnhandledEventError(eventName);
+      }
+    } catch (error) {
+      console.error(`Unexpected error processing ${eventName} event:`, error);
+      throw error;
+    }
+  };
+}
+
+/**
+ * Create the Gluetex namespace implementation
+ */
+const useGluetexNamespaceImplementation =
+  createNamespaceHookImplementation<GluetexNamespaceStore>({
+    createStore: createGluetexNamespaceStore,
+    createEventHandler: gluetexMessageHandler,
+  });
+
+/**
+ * Hook for a machine-specific Gluetex namespace
+ *
+ * @example
+ * ```tsx
+ * function GluetexStatus({ machine }) {
+ *   const { state, traversePosition, pullerSpeed } = useGluetexNamespace(machine);
+ *
+ *   return (
+ *     <div>
+ *       {state && (
+ *         <div>Mode: {state.data.mode_state.mode}</div>
+ *       )}
+ *     </div>
+ *   );
+ * }
+ * ```
  */
 export function useGluetexNamespace(
-  _machine_identification_unique: MachineIdentificationUnique,
+  machine_identification_unique: MachineIdentificationUnique,
 ): GluetexNamespaceStore {
-  const [state, setState] = useState<StateEvent>(HARDCODED_STATE);
+  // Generate namespace ID from validated machine ID
+  const namespaceId = useMemo<NamespaceId>(
+    () => ({
+      type: "machine",
+      machine_identification_unique,
+    }),
+    [machine_identification_unique],
+  );
 
-  // Create time series with simulated data
-  const traversePosition = useMemo(() => {
-    const { initialTimeSeries, insert } = createTimeSeries(
-      TWENTY_MILLISECOND,
-      ONE_SECOND,
-      FIVE_SECOND,
-      ONE_HOUR,
-    );
-    let series = initialTimeSeries;
-
-    // Add some initial simulated values
-    const now = Date.now();
-    for (let i = 0; i < 50; i++) {
-      const timestamp = now - (50 - i) * 100;
-      const value = 90 + Math.sin(i / 5) * 30; // Oscillating between 60 and 120
-      series = insert(series, { value, timestamp });
-    }
-
-    return series;
-  }, []);
-
-  const pullerSpeed = useMemo(() => {
-    const { initialTimeSeries, insert } = createTimeSeries(
-      TWENTY_MILLISECOND,
-      ONE_SECOND,
-      FIVE_SECOND,
-      ONE_HOUR,
-    );
-    let series = initialTimeSeries;
-
-    const now = Date.now();
-    for (let i = 0; i < 50; i++) {
-      const timestamp = now - (50 - i) * 100;
-      const value = 14.5 + Math.random() * 1; // Around 15 m/min with variation
-      series = insert(series, { value, timestamp });
-    }
-
-    return series;
-  }, []);
-
-  const spoolRpm = useMemo(() => {
-    const { initialTimeSeries, insert } = createTimeSeries(
-      TWENTY_MILLISECOND,
-      ONE_SECOND,
-      FIVE_SECOND,
-      ONE_HOUR,
-    );
-    let series = initialTimeSeries;
-
-    const now = Date.now();
-    for (let i = 0; i < 50; i++) {
-      const timestamp = now - (50 - i) * 100;
-      const value = 25 + Math.random() * 5; // Around 25-30 rpm
-      series = insert(series, { value, timestamp });
-    }
-
-    return series;
-  }, []);
-
-  const tensionArmAngle = useMemo(() => {
-    const { initialTimeSeries, insert } = createTimeSeries(
-      TWENTY_MILLISECOND,
-      ONE_SECOND,
-      FIVE_SECOND,
-      ONE_HOUR,
-    );
-    let series = initialTimeSeries;
-
-    const now = Date.now();
-    for (let i = 0; i < 50; i++) {
-      const timestamp = now - (50 - i) * 100;
-      const value = 35 + Math.sin(i / 3) * 10; // Oscillating around 35 degrees
-      series = insert(series, { value, timestamp });
-    }
-
-    return series;
-  }, []);
-
-  const spoolProgress = useMemo(() => {
-    const { initialTimeSeries, insert } = createTimeSeries(
-      TWENTY_MILLISECOND,
-      ONE_SECOND,
-      FIVE_SECOND,
-      ONE_HOUR,
-    );
-    let series = initialTimeSeries;
-
-    const now = Date.now();
-    for (let i = 0; i < 50; i++) {
-      const timestamp = now - (50 - i) * 100;
-      const value = i * 0.5; // Gradually increasing progress
-      series = insert(series, { value, timestamp });
-    }
-
-    return series;
-  }, []);
-
-  const temperature1 = useMemo(() => {
-    const { initialTimeSeries, insert } = createTimeSeries(
-      TWENTY_MILLISECOND,
-      ONE_SECOND,
-      FIVE_SECOND,
-      ONE_HOUR,
-    );
-    let series = initialTimeSeries;
-
-    const now = Date.now();
-    for (let i = 0; i < 50; i++) {
-      const timestamp = now - (50 - i) * 100;
-      const value = 85.0 + Math.sin(i / 10) * 3; // Oscillating around 85°C
-      series = insert(series, { value, timestamp });
-    }
-
-    return series;
-  }, []);
-
-  const temperature2 = useMemo(() => {
-    const { initialTimeSeries, insert } = createTimeSeries(
-      TWENTY_MILLISECOND,
-      ONE_SECOND,
-      FIVE_SECOND,
-      ONE_HOUR,
-    );
-    let series = initialTimeSeries;
-
-    const now = Date.now();
-    for (let i = 0; i < 50; i++) {
-      const timestamp = now - (50 - i) * 100;
-      const value = 125.0 + Math.sin(i / 8) * 2; // Oscillating around 125°C
-      series = insert(series, { value, timestamp });
-    }
-
-    return series;
-  }, []);
-
-  const slavePullerSpeed = useMemo(() => {
-    const { initialTimeSeries, insert } = createTimeSeries(
-      TWENTY_MILLISECOND,
-      ONE_SECOND,
-      FIVE_SECOND,
-      ONE_HOUR,
-    );
-    let series = initialTimeSeries;
-
-    const now = Date.now();
-    for (let i = 0; i < 50; i++) {
-      const timestamp = now - (50 - i) * 100;
-      const value = 11.5 + Math.random() * 1; // Around 12 m/min with variation
-      series = insert(series, { value, timestamp });
-    }
-
-    return series;
-  }, []);
-
-  // Simulate live data updates
-  useEffect(() => {
-    const interval = setInterval(() => {
-      // Update traverse position to simulate movement
-      const currentPos = state.traverse_state.position_in;
-      setState((prev) => ({
-        ...prev,
-        traverse_state: {
-          ...prev.traverse_state,
-          position_in: (currentPos + 0.5) % 180, // Slowly moving
-        },
-      }));
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [state.traverse_state.position_in]);
-
-  return {
-    state,
-    defaultState: DEFAULT_STATE,
-    traversePosition,
-    pullerSpeed,
-    slavePullerSpeed,
-    spoolRpm,
-    tensionArmAngle,
-    spoolProgress,
-    temperature1,
-    temperature2,
-  };
+  // Use the implementation with validated namespace ID
+  return useGluetexNamespaceImplementation(namespaceId);
 }
