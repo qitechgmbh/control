@@ -125,6 +125,18 @@ pub struct LiveValuesEvent {
     pub tension_arm_angle: f64,
     // spool progress in meters (pulled distance of filament)
     pub spool_progress: f64,
+    /// temperature 1 in celsius
+    pub temperature_1: f64,
+    /// temperature 2 in celsius
+    pub temperature_2: f64,
+    /// temperature 3 in celsius
+    pub temperature_3: f64,
+    /// temperature 4 in celsius
+    pub temperature_4: f64,
+    /// temperature 5 in celsius
+    pub temperature_5: f64,
+    /// temperature 6 in celsius
+    pub temperature_6: f64,
 }
 
 impl LiveValuesEvent {
