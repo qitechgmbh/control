@@ -60,6 +60,12 @@ export function useGluetex() {
     temperature4,
     temperature5,
     temperature6,
+    heater1Power,
+    heater2Power,
+    heater3Power,
+    heater4Power,
+    heater5Power,
+    heater6Power,
   } = useGluetexNamespace(machineIdentification);
 
   // Single optimistic state for all state management
@@ -718,6 +724,12 @@ export function useGluetex() {
     temperature4,
     temperature5,
     temperature6,
+    heater1Power,
+    heater2Power,
+    heater3Power,
+    heater4Power,
+    heater5Power,
+    heater6Power,
 
     // Loading states
     isLoading,
