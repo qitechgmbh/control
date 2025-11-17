@@ -40,7 +40,7 @@ impl Function {
 /// ID-D      | Network address of the destination device | 2
 /// F         | Function, action to perform | 1
 /// D_ADDRESS | Data address: Identification code of the data register on which the action will be
-/// carried out | 4
+///           | carried out | 4
 /// D_L       | data_length (number of byte) | 2
 /// DATA      | Date sent | Variable
 /// LRC       | Longitudinal redundancy check | 2
