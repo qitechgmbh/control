@@ -13,8 +13,6 @@ _17.11.2025_
 ## Extruder V2
 - [#881](https://github.com/qitechgmbh/control/pull/881) Extended Temperature PID Configuration
 
-## Winder V2
-
 
 # `2.11.0`
 _21.10.2025_
