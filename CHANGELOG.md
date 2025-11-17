@@ -1,3 +1,21 @@
+# `2.12.0`
+_17.11.2025_
+
+## General
+- [#847](https://github.com/qitechgmbh/control/pull/847) Improved discovery and initialization 
+- [#859](https://github.com/qitechgmbh/control/pull/859) Improved update speed
+- [#897](https://github.com/qitechgmbh/control/pull/897), [#899](https://github.com/qitechgmbh/control/pull/899), [#852](https://github.com/qitechgmbh/control/pull/852)  Improved system stability
+- [#817](https://github.com/qitechgmbh/control/pull/817) Added an update bar
+
+## Laser
+- [#857](https://github.com/qitechgmbh/control/pull/857) Fixed potential issues with 2 Axis Laser
+
+## Extruder V2
+- [#881](https://github.com/qitechgmbh/control/pull/881) Extended Temperature PID Configuration
+
+## Winder V2
+
+
 # `2.11.0`
 _21.10.2025_
 
