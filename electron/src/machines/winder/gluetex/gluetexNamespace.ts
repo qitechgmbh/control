@@ -35,6 +35,12 @@ export const liveValuesEventDataSchema = z.object({
   spool_rpm: z.number(),
   tension_arm_angle: z.number(),
   spool_progress: z.number(),
+  temperature_1: z.number(),
+  temperature_2: z.number(),
+  temperature_3: z.number(),
+  temperature_4: z.number(),
+  temperature_5: z.number(),
+  temperature_6: z.number(),
 });
 
 /**
@@ -273,11 +279,15 @@ export type GluetexNamespaceStore = {
   spoolRpm: TimeSeries;
   tensionArmAngle: TimeSeries;
   spoolProgress: TimeSeries;
+  temperature1: TimeSeries;
+  temperature2: TimeSeries;
+  temperature3: TimeSeries;
+  temperature4: TimeSeries;
+  temperature5: TimeSeries;
+  temperature6: TimeSeries;
 
   // Time series data for addons (local)
   slavePullerSpeed: TimeSeries;
-  temperature1: TimeSeries;
-  temperature2: TimeSeries;
 };
 
 // Constants for time durations
@@ -302,12 +312,22 @@ const { initialTimeSeries: spoolRpm, insert: addSpoolRpm } = createTimeSeries(
 const { initialTimeSeries: tensionArmAngle, insert: addTensionArmAngle } =
   createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
 
-// Create time series for addon values (local)
-const { initialTimeSeries: slavePullerSpeed, insert: addSlavePullerSpeed } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+// Create time series for temperature values (from backend)
 const { initialTimeSeries: temperature1, insert: addTemperature1 } =
   createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
 const { initialTimeSeries: temperature2, insert: addTemperature2 } =
+  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+const { initialTimeSeries: temperature3, insert: addTemperature3 } =
+  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+const { initialTimeSeries: temperature4, insert: addTemperature4 } =
+  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+const { initialTimeSeries: temperature5, insert: addTemperature5 } =
+  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+const { initialTimeSeries: temperature6, insert: addTemperature6 } =
+  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+
+// Create time series for addon values (local)
+const { initialTimeSeries: slavePullerSpeed, insert: addSlavePullerSpeed } =
   createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
 
 // Default addon state
@@ -361,11 +381,15 @@ export const createGluetexNamespaceStore =
         spoolRpm,
         tensionArmAngle,
         spoolProgress,
+        temperature1,
+        temperature2,
+        temperature3,
+        temperature4,
+        temperature5,
+        temperature6,
 
         // Time series data for addons
         slavePullerSpeed,
-        temperature1,
-        temperature2,
       };
     });
 
@@ -443,6 +467,12 @@ export function gluetexMessageHandler(
           spool_rpm,
           tension_arm_angle,
           spool_progress,
+          temperature_1,
+          temperature_2,
+          temperature_3,
+          temperature_4,
+          temperature_5,
+          temperature_6,
         } = liveValuesEvent.data;
         const timestamp = liveValuesEvent.ts;
 
@@ -499,6 +529,61 @@ export function gluetexMessageHandler(
             tensionArmAngleValue,
           );
 
+          // Add temperature readings from backend
+          const temp1Value: TimeSeriesValue = {
+            value: temperature_1,
+            timestamp,
+          };
+          newState.temperature1 = addTemperature1(
+            state.temperature1,
+            temp1Value,
+          );
+
+          const temp2Value: TimeSeriesValue = {
+            value: temperature_2,
+            timestamp,
+          };
+          newState.temperature2 = addTemperature2(
+            state.temperature2,
+            temp2Value,
+          );
+
+          const temp3Value: TimeSeriesValue = {
+            value: temperature_3,
+            timestamp,
+          };
+          newState.temperature3 = addTemperature3(
+            state.temperature3,
+            temp3Value,
+          );
+
+          const temp4Value: TimeSeriesValue = {
+            value: temperature_4,
+            timestamp,
+          };
+          newState.temperature4 = addTemperature4(
+            state.temperature4,
+            temp4Value,
+          );
+
+          const temp5Value: TimeSeriesValue = {
+            value: temperature_5,
+            timestamp,
+          };
+          newState.temperature5 = addTemperature5(
+            state.temperature5,
+            temp5Value,
+          );
+
+          const temp6Value: TimeSeriesValue = {
+            value: temperature_6,
+            timestamp,
+          };
+          newState.temperature6 = addTemperature6(
+            state.temperature6,
+            temp6Value,
+          );
+
           // Simulate addon live values (these would come from backend in the future)
           // For now, generate synthetic data based on puller speed
           const slavePullerValue: TimeSeriesValue = {
@@ -508,29 +593,6 @@ export function gluetexMessageHandler(
           newState.slavePullerSpeed = addSlavePullerSpeed(
             state.slavePullerSpeed,
             slavePullerValue,
-          );
-
-          // Simulate temperature readings
-          const temp1Value: TimeSeriesValue = {
-            value:
-              state.state?.data.quality_control_state?.temperature1
-                .current_temperature || 85.0,
-            timestamp,
-          };
-          newState.temperature1 = addTemperature1(
-            state.temperature1,
-            temp1Value,
-          );
-
-          const temp2Value: TimeSeriesValue = {
-            value:
-              state.state?.data.quality_control_state?.temperature2
-                .current_temperature || 125.0,
-            timestamp,
-          };
-          newState.temperature2 = addTemperature2(
-            state.temperature2,
-            temp2Value,
           );
 
           return newState;
