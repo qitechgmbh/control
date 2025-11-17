@@ -16,6 +16,7 @@ mod gluetex_imports {
     pub use ethercat_hal::coe::ConfigurableDevice;
     pub use ethercat_hal::devices::ek1100::EK1100;
     pub use ethercat_hal::devices::el2002::{EL2002, EL2002_IDENTITY_B, EL2002Port};
+    pub use ethercat_hal::devices::el2004::{EL2004, EL2004_IDENTITY_A, EL2004Port};
     pub use ethercat_hal::devices::el3204::{
         EL3204, EL3204_IDENTITY_A, EL3204_IDENTITY_B, EL3204Port,
     };
@@ -42,16 +43,18 @@ mod gluetex_imports {
     pub use ethercat_hal::io::temperature_input::TemperatureInput;
     pub use ethercat_hal::shared_config;
     pub use ethercat_hal::shared_config::el70x1::{EL70x1OperationMode, StmMotorConfiguration};
-    pub use std::time::Instant;
+    pub use std::time::{Duration, Instant};
     pub use units::ConstZero;
     pub use units::f64::*;
     pub use units::length::{centimeter, meter, millimeter};
+    pub use units::thermodynamic_temperature::degree_celsius;
     pub use units::velocity::meter_per_minute;
 }
 
 pub use gluetex_imports::*;
 
 use crate::get_ethercat_device;
+use crate::gluetex::temperature_controller::TemperatureController;
 
 impl MachineNewTrait for Gluetex {
     fn new<'maindevice>(params: &MachineNewParams) -> Result<Self, Error> {
@@ -215,6 +218,115 @@ impl MachineNewTrait for Gluetex {
             let temperature_5 = TemperatureInput::new(el3204_2.clone(), EL3204Port::T1);
             let temperature_6 = TemperatureInput::new(el3204_2, EL3204Port::T2);
 
+            // Role 7: Digital outputs 1-4 for heater SSRs EL2004
+            let el2004_1 =
+                get_ethercat_device::<EL2004>(hardware, params, 7, vec![EL2004_IDENTITY_A])
+                    .await?
+                    .0;
+
+            // Role 8: Digital outputs 5-6 for heater SSRs EL2004
+            let el2004_2 =
+                get_ethercat_device::<EL2004>(hardware, params, 8, vec![EL2004_IDENTITY_A])
+                    .await?
+                    .0;
+
+            // Digital outputs for SSR control (24V to external SSRs for 60W heaters)
+            let heater_ssr_1 = DigitalOutput::new(el2004_1.clone(), EL2004Port::DO1);
+            let heater_ssr_2 = DigitalOutput::new(el2004_1.clone(), EL2004Port::DO2);
+            let heater_ssr_3 = DigitalOutput::new(el2004_1.clone(), EL2004Port::DO3);
+            let heater_ssr_4 = DigitalOutput::new(el2004_1, EL2004Port::DO4);
+            let heater_ssr_5 = DigitalOutput::new(el2004_2.clone(), EL2004Port::DO1);
+            let heater_ssr_6 = DigitalOutput::new(el2004_2, EL2004Port::DO2);
+
+            // Maximum temperature for all heating zones
+            let max_temperature = ThermodynamicTemperature::new::<degree_celsius>(300.0);
+
+            // PID-controlled temperature controllers (60W heaters via SSR)
+            // PID tuning: kp=0.16, ki=0.0, kd=0.008 (similar to extruder)
+            let temperature_controller_1 = TemperatureController::new(
+                0.16,
+                0.0,
+                0.008,
+                ThermodynamicTemperature::new::<degree_celsius>(150.0),
+                max_temperature,
+                temperature_1,
+                heater_ssr_1,
+                super::Heating::default(),
+                Duration::from_millis(500),
+                60.0, // 60W heater
+                1.0,
+            );
+
+            let temperature_controller_2 = TemperatureController::new(
+                0.16,
+                0.0,
+                0.008,
+                ThermodynamicTemperature::new::<degree_celsius>(150.0),
+                max_temperature,
+                temperature_2,
+                heater_ssr_2,
+                super::Heating::default(),
+                Duration::from_millis(500),
+                60.0,
+                1.0,
+            );
+
+            let temperature_controller_3 = TemperatureController::new(
+                0.16,
+                0.0,
+                0.008,
+                ThermodynamicTemperature::new::<degree_celsius>(150.0),
+                max_temperature,
+                temperature_3,
+                heater_ssr_3,
+                super::Heating::default(),
+                Duration::from_millis(500),
+                60.0,
+                1.0,
+            );
+
+            let temperature_controller_4 = TemperatureController::new(
+                0.16,
+                0.0,
+                0.008,
+                ThermodynamicTemperature::new::<degree_celsius>(150.0),
+                max_temperature,
+                temperature_4,
+                heater_ssr_4,
+                super::Heating::default(),
+                Duration::from_millis(500),
+                60.0,
+                1.0,
+            );
+
+            let temperature_controller_5 = TemperatureController::new(
+                0.16,
+                0.0,
+                0.008,
+                ThermodynamicTemperature::new::<degree_celsius>(150.0),
+                max_temperature,
+                temperature_5,
+                heater_ssr_5,
+                super::Heating::default(),
+                Duration::from_millis(500),
+                60.0,
+                1.0,
+            );
+
+            let temperature_controller_6 = TemperatureController::new(
+                0.16,
+                0.0,
+                0.008,
+                ThermodynamicTemperature::new::<degree_celsius>(150.0),
+                max_temperature,
+                temperature_6,
+                heater_ssr_6,
+                super::Heating::default(),
+                Duration::from_millis(500),
+                60.0,
+                1.0,
+            );
+
             let mode = GluetexMode::Standby;
 
             let machine_id = params
@@ -232,12 +344,12 @@ impl MachineNewTrait for Gluetex {
                 api_sender: sender,
                 traverse: StepperVelocityEL70x1::new(el7031.clone(), EL7031StepperPort::STM1),
                 traverse_end_stop: DigitalInput::new(el7031, EL7031DigitalInputPort::DI1),
-                temperature_1,
-                temperature_2,
-                temperature_3,
-                temperature_4,
-                temperature_5,
-                temperature_6,
+                temperature_controller_1,
+                temperature_controller_2,
+                temperature_controller_3,
+                temperature_controller_4,
+                temperature_controller_5,
+                temperature_controller_6,
                 puller: StepperVelocityEL70x1::new(
                     el7031_0030.clone(),
                     EL7031_0030StepperPort::STM1,
