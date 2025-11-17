@@ -8,16 +8,20 @@ pub mod minmax_spool_speed_controller;
 pub mod new;
 pub mod puller_speed_controller;
 pub mod spool_speed_controller;
+pub mod temperature_controller;
 pub mod tension_arm;
 pub mod traverse_controller;
 
 use units::Length;
+use units::f64::ThermodynamicTemperature;
+use units::thermodynamic_temperature::degree_celsius;
 
 mod gluetex_imports {
     pub use super::api::GluetexNamespace;
     pub use super::api::SpoolAutomaticActionMode;
     pub use super::puller_speed_controller::PullerSpeedController;
     pub use super::spool_speed_controller::SpoolSpeedController;
+    pub use super::temperature_controller::TemperatureController;
     pub use super::tension_arm::TensionArm;
     pub use super::traverse_controller::TraverseController;
     pub use control_core::converters::angular_step_converter::AngularStepConverter;
@@ -31,6 +35,34 @@ mod gluetex_imports {
     pub use crate::buffer1::BufferV1;
     pub use units::ConstZero;
     pub use units::{length::meter, length::millimeter, velocity::meter_per_second};
+}
+
+#[derive(Debug, Clone)]
+pub struct Heating {
+    pub temperature: ThermodynamicTemperature,
+    pub heating: bool,
+    pub target_temperature: ThermodynamicTemperature,
+    pub wiring_error: bool,
+}
+
+impl Default for Heating {
+    fn default() -> Self {
+        Self {
+            temperature: ThermodynamicTemperature::new::<degree_celsius>(0.0),
+            heating: false,
+            target_temperature: ThermodynamicTemperature::new::<degree_celsius>(0.0),
+            wiring_error: false,
+        }
+    }
+}
+
+pub enum HeatingZone {
+    Zone1,
+    Zone2,
+    Zone3,
+    Zone4,
+    Zone5,
+    Zone6,
 }
 
 pub use gluetex_imports::*;
@@ -90,13 +122,13 @@ pub struct Gluetex {
     pub traverse_controller: TraverseController,
     pub traverse_end_stop: DigitalInput,
 
-    // temperature sensors
-    pub temperature_1: TemperatureInput,
-    pub temperature_2: TemperatureInput,
-    pub temperature_3: TemperatureInput,
-    pub temperature_4: TemperatureInput,
-    pub temperature_5: TemperatureInput,
-    pub temperature_6: TemperatureInput,
+    // temperature controllers (PID-controlled heaters with temperature sensors)
+    pub temperature_controller_1: TemperatureController,
+    pub temperature_controller_2: TemperatureController,
+    pub temperature_controller_3: TemperatureController,
+    pub temperature_controller_4: TemperatureController,
+    pub temperature_controller_5: TemperatureController,
+    pub temperature_controller_6: TemperatureController,
 
     // socketio
     namespace: GluetexNamespace,
