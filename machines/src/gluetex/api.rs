@@ -26,6 +26,24 @@ use smol::channel::Sender;
 use crate::{MachineApi, MachineMessage};
 use crate::{MachineCrossConnectionState, machine_identification::MachineIdentificationUnique};
 
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub enum HeatingZone {
+    Zone1,
+    Zone2,
+    Zone3,
+    Zone4,
+    Zone5,
+    Zone6,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct HeatingPidSettings {
+    pub zone: String,
+    pub ki: f64,
+    pub kp: f64,
+    pub kd: f64,
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub enum Mode {
     #[default]
@@ -103,6 +121,10 @@ pub enum Mutation {
     // Tension Arm
     ZeroTensionArmAngle,
 
+    // Heating
+    SetHeatingTargetTemperature(HeatingZone, f64),
+    ConfigureHeatingPid(HeatingPidSettings),
+
     // Mode
     SetMode(Mode),
 
@@ -137,6 +159,18 @@ pub struct LiveValuesEvent {
     pub temperature_5: f64,
     /// temperature 6 in celsius
     pub temperature_6: f64,
+    /// heater 1 power in watts
+    pub heater_1_power: f64,
+    /// heater 2 power in watts
+    pub heater_2_power: f64,
+    /// heater 3 power in watts
+    pub heater_3_power: f64,
+    /// heater 4 power in watts
+    pub heater_4_power: f64,
+    /// heater 5 power in watts
+    pub heater_5_power: f64,
+    /// heater 6 power in watts
+    pub heater_6_power: f64,
 }
 
 impl LiveValuesEvent {
@@ -160,6 +194,8 @@ pub struct StateEvent {
     pub tension_arm_state: TensionArmState,
     /// spool speed controller state
     pub spool_speed_controller_state: SpoolSpeedControllerState,
+    /// heating states
+    pub heating_states: HeatingStates,
     /// Is a Machine Connected?
     pub connected_machine_state: MachineCrossConnectionState,
 }
@@ -262,6 +298,24 @@ pub struct SpoolSpeedControllerState {
     pub forward: bool,
 }
 
+#[derive(Serialize, Debug, Clone, Default)]
+pub struct HeatingStates {
+    pub zone_1: HeatingState,
+    pub zone_2: HeatingState,
+    pub zone_3: HeatingState,
+    pub zone_4: HeatingState,
+    pub zone_5: HeatingState,
+    pub zone_6: HeatingState,
+}
+
+#[derive(Serialize, Debug, Clone, Default)]
+pub struct HeatingState {
+    /// target temperature in celsius
+    pub target_temperature: f64,
+    /// wiring error detected
+    pub wiring_error: bool,
+}
+
 pub enum GluetexEvents {
     LiveValues(Event<LiveValuesEvent>),
     State(Event<StateEvent>),
@@ -350,6 +404,10 @@ impl MachineApi for Gluetex {
             Mutation::SetSpoolAutomaticAction(mode) => self.set_spool_automatic_mode(mode),
             Mutation::ResetSpoolProgress => self.stop_or_pull_spool_reset(Instant::now()),
             Mutation::ZeroTensionArmAngle => self.tension_arm_zero(),
+            Mutation::SetHeatingTargetTemperature(zone, temperature) => {
+                self.set_target_temperature(temperature, zone)
+            }
+            Mutation::ConfigureHeatingPid(settings) => self.configure_heating_pid(settings),
             Mutation::SetConnectedMachine(machine_identification_unique) => {
                 let main_sender = match &self.main_sender {
                     Some(sender) => sender,
