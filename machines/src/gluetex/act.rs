@@ -21,6 +21,14 @@ impl MachineAct for Gluetex {
         // automatically stops or pulls after N Meters if enabled
         self.stop_or_pull_spool(now);
 
+        // update all temperature controllers
+        self.temperature_controller_1.update(now);
+        self.temperature_controller_2.update(now);
+        self.temperature_controller_3.update(now);
+        self.temperature_controller_4.update(now);
+        self.temperature_controller_5.update(now);
+        self.temperature_controller_6.update(now);
+
         if self.traverse_controller.did_change_state() {
             self.emit_state();
         }
