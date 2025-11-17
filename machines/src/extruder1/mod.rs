@@ -1,7 +1,6 @@
 #[cfg(not(feature = "mock-machine"))]
 use std::time::Instant;
 
-
 #[cfg(not(feature = "mock-machine"))]
 use smol::channel::Receiver;
 #[cfg(not(feature = "mock-machine"))]
@@ -15,9 +14,9 @@ use units::electric_current::ampere;
 #[cfg(not(feature = "mock-machine"))]
 use units::electric_potential::volt;
 
+use crate::{AsyncThreadMessage, Machine};
 use units::f64::*;
 use units::thermodynamic_temperature::degree_celsius;
-use crate::{AsyncThreadMessage, Machine};
 
 #[cfg(not(feature = "mock-machine"))]
 use crate::{

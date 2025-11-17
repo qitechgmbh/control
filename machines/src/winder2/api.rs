@@ -1,7 +1,7 @@
 #[cfg(feature = "mock-machine")]
 mod winder2_imports {
+    pub use super::super::Winder2Mode;
     pub use super::super::puller_speed_controller::{GearRatio, PullerRegulationMode};
-    pub use super::super::{ Winder2Mode};
     pub use control_core::socketio::{
         event::{Event, GenericEvent},
         namespace::{

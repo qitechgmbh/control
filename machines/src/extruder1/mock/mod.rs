@@ -1,4 +1,3 @@
-
 #[cfg(feature = "mock-machine")]
 use smol::channel::Receiver;
 
@@ -8,9 +7,10 @@ use smol::channel::Sender;
 #[cfg(feature = "mock-machine")]
 use crate::{AsyncThreadMessage, Machine};
 
-
 #[cfg(feature = "mock-machine")]
-use crate::{MachineIdentificationUnique, MachineMessage, machine_identification::MachineIdentification};
+use crate::{
+    MachineIdentificationUnique, MachineMessage, machine_identification::MachineIdentification,
+};
 #[cfg(feature = "mock-machine")]
 use std::time::Instant;
 
@@ -37,7 +37,6 @@ pub mod mock_emit;
 #[cfg(feature = "mock-machine")]
 pub mod new;
 
-
 #[cfg(feature = "mock-machine")]
 impl Machine for ExtruderV2 {
     fn get_machine_identification_unique(&self) -> MachineIdentificationUnique {
@@ -49,16 +48,15 @@ impl Machine for ExtruderV2 {
     }
 }
 
-
 #[cfg(feature = "mock-machine")]
 #[derive(Debug)]
 pub struct ExtruderV2 {
     api_receiver: Receiver<MachineMessage>,
     api_sender: Sender<MachineMessage>,
     main_sender: Option<Sender<AsyncThreadMessage>>,
-    
+
     machine_identification_unique: MachineIdentificationUnique,
-    
+
     namespace: ExtruderV2Namespace,
     last_measurement_emit: Instant,
     last_status_hash: Option<u64>,

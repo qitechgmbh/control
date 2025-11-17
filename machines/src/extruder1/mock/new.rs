@@ -1,18 +1,19 @@
-use crate::{MachineNewHardware, MachineNewParams, MachineNewTrait, extruder1::{
-    ExtruderV2Mode,
-    api::{
-        ExtruderSettingsState, ExtruderV2Namespace, HeatingState, HeatingStates,
-        InverterStatusState, ModeState, MotorStatusValues, PidSettings, PidSettingsStates,
-        PressureState, RegulationState, RotationState, ScrewState, TemperaturePid,
-        TemperaturePidStates,
+use crate::{
+    MachineNewHardware, MachineNewParams, MachineNewTrait,
+    extruder1::{
+        ExtruderV2Mode,
+        api::{
+            ExtruderSettingsState, ExtruderV2Namespace, HeatingState, HeatingStates,
+            InverterStatusState, ModeState, MotorStatusValues, PidSettings, PidSettingsStates,
+            PressureState, RegulationState, RotationState, ScrewState, TemperaturePid,
+            TemperaturePidStates,
+        },
+        mock::ExtruderV2,
     },
-    mock::ExtruderV2,
-}};
+};
 
 impl MachineNewTrait for ExtruderV2 {
-    fn new(
-        params: &MachineNewParams<'_, '_, '_, '_, '_, '_, '_>,
-    ) -> Result<Self, anyhow::Error>
+    fn new(params: &MachineNewParams<'_, '_, '_, '_, '_, '_, '_>) -> Result<Self, anyhow::Error>
     where
         Self: Sized,
     {

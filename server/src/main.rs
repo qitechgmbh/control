@@ -15,7 +15,6 @@ use machines::{
     winder2::api::GenericEvent,
 };
 
-
 use app_state::{HotThreadMessage, SharedState};
 use ethercat::{
     ethercat_discovery_info::{send_ethercat_discovering, send_ethercat_found},
@@ -24,18 +23,16 @@ use ethercat::{
 };
 use r#loop::start_loop_thread;
 
-
-
 use panic::init_panic_handling;
 use rest::init::start_api_thread;
 use serialport::UsbPortInfo;
 use smol::{
-     channel::{Receiver, Sender}, lock::RwLock
+    channel::{Receiver, Sender},
+    lock::RwLock,
 };
 use socketio::{main_namespace::machines_event::MachineObj, queue::start_socketio_queue};
 use socketioxide::extract::SocketRef;
 use std::{collections::HashMap, sync::Arc, time::Duration};
-
 
 #[cfg(feature = "mock-machine")]
 use mock_init::init_mock;
@@ -88,9 +85,9 @@ pub async fn add_serial_device(
     let machine = match new_machine {
         Ok(machine) => machine,
         Err(e) => {
-            tracing::error!("{:?}",e);
+            tracing::error!("{:?}", e);
             return;
-        },
+        }
     };
 
     shared_state
@@ -110,7 +107,7 @@ pub async fn add_serial_device(
         .rt_machine_creation_channel
         .send(HotThreadMessage::AddMachines(vec![machine]))
         .await;
-    shared_state.clone().send_machines_event().await;    
+    shared_state.clone().send_machines_event().await;
 }
 
 async fn setup_ethercat(
@@ -314,7 +311,7 @@ fn main() {
     let _loop_thread = start_loop_thread(receiver, CYCLE_TARGET_TIME);
     let _ = start_api_thread(app_state.clone());
     let mut socketio_fut = start_socketio_queue(app_state.clone()).fuse();
-    
+
     #[cfg(not(feature = "mock-machine"))]
     let mut ethercat_fut = start_interface_discovery().fuse();
 
@@ -365,7 +362,7 @@ fn main() {
             }
 
             #[cfg(feature = "mock-machine")]
-            select! {             
+            select! {
                 res = socketio_fut => {
                     // In theory it should never finish
                     tracing::warn!("SocketIO task finished: {:?}", res);
@@ -374,11 +371,10 @@ fn main() {
                     tracing::warn!("Async handler task finished: {:?}", res);
                 },
                 _ = smol::Timer::after(Duration::from_millis(1)).fuse() => {
-     
+
                 }
 
             }
-
         }
     });
 }

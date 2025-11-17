@@ -1,13 +1,15 @@
-use crate::{MachineNewParams, MachineNewTrait, winder2::api::{ModeState, PullerState, SpoolAutomaticActionState, SpoolSpeedControllerState, TensionArmState, TraverseState, Winder2Namespace}};
+use crate::{
+    MachineNewParams, MachineNewTrait,
+    winder2::api::{
+        ModeState, PullerState, SpoolAutomaticActionState, SpoolSpeedControllerState,
+        TensionArmState, TraverseState, Winder2Namespace,
+    },
+};
 
 use super::Winder2;
 
-
-
 impl MachineNewTrait for Winder2 {
-    fn new(
-        params: &MachineNewParams<'_, '_, '_, '_, '_, '_, '_>,
-    ) -> Result<Self, anyhow::Error>
+    fn new(params: &MachineNewParams<'_, '_, '_, '_, '_, '_, '_>) -> Result<Self, anyhow::Error>
     where
         Self: Sized,
     {
@@ -26,7 +28,6 @@ impl MachineNewTrait for Winder2 {
         }
 
         let now = std::time::Instant::now();
-
 
         let (sender, receiver) = smol::channel::unbounded();
         let mut winder_mock_machine = Self {

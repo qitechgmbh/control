@@ -1,8 +1,7 @@
-
-use std::time::{Duration, Instant};
-use crate::MachineAct;
 use super::ExtruderV2;
+use crate::MachineAct;
 use crate::MachineMessage;
+use std::time::{Duration, Instant};
 
 impl MachineAct for ExtruderV2 {
     fn act(&mut self, now: Instant) {

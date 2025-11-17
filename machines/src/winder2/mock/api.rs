@@ -1,7 +1,7 @@
-use std::{ time::Instant};
-use serde_json::Value;
-use crate::{MachineApi, winder2::api::Mutation};
 use super::Winder2;
+use crate::{MachineApi, winder2::api::Mutation};
+use serde_json::Value;
+use std::time::Instant;
 
 impl MachineApi for Winder2 {
     fn api_mutate(&mut self, request_body: Value) -> Result<(), anyhow::Error> {
@@ -56,7 +56,9 @@ impl MachineApi for Winder2 {
         Ok(())
     }
 
-    fn api_event_namespace(&mut self) -> std::option::Option<control_core::socketio::namespace::Namespace> {
+    fn api_event_namespace(
+        &mut self,
+    ) -> std::option::Option<control_core::socketio::namespace::Namespace> {
         self.namespace.namespace.clone()
     }
 

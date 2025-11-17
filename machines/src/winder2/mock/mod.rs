@@ -5,12 +5,15 @@ pub mod api;
 pub mod mock_emit;
 pub mod new;
 
-use smol::channel::{Receiver, Sender};
-use crate::{AsyncThreadMessage, Machine, MachineConnection, MachineMessage, machine_identification::MachineIdentificationUnique};
 use super::api::{
     ModeState, PullerState, SpoolAutomaticActionState, SpoolSpeedControllerState, TensionArmState,
     TraverseState, Winder2Namespace,
 };
+use crate::{
+    AsyncThreadMessage, Machine, MachineConnection, MachineMessage,
+    machine_identification::MachineIdentificationUnique,
+};
+use smol::channel::{Receiver, Sender};
 
 #[derive(Debug)]
 pub struct Winder2 {
@@ -31,14 +34,13 @@ pub struct Winder2 {
     /// spool speed controller state
     pub spool_speed_controller_state: SpoolSpeedControllerState,
 
-
     /// Receive from Api or MainThread
-    api_receiver: Receiver<MachineMessage>,    
+    api_receiver: Receiver<MachineMessage>,
     api_sender: Sender<MachineMessage>,
-    
+
     /// Communicate with main thread
     main_sender: Option<Sender<AsyncThreadMessage>>,
-    
+
     /// All currently "connected" Machines
     connected_machines: Vec<MachineConnection>,
     /// Defaults to limit of 2

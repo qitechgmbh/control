@@ -1,7 +1,7 @@
-use std::time::{Duration, Instant};
-use crate::MachineAct;
 use super::Winder2;
+use crate::MachineAct;
 use crate::MachineMessage;
+use std::time::{Duration, Instant};
 
 impl MachineAct for Winder2 {
     fn act(&mut self, now: Instant) {
@@ -39,6 +39,5 @@ impl MachineAct for Winder2 {
                 ()
             }
         }
-
     }
 }

@@ -1,17 +1,15 @@
 use std::time::Instant;
 
+use super::Winder2;
 use crate::machine_identification::{MachineIdentification, MachineIdentificationUnique};
 use crate::winder2::Winder2Mode;
 use crate::winder2::api::LiveValuesEvent;
-use crate::winder2::api::{
-    ModeState, SpoolAutomaticActionMode, StateEvent, Winder2Events,
-};
+use crate::winder2::api::{ModeState, SpoolAutomaticActionMode, StateEvent, Winder2Events};
 use crate::winder2::puller_speed_controller::{GearRatio, PullerRegulationMode};
 use crate::winder2::spool_speed_controller::SpoolSpeedControllerType;
 use crate::{MACHINE_WINDER_V1, VENDOR_QITECH};
 use control_core::socketio::event::BuildEvent;
 use control_core::socketio::namespace::NamespaceCacheingLogic;
-use super::Winder2;
 
 impl Winder2 {
     pub const MACHINE_IDENTIFICATION: MachineIdentification = MachineIdentification {
@@ -88,7 +86,7 @@ impl Winder2 {
         use crate::MachineCrossConnectionState;
 
         let connected_machine = self.connected_machines.get(0);
-        
+
         let ident = match connected_machine {
             Some(machine) => Some(machine.ident.clone()),
             None => None,

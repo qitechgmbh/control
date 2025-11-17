@@ -1,5 +1,8 @@
-use crate::{MachineApi, extruder1::{HeatingType, api::Mutation}};
 use super::ExtruderV2;
+use crate::{
+    MachineApi,
+    extruder1::{HeatingType, api::Mutation},
+};
 
 impl MachineApi for ExtruderV2 {
     fn api_mutate(&mut self, request_body: serde_json::Value) -> Result<(), anyhow::Error> {
@@ -42,7 +45,9 @@ impl MachineApi for ExtruderV2 {
         Ok(())
     }
 
-    fn api_event_namespace(&mut self) -> std::option::Option<control_core::socketio::namespace::Namespace> {
+    fn api_event_namespace(
+        &mut self,
+    ) -> std::option::Option<control_core::socketio::namespace::Namespace> {
         self.namespace.namespace.clone()
     }
 

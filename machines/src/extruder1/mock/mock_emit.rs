@@ -4,7 +4,6 @@ use crate::extruder1::{
     mock::ExtruderV2,
 };
 
-
 use control_core::{
     helpers::hasher_serializer::hash_with_serde_model,
     socketio::{event::BuildEvent, namespace::NamespaceCacheingLogic},

@@ -24,7 +24,6 @@ mod winder2_imports {
 
 #[cfg(not(feature = "mock-machine"))]
 mod winder2_imports {
-    pub use smol::channel::{Receiver, Sender};
     pub use super::api::SpoolAutomaticActionMode;
     pub use super::api::Winder2Namespace;
     pub use super::puller_speed_controller::PullerSpeedController;
@@ -36,14 +35,15 @@ mod winder2_imports {
         digital_input::DigitalInput, digital_output::DigitalOutput,
         stepper_velocity_el70x1::StepperVelocityEL70x1,
     };
+    pub use smol::channel::{Receiver, Sender};
     pub use smol::lock::RwLock;
     pub use std::{fmt::Debug, sync::Weak, time::Instant};
 
     pub use crate::buffer1::BufferV1;
-    pub use units::ConstZero;
-    pub use units::{length::meter, length::millimeter, velocity::meter_per_second};
-    pub use units::f64::Length;
     pub use crate::{AsyncThreadMessage, Machine};
+    pub use units::ConstZero;
+    pub use units::f64::Length;
+    pub use units::{length::meter, length::millimeter, velocity::meter_per_second};
 }
 
 pub use winder2_imports::*;
