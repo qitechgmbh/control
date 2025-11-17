@@ -198,12 +198,36 @@ impl Gluetex {
             spool_rpm,
             tension_arm_angle: angle_deg,
             spool_progress: self.spool_automatic_action.progress.get::<meter>(),
-            temperature_1: self.temperature_1.get_temperature().unwrap_or(0.0),
-            temperature_2: self.temperature_2.get_temperature().unwrap_or(0.0),
-            temperature_3: self.temperature_3.get_temperature().unwrap_or(0.0),
-            temperature_4: self.temperature_4.get_temperature().unwrap_or(0.0),
-            temperature_5: self.temperature_5.get_temperature().unwrap_or(0.0),
-            temperature_6: self.temperature_6.get_temperature().unwrap_or(0.0),
+            temperature_1: self
+                .temperature_controller_1
+                .get_temperature()
+                .unwrap_or(0.0),
+            temperature_2: self
+                .temperature_controller_2
+                .get_temperature()
+                .unwrap_or(0.0),
+            temperature_3: self
+                .temperature_controller_3
+                .get_temperature()
+                .unwrap_or(0.0),
+            temperature_4: self
+                .temperature_controller_4
+                .get_temperature()
+                .unwrap_or(0.0),
+            temperature_5: self
+                .temperature_controller_5
+                .get_temperature()
+                .unwrap_or(0.0),
+            temperature_6: self
+                .temperature_controller_6
+                .get_temperature()
+                .unwrap_or(0.0),
+            heater_1_power: self.temperature_controller_1.get_heating_element_wattage(),
+            heater_2_power: self.temperature_controller_2.get_heating_element_wattage(),
+            heater_3_power: self.temperature_controller_3.get_heating_element_wattage(),
+            heater_4_power: self.temperature_controller_4.get_heating_element_wattage(),
+            heater_5_power: self.temperature_controller_5.get_heating_element_wattage(),
+            heater_6_power: self.temperature_controller_6.get_heating_element_wattage(),
         };
 
         let event = live_values.build();
@@ -302,6 +326,56 @@ impl Gluetex {
             spool_automatic_action_state: SpoolAutomaticActionState {
                 spool_required_meters: self.spool_automatic_action.target_length.get::<meter>(),
                 spool_automatic_action_mode: self.spool_automatic_action.mode.clone(),
+            },
+            heating_states: api::HeatingStates {
+                zone_1: api::HeatingState {
+                    target_temperature: self
+                        .temperature_controller_1
+                        .heating
+                        .target_temperature
+                        .get::<units::thermodynamic_temperature::degree_celsius>(),
+                    wiring_error: self.temperature_controller_1.heating.wiring_error,
+                },
+                zone_2: api::HeatingState {
+                    target_temperature: self
+                        .temperature_controller_2
+                        .heating
+                        .target_temperature
+                        .get::<units::thermodynamic_temperature::degree_celsius>(),
+                    wiring_error: self.temperature_controller_2.heating.wiring_error,
+                },
+                zone_3: api::HeatingState {
+                    target_temperature: self
+                        .temperature_controller_3
+                        .heating
+                        .target_temperature
+                        .get::<units::thermodynamic_temperature::degree_celsius>(),
+                    wiring_error: self.temperature_controller_3.heating.wiring_error,
+                },
+                zone_4: api::HeatingState {
+                    target_temperature: self
+                        .temperature_controller_4
+                        .heating
+                        .target_temperature
+                        .get::<units::thermodynamic_temperature::degree_celsius>(),
+                    wiring_error: self.temperature_controller_4.heating.wiring_error,
+                },
+                zone_5: api::HeatingState {
+                    target_temperature: self
+                        .temperature_controller_5
+                        .heating
+                        .target_temperature
+                        .get::<units::thermodynamic_temperature::degree_celsius>(),
+                    wiring_error: self.temperature_controller_5.heating.wiring_error,
+                },
+                zone_6: api::HeatingState {
+                    target_temperature: self
+                        .temperature_controller_6
+                        .heating
+                        .target_temperature
+                        .get::<units::thermodynamic_temperature::degree_celsius>(),
+                    wiring_error: self.temperature_controller_6.heating.wiring_error,
+                },
             },
             connected_machine_state: cross_conn,
         }
@@ -466,6 +540,73 @@ impl Gluetex {
     pub fn spool_set_adaptive_tension_target(&mut self, tension_target: f64) {
         self.spool_speed_controller
             .set_adaptive_tension_target(tension_target);
+        self.emit_state();
+    }
+
+    /// Set target temperature for a heating zone
+    pub fn set_target_temperature(&mut self, target_temperature: f64, zone: api::HeatingZone) {
+        let target_temp = units::f64::ThermodynamicTemperature::new::<
+            units::thermodynamic_temperature::degree_celsius,
+        >(target_temperature);
+
+        match zone {
+            api::HeatingZone::Zone1 => self
+                .temperature_controller_1
+                .set_target_temperature(target_temp),
+            api::HeatingZone::Zone2 => self
+                .temperature_controller_2
+                .set_target_temperature(target_temp),
+            api::HeatingZone::Zone3 => self
+                .temperature_controller_3
+                .set_target_temperature(target_temp),
+            api::HeatingZone::Zone4 => self
+                .temperature_controller_4
+                .set_target_temperature(target_temp),
+            api::HeatingZone::Zone5 => self
+                .temperature_controller_5
+                .set_target_temperature(target_temp),
+            api::HeatingZone::Zone6 => self
+                .temperature_controller_6
+                .set_target_temperature(target_temp),
+        }
+        self.emit_state();
+    }
+
+    /// Configure PID parameters for a heating zone
+    pub fn configure_heating_pid(&mut self, settings: api::HeatingPidSettings) {
+        match settings.zone.as_str() {
+            "zone_1" => {
+                self.temperature_controller_1
+                    .pid
+                    .configure(settings.ki, settings.kp, settings.kd);
+            }
+            "zone_2" => {
+                self.temperature_controller_2
+                    .pid
+                    .configure(settings.ki, settings.kp, settings.kd);
+            }
+            "zone_3" => {
+                self.temperature_controller_3
+                    .pid
+                    .configure(settings.ki, settings.kp, settings.kd);
+            }
+            "zone_4" => {
+                self.temperature_controller_4
+                    .pid
+                    .configure(settings.ki, settings.kp, settings.kd);
+            }
+            "zone_5" => {
+                self.temperature_controller_5
+                    .pid
+                    .configure(settings.ki, settings.kp, settings.kd);
+            }
+            "zone_6" => {
+                self.temperature_controller_6
+                    .pid
+                    .configure(settings.ki, settings.kp, settings.kd);
+            }
+            _ => tracing::warn!("Unknown heating zone: {}", settings.zone),
+        }
         self.emit_state();
     }
 

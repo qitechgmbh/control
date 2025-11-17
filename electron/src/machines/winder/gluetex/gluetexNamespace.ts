@@ -41,6 +41,12 @@ export const liveValuesEventDataSchema = z.object({
   temperature_4: z.number(),
   temperature_5: z.number(),
   temperature_6: z.number(),
+  heater_1_power: z.number(),
+  heater_2_power: z.number(),
+  heater_3_power: z.number(),
+  heater_4_power: z.number(),
+  heater_5_power: z.number(),
+  heater_6_power: z.number(),
 });
 
 /**
@@ -188,6 +194,26 @@ export const spoolSpeedControllerStateSchema = z.object({
 });
 
 /**
+ * Heating state schema
+ */
+export const heatingStateSchema = z.object({
+  target_temperature: z.number(),
+  wiring_error: z.boolean(),
+});
+
+/**
+ * Heating states schema
+ */
+export const heatingStatesSchema = z.object({
+  zone_1: heatingStateSchema,
+  zone_2: heatingStateSchema,
+  zone_3: heatingStateSchema,
+  zone_4: heatingStateSchema,
+  zone_5: heatingStateSchema,
+  zone_6: heatingStateSchema,
+});
+
+/**
  * Consolidated state event schema (state changes only) - from backend
  */
 export const stateEventDataSchema = z.object({
@@ -198,6 +224,7 @@ export const stateEventDataSchema = z.object({
   tension_arm_state: tensionArmStateSchema,
   spool_speed_controller_state: spoolSpeedControllerStateSchema,
   spool_automatic_action_state: spoolAutomaticActionStateSchema,
+  heating_states: heatingStatesSchema,
   connected_machine_state: connectedMachineStateSchema,
 });
 
@@ -285,6 +312,12 @@ export type GluetexNamespaceStore = {
   temperature4: TimeSeries;
   temperature5: TimeSeries;
   temperature6: TimeSeries;
+  heater1Power: TimeSeries;
+  heater2Power: TimeSeries;
+  heater3Power: TimeSeries;
+  heater4Power: TimeSeries;
+  heater5Power: TimeSeries;
+  heater6Power: TimeSeries;
 
   // Time series data for addons (local)
   slavePullerSpeed: TimeSeries;
@@ -324,6 +357,19 @@ const { initialTimeSeries: temperature4, insert: addTemperature4 } =
 const { initialTimeSeries: temperature5, insert: addTemperature5 } =
   createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
 const { initialTimeSeries: temperature6, insert: addTemperature6 } =
+  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+
+const { initialTimeSeries: heater1Power, insert: addHeater1Power } =
+  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+const { initialTimeSeries: heater2Power, insert: addHeater2Power } =
+  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+const { initialTimeSeries: heater3Power, insert: addHeater3Power } =
+  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+const { initialTimeSeries: heater4Power, insert: addHeater4Power } =
+  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+const { initialTimeSeries: heater5Power, insert: addHeater5Power } =
+  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+const { initialTimeSeries: heater6Power, insert: addHeater6Power } =
   createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
 
 // Create time series for addon values (local)
@@ -387,6 +433,12 @@ export const createGluetexNamespaceStore =
         temperature4,
         temperature5,
         temperature6,
+        heater1Power,
+        heater2Power,
+        heater3Power,
+        heater4Power,
+        heater5Power,
+        heater6Power,
 
         // Time series data for addons
         slavePullerSpeed,
@@ -473,6 +525,12 @@ export function gluetexMessageHandler(
           temperature_4,
           temperature_5,
           temperature_6,
+          heater_1_power,
+          heater_2_power,
+          heater_3_power,
+          heater_4_power,
+          heater_5_power,
+          heater_6_power,
         } = liveValuesEvent.data;
         const timestamp = liveValuesEvent.ts;
 
@@ -582,6 +640,61 @@ export function gluetexMessageHandler(
           newState.temperature6 = addTemperature6(
             state.temperature6,
             temp6Value,
+          );
+
+          // Add heater power values
+          const heater1Value: TimeSeriesValue = {
+            value: heater_1_power,
+            timestamp,
+          };
+          newState.heater1Power = addHeater1Power(
+            state.heater1Power,
+            heater1Value,
+          );
+
+          const heater2Value: TimeSeriesValue = {
+            value: heater_2_power,
+            timestamp,
+          };
+          newState.heater2Power = addHeater2Power(
+            state.heater2Power,
+            heater2Value,
+          );
+
+          const heater3Value: TimeSeriesValue = {
+            value: heater_3_power,
+            timestamp,
+          };
+          newState.heater3Power = addHeater3Power(
+            state.heater3Power,
+            heater3Value,
+          );
+
+          const heater4Value: TimeSeriesValue = {
+            value: heater_4_power,
+            timestamp,
+          };
+          newState.heater4Power = addHeater4Power(
+            state.heater4Power,
+            heater4Value,
+          );
+
+          const heater5Value: TimeSeriesValue = {
+            value: heater_5_power,
+            timestamp,
+          };
+          newState.heater5Power = addHeater5Power(
+            state.heater5Power,
+            heater5Value,
+          );
+
+          const heater6Value: TimeSeriesValue = {
+            value: heater_6_power,
+            timestamp,
+          };
+          newState.heater6Power = addHeater6Power(
+            state.heater6Power,
+            heater6Value,
           );
 
           // Simulate addon live values (these would come from backend in the future)
