@@ -30,8 +30,7 @@ use panic::init_panic_handling;
 use rest::init::start_api_thread;
 use serialport::UsbPortInfo;
 use smol::{
-    channel::{Receiver, Sender},
-    lock::RwLock,
+    Timer, channel::{Receiver, Sender}, lock::RwLock
 };
 use socketio::{main_namespace::machines_event::MachineObj, queue::start_socketio_queue};
 use socketioxide::extract::SocketRef;
@@ -88,7 +87,10 @@ pub async fn add_serial_device(
 
     let machine = match new_machine {
         Ok(machine) => machine,
-        Err(_) => return,
+        Err(e) => {
+            tracing::error!("{:?}",e);
+            return;
+        },
     };
 
     shared_state
@@ -108,8 +110,7 @@ pub async fn add_serial_device(
         .rt_machine_creation_channel
         .send(HotThreadMessage::AddMachines(vec![machine]))
         .await;
-
-    shared_state.clone().send_machines_event().await;
+    shared_state.clone().send_machines_event().await;    
 }
 
 async fn setup_ethercat(
@@ -309,16 +310,14 @@ fn main() {
     let (sender, receiver) = smol::channel::unbounded();
     let (main_sender, main_receiver) = smol::channel::unbounded();
     let shared_state = SharedState::new(sender.clone(), main_sender.clone());
-
     let app_state = Arc::new(shared_state);
     let _loop_thread = start_loop_thread(receiver, CYCLE_TARGET_TIME);
-
-    #[cfg(feature = "mock-machine")]
-    init_mock(app_state.clone()).expect("Failed to initialize mock machines");
-
     let _ = start_api_thread(app_state.clone());
     let mut socketio_fut = start_socketio_queue(app_state.clone()).fuse();
+    
+    #[cfg(not(feature = "mock-machine"))]
     let mut ethercat_fut = start_interface_discovery().fuse();
+
     let mut serial_fut = start_serial_discovery().fuse();
     let mut handle_async_machine_requests =
         smol::spawn(handle_async_requests(main_receiver, app_state.clone())).fuse();
@@ -328,6 +327,9 @@ fn main() {
         send_ethercat_discovering(app_state.clone()).await;
     });
 
+    #[cfg(feature = "mock-machine")]
+    init_mock(app_state.clone()).expect("Failed to initialize mock machines");
+
     smol::block_on(async {
         loop {
             #[cfg(feature = "development-build")]
@@ -336,6 +338,7 @@ fn main() {
                 break;
             }
             // lets the async runtime decide which future to run next
+            #[cfg(not(feature = "mock-machine"))]
             select! {
                 res = ethercat_fut => {
                     tracing::info!("EtherCAT task finished: {:?}", res);
@@ -359,8 +362,23 @@ fn main() {
                 res = handle_async_machine_requests => {
                     tracing::warn!("Async handler task finished: {:?}", res);
                 },
+            }
+
+            #[cfg(feature = "mock-machine")]
+            select! {             
+                res = socketio_fut => {
+                    // In theory it should never finish
+                    tracing::warn!("SocketIO task finished: {:?}", res);
+                },
+                res = handle_async_machine_requests => {
+                    tracing::warn!("Async handler task finished: {:?}", res);
+                },
+                _ = Timer::after(Duration::from_millis(1)).fuse() => {
+     
+                }
 
             }
+
         }
     });
 }

@@ -61,6 +61,6 @@ impl MachineApi for Winder2 {
     }
 
     fn api_get_sender(&self) -> smol::channel::Sender<crate::MachineMessage> {
-        todo!()
+        self.api_sender.clone()
     }
 }

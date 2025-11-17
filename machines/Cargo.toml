@@ -37,7 +37,7 @@ approx = "0.5.1"
 textplots = "0.8.7"
 
 [features]
-default = ["tracing-fmt","mock-machine"]
+default = ["tracing-fmt"]
 never_type = []
 tracing-fmt = []
 mock-machine = []

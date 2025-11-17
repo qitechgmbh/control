@@ -1,7 +1,7 @@
-
 use std::time::{Duration, Instant};
 use crate::MachineAct;
 use super::Winder2;
+use crate::MachineMessage;
 
 impl MachineAct for Winder2 {
     fn act(&mut self, now: Instant) {
@@ -13,6 +13,25 @@ impl MachineAct for Winder2 {
     }
 
     fn act_machine_message(&mut self, msg: crate::MachineMessage) {
-        todo!()
+        match msg {
+            MachineMessage::SubscribeNamespace(namespace) => {
+                self.namespace.namespace = Some(namespace);
+                self.emit_state();
+                tracing::info!("extruder1 received subscribe");
+            }
+            MachineMessage::UnsubscribeNamespace => self.namespace.namespace = None,
+            MachineMessage::HttpApiJsonRequest(value) => {
+                use crate::MachineApi;
+
+                let _res = self.api_mutate(value);
+            }
+            MachineMessage::ConnectToMachine(_machine_connection) => (),
+            MachineMessage::DisconnectMachine(_machine_connection) =>
+            /*Doesnt connec to any Machine do nothing*/
+            {
+                ()
+            }
+        }
+
     }
 }
