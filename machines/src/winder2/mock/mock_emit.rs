@@ -1,17 +1,16 @@
 use std::time::Instant;
 
-use crate::machines::winder2::Winder2Mode;
-use crate::machines::winder2::api::LiveValuesEvent;
-use crate::machines::winder2::api::{
+use crate::machine_identification::{MachineIdentification, MachineIdentificationUnique};
+use crate::winder2::Winder2Mode;
+use crate::winder2::api::LiveValuesEvent;
+use crate::winder2::api::{
     ModeState, SpoolAutomaticActionMode, StateEvent, Winder2Events,
 };
-use crate::machines::winder2::puller_speed_controller::{GearRatio, PullerRegulationMode};
-use crate::machines::winder2::spool_speed_controller::SpoolSpeedControllerType;
-use crate::machines::{MACHINE_WINDER_V1, VENDOR_QITECH};
-use control_core::machines::identification::{MachineIdentification, MachineIdentificationUnique};
+use crate::winder2::puller_speed_controller::{GearRatio, PullerRegulationMode};
+use crate::winder2::spool_speed_controller::SpoolSpeedControllerType;
+use crate::{MACHINE_WINDER_V1, VENDOR_QITECH};
 use control_core::socketio::event::BuildEvent;
 use control_core::socketio::namespace::NamespaceCacheingLogic;
-
 use super::Winder2;
 
 impl Winder2 {
@@ -20,7 +19,7 @@ impl Winder2 {
         machine: MACHINE_WINDER_V1,
     };
 
-    pub fn stop_or_pull_spool_reset(&mut self, now: Instant) {}
+    pub fn stop_or_pull_spool_reset(&mut self, _now: Instant) {}
     /// Implement Mode
     pub fn set_mode(&mut self, mode: &Winder2Mode) {
         self.mode_state = ModeState {
@@ -86,6 +85,20 @@ impl Winder2 {
     }
 
     pub fn build_state_event(&mut self) -> StateEvent {
+        use crate::MachineCrossConnectionState;
+
+        let connected_machine = self.connected_machines.get(0);
+        
+        let ident = match connected_machine {
+            Some(machine) => Some(machine.ident.clone()),
+            None => None,
+        };
+
+        let cross_conn = MachineCrossConnectionState {
+            machine_identification_unique: ident,
+            is_available: connected_machine.is_some(),
+        };
+
         StateEvent {
             is_default_state: self.is_default_state,
             traverse_state: self.traverse_state.clone(),
@@ -94,7 +107,7 @@ impl Winder2 {
             mode_state: self.mode_state.clone(),
             tension_arm_state: self.tension_arm_state.clone(),
             spool_speed_controller_state: self.spool_speed_controller_state.clone(),
-            connected_machine_state: self.connected_machine_state.clone(),
+            connected_machine_state: cross_conn,
         }
     }
 
@@ -110,7 +123,7 @@ impl Winder2 {
     /// It will set [`Self::spool_mode`]
     fn set_traverse_mode(&mut self, mode: &Winder2Mode) {
         self.mode_state = ModeState {
-            mode: crate::machines::winder2::api::Mode::Standby,
+            mode: crate::winder2::api::Mode::Standby,
             can_wind: true,
         };
         self.emit_state();
@@ -227,7 +240,7 @@ impl Winder2 {
     /// set connected buffer
     pub fn set_connected_buffer(
         &mut self,
-        machine_identification_unique: MachineIdentificationUnique,
+        _machine_identification_unique: MachineIdentificationUnique,
     ) {
         self.emit_state();
     }
@@ -235,7 +248,7 @@ impl Winder2 {
     /// disconnect buffer
     pub fn disconnect_buffer(
         &mut self,
-        machine_identification_unique: MachineIdentificationUnique,
+        _machine_identification_unique: MachineIdentificationUnique,
     ) {
         self.emit_state();
     }

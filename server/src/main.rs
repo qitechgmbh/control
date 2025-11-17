@@ -15,11 +15,6 @@ use machines::{
     winder2::api::GenericEvent,
 };
 
-#[cfg(feature = "mock-machine")]
-use mock::init::init_mock;
-
-#[cfg(feature = "mock-machine")]
-pub mod mock;
 
 use app_state::{HotThreadMessage, SharedState};
 use ethercat::{
@@ -28,6 +23,9 @@ use ethercat::{
     setup::setup_loop,
 };
 use r#loop::start_loop_thread;
+
+
+
 use panic::init_panic_handling;
 use rest::init::start_api_thread;
 use serialport::UsbPortInfo;
@@ -38,6 +36,13 @@ use smol::{
 use socketio::{main_namespace::machines_event::MachineObj, queue::start_socketio_queue};
 use socketioxide::extract::SocketRef;
 use std::{collections::HashMap, sync::Arc, time::Duration};
+
+
+#[cfg(feature = "mock-machine")]
+use mock_init::init_mock;
+
+#[cfg(feature = "mock-machine")]
+pub mod mock_init;
 
 pub mod app_state;
 pub mod ethercat;

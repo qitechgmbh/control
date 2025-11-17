@@ -1,16 +1,9 @@
 use std::sync::Arc;
 
-use control_core::{
-    helpers::hashing::{byte_folding_u16, hash_djb2},
-    machines::identification::{
-        DeviceHardwareIdentification, DeviceHardwareIdentificationSerial, DeviceIdentification,
-        DeviceMachineIdentification, MachineIdentification, MachineIdentificationUnique,
-    },
-    serial::{SerialDevice, SerialDeviceNew, SerialDeviceNewParams},
-};
+use control_core::helpers::hashing::{byte_folding_u16, hash_djb2};
 use smol::lock::RwLock;
 
-use crate::machines::{MACHINE_MOCK, VENDOR_QITECH};
+use crate::{MACHINE_MOCK, SerialDevice, SerialDeviceNew, SerialDeviceNewParams, VENDOR_QITECH, machine_identification::{DeviceHardwareIdentification, DeviceHardwareIdentificationSerial, DeviceIdentification, DeviceMachineIdentification, MachineIdentification, MachineIdentificationUnique}};
 
 /// Mock serial device for testing MockMachine
 /// This provides a minimal SerialDevice implementation that doesn't require actual hardware
@@ -26,7 +19,7 @@ impl SerialDeviceNew for MockSerialDevice {
         params: &SerialDeviceNewParams,
     ) -> Result<(DeviceIdentification, Arc<RwLock<Self>>), anyhow::Error>
     where
-        Self: Sized,
+        Self: Sized, 
     {
         // Generate a unique serial number based on the path
         let hash = hash_djb2(params.path.as_bytes());

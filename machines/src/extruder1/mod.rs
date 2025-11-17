@@ -1,18 +1,18 @@
 #[cfg(not(feature = "mock-machine"))]
 use std::time::Instant;
-
-#[cfg(not(feature = "mock-machine"))]
-use serde::{Deserialize, Serialize};
-use smol::channel::Receiver;
 use smol::channel::Sender;
+use serde::{Deserialize, Serialize};
+
 #[cfg(not(feature = "mock-machine"))]
 use units::electric_current::ampere;
+
 #[cfg(not(feature = "mock-machine"))]
 use units::electric_potential::volt;
+
 use units::f64::*;
 use units::thermodynamic_temperature::degree_celsius;
-
 use crate::{AsyncThreadMessage, Machine};
+
 #[cfg(not(feature = "mock-machine"))]
 use crate::{
     MACHINE_EXTRUDER_V1, MachineMessage, VENDOR_QITECH,
@@ -94,6 +94,7 @@ pub struct ExtruderV2 {
     emitted_default_state: bool,
 }
 
+#[cfg(not(feature = "mock-machine"))]
 impl Machine for ExtruderV2 {
     fn get_machine_identification_unique(&self) -> MachineIdentificationUnique {
         self.machine_identification_unique.clone()

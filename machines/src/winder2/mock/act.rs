@@ -1,6 +1,7 @@
-use crate::machines::winder2::mock::Winder2;
-use control_core::machines::new::MachineAct;
+
 use std::time::{Duration, Instant};
+use crate::MachineAct;
+use super::Winder2;
 
 impl MachineAct for Winder2 {
     fn act(&mut self, now: Instant) {
@@ -9,5 +10,9 @@ impl MachineAct for Winder2 {
             self.emit_live_values();
             self.last_measurement_emit = now;
         }
+    }
+
+    fn act_machine_message(&mut self, msg: crate::MachineMessage) {
+        todo!()
     }
 }
