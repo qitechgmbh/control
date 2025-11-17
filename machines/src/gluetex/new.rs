@@ -16,6 +16,9 @@ mod gluetex_imports {
     pub use ethercat_hal::coe::ConfigurableDevice;
     pub use ethercat_hal::devices::ek1100::EK1100;
     pub use ethercat_hal::devices::el2002::{EL2002, EL2002_IDENTITY_B, EL2002Port};
+    pub use ethercat_hal::devices::el3204::{
+        EL3204, EL3204_IDENTITY_A, EL3204_IDENTITY_B, EL3204Port,
+    };
     pub use ethercat_hal::devices::el7031::coe::EL7031Configuration;
     pub use ethercat_hal::devices::el7031::pdo::EL7031PredefinedPdoAssignment;
     pub use ethercat_hal::devices::el7031::{
@@ -36,6 +39,7 @@ mod gluetex_imports {
     pub use ethercat_hal::io::digital_input::DigitalInput;
     pub use ethercat_hal::io::digital_output::DigitalOutput;
     pub use ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1;
+    pub use ethercat_hal::io::temperature_input::TemperatureInput;
     pub use ethercat_hal::shared_config;
     pub use ethercat_hal::shared_config::el70x1::{EL70x1OperationMode, StmMotorConfiguration};
     pub use std::time::Instant;
@@ -183,6 +187,34 @@ impl MachineNewTrait for Gluetex {
                 device.0
             };
 
+            // Role 5: Temperature Sensors 1-4 EL3204
+            let el3204_1 = get_ethercat_device::<EL3204>(
+                hardware,
+                params,
+                5,
+                vec![EL3204_IDENTITY_A, EL3204_IDENTITY_B],
+            )
+            .await?
+            .0;
+
+            // Role 6: Temperature Sensors 5-6 (and 2 spare ports) EL3204
+            let el3204_2 = get_ethercat_device::<EL3204>(
+                hardware,
+                params,
+                6,
+                vec![EL3204_IDENTITY_A, EL3204_IDENTITY_B],
+            )
+            .await?
+            .0;
+
+            // Temperature inputs
+            let temperature_1 = TemperatureInput::new(el3204_1.clone(), EL3204Port::T1);
+            let temperature_2 = TemperatureInput::new(el3204_1.clone(), EL3204Port::T2);
+            let temperature_3 = TemperatureInput::new(el3204_1.clone(), EL3204Port::T3);
+            let temperature_4 = TemperatureInput::new(el3204_1, EL3204Port::T4);
+            let temperature_5 = TemperatureInput::new(el3204_2.clone(), EL3204Port::T1);
+            let temperature_6 = TemperatureInput::new(el3204_2, EL3204Port::T2);
+
             let mode = GluetexMode::Standby;
 
             let machine_id = params
@@ -200,6 +232,12 @@ impl MachineNewTrait for Gluetex {
                 api_sender: sender,
                 traverse: StepperVelocityEL70x1::new(el7031.clone(), EL7031StepperPort::STM1),
                 traverse_end_stop: DigitalInput::new(el7031, EL7031DigitalInputPort::DI1),
+                temperature_1,
+                temperature_2,
+                temperature_3,
+                temperature_4,
+                temperature_5,
+                temperature_6,
                 puller: StepperVelocityEL70x1::new(
                     el7031_0030.clone(),
                     EL7031_0030StepperPort::STM1,
