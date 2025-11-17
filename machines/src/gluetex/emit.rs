@@ -198,6 +198,12 @@ impl Gluetex {
             spool_rpm,
             tension_arm_angle: angle_deg,
             spool_progress: self.spool_automatic_action.progress.get::<meter>(),
+            temperature_1: self.temperature_1.get_temperature().unwrap_or(0.0),
+            temperature_2: self.temperature_2.get_temperature().unwrap_or(0.0),
+            temperature_3: self.temperature_3.get_temperature().unwrap_or(0.0),
+            temperature_4: self.temperature_4.get_temperature().unwrap_or(0.0),
+            temperature_5: self.temperature_5.get_temperature().unwrap_or(0.0),
+            temperature_6: self.temperature_6.get_temperature().unwrap_or(0.0),
         };
 
         let event = live_values.build();

@@ -23,7 +23,7 @@ mod gluetex_imports {
     pub use control_core::converters::angular_step_converter::AngularStepConverter;
     pub use ethercat_hal::io::{
         digital_input::DigitalInput, digital_output::DigitalOutput,
-        stepper_velocity_el70x1::StepperVelocityEL70x1,
+        stepper_velocity_el70x1::StepperVelocityEL70x1, temperature_input::TemperatureInput,
     };
     pub use smol::lock::RwLock;
     pub use std::{fmt::Debug, sync::Weak, time::Instant};
@@ -89,6 +89,14 @@ pub struct Gluetex {
     // controllers
     pub traverse_controller: TraverseController,
     pub traverse_end_stop: DigitalInput,
+
+    // temperature sensors
+    pub temperature_1: TemperatureInput,
+    pub temperature_2: TemperatureInput,
+    pub temperature_3: TemperatureInput,
+    pub temperature_4: TemperatureInput,
+    pub temperature_5: TemperatureInput,
+    pub temperature_6: TemperatureInput,
 
     // socketio
     namespace: GluetexNamespace,

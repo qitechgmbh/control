@@ -56,6 +56,10 @@ export function useGluetex() {
     spoolProgress,
     temperature1,
     temperature2,
+    temperature3,
+    temperature4,
+    temperature5,
+    temperature6,
   } = useGluetexNamespace(machineIdentification);
 
   // Single optimistic state for all state management
@@ -710,6 +714,10 @@ export function useGluetex() {
     spoolProgress,
     temperature1,
     temperature2,
+    temperature3,
+    temperature4,
+    temperature5,
+    temperature6,
 
     // Loading states
     isLoading,
