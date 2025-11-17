@@ -24,6 +24,7 @@ mod winder2_imports {
 
 #[cfg(not(feature = "mock-machine"))]
 mod winder2_imports {
+    pub use smol::channel::{Receiver, Sender};
     pub use super::api::SpoolAutomaticActionMode;
     pub use super::api::Winder2Namespace;
     pub use super::puller_speed_controller::PullerSpeedController;

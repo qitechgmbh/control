@@ -1,9 +1,14 @@
 
 #[cfg(feature = "mock-machine")]
 use smol::channel::Receiver;
+
+#[cfg(feature = "mock-machine")]
 use smol::channel::Sender;
 
+#[cfg(feature = "mock-machine")]
 use crate::{AsyncThreadMessage, Machine};
+
+
 #[cfg(feature = "mock-machine")]
 use crate::{MachineIdentificationUnique, MachineMessage, machine_identification::MachineIdentification};
 #[cfg(feature = "mock-machine")]
@@ -33,7 +38,7 @@ pub mod mock_emit;
 pub mod new;
 
 
-
+#[cfg(feature = "mock-machine")]
 impl Machine for ExtruderV2 {
     fn get_machine_identification_unique(&self) -> MachineIdentificationUnique {
         self.machine_identification_unique.clone()

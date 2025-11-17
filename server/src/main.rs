@@ -30,7 +30,7 @@ use panic::init_panic_handling;
 use rest::init::start_api_thread;
 use serialport::UsbPortInfo;
 use smol::{
-    Timer, channel::{Receiver, Sender}, lock::RwLock
+     channel::{Receiver, Sender}, lock::RwLock
 };
 use socketio::{main_namespace::machines_event::MachineObj, queue::start_socketio_queue};
 use socketioxide::extract::SocketRef;
@@ -373,7 +373,7 @@ fn main() {
                 res = handle_async_machine_requests => {
                     tracing::warn!("Async handler task finished: {:?}", res);
                 },
-                _ = Timer::after(Duration::from_millis(1)).fuse() => {
+                _ = smol::Timer::after(Duration::from_millis(1)).fuse() => {
      
                 }
 

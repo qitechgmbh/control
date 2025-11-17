@@ -1,6 +1,12 @@
 #[cfg(not(feature = "mock-machine"))]
 use std::time::Instant;
+
+
+#[cfg(not(feature = "mock-machine"))]
+use smol::channel::Receiver;
+#[cfg(not(feature = "mock-machine"))]
 use smol::channel::Sender;
+
 use serde::{Deserialize, Serialize};
 
 #[cfg(not(feature = "mock-machine"))]
