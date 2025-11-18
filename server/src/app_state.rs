@@ -142,7 +142,7 @@ impl SharedState {
 
     pub async fn add_machines_if_not_exists(&self, machines: Vec<MachineObj>) {
         let mut current_machines = self.current_machines_meta.lock().await;
-
+        tracing::info!("add_machines_if_not_exists: {:?}", current_machines);
         // Track existing machine identifiers for quick lookup
         let existing_ids: HashSet<_> = current_machines
             .iter()

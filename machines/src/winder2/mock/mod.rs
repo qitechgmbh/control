@@ -1,21 +1,21 @@
 use std::time::Instant;
 
-use control_core::machines::{
-    connection::MachineCrossConnectionState, identification::MachineIdentificationUnique,
-};
-use control_core_derive::Machine;
 pub mod act;
 pub mod api;
 pub mod mock_emit;
 pub mod new;
-use crate::machines::winder2::api::Winder2Namespace;
 
 use super::api::{
     ModeState, PullerState, SpoolAutomaticActionState, SpoolSpeedControllerState, TensionArmState,
-    TraverseState,
+    TraverseState, Winder2Namespace,
 };
+use crate::{
+    AsyncThreadMessage, Machine, MachineConnection, MachineMessage,
+    machine_identification::MachineIdentificationUnique,
+};
+use smol::channel::{Receiver, Sender};
 
-#[derive(Debug, Machine)]
+#[derive(Debug)]
 pub struct Winder2 {
     machine_identification_unique: MachineIdentificationUnique,
     namespace: Winder2Namespace,
@@ -33,12 +33,32 @@ pub struct Winder2 {
     pub tension_arm_state: TensionArmState,
     /// spool speed controller state
     pub spool_speed_controller_state: SpoolSpeedControllerState,
-    /// connected machine state
-    pub connected_machine_state: MachineCrossConnectionState,
+
+    /// Receive from Api or MainThread
+    api_receiver: Receiver<MachineMessage>,
+    api_sender: Sender<MachineMessage>,
+
+    /// Communicate with main thread
+    main_sender: Option<Sender<AsyncThreadMessage>>,
+
+    /// All currently "connected" Machines
+    connected_machines: Vec<MachineConnection>,
+    /// Defaults to limit of 2
+    max_connected_machines: usize,
 }
 
 impl std::fmt::Display for Winder2 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Winder2")
+    }
+}
+
+impl Machine for Winder2 {
+    fn get_machine_identification_unique(&self) -> MachineIdentificationUnique {
+        self.machine_identification_unique.clone()
+    }
+
+    fn get_main_sender(&self) -> Option<Sender<AsyncThreadMessage>> {
+        self.main_sender.clone()
     }
 }
