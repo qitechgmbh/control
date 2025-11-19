@@ -59,6 +59,7 @@ pub fn convert_raw_diagnosis_bytes(message : [u8; DIAG_MESSAGE_LENGTH]) -> Resul
 	let timestamp = u64::from_be_bytes(timestamp_bytes);
 
 	let data_type_p1_bytes = [message[16],message[17]];
+	println!("{:?}",data_type_p1_bytes);
 	let data_type_p1 = u16::from_be_bytes(data_type_p1_bytes);
 
 	// TODO: Find the Constants
