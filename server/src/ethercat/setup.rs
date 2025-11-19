@@ -8,6 +8,7 @@ use crate::{
 };
 #[cfg(all(target_os = "linux", not(feature = "development-build")))]
 use control_core::{irq_handling::set_irq_affinity, realtime::set_realtime_priority};
+use ethercat_hal::debugging::diagnosis_history::get_most_recent_diagnosis_message;
 use machines::machine_identification::{
     DeviceHardwareIdentification, DeviceHardwareIdentificationEthercat, DeviceIdentification,
     DeviceIdentificationIdentified, MachineIdentificationUnique, read_device_identifications,
@@ -267,7 +268,7 @@ pub async fn setup_loop(
             err
         ))?,
     };
-
+/*
     // create devices
     let devices =
         devices_from_subdevices::<MAX_SUBDEVICES, PDI_LEN>(&mut group_preop, &maindevice)?;
@@ -294,10 +295,12 @@ pub async fn setup_loop(
         .zip(&subdevices)
         .map(|((a, b), c)| (a, b, c))
         .collect::<Vec<_>>();
-
+*/
     let mut ethercat_meta_devices = app_state.ethercat_meta_data.write().await;
     ethercat_meta_devices.clear();
 
+
+/*
     // filter devices and if Option<DeviceMachineIdentification> is Some
     // return identified_devices, identified_device_identifications, identified_subdevices
     let (identified_device_identifications, identified_devices, identified_subdevices): (
@@ -335,6 +338,12 @@ pub async fn setup_loop(
         );
     tracing::info!("Found Devices: {:?}", ethercat_meta_devices);
     drop(ethercat_meta_devices);
+*/
+
+    let subdevices = group_preop.iter(&maindevice).collect::<Vec<_>>();
+    // We always need to have atleast one subdevice anyways
+    let coupler = subdevices.get(0).unwrap(); 
+    let _resp = get_most_recent_diagnosis_message(coupler).await;
 
     for subdevice in subdevices.iter() {
         if subdevice.name() == "EL5152" {
@@ -343,6 +352,8 @@ pub async fn setup_loop(
         }
     }
 
+    
+/*
     // remove subdevice from devices tuple
     let devices = devices
         .iter()
@@ -361,26 +372,23 @@ pub async fn setup_loop(
         app_state.clone().socketio_setup.socket_queue_tx.clone(),
     )
     .await?;
-    /*let main_namespace = &mut app_state_clone
-        .socketio_setup
-        .namespaces
-        .write()
-        .await
-        .main_namespace;
-    let event = MachinesEventBuilder().build(app_state_clone.clone());
-    main_namespace.emit(MainNamespaceEvents::MachinesEvent(event));*/
-
+  */  
     // Put group in operational state
     let group_op = match group_preop.into_op(&maindevice).await {
         Ok(group_op) => {
             tracing::info!("Group in OP state");
             group_op
         }
-        Err(err) => Err(anyhow::anyhow!(
-            "[{}::setup_loop] Failed to put group in OP state: {:?}",
-            module_path!(),
-            err
-        ))?,
+        Err(err) => 
+        {
+            Err(anyhow::anyhow!(
+                "[{}::setup_loop] Failed to put group in OP state: {:?}",
+                module_path!(),
+                err
+            ))?
+        }
+
+        
     };
     {
         // Notify client via socketio
@@ -398,9 +406,11 @@ pub async fn setup_loop(
     }
     tracing::info!("DONE WITH INIT");
 
-    return Ok(EthercatSetup {
+
+    return Err(anyhow::anyhow!("TESTING"));
+    /*return Ok(EthercatSetup {
         devices,
         group: group_op,
         maindevice,
-    });
+    });*/
 }
