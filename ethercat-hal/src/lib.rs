@@ -4,3 +4,4 @@ pub mod helpers;
 pub mod io;
 pub mod pdo;
 pub mod shared_config;
+pub mod debugging;
