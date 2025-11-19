@@ -6,8 +6,6 @@ const DIAGNOSIS_HISTORY_INDEX : u16 = 0x10f3;
 const MAXIMUM_MESSAGES : u8 = 01;
 const NEWEST_MESSAGE : u8 = 02;
 const NEW_MESSAGE_AVAILABLE : u8 = 04;
-// Diagnosis messages start at subindex 6
-const _DIAGNOSIS_MESSAGE_START : u8 = 06;
 const DIAG_MESSAGE_LENGTH : usize = 26;
 
 
@@ -102,8 +100,6 @@ impl SubdeviceDiagnosisEntry {
 */
 
 pub fn convert_raw_diagnosis_bytes(message : [u8; DIAG_MESSAGE_LENGTH]) -> Result<SubdeviceDiagnosisEntry,anyhow::Error> {
-	println!("{:?}",message);
-
 	let diag_code_bytes = [message[0],message[1],message[2],message[3]];
 	let diag_code = u32::from_le_bytes(diag_code_bytes);
 
@@ -117,7 +113,6 @@ pub fn convert_raw_diagnosis_bytes(message : [u8; DIAG_MESSAGE_LENGTH]) -> Resul
 	let timestamp = u64::from_le_bytes(timestamp_bytes);
 
 	let data_type_p1_bytes = [message[16],message[17]];
-	println!("{:?}",data_type_p1_bytes);
 	let data_type_p1 = u16::from_le_bytes(data_type_p1_bytes);
 
 	// TODO: Find the Constants
@@ -143,16 +138,6 @@ pub fn convert_raw_diagnosis_bytes(message : [u8; DIAG_MESSAGE_LENGTH]) -> Resul
 /// Expects the SubdeviceRef to be the Coupler or any other device with a diag history index
 pub async fn get_most_recent_diagnosis_message(device : &SubDeviceRef<'_,&SubDevice>) -> Option<String>
 {
-	let max_messages = device.sdo_read::<u8>(DIAGNOSIS_HISTORY_INDEX, MAXIMUM_MESSAGES).await;
-	let max_messages = match max_messages {
-    	Ok(m) => m,
-    	Err(e) => 
-    	{
-			tracing::error!("get_most_recent_diagnosis_message: Failed to read max_messages {:?}",e);
-			return None;
-    	},
-	};	
-
 	let new_message_available = device.sdo_read::<bool>(DIAGNOSIS_HISTORY_INDEX, NEW_MESSAGE_AVAILABLE).await;
 	let new_message_available = match new_message_available {
     	Ok(m) => m,
