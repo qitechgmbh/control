@@ -39,6 +39,11 @@ impl fmt::Display for SubdeviceDiagnosisEntry {
     }
 }
 
+/*	
+	Could be tested with this:
+		00 E8 00 A0 02 00 00 00 5F FB D5 A5 A6 0B 00 00 05 00 11 05 10 08 2A 00 2A 00
+*/
+
 pub fn convert_raw_diagnosis_bytes(message : [u8; DIAG_MESSAGE_LENGTH]) -> Result<SubdeviceDiagnosisEntry,anyhow::Error> {
 	
 	let diag_code_bytes = [message[0],message[1],message[2],message[3]];
