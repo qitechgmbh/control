@@ -268,7 +268,8 @@ pub async fn setup_loop(
             err
         ))?,
     };
-/*
+
+
     // create devices
     let devices =
         devices_from_subdevices::<MAX_SUBDEVICES, PDI_LEN>(&mut group_preop, &maindevice)?;
@@ -295,12 +296,11 @@ pub async fn setup_loop(
         .zip(&subdevices)
         .map(|((a, b), c)| (a, b, c))
         .collect::<Vec<_>>();
-*/
+
     let mut ethercat_meta_devices = app_state.ethercat_meta_data.write().await;
     ethercat_meta_devices.clear();
 
 
-/*
     // filter devices and if Option<DeviceMachineIdentification> is Some
     // return identified_devices, identified_device_identifications, identified_subdevices
     let (identified_device_identifications, identified_devices, identified_subdevices): (
@@ -338,9 +338,8 @@ pub async fn setup_loop(
         );
     tracing::info!("Found Devices: {:?}", ethercat_meta_devices);
     drop(ethercat_meta_devices);
-*/
 
-    let subdevices = group_preop.iter(&maindevice).collect::<Vec<_>>();
+
     // We always need to have atleast one subdevice anyways
     let coupler = subdevices.get(0).unwrap(); 
     let _resp = get_most_recent_diagnosis_message(coupler).await;
@@ -353,7 +352,7 @@ pub async fn setup_loop(
     }
 
     
-/*
+
     // remove subdevice from devices tuple
     let devices = devices
         .iter()
@@ -372,7 +371,7 @@ pub async fn setup_loop(
         app_state.clone().socketio_setup.socket_queue_tx.clone(),
     )
     .await?;
-  */  
+ 
     // Put group in operational state
     let group_op = match group_preop.into_op(&maindevice).await {
         Ok(group_op) => {
@@ -407,10 +406,9 @@ pub async fn setup_loop(
     tracing::info!("DONE WITH INIT");
 
 
-    return Err(anyhow::anyhow!("TESTING"));
-    /*return Ok(EthercatSetup {
+    return Ok(EthercatSetup {
         devices,
         group: group_op,
         maindevice,
-    });*/
+    });
 }
