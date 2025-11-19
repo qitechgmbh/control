@@ -99,7 +99,7 @@ The laser can emit an audible alarm if the measured diameter is out of tolerance
 Several communication parameters can be configured:
 
 - **Set UART:** Configure **parity (8N1)** and **baud rate (38400)**.
-- **Set Protocol:** Choose the communication protocol. *(We use Modbus RTU.)*
+- **Set Protocol:** Choose the communication protocol. _(We use Modbus RTU.)_
 - **Set Slave Address:** The slave address of our laser is **1**.
 
 <br>
@@ -109,4 +109,3 @@ Several communication parameters can be configured:
 The laser can be calibrated using **4 mm** and **8 mm** reference rods.
 
 <br><br>
-
