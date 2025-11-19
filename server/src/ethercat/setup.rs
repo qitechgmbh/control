@@ -269,7 +269,6 @@ pub async fn setup_loop(
         ))?,
     };
 
-
     // create devices
     let devices =
         devices_from_subdevices::<MAX_SUBDEVICES, PDI_LEN>(&mut group_preop, &maindevice)?;
@@ -299,7 +298,6 @@ pub async fn setup_loop(
 
     let mut ethercat_meta_devices = app_state.ethercat_meta_data.write().await;
     ethercat_meta_devices.clear();
-
 
     // filter devices and if Option<DeviceMachineIdentification> is Some
     // return identified_devices, identified_device_identifications, identified_subdevices
@@ -339,9 +337,8 @@ pub async fn setup_loop(
     tracing::info!("Found Devices: {:?}", ethercat_meta_devices);
     drop(ethercat_meta_devices);
 
-
     // We always need to have atleast one subdevice anyways
-    let coupler = subdevices.get(0).unwrap(); 
+    let coupler = subdevices.get(0).unwrap();
     let _resp = get_most_recent_diagnosis_message(coupler).await;
 
     for subdevice in subdevices.iter() {
@@ -350,8 +347,6 @@ pub async fn setup_loop(
             subdevice.sdo_write(SM_INPUT, 0x1, 0x00u16).await?; //set sync mode (1) for free run (0)
         }
     }
-
-    
 
     // remove subdevice from devices tuple
     let devices = devices
@@ -371,23 +366,18 @@ pub async fn setup_loop(
         app_state.clone().socketio_setup.socket_queue_tx.clone(),
     )
     .await?;
- 
+
     // Put group in operational state
     let group_op = match group_preop.into_op(&maindevice).await {
         Ok(group_op) => {
             tracing::info!("Group in OP state");
             group_op
         }
-        Err(err) => 
-        {
-            Err(anyhow::anyhow!(
-                "[{}::setup_loop] Failed to put group in OP state: {:?}",
-                module_path!(),
-                err
-            ))?
-        }
-
-        
+        Err(err) => Err(anyhow::anyhow!(
+            "[{}::setup_loop] Failed to put group in OP state: {:?}",
+            module_path!(),
+            err
+        ))?,
     };
     {
         // Notify client via socketio
@@ -404,7 +394,6 @@ pub async fn setup_loop(
         main_namespace.emit(MainNamespaceEvents::EthercatDevicesEvent(event));
     }
     tracing::info!("DONE WITH INIT");
-
 
     return Ok(EthercatSetup {
         devices,
