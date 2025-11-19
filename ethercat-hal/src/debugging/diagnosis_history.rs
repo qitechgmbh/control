@@ -3,7 +3,6 @@ use ethercrab::{SubDevice, SubDeviceRef};
 
 
 const DIAGNOSIS_HISTORY_INDEX : u16 = 0x10f3;
-const MAXIMUM_MESSAGES : u8 = 01;
 const NEWEST_MESSAGE : u8 = 02;
 const NEW_MESSAGE_AVAILABLE : u8 = 04;
 const DIAG_MESSAGE_LENGTH : usize = 26;
