@@ -17,4 +17,27 @@ For Grub add the kernel parameters to the LINUX_COMMANDLINE_DEFAULT:
 
 isolcpus=2,3 isolates the third and fourth core from the system scheduler, cutting down latency
 nohz_full=2,3 isolates third anf fourth core from kernel interrupts
-rcu_nocbs=2,3  
+rcu_nocbs=2,3 isolates read copy update from the given cpu cores, you guessed it less latency
+preempt="full" turns linux into a realtime capable OS. Offering deterministic Execution for programs
+
+After you changed the kernel parameters you have to rebuild the initramfs and bootloader, with something like grub.
+
+```
+# On Most Systems you need this command
+sudo update-grub
+# Or this one
+sudo update-grub2
+```
+
+If those commands dont work for you or you dont use grub then simply, 
+look up for your given distro what you need to do to persist kernel parameters.
+
+## Installation On Generic Linux
+
+This applies to any linux distro, that is not explicitily covered by this guide.
+
+### Download Rust-toolchain
+The easiest way is through rustup, simply execute the script as you home user and for everything keep it at defaults
+
+### Download Npm and Node
+The exact commands depend on which distro you use, but for most npm should exist as a package you can download in the package manager
