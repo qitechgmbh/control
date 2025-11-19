@@ -38,15 +38,16 @@ import { Buffer1ControlPage } from "@/machines/buffer/buffer1/Buffer1ControlPage
 import { Buffer1Page } from "@/machines/buffer/buffer1/Buffer1Page";
 import { Buffer1SettingsPage } from "@/machines/buffer/buffer1/Buffer1Settings";
 
+import { Laser1Page } from "@/machines/laser/laser1/Laser1Page";
 import { Laser1ControlPage } from "@/machines/laser/laser1/Laser1ControlPage";
 import { Laser1GraphsPage } from "@/machines/laser/laser1/Laser1Graph";
-import { Laser1Page } from "@/machines/laser/laser1/Laser1Page";
+import { Laser1ManualPage } from "@/machines/laser/laser1/Laser1Manual";
 import { Laser1PresetsPage } from "@/machines/laser/laser1/Laser1PresetsPage";
 
+import { Mock1Page } from "@/machines/mock/mock1/Mock1Page";
 import { Mock1ControlPage } from "@/machines/mock/mock1/Mock1ControlPage";
 import { Mock1GraphPage } from "@/machines/mock/mock1/Mock1Graph";
 import { Mock1ManualPage } from "@/machines/mock/mock1/Mock1Manual";
-import { Mock1Page } from "@/machines/mock/mock1/Mock1Page";
 import { Mock1PresetsPage } from "@/machines/mock/mock1/Mock1PresetsPage";
 
 import { Aquapath1ControlPage } from "@/machines/aquapath/aquapath1/Aquapath1ControlPage";
@@ -328,6 +329,12 @@ export const laser1PresetsRoute = createRoute({
   getParentRoute: () => laser1SerialRoute,
   path: "presets",
   component: () => <Laser1PresetsPage />,
+});
+
+export const laser1ManualRoute = createRoute({
+  getParentRoute: () => laser1SerialRoute,
+  path: "manual",
+  component: () => <Laser1ManualPage />,
 });
 
 export const mock1SerialRoute = createRoute({
