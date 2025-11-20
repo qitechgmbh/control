@@ -178,6 +178,28 @@ export function useGluetex() {
     }),
   );
 
+  // Addon Motor 3 mutations
+  const { request: requestAddonMotor3SetEnabled } = useMachineMutation(
+    z.object({ SetAddonMotor3Enabled: z.boolean() }),
+  );
+  const { request: requestAddonMotor3SetMasterRatio } = useMachineMutation(
+    z.object({ SetAddonMotor3MasterRatio: z.number() }),
+  );
+  const { request: requestAddonMotor3SetSlaveRatio } = useMachineMutation(
+    z.object({ SetAddonMotor3SlaveRatio: z.number() }),
+  );
+
+  // Addon Motor 4 mutations
+  const { request: requestAddonMotor4SetEnabled } = useMachineMutation(
+    z.object({ SetAddonMotor4Enabled: z.boolean() }),
+  );
+  const { request: requestAddonMotor4SetMasterRatio } = useMachineMutation(
+    z.object({ SetAddonMotor4MasterRatio: z.number() }),
+  );
+  const { request: requestAddonMotor4SetSlaveRatio } = useMachineMutation(
+    z.object({ SetAddonMotor4SlaveRatio: z.number() }),
+  );
+
   // ========== Helper Functions ==========
 
   // Helper function for optimistic updates using produce
@@ -596,22 +618,25 @@ export function useGluetex() {
 
   // ========== Action Functions (Addon Features - Local Only) ==========
 
-  const setStepper2Mode = (mode: StepperMode) => {
+  const setStepper3Mode = (mode: StepperMode) => {
     updateStateLocally((current) => {
-      current.data.stepper_state.stepper2_mode = mode;
+      current.data.stepper_state.stepper3_mode = mode;
     });
   };
 
-  const setStepper34Mode = (mode: StepperMode) => {
-    updateStateLocally((current) => {
-      current.data.stepper_state.stepper34_mode = mode;
-    });
-  };
-
-  const setCuttingUnitMode = (mode: StepperMode) => {
-    updateStateLocally((current) => {
-      current.data.stepper_state.cutting_unit_mode = mode;
-    });
+  const setStepper4Mode = (mode: StepperMode) => {
+    const enabled = mode === "Run";
+    updateStateOptimistically(
+      (current) => {
+        current.data.stepper_state.stepper4_mode = mode;
+      },
+      () => {
+        requestAddonMotor4SetEnabled({
+          machine_identification_unique: machineIdentification,
+          data: { SetAddonMotor4Enabled: enabled },
+        });
+      },
+    );
   };
 
   const setHeatingMode = (mode: HeatingMode) => {
@@ -645,27 +670,55 @@ export function useGluetex() {
   };
 
   const setStepper3Master = (value: number) => {
-    updateStateLocally((current) => {
-      current.data.motor_ratios_state.stepper3_master = value;
-    });
+    updateStateOptimistically(
+      (current) => {
+        current.data.motor_ratios_state.stepper3_master = value;
+      },
+      () =>
+        requestAddonMotor3SetMasterRatio({
+          machine_identification_unique: machineIdentification,
+          data: { SetAddonMotor3MasterRatio: value },
+        }),
+    );
   };
 
   const setStepper3Slave = (value: number) => {
-    updateStateLocally((current) => {
-      current.data.motor_ratios_state.stepper3_slave = value;
-    });
+    updateStateOptimistically(
+      (current) => {
+        current.data.motor_ratios_state.stepper3_slave = value;
+      },
+      () =>
+        requestAddonMotor3SetSlaveRatio({
+          machine_identification_unique: machineIdentification,
+          data: { SetAddonMotor3SlaveRatio: value },
+        }),
+    );
   };
 
   const setStepper4Master = (value: number) => {
-    updateStateLocally((current) => {
-      current.data.motor_ratios_state.stepper4_master = value;
-    });
+    updateStateOptimistically(
+      (current) => {
+        current.data.motor_ratios_state.stepper4_master = value;
+      },
+      () =>
+        requestAddonMotor4SetMasterRatio({
+          machine_identification_unique: machineIdentification,
+          data: { SetAddonMotor4MasterRatio: value },
+        }),
+    );
   };
 
   const setStepper4Slave = (value: number) => {
-    updateStateLocally((current) => {
-      current.data.motor_ratios_state.stepper4_slave = value;
-    });
+    updateStateOptimistically(
+      (current) => {
+        current.data.motor_ratios_state.stepper4_slave = value;
+      },
+      () =>
+        requestAddonMotor4SetSlaveRatio({
+          machine_identification_unique: machineIdentification,
+          data: { SetAddonMotor4SlaveRatio: value },
+        }),
+    );
   };
 
   // ========== Machine Filtering ==========
@@ -767,9 +820,8 @@ export function useGluetex() {
     disconnectMachine,
 
     // Addon action functions (local only)
-    setStepper2Mode,
-    setStepper34Mode,
-    setCuttingUnitMode,
+    setStepper3Mode,
+    setStepper4Mode,
     setHeatingMode,
     setTemperature1Min,
     setTemperature1Max,
