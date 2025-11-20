@@ -47,6 +47,8 @@ export const liveValuesEventDataSchema = z.object({
   heater_4_power: z.number(),
   heater_5_power: z.number(),
   heater_6_power: z.number(),
+  slave_puller_speed: z.number(),
+  slave_tension_arm_angle: z.number(),
 });
 
 /**
@@ -253,7 +255,15 @@ export type StepperMode = "Standby" | "Run";
 export type HeatingMode = "Standby" | "Heating";
 
 export type SlavePullerState = {
+  enabled: boolean;
   forward: boolean;
+  min_angle: number;
+  max_angle: number;
+  min_speed_factor: number | null;
+  max_speed_factor: number | null;
+  tension_arm: {
+    zeroed: boolean;
+  };
 };
 
 export type MotorRatiosState = {
@@ -355,6 +365,7 @@ export type GluetexNamespaceStore = {
 
   // Time series data for addons (local)
   slavePullerSpeed: TimeSeries;
+  slaveTensionArmAngle: TimeSeries;
 };
 
 // Constants for time durations
@@ -409,11 +420,23 @@ const { initialTimeSeries: heater6Power, insert: addHeater6Power } =
 // Create time series for addon values (local)
 const { initialTimeSeries: slavePullerSpeed, insert: addSlavePullerSpeed } =
   createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+const {
+  initialTimeSeries: slaveTensionArmAngle,
+  insert: addSlaveTensionArmAngle,
+} = createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
 
 // Default addon state
 const DEFAULT_ADDON_STATE = {
   slave_puller_state: {
+    enabled: false,
     forward: true,
+    min_angle: 20.0,
+    max_angle: 90.0,
+    min_speed_factor: null,
+    max_speed_factor: null,
+    tension_arm: {
+      zeroed: false,
+    },
   },
   motor_ratios_state: {
     stepper3_master: 1.0,
@@ -475,6 +498,7 @@ export const createGluetexNamespaceStore =
 
         // Time series data for addons
         slavePullerSpeed,
+        slaveTensionArmAngle,
       };
     });
 
@@ -577,6 +601,8 @@ export function gluetexMessageHandler(
           heater_4_power,
           heater_5_power,
           heater_6_power,
+          slave_puller_speed,
+          slave_tension_arm_angle,
         } = liveValuesEvent.data;
         const timestamp = liveValuesEvent.ts;
 
@@ -743,15 +769,23 @@ export function gluetexMessageHandler(
             heater6Value,
           );
 
-          // Simulate addon live values (these would come from backend in the future)
-          // For now, generate synthetic data based on puller speed
+          // Update slave puller data from backend
           const slavePullerValue: TimeSeriesValue = {
-            value: puller_speed * 0.95, // Slave runs slightly slower
+            value: slave_puller_speed,
             timestamp,
           };
           newState.slavePullerSpeed = addSlavePullerSpeed(
             state.slavePullerSpeed,
             slavePullerValue,
+          );
+
+          const slaveTensionArmValue: TimeSeriesValue = {
+            value: slave_tension_arm_angle,
+            timestamp,
+          };
+          newState.slaveTensionArmAngle = addSlaveTensionArmAngle(
+            state.slaveTensionArmAngle,
+            slaveTensionArmValue,
           );
 
           return newState;
