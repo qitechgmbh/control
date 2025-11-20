@@ -221,7 +221,8 @@ mod tests {
 
     #[test]
     fn test_slave_puller_angles() {
-        let converter = LinearStepConverter::from_circumference(200, Length::new::<millimeter>(50.0));
+        let converter =
+            LinearStepConverter::from_circumference(200, Length::new::<millimeter>(50.0));
         let filament_calc =
             FilamentTensionCalculator::new(Angle::new::<degree>(20.0), Angle::new::<degree>(90.0));
 
@@ -238,7 +239,8 @@ mod tests {
 
     #[test]
     fn test_slave_puller_enabled_state() {
-        let converter = LinearStepConverter::from_circumference(200, Length::new::<millimeter>(50.0));
+        let converter =
+            LinearStepConverter::from_circumference(200, Length::new::<millimeter>(50.0));
         let filament_calc =
             FilamentTensionCalculator::new(Angle::new::<degree>(20.0), Angle::new::<degree>(90.0));
 
@@ -260,7 +262,8 @@ mod tests {
 
     #[test]
     fn test_optional_speed_factors() {
-        let converter = LinearStepConverter::from_circumference(200, Length::new::<millimeter>(50.0));
+        let converter =
+            LinearStepConverter::from_circumference(200, Length::new::<millimeter>(50.0));
         let filament_calc =
             FilamentTensionCalculator::new(Angle::new::<degree>(20.0), Angle::new::<degree>(90.0));
 
