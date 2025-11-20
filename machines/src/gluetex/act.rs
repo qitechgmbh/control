@@ -15,6 +15,10 @@ impl MachineAct for Gluetex {
         // sync the puller speed
         self.sync_puller_speed(now);
 
+        // sync addon motor speeds
+        self.sync_addon_motor_3_speed(now);
+        self.sync_addon_motor_4_speed(now);
+
         // sync the traverse speed
         self.sync_traverse_speed();
 

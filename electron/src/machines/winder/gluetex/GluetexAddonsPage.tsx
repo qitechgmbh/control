@@ -25,9 +25,8 @@ export function GluetexAddonsPage() {
     defaultState,
     isLoading,
     isDisabled,
-    setStepper2Mode,
-    setStepper34Mode,
-    setCuttingUnitMode,
+    setStepper3Mode,
+    setStepper4Mode,
     setHeatingMode,
     temperature1,
     temperature2,
@@ -53,12 +52,12 @@ export function GluetexAddonsPage() {
     <Page>
       <ControlGrid>
         <ControlCard className="bg-red" title="Motors">
-          <Label label="Stepper 2">
+          <Label label="Stepper 3">
             <SelectionGroup<StepperMode>
-              value={state?.stepper_state?.stepper2_mode}
+              value={state?.stepper_state?.stepper3_mode}
               disabled={isDisabled}
               loading={isLoading}
-              onChange={setStepper2Mode}
+              onChange={setStepper3Mode}
               orientation="horizontal"
               className="grid grid-cols-2 gap-2"
               options={{
@@ -75,34 +74,12 @@ export function GluetexAddonsPage() {
               }}
             />
           </Label>
-          <Label label="Stepper 3&4">
+          <Label label="Stepper 4">
             <SelectionGroup<StepperMode>
-              value={state?.stepper_state?.stepper34_mode}
+              value={state?.stepper_state?.stepper4_mode}
               disabled={isDisabled}
               loading={isLoading}
-              onChange={setStepper34Mode}
-              orientation="horizontal"
-              className="grid grid-cols-2 gap-2"
-              options={{
-                Standby: {
-                  children: "Standby",
-                  icon: "lu:Power",
-                  isActiveClassName: "bg-green-600",
-                },
-                Run: {
-                  children: "Run",
-                  icon: "lu:Play",
-                  isActiveClassName: "bg-green-600",
-                },
-              }}
-            />
-          </Label>
-          <Label label="Cutting Unit">
-            <SelectionGroup<StepperMode>
-              value={state?.stepper_state?.cutting_unit_mode}
-              disabled={isDisabled}
-              loading={isLoading}
-              onChange={setCuttingUnitMode}
+              onChange={setStepper4Mode}
               orientation="horizontal"
               className="grid grid-cols-2 gap-2"
               options={{
