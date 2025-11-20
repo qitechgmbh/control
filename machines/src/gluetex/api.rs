@@ -18,6 +18,7 @@ mod gluetex_imports {
         time::{Duration, Instant},
     };
     pub use tracing::instrument;
+    pub use units::{Angle, angle::degree};
 }
 
 pub use gluetex_imports::*;
@@ -141,6 +142,15 @@ pub enum Mutation {
     SetAddonMotor3SlaveRatio(f64),
     SetAddonMotor4MasterRatio(f64),
     SetAddonMotor4SlaveRatio(f64),
+
+    // Slave Puller
+    SetSlavePullerEnabled(bool),
+    SetSlavePullerForward(bool),
+    SetSlavePullerMinAngle(f64),
+    SetSlavePullerMaxAngle(f64),
+    SetSlavePullerMinSpeedFactor(f64),
+    SetSlavePullerMaxSpeedFactor(f64),
+    ZeroSlaveTensionArm,
 }
 
 #[derive(Serialize, Debug, Clone, Default)]
@@ -179,6 +189,10 @@ pub struct LiveValuesEvent {
     pub heater_5_power: f64,
     /// heater 6 power in watts
     pub heater_6_power: f64,
+    /// slave puller speed in m/min
+    pub slave_puller_speed: f64,
+    /// slave tension arm angle in degrees
+    pub slave_tension_arm_angle: f64,
 }
 
 impl LiveValuesEvent {
@@ -210,6 +224,8 @@ pub struct StateEvent {
     pub addon_motor_3_state: AddonMotorState,
     /// addon motor 4 state
     pub addon_motor_4_state: AddonMotorState,
+    /// slave puller state
+    pub slave_puller_state: SlavePullerState,
 }
 
 #[derive(Serialize, Debug, Clone, Default)]
@@ -318,6 +334,30 @@ pub struct AddonMotorState {
     pub master_ratio: f64,
     /// slave ratio value (e.g., 1 in "2:1")
     pub slave_ratio: f64,
+}
+
+#[derive(Serialize, Debug, Clone, Default)]
+pub struct SlavePullerState {
+    /// is slave puller enabled
+    pub enabled: bool,
+    /// forward rotation direction
+    pub forward: bool,
+    /// minimum tension arm angle for detection zone (degrees)
+    pub min_angle: f64,
+    /// maximum tension arm angle for detection zone (degrees)
+    pub max_angle: f64,
+    /// minimum speed factor for overspeed protection (optional)
+    pub min_speed_factor: Option<f64>,
+    /// maximum speed factor for overspeed protection (optional)
+    pub max_speed_factor: Option<f64>,
+    /// slave tension arm state
+    pub tension_arm: SlaveTensionArmState,
+}
+
+#[derive(Serialize, Debug, Clone, Default)]
+pub struct SlaveTensionArmState {
+    /// is zeroed
+    pub zeroed: bool,
 }
 
 #[derive(Serialize, Debug, Clone, Default)]
@@ -479,6 +519,38 @@ impl MachineApi for Gluetex {
             }
             Mutation::SetAddonMotor4SlaveRatio(ratio) => {
                 self.addon_motor_4_controller.set_slave_ratio(ratio);
+                self.emit_state();
+            }
+            Mutation::SetSlavePullerEnabled(enabled) => {
+                self.slave_puller_speed_controller.set_enabled(enabled);
+                self.emit_state();
+            }
+            Mutation::SetSlavePullerForward(forward) => {
+                self.slave_puller_speed_controller.set_forward(forward);
+                self.emit_state();
+            }
+            Mutation::SetSlavePullerMinAngle(angle_deg) => {
+                self.slave_puller_speed_controller
+                    .set_min_angle(Angle::new::<degree>(angle_deg));
+                self.emit_state();
+            }
+            Mutation::SetSlavePullerMaxAngle(angle_deg) => {
+                self.slave_puller_speed_controller
+                    .set_max_angle(Angle::new::<degree>(angle_deg));
+                self.emit_state();
+            }
+            Mutation::SetSlavePullerMinSpeedFactor(factor) => {
+                self.slave_puller_speed_controller
+                    .set_min_speed_factor(Some(factor));
+                self.emit_state();
+            }
+            Mutation::SetSlavePullerMaxSpeedFactor(factor) => {
+                self.slave_puller_speed_controller
+                    .set_max_speed_factor(Some(factor));
+                self.emit_state();
+            }
+            Mutation::ZeroSlaveTensionArm => {
+                self.slave_tension_arm.zero();
                 self.emit_state();
             }
         }
