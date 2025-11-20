@@ -8,6 +8,7 @@ pub mod filament_tension;
 pub mod minmax_spool_speed_controller;
 pub mod new;
 pub mod puller_speed_controller;
+pub mod slave_puller_speed_controller;
 pub mod spool_speed_controller;
 pub mod temperature_controller;
 pub mod tension_arm;
@@ -22,6 +23,7 @@ mod gluetex_imports {
     pub use super::api::GluetexNamespace;
     pub use super::api::SpoolAutomaticActionMode;
     pub use super::puller_speed_controller::PullerSpeedController;
+    pub use super::slave_puller_speed_controller::SlavePullerSpeedController;
     pub use super::spool_speed_controller::SpoolSpeedController;
     pub use super::temperature_controller::TemperatureController;
     pub use super::tension_arm::TensionArm;
@@ -160,6 +162,12 @@ pub struct Gluetex {
 
     // control circuit puller
     pub puller_speed_controller: PullerSpeedController,
+
+    // slave puller (secondary puller with tension control)
+    pub slave_puller: StepperVelocityEL70x1,
+    pub slave_puller_speed_controller: SlavePullerSpeedController,
+    pub slave_tension_arm: TensionArm,
+    pub slave_puller_mode: PullerMode,
 
     /// Will be initialized as false and set to true by emit_state
     /// This way we can signal to the client that the first state emission is a default state
@@ -384,6 +392,90 @@ impl Gluetex {
         let puller_angular_velocity = self.puller_speed_controller.calc_angular_velocity(t);
         self.addon_motor_4_controller
             .sync_motor_speed(&mut self.addon_motor_4, puller_angular_velocity);
+    }
+
+    /// Sync slave puller speed based on master puller speed and slave tension arm
+    /// called by `act`
+    pub fn sync_slave_puller_speed(&mut self, t: Instant) {
+        // Get master puller speed as reference
+        let master_speed = self.puller_speed_controller.get_target_speed();
+
+        // Calculate slave speed based on tension arm
+        let slave_velocity = self.slave_puller_speed_controller.update_speed(
+            t,
+            master_speed,
+            &self.slave_tension_arm,
+        );
+
+        // Apply direction
+        let directed_velocity = if self.slave_puller_speed_controller.get_forward() {
+            slave_velocity
+        } else {
+            -slave_velocity
+        };
+
+        // Convert to angular velocity then to steps
+        let angular_velocity = self
+            .slave_puller_speed_controller
+            .velocity_to_angular_velocity(directed_velocity);
+
+        let steps_per_second = self
+            .slave_puller_speed_controller
+            .converter
+            .angular_velocity_to_steps(angular_velocity);
+
+        let _ = self.slave_puller.set_speed(steps_per_second);
+    }
+
+    /// Apply the mode changes to the slave puller
+    ///
+    /// It contains a transition matrix for atomic changes.
+    /// It will set [`Self::slave_puller_mode`]
+    fn set_slave_puller_mode(&mut self, mode: &GluetexMode) {
+        // Convert to `GluetexMode` to `PullerMode`
+        let mode: PullerMode = mode.clone().into();
+
+        // Transition matrix
+        match self.slave_puller_mode {
+            PullerMode::Standby => match mode {
+                PullerMode::Standby => {}
+                PullerMode::Hold => {
+                    // From [`PullerMode::Standby`] to [`PullerMode::Hold`]
+                    self.slave_puller.set_enabled(true);
+                }
+                PullerMode::Pull => {
+                    // From [`PullerMode::Standby`] to [`PullerMode::Pull`]
+                    self.slave_puller.set_enabled(true);
+                    self.slave_puller_speed_controller.set_enabled(true);
+                }
+            },
+            PullerMode::Hold => match mode {
+                PullerMode::Standby => {
+                    // From [`PullerMode::Hold`] to [`PullerMode::Standby`]
+                    self.slave_puller.set_enabled(false);
+                }
+                PullerMode::Hold => {}
+                PullerMode::Pull => {
+                    // From [`PullerMode::Hold`] to [`PullerMode::Pull`]
+                    self.slave_puller_speed_controller.set_enabled(true);
+                }
+            },
+            PullerMode::Pull => match mode {
+                PullerMode::Standby => {
+                    // From [`PullerMode::Pull`] to [`PullerMode::Standby`]
+                    self.slave_puller.set_enabled(false);
+                    self.slave_puller_speed_controller.set_enabled(false);
+                }
+                PullerMode::Hold => {
+                    // From [`PullerMode::Pull`] to [`PullerMode::Hold`]
+                    self.slave_puller_speed_controller.set_enabled(false);
+                }
+                PullerMode::Pull => {}
+            },
+        }
+
+        // Update the internal state
+        self.slave_puller_mode = mode;
     }
 }
 
