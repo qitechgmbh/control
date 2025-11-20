@@ -214,6 +214,15 @@ export const heatingStatesSchema = z.object({
 });
 
 /**
+ * Addon motor state schema (from backend)
+ */
+export const addonMotorStateSchema = z.object({
+  enabled: z.boolean(),
+  master_ratio: z.number(),
+  slave_ratio: z.number(),
+});
+
+/**
  * Consolidated state event schema (state changes only) - from backend
  */
 export const stateEventDataSchema = z.object({
@@ -226,6 +235,8 @@ export const stateEventDataSchema = z.object({
   spool_automatic_action_state: spoolAutomaticActionStateSchema,
   heating_states: heatingStatesSchema,
   connected_machine_state: connectedMachineStateSchema,
+  addon_motor_3_state: addonMotorStateSchema,
+  addon_motor_4_state: addonMotorStateSchema,
 });
 
 // ========== Event Schemas with Wrappers ==========
@@ -253,10 +264,33 @@ export type MotorRatiosState = {
 };
 
 export type StepperState = {
-  stepper2_mode: StepperMode;
-  stepper34_mode: StepperMode;
-  cutting_unit_mode: StepperMode;
+  stepper3_mode: StepperMode;
+  stepper4_mode: StepperMode;
 };
+
+/**
+ * Helper to convert backend addon motor state to frontend MotorRatiosState
+ */
+function getMotorRatiosFromBackend(
+  motor3: z.infer<typeof addonMotorStateSchema>,
+  motor4: z.infer<typeof addonMotorStateSchema>,
+): MotorRatiosState {
+  return {
+    stepper3_master: motor3.master_ratio,
+    stepper3_slave: motor3.slave_ratio,
+    stepper4_master: motor4.master_ratio,
+    stepper4_slave: motor4.slave_ratio,
+  };
+}
+
+/**
+ * Helper to determine stepper4 mode from backend enabled state
+ */
+function getStepper4ModeFromBackend(
+  motor4: z.infer<typeof addonMotorStateSchema>,
+): StepperMode {
+  return motor4.enabled ? "Run" : "Standby";
+}
 
 export type HeatingState = {
   heating_mode: HeatingMode;
@@ -388,9 +422,8 @@ const DEFAULT_ADDON_STATE = {
     stepper4_slave: 1.0,
   },
   stepper_state: {
-    stepper2_mode: "Standby" as StepperMode,
-    stepper34_mode: "Standby" as StepperMode,
-    cutting_unit_mode: "Standby" as StepperMode,
+    stepper3_mode: "Standby" as StepperMode,
+    stepper4_mode: "Standby" as StepperMode,
   },
   heating_state: {
     heating_mode: "Standby" as HeatingMode,
@@ -472,19 +505,32 @@ export function gluetexMessageHandler(
         const stateEvent = stateEventSchema.parse(event);
 
         updateStore((state) => {
-          // Extend backend state with addon state
+          // Derive motor ratios from backend addon motor state
+          const motorRatiosState = getMotorRatiosFromBackend(
+            stateEvent.data.addon_motor_3_state,
+            stateEvent.data.addon_motor_4_state,
+          );
+
+          // Derive stepper4 mode from backend enabled state
+          const stepper4Mode = getStepper4ModeFromBackend(
+            stateEvent.data.addon_motor_4_state,
+          );
+
+          // Extend backend state with addon state (some local, some derived from backend)
           const extendedData: ExtendedStateEventData = {
             ...stateEvent.data,
-            // Preserve existing addon state or use defaults
+            // Preserve existing local-only addon state
             slave_puller_state:
               state.state?.data.slave_puller_state ||
               DEFAULT_ADDON_STATE.slave_puller_state,
-            motor_ratios_state:
-              state.state?.data.motor_ratios_state ||
-              DEFAULT_ADDON_STATE.motor_ratios_state,
-            stepper_state:
-              state.state?.data.stepper_state ||
-              DEFAULT_ADDON_STATE.stepper_state,
+            // Derive from backend addon motor state
+            motor_ratios_state: motorRatiosState,
+            stepper_state: {
+              stepper3_mode:
+                state.state?.data.stepper_state.stepper3_mode ||
+                DEFAULT_ADDON_STATE.stepper_state.stepper3_mode,
+              stepper4_mode: stepper4Mode,
+            },
             heating_state:
               state.state?.data.heating_state ||
               DEFAULT_ADDON_STATE.heating_state,
