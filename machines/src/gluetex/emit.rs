@@ -84,9 +84,10 @@ impl Gluetex {
             // all transitions are allowed
             self.mode = mode.clone();
 
-            // Apply the mode changes to the spool and puller
+            // Apply the mode changes to the spool, puller, slave puller, and traverse
             self.set_spool_mode(mode);
             self.set_puller_mode(mode);
+            self.set_slave_puller_mode(mode);
             self.set_traverse_mode(mode);
         }
         self.emit_state();
@@ -228,6 +229,23 @@ impl Gluetex {
             heater_4_power: self.temperature_controller_4.get_heating_element_wattage(),
             heater_5_power: self.temperature_controller_5.get_heating_element_wattage(),
             heater_6_power: self.temperature_controller_6.get_heating_element_wattage(),
+            slave_puller_speed: {
+                let steps_per_second = self.slave_puller.get_speed();
+                let angular_velocity = self
+                    .slave_puller_speed_controller
+                    .converter
+                    .steps_to_angular_velocity(steps_per_second as f64);
+                let speed = self
+                    .slave_puller_speed_controller
+                    .converter
+                    .angular_velocity_to_velocity(angular_velocity);
+                speed.get::<meter_per_minute>().abs()
+            },
+            slave_tension_arm_angle: {
+                let angle = self.slave_tension_arm.get_angle().get::<degree>();
+                // Wrap [270;<360] to [-90; 0]
+                if angle >= 270.0 { angle - 360.0 } else { angle }
+            },
         };
 
         let event = live_values.build();
@@ -387,6 +405,23 @@ impl Gluetex {
                 enabled: self.addon_motor_4_controller.is_enabled(),
                 master_ratio: self.addon_motor_4_controller.get_master_ratio(),
                 slave_ratio: self.addon_motor_4_controller.get_slave_ratio(),
+            },
+            slave_puller_state: api::SlavePullerState {
+                enabled: self.slave_puller_speed_controller.is_enabled(),
+                forward: self.slave_puller_speed_controller.get_forward(),
+                min_angle: self
+                    .slave_puller_speed_controller
+                    .get_min_angle()
+                    .get::<degree>(),
+                max_angle: self
+                    .slave_puller_speed_controller
+                    .get_max_angle()
+                    .get::<degree>(),
+                min_speed_factor: self.slave_puller_speed_controller.get_min_speed_factor(),
+                max_speed_factor: self.slave_puller_speed_controller.get_max_speed_factor(),
+                tension_arm: api::SlaveTensionArmState {
+                    zeroed: self.slave_tension_arm.zeroed,
+                },
             },
         }
     }
