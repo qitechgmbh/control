@@ -720,3 +720,7 @@ The following persons must not work on the machine:
 ![QiTech Pro Extruder Electrical Diagram 2025 - Sheet 8](images/manuals/extruder/QiTech_Pro_Extruder_Electrical_Diagram_2025_8-008.png)
 
 ![QiTech Pro Extruder Electrical Diagram 2025 - Sheet 9](images/manuals/extruder/QiTech_Pro_Extruder_Electrical_Diagram_2025_9-009.png)
+
+## Mechanical Diagrams
+
+![QiTech Pro Extruder Nozzle 2025](images/manuals/extruder/Nozzle.png)

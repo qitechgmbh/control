@@ -1,12 +1,7 @@
-use std::{sync::Arc, time::Instant};
-
-use control_core::{machines::api::MachineApi, socketio::namespace::Namespace};
-use serde_json::Value;
-use smol::lock::Mutex;
-
-use crate::machines::winder2::api::Mutation;
-
 use super::Winder2;
+use crate::{MachineApi, winder2::api::Mutation};
+use serde_json::Value;
+use std::time::Instant;
 
 impl MachineApi for Winder2 {
     fn api_mutate(&mut self, request_body: Value) -> Result<(), anyhow::Error> {
@@ -61,7 +56,13 @@ impl MachineApi for Winder2 {
         Ok(())
     }
 
-    fn api_event_namespace(&mut self) -> Arc<Mutex<Namespace>> {
+    fn api_event_namespace(
+        &mut self,
+    ) -> std::option::Option<control_core::socketio::namespace::Namespace> {
         self.namespace.namespace.clone()
+    }
+
+    fn api_get_sender(&self) -> smol::channel::Sender<crate::MachineMessage> {
+        self.api_sender.clone()
     }
 }

@@ -19,9 +19,8 @@ mod winder2_imports {
     pub use super::api::SpoolAutomaticActionMode;
     pub use std::time::Instant;
     pub use units::f64::Length;
+    pub use units::length::meter;
 }
-
-use units::Length;
 
 #[cfg(not(feature = "mock-machine"))]
 mod winder2_imports {
@@ -36,19 +35,19 @@ mod winder2_imports {
         digital_input::DigitalInput, digital_output::DigitalOutput,
         stepper_velocity_el70x1::StepperVelocityEL70x1,
     };
+    pub use smol::channel::{Receiver, Sender};
     pub use smol::lock::RwLock;
     pub use std::{fmt::Debug, sync::Weak, time::Instant};
 
     pub use crate::buffer1::BufferV1;
+    pub use crate::{AsyncThreadMessage, Machine};
     pub use units::ConstZero;
+    pub use units::f64::Length;
     pub use units::{length::meter, length::millimeter, velocity::meter_per_second};
 }
 
-#[cfg(not(feature = "mock-machine"))]
-use smol::channel::{Receiver, Sender};
 pub use winder2_imports::*;
 
-use crate::{AsyncThreadMessage, Machine};
 #[cfg(not(feature = "mock-machine"))]
 use crate::{
     MACHINE_WINDER_V1, MachineConnection, MachineMessage, VENDOR_QITECH,
@@ -74,6 +73,7 @@ impl Default for SpoolAutomaticAction {
     }
 }
 
+#[cfg(not(feature = "mock-machine"))]
 impl Machine for Winder2 {
     fn get_machine_identification_unique(&self) -> MachineIdentificationUnique {
         self.machine_identification_unique.clone()

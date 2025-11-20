@@ -1,8 +1,8 @@
-use crate::machines::extruder1::{HeatingType, api::Mutation, mock::ExtruderV2};
-use control_core::machines::api::MachineApi;
-use control_core::socketio::namespace::Namespace;
-use smol::lock::Mutex;
-use std::sync::Arc;
+use super::ExtruderV2;
+use crate::{
+    MachineApi,
+    extruder1::{HeatingType, api::Mutation},
+};
 
 impl MachineApi for ExtruderV2 {
     fn api_mutate(&mut self, request_body: serde_json::Value) -> Result<(), anyhow::Error> {
@@ -45,7 +45,13 @@ impl MachineApi for ExtruderV2 {
         Ok(())
     }
 
-    fn api_event_namespace(&mut self) -> Arc<Mutex<Namespace>> {
+    fn api_event_namespace(
+        &mut self,
+    ) -> std::option::Option<control_core::socketio::namespace::Namespace> {
         self.namespace.namespace.clone()
+    }
+
+    fn api_get_sender(&self) -> smol::channel::Sender<crate::MachineMessage> {
+        self.api_sender.clone()
     }
 }
