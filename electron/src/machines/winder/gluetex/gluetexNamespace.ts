@@ -204,6 +204,28 @@ export const heatingStateSchema = z.object({
 });
 
 /**
+ * Heating PID settings schema
+ */
+export const heatingPidSettingsSchema = z.object({
+  ki: z.number(),
+  kp: z.number(),
+  kd: z.number(),
+  zone: z.string(),
+});
+
+/**
+ * Heating PID states schema
+ */
+export const heatingPidStatesSchema = z.object({
+  zone_1: heatingPidSettingsSchema,
+  zone_2: heatingPidSettingsSchema,
+  zone_3: heatingPidSettingsSchema,
+  zone_4: heatingPidSettingsSchema,
+  zone_5: heatingPidSettingsSchema,
+  zone_6: heatingPidSettingsSchema,
+});
+
+/**
  * Heating states schema
  */
 export const heatingStatesSchema = z.object({
@@ -236,6 +258,7 @@ export const stateEventDataSchema = z.object({
   spool_speed_controller_state: spoolSpeedControllerStateSchema,
   spool_automatic_action_state: spoolAutomaticActionStateSchema,
   heating_states: heatingStatesSchema,
+  heating_pid_settings: heatingPidStatesSchema,
   connected_machine_state: connectedMachineStateSchema,
   addon_motor_3_state: addonMotorStateSchema,
   addon_motor_4_state: addonMotorStateSchema,
