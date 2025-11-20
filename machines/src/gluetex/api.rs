@@ -37,12 +37,12 @@ pub enum HeatingZone {
     Zone6,
 }
 
-#[derive(Deserialize, Serialize, Debug, Clone)]
+#[derive(Deserialize, Serialize, Debug, Clone, Default)]
 pub struct HeatingPidSettings {
-    pub zone: String,
     pub ki: f64,
     pub kp: f64,
     pub kd: f64,
+    pub zone: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
@@ -218,6 +218,8 @@ pub struct StateEvent {
     pub spool_speed_controller_state: SpoolSpeedControllerState,
     /// heating states
     pub heating_states: HeatingStates,
+    /// PID settings for heating zones
+    pub heating_pid_settings: HeatingPidStates,
     /// Is a Machine Connected?
     pub connected_machine_state: MachineCrossConnectionState,
     /// addon motor 3 state
@@ -376,6 +378,16 @@ pub struct HeatingState {
     pub target_temperature: f64,
     /// wiring error detected
     pub wiring_error: bool,
+}
+
+#[derive(Serialize, Debug, Clone, Default)]
+pub struct HeatingPidStates {
+    pub zone_1: HeatingPidSettings,
+    pub zone_2: HeatingPidSettings,
+    pub zone_3: HeatingPidSettings,
+    pub zone_4: HeatingPidSettings,
+    pub zone_5: HeatingPidSettings,
+    pub zone_6: HeatingPidSettings,
 }
 
 pub enum GluetexEvents {

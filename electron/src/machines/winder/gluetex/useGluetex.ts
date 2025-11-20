@@ -224,6 +224,17 @@ export function useGluetex() {
     z.literal("ZeroSlaveTensionArm"),
   );
 
+  const { request: requestConfigureHeatingPid } = useMachineMutation(
+    z.object({
+      ConfigureHeatingPid: z.object({
+        zone: z.string(),
+        kp: z.number(),
+        ki: z.number(),
+        kd: z.number(),
+      }),
+    }),
+  );
+
   // ========== Helper Functions ==========
 
   // Helper function for optimistic updates using produce
@@ -838,6 +849,27 @@ export function useGluetex() {
     );
   };
 
+  const setHeatingPid = (zone: string, kp: number, ki: number, kd: number) => {
+    updateStateOptimistically(
+      (current) => {
+        const heatingPidSettings =
+          current.data.heating_pid_settings[
+            zone as keyof typeof current.data.heating_pid_settings
+          ];
+        if (heatingPidSettings) {
+          heatingPidSettings.kp = kp;
+          heatingPidSettings.ki = ki;
+          heatingPidSettings.kd = kd;
+        }
+      },
+      () =>
+        requestConfigureHeatingPid({
+          machine_identification_unique: machineIdentification,
+          data: { ConfigureHeatingPid: { zone, kp, ki, kd } },
+        }),
+    );
+  };
+
   // ========== Machine Filtering ==========
 
   const machines = useMachines();
@@ -945,6 +977,9 @@ export function useGluetex() {
     setSlavePullerMinSpeedFactor,
     setSlavePullerMaxSpeedFactor,
     zeroSlaveTensionArm,
+
+    // Heating action functions
+    setHeatingPid,
 
     // Addon action functions (local only)
     setStepper3Mode,
