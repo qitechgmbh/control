@@ -44,6 +44,13 @@ export function GluetexSettingPage() {
     filteredMachines,
     setConnectedMachine,
     disconnectMachine,
+    setSlavePullerEnabled,
+    setSlavePullerForward,
+    setSlavePullerMinAngle,
+    setSlavePullerMaxAngle,
+    setSlavePullerMinSpeedFactor,
+    setSlavePullerMaxSpeedFactor,
+    zeroSlaveTensionArm,
   } = useGluetex();
 
   const handleXlModeChange = (enabled: boolean) => {
@@ -354,6 +361,121 @@ export function GluetexSettingPage() {
             />
           </Label>
         </ControlCard>
+
+        <ControlCard title="Slave Puller">
+          <Label label="Enable Slave Puller">
+            <SelectionGroupBoolean
+              value={state?.slave_puller_state?.enabled}
+              disabled={isDisabled}
+              loading={isLoading}
+              optionFalse={{
+                children: "Disabled",
+                icon: "lu:Circle",
+              }}
+              optionTrue={{
+                children: "Enabled",
+                icon: "lu:Circle",
+              }}
+              onChange={(value) => setSlavePullerEnabled(value)}
+            />
+          </Label>
+
+          <Label label="Rotation Direction">
+            <SelectionGroupBoolean
+              value={state?.slave_puller_state?.forward}
+              disabled={isDisabled}
+              loading={isLoading}
+              optionFalse={{
+                children: "Reverse",
+                icon: "lu:RotateCcw",
+              }}
+              optionTrue={{
+                children: "Forward",
+                icon: "lu:RotateCw",
+              }}
+              onChange={(value) => setSlavePullerForward(value)}
+            />
+          </Label>
+
+          <div className="flex flex-row flex-wrap gap-4">
+            <Label label="Min Angle (Detection Zone)">
+              <EditValue
+                value={state?.slave_puller_state?.min_angle}
+                title={"Minimum Angle"}
+                unit="deg"
+                step={1}
+                min={0}
+                max={
+                  state?.slave_puller_state?.max_angle
+                    ? state.slave_puller_state.max_angle - 5
+                    : 85
+                }
+                defaultValue={20}
+                renderValue={(value) => roundToDecimals(value, 0)}
+                onChange={(value) => setSlavePullerMinAngle(value)}
+              />
+            </Label>
+
+            <Label label="Max Angle (Detection Zone)">
+              <EditValue
+                value={state?.slave_puller_state?.max_angle}
+                title={"Maximum Angle"}
+                unit="deg"
+                step={1}
+                min={
+                  state?.slave_puller_state?.min_angle
+                    ? state.slave_puller_state.min_angle + 5
+                    : 25
+                }
+                max={180}
+                defaultValue={90}
+                renderValue={(value) => roundToDecimals(value, 0)}
+                onChange={(value) => setSlavePullerMaxAngle(value)}
+              />
+            </Label>
+
+            <Label label="Min Speed Factor (Optional)">
+              <EditValue
+                value={state?.slave_puller_state?.min_speed_factor ?? 0}
+                title={"Minimum Speed Factor"}
+                unit={undefined}
+                step={0.05}
+                min={0.1}
+                max={
+                  state?.slave_puller_state?.max_speed_factor
+                    ? state.slave_puller_state.max_speed_factor - 0.1
+                    : 2
+                }
+                defaultValue={0}
+                renderValue={(value) => roundToDecimals(value, 2)}
+                onChange={(value) =>
+                  setSlavePullerMinSpeedFactor(value === 0 ? null : value)
+                }
+              />
+            </Label>
+
+            <Label label="Max Speed Factor (Optional)">
+              <EditValue
+                value={state?.slave_puller_state?.max_speed_factor ?? 0}
+                title={"Maximum Speed Factor"}
+                unit={undefined}
+                step={0.05}
+                min={
+                  state?.slave_puller_state?.min_speed_factor
+                    ? state.slave_puller_state.min_speed_factor + 0.1
+                    : 0.2
+                }
+                max={3}
+                defaultValue={0}
+                renderValue={(value) => roundToDecimals(value, 2)}
+                onChange={(value) =>
+                  setSlavePullerMaxSpeedFactor(value === 0 ? null : value)
+                }
+              />
+            </Label>
+          </div>
+        </ControlCard>
+
         <MachineSelector
           machines={filteredMachines}
           selectedMachine={selectedMachine}
