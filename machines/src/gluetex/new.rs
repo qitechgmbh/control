@@ -1,8 +1,10 @@
 mod gluetex_imports {
     pub use super::super::api::GluetexNamespace;
     pub use super::super::tension_arm::TensionArm;
-    pub use super::super::{Gluetex, GluetexMode};
+    pub use super::super::{Gluetex, GluetexMode, PullerMode};
+    pub use crate::gluetex::filament_tension::FilamentTensionCalculator;
     pub use crate::gluetex::puller_speed_controller::PullerSpeedController;
+    pub use crate::gluetex::slave_puller_speed_controller::SlavePullerSpeedController;
     pub use crate::gluetex::spool_speed_controller::SpoolSpeedController;
     pub use crate::gluetex::traverse_controller::TraverseController;
     pub use crate::{
@@ -45,6 +47,7 @@ mod gluetex_imports {
     pub use ethercat_hal::shared_config::el70x1::{EL70x1OperationMode, StmMotorConfiguration};
     pub use std::time::{Duration, Instant};
     pub use units::ConstZero;
+    pub use units::angle::degree;
     pub use units::f64::*;
     pub use units::length::{centimeter, meter, millimeter};
     pub use units::thermodynamic_temperature::degree_celsius;
@@ -298,6 +301,38 @@ impl MachineNewTrait for Gluetex {
                 device.0
             };
 
+            // Role 11: Slave Puller EL7031-0030 (with analog input for tension arm)
+            let el7031_0030_slave = {
+                let device = get_ethercat_device::<EL7031_0030>(
+                    hardware,
+                    params,
+                    11,
+                    vec![EL7031_0030_IDENTITY_A],
+                )
+                .await?;
+
+                let el7031_0030_config = EL7031_0030Configuration {
+                    stm_features: el7031_0030::coe::StmFeatures {
+                        operation_mode: EL70x1OperationMode::DirectVelocity,
+                        speed_range: shared_config::el70x1::EL70x1SpeedRange::Steps1000,
+                        ..Default::default()
+                    },
+                    stm_motor: StmMotorConfiguration {
+                        max_current: 2700,
+                        ..Default::default()
+                    },
+                    pdo_assignment: EL7031_0030PredefinedPdoAssignment::VelocityControlCompact,
+                    ..Default::default()
+                };
+                device
+                    .0
+                    .write()
+                    .await
+                    .write_config(&device.1, &el7031_0030_config)
+                    .await?;
+                device.0
+            };
+
             // Digital outputs for SSR control (24V to external SSRs for 60W heaters)
             let heater_ssr_1 = DigitalOutput::new(el2004_1.clone(), EL2004Port::DO1);
             let heater_ssr_2 = DigitalOutput::new(el2004_1.clone(), EL2004Port::DO2);
@@ -445,7 +480,7 @@ impl MachineNewTrait for Gluetex {
                 last_measurement_emit: Instant::now(),
                 spool_mode: mode.clone().into(),
                 traverse_mode: mode.clone().into(),
-                puller_mode: mode.into(),
+                puller_mode: mode.clone().into(),
                 puller_speed_controller: PullerSpeedController::new(
                     Velocity::new::<meter_per_minute>(1.0),
                     Length::new::<millimeter>(1.75),
@@ -454,6 +489,27 @@ impl MachineNewTrait for Gluetex {
                         Length::new::<centimeter>(8.0), // 8cm diameter of the puller wheel
                     ),
                 ),
+                slave_puller: StepperVelocityEL70x1::new(
+                    el7031_0030_slave.clone(),
+                    EL7031_0030StepperPort::STM1,
+                ),
+                slave_tension_arm: TensionArm::new(AnalogInput::new(
+                    el7031_0030_slave,
+                    EL7031_0030AnalogInputPort::AI1,
+                )),
+                slave_puller_speed_controller: SlavePullerSpeedController::new(
+                    Angle::new::<degree>(20.0), // Min angle (low tension, high speed)
+                    Angle::new::<degree>(90.0), // Max angle (high tension, low speed)
+                    LinearStepConverter::from_diameter(
+                        200,                            // 200 steps per revolution
+                        Length::new::<centimeter>(8.0), // 8cm diameter
+                    ),
+                    FilamentTensionCalculator::new(
+                        Angle::new::<degree>(20.0), // Min angle for tension calc
+                        Angle::new::<degree>(90.0), // Max angle for tension calc
+                    ),
+                ),
+                slave_puller_mode: mode.clone().into(),
                 traverse_controller: TraverseController::new(
                     Length::new::<millimeter>(22.0), // Default inner limit
                     Length::new::<millimeter>(92.0), // Default outer limit
