@@ -51,6 +51,7 @@ export function useGluetex() {
     traversePosition,
     pullerSpeed,
     slavePullerSpeed,
+    slaveTensionArmAngle,
     spoolRpm,
     tensionArmAngle,
     spoolProgress,
@@ -198,6 +199,29 @@ export function useGluetex() {
   );
   const { request: requestAddonMotor4SetSlaveRatio } = useMachineMutation(
     z.object({ SetAddonMotor4SlaveRatio: z.number() }),
+  );
+
+  // Slave Puller mutations
+  const { request: requestSlavePullerSetEnabled } = useMachineMutation(
+    z.object({ SetSlavePullerEnabled: z.boolean() }),
+  );
+  const { request: requestSlavePullerSetForward } = useMachineMutation(
+    z.object({ SetSlavePullerForward: z.boolean() }),
+  );
+  const { request: requestSlavePullerSetMinAngle } = useMachineMutation(
+    z.object({ SetSlavePullerMinAngle: z.number() }),
+  );
+  const { request: requestSlavePullerSetMaxAngle } = useMachineMutation(
+    z.object({ SetSlavePullerMaxAngle: z.number() }),
+  );
+  const { request: requestSlavePullerSetMinSpeedFactor } = useMachineMutation(
+    z.object({ SetSlavePullerMinSpeedFactor: z.number() }),
+  );
+  const { request: requestSlavePullerSetMaxSpeedFactor } = useMachineMutation(
+    z.object({ SetSlavePullerMaxSpeedFactor: z.number() }),
+  );
+  const { request: requestZeroSlaveTensionArm } = useMachineMutation(
+    z.literal("ZeroSlaveTensionArm"),
   );
 
   // ========== Helper Functions ==========
@@ -721,6 +745,99 @@ export function useGluetex() {
     );
   };
 
+  // ========== Slave Puller Functions ==========
+
+  const setSlavePullerEnabled = (enabled: boolean) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.slave_puller_state.enabled = enabled;
+      },
+      () =>
+        requestSlavePullerSetEnabled({
+          machine_identification_unique: machineIdentification,
+          data: { SetSlavePullerEnabled: enabled },
+        }),
+    );
+  };
+
+  const setSlavePullerForward = (forward: boolean) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.slave_puller_state.forward = forward;
+      },
+      () =>
+        requestSlavePullerSetForward({
+          machine_identification_unique: machineIdentification,
+          data: { SetSlavePullerForward: forward },
+        }),
+    );
+  };
+
+  const setSlavePullerMinAngle = (angle: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.slave_puller_state.min_angle = angle;
+      },
+      () =>
+        requestSlavePullerSetMinAngle({
+          machine_identification_unique: machineIdentification,
+          data: { SetSlavePullerMinAngle: angle },
+        }),
+    );
+  };
+
+  const setSlavePullerMaxAngle = (angle: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.slave_puller_state.max_angle = angle;
+      },
+      () =>
+        requestSlavePullerSetMaxAngle({
+          machine_identification_unique: machineIdentification,
+          data: { SetSlavePullerMaxAngle: angle },
+        }),
+    );
+  };
+
+  const setSlavePullerMinSpeedFactor = (factor: number | null) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.slave_puller_state.min_speed_factor = factor;
+      },
+      () =>
+        requestSlavePullerSetMinSpeedFactor({
+          machine_identification_unique: machineIdentification,
+          data: { SetSlavePullerMinSpeedFactor: factor ?? 0 },
+        }),
+    );
+  };
+
+  const setSlavePullerMaxSpeedFactor = (factor: number | null) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.slave_puller_state.max_speed_factor = factor;
+      },
+      () =>
+        requestSlavePullerSetMaxSpeedFactor({
+          machine_identification_unique: machineIdentification,
+          data: { SetSlavePullerMaxSpeedFactor: factor ?? 0 },
+        }),
+    );
+  };
+
+  const zeroSlaveTensionArm = () => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.slave_puller_state.tension_arm.zeroed = true;
+      },
+      () =>
+        requestZeroSlaveTensionArm({
+          machine_identification_unique: machineIdentification,
+          data: "ZeroSlaveTensionArm",
+        }),
+    );
+  };
+
   // ========== Machine Filtering ==========
 
   const machines = useMachines();
@@ -768,6 +885,7 @@ export function useGluetex() {
     traversePosition,
     pullerSpeed,
     slavePullerSpeed,
+    slaveTensionArmAngle,
     spoolRpm,
     tensionArmAngle,
     spoolProgress,
@@ -818,6 +936,15 @@ export function useGluetex() {
     setSpoolAdaptiveDeaccelerationUrgencyMultiplier,
     setConnectedMachine,
     disconnectMachine,
+
+    // Slave Puller action functions
+    setSlavePullerEnabled,
+    setSlavePullerForward,
+    setSlavePullerMinAngle,
+    setSlavePullerMaxAngle,
+    setSlavePullerMinSpeedFactor,
+    setSlavePullerMaxSpeedFactor,
+    zeroSlaveTensionArm,
 
     // Addon action functions (local only)
     setStepper3Mode,
