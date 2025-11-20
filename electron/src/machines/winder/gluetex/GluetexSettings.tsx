@@ -51,6 +51,7 @@ export function GluetexSettingPage() {
     setSlavePullerMinSpeedFactor,
     setSlavePullerMaxSpeedFactor,
     zeroSlaveTensionArm,
+    setHeatingPid,
   } = useGluetex();
 
   const handleXlModeChange = (enabled: boolean) => {
@@ -470,6 +471,408 @@ export function GluetexSettingPage() {
                 renderValue={(value) => roundToDecimals(value, 2)}
                 onChange={(value) =>
                   setSlavePullerMaxSpeedFactor(value === 0 ? null : value)
+                }
+              />
+            </Label>
+          </div>
+        </ControlCard>
+
+        <ControlCard title="Heating Zone 1">
+          <div className="flex flex-row flex-wrap gap-4">
+            <Label label="Proportional Gain (Kp)">
+              <EditValue
+                value={state?.heating_pid_settings?.zone_1?.kp}
+                title={"Kp"}
+                unit={undefined}
+                step={0.01}
+                min={0}
+                max={10}
+                defaultValue={defaultState?.heating_pid_settings?.zone_1?.kp}
+                renderValue={(value) => roundToDecimals(value, 3)}
+                onChange={(value) =>
+                  setHeatingPid(
+                    "zone_1",
+                    value,
+                    state?.heating_pid_settings?.zone_1?.ki ?? 0,
+                    state?.heating_pid_settings?.zone_1?.kd ?? 0,
+                  )
+                }
+              />
+            </Label>
+
+            <Label label="Integral Gain (Ki)">
+              <EditValue
+                value={state?.heating_pid_settings?.zone_1?.ki}
+                title={"Ki"}
+                unit={undefined}
+                step={0.001}
+                min={0}
+                max={1}
+                defaultValue={defaultState?.heating_pid_settings?.zone_1?.ki}
+                renderValue={(value) => roundToDecimals(value, 4)}
+                onChange={(value) =>
+                  setHeatingPid(
+                    "zone_1",
+                    state?.heating_pid_settings?.zone_1?.kp ?? 0,
+                    value,
+                    state?.heating_pid_settings?.zone_1?.kd ?? 0,
+                  )
+                }
+              />
+            </Label>
+
+            <Label label="Derivative Gain (Kd)">
+              <EditValue
+                value={state?.heating_pid_settings?.zone_1?.kd}
+                title={"Kd"}
+                unit={undefined}
+                step={0.001}
+                min={0}
+                max={1}
+                defaultValue={defaultState?.heating_pid_settings?.zone_1?.kd}
+                renderValue={(value) => roundToDecimals(value, 4)}
+                onChange={(value) =>
+                  setHeatingPid(
+                    "zone_1",
+                    state?.heating_pid_settings?.zone_1?.kp ?? 0,
+                    state?.heating_pid_settings?.zone_1?.ki ?? 0,
+                    value,
+                  )
+                }
+              />
+            </Label>
+          </div>
+        </ControlCard>
+
+        <ControlCard title="Heating Zone 2">
+          <div className="flex flex-row flex-wrap gap-4">
+            <Label label="Proportional Gain (Kp)">
+              <EditValue
+                value={state?.heating_pid_settings?.zone_2?.kp}
+                title={"Kp"}
+                unit={undefined}
+                step={0.01}
+                min={0}
+                max={10}
+                defaultValue={defaultState?.heating_pid_settings?.zone_2?.kp}
+                renderValue={(value) => roundToDecimals(value, 3)}
+                onChange={(value) =>
+                  setHeatingPid(
+                    "zone_2",
+                    value,
+                    state?.heating_pid_settings?.zone_2?.ki ?? 0,
+                    state?.heating_pid_settings?.zone_2?.kd ?? 0,
+                  )
+                }
+              />
+            </Label>
+
+            <Label label="Integral Gain (Ki)">
+              <EditValue
+                value={state?.heating_pid_settings?.zone_2?.ki}
+                title={"Ki"}
+                unit={undefined}
+                step={0.001}
+                min={0}
+                max={1}
+                defaultValue={defaultState?.heating_pid_settings?.zone_2?.ki}
+                renderValue={(value) => roundToDecimals(value, 4)}
+                onChange={(value) =>
+                  setHeatingPid(
+                    "zone_2",
+                    state?.heating_pid_settings?.zone_2?.kp ?? 0,
+                    value,
+                    state?.heating_pid_settings?.zone_2?.kd ?? 0,
+                  )
+                }
+              />
+            </Label>
+
+            <Label label="Derivative Gain (Kd)">
+              <EditValue
+                value={state?.heating_pid_settings?.zone_2?.kd}
+                title={"Kd"}
+                unit={undefined}
+                step={0.001}
+                min={0}
+                max={1}
+                defaultValue={defaultState?.heating_pid_settings?.zone_2?.kd}
+                renderValue={(value) => roundToDecimals(value, 4)}
+                onChange={(value) =>
+                  setHeatingPid(
+                    "zone_2",
+                    state?.heating_pid_settings?.zone_2?.kp ?? 0,
+                    state?.heating_pid_settings?.zone_2?.ki ?? 0,
+                    value,
+                  )
+                }
+              />
+            </Label>
+          </div>
+        </ControlCard>
+
+        <ControlCard title="Heating Zone 3">
+          <div className="flex flex-row flex-wrap gap-4">
+            <Label label="Proportional Gain (Kp)">
+              <EditValue
+                value={state?.heating_pid_settings?.zone_3?.kp}
+                title={"Kp"}
+                unit={undefined}
+                step={0.01}
+                min={0}
+                max={10}
+                defaultValue={defaultState?.heating_pid_settings?.zone_3?.kp}
+                renderValue={(value) => roundToDecimals(value, 3)}
+                onChange={(value) =>
+                  setHeatingPid(
+                    "zone_3",
+                    value,
+                    state?.heating_pid_settings?.zone_3?.ki ?? 0,
+                    state?.heating_pid_settings?.zone_3?.kd ?? 0,
+                  )
+                }
+              />
+            </Label>
+
+            <Label label="Integral Gain (Ki)">
+              <EditValue
+                value={state?.heating_pid_settings?.zone_3?.ki}
+                title={"Ki"}
+                unit={undefined}
+                step={0.001}
+                min={0}
+                max={1}
+                defaultValue={defaultState?.heating_pid_settings?.zone_3?.ki}
+                renderValue={(value) => roundToDecimals(value, 4)}
+                onChange={(value) =>
+                  setHeatingPid(
+                    "zone_3",
+                    state?.heating_pid_settings?.zone_3?.kp ?? 0,
+                    value,
+                    state?.heating_pid_settings?.zone_3?.kd ?? 0,
+                  )
+                }
+              />
+            </Label>
+
+            <Label label="Derivative Gain (Kd)">
+              <EditValue
+                value={state?.heating_pid_settings?.zone_3?.kd}
+                title={"Kd"}
+                unit={undefined}
+                step={0.001}
+                min={0}
+                max={1}
+                defaultValue={defaultState?.heating_pid_settings?.zone_3?.kd}
+                renderValue={(value) => roundToDecimals(value, 4)}
+                onChange={(value) =>
+                  setHeatingPid(
+                    "zone_3",
+                    state?.heating_pid_settings?.zone_3?.kp ?? 0,
+                    state?.heating_pid_settings?.zone_3?.ki ?? 0,
+                    value,
+                  )
+                }
+              />
+            </Label>
+          </div>
+        </ControlCard>
+
+        <ControlCard title="Heating Zone 4">
+          <div className="flex flex-row flex-wrap gap-4">
+            <Label label="Proportional Gain (Kp)">
+              <EditValue
+                value={state?.heating_pid_settings?.zone_4?.kp}
+                title={"Kp"}
+                unit={undefined}
+                step={0.01}
+                min={0}
+                max={10}
+                defaultValue={defaultState?.heating_pid_settings?.zone_4?.kp}
+                renderValue={(value) => roundToDecimals(value, 3)}
+                onChange={(value) =>
+                  setHeatingPid(
+                    "zone_4",
+                    value,
+                    state?.heating_pid_settings?.zone_4?.ki ?? 0,
+                    state?.heating_pid_settings?.zone_4?.kd ?? 0,
+                  )
+                }
+              />
+            </Label>
+
+            <Label label="Integral Gain (Ki)">
+              <EditValue
+                value={state?.heating_pid_settings?.zone_4?.ki}
+                title={"Ki"}
+                unit={undefined}
+                step={0.001}
+                min={0}
+                max={1}
+                defaultValue={defaultState?.heating_pid_settings?.zone_4?.ki}
+                renderValue={(value) => roundToDecimals(value, 4)}
+                onChange={(value) =>
+                  setHeatingPid(
+                    "zone_4",
+                    state?.heating_pid_settings?.zone_4?.kp ?? 0,
+                    value,
+                    state?.heating_pid_settings?.zone_4?.kd ?? 0,
+                  )
+                }
+              />
+            </Label>
+
+            <Label label="Derivative Gain (Kd)">
+              <EditValue
+                value={state?.heating_pid_settings?.zone_4?.kd}
+                title={"Kd"}
+                unit={undefined}
+                step={0.001}
+                min={0}
+                max={1}
+                defaultValue={defaultState?.heating_pid_settings?.zone_4?.kd}
+                renderValue={(value) => roundToDecimals(value, 4)}
+                onChange={(value) =>
+                  setHeatingPid(
+                    "zone_4",
+                    state?.heating_pid_settings?.zone_4?.kp ?? 0,
+                    state?.heating_pid_settings?.zone_4?.ki ?? 0,
+                    value,
+                  )
+                }
+              />
+            </Label>
+          </div>
+        </ControlCard>
+
+        <ControlCard title="Heating Zone 5">
+          <div className="flex flex-row flex-wrap gap-4">
+            <Label label="Proportional Gain (Kp)">
+              <EditValue
+                value={state?.heating_pid_settings?.zone_5?.kp}
+                title={"Kp"}
+                unit={undefined}
+                step={0.01}
+                min={0}
+                max={10}
+                defaultValue={defaultState?.heating_pid_settings?.zone_5?.kp}
+                renderValue={(value) => roundToDecimals(value, 3)}
+                onChange={(value) =>
+                  setHeatingPid(
+                    "zone_5",
+                    value,
+                    state?.heating_pid_settings?.zone_5?.ki ?? 0,
+                    state?.heating_pid_settings?.zone_5?.kd ?? 0,
+                  )
+                }
+              />
+            </Label>
+
+            <Label label="Integral Gain (Ki)">
+              <EditValue
+                value={state?.heating_pid_settings?.zone_5?.ki}
+                title={"Ki"}
+                unit={undefined}
+                step={0.001}
+                min={0}
+                max={1}
+                defaultValue={defaultState?.heating_pid_settings?.zone_5?.ki}
+                renderValue={(value) => roundToDecimals(value, 4)}
+                onChange={(value) =>
+                  setHeatingPid(
+                    "zone_5",
+                    state?.heating_pid_settings?.zone_5?.kp ?? 0,
+                    value,
+                    state?.heating_pid_settings?.zone_5?.kd ?? 0,
+                  )
+                }
+              />
+            </Label>
+
+            <Label label="Derivative Gain (Kd)">
+              <EditValue
+                value={state?.heating_pid_settings?.zone_5?.kd}
+                title={"Kd"}
+                unit={undefined}
+                step={0.001}
+                min={0}
+                max={1}
+                defaultValue={defaultState?.heating_pid_settings?.zone_5?.kd}
+                renderValue={(value) => roundToDecimals(value, 4)}
+                onChange={(value) =>
+                  setHeatingPid(
+                    "zone_5",
+                    state?.heating_pid_settings?.zone_5?.kp ?? 0,
+                    state?.heating_pid_settings?.zone_5?.ki ?? 0,
+                    value,
+                  )
+                }
+              />
+            </Label>
+          </div>
+        </ControlCard>
+
+        <ControlCard title="Heating Zone 6">
+          <div className="flex flex-row flex-wrap gap-4">
+            <Label label="Proportional Gain (Kp)">
+              <EditValue
+                value={state?.heating_pid_settings?.zone_6?.kp}
+                title={"Kp"}
+                unit={undefined}
+                step={0.01}
+                min={0}
+                max={10}
+                defaultValue={defaultState?.heating_pid_settings?.zone_6?.kp}
+                renderValue={(value) => roundToDecimals(value, 3)}
+                onChange={(value) =>
+                  setHeatingPid(
+                    "zone_6",
+                    value,
+                    state?.heating_pid_settings?.zone_6?.ki ?? 0,
+                    state?.heating_pid_settings?.zone_6?.kd ?? 0,
+                  )
+                }
+              />
+            </Label>
+
+            <Label label="Integral Gain (Ki)">
+              <EditValue
+                value={state?.heating_pid_settings?.zone_6?.ki}
+                title={"Ki"}
+                unit={undefined}
+                step={0.001}
+                min={0}
+                max={1}
+                defaultValue={defaultState?.heating_pid_settings?.zone_6?.ki}
+                renderValue={(value) => roundToDecimals(value, 4)}
+                onChange={(value) =>
+                  setHeatingPid(
+                    "zone_6",
+                    state?.heating_pid_settings?.zone_6?.kp ?? 0,
+                    value,
+                    state?.heating_pid_settings?.zone_6?.kd ?? 0,
+                  )
+                }
+              />
+            </Label>
+
+            <Label label="Derivative Gain (Kd)">
+              <EditValue
+                value={state?.heating_pid_settings?.zone_6?.kd}
+                title={"Kd"}
+                unit={undefined}
+                step={0.001}
+                min={0}
+                max={1}
+                defaultValue={defaultState?.heating_pid_settings?.zone_6?.kd}
+                renderValue={(value) => roundToDecimals(value, 4)}
+                onChange={(value) =>
+                  setHeatingPid(
+                    "zone_6",
+                    state?.heating_pid_settings?.zone_6?.kp ?? 0,
+                    state?.heating_pid_settings?.zone_6?.ki ?? 0,
+                    value,
+                  )
                 }
               />
             </Label>

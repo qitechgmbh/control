@@ -395,6 +395,44 @@ impl Gluetex {
                     wiring_error: self.temperature_controller_6.heating.wiring_error,
                 },
             },
+            heating_pid_settings: api::HeatingPidStates {
+                zone_1: api::HeatingPidSettings {
+                    ki: self.temperature_controller_1.pid.get_ki(),
+                    kp: self.temperature_controller_1.pid.get_kp(),
+                    kd: self.temperature_controller_1.pid.get_kd(),
+                    zone: String::from("zone_1"),
+                },
+                zone_2: api::HeatingPidSettings {
+                    ki: self.temperature_controller_2.pid.get_ki(),
+                    kp: self.temperature_controller_2.pid.get_kp(),
+                    kd: self.temperature_controller_2.pid.get_kd(),
+                    zone: String::from("zone_2"),
+                },
+                zone_3: api::HeatingPidSettings {
+                    ki: self.temperature_controller_3.pid.get_ki(),
+                    kp: self.temperature_controller_3.pid.get_kp(),
+                    kd: self.temperature_controller_3.pid.get_kd(),
+                    zone: String::from("zone_3"),
+                },
+                zone_4: api::HeatingPidSettings {
+                    ki: self.temperature_controller_4.pid.get_ki(),
+                    kp: self.temperature_controller_4.pid.get_kp(),
+                    kd: self.temperature_controller_4.pid.get_kd(),
+                    zone: String::from("zone_4"),
+                },
+                zone_5: api::HeatingPidSettings {
+                    ki: self.temperature_controller_5.pid.get_ki(),
+                    kp: self.temperature_controller_5.pid.get_kp(),
+                    kd: self.temperature_controller_5.pid.get_kd(),
+                    zone: String::from("zone_5"),
+                },
+                zone_6: api::HeatingPidSettings {
+                    ki: self.temperature_controller_6.pid.get_ki(),
+                    kp: self.temperature_controller_6.pid.get_kp(),
+                    kd: self.temperature_controller_6.pid.get_kd(),
+                    zone: String::from("zone_6"),
+                },
+            },
             connected_machine_state: cross_conn,
             addon_motor_3_state: api::AddonMotorState {
                 enabled: self.addon_motor_3_controller.is_enabled(),
