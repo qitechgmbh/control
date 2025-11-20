@@ -1,5 +1,6 @@
 pub mod act;
 pub mod adaptive_spool_speed_controller;
+pub mod addon_motor_controller;
 pub mod api;
 pub mod clamp_revolution;
 pub mod emit;
@@ -17,6 +18,7 @@ use units::f64::ThermodynamicTemperature;
 use units::thermodynamic_temperature::degree_celsius;
 
 mod gluetex_imports {
+    pub use super::addon_motor_controller::AddonMotorController;
     pub use super::api::GluetexNamespace;
     pub use super::api::SpoolAutomaticActionMode;
     pub use super::puller_speed_controller::PullerSpeedController;
@@ -118,9 +120,17 @@ pub struct Gluetex {
     pub tension_arm: TensionArm,
     pub laser: DigitalOutput,
 
+    // addon motors
+    pub addon_motor_3: StepperVelocityEL70x1,
+    pub addon_motor_4: StepperVelocityEL70x1,
+
     // controllers
     pub traverse_controller: TraverseController,
     pub traverse_end_stop: DigitalInput,
+
+    // addon motor controllers
+    pub addon_motor_3_controller: AddonMotorController,
+    pub addon_motor_4_controller: AddonMotorController,
 
     // temperature controllers (PID-controlled heaters with temperature sensors)
     pub temperature_controller_1: TemperatureController,
@@ -358,6 +368,22 @@ impl Gluetex {
             .converter
             .angular_velocity_to_steps(angular_velocity);
         let _ = self.puller.set_speed(steps_per_second);
+    }
+
+    /// Sync addon motor 3 speed based on puller angular velocity and ratio
+    /// called by `act`
+    pub fn sync_addon_motor_3_speed(&mut self, t: Instant) {
+        let puller_angular_velocity = self.puller_speed_controller.calc_angular_velocity(t);
+        self.addon_motor_3_controller
+            .sync_motor_speed(&mut self.addon_motor_3, puller_angular_velocity);
+    }
+
+    /// Sync addon motor 4 speed based on puller angular velocity and ratio
+    /// called by `act`
+    pub fn sync_addon_motor_4_speed(&mut self, t: Instant) {
+        let puller_angular_velocity = self.puller_speed_controller.calc_angular_velocity(t);
+        self.addon_motor_4_controller
+            .sync_motor_speed(&mut self.addon_motor_4, puller_angular_velocity);
     }
 }
 

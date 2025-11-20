@@ -378,6 +378,16 @@ impl Gluetex {
                 },
             },
             connected_machine_state: cross_conn,
+            addon_motor_3_state: api::AddonMotorState {
+                enabled: self.addon_motor_3_controller.is_enabled(),
+                master_ratio: self.addon_motor_3_controller.get_master_ratio(),
+                slave_ratio: self.addon_motor_3_controller.get_slave_ratio(),
+            },
+            addon_motor_4_state: api::AddonMotorState {
+                enabled: self.addon_motor_4_controller.is_enabled(),
+                master_ratio: self.addon_motor_4_controller.get_master_ratio(),
+                slave_ratio: self.addon_motor_4_controller.get_slave_ratio(),
+            },
         }
     }
 

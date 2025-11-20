@@ -133,6 +133,14 @@ pub enum Mutation {
 
     // Disconnect Machine
     DisconnectMachine(MachineIdentificationUnique),
+
+    // Addon Motors
+    SetAddonMotor3Enabled(bool),
+    SetAddonMotor4Enabled(bool),
+    SetAddonMotor3MasterRatio(f64),
+    SetAddonMotor3SlaveRatio(f64),
+    SetAddonMotor4MasterRatio(f64),
+    SetAddonMotor4SlaveRatio(f64),
 }
 
 #[derive(Serialize, Debug, Clone, Default)]
@@ -198,6 +206,10 @@ pub struct StateEvent {
     pub heating_states: HeatingStates,
     /// Is a Machine Connected?
     pub connected_machine_state: MachineCrossConnectionState,
+    /// addon motor 3 state
+    pub addon_motor_3_state: AddonMotorState,
+    /// addon motor 4 state
+    pub addon_motor_4_state: AddonMotorState,
 }
 
 #[derive(Serialize, Debug, Clone, Default)]
@@ -296,6 +308,16 @@ pub struct SpoolSpeedControllerState {
     pub adaptive_deacceleration_urgency_multiplier: f64,
     /// forward rotation direction
     pub forward: bool,
+}
+
+#[derive(Serialize, Debug, Clone, Default)]
+pub struct AddonMotorState {
+    /// is motor enabled (running)
+    pub enabled: bool,
+    /// master ratio value (e.g., 2 in "2:1")
+    pub master_ratio: f64,
+    /// slave ratio value (e.g., 1 in "2:1")
+    pub slave_ratio: f64,
 }
 
 #[derive(Serialize, Debug, Clone, Default)]
@@ -433,6 +455,30 @@ impl MachineApi for Gluetex {
                     None => return Err(anyhow::anyhow!("[DisconnectMachine] Machine cannot connect to others! {:?}", self.machine_identification_unique)),
                 };*/
                 //main_sender.try_send(crate::AsyncThreadMessage::ConnectOneWayRequest(crate::CrossConnection { src: self.get_machine_identification_unique(), dest: machine_identification_unique }))?;
+                self.emit_state();
+            }
+            Mutation::SetAddonMotor3Enabled(enabled) => {
+                self.addon_motor_3_controller.set_enabled(enabled);
+                self.emit_state();
+            }
+            Mutation::SetAddonMotor4Enabled(enabled) => {
+                self.addon_motor_4_controller.set_enabled(enabled);
+                self.emit_state();
+            }
+            Mutation::SetAddonMotor3MasterRatio(ratio) => {
+                self.addon_motor_3_controller.set_master_ratio(ratio);
+                self.emit_state();
+            }
+            Mutation::SetAddonMotor3SlaveRatio(ratio) => {
+                self.addon_motor_3_controller.set_slave_ratio(ratio);
+                self.emit_state();
+            }
+            Mutation::SetAddonMotor4MasterRatio(ratio) => {
+                self.addon_motor_4_controller.set_master_ratio(ratio);
+                self.emit_state();
+            }
+            Mutation::SetAddonMotor4SlaveRatio(ratio) => {
+                self.addon_motor_4_controller.set_slave_ratio(ratio);
                 self.emit_state();
             }
         }
