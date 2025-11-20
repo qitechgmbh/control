@@ -3,7 +3,6 @@ use std::time::Instant;
 use control_core::converters::linear_step_converter::LinearStepConverter;
 use units::ConstZero;
 use units::f64::*;
-use units::velocity::meter_per_minute;
 
 use super::{
     clamp_revolution::Clamping, clamp_revolution::clamp_revolution_uom,
@@ -131,7 +130,7 @@ impl SlavePullerSpeedController {
     /// Commanded velocity for the slave puller motor
     pub fn update_speed(
         &mut self,
-        t: Instant,
+        _t: Instant,
         master_speed: Velocity,
         tension_arm: &TensionArm,
     ) -> Velocity {
