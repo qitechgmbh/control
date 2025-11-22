@@ -56,7 +56,8 @@ import { Aquapath1GraphPage } from "@/machines/aquapath/aquapath1/Aquapath1Graph
 import { TestMachinePage } from "@/machines/testmachine/TestMachinePage";
 import { TestMachineControlPage } from "@/machines/testmachine/TestMachineControlPage";
 import { Laser1PresetsPage } from "@/machines/laser/laser1/Laser1PresetsPage";
-
+import { XtremZebraPage } from "@/machines/xtremZebra/xtremZebra1/XtremZebraPage";
+import { XtremZebraControlPage } from "@/machines/xtremZebra/xtremZebra1/XtremZebraControlPage";
 // make a route tree like this
 // _mainNavigation/machines/winder2/$serial/control
 // _mainNavigation/configuration/a
@@ -286,6 +287,18 @@ export const buffer1SettingsRoute = createRoute({
   component: () => <Buffer1SettingsPage />,
 });
 
+export const xtremZebraSerialRoute = createRoute({
+  getParentRoute: () => machinesRoute,
+  path: "xtremZebra/$serial",
+  component: () => <XtremZebraPage />,
+});
+
+export const xtremZebraControlRoute = createRoute({
+  getParentRoute: () => xtremZebraSerialRoute,
+  path: "control",
+  component: () => <XtremZebraControlPage />,
+});
+
 export const setupRoute = createRoute({
   getParentRoute: () => sidebarRoute,
   path: "setup",
@@ -416,6 +429,8 @@ export const rootTree = RootRoute.addChildren([
       ]),
 
       buffer1SerialRoute.addChildren([buffer1ControlRoute]),
+
+      xtremZebraSerialRoute.addChildren([xtremZebraControlRoute]),
     ]),
   ]),
 ]);
