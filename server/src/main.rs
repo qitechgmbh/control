@@ -9,7 +9,7 @@ use machines::{
     },
     registry::{MACHINE_REGISTRY, MachineRegistry},
     serial::{
-        devices::laser::Laser,
+        devices::{laser::Laser, xtrem_zebra::XtremZebraUdp},
         init::{SerialDetection, start_serial_discovery},
     },
     winder2::api::GenericEvent,
@@ -29,6 +29,7 @@ use serialport::UsbPortInfo;
 use smol::{
     channel::{Receiver, Sender},
     lock::RwLock,
+    unblock,
 };
 use socketio::{main_namespace::machines_event::MachineObj, queue::start_socketio_queue};
 use socketioxide::extract::SocketRef;
