@@ -33,6 +33,19 @@ impl Function {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DataAddress {
+    ReadSerial,
+}
+
+impl DataAddress {
+    pub const fn as_hex(&self) -> u16 {
+        match self {
+            Self::ReadSerial => 0x0000,
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct XtremFrame {
     pub stx: u8,
@@ -40,114 +53,28 @@ pub struct XtremFrame {
     pub id_dest: u8,
     pub function: Function,
     pub data_address: u16,
+    pub data_length: u8,
     pub data: Vec<u8>,
     pub lrc: u8,
     pub etx: u8,
 }
 
 impl XtremFrame {
-    /// Constructor
-    pub fn new(
-        id_origin: u8,
-        id_dest: u8,
-        function: Function,
-        data_address: u16,
-        data: Vec<u8>,
-    ) -> Self {
-        let mut payload = Vec::new();
-        payload.extend(format!("{:02X}{:02X}", id_origin, id_dest).as_bytes());
-        payload.push(function.as_char() as u8);
-        payload.extend(format!("{:04X}", data_address).as_bytes());
-        payload.extend(format!("{:02X}", data.len()).as_bytes());
-        payload.extend(&data);
-
-        let lrc = Self::compute_lrc(&payload);
-
-        Self {
-            stx: 0x02,
-            id_origin,
-            id_dest,
-            function,
-            data_address,
-            data,
-            lrc,
-            etx: 0x03,
-        }
-    }
-
     /// Compute XOR LRC
-    fn compute_lrc(data: &[u8]) -> u8 {
+    pub fn compute_lrc(data: &[u8]) -> u8 {
         data.iter().fold(0u8, |acc, &b| acc ^ b)
     }
-
-    /// Build full XTREM frame
-    pub fn encode(&self) -> Vec<u8> {
-        let mut payload = Vec::new();
-        payload.extend(format!("{:02X}{:02X}", self.id_origin, self.id_dest).as_bytes());
-        payload.push(self.function.as_char() as u8);
-        payload.extend(format!("{:04X}", self.data_address).as_bytes());
-        payload.extend(format!("{:02X}", self.data.len()).as_bytes());
-        payload.extend(&self.data);
-
-        let mut frame = vec![self.stx];
-        frame.extend(&payload);
-        frame.extend(format!("{:02X}", self.lrc).as_bytes());
-        frame.push(self.etx);
-
-        frame
-    }
-
-    /// Decode an XTREM frame
-    pub fn decode(frame: &[u8]) -> Option<Self> {
-        if frame.len() < 12 || frame[0] != 0x02 || *frame.last()? != 0x03 {
-            return None;
-        }
-
-        // Extract inner ASCII-encoded payload
-        let inner = &frame[1..frame.len() - 1]; // drop STX/ETX
-        if inner.len() < 2 {
-            return None;
-        }
-
-        // Last 2 ASCII chars are LRC
-        let (payload, lrc_ascii) = inner.split_at(inner.len() - 2);
-
-        let lrc_str = std::str::from_utf8(lrc_ascii).ok()?;
-        let received_lrc = u8::from_str_radix(lrc_str, 16).ok()?;
-
-        let calculated = Self::compute_lrc(payload);
-
-        if received_lrc != calculated {
-            return None;
-        }
-
-        // Now parse ASCII components
-        let text = std::str::from_utf8(payload).ok()?;
-        let mut idx = 0;
-        let mut take = |n: usize| {
-            let s = &text[idx..idx + n];
-            idx += n;
-            s
-        };
-
-        let id_origin = u8::from_str_radix(take(2), 16).ok()?;
-        let id_dest = u8::from_str_radix(take(2), 16).ok()?;
-        let function = Function::from_char(take(1).chars().next()?)?;
-        let data_address = u16::from_str_radix(take(4), 16).ok()?;
-        let data_len = usize::from_str_radix(take(2), 16).ok()?;
-
-        let data_str = &text[idx..idx + data_len];
-        let data = data_str.as_bytes().to_vec();
-
-        Some(Self {
-            stx: 0x02,
-            id_origin,
-            id_dest,
-            function,
-            data_address,
-            data,
-            lrc: received_lrc,
-            etx: 0x03,
-        })
+    /// Builds full raw bytes of a frame.
+    pub fn as_bytes(&self) -> Vec<u8> {
+        let mut buf = vec![self.stx];
+        buf.push(self.id_origin);
+        buf.push(self.id_dest);
+        buf.push(self.function.as_char() as u8);
+        buf.extend_from_slice(&self.data_address.to_be_bytes());
+        buf.push(self.data_length);
+        buf.extend_from_slice(&self.data);
+        buf.push(self.lrc);
+        buf.push(self.etx);
+        buf
     }
 }

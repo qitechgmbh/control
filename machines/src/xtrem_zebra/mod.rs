@@ -1,12 +1,16 @@
-use std::time::Instant;
+use std::{sync::Arc, time::Instant};
 
 use control_core::socketio::namespace::NamespaceCacheingLogic;
-use smol::channel::{Receiver, Sender};
+use smol::{
+    channel::{Receiver, Sender},
+    lock::RwLock,
+};
 use socketioxide::extract::SocketRef;
 
 use crate::{
     AsyncThreadMessage, MACHINE_XTREM_ZEBRA, Machine, MachineMessage, VENDOR_QITECH,
     machine_identification::{MachineIdentification, MachineIdentificationUnique},
+    serial::devices::xtrem_zebra::XtremSerial,
     xtrem_zebra::api::{
         LiveValuesEvent, StateEvent, XtremZebraEvents, XtremZebraNamespace, XtremZebraState,
     },
@@ -24,7 +28,7 @@ pub struct XtremZebra {
     main_sender: Option<Sender<AsyncThreadMessage>>,
 
     // drivers
-    //laser: Arc<RwLock<Laser>>,
+    xtrem_zebra: Arc<RwLock<XtremSerial>>,
 
     // socketio
     namespace: XtremZebraNamespace,
@@ -80,7 +84,6 @@ impl XtremZebra {
         machine: MACHINE_XTREM_ZEBRA,
     };
 
-    ///diameter in mm
     pub fn emit_live_values(&mut self) {
         let weight = self.weight;
 
@@ -109,24 +112,7 @@ impl XtremZebra {
     }
 
     pub fn update(&mut self) {
-        //     let laser_data = smol::block_on(async { self.laser.read().await.get_data().await });
-        //     self.diameter = Length::new::<millimeter>(
-        //         laser_data
-        //             .as_ref()
-        //             .map(|data| data.diameter.get::<millimeter>())
-        //             .unwrap_or(0.0),
-        //     );
-        //
-        //     self.x_diameter = laser_data
-        //         .as_ref()
-        //         .and_then(|data| data.x_axis.as_ref())
-        //         .cloned();
-        //
-        //     self.y_diameter = laser_data
-        //         .as_ref()
-        //         .and_then(|data| data.y_axis.as_ref())
-        //         .cloned();
-        //
-        //     self.roundness = self.calculate_roundness();
+        // let xtrem_zebra_data =
+        //     smol::block_on(async { self.xtrem_zebra.read().await.get_data().await });
     }
 }

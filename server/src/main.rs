@@ -7,7 +7,10 @@ use machines::{
         DeviceIdentification, DeviceIdentificationIdentified, MachineIdentificationUnique,
     },
     registry::{MACHINE_REGISTRY, MachineRegistry},
-    serial::{devices::laser::Laser, init::SerialDetection},
+    serial::{
+        devices::{laser::Laser, xtrem_zebra::XtremZebraUdp},
+        init::{SerialDetection, start_serial_discovery},
+    },
     winder2::api::GenericEvent,
 };
 
@@ -25,6 +28,7 @@ use smol::{
     channel::{Receiver, Sender},
     future,
     lock::RwLock,
+    unblock,
 };
 use socketio::main_namespace::machines_event::MachineObj;
 use socketioxide::extract::SocketRef;
