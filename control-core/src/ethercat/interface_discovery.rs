@@ -6,7 +6,6 @@ use ethercrab::{
 use interfaces::Interface;
 use std::cmp::min;
 use std::{
-    iter,
     net::{IpAddr, Ipv4Addr, SocketAddr},
     process::Command,
 };
