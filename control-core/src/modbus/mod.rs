@@ -5,6 +5,8 @@ use crc::{CRC_16_MODBUS, Crc};
 use serialport::SerialPort;
 use std::time::Duration;
 
+pub mod tcp;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ParityType {
     Even,

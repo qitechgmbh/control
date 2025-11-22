@@ -135,7 +135,6 @@ pub async fn start_interface_discovery(
     set_ethercat_iface(interface.clone());
 
     let res = setup_loop(&interface, app_state.clone()).await;
-
     match res {
         Ok(setup) => {
             let _ = sender.send(HotThreadMessage::AddEtherCatSetup(setup)).await;
