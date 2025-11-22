@@ -21,7 +21,7 @@ struct Packet {
 }
 
 impl Packet {
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self { buf: Vec::new() }
     }
 
@@ -48,7 +48,7 @@ pub struct ModbusTcpDevice {
 impl ModbusTcpDevice {
     pub async fn new(addr: SocketAddr) -> Result<Self> {
         let timeout = async {
-            Timer::after(Duration::from_millis(400)).await;
+            Timer::after(Duration::from_millis(10)).await;
             Err(io::Error::from(ErrorKind::TimedOut))
         };
 
@@ -145,7 +145,7 @@ impl ModbusTcpDevice {
         Ok(s)
     }
 
-    pub async fn set_string<const N: usize>(&mut self, addr: u16, s: &str) -> Result<()> {
+    pub async fn set_string<const N: usize>(&mut self, _addr: u16, s: &str) -> Result<()> {
         assert!(s.len() <= N, "String is too long to fit!");
 
         Ok(())
