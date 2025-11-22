@@ -272,6 +272,18 @@ export const buffer1: MachineProperties = {
   ],
 };
 
+export const xtremZebra1: MachineProperties = {
+  name: "Laser",
+  version: "V1",
+  slug: "xtremZebra",
+  icon: "lu:Sun",
+  machine_identification: {
+    vendor: VENDOR_QITECH,
+    machine: 0x0010,
+  },
+  device_roles: [],
+};
+
 export const aquapath1: MachineProperties = {
   name: "Aquapath",
   version: "V1",
@@ -347,6 +359,7 @@ export const machineProperties: MachineProperties[] = [
   mock1,
   buffer1,
   aquapath1,
+  xtremZebra,
 ];
 
 export const getMachineProperties = (
