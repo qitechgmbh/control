@@ -103,7 +103,9 @@ export function MachinesPage() {
           Hardcoded frontend machines for testing (no backend required)
         </p>
         <TouchButton
-          onClick={() => navigate({ to: "/_sidebar/machines/gluetex/control" })}
+          onClick={() =>
+            navigate({ to: "/_sidebar/machines/gluetex/999/control" })
+          }
           icon="lu:TestTube"
           variant="outline"
         >
