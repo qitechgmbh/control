@@ -181,7 +181,7 @@ export function DeviceEeepromDialogContent({ device, setOpen }: ContentProps) {
         device.revision,
         machinePreset?.device_roles,
       ),
-    [device.product_id, device.revision, machinePreset],
+    [device.vendor_id, device.product_id, device.revision, machinePreset],
   );
 
   // if there is only one allowed role, set the role to that immediately
@@ -197,7 +197,10 @@ export function DeviceEeepromDialogContent({ device, setOpen }: ContentProps) {
       );
       // set the device role using the actual role number, not the index
       if (machinePreset && machinePreset.device_roles[index]) {
-        form.setValue("role", machinePreset.device_roles[index].role.toString());
+        form.setValue(
+          "role",
+          machinePreset.device_roles[index].role.toString(),
+        );
       }
     }
   }, [filteredAllowedDevices, machinePreset, form]);
