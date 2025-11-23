@@ -1,10 +1,12 @@
 import { Topbar } from "@/components/Topbar";
+import { gluetexRoute } from "@/routes/routes";
 import React from "react";
 
 export function GluetexPage() {
+  const { serial } = gluetexRoute.useParams();
   return (
     <Topbar
-      pathname={`/_sidebar/machines/gluetex`}
+      pathname={`/_sidebar/machines/gluetex/${serial}`}
       items={[
         {
           link: "control",
