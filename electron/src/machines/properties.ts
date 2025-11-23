@@ -655,6 +655,181 @@ export const wagoAiTestMachine: MachineProperties = {
   ],
 };
 
+export const gluetex: MachineProperties = {
+  name: "Gluetex",
+  version: "V1",
+  slug: "gluetex",
+  icon: "lu:Disc3",
+  machine_identification: {
+    vendor: VENDOR_QITECH,
+    machine: 0x000a,
+  },
+  device_roles: [
+    {
+      role: 0,
+      role_label: "Bus Coupler",
+      allowed_devices: [
+        {
+          vendor_id: 2,
+          product_id: 0x44c2c52,
+          revision: 0x120000,
+        },
+      ],
+    },
+    {
+      role: 1,
+      role_label: "2x Digital Output",
+      allowed_devices: [
+        {
+          vendor_id: 2,
+          product_id: 0x7d23052,
+          revision: 0x110000,
+        },
+        {
+          vendor_id: 2,
+          product_id: 0x7d23052,
+          revision: 0x120000,
+        },
+      ],
+    },
+    {
+      role: 2,
+      role_label: "1x Stepper Spool EL7041-0052",
+      allowed_devices: [
+        {
+          vendor_id: 2,
+          product_id: 461451346,
+          revision: 0x100000,
+        },
+      ],
+    },
+    {
+      role: 3,
+      role_label: "1x Stepper Traverse",
+      allowed_devices: [
+        {
+          vendor_id: 2,
+          product_id: 0x1b773052,
+          revision: 0x1a0000,
+        },
+        {
+          vendor_id: 2,
+          product_id: 0x1b773052,
+          revision: 0x190000,
+        },
+      ],
+    },
+    {
+      role: 4,
+      role_label: "1x Stepper Puller",
+      allowed_devices: [
+        {
+          vendor_id: 2,
+          product_id: 0x1b773052,
+          revision: 0x10001e,
+        },
+      ],
+    },
+    {
+      role: 5,
+      role_label: "Temperature Sensors 1-4",
+      allowed_devices: [
+        {
+          vendor_id: 2,
+          product_id: 0xc843052,
+          revision: 0x160000,
+        },
+        {
+          vendor_id: 2,
+          product_id: 0xc843052,
+          revision: 0x150000,
+        },
+      ],
+    },
+    {
+      role: 6,
+      role_label: "Temperature Sensors 5-6",
+      allowed_devices: [
+        {
+          vendor_id: 2,
+          product_id: 0xc843052,
+          revision: 0x160000,
+        },
+        {
+          vendor_id: 2,
+          product_id: 0xc843052,
+          revision: 0x150000,
+        },
+      ],
+    },
+    {
+      role: 7,
+      role_label: "Digital Outputs 1-4 for Heater SSRs",
+      allowed_devices: [
+        {
+          vendor_id: 2,
+          product_id: 131346514,
+          revision: 0x110000,
+        },
+      ],
+    },
+    {
+      role: 8,
+      role_label: "Digital Outputs 5-6 for Heater SSRs",
+      allowed_devices: [
+        {
+          vendor_id: 2,
+          product_id: 131346514,
+          revision: 0x110000,
+        },
+      ],
+    },
+    {
+      role: 9,
+      role_label: "Addon Motor 3",
+      allowed_devices: [
+        {
+          vendor_id: 2,
+          product_id: 0x1b773052,
+          revision: 0x1a0000,
+        },
+        {
+          vendor_id: 2,
+          product_id: 0x1b773052,
+          revision: 0x190000,
+        },
+      ],
+    },
+    {
+      role: 10,
+      role_label: "Addon Motor 4",
+      allowed_devices: [
+        {
+          vendor_id: 2,
+          product_id: 0x1b773052,
+          revision: 0x1a0000,
+        },
+        {
+          vendor_id: 2,
+          product_id: 0x1b773052,
+          revision: 0x190000,
+        },
+      ],
+    },
+    {
+      role: 11,
+      role_label: "Slave Puller",
+      allowed_devices: [
+        {
+          vendor_id: 2,
+          product_id: 0x1b773052,
+          revision: 0x10001e,
+        },
+      ],
+    },
+  ],
+};
+
 export const machineProperties: MachineProperties[] = [
   winder2,
   extruder3,
@@ -671,6 +846,7 @@ export const machineProperties: MachineProperties[] = [
   wago8chDioTestMachine,
   ip20TestMachine,
   wagoDoTestMachine,
+  gluetex,
   TestMotor,
 ];
 
