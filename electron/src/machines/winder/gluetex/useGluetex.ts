@@ -8,7 +8,8 @@ import { toastError } from "@/components/Toast";
 import { useMachineMutate as useMachineMutation } from "@/client/useClient";
 import { useStateOptimistic } from "@/lib/useStateOptimistic";
 import { MachineIdentificationUnique } from "@/machines/types";
-import { VENDOR_QITECH } from "@/machines/properties";
+import { VENDOR_QITECH, gluetex } from "@/machines/properties";
+import { gluetexRoute } from "@/routes/routes";
 import { useEffect, useMemo } from "react";
 import { produce } from "immer";
 import { useMachines } from "@/client/useMachines";
@@ -32,17 +33,32 @@ import {
 import { machineIdentificationUnique } from "@/machines/types";
 
 export function useGluetex() {
-  // Use hardcoded machine identification for testing
-  // TODO: Get this from route params like winder2 does
+  const { serial: serialString } = gluetexRoute.useParams();
+
+  // Memoize the machine identification to keep it stable between renders
   const machineIdentification: MachineIdentificationUnique = useMemo(() => {
+    const serial = parseInt(serialString);
+
+    if (isNaN(serial)) {
+      toastError(
+        "Invalid Serial Number",
+        `"${serialString}" is not a valid serial number.`,
+      );
+
+      return {
+        machine_identification: {
+          vendor: 0,
+          machine: 0,
+        },
+        serial: 0,
+      };
+    }
+
     return {
-      machine_identification: {
-        vendor: VENDOR_QITECH,
-        machine: 0x000a, // Gluetex machine ID
-      },
-      serial: 999,
+      machine_identification: gluetex.machine_identification,
+      serial,
     };
-  }, []);
+  }, [serialString]);
 
   // Get consolidated state and live values from namespace
   const {
