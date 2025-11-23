@@ -239,7 +239,7 @@ impl MachineNewTrait for Gluetex {
                     hardware,
                     params,
                     8,
-                    vec![EL7031_IDENTITY_A, EL7031_IDENTITY_B],
+                    vec![EL7031_IDENTITY_A, EL7031_IDENTITY_B, EL7031_0030_IDENTITY_A],
                 )
                 .await?;
 
@@ -273,7 +273,7 @@ impl MachineNewTrait for Gluetex {
                     hardware,
                     params,
                     9,
-                    vec![EL7031_IDENTITY_A, EL7031_IDENTITY_B],
+                    vec![EL7031_IDENTITY_A, EL7031_IDENTITY_B, EL7031_0030_IDENTITY_A],
                 )
                 .await?;
 
@@ -307,7 +307,7 @@ impl MachineNewTrait for Gluetex {
                     hardware,
                     params,
                     10,
-                    vec![EL7031_0030_IDENTITY_A],
+                    vec![EL7031_0030_IDENTITY_A, EL7031_IDENTITY_A, EL7031_IDENTITY_B],
                 )
                 .await?;
 
