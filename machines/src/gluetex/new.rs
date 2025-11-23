@@ -233,18 +233,18 @@ impl MachineNewTrait for Gluetex {
             .await?
             .0;
 
-            // Role 8: Addon Motor 3 EL7031
+            // Role 8: Addon Motor 3 EL7031-0030
             let el7031_addon3 = {
-                let device = get_ethercat_device::<EL7031>(
+                let device = get_ethercat_device::<EL7031_0030>(
                     hardware,
                     params,
                     8,
-                    vec![EL7031_IDENTITY_A, EL7031_IDENTITY_B, EL7031_0030_IDENTITY_A],
+                    vec![EL7031_0030_IDENTITY_A, EL7031_IDENTITY_A, EL7031_IDENTITY_B],
                 )
                 .await?;
 
-                let el7031_config = EL7031Configuration {
-                    stm_features: shared_config::el70x1::StmFeatures {
+                let el7031_0030_config = EL7031_0030Configuration {
+                    stm_features: el7031_0030::coe::StmFeatures {
                         operation_mode: EL70x1OperationMode::DirectVelocity,
                         speed_range: shared_config::el70x1::EL70x1SpeedRange::Steps1000,
                         ..Default::default()
@@ -253,7 +253,7 @@ impl MachineNewTrait for Gluetex {
                         max_current: 1500,
                         ..Default::default()
                     },
-                    pdo_assignment: EL7031PredefinedPdoAssignment::VelocityControlCompact,
+                    pdo_assignment: EL7031_0030PredefinedPdoAssignment::VelocityControlCompact,
                     ..Default::default()
                 };
 
@@ -261,24 +261,24 @@ impl MachineNewTrait for Gluetex {
                     .0
                     .write()
                     .await
-                    .write_config(&device.1, &el7031_config)
+                    .write_config(&device.1, &el7031_0030_config)
                     .await?;
 
                 device.0
             };
 
-            // Role 9: Addon Motor 4 EL7031
+            // Role 9: Addon Motor 4 EL7031-0030
             let el7031_addon4 = {
-                let device = get_ethercat_device::<EL7031>(
+                let device = get_ethercat_device::<EL7031_0030>(
                     hardware,
                     params,
                     9,
-                    vec![EL7031_IDENTITY_A, EL7031_IDENTITY_B, EL7031_0030_IDENTITY_A],
+                    vec![EL7031_0030_IDENTITY_A, EL7031_IDENTITY_A, EL7031_IDENTITY_B],
                 )
                 .await?;
 
-                let el7031_config = EL7031Configuration {
-                    stm_features: shared_config::el70x1::StmFeatures {
+                let el7031_0030_config = EL7031_0030Configuration {
+                    stm_features: el7031_0030::coe::StmFeatures {
                         operation_mode: EL70x1OperationMode::DirectVelocity,
                         speed_range: shared_config::el70x1::EL70x1SpeedRange::Steps1000,
                         ..Default::default()
@@ -287,7 +287,7 @@ impl MachineNewTrait for Gluetex {
                         max_current: 1500,
                         ..Default::default()
                     },
-                    pdo_assignment: EL7031PredefinedPdoAssignment::VelocityControlCompact,
+                    pdo_assignment: EL7031_0030PredefinedPdoAssignment::VelocityControlCompact,
                     ..Default::default()
                 };
 
@@ -295,7 +295,7 @@ impl MachineNewTrait for Gluetex {
                     .0
                     .write()
                     .await
-                    .write_config(&device.1, &el7031_config)
+                    .write_config(&device.1, &el7031_0030_config)
                     .await?;
 
                 device.0
@@ -440,91 +440,96 @@ impl MachineNewTrait for Gluetex {
                 .machine_identification_unique
                 .clone();
             let (sender, receiver) = smol::channel::unbounded();
-            let mut new = Self {
-                main_sender: params.main_thread_channel.clone(),
-                max_connected_machines: 2,
-                api_receiver: receiver,
-                api_sender: sender,
-                traverse: StepperVelocityEL70x1::new(el7031.clone(), EL7031StepperPort::STM1),
-                traverse_end_stop: DigitalInput::new(el7031, EL7031DigitalInputPort::DI1),
-                temperature_controller_1,
-                temperature_controller_2,
-                temperature_controller_3,
-                temperature_controller_4,
-                temperature_controller_5,
-                temperature_controller_6,
-                puller: StepperVelocityEL70x1::new(
-                    el7031_0030.clone(),
-                    EL7031_0030StepperPort::STM1,
-                ),
-                spool: StepperVelocityEL70x1::new(el7041, EL7041_0052Port::STM1),
-                addon_motor_3: StepperVelocityEL70x1::new(el7031_addon3, EL7031StepperPort::STM1),
-                addon_motor_4: StepperVelocityEL70x1::new(el7031_addon4, EL7031StepperPort::STM1),
-                addon_motor_3_controller: super::addon_motor_controller::AddonMotorController::new(
-                    200,
-                ),
-                addon_motor_4_controller: super::addon_motor_controller::AddonMotorController::new(
-                    200,
-                ),
-                tension_arm: TensionArm::new(AnalogInput::new(
-                    el7031_0030,
-                    EL7031_0030AnalogInputPort::AI1,
-                )),
-                laser: DigitalOutput::new(el2002, EL2002Port::DO1),
-                namespace: GluetexNamespace {
-                    namespace: params.namespace.clone(),
-                },
-                mode: mode.clone(),
-                spool_step_converter: AngularStepConverter::new(200),
-                spool_speed_controller: SpoolSpeedController::new(),
-                last_measurement_emit: Instant::now(),
-                spool_mode: mode.clone().into(),
-                traverse_mode: mode.clone().into(),
-                puller_mode: mode.clone().into(),
-                puller_speed_controller: PullerSpeedController::new(
-                    Velocity::new::<meter_per_minute>(1.0),
-                    Length::new::<millimeter>(1.75),
-                    LinearStepConverter::from_diameter(
-                        200,                            // Assuming 200 steps per revolution for the puller stepper,
-                        Length::new::<centimeter>(8.0), // 8cm diameter of the puller wheel
+            let mut new =
+                Self {
+                    main_sender: params.main_thread_channel.clone(),
+                    max_connected_machines: 2,
+                    api_receiver: receiver,
+                    api_sender: sender,
+                    traverse: StepperVelocityEL70x1::new(el7031.clone(), EL7031StepperPort::STM1),
+                    traverse_end_stop: DigitalInput::new(el7031, EL7031DigitalInputPort::DI1),
+                    temperature_controller_1,
+                    temperature_controller_2,
+                    temperature_controller_3,
+                    temperature_controller_4,
+                    temperature_controller_5,
+                    temperature_controller_6,
+                    puller: StepperVelocityEL70x1::new(
+                        el7031_0030.clone(),
+                        EL7031_0030StepperPort::STM1,
                     ),
-                ),
-                slave_puller: StepperVelocityEL70x1::new(
-                    el7031_0030_slave.clone(),
-                    EL7031_0030StepperPort::STM1,
-                ),
-                slave_tension_arm: TensionArm::new(AnalogInput::new(
-                    el7031_0030_slave,
-                    EL7031_0030AnalogInputPort::AI1,
-                )),
-                slave_puller_speed_controller: SlavePullerSpeedController::new(
-                    Angle::new::<degree>(20.0), // Min angle (low tension, high speed)
-                    Angle::new::<degree>(90.0), // Max angle (high tension, low speed)
-                    LinearStepConverter::from_diameter(
-                        200,                            // 200 steps per revolution
-                        Length::new::<centimeter>(8.0), // 8cm diameter
+                    spool: StepperVelocityEL70x1::new(el7041, EL7041_0052Port::STM1),
+                    addon_motor_3: StepperVelocityEL70x1::new(
+                        el7031_addon3,
+                        EL7031_0030StepperPort::STM1,
                     ),
-                    FilamentTensionCalculator::new(
-                        Angle::new::<degree>(20.0), // Min angle for tension calc
-                        Angle::new::<degree>(90.0), // Max angle for tension calc
+                    addon_motor_4: StepperVelocityEL70x1::new(
+                        el7031_addon4,
+                        EL7031_0030StepperPort::STM1,
                     ),
-                ),
-                slave_puller_mode: mode.clone().into(),
-                traverse_controller: TraverseController::new(
-                    Length::new::<millimeter>(22.0), // Default inner limit
-                    Length::new::<millimeter>(92.0), // Default outer limit
-                    64,                              // Microsteps
-                ),
-                emitted_default_state: false,
-                spool_automatic_action: super::SpoolAutomaticAction {
-                    progress: Length::ZERO,
-                    progress_last_check: Instant::now(),
-                    target_length: Length::new::<meter>(250.0),
-                    mode: super::api::SpoolAutomaticActionMode::NoAction,
-                },
-                machine_identification_unique: machine_id,
-                connected_machines: vec![],
-            };
+                    addon_motor_3_controller:
+                        super::addon_motor_controller::AddonMotorController::new(200),
+                    addon_motor_4_controller:
+                        super::addon_motor_controller::AddonMotorController::new(200),
+                    tension_arm: TensionArm::new(AnalogInput::new(
+                        el7031_0030,
+                        EL7031_0030AnalogInputPort::AI1,
+                    )),
+                    laser: DigitalOutput::new(el2002, EL2002Port::DO1),
+                    namespace: GluetexNamespace {
+                        namespace: params.namespace.clone(),
+                    },
+                    mode: mode.clone(),
+                    spool_step_converter: AngularStepConverter::new(200),
+                    spool_speed_controller: SpoolSpeedController::new(),
+                    last_measurement_emit: Instant::now(),
+                    spool_mode: mode.clone().into(),
+                    traverse_mode: mode.clone().into(),
+                    puller_mode: mode.clone().into(),
+                    puller_speed_controller: PullerSpeedController::new(
+                        Velocity::new::<meter_per_minute>(1.0),
+                        Length::new::<millimeter>(1.75),
+                        LinearStepConverter::from_diameter(
+                            200,                            // Assuming 200 steps per revolution for the puller stepper,
+                            Length::new::<centimeter>(8.0), // 8cm diameter of the puller wheel
+                        ),
+                    ),
+                    slave_puller: StepperVelocityEL70x1::new(
+                        el7031_0030_slave.clone(),
+                        EL7031_0030StepperPort::STM1,
+                    ),
+                    slave_tension_arm: TensionArm::new(AnalogInput::new(
+                        el7031_0030_slave,
+                        EL7031_0030AnalogInputPort::AI1,
+                    )),
+                    slave_puller_speed_controller: SlavePullerSpeedController::new(
+                        Angle::new::<degree>(20.0), // Min angle (low tension, high speed)
+                        Angle::new::<degree>(90.0), // Max angle (high tension, low speed)
+                        LinearStepConverter::from_diameter(
+                            200,                            // 200 steps per revolution
+                            Length::new::<centimeter>(8.0), // 8cm diameter
+                        ),
+                        FilamentTensionCalculator::new(
+                            Angle::new::<degree>(20.0), // Min angle for tension calc
+                            Angle::new::<degree>(90.0), // Max angle for tension calc
+                        ),
+                    ),
+                    slave_puller_mode: mode.clone().into(),
+                    traverse_controller: TraverseController::new(
+                        Length::new::<millimeter>(22.0), // Default inner limit
+                        Length::new::<millimeter>(92.0), // Default outer limit
+                        64,                              // Microsteps
+                    ),
+                    emitted_default_state: false,
+                    spool_automatic_action: super::SpoolAutomaticAction {
+                        progress: Length::ZERO,
+                        progress_last_check: Instant::now(),
+                        target_length: Length::new::<meter>(250.0),
+                        mode: super::api::SpoolAutomaticActionMode::NoAction,
+                    },
+                    machine_identification_unique: machine_id,
+                    connected_machines: vec![],
+                };
 
             // initalize events
             new.emit_state();
