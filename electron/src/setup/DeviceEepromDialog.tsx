@@ -195,10 +195,12 @@ export function DeviceEeepromDialogContent({ device, setOpen }: ContentProps) {
       const index = filteredAllowedDevices.findIndex(
         (isAllowed) => isAllowed === true,
       );
-      // set the device role of index
-      form.setValue("role", index.toString());
+      // set the device role using the actual role number, not the index
+      if (machinePreset && machinePreset.device_roles[index]) {
+        form.setValue("role", machinePreset.device_roles[index].role.toString());
+      }
     }
-  }, [filteredAllowedDevices]);
+  }, [filteredAllowedDevices, machinePreset, form]);
 
   // Position numpad once when it opens
   useEffect(() => {
