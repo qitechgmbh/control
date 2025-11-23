@@ -855,6 +855,11 @@ export const gluetex: MachineProperties = {
           product_id: 0x1b773052,
           revision: 0x190000,
         },
+        {
+          vendor_id: 2,
+          product_id: 0x1b773052,
+          revision: 0x10001e,
+        },
       ],
     },
     {
@@ -871,6 +876,11 @@ export const gluetex: MachineProperties = {
           product_id: 0x1b773052,
           revision: 0x190000,
         },
+        {
+          vendor_id: 2,
+          product_id: 0x1b773052,
+          revision: 0x10001e,
+        },
       ],
     },
     {
@@ -886,6 +896,11 @@ export const gluetex: MachineProperties = {
           vendor_id: 2,
           product_id: 0x1b773052,
           revision: 0x190000,
+        },
+        {
+          vendor_id: 2,
+          product_id: 0x1b773052,
+          revision: 0x10001e,
         },
       ],
     },
