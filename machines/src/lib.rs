@@ -353,7 +353,7 @@ async fn get_device_ident<
             }
             _ => {
                 return Err(anyhow::anyhow!(
-                    "[{}::MachineNewTrait/ExtruderV2::new] Device with role {} is not Ethercat",
+                    "[{}] Device with role {} is not Ethercat",
                     module_path!(),
                     role
                 ));
@@ -411,9 +411,11 @@ where
 
     if !matched_any_identity {
         return Err(anyhow::anyhow!(
-            "[{}::MachineNewTrait/ExtruderV2::new] Device identity mismatch: expected {:?}",
+            "[{}] Device identity mismatch for role {}: expected {:?}, got {:?}",
             module_path!(),
-            expected_identities
+            role,
+            expected_identities,
+            actual_identity
         ));
     }
 
