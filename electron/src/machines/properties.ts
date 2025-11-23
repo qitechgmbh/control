@@ -90,13 +90,18 @@ export const winder2: MachineProperties = {
       ],
     },
     {
-      role: 4,
-      role_label: "1x Stepper Puller",
+      role: 10,
+      role_label: "Slave Puller",
       allowed_devices: [
         {
           vendor_id: 2,
           product_id: 0x1b773052,
-          revision: 0x10001e,
+          revision: 0x1a0000,
+        },
+        {
+          vendor_id: 2,
+          product_id: 0x1b773052,
+          revision: 0x190000,
         },
       ],
     },
@@ -744,6 +749,11 @@ export const gluetex: MachineProperties = {
           product_id: 0xc843052,
           revision: 0x150000,
         },
+        {
+          vendor_id: 2,
+          product_id: 0xc843052,
+          revision: 0x1a0000,
+        },
       ],
     },
     {
@@ -760,32 +770,31 @@ export const gluetex: MachineProperties = {
           product_id: 0xc843052,
           revision: 0x150000,
         },
+        {
+          vendor_id: 2,
+          product_id: 0xc843052,
+          revision: 0x1a0000,
+        },
       ],
     },
     {
       role: 7,
-      role_label: "Digital Outputs 1-4 for Heater SSRs",
+      role_label: "Digital Outputs for Heater SSRs",
       allowed_devices: [
         {
           vendor_id: 2,
-          product_id: 131346514,
+          product_id: 0x7d83052,
           revision: 0x110000,
+        },
+        {
+          vendor_id: 2,
+          product_id: 0x7d83052,
+          revision: 0x120000,
         },
       ],
     },
     {
       role: 8,
-      role_label: "Digital Outputs 5-6 for Heater SSRs",
-      allowed_devices: [
-        {
-          vendor_id: 2,
-          product_id: 131346514,
-          revision: 0x110000,
-        },
-      ],
-    },
-    {
-      role: 9,
       role_label: "Addon Motor 3",
       allowed_devices: [
         {
@@ -801,7 +810,7 @@ export const gluetex: MachineProperties = {
       ],
     },
     {
-      role: 10,
+      role: 9,
       role_label: "Addon Motor 4",
       allowed_devices: [
         {
@@ -817,13 +826,18 @@ export const gluetex: MachineProperties = {
       ],
     },
     {
-      role: 11,
+      role: 10,
       role_label: "Slave Puller",
       allowed_devices: [
         {
           vendor_id: 2,
           product_id: 0x1b773052,
-          revision: 0x10001e,
+          revision: 0x1a0000,
+        },
+        {
+          vendor_id: 2,
+          product_id: 0x1b773052,
+          revision: 0x190000,
         },
       ],
     },
