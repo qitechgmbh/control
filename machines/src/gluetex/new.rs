@@ -18,7 +18,9 @@ mod gluetex_imports {
     pub use ethercat_hal::coe::ConfigurableDevice;
     pub use ethercat_hal::devices::ek1100::EK1100;
     pub use ethercat_hal::devices::el2002::{EL2002, EL2002_IDENTITY_B, EL2002Port};
-    pub use ethercat_hal::devices::el2004::{EL2004, EL2004_IDENTITY_A, EL2004Port};
+    pub use ethercat_hal::devices::el2008::{
+        EL2008, EL2008_IDENTITY_A, EL2008_IDENTITY_B, EL2008Port,
+    };
     pub use ethercat_hal::devices::el3204::{
         EL3204, EL3204_IDENTITY_A, EL3204_IDENTITY_B, EL3204Port,
     };
@@ -221,20 +223,52 @@ impl MachineNewTrait for Gluetex {
             let temperature_5 = TemperatureInput::new(el3204_2.clone(), EL3204Port::T1);
             let temperature_6 = TemperatureInput::new(el3204_2, EL3204Port::T2);
 
-            // Role 7: Digital outputs 1-4 for heater SSRs EL2004
-            let el2004_1 =
-                get_ethercat_device::<EL2004>(hardware, params, 7, vec![EL2004_IDENTITY_A])
-                    .await?
-                    .0;
+            // Role 7: Digital outputs for heater SSRs EL2008
+            let el2008 = get_ethercat_device::<EL2008>(
+                hardware,
+                params,
+                7,
+                vec![EL2008_IDENTITY_A, EL2008_IDENTITY_B],
+            )
+            .await?
+            .0;
 
-            // Role 8: Digital outputs 5-6 for heater SSRs EL2004
-            let el2004_2 =
-                get_ethercat_device::<EL2004>(hardware, params, 8, vec![EL2004_IDENTITY_A])
-                    .await?
-                    .0;
-
-            // Role 9: Addon Motor 3 EL7031
+            // Role 8: Addon Motor 3 EL7031
             let el7031_addon3 = {
+                let device = get_ethercat_device::<EL7031>(
+                    hardware,
+                    params,
+                    8,
+                    vec![EL7031_IDENTITY_A, EL7031_IDENTITY_B],
+                )
+                .await?;
+
+                let el7031_config = EL7031Configuration {
+                    stm_features: shared_config::el70x1::StmFeatures {
+                        operation_mode: EL70x1OperationMode::DirectVelocity,
+                        speed_range: shared_config::el70x1::EL70x1SpeedRange::Steps1000,
+                        ..Default::default()
+                    },
+                    stm_motor: StmMotorConfiguration {
+                        max_current: 1500,
+                        ..Default::default()
+                    },
+                    pdo_assignment: EL7031PredefinedPdoAssignment::VelocityControlCompact,
+                    ..Default::default()
+                };
+
+                device
+                    .0
+                    .write()
+                    .await
+                    .write_config(&device.1, &el7031_config)
+                    .await?;
+
+                device.0
+            };
+
+            // Role 9: Addon Motor 4 EL7031
+            let el7031_addon4 = {
                 let device = get_ethercat_device::<EL7031>(
                     hardware,
                     params,
@@ -267,46 +301,12 @@ impl MachineNewTrait for Gluetex {
                 device.0
             };
 
-            // Role 10: Addon Motor 4 EL7031
-            let el7031_addon4 = {
-                let device = get_ethercat_device::<EL7031>(
-                    hardware,
-                    params,
-                    10,
-                    vec![EL7031_IDENTITY_A, EL7031_IDENTITY_B],
-                )
-                .await?;
-
-                let el7031_config = EL7031Configuration {
-                    stm_features: shared_config::el70x1::StmFeatures {
-                        operation_mode: EL70x1OperationMode::DirectVelocity,
-                        speed_range: shared_config::el70x1::EL70x1SpeedRange::Steps1000,
-                        ..Default::default()
-                    },
-                    stm_motor: StmMotorConfiguration {
-                        max_current: 1500,
-                        ..Default::default()
-                    },
-                    pdo_assignment: EL7031PredefinedPdoAssignment::VelocityControlCompact,
-                    ..Default::default()
-                };
-
-                device
-                    .0
-                    .write()
-                    .await
-                    .write_config(&device.1, &el7031_config)
-                    .await?;
-
-                device.0
-            };
-
-            // Role 11: Slave Puller EL7031-0030 (with analog input for tension arm)
+            // Role 10: Slave Puller EL7031-0030 (with analog input for tension arm)
             let el7031_0030_slave = {
                 let device = get_ethercat_device::<EL7031_0030>(
                     hardware,
                     params,
-                    11,
+                    10,
                     vec![EL7031_0030_IDENTITY_A],
                 )
                 .await?;
@@ -334,12 +334,12 @@ impl MachineNewTrait for Gluetex {
             };
 
             // Digital outputs for SSR control (24V to external SSRs for 60W heaters)
-            let heater_ssr_1 = DigitalOutput::new(el2004_1.clone(), EL2004Port::DO1);
-            let heater_ssr_2 = DigitalOutput::new(el2004_1.clone(), EL2004Port::DO2);
-            let heater_ssr_3 = DigitalOutput::new(el2004_1.clone(), EL2004Port::DO3);
-            let heater_ssr_4 = DigitalOutput::new(el2004_1, EL2004Port::DO4);
-            let heater_ssr_5 = DigitalOutput::new(el2004_2.clone(), EL2004Port::DO1);
-            let heater_ssr_6 = DigitalOutput::new(el2004_2, EL2004Port::DO2);
+            let heater_ssr_1 = DigitalOutput::new(el2008.clone(), EL2008Port::DO1);
+            let heater_ssr_2 = DigitalOutput::new(el2008.clone(), EL2008Port::DO2);
+            let heater_ssr_3 = DigitalOutput::new(el2008.clone(), EL2008Port::DO3);
+            let heater_ssr_4 = DigitalOutput::new(el2008.clone(), EL2008Port::DO4);
+            let heater_ssr_5 = DigitalOutput::new(el2008.clone(), EL2008Port::DO5);
+            let heater_ssr_6 = DigitalOutput::new(el2008, EL2008Port::DO6);
 
             // Maximum temperature for all heating zones
             let max_temperature = ThermodynamicTemperature::new::<degree_celsius>(300.0);
