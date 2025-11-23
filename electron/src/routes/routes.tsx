@@ -142,7 +142,7 @@ export const winder2PresetsRoute = createRoute({
 
 export const gluetexRoute = createRoute({
   getParentRoute: () => machinesRoute,
-  path: "gluetex",
+  path: "gluetex/$serial",
   component: () => <GluetexPage />,
 });
 
