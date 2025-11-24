@@ -270,6 +270,15 @@ export function useGluetex() {
     z.object({ SetHeatingEnabled: z.boolean() }),
   );
 
+  const { request: requestSetHeatingTargetTemperature } = useMachineMutation(
+    z.object({
+      SetHeatingTargetTemperature: z.tuple([
+        z.enum(["Zone1", "Zone2", "Zone3", "Zone4", "Zone5", "Zone6"]),
+        z.number(),
+      ]),
+    }),
+  );
+
   // ========== Helper Functions ==========
 
   // Helper function for optimistic updates using produce
@@ -980,6 +989,84 @@ export function useGluetex() {
     );
   };
 
+  const setHeatingZone1Temperature = (temperature: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.heating_states.zone_1.target_temperature = temperature;
+      },
+      () =>
+        requestSetHeatingTargetTemperature({
+          machine_identification_unique: machineIdentification,
+          data: { SetHeatingTargetTemperature: ["Zone1", temperature] },
+        }),
+    );
+  };
+
+  const setHeatingZone2Temperature = (temperature: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.heating_states.zone_2.target_temperature = temperature;
+      },
+      () =>
+        requestSetHeatingTargetTemperature({
+          machine_identification_unique: machineIdentification,
+          data: { SetHeatingTargetTemperature: ["Zone2", temperature] },
+        }),
+    );
+  };
+
+  const setHeatingZone3Temperature = (temperature: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.heating_states.zone_3.target_temperature = temperature;
+      },
+      () =>
+        requestSetHeatingTargetTemperature({
+          machine_identification_unique: machineIdentification,
+          data: { SetHeatingTargetTemperature: ["Zone3", temperature] },
+        }),
+    );
+  };
+
+  const setHeatingZone4Temperature = (temperature: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.heating_states.zone_4.target_temperature = temperature;
+      },
+      () =>
+        requestSetHeatingTargetTemperature({
+          machine_identification_unique: machineIdentification,
+          data: { SetHeatingTargetTemperature: ["Zone4", temperature] },
+        }),
+    );
+  };
+
+  const setHeatingZone5Temperature = (temperature: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.heating_states.zone_5.target_temperature = temperature;
+      },
+      () =>
+        requestSetHeatingTargetTemperature({
+          machine_identification_unique: machineIdentification,
+          data: { SetHeatingTargetTemperature: ["Zone5", temperature] },
+        }),
+    );
+  };
+
+  const setHeatingZone6Temperature = (temperature: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.heating_states.zone_6.target_temperature = temperature;
+      },
+      () =>
+        requestSetHeatingTargetTemperature({
+          machine_identification_unique: machineIdentification,
+          data: { SetHeatingTargetTemperature: ["Zone6", temperature] },
+        }),
+    );
+  };
+
   // ========== Machine Filtering ==========
 
   const machines = useMachines();
@@ -1097,6 +1184,12 @@ export function useGluetex() {
 
     // Heating action functions
     setHeatingPid,
+    setHeatingZone1Temperature,
+    setHeatingZone2Temperature,
+    setHeatingZone3Temperature,
+    setHeatingZone4Temperature,
+    setHeatingZone5Temperature,
+    setHeatingZone6Temperature,
 
     // Addon action functions (local only)
     setStepper3Mode,
