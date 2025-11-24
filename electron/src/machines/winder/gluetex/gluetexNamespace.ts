@@ -229,6 +229,7 @@ export const heatingPidStatesSchema = z.object({
  * Heating states schema
  */
 export const heatingStatesSchema = z.object({
+  enabled: z.boolean(),
   zone_1: heatingStateSchema,
   zone_2: heatingStateSchema,
   zone_3: heatingStateSchema,
@@ -317,12 +318,30 @@ function getMotorRatiosFromBackend(
 }
 
 /**
+ * Helper to determine stepper3 mode from backend enabled state
+ */
+function getStepper3ModeFromBackend(
+  motor3: z.infer<typeof addonMotorStateSchema>,
+): StepperMode {
+  return motor3.enabled ? "Run" : "Standby";
+}
+
+/**
  * Helper to determine stepper4 mode from backend enabled state
  */
 function getStepper4ModeFromBackend(
   motor4: z.infer<typeof addonMotorStateSchema>,
 ): StepperMode {
   return motor4.enabled ? "Run" : "Standby";
+}
+
+/**
+ * Helper to determine heating mode from backend enabled state
+ */
+function getHeatingModeFromBackend(
+  heatingStates: z.infer<typeof heatingStatesSchema>,
+): HeatingMode {
+  return heatingStates.enabled ? "Heating" : "Standby";
 }
 
 export type HeatingState = {
@@ -558,9 +577,17 @@ export function gluetexMessageHandler(
             stateEvent.data.addon_motor_4_state,
           );
 
-          // Derive stepper4 mode from backend enabled state
+          // Derive stepper modes from backend enabled state
+          const stepper3Mode = getStepper3ModeFromBackend(
+            stateEvent.data.addon_motor_3_state,
+          );
           const stepper4Mode = getStepper4ModeFromBackend(
             stateEvent.data.addon_motor_4_state,
+          );
+
+          // Derive heating mode from backend enabled state
+          const heatingMode = getHeatingModeFromBackend(
+            stateEvent.data.heating_states,
           );
 
           // Extend backend state with addon state (some local, some derived from backend)
@@ -573,14 +600,12 @@ export function gluetexMessageHandler(
             // Derive from backend addon motor state
             motor_ratios_state: motorRatiosState,
             stepper_state: {
-              stepper3_mode:
-                state.state?.data.stepper_state.stepper3_mode ||
-                DEFAULT_ADDON_STATE.stepper_state.stepper3_mode,
+              stepper3_mode: stepper3Mode,
               stepper4_mode: stepper4Mode,
             },
-            heating_state:
-              state.state?.data.heating_state ||
-              DEFAULT_ADDON_STATE.heating_state,
+            heating_state: {
+              heating_mode: heatingMode,
+            },
             quality_control_state:
               state.state?.data.quality_control_state ||
               DEFAULT_ADDON_STATE.quality_control_state,

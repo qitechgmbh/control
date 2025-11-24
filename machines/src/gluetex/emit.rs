@@ -346,6 +346,7 @@ impl Gluetex {
                 spool_automatic_action_mode: self.spool_automatic_action.mode.clone(),
             },
             heating_states: api::HeatingStates {
+                enabled: self.heating_enabled,
                 zone_1: api::HeatingState {
                     target_temperature: self
                         .temperature_controller_1
@@ -653,6 +654,26 @@ impl Gluetex {
                 .set_target_temperature(target_temp),
         }
         self.emit_state();
+    }
+
+    /// Enable or disable all heating zones
+    pub fn set_heating_enabled(&mut self, enabled: bool) {
+        self.heating_enabled = enabled;
+        if enabled {
+            self.temperature_controller_1.allow_heating();
+            self.temperature_controller_2.allow_heating();
+            self.temperature_controller_3.allow_heating();
+            self.temperature_controller_4.allow_heating();
+            self.temperature_controller_5.allow_heating();
+            self.temperature_controller_6.allow_heating();
+        } else {
+            self.temperature_controller_1.disallow_heating();
+            self.temperature_controller_2.disallow_heating();
+            self.temperature_controller_3.disallow_heating();
+            self.temperature_controller_4.disallow_heating();
+            self.temperature_controller_5.disallow_heating();
+            self.temperature_controller_6.disallow_heating();
+        }
     }
 
     /// Configure PID parameters for a heating zone

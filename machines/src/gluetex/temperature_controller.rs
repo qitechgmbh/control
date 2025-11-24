@@ -62,11 +62,11 @@ impl TemperatureController {
         self.heating.target_temperature = temp;
     }
 
-    pub const fn disallow_heating(&mut self) {
+    pub fn disallow_heating(&mut self) {
         self.heating_allowed = false;
     }
 
-    pub const fn allow_heating(&mut self) {
+    pub fn allow_heating(&mut self) {
         self.heating_allowed = true;
     }
 
