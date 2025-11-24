@@ -6,6 +6,7 @@ import { useGluetex } from "./useGluetex";
 
 export function GluetexHeatersPage() {
   const {
+    state,
     temperature1,
     temperature2,
     temperature3,
@@ -18,6 +19,12 @@ export function GluetexHeatersPage() {
     heater4Power,
     heater5Power,
     heater6Power,
+    setHeatingZone1Temperature,
+    setHeatingZone2Temperature,
+    setHeatingZone3Temperature,
+    setHeatingZone4Temperature,
+    setHeatingZone5Temperature,
+    setHeatingZone6Temperature,
   } = useGluetex();
 
   return (
@@ -25,55 +32,55 @@ export function GluetexHeatersPage() {
       <ControlGrid>
         <HeatingZone
           title={"Temperature 1"}
-          heatingState={undefined}
+          heatingState={state?.heating_states.zone_1}
           heatingTimeSeries={temperature1}
           heatingPower={heater1Power}
-          onChangeTargetTemp={(temp) => console.log("Set Temperature 1:", temp)}
+          onChangeTargetTemp={setHeatingZone1Temperature}
           min={0}
           max={300}
         />
         <HeatingZone
           title={"Temperature 2"}
-          heatingState={undefined}
+          heatingState={state?.heating_states.zone_2}
           heatingTimeSeries={temperature2}
           heatingPower={heater2Power}
-          onChangeTargetTemp={(temp) => console.log("Set Temperature 2:", temp)}
+          onChangeTargetTemp={setHeatingZone2Temperature}
           min={0}
           max={300}
         />
         <HeatingZone
           title={"Temperature 3"}
-          heatingState={undefined}
+          heatingState={state?.heating_states.zone_3}
           heatingTimeSeries={temperature3}
           heatingPower={heater3Power}
-          onChangeTargetTemp={(temp) => console.log("Set Temperature 3:", temp)}
+          onChangeTargetTemp={setHeatingZone3Temperature}
           min={0}
           max={300}
         />
         <HeatingZone
           title={"Temperature 4"}
-          heatingState={undefined}
+          heatingState={state?.heating_states.zone_4}
           heatingTimeSeries={temperature4}
           heatingPower={heater4Power}
-          onChangeTargetTemp={(temp) => console.log("Set Temperature 4:", temp)}
+          onChangeTargetTemp={setHeatingZone4Temperature}
           min={0}
           max={300}
         />
         <HeatingZone
           title={"Temperature 5"}
-          heatingState={undefined}
+          heatingState={state?.heating_states.zone_5}
           heatingTimeSeries={temperature5}
           heatingPower={heater5Power}
-          onChangeTargetTemp={(temp) => console.log("Set Temperature 5:", temp)}
+          onChangeTargetTemp={setHeatingZone5Temperature}
           min={0}
           max={300}
         />
         <HeatingZone
           title={"Temperature 6"}
-          heatingState={undefined}
+          heatingState={state?.heating_states.zone_6}
           heatingTimeSeries={temperature6}
           heatingPower={heater6Power}
-          onChangeTargetTemp={(temp) => console.log("Set Temperature 6:", temp)}
+          onChangeTargetTemp={setHeatingZone6Temperature}
           min={0}
           max={300}
         />
