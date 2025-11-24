@@ -153,6 +153,11 @@ pub enum Mutation {
     SetSlavePullerMaxSpeedFactor(f64),
     ZeroSlaveTensionArm,
     ZeroAddonTensionArm,
+
+    // Tension Arm Monitoring
+    SetTensionArmMonitorEnabled(bool),
+    SetTensionArmMonitorMinAngle(f64),
+    SetTensionArmMonitorMaxAngle(f64),
 }
 
 #[derive(Serialize, Debug, Clone, Default)]
@@ -234,6 +239,8 @@ pub struct StateEvent {
     pub slave_puller_state: SlavePullerState,
     /// addon tension arm state
     pub addon_tension_arm_state: TensionArmState,
+    /// tension arm monitor state
+    pub tension_arm_monitor_state: TensionArmMonitorState,
 }
 
 #[derive(Serialize, Debug, Clone, Default)]
@@ -395,6 +402,18 @@ pub struct HeatingPidStates {
     pub zone_4: HeatingPidSettings,
     pub zone_5: HeatingPidSettings,
     pub zone_6: HeatingPidSettings,
+}
+
+#[derive(Serialize, Debug, Clone, Default)]
+pub struct TensionArmMonitorState {
+    /// is monitoring enabled
+    pub enabled: bool,
+    /// minimum allowed angle in degrees
+    pub min_angle: f64,
+    /// maximum allowed angle in degrees
+    pub max_angle: f64,
+    /// is monitor currently triggered (limits exceeded)
+    pub triggered: bool,
 }
 
 pub enum GluetexEvents {
@@ -578,6 +597,22 @@ impl MachineApi for Gluetex {
             }
             Mutation::ZeroAddonTensionArm => {
                 self.addon_tension_arm.zero();
+                self.emit_state();
+            }
+            Mutation::SetTensionArmMonitorEnabled(enabled) => {
+                self.tension_arm_monitor_config.enabled = enabled;
+                // Clear triggered flag when disabling
+                if !enabled {
+                    self.tension_arm_monitor_triggered = false;
+                }
+                self.emit_state();
+            }
+            Mutation::SetTensionArmMonitorMinAngle(angle_deg) => {
+                self.tension_arm_monitor_config.min_angle = Angle::new::<degree>(angle_deg);
+                self.emit_state();
+            }
+            Mutation::SetTensionArmMonitorMaxAngle(angle_deg) => {
+                self.tension_arm_monitor_config.max_angle = Angle::new::<degree>(angle_deg);
                 self.emit_state();
             }
         }

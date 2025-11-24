@@ -249,6 +249,16 @@ export const addonMotorStateSchema = z.object({
 });
 
 /**
+ * Tension arm monitor state schema (from backend)
+ */
+export const tensionArmMonitorStateSchema = z.object({
+  enabled: z.boolean(),
+  min_angle: z.number(),
+  max_angle: z.number(),
+  triggered: z.boolean(),
+});
+
+/**
  * Consolidated state event schema (state changes only) - from backend
  */
 export const stateEventDataSchema = z.object({
@@ -265,6 +275,7 @@ export const stateEventDataSchema = z.object({
   addon_motor_3_state: addonMotorStateSchema,
   addon_motor_4_state: addonMotorStateSchema,
   addon_tension_arm_state: tensionArmStateSchema,
+  tension_arm_monitor_state: tensionArmMonitorStateSchema,
 });
 
 // ========== Event Schemas with Wrappers ==========
