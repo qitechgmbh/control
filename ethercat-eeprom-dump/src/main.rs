@@ -2,9 +2,9 @@ use std::sync::Arc;
 
 use dump::dump_eeprom;
 use ethercrab::{MainDevice, MainDeviceConfig, PduStorage, std::ethercat_now};
-use futures::executor::block_on;
 use read::read_eeprom;
 use restore::restore_eeoprom;
+use smol;
 
 /// Maximum number of SubDevices that can be stored. This must be a power of 2 greater than 1.
 const MAX_SUBDEVICES: usize = 16;
@@ -57,7 +57,7 @@ async fn main() {
                 .get_one::<usize>("SUBDEVICE")
                 .expect("subdevice index is required");
             let file = sub_matches.get_one::<String>("file");
-            let result = block_on(dump_eeprom(&group, &maindevice, *subdevice_index, file));
+            let result = smol::block_on(dump_eeprom(&group, &maindevice, *subdevice_index, file));
             if let Err(e) = result {
                 eprintln!("Error reading EEPROM: {}", e);
             }
@@ -69,7 +69,8 @@ async fn main() {
             let file = sub_matches
                 .get_one::<String>("file")
                 .expect("file is required");
-            let result = block_on(restore_eeoprom(&group, &maindevice, *subdevice_index, file));
+            let result =
+                smol::block_on(restore_eeoprom(&group, &maindevice, *subdevice_index, file));
             if let Err(e) = result {
                 eprintln!("Error writing EEPROM: {}", e);
             }
@@ -78,7 +79,7 @@ async fn main() {
             let file = sub_matches
                 .get_one::<String>("file")
                 .expect("file is required");
-            let result = block_on(read_eeprom(file));
+            let result = smol::block_on(read_eeprom(file));
             if let Err(e) = result {
                 eprintln!("Error parsing EEPROM: {}", e);
             }

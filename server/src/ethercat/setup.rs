@@ -7,13 +7,13 @@ use crate::{
     ethercat::config::{MAX_FRAMES, MAX_PDU_DATA, MAX_SUBDEVICES, PDI_LEN},
 };
 #[cfg(all(target_os = "linux", not(feature = "development-build")))]
-use control_core::irq_handling::set_irq_affinity;
+use control_core::{irq_handling::set_irq_affinity, realtime::set_realtime_priority};
 use machines::machine_identification::{
     DeviceHardwareIdentification, DeviceHardwareIdentificationEthercat, DeviceIdentification,
     DeviceIdentificationIdentified, MachineIdentificationUnique, read_device_identifications,
 };
 
-use control_core::realtime::{set_core_affinity, set_realtime_priority};
+use control_core::realtime::set_core_affinity;
 use control_core::socketio::namespace::NamespaceCacheingLogic;
 use ethercat_hal::devices::devices_from_subdevices;
 use ethercrab::std::ethercat_now;
@@ -109,9 +109,11 @@ pub async fn set_ethercat_devices<const MAX_SUBDEVICES: usize, const MAX_PDI: us
     shared_state: Arc<SharedState>,
     socket_queue_tx: Sender<(SocketRef, Arc<control_core::socketio::event::GenericEvent>)>,
 ) -> Result<(), anyhow::Error> {
-    tracing::info!("set_ethercat_devices");
     let device_grouping_result = group_devices_by_identification(device_identifications);
-    tracing::info!("{:?}", device_grouping_result.unidentified_devices);
+    tracing::info!(
+        "set_ethercat_devices: {:?}",
+        device_grouping_result.unidentified_devices
+    );
     let machine_new_hardware = MachineNewHardware::Ethercat(hardware);
 
     let mut machines: Vec<Box<dyn Machine>> = vec![];
@@ -194,10 +196,9 @@ pub async fn setup_loop(
             #[cfg(not(all(target_os = "linux", feature = "io-uring")))]
             {
                 use ethercrab::std::tx_rx_task;
-                use futures::executor::block_on;
 
                 let rt = smol::LocalExecutor::new();
-                let _ = block_on(rt.run(async {
+                let _ = smol::block_on(rt.run(async {
                     tx_rx_task(&interface, tx, rx)
                         .expect("spawn TX/RX task")
                         .await
@@ -245,6 +246,7 @@ pub async fn setup_loop(
             .write()
             .await
             .main_namespace;
+
         let event = EthercatDevicesEventBuilder().initializing();
         main_namespace.emit(MainNamespaceEvents::EthercatDevicesEvent(event));
     }

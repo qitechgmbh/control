@@ -1,6 +1,5 @@
 use std::{fmt, sync::Arc};
 
-use futures::executor::block_on;
 use smol::lock::RwLock;
 
 /// Pulse Train Output (PTO) device
@@ -29,21 +28,21 @@ impl<'device> PulseTrainOutput {
         // build sync write closure
         let device1 = device.clone();
         let set_output = Box::new(move |value: PulseTrainOutputOutput| {
-            let mut device = block_on(device1.write());
+            let mut device = smol::block_on(device1.write());
             device.set_output(port, value);
         });
 
         // build sync get closure
         let device2 = device.clone();
         let get_output = Box::new(move || -> PulseTrainOutputOutput {
-            let device = block_on(device2.read());
+            let device = smol::block_on(device2.read());
             device.get_output(port)
         });
 
         // build sync get closure
         let device2 = device;
         let get_input = Box::new(move || -> PulseTrainOutputInput {
-            let device = block_on(device2.read());
+            let device = smol::block_on(device2.read());
             device.get_input(port)
         });
 

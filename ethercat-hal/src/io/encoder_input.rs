@@ -1,6 +1,5 @@
 use std::{fmt, sync::Arc};
 
-use futures::executor::block_on;
 use smol::lock::RwLock;
 
 /// Encoder Input device
@@ -34,7 +33,7 @@ impl EncoderInput {
         let port_counter = port.clone();
         let device_counter = device.clone();
         let get_counter = Box::new(move || {
-            let device = block_on(device_counter.read());
+            let device = smol::block_on(device_counter.read());
             device.get_counter_value(port_counter.clone())
         });
 
@@ -42,7 +41,7 @@ impl EncoderInput {
         let port_frequency = port.clone();
         let device_frequency = device.clone();
         let get_frequency = Box::new(move || {
-            let device = block_on(device_frequency.read());
+            let device = smol::block_on(device_frequency.read());
             device.get_frequency(port_frequency.clone())
         });
 
@@ -50,7 +49,7 @@ impl EncoderInput {
         let port_period = port.clone();
         let device_period = device.clone();
         let get_period = Box::new(move || {
-            let device = block_on(device_period.read());
+            let device = smol::block_on(device_period.read());
             device.get_period(port_period.clone())
         });
 
@@ -58,7 +57,7 @@ impl EncoderInput {
         let port_set = port;
         let device_set = device;
         let set_counter = Box::new(move |value: u32| {
-            let mut device = block_on(device_set.write());
+            let mut device = smol::block_on(device_set.write());
             device.set_counter(port_set.clone(), value)
         });
 
