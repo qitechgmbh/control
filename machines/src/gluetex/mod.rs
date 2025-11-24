@@ -170,6 +170,9 @@ pub struct Gluetex {
     pub slave_tension_arm: TensionArm,
     pub slave_puller_mode: PullerMode,
 
+    // addon tension arm (independent tension arm on Role 9)
+    pub addon_tension_arm: TensionArm,
+
     /// Will be initialized as false and set to true by emit_state
     /// This way we can signal to the client that the first state emission is a default state
     emitted_default_state: bool,

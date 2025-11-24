@@ -152,6 +152,7 @@ pub enum Mutation {
     SetSlavePullerMinSpeedFactor(f64),
     SetSlavePullerMaxSpeedFactor(f64),
     ZeroSlaveTensionArm,
+    ZeroAddonTensionArm,
 }
 
 #[derive(Serialize, Debug, Clone, Default)]
@@ -194,6 +195,8 @@ pub struct LiveValuesEvent {
     pub slave_puller_speed: f64,
     /// slave tension arm angle in degrees
     pub slave_tension_arm_angle: f64,
+    /// addon tension arm angle in degrees
+    pub addon_tension_arm_angle: f64,
 }
 
 impl LiveValuesEvent {
@@ -229,6 +232,8 @@ pub struct StateEvent {
     pub addon_motor_4_state: AddonMotorState,
     /// slave puller state
     pub slave_puller_state: SlavePullerState,
+    /// addon tension arm state
+    pub addon_tension_arm_state: TensionArmState,
 }
 
 #[derive(Serialize, Debug, Clone, Default)]
@@ -569,6 +574,10 @@ impl MachineApi for Gluetex {
             }
             Mutation::ZeroSlaveTensionArm => {
                 self.slave_tension_arm.zero();
+                self.emit_state();
+            }
+            Mutation::ZeroAddonTensionArm => {
+                self.addon_tension_arm.zero();
                 self.emit_state();
             }
         }

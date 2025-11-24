@@ -68,6 +68,7 @@ export function useGluetex() {
     pullerSpeed,
     slavePullerSpeed,
     slaveTensionArmAngle,
+    addonTensionArmAngle,
     spoolRpm,
     tensionArmAngle,
     spoolProgress,
@@ -238,6 +239,9 @@ export function useGluetex() {
   );
   const { request: requestZeroSlaveTensionArm } = useMachineMutation(
     z.literal("ZeroSlaveTensionArm"),
+  );
+  const { request: requestZeroAddonTensionArm } = useMachineMutation(
+    z.literal("ZeroAddonTensionArm"),
   );
 
   const { request: requestConfigureHeatingPid } = useMachineMutation(
@@ -887,6 +891,19 @@ export function useGluetex() {
     );
   };
 
+  const zeroAddonTensionArm = () => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.addon_tension_arm_state.zeroed = true;
+      },
+      () =>
+        requestZeroAddonTensionArm({
+          machine_identification_unique: machineIdentification,
+          data: "ZeroAddonTensionArm",
+        }),
+    );
+  };
+
   const setHeatingPid = (zone: string, kp: number, ki: number, kd: number) => {
     updateStateOptimistically(
       (current) => {
@@ -956,6 +973,7 @@ export function useGluetex() {
     pullerSpeed,
     slavePullerSpeed,
     slaveTensionArmAngle,
+    addonTensionArmAngle,
     spoolRpm,
     tensionArmAngle,
     spoolProgress,
@@ -1015,6 +1033,7 @@ export function useGluetex() {
     setSlavePullerMinSpeedFactor,
     setSlavePullerMaxSpeedFactor,
     zeroSlaveTensionArm,
+    zeroAddonTensionArm,
 
     // Heating action functions
     setHeatingPid,

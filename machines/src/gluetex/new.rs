@@ -465,9 +465,13 @@ impl MachineNewTrait for Gluetex {
                         EL7031_0030StepperPort::STM1,
                     ),
                     addon_motor_4: StepperVelocityEL70x1::new(
-                        el7031_addon4,
+                        el7031_addon4.clone(),
                         EL7031_0030StepperPort::STM1,
                     ),
+                    addon_tension_arm: TensionArm::new(AnalogInput::new(
+                        el7031_addon4,
+                        EL7031_0030AnalogInputPort::AI1,
+                    )),
                     addon_motor_3_controller:
                         super::addon_motor_controller::AddonMotorController::new(200),
                     addon_motor_4_controller:

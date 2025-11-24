@@ -49,6 +49,7 @@ export const liveValuesEventDataSchema = z.object({
   heater_6_power: z.number(),
   slave_puller_speed: z.number(),
   slave_tension_arm_angle: z.number(),
+  addon_tension_arm_angle: z.number(),
 });
 
 /**
@@ -263,6 +264,7 @@ export const stateEventDataSchema = z.object({
   connected_machine_state: connectedMachineStateSchema,
   addon_motor_3_state: addonMotorStateSchema,
   addon_motor_4_state: addonMotorStateSchema,
+  addon_tension_arm_state: tensionArmStateSchema,
 });
 
 // ========== Event Schemas with Wrappers ==========
@@ -408,6 +410,7 @@ export type GluetexNamespaceStore = {
   // Time series data for addons (local)
   slavePullerSpeed: TimeSeries;
   slaveTensionArmAngle: TimeSeries;
+  addonTensionArmAngle: TimeSeries;
 };
 
 // Constants for time durations
@@ -465,6 +468,10 @@ const { initialTimeSeries: slavePullerSpeed, insert: addSlavePullerSpeed } =
 const {
   initialTimeSeries: slaveTensionArmAngle,
   insert: addSlaveTensionArmAngle,
+} = createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+const {
+  initialTimeSeries: addonTensionArmAngle,
+  insert: addAddonTensionArmAngle,
 } = createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
 
 // Default addon state
@@ -541,6 +548,7 @@ export const createGluetexNamespaceStore =
         // Time series data for addons
         slavePullerSpeed,
         slaveTensionArmAngle,
+        addonTensionArmAngle,
       };
     });
 
@@ -651,6 +659,7 @@ export function gluetexMessageHandler(
           heater_6_power,
           slave_puller_speed,
           slave_tension_arm_angle,
+          addon_tension_arm_angle,
         } = liveValuesEvent.data;
         const timestamp = liveValuesEvent.ts;
 
@@ -834,6 +843,15 @@ export function gluetexMessageHandler(
           newState.slaveTensionArmAngle = addSlaveTensionArmAngle(
             state.slaveTensionArmAngle,
             slaveTensionArmValue,
+          );
+
+          const addonTensionArmValue: TimeSeriesValue = {
+            value: addon_tension_arm_angle,
+            timestamp,
+          };
+          newState.addonTensionArmAngle = addAddonTensionArmAngle(
+            state.addonTensionArmAngle,
+            addonTensionArmValue,
           );
 
           return newState;
