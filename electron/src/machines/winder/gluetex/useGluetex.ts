@@ -244,6 +244,17 @@ export function useGluetex() {
     z.literal("ZeroAddonTensionArm"),
   );
 
+  // Tension Arm Monitor mutations
+  const { request: requestSetTensionArmMonitorEnabled } = useMachineMutation(
+    z.object({ SetTensionArmMonitorEnabled: z.boolean() }),
+  );
+  const { request: requestSetTensionArmMonitorMinAngle } = useMachineMutation(
+    z.object({ SetTensionArmMonitorMinAngle: z.number() }),
+  );
+  const { request: requestSetTensionArmMonitorMaxAngle } = useMachineMutation(
+    z.object({ SetTensionArmMonitorMaxAngle: z.number() }),
+  );
+
   const { request: requestConfigureHeatingPid } = useMachineMutation(
     z.object({
       ConfigureHeatingPid: z.object({
@@ -904,6 +915,50 @@ export function useGluetex() {
     );
   };
 
+  // Tension Arm Monitor action functions
+  const setTensionArmMonitorEnabled = (enabled: boolean) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.tension_arm_monitor_state.enabled = enabled;
+        // Clear triggered flag when disabling
+        if (!enabled) {
+          current.data.tension_arm_monitor_state.triggered = false;
+        }
+      },
+      () =>
+        requestSetTensionArmMonitorEnabled({
+          machine_identification_unique: machineIdentification,
+          data: { SetTensionArmMonitorEnabled: enabled },
+        }),
+    );
+  };
+
+  const setTensionArmMonitorMinAngle = (angle: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.tension_arm_monitor_state.min_angle = angle;
+      },
+      () =>
+        requestSetTensionArmMonitorMinAngle({
+          machine_identification_unique: machineIdentification,
+          data: { SetTensionArmMonitorMinAngle: angle },
+        }),
+    );
+  };
+
+  const setTensionArmMonitorMaxAngle = (angle: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.tension_arm_monitor_state.max_angle = angle;
+      },
+      () =>
+        requestSetTensionArmMonitorMaxAngle({
+          machine_identification_unique: machineIdentification,
+          data: { SetTensionArmMonitorMaxAngle: angle },
+        }),
+    );
+  };
+
   const setHeatingPid = (zone: string, kp: number, ki: number, kd: number) => {
     updateStateOptimistically(
       (current) => {
@@ -1034,6 +1089,11 @@ export function useGluetex() {
     setSlavePullerMaxSpeedFactor,
     zeroSlaveTensionArm,
     zeroAddonTensionArm,
+
+    // Tension Arm Monitor action functions
+    setTensionArmMonitorEnabled,
+    setTensionArmMonitorMinAngle,
+    setTensionArmMonitorMaxAngle,
 
     // Heating action functions
     setHeatingPid,
