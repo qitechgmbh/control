@@ -534,6 +534,8 @@ impl MachineNewTrait for Gluetex {
                     },
                     machine_identification_unique: machine_id,
                     connected_machines: vec![],
+                    tension_arm_monitor_config: super::TensionArmMonitorConfig::default(),
+                    tension_arm_monitor_triggered: false,
                 };
 
             // initalize events
