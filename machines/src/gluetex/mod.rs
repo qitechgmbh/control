@@ -188,6 +188,9 @@ pub struct Gluetex {
     pub slave_puller_speed_controller: SlavePullerSpeedController,
     pub slave_tension_arm: TensionArm,
     pub slave_puller_mode: PullerMode,
+    /// User preference for whether slave puller feature is enabled
+    /// This is independent of mode-based enabling
+    pub slave_puller_user_enabled: bool,
 
     // addon tension arm (independent tension arm on Role 9)
     pub addon_tension_arm: TensionArm,
@@ -462,6 +465,9 @@ impl Gluetex {
         // Convert to `GluetexMode` to `PullerMode`
         let mode: PullerMode = mode.clone().into();
 
+        // Only enable the slave puller if the user has enabled it in settings
+        let should_enable_controller = self.slave_puller_user_enabled;
+
         // Transition matrix
         match self.slave_puller_mode {
             PullerMode::Standby => match mode {
@@ -473,7 +479,10 @@ impl Gluetex {
                 PullerMode::Pull => {
                     // From [`PullerMode::Standby`] to [`PullerMode::Pull`]
                     self.slave_puller.set_enabled(true);
-                    self.slave_puller_speed_controller.set_enabled(true);
+                    // Only enable speed controller if user wants it enabled
+                    if should_enable_controller {
+                        self.slave_puller_speed_controller.set_enabled(true);
+                    }
                 }
             },
             PullerMode::Hold => match mode {
@@ -484,7 +493,10 @@ impl Gluetex {
                 PullerMode::Hold => {}
                 PullerMode::Pull => {
                     // From [`PullerMode::Hold`] to [`PullerMode::Pull`]
-                    self.slave_puller_speed_controller.set_enabled(true);
+                    // Only enable speed controller if user wants it enabled
+                    if should_enable_controller {
+                        self.slave_puller_speed_controller.set_enabled(true);
+                    }
                 }
             },
             PullerMode::Pull => match mode {

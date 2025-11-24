@@ -520,6 +520,7 @@ impl MachineNewTrait for Gluetex {
                         ),
                     ),
                     slave_puller_mode: mode.clone().into(),
+                    slave_puller_user_enabled: false, // Default to disabled
                     traverse_controller: TraverseController::new(
                         Length::new::<millimeter>(22.0), // Default inner limit
                         Length::new::<millimeter>(92.0), // Default outer limit
