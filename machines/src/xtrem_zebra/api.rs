@@ -15,8 +15,9 @@ use tracing::instrument;
 
 #[derive(Serialize, Debug, Clone, Default)]
 pub struct LiveValuesEvent {
-    /// weight measurement in grams
-    pub weight: f64,
+    /// weight measurement in kilograms
+    pub total_weight: f64,
+    pub current_weight: f64,
 }
 
 impl LiveValuesEvent {

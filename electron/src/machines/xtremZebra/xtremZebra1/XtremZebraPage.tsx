@@ -20,6 +20,12 @@ export function XtremZebraPage() {
         //     title: "Manual",
         //     icon: "lu:BookOpen",
         // },
+        {
+          link: "graphs",
+          activeLink: "graphs",
+          title: "Graphs",
+          icon: "lu:ChartSpline",
+        },
       ]}
     />
   );

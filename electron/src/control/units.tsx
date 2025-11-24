@@ -37,6 +37,8 @@ export function getUnitIcon(unit: Unit): IconName {
       return "lu:Waves";
     case "%":
       return "lu:ChartNoAxesColumn";
+    case "kg":
+      return "lu:Weight";
     default:
       return "lu:ChartNoAxesColumn";
   }
@@ -76,6 +78,8 @@ export function renderUnitSymbol(unit: Unit | undefined): string {
       return "l/min";
     case "%":
       return "%";
+    case "kg":
+      return "kg";
     default:
       return "";
   }
@@ -137,6 +141,8 @@ export function renderUnitSymbolLong(unit: Unit): string {
       return "liters/minute";
     case "%":
       return "percent";
+    case "kg":
+      return "kilograms";
     default:
       return "";
   }
@@ -159,6 +165,7 @@ export const units = [
   "kWh",
   "l/min",
   "%",
+  "kg",
 ] as const;
 
 export type Unit = (typeof units)[number];

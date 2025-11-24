@@ -28,7 +28,6 @@ use smol::{
     channel::{Receiver, Sender},
     future,
     lock::RwLock,
-    unblock,
 };
 use socketio::main_namespace::machines_event::MachineObj;
 use socketioxide::extract::SocketRef;
@@ -179,23 +178,6 @@ pub async fn handle_serial_device_hotplug(
             }
         }
     }
-
-    let serial_params = SerialDeviceNewParams {
-        path: String::from("192.168.4.33:4444"),
-    };
-    match XtremSerial::new_serial(&serial_params) {
-        Ok((device_identification, serial_device)) => {
-            add_serial_device(
-                app_state.clone(),
-                &device_identification,
-                serial_device,
-                &MACHINE_REGISTRY,
-                app_state.socketio_setup.socket_queue_tx.clone(),
-            )
-            .await;
-        }
-        _ => (),
-    };
 
     // Machine isnt connected, so add it back
     if laser.is_some() && unique_ident.is_none() {
@@ -367,6 +349,25 @@ fn main() {
     smol::block_on(async {
         send_empty_machines_event(app_state.clone()).await;
         send_ethercat_discovering(app_state.clone()).await;
+    });
+
+    smol::block_on(async {
+        let serial_params = SerialDeviceNewParams {
+            path: String::from("192.168.4.33:4444"),
+        };
+        match XtremSerial::new_serial(&serial_params) {
+            Ok((device_identification, serial_device)) => {
+                add_serial_device(
+                    app_state.clone(),
+                    &device_identification,
+                    serial_device,
+                    &MACHINE_REGISTRY,
+                    app_state.socketio_setup.socket_queue_tx.clone(),
+                )
+                .await;
+            }
+            _ => (),
+        };
     });
 
     #[cfg(feature = "mock-machine")]

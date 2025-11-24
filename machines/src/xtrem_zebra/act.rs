@@ -18,7 +18,7 @@ impl MachineAct for XtremZebra {
         if now.duration_since(self.last_measurement_emit) > Duration::from_secs_f64(1.0 / 30.0) {
             self.emit_live_values();
             self.last_measurement_emit = now;
-            // println!("Weight: {}", self.weight);
+            // println!("Current Weight {}", self.current_weight)
         }
     }
 

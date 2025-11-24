@@ -13,9 +13,8 @@ function useXtremZebra(
   machine_identification_unique: MachineIdentificationUnique,
 ) {
   // Get consolidated state and live values from namespace
-  const { state, defaultState, weight } = useXtremZebraNamespace(
-    machine_identification_unique,
-  );
+  const { state, defaultState, total_weight, current_weight } =
+    useXtremZebraNamespace(machine_identification_unique);
 
   // Single optimistic state for all state management
   const stateOptimistic = useStateOptimistic<StateEvent>();
@@ -50,7 +49,8 @@ function useXtremZebra(
     defaultState: defaultState?.data,
 
     // Live values (TimeSeries)
-    weight,
+    total_weight,
+    current_weight,
 
     // Loading states
     isLoading: stateOptimistic.isOptimistic,

@@ -1,11 +1,12 @@
 use anyhow::{Result, anyhow};
 use control_core::helpers::hashing::{byte_folding_u16, hash_djb2};
 use smol::lock::RwLock;
-use std::net::{SocketAddr, ToSocketAddrs, UdpSocket};
+use std::collections::HashMap;
+use std::net::UdpSocket;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::thread;
 use std::time::{Duration, Instant};
-use std::{io, thread};
 
 use anyhow::Ok;
 use control_core::xtrem_protocol::xtrem_serial_interface::{DataAddress, Function, XtremFrame};
@@ -88,6 +89,8 @@ impl TryFrom<XtremResponse> for XtremFrame {
 
 #[derive(Debug, Clone)]
 struct XtremRequest {
+    pub id_origin: u8,
+    pub id_dest: u8,
     pub data_address: DataAddress,
     pub function: Function,
     pub data: Vec<u8>,
@@ -95,8 +98,8 @@ struct XtremRequest {
 
 impl From<XtremRequest> for XtremFrame {
     fn from(request: XtremRequest) -> Self {
-        let id_origin = 0x00;
-        let id_dest = 0x01;
+        let id_origin = request.id_origin;
+        let id_dest = request.id_dest;
         let data_address = request.data_address.as_hex();
         let data_length = request.data.len() as u8;
 
@@ -130,7 +133,7 @@ impl SerialDeviceNew for XtremSerial {
         params: &SerialDeviceNewParams,
     ) -> Result<(DeviceIdentification, Arc<RwLock<Self>>)> {
         let xtrem_data = Some(XtremData {
-            weight: 0.0,
+            current_weight: 0.0,
             last_timestamp: Instant::now(),
         });
 
@@ -195,15 +198,17 @@ impl XtremSerial {
     /// Asynchronous UDP communication handler for the XTREM Zebra device.
     async fn process_udp(
         this: Arc<RwLock<Self>>,
-        path: String,
+        _path: String,
         shutdown: Arc<AtomicBool>,
-    ) -> Result<()> {
-        let rx_port = 5555; // scale -> PC
-        let tx_addr = "192.168.4.33:4444"; // PC -> scale
+    ) -> std::result::Result<(), anyhow::Error> {
+        let rx_port = 5555; // Device -> PC
+        let tx_addr = "192.168.4.255:4444"; // PC -> Broadcast domain (we send unicast by ID)
 
         let sock_rx = UdpSocket::bind(("0.0.0.0", rx_port))?;
         sock_rx.set_nonblocking(true)?;
+
         let sock_tx = UdpSocket::bind("0.0.0.0:0")?;
+        sock_tx.set_broadcast(true)?;
         sock_tx.connect(tx_addr)?;
 
         println!(
@@ -211,51 +216,92 @@ impl XtremSerial {
             rx_port, tx_addr
         );
 
-        // Build an XtremRequest for reading the serial number
-        let request = XtremRequest {
-            data_address: DataAddress::ReadSerial,
-            function: Function::ReadRequest,
-            data: vec![],
+        // Function to build a request for a specific destination ID
+        let build_request = |dest_id: u8| -> Vec<u8> {
+            let request = XtremRequest {
+                id_origin: 0x00,
+                id_dest: dest_id,
+                data_address: DataAddress::Weight,
+                function: Function::ReadRequest,
+                data: Vec::new(),
+            };
+            let frame: XtremFrame = request.into();
+            frame.as_bytes()
         };
 
-        let frame: XtremFrame = request.into();
-        let cmd = frame.as_bytes();
+        // Known device IDs
+        let device_ids = [0x01, 0x02];
+        let cmds: Vec<Vec<u8>> = device_ids.iter().map(|&id| build_request(id)).collect();
 
         while !shutdown.load(Ordering::Relaxed) {
-            println!("[XTREM] Sending request...");
-            sock_tx.send(&cmd)?;
+            // Send requests to all known devices
+            for (i, cmd) in cmds.iter().enumerate() {
+                let dest_id = device_ids[i];
+                println!("[XTREM] Sending request to device {:02X}", dest_id);
+                sock_tx.send(cmd)?;
+                thread::sleep(Duration::from_millis(10));
+            }
 
-            // Wait up to 300 ms for reply
             let start = Instant::now();
             let timeout = Duration::from_millis(300);
             let mut buf = [0u8; 2048];
+            let mut total_weight = 0.0;
+            let mut received_count = 0;
 
-            loop {
+            // Wait for replies from both scales
+            while start.elapsed() < timeout && received_count < device_ids.len() {
                 match sock_rx.recv(&mut buf) {
                     std::result::Result::Ok(n) => {
-                        println!("[XTREM] RX {} bytes", n);
-                        println!("HEX  : {:02X?}", &buf[..n]);
-                        println!("ASCII: {}", String::from_utf8_lossy(&buf[..n]));
-                        break;
-                    }
-                    Err(_) => {
-                        if start.elapsed() >= timeout {
-                            println!("[XTREM] Timeout (no reply)");
-                            break;
+                        let ascii = String::from_utf8_lossy(&buf[..n]);
+                        println!("[XTREM] RX {} bytes: {}", n, ascii);
+
+                        if let std::result::Result::Ok(frame) =
+                            XtremFrame::try_from(XtremResponse {
+                                raw: buf[..n].to_vec(),
+                            })
+                        {
+                            let weight = XtremFrame::parse_weight_from_response(&buf[..n]);
+                            let id = frame.id_origin;
+
+                            println!("[XTREM] Device {:02X} weight: {:.3} kg", id, weight);
+                            total_weight += weight;
+                            received_count += 1;
                         }
-                        std::thread::sleep(Duration::from_millis(10));
+                    }
+                    Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {
+                        thread::sleep(Duration::from_millis(10));
+                    }
+                    Err(e) => {
+                        eprintln!("[XTREM] Socket error: {:?}", e);
+                        break;
                     }
                 }
             }
+
+            // Update the shared structure with the combined weight
+            {
+                let mut device = this.write().await;
+                device.data = Some(XtremData {
+                    current_weight: total_weight,
+                    last_timestamp: Instant::now(),
+                });
+            }
+
+            println!(
+                "[XTREM] Combined total weight from {} devices: {:.3} kg",
+                received_count, total_weight
+            );
+
+            thread::sleep(Duration::from_millis(300));
         }
 
         println!("[XTREM] Shutdown signal received, stopping thread.");
-        Ok(())
+        std::result::Result::Ok(())
     }
 }
 
 #[derive(Debug, Clone)]
 pub struct XtremData {
-    pub weight: f64,
+    pub current_weight: f64,
     pub last_timestamp: Instant,
 }
