@@ -35,8 +35,8 @@ export function GluetexAddonsPage() {
     setTemperature2Min,
     setTemperature2Max,
     slavePullerSpeed,
-    tensionArmAngle,
-    zeroTensionArmAngle,
+    slaveTensionArmAngle,
+    zeroSlaveTensionArm,
     setStepper3Master,
     setStepper3Slave,
     setStepper4Master,
@@ -268,11 +268,11 @@ export function GluetexAddonsPage() {
         </ControlCard>
 
         <ControlCard title="Tension Arm">
-          <TensionArm degrees={tensionArmAngle.current?.value} />
+          <TensionArm degrees={slaveTensionArmAngle.current?.value} />
           <TimeSeriesValueNumeric
             label="Tension Arm"
             unit="deg"
-            timeseries={tensionArmAngle}
+            timeseries={slaveTensionArmAngle}
             renderValue={(value) => roundDegreesToDecimals(value, 0)}
           />
           <TimeSeriesValueNumeric
@@ -284,13 +284,13 @@ export function GluetexAddonsPage() {
           <TouchButton
             variant="outline"
             icon="lu:House"
-            onClick={zeroTensionArmAngle}
+            onClick={zeroSlaveTensionArm}
             disabled={isDisabled}
             isLoading={isLoading}
           >
             Set Zero Point
           </TouchButton>
-          {!state?.tension_arm_state?.zeroed && (
+          {!state?.slave_puller_state?.tension_arm?.zeroed && (
             <StatusBadge variant="error">Not Zeroed</StatusBadge>
           )}
         </ControlCard>
