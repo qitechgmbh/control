@@ -564,7 +564,11 @@ impl MachineApi for Gluetex {
                 self.emit_state();
             }
             Mutation::SetSlavePullerEnabled(enabled) => {
-                self.slave_puller_speed_controller.set_enabled(enabled);
+                self.slave_puller_user_enabled = enabled;
+                // Re-apply the current mode to update the controller state
+                // This ensures the mode transition logic respects the new user preference
+                let current_mode = self.mode.clone();
+                self.set_slave_puller_mode(&current_mode);
                 self.emit_state();
             }
             Mutation::SetSlavePullerForward(forward) => {
