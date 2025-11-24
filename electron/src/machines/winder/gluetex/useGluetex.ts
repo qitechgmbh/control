@@ -251,6 +251,10 @@ export function useGluetex() {
     }),
   );
 
+  const { request: requestSetHeatingEnabled } = useMachineMutation(
+    z.object({ SetHeatingEnabled: z.boolean() }),
+  );
+
   // ========== Helper Functions ==========
 
   // Helper function for optimistic updates using produce
@@ -670,9 +674,18 @@ export function useGluetex() {
   // ========== Action Functions (Addon Features - Local Only) ==========
 
   const setStepper3Mode = (mode: StepperMode) => {
-    updateStateLocally((current) => {
-      current.data.stepper_state.stepper3_mode = mode;
-    });
+    const enabled = mode === "Run";
+    updateStateOptimistically(
+      (current) => {
+        current.data.stepper_state.stepper3_mode = mode;
+      },
+      () => {
+        requestAddonMotor3SetEnabled({
+          machine_identification_unique: machineIdentification,
+          data: { SetAddonMotor3Enabled: enabled },
+        });
+      },
+    );
   };
 
   const setStepper4Mode = (mode: StepperMode) => {
@@ -691,9 +704,18 @@ export function useGluetex() {
   };
 
   const setHeatingMode = (mode: HeatingMode) => {
-    updateStateLocally((current) => {
-      current.data.heating_state.heating_mode = mode;
-    });
+    const enabled = mode === "Heating";
+    updateStateOptimistically(
+      (current) => {
+        current.data.heating_state.heating_mode = mode;
+      },
+      () => {
+        requestSetHeatingEnabled({
+          machine_identification_unique: machineIdentification,
+          data: { SetHeatingEnabled: enabled },
+        });
+      },
+    );
   };
 
   const setTemperature1Min = (min: number) => {

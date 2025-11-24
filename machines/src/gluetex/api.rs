@@ -123,6 +123,7 @@ pub enum Mutation {
     ZeroTensionArmAngle,
 
     // Heating
+    SetHeatingEnabled(bool),
     SetHeatingTargetTemperature(HeatingZone, f64),
     ConfigureHeatingPid(HeatingPidSettings),
 
@@ -364,6 +365,7 @@ pub struct SlaveTensionArmState {
 
 #[derive(Serialize, Debug, Clone, Default)]
 pub struct HeatingStates {
+    pub enabled: bool,
     pub zone_1: HeatingState,
     pub zone_2: HeatingState,
     pub zone_3: HeatingState,
@@ -478,6 +480,10 @@ impl MachineApi for Gluetex {
             Mutation::SetSpoolAutomaticAction(mode) => self.set_spool_automatic_mode(mode),
             Mutation::ResetSpoolProgress => self.stop_or_pull_spool_reset(Instant::now()),
             Mutation::ZeroTensionArmAngle => self.tension_arm_zero(),
+            Mutation::SetHeatingEnabled(enabled) => {
+                self.set_heating_enabled(enabled);
+                self.emit_state();
+            }
             Mutation::SetHeatingTargetTemperature(zone, temperature) => {
                 self.set_target_temperature(temperature, zone)
             }
