@@ -334,9 +334,12 @@ fn main() {
     let _loop_thread = start_loop_thread(receiver, CYCLE_TARGET_TIME);
     let _ = start_api_thread(app_state.clone());
 
-    let socketio_task = smol::spawn(start_socketio_queue(app_state.clone()));
-    let serial_task = smol::spawn(start_serial_discovery(app_state.clone()));
-    let async_machine_task = smol::spawn(handle_async_requests(main_receiver, app_state.clone()));
+    let mut socketio_task = smol::spawn(start_socketio_queue(app_state.clone()));
+    let mut serial_task = smol::spawn(start_serial_discovery(app_state.clone()));
+    let mut async_machine_task = smol::spawn(handle_async_requests(
+        main_receiver.clone(),
+        app_state.clone(),
+    ));
 
     #[cfg(not(feature = "mock-machine"))]
     smol::spawn(start_interface_discovery(app_state.clone(), sender)).detach();
@@ -358,25 +361,27 @@ fn main() {
             }
 
             if serial_task.is_finished() {
-                tracing::error!("Serial task died!");
-                break;
+                tracing::warn!("Serial task died! Restarting...");
+                serial_task.cancel().await;
+                serial_task = smol::spawn(start_serial_discovery(app_state.clone()));
             }
 
             if socketio_task.is_finished() {
-                tracing::error!("SocketIO task died!");
-                break;
+                tracing::warn!("SocketIO task died! Restarting...");
+                socketio_task.cancel().await;
+                socketio_task = smol::spawn(start_socketio_queue(app_state.clone()));
             }
 
             if async_machine_task.is_finished() {
-                tracing::error!("Async handler task died!");
-                break;
+                tracing::warn!("Async handler task died! Restarting...");
+                async_machine_task.cancel().await;
+                async_machine_task = smol::spawn(handle_async_requests(
+                    main_receiver.clone(),
+                    app_state.clone(),
+                ));
             }
 
             future::yield_now().await;
         }
     });
-
-    tracing::error!(
-        "Exiting, since a task has died! SystemD shall restart us. Better luck next time."
-    );
 }
