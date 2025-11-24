@@ -18,7 +18,7 @@ interfaces = "0.0.9"
 serde = "1.0.219"
 serialport = "4.7.3"
 smol = "2.0.2"
-socketioxide = "0.17.2"
+socketioxide = "0.18.0"
 bitvec = { version = "1.0.1", features = ["alloc"] }
 crc = "3.3.0"
 tracing = "0.1.41"
