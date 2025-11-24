@@ -107,6 +107,17 @@ export type SpoolAutomaticActionMode = z.infer<
 export const spoolRegulationModeSchema = z.enum(["Adaptive", "MinMax"]);
 export type SpoolRegulationMode = z.infer<typeof spoolRegulationModeSchema>;
 
+/**
+ * Heating zone enum to match backend
+ */
+export type HeatingZone =
+  | "Zone1"
+  | "Zone2"
+  | "Zone3"
+  | "Zone4"
+  | "Zone5"
+  | "Zone6";
+
 export const spoolAutomaticActionStateSchema = z.object({
   spool_required_meters: z.number(),
   spool_automatic_action_mode: spoolAutomaticActionModeSchema,
