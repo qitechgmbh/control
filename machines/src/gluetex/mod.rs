@@ -38,7 +38,9 @@ mod gluetex_imports {
 
     pub use crate::buffer1::BufferV1;
     pub use units::ConstZero;
-    pub use units::{Angle, angle::degree, length::meter, length::millimeter, velocity::meter_per_second};
+    pub use units::{
+        Angle, angle::degree, length::meter, length::millimeter, velocity::meter_per_second,
+    };
 }
 
 #[derive(Debug, Clone)]
