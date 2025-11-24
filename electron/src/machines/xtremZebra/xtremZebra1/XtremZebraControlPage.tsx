@@ -15,7 +15,11 @@ export function XtremZebraControlPage() {
   return (
     <Page>
       <ControlGrid columns={2}>
-        <ControlCard title="Weight"></ControlCard>
+        <ControlCard title="Scale">
+            <TimeSeriesValueNumeric
+            label="Weight"
+            unit="mm"
+        </ControlCard>
       </ControlGrid>
     </Page>
   );

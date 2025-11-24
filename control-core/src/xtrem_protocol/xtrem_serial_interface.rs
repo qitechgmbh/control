@@ -77,4 +77,40 @@ impl XtremFrame {
         buf.push(self.etx);
         buf
     }
+
+    /// Parses an XTREM ASCII response and extracts the numeric weight in kg.
+    pub fn parse_weight_from_response(data: &[u8]) -> f64 {
+        // Locate start (STX) and end (ETX) of frame
+        let start = data.iter().position(|&b| b == 0x02);
+        let end = data.iter().rposition(|&b| b == 0x03);
+
+        if let (Some(start), Some(end)) = (start, end) {
+            if end > start {
+                // Extract everything between STX and ETX
+                let payload = &data[start + 1..end];
+                let ascii = String::from_utf8_lossy(payload);
+
+                // Example payload: "0100r01010A     0.0kg00"
+                // Find "kg" and extract the numeric substring before it.
+                if let Some(kg_index) = ascii.find("kg") {
+                    // Get a small window before "kg" to isolate the number
+                    let mut num_start = 0;
+                    for (i, c) in ascii[..kg_index].char_indices().rev() {
+                        if !(c.is_ascii_digit() || c == '.' || c == ' ') {
+                            num_start = i + 1;
+                            break;
+                        }
+                    }
+
+                    let number_str = ascii[num_start..kg_index].trim();
+
+                    if let Ok(value) = number_str.parse::<f64>() {
+                        return value;
+                    }
+                }
+            }
+        }
+
+        0.0
+    }
 }

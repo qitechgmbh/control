@@ -273,7 +273,7 @@ export const buffer1: MachineProperties = {
 };
 
 export const xtremZebra1: MachineProperties = {
-  name: "Laser",
+  name: "Xtrem Zebra",
   version: "V1",
   slug: "xtremZebra",
   icon: "lu:Sun",
@@ -359,7 +359,7 @@ export const machineProperties: MachineProperties[] = [
   mock1,
   buffer1,
   aquapath1,
-  xtremZebra,
+  xtremZebra1,
 ];
 
 export const getMachineProperties = (

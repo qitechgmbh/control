@@ -188,6 +188,22 @@ impl Drop for XtremSerial {
     }
 }
 
+use std::sync::OnceLock;
+
+// A global shared receiver socket for all XtremSerial instances
+static XTREM_RX_SOCKET: OnceLock<Arc<UdpSocket>> = OnceLock::new();
+
+fn get_shared_rx_socket() -> Result<Arc<UdpSocket>> {
+    if let Some(sock) = XTREM_RX_SOCKET.get() {
+        Ok(sock.clone())
+    } else {
+        let sock = Arc::new(UdpSocket::bind(("0.0.0.0", 5555))?);
+        sock.set_nonblocking(true)?;
+        XTREM_RX_SOCKET.set(sock.clone());
+        Ok(sock)
+    }
+}
+
 impl XtremSerial {
     pub async fn get_data(&self) -> Option<XtremData> {
         self.data.clone()
@@ -201,8 +217,7 @@ impl XtremSerial {
         let rx_port = 5555; // scale -> PC
         let tx_addr = "192.168.4.33:4444"; // PC -> scale
 
-        let sock_rx = UdpSocket::bind(("0.0.0.0", rx_port))?;
-        sock_rx.set_nonblocking(true)?;
+        let sock_rx = get_shared_rx_socket()?;
         let sock_tx = UdpSocket::bind("0.0.0.0:0")?;
         sock_tx.connect(tx_addr)?;
 
@@ -221,8 +236,20 @@ impl XtremSerial {
         let frame: XtremFrame = request.into();
         let cmd = frame.as_bytes();
 
+        let func = b"0101";
+
+        let mut cmd: Vec<u8> = Vec::new();
+        cmd.push(0x02); // STX
+        cmd.extend_from_slice(b"0001R");
+        cmd.extend_from_slice(func);
+        cmd.extend_from_slice(b"0052");
+        cmd.push(0x03); // ETX
+        cmd.extend_from_slice(b"\r\n");
+
+        let cmd = cmd.as_slice();
+
         while !shutdown.load(Ordering::Relaxed) {
-            println!("[XTREM] Sending request...");
+            // println!("[XTREM] Sending request...");
             sock_tx.send(&cmd)?;
 
             // Wait up to 300 ms for reply
@@ -233,9 +260,19 @@ impl XtremSerial {
             loop {
                 match sock_rx.recv(&mut buf) {
                     std::result::Result::Ok(n) => {
-                        println!("[XTREM] RX {} bytes", n);
-                        println!("HEX  : {:02X?}", &buf[..n]);
-                        println!("ASCII: {}", String::from_utf8_lossy(&buf[..n]));
+                        // println!("[XTREM] RX {} bytes", n);
+                        // println!("HEX  : {:02X?}", &buf[..n]);
+                        // println!("ASCII: {}", String::from_utf8_lossy(&buf[..n]));
+                        let weight = XtremFrame::parse_weight_from_response(&buf[..n]);
+
+                        let mut device = this.write().await;
+                        device.data = Some(XtremData {
+                            weight,
+                            last_timestamp: Instant::now(),
+                        });
+
+                        std::thread::sleep(Duration::from_millis(300));
+
                         break;
                     }
                     Err(_) => {
