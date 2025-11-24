@@ -454,6 +454,7 @@ impl MachineNewTrait for Gluetex {
                     temperature_controller_4,
                     temperature_controller_5,
                     temperature_controller_6,
+                    heating_enabled: false,
                     puller: StepperVelocityEL70x1::new(
                         el7031_0030.clone(),
                         EL7031_0030StepperPort::STM1,

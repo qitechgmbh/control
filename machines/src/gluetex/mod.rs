@@ -141,6 +141,7 @@ pub struct Gluetex {
     pub temperature_controller_4: TemperatureController,
     pub temperature_controller_5: TemperatureController,
     pub temperature_controller_6: TemperatureController,
+    pub heating_enabled: bool,
 
     // socketio
     namespace: GluetexNamespace,
