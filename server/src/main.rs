@@ -116,7 +116,7 @@ async fn setup_ethercat(
     sender: Sender<HotThreadMessage>,
 ) {
     tracing::info!("Calling setup_loop");
-    let res = setup_loop(&interface, app_state.clone()).await;
+    let res = setup_loop(interface, app_state.clone()).await;
     match res {
         Ok(setup) => {
             let _ = sender.send(HotThreadMessage::AddEtherCatSetup(setup)).await;
@@ -338,15 +338,8 @@ fn main() {
             #[cfg(not(feature = "mock-machine"))]
             select! {
                 res = ethercat_fut => {
-                    tracing::info!("EtherCAT task finished: {:?}", res);
-                    match res {
-                        Ok(interface) =>
-                        {
-                            setup_ethercat(&interface,app_state.clone(),sender.clone()).await;
-                        },
-                        Err(_) => (),
-                    };
-
+                    tracing::info!("EtherCAT device found: {:?}", res);
+                    setup_ethercat(&res, app_state.clone(), sender.clone()).await;
                 },
                 res = serial_fut => {
                     let _ = handle_serial_device_hotplug(app_state.clone(),res).await;
