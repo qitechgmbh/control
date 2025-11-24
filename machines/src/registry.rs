@@ -2,7 +2,8 @@
 use crate::{extruder1::mock::ExtruderV2, mock::MockMachine, winder2::mock::Winder2};
 
 use crate::{
-    Machine, MachineNewParams, extruder1::ExtruderV2, machine_identification::MachineIdentification,
+    Machine, MachineNewParams, extruder1::ExtruderV2,
+    machine_identification::MachineIdentification, xtrem_zebra::XtremZebra,
 };
 #[cfg(not(feature = "mock-machine"))]
 use crate::{
@@ -104,6 +105,9 @@ lazy_static! {
         #[cfg(not(feature = "mock-machine"))]
         mc.register::<AquaPathV1>(AquaPathV1::MACHINE_IDENTIFICATION);
         mc.register::<TestMachine>(TestMachine::MACHINE_IDENTIFICATION);
+
+        #[cfg(not(feature = "mock-machine"))]
+        mc.register::<XtremZebra>(XtremZebra::MACHINE_IDENTIFICATION);
         mc
     };
 }

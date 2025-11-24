@@ -8,7 +8,7 @@ use machines::{
     },
     registry::{MACHINE_REGISTRY, MachineRegistry},
     serial::{
-        devices::{laser::Laser, xtrem_zebra::XtremZebraUdp},
+        devices::{laser::Laser, xtrem_zebra::XtremSerial},
         init::{SerialDetection, start_serial_discovery},
     },
     winder2::api::GenericEvent,
@@ -179,6 +179,23 @@ pub async fn handle_serial_device_hotplug(
             }
         }
     }
+
+    let serial_params = SerialDeviceNewParams {
+        path: String::from("192.168.4.33:4444"),
+    };
+    match XtremSerial::new_serial(&serial_params) {
+        Ok((device_identification, serial_device)) => {
+            add_serial_device(
+                app_state.clone(),
+                &device_identification,
+                serial_device,
+                &MACHINE_REGISTRY,
+                app_state.socketio_setup.socket_queue_tx.clone(),
+            )
+            .await;
+        }
+        _ => (),
+    };
 
     // Machine isnt connected, so add it back
     if laser.is_some() && unique_ident.is_none() {

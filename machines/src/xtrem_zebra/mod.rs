@@ -112,7 +112,12 @@ impl XtremZebra {
     }
 
     pub fn update(&mut self) {
-        // let xtrem_zebra_data =
-        //     smol::block_on(async { self.xtrem_zebra.read().await.get_data().await });
+        let xtrem_zebra_data =
+            smol::block_on(async { self.xtrem_zebra.read().await.get_data().await });
+
+        self.weight = xtrem_zebra_data
+            .as_ref()
+            .map(|data| data.weight)
+            .unwrap_or(0.0);
     }
 }

@@ -1,8 +1,9 @@
 use lazy_static::lazy_static;
 
 use crate::{
-    SerialDevice, SerialDeviceIdentification, machine_identification::DeviceIdentification,
-    serial::devices::laser::Laser,
+    SerialDevice, SerialDeviceIdentification,
+    machine_identification::DeviceIdentification,
+    serial::devices::{laser::Laser, xtrem_zebra::XtremSerial},
 };
 
 #[cfg(feature = "mock-machine")]
@@ -114,6 +115,11 @@ lazy_static! {
         sdr.register::<MockSerialDevice>(SerialDeviceIdentification {
             vendor_id: 0x0001, // VENDOR_QITECH
             product_id: 0x0007, // MACHINE_MOCK
+        });
+
+        sdr.register::<XtremSerial>(SerialDeviceIdentification {
+            vendor_id: 0x0001,
+            product_id: 0x0010,
         });
 
         sdr

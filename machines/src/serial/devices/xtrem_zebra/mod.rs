@@ -14,7 +14,9 @@ use crate::machine_identification::{
     DeviceHardwareIdentification, DeviceHardwareIdentificationSerial, DeviceIdentification,
     DeviceMachineIdentification, MachineIdentification, MachineIdentificationUnique,
 };
-use crate::{MACHINE_XTREM_ZEBRA, SerialDeviceNew, SerialDeviceNewParams, VENDOR_QITECH};
+use crate::{
+    MACHINE_XTREM_ZEBRA, SerialDevice, SerialDeviceNew, SerialDeviceNewParams, VENDOR_QITECH,
+};
 
 #[derive(Debug)]
 pub struct XtremSerial {
@@ -27,6 +29,8 @@ pub struct XtremSerial {
     /// Flag used by the background thread to know when to shut down
     pub shutdown_flag: Arc<AtomicBool>,
 }
+
+impl SerialDevice for XtremSerial {}
 
 struct XtremResponse {
     pub raw: Vec<u8>,
@@ -185,6 +189,9 @@ impl Drop for XtremSerial {
 }
 
 impl XtremSerial {
+    pub async fn get_data(&self) -> Option<XtremData> {
+        self.data.clone()
+    }
     /// Asynchronous UDP communication handler for the XTREM Zebra device.
     async fn process_udp(
         this: Arc<RwLock<Self>>,
@@ -240,8 +247,6 @@ impl XtremSerial {
                     }
                 }
             }
-
-            std::thread::sleep(Duration::from_millis(500));
         }
 
         println!("[XTREM] Shutdown signal received, stopping thread.");
@@ -251,6 +256,6 @@ impl XtremSerial {
 
 #[derive(Debug, Clone)]
 pub struct XtremData {
-    weight: f64,
-    last_timestamp: Instant,
+    pub weight: f64,
+    pub last_timestamp: Instant,
 }
