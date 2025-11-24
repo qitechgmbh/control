@@ -35,18 +35,17 @@ pub struct AiStandard {
 
 impl TxPdoObject for AiStandard {
     fn read(&mut self, bits: &BitSlice<u8, Lsb0>) {
-        // only read other values if txpdo_toggle is true
-        self.txpdo_toggle = bits[8 + 7];
-        if !self.txpdo_toggle {
-            return;
-        }
-
+        // Read all values regardless of txpdo_toggle state.
+        // The toggle bit is still read for informational purposes, but we always
+        // update the value to prevent stale data when multiple analog inputs
+        // are active on the same device.
         self.undervoltage = bits[0];
         self.overvoltage = bits[1];
         self.limit1 = bits[2..4].load_le::<u8>().into();
         self.limit2 = bits[4..6].load_le::<u8>().into();
         self.error = bits[7];
         self.txpdo_state = bits[8 + 6];
+        self.txpdo_toggle = bits[8 + 7];
         self.value = bits[16..16 + 16].load_le::<u16>();
     }
 }
