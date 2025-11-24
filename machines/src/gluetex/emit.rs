@@ -246,6 +246,11 @@ impl Gluetex {
                 // Wrap [270;<360] to [-90; 0]
                 if angle >= 270.0 { angle - 360.0 } else { angle }
             },
+            addon_tension_arm_angle: {
+                let angle = self.addon_tension_arm.get_angle().get::<degree>();
+                // Wrap [270;<360] to [-90; 0]
+                if angle >= 270.0 { angle - 360.0 } else { angle }
+            },
         };
 
         let event = live_values.build();
@@ -461,6 +466,9 @@ impl Gluetex {
                 tension_arm: api::SlaveTensionArmState {
                     zeroed: self.slave_tension_arm.zeroed,
                 },
+            },
+            addon_tension_arm_state: TensionArmState {
+                zeroed: self.addon_tension_arm.zeroed,
             },
         }
     }
