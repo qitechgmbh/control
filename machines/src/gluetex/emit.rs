@@ -451,7 +451,7 @@ impl Gluetex {
                 slave_ratio: self.addon_motor_4_controller.get_slave_ratio(),
             },
             slave_puller_state: api::SlavePullerState {
-                enabled: self.slave_puller_speed_controller.is_enabled(),
+                enabled: self.slave_puller_user_enabled,
                 forward: self.slave_puller_speed_controller.get_forward(),
                 min_angle: self
                     .slave_puller_speed_controller
