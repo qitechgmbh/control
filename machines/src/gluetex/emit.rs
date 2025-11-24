@@ -470,6 +470,12 @@ impl Gluetex {
             addon_tension_arm_state: TensionArmState {
                 zeroed: self.addon_tension_arm.zeroed,
             },
+            tension_arm_monitor_state: api::TensionArmMonitorState {
+                enabled: self.tension_arm_monitor_config.enabled,
+                min_angle: self.tension_arm_monitor_config.min_angle.get::<degree>(),
+                max_angle: self.tension_arm_monitor_config.max_angle.get::<degree>(),
+                triggered: self.tension_arm_monitor_triggered,
+            },
         }
     }
 
