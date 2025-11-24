@@ -28,6 +28,9 @@ impl MachineAct for Gluetex {
         // automatically stops or pulls after N Meters if enabled
         self.stop_or_pull_spool(now);
 
+        // check tension arm positions and trigger emergency stop if needed
+        self.check_tension_arm_monitor();
+
         // update all temperature controllers
         self.temperature_controller_1.update(now);
         self.temperature_controller_2.update(now);
