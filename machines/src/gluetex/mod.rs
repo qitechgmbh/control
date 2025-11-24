@@ -38,7 +38,7 @@ mod gluetex_imports {
 
     pub use crate::buffer1::BufferV1;
     pub use units::ConstZero;
-    pub use units::{length::meter, length::millimeter, velocity::meter_per_second};
+    pub use units::{Angle, angle::degree, length::meter, length::millimeter, velocity::meter_per_second};
 }
 
 #[derive(Debug, Clone)]
@@ -56,6 +56,23 @@ impl Default for Heating {
             heating: false,
             target_temperature: ThermodynamicTemperature::new::<degree_celsius>(0.0),
             wiring_error: false,
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct TensionArmMonitorConfig {
+    pub enabled: bool,
+    pub min_angle: Angle,
+    pub max_angle: Angle,
+}
+
+impl Default for TensionArmMonitorConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            min_angle: Angle::new::<degree>(10.0),
+            max_angle: Angle::new::<degree>(170.0),
         }
     }
 }
@@ -172,6 +189,10 @@ pub struct Gluetex {
 
     // addon tension arm (independent tension arm on Role 9)
     pub addon_tension_arm: TensionArm,
+
+    // tension arm monitoring
+    pub tension_arm_monitor_config: TensionArmMonitorConfig,
+    pub tension_arm_monitor_triggered: bool,
 
     /// Will be initialized as false and set to true by emit_state
     /// This way we can signal to the client that the first state emission is a default state
@@ -480,6 +501,77 @@ impl Gluetex {
 
         // Update the internal state
         self.slave_puller_mode = mode;
+    }
+
+    /// Check all tension arm positions and trigger emergency stop if any are out of range
+    pub fn check_tension_arm_monitor(&mut self) {
+        // Only check if monitoring is enabled
+        if !self.tension_arm_monitor_config.enabled {
+            // Clear triggered flag if monitoring is disabled
+            if self.tension_arm_monitor_triggered {
+                self.tension_arm_monitor_triggered = false;
+                self.emit_state();
+            }
+            return;
+        }
+
+        // Check all three tension arms
+        let main_angle = self.tension_arm.get_angle();
+        let slave_angle = self.slave_tension_arm.get_angle();
+        let addon_angle = self.addon_tension_arm.get_angle();
+
+        let min_angle = self.tension_arm_monitor_config.min_angle;
+        let max_angle = self.tension_arm_monitor_config.max_angle;
+
+        // Check if any tension arm is out of range
+        let out_of_range = main_angle < min_angle
+            || main_angle > max_angle
+            || slave_angle < min_angle
+            || slave_angle > max_angle
+            || addon_angle < min_angle
+            || addon_angle > max_angle;
+
+        // If out of range, trigger emergency stop
+        if out_of_range && !self.tension_arm_monitor_triggered {
+            self.tension_arm_monitor_triggered = true;
+            self.emergency_stop();
+            self.emit_state();
+            tracing::warn!(
+                "Tension arm monitor triggered! Main: {:.1}°, Slave: {:.1}°, Addon: {:.1}° (limits: {:.1}°-{:.1}°)",
+                main_angle.get::<degree>(),
+                slave_angle.get::<degree>(),
+                addon_angle.get::<degree>(),
+                min_angle.get::<degree>(),
+                max_angle.get::<degree>()
+            );
+        } else if !out_of_range && self.tension_arm_monitor_triggered {
+            // Clear triggered flag if back in range
+            self.tension_arm_monitor_triggered = false;
+            self.emit_state();
+            tracing::info!("Tension arm monitor cleared - all arms back in range");
+        }
+    }
+
+    /// Emergency stop: stops all motors, heating, and sets machine to standby
+    fn emergency_stop(&mut self) {
+        // Stop all motors by setting mode to standby
+        self.set_mode(&GluetexMode::Standby);
+
+        // Disable heating
+        self.heating_enabled = false;
+
+        // Ensure all motors are disabled
+        self.spool.set_enabled(false);
+        self.puller.set_enabled(false);
+        self.slave_puller.set_enabled(false);
+        self.traverse.set_enabled(false);
+        self.addon_motor_3.set_enabled(false);
+        self.addon_motor_4.set_enabled(false);
+
+        // Disable all controllers
+        self.spool_speed_controller.set_enabled(false);
+        self.puller_speed_controller.set_enabled(false);
+        self.slave_puller_speed_controller.set_enabled(false);
     }
 }
 

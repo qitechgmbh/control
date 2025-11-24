@@ -52,6 +52,9 @@ export function GluetexSettingPage() {
     setSlavePullerMaxSpeedFactor,
     zeroSlaveTensionArm,
     setHeatingPid,
+    setTensionArmMonitorEnabled,
+    setTensionArmMonitorMinAngle,
+    setTensionArmMonitorMaxAngle,
   } = useGluetex();
 
   const handleXlModeChange = (enabled: boolean) => {
@@ -893,6 +896,61 @@ export function GluetexSettingPage() {
             disconnectMachine(selectedMachine.machine_identification_unique);
           }}
         />
+
+        <ControlCard title="Tension Arm Monitor">
+          <Label label="Enable Monitoring">
+            <SelectionGroupBoolean
+              value={state?.tension_arm_monitor_state?.enabled}
+              disabled={isDisabled}
+              loading={isLoading}
+              optionFalse={{
+                children: "Disabled",
+                icon: "lu:CircleOff",
+              }}
+              optionTrue={{
+                children: "Enabled",
+                icon: "lu:Shield",
+              }}
+              onChange={(value) => setTensionArmMonitorEnabled(value)}
+            />
+          </Label>
+          {state?.tension_arm_monitor_state?.triggered && (
+            <div className="rounded-md bg-red-500/10 p-3 text-red-600 dark:text-red-400">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">⚠️</span>
+                <span className="font-semibold">
+                  Tension Arm Limit Exceeded - Machine Stopped
+                </span>
+              </div>
+            </div>
+          )}
+          <Label label="Minimum Angle">
+            <EditValue
+              value={state?.tension_arm_monitor_state?.min_angle}
+              title={"Minimum Angle"}
+              unit="deg"
+              step={1}
+              min={0}
+              max={180}
+              defaultValue={defaultState?.tension_arm_monitor_state?.min_angle}
+              renderValue={(value) => roundToDecimals(value, 1)}
+              onChange={(value) => setTensionArmMonitorMinAngle(value)}
+            />
+          </Label>
+          <Label label="Maximum Angle">
+            <EditValue
+              value={state?.tension_arm_monitor_state?.max_angle}
+              title={"Maximum Angle"}
+              unit="deg"
+              step={1}
+              min={0}
+              max={180}
+              defaultValue={defaultState?.tension_arm_monitor_state?.max_angle}
+              renderValue={(value) => roundToDecimals(value, 1)}
+              onChange={(value) => setTensionArmMonitorMaxAngle(value)}
+            />
+          </Label>
+        </ControlCard>
       </ControlGrid>
     </Page>
   );
