@@ -104,7 +104,10 @@ export function MachinesPage() {
         </p>
         <TouchButton
           onClick={() =>
-            navigate({ to: "/_sidebar/machines/gluetex/999/control" })
+            navigate({
+              to: "/_sidebar/machines/gluetex/$serial/control",
+              params: { serial: "999" },
+            })
           }
           icon="lu:TestTube"
           variant="outline"
