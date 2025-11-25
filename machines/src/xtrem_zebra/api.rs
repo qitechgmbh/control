@@ -18,6 +18,9 @@ pub struct LiveValuesEvent {
     /// weight measurement in kilograms
     pub total_weight: f64,
     pub current_weight: f64,
+    pub plate1_counter: u32,
+    pub plate2_counter: u32,
+    pub plate3_counter: u32,
 }
 
 impl LiveValuesEvent {
@@ -29,7 +32,7 @@ impl LiveValuesEvent {
 #[derive(Serialize, Debug, Clone, BuildEvent)]
 pub struct StateEvent {
     pub is_default_state: bool,
-    /// laser state
+    /// xtrem state
     pub xtrem_zebra_state: XtremZebraState,
 }
 
@@ -40,7 +43,16 @@ impl StateEvent {
 }
 
 #[derive(Serialize, Debug, Clone)]
-pub struct XtremZebraState {}
+pub struct XtremZebraState {
+    /// plate1 target weight
+    pub plate1_target: f64,
+    /// plate2 target weight
+    pub plate2_target: f64,
+    /// plate3 target weight
+    pub plate3_target: f64,
+    /// tolerance
+    pub tolerance: f64,
+}
 
 pub enum XtremZebraEvents {
     LiveValues(Event<LiveValuesEvent>),
@@ -74,7 +86,13 @@ impl CacheableEvents<Self> for XtremZebraEvents {
 /// All values in the Mutation enum should be positive.
 /// This ensures that the parameters for setting tolerances and target diameter
 /// are valid and meaningful within the context of the XtremZebra's operation.
-enum Mutation {}
+enum Mutation {
+    SetPlate1Target(f64),
+    SetPlate2Target(f64),
+    SetPlate3Target(f64),
+    SetTolerance(f64),
+    SetTare,
+}
 
 impl NamespaceCacheingLogic<XtremZebraEvents> for XtremZebraNamespace {
     #[instrument(skip_all)]
@@ -92,7 +110,23 @@ impl NamespaceCacheingLogic<XtremZebraEvents> for XtremZebraNamespace {
 impl MachineApi for XtremZebra {
     fn api_mutate(&mut self, request_body: Value) -> Result<(), anyhow::Error> {
         let mutation: Mutation = serde_json::from_value(request_body)?;
-        match mutation {}
+        match mutation {
+            Mutation::SetPlate1Target(target) => {
+                self.set_plate1_target_weight(target);
+            }
+            Mutation::SetPlate2Target(target) => {
+                self.set_plate2_target_weight(target);
+            }
+            Mutation::SetPlate3Target(target) => {
+                self.set_plate3_target_weight(target);
+            }
+            Mutation::SetTolerance(tolerance) => {
+                self.tolerance = tolerance;
+            }
+            Mutation::SetTare => {
+                self.set_tare();
+            }
+        }
         Ok(())
     }
 

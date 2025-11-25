@@ -29,6 +29,9 @@ import {
 export const liveValuesEventDataSchema = z.object({
   total_weight: z.number(),
   current_weight: z.number(),
+  plate1_counter: z.number(),
+  plate2_counter: z.number(),
+  plate3_counter: z.number(),
 });
 
 /**
@@ -36,7 +39,12 @@ export const liveValuesEventDataSchema = z.object({
  */
 export const stateEventDataSchema = z.object({
   is_default_state: z.boolean(),
-  xtrem_zebra_state: z.object({}),
+  xtrem_zebra_state: z.object({
+    plate1_target: z.number(),
+    plate2_target: z.number(),
+    plate3_target: z.number(),
+    tolerance: z.number(),
+  }),
 });
 
 // ========== Event Schemas with Wrappers ==========
@@ -55,6 +63,9 @@ export type XtremZebraNamespaceStore = {
   // Time series data for live values
   total_weight: TimeSeries;
   current_weight: TimeSeries;
+  plate1_counter: TimeSeries;
+  plate2_counter: TimeSeries;
+  plate3_counter: TimeSeries;
 };
 
 // Constants for time durations
@@ -69,6 +80,15 @@ const { initialTimeSeries: total_weight, insert: addTotalWeight } =
 const { initialTimeSeries: current_weight, insert: addCurrentWeight } =
   createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
 
+const { initialTimeSeries: plate1_counter, insert: addPlate1Counter } =
+  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+
+const { initialTimeSeries: plate2_counter, insert: addPlate2Counter } =
+  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+
+const { initialTimeSeries: plate3_counter, insert: addPlate3Counter } =
+  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+
 /**
  * Factory function to create a new XtremZebra namespace store
  * @returns A new Zustand store instance for XtremZebra namespace
@@ -81,6 +101,9 @@ export const createXtremZebraNamespaceStore =
         defaultState: null,
         total_weight,
         current_weight,
+        plate1_counter,
+        plate2_counter,
+        plate3_counter,
       };
     });
 
@@ -128,12 +151,36 @@ export function xtremZebraMessageHandler(
           value: liveValuesEvent.data.current_weight,
           timestamp: event.ts,
         };
+        const plate1CounterValue: TimeSeriesValue = {
+          value: liveValuesEvent.data.plate1_counter,
+          timestamp: event.ts,
+        };
+        const plate2CounterValue: TimeSeriesValue = {
+          value: liveValuesEvent.data.plate2_counter,
+          timestamp: event.ts,
+        };
+        const plate3CounterValue: TimeSeriesValue = {
+          value: liveValuesEvent.data.plate3_counter,
+          timestamp: event.ts,
+        };
         updateStore((state) => ({
           ...state,
           total_weight: addTotalWeight(state.total_weight, totalWeightValue),
           current_weight: addCurrentWeight(
             state.current_weight,
             currentWeightValue,
+          ),
+          plate1_counter: addPlate1Counter(
+            state.plate1_counter,
+            plate1CounterValue,
+          ),
+          plate2_counter: addPlate2Counter(
+            state.plate2_counter,
+            plate2CounterValue,
+          ),
+          plate3_counter: addPlate3Counter(
+            state.plate3_counter,
+            plate3CounterValue,
           ),
         }));
       } else {

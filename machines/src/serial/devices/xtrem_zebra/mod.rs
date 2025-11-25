@@ -41,48 +41,32 @@ impl TryFrom<XtremResponse> for XtremFrame {
     type Error = anyhow::Error;
 
     fn try_from(value: XtremResponse) -> Result<Self, Self::Error> {
-        let data = value.raw;
+        let ascii = String::from_utf8_lossy(&value.raw);
 
-        if data.len() < 14 {
-            return Err(anyhow!("Invalid Xtrem message length: {}", data.len()));
+        if ascii.len() < 10 {
+            return Err(anyhow!("Too short ASCII frame"));
         }
 
-        let stx = data[0];
-        let id_origin = data[1];
-        let id_dest = data[3];
-        let function_char = data[5] as char;
-        let function = Function::from_char(function_char)
-            .ok_or_else(|| anyhow! {"Invalid function character: {}", function_char})?;
+        let id_origin = ascii[0..2].parse::<u8>().unwrap_or(0);
+        let id_dest = ascii[2..4].parse::<u8>().unwrap_or(0);
+        let func_char = ascii.chars().nth(4).unwrap_or('r');
+        let function = Function::from_char(func_char)
+            .ok_or_else(|| anyhow!("Invalid function char '{}'", func_char))?;
 
-        let data_address = u16::from_be_bytes([data[6], data[7]]);
-        let data_length = data[10];
-
-        let dl_value = data_length as usize;
-        if data.len() < 12 + dl_value + 3 {
-            return Err(anyhow!(
-                "Incomplete data section: expected {} bytes of DATA, got {}",
-                dl_value,
-                data.len() - 12
-            ));
-        }
-
-        let data_start = 12;
-        let data_end = 12 + dl_value;
-        let payload = data[data_start..data_end].to_vec();
-
-        let lrc = data[data_end];
-        let etx = data[data_end + 1];
+        let data_address = u16::from_str_radix(&ascii[5..9], 16).unwrap_or(0);
+        let data_length = 0;
+        let payload = Vec::new();
 
         Ok(Self {
-            stx,
+            stx: 0x02,
             id_origin,
             id_dest,
             function,
             data_address,
             data_length,
             data: payload,
-            lrc,
-            etx,
+            lrc: 0,
+            etx: 0x03,
         })
     }
 }
@@ -237,7 +221,6 @@ impl XtremSerial {
             // Send requests to all known devices
             for (i, cmd) in cmds.iter().enumerate() {
                 let dest_id = device_ids[i];
-                println!("[XTREM] Sending request to device {:02X}", dest_id);
                 sock_tx.send(cmd)?;
                 thread::sleep(Duration::from_millis(10));
             }
@@ -252,20 +235,25 @@ impl XtremSerial {
             while start.elapsed() < timeout && received_count < device_ids.len() {
                 match sock_rx.recv(&mut buf) {
                     std::result::Result::Ok(n) => {
-                        let ascii = String::from_utf8_lossy(&buf[..n]);
-                        println!("[XTREM] RX {} bytes: {}", n, ascii);
+                        // Filter to printable ASCII
+                        let clean: String = buf[..n]
+                            .iter()
+                            .filter(|b| b.is_ascii_graphic() || **b == b' ')
+                            .map(|&b| b as char)
+                            .collect();
 
-                        if let std::result::Result::Ok(frame) =
-                            XtremFrame::try_from(XtremResponse {
-                                raw: buf[..n].to_vec(),
-                            })
-                        {
-                            let weight = XtremFrame::parse_weight_from_response(&buf[..n]);
-                            let id = frame.id_origin;
-
-                            println!("[XTREM] Device {:02X} weight: {:.3} kg", id, weight);
-                            total_weight += weight;
-                            received_count += 1;
+                        // Now first two characters are the origin ID, e.g. "01" or "02"
+                        if clean.len() >= 2 {
+                            let id_str = &clean[0..2];
+                            match id_str.parse::<u8>() {
+                                std::result::Result::Ok(id) => {
+                                    let weight = XtremFrame::parse_weight_from_response(&buf[..n]);
+                                    //println!("[XTREM] Device {:02X} weight: {:.3} kg", id, weight);
+                                    total_weight += weight;
+                                    received_count += 1;
+                                }
+                                Err(_) => println!("[XTREM] Failed to parse ID from '{}'", id_str),
+                            }
                         }
                     }
                     Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {
@@ -286,11 +274,6 @@ impl XtremSerial {
                     last_timestamp: Instant::now(),
                 });
             }
-
-            println!(
-                "[XTREM] Combined total weight from {} devices: {:.3} kg",
-                received_count, total_weight
-            );
 
             thread::sleep(Duration::from_millis(300));
         }

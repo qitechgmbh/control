@@ -10,7 +10,7 @@ use socketioxide::extract::SocketRef;
 use crate::{
     AsyncThreadMessage, MACHINE_XTREM_ZEBRA, Machine, MachineMessage, VENDOR_QITECH,
     machine_identification::{MachineIdentification, MachineIdentificationUnique},
-    serial::devices::xtrem_zebra::XtremSerial,
+    serial::devices::xtrem_zebra::{XtremData, XtremSerial},
     xtrem_zebra::api::{
         LiveValuesEvent, StateEvent, XtremZebraEvents, XtremZebraNamespace, XtremZebraState,
     },
@@ -41,7 +41,18 @@ pub struct XtremZebra {
     cycle_max_weight: f64,
     in_accumulation: bool,
 
-    plate_counter: u32,
+    plate1_target: f64,
+    plate2_target: f64,
+    plate3_target: f64,
+
+    tolerance: f64,
+
+    plate1_counter: u32,
+    plate2_counter: u32,
+    plate3_counter: u32,
+
+    tare_weight: f64,
+    last_raw_weight: f64,
 
     /// Will be initialized as false and set to true by emit_state
     /// This way we can signal to the client that the first state emission is a default state
@@ -94,6 +105,9 @@ impl XtremZebra {
         let live_values = LiveValuesEvent {
             total_weight: self.total_weight,
             current_weight: self.current_weight,
+            plate1_counter: self.plate1_counter,
+            plate2_counter: self.plate2_counter,
+            plate3_counter: self.plate3_counter,
         };
 
         self.namespace
@@ -101,7 +115,12 @@ impl XtremZebra {
     }
 
     pub fn build_state_event(&self) -> StateEvent {
-        let xtrem_zebra = XtremZebraState {};
+        let xtrem_zebra = XtremZebraState {
+            plate1_target: self.plate1_target,
+            plate2_target: self.plate2_target,
+            plate3_target: self.plate3_target,
+            tolerance: self.tolerance,
+        };
 
         StateEvent {
             is_default_state: false,
@@ -112,46 +131,94 @@ impl XtremZebra {
     pub fn emit_state(&mut self) {
         let state = StateEvent {
             is_default_state: !std::mem::replace(&mut self.emitted_default_state, true),
-            xtrem_zebra_state: XtremZebraState {},
+            xtrem_zebra_state: XtremZebraState {
+                plate1_target: self.plate1_target,
+                plate2_target: self.plate2_target,
+                plate3_target: self.plate3_target,
+                tolerance: self.tolerance,
+            },
         };
 
         self.namespace.emit(XtremZebraEvents::State(state.build()));
     }
 
-    pub fn update(&mut self) {
-        let xtrem_zebra_data =
-            smol::block_on(async { self.xtrem_zebra.read().await.get_data().await });
+    fn calculate_current_and_total_weight(&mut self, data: Option<XtremData>) {
+        let raw_weight = data.as_ref().map(|d| d.current_weight).unwrap_or(0.0);
+        self.last_raw_weight = raw_weight;
 
-        let new_weight = xtrem_zebra_data
-            .as_ref()
-            .map(|data| data.current_weight)
-            .unwrap_or(0.0);
+        let new_weight = (raw_weight - self.tare_weight).max(0.0);
 
-        // Detect accumulation start
-        if !self.in_accumulation && new_weight > 0.0 {
+        if !self.in_accumulation && new_weight > self.tolerance {
             self.in_accumulation = true;
             self.cycle_max_weight = 0.0;
         }
 
-        // Track maximum and display only while > 0
         if self.in_accumulation {
             if new_weight > self.cycle_max_weight {
                 self.cycle_max_weight = new_weight;
             }
 
-            // While accumulating, show current max as total
             self.total_weight = self.cycle_max_weight;
 
-            // Detect return to 0 (end of accumulation)
-            if new_weight == 0.0 && self.last_weight > 0.0 {
+            if new_weight <= self.tolerance && self.last_weight > self.tolerance {
                 self.in_accumulation = false;
-                // Hide total weight when scale resets
+
+                let w = self.cycle_max_weight;
+
+                if (w >= self.plate1_target - self.tolerance)
+                    && (w <= self.plate1_target + self.tolerance)
+                {
+                    self.plate1_counter += 1;
+                } else if (w >= self.plate2_target - self.tolerance)
+                    && (w <= self.plate2_target + self.tolerance)
+                {
+                    self.plate2_counter += 1;
+                } else if (w >= self.plate3_target - self.tolerance)
+                    && (w <= self.plate3_target + self.tolerance)
+                {
+                    self.plate3_counter += 1;
+                }
+
                 self.total_weight = 0.0;
+                self.cycle_max_weight = 0.0;
             }
         }
 
-        // Update tracking values
         self.last_weight = new_weight;
         self.current_weight = new_weight;
+    }
+
+    pub fn set_plate1_target_weight(&mut self, target: f64) {
+        self.plate1_target = target;
+        self.emit_state();
+        println!("plate1_target {}", self.plate1_target);
+    }
+    pub fn set_plate2_target_weight(&mut self, target: f64) {
+        self.plate2_target = target;
+        self.emit_state();
+        println!("plate2_target {}", self.plate2_target);
+    }
+    pub fn set_plate3_target_weight(&mut self, target: f64) {
+        self.plate3_target = target;
+        self.emit_state();
+        println!("plate3_target {}", self.plate3_target);
+    }
+    pub fn set_tolerance(&mut self, tolerance: f64) {
+        self.tolerance = tolerance;
+        self.emit_state();
+        println!("tolerance {}", self.tolerance);
+    }
+    pub fn set_tare(&mut self) {
+        self.tare_weight = self.last_raw_weight;
+        self.cycle_max_weight = 0.0;
+        self.total_weight = 0.0;
+        self.current_weight = 0.0;
+        self.in_accumulation = false;
+    }
+
+    pub fn update(&mut self) {
+        let xtrem_zebra_data =
+            smol::block_on(async { self.xtrem_zebra.read().await.get_data().await });
+        self.calculate_current_and_total_weight(xtrem_zebra_data.clone());
     }
 }

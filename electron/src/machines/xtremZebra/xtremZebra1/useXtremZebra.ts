@@ -13,8 +13,15 @@ function useXtremZebra(
   machine_identification_unique: MachineIdentificationUnique,
 ) {
   // Get consolidated state and live values from namespace
-  const { state, defaultState, total_weight, current_weight } =
-    useXtremZebraNamespace(machine_identification_unique);
+  const {
+    state,
+    defaultState,
+    total_weight,
+    current_weight,
+    plate1_counter,
+    plate2_counter,
+    plate3_counter,
+  } = useXtremZebraNamespace(machine_identification_unique);
 
   // Single optimistic state for all state management
   const stateOptimistic = useStateOptimistic<StateEvent>();
@@ -38,6 +45,94 @@ function useXtremZebra(
   };
 
   // Mutation schemas
+  const schemaTolerance = z.object({
+    SetTolerance: z.number(),
+  });
+  const { request: requestTolerance } = useMachineMutation(schemaTolerance);
+  const schemaPlate1Target = z.object({
+    SetPlate1Target: z.number(),
+  });
+  const { request: requestPlate1Target } =
+    useMachineMutation(schemaPlate1Target);
+  const schemaPlate2Target = z.object({
+    SetPlate2Target: z.number(),
+  });
+  const { request: requestPlate2Target } =
+    useMachineMutation(schemaPlate2Target);
+  const schemaPlate3Target = z.object({
+    SetPlate3Target: z.number(),
+  });
+  const { request: requestPlate3Target } =
+    useMachineMutation(schemaPlate3Target);
+
+  const { request: requestSetTare } = useMachineMutation(z.literal("SetTare"));
+
+  const setTolerance = (tolerance: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.xtrem_zebra_state.tolerance = tolerance;
+      },
+      () =>
+        requestTolerance({
+          machine_identification_unique,
+          data: {
+            SetTolerance: tolerance,
+          },
+        }),
+    );
+  };
+
+  const setPlate1Target = (plate1_target: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.xtrem_zebra_state.plate1_target = plate1_target;
+      },
+      () =>
+        requestPlate1Target({
+          machine_identification_unique,
+          data: {
+            SetPlate1Target: plate1_target,
+          },
+        }),
+    );
+  };
+
+  const setPlate2Target = (plate2_target: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.xtrem_zebra_state.plate2_target = plate2_target;
+      },
+      () =>
+        requestPlate2Target({
+          machine_identification_unique,
+          data: {
+            SetPlate2Target: plate2_target,
+          },
+        }),
+    );
+  };
+
+  const setPlate3Target = (plate3_target: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.xtrem_zebra_state.plate3_target = plate3_target;
+      },
+      () =>
+        requestPlate3Target({
+          machine_identification_unique,
+          data: {
+            SetPlate3Target: plate3_target,
+          },
+        }),
+    );
+  };
+
+  const setTare = () => {
+    requestSetTare({
+      machine_identification_unique,
+      data: "SetTare",
+    });
+  };
 
   // Action functions with verb-first names
 
@@ -51,12 +146,20 @@ function useXtremZebra(
     // Live values (TimeSeries)
     total_weight,
     current_weight,
+    plate1_counter,
+    plate2_counter,
+    plate3_counter,
 
     // Loading states
     isLoading: stateOptimistic.isOptimistic,
     isDisabled: !stateOptimistic.isInitialized,
 
     // Action functions (verb-first)
+    setTolerance,
+    setPlate1Target,
+    setPlate2Target,
+    setPlate3Target,
+    setTare,
   };
 }
 
