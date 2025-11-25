@@ -7,22 +7,24 @@ import { TimeSeriesValueNumeric } from "@/control/TimeSeriesValue";
 import { useXtremZebra1 } from "./useXtremZebra";
 
 export function XtremZebraControlPage() {
-  const { weight, state } = useXtremZebra1();
+  const { state, total_weight, current_weight } = useXtremZebra1();
 
   return (
     <Page>
       <ControlGrid columns={2}>
-        <ControlCard title="Scale">
+        <ControlCard title="Current Weight">
           <TimeSeriesValueNumeric
-            label="Current Weight"
+            label=""
             unit="kg"
-            timeseries={weight}
+            timeseries={current_weight}
             renderValue={(value) => value.toFixed(1)}
           />
+        </ControlCard>
+        <ControlCard title="Total Weight">
           <TimeSeriesValueNumeric
-            label="Total Weight"
+            label=""
             unit="kg"
-            timeseries={weight}
+            timeseries={total_weight}
             renderValue={(value) => value.toFixed(1)}
           />
         </ControlCard>

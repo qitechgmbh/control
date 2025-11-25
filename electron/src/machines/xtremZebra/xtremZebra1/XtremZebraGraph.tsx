@@ -10,7 +10,7 @@ import React from "react";
 import { useXtremZebra1 } from "./useXtremZebra";
 
 export function XtremZebraGraphPage() {
-  const { weight, state } = useXtremZebra1();
+  const { current_weight, state } = useXtremZebra1();
 
   const syncHook = useGraphSync("weight-group");
 
@@ -33,7 +33,7 @@ export function XtremZebraGraphPage() {
         <AutoSyncedBigGraph
           syncHook={syncHook}
           newData={{
-            newData: weight,
+            newData: current_weight,
             color: weightColor,
           }}
           unit="mm"

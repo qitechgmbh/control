@@ -111,38 +111,19 @@ impl XtremFrame {
         // Convert to ASCII string
         let ascii = String::from_utf8_lossy(data);
 
-        // Expected layout:
-        // 01 | 00 | r | 0001 | 02 | 01
-        // ^    ^    ^    ^      ^    ^
-        // |    |    |    |      |    └─ data (here "01")
-        // |    |    |    |      └──── data length
-        // |    |    |    └─────────── register
-        // |    |    └──────────────── function
-        // |    └───────────────────── destination ID
-        // └────────────────────────── origin ID
-
-        // Safety check: must be long enough
-        if ascii.len() < 13 {
-            return 0.0;
-        }
-
-        // Data length is at position 10–12
-        let data_len_str = &ascii[10..12];
-        let data_len = data_len_str.parse::<usize>().unwrap_or(0);
-
-        // Data starts at position 12
-        let data_start = 12;
-        let data_end = data_start + data_len * 2; // 2 chars per byte (ASCII hex)
-
-        if ascii.len() < data_end {
-            return 0.0;
-        }
-
-        let data_str = &ascii[data_start..data_end];
-
-        // Convert ASCII hex to integer
-        if let Ok(value) = u16::from_str_radix(data_str, 16) {
-            return value as f64;
+        if let Some(kg_index) = ascii.find("kg") {
+            let mut start = kg_index;
+            while start > 0 {
+                let c = ascii.as_bytes()[start - 1] as char;
+                if !(c.is_ascii_digit() || c == '.' || c == ' ') {
+                    break;
+                }
+                start -= 1;
+            }
+            let number_str = ascii[start..kg_index].trim();
+            if let Ok(v) = number_str.parse::<f64>() {
+                return v;
+            }
         }
 
         0.0

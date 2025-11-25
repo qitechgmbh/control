@@ -124,33 +124,33 @@ impl XtremZebra {
 
         let new_weight = xtrem_zebra_data
             .as_ref()
-            .map(|data| data.weight)
+            .map(|data| data.current_weight)
             .unwrap_or(0.0);
 
-        // Detect accumulation
+        // Detect accumulation start
         if !self.in_accumulation && new_weight > 0.0 {
             self.in_accumulation = true;
             self.cycle_max_weight = 0.0;
         }
 
-        // Track maximum during accumulation
+        // Track maximum and display only while > 0
         if self.in_accumulation {
             if new_weight > self.cycle_max_weight {
                 self.cycle_max_weight = new_weight;
             }
 
-            if new_weight == 0.0 && self.last_weight > 0.0 {
-                self.total_weight = self.cycle_max_weight;
-                self.in_accumulation = false
-            }
+            // While accumulating, show current max as total
+            self.total_weight = self.cycle_max_weight;
 
-            println!(
-                "[XTREM] Cycle finished. Total weight this cycle: {:.3} kg",
-                self.total_weight
-            )
+            // Detect return to 0 (end of accumulation)
+            if new_weight == 0.0 && self.last_weight > 0.0 {
+                self.in_accumulation = false;
+                // Hide total weight when scale resets
+                self.total_weight = 0.0;
+            }
         }
 
-        // Update fields
+        // Update tracking values
         self.last_weight = new_weight;
         self.current_weight = new_weight;
     }

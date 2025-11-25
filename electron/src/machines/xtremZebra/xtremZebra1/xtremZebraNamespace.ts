@@ -27,7 +27,8 @@ import {
  * Live values from XtremZebra (30 FPS)
  */
 export const liveValuesEventDataSchema = z.object({
-  weight: z.number(),
+  total_weight: z.number(),
+  current_weight: z.number(),
 });
 
 /**
@@ -52,7 +53,8 @@ export type XtremZebraNamespaceStore = {
   defaultState: StateEvent | null;
 
   // Time series data for live values
-  weight: TimeSeries;
+  total_weight: TimeSeries;
+  current_weight: TimeSeries;
 };
 
 // Constants for time durations
@@ -122,9 +124,17 @@ export function xtremZebraMessageHandler(
           value: liveValuesEvent.data.total_weight,
           timestamp: event.ts,
         };
+        const currentWeightValue: TimeSeriesValue = {
+          value: liveValuesEvent.data.current_weight,
+          timestamp: event.ts,
+        };
         updateStore((state) => ({
           ...state,
-          weight: addWeight(state.weight, weightValue),
+          total_weight: addTotalWeight(state.total_weight, totalWeightValue),
+          current_weight: addCurrentWeight(
+            state.current_weight,
+            currentWeightValue,
+          ),
         }));
       } else {
         handleUnhandledEventError(eventName);
