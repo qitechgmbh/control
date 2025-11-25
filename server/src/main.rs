@@ -323,9 +323,7 @@ fn main() {
 
     #[cfg(feature = "development-build")]
     let running = setup_ctrlc_handler();
-
-    const CYCLE_TARGET_TIME: Duration = Duration::from_micros(300);
-
+    const CYCLE_TARGET_TIME: Duration = Duration::from_micros(700);
     // for the "hot thread"
     let (sender, receiver) = smol::channel::unbounded();
     let (main_sender, main_receiver) = smol::channel::unbounded();
