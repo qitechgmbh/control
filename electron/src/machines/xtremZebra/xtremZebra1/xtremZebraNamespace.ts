@@ -60,19 +60,12 @@ const TWENTY_MILLISECOND = 20;
 const ONE_SECOND = 1000;
 const FIVE_SECOND = 5 * ONE_SECOND;
 const ONE_HOUR = 60 * 60 * ONE_SECOND;
-const { initialTimeSeries: diameter, insert: addDiameter } = createTimeSeries(
-  TWENTY_MILLISECOND,
-  ONE_SECOND,
-  FIVE_SECOND,
-  ONE_HOUR,
-);
 
-const { initialTimeSeries: weight, insert: addWeight } = createTimeSeries(
-  TWENTY_MILLISECOND,
-  ONE_SECOND,
-  FIVE_SECOND,
-  ONE_HOUR,
-);
+const { initialTimeSeries: total_weight, insert: addTotalWeight } =
+  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+
+const { initialTimeSeries: current_weight, insert: addCurrentWeight } =
+  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
 
 /**
  * Factory function to create a new XtremZebra namespace store
@@ -84,7 +77,8 @@ export const createXtremZebraNamespaceStore =
       return {
         state: null,
         defaultState: null,
-        weight: weight,
+        total_weight,
+        current_weight,
       };
     });
 
@@ -124,8 +118,8 @@ export function xtremZebraMessageHandler(
       // Live values events (keep for 1 hour)
       else if (eventName === "LiveValuesEvent") {
         const liveValuesEvent = liveValuesEventSchema.parse(event);
-        const weightValue: TimeSeriesValue = {
-          value: liveValuesEvent.data.weight,
+        const totalWeightValue: TimeSeriesValue = {
+          value: liveValuesEvent.data.total_weight,
           timestamp: event.ts,
         };
         updateStore((state) => ({

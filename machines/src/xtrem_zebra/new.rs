@@ -39,7 +39,12 @@ impl MachineNewTrait for XtremZebra {
             },
             last_measurement_emit: Instant::now(),
             emitted_default_state: false,
-            weight: 0.0,
+            total_weight: 0.0,
+            current_weight: 0.0,
+            last_weight: 0.0,
+            cycle_max_weight: 0.0,
+            in_accumulation: false,
+            plate_counter: 0,
         };
 
         Ok(xtrem_zebra)

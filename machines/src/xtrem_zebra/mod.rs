@@ -35,7 +35,13 @@ pub struct XtremZebra {
     last_measurement_emit: Instant,
 
     // scale values
-    weight: f64,
+    total_weight: f64,
+    current_weight: f64,
+    last_weight: f64,
+    cycle_max_weight: f64,
+    in_accumulation: bool,
+
+    plate_counter: u32,
 
     /// Will be initialized as false and set to true by emit_state
     /// This way we can signal to the client that the first state emission is a default state
@@ -85,9 +91,10 @@ impl XtremZebra {
     };
 
     pub fn emit_live_values(&mut self) {
-        let weight = self.weight;
-
-        let live_values = LiveValuesEvent { weight };
+        let live_values = LiveValuesEvent {
+            total_weight: self.total_weight,
+            current_weight: self.current_weight,
+        };
 
         self.namespace
             .emit(XtremZebraEvents::LiveValues(live_values.build()));
@@ -115,9 +122,36 @@ impl XtremZebra {
         let xtrem_zebra_data =
             smol::block_on(async { self.xtrem_zebra.read().await.get_data().await });
 
-        self.weight = xtrem_zebra_data
+        let new_weight = xtrem_zebra_data
             .as_ref()
             .map(|data| data.weight)
             .unwrap_or(0.0);
+
+        // Detect accumulation
+        if !self.in_accumulation && new_weight > 0.0 {
+            self.in_accumulation = true;
+            self.cycle_max_weight = 0.0;
+        }
+
+        // Track maximum during accumulation
+        if self.in_accumulation {
+            if new_weight > self.cycle_max_weight {
+                self.cycle_max_weight = new_weight;
+            }
+
+            if new_weight == 0.0 && self.last_weight > 0.0 {
+                self.total_weight = self.cycle_max_weight;
+                self.in_accumulation = false
+            }
+
+            println!(
+                "[XTREM] Cycle finished. Total weight this cycle: {:.3} kg",
+                self.total_weight
+            )
+        }
+
+        // Update fields
+        self.last_weight = new_weight;
+        self.current_weight = new_weight;
     }
 }

@@ -1,11 +1,11 @@
 use anyhow::{Result, anyhow};
 use control_core::helpers::hashing::{byte_folding_u16, hash_djb2};
 use smol::lock::RwLock;
-use std::net::{SocketAddr, ToSocketAddrs, UdpSocket};
+use std::net::UdpSocket;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::thread;
 use std::time::{Duration, Instant};
-use std::{io, thread};
 
 use anyhow::Ok;
 use control_core::xtrem_protocol::xtrem_serial_interface::{DataAddress, Function, XtremFrame};
@@ -88,6 +88,8 @@ impl TryFrom<XtremResponse> for XtremFrame {
 
 #[derive(Debug, Clone)]
 struct XtremRequest {
+    pub id_origin: u8,
+    pub id_dest: u8,
     pub data_address: DataAddress,
     pub function: Function,
     pub data: Vec<u8>,
@@ -95,8 +97,8 @@ struct XtremRequest {
 
 impl From<XtremRequest> for XtremFrame {
     fn from(request: XtremRequest) -> Self {
-        let id_origin = 0x00;
-        let id_dest = 0x01;
+        let id_origin = request.id_origin;
+        let id_dest = request.id_dest;
         let data_address = request.data_address.as_hex();
         let data_length = request.data.len() as u8;
 
@@ -188,22 +190,6 @@ impl Drop for XtremSerial {
     }
 }
 
-use std::sync::OnceLock;
-
-// A global shared receiver socket for all XtremSerial instances
-static XTREM_RX_SOCKET: OnceLock<Arc<UdpSocket>> = OnceLock::new();
-
-fn get_shared_rx_socket() -> Result<Arc<UdpSocket>> {
-    if let Some(sock) = XTREM_RX_SOCKET.get() {
-        Ok(sock.clone())
-    } else {
-        let sock = Arc::new(UdpSocket::bind(("0.0.0.0", 5555))?);
-        sock.set_nonblocking(true)?;
-        XTREM_RX_SOCKET.set(sock.clone());
-        Ok(sock)
-    }
-}
-
 impl XtremSerial {
     pub async fn get_data(&self) -> Option<XtremData> {
         self.data.clone()
@@ -211,46 +197,33 @@ impl XtremSerial {
     /// Asynchronous UDP communication handler for the XTREM Zebra device.
     async fn process_udp(
         this: Arc<RwLock<Self>>,
-        path: String,
+        _path: String,
         shutdown: Arc<AtomicBool>,
     ) -> Result<()> {
-        let rx_port = 5555; // scale -> PC
-        let tx_addr = "192.168.4.33:4444"; // PC -> scale
+        let rx_port = 5555; // Device -> PC
+        let tx_addr = "192.168.4.255:4444"; // PC -> Broadcast
 
-        let sock_rx = get_shared_rx_socket()?;
-        let sock_tx = UdpSocket::bind("0.0.0.0:0")?;
+        let sock_rx = UdpSocket::bind(("0.0.0.0", rx_port))?;
+        let sock_tx = UdpSocket::bind(tx_addr)?;
+
+        let _ = sock_tx.set_broadcast(true);
         sock_tx.connect(tx_addr)?;
-
-        println!(
-            "[XTREM] Listening on UDP {} / sending to {}",
-            rx_port, tx_addr
-        );
 
         // Build an XtremRequest for reading the serial number
         let request = XtremRequest {
-            data_address: DataAddress::ReadSerial,
+            id_origin: 0x00,
+            id_dest: 0x01,
+            data_address: DataAddress::Weight,
             function: Function::ReadRequest,
-            data: vec![],
+            data: Vec::new(),
         };
 
         let frame: XtremFrame = request.into();
         let cmd = frame.as_bytes();
 
-        let func = b"0101";
-
-        let mut cmd: Vec<u8> = Vec::new();
-        cmd.push(0x02); // STX
-        cmd.extend_from_slice(b"0001R");
-        cmd.extend_from_slice(func);
-        cmd.extend_from_slice(b"0052");
-        cmd.push(0x03); // ETX
-        cmd.extend_from_slice(b"\r\n");
-
-        let cmd = cmd.as_slice();
-
         while !shutdown.load(Ordering::Relaxed) {
             // println!("[XTREM] Sending request...");
-            sock_tx.send(&cmd)?;
+            sock_tx.send(cmd.as_slice())?;
 
             // Wait up to 300 ms for reply
             let start = Instant::now();

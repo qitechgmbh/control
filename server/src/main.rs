@@ -29,7 +29,6 @@ use serialport::UsbPortInfo;
 use smol::{
     channel::{Receiver, Sender},
     lock::RwLock,
-    unblock,
 };
 use socketio::{main_namespace::machines_event::MachineObj, queue::start_socketio_queue};
 use socketioxide::extract::SocketRef;
