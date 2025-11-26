@@ -9,6 +9,12 @@ export function GluetexPage() {
       pathname={`/_sidebar/machines/gluetex/${serial}`}
       items={[
         {
+          link: "overview",
+          activeLink: "overview",
+          title: "Overview",
+          icon: "lu:LayoutDashboard",
+        },
+        {
           link: "control",
           activeLink: "control",
           title: "Control",

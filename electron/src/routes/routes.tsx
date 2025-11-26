@@ -21,6 +21,7 @@ import { Winder2GraphsPage } from "@/machines/winder/winder2/Winder2Graphs";
 import { Winder2PresetsPage } from "@/machines/winder/winder2/Winder2PresetsPage";
 
 import { GluetexPage } from "@/machines/winder/gluetex/GluetexPage";
+import { GluetexOverviewPage } from "@/machines/winder/gluetex/GluetexOverviewPage";
 import { GluetexControlPage } from "@/machines/winder/gluetex/GluetexControlPage";
 import { GluetexManualPage } from "@/machines/winder/gluetex/GluetexManual";
 import { GluetexSettingPage } from "@/machines/winder/gluetex/GluetexSettings";
@@ -303,6 +304,12 @@ export const gluetexRoute = createRoute({
   getParentRoute: () => machinesRoute,
   path: "gluetex/$serial",
   component: () => <GluetexPage />,
+});
+
+export const gluetexOverviewRoute = createRoute({
+  getParentRoute: () => gluetexRoute,
+  path: "overview",
+  component: () => <GluetexOverviewPage />,
 });
 
 export const gluetexControlRoute = createRoute({
@@ -604,6 +611,7 @@ export const rootTree = RootRoute.addChildren([
       ]),
 
       gluetexRoute.addChildren([
+        gluetexOverviewRoute,
         gluetexControlRoute,
         gluetexManualRoute,
         gluetexSettingsRoute,
