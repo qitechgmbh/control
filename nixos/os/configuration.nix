@@ -132,6 +132,13 @@ in
       interface = "enp1s0";
       bind-interfaces = true;
       dhcp-range = "192.168.4.10,192.168.4.100,12h";
+      dhcp-option = [
+        "3,192.168.4.1" # gateway
+        "6,192.168.4.1" # DNS server
+      ];
+
+      log-dhcp = true;
+      log-queries = true;
     };
   };
 
