@@ -32,7 +32,6 @@ It consists of a pulling unit, a tension arm, a filament guiding traverse and th
 ## Dimensions and Weight
 
 ![dimensions top view](images/manuals/winder/datasheet/dimensions-top.png)
-![dimensions side view](images/manuals/winder/datasheet/dimensions-side.png)
 ![dimensions front view](images/manuals/winder/datasheet/gestell.png)
 
 |                | no frame | incl. frame |
@@ -73,7 +72,7 @@ Since the diameter of the extruded filament depends primarily on the pulling spe
 
 When extruding or rewinding, it is often the case that a specific amount of meters must be wound onto a spool. The QiTech Pro Winder has an integrated filament length measurement. For example, after 100 m, it can automatically switch from "wind" to "pull" mode. In addition, the operator is alerted acoustically that the spool has finished winding.
 
-![auto stop ui placeholder](images/manuals/winder/datasheet/autostop-ui.svg)
+![auto stop ui placeholder](images/manuals/winder/datasheet/autostop-ui.png)
 
 <br>
 
