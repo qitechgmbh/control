@@ -119,8 +119,6 @@ in
   # Enable networking
   networking.networkmanager.enable = true;
 
-  environment.systemPackages = with pkgs; [ dnsmasq ];
-
   services.dnsmasq = {
       enable = false;
   };
@@ -269,6 +267,7 @@ in
     wireshark
     pciutils
     neofetch
+    dnsmasq
   ];
 
   xdg.portal.enable = true;
