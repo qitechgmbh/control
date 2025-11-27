@@ -139,10 +139,13 @@ pub enum Mutation {
     // Addon Motors
     SetAddonMotor3Enabled(bool),
     SetAddonMotor4Enabled(bool),
+    SetAddonMotor5Enabled(bool),
     SetAddonMotor3MasterRatio(f64),
     SetAddonMotor3SlaveRatio(f64),
     SetAddonMotor4MasterRatio(f64),
     SetAddonMotor4SlaveRatio(f64),
+    SetAddonMotor5MasterRatio(f64),
+    SetAddonMotor5SlaveRatio(f64),
 
     // Slave Puller
     SetSlavePullerEnabled(bool),
@@ -235,6 +238,8 @@ pub struct StateEvent {
     pub addon_motor_3_state: AddonMotorState,
     /// addon motor 4 state
     pub addon_motor_4_state: AddonMotorState,
+    /// addon motor 5 state
+    pub addon_motor_5_state: AddonMotorState,
     /// slave puller state
     pub slave_puller_state: SlavePullerState,
     /// addon tension arm state
@@ -561,6 +566,18 @@ impl MachineApi for Gluetex {
             }
             Mutation::SetAddonMotor4SlaveRatio(ratio) => {
                 self.addon_motor_4_controller.set_slave_ratio(ratio);
+                self.emit_state();
+            }
+            Mutation::SetAddonMotor5Enabled(enabled) => {
+                self.addon_motor_5_controller.set_enabled(enabled);
+                self.emit_state();
+            }
+            Mutation::SetAddonMotor5MasterRatio(ratio) => {
+                self.addon_motor_5_controller.set_master_ratio(ratio);
+                self.emit_state();
+            }
+            Mutation::SetAddonMotor5SlaveRatio(ratio) => {
+                self.addon_motor_5_controller.set_slave_ratio(ratio);
                 self.emit_state();
             }
             Mutation::SetSlavePullerEnabled(enabled) => {
