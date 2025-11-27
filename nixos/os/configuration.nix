@@ -2,6 +2,12 @@
 
 let
   gitInfo = import ../gitInfo.nix { inherit pkgs; };
+
+  # Automatically detect the first non-loopback interface
+  primaryInterface =
+    builtins.head (
+    builtins.filter (name: name != "lo") (builtins.attrNames config.networking.interfaces)
+    );
 in
 {
   imports =
@@ -80,7 +86,7 @@ in
       experimental-features = nix-command flakes
     '';
     settings = {
-      sandbox = false;  
+      sandbox = false;
     };
   };
 
@@ -118,6 +124,36 @@ in
 
   # Enable networking
   networking.networkmanager.enable = true;
+
+  # Disable NetworkManager managing that inerface (so we can assign static IP)
+  networking.networkmanager.unmanged = [ primaryInterface ];
+
+  # Set static IP on that interface
+  networking.interfaces.${primaryInterface} = {
+    useDHCP = false;
+    ipv4.addresses = [{
+        address = "192.168.4.1";
+        prefixLength = 24;
+    }];
+  };
+
+  services.dnsmasq = {
+    enable = true;
+    setting = {
+      interface = primaryInterface;
+      bind-interfaces = true;
+      listen-address = "192.168.4.1";
+
+      # DNS behavior
+      domain-needed = true;
+      bogus-priv = true;
+      no-resolv = true;
+      server = [ "1.1.1.1" "8.8.8.8" ];
+
+      # DHCP range for connected devices
+      dhcp-range = "192.168.4.10,192.168.4.100,12h";
+    };
+  };
 
   # Set your time zone.
   time.timeZone = "UTC";
