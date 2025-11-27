@@ -138,7 +138,7 @@ serviceConfig = {
     # Open firewall if requested
     networking.firewall = mkIf cfg.openFirewall {
       allowedTCPPorts = [ 3001 ];
-      allowedUDPPorts = [ 4444, 5555];
+      allowedUDPPorts = [ 4444 5555];
     };
 
     # Desktop integration
