@@ -305,6 +305,7 @@ export const stateEventDataSchema = z.object({
   connected_machine_state: connectedMachineStateSchema,
   addon_motor_3_state: addonMotorStateSchema,
   addon_motor_4_state: addonMotorStateSchema,
+  addon_motor_5_state: addonMotorStateSchema,
   slave_puller_state: slavePullerStateSchema,
   addon_tension_arm_state: tensionArmStateSchema,
   tension_arm_monitor_state: tensionArmMonitorStateSchema,
@@ -331,11 +332,14 @@ export type MotorRatiosState = {
   stepper3_slave: number;
   stepper4_master: number;
   stepper4_slave: number;
+  stepper5_master: number;
+  stepper5_slave: number;
 };
 
 export type StepperState = {
   stepper3_mode: StepperMode;
   stepper4_mode: StepperMode;
+  stepper5_mode: StepperMode;
 };
 
 /**
@@ -344,12 +348,15 @@ export type StepperState = {
 function getMotorRatiosFromBackend(
   motor3: z.infer<typeof addonMotorStateSchema>,
   motor4: z.infer<typeof addonMotorStateSchema>,
+  motor5: z.infer<typeof addonMotorStateSchema>,
 ): MotorRatiosState {
   return {
     stepper3_master: motor3.master_ratio,
     stepper3_slave: motor3.slave_ratio,
     stepper4_master: motor4.master_ratio,
     stepper4_slave: motor4.slave_ratio,
+    stepper5_master: motor5.master_ratio,
+    stepper5_slave: motor5.slave_ratio,
   };
 }
 
@@ -369,6 +376,15 @@ function getStepper4ModeFromBackend(
   motor4: z.infer<typeof addonMotorStateSchema>,
 ): StepperMode {
   return motor4.enabled ? "Run" : "Standby";
+}
+
+/**
+ * Helper to determine stepper5 mode from backend enabled state
+ */
+function getStepper5ModeFromBackend(
+  motor5: z.infer<typeof addonMotorStateSchema>,
+): StepperMode {
+  return motor5.enabled ? "Run" : "Standby";
 }
 
 /**
@@ -516,10 +532,13 @@ const DEFAULT_ADDON_STATE = {
     stepper3_slave: 1.0,
     stepper4_master: 1.0,
     stepper4_slave: 1.0,
+    stepper5_master: 1.0,
+    stepper5_slave: 1.0,
   },
   stepper_state: {
     stepper3_mode: "Standby" as StepperMode,
     stepper4_mode: "Standby" as StepperMode,
+    stepper5_mode: "Standby" as StepperMode,
   },
   heating_state: {
     heating_mode: "Standby" as HeatingMode,
@@ -607,6 +626,7 @@ export function gluetexMessageHandler(
           const motorRatiosState = getMotorRatiosFromBackend(
             stateEvent.data.addon_motor_3_state,
             stateEvent.data.addon_motor_4_state,
+            stateEvent.data.addon_motor_5_state,
           );
 
           // Derive stepper modes from backend enabled state
@@ -615,6 +635,9 @@ export function gluetexMessageHandler(
           );
           const stepper4Mode = getStepper4ModeFromBackend(
             stateEvent.data.addon_motor_4_state,
+          );
+          const stepper5Mode = getStepper5ModeFromBackend(
+            stateEvent.data.addon_motor_5_state,
           );
 
           // Derive heating mode from backend enabled state
@@ -631,6 +654,7 @@ export function gluetexMessageHandler(
             stepper_state: {
               stepper3_mode: stepper3Mode,
               stepper4_mode: stepper4Mode,
+              stepper5_mode: stepper5Mode,
             },
             heating_state: {
               heating_mode: heatingMode,
