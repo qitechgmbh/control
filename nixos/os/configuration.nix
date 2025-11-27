@@ -119,7 +119,7 @@ in
   # Enable networking
   networking.networkmanager.enable = true;
 
-  {
+  # Static IP for the Ethernet interface
   networking.interfaces.enp1s0.ipv4.addresses = [
     {
       address = "192.168.4.1";
@@ -139,11 +139,10 @@ in
 
       # DHCP range for clients
       dhcp-range = "192.168.4.10,192.168.4.100,12h";
-
     };
   };
 
-  # disable NetworkManager managing this interface
+  # Disable NetworkManager managing this interface
   networking.networkmanager.unmanaged = [ "enp1s0" ];
 
   # Set your time zone.
