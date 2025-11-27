@@ -27,6 +27,7 @@ export function GluetexAddonsPage() {
     isDisabled,
     setStepper3Mode,
     setStepper4Mode,
+    setStepper5Mode,
     setHeatingMode,
     temperature1,
     temperature2,
@@ -43,6 +44,8 @@ export function GluetexAddonsPage() {
     setStepper3Slave,
     setStepper4Master,
     setStepper4Slave,
+    setStepper5Master,
+    setStepper5Slave,
   } = useGluetex();
 
   // Calculate max speed based on gear ratio (same as main puller)
@@ -82,6 +85,28 @@ export function GluetexAddonsPage() {
               disabled={isDisabled}
               loading={isLoading}
               onChange={setStepper4Mode}
+              orientation="horizontal"
+              className="grid grid-cols-2 gap-2"
+              options={{
+                Standby: {
+                  children: "Standby",
+                  icon: "lu:Power",
+                  isActiveClassName: "bg-green-600",
+                },
+                Run: {
+                  children: "Run",
+                  icon: "lu:Play",
+                  isActiveClassName: "bg-green-600",
+                },
+              }}
+            />
+          </Label>
+          <Label label="Stepper 5">
+            <SelectionGroup<StepperMode>
+              value={state?.stepper_state?.stepper5_mode}
+              disabled={isDisabled}
+              loading={isLoading}
+              onChange={setStepper5Mode}
               orientation="horizontal"
               className="grid grid-cols-2 gap-2"
               options={{
@@ -317,6 +342,17 @@ export function GluetexAddonsPage() {
               onRatioChange={(master, slave) => {
                 setStepper4Master(master);
                 setStepper4Slave(slave);
+              }}
+            />
+          </Label>
+          <Label label="Stepper 5 Ratio">
+            <RatioInput
+              master={state?.motor_ratios_state?.stepper5_master}
+              slave={state?.motor_ratios_state?.stepper5_slave}
+              title="Stepper 5 Motor Ratio"
+              onRatioChange={(master, slave) => {
+                setStepper5Master(master);
+                setStepper5Slave(slave);
               }}
             />
           </Label>

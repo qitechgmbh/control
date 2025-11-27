@@ -866,6 +866,27 @@ export const gluetex: MachineProperties = {
         },
       ],
     },
+    {
+      role: 11,
+      role_label: "Addon Motor 5",
+      allowed_devices: [
+        {
+          vendor_id: 2,
+          product_id: 0x1b773052,
+          revision: 0x1a0000,
+        },
+        {
+          vendor_id: 2,
+          product_id: 0x1b773052,
+          revision: 0x190000,
+        },
+        {
+          vendor_id: 2,
+          product_id: 0x1b773052,
+          revision: 0x10001e,
+        },
+      ],
+    },
   ],
 };
 

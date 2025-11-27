@@ -333,6 +333,40 @@ impl MachineNewTrait for Gluetex {
                 device.0
             };
 
+            // Role 11: Addon Motor 5 EL7031-0030
+            let el7031_addon5 = {
+                let device = get_ethercat_device::<EL7031_0030>(
+                    hardware,
+                    params,
+                    11,
+                    vec![EL7031_0030_IDENTITY_A, EL7031_IDENTITY_A, EL7031_IDENTITY_B],
+                )
+                .await?;
+
+                let el7031_0030_config = EL7031_0030Configuration {
+                    stm_features: el7031_0030::coe::StmFeatures {
+                        operation_mode: EL70x1OperationMode::DirectVelocity,
+                        speed_range: shared_config::el70x1::EL70x1SpeedRange::Steps1000,
+                        ..Default::default()
+                    },
+                    stm_motor: StmMotorConfiguration {
+                        max_current: 1500,
+                        ..Default::default()
+                    },
+                    pdo_assignment: EL7031_0030PredefinedPdoAssignment::VelocityControlCompact,
+                    ..Default::default()
+                };
+
+                device
+                    .0
+                    .write()
+                    .await
+                    .write_config(&device.1, &el7031_0030_config)
+                    .await?;
+
+                device.0
+            };
+
             // Digital outputs for SSR control (24V to external SSRs for 60W heaters)
             let heater_ssr_1 = DigitalOutput::new(el2008.clone(), EL2008Port::DO1);
             let heater_ssr_2 = DigitalOutput::new(el2008.clone(), EL2008Port::DO2);
@@ -468,6 +502,10 @@ impl MachineNewTrait for Gluetex {
                         el7031_addon4.clone(),
                         EL7031_0030StepperPort::STM1,
                     ),
+                    addon_motor_5: StepperVelocityEL70x1::new(
+                        el7031_addon5,
+                        EL7031_0030StepperPort::STM1,
+                    ),
                     addon_tension_arm: TensionArm::new(AnalogInput::new(
                         el7031_addon4,
                         EL7031_0030AnalogInputPort::AI1,
@@ -475,6 +513,8 @@ impl MachineNewTrait for Gluetex {
                     addon_motor_3_controller:
                         super::addon_motor_controller::AddonMotorController::new(200),
                     addon_motor_4_controller:
+                        super::addon_motor_controller::AddonMotorController::new(200),
+                    addon_motor_5_controller:
                         super::addon_motor_controller::AddonMotorController::new(200),
                     tension_arm: TensionArm::new(AnalogInput::new(
                         el7031_0030,
