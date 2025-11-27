@@ -1,4 +1,4 @@
-use super::Heating;
+use crate::gluetex::Heating;
 use control_core::controllers::pid::PidController;
 use ethercat_hal::io::{digital_output::DigitalOutput, temperature_input::TemperatureInput};
 use std::time::{Duration, Instant};

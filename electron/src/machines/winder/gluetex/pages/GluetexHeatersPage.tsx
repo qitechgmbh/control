@@ -2,7 +2,7 @@ import { Page } from "@/components/Page";
 import React from "react";
 import { ControlGrid } from "@/control/ControlGrid";
 import { HeatingZone } from "@/machines/extruder/HeatingZone";
-import { useGluetex } from "./useGluetex";
+import { useGluetex } from "../hooks/useGluetex";
 
 export function GluetexHeatersPage() {
   const {

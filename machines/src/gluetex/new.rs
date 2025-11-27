@@ -1,12 +1,12 @@
 mod gluetex_imports {
     pub use super::super::api::GluetexNamespace;
-    pub use super::super::tension_arm::TensionArm;
+    pub use super::super::controllers::puller_speed_controller::PullerSpeedController;
+    pub use super::super::controllers::slave_puller_speed_controller::SlavePullerSpeedController;
+    pub use super::super::controllers::spool_speed_controller::SpoolSpeedController;
+    pub use super::super::controllers::tension_arm::TensionArm;
+    pub use super::super::controllers::traverse_controller::TraverseController;
+    pub use super::super::features::filament_tension::FilamentTensionCalculator;
     pub use super::super::{Gluetex, GluetexMode, PullerMode};
-    pub use crate::gluetex::filament_tension::FilamentTensionCalculator;
-    pub use crate::gluetex::puller_speed_controller::PullerSpeedController;
-    pub use crate::gluetex::slave_puller_speed_controller::SlavePullerSpeedController;
-    pub use crate::gluetex::spool_speed_controller::SpoolSpeedController;
-    pub use crate::gluetex::traverse_controller::TraverseController;
     pub use crate::{
         MachineNewHardware, MachineNewParams, MachineNewTrait, validate_no_role_dublicates,
         validate_same_machine_identification_unique,
@@ -59,7 +59,7 @@ mod gluetex_imports {
 pub use gluetex_imports::*;
 
 use crate::get_ethercat_device;
-use crate::gluetex::temperature_controller::TemperatureController;
+use crate::gluetex::controllers::temperature_controller::TemperatureController;
 
 impl MachineNewTrait for Gluetex {
     fn new<'maindevice>(params: &MachineNewParams) -> Result<Self, Error> {
@@ -474,110 +474,109 @@ impl MachineNewTrait for Gluetex {
                 .machine_identification_unique
                 .clone();
             let (sender, receiver) = smol::channel::unbounded();
-            let mut new =
-                Self {
-                    main_sender: params.main_thread_channel.clone(),
-                    max_connected_machines: 2,
-                    api_receiver: receiver,
-                    api_sender: sender,
-                    traverse: StepperVelocityEL70x1::new(el7031.clone(), EL7031StepperPort::STM1),
-                    traverse_end_stop: DigitalInput::new(el7031, EL7031DigitalInputPort::DI1),
-                    temperature_controller_1,
-                    temperature_controller_2,
-                    temperature_controller_3,
-                    temperature_controller_4,
-                    temperature_controller_5,
-                    temperature_controller_6,
-                    heating_enabled: false,
-                    puller: StepperVelocityEL70x1::new(
-                        el7031_0030.clone(),
-                        EL7031_0030StepperPort::STM1,
+            let mut new = Self {
+                main_sender: params.main_thread_channel.clone(),
+                max_connected_machines: 2,
+                api_receiver: receiver,
+                api_sender: sender,
+                traverse: StepperVelocityEL70x1::new(el7031.clone(), EL7031StepperPort::STM1),
+                traverse_end_stop: DigitalInput::new(el7031, EL7031DigitalInputPort::DI1),
+                temperature_controller_1,
+                temperature_controller_2,
+                temperature_controller_3,
+                temperature_controller_4,
+                temperature_controller_5,
+                temperature_controller_6,
+                heating_enabled: false,
+                puller: StepperVelocityEL70x1::new(
+                    el7031_0030.clone(),
+                    EL7031_0030StepperPort::STM1,
+                ),
+                spool: StepperVelocityEL70x1::new(el7041, EL7041_0052Port::STM1),
+                addon_motor_3: StepperVelocityEL70x1::new(
+                    el7031_addon3,
+                    EL7031_0030StepperPort::STM1,
+                ),
+                addon_motor_4: StepperVelocityEL70x1::new(
+                    el7031_addon4.clone(),
+                    EL7031_0030StepperPort::STM1,
+                ),
+                addon_motor_5: StepperVelocityEL70x1::new(
+                    el7031_addon5,
+                    EL7031_0030StepperPort::STM1,
+                ),
+                addon_tension_arm: TensionArm::new(AnalogInput::new(
+                    el7031_addon4,
+                    EL7031_0030AnalogInputPort::AI1,
+                )),
+                addon_motor_3_controller:
+                    super::controllers::addon_motor_controller::AddonMotorController::new(200),
+                addon_motor_4_controller:
+                    super::controllers::addon_motor_controller::AddonMotorController::new(200),
+                addon_motor_5_controller:
+                    super::controllers::addon_motor_controller::AddonMotorController::new(200),
+                tension_arm: TensionArm::new(AnalogInput::new(
+                    el7031_0030,
+                    EL7031_0030AnalogInputPort::AI1,
+                )),
+                laser: DigitalOutput::new(el2002, EL2002Port::DO1),
+                namespace: GluetexNamespace {
+                    namespace: params.namespace.clone(),
+                },
+                mode: mode.clone(),
+                spool_step_converter: AngularStepConverter::new(200),
+                spool_speed_controller: SpoolSpeedController::new(),
+                last_measurement_emit: Instant::now(),
+                spool_mode: mode.clone().into(),
+                traverse_mode: mode.clone().into(),
+                puller_mode: mode.clone().into(),
+                puller_speed_controller: PullerSpeedController::new(
+                    Velocity::new::<meter_per_minute>(1.0),
+                    Length::new::<millimeter>(1.75),
+                    LinearStepConverter::from_diameter(
+                        200,                            // Assuming 200 steps per revolution for the puller stepper,
+                        Length::new::<centimeter>(8.0), // 8cm diameter of the puller wheel
                     ),
-                    spool: StepperVelocityEL70x1::new(el7041, EL7041_0052Port::STM1),
-                    addon_motor_3: StepperVelocityEL70x1::new(
-                        el7031_addon3,
-                        EL7031_0030StepperPort::STM1,
+                ),
+                slave_puller: StepperVelocityEL70x1::new(
+                    el7031_0030_slave.clone(),
+                    EL7031_0030StepperPort::STM1,
+                ),
+                slave_tension_arm: TensionArm::new(AnalogInput::new(
+                    el7031_0030_slave,
+                    EL7031_0030AnalogInputPort::AI1,
+                )),
+                slave_puller_speed_controller: SlavePullerSpeedController::new(
+                    Angle::new::<degree>(20.0), // Min angle (low tension, high speed)
+                    Angle::new::<degree>(90.0), // Max angle (high tension, low speed)
+                    LinearStepConverter::from_diameter(
+                        200,                            // 200 steps per revolution
+                        Length::new::<centimeter>(8.0), // 8cm diameter
                     ),
-                    addon_motor_4: StepperVelocityEL70x1::new(
-                        el7031_addon4.clone(),
-                        EL7031_0030StepperPort::STM1,
+                    FilamentTensionCalculator::new(
+                        Angle::new::<degree>(20.0), // Min angle for tension calc
+                        Angle::new::<degree>(90.0), // Max angle for tension calc
                     ),
-                    addon_motor_5: StepperVelocityEL70x1::new(
-                        el7031_addon5,
-                        EL7031_0030StepperPort::STM1,
-                    ),
-                    addon_tension_arm: TensionArm::new(AnalogInput::new(
-                        el7031_addon4,
-                        EL7031_0030AnalogInputPort::AI1,
-                    )),
-                    addon_motor_3_controller:
-                        super::addon_motor_controller::AddonMotorController::new(200),
-                    addon_motor_4_controller:
-                        super::addon_motor_controller::AddonMotorController::new(200),
-                    addon_motor_5_controller:
-                        super::addon_motor_controller::AddonMotorController::new(200),
-                    tension_arm: TensionArm::new(AnalogInput::new(
-                        el7031_0030,
-                        EL7031_0030AnalogInputPort::AI1,
-                    )),
-                    laser: DigitalOutput::new(el2002, EL2002Port::DO1),
-                    namespace: GluetexNamespace {
-                        namespace: params.namespace.clone(),
-                    },
-                    mode: mode.clone(),
-                    spool_step_converter: AngularStepConverter::new(200),
-                    spool_speed_controller: SpoolSpeedController::new(),
-                    last_measurement_emit: Instant::now(),
-                    spool_mode: mode.clone().into(),
-                    traverse_mode: mode.clone().into(),
-                    puller_mode: mode.clone().into(),
-                    puller_speed_controller: PullerSpeedController::new(
-                        Velocity::new::<meter_per_minute>(1.0),
-                        Length::new::<millimeter>(1.75),
-                        LinearStepConverter::from_diameter(
-                            200,                            // Assuming 200 steps per revolution for the puller stepper,
-                            Length::new::<centimeter>(8.0), // 8cm diameter of the puller wheel
-                        ),
-                    ),
-                    slave_puller: StepperVelocityEL70x1::new(
-                        el7031_0030_slave.clone(),
-                        EL7031_0030StepperPort::STM1,
-                    ),
-                    slave_tension_arm: TensionArm::new(AnalogInput::new(
-                        el7031_0030_slave,
-                        EL7031_0030AnalogInputPort::AI1,
-                    )),
-                    slave_puller_speed_controller: SlavePullerSpeedController::new(
-                        Angle::new::<degree>(20.0), // Min angle (low tension, high speed)
-                        Angle::new::<degree>(90.0), // Max angle (high tension, low speed)
-                        LinearStepConverter::from_diameter(
-                            200,                            // 200 steps per revolution
-                            Length::new::<centimeter>(8.0), // 8cm diameter
-                        ),
-                        FilamentTensionCalculator::new(
-                            Angle::new::<degree>(20.0), // Min angle for tension calc
-                            Angle::new::<degree>(90.0), // Max angle for tension calc
-                        ),
-                    ),
-                    slave_puller_mode: mode.clone().into(),
-                    slave_puller_user_enabled: false, // Default to disabled
-                    traverse_controller: TraverseController::new(
-                        Length::new::<millimeter>(22.0), // Default inner limit
-                        Length::new::<millimeter>(92.0), // Default outer limit
-                        64,                              // Microsteps
-                    ),
-                    emitted_default_state: false,
-                    spool_automatic_action: super::SpoolAutomaticAction {
-                        progress: Length::ZERO,
-                        progress_last_check: Instant::now(),
-                        target_length: Length::new::<meter>(250.0),
-                        mode: super::api::SpoolAutomaticActionMode::NoAction,
-                    },
-                    machine_identification_unique: machine_id,
-                    connected_machines: vec![],
-                    tension_arm_monitor_config: super::TensionArmMonitorConfig::default(),
-                    tension_arm_monitor_triggered: false,
-                };
+                ),
+                slave_puller_mode: mode.clone().into(),
+                slave_puller_user_enabled: false, // Default to disabled
+                traverse_controller: TraverseController::new(
+                    Length::new::<millimeter>(22.0), // Default inner limit
+                    Length::new::<millimeter>(92.0), // Default outer limit
+                    64,                              // Microsteps
+                ),
+                emitted_default_state: false,
+                spool_automatic_action: super::SpoolAutomaticAction {
+                    progress: Length::ZERO,
+                    progress_last_check: Instant::now(),
+                    target_length: Length::new::<meter>(250.0),
+                    mode: super::api::SpoolAutomaticActionMode::NoAction,
+                },
+                machine_identification_unique: machine_id,
+                connected_machines: vec![],
+                tension_arm_monitor_config: super::TensionArmMonitorConfig::default(),
+                tension_arm_monitor_triggered: false,
+            };
 
             // initalize events
             new.emit_state();
