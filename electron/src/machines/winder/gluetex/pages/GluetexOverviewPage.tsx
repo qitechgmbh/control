@@ -6,9 +6,9 @@ import { TimeSeriesValueNumeric } from "@/control/TimeSeriesValue";
 import { EditValue } from "@/control/EditValue";
 import { Label } from "@/control/Label";
 import { TouchButton } from "@/components/touch/TouchButton";
-import { useGluetex } from "./useGluetex";
+import { useGluetex } from "../hooks/useGluetex";
 import { roundToDecimals } from "@/lib/decimal";
-import { SpoolAutomaticActionMode } from "./gluetexNamespace";
+import { SpoolAutomaticActionMode } from "../state/gluetexNamespace";
 import { SelectionGroup } from "@/control/SelectionGroup";
 import { cn } from "@/lib/utils";
 
