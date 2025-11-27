@@ -270,7 +270,6 @@ impl XtremSerial {
             thread::sleep(Duration::from_millis(300));
         }
 
-        println!("[XTREM] Shutdown signal received, stopping thread.");
         std::result::Result::Ok(())
     }
 }
