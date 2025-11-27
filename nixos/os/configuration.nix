@@ -120,7 +120,7 @@ in
   networking.networkmanager.enable = true;
 
   services.dnsmasq = {
-      enable = false;
+      enable = true;
   };
 
   # Set your time zone.
