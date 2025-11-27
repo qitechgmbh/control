@@ -119,31 +119,29 @@ in
   # Enable networking
   networking.networkmanager.enable = true;
 
-  # Static IP for the Ethernet interface
-  networking.interfaces.enp1s0.ipv4.addresses = [
-    {
+  networking.interfaces.enp1s0.ipv4.addresses = [{
       address = "192.168.4.1";
       prefixLength = 24;
-    }
-  ];
+  }];
 
-  # Replace `enp1s0` with your actual ethernet interface name
-  # (check with `ip link` or `networkctl list`)
+  networking.networkmanager.unmanaged = [ "enp1s0" ];
 
   services.dnsmasq = {
     enable = true;
-
     settings = {
-      interface = "enp1s0";   # The interface to bind to
-      bind-interfaces = true; # Ensure it only listens on this interface
-
-      # DHCP range for clients
+      interface = "enp1s0";
+      bind-interfaces = true;
       dhcp-range = "192.168.4.10,192.168.4.100,12h";
+      dhcp-option = [
+        "3,192.168.4.1" # gateway
+        "6,192.168.4.1" # DNS server
+      ];
+
+      log-dhcp = true;
+      log-queries = true;
     };
   };
 
-  # Disable NetworkManager managing this interface
-  networking.networkmanager.unmanaged = [ "enp1s0" ];
 
   # Set your time zone.
   time.timeZone = "UTC";
@@ -289,6 +287,7 @@ in
     wireshark
     pciutils
     neofetch
+    dnsmasq
   ];
 
   xdg.portal.enable = true;
