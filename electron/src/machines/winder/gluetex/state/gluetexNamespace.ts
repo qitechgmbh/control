@@ -15,7 +15,7 @@ import {
   NamespaceId,
   createNamespaceHookImplementation,
   ThrottledStoreUpdater,
-} from "../../../client/socketioStore";
+} from "../../../../client/socketioStore";
 import { MachineIdentificationUnique } from "@/machines/types";
 import { useMemo } from "react";
 import {

@@ -3,7 +3,7 @@ import { Page } from "@/components/Page";
 import React, { useState } from "react";
 import { ControlGrid } from "@/control/ControlGrid";
 import { TimeSeriesValueNumeric } from "@/control/TimeSeriesValue";
-import { TraverseBar } from "../TraverseBar";
+import { TraverseBar } from "../../TraverseBar";
 import {
   SelectionGroup,
   SelectionGroupBoolean,
@@ -12,15 +12,15 @@ import { EditValue } from "@/control/EditValue";
 import { Label } from "@/control/Label";
 import { TouchButton } from "@/components/touch/TouchButton";
 import { StatusBadge } from "@/control/StatusBadge";
-import { useGluetex } from "./useGluetex";
+import { useGluetex } from "../hooks/useGluetex";
 import {
   Mode,
   SpoolAutomaticActionMode,
   getGearRatioMultiplier,
-} from "./gluetexNamespace";
-import { TensionArm } from "../TensionArm";
+} from "../state/gluetexNamespace";
+import { TensionArm } from "../../TensionArm";
 import { roundDegreesToDecimals, roundToDecimals } from "@/lib/decimal";
-import { Spool } from "../Spool";
+import { Spool } from "../../Spool";
 import {
   Dialog,
   DialogContent,
@@ -28,7 +28,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { getGluetexTraverseMax } from "./gluetexConfig";
+import { getGluetexTraverseMax } from "../config/gluetexConfig";
 
 export function GluetexControlPage() {
   const [showResetConfirmDialog, setShowResetConfirmDialog] = useState(false);
