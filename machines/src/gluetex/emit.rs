@@ -1,6 +1,7 @@
 mod gluetex_imports {
-    pub use super::super::puller_speed_controller::PullerRegulationMode;
-    pub use super::super::{Gluetex, GluetexMode, TraverseMode, api, spool_speed_controller};
+    pub use super::super::controllers::puller_speed_controller::PullerRegulationMode;
+    pub use super::super::controllers::spool_speed_controller;
+    pub use super::super::{Gluetex, GluetexMode, TraverseMode, api};
     pub use crate::buffer1::BufferV1;
     pub use api::{
         GluetexEvents, LiveValuesEvent, ModeState, PullerState, SpoolAutomaticActionMode,
@@ -607,7 +608,10 @@ impl Gluetex {
     }
 
     /// Set gear ratio for winding speed
-    pub fn puller_set_gear_ratio(&mut self, gear_ratio: super::puller_speed_controller::GearRatio) {
+    pub fn puller_set_gear_ratio(
+        &mut self,
+        gear_ratio: super::controllers::puller_speed_controller::GearRatio,
+    ) {
         self.puller_speed_controller.set_gear_ratio(gear_ratio);
         self.emit_state();
     }
