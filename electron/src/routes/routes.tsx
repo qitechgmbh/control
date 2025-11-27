@@ -44,6 +44,7 @@ import { Laser1PresetsPage } from "@/machines/laser/laser1/Laser1PresetsPage";
 import { XtremZebraPage } from "@/machines/xtremZebra/xtremZebra1/XtremZebraPage";
 import { XtremZebraControlPage } from "@/machines/xtremZebra/xtremZebra1/XtremZebraControlPage";
 import { XtremZebraGraphPage } from "@/machines/xtremZebra/xtremZebra1/XtremZebraGraph";
+import { XtremZebraPresetsPage } from "@/machines/xtremZebra/xtremZebra1/XtremZebraPresetsPage";
 // make a route tree like this
 // _mainNavigation/machines/winder2/$serial/control
 // _mainNavigation/configuration/a
@@ -243,6 +244,12 @@ export const xtremZebraGraphRoute = createRoute({
   component: () => <XtremZebraGraphPage />,
 });
 
+export const xtremZebraPresetsRoute = createRoute({
+  getParentRoute: () => xtremZebraSerialRoute,
+  path: "presets",
+  component: () => <XtremZebraPresetsPage />,
+});
+
 export const setupRoute = createRoute({
   getParentRoute: () => sidebarRoute,
   path: "setup",
@@ -368,6 +375,7 @@ export const rootTree = RootRoute.addChildren([
       xtremZebraSerialRoute.addChildren([
         xtremZebraControlRoute,
         xtremZebraGraphRoute,
+        xtremZebraPresetsRoute,
       ]),
     ]),
   ]),

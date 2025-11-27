@@ -154,11 +154,11 @@ function useXtremZebra(
     defaultState: defaultState?.data,
 
     // Live values (TimeSeries)
-    total_weight,
-    current_weight,
-    plate1_counter,
-    plate2_counter,
-    plate3_counter,
+    totalWeight: total_weight,
+    currentWeight: current_weight,
+    plate1Counter: plate1_counter,
+    plate2Counter: plate2_counter,
+    plate3Counter: plate3_counter,
 
     // Loading states
     isLoading: stateOptimistic.isOptimistic,

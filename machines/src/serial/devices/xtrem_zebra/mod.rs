@@ -194,11 +194,6 @@ impl XtremSerial {
         sock_tx.set_broadcast(true)?;
         sock_tx.connect(tx_addr)?;
 
-        println!(
-            "[XTREM] Listening on UDP {} / sending to {}",
-            rx_port, tx_addr
-        );
-
         // Function to build a request for a specific destination ID
         let build_request = |dest_id: u8| -> Vec<u8> {
             let request = XtremRequest {
@@ -218,8 +213,7 @@ impl XtremSerial {
 
         while !shutdown.load(Ordering::Relaxed) {
             // Send requests to all known devices
-            for (i, cmd) in cmds.iter().enumerate() {
-                let _dest_id = device_ids[i];
+            for cmd in cmds.iter() {
                 sock_tx.send(cmd)?;
                 thread::sleep(Duration::from_millis(10));
             }
