@@ -1,6 +1,5 @@
 use std::{fmt, sync::Arc};
 
-use futures::executor::block_on;
 use smol::lock::RwLock;
 
 /// Digital Output (DO) device
@@ -29,7 +28,7 @@ impl DigitalOutput {
         let port1 = port.clone();
         let device1 = device.clone();
         let set_output = Box::new(move |value: DigitalOutputOutput| {
-            let mut device = block_on(device1.write());
+            let mut device = smol::block_on(device1.write());
             device.set_output(port1.clone(), value);
         });
 
@@ -37,7 +36,7 @@ impl DigitalOutput {
         let port2 = port;
         let device2 = device.clone();
         let get_output = Box::new(move || -> DigitalOutputOutput {
-            let device = block_on(device2.read());
+            let device = smol::block_on(device2.read());
             device.get_output(port2.clone())
         });
 

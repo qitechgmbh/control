@@ -1,13 +1,18 @@
 use control_core::ethercat::interface_discovery::discover_ethercat_interface;
-use smol::{Task, Timer};
-use std::time::Duration;
+use smol::Timer;
+use std::{sync::Arc, time::Duration};
 
-pub async fn find_ethercat_interface() -> Result<String, anyhow::Error> {
+use crate::{
+    app_state::SharedState,
+    ethercat::{ethercat_discovery_info::send_ethercat_found, setup::setup_loop},
+};
+
+pub async fn find_ethercat_interface() -> String {
     loop {
         match discover_ethercat_interface().await {
             Ok(interface) => {
                 tracing::info!("Found EtherCAT Interface at: {}", interface);
-                return Ok(interface);
+                return interface;
             }
             Err(e) => {
                 tracing::warn!("No working interface found: {}. Retrying...", e);
@@ -17,7 +22,21 @@ pub async fn find_ethercat_interface() -> Result<String, anyhow::Error> {
     }
 }
 
-// Returns a Future to the interface
-pub fn start_interface_discovery() -> Task<Result<String, anyhow::Error>> {
-    smol::spawn(find_ethercat_interface())
+pub async fn start_interface_discovery(app_state: Arc<SharedState>) {
+    let interface = find_ethercat_interface().await;
+
+    tracing::info!("Calling setup_loop");
+    let res = setup_loop(&interface, app_state.clone()).await;
+    match res {
+        Ok(_) => tracing::info!("Successfully initialized EtherCAT network"),
+        Err(e) => {
+            tracing::error!(
+                "[{}::main] Failed to initialize EtherCAT network \n{:?}",
+                module_path!(),
+                e
+            );
+        }
+    }
+
+    send_ethercat_found(app_state, &interface).await;
 }

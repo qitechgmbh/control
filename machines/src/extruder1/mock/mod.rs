@@ -1,14 +1,21 @@
 #[cfg(feature = "mock-machine")]
-use control_core::machines::identification::MachineIdentification;
+use smol::channel::Receiver;
+
 #[cfg(feature = "mock-machine")]
-use control_core::machines::identification::MachineIdentificationUnique;
+use smol::channel::Sender;
+
 #[cfg(feature = "mock-machine")]
-use control_core_derive::Machine;
+use crate::{AsyncThreadMessage, Machine};
+
+#[cfg(feature = "mock-machine")]
+use crate::{
+    MachineIdentificationUnique, MachineMessage, machine_identification::MachineIdentification,
+};
 #[cfg(feature = "mock-machine")]
 use std::time::Instant;
 
 #[cfg(feature = "mock-machine")]
-use crate::machines::{
+use crate::{
     MACHINE_EXTRUDER_V1, VENDOR_QITECH,
     extruder1::{
         ExtruderV2Mode,
@@ -31,9 +38,25 @@ pub mod mock_emit;
 pub mod new;
 
 #[cfg(feature = "mock-machine")]
-#[derive(Debug, Machine)]
+impl Machine for ExtruderV2 {
+    fn get_machine_identification_unique(&self) -> MachineIdentificationUnique {
+        self.machine_identification_unique.clone()
+    }
+
+    fn get_main_sender(&self) -> Option<Sender<AsyncThreadMessage>> {
+        self.main_sender.clone()
+    }
+}
+
+#[cfg(feature = "mock-machine")]
+#[derive(Debug)]
 pub struct ExtruderV2 {
+    api_receiver: Receiver<MachineMessage>,
+    api_sender: Sender<MachineMessage>,
+    main_sender: Option<Sender<AsyncThreadMessage>>,
+
     machine_identification_unique: MachineIdentificationUnique,
+
     namespace: ExtruderV2Namespace,
     last_measurement_emit: Instant,
     last_status_hash: Option<u64>,
