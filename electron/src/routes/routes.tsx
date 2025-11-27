@@ -20,14 +20,15 @@ import { Winder2SettingPage } from "@/machines/winder/winder2/Winder2Settings";
 import { Winder2GraphsPage } from "@/machines/winder/winder2/Winder2Graphs";
 import { Winder2PresetsPage } from "@/machines/winder/winder2/Winder2PresetsPage";
 
-import { GluetexPage } from "@/machines/winder/gluetex/GluetexPage";
-import { GluetexOverviewPage } from "@/machines/winder/gluetex/GluetexOverviewPage";
-import { GluetexControlPage } from "@/machines/winder/gluetex/GluetexControlPage";
-import { GluetexManualPage } from "@/machines/winder/gluetex/GluetexManual";
-import { GluetexSettingPage } from "@/machines/winder/gluetex/GluetexSettings";
-import { GluetexGraphsPage } from "@/machines/winder/gluetex/GluetexGraphs";
-import { GluetexPresetsPage } from "@/machines/winder/gluetex/GluetexPresetsPage";
-import { GluetexAddonsPage } from "@/machines/winder/gluetex/GluetexAddonsPage";
+import { GluetexPage } from "@/machines/winder/gluetex/pages/GluetexPage";
+import { GluetexOverviewPage } from "@/machines/winder/gluetex/pages/GluetexOverviewPage";
+import { GluetexControlPage } from "@/machines/winder/gluetex/pages/GluetexControlPage";
+import { GluetexManualPage } from "@/machines/winder/gluetex/pages/GluetexManual";
+import { GluetexSettingPage } from "@/machines/winder/gluetex/pages/GluetexSettings";
+import { GluetexGraphsPage } from "@/machines/winder/gluetex/pages/GluetexGraphs";
+import { GluetexPresetsPage } from "@/machines/winder/gluetex/pages/GluetexPresetsPage";
+import { GluetexAddonsPage } from "@/machines/winder/gluetex/pages/GluetexAddonsPage";
+import { GluetexHeatersPage } from "@/machines/winder/gluetex/pages/GluetexHeatersPage";
 
 import { Extruder2Page } from "@/machines/extruder/extruder2/Extruder2Page";
 import { Extruder2ControlPage } from "@/machines/extruder/extruder2/Extruder2ControlPage";

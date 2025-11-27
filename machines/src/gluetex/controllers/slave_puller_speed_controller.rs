@@ -4,9 +4,10 @@ use control_core::converters::linear_step_converter::LinearStepConverter;
 use units::ConstZero;
 use units::f64::*;
 
-use super::{
+use super::tension_arm::TensionArm;
+use crate::gluetex::features::{
     clamp_revolution::Clamping, clamp_revolution::clamp_revolution_uom,
-    filament_tension::FilamentTensionCalculator, tension_arm::TensionArm,
+    filament_tension::FilamentTensionCalculator,
 };
 
 /// Slave puller speed controller that follows the master puller

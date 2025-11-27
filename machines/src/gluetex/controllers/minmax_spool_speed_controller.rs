@@ -1,9 +1,10 @@
-use crate::gluetex::{
-    clamp_revolution::clamp_revolution_uom, filament_tension::FilamentTensionCalculator,
-    puller_speed_controller::PullerSpeedController,
+use crate::gluetex::controllers::{
+    puller_speed_controller::PullerSpeedController, tension_arm::TensionArm,
 };
-
-use super::{clamp_revolution::Clamping, tension_arm::TensionArm};
+use crate::gluetex::features::{
+    clamp_revolution::Clamping, clamp_revolution::clamp_revolution_uom,
+    filament_tension::FilamentTensionCalculator,
+};
 use control_core::{
     controllers::{
         first_degree_motion::angular_acceleration_speed_controller::AngularAccelerationSpeedController,
