@@ -127,10 +127,6 @@ in
   networking.networkmanager.unmanaged = [ "enp1s0" ];
 
   services.dnsmasq = {
-      enable = true;
-  };
-
-  services.dnsmasq = {
     enable = true;
     settings = {
       interface = "enp1s0";
