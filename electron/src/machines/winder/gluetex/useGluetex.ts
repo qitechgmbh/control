@@ -218,6 +218,17 @@ export function useGluetex() {
     z.object({ SetAddonMotor4SlaveRatio: z.number() }),
   );
 
+  // Addon Motor 5 mutations
+  const { request: requestAddonMotor5SetEnabled } = useMachineMutation(
+    z.object({ SetAddonMotor5Enabled: z.boolean() }),
+  );
+  const { request: requestAddonMotor5SetMasterRatio } = useMachineMutation(
+    z.object({ SetAddonMotor5MasterRatio: z.number() }),
+  );
+  const { request: requestAddonMotor5SetSlaveRatio } = useMachineMutation(
+    z.object({ SetAddonMotor5SlaveRatio: z.number() }),
+  );
+
   // Slave Puller mutations
   const { request: requestSlavePullerSetEnabled } = useMachineMutation(
     z.object({ SetSlavePullerEnabled: z.boolean() }),
@@ -818,6 +829,47 @@ export function useGluetex() {
     );
   };
 
+  const setStepper5Mode = (mode: StepperMode) => {
+    const enabled = mode === "Run";
+    updateStateOptimistically(
+      (current) => {
+        current.data.stepper_state.stepper5_mode = mode;
+      },
+      () => {
+        requestAddonMotor5SetEnabled({
+          machine_identification_unique: machineIdentification,
+          data: { SetAddonMotor5Enabled: enabled },
+        });
+      },
+    );
+  };
+
+  const setStepper5Master = (value: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.motor_ratios_state.stepper5_master = value;
+      },
+      () =>
+        requestAddonMotor5SetMasterRatio({
+          machine_identification_unique: machineIdentification,
+          data: { SetAddonMotor5MasterRatio: value },
+        }),
+    );
+  };
+
+  const setStepper5Slave = (value: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.motor_ratios_state.stepper5_slave = value;
+      },
+      () =>
+        requestAddonMotor5SetSlaveRatio({
+          machine_identification_unique: machineIdentification,
+          data: { SetAddonMotor5SlaveRatio: value },
+        }),
+    );
+  };
+
   // ========== Slave Puller Functions ==========
 
   const setSlavePullerEnabled = (enabled: boolean) => {
@@ -1194,6 +1246,7 @@ export function useGluetex() {
     // Addon action functions (local only)
     setStepper3Mode,
     setStepper4Mode,
+    setStepper5Mode,
     setHeatingMode,
     setTemperature1Min,
     setTemperature1Max,
@@ -1203,5 +1256,7 @@ export function useGluetex() {
     setStepper3Slave,
     setStepper4Master,
     setStepper4Slave,
+    setStepper5Master,
+    setStepper5Slave,
   };
 }

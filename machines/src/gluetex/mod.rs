@@ -144,6 +144,7 @@ pub struct Gluetex {
     // addon motors
     pub addon_motor_3: StepperVelocityEL70x1,
     pub addon_motor_4: StepperVelocityEL70x1,
+    pub addon_motor_5: StepperVelocityEL70x1,
 
     // controllers
     pub traverse_controller: TraverseController,
@@ -152,6 +153,7 @@ pub struct Gluetex {
     // addon motor controllers
     pub addon_motor_3_controller: AddonMotorController,
     pub addon_motor_4_controller: AddonMotorController,
+    pub addon_motor_5_controller: AddonMotorController,
 
     // temperature controllers (PID-controlled heaters with temperature sensors)
     pub temperature_controller_1: TemperatureController,
@@ -422,6 +424,14 @@ impl Gluetex {
         let puller_angular_velocity = self.puller_speed_controller.calc_angular_velocity(t);
         self.addon_motor_4_controller
             .sync_motor_speed(&mut self.addon_motor_4, puller_angular_velocity);
+    }
+
+    /// Sync addon motor 5 speed based on puller angular velocity and ratio
+    /// called by `act`
+    pub fn sync_addon_motor_5_speed(&mut self, t: Instant) {
+        let puller_angular_velocity = self.puller_speed_controller.calc_angular_velocity(t);
+        self.addon_motor_5_controller
+            .sync_motor_speed(&mut self.addon_motor_5, puller_angular_velocity);
     }
 
     /// Sync slave puller speed based on master puller speed and slave tension arm
