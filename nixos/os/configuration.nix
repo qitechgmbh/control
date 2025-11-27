@@ -6,7 +6,7 @@ let
   # Automatically detect the first non-loopback interface
   primaryInterface =
     builtins.head (
-    builtins.filter (name: name != "lo") (builtins.attrNames config.networking.interfaces)
+      lib.filter (name: name != "lo") (builtins.attrNames (builtins.readDir "/sys/class/net"))
     );
 in
 {
@@ -125,21 +125,21 @@ in
   # Enable networking
   networking.networkmanager.enable = true;
 
-  # Disable NetworkManager managing that inerface (so we can assign static IP)
-  networking.networkmanager.unmanged = [ primaryInterface ];
+  # Disable NetworkManager managing that interface (so we can assign static IP)
+  networking.networkmanager.unmanaged = [ primaryInterface ];
 
   # Set static IP on that interface
   networking.interfaces.${primaryInterface} = {
     useDHCP = false;
     ipv4.addresses = [{
-        address = "192.168.4.1";
-        prefixLength = 24;
+      address = "192.168.4.1";
+      prefixLength = 24;
     }];
   };
 
   services.dnsmasq = {
     enable = true;
-    setting = {
+    settings = {
       interface = primaryInterface;
       bind-interfaces = true;
       listen-address = "192.168.4.1";
