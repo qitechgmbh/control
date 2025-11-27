@@ -260,6 +260,26 @@ export const addonMotorStateSchema = z.object({
 });
 
 /**
+ * Slave tension arm state schema (from backend)
+ */
+export const slaveTensionArmStateSchema = z.object({
+  zeroed: z.boolean(),
+});
+
+/**
+ * Slave puller state schema (from backend)
+ */
+export const slavePullerStateSchema = z.object({
+  enabled: z.boolean(),
+  forward: z.boolean(),
+  min_angle: z.number(),
+  max_angle: z.number(),
+  min_speed_factor: z.number().nullable(),
+  max_speed_factor: z.number().nullable(),
+  tension_arm: slaveTensionArmStateSchema,
+});
+
+/**
  * Tension arm monitor state schema (from backend)
  */
 export const tensionArmMonitorStateSchema = z.object({
@@ -285,6 +305,7 @@ export const stateEventDataSchema = z.object({
   connected_machine_state: connectedMachineStateSchema,
   addon_motor_3_state: addonMotorStateSchema,
   addon_motor_4_state: addonMotorStateSchema,
+  slave_puller_state: slavePullerStateSchema,
   addon_tension_arm_state: tensionArmStateSchema,
   tension_arm_monitor_state: tensionArmMonitorStateSchema,
 });
@@ -302,17 +323,8 @@ export type StateEventData = z.infer<typeof stateEventDataSchema>;
 export type StepperMode = "Standby" | "Run";
 export type HeatingMode = "Standby" | "Heating";
 
-export type SlavePullerState = {
-  enabled: boolean;
-  forward: boolean;
-  min_angle: number;
-  max_angle: number;
-  min_speed_factor: number | null;
-  max_speed_factor: number | null;
-  tension_arm: {
-    zeroed: boolean;
-  };
-};
+// SlavePullerState is now parsed from backend via slavePullerStateSchema
+export type SlavePullerState = z.infer<typeof slavePullerStateSchema>;
 
 export type MotorRatiosState = {
   stepper3_master: number;
@@ -385,9 +397,9 @@ export type QualityControlState = {
 
 /**
  * Extended state event data with addon fields
+ * Note: slave_puller_state now comes from backend via StateEventData
  */
 export type ExtendedStateEventData = StateEventData & {
-  slave_puller_state: SlavePullerState;
   motor_ratios_state: MotorRatiosState;
   stepper_state: StepperState;
   heating_state: HeatingState;
@@ -496,19 +508,9 @@ const {
   insert: addAddonTensionArmAngle,
 } = createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
 
-// Default addon state
+// Default addon state (local-only fields)
+// Note: slave_puller_state is no longer needed here as it comes from backend
 const DEFAULT_ADDON_STATE = {
-  slave_puller_state: {
-    enabled: false,
-    forward: true,
-    min_angle: 20.0,
-    max_angle: 90.0,
-    min_speed_factor: null,
-    max_speed_factor: null,
-    tension_arm: {
-      zeroed: false,
-    },
-  },
   motor_ratios_state: {
     stepper3_master: 1.0,
     stepper3_slave: 1.0,
@@ -623,10 +625,7 @@ export function gluetexMessageHandler(
           // Extend backend state with addon state (some local, some derived from backend)
           const extendedData: ExtendedStateEventData = {
             ...stateEvent.data,
-            // Preserve existing local-only addon state
-            slave_puller_state:
-              state.state?.data.slave_puller_state ||
-              DEFAULT_ADDON_STATE.slave_puller_state,
+            // slave_puller_state now comes from backend via stateEvent.data
             // Derive from backend addon motor state
             motor_ratios_state: motorRatiosState,
             stepper_state: {
