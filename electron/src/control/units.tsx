@@ -39,6 +39,8 @@ export function getUnitIcon(unit: Unit): IconName {
       return "lu:ChartNoAxesColumn";
     case "kg":
       return "lu:Weight";
+    case "pcs":
+      return "lu:Tally1";
     default:
       return "lu:ChartNoAxesColumn";
   }
@@ -80,6 +82,8 @@ export function renderUnitSymbol(unit: Unit | undefined): string {
       return "%";
     case "kg":
       return "kg";
+    case "pcs":
+      return "pcs";
     default:
       return "";
   }
@@ -143,6 +147,8 @@ export function renderUnitSymbolLong(unit: Unit): string {
       return "percent";
     case "kg":
       return "kilograms";
+    case "pcs":
+      return "pieces";
     default:
       return "";
   }
@@ -166,6 +172,7 @@ export const units = [
   "l/min",
   "%",
   "kg",
+  "pcs",
 ] as const;
 
 export type Unit = (typeof units)[number];

@@ -66,6 +66,9 @@ function useXtremZebra(
     useMachineMutation(schemaPlate3Target);
 
   const { request: requestSetTare } = useMachineMutation(z.literal("SetTare"));
+  const { request: requestZeroCounters } = useMachineMutation(
+    z.literal("ZeroCounters"),
+  );
 
   const setTolerance = (tolerance: number) => {
     updateStateOptimistically(
@@ -134,6 +137,13 @@ function useXtremZebra(
     });
   };
 
+  const zeroCounters = () => {
+    requestZeroCounters({
+      machine_identification_unique,
+      data: "ZeroCounters",
+    });
+  };
+
   // Action functions with verb-first names
 
   return {
@@ -160,6 +170,7 @@ function useXtremZebra(
     setPlate2Target,
     setPlate3Target,
     setTare,
+    zeroCounters,
   };
 }
 

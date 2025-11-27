@@ -1,6 +1,6 @@
 use serialport::UsbPortInfo;
 use smol::Task;
-use std::{collections::HashMap, hash::Hash, time::Duration};
+use std::{collections::HashMap, time::Duration};
 /*
 *@author: Alisher Darmenov
 *@company: QiTech

@@ -1,7 +1,6 @@
 use anyhow::{Result, anyhow};
 use control_core::helpers::hashing::{byte_folding_u16, hash_djb2};
 use smol::lock::RwLock;
-use std::collections::HashMap;
 use std::net::UdpSocket;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -220,7 +219,7 @@ impl XtremSerial {
         while !shutdown.load(Ordering::Relaxed) {
             // Send requests to all known devices
             for (i, cmd) in cmds.iter().enumerate() {
-                let dest_id = device_ids[i];
+                let _dest_id = device_ids[i];
                 sock_tx.send(cmd)?;
                 thread::sleep(Duration::from_millis(10));
             }
@@ -246,9 +245,8 @@ impl XtremSerial {
                         if clean.len() >= 2 {
                             let id_str = &clean[0..2];
                             match id_str.parse::<u8>() {
-                                std::result::Result::Ok(id) => {
+                                std::result::Result::Ok(_) => {
                                     let weight = XtremFrame::parse_weight_from_response(&buf[..n]);
-                                    //println!("[XTREM] Device {:02X} weight: {:.3} kg", id, weight);
                                     total_weight += weight;
                                     received_count += 1;
                                 }

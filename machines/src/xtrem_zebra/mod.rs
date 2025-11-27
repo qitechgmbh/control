@@ -142,29 +142,41 @@ impl XtremZebra {
         self.namespace.emit(XtremZebraEvents::State(state.build()));
     }
 
-    fn calculate_current_and_total_weight(&mut self, data: Option<XtremData>) {
+    fn calculate_weight_and_counter(&mut self, data: Option<XtremData>) {
+        // Raw reading from device
         let raw_weight = data.as_ref().map(|d| d.current_weight).unwrap_or(0.0);
         self.last_raw_weight = raw_weight;
 
+        // Tared, clamped to avoid tiny negatives
         let new_weight = (raw_weight - self.tare_weight).max(0.0);
 
-        if !self.in_accumulation && new_weight > self.tolerance {
+        // Convenience flags around zero using tolerance
+        let was_zero = self.last_weight == 0.0 && new_weight > 0.0;
+        let is_zero = new_weight == 0.0 && self.last_weight > 0.0;
+
+        // Rising edge -> start of accumulation cycle
+        if !self.in_accumulation && was_zero {
             self.in_accumulation = true;
-            self.cycle_max_weight = 0.0;
+            self.cycle_max_weight = new_weight;
         }
 
+        // Inside cycle
         if self.in_accumulation {
+            // Track the highest reached weight during this cycle
             if new_weight > self.cycle_max_weight {
                 self.cycle_max_weight = new_weight;
             }
 
+            // While accumulating, show the current max as total
             self.total_weight = self.cycle_max_weight;
 
-            if new_weight <= self.tolerance && self.last_weight > self.tolerance {
+            // Falling edge -> end of cycle
+            if is_zero {
                 self.in_accumulation = false;
 
                 let w = self.cycle_max_weight;
 
+                // Match against plate targets (+- tolerance)
                 if (w >= self.plate1_target - self.tolerance)
                     && (w <= self.plate1_target + self.tolerance)
                 {
@@ -179,11 +191,16 @@ impl XtremZebra {
                     self.plate3_counter += 1;
                 }
 
+                // Reset cycle data
                 self.total_weight = 0.0;
                 self.cycle_max_weight = 0.0;
             }
+        } else {
+            // Not in a cycle, ensure display is 0
+            self.total_weight = 0.0;
         }
 
+        // Store values for next loop iteration
         self.last_weight = new_weight;
         self.current_weight = new_weight;
     }
@@ -191,22 +208,18 @@ impl XtremZebra {
     pub fn set_plate1_target_weight(&mut self, target: f64) {
         self.plate1_target = target;
         self.emit_state();
-        println!("plate1_target {}", self.plate1_target);
     }
     pub fn set_plate2_target_weight(&mut self, target: f64) {
         self.plate2_target = target;
         self.emit_state();
-        println!("plate2_target {}", self.plate2_target);
     }
     pub fn set_plate3_target_weight(&mut self, target: f64) {
         self.plate3_target = target;
         self.emit_state();
-        println!("plate3_target {}", self.plate3_target);
     }
     pub fn set_tolerance(&mut self, tolerance: f64) {
         self.tolerance = tolerance;
         self.emit_state();
-        println!("tolerance {}", self.tolerance);
     }
     pub fn set_tare(&mut self) {
         self.tare_weight = self.last_raw_weight;
@@ -214,11 +227,18 @@ impl XtremZebra {
         self.total_weight = 0.0;
         self.current_weight = 0.0;
         self.in_accumulation = false;
+        self.emit_state();
+    }
+    pub fn zero_counters(&mut self) {
+        self.plate1_counter = 0;
+        self.plate2_counter = 0;
+        self.plate3_counter = 0;
+        self.emit_state();
     }
 
     pub fn update(&mut self) {
         let xtrem_zebra_data =
             smol::block_on(async { self.xtrem_zebra.read().await.get_data().await });
-        self.calculate_current_and_total_weight(xtrem_zebra_data.clone());
+        self.calculate_weight_and_counter(xtrem_zebra_data.clone());
     }
 }

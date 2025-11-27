@@ -23,6 +23,7 @@ export function XtremZebraControlPage() {
     setPlate2Target,
     setPlate3Target,
     setTare,
+    zeroCounters,
     isDisabled,
     isLoading,
   } = useXtremZebra1();
@@ -49,22 +50,31 @@ export function XtremZebraControlPage() {
         <ControlCard title="Plate Counter">
           <TimeSeriesValueNumeric
             label="Plate 1"
-            unit="kg"
+            unit="pcs"
             timeseries={plate1_counter}
             renderValue={(value) => value.toFixed(1)}
           />
           <TimeSeriesValueNumeric
             label="Plate 2"
-            unit="kg"
+            unit="pcs"
             timeseries={plate2_counter}
             renderValue={(value) => value.toFixed(1)}
           />
           <TimeSeriesValueNumeric
             label="Plate 3"
-            unit="kg"
+            unit="pcs"
             timeseries={plate3_counter}
             renderValue={(value) => value.toFixed(1)}
           />
+          <Label label="Counters">
+            <TouchButton
+              variant="outline"
+              icon="lu:CircleOff"
+              onClick={zeroCounters}
+            >
+              Zero Counters
+            </TouchButton>
+          </Label>
         </ControlCard>
         <ControlCard title="Set Target Weight and Tolerance ">
           <Label label="Set Tolerance">
@@ -87,7 +97,7 @@ export function XtremZebraControlPage() {
               unit="kg"
               step={0.1}
               min={0}
-              max={100}
+              max={1000}
               renderValue={(value) => value.toFixed(2)}
               onChange={(val) => setPlate1Target(val)}
               defaultValue={defaultState?.xtrem_zebra_state.plate1_target}
@@ -100,7 +110,7 @@ export function XtremZebraControlPage() {
               unit="kg"
               step={0.1}
               min={0}
-              max={100}
+              max={1000}
               renderValue={(value) => value.toFixed(2)}
               onChange={(val) => setPlate2Target(val)}
               defaultValue={defaultState?.xtrem_zebra_state.plate2_target}
@@ -113,7 +123,7 @@ export function XtremZebraControlPage() {
               unit="kg"
               step={0.1}
               min={0}
-              max={100}
+              max={1000}
               renderValue={(value) => value.toFixed(2)}
               onChange={(val) => setPlate3Target(val)}
               defaultValue={defaultState?.xtrem_zebra_state.plate3_target}
