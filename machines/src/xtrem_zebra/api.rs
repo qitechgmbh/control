@@ -92,6 +92,7 @@ enum Mutation {
     SetPlate3Target(f64),
     SetTolerance(f64),
     SetTare,
+    ZeroCounters,
 }
 
 impl NamespaceCacheingLogic<XtremZebraEvents> for XtremZebraNamespace {
@@ -125,6 +126,9 @@ impl MachineApi for XtremZebra {
             }
             Mutation::SetTare => {
                 self.set_tare();
+            }
+            Mutation::ZeroCounters => {
+                self.zero_counters();
             }
         }
         Ok(())

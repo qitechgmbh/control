@@ -26,6 +26,12 @@ export function XtremZebraPage() {
           title: "Graphs",
           icon: "lu:ChartSpline",
         },
+        {
+          link: "presets",
+          activeLink: "presets",
+          title: "Presets",
+          icon: "lu:Save",
+        },
       ]}
     />
   );

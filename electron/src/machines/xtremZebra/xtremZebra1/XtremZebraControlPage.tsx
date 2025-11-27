@@ -13,11 +13,11 @@ export function XtremZebraControlPage() {
   const {
     state,
     defaultState,
-    total_weight,
-    current_weight,
-    plate1_counter,
-    plate2_counter,
-    plate3_counter,
+    totalWeight,
+    currentWeight,
+    plate1Counter,
+    plate2Counter,
+    plate3Counter,
     setTolerance,
     setPlate1Target,
     setPlate2Target,
@@ -35,7 +35,7 @@ export function XtremZebraControlPage() {
           <TimeSeriesValueNumeric
             label=""
             unit="kg"
-            timeseries={current_weight}
+            timeseries={currentWeight}
             renderValue={(value) => value.toFixed(1)}
           />
         </ControlCard>
@@ -43,7 +43,7 @@ export function XtremZebraControlPage() {
           <TimeSeriesValueNumeric
             label=""
             unit="kg"
-            timeseries={total_weight}
+            timeseries={totalWeight}
             renderValue={(value) => value.toFixed(1)}
           />
         </ControlCard>
@@ -51,25 +51,25 @@ export function XtremZebraControlPage() {
           <TimeSeriesValueNumeric
             label="Plate 1"
             unit="pcs"
-            timeseries={plate1_counter}
+            timeseries={plate1Counter}
             renderValue={(value) => value.toFixed(1)}
           />
           <TimeSeriesValueNumeric
             label="Plate 2"
             unit="pcs"
-            timeseries={plate2_counter}
+            timeseries={plate2Counter}
             renderValue={(value) => value.toFixed(1)}
           />
           <TimeSeriesValueNumeric
             label="Plate 3"
             unit="pcs"
-            timeseries={plate3_counter}
+            timeseries={plate3Counter}
             renderValue={(value) => value.toFixed(1)}
           />
           <Label label="Counters">
             <TouchButton
               variant="outline"
-              icon="lu:CircleOff"
+              icon="lu:RotateCcw"
               onClick={zeroCounters}
             >
               Zero Counters
