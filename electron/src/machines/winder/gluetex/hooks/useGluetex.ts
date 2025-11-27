@@ -29,7 +29,7 @@ import {
   GearRatio,
   StepperMode,
   HeatingMode,
-} from "./gluetexNamespace";
+} from "../state/gluetexNamespace";
 import { machineIdentificationUnique } from "@/machines/types";
 
 export function useGluetex() {

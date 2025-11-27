@@ -3,7 +3,7 @@ import { ControlCard } from "@/control/ControlCard";
 import { ControlGrid } from "@/control/ControlGrid";
 import { EditValue } from "@/control/EditValue";
 import React, { useState } from "react";
-import { useGluetex } from "./useGluetex";
+import { useGluetex } from "../hooks/useGluetex";
 import { roundToDecimals } from "@/lib/decimal";
 import { Label } from "@/control/Label";
 import { SelectionGroupBoolean } from "@/control/SelectionGroup";
@@ -14,7 +14,7 @@ import {
   setGluetexXLMode,
   GLUETEX_TRAVERSE_MAX_STANDARD,
   GLUETEX_TRAVERSE_MAX_XL,
-} from "./gluetexConfig";
+} from "../config/gluetexConfig";
 
 export function GluetexSettingPage() {
   const [xlMode, setXlMode] = useState(getGluetexXLMode());

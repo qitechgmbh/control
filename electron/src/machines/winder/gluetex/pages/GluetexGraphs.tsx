@@ -7,7 +7,7 @@ import {
   type GraphLine,
 } from "@/components/graph";
 import React from "react";
-import { useGluetex } from "./useGluetex";
+import { useGluetex } from "../hooks/useGluetex";
 import { roundDegreesToDecimals, roundToDecimals } from "@/lib/decimal";
 import { TimeSeries } from "@/lib/timeseries";
 import { Unit } from "@/control/units";

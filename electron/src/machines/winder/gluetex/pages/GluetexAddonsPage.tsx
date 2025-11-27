@@ -3,20 +3,20 @@ import { Page } from "@/components/Page";
 import React from "react";
 import { ControlGrid } from "@/control/ControlGrid";
 import { TimeSeriesValueNumeric } from "@/control/TimeSeriesValue";
-import { TemperatureBar } from "../TemperatureBar";
+import { TemperatureBar } from "../../TemperatureBar";
 import { SelectionGroup } from "@/control/SelectionGroup";
 import { EditValue } from "@/control/EditValue";
 import { Label } from "@/control/Label";
 import { TouchButton } from "@/components/touch/TouchButton";
 import { StatusBadge } from "@/control/StatusBadge";
-import { useGluetex } from "./useGluetex";
+import { useGluetex } from "../hooks/useGluetex";
 import {
   StepperMode,
   HeatingMode,
   getGearRatioMultiplier,
-} from "./gluetexNamespace";
+} from "../state/gluetexNamespace";
 import { roundToDecimals, roundDegreesToDecimals } from "@/lib/decimal";
-import { TensionArm } from "../TensionArm";
+import { TensionArm } from "../../TensionArm";
 import { RatioInput } from "@/components/ratio/RatioInput";
 
 export function GluetexAddonsPage() {

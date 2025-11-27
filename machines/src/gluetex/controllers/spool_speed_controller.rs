@@ -1,4 +1,4 @@
-use crate::gluetex::{
+use crate::gluetex::controllers::{
     adaptive_spool_speed_controller::AdaptiveSpoolSpeedController,
     minmax_spool_speed_controller::MinMaxSpoolSpeedController,
     puller_speed_controller::PullerSpeedController,

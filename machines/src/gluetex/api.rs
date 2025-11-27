@@ -1,5 +1,5 @@
 mod gluetex_imports {
-    pub use super::super::puller_speed_controller::{GearRatio, PullerRegulationMode};
+    pub use super::super::controllers::puller_speed_controller::{GearRatio, PullerRegulationMode};
     pub use super::super::{Gluetex, GluetexMode};
     pub use control_core::socketio::{
         event::{Event, GenericEvent},
@@ -102,7 +102,7 @@ pub enum Mutation {
     SetPullerGearRatio(GearRatio),
 
     // Spool Speed Controller
-    SetSpoolRegulationMode(super::spool_speed_controller::SpoolSpeedControllerType),
+    SetSpoolRegulationMode(super::controllers::spool_speed_controller::SpoolSpeedControllerType),
     SetSpoolMinMaxMinSpeed(f64),
     SetSpoolMinMaxMaxSpeed(f64),
     SetSpoolForward(bool),
@@ -327,7 +327,7 @@ pub struct TensionArmState {
 #[derive(Serialize, Debug, Clone, Default)]
 pub struct SpoolSpeedControllerState {
     /// regulation mode
-    pub regulation_mode: super::spool_speed_controller::SpoolSpeedControllerType,
+    pub regulation_mode: super::controllers::spool_speed_controller::SpoolSpeedControllerType,
     /// min speed in rpm for minmax mode
     pub minmax_min_speed: f64,
     /// max speed in rpm for minmax mode

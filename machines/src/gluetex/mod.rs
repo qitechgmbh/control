@@ -1,33 +1,27 @@
+// Core functionality
 pub mod act;
-pub mod adaptive_spool_speed_controller;
-pub mod addon_motor_controller;
 pub mod api;
-pub mod clamp_revolution;
 pub mod emit;
-pub mod filament_tension;
-pub mod minmax_spool_speed_controller;
 pub mod new;
-pub mod puller_speed_controller;
-pub mod slave_puller_speed_controller;
-pub mod spool_speed_controller;
-pub mod temperature_controller;
-pub mod tension_arm;
-pub mod traverse_controller;
+
+// Organized submodules
+pub mod controllers;
+pub mod features;
 
 use units::Length;
 use units::f64::ThermodynamicTemperature;
 use units::thermodynamic_temperature::degree_celsius;
 
 mod gluetex_imports {
-    pub use super::addon_motor_controller::AddonMotorController;
     pub use super::api::GluetexNamespace;
     pub use super::api::SpoolAutomaticActionMode;
-    pub use super::puller_speed_controller::PullerSpeedController;
-    pub use super::slave_puller_speed_controller::SlavePullerSpeedController;
-    pub use super::spool_speed_controller::SpoolSpeedController;
-    pub use super::temperature_controller::TemperatureController;
-    pub use super::tension_arm::TensionArm;
-    pub use super::traverse_controller::TraverseController;
+    pub use super::controllers::addon_motor_controller::AddonMotorController;
+    pub use super::controllers::puller_speed_controller::PullerSpeedController;
+    pub use super::controllers::slave_puller_speed_controller::SlavePullerSpeedController;
+    pub use super::controllers::spool_speed_controller::SpoolSpeedController;
+    pub use super::controllers::temperature_controller::TemperatureController;
+    pub use super::controllers::tension_arm::TensionArm;
+    pub use super::controllers::traverse_controller::TraverseController;
     pub use control_core::converters::angular_step_converter::AngularStepConverter;
     pub use ethercat_hal::io::{
         digital_input::DigitalInput, digital_output::DigitalOutput,
