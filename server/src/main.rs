@@ -353,20 +353,18 @@ fn main() {
 
     smol::block_on(async {
         let serial_params = SerialDeviceNewParams {
-            path: String::from("192.168.4.33:4444"),
+            path: String::from("192.168.4.255:4444"),
         };
-        match XtremSerial::new_serial(&serial_params) {
-            Ok((device_identification, serial_device)) => {
-                add_serial_device(
-                    app_state.clone(),
-                    &device_identification,
-                    serial_device,
-                    &MACHINE_REGISTRY,
-                    app_state.socketio_setup.socket_queue_tx.clone(),
-                )
-                .await;
-            }
-            _ => (),
+        if let Ok((device_identification, serial_device)) = XtremSerial::new_serial(&serial_params)
+        {
+            add_serial_device(
+                app_state.clone(),
+                &device_identification,
+                serial_device,
+                &MACHINE_REGISTRY,
+                app_state.socketio_setup.socket_queue_tx.clone(),
+            )
+            .await;
         };
     });
 
