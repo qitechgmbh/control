@@ -119,31 +119,11 @@ in
   # Enable networking
   networking.networkmanager.enable = true;
 
-  # Static IP for the Ethernet interface
-  networking.interfaces.enp1s0.ipv4.addresses = [
-    {
-      address = "192.168.4.1";
-      prefixLength = 24;
-    }
-  ];
-
-  # Replace `enp1s0` with your actual ethernet interface name
-  # (check with `ip link` or `networkctl list`)
+  environment.systemPackages = with pkgs; [ dnsmasq ];
 
   services.dnsmasq = {
-    enable = true;
-
-    settings = {
-      interface = "enp1s0";   # The interface to bind to
-      bind-interfaces = true; # Ensure it only listens on this interface
-
-      # DHCP range for clients
-      dhcp-range = "192.168.4.10,192.168.4.100,12h";
-    };
+      enable = false;
   };
-
-  # Disable NetworkManager managing this interface
-  networking.networkmanager.unmanaged = [ "enp1s0" ];
 
   # Set your time zone.
   time.timeZone = "UTC";
