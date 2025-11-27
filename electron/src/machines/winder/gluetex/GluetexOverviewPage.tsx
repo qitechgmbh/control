@@ -200,7 +200,7 @@ export function GluetexOverviewPage() {
             {/* Addon Motors Status Grid */}
             <div>
               <h3 className="mb-2 text-lg font-semibold">Addon Motors</h3>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 <div className="flex flex-col items-center gap-2 rounded-lg border p-3">
                   <span className="text-sm font-medium">Stepper 3</span>
                   <div
@@ -223,6 +223,18 @@ export function GluetexOverviewPage() {
                   />
                   <span className="text-xs">
                     {state?.stepper_state?.stepper4_mode || "Standby"}
+                  </span>
+                </div>
+                <div className="flex flex-col items-center gap-2 rounded-lg border p-3">
+                  <span className="text-sm font-medium">Stepper 5</span>
+                  <div
+                    className={cn(
+                      "h-8 w-8 rounded-full",
+                      getStepperColor(state?.stepper_state?.stepper5_mode),
+                    )}
+                  />
+                  <span className="text-xs">
+                    {state?.stepper_state?.stepper5_mode || "Standby"}
                   </span>
                 </div>
               </div>
