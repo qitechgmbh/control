@@ -2,12 +2,6 @@
 
 let
   gitInfo = import ../gitInfo.nix { inherit pkgs; };
-
-  # Automatically detect the first non-loopback interface
-  primaryInterface =
-    builtins.head (
-      lib.filter (name: name != "lo") (builtins.attrNames (builtins.readDir "/sys/class/net"))
-    );
 in
 {
   imports =
@@ -125,35 +119,32 @@ in
   # Enable networking
   networking.networkmanager.enable = true;
 
-  # Disable NetworkManager managing that interface (so we can assign static IP)
-  networking.networkmanager.unmanaged = [ primaryInterface ];
-
-  # Set static IP on that interface
-  networking.interfaces.${primaryInterface} = {
-    useDHCP = false;
-    ipv4.addresses = [{
+  {
+  networking.interfaces.enp1s0.ipv4.addresses = [
+    {
       address = "192.168.4.1";
       prefixLength = 24;
-    }];
-  };
+    }
+  ];
+
+  # Replace `enp1s0` with your actual ethernet interface name
+  # (check with `ip link` or `networkctl list`)
 
   services.dnsmasq = {
     enable = true;
+
     settings = {
-      interface = primaryInterface;
-      bind-interfaces = true;
-      listen-address = "192.168.4.1";
+      interface = "enp1s0";   # The interface to bind to
+      bind-interfaces = true; # Ensure it only listens on this interface
 
-      # DNS behavior
-      domain-needed = true;
-      bogus-priv = true;
-      no-resolv = true;
-      server = [ "1.1.1.1" "8.8.8.8" ];
-
-      # DHCP range for connected devices
+      # DHCP range for clients
       dhcp-range = "192.168.4.10,192.168.4.100,12h";
+
     };
   };
+
+  # disable NetworkManager managing this interface
+  networking.networkmanager.unmanaged = [ "enp1s0" ];
 
   # Set your time zone.
   time.timeZone = "UTC";
