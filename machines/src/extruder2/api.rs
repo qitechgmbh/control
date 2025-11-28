@@ -106,8 +106,6 @@ pub struct ModeState {
     pub mode: ExtruderV3Mode,
 }
 
-
-
 pub enum ExtruderV3Events {
     LiveValues(Event<LiveValuesEvent>),
     State(Event<StateEvent>),

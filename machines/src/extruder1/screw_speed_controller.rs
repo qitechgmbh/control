@@ -109,16 +109,17 @@ impl ScrewSpeedController {
         self.target_pressure = target_pressure;
     }
 
-    pub fn set_target_screw_rpm(&mut self, target_rpm: AngularVelocity) {
+    pub fn set_target_screw_rpm(&mut self, target_rpm: AngularVelocity,motor_rpm_rating : AngularVelocity, motor_poles : usize ) {
         // Use uom here and perhaps clamp it
         let target_motor_rpm = self
             .transmission
             .calculate_angular_velocity_input(target_rpm);
 
         self.target_rpm = target_rpm;
-        let target_frequency =
-            Frequency::new::<cycle_per_minute>(target_motor_rpm.get::<revolution_per_minute>());
 
+        let target_frequency : Frequency =
+            Frequency::new::<hertz>(target_motor_rpm.get::<revolution_per_minute>() as f64 / 120.0 * 2 as f64);
+        
         self.inverter.set_frequency_target(target_frequency);
     }
 

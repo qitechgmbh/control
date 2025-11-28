@@ -259,7 +259,7 @@ impl ExtruderV3 {
     pub fn set_regulation(&mut self, uses_rpm: bool) {
         if !self.screw_speed_controller.get_uses_rpm() && uses_rpm {
             self.screw_speed_controller
-                .set_target_screw_rpm(self.screw_speed_controller.target_rpm);
+            .set_target_screw_rpm(self.screw_speed_controller.target_rpm,AngularVelocity::new::<revolution_per_minute>(3000.0),2);
             self.screw_speed_controller.set_uses_rpm(uses_rpm);
         }
 
@@ -276,11 +276,10 @@ impl ExtruderV3 {
         self.emit_state();
     }
 
+
     pub fn set_target_rpm(&mut self, rpm: f64) {
-        // rpm * 2 due to motor being rated for double the rpm
-        // TODO make a scaler for Motor RPM
         self.screw_speed_controller
-            .set_target_screw_rpm(AngularVelocity::new::<revolution_per_minute>(rpm*2.0));
+            .set_target_screw_rpm(AngularVelocity::new::<revolution_per_minute>(rpm),AngularVelocity::new::<revolution_per_minute>(3000.0),2);
         self.emit_state();
     }
 

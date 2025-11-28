@@ -9,7 +9,7 @@ use std::time::{Duration, Instant};
 use units::electric_current::centiampere;
 use units::electric_potential::centivolt;
 use units::f64::*;
-use units::frequency::centihertz;
+use units::frequency::{centihertz, hertz};
 
 /// Specifies all System environment Variables
 /// Register addresses are calculated as follows: Register-value 40002 -> address: 40002-40001 -> actual address in request:0x1
@@ -443,7 +443,6 @@ impl MitsubishiCS80 {
     pub fn set_frequency_target(&mut self, frequency: Frequency) {
         let mut request: MitsubishiCS80Request =
             MitsubishiCS80Requests::WriteRunningFrequency.into();
-
         let result = self.convert_frequency_to_word(frequency);
         let bytes = result.to_le_bytes();
         request.request.data[2] = bytes[1];
