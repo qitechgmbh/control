@@ -17,12 +17,18 @@ import { ExtruderV2ManualPage } from "@/machines/extruder/extruder2/Extruder2Man
 import { ChooseVersionPage } from "@/setup/ChooseVersionPage";
 import { fallback, zodValidator } from "@tanstack/zod-adapter";
 
+
+import { Extruder3Page } from "@/machines/extruder/extruder3/Extruder3Page";
+import { Extruder3ControlPage } from "@/machines/extruder/extruder3/Extruder3ControlPage";
+import { Extruder3SettingsPage } from "@/machines/extruder/extruder3/Extruder3Settings";
+import { ExtruderV3ManualPage } from "@/machines/extruder/extruder3/Extruder3Manual";
+
 import { Buffer1ControlPage } from "@/machines/buffer/buffer1/Buffer1ControlPage";
 import { Buffer1Page } from "@/machines/buffer/buffer1/Buffer1Page";
 import { Buffer1SettingsPage } from "@/machines/buffer/buffer1/Buffer1Settings";
 import { ChangelogPage } from "@/setup/ChangelogPage";
-import { Extruder2GraphsPage } from "@/machines/extruder/extruder2/Extruder2Graph";
-import { Extruder2PresetsPage } from "@/machines/extruder/extruder2/Extruder2PresetsPage";
+import { Extruder3GraphsPage } from "@/machines/extruder/extruder3/Extruder3Graph";
+import { Extruder3PresetsPage } from "@/machines/extruder/extruder3/Extruder3PresetsPage";
 import { githubSourceSchema } from "@/setup/GithubSourceDialog";
 import { Laser1ControlPage } from "@/machines/laser/laser1/Laser1ControlPage";
 import { Laser1GraphsPage } from "@/machines/laser/laser1/Laser1Graph";
@@ -95,6 +101,46 @@ export const extruder2PresetsRoute = createRoute({
   path: "presets",
   component: () => <Extruder2PresetsPage />,
 });
+
+
+export const extruder3Route = createRoute({
+  getParentRoute: () => machinesRoute,
+  path: "extruder3/$serial",
+  component: () => <Extruder3Page />,
+});
+
+export const extruder3ControlRoute = createRoute({
+  getParentRoute: () => extruder3Route,
+  path: "control",
+  component: () => <Extruder3ControlPage />,
+});
+
+export const extruder3SettingsRoute = createRoute({
+  getParentRoute: () => extruder3Route,
+  path: "settings",
+  component: () => <Extruder3SettingsPage />,
+});
+
+export const extruder3ManualRoute = createRoute({
+  getParentRoute: () => extruder3Route,
+  path: "manual",
+  component: () => <ExtruderV3ManualPage />,
+});
+
+export const extruder3GraphsRoute = createRoute({
+  getParentRoute: () => extruder3Route,
+  path: "graphs",
+  component: () => <Extruder3GraphsPage />,
+});
+
+export const extruder3PresetsRoute = createRoute({
+  getParentRoute: () => extruder3Route,
+  path: "presets",
+  component: () => <Extruder3PresetsPage />,
+});
+
+
+
 
 export const winder2SerialRoute = createRoute({
   getParentRoute: () => machinesRoute,
@@ -334,6 +380,17 @@ export const rootTree = RootRoute.addChildren([
         extruder2GraphsRoute,
         extruder2PresetsRoute,
       ]),
+
+
+
+      extruder3Route.addChildren([
+        extruder3ControlRoute,
+        extruder3SettingsRoute,
+        extruder3ManualRoute,
+        extruder3GraphsRoute,
+        extruder3PresetsRoute,
+      ]),
+
 
       mock1SerialRoute.addChildren([
         mock1ControlRoute,
