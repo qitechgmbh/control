@@ -81,7 +81,15 @@ impl MachineNewTrait for ExtruderV3 {
         smol::block_on(async {
             // Role 0 - Buscoupler EK1100
 
-            use crate::{extruder1::{Heating, mitsubishi_cs80::MitsubishiCS80, screw_speed_controller::ScrewSpeedController}, extruder2::{ExtruderV3Mode, api::ExtruderV3Namespace}};
+            use control_core::transmission::fixed::FixedTransmission;
+
+            use crate::{
+                extruder1::{
+                    Heating, mitsubishi_cs80::MitsubishiCS80,
+                    screw_speed_controller::ScrewSpeedController,
+                },
+                extruder2::{ExtruderV3Mode, api::ExtruderV3Namespace},
+            };
             let _ek1100 =
                 get_ethercat_device::<EK1100>(hardware, params, 0, [EK1100_IDENTITY_A].to_vec());
             let el6021 = {
@@ -205,8 +213,13 @@ impl MachineNewTrait for ExtruderV3 {
             let target_pressure = Pressure::new::<bar>(0.0);
             let target_rpm = AngularVelocity::new::<revolution_per_minute>(0.0);
 
-            let screw_speed_controller =
-                ScrewSpeedController::new(inverter, target_pressure, target_rpm, pressure_sensor);
+            let screw_speed_controller = ScrewSpeedController::new(
+                inverter,
+                target_pressure,
+                target_rpm,
+                pressure_sensor,
+                FixedTransmission::new(1.0 / 30.0),
+            );
             let (sender, receiver) = smol::channel::unbounded();
 
             let mut extruder: ExtruderV3 = Self {

@@ -1,47 +1,62 @@
 import { createRoute, Outlet } from "@tanstack/react-router";
 import { RootRoute } from "./__root";
 import React from "react";
+import { z } from "zod";
+
+import { ChooseVersionPage } from "@/setup/ChooseVersionPage";
+import { fallback, zodValidator } from "@tanstack/zod-adapter";
+import { githubSourceSchema } from "@/setup/GithubSourceDialog";
 import { SidebarLayout } from "@/components/SidebarLayout";
 import { SetupPage } from "@/setup/SetupPage";
 import { EthercatPage } from "@/setup/EthercatPage";
 import { MachinesPage } from "@/setup/MachinesPage";
+import { ChangelogPage } from "@/setup/ChangelogPage";
+import { TroubleshootPage } from "@/setup/Trobleshoot";
+import { UpdateExecutePage } from "@/setup/UpdateExecutePage";
+
 import { Winder2Page } from "@/machines/winder/winder2/Winder2Page";
 import { Winder2ControlPage } from "@/machines/winder/winder2/Winder2ControlPage";
 import { Winder2ManualPage } from "@/machines/winder/winder2/Winder2Manual";
 import { Winder2SettingPage } from "@/machines/winder/winder2/Winder2Settings";
 import { Winder2GraphsPage } from "@/machines/winder/winder2/Winder2Graphs";
+import { Winder2PresetsPage } from "@/machines/winder/winder2/Winder2PresetsPage";
+
 import { Extruder2Page } from "@/machines/extruder/extruder2/Extruder2Page";
 import { Extruder2ControlPage } from "@/machines/extruder/extruder2/Extruder2ControlPage";
 import { Extruder2SettingsPage } from "@/machines/extruder/extruder2/Extruder2Settings";
 import { ExtruderV2ManualPage } from "@/machines/extruder/extruder2/Extruder2Manual";
-import { ChooseVersionPage } from "@/setup/ChooseVersionPage";
-import { fallback, zodValidator } from "@tanstack/zod-adapter";
+import { Extruder2GraphsPage } from "@/machines/extruder/extruder2/Extruder2Graph";
+import { Extruder2PresetsPage } from "@/machines/extruder/extruder2/Extruder2PresetsPage";
+
+import { Extruder3Page } from "@/machines/extruder/extruder3/Extruder3Page";
+import { Extruder3ControlPage } from "@/machines/extruder/extruder3/Extruder3ControlPage";
+import { Extruder3SettingsPage } from "@/machines/extruder/extruder3/Extruder3Settings";
+import { ExtruderV3ManualPage } from "@/machines/extruder/extruder3/Extruder3Manual";
+import { Extruder3GraphsPage } from "@/machines/extruder/extruder3/Extruder3Graph";
+import { Extruder3PresetsPage } from "@/machines/extruder/extruder3/Extruder3PresetsPage";
 
 import { Buffer1ControlPage } from "@/machines/buffer/buffer1/Buffer1ControlPage";
 import { Buffer1Page } from "@/machines/buffer/buffer1/Buffer1Page";
 import { Buffer1SettingsPage } from "@/machines/buffer/buffer1/Buffer1Settings";
-import { ChangelogPage } from "@/setup/ChangelogPage";
-import { Extruder2GraphsPage } from "@/machines/extruder/extruder2/Extruder2Graph";
-import { Extruder2PresetsPage } from "@/machines/extruder/extruder2/Extruder2PresetsPage";
-import { githubSourceSchema } from "@/setup/GithubSourceDialog";
+
 import { Laser1ControlPage } from "@/machines/laser/laser1/Laser1ControlPage";
 import { Laser1GraphsPage } from "@/machines/laser/laser1/Laser1Graph";
 import { Laser1Page } from "@/machines/laser/laser1/Laser1Page";
+
 import { Mock1ControlPage } from "@/machines/mock/mock1/Mock1ControlPage";
 import { Mock1GraphPage } from "@/machines/mock/mock1/Mock1Graph";
 import { Mock1ManualPage } from "@/machines/mock/mock1/Mock1Manual";
 import { Mock1Page } from "@/machines/mock/mock1/Mock1Page";
 import { Mock1PresetsPage } from "@/machines/mock/mock1/Mock1PresetsPage";
-import { TroubleshootPage } from "@/setup/Trobleshoot";
-import { UpdateExecutePage } from "@/setup/UpdateExecutePage";
-import { Winder2PresetsPage } from "@/machines/winder/winder2/Winder2PresetsPage";
+
 import { Aquapath1ControlPage } from "@/machines/aquapath/aquapath1/Aquapath1ControlPage";
 import { Aquapath1Page } from "@/machines/aquapath/aquapath1/Aquapath1Page";
 import { Aquapath1GraphPage } from "@/machines/aquapath/aquapath1/Aquapath1Graph";
+
 import { TestMachinePage } from "@/machines/testmachine/TestMachinePage";
 import { TestMachineControlPage } from "@/machines/testmachine/TestMachineControlPage";
-import { z } from "zod";
 import { Laser1PresetsPage } from "@/machines/laser/laser1/Laser1PresetsPage";
+
 // make a route tree like this
 // _mainNavigation/machines/winder2/$serial/control
 // _mainNavigation/configuration/a
@@ -107,6 +122,42 @@ export const extruder2PresetsRoute = createRoute({
   getParentRoute: () => extruder2Route,
   path: "presets",
   component: () => <Extruder2PresetsPage />,
+});
+
+export const extruder3Route = createRoute({
+  getParentRoute: () => machinesRoute,
+  path: "extruder3/$serial",
+  component: () => <Extruder3Page />,
+});
+
+export const extruder3ControlRoute = createRoute({
+  getParentRoute: () => extruder3Route,
+  path: "control",
+  component: () => <Extruder3ControlPage />,
+});
+
+export const extruder3SettingsRoute = createRoute({
+  getParentRoute: () => extruder3Route,
+  path: "settings",
+  component: () => <Extruder3SettingsPage />,
+});
+
+export const extruder3ManualRoute = createRoute({
+  getParentRoute: () => extruder3Route,
+  path: "manual",
+  component: () => <ExtruderV3ManualPage />,
+});
+
+export const extruder3GraphsRoute = createRoute({
+  getParentRoute: () => extruder3Route,
+  path: "graphs",
+  component: () => <Extruder3GraphsPage />,
+});
+
+export const extruder3PresetsRoute = createRoute({
+  getParentRoute: () => extruder3Route,
+  path: "presets",
+  component: () => <Extruder3PresetsPage />,
 });
 
 export const winder2SerialRoute = createRoute({
@@ -347,6 +398,14 @@ export const rootTree = RootRoute.addChildren([
         extruder2ManualRoute,
         extruder2GraphsRoute,
         extruder2PresetsRoute,
+      ]),
+
+      extruder3Route.addChildren([
+        extruder3ControlRoute,
+        extruder3SettingsRoute,
+        extruder3ManualRoute,
+        extruder3GraphsRoute,
+        extruder3PresetsRoute,
       ]),
 
       mock1SerialRoute.addChildren([
