@@ -16,14 +16,15 @@ use units::electric_current::ampere;
 #[cfg(not(feature = "mock-machine"))]
 use units::electric_potential::volt;
 
+#[cfg(not(feature = "mock-machine"))]
+use crate::MACHINE_EXTRUDER_V2;
 use crate::{AsyncThreadMessage, Machine};
 
 #[cfg(not(feature = "mock-machine"))]
 use crate::{
-    MACHINE_EXTRUDER_V1, MachineMessage, VENDOR_QITECH,
+    MachineMessage, VENDOR_QITECH,
     extruder1::{
-        screw_speed_controller::ScrewSpeedController,
-        temperature_controller::TemperatureController,
+        screw_speed_controller::ScrewSpeedController, temperature_controller::TemperatureController,
     },
     machine_identification::{MachineIdentification, MachineIdentificationUnique},
 };
@@ -100,7 +101,7 @@ impl std::fmt::Display for ExtruderV3 {
 impl ExtruderV3 {
     pub const MACHINE_IDENTIFICATION: MachineIdentification = MachineIdentification {
         vendor: VENDOR_QITECH,
-        machine: MACHINE_EXTRUDER_V1,
+        machine: MACHINE_EXTRUDER_V2,
     };
 }
 

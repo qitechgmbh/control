@@ -3,9 +3,9 @@
 use crate::extruder1::{
     HeatingType,
     api::{
-        ExtruderSettingsState, HeatingState, HeatingStates, InverterStatusState,
-         PidSettings, PidSettingsStates, PressureState, RegulationState,
-        RotationState, ScrewState, TemperaturePid,
+        ExtruderSettingsState, HeatingState, HeatingStates, InverterStatusState, PidSettings,
+        PidSettingsStates, PressureState, RegulationState, RotationState, ScrewState,
+        TemperaturePid,
     },
 };
 #[cfg(not(feature = "mock-machine"))]
@@ -29,7 +29,10 @@ use super::{ExtruderV3, ExtruderV3Mode, api::StateEvent};
 #[cfg(not(feature = "mock-machine"))]
 impl ExtruderV3 {
     pub fn build_state_event(&mut self) -> StateEvent {
-        use crate::{extruder1::api::{TemperaturePid, TemperaturePidStates}, extruder2::api::ModeState};
+        use crate::{
+            extruder1::api::{TemperaturePid, TemperaturePidStates},
+            extruder2::api::ModeState,
+        };
 
         StateEvent {
             is_default_state: !std::mem::replace(&mut self.emitted_default_state, true),
@@ -258,8 +261,11 @@ impl ExtruderV3 {
 
     pub fn set_regulation(&mut self, uses_rpm: bool) {
         if !self.screw_speed_controller.get_uses_rpm() && uses_rpm {
-            self.screw_speed_controller
-                .set_target_screw_rpm(self.screw_speed_controller.target_rpm);
+            self.screw_speed_controller.set_target_screw_rpm(
+                self.screw_speed_controller.target_rpm,
+                AngularVelocity::new::<revolution_per_minute>(3000.0),
+                2,
+            );
             self.screw_speed_controller.set_uses_rpm(uses_rpm);
         }
 
@@ -277,8 +283,11 @@ impl ExtruderV3 {
     }
 
     pub fn set_target_rpm(&mut self, rpm: f64) {
-        self.screw_speed_controller
-            .set_target_screw_rpm(AngularVelocity::new::<revolution_per_minute>(rpm));
+        self.screw_speed_controller.set_target_screw_rpm(
+            AngularVelocity::new::<revolution_per_minute>(rpm),
+            AngularVelocity::new::<revolution_per_minute>(3000.0),
+            2,
+        );
         self.emit_state();
     }
 

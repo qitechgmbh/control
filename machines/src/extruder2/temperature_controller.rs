@@ -1,9 +1,9 @@
+use crate::extruder1::Heating;
 use control_core::controllers::pid::PidController;
 use ethercat_hal::io::{digital_output::DigitalOutput, temperature_input::TemperatureInput};
 use std::time::{Duration, Instant};
 use units::f64::*;
 use units::thermodynamic_temperature::degree_celsius;
-use crate::extruder1::Heating;
 
 #[derive(Debug)]
 

@@ -1,6 +1,20 @@
 use std::sync::Arc;
 
-use control_core::socketio::{event::{Event, GenericEvent}, namespace::{CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_first_and_last_event}};
+use crate::extruder1::{
+    api::{
+        ExtruderSettingsState, HeatingStates, InverterStatusState, PidSettings, PidSettingsStates,
+        PressureState, RegulationState, RotationState, ScrewState, TemperaturePid,
+    },
+    mitsubishi_cs80::MotorStatus,
+};
+#[cfg(not(feature = "mock-machine"))]
+use crate::{MachineApi, MachineMessage};
+use control_core::socketio::{
+    event::{Event, GenericEvent},
+    namespace::{
+        CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_first_and_last_event,
+    },
+};
 use control_core_derive::BuildEvent;
 use serde::{Deserialize, Serialize};
 #[cfg(not(feature = "mock-machine"))]
@@ -8,16 +22,14 @@ use serde_json::Value;
 #[cfg(not(feature = "mock-machine"))]
 use smol::channel::Sender;
 use tracing::instrument;
-use units::{angular_velocity::revolution_per_minute, electric_current::ampere, electric_potential::volt, frequency::hertz};
-#[cfg(not(feature = "mock-machine"))]
-use crate::{MachineApi, MachineMessage};
-use crate::extruder1::{api::{ExtruderSettingsState, HeatingStates, InverterStatusState, PidSettings, PidSettingsStates, PressureState, RegulationState, RotationState, ScrewState, TemperaturePid}, mitsubishi_cs80::MotorStatus};
+use units::{
+    angular_velocity::revolution_per_minute, electric_current::ampere, electric_potential::volt,
+    frequency::hertz,
+};
 
 #[cfg(not(feature = "mock-machine"))]
 use super::ExtruderV3;
 use super::ExtruderV3Mode;
-
-
 
 #[derive(Debug, Clone, Default, Serialize)]
 pub struct MotorStatusValues {
@@ -100,13 +112,10 @@ pub struct StateEvent {
     pub pid_settings: PidSettingsStates,
 }
 
-
 #[derive(Serialize, Debug, Clone, PartialEq, Eq)]
 pub struct ModeState {
     pub mode: ExtruderV3Mode,
 }
-
-
 
 pub enum ExtruderV3Events {
     LiveValues(Event<LiveValuesEvent>),
@@ -196,7 +205,6 @@ impl MachineApi for ExtruderV3 {
             Mutation::ResetInverter(_) => self.reset_inverter(),
 
             Mutation::SetFrontHeatingTargetTemperature(temp) => {
-
                 self.set_target_temperature(temp, HeatingType::Front)
             }
             Mutation::SetMiddleHeatingTemperature(temp) => {
