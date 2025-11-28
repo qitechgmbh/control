@@ -277,8 +277,10 @@ impl ExtruderV3 {
     }
 
     pub fn set_target_rpm(&mut self, rpm: f64) {
+        // rpm * 2 due to motor being rated for double the rpm
+        // TODO make a scaler for Motor RPM
         self.screw_speed_controller
-            .set_target_screw_rpm(AngularVelocity::new::<revolution_per_minute>(rpm));
+            .set_target_screw_rpm(AngularVelocity::new::<revolution_per_minute>(rpm*2.0));
         self.emit_state();
     }
 
