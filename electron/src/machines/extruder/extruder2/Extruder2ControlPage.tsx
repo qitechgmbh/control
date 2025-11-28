@@ -152,7 +152,7 @@ export function Extruder2ControlPage() {
                 unit="rpm"
                 title="Target Output RPM"
                 min={0}
-                max={88}
+                max={44}
                 renderValue={(value) => roundToDecimals(value, 0)}
                 onChange={setInverterTargetRpm}
               />
