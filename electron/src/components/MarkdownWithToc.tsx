@@ -1,5 +1,6 @@
 import React from "react";
 import { Markdown } from "./Markdown";
+import { ManualMarkdown } from "./ManualMarkdown";
 import { MarkdownToc } from "./MarkdownToc";
 
 type MarkdownWithTocProps = {
@@ -26,6 +27,11 @@ type MarkdownWithTocProps = {
    * @default "top-4"
    */
   stickyTop?: string;
+  /**
+   * Whether this is a machine manual (enables image path transformation)
+   * @default false
+   */
+  isManual?: boolean;
 };
 
 /**
@@ -44,12 +50,19 @@ export function MarkdownWithToc({
   tocWidth = "w-64",
   gap = "gap-6",
   stickyTop = "top-6",
+  isManual = false,
 }: MarkdownWithTocProps) {
+  const MarkdownComponent = isManual ? ManualMarkdown : Markdown;
+  
   return (
     <div className={`flex ${gap}`}>
       {/* Main Content */}
       <div className="min-w-0 flex-1">
-        <Markdown text={markdownContent} />
+        {isManual ? (
+          <ManualMarkdown markdownContent={markdownContent} />
+        ) : (
+          <Markdown text={markdownContent} />
+        )}
       </div>
 
       {/* Table of Contents Sidebar */}
