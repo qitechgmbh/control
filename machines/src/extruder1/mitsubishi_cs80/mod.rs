@@ -443,6 +443,9 @@ impl MitsubishiCS80 {
     pub fn set_frequency_target(&mut self, frequency: Frequency) {
         let mut request: MitsubishiCS80Request =
             MitsubishiCS80Requests::WriteRunningFrequency.into();
+
+        println!("{:?}",frequency.get::<hertz>());
+
         let result = self.convert_frequency_to_word(frequency);
         let bytes = result.to_le_bytes();
         request.request.data[2] = bytes[1];

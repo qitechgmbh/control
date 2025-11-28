@@ -118,7 +118,7 @@ impl ScrewSpeedController {
         self.target_rpm = target_rpm;
 
         let target_frequency : Frequency =
-            Frequency::new::<hertz>(target_motor_rpm.get::<revolution_per_minute>() as f64 / 120.0 * 2 as f64);
+            Frequency::new::<hertz>(target_motor_rpm.get::<revolution_per_minute>() as f64 / 120.0 * motor_poles as f64);
         
         self.inverter.set_frequency_target(target_frequency);
     }
