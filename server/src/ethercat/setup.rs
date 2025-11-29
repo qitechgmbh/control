@@ -8,6 +8,7 @@ use crate::{
 };
 #[cfg(all(target_os = "linux", not(feature = "development-build")))]
 use control_core::{irq_handling::set_irq_affinity, realtime::set_realtime_priority};
+use ethercat_hal::debugging::diagnosis_history::get_most_recent_diagnosis_message;
 use machines::machine_identification::{
     DeviceHardwareIdentification, DeviceHardwareIdentificationEthercat, DeviceIdentification,
     DeviceIdentificationIdentified, MachineIdentificationUnique, read_device_identifications,
@@ -336,6 +337,10 @@ pub async fn setup_loop(
     tracing::info!("Found Devices: {:?}", ethercat_meta_devices);
     drop(ethercat_meta_devices);
 
+    // We always need to have atleast one subdevice anyways
+    let coupler = subdevices.get(0).unwrap();
+    let _resp = get_most_recent_diagnosis_message(coupler).await;
+
     for subdevice in subdevices.iter() {
         if subdevice.name() == "EL5152" {
             subdevice.sdo_write(SM_OUTPUT, 0x1, 0x00u16).await?; //set sync mode (1) for free run (0)
@@ -361,14 +366,6 @@ pub async fn setup_loop(
         app_state.clone().socketio_setup.socket_queue_tx.clone(),
     )
     .await?;
-    /*let main_namespace = &mut app_state_clone
-        .socketio_setup
-        .namespaces
-        .write()
-        .await
-        .main_namespace;
-    let event = MachinesEventBuilder().build(app_state_clone.clone());
-    main_namespace.emit(MainNamespaceEvents::MachinesEvent(event));*/
 
     // Put group in operational state
     let group_op = match group_preop.into_op(&maindevice).await {

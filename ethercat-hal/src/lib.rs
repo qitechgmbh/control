@@ -1,4 +1,5 @@
 pub mod coe;
+pub mod debugging;
 pub mod devices;
 pub mod helpers;
 pub mod io;
