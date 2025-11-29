@@ -118,9 +118,8 @@ pub async fn start_serial_discovery(app_state: Arc<SharedState>) {
     loop {
         let devices = SerialDetection::detect_devices();
 
-        if !devices.is_empty() {
-            handle_serial_device_hotplug(app_state.clone(), devices).await;
-        }
+        // This allows detection of disconnected devices
+        handle_serial_device_hotplug(app_state.clone(), devices).await;
 
         smol::Timer::after(Duration::from_secs(1)).await;
     }
