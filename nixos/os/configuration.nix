@@ -119,17 +119,17 @@ in
   # Enable networking
   networking.networkmanager.enable = true;
 
-  networking.interfaces.enp1s0.ipv4.addresses = [{
+  networking.interfaces.eno1.ipv4.addresses = [{
       address = "192.168.4.1";
       prefixLength = 24;
   }];
 
-  networking.networkmanager.unmanaged = [ "enp1s0" ];
+  networking.networkmanager.unmanaged = [ "eno1" ];
 
   services.dnsmasq = {
     enable = true;
     settings = {
-      interface = "enp1s0";
+      interface = "eno1";
       bind-interfaces = true;
       dhcp-range = "192.168.4.10,192.168.4.100,12h";
       dhcp-option = [
