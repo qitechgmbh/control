@@ -124,7 +124,7 @@ in
       prefixLength = 24;
   }];
 
-  networking.networkmanager.unmanaged = "eno1";
+  networking.networkmanager.unmanaged = [ "eno1" ];
 
   services.dnsmasq = {
     enable = true;
