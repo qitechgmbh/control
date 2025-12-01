@@ -1,6 +1,0 @@
-
-
-
-
-pub const WAGO_750_1506_VENDOR_ID: u32 = 0x00000021;
-pub const WAGO_750_1506_PRODUCT_ID: u32 = 0x07500354;

@@ -21,6 +21,7 @@ pub mod el7031;
 pub mod el7031_0030;
 pub mod el7041_0052;
 pub mod wago_750_354;
+pub mod wago_modules;
 
 use super::devices::el1008::EL1008;
 use crate::{
@@ -120,6 +121,17 @@ where
     }
 
     fn as_any(&self) -> &dyn Any;
+    fn as_any_mut(&mut self) -> &mut dyn Any;
+}
+
+pub trait DynamicEthercatDevice: EthercatDevice + EthercatDynamicPDO {}
+
+pub trait EthercatDynamicPDO {    
+    fn get_tx_offset(&self) -> usize;
+    fn get_rx_offset(&self) -> usize;
+
+    fn set_tx_offset(&mut self, offset: usize);
+    fn set_rx_offset(&mut self, offset: usize);
 }
 
 /// A trait for devices that want to process input and output data
@@ -257,6 +269,10 @@ pub async fn specific_device_from_devices<DEVICE: EthercatDevice>(
 }
 
 pub type SubDeviceIdentityTuple = (u32, u32, u32);
+
+// Is vendor id at 0, and prodid at 1
+pub type SubDeviceProductTuple = (u32,u32);
+
 /// function that converts SubDeviceIdentity to tuple
 pub const fn subdevice_identity_to_tuple(identity: &SubDeviceIdentity) -> SubDeviceIdentityTuple {
     (identity.vendor_id, identity.product_id, identity.revision)

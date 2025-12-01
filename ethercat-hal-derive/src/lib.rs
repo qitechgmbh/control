@@ -251,6 +251,11 @@ pub fn ethercat_device_derive(input: TokenStream) -> TokenStream {
             fn as_any(&self) -> &dyn std::any::Any {
                 self
             }
+
+            #[doc="Implemented by the ethercat_hal_derive::EthercatDevice derive macro"]
+            fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
+                self
+            }
         }
 
         impl crate::devices::EthercatDeviceUsed for #name {
