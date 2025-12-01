@@ -159,6 +159,7 @@ pub async fn set_ethercat_devices<const MAX_SUBDEVICES: usize, const MAX_PDI: us
         .rt_machine_creation_channel
         .send(crate::app_state::HotThreadMessage::AddMachines(machines))
         .await;
+
     shared_state.add_machines_if_not_exists(machine_objs).await;
     shared_state.clone().send_machines_event().await;
 
@@ -339,12 +340,20 @@ pub async fn setup_loop(
     let coupler = subdevices.get(0).unwrap();
     let _resp = get_most_recent_diagnosis_message(coupler).await;
 
-    for subdevice in subdevices.iter() {
-        if subdevice.name() == "EL5152" {
-            subdevice.sdo_write(SM_OUTPUT, 0x1, 0x00u16).await?; //set sync mode (1) for free run (0)
-            subdevice.sdo_write(SM_INPUT, 0x1, 0x00u16).await?; //set sync mode (1) for free run (0)
-        }
-    }
+
+    /*
+        handle special edge cases,
+        Wago couplers handle all subdevices as part of the coupler instead of their own devices,
+        meaning we need to convert the PDO Mappings to seperate SubDevices to enable more ease of use
+        OR alternatively you could show it like TwinCAT with "slots" on the Coupler
+    */
+    match (coupler.identity().vendor_id,coupler.identity().product_id) {
+        (WAGO_750_354_VENDOR_ID,WAGO_750_354_PRODUCT_ID) => {
+            let r = Wago750_354::initialize_modules(coupler).await?;
+            println!("{:?}",r);
+        },        
+        _ => (),
+    };
 
     // remove subdevice from devices tuple
     let devices = devices
@@ -365,8 +374,29 @@ pub async fn setup_loop(
     )
     .await?;
 
+    let group_safe = match group_preop.into_safe_op(&maindevice).await {
+        Ok(group_op) => {
+            tracing::info!("Group in Safe-OP state");
+            group_op
+        }
+        Err(err) => Err(anyhow::anyhow!(
+            "[{}::setup_loop] Failed to put group in Safe-OP state: {:?}",
+            module_path!(),
+            err
+        ))?,
+    };
+
+    /*
+        Make DC Slaves Happy
+    */
+    let res = group_safe.tx_rx_sync_system_time(&maindevice).await;
+    match res {
+        Ok(_) => (),
+        Err(e) => tracing::error!("[{}::setup_loop] Failed to sync dc time: {:?}",e, module_path!()),
+    }
+
     // Put group in operational state
-    let group_op = match group_preop.into_op(&maindevice).await {
+    let group_op = match group_safe.into_op(&maindevice).await {
         Ok(group_op) => {
             tracing::info!("Group in OP state");
             group_op
