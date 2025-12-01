@@ -38,7 +38,8 @@ import { Winder2PresetsPage } from "@/machines/winder/winder2/Winder2PresetsPage
 import { Aquapath1ControlPage } from "@/machines/aquapath/aquapath1/Aquapath1ControlPage";
 import { Aquapath1Page } from "@/machines/aquapath/aquapath1/Aquapath1Page";
 import { Aquapath1GraphPage } from "@/machines/aquapath/aquapath1/Aquapath1Graph";
-
+import { TestMachinePage } from "@/machines/testmachine/TestMachinePage";
+import { TestMachineControlPage } from "@/machines/testmachine/TestMachineControlPage";
 import { z } from "zod";
 import { Laser1PresetsPage } from "@/machines/laser/laser1/Laser1PresetsPage";
 // make a route tree like this
@@ -48,6 +49,18 @@ import { Laser1PresetsPage } from "@/machines/laser/laser1/Laser1PresetsPage";
 // the mainNavigation has a custom layout
 // the winder2 winder2 and configuration also have a custom layout
 // the leaf routes are just pages
+export const testMachineSerialRoute = createRoute({
+  getParentRoute: () => machinesRoute,
+  path: "testmachine/$serial",
+  component: () => <TestMachinePage />,
+});
+
+// Leaf route: control page
+export const testMachineControlRoute = createRoute({
+  getParentRoute: () => testMachineSerialRoute,
+  path: "control",
+  component: () => <TestMachineControlPage />,
+});
 
 export const sidebarRoute = createRoute({
   getParentRoute: () => RootRoute,
@@ -313,6 +326,7 @@ export const rootTree = RootRoute.addChildren([
         laser1GraphsRoute,
         laser1PresetsRoute,
       ]),
+      testMachineSerialRoute.addChildren([testMachineControlRoute]),
 
       aquapath1SerialRoute.addChildren([
         aquapath1ControlRoute,

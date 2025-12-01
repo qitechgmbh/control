@@ -24,6 +24,7 @@ pub mod machine_identification;
 pub mod mock;
 pub mod registry;
 pub mod serial;
+pub mod test_machine;
 pub mod winder2;
 
 pub const VENDOR_QITECH: u16 = 0x0001;
@@ -34,6 +35,7 @@ pub const MACHINE_MOCK: u16 = 0x0007;
 pub const MACHINE_AQUAPATH_V1: u16 = 0x0009;
 #[cfg(not(feature = "mock-machine"))]
 pub const MACHINE_BUFFER_V1: u16 = 0x0008;
+pub const TEST_MACHINE: u16 = 0x0033;
 
 use serde_json::Value;
 use smol::lock::RwLock;
