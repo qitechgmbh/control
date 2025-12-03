@@ -387,11 +387,7 @@ pub async fn setup_loop(
     let res = group_safe.tx_rx_sync_system_time(&maindevice).await;
     match res {
         Ok(_) => (),
-        Err(e) => tracing::error!(
-            "[{}::setup_loop] Failed to sync dc time: {:?}",
-            module_path!(),
-            e
-        ),
+        Err(e) => tracing::error!("[{}::setup_loop] Failed to sync dc time: {:?}",e, module_path!()),
     }
 
     // Put group in operational state
