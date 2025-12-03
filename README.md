@@ -202,5 +202,5 @@ The EL2004 LED Toggle Example is a minimal demonstration showing how to control 
 <img width="813" height="1079" alt="Screenshot 2025-12-03 at 16 12 42" src="https://github.com/user-attachments/assets/af34a581-a668-4c6b-9d7f-062355813b6a" />
 
 
-Figure 1: Beckhoff EK1100 Bus Coupler — the device circles in red is a simple … [caption truncated in source]
+Figure 1: Beckhoff EK1100 Bus Coupler — the device circles in red is a simple 24V Power Source
 
