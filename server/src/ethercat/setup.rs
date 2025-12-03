@@ -368,8 +368,34 @@ pub async fn setup_loop(
     let event = MachinesEventBuilder().build(app_state_clone.clone());
     main_namespace.emit(MainNamespaceEvents::MachinesEvent(event));*/
 
+    // Put group in Safe-OP state
+    let group_safe = match group_preop.into_safe_op(&maindevice).await {
+        Ok(group_op) => {
+            tracing::info!("Group in Safe-OP state");
+            group_op
+        }
+        Err(err) => Err(anyhow::anyhow!(
+            "[{}::setup_loop] Failed to put group in Safe-OP state: {:?}",
+            module_path!(),
+            err
+        ))?,
+    };
+
+    /*
+        Make DC Slaves Happy
+    */
+    let res = group_safe.tx_rx_sync_system_time(&maindevice).await;
+    match res {
+        Ok(_) => (),
+        Err(e) => tracing::error!(
+            "[{}::setup_loop] Failed to sync dc time: {:?}",
+            module_path!(),
+            e
+        ),
+    }
+
     // Put group in operational state
-    let group_op = match group_preop.into_op(&maindevice).await {
+    let group_op = match group_safe.into_op(&maindevice).await {
         Ok(group_op) => {
             tracing::info!("Group in OP state");
             group_op
