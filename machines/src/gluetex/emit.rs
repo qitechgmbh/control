@@ -243,12 +243,12 @@ impl Gluetex {
                 speed.get::<meter_per_minute>().abs()
             },
             slave_tension_arm_angle: {
-                let angle = self.slave_tension_arm.get_angle().get::<degree>();
+                let angle = self.addon_tension_arm.get_angle().get::<degree>();
                 // Wrap [270;<360] to [-90; 0]
                 if angle >= 270.0 { angle - 360.0 } else { angle }
             },
             addon_tension_arm_angle: {
-                let angle = self.addon_tension_arm.get_angle().get::<degree>();
+                let angle = self.slave_tension_arm.get_angle().get::<degree>();
                 // Wrap [270;<360] to [-90; 0]
                 if angle >= 270.0 { angle - 360.0 } else { angle }
             },
@@ -470,11 +470,11 @@ impl Gluetex {
                 min_speed_factor: self.slave_puller_speed_controller.get_min_speed_factor(),
                 max_speed_factor: self.slave_puller_speed_controller.get_max_speed_factor(),
                 tension_arm: api::SlaveTensionArmState {
-                    zeroed: self.slave_tension_arm.zeroed,
+                    zeroed: self.addon_tension_arm.zeroed,
                 },
             },
             addon_tension_arm_state: TensionArmState {
-                zeroed: self.addon_tension_arm.zeroed,
+                zeroed: self.slave_tension_arm.zeroed,
             },
             tension_arm_monitor_state: api::TensionArmMonitorState {
                 enabled: self.tension_arm_monitor_config.enabled,
