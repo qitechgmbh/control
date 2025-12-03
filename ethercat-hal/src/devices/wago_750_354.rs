@@ -174,6 +174,7 @@ impl Wago750_354 {
 
         let tx_offsets = Wago750_354::get_pdo_offsets(device,true).await?;
         let rx_offsets = Wago750_354::get_pdo_offsets(device,false).await?;
+        
         let modules = Wago750_354::get_modules(device,count).await?;        
         let devices =  Wago750_354::subdevices_from_modules(&tx_offsets,&rx_offsets,&modules).await; 
 
