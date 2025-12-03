@@ -91,8 +91,8 @@ export function SidebarLayout() {
       return;
     }
     
-    // Check if machine still exists
-    const machineExists = machines.some(
+    // Check if machine still exists in the raw machines data
+    const machineExists = machinesEvent.data.machines.some(
       (m) => m.machine_identification_unique.serial === serialNumber
     );
 
