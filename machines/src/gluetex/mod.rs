@@ -535,8 +535,8 @@ impl Gluetex {
 
         // Check all three tension arms
         let main_angle = self.tension_arm.get_angle();
-        let slave_angle = self.slave_tension_arm.get_angle();
-        let addon_angle = self.addon_tension_arm.get_angle();
+        let slave_angle = self.addon_tension_arm.get_angle();
+        let addon_angle = self.slave_tension_arm.get_angle();
 
         let min_angle = self.tension_arm_monitor_config.min_angle;
         let max_angle = self.tension_arm_monitor_config.max_angle;
