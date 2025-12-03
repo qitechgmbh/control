@@ -35,6 +35,8 @@ export function getUnitIcon(unit: Unit): IconName {
       return "lu:BatteryFull";
     case "l/min":
       return "lu:Waves";
+    case "%":
+      return "lu:ChartNoAxesColumn";
     default:
       return "lu:ChartNoAxesColumn";
   }
@@ -72,6 +74,8 @@ export function renderUnitSymbol(unit: Unit | undefined): string {
       return "kWh";
     case "l/min":
       return "l/min";
+    case "%":
+      return "%";
     default:
       return "";
   }
@@ -131,6 +135,8 @@ export function renderUnitSymbolLong(unit: Unit): string {
       return "kilowatt-hours";
     case "l/min":
       return "liters/minute";
+    case "%":
+      return "percent";
     default:
       return "";
   }
@@ -152,6 +158,7 @@ export const units = [
   "A",
   "kWh",
   "l/min",
+  "%",
 ] as const;
 
 export type Unit = (typeof units)[number];
