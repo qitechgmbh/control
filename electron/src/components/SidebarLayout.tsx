@@ -72,7 +72,24 @@ export function SidebarLayout() {
     const pathMatch = routerState.location.pathname.match(/\/machines\/[^/]+\/(\d+)/);
     if (!pathMatch) return; // Not on a machine page
 
-    const serialNumber = parseInt(pathMatch[1], 10);
+    // Safety check: ensure pathMatch has at least 2 elements (full match + capture group)
+    if (pathMatch.length < 2) {
+      console.warn("[ConnectionGuard] Invalid pathMatch structure:", pathMatch);
+      return;
+    }
+
+    // Parse serial number with error handling
+    const serialString = pathMatch[1];
+    const serialNumber = parseInt(serialString, 10);
+    
+    // Check if parseInt succeeded (NaN means parsing failed)
+    if (isNaN(serialNumber)) {
+      console.warn(
+        `[ConnectionGuard] Failed to parse serial number from "${serialString}"`,
+        { pathname: routerState.location.pathname }
+      );
+      return;
+    }
     
     // Check if machine still exists
     const machineExists = machines.some(
