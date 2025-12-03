@@ -19,6 +19,30 @@ export function Laser1GraphsPage() {
 
   const isTwoAxis = !!x_diameter?.current || !!y_diameter?.current;
 
+  // Transform roundness from ratio (0-1) to percentage (0-100)
+  const roundnessPercent = React.useMemo(() => {
+    if (!roundness) return null;
+    
+    const transformValue = (val: { value: number; timestamp: number } | null) => {
+      if (!val) return null;
+      return { value: val.value * 100, timestamp: val.timestamp };
+    };
+    
+    const transformSeries = (series: any) => {
+      if (!series || !series.values) return series;
+      return {
+        ...series,
+        values: series.values.map(transformValue),
+      };
+    };
+    
+    return {
+      current: roundness.current ? transformValue(roundness.current) : null,
+      long: transformSeries(roundness.long),
+      short: transformSeries(roundness.short),
+    };
+  }, [roundness]);
+
   const diameterColor = "#3b82f6";
   const xDiameterColor = "#ef4444";
   const yDiameterColor = "#22c55e";
@@ -121,13 +145,12 @@ export function Laser1GraphsPage() {
                 title: "Y-Diameter",
               },
               {
-                newData: roundness,
+                newData: roundnessPercent,
                 color: roundnessColor,
-                title: "Roundness",
+                title: "Roundness (%)",
               },
             ]}
-            unit="mm"
-            renderValue={(value) => value.toFixed(3)}
+            renderValue={(value) => value.toFixed(2)}
             config={config}
             graphId="diameter-graph"
           />

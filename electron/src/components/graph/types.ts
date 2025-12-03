@@ -63,7 +63,7 @@ export type DataSeries = SeriesData | SeriesData[];
 export type BigGraphProps = {
   newData: DataSeries;
   unit?: Unit;
-  renderValue?: (value: number) => string;
+  renderValue?: (value: number, seriesIndex?: number, seriesTitle?: string) => string;
   config: GraphConfig;
   graphId: string;
   syncGraph?: PropGraphSync;
