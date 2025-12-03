@@ -152,3 +152,55 @@ We could combine the code of the frontend and backend using [Doxius](https://dio
 - [x] [Ethercat Basics](./docs/ethercat-basics.md)
 
 - [x] [NixOS Operating System](./docs/nixos/README.md)
+
+
+## Minimal Example 
+
+# Hello EtherCAT - LED Control on the EL2004
+
+1. Introduction
+2. Requirements
+3. Wiring / Hardware Setup
+4. Software Overview
+5. Step-by-Step Implementation
+6. Final Code Listing
+7. Expected Behavior
+
+---
+
+## 1. Introduction
+
+The EL2004 LED Toggle Example is a minimal demonstration showing how to control digital outputs on a Beckhoff EL2004 EtherCAT terminal using the existing QiTech machine framework. It is designed as the simplest possible working example of hardware interaction: turning an LED on and off.
+
+---
+
+## 2. Requirements
+
+### Hardware
+- Beckhoff EL2004 EtherCAT Terminal (Digital Output, 4 channels)
+- Beckhoff EK1100 EtherCAT Coupler
+- Power supply for EK1100 and EL2004 module (AC/DC Adapter with 24V Output )
+- Connecting wires
+- A PC connected to the EtherCAT network
+
+### Software
+- Rust toolchain (for building backend machine code)
+- Node.js and npm/yarn (for frontend control interface)
+- The project repository cloned locally
+- Access to EtherCAT drivers and any required HAL bindings (available in the QITech control repository)
+
+---
+
+## 3. Wiring / Hardware Setup
+
+### Schematic
+<img width="1123" height="859" alt="Screenshot 2025-12-03 at 16 12 26" src="https://github.com/user-attachments/assets/a04278d9-7f6a-442d-9ea7-7ace9ac44872" />
+
+
+### Needed Hardware Overview
+
+<img width="813" height="1079" alt="Screenshot 2025-12-03 at 16 12 42" src="https://github.com/user-attachments/assets/af34a581-a668-4c6b-9d7f-062355813b6a" />
+
+
+Figure 1: Beckhoff EK1100 Bus Coupler — the device circles in red is a simple … [caption truncated in source]
+
