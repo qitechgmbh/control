@@ -97,7 +97,6 @@ export function SidebarLayout() {
     );
 
     if (!machineExists) {
-      console.log(`Machine ${serialNumber} disconnected, redirecting to setup`);
       router.navigate({ to: "/_sidebar/setup/machines" });
     }
   }, [machines, machinesEvent, routerState.location.pathname, router]);
