@@ -67,7 +67,7 @@ impl MachineAct for ExtruderV3 {
             }
             MachineMessage::ConnectToMachine(_machine_connection) => (),
             MachineMessage::DisconnectMachine(_machine_connection) =>
-            /*Doesnt connec to any Machine do nothing*/
+            /*Doesnt connect to any Machine so do nothing*/
             {
                 ()
             }
