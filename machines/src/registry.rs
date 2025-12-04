@@ -5,7 +5,7 @@ use crate::{Machine, MachineNewParams, machine_identification::MachineIdentifica
 #[cfg(not(feature = "mock-machine"))]
 use crate::{
     aquapath1::AquaPathV1, buffer1::BufferV1, extruder1::ExtruderV2, laser::LaserMachine,
-    winder2::Winder2,
+    test_machine::TestMachine, winder2::Winder2,
 };
 
 use lazy_static::lazy_static;
@@ -98,6 +98,7 @@ lazy_static! {
 
         #[cfg(not(feature = "mock-machine"))]
         mc.register::<AquaPathV1>(AquaPathV1::MACHINE_IDENTIFICATION);
+        mc.register::<TestMachine>(TestMachine::MACHINE_IDENTIFICATION);
         mc
     };
 }
