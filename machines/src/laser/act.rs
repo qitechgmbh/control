@@ -57,12 +57,12 @@ impl MachineAct for LaserMachine {
                 let _res = self.api_mutate(value);
             }
             MachineMessage::ConnectToMachine(_machine_connection) =>
-            /*Doesnt connec to any Macine do nothing*/
+            /*Doesnt connect to any Machine so do nothing*/
             {
                 ()
             }
             MachineMessage::DisconnectMachine(_machine_connection) =>
-            /*Doesnt connec to any Machine do nothing*/
+            /*Doesnt connect to any Machine so do nothing*/
             {
                 ()
             }
