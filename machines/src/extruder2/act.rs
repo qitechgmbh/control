@@ -1,13 +1,17 @@
 #[cfg(not(feature = "mock-machine"))]
-use crate::extruder1::ExtruderV2;
-#[cfg(not(feature = "mock-machine"))]
-use crate::{MachineAct, MachineMessage};
-#[cfg(not(feature = "mock-machine"))]
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 #[cfg(not(feature = "mock-machine"))]
-impl MachineAct for ExtruderV2 {
+use crate::{MachineAct, MachineMessage};
+
+#[cfg(not(feature = "mock-machine"))]
+use super::ExtruderV3;
+
+#[cfg(not(feature = "mock-machine"))]
+impl MachineAct for ExtruderV3 {
     fn act(&mut self, now: Instant) {
+        use std::time::Duration;
+
         let msg = self.api_receiver.try_recv();
         match msg {
             Ok(msg) => {
@@ -21,17 +25,17 @@ impl MachineAct for ExtruderV2 {
         self.temperature_controller_front.update(now);
         self.temperature_controller_middle.update(now);
 
-        if self.mode == super::ExtruderV2Mode::Extrude {
+        if self.mode == super::ExtruderV3Mode::Extrude {
             self.screw_speed_controller.update(now, true);
         } else {
             self.screw_speed_controller.update(now, false);
         }
 
-        if self.mode == super::ExtruderV2Mode::Standby {
+        if self.mode == super::ExtruderV3Mode::Standby {
             self.turn_heating_off();
         }
 
-        if self.mode == super::ExtruderV2Mode::Extrude
+        if self.mode == super::ExtruderV3Mode::Extrude
             && !self.screw_speed_controller.get_motor_enabled()
         {
             self.switch_to_heat();

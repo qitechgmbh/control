@@ -11,8 +11,6 @@ use ethercat_hal::devices::{
     EthercatDeviceUsed,
     ek1100::EK1100,
     ek1100::EK1100_IDENTITY_A,
-    el1002::EL1002,
-    el1002::EL1002_IDENTITY_A,
     el6021::EL6021,
     el6021::EL6021Configuration,
     el6021::EL6021Port,
@@ -50,13 +48,10 @@ use units::thermodynamic_temperature::{ThermodynamicTemperature, degree_celsius}
 use crate::extruder1::temperature_controller::TemperatureController;
 
 #[cfg(not(feature = "mock-machine"))]
-use super::{
-    ExtruderV2, ExtruderV2Mode, Heating, api::ExtruderV2Namespace, mitsubishi_cs80::MitsubishiCS80,
-    screw_speed_controller::ScrewSpeedController,
-};
+use super::ExtruderV3;
 
 #[cfg(not(feature = "mock-machine"))]
-impl MachineNewTrait for ExtruderV2 {
+impl MachineNewTrait for ExtruderV3 {
     fn new<'maindevice>(params: &MachineNewParams) -> Result<Self, Error> {
         // validate general stuff
 
@@ -87,14 +82,16 @@ impl MachineNewTrait for ExtruderV2 {
             // Role 0 - Buscoupler EK1100
 
             use control_core::transmission::fixed::FixedTransmission;
+
+            use crate::{
+                extruder1::{
+                    Heating, mitsubishi_cs80::MitsubishiCS80,
+                    screw_speed_controller::ScrewSpeedController,
+                },
+                extruder2::{ExtruderV3Mode, api::ExtruderV3Namespace},
+            };
             let _ek1100 =
                 get_ethercat_device::<EK1100>(hardware, params, 0, [EK1100_IDENTITY_A].to_vec());
-
-            // What is its use ?
-            let _el1002 =
-                get_ethercat_device::<EL1002>(hardware, params, 1, [EL1002_IDENTITY_A].to_vec())
-                    .await?;
-
             let el6021 = {
                 let identities = [
                     EL6021_IDENTITY_A,
@@ -103,7 +100,7 @@ impl MachineNewTrait for ExtruderV2 {
                     EL6021_IDENTITY_D,
                 ]
                 .to_vec();
-                let device = get_ethercat_device::<EL6021>(hardware, params, 2, identities).await?;
+                let device = get_ethercat_device::<EL6021>(hardware, params, 1, identities).await?;
 
                 device
                     .0
@@ -119,19 +116,19 @@ impl MachineNewTrait for ExtruderV2 {
             };
 
             let el2004 =
-                get_ethercat_device::<EL2004>(hardware, params, 3, [EL2004_IDENTITY_A].to_vec())
+                get_ethercat_device::<EL2004>(hardware, params, 2, [EL2004_IDENTITY_A].to_vec())
                     .await?
                     .0;
 
             let el3021 =
-                get_ethercat_device::<EL3021>(hardware, params, 4, [EL3021_IDENTITY_A].to_vec())
+                get_ethercat_device::<EL3021>(hardware, params, 3, [EL3021_IDENTITY_A].to_vec())
                     .await?
                     .0;
 
             let el3204 = get_ethercat_device::<EL3204>(
                 hardware,
                 params,
-                5,
+                4,
                 [EL3204_IDENTITY_A, EL3204_IDENTITY_B].to_vec(),
             )
             .await?
@@ -221,20 +218,20 @@ impl MachineNewTrait for ExtruderV2 {
                 target_pressure,
                 target_rpm,
                 pressure_sensor,
-                FixedTransmission::new(1.0 / 34.0),
+                FixedTransmission::new(1.0 / 30.0),
             );
             let (sender, receiver) = smol::channel::unbounded();
 
-            let mut extruder: ExtruderV2 = Self {
+            let mut extruder: ExtruderV3 = Self {
                 main_sender: params.main_thread_channel.clone(),
                 api_receiver: receiver,
                 api_sender: sender,
                 machine_identification_unique: params.get_machine_identification_unique(),
-                namespace: ExtruderV2Namespace {
+                namespace: ExtruderV3Namespace {
                     namespace: params.namespace.clone(),
                 },
                 last_measurement_emit: Instant::now(),
-                mode: ExtruderV2Mode::Standby,
+                mode: ExtruderV3Mode::Standby,
                 total_energy_kwh: 0.0,
                 last_energy_calculation_time: None,
                 temperature_controller_front,

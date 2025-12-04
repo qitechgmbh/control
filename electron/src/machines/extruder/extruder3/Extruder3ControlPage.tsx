@@ -10,11 +10,11 @@ import { HeatingZone } from "../HeatingZone";
 import { Label } from "@/control/Label";
 import { EditValue } from "@/control/EditValue";
 import { roundToDecimals } from "@/lib/decimal";
-import { useExtruder2 } from "./useExtruder";
+import { useExtruder3 } from "./useExtruder";
 import { TimeSeriesValueNumeric } from "@/control/TimeSeriesValue";
 import { StatusBadge } from "@/control/StatusBadge";
 
-export function Extruder2ControlPage() {
+export function Extruder3ControlPage() {
   const {
     state,
     defaultState,
@@ -45,7 +45,7 @@ export function Extruder2ControlPage() {
 
     isLoading,
     isDisabled,
-  } = useExtruder2();
+  } = useExtruder3();
 
   function isZoneReadyForExtrusion(
     temperature: number,
@@ -152,7 +152,7 @@ export function Extruder2ControlPage() {
                 unit="rpm"
                 title="Target Output RPM"
                 min={0}
-                max={44}
+                max={100}
                 renderValue={(value) => roundToDecimals(value, 0)}
                 onChange={setInverterTargetRpm}
               />

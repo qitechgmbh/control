@@ -1,10 +1,12 @@
 #[cfg(feature = "mock-machine")]
 use crate::{extruder1::mock::ExtruderV2, mock::MockMachine, winder2::mock::Winder2};
 
-use crate::{Machine, MachineNewParams, machine_identification::MachineIdentification};
+use crate::{
+    Machine, MachineNewParams, extruder1::ExtruderV2, machine_identification::MachineIdentification,
+};
 #[cfg(not(feature = "mock-machine"))]
 use crate::{
-    aquapath1::AquaPathV1, buffer1::BufferV1, extruder1::ExtruderV2, laser::LaserMachine,
+    aquapath1::AquaPathV1, buffer1::BufferV1, extruder2::ExtruderV3, laser::LaserMachine,
     test_machine::TestMachine, winder2::Winder2,
 };
 
@@ -85,7 +87,10 @@ lazy_static! {
     pub static ref MACHINE_REGISTRY: MachineRegistry = {
         let mut mc = MachineRegistry::new();
         mc.register::<Winder2>(Winder2::MACHINE_IDENTIFICATION);
+
         mc.register::<ExtruderV2>(ExtruderV2::MACHINE_IDENTIFICATION);
+
+        mc.register::<ExtruderV3>(ExtruderV3::MACHINE_IDENTIFICATION);
 
         #[cfg(feature = "mock-machine")]
         mc.register::<MockMachine>(MockMachine::MACHINE_IDENTIFICATION);

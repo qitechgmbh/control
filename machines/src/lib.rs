@@ -19,6 +19,7 @@ pub mod aquapath1;
 #[cfg(not(feature = "mock-machine"))]
 pub mod buffer1;
 pub mod extruder1;
+pub mod extruder2;
 pub mod laser;
 pub mod machine_identification;
 pub mod mock;
@@ -35,6 +36,7 @@ pub const MACHINE_MOCK: u16 = 0x0007;
 pub const MACHINE_AQUAPATH_V1: u16 = 0x0009;
 #[cfg(not(feature = "mock-machine"))]
 pub const MACHINE_BUFFER_V1: u16 = 0x0008;
+pub const MACHINE_EXTRUDER_V2: u16 = 0x0016;
 pub const TEST_MACHINE: u16 = 0x0033;
 
 use serde_json::Value;

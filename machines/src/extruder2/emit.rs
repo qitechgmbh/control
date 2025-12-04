@@ -1,11 +1,11 @@
 #[cfg(not(feature = "mock-machine"))]
 // Contains Implementations for All functions that use emit_state
 use crate::extruder1::{
-    ExtruderV2, ExtruderV2Mode, HeatingType,
+    HeatingType,
     api::{
-        ExtruderSettingsState, ExtruderV2Events, HeatingState, HeatingStates, InverterStatusState,
-        LiveValuesEvent, ModeState, PidSettings, PidSettingsStates, PressureState, RegulationState,
-        RotationState, ScrewState, StateEvent, TemperaturePid,
+        ExtruderSettingsState, HeatingState, HeatingStates, InverterStatusState, PidSettings,
+        PidSettingsStates, PressureState, RegulationState, RotationState, ScrewState,
+        TemperaturePid,
     },
 };
 #[cfg(not(feature = "mock-machine"))]
@@ -24,9 +24,15 @@ use units::thermodynamic_temperature::ThermodynamicTemperature;
 use units::{angular_velocity::revolution_per_minute, thermodynamic_temperature::degree_celsius};
 
 #[cfg(not(feature = "mock-machine"))]
-impl ExtruderV2 {
+use super::{ExtruderV3, ExtruderV3Mode, api::StateEvent};
+
+#[cfg(not(feature = "mock-machine"))]
+impl ExtruderV3 {
     pub fn build_state_event(&mut self) -> StateEvent {
-        use crate::extruder1::api::{TemperaturePid, TemperaturePidStates};
+        use crate::{
+            extruder1::api::{TemperaturePid, TemperaturePidStates},
+            extruder2::api::ModeState,
+        };
 
         StateEvent {
             is_default_state: !std::mem::replace(&mut self.emitted_default_state, true),
@@ -144,13 +150,15 @@ impl ExtruderV2 {
 }
 
 #[cfg(not(feature = "mock-machine"))]
-impl ExtruderV2 {
+impl ExtruderV3 {
     pub fn emit_state(&mut self) {
+        use super::api::ExtruderV3Events;
+
         let state = self.build_state_event();
         let hash = hash_with_serde_model(self.screw_speed_controller.get_inverter_status());
         self.last_status_hash = Some(hash);
         let event = state.build();
-        self.namespace.emit(ExtruderV2Events::State(event));
+        self.namespace.emit(ExtruderV3Events::State(event));
     }
 
     pub fn maybe_emit_state_event(&mut self) {
@@ -170,6 +178,8 @@ impl ExtruderV2 {
 
     pub fn emit_live_values(&mut self) {
         use std::time::Instant;
+
+        use crate::extruder2::api::{ExtruderV3Events, LiveValuesEvent};
         let now = Instant::now();
         let combined_power = self.calculate_combined_power();
         self.update_total_energy(combined_power, now);
@@ -214,7 +224,7 @@ impl ExtruderV2 {
         };
 
         let event = live_values.build();
-        self.namespace.emit(ExtruderV2Events::LiveValues(event));
+        self.namespace.emit(ExtruderV3Events::LiveValues(event));
     }
 
     // === Steuerungsfunktionen mit emit_state ===
@@ -244,7 +254,7 @@ impl ExtruderV2 {
         self.emit_state();
     }
 
-    pub fn set_mode_state(&mut self, mode: ExtruderV2Mode) {
+    pub fn set_mode_state(&mut self, mode: ExtruderV3Mode) {
         self.switch_mode(mode);
         self.emit_state();
     }
@@ -253,8 +263,8 @@ impl ExtruderV2 {
         if !self.screw_speed_controller.get_uses_rpm() && uses_rpm {
             self.screw_speed_controller.set_target_screw_rpm(
                 self.screw_speed_controller.target_rpm,
-                AngularVelocity::new::<revolution_per_minute>(1500.0),
-                4,
+                AngularVelocity::new::<revolution_per_minute>(3000.0),
+                2,
             );
             self.screw_speed_controller.set_uses_rpm(uses_rpm);
         }
@@ -275,8 +285,8 @@ impl ExtruderV2 {
     pub fn set_target_rpm(&mut self, rpm: f64) {
         self.screw_speed_controller.set_target_screw_rpm(
             AngularVelocity::new::<revolution_per_minute>(rpm),
-            AngularVelocity::new::<revolution_per_minute>(1500.0),
-            4,
+            AngularVelocity::new::<revolution_per_minute>(3000.0),
+            2,
         );
         self.emit_state();
     }
