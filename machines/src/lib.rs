@@ -27,6 +27,7 @@ pub mod registry;
 pub mod serial;
 pub mod test_machine;
 pub mod winder2;
+pub mod ethercat_beckhoff;
 
 pub const VENDOR_QITECH: u16 = 0x0001;
 pub const MACHINE_WINDER_V1: u16 = 0x0002;
@@ -38,6 +39,8 @@ pub const MACHINE_AQUAPATH_V1: u16 = 0x0009;
 pub const MACHINE_BUFFER_V1: u16 = 0x0008;
 pub const MACHINE_EXTRUDER_V2: u16 = 0x0016;
 pub const TEST_MACHINE: u16 = 0x0033;
+
+pub const MACHINE_BECKHOFF_TEST: u16 = 0x0011;
 
 use serde_json::Value;
 use smol::lock::RwLock;
