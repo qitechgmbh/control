@@ -1,5 +1,5 @@
 use crate::{
-    MachineNewHardware, MachineNewParams, MachineNewTrait, get_ethercat_device,
+    MachineNewTrait, MachineNewParams, MachineNewHardware, get_ethercat_device,
     get_subdevice_by_index, validate_no_role_dublicates,
     validate_same_machine_identification_unique,
 };

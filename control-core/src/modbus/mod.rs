@@ -1,4 +1,5 @@
 pub mod modbus_serial_interface;
+pub mod tcp;
 
 use anyhow::Error;
 use crc::{CRC_16_MODBUS, Crc};

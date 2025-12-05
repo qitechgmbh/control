@@ -1,7 +1,7 @@
-use crate::metrics::collector::{RuntimeMetricsConfig, spawn_runtime_metrics_sampler};
+use crate::{metrics::collector::{RuntimeMetricsConfig, spawn_runtime_metrics_sampler}, socketio::main_namespace::machines_event::MachineObj};
 use machines::{
-    AsyncThreadMessage, MachineConnection, MachineNewHardware, MachineNewHardwareSerial,
-    MachineNewParams, SerialDevice, SerialDeviceIdentification, SerialDeviceNew,
+    AsyncThreadMessage, MachineNewParams, MachineConnection, MachineNewHardware,
+    MachineNewHardwareSerial, SerialDevice, SerialDeviceIdentification, SerialDeviceNew,
     SerialDeviceNewParams,
     laser::LaserMachine,
     machine_identification::{
@@ -26,7 +26,6 @@ use smol::{
     future,
     lock::RwLock,
 };
-use socketio::main_namespace::machines_event::MachineObj;
 use socketioxide::extract::SocketRef;
 use std::{collections::HashMap, sync::Arc, time::Duration};
 
@@ -80,7 +79,7 @@ pub async fn add_serial_device(
         .clone();
 
     let new_machine = machine_registry.new_machine(&MachineNewParams {
-        device_group: &vec![device_identification_identified.clone()],
+        device_group: &vec![device_identification_identified],
         hardware: &MachineNewHardware::Serial(&hardware),
         socket_queue_tx,
         namespace: None,

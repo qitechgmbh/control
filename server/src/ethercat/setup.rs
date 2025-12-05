@@ -26,7 +26,7 @@ use machines::machine_identification::{
     DeviceIdentificationIdentified, MachineIdentificationUnique, read_device_identifications,
 };
 use machines::registry::{MACHINE_REGISTRY, MachineRegistry};
-use machines::{Machine, MachineNewHardware, MachineNewHardwareEthercat, MachineNewParams};
+use machines::{MachineNewParams, Machine, MachineNewHardware, MachineNewHardwareEthercat};
 use smol::channel::Sender;
 use socketioxide::extract::SocketRef;
 use std::{sync::Arc, time::Duration};
@@ -478,9 +478,9 @@ pub async fn setup_loop(
         main_namespace.emit(MainNamespaceEvents::EthercatDevicesEvent(event));
     }
 
-    return Ok(EthercatSetup {
+    Ok(EthercatSetup {
         devices,
         group: group_op,
         maindevice,
-    });
+    })
 }

@@ -4,7 +4,7 @@ use smol::block_on;
 use std::time::Instant;
 
 use crate::{
-    MachineNewHardware, MachineNewParams, MachineNewTrait, get_ethercat_device,
+    MachineNewTrait, MachineNewParams, MachineNewHardware, get_ethercat_device,
     validate_no_role_dublicates, validate_same_machine_identification_unique,
 };
 
@@ -30,7 +30,7 @@ impl MachineNewTrait for IP20TestMachine {
             MachineNewHardware::Ethercat(x) => x,
             _ => {
                 return Err(anyhow::anyhow!(
-                    "[{}::MachineNewTrait/IP20TestMachine::new] MachineNewHardware is not Ethercat",
+                    "[{}::EtherCATMachine/IP20TestMachine::new] MachineNewHardware is not Ethercat",
                     module_path!()
                 ));
             }
