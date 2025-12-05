@@ -1,7 +1,5 @@
 use crate::add_serial_device;
 use crate::app_state::SharedState;
-use crate::socketio::main_namespace::MainNamespaceEvents;
-use crate::socketio::main_namespace::machines_event::MachinesEventBuilder;
 use machines::registry::MACHINE_REGISTRY;
 use std::sync::Arc;
 
