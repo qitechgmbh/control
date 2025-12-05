@@ -1,6 +1,6 @@
 use machines::{
-    AsyncThreadMessage, MachineConnection, MachineNewHardware, MachineNewHardwareSerial,
-    MachineNewParams, SerialDevice, SerialDeviceIdentification, SerialDeviceNew,
+    AsyncThreadMessage, EtherCATParams, MachineConnection, MachineNewHardware,
+    MachineNewHardwareSerial, SerialDevice, SerialDeviceIdentification, SerialDeviceNew,
     SerialDeviceNewParams,
     laser::LaserMachine,
     machine_identification::{
@@ -78,12 +78,12 @@ pub async fn add_serial_device(
         .machine_identification_unique
         .clone();
 
-    let new_machine = machine_registry.new_machine(&MachineNewParams {
+    let new_machine = machine_registry.new_machine(&EtherCATParams {
         device_group: &vec![device_identification_identified.clone()],
         hardware: &MachineNewHardware::Serial(&hardware),
         socket_queue_tx,
         namespace: None,
-        main_thread_channel: Some(shared_state.main_channel.clone()),
+        main_sender: Some(shared_state.main_channel.clone()),
     });
 
     let machine = match new_machine {

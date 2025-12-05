@@ -1,15 +1,15 @@
 use std::time::Instant;
 
 use crate::serial::{devices::laser::Laser, registry::SERIAL_DEVICE_REGISTRY};
-use crate::{MachineNewHardware, MachineNewTrait};
+use crate::{EtherCATMachine, MachineNewHardware};
 
 use super::{LaserMachine, LaserTarget, api::LaserMachineNamespace};
 use anyhow::Error;
 use units::ConstZero;
 use units::length::{Length, millimeter};
 
-impl MachineNewTrait for LaserMachine {
-    fn new(params: &crate::MachineNewParams<'_, '_, '_, '_, '_, '_, '_>) -> Result<Self, Error>
+impl EtherCATMachine for LaserMachine {
+    fn new(params: &crate::EtherCATParams<'_, '_, '_, '_, '_, '_, '_>) -> Result<Self, Error>
     where
         Self: Sized,
     {
@@ -35,7 +35,7 @@ impl MachineNewTrait for LaserMachine {
         let (sender, receiver) = smol::channel::unbounded();
 
         let laser_machine = Self {
-            main_sender: params.main_thread_channel.clone(),
+            main_sender: params.main_sender.clone(),
             api_receiver: receiver,
             api_sender: sender,
             machine_identification_unique: params.get_machine_identification_unique(),

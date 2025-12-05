@@ -18,16 +18,16 @@ use ethercat_hal::{
 };
 
 use crate::{
-    MachineNewHardware, MachineNewHardwareEthercat, MachineNewParams, MachineNewTrait,
+    EtherCATMachine, EtherCATParams, MachineNewHardware, MachineNewHardwareEthercat,
     buffer1::BufferV1Mode, get_ethercat_device, validate_same_machine_identification_unique,
 };
 use crate::{buffer1::buffer_tower_controller::BufferTowerController, validate_no_role_dublicates};
 
 use super::{BufferV1, api::Buffer1Namespace};
 
-impl MachineNewTrait for BufferV1 {
+impl EtherCATMachine for BufferV1 {
     fn new<'maindevice>(
-        params: &MachineNewParams<'maindevice, '_, '_, '_, '_, '_, '_>,
+        params: &EtherCATParams<'maindevice, '_, '_, '_, '_, '_, '_>,
     ) -> Result<Self, Error> {
         // validate general stuff
         let device_identification = params.device_group.to_vec();
@@ -128,7 +128,7 @@ impl MachineNewTrait for BufferV1 {
 
             // create buffer instance
             let mut buffer: BufferV1 = Self {
-                main_sender: params.main_thread_channel.clone(),
+                main_sender: params.main_sender.clone(),
                 api_receiver: receiver,
                 api_sender: sender,
                 namespace: Buffer1Namespace {
