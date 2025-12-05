@@ -1,5 +1,5 @@
 #[cfg(not(feature = "mock-machine"))]
-use crate::{MachineNewParams, MachineNewTrait, get_ethercat_device};
+use crate::{EtherCATMachine, EtherCATParams, get_ethercat_device};
 
 #[cfg(not(feature = "mock-machine"))]
 use anyhow::Error;
@@ -56,8 +56,8 @@ use super::{
 };
 
 #[cfg(not(feature = "mock-machine"))]
-impl MachineNewTrait for ExtruderV2 {
-    fn new<'maindevice>(params: &MachineNewParams) -> Result<Self, Error> {
+impl EtherCATMachine for ExtruderV2 {
+    fn new<'maindevice>(params: &EtherCATParams) -> Result<Self, Error> {
         // validate general stuff
         use crate::{
             MachineNewHardware, MachineNewHardwareEthercat, validate_no_role_dublicates,
@@ -224,7 +224,7 @@ impl MachineNewTrait for ExtruderV2 {
             let (sender, receiver) = smol::channel::unbounded();
 
             let mut extruder: ExtruderV2 = Self {
-                main_sender: params.main_thread_channel.clone(),
+                main_sender: params.main_sender.clone(),
                 api_receiver: receiver,
                 api_sender: sender,
                 machine_identification_unique: params.get_machine_identification_unique(),

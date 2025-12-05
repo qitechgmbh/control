@@ -8,13 +8,13 @@ use ethercat_hal::{
 use smol::{block_on, channel::unbounded};
 
 use crate::{
-    MachineNewHardware, MachineNewParams, MachineNewTrait,
+    EtherCATMachine, EtherCATParams, MachineNewHardware,
     analog_input_test_machine::{AnalogInputTestMachine, api::AnalogInputTestMachineNamespace},
     get_ethercat_device, validate_no_role_dublicates, validate_same_machine_identification_unique,
 };
 
-impl MachineNewTrait for AnalogInputTestMachine {
-    fn new<'maindevice>(params: &MachineNewParams) -> Result<Self, Error> {
+impl EtherCATMachine for AnalogInputTestMachine {
+    fn new<'maindevice>(params: &EtherCATParams) -> Result<Self, Error> {
         // validate general stuff
         let device_identification = params
             .device_group
@@ -28,7 +28,7 @@ impl MachineNewTrait for AnalogInputTestMachine {
             MachineNewHardware::Ethercat(x) => x,
             _ => {
                 return Err(anyhow::anyhow!(
-                    "[{}::MachineNewTrait/TestMachine::new] MachineNewHardware is not Ethercat",
+                    "[{}::EtherCATMachine/TestMachine::new] MachineNewHardware is not Ethercat",
                     module_path!()
                 ));
             }
@@ -50,8 +50,8 @@ impl MachineNewTrait for AnalogInputTestMachine {
                 api_receiver: receiver,
                 api_sender: sender,
                 machine_identification_unique: params.get_machine_identification_unique(),
-                main_sender: params.main_thread_channel.clone(),
-                namespace: namespace,
+                main_sender: params.main_sender.clone(),
+                namespace,
 
                 last_measurement: Instant::now(),
                 measurement_rate_hz: 1.0,

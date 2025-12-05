@@ -4,7 +4,7 @@ use smol::block_on;
 use std::time::Instant;
 
 use crate::{
-    MachineNewHardware, MachineNewParams, MachineNewTrait, get_ethercat_device,
+    EtherCATMachine, EtherCATParams, MachineNewHardware, get_ethercat_device,
     validate_no_role_dublicates, validate_same_machine_identification_unique,
 };
 
@@ -20,8 +20,8 @@ use smol::lock::RwLock;
 use std::sync::Arc;
 */
 
-impl MachineNewTrait for TestMachine {
-    fn new<'maindevice>(params: &MachineNewParams) -> Result<Self, Error> {
+impl EtherCATMachine for TestMachine {
+    fn new<'maindevice>(params: &EtherCATParams) -> Result<Self, Error> {
         // validate general stuff
         let device_identification = params
             .device_group
@@ -89,7 +89,7 @@ impl MachineNewTrait for TestMachine {
                 },
                 last_state_emit: Instant::now(),
                 led_on: [false; 4],
-                main_sender: params.main_thread_channel.clone(),
+                main_sender: params.main_sender.clone(),
                 douts: [do1, do2, do3, do4],
             };
             my_test.emit_state();

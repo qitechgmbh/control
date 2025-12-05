@@ -1,5 +1,5 @@
 use crate::{
-    MachineNewHardware, MachineNewParams, MachineNewTrait, get_ethercat_device,
+    EtherCATMachine, EtherCATParams, MachineNewHardware, get_ethercat_device,
     get_subdevice_by_index, validate_no_role_dublicates,
     validate_same_machine_identification_unique,
 };
@@ -28,8 +28,8 @@ use ethercat_hal::{
 use std::time::{Duration, Instant};
 use units::thermodynamic_temperature::{ThermodynamicTemperature, degree_celsius};
 
-impl MachineNewTrait for AquaPathV1 {
-    fn new<'maindevice>(params: &MachineNewParams) -> Result<Self, Error> {
+impl EtherCATMachine for AquaPathV1 {
+    fn new<'maindevice>(params: &EtherCATParams) -> Result<Self, Error> {
         // validate general stuff
         let device_identification = params
             .device_group
@@ -162,7 +162,7 @@ impl MachineNewTrait for AquaPathV1 {
             );
             let (sender, receiver) = smol::channel::unbounded();
             let mut water_cooling = Self {
-                main_sender: params.main_thread_channel.clone(),
+                main_sender: params.main_sender.clone(),
                 api_receiver: receiver,
                 api_sender: sender,
                 machine_identification_unique: params.get_machine_identification_unique(),

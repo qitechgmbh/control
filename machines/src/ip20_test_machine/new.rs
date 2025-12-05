@@ -4,7 +4,7 @@ use smol::block_on;
 use std::time::Instant;
 
 use crate::{
-    MachineNewHardware, MachineNewParams, MachineNewTrait, get_ethercat_device,
+    EtherCATMachine, EtherCATParams, MachineNewHardware, get_ethercat_device,
     validate_no_role_dublicates, validate_same_machine_identification_unique,
 };
 
@@ -15,8 +15,8 @@ use ethercat_hal::devices::wago_modules::ip20_ec_di8_do8::{
 use ethercat_hal::io::digital_input::DigitalInput;
 use ethercat_hal::io::digital_output::DigitalOutput;
 
-impl MachineNewTrait for IP20TestMachine {
-    fn new<'maindevice>(params: &MachineNewParams) -> Result<Self, Error> {
+impl EtherCATMachine for IP20TestMachine {
+    fn new<'maindevice>(params: &EtherCATParams) -> Result<Self, Error> {
         // validate general stuff
         let device_identification = params
             .device_group
@@ -30,7 +30,7 @@ impl MachineNewTrait for IP20TestMachine {
             MachineNewHardware::Ethercat(x) => x,
             _ => {
                 return Err(anyhow::anyhow!(
-                    "[{}::MachineNewTrait/IP20TestMachine::new] MachineNewHardware is not Ethercat",
+                    "[{}::EtherCATMachine/IP20TestMachine::new] MachineNewHardware is not Ethercat",
                     module_path!()
                 ));
             }
@@ -78,7 +78,7 @@ impl MachineNewTrait for IP20TestMachine {
                 last_live_values_emit: Instant::now(),
                 outputs: [false; 8],
                 inputs: [false; 8],
-                main_sender: params.main_thread_channel.clone(),
+                main_sender: params.main_sender.clone(),
                 douts: [do1, do2, do3, do4, do5, do6, do7, do8],
                 dins: [di1, di2, di3, di4, di5, di6, di7, di8],
             };

@@ -7,7 +7,7 @@ mod winder2_imports {
     pub use crate::winder2::spool_speed_controller::SpoolSpeedController;
     pub use crate::winder2::traverse_controller::TraverseController;
     pub use crate::{
-        MachineNewHardware, MachineNewParams, MachineNewTrait, validate_no_role_dublicates,
+        EtherCATMachine, EtherCATParams, MachineNewHardware, validate_no_role_dublicates,
         validate_same_machine_identification_unique,
     };
     pub use anyhow::Error;
@@ -53,8 +53,8 @@ pub use winder2_imports::*;
 use crate::get_ethercat_device;
 
 #[cfg(not(feature = "mock-machine"))]
-impl MachineNewTrait for Winder2 {
-    fn new<'maindevice>(params: &MachineNewParams) -> Result<Self, Error> {
+impl EtherCATMachine for Winder2 {
+    fn new<'maindevice>(params: &EtherCATParams) -> Result<Self, Error> {
         // validate general stuff
 
         let device_identification = params.device_group.to_vec();
@@ -198,7 +198,7 @@ impl MachineNewTrait for Winder2 {
                 .clone();
             let (sender, receiver) = smol::channel::unbounded();
             let mut new = Self {
-                main_sender: params.main_thread_channel.clone(),
+                main_sender: params.main_sender.clone(),
                 max_connected_machines: 2,
                 api_receiver: receiver,
                 api_sender: sender,

@@ -26,7 +26,7 @@ use machines::machine_identification::{
     DeviceIdentificationIdentified, MachineIdentificationUnique, read_device_identifications,
 };
 use machines::registry::{MACHINE_REGISTRY, MachineRegistry};
-use machines::{Machine, MachineNewHardware, MachineNewHardwareEthercat, MachineNewParams};
+use machines::{EtherCATParams, Machine, MachineNewHardware, MachineNewHardwareEthercat};
 use smol::channel::Sender;
 use socketioxide::extract::SocketRef;
 use std::{sync::Arc, time::Duration};
@@ -132,12 +132,12 @@ pub async fn set_ethercat_devices<const MAX_SUBDEVICES: usize, const MAX_PDI: us
             None => continue, // Skip this group if empty
         };
 
-        let new_machine = machine_registry.new_machine(&MachineNewParams {
+        let new_machine = machine_registry.new_machine(&EtherCATParams {
             device_group,
             hardware: &machine_new_hardware,
             socket_queue_tx: socket_queue_tx.clone(),
             namespace: None,
-            main_thread_channel: Some(shared_state.main_channel.clone()),
+            main_sender: Some(shared_state.main_channel.clone()),
         });
 
         match new_machine {
@@ -478,9 +478,9 @@ pub async fn setup_loop(
         main_namespace.emit(MainNamespaceEvents::EthercatDevicesEvent(event));
     }
 
-    return Ok(EthercatSetup {
+    Ok(EthercatSetup {
         devices,
         group: group_op,
         maindevice,
-    });
+    })
 }
