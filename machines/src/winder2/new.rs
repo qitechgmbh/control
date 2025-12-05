@@ -7,7 +7,7 @@ mod winder2_imports {
     pub use crate::winder2::spool_speed_controller::SpoolSpeedController;
     pub use crate::winder2::traverse_controller::TraverseController;
     pub use crate::{
-        MachineNewHardware, MachineNewParams, MachineNewTrait, validate_no_role_dublicates,
+        MachineNewTrait, MachineNewParams, MachineNewHardware, validate_no_role_dublicates,
         validate_same_machine_identification_unique,
     };
     pub use anyhow::Error;

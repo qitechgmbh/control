@@ -1,3 +1,4 @@
+use std::fmt::Debug;
 use std::io::ErrorKind;
 use std::net::SocketAddr;
 use std::time::Duration;
@@ -43,6 +44,15 @@ impl Packet {
 pub struct ModbusTcpDevice {
     stream: TcpStream,
     transactions: u16,
+}
+
+impl Debug for ModbusTcpDevice {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self.stream.peer_addr() {
+            Ok(addr) => write!(f, "ModbusTcpDevice({:?})", addr),
+            Err(_) => std::fmt::Result::Err(std::fmt::Error),
+        }
+    }
 }
 
 impl ModbusTcpDevice {
