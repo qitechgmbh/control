@@ -48,18 +48,40 @@ export function VirtualKeyboardProvider({
     function handlePointerDown(e: PointerEvent) {
       const el = e.target as HTMLElement | null;
 
+      // Only handle events within the current document
+      // Ignore events from outside the window (e.g., clicks on other windows)
+      if (!el || el.ownerDocument !== document) {
+        return;
+      }
+
       // If click is on any input/textarea → keep keyboard open (or let it open via focusin)
       // This must be checked FIRST, even if keyboard is not yet visible
       // This prevents closing the keyboard when clicking on an input field
-      if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA")) {
+      if (el.tagName === "INPUT" || el.tagName === "TEXTAREA") {
         return;
+      }
+
+      // If click is on a label that's associated with an input → keep keyboard open
+      // Labels can trigger focus on inputs, so we should let that happen
+      if (el.tagName === "LABEL") {
+        const labelFor = el.getAttribute("for");
+        if (labelFor) {
+          const associatedInput = document.getElementById(labelFor);
+          if (associatedInput && (associatedInput.tagName === "INPUT" || associatedInput.tagName === "TEXTAREA")) {
+            return;
+          }
+        }
+        // Also check if label contains an input
+        if (el.querySelector("input, textarea")) {
+          return;
+        }
       }
 
       // If keyboard is not open, do nothing
       if (!isVisible) return;
 
       // If click is on the active input itself or inside it → keep keyboard open
-      if (activeInputRef.current && el) {
+      if (activeInputRef.current) {
         if (el === activeInputRef.current || activeInputRef.current.contains(el)) {
           return;
         }
@@ -67,7 +89,7 @@ export function VirtualKeyboardProvider({
 
       // If click is in the keyboard → keep keyboard open
       // Use closest() to work with portals/dialogs
-      if (el && el.closest('[data-virtual-keyboard-root="true"]')) {
+      if (el.closest('[data-virtual-keyboard-root="true"]')) {
         return;
       }
 
