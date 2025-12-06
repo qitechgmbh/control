@@ -368,7 +368,7 @@ Referenced Manuals
 
 [Beckhoff EL2004 Documentation](https://download.beckhoff.com/download/Document/io/ethercat-terminals/el20xx_el2124_de.pdf)
 
-# 7.Acknowledgements
+# 7. Acknowledgements
 
 This tutorial is inspired by the clarity and educational quality of Beckhoff manuals.
 All wiring illustrations and hardware descriptions in this guide are provided for demonstration purposes only and do not replace official Beckhoff installation guidelines.
