@@ -279,6 +279,8 @@ Connect the 24 V adapter to the hollow plug used earlier.
 **Example AC/DC Adapter (Figure 4):**
 
 <img src="./docs/assets/adapter.jpeg" width="400">
+
+
 ### Ethernet  
 Use a standard LAN cable to connect your PC → EK1100.
 The final powered up and connected setup should look like this:
@@ -337,17 +339,20 @@ Once the backend + frontend are running, you should see:
 
 Steps:
 
-1.Click Assign on the EK1100
+- Click Assign on the EK1100
 
-2.Select TestMachine V1
+- Select TestMachine V1
+ 
 ![](./docs/assets/setmachine.png)
 
-3.Enter a serial number (use the same for EK1100 + EL2004)
+
+- Enter a serial number (use the same for EK1100 + EL2004)
+
 ![](./docs/assets/setserial.png)
 
-4.Click Write
+- Click Write
 
-5.Repeat for the EL2004
+- Repeat for the EL2004
 
 ## 5.2 Testing LED Control
 Navigate to:
@@ -355,8 +360,10 @@ Navigate to:
 Machines → TestMachine
 ![](./docs/assets/machinedetected.png)
 You will see this interface:
+
 ![](./docs/assets/machinecontrol.png)
-You can now toggle the four digital outputs of the EL2004.
+
+**You can now toggle the four digital outputs of the EL2004.**
 # 6. References
 
 This guide incorporates information from official Beckhoff documentation.
