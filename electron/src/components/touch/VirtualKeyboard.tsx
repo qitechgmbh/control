@@ -56,6 +56,7 @@ export function VirtualKeyboard({
       <div 
         className="fixed bottom-0 left-0 right-0 z-[9999] border-t bg-background p-4 shadow-2xl"
         data-virtual-keyboard
+        data-virtual-keyboard-root="true"
       >
         <div className="mx-auto grid max-w-md grid-cols-3 gap-3">
           {["1", "2", "3", "4", "5", "6", "7", "8", "9", "0", ".", "-"].map(
@@ -130,6 +131,7 @@ export function VirtualKeyboard({
     <div 
       className="fixed bottom-0 left-0 right-0 z-[9999] border-t bg-background p-3 shadow-2xl"
       data-virtual-keyboard
+      data-virtual-keyboard-root="true"
     >
       <div className="mx-auto max-w-4xl">
         {/* Row 1: Numbers/Symbols */}

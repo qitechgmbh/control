@@ -46,18 +46,19 @@ export function VirtualKeyboardProvider({
   // Global pointerdown handler for click-outside detection
   useEffect(() => {
     function handlePointerDown(e: PointerEvent) {
-      const target = e.target as Node | null;
+      const el = e.target as HTMLElement | null;
 
       // If keyboard is not open, do nothing
       if (!isVisible) return;
 
       // If click is in the active input → keep keyboard open
-      if (activeInputRef.current && activeInputRef.current.contains(target)) {
+      if (activeInputRef.current && activeInputRef.current.contains(el)) {
         return;
       }
 
-      // If click is in the keyboard root → keep keyboard open
-      if (keyboardRootRef.current && keyboardRootRef.current.contains(target)) {
+      // If click is in the keyboard → keep keyboard open
+      // Use closest() to work with portals/dialogs
+      if (el && el.closest('[data-virtual-keyboard-root="true"]')) {
         return;
       }
 
@@ -65,9 +66,9 @@ export function VirtualKeyboardProvider({
       hideKeyboard();
     }
 
-    document.addEventListener("pointerdown", handlePointerDown, true);
+    document.addEventListener("pointerdown", handlePointerDown);
     return () => {
-      document.removeEventListener("pointerdown", handlePointerDown, true);
+      document.removeEventListener("pointerdown", handlePointerDown);
     };
   }, [isVisible, hideKeyboard]);
 
