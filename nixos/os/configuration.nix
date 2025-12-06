@@ -184,8 +184,11 @@ in
   # Configure console keymap
   console.keyMap = "de";
 
-  # Enable CUPS to print documents.
   services.printing.enable = false;
+  services.bluetooth.enable = false;
+  services.avahi.enable = false;
+  services.modemmanager.enable = false;
+  services.geoclue2.enable = false;
 
   # Enable sound with pipewire.
   services.pulseaudio.enable = false;
@@ -239,6 +242,13 @@ in
   # Workaround for GNOME autologin: https://github.com/NixOS/nixpkgs/issues/103746#issuecomment-945091229
   systemd.services."getty@tty1".enable = false;
   systemd.services."autovt@tty1".enable = false;
+
+  # Disable unnecessary systemd services (only those definitively not needed)
+  systemd.services.cups.enable = false;
+  systemd.services.bluetooth.enable = false;
+  systemd.services.avahi-daemon.enable = false;
+  systemd.services.ModemManager.enable = false;
+  systemd.services.geoclue.enable = false;
 
   # Install firefox.
   programs.firefox.enable = true;
