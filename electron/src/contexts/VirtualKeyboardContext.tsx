@@ -36,12 +36,43 @@ export function VirtualKeyboardProvider({
     activeInputRef.current = input;
     input.focus();
     setIsVisible(true);
+    // Notify main process that virtual keyboard is now visible
+    if (window.keyboard?.setVirtualKeyboardVisibility) {
+      window.keyboard.setVirtualKeyboardVisibility(true);
+    }
   }, []);
 
   const hideKeyboard = useCallback(() => {
     setIsVisible(false);
     activeInputRef.current = null;
+    // Notify main process that virtual keyboard is now hidden
+    if (window.keyboard?.setVirtualKeyboardVisibility) {
+      window.keyboard.setVirtualKeyboardVisibility(false);
+    }
   }, []);
+
+  // Prevent keyboard from closing when window loses focus (e.g., clicking outside window)
+  useEffect(() => {
+    function handleWindowBlur() {
+      // Don't close keyboard when window loses focus
+      // The keyboard should only close when clicking inside the window
+    }
+
+    function handleWindowFocus() {
+      // When window regains focus, ensure input still has focus if keyboard was visible
+      if (isVisible && activeInputRef.current) {
+        // Try to restore focus to the input
+        activeInputRef.current.focus();
+      }
+    }
+
+    window.addEventListener("blur", handleWindowBlur);
+    window.addEventListener("focus", handleWindowFocus);
+    return () => {
+      window.removeEventListener("blur", handleWindowBlur);
+      window.removeEventListener("focus", handleWindowFocus);
+    };
+  }, [isVisible]);
 
   // Global pointerdown handler for click-outside detection
   useEffect(() => {

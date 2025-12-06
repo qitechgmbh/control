@@ -91,6 +91,7 @@ interface NixOSContext {
 interface KeyboardContext {
   show: () => Promise<void>;
   hide: () => Promise<void>;
+  setVirtualKeyboardVisibility: (visible: boolean) => void;
 }
 
 declare interface Window {

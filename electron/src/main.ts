@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from "electron";
+import { app, BrowserWindow, ipcMain } from "electron";
 import registerListeners from "./helpers/ipc/listeners-register";
 // "electron-squirrel-startup" seems broken when packaging with vite
 //import started from "electron-squirrel-startup";
@@ -7,6 +7,7 @@ import {
   installExtension,
   REACT_DEVELOPER_TOOLS,
 } from "electron-devtools-installer";
+import { VIRTUAL_KEYBOARD_VISIBILITY_CHANGED } from "./helpers/ipc/keyboard/keyboard-channels";
 
 // Set consistent app ID for Windows taskbar and GNOME dock integration
 app.setAppUserModelId("de.qitech.control-electron");
@@ -50,6 +51,22 @@ function createWindow() {
 
   mainWindow.setTitle("QiTech Control");
   mainWindow.setFullScreen(process.env.QITECH_OS === "true");
+
+  // Track virtual keyboard visibility to prevent window from closing when keyboard is open
+  let isVirtualKeyboardVisible = false;
+  
+  ipcMain.on(VIRTUAL_KEYBOARD_VISIBILITY_CHANGED, (event, visible: boolean) => {
+    isVirtualKeyboardVisible = visible;
+  });
+
+  // Prevent window from closing when virtual keyboard is open
+  mainWindow.on("close", (event) => {
+    if (isVirtualKeyboardVisible) {
+      event.preventDefault();
+      // Optionally minimize instead of closing
+      // mainWindow.minimize();
+    }
+  });
 
   registerListeners(mainWindow);
 
