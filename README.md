@@ -74,7 +74,9 @@ We could combine the code of the frontend and backend using [Doxius](https://dio
 | Laser        | V1      | ???          | Diameter Measuring Laser    | -                                                      | 1 (Qitech Industries GmbH) | 6          | Yes         |                                 |
 | Mock         | -       | ???          | Mock Machine for Testing    | -                                                      | 1 (Qitech Industries GmbH) | 7          | Yes         | -                               |
 
-# More Docs
+# More Docs    docs
+
+/assets
 
 - [x] [Architecture & Data Flow](./docs/architecture-overview.md)
 
@@ -154,53 +156,222 @@ We could combine the code of the frontend and backend using [Doxius](https://dio
 - [x] [NixOS Operating System](./docs/nixos/README.md)
 
 
-## Minimal Example 
-
-# Hello EtherCAT - LED Control on the EL2004
-
-1. Introduction
-2. Requirements
-3. Wiring / Hardware Setup
-4. Software Overview
-5. Step-by-Step Implementation
-6. Final Code Listing
-7. Expected Behavior
+## Minimal Example — LED Control on the EL2004  
+A complete hardware + software walkthrough
 
 ---
 
-## 1. Introduction
-
-The EL2004 LED Toggle Example is a minimal demonstration showing how to control digital outputs on a Beckhoff EL2004 EtherCAT terminal using the existing QiTech machine framework. It is designed as the simplest possible working example of hardware interaction: turning an LED on and off.
-
----
-
-## 2. Requirements
-
-### Hardware
-- Beckhoff EL2004 EtherCAT Terminal (Digital Output, 4 channels)
-- Beckhoff EK1100 EtherCAT Coupler
-- Power supply for EK1100 and EL2004 module (AC/DC Adapter with 24V Output )
-- Connecting wires
-- A PC connected to the EtherCAT network
-
-### Software
-- Rust toolchain (for building backend machine code)
-- Node.js and npm/yarn (for frontend control interface)
-- The project repository cloned locally
-- Access to EtherCAT drivers and any required HAL bindings (available in the QITech control repository)
+## Table of Contents
+1. [Introduction](#1-introduction)  
+2. [Requirements](#2-requirements)  
+3. [Hardware Setup](#3-hardware-setup)  
+4. [Software Setup](#4-software-setup)  
+5. [Demo](#5-demo)  
+6. [References](#6-references)  
+7. [Acknowledgements](#7-acknowledgements)
 
 ---
 
-## 3. Wiring / Hardware Setup
+# 1. Introduction
 
-### Schematic
-<img width="1123" height="859" alt="Screenshot 2025-12-03 at 16 12 26" src="https://github.com/user-attachments/assets/a04278d9-7f6a-442d-9ea7-7ace9ac44872" />
+The EL2004 LED Toggle Example is a minimal demonstration showing how to control digital outputs on a **Beckhoff EL2004 EtherCAT terminal** using the QiTech machine framework.  
+It represents the simplest possible hardware interaction in the system:  
+**toggling LED outputs using the QiTech Control Dashboard.**
 
+---
 
-### Needed Hardware Overview
+# 2. Requirements
 
-<img width="813" height="1079" alt="Screenshot 2025-12-03 at 16 12 42" src="https://github.com/user-attachments/assets/af34a581-a668-4c6b-9d7f-062355813b6a" />
+## Hardware
+- Beckhoff **EL2004 EtherCAT Terminal** (4-channel digital output)  
+- Beckhoff **EK1100 EtherCAT Coupler**  
+- **24 V DC power supply** (AC/DC adapter + DC hollow plug)  
+- Jumper / bridge wires (0.5–1.5 mm² recommended)  
+- A **Linux PC** (Ubuntu/Debian recommended)  
+- Standard Ethernet cable  
+- Flat screwdriver  
 
+## Software  
+*(Installation steps in Section 4)*  
+- Rust toolchain  
+- Node.js + npm  
+- Git  
+- QiTech Control repository  
+- EtherCAT HAL (included inside repo)
 
-Figure 1: Beckhoff EK1100 Bus Coupler — the device circles in red is a simple … [caption truncated in source]
+---
 
+# 3. Hardware Setup
+
+## 3.1 Schematic
+
+> Replace this path with your actual asset path  
+> Example: `./docs/assets/schematic.png`
+
+![](./docs/assets/schematic.png)
+
+---
+
+## 3.2 EK1100 Wiring
+
+This wiring configuration powers the EL2004 and prepares it for LED control.  
+It is not the only possible wiring but is the **simplest functional setup**.
+
+### ⚠️ Safety Warning  
+Always disconnect power before wiring.  
+Working on live EtherCAT terminals can cause serious damage or electrical shock.
+
+---
+
+## 3.2.1 Safe Wiring Procedure (Beckhoff Recommended)
+
+1. Insert a screwdriver **straight** into the square release hole.  
+2. Insert the stripped wire into the round opening.  
+3. Remove the screwdriver — the spring clamp locks the wire.
+
+![](./docs/assets/wiring.png)
+
+---
+
+## 3.2.2 Wiring Steps (Used in This Example)
+
+We supply power using a **DC hollow-plug adapter**, like this one:  
+https://www.amazon.de/dp/B093FTFZ8Q
+
+Perform the following wiring on the EK1100:
+
+1. Red wire **(+24 V)** → Terminal **2**  
+2. Black wire **(0 V)** → Terminal **3**  
+3. Jumper wire from **Terminal 1 → Terminal 6**  
+4. Jumper wire from **Terminal 5 → Terminal 7**  
+
+After wiring, your module should look like **Figure 1**.
+
+---
+
+### **Figure 1 — EK1100 Minimal Wiring**
+![](./docs/assets/ek1100.jpeg)
+
+---
+
+## 3.3 EL2004 Integration
+
+Slide the EL2004 onto the **right side of the EK1100** until it locks.  
+The EtherCAT E-Bus and power contacts connect automatically — **no wiring required**.
+
+### **Figure 2 — EL2004 Terminal**
+![](./docs/assets/el2004.jpeg)
+
+---
+
+## 3.4 Final Assembled Setup
+
+### **Figure 3 — EK1100 + EL2004 Connected**
+![](./docs/assets/complete.jpeg)
+
+---
+
+## 3.5 Power & Ethernet
+
+### Power  
+Connect the 24 V adapter to the hollow plug used earlier.
+**Example AC/DC Adapter (Figure 4):**
+
+![](./docs/assets/adapter.jpeg)
+### Ethernet  
+Use a standard LAN cable to connect your PC → EK1100.
+The final powered up and connected setup should look like this:
+
+![](./docs/assets/power.jpeg)
+
+---
+
+# 4. Software Setup
+
+## 4.1 Installing on Ubuntu/Debian
+
+Paste this into your terminal:
+
+```bash
+# Press Enter when prompted
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+
+sudo apt update
+sudo apt install -y npm nodejs git
+
+git clone git@github.com:qitechgmbh/control.git
+cd control/electron
+npm install
+```
+## 4.2 Running the Backend
+```bash
+./cargo_run_linux.sh
+```
+This script:
+
+- Builds the backend
+
+- Grants required system capabilities (raw sockets)
+
+- Starts EtherCAT communication
+
+Ensure the EK1100 is connected.
+
+## 4.3 Running the Frontend
+```bash
+cd electron
+npm run start
+```
+This launches the QiTech Control dashboard.
+# 5. Demo
+
+## 5.1 Assigning Devices in the Dashboard
+
+Once the backend + frontend are running, you should see:
+
+    EK1100 Coupler
+
+    EL2004 Digital Output Terminal
+![](./docs/assets/discovery.png)
+
+Steps:
+
+1.Click Assign on the EK1100
+
+2.Select TestMachine V1
+![](./docs/assets/setmachine.png)
+
+3.Enter a serial number (use the same for EK1100 + EL2004)
+![](./docs/assets/setserial.png)
+
+4.Click Write
+
+5.Repeat for the EL2004
+
+## 5.2 Testing LED Control
+Navigate to:
+
+Machines → TestMachine
+![](./docs/assets/machinedetected.png)
+You will see this interface:
+![](./docs/assets/machinecontrol.png)
+You can now toggle the four digital outputs of the EL2004.
+# 6. References
+
+This guide incorporates information from official Beckhoff documentation.
+All diagrams, product names, and figures belong to Beckhoff Automation GmbH & Co. KG and are used here solely for educational purposes.
+
+Referenced Manuals
+
+EK1100 / EK1501 EtherCAT Coupler Documentation
+[Beckhoff EK1100 Documentation](https://download.beckhoff.com/download/Document/io/ethercat-terminals/ek110x_ek15xx_en.pdf)
+
+EL2004 Digital Output Terminal Documentation
+[Beckhoff EL2004 Documentation](https://download.beckhoff.com/download/Document/io/ethercat-terminals/el20xx_el2124_de.pdf)
+
+# 7.Acknowledgements
+
+This tutorial is inspired by the clarity and educational quality of Beckhoff manuals.
+All wiring illustrations and hardware descriptions in this guide are provided for demonstration purposes only and do not replace official Beckhoff installation guidelines.
+
+Special thanks to the QiTech engineering team for providing the backend architecture, EtherCAT HAL abstraction, and the TestMachine framework that makes this example possible.
