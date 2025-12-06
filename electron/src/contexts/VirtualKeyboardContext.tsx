@@ -38,36 +38,54 @@ export function VirtualKeyboardProvider({
     (key: string) => {
       if (!activeInput) return;
 
-      const start = activeInput.selectionStart ?? activeInput.value.length;
-      const end = activeInput.selectionEnd ?? activeInput.value.length;
+      // Store reference to DOM element to avoid React Compiler warnings
+      // We're mutating DOM properties, not React state
+      const inputElement = activeInput;
+      const start = inputElement.selectionStart ?? inputElement.value.length;
+      const end = inputElement.selectionEnd ?? inputElement.value.length;
 
       if (key === "BACKSPACE") {
         if (start === end && start > 0) {
-          activeInput.value =
-            activeInput.value.slice(0, start - 1) +
-            activeInput.value.slice(end);
-          activeInput.selectionStart = activeInput.selectionEnd = start - 1;
+          inputElement.value =
+            inputElement.value.slice(0, start - 1) +
+            inputElement.value.slice(end);
+          inputElement.selectionStart = inputElement.selectionEnd = start - 1;
         } else {
-          activeInput.value =
-            activeInput.value.slice(0, start) + activeInput.value.slice(end);
-          activeInput.selectionStart = activeInput.selectionEnd = start;
+          inputElement.value =
+            inputElement.value.slice(0, start) + inputElement.value.slice(end);
+          inputElement.selectionStart = inputElement.selectionEnd = start;
         }
       } else {
-        activeInput.value =
-          activeInput.value.slice(0, start) +
+        inputElement.value =
+          inputElement.value.slice(0, start) +
           key +
-          activeInput.value.slice(end);
-        activeInput.selectionStart = activeInput.selectionEnd =
+          inputElement.value.slice(end);
+        inputElement.selectionStart = inputElement.selectionEnd =
           start + key.length;
       }
 
       // Dispatch input event to trigger React state updates
       const event = new Event("input", { bubbles: true });
-      activeInput.dispatchEvent(event);
+      inputElement.dispatchEvent(event);
 
       // Dispatch change event for form libraries
       const changeEvent = new Event("change", { bubbles: true });
-      activeInput.dispatchEvent(changeEvent);
+      inputElement.dispatchEvent(changeEvent);
+
+      // Restore focus to input after key press
+      // This ensures the keyboard stays open when clicking buttons
+      setTimeout(() => {
+        if (inputElement && document.activeElement !== inputElement) {
+          inputElement.focus();
+          // Restore cursor position
+          if (inputElement.selectionStart !== null) {
+            inputElement.setSelectionRange(
+              inputElement.selectionStart,
+              inputElement.selectionEnd,
+            );
+          }
+        }
+      }, 10);
     },
     [activeInput],
   );
@@ -77,17 +95,39 @@ export function VirtualKeyboardProvider({
       ? (activeInput.type as "text" | "number" | "email" | "tel")
       : "text";
 
+  // Keep focus on the active input when clicking on keyboard
+  const handleKeyboardClick = useCallback(() => {
+    if (activeInput) {
+      // Store reference to DOM element to avoid React Compiler warnings
+      const inputElement = activeInput;
+      // Restore focus to the input after a short delay
+      // This prevents the keyboard from closing when clicking buttons
+      setTimeout(() => {
+        inputElement.focus();
+        // Restore cursor position if it was set
+        if (inputElement.selectionStart !== null) {
+          inputElement.setSelectionRange(
+            inputElement.selectionStart,
+            inputElement.selectionEnd,
+          );
+        }
+      }, 10);
+    }
+  }, [activeInput]);
+
   return (
     <VirtualKeyboardContext.Provider
       value={{ showKeyboard, hideKeyboard, isVisible }}
     >
       {children}
       {isVisible && activeInput && (
-        <VirtualKeyboard
-          onKeyPress={handleKeyPress}
-          onClose={hideKeyboard}
-          inputType={inputType}
-        />
+        <div onClick={handleKeyboardClick} onMouseDown={handleKeyboardClick}>
+          <VirtualKeyboard
+            onKeyPress={handleKeyPress}
+            onClose={hideKeyboard}
+            inputType={inputType}
+          />
+        </div>
       )}
     </VirtualKeyboardContext.Provider>
   );

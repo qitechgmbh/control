@@ -70,7 +70,8 @@ export function useSystemKeyboard() {
     };
 
     // Function to handle input blur
-    // Use a small delay to allow for keyboard button clicks
+    // Use a delay to check if focus moved to keyboard
+    // If focus moved to keyboard, restore it to the input
     let blurTimeout: NodeJS.Timeout | null = null;
     const handleInputBlur = (event: FocusEvent) => {
       const target = event.target as HTMLElement;
@@ -84,10 +85,24 @@ export function useSystemKeyboard() {
           clearTimeout(blurTimeout);
         }
         
-        // Delay hiding keyboard to allow for button clicks
+        // Check after a short delay if focus is still on keyboard
         blurTimeout = setTimeout(() => {
-          hideKeyboard();
-        }, 200);
+          const activeElement = document.activeElement;
+          const keyboardElement = document.querySelector('[data-virtual-keyboard]');
+          
+          // If focus is on keyboard or keyboard is still visible, restore focus to input
+          if (
+            keyboardElement &&
+            (keyboardElement.contains(activeElement) ||
+             activeElement?.closest('[data-virtual-keyboard]'))
+          ) {
+            // Focus is on keyboard, restore it to input
+            (target as HTMLInputElement | HTMLTextAreaElement).focus();
+          } else {
+            // Focus moved away from keyboard, hide it
+            hideKeyboard();
+          }
+        }, 150);
       }
     };
 

@@ -53,7 +53,10 @@ export function VirtualKeyboard({
   // For numeric inputs, show a simplified numpad instead
   if (inputType === "number" || inputType === "tel") {
     return (
-      <div className="fixed bottom-0 left-0 right-0 z-[9999] border-t bg-background p-4 shadow-2xl">
+      <div 
+        className="fixed bottom-0 left-0 right-0 z-[9999] border-t bg-background p-4 shadow-2xl"
+        data-virtual-keyboard
+      >
         <div className="mx-auto grid max-w-md grid-cols-3 gap-3">
           {["1", "2", "3", "4", "5", "6", "7", "8", "9", "0", ".", "-"].map(
             (key) => (
@@ -61,7 +64,10 @@ export function VirtualKeyboard({
                 key={key}
                 variant="outline"
                 className="h-16 text-2xl font-normal"
-                onMouseDown={(e) => e.preventDefault()}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
                 onClick={() => handleKeyPress(key)}
               >
                 {key}
@@ -71,7 +77,10 @@ export function VirtualKeyboard({
           <Button
             variant="outline"
             className="col-span-2 h-16 text-lg"
-            onMouseDown={(e) => e.preventDefault()}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
             onClick={() => onKeyPress("BACKSPACE")}
           >
             <Icon name="lu:Delete" className="mr-2" />
@@ -81,7 +90,10 @@ export function VirtualKeyboard({
             <Button
               variant="outline"
               className="h-16 text-lg"
-              onMouseDown={(e) => e.preventDefault()}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
               onClick={onClose}
             >
               <Icon name="lu:X" className="mr-2" />
@@ -100,7 +112,10 @@ export function VirtualKeyboard({
   const currentRow4 = isSymbols ? symbolsRow4 : keysRow4;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-[9999] border-t bg-background p-3 shadow-2xl">
+    <div 
+      className="fixed bottom-0 left-0 right-0 z-[9999] border-t bg-background p-3 shadow-2xl"
+      data-virtual-keyboard
+    >
       <div className="mx-auto max-w-4xl">
         {/* Row 1: Numbers/Symbols */}
         <div className="mb-2 flex gap-1.5">
@@ -112,7 +127,10 @@ export function VirtualKeyboard({
                 "h-12 flex-1 text-base font-normal",
                 isShift && !isSymbols && "bg-primary/20",
               )}
-              onMouseDown={(e) => e.preventDefault()}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
               onClick={() => handleKeyPress(key)}
             >
               {isShift && !isSymbols ? key.toUpperCase() : key}
@@ -130,7 +148,10 @@ export function VirtualKeyboard({
                 "h-12 flex-1 text-base font-normal",
                 isShift && !isSymbols && "bg-primary/20",
               )}
-              onMouseDown={(e) => e.preventDefault()}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
               onClick={() => handleKeyPress(key)}
             >
               {isShift && !isSymbols ? key.toUpperCase() : key}
@@ -148,7 +169,10 @@ export function VirtualKeyboard({
                 "h-12 flex-1 text-base font-normal",
                 isShift && !isSymbols && "bg-primary/20",
               )}
-              onMouseDown={(e) => e.preventDefault()}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
               onClick={() => handleKeyPress(key)}
             >
               {isShift && !isSymbols ? key.toUpperCase() : key}
@@ -161,7 +185,10 @@ export function VirtualKeyboard({
           <Button
             variant={isShift ? "default" : "outline"}
             className="h-12 px-4 text-sm font-medium"
-            onMouseDown={(e) => e.preventDefault()}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
             onClick={handleShift}
           >
             <Icon name="lu:ArrowUp" />
@@ -174,7 +201,10 @@ export function VirtualKeyboard({
                 "h-12 flex-1 text-base font-normal",
                 isShift && !isSymbols && "bg-primary/20",
               )}
-              onMouseDown={(e) => e.preventDefault()}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
               onClick={() => handleKeyPress(key)}
             >
               {isShift && !isSymbols ? key.toUpperCase() : key}
@@ -183,7 +213,10 @@ export function VirtualKeyboard({
           <Button
             variant="outline"
             className="h-12 flex-1 text-sm font-medium"
-            onMouseDown={(e) => e.preventDefault()}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
             onClick={() => handleKeyPress(" ")}
           >
             Space
@@ -191,7 +224,10 @@ export function VirtualKeyboard({
           <Button
             variant="outline"
             className="h-12 px-4 text-sm font-medium"
-            onMouseDown={(e) => e.preventDefault()}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
             onClick={() => onKeyPress("BACKSPACE")}
           >
             <Icon name="lu:Delete" />
@@ -200,7 +236,10 @@ export function VirtualKeyboard({
             <Button
               variant="outline"
               className="h-12 px-4 text-sm font-medium"
-              onMouseDown={(e) => e.preventDefault()}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
               onClick={onClose}
             >
               <Icon name="lu:X" />
@@ -214,7 +253,10 @@ export function VirtualKeyboard({
             variant={isSymbols ? "default" : "outline"}
             size="sm"
             className="h-8 text-xs"
-            onMouseDown={(e) => e.preventDefault()}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
             onClick={handleSymbols}
           >
             {isSymbols ? "ABC" : "123"}
