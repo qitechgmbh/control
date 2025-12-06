@@ -348,7 +348,7 @@ Steps:
 
 - Enter a serial number (use the same for EK1100 + EL2004)
 
-![](./docs/assets/setserial.png)
+![](./docs/assets/serserial.png)
 
 - Click Write
 
