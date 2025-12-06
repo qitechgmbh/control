@@ -173,6 +173,100 @@ export function VirtualKeyboardProvider({
     inputElement.focus();
   }, []);
 
+  // Numpad handlers for numeric inputs
+  const handleNumpadDigit = useCallback((digit: string) => {
+    handleKeyPress(digit);
+  }, [handleKeyPress]);
+
+  const handleNumpadDecimal = useCallback(() => {
+    const inputElement = activeInputRef.current;
+    if (!inputElement) return;
+
+    const start = inputElement.selectionStart ?? inputElement.value.length;
+    const end = inputElement.selectionEnd ?? inputElement.value.length;
+    const currentValue = inputElement.value;
+
+    if (!currentValue.includes(".")) {
+      // Add decimal at cursor position
+      inputElement.value =
+        currentValue.slice(0, start) + "." + currentValue.slice(end);
+      inputElement.selectionStart = inputElement.selectionEnd = start + 1;
+    } else {
+      // Move existing decimal to cursor position
+      const currentDecimalIndex = currentValue.indexOf(".");
+      const valueWithoutDecimal = currentValue.replace(".", "");
+      const adjustedStart = start > currentDecimalIndex ? start - 1 : start;
+      inputElement.value =
+        valueWithoutDecimal.slice(0, adjustedStart) +
+        "." +
+        valueWithoutDecimal.slice(adjustedStart);
+      inputElement.selectionStart = inputElement.selectionEnd =
+        adjustedStart + 1;
+    }
+
+    // Dispatch events
+    inputElement.dispatchEvent(new Event("input", { bubbles: true }));
+    inputElement.dispatchEvent(new Event("change", { bubbles: true }));
+    inputElement.focus();
+  }, []);
+
+  const handleNumpadDelete = useCallback(() => {
+    handleKeyPress("BACKSPACE");
+  }, [handleKeyPress]);
+
+  const handleNumpadToggleSign = useCallback(() => {
+    const inputElement = activeInputRef.current;
+    if (!inputElement) return;
+
+    const start = inputElement.selectionStart ?? inputElement.value.length;
+    const currentValue = inputElement.value;
+
+    let newValue: string;
+    let newPosition: number;
+
+    if (currentValue === "" || currentValue === "0") {
+      newValue = "-";
+      newPosition = 1;
+    } else if (currentValue.startsWith("-")) {
+      newValue = currentValue.slice(1);
+      newPosition = Math.max(0, start - 1);
+    } else {
+      newValue = "-" + currentValue;
+      newPosition = start + 1;
+    }
+
+    inputElement.value = newValue;
+    inputElement.selectionStart = inputElement.selectionEnd = newPosition;
+
+    // Dispatch events
+    inputElement.dispatchEvent(new Event("input", { bubbles: true }));
+    inputElement.dispatchEvent(new Event("change", { bubbles: true }));
+    inputElement.focus();
+  }, []);
+
+  const handleNumpadCursorLeft = useCallback(() => {
+    const inputElement = activeInputRef.current;
+    if (!inputElement) return;
+
+    const start = inputElement.selectionStart ?? inputElement.value.length;
+    if (start > 0) {
+      inputElement.setSelectionRange(start - 1, start - 1);
+    }
+    inputElement.focus();
+  }, []);
+
+  const handleNumpadCursorRight = useCallback(() => {
+    const inputElement = activeInputRef.current;
+    if (!inputElement) return;
+
+    const start = inputElement.selectionStart ?? inputElement.value.length;
+    const valueLength = inputElement.value.length;
+    if (start < valueLength) {
+      inputElement.setSelectionRange(start + 1, start + 1);
+    }
+    inputElement.focus();
+  }, []);
+
   const inputType =
     activeInputRef.current instanceof HTMLInputElement
       ? (activeInputRef.current.type as "text" | "number" | "email" | "tel")
@@ -192,9 +286,14 @@ export function VirtualKeyboardProvider({
       {isVisible && activeInputRef.current && (
         <div ref={keyboardRootRef}>
           <VirtualKeyboard
-            onKeyPress={handleKeyPress}
             onClose={hideKeyboard}
             inputType={inputType}
+            onNumpadDigit={handleNumpadDigit}
+            onNumpadDecimal={handleNumpadDecimal}
+            onNumpadDelete={handleNumpadDelete}
+            onNumpadToggleSign={handleNumpadToggleSign}
+            onNumpadCursorLeft={handleNumpadCursorLeft}
+            onNumpadCursorRight={handleNumpadCursorRight}
           />
         </div>
       )}
