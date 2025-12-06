@@ -64,11 +64,16 @@ export function VirtualKeyboard({
                 key={key}
                 variant="outline"
                 className="h-16 text-2xl font-normal"
+                tabIndex={-1}
                 onMouseDown={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
                 }}
-                onClick={() => handleKeyPress(key)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleKeyPress(key);
+                }}
               >
                 {key}
               </Button>
@@ -77,11 +82,16 @@ export function VirtualKeyboard({
           <Button
             variant="outline"
             className="col-span-2 h-16 text-lg"
+            tabIndex={-1}
             onMouseDown={(e) => {
               e.preventDefault();
               e.stopPropagation();
             }}
-            onClick={() => onKeyPress("BACKSPACE")}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onKeyPress("BACKSPACE");
+            }}
           >
             <Icon name="lu:Delete" className="mr-2" />
             Delete
@@ -90,11 +100,16 @@ export function VirtualKeyboard({
             <Button
               variant="outline"
               className="h-16 text-lg"
+              tabIndex={-1}
               onMouseDown={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
               }}
-              onClick={onClose}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onClose();
+              }}
             >
               <Icon name="lu:X" className="mr-2" />
               Close
@@ -127,11 +142,16 @@ export function VirtualKeyboard({
                 "h-12 flex-1 text-base font-normal",
                 isShift && !isSymbols && "bg-primary/20",
               )}
+              tabIndex={-1}
               onMouseDown={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
               }}
-              onClick={() => handleKeyPress(key)}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleKeyPress(key);
+              }}
             >
               {isShift && !isSymbols ? key.toUpperCase() : key}
             </Button>
@@ -148,11 +168,16 @@ export function VirtualKeyboard({
                 "h-12 flex-1 text-base font-normal",
                 isShift && !isSymbols && "bg-primary/20",
               )}
+              tabIndex={-1}
               onMouseDown={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
               }}
-              onClick={() => handleKeyPress(key)}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleKeyPress(key);
+              }}
             >
               {isShift && !isSymbols ? key.toUpperCase() : key}
             </Button>
@@ -169,11 +194,16 @@ export function VirtualKeyboard({
                 "h-12 flex-1 text-base font-normal",
                 isShift && !isSymbols && "bg-primary/20",
               )}
+              tabIndex={-1}
               onMouseDown={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
               }}
-              onClick={() => handleKeyPress(key)}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleKeyPress(key);
+              }}
             >
               {isShift && !isSymbols ? key.toUpperCase() : key}
             </Button>
@@ -185,11 +215,16 @@ export function VirtualKeyboard({
           <Button
             variant={isShift ? "default" : "outline"}
             className="h-12 px-4 text-sm font-medium"
+            tabIndex={-1}
             onMouseDown={(e) => {
               e.preventDefault();
               e.stopPropagation();
             }}
-            onClick={handleShift}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleShift();
+            }}
           >
             <Icon name="lu:ArrowUp" />
           </Button>
@@ -201,11 +236,16 @@ export function VirtualKeyboard({
                 "h-12 flex-1 text-base font-normal",
                 isShift && !isSymbols && "bg-primary/20",
               )}
+              tabIndex={-1}
               onMouseDown={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
               }}
-              onClick={() => handleKeyPress(key)}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleKeyPress(key);
+              }}
             >
               {isShift && !isSymbols ? key.toUpperCase() : key}
             </Button>
@@ -213,22 +253,32 @@ export function VirtualKeyboard({
           <Button
             variant="outline"
             className="h-12 flex-1 text-sm font-medium"
+            tabIndex={-1}
             onMouseDown={(e) => {
               e.preventDefault();
               e.stopPropagation();
             }}
-            onClick={() => handleKeyPress(" ")}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleKeyPress(" ");
+            }}
           >
             Space
           </Button>
           <Button
             variant="outline"
             className="h-12 px-4 text-sm font-medium"
+            tabIndex={-1}
             onMouseDown={(e) => {
               e.preventDefault();
               e.stopPropagation();
             }}
-            onClick={() => onKeyPress("BACKSPACE")}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onKeyPress("BACKSPACE");
+            }}
           >
             <Icon name="lu:Delete" />
           </Button>
@@ -236,11 +286,16 @@ export function VirtualKeyboard({
             <Button
               variant="outline"
               className="h-12 px-4 text-sm font-medium"
+              tabIndex={-1}
               onMouseDown={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
               }}
-              onClick={onClose}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onClose();
+              }}
             >
               <Icon name="lu:X" />
             </Button>
@@ -253,11 +308,16 @@ export function VirtualKeyboard({
             variant={isSymbols ? "default" : "outline"}
             size="sm"
             className="h-8 text-xs"
+            tabIndex={-1}
             onMouseDown={(e) => {
               e.preventDefault();
               e.stopPropagation();
             }}
-            onClick={handleSymbols}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleSymbols();
+            }}
           >
             {isSymbols ? "ABC" : "123"}
           </Button>

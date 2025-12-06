@@ -70,11 +70,11 @@ export function useSystemKeyboard() {
     };
 
     // Function to handle input blur
-    // Use a delay to check if focus moved to keyboard
-    // If focus moved to keyboard, restore it to the input
+    // Check immediately if focus moved to keyboard, if so restore it to input
     let blurTimeout: NodeJS.Timeout | null = null;
     const handleInputBlur = (event: FocusEvent) => {
       const target = event.target as HTMLElement;
+      const relatedTarget = event.relatedTarget as HTMLElement | null;
       
       if (
         target &&
@@ -85,24 +85,45 @@ export function useSystemKeyboard() {
           clearTimeout(blurTimeout);
         }
         
-        // Check after a short delay if focus is still on keyboard
+        // Check immediately if the new focus target is within the keyboard
+        const keyboardElement = document.querySelector('[data-virtual-keyboard]');
+        const isFocusOnKeyboard = 
+          keyboardElement &&
+          relatedTarget &&
+          (keyboardElement.contains(relatedTarget) ||
+           relatedTarget.closest('[data-virtual-keyboard]'));
+        
+        if (isFocusOnKeyboard) {
+          // Focus moved to keyboard, immediately restore it to input
+          // Use requestAnimationFrame to ensure this happens after the blur event
+          requestAnimationFrame(() => {
+            (target as HTMLInputElement | HTMLTextAreaElement).focus();
+            // Restore cursor position
+            const input = target as HTMLInputElement | HTMLTextAreaElement;
+            if (input.selectionStart !== null) {
+              input.setSelectionRange(
+                input.selectionStart,
+                input.selectionEnd,
+              );
+            }
+          });
+          return; // Don't hide keyboard
+        }
+        
+        // Focus moved away from keyboard, hide it after a delay
+        // This delay allows for clicks on other inputs
         blurTimeout = setTimeout(() => {
           const activeElement = document.activeElement;
-          const keyboardElement = document.querySelector('[data-virtual-keyboard]');
-          
-          // If focus is on keyboard or keyboard is still visible, restore focus to input
-          if (
+          const isStillOnKeyboard = 
             keyboardElement &&
             (keyboardElement.contains(activeElement) ||
-             activeElement?.closest('[data-virtual-keyboard]'))
-          ) {
-            // Focus is on keyboard, restore it to input
-            (target as HTMLInputElement | HTMLTextAreaElement).focus();
-          } else {
-            // Focus moved away from keyboard, hide it
+             activeElement?.closest('[data-virtual-keyboard]'));
+          
+          if (!isStillOnKeyboard) {
+            // Focus is not on keyboard, hide it
             hideKeyboard();
           }
-        }, 150);
+        }, 200);
       }
     };
 
