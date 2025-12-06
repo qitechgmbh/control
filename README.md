@@ -250,7 +250,8 @@ After wiring, your module should look like **Figure 1**.
 ---
 
 ### **Figure 1 — EK1100 Minimal Wiring**
-![](./docs/assets/ek1100.jpeg)
+<img src="./docs/assets/ek1100.jpeg" width="400">
+
 
 ---
 
@@ -260,14 +261,14 @@ Slide the EL2004 onto the **right side of the EK1100** until it locks.
 The EtherCAT E-Bus and power contacts connect automatically — **no wiring required**.
 
 ### **Figure 2 — EL2004 Terminal**
-![](./docs/assets/el2004.jpeg)
+<img src="./docs/assets/el2004.jpeg" width="400">
 
 ---
 
 ## 3.4 Final Assembled Setup
 
 ### **Figure 3 — EK1100 + EL2004 Connected**
-![](./docs/assets/complete.jpeg)
+<img src="./docs/assets/complete.jpeg" width="400">
 
 ---
 
@@ -277,12 +278,12 @@ The EtherCAT E-Bus and power contacts connect automatically — **no wiring requ
 Connect the 24 V adapter to the hollow plug used earlier.
 **Example AC/DC Adapter (Figure 4):**
 
-![](./docs/assets/adapter.jpeg)
+<img src="./docs/assets/adapter.jpeg" width="400">
 ### Ethernet  
 Use a standard LAN cable to connect your PC → EK1100.
 The final powered up and connected setup should look like this:
 
-![](./docs/assets/power.jpeg)
+<img src="./docs/assets/power.jpeg" width="400">
 
 ---
 
@@ -363,10 +364,8 @@ All diagrams, product names, and figures belong to Beckhoff Automation GmbH & Co
 
 Referenced Manuals
 
-EK1100 / EK1501 EtherCAT Coupler Documentation
 [Beckhoff EK1100 Documentation](https://download.beckhoff.com/download/Document/io/ethercat-terminals/ek110x_ek15xx_en.pdf)
 
-EL2004 Digital Output Terminal Documentation
 [Beckhoff EL2004 Documentation](https://download.beckhoff.com/download/Document/io/ethercat-terminals/el20xx_el2124_de.pdf)
 
 # 7.Acknowledgements
