@@ -5,6 +5,7 @@ import { addEnvironmentEventListeners } from "./environment/environment-listener
 import { addUpdateEventListeners } from "./update/update-listeners";
 import { addTroubleshootEventListeners } from "./troubleshoot/troubleshoot-listeners";
 import { addNixOSEventListeners } from "./nixos/nixos-listeners";
+import { addKeyboardEventListeners } from "./keyboard/keyboard-listeners";
 
 export default function registerListeners(mainWindow: BrowserWindow) {
   addWindowEventListeners(mainWindow);
@@ -13,4 +14,5 @@ export default function registerListeners(mainWindow: BrowserWindow) {
   addUpdateEventListeners();
   addTroubleshootEventListeners();
   addNixOSEventListeners();
+  addKeyboardEventListeners();
 }

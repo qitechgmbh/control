@@ -1,24 +1,25 @@
 import { useEffect } from "react";
 
 /**
- * Hook to ensure inputMode attributes are set on all input fields.
+ * Hook to ensure the system keyboard appears when input fields are focused.
  * 
- * This ensures that system keyboards (on-screen keyboards) appear when inputs are focused.
- * Works on all platforms and desktop environments (GNOME, KDE, Windows, macOS, mobile).
+ * This hook:
+ * - Sets inputMode attributes on all input fields (tells the system which keyboard type to show)
+ * - Explicitly triggers the system on-screen keyboard via IPC when inputs are focused
  * 
- * The inputMode attribute is a standard HTML attribute that tells the system
- * which type of keyboard to show. This works regardless of the desktop environment.
+ * The inputMode attribute is a standard HTML attribute that works across platforms.
+ * The IPC call ensures the keyboard is explicitly shown if it doesn't appear automatically.
  */
 export function useSystemKeyboard() {
   useEffect(() => {
     // Function to set inputMode based on input type
     const setInputMode = (input: HTMLInputElement | HTMLTextAreaElement) => {
-      // Skip if already set or if it's a hidden input
+      // Skip hidden inputs
+      if (input instanceof HTMLInputElement && input.type === "hidden") {
+        return;
+      }
+      
       if (input instanceof HTMLInputElement) {
-        if (input.inputMode || input.type === "hidden") {
-          return;
-        }
-        
         // Set inputMode based on type
         switch (input.type) {
           case "number":
@@ -35,7 +36,10 @@ export function useSystemKeyboard() {
             input.inputMode = "search";
             break;
           default:
-            input.inputMode = "text";
+            // Only set to "text" if not already explicitly set
+            if (!input.inputMode) {
+              input.inputMode = "text";
+            }
         }
       } else if (input instanceof HTMLTextAreaElement) {
         if (!input.inputMode) {
@@ -44,15 +48,42 @@ export function useSystemKeyboard() {
       }
     };
 
+    // Function to show keyboard via IPC
+    // This explicitly triggers the system keyboard if it doesn't appear automatically
+    const showKeyboard = async () => {
+      try {
+        if (window.keyboard?.show) {
+          await window.keyboard.show();
+        }
+      } catch (error) {
+        // Silently fail if keyboard API is not available
+        // The inputMode attribute should still work
+      }
+    };
+
     // Function to handle input focus
-    const handleInputFocus = (event: FocusEvent) => {
+    const handleInputFocus = async (event: FocusEvent) => {
       const target = event.target as HTMLElement;
       
       if (
         target &&
         (target.tagName === "INPUT" || target.tagName === "TEXTAREA")
       ) {
-        setInputMode(target as HTMLInputElement | HTMLTextAreaElement);
+        const input = target as HTMLInputElement | HTMLTextAreaElement;
+        setInputMode(input);
+        
+        // Ensure the input has proper accessibility attributes
+        // This helps the system detect the input field
+        if (!target.getAttribute("role")) {
+          target.setAttribute("role", "textbox");
+        }
+        if (!target.getAttribute("aria-label") && target.getAttribute("placeholder")) {
+          target.setAttribute("aria-label", target.getAttribute("placeholder") || "");
+        }
+        
+        // Explicitly trigger the system keyboard
+        // This ensures the keyboard appears even if inputMode alone doesn't trigger it
+        await showKeyboard();
       }
     };
 
@@ -64,7 +95,7 @@ export function useSystemKeyboard() {
       }
     });
 
-    // Listen for new inputs being focused
+    // Listen for input focus events
     document.addEventListener("focusin", handleInputFocus, true);
 
     // Cleanup

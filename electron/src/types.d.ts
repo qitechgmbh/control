@@ -87,6 +87,12 @@ interface NixOSContext {
     generationId: string,
   ) => Promise<{ success: boolean; error?: string }>;
 }
+
+interface KeyboardContext {
+  show: () => Promise<void>;
+  hide: () => Promise<void>;
+}
+
 declare interface Window {
   themeMode: ThemeModeContext;
   electronWindow: ElectronWindow;
@@ -94,6 +100,7 @@ declare interface Window {
   update: UpdateContext;
   troubleshoot: TroubleshootContext;
   nixos: NixOSContext;
+  keyboard: KeyboardContext;
 }
 
 // Module declarations for Vite imports
