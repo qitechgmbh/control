@@ -1,18 +1,20 @@
 import { useEffect } from "react";
+import { useVirtualKeyboard } from "@/contexts/VirtualKeyboardContext";
 
 /**
- * Hook to ensure the system keyboard appears when input fields are focused.
+ * Hook to ensure the virtual keyboard appears when input fields are focused.
  * 
  * This hook:
- * - Sets inputMode attributes on all input fields (tells the system which keyboard type to show)
- * - Explicitly triggers the system on-screen keyboard via IPC when inputs are focused
- * 
- * The inputMode attribute is a standard HTML attribute that works across platforms.
- * The IPC call ensures the keyboard is explicitly shown if it doesn't appear automatically.
+ * - Sets inputMode attributes on all input fields (for accessibility)
+ * - Shows the virtual keyboard when inputs are focused
+ * - Hides the virtual keyboard when inputs lose focus
  */
 export function useSystemKeyboard() {
+  const { showKeyboard, hideKeyboard } = useVirtualKeyboard();
+
   useEffect(() => {
     // Function to set inputMode based on input type
+    // This is still useful for accessibility and system integration
     const setInputMode = (input: HTMLInputElement | HTMLTextAreaElement) => {
       // Skip hidden inputs
       if (input instanceof HTMLInputElement && input.type === "hidden") {
@@ -27,16 +29,11 @@ export function useSystemKeyboard() {
             input.inputMode = "numeric";
             break;
           case "email":
-            input.inputMode = "email";
-            break;
           case "url":
-            input.inputMode = "url";
-            break;
           case "search":
-            input.inputMode = "search";
+            input.inputMode = input.type;
             break;
           default:
-            // Only set to "text" if not already explicitly set
             if (!input.inputMode) {
               input.inputMode = "text";
             }
@@ -48,21 +45,8 @@ export function useSystemKeyboard() {
       }
     };
 
-    // Function to show keyboard via IPC
-    // This explicitly triggers the system keyboard if it doesn't appear automatically
-    const showKeyboard = async () => {
-      try {
-        if (window.keyboard?.show) {
-          await window.keyboard.show();
-        }
-      } catch (error) {
-        // Silently fail if keyboard API is not available
-        // The inputMode attribute should still work
-      }
-    };
-
     // Function to handle input focus
-    const handleInputFocus = async (event: FocusEvent) => {
+    const handleInputFocus = (event: FocusEvent) => {
       const target = event.target as HTMLElement;
       
       if (
@@ -73,7 +57,6 @@ export function useSystemKeyboard() {
         setInputMode(input);
         
         // Ensure the input has proper accessibility attributes
-        // This helps the system detect the input field
         if (!target.getAttribute("role")) {
           target.setAttribute("role", "textbox");
         }
@@ -81,9 +64,30 @@ export function useSystemKeyboard() {
           target.setAttribute("aria-label", target.getAttribute("placeholder") || "");
         }
         
-        // Explicitly trigger the system keyboard
-        // This ensures the keyboard appears even if inputMode alone doesn't trigger it
-        await showKeyboard();
+        // Show virtual keyboard
+        showKeyboard(input);
+      }
+    };
+
+    // Function to handle input blur
+    // Use a small delay to allow for keyboard button clicks
+    let blurTimeout: NodeJS.Timeout | null = null;
+    const handleInputBlur = (event: FocusEvent) => {
+      const target = event.target as HTMLElement;
+      
+      if (
+        target &&
+        (target.tagName === "INPUT" || target.tagName === "TEXTAREA")
+      ) {
+        // Clear any existing timeout
+        if (blurTimeout) {
+          clearTimeout(blurTimeout);
+        }
+        
+        // Delay hiding keyboard to allow for button clicks
+        blurTimeout = setTimeout(() => {
+          hideKeyboard();
+        }, 200);
       }
     };
 
@@ -95,13 +99,17 @@ export function useSystemKeyboard() {
       }
     });
 
-    // Listen for input focus events
+    // Listen for input focus and blur events
     document.addEventListener("focusin", handleInputFocus, true);
+    document.addEventListener("focusout", handleInputBlur, true);
 
     // Cleanup
     return () => {
       document.removeEventListener("focusin", handleInputFocus, true);
+      document.removeEventListener("focusout", handleInputBlur, true);
+      if (blurTimeout) {
+        clearTimeout(blurTimeout);
+      }
     };
-  }, []);
+  }, [showKeyboard, hideKeyboard]);
 }
-

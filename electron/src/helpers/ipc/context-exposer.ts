@@ -4,7 +4,8 @@ import { exposeEnvironmentContext } from "./environment/environment-context";
 import { exposeUpdateContext } from "./update/update-context";
 import { exposeTroubleshootContext } from "./troubleshoot/troubleshoot-context";
 import { exposeNixOSContext } from "./nixos/nixos-context";
-import { exposeKeyboardContext } from "./keyboard/keyboard-context";
+// Keyboard is now handled in-app via VirtualKeyboard component
+// import { exposeKeyboardContext } from "./keyboard/keyboard-context";
 
 export default function exposeContexts() {
   exposeWindowContext();
@@ -13,5 +14,6 @@ export default function exposeContexts() {
   exposeUpdateContext();
   exposeTroubleshootContext();
   exposeNixOSContext();
-  exposeKeyboardContext();
+  // Keyboard is now handled in-app via VirtualKeyboard component
+  // exposeKeyboardContext();
 }

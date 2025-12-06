@@ -5,7 +5,8 @@ import { addEnvironmentEventListeners } from "./environment/environment-listener
 import { addUpdateEventListeners } from "./update/update-listeners";
 import { addTroubleshootEventListeners } from "./troubleshoot/troubleshoot-listeners";
 import { addNixOSEventListeners } from "./nixos/nixos-listeners";
-import { addKeyboardEventListeners } from "./keyboard/keyboard-listeners";
+// Keyboard is now handled in-app via VirtualKeyboard component
+// import { addKeyboardEventListeners } from "./keyboard/keyboard-listeners";
 
 export default function registerListeners(mainWindow: BrowserWindow) {
   addWindowEventListeners(mainWindow);
@@ -14,5 +15,6 @@ export default function registerListeners(mainWindow: BrowserWindow) {
   addUpdateEventListeners();
   addTroubleshootEventListeners();
   addNixOSEventListeners();
-  addKeyboardEventListeners();
+  // Keyboard is now handled in-app via VirtualKeyboard component
+  // addKeyboardEventListeners(mainWindow);
 }

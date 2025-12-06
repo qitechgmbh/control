@@ -10,14 +10,15 @@ import { Toaster } from "./components/ui/sonner";
 import { enableMapSet } from "immer";
 import { useGlobalLogStreaming } from "./hooks/useGlobalLogStreaming";
 import { useSystemKeyboard } from "./hooks/useSystemKeyboard";
+import { VirtualKeyboardProvider } from "./contexts/VirtualKeyboardContext";
 
-export default function App() {
+function AppContent() {
   const { i18n } = useTranslation();
 
   // Start global log streaming
   useGlobalLogStreaming();
 
-  // Ensure system keyboard appears when inputs are focused
+  // Ensure virtual keyboard appears when inputs are focused
   useSystemKeyboard();
 
   useEffect(() => {
@@ -26,6 +27,14 @@ export default function App() {
   }, [i18n]);
 
   return <RouterProvider router={router} />;
+}
+
+export default function App() {
+  return (
+    <VirtualKeyboardProvider>
+      <AppContent />
+    </VirtualKeyboardProvider>
+  );
 }
 
 // enable immer MapSet plugin
