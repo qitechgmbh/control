@@ -267,10 +267,36 @@ export function VirtualKeyboardProvider({
     inputElement.focus();
   }, []);
 
-  const inputType =
-    activeInputRef.current instanceof HTMLInputElement
-      ? (activeInputRef.current.type as "text" | "number" | "email" | "tel")
-      : "text";
+  // Determine input type - check both type and inputMode for numeric inputs
+  const inputType = (() => {
+    if (!activeInputRef.current) return "text";
+    
+    if (activeInputRef.current instanceof HTMLInputElement) {
+      const type = activeInputRef.current.type;
+      const inputMode = activeInputRef.current.inputMode;
+      
+      // Debug: Log input detection
+      console.log("Input detected - type:", type, "inputMode:", inputMode);
+      
+      // If type is number or tel, use that
+      if (type === "number" || type === "tel") {
+        return type as "number" | "tel";
+      }
+      
+      // If inputMode is numeric, treat it as a number input
+      if (inputMode === "numeric") {
+        return "number";
+      }
+      
+      // Otherwise use the type
+      return type as "text" | "number" | "email" | "tel";
+    }
+    
+    return "text";
+  })();
+  
+  // Debug: Log final inputType
+  console.log("Final inputType:", inputType, "isVisible:", isVisible);
 
   return (
     <VirtualKeyboardContext.Provider

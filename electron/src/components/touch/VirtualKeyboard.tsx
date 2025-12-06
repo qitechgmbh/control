@@ -31,6 +31,9 @@ export function VirtualKeyboard({
     return null;
   }
 
+  // Debug: Log when numpad should be shown
+  console.log("VirtualKeyboard rendering numpad for inputType:", inputType);
+
   return (
     <div 
       className="fixed bottom-0 left-0 right-0 z-[9999] border-t bg-background p-4 shadow-2xl"
