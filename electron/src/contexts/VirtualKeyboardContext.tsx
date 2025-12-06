@@ -48,12 +48,21 @@ export function VirtualKeyboardProvider({
     function handlePointerDown(e: PointerEvent) {
       const el = e.target as HTMLElement | null;
 
+      // If click is on any input/textarea → keep keyboard open (or let it open via focusin)
+      // This must be checked FIRST, even if keyboard is not yet visible
+      // This prevents closing the keyboard when clicking on an input field
+      if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA")) {
+        return;
+      }
+
       // If keyboard is not open, do nothing
       if (!isVisible) return;
 
-      // If click is in the active input → keep keyboard open
-      if (activeInputRef.current && activeInputRef.current.contains(el)) {
-        return;
+      // If click is on the active input itself or inside it → keep keyboard open
+      if (activeInputRef.current && el) {
+        if (el === activeInputRef.current || activeInputRef.current.contains(el)) {
+          return;
+        }
       }
 
       // If click is in the keyboard → keep keyboard open
