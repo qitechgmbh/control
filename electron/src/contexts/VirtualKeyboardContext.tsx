@@ -4,6 +4,7 @@ import React, {
   useState,
   useCallback,
   useRef,
+  useEffect,
 } from "react";
 import { VirtualKeyboard } from "@/components/touch/VirtualKeyboard";
 
@@ -13,6 +14,8 @@ interface VirtualKeyboardContextValue {
   showKeyboard: (input: InputElement) => void;
   hideKeyboard: () => void;
   isVisible: boolean;
+  keyboardRootRef: React.RefObject<HTMLDivElement | null>;
+  activeInputRef: React.RefObject<InputElement | null>;
 }
 
 const VirtualKeyboardContext = createContext<
@@ -26,20 +29,47 @@ export function VirtualKeyboardProvider({
 }) {
   // Use ref for DOM element to avoid React Compiler warnings about mutating state
   const activeInputRef = useRef<InputElement | null>(null);
+  const keyboardRootRef = useRef<HTMLDivElement | null>(null);
   const [isVisible, setIsVisible] = useState(false);
 
   const showKeyboard = useCallback((input: InputElement) => {
     activeInputRef.current = input;
+    input.focus();
     setIsVisible(true);
   }, []);
 
   const hideKeyboard = useCallback(() => {
     setIsVisible(false);
-    // Don't clear activeInputRef immediately to allow for blur delay
-    setTimeout(() => {
-      activeInputRef.current = null;
-    }, 200);
+    activeInputRef.current = null;
   }, []);
+
+  // Global pointerdown handler for click-outside detection
+  useEffect(() => {
+    function handlePointerDown(e: PointerEvent) {
+      const target = e.target as Node | null;
+
+      // If keyboard is not open, do nothing
+      if (!isVisible) return;
+
+      // If click is in the active input → keep keyboard open
+      if (activeInputRef.current && activeInputRef.current.contains(target)) {
+        return;
+      }
+
+      // If click is in the keyboard root → keep keyboard open
+      if (keyboardRootRef.current && keyboardRootRef.current.contains(target)) {
+        return;
+      }
+
+      // Click is outside both input and keyboard → close keyboard
+      hideKeyboard();
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown, true);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown, true);
+    };
+  }, [isVisible, hideKeyboard]);
 
   const handleKeyPress = useCallback((key: string) => {
     const inputElement = activeInputRef.current;
@@ -76,20 +106,8 @@ export function VirtualKeyboardProvider({
     const changeEvent = new Event("change", { bubbles: true });
     inputElement.dispatchEvent(changeEvent);
 
-    // Restore focus to input after key press
-    // This ensures the keyboard stays open when clicking buttons
-    requestAnimationFrame(() => {
-      if (inputElement && document.activeElement !== inputElement) {
-        inputElement.focus();
-        // Restore cursor position
-        if (inputElement.selectionStart !== null) {
-          inputElement.setSelectionRange(
-            inputElement.selectionStart,
-            inputElement.selectionEnd,
-          );
-        }
-      }
-    });
+    // Important: Keep focus on input after key press
+    inputElement.focus();
   }, []);
 
   const inputType =
@@ -97,36 +115,19 @@ export function VirtualKeyboardProvider({
       ? (activeInputRef.current.type as "text" | "number" | "email" | "tel")
       : "text";
 
-  // Keep focus on the active input when clicking on keyboard
-  const handleKeyboardClick = useCallback((e: React.MouseEvent) => {
-    const inputElement = activeInputRef.current;
-    if (inputElement) {
-      // Prevent the click from stealing focus
-      e.preventDefault();
-      e.stopPropagation();
-      
-      // Restore focus to the input immediately
-      // Use requestAnimationFrame to ensure this happens after any blur events
-      requestAnimationFrame(() => {
-        inputElement.focus();
-        // Restore cursor position if it was set
-        if (inputElement.selectionStart !== null) {
-          inputElement.setSelectionRange(
-            inputElement.selectionStart,
-            inputElement.selectionEnd,
-          );
-        }
-      });
-    }
-  }, []);
-
   return (
     <VirtualKeyboardContext.Provider
-      value={{ showKeyboard, hideKeyboard, isVisible }}
+      value={{
+        showKeyboard,
+        hideKeyboard,
+        isVisible,
+        keyboardRootRef,
+        activeInputRef,
+      }}
     >
       {children}
       {isVisible && activeInputRef.current && (
-        <div onClick={handleKeyboardClick} onMouseDown={handleKeyboardClick}>
+        <div ref={keyboardRootRef}>
           <VirtualKeyboard
             onKeyPress={handleKeyPress}
             onClose={hideKeyboard}
