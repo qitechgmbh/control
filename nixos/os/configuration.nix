@@ -185,7 +185,8 @@ in
   console.keyMap = "de";
 
   services.printing.enable = false;
-  services.bluetooth.enable = false;
+  hardware.bluetooth.enable = false;
+  services.bluez.enable = false;
   services.avahi.enable = false;
   services.modemmanager.enable = false;
   services.geoclue2.enable = false;
@@ -245,7 +246,6 @@ in
 
   # Disable unnecessary systemd services (only those definitively not needed)
   systemd.services.cups.enable = false;
-  systemd.services.bluetooth.enable = false;
   systemd.services.avahi-daemon.enable = false;
   systemd.services.ModemManager.enable = false;
   systemd.services.geoclue.enable = false;
