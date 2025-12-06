@@ -205,9 +205,6 @@ It represents the simplest possible hardware interaction in the system:
 
 ## 3.1 Schematic
 
-> Replace this path with your actual asset path  
-> Example: `./docs/assets/schematic.png`
-
 ![](./docs/assets/schematic.png)
 
 ---
