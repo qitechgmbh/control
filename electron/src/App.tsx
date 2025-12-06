@@ -9,12 +9,16 @@ import { RouterProvider } from "@tanstack/react-router";
 import { Toaster } from "./components/ui/sonner";
 import { enableMapSet } from "immer";
 import { useGlobalLogStreaming } from "./hooks/useGlobalLogStreaming";
+import { useSystemKeyboard } from "./hooks/useSystemKeyboard";
 
 export default function App() {
   const { i18n } = useTranslation();
 
   // Start global log streaming
   useGlobalLogStreaming();
+
+  // Ensure system keyboard appears when inputs are focused
+  useSystemKeyboard();
 
   useEffect(() => {
     syncThemeWithLocal();

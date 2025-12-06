@@ -218,7 +218,11 @@ export function DeviceEeepromDialogContent({ device, setOpen }: ContentProps) {
               <FormItem>
                 <FormLabel>Serial</FormLabel>
                 <FormControl>
-                  <Input placeholder="1234" {...field} />
+                  <Input
+                    placeholder="1234"
+                    inputMode="numeric"
+                    {...field}
+                  />
                 </FormControl>
                 <FormDescription>Serial number of the machine.</FormDescription>
                 <FormMessage />
