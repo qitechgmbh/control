@@ -1,3 +1,10 @@
+use super::api::{
+    ModeState, PullerState, SpoolAutomaticActionState, SpoolSpeedControllerState, TensionArmState,
+    TraverseState, Winder2Namespace,
+};
+use crate::machine_identification::MachineIdentificationUnique;
+use crate::{AsyncThreadMessage, Machine, MachineConnection, MachineMessage, Sender};
+use smol::channel::Receiver;
 use std::time::Instant;
 
 pub mod act;
@@ -5,19 +12,9 @@ pub mod api;
 pub mod mock_emit;
 pub mod new;
 
-use super::api::{
-    ModeState, PullerState, SpoolAutomaticActionState, SpoolSpeedControllerState, TensionArmState,
-    TraverseState, Winder2Namespace,
-};
-use crate::{
-    AsyncThreadMessage, Machine, MachineConnection, MachineMessage,
-    machine_identification::MachineIdentificationUnique,
-};
-use smol::channel::{Receiver, Sender};
-
 #[derive(Debug)]
 pub struct Winder2 {
-    machine_identification_unique: MachineIdentificationUnique,
+    pub machine_identification_unique: MachineIdentificationUnique,
     namespace: Winder2Namespace,
     last_measurement_emit: Instant,
     pub is_default_state: bool,
