@@ -67,7 +67,7 @@ export function SidebarLayout() {
   const routerState = useRouterState();
   const { machines: machinesEvent } = useMainNamespace();
   const [contentWidth, setContentWidth] = React.useState<number>(0);
-  
+
   // Machine connection guard: redirect to setup if selected machine disconnects
   useEffect(() => {
     // Wait for machines data to be loaded
