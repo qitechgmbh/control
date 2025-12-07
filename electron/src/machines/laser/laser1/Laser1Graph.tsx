@@ -22,12 +22,14 @@ export function Laser1GraphsPage() {
   // Transform roundness from ratio (0-1) to percentage (0-100)
   const roundnessPercent = React.useMemo(() => {
     if (!roundness) return null;
-    
-    const transformValue = (val: { value: number; timestamp: number } | null) => {
+
+    const transformValue = (
+      val: { value: number; timestamp: number } | null,
+    ) => {
       if (!val) return null;
       return { value: val.value * 100, timestamp: val.timestamp };
     };
-    
+
     const transformSeries = (series: any) => {
       if (!series || !series.values) return series;
       return {
@@ -35,7 +37,7 @@ export function Laser1GraphsPage() {
         values: series.values.map(transformValue),
       };
     };
-    
+
     return {
       current: roundness.current ? transformValue(roundness.current) : null,
       long: transformSeries(roundness.long),
