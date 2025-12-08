@@ -7,18 +7,19 @@ use anyhow::Error;
 
 use ethercat_hal::devices::{
     ek1100::{EK1100, EK1100_IDENTITY_A},
-    // WICHTIG: EL7031_IDENTITY_B hier oben mit importieren!
-    el7031::{EL7031, EL7031_IDENTITY_A, EL7031_IDENTITY_B, EL7031StepperPort},
-    el7031::coe::EL7031Configuration,
-    el7031::pdo::EL7031PredefinedPdoAssignment,
+
 };
 use ethercat_hal::shared_config;
 use ethercat_hal::shared_config::el70x1::{EL70x1OperationMode, StmMotorConfiguration};
 use ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1;
 use ethercat_hal::coe::ConfigurableDevice;
+use ethercat_hal::devices::el7031_0030::{EL7031_0030StepperPort, EL7031_0030, EL7031_0030_IDENTITY_A};
+use ethercat_hal::devices::el7031_0030::coe::EL7031_0030Configuration;
+use ethercat_hal::devices::el7031_0030::pdo::EL7031_0030PredefinedPdoAssignment;
 
 impl MachineNewTrait for BeckhoffMachine {
     fn new<'maindevice>(params: &MachineNewParams) -> Result<Self, Error> {
+        println!("[{}::new] Creating new BeckhoffMachine", module_path!());
         let device_identification = params.device_group.iter().cloned().collect::<Vec<_>>();
         validate_same_machine_identification_unique(&device_identification)?;
         validate_no_role_dublicates(&device_identification)?;
@@ -36,15 +37,15 @@ impl MachineNewTrait for BeckhoffMachine {
 
             // Role 1: EL7031 (Stepper Motor)
             let el7031 = {
-                let device = get_ethercat_device::<EL7031>(
+                let device = get_ethercat_device::<EL7031_0030>(
                     hardware,
                     params,
                     1,
-                    vec![EL7031_IDENTITY_A, EL7031_IDENTITY_B],
+                    vec![EL7031_0030_IDENTITY_A],
                 ).await?;
 
-                let el7031_config = EL7031Configuration {
-                    stm_features: shared_config::el70x1::StmFeatures {
+                let el7031_config = EL7031_0030Configuration {
+                    stm_features: ethercat_hal::devices::el7031_0030::coe::StmFeatures {
                         operation_mode: EL70x1OperationMode::DirectVelocity,
                         speed_range: shared_config::el70x1::EL70x1SpeedRange::Steps1000,
                         ..Default::default()
@@ -53,9 +54,10 @@ impl MachineNewTrait for BeckhoffMachine {
                         max_current: 1500,
                         ..Default::default()
                     },
-                    pdo_assignment: EL7031PredefinedPdoAssignment::VelocityControlCompact,
+                    pdo_assignment: EL7031_0030PredefinedPdoAssignment::VelocityControlCompact,
                     ..Default::default()
                 };
+
 
                 device
                     .0
@@ -69,7 +71,7 @@ impl MachineNewTrait for BeckhoffMachine {
 
             let motor_driver = StepperVelocityEL70x1::new(
                 el7031.clone(),
-                EL7031StepperPort::STM1
+                EL7031_0030StepperPort::STM1
             );
 
             let (sender, receiver) = smol::channel::unbounded();
@@ -81,7 +83,7 @@ impl MachineNewTrait for BeckhoffMachine {
                 machine_identification_unique: params.get_machine_identification_unique(),
                 namespace: BeckhoffNamespace { namespace: params.namespace.clone() },
                 motor_driver,
-                motor_state: MotorState { enabled: false, target_velocity: 0 },
+                motor_state: MotorState { enabled: true, target_velocity: 100 },
             })
         })
     }

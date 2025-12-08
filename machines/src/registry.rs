@@ -20,6 +20,7 @@ use lazy_static::lazy_static;
 
 use anyhow::Error;
 use std::{any::TypeId, collections::HashMap};
+use crate::ethercat_beckhoff::BeckhoffMachine;
 
 pub type MachineNewClosure =
     Box<dyn Fn(&MachineNewParams) -> Result<Box<dyn Machine>, Error> + Send + Sync>;
@@ -118,6 +119,7 @@ lazy_static! {
         #[cfg(not(feature = "mock-machine"))]
         mc.register::<AquaPathV1>(AquaPathV1::MACHINE_IDENTIFICATION);
         mc.register::<TestMachine>(TestMachine::MACHINE_IDENTIFICATION);
+        mc.register::<BeckhoffMachine>(BeckhoffMachine::MACHINE_IDENTIFICATION);
         mc
     };
 }

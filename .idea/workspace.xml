@@ -32,7 +32,13 @@
     </cargoProject>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="b557d8ff-b48e-4abd-9051-810d7626e7a0" name="Changes" comment="first version of manually running a stepper motor with ethercat beckhoff Ek1100 and EL7031" />
+    <list default="true" id="b557d8ff-b48e-4abd-9051-810d7626e7a0" name="Changes" comment="first version of manually running a stepper motor with ethercat beckhoff Ek1100 and EL7031">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/electron/src/machines/properties.ts" beforeDir="false" afterPath="$PROJECT_DIR$/electron/src/machines/properties.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ethercat-hal/src/devices/el7031_0030/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/ethercat-hal/src/devices/el7031_0030/mod.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/machines/src/ethercat_beckhoff/new.rs" beforeDir="false" afterPath="$PROJECT_DIR$/machines/src/ethercat_beckhoff/new.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/machines/src/registry.rs" beforeDir="false" afterPath="$PROJECT_DIR$/machines/src/registry.rs" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -95,7 +101,7 @@
     &quot;org.rust.first.attach.projects&quot;: &quot;true&quot;,
     &quot;settings.editor.selected.configurable&quot;: &quot;language.rust.cargo.check&quot;,
     &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;,
-    &quot;ts.external.directory.path&quot;: &quot;/home/qitech/.local/share/JetBrains/Toolbox/apps/rustrover/plugins/javascript-plugin/jsLanguageServicesImpl/external&quot;,
+    &quot;ts.external.directory.path&quot;: &quot;/home/qitech/Schreibtisch/QiTechCode/electron/node_modules/typescript/lib&quot;,
     &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
 }</component>
@@ -154,7 +160,7 @@
       <workItem from="1764602516828" duration="3511000" />
       <workItem from="1764835841699" duration="17177000" />
       <workItem from="1764855409743" duration="6929000" />
-      <workItem from="1765181417421" duration="3914000" />
+      <workItem from="1765181417421" duration="9425000" />
     </task>
     <task id="LOCAL-00001" summary="first version of manually running a stepper motor with ethercat beckhoff Ek1100 and EL7031">
       <option name="closed" value="true" />
