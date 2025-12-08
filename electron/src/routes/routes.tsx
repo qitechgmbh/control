@@ -56,6 +56,8 @@ import { Aquapath1GraphPage } from "@/machines/aquapath/aquapath1/Aquapath1Graph
 import { TestMachinePage } from "@/machines/testmachine/TestMachinePage";
 import { TestMachineControlPage } from "@/machines/testmachine/TestMachineControlPage";
 import { Laser1PresetsPage } from "@/machines/laser/laser1/Laser1PresetsPage";
+import { TestMotorPage } from "@/machines/ethercat_beckhoff/TestMotorPage";
+import { TestMotorControlPage } from "@/machines/ethercat_beckhoff/TestMotorControlPage";
 
 import { MetricsGraphsPage } from "@/metrics/MetricsGraphsPage";
 import { MetricsControlPage } from "@/metrics/MetricsControlPage";
@@ -79,6 +81,19 @@ export const testMachineControlRoute = createRoute({
   path: "control",
   component: () => <TestMachineControlPage />,
 });
+
+export const testMotorSerialRoute = createRoute({
+  getParentRoute: () => machinesRoute,
+  path: "testmotor/$serial",
+  component: () => <TestMotorPage />,
+});
+
+export const testMotorControlRoute = createRoute({
+  getParentRoute: () => testMotorSerialRoute,
+  path: "control",
+  component: () => <TestMotorControlPage />,
+});
+
 
 export const sidebarRoute = createRoute({
   getParentRoute: () => RootRoute,
@@ -390,7 +405,10 @@ export const rootTree = RootRoute.addChildren([
         laser1GraphsRoute,
         laser1PresetsRoute,
       ]),
+
       testMachineSerialRoute.addChildren([testMachineControlRoute]),
+
+      testMotorSerialRoute.addChildren([testMotorControlRoute]),
 
       aquapath1SerialRoute.addChildren([
         aquapath1ControlRoute,
