@@ -1,4 +1,65 @@
-![Titelseite,screenshot from Word doccument](images/manuals/extruder/Titelseite.jpeg)
+![Titelseite,screenshot from Word doccument](/images/manuals/extruder/Titelseite.jpeg)
+
+<!-- Datasheet: Added below Titelseite. Placeholder images to be replaced with final exports. -->
+
+# QiTech Pro Extruder – Datasheet
+
+![Datasheet Header](/images/manuals/extruder/datasheet/header.png)
+
+## Included Assemblies
+Electrical cabinet · Temperature controller · Frequency inverter · Cable routing + connection to QiTech Control (digital control)
+
+## Motor
+| Specification | Value |
+| ------------- | ----- |
+| Motor power | 1.5 kW |
+| Output speed | 41 rpm |
+| Output torque | 336 Nm |
+| Transmission ratio | 34:2 |
+| Service factor cG | 1.4 |
+| Voltage / Frequency | 400 V / 50 Hz |
+| Efficiency class | IE3 (Premium Efficiency) |
+| Efficiency @ 100% rated load / % rated current (std. voltage) | 5.98 / 3.45 A |
+| Protection class | IP55, Insulation class F |
+| Construction design | Flange design, terminal box top |
+| Shaft end (d×L) | 40 × 80 mm |
+
+## Melt Pressure Sensor (DSI1-1/2-500-F-15)
+| Specification | Value |
+| ------------- | ----- |
+| Output signal | 4–20 mA (2-conductor) |
+| Sensor system | Mercury-free |
+| Sensor | DMS Vollbrückentechnik |
+| Measuring accuracy | 0.5 % |
+| Calibration signal | 80 % |
+| Supply voltage | 15–32 VDC |
+| Measuring range | 0–500 bar |
+| Temperature range (membrane) | max. 410 °C |
+| Temperature range (sensor head) | max. 85 °C |
+| Screw-in thread | 1/2"–20 UNF |
+
+## Extruder Barrel & Screw
+Nitrided extruder barrel (Ø 65 mm). Screw hardened from high‑alloyed steel (Ø 25 mm).
+
+## Heating Elements & Temperature Sensors
+3 heating zones (max. 350 °C), Heater 415 V, 3 × 750 W. 3× Type K temperature sensors, 1/8" NPT.
+
+## Hopper
+Volume: 4 L · Material: Aluminum · Easily detachable.
+
+## Dimensions
+
+![Dimensions](/images/manuals/extruder/datasheet/dimensions.png)
+
+Overall length 1365 mm · Width 220 mm · Height 384 mm.
+
+Fully wired and assembled (raised on 2 aluminum profiles).
+
+Delivery time after completion: 2–5 working days.
+
+Warranty: 24 months after delivery (excluding wearing parts).
+
+<br>
 
 <br>
 
@@ -55,7 +116,7 @@ Darmstadt, 10/06/2025
 
 64392 Darmstadt,
 
-<img src="images/manuals/extruder/signature.jpeg" width="300" height="60"/>
+<img src="/images/manuals/extruder/signature.jpeg" width="300" height="60"/>
 
 Milan von dem Bussche
 
@@ -101,7 +162,7 @@ Operating instructions
 
 # 1 Machine description
 
-![maschinenbeschreibung](images/manuals/extruder/description.jpeg)
+![maschinenbeschreibung](/images/manuals/extruder/description.jpeg)
 
 <br><br><br>
 
@@ -168,7 +229,7 @@ Accuracy class: 2
 
 | Picture                                       | Danger!                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| ![Warning](images/manuals/extruder/w001.jpeg) | **Danger to life due to technically faulty machine.** <br> The machine may only be used when it is in perfect technical condition and in accordance with its intended use, in a safety-conscious and hazard-conscious manner and in compliance with these operating instructions. All faults, especially those that could impair safety, must be rectified immediately before starting the winder. Everyone who works on or with the Qitech Winder is responsible for observing these safety aspects! |
+| ![Warning](/images/manuals/extruder/w001.jpeg) | **Danger to life due to technically faulty machine.** <br> The machine may only be used when it is in perfect technical condition and in accordance with its intended use, in a safety-conscious and hazard-conscious manner and in compliance with these operating instructions. All faults, especially those that could impair safety, must be rectified immediately before starting the winder. Everyone who works on or with the Qitech Winder is responsible for observing these safety aspects! |
 
 <br><br><br>
 
@@ -176,17 +237,17 @@ Accuracy class: 2
 
 | Pictogram                                  | Description of pictogram                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | Pictogram                                  | Pictogram Description                                                                                                                                                                                                    |
 | ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| ![w001](images/manuals/extruder/w001.jpeg) | W001 General warning sign The combination of the symbol W001 and the signal word **"Danger"** indicates an imminently hazardous situation which, if not avoided death or serious injury if it is not avoided. The combination of the symbol W001 and the signal word **"Warning"** indicates an imminently hazardous situation which, if not avoided, will result in death or serious injury. death or serious injury if it is not avoided. The combination of the symbol W001 and the signal word **"Caution"** indicates an imminently hazardous situation which, if not avoided death or serious injury if not avoided. | ![m001](images/manuals/extruder/m001.jpeg) | M001 General warning sign Mandatory sign This combination of symbol and signal word indicates a potentially hazardous situation which, if not avoided, may result in damage to property or the environment. not avoided. |
-| ![w008](images/manuals/extruder/w008.jpeg) | W008 Warning of risk of falling                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | ![m003](images/manuals/extruder/m003.jpeg) | M003 Use hearing protection                                                                                                                                                                                              |
-| ![w011](images/manuals/extruder/w011.jpeg) | W011 Warning of danger of slipping                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | ![m004](images/manuals/extruder/m004.jpeg) | M004 Use eye protection                                                                                                                                                                                                  |
-| ![w004](images/manuals/extruder/w004.jpeg) | W004 Warning of laser beam                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | ![m008](images/manuals/extruder/m008.jpeg) | M008 Use foot protection                                                                                                                                                                                                 |
-| ![w012](images/manuals/extruder/w012.jpeg) | W012 Warning of electrical voltage                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | ![m009](images/manuals/extruder/m009.jpeg) | M009 Use hand protection                                                                                                                                                                                                 |
-| ![w017](images/manuals/extruder/w017.jpeg) | W017 Warning of hot surface                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | ![m010](images/manuals/extruder/m010.jpeg) | M010 Use protective clothing                                                                                                                                                                                             |
-| ![w018](images/manuals/extruder/w018.jpeg) | W018 Warning against automatic start-up                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | ![m012](images/manuals/extruder/m012.jpeg) | M012 Use handrail                                                                                                                                                                                                        |
-| ![w019](images/manuals/extruder/w019.jpeg) | W019 Warning of crushing hazard                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | ![m021](images/manuals/extruder/m021.jpeg) | M021 Switch off before maintenance or repair                                                                                                                                                                             |
-| ![w024](images/manuals/extruder/w024.jpeg) | W024 Warning against hand injuries                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | ![m014](images/manuals/extruder/m014.jpeg) | M014 Use head protection                                                                                                                                                                                                 |
-| ![w025](images/manuals/extruder/w025.jpeg) | W025 Warning against counter-rotating rollers                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |                                            |                                                                                                                                                                                                                          |
-| ![w016](images/manuals/extruder/w016.jpeg) | W016 Warning of toxic substances                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |                                            |                                                                                                                                                                                                                          |
+| ![w001](/images/manuals/extruder/w001.jpeg) | W001 General warning sign The combination of the symbol W001 and the signal word **"Danger"** indicates an imminently hazardous situation which, if not avoided death or serious injury if it is not avoided. The combination of the symbol W001 and the signal word **"Warning"** indicates an imminently hazardous situation which, if not avoided, will result in death or serious injury. death or serious injury if it is not avoided. The combination of the symbol W001 and the signal word **"Caution"** indicates an imminently hazardous situation which, if not avoided death or serious injury if not avoided. | ![m001](/images/manuals/extruder/m001.jpeg) | M001 General warning sign Mandatory sign This combination of symbol and signal word indicates a potentially hazardous situation which, if not avoided, may result in damage to property or the environment. not avoided. |
+| ![w008](/images/manuals/extruder/w008.jpeg) | W008 Warning of risk of falling                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | ![m003](/images/manuals/extruder/m003.jpeg) | M003 Use hearing protection                                                                                                                                                                                              |
+| ![w011](/images/manuals/extruder/w011.jpeg) | W011 Warning of danger of slipping                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | ![m004](/images/manuals/extruder/m004.jpeg) | M004 Use eye protection                                                                                                                                                                                                  |
+| ![w004](/images/manuals/extruder/w004.jpeg) | W004 Warning of laser beam                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | ![m008](/images/manuals/extruder/m008.jpeg) | M008 Use foot protection                                                                                                                                                                                                 |
+| ![w012](/images/manuals/extruder/w012.jpeg) | W012 Warning of electrical voltage                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | ![m009](/images/manuals/extruder/m009.jpeg) | M009 Use hand protection                                                                                                                                                                                                 |
+| ![w017](/images/manuals/extruder/w017.jpeg) | W017 Warning of hot surface                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | ![m010](/images/manuals/extruder/m010.jpeg) | M010 Use protective clothing                                                                                                                                                                                             |
+| ![w018](/images/manuals/extruder/w018.jpeg) | W018 Warning against automatic start-up                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | ![m012](/images/manuals/extruder/m012.jpeg) | M012 Use handrail                                                                                                                                                                                                        |
+| ![w019](/images/manuals/extruder/w019.jpeg) | W019 Warning of crushing hazard                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | ![m021](/images/manuals/extruder/m021.jpeg) | M021 Switch off before maintenance or repair                                                                                                                                                                             |
+| ![w024](/images/manuals/extruder/w024.jpeg) | W024 Warning against hand injuries                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | ![m014](/images/manuals/extruder/m014.jpeg) | M014 Use head protection                                                                                                                                                                                                 |
+| ![w025](/images/manuals/extruder/w025.jpeg) | W025 Warning against counter-rotating rollers                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |                                            |                                                                                                                                                                                                                          |
+| ![w016](/images/manuals/extruder/w016.jpeg) | W016 Warning of toxic substances                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |                                            |                                                                                                                                                                                                                          |
 
 <br><br><br>
 
@@ -194,15 +255,15 @@ Accuracy class: 2
 
 | Prohibition signs Pictogram                                               | Pictogram description                                                                   | International pictograms / other Pictogram                                               | Pictogram Description                                                       |
 | ------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| <img src="images/manuals/extruder/p001.jpeg" width="158" height="158"/>   | P001 General prohibition sign                                                           | <img src="images/manuals/extruder/f001.jpeg" width="158" height="158">                   | F001 Fire extinguisher                                                      |
-| <img src="images/manuals/extruder/p002.jpeg" width="158" height="158"/>   | P002 No smoking                                                                         | <img src="images/manuals/extruder/ANIS_danger.jpeg" width="232" height="60">             | ANSI Z535.3 - DANGER                                                        |
-| <img src="images/manuals/extruder/p003.jpeg" width="158" height="158"/>   | P003 No open flames; fire, open source of ignition and smoking prohibited               | <img src="images/manuals/extruder/ANIS_warning.jpeg" width="232" height="60">            | ANSI Z535.3 - WARNING                                                       |
-| <img src="images/manuals/extruder/p006.jpeg" width="158" height="158"/>   | P006 Prohibited for industrial trucks                                                   | <img src="images/manuals/extruder/ANIS_caution.jpeg" width="232" height="60">            | ANSI Z535.3 - CAUTION                                                       |
-| <img src="images/manuals/extruder/p009.jpeg" width="158" height="158"/>   | P009 Climbing prohibited - In the sense of climbing prohibited for unauthorized persons | <img src="images/manuals/extruder/ANIS_notice.jpeg" width="232" height="60">             | ANSI Z535.3 - NOTICE                                                        |
-| <img src="images/manuals/extruder/p022.jpeg" width="158" height="158"/>   | P022 Eating and drinking prohibited                                                     | <img src="images/manuals/extruder/ANIS_safetyinstructions.jpeg" width="232" height="60"> | ANSI Z535.3 - SAFETY INSTRUCTIONS                                           |
-| <img src="images/manuals/extruder/p024.jpeg" width="158" height="158"/>   | P024 Entering the area prohibited                                                       | <img src="images/manuals/extruder/trashcan.jpeg" width="158" height="158">               | Symbol for separate collection of waste electrical and electronic equipment |
-| <img src="images/manuals/extruder/p031.jpeg" width="158" height="158"/>   | P031 Switching prohibited                                                               |                                                                                          |                                                                             |
-| <img src="images/manuals/extruder/D-p006.jpeg" width="158" height="158"/> | D-P006 Access prohibited for unauthorized persons                                       |                                                                                          |                                                                             |
+| <img src="/images/manuals/extruder/p001.jpeg" width="158" height="158"/>   | P001 General prohibition sign                                                           | <img src="/images/manuals/extruder/f001.jpeg" width="158" height="158">                   | F001 Fire extinguisher                                                      |
+| <img src="/images/manuals/extruder/p002.jpeg" width="158" height="158"/>   | P002 No smoking                                                                         | <img src="/images/manuals/extruder/ANIS_danger.jpeg" width="232" height="60">             | ANSI Z535.3 - DANGER                                                        |
+| <img src="/images/manuals/extruder/p003.jpeg" width="158" height="158"/>   | P003 No open flames; fire, open source of ignition and smoking prohibited               | <img src="/images/manuals/extruder/ANIS_warning.jpeg" width="232" height="60">            | ANSI Z535.3 - WARNING                                                       |
+| <img src="/images/manuals/extruder/p006.jpeg" width="158" height="158"/>   | P006 Prohibited for industrial trucks                                                   | <img src="/images/manuals/extruder/ANIS_caution.jpeg" width="232" height="60">            | ANSI Z535.3 - CAUTION                                                       |
+| <img src="/images/manuals/extruder/p009.jpeg" width="158" height="158"/>   | P009 Climbing prohibited - In the sense of climbing prohibited for unauthorized persons | <img src="/images/manuals/extruder/ANIS_notice.jpeg" width="232" height="60">             | ANSI Z535.3 - NOTICE                                                        |
+| <img src="/images/manuals/extruder/p022.jpeg" width="158" height="158"/>   | P022 Eating and drinking prohibited                                                     | <img src="/images/manuals/extruder/ANIS_safetyinstructions.jpeg" width="232" height="60"> | ANSI Z535.3 - SAFETY INSTRUCTIONS                                           |
+| <img src="/images/manuals/extruder/p024.jpeg" width="158" height="158"/>   | P024 Entering the area prohibited                                                       | <img src="/images/manuals/extruder/trashcan.jpeg" width="158" height="158">               | Symbol for separate collection of waste electrical and electronic equipment |
+| <img src="/images/manuals/extruder/p031.jpeg" width="158" height="158"/>   | P031 Switching prohibited                                                               |                                                                                          |                                                                             |
+| <img src="/images/manuals/extruder/D-p006.jpeg" width="158" height="158"/> | D-P006 Access prohibited for unauthorized persons                                       |                                                                                          |                                                                             |
 
 <br><br><br>
 
@@ -275,7 +336,7 @@ The machine has a main switch that disconnects/connects the mains supply. The ON
 
 The emergency stop switch is used to quickly stop the machine in the event of danger. This is designed with redundant emergency stop contactors. An emergency stop switching device also prevents the machine from being switched on again after a power failure. By activating the emergency stop device, the entire machine is shut down and disconnected from the mains supply.
 
-![emergency stop button / switch](images/manuals/extruder/emergency_stop.jpeg)
+![emergency stop button / switch](/images/manuals/extruder/emergency_stop.jpeg)
 
 Hazardous movements are brought to a controlled standstill as quickly as possible. The machine can only be restarted by physically resetting the emergency stop switch and then starting one of the operating modes in the software.
 
@@ -357,11 +418,11 @@ Depending on the activity or the duration of the activity, the operator must det
 <br><br>
 | Picture | Danger |
 |---------|--------|
-| ![Warning](images/manuals/extruder/w001.jpeg)|**Risk of injury due to improper transport** <br> Be careful when loading the machine, do not place any limbs under the parts when setting them down, do not stand under suspended loads or between moving loads and walls or machine parts. Wear personal protective equipment: safety shoes, protective work clothing, protective gloves.
+| ![Warning](/images/manuals/extruder/w001.jpeg)|**Risk of injury due to improper transport** <br> Be careful when loading the machine, do not place any limbs under the parts when setting them down, do not stand under suspended loads or between moving loads and walls or machine parts. Wear personal protective equipment: safety shoes, protective work clothing, protective gloves.
 
 | Picture                                       | Caution!                                                                                                                                                                                                                                                                    |
 | --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| ![Warning](images/manuals/extruder/w001.jpeg) | **Danger to life due to incorrect installation and commissioning!** <brErrors during installation can lead to life-threatening situations or cause considerable damage to property. Installation and commissioning may only be carried out by the manufacturer's employees. |
+| ![Warning](/images/manuals/extruder/w001.jpeg) | **Danger to life due to incorrect installation and commissioning!** <brErrors during installation can lead to life-threatening situations or cause considerable damage to property. Installation and commissioning may only be carried out by the manufacturer's employees. |
 
 <br>
 <br>
@@ -390,7 +451,7 @@ The CEE plug of the extruder must be plugged into a suitable three-phase socket 
 
 The machines are delivered with the newest version of the software installed. Updates, as well as previous updates and the software version can be viewed under Setup-> Updates. If a new version of the software is available, it will be displayed here. To perform the update an internet connection is required. In the next step, click the red "Select" button next to the chosen update. The display will now shut down, and when it is turned back on, the latest version of the software will be installed.
 
-![screenshot updates](images/manuals/extruder/screenshot_updates.png)
+![screenshot updates](/images/manuals/extruder/screenshot_updates.png)
 
 <br>
 
@@ -431,7 +492,7 @@ Then start the machine as follows:
 - Set the “target temperature” of the individual heating zones according to the melting material in the 3 input fields
 - Set the “target temperature” of the nozzle
 - After reaching the target temperature, wait 15 minutes until the machine has heated through and the plastic in the screw barrel has completely melted.
-  ![Screenshot: set traget temperature](images/manuals/extruder/screenshot_adjust_heat.png)
+  ![Screenshot: set traget temperature](/images/manuals/extruder/screenshot_adjust_heat.png)
 
 <br>
 
@@ -443,7 +504,7 @@ Then start the machine as follows:
 - Press the "Extrude" button in the “mode” box
 - Wait until old melt has been "flushed" out of the extruder, i.e. no more discolouration of the filament is no longer discoloured and a constant material flow has been achieved
 
-![screenshot: adjust screw speed](images/manuals/extruder/screenshot_extruder_adjustscrew_speed.png)
+![screenshot: adjust screw speed](/images/manuals/extruder/screenshot_extruder_adjustscrew_speed.png)
 
 <br>
 
@@ -471,7 +532,7 @@ Then start the machine as follows:
 - Go to "Config" in the funktion bar
 - To set the screw direction click on "Forward" or "Backward" in the "Invert settings" box
 
-![Changing screrw direction](images/manuals/extruder/screenshot_config.png)
+![Changing screrw direction](/images/manuals/extruder/screenshot_config.png)
 
 <br>
 
@@ -495,7 +556,7 @@ Then start the machine as follows:
 
 | Picture                                       | DANGER!                                                                                                                                                                                                                                                                  |
 | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| ![Warning](images/manuals/extruder/w001.jpeg) | **Danger to life due to operation of the machine in a faulty condition.** <br> If safety-relevant changes or defects occur on the machine, shut it down immediately, secure it against being switched on again and report the incident to the responsible office/person! |
+| ![Warning](/images/manuals/extruder/w001.jpeg) | **Danger to life due to operation of the machine in a faulty condition.** <br> If safety-relevant changes or defects occur on the machine, shut it down immediately, secure it against being switched on again and report the incident to the responsible office/person! |
 
 <br>
 <br>
@@ -533,11 +594,11 @@ If further work is necessary, such as replacing the extruder screw, please conta
 
 | Picture                                       | Caution!                                                                      |
 | --------------------------------------------- | ----------------------------------------------------------------------------- |
-| ![Warning](images/manuals/extruder/w001.jpeg) | **Observe the instructions for maintenance work when servicing the machine!** |
+| ![Warning](/images/manuals/extruder/w001.jpeg) | **Observe the instructions for maintenance work when servicing the machine!** |
 
 | Picture                                       | Caution!                                                                                                                           |
 | --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| ![Warning](images/manuals/extruder/w001.jpeg) | **Risk of screw breakage if disassembled while hot!** <br> Screw connections may only be loosened when the system has cooled down. |
+| ![Warning](/images/manuals/extruder/w001.jpeg) | **Risk of screw breakage if disassembled while hot!** <br> Screw connections may only be loosened when the system has cooled down. |
 
 <br>
 <br>
@@ -620,15 +681,15 @@ Appliances with this logo on the packaging or on the appliance must be disposed 
 
 | Picture                                                                 | Danger!                                                                                                                                                                                                                                                                                                                   |
 | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| <img src="images/manuals/extruder/w001.jpeg" width="150" height="150"/> | **Danger of getting caught, pulled in or pulled along by moving parts of the machine** <br> Do not wear loose long hair, loose clothing or jewelry! There is always a risk of getting caught, pulled in or pulled along by moving parts!                                                                                  |
-| <img src="images/manuals/extruder/w001.jpeg" width="150" height="150"/> | **Operation only permitted with protective devices fitted!** <br> The extruder may only be operated with properly fitted and functioning safety guards. The operator is responsible for ensuring that all protective devices are properly fitted.                                                                         |
-| <img src="images/manuals/extruder/w001.jpeg" width="150" height="150"/> | **Danger of cutting tensioned filament** <br> The stretched filament must not be touched between the puller and the spool. Danger of cutting! Do not wind any pointed, sharp-edged or particularly thin materials!                                                                                                        |
-| <img src="images/manuals/extruder/w012.jpeg" width="150" height="150"/> | **Electric shock** <br> Before carrying out any repair, set-up or maintenance work, the extruder must be de-energised by disconnecting the mains plug! Pull out the mains plug!                                                                                                                                           |
-| <img src="images/manuals/extruder/w012.jpeg" width="150" height="150"/> | **Electrostatic charges on the puller and spool** <br> Friction of the filament on the puller rollers and on the spool can lead to electrostatic charges. There is a risk of minor electric shocks! Do not touch the affected areas, but keep a sufficient distance!                                                      |
-| <img src="images/manuals/extruder/w018.jpeg" width="150" height="150"/> | **Automatic speed adjustment of puller, reel and traverse** <br> The bobbin automatically adjusts its speed to keep the winding pressure constant. The traverse automatically adjusts its speed to the reel in order to maintain the same travel distance per revolution.                                                 |
-| <img src="images/manuals/extruder/w025.jpeg" width="150" height="150"/> | **Feeding of body parts** <br> Extreme caution is required in the area of the puller and spool axle! There is an acute danger of getting caught or pulled in! Make sure you wear close-fitting clothing! Always keep the emergency stop switch within easy reach so that it can be activated immediately in an emergency. |
-| <img src="images/manuals/extruder/w024.jpeg" width="150" height="150"/> | **Risk of crushing when threading the filament** <br> Exercise extreme caution when threading the filament through the puller rollers! There is a risk of crushing between the upper and lower pair of rollers.                                                                                                           |
-| <img src="images/manuals/extruder/w024.jpeg" width="150" height="150"/> | **Risk of crushing between the traversing unit and machine housing** <br> Exercise extreme caution when moving the traverser towards the housing! Do not place any limbs in the gap!                                                                                                                                      |
+| <img src="/images/manuals/extruder/w001.jpeg" width="150" height="150"/> | **Danger of getting caught, pulled in or pulled along by moving parts of the machine** <br> Do not wear loose long hair, loose clothing or jewelry! There is always a risk of getting caught, pulled in or pulled along by moving parts!                                                                                  |
+| <img src="/images/manuals/extruder/w001.jpeg" width="150" height="150"/> | **Operation only permitted with protective devices fitted!** <br> The extruder may only be operated with properly fitted and functioning safety guards. The operator is responsible for ensuring that all protective devices are properly fitted.                                                                         |
+| <img src="/images/manuals/extruder/w001.jpeg" width="150" height="150"/> | **Danger of cutting tensioned filament** <br> The stretched filament must not be touched between the puller and the spool. Danger of cutting! Do not wind any pointed, sharp-edged or particularly thin materials!                                                                                                        |
+| <img src="/images/manuals/extruder/w012.jpeg" width="150" height="150"/> | **Electric shock** <br> Before carrying out any repair, set-up or maintenance work, the extruder must be de-energised by disconnecting the mains plug! Pull out the mains plug!                                                                                                                                           |
+| <img src="/images/manuals/extruder/w012.jpeg" width="150" height="150"/> | **Electrostatic charges on the puller and spool** <br> Friction of the filament on the puller rollers and on the spool can lead to electrostatic charges. There is a risk of minor electric shocks! Do not touch the affected areas, but keep a sufficient distance!                                                      |
+| <img src="/images/manuals/extruder/w018.jpeg" width="150" height="150"/> | **Automatic speed adjustment of puller, reel and traverse** <br> The bobbin automatically adjusts its speed to keep the winding pressure constant. The traverse automatically adjusts its speed to the reel in order to maintain the same travel distance per revolution.                                                 |
+| <img src="/images/manuals/extruder/w025.jpeg" width="150" height="150"/> | **Feeding of body parts** <br> Extreme caution is required in the area of the puller and spool axle! There is an acute danger of getting caught or pulled in! Make sure you wear close-fitting clothing! Always keep the emergency stop switch within easy reach so that it can be activated immediately in an emergency. |
+| <img src="/images/manuals/extruder/w024.jpeg" width="150" height="150"/> | **Risk of crushing when threading the filament** <br> Exercise extreme caution when threading the filament through the puller rollers! There is a risk of crushing between the upper and lower pair of rollers.                                                                                                           |
+| <img src="/images/manuals/extruder/w024.jpeg" width="150" height="150"/> | **Risk of crushing between the traversing unit and machine housing** <br> Exercise extreme caution when moving the traverser towards the housing! Do not place any limbs in the gap!                                                                                                                                      |
 
 <br>
 <br>
@@ -674,7 +735,7 @@ The following persons must not work on the machine:
 
 | Picture                                                                                                                 | DANGER!                                                                                                                                  |
 | ----------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| ![Warning](images/manuals/extruder/w001.jpeg)                                                                           | **Risk of injury due to insufficient qualification!** Improper handling can lead to considerable personal injury and damage to property. |
+| ![Warning](/images/manuals/extruder/w001.jpeg)                                                                           | **Risk of injury due to insufficient qualification!** Improper handling can lead to considerable personal injury and damage to property. |
 | - Special activities may only be carried out by the persons specified in the respective chapters of these instructions. |
 
 <br>
@@ -703,24 +764,24 @@ The following persons must not work on the machine:
 
 ## Electrical Diagrams
 
-![QiTech Pro Extruder Electrical Diagram 2025 - Sheet 1](images/manuals/extruder/QiTech_Pro_Extruder_Electrical_Diagram_2025-001.png)
+![QiTech Pro Extruder Electrical Diagram 2025 - Sheet 1](/images/manuals/extruder/QiTech_Pro_Extruder_Electrical_Diagram_2025-001.png)
 
-![QiTech Pro Extruder Electrical Diagram 2025 - Sheet 2](images/manuals/extruder/QiTech_Pro_Extruder_Electrical_Diagram_2025_2-002.png)
+![QiTech Pro Extruder Electrical Diagram 2025 - Sheet 2](/images/manuals/extruder/QiTech_Pro_Extruder_Electrical_Diagram_2025_2-002.png)
 
-![QiTech Pro Extruder Electrical Diagram 2025 - Sheet 3](images/manuals/extruder/QiTech_Pro_Extruder_Electrical_Diagram_2025_3-003.png)
+![QiTech Pro Extruder Electrical Diagram 2025 - Sheet 3](/images/manuals/extruder/QiTech_Pro_Extruder_Electrical_Diagram_2025_3-003.png)
 
-![QiTech Pro Extruder Electrical Diagram 2025 - Sheet 4](images/manuals/extruder/QiTech_Pro_Extruder_Electrical_Diagram_2025_4-004.png)
+![QiTech Pro Extruder Electrical Diagram 2025 - Sheet 4](/images/manuals/extruder/QiTech_Pro_Extruder_Electrical_Diagram_2025_4-004.png)
 
-![QiTech Pro Extruder Electrical Diagram 2025 - Sheet 5](images/manuals/extruder/QiTech_Pro_Extruder_Electrical_Diagram_2025_5-005.png)
+![QiTech Pro Extruder Electrical Diagram 2025 - Sheet 5](/images/manuals/extruder/QiTech_Pro_Extruder_Electrical_Diagram_2025_5-005.png)
 
-![QiTech Pro Extruder Electrical Diagram 2025 - Sheet 6](images/manuals/extruder/QiTech_Pro_Extruder_Electrical_Diagram_2025_6-006.png)
+![QiTech Pro Extruder Electrical Diagram 2025 - Sheet 6](/images/manuals/extruder/QiTech_Pro_Extruder_Electrical_Diagram_2025_6-006.png)
 
-![QiTech Pro Extruder Electrical Diagram 2025 - Sheet 7](images/manuals/extruder/QiTech_Pro_Extruder_Electrical_Diagram_2025_7-007.png)
+![QiTech Pro Extruder Electrical Diagram 2025 - Sheet 7](/images/manuals/extruder/QiTech_Pro_Extruder_Electrical_Diagram_2025_7-007.png)
 
-![QiTech Pro Extruder Electrical Diagram 2025 - Sheet 8](images/manuals/extruder/QiTech_Pro_Extruder_Electrical_Diagram_2025_8-008.png)
+![QiTech Pro Extruder Electrical Diagram 2025 - Sheet 8](/images/manuals/extruder/QiTech_Pro_Extruder_Electrical_Diagram_2025_8-008.png)
 
-![QiTech Pro Extruder Electrical Diagram 2025 - Sheet 9](images/manuals/extruder/QiTech_Pro_Extruder_Electrical_Diagram_2025_9-009.png)
+![QiTech Pro Extruder Electrical Diagram 2025 - Sheet 9](/images/manuals/extruder/QiTech_Pro_Extruder_Electrical_Diagram_2025_9-009.png)
 
 ## Mechanical Diagrams
 
-![QiTech Pro Extruder Nozzle 2025](images/manuals/extruder/Nozzle.png)
+![QiTech Pro Extruder Nozzle 2025](/images/manuals/extruder/Nozzle.png)
