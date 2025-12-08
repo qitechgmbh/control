@@ -32,11 +32,8 @@
     </cargoProject>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="b557d8ff-b48e-4abd-9051-810d7626e7a0" name="Changes" comment="stepper motor with ethercat beckhoff Ek1100 and EL7031 works">
+    <list default="true" id="b557d8ff-b48e-4abd-9051-810d7626e7a0" name="Changes" comment="stepper motor with ethercat beckhoff Ek1100 and EL7031 0030 + UI works">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/electron/src/routes/routes.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/electron/src/routes/routes.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/machines/src/ethercat_beckhoff/act.rs" beforeDir="false" afterPath="$PROJECT_DIR$/machines/src/ethercat_beckhoff/act.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/machines/src/ethercat_beckhoff/api.rs" beforeDir="false" afterPath="$PROJECT_DIR$/machines/src/ethercat_beckhoff/api.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -167,7 +164,7 @@
       <workItem from="1764602516828" duration="3511000" />
       <workItem from="1764835841699" duration="17177000" />
       <workItem from="1764855409743" duration="6929000" />
-      <workItem from="1765181417421" duration="21524000" />
+      <workItem from="1765181417421" duration="22476000" />
     </task>
     <task id="LOCAL-00001" summary="first version of manually running a stepper motor with ethercat beckhoff Ek1100 and EL7031">
       <option name="closed" value="true" />
@@ -185,7 +182,15 @@
       <option name="project" value="LOCAL" />
       <updated>1765191111247</updated>
     </task>
-    <option name="localTasksCounter" value="3" />
+    <task id="LOCAL-00003" summary="stepper motor with ethercat beckhoff Ek1100 and EL7031 0030 + UI works">
+      <option name="closed" value="true" />
+      <created>1765209789314</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1765209789314</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -194,7 +199,8 @@
   <component name="VcsManagerConfiguration">
     <MESSAGE value="first version of manually running a stepper motor with ethercat beckhoff Ek1100 and EL7031" />
     <MESSAGE value="stepper motor with ethercat beckhoff Ek1100 and EL7031 works" />
-    <option name="LAST_COMMIT_MESSAGE" value="stepper motor with ethercat beckhoff Ek1100 and EL7031 works" />
+    <MESSAGE value="stepper motor with ethercat beckhoff Ek1100 and EL7031 0030 + UI works" />
+    <option name="LAST_COMMIT_MESSAGE" value="stepper motor with ethercat beckhoff Ek1100 and EL7031 0030 + UI works" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />
