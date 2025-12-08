@@ -46,7 +46,7 @@ impl MachineNewTrait for XtremZebra {
             let digital_out_1 = DigitalOutput::new(el2004.clone(), EL2004Port::DO1); // Green Light
             let digital_out_2 = DigitalOutput::new(el2004.clone(), EL2004Port::DO2); // Yellow Light
             let digital_out_3 = DigitalOutput::new(el2004.clone(), EL2004Port::DO3); // Red Light
-            let _digital_out_4 = DigitalOutput::new(el2004.clone(), EL2004Port::DO4); // ?
+            let digital_out_4 = DigitalOutput::new(el2004.clone(), EL2004Port::DO4); // ?
 
             let (sender, receiver) = smol::channel::unbounded();
 
@@ -79,6 +79,7 @@ impl MachineNewTrait for XtremZebra {
                     green_light: digital_out_1,
                     yellow_light: digital_out_2,
                     red_light: digital_out_3,
+                    beeper: digital_out_4,
                 },
             };
             Ok(xtrem_zebra_machine)

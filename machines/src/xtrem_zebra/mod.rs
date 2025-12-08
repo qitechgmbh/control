@@ -160,7 +160,7 @@ impl XtremZebra {
         if !self.in_accumulation && was_zero {
             self.in_accumulation = true;
             self.cycle_max_weight = new_weight;
-            self.signal_light.yellow_light.set(true);
+            //self.signal_light.yellow_light.set(true);
         }
 
         // Inside cycle
@@ -243,6 +243,9 @@ impl XtremZebra {
         self.plate1_counter = 0;
         self.plate2_counter = 0;
         self.plate3_counter = 0;
+        self.signal_light
+            .beeper
+            .set(!self.signal_light.beeper.get());
         self.emit_state();
     }
 
@@ -258,4 +261,5 @@ struct SignalLight {
     green_light: DigitalOutput,
     yellow_light: DigitalOutput,
     red_light: DigitalOutput,
+    beeper: DigitalOutput,
 }

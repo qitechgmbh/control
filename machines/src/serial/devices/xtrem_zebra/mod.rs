@@ -235,7 +235,7 @@ impl XtremSerial {
                             match id_str.parse::<u8>() {
                                 std::result::Result::Ok(_) => {
                                     let weight = XtremFrame::parse_weight_from_response(&buf[..n]);
-                                    println!("Weight: {}", weight);
+                                    println!("Weight: {}:: From Reply: {}", weight, received_count);
                                     total_weight += weight;
                                     received_count += 1;
                                 }
