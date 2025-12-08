@@ -60,6 +60,8 @@ import { AnalogInputTestMachine } from "@/machines/analoginputtestmachine/Analog
 import { AnalogInputTestMachineControl } from "@/machines/analoginputtestmachine/AnalogInputTestMachineControlPage";
 import { IP20TestMachinePage } from "@/machines/ip20testmachine/IP20TestMachinePage";
 import { IP20TestMachineControlPage } from "@/machines/ip20testmachine/IP20TestMachineControlPage";
+import { TestMotorPage } from "@/machines/ethercat_beckhoff/TestMotorPage";
+import { TestMotorControlPage } from "@/machines/ethercat_beckhoff/TestMotorControlPage";
 
 import { MetricsGraphsPage } from "@/metrics/MetricsGraphsPage";
 import { MetricsControlPage } from "@/metrics/MetricsControlPage";
@@ -110,6 +112,19 @@ export const ip20TestMachineControlRoute = createRoute({
   path: "control",
   component: () => <IP20TestMachineControlPage />,
 });
+
+export const testMotorSerialRoute = createRoute({
+  getParentRoute: () => machinesRoute,
+  path: "testmotor/$serial",
+  component: () => <TestMotorPage />,
+});
+
+export const testMotorControlRoute = createRoute({
+  getParentRoute: () => testMotorSerialRoute,
+  path: "control",
+  component: () => <TestMotorControlPage />,
+});
+
 
 export const sidebarRoute = createRoute({
   getParentRoute: () => RootRoute,
@@ -433,6 +448,7 @@ export const rootTree = RootRoute.addChildren([
         laser1GraphsRoute,
         laser1PresetsRoute,
       ]),
+
       testMachineSerialRoute.addChildren([testMachineControlRoute]),
 
       analogInputTestMachineSerialRoute.addChildren([
@@ -440,6 +456,8 @@ export const rootTree = RootRoute.addChildren([
       ]),
 
       ip20TestMachineSerialRoute.addChildren([ip20TestMachineControlRoute]),
+
+      testMotorSerialRoute.addChildren([testMotorControlRoute]),
 
       aquapath1SerialRoute.addChildren([
         aquapath1ControlRoute,

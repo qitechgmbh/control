@@ -31,6 +31,7 @@ pub enum BeckhoffEvents {
 enum Mutation {
     SetMotorOn(bool),
     SetMotorVelocity(i32),
+    SetMotorOff(bool),
 }
 
 #[derive(Debug, Clone)]
@@ -70,13 +71,18 @@ impl MachineApi for BeckhoffMachine {
     fn api_mutate(&mut self, request_body: Value) -> Result<(), anyhow::Error> {
         let mutation: Mutation = serde_json::from_value(request_body)?;
         match mutation {
-            Mutation::SetMotorOn(true) => {
-                self.turn_motor_on();
+            Mutation::SetMotorOn(t) => {
+                if t {
+                    self.turn_motor_on();
+                } else {
+                    self.turn_motor_off();
+                }
             },
             Mutation::SetMotorVelocity(vel) => {
                 self.motor_state.target_velocity = vel;
                 self.emit_state();
             }
+
             _ => {}
         }
         Ok(())
