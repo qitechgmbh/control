@@ -53,7 +53,7 @@ export function MarkdownWithToc({
   isManual = false,
 }: MarkdownWithTocProps) {
   const MarkdownComponent = isManual ? ManualMarkdown : Markdown;
-  
+
   return (
     <div className={`flex ${gap}`}>
       {/* Main Content */}
