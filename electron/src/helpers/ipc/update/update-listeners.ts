@@ -177,10 +177,10 @@ async function update(
           status: "completed",
         });
 
-        // 3. make the nixos-install.sh script executable (not tracked in progress UI)
+        // 3. make the ./bin/nixos-install script executable (not tracked in progress UI)
         const chmodResult = await runCommand(
           "chmod",
-          ["+x", "nixos-install.sh"],
+          ["+x", "./bin/nixos-install"],
           repoDir,
           event,
         );
@@ -189,7 +189,7 @@ async function update(
           return;
         }
 
-        // 4. run the nixos-install.sh script
+        // 4. run the ./bin/nixos-install script
         // This script will handle rust-build, electron-build, and system-install
         // Start with rust-build (cargo builds)
         event.sender.send(UPDATE_STEP, {
@@ -198,7 +198,7 @@ async function update(
         });
 
         const installResult = await runCommandWithStepTracking(
-          "./nixos-install.sh",
+          "./bin/nixos-install",
           [],
           repoDir,
           event,
