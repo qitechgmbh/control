@@ -6,7 +6,10 @@ import extruderManualContent from "@root/docs/machines/manuals/extruder.md?raw";
 export function ExtruderV2ManualPage() {
   return (
     <Page>
-      <MarkdownWithToc markdownContent={extruderManualContent} isManual={true} />
+      <MarkdownWithToc
+        markdownContent={extruderManualContent}
+        isManual={true}
+      />
     </Page>
   );
 }
