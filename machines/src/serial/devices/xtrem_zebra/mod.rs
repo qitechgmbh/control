@@ -14,9 +14,7 @@ use crate::machine_identification::{
     DeviceHardwareIdentification, DeviceHardwareIdentificationSerial, DeviceIdentification,
     DeviceMachineIdentification, MachineIdentification, MachineIdentificationUnique,
 };
-use crate::{
-    MACHINE_XTREM_ZEBRA, SerialDevice, SerialDeviceNew, SerialDeviceNewParams, VENDOR_QITECH,
-};
+use crate::{MACHINE_XTREM_ZEBRA, VENDOR_QITECH};
 
 #[derive(Debug)]
 pub struct XtremSerial {
@@ -29,8 +27,6 @@ pub struct XtremSerial {
     /// Flag used by the background thread to know when to shut down
     pub shutdown_flag: Arc<AtomicBool>,
 }
-
-impl SerialDevice for XtremSerial {}
 
 struct XtremResponse {
     pub raw: Vec<u8>,
@@ -111,16 +107,16 @@ impl From<XtremRequest> for XtremFrame {
     }
 }
 
-impl SerialDeviceNew for XtremSerial {
-    fn new_serial(
-        params: &SerialDeviceNewParams,
-    ) -> Result<(DeviceIdentification, Arc<RwLock<Self>>)> {
+impl XtremSerial {
+    pub fn new_serial() -> Result<(DeviceIdentification, Arc<RwLock<Self>>)> {
         let xtrem_data = Some(XtremData {
             current_weight: 0.0,
             last_timestamp: Instant::now(),
         });
 
-        let hash = hash_djb2(params.path.as_bytes());
+        let path = String::from("192.168.4.1");
+
+        let hash = hash_djb2(path.as_bytes());
         let serial = byte_folding_u16(&hash.to_le_bytes());
         let device_identification = DeviceIdentification {
             device_machine_identification: Some(DeviceMachineIdentification {
@@ -134,9 +130,7 @@ impl SerialDeviceNew for XtremSerial {
                 role: 0,
             }),
             device_hardware_identification: DeviceHardwareIdentification::Serial(
-                DeviceHardwareIdentificationSerial {
-                    path: params.path.clone(),
-                },
+                DeviceHardwareIdentificationSerial { path: path.clone() },
             ),
         };
 
@@ -144,12 +138,12 @@ impl SerialDeviceNew for XtremSerial {
 
         let _self = Arc::new(RwLock::new(Self {
             data: xtrem_data,
-            path: params.path.clone(),
+            path: path.clone(),
             shutdown_flag: shutdown_flag.clone(),
         }));
 
         let _self_clone = _self.clone();
-        let path = params.path.clone();
+        let path = path.clone();
 
         // Spawn the XTREM communication thread
         thread::Builder::new()
@@ -179,7 +173,7 @@ impl XtremSerial {
         self.data.clone()
     }
     /// Asynchronous UDP communication handler for the XTREM Zebra device.
-    async fn process_udp(
+    pub async fn process_udp(
         this: Arc<RwLock<Self>>,
         _path: String,
         shutdown: Arc<AtomicBool>,
@@ -241,6 +235,7 @@ impl XtremSerial {
                             match id_str.parse::<u8>() {
                                 std::result::Result::Ok(_) => {
                                     let weight = XtremFrame::parse_weight_from_response(&buf[..n]);
+                                    println!("Weight: {}", weight);
                                     total_weight += weight;
                                     received_count += 1;
                                 }

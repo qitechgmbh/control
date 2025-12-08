@@ -8,7 +8,7 @@ use machines::{
     },
     registry::{MACHINE_REGISTRY, MachineRegistry},
     serial::{
-        devices::{laser::Laser, xtrem_zebra::XtremSerial},
+        devices::laser::Laser,
         init::{SerialDetection, start_serial_discovery},
     },
     winder2::api::GenericEvent,
@@ -351,22 +351,22 @@ fn main() {
         send_ethercat_discovering(app_state.clone()).await;
     });
 
-    smol::block_on(async {
-        let serial_params = SerialDeviceNewParams {
-            path: String::from("192.168.4.255:4444"),
-        };
-        if let Ok((device_identification, serial_device)) = XtremSerial::new_serial(&serial_params)
-        {
-            add_serial_device(
-                app_state.clone(),
-                &device_identification,
-                serial_device,
-                &MACHINE_REGISTRY,
-                app_state.socketio_setup.socket_queue_tx.clone(),
-            )
-            .await;
-        };
-    });
+    // smol::block_on(async {
+    //     let serial_params = SerialDeviceNewParams {
+    //         path: String::from("192.168.4.255:4444"),
+    //     };
+    //     if let Ok((device_identification, serial_device)) = XtremSerial::new_serial(&serial_params)
+    //     {
+    //         add_serial_device(
+    //             app_state.clone(),
+    //             &device_identification,
+    //             serial_device,
+    //             &MACHINE_REGISTRY,
+    //             app_state.socketio_setup.socket_queue_tx.clone(),
+    //         )
+    //         .await;
+    //     };
+    // });
 
     #[cfg(feature = "mock-machine")]
     init_mock(app_state.clone()).expect("Failed to initialize mock machines");

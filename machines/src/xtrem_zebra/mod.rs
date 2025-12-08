@@ -1,6 +1,7 @@
 use std::{sync::Arc, time::Instant};
 
 use control_core::socketio::namespace::NamespaceCacheingLogic;
+use ethercat_hal::io::digital_output::DigitalOutput;
 use smol::{
     channel::{Receiver, Sender},
     lock::RwLock,
@@ -28,9 +29,8 @@ pub struct XtremZebra {
     main_sender: Option<Sender<AsyncThreadMessage>>,
 
     // drivers
-    xtrem_zebra: Arc<RwLock<XtremSerial>>,
+    xtrem_serial: Arc<RwLock<XtremSerial>>,
 
-    // socketio
     namespace: XtremZebraNamespace,
     last_measurement_emit: Instant,
 
@@ -53,6 +53,8 @@ pub struct XtremZebra {
 
     tare_weight: f64,
     last_raw_weight: f64,
+
+    signal_light: SignalLight,
 
     /// Will be initialized as false and set to true by emit_state
     /// This way we can signal to the client that the first state emission is a default state
@@ -88,7 +90,7 @@ impl XtremZebraNamespace {
 impl Drop for XtremZebra {
     fn drop(&mut self) {
         tracing::info!(
-            "[LaserMachine::{:?}] Dropping machine and disconnecting clients...",
+            "[XtremZebra::{:?}] Dropping machine and disconnecting clients...",
             self.machine_identification_unique
         );
         smol::block_on(self.namespace.disconnect_all());
@@ -158,6 +160,7 @@ impl XtremZebra {
         if !self.in_accumulation && was_zero {
             self.in_accumulation = true;
             self.cycle_max_weight = new_weight;
+            self.signal_light.yellow_light.set(true);
         }
 
         // Inside cycle
@@ -180,15 +183,20 @@ impl XtremZebra {
                 if (w >= self.plate1_target - self.tolerance)
                     && (w <= self.plate1_target + self.tolerance)
                 {
+                    self.signal_light.green_light.set(true);
                     self.plate1_counter += 1;
                 } else if (w >= self.plate2_target - self.tolerance)
                     && (w <= self.plate2_target + self.tolerance)
                 {
+                    self.signal_light.green_light.set(true);
                     self.plate2_counter += 1;
                 } else if (w >= self.plate3_target - self.tolerance)
                     && (w <= self.plate3_target + self.tolerance)
                 {
+                    self.signal_light.green_light.set(true);
                     self.plate3_counter += 1;
+                } else {
+                    self.signal_light.red_light.set(true);
                 }
 
                 // Reset cycle data
@@ -198,6 +206,8 @@ impl XtremZebra {
         } else {
             // Not in a cycle, ensure display is 0
             self.total_weight = 0.0;
+            self.signal_light.green_light.set(false);
+            self.signal_light.red_light.set(false);
         }
 
         // Store values for next loop iteration
@@ -238,7 +248,14 @@ impl XtremZebra {
 
     pub fn update(&mut self) {
         let xtrem_zebra_data =
-            smol::block_on(async { self.xtrem_zebra.read().await.get_data().await });
+            smol::block_on(async { self.xtrem_serial.read().await.get_data().await });
         self.calculate_weight_and_counter(xtrem_zebra_data.clone());
     }
+}
+
+#[derive(Debug)]
+struct SignalLight {
+    green_light: DigitalOutput,
+    yellow_light: DigitalOutput,
+    red_light: DigitalOutput,
 }
