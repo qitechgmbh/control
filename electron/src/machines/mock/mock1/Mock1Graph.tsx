@@ -69,42 +69,6 @@ export function Mock1GraphPage() {
     return { line, label };
   }
 
-  React.useEffect(() => {
-    if (!graph1Ref.current || !sineWaveSum.current) return;
-    const graphEl = graph1Ref.current;
-    const graphWidth = graphEl.clientWidth;
-    const graphHeight = graphEl.clientHeight;
-
-    // Remove previous markers and labels
-    graphEl.querySelectorAll(".vertical-marker, .marker-label").forEach((el) => el.remove());
-
-    const endTime = sineWaveSum.current.timestamp;
-    const startTime = endTime - (singleGraphConfig.defaultTimeWindow as number);
-    const graphMin = -1; // TODO: do it in general case not hardcord
-    const graphMax = 1; // TODO: do it in general case not hardcord
-
-    markers.forEach(({ timestamp, name }) => {
-      const closest = sineWaveSum.long.values
-        .filter((v): v is TimeSeriesValue => v !== null)
-        .reduce((prev, curr) =>
-          Math.abs(curr.timestamp - timestamp) < Math.abs(prev.timestamp - timestamp) ? curr : prev
-        );
-      const valueY = ((closest.value - graphMin) / (graphMax - graphMin)) * graphHeight;
-      const { line, label } = createMarkerElement(
-        timestamp,
-        valueY,
-        name,
-        startTime,
-        endTime,
-        graphWidth,
-        graphHeight,
-      );
-
-      graphEl.appendChild(line);
-      graphEl.appendChild(label);
-    });
-  }, [markers, sineWaveSum.current]);
-
   const config: GraphConfig = {
     title: "Sine Wave",
     defaultTimeWindow: 30 * 60 * 1000,
@@ -185,6 +149,67 @@ export function Mock1GraphPage() {
     ...config,
     title: "Sine Wave",
   };
+
+  const [timeTick, setTimeTick] = useState(0);
+
+  // Component be re-rendered by updating 'timeTick'.
+  React.useEffect(() => {
+      if (!sineWaveSum.current) return;
+
+      const intervalId = setInterval(() => {
+          setTimeTick(prev => prev + 1);
+      }, 50); 
+
+      return () => clearInterval(intervalId);
+  }, [sineWaveSum.current]); 
+
+  // Draw the marker
+  React.useEffect(() => {
+    if (!graph1Ref.current || !sineWaveSum.current) return;
+    const graphEl = graph1Ref.current;
+    const graphWidth = graphEl.clientWidth;
+    const graphHeight = graphEl.clientHeight;
+
+    // Remove previous markers and labels
+    graphEl.querySelectorAll(".vertical-marker, .marker-label").forEach((el) => el.remove());
+
+    const currentTimeWindow = syncHook.controlProps.timeWindow;  
+    const defaultDuration = singleGraphConfig.defaultTimeWindow as number;
+    const validTimeWindowMs = 
+        (typeof currentTimeWindow === 'number' && currentTimeWindow) || 
+        defaultDuration;
+    const endTime = sineWaveSum.current.timestamp; 
+    const startTime = endTime - validTimeWindowMs; 
+
+    const graphMin = -1; 
+    const graphMax = 1; 
+
+    markers.forEach(({ timestamp, name }) => {
+      if (timestamp >= startTime && timestamp <= endTime) {
+          const closest = sineWaveSum.long.values
+              .filter((v): v is TimeSeriesValue => v !== null)
+              .reduce((prev, curr) =>
+                Math.abs(curr.timestamp - timestamp) < Math.abs(prev.timestamp - timestamp) ? curr : prev
+              );
+          if (!closest) return; 
+
+          const valueY = ((closest.value - graphMin) / (graphMax - graphMin)) * graphHeight;
+          
+          const { line, label } = createMarkerElement(
+            timestamp,
+            valueY,
+            name,
+            startTime, 
+            endTime,   
+            graphWidth,
+            graphHeight,
+          );
+
+          graphEl.appendChild(line);
+          graphEl.appendChild(label);
+      }
+    });
+  }, [markers, sineWaveSum.current, timeTick, singleGraphConfig.defaultTimeWindow, syncHook.controlProps.timeWindow]);
 
   return (
     <Page className="pb-27">
