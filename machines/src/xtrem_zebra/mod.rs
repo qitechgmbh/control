@@ -165,6 +165,9 @@ impl XtremZebra {
 
         // Inside cycle
         if self.in_accumulation {
+            self.signal_light.green_light.set(true);
+            self.signal_light.yellow_light.set(true);
+            self.signal_light.red_light.set(true);
             // Track the highest reached weight during this cycle
             if new_weight > self.cycle_max_weight {
                 self.cycle_max_weight = new_weight;
@@ -183,20 +186,15 @@ impl XtremZebra {
                 if (w >= self.plate1_target - self.tolerance)
                     && (w <= self.plate1_target + self.tolerance)
                 {
-                    self.signal_light.green_light.set(true);
                     self.plate1_counter += 1;
                 } else if (w >= self.plate2_target - self.tolerance)
                     && (w <= self.plate2_target + self.tolerance)
                 {
-                    self.signal_light.green_light.set(true);
                     self.plate2_counter += 1;
                 } else if (w >= self.plate3_target - self.tolerance)
                     && (w <= self.plate3_target + self.tolerance)
                 {
-                    self.signal_light.green_light.set(true);
                     self.plate3_counter += 1;
-                } else {
-                    self.signal_light.red_light.set(true);
                 }
 
                 // Reset cycle data
@@ -207,6 +205,7 @@ impl XtremZebra {
             // Not in a cycle, ensure display is 0
             self.total_weight = 0.0;
             self.signal_light.green_light.set(false);
+            self.signal_light.yellow_light.set(false);
             self.signal_light.red_light.set(false);
         }
 
