@@ -6,6 +6,7 @@ use std::time::Instant;
 
 impl MachineAct for BeckhoffMachine {
     fn act(&mut self, _now_ts: Instant) {
+        println!("[{}::act] Running act", module_path!());
         if let Ok(msg) = self.api_receiver.try_recv() {
             self.act_machine_message(msg);
         }
@@ -15,8 +16,7 @@ impl MachineAct for BeckhoffMachine {
         if self.motor_state.enabled {
 
             let steps_per_rev = 200.0; // Anpassen an deinen Motor!
-            let steps_per_second = (self.motor_state.target_velocity as f64)
-                * steps_per_rev / 60.0;
+            let steps_per_second = (self.motor_state.target_velocity as f64) * steps_per_rev / 60.0;
 
             let _ = self.motor_driver.set_speed(steps_per_second);
         } else {

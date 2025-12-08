@@ -24,6 +24,7 @@ use lazy_static::lazy_static;
 
 use anyhow::Error;
 use std::{any::TypeId, collections::HashMap};
+use crate::ethercat_beckhoff::BeckhoffMachine;
 
 pub type MachineNewClosure =
     Box<dyn Fn(&MachineNewParams) -> Result<Box<dyn Machine>, Error> + Send + Sync>;
@@ -128,6 +129,7 @@ lazy_static! {
 
         mc.register::<AnalogInputTestMachine>(AnalogInputTestMachine::MACHINE_IDENTIFICATION);
 
+        mc.register::<BeckhoffMachine>(BeckhoffMachine::MACHINE_IDENTIFICATION);
         mc
     };
 }

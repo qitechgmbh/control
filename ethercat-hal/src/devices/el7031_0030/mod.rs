@@ -351,8 +351,11 @@ pub enum EL7031_0030AnalogInputPort {
 pub const EL7031_0030_VENDOR_ID: u32 = 0x2;
 pub const EL7031_0030_PRODUCT_ID: u32 = 0x1b773052;
 pub const EL7031_0030_REVISION_A: u32 = 0x10001E;
+
 pub const EL7031_0030_IDENTITY_A: SubDeviceIdentityTuple = (
     EL7031_0030_VENDOR_ID,
     EL7031_0030_PRODUCT_ID,
     EL7031_0030_REVISION_A,
 );
+
+
