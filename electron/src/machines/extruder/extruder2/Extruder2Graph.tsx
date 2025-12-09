@@ -7,6 +7,7 @@ import {
 } from "@/components/graph";
 import React from "react";
 import { useExtruder2 } from "./useExtruder";
+import { GraphWithMarkerControls } from "@/components/graph/GraphWithMarkerControls";
 
 export function Extruder2GraphsPage() {
   const {
@@ -34,6 +35,13 @@ export function Extruder2GraphsPage() {
   } = useExtruder2();
 
   const syncHook = useGraphSync("extruder-graphs");
+
+  // ESTIMATED SCALES (REPLACE WITH REAL LIMITS)
+  const SCALE_TEMP = { min: 0, max: 450 }; // Typical max temp for extruders (in °C)
+  const SCALE_POWER = { min: 0, max: 10000 }; // Estimated max power (in W)
+  const SCALE_CURRENT = { min: 0, max: 50 }; // Estimated max motor current (in A)
+  const SCALE_PRESSURE = { min: 0, max: 250 }; // Estimated max pressure (in bar)
+  const SCALE_RPM = { min: 0, max: 100 }; // Estimated max screw RPM (in rpm)
 
   // Base config
   const baseConfig: GraphConfig = {
@@ -253,7 +261,7 @@ export function Extruder2GraphsPage() {
   return (
     <Page className="pb-25">
       <div className="flex flex-col gap-4">
-        <AutoSyncedBigGraph
+        <GraphWithMarkerControls
           syncHook={syncHook}
           newData={{
             newData: pressure,
@@ -275,27 +283,33 @@ export function Extruder2GraphsPage() {
           unit="bar"
           renderValue={(value) => value.toFixed(2)}
           graphId="pressure-graph"
+          currentTimeSeries={pressure}
+          yAxisScale={SCALE_PRESSURE}
         />
 
-        <AutoSyncedBigGraph
+        <GraphWithMarkerControls
           syncHook={syncHook}
           newData={temperatureData}
           config={temperatureConfig}
           unit="C"
           renderValue={(value) => value.toFixed(1)}
           graphId="combined-temperatures"
+          currentTimeSeries={nozzleTemperature}
+          yAxisScale={SCALE_TEMP}
         />
 
-        <AutoSyncedBigGraph
+        <GraphWithMarkerControls
           syncHook={syncHook}
           newData={powerData}
           config={powerConfig}
           unit="W"
           renderValue={(value) => value.toFixed(1)}
           graphId="combined-power"
+          currentTimeSeries={combinedPower}
+          yAxisScale={SCALE_POWER}
         />
 
-        <AutoSyncedBigGraph
+        <GraphWithMarkerControls
           syncHook={syncHook}
           newData={{
             newData: motorCurrent,
@@ -305,9 +319,11 @@ export function Extruder2GraphsPage() {
           unit="A"
           renderValue={(value) => value.toFixed(2)}
           graphId="motor-current"
+          currentTimeSeries={motorCurrent}
+          yAxisScale={SCALE_CURRENT}
         />
 
-        <AutoSyncedBigGraph
+        <GraphWithMarkerControls
           syncHook={syncHook}
           newData={{
             newData: motorScrewRpm,
@@ -329,6 +345,8 @@ export function Extruder2GraphsPage() {
           unit="rpm"
           renderValue={(value) => value.toFixed(0)}
           graphId="rpm-graph"
+          currentTimeSeries={motorScrewRpm}
+          yAxisScale={SCALE_RPM}
         />
       </div>
 
