@@ -1,5 +1,6 @@
 use anyhow::{Result, anyhow};
 use control_core::helpers::hashing::{byte_folding_u16, hash_djb2};
+use smol::Timer;
 use smol::lock::RwLock;
 use std::net::UdpSocket;
 use std::sync::Arc;
@@ -178,83 +179,25 @@ impl XtremSerial {
         _path: String,
         shutdown: Arc<AtomicBool>,
     ) -> std::result::Result<(), anyhow::Error> {
-        let rx_port = 5555; // Device -> PC
-        let tx_addr = "192.168.4.255:4444"; // PC -> Broadcast domain (we send unicast by ID)
+        // Setup sockets
+        let (sock_rx, sock_tx) = Self::setup_sockets(5555, "192.168.4.255:4444")?;
 
-        let sock_rx = UdpSocket::bind(("0.0.0.0", rx_port))?;
-        sock_rx.set_nonblocking(true)?;
-
-        let sock_tx = UdpSocket::bind("0.0.0.0:0")?;
-        sock_tx.set_broadcast(true)?;
-        sock_tx.connect(tx_addr)?;
-
-        // Function to build a request for a specific destination ID
-        let build_request = |dest_id: u8| -> Vec<u8> {
-            let request = XtremRequest {
-                id_origin: 0x00,
-                id_dest: dest_id,
-                data_address: DataAddress::Weight,
-                function: Function::ReadRequest,
-                data: Vec::new(),
-            };
-            let frame: XtremFrame = request.into();
-            frame.as_bytes()
-        };
-
-        // Known device IDs
+        // Prepare request frames for known device IDs
         let device_ids = [0x01, 0x02];
-        let cmds: Vec<Vec<u8>> = device_ids.iter().map(|&id| build_request(id)).collect();
+        let cmds: Vec<Vec<u8>> = device_ids
+            .iter()
+            .map(|&id| Self::build_request(id))
+            .collect();
 
+        // Main loop
         while !shutdown.load(Ordering::Relaxed) {
-            // Send requests to all known devices
-            for cmd in cmds.iter() {
-                sock_tx.send(cmd)?;
-                thread::sleep(Duration::from_millis(10));
-            }
+            // Send requests
+            Self::send_requests(&sock_tx, &cmds).await?;
 
-            let start = Instant::now();
-            let timeout = Duration::from_millis(300);
+            // Gather replies
+            let (total_weight, _) = Self::collect_responses(&sock_rx, &device_ids).await?;
 
-            let mut buf = [0u8; 2048];
-            let mut total_weight = 0.0;
-            let mut received_count = 0;
-
-            // Wait for replies from both scales
-            while start.elapsed() < timeout && received_count < device_ids.len() {
-                match sock_rx.recv(&mut buf) {
-                    std::result::Result::Ok(n) => {
-                        // Filter to printable ASCII
-                        let clean: String = buf[..n]
-                            .iter()
-                            .filter(|b| b.is_ascii_graphic() || **b == b' ')
-                            .map(|&b| b as char)
-                            .collect();
-
-                        // Now first two characters are the origin ID, e.g. "01" or "02"
-                        if clean.len() >= 2 {
-                            let id_str = &clean[0..2];
-                            match id_str.parse::<u8>() {
-                                std::result::Result::Ok(_) => {
-                                    let weight = XtremFrame::parse_weight_from_response(&buf[..n]);
-                                    println!("Weight: {}:: From ID: {}", weight, id_str);
-                                    total_weight += weight;
-                                    received_count += 1;
-                                }
-                                Err(_) => println!("[XTREM] Failed to parse ID from '{}'", id_str),
-                            }
-                        }
-                    }
-                    Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {
-                        thread::sleep(Duration::from_millis(10));
-                    }
-                    Err(e) => {
-                        eprintln!("[XTREM] Socket error: {:?}", e);
-                        break;
-                    }
-                }
-            }
-
-            // Update the shared structure with the combined weight
+            // Update shared state
             {
                 let mut device = this.write().await;
                 device.data = Some(XtremData {
@@ -263,10 +206,97 @@ impl XtremSerial {
                 });
             }
 
-            thread::sleep(Duration::from_millis(300));
+            // Wait before next poll
+            Timer::after(Duration::from_millis(300)).await;
         }
 
         std::result::Result::Ok(())
+    }
+
+    /// Helper: Socket setup
+    fn setup_sockets(rx_port: u16, tx_addr: &str) -> Result<(UdpSocket, UdpSocket)> {
+        let sock_rx = UdpSocket::bind(("0.0.0.0", rx_port))?;
+        let _ = sock_rx.set_nonblocking(true);
+
+        let sock_tx = UdpSocket::bind("0.0.0.0:0")?;
+        sock_tx.set_broadcast(true)?;
+        sock_tx.connect(tx_addr)?;
+
+        Ok((sock_rx, sock_tx))
+    }
+
+    /// Helper: Build frame for a device ID
+    fn build_request(dest_id: u8) -> Vec<u8> {
+        let request = XtremRequest {
+            id_origin: 0x00,
+            id_dest: dest_id,
+            data_address: DataAddress::Weight,
+            function: Function::ReadRequest,
+            data: Vec::new(),
+        };
+        let frame: XtremFrame = request.into();
+        frame.as_bytes()
+    }
+
+    /// Helper: Send requests
+    async fn send_requests(sock_tx: &UdpSocket, cmds: &[Vec<u8>]) -> Result<()> {
+        for cmd in cmds {
+            sock_tx.send(cmd)?;
+            Timer::after(Duration::from_millis(10));
+        }
+        Ok(())
+    }
+
+    /// Helper: Collect and parse responses
+    async fn collect_responses(sock_rx: &UdpSocket, device_ids: &[u8]) -> Result<(f64, usize)> {
+        let start = Instant::now();
+        let timeout = Duration::from_millis(300);
+
+        let mut buf = [0u8; 2048];
+        let mut total_weight = 0.0;
+        let mut received_count = 0;
+
+        while start.elapsed() < timeout && received_count < device_ids.len() {
+            match sock_rx.recv(&mut buf) {
+                std::result::Result::Ok(n) => {
+                    if let Some((id, weight)) = Self::parse_response(&buf[..n]) {
+                        tracing::debug!("Received weight {weight} from ID {id}");
+                        total_weight += weight;
+                        received_count += 1;
+                    }
+                }
+                Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {
+                    Timer::after(Duration::from_millis(10));
+                }
+                Err(e) => {
+                    tracing::error!("[XTREM] Socket error: {:?}", e);
+                    break;
+                }
+            }
+        }
+        Ok((total_weight, received_count))
+    }
+
+    /// Helper: Parse a single response
+    fn parse_response(buf: &[u8]) -> Option<(u8, f64)> {
+        let clean: String = buf
+            .iter()
+            .filter(|b| b.is_ascii_graphic() || **b == b' ')
+            .map(|&b| b as char)
+            .collect();
+
+        if clean.len() < 2 {
+            return None;
+        }
+
+        let id_str = &clean[0..2];
+        if let std::result::Result::Ok(id) = id_str.parse::<u8>() {
+            let weight = XtremFrame::parse_weight_from_response(buf);
+            Some((id, weight))
+        } else {
+            tracing::warn!("[XTREM] Failed to parse ID from '{id_str}'");
+            None
+        }
     }
 }
 
