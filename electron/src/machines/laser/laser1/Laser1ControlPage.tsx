@@ -79,8 +79,9 @@ export function Laser1ControlPage() {
             <div className="flex flex-row items-center gap-6">
               <TimeSeriesValueNumeric
                 label="Roundness"
+                unit="%"
                 timeseries={roundness}
-                renderValue={(value) => value.toFixed(3)}
+                renderValue={(value) => (value * 100).toFixed(2)}
               />
             </div>
           )}
@@ -99,8 +100,9 @@ export function Laser1ControlPage() {
                 {roundness?.current && (
                   <MinMaxValue
                     label="Roundness Range"
+                    unit="%"
                     timeseries={roundness}
-                    renderValue={(value) => value.toFixed(3)}
+                    renderValue={(value) => (value * 100).toFixed(2)}
                     timeframe={timeframe}
                     hideSelector
                   />
