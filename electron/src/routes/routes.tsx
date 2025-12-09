@@ -57,6 +57,10 @@ import { TestMachinePage } from "@/machines/testmachine/TestMachinePage";
 import { TestMachineControlPage } from "@/machines/testmachine/TestMachineControlPage";
 import { Laser1PresetsPage } from "@/machines/laser/laser1/Laser1PresetsPage";
 
+import { MetricsPage } from "@/metrics/MetricsPage";
+import { MetricsGraphsPage } from "@/metrics/MetricsGraphsPage";
+import { MetricsControlPage } from "@/metrics/MetricsControlPage";
+
 // make a route tree like this
 // _mainNavigation/machines/winder2/$serial/control
 // _mainNavigation/configuration/a
@@ -322,6 +326,24 @@ export const updateChooseVersionRoute = createRoute({
   component: () => <ChooseVersionPage />,
 });
 
+export const metricsRoute = createRoute({
+  getParentRoute: () => sidebarRoute,  
+  path: "metrics",
+  component: () => <MetricsPage />,
+});
+
+export const metricsGraphsRoute = createRoute({
+  getParentRoute: () => metricsRoute,
+  path: "graphs",
+  component: () => <MetricsGraphsPage />,
+});
+
+export const metricsControlRoute = createRoute({
+  getParentRoute: () => metricsRoute,
+  path: "control",
+  component: () => <MetricsControlPage />,
+});
+
 export const versionSearchSchema = z
   .object({
     branch: fallback(z.string().optional(), undefined),
@@ -370,7 +392,7 @@ export const rootTree = RootRoute.addChildren([
       ]),
       troubleshootRoute,
     ]),
-
+    metricsRoute.addChildren([metricsGraphsRoute, metricsControlRoute]),
     machinesRoute.addChildren([
       laser1SerialRoute.addChildren([
         laser1ControlRoute,

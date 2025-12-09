@@ -11,6 +11,8 @@ use super::handlers::write_machine_device_identification::post_write_machine_dev
 use crate::app_state::SharedState;
 use crate::socketio::init::init_socketio;
 
+use crate::rest::handlers::metrics::metrics_router;
+
 async fn init_api(app_state: Arc<SharedState>) -> Result<()> {
     let cors = CorsLayer::permissive();
     let socketio_layer = init_socketio(app_state.clone()).await;
@@ -26,6 +28,7 @@ async fn init_api(app_state: Arc<SharedState>) -> Result<()> {
             post(post_write_machine_device_identification),
         )
         .route("/api/v1/machine/mutate", post(post_machine_mutate))
+        .nest("/api/v1/metrics", metrics_router())        
         .layer(socketio_layer)
         .layer(cors)
         .layer(trace_layer)

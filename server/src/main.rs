@@ -10,7 +10,7 @@ use machines::{
     serial::{devices::laser::Laser, init::SerialDetection},
     winder2::api::GenericEvent,
 };
-
+use crate::metrics::collector::{RuntimeMetricsConfig, spawn_runtime_metrics_sampler};
 #[cfg(feature = "development-build")]
 use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -52,6 +52,7 @@ pub mod panic;
 pub mod performance_metrics;
 pub mod rest;
 pub mod socketio;
+pub mod metrics;
 
 pub async fn send_empty_machines_event(shared_state: Arc<SharedState>) {
     shared_state.current_machines_meta.lock().await.clear();
@@ -332,6 +333,15 @@ fn main() {
     let app_state = Arc::new(shared_state);
     let _loop_thread = start_loop_thread(receiver, CYCLE_TARGET_TIME);
     let _ = start_api_thread(app_state.clone());
+    spawn_runtime_metrics_sampler(RuntimeMetricsConfig {
+        csv_path: "runtime_metrics.csv".to_string(),
+        interval: Duration::from_secs(1),
+
+        // TEMP for testing on my machine:
+        ethercat_iface: Some("eno1".to_string()),
+
+    });
+
 
     let mut socketio_task = smol::spawn(start_socketio_queue(app_state.clone()));
     let mut serial_task = smol::spawn(start_serial_discovery(app_state.clone()));

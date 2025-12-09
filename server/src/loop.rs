@@ -11,6 +11,8 @@ use spin_sleep::SpinSleeper;
 use std::time::Duration;
 use std::time::Instant;
 
+use crate::metrics::jitter::record_machines_loop_jitter;
+use crate::metrics::preemption::set_rt_loop_tid;
 pub struct RtLoopInputs<'a> {
     pub machines: &'a mut Vec<Box<dyn Machine>>,
     pub ethercat_setup: Option<Box<EthercatSetup>>,
@@ -35,6 +37,9 @@ pub fn start_loop_thread(
                     .with_spin_strategy(spin_sleep::SpinStrategy::YieldThread);
 
             let _ = set_core_affinity(2);
+            let tid = unsafe { libc::syscall(libc::SYS_gettid) as libc::pid_t };
+            set_rt_loop_tid(tid);
+
             #[cfg(not(feature = "development-build"))]
             if let Err(e) = set_realtime_priority() {
                 tracing::error!(
@@ -267,13 +272,23 @@ pub fn loop_once<'maindevice>(inputs: &mut RtLoopInputs<'_>) -> Result<(), anyho
             }
         };
     }
+    let target_instant = loop_once_start + inputs.cycle_target;
 
     if inputs.ethercat_setup.is_some() {
         // spin_sleep so we have a cycle time of ~300us
         // This does push usage to 100% if completely busy, but provides much better accuracy then thread sleep or async sleep
         inputs
             .sleeper
-            .sleep_until(loop_once_start + inputs.cycle_target);
+            .sleep_until(target_instant);
+        // let now = std::time::Instant::now();
+        // let jitter = if now >= target_instant {
+        //     now.duration_since(target_instant)
+        // } else {
+        //     Duration::from_nanos(0)
+        // };
+        // record_machines_loop_jitter(jitter);
+
+
     } else {
         // if we dont have an ethercat setup or other rt relevant stuff do the "worse" async sleep or later if we get rid of async thread::sleep or yielding
         // We do this, so that when no rt relevant code runs the cpu doesnt spin at 100% for no reason
@@ -282,6 +297,13 @@ pub fn loop_once<'maindevice>(inputs: &mut RtLoopInputs<'_>) -> Result<(), anyho
             smol::block_on(smol::Timer::after(inputs.cycle_target - loop_duration));
         }
     }
-
+    let now = std::time::Instant::now();
+    let jitter = if now >= target_instant {
+        now.duration_since(target_instant)
+    } else {
+        Duration::from_nanos(0)
+    };
+    record_machines_loop_jitter(jitter);
     Ok(())
+
 }

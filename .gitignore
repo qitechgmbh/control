@@ -5,3 +5,5 @@ Cargo.lock
 dhat-heap.json
 build.sh
 shell.nix
+node_modules/
+runtime_metrics.csv

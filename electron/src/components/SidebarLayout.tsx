@@ -121,6 +121,12 @@ export function SidebarLayout() {
       title: "Setup",
       icon: "lu:Settings2",
     },
+    {
+      link: "/_sidebar/metrics/graphs",
+      activeLink: "/_sidebar/metrics",
+      title: "Metrics",
+      icon: "lu:ChartNoAxesCombined", 
+    },
   ];
 
   // width measuring
