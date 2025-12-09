@@ -30,6 +30,7 @@ impl MachineNewTrait for XtremZebra {
             }
         };
 
+        // This creates the "driver" for the serial connection to the scales.
         let hardware_serial = XtremSerial::new_serial();
         let (_device_id, xtrem_serial) = hardware_serial?;
 
@@ -46,7 +47,7 @@ impl MachineNewTrait for XtremZebra {
             let digital_out_1 = DigitalOutput::new(el2004.clone(), EL2004Port::DO1); // Green Light
             let digital_out_2 = DigitalOutput::new(el2004.clone(), EL2004Port::DO2); // Yellow Light
             let digital_out_3 = DigitalOutput::new(el2004.clone(), EL2004Port::DO3); // Red Light
-            let digital_out_4 = DigitalOutput::new(el2004.clone(), EL2004Port::DO4); // ?
+            let digital_out_4 = DigitalOutput::new(el2004.clone(), EL2004Port::DO4); // Beep Sound
 
             let (sender, receiver) = smol::channel::unbounded();
 
