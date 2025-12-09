@@ -24,6 +24,7 @@ export function XtremZebraControlPage() {
     setPlate3Target,
     setTare,
     zeroCounters,
+    clearLights,
     isDisabled,
     isLoading,
   } = useXtremZebra1();
@@ -73,6 +74,15 @@ export function XtremZebraControlPage() {
               onClick={zeroCounters}
             >
               Zero Counters
+            </TouchButton>
+          </Label>
+          <Label label="Lights">
+            <TouchButton
+              variant="outline"
+              icon="lu:RotateCcw"
+              onClick={clearLights}
+            >
+              Clear Lights
             </TouchButton>
           </Label>
         </ControlCard>

@@ -69,6 +69,9 @@ function useXtremZebra(
   const { request: requestZeroCounters } = useMachineMutation(
     z.literal("ZeroCounters"),
   );
+  const { request: requestClearLights } = useMachineMutation(
+    z.literal("ClearLights"),
+  );
 
   const setTolerance = (tolerance: number) => {
     updateStateOptimistically(
@@ -144,6 +147,13 @@ function useXtremZebra(
     });
   };
 
+  const clearLights = () => {
+    requestClearLights({
+      machine_identification_unique,
+      data: "ClearLights",
+    });
+  };
+
   // Action functions with verb-first names
 
   return {
@@ -171,6 +181,7 @@ function useXtremZebra(
     setPlate3Target,
     setTare,
     zeroCounters,
+    clearLights,
   };
 }
 

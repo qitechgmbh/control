@@ -364,7 +364,7 @@ export const xtremZebra1: MachineProperties = {
   name: "Scales",
   version: "V1",
   slug: "xtremZebra",
-  icon: "lu:Sun",
+  icon: "lu:Scale",
   machine_identification: {
     vendor: VENDOR_QITECH,
     machine: 0x0010,

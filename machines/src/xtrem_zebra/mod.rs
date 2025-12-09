@@ -1,4 +1,7 @@
-use std::{sync::Arc, time::Instant};
+use std::{
+    sync::Arc,
+    time::{Duration, Instant},
+};
 
 use control_core::socketio::namespace::NamespaceCacheingLogic;
 use ethercat_hal::io::digital_output::DigitalOutput;
@@ -144,72 +147,78 @@ impl XtremZebra {
     }
 
     fn calculate_weight_and_counter(&mut self, data: Option<XtremData>) {
-        // Raw reading from device
         let raw_weight = data.as_ref().map(|d| d.current_weight).unwrap_or(0.0);
         self.last_raw_weight = raw_weight;
 
-        // Tared, clamped to avoid tiny negatives
         let new_weight = (raw_weight - self.tare_weight).max(0.0);
 
-        // Convenience flags around zero using tolerance
         let was_zero = self.last_weight == 0.0 && new_weight > 0.0;
         let is_zero = new_weight == 0.0 && self.last_weight > 0.0;
 
-        // Rising edge -> start of accumulation cycle
         if !self.in_accumulation && was_zero {
             self.in_accumulation = true;
             self.cycle_max_weight = new_weight;
         }
 
-        // Inside cycle
         if self.in_accumulation {
-            self.signal_light.green_light.set(true);
-            // self.signal_light.yellow_light.set(true);
-            // self.signal_light.red_light.set(true);
-            // Track the highest reached weight during this cycle
             if new_weight > self.cycle_max_weight {
                 self.cycle_max_weight = new_weight;
             }
 
-            // While accumulating, show the current max as total
             self.total_weight = self.cycle_max_weight;
 
-            // Falling edge -> end of cycle
             if is_zero {
                 self.in_accumulation = false;
-
                 let w = self.cycle_max_weight;
 
-                // Match against plate targets (+- tolerance)
+                // Turn on appropriate light and record the time
                 if (w >= self.plate1_target - self.tolerance)
                     && (w <= self.plate1_target + self.tolerance)
                 {
+                    self.signal_light.green_light.set(true);
+                    self.signal_light.green_light_on_since = Some(Instant::now());
                     self.plate1_counter += 1;
                 } else if (w >= self.plate2_target - self.tolerance)
                     && (w <= self.plate2_target + self.tolerance)
                 {
+                    self.signal_light.green_light.set(true);
+                    self.signal_light.green_light_on_since = Some(Instant::now());
                     self.plate2_counter += 1;
                 } else if (w >= self.plate3_target - self.tolerance)
                     && (w <= self.plate3_target + self.tolerance)
                 {
+                    self.signal_light.green_light.set(true);
+                    self.signal_light.green_light_on_since = Some(Instant::now());
                     self.plate3_counter += 1;
                 } else {
-                    // Do something when the weight hits no target weight
+                    self.signal_light.red_light.set(true);
+                    self.signal_light.red_light_on_since = Some(Instant::now());
                 }
 
-                // Reset cycle data
                 self.total_weight = 0.0;
                 self.cycle_max_weight = 0.0;
             }
         } else {
-            // Not in a cycle, ensure display is 0
             self.total_weight = 0.0;
-            self.signal_light.green_light.set(false);
-            // self.signal_light.yellow_light.set(false);
-            // self.signal_light.red_light.set(false);
         }
 
-        // Store values for next loop iteration
+        let now = Instant::now();
+        let light_duration = Duration::from_secs(10);
+
+        if let Some(t) = self.signal_light.green_light_on_since {
+            if now.duration_since(t) > light_duration {
+                self.signal_light.green_light.set(false);
+                self.signal_light.green_light_on_since = None;
+            }
+        }
+
+        if let Some(t) = self.signal_light.red_light_on_since {
+            if now.duration_since(t) > light_duration {
+                self.signal_light.red_light.set(false);
+                self.signal_light.red_light_on_since = None;
+            }
+        }
+
         self.last_weight = new_weight;
         self.current_weight = new_weight;
     }
@@ -248,6 +257,11 @@ impl XtremZebra {
             .set(!self.signal_light.beeper.get());
         self.emit_state();
     }
+    pub fn clear_lights(&mut self) {
+        self.signal_light.green_light.set(false);
+        self.signal_light.yellow_light.set(false);
+        self.signal_light.red_light.set(false);
+    }
 
     pub fn update(&mut self) {
         let xtrem_zebra_data =
@@ -259,7 +273,10 @@ impl XtremZebra {
 #[derive(Debug)]
 struct SignalLight {
     green_light: DigitalOutput,
+    green_light_on_since: Option<Instant>,
     yellow_light: DigitalOutput,
+    _yellow_light_on_since: Option<Instant>,
     red_light: DigitalOutput,
+    red_light_on_since: Option<Instant>,
     beeper: DigitalOutput,
 }
