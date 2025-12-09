@@ -69,8 +69,20 @@ type FormSchema = z.infer<typeof formSchema>;
 export function DeviceEepromDialog({ device }: Props) {
   const [open, setOpen] = React.useState(false);
   const key = useMemo(() => Math.random(), [open]);
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open}
+      onOpenChange={(newOpen) => {
+        setOpen(newOpen);
+        // Close numpad when dialog closes
+        if (!newOpen) {
+          // This will be handled by the key change resetting the component
+        }
+      }}
+      // Prevent closing via Escape to keep numpad open while interacting
+      modal
+    >
       <DialogTrigger asChild>
         <Button variant="outline">
           <Icon name="lu:Pencil" />
@@ -91,7 +103,10 @@ type ContentProps = {
 export function DeviceEeepromDialogContent({ device, setOpen }: ContentProps) {
   const client = useClient();
   const serialInputRef = useRef<HTMLInputElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const numpadRef = useRef<HTMLDivElement>(null);
   const [numpadOpen, setNumpadOpen] = useState(false);
+  const [numpadPosition, setNumpadPosition] = useState({ left: 0, top: 0 });
 
   const form = useForm<FormSchema>({
     resolver: zodResolver(formSchema),
@@ -173,6 +188,81 @@ export function DeviceEeepromDialogContent({ device, setOpen }: ContentProps) {
       form.setValue("role", index.toString());
     }
   }, [filteredAllowedDevices]);
+
+  // Update numpad position when dialog moves or resizes
+  useEffect(() => {
+    if (!numpadOpen) return;
+
+    const updatePosition = () => {
+      if (dialogRef.current) {
+        const rect = dialogRef.current.getBoundingClientRect();
+        setNumpadPosition({
+          left: rect.right + 20,
+          top: rect.top + rect.height / 2,
+        });
+      }
+    };
+
+    // Initial position - use requestAnimationFrame to ensure dialog is rendered
+    const rafId = requestAnimationFrame(() => {
+      updatePosition();
+      // Also try again after a short delay to catch any late renders
+      setTimeout(updatePosition, 50);
+    });
+
+    // Update on scroll
+    const handleScroll = () => updatePosition();
+    window.addEventListener("scroll", handleScroll, true);
+
+    // Update on resize
+    const handleResize = () => updatePosition();
+    window.addEventListener("resize", handleResize);
+
+    // Use ResizeObserver to watch dialog size changes
+    const resizeObserver = new ResizeObserver(() => {
+      updatePosition();
+    });
+
+    if (dialogRef.current) {
+      resizeObserver.observe(dialogRef.current);
+    }
+
+    // Use MutationObserver to watch for position changes
+    const mutationObserver = new MutationObserver(() => {
+      updatePosition();
+    });
+
+    if (dialogRef.current) {
+      mutationObserver.observe(document.body, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ["style", "class"],
+      });
+    }
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      window.removeEventListener("scroll", handleScroll, true);
+      window.removeEventListener("resize", handleResize);
+      resizeObserver.disconnect();
+      mutationObserver.disconnect();
+    };
+  }, [numpadOpen]);
+
+  // Don't close numpad automatically - only via button toggle
+
+  // Keep focus on input field when numpad is opened
+  useEffect(() => {
+    if (numpadOpen && serialInputRef.current) {
+      // Use setTimeout to ensure this runs after any other focus changes
+      setTimeout(() => {
+        if (serialInputRef.current) {
+          serialInputRef.current.focus();
+        }
+      }, 0);
+    }
+  }, [numpadOpen]);
 
   // Numpad handlers for serial input
   const numpadHandlers = useMemo(() => {
@@ -281,137 +371,177 @@ export function DeviceEeepromDialogContent({ device, setOpen }: ContentProps) {
   }, [form]);
 
   return (
-    <DialogContent>
-      <DialogHeader>
-        <DialogTitle>Machine Assignment</DialogTitle>
-        <p>
-          for {device.name}
-          <Hex value={device.configured_address} />
-        </p>
-        <DialogDescription>
-          To assign the device to a machine, select the machine, serial number &
-          device role.
-        </DialogDescription>
-      </DialogHeader>
-      <Separator />
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          {/* machine type dropdown */}
-          <FormField
-            control={form.control}
-            name="machine"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Maschine</FormLabel>
-                <FormControl>
-                  <Select {...field} onValueChange={field.onChange}>
-                    <SelectTrigger className="w-min">
-                      <SelectValue placeholder="Machine" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {machineProperties.map((machine) => (
-                        <SelectItem
-                          key={machine.machine_identification.machine}
-                          value={machine.machine_identification.machine.toString()}
-                        >
-                          {machine.name} {machine.version}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
+    <>
+      <DialogContent
+        ref={dialogRef}
+        // Keep dialog open on any outside interaction; closing is manual via controls
+        onInteractOutside={(e) => e.preventDefault()}
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => e.preventDefault()}
+      >
+        <DialogHeader>
+          <DialogTitle>Machine Assignment</DialogTitle>
+          <p>
+            for {device.name}
+            <Hex value={device.configured_address} />
+          </p>
+          <DialogDescription>
+            To assign the device to a machine, select the machine, serial number
+            & device role.
+          </DialogDescription>
+        </DialogHeader>
+        <Separator />
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            {/* machine type dropdown */}
+            <FormField
+              control={form.control}
+              name="machine"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Maschine</FormLabel>
+                  <FormControl>
+                    <Select {...field} onValueChange={field.onChange}>
+                      <SelectTrigger className="w-min">
+                        <SelectValue placeholder="Machine" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {machineProperties.map((machine) => (
+                          <SelectItem
+                            key={machine.machine_identification.machine}
+                            value={machine.machine_identification.machine.toString()}
+                          >
+                            {machine.name} {machine.version}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            {/* Serial Number */}
+            <FormField
+              control={form.control}
+              name="serial"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Serial</FormLabel>
+                  <FormControl>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        {...field}
+                        ref={(e) => {
+                          field.ref(e);
+                          serialInputRef.current = e;
+                        }}
+                        placeholder="1234"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        aria-label="Toggle numpad"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setNumpadOpen(!numpadOpen);
+                        }}
+                      >
+                        <Icon name="lu:Calculator" />
+                      </Button>
+                    </div>
+                  </FormControl>
+                  <FormDescription>
+                    Serial number of the machine.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            {/* Device Role */}
+            <FormField
+              control={form.control}
+              name="role"
+              disabled={!machinePreset}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Device Role</FormLabel>
+                  <FormControl>
+                    <Select {...field}>
+                      <SelectTrigger className="w-min">
+                        <SelectValue placeholder="Device Role" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {machinePreset?.device_roles.map((device_role, i) => (
+                          <SelectItem
+                            key={device_role.role}
+                            value={device_role.role.toString()}
+                            disabled={!filteredAllowedDevices[i]}
+                          >
+                            <DeviceRoleComponent device_role={device_role} />
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <Separator />
+            <Button type="submit" disabled={!form.formState.isValid}>
+              <Icon name="lu:Save" /> Write
+            </Button>
+            <Alert title="Restart mandatory" variant="info">
+              The device must be restarted for the changes to take effect
+            </Alert>
+          </form>
+        </Form>
+      </DialogContent>
+      {/* Numpad as separate window right of dialog */}
+      {numpadOpen && (
+        <div
+          ref={numpadRef}
+          data-numpad
+          className="fixed z-[100] w-auto rounded-md border border-neutral-200 bg-white p-4 shadow-md dark:border-neutral-800 dark:bg-neutral-950"
+          style={{
+            left: `${numpadPosition.left}px`,
+            top: `${numpadPosition.top}px`,
+            transform: "translateY(-50%)",
+            pointerEvents: "auto",
+          }}
+          tabIndex={-1}
+          onMouseDown={(e) => {
+            // Prevent clicks on numpad from closing the dialog and stealing focus from input
+            e.preventDefault();
+            e.stopPropagation();
+            // Ensure input field keeps focus
+            if (serialInputRef.current) {
+              serialInputRef.current.focus();
+            }
+          }}
+          onClick={(e) => {
+            // Prevent clicks on numpad from closing the dialog
+            e.stopPropagation();
+            // Ensure input field keeps focus
+            if (serialInputRef.current) {
+              serialInputRef.current.focus();
+            }
+          }}
+          onKeyDown={(e) => {
+            // Prevent Escape or other keys from bubbling and closing the dialog
+            e.stopPropagation();
+          }}
+        >
+          <TouchNumpad
+            onDigit={numpadHandlers.appendDigit}
+            onDelete={numpadHandlers.deleteChar}
+            onCursorLeft={numpadHandlers.moveCursorLeft}
+            onCursorRight={numpadHandlers.moveCursorRight}
           />
-          {/* Serial Number */}
-          <FormField
-            control={form.control}
-            name="serial"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Serial</FormLabel>
-                <FormControl>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      {...field}
-                      ref={(e) => {
-                        field.ref(e);
-                        serialInputRef.current = e;
-                      }}
-                      placeholder="1234"
-                      onFocus={() => setNumpadOpen(true)}
-                    />
-                    <Popover open={numpadOpen} onOpenChange={setNumpadOpen}>
-                      <PopoverTrigger asChild>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="icon"
-                          aria-label="Toggle numpad"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            setNumpadOpen(!numpadOpen);
-                          }}
-                        >
-                          <Icon name="lu:Calculator" />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-4" align="end">
-                        <TouchNumpad
-                          onDigit={numpadHandlers.appendDigit}
-                          onDelete={numpadHandlers.deleteChar}
-                          onCursorLeft={numpadHandlers.moveCursorLeft}
-                          onCursorRight={numpadHandlers.moveCursorRight}
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                </FormControl>
-                <FormDescription>Serial number of the machine.</FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          {/* Device Role */}
-          <FormField
-            control={form.control}
-            name="role"
-            disabled={!machinePreset}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Device Role</FormLabel>
-                <FormControl>
-                  <Select {...field}>
-                    <SelectTrigger className="w-min">
-                      <SelectValue placeholder="Device Role" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {machinePreset?.device_roles.map((device_role, i) => (
-                        <SelectItem
-                          key={device_role.role}
-                          value={device_role.role.toString()}
-                          disabled={!filteredAllowedDevices[i]}
-                        >
-                          <DeviceRoleComponent device_role={device_role} />
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <Separator />
-          <Button type="submit" disabled={!form.formState.isValid}>
-            <Icon name="lu:Save" /> Write
-          </Button>
-          <Alert title="Restart mandatory" variant="info">
-            The device must be restarted for the changes to take effect
-          </Alert>
-        </form>
-      </Form>
-    </DialogContent>
+        </div>
+      )}
+    </>
   );
 }
