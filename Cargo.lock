@@ -2323,6 +2323,7 @@ dependencies = [
  "dhat",
  "ethercat_hal",
  "ethercrab",
+ "libc",
  "machines",
  "regex",
  "serde",

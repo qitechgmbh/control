@@ -11,6 +11,8 @@ use spin_sleep::SpinSleeper;
 use std::time::Duration;
 use std::time::Instant;
 
+use crate::metrics::jitter::record_machines_loop_jitter;
+use crate::metrics::preemption::set_rt_loop_tid;
 pub struct RtLoopInputs<'a> {
     pub machines: &'a mut Vec<Box<dyn Machine>>,
     pub ethercat_setup: Option<Box<EthercatSetup>>,
@@ -35,6 +37,9 @@ pub fn start_loop_thread(
                     .with_spin_strategy(spin_sleep::SpinStrategy::YieldThread);
 
             let _ = set_core_affinity(2);
+            let tid = unsafe { libc::syscall(libc::SYS_gettid) as libc::pid_t };
+            set_rt_loop_tid(tid);
+
             #[cfg(not(feature = "development-build"))]
             if let Err(e) = set_realtime_priority() {
                 tracing::error!(
@@ -51,6 +56,7 @@ pub fn start_loop_thread(
 
             let mut ethercat_perf = EthercatPerformanceMetrics::new();
             let mut machines: Vec<Box<dyn Machine>> = vec![];
+            let mut last_iter_start: Option<Instant> = None;
             let mut rt_loop_inputs = RtLoopInputs {
                 machines: &mut machines,
                 ethercat_setup: None,
@@ -105,6 +111,15 @@ pub fn start_loop_thread(
                         }
                     }
                 }
+                let iter_start = Instant::now();
+                if let Some(prev) = last_iter_start {
+                    if let Some(period) = iter_start.checked_duration_since(prev) {
+                        let jitter_ns = period.as_nanos() as i128
+                            - rt_loop_inputs.cycle_target.as_nanos() as i128;
+                        record_machines_loop_jitter(jitter_ns);
+                    }
+                }
+                last_iter_start = Some(iter_start);
 
                 if let Err(e) = loop_once(&mut rt_loop_inputs) {
                     tracing::error!(
@@ -236,7 +251,6 @@ pub fn execute_machines(machines: &mut Vec<Box<dyn Machine>>) {
         machine.act(now);
     }
 }
-
 // No more logging in loop_once
 pub fn loop_once<'maindevice>(inputs: &mut RtLoopInputs<'_>) -> Result<(), anyhow::Error> {
     let loop_once_start = std::time::Instant::now();
