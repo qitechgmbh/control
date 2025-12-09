@@ -15,7 +15,7 @@ import {
   machineProperties,
   VENDOR_QITECH,
 } from "@/machines/properties";
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -45,6 +45,8 @@ import { Icon } from "@/components/Icon";
 import { toast } from "sonner";
 import { Toast } from "@/components/Toast";
 import { EthercatDevicesEventData } from "@/client/mainNamespace";
+import { TouchNumpad } from "@/components/touch/TouchNumpad";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 type Device = NonNullable<EthercatDevicesEventData["Done"]>["devices"][number];
 
@@ -84,6 +86,8 @@ type ContentProps = {
 
 export function DeviceEeepromDialogContent({ device, setOpen }: ContentProps) {
   const client = useClient();
+  const serialInputRef = useRef<HTMLInputElement>(null);
+  const [numpadOpen, setNumpadOpen] = useState(false);
 
   const form = useForm<FormSchema>({
     resolver: zodResolver(formSchema),
@@ -166,6 +170,101 @@ export function DeviceEeepromDialogContent({ device, setOpen }: ContentProps) {
     }
   }, [filteredAllowedDevices]);
 
+  // Numpad handlers for serial input
+  const numpadHandlers = useMemo(() => {
+    const ensureFocus = () => {
+      if (serialInputRef.current && document.activeElement !== serialInputRef.current) {
+        serialInputRef.current.focus();
+      }
+    };
+
+    const updateCursorPosition = (position: number) => {
+      setTimeout(() => {
+        if (serialInputRef.current) {
+          serialInputRef.current.setSelectionRange(position, position);
+        }
+      }, 0);
+    };
+
+    const getCurrentValue = () => {
+      return form.getValues("serial") || "";
+    };
+
+    return {
+      appendDigit: (digit: string) => {
+        if (!serialInputRef.current) return;
+
+        ensureFocus();
+        const input = serialInputRef.current;
+        const start = input.selectionStart || 0;
+        const end = input.selectionEnd || 0;
+        const currentValue = getCurrentValue();
+        const newValue = currentValue.slice(0, start) + digit + currentValue.slice(end);
+
+        form.setValue("serial", newValue, { shouldValidate: true });
+        updateCursorPosition(start + 1);
+      },
+
+      addDecimal: () => {
+        // Not needed for serial (U16 integer), but keeping for consistency
+        // Could be used for other numeric inputs if needed
+      },
+
+      deleteChar: () => {
+        if (!serialInputRef.current) return;
+
+        ensureFocus();
+        const input = serialInputRef.current;
+        const start = input.selectionStart || 0;
+        const end = input.selectionEnd || 0;
+        const currentValue = getCurrentValue();
+
+        let newValue: string;
+        let newPosition: number;
+
+        if (start !== end) {
+          // Delete selection
+          newValue = currentValue.slice(0, start) + currentValue.slice(end);
+          newPosition = start;
+        } else if (start > 0) {
+          // Backspace
+          newValue = currentValue.slice(0, start - 1) + currentValue.slice(start);
+          newPosition = start - 1;
+        } else {
+          return;
+        }
+
+        form.setValue("serial", newValue, { shouldValidate: true });
+        updateCursorPosition(newPosition);
+      },
+
+      toggleSign: () => {
+        // Not needed for U16 (unsigned), but keeping for consistency
+      },
+
+      moveCursorLeft: () => {
+        if (!serialInputRef.current) return;
+
+        ensureFocus();
+        const currentPos = serialInputRef.current.selectionStart || 0;
+        if (currentPos > 0) {
+          serialInputRef.current.setSelectionRange(currentPos - 1, currentPos - 1);
+        }
+      },
+
+      moveCursorRight: () => {
+        if (!serialInputRef.current) return;
+
+        ensureFocus();
+        const currentPos = serialInputRef.current.selectionStart || 0;
+        const currentValue = getCurrentValue();
+        if (currentPos < currentValue.length) {
+          serialInputRef.current.setSelectionRange(currentPos + 1, currentPos + 1);
+        }
+      },
+    };
+  }, [form]);
+
   return (
     <DialogContent>
       <DialogHeader>
@@ -218,7 +317,40 @@ export function DeviceEeepromDialogContent({ device, setOpen }: ContentProps) {
               <FormItem>
                 <FormLabel>Serial</FormLabel>
                 <FormControl>
-                  <Input placeholder="1234" {...field} />
+                  <div className="flex items-center gap-2">
+                    <Input
+                      {...field}
+                      ref={(e) => {
+                        field.ref(e);
+                        serialInputRef.current = e;
+                      }}
+                      placeholder="1234"
+                      onFocus={() => setNumpadOpen(true)}
+                    />
+                    <Popover open={numpadOpen} onOpenChange={setNumpadOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setNumpadOpen(!numpadOpen);
+                          }}
+                        >
+                          <Icon name="lu:Calculator" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-4" align="end">
+                        <TouchNumpad
+                          onDigit={numpadHandlers.appendDigit}
+                          onDelete={numpadHandlers.deleteChar}
+                          onCursorLeft={numpadHandlers.moveCursorLeft}
+                          onCursorRight={numpadHandlers.moveCursorRight}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
                 </FormControl>
                 <FormDescription>Serial number of the machine.</FormDescription>
                 <FormMessage />
