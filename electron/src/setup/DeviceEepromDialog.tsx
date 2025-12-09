@@ -348,6 +348,7 @@ export function DeviceEeepromDialogContent({ device, setOpen }: ContentProps) {
                           type="button"
                           variant="outline"
                           size="icon"
+                          aria-label="Toggle numpad"
                           onClick={(e) => {
                             e.preventDefault();
                             setNumpadOpen(!numpadOpen);
