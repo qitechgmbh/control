@@ -361,7 +361,7 @@ export const buffer1: MachineProperties = {
 };
 
 export const xtremZebra1: MachineProperties = {
-  name: "Xtrem Zebra",
+  name: "Scales",
   version: "V1",
   slug: "xtremZebra",
   icon: "lu:Sun",
