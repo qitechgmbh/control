@@ -78,8 +78,22 @@ export function GraphWithMarkerControls({
 }: GraphWithMarkerControlsProps) {
   const graphWrapperRef = useRef<HTMLDivElement | null>(null);
   const [markerName, setMarkerName] = useState("");
-  const [markers, setMarkers] = useState<{ timestamp: number; name: string }[]>([]);
+  const [markers, setMarkers] = useState<{ timestamp: number; name: string; value: number }[]>([])
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+
+  // Convert local markers state into GraphLine format
+  // TODO: do I really need this?
+  const dynamicMarkerLines = markers.map((marker, index) => ({
+    type: "user_marker" as const, // Use a unique type identifier
+    value: marker.value, // We need to store the value as well!
+    label: marker.name,
+    color: "#ff0000", // e.g., Red for user-added markers
+    width: 2,
+    show: true,
+    
+    // *** FIX: Store the actual time here ***
+    markerTimestamp: marker.timestamp,
+  }));
 
   // Time Tick for forcing marker redraw
   const [timeTick, setTimeTick] = useState(0);
@@ -95,15 +109,15 @@ export function GraphWithMarkerControls({
 
   const handleAddMarker = useCallback(() => {
     if (currentTimeSeries?.current && markerName.trim()) {
-      const ts = currentTimeSeries.current.timestamp;
-      const name = markerName.trim();
-      setMarkers((prev) => [...prev, { timestamp: ts, name }]);
-      const tsStr = new Date(ts).toLocaleTimeString("en-GB", { hour12: false });
-      setStatusMessage(`Marker '${name}' added @ ${tsStr}`);
-      setMarkerName(""); // Clear input after adding
-    } else {
-      setStatusMessage("No data or marker name is empty.");
-    }
+        const ts = currentTimeSeries.current.timestamp;
+        const val = currentTimeSeries.current.value; // <--- Value extracted
+        const name = markerName.trim();
+        
+        // Ensure 'value' is stored here
+        setMarkers((prev) => [...prev, { timestamp: ts, name, value: val }]); // <--- Value stored
+        
+        // ... (rest of the function)
+    } // ...
   }, [currentTimeSeries, markerName]);
 
 
@@ -173,6 +187,13 @@ export function GraphWithMarkerControls({
     });
   }, [markers, currentTimeSeries, timeTick, config.defaultTimeWindow, syncHook.controlProps.timeWindow]);
 
+  // Combine the base config lines with the dynamic lines
+  // TODO: do I really need this? if not change back to config
+  const finalConfig = {
+    ...config,
+    lines: [...(config.lines || []), ...dynamicMarkerLines],
+  };
+
   return (
     <div className="flex flex-col gap-2">
       <div ref={graphWrapperRef} className="relative">
@@ -180,7 +201,7 @@ export function GraphWithMarkerControls({
         <AutoSyncedBigGraph
           syncHook={syncHook}
           newData={newData}
-          config={config}
+          config={finalConfig}
           unit={unit}
           renderValue={renderValue}
           graphId={graphId}

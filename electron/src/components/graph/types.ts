@@ -28,7 +28,7 @@ export type PropGraphSync = {
 
 // Configuration types for additional lines
 export type GraphLine = {
-  type: "threshold" | "target";
+  type: "threshold" | "target" | "user_marker"; // TODO: redundant or not?
   value: number;
   targetSeries?: TimeSeries;
   color: string;
@@ -36,6 +36,7 @@ export type GraphLine = {
   width?: number;
   dash?: number[];
   show?: boolean;
+  markerTimestamp?: number;
 };
 
 export type GraphConfig = {
