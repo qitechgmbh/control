@@ -78,7 +78,7 @@ impl XtremFrame {
         // Build ASCII payload
         let mut payload = String::new();
         use std::fmt::Write;
-        write!(
+        if let Err(e) = write!(
             &mut payload,
             "{:02}{:02}{}{:04X}{:02X}",
             self.id_origin,
@@ -86,16 +86,24 @@ impl XtremFrame {
             self.function.as_char(),
             self.data_address,
             self.data_length,
-        )
-        .unwrap();
+        ) {
+            eprintln!("Failed to write header: {}", e);
+            return buf.clone();
+        }
 
         // Append data
         for b in &self.data {
-            write!(&mut payload, "{:02X}", b).unwrap();
+            if let Err(e) = write!(&mut payload, "{:02X}", b) {
+                eprintln!("Failed to write data bytes: {}", e);
+                return buf.clone();
+            }
         }
 
         // Append this frame's LRC
-        write!(&mut payload, "{:02X}", self.lrc).unwrap();
+        if let Err(e) = write!(&mut payload, "{:02X}", self.lrc) {
+            eprintln!("Failed to write LRC: {}", e);
+            return buf.clone();
+        }
 
         buf.extend_from_slice(payload.as_bytes());
 

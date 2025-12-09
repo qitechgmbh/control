@@ -82,8 +82,7 @@ impl XtremZebraNamespace {
         if self.namespace.is_none() {
             return vec![];
         }
-        let sockets = self.namespace.clone().unwrap().sockets.clone();
-        sockets
+        self.namespace.clone().unwrap().sockets.clone()
     }
 }
 
@@ -160,7 +159,6 @@ impl XtremZebra {
         if !self.in_accumulation && was_zero {
             self.in_accumulation = true;
             self.cycle_max_weight = new_weight;
-            //self.signal_light.yellow_light.set(true);
         }
 
         // Inside cycle
@@ -195,6 +193,8 @@ impl XtremZebra {
                     && (w <= self.plate3_target + self.tolerance)
                 {
                     self.plate3_counter += 1;
+                } else {
+                    // Do something when the weight hits no target weight
                 }
 
                 // Reset cycle data
@@ -242,6 +242,7 @@ impl XtremZebra {
         self.plate1_counter = 0;
         self.plate2_counter = 0;
         self.plate3_counter = 0;
+        // This is for testing only
         self.signal_light
             .beeper
             .set(!self.signal_light.beeper.get());

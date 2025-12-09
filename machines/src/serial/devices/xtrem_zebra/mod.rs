@@ -214,6 +214,7 @@ impl XtremSerial {
 
             let start = Instant::now();
             let timeout = Duration::from_millis(300);
+
             let mut buf = [0u8; 2048];
             let mut total_weight = 0.0;
             let mut received_count = 0;
@@ -235,7 +236,7 @@ impl XtremSerial {
                             match id_str.parse::<u8>() {
                                 std::result::Result::Ok(_) => {
                                     let weight = XtremFrame::parse_weight_from_response(&buf[..n]);
-                                    println!("Weight: {}:: From Reply: {}", weight, received_count);
+                                    println!("Weight: {}:: From ID: {}", weight, id_str);
                                     total_weight += weight;
                                     received_count += 1;
                                 }
