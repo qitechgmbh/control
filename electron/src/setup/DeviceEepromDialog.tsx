@@ -46,7 +46,11 @@ import { toast } from "sonner";
 import { Toast } from "@/components/Toast";
 import { EthercatDevicesEventData } from "@/client/mainNamespace";
 import { TouchNumpad } from "@/components/touch/TouchNumpad";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 type Device = NonNullable<EthercatDevicesEventData["Done"]>["devices"][number];
 
@@ -173,7 +177,10 @@ export function DeviceEeepromDialogContent({ device, setOpen }: ContentProps) {
   // Numpad handlers for serial input
   const numpadHandlers = useMemo(() => {
     const ensureFocus = () => {
-      if (serialInputRef.current && document.activeElement !== serialInputRef.current) {
+      if (
+        serialInputRef.current &&
+        document.activeElement !== serialInputRef.current
+      ) {
         serialInputRef.current.focus();
       }
     };
@@ -199,7 +206,8 @@ export function DeviceEeepromDialogContent({ device, setOpen }: ContentProps) {
         const start = input.selectionStart || 0;
         const end = input.selectionEnd || 0;
         const currentValue = getCurrentValue();
-        const newValue = currentValue.slice(0, start) + digit + currentValue.slice(end);
+        const newValue =
+          currentValue.slice(0, start) + digit + currentValue.slice(end);
 
         form.setValue("serial", newValue, { shouldValidate: true });
         updateCursorPosition(start + 1);
@@ -228,7 +236,8 @@ export function DeviceEeepromDialogContent({ device, setOpen }: ContentProps) {
           newPosition = start;
         } else if (start > 0) {
           // Backspace
-          newValue = currentValue.slice(0, start - 1) + currentValue.slice(start);
+          newValue =
+            currentValue.slice(0, start - 1) + currentValue.slice(start);
           newPosition = start - 1;
         } else {
           return;
@@ -248,7 +257,10 @@ export function DeviceEeepromDialogContent({ device, setOpen }: ContentProps) {
         ensureFocus();
         const currentPos = serialInputRef.current.selectionStart || 0;
         if (currentPos > 0) {
-          serialInputRef.current.setSelectionRange(currentPos - 1, currentPos - 1);
+          serialInputRef.current.setSelectionRange(
+            currentPos - 1,
+            currentPos - 1,
+          );
         }
       },
 
@@ -259,7 +271,10 @@ export function DeviceEeepromDialogContent({ device, setOpen }: ContentProps) {
         const currentPos = serialInputRef.current.selectionStart || 0;
         const currentValue = getCurrentValue();
         if (currentPos < currentValue.length) {
-          serialInputRef.current.setSelectionRange(currentPos + 1, currentPos + 1);
+          serialInputRef.current.setSelectionRange(
+            currentPos + 1,
+            currentPos + 1,
+          );
         }
       },
     };
