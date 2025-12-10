@@ -19,13 +19,8 @@ export function XtremZebraControlPage() {
     defaultState,
     totalWeight,
     currentWeight,
-    plate1Counter,
-    plate2Counter,
-    plate3Counter,
+    plateCounter,
     setTolerance,
-    setPlate1Target,
-    setPlate2Target,
-    setPlate3Target,
     setTare,
     start,
 
@@ -41,17 +36,24 @@ export function XtremZebraControlPage() {
   return (
     <Page>
       <ControlGrid columns={2}>
-        <ControlCard title="Current Weight">
+        <ControlCard title="Target">
+          <DisplayValue
+            title="Target Weight"
+            icon="lu:Scale"
+            unit="kg"
+            value={state?.weighted_item.weight}
+            renderValue={(v) => v.toFixed(0)}
+          />
+        </ControlCard>
+        <ControlCard title="Current">
           <TimeSeriesValueNumeric
-            label=""
+            label="Live Weight"
             unit="kg"
             timeseries={currentWeight}
             renderValue={(value) => value.toFixed(1)}
           />
-        </ControlCard>
-        <ControlCard title="Total Weight">
           <TimeSeriesValueNumeric
-            label=""
+            label="Total Weight"
             unit="kg"
             timeseries={totalWeight}
             renderValue={(value) => value.toFixed(1)}
@@ -66,102 +68,19 @@ export function XtremZebraControlPage() {
             renderValue={(v) => v.toFixed(1)}
           />
           <TimeSeriesValueNumeric
-            label="Plate 1"
+            label="Current Quantity"
             unit="pcs"
-            timeseries={plate1Counter}
+            timeseries={plateCounter}
             renderValue={(value) => value.toFixed(0)}
           />
-          <TimeSeriesValueNumeric
-            label="Plate 2"
-            unit="pcs"
-            timeseries={plate2Counter}
-            renderValue={(value) => value.toFixed(1)}
-          />
-          <TimeSeriesValueNumeric
-            label="Plate 3"
-            unit="pcs"
-            timeseries={plate3Counter}
-            renderValue={(value) => value.toFixed(1)}
-          />
-          <Label label="Counters">
-            <TouchButton
-              variant="outline"
-              icon="lu:RotateCcw"
-              onClick={zeroCounters}
-            >
-              Zero Counters
-            </TouchButton>
-          </Label>
-          <Label label="Lights">
-            <TouchButton
-              variant="outline"
-              icon="lu:RotateCcw"
-              onClick={clearLights}
-            >
-              Clear Lights
-            </TouchButton>
-          </Label>
+          <TouchButton
+            variant="outline"
+            icon="lu:RotateCcw"
+            onClick={zeroCounters}
+          >
+            Zero Counters
+          </TouchButton>
         </ControlCard>
-        <ControlCard title="Set Target Weight and Tolerance ">
-          <Label label="Set Tolerance">
-            <EditValue
-              title="Set Tolerance"
-              value={state?.xtrem_zebra_state.tolerance}
-              unit="kg"
-              step={0.1}
-              min={0}
-              max={100}
-              renderValue={(value) => value.toFixed(2)}
-              onChange={(val) => setTolerance(val)}
-              defaultValue={defaultState?.xtrem_zebra_state.tolerance}
-            />
-          </Label>
-          <Label label="Set Plate 1 Target">
-            <EditValue
-              title="Set Plate 1 Target"
-              value={state?.xtrem_zebra_state.plate1_target}
-              unit="kg"
-              step={0.1}
-              min={0}
-              max={1000}
-              renderValue={(value) => value.toFixed(2)}
-              onChange={(val) => setPlate1Target(val)}
-              defaultValue={defaultState?.xtrem_zebra_state.plate1_target}
-            />
-          </Label>
-          <Label label="Set Plate 2 Target">
-            <EditValue
-              title="Set Plate 2 Target"
-              value={state?.xtrem_zebra_state.plate2_target}
-              unit="kg"
-              step={0.1}
-              min={0}
-              max={1000}
-              renderValue={(value) => value.toFixed(2)}
-              onChange={(val) => setPlate2Target(val)}
-              defaultValue={defaultState?.xtrem_zebra_state.plate2_target}
-            />
-          </Label>
-          <Label label="Set Plate 3 Target">
-            <EditValue
-              title="Set Plate 3 Target"
-              value={state?.xtrem_zebra_state.plate3_target}
-              unit="kg"
-              step={0.1}
-              min={0}
-              max={1000}
-              renderValue={(value) => value.toFixed(2)}
-              onChange={(val) => setPlate3Target(val)}
-              defaultValue={defaultState?.xtrem_zebra_state.plate3_target}
-            />
-          </Label>
-          <Label label="Tare">
-            <TouchButton variant="outline" icon="lu:Scale" onClick={setTare}>
-              Tare Scales
-            </TouchButton>
-          </Label>
-        </ControlCard>
-
         <ControlCard title="Access & Configuration">
           <Label label="Password">
             <EditString
@@ -177,6 +96,19 @@ export function XtremZebraControlPage() {
               onChange={(val) => setStringValue(val)}
             />
           </Label>
+          <Label label="Set Tolerance">
+            <EditValue
+              title="Set Tolerance"
+              value={state?.xtrem_zebra_state.tolerance}
+              unit="kg"
+              step={0.1}
+              min={0}
+              max={100}
+              renderValue={(value) => value.toFixed(2)}
+              onChange={(val) => setTolerance(val)}
+              defaultValue={defaultState?.xtrem_zebra_state.tolerance}
+            />
+          </Label>
           <Label label="Start Weighted Item">
             <TouchButton
               variant="outline"
@@ -184,6 +116,24 @@ export function XtremZebraControlPage() {
               onClick={start}
             >
               Start
+            </TouchButton>
+          </Label>
+          <Label label="Lights">
+            <TouchButton
+              variant="outline"
+              icon="lu:RotateCcw"
+              onClick={clearLights}
+            >
+              Clear Lights
+            </TouchButton>
+          </Label>
+          <Label label="Tare">
+            <TouchButton
+              variant="outline"
+              icon="lu:Scale"
+              onClick={clearLights}
+            >
+              Tare Scales
             </TouchButton>
           </Label>
         </ControlCard>

@@ -48,15 +48,9 @@ pub struct XtremZebra {
     cycle_max_weight: f64,
     in_accumulation: bool,
 
-    plate1_target: f64,
-    plate2_target: f64,
-    plate3_target: f64,
-
     tolerance: f64,
 
-    plate1_counter: u32,
-    plate2_counter: u32,
-    plate3_counter: u32,
+    plate_counter: u32,
 
     tare_weight: f64,
     last_raw_weight: f64,
@@ -119,9 +113,7 @@ impl XtremZebra {
         let live_values = LiveValuesEvent {
             total_weight: self.total_weight,
             current_weight: self.current_weight,
-            plate1_counter: self.plate1_counter,
-            plate2_counter: self.plate2_counter,
-            plate3_counter: self.plate3_counter,
+            plate_counter: self.plate_counter,
         };
 
         self.namespace
@@ -130,9 +122,6 @@ impl XtremZebra {
 
     pub fn build_state_event(&self) -> StateEvent {
         let xtrem_zebra = XtremZebraState {
-            plate1_target: self.plate1_target,
-            plate2_target: self.plate2_target,
-            plate3_target: self.plate3_target,
             tolerance: self.tolerance,
         };
 
@@ -174,24 +163,12 @@ impl XtremZebra {
                 self.in_accumulation = false;
                 let w = self.cycle_max_weight;
 
-                if (w >= self.plate1_target - self.tolerance)
-                    && (w <= self.plate1_target + self.tolerance)
+                if (w >= self.weighted_item.weight as f64 - self.tolerance)
+                    && (w <= self.weighted_item.weight as f64 + self.tolerance)
                 {
                     self.signal_light.green_light.set(true);
                     self.signal_light.green_light_on_since = Some(Instant::now());
-                    self.plate1_counter += 1;
-                } else if (w >= self.plate2_target - self.tolerance)
-                    && (w <= self.plate2_target + self.tolerance)
-                {
-                    self.signal_light.green_light.set(true);
-                    self.signal_light.green_light_on_since = Some(Instant::now());
-                    self.plate2_counter += 1;
-                } else if (w >= self.plate3_target - self.tolerance)
-                    && (w <= self.plate3_target + self.tolerance)
-                {
-                    self.signal_light.green_light.set(true);
-                    self.signal_light.green_light_on_since = Some(Instant::now());
-                    self.plate3_counter += 1;
+                    self.plate_counter += 1;
                 } else {
                     self.signal_light.red_light.set(true);
                     self.signal_light.red_light_on_since = Some(Instant::now());
@@ -225,18 +202,6 @@ impl XtremZebra {
         self.current_weight = new_weight;
     }
 
-    pub fn set_plate1_target_weight(&mut self, target: f64) {
-        self.plate1_target = target;
-        self.emit_state();
-    }
-    pub fn set_plate2_target_weight(&mut self, target: f64) {
-        self.plate2_target = target;
-        self.emit_state();
-    }
-    pub fn set_plate3_target_weight(&mut self, target: f64) {
-        self.plate3_target = target;
-        self.emit_state();
-    }
     pub fn set_tolerance(&mut self, tolerance: f64) {
         self.tolerance = tolerance;
         self.emit_state();
@@ -250,9 +215,7 @@ impl XtremZebra {
         self.emit_state();
     }
     pub fn zero_counters(&mut self) {
-        self.plate1_counter = 0;
-        self.plate2_counter = 0;
-        self.plate3_counter = 0;
+        self.plate_counter = 0;
         self.emit_state();
     }
     pub fn clear_lights(&mut self) {
