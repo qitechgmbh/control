@@ -80,7 +80,7 @@ impl MachineNewTrait for XtremZebra {
                     green_light: digital_out_1,
                     green_light_on_since: None,
                     yellow_light: digital_out_2,
-                    yellow_light_on_since: None,
+                    _yellow_light_on_since: None,
                     red_light: digital_out_3,
                     red_light_on_since: None,
                     beeper: digital_out_4,

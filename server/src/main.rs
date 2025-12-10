@@ -7,10 +7,7 @@ use machines::{
         DeviceIdentification, DeviceIdentificationIdentified, MachineIdentificationUnique,
     },
     registry::{MACHINE_REGISTRY, MachineRegistry},
-    serial::{
-        devices::laser::Laser,
-        init::{SerialDetection, start_serial_discovery},
-    },
+    serial::{devices::laser::Laser, init::SerialDetection},
     winder2::api::GenericEvent,
 };
 
