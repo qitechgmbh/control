@@ -1,5 +1,5 @@
 import { ControlCard } from "@/control/ControlCard";
-import { ControlCard } from "@/control/EditString";
+import { EditString } from "@/control/EditString";
 
 import { Page } from "@/components/Page";
 import React from "react";
