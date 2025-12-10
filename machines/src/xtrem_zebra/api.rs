@@ -29,19 +29,17 @@ impl LiveValuesEvent {
     }
 }
 
-
-
 #[derive(Serialize, Debug, Clone)]
 pub struct Configuration {
-    pub password : Option<String>,
-    pub config_string : Option<String>,
+    pub password: Option<String>,
+    pub config_string: Option<String>,
 }
 
 #[derive(Serialize, Debug, Clone, BuildEvent)]
 pub struct StateEvent {
     pub is_default_state: bool,
     pub xtrem_zebra_state: XtremZebraState,
-    pub configuration : Configuration,
+    pub configuration: Configuration,
 }
 
 impl StateEvent {
@@ -104,6 +102,7 @@ enum Mutation {
     SetPassword(String),
     ZeroCounters,
     ClearLights,
+    Start,
 }
 
 impl NamespaceCacheingLogic<XtremZebraEvents> for XtremZebraNamespace {
@@ -118,8 +117,6 @@ impl NamespaceCacheingLogic<XtremZebraEvents> for XtremZebraNamespace {
         }
     }
 }
-
-
 
 impl MachineApi for XtremZebra {
     fn api_mutate(&mut self, request_body: Value) -> Result<(), anyhow::Error> {
@@ -146,14 +143,22 @@ impl MachineApi for XtremZebra {
             Mutation::ClearLights => {
                 self.clear_lights();
             }
-            Mutation::SetConfigString(root) =>{
+            Mutation::SetConfigString(root) => {
                 self.configuration.config_string = Some(root);
-                println!("SetConfigString {:?}",self.configuration.config_string);
-            },
+                println!("SetConfigString {:?}", self.configuration.config_string);
+            }
             Mutation::SetPassword(pw) => {
                 self.configuration.password = Some(pw);
-                println!("SetPassword {:?}",self.configuration.password);
-            },
+                println!("SetPassword {:?}", self.configuration.password);
+            }
+            Mutation::SetConfigString(root) => {
+                println!("SetConfigString {}", root);
+                self.configuration.config_string = Some(root);
+            }
+            Mutation::SetPassword(pw) => self.configuration.password = Some(pw),
+            Mutation::Start => {
+                self.start();
+            }
         }
         Ok(())
     }

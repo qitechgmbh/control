@@ -72,7 +72,7 @@ function useXtremZebra(
   const { request: requestClearLights } = useMachineMutation(
     z.literal("ClearLights"),
   );
-
+  const { request: requestStart } = useMachineMutation(z.literal("Start"));
 
   // 1. New Zod Schemas for String/Password
   // Assuming the mutation request body is an object containing the new string/password value.
@@ -84,13 +84,12 @@ function useXtremZebra(
   });
 
   // 2. New Mutation Hooks
-  const { request: requestConfigString } = useMachineMutation(schemaConfigString);
+  const { request: requestConfigString } =
+    useMachineMutation(schemaConfigString);
   const { request: requestPassword } = useMachineMutation(schemaPassword);
 
-
-
   // 3. New Action Functions
-  
+
   /**
    * Sets the new Configuration String value and triggers a server request.
    * @param configString The new string value.
@@ -212,6 +211,13 @@ function useXtremZebra(
     });
   };
 
+  const start = () => {
+    requestStart({
+      machine_identification_unique,
+      data: "Start",
+    });
+  };
+
   // Action functions with verb-first names
 
   return {
@@ -238,6 +244,7 @@ function useXtremZebra(
     setPlate2Target,
     setPlate3Target,
     setTare,
+    start,
     zeroCounters,
     clearLights,
 
@@ -245,7 +252,6 @@ function useXtremZebra(
     setStringValue,
   };
 }
-
 
 export function useXtremZebra1() {
   const { serial: serialString } = xtremZebraSerialRoute.useParams();
@@ -276,9 +282,6 @@ export function useXtremZebra1() {
   }, [serialString]); // Only recreate when serialString changes
 
   const xtremZebra = useXtremZebra(machineIdentification);
-
-
-
 
   return {
     ...xtremZebra,

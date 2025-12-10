@@ -27,12 +27,11 @@ pub mod new;
 
 #[derive(Debug)]
 pub struct WeightedItem {
-    pub code : String,
+    pub code: String,
     pub name: String,
     pub weight: f32, // weight is in kilo
-    pub quantity : u32,
+    pub quantity: u32,
 }
-
 
 #[derive(Debug)]
 pub struct XtremZebra {
@@ -69,7 +68,7 @@ pub struct XtremZebra {
     last_raw_weight: f64,
 
     signal_light: SignalLight,
-    configuration : Configuration,
+    configuration: Configuration,
 
     /// Will be initialized as false and set to true by emit_state
     /// This way we can signal to the client that the first state emission is a default state
@@ -261,6 +260,7 @@ impl XtremZebra {
         self.signal_light.yellow_light.set(false);
         self.signal_light.red_light.set(false);
     }
+    pub fn start(&mut self) {}
 
     pub fn update(&mut self) {
         let xtrem_zebra_data =

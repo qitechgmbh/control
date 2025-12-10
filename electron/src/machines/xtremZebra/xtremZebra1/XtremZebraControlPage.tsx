@@ -10,6 +10,7 @@ import { useXtremZebra1 } from "./useXtremZebra";
 import { EditValue } from "@/control/EditValue";
 import { Label } from "@/control/Label";
 import { TouchButton } from "@/components/touch/TouchButton";
+import { start } from "repl";
 
 export function XtremZebraControlPage() {
   const {
@@ -25,11 +26,10 @@ export function XtremZebraControlPage() {
     setPlate2Target,
     setPlate3Target,
     setTare,
-
+    start,
 
     setPassword,
     setStringValue,
-    
 
     zeroCounters,
     clearLights,
@@ -39,9 +39,6 @@ export function XtremZebraControlPage() {
 
   return (
     <Page>
-
-
-
       <ControlGrid columns={2}>
         <ControlCard title="Current Weight">
           <TimeSeriesValueNumeric
@@ -143,7 +140,7 @@ export function XtremZebraControlPage() {
               value={state?.xtrem_zebra_state.plate3_target}
               unit="kg"
               step={0.1}
-              min={0} 
+              min={0}
               max={1000}
               renderValue={(value) => value.toFixed(2)}
               onChange={(val) => setPlate3Target(val)}
@@ -172,8 +169,16 @@ export function XtremZebraControlPage() {
               onChange={(val) => setStringValue(val)}
             />
           </Label>
+          <Label label="Start Weighted Item">
+            <TouchButton
+              variant="outline"
+              icon="lu:ArrowBigRight"
+              onClick={start}
+            >
+              Start
+            </TouchButton>
+          </Label>
         </ControlCard>
-
       </ControlGrid>
     </Page>
   );
