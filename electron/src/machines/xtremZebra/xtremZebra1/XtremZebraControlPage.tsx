@@ -161,14 +161,14 @@ export function XtremZebraControlPage() {
           <Label label="Password">
             <EditString
               title="Enter Password"
-              value={state?.configuration.password}
+              value={state?.configuration.password ?? ""}
               onChange={(val) => setPassword(val)}
             />
           </Label>
           <Label label="Configuration String">
             <EditString
               title="Configuration String"
-              value={state?.configuration.config_string}
+              value={state?.configuration.config_string ?? ""}
               onChange={(val) => setStringValue(val)}
             />
           </Label>

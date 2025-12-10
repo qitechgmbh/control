@@ -87,7 +87,7 @@ impl MachineNewTrait for XtremZebra {
                     red_light_on_since: None,
                     _beeper: digital_out_4,
                 },
-                config: Configuration{
+                configuration: Configuration{
                     password: None,
                     server_root: None,
                 },

@@ -41,7 +41,7 @@ pub struct Configuration {
 pub struct StateEvent {
     pub is_default_state: bool,
     pub xtrem_zebra_state: XtremZebraState,
-    pub config : Configuration,
+    pub configuration : Configuration,
 }
 
 impl StateEvent {
@@ -146,9 +146,9 @@ impl MachineApi for XtremZebra {
             }
             Mutation::SetConfigString(root) =>{
                 println!("SetConfigString {}",root);
-                self.config.server_root = Some(root);
+                self.configuration.server_root = Some(root);
             },
-            Mutation::SetPassword(pw) => self.config.password = Some(pw),
+            Mutation::SetPassword(pw) => self.configuration.password = Some(pw),
         }
         Ok(())
     }

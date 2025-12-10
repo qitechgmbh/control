@@ -59,7 +59,7 @@ pub struct XtremZebra {
     last_raw_weight: f64,
 
     signal_light: SignalLight,
-    config : Configuration,
+    configuration : Configuration,
 
     /// Will be initialized as false and set to true by emit_state
     /// This way we can signal to the client that the first state emission is a default state
@@ -131,7 +131,7 @@ impl XtremZebra {
         StateEvent {
             is_default_state: false,
             xtrem_zebra_state: xtrem_zebra,
-            config: self.config.clone(),
+            configuration: self.configuration.clone(),
         }
     }
 
