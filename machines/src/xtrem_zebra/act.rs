@@ -32,6 +32,7 @@ impl MachineAct for XtremZebra {
 
         let it = self.check_for_weighted_item();
         if it.is_some() {
+            println!("Got New Item: {:?}",it);
             self.weighted_item = it.unwrap();
         }
 
