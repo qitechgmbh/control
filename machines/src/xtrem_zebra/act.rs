@@ -34,6 +34,10 @@ impl MachineAct for XtremZebra {
         if it.is_some() {
             println!("Got New Item: {:?}",it);
             self.weighted_item = it.unwrap();
+            self.emit_state();
+            self.zero_counters();
+            self.clear_lights();
+            self.emit_state();
         }
 
         // IF the current one is finished check for a new one
