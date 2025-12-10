@@ -232,7 +232,6 @@ pub fn get_newest_weighted_item(
     server_root: &str,
     beas_session_id: &str,
 ) -> Result<WeightedItem, ApiError> {
-    println!("get_newest_weighted_item {}", server_root);
     let article_weights = article_weights();
     let work_orders = get_work_orders(server_root, beas_session_id)?;
     let newest_order = get_newest_order(&work_orders)?;
@@ -256,6 +255,8 @@ pub struct ApiConfig {
     pub password: String,
     pub session_id: Option<String>,
 }
+
+
 
 type ConfigSender = Sender<ApiConfig>;
 type ConfigReceiver = Receiver<ApiConfig>;

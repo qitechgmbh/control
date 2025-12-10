@@ -224,11 +224,6 @@ impl XtremZebra {
         self.signal_light.red_light.set(false);
     }
     pub fn start(&mut self) {
-        let _res = self.config_tx.try_send(ApiConfig {
-            server_root: self.configuration.config_string.clone().unwrap(),
-            password: self.configuration.password.clone().unwrap(),
-            session_id: None,
-        });
         let _res = self.request_tx.try_send(());
     }
 
