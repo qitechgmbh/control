@@ -13,6 +13,7 @@ use machine_identification::{
 use serde::Serialize;
 use smol::channel::Sender;
 use socketioxide::extract::SocketRef;
+use xtrem_zebra::WeightedItem;
 use std::fmt::Debug;
 use std::{any::Any, sync::Arc, time::Instant};
 pub mod aquapath1;

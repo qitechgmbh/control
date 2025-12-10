@@ -3,6 +3,14 @@ use crate::MachineAct;
 use crate::MachineMessage;
 use std::time::{Duration, Instant};
 
+use crate::WeightedItem;
+
+impl XtremZebra {
+    fn check_for_weighted_item(&self) -> Option<WeightedItem>{
+        Some(WeightedItem { code: "ZURO-20163".to_owned(), name: "Zuschnitt 1,2 x 912 x 1801 mm 216,5 ltr.".to_owned(), weight: 14.750, quantity: 288 })
+    }
+}
+
 impl MachineAct for XtremZebra {
     fn act(&mut self, now: Instant) {
         let msg = self.api_receiver.try_recv();
@@ -13,6 +21,9 @@ impl MachineAct for XtremZebra {
             Err(_) => (),
         };
         self.update();
+
+        // IF the current one is finished check for a new one
+        let item = self.check_for_weighted_item();
 
         // more than 33ms have passed since last emit (30 "fps" target)
         if now.duration_since(self.last_measurement_emit) > Duration::from_secs_f64(1.0 / 30.0) {

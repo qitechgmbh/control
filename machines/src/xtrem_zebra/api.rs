@@ -119,6 +119,8 @@ impl NamespaceCacheingLogic<XtremZebraEvents> for XtremZebraNamespace {
     }
 }
 
+
+
 impl MachineApi for XtremZebra {
     fn api_mutate(&mut self, request_body: Value) -> Result<(), anyhow::Error> {
         let mutation: Mutation = serde_json::from_value(request_body)?;
@@ -145,10 +147,13 @@ impl MachineApi for XtremZebra {
                 self.clear_lights();
             }
             Mutation::SetConfigString(root) =>{
-                println!("SetConfigString {}",root);
                 self.configuration.config_string = Some(root);
+                println!("SetConfigString {:?}",self.configuration.config_string);
             },
-            Mutation::SetPassword(pw) => self.configuration.password = Some(pw),
+            Mutation::SetPassword(pw) => {
+                self.configuration.password = Some(pw);
+                println!("SetPassword {:?}",self.configuration.password);
+            },
         }
         Ok(())
     }

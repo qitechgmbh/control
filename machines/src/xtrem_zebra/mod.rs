@@ -38,6 +38,7 @@ pub struct WeightedItem {
 pub struct XtremZebra {
     api_receiver: Receiver<MachineMessage>,
     api_sender: Sender<MachineMessage>,
+    
     machine_identification_unique: MachineIdentificationUnique,
     main_sender: Option<Sender<AsyncThreadMessage>>,
 
