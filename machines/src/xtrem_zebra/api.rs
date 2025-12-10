@@ -29,11 +29,19 @@ impl LiveValuesEvent {
     }
 }
 
+
+
+#[derive(Serialize, Debug, Clone)]
+pub struct Configuration {
+    pub password : Option<String>,
+    pub server_root : Option<String>,
+}
+
 #[derive(Serialize, Debug, Clone, BuildEvent)]
 pub struct StateEvent {
     pub is_default_state: bool,
-    /// xtrem state
     pub xtrem_zebra_state: XtremZebraState,
+    pub config : Configuration,
 }
 
 impl StateEvent {
@@ -92,6 +100,8 @@ enum Mutation {
     SetPlate3Target(f64),
     SetTolerance(f64),
     SetTare,
+    SetConfigString(String),
+    SetPassword(String),
     ZeroCounters,
     ClearLights,
 }
@@ -134,6 +144,11 @@ impl MachineApi for XtremZebra {
             Mutation::ClearLights => {
                 self.clear_lights();
             }
+            Mutation::SetConfigString(root) =>{
+                println!("SetConfigString {}",root);
+                self.config.server_root = Some(root);
+            },
+            Mutation::SetPassword(pw) => self.config.password = Some(pw),
         }
         Ok(())
     }

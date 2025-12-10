@@ -73,6 +73,63 @@ function useXtremZebra(
     z.literal("ClearLights"),
   );
 
+  // 1. New Zod Schemas for String/Password
+  // Assuming the mutation request body is an object containing the new string/password value.
+  const schemaConfigString = z.object({
+    SetConfigString: z.string(),
+  });
+  const schemaPassword = z.object({
+    SetPassword: z.string(),
+  });
+
+  // 2. New Mutation Hooks
+  const { request: requestConfigString } = useMachineMutation(schemaConfigString);
+  const { request: requestPassword } = useMachineMutation(schemaPassword);
+
+
+
+  // 3. New Action Functions
+  
+  /**
+   * Sets the new Configuration String value and triggers a server request.
+   * @param configString The new string value.
+   */
+  const setStringValue = (configString: string) => {
+    updateStateOptimistically(
+      (current) => {
+        // ASSUMPTION: 'configuration' property exists in StateEvent.data
+        current.data.configuration.config_string = configString;
+      },
+      () =>
+        requestConfigString({
+          machine_identification_unique,
+          data: {
+            SetConfigString: configString,
+          },
+        }),
+    );
+  };
+
+  /**
+   * Sets the new Password value and triggers a server request.
+   * @param password The new password value.
+   */
+  const setPassword = (password: string) => {
+    updateStateOptimistically(
+      (current) => {
+        // ASSUMPTION: 'configuration' property exists in StateEvent.data
+        current.data.configuration.password = password;
+      },
+      () =>
+        requestPassword({
+          machine_identification_unique,
+          data: {
+            SetPassword: password,
+          },
+        }),
+    );
+  };
+
   const setTolerance = (tolerance: number) => {
     updateStateOptimistically(
       (current) => {
@@ -180,10 +237,13 @@ function useXtremZebra(
     setPlate2Target,
     setPlate3Target,
     setTare,
+    setPassword,
+    SetConfigString,
     zeroCounters,
     clearLights,
   };
 }
+
 
 export function useXtremZebra1() {
   const { serial: serialString } = xtremZebraSerialRoute.useParams();
@@ -214,6 +274,9 @@ export function useXtremZebra1() {
   }, [serialString]); // Only recreate when serialString changes
 
   const xtremZebra = useXtremZebra(machineIdentification);
+
+
+
 
   return {
     ...xtremZebra,

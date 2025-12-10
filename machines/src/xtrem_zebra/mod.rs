@@ -3,6 +3,7 @@ use std::{
     time::{Duration, Instant},
 };
 
+use api::Configuration;
 use control_core::socketio::namespace::NamespaceCacheingLogic;
 use ethercat_hal::io::digital_output::DigitalOutput;
 use smol::{
@@ -58,6 +59,7 @@ pub struct XtremZebra {
     last_raw_weight: f64,
 
     signal_light: SignalLight,
+    config : Configuration,
 
     /// Will be initialized as false and set to true by emit_state
     /// This way we can signal to the client that the first state emission is a default state
@@ -129,20 +131,12 @@ impl XtremZebra {
         StateEvent {
             is_default_state: false,
             xtrem_zebra_state: xtrem_zebra,
+            config: self.config.clone(),
         }
     }
 
     pub fn emit_state(&mut self) {
-        let state = StateEvent {
-            is_default_state: !std::mem::replace(&mut self.emitted_default_state, true),
-            xtrem_zebra_state: XtremZebraState {
-                plate1_target: self.plate1_target,
-                plate2_target: self.plate2_target,
-                plate3_target: self.plate3_target,
-                tolerance: self.tolerance,
-            },
-        };
-
+        let state = self.build_state_event();
         self.namespace.emit(XtremZebraEvents::State(state.build()));
     }
 

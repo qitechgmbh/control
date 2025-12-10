@@ -31,6 +31,9 @@ export function XtremZebraControlPage() {
 
   return (
     <Page>
+
+
+
       <ControlGrid columns={2}>
         <ControlCard title="Current Weight">
           <TimeSeriesValueNumeric
@@ -145,6 +148,29 @@ export function XtremZebraControlPage() {
             </TouchButton>
           </Label>
         </ControlCard>
+
+        {/* --- NEW CONTROL CARD FOR STRING/PASSWORD FIELDS --- */}
+        <ControlCard title="Access & Configuration">
+          <Label label="Password">
+            {/* The type="password" attribute is crucial for obscuring the input */}
+            <EditStringValue
+              title="Enter Password"
+              value={password}
+              onChange={(val) => setPassword(val)}
+              type="password" 
+            />
+          </Label>
+          <Label label="Configuration String">
+            <EditStringValue
+              title="Configuration String"
+              value={stringValue}
+              onChange={(val) => setStringValue(val)}
+              // type="text" is the default for string input
+            />
+          </Label>
+        </ControlCard>
+        {/* ----------------------------------------------------- */}
+        
       </ControlGrid>
     </Page>
   );

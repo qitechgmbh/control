@@ -13,6 +13,8 @@ use ethercat_hal::devices::ek1100::{EK1100, EK1100_IDENTITY_A};
 use ethercat_hal::devices::el2004::{EL2004, EL2004_IDENTITY_A, EL2004Port};
 use ethercat_hal::io::digital_output::DigitalOutput;
 
+use super::api::Configuration;
+
 impl MachineNewTrait for XtremZebra {
     fn new<'maindevice>(params: &crate::MachineNewParams) -> Result<Self, Error> {
         let device_identification = params.device_group.to_vec();
@@ -84,6 +86,10 @@ impl MachineNewTrait for XtremZebra {
                     red_light: digital_out_3,
                     red_light_on_since: None,
                     _beeper: digital_out_4,
+                },
+                config: Configuration{
+                    password: None,
+                    server_root: None,
                 },
             };
             Ok(xtrem_zebra_machine)
