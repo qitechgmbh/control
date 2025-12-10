@@ -62,13 +62,13 @@ pub struct XtremZebra {
     last_raw_weight: f64,
 
     signal_light: SignalLight,
-    
+
     weighted_item: WeightedItem,
     configuration: Configuration,
 
-    request_tx : Sender<()>,
-    item_rx : Receiver<WeightedItem>,
-    config_tx : Sender<ApiConfig>,
+    request_tx: Sender<()>,
+    item_rx: Receiver<WeightedItem>,
+    config_tx: Sender<ApiConfig>,
     /// Will be initialized as false and set to true by emit_state
     /// This way we can signal to the client that the first state emission is a default state
     emitted_default_state: bool,
@@ -134,12 +134,12 @@ impl XtremZebra {
             plate2_target: self.plate2_target,
             plate3_target: self.plate3_target,
             tolerance: self.tolerance,
-            weighted_item: self.weighted_item.clone(),
         };
 
         StateEvent {
             is_default_state: false,
             xtrem_zebra_state: xtrem_zebra,
+            weighted_item: self.weighted_item.clone(),
             configuration: self.configuration.clone(),
         }
     }
@@ -261,8 +261,12 @@ impl XtremZebra {
         self.signal_light.red_light.set(false);
     }
     pub fn start(&mut self) {
-        let _res = self.config_tx.try_send(ApiConfig { server_root: self.configuration.config_string.clone().unwrap(), password: self.configuration.password.clone().unwrap(), session_id: None });
-        let _res = self.request_tx.try_send(());   
+        let _res = self.config_tx.try_send(ApiConfig {
+            server_root: self.configuration.config_string.clone().unwrap(),
+            password: self.configuration.password.clone().unwrap(),
+            session_id: None,
+        });
+        let _res = self.request_tx.try_send(());
     }
 
     pub fn update(&mut self) {

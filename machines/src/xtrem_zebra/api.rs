@@ -1,6 +1,6 @@
-use crate::{MachineApi, MachineMessage};
 use super::XtremZebra;
- use beas_bsl::WeightedItem;
+use crate::{MachineApi, MachineMessage};
+use beas_bsl::WeightedItem;
 use control_core::socketio::{
     event::{Event, GenericEvent},
     namespace::{
@@ -39,6 +39,7 @@ pub struct Configuration {
 pub struct StateEvent {
     pub is_default_state: bool,
     pub xtrem_zebra_state: XtremZebraState,
+    pub weighted_item: WeightedItem,
     pub configuration: Configuration,
 }
 
@@ -58,8 +59,6 @@ pub struct XtremZebraState {
     pub plate3_target: f64,
     /// tolerance
     pub tolerance: f64,
-    /// weighted item
-    pub weighted_item: WeightedItem,
 }
 
 pub enum XtremZebraEvents {
