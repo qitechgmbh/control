@@ -181,7 +181,7 @@ impl XtremZebra {
         }
 
         let now = Instant::now();
-        let light_duration = Duration::from_secs(10);
+        let light_duration = Duration::from_millis(500);
 
         if let Some(t) = self.signal_light.green_light_on_since {
             if now.duration_since(t) > light_duration {
@@ -211,6 +211,7 @@ impl XtremZebra {
         self.total_weight = 0.0;
         self.current_weight = 0.0;
         self.in_accumulation = false;
+        println!("Scales tared");
         self.emit_state();
     }
     pub fn zero_counters(&mut self) {

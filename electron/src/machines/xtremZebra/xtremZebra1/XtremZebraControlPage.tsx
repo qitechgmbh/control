@@ -37,13 +37,16 @@ export function XtremZebraControlPage() {
     <Page>
       <ControlGrid columns={2}>
         <ControlCard title="Target">
-          <DisplayValue
-            title="Target Weight"
-            icon="lu:Scale"
-            unit="kg"
-            value={state?.weighted_item.weight}
-            renderValue={(v) => v.toFixed(0)}
-          />
+          <label>
+            {state?.weighted_item.name}
+            <DisplayValue
+              title="Target Weight"
+              icon="lu:Scale"
+              unit="kg"
+              value={state?.weighted_item.weight}
+              renderValue={(v) => v.toFixed(0)}
+            />
+          </label>
         </ControlCard>
         <ControlCard title="Current">
           <TimeSeriesValueNumeric
