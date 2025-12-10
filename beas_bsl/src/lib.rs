@@ -397,7 +397,6 @@ pub fn worker_sender_logic(
             }
             Err(TryRecvError::Empty) => {
                 // Initial config hasn't arrived yet. Wait briefly.
-                println!("[WORKER] Waiting for initial configuration... Sleeping.");
                 thread::sleep(Duration::from_millis(100));
             }
             Err(TryRecvError::Closed) => {
@@ -425,7 +424,6 @@ pub fn worker_sender_logic(
     loop {
         match request_rx.try_recv() {
             Ok(_) => {
-                println!("REQUEST RECEIVED");
                 let result = get_newest_weighted_item(
                     &current_config.server_root,
                     &current_config.session_id.clone().unwrap(),
