@@ -75,6 +75,7 @@ impl MachineNewTrait for XtremZebra {
                 plate1_counter: 0,
                 plate2_counter: 0,
                 plate3_counter: 0,
+                target_quantity: 0,
                 tolerance: 0.3,
                 tare_weight: 0.0,
                 last_raw_weight: 0.0,
@@ -87,7 +88,7 @@ impl MachineNewTrait for XtremZebra {
                     red_light_on_since: None,
                     _beeper: digital_out_4,
                 },
-                configuration: Configuration{
+                configuration: Configuration {
                     password: None,
                     config_string: None,
                 },

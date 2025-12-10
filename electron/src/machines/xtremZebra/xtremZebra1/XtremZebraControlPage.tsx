@@ -11,6 +11,7 @@ import { EditValue } from "@/control/EditValue";
 import { Label } from "@/control/Label";
 import { TouchButton } from "@/components/touch/TouchButton";
 import { start } from "repl";
+import { DisplayValue } from "@/control/DisplayValue";
 
 export function XtremZebraControlPage() {
   const {
@@ -57,6 +58,13 @@ export function XtremZebraControlPage() {
           />
         </ControlCard>
         <ControlCard title="Plate Counter">
+          <DisplayValue
+            title="Target Quantity"
+            description="The amount of plates we expect"
+            unit="pcs"
+            value={state?.xtrem_zebra_state.target_quantity}
+            renderValue={(v) => v.toFixed(1)}
+          />
           <TimeSeriesValueNumeric
             label="Plate 1"
             unit="pcs"

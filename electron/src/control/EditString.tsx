@@ -126,13 +126,10 @@ export function EditString({
       </PopoverTrigger>
       {valueIsDefined && (
         <PopoverContent className="mx-8 flex w-auto rounded-2xl p-0 shadow-2xl">
-          <div className="flex flex-col gap-6 p-6 min-w-[300px]">
+          <div className="flex min-w-[300px] flex-col gap-6 p-6">
             {/* Header */}
-            <div className="text-xl flex flex-row items-center gap-2">
-              <Icon
-                name={icon ?? "lu:Pencil"}
-                className="size-6"
-              />
+            <div className="flex flex-row items-center gap-2 text-xl">
+              <Icon name={icon ?? "lu:Pencil"} className="size-6" />
               <span>{title}</span>
             </div>
             {description && <span>{description}</span>}

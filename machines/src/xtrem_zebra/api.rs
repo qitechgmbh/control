@@ -58,6 +58,8 @@ pub struct XtremZebraState {
     pub plate3_target: f64,
     /// tolerance
     pub tolerance: f64,
+    /// target quantity
+    pub target_quantity: u32,
 }
 
 pub enum XtremZebraEvents {

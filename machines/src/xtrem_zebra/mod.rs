@@ -37,7 +37,7 @@ pub struct WeightedItem {
 pub struct XtremZebra {
     api_receiver: Receiver<MachineMessage>,
     api_sender: Sender<MachineMessage>,
-    
+
     machine_identification_unique: MachineIdentificationUnique,
     main_sender: Option<Sender<AsyncThreadMessage>>,
 
@@ -63,6 +63,8 @@ pub struct XtremZebra {
     plate1_counter: u32,
     plate2_counter: u32,
     plate3_counter: u32,
+
+    target_quantity: u32,
 
     tare_weight: f64,
     last_raw_weight: f64,
@@ -135,6 +137,7 @@ impl XtremZebra {
             plate2_target: self.plate2_target,
             plate3_target: self.plate3_target,
             tolerance: self.tolerance,
+            target_quantity: self.target_quantity,
         };
 
         StateEvent {
@@ -237,6 +240,10 @@ impl XtremZebra {
         self.plate3_target = target;
         self.emit_state();
     }
+    pub fn set_target_quantity(&mut self, target: u32) {
+        self.target_quantity = target;
+        self.emit_state();
+    }
     pub fn set_tolerance(&mut self, tolerance: f64) {
         self.tolerance = tolerance;
         self.emit_state();
@@ -260,7 +267,14 @@ impl XtremZebra {
         self.signal_light.yellow_light.set(false);
         self.signal_light.red_light.set(false);
     }
-    pub fn start(&mut self) {}
+    pub fn start(&mut self) {
+        if let Some(weighted_item) = self.check_for_weighted_item() {
+            self.set_plate1_target_weight(weighted_item.weight as f64);
+            self.set_target_quantity(weighted_item.quantity);
+            self.zero_counters();
+            self.clear_lights();
+        }
+    }
 
     pub fn update(&mut self) {
         let xtrem_zebra_data =

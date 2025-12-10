@@ -44,10 +44,12 @@ export const stateEventDataSchema = z.object({
     plate2_target: z.number(),
     plate3_target: z.number(),
     tolerance: z.number(),
+    target_quantity: z.number(),
   }),
-  configuration: z.object({ // <--- This new property is assumed
-      config_string: z.string().nullable(),
-      password: z.string().nullable(),
+  configuration: z.object({
+    // <--- This new property is assumed
+    config_string: z.string().nullable(),
+    password: z.string().nullable(),
   }),
 });
 
