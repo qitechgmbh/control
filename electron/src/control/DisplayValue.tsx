@@ -2,97 +2,70 @@
 
 import React from "react";
 import { Icon, IconName } from "@/components/Icon";
-import { Separator } from "@/components/ui/separator";
-import {
-  getUnitIcon,
-  renderValueToReactNode,
-  renderUnitSymbol,
-  renderUnitSymbolLong,
-  Unit,
-} from "./units";
+import { Unit, renderUnitSymbol, renderValueToReactNode } from "./units";
 import { cva } from "class-variance-authority";
 
 type Props = {
-  unit?: Unit;
-  value?: number | null;
+  /** Label above the value (e.g. "Temperature") */
   title: string;
-  description?: string;
-  icon?: IconName;
-  renderValue: (value: number) => string;
-  inverted?: boolean;
-  minLabel?: string;
-  maxLabel?: string;
+  /** Icon shown next to the title */
+  icon: IconName;
+  /** Optional unit (°C, W, etc.) */
+  unit?: Unit;
+  /** Value from backend (can be null/undefined) */
+  value?: number | null;
+  /** Function to render the value (e.g. v => v.toFixed(1)) */
+  renderValue: (v: number) => string;
+  /** Optional extra class name for layout */
   className?: string;
 };
 
 const containerStyle = cva(
-  "flex flex-col gap-6 rounded-2xl p-6 shadow-2xl bg-white dark:bg-neutral-900 transition-colors duration-300 ease-in-out",
+  "flex flex-col justify-center rounded-2xl border border-neutral-200 bg-white dark:bg-neutral-900 px-6 py-4 shadow-sm transition-colors duration-300 ease-in-out",
 );
 
-const valueRowStyle = cva("flex flex-row items-center justify-center gap-2", {
-  variants: {
-    inverted: {
-      true: "flex-row-reverse",
-    },
-  },
-});
-
 /**
- * DisplayValue Component
+ * DisplayValue
  *
- * Read-only version of EditValue:
- * - Same style and layout
- * - No editing, numpad, or sliders
- * - Reactive updates from parent state/backend
- * - Graceful handling of undefined/null values
+ * Read-only display tile matching the visual style of EditValue
+ * (without edit icons, sliders, or graphs).
+ *
+ * Shows:
+ * - A title and icon (e.g. "Temperature")
+ * - A large monospaced value with unit
+ * - Smoothly updates when the value prop changes
  */
 export function DisplayValue({
+  title,
+  icon,
   unit,
   value,
   renderValue,
-  title,
-  description,
-  icon,
-  inverted,
   className,
 }: Props) {
   const valueIsDefined = value !== undefined && value !== null;
-  const formattedValue = valueIsDefined ? renderValue(value!) : "--";
 
   return (
-    <div className={containerStyle({ className })}>
-      {/* Header section */}
-      <div className="flex flex-row items-center gap-2">
-        <Icon
-          name={icon ?? (unit ? getUnitIcon(unit) : "lu:Gauge")}
-          className="size-6"
-        />
-        <span className="text-lg font-medium">{title}</span>
+    <div className={containerStyle({ class: className })}>
+      {/* Header */}
+      <div className="mb-1 flex flex-row items-center gap-2 text-sm text-neutral-600 dark:text-neutral-400">
+        <Icon name={icon} className="size-5" />
+        <span>{title}</span>
       </div>
 
-      {description && (
-        <span className="text-sm text-neutral-500">{description}</span>
-      )}
-
-      <Separator />
-
-      {/* Value row */}
-      <div className={valueRowStyle({ inverted })}>
-        <span className="font-mono text-5xl font-bold">
-          {renderValueToReactNode(value, unit, renderValue)}
+      {/* Value */}
+      <div className="flex flex-row items-end gap-1">
+        <span className="font-mono text-5xl leading-none font-bold text-neutral-900 dark:text-neutral-100">
+          {valueIsDefined
+            ? renderValueToReactNode(value, unit, renderValue)
+            : "--"}
         </span>
         {unit && (
-          <span className="text-2xl text-neutral-500">
+          <span className="pb-1 text-2xl font-light text-neutral-500 dark:text-neutral-400">
             {renderUnitSymbol(unit)}
           </span>
         )}
       </div>
-
-      {unit && (
-        <span className="text-center text-sm text-gray-400 uppercase">
-          {renderUnitSymbolLong(unit)}
-        </span>
-      )}
     </div>
   );
 }

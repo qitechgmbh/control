@@ -119,8 +119,8 @@ impl XtremFrame {
         // Convert to ASCII string
         let ascii = String::from_utf8_lossy(data);
 
-        if let Some(kg_index) = ascii.find("kg") {
-            let mut start = kg_index;
+        if let Some(unit_index) = ascii.find("kg").or_else(|| ascii.find('g')) {
+            let mut start = unit_index;
             while start > 0 {
                 let c = ascii.as_bytes()[start - 1] as char;
                 if !(c.is_ascii_digit() || c == '.' || c == ' ') {
@@ -128,7 +128,7 @@ impl XtremFrame {
                 }
                 start -= 1;
             }
-            let number_str = ascii[start..kg_index].trim();
+            let number_str = ascii[start..unit_index].trim();
             if let Ok(v) = number_str.parse::<f64>() {
                 return v;
             }
