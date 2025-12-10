@@ -143,7 +143,7 @@ export function XtremZebraControlPage() {
               value={state?.xtrem_zebra_state.plate3_target}
               unit="kg"
               step={0.1}
-              min={0}
+              min={0} 
               max={1000}
               renderValue={(value) => value.toFixed(2)}
               onChange={(val) => setPlate3Target(val)}
@@ -161,14 +161,14 @@ export function XtremZebraControlPage() {
           <Label label="Password">
             <EditString
               title="Enter Password"
-              value={password}
+              value={state?.configuration.password}
               onChange={(val) => setPassword(val)}
             />
           </Label>
           <Label label="Configuration String">
             <EditString
               title="Configuration String"
-              value={stringValue}
+              value={state?.configuration.config_string}
               onChange={(val) => setStringValue(val)}
             />
           </Label>
