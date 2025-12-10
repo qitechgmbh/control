@@ -130,11 +130,7 @@ export function XtremZebraControlPage() {
             </TouchButton>
           </Label>
           <Label label="Tare">
-            <TouchButton
-              variant="outline"
-              icon="lu:Scale"
-              onClick={clearLights}
-            >
+            <TouchButton variant="outline" icon="lu:Scale" onClick={setTare}>
               Tare Scales
             </TouchButton>
           </Label>
