@@ -1,0 +1,13 @@
+[package]
+name = "beas_bsl"
+version = "0.1.0"
+edition = "2024"
+
+[lints]
+workspace = true
+
+[dependencies]
+ureq = { version = "2", default-features = false,features = ["json"] }
+serde = "1.0.228"
+serde_json = "1.0.145"
+smol = "2.0.2"
