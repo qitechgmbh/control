@@ -171,7 +171,6 @@ impl XtremZebra {
                 self.in_accumulation = false;
                 let w = self.cycle_max_weight;
 
-                // Turn on appropriate light and record the time
                 if (w >= self.plate1_target - self.tolerance)
                     && (w <= self.plate1_target + self.tolerance)
                 {
@@ -251,10 +250,6 @@ impl XtremZebra {
         self.plate1_counter = 0;
         self.plate2_counter = 0;
         self.plate3_counter = 0;
-        // This is for testing only
-        self.signal_light
-            .beeper
-            .set(!self.signal_light.beeper.get());
         self.emit_state();
     }
     pub fn clear_lights(&mut self) {

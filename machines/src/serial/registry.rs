@@ -116,11 +116,6 @@ lazy_static! {
             product_id: 0x0007, // MACHINE_MOCK
         });
 
-        // sdr.register::<XtremSerial>(SerialDeviceIdentification {
-        //     vendor_id: 0x0001,
-        //     product_id: 0x0010,
-        // });
-
         sdr
     };
 }
