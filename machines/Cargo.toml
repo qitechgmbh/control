@@ -6,6 +6,8 @@ edition = "2024"
 [dependencies]
 ethercrab = "0.6"
 ethercat_hal = { path = "../ethercat-hal" }
+beas_bsl = { path = "../beas_bsl" }
+
 control_core = { path = "../control-core" }
 control_core_derive = { path = "../control-core-derive" }
 units = { path = "../units" }

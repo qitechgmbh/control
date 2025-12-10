@@ -1,5 +1,4 @@
-use crate::{MachineApi, MachineMessage, xtrem_zebra::WeightedItem};
-
+use crate::{MachineApi, MachineMessage};
 use super::XtremZebra;
 use control_core::socketio::{
     event::{Event, GenericEvent},

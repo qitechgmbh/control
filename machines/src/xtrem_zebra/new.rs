@@ -7,7 +7,7 @@ use crate::{
     MachineNewHardware, MachineNewHardwareEthercat, MachineNewTrait, get_ethercat_device,
     validate_no_role_dublicates, validate_same_machine_identification_unique,
 };
-
+use beas_bsl::{WeightedItem, start};
 use anyhow::Error;
 use ethercat_hal::devices::ek1100::{EK1100, EK1100_IDENTITY_A};
 use ethercat_hal::devices::el2004::{EL2004, EL2004_IDENTITY_A, EL2004Port};
@@ -35,7 +35,9 @@ impl MachineNewTrait for XtremZebra {
         // This creates the "driver" for the serial connection to the scales.
         let hardware_serial = XtremSerial::new_serial();
         let (_device_id, xtrem_serial) = hardware_serial?;
-
+        
+        let (request_tx, item_rx, config_tx, worker_handle) = start();    
+        
         smol::block_on(async {
             // Role 0: Buscoupler EK1100
             let _ek1100 =

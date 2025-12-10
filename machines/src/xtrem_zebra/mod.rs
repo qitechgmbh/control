@@ -26,13 +26,7 @@ pub mod act;
 pub mod api;
 pub mod new;
 
-#[derive(Debug, Serialize, Clone)]
-pub struct WeightedItem {
-    pub code: String,
-    pub name: String,
-    pub weight: f32, // weight is in kilo
-    pub quantity: u32,
-}
+use beas_bsl::WeightedItem;
 
 #[derive(Debug)]
 pub struct XtremZebra {
@@ -41,7 +35,6 @@ pub struct XtremZebra {
 
     machine_identification_unique: MachineIdentificationUnique,
     main_sender: Option<Sender<AsyncThreadMessage>>,
-
     // drivers
     xtrem_serial: Arc<RwLock<XtremSerial>>,
 
@@ -69,8 +62,12 @@ pub struct XtremZebra {
     last_raw_weight: f64,
 
     signal_light: SignalLight,
+    
     weighted_item: WeightedItem,
     configuration: Configuration,
+
+    request_tx : Sender<()>,
+    item_rx : Receiver<WeightedItem>,
 
     /// Will be initialized as false and set to true by emit_state
     /// This way we can signal to the client that the first state emission is a default state

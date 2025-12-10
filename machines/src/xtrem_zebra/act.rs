@@ -3,7 +3,8 @@ use crate::MachineAct;
 use crate::MachineMessage;
 use std::time::{Duration, Instant};
 
-use crate::WeightedItem;
+use beas_bsl::WeightedItem;
+
 
 impl XtremZebra {
     pub fn check_for_weighted_item(&self) -> Option<WeightedItem> {
