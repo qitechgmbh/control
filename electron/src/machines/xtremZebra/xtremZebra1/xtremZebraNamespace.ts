@@ -38,7 +38,6 @@ export const liveValuesEventDataSchema = z.object({
 export const stateEventDataSchema = z.object({
   is_default_state: z.boolean(),
   xtrem_zebra_state: z.object({
-    plate_counter: z.number(),
     tolerance: z.number(),
   }),
   weighted_item: z.object({
