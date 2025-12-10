@@ -273,5 +273,5 @@ struct SignalLight {
     _yellow_light_on_since: Option<Instant>,
     red_light: DigitalOutput,
     red_light_on_since: Option<Instant>,
-    beeper: DigitalOutput,
+    _beeper: DigitalOutput,
 }
