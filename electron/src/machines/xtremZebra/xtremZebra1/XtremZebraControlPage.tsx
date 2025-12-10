@@ -1,4 +1,6 @@
 import { ControlCard } from "@/control/ControlCard";
+import { ControlCard } from "@/control/EditString";
+
 import { Page } from "@/components/Page";
 import React from "react";
 import { ControlGrid } from "@/control/ControlGrid";
@@ -24,7 +26,7 @@ export function XtremZebraControlPage() {
     setPlate3Target,
     setTare,
 
-    
+
     setPassword,
     setStringValue,
     
@@ -159,7 +161,7 @@ export function XtremZebraControlPage() {
         <ControlCard title="Access & Configuration">
           <Label label="Password">
             {/* The type="password" attribute is crucial for obscuring the input */}
-            <EditStringValue
+            <EditString
               title="Enter Password"
               value={password}
               onChange={(val) => setPassword(val)}
@@ -167,7 +169,7 @@ export function XtremZebraControlPage() {
             />
           </Label>
           <Label label="Configuration String">
-            <EditStringValue
+            <EditString
               title="Configuration String"
               value={stringValue}
               onChange={(val) => setStringValue(val)}
