@@ -1,5 +1,6 @@
 use crate::{MachineApi, MachineMessage};
 use super::XtremZebra;
+ use beas_bsl::WeightedItem;
 use control_core::socketio::{
     event::{Event, GenericEvent},
     namespace::{

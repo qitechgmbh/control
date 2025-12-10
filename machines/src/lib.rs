@@ -15,7 +15,6 @@ use smol::channel::Sender;
 use socketioxide::extract::SocketRef;
 use std::fmt::Debug;
 use std::{any::Any, sync::Arc, time::Instant};
-use xtrem_zebra::WeightedItem;
 pub mod aquapath1;
 #[cfg(not(feature = "mock-machine"))]
 pub mod buffer1;

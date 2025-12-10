@@ -2,7 +2,7 @@ use std::time::Instant;
 
 use crate::serial::devices::xtrem_zebra::XtremSerial;
 use crate::xtrem_zebra::api::XtremZebraNamespace;
-use crate::xtrem_zebra::{SignalLight, WeightedItem, XtremZebra};
+use crate::xtrem_zebra::{SignalLight, XtremZebra};
 use crate::{
     MachineNewHardware, MachineNewHardwareEthercat, MachineNewTrait, get_ethercat_device,
     validate_no_role_dublicates, validate_same_machine_identification_unique,
@@ -99,6 +99,9 @@ impl MachineNewTrait for XtremZebra {
                     password: None,
                     config_string: None,
                 },
+                request_tx,
+                item_rx,
+                config_tx,
             };
             Ok(xtrem_zebra_machine)
         })

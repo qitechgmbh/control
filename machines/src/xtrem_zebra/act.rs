@@ -8,12 +8,13 @@ use beas_bsl::WeightedItem;
 
 impl XtremZebra {
     pub fn check_for_weighted_item(&self) -> Option<WeightedItem> {
-        Some(WeightedItem {
-            code: "ZURO-20163".to_owned(),
-            name: "Zuschnitt 1,2 x 912 x 1801 mm 216,5 ltr.".to_owned(),
-            weight: 14.750,
-            quantity: 288,
-        })
+       let res = self.item_rx.try_recv();
+       match res {
+            Ok(item) => Some(item),
+            Err(e) => {
+                None
+            },
+        }
     }
 }
 
@@ -26,7 +27,13 @@ impl MachineAct for XtremZebra {
             }
             Err(_) => (),
         };
+
         self.update();
+
+        let it = self.check_for_weighted_item();
+        if it.is_some() {
+            self.weighted_item = it.unwrap();
+        }
 
         // IF the current one is finished check for a new one
         // let item = self.check_for_weighted_item();
@@ -39,7 +46,6 @@ impl MachineAct for XtremZebra {
     }
 
     fn act_machine_message(&mut self, msg: MachineMessage) {
-        tracing::info!("{:?}", msg);
         match msg {
             MachineMessage::SubscribeNamespace(namespace) => {
                 self.namespace.namespace = Some(namespace);

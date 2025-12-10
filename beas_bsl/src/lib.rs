@@ -40,7 +40,7 @@ impl fmt::Display for ApiError {
 }
 
 // --- Data Structures (No change needed) ---
-#[derive(Debug, Clone)] // Added Clone for config channel
+#[derive(Debug, Clone,Serialize)] // Added Clone for config channel
 pub struct WeightedItem {
     pub code : String,
     pub name: String,

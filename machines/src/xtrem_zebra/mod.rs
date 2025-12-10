@@ -26,7 +26,7 @@ pub mod act;
 pub mod api;
 pub mod new;
 
-use beas_bsl::WeightedItem;
+use beas_bsl::{ApiConfig, WeightedItem};
 
 #[derive(Debug)]
 pub struct XtremZebra {
@@ -68,7 +68,7 @@ pub struct XtremZebra {
 
     request_tx : Sender<()>,
     item_rx : Receiver<WeightedItem>,
-
+    config_tx : Sender<ApiConfig>,
     /// Will be initialized as false and set to true by emit_state
     /// This way we can signal to the client that the first state emission is a default state
     emitted_default_state: bool,
@@ -261,14 +261,8 @@ impl XtremZebra {
         self.signal_light.red_light.set(false);
     }
     pub fn start(&mut self) {
-        if let Some(weighted_item) = self.check_for_weighted_item() {
-            self.set_plate1_target_weight(weighted_item.weight as f64);
-            self.weighted_item.weight = weighted_item.weight;
-            self.weighted_item.quantity = weighted_item.quantity;
-            self.zero_counters();
-            self.clear_lights();
-            self.emit_state();
-        }
+        let _res = self.config_tx.try_send(ApiConfig { server_root: self.configuration.config_string.clone().unwrap(), password: self.configuration.password.clone().unwrap(), session_id: None });
+        let _res = self.request_tx.try_send(());   
     }
 
     pub fn update(&mut self) {
