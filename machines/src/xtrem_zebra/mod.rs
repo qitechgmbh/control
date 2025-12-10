@@ -6,6 +6,7 @@ use std::{
 use api::Configuration;
 use control_core::socketio::namespace::NamespaceCacheingLogic;
 use ethercat_hal::io::digital_output::DigitalOutput;
+use serde::Serialize;
 use smol::{
     channel::{Receiver, Sender},
     lock::RwLock,
@@ -25,7 +26,7 @@ pub mod act;
 pub mod api;
 pub mod new;
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Clone)]
 pub struct WeightedItem {
     pub code: String,
     pub name: String,
@@ -64,12 +65,11 @@ pub struct XtremZebra {
     plate2_counter: u32,
     plate3_counter: u32,
 
-    target_quantity: u32,
-
     tare_weight: f64,
     last_raw_weight: f64,
 
     signal_light: SignalLight,
+    weighted_item: WeightedItem,
     configuration: Configuration,
 
     /// Will be initialized as false and set to true by emit_state
@@ -137,7 +137,7 @@ impl XtremZebra {
             plate2_target: self.plate2_target,
             plate3_target: self.plate3_target,
             tolerance: self.tolerance,
-            target_quantity: self.target_quantity,
+            weighted_item: self.weighted_item.clone(),
         };
 
         StateEvent {
@@ -240,10 +240,6 @@ impl XtremZebra {
         self.plate3_target = target;
         self.emit_state();
     }
-    pub fn set_target_quantity(&mut self, target: u32) {
-        self.target_quantity = target;
-        self.emit_state();
-    }
     pub fn set_tolerance(&mut self, tolerance: f64) {
         self.tolerance = tolerance;
         self.emit_state();
@@ -270,9 +266,11 @@ impl XtremZebra {
     pub fn start(&mut self) {
         if let Some(weighted_item) = self.check_for_weighted_item() {
             self.set_plate1_target_weight(weighted_item.weight as f64);
-            self.set_target_quantity(weighted_item.quantity);
+            self.weighted_item.weight = weighted_item.weight;
+            self.weighted_item.quantity = weighted_item.quantity;
             self.zero_counters();
             self.clear_lights();
+            self.emit_state();
         }
     }
 

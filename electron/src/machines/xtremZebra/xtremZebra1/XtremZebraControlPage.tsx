@@ -60,9 +60,9 @@ export function XtremZebraControlPage() {
         <ControlCard title="Plate Counter">
           <DisplayValue
             title="Target Quantity"
-            icon="lu:RotateCcw"
+            icon="lu:Tally1"
             unit="pcs"
-            value={state?.xtrem_zebra_state.target_quantity}
+            value={state?.weighted_item.quantity}
             renderValue={(v) => v.toFixed(1)}
           />
           <TimeSeriesValueNumeric

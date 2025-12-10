@@ -1,4 +1,4 @@
-use crate::{MachineApi, MachineMessage};
+use crate::{MachineApi, MachineMessage, xtrem_zebra::WeightedItem};
 
 use super::XtremZebra;
 use control_core::socketio::{
@@ -58,8 +58,8 @@ pub struct XtremZebraState {
     pub plate3_target: f64,
     /// tolerance
     pub tolerance: f64,
-    /// target quantity
-    pub target_quantity: u32,
+    /// weighted item
+    pub weighted_item: WeightedItem,
 }
 
 pub enum XtremZebraEvents {

@@ -44,7 +44,12 @@ export const stateEventDataSchema = z.object({
     plate2_target: z.number(),
     plate3_target: z.number(),
     tolerance: z.number(),
-    target_quantity: z.number(),
+  }),
+  weighted_item: z.object({
+    code: z.string(),
+    name: z.string(),
+    weight: z.number(),
+    quantity: z.number(),
   }),
   configuration: z.object({
     // <--- This new property is assumed
