@@ -37,7 +37,7 @@ export function XtremZebraControlPage() {
     <Page>
       <ControlGrid columns={2}>
         <ControlCard title="Target">
-          <Label label={state?.weighted_item.name ?? ""}>
+          <Label label={state?.weighted_item.name ?? "Waiting for data..."}>
             <DisplayValue
               title="Target Weight"
               icon="lu:Scale"
