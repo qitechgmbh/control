@@ -73,6 +73,7 @@ function useXtremZebra(
     z.literal("ClearLights"),
   );
 
+
   // 1. New Zod Schemas for String/Password
   // Assuming the mutation request body is an object containing the new string/password value.
   const schemaConfigString = z.object({
@@ -237,10 +238,11 @@ function useXtremZebra(
     setPlate2Target,
     setPlate3Target,
     setTare,
-    setPassword,
-    SetConfigString,
     zeroCounters,
     clearLights,
+
+    setPassword,
+    setStringValue,
   };
 }
 

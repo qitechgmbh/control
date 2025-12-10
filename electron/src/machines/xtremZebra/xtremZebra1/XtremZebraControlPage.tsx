@@ -23,6 +23,12 @@ export function XtremZebraControlPage() {
     setPlate2Target,
     setPlate3Target,
     setTare,
+
+    
+    setPassword,
+    setStringValue,
+    
+
     zeroCounters,
     clearLights,
     isDisabled,
@@ -170,7 +176,7 @@ export function XtremZebraControlPage() {
           </Label>
         </ControlCard>
         {/* ----------------------------------------------------- */}
-        
+
       </ControlGrid>
     </Page>
   );
