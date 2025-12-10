@@ -33,7 +33,7 @@ impl MachineNewTrait for XtremZebra {
         let hardware_serial = XtremSerial::new_serial();
         let (_device_id, xtrem_serial) = hardware_serial?;
         let (request_tx, item_rx, config_tx, _worker_handle) = start();    
-        let api_config = read_api_config_from_file("/tmp/api_config.json");
+        let api_config = read_api_config_from_file("/home/qitech/api_config.json");
         
         match api_config {
             Ok(api_config) => {

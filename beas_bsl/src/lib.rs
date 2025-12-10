@@ -497,8 +497,12 @@ pub fn beas_client_receiver_logic(
                 )));
             }
         }
-    }
 
+    }
+    Err(ChannelError::ReceiveError(
+        "Client response timeout.".to_string(),
+    ))
+}
 pub fn start() -> (RequestSender, ItemReceiver, ConfigSender, thread::JoinHandle<Result<(), WorkerError>>) {
     let channels = create_worker_channels();    
     let consumer_request_tx = channels.request_tx.clone();
