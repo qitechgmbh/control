@@ -5,15 +5,12 @@ use std::time::{Duration, Instant};
 
 use beas_bsl::WeightedItem;
 
-
 impl XtremZebra {
     pub fn check_for_weighted_item(&self) -> Option<WeightedItem> {
-       let res = self.item_rx.try_recv();
-       match res {
+        let res = self.item_rx.try_recv();
+        match res {
             Ok(item) => Some(item),
-            Err(e) => {
-                None
-            },
+            Err(_e) => None,
         }
     }
 }
@@ -32,7 +29,7 @@ impl MachineAct for XtremZebra {
 
         let it = self.check_for_weighted_item();
         if it.is_some() {
-            println!("Got New Item: {:?}",it);
+            println!("Got New Item: {:?}", it);
             self.weighted_item = it.unwrap();
             self.emit_state();
             self.zero_counters();

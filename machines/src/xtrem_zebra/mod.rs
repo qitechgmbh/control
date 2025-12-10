@@ -6,7 +6,6 @@ use std::{
 use api::Configuration;
 use control_core::socketio::namespace::NamespaceCacheingLogic;
 use ethercat_hal::io::digital_output::DigitalOutput;
-use serde::Serialize;
 use smol::{
     channel::{Receiver, Sender},
     lock::RwLock,
@@ -65,7 +64,7 @@ pub struct XtremZebra {
     config_tx: Sender<ApiConfig>,
     /// Will be initialized as false and set to true by emit_state
     /// This way we can signal to the client that the first state emission is a default state
-    emitted_default_state: bool,
+    _emitted_default_state: bool,
 }
 
 impl Machine for XtremZebra {

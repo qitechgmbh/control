@@ -36,7 +36,7 @@ impl MachineNewTrait for XtremZebra {
         let hardware_serial = XtremSerial::new_serial();
         let (_device_id, xtrem_serial) = hardware_serial?;
 
-        let (request_tx, item_rx, config_tx, worker_handle) = start();
+        let (request_tx, item_rx, config_tx, _worker_handle) = start();
 
         smol::block_on(async {
             // Role 0: Buscoupler EK1100
@@ -65,7 +65,7 @@ impl MachineNewTrait for XtremZebra {
                     namespace: params.namespace.clone(),
                 },
                 last_measurement_emit: Instant::now(),
-                emitted_default_state: false,
+                _emitted_default_state: false,
                 total_weight: 0.0,
                 current_weight: 0.0,
                 last_weight: 0.0,

@@ -132,11 +132,6 @@ impl MachineApi for XtremZebra {
                 self.configuration.password = Some(pw);
                 println!("SetPassword {:?}", self.configuration.password);
             }
-            Mutation::SetConfigString(root) => {
-                println!("SetConfigString {}", root);
-                self.configuration.config_string = Some(root);
-            }
-            Mutation::SetPassword(pw) => self.configuration.password = Some(pw),
             Mutation::Start => {
                 self.start();
             }
