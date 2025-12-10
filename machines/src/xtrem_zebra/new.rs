@@ -7,8 +7,8 @@ use crate::{
     MachineNewHardware, MachineNewHardwareEthercat, MachineNewTrait, get_ethercat_device,
     validate_no_role_dublicates, validate_same_machine_identification_unique,
 };
+use beas_bsl::{WeightedItem, read_api_config_from_file, start};
 use anyhow::Error;
-use beas_bsl::{WeightedItem, start};
 use ethercat_hal::devices::ek1100::{EK1100, EK1100_IDENTITY_A};
 use ethercat_hal::devices::el2004::{EL2004, EL2004_IDENTITY_A, EL2004Port};
 use ethercat_hal::io::digital_output::DigitalOutput;
@@ -18,10 +18,8 @@ use super::api::Configuration;
 impl MachineNewTrait for XtremZebra {
     fn new<'maindevice>(params: &crate::MachineNewParams) -> Result<Self, Error> {
         let device_identification = params.device_group.to_vec();
-
         validate_same_machine_identification_unique(&device_identification)?;
         validate_no_role_dublicates(&device_identification)?;
-
         let hardware: &&MachineNewHardwareEthercat<'_, '_, '_> = match &params.hardware {
             MachineNewHardware::Ethercat(x) => x,
             _ => {
@@ -31,12 +29,18 @@ impl MachineNewTrait for XtremZebra {
                 ));
             }
         };
-
         // This creates the "driver" for the serial connection to the scales.
         let hardware_serial = XtremSerial::new_serial();
         let (_device_id, xtrem_serial) = hardware_serial?;
-
-        let (request_tx, item_rx, config_tx, _worker_handle) = start();
+        let (request_tx, item_rx, config_tx, _worker_handle) = start();    
+        let api_config = read_api_config_from_file("/tmp/api_config.json");
+        
+        match api_config {
+            Ok(api_config) => {
+                let _res = config_tx.try_send(api_config);
+            },
+            Err(_e) => (),
+        };
 
         smol::block_on(async {
             // Role 0: Buscoupler EK1100

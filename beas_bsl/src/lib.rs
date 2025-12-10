@@ -250,14 +250,51 @@ pub fn get_newest_weighted_item(
 }
 
 // --- New Channel for Configuration ---
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone,Deserialize)]
 pub struct ApiConfig {
     pub server_root: String,
     pub password: String,
     pub session_id: Option<String>,
 }
+
 type ConfigSender = Sender<ApiConfig>;
 type ConfigReceiver = Receiver<ApiConfig>;
+
+
+
+// A unified error type to handle both IO and JSON errors
+#[derive(Debug)]
+pub enum ConfigError {
+    Io(std::io::Error),
+    Json(serde_json::Error),
+}
+
+impl From<std::io::Error> for ConfigError {
+    fn from(err: std::io::Error) -> Self {
+        ConfigError::Io(err)
+    }
+}
+impl From<serde_json::Error> for ConfigError {
+    fn from(err: serde_json::Error) -> Self {
+        ConfigError::Json(err)
+    }
+}
+impl fmt::Display for ConfigError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+pub fn read_api_config_from_file(file_path: &str) -> Result<ApiConfig, ConfigError> {
+    // 1. Read the file content into a String
+    let json_data = std::fs::read_to_string(file_path)?; // Uses ? to handle IoError
+
+    // 2. Deserialize the JSON string into the ApiConfig struct
+    let config: ApiConfig = serde_json::from_str(&json_data)?; // Uses ? to handle JsonError
+
+    // 3. Return the successfully loaded config
+    Ok(config)
+}
 
 #[derive(Debug)]
 pub enum ChannelError {
@@ -462,18 +499,8 @@ pub fn beas_client_receiver_logic(
         }
     }
 
-    Err(ChannelError::ReceiveError(
-        "Client response timeout.".to_string(),
-    ))
-}
-
-pub fn start() -> (
-    RequestSender,
-    ItemReceiver,
-    ConfigSender,
-    thread::JoinHandle<Result<(), WorkerError>>,
-) {
-    let channels = create_worker_channels();
+pub fn start() -> (RequestSender, ItemReceiver, ConfigSender, thread::JoinHandle<Result<(), WorkerError>>) {
+    let channels = create_worker_channels();    
     let consumer_request_tx = channels.request_tx.clone();
     let consumer_item_rx = channels.item_rx.clone();
     let consumer_config_tx = channels.config_tx.clone();
@@ -494,19 +521,12 @@ pub fn start() -> (
 
 /*
 pub fn main() {
-    let (request_tx, item_rx, config_tx, worker_handle) = start();
-
-    let new_config = ApiConfig {
-        server_root: "http://192.0.2.26:8080/odata4/".to_string(),
-        password: "".to_string(),
-        session_id: None,
-    };
-
-    if let Err(e) = config_tx.try_send(new_config) {
+    let (request_tx, item_rx, config_tx, _worker_handle) = start(); 
+    let api_config = read_api_config_from_file("/tmp/api_config.json").unwrap();
+    if let Err(e) = config_tx.try_send(api_config) {
         eprintln!("[MAIN] Failed to send new config: {:?}", e);
     }
-
-    match client_receiver_logic(request_tx.clone(), item_rx.clone()) {
+    match beas_client_receiver_logic(request_tx.clone(), item_rx.clone()) {
         Ok(received_item) => {
             println!("[MAIN] ✅ T3 Success: Item code is {}", received_item.code);
         },
@@ -514,5 +534,4 @@ pub fn main() {
     }
     thread::sleep(Duration::from_millis(100)); // Give time for worker to process config
 }
-
 */
