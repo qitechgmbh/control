@@ -26,6 +26,15 @@ pub mod api;
 pub mod new;
 
 #[derive(Debug)]
+pub struct WeightedItem {
+    pub code : String,
+    pub name: String,
+    pub weight: f32, // weight is in kilo
+    pub quantity : u32,
+}
+
+
+#[derive(Debug)]
 pub struct XtremZebra {
     api_receiver: Receiver<MachineMessage>,
     api_sender: Sender<MachineMessage>,

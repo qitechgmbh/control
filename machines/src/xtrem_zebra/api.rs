@@ -34,7 +34,7 @@ impl LiveValuesEvent {
 #[derive(Serialize, Debug, Clone)]
 pub struct Configuration {
     pub password : Option<String>,
-    pub server_root : Option<String>,
+    pub config_string : Option<String>,
 }
 
 #[derive(Serialize, Debug, Clone, BuildEvent)]
@@ -146,7 +146,7 @@ impl MachineApi for XtremZebra {
             }
             Mutation::SetConfigString(root) =>{
                 println!("SetConfigString {}",root);
-                self.configuration.server_root = Some(root);
+                self.configuration.config_string = Some(root);
             },
             Mutation::SetPassword(pw) => self.configuration.password = Some(pw),
         }

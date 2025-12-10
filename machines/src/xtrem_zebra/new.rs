@@ -89,7 +89,7 @@ impl MachineNewTrait for XtremZebra {
                 },
                 configuration: Configuration{
                     password: None,
-                    server_root: None,
+                    config_string: None,
                 },
             };
             Ok(xtrem_zebra_machine)
