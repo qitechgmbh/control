@@ -10,16 +10,13 @@ import React from "react";
 import { useXtremZebra1 } from "./useXtremZebra";
 
 export function XtremZebraGraphPage() {
-  const { currentWeight, plate1Counter, plate2Counter, plate3Counter, state } =
-    useXtremZebra1();
+  const { currentWeight, plateCounter, state } = useXtremZebra1();
 
   const syncHook = useGraphSync("weight-group");
 
   const weightColor = "#3b82f6";
   const counterColor = "#3b82f6";
-  const plate1CounterColor = "#ef4444";
-  const plate2CounterColor = "#22c55e";
-  const plate3CounterColor = "#eab308";
+  const plateCounterColor = "#ef4444";
 
   // Base config
   const baseConfig: GraphConfig = {
@@ -30,30 +27,12 @@ export function XtremZebraGraphPage() {
   };
 
   const plateCounterData = [
-    ...(plate1Counter
+    ...(plateCounter
       ? [
           {
-            newData: plate1Counter,
-            title: "Plate 1 Counter",
-            color: plate1CounterColor,
-          },
-        ]
-      : []),
-    ...(plate2Counter
-      ? [
-          {
-            newData: plate2Counter,
-            title: "Plate 2 Counter",
-            color: plate2CounterColor,
-          },
-        ]
-      : []),
-    ...(plate3Counter
-      ? [
-          {
-            newData: plate3Counter,
-            title: "Plate 3 Counter",
-            color: plate3CounterColor,
+            newData: plateCounter,
+            title: "Plate Counter",
+            color: plateCounterColor,
           },
         ]
       : []),
