@@ -29,13 +29,6 @@ export function Extruder2GraphsPage() {
 
   const syncHook = useGraphSync("extruder-graphs");
 
-  // ESTIMATED SCALES (REPLACE WITH REAL LIMITS)
-  const SCALE_TEMP = { min: 0, max: 450 }; // Typical max temp for extruders (in °C)
-  const SCALE_POWER = { min: 0, max: 10000 }; // Estimated max power (in W)
-  const SCALE_CURRENT = { min: 0, max: 50 }; // Estimated max motor current (in A)
-  const SCALE_PRESSURE = { min: 0, max: 250 }; // Estimated max pressure (in bar)
-  const SCALE_RPM = { min: 0, max: 100 }; // Estimated max screw RPM (in rpm)
-
   // Base config
   const baseConfig: GraphConfig = {
     defaultTimeWindow: 30 * 60 * 1000, // 30 minutes
@@ -272,7 +265,6 @@ export function Extruder2GraphsPage() {
           renderValue={(value) => value.toFixed(2)}
           graphId="pressure-graph"
           currentTimeSeries={pressure}
-          yAxisScale={SCALE_PRESSURE}
         />
 
         <GraphWithMarkerControls
@@ -283,7 +275,6 @@ export function Extruder2GraphsPage() {
           renderValue={(value) => value.toFixed(1)}
           graphId="combined-temperatures"
           currentTimeSeries={nozzleTemperature}
-          yAxisScale={SCALE_TEMP}
         />
 
         <GraphWithMarkerControls
@@ -294,7 +285,6 @@ export function Extruder2GraphsPage() {
           renderValue={(value) => value.toFixed(1)}
           graphId="combined-power"
           currentTimeSeries={combinedPower}
-          yAxisScale={SCALE_POWER}
         />
 
         <GraphWithMarkerControls
@@ -308,7 +298,6 @@ export function Extruder2GraphsPage() {
           renderValue={(value) => value.toFixed(2)}
           graphId="motor-current"
           currentTimeSeries={motorCurrent}
-          yAxisScale={SCALE_CURRENT}
         />
 
         <GraphWithMarkerControls
@@ -333,7 +322,6 @@ export function Extruder2GraphsPage() {
           renderValue={(value) => value.toFixed(0)}
           graphId="rpm-graph"
           currentTimeSeries={motorScrewRpm}
-          yAxisScale={SCALE_RPM}
         />
       </div>
 
