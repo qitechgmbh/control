@@ -4,4 +4,4 @@ dist/
 Cargo.lock
 dhat-heap.json
 build.sh
-
+shell.nix

@@ -6,19 +6,18 @@ use crate::{
     app_state::SharedState,
     ethercat::config::{MAX_FRAMES, MAX_PDU_DATA, MAX_SUBDEVICES, PDI_LEN},
 };
+use control_core::realtime::set_core_affinity;
+use control_core::socketio::namespace::NamespaceCacheingLogic;
 #[cfg(all(target_os = "linux", not(feature = "development-build")))]
 use control_core::{irq_handling::set_irq_affinity, realtime::set_realtime_priority};
 use ethercat_hal::debugging::diagnosis_history::get_most_recent_diagnosis_message;
+use ethercat_hal::devices::devices_from_subdevices;
+use ethercrab::std::ethercat_now;
+use ethercrab::{MainDevice, MainDeviceConfig, PduStorage, RetryBehaviour, Timeouts};
 use machines::machine_identification::{
     DeviceHardwareIdentification, DeviceHardwareIdentificationEthercat, DeviceIdentification,
     DeviceIdentificationIdentified, MachineIdentificationUnique, read_device_identifications,
 };
-
-use control_core::realtime::set_core_affinity;
-use control_core::socketio::namespace::NamespaceCacheingLogic;
-use ethercat_hal::devices::devices_from_subdevices;
-use ethercrab::std::ethercat_now;
-use ethercrab::{MainDevice, MainDeviceConfig, PduStorage, RetryBehaviour, Timeouts};
 use machines::registry::{MACHINE_REGISTRY, MachineRegistry};
 use machines::{Machine, MachineNewHardware, MachineNewHardwareEthercat, MachineNewParams};
 use smol::channel::Sender;
@@ -156,7 +155,6 @@ pub async fn set_ethercat_devices<const MAX_SUBDEVICES: usize, const MAX_PDI: us
             }),
         }
     }
-
     let _ = shared_state
         .rt_machine_creation_channel
         .send(crate::app_state::HotThreadMessage::AddMachines(machines))

@@ -251,8 +251,11 @@ impl ExtruderV2 {
 
     pub fn set_regulation(&mut self, uses_rpm: bool) {
         if !self.screw_speed_controller.get_uses_rpm() && uses_rpm {
-            self.screw_speed_controller
-                .set_target_screw_rpm(self.screw_speed_controller.target_rpm);
+            self.screw_speed_controller.set_target_screw_rpm(
+                self.screw_speed_controller.target_rpm,
+                AngularVelocity::new::<revolution_per_minute>(1500.0),
+                4,
+            );
             self.screw_speed_controller.set_uses_rpm(uses_rpm);
         }
 
@@ -270,8 +273,11 @@ impl ExtruderV2 {
     }
 
     pub fn set_target_rpm(&mut self, rpm: f64) {
-        self.screw_speed_controller
-            .set_target_screw_rpm(AngularVelocity::new::<revolution_per_minute>(rpm));
+        self.screw_speed_controller.set_target_screw_rpm(
+            AngularVelocity::new::<revolution_per_minute>(rpm),
+            AngularVelocity::new::<revolution_per_minute>(1500.0),
+            4,
+        );
         self.emit_state();
     }
 
