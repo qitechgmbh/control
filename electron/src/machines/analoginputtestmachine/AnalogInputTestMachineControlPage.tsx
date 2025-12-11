@@ -8,6 +8,7 @@ import {
   createTimeSeries,
   TimeSeries,
   TimeSeriesValue,
+  TimeSeriesWithInsert,
 } from "@/lib/timeseries";
 import { analogInputTestMachineSerialRoute } from "@/routes/routes";
 import React, { useEffect, useMemo, useState } from "react";
@@ -19,7 +20,7 @@ import { StoreApi, create } from "zustand";
 
 const createMachineStore = (): StoreApi<{
   measurementRateHz?: number;
-  measurement?: [number, number]; //[0]: measrement value, [1]: measurement timestamp
+  measurement?: [number, number]; //[0]: measurement value, [1]: measurement timestamp
 }> =>
   create<{
     measurementRateHz?: number;
@@ -31,7 +32,6 @@ const createMachineStore = (): StoreApi<{
 const useMachineNamespace = createNamespaceHookImplementation({
   createStore: () => createMachineStore(), // Your Zustand store
   createEventHandler: (store, throttledUpdater) => (event) => {
-    console.log(event);
     const oldState = store.getState();
     const newMeasurementDataHz = event.data["MeasurementDataHz"];
     const newMeasurement: [number, number] = event.data["Measurement"];
@@ -91,14 +91,28 @@ export function AnalogInputTestMachineControl(): React.JSX.Element {
 
   const [measurementRate, setMeasurementRate] = useState(1);
 
-  const [seriesData, setSeriesData] = useState<TimeSeries | null>(null);
+  const foo: TimeSeriesWithInsert = createTimeSeries(
+    100,
+    1000,
+    30 * 1000,
+    5 * 60 * 1000,
+  );
+
+  const [seriesData, setSeriesData] = useState<TimeSeries | null>(
+    foo.initialTimeSeries,
+  );
 
   useEffect(() => {
-    const stopFeed = startDemoDataFeed((newSeriesState) => {
-      setSeriesData(newSeriesState);
-    });
-    return () => stopFeed();
-  }, []);
+    console.log(websocketStore);
+    const lastMeasurement = websocketStore.measurement;
+    if (lastMeasurement && seriesData) {
+      const dataPoint: TimeSeriesValue = {
+        value: lastMeasurement[0],
+        timestamp: lastMeasurement[1],
+      };
+      setSeriesData(foo.insert(seriesData, dataPoint));
+    }
+  }, [websocketStore]);
 
   if (!seriesData) return <div>Initializing Sensor...</div>;
 
@@ -136,13 +150,65 @@ export function AnalogInputTestMachineControl(): React.JSX.Element {
         </ControlCard>
         <ControlCard title="Results">
           <div className="flex flex-row">
-            <MiniGraph newData={seriesData} width={500}></MiniGraph>
+            <MiniGraph
+              newData={seriesData.initialTimeSeries}
+              width={500}
+            ></MiniGraph>
             <div className="flex flex-col justify-center">
-              {seriesData.current?.value.toFixed(4)}A
+              {seriesData.initialTimeSeries.current?.value.toFixed(4)}A
             </div>
           </div>
         </ControlCard>
       </ControlGrid>
     </Page>
   );
+}
+
+/**
+ * Starts a simulation that pumps random data into a TimeSeries.
+ * * @param onUpdate - Callback function that receives the new immutable TimeSeries state every tick.
+ * @returns A stop function to clear the interval.
+ */
+export function startDemoDataFeed(
+  onUpdate: (series: TimeSeries) => void,
+): () => void {
+  // 1. Configuration constants
+  const UPDATE_RATE_MS = 50; // How fast the "sensor" pushes data (20Hz)
+  const SHORT_WINDOW = 30 * 1000; // 30 seconds retention
+  const LONG_WINDOW = 5 * 60 * 1000; // 5 minutes retention
+  // 2. Initialize the Series using your factory
+  // Short: sample every 100ms (decimates the 50ms input)
+  // Long: sample every 1000ms
+  const { initialTimeSeries, insert } = createTimeSeries(
+    100,
+    1000,
+    SHORT_WINDOW,
+    LONG_WINDOW,
+  );
+  // 3. Mutable container for our immutable state
+  let currentState = initialTimeSeries;
+  // Track the last value for "Random Walk" generation
+  let lastValue = 50;
+  // 4. Start the simulation loop
+  const intervalId = setInterval(() => {
+    const now = Date.now();
+    // Generate a "Random Walk" value (smoother than pure random)
+    // New value = Old Value + (random small change)
+    const change = (Math.random() - 0.5) * 5;
+    let newValue = lastValue + change;
+    // Clamp values between 0 and 100 to keep chart pretty
+    newValue = Math.max(0, Math.min(100, newValue));
+    lastValue = newValue;
+    const dataPoint: TimeSeriesValue = {
+      timestamp: now,
+      value: newValue,
+    };
+    // 5. Perform the immutable update
+    // We overwrite our local 'currentState' with the new draft from Immer
+    currentState = insert(currentState, dataPoint);
+    // 6. Notify the consumer (e.g., React Component)
+    onUpdate(currentState);
+  }, UPDATE_RATE_MS);
+  // Return a cleanup function
+  return () => clearInterval(intervalId);
 }
