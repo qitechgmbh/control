@@ -13,14 +13,6 @@ import { TimeSeries } from "@/lib/timeseries";
 import { Unit } from "@/control/units";
 import { GraphWithMarkerControls } from "@/components/graph/GraphWithMarkerControls";
 
-// Define placeholder Y-Axis scales (MUST BE UPDATED WITH ACTUAL MACHINE LIMITS)
-// TODO: why is it necessary here?
-const WINDER_RPM_SCALE = { min: 0, max: 1000 };
-const WINDER_ANGLE_SCALE = { min: 0, max: 90 }; 
-const WINDER_POS_SCALE = { min: 0, max: 500 }; 
-const WINDER_SPEED_SCALE = { min: 0, max: 100 }; 
-const WINDER_PROGRESS_SCALE = { min: 0, max: 50000 };
-
 export function Winder2GraphsPage() {
   const {
     state,
@@ -118,7 +110,6 @@ export function SpoolRpmGraph({
       config={config}
       graphId="spool-rpm"
       currentTimeSeries={newData}
-      yAxisScale={WINDER_RPM_SCALE} // TODO: is it necessary?
     />
   );
 }
@@ -180,7 +171,6 @@ export function TraversePositionGraph({
       config={config}
       graphId="traverse-position"
       currentTimeSeries={newData}
-      yAxisScale={WINDER_POS_SCALE} // TODO: is it necessary?
     />
   );
 }
@@ -217,7 +207,6 @@ export function TensionArmAngleGraph({
       config={config}
       graphId="tension-arm-angle"
       currentTimeSeries={newData}
-      yAxisScale={WINDER_ANGLE_SCALE} // TODO: is it necessary?
     />
   );
 }
@@ -255,7 +244,6 @@ export function SpoolProgressGraph({
       config={config}
       graphId="spool-progress"
       currentTimeSeries={newData}
-      yAxisScale={WINDER_PROGRESS_SCALE} // TODO: is it necessary?
     />
   );
 }
@@ -309,7 +297,6 @@ export function PullerSpeedGraph({
       config={config}
       graphId="puller-speed"
       currentTimeSeries={newData}
-      yAxisScale={WINDER_SPEED_SCALE} // TODO: is it necessary?
     />
   );
 }
