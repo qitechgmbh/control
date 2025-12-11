@@ -40,7 +40,7 @@ export function TestMotorControlPage() {
               value={safeState.motor_velocity}
               unit="rpm"
               min={0}
-              max={1000} // Setze hier dein Limit
+              max={1000} // Limit
               step={1}
               onChange={(val) => setVelocity(val)}
               // Zeigt den Wert (hier ganze Zahl)
