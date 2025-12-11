@@ -89,5 +89,6 @@ To get started with actual hardware, check out these step-by-step tutorials:
 
 - **[LED Control with EL2004](./minimal-example-el2004.md)** - Digital output control, the simplest possible hardware setup
 - **[Analog Input with EL3021](./minimal-example-el3021.md)** - Reading analog current measurements
+- **[Stepper Motor with EL7031-0030](./example-el7031-0030-stepper.md)** - Controlling an stepper motor
 
 These examples provide complete hardware wiring diagrams and software setup instructions.

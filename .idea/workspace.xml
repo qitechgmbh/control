@@ -32,13 +32,22 @@
     </cargoProject>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="b557d8ff-b48e-4abd-9051-810d7626e7a0" name="Changes" comment="stepper motor with ethercat beckhoff Ek1100 and EL7031 0030 + UI works">
+    <list default="true" id="b557d8ff-b48e-4abd-9051-810d7626e7a0" name="Changes" comment="finished stepper motor">
+      <change afterPath="$PROJECT_DIR$/docs/assets/UI_motor.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/docs/assets/UI_start_motor.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/docs/assets/machine_assigment_motor.png" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/electron/src/machines/ethercat_beckhoff/TestMotorControlPage.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/electron/src/machines/ethercat_beckhoff/TestMotorControlPage.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="EmbeddingIndexingInfo">
+    <option name="cachedIndexableFilesCount" value="866" />
+    <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
   </component>
   <component name="ExecutionTargetManager" SELECTED_TARGET="RsBuildProfile:test" />
   <component name="FileTemplateManagerImpl">
@@ -70,40 +79,41 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
-    &quot;NIXITCH_NIXPKGS_CONFIG&quot;: &quot;&quot;,
-    &quot;NIXITCH_NIX_CONF_DIR&quot;: &quot;&quot;,
-    &quot;NIXITCH_NIX_OTHER_STORES&quot;: &quot;&quot;,
-    &quot;NIXITCH_NIX_PATH&quot;: &quot;&quot;,
-    &quot;NIXITCH_NIX_PROFILES&quot;: &quot;&quot;,
-    &quot;NIXITCH_NIX_REMOTE&quot;: &quot;&quot;,
-    &quot;NIXITCH_NIX_USER_PROFILE_DIR&quot;: &quot;&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.rust.reset.selective.auto.import&quot;: &quot;true&quot;,
-    &quot;SHELLCHECK.PATH&quot;: &quot;/home/qitech/.local/share/JetBrains/RustRover2025.2/Shell Script/shellcheck&quot;,
-    &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;Hamids-Branch&quot;,
-    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;/home/qitech/Schreibtisch/QiTechCode&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_interpreter_path&quot;: &quot;/home/qitech/.config/JetBrains/RustRover2025.2/node/versions/24.11.1/bin/node&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;org.rust.cargo.project.model.PROJECT_DISCOVERY&quot;: &quot;true&quot;,
-    &quot;org.rust.first.attach.projects&quot;: &quot;true&quot;,
-    &quot;prettierjs.PrettierConfiguration.Package&quot;: &quot;/home/qitech/Schreibtisch/QiTechCode/electron/node_modules/prettier&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;language.rust.cargo.check&quot;,
-    &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;,
-    &quot;ts.external.directory.path&quot;: &quot;/home/qitech/Schreibtisch/QiTechCode/electron/node_modules/typescript/lib&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "NIXITCH_NIXPKGS_CONFIG": "",
+    "NIXITCH_NIX_CONF_DIR": "",
+    "NIXITCH_NIX_OTHER_STORES": "",
+    "NIXITCH_NIX_PATH": "",
+    "NIXITCH_NIX_PROFILES": "",
+    "NIXITCH_NIX_REMOTE": "",
+    "NIXITCH_NIX_USER_PROFILE_DIR": "",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.rust.reset.selective.auto.import": "true",
+    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "SHELLCHECK.PATH": "/home/qitech/.local/share/JetBrains/RustRover2025.2/Shell Script/shellcheck",
+    "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
+    "git-widget-placeholder": "Hamids-Branch",
+    "junie.onboarding.icon.badge.shown": "true",
+    "last_opened_file_path": "/home/qitech/Schreibtisch/QiTechCode",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_interpreter_path": "/home/qitech/.config/JetBrains/RustRover2025.2/node/versions/24.11.1/bin/node",
+    "nodejs_package_manager_path": "npm",
+    "org.rust.cargo.project.model.PROJECT_DISCOVERY": "true",
+    "org.rust.first.attach.projects": "true",
+    "prettierjs.PrettierConfiguration.Package": "/home/qitech/Schreibtisch/QiTechCode/electron/node_modules/prettier",
+    "settings.editor.selected.configurable": "language.rust.cargo.check",
+    "to.speed.mode.migration.done": "true",
+    "ts.external.directory.path": "/home/qitech/Schreibtisch/QiTechCode/electron/node_modules/typescript/lib",
+    "vue.rearranger.settings.migration": "true"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/electron/src/routes" />
@@ -164,7 +174,9 @@
       <workItem from="1764602516828" duration="3511000" />
       <workItem from="1764835841699" duration="17177000" />
       <workItem from="1764855409743" duration="6929000" />
-      <workItem from="1765181417421" duration="22476000" />
+      <workItem from="1765181417421" duration="22755000" />
+      <workItem from="1765440327541" duration="429000" />
+      <workItem from="1765440791125" duration="21066000" />
     </task>
     <task id="LOCAL-00001" summary="first version of manually running a stepper motor with ethercat beckhoff Ek1100 and EL7031">
       <option name="closed" value="true" />
@@ -190,7 +202,15 @@
       <option name="project" value="LOCAL" />
       <updated>1765209789314</updated>
     </task>
-    <option name="localTasksCounter" value="4" />
+    <task id="LOCAL-00004" summary="finished stepper motor">
+      <option name="closed" value="true" />
+      <created>1765210837622</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1765210837622</updated>
+    </task>
+    <option name="localTasksCounter" value="5" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -200,7 +220,8 @@
     <MESSAGE value="first version of manually running a stepper motor with ethercat beckhoff Ek1100 and EL7031" />
     <MESSAGE value="stepper motor with ethercat beckhoff Ek1100 and EL7031 works" />
     <MESSAGE value="stepper motor with ethercat beckhoff Ek1100 and EL7031 0030 + UI works" />
-    <option name="LAST_COMMIT_MESSAGE" value="stepper motor with ethercat beckhoff Ek1100 and EL7031 0030 + UI works" />
+    <MESSAGE value="finished stepper motor" />
+    <option name="LAST_COMMIT_MESSAGE" value="finished stepper motor" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />
