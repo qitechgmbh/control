@@ -11,6 +11,7 @@ import { useWinder2 } from "./useWinder";
 import { roundDegreesToDecimals, roundToDecimals } from "@/lib/decimal";
 import { TimeSeries } from "@/lib/timeseries";
 import { Unit } from "@/control/units";
+import { GraphWithMarkerControls } from "@/components/graph/GraphWithMarkerControls";
 
 export function Winder2GraphsPage() {
   const {
@@ -96,7 +97,7 @@ export function SpoolRpmGraph({
   };
 
   return (
-    <AutoSyncedBigGraph
+    <GraphWithMarkerControls
       syncHook={syncHook}
       newData={{
         newData,
@@ -106,6 +107,7 @@ export function SpoolRpmGraph({
       renderValue={renderValue}
       config={config}
       graphId="spool-rpm"
+      currentTimeSeries={newData}
     />
   );
 }
@@ -155,7 +157,7 @@ export function TraversePositionGraph({
   };
 
   return (
-    <AutoSyncedBigGraph
+    <GraphWithMarkerControls
       syncHook={syncHook}
       newData={{
         newData,
@@ -166,6 +168,7 @@ export function TraversePositionGraph({
       renderValue={renderValue}
       config={config}
       graphId="traverse-position"
+      currentTimeSeries={newData}
     />
   );
 }
@@ -191,7 +194,7 @@ export function TensionArmAngleGraph({
   };
 
   return (
-    <AutoSyncedBigGraph
+    <GraphWithMarkerControls
       syncHook={syncHook}
       newData={{
         newData,
@@ -201,6 +204,7 @@ export function TensionArmAngleGraph({
       renderValue={renderValue}
       config={config}
       graphId="tension-arm-angle"
+      currentTimeSeries={newData}
     />
   );
 }
@@ -225,8 +229,9 @@ export function SpoolProgressGraph({
     exportFilename: "spool_progress",
   };
 
+  // NOTE: Assuming this graph starts at 0, and the max is the total capacity.
   return (
-    <AutoSyncedBigGraph
+    <GraphWithMarkerControls
       syncHook={syncHook}
       newData={{
         newData,
@@ -236,6 +241,7 @@ export function SpoolProgressGraph({
       renderValue={renderValue}
       config={config}
       graphId="spool-progress"
+      currentTimeSeries={newData}
     />
   );
 }
@@ -274,7 +280,7 @@ export function PullerSpeedGraph({
   };
 
   return (
-    <AutoSyncedBigGraph
+    <GraphWithMarkerControls
       syncHook={syncHook}
       newData={{
         newData,
@@ -285,6 +291,7 @@ export function PullerSpeedGraph({
       renderValue={renderValue}
       config={config}
       graphId="puller-speed"
+      currentTimeSeries={newData}
     />
   );
 }
