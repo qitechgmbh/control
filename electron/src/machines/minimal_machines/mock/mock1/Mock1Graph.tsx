@@ -11,10 +11,6 @@ import { TimeSeriesValue, type Series, TimeSeries } from "@/lib/timeseries";
 import { GraphWithMarkerControls } from "@/components/graph/GraphWithMarkerControls";
 import { Unit } from "@/control/units";
 
-// Define the assumed Y-axis scale for the mock data (-1 to 1)
-// TODO: why is it neccessary here?
-const MOCK_Y_AXIS_SCALE = { min: -1, max: 1 };
-
 export function Mock1GraphPage() {
   const { sineWaveSum } = useMock1();
 
@@ -112,7 +108,6 @@ export function Mock1GraphPage() {
           renderValue={(value) => value.toFixed(3)}
           graphId="single-graph1"
           currentTimeSeries={sineWaveSum}
-          yAxisScale={MOCK_Y_AXIS_SCALE}
         />
         <GraphWithMarkerControls
           syncHook={syncHook}
@@ -125,7 +120,6 @@ export function Mock1GraphPage() {
           renderValue={(value) => value.toFixed(3)}
           graphId="combined-graph"
           currentTimeSeries={sineWaveSum}
-          yAxisScale={MOCK_Y_AXIS_SCALE}
         />
         <GraphWithMarkerControls
           syncHook={syncHook}
@@ -135,7 +129,6 @@ export function Mock1GraphPage() {
           renderValue={(value) => value.toFixed(3)}
           graphId="single-graph2"
           currentTimeSeries={sineWaveSum}
-          yAxisScale={MOCK_Y_AXIS_SCALE}
         />
         <GraphWithMarkerControls
           syncHook={syncHook}
@@ -145,7 +138,6 @@ export function Mock1GraphPage() {
           renderValue={(value) => value.toFixed(3)}
           graphId="single-graph"
           currentTimeSeries={sineWaveSum}
-          yAxisScale={MOCK_Y_AXIS_SCALE}
         />
       </div>
 

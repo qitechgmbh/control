@@ -21,12 +21,7 @@ type GraphWithMarkerControlsProps = {
   unit?: Unit;
   renderValue?: (value: number) => string;
   graphId: string;
-  // The raw TimeSeries object for capturing timestamps.
   currentTimeSeries: TimeSeries | null; 
-  yAxisScale?: { // TODO: why is it neccessary?
-    min: number; 
-    max: number 
-  };
 };
 
 function createMarkerElement(
@@ -81,17 +76,13 @@ export function GraphWithMarkerControls({
   const [markers, setMarkers] = useState<{ timestamp: number; name: string; value: number }[]>([])
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
-  // Convert local markers state into GraphLine format
-  // TODO: do I really need this?
   const dynamicMarkerLines = markers.map((marker, index) => ({
-    type: "user_marker" as const, // Use a unique type identifier
-    value: marker.value, // We need to store the value as well!
+    type: "user_marker" as const,
+    value: marker.value,
     label: marker.name,
-    color: "#ff0000", // e.g., Red for user-added markers
+    color: "#ff0000",
     width: 2,
     show: true,
-    
-    // *** FIX: Store the actual time here ***
     markerTimestamp: marker.timestamp,
   }));
 
@@ -110,14 +101,11 @@ export function GraphWithMarkerControls({
   const handleAddMarker = useCallback(() => {
     if (currentTimeSeries?.current && markerName.trim()) {
         const ts = currentTimeSeries.current.timestamp;
-        const val = currentTimeSeries.current.value; // <--- Value extracted
+        const val = currentTimeSeries.current.value;
         const name = markerName.trim();
         
-        // Ensure 'value' is stored here
-        setMarkers((prev) => [...prev, { timestamp: ts, name, value: val }]); // <--- Value stored
-        
-        // ... (rest of the function)
-    } // ...
+        setMarkers((prev) => [...prev, { timestamp: ts, name, value: val }]);
+    }
   }, [currentTimeSeries, markerName]);
 
 
@@ -151,7 +139,7 @@ export function GraphWithMarkerControls({
     const endTime = currentTimeSeries.current.timestamp; 
     const startTime = endTime - validTimeWindowMs; 
 
-    // Assuming the graph's fixed Y-scale is from -1 to 1 based on your sine wave example
+    // Assuming the graph's fixed Y-scale is from -1 to 1 based on the sine wave example
     const graphMin = -1; 
     const graphMax = 1; 
     // TODO: For real-world graphs (like Winder), you might need to read the actual min/max scale 
@@ -169,7 +157,7 @@ export function GraphWithMarkerControls({
 
           // Calculate the Y-position in pixels from the bottom of the chart area
           const normalizedValue = (closest.value - graphMin) / (graphMax - graphMin);
-          const valueY = normalizedValue * graphHeight; // Height from bottom
+          const valueY = normalizedValue * graphHeight;
 
           const { line, label } = createMarkerElement(
             timestamp,
@@ -187,8 +175,6 @@ export function GraphWithMarkerControls({
     });
   }, [markers, currentTimeSeries, timeTick, config.defaultTimeWindow, syncHook.controlProps.timeWindow]);
 
-  // Combine the base config lines with the dynamic lines
-  // TODO: do I really need this? if not change back to config
   const finalConfig = {
     ...config,
     lines: [...(config.lines || []), ...dynamicMarkerLines],
