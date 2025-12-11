@@ -84,7 +84,7 @@ export function exportGraphsToExcel(
         XLSX.utils.book_append_sheet(workbook, dataWorksheet, dataSheetName);
       }
 
-      // TODO: clean and refactor
+      // Excel worksheet for timestamps and timestamp markers
       if (graphLineData.targetLines.length > 0) {
         const markerReportData = createGraphLineMarkerReportSheet(graphLineData);
         const markerReportWorksheet = XLSX.utils.aoa_to_sheet(markerReportData);
@@ -103,7 +103,6 @@ export function exportGraphsToExcel(
           markerReportSheetName,
         );
       }
-      // TODO: clean and refactor
 
       processedCount++;
     });
@@ -311,9 +310,6 @@ function createGraphLineDataSheet(graphLine: {
   });
 }
 
-/**
- * TODO: clean and refactor
- */
 function createGraphLineMarkerReportSheet(graphLine: {
   graphTitle: string;
   lineTitle: string;
@@ -341,11 +337,11 @@ function createGraphLineMarkerReportSheet(graphLine: {
     return reportData;
   }
 
-  // 2. Filter User Markers
+  // Filter User Markers
   const allTargetLines = graphLine.targetLines.filter(line => line.show !== false);
   const userMarkers = allTargetLines.filter(line => line.type === 'user_marker' && line.label);
 
-  // 3. Map Markers to Closest Data Point Index
+  // Map Markers to Closest Data Point Index
   const markerIndexMap = new Map<number, { label: string; originalTimestamp: number }>();
 
   userMarkers.forEach(line => {
@@ -371,7 +367,7 @@ function createGraphLineMarkerReportSheet(graphLine: {
     }
   });
 
-  // Add the final header before the detailed report starts
+  // Add the final header before the timestamp report starts
   reportData.push(
       ["--- BEGIN DETAILED REPORT ---", ""],
       ["", ""],
@@ -382,17 +378,15 @@ function createGraphLineMarkerReportSheet(graphLine: {
       reportData.push(["No user-created markers found.", ""]);
   }
   
-  // 4. Detailed Report Generation Loop
   timestamps.forEach((dataPointTimestamp, index) => {
     const value = values[index];
     const markerData = markerIndexMap.get(index);
 
-    let finalMarkerLabel = "N/A";
+    let finalMarkerLabel = "";
     let timeToDisplay = dataPointTimestamp; // Default to data sample time
 
     if (markerData) {
-        finalMarkerLabel = `Marker: ${markerData.label}`;
-        // CRITICAL FIX: Use the marker's high-precision time for display
+        finalMarkerLabel = `${markerData.label}`;
         timeToDisplay = markerData.originalTimestamp; 
     }
 
@@ -413,8 +407,8 @@ function createGraphLineMarkerReportSheet(graphLine: {
         : value?.toFixed(3) || "";
     reportData.push([`Value (${unitSymbol})`, formattedValue]);
     
-    // Row 3: Marker Event
-    reportData.push(["Marker Event", finalMarkerLabel]);
+    // Row 3: Marker Name
+    reportData.push(["Marker", finalMarkerLabel]);
     
     // Separator
     reportData.push(["", ""]);
