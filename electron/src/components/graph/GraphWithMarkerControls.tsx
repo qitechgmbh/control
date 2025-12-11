@@ -21,7 +21,7 @@ type GraphWithMarkerControlsProps = {
   unit?: Unit;
   renderValue?: (value: number) => string;
   graphId: string;
-  currentTimeSeries: TimeSeries | null; 
+  currentTimeSeries: TimeSeries | null;
 };
 
 function createMarkerElement(
@@ -36,7 +36,7 @@ function createMarkerElement(
   // Calculate the position of the timestamp
   const ratio = (timestamp - startTime) / (endTime - startTime);
   const xPos = Math.min(Math.max(ratio, 0), 1) * graphWidth;
-  const yPos = graphHeight - value; 
+  const yPos = graphHeight - value;
 
   const line = document.createElement("div");
   line.style.position = "absolute";
@@ -73,7 +73,9 @@ export function GraphWithMarkerControls({
 }: GraphWithMarkerControlsProps) {
   const graphWrapperRef = useRef<HTMLDivElement | null>(null);
   const [markerName, setMarkerName] = useState("");
-  const [markers, setMarkers] = useState<{ timestamp: number; name: string; value: number }[]>([])
+  const [markers, setMarkers] = useState<
+    { timestamp: number; name: string; value: number }[]
+  >([]);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   const dynamicMarkerLines = markers.map((marker, index) => ({
@@ -93,21 +95,20 @@ export function GraphWithMarkerControls({
   useEffect(() => {
     if (!currentTimeSeries?.current) return;
     const intervalId = setInterval(() => {
-        setTimeTick(prev => prev + 1);
-    }, 50); 
+      setTimeTick((prev) => prev + 1);
+    }, 50);
     return () => clearInterval(intervalId);
-  }, [currentTimeSeries?.current]); 
+  }, [currentTimeSeries?.current]);
 
   const handleAddMarker = useCallback(() => {
     if (currentTimeSeries?.current && markerName.trim()) {
-        const ts = currentTimeSeries.current.timestamp;
-        const val = currentTimeSeries.current.value;
-        const name = markerName.trim();
-        
-        setMarkers((prev) => [...prev, { timestamp: ts, name, value: val }]);
+      const ts = currentTimeSeries.current.timestamp;
+      const val = currentTimeSeries.current.value;
+      const name = markerName.trim();
+
+      setMarkers((prev) => [...prev, { timestamp: ts, name, value: val }]);
     }
   }, [currentTimeSeries, markerName]);
-
 
   // Marker Drawing Effect
   useEffect(() => {
@@ -116,64 +117,78 @@ export function GraphWithMarkerControls({
     const graphEl = graphWrapperRef.current;
     // The BigGraph component is the first child (the one with the actual chart)
     // TODO: Find a better way to do this
-    const chartContainer = graphEl.querySelector(".h-\\[50vh\\] > div > div.flex-1 > div");
-    if (!chartContainer) return; 
+    const chartContainer = graphEl.querySelector(
+      ".h-\\[50vh\\] > div > div.flex-1 > div",
+    );
+    if (!chartContainer) return;
 
     const graphWidth = chartContainer.clientWidth;
     const graphHeight = chartContainer.clientHeight;
-    
+
     const overlayContainer = chartContainer.parentElement;
     if (!overlayContainer) return;
 
     // Remove previous markers and labels from the overlay container
-    overlayContainer.querySelectorAll(".vertical-marker, .marker-label").forEach((el) => el.remove());
+    overlayContainer
+      .querySelectorAll(".vertical-marker, .marker-label")
+      .forEach((el) => el.remove());
 
     // Get the visible time window
-    const currentTimeWindow = syncHook.controlProps.timeWindow;  
+    const currentTimeWindow = syncHook.controlProps.timeWindow;
     const defaultDuration = config.defaultTimeWindow as number;
-    const validTimeWindowMs = 
-        (typeof currentTimeWindow === 'number' && currentTimeWindow) || 
-        defaultDuration || // Fallback to config default
-        (30 * 60 * 1000); // Final fallback (30 minutes)
-        
-    const endTime = currentTimeSeries.current.timestamp; 
-    const startTime = endTime - validTimeWindowMs; 
+    const validTimeWindowMs =
+      (typeof currentTimeWindow === "number" && currentTimeWindow) ||
+      defaultDuration || // Fallback to config default
+      30 * 60 * 1000; // Final fallback (30 minutes)
+
+    const endTime = currentTimeSeries.current.timestamp;
+    const startTime = endTime - validTimeWindowMs;
 
     // Assuming the graph's fixed Y-scale is from -1 to 1 based on the sine wave example
-    const graphMin = -1; 
-    const graphMax = 1; 
-    // TODO: For real-world graphs (like Winder), you might need to read the actual min/max scale 
+    const graphMin = -1;
+    const graphMax = 1;
+    // TODO: For real-world graphs (like Winder), you might need to read the actual min/max scale
     // from the uPlot instance or define a safe range if the data is unconstrained.
 
     markers.forEach(({ timestamp, name }) => {
       if (timestamp >= startTime && timestamp <= endTime) {
-          // Find the data point closest to the marker timestamp to get the correct Y-value
-          const closest = currentTimeSeries.long.values
-              .filter((v): v is TimeSeriesValue => v !== null)
-              .reduce((prev, curr) =>
-                Math.abs(curr.timestamp - timestamp) < Math.abs(prev.timestamp - timestamp) ? curr : prev
-              );
-          if (!closest) return; 
-
-          // Calculate the Y-position in pixels from the bottom of the chart area
-          const normalizedValue = (closest.value - graphMin) / (graphMax - graphMin);
-          const valueY = normalizedValue * graphHeight;
-
-          const { line, label } = createMarkerElement(
-            timestamp,
-            valueY,
-            name,
-            startTime, 
-            endTime,   
-            graphWidth,
-            graphHeight,
+        // Find the data point closest to the marker timestamp to get the correct Y-value
+        const closest = currentTimeSeries.long.values
+          .filter((v): v is TimeSeriesValue => v !== null)
+          .reduce((prev, curr) =>
+            Math.abs(curr.timestamp - timestamp) <
+            Math.abs(prev.timestamp - timestamp)
+              ? curr
+              : prev,
           );
+        if (!closest) return;
 
-          overlayContainer.appendChild(line);
-          overlayContainer.appendChild(label);
+        // Calculate the Y-position in pixels from the bottom of the chart area
+        const normalizedValue =
+          (closest.value - graphMin) / (graphMax - graphMin);
+        const valueY = normalizedValue * graphHeight;
+
+        const { line, label } = createMarkerElement(
+          timestamp,
+          valueY,
+          name,
+          startTime,
+          endTime,
+          graphWidth,
+          graphHeight,
+        );
+
+        overlayContainer.appendChild(line);
+        overlayContainer.appendChild(label);
       }
     });
-  }, [markers, currentTimeSeries, timeTick, config.defaultTimeWindow, syncHook.controlProps.timeWindow]);
+  }, [
+    markers,
+    currentTimeSeries,
+    timeTick,
+    config.defaultTimeWindow,
+    syncHook.controlProps.timeWindow,
+  ]);
 
   const finalConfig = {
     ...config,
@@ -193,25 +208,25 @@ export function GraphWithMarkerControls({
           graphId={graphId}
         />
       </div>
-      
+
       {/* Marker Input and Button */}
-      <div className="flex gap-2 items-center">
+      <div className="flex items-center gap-2">
         <span className="font-medium">Add Marker:</span>
         <input
           type="text"
           placeholder={`Marker for ${config.title}`}
           value={markerName}
           onChange={(e) => setMarkerName(e.target.value)}
-          className="border px-2 py-1 rounded"
+          className="rounded border px-2 py-1"
         />
-        <button 
-          onClick={handleAddMarker} 
-          className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300"
+        <button
+          onClick={handleAddMarker}
+          className="rounded bg-gray-200 px-3 py-1 hover:bg-gray-300"
           disabled={!currentTimeSeries?.current}
         >
           Add
         </button>
-        <p className="text-sm text-gray-600 ml-4">{statusMessage ?? ""}</p>
+        <p className="ml-4 text-sm text-gray-600">{statusMessage ?? ""}</p>
       </div>
     </div>
   );
