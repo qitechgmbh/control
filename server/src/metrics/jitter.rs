@@ -1,7 +1,6 @@
 use std::cell::UnsafeCell;
 use std::sync::OnceLock;
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::time::Duration;
 
 const JITTER_RING_LEN: usize = 1024;
 #[derive(Debug, Clone, Copy)]
