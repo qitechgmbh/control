@@ -1,6 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
+import { pushRuntimeSample } from "./runtimeSeries";
 
-const API_BASE = "http://localhost:3001";
+// Talk directly to the Rust API on port 3001.
+// If you later proxy via Vite/Electron, make this configurable.
+const API_BASE = "http://127.0.0.1:3001";
 const RUNTIME_URL = `${API_BASE}/api/v1/metrics/runtime/latest`;
 
 export type RuntimeMetricsSample = {
@@ -14,85 +17,140 @@ export type RuntimeMetricsSample = {
   jitter_max_ns: number;
   rx_rate_bytes_per_sec: number;
   tx_rate_bytes_per_sec: number;
+  rt_loop_cpu_time_seconds?: number | null;
   rt_nr_switches: number | null;
   rt_nr_voluntary_switches: number | null;
   rt_nr_involuntary_switches: number | null;
 };
 
+type MetricsState = {
+  sample: RuntimeMetricsSample | null;
+  cpuPercent: number | null;
+  preemptionRate: number | null;
+};
+
+// ---- shared module-level state (global poller) ----
+
+let currentState: MetricsState = {
+  sample: null,
+  cpuPercent: null,
+  preemptionRate: null,
+};
+
+let lastSample: RuntimeMetricsSample | null = null;
+let pollIntervalMs = 5000;
+let pollTimer: ReturnType<typeof setInterval> | null = null;
+
+const subscribers = new Set<(s: MetricsState) => void>();
+
+function notifySubscribers() {
+  for (const cb of subscribers) cb(currentState);
+}
+
+async function fetchOnce() {
+  try {
+    const res = await fetch(RUNTIME_URL);
+    if (!res.ok) {
+      console.error(
+        "Runtime metrics fetch failed:",
+        res.status,
+        res.statusText,
+      );
+      return;
+    }
+
+    const json = (await res.json()) as RuntimeMetricsSample | null;
+    if (!json) {
+      // backend returned null (no sample yet)
+      return;
+    }
+
+    const current = json;
+    const last = lastSample;
+
+    let cpuPercent: number | null = null;
+    let preemptionRate: number | null = null;
+
+    if (last) {
+      const dtWallSec = (current.timestamp_ms - last.timestamp_ms) / 1000.0;
+      if (dtWallSec > 0) {
+        const dtCpu = current.cpu_time_seconds - last.cpu_time_seconds;
+        cpuPercent = (dtCpu / dtWallSec) * 100.0;
+
+        if (
+          current.rt_nr_involuntary_switches != null &&
+          last.rt_nr_involuntary_switches != null
+        ) {
+          const dtPreempt =
+            current.rt_nr_involuntary_switches -
+            last.rt_nr_involuntary_switches;
+          preemptionRate = dtPreempt / dtWallSec;
+        }
+      }
+    }
+
+    lastSample = current;
+
+    currentState = {
+      sample: current,
+      cpuPercent,
+      preemptionRate,
+    };
+
+    // feed into shared time-series for graphs
+    pushRuntimeSample(current, cpuPercent, preemptionRate);
+
+    notifySubscribers();
+  } catch (err) {
+    console.error("Failed to fetch runtime metrics:", err);
+  }
+}
+
+function startPolling() {
+  if (pollTimer != null) return;
+  void fetchOnce();
+  pollTimer = setInterval(fetchOnce, pollIntervalMs);
+}
+
 /**
- * Polls the backend runtime metrics endpoint and computes:
- * - latest sample
- * - process CPU usage (%), derived from cpu_time_seconds deltas
- * - preemption rate (involuntary switches per second)
+ * Shared runtime metrics hook.
+ *
+ * - One global poller per app (module-level).
+ * - Polling continues even if no components are mounted.
+ * - Components just subscribe to the latest state.
  */
 export function useRuntimeMetrics(
   enabled: boolean,
   intervalMs: number = 5000,
-) {
-  const [sample, setSample] = useState<RuntimeMetricsSample | null>(null);
-  const [cpuPercent, setCpuPercent] = useState<number | null>(null);
-  const [preemptionRate, setPreemptionRate] = useState<number | null>(null);
+): MetricsState {
+  const [state, setState] = useState<MetricsState>(currentState);
 
-  const lastRef = useRef<RuntimeMetricsSample | null>(null);
-
+  // Subscribe to shared state
   useEffect(() => {
-    if (!enabled) {
-      setSample(null);
-      setCpuPercent(null);
-      setPreemptionRate(null);
-      lastRef.current = null;
-      return;
-    }
-
-    let cancelled = false;
-
-    const fetchOnce = async () => {
-      try {
-        const res = await fetch(RUNTIME_URL);
-        if (!res.ok) return;
-        const json = (await res.json()) as RuntimeMetricsSample | null;
-        if (!json || cancelled) return;
-
-        const current = json;
-        const last = lastRef.current;
-
-        if (last) {
-          const dtWallSec =
-            (current.timestamp_ms - last.timestamp_ms) / 1000.0;
-          if (dtWallSec > 0) {
-            const dtCpu = current.cpu_time_seconds - last.cpu_time_seconds;
-            setCpuPercent((dtCpu / dtWallSec) * 100.0);
-
-            if (
-              current.rt_nr_involuntary_switches != null &&
-              last.rt_nr_involuntary_switches != null
-            ) {
-              const dtPreempt =
-                current.rt_nr_involuntary_switches -
-                last.rt_nr_involuntary_switches;
-              setPreemptionRate(dtPreempt / dtWallSec);
-            }
-          }
-        }
-
-        lastRef.current = current;
-        setSample(current);
-      } catch (err) {
-        console.error("Failed to fetch runtime metrics:", err);
-      }
-    };
-
-    fetchOnce();
-    const id = setInterval(fetchOnce, intervalMs);
+    const cb = (s: MetricsState) => setState(s);
+    subscribers.add(cb);
+    cb(currentState);
 
     return () => {
-      cancelled = true;
-      clearInterval(id);
+      subscribers.delete(cb);
+      // do NOT stop polling here; recording continues in background
     };
+  }, []);
+
+  // Control poller configuration
+  useEffect(() => {
+    pollIntervalMs = intervalMs;
+
+    if (enabled) {
+      if (pollTimer != null) {
+        clearInterval(pollTimer);
+        pollTimer = null;
+      }
+      startPolling();
+    }
   }, [enabled, intervalMs]);
 
-  return { sample, cpuPercent, preemptionRate };
+  return state;
 }
 
-// Also export as default, in case some code uses default import
 export default useRuntimeMetrics;

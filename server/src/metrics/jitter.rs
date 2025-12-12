@@ -1,14 +1,14 @@
 use std::cell::UnsafeCell;
-use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::OnceLock;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Duration;
 
 const JITTER_RING_LEN: usize = 1024;
-
 #[derive(Debug, Clone, Copy)]
 pub struct JitterSample {
-    /// Jitter in nanoseconds (positive = late, 0 = on time or early).
-    pub jitter_ns: u64,
+    /// Signed jitter in nanoseconds.
+    /// Negative = early, 0 = on time, positive = late.
+    pub jitter_ns: i128,
 }
 
 /// Fixed-size ring buffer for jitter samples.
@@ -21,8 +21,6 @@ struct JitterRing {
     buf: UnsafeCell<[JitterSample; JITTER_RING_LEN]>,
 }
 
-// `UnsafeCell` makes this type !Sync by default; we guarantee we only have
-// one writer and relaxed, best-effort reads, so we can mark it Sync.
 unsafe impl Sync for JitterRing {}
 
 impl JitterRing {
@@ -35,10 +33,7 @@ impl JitterRing {
     }
 
     fn push(&self, sample: JitterSample) {
-        let idx = self
-            .write_idx
-            .fetch_add(1, Ordering::Relaxed)
-            % JITTER_RING_LEN;
+        let idx = self.write_idx.fetch_add(1, Ordering::Relaxed) % JITTER_RING_LEN;
 
         // SAFETY: single writer pattern; occasional torn reads are fine for diagnostics.
         unsafe {
@@ -54,36 +49,17 @@ impl JitterRing {
 }
 
 static MACHINES_JITTER_RING: OnceLock<JitterRing> = OnceLock::new();
-static ETHERCAT_JITTER_RING: OnceLock<JitterRing> = OnceLock::new();
 
 fn machines_ring() -> &'static JitterRing {
     MACHINES_JITTER_RING.get_or_init(JitterRing::new)
 }
 
-fn ethercat_ring() -> &'static JitterRing {
-    ETHERCAT_JITTER_RING.get_or_init(JitterRing::new)
-}
-
 /// Record one jitter sample for the main RT loop (machines + EtherCAT).
-pub fn record_machines_loop_jitter(jitter: Duration) {
-    machines_ring().push(JitterSample {
-        jitter_ns: jitter.as_nanos() as u64,
-    });
-}
-
-/// Record one jitter sample for a dedicated EtherCAT loop (if you have one).
-pub fn record_ethercat_loop_jitter(jitter: Duration) {
-    ethercat_ring().push(JitterSample {
-        jitter_ns: jitter.as_nanos() as u64,
-    });
+pub fn record_machines_loop_jitter(jitter_ns: i128) {
+    machines_ring().push(JitterSample { jitter_ns });
 }
 
 /// Get a snapshot of recent jitter samples for the machines loop.
 pub fn snapshot_machines_jitter() -> Vec<JitterSample> {
     machines_ring().snapshot()
-}
-
-/// Get a snapshot of recent jitter samples for the EtherCAT loop.
-pub fn snapshot_ethercat_jitter() -> Vec<JitterSample> {
-    ethercat_ring().snapshot()
 }

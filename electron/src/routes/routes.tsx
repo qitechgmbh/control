@@ -57,7 +57,6 @@ import { TestMachinePage } from "@/machines/testmachine/TestMachinePage";
 import { TestMachineControlPage } from "@/machines/testmachine/TestMachineControlPage";
 import { Laser1PresetsPage } from "@/machines/laser/laser1/Laser1PresetsPage";
 
-import { MetricsPage } from "@/metrics/MetricsPage";
 import { MetricsGraphsPage } from "@/metrics/MetricsGraphsPage";
 import { MetricsControlPage } from "@/metrics/MetricsControlPage";
 
@@ -325,23 +324,15 @@ export const updateChooseVersionRoute = createRoute({
   path: "choose-version",
   component: () => <ChooseVersionPage />,
 });
-
 export const metricsRoute = createRoute({
-  getParentRoute: () => sidebarRoute,  
+  getParentRoute: () => setupRoute,
   path: "metrics",
-  component: () => <MetricsPage />,
-});
-
-export const metricsGraphsRoute = createRoute({
-  getParentRoute: () => metricsRoute,
-  path: "graphs",
-  component: () => <MetricsGraphsPage />,
-});
-
-export const metricsControlRoute = createRoute({
-  getParentRoute: () => metricsRoute,
-  path: "control",
-  component: () => <MetricsControlPage />,
+  component: () => (
+    <>
+      <MetricsControlPage />
+      <MetricsGraphsPage />
+    </>
+  ),
 });
 
 export const versionSearchSchema = z
@@ -391,8 +382,8 @@ export const rootTree = RootRoute.addChildren([
         updateExecuteRoute,
       ]),
       troubleshootRoute,
+      metricsRoute,
     ]),
-    metricsRoute.addChildren([metricsGraphsRoute, metricsControlRoute]),
     machinesRoute.addChildren([
       laser1SerialRoute.addChildren([
         laser1ControlRoute,

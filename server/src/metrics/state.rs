@@ -1,4 +1,3 @@
-
 use std::sync::{Mutex, OnceLock};
 
 use crate::metrics::csv_writer::RuntimeSample;

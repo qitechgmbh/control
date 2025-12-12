@@ -20,6 +20,18 @@ pub struct RtLoopInputs<'a> {
     pub sleeper: SpinSleeper,
     pub cycle_target: Duration,
 }
+#[inline(always)]
+fn signed_jitter(now: Instant, deadline: Instant) -> i128 {
+    if now >= deadline {
+        now.duration_since(deadline).as_nanos() as i128
+    } else {
+        -(deadline.duration_since(now).as_nanos() as i128)
+    }
+}
+thread_local! {
+    static IDEAL_START: std::cell::Cell<Option<Instant>> =
+        std::cell::Cell::new(None);
+}
 
 // 300 us loop cycle target
 // SharedState is mostly read from and rarely locked, but does not contain any machine,ethercat devices etc
@@ -245,6 +257,24 @@ pub fn execute_machines(machines: &mut Vec<Box<dyn Machine>>) {
 // No more logging in loop_once
 pub fn loop_once<'maindevice>(inputs: &mut RtLoopInputs<'_>) -> Result<(), anyhow::Error> {
     let loop_once_start = std::time::Instant::now();
+    // ---- textbook jitter: actual start vs ideal periodic start ----
+    if inputs.ethercat_setup.is_some() {
+        IDEAL_START.with(|cell| {
+            let prev_ideal = cell.get();
+
+            let (jitter_ns, next_ideal) = if let Some(ideal) = prev_ideal {
+                // signed jitter in nanoseconds: negative = early, positive = late
+                let j = signed_jitter(loop_once_start, ideal);
+                (j, ideal + inputs.cycle_target)
+            } else {
+                // first iteration: establish ideal timeline, report 0 jitter
+                (0_i128, loop_once_start + inputs.cycle_target)
+            };
+
+            record_machines_loop_jitter(jitter_ns);
+            cell.set(Some(next_ideal));
+        });
+    }
     if inputs.ethercat_setup.is_some() && inputs.ethercat_perf_metrics.is_some() {
         inputs
             .ethercat_perf_metrics
@@ -277,18 +307,7 @@ pub fn loop_once<'maindevice>(inputs: &mut RtLoopInputs<'_>) -> Result<(), anyho
     if inputs.ethercat_setup.is_some() {
         // spin_sleep so we have a cycle time of ~300us
         // This does push usage to 100% if completely busy, but provides much better accuracy then thread sleep or async sleep
-        inputs
-            .sleeper
-            .sleep_until(target_instant);
-        // let now = std::time::Instant::now();
-        // let jitter = if now >= target_instant {
-        //     now.duration_since(target_instant)
-        // } else {
-        //     Duration::from_nanos(0)
-        // };
-        // record_machines_loop_jitter(jitter);
-
-
+        inputs.sleeper.sleep_until(target_instant);
     } else {
         // if we dont have an ethercat setup or other rt relevant stuff do the "worse" async sleep or later if we get rid of async thread::sleep or yielding
         // We do this, so that when no rt relevant code runs the cpu doesnt spin at 100% for no reason
@@ -297,13 +316,6 @@ pub fn loop_once<'maindevice>(inputs: &mut RtLoopInputs<'_>) -> Result<(), anyho
             smol::block_on(smol::Timer::after(inputs.cycle_target - loop_duration));
         }
     }
-    let now = std::time::Instant::now();
-    let jitter = if now >= target_instant {
-        now.duration_since(target_instant)
-    } else {
-        Duration::from_nanos(0)
-    };
-    record_machines_loop_jitter(jitter);
-    Ok(())
 
+    Ok(())
 }

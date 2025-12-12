@@ -28,7 +28,7 @@ async fn init_api(app_state: Arc<SharedState>) -> Result<()> {
             post(post_write_machine_device_identification),
         )
         .route("/api/v1/machine/mutate", post(post_machine_mutate))
-        .nest("/api/v1/metrics", metrics_router())        
+        .nest("/api/v1/metrics", metrics_router())
         .layer(socketio_layer)
         .layer(cors)
         .layer(trace_layer)
