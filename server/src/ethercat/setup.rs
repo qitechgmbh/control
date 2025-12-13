@@ -120,7 +120,6 @@ pub async fn set_ethercat_devices<const MAX_SUBDEVICES: usize, const MAX_PDI: us
     let machine_new_hardware = MachineNewHardware::Ethercat(hardware);
 
     let mut machines: Vec<Box<dyn Machine>> = vec![];
-    let mut machine_objs: Vec<MachineObj> = vec![];
 
     for device_group in device_grouping_result.device_groups.iter() {
         let machine_identification_unique: MachineIdentificationUnique = match device_group.first()
@@ -141,31 +140,14 @@ pub async fn set_ethercat_devices<const MAX_SUBDEVICES: usize, const MAX_PDI: us
         });
 
         match new_machine {
-            Ok(machine) => {
-                shared_state.clone().api_machines.lock().await.insert(
-                    machine_identification_unique.clone(),
-                    machine.api_get_sender(),
-                );
-                machine_objs.push(MachineObj {
-                    machine_identification_unique,
-                    error: None,
-                });
-                machines.push(machine);
-            }
-            Err(e) => machine_objs.push(MachineObj {
-                machine_identification_unique,
-                error: Some(e.to_string()),
-            }),
+            Ok(machine) => machines.push(machine),
+            Err(e) => shared_state
+                .report_machine_error(machine_identification_unique
+                .clone(), e.to_string()).await,
         }
     }
-    let _ = shared_state
-        .rt_machine_creation_channel
-        .send(crate::app_state::HotThreadMessage::AddMachines(machines))
-        .await;
 
-    shared_state.add_machines_if_not_exists(machine_objs).await;
-    shared_state.clone().send_machines_event().await;
-
+    shared_state.add_machines(machines).await;
     Ok(())
 }
 

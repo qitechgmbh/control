@@ -133,6 +133,8 @@ impl SharedState {
         let mut current_machines = self.current_machines_meta.lock().await;
         // Retain only machines that do not match the given ID
         current_machines.retain(|m| &m.machine_identification_unique != machine_id);
+        drop(current_machines);
+
         tracing::info!(
             "remove_machine {:?} {:?}",
             self.current_machines_meta,
@@ -140,9 +142,9 @@ impl SharedState {
         );
     }
 
-    pub async fn add_machines_if_not_exists(&self, machines: Vec<MachineObj>) {
+    async fn add_machine_objs(&self, machines: Vec<MachineObj>) {
         let mut current_machines = self.current_machines_meta.lock().await;
-        tracing::info!("add_machines_if_not_exists: {:?}", current_machines);
+
         // Track existing machine identifiers for quick lookup
         let existing_ids: HashSet<_> = current_machines
             .iter()
@@ -154,6 +156,52 @@ impl SharedState {
                 current_machines.push(machine);
             }
         }
+        drop(current_machines);
+
+        self.send_machines_event().await;
+    }
+
+    pub async fn report_machine_error(&self, machine_identification_unique: MachineIdentificationUnique, error: String) {
+        let mut current_machines = self.current_machines_meta.lock().await;
+
+        for machine in current_machines.iter_mut() {
+            if machine.machine_identification_unique == machine_identification_unique {
+                machine.error = Some(error);
+                return;
+            }
+        }
+
+        current_machines.push(MachineObj {
+            machine_identification_unique,
+            error: Some(error)
+        });
+    }
+
+    pub async fn add_machines(&self, machines: Vec<Box<dyn Machine>>) {
+        let mut api_machines = self.api_machines.lock().await;
+        for machine in machines.iter() {
+            api_machines.insert(
+                machine.get_machine_identification_unique(),
+                machine.api_get_sender(),
+            );
+        }
+        drop(api_machines);
+
+        let objs = machines
+            .iter()
+            .map(|m| MachineObj {
+                machine_identification_unique: m.get_machine_identification_unique(),
+                error: None
+            })
+        .collect();
+        self.add_machine_objs(objs).await;
+
+        self.rt_machine_creation_channel
+            .send(HotThreadMessage::AddMachines(machines))
+            .await
+            .expect("Could not send to real-time channel");
+
+        self.send_machines_event().await;
     }
 
     pub fn new(

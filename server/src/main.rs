@@ -33,12 +33,13 @@ use std::{collections::HashMap, sync::Arc, time::Duration};
 #[cfg(feature = "mock-machine")]
 use mock_init::init_mock;
 
+#[cfg(not(feature = "mock-machine"))]
+use crate::ethercat::init::start_ethercat_discovery;
 use crate::{
     ethercat::{
         ethercat_discovery_info::send_ethercat_found, init::find_ethercat_interface,
         setup::setup_loop,
-    },
-    socketio::queue::socketio_queue_worker,
+    }, modbus_tcp::start_modbus_tcp_discovery, socketio::queue::socketio_queue_worker
 };
 
 #[cfg(feature = "mock-machine")]
@@ -50,6 +51,7 @@ pub mod logging;
 pub mod r#loop;
 pub mod metrics;
 pub mod panic;
+pub mod modbus_tcp;
 pub mod performance_metrics;
 pub mod rest;
 pub mod socketio;
@@ -74,11 +76,6 @@ pub async fn add_serial_device(
         .try_into()
         .expect("Serial devices always have machine identification");
 
-    let machine_identification: MachineIdentificationUnique = device_identification_identified
-        .device_machine_identification
-        .machine_identification_unique
-        .clone();
-
     let new_machine = machine_registry.new_machine(&EtherCATParams {
         device_group: &vec![device_identification_identified.clone()],
         hardware: &MachineNewHardware::Serial(&hardware),
@@ -95,24 +92,8 @@ pub async fn add_serial_device(
         }
     };
 
-    shared_state
-        .add_machines_if_not_exists(vec![MachineObj {
-            machine_identification_unique: machine_identification.clone(),
-            error: None,
-        }])
-        .await;
-
-    shared_state
-        .api_machines
-        .lock()
-        .await
-        .insert(machine_identification, machine.api_get_sender());
-
-    let _ = shared_state
-        .rt_machine_creation_channel
-        .send(HotThreadMessage::AddMachines(vec![machine]))
-        .await;
-    shared_state.clone().send_machines_event().await;
+    let machines = vec![machine];
+    shared_state.add_machines(machines);
 }
 
 pub async fn start_serial_discovery(app_state: Arc<SharedState>) {
@@ -341,13 +322,14 @@ fn main() {
 
     let mut socketio_task = smol::spawn(start_socketio_queue(app_state.clone()));
     let mut serial_task = smol::spawn(start_serial_discovery(app_state.clone()));
+    let mut modbus_tcp_task = smol::spawn(start_modbus_tcp_discovery(app_state.clone()));
     let mut async_machine_task = smol::spawn(handle_async_requests(
         main_receiver.clone(),
         app_state.clone(),
     ));
 
     #[cfg(not(feature = "mock-machine"))]
-    smol::spawn(start_interface_discovery(app_state.clone(), sender)).detach();
+    smol::spawn(start_ethercat_discovery(app_state.clone())).detach();
 
     smol::block_on(async {
         send_empty_machines_event(app_state.clone()).await;
@@ -363,6 +345,12 @@ fn main() {
             if !running.load(Ordering::SeqCst) {
                 tracing::info!("Shutdown signal received, exiting main loop.");
                 break;
+            }
+
+            if modbus_tcp_task.is_finished() {
+                tracing::warn!("ModbusTCP task died! Restarting...");
+                modbus_tcp_task.cancel().await;
+                modbus_tcp_task = smol::spawn(start_modbus_tcp_discovery(app_state.clone()));
             }
 
             if serial_task.is_finished() {
