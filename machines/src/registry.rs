@@ -2,12 +2,12 @@
 use crate::{extruder1::mock::ExtruderV2, mock::MockMachine, winder2::mock::Winder2};
 
 use crate::{
-    EtherCATMachine, EtherCATParams, Machine, extruder1::ExtruderV2,
+    EtherCATMachine, EtherCATParams, Machine,
     machine_identification::MachineIdentification,
 };
 #[cfg(not(feature = "mock-machine"))]
 use crate::{
-    aquapath1::AquaPathV1, buffer1::BufferV1, extruder2::ExtruderV3, laser::LaserMachine,
+    aquapath1::AquaPathV1, buffer1::BufferV1, extruder1::ExtruderV2, extruder2::ExtruderV3, laser::LaserMachine,
     test_machine::TestMachine, winder2::Winder2,
 };
 
@@ -91,6 +91,7 @@ lazy_static! {
 
         mc.register::<ExtruderV2>(ExtruderV2::MACHINE_IDENTIFICATION);
 
+        #[cfg(not(feature = "mock-machine"))]
         mc.register::<ExtruderV3>(ExtruderV3::MACHINE_IDENTIFICATION);
 
         #[cfg(feature = "mock-machine")]
@@ -104,7 +105,10 @@ lazy_static! {
 
         #[cfg(not(feature = "mock-machine"))]
         mc.register::<AquaPathV1>(AquaPathV1::MACHINE_IDENTIFICATION);
+
+        #[cfg(not(feature = "mock-machine"))]
         mc.register::<TestMachine>(TestMachine::MACHINE_IDENTIFICATION);
+
         mc
     };
 }

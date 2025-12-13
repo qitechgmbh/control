@@ -14,6 +14,7 @@ use units::electric_current::ampere;
 #[cfg(not(feature = "mock-machine"))]
 use units::electric_potential::volt;
 
+#[cfg(not(feature = "mock-machine"))]
 use crate::{AsyncThreadMessage, Machine};
 use units::f64::*;
 use units::thermodynamic_temperature::degree_celsius;
