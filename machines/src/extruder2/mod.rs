@@ -18,6 +18,7 @@ use units::electric_potential::volt;
 
 #[cfg(not(feature = "mock-machine"))]
 use crate::MACHINE_EXTRUDER_V2;
+#[cfg(not(feature = "mock-machine"))]
 use crate::{AsyncThreadMessage, Machine};
 
 #[cfg(not(feature = "mock-machine"))]
@@ -29,10 +30,13 @@ use crate::{
     machine_identification::{MachineIdentification, MachineIdentificationUnique},
 };
 
+#[cfg(not(feature = "mock-machine"))]
 pub mod act;
+#[cfg(not(feature = "mock-machine"))]
 pub mod api;
+#[cfg(not(feature = "mock-machine"))]
 pub mod emit;
-pub mod mock;
+#[cfg(not(feature = "mock-machine"))]
 pub mod new;
 pub mod temperature_controller;
 

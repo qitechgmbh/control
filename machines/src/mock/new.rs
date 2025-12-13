@@ -4,14 +4,14 @@ use super::{
     MockMachine,
     api::{MockMachineNamespace, Mode},
 };
-use crate::{MachineNewHardware, MachineNewParams, MachineNewTrait};
+use crate::{EtherCATMachine, EtherCATParams, MachineNewHardware};
 use anyhow::Error;
 use units::f64::Frequency;
 use units::frequency::hertz;
 
-impl MachineNewTrait for MockMachine {
+impl EtherCATMachine for MockMachine {
     fn new<'maindevice, 'subdevices>(
-        params: &MachineNewParams<'maindevice, 'subdevices, '_, '_, '_, '_, '_>,
+        params: &EtherCATParams<'maindevice, 'subdevices, '_, '_, '_, '_, '_>,
     ) -> Result<Self, Error>
     where
         Self: Sized,
@@ -33,7 +33,7 @@ impl MachineNewTrait for MockMachine {
         let now = Instant::now();
         let (sender, receiver) = smol::channel::unbounded();
         let mut mock_machine = Self {
-            main_sender: params.main_thread_channel.clone(),
+            main_sender: params.main_sender.clone(),
             api_receiver: receiver,
             api_sender: sender,
             machine_identification_unique: params.get_machine_identification_unique(),

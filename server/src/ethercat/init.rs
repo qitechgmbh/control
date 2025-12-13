@@ -1,28 +1,24 @@
-use control_core::ethercat::interface_discovery::discover_ethercat_interface;
+use control_core::ethernet::ethercat_interface_discovery::probe_ethercat;
 use smol::Timer;
 use std::{sync::Arc, time::Duration};
 
-use crate::{
-    app_state::SharedState,
-    ethercat::{ethercat_discovery_info::send_ethercat_found, setup::setup_loop},
-};
+use crate::{app_state::SharedState, ethercat::{ethercat_discovery_info::send_ethercat_found, setup::setup_loop}};
 
 pub async fn find_ethercat_interface() -> String {
     loop {
-        match discover_ethercat_interface().await {
-            Ok(interface) => {
-                tracing::info!("Found EtherCAT Interface at: {}", interface);
-                return interface;
-            }
-            Err(e) => {
-                tracing::warn!("No working interface found: {}. Retrying...", e);
-                Timer::after(Duration::from_secs(1)).await;
-            }
+        let res = probe_ethercat().await;
+
+        if let Some(interface) = res {
+            tracing::info!("Found EtherCAT Interface at: {}", interface);
+            return interface;
         }
+
+        tracing::warn!("No working interface found. Retrying...");
+        Timer::after(Duration::from_secs(1)).await;
     }
 }
 
-pub async fn start_interface_discovery(app_state: Arc<SharedState>) {
+pub async fn start_ethercat_discovery(app_state: Arc<SharedState>) {
     let interface = find_ethercat_interface().await;
 
     tracing::info!("Calling setup_loop");
