@@ -419,15 +419,15 @@ pub struct MachineChannel {
 }
 
 impl MachineChannel {
-    fn new(params: &MachineNewParams) -> Self {
+    pub fn new(machine_identification_unique: MachineIdentificationUnique) -> Self {
         let (sender, receiver) = smol::channel::unbounded();
 
         Self {
             api_sender: sender,
             api_receiver: receiver,
-            machine_identification_unique: params.get_machine_identification_unique(),
-            main_sender: params.main_thread_channel.clone(),
-            namespace: params.namespace.clone(),
+            machine_identification_unique,
+            main_sender: None,
+            namespace: None,
         }
     }
 }
