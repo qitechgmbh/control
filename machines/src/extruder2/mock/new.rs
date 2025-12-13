@@ -1,5 +1,5 @@
 use crate::{
-    MachineNewHardware, MachineNewParams, MachineNewTrait,
+    EtherCATMachine, EtherCATParams, MachineNewHardware,
     extruder1::{
         ExtruderV2Mode,
         api::{
@@ -12,8 +12,8 @@ use crate::{
     extruder2::mock::ExtruderV2,
 };
 
-impl MachineNewTrait for ExtruderV2 {
-    fn new(params: &MachineNewParams<'_, '_, '_, '_, '_, '_, '_>) -> Result<Self, anyhow::Error>
+impl EtherCATMachine for ExtruderV2 {
+    fn new(params: &EtherCATParams<'_, '_, '_, '_, '_, '_, '_>) -> Result<Self, anyhow::Error>
     where
         Self: Sized,
     {
@@ -35,7 +35,7 @@ impl MachineNewTrait for ExtruderV2 {
         let (sender, receiver) = smol::channel::unbounded();
 
         let mut extruder_mock_machine = Self {
-            main_sender: params.main_thread_channel.clone(),
+            main_sender: params.main_sender.clone(),
             api_receiver: receiver,
             api_sender: sender,
             machine_identification_unique: params.get_machine_identification_unique(),

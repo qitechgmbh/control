@@ -31,10 +31,15 @@ use crate::{
     machine_identification::{MachineIdentification, MachineIdentificationUnique},
 };
 
+#[cfg(not(feature = "mock-machine"))]
 pub mod act;
+#[cfg(not(feature = "mock-machine"))]
 pub mod api;
+#[cfg(not(feature = "mock-machine"))]
 pub mod emit;
+#[cfg(feature = "mock-machine")]
 pub mod mock;
+#[cfg(not(feature = "mock-machine"))]
 pub mod new;
 pub mod temperature_controller;
 

@@ -1,5 +1,5 @@
 use crate::{
-    MachineNewParams, MachineNewTrait,
+    EtherCATMachine, EtherCATParams,
     winder2::api::{
         ModeState, PullerState, SpoolAutomaticActionState, SpoolSpeedControllerState,
         TensionArmState, TraverseState, Winder2Namespace,
@@ -8,8 +8,8 @@ use crate::{
 
 use super::Winder2;
 
-impl MachineNewTrait for Winder2 {
-    fn new(params: &MachineNewParams<'_, '_, '_, '_, '_, '_, '_>) -> Result<Self, anyhow::Error>
+impl EtherCATMachine for Winder2 {
+    fn new(params: &EtherCATParams<'_, '_, '_, '_, '_, '_, '_>) -> Result<Self, anyhow::Error>
     where
         Self: Sized,
     {
@@ -31,7 +31,7 @@ impl MachineNewTrait for Winder2 {
 
         let (sender, receiver) = smol::channel::unbounded();
         let mut winder_mock_machine = Self {
-            main_sender: params.main_thread_channel.clone(),
+            main_sender: params.main_sender.clone(),
             max_connected_machines: 2,
             api_receiver: receiver,
             api_sender: sender,
