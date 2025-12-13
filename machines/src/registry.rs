@@ -14,7 +14,7 @@ use crate::{
 };
 
 use crate::{
-    Machine, MachineNewParams, MachineNewTrait, machine_identification::MachineIdentification,
+    Machine, MachineNewParams, MachineNewTrait, machine_identification::MachineIdentification, test_machine::TestMachine
 };
 
 #[cfg(not(feature = "mock-machine"))]
