@@ -37,6 +37,7 @@ use crate::{
         ethercat_discovery_info::send_ethercat_found, init::find_ethercat_interface,
         setup::setup_loop,
     },
+    modbus_tcp::start_modbus_tcp_discovery,
     socketio::queue::socketio_queue_worker,
 };
 
@@ -48,6 +49,7 @@ pub mod ethercat;
 pub mod logging;
 pub mod r#loop;
 pub mod metrics;
+pub mod modbus_tcp;
 pub mod panic;
 pub mod performance_metrics;
 pub mod rest;
@@ -341,6 +343,7 @@ fn main() {
 
     let mut socketio_task = smol::spawn(start_socketio_queue(app_state.clone()));
     let mut serial_task = smol::spawn(start_serial_discovery(app_state.clone()));
+    let mut modbus_tcp_task = smol::spawn(start_modbus_tcp_discovery(app_state.clone()));
     let mut async_machine_task = smol::spawn(handle_async_requests(
         main_receiver.clone(),
         app_state.clone(),
@@ -363,6 +366,12 @@ fn main() {
             if !running.load(Ordering::SeqCst) {
                 tracing::info!("Shutdown signal received, exiting main loop.");
                 break;
+            }
+
+            if modbus_tcp_task.is_finished() {
+                tracing::warn!("ModbusTCP task died! Restarting...");
+                modbus_tcp_task.cancel().await;
+                modbus_tcp_task = smol::spawn(start_modbus_tcp_discovery(app_state.clone()));
             }
 
             if serial_task.is_finished() {
