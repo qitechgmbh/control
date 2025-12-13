@@ -13,8 +13,10 @@ use machine_identification::{
 use serde::Serialize;
 use smol::channel::{Receiver, Sender};
 use socketioxide::extract::SocketRef;
+use std::any::Any;
 use std::fmt::Debug;
-use std::{any::Any, sync::Arc, time::Instant};
+use std::sync::Arc;
+use std::time::Instant;
 pub mod aquapath1;
 #[cfg(not(feature = "mock-machine"))]
 pub mod buffer1;
@@ -415,15 +417,16 @@ pub struct MachineChannel {
 }
 
 impl MachineChannel {
-    fn new(params: &EtherCATParams) -> Self {
+
+    pub fn new(machine_identification_unique: MachineIdentificationUnique) -> Self {
         let (sender, receiver) = smol::channel::unbounded();
 
         Self {
             api_sender: sender,
             api_receiver: receiver,
-            machine_identification_unique: params.get_machine_identification_unique(),
-            main_sender: params.main_sender.clone(),
-            namespace: params.namespace.clone(),
+            machine_identification_unique,
+            main_sender: None,
+            namespace: None
         }
     }
 }

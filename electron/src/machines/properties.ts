@@ -461,6 +461,17 @@ export const testmachine: MachineProperties = {
     },
   ],
 };
+export const wago_power1: MachineProperties = {
+  name: "WAGO Power",
+  version: "V1",
+  slug: "wago_power",
+  icon: "lu:PlugZap",
+  machine_identification: {
+    vendor: VENDOR_QITECH,
+    machine: 0x000a,
+  },
+  device_roles: [],
+};
 
 export const machineProperties: MachineProperties[] = [
   winder2,
@@ -469,6 +480,7 @@ export const machineProperties: MachineProperties[] = [
   laser1,
   mock1,
   buffer1,
+  wago_power1,
   aquapath1,
   testmachine,
 ];
