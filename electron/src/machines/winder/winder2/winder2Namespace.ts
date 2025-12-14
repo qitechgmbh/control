@@ -1,8 +1,3 @@
-/**
- * @file winder2Namespace.ts
- * @description TypeScript implementation of Winder2 namespace with Zod schema validation.
- */
-
 import { StoreApi } from "zustand";
 import { create } from "zustand";
 import { z } from "zod";

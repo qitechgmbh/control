@@ -77,7 +77,7 @@ pub async fn add_serial_device(
         .expect("Serial devices always have machine identification");
 
     let new_machine = machine_registry.new_machine(&EtherCATParams {
-        device_group: &vec![device_identification_identified.clone()],
+        device_group: &vec![device_identification_identified],
         hardware: &MachineNewHardware::Serial(&hardware),
         socket_queue_tx,
         namespace: None,
@@ -93,7 +93,7 @@ pub async fn add_serial_device(
     };
 
     let machines = vec![machine];
-    shared_state.add_machines(machines);
+    shared_state.add_machines(machines).await;
 }
 
 pub async fn start_serial_discovery(app_state: Arc<SharedState>) {

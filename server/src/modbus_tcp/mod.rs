@@ -1,7 +1,7 @@
 use std::{sync::Arc, time::Duration};
 use crate::app_state::{HotThreadMessage, SharedState};
 use control_core::ethernet::modbus_tcp_discovery::probe_modbus_tcp;
-use machines::{HasMachineChannel, MACHINE_WAGO_POWER_V1, Machine, MachineAct, MachineChannel, Mutatable, VENDOR_QITECH, machine_identification::{MachineIdentification, MachineIdentificationUnique}};
+use machines::{MACHINE_WAGO_POWER_V1, Machine, MachineAct, MachineApi, MachineChannel, MachineWithChannel, VENDOR_QITECH, machine_identification::{MachineIdentification, MachineIdentificationUnique}};
 use smol::future;
 
 #[derive(Debug)]
@@ -9,7 +9,7 @@ pub struct BasicMachine {
     channel: MachineChannel
 }
 
-impl HasMachineChannel for BasicMachine {
+impl MachineWithChannel for BasicMachine {
     fn get_machine_channel(&self) -> &MachineChannel {
         &self.channel
     }
@@ -17,20 +17,13 @@ impl HasMachineChannel for BasicMachine {
     fn get_machine_channel_mut(&mut self) -> &mut MachineChannel {
         &mut self.channel
     }
-}
 
-impl MachineAct for BasicMachine {
-
-    fn act(&mut self, now: std::time::Instant) {
-        println!("Basic Machine Acting");
+    fn update(&mut self, now: std::time::Instant) {
+        // println!("Basic Machine Acting");
+        if self.api_event_namespace().is_some() {
+            tracing::info!("###################### NAMESPACE FOUND!!!!!!");
+        }
     }
-
-    fn act_machine_message(&mut self, msg: machines::MachineMessage) {
-        println!("API Message Received: {:?}", msg)
-    }
-}
-
-impl Mutatable for BasicMachine {
 
     fn mutate(&mut self, mutation: serde_json::Value) -> anyhow::Result<()> {
         println!("Basic Machine Mutation");

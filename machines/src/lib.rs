@@ -433,22 +433,17 @@ impl MachineChannel {
     }
 }
 
-pub trait HasMachineChannel: Send + Debug + Sync {
+pub trait MachineWithChannel: Send + Debug + Sync {
     fn get_machine_channel(&self) -> &MachineChannel;
     fn get_machine_channel_mut(&mut self) -> &mut MachineChannel;
-}
 
-pub trait Mutatable {
+    fn update(&mut self, now: std::time::Instant);
     fn mutate(&mut self, mutation: Value) -> Result<()>;
-}
-
-pub trait MachineMessageReceiver {
-    fn on_machine_message(&mut self, msg: MachineMessage);
 }
 
 impl<C> MachineApi for C
 where
-    C: HasMachineChannel + Mutatable,
+    C: MachineWithChannel
 {
     fn api_get_sender(&self) -> Sender<MachineMessage> {
         self.get_machine_channel().api_sender.clone()
@@ -463,9 +458,45 @@ where
     }
 }
 
+impl<C> MachineAct for C
+where
+    C: MachineWithChannel
+{
+
+    fn act(&mut self, now: Instant) {
+        while let Ok(msg) = self.get_machine_channel_mut().api_receiver.try_recv() {
+            self.act_machine_message(msg);
+        }
+
+        self.update(now);
+    }
+
+    fn act_machine_message(&mut self, msg: MachineMessage) {
+        let channel = self.get_machine_channel_mut();
+
+        match msg {
+            MachineMessage::SubscribeNamespace(namespace) => {
+                channel.namespace = Some(namespace);
+            }
+            MachineMessage::UnsubscribeNamespace => {
+                channel.namespace = None;
+            }
+            MachineMessage::HttpApiJsonRequest(value) => {
+                let _ = self.mutate(value);
+            }
+            MachineMessage::ConnectToMachine(_machine_connection) => {
+                todo!();
+            }
+            MachineMessage::DisconnectMachine(_machine_connection) => {
+                todo!();
+            }
+        }
+    }
+}
+
 impl<C> Machine for C
 where
-    C: HasMachineChannel + MachineAct + Mutatable + 'static,
+    C: MachineWithChannel + 'static,
 {
     fn get_machine_identification_unique(&self) -> MachineIdentificationUnique {
         self.get_machine_channel()
