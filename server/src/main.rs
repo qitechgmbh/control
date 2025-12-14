@@ -26,7 +26,6 @@ use smol::{
     future,
     lock::RwLock,
 };
-use socketio::main_namespace::machines_event::MachineObj;
 use socketioxide::extract::SocketRef;
 use std::{collections::HashMap, sync::Arc, time::Duration};
 

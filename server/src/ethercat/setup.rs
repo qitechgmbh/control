@@ -1,7 +1,6 @@
 use crate::app_state::{EtherCatDeviceMetaData, EthercatSetup};
 use crate::socketio::main_namespace::MainNamespaceEvents;
 use crate::socketio::main_namespace::ethercat_devices_event::EthercatDevicesEventBuilder;
-use crate::socketio::main_namespace::machines_event::MachineObj;
 use crate::{
     app_state::SharedState,
     ethercat::config::{MAX_FRAMES, MAX_PDU_DATA, MAX_SUBDEVICES, PDI_LEN},
