@@ -7,7 +7,7 @@ import {
 } from "@/components/graph";
 
 import React from "react";
-import { useAquapath1 } from "./useAquapath";
+import { useAquapath1 } from "./useAquapath1";
 import { TimeSeries } from "@/lib/timeseries";
 
 export function Aquapath1GraphPage() {
