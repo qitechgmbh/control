@@ -1,6 +1,6 @@
 use anyhow::{Error, Result};
 use control_core::socketio::event::GenericEvent;
-use control_core::socketio::namespace::Namespace;
+use control_core::socketio::namespace::{CacheableEvents, Namespace, NamespaceCacheingLogic};
 use ethercat_hal::devices::{
     EthercatDevice, SubDeviceIdentityTuple, downcast_device, subdevice_identity_to_tuple,
 };
@@ -428,6 +428,21 @@ impl MachineChannel {
             machine_identification_unique,
             main_sender: None,
             namespace: None,
+        }
+    }
+}
+
+impl<E> NamespaceCacheingLogic<E> for MachineChannel
+where
+    E: CacheableEvents<E>
+{
+
+    fn emit(&mut self, events: E) {
+        let event = Arc::new(events.event_value());
+        let cache_fn = events.event_cache_fn();
+
+        if let Some(ns) = &mut self.namespace {
+            ns.emit(event, &cache_fn);
         }
     }
 }

@@ -42,15 +42,19 @@ function wagoPower1MessageHandler(
     const eventName = event.name;
 
     // Helper function to update store through buffer
-    // const updateStore = (
-    //   updater: (state: WagoPower1NamespaceStore) => WagoPower1NamespaceStore,
-    // ) => {
-    //   throttledUpdater.updateWith(updater);
-    // };
+    const updateStore = (
+      updater: (state: WagoPower1NamespaceStore) => WagoPower1NamespaceStore,
+    ) => {
+      throttledUpdater.updateWith(updater);
+    };
 
     try {
       if (eventName === "StateEvent") {
-        console.log({ state: event });
+          const stateEvent = stateEventSchema.parse(event);
+          updateStore((store) => ({
+              ...store,
+              state: stateEvent,
+          }));
       } else {
           handleUnhandledEventError(eventName);
       }
