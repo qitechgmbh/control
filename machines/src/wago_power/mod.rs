@@ -1,24 +1,46 @@
-use std::{net::SocketAddr, time::Instant};
+use std::time::{Duration, Instant};
 
 use anyhow::Result;
-use control_core::modbus::tcp::ModbusTcpDevice;
+use control_core::socketio::{event::{BuildEvent, GenericEvent}, namespace::{CacheFn, CacheableEvents, NamespaceCacheingLogic, cache_n_events}};
+use control_core_derive::BuildEvent;
+use serde::Serialize;
 
-use crate::{MachineAct, MachineChannel, MachineMessage, MachineWithChannel};
+use crate::{MachineChannel, MachineWithChannel};
 
-#[derive(Debug)]
-pub struct WagoPowerSupply {
-    channel: MachineChannel,
-    device: ModbusTcpDevice,
+#[derive(Serialize, Debug, Clone, BuildEvent)]
+pub struct StateEvent {
+  voltage_milli_volt: f32,
+  current_milli_ampere: f32
 }
 
-impl WagoPowerSupply {
-    fn new(channel: MachineChannel, addr: SocketAddr) -> Result<Self> {
-        let device = smol::block_on(ModbusTcpDevice::new(addr))?;
-        Ok(Self { channel, device })
+impl CacheableEvents<Self> for StateEvent {
+
+    fn event_value(&self) -> GenericEvent {
+        self.build().into()
+    }
+
+    fn event_cache_fn(&self) -> CacheFn {
+        cache_n_events(10)
     }
 }
 
-impl MachineWithChannel for WagoPowerSupply {
+#[derive(Debug)]
+pub struct WagoPower {
+    channel: MachineChannel,
+    last_emit: Instant,
+}
+
+impl WagoPower {
+    pub async fn new(channel: MachineChannel, /* addr: SocketAddr */) -> Result<Self> {
+        // let device = smol::block_on(ModbusTcpDevice::new(addr))?;
+        Ok(Self {
+            channel,
+            last_emit: Instant::now(),
+        })
+    }
+}
+
+impl MachineWithChannel for WagoPower {
     fn get_machine_channel(&self) -> &MachineChannel {
         &self.channel
     }
@@ -31,6 +53,15 @@ impl MachineWithChannel for WagoPowerSupply {
         Ok(())
     }
 
-    fn update(&mut self, _now: Instant) {
+    fn update(&mut self, now: Instant) {
+        if now - self.last_emit < Duration::from_millis(1000 / 30) {
+            let event = StateEvent {
+                voltage_milli_volt: 24000.0,
+                current_milli_ampere: 5000.0,
+            };
+
+            self.channel.emit(event);
+            self.last_emit = now;
+        }
     }
 }
