@@ -149,10 +149,17 @@ pub async fn set_ethercat_devices<const MAX_SUBDEVICES: usize, const MAX_PDI: us
                 });
                 machines.push(machine);
             }
-            Err(e) => machine_objs.push(MachineObj {
-                machine_identification_unique,
-                error: Some(e.to_string()),
-            }),
+            Err(e) => {
+                tracing::error!(
+                    "Error initializing EtherCAT for machine {}: {}",
+                    machine_identification_unique,
+                    e
+                );
+                machine_objs.push(MachineObj {
+                    machine_identification_unique,
+                    error: Some(e.to_string()),
+                })
+            }
         }
     }
     let _ = shared_state

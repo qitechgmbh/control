@@ -7,12 +7,12 @@ use crate::{
 use super::{
     AquaPathV1, AquaPathV1Mode, Flow, Temperature, api::AquaPathV1Namespace, controller::Controller,
 };
-use anyhow::Error;
+use anyhow::{Context, Error};
 use ethercat_hal::{
     coe::ConfigurableDevice,
     devices::{
         ek1100::{EK1100, EK1100_IDENTITY_A},
-        el2008::{EL2008, EL2008_IDENTITY_A, EL2008Port},
+        el2008::{EL2008, EL2008_IDENTITY_A, EL2008_IDENTITY_B, EL2008Port},
         el3204::{EL3204, EL3204_IDENTITY_A, EL3204_IDENTITY_B, EL3204Port},
         el4002::{EL4002, EL4002_IDENTITY_A, EL4002Port},
         el5152::{
@@ -52,18 +52,26 @@ impl MachineNewTrait for AquaPathV1 {
         smol::block_on(async {
             // Role 0 - Buscoupler EK1100
             let _ek1100 =
-                get_ethercat_device::<EK1100>(hardware, params, 0, [EK1100_IDENTITY_A].to_vec());
+                get_ethercat_device::<EK1100>(hardware, params, 0, [EK1100_IDENTITY_A].to_vec())
+                    .await
+                    .context("Failed to get ek1100 device")?;
 
             // Role 1 - EL2008 Digital Output Module
-            let el2008 =
-                get_ethercat_device::<EL2008>(hardware, params, 1, [EL2008_IDENTITY_A].to_vec())
-                    .await?
-                    .0;
+            let el2008 = get_ethercat_device::<EL2008>(
+                hardware,
+                params,
+                1,
+                [EL2008_IDENTITY_A, EL2008_IDENTITY_B].to_vec(),
+            )
+            .await
+            .context("Failed to get el2008 device")?
+            .0;
 
             // Role 2 - EL4002 Analog Output Module
             let el4002 =
                 get_ethercat_device::<EL4002>(hardware, params, 2, [EL4002_IDENTITY_A].to_vec())
-                    .await?
+                    .await
+                    .context("Failed to get el4002 device")?
                     .0;
 
             let el3204 = get_ethercat_device::<EL3204>(
@@ -72,12 +80,14 @@ impl MachineNewTrait for AquaPathV1 {
                 3,
                 [EL3204_IDENTITY_A, EL3204_IDENTITY_B].to_vec(),
             )
-            .await?
+            .await
+            .context("Failed to get el3204 device")?
             .0;
 
             let el5152 =
                 get_ethercat_device::<EL5152>(hardware, params, 4, [EL5152_IDENTITY_A].to_vec())
-                    .await?
+                    .await
+                    .context("Failed to get el5152 device")?
                     .0;
 
             let config = EL5152Configuration {
@@ -89,7 +99,8 @@ impl MachineNewTrait for AquaPathV1 {
                 .write()
                 .await
                 .write_config(&subdevice, &config)
-                .await?;
+                .await
+                .context("Failed to get el5152 subdevie")?;
 
             let enc1 = EncoderInput::new(el5152.clone(), EL5152Port::ENC1);
 
@@ -161,7 +172,7 @@ impl MachineNewTrait for AquaPathV1 {
                 enc2,
             );
             let (sender, receiver) = smol::channel::unbounded();
-            let mut water_cooling = Self {
+            let mut aqua_path = Self {
                 main_sender: params.main_thread_channel.clone(),
                 api_receiver: receiver,
                 api_sender: sender,
@@ -174,9 +185,9 @@ impl MachineNewTrait for AquaPathV1 {
                 front_controller,
                 back_controller,
             };
-            water_cooling.emit_state();
+            aqua_path.emit_state();
 
-            Ok(water_cooling)
+            Ok(aqua_path)
         })
     }
 }

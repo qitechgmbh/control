@@ -385,7 +385,7 @@ where
 
     if !matched_any_identity {
         return Err(anyhow::anyhow!(
-            "[{}::MachineNewTrait/ExtruderV2::new] Device identity mismatch: expected {:?}",
+            "[{}::get_ethercat_device] Device identity mismatch: expected {:?}",
             module_path!(),
             expected_identities
         ));
