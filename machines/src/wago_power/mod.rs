@@ -3,7 +3,7 @@ use std::{net::SocketAddr, time::Instant};
 use anyhow::Result;
 use control_core::modbus::tcp::ModbusTcpDevice;
 
-use crate::{HasMachineChannel, MachineAct, MachineChannel, MachineMessage, Mutatable};
+use crate::{MachineAct, MachineChannel, MachineMessage, MachineWithChannel};
 
 #[derive(Debug)]
 pub struct WagoPowerSupply {
@@ -18,7 +18,7 @@ impl WagoPowerSupply {
     }
 }
 
-impl HasMachineChannel for WagoPowerSupply {
+impl MachineWithChannel for WagoPowerSupply {
     fn get_machine_channel(&self) -> &MachineChannel {
         &self.channel
     }
@@ -26,16 +26,11 @@ impl HasMachineChannel for WagoPowerSupply {
     fn get_machine_channel_mut(&mut self) -> &mut MachineChannel {
         &mut self.channel
     }
-}
 
-impl Mutatable for WagoPowerSupply {
     fn mutate(&mut self, _mutation: serde_json::Value) -> Result<()> {
         Ok(())
     }
-}
 
-impl MachineAct for WagoPowerSupply {
-    fn act(&mut self, _now: Instant) {}
-
-    fn act_machine_message(&mut self, _msg: MachineMessage) {}
+    fn update(&mut self, _now: Instant) {
+    }
 }
