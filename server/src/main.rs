@@ -321,7 +321,6 @@ fn main() {
 
     let mut socketio_task = smol::spawn(start_socketio_queue(app_state.clone()));
     let mut serial_task = smol::spawn(start_serial_discovery(app_state.clone()));
-    let mut modbus_tcp_task = smol::spawn(start_modbus_tcp_discovery(app_state.clone()));
     let mut async_machine_task = smol::spawn(handle_async_requests(
         main_receiver.clone(),
         app_state.clone(),
@@ -329,6 +328,8 @@ fn main() {
 
     #[cfg(not(feature = "mock-machine"))]
     smol::spawn(start_ethercat_discovery(app_state.clone())).detach();
+
+    smol::spawn(start_modbus_tcp_discovery(app_state.clone())).detach();
 
     smol::block_on(async {
         send_empty_machines_event(app_state.clone()).await;
@@ -344,12 +345,6 @@ fn main() {
             if !running.load(Ordering::SeqCst) {
                 tracing::info!("Shutdown signal received, exiting main loop.");
                 break;
-            }
-
-            if modbus_tcp_task.is_finished() {
-                tracing::warn!("ModbusTCP task died! Restarting...");
-                modbus_tcp_task.cancel().await;
-                modbus_tcp_task = smol::spawn(start_modbus_tcp_discovery(app_state.clone()));
             }
 
             if serial_task.is_finished() {
