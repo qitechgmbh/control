@@ -33,7 +33,7 @@ mod gluetex_imports {
     pub use ethercat_hal::devices::el7031_0030::pdo::EL7031_0030PredefinedPdoAssignment;
     pub use ethercat_hal::devices::el7031_0030::{
         self, EL7031_0030, EL7031_0030_IDENTITY_A, EL7031_0030AnalogInputPort,
-        EL7031_0030StepperPort,
+        EL7031_0030DigitalInputPort, EL7031_0030StepperPort,
     };
     pub use ethercat_hal::devices::el7041_0052::coe::EL7041_0052Configuration;
     pub use ethercat_hal::devices::el7041_0052::{
@@ -334,7 +334,7 @@ impl MachineNewTrait for Gluetex {
             };
 
             // Role 11: Addon Motor 5 EL7031-0030
-            let el7031_addon5 = {
+            let el7031_addon5_shared = {
                 let device = get_ethercat_device::<EL7031_0030>(
                     hardware,
                     params,
@@ -502,8 +502,12 @@ impl MachineNewTrait for Gluetex {
                     EL7031_0030StepperPort::STM1,
                 ),
                 addon_motor_5: StepperVelocityEL70x1::new(
-                    el7031_addon5,
+                    el7031_addon5_shared.clone(),
                     EL7031_0030StepperPort::STM1,
+                ),
+                addon_motor_5_endstop: DigitalInput::new(
+                    el7031_addon5_shared,
+                    EL7031_0030DigitalInputPort::DI1,
                 ),
                 addon_tension_arm: TensionArm::new(AnalogInput::new(
                     el7031_addon4,
@@ -515,6 +519,7 @@ impl MachineNewTrait for Gluetex {
                     super::controllers::addon_motor_controller::AddonMotorController::new(200),
                 addon_motor_5_controller:
                     super::controllers::addon_motor_controller::AddonMotorController::new(200),
+                addon_motor_5_last_sync: Instant::now(),
                 tension_arm: TensionArm::new(AnalogInput::new(
                     el7031_0030,
                     EL7031_0030AnalogInputPort::AI1,
