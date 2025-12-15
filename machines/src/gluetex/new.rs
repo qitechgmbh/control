@@ -39,6 +39,9 @@ mod gluetex_imports {
     pub use ethercat_hal::devices::el7041_0052::{
         EL7041_0052, EL7041_0052_IDENTITY_A, EL7041_0052Port,
     };
+    pub use ethercat_hal::devices::el3062_0030::{
+        EL3062_0030, EL3062_0030_IDENTITY_A, EL3062_0030Port,
+    };
     pub use ethercat_hal::devices::{ek1100::EK1100_IDENTITY_A, el2002::EL2002_IDENTITY_A};
     pub use ethercat_hal::io::analog_input::AnalogInput;
     pub use ethercat_hal::io::digital_input::DigitalInput;
@@ -367,6 +370,16 @@ impl MachineNewTrait for Gluetex {
                 device.0
             };
 
+            // Role 12: Analog Input EL3062
+            let el3062 = get_ethercat_device::<EL3062_0030>(
+                hardware,
+                params,
+                12,
+                vec![EL3062_0030_IDENTITY_A],
+            )
+            .await?
+            .0;
+
             // Digital outputs for SSR control (24V to external SSRs for 60W heaters)
             let heater_ssr_1 = DigitalOutput::new(el2008.clone(), EL2008Port::DO1);
             let heater_ssr_2 = DigitalOutput::new(el2008.clone(), EL2008Port::DO2);
@@ -525,6 +538,8 @@ impl MachineNewTrait for Gluetex {
                     EL7031_0030AnalogInputPort::AI1,
                 )),
                 laser: DigitalOutput::new(el2002, EL2002Port::DO1),
+                addon_voltage_input_1: AnalogInput::new(el3062.clone(), EL3062_0030Port::AI1),
+                addon_voltage_input_2: AnalogInput::new(el3062, EL3062_0030Port::AI2),
                 namespace: GluetexNamespace {
                     namespace: params.namespace.clone(),
                 },

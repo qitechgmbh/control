@@ -24,7 +24,7 @@ mod gluetex_imports {
     pub use super::controllers::traverse_controller::TraverseController;
     pub use control_core::converters::angular_step_converter::AngularStepConverter;
     pub use ethercat_hal::io::{
-        digital_input::DigitalInput, digital_output::DigitalOutput,
+        analog_input::AnalogInput, digital_input::DigitalInput, digital_output::DigitalOutput,
         stepper_velocity_el70x1::StepperVelocityEL70x1, temperature_input::TemperatureInput,
     };
     pub use smol::lock::RwLock;
@@ -193,6 +193,10 @@ pub struct Gluetex {
 
     // addon tension arm (independent tension arm on Role 9)
     pub addon_tension_arm: TensionArm,
+
+    // addon voltage inputs (EL3062 analog inputs)
+    pub addon_voltage_input_1: AnalogInput,
+    pub addon_voltage_input_2: AnalogInput,
 
     // tension arm monitoring
     pub tension_arm_monitor_config: TensionArmMonitorConfig,

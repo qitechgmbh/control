@@ -207,6 +207,10 @@ pub struct LiveValuesEvent {
     pub slave_tension_arm_angle: f64,
     /// addon tension arm angle in degrees
     pub addon_tension_arm_angle: f64,
+    /// voltage input 1 in volts
+    pub addon_voltage_1: f64,
+    /// voltage input 2 in volts
+    pub addon_voltage_2: f64,
 }
 
 impl LiveValuesEvent {
