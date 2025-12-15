@@ -887,6 +887,17 @@ export const gluetex: MachineProperties = {
         },
       ],
     },
+    {
+      role: 12,
+      role_label: "Analog Input EL3062",
+      allowed_devices: [
+        {
+          vendor_id: 2,
+          product_id: 0x0bf63052,
+          revision: 0x0017001e,
+        },
+      ],
+    },
   ],
 };
 
