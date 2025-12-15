@@ -561,7 +561,7 @@ export const TestMotor: MachineProperties = {
         {
           vendor_id: 0x2,
           product_id: 0x1b773052,
-          revision: 0x10001E,
+          revision: 0x10001e,
         },
       ],
     },

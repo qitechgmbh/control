@@ -22,9 +22,9 @@ use crate::test_machine::TestMachine;
 
 use lazy_static::lazy_static;
 
+use crate::ethercat_beckhoff::BeckhoffMachine;
 use anyhow::Error;
 use std::{any::TypeId, collections::HashMap};
-use crate::ethercat_beckhoff::BeckhoffMachine;
 
 pub type MachineNewClosure =
     Box<dyn Fn(&MachineNewParams) -> Result<Box<dyn Machine>, Error> + Send + Sync>;

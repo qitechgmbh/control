@@ -21,6 +21,7 @@ pub mod analog_input_test_machine;
 pub mod aquapath1;
 #[cfg(not(feature = "mock-machine"))]
 pub mod buffer1;
+pub mod ethercat_beckhoff;
 pub mod extruder1;
 pub mod extruder2;
 pub mod ip20_test_machine;
@@ -32,7 +33,6 @@ pub mod serial;
 pub mod test_machine;
 pub mod wago_power;
 pub mod winder2;
-pub mod ethercat_beckhoff;
 
 pub const VENDOR_QITECH: u16 = 0x0001;
 pub const MACHINE_WINDER_V1: u16 = 0x0002;

@@ -16,7 +16,6 @@ export function TestMotorControlPage() {
   return (
     <Page>
       <ControlGrid columns={2}>
-
         {/* rundsteuerung */}
         <ControlCard title="Motor Status">
           {/* An/Aus Schalter */}
@@ -48,7 +47,6 @@ export function TestMotorControlPage() {
             />
           </Label>
         </ControlCard>
-
       </ControlGrid>
     </Page>
   );

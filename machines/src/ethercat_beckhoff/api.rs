@@ -1,14 +1,16 @@
+use super::BeckhoffMachine;
 use crate::{MachineApi, MachineMessage};
 use control_core::socketio::{
     event::{Event, GenericEvent},
-    namespace::{CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_first_and_last_event},
+    namespace::{
+        CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_first_and_last_event,
+    },
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use smol::channel::Sender;
 use std::sync::Arc;
 use tracing::instrument;
-use super::BeckhoffMachine;
 
 #[derive(Serialize, Debug, Clone)]
 pub struct StateEvent {
@@ -77,7 +79,7 @@ impl MachineApi for BeckhoffMachine {
                 } else {
                     self.turn_motor_off();
                 }
-            },
+            }
             Mutation::SetMotorVelocity(vel) => {
                 self.motor_state.target_velocity = vel;
                 self.emit_state();

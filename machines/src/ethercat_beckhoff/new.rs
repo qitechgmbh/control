@@ -1,21 +1,20 @@
+use super::{BeckhoffMachine, MotorState, api::BeckhoffNamespace};
 use crate::{
     MachineNewHardware, MachineNewParams, MachineNewTrait, get_ethercat_device,
     validate_no_role_dublicates, validate_same_machine_identification_unique,
 };
-use super::{BeckhoffMachine, MotorState, api::BeckhoffNamespace};
 use anyhow::Error;
 
-use ethercat_hal::devices::{
-    ek1100::{EK1100, EK1100_IDENTITY_A},
-
-};
-use ethercat_hal::shared_config;
-use ethercat_hal::shared_config::el70x1::{EL70x1OperationMode, StmMotorConfiguration};
-use ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1;
 use ethercat_hal::coe::ConfigurableDevice;
-use ethercat_hal::devices::el7031_0030::{EL7031_0030StepperPort, EL7031_0030, EL7031_0030_IDENTITY_A};
+use ethercat_hal::devices::ek1100::{EK1100, EK1100_IDENTITY_A};
 use ethercat_hal::devices::el7031_0030::coe::EL7031_0030Configuration;
 use ethercat_hal::devices::el7031_0030::pdo::EL7031_0030PredefinedPdoAssignment;
+use ethercat_hal::devices::el7031_0030::{
+    EL7031_0030, EL7031_0030_IDENTITY_A, EL7031_0030StepperPort,
+};
+use ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1;
+use ethercat_hal::shared_config;
+use ethercat_hal::shared_config::el70x1::{EL70x1OperationMode, StmMotorConfiguration};
 
 impl MachineNewTrait for BeckhoffMachine {
     fn new<'maindevice>(params: &MachineNewParams) -> Result<Self, Error> {
@@ -31,9 +30,8 @@ impl MachineNewTrait for BeckhoffMachine {
 
         smol::block_on(async {
             // Role 0: EK1100 (Koppler)
-            let _ek1100 = get_ethercat_device::<EK1100>(
-                hardware, params, 0, vec![EK1100_IDENTITY_A]
-            ).await?;
+            let _ek1100 =
+                get_ethercat_device::<EK1100>(hardware, params, 0, vec![EK1100_IDENTITY_A]).await?;
 
             // Role 1: EL7031 (Stepper Motor)
             let el7031 = {
@@ -42,7 +40,8 @@ impl MachineNewTrait for BeckhoffMachine {
                     params,
                     1,
                     vec![EL7031_0030_IDENTITY_A],
-                ).await?;
+                )
+                .await?;
 
                 let el7031_config = EL7031_0030Configuration {
                     stm_features: ethercat_hal::devices::el7031_0030::coe::StmFeatures {
@@ -58,7 +57,6 @@ impl MachineNewTrait for BeckhoffMachine {
                     ..Default::default()
                 };
 
-
                 device
                     .0
                     .write()
@@ -69,10 +67,8 @@ impl MachineNewTrait for BeckhoffMachine {
                 device.0
             };
 
-            let motor_driver = StepperVelocityEL70x1::new(
-                el7031.clone(),
-                EL7031_0030StepperPort::STM1
-            );
+            let motor_driver =
+                StepperVelocityEL70x1::new(el7031.clone(), EL7031_0030StepperPort::STM1);
 
             let (sender, receiver) = smol::channel::unbounded();
 
@@ -81,9 +77,14 @@ impl MachineNewTrait for BeckhoffMachine {
                 api_receiver: receiver,
                 api_sender: sender,
                 machine_identification_unique: params.get_machine_identification_unique(),
-                namespace: BeckhoffNamespace { namespace: params.namespace.clone() },
+                namespace: BeckhoffNamespace {
+                    namespace: params.namespace.clone(),
+                },
                 motor_driver,
-                motor_state: MotorState { enabled: true, target_velocity: 100 },
+                motor_state: MotorState {
+                    enabled: true,
+                    target_velocity: 100,
+                },
             })
         })
     }
