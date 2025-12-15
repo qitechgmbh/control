@@ -45,7 +45,6 @@ export function Laser1GraphsPage() {
     };
   }, [roundness]);
 
-
   const diameterColor = "#3b82f6"; // Blau
   const xDiameterColor = "#ef4444"; // Rot
   const yDiameterColor = "#22c55e"; // Grün
@@ -59,7 +58,7 @@ export function Laser1GraphsPage() {
       grid: "#e2e8f0",
       axis: "#64748b",
       background: "#ffffff",
-    }
+    },
   };
 
   // Diameter-Graph (Diameter, X-Diameter, Y-Diameter)
@@ -68,7 +67,8 @@ export function Laser1GraphsPage() {
       newData: diameter,
       color: diameterColor,
       title: "Diameter",
-      lines: [ // Toleranzlinien für den Durchmesser
+      lines: [
+        // Toleranzlinien für den Durchmesser
         {
           type: "threshold" as const,
           value: targetDiameter + higherTolerance,
@@ -92,8 +92,12 @@ export function Laser1GraphsPage() {
       ],
     },
 
-    ...(isTwoAxis && x_diameter ? [{ newData: x_diameter, color: xDiameterColor, title: "X-Diameter" }] : []),
-    ...(isTwoAxis && y_diameter ? [{ newData: y_diameter, color: yDiameterColor, title: "Y-Diameter" }] : []),
+    ...(isTwoAxis && x_diameter
+      ? [{ newData: x_diameter, color: xDiameterColor, title: "X-Diameter" }]
+      : []),
+    ...(isTwoAxis && y_diameter
+      ? [{ newData: y_diameter, color: yDiameterColor, title: "Y-Diameter" }]
+      : []),
   ];
 
   // Roundness-Graph
