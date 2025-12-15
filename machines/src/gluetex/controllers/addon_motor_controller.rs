@@ -1,10 +1,10 @@
 use control_core::converters::angular_step_converter::AngularStepConverter;
 use ethercat_hal::io::digital_input::DigitalInput;
 use ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1;
+use units::Length;
 use units::angular_velocity::revolution_per_second;
 use units::f64::AngularVelocity;
 use units::length::millimeter;
-use units::Length;
 
 /// State machine for homing and pattern control
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -213,7 +213,12 @@ impl AddonMotorController {
         let pattern_mode = self.konturlaenge_mm > 0.0 || self.pause_mm > 0.0;
 
         if pattern_mode && endstop.is_some() {
-            self.handle_pattern_control(motor, puller_angular_velocity, endstop.unwrap(), puller_length_moved);
+            self.handle_pattern_control(
+                motor,
+                puller_angular_velocity,
+                endstop.unwrap(),
+                puller_length_moved,
+            );
         } else {
             // Constant mode - just follow the ratio
             let target_velocity = self.calculate_motor_velocity(puller_angular_velocity);
@@ -232,7 +237,7 @@ impl AddonMotorController {
     ) {
         // Update accumulated distance
         let distance_mm = puller_length_moved.get::<millimeter>();
-        
+
         match self.pattern_state {
             PatternControlState::Homing => {
                 // Check if endstop is hit
@@ -244,19 +249,21 @@ impl AddonMotorController {
                 } else {
                     // Keep moving towards endstop
                     let target_velocity = self.calculate_motor_velocity(puller_angular_velocity);
-                    let steps_per_second = self.converter.angular_velocity_to_steps(target_velocity);
+                    let steps_per_second =
+                        self.converter.angular_velocity_to_steps(target_velocity);
                     let _ = motor.set_speed(steps_per_second);
                 }
             }
             PatternControlState::Running => {
                 self.accumulated_distance += distance_mm;
-                
+
                 if self.accumulated_distance >= self.konturlaenge_mm {
                     // Konturlänge reached - go back to endstop
                     let target_velocity = self.calculate_motor_velocity(puller_angular_velocity);
-                    let steps_per_second = self.converter.angular_velocity_to_steps(target_velocity);
+                    let steps_per_second =
+                        self.converter.angular_velocity_to_steps(target_velocity);
                     let _ = motor.set_speed(steps_per_second);
-                    
+
                     // Check if we've reached the endstop
                     if endstop.get_value().unwrap_or(false) {
                         let _ = motor.set_speed(0.0);
@@ -266,7 +273,8 @@ impl AddonMotorController {
                 } else {
                     // Continue running
                     let target_velocity = self.calculate_motor_velocity(puller_angular_velocity);
-                    let steps_per_second = self.converter.angular_velocity_to_steps(target_velocity);
+                    let steps_per_second =
+                        self.converter.angular_velocity_to_steps(target_velocity);
                     let _ = motor.set_speed(steps_per_second);
                 }
             }
@@ -274,7 +282,7 @@ impl AddonMotorController {
                 // Motor is stopped at endstop
                 let _ = motor.set_speed(0.0);
                 self.accumulated_distance += distance_mm;
-                
+
                 if self.accumulated_distance >= self.pause_mm {
                     // Pause duration reached - start running again
                     self.pattern_state = PatternControlState::Running;
