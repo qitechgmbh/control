@@ -2,8 +2,6 @@ use super::BeckhoffMachine;
 use crate::{MachineAct, MachineMessage};
 use std::time::Instant;
 
-
-
 impl MachineAct for BeckhoffMachine {
     fn act(&mut self, _now_ts: Instant) {
         // println!("[{}::act] Running act", module_path!());
@@ -14,7 +12,6 @@ impl MachineAct for BeckhoffMachine {
         self.motor_driver.set_enabled(self.motor_state.enabled);
 
         if self.motor_state.enabled {
-
             let steps_per_rev = 200.0; // Anpassen an Motor
             let steps_per_second = (self.motor_state.target_velocity as f64) * steps_per_rev / 60.0;
 
@@ -29,14 +26,14 @@ impl MachineAct for BeckhoffMachine {
             MachineMessage::SubscribeNamespace(ns) => {
                 self.namespace.namespace = Some(ns);
                 self.emit_state();
-            },
+            }
             MachineMessage::UnsubscribeNamespace => {
                 self.namespace.namespace = None;
-            },
+            }
             MachineMessage::HttpApiJsonRequest(value) => {
                 use crate::MachineApi;
                 let _ = self.api_mutate(value);
-            },
+            }
             _ => {}
         }
     }

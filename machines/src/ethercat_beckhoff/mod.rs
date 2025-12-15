@@ -1,9 +1,8 @@
-use crate::{VENDOR_QITECH, MACHINE_BECKHOFF_TEST};
-use crate::{AsyncThreadMessage, Machine, MachineMessage};
 use crate::machine_identification::{MachineIdentification, MachineIdentificationUnique};
-use smol::channel::{Receiver, Sender};
+use crate::{AsyncThreadMessage, Machine, MachineMessage};
+use crate::{MACHINE_BECKHOFF_TEST, VENDOR_QITECH};
 use control_core::socketio::namespace::NamespaceCacheingLogic;
-// NEU: Wir importieren den Wrapper statt des rohen Devices
+use smol::channel::{Receiver, Sender};
 use ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1;
 
 pub mod act;
@@ -49,7 +48,8 @@ impl BeckhoffMachine {
             motor_enabled: self.motor_state.enabled,
             motor_velocity: self.motor_state.target_velocity,
         };
-        self.namespace.emit(api::BeckhoffEvents::State(event.build()));
+        self.namespace
+            .emit(api::BeckhoffEvents::State(event.build()));
     }
 
     pub fn turn_motor_on(&mut self) {

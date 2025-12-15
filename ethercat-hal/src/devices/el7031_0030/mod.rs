@@ -357,5 +357,3 @@ pub const EL7031_0030_IDENTITY_A: SubDeviceIdentityTuple = (
     EL7031_0030_PRODUCT_ID,
     EL7031_0030_REVISION_A,
 );
-
-

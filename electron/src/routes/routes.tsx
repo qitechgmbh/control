@@ -94,7 +94,6 @@ export const testMotorControlRoute = createRoute({
   component: () => <TestMotorControlPage />,
 });
 
-
 export const sidebarRoute = createRoute({
   getParentRoute: () => RootRoute,
   path: "_sidebar",

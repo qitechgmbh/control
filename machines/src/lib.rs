@@ -18,6 +18,7 @@ use std::{any::Any, sync::Arc, time::Instant};
 pub mod aquapath1;
 #[cfg(not(feature = "mock-machine"))]
 pub mod buffer1;
+pub mod ethercat_beckhoff;
 pub mod extruder1;
 pub mod extruder2;
 pub mod laser;
@@ -27,7 +28,6 @@ pub mod registry;
 pub mod serial;
 pub mod test_machine;
 pub mod winder2;
-pub mod ethercat_beckhoff;
 
 pub const VENDOR_QITECH: u16 = 0x0001;
 pub const MACHINE_WINDER_V1: u16 = 0x0002;
