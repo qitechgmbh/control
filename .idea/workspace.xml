@@ -32,22 +32,8 @@
     </cargoProject>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="b557d8ff-b48e-4abd-9051-810d7626e7a0" name="Changes" comment="stepper motor doc finished">
-      <change beforePath="$PROJECT_DIR$/electron/src/machines/ethercat_beckhoff/TestMotorControlPage.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/electron/src/machines/ethercat_beckhoff/TestMotorControlPage.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/electron/src/machines/ethercat_beckhoff/TestMotorPage.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/electron/src/machines/ethercat_beckhoff/TestMotorPage.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/electron/src/machines/ethercat_beckhoff/testMotorNamespace.ts" beforeDir="false" afterPath="$PROJECT_DIR$/electron/src/machines/ethercat_beckhoff/testMotorNamespace.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/electron/src/machines/ethercat_beckhoff/useTestMotor.ts" beforeDir="false" afterPath="$PROJECT_DIR$/electron/src/machines/ethercat_beckhoff/useTestMotor.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/electron/src/machines/laser/laser1/Laser1Graph.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/electron/src/machines/laser/laser1/Laser1Graph.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/electron/src/machines/laser/laser1/laser1Namespace.ts" beforeDir="false" afterPath="$PROJECT_DIR$/electron/src/machines/laser/laser1/laser1Namespace.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/electron/src/machines/properties.ts" beforeDir="false" afterPath="$PROJECT_DIR$/electron/src/machines/properties.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/electron/src/routes/routes.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/electron/src/routes/routes.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ethercat-hal/src/devices/el7031_0030/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/ethercat-hal/src/devices/el7031_0030/mod.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/machines/src/ethercat_beckhoff/act.rs" beforeDir="false" afterPath="$PROJECT_DIR$/machines/src/ethercat_beckhoff/act.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/machines/src/ethercat_beckhoff/api.rs" beforeDir="false" afterPath="$PROJECT_DIR$/machines/src/ethercat_beckhoff/api.rs" afterDir="false" />
+    <list default="true" id="b557d8ff-b48e-4abd-9051-810d7626e7a0" name="Changes" comment="finished stepper motor + doc finished (real version)">
       <change beforePath="$PROJECT_DIR$/machines/src/ethercat_beckhoff/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/machines/src/ethercat_beckhoff/mod.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/machines/src/ethercat_beckhoff/new.rs" beforeDir="false" afterPath="$PROJECT_DIR$/machines/src/ethercat_beckhoff/new.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/machines/src/lib.rs" beforeDir="false" afterPath="$PROJECT_DIR$/machines/src/lib.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/machines/src/registry.rs" beforeDir="false" afterPath="$PROJECT_DIR$/machines/src/registry.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -231,18 +217,38 @@
       <option name="project" value="LOCAL" />
       <updated>1765210837622</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="finished stepper motor + doc finished (real version)">
+      <option name="closed" value="true" />
+      <created>1765802124740</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1765802124740</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="first version of manually running a stepper motor with ethercat beckhoff Ek1100 and EL7031" />
     <MESSAGE value="stepper motor with ethercat beckhoff Ek1100 and EL7031 works" />
     <MESSAGE value="stepper motor with ethercat beckhoff Ek1100 and EL7031 0030 + UI works" />
     <MESSAGE value="finished stepper motor" />
-    <option name="LAST_COMMIT_MESSAGE" value="finished stepper motor" />
+    <MESSAGE value="finished stepper motor + doc finished (real version)" />
+    <option name="LAST_COMMIT_MESSAGE" value="finished stepper motor + doc finished (real version)" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />
