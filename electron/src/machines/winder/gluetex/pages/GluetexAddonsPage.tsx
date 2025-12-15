@@ -48,6 +48,8 @@ export function GluetexAddonsPage() {
     setStepper5Slave,
     setStepper5Konturlaenge,
     setStepper5Pause,
+    addonVoltage1,
+    addonVoltage2,
   } = useGluetex();
 
   // Calculate max speed based on gear ratio (same as main puller)
@@ -420,6 +422,21 @@ export function GluetexAddonsPage() {
           {!state?.addon_tension_arm_state?.zeroed && (
             <StatusBadge variant="error">Not Zeroed</StatusBadge>
           )}
+        </ControlCard>
+
+        <ControlCard className="bg-red" title="Analog Voltage Inputs">
+          <TimeSeriesValueNumeric
+            label="Voltage Input 1"
+            unit="V"
+            timeseries={addonVoltage1}
+            renderValue={(value) => roundToDecimals(value, 2)}
+          />
+          <TimeSeriesValueNumeric
+            label="Voltage Input 2"
+            unit="V"
+            timeseries={addonVoltage2}
+            renderValue={(value) => roundToDecimals(value, 2)}
+          />
         </ControlCard>
       </ControlGrid>
     </Page>
