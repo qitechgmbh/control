@@ -39,7 +39,7 @@ export function Aquapath1ControlPage() {
           <div className="grid grid-cols-2 gap-6">
             <div className="flex flex-col gap-8">
               <TimeSeriesValueNumeric
-                label="Front Flow"
+                label="Flow 1"
                 unit="l/min"
                 timeseries={front_flow}
                 renderValue={(value) => value.toFixed(1)}
@@ -48,7 +48,7 @@ export function Aquapath1ControlPage() {
 
             <div className="flex flex-col gap-8">
               <TimeSeriesValueNumeric
-                label="Back Flow"
+                label="Flow 2"
                 unit="l/min"
                 timeseries={back_flow}
                 renderValue={(value) => value.toFixed(1)}
@@ -57,7 +57,7 @@ export function Aquapath1ControlPage() {
           </div>
 
           <div className="mt-8">
-            <Label label="Front Pump">
+            <Label label="Pump 1">
               <SelectionGroup<"On" | "Off">
                 value={frontTargetFlow ? "On" : "Off"}
                 orientation="vertical"
@@ -86,7 +86,7 @@ export function Aquapath1ControlPage() {
               />
             </Label>
 
-            <Label label="Back Pump">
+            <Label label="Pump 2">
               <SelectionGroup<"On" | "Off">
                 value={backTargetFlow ? "On" : "Off"}
                 orientation="vertical"
@@ -121,20 +121,14 @@ export function Aquapath1ControlPage() {
           <div className="grid grid-cols-2 gap-6">
             <div className="flex flex-col gap-8">
               <TimeSeriesValueNumeric
-                label="Front in"
+                label="Reservoir 1"
                 unit="C"
                 timeseries={front_temperature}
                 renderValue={(value) => value.toFixed(1)}
               />
-              <TimeSeriesValueNumeric
-                label="Front Reservoir"
-                unit="C"
-                timeseries={front_temp_reservoir}
-                renderValue={(value) => value.toFixed(1)}
-              />
-              <Label label="Set Front Target Temperature">
+              <Label label="Set Reservoir 1 Target Temperature">
                 <EditValue
-                  title="Set Front Target Temperature"
+                  title="Set Reservoir 1 Target Temperature"
                   value={frontTargetTemperature}
                   unit="C"
                   renderValue={(value) => value.toFixed(1)}
@@ -150,20 +144,14 @@ export function Aquapath1ControlPage() {
 
             <div className="flex flex-col gap-8">
               <TimeSeriesValueNumeric
-                label="Back in"
+                label="Reservoir 2"
                 unit="C"
                 timeseries={back_temperature}
                 renderValue={(value) => value.toFixed(1)}
               />
-              <TimeSeriesValueNumeric
-                label="Back Reservoir"
-                unit="C"
-                timeseries={back_temp_reservoir}
-                renderValue={(value) => value.toFixed(1)}
-              />
-              <Label label="Set Back Target Temperature">
+              <Label label="Set Reservoir 2 Target Temperature">
                 <EditValue
-                  title="Set Back Target Temperature"
+                  title="Set Reservoir 2 Target Temperature"
                   value={backTargetTemperature}
                   unit="C"
                   renderValue={(value) => value.toFixed(1)}
