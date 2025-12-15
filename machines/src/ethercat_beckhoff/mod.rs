@@ -2,8 +2,8 @@ use crate::machine_identification::{MachineIdentification, MachineIdentification
 use crate::{AsyncThreadMessage, Machine, MachineMessage};
 use crate::{MACHINE_BECKHOFF_TEST, VENDOR_QITECH};
 use control_core::socketio::namespace::NamespaceCacheingLogic;
-use smol::channel::{Receiver, Sender};
 use ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1;
+use smol::channel::{Receiver, Sender};
 
 pub mod act;
 pub mod api;
