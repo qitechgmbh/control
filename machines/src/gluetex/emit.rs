@@ -252,6 +252,22 @@ impl Gluetex {
                 // Wrap [270;<360] to [-90; 0]
                 if angle >= 270.0 { angle - 360.0 } else { angle }
             },
+            addon_voltage_1: {
+                use ethercat_hal::io::analog_input::physical::AnalogInputValue;
+                use units::electric_potential::volt;
+                match self.addon_voltage_input_1.get_physical() {
+                    AnalogInputValue::Potential(v) => v.get::<volt>(),
+                    _ => 0.0,
+                }
+            },
+            addon_voltage_2: {
+                use ethercat_hal::io::analog_input::physical::AnalogInputValue;
+                use units::electric_potential::volt;
+                match self.addon_voltage_input_2.get_physical() {
+                    AnalogInputValue::Potential(v) => v.get::<volt>(),
+                    _ => 0.0,
+                }
+            },
         };
 
         let event = live_values.build();
