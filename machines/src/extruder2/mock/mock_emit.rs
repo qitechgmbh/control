@@ -1,8 +1,8 @@
 use crate::extruder1::{
     ExtruderV2Mode, HeatingType,
     api::{ExtruderV2Events, LiveValuesEvent, ModeState, PidSettings, StateEvent, TemperaturePid},
-    mock::ExtruderV2,
 };
+use crate::extruder2::mock::ExtruderV2;
 
 use control_core::{
     helpers::hasher_serializer::hash_with_serde_model,
