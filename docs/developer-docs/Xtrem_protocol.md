@@ -11,9 +11,9 @@
 The **XTREM communication protocol** allows a terminal or host controller to exchange data and commands with the XTREM weighing module.
 The device transmits and receives ASCII-coded frames over a serial interface (RS232, RS485, Wi-Fi, or Ethernet, depending on configuration).
 
-Since we are using the Ethernet interface we need to provide some kind of DHCP to assign a IP - Address to each Xtrem Device.
-They then may be address via a **broadcast** IP (e.g.: 192.168.4.255/24).
-A **Unicast** communication is applied through the device ID inside the Xtrem Frame.
+Since we are using the Ethernet interface we need to provide some kind of DHCP to assign an IP - Address to each XTREM Device.
+They then may be addressed via a **broadcast** IP (e.g.: 192.168.4.255/24).
+A **Unicast** communication is applied through the device ID inside the XTREM Frame.
 
 ---
 
@@ -126,16 +126,14 @@ pub fn compute_lrc(data: &[u8]) -> u8 {
 
 ---
 
-## Quick Notes About Factory resetting the device.
+## Post-Factory Reset Configuration
 
-When I Factory reset the Scale I had to configure some registers so it would work properly again.
-Although it was not possible to set the unit back to from 'g' to 'kg' the values I received were in kg.
+After performing a factory reset, several registers must be configured to ensure proper operation of the device.
 
-After the Factory reset 3 registers were important to configrue.
+Note: The unit may remain set to 'g' after a factory reset, but the values received may be in 'kg' depending on the device configuration.
 
-1. Address: 0022 | Max (Max1) (scale maximum capacity)
-    This one was '60000' for the broken scale and '6000' for the working scale so I set it to 6000 as well.
-
-2. Address: 0023 | e (e1) (scale interval)
-
-3. Address: 0026 | Decimal position
+The following registers should be reviewed and set as required:
+1. **Address: 0022 | Max (Max1) (scale maximum capacity)**
+    The default value for this register may vary between devices (e.g., 60000 or 6000). Set this value to 6000 to ensure correct operation.
+2. **Address: 0023 | e (e1) (scale interval)**
+3. **Address: 0026 | Decimal position**
