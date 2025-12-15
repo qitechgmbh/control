@@ -2,12 +2,13 @@
 use crate::{extruder1::mock::ExtruderV2, mock::MockMachine, winder2::mock::Winder2};
 
 use crate::{
-    Machine, MachineNewParams, machine_identification::MachineIdentification, test_machine::TestMachine
+    Machine, MachineNewParams, machine_identification::MachineIdentification,
+    test_machine::TestMachine,
 };
 #[cfg(not(feature = "mock-machine"))]
 use crate::{
-    aquapath1::AquaPathV1, buffer1::BufferV1, extruder1::ExtruderV2, gluetex::Gluetex,
-    laser::LaserMachine, winder2::Winder2, extruder2::ExtruderV3,
+    aquapath1::AquaPathV1, buffer1::BufferV1, extruder1::ExtruderV2, extruder2::ExtruderV3,
+    gluetex::Gluetex, laser::LaserMachine, winder2::Winder2,
 };
 
 use lazy_static::lazy_static;
