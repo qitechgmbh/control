@@ -454,7 +454,7 @@ pub async fn setup_loop(
     }
 
     // Put group in operational state
-    let group_op = match group_safe.into_op(&maindevice).await {
+    let group_op = match group_preop.into_op(&maindevice).await {
         Ok(group_op) => {
             tracing::info!("Group in OP state");
             group_op
