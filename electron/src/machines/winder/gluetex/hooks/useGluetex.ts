@@ -228,6 +228,12 @@ export function useGluetex() {
   const { request: requestAddonMotor5SetSlaveRatio } = useMachineMutation(
     z.object({ SetAddonMotor5SlaveRatio: z.number() }),
   );
+  const { request: requestAddonMotor5SetKonturlaenge } = useMachineMutation(
+    z.object({ SetAddonMotor5Konturlaenge: z.number() }),
+  );
+  const { request: requestAddonMotor5SetPause } = useMachineMutation(
+    z.object({ SetAddonMotor5Pause: z.number() }),
+  );
 
   // Slave Puller mutations
   const { request: requestSlavePullerSetEnabled } = useMachineMutation(
@@ -870,6 +876,22 @@ export function useGluetex() {
     );
   };
 
+  const setStepper5Konturlaenge = (value: number) => {
+    // Update backend only, no optimistic update needed for now
+    requestAddonMotor5SetKonturlaenge({
+      machine_identification_unique: machineIdentification,
+      data: { SetAddonMotor5Konturlaenge: value },
+    });
+  };
+
+  const setStepper5Pause = (value: number) => {
+    // Update backend only, no optimistic update needed for now
+    requestAddonMotor5SetPause({
+      machine_identification_unique: machineIdentification,
+      data: { SetAddonMotor5Pause: value },
+    });
+  };
+
   // ========== Slave Puller Functions ==========
 
   const setSlavePullerEnabled = (enabled: boolean) => {
@@ -1258,5 +1280,7 @@ export function useGluetex() {
     setStepper4Slave,
     setStepper5Master,
     setStepper5Slave,
+    setStepper5Konturlaenge,
+    setStepper5Pause,
   };
 }

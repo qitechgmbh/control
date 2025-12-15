@@ -451,10 +451,13 @@ impl Gluetex {
                 master_ratio: self.addon_motor_4_controller.get_master_ratio(),
                 slave_ratio: self.addon_motor_4_controller.get_slave_ratio(),
             },
-            addon_motor_5_state: api::AddonMotorState {
+            addon_motor_5_state: api::AddonMotor5State {
                 enabled: self.addon_motor_5_controller.is_enabled(),
                 master_ratio: self.addon_motor_5_controller.get_master_ratio(),
                 slave_ratio: self.addon_motor_5_controller.get_slave_ratio(),
+                konturlaenge_mm: self.addon_motor_5_controller.get_konturlaenge_mm(),
+                pause_mm: self.addon_motor_5_controller.get_pause_mm(),
+                pattern_state: format!("{:?}", self.addon_motor_5_controller.get_pattern_state()),
             },
             slave_puller_state: api::SlavePullerState {
                 enabled: self.slave_puller_user_enabled,

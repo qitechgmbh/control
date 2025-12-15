@@ -260,6 +260,18 @@ export const addonMotorStateSchema = z.object({
 });
 
 /**
+ * Addon motor 5 state schema with pattern control (from backend)
+ */
+export const addonMotor5StateSchema = z.object({
+  enabled: z.boolean(),
+  master_ratio: z.number(),
+  slave_ratio: z.number(),
+  konturlaenge_mm: z.number(),
+  pause_mm: z.number(),
+  pattern_state: z.string(),
+});
+
+/**
  * Slave tension arm state schema (from backend)
  */
 export const slaveTensionArmStateSchema = z.object({
@@ -305,7 +317,7 @@ export const stateEventDataSchema = z.object({
   connected_machine_state: connectedMachineStateSchema,
   addon_motor_3_state: addonMotorStateSchema,
   addon_motor_4_state: addonMotorStateSchema,
-  addon_motor_5_state: addonMotorStateSchema,
+  addon_motor_5_state: addonMotor5StateSchema,
   slave_puller_state: slavePullerStateSchema,
   addon_tension_arm_state: tensionArmStateSchema,
   tension_arm_monitor_state: tensionArmMonitorStateSchema,

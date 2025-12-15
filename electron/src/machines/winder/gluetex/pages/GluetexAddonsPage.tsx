@@ -46,6 +46,8 @@ export function GluetexAddonsPage() {
     setStepper4Slave,
     setStepper5Master,
     setStepper5Slave,
+    setStepper5Konturlaenge,
+    setStepper5Pause,
   } = useGluetex();
 
   // Calculate max speed based on gear ratio (same as main puller)
@@ -356,6 +358,46 @@ export function GluetexAddonsPage() {
               }}
             />
           </Label>
+          <Label label="Stepper 5 Konturlänge">
+            <EditValue
+              value={state?.addon_motor_5_state?.konturlaenge_mm}
+              title="Konturlänge"
+              unit="mm"
+              step={1}
+              min={0}
+              max={10000}
+              defaultValue={0}
+              renderValue={(value) => roundToDecimals(value, 1)}
+              onChange={(value) => setStepper5Konturlaenge(value)}
+            />
+          </Label>
+          <Label label="Stepper 5 Pause">
+            <EditValue
+              value={state?.addon_motor_5_state?.pause_mm}
+              title="Pause"
+              unit="mm"
+              step={1}
+              min={0}
+              max={10000}
+              defaultValue={0}
+              renderValue={(value) => roundToDecimals(value, 1)}
+              onChange={(value) => setStepper5Pause(value)}
+            />
+          </Label>
+          {state?.addon_motor_5_state?.konturlaenge_mm !== undefined &&
+            state?.addon_motor_5_state?.konturlaenge_mm > 0 && (
+              <Label label="Stepper 5 Pattern State">
+                <StatusBadge
+                  variant={
+                    state?.addon_motor_5_state?.pattern_state === "Running"
+                      ? "success"
+                      : "error"
+                  }
+                >
+                  {state?.addon_motor_5_state?.pattern_state || "Idle"}
+                </StatusBadge>
+              </Label>
+            )}
         </ControlCard>
 
         <ControlCard title="Addon Tension Arm">

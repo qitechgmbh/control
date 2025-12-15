@@ -146,6 +146,8 @@ pub enum Mutation {
     SetAddonMotor4SlaveRatio(f64),
     SetAddonMotor5MasterRatio(f64),
     SetAddonMotor5SlaveRatio(f64),
+    SetAddonMotor5Konturlaenge(f64),
+    SetAddonMotor5Pause(f64),
 
     // Slave Puller
     SetSlavePullerEnabled(bool),
@@ -239,7 +241,7 @@ pub struct StateEvent {
     /// addon motor 4 state
     pub addon_motor_4_state: AddonMotorState,
     /// addon motor 5 state
-    pub addon_motor_5_state: AddonMotorState,
+    pub addon_motor_5_state: AddonMotor5State,
     /// slave puller state
     pub slave_puller_state: SlavePullerState,
     /// addon tension arm state
@@ -354,6 +356,22 @@ pub struct AddonMotorState {
     pub master_ratio: f64,
     /// slave ratio value (e.g., 1 in "2:1")
     pub slave_ratio: f64,
+}
+
+#[derive(Serialize, Debug, Clone, Default)]
+pub struct AddonMotor5State {
+    /// is motor enabled (running)
+    pub enabled: bool,
+    /// master ratio value (e.g., 2 in "2:1")
+    pub master_ratio: f64,
+    /// slave ratio value (e.g., 1 in "2:1")
+    pub slave_ratio: f64,
+    /// Konturlänge in mm (0 = constant mode)
+    pub konturlaenge_mm: f64,
+    /// Pause in mm (0 = constant mode)
+    pub pause_mm: f64,
+    /// Current pattern control state
+    pub pattern_state: String,
 }
 
 #[derive(Serialize, Debug, Clone, Default)]
@@ -578,6 +596,14 @@ impl MachineApi for Gluetex {
             }
             Mutation::SetAddonMotor5SlaveRatio(ratio) => {
                 self.addon_motor_5_controller.set_slave_ratio(ratio);
+                self.emit_state();
+            }
+            Mutation::SetAddonMotor5Konturlaenge(length_mm) => {
+                self.addon_motor_5_controller.set_konturlaenge_mm(length_mm);
+                self.emit_state();
+            }
+            Mutation::SetAddonMotor5Pause(pause_mm) => {
+                self.addon_motor_5_controller.set_pause_mm(pause_mm);
                 self.emit_state();
             }
             Mutation::SetSlavePullerEnabled(enabled) => {
