@@ -28,7 +28,7 @@ socketioxide = { version = "0.17.2", features = ["msgpack"] }
 serialport = "4.7.3"
 
 #tracing
-tracing = { version = "0.1.41", features = ["attributes"] }
+tracing = { version = "0.1.43", features = ["attributes"] }
 tonic = { version = "0.13.1", optional = true }
 
 [dev-dependencies]
