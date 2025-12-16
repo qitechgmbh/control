@@ -11,7 +11,6 @@ const laser1PresetDataSchema = z
     targetDiameter: z.number(),
     lowerTolerance: z.number(),
     higherTolerance: z.number(),
-    autoStopOnOutOfTolerance: z.boolean(),
   })
   .partial();
 
@@ -36,11 +35,6 @@ const previewEntries: PresetPreviewEntries<Laser1> = [
     renderValue: (data: PresetData<Laser1>) =>
       data?.higherTolerance?.toFixed(3),
   },
-  {
-    name: "Auto Stop On Out Of Tolerance",
-    renderValue: (data: PresetData<Laser1>) =>
-      data?.autoStopOnOutOfTolerance?.toString(),
-  },
 ];
 
 export function Laser1PresetsPage() {
@@ -48,7 +42,6 @@ export function Laser1PresetsPage() {
     setTargetDiameter,
     setLowerTolerance,
     setHigherTolerance,
-    setAutoStopOnOutOfTolerance,
     defaultState,
     state,
   } = useLaser1();
@@ -57,20 +50,16 @@ export function Laser1PresetsPage() {
     const targetDiameter = preset.data.targetDiameter ?? 1.75;
     const lowerTolerance = preset.data?.lowerTolerance ?? 0.05;
     const higherTolerance = preset.data?.higherTolerance ?? 0.05;
-    const autoStopOnOutOfTolerance =
-      preset.data?.autoStopOnOutOfTolerance ?? false;
 
     setTargetDiameter(targetDiameter);
     setLowerTolerance(lowerTolerance);
     setHigherTolerance(higherTolerance);
-    setAutoStopOnOutOfTolerance(autoStopOnOutOfTolerance);
   };
 
   const toPresetData = (s: typeof state): PresetData<Laser1> => ({
     targetDiameter: s?.laser_state.target_diameter,
     lowerTolerance: s?.laser_state.lower_tolerance,
     higherTolerance: s?.laser_state.higher_tolerance,
-    autoStopOnOutOfTolerance: s?.laser_state.auto_stop_on_out_of_tolerance,
   });
 
   return (

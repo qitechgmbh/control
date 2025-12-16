@@ -1,6 +1,6 @@
 import { ControlCard } from "@/control/ControlCard";
 import { Page } from "@/components/Page";
-import React, { useEffect } from "react";
+import React from "react";
 import { ControlGrid } from "@/control/ControlGrid";
 import { TimeSeriesValueNumeric } from "@/control/TimeSeriesValue";
 import { MinMaxValue, TIMEFRAME_OPTIONS } from "@/control/MinMaxValue";
@@ -35,29 +35,6 @@ export function Laser1ControlPage() {
   const isTwoAxis = !!x_diameter?.current || !!y_diameter?.current;
   // Shared timeframe state (default 5 minutes)
   const [timeframe, setTimeframe] = React.useState<number>(5 * 60 * 1000);
-
-  // Global Warning for out of tolerance
-  useEffect(() => {
-    if (state?.laser_state?.in_tolerance === false) {
-      const toastId = toast(
-        <div className="bg-red-500 text-white p-4 rounded-lg shadow-lg w-80 flex flex-col gap-1">
-          <strong>Warning!</strong>
-          <span>Diameter out of tolerance!</span>
-          <button
-            className="self-end text-white font-bold mt-2 hover:text-gray-200"
-            onClick={() => toast.dismiss(toastId)}
-          >
-            ×
-          </button>
-        </div>,
-        {
-          duration: Infinity,
-          position: "top-center",
-          style: { background: "transparent", padding: 0, boxShadow: "none" },
-        }
-      );
-    }
-  }, [state?.laser_state?.in_tolerance]);
 
   return (
     <Page>

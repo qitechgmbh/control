@@ -20,12 +20,12 @@ export function Laser1Page() {
           title: "Graphs",
           icon: "lu:ChartSpline",
         },
-        {
-          link: "settings",
-          activeLink: "settings",
-          title: "Config",
-          icon: "lu:Settings",
-        },
+        // {
+        //   link: "settings",
+        //   activeLink: "settings",
+        //   title: "Config",
+        //   icon: "lu:Settings",
+        // },
         // {
         //     link: "manual",
         //     activeLink: "manual",

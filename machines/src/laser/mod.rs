@@ -11,10 +11,10 @@ use smol::{
     lock::RwLock,
 };
 use socketioxide::extract::SocketRef;
+use units::Length;
 
 use crate::AsyncThreadMessage;
 use std::{sync::Arc, time::Instant};
-use units::{ConstZero, f64::*};
 use units::length::millimeter;
 
 pub mod act;
@@ -45,8 +45,6 @@ pub struct LaserMachine {
     higher_tolerance: Length,
     lower_tolerance: Length,
     in_tolerance: bool,
-
-    auto_stop_on_out_of_tolerance: bool,
 
     //laser target configuration
     laser_target: LaserTarget,
@@ -123,7 +121,6 @@ impl LaserMachine {
             lower_tolerance: self.lower_tolerance.get::<millimeter>(),
             target_diameter: self.laser_target.diameter.get::<millimeter>(),
             in_tolerance: self.in_tolerance,
-            auto_stop_on_out_of_tolerance: self.auto_stop_on_out_of_tolerance,
         };
 
         StateEvent {
@@ -140,7 +137,6 @@ impl LaserMachine {
                 lower_tolerance: self.laser_target.lower_tolerance.get::<millimeter>(),
                 target_diameter: self.laser_target.diameter.get::<millimeter>(),
                 in_tolerance: self.in_tolerance,
-                auto_stop_on_out_of_tolerance: self.auto_stop_on_out_of_tolerance,
             },
         };
 
@@ -163,11 +159,6 @@ impl LaserMachine {
     pub fn set_target_diameter(&mut self, target_diameter: f64) {
         self.target_diameter = Length::new::<millimeter>(target_diameter);
         self.laser_target.diameter = Length::new::<millimeter>(target_diameter);
-        self.emit_state();
-    }
-
-    pub fn set_auto_stop_on_out_of_tolerance(&mut self, auto_stop_on_out_of_tolerance: bool) {
-        self.auto_stop_on_out_of_tolerance = auto_stop_on_out_of_tolerance;
         self.emit_state();
     }
 
@@ -239,10 +230,6 @@ impl LaserMachine {
 
         if self.in_tolerance != self.calculate_in_tolerance() {
             self.did_change_state = true;
-        }
-
-        if !self.in_tolerance && self.auto_stop_on_out_of_tolerance && self.did_change_state {
-            println!("WINDER STOPED");
         }
     }
 }

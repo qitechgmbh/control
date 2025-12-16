@@ -43,7 +43,6 @@ export const stateEventDataSchema = z.object({
     lower_tolerance: z.number(),
     target_diameter: z.number(),
     in_tolerance: z.boolean(),
-    auto_stop_on_out_of_tolerance: z.boolean(),
   }),
 });
 

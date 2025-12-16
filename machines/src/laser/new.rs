@@ -54,7 +54,6 @@ impl MachineNewTrait for LaserMachine {
             lower_tolerance: Length::new::<millimeter>(0.05),
             higher_tolerance: Length::new::<millimeter>(0.05),
             in_tolerance: true,
-            auto_stop_on_out_of_tolerance: false,
             did_change_state: true,
         };
 
