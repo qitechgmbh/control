@@ -119,7 +119,7 @@ impl Winder2 {
     ///
     /// It contains a transition matrix for atomic changes.
     /// It will set [`Self::spool_mode`]
-    fn set_traverse_mode(&mut self, mode: &Winder2Mode) {
+    fn set_traverse_mode(&mut self, _mode: &Winder2Mode) {
         self.mode_state = ModeState {
             mode: crate::winder2::api::Mode::Standby,
             can_wind: true,
