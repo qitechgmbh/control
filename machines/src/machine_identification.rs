@@ -1,5 +1,6 @@
 use std::fmt::Display;
 
+use ethercat_hal::devices::wago_750_354::WAGO_750_354_IDENTITY_A;
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -345,6 +346,7 @@ pub fn get_identification_addresses(
     let identity_tuple = subdevice_identity_to_tuple(subdevice_identity);
 
     Ok(match identity_tuple {
+        WAGO_750_354_IDENTITY_A => MachineIdentificationAddresses::default(),
         EK1100_IDENTITY_A => MachineIdentificationAddresses::default(),
         EL1002_IDENTITY_A => MachineIdentificationAddresses::default(),
         EL1008_IDENTITY_A => MachineIdentificationAddresses::default(),
