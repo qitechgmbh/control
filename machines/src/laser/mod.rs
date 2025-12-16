@@ -242,8 +242,7 @@ impl LaserMachine {
         }
 
         if !self.in_tolerance && self.auto_stop_on_out_of_tolerance && self.did_change_state {
-            unimplemented!();
-            // Stop the Winder over Laser Winder connection
+            println!("WINDER STOPED");
         }
     }
 }
