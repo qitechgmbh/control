@@ -1,6 +1,6 @@
 use crate::{MachineApi, MachineMessage};
 
-use super::MockMachine;
+use super::AquaPathV1;
 use control_core::socketio::{
     event::{Event, GenericEvent},
     namespace::{

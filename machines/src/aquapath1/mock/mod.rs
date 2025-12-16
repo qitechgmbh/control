@@ -1,23 +1,38 @@
+
+#[cfg(feature = "mock-machine")]
 use crate::AsyncThreadMessage;
+#[cfg(feature = "mock-machine")]
 use crate::{
-    MACHINE_MOCK, Machine, MachineMessage, VENDOR_QITECH,
-    machine_identification::{MachineIdentification, MachineIdentificationUnique},
+    MACHINE_MOCK, Machine, MachineMessage, VENDOR_QITECH, aquapath1::AquaPathV1, machine_identification::{MachineIdentification, MachineIdentificationUnique}
 };
+#[cfg(feature = "mock-machine")]
 use api::{LiveValuesEvent, MockEvents, MockMachineNamespace, Mode, ModeState, StateEvent};
+#[cfg(feature = "mock-machine")]
 use control_core::socketio::event::BuildEvent;
+#[cfg(feature = "mock-machine")]
 use control_core::socketio::namespace::NamespaceCacheingLogic;
+
+#[cfg(feature = "mock-machine")]
 use smol::channel::{Receiver, Sender};
+#[cfg(feature = "mock-machine")]
 use std::time::Instant;
+#[cfg(feature = "mock-machine")]
 use tracing::info;
+#[cfg(feature = "mock-machine")]
 use units::f64::*;
+#[cfg(feature = "mock-machine")]
 use units::frequency::{hertz, millihertz};
 
+#[cfg(feature = "mock-machine")]
 pub mod act;
+#[cfg(feature = "mock-machine")]
 pub mod api;
+#[cfg(feature = "mock-machine")]
 pub mod new;
 
+#[cfg(feature = "mock-machine")]
 #[derive(Debug)]
-pub struct MockMachine {
+pub struct AquaPathV1 {
     machine_identification_unique: MachineIdentificationUnique,
     main_sender: Option<Sender<AsyncThreadMessage>>,
 
@@ -42,7 +57,8 @@ pub struct MockMachine {
     api_receiver: Receiver<MachineMessage>,
 }
 
-impl Machine for MockMachine {
+#[cfg(feature = "mock-machine")]
+impl Machine for AquaPathV1 {
     fn get_machine_identification_unique(&self) -> MachineIdentificationUnique {
         self.machine_identification_unique.clone()
     }
@@ -52,7 +68,8 @@ impl Machine for MockMachine {
     }
 }
 
-impl MockMachine {
+#[cfg(feature = "mock-machine")]
+impl AquaPathV1 {
     pub const MACHINE_IDENTIFICATION: MachineIdentification = MachineIdentification {
         machine: MACHINE_MOCK,
         vendor: VENDOR_QITECH,
