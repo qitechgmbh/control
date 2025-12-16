@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{sync::Arc, time::Instant};
 
 use control_core::socketio::{
     event::{Event, GenericEvent},
@@ -6,6 +6,7 @@ use control_core::socketio::{
         CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_first_and_last_event,
     },
 };
+use ethercat_hal::io::analog_input::physical::AnalogInputValue;
 use serde::{Deserialize, Serialize};
 
 use crate::{MachineApi, analog_input_test_machine::AnalogInputTestMachine};
@@ -16,14 +17,9 @@ pub struct AnalogInputTestMachineNamespace {
 }
 
 #[derive(Serialize, Debug, Clone)]
-pub struct StateEvent {
-    pub measurement_rate_hz: f64,
-}
-
-impl StateEvent {
-    pub fn build(&self) -> Event<Self> {
-        Event::new("StateEvent", self.clone())
-    }
+pub enum MeasurementEvent {
+    MeasurementRateHz(f64),
+    Measurement(f64, String),
 }
 
 impl NamespaceCacheingLogic<AnalogInputTestMachineEvents> for AnalogInputTestMachineNamespace {
@@ -49,7 +45,7 @@ impl CacheableEvents<AnalogInputTestMachineEvents> for AnalogInputTestMachineEve
 }
 
 pub enum AnalogInputTestMachineEvents {
-    State(Event<StateEvent>),
+    State(Event<MeasurementEvent>),
 }
 
 #[derive(Deserialize)]
@@ -64,8 +60,8 @@ impl MachineApi for AnalogInputTestMachine {
 
     fn api_mutate(&mut self, value: serde_json::Value) -> Result<(), anyhow::Error> {
         let mutation: Mutation = serde_json::from_value(value)?;
-        let foo = mutation.measurement_rate_hz;
-        self.measurement_rate_hz = f64::from(foo);
+        self.measurement_rate_hz = f64::from(mutation.measurement_rate_hz);
+        self.emit_measurement_rate();
         Ok(())
     }
 

@@ -1,11 +1,14 @@
 use std::time::Instant;
 
+use control_core::socketio::{event::Event, namespace::NamespaceCacheingLogic};
 use ethercat_hal::io::analog_input::AnalogInput;
 use smol::channel::{Receiver, Sender};
 
 use crate::{
     ANALOG_INPUT_TEST_MACHINE, AsyncThreadMessage, Machine, MachineMessage, VENDOR_QITECH,
-    analog_input_test_machine::api::AnalogInputTestMachineNamespace,
+    analog_input_test_machine::api::{
+        AnalogInputTestMachineEvents, AnalogInputTestMachineNamespace, MeasurementEvent,
+    },
     machine_identification::{MachineIdentification, MachineIdentificationUnique},
 };
 
@@ -42,4 +45,22 @@ impl AnalogInputTestMachine {
         vendor: VENDOR_QITECH,
         machine: ANALOG_INPUT_TEST_MACHINE,
     };
+
+    pub fn emit_measurement(&mut self, value: f64, unix_timestamp_ms: u128) {
+        let event = MeasurementEvent::Measurement(value, unix_timestamp_ms.to_string());
+        self.namespace
+            .emit(AnalogInputTestMachineEvents::State(Event::new(
+                "Measurement",
+                event.clone(),
+            )));
+    }
+
+    pub fn emit_measurement_rate(&mut self) {
+        let event = MeasurementEvent::MeasurementRateHz(self.measurement_rate_hz);
+        self.namespace
+            .emit(AnalogInputTestMachineEvents::State(Event::new(
+                "MeasurementRateHz",
+                event.clone(),
+            )));
+    }
 }

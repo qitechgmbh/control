@@ -1,18 +1,21 @@
-use std::time::{Duration, Instant};
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use crate::{MachineAct, MachineApi, analog_input_test_machine::AnalogInputTestMachine};
 
 impl MachineAct for AnalogInputTestMachine {
     fn act_machine_message(&mut self, msg: crate::MachineMessage) {
         match msg {
-            crate::MachineMessage::SubscribeNamespace(namespace) => todo!(),
-            crate::MachineMessage::UnsubscribeNamespace => todo!(),
+            crate::MachineMessage::SubscribeNamespace(namespace) => {
+                self.namespace.namespace = Some(namespace);
+                self.emit_measurement_rate();
+            }
+            crate::MachineMessage::UnsubscribeNamespace => self.namespace.namespace = None,
             crate::MachineMessage::HttpApiJsonRequest(value) => {
                 use crate::MachineApi;
                 let _res = self.api_mutate(value);
             }
-            crate::MachineMessage::ConnectToMachine(machine_connection) => todo!(),
-            crate::MachineMessage::DisconnectMachine(machine_connection) => todo!(),
+            crate::MachineMessage::ConnectToMachine(machine_connection) => {}
+            crate::MachineMessage::DisconnectMachine(machine_connection) => {}
         }
     }
 
@@ -30,10 +33,18 @@ impl MachineAct for AnalogInputTestMachine {
                     todo!()
                 }
                 ethercat_hal::io::analog_input::physical::AnalogInputValue::Current(quantity) => {
+                    let now_milliseconds = SystemTime::now()
+                        .duration_since(UNIX_EPOCH)
+                        .expect("Now is expected to be after UNIX_EPOCH")
+                        .as_millis();
                     println!("{quantity:?}");
+                    println!("{now_milliseconds:?}");
+                    self.emit_measurement(quantity.value, now_milliseconds);
                 }
             }
             self.last_measurement = Instant::now();
         }
     }
 }
+
+//@TODO Fetch measurement rate on reload
