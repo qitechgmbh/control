@@ -14,18 +14,29 @@ import { MachineIdentificationUnique } from "@/machines/types";
 import { useMemo } from "react";
 import { createTimeSeries, TimeSeries, TimeSeriesValue } from "@/lib/timeseries";
 
-export const liveValuesEventDataSchema = z.object({
+export const liveValuesEventSchema = eventSchema(z.object({
   voltage: z.number(),
   current: z.number(),
-});
-
-export const liveValuesEventSchema = eventSchema(liveValuesEventDataSchema);
+}));
 
 export type LiveValuesEvent = z.infer<typeof liveValuesEventSchema>;
 
+export const modeSchema = z.enum(["Off", "On24V"]);
+export type Mode = z.infer<typeof modeSchema>;
+
+export const stateEventSchema = eventSchema(z.object({
+    mode: modeSchema,
+    is_default_state: z.boolean(),
+}));
+
+export type StateEvent = z.infer<typeof stateEventSchema>;
+
 export type WagoPower1NamespaceStore = {
-    current: TimeSeries,
-    voltage: TimeSeries,
+  state: StateEvent | null;
+  defaultState: StateEvent | null;
+
+  current: TimeSeries,
+  voltage: TimeSeries,
 };
 
 const TWENTY_MILLISECOND = 20;
@@ -49,6 +60,8 @@ const createWagoPower1NamespaceStore =
   (): StoreApi<WagoPower1NamespaceStore> =>
     create<WagoPower1NamespaceStore>(() => {
       return {
+        state: null,
+        defaultState: null,
         voltage,
         current,
       };
@@ -69,7 +82,20 @@ function wagoPower1MessageHandler(
     };
 
     try {
-      if (eventName === "LiveValuesEvent") {
+        if (eventName === "StateEvent") {
+            const stateEvent = stateEventSchema.parse(event);
+
+            updateStore((state) => ({
+              ...state,
+              state: stateEvent,
+              // only set default state if is_default_state is true
+              defaultState: stateEvent.data.is_default_state
+                ? stateEvent
+                : state.defaultState,
+            }));
+
+        } else if (eventName === "LiveValuesEvent") {
+            console.log(event);
           const liveValues = liveValuesEventSchema.parse(event);
           const { voltage, current } = liveValues.data;
           const voltageValue: TimeSeriesValue = {
