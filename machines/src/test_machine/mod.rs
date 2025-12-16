@@ -2,6 +2,7 @@ use crate::machine_identification::{MachineIdentification, MachineIdentification
 use crate::test_machine::api::{StateEvent, TestMachineEvents};
 use crate::{AsyncThreadMessage, Machine, MachineMessage};
 use control_core::socketio::namespace::NamespaceCacheingLogic;
+use ethercat_hal::io::digital_output::DigitalOutput;
 use smol::channel::{Receiver, Sender};
 use std::time::Instant;
 pub mod act;
@@ -9,7 +10,6 @@ pub mod api;
 pub mod new;
 use crate::test_machine::api::TestMachineNamespace;
 use crate::{TEST_MACHINE, VENDOR_QITECH};
-use ethercat_hal::io::digital_output::DigitalOutput;
 
 #[derive(Debug)]
 pub struct TestMachine {
@@ -20,7 +20,7 @@ pub struct TestMachine {
     pub last_state_emit: Instant,
     pub led_on: [bool; 4],
     pub main_sender: Option<Sender<AsyncThreadMessage>>,
-    pub leds: [DigitalOutput; 4],
+    pub douts: [DigitalOutput; 4],
 }
 
 impl Machine for TestMachine {

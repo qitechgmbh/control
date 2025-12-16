@@ -71,7 +71,7 @@ impl MachineApi for TestMachine {
             Mutation::SetAllLeds { on } => self.set_all_leds(on),
         }
 
-        for (led, &on) in self.leds.iter().zip(self.led_on.iter()) {
+        for (led, &on) in self.douts.iter().zip(self.led_on.iter()) {
             led.set(on);
         }
 

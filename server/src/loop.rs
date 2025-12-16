@@ -68,6 +68,7 @@ pub fn start_loop_thread(
                 match msg {
                     HotThreadMessage::NoMsg => {}
                     HotThreadMessage::AddEtherCatSetup(ethercat_setup) => {
+                        println!("EthercatSetup: {:?}", ethercat_setup.devices);
                         rt_loop_inputs.ethercat_setup = Some(Box::new(ethercat_setup));
                     }
                     HotThreadMessage::WriteMachineDeviceInfo(info_request) => {
