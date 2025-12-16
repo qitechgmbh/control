@@ -1,24 +1,8 @@
-use super::MockMachine;
+use super::aquapath1::{AquaPathV1, AquaPathV1Mode};
 use crate::{MachineAct, MachineMessage};
 use std::time::{Duration, Instant};
 
-/// Implements the `MachineAct` trait for the `MockMachine`.
-///
-/// # Parameters
-/// - `_now_ts`: The current timestamp of type `Instant`.
-///
-/// # Returns
-/// A pinned `Future` that resolves to `()` and is `Send`-safe. The future encapsulates the asynchronous behavior of the `act` method.
-///
-/// # Description
-/// This method is called to perform periodic actions for the `MockMachine`. Specifically:
-/// - It checks if the time elapsed since the last measurement emission exceeds 33 milliseconds.
-/// - If the condition is met and the machine is in Running mode, it emits a sine wave data event.
-/// - State events (frequency, mode) are only emitted when values change, not continuously.
-///
-/// The method ensures that the sine wave value is updated approximately 60 times per second (16ms intervals) when running.
-///
-impl MachineAct for MockMachine {
+impl MachineAct for AquaPathV1 {
     fn act(&mut self, now: Instant) {
         let msg = self.api_receiver.try_recv();
         match msg {
@@ -40,6 +24,7 @@ impl MachineAct for MockMachine {
             MachineMessage::SubscribeNamespace(namespace) => {
                 self.namespace.namespace = Some(namespace);
                 self.emit_state();
+                tracing::info!("Aquapath1 received subscribe");
             }
             MachineMessage::UnsubscribeNamespace => self.namespace.namespace = None,
             MachineMessage::HttpApiJsonRequest(value) => {
