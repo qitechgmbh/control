@@ -11,7 +11,6 @@ import { Label } from "@/control/Label";
 import { useLaser1 } from "./useLaser1";
 
 import { DiameterVisualisation } from "../DiameterVisualisation";
-import { toast } from "sonner";
 
 export function Laser1ControlPage() {
   const {
