@@ -451,6 +451,8 @@ pub trait MachineWithChannel: Send + Debug + Sync {
     fn get_machine_channel(&self) -> &MachineChannel;
     fn get_machine_channel_mut(&mut self) -> &mut MachineChannel;
 
+    fn on_namespace(&mut self) {}
+
     fn update(&mut self, now: std::time::Instant) -> Result<()>;
     fn mutate(&mut self, value: Value) -> Result<()>;
 }
@@ -493,6 +495,7 @@ where
         match msg {
             MachineMessage::SubscribeNamespace(namespace) => {
                 channel.namespace = Some(namespace);
+                self.on_namespace();
             }
             MachineMessage::UnsubscribeNamespace => {
                 channel.namespace = None;
