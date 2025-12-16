@@ -28,10 +28,9 @@ export function getUnitIcon(unit: Unit): IconName {
     case "Hz":
       return "lu:AudioWaveform";
     case "W":
-      return "lu:Zap";
     case "V":
-      return "lu:Zap";
     case "A":
+    case "mA":
       return "lu:Zap";
     case "kWh":
       return "lu:BatteryFull";
@@ -82,6 +81,8 @@ export function renderUnitSymbol(unit: Unit | undefined): string {
       return "W";
     case "V":
       return "V";
+    case "mA":
+      return "mA";
     case "A":
       return "A";
     case "kWh":
@@ -155,6 +156,8 @@ export function renderUnitSymbolLong(unit: Unit): string {
       return "watts";
     case "V":
       return "volts";
+    case "mA":
+      return "milliamperes";
     case "A":
       return "amperes";
     case "kWh":
@@ -192,6 +195,7 @@ export const units = [
   "Hz",
   "W",
   "V",
+  "mA",
   "A",
   "kWh",
   "l/min",

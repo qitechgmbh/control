@@ -11,6 +11,7 @@ quantity! {
         Z0,  // amount of substance
         Z0>; // luminous intensity
     units {
+        @millivolt: 1.0e-3; "mV", "millivolt", "millivolts";
         @centivolt: 1.0e-2; "cV", "centivolt", "centivolts";
         @volt: 1.0; "V", "volt", "volts";
     }
