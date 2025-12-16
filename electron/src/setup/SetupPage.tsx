@@ -30,6 +30,12 @@ export function SetupPage() {
           title: "Troubleshoot",
           icon: "lu:MessageSquareWarning",
         },
+        {
+          link: "metrics",
+          activeLink: "metrics",
+          title: "Metrics",
+          icon: "lu:Activity",
+        },
       ]}
     />
   );

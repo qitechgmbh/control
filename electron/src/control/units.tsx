@@ -25,6 +25,8 @@ export function getUnitIcon(unit: Unit): IconName {
       return "lu:Gauge";
     case "mHz":
       return "lu:AudioWaveform";
+    case "Hz":
+      return "lu:AudioWaveform";
     case "W":
       return "lu:Zap";
     case "V":
@@ -37,6 +39,16 @@ export function getUnitIcon(unit: Unit): IconName {
       return "lu:Waves";
     case "%":
       return "lu:ChartNoAxesColumn";
+    case "µs":
+      return "lu:RefreshCcw";
+    case "s":
+      return "lu:Clock";
+    case "MiB":
+      return "lu:MemoryStick";
+    case "Mbit/s":
+      return "lu:Network";
+    case "/s":
+      return "lu:Gauge";
     default:
       return "lu:ChartNoAxesColumn";
   }
@@ -64,6 +76,8 @@ export function renderUnitSymbol(unit: Unit | undefined): string {
       return "m/min";
     case "mHz":
       return "mHz";
+    case "Hz":
+      return "Hz";
     case "W":
       return "W";
     case "V":
@@ -76,6 +90,16 @@ export function renderUnitSymbol(unit: Unit | undefined): string {
       return "l/min";
     case "%":
       return "%";
+    case "µs":
+      return "µs";
+    case "s":
+      return "s";
+    case "MiB":
+      return "MiB";
+    case "Mbit/s":
+      return "Mbit/s";
+    case "/s":
+      return "/s";
     default:
       return "";
   }
@@ -125,6 +149,8 @@ export function renderUnitSymbolLong(unit: Unit): string {
       return "meters/minute";
     case "mHz":
       return "millihertz";
+    case "Hz":
+      return "hertz";
     case "W":
       return "watts";
     case "V":
@@ -137,6 +163,16 @@ export function renderUnitSymbolLong(unit: Unit): string {
       return "liters/minute";
     case "%":
       return "percent";
+    case "µs":
+      return "microseconds";
+    case "s":
+      return "seconds";
+    case "MiB":
+      return "mebibytes";
+    case "Mbit/s":
+      return "megabits/second";
+    case "/s":
+      return "per second";
     default:
       return "";
   }
@@ -153,12 +189,18 @@ export const units = [
   "bar",
   "m/min",
   "mHz",
+  "Hz",
   "W",
   "V",
   "A",
   "kWh",
   "l/min",
   "%",
+  "µs",
+  "s",
+  "MiB",
+  "Mbit/s",
+  "/s",
 ] as const;
 
 export type Unit = (typeof units)[number];

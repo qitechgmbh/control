@@ -57,6 +57,9 @@ import { TestMachinePage } from "@/machines/testmachine/TestMachinePage";
 import { TestMachineControlPage } from "@/machines/testmachine/TestMachineControlPage";
 import { Laser1PresetsPage } from "@/machines/laser/laser1/Laser1PresetsPage";
 
+import { MetricsGraphsPage } from "@/metrics/MetricsGraphsPage";
+import { MetricsControlPage } from "@/metrics/MetricsControlPage";
+
 // make a route tree like this
 // _mainNavigation/machines/winder2/$serial/control
 // _mainNavigation/configuration/a
@@ -321,6 +324,16 @@ export const updateChooseVersionRoute = createRoute({
   path: "choose-version",
   component: () => <ChooseVersionPage />,
 });
+export const metricsRoute = createRoute({
+  getParentRoute: () => setupRoute,
+  path: "metrics",
+  component: () => (
+    <>
+      <MetricsControlPage />
+      <MetricsGraphsPage />
+    </>
+  ),
+});
 
 export const versionSearchSchema = z
   .object({
@@ -369,8 +382,8 @@ export const rootTree = RootRoute.addChildren([
         updateExecuteRoute,
       ]),
       troubleshootRoute,
+      metricsRoute,
     ]),
-
     machinesRoute.addChildren([
       laser1SerialRoute.addChildren([
         laser1ControlRoute,
