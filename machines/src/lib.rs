@@ -451,8 +451,8 @@ pub trait MachineWithChannel: Send + Debug + Sync {
     fn get_machine_channel(&self) -> &MachineChannel;
     fn get_machine_channel_mut(&mut self) -> &mut MachineChannel;
 
-    fn update(&mut self, now: std::time::Instant);
-    fn mutate(&mut self, mutation: Value) -> Result<()>;
+    fn update(&mut self, now: std::time::Instant) -> Result<()>;
+    fn mutate(&mut self, value: Value) -> Result<()>;
 }
 
 impl<C> MachineApi for C
@@ -482,7 +482,9 @@ where
             self.act_machine_message(msg);
         }
 
-        self.update(now);
+        if let Err(e) = self.update(now) {
+            tracing::error!("Machine errored while updating: {}, ", e);
+        }
     }
 
     fn act_machine_message(&mut self, msg: MachineMessage) {

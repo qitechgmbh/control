@@ -33,6 +33,5 @@ export function useWagoPower1() {
     };
   }, [serialString]);
 
-  const { state } = useWagoPower1Namespace(machineIdentification);
-  return { state };
+  return useWagoPower1Namespace(machineIdentification);
 }
