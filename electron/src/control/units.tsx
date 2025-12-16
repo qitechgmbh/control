@@ -106,11 +106,11 @@ export function renderUnitSymbol(unit: Unit | undefined): string {
   }
 }
 
+// this function will add prefix/suffix to the valueString but without unit symbol.
 // example
-// value: 10.0
-// -> valueString: "10" (custom input)
-// this function will add prefix/suffix to the valueString but without unit symbol
-// -> "10°"
+//   const f = 3.1415;
+//   renderUnitSyntax(f.toFixed(2), "deg")
+// result: "3.14°"
 export function renderUnitSyntax(
   valueString: string | undefined,
   unit: Unit | undefined,
