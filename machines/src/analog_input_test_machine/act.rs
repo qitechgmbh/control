@@ -37,8 +37,6 @@ impl MachineAct for AnalogInputTestMachine {
                         .duration_since(UNIX_EPOCH)
                         .expect("Now is expected to be after UNIX_EPOCH")
                         .as_millis();
-                    println!("{quantity:?}");
-                    println!("{now_milliseconds:?}");
                     self.emit_measurement(quantity.value, now_milliseconds);
                 }
             }

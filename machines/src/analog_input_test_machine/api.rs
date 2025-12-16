@@ -62,6 +62,8 @@ impl MachineApi for AnalogInputTestMachine {
         let mutation: Mutation = serde_json::from_value(value)?;
         self.measurement_rate_hz = f64::from(mutation.measurement_rate_hz);
         self.emit_measurement_rate();
+        let mrate = self.measurement_rate_hz;
+        println!("FOOOOOOOBAR {mrate:?}");
         Ok(())
     }
 
