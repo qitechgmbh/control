@@ -5,6 +5,7 @@ use std::time::Duration;
 
 use anyhow::Context;
 use anyhow::Result;
+use anyhow::bail;
 use smol::Timer;
 use smol::future::FutureExt;
 use smol::io;
@@ -15,7 +16,9 @@ use smol::net::TcpStream;
 const PROTOCOL_ID: u16 = 0;
 const UNIT_ID: u8 = 0;
 const READ_HOLDING_FUNCTION_CODE: u8 = 3;
+const WRITE_HOLDING_FUNCTION_CODE: u8 = 16;
 const READ_HOLDING_LENGTH: u16 = 6; // Unit ID 00 + Func Code 03 + Start Address XXXX + Quantity XXXX = 6 bytes
+const WRITE_HOLDING_LENGTH_WITHOUT_DATA: u16 = 6; // Unit ID 00 + Func Code 16 + Start Address XXXX + Quantity XXXX = 6 bytes
 
 struct Packet {
     buf: Vec<u8>,
@@ -73,27 +76,13 @@ impl ModbusTcpDevice {
         })
     }
 
-    async fn send_read_holding_request(&mut self, addr: u16, count: u16) -> Result<u16> {
-        let mut packet = Packet::new();
-
-        self.transactions += 1;
-        packet.add_u16(self.transactions);
-        packet.add_u16(PROTOCOL_ID);
-        packet.add_u16(READ_HOLDING_LENGTH);
-
-        packet.add_u8(UNIT_ID);
-        packet.add_u8(READ_HOLDING_FUNCTION_CODE);
-
-        packet.add_u16(addr);
-        packet.add_u16(count);
-
-        self.send(packet).await?;
-
+    async fn read_and_check_responce_header(&mut self, func_code: u8) -> Result<()> {
         assert_eq!(
             self.read_u16().await?,
             self.transactions,
             "Modbus device sent unexpected transaction id!"
         );
+
         assert_eq!(
             self.read_u16().await?,
             PROTOCOL_ID,
@@ -111,11 +100,32 @@ impl ModbusTcpDevice {
             UNIT_ID,
             "Modbus device sent unexpected unit id!"
         );
-        assert_eq!(
-            self.read_u8().await?,
-            READ_HOLDING_FUNCTION_CODE,
-            "Modbus device sent unexpected function code! It probably encountered an exception."
-        );
+
+        let func_code_res = self.read_u8().await?;
+        if func_code != func_code_res {
+            let error_code = self.read_u8().await?;
+            bail!("Modbus device sent unexpected function code 0x{:x}! It probably encountered an error. Error code: 0x{:x}", func_code_res, error_code);
+        }
+
+        Ok(())
+    }
+
+    async fn send_read_holding_request(&mut self, addr: u16, count: u16) -> Result<u16> {
+        let mut packet = Packet::new();
+
+        self.transactions += 1;
+        packet.add_u16(self.transactions);
+        packet.add_u16(PROTOCOL_ID);
+        packet.add_u16(READ_HOLDING_LENGTH);
+
+        packet.add_u8(UNIT_ID);
+        packet.add_u8(READ_HOLDING_FUNCTION_CODE);
+
+        packet.add_u16(addr);
+        packet.add_u16(count);
+
+        self.send(packet).await?;
+        self.read_and_check_responce_header(READ_HOLDING_FUNCTION_CODE).await?;
 
         let num_data_bytes = self.read_u8().await? as u16;
         assert_eq!(
@@ -136,6 +146,39 @@ impl ModbusTcpDevice {
         }
 
         Ok(res)
+    }
+
+    pub async fn set_holding_registers(&mut self, addr: u16, values: &[u16]) -> Result<()> {
+        let mut packet = Packet::new();
+        let count: u16 = values.len() as u16;
+
+        self.transactions += 1;
+        packet.add_u16(self.transactions);
+        packet.add_u16(PROTOCOL_ID);
+        packet.add_u16(WRITE_HOLDING_LENGTH_WITHOUT_DATA + 2 * count);
+
+        packet.add_u8(UNIT_ID);
+        packet.add_u8(WRITE_HOLDING_FUNCTION_CODE);
+
+        packet.add_u16(addr);
+        packet.add_u16(2 * count);
+
+        for value in values {
+            packet.add_u16(value.to_owned());
+        }
+
+        self.send(packet).await?;
+        self.read_and_check_responce_header(WRITE_HOLDING_FUNCTION_CODE).await?;
+
+        assert_eq!(
+            self.read_u16().await?,
+            addr,
+            "Modbus device wrote to wrong register address!"
+        );
+
+        let _count_written = self.read_u16().await?;
+
+        Ok(())
     }
 
     pub async fn get_string<const N: usize>(&mut self, addr: u16) -> Result<String> {
@@ -178,8 +221,7 @@ impl ModbusTcpDevice {
         self.stream
             .write_all(packet.as_bytes())
             .await
-            .context("Could write to modbus device!")?;
-        Ok(())
+            .context("Could write to modbus device!")
     }
 
     async fn read_u8(&mut self) -> Result<u8> {
