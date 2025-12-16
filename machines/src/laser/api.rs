@@ -1,4 +1,4 @@
-use crate::{MachineApi, MachineMessage,};
+use crate::{MachineApi, MachineMessage};
 
 use super::LaserMachine;
 use control_core::socketio::{

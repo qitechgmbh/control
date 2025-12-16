@@ -4,7 +4,7 @@ import { MachineIdentificationUnique } from "@/machines/types";
 import { laser1 } from "@/machines/properties";
 import { laser1SerialRoute } from "@/routes/routes";
 import { z } from "zod";
-import { useLaser1Namespace, StateEvent, } from "./laser1Namespace";
+import { useLaser1Namespace, StateEvent } from "./laser1Namespace";
 import { useEffect, useMemo } from "react";
 import { useStateOptimistic } from "@/lib/useStateOptimistic";
 import { produce } from "immer";
