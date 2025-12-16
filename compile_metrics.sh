@@ -3,18 +3,15 @@ set -euo pipefail
 
 BUILD_DIR="${BUILD_DIR:-target}"
 CSV_FILE="${CSV_FILE:-compile_metrics.csv}"
+DEFAULT_PKG="server"
 
-if [ "$#" -lt 1 ]; then
-  echo "Usage: $0 cargo build [--release]"
-  exit 1
+if [ "$#" -eq 0 ]; then
+  set -- cargo build
 fi
 
-if [ -d "$BUILD_DIR" ]; then
-  find "$BUILD_DIR" -type f -name '*.ll' -delete
-fi
-
-if [ "$1" = "cargo" ] && [ "$2" = "build" ]; then
-  BUILD_CMD=(cargo rustc)
+if [ "${1:-}" = "cargo" ] && [ "${2:-}" = "build" ]; then
+  cargo clean
+  BUILD_CMD=(cargo rustc -p "$DEFAULT_PKG")
   shift 2
   BUILD_CMD+=("$@")
   BUILD_CMD+=(-- --emit=llvm-ir -C debuginfo=0)
@@ -57,7 +54,6 @@ else
   binary_size_bytes=0
 fi
 
-
 finished_timestamp_ms=$(($(date +%s%N) / 1000000))
 finished_datetime=$(date -Iseconds)
 
@@ -67,4 +63,5 @@ fi
 
 echo "${finished_datetime},${finished_timestamp_ms},${compile_ms},${llvm_ir_lines},${binary_size_bytes}" \
   >> "$CSV_FILE"
+
 echo "Metrics recorded in $CSV_FILE"

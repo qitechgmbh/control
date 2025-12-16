@@ -8,6 +8,7 @@ import {
 } from "@/components/graph";
 import { useRuntimeMetrics } from "./useRuntimeMetrics";
 import { useRuntimeMetricSeries } from "./runtimeSeries";
+import { getUnitIcon, type Unit } from "@/control/units";
 
 export function MetricsGraphsPage() {
   // Start / keep the global poller alive
@@ -18,9 +19,15 @@ export function MetricsGraphsPage() {
 
   const syncHook = useGraphSync("runtime-metrics");
 
+  const jitterUnit: Unit = "µs";
+  const cpuUnit: Unit = "%";
+  const memUnit: Unit = "MiB";
+  const ioUnit: Unit = "Mbit/s";
+  const preemptUnit: Unit = "/s";
+
   const jitterConfig: GraphConfig = {
-    title: "Loop jitter (avg, µs)",
-    icon: "lu:Activity",
+    title: "Average Loop Jitter",
+    icon: getUnitIcon(jitterUnit),
     colors: {
       primary: "#f97316",
       grid: "#e2e8f0",
@@ -30,8 +37,8 @@ export function MetricsGraphsPage() {
   };
 
   const cpuConfig: GraphConfig = {
-    title: "CPU usage (%)",
-    icon: "lu:Cpu",
+    title: "CPU Usage",
+    icon: getUnitIcon(cpuUnit),
     colors: {
       primary: "#3b82f6",
       grid: "#e2e8f0",
@@ -41,8 +48,8 @@ export function MetricsGraphsPage() {
   };
 
   const memConfig: GraphConfig = {
-    title: "Memory usage (MiB)",
-    icon: "lu:MemoryStick",
+    title: "Memory Usage",
+    icon: getUnitIcon(memUnit),
     colors: {
       primary: "#10b981",
       grid: "#e2e8f0",
@@ -52,8 +59,8 @@ export function MetricsGraphsPage() {
   };
 
   const ioConfig: GraphConfig = {
-    title: "EtherCAT throughput (Mbit/s)",
-    icon: "lu:Network",
+    title: "EtherCAT Throughput",
+    icon: getUnitIcon(ioUnit),
     colors: {
       primary: "#10b981",
       grid: "#e2e8f0",
@@ -64,8 +71,8 @@ export function MetricsGraphsPage() {
   };
 
   const preemptConfig: GraphConfig = {
-    title: "Preemptions per second (1/s)",
-    icon: "lu:Timer",
+    title: "Preemptions Per Second",
+    icon: getUnitIcon(preemptUnit),
     colors: {
       primary: "#6366f1",
       grid: "#e2e8f0",
@@ -84,7 +91,7 @@ export function MetricsGraphsPage() {
               newData: series.jitter,
               color: "#f97316",
             }}
-            unit={undefined}
+            unit={jitterUnit}
             renderValue={(v) => v.toFixed(1)}
             config={jitterConfig}
             graphId="runtime_jitter"
@@ -98,7 +105,7 @@ export function MetricsGraphsPage() {
               newData: series.cpu,
               color: "#3b82f6",
             }}
-            unit="%"
+            unit={cpuUnit}
             renderValue={(v) => v.toFixed(1)}
             config={cpuConfig}
             graphId="runtime_cpu"
@@ -112,7 +119,7 @@ export function MetricsGraphsPage() {
               newData: series.mem,
               color: "#10b981",
             }}
-            unit={undefined}
+            unit={memUnit}
             renderValue={(v) => v.toFixed(1)}
             config={memConfig}
             graphId="runtime_memory"
@@ -134,7 +141,7 @@ export function MetricsGraphsPage() {
                 color: "#ef4444",
               },
             ]}
-            unit={undefined}
+            unit={ioUnit}
             renderValue={(v) => v.toFixed(2)}
             config={ioConfig}
             graphId="runtime_io"
@@ -148,7 +155,7 @@ export function MetricsGraphsPage() {
               newData: series.preempt,
               color: "#6366f1",
             }}
-            unit={undefined}
+            unit={preemptUnit}
             renderValue={(v) => v.toFixed(1)}
             config={preemptConfig}
             graphId="runtime_preemptions"
