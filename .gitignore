@@ -5,3 +5,4 @@ Cargo.lock
 dhat-heap.json
 build.sh
 shell.nix
+package-lock.json
