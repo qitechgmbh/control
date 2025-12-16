@@ -1,57 +1,50 @@
-use std::time::Instant;
+use std::{sync::Arc, time::{Duration, Instant}};
 
+use crate::{MachineNewTrait, MachineNewParams};
+use super::{AquaPathV1Namespace, AquaPathV1, AquaPathV1Mode, controller::Controller};
+use anyhow::Error;
+use control_core::controllers::pid::PidController;
+use ethercat_hal::io::analog_output::{AnalogOutput, AnalogOutputDevice};
+use smol::lock::RwLock;
 use super::{
     MockMachine,
     api::{MockMachineNamespace, Mode},
 };
 use crate::{MachineNewHardware, MachineNewParams, MachineNewTrait};
 use anyhow::Error;
-use units::f64::Frequency;
+use units::{f64::Frequency, ThermodynamicTemperature};
 use units::frequency::hertz;
 
-impl MachineNewTrait for MockMachine {
-    fn new<'maindevice, 'subdevices>(
-        params: &MachineNewParams<'maindevice, 'subdevices, '_, '_, '_, '_, '_>,
+impl MachineNewTrait for AquaPathV1 {
+    fn new<'maindevice>(
+        params: &MachineNewParams
     ) -> Result<Self, Error>
-    where
-        Self: Sized,
     {
-        // Mock machine can work with either Serial or Ethercat hardware
-        // For the mock machine, we don't need to actually use the hardware
-        // We just validate that we have the expected hardware type
-        match params.hardware {
-            MachineNewHardware::Serial(_) => {
-                // For serial mode, we could potentially use the serial device if needed
-                // but for a mock machine, we'll just note it and proceed
-            }
-            MachineNewHardware::Ethercat(_) => {
-                // For ethercat mode, we could potentially use the ethercat devices
-                // but for a mock machine, we'll just note it and proceed
-            }
-        }
+        let front_controller = Controller::new(
+            0.0, 0.0, 0.0, Duration::new(0u64, 0u32), 
+            crate::aquapath1::Temperature { temperature: (), cooling: true, heating: false, target_temperature: () },
+            ThermodynamicTemperature::new(0),
+            AnalogOutput::new(Arc::new(
+                AnalogOutputDevice
+            )),
+        );
 
-        let now = Instant::now();
         let (sender, receiver) = smol::channel::unbounded();
-        let mut mock_machine = Self {
-            main_sender: params.main_thread_channel.clone(),
+        let mut water_cooling = Self {
+            main_sender: None,
             api_receiver: receiver,
             api_sender: sender,
             machine_identification_unique: params.get_machine_identification_unique(),
-            namespace: MockMachineNamespace {
+            namespace: AquapathV1Namespace {
                 namespace: params.namespace.clone(),
             },
-            last_measurement_emit: now,
-            t_0: now, // Initialize start time to current time
-            frequency1: Frequency::new::<hertz>(0.1), // Default frequency1 of 100 mHz
-            frequency2: Frequency::new::<hertz>(0.2), // Default frequency2 of 200 mHz
-            frequency3: Frequency::new::<hertz>(0.5), // Default frequency3 of 500 mHz
-            mode: Mode::Standby, // Start in standby mode
-            emitted_default_state: false,
-            last_emitted_event: None,
+            mode: AquapathV1Mode::Standby,
+            last_measurement_emit: Instant::now(),
+            front_controller,
+            back_controller,
         };
+        water_cooling.emit_state();
 
-        mock_machine.emit_state();
-
-        Ok(mock_machine)
+        Ok(water_cooling)
     }
 }

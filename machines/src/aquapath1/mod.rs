@@ -20,6 +20,7 @@ use crate::{
 use smol::channel::{Receiver, Sender};
 
 use super::machine_identification::MachineIdentificationUnique;
+pub mod mock;
 pub mod act;
 pub mod api;
 pub mod controller;
