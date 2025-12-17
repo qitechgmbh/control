@@ -48,8 +48,7 @@ impl Machine for AquaPathV1 {
     fn get_machine_identification_unique(&self) -> MachineIdentificationUnique {
         self.machine_identification_unique.clone()
     }
-
-    fn get_main_sender(&self) -> Option<Sender<AsyncThreadMessage>> {
+fn get_main_sender(&self) -> Option<Sender<AsyncThreadMessage>> {
         self.main_sender.clone()
     }
 }
