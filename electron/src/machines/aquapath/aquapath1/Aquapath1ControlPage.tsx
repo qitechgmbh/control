@@ -59,7 +59,9 @@ export function Aquapath1ControlPage() {
               <Label label="Set Target Temperature">
                 <EditValue
                   title="Set Target Temperature"
+                  min={0}
                   value={frontTargetTemperature}
+                  max={80}
                   unit="C"
                   renderValue={(value) => value.toFixed(1)}
                   onChange={(val) => {
@@ -125,7 +127,9 @@ export function Aquapath1ControlPage() {
               <Label label="Set Target Temperature">
                 <EditValue
                   title="Set Target Temperature"
+                  min={0}
                   value={backTargetTemperature}
+                  max={80}
                   unit="C"
                   renderValue={(value) => value.toFixed(1)}
                   onChange={(val) => {
