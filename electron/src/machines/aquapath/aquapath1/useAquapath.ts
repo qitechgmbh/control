@@ -6,7 +6,7 @@ import { aquapath1SerialRoute } from "@/routes/routes";
 import { Mode, StateEvent, useAquapath1Namespace } from "./aquapath1Namespace";
 import { useMachineMutate as useMachineMutation } from "@/client/useClient";
 
-import { useEffect, useMemo } from "react";
+import { use, useEffect, useMemo } from "react";
 import { produce } from "immer";
 import { z } from "zod";
 
@@ -48,6 +48,8 @@ export function useAquapath1() {
     back_flow: back_flow,
     front_temp_reservoir: front_temp_reservoir,
     back_temp_reservoir: back_temp_reservoir,
+    front_fan_rpm: front_fan_rpm,
+    back_fan_rpm: back_fan_rpm,
   } = useAquapath1Namespace(machineIdentification);
 
   // Single optimistic state for all state management
@@ -125,6 +127,33 @@ export function useAquapath1() {
     );
   };
 
+  const setFrontFan = (rpm: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.fan_states.back.rpm = rpm;
+      },
+      () => {
+        requestFrontFan({
+          machine_identification_unique: machineIdentification,
+          data: { SetFrontFan: rpm },
+        })
+      },
+    );
+  }
+
+  const setBackFan = (rpm: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.fan_states.back.rpm = rpm;
+      },
+      () =>
+        requestBackFan({
+          machine_identification_unique: machineIdentification,
+          data: { SetBackFan: rpm },
+        }),
+    );
+  }
+
   // Mutation hooks
   const { request: requestAquapathMode } = useMachineMutation(
     z.object({ SetAquaPathMode: z.enum(["Standby", "Auto"]) }),
@@ -140,6 +169,12 @@ export function useAquapath1() {
   );
   const { request: requestBackFlow } = useMachineMutation(
     z.object({ SetBackFlow: z.boolean() }),
+  );
+  const { request: requestFrontFan } = useMachineMutation(
+    z.object({ setFrontFan: z.number() }),
+  );
+  const { request: requestBackFan } = useMachineMutation(
+    z.object({ setBackFan: z.number() }),
   );
   // Helper function for optimistic updates using produce
   const updateStateOptimistically = (
@@ -165,11 +200,15 @@ export function useAquapath1() {
     back_temperature,
     front_temp_reservoir,
     back_temp_reservoir,
+    front_fan_rpm,
+    back_fan_rpm,
 
     setAquapathMode,
     setFrontTemperature,
     setBackTemperature,
     setFrontFlow,
     setBackFlow,
+    setFrontFan,
+    setBackFan,
   };
 }
