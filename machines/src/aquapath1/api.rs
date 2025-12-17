@@ -101,7 +101,7 @@ enum Mutation {
     SetBackFlow(bool),
 
     SetBackFan(f32),
-    SerFrontFan(f32),
+    SetFrontFan(f32),
 }
 
 #[derive(Debug, Clone)]
