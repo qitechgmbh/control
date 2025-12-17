@@ -6,8 +6,14 @@ import { TouchSlider } from "@/components/touch/TouchSlider"
 export function Aquapath1SettingsPage() {
   return (
     <Page>
-      <ControlGrid columns={1}>
-        <ControlCard title="Adjust Fan RPM">
+      <ControlGrid columns={2}>
+        <ControlCard title="Fan 1 RPM">
+          <TouchSlider
+            
+          />
+        </ControlCard>
+
+        <ControlCard title="Fan 1 RPM">
           <TouchSlider
             
           />
