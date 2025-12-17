@@ -402,6 +402,7 @@ export const rootTree = RootRoute.addChildren([
       aquapath1SerialRoute.addChildren([
         aquapath1ControlRoute,
         aquapath1GraphRoute,
+        aquapath1SettingsRoute,
       ]),
 
       winder2SerialRoute.addChildren([
