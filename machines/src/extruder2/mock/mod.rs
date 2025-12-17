@@ -75,7 +75,6 @@ pub struct ExtruderV2 {
     /// mode state
     pub mode_state: ModeState,
     /// regulation state
-
     pub regulation_state: RegulationState,
     /// pressure state
     pub pressure_state: PressureState,

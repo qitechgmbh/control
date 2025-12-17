@@ -275,7 +275,7 @@ impl CacheableEvents<Self> for ExtruderV1Events {
 }
 
 #[cfg(not(feature = "mock-machine"))]
-impl MachineApi for ExtruderV1{
+impl MachineApi for ExtruderV1 {
     fn api_get_sender(&self) -> Sender<MachineMessage> {
         self.api_sender.clone()
     }
