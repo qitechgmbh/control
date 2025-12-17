@@ -35,100 +35,30 @@ export function Aquapath1ControlPage() {
   return (
     <Page>
       <ControlGrid columns={2}>
-        <ControlCard title="Flow Measurements">
-          <div className="grid grid-cols-2 gap-6">
-            <div className="flex flex-col gap-8">
+        <ControlCard title="Reservoir 1">
+          <div className="grid grid-rows-4 gap-4">
+            <div className="flex-row">
               <TimeSeriesValueNumeric
-                label="Flow 1"
+                label="Flow"
                 unit="l/min"
                 timeseries={front_flow}
                 renderValue={(value) => value.toFixed(1)}
               />
             </div>
 
-            <div className="flex flex-col gap-8">
+            <div className="flex-row">
               <TimeSeriesValueNumeric
-                label="Flow 2"
-                unit="l/min"
-                timeseries={back_flow}
-                renderValue={(value) => value.toFixed(1)}
-              />
-            </div>
-          </div>
-
-          <div className="mt-8">
-            <Label label="Pump 1">
-              <SelectionGroup<"On" | "Off">
-                value={frontTargetFlow ? "On" : "Off"}
-                orientation="vertical"
-                className="grid h-full grid-cols-2 gap-2"
-                options={{
-                  Off: {
-                    children: "Off",
-                    icon: "lu:CirclePause",
-                    isActiveClassName: "bg-green-600",
-                    className: "h-full",
-                  },
-                  On: {
-                    children: "On",
-                    icon: "lu:CirclePlay",
-                    isActiveClassName: "bg-green-600",
-                    className: "h-full",
-                  },
-                }}
-                onChange={(value) => {
-                  if (value == "On") {
-                    setFrontFlow(true);
-                  } else {
-                    setFrontFlow(false);
-                  }
-                }}
-              />
-            </Label>
-
-            <Label label="Pump 2">
-              <SelectionGroup<"On" | "Off">
-                value={backTargetFlow ? "On" : "Off"}
-                orientation="vertical"
-                className="grid h-full grid-cols-2 gap-2"
-                options={{
-                  Off: {
-                    children: "Off",
-                    icon: "lu:CirclePause",
-                    isActiveClassName: "bg-green-600",
-                    className: "h-full",
-                  },
-                  On: {
-                    children: "On",
-                    icon: "lu:CirclePlay",
-                    isActiveClassName: "bg-green-600",
-                    className: "h-full",
-                  },
-                }}
-                onChange={(value) => {
-                  if (value == "On") {
-                    setBackFlow(true);
-                  } else {
-                    setBackFlow(false);
-                  }
-                }}
-              />
-            </Label>
-          </div>
-        </ControlCard>
-
-        <ControlCard title="Temperature Measurements">
-          <div className="grid grid-cols-2 gap-6">
-            <div className="flex flex-col gap-8">
-              <TimeSeriesValueNumeric
-                label="Reservoir 1"
+                label="Temperature"
                 unit="C"
                 timeseries={front_temperature}
                 renderValue={(value) => value.toFixed(1)}
               />
-              <Label label="Set Reservoir 1 Target Temperature">
+            </div>
+
+            <div className="flex-row">
+              <Label label="Set Target Temperature">
                 <EditValue
-                  title="Set Reservoir 1 Target Temperature"
+                  title="Set Target Temperature"
                   value={frontTargetTemperature}
                   unit="C"
                   renderValue={(value) => value.toFixed(1)}
@@ -142,25 +72,95 @@ export function Aquapath1ControlPage() {
               </Label>
             </div>
 
-            <div className="flex flex-col gap-8">
+            <div className="flex-row">
+              <Label label="Pump">
+                <SelectionGroup<"On" | "Off">
+                  value={frontTargetFlow ? "On" : "Off"}
+                  orientation="vertical"
+                  className="grid h-full grid-cols-2 gap-2"
+                  options={{
+                    Off: {
+                      children: "Off",
+                      icon: "lu:CirclePause",
+                      isActiveClassName: "bg-green-600",
+                      className: "h-full",
+                    },
+                    On: {
+                      children: "On",
+                      icon: "lu:CirclePlay",
+                      isActiveClassName: "bg-green-600",
+                      className: "h-full",
+                    },
+                  }}
+                  onChange={(value) => {
+                    setFrontFlow(value == "On");
+                  }}
+                />
+              </Label>
+            </div>
+          </div>
+        </ControlCard>
+
+        <ControlCard title="Reservoir 2">
+          <div className="grid grid-rows-4 gap-4">
+            <div className="flex-row">
               <TimeSeriesValueNumeric
-                label="Reservoir 2"
+                label="Flow"
+                unit="l/min"
+                timeseries={back_flow}
+                renderValue={(value) => value.toFixed(1)}
+              />
+            </div>
+
+            <div className="flex-row">
+              <TimeSeriesValueNumeric
+                label="Temperature"
                 unit="C"
                 timeseries={back_temperature}
                 renderValue={(value) => value.toFixed(1)}
               />
-              <Label label="Set Reservoir 2 Target Temperature">
+            </div>
+
+            <div className="flex-row">
+              <Label label="Set Target Temperature">
                 <EditValue
-                  title="Set Reservoir 2 Target Temperature"
+                  title="Set Target Temperature"
                   value={backTargetTemperature}
                   unit="C"
                   renderValue={(value) => value.toFixed(1)}
                   onChange={(val) => {
-                    setBackTemperature(val);
+                    setFrontTemperature(val);
                   }}
                   defaultValue={
                     defaultState?.temperature_states.back.target_temperature
                   }
+                />
+              </Label>
+            </div>
+
+            <div className="flex-row">
+              <Label label="Pump">
+                <SelectionGroup<"On" | "Off">
+                  value={backTargetFlow ? "On" : "Off"}
+                  orientation="vertical"
+                  className="grid h-full grid-cols-2 gap-2"
+                  options={{
+                    Off: {
+                      children: "Off",
+                      icon: "lu:CirclePause",
+                      isActiveClassName: "bg-green-600",
+                      className: "h-full",
+                    },
+                    On: {
+                      children: "On",
+                      icon: "lu:CirclePlay",
+                      isActiveClassName: "bg-green-600",
+                      className: "h-full",
+                    },
+                  }}
+                  onChange={(value) => {
+                    setBackFlow(value == "On");
+                  }}
                 />
               </Label>
             </div>
