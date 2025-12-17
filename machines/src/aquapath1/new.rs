@@ -12,7 +12,7 @@ use ethercat_hal::{
     coe::ConfigurableDevice,
     devices::{
         ek1100::{EK1100, EK1100_IDENTITY_A},
-        el2008::{EL2008, EL2008_IDENTITY_A, EL2008Port},
+        el2008::{EL2008, EL2008_IDENTITY_A, EL2008_IDENTITY_B, EL2008Port},
         el3204::{EL3204, EL3204_IDENTITY_A, EL3204_IDENTITY_B, EL3204Port},
         el4002::{EL4002, EL4002_IDENTITY_A, EL4002Port},
         el5152::{
@@ -55,10 +55,14 @@ impl MachineNewTrait for AquaPathV1 {
                 get_ethercat_device::<EK1100>(hardware, params, 0, [EK1100_IDENTITY_A].to_vec());
 
             // Role 1 - EL2008 Digital Output Module
-            let el2008 =
-                get_ethercat_device::<EL2008>(hardware, params, 1, [EL2008_IDENTITY_A].to_vec())
-                    .await?
-                    .0;
+            let el2008 = get_ethercat_device::<EL2008>(
+                hardware,
+                params,
+                1,
+                [EL2008_IDENTITY_A, EL2008_IDENTITY_B].to_vec(),
+            )
+            .await?
+            .0;
 
             // Role 2 - EL4002 Analog Output Module
             let el4002 =
@@ -108,8 +112,7 @@ impl MachineNewTrait for AquaPathV1 {
             //phys 5
             let do2 = DigitalOutput::new(el2008.clone(), EL2008Port::DO2);
             //heating
-            //phys 2
-            let do3 = DigitalOutput::new(el2008.clone(), EL2008Port::DO3);
+
             //phys 6
             let do4 = DigitalOutput::new(el2008.clone(), EL2008Port::DO4);
             //phys 3
@@ -117,8 +120,7 @@ impl MachineNewTrait for AquaPathV1 {
             //phys 7
             let do6 = DigitalOutput::new(el2008.clone(), EL2008Port::DO6);
             //cooling power cut
-            //phys 4
-            let do7 = DigitalOutput::new(el2008.clone(), EL2008Port::DO7);
+
             //phys 8
             let do8 = DigitalOutput::new(el2008.clone(), EL2008Port::DO8);
 
@@ -133,9 +135,8 @@ impl MachineNewTrait for AquaPathV1 {
                 Temperature::default(),
                 ThermodynamicTemperature::new::<degree_celsius>(25.0),
                 ao1,
-                do7,
-                do3,
-                do5,
+                do4,
+                do2,
                 t1,
                 t2,
                 Flow::default(),
@@ -152,12 +153,11 @@ impl MachineNewTrait for AquaPathV1 {
                 ThermodynamicTemperature::new::<degree_celsius>(25.0),
                 ao2,
                 do8,
-                do4,
                 do6,
                 t3,
                 t4,
                 Flow::default(),
-                do2,
+                do5,
                 enc2,
             );
             let (sender, receiver) = smol::channel::unbounded();

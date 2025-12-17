@@ -17,7 +17,6 @@ export function TroubleshootPage() {
   // Get backend logs for display
   const backendLogs = getLogsBySource("qitech-control-server");
   const logLines = backendLogs.map((log) => log.raw);
-  console.log(backendLogs);
   const handleRebootHmi = async () => {
     setIsRebootLoading(true);
 
