@@ -8,7 +8,9 @@ export function Aquapath1SettingsPage() {
     <Page>
       <ControlGrid columns={1}>
         <ControlCard title="Adjust Fan RPM">
-          <TouchSlider></TouchSlider>
+          <TouchSlider
+            
+          />
         </ControlCard>
       </ControlGrid>
     </Page>

@@ -10,7 +10,7 @@ use crate::{
     aquapath1::{
         api::{
             AquaPathV1Events, AquaPathV1Namespace, FlowState, FlowStates, LiveValuesEvent,
-            ModeState, StateEvent, TempState, TempStates,
+            ModeState, StateEvent, TempState, TempStates, FanState, FanStates,
         },
         controller::Controller,
     },
@@ -167,6 +167,14 @@ impl AquaPathV1 {
                     should_flow: self.back_controller.should_pump,
                 },
             },
+            fan_states: FanStates {
+                front: FanState {
+                    rpm: self.front_controller.cooling_controller.get(),
+                },
+                back: FanState {
+                    rpm: self.back_controller.cooling_controller.get(),
+                },
+            },
         };
 
         let event = state.build();
@@ -265,6 +273,16 @@ impl AquaPathV1 {
         match cooling_type {
             AquaPathSideType::Back => self.back_controller.set_should_pump(should_pump),
             AquaPathSideType::Front => self.front_controller.set_should_pump(should_pump),
+        }
+        self.emit_state();
+    }
+}
+
+impl AquaPathV1 {
+    fn set_target_rpm(&mut self, value: f64, fan_type: AquaPathSideType) {
+        match fan_type {
+            AquaPathSideType::Back => self.back_controller.cooling_controller.set(value as f32),
+            AquaPathSideType::Front => self.front_controller.cooling_controller.set(value as f32),
         }
         self.emit_state();
     }
