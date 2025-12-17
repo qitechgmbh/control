@@ -14,33 +14,31 @@ export function Aquapath1SettingsPage() {
       <ControlGrid columns={2}>
         <ControlCard title="Front Fan RPM">
           <TouchSlider
-            className=""
-            minLabel=""
-            maxLabel=""
-            defaultValue={[0]}
-            inverted={false}
-            renderValue={(x: number)=>x.toString()}
-            unit="%"
-            defaultValue={[50]}
+            className="w-[48rem]"
+            value={state?.fan_states.front ? [state.fan_states.front] : undefined}
+            onValueChange={(x: Number) => "${x}"}
             min={0}
-            value={state?.fan_states.front}
             max={100}
+            step={1}
+            inverted={false}
+            unit={"%"}
+            minLabel={"min"}
+            maxLabel={"max"}
           />
         </ControlCard>
 
-        <ControlCard title="Back Fan RPM">
+        <ControlCard title="Front Fan RPM">
           <TouchSlider
-            className=""
-            minLabel=""
-            maxLabel=""
-            defaultValue={[0]}
-            inverted={false}
-            renderValue={(x: number)=>x.toString()}
-            unit="%"
-            defaultValue={[50]}
+            className="w-[48rem]"
+            value={state?.fan_states.front ? [state.fan_states.front] : undefined}
+            onValueChange={(x: Number) => "${x}"}
             min={0}
-            value={state?.fan_states.front}
             max={100}
+            step={1}
+            inverted={false}
+            unit={"%"}
+            minLabel={"min"}
+            maxLabel={"max"}
           />
         </ControlCard>
       </ControlGrid>
