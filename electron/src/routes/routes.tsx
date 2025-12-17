@@ -52,6 +52,7 @@ import { Mock1PresetsPage } from "@/machines/mock/mock1/Mock1PresetsPage";
 import { Aquapath1ControlPage } from "@/machines/aquapath/aquapath1/Aquapath1ControlPage";
 import { Aquapath1Page } from "@/machines/aquapath/aquapath1/Aquapath1Page";
 import { Aquapath1GraphPage } from "@/machines/aquapath/aquapath1/Aquapath1Graph";
+import { Aquapath1SettingsPage } from "@/machines/aquapath/aquapath1/Aquapath1Settings";
 
 import { TestMachinePage } from "@/machines/testmachine/TestMachinePage";
 import { TestMachineControlPage } from "@/machines/testmachine/TestMachineControlPage";
@@ -281,6 +282,12 @@ export const aquapath1ControlRoute = createRoute({
   getParentRoute: () => aquapath1SerialRoute,
   path: "control",
   component: () => <Aquapath1ControlPage />,
+});
+
+export const aquapath1SettingsRoute = createRoute({
+  getParentRoute: () => aquapath1SerialRoute,
+  path: "settings",
+  component: () => <Aquapath1SettingsPage />,
 });
 
 export const buffer1SettingsRoute = createRoute({
