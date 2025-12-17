@@ -1,6 +1,6 @@
 use crate::extruder1::{
-    ExtruderV2Mode, HeatingType,
-    api::{ExtruderV2Events, LiveValuesEvent, ModeState, PidSettings, StateEvent, TemperaturePid},
+    ExtruderV1Mode, HeatingType,
+    api::{ExtruderV1Events, LiveValuesEvent, ModeState, PidSettings, StateEvent, TemperaturePid},
 };
 use crate::extruder2::mock::ExtruderV2;
 
@@ -33,7 +33,7 @@ impl ExtruderV2 {
         let hash = hash_with_serde_model(self.inverter_status_state.clone());
         self.last_status_hash = Some(hash);
         let event = state.build();
-        self.namespace.emit(ExtruderV2Events::State(event));
+        self.namespace.emit(ExtruderV1Events::State(event));
     }
 
     pub fn maybe_emit_state_event(&mut self) {
@@ -68,7 +68,7 @@ impl ExtruderV2 {
         };
 
         let event = live_values.build();
-        self.namespace.emit(ExtruderV2Events::LiveValues(event));
+        self.namespace.emit(ExtruderV1Events::LiveValues(event));
     }
 
     pub fn set_nozzle_pressure_limit_is_enabled(&mut self, enabled: bool) {
@@ -94,7 +94,7 @@ impl ExtruderV2 {
         self.emit_state();
     }
 
-    pub fn set_mode_state(&mut self, mode: ExtruderV2Mode) {
+    pub fn set_mode_state(&mut self, mode: ExtruderV1Mode) {
         self.mode_state = ModeState { mode };
         self.emit_state();
     }

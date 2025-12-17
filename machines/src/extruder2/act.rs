@@ -5,10 +5,10 @@ use std::time::Instant;
 use crate::{MachineAct, MachineMessage};
 
 #[cfg(not(feature = "mock-machine"))]
-use super::ExtruderV3;
+use super::ExtruderV2;
 
 #[cfg(not(feature = "mock-machine"))]
-impl MachineAct for ExtruderV3 {
+impl MachineAct for ExtruderV2 {
     fn act(&mut self, now: Instant) {
         use std::time::Duration;
 
@@ -25,17 +25,17 @@ impl MachineAct for ExtruderV3 {
         self.temperature_controller_front.update(now);
         self.temperature_controller_middle.update(now);
 
-        if self.mode == super::ExtruderV3Mode::Extrude {
+        if self.mode == super::ExtruderV2Mode::Extrude {
             self.screw_speed_controller.update(now, true);
         } else {
             self.screw_speed_controller.update(now, false);
         }
 
-        if self.mode == super::ExtruderV3Mode::Standby {
+        if self.mode == super::ExtruderV2Mode::Standby {
             self.turn_heating_off();
         }
 
-        if self.mode == super::ExtruderV3Mode::Extrude
+        if self.mode == super::ExtruderV2Mode::Extrude
             && !self.screw_speed_controller.get_motor_enabled()
         {
             self.switch_to_heat();
@@ -57,7 +57,7 @@ impl MachineAct for ExtruderV3 {
             MachineMessage::SubscribeNamespace(namespace) => {
                 self.namespace.namespace = Some(namespace);
                 self.emit_state();
-                tracing::info!("extruder1 received subscribe");
+                tracing::info!("extruder2 received subscribe");
             }
             MachineMessage::UnsubscribeNamespace => self.namespace.namespace = None,
             MachineMessage::HttpApiJsonRequest(value) => {

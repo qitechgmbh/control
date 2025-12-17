@@ -1,9 +1,9 @@
-use super::ExtruderV2;
+use super::ExtruderV1;
 use crate::MachineAct;
 use crate::MachineMessage;
 use std::time::{Duration, Instant};
 
-impl MachineAct for ExtruderV2 {
+impl MachineAct for ExtruderV1 {
     fn act(&mut self, now: Instant) {
         let msg = self.api_receiver.try_recv();
         match msg {

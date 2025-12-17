@@ -51,12 +51,12 @@ use crate::extruder1::temperature_controller::TemperatureController;
 
 #[cfg(not(feature = "mock-machine"))]
 use super::{
-    ExtruderV2, ExtruderV2Mode, Heating, api::ExtruderV2Namespace, mitsubishi_cs80::MitsubishiCS80,
+    ExtruderV1, ExtruderV1Mode, Heating, api::ExtruderV1Namespace, mitsubishi_cs80::MitsubishiCS80,
     screw_speed_controller::ScrewSpeedController,
 };
 
 #[cfg(not(feature = "mock-machine"))]
-impl MachineNewTrait for ExtruderV2 {
+impl MachineNewTrait for ExtruderV1 {
     fn new<'maindevice>(params: &MachineNewParams) -> Result<Self, Error> {
         // validate general stuff
         use crate::{
@@ -223,16 +223,16 @@ impl MachineNewTrait for ExtruderV2 {
             );
             let (sender, receiver) = smol::channel::unbounded();
 
-            let mut extruder: ExtruderV2 = Self {
+            let mut extruder: ExtruderV1 = Self {
                 main_sender: params.main_thread_channel.clone(),
                 api_receiver: receiver,
                 api_sender: sender,
                 machine_identification_unique: params.get_machine_identification_unique(),
-                namespace: ExtruderV2Namespace {
+                namespace: ExtruderV1Namespace {
                     namespace: params.namespace.clone(),
                 },
                 last_measurement_emit: Instant::now(),
-                mode: ExtruderV2Mode::Standby,
+                mode: ExtruderV1Mode::Standby,
                 total_energy_kwh: 0.0,
                 last_energy_calculation_time: None,
                 temperature_controller_front,

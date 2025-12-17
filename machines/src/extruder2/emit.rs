@@ -24,10 +24,10 @@ use units::thermodynamic_temperature::ThermodynamicTemperature;
 use units::{angular_velocity::revolution_per_minute, thermodynamic_temperature::degree_celsius};
 
 #[cfg(not(feature = "mock-machine"))]
-use super::{ExtruderV3, ExtruderV3Mode, api::StateEvent};
+use super::{ExtruderV2, ExtruderV2Mode, api::StateEvent};
 
 #[cfg(not(feature = "mock-machine"))]
-impl ExtruderV3 {
+impl ExtruderV2 {
     pub fn build_state_event(&mut self) -> StateEvent {
         use crate::{
             extruder1::api::{TemperaturePid, TemperaturePidStates},
@@ -150,15 +150,15 @@ impl ExtruderV3 {
 }
 
 #[cfg(not(feature = "mock-machine"))]
-impl ExtruderV3 {
+impl ExtruderV2 {
     pub fn emit_state(&mut self) {
-        use super::api::ExtruderV3Events;
+        use super::api::ExtruderV2Events;
 
         let state = self.build_state_event();
         let hash = hash_with_serde_model(self.screw_speed_controller.get_inverter_status());
         self.last_status_hash = Some(hash);
         let event = state.build();
-        self.namespace.emit(ExtruderV3Events::State(event));
+        self.namespace.emit(ExtruderV2Events::State(event));
     }
 
     pub fn maybe_emit_state_event(&mut self) {
@@ -179,7 +179,7 @@ impl ExtruderV3 {
     pub fn emit_live_values(&mut self) {
         use std::time::Instant;
 
-        use crate::extruder2::api::{ExtruderV3Events, LiveValuesEvent};
+        use crate::extruder2::api::{ExtruderV2Events, LiveValuesEvent};
         let now = Instant::now();
         let combined_power = self.calculate_combined_power();
         self.update_total_energy(combined_power, now);
@@ -224,7 +224,7 @@ impl ExtruderV3 {
         };
 
         let event = live_values.build();
-        self.namespace.emit(ExtruderV3Events::LiveValues(event));
+        self.namespace.emit(ExtruderV2Events::LiveValues(event));
     }
 
     // === Steuerungsfunktionen mit emit_state ===
@@ -254,7 +254,7 @@ impl ExtruderV3 {
         self.emit_state();
     }
 
-    pub fn set_mode_state(&mut self, mode: ExtruderV3Mode) {
+    pub fn set_mode_state(&mut self, mode: ExtruderV2Mode) {
         self.switch_mode(mode);
         self.emit_state();
     }

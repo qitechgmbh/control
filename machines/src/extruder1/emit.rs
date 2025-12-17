@@ -1,9 +1,9 @@
 #[cfg(not(feature = "mock-machine"))]
 // Contains Implementations for All functions that use emit_state
 use crate::extruder1::{
-    ExtruderV2, ExtruderV2Mode, HeatingType,
+    ExtruderV1, ExtruderV1Mode, HeatingType,
     api::{
-        ExtruderSettingsState, ExtruderV2Events, HeatingState, HeatingStates, InverterStatusState,
+        ExtruderSettingsState, ExtruderV1Events, HeatingState, HeatingStates, InverterStatusState,
         LiveValuesEvent, ModeState, PidSettings, PidSettingsStates, PressureState, RegulationState,
         RotationState, ScrewState, StateEvent, TemperaturePid,
     },
@@ -24,7 +24,7 @@ use units::thermodynamic_temperature::ThermodynamicTemperature;
 use units::{angular_velocity::revolution_per_minute, thermodynamic_temperature::degree_celsius};
 
 #[cfg(not(feature = "mock-machine"))]
-impl ExtruderV2 {
+impl ExtruderV1 {
     pub fn build_state_event(&mut self) -> StateEvent {
         use crate::extruder1::api::{TemperaturePid, TemperaturePidStates};
 
@@ -144,13 +144,13 @@ impl ExtruderV2 {
 }
 
 #[cfg(not(feature = "mock-machine"))]
-impl ExtruderV2 {
+impl ExtruderV1 {
     pub fn emit_state(&mut self) {
         let state = self.build_state_event();
         let hash = hash_with_serde_model(self.screw_speed_controller.get_inverter_status());
         self.last_status_hash = Some(hash);
         let event = state.build();
-        self.namespace.emit(ExtruderV2Events::State(event));
+        self.namespace.emit(ExtruderV1Events::State(event));
     }
 
     pub fn maybe_emit_state_event(&mut self) {
@@ -214,7 +214,7 @@ impl ExtruderV2 {
         };
 
         let event = live_values.build();
-        self.namespace.emit(ExtruderV2Events::LiveValues(event));
+        self.namespace.emit(ExtruderV1Events::LiveValues(event));
     }
 
     // === Steuerungsfunktionen mit emit_state ===
@@ -244,7 +244,7 @@ impl ExtruderV2 {
         self.emit_state();
     }
 
-    pub fn set_mode_state(&mut self, mode: ExtruderV2Mode) {
+    pub fn set_mode_state(&mut self, mode: ExtruderV1Mode) {
         self.switch_mode(mode);
         self.emit_state();
     }

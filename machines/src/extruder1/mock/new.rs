@@ -1,18 +1,18 @@
 use crate::{
     MachineNewHardware, MachineNewParams, MachineNewTrait,
     extruder1::{
-        ExtruderV2Mode,
+        ExtruderV1Mode,
         api::{
-            ExtruderSettingsState, ExtruderV2Namespace, HeatingState, HeatingStates,
+            ExtruderSettingsState, ExtruderV1Namespace, HeatingState, HeatingStates,
             InverterStatusState, ModeState, MotorStatusValues, PidSettings, PidSettingsStates,
             PressureState, RegulationState, RotationState, ScrewState, TemperaturePid,
             TemperaturePidStates,
         },
-        mock::ExtruderV2,
+        mock::ExtruderV1,
     },
 };
 
-impl MachineNewTrait for ExtruderV2 {
+impl MachineNewTrait for ExtruderV1 {
     fn new(params: &MachineNewParams<'_, '_, '_, '_, '_, '_, '_>) -> Result<Self, anyhow::Error>
     where
         Self: Sized,
@@ -39,12 +39,12 @@ impl MachineNewTrait for ExtruderV2 {
             api_receiver: receiver,
             api_sender: sender,
             machine_identification_unique: params.get_machine_identification_unique(),
-            namespace: ExtruderV2Namespace {
+            namespace: ExtruderV1Namespace {
                 namespace: params.namespace.clone(),
             },
             last_measurement_emit: now,
 
-            mode: ExtruderV2Mode::Standby, // Start in standby mode
+            mode: ExtruderV1Mode::Standby, // Start in standby mode
             emitted_default_state: false,
             last_status_hash: None,
             total_energy_kwh: 0.0,
@@ -52,7 +52,7 @@ impl MachineNewTrait for ExtruderV2 {
             is_default_state: false,
             rotation_state: RotationState { forward: false },
             mode_state: ModeState {
-                mode: ExtruderV2Mode::Standby,
+                mode: ExtruderV1Mode::Standby,
             },
             regulation_state: RegulationState { uses_rpm: true },
             pressure_state: PressureState {
