@@ -1,7 +1,7 @@
-use super::{ExtruderV2Mode, mitsubishi_cs80::MotorStatus};
+use super::{ExtruderV1Mode, mitsubishi_cs80::MotorStatus};
 
 #[cfg(not(feature = "mock-machine"))]
-use super::ExtruderV2;
+use super::ExtruderV1;
 
 #[cfg(not(feature = "mock-machine"))]
 use crate::{MachineMessage, extruder1::HeatingType};
@@ -115,7 +115,7 @@ pub struct RotationState {
 
 #[derive(Serialize, Debug, Clone, PartialEq, Eq)]
 pub struct ModeState {
-    pub mode: ExtruderV2Mode,
+    pub mode: ExtruderV1Mode,
 }
 
 #[derive(Serialize, Debug, Clone, PartialEq, Eq)]
@@ -205,7 +205,7 @@ pub struct PidSettingsStates {
     pub pressure: PidSettings,
 }
 
-pub enum ExtruderV2Events {
+pub enum ExtruderV1Events {
     LiveValues(Event<LiveValuesEvent>),
     State(Event<StateEvent>),
 }
@@ -221,7 +221,7 @@ pub enum Mutation {
     SetInverterRegulation(bool),
 
     //Mode
-    SetExtruderMode(ExtruderV2Mode),
+    SetExtruderMode(ExtruderV1Mode),
     SetFrontHeatingTargetTemperature(f64),
     SetBackHeatingTargetTemperature(f64),
     SetMiddleHeatingTemperature(f64),
@@ -240,13 +240,13 @@ pub enum Mutation {
 }
 
 #[derive(Debug)]
-pub struct ExtruderV2Namespace {
+pub struct ExtruderV1Namespace {
     pub namespace: Option<Namespace>,
 }
 
-impl NamespaceCacheingLogic<ExtruderV2Events> for ExtruderV2Namespace {
+impl NamespaceCacheingLogic<ExtruderV1Events> for ExtruderV1Namespace {
     #[instrument(skip_all)]
-    fn emit(&mut self, events: ExtruderV2Events) {
+    fn emit(&mut self, events: ExtruderV1Events) {
         let event = Arc::new(events.event_value());
         let buffer_fn = events.event_cache_fn();
 
@@ -257,7 +257,7 @@ impl NamespaceCacheingLogic<ExtruderV2Events> for ExtruderV2Namespace {
     }
 }
 
-impl CacheableEvents<Self> for ExtruderV2Events {
+impl CacheableEvents<Self> for ExtruderV1Events {
     fn event_value(&self) -> GenericEvent {
         match self {
             Self::LiveValues(event) => event.into(),
@@ -275,7 +275,7 @@ impl CacheableEvents<Self> for ExtruderV2Events {
 }
 
 #[cfg(not(feature = "mock-machine"))]
-impl MachineApi for ExtruderV2 {
+impl MachineApi for ExtruderV1{
     fn api_get_sender(&self) -> Sender<MachineMessage> {
         self.api_sender.clone()
     }
