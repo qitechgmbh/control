@@ -9,8 +9,8 @@ use crate::{
     MACHINE_AQUAPATH_V1, VENDOR_QITECH,
     aquapath1::{
         api::{
-            AquaPathV1Events, AquaPathV1Namespace, FlowState, FlowStates, LiveValuesEvent,
-            ModeState, StateEvent, TempState, TempStates, FanState, FanStates,
+            AquaPathV1Events, AquaPathV1Namespace, FanState, FanStates, FlowState, FlowStates,
+            LiveValuesEvent, ModeState, StateEvent, TempState, TempStates,
         },
         controller::Controller,
     },
@@ -279,10 +279,10 @@ impl AquaPathV1 {
 }
 
 impl AquaPathV1 {
-    fn set_target_rpm(&mut self, value: f64, fan_type: AquaPathSideType) {
+    fn set_target_rpm(&mut self, value: f32, fan_type: AquaPathSideType) {
         match fan_type {
-            AquaPathSideType::Back => self.back_controller.cooling_controller.set(value as f32),
-            AquaPathSideType::Front => self.front_controller.cooling_controller.set(value as f32),
+            AquaPathSideType::Back => self.back_controller.cooling_controller.set(value),
+            AquaPathSideType::Front => self.front_controller.cooling_controller.set(value),
         }
         self.emit_state();
     }

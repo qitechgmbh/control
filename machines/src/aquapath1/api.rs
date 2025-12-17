@@ -20,8 +20,8 @@ pub struct LiveValuesEvent {
     pub back_temperature: f64,
     pub front_temp_reservoir: f64,
     pub back_temp_reservoir: f64,
-    pub front_fan_rpm: f64,
-    pub back_fan_rpm: f64,
+    pub front_fan_rpm: f32,
+    pub back_fan_rpm: f32,
 }
 
 impl LiveValuesEvent {
@@ -75,7 +75,7 @@ pub struct FlowState {
 
 #[derive(Serialize, Debug, Clone)]
 pub struct FanState {
-    pub rpm: f64,
+    pub rpm: f32,
 }
 
 #[derive(Serialize, Debug, Clone)]
@@ -100,8 +100,8 @@ enum Mutation {
     SetFrontFlow(bool),
     SetBackFlow(bool),
 
-    SetBackFan(f64),
-    SerFrontFan(f64),
+    SetBackFan(f32),
+    SerFrontFan(f32),
 }
 
 #[derive(Debug, Clone)]
