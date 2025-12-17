@@ -119,11 +119,30 @@ impl AquaPathV1 {
                 .back_controller
                 .current_temperature
                 .get::<degree_celsius>(),
-            front_flow: self.front_controller.current_flow.get::<liter_per_minute>(),
-            back_flow: self.back_controller.current_flow.get::<liter_per_minute>(),
-            front_temp_reservoir: self.front_controller.temp_reservoir.get::<degree_celsius>(),
-            back_temp_reservoir: self.back_controller.temp_reservoir.get::<degree_celsius>(),
-        };
+            front_flow: self
+                .front_controller.current_flow
+                .get::<liter_per_minute>(),
+            back_flow: self
+                .back_controller
+                .current_flow
+                .get::<liter_per_minute>(),
+            front_temp_reservoir: self
+                .front_controller
+                .temp_reservoir
+                .get::<degree_celsius>(),
+            back_temp_reservoir: self
+                .back_controller
+                .temp_reservoir
+                .get::<degree_celsius>(),
+            front_fan_rpm: self
+                .front_controller
+                .cooling_controller
+                .get(),
+            back_fan_rpm: self
+                .back_controller
+                .cooling_controller
+                .get(),
+            };
         let event = live_values.build();
         self.namespace.emit(AquaPathV1Events::LiveValues(event));
     }
