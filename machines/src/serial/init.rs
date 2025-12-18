@@ -130,7 +130,7 @@ pub async fn handle_serial_device_hotplug(
                 }
 
                 let app_state_event = app_state.clone();
-                let main_namespace = &mut app_state_event2
+                let main_namespace = &mut app_state_event
                     .socketio_setup
                     .namespaces
                     .write()
