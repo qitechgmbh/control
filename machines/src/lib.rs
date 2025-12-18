@@ -466,7 +466,13 @@ where
     }
 
     fn api_mutate(&mut self, value: Value) -> Result<()> {
-        self.mutate(value)
+        let res = self.mutate(value);
+
+        if let Err(ref e) = res {
+            tracing::error!("Machine errored while mutating: {}, ", e);
+        }
+
+        res
     }
 
     fn api_event_namespace(&mut self) -> Option<Namespace> {
@@ -501,7 +507,7 @@ where
                 channel.namespace = None;
             }
             MachineMessage::HttpApiJsonRequest(value) => {
-                let _ = self.mutate(value);
+                let _ = self.api_mutate(value);
             }
             MachineMessage::ConnectToMachine(_machine_connection) => {
                 todo!();
