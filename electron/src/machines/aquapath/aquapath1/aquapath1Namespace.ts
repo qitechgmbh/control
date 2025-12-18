@@ -98,37 +98,19 @@ export type Aquapath1NamespaceStore = {
   back_temp_reservoir: TimeSeries;
 };
 
-// Constants for time durations
-const TWENTY_MILLISECOND = 20;
-const ONE_SECOND = 1000;
-const FIVE_SECOND = 5 * ONE_SECOND;
-const ONE_HOUR = 60 * 60 * ONE_SECOND;
-
 const { initialTimeSeries: front_temperature, insert: addTemperature1 } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
-
+  createTimeSeries();
 const { initialTimeSeries: back_temperature, insert: addTemperature2 } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
-
+  createTimeSeries();
 const { initialTimeSeries: front_temp_reservoir, insert: addTempReserv1 } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
-
+  createTimeSeries();
 const { initialTimeSeries: back_temp_reservoir, insert: addTempReserv2 } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+  createTimeSeries();
+const { initialTimeSeries: front_flow, insert: addFlow1 } =
+  createTimeSeries();
+const { initialTimeSeries: back_flow, insert: addFlow2 } =
+  createTimeSeries();
 
-const { initialTimeSeries: front_flow, insert: addFlow1 } = createTimeSeries(
-  TWENTY_MILLISECOND,
-  ONE_SECOND,
-  FIVE_SECOND,
-  ONE_HOUR,
-);
-
-const { initialTimeSeries: back_flow, insert: addFlow2 } = createTimeSeries(
-  TWENTY_MILLISECOND,
-  ONE_SECOND,
-  FIVE_SECOND,
-  ONE_HOUR,
-);
 /**
  * Factory function to create a new Aquapath namespace store
  * @returns A new Zustand store instance for Aquapath namespace

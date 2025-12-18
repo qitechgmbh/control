@@ -4,37 +4,21 @@ import type { RuntimeMetricsSample } from "./useRuntimeMetrics";
 
 const ONE_SECOND = 1000;
 const FIVE_SECOND = 5 * ONE_SECOND;
-const ONE_HOUR = 60 * 60 * ONE_SECOND;
 
 // 5 s window, 1 s bucket, 1 h history
 const { initialTimeSeries: jitterInitial, insert: insertJitter } =
-  createTimeSeries(FIVE_SECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
-const { initialTimeSeries: cpuInitial, insert: insertCpu } = createTimeSeries(
-  FIVE_SECOND,
-  ONE_SECOND,
-  FIVE_SECOND,
-  ONE_HOUR,
-);
-const { initialTimeSeries: memInitial, insert: insertMem } = createTimeSeries(
-  FIVE_SECOND,
-  ONE_SECOND,
-  FIVE_SECOND,
-  ONE_HOUR,
-);
-const { initialTimeSeries: rxInitial, insert: insertRx } = createTimeSeries(
-  FIVE_SECOND,
-  ONE_SECOND,
-  FIVE_SECOND,
-  ONE_HOUR,
-);
-const { initialTimeSeries: txInitial, insert: insertTx } = createTimeSeries(
-  FIVE_SECOND,
-  ONE_SECOND,
-  FIVE_SECOND,
-  ONE_HOUR,
-);
+  createTimeSeries({ sampleIntervalShort: FIVE_SECOND });
+const { initialTimeSeries: cpuInitial, insert: insertCpu } = createTimeSeries({
+  sampleIntervalShort: FIVE_SECOND,
+});
+const { initialTimeSeries: memInitial, insert: insertMem } =
+  createTimeSeries({ sampleIntervalShort: FIVE_SECOND });
+const { initialTimeSeries: rxInitial, insert: insertRx } =
+  createTimeSeries({ sampleIntervalShort: FIVE_SECOND });
+const { initialTimeSeries: txInitial, insert: insertTx } =
+  createTimeSeries({ sampleIntervalShort: FIVE_SECOND });
 const { initialTimeSeries: preemptInitial, insert: insertPreempt } =
-  createTimeSeries(FIVE_SECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+  createTimeSeries({ sampleIntervalShort: FIVE_SECOND });
 
 export type RuntimeSeriesState = {
   jitter: TimeSeries | null;
