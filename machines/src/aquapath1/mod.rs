@@ -17,15 +17,13 @@ use crate::{
     machine_identification::MachineIdentification,
 };
 
+use super::machine_identification::MachineIdentificationUnique;
 use smol::channel::{Receiver, Sender};
 
-use super::machine_identification::MachineIdentificationUnique;
 pub mod act;
 pub mod api;
 pub mod controller;
-// pub mod flow_controller;
 pub mod new;
-// pub mod temperature_controller;
 
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
 pub enum AquaPathV1Mode {

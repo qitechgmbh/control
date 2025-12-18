@@ -46,3 +46,6 @@ jobs:
 
       - name: Run tests
         run: cargo test --verbose
+
+      - name: Mock Machine
+        run: cargo build --features development-build --features mock-machine
