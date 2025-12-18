@@ -106,10 +106,8 @@ const { initialTimeSeries: front_temp_reservoir, insert: addTempReserv1 } =
   createTimeSeries();
 const { initialTimeSeries: back_temp_reservoir, insert: addTempReserv2 } =
   createTimeSeries();
-const { initialTimeSeries: front_flow, insert: addFlow1 } =
-  createTimeSeries();
-const { initialTimeSeries: back_flow, insert: addFlow2 } =
-  createTimeSeries();
+const { initialTimeSeries: front_flow, insert: addFlow1 } = createTimeSeries();
+const { initialTimeSeries: back_flow, insert: addFlow2 } = createTimeSeries();
 
 /**
  * Factory function to create a new Aquapath namespace store

@@ -223,8 +223,7 @@ export type Extruder3NamespaceStore = {
   totalEnergyKWh: TimeSeries;
 };
 
-const { initialTimeSeries: pressure, insert: addPressure } =
-  createTimeSeries();
+const { initialTimeSeries: pressure, insert: addPressure } = createTimeSeries();
 const { initialTimeSeries: backTemperature, insert: addBackTemperature } =
   createTimeSeries();
 const { initialTimeSeries: frontTemperature, insert: addFrontTemperature } =
