@@ -39,6 +39,28 @@ export interface TimeSeriesWithInsert {
 }
 
 /**
+ * Configuration object for creating a time series
+ */
+export interface TimeSeriesConfig {
+  sampleIntervalShort: number;
+  sampleIntervalLong: number;
+  retentionDurationShort: number;
+  retentionDurationLong: number;
+}
+
+/**
+ * Default configuration values
+ * Short: 20ms sample, 5s retention
+ * Long: 1s sample, 1h retention
+ */
+export const DEFAULT_TIMESERIES_CONFIG: TimeSeriesConfig = {
+  sampleIntervalShort: 20, // 20ms
+  sampleIntervalLong: 1000, // 1s
+  retentionDurationShort: 5000, // 5s
+  retentionDurationLong: 60 * 60 * 1000, // 1h
+};
+
+/**
  * Extract data with time window filtering in chronological order
  */
 export function extractDataFromSeries(
@@ -177,13 +199,18 @@ export function seriesToUPlotData(
 
 /**
  * Factory function to create a new time series with circular buffers
+ * @param config Optional configuration object. If omitted or partial, defaults from DEFAULT_TIMESERIES_CONFIG are used.
  */
 export const createTimeSeries = (
-  sampleIntervalShort: number,
-  sampleIntervalLong: number,
-  retentionDurationShort: number,
-  retentionDurationLong: number,
+  config: Partial<TimeSeriesConfig> = {},
 ): TimeSeriesWithInsert => {
+  const {
+    sampleIntervalShort,
+    sampleIntervalLong,
+    retentionDurationShort,
+    retentionDurationLong,
+  } = { ...DEFAULT_TIMESERIES_CONFIG, ...config };
+
   const shortSize = Math.ceil(retentionDurationShort / sampleIntervalShort);
   const longSize = Math.ceil(retentionDurationLong / sampleIntervalLong);
 
