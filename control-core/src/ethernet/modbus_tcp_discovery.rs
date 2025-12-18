@@ -5,7 +5,12 @@ use interfaces::Interface;
 use std::cmp::min;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
-pub async fn probe_modbus_tcp() -> Vec<SocketAddr> {
+pub struct ModbusTcpProbe {
+    pub addr: SocketAddr,
+    pub serial: u16,
+}
+
+pub async fn probe_modbus_tcp() -> Vec<ModbusTcpProbe> {
     let interfaces = match get_interfaces() {
         Ok(x) => x,
         Err(_) => return vec![],
@@ -21,8 +26,8 @@ pub async fn probe_modbus_tcp() -> Vec<SocketAddr> {
         .collect()
 }
 
-async fn probe_modbus_tcp_addresses(interface: Interface) -> Vec<SocketAddr> {
-    let out: Vec<SocketAddr> = interface
+async fn probe_modbus_tcp_addresses(interface: Interface) -> Vec<ModbusTcpProbe> {
+    let out: Vec<ModbusTcpProbe> = interface
         .addresses
         .iter()
         .filter_map(|addr| {
@@ -51,21 +56,23 @@ async fn probe_modbus_tcp_addresses(interface: Interface) -> Vec<SocketAddr> {
         .filter_map(|x| x.ok())
         .collect();
 
-    println!("FOUOOOUUUUNNNDDD {:?}", out);
-
     out
 }
 
-async fn ping_modbus_device(addr: SocketAddr) -> Result<SocketAddr> {
-    tracing::info!("Trying modbus tcp at {}", addr);
+async fn ping_modbus_device(addr: SocketAddr) -> Result<ModbusTcpProbe> {
     let mut device = ModbusTcpDevice::new(addr).await?;
 
-    let serial1 = device.get_u32(0x2).await?;
-    let serial2 = device.get_u32(0x4).await?;
+    let module_number1 = device.get_u32(0x2).await?;
+    let module_number2 = device.get_u32(0x4).await?;
 
-    if serial1 != 0x2787_2144 || serial2 != 0x0000_0000 {
+    if module_number1 != 0x2787_2144 || module_number2 != 0x0000_0000 {
         bail!("Unknown modbus tcp device!");
     }
 
-    Ok(addr)
+    let serial = device.get_u32(0x000A).await?;
+
+    Ok(ModbusTcpProbe {
+        addr,
+        serial: serial as u16,
+    })
 }
