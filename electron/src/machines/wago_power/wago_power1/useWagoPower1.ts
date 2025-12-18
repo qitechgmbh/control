@@ -3,7 +3,12 @@ import { wagoPower1 } from "@/machines/properties";
 import { MachineIdentificationUnique } from "@/machines/types";
 import { wagoPower1SerialRoute } from "@/routes/routes";
 import { useEffect, useMemo } from "react";
-import { Mode, modeSchema, StateEvent, useWagoPower1Namespace } from "./wagoPower1Namespace";
+import {
+  Mode,
+  modeSchema,
+  StateEvent,
+  useWagoPower1Namespace,
+} from "./wagoPower1Namespace";
 import { useStateOptimistic } from "@/lib/useStateOptimistic";
 import { produce } from "immer";
 import z from "zod";
@@ -41,7 +46,9 @@ export function useWagoPower1() {
     z.object({ SetMode: modeSchema }),
   );
 
-  const { state, defaultState, voltage, current } = useWagoPower1Namespace(machineIdentification);
+  const { state, defaultState, voltage, current } = useWagoPower1Namespace(
+    machineIdentification,
+  );
   //
   // Single optimistic state for all state management
   const stateOptimistic = useStateOptimistic<StateEvent>();
@@ -83,15 +90,15 @@ export function useWagoPower1() {
   const isDisabled = !stateOptimistic.isInitialized;
 
   return {
-      state: stateOptimistic.value?.data,
-      defaultState: defaultState?.data,
+    state: stateOptimistic.value?.data,
+    defaultState: defaultState?.data,
 
-      current,
-      voltage,
+    current,
+    voltage,
 
-      setMode,
+    setMode,
 
-      isLoading,
-      isDisabled,
-  }
+    isLoading,
+    isDisabled,
+  };
 }

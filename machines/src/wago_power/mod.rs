@@ -39,7 +39,7 @@ impl CacheableEvents<Self> for LiveValuesEvent {
     }
 
     fn event_cache_fn(&self) -> CacheFn {
-        cache_duration(Duration::from_hours(1), Duration::from_secs(1))
+        cache_duration(Duration::from_secs(60 * 60), Duration::from_secs(1))
     }
 }
 
@@ -172,7 +172,7 @@ impl WagoPower {
 
     #[cfg(feature = "mock-machine")]
     pub async fn get_serial(&mut self) -> Result<u16> {
-        0xbeef
+        Ok(0xbeef)
     }
 
     #[cfg(not(feature = "mock-machine"))]
@@ -213,7 +213,7 @@ impl MachineWithChannel for WagoPower {
             self.emitted_default_state = true;
         }
 
-        if now - self.last_emit > Duration::from_millis(1000 / 30) {
+        if now.duration_since(self.last_emit) > Duration::from_secs_f64(1.0 / 30.0) {
             if let Ok(event) = self.get_live_values() {
                 self.channel.emit(event);
             }
