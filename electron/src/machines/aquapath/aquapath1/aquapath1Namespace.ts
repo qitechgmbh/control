@@ -52,7 +52,8 @@ export const flowStatesSchema = z.object({
 });
 
 export const fanStateSchema = z.object({
-  rpm: z.number(),
+  revolutions: z.number(),
+  target_revolutions: z.number(),
 })
 export const fanStatesSchema = z.object({
   back: fanStateSchema,
@@ -68,8 +69,8 @@ export const liveValuesEventDataSchema = z.object({
   back_temperature: z.number(),
   front_temp_reservoir: z.number(),
   back_temp_reservoir: z.number(),
-  front_fan_rpm: z.number(),
-  back_fan_rpm: z.number(),
+  front_revolutions: z.number(),
+  back_revolutions: z.number(),
 });
 
 /**
@@ -107,8 +108,8 @@ export type Aquapath1NamespaceStore = {
   front_temp_reservoir: TimeSeries;
   back_temp_reservoir: TimeSeries;
 
-  front_fan_rpm: TimeSeries;
-  back_fan_rpm: TimeSeries;
+  front_revolutions: TimeSeries;
+  back_revolutions: TimeSeries;
 };
 
 // Constants for time durations
@@ -143,14 +144,14 @@ const { initialTimeSeries: back_flow, insert: addFlow2 } = createTimeSeries(
   ONE_HOUR,
 );
 
-const { initialTimeSeries: front_fan_rpm, insert: addFan1 } = createTimeSeries(
+const { initialTimeSeries: front_revolutions, insert: addFan1 } = createTimeSeries(
   TWENTY_MILLISECOND,
   ONE_SECOND,
   FIVE_SECOND,
   ONE_HOUR,
 );
 
-const { initialTimeSeries: back_fan_rpm, insert: addFan2 } = createTimeSeries(
+const { initialTimeSeries: back_revolutions, insert: addFan2 } = createTimeSeries(
   TWENTY_MILLISECOND,
   ONE_SECOND,
   FIVE_SECOND,
@@ -173,8 +174,8 @@ export const createAquapath1NamespaceStore =
         back_flow: back_flow,
         front_temp_reservoir: front_temp_reservoir,
         back_temp_reservoir: back_temp_reservoir,
-        front_fan_rpm: front_fan_rpm,
-        back_fan_rpm: back_fan_rpm,
+        front_revolutions: front_revolutions,
+        back_revolutions: back_revolutions,
       };
     });
   };
@@ -242,12 +243,12 @@ export function aquapath1MessageHandler(
             value: liveValuesEvent.data.back_temp_reservoir,
             timestamp: event.ts,
           }),
-          front_fan_rpm: addFan1(state.front_fan_rpm, {
-            value: liveValuesEvent.data.front_fan_rpm,
+          front_revolutions: addFan1(state.front_revolutions, {
+            value: liveValuesEvent.data.front_revolutions,
             timestamp: event.ts,
           }),
-          back_fan_rpm: addFan2(state.back_fan_rpm, {
-            value: liveValuesEvent.data.back_fan_rpm,
+          back_revolutions: addFan2(state.back_revolutions, {
+            value: liveValuesEvent.data.back_revolutions,
             timestamp: event.ts,
           }),
         }));

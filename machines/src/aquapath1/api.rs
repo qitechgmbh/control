@@ -78,7 +78,6 @@ pub struct FanState {
     pub revolutions: f64,
     pub target_revolutions: f64,
 }
-
 #[derive(Serialize, Debug, Clone)]
 pub struct FanStates {
     pub front: FanState,

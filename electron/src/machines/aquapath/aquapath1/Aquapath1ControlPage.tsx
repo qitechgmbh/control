@@ -37,7 +37,7 @@ export function Aquapath1ControlPage() {
       <ControlGrid columns={2}>
         <ControlCard title="Reservoir 1">
           <div className="grid grid-rows-4 gap-4">
-            <div className="flex-row">
+            <div className="flex flex-row">
               <TimeSeriesValueNumeric
                 label="Flow"
                 unit="l/min"
@@ -46,7 +46,7 @@ export function Aquapath1ControlPage() {
               />
             </div>
 
-            <div className="flex-row">
+            <div className="flex flex-row">
               <TimeSeriesValueNumeric
                 label="Temperature"
                 unit="C"
@@ -55,7 +55,7 @@ export function Aquapath1ControlPage() {
               />
             </div>
 
-            <div className="flex-row">
+            <div className="flex flex-row">
               <Label label="Set Target Temperature">
                 <EditValue
                   title="Set Target Temperature"
@@ -74,7 +74,7 @@ export function Aquapath1ControlPage() {
               </Label>
             </div>
 
-            <div className="flex-row">
+            <div className="flex flex-row">
               <Label label="Pump">
                 <SelectionGroup<"On" | "Off">
                   value={frontTargetFlow ? "On" : "Off"}
@@ -105,7 +105,7 @@ export function Aquapath1ControlPage() {
 
         <ControlCard title="Reservoir 2">
           <div className="grid grid-rows-4 gap-4">
-            <div className="flex-row">
+            <div className="flex flex-row">
               <TimeSeriesValueNumeric
                 label="Flow"
                 unit="l/min"
@@ -114,7 +114,7 @@ export function Aquapath1ControlPage() {
               />
             </div>
 
-            <div className="flex-row">
+            <div className="flex flex-row">
               <TimeSeriesValueNumeric
                 label="Temperature"
                 unit="C"
@@ -123,7 +123,7 @@ export function Aquapath1ControlPage() {
               />
             </div>
 
-            <div className="flex-row">
+            <div className="flex flex-row">
               <Label label="Set Target Temperature">
                 <EditValue
                   title="Set Target Temperature"
@@ -142,7 +142,7 @@ export function Aquapath1ControlPage() {
               </Label>
             </div>
 
-            <div className="flex-row">
+            <div className="flex flex-row">
               <Label label="Pump">
                 <SelectionGroup<"On" | "Off">
                   value={backTargetFlow ? "On" : "Off"}

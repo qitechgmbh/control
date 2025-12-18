@@ -48,8 +48,8 @@ export function useAquapath1() {
     back_flow: back_flow,
     front_temp_reservoir: front_temp_reservoir,
     back_temp_reservoir: back_temp_reservoir,
-    front_fan_rpm: front_fan_rpm,
-    back_fan_rpm: back_fan_rpm,
+    front_revolutions: front_revolutions,
+    back_revolutions: back_revolutions,
   } = useAquapath1Namespace(machineIdentification);
 
   // Single optimistic state for all state management
@@ -127,29 +127,29 @@ export function useAquapath1() {
     );
   };
 
-  const setFrontFan = (rpm: number) => {
+  const setFrontRevolutions = (revolutions: number) => {
     updateStateOptimistically(
       (current) => {
-        current.data.fan_states.back.rpm = rpm;
+        current.data.fan_states.back.revolutions = revolutions;
       },
       () => {
-        requestFrontFan({
+        requestFrontRevolutions({
           machine_identification_unique: machineIdentification,
-          data: { SetFrontFan: rpm },
+          data: { SetFrontRevolutions: revolutions },
         })
       },
     );
   }
 
-  const setBackFan = (rpm: number) => {
+  const setBackRevolutions = (revolutions: number) => {
     updateStateOptimistically(
       (current) => {
-        current.data.fan_states.back.rpm = rpm;
+        current.data.fan_states.back.revolutions = revolutions;
       },
       () =>
-        requestBackFan({
+        requestBackRevolutions({
           machine_identification_unique: machineIdentification,
-          data: { SetBackFan: rpm },
+          data: { SetBackRevolutions: revolutions },
         }),
     );
   }
@@ -170,11 +170,11 @@ export function useAquapath1() {
   const { request: requestBackFlow } = useMachineMutation(
     z.object({ SetBackFlow: z.boolean() }),
   );
-  const { request: requestFrontFan } = useMachineMutation(
-    z.object({ setFrontFan: z.number() }),
+  const { request: requestFrontRevolutions } = useMachineMutation(
+    z.object({ SetFrontRevolutions: z.number() }),
   );
-  const { request: requestBackFan } = useMachineMutation(
-    z.object({ setBackFan: z.number() }),
+  const { request: requestBackRevolutions } = useMachineMutation(
+    z.object({ SetBackRevolutions: z.number() }),
   );
   // Helper function for optimistic updates using produce
   const updateStateOptimistically = (
@@ -200,15 +200,15 @@ export function useAquapath1() {
     back_temperature,
     front_temp_reservoir,
     back_temp_reservoir,
-    front_fan_rpm,
-    back_fan_rpm,
+    front_revolutions,
+    back_revolutions,
 
     setAquapathMode,
     setFrontTemperature,
     setBackTemperature,
     setFrontFlow,
     setBackFlow,
-    setFrontFan,
-    setBackFan,
+    setFrontRevolutions,
+    setBackRevolutions,
   };
 }
