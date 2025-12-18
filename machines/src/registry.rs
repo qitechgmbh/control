@@ -1,4 +1,3 @@
-use crate::analog_input_test_machine::AnalogInputTestMachine;
 #[cfg(feature = "mock-machine")]
 use crate::{
     analog_input_test_machine::AnalogInputTestMachine,
