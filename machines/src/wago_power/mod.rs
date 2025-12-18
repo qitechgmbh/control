@@ -3,15 +3,13 @@ use anyhow::Result;
 use control_core::{modbus::tcp::ModbusTcpDevice, socketio::{event::{BuildEvent, GenericEvent}, namespace::{CacheFn, CacheableEvents, NamespaceCacheingLogic, cache_duration, cache_first_and_last_event}}};
 use control_core_derive::BuildEvent;
 use serde::*;
+use smol::lock::Mutex;
 use units::{*, electric_current::milliampere, electric_potential::{millivolt, volt}};
 use crate::{MachineChannel, MachineWithChannel};
 
 const MODBUS_DC_OFF: u16 = 0;
-const MODBUS_DC_ON: u16 = 1 << 0;
-const MODBUS_CONSTANT_POWER: u16 = 1 << 6;
-const MODBUS_HUCCUP_POWER: u16 = 1 << 0;
-const MODBUS_POWER_PROTECT: u16 = 1 << 9;
-const MODBUS_THERMAL_PROTECT: u16 = 1 << 12;
+const MODBUS_DC_ON: u16 = 1;
+const MODBUS_HICCUP_POWER: u16 = 1 << 8;
 
 #[derive(Serialize, Debug, Clone, BuildEvent)]
 pub struct LiveValuesEvent {
@@ -34,6 +32,16 @@ impl CacheableEvents<Self> for LiveValuesEvent {
 pub enum Mode {
   Off,
   On24V,
+}
+
+impl Mode {
+
+    pub fn as_u16(&self) -> u16 {
+        match self {
+            Mode::Off => MODBUS_DC_OFF,
+            Mode::On24V => MODBUS_HICCUP_POWER | MODBUS_DC_ON,
+        }
+    }
 }
 
 #[derive(Serialize, Debug, Clone, BuildEvent)]
@@ -62,7 +70,7 @@ pub enum Mutation {
 pub struct WagoPower {
     mode: Mode,
     channel: MachineChannel,
-    device: ModbusTcpDevice,
+    device: Mutex<ModbusTcpDevice>,
     last_emit: Instant,
     emitted_default_state: bool,
 }
@@ -73,7 +81,7 @@ impl WagoPower {
         Ok(Self {
             mode: Mode::Off,
             channel,
-            device: ModbusTcpDevice::new(addr).await?,
+            device: Mutex::new(ModbusTcpDevice::new(addr).await?),
             last_emit: Instant::now(),
             emitted_default_state: false,
         })
@@ -97,13 +105,13 @@ impl WagoPower {
 
     #[cfg(not(feature = "mock-machine"))]
     fn get_live_values(&mut self) -> Result<LiveValuesEvent> {
-        let electric = smol::block_on(
-            self.device.get_holding_registers(0x0500, 2)
-        )?;
+        let electric = smol::block_on(async {
+            let mut dev = self.device.lock().await;
+            dev.get_holding_registers(0x0500, 2).await
+        })?;
 
         let voltage = ElectricPotential::new::<millivolt>(f64::from(electric[0]));
         let current = ElectricCurrent::new::<milliampere>(f64::from(electric[1]));
-        println!("vol: {:?}, cur: {:?}", voltage, current);
 
         Ok(LiveValuesEvent {
             voltage: voltage.get::<volt>(),
@@ -130,22 +138,14 @@ impl WagoPower {
     }
 
     async fn transmit_voltage(&mut self) -> Result<()> {
-        let res = self.device.get_holding_registers(0x008A, 1).await?;
-        let mut control_bits = res[0];
+        let mut dev = self.device.lock().await;
 
-        // control_bits &= !1;
+        let voltage = 24000;
+        let warning_threshold = 5000; // For now
+        let control_bits = self.mode.as_u16();
+        let delay_ms = 100; // For now
 
-        // let voltage = 24000;
-        // let current_limit = 5000; // For now
-        // control_bits |= match self.mode {
-        //     Mode::Off => MODBUS_DC_OFF,
-        //     Mode::On24V => MODBUS_DC_ON,
-        // };
-        // let delay_ms = 100; // For now
-
-        let values = vec![control_bits];
-
-        self.device.set_holding_registers(0x008A, &values).await?;
+        dev.set_holding_registers(0x0088, &[voltage, warning_threshold, control_bits, delay_ms]).await?;
 
         Ok(())
     }
@@ -176,11 +176,15 @@ impl MachineWithChannel for WagoPower {
 
     fn update(&mut self, now: Instant) -> Result<()> {
         if !self.emitted_default_state {
+            self.set_mode(Mode::Off)?;
+
             self.emit_state();
             self.emitted_default_state = true;
+
          }
 
-        if now - self.last_emit < Duration::from_millis(1000 / 30) {
+
+        if now - self.last_emit > Duration::from_millis(1000 / 30) {
             if let Ok(event) = self.get_live_values() {
                 self.channel.emit(event);
             }
