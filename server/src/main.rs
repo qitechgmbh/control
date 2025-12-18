@@ -38,7 +38,9 @@ use crate::{
     ethercat::{
         ethercat_discovery_info::send_ethercat_found, init::find_ethercat_interface,
         setup::setup_loop,
-    }, modbus_tcp::start_modbus_tcp_discovery, socketio::queue::socketio_queue_worker
+    },
+    modbus_tcp::start_modbus_tcp_discovery,
+    socketio::queue::socketio_queue_worker,
 };
 
 #[cfg(feature = "mock-machine")]
@@ -49,8 +51,8 @@ pub mod ethercat;
 pub mod logging;
 pub mod r#loop;
 pub mod metrics;
-pub mod panic;
 pub mod modbus_tcp;
+pub mod panic;
 pub mod performance_metrics;
 pub mod rest;
 pub mod socketio;

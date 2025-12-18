@@ -2,7 +2,10 @@ use control_core::ethernet::ethercat_interface_discovery::probe_ethercat;
 use smol::Timer;
 use std::{sync::Arc, time::Duration};
 
-use crate::{app_state::SharedState, ethercat::{ethercat_discovery_info::send_ethercat_found, setup::setup_loop}};
+use crate::{
+    app_state::SharedState,
+    ethercat::{ethercat_discovery_info::send_ethercat_found, setup::setup_loop},
+};
 
 pub async fn find_ethercat_interface() -> String {
     loop {

@@ -4,7 +4,10 @@ use ethercrab::{
     std::{ethercat_now, tx_rx_task},
 };
 
-use crate::{ethernet::{get_interfaces, set_interface_managed}, futures::FutureIteratorExt};
+use crate::{
+    ethernet::{get_interfaces, set_interface_managed},
+    futures::FutureIteratorExt,
+};
 
 // Constants for EtherCAT configuration
 const IFACE_DISCOVERY_MAX_SUBDEVICES: usize = 16; // Must be power of 2 > 1

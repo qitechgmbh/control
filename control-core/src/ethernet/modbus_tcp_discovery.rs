@@ -1,9 +1,9 @@
-use std::net::{IpAddr, Ipv4Addr, SocketAddr};
-use std::cmp::min;
-use anyhow::{Result, bail};
-use interfaces::Interface;
 use crate::ethernet::get_interfaces;
 use crate::{futures::FutureIteratorExt, modbus::tcp::ModbusTcpDevice};
+use anyhow::{Result, bail};
+use interfaces::Interface;
+use std::cmp::min;
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
 pub async fn probe_modbus_tcp() -> Vec<SocketAddr> {
     let interfaces = match get_interfaces() {

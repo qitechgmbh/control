@@ -161,7 +161,11 @@ impl SharedState {
         self.send_machines_event().await;
     }
 
-    pub async fn report_machine_error(&self, machine_identification_unique: MachineIdentificationUnique, error: String) {
+    pub async fn report_machine_error(
+        &self,
+        machine_identification_unique: MachineIdentificationUnique,
+        error: String,
+    ) {
         let mut current_machines = self.current_machines_meta.lock().await;
 
         for machine in current_machines.iter_mut() {
@@ -173,7 +177,7 @@ impl SharedState {
 
         current_machines.push(MachineObj {
             machine_identification_unique,
-            error: Some(error)
+            error: Some(error),
         });
     }
 
@@ -191,9 +195,9 @@ impl SharedState {
             .iter()
             .map(|m| MachineObj {
                 machine_identification_unique: m.get_machine_identification_unique(),
-                error: None
+                error: None,
             })
-        .collect();
+            .collect();
         self.add_machine_objs(objs).await;
 
         self.rt_machine_creation_channel

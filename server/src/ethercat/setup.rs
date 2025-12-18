@@ -140,9 +140,11 @@ pub async fn set_ethercat_devices<const MAX_SUBDEVICES: usize, const MAX_PDI: us
 
         match new_machine {
             Ok(machine) => machines.push(machine),
-            Err(e) => shared_state
-                .report_machine_error(machine_identification_unique
-                .clone(), e.to_string()).await,
+            Err(e) => {
+                shared_state
+                    .report_machine_error(machine_identification_unique.clone(), e.to_string())
+                    .await
+            }
         }
     }
 

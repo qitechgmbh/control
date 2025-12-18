@@ -1,9 +1,12 @@
-use std::sync::Arc;
 use crate::app_state::SharedState;
-use machines::{MACHINE_WAGO_POWER_V1, Machine, MachineChannel, VENDOR_QITECH, machine_identification::{MachineIdentification, MachineIdentificationUnique}, wago_power::WagoPower};
-use smol::future;
 use control_core::ethernet::modbus_tcp_discovery::probe_modbus_tcp;
 use control_core::futures::FutureIteratorExt;
+use machines::{
+    MACHINE_WAGO_POWER_V1, Machine, MachineChannel, VENDOR_QITECH,
+    machine_identification::{MachineIdentification, MachineIdentificationUnique},
+    wago_power::WagoPower,
+};
+use std::sync::Arc;
 
 #[cfg(not(feature = "mock-machine"))]
 pub async fn start_modbus_tcp_discovery(shared_state: Arc<SharedState>) {
@@ -11,8 +14,8 @@ pub async fn start_modbus_tcp_discovery(shared_state: Arc<SharedState>) {
 
     let machines: Vec<Box<dyn Machine>> = addresses
         .into_iter()
-        .map(|addr| smol::spawn(
-                async move {
+        .map(|addr| {
+            smol::spawn(async move {
                 let machine_identification_unique = MachineIdentificationUnique {
                     machine_identification: MachineIdentification {
                         vendor: VENDOR_QITECH,
@@ -27,7 +30,7 @@ pub async fn start_modbus_tcp_discovery(shared_state: Arc<SharedState>) {
                     .expect("Failed to initialize wago power supply");
                 Box::new(power) as Box<dyn Machine>
             })
-        )
+        })
         .join_all()
         .await;
 
