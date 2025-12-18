@@ -14,20 +14,21 @@ pub async fn start_modbus_tcp_discovery(shared_state: Arc<SharedState>) {
 
     let machines: Vec<Box<dyn Machine>> = addresses
         .into_iter()
-        .map(|addr| {
+        .map(|probe| {
             smol::spawn(async move {
                 let machine_identification_unique = MachineIdentificationUnique {
                     machine_identification: MachineIdentification {
                         vendor: VENDOR_QITECH,
                         machine: MACHINE_WAGO_POWER_V1,
                     },
-                    serial: 0xbeef,
+                    serial: probe.serial,
                 };
 
                 let channel = MachineChannel::new(machine_identification_unique);
-                let power = WagoPower::new(channel, addr)
+                let power = WagoPower::new(channel, probe.addr)
                     .await
                     .expect("Failed to initialize wago power supply");
+
                 Box::new(power) as Box<dyn Machine>
             })
         })

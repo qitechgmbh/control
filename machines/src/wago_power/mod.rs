@@ -169,6 +169,17 @@ impl WagoPower {
 
         Ok(())
     }
+
+    #[cfg(feature = "mock-machine")]
+    pub async fn get_serial(&mut self) -> Result<u16> {
+        0xbeef
+    }
+
+    #[cfg(not(feature = "mock-machine"))]
+    pub async fn get_serial(&mut self) -> Result<u16> {
+        let mut dev = self.device.lock().await;
+        dev.get_u16(0x000B).await
+    }
 }
 
 impl MachineWithChannel for WagoPower {
