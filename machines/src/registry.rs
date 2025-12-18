@@ -1,11 +1,13 @@
 #[cfg(feature = "mock-machine")]
 use crate::{
-    analog_input_test_machine::AnalogInputTestMachine,
     extruder1::mock::ExtruderV2 as ExtruderV2Mock1, extruder2::mock::ExtruderV2 as ExtruderV2Mock2,
     mock::MockMachine, winder2::mock::Winder2,
 };
 
-use crate::{Machine, MachineNewParams, machine_identification::MachineIdentification};
+use crate::{
+    Machine, MachineNewParams, analog_input_test_machine::AnalogInputTestMachine,
+    machine_identification::MachineIdentification,
+};
 
 #[cfg(not(feature = "mock-machine"))]
 use crate::extruder1::ExtruderV2;
