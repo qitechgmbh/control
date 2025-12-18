@@ -26,7 +26,11 @@ use ethercat_hal::{
     },
 };
 use std::time::{Duration, Instant};
-use units::{angular_velocity::revolution_per_minute, thermodynamic_temperature::{degree_celsius, ThermodynamicTemperature}, AngularVelocity};
+use units::{
+    AngularVelocity,
+    angular_velocity::revolution_per_minute,
+    thermodynamic_temperature::{ThermodynamicTemperature, degree_celsius},
+};
 
 impl MachineNewTrait for AquaPathV1 {
     fn new<'maindevice>(params: &MachineNewParams) -> Result<Self, Error> {

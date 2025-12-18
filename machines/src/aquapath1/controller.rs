@@ -1,16 +1,16 @@
 use crate::aquapath1::VolumeRate;
-use crate::aquapath1::{Flow, Temperature,};
+use crate::aquapath1::{Flow, Temperature};
 use control_core::controllers::pid::PidController;
 use ethercat_hal::io::encoder_input::EncoderInput;
 use ethercat_hal::io::{
     analog_output::AnalogOutput, digital_output::DigitalOutput, temperature_input::TemperatureInput,
 };
-use units::angular_velocity::revolution_per_minute;
-use units::AngularVelocity;
 use std::time::{Duration, Instant};
+use units::angular_velocity::revolution_per_minute;
 use units::f64::ThermodynamicTemperature;
 use units::thermodynamic_temperature::degree_celsius;
 use units::volume_rate::liter_per_minute;
+use units::AngularVelocity;
 #[derive(Debug)]
 
 pub struct Controller {
@@ -316,7 +316,8 @@ impl Controller {
         let current_revolutions = self.get_current_revolutions();
         if target_revolutions != current_revolutions {
             self.current_revolutions = target_revolutions;
-            self.cooling_controller.set(self.target_revolutions.get::<revolution_per_minute>() as f32 / 10.0f32);
+            self.cooling_controller
+                .set(self.target_revolutions.get::<revolution_per_minute>() as f32 / 10.0f32);
         }
     }
 }
