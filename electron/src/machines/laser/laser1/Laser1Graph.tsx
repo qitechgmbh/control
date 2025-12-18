@@ -100,7 +100,7 @@ export function Laser1GraphsPage() {
       : []),
   ];
 
-  //  Roundness-Graph
+  // Roundness-Graph
   const roundnessGraphData = {
     newData: roundnessPercent,
     color: roundnessColor,
