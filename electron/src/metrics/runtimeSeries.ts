@@ -11,12 +11,15 @@ const { initialTimeSeries: jitterInitial, insert: insertJitter } =
 const { initialTimeSeries: cpuInitial, insert: insertCpu } = createTimeSeries({
   sampleIntervalShort: FIVE_SECOND,
 });
-const { initialTimeSeries: memInitial, insert: insertMem } =
-  createTimeSeries({ sampleIntervalShort: FIVE_SECOND });
-const { initialTimeSeries: rxInitial, insert: insertRx } =
-  createTimeSeries({ sampleIntervalShort: FIVE_SECOND });
-const { initialTimeSeries: txInitial, insert: insertTx } =
-  createTimeSeries({ sampleIntervalShort: FIVE_SECOND });
+const { initialTimeSeries: memInitial, insert: insertMem } = createTimeSeries({
+  sampleIntervalShort: FIVE_SECOND,
+});
+const { initialTimeSeries: rxInitial, insert: insertRx } = createTimeSeries({
+  sampleIntervalShort: FIVE_SECOND,
+});
+const { initialTimeSeries: txInitial, insert: insertTx } = createTimeSeries({
+  sampleIntervalShort: FIVE_SECOND,
+});
 const { initialTimeSeries: preemptInitial, insert: insertPreempt } =
   createTimeSeries({ sampleIntervalShort: FIVE_SECOND });
 
