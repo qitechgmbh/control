@@ -434,9 +434,8 @@ impl MachineChannel {
 
 impl<E> NamespaceCacheingLogic<E> for MachineChannel
 where
-    E: CacheableEvents<E>
+    E: CacheableEvents<E>,
 {
-
     fn emit(&mut self, events: E) {
         let event = Arc::new(events.event_value());
         let cache_fn = events.event_cache_fn();
@@ -459,7 +458,7 @@ pub trait MachineWithChannel: Send + Debug + Sync {
 
 impl<C> MachineApi for C
 where
-    C: MachineWithChannel
+    C: MachineWithChannel,
 {
     fn api_get_sender(&self) -> Sender<MachineMessage> {
         self.get_machine_channel().api_sender.clone()
@@ -482,9 +481,8 @@ where
 
 impl<C> MachineAct for C
 where
-    C: MachineWithChannel
+    C: MachineWithChannel,
 {
-
     fn act(&mut self, now: Instant) {
         while let Ok(msg) = self.get_machine_channel_mut().api_receiver.try_recv() {
             self.act_machine_message(msg);
