@@ -9,15 +9,15 @@ import { Mode } from "./wagoPower1Namespace";
 
 export function WagoPower1ControlPage() {
   const {
-      state,
+    state,
 
-      voltage,
-      current,
+    voltage,
+    current,
 
-      setMode,
+    setMode,
 
-      isLoading,
-      isDisabled,
+    isLoading,
+    isDisabled,
   } = useWagoPower1();
 
   return (
