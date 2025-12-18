@@ -42,6 +42,7 @@ impl MachineAct for AquaPathV1 {
             MachineMessage::HttpApiJsonRequest(value) => {
                 use crate::MachineApi;
 
+                tracing::warn!("VALUE {}", value);
                 let _res = self.api_mutate(value);
             }
             MachineMessage::ConnectToMachine(_machine_connection) =>

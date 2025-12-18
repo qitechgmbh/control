@@ -1,7 +1,8 @@
 use control_core::socketio::namespace::NamespaceCacheingLogic;
 use serde::{Deserialize, Serialize};
+use units::angular_velocity::{revolution_per_minute, AngularVelocity};
 use std::time::Instant;
-use units::f64::*;
+use units::{f64::*, AngularVelocity};
 use units::{thermodynamic_temperature::degree_celsius, volume_rate::liter_per_minute};
 
 use crate::{AsyncThreadMessage, Machine, MachineMessage};
@@ -48,7 +49,7 @@ impl Machine for AquaPathV1 {
     fn get_machine_identification_unique(&self) -> MachineIdentificationUnique {
         self.machine_identification_unique.clone()
     }
-fn get_main_sender(&self) -> Option<Sender<AsyncThreadMessage>> {
+    fn get_main_sender(&self) -> Option<Sender<AsyncThreadMessage>> {
         self.main_sender.clone()
     }
 }
@@ -79,6 +80,10 @@ impl Default for Flow {
             should_pump: false,
         }
     }
+}
+
+pub struct FanRevolutions {
+    pub revolutions: AngularVelocity<revolution_per_minute>,
 }
 
 #[derive(Debug)]
@@ -297,10 +302,12 @@ impl AquaPathV1 {
 }
 
 impl AquaPathV1 {
-    fn set_target_rpm(&mut self, value: f32, fan_type: AquaPathSideType) {
+    fn set_target_revolutions(&mut self, revolutions: f64, fan_type: AquaPathSideType) {
+        let target_revolutions = AngularVelocity::new<revolution_per_minute>(value);
+
         match fan_type {
-            AquaPathSideType::Back => self.back_controller.cooling_controller.set(value),
-            AquaPathSideType::Front => self.front_controller.cooling_controller.set(value),
+            AquaPathSideType::Back => self.back_controller.set_target_rpm(target_revolutions),
+            AquaPathSideType::Front => self.front_controller.set_target_rpm(target_revolutions),
         }
         self.emit_state();
     }

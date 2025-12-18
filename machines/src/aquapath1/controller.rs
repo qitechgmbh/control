@@ -1,10 +1,12 @@
 use crate::aquapath1::VolumeRate;
-use crate::aquapath1::{Flow, Temperature};
+use crate::aquapath1::{Flow, Temperature, FanRevolutions};
 use control_core::controllers::pid::PidController;
 use ethercat_hal::io::encoder_input::EncoderInput;
 use ethercat_hal::io::{
     analog_output::AnalogOutput, digital_output::DigitalOutput, temperature_input::TemperatureInput,
 };
+use units::angular_velocity::revolution_per_minute;
+use units::AngularVelocity;
 use std::time::{Duration, Instant};
 use units::f64::ThermodynamicTemperature;
 use units::thermodynamic_temperature::degree_celsius;
@@ -26,6 +28,7 @@ pub struct Controller {
 
     pub cooling_controller: AnalogOutput,
     pub cooling_relais: DigitalOutput,
+    pub fan_revolutions: AngularVelocity,
 
     pub heating_relais_1: DigitalOutput,
     pub temperature_sensor_in: TemperatureInput,
@@ -74,6 +77,7 @@ impl Controller {
 
             temperature: temp,
             cooling_controller: cooling_controller,
+            fan_revolutions: AngularVelocity::new<revolution_per_minute>(0.0),
             cooling_relais: cooling_relais,
             heating_relais_1: heating_relais_1,
             cooling_allowed: false,
@@ -222,6 +226,14 @@ impl Controller {
                 return VolumeRate::new::<liter_per_minute>(0.0);
             }
         }
+    }
+
+    pub fn get_target_revolutions(&self) -> FanRevolutions {
+        self.fan_revolutions
+    }
+
+    pub fn set_target_revolutions(&self, revolutions: f64) {
+        self.fan_revolutions = AngularVelocity::new<revolution_per_minute>(revolutions);
     }
 
     pub fn update(&mut self, now: Instant) -> () {

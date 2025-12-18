@@ -9,12 +9,17 @@ export function Aquapath1SettingsPage() {
     state,
   } = useAquapath1();
 
+  let s = "";
+  for(const prop in state?.fan_states) {
+    s += `${prop}: ${state[prop]}\n`;
+  }
+
   return (
     <Page>
       <ControlGrid columns={2}>
         <ControlCard title="Front Fan RPM">
           <TouchSlider
-            className="w-[48rem]"
+            className=""
             value={state?.fan_states.front ? [state.fan_states.front] : undefined}
             onValueChange={(x: Number) => "${x}"}
             min={0}
@@ -26,6 +31,8 @@ export function Aquapath1SettingsPage() {
             maxLabel={"max"}
           />
         </ControlCard>
+
+        <div>{s}</div>
 
         <ControlCard title="Front Fan RPM">
           <TouchSlider
