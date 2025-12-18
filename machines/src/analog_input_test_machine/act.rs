@@ -1,6 +1,6 @@
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
-use crate::{MachineAct, MachineApi, analog_input_test_machine::AnalogInputTestMachine};
+use crate::{MachineAct, analog_input_test_machine::AnalogInputTestMachine};
 
 impl MachineAct for AnalogInputTestMachine {
     fn act_machine_message(&mut self, msg: crate::MachineMessage) {
@@ -14,8 +14,8 @@ impl MachineAct for AnalogInputTestMachine {
                 use crate::MachineApi;
                 let _res = self.api_mutate(value);
             }
-            crate::MachineMessage::ConnectToMachine(machine_connection) => {}
-            crate::MachineMessage::DisconnectMachine(machine_connection) => {}
+            crate::MachineMessage::ConnectToMachine(_machine_connection) => {}
+            crate::MachineMessage::DisconnectMachine(_machine_connection) => {}
         }
     }
 
@@ -29,8 +29,10 @@ impl MachineAct for AnalogInputTestMachine {
         {
             let measured_value = self.analog_input.get_physical();
             match measured_value {
-                ethercat_hal::io::analog_input::physical::AnalogInputValue::Potential(quantity) => {
-                    todo!()
+                ethercat_hal::io::analog_input::physical::AnalogInputValue::Potential(
+                    _quantity,
+                ) => {
+                    // Don't do anything
                 }
                 ethercat_hal::io::analog_input::physical::AnalogInputValue::Current(quantity) => {
                     let now_milliseconds = SystemTime::now()
@@ -44,5 +46,3 @@ impl MachineAct for AnalogInputTestMachine {
         }
     }
 }
-
-//@TODO Fetch measurement rate on reload

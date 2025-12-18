@@ -1,4 +1,4 @@
-use std::{sync::Arc, time::Instant};
+use std::sync::Arc;
 
 use control_core::socketio::{
     event::{Event, GenericEvent},
@@ -6,7 +6,6 @@ use control_core::socketio::{
         CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_first_and_last_event,
     },
 };
-use ethercat_hal::io::analog_input::physical::AnalogInputValue;
 use serde::{Deserialize, Serialize};
 
 use crate::{MachineApi, analog_input_test_machine::AnalogInputTestMachine};
