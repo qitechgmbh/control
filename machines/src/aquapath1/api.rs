@@ -100,8 +100,8 @@ enum Mutation {
     SetFrontFlow(bool),
     SetBackFlow(bool),
 
-    SetBackFan(f64),
-    SetFrontFan(f64),
+    SetFrontRevolutions(f64),
+    SetBackRevolutions(f64),
 }
 
 #[derive(Debug, Clone)]
@@ -162,10 +162,10 @@ impl MachineApi for AquaPathV1 {
             Mutation::SetFrontFlow(should_pump) => {
                 self.set_should_pump(should_pump, super::AquaPathSideType::Front)
             }
-            Mutation::SetBackFan(revolution) => {
+            Mutation::SetBackRevolutions(revolution) => {
                 self.set_target_revolutions(revolution, super::AquaPathSideType::Back)
             }
-            Mutation::SetFrontFan(revolutions) => {
+            Mutation::SetFrontRevolutions(revolutions) => {
                 self.set_target_revolutions(revolutions, super::AquaPathSideType::Front)
             }
         }

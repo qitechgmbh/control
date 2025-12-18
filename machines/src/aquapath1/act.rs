@@ -36,13 +36,13 @@ impl MachineAct for AquaPathV1 {
         match msg {
             MachineMessage::SubscribeNamespace(namespace) => {
                 self.namespace.namespace = Some(namespace);
+                tracing::warn!("{:?}", self.namespace.namespace);
                 self.emit_state();
             }
             MachineMessage::UnsubscribeNamespace => self.namespace.namespace = None,
             MachineMessage::HttpApiJsonRequest(value) => {
                 use crate::MachineApi;
 
-                tracing::warn!("VALUE {}", value);
                 let _res = self.api_mutate(value);
             }
             MachineMessage::ConnectToMachine(_machine_connection) =>

@@ -16,8 +16,8 @@ export function Aquapath1ControlPage() {
     back_flow,
     front_temperature,
     back_temperature,
-    front_temp_reservoir,
-    back_temp_reservoir,
+    front_revolutions,
+    back_revolutions,
     setAquapathMode,
     setFrontTemperature,
     setBackTemperature,
@@ -36,7 +36,7 @@ export function Aquapath1ControlPage() {
     <Page>
       <ControlGrid columns={2}>
         <ControlCard title="Reservoir 1">
-          <div className="grid grid-rows-4 gap-4">
+          <div className="grid grid-rows-5 gap-4">
             <div className="flex flex-row">
               <TimeSeriesValueNumeric
                 label="Flow"
@@ -72,6 +72,15 @@ export function Aquapath1ControlPage() {
                   }
                 />
               </Label>
+            </div>
+
+            <div className="flex flex-row">
+              <TimeSeriesValueNumeric
+                label="Revolution Speed"
+                unit="%"
+                timeseries={front_revolutions}
+                renderValue={(value) => value.toFixed(1)}
+              />
             </div>
 
             <div className="flex flex-row">
@@ -133,13 +142,22 @@ export function Aquapath1ControlPage() {
                   unit="C"
                   renderValue={(value) => value.toFixed(1)}
                   onChange={(val) => {
-                    setFrontTemperature(val);
+                    setBackTemperature(val);
                   }}
                   defaultValue={
                     defaultState?.temperature_states.back.target_temperature
                   }
                 />
               </Label>
+            </div>
+
+            <div className="flex flex-row">
+              <TimeSeriesValueNumeric
+                label="Revolution Speed"
+                unit="%"
+                timeseries={back_revolutions}
+                renderValue={(value) => value.toFixed(1)}
+              />
             </div>
 
             <div className="flex flex-row">
