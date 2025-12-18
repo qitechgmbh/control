@@ -15,6 +15,7 @@ use smol::channel::Sender;
 use socketioxide::extract::SocketRef;
 use std::fmt::Debug;
 use std::{any::Any, sync::Arc, time::Instant};
+pub mod analog_input_test_machine;
 pub mod aquapath1;
 #[cfg(not(feature = "mock-machine"))]
 pub mod buffer1;
@@ -26,7 +27,6 @@ pub mod mock;
 pub mod registry;
 pub mod serial;
 pub mod test_machine;
-pub mod analog_input_test_machine;
 pub mod winder2;
 
 pub const VENDOR_QITECH: u16 = 0x0001;
