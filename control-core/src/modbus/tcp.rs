@@ -104,7 +104,11 @@ impl ModbusTcpDevice {
         let func_code_res = self.read_u8().await?;
         if func_code != func_code_res {
             let error_code = self.read_u8().await?;
-            bail!("Modbus device sent unexpected function code 0x{:x}! It probably encountered an error. Error code: 0x{:x}", func_code_res, error_code);
+            bail!(
+                "Modbus device sent unexpected function code 0x{:x}! It probably encountered an error. Error code: 0x{:x}",
+                func_code_res,
+                error_code
+            );
         }
 
         Ok(())
@@ -125,7 +129,8 @@ impl ModbusTcpDevice {
         packet.add_u16(count);
 
         self.send(packet).await?;
-        self.read_and_check_responce_header(READ_HOLDING_FUNCTION_CODE).await?;
+        self.read_and_check_responce_header(READ_HOLDING_FUNCTION_CODE)
+            .await?;
 
         let num_data_bytes = self.read_u8().await? as u16;
         assert_eq!(
@@ -151,7 +156,11 @@ impl ModbusTcpDevice {
     pub async fn set_holding_registers(&mut self, addr: u16, values: &[u16]) -> Result<()> {
         let count = values.len();
         let num_bytes = count * 2;
-        assert!(count <= 128, "Cannot send that many bytes to modbus device in one go! Trying to send {} bytes of data.", num_bytes);
+        assert!(
+            count <= 128,
+            "Cannot send that many bytes to modbus device in one go! Trying to send {} bytes of data.",
+            num_bytes
+        );
 
         let mut packet = Packet::new();
 
@@ -173,7 +182,8 @@ impl ModbusTcpDevice {
         }
 
         self.send(packet).await?;
-        self.read_and_check_responce_header(WRITE_HOLDING_FUNCTION_CODE).await?;
+        self.read_and_check_responce_header(WRITE_HOLDING_FUNCTION_CODE)
+            .await?;
 
         assert_eq!(
             self.read_u16().await?,
