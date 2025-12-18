@@ -1,6 +1,6 @@
 use control_core::socketio::namespace::NamespaceCacheingLogic;
 use serde::{Deserialize, Serialize};
-use units::angular_velocity::{revolution_per_minute, AngularVelocity};
+use units::angular_velocity::revolution_per_minute;
 use std::time::Instant;
 use units::f64::*;
 use units::{thermodynamic_temperature::degree_celsius, volume_rate::liter_per_minute};

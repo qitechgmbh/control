@@ -61,6 +61,7 @@ impl Controller {
         heating_relais_1: DigitalOutput,
         temp_sensor_in: TemperatureInput,
         temp_sensor_out: TemperatureInput,
+        target_revolutions: AngularVelocity,
 
         flow: Flow,
         pump_relais: DigitalOutput,
@@ -80,8 +81,8 @@ impl Controller {
             temperature: temp,
             cooling_controller: cooling_controller,
 
-            current_revolutions: AngularVelocity::new::<revolution_per_minute>(0.0),
-            target_revolutions: AngularVelocity::new::<revolution_per_minute>(0.0),
+            current_revolutions: AngularVelocity::new::<revolution_per_minute>(100.0),
+            target_revolutions: target_revolutions,
 
             cooling_relais: cooling_relais,
             heating_relais_1: heating_relais_1,
@@ -233,6 +234,10 @@ impl Controller {
         }
     }
 
+    pub fn get_current_revolutions(&self) -> AngularVelocity {
+        self.current_revolutions
+    }
+
     pub fn get_target_revolutions(&self) -> AngularVelocity {
         self.target_revolutions
     }
@@ -305,6 +310,13 @@ impl Controller {
             if self.cooling_allowed && !self.temperature.cooling {
                 self.turn_cooling_on();
             }
+        }
+
+        let target_revolutions = self.get_target_revolutions();
+        let current_revolutions = self.get_current_revolutions();
+        if target_revolutions != current_revolutions {
+            self.current_revolutions = target_revolutions;
+            self.cooling_controller.set(self.target_revolutions.get::<revolution_per_minute>() as f32 / 10.0f32);
         }
     }
 }
