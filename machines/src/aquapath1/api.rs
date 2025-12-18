@@ -20,8 +20,8 @@ pub struct LiveValuesEvent {
     pub back_temperature: f64,
     pub front_temp_reservoir: f64,
     pub back_temp_reservoir: f64,
-    pub front_fan_rpm: f64,
-    pub back_fan_rpm: f64,
+    pub front_revolutions: f64,
+    pub back_revolutions: f64,
 }
 
 impl LiveValuesEvent {
@@ -75,7 +75,8 @@ pub struct FlowState {
 
 #[derive(Serialize, Debug, Clone)]
 pub struct FanState {
-    pub rpm: f64,
+    pub revolutions: f64,
+    pub target_revolutions: f64,
 }
 
 #[derive(Serialize, Debug, Clone)]
@@ -162,11 +163,11 @@ impl MachineApi for AquaPathV1 {
             Mutation::SetFrontFlow(should_pump) => {
                 self.set_should_pump(should_pump, super::AquaPathSideType::Front)
             }
-            Mutation::SetBackFan(rpm) => {
-                self.set_target_rpm(rpm, super::AquaPathSideType::Back)
+            Mutation::SetBackFan(revolution) => {
+                self.set_target_revolutions(revolution, super::AquaPathSideType::Back)
             }
-            Mutation::SetFrontFan(rpm) => {
-                self.set_target_rpm(rpm, super::AquaPathSideType::Front)
+            Mutation::SetFrontFan(revolutions) => {
+                self.set_target_revolutions(revolutions, super::AquaPathSideType::Front)
             }
         }
         Ok(())
