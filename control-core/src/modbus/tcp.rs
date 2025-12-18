@@ -201,7 +201,7 @@ impl ModbusTcpDevice {
     }
 
     pub async fn get_string<const N: usize>(&mut self, addr: u16) -> Result<String> {
-        assert!(N.is_multiple_of(2), "Strings are always of even length!");
+        assert!(N % 2 == 0, "Strings are always of even length!");
         assert!(N <= 256, "Cannot read long strings in a single swoop!");
         let count = N / 2;
 
