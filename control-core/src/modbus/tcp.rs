@@ -18,7 +18,7 @@ const UNIT_ID: u8 = 0;
 const READ_HOLDING_FUNCTION_CODE: u8 = 3;
 const WRITE_HOLDING_FUNCTION_CODE: u8 = 16;
 const READ_HOLDING_LENGTH: u16 = 6; // Unit ID 00 + Func Code 03 + Start Address XXXX + Quantity XXXX = 6 bytes
-const WRITE_HOLDING_LENGTH_WITHOUT_DATA: u16 = 6; // Unit ID 00 + Func Code 16 + Start Address XXXX + Quantity XXXX = 6 bytes
+const WRITE_HOLDING_LENGTH_WITHOUT_DATA: u16 = 7; // Unit ID 00 + Func Code 16 + Start Address XXXX + Quantity XXXX + Num Data Bytes XX = 7 bytes
 
 struct Packet {
     buf: Vec<u8>,
@@ -149,19 +149,24 @@ impl ModbusTcpDevice {
     }
 
     pub async fn set_holding_registers(&mut self, addr: u16, values: &[u16]) -> Result<()> {
+        let count = values.len();
+        let num_bytes = count * 2;
+        assert!(count <= 128, "Cannot send that many bytes to modbus device in one go! Trying to send {} bytes of data.", num_bytes);
+
         let mut packet = Packet::new();
-        let count: u16 = values.len() as u16;
 
         self.transactions += 1;
         packet.add_u16(self.transactions);
         packet.add_u16(PROTOCOL_ID);
-        packet.add_u16(WRITE_HOLDING_LENGTH_WITHOUT_DATA + 2 * count);
+        packet.add_u16(WRITE_HOLDING_LENGTH_WITHOUT_DATA + num_bytes as u16);
 
         packet.add_u8(UNIT_ID);
         packet.add_u8(WRITE_HOLDING_FUNCTION_CODE);
 
         packet.add_u16(addr);
-        packet.add_u16(2 * count);
+        packet.add_u16(count as u16);
+
+        packet.add_u8(num_bytes as u8);
 
         for value in values {
             packet.add_u16(value.to_owned());
@@ -176,7 +181,11 @@ impl ModbusTcpDevice {
             "Modbus device wrote to wrong register address!"
         );
 
-        let _count_written = self.read_u16().await?;
+        assert_eq!(
+            self.read_u16().await?,
+            count as u16,
+            "Modbus device wrote wrong number of registers!"
+        );
 
         Ok(())
     }
