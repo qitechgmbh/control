@@ -1,4 +1,4 @@
-use std::time::{Instant};
+use std::time::Instant;
 
 use anyhow::Error;
 use ethercat_hal::{
