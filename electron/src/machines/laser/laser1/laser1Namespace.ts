@@ -42,6 +42,7 @@ export const stateEventDataSchema = z.object({
     higher_tolerance: z.number(),
     lower_tolerance: z.number(),
     target_diameter: z.number(),
+    in_tolerance: z.boolean(),
   }),
 });
 
@@ -68,24 +69,25 @@ export type Laser1NamespaceStore = {
 // Constants for time durations
 const TWENTY_MILLISECOND = 20;
 const ONE_SECOND = 1000;
+const HALF_SECOND = 500;
 const FIVE_SECOND = 5 * ONE_SECOND;
 const ONE_HOUR = 60 * 60 * ONE_SECOND;
 const { initialTimeSeries: diameter, insert: addDiameter } = createTimeSeries(
   TWENTY_MILLISECOND,
-  ONE_SECOND,
+  HALF_SECOND,
   FIVE_SECOND,
   ONE_HOUR,
 );
 
 const { initialTimeSeries: x_diameter, insert: addXDiameter } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+  createTimeSeries(TWENTY_MILLISECOND, HALF_SECOND, FIVE_SECOND, ONE_HOUR);
 
 const { initialTimeSeries: y_diameter, insert: addYDiameter } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+  createTimeSeries(TWENTY_MILLISECOND, HALF_SECOND, FIVE_SECOND, ONE_HOUR);
 
 const { initialTimeSeries: roundness, insert: addRoundness } = createTimeSeries(
   TWENTY_MILLISECOND,
-  ONE_SECOND,
+  HALF_SECOND,
   FIVE_SECOND,
   ONE_HOUR,
 );
@@ -102,7 +104,7 @@ export const createLaser1NamespaceStore = (): StoreApi<Laser1NamespaceStore> =>
       diameter: diameter,
       x_diameter,
       y_diameter,
-      roundness: roundness,
+      roundness,
     };
   });
 
