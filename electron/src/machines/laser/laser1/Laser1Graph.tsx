@@ -19,7 +19,7 @@ export function Laser1GraphsPage() {
 
   const isTwoAxis = !!x_diameter?.current || !!y_diameter?.current;
 
-  // Roundness von Verhältnis (0-1) in Prozent (0-100) umwandeln
+  // Convert roundness from ratio (0-1) to percentage (0-100)
   const roundnessPercent = React.useMemo(() => {
     if (!roundness) return null;
 
@@ -45,15 +45,15 @@ export function Laser1GraphsPage() {
     };
   }, [roundness]);
 
-  const diameterColor = "#3b82f6"; // Blau
-  const xDiameterColor = "#ef4444"; // Rot
-  const yDiameterColor = "#22c55e"; // Grün
-  const roundnessColor = "#eab308"; // Gelb
+  const diameterColor = "#3b82f6"; // blue
+  const xDiameterColor = "#ef4444"; // red
+  const yDiameterColor = "#22c55e"; // green
+  const roundnessColor = "#eab308"; // yellow
 
-  // Grundkonfiguration for all Graphen
+  // config for all graph
   const baseGraphConfig: GraphConfig = {
     title: "",
-    defaultTimeWindow: 30 * 60 * 1000, // 30 Minuten Standard
+    defaultTimeWindow: 30 * 60 * 1000, // 30 minutes Standard
     colors: {
       grid: "#e2e8f0",
       axis: "#64748b",
@@ -68,7 +68,7 @@ export function Laser1GraphsPage() {
       color: diameterColor,
       title: "Diameter",
       lines: [
-        // Toleranzlinien für den Durchmesser
+        // Tolerance for diameter
         {
           type: "threshold" as const,
           value: targetDiameter + higherTolerance,
@@ -110,7 +110,7 @@ export function Laser1GraphsPage() {
   return (
     <Page className="pb-27">
       <div className="flex flex-col gap-4">
-        {/* Graph 1: Durchmesser */}
+        {/* Graph 1: Diameter */}
         <AutoSyncedBigGraph
           syncHook={syncHook}
           newData={diameterGraphData}
