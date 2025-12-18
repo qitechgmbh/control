@@ -20,6 +20,7 @@ pub struct TestMachineStepper {
     pub last_state_emit: Instant,
     pub main_sender: Option<Sender<AsyncThreadMessage>>,
     pub stepper: StepperVelocityWago750672,
+    // pub stepper: Arc<RwLock<Wago750_671>>,
 }
 
 impl Machine for TestMachineStepper {
