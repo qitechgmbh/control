@@ -18,6 +18,7 @@ use std::{any::Any, sync::Arc, time::Instant};
 pub mod aquapath1;
 #[cfg(not(feature = "mock-machine"))]
 pub mod buffer1;
+pub mod ethercat_beckhoff;
 pub mod extruder1;
 pub mod extruder2;
 pub mod laser;
@@ -38,6 +39,8 @@ pub const MACHINE_AQUAPATH_V1: u16 = 0x0009;
 pub const MACHINE_BUFFER_V1: u16 = 0x0008;
 pub const MACHINE_EXTRUDER_V2: u16 = 0x0016;
 pub const TEST_MACHINE: u16 = 0x0033;
+
+pub const MACHINE_BECKHOFF_TEST: u16 = 0x0011;
 
 use serde_json::Value;
 use smol::lock::RwLock;

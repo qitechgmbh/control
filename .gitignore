@@ -8,3 +8,4 @@ shell.nix
 node_modules/
 runtime_metrics.csv
 compile_metrics.csv
+.idea/

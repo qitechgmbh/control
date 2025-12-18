@@ -18,6 +18,7 @@ use crate::test_machine::TestMachine;
 
 use lazy_static::lazy_static;
 
+use crate::ethercat_beckhoff::BeckhoffMachine;
 use anyhow::Error;
 use std::{any::TypeId, collections::HashMap};
 
@@ -118,6 +119,7 @@ lazy_static! {
         #[cfg(not(feature = "mock-machine"))]
         mc.register::<AquaPathV1>(AquaPathV1::MACHINE_IDENTIFICATION);
         mc.register::<TestMachine>(TestMachine::MACHINE_IDENTIFICATION);
+        mc.register::<BeckhoffMachine>(BeckhoffMachine::MACHINE_IDENTIFICATION);
         mc
     };
 }
