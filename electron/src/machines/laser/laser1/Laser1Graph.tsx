@@ -50,7 +50,7 @@ export function Laser1GraphsPage() {
   const yDiameterColor = "#22c55e"; // green
   const roundnessColor = "#eab308"; // yellow
 
-  // config for all graph
+  // config for all graphs
   const baseGraphConfig: GraphConfig = {
     title: "",
     defaultTimeWindow: 30 * 60 * 1000, // 30 minutes Standard
