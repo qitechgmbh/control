@@ -223,6 +223,16 @@ impl ModbusTcpDevice {
         Ok(())
     }
 
+    pub async fn get_u16(&mut self, addr: u16) -> Result<u16> {
+        let length = self.send_read_holding_request(addr, 1).await?;
+        assert_eq!(
+            length, 2,
+            "Expected modbus device to send exactly 2 bytes of data!"
+        );
+
+        self.read_u16().await
+    }
+
     pub async fn get_u32(&mut self, addr: u16) -> Result<u32> {
         let length = self.send_read_holding_request(addr, 2).await?;
         assert_eq!(
