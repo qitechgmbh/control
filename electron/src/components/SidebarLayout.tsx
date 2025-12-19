@@ -11,7 +11,6 @@ import { Fragment, useEffect } from "react";
 import React from "react";
 import { Icon, IconName } from "./Icon";
 import { useMainNamespace } from "@/client/mainNamespace";
-import { useMainNamespace } from "@/client/mainNamespace";
 
 type SidebarItemContent = {
   link: string;
@@ -64,9 +63,6 @@ export function useSidebarlessWidth() {
 
 export function SidebarLayout() {
   const machines = useMachines();
-  const router = useRouter();
-  const routerState = useRouterState();
-  const { machines: machinesEvent } = useMainNamespace();
   const router = useRouter();
   const routerState = useRouterState();
   const { machines: machinesEvent } = useMainNamespace();
