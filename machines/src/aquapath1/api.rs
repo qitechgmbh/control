@@ -102,6 +102,11 @@ enum Mutation {
 
     SetFrontRevolutions(f64),
     SetBackRevolutions(f64),
+
+    SetFrontHeatingTolerance(f64),
+    SetBackHeatingTolerance(f64),
+    SetFrontCoolingTolerance(f64),
+    SetBackCoolingTolerance(f64),
 }
 
 #[derive(Debug, Clone)]
@@ -163,10 +168,22 @@ impl MachineApi for AquaPathV1 {
                 self.set_should_pump(should_pump, super::AquaPathSideType::Front)
             }
             Mutation::SetBackRevolutions(revolution) => {
-                self.set_target_revolutions(revolution, super::AquaPathSideType::Back)
+                self.set_max_revolutions(revolution, super::AquaPathSideType::Back)
             }
             Mutation::SetFrontRevolutions(revolutions) => {
-                self.set_target_revolutions(revolutions, super::AquaPathSideType::Front)
+                self.set_max_revolutions(revolutions, super::AquaPathSideType::Front)
+            }
+            Mutation::SetBackHeatingTolerance(tolerance) => {
+                self.set_heating_tolerance(tolerance, super::AquaPathSideType::Back)
+            }
+            Mutation::SetFrontHeatingTolerance(tolerance) => {
+                self.set_heating_tolerance(tolerance, super::AquaPathSideType::Front)
+            }
+            Mutation::SetBackCoolingTolerance(tolerance) => {
+                self.set_cooling_tolerance(tolerance, super::AquaPathSideType::Back);
+            }
+            Mutation::SetFrontCoolingTolerance(tolerance) => {
+                self.set_cooling_tolerance(tolerance, super::AquaPathSideType::Front);
             }
         }
         Ok(())

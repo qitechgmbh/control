@@ -302,15 +302,39 @@ impl AquaPathV1 {
 }
 
 impl AquaPathV1 {
-    fn set_target_revolutions(&mut self, revolutions: f64, fan_type: AquaPathSideType) {
+    fn set_max_revolutions(&mut self, revolutions: f64, fan_type: AquaPathSideType) {
         match fan_type {
             AquaPathSideType::Back => self
                 .back_controller
-                .set_target_revolutions(AngularVelocity::new::<revolution_per_minute>(revolutions)),
+                .set_max_revolutions(AngularVelocity::new::<revolution_per_minute>(revolutions)),
             AquaPathSideType::Front => self
                 .front_controller
-                .set_target_revolutions(AngularVelocity::new::<revolution_per_minute>(revolutions)),
+                .set_max_revolutions(AngularVelocity::new::<revolution_per_minute>(revolutions)),
         }
         self.emit_state();
+    }
+}
+
+impl AquaPathV1 {
+    fn set_heating_tolerance(&mut self, tolerance: f64, tolerance_type: AquaPathSideType) {
+        match tolerance_type {
+            AquaPathSideType::Back => self.back_controller.set_heating_tolerance(
+                ThermodynamicTemperature::new::<degree_celsius>(tolerance)
+            ),
+            AquaPathSideType::Front => self.front_controller.set_heating_tolerance(
+                ThermodynamicTemperature::new::<degree_celsius>(tolerance)
+            ),
+        }
+    }
+
+    fn set_cooling_tolerance(&mut self, tolerance: f64, tolerance_type: AquaPathSideType) {
+        match tolerance_type {
+            AquaPathSideType::Back => self.back_controller.set_cooling_tolerance(
+                ThermodynamicTemperature::new::<degree_celsius>(tolerance)
+            ),
+            AquaPathSideType::Front => self.front_controller.set_cooling_tolerance(
+                ThermodynamicTemperature::new::<degree_celsius>(tolerance)
+            ),
+        }
     }
 }
