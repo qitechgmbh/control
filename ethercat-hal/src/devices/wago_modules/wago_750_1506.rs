@@ -143,7 +143,7 @@ pub struct Wago750_1506 {
     is_used: bool,
     tx_bit_offset: usize,
     rx_bit_offset: usize,
-    // Should always have on but not when calling constructor
+    // Should always have one but not when calling constructor
     module: Option<Module>,
     rx_pdo: Wago750_1506RxPdo,
     tx_pdo: Wago750_1506TxPdo,
