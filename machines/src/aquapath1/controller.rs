@@ -6,11 +6,11 @@ use ethercat_hal::io::{
     analog_output::AnalogOutput, digital_output::DigitalOutput, temperature_input::TemperatureInput,
 };
 use std::time::{Duration, Instant};
+use units::AngularVelocity;
 use units::angular_velocity::revolution_per_minute;
 use units::f64::ThermodynamicTemperature;
 use units::thermodynamic_temperature::degree_celsius;
 use units::volume_rate::liter_per_minute;
-use units::AngularVelocity;
 #[derive(Debug)]
 
 pub struct Controller {
@@ -242,8 +242,8 @@ impl Controller {
         self.target_revolutions
     }
 
-    pub fn set_target_revolutions(&mut self, revolutions: f64) {
-        self.target_revolutions = AngularVelocity::new::<revolution_per_minute>(revolutions);
+    pub fn set_target_revolutions(&mut self, revolutions: AngularVelocity) {
+        self.target_revolutions = revolutions;
     }
 
     pub fn update(&mut self, now: Instant) -> () {

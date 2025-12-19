@@ -3,7 +3,7 @@ use crate::{MachineApi, MachineMessage};
 use control_core::socketio::{
     event::{Event, GenericEvent},
     namespace::{
-        cache_first_and_last_event, CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic,
+        CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_first_and_last_event,
     },
 };
 use serde::{Deserialize, Serialize};

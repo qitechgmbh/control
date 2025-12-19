@@ -36,7 +36,6 @@ impl MachineAct for AquaPathV1 {
         match msg {
             MachineMessage::SubscribeNamespace(namespace) => {
                 self.namespace.namespace = Some(namespace);
-                tracing::warn!("{:?}", self.namespace.namespace);
                 self.emit_state();
             }
             MachineMessage::UnsubscribeNamespace => self.namespace.namespace = None,
