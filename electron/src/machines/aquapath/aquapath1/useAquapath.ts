@@ -136,10 +136,10 @@ export function useAquapath1() {
         requestFrontRevolutions({
           machine_identification_unique: machineIdentification,
           data: { SetFrontRevolutions: revolutions },
-        })
+        });
       },
     );
-  }
+  };
 
   const setBackRevolutions = (revolutions: number) => {
     updateStateOptimistically(
@@ -152,7 +152,7 @@ export function useAquapath1() {
           data: { SetBackRevolutions: revolutions },
         }),
     );
-  }
+  };
 
   // Mutation hooks
   const { request: requestAquapathMode } = useMachineMutation(
