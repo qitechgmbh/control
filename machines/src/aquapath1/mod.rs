@@ -1,5 +1,7 @@
+use api::{ToleranceState, ToleranceStates};
 use control_core::socketio::namespace::NamespaceCacheingLogic;
 use serde::{Deserialize, Serialize};
+use units::angle::degree;
 use std::time::Instant;
 use units::angular_velocity::revolution_per_minute;
 use units::f64::*;
@@ -182,7 +184,7 @@ impl AquaPathV1 {
                         .front_controller
                         .current_revolutions
                         .get::<revolution_per_minute>(),
-                    target_revolutions: self
+                    max_revolutions: self
                         .front_controller
                         .target_revolutions
                         .get::<revolution_per_minute>(),
@@ -192,12 +194,22 @@ impl AquaPathV1 {
                         .back_controller
                         .current_revolutions
                         .get::<revolution_per_minute>(),
-                    target_revolutions: self
+                    max_revolutions: self
                         .back_controller
                         .target_revolutions
                         .get::<revolution_per_minute>(),
                 },
             },
+            tolerance_states: ToleranceStates {
+                front: ToleranceState {
+                    heating: self.front_controller.heating_tolerance.get::<degree_celsius>(),
+                    cooling: self.front_controller.cooling_tolerance.get::<degree_celsius>(),
+                },
+                back: ToleranceState {
+                    heating: self.back_controller.heating_tolerance.get::<degree_celsius>(),
+                    cooling: self.back_controller.cooling_tolerance.get::<degree_celsius>(),
+                },
+            }
         };
 
         let event = state.build();
@@ -304,17 +316,12 @@ impl AquaPathV1 {
 impl AquaPathV1 {
     fn set_max_revolutions(&mut self, revolutions: f64, fan_type: AquaPathSideType) {
         match fan_type {
-<<<<<<< HEAD
             AquaPathSideType::Back => self
                 .back_controller
                 .set_max_revolutions(AngularVelocity::new::<revolution_per_minute>(revolutions)),
             AquaPathSideType::Front => self
                 .front_controller
                 .set_max_revolutions(AngularVelocity::new::<revolution_per_minute>(revolutions)),
-=======
-            AquaPathSideType::Back => self.back_controller.set_target_revolutions(revolutions),
-            AquaPathSideType::Front => self.front_controller.set_target_revolutions(revolutions),
->>>>>>> bb12f9672394b7d55a4b002ed903f309bd0e0eaf
         }
         self.emit_state();
     }

@@ -38,6 +38,7 @@ pub struct StateEvent {
     pub flow_states: FlowStates,
     pub temperature_states: TempStates,
     pub fan_states: FanStates,
+    pub tolerance_states: ToleranceStates,
 }
 
 impl StateEvent {
@@ -76,12 +77,23 @@ pub struct FlowState {
 #[derive(Serialize, Debug, Clone)]
 pub struct FanState {
     pub revolutions: f64,
-    pub target_revolutions: f64,
+    pub max_revolutions: f64,
 }
 #[derive(Serialize, Debug, Clone)]
 pub struct FanStates {
     pub front: FanState,
     pub back: FanState,
+}
+
+#[derive(Serialize, Debug, Clone)]
+pub struct ToleranceState {
+    pub heating: f64,
+    pub cooling: f64,
+}
+#[derive(Serialize, Debug, Clone)]
+pub struct ToleranceStates {
+    front: ToleranceState,
+    back: ToleranceState,
 }
 
 pub enum AquaPathV1Events {

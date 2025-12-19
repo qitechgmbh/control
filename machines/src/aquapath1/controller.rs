@@ -191,7 +191,6 @@ impl Controller {
 
     pub fn turn_cooling_on(&mut self) {
         self.cooling_relais.set(true);
-        self.cooling_controller.set(10.0);
         self.temperature.cooling = true;
     }
 
@@ -251,6 +250,14 @@ impl Controller {
 
     pub fn set_max_revolutions(&mut self, revolutions: AngularVelocity) {
         self.target_revolutions = revolutions;
+    }
+
+    pub fn set_cooling_tolerance(&mut self, tolerance: ThermodynamicTemperature) {
+        self.cooling_tolerance = tolerance;
+    }
+
+    pub fn set_heating_tolerance(&mut self, tolerance: ThermodynamicTemperature) {
+        self.heating_tolerance = tolerance;
     }
 
     pub fn update(&mut self, now: Instant) -> () {
@@ -315,20 +322,21 @@ impl Controller {
                     self.turn_heating_off();
                 }
             }
-        } else if error < self.cooling_tolerance.get::<degree_celsius> {
+        } else if error < self.cooling_tolerance.get::<degree_celsius>() {
             // Need cooling (current > target)
             if self.temperature.heating {
                 self.turn_heating_off();
             }
             if self.cooling_allowed && !self.temperature.cooling {
-                let max_revolutions = self.get_target_revolutions();
-                let temp_offset = (self.current_temperature - self.target_temperature).abs();
+                self.turn_cooling_on();
+
+                let max_revolutions = self.get_max_revolutions();
+                let temp_offset = self.current_temperature - self.target_temperature;
 
                 let target_revolutions = temp_offset
                     .get::<kelvin>()
                     .clamp(0.0, max_revolutions.get::<revolution_per_minute>());
-                tracing::info!("FAN {target_revolutions}, {:?}", temp_offset);
-                self.cooling_relais.set(self.cooling_allowed);
+
                 self.cooling_controller
                     .set(target_revolutions as f32 / 10.0);
                 self.current_revolutions =

@@ -53,11 +53,20 @@ export const flowStatesSchema = z.object({
 
 export const fanStateSchema = z.object({
   revolutions: z.number(),
-  target_revolutions: z.number(),
+  max_revolutions: z.number(),
 });
 export const fanStatesSchema = z.object({
   back: fanStateSchema,
   front: fanStateSchema,
+});
+
+export const toleranceStateSchema = z.object({
+  heating: z.number(),
+  cooling: z.number(),
+})
+export const toleranceStatesSchema = z.object({
+  back: toleranceStateSchema,
+  front: toleranceStateSchema,
 });
 /**
  * Live values event schema (time-series data)
@@ -82,6 +91,7 @@ export const stateEventDataSchema = z.object({
   flow_states: flowStatesSchema,
   temperature_states: tempStatesSchema,
   fan_states: fanStatesSchema,
+  tolerance_states: toleranceStatesSchema,
 });
 
 // ========== Event Schemas with Wrappers ==========
