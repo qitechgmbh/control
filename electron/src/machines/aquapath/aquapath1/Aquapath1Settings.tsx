@@ -72,7 +72,7 @@ export function Aquapath1SettingsPage() {
             <EditValue
               title="Set Cooling Tolerance"
               min={0}
-              value={state?.tolerance_states.back.heating}
+              value={state?.tolerance_states.front.cooling}
               max={10}
               step={0.1}
               unit="C"
@@ -89,7 +89,7 @@ export function Aquapath1SettingsPage() {
             <EditValue
               title="Set Heating Tolerance"
               min={0}
-              value={state?.tolerance_states.front.heating}
+              value={state?.tolerance_states.back.heating}
               max={10}
               step={0.1}
               unit="C"
@@ -104,7 +104,7 @@ export function Aquapath1SettingsPage() {
             <EditValue
               title="Set Cooling Tolerance"
               min={0}
-              value={state?.tolerance_states.front.cooling}
+              value={state?.tolerance_states.back.cooling}
               max={10}
               step={0.1}
               unit="C"
