@@ -53,7 +53,7 @@ export const flowStatesSchema = z.object({
 
 export const fanStateSchema = z.object({
   revolutions: z.number(),
-  target_revolutions: z.number(),
+  max_revolutions: z.number(),
 });
 export const fanStatesSchema = z.object({
   back: fanStateSchema,
