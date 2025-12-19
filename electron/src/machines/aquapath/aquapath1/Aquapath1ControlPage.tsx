@@ -6,6 +6,7 @@ import { TimeSeriesValueNumeric } from "@/control/TimeSeriesValue";
 import { useAquapath1 } from "./useAquapath";
 import { SelectionGroup } from "@/control/SelectionGroup";
 import { EditValue } from "@/control/EditValue";
+import { StatusBadge } from "@/control/StatusBadge";
 import { Label } from "@/control/Label";
 
 export function Aquapath1ControlPage() {
@@ -28,6 +29,20 @@ export function Aquapath1ControlPage() {
     state?.temperature_states?.front.target_temperature ?? 0;
   const backTargetTemperature =
     state?.temperature_states?.back.target_temperature ?? 0;
+
+  const frontCurrentTemperature =
+    state?.temperature_states?.front.temperature ?? 0;
+  const backCurrentTemperature =
+    state?.temperature_states?.back.temperature ?? 0;
+
+  const frontCoolingBoundary =
+    frontTargetTemperature + (state?.tolerance_states.front.cooling ?? 0);
+  const frontHeatingBoundary =
+    frontTargetTemperature - (state?.tolerance_states.front.heating ?? 0);
+  const backCoolingBoundary =
+    backTargetTemperature + (state?.tolerance_states.back.cooling ?? 0);
+  const backHeatingBoundary =
+    backTargetTemperature - (state?.tolerance_states.back.heating ?? 0);
 
   const frontTargetFlow = state?.flow_states.front.should_flow ?? false;
   const backTargetFlow = state?.flow_states.back.should_flow ?? false;
@@ -72,6 +87,13 @@ export function Aquapath1ControlPage() {
                   }
                 />
               </Label>
+
+              {frontCurrentTemperature < frontHeatingBoundary && (
+                <StatusBadge variant="success">Heating</StatusBadge>
+              )}
+              {frontCurrentTemperature > frontCoolingBoundary && (
+                <StatusBadge variant="success">Cooling</StatusBadge>
+              )}
             </div>
 
             <div className="flex flex-row">
@@ -150,6 +172,13 @@ export function Aquapath1ControlPage() {
                 />
               </Label>
             </div>
+
+            {backCurrentTemperature < backHeatingBoundary && (
+              <StatusBadge variant="success">Heating</StatusBadge>
+            )}
+            {backCurrentTemperature > backCoolingBoundary && (
+              <StatusBadge variant="success">Cooling</StatusBadge>
+            )}
 
             <div className="flex flex-row">
               <TimeSeriesValueNumeric

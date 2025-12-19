@@ -168,7 +168,7 @@ export function useAquapath1() {
     );
   };
 
- const setBackHeatingTolerance = (tolerance: number) => {
+  const setBackHeatingTolerance = (tolerance: number) => {
     updateStateOptimistically(
       (current) => {
         current.data.tolerance_states.back.heating = tolerance;
@@ -182,7 +182,7 @@ export function useAquapath1() {
     );
   };
 
- const setFrontCoolingTolerance = (tolerance: number) => {
+  const setFrontCoolingTolerance = (tolerance: number) => {
     updateStateOptimistically(
       (current) => {
         current.data.tolerance_states.front.cooling = tolerance;
@@ -196,7 +196,7 @@ export function useAquapath1() {
     );
   };
 
- const setBackCoolingTolerance = (tolerance: number) => {
+  const setBackCoolingTolerance = (tolerance: number) => {
     updateStateOptimistically(
       (current) => {
         current.data.tolerance_states.back.cooling = tolerance;

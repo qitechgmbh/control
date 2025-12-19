@@ -63,7 +63,7 @@ export const fanStatesSchema = z.object({
 export const toleranceStateSchema = z.object({
   heating: z.number(),
   cooling: z.number(),
-})
+});
 export const toleranceStatesSchema = z.object({
   back: toleranceStateSchema,
   front: toleranceStateSchema,

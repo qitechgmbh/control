@@ -114,7 +114,7 @@ export function Aquapath1SettingsPage() {
               }}
             />
           </Label>
-       </ControlCard>
+        </ControlCard>
       </ControlGrid>
     </Page>
   );
