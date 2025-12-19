@@ -28,11 +28,13 @@ pub struct Controller {
 
     pub cooling_controller: AnalogOutput,
     pub cooling_relais: DigitalOutput,
+    pub cooling_tolerance: ThermodynamicTemperature,
 
     pub current_revolutions: AngularVelocity,
     pub target_revolutions: AngularVelocity,
 
     pub heating_relais_1: DigitalOutput,
+    pub heating_tolerance: ThermodynamicTemperature,
     pub temperature_sensor_in: TemperatureInput,
     pub temperature_sensor_out: TemperatureInput,
 
@@ -80,12 +82,14 @@ impl Controller {
 
             temperature: temp,
             cooling_controller: cooling_controller,
+            cooling_tolerance: ThermodynamicTemperature::new::<degree_celsius>(2.0),
 
             current_revolutions: AngularVelocity::new::<revolution_per_minute>(100.0),
             target_revolutions: target_revolutions,
 
             cooling_relais: cooling_relais,
             heating_relais_1: heating_relais_1,
+            heating_tolerance: ThermodynamicTemperature::new::<degree_celsius>(2.0),
             cooling_allowed: false,
             heating_allowed: false,
             temperature_sensor_in: temp_sensor_in,
@@ -242,8 +246,8 @@ impl Controller {
         self.target_revolutions
     }
 
-    pub fn set_target_revolutions(&mut self, revolutions: AngularVelocity) {
-        self.target_revolutions = revolutions;
+    pub fn set_target_revolutions(&mut self, revolutions: f64) {
+        self.target_revolutions = AngularVelocity::new::<revolution_per_minute>(revolutions);
     }
 
     pub fn update(&mut self, now: Instant) -> () {
@@ -287,7 +291,7 @@ impl Controller {
         }
 
         // Decide whether to heat or cool based on error
-        if error > 0.0 {
+        if error > self.heating_tolerance.get::<degree_celsius>() {
             // Need heating (current < target)
             if self.temperature.cooling {
                 self.turn_cooling_off();
@@ -308,7 +312,7 @@ impl Controller {
                     self.turn_heating_off();
                 }
             }
-        } else {
+        } else if error < self.cooling_tolerance.get::<degree_celsius>() {
             // Need cooling (current > target)
             if self.temperature.heating {
                 self.turn_heating_off();
