@@ -201,14 +201,26 @@ impl AquaPathV1 {
             },
             tolerance_states: ToleranceStates {
                 front: ToleranceState {
-                    heating: self.front_controller.heating_tolerance.get::<degree_celsius>(),
-                    cooling: self.front_controller.cooling_tolerance.get::<degree_celsius>(),
+                    heating: self
+                        .front_controller
+                        .heating_tolerance
+                        .get::<degree_celsius>(),
+                    cooling: self
+                        .front_controller
+                        .cooling_tolerance
+                        .get::<degree_celsius>(),
                 },
                 back: ToleranceState {
-                    heating: self.back_controller.heating_tolerance.get::<degree_celsius>(),
-                    cooling: self.back_controller.cooling_tolerance.get::<degree_celsius>(),
+                    heating: self
+                        .back_controller
+                        .heating_tolerance
+                        .get::<degree_celsius>(),
+                    cooling: self
+                        .back_controller
+                        .cooling_tolerance
+                        .get::<degree_celsius>(),
                 },
-            }
+            },
         };
 
         let event = state.build();
@@ -329,12 +341,12 @@ impl AquaPathV1 {
 impl AquaPathV1 {
     fn set_heating_tolerance(&mut self, tolerance: f64, tolerance_type: AquaPathSideType) {
         match tolerance_type {
-            AquaPathSideType::Back => self.back_controller.set_heating_tolerance(
-                ThermodynamicTemperature::new::<degree_celsius>(tolerance)
-            ),
-            AquaPathSideType::Front => self.front_controller.set_heating_tolerance(
-                ThermodynamicTemperature::new::<degree_celsius>(tolerance)
-            ),
+            AquaPathSideType::Back => self
+                .back_controller
+                .set_heating_tolerance(ThermodynamicTemperature::new::<degree_celsius>(tolerance)),
+            AquaPathSideType::Front => self
+                .front_controller
+                .set_heating_tolerance(ThermodynamicTemperature::new::<degree_celsius>(tolerance)),
         }
 
         self.emit_state();
@@ -342,12 +354,12 @@ impl AquaPathV1 {
 
     fn set_cooling_tolerance(&mut self, tolerance: f64, tolerance_type: AquaPathSideType) {
         match tolerance_type {
-            AquaPathSideType::Back => self.back_controller.set_cooling_tolerance(
-                ThermodynamicTemperature::new::<degree_celsius>(tolerance)
-            ),
-            AquaPathSideType::Front => self.front_controller.set_cooling_tolerance(
-                ThermodynamicTemperature::new::<degree_celsius>(tolerance)
-            ),
+            AquaPathSideType::Back => self
+                .back_controller
+                .set_cooling_tolerance(ThermodynamicTemperature::new::<degree_celsius>(tolerance)),
+            AquaPathSideType::Front => self
+                .front_controller
+                .set_cooling_tolerance(ThermodynamicTemperature::new::<degree_celsius>(tolerance)),
         }
 
         self.emit_state();
