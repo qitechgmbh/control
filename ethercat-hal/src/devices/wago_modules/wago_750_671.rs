@@ -4,9 +4,12 @@
 * 1.5 A
 */
 
-use crate::{devices::{
-    DynamicEthercatDevice, EthercatDevice, EthercatDeviceProcessing, EthercatDeviceUsed, EthercatDynamicPDO, Module, NewEthercatDevice, SubDeviceProductTuple
-}, io::digital_input::{DigitalInputDevice, DigitalInputInput}};
+use bitvec::field::BitField;
+
+use crate::devices::{
+    DynamicEthercatDevice, EthercatDevice, EthercatDeviceProcessing, EthercatDeviceUsed,
+    EthercatDynamicPDO, Module, NewEthercatDevice, SubDeviceProductTuple,
+};
 
 #[derive(Clone)]
 pub struct Wago750_671 {
@@ -48,23 +51,12 @@ impl From<Wago750_671DigitalInputPort> for usize {
 
 #[derive(Clone, Default)]
 pub struct Wago750_671RxPdo {
+    pub b: [u8; 12],
 }
 
 #[derive(Clone, Default)]
 pub struct Wago750_671TxPdo {
-    port1: bool,
-    port2: bool,
-}
-
-impl DigitalInputDevice<Wago750_671DigitalInputPort> for Wago750_671 {
-    fn get_input(&self, port: Wago750_671DigitalInputPort) -> Result<DigitalInputInput, anyhow::Error> {
-        Ok(DigitalInputInput {
-            value: match port {
-                Wago750_671DigitalInputPort::DI1 => self.txpdo.port1,
-                Wago750_671DigitalInputPort::DI2 => self.txpdo.port2,
-            },
-        })
-    }
+    pub b: [u8; 12],
 }
 
 impl EthercatDeviceUsed for Wago750_671 {
@@ -105,22 +97,51 @@ impl EthercatDevice for Wago750_671 {
         &mut self,
         input: &bitvec::prelude::BitSlice<u8, bitvec::prelude::Lsb0>,
     ) -> Result<(), anyhow::Error> {
+        let base = self.tx_bit_offset;
+
+        for byte_i in 0..12 {
+            let bits = &input[base + byte_i * 8..base + (byte_i + 1) * 8];
+            self.txpdo.b[byte_i] = bits.load_le::<u8>();
+        }
+
+        // TEMP Debug START
+        println!("Wago750_671 IN: {:02X?} \n\n", self.txpdo.b);
+
+        let s0 = self.txpdo.b[0];
+        let s3 = self.txpdo.b[9];
+        let s2 = self.txpdo.b[10];
+        let s1 = self.txpdo.b[11];
+
+        println!(
+            "S0={:08b} S1={:08b} S2={:08b} S3={:08b}",
+            s0, s1, s2, s3
+        );
+
+        // TEMP Debug END
+
         Ok(())
     }
 
     fn input_len(&self) -> usize {
-        0
+        12 * 8
     }
 
     fn output(
         &self,
         output: &mut bitvec::prelude::BitSlice<u8, bitvec::prelude::Lsb0>,
     ) -> Result<(), anyhow::Error> {
+        let base = self.rx_bit_offset;
+
+        for byte_i in 0..12 {
+            let bits = &mut output[base + byte_i * 8..base + (byte_i + 1) * 8];
+            bits.store_le(self.rxpdo.b[byte_i]);
+        }
+
         Ok(())
     }
 
     fn output_len(&self) -> usize {
-        2
+        12 * 8
     }
 
     fn as_any(&self) -> &dyn std::any::Any {
