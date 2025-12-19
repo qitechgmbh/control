@@ -46,11 +46,6 @@ import { toast } from "sonner";
 import { Toast } from "@/components/Toast";
 import { EthercatDevicesEventData } from "@/client/mainNamespace";
 import { TouchNumpad } from "@/components/touch/TouchNumpad";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 
 type Device = NonNullable<EthercatDevicesEventData["Done"]>["devices"][number];
 
@@ -107,6 +102,7 @@ export function DeviceEeepromDialogContent({ device, setOpen }: ContentProps) {
   const numpadRef = useRef<HTMLDivElement>(null);
   const [numpadOpen, setNumpadOpen] = useState(false);
   const [numpadPosition, setNumpadPosition] = useState({ left: 0, top: 0 });
+  const serialContainerRef = useRef<HTMLDivElement>(null);
 
   const form = useForm<FormSchema>({
     resolver: zodResolver(formSchema),
@@ -189,68 +185,34 @@ export function DeviceEeepromDialogContent({ device, setOpen }: ContentProps) {
     }
   }, [filteredAllowedDevices]);
 
-  // Update numpad position when dialog moves or resizes
+  // Position numpad once when it opens
+  useEffect(() => {
+    if (!numpadOpen || !dialogRef.current) return;
+    const rect = dialogRef.current.getBoundingClientRect();
+    setNumpadPosition({
+      left: rect.right + 20,
+      top: rect.top + rect.height / 2,
+    });
+  }, [numpadOpen]);
+
+  // Close numpad when clicking outside input/numpad
   useEffect(() => {
     if (!numpadOpen) return;
 
-    const updatePosition = () => {
-      if (dialogRef.current) {
-        const rect = dialogRef.current.getBoundingClientRect();
-        setNumpadPosition({
-          left: rect.right + 20,
-          top: rect.top + rect.height / 2,
-        });
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target as Node | null;
+      const insideSerial = serialContainerRef.current?.contains(target);
+      const insideNumpad = numpadRef.current?.contains(target);
+      if (!insideSerial && !insideNumpad) {
+        setNumpadOpen(false);
       }
     };
 
-    // Initial position - use requestAnimationFrame to ensure dialog is rendered
-    const rafId = requestAnimationFrame(() => {
-      updatePosition();
-      // Also try again after a short delay to catch any late renders
-      setTimeout(updatePosition, 50);
-    });
-
-    // Update on scroll
-    const handleScroll = () => updatePosition();
-    window.addEventListener("scroll", handleScroll, true);
-
-    // Update on resize
-    const handleResize = () => updatePosition();
-    window.addEventListener("resize", handleResize);
-
-    // Use ResizeObserver to watch dialog size changes
-    const resizeObserver = new ResizeObserver(() => {
-      updatePosition();
-    });
-
-    if (dialogRef.current) {
-      resizeObserver.observe(dialogRef.current);
-    }
-
-    // Use MutationObserver to watch for position changes
-    const mutationObserver = new MutationObserver(() => {
-      updatePosition();
-    });
-
-    if (dialogRef.current) {
-      mutationObserver.observe(document.body, {
-        childList: true,
-        subtree: true,
-        attributes: true,
-        attributeFilter: ["style", "class"],
-      });
-    }
-
+    document.addEventListener("pointerdown", handlePointerDown, true);
     return () => {
-      cancelAnimationFrame(rafId);
-      window.removeEventListener("scroll", handleScroll, true);
-      window.removeEventListener("resize", handleResize);
-      resizeObserver.disconnect();
-      mutationObserver.disconnect();
+      document.removeEventListener("pointerdown", handlePointerDown, true);
     };
   }, [numpadOpen]);
-
-  // Don't close numpad automatically - only via button toggle
 
   // Keep focus on input field when numpad is opened
   useEffect(() => {
@@ -429,7 +391,10 @@ export function DeviceEeepromDialogContent({ device, setOpen }: ContentProps) {
                 <FormItem>
                   <FormLabel>Serial</FormLabel>
                   <FormControl>
-                    <div className="flex items-center gap-2">
+                    <div
+                      ref={serialContainerRef}
+                      className="flex items-center gap-2"
+                    >
                       <Input
                         {...field}
                         ref={(e) => {
@@ -437,19 +402,19 @@ export function DeviceEeepromDialogContent({ device, setOpen }: ContentProps) {
                           serialInputRef.current = e;
                         }}
                         placeholder="1234"
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        aria-label="Toggle numpad"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          setNumpadOpen(!numpadOpen);
+                        onFocus={() => setNumpadOpen(true)}
+                        onClick={() => setNumpadOpen(true)}
+                        onBlur={(event) => {
+                          const next = event.relatedTarget as Node | null;
+                          if (
+                            serialContainerRef.current?.contains(next) ||
+                            numpadRef.current?.contains(next)
+                          ) {
+                            return;
+                          }
+                          setNumpadOpen(false);
                         }}
-                      >
-                        <Icon name="lu:Calculator" />
-                      </Button>
+                      />
                     </div>
                   </FormControl>
                   <FormDescription>
