@@ -5,9 +5,9 @@ use ethercat_hal::io::encoder_input::EncoderInput;
 use ethercat_hal::io::{
     analog_output::AnalogOutput, digital_output::DigitalOutput, temperature_input::TemperatureInput,
 };
-use std::time::{Duration, Instant};
 use units::AngularVelocity;
-use units::angular_velocity::revolution_per_minute;
+use std::time::{Duration, Instant};
+use units::angular_velocity::{revolution_per_minute,};
 use units::f64::ThermodynamicTemperature;
 use units::thermodynamic_temperature::{degree_celsius, kelvin};
 use units::volume_rate::liter_per_minute;
@@ -196,6 +196,7 @@ impl Controller {
 
     pub fn turn_cooling_off(&mut self) {
         self.cooling_relais.set(false);
+        self.current_revolutions = AngularVelocity::new::<revolution_per_minute>(0.0);
         self.temperature.cooling = false;
     }
 
@@ -327,8 +328,10 @@ impl Controller {
             if self.temperature.heating {
                 self.turn_heating_off();
             }
-            if self.cooling_allowed && !self.temperature.cooling {
-                self.turn_cooling_on();
+            if self.cooling_allowed {
+                if !self.temperature.cooling {
+                    self.turn_cooling_on();
+                }
 
                 let max_revolutions = self.get_max_revolutions();
                 let temp_offset = self.current_temperature - self.target_temperature;
