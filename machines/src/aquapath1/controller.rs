@@ -6,11 +6,11 @@ use ethercat_hal::io::{
     analog_output::AnalogOutput, digital_output::DigitalOutput, temperature_input::TemperatureInput,
 };
 use std::time::{Duration, Instant};
+use units::AngularVelocity;
 use units::angular_velocity::revolution_per_minute;
 use units::f64::ThermodynamicTemperature;
-use units::thermodynamic_temperature::degree_celsius;
+use units::thermodynamic_temperature::{degree_celsius, kelvin};
 use units::volume_rate::liter_per_minute;
-use units::AngularVelocity;
 #[derive(Debug)]
 
 pub struct Controller {
@@ -263,9 +263,15 @@ impl Controller {
         self.current_temperature = self.get_temp_in();
         self.temp_reservoir = self.get_temp_out();
 
-        if self.current_temperature < self.min_temperature && self.temperature.cooling {
+        if self.current_temperature
+            < (self.min_temperature - ThermodynamicTemperature::new::<degree_celsius>(2.0))
+            && self.temperature.cooling
+        {
             self.turn_cooling_off();
-        } else if self.current_temperature > self.max_temperature && self.temperature.heating {
+        } else if self.current_temperature
+            > (self.max_temperature + ThermodynamicTemperature::new::<degree_celsius>(2.0))
+            && self.temperature.heating
+        {
             self.turn_heating_off();
         }
 
@@ -308,16 +314,19 @@ impl Controller {
                 self.turn_heating_off();
             }
             if self.cooling_allowed && !self.temperature.cooling {
-                self.turn_cooling_on();
-            }
-        }
+                let max_revolutions = self.get_target_revolutions();
+                let temp_offset = self.current_temperature - self.target_temperature;
 
-        let target_revolutions = self.get_target_revolutions();
-        let current_revolutions = self.get_current_revolutions();
-        if target_revolutions != current_revolutions {
-            self.current_revolutions = target_revolutions;
-            self.cooling_controller
-                .set(self.target_revolutions.get::<revolution_per_minute>() as f32 / 10.0f32);
+                let target_revolutions = temp_offset
+                    .abs()
+                    .get::<kelvin>()
+                    .clone()
+                    .clamp(0.0, max_revolutions.get::<revolution_per_minute>());
+                tracing::info!("FAN {target_revolutions}, {:?}", temp_offset);
+                self.cooling_relais.set(true);
+                self.cooling_controller.set(target_revolutions as f32 / 10.0);
+                self.current_revolutions = AngularVelocity::new::<revolution_per_minute>(target_revolutions);
+            }
         }
     }
 }
