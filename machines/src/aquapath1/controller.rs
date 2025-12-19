@@ -319,15 +319,13 @@ impl Controller {
             }
             if self.cooling_allowed && !self.temperature.cooling {
                 let max_revolutions = self.get_target_revolutions();
-                let temp_offset = self.current_temperature - self.target_temperature;
+                let temp_offset = (self.current_temperature - self.target_temperature).abs();
 
                 let target_revolutions = temp_offset
-                    .abs()
                     .get::<kelvin>()
-                    .clone()
                     .clamp(0.0, max_revolutions.get::<revolution_per_minute>());
                 tracing::info!("FAN {target_revolutions}, {:?}", temp_offset);
-                self.cooling_relais.set(true);
+                self.cooling_relais.set(self.cooling_allowed);
                 self.cooling_controller.set(target_revolutions as f32 / 10.0);
                 self.current_revolutions = AngularVelocity::new::<revolution_per_minute>(target_revolutions);
             }

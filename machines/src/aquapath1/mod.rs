@@ -306,10 +306,10 @@ impl AquaPathV1 {
         match fan_type {
             AquaPathSideType::Back => self
                 .back_controller
-                .set_target_revolutions(AngularVelocity::new::<revolution_per_minute>(revolutions)),
+                .set_target_revolutions(revolutions),
             AquaPathSideType::Front => self
                 .front_controller
-                .set_target_revolutions(AngularVelocity::new::<revolution_per_minute>(revolutions)),
+                .set_target_revolutions(revolutions),
         }
         self.emit_state();
     }
