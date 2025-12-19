@@ -9,6 +9,7 @@ import { RouterProvider } from "@tanstack/react-router";
 import { Toaster } from "./components/ui/sonner";
 import { enableMapSet } from "immer";
 import { useGlobalLogStreaming } from "./hooks/useGlobalLogStreaming";
+import { GlobalLaserToastManager } from "./setup/GlobalLaserToastManager";
 
 export default function App() {
   const { i18n } = useTranslation();
@@ -21,7 +22,12 @@ export default function App() {
     updateAppLanguage(i18n);
   }, [i18n]);
 
-  return <RouterProvider router={router} />;
+  return (
+    <>
+      <GlobalLaserToastManager />
+      <RouterProvider router={router} />
+    </>
+  );
 }
 
 // enable immer MapSet plugin

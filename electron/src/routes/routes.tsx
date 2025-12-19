@@ -57,6 +57,8 @@ import { Aquapath1SettingsPage } from "@/machines/aquapath/aquapath1/Aquapath1Se
 import { TestMachinePage } from "@/machines/testmachine/TestMachinePage";
 import { TestMachineControlPage } from "@/machines/testmachine/TestMachineControlPage";
 import { Laser1PresetsPage } from "@/machines/laser/laser1/Laser1PresetsPage";
+import { AnalogInputTestMachine } from "@/machines/analoginputtestmachine/AnalogInputTestMachinePage";
+import { AnalogInputTestMachineControl } from "@/machines/analoginputtestmachine/AnalogInputTestMachineControlPage";
 
 import { MetricsGraphsPage } from "@/metrics/MetricsGraphsPage";
 import { MetricsControlPage } from "@/metrics/MetricsControlPage";
@@ -79,6 +81,18 @@ export const testMachineControlRoute = createRoute({
   getParentRoute: () => testMachineSerialRoute,
   path: "control",
   component: () => <TestMachineControlPage />,
+});
+
+export const analogInputTestMachineSerialRoute = createRoute({
+  getParentRoute: () => machinesRoute,
+  path: "analogInputTestMachine/$serial",
+  component: () => <AnalogInputTestMachine />,
+});
+
+export const analogInputTestMachineControlRoute = createRoute({
+  getParentRoute: () => analogInputTestMachineSerialRoute,
+  path: "control",
+  component: () => <AnalogInputTestMachineControl />,
 });
 
 export const sidebarRoute = createRoute({
@@ -398,6 +412,10 @@ export const rootTree = RootRoute.addChildren([
         laser1PresetsRoute,
       ]),
       testMachineSerialRoute.addChildren([testMachineControlRoute]),
+
+      analogInputTestMachineSerialRoute.addChildren([
+        analogInputTestMachineControlRoute,
+      ]),
 
       aquapath1SerialRoute.addChildren([
         aquapath1ControlRoute,

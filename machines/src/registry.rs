@@ -4,7 +4,10 @@ use crate::{
     mock::MockMachine, winder2::mock::Winder2,
 };
 
-use crate::{Machine, MachineNewParams, machine_identification::MachineIdentification};
+use crate::{
+    Machine, MachineNewParams, analog_input_test_machine::AnalogInputTestMachine,
+    machine_identification::MachineIdentification,
+};
 
 #[cfg(not(feature = "mock-machine"))]
 use crate::extruder1::ExtruderV2;
@@ -117,7 +120,10 @@ lazy_static! {
 
         #[cfg(not(feature = "mock-machine"))]
         mc.register::<AquaPathV1>(AquaPathV1::MACHINE_IDENTIFICATION);
+
         mc.register::<TestMachine>(TestMachine::MACHINE_IDENTIFICATION);
+        mc.register::<AnalogInputTestMachine>(AnalogInputTestMachine::MACHINE_IDENTIFICATION);
+
         mc
     };
 }
