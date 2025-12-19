@@ -154,6 +154,62 @@ export function useAquapath1() {
     );
   };
 
+  const setFrontHeatingTolerance = (tolerance: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.tolerance_states.front.heating = tolerance;
+      },
+      () => {
+        requestFrontHeatingTolerance({
+          machine_identification_unique: machineIdentification,
+          data: { setFrontHeatingTolerance: tolerance },
+        });
+      },
+    );
+  };
+
+ const setBackHeatingTolerance = (tolerance: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.tolerance_states.back.heating = tolerance;
+      },
+      () => {
+        requestBackHeatingTolerance({
+          machine_identification_unique: machineIdentification,
+          data: { setBackHeatingTolerance: tolerance },
+        });
+      },
+    );
+  };
+
+ const setFrontCoolingTolerance = (tolerance: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.tolerance_states.front.cooling = tolerance;
+      },
+      () => {
+        requestFrontCoolingTolerance({
+          machine_identification_unique: machineIdentification,
+          data: { setFrontHeatingTolerance: tolerance },
+        });
+      },
+    );
+  };
+
+ const setBackCoolingTolerance = (tolerance: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.tolerance_states.back.cooling = tolerance;
+      },
+      () => {
+        requestBackCoolingTolerance({
+          machine_identification_unique: machineIdentification,
+          data: { setBackHeatingTolerance: tolerance },
+        });
+      },
+    );
+  };
+
   // Mutation hooks
   const { request: requestAquapathMode } = useMachineMutation(
     z.object({ SetAquaPathMode: z.enum(["Standby", "Auto"]) }),
@@ -176,6 +232,16 @@ export function useAquapath1() {
   const { request: requestBackRevolutions } = useMachineMutation(
     z.object({ SetBackRevolutions: z.number() }),
   );
+  const { request: requestFrontHeatingTolerance } = useMachineMutation(
+    z.object({ setFrontHeatingTolerance: z.number() }),
+  )
+  const { request: requestBackHeatingTolerance } = useMachineMutation(
+    z.object({ setBackHeatingTolerance: z.number() }),
+  )
+  const { request: requestFrontHeatingTolerance } = useMachineMutation(
+    z.object({ setFrontHeatingTolerance: z.number() }),
+  )
+
   // Helper function for optimistic updates using produce
   const updateStateOptimistically = (
     producer: (current: StateEvent) => void,
@@ -210,5 +276,9 @@ export function useAquapath1() {
     setBackFlow,
     setFrontRevolutions,
     setBackRevolutions,
+    setFrontHeatingTolerance,
+    setBackHeatingTolerance,
+    setFrontCoolingTolerance,
+    setBackCoolingTolerance,
   };
 }
