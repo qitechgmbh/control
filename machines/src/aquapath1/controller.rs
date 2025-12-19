@@ -33,7 +33,7 @@ pub struct Controller {
     pub heating_tolerance: ThermodynamicTemperature,
 
     pub current_revolutions: AngularVelocity,
-    pub target_revolutions: AngularVelocity,
+    pub max_revolutions: AngularVelocity,
 
     pub heating_relais_1: DigitalOutput,
     pub temperature_sensor_in: TemperatureInput,
@@ -88,7 +88,7 @@ impl Controller {
             heating_tolerance: ThermodynamicTemperature::new::<degree_celsius>(2.0),
 
             current_revolutions: AngularVelocity::new::<revolution_per_minute>(100.0),
-            target_revolutions: target_revolutions,
+            max_revolutions: target_revolutions,
 
             cooling_relais: cooling_relais,
             heating_relais_1: heating_relais_1,
