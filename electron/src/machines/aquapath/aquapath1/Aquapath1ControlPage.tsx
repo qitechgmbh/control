@@ -70,7 +70,7 @@ export function Aquapath1ControlPage() {
               />
             </div>
 
-            <div className="flex flex-row">
+            <div className="flex flex-row gap-4">
               <Label label="Set Target Temperature">
                 <EditValue
                   title="Set Target Temperature"
@@ -154,7 +154,7 @@ export function Aquapath1ControlPage() {
               />
             </div>
 
-            <div className="flex flex-row">
+            <div className="flex flex-row gap-4">
               <Label label="Set Target Temperature">
                 <EditValue
                   title="Set Target Temperature"
@@ -171,7 +171,6 @@ export function Aquapath1ControlPage() {
                   }
                 />
               </Label>
-
 
               {backCurrentTemperature < backHeatingBoundary && (
                 <Badge variant="secondary">Heating</Badge>
