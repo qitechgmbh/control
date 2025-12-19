@@ -87,7 +87,7 @@ impl Controller {
             cooling_tolerance: ThermodynamicTemperature::new::<degree_celsius>(2.0),
             heating_tolerance: ThermodynamicTemperature::new::<degree_celsius>(2.0),
 
-            current_revolutions: AngularVelocity::new::<revolution_per_minute>(100.0),
+            current_revolutions: AngularVelocity::new::<revolution_per_minute>(0.0),
             max_revolutions: target_revolutions,
 
             cooling_relais: cooling_relais,
@@ -245,11 +245,11 @@ impl Controller {
     }
 
     pub fn get_max_revolutions(&self) -> AngularVelocity {
-        self.target_revolutions
+        self.max_revolutions
     }
 
     pub fn set_max_revolutions(&mut self, revolutions: AngularVelocity) {
-        self.target_revolutions = revolutions;
+        self.max_revolutions = revolutions;
     }
 
     pub fn set_cooling_tolerance(&mut self, tolerance: ThermodynamicTemperature) {
