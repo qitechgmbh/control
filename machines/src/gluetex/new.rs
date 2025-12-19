@@ -42,6 +42,8 @@ mod gluetex_imports {
     pub use ethercat_hal::devices::el3062_0030::{
         EL3062_0030, EL3062_0030_IDENTITY_A, EL3062_0030Port,
     };
+    pub use ethercat_hal::devices::el3062_0030::EL3062_0030Configuration;
+    pub use ethercat_hal::devices::el3062_0030::EL3062_0030PredefinedPdoAssignment;
     pub use ethercat_hal::devices::{ek1100::EK1100_IDENTITY_A, el2002::EL2002_IDENTITY_A};
     pub use ethercat_hal::io::analog_input::AnalogInput;
     pub use ethercat_hal::io::digital_input::DigitalInput;
@@ -371,14 +373,29 @@ impl MachineNewTrait for Gluetex {
             };
 
             // Role 12: Analog Input EL3062
-            let el3062 = get_ethercat_device::<EL3062_0030>(
-                hardware,
-                params,
-                12,
-                vec![EL3062_0030_IDENTITY_A],
-            )
-            .await?
-            .0;
+            let el3062 = {
+                let device = get_ethercat_device::<EL3062_0030>(
+                    hardware,
+                    params,
+                    12,
+                    vec![EL3062_0030_IDENTITY_A],
+                )
+                .await?;
+
+                let el3062_config = EL3062_0030Configuration {
+                    pdo_assignment: EL3062_0030PredefinedPdoAssignment::Standard,
+                    ..Default::default()
+                };
+
+                device
+                    .0
+                    .write()
+                    .await
+                    .write_config(&device.1, &el3062_config)
+                    .await?;
+
+                device.0
+            };
 
             // Digital outputs for SSR control (24V to external SSRs for 60W heaters)
             let heater_ssr_1 = DigitalOutput::new(el2008.clone(), EL2008Port::DO1);
