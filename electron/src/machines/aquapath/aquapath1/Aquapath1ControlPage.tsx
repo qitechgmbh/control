@@ -6,7 +6,7 @@ import { TimeSeriesValueNumeric } from "@/control/TimeSeriesValue";
 import { useAquapath1 } from "./useAquapath";
 import { SelectionGroup } from "@/control/SelectionGroup";
 import { EditValue } from "@/control/EditValue";
-import { StatusBadge } from "@/control/StatusBadge";
+import { Badge } from "@/components/ui/badge";
 import { Label } from "@/control/Label";
 
 export function Aquapath1ControlPage() {
@@ -89,10 +89,10 @@ export function Aquapath1ControlPage() {
               </Label>
 
               {frontCurrentTemperature < frontHeatingBoundary && (
-                <StatusBadge variant="success">Heating</StatusBadge>
+                <Badge variant="secondary">Heating</Badge>
               )}
               {frontCurrentTemperature > frontCoolingBoundary && (
-                <StatusBadge variant="success">Cooling</StatusBadge>
+                <Badge variant="default">Cooling</Badge>
               )}
             </div>
 
@@ -171,13 +171,12 @@ export function Aquapath1ControlPage() {
                   }
                 />
               </Label>
-
-              {backCurrentTemperature < backHeatingBoundary && (
-                <StatusBadge variant="success">Heating</StatusBadge>
-              )}
-              {backCurrentTemperature > backCoolingBoundary && (
-                <StatusBadge variant="success">Cooling</StatusBadge>
-              )}
+                {backCurrentTemperature < backHeatingBoundary && (
+                  <Badge variant="secondary">Heating</Badge>
+                )}
+                {backCurrentTemperature > backCoolingBoundary && (
+                  <Badge variant="default">Cooling</Badge>
+                )}
             </div>
 
             <div className="flex flex-row">
