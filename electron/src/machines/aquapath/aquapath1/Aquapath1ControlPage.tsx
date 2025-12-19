@@ -70,7 +70,7 @@ export function Aquapath1ControlPage() {
               />
             </div>
 
-            <div className="flex flex-row">
+            <div className="flex flex-row gap-4">
               <Label label="Set Target Temperature">
                 <EditValue
                   title="Set Target Temperature"
@@ -154,7 +154,7 @@ export function Aquapath1ControlPage() {
               />
             </div>
 
-            <div className="flex flex-row">
+            <div className="flex flex-row gap-4">
               <Label label="Set Target Temperature">
                 <EditValue
                   title="Set Target Temperature"
@@ -171,14 +171,14 @@ export function Aquapath1ControlPage() {
                   }
                 />
               </Label>
-            </div>
 
-            {backCurrentTemperature < backHeatingBoundary && (
-              <StatusBadge variant="success">Heating</StatusBadge>
-            )}
-            {backCurrentTemperature > backCoolingBoundary && (
-              <StatusBadge variant="success">Cooling</StatusBadge>
-            )}
+              {backCurrentTemperature < backHeatingBoundary && (
+                <StatusBadge variant="success">Heating</StatusBadge>
+              )}
+              {backCurrentTemperature > backCoolingBoundary && (
+                <StatusBadge variant="success">Cooling</StatusBadge>
+              )}
+            </div>
 
             <div className="flex flex-row">
               <TimeSeriesValueNumeric

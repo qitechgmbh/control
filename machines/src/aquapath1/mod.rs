@@ -1,7 +1,6 @@
 use api::{ToleranceState, ToleranceStates};
 use control_core::socketio::namespace::NamespaceCacheingLogic;
 use serde::{Deserialize, Serialize};
-use units::angle::degree;
 use std::time::Instant;
 use units::angular_velocity::revolution_per_minute;
 use units::f64::*;
