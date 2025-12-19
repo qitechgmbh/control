@@ -304,12 +304,8 @@ impl AquaPathV1 {
 impl AquaPathV1 {
     fn set_target_revolutions(&mut self, revolutions: f64, fan_type: AquaPathSideType) {
         match fan_type {
-            AquaPathSideType::Back => self
-                .back_controller
-                .set_target_revolutions(revolutions),
-            AquaPathSideType::Front => self
-                .front_controller
-                .set_target_revolutions(revolutions),
+            AquaPathSideType::Back => self.back_controller.set_target_revolutions(revolutions),
+            AquaPathSideType::Front => self.front_controller.set_target_revolutions(revolutions),
         }
         self.emit_state();
     }

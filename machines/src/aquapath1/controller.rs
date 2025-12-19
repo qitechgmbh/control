@@ -326,8 +326,10 @@ impl Controller {
                     .clamp(0.0, max_revolutions.get::<revolution_per_minute>());
                 tracing::info!("FAN {target_revolutions}, {:?}", temp_offset);
                 self.cooling_relais.set(self.cooling_allowed);
-                self.cooling_controller.set(target_revolutions as f32 / 10.0);
-                self.current_revolutions = AngularVelocity::new::<revolution_per_minute>(target_revolutions);
+                self.cooling_controller
+                    .set(target_revolutions as f32 / 10.0);
+                self.current_revolutions =
+                    AngularVelocity::new::<revolution_per_minute>(target_revolutions);
             }
         }
     }
