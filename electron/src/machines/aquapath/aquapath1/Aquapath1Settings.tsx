@@ -4,13 +4,10 @@ import { ControlGrid } from "@/control/ControlGrid";
 import { EditValue } from "@/control/EditValue";
 import { Label } from "@/control/Label";
 import { useAquapath1 } from "./useAquapath";
+import React from "react";
 
 export function Aquapath1SettingsPage() {
-  const {
-    state,
-    setFrontRevolutions,
-    setBackRevolutions,
-  } = useAquapath1();
+  const { state, setFrontRevolutions, setBackRevolutions } = useAquapath1();
 
   return (
     <Page>

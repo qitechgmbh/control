@@ -54,11 +54,11 @@ export const flowStatesSchema = z.object({
 export const fanStateSchema = z.object({
   revolutions: z.number(),
   target_revolutions: z.number(),
-})
+});
 export const fanStatesSchema = z.object({
   back: fanStateSchema,
   front: fanStateSchema,
-})
+});
 /**
  * Live values event schema (time-series data)
  */
@@ -144,19 +144,11 @@ const { initialTimeSeries: back_flow, insert: addFlow2 } = createTimeSeries(
   ONE_HOUR,
 );
 
-const { initialTimeSeries: front_revolutions, insert: addFan1 } = createTimeSeries(
-  TWENTY_MILLISECOND,
-  ONE_SECOND,
-  FIVE_SECOND,
-  ONE_HOUR,
-);
+const { initialTimeSeries: front_revolutions, insert: addFan1 } =
+  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
 
-const { initialTimeSeries: back_revolutions, insert: addFan2 } = createTimeSeries(
-  TWENTY_MILLISECOND,
-  ONE_SECOND,
-  FIVE_SECOND,
-  ONE_HOUR,
-);
+const { initialTimeSeries: back_revolutions, insert: addFan2 } =
+  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
 
 /**
  * Factory function to create a new Aquapath namespace store

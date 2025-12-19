@@ -6,7 +6,7 @@ import { aquapath1SerialRoute } from "@/routes/routes";
 import { Mode, StateEvent, useAquapath1Namespace } from "./aquapath1Namespace";
 import { useMachineMutate as useMachineMutation } from "@/client/useClient";
 
-import { use, useEffect, useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { produce } from "immer";
 import { z } from "zod";
 
@@ -42,14 +42,14 @@ export function useAquapath1() {
   const {
     state,
     defaultState,
-    front_temperature: front_temperature,
-    back_temperature: back_temperature,
-    front_flow: front_flow,
-    back_flow: back_flow,
-    front_temp_reservoir: front_temp_reservoir,
-    back_temp_reservoir: back_temp_reservoir,
-    front_revolutions: front_revolutions,
-    back_revolutions: back_revolutions,
+    front_temperature,
+    back_temperature,
+    front_flow,
+    back_flow,
+    front_temp_reservoir,
+    back_temp_reservoir,
+    front_revolutions,
+    back_revolutions,
   } = useAquapath1Namespace(machineIdentification);
 
   // Single optimistic state for all state management
@@ -136,10 +136,10 @@ export function useAquapath1() {
         requestFrontRevolutions({
           machine_identification_unique: machineIdentification,
           data: { SetFrontRevolutions: revolutions },
-        })
+        });
       },
     );
-  }
+  };
 
   const setBackRevolutions = (revolutions: number) => {
     updateStateOptimistically(
@@ -152,7 +152,7 @@ export function useAquapath1() {
           data: { SetBackRevolutions: revolutions },
         }),
     );
-  }
+  };
 
   // Mutation hooks
   const { request: requestAquapathMode } = useMachineMutation(

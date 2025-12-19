@@ -242,8 +242,8 @@ impl Controller {
         self.target_revolutions
     }
 
-    pub fn set_target_revolutions(&mut self, revolutions: f64) {
-        self.target_revolutions = AngularVelocity::new::<revolution_per_minute>(revolutions);
+    pub fn set_target_revolutions(&mut self, revolutions: AngularVelocity) {
+        self.target_revolutions = revolutions;
     }
 
     pub fn update(&mut self, now: Instant) -> () {

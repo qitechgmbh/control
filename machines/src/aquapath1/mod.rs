@@ -1,7 +1,7 @@
 use control_core::socketio::namespace::NamespaceCacheingLogic;
 use serde::{Deserialize, Serialize};
-use units::angular_velocity::revolution_per_minute;
 use std::time::Instant;
+use units::angular_velocity::revolution_per_minute;
 use units::f64::*;
 use units::{thermodynamic_temperature::degree_celsius, volume_rate::liter_per_minute};
 
@@ -120,21 +120,10 @@ impl AquaPathV1 {
                 .back_controller
                 .current_temperature
                 .get::<degree_celsius>(),
-            front_flow: self
-                .front_controller.current_flow
-                .get::<liter_per_minute>(),
-            back_flow: self
-                .back_controller
-                .current_flow
-                .get::<liter_per_minute>(),
-            front_temp_reservoir: self
-                .front_controller
-                .temp_reservoir
-                .get::<degree_celsius>(),
-            back_temp_reservoir: self
-                .back_controller
-                .temp_reservoir
-                .get::<degree_celsius>(),
+            front_flow: self.front_controller.current_flow.get::<liter_per_minute>(),
+            back_flow: self.back_controller.current_flow.get::<liter_per_minute>(),
+            front_temp_reservoir: self.front_controller.temp_reservoir.get::<degree_celsius>(),
+            back_temp_reservoir: self.back_controller.temp_reservoir.get::<degree_celsius>(),
             front_revolutions: self
                 .front_controller
                 .current_revolutions
@@ -143,7 +132,7 @@ impl AquaPathV1 {
                 .back_controller
                 .current_revolutions
                 .get::<revolution_per_minute>(),
-            };
+        };
         let event = live_values.build();
         self.namespace.emit(AquaPathV1Events::LiveValues(event));
     }
@@ -189,12 +178,24 @@ impl AquaPathV1 {
             },
             fan_states: FanStates {
                 front: FanState {
-                    revolutions: self.front_controller.current_revolutions.get::<revolution_per_minute>(),
-                    target_revolutions: self.front_controller.target_revolutions.get::<revolution_per_minute>(),
+                    revolutions: self
+                        .front_controller
+                        .current_revolutions
+                        .get::<revolution_per_minute>(),
+                    target_revolutions: self
+                        .front_controller
+                        .target_revolutions
+                        .get::<revolution_per_minute>(),
                 },
                 back: FanState {
-                    revolutions: self.back_controller.current_revolutions.get::<revolution_per_minute>(),
-                    target_revolutions: self.back_controller.target_revolutions.get::<revolution_per_minute>(),
+                    revolutions: self
+                        .back_controller
+                        .current_revolutions
+                        .get::<revolution_per_minute>(),
+                    target_revolutions: self
+                        .back_controller
+                        .target_revolutions
+                        .get::<revolution_per_minute>(),
                 },
             },
         };
@@ -303,8 +304,12 @@ impl AquaPathV1 {
 impl AquaPathV1 {
     fn set_target_revolutions(&mut self, revolutions: f64, fan_type: AquaPathSideType) {
         match fan_type {
-            AquaPathSideType::Back => self.back_controller.set_target_revolutions(revolutions),
-            AquaPathSideType::Front => self.front_controller.set_target_revolutions(revolutions),
+            AquaPathSideType::Back => self
+                .back_controller
+                .set_target_revolutions(AngularVelocity::new::<revolution_per_minute>(revolutions)),
+            AquaPathSideType::Front => self
+                .front_controller
+                .set_target_revolutions(AngularVelocity::new::<revolution_per_minute>(revolutions)),
         }
         self.emit_state();
     }
