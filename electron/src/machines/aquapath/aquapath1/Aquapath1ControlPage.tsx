@@ -171,14 +171,15 @@ export function Aquapath1ControlPage() {
                   }
                 />
               </Label>
-            </div>
 
-            {backCurrentTemperature < backHeatingBoundary && (
-              <Badge variant="secondary">Heating</Badge>
-            )}
-            {backCurrentTemperature > backCoolingBoundary && (
-              <Badge variant="default">Cooling</Badge>
-            )}
+
+              {backCurrentTemperature < backHeatingBoundary && (
+                <Badge variant="secondary">Heating</Badge>
+              )}
+              {backCurrentTemperature > backCoolingBoundary && (
+                <Badge variant="default">Cooling</Badge>
+              )}
+            </div>
 
             <div className="flex flex-row">
               <TimeSeriesValueNumeric

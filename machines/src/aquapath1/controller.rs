@@ -333,8 +333,8 @@ impl Controller {
                 let max_revolutions = self.get_max_revolutions();
                 let temp_offset = self.current_temperature - self.target_temperature;
 
-                let target_revolutions = temp_offset
-                    .get::<kelvin>()
+                let target_revolutions = (temp_offset
+                    .get::<kelvin>() * 10.0)
                     .clamp(0.0, max_revolutions.get::<revolution_per_minute>());
 
                 self.cooling_controller
