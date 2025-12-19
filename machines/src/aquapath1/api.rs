@@ -92,8 +92,8 @@ pub struct ToleranceState {
 }
 #[derive(Serialize, Debug, Clone)]
 pub struct ToleranceStates {
-    front: ToleranceState,
-    back: ToleranceState,
+    pub front: ToleranceState,
+    pub back: ToleranceState,
 }
 
 pub enum AquaPathV1Events {

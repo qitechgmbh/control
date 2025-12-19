@@ -162,7 +162,7 @@ export function useAquapath1() {
       () => {
         requestFrontHeatingTolerance({
           machine_identification_unique: machineIdentification,
-          data: { setFrontHeatingTolerance: tolerance },
+          data: { SetFrontHeatingTolerance: tolerance },
         });
       },
     );
@@ -176,7 +176,7 @@ export function useAquapath1() {
       () => {
         requestBackHeatingTolerance({
           machine_identification_unique: machineIdentification,
-          data: { setBackHeatingTolerance: tolerance },
+          data: { SetBackHeatingTolerance: tolerance },
         });
       },
     );
@@ -190,7 +190,7 @@ export function useAquapath1() {
       () => {
         requestFrontCoolingTolerance({
           machine_identification_unique: machineIdentification,
-          data: { setFrontHeatingTolerance: tolerance },
+          data: { SetFrontCoolingTolerance: tolerance },
         });
       },
     );
@@ -204,7 +204,7 @@ export function useAquapath1() {
       () => {
         requestBackCoolingTolerance({
           machine_identification_unique: machineIdentification,
-          data: { setBackHeatingTolerance: tolerance },
+          data: { SetBackCoolingTolerance: tolerance },
         });
       },
     );
@@ -233,14 +233,17 @@ export function useAquapath1() {
     z.object({ SetBackRevolutions: z.number() }),
   );
   const { request: requestFrontHeatingTolerance } = useMachineMutation(
-    z.object({ setFrontHeatingTolerance: z.number() }),
-  )
+    z.object({ SetFrontHeatingTolerance: z.number() }),
+  );
+  const { request: requestFrontCoolingTolerance } = useMachineMutation(
+    z.object({ SetFrontCoolingTolerance: z.number() }),
+  );
   const { request: requestBackHeatingTolerance } = useMachineMutation(
-    z.object({ setBackHeatingTolerance: z.number() }),
-  )
-  const { request: requestFrontHeatingTolerance } = useMachineMutation(
-    z.object({ setFrontHeatingTolerance: z.number() }),
-  )
+    z.object({ SetBackHeatingTolerance: z.number() }),
+  );
+  const { request: requestBackCoolingTolerance } = useMachineMutation(
+    z.object({ SetBackCoolingTolerance: z.number() }),
+  );
 
   // Helper function for optimistic updates using produce
   const updateStateOptimistically = (

@@ -52,43 +52,14 @@ export function Aquapath1SettingsPage() {
           </Label>
         </ControlCard>
 
-        <ControlCard>
-          <Label label="Set Back Temperature Tolerances">
+        <ControlCard title="Set Front Temperature Tolerances">
+          <Label label="Set Heating Tolerance">
             <EditValue
               title="Set Heating Tolerance"
               min={0}
-              value={state?.tolerance_states.back.heating}
-              max={10}
-              unit="C"
-              renderValue={(value) => value.toFixed(1)}
-              onChange={(val) => {
-                setBackHeatingTolerance(val);
-              }}
-            />
-          </Label>
-
-          <Label label="Set Back Temperature Tolerances">
-            <EditValue
-              title="Set Cooling Tolerance"
-              min={0}
-              value={state?.tolerance_states.back.heating}
-              max={10}
-              unit="C"
-              renderValue={(value) => value.toFixed(1)}
-              onChange={(val) => {
-                setBackCoolingTolerance(val);
-              }}
-            />
-          </Label>
-        </ControlCard>
-
-        <ControlCard>
-          <Label label="Set Heating Tolerance">
-            <EditValue
-              title="Set Target Revolution Speed"
-              min={0}
               value={state?.tolerance_states.front.heating}
-              max={100}
+              max={10}
+              step={0.1}
               unit="C"
               renderValue={(value) => value.toFixed(1)}
               onChange={(val) => {
@@ -97,16 +68,49 @@ export function Aquapath1SettingsPage() {
             />
           </Label>
 
-          <Label label="Set Heating Tolerance">
+          <Label label="Set Cooling Tolerance">
             <EditValue
-              title="Set Target Revolution Speed"
+              title="Set Cooling Tolerance"
               min={0}
-              value={state?.tolerance_states.front.cooling}
-              max={100}
+              value={state?.tolerance_states.back.heating}
+              max={10}
+              step={0.1}
               unit="C"
               renderValue={(value) => value.toFixed(1)}
               onChange={(val) => {
                 setFrontCoolingTolerance(val);
+              }}
+            />
+          </Label>
+        </ControlCard>
+
+        <ControlCard title="Set Back Temperature Tolerances">
+          <Label label="Set Heating Tolerance">
+            <EditValue
+              title="Set Heating Tolerance"
+              min={0}
+              value={state?.tolerance_states.front.heating}
+              max={10}
+              step={0.1}
+              unit="C"
+              renderValue={(value) => value.toFixed(1)}
+              onChange={(val) => {
+                setBackHeatingTolerance(val);
+              }}
+            />
+          </Label>
+
+          <Label label="Set Cooling Tolerance">
+            <EditValue
+              title="Set Cooling Tolerance"
+              min={0}
+              value={state?.tolerance_states.front.cooling}
+              max={10}
+              step={0.1}
+              unit="C"
+              renderValue={(value) => value.toFixed(1)}
+              onChange={(val) => {
+                setBackCoolingTolerance(val);
               }}
             />
           </Label>

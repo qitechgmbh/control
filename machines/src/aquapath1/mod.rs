@@ -337,6 +337,8 @@ impl AquaPathV1 {
                 ThermodynamicTemperature::new::<degree_celsius>(tolerance)
             ),
         }
+
+        self.emit_state();
     }
 
     fn set_cooling_tolerance(&mut self, tolerance: f64, tolerance_type: AquaPathSideType) {
@@ -348,5 +350,7 @@ impl AquaPathV1 {
                 ThermodynamicTemperature::new::<degree_celsius>(tolerance)
             ),
         }
+
+        self.emit_state();
     }
 }
