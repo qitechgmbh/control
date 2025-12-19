@@ -23,7 +23,7 @@ export function Aquapath1SettingsPage() {
         <ControlCard title="Front Fan Revolutions">
           <Label label="Set Max Revolution Speed">
             <EditValue
-              title="Set Target Revolution Speed"
+              title="Set Max Revolution Speed"
               min={0}
               value={state?.fan_states.front.revolutions}
               max={100}
@@ -39,7 +39,7 @@ export function Aquapath1SettingsPage() {
         <ControlCard title="Back Fan Revolutions">
           <Label label="Set Max Revolution Speed">
             <EditValue
-              title="Set Target Revolution Speed"
+              title="Set Max Revolution Speed"
               min={0}
               value={state?.fan_states.back.revolutions}
               max={100}
@@ -52,7 +52,7 @@ export function Aquapath1SettingsPage() {
           </Label>
         </ControlCard>
 
-        <ControlCard title="Set Front Temperature Tolerances">
+        <ControlCard title="Front Temperature Tolerances">
           <Label label="Set Heating Tolerance">
             <EditValue
               title="Set Heating Tolerance"
@@ -84,7 +84,7 @@ export function Aquapath1SettingsPage() {
           </Label>
         </ControlCard>
 
-        <ControlCard title="Set Back Temperature Tolerances">
+        <ControlCard title="Back Temperature Tolerances">
           <Label label="Set Heating Tolerance">
             <EditValue
               title="Set Heating Tolerance"
