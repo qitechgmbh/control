@@ -466,7 +466,7 @@ impl Gluetex {
         let slave_velocity = self.slave_puller_speed_controller.update_speed(
             t,
             master_speed,
-            &self.slave_tension_arm,
+            &self.addon_tension_arm,
         );
 
         // Apply direction
