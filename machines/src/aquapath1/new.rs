@@ -25,7 +25,7 @@ use ethercat_hal::{
         temperature_input::TemperatureInput,
     },
 };
-use std::time::{Duration, Instant};
+use std::time::Instant;
 use units::{
     AngularVelocity,
     angular_velocity::revolution_per_minute,

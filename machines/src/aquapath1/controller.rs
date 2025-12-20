@@ -5,7 +5,7 @@ use ethercat_hal::io::encoder_input::EncoderInput;
 use ethercat_hal::io::{
     analog_output::AnalogOutput, digital_output::DigitalOutput, temperature_input::TemperatureInput,
 };
-use std::time::{Duration, Instant};
+use std::time::Instant;
 use units::AngularVelocity;
 use units::angular_velocity::revolution_per_minute;
 use units::f64::ThermodynamicTemperature;
