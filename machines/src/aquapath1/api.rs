@@ -22,6 +22,10 @@ pub struct LiveValuesEvent {
     pub back_temp_reservoir: f64,
     pub front_revolutions: f64,
     pub back_revolutions: f64,
+    pub front_power: f64,
+    pub back_power: f64,
+    pub front_total_energy: f64,
+    pub back_total_energy: f64,
 }
 
 impl LiveValuesEvent {

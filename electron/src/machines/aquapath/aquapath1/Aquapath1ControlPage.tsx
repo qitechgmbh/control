@@ -19,6 +19,10 @@ export function Aquapath1ControlPage() {
     back_temperature,
     front_revolutions,
     back_revolutions,
+    front_power,
+    back_power,
+    front_total_energy,
+    back_total_energy,
     setAquapathMode,
     setFrontTemperature,
     setBackTemperature,
@@ -89,7 +93,7 @@ export function Aquapath1ControlPage() {
               </Label>
 
               {frontCurrentTemperature < frontHeatingBoundary && (
-                <Badge variant="secondary">Heating</Badge>
+                <Badge variant="secondary">Heating {front_power.current?.value}</Badge>
               )}
               {frontCurrentTemperature > frontCoolingBoundary && (
                 <Badge variant="default">Cooling</Badge>
@@ -173,7 +177,7 @@ export function Aquapath1ControlPage() {
               </Label>
 
               {backCurrentTemperature < backHeatingBoundary && (
-                <Badge variant="secondary">Heating</Badge>
+                <Badge variant="secondary">Heating {back_power.current?.value}</Badge>
               )}
               {backCurrentTemperature > backCoolingBoundary && (
                 <Badge variant="default">Cooling</Badge>

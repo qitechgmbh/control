@@ -39,6 +39,9 @@ pub struct Controller {
     pub temperature_sensor_in: TemperatureInput,
     pub temperature_sensor_out: TemperatureInput,
 
+    pub power: f64,
+    pub total_energy: f64,
+
     pub cooling_allowed: bool,
     pub heating_allowed: bool,
 
@@ -97,6 +100,9 @@ impl Controller {
             heating_allowed: false,
             temperature_sensor_in: temp_sensor_in,
             temperature_sensor_out: temp_sensor_out,
+
+            power: 700.0,
+            total_energy: 0.0,
 
             flow: flow,
             pump_relais: pump_relais,
@@ -261,6 +267,15 @@ impl Controller {
         self.heating_tolerance = tolerance;
     }
 
+    // no power/energy unit implemented
+    pub fn get_current_power(&self) -> f64 {
+        self.temperature_pid_output * self.power
+    }
+
+    pub fn get_total_energy(&self) -> f64 {
+        self.total_energy
+    }
+
     pub fn update(&mut self, now: Instant) -> () {
         let current_flow = self.get_flow();
         self.current_flow = current_flow;
@@ -279,12 +294,12 @@ impl Controller {
         self.temp_reservoir = self.get_temp_out();
 
         if self.current_temperature
-            < (self.min_temperature - ThermodynamicTemperature::new::<degree_celsius>(2.0))
+            < (self.min_temperature - self.cooling_tolerance)
             && self.temperature.cooling
         {
             self.turn_cooling_off();
         } else if self.current_temperature
-            > (self.max_temperature + ThermodynamicTemperature::new::<degree_celsius>(2.0))
+            > (self.max_temperature + self.heating_tolerance)
             && self.temperature.heating
         {
             self.turn_heating_off();
@@ -317,6 +332,8 @@ impl Controller {
                 } else if !on && self.temperature.heating {
                     self.turn_heating_off();
                 }
+
+                self.total_energy += self.get_current_power() * elapsed.as_secs_f64() / 3600.0;
             } else {
                 // Pump is off or heating not allowed - don't heat
                 if self.temperature.heating {

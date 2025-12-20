@@ -80,6 +80,10 @@ export const liveValuesEventDataSchema = z.object({
   back_temp_reservoir: z.number(),
   front_revolutions: z.number(),
   back_revolutions: z.number(),
+  back_power: z.number(),
+  front_power: z.number(),
+  front_total_energy: z.number(),
+  back_total_energy: z.number(),
 });
 
 /**
@@ -120,6 +124,12 @@ export type Aquapath1NamespaceStore = {
 
   front_revolutions: TimeSeries;
   back_revolutions: TimeSeries;
+
+  front_power: TimeSeries;
+  back_power: TimeSeries;
+
+  front_total_energy: TimeSeries;
+  back_total_energy: TimeSeries;
 };
 
 // Constants for time durations
@@ -160,6 +170,18 @@ const { initialTimeSeries: front_revolutions, insert: addFan1 } =
 const { initialTimeSeries: back_revolutions, insert: addFan2 } =
   createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
 
+const { initialTimeSeries: front_power, insert: addFrontPower } =
+  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+
+const { initialTimeSeries: back_power, insert: addBackPower } =
+  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+
+const { initialTimeSeries: front_total_energy, insert: addFrontEnergy } =
+  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+
+const { initialTimeSeries: back_total_energy, insert: addBackEnergy } =
+  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+
 /**
  * Factory function to create a new Aquapath namespace store
  * @returns A new Zustand store instance for Aquapath namespace
@@ -178,6 +200,10 @@ export const createAquapath1NamespaceStore =
         back_temp_reservoir: back_temp_reservoir,
         front_revolutions: front_revolutions,
         back_revolutions: back_revolutions,
+        back_power: back_power,
+        front_power: front_power,
+        front_total_energy: front_total_energy,
+        back_total_energy: back_total_energy,
       };
     });
   };
@@ -251,6 +277,22 @@ export function aquapath1MessageHandler(
           }),
           back_revolutions: addFan2(state.back_revolutions, {
             value: liveValuesEvent.data.back_revolutions,
+            timestamp: event.ts,
+          }),
+          front_power: addFrontPower(state.front_power, {
+            value: liveValuesEvent.data.front_power,
+            timestamp: event.ts,
+          }),
+          back_power: addBackPower(state.back_power, {
+            value: liveValuesEvent.data.back_power,
+            timestamp: event.ts,
+          }),
+          front_total_energy: addFrontEnergy(state.front_total_energy, {
+            value: liveValuesEvent.data.front_total_energy,
+            timestamp: event.ts,
+          }),
+          back_total_energy: addBackEnergy(state.back_total_energy, {
+            value: liveValuesEvent.data.back_total_energy,
             timestamp: event.ts,
           }),
         }));
