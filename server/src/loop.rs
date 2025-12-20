@@ -47,6 +47,10 @@ pub fn start_loop_thread(
                 unsafe { libc::pthread_threadid_np(libc::pthread_self(), &mut thread_id_raw) };
                 thread_id_raw as libc::pid_t
             };
+            #[cfg(target_os = "windows")]
+            let tid = unsafe { libc::GetCurrentThreadId() as libc::pid_t };
+            #[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
+            let tid = 0 as libc::pid_t; // Fallback for unsupported platforms
 
             set_rt_loop_tid(tid);
 
