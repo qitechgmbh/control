@@ -15,6 +15,12 @@ use ethercat_hal::devices::devices_from_subdevices;
 use ethercat_hal::devices::wago_750_354::{
     WAGO_750_354_PRODUCT_ID, WAGO_750_354_VENDOR_ID, Wago750_354,
 };
+use ethercat_hal::devices::wago_modules::{
+    wago_750_455::WAGO_750_455_PRODUCT_ID,
+    wago_750_501::WAGO_750_501_PRODUCT_ID,
+    wago_750_652::WAGO_750_652_PRODUCT_ID,
+    wago_750_1506::WAGO_750_1506_PRODUCT_ID,
+};
 
 use ethercrab::std::ethercat_now;
 use ethercrab::{MainDevice, MainDeviceConfig, PduStorage, RetryBehaviour, Timeouts};
@@ -27,6 +33,17 @@ use machines::{Machine, MachineNewHardware, MachineNewHardwareEthercat, MachineN
 use smol::channel::Sender;
 use socketioxide::extract::SocketRef;
 use std::{sync::Arc, time::Duration};
+
+/// Map Wago module product IDs to their device names
+fn wago_module_name(product_id: u32) -> String {
+    match product_id {
+        WAGO_750_455_PRODUCT_ID => "750-455".to_owned(),
+        WAGO_750_501_PRODUCT_ID => "750-501".to_owned(),
+        WAGO_750_652_PRODUCT_ID => "750-652".to_owned(),
+        WAGO_750_1506_PRODUCT_ID => "750-1506".to_owned(),
+        _ => format!("Wago Module (0x{:x})", product_id),
+    }
+}
 
 const SM_OUTPUT: u16 = 0x1C32;
 const SM_INPUT: u16 = 0x1C33;
@@ -353,7 +370,7 @@ pub async fn setup_loop(
                         Some(meta) => {
                             let meta_data = EtherCatDeviceMetaData {
                                 configured_address: module.slot,
-                                name: "wago module".to_owned(),
+                                name: wago_module_name(module.product_id),
                                 vendor_id:module.vendor_id,
                                 product_id: module.product_id,
                                 revision: 0x2,
