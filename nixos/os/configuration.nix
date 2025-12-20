@@ -183,15 +183,14 @@ in
   };
 
   # Enable the X11 windowing system.
-  services.xserver.enable = true;
-  #services.xserver.videoDrivers = [ "intel" ];
-  services.xserver.displayManager.gdm = {
+  services.xserver = {
     enable = true;
-    autoSuspend = false;
-    wayland = true;
+    desktopManager = {
+      xterm.enable = false;
+      xfce.enable = true;
+    };
   };
-
-  services.xserver.desktopManager.gnome.enable = true;
+  services.displayManager.defaultSession = "xfce";
 
   # Disable sleep/suspend
   systemd.targets.sleep.enable = false;
@@ -280,10 +279,6 @@ in
   # services.displayManager.autoLogin.enable = true;
   # services.displayManager.autoLogin.user = "qitech";
 
-  # Workaround for GNOME autologin: https://github.com/NixOS/nixpkgs/issues/103746#issuecomment-945091229
-  systemd.services."getty@tty1".enable = true;
-  systemd.services."autovt@tty1".enable = true;
-
   # Install firefox.
   programs.firefox.enable = true;
 
@@ -291,52 +286,18 @@ in
   programs.wireshark.enable = true;
   programs.wireshark.package = pkgs.wireshark;
 
-  # List packages installed in system profile. To search, run:
-  # $ nix search wget
   environment.systemPackages = with pkgs; [
-    #  vim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
-    #  wget
-    gnome-tweaks
-    gnome-extension-manager
-    gnomeExtensions.dash-to-dock
-    # Extension to disable activities overview on login
-    gnomeExtensions.no-overview
+    vim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
+    wget
     git
     pkgs.qitechPackages.electron
     htop
     wireshark
     pciutils
-    neofetch
   ];
 
   xdg.portal.enable = true;
   xdg.portal.extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
-
-  environment.gnome.excludePackages = (with pkgs; [
-    atomix # puzzle game
-    baobab # disk usage analyzer
-    cheese # webcam tool
-    eog # image viewer
-    epiphany # web browser
-    evince # document viewer
-    geary # email reader
-    simple-scan # document scanner
-    gnome-characters
-    gnome-music
-    gnome-photos
-    gnome-terminal
-    gnome-tour
-    gnome-calculator
-    gnome-calendar
-    gnome-contacts
-    gnome-maps
-    gnome-weather
-    hitori # sudoku game
-    iagno # go game
-    tali # poker game
-    totem # video player
-    seahorse # password manager
-  ]);
 
   # Set system wide env variables
   environment.variables = {
@@ -386,6 +347,6 @@ in
   # this value at the release version of the first install of this system.
   # Before changing this value read the documentation for this option
   # (e.g. man configuration.nix or on https://nixos.org/nixos/options.html).
-  system.stateVersion = "24.11"; # Did you read the comment?
+  system.stateVersion = "25.11"; # Did you read the comment?
 
 }
