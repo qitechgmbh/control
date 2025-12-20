@@ -294,13 +294,9 @@ impl Controller {
         self.current_temperature = self.get_temp_in();
         self.temp_reservoir = self.get_temp_out();
 
-        if self.current_temperature < self.min_temperature
-            && self.temperature.cooling
-        {
+        if self.current_temperature < self.min_temperature && self.temperature.cooling {
             self.turn_cooling_off();
-        } else if self.current_temperature > self.max_temperature
-            && self.temperature.heating
-        {
+        } else if self.current_temperature > self.max_temperature && self.temperature.heating {
             self.turn_heating_off();
         }
 
@@ -321,7 +317,6 @@ impl Controller {
                 self.turn_heating_on();
 
                 self.total_energy += self.get_current_power() * elapsed.as_secs_f64() / 3600.0;
-                tracing::info!("{} {}", elapsed.as_secs_f64(), self.total_energy);
             } else {
                 // Pump is off or heating not allowed - don't heat
                 if self.temperature.heating {

@@ -133,18 +133,10 @@ impl AquaPathV1 {
                 .back_controller
                 .current_revolutions
                 .get::<revolution_per_minute>(),
-            front_power: self
-                .front_controller
-                .get_current_power(),
-            back_power: self
-                .back_controller
-                .get_current_power(),
-            front_total_energy: self
-                .front_controller
-                .get_total_energy(),
-            back_total_energy: self
-                .back_controller
-                .get_total_energy(),
+            front_power: self.front_controller.get_current_power(),
+            back_power: self.back_controller.get_current_power(),
+            front_total_energy: self.front_controller.get_total_energy(),
+            back_total_energy: self.back_controller.get_total_energy(),
         };
         let event = live_values.build();
         self.namespace.emit(AquaPathV1Events::LiveValues(event));

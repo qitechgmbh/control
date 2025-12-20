@@ -93,15 +93,18 @@ export function Aquapath1ControlPage() {
                 />
               </Label>
 
-              {frontCurrentTemperature < frontHeatingBoundary && frontTargetFlow && (
-                <Badge variant="default">
-                  Power: {front_power.current?.value} W<br/>
-                  Total: {front_total_energy.current?.value} kWh
-                </Badge>
-              )}
-              {frontCurrentTemperature > frontCoolingBoundary && frontTargetFlow && (
-                <Badge variant="secondary">Cooling</Badge>
-              )}
+              {frontCurrentTemperature < frontHeatingBoundary &&
+                (state?.flow_states.front.flow ?? 0) > 0 && (
+                  <Badge variant="default">
+                    Power: {front_power.current?.value} W<br />
+                    Total: {front_total_energy.current?.value} kWh
+                  </Badge>
+                )}
+              {frontCurrentTemperature > frontCoolingBoundary &&
+                frontTargetFlow &&
+                (state?.flow_states.front.flow ?? 0) && (
+                  <Badge variant="secondary">Cooling</Badge>
+                )}
             </div>
 
             <div className="flex flex-row">
@@ -180,15 +183,19 @@ export function Aquapath1ControlPage() {
                 />
               </Label>
 
-              {backCurrentTemperature < backHeatingBoundary && backTargetFlow && (
-                <Badge variant="default">
-                  Power: {back_power.current?.value} W<br/>
-                  Total: {back_total_energy.current?.value} kWh
-                </Badge>
-              )}
-              {backCurrentTemperature > backCoolingBoundary && frontTargetFlow && (
-                <Badge variant="secondary">Cooling</Badge>
-              )}
+              {backCurrentTemperature < backHeatingBoundary &&
+                backTargetFlow &&
+                (state?.flow_states.front.flow ?? 0) && (
+                  <Badge variant="default">
+                    Power: {back_power.current?.value} W<br />
+                    Total: {back_total_energy.current?.value} kWh
+                  </Badge>
+                )}
+              {backCurrentTemperature > backCoolingBoundary &&
+                frontTargetFlow &&
+                (state?.flow_states.front.flow ?? 0) && (
+                  <Badge variant="secondary">Cooling</Badge>
+                )}
             </div>
 
             <div className="flex flex-row">
