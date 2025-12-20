@@ -6,36 +6,46 @@ use machines::{
     machine_identification::{MachineIdentification, MachineIdentificationUnique},
     wago_power::WagoPower,
 };
+use smol::Timer;
 use std::sync::Arc;
+use std::time::Duration;
 
 #[cfg(not(feature = "mock-machine"))]
 pub async fn start_modbus_tcp_discovery(shared_state: Arc<SharedState>) {
-    let addresses = probe_modbus_tcp().await;
+    loop {
+        let addresses = probe_modbus_tcp().await;
 
-    let machines: Vec<Box<dyn Machine>> = addresses
-        .into_iter()
-        .map(|probe| {
-            smol::spawn(async move {
-                let machine_identification_unique = MachineIdentificationUnique {
-                    machine_identification: MachineIdentification {
-                        vendor: VENDOR_QITECH,
-                        machine: MACHINE_WAGO_POWER_V1,
-                    },
-                    serial: probe.serial,
-                };
+        if addresses.is_empty() {
+            Timer::after(Duration::from_secs(1)).await;
+            continue;
+        }
 
-                let channel = MachineChannel::new(machine_identification_unique);
-                let power = WagoPower::new(channel, probe.addr)
-                    .await
-                    .expect("Failed to initialize wago power supply");
+        let machines: Vec<Box<dyn Machine>> = addresses
+            .into_iter()
+            .map(|probe| {
+                smol::spawn(async move {
+                    let machine_identification_unique = MachineIdentificationUnique {
+                        machine_identification: MachineIdentification {
+                            vendor: VENDOR_QITECH,
+                            machine: MACHINE_WAGO_POWER_V1,
+                        },
+                        serial: probe.serial,
+                    };
 
-                Box::new(power) as Box<dyn Machine>
+                    let channel = MachineChannel::new(machine_identification_unique);
+                    let power = WagoPower::new(channel, probe.addr)
+                        .await
+                        .expect("Failed to initialize wago power supply");
+
+                    Box::new(power) as Box<dyn Machine>
+                })
             })
-        })
-        .join_all()
-        .await;
+            .join_all()
+            .await;
 
-    shared_state.add_machines(machines).await;
+        shared_state.add_machines(machines).await;
+        return;
+    }
 }
 
 #[cfg(feature = "mock-machine")]
