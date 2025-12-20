@@ -505,7 +505,8 @@ export function DeviceEepromDialogContent({ device, setOpen }: ContentProps) {
               </Button>
             </div>
             <Alert title="Restart mandatory" variant="info">
-              The backend service must be restarted for the changes to take effect
+              The backend service must be restarted for the changes to take
+              effect
             </Alert>
           </form>
         </Form>
