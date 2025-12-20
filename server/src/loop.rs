@@ -43,9 +43,9 @@ pub fn start_loop_thread(
             let tid = unsafe { libc::syscall(libc::SYS_gettid) as libc::pid_t };
             #[cfg(target_os = "macos")]
             let tid = {
-                let mut tid: u64 = 0;
-                unsafe { libc::pthread_threadid_np(libc::pthread_self(), &mut tid) };
-                tid as libc::pid_t
+                let mut thread_id_raw: u64 = 0;
+                unsafe { libc::pthread_threadid_np(libc::pthread_self(), &mut thread_id_raw) };
+                thread_id_raw as libc::pid_t
             };
 
             set_rt_loop_tid(tid);
