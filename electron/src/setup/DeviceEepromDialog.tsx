@@ -513,7 +513,8 @@ export function DeviceEepromDialogContent({ device, setOpen }: ContentProps) {
               <Icon name="lu:Save" /> Write
             </Button>
             <Alert title="Restart mandatory" variant="info">
-              The backend service must be restarted for the changes to take effect
+              The backend service must be restarted for the changes to take
+              effect
             </Alert>
           </form>
         </Form>
