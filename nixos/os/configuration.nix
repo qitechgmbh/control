@@ -185,6 +185,7 @@ in
       "wheel"
       "realtime"
       "wireshark"
+      "dailout"
     ];
   };
 
