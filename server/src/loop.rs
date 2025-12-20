@@ -37,7 +37,7 @@ pub fn start_loop_thread(
                     .with_spin_strategy(spin_sleep::SpinStrategy::YieldThread);
 
             let _ = set_core_affinity(2);
-            
+
             // Get thread ID in a platform-specific way
             #[cfg(target_os = "linux")]
             let tid = unsafe { libc::syscall(libc::SYS_gettid) as libc::pid_t };
@@ -47,7 +47,7 @@ pub fn start_loop_thread(
                 unsafe { libc::pthread_threadid_np(libc::pthread_self(), &mut tid) };
                 tid as libc::pid_t
             };
-            
+
             set_rt_loop_tid(tid);
 
             #[cfg(not(feature = "development-build"))]
