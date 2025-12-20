@@ -41,10 +41,12 @@ import { DeviceRoleComponent } from "@/components/DeviceRole";
 import { Alert } from "@/components/Alert";
 import { Separator } from "@/components/ui/separator";
 import { Icon } from "@/components/Icon";
+import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { toast } from "sonner";
 import { Toast } from "@/components/Toast";
 import { EthercatDevicesEventData } from "@/client/mainNamespace";
 import { TouchNumpad } from "@/components/touch/TouchNumpad";
+import { restartBackend } from "@/helpers/troubleshoot_helpers";
 
 type Device = NonNullable<EthercatDevicesEventData["Done"]>["devices"][number];
 
@@ -69,12 +71,17 @@ type FormSchema = z.infer<typeof formSchema>;
 export function DeviceEepromDialog({ device }: Props) {
   const [open, setOpen] = React.useState(false);
   const key = useMemo(() => Math.random(), [open]);
-  const onClose = () => setOpen(false);
 
   return (
     <Dialog
       open={open}
-      onOpenChange={setOpen}
+      onOpenChange={(newOpen) => {
+        setOpen(newOpen);
+        // Close numpad when dialog closes
+        if (!newOpen) {
+          // This will be handled by the key change resetting the component
+        }
+      }}
       // Prevent closing via Escape to keep numpad open while interacting
       modal
     >
@@ -103,6 +110,7 @@ export function DeviceEeepromDialogContent({ device, setOpen }: ContentProps) {
   const [numpadOpen, setNumpadOpen] = useState(false);
   const [numpadPosition, setNumpadPosition] = useState({ left: 0, top: 0 });
   const serialContainerRef = useRef<HTMLDivElement>(null);
+  const [isRestartingBackend, setIsRestartingBackend] = useState(false);
 
   const form = useForm<FormSchema>({
     resolver: zodResolver(formSchema),
@@ -145,9 +153,37 @@ export function DeviceEeepromDialogContent({ device, setOpen }: ContentProps) {
               Machine assignment written successfully.
             </Toast>,
           );
-          setOpen();
+          setOpen(false);
         }
       });
+  };
+
+  const handleRestartBackend = async () => {
+    setIsRestartingBackend(true);
+    try {
+      const result = await restartBackend();
+      if (result.success) {
+        toast(
+          <Toast title="Backend restart" icon="lu:RotateCcw">
+            Backend service restart initiated.
+          </Toast>,
+        );
+      } else {
+        toast(
+          <Toast title="Backend restart failed" icon="lu:CircleAlert">
+            {result.error ?? "Unknown error"}
+          </Toast>,
+        );
+      }
+    } catch (error) {
+      toast(
+        <Toast title="Backend restart failed" icon="lu:CircleAlert">
+          {error instanceof Error ? error.message : String(error)}
+        </Toast>,
+      );
+    } finally {
+      setIsRestartingBackend(false);
+    }
   };
 
   const machinePreset = useMemo(() => {
@@ -455,6 +491,30 @@ export function DeviceEeepromDialogContent({ device, setOpen }: ContentProps) {
               )}
             />
             <Separator />
+            <div className="flex flex-wrap gap-2">
+              <Button type="submit" disabled={!form.formState.isValid}>
+                <Icon name="lu:Save" /> Write
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={handleRestartBackend}
+                disabled={isRestartingBackend}
+                aria-busy={isRestartingBackend}
+              >
+                {isRestartingBackend ? (
+                  <>
+                    <LoadingSpinner />
+                    Restarting...
+                  </>
+                ) : (
+                  <>
+                    <Icon name="lu:RotateCcw" />
+                    Restart backend
+                  </>
+                )}
+              </Button>
+            </div>
             <Button type="submit" disabled={!form.formState.isValid}>
               <Icon name="lu:Save" /> Write
             </Button>
