@@ -214,6 +214,7 @@ impl Controller {
     pub fn turn_heating_off(&mut self) {
         self.heating_relais_1.set(false);
         self.temperature.heating = false;
+        self.power = 0.0;
     }
 
     pub fn set_should_pump(&mut self, should_pump: bool) {
@@ -269,7 +270,7 @@ impl Controller {
 
     // no power/energy unit implemented
     pub fn get_current_power(&self) -> f64 {
-        self.temperature_pid_output * self.power
+        self.power
     }
 
     pub fn get_total_energy(&self) -> f64 {
@@ -293,13 +294,11 @@ impl Controller {
         self.current_temperature = self.get_temp_in();
         self.temp_reservoir = self.get_temp_out();
 
-        if self.current_temperature
-            < (self.min_temperature - self.cooling_tolerance)
+        if self.current_temperature < self.min_temperature
             && self.temperature.cooling
         {
             self.turn_cooling_off();
-        } else if self.current_temperature
-            > (self.max_temperature + self.heating_tolerance)
+        } else if self.current_temperature > self.max_temperature
             && self.temperature.heating
         {
             self.turn_heating_off();
@@ -308,13 +307,9 @@ impl Controller {
         // Calculate PID error once
         let error = self.target_temperature.get::<degree_celsius>()
             - self.current_temperature.get::<degree_celsius>();
-        let control = self.pid.update(error, now);
-        self.temperature_pid_output = control;
 
-        let elapsed = now.duration_since(self.window_start);
-        if elapsed >= self.pwm_period {
-            self.window_start = now;
-        }
+        let elapsed = now - self.window_start;
+        self.window_start = now;
 
         // Decide whether to heat or cool based on error
         if error > self.heating_tolerance.get::<degree_celsius>() {
@@ -323,29 +318,22 @@ impl Controller {
                 self.turn_cooling_off();
             }
             if self.heating_allowed && current_flow > VolumeRate::new::<liter_per_minute>(0.0) {
-                // Only start heating if pump is on
-                let duty = control.clamp(0.0, 1.0);
-                let on_time = self.pwm_period.mul_f64(duty);
-                let on = elapsed < on_time;
-                if on && !self.temperature.heating {
-                    self.turn_heating_on();
-                } else if !on && self.temperature.heating {
-                    self.turn_heating_off();
-                }
+                self.turn_heating_on();
 
                 self.total_energy += self.get_current_power() * elapsed.as_secs_f64() / 3600.0;
+                tracing::info!("{} {}", elapsed.as_secs_f64(), self.total_energy);
             } else {
                 // Pump is off or heating not allowed - don't heat
                 if self.temperature.heating {
                     self.turn_heating_off();
                 }
             }
-        } else if error < self.cooling_tolerance.get::<degree_celsius>() {
+        } else if error < -self.cooling_tolerance.get::<degree_celsius>() {
             // Need cooling (current > target)
             if self.temperature.heating {
                 self.turn_heating_off();
             }
-            if self.cooling_allowed {
+            if self.cooling_allowed && current_flow > VolumeRate::new::<liter_per_minute>(0.0) {
                 if !self.temperature.cooling {
                     self.turn_cooling_on();
                 }
@@ -360,6 +348,10 @@ impl Controller {
                     .set(target_revolutions as f32 / 10.0);
                 self.current_revolutions =
                     AngularVelocity::new::<revolution_per_minute>(target_revolutions);
+            } else {
+                if self.temperature.cooling {
+                    self.turn_cooling_off();
+                }
             }
         }
     }

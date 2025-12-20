@@ -8,6 +8,7 @@ import { SelectionGroup } from "@/control/SelectionGroup";
 import { EditValue } from "@/control/EditValue";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/control/Label";
+import { HeatingZone } from "../../extruder/HeatingZone";
 
 export function Aquapath1ControlPage() {
   const {
@@ -92,11 +93,14 @@ export function Aquapath1ControlPage() {
                 />
               </Label>
 
-              {frontCurrentTemperature < frontHeatingBoundary && (
-                <Badge variant="secondary">Heating {front_power.current?.value}</Badge>
+              {frontCurrentTemperature < frontHeatingBoundary && frontTargetFlow && (
+                <Badge variant="default">
+                  Power: {front_power.current?.value} W<br/>
+                  Total: {front_total_energy.current?.value} kWh
+                </Badge>
               )}
-              {frontCurrentTemperature > frontCoolingBoundary && (
-                <Badge variant="default">Cooling</Badge>
+              {frontCurrentTemperature > frontCoolingBoundary && frontTargetFlow && (
+                <Badge variant="secondary">Cooling</Badge>
               )}
             </div>
 
@@ -176,11 +180,14 @@ export function Aquapath1ControlPage() {
                 />
               </Label>
 
-              {backCurrentTemperature < backHeatingBoundary && (
-                <Badge variant="secondary">Heating {back_power.current?.value}</Badge>
+              {backCurrentTemperature < backHeatingBoundary && backTargetFlow && (
+                <Badge variant="default">
+                  Power: {back_power.current?.value} W<br/>
+                  Total: {back_total_energy.current?.value} kWh
+                </Badge>
               )}
-              {backCurrentTemperature > backCoolingBoundary && (
-                <Badge variant="default">Cooling</Badge>
+              {backCurrentTemperature > backCoolingBoundary && frontTargetFlow && (
+                <Badge variant="secondary">Cooling</Badge>
               )}
             </div>
 
