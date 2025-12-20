@@ -68,13 +68,7 @@ export function DeviceEepromDialog({ device }: Props) {
   return (
     <Dialog
       open={open}
-      onOpenChange={(newOpen) => {
-        setOpen(newOpen);
-        // Close numpad when dialog closes
-        if (!newOpen) {
-          // This will be handled by the key change resetting the component
-        }
-      }}
+      onOpenChange={setOpen}
       // Prevent closing via Escape to keep numpad open while interacting
       modal
     >
