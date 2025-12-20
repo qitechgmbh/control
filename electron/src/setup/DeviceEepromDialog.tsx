@@ -70,13 +70,7 @@ export function DeviceEepromDialog({ device }: Props) {
   return (
     <Dialog
       open={open}
-      onOpenChange={(newOpen) => {
-        setOpen(newOpen);
-        // Close numpad when dialog closes
-        if (!newOpen) {
-          // This will be handled by the key change resetting the component
-        }
-      }}
+      onOpenChange={setOpen}
       // Prevent closing via Escape to keep numpad open while interacting
       modal
     >
@@ -86,7 +80,7 @@ export function DeviceEepromDialog({ device }: Props) {
           Assign
         </Button>
       </DialogTrigger>
-      <DeviceEeepromDialogContent device={device} key={key} setOpen={setOpen} />
+      <DeviceEepromDialogContent device={device} key={key} setOpen={setOpen} />
     </Dialog>
   );
 }
@@ -97,7 +91,7 @@ type ContentProps = {
   setOpen: (open: boolean) => void;
 };
 
-export function DeviceEeepromDialogContent({ device, setOpen }: ContentProps) {
+export function DeviceEepromDialogContent({ device, setOpen }: ContentProps) {
   const client = useClient();
   const serialInputRef = useRef<HTMLInputElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -511,7 +505,7 @@ export function DeviceEeepromDialogContent({ device, setOpen }: ContentProps) {
               </Button>
             </div>
             <Alert title="Restart mandatory" variant="info">
-              The device must be restarted for the changes to take effect
+              The backend service must be restarted for the changes to take effect
             </Alert>
           </form>
         </Form>
