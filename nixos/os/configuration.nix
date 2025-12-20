@@ -270,7 +270,7 @@ in
   users.users.qitech = {
     isNormalUser = true;
     description = "QiTech HMI";
-    extraGroups = [ "networkmanager" "wheel" "realtime" "wireshark" ];
+    extraGroups = [ "networkmanager" "wheel" "realtime" "wireshark" "dailout" ];
     packages = with pkgs; [ ];
   };
 
