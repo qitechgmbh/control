@@ -64,7 +64,7 @@ impl Controller {
         heating_relais_1: DigitalOutput,
         temp_sensor_in: TemperatureInput,
         temp_sensor_out: TemperatureInput,
-        target_revolutions: AngularVelocity,
+        max_revolutions: AngularVelocity,
 
         flow: Flow,
         pump_relais: DigitalOutput,
@@ -88,7 +88,7 @@ impl Controller {
             heating_tolerance: ThermodynamicTemperature::new::<degree_celsius>(2.0),
 
             current_revolutions: AngularVelocity::new::<revolution_per_minute>(0.0),
-            max_revolutions: target_revolutions,
+            max_revolutions: max_revolutions,
 
             cooling_relais: cooling_relais,
             heating_relais_1: heating_relais_1,
