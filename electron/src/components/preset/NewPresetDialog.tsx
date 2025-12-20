@@ -226,12 +226,12 @@ export function NewPresetDialog<T extends PresetSchema>({
               className="w-full"
             />
           </div>
-        <div className="flex flex-col gap-6 text-sm">
-          <span>Current Settings:</span>
-          <PresetPreviewTable entries={previewEntries} data={currentState} />
-        </div>
+          <div className="flex flex-col gap-6 text-sm">
+            <span>Current Settings:</span>
+            <PresetPreviewTable entries={previewEntries} data={currentState} />
+          </div>
 
-        <Separator />
+          <Separator />
           <div className="flex flex-row gap-4">
             <TouchButton
               variant="outline"
