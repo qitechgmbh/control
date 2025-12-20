@@ -15,9 +15,7 @@ use units::volume_rate::liter_per_minute;
 
 pub struct Controller {
     pub pid: PidController,
-    temperature_pid_output: f64,
     window_start: Instant,
-    pwm_period: Duration,
 
     pub temperature: Temperature,
     pub target_temperature: ThermodynamicTemperature,
@@ -59,7 +57,6 @@ impl Controller {
         kp: f64,
         ki: f64,
         kd: f64,
-        pwm_duration: Duration,
         temp: Temperature,
         target_tempetature: ThermodynamicTemperature,
         cooling_controller: AnalogOutput,
@@ -75,9 +72,7 @@ impl Controller {
     ) -> Self {
         Self {
             pid: PidController::new(kp, ki, kd),
-            temperature_pid_output: 0.0,
             window_start: Instant::now(),
-            pwm_period: pwm_duration,
             target_temperature: target_tempetature,
             current_temperature: ThermodynamicTemperature::new::<degree_celsius>(25.0),
             temp_reservoir: ThermodynamicTemperature::new::<degree_celsius>(25.0),
