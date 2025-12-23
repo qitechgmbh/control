@@ -12,11 +12,11 @@ use control_core::socketio::namespace::NamespaceCacheingLogic;
 use control_core::{irq_handling::set_irq_affinity, realtime::set_realtime_priority};
 use ethercat_hal::debugging::diagnosis_history::get_most_recent_diagnosis_message;
 use ethercat_hal::devices::devices_from_subdevices;
-use ethercat_hal::devices::wago_modules::ip20_ec_di8_do8::{
-    IP20_EC_DI8_DO8_PRODUCT_ID, IP20_EC_DI8_DO8_VENDOR_ID, IP20EcDi8Do8,
-};
 use ethercat_hal::devices::wago_750_354::{
     WAGO_750_354_PRODUCT_ID, WAGO_750_354_VENDOR_ID, Wago750_354,
+};
+use ethercat_hal::devices::wago_modules::ip20_ec_di8_do8::{
+    IP20_EC_DI8_DO8_PRODUCT_ID, IP20_EC_DI8_DO8_VENDOR_ID, IP20EcDi8Do8,
 };
 
 use ethercrab::std::ethercat_now;

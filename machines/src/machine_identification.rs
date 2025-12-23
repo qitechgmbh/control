@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
-use ethercat_hal::devices::wago_modules::ip20_ec_di8_do8::IP20_EC_DI8_DO8_IDENTITY;
 use ethercat_hal::devices::wago_750_354::WAGO_750_354_IDENTITY_A;
+use ethercat_hal::devices::wago_modules::ip20_ec_di8_do8::IP20_EC_DI8_DO8_IDENTITY;
 use serde::Deserialize;
 use serde::Serialize;
 
