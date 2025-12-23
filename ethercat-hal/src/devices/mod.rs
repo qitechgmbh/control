@@ -20,6 +20,7 @@ pub mod el6021;
 pub mod el7031;
 pub mod el7031_0030;
 pub mod el7041_0052;
+pub mod ip20_ec_di8_do8;
 pub mod wago_750_354;
 pub mod wago_modules;
 
@@ -53,6 +54,7 @@ use el7041_0052::EL7041_0052_IDENTITY_A;
 use ethercrab::{MainDevice, SubDeviceIdentity};
 use smol::lock::RwLock;
 use std::{any::Any, fmt::Debug, sync::Arc};
+use ip20_ec_di8_do8::{IP20_EC_DI8_DO8_IDENTITY, IP20EcDi8Do8};
 use wago_750_354::{WAGO_750_354_IDENTITY_A, Wago750_354};
 
 #[derive(Debug, Clone, Copy)]
@@ -214,6 +216,7 @@ pub fn device_from_subdevice_identity_tuple(
 ) -> Result<Arc<RwLock<dyn EthercatDevice>>, anyhow::Error> {
     match subdevice_identity_tuple {
         WAGO_750_354_IDENTITY_A => Ok(Arc::new(RwLock::new(Wago750_354::new()))),
+        IP20_EC_DI8_DO8_IDENTITY => Ok(Arc::new(RwLock::new(IP20EcDi8Do8::new()))),
         EK1100_IDENTITY_A => Ok(Arc::new(RwLock::new(EK1100::new()))),
         EL1002_IDENTITY_A => Ok(Arc::new(RwLock::new(EL1002::new()))),
         EL1008_IDENTITY_A => Ok(Arc::new(RwLock::new(EL1008::new()))),
