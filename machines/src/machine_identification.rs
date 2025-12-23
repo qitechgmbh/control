@@ -387,61 +387,7 @@ pub fn get_identification_addresses(
     })
 }
 
-async fn u16dump<'maindevice>(
-    subdevice: &'maindevice EthercrabSubDevicePreoperational<'maindevice>,
-    maindevice: &MainDevice<'maindevice>,
-    start_byte: u16,
-    end_byte: u16,
-) -> Result<(), Error> {
-    let mut words: Vec<u16> = Vec::new();
-    for word in start_byte..end_byte {
-        words.push(subdevice.eeprom_read(maindevice, word).await?);
-    }
-
-    println!(
-        "EEPROM dump for {} from 0x{:04x} to 0x{:04x}",
-        subdevice.name(),
-        start_byte / 2,
-        end_byte / 2
-    );
-
-    u16print(start_byte, end_byte, words);
-
-    Ok(())
-}
-
-fn u16print(start_byte: u16, end_byte: u16, data: Vec<u16>) {
-    let table_start_word = start_byte & 0xfff0;
-    let table_end_word = (end_byte & 0xfff0_u16) + 0x10_u16;
-
-    let rows = (table_end_word - table_start_word) >> 4;
-
-    for row in 0..rows {
-        print!("0x{:04x} | ", (table_start_word + row * 0x10) / 2);
-        for word in 0..8 {
-            let word_address = row * 8 + word;
-            if word_address < start_byte {
-                print!("     ");
-            } else {
-                let i = (word_address - start_byte) as usize;
-                if i > data.len() - 1 {
-                    print!("     ");
-                } else {
-                    print!("{:04x} ", data[i]);
-                }
-            }
-        }
-        println!();
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn test_hexprint() {
-        let data = vec![0x0000, 0x1ced];
-        u16print(0x01, 0x40, data);
-    }
 }
