@@ -1,6 +1,7 @@
 use std::fmt::Display;
 
 use ethercat_hal::devices::wago_750_354::WAGO_750_354_IDENTITY_A;
+use ethercat_hal::devices::ip20_ec_di8_do8::IP20_EC_DI8_DO8_IDENTITY;
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -206,7 +207,7 @@ pub async fn machine_device_identification<'maindevice>(
     let addresses = match get_identification_addresses(&subdevice.identity(), subdevice.name()) {
         Ok(x) => x,
         Err(e) => {
-            u16dump(subdevice, maindevice, 0, 128).await?;
+            // u16dump(subdevice, maindevice, 0, 128).await?;
             return Err(e);
         }
     };
@@ -347,6 +348,7 @@ pub fn get_identification_addresses(
 
     Ok(match identity_tuple {
         WAGO_750_354_IDENTITY_A => MachineIdentificationAddresses::default(),
+        IP20_EC_DI8_DO8_IDENTITY => MachineIdentificationAddresses::default(),
         EK1100_IDENTITY_A => MachineIdentificationAddresses::default(),
         EL1002_IDENTITY_A => MachineIdentificationAddresses::default(),
         EL1008_IDENTITY_A => MachineIdentificationAddresses::default(),
