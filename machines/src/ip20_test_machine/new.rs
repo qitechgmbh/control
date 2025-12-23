@@ -9,7 +9,7 @@ use crate::{
 };
 
 use anyhow::Error;
-use ethercat_hal::devices::ip20_ec_di8_do8::{
+use ethercat_hal::devices::wago_modules::ip20_ec_di8_do8::{
     IP20_EC_DI8_DO8_IDENTITY, IP20EcDi8Do8, IP20EcDi8Do8InputPort, IP20EcDi8Do8OutputPort,
 };
 use ethercat_hal::io::digital_input::DigitalInput;

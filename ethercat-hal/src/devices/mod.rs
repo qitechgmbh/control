@@ -20,7 +20,6 @@ pub mod el6021;
 pub mod el7031;
 pub mod el7031_0030;
 pub mod el7041_0052;
-pub mod ip20_ec_di8_do8;
 pub mod wago_750_354;
 pub mod wago_modules;
 
@@ -52,8 +51,8 @@ use el7031::{EL7031_IDENTITY_A, EL7031_IDENTITY_B};
 use el7031_0030::EL7031_0030_IDENTITY_A;
 use el7041_0052::EL7041_0052_IDENTITY_A;
 use ethercrab::{MainDevice, SubDeviceIdentity};
-use ip20_ec_di8_do8::{IP20_EC_DI8_DO8_IDENTITY, IP20EcDi8Do8};
 use smol::lock::RwLock;
+use wago_modules::ip20_ec_di8_do8::{IP20_EC_DI8_DO8_IDENTITY, IP20EcDi8Do8};
 use std::{any::Any, fmt::Debug, sync::Arc};
 use wago_750_354::{WAGO_750_354_IDENTITY_A, Wago750_354};
 
