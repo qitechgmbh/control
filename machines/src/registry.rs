@@ -6,7 +6,7 @@ use crate::{
 
 use crate::{
     Machine, MachineNewParams, analog_input_test_machine::AnalogInputTestMachine,
-    machine_identification::MachineIdentification,
+    ip20_test_machine::IP20TestMachine, machine_identification::MachineIdentification,
 };
 
 #[cfg(not(feature = "mock-machine"))]
@@ -122,6 +122,7 @@ lazy_static! {
         mc.register::<AquaPathV1>(AquaPathV1::MACHINE_IDENTIFICATION);
 
         mc.register::<TestMachine>(TestMachine::MACHINE_IDENTIFICATION);
+        mc.register::<IP20TestMachine>(IP20TestMachine::MACHINE_IDENTIFICATION);
         mc.register::<AnalogInputTestMachine>(AnalogInputTestMachine::MACHINE_IDENTIFICATION);
 
         mc

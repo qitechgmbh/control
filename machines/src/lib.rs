@@ -21,6 +21,7 @@ pub mod aquapath1;
 pub mod buffer1;
 pub mod extruder1;
 pub mod extruder2;
+pub mod ip20_test_machine;
 pub mod laser;
 pub mod machine_identification;
 pub mod mock;
@@ -39,6 +40,7 @@ pub const MACHINE_AQUAPATH_V1: u16 = 0x0009;
 pub const MACHINE_BUFFER_V1: u16 = 0x0008;
 pub const MACHINE_EXTRUDER_V2: u16 = 0x0016;
 pub const TEST_MACHINE: u16 = 0x0033;
+pub const IP20_TEST_MACHINE: u16 = 0x0034;
 pub const ANALOG_INPUT_TEST_MACHINE: u16 = 0x0035;
 
 use serde_json::Value;
