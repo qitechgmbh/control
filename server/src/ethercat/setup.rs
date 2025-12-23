@@ -15,6 +15,9 @@ use ethercat_hal::devices::devices_from_subdevices;
 use ethercat_hal::devices::wago_750_354::{
     WAGO_750_354_PRODUCT_ID, WAGO_750_354_VENDOR_ID, Wago750_354,
 };
+use ethercat_hal::devices::ip20_ec_di8_do8::{
+    IP20_EC_DI8_DO8_PRODUCT_ID, IP20_EC_DI8_DO8_VENDOR_ID, IP20EcDi8Do8,
+};
 
 use ethercrab::std::ethercat_now;
 use ethercrab::{MainDevice, MainDeviceConfig, PduStorage, RetryBehaviour, Timeouts};
@@ -357,6 +360,29 @@ pub async fn setup_loop(
                                 vendor_id:module.vendor_id,
                                 product_id: module.product_id,
                                 revision: 0x2,
+                                device_identification: DeviceIdentification{
+                                    device_machine_identification: meta.device_identification.device_machine_identification.clone(),
+                                    device_hardware_identification: machines::machine_identification::DeviceHardwareIdentification::Ethercat(DeviceHardwareIdentificationEthercat{ subdevice_index: module.slot as usize }) }
+                            };
+                            ethercat_meta_devices.push(meta_data);
+                        }
+                        None => break,
+                    }
+                }
+            }
+        }
+        (IP20_EC_DI8_DO8_VENDOR_ID, IP20_EC_DI8_DO8_PRODUCT_ID) => {
+            let r = IP20EcDi8Do8::initialize_modules(coupler).await?;
+            for module in r {
+                if coupler.configured_address() == module.belongs_to_addr {
+                    match ethercat_meta_devices.get(0) {
+                        Some(meta) => {
+                            let meta_data = EtherCatDeviceMetaData {
+                                configured_address: module.slot,
+                                name: "IP20 EC DI8 DO8 module".to_owned(),
+                                vendor_id:module.vendor_id,
+                                product_id: module.product_id,
+                                revision: 0x1,
                                 device_identification: DeviceIdentification{
                                     device_machine_identification: meta.device_identification.device_machine_identification.clone(),
                                     device_hardware_identification: machines::machine_identification::DeviceHardwareIdentification::Ethercat(DeviceHardwareIdentificationEthercat{ subdevice_index: module.slot as usize }) }
