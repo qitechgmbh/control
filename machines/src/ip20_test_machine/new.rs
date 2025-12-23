@@ -9,9 +9,11 @@ use crate::{
 };
 
 use anyhow::Error;
-use ethercat_hal::devices::ip20_ec_di8_do8::{IP20EcDi8Do8, IP20_EC_DI8_DO8_IDENTITY, IP20EcDi8Do8OutputPort, IP20EcDi8Do8InputPort};
-use ethercat_hal::io::digital_output::DigitalOutput;
+use ethercat_hal::devices::ip20_ec_di8_do8::{
+    IP20_EC_DI8_DO8_IDENTITY, IP20EcDi8Do8, IP20EcDi8Do8InputPort, IP20EcDi8Do8OutputPort,
+};
 use ethercat_hal::io::digital_input::DigitalInput;
+use ethercat_hal::io::digital_output::DigitalOutput;
 
 impl MachineNewTrait for IP20TestMachine {
     fn new<'maindevice>(params: &MachineNewParams) -> Result<Self, Error> {
@@ -33,7 +35,7 @@ impl MachineNewTrait for IP20TestMachine {
                 ));
             }
         };
-        
+
         block_on(async {
             let ip20_device = get_ethercat_device::<IP20EcDi8Do8>(
                 hardware,
@@ -80,10 +82,10 @@ impl MachineNewTrait for IP20TestMachine {
                 douts: [do1, do2, do3, do4, do5, do6, do7, do8],
                 dins: [di1, di2, di3, di4, di5, di6, di7, di8],
             };
-            
+
             machine.emit_state();
             machine.emit_live_values();
-            
+
             Ok(machine)
         })
     }

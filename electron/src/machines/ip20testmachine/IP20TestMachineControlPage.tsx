@@ -10,8 +10,12 @@ import { useIP20TestMachine } from "./useIP20TestMachine";
 export function IP20TestMachineControlPage() {
   const { state, liveValues, setOutput, setAllOutputs } = useIP20TestMachine();
 
-  const safeState = state ?? { outputs: [false, false, false, false, false, false, false, false] };
-  const safeLiveValues = liveValues ?? { inputs: [false, false, false, false, false, false, false, false] };
+  const safeState = state ?? {
+    outputs: [false, false, false, false, false, false, false, false],
+  };
+  const safeLiveValues = liveValues ?? {
+    inputs: [false, false, false, false, false, false, false, false],
+  };
 
   return (
     <Page>
@@ -51,7 +55,7 @@ export function IP20TestMachineControlPage() {
           <div className="grid grid-cols-2 gap-6">
             {safeLiveValues.inputs.map((input, index) => (
               <Label key={index} label={`Input ${index + 1}`}>
-                <div className="flex items-center justify-center h-full">
+                <div className="flex h-full items-center justify-center">
                   <Badge
                     className={`text-md ${input ? "bg-green-600" : "bg-gray-400"}`}
                   >
@@ -69,12 +73,12 @@ export function IP20TestMachineControlPage() {
             value={safeState.outputs.every(Boolean) ? "On" : "Off"}
             orientation="horizontal"
             options={{
-              Off: { 
+              Off: {
                 children: "Turn All Outputs Off",
                 icon: "lu:CirclePause",
                 isActiveClassName: "bg-red-600",
               },
-              On: { 
+              On: {
                 children: "Turn All Outputs On",
                 icon: "lu:CirclePlay",
                 isActiveClassName: "bg-green-600",
