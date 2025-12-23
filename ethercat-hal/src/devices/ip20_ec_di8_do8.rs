@@ -352,13 +352,7 @@ impl IP20EcDi8Do8 {
             .await
         {
             Ok(value) => Ok(value as usize),
-            Err(e) => {
-                println!(
-                    "Note: Failed to read module count for IP20EcDi8Do8 (might not support modules): {:?}",
-                    e
-                );
-                Ok(0)
-            }
+            Err(_e) => Ok(0),
         }
     }
 
@@ -402,10 +396,7 @@ impl IP20EcDi8Do8 {
                     module.has_tx = true;
                     module.has_rx = true;
                 }
-                _ => println!(
-                    "IP20EcDi8Do8 found Unknown/Unimplemented Module: 0x{:X}",
-                    ident_iom
-                ),
+                _ => {}
             }
             modules.push(module);
         }
@@ -444,12 +435,6 @@ impl IP20EcDi8Do8 {
                             Arc::new(RwLock::new(wago_750_652::Wago750_652::new()))
                         }
                         _ => {
-                            println!(
-                                "{} Missing Implementation for Module Identification: vendor_id: {:?}, module ident: {:?} !",
-                                module_path!(),
-                                m.vendor_id,
-                                m.product_id
-                            );
                             return;
                         }
                     };
