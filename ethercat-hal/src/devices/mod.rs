@@ -52,9 +52,9 @@ use el7031::{EL7031_IDENTITY_A, EL7031_IDENTITY_B};
 use el7031_0030::EL7031_0030_IDENTITY_A;
 use el7041_0052::EL7041_0052_IDENTITY_A;
 use ethercrab::{MainDevice, SubDeviceIdentity};
+use ip20_ec_di8_do8::{IP20_EC_DI8_DO8_IDENTITY, IP20EcDi8Do8};
 use smol::lock::RwLock;
 use std::{any::Any, fmt::Debug, sync::Arc};
-use ip20_ec_di8_do8::{IP20_EC_DI8_DO8_IDENTITY, IP20EcDi8Do8};
 use wago_750_354::{WAGO_750_354_IDENTITY_A, Wago750_354};
 
 #[derive(Debug, Clone, Copy)]

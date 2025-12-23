@@ -1,9 +1,9 @@
+use crate::ip20_test_machine::api::{IP20TestMachineEvents, LiveValuesEvent, StateEvent};
 use crate::machine_identification::{MachineIdentification, MachineIdentificationUnique};
-use crate::ip20_test_machine::api::{LiveValuesEvent, StateEvent, IP20TestMachineEvents};
 use crate::{AsyncThreadMessage, Machine, MachineMessage};
 use control_core::socketio::namespace::NamespaceCacheingLogic;
-use ethercat_hal::io::digital_output::DigitalOutput;
 use ethercat_hal::io::digital_input::DigitalInput;
+use ethercat_hal::io::digital_output::DigitalOutput;
 use smol::channel::{Receiver, Sender};
 use std::time::Instant;
 pub mod act;
@@ -60,7 +60,8 @@ impl IP20TestMachine {
         }
         .build();
 
-        self.namespace.emit(IP20TestMachineEvents::LiveValues(event));
+        self.namespace
+            .emit(IP20TestMachineEvents::LiveValues(event));
     }
 
     /// Set the state of a specific output

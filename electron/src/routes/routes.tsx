@@ -424,9 +424,7 @@ export const rootTree = RootRoute.addChildren([
         analogInputTestMachineControlRoute,
       ]),
 
-      ip20TestMachineSerialRoute.addChildren([
-        ip20TestMachineControlRoute,
-      ]),
+      ip20TestMachineSerialRoute.addChildren([ip20TestMachineControlRoute]),
 
       aquapath1SerialRoute.addChildren([
         aquapath1ControlRoute,

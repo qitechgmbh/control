@@ -4,9 +4,7 @@ use super::{
 };
 use crate::devices::wago_modules::*;
 use crate::{
-    devices::{
-        DynamicEthercatDevice, Module,
-    },
+    devices::{DynamicEthercatDevice, Module},
     helpers::ethercrab_types::EthercrabSubDevicePreoperational,
     io::{
         digital_input::{DigitalInputDevice, DigitalInputInput},
@@ -363,13 +361,13 @@ impl IP20EcDi8Do8 {
         const MODULES_START_ADDR: u16 = 0x9000;
         const MODULE_IDENT_SUBINDEX: u8 = 0x0a;
         let mut modules: Vec<Module> = vec![];
-        
+
         for i in 0..module_count {
             let module_addr = MODULES_START_ADDR + (i * 0x10) as u16;
             let ident_iom = device
                 .sdo_read::<u32>(module_addr, MODULE_IDENT_SUBINDEX)
                 .await?;
-            
+
             // For Wago the IOM will be the product ID
             let mut module = Module {
                 slot: i as u16,
@@ -421,23 +419,21 @@ impl IP20EcDi8Do8 {
             match module {
                 Some(m) => {
                     // Map ModuleIdent's to Terminals
-                    let dev: Arc<RwLock<dyn DynamicEthercatDevice>> = match (
-                        m.vendor_id,
-                        m.product_id,
-                    ) {
-                        wago_750_501::WAGO_750_501_MODULE_IDENT => {
-                            Arc::new(RwLock::new(wago_750_501::Wago750_501::new()))
-                        }
-                        wago_750_1506::WAGO_750_1506_MODULE_IDENT => {
-                            Arc::new(RwLock::new(wago_750_1506::Wago750_1506::new()))
-                        }
-                        wago_750_652::WAGO_750_652_MODULE_IDENT => {
-                            Arc::new(RwLock::new(wago_750_652::Wago750_652::new()))
-                        }
-                        _ => {
-                            return;
-                        }
-                    };
+                    let dev: Arc<RwLock<dyn DynamicEthercatDevice>> =
+                        match (m.vendor_id, m.product_id) {
+                            wago_750_501::WAGO_750_501_MODULE_IDENT => {
+                                Arc::new(RwLock::new(wago_750_501::Wago750_501::new()))
+                            }
+                            wago_750_1506::WAGO_750_1506_MODULE_IDENT => {
+                                Arc::new(RwLock::new(wago_750_1506::Wago750_1506::new()))
+                            }
+                            wago_750_652::WAGO_750_652_MODULE_IDENT => {
+                                Arc::new(RwLock::new(wago_750_652::Wago750_652::new()))
+                            }
+                            _ => {
+                                return;
+                            }
+                        };
 
                     let tx_pdo_offset = self.tx_offsets.get(tx_index as usize);
                     if m.has_tx {
