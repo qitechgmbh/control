@@ -1,8 +1,8 @@
-use super::{
+use crate::devices::{
     EthercatDevice, EthercatDeviceProcessing, EthercatDeviceUsed, NewEthercatDevice,
     SubDeviceIdentityTuple,
 };
-use crate::devices::wago_modules::*;
+use super::*;
 use crate::{
     devices::{DynamicEthercatDevice, Module},
     helpers::ethercrab_types::EthercrabSubDevicePreoperational,
