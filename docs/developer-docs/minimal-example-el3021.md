@@ -152,13 +152,13 @@ To assign the two devices to a machine, click "Assign" on both devices. This sho
 
 **EK1100**
 ![](../assets/EL3021_assign.png)
-1. Select "AnalogTest V1" under "Maschine"
+1. Select "AnalogTest V1" under "Machine"
 2. Choose a serial number to uniquely identify the machine (1 in this example)
 3. Under "Device Role" select "0 - Bus Coupler"
 
 **EL3021**
 ![](../assets/EL3021_assign2.png)
-1. Select "AnalogTest V1" under "Maschine"
+1. Select "AnalogTest V1" under "Machine"
 2. Use the same serial number you chose for the EK1100
 3. Under "Device Role" select "1 - EL3021"
 ---
