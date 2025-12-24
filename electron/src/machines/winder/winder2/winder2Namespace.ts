@@ -218,26 +218,16 @@ export type Winder2NamespaceStore = {
   spoolProgress: TimeSeries;
 };
 
-// Constants for time durations
-const TWENTY_MILLISECOND = 20;
-const ONE_SECOND = 1000;
-const FIVE_SECOND = 5 * ONE_SECOND;
-const ONE_HOUR = 60 * 60 * ONE_SECOND;
-
+//Store Factory and Message Handler -> no param, so default values
 const { initialTimeSeries: spoolProgress, insert: addSpoolProgress } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+  createTimeSeries();
 const { initialTimeSeries: traversePosition, insert: addTraversePosition } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+  createTimeSeries();
 const { initialTimeSeries: pullerSpeed, insert: addPullerSpeed } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
-const { initialTimeSeries: spoolRpm, insert: addSpoolRpm } = createTimeSeries(
-  TWENTY_MILLISECOND,
-  ONE_SECOND,
-  FIVE_SECOND,
-  ONE_HOUR,
-);
+  createTimeSeries();
+const { initialTimeSeries: spoolRpm, insert: addSpoolRpm } = createTimeSeries();
 const { initialTimeSeries: tensionArmAngle, insert: addTensionArmAngle } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+  createTimeSeries();
 
 /**
  * Factory function to create a new Winder2 namespace store
