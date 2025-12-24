@@ -82,3 +82,12 @@ git push
 # Recommended Editor Setup
 
 We recommend you to use an Editor with rust-analyzer support like VSCode to speed up development and detect errors before compiling.
+
+# Minimal Hardware Examples
+
+To get started with actual hardware, check out these step-by-step tutorials:
+
+- **[LED Control with EL2004](./minimal-example-el2004.md)** - Digital output control, the simplest possible hardware setup
+- **[Analog Input with EL3021](./minimal-example-el3021.md)** - Reading analog current measurements
+
+These examples provide complete hardware wiring diagrams and software setup instructions.
