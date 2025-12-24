@@ -16,7 +16,8 @@
     "strict": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@root/*": ["../*"]
     },
     "outDir": "dist",
     "moduleResolution": "node",
