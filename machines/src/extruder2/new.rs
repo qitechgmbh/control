@@ -1,5 +1,5 @@
 #[cfg(not(feature = "mock-machine"))]
-use crate::{MachineNewTrait, MachineNewParams, get_ethercat_device};
+use crate::{MachineNewParams, MachineNewTrait, get_ethercat_device};
 
 #[cfg(not(feature = "mock-machine"))]
 use anyhow::Error;
