@@ -18,7 +18,7 @@ use ethercat_hal::{
 };
 
 use crate::{
-    MachineNewTrait, MachineNewParams, MachineNewHardware, MachineNewHardwareEthercat,
+    MachineNewHardware, MachineNewHardwareEthercat, MachineNewParams, MachineNewTrait,
     buffer1::BufferV1Mode, get_ethercat_device, validate_same_machine_identification_unique,
 };
 use crate::{buffer1::buffer_tower_controller::BufferTowerController, validate_no_role_dublicates};

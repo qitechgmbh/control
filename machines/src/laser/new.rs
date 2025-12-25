@@ -1,7 +1,7 @@
 use std::time::Instant;
 
 use crate::serial::{devices::laser::Laser, registry::SERIAL_DEVICE_REGISTRY};
-use crate::{MachineNewTrait, MachineNewHardware};
+use crate::{MachineNewHardware, MachineNewTrait};
 
 use super::{LaserMachine, LaserTarget, api::LaserMachineNamespace};
 use anyhow::Error;

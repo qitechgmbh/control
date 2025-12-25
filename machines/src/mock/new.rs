@@ -4,7 +4,7 @@ use super::{
     MockMachine,
     api::{MockMachineNamespace, Mode},
 };
-use crate::{MachineNewTrait, MachineNewParams, MachineNewHardware};
+use crate::{MachineNewHardware, MachineNewParams, MachineNewTrait};
 use anyhow::Error;
 use units::f64::Frequency;
 use units::frequency::hertz;

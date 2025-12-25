@@ -1,7 +1,10 @@
-use crate::{metrics::collector::{RuntimeMetricsConfig, spawn_runtime_metrics_sampler}, socketio::main_namespace::machines_event::MachineObj};
+use crate::{
+    metrics::collector::{RuntimeMetricsConfig, spawn_runtime_metrics_sampler},
+    socketio::main_namespace::machines_event::MachineObj,
+};
 use machines::{
-    AsyncThreadMessage, MachineNewParams, MachineConnection, MachineNewHardware,
-    MachineNewHardwareSerial, SerialDevice, SerialDeviceIdentification, SerialDeviceNew,
+    AsyncThreadMessage, MachineConnection, MachineNewHardware, MachineNewHardwareSerial,
+    MachineNewParams, SerialDevice, SerialDeviceIdentification, SerialDeviceNew,
     SerialDeviceNewParams,
     laser::LaserMachine,
     machine_identification::{
