@@ -23,7 +23,7 @@ use units::thermodynamic_temperature::degree_celsius;
 use crate::{
     MACHINE_EXTRUDER_V1, MachineMessage, VENDOR_QITECH,
     extruder1::{
-        api::ExtruderV2Namespace, screw_speed_controller::ScrewSpeedController,
+        api::ExtruderV1Namespace, screw_speed_controller::ScrewSpeedController,
         temperature_controller::TemperatureController,
     },
     machine_identification::{MachineIdentification, MachineIdentificationUnique},
@@ -39,7 +39,7 @@ pub mod screw_speed_controller;
 pub mod temperature_controller;
 
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Eq)]
-pub enum ExtruderV2Mode {
+pub enum ExtruderV1Mode {
     Standby,
     Heat,
     Extrude,
@@ -73,17 +73,17 @@ pub enum HeatingType {
 
 #[cfg(not(feature = "mock-machine"))]
 #[derive(Debug)]
-pub struct ExtruderV2 {
+pub struct ExtruderV1 {
     api_receiver: Receiver<MachineMessage>,
     api_sender: Sender<MachineMessage>,
     main_sender: Option<Sender<AsyncThreadMessage>>,
 
     machine_identification_unique: MachineIdentificationUnique,
-    namespace: ExtruderV2Namespace,
+    namespace: ExtruderV1Namespace,
 
     last_measurement_emit: Instant,
     last_status_hash: Option<u64>,
-    mode: ExtruderV2Mode,
+    mode: ExtruderV1Mode,
 
     screw_speed_controller: ScrewSpeedController,
     temperature_controller_front: TemperatureController,
@@ -101,7 +101,7 @@ pub struct ExtruderV2 {
 }
 
 #[cfg(not(feature = "mock-machine"))]
-impl Machine for ExtruderV2 {
+impl Machine for ExtruderV1 {
     fn get_machine_identification_unique(&self) -> MachineIdentificationUnique {
         self.machine_identification_unique.clone()
     }
@@ -112,14 +112,14 @@ impl Machine for ExtruderV2 {
 }
 
 #[cfg(not(feature = "mock-machine"))]
-impl std::fmt::Display for ExtruderV2 {
+impl std::fmt::Display for ExtruderV1 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "ExtruderV2")
+        write!(f, "ExtruderV1")
     }
 }
 
 #[cfg(not(feature = "mock-machine"))]
-impl ExtruderV2 {
+impl ExtruderV1 {
     pub const MACHINE_IDENTIFICATION: MachineIdentification = MachineIdentification {
         vendor: VENDOR_QITECH,
         machine: MACHINE_EXTRUDER_V1,
@@ -127,7 +127,7 @@ impl ExtruderV2 {
 }
 
 #[cfg(not(feature = "mock-machine"))]
-impl ExtruderV2 {
+impl ExtruderV1 {
     /// Calculate combined power consumption in watts
     fn calculate_combined_power(&mut self) -> f64 {
         let motor_power = {
@@ -175,58 +175,58 @@ impl ExtruderV2 {
 
     fn switch_to_standby(&mut self) {
         match self.mode {
-            ExtruderV2Mode::Standby => (),
-            ExtruderV2Mode::Heat => {
+            ExtruderV1Mode::Standby => (),
+            ExtruderV1Mode::Heat => {
                 self.turn_heating_off();
                 self.screw_speed_controller.reset_pid();
             }
-            ExtruderV2Mode::Extrude => {
+            ExtruderV1Mode::Extrude => {
                 self.turn_heating_off();
                 self.screw_speed_controller.turn_motor_off();
                 self.screw_speed_controller.reset_pid();
             }
         };
-        self.mode = ExtruderV2Mode::Standby;
+        self.mode = ExtruderV1Mode::Standby;
     }
 
     fn switch_to_heat(&mut self) {
         match self.mode {
-            ExtruderV2Mode::Standby => self.enable_heating(),
-            ExtruderV2Mode::Heat => (),
-            ExtruderV2Mode::Extrude => {
+            ExtruderV1Mode::Standby => self.enable_heating(),
+            ExtruderV1Mode::Heat => (),
+            ExtruderV1Mode::Extrude => {
                 self.screw_speed_controller.turn_motor_off();
                 self.screw_speed_controller.reset_pid();
             }
         }
-        self.mode = ExtruderV2Mode::Heat;
+        self.mode = ExtruderV1Mode::Heat;
     }
 
     fn switch_to_extrude(&mut self) {
         match self.mode {
-            ExtruderV2Mode::Standby => {
+            ExtruderV1Mode::Standby => {
                 self.screw_speed_controller.turn_motor_on();
                 self.enable_heating();
                 self.screw_speed_controller.reset_pid();
             }
-            ExtruderV2Mode::Heat => {
+            ExtruderV1Mode::Heat => {
                 self.screw_speed_controller.turn_motor_on();
                 self.enable_heating();
                 self.screw_speed_controller.reset_pid();
             }
-            ExtruderV2Mode::Extrude => (),
+            ExtruderV1Mode::Extrude => (),
         }
-        self.mode = ExtruderV2Mode::Extrude;
+        self.mode = ExtruderV1Mode::Extrude;
     }
 
-    fn switch_mode(&mut self, mode: ExtruderV2Mode) {
+    fn switch_mode(&mut self, mode: ExtruderV1Mode) {
         if self.mode == mode {
             return;
         }
 
         match mode {
-            ExtruderV2Mode::Standby => self.switch_to_standby(),
-            ExtruderV2Mode::Heat => self.switch_to_heat(),
-            ExtruderV2Mode::Extrude => self.switch_to_extrude(),
+            ExtruderV1Mode::Standby => self.switch_to_standby(),
+            ExtruderV1Mode::Heat => self.switch_to_heat(),
+            ExtruderV1Mode::Extrude => self.switch_to_extrude(),
         }
     }
 

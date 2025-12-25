@@ -26,7 +26,7 @@ impl MachineAct for ExtruderV2 {
             MachineMessage::SubscribeNamespace(namespace) => {
                 self.namespace.namespace = Some(namespace);
                 self.emit_state();
-                tracing::info!("extruder1 received subscribe");
+                tracing::info!("extruder2 received subscribe");
             }
             MachineMessage::UnsubscribeNamespace => self.namespace.namespace = None,
             MachineMessage::HttpApiJsonRequest(value) => {

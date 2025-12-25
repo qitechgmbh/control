@@ -1,6 +1,6 @@
 #[cfg(feature = "mock-machine")]
 use crate::{
-    extruder1::mock::ExtruderV2 as ExtruderV2Mock1, extruder2::mock::ExtruderV2 as ExtruderV2Mock2,
+    extruder1::mock::ExtruderV1 as ExtruderV2Mock1, extruder2::mock::ExtruderV2 as ExtruderV2Mock2,
     mock::MockMachine, winder2::mock::Winder2,
 };
 
@@ -10,10 +10,10 @@ use crate::{
 };
 
 #[cfg(not(feature = "mock-machine"))]
-use crate::extruder1::ExtruderV2;
+use crate::extruder1::ExtruderV1;
 #[cfg(not(feature = "mock-machine"))]
 use crate::{
-    aquapath1::AquaPathV1, buffer1::BufferV1, extruder2::ExtruderV3, laser::LaserMachine,
+    aquapath1::AquaPathV1, buffer1::BufferV1, extruder2::ExtruderV2, laser::LaserMachine,
     winder2::Winder2,
 };
 
@@ -104,10 +104,10 @@ lazy_static! {
         mc.register::<ExtruderV2Mock2>(ExtruderV2Mock2::MACHINE_IDENTIFICATION);
 
         #[cfg(not(feature = "mock-machine"))]
-        mc.register::<ExtruderV2>(ExtruderV2::MACHINE_IDENTIFICATION);
+        mc.register::<ExtruderV1>(ExtruderV1::MACHINE_IDENTIFICATION);
 
         #[cfg(not(feature = "mock-machine"))]
-        mc.register::<ExtruderV3>(ExtruderV3::MACHINE_IDENTIFICATION);
+        mc.register::<ExtruderV2>(ExtruderV2::MACHINE_IDENTIFICATION);
 
         #[cfg(feature = "mock-machine")]
         mc.register::<MockMachine>(MockMachine::MACHINE_IDENTIFICATION);

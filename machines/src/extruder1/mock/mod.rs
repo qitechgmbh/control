@@ -18,9 +18,9 @@ use std::time::Instant;
 use crate::{
     MACHINE_EXTRUDER_V1, VENDOR_QITECH,
     extruder1::{
-        ExtruderV2Mode,
+        ExtruderV1Mode,
         api::{
-            ExtruderSettingsState, ExtruderV2Namespace, HeatingStates, InverterStatusState,
+            ExtruderSettingsState, ExtruderV1Namespace, HeatingStates, InverterStatusState,
             ModeState, MotorStatusValues, PidSettingsStates, PressureState, RegulationState,
             RotationState, ScrewState,
         },
@@ -38,7 +38,7 @@ pub mod mock_emit;
 pub mod new;
 
 #[cfg(feature = "mock-machine")]
-impl Machine for ExtruderV2 {
+impl Machine for ExtruderV1 {
     fn get_machine_identification_unique(&self) -> MachineIdentificationUnique {
         self.machine_identification_unique.clone()
     }
@@ -50,17 +50,17 @@ impl Machine for ExtruderV2 {
 
 #[cfg(feature = "mock-machine")]
 #[derive(Debug)]
-pub struct ExtruderV2 {
+pub struct ExtruderV1 {
     api_receiver: Receiver<MachineMessage>,
     api_sender: Sender<MachineMessage>,
     main_sender: Option<Sender<AsyncThreadMessage>>,
 
     machine_identification_unique: MachineIdentificationUnique,
 
-    namespace: ExtruderV2Namespace,
+    namespace: ExtruderV1Namespace,
     last_measurement_emit: Instant,
     last_status_hash: Option<u64>,
-    mode: ExtruderV2Mode,
+    mode: ExtruderV1Mode,
     /// Energy tracking for total consumption calculation
     pub total_energy_kwh: f64,
     pub last_energy_calculation_time: Option<Instant>,
@@ -121,7 +121,7 @@ pub struct ExtruderV2 {
 }
 
 #[cfg(feature = "mock-machine")]
-impl ExtruderV2 {
+impl ExtruderV1 {
     pub const MACHINE_IDENTIFICATION: MachineIdentification = MachineIdentification {
         vendor: VENDOR_QITECH,
         machine: MACHINE_EXTRUDER_V1,
