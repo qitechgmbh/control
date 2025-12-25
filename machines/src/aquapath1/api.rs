@@ -20,6 +20,12 @@ pub struct LiveValuesEvent {
     pub back_temperature: f64,
     pub front_temp_reservoir: f64,
     pub back_temp_reservoir: f64,
+    pub front_revolutions: f64,
+    pub back_revolutions: f64,
+    pub front_power: f64,
+    pub back_power: f64,
+    pub front_total_energy: f64,
+    pub back_total_energy: f64,
 }
 
 impl LiveValuesEvent {
@@ -35,6 +41,8 @@ pub struct StateEvent {
     pub mode_state: ModeState,
     pub flow_states: FlowStates,
     pub temperature_states: TempStates,
+    pub fan_states: FanStates,
+    pub tolerance_states: ToleranceStates,
 }
 
 impl StateEvent {
@@ -70,6 +78,28 @@ pub struct FlowState {
     pub should_flow: bool,
 }
 
+#[derive(Serialize, Debug, Clone)]
+pub struct FanState {
+    pub revolutions: f64,
+    pub max_revolutions: f64,
+}
+#[derive(Serialize, Debug, Clone)]
+pub struct FanStates {
+    pub front: FanState,
+    pub back: FanState,
+}
+
+#[derive(Serialize, Debug, Clone)]
+pub struct ToleranceState {
+    pub heating: f64,
+    pub cooling: f64,
+}
+#[derive(Serialize, Debug, Clone)]
+pub struct ToleranceStates {
+    pub front: ToleranceState,
+    pub back: ToleranceState,
+}
+
 pub enum AquaPathV1Events {
     LiveValues(Event<LiveValuesEvent>),
     State(Event<StateEvent>),
@@ -85,6 +115,14 @@ enum Mutation {
 
     SetFrontFlow(bool),
     SetBackFlow(bool),
+
+    SetFrontRevolutions(f64),
+    SetBackRevolutions(f64),
+
+    SetFrontHeatingTolerance(f64),
+    SetBackHeatingTolerance(f64),
+    SetFrontCoolingTolerance(f64),
+    SetBackCoolingTolerance(f64),
 }
 
 #[derive(Debug, Clone)]
@@ -144,6 +182,24 @@ impl MachineApi for AquaPathV1 {
             }
             Mutation::SetFrontFlow(should_pump) => {
                 self.set_should_pump(should_pump, super::AquaPathSideType::Front)
+            }
+            Mutation::SetBackRevolutions(revolution) => {
+                self.set_max_revolutions(revolution, super::AquaPathSideType::Back)
+            }
+            Mutation::SetFrontRevolutions(revolutions) => {
+                self.set_max_revolutions(revolutions, super::AquaPathSideType::Front)
+            }
+            Mutation::SetBackHeatingTolerance(tolerance) => {
+                self.set_heating_tolerance(tolerance, super::AquaPathSideType::Back)
+            }
+            Mutation::SetFrontHeatingTolerance(tolerance) => {
+                self.set_heating_tolerance(tolerance, super::AquaPathSideType::Front)
+            }
+            Mutation::SetBackCoolingTolerance(tolerance) => {
+                self.set_cooling_tolerance(tolerance, super::AquaPathSideType::Back);
+            }
+            Mutation::SetFrontCoolingTolerance(tolerance) => {
+                self.set_cooling_tolerance(tolerance, super::AquaPathSideType::Front);
             }
         }
         Ok(())

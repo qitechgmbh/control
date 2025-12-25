@@ -42,12 +42,18 @@ export function useAquapath1() {
   const {
     state,
     defaultState,
-    front_temperature: front_temperature,
-    back_temperature: back_temperature,
-    front_flow: front_flow,
-    back_flow: back_flow,
-    front_temp_reservoir: front_temp_reservoir,
-    back_temp_reservoir: back_temp_reservoir,
+    front_temperature,
+    back_temperature,
+    front_flow,
+    back_flow,
+    front_temp_reservoir,
+    back_temp_reservoir,
+    front_revolutions,
+    back_revolutions,
+    front_power,
+    back_power,
+    front_total_energy,
+    back_total_energy,
   } = useAquapath1Namespace(machineIdentification);
 
   // Single optimistic state for all state management
@@ -125,6 +131,89 @@ export function useAquapath1() {
     );
   };
 
+  const setFrontRevolutions = (revolutions: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.fan_states.back.revolutions = revolutions;
+      },
+      () => {
+        requestFrontRevolutions({
+          machine_identification_unique: machineIdentification,
+          data: { SetFrontRevolutions: revolutions },
+        });
+      },
+    );
+  };
+
+  const setBackRevolutions = (revolutions: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.fan_states.back.revolutions = revolutions;
+      },
+      () =>
+        requestBackRevolutions({
+          machine_identification_unique: machineIdentification,
+          data: { SetBackRevolutions: revolutions },
+        }),
+    );
+  };
+
+  const setFrontHeatingTolerance = (tolerance: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.tolerance_states.front.heating = tolerance;
+      },
+      () => {
+        requestFrontHeatingTolerance({
+          machine_identification_unique: machineIdentification,
+          data: { SetFrontHeatingTolerance: tolerance },
+        });
+      },
+    );
+  };
+
+  const setBackHeatingTolerance = (tolerance: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.tolerance_states.back.heating = tolerance;
+      },
+      () => {
+        requestBackHeatingTolerance({
+          machine_identification_unique: machineIdentification,
+          data: { SetBackHeatingTolerance: tolerance },
+        });
+      },
+    );
+  };
+
+  const setFrontCoolingTolerance = (tolerance: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.tolerance_states.front.cooling = tolerance;
+      },
+      () => {
+        requestFrontCoolingTolerance({
+          machine_identification_unique: machineIdentification,
+          data: { SetFrontCoolingTolerance: tolerance },
+        });
+      },
+    );
+  };
+
+  const setBackCoolingTolerance = (tolerance: number) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.tolerance_states.back.cooling = tolerance;
+      },
+      () => {
+        requestBackCoolingTolerance({
+          machine_identification_unique: machineIdentification,
+          data: { SetBackCoolingTolerance: tolerance },
+        });
+      },
+    );
+  };
+
   // Mutation hooks
   const { request: requestAquapathMode } = useMachineMutation(
     z.object({ SetAquaPathMode: z.enum(["Standby", "Auto"]) }),
@@ -141,6 +230,25 @@ export function useAquapath1() {
   const { request: requestBackFlow } = useMachineMutation(
     z.object({ SetBackFlow: z.boolean() }),
   );
+  const { request: requestFrontRevolutions } = useMachineMutation(
+    z.object({ SetFrontRevolutions: z.number() }),
+  );
+  const { request: requestBackRevolutions } = useMachineMutation(
+    z.object({ SetBackRevolutions: z.number() }),
+  );
+  const { request: requestFrontHeatingTolerance } = useMachineMutation(
+    z.object({ SetFrontHeatingTolerance: z.number() }),
+  );
+  const { request: requestFrontCoolingTolerance } = useMachineMutation(
+    z.object({ SetFrontCoolingTolerance: z.number() }),
+  );
+  const { request: requestBackHeatingTolerance } = useMachineMutation(
+    z.object({ SetBackHeatingTolerance: z.number() }),
+  );
+  const { request: requestBackCoolingTolerance } = useMachineMutation(
+    z.object({ SetBackCoolingTolerance: z.number() }),
+  );
+
   // Helper function for optimistic updates using produce
   const updateStateOptimistically = (
     producer: (current: StateEvent) => void,
@@ -165,11 +273,23 @@ export function useAquapath1() {
     back_temperature,
     front_temp_reservoir,
     back_temp_reservoir,
+    front_revolutions,
+    back_revolutions,
+    front_power,
+    back_power,
+    front_total_energy,
+    back_total_energy,
 
     setAquapathMode,
     setFrontTemperature,
     setBackTemperature,
     setFrontFlow,
     setBackFlow,
+    setFrontRevolutions,
+    setBackRevolutions,
+    setFrontHeatingTolerance,
+    setBackHeatingTolerance,
+    setFrontCoolingTolerance,
+    setBackCoolingTolerance,
   };
 }
