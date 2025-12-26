@@ -66,6 +66,7 @@ type FormSchema = z.infer<typeof formSchema>;
 export function DeviceEepromDialog({ device }: Props) {
   const [open, setOpen] = React.useState(false);
   const key = useMemo(() => Math.random(), [open]);
+  const onClose = () => setOpen(false);
 
   return (
     <Dialog
@@ -80,7 +81,7 @@ export function DeviceEepromDialog({ device }: Props) {
           Assign
         </Button>
       </DialogTrigger>
-      <DeviceEepromDialogContent device={device} key={key} setOpen={setOpen} />
+      <DeviceEepromDialogContent device={device} key={key} setOpen={onClose} />
     </Dialog>
   );
 }
@@ -88,7 +89,7 @@ export function DeviceEepromDialog({ device }: Props) {
 // (Empty comment block removed)
 type ContentProps = {
   device: Device;
-  setOpen: (open: boolean) => void;
+  setOpen: () => void;
 };
 
 export function DeviceEepromDialogContent({ device, setOpen }: ContentProps) {
@@ -142,7 +143,7 @@ export function DeviceEepromDialogContent({ device, setOpen }: ContentProps) {
               Machine assignment written successfully.
             </Toast>,
           );
-          setOpen(false);
+          setOpen();
         }
       });
   };
