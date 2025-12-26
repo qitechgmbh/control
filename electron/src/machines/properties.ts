@@ -462,6 +462,17 @@ export const testmachine: MachineProperties = {
     },
   ],
 };
+export const wagoPower1: MachineProperties = {
+  name: "WAGO Power",
+  version: "V1",
+  slug: "wago_power1",
+  icon: "lu:PlugZap",
+  machine_identification: {
+    vendor: VENDOR_QITECH,
+    machine: 0x000a,
+  },
+  device_roles: [],
+};
 
 export const analogInputTestMachine: MachineProperties = {
   name: "AnalogTest",
@@ -529,6 +540,7 @@ export const machineProperties: MachineProperties[] = [
   laser1,
   mock1,
   buffer1,
+  wagoPower1,
   aquapath1,
   testmachine,
   analogInputTestMachine,

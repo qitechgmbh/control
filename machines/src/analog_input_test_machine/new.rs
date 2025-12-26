@@ -28,7 +28,7 @@ impl MachineNewTrait for AnalogInputTestMachine {
             MachineNewHardware::Ethercat(x) => x,
             _ => {
                 return Err(anyhow::anyhow!(
-                    "[{}::MachineNewTrait/TestMachine::new] MachineNewHardware is not Ethercat",
+                    "[{}::EtherCATMachine/TestMachine::new] MachineNewHardware is not Ethercat",
                     module_path!()
                 ));
             }
@@ -51,7 +51,7 @@ impl MachineNewTrait for AnalogInputTestMachine {
                 api_sender: sender,
                 machine_identification_unique: params.get_machine_identification_unique(),
                 main_sender: params.main_thread_channel.clone(),
-                namespace: namespace,
+                namespace,
 
                 last_measurement: Instant::now(),
                 measurement_rate_hz: 1.0,

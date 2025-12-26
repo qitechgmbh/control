@@ -30,7 +30,7 @@ impl MachineNewTrait for IP20TestMachine {
             MachineNewHardware::Ethercat(x) => x,
             _ => {
                 return Err(anyhow::anyhow!(
-                    "[{}::MachineNewTrait/IP20TestMachine::new] MachineNewHardware is not Ethercat",
+                    "[{}::EtherCATMachine/IP20TestMachine::new] MachineNewHardware is not Ethercat",
                     module_path!()
                 ));
             }
