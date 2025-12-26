@@ -31,11 +31,12 @@ export function UpdateProgressBar({
     }
 
     // Simple estimate: if we've done X% in Y seconds, remaining is (Y / X) * (100 - X)
-    const remainingSeconds = (elapsedSeconds / overallProgress) * (100 - overallProgress);
-    
+    const remainingSeconds =
+      (elapsedSeconds / overallProgress) * (100 - overallProgress);
+
     // Apply reasonable bounds: minimum 30 seconds, maximum 30 minutes
     const boundedSeconds = Math.max(30, Math.min(1800, remainingSeconds));
-    
+
     return Math.round(boundedSeconds);
   }, [startTime, overallProgress]);
 
@@ -45,7 +46,7 @@ export function UpdateProgressBar({
     }
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
-    
+
     // Round to nearest minute for longer estimates (5+ minutes) for simplicity
     if (minutes >= 5 && remainingSeconds >= 30) {
       return `${minutes + 1}m`;
@@ -67,7 +68,7 @@ export function UpdateProgressBar({
               {overallProgress}%
             </span>
             {timeEstimate !== null && (
-              <span className="text-xs text-gray-500 dark:text-gray-400 tabular-nums">
+              <span className="text-xs text-gray-500 tabular-nums dark:text-gray-400">
                 ~{formatTime(timeEstimate)} remaining
               </span>
             )}
