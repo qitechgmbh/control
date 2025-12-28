@@ -1,8 +1,7 @@
-import React, { useMemo } from "react";
+import React from "react";
 import { Icon } from "./Icon";
 import { cn } from "@/lib/utils";
 import type { UpdateStep } from "@/stores/updateStore";
-import { useUpdateStore } from "@/stores/updateStore";
 
 interface UpdateProgressBarProps {
   steps: UpdateStep[];
@@ -15,64 +14,15 @@ export function UpdateProgressBar({
   overallProgress,
   className,
 }: UpdateProgressBarProps) {
-  const startTime = useUpdateStore((state) => state.startTime);
-
-  const timeEstimate = useMemo(() => {
-    if (!startTime || overallProgress === 0) {
-      return null;
-    }
-
-    const elapsedTime = Date.now() - startTime;
-    const elapsedSeconds = elapsedTime / 1000;
-
-    // Wait at least 5 seconds and have at least 5% progress before showing estimate
-    if (elapsedSeconds < 5 || overallProgress < 5) {
-      return null;
-    }
-
-    // Simple estimate: if we've done X% in Y seconds, remaining is (Y / X) * (100 - X)
-    const remainingSeconds =
-      (elapsedSeconds / overallProgress) * (100 - overallProgress);
-
-    // Apply reasonable bounds: minimum 30 seconds, maximum 30 minutes
-    const boundedSeconds = Math.max(30, Math.min(1800, remainingSeconds));
-
-    return Math.round(boundedSeconds);
-  }, [startTime, overallProgress]);
-
-  const formatTime = (seconds: number): string => {
-    if (seconds < 60) {
-      return `${seconds}s`;
-    }
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-
-    // Round to nearest minute for longer estimates (5+ minutes) for simplicity
-    if (minutes >= 5 && remainingSeconds >= 30) {
-      return `${minutes + 1}m`;
-    }
-    if (remainingSeconds === 0) {
-      return `${minutes}m`;
-    }
-    return `${minutes}m ${remainingSeconds}s`;
-  };
-
   return (
     <div className={cn("space-y-4", className)}>
       {/* Overall Progress Bar */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <span className="text-sm font-medium">Overall Progress</span>
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold tabular-nums">
-              {overallProgress}%
-            </span>
-            {timeEstimate !== null && (
-              <span className="text-xs text-gray-500 tabular-nums dark:text-gray-400">
-                ~{formatTime(timeEstimate)} remaining
-              </span>
-            )}
-          </div>
+          <span className="text-sm font-semibold tabular-nums">
+            {overallProgress}%
+          </span>
         </div>
         <div className="relative h-2.5 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-800">
           <div

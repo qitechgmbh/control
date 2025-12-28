@@ -54,6 +54,9 @@ export function UpdateExecutePage() {
       commit: search.commit,
     };
 
+    // Show info about average update time
+    toast.info("The update process takes approximately 5 minutes on average.");
+
     initializeSteps();
     startUpdate();
     // Perhaps we just need to clear the logs ?
