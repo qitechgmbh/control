@@ -60,8 +60,8 @@ import { AnalogInputTestMachine } from "@/machines/analoginputtestmachine/Analog
 import { AnalogInputTestMachineControl } from "@/machines/analoginputtestmachine/AnalogInputTestMachineControlPage";
 import { IP20TestMachinePage } from "@/machines/ip20testmachine/IP20TestMachinePage";
 import { IP20TestMachineControlPage } from "@/machines/ip20testmachine/IP20TestMachineControlPage";
-import { TestMotorPage } from "@/machines/ethercat_beckhoff/TestMotorPage";
-import { TestMotorControlPage } from "@/machines/ethercat_beckhoff/TestMotorControlPage";
+import { TestMotorPage } from "@/machines/motor_test_machine/TestMotorPage";
+import { TestMotorControlPage } from "@/machines/motor_test_machine/TestMotorControlPage";
 
 import { MetricsGraphsPage } from "@/metrics/MetricsGraphsPage";
 import { MetricsControlPage } from "@/metrics/MetricsControlPage";
