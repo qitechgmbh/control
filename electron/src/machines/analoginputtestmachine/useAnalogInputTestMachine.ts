@@ -76,12 +76,12 @@ export function useAnalogInputTestMachine() {
     );
   };
 
-  const timeSeries: TimeSeriesWithInsert = createTimeSeries(
-    20,
-    1000,
-    5000,
-    60 * 60 * 1000,
-  );
+  const timeSeries: TimeSeriesWithInsert = createTimeSeries({
+    sampleIntervalShort: 20,
+    sampleIntervalLong: 1000,
+    retentionDurationShort: 5000,
+    retentionDurationLong: 60 * 60 * 1000,
+  });
 
   const [seriesData, setSeriesData] = useState<TimeSeries | null>(
     timeSeries.initialTimeSeries,
