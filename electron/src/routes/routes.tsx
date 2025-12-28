@@ -56,6 +56,10 @@ import { Aquapath1GraphPage } from "@/machines/aquapath/aquapath1/Aquapath1Graph
 import { TestMachinePage } from "@/machines/testmachine/TestMachinePage";
 import { TestMachineControlPage } from "@/machines/testmachine/TestMachineControlPage";
 import { Laser1PresetsPage } from "@/machines/laser/laser1/Laser1PresetsPage";
+import { AnalogInputTestMachine } from "@/machines/analoginputtestmachine/AnalogInputTestMachinePage";
+import { AnalogInputTestMachineControl } from "@/machines/analoginputtestmachine/AnalogInputTestMachineControlPage";
+import { IP20TestMachinePage } from "@/machines/ip20testmachine/IP20TestMachinePage";
+import { IP20TestMachineControlPage } from "@/machines/ip20testmachine/IP20TestMachineControlPage";
 import { TestMotorPage } from "@/machines/ethercat_beckhoff/TestMotorPage";
 import { TestMotorControlPage } from "@/machines/ethercat_beckhoff/TestMotorControlPage";
 
@@ -80,6 +84,30 @@ export const testMachineControlRoute = createRoute({
   getParentRoute: () => testMachineSerialRoute,
   path: "control",
   component: () => <TestMachineControlPage />,
+});
+
+export const analogInputTestMachineSerialRoute = createRoute({
+  getParentRoute: () => machinesRoute,
+  path: "analogInputTestMachine/$serial",
+  component: () => <AnalogInputTestMachine />,
+});
+
+export const analogInputTestMachineControlRoute = createRoute({
+  getParentRoute: () => analogInputTestMachineSerialRoute,
+  path: "control",
+  component: () => <AnalogInputTestMachineControl />,
+});
+
+export const ip20TestMachineSerialRoute = createRoute({
+  getParentRoute: () => machinesRoute,
+  path: "ip20testmachine/$serial",
+  component: () => <IP20TestMachinePage />,
+});
+
+export const ip20TestMachineControlRoute = createRoute({
+  getParentRoute: () => ip20TestMachineSerialRoute,
+  path: "control",
+  component: () => <IP20TestMachineControlPage />,
 });
 
 export const testMotorSerialRoute = createRoute({
@@ -406,6 +434,12 @@ export const rootTree = RootRoute.addChildren([
       ]),
 
       testMachineSerialRoute.addChildren([testMachineControlRoute]),
+
+      analogInputTestMachineSerialRoute.addChildren([
+        analogInputTestMachineControlRoute,
+      ]),
+
+      ip20TestMachineSerialRoute.addChildren([ip20TestMachineControlRoute]),
 
       testMotorSerialRoute.addChildren([testMotorControlRoute]),
 

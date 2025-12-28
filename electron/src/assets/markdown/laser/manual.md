@@ -1,1 +1,0 @@
-# Laser Manual

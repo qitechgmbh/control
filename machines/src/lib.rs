@@ -15,12 +15,14 @@ use smol::channel::Sender;
 use socketioxide::extract::SocketRef;
 use std::fmt::Debug;
 use std::{any::Any, sync::Arc, time::Instant};
+pub mod analog_input_test_machine;
 pub mod aquapath1;
 #[cfg(not(feature = "mock-machine"))]
 pub mod buffer1;
 pub mod ethercat_beckhoff;
 pub mod extruder1;
 pub mod extruder2;
+pub mod ip20_test_machine;
 pub mod laser;
 pub mod machine_identification;
 pub mod mock;
@@ -39,6 +41,8 @@ pub const MACHINE_AQUAPATH_V1: u16 = 0x0009;
 pub const MACHINE_BUFFER_V1: u16 = 0x0008;
 pub const MACHINE_EXTRUDER_V2: u16 = 0x0016;
 pub const TEST_MACHINE: u16 = 0x0033;
+pub const IP20_TEST_MACHINE: u16 = 0x0034;
+pub const ANALOG_INPUT_TEST_MACHINE: u16 = 0x0035;
 
 pub const MACHINE_BECKHOFF_TEST: u16 = 0x0011;
 

@@ -427,6 +427,7 @@ export const aquapath1: MachineProperties = {
     },
   ],
 };
+
 export const testmachine: MachineProperties = {
   name: "TestMachine",
   version: "V1",
@@ -456,6 +457,65 @@ export const testmachine: MachineProperties = {
           vendor_id: 2,
           product_id: 0x7d43052,
           revision: 0x120000,
+        },
+      ],
+    },
+  ],
+};
+
+export const analogInputTestMachine: MachineProperties = {
+  name: "AnalogTest",
+  version: "V1",
+  slug: "analogInputTestMachine",
+  icon: "lu:Clock",
+  machine_identification: {
+    vendor: VENDOR_QITECH,
+    machine: 0x0035,
+  },
+  device_roles: [
+    {
+      role: 0,
+      role_label: "Bus Coupler",
+      allowed_devices: [
+        {
+          vendor_id: 2,
+          product_id: 0x44c2c52,
+          revision: 0x120000,
+        },
+      ],
+    },
+    {
+      role: 1,
+      role_label: "EL3021",
+      allowed_devices: [
+        {
+          vendor_id: 2,
+          product_id: 0xbcd3052,
+          revision: 0x140000,
+        },
+      ],
+    },
+  ],
+};
+
+export const ip20TestMachine: MachineProperties = {
+  name: "IP20 Test",
+  version: "V1",
+  slug: "ip20testmachine",
+  icon: "lu:ToggleLeft",
+  machine_identification: {
+    vendor: VENDOR_QITECH,
+    machine: 0x0034,
+  },
+  device_roles: [
+    {
+      role: 0,
+      role_label: "IP20-EC-DI8-DO8",
+      allowed_devices: [
+        {
+          vendor_id: 0x741,
+          product_id: 0x117b6722,
+          revision: 0x1,
         },
       ],
     },
@@ -506,6 +566,8 @@ export const machineProperties: MachineProperties[] = [
   buffer1,
   aquapath1,
   testmachine,
+  analogInputTestMachine,
+  ip20TestMachine,
   TestMotor,
 ];
 

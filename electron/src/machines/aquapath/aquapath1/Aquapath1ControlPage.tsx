@@ -131,6 +131,9 @@ export function Aquapath1ControlPage() {
                   title="Set Reservoir 1 Target Temperature"
                   value={frontTargetTemperature}
                   unit="C"
+                  step={0.1}
+                  min={0.0}
+                  max={80.0}
                   renderValue={(value) => value.toFixed(1)}
                   onChange={(val) => {
                     setFrontTemperature(val);
@@ -154,6 +157,9 @@ export function Aquapath1ControlPage() {
                   title="Set Reservoir 2 Target Temperature"
                   value={backTargetTemperature}
                   unit="C"
+                  step={0.1}
+                  min={0.0}
+                  max={80.0}
                   renderValue={(value) => value.toFixed(1)}
                   onChange={(val) => {
                     setBackTemperature(val);
