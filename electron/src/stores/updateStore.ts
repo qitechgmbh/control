@@ -25,7 +25,6 @@ export type UpdateState = {
   steps: UpdateStep[];
   currentStepIndex: number;
   overallProgress: number; // 0-100
-  startTime: number | null; // Timestamp when update started
 };
 
 export type UpdateActions = {
@@ -109,7 +108,6 @@ const initialState: UpdateState = {
   steps: defaultSteps,
   currentStepIndex: 0,
   overallProgress: 0,
-  startTime: null,
 };
 
 export const useUpdateStore = create<UpdateStore>((set) => ({
@@ -144,7 +142,6 @@ export const useUpdateStore = create<UpdateStore>((set) => ({
       produce((state: UpdateState) => {
         state.isUpdating = true;
         state.terminalLines = [];
-        state.startTime = Date.now();
       }),
     ),
 
@@ -188,7 +185,6 @@ export const useUpdateStore = create<UpdateStore>((set) => ({
         state.steps = defaultSteps.map((step) => ({ ...step }));
         state.currentStepIndex = 0;
         state.overallProgress = 0;
-        state.startTime = null;
       }),
     ),
 
