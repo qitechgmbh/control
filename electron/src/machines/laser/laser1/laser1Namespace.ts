@@ -67,17 +67,17 @@ export type Laser1NamespaceStore = {
 };
 
 // Constants for time durations
-const HALF_SECOND = 500;
+const HUNDRED_MS = 100;
 
 const { initialTimeSeries: diameter, insert: addDiameter } = createTimeSeries({
-  sampleIntervalLong: HALF_SECOND,
+  sampleIntervalLong: HUNDRED_MS,
 });
 const { initialTimeSeries: x_diameter, insert: addXDiameter } =
-  createTimeSeries({ sampleIntervalLong: HALF_SECOND });
+  createTimeSeries({ sampleIntervalLong: HUNDRED_MS });
 const { initialTimeSeries: y_diameter, insert: addYDiameter } =
-  createTimeSeries({ sampleIntervalLong: HALF_SECOND });
+  createTimeSeries({ sampleIntervalLong: HUNDRED_MS });
 const { initialTimeSeries: roundness, insert: addRoundness } = createTimeSeries(
-  { sampleIntervalLong: HALF_SECOND },
+  { sampleIntervalLong: HUNDRED_MS },
 );
 
 /**
