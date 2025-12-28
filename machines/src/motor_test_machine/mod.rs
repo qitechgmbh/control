@@ -16,7 +16,7 @@ pub struct MotorState {
 }
 
 #[derive(Debug)]
-pub struct BeckhoffMachine {
+pub struct MotorTestMachine {
     api_receiver: Receiver<MachineMessage>,
     api_sender: Sender<MachineMessage>,
     main_sender: Option<Sender<AsyncThreadMessage>>,
@@ -27,7 +27,7 @@ pub struct BeckhoffMachine {
     pub motor_state: MotorState,
 }
 
-impl Machine for BeckhoffMachine {
+impl Machine for MotorTestMachine {
     fn get_machine_identification_unique(&self) -> MachineIdentificationUnique {
         self.machine_identification_unique.clone()
     }
@@ -37,7 +37,7 @@ impl Machine for BeckhoffMachine {
     }
 }
 
-impl BeckhoffMachine {
+impl MotorTestMachine {
     pub const MACHINE_IDENTIFICATION: MachineIdentification = MachineIdentification {
         vendor: VENDOR_QITECH,
         machine: MACHINE_BECKHOFF_TEST,

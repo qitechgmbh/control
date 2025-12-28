@@ -238,7 +238,7 @@ Use the official documentation of the EL7031-0030 for more information:
 ### Backend (Rust)
 Located in [machines/src/ethercat_beckhoff/](../../machines/src/ethercat_beckhoff/).
 
-1. **`mod.rs`**: Defines the `BeckhoffMachine` struct and holds the state (driver wrapper, enabled state, target velocity).
+1. **`mod.rs`**: Defines the `MotorTestMachine` struct and holds the state (driver wrapper, enabled state, target velocity).
 2. **`api.rs`**: Handles incoming JSON commands from the frontend (Enable/Disable, Set Velocity) via WebSockets/SocketIO.
 3. **`act.rs`**: The real-time control loop. It updates the `StepperVelocityEL70x1` driver wrapper in every cycle based on the current state.
 4. **`new.rs`**: Initializes the hardware.

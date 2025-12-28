@@ -1,8 +1,8 @@
-use super::BeckhoffMachine;
+use super::MotorTestMachine;
 use crate::{MachineAct, MachineMessage};
 use std::time::Instant;
 
-impl MachineAct for BeckhoffMachine {
+impl MachineAct for MotorTestMachine {
     fn act(&mut self, _now_ts: Instant) {
         // println!("[{}::act] Running act", module_path!());
         if let Ok(msg) = self.api_receiver.try_recv() {
