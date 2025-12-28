@@ -1,4 +1,4 @@
-use super::{BeckhoffMachine, MotorState, api::BeckhoffNamespace};
+use super::{MotorState, MotorTestMachine, api::BeckhoffNamespace};
 use crate::{
     MachineNewHardware, MachineNewParams, MachineNewTrait, get_ethercat_device,
     validate_no_role_dublicates, validate_same_machine_identification_unique,
@@ -16,9 +16,9 @@ use ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1;
 use ethercat_hal::shared_config;
 use ethercat_hal::shared_config::el70x1::{EL70x1OperationMode, StmMotorConfiguration};
 
-impl MachineNewTrait for BeckhoffMachine {
+impl MachineNewTrait for MotorTestMachine {
     fn new<'maindevice>(params: &MachineNewParams) -> Result<Self, Error> {
-        println!("[{}::new] Creating new BeckhoffMachine", module_path!());
+        println!("[{}::new] Creating new MotorTestMachine", module_path!());
         let device_identification = params.device_group.iter().cloned().collect::<Vec<_>>();
         validate_same_machine_identification_unique(&device_identification)?;
         validate_no_role_dublicates(&device_identification)?;

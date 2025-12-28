@@ -1,4 +1,4 @@
-use super::BeckhoffMachine;
+use super::MotorTestMachine;
 use crate::{MachineApi, MachineMessage};
 use control_core::socketio::{
     event::{Event, GenericEvent},
@@ -63,7 +63,7 @@ impl CacheableEvents<BeckhoffEvents> for BeckhoffEvents {
     }
 }
 
-impl MachineApi for BeckhoffMachine {
+impl MachineApi for MotorTestMachine {
     fn api_get_sender(&self) -> Sender<MachineMessage> {
         self.api_sender.clone()
     }

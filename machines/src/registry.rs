@@ -21,7 +21,7 @@ use crate::test_machine::TestMachine;
 
 use lazy_static::lazy_static;
 
-use crate::ethercat_beckhoff::BeckhoffMachine;
+use crate::motor_test_machine::MotorTestMachine;
 use anyhow::Error;
 use std::{any::TypeId, collections::HashMap};
 
@@ -126,7 +126,7 @@ lazy_static! {
         mc.register::<IP20TestMachine>(IP20TestMachine::MACHINE_IDENTIFICATION);
         mc.register::<AnalogInputTestMachine>(AnalogInputTestMachine::MACHINE_IDENTIFICATION);
 
-        mc.register::<BeckhoffMachine>(BeckhoffMachine::MACHINE_IDENTIFICATION);
+        mc.register::<MotorTestMachine>(MotorTestMachine::MACHINE_IDENTIFICATION);
         mc
     };
 }
