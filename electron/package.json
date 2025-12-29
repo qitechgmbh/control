@@ -99,7 +99,7 @@
     "tailwind-merge": "^3.0.1",
     "tailwindcss-animate": "^1.0.7",
     "uplot": "^1.6.32",
-    "xlsx": "^0.18.5",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
     "zod": "^4.3.5",
     "zod-validation-error": "^5.0.0",
     "zustand": "^5.0.8"
