@@ -1,3 +1,4 @@
+import path from "path";
 import { builtinModules } from "node:module";
 import type { AddressInfo } from "node:net";
 import type { ConfigEnv, Plugin, UserConfig } from "vite";
@@ -21,6 +22,7 @@ export function getBuildConfig(env: ConfigEnv<"build">): UserConfig {
   return {
     root,
     mode,
+    publicDir: path.resolve(__dirname, "public"),
     build: {
       // Prevent multiple builds from interfering with each other.
       emptyOutDir: false,
@@ -28,6 +30,13 @@ export function getBuildConfig(env: ConfigEnv<"build">): UserConfig {
       outDir: ".vite/build",
       watch: command === "serve" ? {} : null,
       minify: command === "build",
+    },
+    resolve: {
+      preserveSymlinks: true,
+      alias: {
+        "@": path.resolve(__dirname, "./src"),
+        "@root": path.resolve(__dirname, ".."),
+      },
     },
     clearScreen: false,
   };

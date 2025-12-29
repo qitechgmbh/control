@@ -11,7 +11,6 @@ import {
 export default defineConfig((env) => {
   const forgeEnv = env as ConfigEnv<"build">;
   const { forgeConfigSelf } = forgeEnv;
-  const define = getBuildDefine(forgeEnv);
   const config: UserConfig = {
     build: {
       lib: {
@@ -24,7 +23,6 @@ export default defineConfig((env) => {
       },
     },
     plugins: [pluginHotRestart("restart")],
-    define,
     resolve: {
       // Load the Node.js entry.
       mainFields: ["module", "jsnext:main", "jsnext"],
