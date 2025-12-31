@@ -47,22 +47,8 @@ export type WagoPower1NamespaceStore = {
   voltage: TimeSeries;
 };
 
-const TWENTY_MILLISECOND = 20;
-const ONE_SECOND = 1000;
-const FIVE_SECOND = 5 * ONE_SECOND;
-const ONE_HOUR = 60 * 60 * ONE_SECOND;
-const { initialTimeSeries: voltage, insert: addVoltage } = createTimeSeries(
-  TWENTY_MILLISECOND,
-  ONE_SECOND,
-  FIVE_SECOND,
-  ONE_HOUR,
-);
-const { initialTimeSeries: current, insert: addCurrent } = createTimeSeries(
-  TWENTY_MILLISECOND,
-  ONE_SECOND,
-  FIVE_SECOND,
-  ONE_HOUR,
-);
+const { initialTimeSeries: voltage, insert: addVoltage } = createTimeSeries();
+const { initialTimeSeries: current, insert: addCurrent } = createTimeSeries();
 
 const createWagoPower1NamespaceStore = (): StoreApi<WagoPower1NamespaceStore> =>
   create<WagoPower1NamespaceStore>(() => {
