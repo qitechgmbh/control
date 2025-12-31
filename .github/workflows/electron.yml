@@ -3,10 +3,10 @@ name: Electron
 on:
   push:
     branches:
-      - "**"
+      - master
   pull_request:
     branches:
-      - "*"
+      - master
 
 jobs:
   build-electron:
@@ -16,25 +16,17 @@ jobs:
         working-directory: electron
 
     steps:
+      - uses: actions/checkout@v4
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "18" # or '20' for latest LTS
-
-      - uses: actions/checkout@v4
-
-      - name: Cache NPM dependencies
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.npm
-            node_modules/
-          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-npm-
+          node-version: 20
+          cache: "npm"
+          cache-dependency-path: ./electron/package-lock.json
 
       - name: Install
-        run: npm i
+        run: npm ci
 
       - name: Build
         run: tsc
