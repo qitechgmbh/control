@@ -6,6 +6,9 @@ import {
   REACT_DEVELOPER_TOOLS,
 } from "electron-devtools-installer";
 
+const ARG1 = process.argv[1] ?? "./main.js";
+const DIR = path.dirname(ARG1);
+
 // Set consistent app ID for Windows taskbar and GNOME dock integration
 app.setAppUserModelId("de.qitech.control-electron");
 
@@ -27,8 +30,8 @@ if (!gotTheLock) {
 }
 
 function createWindow() {
-  const main = process.argv[1] ?? "./main.ts";
-  const preload = path.join(path.dirname(main), "preload.js");
+  const preload = path.join(DIR, "preload.js");
+  console.log("Setting preload.js to", preload);
 
   const mainWindow = new BrowserWindow({
     width: 1200,
@@ -43,7 +46,7 @@ function createWindow() {
       preload: preload,
     },
     // Add icon path for better integration
-    icon: path.join(__dirname, "../assets/icon.png"),
+    icon: path.join(DIR, "icon.png"),
     // Set window class explicitly for Linux/GNOME integration
     title: "QiTech Control",
   });
@@ -56,7 +59,7 @@ function createWindow() {
   if (process.env.VITE_DEV_SERVER_URL) {
     mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
   } else {
-    const index = process.argv[2] ?? "./index.html";
+    const index = path.join(DIR, "index.html");
     mainWindow.loadFile(index);
   }
 }

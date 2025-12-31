@@ -29,21 +29,7 @@
   outputs = { self, nixpkgs, crane, flake-utils, qitech-control, home-manager, ... }:
     flake-utils.lib.eachDefaultSystem (system:
       let
-        overlays = [
-          # Add our own overlay for QiTech packages
-          (final: prev: {
-            qitechPackages = {
-              server = final.callPackage ./nixos/packages/server.nix {
-                craneLib = crane.mkLib final;
-              };
-              electron = final.callPackage ./nixos/packages/electron.nix {
-                nodejs = final.nodejs_22;
-              };
-            };
-          })
-        ];
-
-        pkgs = import nixpkgs { inherit system overlays; };
+        pkgs = import nixpkgs { inherit system; };
         gitInfo = import ./nixos/gitInfo.nix { inherit pkgs; };
 
         craneLib = crane.mkLib pkgs;
@@ -65,7 +51,10 @@
             nodejs_22
             nodePackages.npm
             lldb
+            electron
           ];
+
+          ELECTON_SKIP_BINARY_DOWNLOAD = 1;
 
           hardeningDisable = [ "fortify" ];
 
@@ -102,9 +91,7 @@
                     server = final.callPackage ./nixos/packages/server.nix {
                       craneLib = crane.mkLib final;
                     };
-                    electron = final.callPackage ./nixos/packages/electron.nix {
-                      nodejs = final.nodejs_22;
-                    };
+                    electron = final.callPackage ./nixos/packages/electron.nix {};
                   };
                 })
               ];
