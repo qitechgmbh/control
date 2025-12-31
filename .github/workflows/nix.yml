@@ -1,22 +1,41 @@
-name: "nix"
+name: Nix CI
+
 on:
-  pull_request:
   push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+env:
+  NIX_PATH: nixpkgs=channel:nixos-25.05
+
 jobs:
-  tests:
+  electron:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Check out repository
+        uses: actions/checkout@v4
 
-      - uses: cachix/install-nix-action@v31
+      - uses: nixbuild/nix-quick-install-action@v34
         with:
-          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+          nix_conf: |
+            keep-env-derivations = true
+            keep-outputs = true
 
-      - name: Validate NixOS configuration
+      - uses: nix-community/cache-nix-action@v6
+        with:
+          primary-key: nix-${{ runner.os }}-${{ hashFiles('**/*.nix', '**/flake.lock') }}
+          restore-prefixes-first-match: nix-${{ runner.os }}-
+
+      - name: Nix Version
+        run: nix --version
+
+      - name: Build Electron in Nix
         run: |
-          pwd
-          ls -R
-          nix-instantiate ./nixos/os/configuration.nix
-          nix-build '<nixpkgs/nixos>' \
-          -A config.system.build.toplevel \
-          -I nixos-config=./nixos/os/configuration.nix
+          nix-build -E '
+            with import <nixpkgs> {};
+            callPackage ./nixos/packages/electron.nix {}
+          '
