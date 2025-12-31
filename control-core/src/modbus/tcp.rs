@@ -77,29 +77,22 @@ impl ModbusTcpDevice {
     }
 
     async fn read_and_check_responce_header(&mut self, func_code: u8) -> Result<()> {
-        assert_eq!(
-            self.read_u16().await?,
-            self.transactions,
-            "Modbus device sent unexpected transaction id!"
-        );
+        if self.read_u16().await? != self.transactions {
+            bail!("Modbus device sent unexpected transaction id!");
+        }
 
-        assert_eq!(
-            self.read_u16().await?,
-            PROTOCOL_ID,
-            "Modbus device sent unexpected protocol id!"
-        );
+        if self.read_u16().await? != PROTOCOL_ID {
+            bail!("Modbus device sent unexpected protocol id!");
+        }
 
         let length = self.read_u16().await?;
-        assert!(
-            length >= 2,
-            "Modbus device will send too few bytes to understand the response!"
-        );
+        if length < 2 {
+            bail!("Modbus device will send too few bytes to understand the response!");
+        }
 
-        assert_eq!(
-            self.read_u8().await?,
-            UNIT_ID,
-            "Modbus device sent unexpected unit id!"
-        );
+        if self.read_u8().await? != UNIT_ID {
+            bail!("Modbus device sent unexpected unit id!");
+        }
 
         let func_code_res = self.read_u8().await?;
         if func_code != func_code_res {
@@ -133,11 +126,11 @@ impl ModbusTcpDevice {
             .await?;
 
         let num_data_bytes = self.read_u8().await? as u16;
-        assert_eq!(
-            count * 2,
-            num_data_bytes,
-            "Modbus device wants to send only a portion of the requested range - UNIMPLEMENTED!"
-        );
+        if count * 2 != num_data_bytes {
+            bail!(
+                "Modbus device wants to send only a portion of the requested range - UNIMPLEMENTED!"
+            );
+        }
 
         Ok(num_data_bytes)
     }
@@ -185,17 +178,13 @@ impl ModbusTcpDevice {
         self.read_and_check_responce_header(WRITE_HOLDING_FUNCTION_CODE)
             .await?;
 
-        assert_eq!(
-            self.read_u16().await?,
-            addr,
-            "Modbus device wrote to wrong register address!"
-        );
+        if self.read_u16().await? != addr {
+            bail!("Modbus device wrote to wrong register address!");
+        }
 
-        assert_eq!(
-            self.read_u16().await?,
-            count as u16,
-            "Modbus device wrote wrong number of registers!"
-        );
+        if self.read_u16().await? != count as u16 {
+            bail!("Modbus device wrote wrong number of registers!");
+        }
 
         Ok(())
     }
@@ -220,7 +209,7 @@ impl ModbusTcpDevice {
     pub async fn set_string<const N: usize>(&mut self, _addr: u16, s: &str) -> Result<()> {
         assert!(s.len() <= N, "String is too long to fit!");
 
-        Ok(())
+        todo!()
     }
 
     pub async fn get_u16(&mut self, addr: u16) -> Result<u16> {
