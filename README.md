@@ -2,7 +2,12 @@
 
 # QiTech Control
 
-QiTech Control is an industrial control panel software for the next generation of QiTech recycling machines built on top of Beckhoff Automation hardware.
+QiTech Control is an open-source framework designed to bring modern software paradigms to certified industrial hardware.
+
+It frees developers from proprietary, license-heavy PLC ecosystems and rigid "point-and-click" workflows that are no longer adequate for today's complex automation challenges.
+
+QiTech Control combines the modularity and reliability of standard EtherCAT terminals (e.g., WAGO, Beckhoff) with the power of a modern Rust & React stack.
+
 
 [![](https://img.youtube.com/vi/KI3YeBwfV-s/maxresdefault.jpg)](https://www.youtube.com/watch?v=KI3YeBwfV-s)
 *Click here to watch a video demo of our software.*
