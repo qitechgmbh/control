@@ -1,7 +1,5 @@
 import { app, BrowserWindow } from "electron";
 import registerListeners from "./helpers/ipc/listeners-register";
-// "electron-squirrel-startup" seems broken when packaging with vite
-//import started from "electron-squirrel-startup";
 import path from "path";
 import {
   installExtension,
@@ -29,7 +27,9 @@ if (!gotTheLock) {
 }
 
 function createWindow() {
-  const preload = path.join(__dirname, "preload.js");
+  const main = process.argv[1] ?? "./main.ts";
+  const preload = path.join(path.dirname(main), "preload.js");
+
   const mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
@@ -53,12 +53,11 @@ function createWindow() {
 
   registerListeners(mainWindow);
 
-  if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
-    mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
+  if (process.env.VITE_DEV_SERVER_URL) {
+    mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
   } else {
-    mainWindow.loadFile(
-      path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`),
-    );
+    const index = process.argv[2] ?? "./index.html";
+    mainWindow.loadFile(index);
   }
 }
 
