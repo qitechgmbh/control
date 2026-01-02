@@ -7,6 +7,7 @@ use crate::{
 use crate::{
     Machine, MachineNewParams, analog_input_test_machine::AnalogInputTestMachine,
     ip20_test_machine::IP20TestMachine, machine_identification::MachineIdentification,
+    minimal_bottle_sorter::MinimalBottleSorter,
 };
 
 #[cfg(not(feature = "mock-machine"))]
@@ -124,6 +125,7 @@ lazy_static! {
         mc.register::<TestMachine>(TestMachine::MACHINE_IDENTIFICATION);
         mc.register::<IP20TestMachine>(IP20TestMachine::MACHINE_IDENTIFICATION);
         mc.register::<AnalogInputTestMachine>(AnalogInputTestMachine::MACHINE_IDENTIFICATION);
+        mc.register::<MinimalBottleSorter>(MinimalBottleSorter::MACHINE_IDENTIFICATION);
 
         mc
     };

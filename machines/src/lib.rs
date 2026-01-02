@@ -17,6 +17,7 @@ use std::fmt::Debug;
 use std::{any::Any, sync::Arc, time::Instant};
 pub mod analog_input_test_machine;
 pub mod aquapath1;
+pub mod minimal_bottle_sorter;
 #[cfg(not(feature = "mock-machine"))]
 pub mod buffer1;
 pub mod extruder1;
@@ -42,6 +43,7 @@ pub const MACHINE_EXTRUDER_V2: u16 = 0x0016;
 pub const TEST_MACHINE: u16 = 0x0033;
 pub const IP20_TEST_MACHINE: u16 = 0x0034;
 pub const ANALOG_INPUT_TEST_MACHINE: u16 = 0x0035;
+pub const MINIMAL_BOTTLE_SORTER: u16 = 0x0036;
 
 use serde_json::Value;
 use smol::lock::RwLock;
