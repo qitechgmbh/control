@@ -17,7 +17,6 @@ use std::fmt::Debug;
 use std::{any::Any, sync::Arc, time::Instant};
 pub mod analog_input_test_machine;
 pub mod aquapath1;
-pub mod minimal_bottle_sorter;
 #[cfg(not(feature = "mock-machine"))]
 pub mod buffer1;
 pub mod extruder1;
@@ -25,6 +24,7 @@ pub mod extruder2;
 pub mod ip20_test_machine;
 pub mod laser;
 pub mod machine_identification;
+pub mod minimal_bottle_sorter;
 pub mod mock;
 pub mod registry;
 pub mod serial;

@@ -1,5 +1,5 @@
-use crate::minimal_bottle_sorter::api::{MinimalBottleSorterEvents, LiveValuesEvent, StateEvent};
 use crate::machine_identification::{MachineIdentification, MachineIdentificationUnique};
+use crate::minimal_bottle_sorter::api::{LiveValuesEvent, MinimalBottleSorterEvents, StateEvent};
 use crate::{AsyncThreadMessage, Machine, MachineMessage};
 use control_core::socketio::namespace::NamespaceCacheingLogic;
 use ethercat_hal::io::digital_output::DigitalOutput;
@@ -21,7 +21,7 @@ pub struct MinimalBottleSorter {
     pub last_state_emit: Instant,
     pub last_live_values_emit: Instant,
     pub stepper_enabled: bool,
-    pub stepper_speed: f64, // mm/s
+    pub stepper_speed: f64,      // mm/s
     pub stepper_direction: bool, // true = forward, false = backward
     pub outputs: [bool; 8],
     pub pulse_remaining: [u32; 8], // remaining milliseconds for pulse
