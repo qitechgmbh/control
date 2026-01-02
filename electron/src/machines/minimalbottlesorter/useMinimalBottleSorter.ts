@@ -39,7 +39,9 @@ export function useMinimalBottleSorter() {
   }, [serialString]);
 
   // Namespace state from backend
-  const { state, liveValues } = useMinimalBottleSorterNamespace(machineIdentification);
+  const { state, liveValues } = useMinimalBottleSorterNamespace(
+    machineIdentification,
+  );
 
   // Optimistic state
   const stateOptimistic = useStateOptimistic<StateEvent>();
