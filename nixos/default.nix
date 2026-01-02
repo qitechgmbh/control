@@ -8,7 +8,7 @@ let
 in {
   server = flake.packages.${system}.server;
   electron = flake.packages.${system}.electron;
-  
+
   # Use the flake's development shell for consistency
   shell = flake.devShells.${system}.default;
 }

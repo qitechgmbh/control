@@ -8,6 +8,10 @@ on:
     branches:
       - master
 
+defaults:
+  run:
+    working-directory: ./nixos
+
 env:
   NIX_PATH: nixpkgs=channel:nixos-25.05
 
@@ -16,26 +20,33 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Check out repository
+      - &checkout
+        name: Check out repository
         uses: actions/checkout@v4
 
-      - uses: nixbuild/nix-quick-install-action@v34
+      - &nix-install
+        uses: nixbuild/nix-quick-install-action@v34
         with:
           nix_conf: |
             keep-env-derivations = true
             keep-outputs = true
 
-      - uses: nix-community/cache-nix-action@v6
+      - &nix-cache
+        uses: nix-community/cache-nix-action@v6
         with:
           primary-key: nix-${{ runner.os }}-${{ hashFiles('**/*.nix', '**/flake.lock') }}
           restore-prefixes-first-match: nix-${{ runner.os }}-
 
-      - name: Nix Version
-        run: nix --version
+      - name: Build Electron in Nix
+        run: nix-build -A electron
+
+  rust:
+    runs-on: ubuntu-latest
+
+    steps:
+      - *checkout
+      - *nix-install
+      - *nix-cache
 
       - name: Build Electron in Nix
-        run: |
-          nix-build -E '
-            with import <nixpkgs> {};
-            callPackage ./nixos/packages/electron.nix {}
-          '
+        run: nix-build -A server

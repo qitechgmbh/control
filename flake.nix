@@ -29,10 +29,20 @@
   outputs = { self, nixpkgs, crane, flake-utils, qitech-control, home-manager, ... }:
     flake-utils.lib.eachDefaultSystem (system:
       let
-        pkgs = import nixpkgs { inherit system; };
-        gitInfo = import ./nixos/gitInfo.nix { inherit pkgs; };
+        overlays = [
+          # Add our own overlay for QiTech packages with commit hash support
+          (final: prev: {
+            qitechPackages = {
+              server = final.callPackage ./nixos/packages/server.nix {
+                craneLib = crane.mkLib pkgs;
+              };
+              electron = final.callPackage ./nixos/packages/electron.nix {};
+            };
+          })
+        ];
 
-        craneLib = crane.mkLib pkgs;
+        pkgs = import nixpkgs { inherit system overlays; };
+        gitInfo = import ./nixos/gitInfo.nix { inherit pkgs; };
 
         # Use Rust 1.86 stable from nixpkgs
         rust = pkgs.rustc;
@@ -43,7 +53,7 @@
           default = self.packages.${system}.server;
         };
 
-        devShells.default = craneLib.devShell {
+        devShells.default = pkgs.mkDevShell {
           packages = with pkgs; [
             pkg-config
             libudev-zero
@@ -64,53 +74,38 @@
             echo "Node version: $(${pkgs.nodejs_22}/bin/node --version)"
           '';
         };
-      }
-    ) // {
-      nixosModules.qitech = import ./nixos/modules/qitech.nix;
-      nixosModules.default = self.nixosModules.qitech;
 
-      # Define nixosConfigurations outside of eachDefaultSystem
-      nixosConfigurations =
-      let
-        system = builtins.currentSystem;
-        pkgs = import nixpkgs { inherit system; };
-        gitInfo = import ./nixos/gitInfo.nix { inherit pkgs; };
-      in {
-        # Replace "nixos" with your actual hostname
-        nixos = nixpkgs.lib.nixosSystem {
-          system = system;
-          specialArgs = {
-            gitInfo = gitInfo; # Pass gitInfo to modules
+        nixosModules.qitech = import ./nixos/modules/qitech.nix;
+        nixosModules.default = self.nixosModules.qitech;
+
+        # Define nixosConfigurations outside of eachDefaultSystem
+        nixosConfigurations =
+        let
+          system = builtins.currentSystem;
+          gitInfo = import ./nixos/gitInfo.nix { inherit pkgs; };
+        in {
+          # Replace "nixos" with your actual hostname
+          nixos = nixpkgs.lib.nixosSystem {
+            system = system;
+            specialArgs = {
+              gitInfo = gitInfo; # Pass gitInfo to modules
+            };
+            modules = [
+              ./nixos/os/configuration.nix
+
+              # QiTech Control module
+              self.nixosModules.qitech
+
+              # Home Manager module
+              home-manager.nixosModules.home-manager
+              {
+                home-manager.useGlobalPkgs = true;
+                home-manager.useUserPackages = true;
+                home-manager.users.qitech = import ./nixos/os/home.nix;
+              }
+            ];
           };
-          modules = [
-            # Apply the overlays to the system
-            { nixpkgs.overlays = [
-                # Add our own overlay for QiTech packages with commit hash support
-                (final: prev: {
-                  qitechPackages = {
-                    server = final.callPackage ./nixos/packages/server.nix {
-                      craneLib = crane.mkLib final;
-                    };
-                    electron = final.callPackage ./nixos/packages/electron.nix {};
-                  };
-                })
-              ];
-            }
-
-            ./nixos/os/configuration.nix
-
-            # QiTech Control module
-            self.nixosModules.qitech
-
-            # Home Manager module
-            home-manager.nixosModules.home-manager
-            {
-              home-manager.useGlobalPkgs = true;
-              home-manager.useUserPackages = true;
-              home-manager.users.qitech = import ./nixos/os/home.nix;
-            }
-          ];
         };
-      };
-    };
+      }
+    );
 }
