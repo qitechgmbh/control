@@ -10,6 +10,7 @@ use crate::{
 
 use anyhow::Error;
 use ethercat_hal::coe::ConfigurableDevice;
+use ethercat_hal::devices::ek1100::{EK1100, EK1100_IDENTITY_A};
 use ethercat_hal::devices::el7041_0052::coe::EL7041_0052Configuration;
 use ethercat_hal::devices::el7041_0052::pdo::EL7041_0052PredefinedPdoAssignment;
 use ethercat_hal::devices::el7041_0052::{EL7041_0052, EL7041_0052_IDENTITY_A, EL7041_0052Port};
@@ -43,11 +44,20 @@ impl MachineNewTrait for MinimalBottleSorter {
         };
 
         block_on(async {
-            // Role 0: EL7041-0052 Stepper Motor Terminal
-            let (el7041, subdevice) = get_ethercat_device::<EL7041_0052>(
+            // Role 0: EK1100 EtherCAT Coupler
+            get_ethercat_device::<EK1100>(
                 hardware,
                 params,
                 0,
+                vec![EK1100_IDENTITY_A],
+            )
+            .await?;
+
+            // Role 1: EL7041-0052 Stepper Motor Terminal
+            let (el7041, subdevice) = get_ethercat_device::<EL7041_0052>(
+                hardware,
+                params,
+                1,
                 vec![EL7041_0052_IDENTITY_A],
             )
             .await?;
@@ -78,11 +88,11 @@ impl MachineNewTrait for MinimalBottleSorter {
 
             let stepper = StepperVelocityEL70x1::new(el7041.clone(), EL7041_0052Port::STM1);
 
-            // Role 1: IP20 DI8/DO8 Module
+            // Role 2: IP20 DI8/DO8 Module
             let ip20_device = get_ethercat_device::<IP20EcDi8Do8>(
                 hardware,
                 params,
-                1,
+                2,
                 [IP20_EC_DI8_DO8_IDENTITY].to_vec(),
             )
             .await?

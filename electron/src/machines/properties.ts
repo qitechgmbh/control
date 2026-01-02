@@ -534,6 +534,17 @@ export const minimalBottleSorter: MachineProperties = {
   device_roles: [
     {
       role: 0,
+      role_label: "EK1100 Bus Coupler",
+      allowed_devices: [
+        {
+          vendor_id: 2,
+          product_id: 0x44c2c52,
+          revision: 0x120000,
+        },
+      ],
+    },
+    {
+      role: 1,
       role_label: "EL7041-0052 Stepper",
       allowed_devices: [
         {
@@ -544,7 +555,7 @@ export const minimalBottleSorter: MachineProperties = {
       ],
     },
     {
-      role: 1,
+      role: 2,
       role_label: "IP20-EC-DI8-DO8",
       allowed_devices: [
         {
