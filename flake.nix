@@ -34,7 +34,7 @@
           (final: prev: {
             qitechPackages = {
               server = final.callPackage ./nixos/packages/server.nix {
-                craneLib = crane.mkLib pkgs;
+                craneLib = crane.mkLib final;
               };
               electron = final.callPackage ./nixos/packages/electron.nix {};
             };

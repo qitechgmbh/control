@@ -34,5 +34,8 @@ craneLib.buildPackage {
     inherit src strictDeps nativeBuildInputs buildInputs pname version;
   };
 
-  cargoExtraArgs = "-p server --features tracing-journald,io-uring --no-default-features";
+  cargoHash = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
+
+  cargoExtraArgs =
+    "-p server --features tracing-journald,io-uring --no-default-features";
 }
