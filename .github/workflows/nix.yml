@@ -27,11 +27,12 @@ jobs:
             keep-env-derivations = true
             keep-outputs = true
 
-      - &nix-cache
-        uses: nix-community/cache-nix-action@v6
+      - uses: nix-community/cache-nix-action@v6
         with:
-          primary-key: nix-${{ runner.os }}-${{ hashFiles('**/*.nix', '**/flake.lock', './electron/package-lock.json', './Cargo.lock') }}
+          primary-key: nix-electron-${{ runner.os }}-${{ hashFiles('**/*.nix', '**/flake.lock', './electron/package-lock.json') }}
           restore-prefixes-first-match: nix-${{ runner.os }}-
+          purge: true
+          purge-prefixes: nix-electron-${{ runner.os }}-
 
       - name: Build Electron in Nix
         run: nix build ".#packages.x86_64-linux.electron"
@@ -42,7 +43,13 @@ jobs:
     steps:
       - *checkout
       - *nix-install
-      - *nix-cache
+
+      - uses: nix-community/cache-nix-action@v6
+        with:
+          primary-key: nix-server-${{ runner.os }}-${{ hashFiles('**/*.nix', '**/flake.lock', './Cargo.lock') }}
+          restore-prefixes-first-match: nix-${{ runner.os }}-
+          purge: true
+          purge-prefixes: nix-server-${{ runner.os }}-
 
       - name: Build Server in Nix
         run: nix build ".#packages.x86_64-linux.server"
@@ -54,10 +61,19 @@ jobs:
     steps:
       - *checkout
       - *nix-install
-      - *nix-cache
 
-      - name: Build Flake and Configuration.nix
-        run: nix build ".#nixosConfigurations.nixos.config.system.build.toplevel"
+      - name: Use both Electron and Server Nix Store
+        uses: nix-community/cache-nix-action@v6
+        with:
+          primary-key: nix-${{ runner.os }}-${{ hashFiles('**/*.nix', '**/flake.lock', './Cargo.lock', './electron/package-lock.json') }}
+
+          # if no hit on the primary key, merge individual caches
+          restore-prefixes-all-matches: |
+            nix-electron-${{ runner.os }}-
+            nix-server-${{ runner.os }}-
+
+      - name: Build Flake and System Configuration
+        run: nix build ".#nixosConfigurations.nixos.config.system.build.toplevel" --impure
 
   format:
     runs-on: ubuntu-latest
