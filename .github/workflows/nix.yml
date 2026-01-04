@@ -48,7 +48,7 @@ jobs:
       - *nix-install
       - *nix-cache
 
-      - name: Build Server in Nix
+      - name: Build Electron in Nix
         run: nix-build -A server
 
   format:

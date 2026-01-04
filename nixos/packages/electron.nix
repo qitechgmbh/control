@@ -1,7 +1,4 @@
-{ lib
-, buildNpmPackage
-, electron
-}:
+{ lib, buildNpmPackage, electron }:
 
 buildNpmPackage rec {
   pname = "qitech-control-electron";

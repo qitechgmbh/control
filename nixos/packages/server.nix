@@ -1,10 +1,4 @@
-{ lib
-, pkgs
-, pkg-config
-, libudev-zero
-, libpcap
-, craneLib
-}:
+{ lib, pkgs, pkg-config, libudev-zero, libpcap, craneLib }:
 
 let
   # Bind variables so they can be inherited inside inner calls
@@ -18,12 +12,13 @@ let
   src = craneLib.cleanCargoSource ../..;
 
   # Safe fallback for CARGO_BUILD_JOBS in impure builds
-  cargoJobs = if (builtins.tryEval (builtins.getEnv "CARGO_BUILD_JOBS")).success
-              then builtins.getEnv "CARGO_BUILD_JOBS"
-              else "2";
-in
+  cargoJobs =
+    if (builtins.tryEval (builtins.getEnv "CARGO_BUILD_JOBS")).success then
+      builtins.getEnv "CARGO_BUILD_JOBS"
+    else
+      "2";
 
-craneLib.buildPackage {
+in craneLib.buildPackage {
   inherit pname version src strictDeps nativeBuildInputs buildInputs;
 
   # Use the safe cargoJobs variable
@@ -33,8 +28,6 @@ craneLib.buildPackage {
   cargoArtifacts = craneLib.buildDepsOnly {
     inherit src strictDeps nativeBuildInputs buildInputs pname version;
   };
-
-  cargoHash = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
 
   cargoExtraArgs =
     "-p server --features tracing-journald,io-uring --no-default-features";

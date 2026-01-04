@@ -5,9 +5,7 @@
     nixpkgs.url = "github:nixos/nixpkgs/nixos-25.05";
 
     # Crane for Rust builds with dependency caching
-    crane = {
-      url = "github:ipetkov/crane";
-    };
+    crane = { url = "github:ipetkov/crane"; };
 
     home-manager = {
       url = "github:nix-community/home-manager";
@@ -21,12 +19,11 @@
     };
 
     # Add flake-utils which was missing
-    flake-utils = {
-      url = "github:numtide/flake-utils";
-    };
+    flake-utils = { url = "github:numtide/flake-utils"; };
   };
 
-  outputs = { self, nixpkgs, crane, flake-utils, qitech-control, home-manager, ... }:
+  outputs =
+    { self, nixpkgs, crane, flake-utils, qitech-control, home-manager, ... }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         overlays = [
@@ -34,9 +31,9 @@
           (final: prev: {
             qitechPackages = {
               server = final.callPackage ./nixos/packages/server.nix {
-                craneLib = crane.mkLib final;
+                craneLib = crane.mkLib pkgs;
               };
-              electron = final.callPackage ./nixos/packages/electron.nix {};
+              electron = final.callPackage ./nixos/packages/electron.nix { };
             };
           })
         ];
@@ -53,7 +50,7 @@
           default = self.packages.${system}.server;
         };
 
-        devShells.default = pkgs.mkDevShell {
+        devShells.default = pkgs.mkShell {
           packages = with pkgs; [
             pkg-config
             libudev-zero
@@ -74,14 +71,14 @@
             echo "Node version: $(${pkgs.nodejs_22}/bin/node --version)"
           '';
         };
-
+      }) // {
         nixosModules.qitech = import ./nixos/modules/qitech.nix;
         nixosModules.default = self.nixosModules.qitech;
 
         # Define nixosConfigurations outside of eachDefaultSystem
-        nixosConfigurations =
-        let
+        nixosConfigurations = let
           system = builtins.currentSystem;
+          pkgs = import nixpkgs { inherit system; };
           gitInfo = import ./nixos/gitInfo.nix { inherit pkgs; };
         in {
           # Replace "nixos" with your actual hostname
@@ -91,6 +88,22 @@
               gitInfo = gitInfo; # Pass gitInfo to modules
             };
             modules = [
+              # Apply the overlays to the system
+              {
+                nixpkgs.overlays = [
+                  # Add our own overlay for QiTech packages with commit hash support
+                  (final: prev: {
+                    qitechPackages = {
+                      server = final.callPackage ./nixos/packages/server.nix {
+                        craneLib = crane.mkLib final;
+                      };
+                      electron =
+                        final.callPackage ./nixos/packages/electron.nix { };
+                    };
+                  })
+                ];
+              }
+
               ./nixos/os/configuration.nix
 
               # QiTech Control module
@@ -106,6 +119,5 @@
             ];
           };
         };
-      }
-    );
+      };
 }
