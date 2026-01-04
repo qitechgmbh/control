@@ -8,12 +8,12 @@ on:
     branches:
       - master
 
+env:
+  NIX_PATH: nixpkgs=channel:nixos-25.05
+
 defaults:
   run:
     working-directory: ./nixos
-
-env:
-  NIX_PATH: nixpkgs=channel:nixos-25.05
 
 jobs:
   electron:
@@ -40,6 +40,10 @@ jobs:
       - name: Build Electron in Nix
         run: nix-build -A electron
 
+      - &nix-store-add
+        name: Add to Nix Store
+        run: nix-store --realize --add result
+
   rust:
     runs-on: ubuntu-latest
 
@@ -51,6 +55,8 @@ jobs:
       - name: Build Server in Nix
         run: nix-build -A server
 
+      - *nix-store-add
+
   format:
     runs-on: ubuntu-latest
 
@@ -59,7 +65,18 @@ jobs:
       - *nix-install
 
       - name: Format
+        working-directory: ./
         run: nix run 'nixpkgs#nixfmt-classic' $(find . nixos -name '*.nix')
+
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - *checkout
+      - *nix-install
+
+      - name: Build Flake and Configuration.nix
+        run: nix flake check "." --impure
 
   build:
     runs-on: ubuntu-latest
@@ -71,4 +88,7 @@ jobs:
       - *nix-cache
 
       - name: Build Flake and Configuration.nix
-        run: nix build '.#nixosConfigurations.nixos.config.system.build.toplevel' --impure
+        working-directory: ./
+        run: nix build "."
+
+      - *nix-store-add
