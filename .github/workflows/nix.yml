@@ -11,10 +11,6 @@ on:
 env:
   NIX_PATH: nixpkgs=channel:nixos-25.05
 
-defaults:
-  run:
-    working-directory: ./nixos
-
 jobs:
   electron:
     runs-on: ubuntu-latest
@@ -34,15 +30,11 @@ jobs:
       - &nix-cache
         uses: nix-community/cache-nix-action@v6
         with:
-          primary-key: nix-${{ runner.os }}-${{ hashFiles('**/*.nix', '**/flake.lock') }}
+          primary-key: nix-${{ runner.os }}-${{ hashFiles('**/*.nix', '**/flake.lock', './electron/package-lock.json', './Cargo.lock') }}
           restore-prefixes-first-match: nix-${{ runner.os }}-
 
       - name: Build Electron in Nix
-        run: nix-build -A electron
-
-      - &nix-store-add
-        name: Add to Nix Store
-        run: nix-store --realize --add result
+        run: nix build ".#packages.x86_64-linux.electron"
 
   rust:
     runs-on: ubuntu-latest
@@ -53,30 +45,7 @@ jobs:
       - *nix-cache
 
       - name: Build Server in Nix
-        run: nix-build -A server
-
-      - *nix-store-add
-
-  format:
-    runs-on: ubuntu-latest
-
-    steps:
-      - *checkout
-      - *nix-install
-
-      - name: Format
-        working-directory: ./
-        run: nix run 'nixpkgs#nixfmt-classic' $(find . nixos -name '*.nix')
-
-  check:
-    runs-on: ubuntu-latest
-
-    steps:
-      - *checkout
-      - *nix-install
-
-      - name: Build Flake and Configuration.nix
-        run: nix flake check "." --impure
+        run: nix build ".#packages.x86_64-linux.server"
 
   build:
     runs-on: ubuntu-latest
@@ -88,7 +57,24 @@ jobs:
       - *nix-cache
 
       - name: Build Flake and Configuration.nix
-        working-directory: ./
-        run: nix build "."
+        run: nix build ".#nixosConfigurations.nixos.config.system.build.toplevel"
 
-      - *nix-store-add
+  format:
+    runs-on: ubuntu-latest
+
+    steps:
+      - *checkout
+      - *nix-install
+
+      - name: Format
+        run: nix run 'nixpkgs#nixfmt-classic' $(find . nixos -name '*.nix')
+
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - *checkout
+      - *nix-install
+
+      - name: Build Flake and Configuration.nix
+        run: nix flake check "." --impure
