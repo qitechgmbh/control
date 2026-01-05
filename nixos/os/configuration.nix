@@ -1,24 +1,22 @@
 { config, pkgs, ... }:
 
-let
-  gitInfo = import ../gitInfo.nix { inherit pkgs; };
-in
-{
-  imports =
-    [ # Include the results of the hardware scan.
+let gitInfo = import ../gitInfo.nix { inherit pkgs; };
+in {
+  imports = [
+    (if builtins.pathExists "/etc/nixos/hardware-configuration.nix" then
       /etc/nixos/hardware-configuration.nix
-    ];
+    else
+      ./ci-hardware-configuration.nix)
+  ];
 
   # Bootloader.
   boot.loader.systemd-boot = {
     enable = true;
-    consoleMode = "max";  # Use the highest available resolution
+    consoleMode = "max"; # Use the highest available resolution
   };
   boot.loader.efi.canTouchEfiVariables = true;
   boot.kernelPackages = pkgs.linuxPackages_6_13;
   boot.kernelModules = [ "i915" ];
-
-
 
   boot.kernelParams = [
     # Realtime Preemption
@@ -45,20 +43,20 @@ in
     #         Should ONLY be used in completely trusted environments
     # - Improves performance by 7-43%
     "mitigation=off"
-    "intel_pstate=performance"    # Intel CPU-specific performance mode (if applicable)
+    "intel_pstate=performance" # Intel CPU-specific performance mode (if applicable)
 
     # Memory Management
     "transparent_hugepage=always" # Use larger memory pages for memory intense applications
-    "nmi_watchdog=0"              # Disable NMI watchdog for reduced CPU overhead and realtime execution
+    "nmi_watchdog=0" # Disable NMI watchdog for reduced CPU overhead and realtime execution
 
     # High-throughput ethernet parameters
-    "pcie_aspm=off"         # Disable PCIe power management for NICs
-    "intel_iommu=off"       # Disable IOMMU (performance gain)
+    "pcie_aspm=off" # Disable PCIe power management for NICs
+    "intel_iommu=off" # Disable IOMMU (performance gain)
 
     # Reliability
-    "panic=10"              # Auto-reboot 10 seconds after kernel panic
-    "oops=panic"            # Treat kernel oops as panic for auto-recovery
-    "usbcore.autosuspend=-1"     # Possibly fixes dre disconnect issue?
+    "panic=10" # Auto-reboot 10 seconds after kernel panic
+    "oops=panic" # Treat kernel oops as panic for auto-recovery
+    "usbcore.autosuspend=-1" # Possibly fixes dre disconnect issue?
 
     "isolcpus=2,3" # Isolate cpus 2 and 3 from scheduler for better latency, 2 runs ethercatthread and 3 runs server control-loop
     "nohz_full=2,3" # In this mode, the periodic scheduler tick is stopped when only one task is running, reducing kernel interruptions on those CPUs.
@@ -68,10 +66,10 @@ in
 
   # Add these system settings for a more comprehensive kiosk setup
   boot.kernel.sysctl = {
-    "kernel.panic_on_oops" = 1;          # Reboot on kernel oops
-    "kernel.panic" = 10;                 # Reboot after 10 seconds on panic
-    "vm.swappiness" = 10;                # Reduce swap usage
-    "kernel.sysrq" = 1;                  # Enable SysRq for emergency control
+    "kernel.panic_on_oops" = 1; # Reboot on kernel oops
+    "kernel.panic" = 10; # Reboot after 10 seconds on panic
+    "vm.swappiness" = 10; # Reduce swap usage
+    "kernel.sysrq" = 1; # Enable SysRq for emergency control
   };
 
   nix = {
@@ -79,13 +77,11 @@ in
     extraOptions = ''
       experimental-features = nix-command flakes
     '';
-    settings = {
-      sandbox = false;  
-    };
+    settings = { sandbox = false; };
   };
 
   # Create a realtime group
-  users.groups.realtime = {};
+  users.groups.realtime = { };
 
   # Configure real-time privileges
   security.pam.loginLimits = [
@@ -208,7 +204,6 @@ in
     enable = true;
     extraPackages = with pkgs; [ mesa ];
   };
-
 
   services.libinput.enable = true;
   services.libinput.touchpad.tapping = true;
