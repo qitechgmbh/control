@@ -85,11 +85,13 @@ export type Buffer1NamespaceStore = {
  * Creates a message handler for Buffer1 namespace events with validation and appropriate caching strategies
  * @param store The store to update when messages are received
  * @param throttledUpdater Throttled updater for batching updates at 30 FPS
+ * @param namespaceId The namespace identifier
  * @returns A message handler function
  */
 export function buffer1MessageHandler(
   store: StoreApi<Buffer1NamespaceStore>,
   throttledUpdater: ThrottledStoreUpdater<Buffer1NamespaceStore>,
+  namespaceId: NamespaceId,
 ): EventHandler {
   return (event: Event<any>) => {
     const eventName = event.name;

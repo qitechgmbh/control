@@ -133,11 +133,13 @@ export const createAquapath1NamespaceStore =
  * Creates a message handler for Mock1 namespace events with validation and appropriate caching strategies
  * @param store The store to update when messages are received
  * @param throttledUpdater Throttled updater for batching updates at 60 FPS
+ * @param namespaceId The namespace identifier
  * @returns A message handler function
  */
 export function aquapath1MessageHandler(
   store: StoreApi<Aquapath1NamespaceStore>,
   throttledUpdater: ThrottledStoreUpdater<Aquapath1NamespaceStore>,
+  namespaceId: NamespaceId,
 ): EventHandler {
   return (event: Event<any>) => {
     const eventName = event.name;

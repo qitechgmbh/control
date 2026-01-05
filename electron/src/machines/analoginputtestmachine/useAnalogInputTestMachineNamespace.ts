@@ -2,6 +2,8 @@ import {
   createNamespaceHookImplementation,
   EventHandler,
   eventSchema,
+  NamespaceId,
+  ThrottledStoreUpdater,
 } from "@/client/socketioStore";
 import z from "zod";
 import { create, StoreApi } from "zustand";
@@ -31,6 +33,8 @@ const createMachineStore = (): StoreApi<AnalogInputTestMachineNamespaceStore> =>
 // ========== Message Handler ==========
 function analogInputTestMachineMessageHandler(
   store: StoreApi<AnalogInputTestMachineNamespaceStore>,
+  throttledUpdater: ThrottledStoreUpdater<AnalogInputTestMachineNamespaceStore>,
+  namespaceId: NamespaceId,
 ): EventHandler {
   return (event) => {
     const oldState = store.getState();
@@ -49,11 +53,12 @@ function analogInputTestMachineMessageHandler(
           });
         break;
       case "Measurement":
-        if (newMeasurement && newMeasurement !== oldState.currentMeasurement)
+        if (newMeasurement && newMeasurement !== oldState.currentMeasurement) {
           store.setState({
             ...oldState,
             currentMeasurement: newMeasurement,
           });
+        }
         break;
     }
   };

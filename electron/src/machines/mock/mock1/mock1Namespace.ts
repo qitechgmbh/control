@@ -20,7 +20,7 @@ import {
   createTimeSeries,
   TimeSeries,
   TimeSeriesValue,
-} from "@/lib/timeseries";
+} from "@/lib/timeseriesHybrid";
 
 // ========== Event Schema Definitions ==========
 /**
@@ -78,7 +78,21 @@ export type Mock1NamespaceStore = {
   sineWave3: TimeSeries;
 };
 
-const { initialTimeSeries: sineWave, insert: addSineWave } = createTimeSeries();
+// Create initial timeseries instances with IndexedDB backing
+const createTimeSeriesForMock = (serial: number, fieldName: string) =>
+  createTimeSeries({
+    seriesKey: `mock1:${serial}:${fieldName}`,
+    liveBufferSize: 250,
+    retentionDurationShort: 5000,
+    retentionDurationLong: 60 * 60 * 1000,
+  });
+
+const { initialTimeSeries: sineWave, insert: addSineWave } = createTimeSeries({
+  seriesKey: "mock1:0:default",
+  liveBufferSize: 250,
+  retentionDurationShort: 5000,
+  retentionDurationLong: 60 * 60 * 1000,
+});
 
 /**
  * Factory function to create a new Mock1 namespace store
@@ -101,11 +115,13 @@ export const createMock1NamespaceStore = (): StoreApi<Mock1NamespaceStore> => {
  * Creates a message handler for Mock1 namespace events with validation and appropriate caching strategies
  * @param store The store to update when messages are received
  * @param throttledUpdater Throttled updater for batching updates at 30 FPS
+ * @param namespaceId The namespace ID for IndexedDB storage
  * @returns A message handler function
  */
 export function mock1MessageHandler(
   store: StoreApi<Mock1NamespaceStore>,
   throttledUpdater: ThrottledStoreUpdater<Mock1NamespaceStore>,
+  namespaceId: NamespaceId,
 ): EventHandler {
   return (event: Event<any>) => {
     const eventName = event.name;
@@ -134,22 +150,25 @@ export function mock1MessageHandler(
       // Live values events (time-series data)
       else if (eventName === "LiveValuesEvent") {
         const liveValuesEvent = liveValuesEventSchema.parse(event);
+        const timestamp = liveValuesEvent.ts;
+
         const wave1Value: TimeSeriesValue = {
           value: liveValuesEvent.data.amplitude1 ?? 0,
-          timestamp: liveValuesEvent.ts,
+          timestamp,
         };
         const wave2Value: TimeSeriesValue = {
           value: liveValuesEvent.data.amplitude2 ?? 0,
-          timestamp: liveValuesEvent.ts,
+          timestamp,
         };
         const wave3Value: TimeSeriesValue = {
           value: liveValuesEvent.data.amplitude3 ?? 0,
-          timestamp: liveValuesEvent.ts,
+          timestamp,
         };
         const waveSumValue: TimeSeriesValue = {
           value: liveValuesEvent.data.amplitude_sum ?? 0,
-          timestamp: liveValuesEvent.ts,
+          timestamp,
         };
+
         updateStore((state) => ({
           ...state,
           sineWaveSum: addSineWave(state.sineWaveSum, waveSumValue),

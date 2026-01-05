@@ -254,6 +254,7 @@ type SocketioStore = {
     createEventHandler: (
       store: StoreApi<S>,
       throttledUpdater: ThrottledStoreUpdater<S>,
+      namespaceId: NamespaceId,
     ) => EventHandler,
   ) => void;
   incrementNamespace: (namespaceId: NamespaceId) => void;
@@ -296,7 +297,7 @@ const useSocketioStore = create<SocketioStore>()((set, get) => ({
         produce((state: SocketioStore) => {
           const store = createStore();
           const throttledUpdater = new ThrottledStoreUpdater(store);
-          const eventHandler = createEventHandler(store, throttledUpdater);
+          const eventHandler = createEventHandler(store, throttledUpdater, namespaceId);
           state.namespaces[namespace_path].store = store;
           state.namespaces[namespace_path].handler = eventHandler;
           state.namespaces[namespace_path].throttledUpdater = throttledUpdater;
@@ -330,7 +331,7 @@ const useSocketioStore = create<SocketioStore>()((set, get) => ({
       produce((state: SocketioStore) => {
         const store = createStore();
         const throttledUpdater = new ThrottledStoreUpdater(store);
-        const handler = createEventHandler(store, throttledUpdater);
+        const handler = createEventHandler(store, throttledUpdater, namespaceId);
         state.namespaces[namespace_path] = {
           count: 0,
           socket,
@@ -452,11 +453,13 @@ export interface NamespaceImplementationConfig<S> {
    * Function that creates a message handler for this namespace
    * @param store The store that will be updated by the handler
    * @param throttledUpdater Throttled updater for batching updates
+   * @param namespaceId The namespace ID for context
    * @returns A message handler function
    */
   createEventHandler: (
     store: StoreApi<S>,
     throttledUpdater: ThrottledStoreUpdater<S>,
+    namespaceId: NamespaceId,
   ) => EventHandler;
 }
 

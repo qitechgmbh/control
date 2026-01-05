@@ -100,11 +100,13 @@ export const createLaser1NamespaceStore = (): StoreApi<Laser1NamespaceStore> =>
  * Creates a message handler for Laser1 namespace events with validation and appropriate caching strategies
  * @param store The store to update when messages are received
  * @param throttledUpdater Throttled updater for batching updates at 30 FPS
+ * @param namespaceId The namespace identifier
  * @returns A message handler function
  */
 export function laser1MessageHandler(
   store: StoreApi<Laser1NamespaceStore>,
   throttledUpdater: ThrottledStoreUpdater<Laser1NamespaceStore>,
+  namespaceId: NamespaceId,
 ): EventHandler {
   return (event: Event<any>) => {
     const eventName = event.name;

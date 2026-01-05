@@ -256,6 +256,7 @@ const { initialTimeSeries: motorPower, insert: addMotorPower } =
 export function extruder3MessageHandler(
   store: StoreApi<Extruder3NamespaceStore>,
   throttledUpdater: ThrottledStoreUpdater<Extruder3NamespaceStore>,
+  namespaceId: NamespaceId,
 ): EventHandler {
   return (event: Event<any>) => {
     const eventName = event.name;

@@ -37,6 +37,7 @@ export const createTestMachineNamespaceStore =
 export function testMachineMessageHandler(
   store: StoreApi<TestMachineNamespaceStore>,
   throttledUpdater: ThrottledStoreUpdater<TestMachineNamespaceStore>,
+  namespaceId: NamespaceId,
 ): EventHandler {
   return (event: Event<any>) => {
     const updateStore = (

@@ -262,6 +262,7 @@ export const createWinder2NamespaceStore =
 export function winder2MessageHandler(
   store: StoreApi<Winder2NamespaceStore>,
   throttledUpdater: ThrottledStoreUpdater<Winder2NamespaceStore>,
+  namespaceId: NamespaceId,
 ): EventHandler {
   return (event: Event<any>) => {
     const eventName = event.name;

@@ -103,6 +103,8 @@ export const eventSchemaMap = {
 
 export function mainMessageHandler(
   store: StoreApi<MainNamespaceStore>,
+  throttledUpdater: ThrottledStoreUpdater<MainNamespaceStore>,
+  namespaceId: NamespaceId,
 ): EventHandler {
   return (event: Event<any>) => {
     const eventName = event.name;

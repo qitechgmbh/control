@@ -10,12 +10,16 @@ import { Toaster } from "./components/ui/sonner";
 import { enableMapSet } from "immer";
 import { useGlobalLogStreaming } from "./hooks/useGlobalLogStreaming";
 import { GlobalLaserToastManager } from "./setup/GlobalLaserToastManager";
+import { useInitializeTimeseries } from "./lib/initTimeseries";
 
 export default function App() {
   const { i18n } = useTranslation();
 
   // Start global log streaming
   useGlobalLogStreaming();
+
+  // Initialize timeseries system (IndexedDB + cleanup)
+  useInitializeTimeseries();
 
   useEffect(() => {
     syncThemeWithLocal();

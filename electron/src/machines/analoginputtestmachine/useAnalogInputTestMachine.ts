@@ -4,12 +4,12 @@ import {
   TimeSeries,
   TimeSeriesValue,
   TimeSeriesWithInsert,
-} from "@/lib/timeseries";
+} from "@/lib/timeseriesHybrid";
 import { useEffect, useMemo, useState } from "react";
 import z from "zod";
 import {
-  StateEvent,
   useAnalogInputTestMachineNamespace,
+  StateEvent,
 } from "./useAnalogInputTestMachineNamespace";
 import { toastError } from "@/components/Toast";
 import { MachineIdentificationUnique } from "../types";
@@ -76,14 +76,19 @@ export function useAnalogInputTestMachine() {
     );
   };
 
-  const timeSeries: TimeSeriesWithInsert = createTimeSeries({
-    sampleIntervalShort: 20,
-    sampleIntervalLong: 1000,
-    retentionDurationShort: 5000,
-    retentionDurationLong: 60 * 60 * 1000,
-  });
+  // Create timeseries with IndexedDB backing
+  const timeSeries: TimeSeriesWithInsert = useMemo(
+    () =>
+      createTimeSeries({
+        seriesKey: `analogInputTestMachine:${machineIdentification.serial}:measurement`,
+        liveBufferSize: 250,
+        retentionDurationShort: 5000,
+        retentionDurationLong: 60 * 60 * 1000,
+      }),
+    [machineIdentification.serial],
+  );
 
-  const [seriesData, setSeriesData] = useState<TimeSeries | null>(
+  const [seriesData, setSeriesData] = useState<TimeSeries>(
     timeSeries.initialTimeSeries,
   );
 
@@ -97,7 +102,7 @@ export function useAnalogInputTestMachine() {
       };
       setSeriesData(timeSeries.insert(seriesData, dataPoint));
     }
-  }, [state]);
+  }, [state.currentMeasurement, timeSeries]);
 
   return {
     seriesData,

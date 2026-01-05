@@ -45,6 +45,7 @@ export const createIP20TestMachineNamespaceStore =
 export function ip20TestMachineMessageHandler(
   store: StoreApi<IP20TestMachineNamespaceStore>,
   throttledUpdater: ThrottledStoreUpdater<IP20TestMachineNamespaceStore>,
+  namespaceId: NamespaceId,
 ): EventHandler {
   return (event: Event<any>) => {
     const updateStore = (
