@@ -179,6 +179,7 @@ pub async fn setup_loop(
     let pdu_storage = Box::leak(Box::new(PduStorage::<MAX_FRAMES, MAX_PDU_DATA>::new()));
     let (tx, rx, pdu) = pdu_storage.try_split().expect("can only split once");
     let interface = interface.to_string();
+    let mut has_dc = false;
 
     std::thread::Builder::new()
         .name("EthercatTxRxThread".to_owned())
@@ -349,6 +350,7 @@ pub async fn setup_loop(
     */
     match (coupler.identity().vendor_id, coupler.identity().product_id) {
         (WAGO_750_354_VENDOR_ID, WAGO_750_354_PRODUCT_ID) => {
+            has_dc = true;
             let r = Wago750_354::initialize_modules(coupler).await?;
             for module in r {
                 if coupler.configured_address() == module.belongs_to_addr {
@@ -372,6 +374,7 @@ pub async fn setup_loop(
             }
         }
         (IP20_EC_DI8_DO8_VENDOR_ID, IP20_EC_DI8_DO8_PRODUCT_ID) => {
+            has_dc = true;
             let r = IP20EcDi8Do8::initialize_modules(coupler).await?;
             for module in r {
                 if coupler.configured_address() == module.belongs_to_addr {
@@ -437,18 +440,23 @@ pub async fn setup_loop(
         ))?,
     };
 
-    /*
-        Make DC Slaves Happy
-        Does this potentially cause issues with Non DC-Sync devices?
-    */
-    let res = group_safe.tx_rx_sync_system_time(&maindevice).await;
-    match res {
-        Ok(_) => (),
-        Err(e) => tracing::error!(
-            "[{}::setup_loop] Failed to sync dc time: {:?}",
-            e,
-            module_path!()
-        ),
+
+
+    // TODO Make a more extensive init for the case of DC-Sync
+    // Maybe we need multiple groups? like one DC group and one non dc sync group?        
+    // For now we just check if we use wago coupler or IP20 
+    if has_dc {
+        for _ in 1..1000 {
+            let res = group_safe.tx_rx_sync_system_time(&maindevice).await;
+            match res {
+                Ok(_) => (),
+                Err(e) => tracing::error!(
+                    "[{}::setup_loop] Failed to sync dc time: {:?}",
+                    e,
+                    module_path!()
+                ),
+            }
+        }
     }
 
     // Put group in operational state
@@ -463,6 +471,7 @@ pub async fn setup_loop(
             err
         ))?,
     };
+
     {
         // Notify client via socketio
         let app_state_clone = app_state.clone();
