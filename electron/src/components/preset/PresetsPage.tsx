@@ -2,19 +2,19 @@ import React from "react";
 import { ControlGrid } from "@/control/ControlGrid";
 import { Page } from "@/components/Page";
 import { usePresets, UsePresetsParams } from "@/lib/preset/usePresets";
-import { Preset, PresetSchema } from "@/lib/preset/preset";
+import { Preset } from "@/lib/preset/preset";
 import { PresetCard } from "./PresetCard";
 import { PresetPreviewEntries } from "./PresetPreviewTable";
 import { NewPresetDialog } from "./NewPresetDialog";
 import { downloadJson } from "@/lib/download";
 import { JsonFileInput } from "../FileInput";
 
-type PresetsPageProps<T extends PresetSchema> = UsePresetsParams<T> & {
+type PresetsPageProps<T> = UsePresetsParams<T> & {
   applyPreset: (preset: Preset<T>) => void;
   previewEntries: PresetPreviewEntries<T>;
 };
 
-export function PresetsPage<T extends PresetSchema>({
+export function PresetsPage<T>({
   applyPreset,
   machine_identification,
   currentState,
