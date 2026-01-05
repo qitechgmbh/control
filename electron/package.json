@@ -102,7 +102,7 @@
     "uplot": "^1.6.32",
     "xlsx": "^0.18.5",
     "zod": "^3.24.2",
-    "zod-validation-error": "^3.4.0",
+    "zod-validation-error": "^5.0.0",
     "zustand": "^5.0.8"
   }
 }
