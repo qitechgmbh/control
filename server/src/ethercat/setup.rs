@@ -31,9 +31,6 @@ use smol::channel::Sender;
 use socketioxide::extract::SocketRef;
 use std::{sync::Arc, time::Duration};
 
-const SM_OUTPUT: u16 = 0x1C32;
-const SM_INPUT: u16 = 0x1C33;
-
 /// Structure to hold the result of grouping devices by identification
 #[derive(Debug)]
 pub struct DeviceGroupingResult {
@@ -404,8 +401,7 @@ pub async fn setup_loop(
     for subdevice in subdevices.iter() {
         // Hack so El5152 goes into OP
         if subdevice.name() == "EL5152" {
-            subdevice.sdo_write(SM_INPUT, 0x1, 0x00u16).await?; //set sync mode (1) for free run (0)
-            subdevice.sdo_write(SM_OUTPUT, 0x1, 0x00u16).await?; //set sync mode (1) for free run (0)
+            has_dc = true;
         }
     }
 
