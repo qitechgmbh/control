@@ -58,6 +58,7 @@ impl ProcessMetrics {
                     // Indices relative to AFTER comm:
                     // 7: minflt, 9: majflt, 11: utime, 12: stime
                     if parts.len() > 12 {
+                        println!("Parts debug: {:?}", parts);
                         minor_faults = parts[7].parse().unwrap_or(0);
                         major_faults = parts[9].parse().unwrap_or(0);
 
