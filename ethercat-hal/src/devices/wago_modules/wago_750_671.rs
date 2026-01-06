@@ -21,6 +21,39 @@ pub struct Wago750_671 {
     module: Option<Module>,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Wago750_671OperationMode {
+    /// Jogging
+    Joggin = 0,
+    /// Move program
+    MoveProgram = 1,
+    /// Positioning
+    Positioning = 2,
+    /// Velocity
+    Velocity = 3,
+}
+
+#[derive(Debug, Clone)]
+pub struct StmFeatures {
+    /// # 0x8012:01
+    /// Operation mode
+    /// - '0' = Jogging
+    /// - '1' = Move program
+    /// - '2' = Positioning Controller
+    /// - '3' = Velocity
+    pub operation_mode: Wago750_671OperationMode,
+}
+
+#[derive(Debug, Clone)]
+pub struct StmMotorConfiguration {
+
+}
+
+#[derive(Clone)]
+pub struct Wago750_671Configuration {
+
+}
+
 #[derive(Debug, Clone)]
 pub enum Wago750_671StepperPort {
     STM1,
