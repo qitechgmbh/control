@@ -36,6 +36,7 @@ pub mod wago_8ch_dio_test_machine;
 pub mod wago_ai_test_machine;
 pub mod wago_do_test_machine;
 pub mod wago_power;
+pub mod test_machine_stepper;
 pub mod winder2;
 
 pub const VENDOR_QITECH: u16 = 0x0001;
@@ -53,6 +54,7 @@ pub const ANALOG_INPUT_TEST_MACHINE: u16 = 0x0035;
 pub const WAGO_AI_TEST_MACHINE: u16 = 0x0036;
 pub const DIGITAL_INPUT_TEST_MACHINE: u16 = 0x0040;
 pub const WAGO_8CH_IO_TEST_MACHINE: u16 = 0x0041;
+pub const TEST_MACHINE_STEPPER: u16 = 0x0037;
 
 pub const MOTOR_TEST_MACHINE: u16 = 0x0011;
 pub const WAGO_DO_TEST_MACHINE: u16 = 0x000E;
