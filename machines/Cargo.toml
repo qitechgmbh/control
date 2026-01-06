@@ -22,7 +22,7 @@ smol = "2.0.2"
 
 # web
 serde_json = "1.0.143"
-socketioxide = { version = "0.17.2", features = ["msgpack"] }
+socketioxide = { version = "0.18.0", features = ["msgpack"] }
 
 # serial
 serialport = "4.7.3"

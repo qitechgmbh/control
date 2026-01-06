@@ -17,7 +17,7 @@ pub async fn init_socketio(app_state: Arc<SharedState>) -> SocketIoLayer {
     let app_state_main = app_state.clone();
 
     // set the on connect handler for main namespace
-    io.ns("/main", move |socket: SocketRef| {
+    io.ns("/main", async move |socket: SocketRef| {
         handle_socket_connection(socket, app_state_main.clone());
     });
 
@@ -26,7 +26,7 @@ pub async fn init_socketio(app_state: Arc<SharedState>) -> SocketIoLayer {
 
     if let Err(err) = io.dyn_ns(
         "/machine/{vendor}/{machine}/{serial}",
-        move |socket: SocketRef| {
+        async move |socket: SocketRef| {
             handle_socket_connection(socket, app_state_machine.clone());
         },
     ) {
@@ -57,7 +57,7 @@ fn handle_socket_connection(socket: SocketRef, app_state: Arc<SharedState>) {
 }
 
 fn setup_disconnection(socket: SocketRef, namespace_id: NamespaceId, app_state: Arc<SharedState>) {
-    socket.on_disconnect(move |socket: SocketRef| {
+    socket.on_disconnect(async move |socket: SocketRef| {
         let namespace_id = namespace_id.clone();
         let app_state = app_state.clone();
 
@@ -90,6 +90,8 @@ fn setup_disconnection(socket: SocketRef, namespace_id: NamespaceId, app_state: 
                     );
                 }
             }
+            drop(namespaces_guard);
+
             if let NamespaceId::Machine(ident) = namespace_id.clone() {
                     match app_state.clone().api_machines.lock().await.get(&ident) {
                         Some(sender) => {
@@ -97,10 +99,9 @@ fn setup_disconnection(socket: SocketRef, namespace_id: NamespaceId, app_state: 
                         },
                         None => tracing::info!("sender doesnt exist for: {}",ident),
                     };
-                }else{
-
                 }
-        })
+            }
+        )
         .detach();
     });
 }
@@ -147,8 +148,6 @@ fn setup_connection(socket: SocketRef, namespace_id: NamespaceId, app_state: Arc
                         },
                         None => tracing::info!("sender doesnt exist for: {}",ident),
                     };
-                }else{
-
                 }
                 }
                 Err(err) => {
