@@ -462,6 +462,41 @@ export const testmachine: MachineProperties = {
   ],
 };
 
+export const testmachinestepper: MachineProperties = {
+  name: "TestMachineStepper",
+  version: "V1",
+  slug: "testmachinestepper",
+  icon: "lu:Disc3",
+  machine_identification: {
+    vendor: VENDOR_QITECH,
+    machine: 0x0034,
+  },
+  device_roles: [
+    {
+      role: 0,
+      role_label: "Bus Coupler",
+      allowed_devices: [
+        {
+          vendor_id: 0x00000021,
+          product_id: 0x07500354,
+          revision: 0x2,
+        },
+      ],
+    },
+    {
+      role: 1,
+      role_label: "Stepper Motor",
+      allowed_devices: [
+        {
+          vendor_id: 0x00000021,
+          product_id: 108074216,
+          revision: 0x2,
+        },
+      ],
+    },
+  ],
+};
+
 export const machineProperties: MachineProperties[] = [
   winder2,
   extruder3,
@@ -471,6 +506,7 @@ export const machineProperties: MachineProperties[] = [
   buffer1,
   aquapath1,
   testmachine,
+  testmachinestepper,
 ];
 
 export const getMachineProperties = (
