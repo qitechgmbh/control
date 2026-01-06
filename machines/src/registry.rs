@@ -18,7 +18,7 @@ use crate::{
     winder2::Winder2,
 };
 
-use crate::test_machine::TestMachine;
+use crate::{test_machine::TestMachine, test_machine_stepper::TestMachineStepper};
 
 use lazy_static::lazy_static;
 
@@ -127,7 +127,7 @@ lazy_static! {
         mc.register::<IP20TestMachine>(IP20TestMachine::MACHINE_IDENTIFICATION);
 
         mc.register::<AnalogInputTestMachine>(AnalogInputTestMachine::MACHINE_IDENTIFICATION);
-
+        mc.register::<TestMachineStepper>(TestMachineStepper::MACHINE_IDENTIFICATION);
         mc
     };
 }

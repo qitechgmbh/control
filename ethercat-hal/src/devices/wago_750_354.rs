@@ -46,6 +46,7 @@ impl EthercatDevice for Wago750_354 {
         &mut self,
         input: &bitvec::prelude::BitSlice<u8, bitvec::prelude::Lsb0>,
     ) -> Result<(), anyhow::Error> {
+        tracing::info!("Hello I'm the input function in the Ethercat Master");
         for slot_device in &mut self.slot_devices {
             match slot_device {
                 Some(device) => {
@@ -57,7 +58,6 @@ impl EthercatDevice for Wago750_354 {
                 None => break,
             }
         }
-
         Ok(())
     }
 

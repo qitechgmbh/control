@@ -56,6 +56,8 @@ import { Aquapath1GraphPage } from "@/machines/aquapath/aquapath1/Aquapath1Graph
 import { TestMachinePage } from "@/machines/testmachine/TestMachinePage";
 import { TestMachineControlPage } from "@/machines/testmachine/TestMachineControlPage";
 
+import { TestMachineStepperPage } from "@/machines/testmachinestepper/TestMachineStepperPage";
+import { TestMachineStepperControlPage } from "@/machines/testmachinestepper/TestMachineStepperControlPage";
 import { AnalogInputTestMachine } from "@/machines/analoginputtestmachine/AnalogInputTestMachinePage";
 import { AnalogInputTestMachineControl } from "@/machines/analoginputtestmachine/AnalogInputTestMachineControlPage";
 import { IP20TestMachinePage } from "@/machines/ip20testmachine/IP20TestMachinePage";
@@ -109,6 +111,19 @@ export const ip20TestMachineControlRoute = createRoute({
   getParentRoute: () => ip20TestMachineSerialRoute,
   path: "control",
   component: () => <IP20TestMachineControlPage />,
+});
+
+export const testMachineStepperSerialRoute = createRoute({
+  getParentRoute: () => machinesRoute,
+  path: "testmachinestepper/$serial",
+  component: () => <TestMachineStepperPage />,
+});
+
+// Leaf route: control page
+export const testMachineStepperControlRoute = createRoute({
+  getParentRoute: () => testMachineStepperSerialRoute,
+  path: "control",
+  component: () => <TestMachineStepperControlPage />,
 });
 
 export const sidebarRoute = createRoute({
@@ -434,6 +449,7 @@ export const rootTree = RootRoute.addChildren([
         laser1PresetsRoute,
       ]),
       testMachineSerialRoute.addChildren([testMachineControlRoute]),
+      testMachineStepperSerialRoute.addChildren([testMachineStepperControlRoute]),
 
       analogInputTestMachineSerialRoute.addChildren([
         analogInputTestMachineControlRoute,
