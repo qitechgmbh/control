@@ -440,11 +440,9 @@ pub async fn setup_loop(
         ))?,
     };
 
-
-
     // TODO Make a more extensive init for the case of DC-Sync
-    // Maybe we need multiple groups? like one DC group and one non dc sync group?        
-    // For now we just check if we use wago coupler or IP20 
+    // Maybe we need multiple groups? like one DC group and one non dc sync group?
+    // For now we just check if we use wago coupler or IP20
     if has_dc {
         for _ in 1..1000 {
             let res = group_safe.tx_rx_sync_system_time(&maindevice).await;
