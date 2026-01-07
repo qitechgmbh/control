@@ -5,7 +5,7 @@ use std::sync::OnceLock;
 /// Process-level metrics for the server process.
 ///
 /// All values are cumulative since process start.
-#[derive(Debug, Clone, Copy,Default)]
+#[derive(Debug, Clone, Copy, Default)]
 pub struct ProcessMetrics {
     pub rss_bytes: u64,
     pub cpu_time_seconds: f64,

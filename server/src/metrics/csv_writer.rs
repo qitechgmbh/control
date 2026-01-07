@@ -35,7 +35,11 @@ pub struct RuntimeSample {
 }
 
 impl RuntimeSample {
-    pub fn from_process_metrics(m: ProcessMetrics,mfaults_per_second : u64, timestamp_ms: u128) -> Self {
+    pub fn from_process_metrics(
+        m: ProcessMetrics,
+        mfaults_per_second: u64,
+        timestamp_ms: u128,
+    ) -> Self {
         Self {
             timestamp_ms,
             rss_bytes: m.rss_bytes,

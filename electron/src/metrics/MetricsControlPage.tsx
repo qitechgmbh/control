@@ -108,10 +108,10 @@ export function MetricsControlPage() {
 
           {/* Total page faults (composite, no single unit) */}
           <MetricCard
-            title="Total Page Faults"
+            title="Page Faults"
             value={
               minorFaults != null || majorFaults != null
-                ? `${minorFaults ?? "–"} minor | ${majorFaults ?? "–"} major`
+                ? `${minorFaults ?? "–"} minor per second | ${majorFaults ?? "–"} major`
                 : "—"
             }
           />

@@ -32,20 +32,24 @@ pub fn spawn_runtime_metrics_sampler(cfg: RuntimeMetricsConfig) {
 
             // 1) Process metrics
             let proc = ProcessMetrics::collect();
-            
+
             // naively expects values for every second
             let faults_since_last = match last_proc {
                 Some(last) => {
                     if proc.minor_faults > last.minor_faults {
                         proc.minor_faults - last.minor_faults
-                    }else{
+                    } else {
                         0
-                    }           
-                },
+                    }
+                }
                 None => 0,
             };
 
-            let mut sample = RuntimeSample::from_process_metrics(last_proc.unwrap_or(ProcessMetrics::default()),faults_since_last, now_ms);
+            let mut sample = RuntimeSample::from_process_metrics(
+                last_proc.unwrap_or(ProcessMetrics::default()),
+                faults_since_last,
+                now_ms,
+            );
             last_proc = Some(proc);
 
             // 2) Jitter summary (SIGNED, nanoseconds)
