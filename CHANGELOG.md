@@ -1,3 +1,24 @@
+# `2.13.0`
+_07.01.2026_
+
+## General
+- [#925](https://github.com/qitechgmbh/control/pull/925) Switch to Setup when selected machine is disconnected
+- [#937](https://github.com/qitechgmbh/control/pull/937) Added minimal Support for WAGO 
+- [#945](https://github.com/qitechgmbh/control/pull/945) Improvements for On-Screen Keyboard usage in Ethercat Setup Page
+- []
+
+## Extruder V3
+- [#930](https://github.com/qitechgmbh/control/pull/930) Added Extruder V3
+
+## Laser
+- [#924](https://github.com/qitechgmbh/control/pull/924) Roundness is now displayed as a percentage
+- [#885](https://github.com/qitechgmbh/control/pull/885) Added Min and Max Diameter
+- [#849](https://github.com/qitechgmbh/control/pull/849) Added a Warning if Filament is out of Spec
+
+## Aquapath
+- [#976](https://github.com/qitechgmbh/control/pull/976) Improved Stability
+
+
 # `2.12.0`
 _17.11.2025_
 
