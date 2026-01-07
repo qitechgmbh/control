@@ -6,10 +6,8 @@
   "main": ".vite/build/main.js",
   "private": true,
   "scripts": {
-    "start": "electron-forge start",
-    "package": "electron-forge package",
-    "make": "electron-forge make",
-    "publish": "electron-forge publish",
+    "start": "vite",
+    "build": "vite build",
     "lint": "eslint .",
     "lint:write": "eslint . --fix",
     "format": "prettier --check .",
@@ -22,15 +20,6 @@
   },
   "author": "",
   "devDependencies": {
-    "@electron-forge/cli": "^7.6.1",
-    "@electron-forge/maker-deb": "^7.8.0",
-    "@electron-forge/maker-rpm": "^7.8.3",
-    "@electron-forge/maker-squirrel": "^7.6.1",
-    "@electron-forge/maker-zip": "^7.6.1",
-    "@electron-forge/plugin-auto-unpack-natives": "^7.6.1",
-    "@electron-forge/plugin-fuses": "^7.10.2",
-    "@electron-forge/plugin-vite": "^7.6.1",
-    "@electron-forge/shared-types": "^7.4.0",
     "@electron/fuses": "^1.8.0",
     "@eslint/compat": "^1.2.6",
     "@eslint/js": "^9.18.0",
@@ -62,6 +51,8 @@
     "typescript": "^5.7.3",
     "typescript-eslint": "^8.24.1",
     "vite": "^6.4.1",
+    "vite-plugin-electron": "^0.29.0",
+    "vite-plugin-electron-renderer": "^0.14.6",
     "vitest": "^3.0.6"
   },
   "dependencies": {

@@ -2,7 +2,7 @@
 
 let
   # Generate Git info in the store
-  gitInfoDerivation = pkgs.runCommand "git-info" {} ''
+  gitInfoDerivation = pkgs.runCommand "git-info" { } ''
     gitTimestamp="${builtins.getEnv "GIT_TIMESTAMP"}"
     gitCommit="${builtins.getEnv "GIT_COMMIT"}"
     gitUrl="${builtins.getEnv "GIT_URL"}"
@@ -21,5 +21,4 @@ let
       }
     EOF
   '';
-in
-  builtins.fromJSON (builtins.readFile "${gitInfoDerivation}/git-info.json")
+in builtins.fromJSON (builtins.readFile "${gitInfoDerivation}/git-info.json")
