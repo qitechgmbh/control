@@ -1,88 +1,4 @@
-![Titelseite,screenshot from Word doccument](/images/manuals/winder/Titelseite.jpeg)
-
-<br>
-
-# Data sheet: QiTech Pro Winder
-
-![datasheet header illustration](/images/manuals/winder/datasheet/header.png)
-
-Short description:
-
-The QiTech Pro Winder is a machine for winding and rewinding 3D printing filaments and other strand materials. It is an improvement upon the proven QiTech Winder with support for multiple filament diameters, spools up to 5 kg, angular speeds up to 20 m/min and automatic adjustment of the winding speed depending on the filament tension.
-
-It consists of a pulling unit, a tension arm, a filament guiding traverse and the spool axis. It is controlled by a computer using the QiTech Control software. The traverse movement ensures a clean wind of the filament on the spool. Automatic load adjustment allows for tight winding without having to manually readjust the winding speed each layer. A laser in the traverse allows for easy calibration of the spool width.
-
-<br>
-
-## Scope of delivery
-
-| # | Item                                      |
-| - | ----------------------------------------- |
-| 1 | QiTech Pro Winder                         |
-| 2 | 2x Spool Carrier-Pins                     |
-| 3 | 4x Weights for tension arm                |
-| 4 | 230V/110V to 24V Power Supply             |
-| 5 | USB C to USB A cable                      |
-| 6 | USB Drive with QiTech Control software    |
-| 7 | Operating manual                          |
-| 8 | optional: wheeled frame                   |
-
-<br>
-
-## Dimensions and Weight
-
-![dimensions top view](/images/manuals/winder/datasheet/dimensions-top.png)
-![dimensions front view](/images/manuals/winder/datasheet/gestell.png)
-
-|                | no frame | incl. frame |
-| -------------- | -------- | ----------- |
-| Weight         | 20 kg    | 35 kg       |
-| Length (1)     | 91 cm    | 91 cm       |
-| Width (2)      | 50 cm    | 50 cm       |
-| Height (3)     | 42 cm    | 134 cm      |
-
-<br>
-
-## Requirements of the Spool
-
-The QiTech Pro Winder is compatible with almost all spools. The spool is rotated by a Carrier-Pin and secured against lateral slipping by a quick release mechanism. The maximum spool weight is 5 kg.
-
-![min/max spool dimensions](/images/manuals/winder/datasheet/spool-min-max.png)
-
-<br>
-
-## Winding Speed
-
-How many meters of filament can be wound per minute at maximum speed depends on the inner diameter of the spool/how much filament has already been wound. The resulting path speed determines how much filament can be wound up in a given time. We take a usual spool with an inner diameter of 100 mm to calculate an expected maximum speed. If the inner diameter is larger, the maximum speed shifts upwards.
-
-Winding Speed:
-
-- Min.: 0.5 Meters/Minute
-- Max.: 20 Meters/Minute
-
-<br>
-
-## Friction of the puller rolls
-
-Since the diameter of the extruded filament depends primarily on the pulling speed of the Pro Winder, it is important that it remains constant. This is ensured on the one hand by the use of a stepper motor as drive. At the same time, a vulcanized PU coating of the rolls and a spring-increased contact pressure make the filament only slip through from approx. 30 N tension.
-
-<br>
-
-## Auto-Stop function
-
-When extruding or rewinding, it is often the case that a specific amount of meters must be wound onto a spool. The QiTech Pro Winder has an integrated filament length measurement. For example, after 100 m, it can automatically switch from "wind" to "pull" mode. In addition, the operator is alerted acoustically that the spool has finished winding.
-
-![auto stop ui placeholder](/images/manuals/winder/datasheet/autostop-ui.png)
-
-<br>
-
-## Electronics / Power consumption
-
-| Specification         | Value                      |
-| --------------------- | -------------------------- |
-| Mains connection      | 230V/50Hz or 110V/60Hz     |
-| Ø Load in operation   | 3A at 24V                  |
-| Ø Consumption in use  | 72 Wh                      |
+![Titelseite,screenshot from Word doccument](images/manuals/winder/Titelseite.jpeg)
 
 <br>
 
@@ -139,7 +55,7 @@ Darmstadt, 10/06/2025
 
 64392 Darmstadt,
 
-<img src="/images/manuals/winder/signature.jpeg" width="300" height="60"/>
+<img src="images/manuals/winder/signature.jpeg" width="300" height="60"/>
 
 Milan von dem Bussche
 
@@ -185,7 +101,7 @@ Operating instructions
 
 # 1 Machine description
 
-![maschinenbeschreibung](/images/manuals/winder/description.png)
+![maschinenbeschreibung](images/manuals/winder/description.png)
 
 | Item number | Item number Description                   |
 | ----------- | ----------------------------------------- |
@@ -270,7 +186,7 @@ Accuracy class: 2
 
 | Picture                                     | Danger!                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| ![Warning](/images/manuals/winder/w001.jpeg) | **Danger to life due to technically faulty machine.** <br> The machine may only be used when it is in perfect technical condition and in accordance with its intended use, in a safety-conscious and hazard-conscious manner and in compliance with these operating instructions. All faults, especially those that could impair safety, must be rectified immediately before starting the winder. Everyone who works on or with the Qitech Winder is responsible for observing these safety aspects! |
+| ![Warning](images/manuals/winder/w001.jpeg) | **Danger to life due to technically faulty machine.** <br> The machine may only be used when it is in perfect technical condition and in accordance with its intended use, in a safety-conscious and hazard-conscious manner and in compliance with these operating instructions. All faults, especially those that could impair safety, must be rectified immediately before starting the winder. Everyone who works on or with the Qitech Winder is responsible for observing these safety aspects! |
 
 <br><br><br>
 
@@ -278,17 +194,17 @@ Accuracy class: 2
 
 | Pictogram                                | Description of pictogram                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | Pictogram                                | Pictogram Description                                                                                                                                                                                                    |
 | ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| ![w001](/images/manuals/winder/w001.jpeg) | W001 General warning sign The combination of the symbol W001 and the signal word **"Danger"** indicates an imminently hazardous situation which, if not avoided death or serious injury if it is not avoided. The combination of the symbol W001 and the signal word **"Warning"** indicates an imminently hazardous situation which, if not avoided, will result in death or serious injury. death or serious injury if it is not avoided. The combination of the symbol W001 and the signal word **"Caution"** indicates an imminently hazardous situation which, if not avoided death or serious injury if not avoided. | ![m001](/images/manuals/winder/m001.jpeg) | M001 General warning sign Mandatory sign This combination of symbol and signal word indicates a potentially hazardous situation which, if not avoided, may result in damage to property or the environment. not avoided. |
-| ![w008](/images/manuals/winder/w008.jpeg) | W008 Warning of risk of falling                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | ![m003](/images/manuals/winder/m003.jpeg) | M003 Use hearing protection                                                                                                                                                                                              |
-| ![w011](/images/manuals/winder/w011.jpeg) | W011 Warning of danger of slipping                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | ![m004](/images/manuals/winder/m004.jpeg) | M004 Use eye protection                                                                                                                                                                                                  |
-| ![w004](/images/manuals/winder/w004.jpeg) | W004 Warning of laser beam                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | ![m008](/images/manuals/winder/m008.jpeg) | M008 Use foot protection                                                                                                                                                                                                 |
-| ![w012](/images/manuals/winder/w012.jpeg) | W012 Warning of electrical voltage                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | ![m009](/images/manuals/winder/m009.jpeg) | M009 Use hand protection                                                                                                                                                                                                 |
-| ![w017](/images/manuals/winder/w017.jpeg) | W017 Warning of hot surface                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | ![m010](/images/manuals/winder/m010.jpeg) | M010 Use protective clothing                                                                                                                                                                                             |
-| ![w018](/images/manuals/winder/w018.jpeg) | W018 Warning against automatic start-up                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | ![m012](/images/manuals/winder/m012.jpeg) | M012 Use handrail                                                                                                                                                                                                        |
-| ![w019](/images/manuals/winder/w019.jpeg) | W019 Warning of crushing hazard                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | ![m021](/images/manuals/winder/m021.jpeg) | M021 Switch off before maintenance or repair                                                                                                                                                                             |
-| ![w024](/images/manuals/winder/w024.jpeg) | W024 Warning against hand injuries                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | ![m014](/images/manuals/winder/m014.jpeg) | M014 Use head protection                                                                                                                                                                                                 |
-| ![w025](/images/manuals/winder/w025.jpeg) | W025 Warning against counter-rotating rollers                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |                                          |                                                                                                                                                                                                                          |
-| ![w016](/images/manuals/winder/w016.jpeg) | W016 Warning of toxic substances                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |                                          |                                                                                                                                                                                                                          |
+| ![w001](images/manuals/winder/w001.jpeg) | W001 General warning sign The combination of the symbol W001 and the signal word **"Danger"** indicates an imminently hazardous situation which, if not avoided death or serious injury if it is not avoided. The combination of the symbol W001 and the signal word **"Warning"** indicates an imminently hazardous situation which, if not avoided, will result in death or serious injury. death or serious injury if it is not avoided. The combination of the symbol W001 and the signal word **"Caution"** indicates an imminently hazardous situation which, if not avoided death or serious injury if not avoided. | ![m001](images/manuals/winder/m001.jpeg) | M001 General warning sign Mandatory sign This combination of symbol and signal word indicates a potentially hazardous situation which, if not avoided, may result in damage to property or the environment. not avoided. |
+| ![w008](images/manuals/winder/w008.jpeg) | W008 Warning of risk of falling                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | ![m003](images/manuals/winder/m003.jpeg) | M003 Use hearing protection                                                                                                                                                                                              |
+| ![w011](images/manuals/winder/w011.jpeg) | W011 Warning of danger of slipping                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | ![m004](images/manuals/winder/m004.jpeg) | M004 Use eye protection                                                                                                                                                                                                  |
+| ![w004](images/manuals/winder/w004.jpeg) | W004 Warning of laser beam                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | ![m008](images/manuals/winder/m008.jpeg) | M008 Use foot protection                                                                                                                                                                                                 |
+| ![w012](images/manuals/winder/w012.jpeg) | W012 Warning of electrical voltage                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | ![m009](images/manuals/winder/m009.jpeg) | M009 Use hand protection                                                                                                                                                                                                 |
+| ![w017](images/manuals/winder/w017.jpeg) | W017 Warning of hot surface                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | ![m010](images/manuals/winder/m010.jpeg) | M010 Use protective clothing                                                                                                                                                                                             |
+| ![w018](images/manuals/winder/w018.jpeg) | W018 Warning against automatic start-up                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | ![m012](images/manuals/winder/m012.jpeg) | M012 Use handrail                                                                                                                                                                                                        |
+| ![w019](images/manuals/winder/w019.jpeg) | W019 Warning of crushing hazard                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | ![m021](images/manuals/winder/m021.jpeg) | M021 Switch off before maintenance or repair                                                                                                                                                                             |
+| ![w024](images/manuals/winder/w024.jpeg) | W024 Warning against hand injuries                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | ![m014](images/manuals/winder/m014.jpeg) | M014 Use head protection                                                                                                                                                                                                 |
+| ![w025](images/manuals/winder/w025.jpeg) | W025 Warning against counter-rotating rollers                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |                                          |                                                                                                                                                                                                                          |
+| ![w016](images/manuals/winder/w016.jpeg) | W016 Warning of toxic substances                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |                                          |                                                                                                                                                                                                                          |
 
 <br><br><br>
 
@@ -296,15 +212,15 @@ Accuracy class: 2
 
 | Prohibition signs Pictogram                                             | Pictogram description                                                                   | International pictograms / other Pictogram                                             | Pictogram Description                                                       |
 | ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| <img src="/images/manuals/winder/p001.jpeg" width="158" height="158"/>   | P001 General prohibition sign                                                           | <img src="/images/manuals/winder/f001.jpeg" width="158" height="158">                   | F001 Fire extinguisher                                                      |
-| <img src="/images/manuals/winder/p002.jpeg" width="158" height="158"/>   | P002 No smoking                                                                         | <img src="/images/manuals/winder/ANIS_danger.jpeg" width="232" height="60">             | ANSI Z535.3 - DANGER                                                        |
-| <img src="/images/manuals/winder/p003.jpeg" width="158" height="158"/>   | P003 No open flames; fire, open source of ignition and smoking prohibited               | <img src="/images/manuals/winder/ANIS_warning.jpeg" width="232" height="60">            | ANSI Z535.3 - WARNING                                                       |
-| <img src="/images/manuals/winder/p006.jpeg" width="158" height="158"/>   | P006 Prohibited for industrial trucks                                                   | <img src="/images/manuals/winder/ANIS_caution.jpeg" width="232" height="60">            | ANSI Z535.3 - CAUTION                                                       |
-| <img src="/images/manuals/winder/p009.jpeg" width="158" height="158"/>   | P009 Climbing prohibited - In the sense of climbing prohibited for unauthorized persons | <img src="/images/manuals/winder/ANIS_notice.jpeg" width="232" height="60">             | ANSI Z535.3 - NOTICE                                                        |
-| <img src="/images/manuals/winder/p022.jpeg" width="158" height="158"/>   | P022 Eating and drinking prohibited                                                     | <img src="/images/manuals/winder/ANIS_safetyinstructions.jpeg" width="232" height="60"> | ANSI Z535.3 - SAFETY INSTRUCTIONS                                           |
-| <img src="/images/manuals/winder/p024.jpeg" width="158" height="158"/>   | P024 Entering the area prohibited                                                       | <img src="/images/manuals/winder/trashcan.jpeg" width="158" height="158">               | Symbol for separate collection of waste electrical and electronic equipment |
-| <img src="/images/manuals/winder/p031.jpeg" width="158" height="158"/>   | P031 Switching prohibited                                                               |                                                                                        |                                                                             |
-| <img src="/images/manuals/winder/D-p006.jpeg" width="158" height="158"/> | D-P006 Access prohibited for unauthorized persons                                       |                                                                                        |                                                                             |
+| <img src="images/manuals/winder/p001.jpeg" width="158" height="158"/>   | P001 General prohibition sign                                                           | <img src="images/manuals/winder/f001.jpeg" width="158" height="158">                   | F001 Fire extinguisher                                                      |
+| <img src="images/manuals/winder/p002.jpeg" width="158" height="158"/>   | P002 No smoking                                                                         | <img src="images/manuals/winder/ANIS_danger.jpeg" width="232" height="60">             | ANSI Z535.3 - DANGER                                                        |
+| <img src="images/manuals/winder/p003.jpeg" width="158" height="158"/>   | P003 No open flames; fire, open source of ignition and smoking prohibited               | <img src="images/manuals/winder/ANIS_warning.jpeg" width="232" height="60">            | ANSI Z535.3 - WARNING                                                       |
+| <img src="images/manuals/winder/p006.jpeg" width="158" height="158"/>   | P006 Prohibited for industrial trucks                                                   | <img src="images/manuals/winder/ANIS_caution.jpeg" width="232" height="60">            | ANSI Z535.3 - CAUTION                                                       |
+| <img src="images/manuals/winder/p009.jpeg" width="158" height="158"/>   | P009 Climbing prohibited - In the sense of climbing prohibited for unauthorized persons | <img src="images/manuals/winder/ANIS_notice.jpeg" width="232" height="60">             | ANSI Z535.3 - NOTICE                                                        |
+| <img src="images/manuals/winder/p022.jpeg" width="158" height="158"/>   | P022 Eating and drinking prohibited                                                     | <img src="images/manuals/winder/ANIS_safetyinstructions.jpeg" width="232" height="60"> | ANSI Z535.3 - SAFETY INSTRUCTIONS                                           |
+| <img src="images/manuals/winder/p024.jpeg" width="158" height="158"/>   | P024 Entering the area prohibited                                                       | <img src="images/manuals/winder/trashcan.jpeg" width="158" height="158">               | Symbol for separate collection of waste electrical and electronic equipment |
+| <img src="images/manuals/winder/p031.jpeg" width="158" height="158"/>   | P031 Switching prohibited                                                               |                                                                                        |                                                                             |
+| <img src="images/manuals/winder/D-p006.jpeg" width="158" height="158"/> | D-P006 Access prohibited for unauthorized persons                                       |                                                                                        |                                                                             |
 
 <br><br><br>
 
@@ -342,7 +258,7 @@ In addition, the following procedures must be regarded as misuse:
 
 <br><br><br>
 
-![spool sizes](/images/manuals/winder/spools.jpeg)
+![spool sizes](images/manuals/winder/spools.jpeg)
 
 <br><br><br>
 
@@ -370,7 +286,7 @@ Hazardous movements are brought to a controlled standstill as quickly as possibl
 
 <br>
 
-<img src="/images/manuals/winder/emergency_stop.jpeg" width="300" height="300"/>
+<img src="images/manuals/winder/emergency_stop.jpeg" width="300" height="300"/>
 
 <br>
 
@@ -427,8 +343,8 @@ Depending on the activity or the duration of the activity, the operator must det
 <br><br>
 | Picture | Danger |
 |---------|--------|
-| <img src="/images/manuals/winder/w001.jpeg" width="150" height="150"/> | **Risk of injury due to improper transport** <br> Be careful when loading the machine, do not place any limbs under the parts when setting them down, do not stand under suspended loads or between moving loads and walls or machine parts. Wear personal protective equipment: safety shoes, protective work clothing, protective gloves. |
-| <img src="/images/manuals/winder/w001.jpeg" width="150" height="150"/> | **Danger to life due to incorrect installation and commissioning!** <br> Errors during installation can lead to life-threatening situations or cause considerable damage to property. Installation and commissioning may only be carried out by the manufacturer's employees. |
+| <img src="images/manuals/winder/w001.jpeg" width="150" height="150"/> | **Risk of injury due to improper transport** <br> Be careful when loading the machine, do not place any limbs under the parts when setting them down, do not stand under suspended loads or between moving loads and walls or machine parts. Wear personal protective equipment: safety shoes, protective work clothing, protective gloves. |
+| <img src="images/manuals/winder/w001.jpeg" width="150" height="150"/> | **Danger to life due to incorrect installation and commissioning!** <br> Errors during installation can lead to life-threatening situations or cause considerable damage to property. Installation and commissioning may only be carried out by the manufacturer's employees. |
 
 <br><br>
 
@@ -448,7 +364,7 @@ The machines are delivered with the newest version of the software installed. Up
 
 <br>
 
-![screenshot of update tab](/images/manuals/winder/screenshot_updates.png)
+![screenshot of update tab](images/manuals/winder/screenshot_updates.png)
 
 <br>
 
@@ -496,7 +412,7 @@ Then start the machine as follows:
 
 <br>
 
-![screenshot outer limit](/images/manuals/winder/screenshot_traverse.png)
+![screenshot outer limit](images/manuals/winder/screenshot_traverse.png)
 
 <br>
 
@@ -519,7 +435,7 @@ The **padding** parameter creates a safety margin that prevents the filament fro
 
 The default padding is 0.88mm, but you can adjust this value in the Control settings based on your filament diameter and winding requirements. Larger filaments may require more padding, while smaller filaments can use less padding for maximum spool utilization.
 
-![Padding example](/images/manuals/winder/winder_padding_example_image.jpg)
+![Padding example](images/manuals/winder/winder_padding_example_image.jpg)
 
 <br>
 
@@ -532,7 +448,7 @@ The default padding is 0.88mm, but you can adjust this value in the Control sett
 
 <br>
 
-![screernshot target speed](/images/manuals/winder/screenshot_targetspeed.png)
+![screernshot target speed](images/manuals/winder/screenshot_targetspeed.png)
 
 <br>
 
@@ -598,7 +514,7 @@ All settings such as the position of the spool sides, the winding speed or the f
 
 | Picture                                                               | Danger!                                                                                                                                                                                                                                           |
 | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| <img src="/images/manuals/winder/w001.jpeg" width="150" height="150"/> | **Danger to life due to operation of the machine in faulty condition** <br> If safety-relevant changes or defects occur on the machine, shut down immediately, secure against restarting and report the process to the responsible office/person! |
+| <img src="images/manuals/winder/w001.jpeg" width="150" height="150"/> | **Danger to life due to operation of the machine in faulty condition** <br> If safety-relevant changes or defects occur on the machine, shut down immediately, secure against restarting and report the process to the responsible office/person! |
 
 <br><br>
 
@@ -642,14 +558,14 @@ The polyurethane coating of the puller rollers will inevitably wear out over tim
 
 Now remove the black plastic caps and simply pull out the puller rollers. To install the new rollers back on, slide them on the axes, put the plastic cap back on and screw the screws.
 
-<img src="/images/manuals/winder/swapping_out_rollers.jpeg" width="300" height="400"/>
+<img src="images/manuals/winder/swapping_out_rollers.jpeg" width="300" height="400"/>
 
 <br>
 <br>
 
 | Picture                                                               | Caution!                                                                  |
 | --------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| <img src="/images/manuals/winder/w001.jpeg" width="150" height="150"/> | Observe the instructions for maintenance work when servicing the machine! |
+| <img src="images/manuals/winder/w001.jpeg" width="150" height="150"/> | Observe the instructions for maintenance work when servicing the machine! |
 
 <br>
 <br>
@@ -714,7 +630,7 @@ The machine consists largely of aluminum and plastic and can be easily separated
 
 | Picture                                                                   | Disposal Instructions                                                                                                                                                                                                                                                                                            |
 | ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| <img src="/images/manuals/winder/trashcan.jpeg" width="150" height="150"/> | Appliances with this logo on the packaging or on the appliance must be disposed of separately. These devices must not be disposed of with normal household waste. You are responsible for ensuring that any electrical or electronic waste is disposed of at the appropriate locations, e.g., recycling centers. |
+| <img src="images/manuals/winder/trashcan.jpeg" width="150" height="150"/> | Appliances with this logo on the packaging or on the appliance must be disposed of separately. These devices must not be disposed of with normal household waste. You are responsible for ensuring that any electrical or electronic waste is disposed of at the appropriate locations, e.g., recycling centers. |
 
 <br><br><br>
 
@@ -722,15 +638,15 @@ The machine consists largely of aluminum and plastic and can be easily separated
 
 | Picture                                                               | Danger!                                                                                                                                                                                                                                                                                                                   |
 | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| <img src="/images/manuals/winder/w001.jpeg" width="150" height="150"/> | **Danger of getting caught, pulled in or pulled along by moving parts of the machine** <br> Do not wear loose long hair, loose clothing or jewelry! There is always a risk of getting caught, pulled in or pulled along by moving parts!                                                                                  |
-| <img src="/images/manuals/winder/w001.jpeg" width="150" height="150"/> | **Operation only permitted with protective devices fitted!** <br> The winder may only be operated with properly fitted and functioning safety guards. The operator is responsible for ensuring that all protective devices are properly fitted.                                                                           |
-| <img src="/images/manuals/winder/w001.jpeg" width="150" height="150"/> | **Danger of cutting tensioned filament** <br> The stretched filament must not be touched between the puller and the spool. Danger of cutting! Do not wind any pointed, sharp-edged or particularly thin materials!                                                                                                        |
-| <img src="/images/manuals/winder/w012.jpeg" width="150" height="150"/> | **Electric shock** <br> Before carrying out any repair, set-up or maintenance work, the winder must be de-energised by disconnecting the mains plug! Pull out the mains plug!                                                                                                                                             |
-| <img src="/images/manuals/winder/w012.jpeg" width="150" height="150"/> | **Electrostatic charges on the puller and spool** <br> Friction of the filament on the puller rollers and on the spool can lead to electrostatic charges. There is a risk of minor electric shocks! Do not touch the affected areas, but keep a sufficient distance!                                                      |
-| <img src="/images/manuals/winder/w018.jpeg" width="150" height="150"/> | **Automatic speed adjustment of puller, reel and traverse** <br> The bobbin automatically adjusts its speed to keep the winding pressure constant. The traverse automatically adjusts its speed to the reel in order to maintain the same travel distance per revolution.                                                 |
-| <img src="/images/manuals/winder/w025.jpeg" width="150" height="150"/> | **Feeding of body parts** <br> Extreme caution is required in the area of the puller and spool axle! There is an acute danger of getting caught or pulled in! Make sure you wear close-fitting clothing! Always keep the emergency stop switch within easy reach so that it can be activated immediately in an emergency. |
-| <img src="/images/manuals/winder/w024.jpeg" width="150" height="150"/> | **Risk of crushing when threading the filament** <br> Exercise extreme caution when threading the filament through the puller rollers! There is a risk of crushing between the upper and lower pair of rollers.                                                                                                           |
-| <img src="/images/manuals/winder/w024.jpeg" width="150" height="150"/> | **Risk of crushing between the traversing unit and machine housing** <br> Exercise extreme caution when moving the traverser towards the housing! Do not place any limbs in the gap!                                                                                                                                      |
+| <img src="images/manuals/winder/w001.jpeg" width="150" height="150"/> | **Danger of getting caught, pulled in or pulled along by moving parts of the machine** <br> Do not wear loose long hair, loose clothing or jewelry! There is always a risk of getting caught, pulled in or pulled along by moving parts!                                                                                  |
+| <img src="images/manuals/winder/w001.jpeg" width="150" height="150"/> | **Operation only permitted with protective devices fitted!** <br> The winder may only be operated with properly fitted and functioning safety guards. The operator is responsible for ensuring that all protective devices are properly fitted.                                                                           |
+| <img src="images/manuals/winder/w001.jpeg" width="150" height="150"/> | **Danger of cutting tensioned filament** <br> The stretched filament must not be touched between the puller and the spool. Danger of cutting! Do not wind any pointed, sharp-edged or particularly thin materials!                                                                                                        |
+| <img src="images/manuals/winder/w012.jpeg" width="150" height="150"/> | **Electric shock** <br> Before carrying out any repair, set-up or maintenance work, the winder must be de-energised by disconnecting the mains plug! Pull out the mains plug!                                                                                                                                             |
+| <img src="images/manuals/winder/w012.jpeg" width="150" height="150"/> | **Electrostatic charges on the puller and spool** <br> Friction of the filament on the puller rollers and on the spool can lead to electrostatic charges. There is a risk of minor electric shocks! Do not touch the affected areas, but keep a sufficient distance!                                                      |
+| <img src="images/manuals/winder/w018.jpeg" width="150" height="150"/> | **Automatic speed adjustment of puller, reel and traverse** <br> The bobbin automatically adjusts its speed to keep the winding pressure constant. The traverse automatically adjusts its speed to the reel in order to maintain the same travel distance per revolution.                                                 |
+| <img src="images/manuals/winder/w025.jpeg" width="150" height="150"/> | **Feeding of body parts** <br> Extreme caution is required in the area of the puller and spool axle! There is an acute danger of getting caught or pulled in! Make sure you wear close-fitting clothing! Always keep the emergency stop switch within easy reach so that it can be activated immediately in an emergency. |
+| <img src="images/manuals/winder/w024.jpeg" width="150" height="150"/> | **Risk of crushing when threading the filament** <br> Exercise extreme caution when threading the filament through the puller rollers! There is a risk of crushing between the upper and lower pair of rollers.                                                                                                           |
+| <img src="images/manuals/winder/w024.jpeg" width="150" height="150"/> | **Risk of crushing between the traversing unit and machine housing** <br> Exercise extreme caution when moving the traverser towards the housing! Do not place any limbs in the gap!                                                                                                                                      |
 
 # 4 Glossary and Definitions
 
@@ -771,7 +687,7 @@ The following persons may not work on the machine:
 
 | Picture                                                               | Danger!                                                                                                                                                                                                                                                     |
 | --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| <img src="/images/manuals/winder/w001.jpeg" width="150" height="150"/> | **Risk of injury if insufficiently qualified!** <br> Improper handling can lead to considerable personal injury and damage to property. Special activities may only be carried out by the persons specified in the relevant sections of these instructions. |
+| <img src="images/manuals/winder/w001.jpeg" width="150" height="150"/> | **Risk of injury if insufficiently qualified!** <br> Improper handling can lead to considerable personal injury and damage to property. Special activities may only be carried out by the persons specified in the relevant sections of these instructions. |
 
 <br>
 <br>
@@ -800,12 +716,12 @@ The following persons may not work on the machine:
 
 ## Electrical Diagrams
 
-![QiTech Pro Winder Electrical Diagram - Sheet 1](/images/manuals/winder/QiTech_Pro_Winder_Electrical_Diagram-001.png)
+![QiTech Pro Winder Electrical Diagram - Sheet 1](images/manuals/winder/QiTech_Pro_Winder_Electrical_Diagram-001.png)
 
-![QiTech Pro Winder Electrical Diagram - Sheet 2](/images/manuals/winder/QiTech_Pro_Winder_Electrical_Diagram_2-002.png)
+![QiTech Pro Winder Electrical Diagram - Sheet 2](images/manuals/winder/QiTech_Pro_Winder_Electrical_Diagram_2-002.png)
 
-![QiTech Pro Winder Electrical Diagram - Sheet 3](/images/manuals/winder/QiTech_Pro_Winder_Electrical_Diagram_3-003.png)
+![QiTech Pro Winder Electrical Diagram - Sheet 3](images/manuals/winder/QiTech_Pro_Winder_Electrical_Diagram_3-003.png)
 
-![QiTech Pro Winder Electrical Diagram - Sheet 4](/images/manuals/winder/QiTech_Pro_Winder_Electrical_Diagram_4-004.png)
+![QiTech Pro Winder Electrical Diagram - Sheet 4](images/manuals/winder/QiTech_Pro_Winder_Electrical_Diagram_4-004.png)
 
-![QiTech Pro Winder Electrical Diagram - Sheet 5](/images/manuals/winder/QiTech_Pro_Winder_Electrical_Diagram_5-005.png)
+![QiTech Pro Winder Electrical Diagram - Sheet 5](images/manuals/winder/QiTech_Pro_Winder_Electrical_Diagram_5-005.png)
