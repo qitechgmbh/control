@@ -104,7 +104,7 @@ export const winder2: MachineProperties = {
 };
 
 export const extruder3: MachineProperties = {
-  name: "Extruder V3",
+  name: "Extruder",
   version: "V3",
   slug: "extruder3",
   icon: "qi:Extruder",
