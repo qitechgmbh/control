@@ -25,6 +25,7 @@ pub mod ip20_test_machine;
 pub mod laser;
 pub mod machine_identification;
 pub mod mock;
+pub mod motor_test_machine;
 pub mod registry;
 pub mod serial;
 pub mod test_machine;
@@ -44,6 +45,8 @@ pub const MACHINE_EXTRUDER_V2: u16 = 0x0016;
 pub const TEST_MACHINE: u16 = 0x0033;
 pub const IP20_TEST_MACHINE: u16 = 0x0034;
 pub const ANALOG_INPUT_TEST_MACHINE: u16 = 0x0035;
+
+pub const MACHINE_BECKHOFF_TEST: u16 = 0x0011;
 
 use serde_json::Value;
 use smol::lock::RwLock;
