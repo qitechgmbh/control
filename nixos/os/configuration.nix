@@ -108,6 +108,13 @@ in {
   networking.hostName = "nixos"; # Define your hostname.
   # networking.wireless.enable = true; # Enables wireless support via wpa_supplicant.
 
+  networking.interfaces.enp1s0.ipv4.addresses = [
+    {
+      address = "10.10.10.1";
+      prefixLength = 24;
+    }
+  ];
+
   # Configure network proxy if necessary
   # networking.proxy.default = "http://user:password@proxy:port/";
   # networking.proxy.noProxy = "127.0.0.1,localhost,internal.domain";
@@ -314,9 +321,27 @@ in {
   # Enable the OpenSSH daemon.
   # services.openssh.enable = true;
 
+  services.dnsmasq = {
+    enable = true;
+
+    settings = {
+      interface = "enp1s0"; # only this interface
+      bind-interfaces = true;
+
+      # DHCP subnet + pool
+      dhcp-range = "10.10.10.50,10.10.10.250,255.255.255.0,12h";
+
+      # Default gateway (router)
+      dhcp-option = [
+        "3,10.10.10.1"      # option 3 = router
+        "6,1.1.1.1,8.8.8.8" # option 6 = DNS servers
+      ];
+    };
+  };
+
   # Open ports in the firewall.
   # networking.firewall.allowedTCPPorts = [ ... ];
-  # networking.firewall.allowedUDPPorts = [ ... ];
+  networking.firewall.allowedUDPPorts = [ 53 67 69 ];
   # Or disable the firewall altogether.
   # networking.firewall.enable = false;
 

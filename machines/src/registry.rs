@@ -1,3 +1,5 @@
+use crate::analog_input_test_machine::AnalogInputTestMachine;
+use crate::ip20_test_machine::IP20TestMachine;
 #[cfg(feature = "mock-machine")]
 use crate::{
     extruder1::mock::ExtruderV2 as ExtruderV2Mock1, extruder2::mock::ExtruderV2 as ExtruderV2Mock2,
@@ -5,8 +7,7 @@ use crate::{
 };
 
 use crate::{
-    Machine, MachineNewParams, analog_input_test_machine::AnalogInputTestMachine,
-    ip20_test_machine::IP20TestMachine, machine_identification::MachineIdentification,
+    Machine, MachineNewParams, MachineNewTrait, machine_identification::MachineIdentification,
 };
 
 #[cfg(not(feature = "mock-machine"))]
@@ -44,7 +45,7 @@ impl MachineRegistry {
         }
     }
 
-    pub fn register<T: Machine + 'static>(
+    pub fn register<T: MachineNewTrait + 'static>(
         &mut self,
         machine_identficiation: MachineIdentification,
     ) {
@@ -122,7 +123,9 @@ lazy_static! {
         mc.register::<AquaPathV1>(AquaPathV1::MACHINE_IDENTIFICATION);
 
         mc.register::<TestMachine>(TestMachine::MACHINE_IDENTIFICATION);
+
         mc.register::<IP20TestMachine>(IP20TestMachine::MACHINE_IDENTIFICATION);
+
         mc.register::<AnalogInputTestMachine>(AnalogInputTestMachine::MACHINE_IDENTIFICATION);
 
         mc

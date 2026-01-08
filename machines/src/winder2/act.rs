@@ -4,8 +4,8 @@ use super::Winder2;
 use crate::{MachineAct, MachineMessage};
 #[cfg(not(feature = "mock-machine"))]
 use std::time::{Duration, Instant};
-#[cfg(not(feature = "mock-machine"))]
 
+#[cfg(not(feature = "mock-machine"))]
 impl MachineAct for Winder2 {
     fn act(&mut self, now: Instant) {
         let machine_message = self.api_receiver.try_recv();

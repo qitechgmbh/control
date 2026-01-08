@@ -481,9 +481,9 @@ pub async fn setup_loop(
         main_namespace.emit(MainNamespaceEvents::EthercatDevicesEvent(event));
     }
 
-    return Ok(EthercatSetup {
+    Ok(EthercatSetup {
         devices,
         group: group_op,
         maindevice,
-    });
+    })
 }
