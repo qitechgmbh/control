@@ -62,7 +62,7 @@ async fn get_runtime_metrics_latest() -> Json<Option<RuntimeMetricsResponse>> {
 
         rss_bytes: s.rss_bytes,
         cpu_time_seconds: s.cpu_time_seconds,
-        minor_faults: s.minor_faults,
+        minor_faults: s.minor_faults_per_second,
         major_faults: s.major_faults,
 
         jitter_min_ns: s.jitter_min_ns,

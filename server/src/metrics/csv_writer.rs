@@ -13,6 +13,7 @@ pub struct RuntimeSample {
     pub rss_bytes: u64,
     pub cpu_time_seconds: f64,
     pub minor_faults: u64,
+    pub minor_faults_per_second: u64,
     pub major_faults: u64,
 
     // jitter (signed nanoseconds)
@@ -34,13 +35,18 @@ pub struct RuntimeSample {
 }
 
 impl RuntimeSample {
-    pub fn from_process_metrics(m: ProcessMetrics, timestamp_ms: u128) -> Self {
+    pub fn from_process_metrics(
+        m: ProcessMetrics,
+        mfaults_per_second: u64,
+        timestamp_ms: u128,
+    ) -> Self {
         Self {
             timestamp_ms,
             rss_bytes: m.rss_bytes,
             cpu_time_seconds: m.cpu_time_seconds,
             minor_faults: m.minor_faults,
             major_faults: m.major_faults,
+            minor_faults_per_second: mfaults_per_second,
 
             jitter_min_ns: 0,
             jitter_avg_ns: 0,
