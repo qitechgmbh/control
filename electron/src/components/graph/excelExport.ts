@@ -84,6 +84,27 @@ export function exportGraphsToExcel(
         XLSX.utils.book_append_sheet(workbook, dataWorksheet, dataSheetName);
       }
 
+      // Excel worksheet for timestamps and timestamp markers
+      if (graphLineData.targetLines.length > 0) {
+        const markerReportData =
+          createGraphLineMarkerReportSheet(graphLineData);
+        const markerReportWorksheet = XLSX.utils.aoa_to_sheet(markerReportData);
+        // Set column widths here (e.g., Column A = 15, Column B = 25)
+        markerReportWorksheet["!cols"] = [
+          { wch: 20 }, // Column A (Labels: 'Timestamp', 'Value', etc.)
+          { wch: 30 }, // Column B (Values, where the Date object resides)
+        ];
+        const markerReportSheetName = generateUniqueSheetName(
+          `${seriesTitle} Marker Report`,
+          usedSheetNames,
+        );
+        XLSX.utils.book_append_sheet(
+          workbook,
+          markerReportWorksheet,
+          markerReportSheetName,
+        );
+      }
+
       processedCount++;
     });
 
@@ -288,6 +309,119 @@ function createGraphLineDataSheet(graphLine: {
         : value?.toFixed(3) || "",
     };
   });
+}
+
+function createGraphLineMarkerReportSheet(graphLine: {
+  graphTitle: string;
+  lineTitle: string;
+  series: TimeSeries;
+  color?: string;
+  unit?: Unit;
+  renderValue?: (value: number) => string;
+  config: GraphConfig;
+  targetLines: GraphLine[];
+}): any[][] {
+  const [timestamps, values] = seriesToUPlotData(graphLine.series.long);
+  const unitSymbol = renderUnitSymbol(graphLine.unit) || "";
+  // Initialize Report Data and Header
+  const reportData: any[][] = [
+    [`Marker Report: ${graphLine.lineTitle}`],
+    ["Graph", graphLine.graphTitle],
+    ["Line Name", graphLine.lineTitle],
+    ["", ""],
+    ["--- Data Point Marker Status ---", ""],
+    ["", ""],
+  ];
+
+  if (timestamps.length === 0) {
+    reportData.push(["No data points to report"]);
+    return reportData;
+  }
+
+  // Filter User Markers
+  const allTargetLines = graphLine.targetLines.filter(
+    (line) => line.show !== false,
+  );
+  const userMarkers = allTargetLines.filter(
+    (line) => line.type === "user_marker" && line.label,
+  );
+
+  // Map Markers to Closest Data Point Index
+  const markerIndexMap = new Map<
+    number,
+    { label: string; originalTimestamp: number }
+  >();
+
+  userMarkers.forEach((line) => {
+    const markerTime = line.markerTimestamp || line.value; // Use the correct high-precision timestamp
+    let closestDataPointIndex = -1;
+    let minTimeDifference = Infinity;
+
+    // Find the data point with the closest timestamp
+    timestamps.forEach((ts, index) => {
+      const difference = Math.abs(ts - markerTime);
+      if (difference < minTimeDifference) {
+        minTimeDifference = difference;
+        closestDataPointIndex = index;
+      }
+    });
+
+    // Store the marker data at the index of the closest data point
+    if (closestDataPointIndex !== -1) {
+      markerIndexMap.set(closestDataPointIndex, {
+        label: line.label || "User Marker",
+        originalTimestamp: markerTime,
+      });
+    }
+  });
+
+  // Add the final header before the timestamp report starts
+  reportData.push(["--- BEGIN DETAILED REPORT ---", ""], ["", ""]);
+
+  // Handle case where no user markers were created
+  if (userMarkers.length === 0) {
+    reportData.push(["No user-created markers found.", ""]);
+  }
+
+  timestamps.forEach((dataPointTimestamp, index) => {
+    const value = values[index];
+    const markerData = markerIndexMap.get(index);
+
+    let finalMarkerLabel = "";
+    let timeToDisplay = dataPointTimestamp; // Default to data sample time
+
+    if (markerData) {
+      finalMarkerLabel = `${markerData.label}`;
+      timeToDisplay = markerData.originalTimestamp;
+    }
+
+    // Format the time (using timeToDisplay)
+    const formattedTime = new Date(timeToDisplay)
+      .toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false,
+      })
+      .replace(/ /g, "");
+
+    // Row 1: Timestamp
+    reportData.push(["Timestamp", formattedTime]);
+
+    // Row 2: Value
+    const formattedValue = graphLine.renderValue
+      ? graphLine.renderValue(value)
+      : value?.toFixed(3) || "";
+    reportData.push([`Value (${unitSymbol})`, formattedValue]);
+
+    // Row 3: Marker Name
+    reportData.push(["Marker", finalMarkerLabel]);
+
+    // Separator
+    reportData.push(["", ""]);
+  });
+
+  return reportData;
 }
 
 // Ensure sheet names are unique and valid for Excel

@@ -7,6 +7,7 @@ import {
 } from "@/components/graph";
 import React from "react";
 import { useExtruder2 } from "./useExtruder";
+import { GraphWithMarkerControls } from "@/components/graph/GraphWithMarkerControls";
 
 export function Extruder2GraphsPage() {
   const {
@@ -242,7 +243,7 @@ export function Extruder2GraphsPage() {
   return (
     <Page className="pb-25">
       <div className="flex flex-col gap-4">
-        <AutoSyncedBigGraph
+        <GraphWithMarkerControls
           syncHook={syncHook}
           newData={{
             newData: pressure,
@@ -263,27 +264,30 @@ export function Extruder2GraphsPage() {
           unit="bar"
           renderValue={(value) => value.toFixed(2)}
           graphId="pressure-graph"
+          currentTimeSeries={pressure}
         />
 
-        <AutoSyncedBigGraph
+        <GraphWithMarkerControls
           syncHook={syncHook}
           newData={temperatureData}
           config={temperatureConfig}
           unit="C"
           renderValue={(value) => value.toFixed(1)}
           graphId="combined-temperatures"
+          currentTimeSeries={nozzleTemperature}
         />
 
-        <AutoSyncedBigGraph
+        <GraphWithMarkerControls
           syncHook={syncHook}
           newData={powerData}
           config={powerConfig}
           unit="W"
           renderValue={(value) => value.toFixed(1)}
           graphId="combined-power"
+          currentTimeSeries={combinedPower}
         />
 
-        <AutoSyncedBigGraph
+        <GraphWithMarkerControls
           syncHook={syncHook}
           newData={{
             newData: motorCurrent,
@@ -293,9 +297,10 @@ export function Extruder2GraphsPage() {
           unit="A"
           renderValue={(value) => value.toFixed(2)}
           graphId="motor-current"
+          currentTimeSeries={motorCurrent}
         />
 
-        <AutoSyncedBigGraph
+        <GraphWithMarkerControls
           syncHook={syncHook}
           newData={{
             newData: motorScrewRpm,
@@ -316,6 +321,7 @@ export function Extruder2GraphsPage() {
           unit="rpm"
           renderValue={(value) => value.toFixed(0)}
           graphId="rpm-graph"
+          currentTimeSeries={motorScrewRpm}
         />
       </div>
 

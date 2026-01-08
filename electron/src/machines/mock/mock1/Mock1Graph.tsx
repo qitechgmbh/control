@@ -8,6 +8,8 @@ import {
 import React from "react";
 import { useMock1 } from "./useMock";
 import { TimeSeriesValue, type Series, TimeSeries } from "@/lib/timeseries";
+import { GraphWithMarkerControls } from "@/components/graph/GraphWithMarkerControls";
+import { Unit } from "@/control/units";
 
 export function Mock1GraphPage() {
   const { sineWaveSum } = useMock1();
@@ -98,40 +100,44 @@ export function Mock1GraphPage() {
   return (
     <Page className="pb-27">
       <div className="flex flex-col gap-4">
-        <AutoSyncedBigGraph
+        <GraphWithMarkerControls
           syncHook={syncHook}
           newData={singleData}
           config={singleGraphConfig}
-          unit={"mm"}
+          unit={"mm" as Unit}
           renderValue={(value) => value.toFixed(3)}
           graphId="single-graph1"
+          currentTimeSeries={sineWaveSum}
         />
-        <AutoSyncedBigGraph
+        <GraphWithMarkerControls
           syncHook={syncHook}
           newData={combinedData}
           config={{
             ...config,
             title: "Combined Sine Waves",
           }}
-          unit={"mm"}
+          unit={"mm" as Unit}
           renderValue={(value) => value.toFixed(3)}
           graphId="combined-graph"
+          currentTimeSeries={sineWaveSum}
         />
-        <AutoSyncedBigGraph
+        <GraphWithMarkerControls
           syncHook={syncHook}
           newData={singleData}
           config={singleGraphConfig}
-          unit={"mm"}
+          unit={"mm" as Unit}
           renderValue={(value) => value.toFixed(3)}
           graphId="single-graph2"
+          currentTimeSeries={sineWaveSum}
         />
-        <AutoSyncedBigGraph
+        <GraphWithMarkerControls
           syncHook={syncHook}
           newData={singleData}
           config={singleGraphConfig}
-          unit={"mm"}
+          unit={"mm" as Unit}
           renderValue={(value) => value.toFixed(3)}
           graphId="single-graph"
+          currentTimeSeries={sineWaveSum}
         />
       </div>
 
