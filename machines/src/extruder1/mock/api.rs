@@ -1,10 +1,10 @@
-use super::ExtruderV2;
+use super::ExtruderV1;
 use crate::{
     MachineApi,
     extruder1::{HeatingType, api::Mutation},
 };
 
-impl MachineApi for ExtruderV2 {
+impl MachineApi for ExtruderV1 {
     fn api_mutate(&mut self, request_body: serde_json::Value) -> Result<(), anyhow::Error> {
         // there are multiple Modbus Frames that are "prebuilt"
         let control: Mutation = serde_json::from_value(request_body)?;

@@ -48,10 +48,10 @@ use units::thermodynamic_temperature::{ThermodynamicTemperature, degree_celsius}
 use crate::extruder1::temperature_controller::TemperatureController;
 
 #[cfg(not(feature = "mock-machine"))]
-use super::ExtruderV3;
+use super::ExtruderV2;
 
 #[cfg(not(feature = "mock-machine"))]
-impl MachineNewTrait for ExtruderV3 {
+impl MachineNewTrait for ExtruderV2 {
     fn new<'maindevice>(params: &MachineNewParams) -> Result<Self, Error> {
         // validate general stuff
 
@@ -88,7 +88,7 @@ impl MachineNewTrait for ExtruderV3 {
                     Heating, mitsubishi_cs80::MitsubishiCS80,
                     screw_speed_controller::ScrewSpeedController,
                 },
-                extruder2::{ExtruderV3Mode, api::ExtruderV3Namespace},
+                extruder2::{ExtruderV2Mode, api::ExtruderV2Namespace},
             };
             let _ek1100 =
                 get_ethercat_device::<EK1100>(hardware, params, 0, [EK1100_IDENTITY_A].to_vec());
@@ -222,16 +222,16 @@ impl MachineNewTrait for ExtruderV3 {
             );
             let (sender, receiver) = smol::channel::unbounded();
 
-            let mut extruder: ExtruderV3 = Self {
+            let mut extruder: ExtruderV2 = Self {
                 main_sender: params.main_thread_channel.clone(),
                 api_receiver: receiver,
                 api_sender: sender,
                 machine_identification_unique: params.get_machine_identification_unique(),
-                namespace: ExtruderV3Namespace {
+                namespace: ExtruderV2Namespace {
                     namespace: params.namespace.clone(),
                 },
                 last_measurement_emit: Instant::now(),
-                mode: ExtruderV3Mode::Standby,
+                mode: ExtruderV2Mode::Standby,
                 total_energy_kwh: 0.0,
                 last_energy_calculation_time: None,
                 temperature_controller_front,
