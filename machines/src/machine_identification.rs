@@ -41,6 +41,29 @@ impl MachineIdentification {
     pub const fn is_valid(&self) -> bool {
         self.vendor != 0 && self.machine != 0
     }
+
+    pub fn vendor_str(&self) -> String {
+        match self.vendor {
+            x if x == VENDOR_QITECH => "QiTech".to_string(),
+            _                       => "N/A".to_string()
+        }
+    }
+
+    pub fn slug(&self) -> String {
+        match self.machine {
+            x if x == MACHINE_WINDER_V1         => "winder_v1".to_string(),
+            x if x == MACHINE_EXTRUDER_V1       => "extruder_v1".to_string(),
+            x if x == MACHINE_LASER_V1          => "laser_v1".to_string(),
+            x if x == MACHINE_MOCK              => "mock".to_string(),
+            x if x == MACHINE_AQUAPATH_V1       => "aquapath_v1".to_string(),
+            x if x == MACHINE_BUFFER_V1         => "buffer_v1".to_string(),
+            x if x == MACHINE_EXTRUDER_V2       => "extruder_v2".to_string(),
+            x if x == TEST_MACHINE              => "test_machine".to_string(),
+            x if x == IP20_TEST_MACHINE         => "ip20_test_machine".to_string(),
+            x if x == ANALOG_INPUT_TEST_MACHINE => "analog_input_test_machine".to_string(),
+            _                                   => "N/A".to_string()
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -148,6 +171,18 @@ use ethercat_hal::helpers::ethercrab_types::{
 };
 use ethercrab::MainDevice;
 use ethercrab::SubDeviceIdentity;
+
+use crate::ANALOG_INPUT_TEST_MACHINE;
+use crate::IP20_TEST_MACHINE;
+use crate::MACHINE_AQUAPATH_V1;
+use crate::MACHINE_BUFFER_V1;
+use crate::MACHINE_EXTRUDER_V1;
+use crate::MACHINE_EXTRUDER_V2;
+use crate::MACHINE_LASER_V1;
+use crate::MACHINE_MOCK;
+use crate::MACHINE_WINDER_V1;
+use crate::TEST_MACHINE;
+use crate::VENDOR_QITECH;
 
 #[derive(Debug)]
 pub struct MachineIdentificationAddresses {

@@ -41,7 +41,6 @@ impl MachineAct for LaserMachine {
     }
 
     fn act_machine_message(&mut self, msg: MachineMessage) {
-        tracing::info!("{:?}", msg);
         match msg {
             MachineMessage::SubscribeNamespace(namespace) => {
                 self.namespace.namespace = Some(namespace);
@@ -69,7 +68,8 @@ impl MachineAct for LaserMachine {
             /*Doesnt connect to any Machine so do nothing*/
             {
                 ()
-            }
+            },
+            MachineMessage::RequestValues(sender) => sender.send_blocking(crate::MachineValues { state: serde_json::Value::Null, live_values: serde_json::Value::Null })
         }
     }
 }

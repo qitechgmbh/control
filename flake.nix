@@ -52,6 +52,8 @@
 
         devShells.default = pkgs.mkShell {
           packages = with pkgs; [
+            cargo
+            rustc
             pkg-config
             libudev-zero
             libpcap

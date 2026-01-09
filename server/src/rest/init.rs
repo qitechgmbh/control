@@ -9,6 +9,7 @@ use tracing::Level;
 use super::handlers::machine_mutation::post_machine_mutate;
 use super::handlers::write_machine_device_identification::post_write_machine_device_identification;
 use crate::app_state::SharedState;
+use crate::rest::rest_api::rest_api_router;
 use crate::socketio::init::init_socketio;
 
 use crate::rest::handlers::metrics::metrics_router;
@@ -29,6 +30,7 @@ async fn init_api(app_state: Arc<SharedState>) -> Result<()> {
         )
         .route("/api/v1/machine/mutate", post(post_machine_mutate))
         .nest("/api/v1/metrics", metrics_router())
+        .nest("/api/v2", rest_api_router())
         .layer(socketio_layer)
         .layer(cors)
         .layer(trace_layer)
@@ -53,7 +55,7 @@ pub fn start_api_thread(app_state: Arc<SharedState>) -> std::thread::JoinHandle<
             .build()
             .expect("Failed to create Tokio runtime");
 
-        if let Err(err) = rt.block_on(init_api(app_state.clone())) {
+        if let Err(err) = rt.block_on(init_api(app_state)) {
             eprintln!("API server exited with error: {err:?}");
         }
     })

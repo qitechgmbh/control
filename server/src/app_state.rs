@@ -3,11 +3,12 @@ use crate::rest::handlers::write_machine_device_identification::MachineDeviceInf
 use crate::socketio::main_namespace::MainNamespaceEvents;
 use crate::socketio::main_namespace::machines_event::{MachineObj, MachinesEventBuilder};
 use crate::socketio::namespaces::Namespaces;
+use anyhow::{Result, bail};
 use control_core::socketio::event::GenericEvent;
 use ethercat_hal::devices::EthercatDevice;
 use ethercrab::SubDeviceRef;
 use ethercrab::{MainDevice, SubDeviceGroup, subdevice_group::Op};
-use machines::machine_identification::{DeviceIdentification, MachineIdentificationUnique};
+use machines::machine_identification::{self, DeviceIdentification, MachineIdentificationUnique};
 use machines::serial::registry::SERIAL_DEVICE_REGISTRY;
 use machines::{Machine, MachineMessage};
 use serde::{Deserialize, Serialize};
@@ -123,9 +124,25 @@ impl EthercatSetup {
 
 impl SharedState {
     pub async fn send_machines_event(&self) {
-        let event = MachinesEventBuilder().build(self.current_machines_meta.lock().await.clone());
+        let event = MachinesEventBuilder().build(self.get_machines_meta().await);
         let main_namespace = &mut self.socketio_setup.namespaces.write().await.main_namespace;
         main_namespace.emit(MainNamespaceEvents::MachinesEvent(event));
+    }
+
+    pub async fn get_machines_meta(&self) -> Vec<MachineObj> {
+        self.current_machines_meta.lock().await.clone()
+    }
+
+    pub async fn message_machine(&self, machine_identification_unique: MachineIdentificationUnique, message: MachineMessage) -> Result<()> {
+        let machines = self.api_machines.lock().await;
+        let sender = machines.get(&machine_identification_unique);
+
+        if let Some(sender) = sender {
+            sender.send(message).await?;
+            return Ok(());
+        }
+
+        bail!("Unknown machine!")
     }
 
     /// Removes a machine by its unique identifier

@@ -13,9 +13,8 @@ use machine_identification::{
 use serde::Serialize;
 use smol::channel::{Receiver, Sender};
 use socketioxide::extract::SocketRef;
+use std::any::Any;
 use std::fmt::Debug;
-use std::{any::Any, sync::Arc, time::Instant};
-pub mod analog_input_test_machine;
 pub mod aquapath1;
 #[cfg(not(feature = "mock-machine"))]
 pub mod buffer1;
@@ -36,7 +35,6 @@ pub const MACHINE_WINDER_V1: u16 = 0x0002;
 pub const MACHINE_EXTRUDER_V1: u16 = 0x0004;
 pub const MACHINE_LASER_V1: u16 = 0x0006;
 pub const MACHINE_MOCK: u16 = 0x0007;
-#[cfg(not(feature = "mock-machine"))]
 pub const MACHINE_BUFFER_V1: u16 = 0x0008;
 pub const MACHINE_AQUAPATH_V1: u16 = 0x0009;
 pub const MACHINE_WAGO_POWER_V1: u16 = 0x000A;
@@ -276,6 +274,12 @@ pub trait MachineAct {
     fn act(&mut self, now: Instant);
 }
 
+#[derive(Serialize, Debug, Clone)]
+pub struct MachineValues {
+    pub state: serde_json::Value,
+    pub live_values: serde_json::Value,
+}
+
 // generic MachineMessage allows us to implement actions
 // to manage or mutate machines with simple messages sent to the Recv Channel of the given Machine,
 // which the machine itself will handle to avoid locking
@@ -287,6 +291,7 @@ pub enum MachineMessage {
     HttpApiJsonRequest(serde_json::Value),
     ConnectToMachine(MachineConnection),
     DisconnectMachine(MachineConnection),
+    RequestValues(Sender<MachineValues>),
 }
 
 pub trait MachineApi {
