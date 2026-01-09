@@ -15,7 +15,7 @@ import {
   machineProperties,
   VENDOR_QITECH,
 } from "@/machines/properties";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -76,7 +76,6 @@ export function DeviceEepromDialog({ device }: Props) {
     <Dialog
       open={open}
       onOpenChange={setOpen}
-      // Prevent closing via Escape to keep numpad open while interacting
       modal
     >
       <DialogTrigger asChild>
@@ -98,12 +97,6 @@ type ContentProps = {
 
 export function DeviceEepromDialogContent({ device, setOpen }: ContentProps) {
   const client = useClient();
-  const serialInputRef = useRef<HTMLInputElement>(null);
-  const dialogRef = useRef<HTMLDivElement>(null);
-  const numpadRef = useRef<HTMLDivElement>(null);
-  const [numpadOpen, setNumpadOpen] = useState(false);
-  const [numpadPosition, setNumpadPosition] = useState({ left: 0, top: 0 });
-  const serialContainerRef = useRef<HTMLDivElement>(null);
   const [isRestartingBackend, setIsRestartingBackend] = useState(false);
 
   const form = useForm<FormSchema>({
@@ -218,7 +211,6 @@ export function DeviceEepromDialogContent({ device, setOpen }: ContentProps) {
   return (
     <>
       <DialogContent
-        ref={dialogRef}
         // Keep dialog open on any outside interaction; closing is manual via controls
         onInteractOutside={(e) => e.preventDefault()}
         onPointerDownOutside={(e) => e.preventDefault()}
@@ -274,31 +266,10 @@ export function DeviceEepromDialogContent({ device, setOpen }: ContentProps) {
                 <FormItem>
                   <FormLabel>Serial</FormLabel>
                   <FormControl>
-                    <div
-                      ref={serialContainerRef}
-                      className="flex items-center gap-2"
-                    >
-                      <Input
-                        {...field}
-                        ref={(e) => {
-                          field.ref(e);
-                          serialInputRef.current = e;
-                        }}
-                        placeholder="1234"
-                        onFocus={() => setNumpadOpen(true)}
-                        onClick={() => setNumpadOpen(true)}
-                        onBlur={(event) => {
-                          const next = event.relatedTarget as Node | null;
-                          if (
-                            serialContainerRef.current?.contains(next) ||
-                            numpadRef.current?.contains(next)
-                          ) {
-                            return;
-                          }
-                          setNumpadOpen(false);
-                        }}
-                      />
-                    </div>
+                    <Input
+                      {...field}
+                      placeholder="1234"
+                    />
                   </FormControl>
                   <FormDescription>
                     Serial number of the machine.
