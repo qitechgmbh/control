@@ -47,7 +47,7 @@ async fn probe_modbus_tcp_addresses(interface: Interface) -> Vec<ModbusTcpProbe>
             let prefix = min(24, m.count_ones()); // mask → prefix length
             let size = 1u32 << (32 - prefix); // number of addresses
 
-            (200..size).map(move |i| SocketAddr::new(Ipv4Addr::from(network + i).into(), 502))
+            (0..size).map(move |i| SocketAddr::new(Ipv4Addr::from(network + i).into(), 502))
         })
         .map(|addr| smol::spawn(ping_modbus_device(addr)))
         .join_all()
