@@ -133,9 +133,9 @@ impl SharedState {
         self.current_machines_meta.lock().await.clone()
     }
 
-    pub async fn message_machine(&self, machine_identification_unique: MachineIdentificationUnique, message: MachineMessage) -> Result<()> {
+    pub async fn message_machine(&self, machine_identification_unique: &MachineIdentificationUnique, message: MachineMessage) -> Result<()> {
         let machines = self.api_machines.lock().await;
-        let sender = machines.get(&machine_identification_unique);
+        let sender = machines.get(machine_identification_unique);
 
         if let Some(sender) = sender {
             sender.send(message).await?;
