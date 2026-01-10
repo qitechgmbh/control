@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use axum::{Router, debug_handler, Json};
+use axum::{Router, debug_handler};
 use axum::extract::{Path, State};
 use axum::routing::get;
 use machines::MachineMessage;
@@ -10,7 +10,7 @@ use machines::winder2::api::{LiveValuesEvent, StateEvent, Winder2Events};
 use serde::{Deserialize, Serialize};
 
 use crate::app_state::SharedState;
-use crate::rest::util::ResponseUtil;
+use crate::rest::response::*;
 
 #[derive(Deserialize, Serialize, Debug, PartialEq)]
 struct MachineResponce {
@@ -46,7 +46,7 @@ struct GetMachinesResponce {
 #[debug_handler]
 async fn get_machines_handler(
     State(shared_state): State<Arc<SharedState>>,
-) -> Json<GetMachinesResponce> {
+) -> Result<GetMachinesResponce> {
 
     let machines = shared_state.get_machines_meta().await.into_iter().map(|m| {
         let vendor = m.machine_identification_unique.machine_identification.vendor_str();
@@ -63,7 +63,7 @@ async fn get_machines_handler(
     })
     .collect();
 
-    Json(GetMachinesResponce {
+    json(GetMachinesResponce {
         machines
     })
 }
@@ -79,7 +79,7 @@ struct GetMachineResponce {
 async fn get_winder_v1_handler(
     Path(serial): Path<u16>,
     State(shared_state): State<Arc<SharedState>>,
-) -> Json<GetMachinesResponce> {
+) -> Result<GetMachineResponce> {
 
     let id = MachineIdentificationUnique {
         machine_identification: Winder2::MACHINE_IDENTIFICATION,
@@ -87,17 +87,15 @@ async fn get_winder_v1_handler(
     };
 
     let (sender, receiver) = smol::channel::unbounded();
-    shared_state.message_machine(machine_identification_unique, MachineMessage::RequestValues(sender)).await?;
+    shared_state.message_machine(&id, MachineMessage::RequestValues(sender)).await.map_err(not_found)?;
 
-    if let Ok(values) = receiver.recv().await {
-        return Json(GetMachineResponce {
-            machine: MachineResponce::from(id),
-            state: values.state,
-            live_values: values.live_values,
-        });
-    }
+    let values = receiver.recv().await.map_err(internal_error)?;
 
-    bail!("Could not get values from machine")
+    json(GetMachineResponce {
+        machine: MachineResponce::from(id),
+        state: values.state,
+        live_values: values.live_values,
+    })
 }
 
 pub fn rest_api_router() -> Router<Arc<SharedState>> {
