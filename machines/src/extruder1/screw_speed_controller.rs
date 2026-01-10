@@ -77,11 +77,11 @@ impl ScrewSpeedController {
         self.nozzle_pressure_limit = pressure;
     }
 
-    pub fn get_nozzle_pressure_limit(&mut self) -> Pressure {
+    pub fn get_nozzle_pressure_limit(&self) -> Pressure {
         self.nozzle_pressure_limit
     }
 
-    pub const fn get_nozzle_pressure_limit_enabled(&mut self) -> bool {
+    pub const fn get_nozzle_pressure_limit_enabled(&self) -> bool {
         self.nozzle_pressure_limit_enabled
     }
 
@@ -89,11 +89,11 @@ impl ScrewSpeedController {
         self.nozzle_pressure_limit_enabled = enabled;
     }
 
-    pub fn get_target_rpm(&mut self) -> AngularVelocity {
+    pub fn get_target_rpm(&self) -> AngularVelocity {
         self.target_rpm
     }
 
-    pub const fn get_rotation_direction(&mut self) -> bool {
+    pub const fn get_rotation_direction(&self) -> bool {
         self.forward_rotation
     }
 
@@ -129,7 +129,7 @@ impl ScrewSpeedController {
         self.inverter.set_frequency_target(target_frequency);
     }
 
-    pub const fn get_uses_rpm(&mut self) -> bool {
+    pub const fn get_uses_rpm(&self) -> bool {
         self.uses_rpm
     }
 
@@ -148,7 +148,7 @@ impl ScrewSpeedController {
         self.motor_on = true;
     }
 
-    pub fn get_motor_status(&mut self) -> MotorStatus {
+    pub fn get_motor_status(&self) -> MotorStatus {
         let frequency = self.inverter.motor_status.frequency;
         let rpm =
             AngularVelocity::new::<revolution_per_minute>(frequency.get::<cycle_per_minute>());
@@ -197,7 +197,7 @@ impl ScrewSpeedController {
         self.pid.reset()
     }
 
-    pub fn get_pressure(&mut self) -> Pressure {
+    pub fn get_pressure(&self) -> Pressure {
         let current_result = self.get_sensor_current();
         let current = match current_result {
             Ok(current) => current.get::<milliampere>(),
