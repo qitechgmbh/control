@@ -100,6 +100,9 @@ pub struct ExtruderV2 {
     emitted_default_state: bool,
 }
 
+#[cfg(feature = "mock-machine")]
+pub use mock::ExtruderV2;
+
 #[cfg(not(feature = "mock-machine"))]
 impl Machine for ExtruderV2 {
     fn get_machine_identification_unique(&self) -> MachineIdentificationUnique {

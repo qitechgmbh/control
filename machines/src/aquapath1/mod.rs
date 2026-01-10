@@ -109,8 +109,8 @@ impl std::fmt::Display for AquaPathV1 {
 }
 
 impl AquaPathV1 {
-    pub fn emit_live_values(&mut self) {
-        let live_values = LiveValuesEvent {
+    pub fn get_live_values(&self) -> LiveValuesEvent {
+        LiveValuesEvent {
             front_temperature: self
                 .front_controller
                 .current_temperature
@@ -123,13 +123,16 @@ impl AquaPathV1 {
             back_flow: self.back_controller.current_flow.get::<liter_per_minute>(),
             front_temp_reservoir: self.front_controller.temp_reservoir.get::<degree_celsius>(),
             back_temp_reservoir: self.back_controller.temp_reservoir.get::<degree_celsius>(),
-        };
-        let event = live_values.build();
+        }
+    }
+
+    pub fn emit_live_values(&mut self) {
+        let event = self.get_live_values().build();
         self.namespace.emit(AquaPathV1Events::LiveValues(event));
     }
 
-    pub fn emit_state(&mut self) {
-        let state = StateEvent {
+    pub fn get_state(&self) -> StateEvent {
+        StateEvent {
             is_default_state: false,
             mode_state: ModeState {
                 mode: self.mode.clone(),
@@ -167,9 +170,11 @@ impl AquaPathV1 {
                     should_flow: self.back_controller.should_pump,
                 },
             },
-        };
+        }
+    }
 
-        let event = state.build();
+    pub fn emit_state(&mut self) {
+        let event = self.get_state().build();
         self.namespace.emit(AquaPathV1Events::State(event));
     }
 }

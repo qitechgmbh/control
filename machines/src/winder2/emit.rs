@@ -161,7 +161,7 @@ impl Winder2 {
         self.emit_state();
     }
 
-    pub fn emit_live_values(&mut self) {
+    pub fn get_live_values(&self) -> LiveValuesEvent {
         let angle_deg = self.tension_arm.get_angle().get::<degree>();
 
         // Wrap [270;<360] to [-90; 0]
@@ -192,7 +192,7 @@ impl Winder2 {
             .get::<revolution_per_minute>()
             .abs();
 
-        let live_values = LiveValuesEvent {
+        LiveValuesEvent {
             traverse_position: self
                 .traverse_controller
                 .get_current_position()
@@ -201,9 +201,11 @@ impl Winder2 {
             spool_rpm,
             tension_arm_angle: angle_deg,
             spool_progress: self.spool_automatic_action.progress.get::<meter>(),
-        };
+        }
+    }
 
-        let event = live_values.build();
+    pub fn emit_live_values(&mut self) {
+        let event = self.get_live_values().build();
         self.namespace.emit(Winder2Events::LiveValues(event));
     }
 

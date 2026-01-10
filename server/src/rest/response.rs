@@ -1,5 +1,4 @@
 use axum::{Json, body::Body, http::StatusCode};
-use serde::Serialize;
 use serde_json::json;
 
 pub enum ApiError {
@@ -8,8 +7,7 @@ pub enum ApiError {
     ErrInternal(String),
 }
 
-impl axum::response::IntoResponse for ApiError
-{
+impl axum::response::IntoResponse for ApiError {
     fn into_response(self) -> axum::response::Response {
         let json = match self {
             Self::ErrBadRequest(ref e) => serde_json::to_string(&json!({ "error_bad_request": e })),

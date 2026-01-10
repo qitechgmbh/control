@@ -15,6 +15,9 @@ use smol::channel::{Receiver, Sender};
 use socketioxide::extract::SocketRef;
 use std::any::Any;
 use std::fmt::Debug;
+use std::sync::Arc;
+use std::time::Instant;
+pub mod analog_input_test_machine;
 pub mod aquapath1;
 #[cfg(not(feature = "mock-machine"))]
 pub mod buffer1;
@@ -452,6 +455,9 @@ where
 }
 
 pub trait MachineWithChannel: Send + Debug + Sync {
+    type State: serde::Serialize;
+    type LiveValues: serde::Serialize;
+
     fn get_machine_channel(&self) -> &MachineChannel;
     fn get_machine_channel_mut(&mut self) -> &mut MachineChannel;
 
@@ -459,6 +465,11 @@ pub trait MachineWithChannel: Send + Debug + Sync {
 
     fn update(&mut self, now: std::time::Instant) -> Result<()>;
     fn mutate(&mut self, value: Value) -> Result<()>;
+
+    fn get_state(&self) -> Self::State;
+    fn get_live_values(&self) -> Option<Self::LiveValues> {
+        None
+    }
 }
 
 impl<C> MachineApi for C
@@ -517,6 +528,17 @@ where
             }
             MachineMessage::DisconnectMachine(_machine_connection) => {
                 todo!();
+            }
+            MachineMessage::RequestValues(sender) => {
+                sender
+                    .send_blocking(MachineValues {
+                        state: serde_json::to_value(self.get_state())
+                            .expect("Failed to serialize state"),
+                        live_values: serde_json::to_value(self.get_live_values())
+                            .expect("Failed to serialize live values"),
+                    })
+                    .expect("Failed to send values");
+                sender.close();
             }
         }
     }

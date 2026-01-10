@@ -45,21 +45,25 @@ impl IP20TestMachine {
 }
 
 impl IP20TestMachine {
-    pub fn emit_state(&mut self) {
-        let event = StateEvent {
+    pub fn get_state(&self) -> StateEvent {
+        StateEvent {
             outputs: self.outputs,
         }
-        .build();
+    }
 
+    pub fn emit_state(&mut self) {
+        let event = self.get_state().build();
         self.namespace.emit(IP20TestMachineEvents::State(event));
     }
 
-    pub fn emit_live_values(&mut self) {
-        let event = LiveValuesEvent {
+    pub fn get_live_values(&self) -> LiveValuesEvent {
+        LiveValuesEvent {
             inputs: self.inputs,
         }
-        .build();
+    }
 
+    pub fn emit_live_values(&mut self) {
+        let event = self.get_live_values().build();
         self.namespace
             .emit(IP20TestMachineEvents::LiveValues(event));
     }

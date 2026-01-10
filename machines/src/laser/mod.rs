@@ -97,22 +97,24 @@ impl LaserMachine {
         machine: MACHINE_LASER_V1,
     };
 
-    ///diameter in mm
-    pub fn emit_live_values(&mut self) {
+    pub fn get_live_values(&self) -> LiveValuesEvent {
         let diameter = self.diameter.get::<millimeter>();
         let x_diameter = self.x_diameter.map(|x| x.get::<millimeter>());
         let y_diameter = self.y_diameter.map(|y| y.get::<millimeter>());
         let roundness = self.roundness;
 
-        let live_values = LiveValuesEvent {
+        LiveValuesEvent {
             diameter,
             x_diameter,
             y_diameter,
             roundness,
-        };
+        }
+    }
 
-        self.namespace
-            .emit(LaserEvents::LiveValues(live_values.build()));
+    ///diameter in mm
+    pub fn emit_live_values(&mut self) {
+        let event = self.get_live_values().build();
+        self.namespace.emit(LaserEvents::LiveValues(event));
     }
 
     pub fn build_state_event(&self) -> StateEvent {
@@ -129,19 +131,23 @@ impl LaserMachine {
         }
     }
 
-    pub fn emit_state(&mut self) {
-        let state = StateEvent {
-            is_default_state: !std::mem::replace(&mut self.emitted_default_state, true),
+    pub fn get_state(&self) -> StateEvent {
+        StateEvent {
+            is_default_state: !self.emitted_default_state,
             laser_state: LaserState {
                 higher_tolerance: self.laser_target.higher_tolerance.get::<millimeter>(),
                 lower_tolerance: self.laser_target.lower_tolerance.get::<millimeter>(),
                 target_diameter: self.laser_target.diameter.get::<millimeter>(),
                 in_tolerance: self.in_tolerance,
             },
-        };
+        }
+    }
 
-        self.namespace.emit(LaserEvents::State(state.build()));
+    pub fn emit_state(&mut self) {
+        let event = self.get_state().build();
+        self.namespace.emit(LaserEvents::State(event));
         self.did_change_state = false;
+        self.emitted_default_state = true;
     }
 
     pub fn set_higher_tolerance(&mut self, higher_tolerance: f64) {

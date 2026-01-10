@@ -8,7 +8,7 @@ use control_core::socketio::event::GenericEvent;
 use ethercat_hal::devices::EthercatDevice;
 use ethercrab::SubDeviceRef;
 use ethercrab::{MainDevice, SubDeviceGroup, subdevice_group::Op};
-use machines::machine_identification::{self, DeviceIdentification, MachineIdentificationUnique};
+use machines::machine_identification::{DeviceIdentification, MachineIdentificationUnique};
 use machines::serial::registry::SERIAL_DEVICE_REGISTRY;
 use machines::{Machine, MachineMessage};
 use serde::{Deserialize, Serialize};
@@ -133,7 +133,11 @@ impl SharedState {
         self.current_machines_meta.lock().await.clone()
     }
 
-    pub async fn message_machine(&self, machine_identification_unique: &MachineIdentificationUnique, message: MachineMessage) -> Result<()> {
+    pub async fn message_machine(
+        &self,
+        machine_identification_unique: &MachineIdentificationUnique,
+        message: MachineMessage,
+    ) -> Result<()> {
         let machines = self.api_machines.lock().await;
         let sender = machines.get(machine_identification_unique);
 
