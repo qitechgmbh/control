@@ -9,6 +9,8 @@ use crate::extruder1::{
     },
 };
 #[cfg(not(feature = "mock-machine"))]
+use crate::extruder2::api::{LiveValuesEvent, StateEvent};
+#[cfg(not(feature = "mock-machine"))]
 use control_core::helpers::hasher_serializer::hash_with_serde_model;
 #[cfg(not(feature = "mock-machine"))]
 use control_core::socketio::event::BuildEvent;
@@ -24,7 +26,7 @@ use units::thermodynamic_temperature::ThermodynamicTemperature;
 use units::{angular_velocity::revolution_per_minute, thermodynamic_temperature::degree_celsius};
 
 #[cfg(not(feature = "mock-machine"))]
-use super::{ExtruderV3, ExtruderV3Mode, api::StateEvent};
+use super::{ExtruderV3, ExtruderV3Mode};
 
 #[cfg(not(feature = "mock-machine"))]
 impl ExtruderV3 {
@@ -176,15 +178,14 @@ impl ExtruderV3 {
         }
     }
 
-    pub fn emit_live_values(&mut self) {
+    pub fn get_live_values(&mut self) -> LiveValuesEvent {
         use std::time::Instant;
 
-        use crate::extruder2::api::{ExtruderV3Events, LiveValuesEvent};
         let now = Instant::now();
         let combined_power = self.calculate_combined_power();
         self.update_total_energy(combined_power, now);
 
-        let live_values = LiveValuesEvent {
+        LiveValuesEvent {
             motor_status: self.screw_speed_controller.get_motor_status().into(),
             pressure: self.screw_speed_controller.get_pressure().get::<bar>(),
             nozzle_temperature: self
@@ -221,9 +222,13 @@ impl ExtruderV3 {
                 .get_heating_element_wattage(),
             combined_power,
             total_energy_kwh: self.total_energy_kwh,
-        };
+        }
+    }
 
-        let event = live_values.build();
+    pub fn emit_live_values(&mut self) {
+        use crate::extruder2::api::ExtruderV3Events;
+
+        let event = self.get_live_values().build();
         self.namespace.emit(ExtruderV3Events::LiveValues(event));
     }
 
