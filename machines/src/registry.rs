@@ -1,3 +1,4 @@
+#[cfg(not(feature = "mock-machine"))]
 use crate::analog_input_test_machine::AnalogInputTestMachine;
 use crate::ip20_test_machine::IP20TestMachine;
 #[cfg(feature = "mock-machine")]
@@ -126,6 +127,7 @@ lazy_static! {
 
         mc.register::<IP20TestMachine>(IP20TestMachine::MACHINE_IDENTIFICATION);
 
+        #[cfg(not(feature = "mock-machine"))]
         mc.register::<AnalogInputTestMachine>(AnalogInputTestMachine::MACHINE_IDENTIFICATION);
 
         mc
