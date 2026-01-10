@@ -70,7 +70,7 @@ impl TemperatureController {
         self.heating_allowed = true;
     }
 
-    pub fn get_heating_element_wattage(&mut self) -> f64 {
+    pub fn get_heating_element_wattage(&self) -> f64 {
         self.temperature_pid_output * self.heating_element_wattage
     }
 
