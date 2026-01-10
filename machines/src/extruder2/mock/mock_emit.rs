@@ -10,10 +10,9 @@ use control_core::{
 };
 
 impl ExtruderV2 {
-    pub fn build_state_event(&mut self) -> StateEvent {
-        // bad performance wise, but doesnt matter its only a mock machine
+    pub fn get_state(&self) -> StateEvent {
         StateEvent {
-            is_default_state: !std::mem::replace(&mut self.emitted_default_state, true),
+            is_default_state: !self.emitted_default_state,
             rotation_state: self.rotation_state.clone(),
             mode_state: self.mode_state.clone(),
             regulation_state: self.regulation_state.clone(),
@@ -25,13 +24,12 @@ impl ExtruderV2 {
             pid_settings: self.pid_settings.clone(),
         }
     }
-}
 
-impl ExtruderV2 {
     pub fn emit_state(&mut self) {
-        let state = self.build_state_event();
+        let state = self.get_state();
         let hash = hash_with_serde_model(self.inverter_status_state.clone());
         self.last_status_hash = Some(hash);
+        self.emitted_default_state = true;
         let event = state.build();
         self.namespace.emit(ExtruderV2Events::State(event));
     }
@@ -51,8 +49,8 @@ impl ExtruderV2 {
         }
     }
 
-    pub fn emit_live_values(&mut self) {
-        let live_values = LiveValuesEvent {
+    pub fn get_live_values(&self) -> LiveValuesEvent {
+        LiveValuesEvent {
             motor_status: self.motor_status.clone(),
             pressure: self.pressure,
             nozzle_temperature: self.nozzle_temperature,
@@ -65,9 +63,11 @@ impl ExtruderV2 {
             middle_power: self.middle_power,
             combined_power: self.combined_power,
             total_energy_kwh: self.total_energy_kwh,
-        };
+        }
+    }
 
-        let event = live_values.build();
+    pub fn emit_live_values(&mut self) {
+        let event = self.get_live_values().build();
         self.namespace.emit(ExtruderV2Events::LiveValues(event));
     }
 
