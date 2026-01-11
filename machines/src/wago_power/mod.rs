@@ -1,4 +1,7 @@
-use crate::{MachineChannel, MachineWithChannel};
+use crate::{
+    MACHINE_WAGO_POWER_V1, MachineChannel, MachineWithChannel, VENDOR_QITECH,
+    machine_identification::MachineIdentification,
+};
 use anyhow::Result;
 use control_core::socketio::{
     event::{BuildEvent, GenericEvent},
@@ -182,6 +185,13 @@ impl WagoPower {
             current: current.get::<milliampere>(),
         })
     }
+}
+
+impl WagoPower {
+    pub const MACHINE_IDENTIFICATION: MachineIdentification = MachineIdentification {
+        vendor: VENDOR_QITECH,
+        machine: MACHINE_WAGO_POWER_V1,
+    };
 }
 
 impl MachineWithChannel for WagoPower {

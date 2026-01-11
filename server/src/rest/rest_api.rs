@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use axum::extract::{Path, State};
-use axum::routing::get;
-use axum::{Extension, Router, debug_handler};
+use axum::routing::{get, post};
+use axum::{Extension, Json, Router, debug_handler};
 use machines::MachineMessage;
 use machines::analog_input_test_machine::AnalogInputTestMachine;
 use machines::aquapath1::AquaPathV1;
@@ -12,6 +12,7 @@ use machines::laser::LaserMachine;
 use machines::machine_identification::{MachineIdentification, MachineIdentificationUnique};
 use machines::mock::MockMachine;
 use machines::test_machine::TestMachine;
+use machines::wago_power::WagoPower;
 use machines::winder2::Winder2;
 use serde::Serialize;
 
@@ -35,7 +36,7 @@ impl From<MachineIdentificationUnique> for MachineResponce {
         let slug = machine_identification_unique.machine_identification.slug();
         let serial = machine_identification_unique.serial;
 
-        MachineResponce {
+        Self {
             legacy_id: machine_identification_unique,
             serial,
             vendor,
@@ -115,13 +116,36 @@ async fn get_machine_handler(
     })
 }
 
+type PostMachineRequest = Vec<serde_json::Value>;
+
+#[debug_handler]
+async fn post_machine_handler(
+    Extension(id): Extension<MachineIdentification>,
+    State(shared_state): State<Arc<SharedState>>,
+    Path(serial): Path<u16>,
+    Json(request): Json<PostMachineRequest>,
+) -> Result<()> {
+    let id = MachineIdentificationUnique {
+        machine_identification: id,
+        serial,
+    };
+
+    for value in request {
+        shared_state
+            .message_machine(&id, MachineMessage::HttpApiJsonRequest(value))
+            .await
+            .map_err(not_found)?;
+    }
+
+    json(())
+}
+
 fn make_machine_router(id: MachineIdentification) -> Router<Arc<SharedState>> {
     let slug = id.slug();
+    let path = format!("/machine/{slug}/{{serial}}");
     Router::new()
-        .route(
-            format!("/machine/{slug}/{{serial}}").as_ref(),
-            get(get_machine_handler),
-        )
+        .route(&path, get(get_machine_handler))
+        .route(&path, post(post_machine_handler))
         .layer(Extension(id))
 }
 
@@ -134,6 +158,7 @@ pub fn rest_api_router() -> Router<Arc<SharedState>> {
         .merge(make_machine_router(ExtruderV2::MACHINE_IDENTIFICATION))
         .merge(make_machine_router(AquaPathV1::MACHINE_IDENTIFICATION))
         .merge(make_machine_router(TestMachine::MACHINE_IDENTIFICATION))
+        .merge(make_machine_router(WagoPower::MACHINE_IDENTIFICATION))
         .merge(make_machine_router(IP20TestMachine::MACHINE_IDENTIFICATION))
         .merge(make_machine_router(
             AnalogInputTestMachine::MACHINE_IDENTIFICATION,
