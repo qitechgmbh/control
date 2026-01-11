@@ -58,10 +58,11 @@ impl MachineIdentification {
             x if x == MACHINE_AQUAPATH_V1 => "aquapath_v1".to_string(),
             x if x == MACHINE_BUFFER_V1 => "buffer_v1".to_string(),
             x if x == MACHINE_EXTRUDER_V2 => "extruder_v2".to_string(),
+            x if x == MACHINE_WAGO_POWER_V1 => "wago_power_v1".to_string(),
             x if x == TEST_MACHINE => "test_machine".to_string(),
             x if x == IP20_TEST_MACHINE => "ip20_test_machine".to_string(),
             x if x == ANALOG_INPUT_TEST_MACHINE => "analog_input_test_machine".to_string(),
-            _ => "N/A".to_string(),
+            _ => unreachable!("Unknown machine id"),
         }
     }
 }
@@ -180,6 +181,7 @@ use crate::MACHINE_EXTRUDER_V1;
 use crate::MACHINE_EXTRUDER_V2;
 use crate::MACHINE_LASER_V1;
 use crate::MACHINE_MOCK;
+use crate::MACHINE_WAGO_POWER_V1;
 use crate::MACHINE_WINDER_V1;
 use crate::TEST_MACHINE;
 use crate::VENDOR_QITECH;
