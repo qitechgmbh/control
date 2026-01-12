@@ -2,8 +2,11 @@ use crate::machine_identification::{MachineIdentification, MachineIdentification
 use crate::test_machine_stepper::api::{StateEvent, TestMachineStepperEvents};
 use crate::{AsyncThreadMessage, Machine, MachineMessage};
 use control_core::socketio::namespace::NamespaceCacheingLogic;
+use ethercat_hal::devices::wago_modules::wago_750_671::Wago750_671;
 use ethercat_hal::io::digital_output::DigitalOutput;
 use smol::channel::{Receiver, Sender};
+use smol::lock::RwLock;
+use std::sync::Arc;
 use std::time::Instant;
 pub mod act;
 pub mod api;
@@ -19,6 +22,7 @@ pub struct TestMachineStepper {
     pub namespace: TestMachineStepperNamespace,
     pub last_state_emit: Instant,
     pub main_sender: Option<Sender<AsyncThreadMessage>>,
+    pub driver: Arc<RwLock<Wago750_671>>,
 }
 
 impl Machine for TestMachineStepper {
