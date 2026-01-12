@@ -61,35 +61,7 @@ export function useTestMachineStepper() {
     serverRequest?.();
   };
 
-  const setLed = (index: number, on: boolean) => {
-    updateStateOptimistically(
-      (current) => {
-        current.led_on[index] = on;
-      },
-      () =>
-        sendMutation({
-          machine_identification_unique: machineIdentification,
-          data: { action: "SetLed", value: { index, on } },
-        }),
-    );
-  };
-
-  const setAllLeds = (on: boolean) => {
-    updateStateOptimistically(
-      (current) => {
-        current.led_on = [on, on, on, on];
-      },
-      () =>
-        sendMutation({
-          machine_identification_unique: machineIdentification,
-          data: { action: "SetAllLeds", value: { on } },
-        }),
-    );
-  };
-
   return {
     state: stateOptimistic.value,
-    setLed,
-    setAllLeds,
   };
 }

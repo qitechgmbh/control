@@ -180,13 +180,13 @@ export const testMachineStepperSerialRoute = createRoute({
   component: () => <TestMachineStepperPage />,
 });
 
-// Leaf route: control page
 export const testMachineStepperControlRoute = createRoute({
   getParentRoute: () => testMachineStepperSerialRoute,
   path: "control",
   component: () => <TestMachineStepperControlPage />,
 });
 
+// Leaf route: control page
 export const sidebarRoute = createRoute({
   getParentRoute: () => RootRoute,
   path: "_sidebar",
@@ -529,6 +529,7 @@ export const rootTree = RootRoute.addChildren([
       ]),
 
       testMachineSerialRoute.addChildren([testMachineControlRoute]),
+
       testMachineStepperSerialRoute.addChildren([testMachineStepperControlRoute]),
 
       analogInputTestMachineSerialRoute.addChildren([
