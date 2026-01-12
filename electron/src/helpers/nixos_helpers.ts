@@ -59,6 +59,19 @@ export async function deleteNixOSGeneration(generationId: string): Promise<{
     };
   }
 }
+export async function deleteAllOldNixOSGeneration(): Promise<{
+  success: boolean;
+  error?: string;
+}> {
+  try {
+    return await window.nixos.deleteAllOldGeneration();
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
 
 /**
  * Check if NixOS context is available

@@ -4,6 +4,7 @@ import {
   NIXOS_LIST_GENERATIONS,
   NIXOS_SET_GENERATION,
   NIXOS_DELETE_GENERATION,
+  NIXOS_DELETE_ALL_OLD_GENERATIONS,
 } from "./nixos-channels";
 import { NixOSGeneration } from "./nixos-context";
 
@@ -37,6 +38,18 @@ export function addNixOSEventListeners() {
   ipcMain.handle(NIXOS_DELETE_GENERATION, async (_, generationId: string) => {
     try {
       const result = await deleteNixOSGeneration(generationId);
+      return result;
+    } catch (error) {
+      console.error("Failed to delete NixOS generation:", error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+  });
+    ipcMain.handle(NIXOS_DELETE_ALL_OLD_GENERATIONS, async (_) => {
+    try {
+      const result = await deleteAllOldNixOSGeneration();
       return result;
     } catch (error) {
       console.error("Failed to delete NixOS generation:", error);
@@ -146,6 +159,50 @@ async function deleteNixOSGeneration(generationId: string): Promise<{
       "sh",
       "-c",
       `nix-env --delete-generations ${generationId} -p /nix/var/nix/profiles/system && nix store gc && /nix/var/nix/profiles/system/bin/switch-to-configuration boot`,
+    ]);
+
+    let stderr = "";
+    let stdout = "";
+
+    process.stdout?.on("data", (data) => {
+      stdout += data.toString();
+    });
+
+    process.stderr?.on("data", (data) => {
+      stderr += data.toString();
+    });
+
+    process.on("close", (code) => {
+      if (code === 0) {
+        resolve({ success: true });
+      } else {
+        resolve({
+          success: false,
+          error: stderr || stdout || `Process exited with code ${code}`,
+        });
+      }
+    });
+
+    process.on("error", (error) => {
+      resolve({
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    });
+  });
+}
+
+async function deleteAllOldNixOSGeneration(): Promise<{
+  success: boolean;
+  error?: string;
+}> {
+  return new Promise((resolve) => {
+    // Delete the specified generation using nix-env and update bootloader
+    // This is the proper NixOS way to delete specific generations
+    const process = spawn("sudo", [
+      "sh",
+      "-c",
+      `nix-collect-garbage --delete-old`,
     ]);
 
     let stderr = "";
