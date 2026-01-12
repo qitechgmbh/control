@@ -1,6 +1,10 @@
-use crate::test_machine_stepper::TestMachineStepper;
+use crate::test_machine_stepper::{AxisState, TestMachineStepper};
 use crate::test_machine_stepper::api::TestMachineStepperNamespace;
-use ethercat_hal::devices::{EthercatDevice, downcast_device, wago_750_354::{WAGO_750_354_IDENTITY_A, Wago750_354}, wago_modules::wago_750_671::Wago750_671};
+use ethercat_hal::devices::{
+    EthercatDevice, EthercatDeviceUsed, downcast_device,
+    wago_750_354::{WAGO_750_354_IDENTITY_A, Wago750_354},
+    wago_modules::wago_750_671::Wago750_671,
+};
 use smol::{block_on, lock::RwLock};
 use std::{sync::Arc, time::Instant};
 
@@ -11,7 +15,8 @@ use crate::{
 
 use anyhow::Error;
 
-impl MachineNewTrait for TestMachineStepper { fn new<'maindevice>(params: &MachineNewParams) -> Result<Self, Error> {
+impl MachineNewTrait for TestMachineStepper {
+    fn new<'maindevice>(params: &MachineNewParams) -> Result<Self, Error> {
         // validate general stuff
         let device_identification = params
             .device_group
@@ -48,10 +53,12 @@ impl MachineNewTrait for TestMachineStepper { fn new<'maindevice>(params: &Machi
             }
 
             coupler.init_slot_modules(_wago_750_354.1);
-            let dev = coupler.slot_devices.get(1).unwrap().clone().unwrap();
+            let dev = coupler.slot_devices.get(0).unwrap().clone().unwrap();
             let wago_750_671: Arc<RwLock<Wago750_671>> =
-                    downcast_device::<Wago750_671>(dev).await?;
+                downcast_device::<Wago750_671>(dev).await?;
             drop(coupler);
+
+            tracing::info!("Is used: {}, ", wago_750_671.read_arc().await.is_used());
 
             let (sender, receiver) = smol::channel::unbounded();
             let mut my_test = Self {
@@ -63,7 +70,12 @@ impl MachineNewTrait for TestMachineStepper { fn new<'maindevice>(params: &Machi
                 },
                 last_state_emit: Instant::now(),
                 main_sender: params.main_thread_channel.clone(),
-                driver: wago_750_671,
+                stepper: wago_750_671,
+                last_move: Instant::now(),
+                pos: 0,
+                reset_done: false,
+                reset_seen: false,
+                axis_state: AxisState::Init,
             };
             my_test.emit_state();
             Ok(my_test)
