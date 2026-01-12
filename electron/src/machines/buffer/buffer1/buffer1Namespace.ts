@@ -130,12 +130,13 @@ export function buffer1MessageHandler(
  * @returns A new Zustand store instance for Buffer1 namespace
  */
 export const createBuffer1NamespaceStore =
-  (): StoreApi<Buffer1NamespaceStore> =>
-    create<Buffer1NamespaceStore>(() => {
+  (): StoreApi<Buffer1NamespaceStore> => {
+    return create<Buffer1NamespaceStore>(() => {
       return {
         state: null,
       };
     });
+  };
 
 /**
  * Create the Buffer1 namespace implementation

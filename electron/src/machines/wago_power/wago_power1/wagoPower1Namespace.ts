@@ -13,10 +13,10 @@ import {
 import { MachineIdentificationUnique } from "@/machines/types";
 import { useMemo } from "react";
 import {
-  createTimeSeries,
   TimeSeries,
   TimeSeriesValue,
 } from "@/lib/timeseries";
+import { createPersistentTimeSeries } from "@/lib/timeseriesPersistent";
 
 export const liveValuesEventSchema = eventSchema(
   z.object({
@@ -47,8 +47,10 @@ export type WagoPower1NamespaceStore = {
   voltage: TimeSeries;
 };
 
-const { initialTimeSeries: voltage, insert: addVoltage } = createTimeSeries();
-const { initialTimeSeries: current, insert: addCurrent } = createTimeSeries();
+const { initialTimeSeries: voltage, insert: addVoltage } = 
+  createPersistentTimeSeries("wagoPower1", "voltage");
+const { initialTimeSeries: current, insert: addCurrent } = 
+  createPersistentTimeSeries("wagoPower1", "current");
 
 const createWagoPower1NamespaceStore = (): StoreApi<WagoPower1NamespaceStore> =>
   create<WagoPower1NamespaceStore>(() => {

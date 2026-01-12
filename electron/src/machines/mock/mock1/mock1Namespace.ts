@@ -16,11 +16,13 @@ import {
   ThrottledStoreUpdater,
 } from "../../../client/socketioStore";
 import { MachineIdentificationUnique } from "@/machines/types";
+import { useMemo } from "react";
+import { TimeSeries, TimeSeriesValue } from "@/lib/timeseries";
 import {
-  createTimeSeries,
-  TimeSeries,
-  TimeSeriesValue,
-} from "@/lib/timeseries";
+  createNamespacePersistentTimeSeries,
+  NamespaceSeriesResult,
+} from "@/lib/namespacePersistence";
+import { serializeNamespaceId } from "../../../client/socketioStore";
 
 // ========== Event Schema Definitions ==========
 /**
@@ -78,35 +80,81 @@ export type Mock1NamespaceStore = {
   sineWave3: TimeSeries;
 };
 
-const { initialTimeSeries: sineWave, insert: addSineWave } = createTimeSeries();
+// Store-level cache for persistent series
+const seriesCache = new Map<
+  string,
+  NamespaceSeriesResult<{
+    sineWaveSum: string;
+    sineWave1: string;
+    sineWave2: string;
+    sineWave3: string;
+  }>
+>();
 
 /**
  * Factory function to create a new Mock1 namespace store
+ * @param namespaceId The namespace identifier for persistence
  * @returns A new Zustand store instance for Mock1 namespace
  */
-export const createMock1NamespaceStore = (): StoreApi<Mock1NamespaceStore> => {
-  return create<Mock1NamespaceStore>(() => {
-    return {
-      state: null,
-      defaultState: null,
-      sineWaveSum: sineWave,
-      sineWave1: sineWave,
-      sineWave2: sineWave,
-      sineWave3: sineWave,
-    };
+export const createMock1NamespaceStore = (
+  namespaceId: NamespaceId,
+): StoreApi<Mock1NamespaceStore> => {
+  const cacheKey = serializeNamespaceId(namespaceId);
+
+  if (!seriesCache.has(cacheKey)) {
+    const seriesResult = createNamespacePersistentTimeSeries(namespaceId, {
+      sineWaveSum: "sineWaveSum",
+      sineWave1: "sineWave1",
+      sineWave2: "sineWave2",
+      sineWave3: "sineWave3",
+    });
+    seriesCache.set(cacheKey, seriesResult);
+  }
+
+  const seriesResult = seriesCache.get(cacheKey)!;
+
+  const store = create<Mock1NamespaceStore>(() => ({
+    state: null,
+    defaultState: null,
+    sineWaveSum: seriesResult.initialState.sineWaveSum,
+    sineWave1: seriesResult.initialState.sineWave1,
+    sineWave2: seriesResult.initialState.sineWave2,
+    sineWave3: seriesResult.initialState.sineWave3,
+  }));
+
+  seriesResult.ready.then((historicalSeries) => {
+    store.setState(historicalSeries);
   });
+
+  return store;
 };
 
 /**
+ * Get insert functions for a namespace
+ */
+function getInsertFunctions(namespaceId: NamespaceId) {
+  const cacheKey = serializeNamespaceId(namespaceId);
+  const seriesResult = seriesCache.get(cacheKey);
+  if (!seriesResult) {
+    throw new Error(`Series not initialized for namespace: ${cacheKey}`);
+  }
+  return seriesResult.insertFns;
+}
+
+/**
  * Creates a message handler for Mock1 namespace events with validation and appropriate caching strategies
+ * @param namespaceId The namespace identifier
  * @param store The store to update when messages are received
  * @param throttledUpdater Throttled updater for batching updates at 30 FPS
  * @returns A message handler function
  */
 export function mock1MessageHandler(
+  namespaceId: NamespaceId,
   store: StoreApi<Mock1NamespaceStore>,
   throttledUpdater: ThrottledStoreUpdater<Mock1NamespaceStore>,
 ): EventHandler {
+  const insertFns = getInsertFunctions(namespaceId);
+
   return (event: Event<any>) => {
     const eventName = event.name;
 
@@ -152,10 +200,10 @@ export function mock1MessageHandler(
         };
         updateStore((state) => ({
           ...state,
-          sineWaveSum: addSineWave(state.sineWaveSum, waveSumValue),
-          sineWave1: addSineWave(state.sineWave1, wave1Value),
-          sineWave2: addSineWave(state.sineWave2, wave2Value),
-          sineWave3: addSineWave(state.sineWave3, wave3Value),
+          sineWaveSum: insertFns.sineWaveSum(state.sineWaveSum, waveSumValue),
+          sineWave1: insertFns.sineWave1(state.sineWave1, wave1Value),
+          sineWave2: insertFns.sineWave2(state.sineWave2, wave2Value),
+          sineWave3: insertFns.sineWave3(state.sineWave3, wave3Value),
         }));
       } else {
         handleUnhandledEventError(eventName);
@@ -168,23 +216,26 @@ export function mock1MessageHandler(
 }
 
 /**
- * Create the Mock1 namespace implementation
+ * Hook to use Mock1 namespace with persistent timeseries
  */
-const useMock1NamespaceImplementation =
-  createNamespaceHookImplementation<Mock1NamespaceStore>({
-    createStore: createMock1NamespaceStore,
-    createEventHandler: mock1MessageHandler,
-  });
-
 export function useMock1Namespace(
   machine_identification_unique: MachineIdentificationUnique,
 ): Mock1NamespaceStore {
-  // Generate namespace ID from validated machine ID
-  const namespaceId: NamespaceId = {
-    type: "machine",
-    machine_identification_unique,
-  };
+  const namespaceId = useMemo<NamespaceId>(
+    () => ({
+      type: "machine",
+      machine_identification_unique,
+    }),
+    [machine_identification_unique],
+  );
 
-  // Use the implementation with validated namespace ID
-  return useMock1NamespaceImplementation(namespaceId);
+  const useImpl = useMemo(() => {
+    return createNamespaceHookImplementation<Mock1NamespaceStore>({
+      createStore: () => createMock1NamespaceStore(namespaceId),
+      createEventHandler: (store, throttledUpdater) =>
+        mock1MessageHandler(namespaceId, store, throttledUpdater),
+    });
+  }, [namespaceId]);
+
+  return useImpl(namespaceId);
 }

@@ -17,10 +17,10 @@ import {
 } from "../../../client/socketioStore";
 import { MachineIdentificationUnique } from "@/machines/types";
 import {
-  createTimeSeries,
   TimeSeries,
   TimeSeriesValue,
 } from "@/lib/timeseries";
+import { createPersistentTimeSeries } from "@/lib/timeseriesPersistent";
 
 // ========== Event Schema Definitions ==========
 /**
@@ -69,16 +69,22 @@ export type Laser1NamespaceStore = {
 // Constants for time durations
 const HALF_SECOND = 500;
 
-const { initialTimeSeries: diameter, insert: addDiameter } = createTimeSeries({
-  sampleIntervalLong: HALF_SECOND,
-});
+const { initialTimeSeries: diameter, insert: addDiameter } = 
+  createPersistentTimeSeries("laser1", "diameter", {
+    sampleIntervalLong: HALF_SECOND,
+  });
 const { initialTimeSeries: x_diameter, insert: addXDiameter } =
-  createTimeSeries({ sampleIntervalLong: HALF_SECOND });
+  createPersistentTimeSeries("laser1", "x_diameter", { 
+    sampleIntervalLong: HALF_SECOND 
+  });
 const { initialTimeSeries: y_diameter, insert: addYDiameter } =
-  createTimeSeries({ sampleIntervalLong: HALF_SECOND });
-const { initialTimeSeries: roundness, insert: addRoundness } = createTimeSeries(
-  { sampleIntervalLong: HALF_SECOND },
-);
+  createPersistentTimeSeries("laser1", "y_diameter", { 
+    sampleIntervalLong: HALF_SECOND 
+  });
+const { initialTimeSeries: roundness, insert: addRoundness } = 
+  createPersistentTimeSeries("laser1", "roundness", {
+    sampleIntervalLong: HALF_SECOND,
+  });
 
 /**
  * Factory function to create a new Laser1 namespace store

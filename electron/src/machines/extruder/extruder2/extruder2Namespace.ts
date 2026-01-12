@@ -11,7 +11,8 @@ import {
   handleUnhandledEventError,
 } from "../../../client/socketioStore";
 import { MachineIdentificationUnique } from "@/machines/types";
-import { createTimeSeries, TimeSeries } from "@/lib/timeseries";
+import { TimeSeries } from "@/lib/timeseries";
+import { createPersistentTimeSeries } from "@/lib/timeseriesPersistent";
 import { useMemo } from "react";
 
 // ========== Event Schema Definitions ==========
@@ -223,35 +224,36 @@ export type Extruder2NamespaceStore = {
   totalEnergyKWh: TimeSeries;
 };
 
-const { initialTimeSeries: pressure, insert: addPressure } = createTimeSeries();
+const { initialTimeSeries: pressure, insert: addPressure } = 
+  createPersistentTimeSeries("extruder2", "pressure");
 const { initialTimeSeries: backTemperature, insert: addBackTemperature } =
-  createTimeSeries();
+  createPersistentTimeSeries("extruder2", "backTemperature");
 const { initialTimeSeries: frontTemperature, insert: addFrontTemperature } =
-  createTimeSeries();
+  createPersistentTimeSeries("extruder2", "frontTemperature");
 const { initialTimeSeries: middleTemperature, insert: addMiddleTemperature } =
-  createTimeSeries();
+  createPersistentTimeSeries("extruder2", "middleTemperature");
 const { initialTimeSeries: nozzleTemperature, insert: addNozzleTemperature } =
-  createTimeSeries();
+  createPersistentTimeSeries("extruder2", "nozzleTemperature");
 const { initialTimeSeries: nozzlePower, insert: addNozzlePower } =
-  createTimeSeries();
+  createPersistentTimeSeries("extruder2", "nozzlePower");
 const { initialTimeSeries: frontPower, insert: addFrontPower } =
-  createTimeSeries();
+  createPersistentTimeSeries("extruder2", "frontPower");
 const { initialTimeSeries: middlePower, insert: addMiddlePower } =
-  createTimeSeries();
+  createPersistentTimeSeries("extruder2", "middlePower");
 const { initialTimeSeries: backPower, insert: addBackPower } =
-  createTimeSeries();
+  createPersistentTimeSeries("extruder2", "backPower");
 const { initialTimeSeries: combinedPower, insert: addCombinedPower } =
-  createTimeSeries();
+  createPersistentTimeSeries("extruder2", "combinedPower");
 const { initialTimeSeries: totalEnergyKWh, insert: addTotalEnergyKWh } =
-  createTimeSeries();
+  createPersistentTimeSeries("extruder2", "totalEnergyKWh");
 const { initialTimeSeries: motorCurrent, insert: addMotorCurrent } =
-  createTimeSeries();
+  createPersistentTimeSeries("extruder2", "motorCurrent");
 const { initialTimeSeries: motorFrequency, insert: addMotorFrequency } =
-  createTimeSeries();
+  createPersistentTimeSeries("extruder2", "motorFrequency");
 const { initialTimeSeries: motorScrewRpm, insert: addMotorScrewRpm } =
-  createTimeSeries();
+  createPersistentTimeSeries("extruder2", "motorScrewRpm");
 const { initialTimeSeries: motorPower, insert: addMotorPower } =
-  createTimeSeries();
+  createPersistentTimeSeries("extruder2", "motorPower");
 
 export function extruder2MessageHandler(
   store: StoreApi<Extruder2NamespaceStore>,

@@ -13,10 +13,10 @@ import {
 import { MachineIdentificationUnique } from "@/machines/types";
 import { useMemo } from "react";
 import {
-  createTimeSeries,
   TimeSeries,
   TimeSeriesValue,
 } from "@/lib/timeseries";
+import { createPersistentTimeSeries } from "@/lib/timeseriesPersistent";
 
 // ========== Event Schema Definitions ==========
 
@@ -215,14 +215,15 @@ export type Winder2NamespaceStore = {
 
 //Store Factory and Message Handler -> no param, so default values
 const { initialTimeSeries: spoolProgress, insert: addSpoolProgress } =
-  createTimeSeries();
+  createPersistentTimeSeries("winder2", "spoolProgress");
 const { initialTimeSeries: traversePosition, insert: addTraversePosition } =
-  createTimeSeries();
+  createPersistentTimeSeries("winder2", "traversePosition");
 const { initialTimeSeries: pullerSpeed, insert: addPullerSpeed } =
-  createTimeSeries();
-const { initialTimeSeries: spoolRpm, insert: addSpoolRpm } = createTimeSeries();
+  createPersistentTimeSeries("winder2", "pullerSpeed");
+const { initialTimeSeries: spoolRpm, insert: addSpoolRpm } = 
+  createPersistentTimeSeries("winder2", "spoolRpm");
 const { initialTimeSeries: tensionArmAngle, insert: addTensionArmAngle } =
-  createTimeSeries();
+  createPersistentTimeSeries("winder2", "tensionArmAngle");
 
 /**
  * Factory function to create a new Winder2 namespace store

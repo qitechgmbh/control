@@ -16,7 +16,8 @@ import {
   ThrottledStoreUpdater,
 } from "../../../client/socketioStore";
 import { MachineIdentificationUnique } from "@/machines/types";
-import { createTimeSeries, TimeSeries } from "@/lib/timeseries";
+import { TimeSeries } from "@/lib/timeseries";
+import { createPersistentTimeSeries } from "@/lib/timeseriesPersistent";
 
 // ========== Event Schema Definitions ==========
 /**
@@ -99,15 +100,17 @@ export type Aquapath1NamespaceStore = {
 };
 
 const { initialTimeSeries: front_temperature, insert: addTemperature1 } =
-  createTimeSeries();
+  createPersistentTimeSeries("aquapath1", "front_temperature");
 const { initialTimeSeries: back_temperature, insert: addTemperature2 } =
-  createTimeSeries();
+  createPersistentTimeSeries("aquapath1", "back_temperature");
 const { initialTimeSeries: front_temp_reservoir, insert: addTempReserv1 } =
-  createTimeSeries();
+  createPersistentTimeSeries("aquapath1", "front_temp_reservoir");
 const { initialTimeSeries: back_temp_reservoir, insert: addTempReserv2 } =
-  createTimeSeries();
-const { initialTimeSeries: front_flow, insert: addFlow1 } = createTimeSeries();
-const { initialTimeSeries: back_flow, insert: addFlow2 } = createTimeSeries();
+  createPersistentTimeSeries("aquapath1", "back_temp_reservoir");
+const { initialTimeSeries: front_flow, insert: addFlow1 } = 
+  createPersistentTimeSeries("aquapath1", "front_flow");
+const { initialTimeSeries: back_flow, insert: addFlow2 } = 
+  createPersistentTimeSeries("aquapath1", "back_flow");
 
 /**
  * Factory function to create a new Aquapath namespace store
