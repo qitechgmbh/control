@@ -63,6 +63,7 @@ impl MachineNewTrait for TestMachineStepper { fn new<'maindevice>(params: &Machi
                 },
                 last_state_emit: Instant::now(),
                 main_sender: params.main_thread_channel.clone(),
+                driver: wago_750_671,
             };
             my_test.emit_state();
             Ok(my_test)
