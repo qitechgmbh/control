@@ -52,7 +52,7 @@ export function addNixOSEventListeners() {
       const result = await deleteAllOldNixOSGeneration();
       return result;
     } catch (error) {
-      console.error("Failed to delete NixOS generation:", error);
+      console.error("Failed to delete all  NixOS generations:", error);
       return {
         success: false,
         error: error instanceof Error ? error.message : String(error),
@@ -197,8 +197,6 @@ async function deleteAllOldNixOSGeneration(): Promise<{
   error?: string;
 }> {
   return new Promise((resolve) => {
-    // Delete the specified generation using nix-env and update bootloader
-    // This is the proper NixOS way to delete specific generations
     const process = spawn("sudo", [
       "sh",
       "-c",

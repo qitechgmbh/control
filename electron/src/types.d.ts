@@ -86,7 +86,7 @@ interface NixOSContext {
   deleteGeneration: (
     generationId: string,
   ) => Promise<{ success: boolean; error?: string }>;
-    deleteAllOldGeneration: (
+    deleteAllOldGenerations: (
   ) => Promise<{ success: boolean; error?: string }>;
 }
 declare interface Window {
