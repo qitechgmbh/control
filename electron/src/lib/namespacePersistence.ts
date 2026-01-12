@@ -72,8 +72,14 @@ export interface NamespaceSeriesResult<T extends SeriesDefinitionMap> {
   initialState: Record<keyof T, TimeSeries>;
   /** Insert functions for each series */
   insertFns: Record<keyof T, (series: TimeSeries, value: TimeSeriesValue) => TimeSeries>;
-  /** Promise that resolves when all series are loaded with historical data */
+  /** Promise that resolves when all series are loaded with historical data (or immediately with lazy loading) */
   ready: Promise<Record<keyof T, TimeSeries>>;
+  /** 
+   * Register a callback to be called when historical data finishes loading (for lazy loading).
+   * With lazy loading enabled, charts render immediately with live data, and this callback
+   * fires when historical data is ready to be merged in.
+   */
+  onHistoryLoaded: (callback: (historicalSeries: Record<keyof T, TimeSeries>) => void) => void;
   /** Cleanup function to remove old data */
   cleanup: () => Promise<void>;
 }
@@ -97,6 +103,9 @@ export function createNamespacePersistentTimeSeries<T extends SeriesDefinitionMa
   const insertFns: Record<string, (series: TimeSeries, value: TimeSeriesValue) => TimeSeries> = {};
   const readyPromises: Promise<[string, TimeSeries]>[] = [];
   const cleanupFns: (() => Promise<void>)[] = [];
+  
+  // Track individual series for history callbacks
+  const seriesMap: Record<string, { persistentSeries: PersistentTimeSeriesWithInsert; key: string }> = {};
 
   // Create persistent timeseries for each definition
   for (const [key, definition] of Object.entries(seriesDefinitions)) {
@@ -112,6 +121,7 @@ export function createNamespacePersistentTimeSeries<T extends SeriesDefinitionMa
     initialState[key] = persistentSeries.initialTimeSeries;
     insertFns[key] = persistentSeries.insert;
     cleanupFns.push(persistentSeries.cleanup);
+    seriesMap[key] = { persistentSeries, key };
 
     // Add to ready promises
     readyPromises.push(
@@ -133,10 +143,34 @@ export function createNamespacePersistentTimeSeries<T extends SeriesDefinitionMa
     await Promise.all(cleanupFns.map((fn) => fn()));
   };
 
+  /**
+   * Register a callback to be called when ALL historical data is loaded (lazy mode)
+   * This aggregates callbacks from all series and fires once all are ready
+   */
+  const onHistoryLoaded = (callback: (historicalSeries: Record<keyof T, TimeSeries>) => void): void => {
+    const loadedSeries: Record<string, TimeSeries> = {};
+    const seriesKeys = Object.keys(seriesMap);
+    let loadedCount = 0;
+
+    // Register callback on each series
+    for (const [key, { persistentSeries }] of Object.entries(seriesMap)) {
+      persistentSeries.onHistoryLoaded((series) => {
+        loadedSeries[key] = series;
+        loadedCount++;
+
+        // Fire callback when all series are loaded
+        if (loadedCount === seriesKeys.length) {
+          callback(loadedSeries as Record<keyof T, TimeSeries>);
+        }
+      });
+    }
+  };
+
   return {
     initialState: initialState as Record<keyof T, TimeSeries>,
     insertFns: insertFns as Record<keyof T, (series: TimeSeries, value: TimeSeriesValue) => TimeSeries>,
     ready,
+    onHistoryLoaded,
     cleanup,
   };
 }

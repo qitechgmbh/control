@@ -122,7 +122,9 @@ export const createMock1NamespaceStore = (
     sineWave3: seriesResult.initialState.sineWave3,
   }));
 
-  seriesResult.ready.then((historicalSeries) => {
+  // With lazy loading, onHistoryLoaded fires when historical data is ready
+  // Live data starts flowing immediately, then history merges in background
+  seriesResult.onHistoryLoaded((historicalSeries) => {
     store.setState(historicalSeries);
   });
 

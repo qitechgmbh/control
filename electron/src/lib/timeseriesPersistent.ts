@@ -29,6 +29,7 @@ import {
   storeDataPoint,
   queryDataPoints,
   deleteOldDataPoints,
+  clearSeriesData,
 } from "./timeseriesDB";
 
 /**
@@ -41,6 +42,17 @@ export interface PersistentTimeSeriesConfig extends TimeSeriesConfig {
   maxRetentionTime?: number;
   /** How often to cleanup old data (default: 1 hour) */
   cleanupInterval?: number;
+  /** 
+   * Maximum window to load from IndexedDB on init (default: retentionDurationLong).
+   * Set to 0 to skip historical loading entirely.
+   */
+  initialLoadWindowMs?: number;
+  /**
+   * When true, historical data loads lazily in the background AFTER 
+   * the timeseries is already active with live data (default: true).
+   * This ensures charts render immediately with live data.
+   */
+  lazyLoadHistory?: boolean;
 }
 
 /**
@@ -49,12 +61,15 @@ export interface PersistentTimeSeriesConfig extends TimeSeriesConfig {
  * Long series buffer: 10 minutes at 20ms = 30,000 points (~240KB per series)
  * Max retention in DB: 7 days (~100MB per series)
  * Cleanup interval: 1 hour
+ * Lazy load: enabled by default so charts render immediately with live data
  */
 export const DEFAULT_PERSISTENT_CONFIG: Required<PersistentTimeSeriesConfig> = {
   ...DEFAULT_TIMESERIES_CONFIG,
   enablePersistence: true,
   maxRetentionTime: 7 * 24 * 60 * 60 * 1000, // 7 days
   cleanupInterval: 60 * 60 * 1000, // 1 hour
+  initialLoadWindowMs: 10 * 60 * 1000, // load last 10 minutes of history
+  lazyLoadHistory: true, // load history in background after live data starts
 };
 
 /**
@@ -63,8 +78,14 @@ export const DEFAULT_PERSISTENT_CONFIG: Required<PersistentTimeSeriesConfig> = {
 export interface PersistentTimeSeriesWithInsert {
   initialTimeSeries: TimeSeries;
   insert: (series: TimeSeries, valueObj: TimeSeriesValue) => TimeSeries;
-  /** Promise that resolves when initial data is loaded from IndexedDB */
+  /** 
+   * Promise that resolves when initial data is loaded from IndexedDB.
+   * With lazyLoadHistory=true, this resolves immediately with empty series,
+   * and onHistoryLoaded callback is fired later when history is ready.
+   */
   ready: Promise<TimeSeries>;
+  /** Callback fired when historical data finishes loading (for lazy loading) */
+  onHistoryLoaded: (callback: (historicalSeries: TimeSeries) => void) => void;
   /** Manually trigger cleanup of old data */
   cleanup: () => Promise<void>;
 }
@@ -78,24 +99,57 @@ export interface PersistentTimeSeriesWithInsert {
 async function loadHistoricalData(
   namespaceId: string,
   seriesName: string,
-  retentionDuration: number,
+  loadWindowMs: number,
 ): Promise<TimeSeriesValue[]> {
   const now = Date.now();
-  const startTime = now - retentionDuration;
+  const startTime = now - loadWindowMs;
 
   try {
-    const dataPoints = await queryDataPoints(
+    const rawData = await queryDataPoints(
       namespaceId,
       seriesName,
       startTime,
       now,
     );
+
+    // Filter out invalid/corrupted entries defensively to avoid breaking charts
+    const dataPoints = rawData.filter(
+      (p) =>
+        Number.isFinite(p.timestamp) &&
+        Number.isFinite(p.value) &&
+        p.timestamp > 0,
+    );
+
+    // If we filtered out everything but had records, proactively clear the series
+    if (rawData.length > 0 && dataPoints.length === 0) {
+      console.warn(
+        `All historical points for ${namespaceId}:${seriesName} were invalid; clearing series in IndexedDB to recover`,
+      );
+      await clearSeriesData(namespaceId, seriesName).catch((err) =>
+        console.error(`Failed to clear corrupted series ${namespaceId}:${seriesName}`, err),
+      );
+    }
+
     return dataPoints;
   } catch (error) {
     console.error(
       `Failed to load historical data for ${namespaceId}:${seriesName}`,
       error,
     );
+
+    // Attempt automatic recovery by clearing the series to prevent UI breakage
+    try {
+      await clearSeriesData(namespaceId, seriesName);
+      console.warn(
+        `Cleared ${namespaceId}:${seriesName} after load failure; proceeding with empty history`,
+      );
+    } catch (clearErr) {
+      console.error(
+        `Failed to clear series ${namespaceId}:${seriesName} after load failure`,
+        clearErr,
+      );
+    }
+
     return [];
   }
 }
@@ -169,6 +223,8 @@ export const createPersistentTimeSeries = (
     enablePersistence,
     maxRetentionTime,
     cleanupInterval,
+    initialLoadWindowMs,
+    lazyLoadHistory,
   } = fullConfig;
 
   const shortSize = Math.ceil(retentionDurationShort / sampleIntervalShort);
@@ -290,40 +346,103 @@ export const createPersistentTimeSeries = (
     return newSeries;
   };
 
-  // Load historical data asynchronously
-  const ready: Promise<TimeSeries> = enablePersistence
-    ? (async () => {
-        try {
-          const historicalData = await loadHistoricalData(
-            namespaceId,
-            seriesName,
-            retentionDurationLong,
-          );
+  // History loaded callbacks for lazy loading
+  const historyCallbacks: ((historicalSeries: TimeSeries) => void)[] = [];
+  let historyLoadedSeries: TimeSeries | null = null;
 
-          // Populate the long series buffer
-          const populatedLong = populateSeriesFromHistory(
-            initialTimeSeries.long,
-            historicalData,
-          );
+  /**
+   * Register a callback to be called when historical data is loaded (lazy mode)
+   */
+  const onHistoryLoaded = (callback: (historicalSeries: TimeSeries) => void): void => {
+    // If history already loaded, call immediately
+    if (historyLoadedSeries !== null) {
+      callback(historyLoadedSeries);
+    } else {
+      historyCallbacks.push(callback);
+    }
+  };
 
-          return {
-            ...initialTimeSeries,
-            long: populatedLong,
-          };
-        } catch (error) {
-          console.error(
-            `Failed to initialize persistent timeseries for ${namespaceId}:${seriesName}`,
-            error,
-          );
-          return initialTimeSeries;
-        }
-      })()
-    : Promise.resolve(initialTimeSeries);
+  /**
+   * Fire history loaded callbacks
+   */
+  const fireHistoryCallbacks = (series: TimeSeries): void => {
+    historyLoadedSeries = series;
+    for (const callback of historyCallbacks) {
+      try {
+        callback(series);
+      } catch (error) {
+        console.error(`History callback error for ${namespaceId}:${seriesName}`, error);
+      }
+    }
+  };
+
+  /**
+   * Load historical data and populate series
+   */
+  const loadAndPopulateHistory = async (): Promise<TimeSeries> => {
+    try {
+      // Limit initial load window to avoid UI stalls when history is large
+      const loadWindowMs = Math.min(
+        retentionDurationLong,
+        initialLoadWindowMs,
+      );
+
+      // Skip loading if window is 0
+      if (loadWindowMs === 0) {
+        return initialTimeSeries;
+      }
+
+      const historicalData = await loadHistoricalData(
+        namespaceId,
+        seriesName,
+        loadWindowMs,
+      );
+
+      // Populate the long series buffer
+      const populatedLong = populateSeriesFromHistory(
+        initialTimeSeries.long,
+        historicalData,
+      );
+
+      return {
+        ...initialTimeSeries,
+        long: populatedLong,
+      };
+    } catch (error) {
+      console.error(
+        `Failed to initialize persistent timeseries for ${namespaceId}:${seriesName}`,
+        error,
+      );
+      return initialTimeSeries;
+    }
+  };
+
+  // Determine ready behavior based on lazyLoadHistory setting
+  let ready: Promise<TimeSeries>;
+
+  if (!enablePersistence) {
+    // Persistence disabled: resolve immediately with empty series
+    ready = Promise.resolve(initialTimeSeries);
+  } else if (lazyLoadHistory) {
+    // Lazy loading: resolve immediately, load history in background
+    ready = Promise.resolve(initialTimeSeries);
+    
+    // Start background loading after a small delay to let UI render first
+    setTimeout(() => {
+      loadAndPopulateHistory().then((loadedSeries) => {
+        fireHistoryCallbacks(loadedSeries);
+      });
+    }, 100); // Small delay to ensure live data starts flowing first
+  } else {
+    // Blocking mode: wait for history before resolving
+    ready = loadAndPopulateHistory();
+  }
 
   return {
     initialTimeSeries,
     insert,
     ready,
+    onHistoryLoaded,
     cleanup,
   };
 };
