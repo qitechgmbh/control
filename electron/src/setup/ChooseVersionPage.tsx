@@ -15,6 +15,7 @@ import {
   setNixOSGeneration,
   deleteNixOSGeneration,
   isNixOSAvailable,
+  deleteAllOldNixOSGeneration,
 } from "@/helpers/nixos_helpers";
 import { useUpdateStore } from "@/stores/updateStore";
 import { useGithubSourceStore } from "@/stores/githubSourceStore";
@@ -341,6 +342,37 @@ export function ChooseVersionPage() {
     }
   };
 
+  const handleDeleteAllOldGeneration = async () => {
+    if (
+      !confirm(
+        `Are you sure you want to delete all old generation This will also update the bootloader menu. This action cannot be undone.`,
+      )
+    ) {
+      return;
+    }
+
+    try {
+      const result = await deleteAllOldNixOSGeneration();
+      if (result.success) {
+        // Refresh the generations list
+        const updatedResult = await listNixOSGenerations();
+        if (updatedResult.success) {
+          setNixosGenerations(updatedResult.generations);
+        }
+        console.log(
+          `Successfully deleted all old generations`,
+        );
+      } else {
+        console.error(`Failed to delete generation: ${result.error}`);
+        setNixosError(result.error || "Failed to delete all old generations");
+      }
+    } catch (error) {
+      console.error("Error deleting generation:", error);
+      setNixosError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setGenerationActionLoading(null);
+    }
+  };
   return (
     <Page>
       <SectionTitle title="Current Version"></SectionTitle>
@@ -532,9 +564,16 @@ export function ChooseVersionPage() {
           </Alert>
         </span>
       )}
+      {/*TODO:this code is only for the apperence of the Button Remove it afer the issue ist solved*/} 
+      <TouchButton
+          className="flex-shrink-0"
+          variant="destructive"
+          onClick={handleDeleteAllOldGeneration}>
+      delete</TouchButton>
 
       {nixosGenerations !== undefined && nixosGenerations.length > 0 ? (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+         {/*TODO:Add a Button for deleting all Generations of Nixos*/} 
           {nixosGenerations.map((generation) => (
             <GenerationButton
               key={generation.id}
