@@ -14,9 +14,7 @@ import { MachineIdentificationUnique } from "@/machines/types";
 
 // ========== Event Schema ==========
 
-export const stateEventDataSchema = z.object({
-  led_on: z.array(z.boolean()).length(4),
-});
+export const stateEventDataSchema = z.object({ });
 
 export const stateEventSchema = eventSchema(stateEventDataSchema);
 
@@ -34,7 +32,7 @@ export const createTestMachineStepperNamespaceStore =
     }));
 
 // ========== Message Handler ==========
-export function testMachineMessageHandler(
+export function testMachineStepperMessageHandler(
   store: StoreApi<TestMachineStepperNamespaceStore>,
   throttledUpdater: ThrottledStoreUpdater<TestMachineStepperNamespaceStore>,
 ): EventHandler {
@@ -61,7 +59,7 @@ export function testMachineMessageHandler(
 const useTestMachineStepperNamespaceImplementation =
   createNamespaceHookImplementation<TestMachineStepperNamespaceStore>({
     createStore: createTestMachineStepperNamespaceStore,
-    createEventHandler: testMachineMessageHandler,
+    createEventHandler: testMachineStepperMessageHandler,
   });
 
 export function useTestMachineStepperNamespace(
