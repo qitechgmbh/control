@@ -575,7 +575,7 @@ export const testmachinestepper: MachineProperties = {
   icon: "lu:Disc3",
   machine_identification: {
     vendor: VENDOR_QITECH,
-    machine: 0x0037,
+    machine: 0x0036,
   },
   device_roles: [
     {
