@@ -2,6 +2,7 @@ import {
   NIXOS_LIST_GENERATIONS,
   NIXOS_SET_GENERATION,
   NIXOS_DELETE_GENERATION,
+  NIXOS_DELETE_ALL_OLD_GENERATIONS,
 } from "./nixos-channels";
 
 export type NixOSGeneration = {
@@ -23,5 +24,7 @@ export function exposeNixOSContext() {
       ipcRenderer.invoke(NIXOS_SET_GENERATION, generationId),
     deleteGeneration: (generationId: string) =>
       ipcRenderer.invoke(NIXOS_DELETE_GENERATION, generationId),
+    deleteAllOldGenerations: () =>
+      ipcRenderer.invoke(NIXOS_DELETE_ALL_OLD_GENERATIONS),
   });
 }

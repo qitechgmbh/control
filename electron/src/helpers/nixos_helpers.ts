@@ -64,7 +64,7 @@ export async function deleteAllOldNixOSGeneration(): Promise<{
   error?: string;
 }> {
   try {
-    return await window.nixos.deleteAllOldGeneration();
+    return await window.nixos.deleteAllOldGenerations();
   } catch (error) {
     return {
       success: false,
