@@ -51,6 +51,9 @@ export function ChooseVersionPage() {
   const [generationActionLoading, setGenerationActionLoading] = useState<
     string | null
   >(null);
+    const [deleteAllActionLoading, setdeleteAllActionLoading] = useState<
+    boolean | false
+  >(false);
 
   const { githubSource, setGithubSource } = useGithubSourceStore();
 
@@ -350,7 +353,7 @@ export function ChooseVersionPage() {
     ) {
       return;
     }
-
+    setdeleteAllActionLoading(true)
     try {
       const result = await deleteAllOldNixOSGeneration();
       if (result.success) {
@@ -370,7 +373,7 @@ export function ChooseVersionPage() {
       console.error("Error deleting generation:", error);
       setNixosError(error instanceof Error ? error.message : String(error));
     } finally {
-      setGenerationActionLoading(null);
+      setdeleteAllActionLoading(false);
     }
   };
   return (
@@ -564,16 +567,15 @@ export function ChooseVersionPage() {
           </Alert>
         </span>
       )}
-      {/*TODO:this code is only for the apperence of the Button Remove it afer the issue ist solved*/} 
-      <TouchButton
-          className="flex-shrink-0"
-          variant="destructive"
-          onClick={handleDeleteAllOldGeneration}>
-      delete</TouchButton>
+
+      <DeleteAllButton 
+      onDeleteAll={()=> handleDeleteAllOldGeneration()}
+      isLoading = {deleteAllActionLoading}//DOTO: Set the Variable to true when it ist loading
+      />
 
       {nixosGenerations !== undefined && nixosGenerations.length > 0 ? (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-         {/*TODO:Add a Button for deleting all Generations of Nixos*/} 
+
           {nixosGenerations.map((generation) => (
             <GenerationButton
               key={generation.id}
@@ -660,6 +662,26 @@ function GenerationButton({
       </div>
     </div>
   );
+}
+
+type DeleteAllButtonProps = {
+  isLoading: boolean;
+  onDeleteAll:() => void;
+};
+function DeleteAllButton({
+  isLoading,
+  onDeleteAll,
+}: DeleteAllButtonProps){
+  return (
+      <div className="flex gap-2">
+        <TouchButton
+            variant="destructive"
+            disabled = {isLoading}
+            onClick={onDeleteAll}>
+            {isLoading? <LoadingSpinner/>: "Delete All Versions"}
+        </TouchButton>
+      </div>
+  )
 }
 
 type UpdateButtonProps = {
