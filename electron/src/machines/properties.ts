@@ -104,7 +104,7 @@ export const winder2: MachineProperties = {
 };
 
 export const extruder3: MachineProperties = {
-  name: "Extruder V3",
+  name: "Extruder",
   version: "V3",
   slug: "extruder3",
   icon: "qi:Extruder",
@@ -462,6 +462,17 @@ export const testmachine: MachineProperties = {
     },
   ],
 };
+export const wagoPower1: MachineProperties = {
+  name: "WAGO Power",
+  version: "V1",
+  slug: "wago_power1",
+  icon: "lu:PlugZap",
+  machine_identification: {
+    vendor: VENDOR_QITECH,
+    machine: 0x000a,
+  },
+  device_roles: [],
+};
 
 export const analogInputTestMachine: MachineProperties = {
   name: "AnalogTest",
@@ -498,6 +509,30 @@ export const analogInputTestMachine: MachineProperties = {
   ],
 };
 
+export const ip20TestMachine: MachineProperties = {
+  name: "IP20 Test",
+  version: "V1",
+  slug: "ip20testmachine",
+  icon: "lu:ToggleLeft",
+  machine_identification: {
+    vendor: VENDOR_QITECH,
+    machine: 0x0034,
+  },
+  device_roles: [
+    {
+      role: 0,
+      role_label: "IP20-EC-DI8-DO8",
+      allowed_devices: [
+        {
+          vendor_id: 0x741,
+          product_id: 0x117b6722,
+          revision: 0x1,
+        },
+      ],
+    },
+  ],
+};
+
 export const machineProperties: MachineProperties[] = [
   winder2,
   extruder3,
@@ -505,9 +540,11 @@ export const machineProperties: MachineProperties[] = [
   laser1,
   mock1,
   buffer1,
+  wagoPower1,
   aquapath1,
   testmachine,
   analogInputTestMachine,
+  ip20TestMachine,
 ];
 
 export const getMachineProperties = (

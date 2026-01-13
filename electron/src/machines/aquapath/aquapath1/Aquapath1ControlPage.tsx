@@ -83,6 +83,7 @@ export function Aquapath1ControlPage() {
                   value={frontTargetTemperature}
                   max={80}
                   unit="C"
+                  step={0.1}
                   renderValue={(value) => value.toFixed(1)}
                   onChange={(val) => {
                     setFrontTemperature(val);
@@ -173,6 +174,7 @@ export function Aquapath1ControlPage() {
                   value={backTargetTemperature}
                   max={80}
                   unit="C"
+                  step={0.1}
                   renderValue={(value) => value.toFixed(1)}
                   onChange={(val) => {
                     setBackTemperature(val);

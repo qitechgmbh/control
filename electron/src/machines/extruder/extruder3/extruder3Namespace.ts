@@ -223,64 +223,35 @@ export type Extruder3NamespaceStore = {
   totalEnergyKWh: TimeSeries;
 };
 
-// Constants for time durations
-const TWENTY_MILLISECOND = 20;
-const ONE_SECOND = 1000;
-const FIVE_SECOND = 5 * ONE_SECOND;
-const ONE_HOUR = 60 * 60 * ONE_SECOND;
-
-const { initialTimeSeries: pressure, insert: addPressure } = createTimeSeries(
-  TWENTY_MILLISECOND,
-  ONE_SECOND,
-  FIVE_SECOND,
-  ONE_HOUR,
-);
-
+const { initialTimeSeries: pressure, insert: addPressure } = createTimeSeries();
 const { initialTimeSeries: backTemperature, insert: addBackTemperature } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
-
+  createTimeSeries();
 const { initialTimeSeries: frontTemperature, insert: addFrontTemperature } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
-
+  createTimeSeries();
 const { initialTimeSeries: middleTemperature, insert: addMiddleTemperature } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
-
+  createTimeSeries();
 const { initialTimeSeries: nozzleTemperature, insert: addNozzleTemperature } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
-
+  createTimeSeries();
 const { initialTimeSeries: nozzlePower, insert: addNozzlePower } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
-
+  createTimeSeries();
 const { initialTimeSeries: frontPower, insert: addFrontPower } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
-
+  createTimeSeries();
 const { initialTimeSeries: middlePower, insert: addMiddlePower } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
-
-const { initialTimeSeries: backPower, insert: addBackPower } = createTimeSeries(
-  TWENTY_MILLISECOND,
-  ONE_SECOND,
-  FIVE_SECOND,
-  ONE_HOUR,
-);
-
+  createTimeSeries();
+const { initialTimeSeries: backPower, insert: addBackPower } =
+  createTimeSeries();
 const { initialTimeSeries: combinedPower, insert: addCombinedPower } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
-
+  createTimeSeries();
 const { initialTimeSeries: totalEnergyKWh, insert: addTotalEnergyKWh } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
-
+  createTimeSeries();
 const { initialTimeSeries: motorCurrent, insert: addMotorCurrent } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
-
+  createTimeSeries();
 const { initialTimeSeries: motorFrequency, insert: addMotorFrequency } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
-
+  createTimeSeries();
 const { initialTimeSeries: motorScrewRpm, insert: addMotorScrewRpm } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
-
+  createTimeSeries();
 const { initialTimeSeries: motorPower, insert: addMotorPower } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+  createTimeSeries();
 
 export function extruder3MessageHandler(
   store: StoreApi<Extruder3NamespaceStore>,

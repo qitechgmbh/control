@@ -28,10 +28,9 @@ export function getUnitIcon(unit: Unit): IconName {
     case "Hz":
       return "lu:AudioWaveform";
     case "W":
-      return "lu:Zap";
     case "V":
-      return "lu:Zap";
     case "A":
+    case "mA":
       return "lu:Zap";
     case "kWh":
       return "lu:BatteryFull";
@@ -82,6 +81,8 @@ export function renderUnitSymbol(unit: Unit | undefined): string {
       return "W";
     case "V":
       return "V";
+    case "mA":
+      return "mA";
     case "A":
       return "A";
     case "kWh":
@@ -105,11 +106,11 @@ export function renderUnitSymbol(unit: Unit | undefined): string {
   }
 }
 
+// this function will add prefix/suffix to the valueString but without unit symbol.
 // example
-// value: 10.0
-// -> valueString: "10" (custom input)
-// this function will add prefix/suffix to the valueString but without unit symbol
-// -> "10°"
+//   const f = 3.1415;
+//   renderUnitSyntax(f.toFixed(2), "deg")
+// result: "3.14°"
 export function renderUnitSyntax(
   valueString: string | undefined,
   unit: Unit | undefined,
@@ -155,6 +156,8 @@ export function renderUnitSymbolLong(unit: Unit): string {
       return "watts";
     case "V":
       return "volts";
+    case "mA":
+      return "milliamperes";
     case "A":
       return "amperes";
     case "kWh":
@@ -192,6 +195,7 @@ export const units = [
   "Hz",
   "W",
   "V",
+  "mA",
   "A",
   "kWh",
   "l/min",

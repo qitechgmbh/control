@@ -12,14 +12,14 @@ import { useLaser1 } from "./useLaser1";
 export function Laser1GraphsPage() {
   const { diameter, x_diameter, y_diameter, roundness, state } = useLaser1();
 
-  const syncHook = useGraphSync("diameter-group");
+  const syncHook = useGraphSync("diameter-roundness-group");
   const targetDiameter = state?.laser_state?.target_diameter ?? 0;
   const lowerTolerance = state?.laser_state?.lower_tolerance ?? 0;
   const higherTolerance = state?.laser_state?.higher_tolerance ?? 0;
 
   const isTwoAxis = !!x_diameter?.current || !!y_diameter?.current;
 
-  // Transform roundness from ratio (0-1) to percentage (0-100)
+  // Convert roundness from ratio (0-1) to percentage (0-100)
   const roundnessPercent = React.useMemo(() => {
     if (!roundness) return null;
 
@@ -45,120 +45,110 @@ export function Laser1GraphsPage() {
     };
   }, [roundness]);
 
-  const diameterColor = "#3b82f6";
-  const xDiameterColor = "#ef4444";
-  const yDiameterColor = "#22c55e";
-  const roundnessColor = "#eab308";
+  const diameterColor = "#3b82f6"; // blue
+  const xDiameterColor = "#ef4444"; // red
+  const yDiameterColor = "#22c55e"; // green
+  const roundnessColor = "#eab308"; // yellow
 
-  const config: GraphConfig = {
-    title: "Diameter",
-    defaultTimeWindow: 30 * 60 * 1000, // 30 minutes
-    exportFilename: "diameter_data",
+  // config for all graphs
+  const baseGraphConfig: GraphConfig = {
+    title: "",
+    defaultTimeWindow: 30 * 60 * 1000, // 30 minutes Standard
     colors: {
-      primary: diameterColor,
       grid: "#e2e8f0",
       axis: "#64748b",
       background: "#ffffff",
     },
   };
-  if (!isTwoAxis) {
-    return (
-      <Page className="pb-27">
-        <div className="flex flex-col gap-4">
+
+  // Diameter-Graph (Diameter, X-Diameter, Y-Diameter)
+  const diameterGraphData = [
+    {
+      newData: diameter,
+      color: diameterColor,
+      title: "Diameter",
+      lines: [
+        // Tolerance for diameter
+        {
+          type: "threshold" as const,
+          value: targetDiameter + higherTolerance,
+          label: "Upper Tolerance",
+          color: diameterColor,
+          dash: [5, 5],
+        },
+        {
+          type: "threshold" as const,
+          value: targetDiameter - lowerTolerance,
+          label: "Lower Tolerance",
+          color: diameterColor,
+          dash: [5, 5],
+        },
+        {
+          type: "target" as const,
+          value: targetDiameter,
+          label: "Target",
+          color: diameterColor,
+        },
+      ],
+    },
+
+    ...(isTwoAxis && x_diameter
+      ? [{ newData: x_diameter, color: xDiameterColor, title: "X-Diameter" }]
+      : []),
+    ...(isTwoAxis && y_diameter
+      ? [{ newData: y_diameter, color: yDiameterColor, title: "Y-Diameter" }]
+      : []),
+  ];
+
+  // Roundness-Graph
+  const roundnessGraphData = {
+    newData: roundnessPercent,
+    color: roundnessColor,
+    title: "Roundness (%)",
+  };
+
+  return (
+    <Page className="pb-27">
+      <div className="flex flex-col gap-4">
+        {/* Graph 1: Diameter */}
+        <AutoSyncedBigGraph
+          syncHook={syncHook}
+          newData={diameterGraphData}
+          unit="mm"
+          renderValue={(value) => value.toFixed(3)}
+          config={{
+            ...baseGraphConfig,
+            title: "Diameter (mm)",
+            exportFilename: "diameter_data",
+            colors: {
+              ...baseGraphConfig.colors,
+              primary: diameterColor,
+            },
+          }}
+          graphId="diameter-graph"
+        />
+
+        {/* Graph 2: Roundness */}
+        {isTwoAxis && roundnessPercent && (
           <AutoSyncedBigGraph
             syncHook={syncHook}
-            newData={{
-              newData: diameter,
-              color: diameterColor,
-              lines: [
-                {
-                  type: "threshold",
-                  value: targetDiameter + higherTolerance,
-                  label: "Upper Threshold",
-                  color: diameterColor,
-                  dash: [5, 5],
-                },
-                {
-                  type: "threshold",
-                  value: targetDiameter - lowerTolerance,
-                  label: "Lower Threshold",
-                  color: diameterColor,
-                  dash: [5, 5],
-                },
-                {
-                  type: "target",
-                  value: targetDiameter,
-                  label: "Target",
-                  color: diameterColor,
-                },
-              ],
-            }}
-            unit="mm"
-            renderValue={(value) => value.toFixed(3)}
-            config={config}
-            graphId="diameter-graph"
-          />
-        </div>
-        <SyncedFloatingControlPanel controlProps={syncHook.controlProps} />
-      </Page>
-    );
-  } else {
-    return (
-      <Page className="pb-27">
-        <div className="flex flex-col gap-4">
-          <AutoSyncedBigGraph
-            syncHook={syncHook}
-            newData={[
-              {
-                newData: diameter,
-                color: diameterColor,
-                title: "Diameter",
-                lines: [
-                  {
-                    type: "threshold",
-                    value: targetDiameter + higherTolerance,
-                    label: "Upper Threshold",
-                    color: diameterColor,
-                    dash: [5, 5],
-                  },
-                  {
-                    type: "threshold",
-                    value: targetDiameter - lowerTolerance,
-                    label: "Lower Threshold",
-                    color: diameterColor,
-                    dash: [5, 5],
-                  },
-                  {
-                    type: "target",
-                    value: targetDiameter,
-                    label: "Target",
-                    color: diameterColor,
-                  },
-                ],
-              },
-              {
-                newData: x_diameter,
-                color: xDiameterColor,
-                title: "X-Diameter",
-              },
-              {
-                newData: y_diameter,
-                color: yDiameterColor,
-                title: "Y-Diameter",
-              },
-              {
-                newData: roundnessPercent,
-                color: roundnessColor,
-                title: "Roundness (%)",
-              },
-            ]}
+            newData={roundnessGraphData}
+            unit="%"
             renderValue={(value) => value.toFixed(2)}
-            config={config}
-            graphId="diameter-graph"
+            config={{
+              ...baseGraphConfig,
+              title: "Roundness (%)",
+              exportFilename: "roundness_data",
+              colors: {
+                ...baseGraphConfig.colors,
+                primary: roundnessColor,
+              },
+            }}
+            graphId="roundness-graph"
           />
-        </div>
-        <SyncedFloatingControlPanel controlProps={syncHook.controlProps} />
-      </Page>
-    );
-  }
+        )}
+      </div>
+      <SyncedFloatingControlPanel controlProps={syncHook.controlProps} />
+    </Page>
+  );
 }

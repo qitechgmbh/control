@@ -1,6 +1,6 @@
-use anyhow::Error;
+use anyhow::{Error, Result};
 use control_core::socketio::event::GenericEvent;
-use control_core::socketio::namespace::Namespace;
+use control_core::socketio::namespace::{CacheableEvents, Namespace, NamespaceCacheingLogic};
 use ethercat_hal::devices::{
     EthercatDevice, SubDeviceIdentityTuple, downcast_device, subdevice_identity_to_tuple,
 };
@@ -11,7 +11,7 @@ use machine_identification::{
     DeviceIdentificationIdentified, MachineIdentificationUnique,
 };
 use serde::Serialize;
-use smol::channel::Sender;
+use smol::channel::{Receiver, Sender};
 use socketioxide::extract::SocketRef;
 use std::fmt::Debug;
 use std::{any::Any, sync::Arc, time::Instant};
@@ -21,12 +21,14 @@ pub mod aquapath1;
 pub mod buffer1;
 pub mod extruder1;
 pub mod extruder2;
+pub mod ip20_test_machine;
 pub mod laser;
 pub mod machine_identification;
 pub mod mock;
 pub mod registry;
 pub mod serial;
 pub mod test_machine;
+pub mod wago_power;
 pub mod winder2;
 
 pub const VENDOR_QITECH: u16 = 0x0001;
@@ -34,11 +36,13 @@ pub const MACHINE_WINDER_V1: u16 = 0x0002;
 pub const MACHINE_EXTRUDER_V1: u16 = 0x0004;
 pub const MACHINE_LASER_V1: u16 = 0x0006;
 pub const MACHINE_MOCK: u16 = 0x0007;
-pub const MACHINE_AQUAPATH_V1: u16 = 0x0009;
 #[cfg(not(feature = "mock-machine"))]
 pub const MACHINE_BUFFER_V1: u16 = 0x0008;
+pub const MACHINE_AQUAPATH_V1: u16 = 0x0009;
+pub const MACHINE_WAGO_POWER_V1: u16 = 0x000A;
 pub const MACHINE_EXTRUDER_V2: u16 = 0x0016;
 pub const TEST_MACHINE: u16 = 0x0033;
+pub const IP20_TEST_MACHINE: u16 = 0x0034;
 pub const ANALOG_INPUT_TEST_MACHINE: u16 = 0x0035;
 
 use serde_json::Value;
@@ -255,7 +259,7 @@ pub fn get_ethercat_device_by_index<'maindevice>(
         .clone())
 }
 
-pub trait MachineNewTrait {
+pub trait MachineNewTrait: Machine {
     fn new(params: &MachineNewParams<'_, '_, '_, '_, '_, '_, '_>) -> Result<Self, anyhow::Error>
     where
         Self: Sized;
@@ -291,7 +295,7 @@ pub trait MachineApi {
     fn api_event_namespace(&mut self) -> Option<Namespace>;
 }
 
-pub trait Machine: MachineAct + MachineNewTrait + MachineApi + Any + Debug + Send + Sync {
+pub trait Machine: MachineAct + MachineApi + Any + Debug + Send + Sync {
     fn get_machine_identification_unique(&self) -> MachineIdentificationUnique;
     fn get_main_sender(&self) -> Option<Sender<AsyncThreadMessage>>;
 }
@@ -403,4 +407,127 @@ where
     }
 
     Ok((device, subdevice))
+}
+
+#[derive(Debug)]
+pub struct MachineChannel {
+    api_receiver: Receiver<MachineMessage>,
+    api_sender: Sender<MachineMessage>,
+    machine_identification_unique: MachineIdentificationUnique,
+    main_sender: Option<Sender<AsyncThreadMessage>>,
+    namespace: Option<Namespace>,
+}
+
+impl MachineChannel {
+    pub fn new(machine_identification_unique: MachineIdentificationUnique) -> Self {
+        let (sender, receiver) = smol::channel::unbounded();
+
+        Self {
+            api_sender: sender,
+            api_receiver: receiver,
+            machine_identification_unique,
+            main_sender: None,
+            namespace: None,
+        }
+    }
+}
+
+impl<E> NamespaceCacheingLogic<E> for MachineChannel
+where
+    E: CacheableEvents<E>,
+{
+    fn emit(&mut self, events: E) {
+        let event = Arc::new(events.event_value());
+        let cache_fn = events.event_cache_fn();
+
+        if let Some(ns) = &mut self.namespace {
+            ns.emit(event, &cache_fn);
+        }
+    }
+}
+
+pub trait MachineWithChannel: Send + Debug + Sync {
+    fn get_machine_channel(&self) -> &MachineChannel;
+    fn get_machine_channel_mut(&mut self) -> &mut MachineChannel;
+
+    fn on_namespace(&mut self) {}
+
+    fn update(&mut self, now: std::time::Instant) -> Result<()>;
+    fn mutate(&mut self, value: Value) -> Result<()>;
+}
+
+impl<C> MachineApi for C
+where
+    C: MachineWithChannel,
+{
+    fn api_get_sender(&self) -> Sender<MachineMessage> {
+        self.get_machine_channel().api_sender.clone()
+    }
+
+    fn api_mutate(&mut self, value: Value) -> Result<()> {
+        let res = self.mutate(value);
+
+        if let Err(ref e) = res {
+            tracing::error!("Machine errored while mutating: {}, ", e);
+        }
+
+        res
+    }
+
+    fn api_event_namespace(&mut self) -> Option<Namespace> {
+        self.get_machine_channel().namespace.clone()
+    }
+}
+
+impl<C> MachineAct for C
+where
+    C: MachineWithChannel,
+{
+    fn act(&mut self, now: Instant) {
+        while let Ok(msg) = self.get_machine_channel_mut().api_receiver.try_recv() {
+            self.act_machine_message(msg);
+        }
+
+        if let Err(e) = self.update(now) {
+            tracing::error!("Machine errored while updating: {}, ", e);
+        }
+    }
+
+    fn act_machine_message(&mut self, msg: MachineMessage) {
+        let channel = self.get_machine_channel_mut();
+
+        match msg {
+            MachineMessage::SubscribeNamespace(namespace) => {
+                channel.namespace = Some(namespace);
+                self.on_namespace();
+            }
+            MachineMessage::UnsubscribeNamespace => {
+                channel.namespace = None;
+            }
+            MachineMessage::HttpApiJsonRequest(value) => {
+                let _ = self.api_mutate(value);
+            }
+            MachineMessage::ConnectToMachine(_machine_connection) => {
+                todo!();
+            }
+            MachineMessage::DisconnectMachine(_machine_connection) => {
+                todo!();
+            }
+        }
+    }
+}
+
+impl<C> Machine for C
+where
+    C: MachineWithChannel + 'static,
+{
+    fn get_machine_identification_unique(&self) -> MachineIdentificationUnique {
+        self.get_machine_channel()
+            .machine_identification_unique
+            .clone()
+    }
+
+    fn get_main_sender(&self) -> Option<Sender<AsyncThreadMessage>> {
+        self.get_machine_channel().main_sender.clone()
+    }
 }

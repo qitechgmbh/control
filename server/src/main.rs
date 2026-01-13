@@ -1,4 +1,7 @@
-use crate::metrics::collector::{RuntimeMetricsConfig, spawn_runtime_metrics_sampler};
+use crate::{
+    metrics::collector::{RuntimeMetricsConfig, spawn_runtime_metrics_sampler},
+    socketio::main_namespace::machines_event::MachineObj,
+};
 use machines::{
     AsyncThreadMessage, MachineConnection, MachineNewHardware, MachineNewHardwareSerial,
     MachineNewParams, SerialDevice, SerialDeviceIdentification, SerialDeviceNew,
@@ -26,7 +29,6 @@ use smol::{
     future,
     lock::RwLock,
 };
-use socketio::main_namespace::machines_event::MachineObj;
 use socketioxide::extract::SocketRef;
 use std::{collections::HashMap, sync::Arc, time::Duration};
 
@@ -38,6 +40,7 @@ use crate::{
         ethercat_discovery_info::send_ethercat_found, init::find_ethercat_interface,
         setup::setup_loop,
     },
+    modbus_tcp::start_modbus_tcp_discovery,
     socketio::queue::socketio_queue_worker,
 };
 
@@ -49,6 +52,7 @@ pub mod ethercat;
 pub mod logging;
 pub mod r#loop;
 pub mod metrics;
+pub mod modbus_tcp;
 pub mod panic;
 pub mod performance_metrics;
 pub mod rest;
@@ -80,7 +84,7 @@ pub async fn add_serial_device(
         .clone();
 
     let new_machine = machine_registry.new_machine(&MachineNewParams {
-        device_group: &vec![device_identification_identified.clone()],
+        device_group: &vec![device_identification_identified],
         hardware: &MachineNewHardware::Serial(&hardware),
         socket_queue_tx,
         namespace: None,
@@ -349,6 +353,8 @@ fn main() {
 
     #[cfg(not(feature = "mock-machine"))]
     smol::spawn(start_interface_discovery(app_state.clone(), sender)).detach();
+
+    smol::spawn(start_modbus_tcp_discovery(app_state.clone())).detach();
 
     smol::block_on(async {
         send_empty_machines_event(app_state.clone()).await;

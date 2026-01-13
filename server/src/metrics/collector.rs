@@ -22,6 +22,7 @@ pub struct RuntimeMetricsConfig {
 pub fn spawn_runtime_metrics_sampler(cfg: RuntimeMetricsConfig) {
     smol::spawn(async move {
         let mut last_net: Option<(Instant, NetDevCounters)> = None;
+        let mut last_proc: Option<ProcessMetrics> = None;
 
         loop {
             let now_ms = SystemTime::now()
@@ -31,7 +32,25 @@ pub fn spawn_runtime_metrics_sampler(cfg: RuntimeMetricsConfig) {
 
             // 1) Process metrics
             let proc = ProcessMetrics::collect();
-            let mut sample = RuntimeSample::from_process_metrics(proc, now_ms);
+
+            // naively expects values for every second
+            let faults_since_last = match last_proc {
+                Some(last) => {
+                    if proc.minor_faults > last.minor_faults {
+                        proc.minor_faults - last.minor_faults
+                    } else {
+                        0
+                    }
+                }
+                None => 0,
+            };
+
+            let mut sample = RuntimeSample::from_process_metrics(
+                last_proc.unwrap_or(ProcessMetrics::default()),
+                faults_since_last,
+                now_ms,
+            );
+            last_proc = Some(proc);
 
             // 2) Jitter summary (SIGNED, nanoseconds)
             let jitter_samples = snapshot_machines_jitter();

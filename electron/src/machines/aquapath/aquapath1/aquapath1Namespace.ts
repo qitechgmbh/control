@@ -132,55 +132,28 @@ export type Aquapath1NamespaceStore = {
   back_total_energy: TimeSeries;
 };
 
-// Constants for time durations
-const TWENTY_MILLISECOND = 20;
-const ONE_SECOND = 1000;
-const FIVE_SECOND = 5 * ONE_SECOND;
-const ONE_HOUR = 60 * 60 * ONE_SECOND;
-
 const { initialTimeSeries: front_temperature, insert: addTemperature1 } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
-
+  createTimeSeries();
 const { initialTimeSeries: back_temperature, insert: addTemperature2 } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
-
+  createTimeSeries();
 const { initialTimeSeries: front_temp_reservoir, insert: addTempReserv1 } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
-
+  createTimeSeries();
 const { initialTimeSeries: back_temp_reservoir, insert: addTempReserv2 } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
-
-const { initialTimeSeries: front_flow, insert: addFlow1 } = createTimeSeries(
-  TWENTY_MILLISECOND,
-  ONE_SECOND,
-  FIVE_SECOND,
-  ONE_HOUR,
-);
-
-const { initialTimeSeries: back_flow, insert: addFlow2 } = createTimeSeries(
-  TWENTY_MILLISECOND,
-  ONE_SECOND,
-  FIVE_SECOND,
-  ONE_HOUR,
-);
-
+  createTimeSeries();
+const { initialTimeSeries: front_flow, insert: addFlow1 } = createTimeSeries();
+const { initialTimeSeries: back_flow, insert: addFlow2 } = createTimeSeries();
 const { initialTimeSeries: front_revolutions, insert: addFan1 } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
-
+  createTimeSeries();
 const { initialTimeSeries: back_revolutions, insert: addFan2 } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
-
+  createTimeSeries();
 const { initialTimeSeries: front_power, insert: addFrontPower } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
-
+  createTimeSeries();
 const { initialTimeSeries: back_power, insert: addBackPower } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
-
+  createTimeSeries();
 const { initialTimeSeries: front_total_energy, insert: addFrontEnergy } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
-
+  createTimeSeries();
 const { initialTimeSeries: back_total_energy, insert: addBackEnergy } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+  createTimeSeries();
 
 /**
  * Factory function to create a new Aquapath namespace store

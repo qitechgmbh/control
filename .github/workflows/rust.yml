@@ -3,9 +3,10 @@ name: Rust
 on:
   push:
     branches:
-      - "**"
+      - master
   pull_request:
-    branches: "*"
+    branches:
+      - master
 
 env:
   CARGO_TERM_COLOR: always
@@ -16,14 +17,24 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Install libudev development package
+      - &udev-install
+        name: Install libudev development package
         run: sudo apt-get update && sudo apt-get install -y libudev-dev
-      - uses: actions/checkout@v4
-      - name: Set Rust version
-        run: rustup override set ${{ env.RUST_VERSION }}
-      - name: Install Formatter
-        run: rustup component add rustfmt
-      - name: Cache Rust dependencies
+
+      - &checkout
+        uses: actions/checkout@v4
+
+      - &setup-rust
+        name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+          profile: minimal
+          override: true
+          components: rustfmt
+
+      - &cargo-cache
+        name: Cache Rust dependencies
         uses: actions/cache@v3
         with:
           path: |
@@ -41,11 +52,36 @@ jobs:
           RUSTFLAGS: "-D warnings"
         run: cargo build --verbose
 
+  format:
+    runs-on: ubuntu-latest
+
+    steps:
+      - *checkout
+      - *setup-rust
+
       - name: Format
         run: cargo fmt --check --verbose
+
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - *udev-install
+      - *checkout
+      - *setup-rust
+      - *cargo-cache
 
       - name: Run tests
         run: cargo test --verbose
 
+  mock:
+    runs-on: ubuntu-latest
+
+    steps:
+      - *udev-install
+      - *checkout
+      - *setup-rust
+      - *cargo-cache
+
       - name: Mock Machine
-        run: cargo build --features development-build --features mock-machine
+        run: cargo build --features "development-build,mock-machine"
