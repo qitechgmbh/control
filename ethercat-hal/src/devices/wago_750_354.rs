@@ -264,6 +264,8 @@ impl Wago750_354 {
             let _ = self.get_pdo_offsets(device, false).await;
         });
 
+        println!("{:?}\n\n{:?}", self.tx_offsets, self.rx_offsets);
+
         for module in self.slots {
             match module {
                 Some(m) => {
