@@ -267,7 +267,6 @@ impl Wago750_354 {
         for module in self.slots {
             match module {
                 Some(m) => {
-
                     // Map ModuleIdent's to Terminals
                     let dev: Arc<RwLock<dyn DynamicEthercatDevice>> = match (
                         m.vendor_id,
