@@ -1,28 +1,27 @@
 import React, { Fragment } from "react";
-import { PresetData, PresetSchema } from "@/lib/preset/preset";
 import { renderUnitSymbol, renderUnitSyntax, Unit } from "@/control/units";
 
 export const previewSeparator = undefined;
 
 type PreviewSeparator = typeof previewSeparator;
 
-type PresetPreviewEntry<T extends PresetSchema> = {
+type PresetPreviewEntry<T> = {
   name: string;
   unit?: Unit;
-  renderValue: (data: PresetData<T>) => string | undefined;
+  renderValue: (data: T) => string | undefined;
 };
 
-export type PresetPreviewEntries<T extends PresetSchema> = (
+export type PresetPreviewEntries<T> = (
   | PresetPreviewEntry<T>
   | PreviewSeparator
 )[];
 
-export type PresetPreviewTableProps<T extends PresetSchema> = {
-  data: PresetData<T>;
+export type PresetPreviewTableProps<T> = {
+  data?: T;
   entries: PresetPreviewEntries<T>;
 };
 
-export function PresetPreviewTable<T extends PresetSchema>({
+export function PresetPreviewTable<T>({
   data,
   entries,
 }: PresetPreviewTableProps<T>) {
@@ -39,7 +38,7 @@ export function PresetPreviewTable<T extends PresetSchema>({
           );
         }
 
-        const value = entry.renderValue(data);
+        const value = data !== undefined ? entry.renderValue(data) : undefined;
         return (
           <Fragment key={entry.name}>
             <div>{entry.name}</div>

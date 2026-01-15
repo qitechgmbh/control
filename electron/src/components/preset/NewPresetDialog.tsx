@@ -1,4 +1,3 @@
-import { PresetData, PresetSchema } from "@/lib/preset/preset";
 import {
   Dialog,
   DialogContent,
@@ -14,13 +13,13 @@ import { Separator } from "../ui/separator";
 import { PresetPreviewEntries, PresetPreviewTable } from "./PresetPreviewTable";
 import { Input } from "../ui/input";
 
-export type NewPresetDialogProps<T extends PresetSchema> = {
-  currentState?: PresetData<T>;
+export type NewPresetDialogProps<T> = {
+  currentState?: T;
   previewEntries: PresetPreviewEntries<T>;
   onSave: (name: string) => void;
 };
 
-export function NewPresetDialog<T extends PresetSchema>({
+export function NewPresetDialog<T>({
   currentState,
   onSave,
   previewEntries,

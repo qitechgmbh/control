@@ -1,4 +1,4 @@
-import { Preset, PresetSchema } from "@/lib/preset/preset";
+import { Preset } from "@/lib/preset/preset";
 import {
   Dialog,
   DialogContent,
@@ -13,14 +13,14 @@ import { Icon } from "../Icon";
 import { Separator } from "../ui/separator";
 import { PresetPreviewEntries, PresetPreviewTable } from "./PresetPreviewTable";
 
-export type PresetShowDialogProps<T extends PresetSchema> = {
+export type PresetShowDialogProps<T> = {
   preset: Preset<T>;
   previewEntries: PresetPreviewEntries<T>;
   onApply: (preset: Preset<T>) => void;
   hideDate?: boolean;
 };
 
-export function PresetShowDialog<T extends PresetSchema>({
+export function PresetShowDialog<T>({
   preset,
   onApply,
   previewEntries,
