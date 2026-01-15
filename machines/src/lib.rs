@@ -18,6 +18,7 @@ use std::fmt::Debug;
 use std::sync::Arc;
 use std::time::Instant;
 pub mod analog_input_test_machine;
+pub mod digital_input_test_machine;
 pub mod aquapath1;
 #[cfg(not(feature = "mock-machine"))]
 pub mod buffer1;
@@ -47,6 +48,7 @@ pub const TEST_MACHINE: u16 = 0x0033;
 pub const IP20_TEST_MACHINE: u16 = 0x0034;
 pub const ANALOG_INPUT_TEST_MACHINE: u16 = 0x0035;
 pub const WAGO_AI_TEST_MACHINE: u16 = 0x0036;
+pub const DIGITAL_INPUT_TEST_MACHINE: u16 = 0x0040;
 
 use serde_json::Value;
 use smol::lock::RwLock;

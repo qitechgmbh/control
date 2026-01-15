@@ -1,0 +1,71 @@
+use std::sync::Arc;
+
+use control_core::socketio::{
+    event::{Event,GenericEvent},
+    namespace::{
+        CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_first_and_last_event,
+    },
+};
+use serde::{Deserialize, Serialize};
+
+use crate::{MachineApi, digital_input_test_machine::DigitalInputTestMachine};
+
+#[derive(Debug, Clone)]
+pub struct DigitalInputTestMachineNamespace {
+    pub namespace: Option<Namespace>,
+}
+
+#[derive(Serialize, Debug, Clone)]
+pub struct StateEvent {
+    pub led_on: [bool; 4],
+}
+impl StateEvent {
+    pub fn build(&self) -> Event<Self> {
+        Event::new("StateEvent", self.clone())
+    }
+}
+pub enum DigitalInputTestMachineEvents {
+    State(Event<StateEvent>),
+}
+
+impl NamespaceCacheingLogic<DigitalInputTestMachineEvents> for DigitalInputTestMachineNamespace {
+    fn emit(&mut self, events: DigitalInputTestMachineEvents) {
+        let event = Arc::new(events.event_value());
+        let buffer_fn = events.event_cache_fn();
+        if let Some(ns) = &mut self.namespace {
+            ns.emit(event, &buffer_fn);
+        }
+    }
+}
+
+impl CacheableEvents<DigitalInputTestMachineEvents> for DigitalInputTestMachineEvents {
+    fn event_value(&self) -> GenericEvent {
+        match self {
+            DigitalInputTestMachineEvents::State(event) => event.clone().into(),
+        }
+    }
+
+    fn event_cache_fn(&self) -> CacheFn {
+        cache_first_and_last_event()
+    }
+}
+
+
+// #[derive(Deserialize)]
+// pub struct Mutation {
+//     measurement_rate_hz: i32,
+// }
+
+impl MachineApi for DigitalInputTestMachine {
+    fn api_get_sender(&self) -> smol::channel::Sender<crate::MachineMessage> {
+        self.api_sender.clone()
+    }
+
+    fn api_mutate(&mut self, value: serde_json::Value) -> Result<(), anyhow::Error> {
+        Ok(())
+    }
+
+    fn api_event_namespace(&mut self) -> Option<control_core::socketio::namespace::Namespace> {
+        self.namespace.namespace.clone()
+    }
+}

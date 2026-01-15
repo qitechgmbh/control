@@ -1,33 +1,19 @@
-use crate::test_machine::TestMachine;
-use crate::test_machine::api::TestMachineNamespace;
-use ethercat_hal::devices::wago_modules::wago_750_1506::{Wago750_1506, Wago750_1506OutputPort};
-use ethercat_hal::devices::{EthercatDevice, downcast_device};
-use ethercat_hal::devices::wago_750_354::{WAGO_750_354_IDENTITY_A, Wago750_354};
-use ethercat_hal::devices::wago_modules::wago_750_402::{self, WAGO_750_402_MODULE_IDENT, Wago750_402, Wago750_402InputPort};
-use ethercat_hal::io::digital_input::DigitalInput;
-use smol::block_on;
-use smol::lock::RwLock;
-use std::sync::Arc;
-use std::time::Instant;
-
-use crate::{
-    MachineNewHardware, MachineNewParams, MachineNewTrait, get_ethercat_device,
-    validate_no_role_dublicates, validate_same_machine_identification_unique,
-};
+use std::{sync::Arc, time::Instant};
 
 use anyhow::Error;
-use ethercat_hal::devices::el2004::{EL2004, EL2004_IDENTITY_A, EL2004Port};
-use ethercat_hal::io::digital_output::DigitalOutput;
+use ethercat_hal::{
+    devices::{EthercatDevice, downcast_device, wago_750_354::{WAGO_750_354_IDENTITY_A, Wago750_354}, wago_modules::wago_750_402::{self, WAGO_750_402_MODULE_IDENT, Wago750_402, Wago750_402InputPort}},
+    io::digital_input::DigitalInput,
+};
+use smol::{block_on, channel::unbounded, lock::RwLock};
 
-//Imports For Wago
-/*
-use ethercat_hal::devices::wago_750_354::{WAGO_750_354_IDENTITY_A, Wago750_354};
-use ethercat_hal::devices::{EthercatDevice, downcast_device};
-use smol::lock::RwLock;
-use std::sync::Arc;
-*/
+use crate::{
+    MachineNewHardware, MachineNewParams, MachineNewTrait,
+    digital_input_test_machine::{DigitalInputTestMachine, api::DigitalInputTestMachineNamespace},
+    get_ethercat_device, validate_no_role_dublicates, validate_same_machine_identification_unique,
+};
 
-impl MachineNewTrait for TestMachine {
+impl MachineNewTrait for DigitalInputTestMachine {
     fn new<'maindevice>(params: &MachineNewParams) -> Result<Self, Error> {
         // validate general stuff
         let device_identification = params
@@ -35,21 +21,21 @@ impl MachineNewTrait for TestMachine {
             .iter()
             .map(|device_identification| device_identification.clone())
             .collect::<Vec<_>>();
-        //validate_same_machine_identification_unique(&device_identification)?;
-        //validate_no_role_dublicates(&device_identification)?;
+        validate_same_machine_identification_unique(&device_identification)?;
+        validate_no_role_dublicates(&device_identification)?;
 
         let hardware = match &params.hardware {
             MachineNewHardware::Ethercat(x) => x,
             _ => {
                 return Err(anyhow::anyhow!(
-                    "[{}::MachineNewTrait/TestMachine::new] MachineNewHardware is not Ethercat",
+                    "[{}::EtherCATMachine/TestMachine::new] MachineNewHardware is not Ethercat",
                     module_path!()
                 ));
             }
         };
+
         block_on(async {
-            
-            // Example usage of a Wago Coupler and a 750-1506 in the first slot, where the Output Port 1,2,3,4 is used
+            // Example usage of a Wago Coupler and a 750-402 in the first slot, where the Output Port 1,2,3,4 is used
             let _wago_750_354 = get_ethercat_device::<Wago750_354>(
                 hardware,
                 params,
@@ -76,27 +62,21 @@ impl MachineNewTrait for TestMachine {
             let di3 = DigitalInput::new(wago750_402.clone(),Wago750_402InputPort::DO3);
             let di4 = DigitalInput::new(wago750_402.clone(),Wago750_402InputPort::DO4);
             
-
-            let dev = coupler.slot_devices.get(1).unwrap().clone().unwrap();
-            let wago750_1506: Arc<RwLock<Wago750_1506>> =
-                downcast_device::<Wago750_1506>(dev).await?;
             drop(coupler);
 
-            let do1 = DigitalOutput::new(wago750_1506.clone(),Wago750_1506OutputPort::DO1);
 
             let (sender, receiver) = smol::channel::unbounded();
             let mut my_test = Self {
                 api_receiver: receiver,
                 api_sender: sender,
                 machine_identification_unique: params.get_machine_identification_unique(),
-                namespace: TestMachineNamespace {
+                namespace: DigitalInputTestMachineNamespace {
                     namespace: params.namespace.clone(),
                 },
                 last_state_emit: Instant::now(),
                 led_on: [false; 4],
                 main_sender: params.main_thread_channel.clone(),
-                dout: do1,
-                dins: [di1,di2,di3,di4],
+                digital_input: [di1,di2,di3,di4],
             };
             my_test.emit_state();
             Ok(my_test)
