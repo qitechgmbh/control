@@ -1,7 +1,7 @@
 use smol::block_on;
 
 use super::TestMachineStepper;
-use crate::{MachineAct, MachineMessage, test_machine_stepper::AxisState};
+use crate::{MachineAct, MachineMessage, test_machine_stepper::SpeedCtlState};
 use std::time::{Duration, Instant};
 
 impl MachineAct for TestMachineStepper {
@@ -15,50 +15,114 @@ impl MachineAct for TestMachineStepper {
             self.last_state_emit = now;
         }
 
-        let do_move = now.duration_since(self.last_move) > Duration::from_secs(1);
-
-        if do_move {
-            self.pos += 2000; // NEW target position
-            self.last_move = now;
-        }
-
         block_on(async {
             let mut stm = self.stepper.write().await;
 
-            match self.axis_state {
-                AxisState::Init => {
-                    // Always keep enable asserted
-                    stm.cmd_enable_pos(false);
+            // Desired setpoints (example)
+            let cmd_vel: i16 = 1000; // steps/s (sign = direction)
+            let cmd_acc: u16 = 500;  // steps/s^2 (must be > 0)
 
-                    // Start reference run (one pulse)
-                    stm.cmd_reference(true);
+            // Always write setpoints continuously (safe)
+            stm.set_speed_setpoint(cmd_vel, cmd_acc);
 
-                    self.axis_state = AxisState::Referencing;
+            // Reset ack if module reports reset
+            if stm.reset_active() && !self.reset_quit_pulsed {
+                stm.apply_reset_quit(true); // one-cycle pulse
+                self.reset_quit_pulsed = true;
+            } else {
+                stm.apply_reset_quit(false);
+                if !stm.reset_active() {
+                    self.reset_quit_pulsed = false;
+                }
+            }
+
+            // If error is active, go to error ack state
+            if stm.error_active() {
+                self.speed_state = SpeedCtlState::ErrorAck;
+            }
+
+            match self.speed_state {
+                SpeedCtlState::Init => {
+                    // Ensure clean edges
+                    self.start_pulsed = false;
+                    self.error_quit_pulsed = false;
+
+                    // Request enable + speed mode (no start yet)
+                    stm.apply_speed_control_state(true, true, false);
+
+                    self.speed_state = SpeedCtlState::WaitReady;
                 }
 
-                AxisState::Referencing => {
-                    // Keep reference mode selected
-                    stm.cmd_reference(false);
+                SpeedCtlState::WaitReady => {
+                    stm.apply_speed_control_state(true, true, false);
 
-                    // Wait until reference is done
-                    let s2 = stm.txpdo.b[10]; // status byte S2
-                    let referenced = (s2 & (1 << 2)) != 0; // Referenced bit
-
-                    if referenced {
-                        self.axis_state = AxisState::Ready;
+                    // Need Ready + Stop_N_ACK before start edge is accepted
+                    if stm.ready() && stm.stop_n_ack() {
+                        self.speed_state = SpeedCtlState::SelectMode;
                     }
                 }
 
-                AxisState::Ready => {
-                    // Normal positioning logic
-                    stm.cmd_enable_pos(false);
+                SpeedCtlState::SelectMode => {
+                    // Keep requesting speed mode until ACK is set
+                    stm.apply_speed_control_state(true, true, false);
 
-                    if do_move {
-                        stm.set_positioning_setpoints(10000, 5000, self.pos);
-                        stm.cmd_enable_pos(true);
+                    if stm.speed_mode_ack() {
+                        self.speed_state = SpeedCtlState::StartSpeed;
+                    }
+                }
+
+                SpeedCtlState::StartSpeed => {
+                    // Pulse Start once (rising edge)
+                    let start_pulse = !self.start_pulsed;
+                    stm.apply_speed_control_state(true, true, start_pulse);
+
+                    if start_pulse {
+                        self.start_pulsed = true;
+                    } else if stm.start_ack() {
+                        // Once accepted, go running
+                        self.speed_state = SpeedCtlState::Running;
+                    }
+                }
+
+                SpeedCtlState::Running => {
+                    // Keep enabled and in speed mode, no start pulse
+                    stm.apply_speed_control_state(true, true, false);
+
+                    // If you want to update speed "on the fly", pulse Start again
+                    // when you change setpoints (same mechanism).
+                }
+
+                SpeedCtlState::ErrorAck => {
+                    // Keep enable request on; ACK error with a pulse on C2.7 (Error_Quit)
+                    stm.apply_speed_control_state(true, true, false);
+
+                    if !self.error_quit_pulsed {
+                        stm.apply_error_quit(true);
+                        self.error_quit_pulsed = true;
+                    } else {
+                        stm.apply_error_quit(false);
+                    }
+
+                    // Once error clears, restart sequence
+                    if !stm.error_active() {
+                        self.error_quit_pulsed = false;
+                        self.start_pulsed = false;
+                        self.speed_state = SpeedCtlState::WaitReady;
                     }
                 }
             }
+
+            // Debug prints
+            println!(
+                "S1={:08b} S2={:08b} S3={:08b} | C1_OUT={:08b} C2_OUT={:08b} C3_OUT={:08b} | v_act={}",
+                stm.txpdo.b[11],
+                stm.txpdo.b[10],
+                stm.txpdo.b[9],
+                stm.rxpdo.b[11],
+                stm.rxpdo.b[10],
+                stm.rxpdo.b[9],
+                stm.actual_velocity(),
+            );
         });
     }
 
@@ -73,12 +137,9 @@ impl MachineAct for TestMachineStepper {
                 use crate::MachineApi;
                 let _res = self.api_mutate(value);
             }
-            MachineMessage::ConnectToMachine(_machine_connection) => {
-                // Does not connect to any Machine; do nothing
-            }
-            MachineMessage::DisconnectMachine(_machine_connection) => {
-                // Does not connect to any Machine; do nothing
-            }
+            MachineMessage::ConnectToMachine(_machine_connection) => {}
+            MachineMessage::DisconnectMachine(_machine_connection) => {}
         }
     }
 }
+
