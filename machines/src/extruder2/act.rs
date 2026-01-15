@@ -2,7 +2,7 @@
 use std::time::Instant;
 
 #[cfg(not(feature = "mock-machine"))]
-use crate::{MachineAct, MachineMessage};
+use crate::{MachineAct, MachineMessage, MachineValues};
 
 #[cfg(not(feature = "mock-machine"))]
 use super::ExtruderV3;
@@ -65,11 +65,20 @@ impl MachineAct for ExtruderV3 {
 
                 let _res = self.api_mutate(value);
             }
-            MachineMessage::ConnectToMachine(_machine_connection) => (),
+            MachineMessage::ConnectToMachine(_machine_connection) => {}
             MachineMessage::DisconnectMachine(_machine_connection) =>
-            /*Doesnt connect to any Machine so do nothing*/
-            {
-                ()
+                /*Doesnt connect to any Machine so do nothing*/
+                {}
+            MachineMessage::RequestValues(sender) => {
+                sender
+                    .send_blocking(MachineValues {
+                        state: serde_json::to_value(self.build_state_event())
+                            .expect("Failed to serialize state"),
+                        live_values: serde_json::to_value(self.get_live_values())
+                            .expect("Failed to serialize live values"),
+                    })
+                    .expect("Failed to send values");
+                sender.close();
             }
         }
     }

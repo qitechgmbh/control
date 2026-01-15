@@ -40,12 +40,14 @@ impl TestMachine {
 }
 
 impl TestMachine {
-    pub fn emit_state(&mut self) {
-        let event = StateEvent {
+    pub fn get_state(&self) -> StateEvent {
+        StateEvent {
             led_on: self.led_on,
         }
-        .build();
+    }
 
+    pub fn emit_state(&mut self) {
+        let event = self.get_state().build();
         self.namespace.emit(TestMachineEvents::State(event));
     }
 

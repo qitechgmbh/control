@@ -100,6 +100,9 @@ pub struct ExtruderV2 {
     emitted_default_state: bool,
 }
 
+#[cfg(feature = "mock-machine")]
+pub use mock::ExtruderV2;
+
 #[cfg(not(feature = "mock-machine"))]
 impl Machine for ExtruderV2 {
     fn get_machine_identification_unique(&self) -> MachineIdentificationUnique {
@@ -129,7 +132,7 @@ impl ExtruderV2 {
 #[cfg(not(feature = "mock-machine"))]
 impl ExtruderV2 {
     /// Calculate combined power consumption in watts
-    fn calculate_combined_power(&mut self) -> f64 {
+    fn calculate_combined_power(&self) -> f64 {
         let motor_power = {
             let motor_status = &self.screw_speed_controller.inverter.motor_status;
             let voltage = motor_status.voltage.get::<volt>();
@@ -153,10 +156,11 @@ impl ExtruderV2 {
     }
 
     /// Update total energy consumption in kWh
-    fn update_total_energy(&mut self, current_power_watts: f64, now: Instant) {
+    fn update_total_energy(&mut self, now: Instant) {
+        let power_watts = self.calculate_combined_power();
         if let Some(last_time) = self.last_energy_calculation_time {
             let time_delta_hours = now.duration_since(last_time).as_secs_f64() / 3600.0;
-            let energy_delta_kwh = (current_power_watts / 1000.0) * time_delta_hours;
+            let energy_delta_kwh = (power_watts / 1000.0) * time_delta_hours;
             self.total_energy_kwh += energy_delta_kwh;
         }
         self.last_energy_calculation_time = Some(now);
