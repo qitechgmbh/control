@@ -19,7 +19,6 @@ pub struct Wago750_671 {
     pub txpdo: Wago750_671TxPdo,
     module: Option<Module>,
 }
-
 /*
 * Wago has two different kind of applications when it comes to
 * running the Stepper Controller.
@@ -32,6 +31,15 @@ pub struct Wago750_671 {
 #[derive(Clone, Default)]
 pub struct Wago750_671RxPdo {
     pub b: [u8; 12],
+    const OFF_C0: usize = 0,
+    const OFF_D0: usize = 2,
+    const OFF_D1: usize = 3,
+    const OFF_D2: usize = 4,
+    const OFF_D3: usize = 5,
+    const OFF_C3: usize = 9,
+    const OFF_C2: usize = 10,
+    const OFF_C1: usize = 11,
+
 }
 
 #[derive(Clone, Default)]
@@ -66,14 +74,6 @@ impl EthercatDynamicPDO for Wago750_671 {
 }
 
 // Process image byte offsets
-const OFF_C0: usize = 0;
-const OFF_D0: usize = 2;
-const OFF_D1: usize = 3;
-const OFF_D2: usize = 4;
-const OFF_D3: usize = 5;
-const OFF_C3: usize = 9;
-const OFF_C2: usize = 10;
-const OFF_C1: usize = 11;
 
 const OFF_S0: usize = 0;
 const OFF_S3: usize = 9;
@@ -108,9 +108,11 @@ const S2_ERROR: u8 = 1 << 7;
 const S3_RESET: u8 = 1 << 7;
 
 impl Wago750_671 {
+    // ----------- Velocity Control / Speed Control API -----------
+
     /// Must be called (or left default) to ensure mailbox is OFF (C0.5 = 0).
     /// If you ever enabled mailbox elsewhere, call this again.
-    pub const fn set_mailbox_enabled(&mut self, enabled: bool) {
+    pub fn set_mailbox_enabled(&mut self, enabled: bool) {
         if enabled {
             self.rxpdo.b[OFF_C0] |= C0_MBX;
         } else {
@@ -119,9 +121,10 @@ impl Wago750_671 {
     }
 
     /// Set speed setpoint and acceleration (Velocity Control process image).
+    ///
     /// vel: i16 (sign determines direction)
     /// acc: u16 (must be > 0, acc==0 will trigger error)
-    pub const fn set_speed_setpoint(&mut self, vel: i16, acc: u16) {
+    pub fn set_speed_setpoint(&mut self, vel: i16, acc: u16) {
         let v = vel.to_le_bytes();
         self.rxpdo.b[OFF_D0] = v[0]; // Velocity L
         self.rxpdo.b[OFF_D1] = v[1]; // Velocity H
@@ -137,7 +140,7 @@ impl Wago750_671 {
     /// - keep enable=true continuously after DI1 is high
     /// - keep speed_mode=true
     /// - pulse start_pulse=true for ONE cycle to accept setpoints / (re)start output
-    pub const fn apply_speed_control_state(&mut self, enable: bool, speed_mode: bool, start_pulse: bool) {
+    pub fn apply_speed_control_state(&mut self, enable: bool, speed_mode: bool, start_pulse: bool) {
         // Always keep mailbox disabled in cyclic operation for this mode
         self.set_mailbox_enabled(false);
 
@@ -157,7 +160,7 @@ impl Wago750_671 {
     }
 
     /// Error acknowledgement is edge-triggered (0->1). Pulse for one cycle.
-    pub const fn apply_error_quit(&mut self, pulse: bool) {
+    pub fn apply_error_quit(&mut self, pulse: bool) {
         if pulse {
             self.rxpdo.b[OFF_C2] |= C2_ERROR_QUIT;
         } else {
@@ -167,7 +170,7 @@ impl Wago750_671 {
 
     /// Reset acknowledgement (Reset_Quit) to clear S3.Reset after warm start / power-on reset.
     /// Pulse for one cycle when S3.Reset is set.
-    pub const fn apply_reset_quit(&mut self, pulse: bool) {
+    pub fn apply_reset_quit(&mut self, pulse: bool) {
         if pulse {
             self.rxpdo.b[OFF_C3] |= C3_RESET_QUIT;
         } else {
@@ -175,44 +178,45 @@ impl Wago750_671 {
         }
     }
 
-    // Status helper functions
-    pub const fn s1(&self) -> u8 {
+    // ----------- Status helpers -----------
+
+    pub fn s1(&self) -> u8 {
         self.txpdo.b[OFF_S1]
     }
-    pub const fn s2(&self) -> u8 {
+    pub fn s2(&self) -> u8 {
         self.txpdo.b[OFF_S2]
     }
-    pub const fn s3(&self) -> u8 {
+    pub fn s3(&self) -> u8 {
         self.txpdo.b[OFF_S3]
     }
 
-    pub const fn ready(&self) -> bool {
+    pub fn ready(&self) -> bool {
         (self.s1() & S1_READY) != 0
     }
-    pub const fn stop_n_ack(&self) -> bool {
+    pub fn stop_n_ack(&self) -> bool {
         (self.s1() & S1_STOP_N_ACK) != 0
     }
-    pub const fn start_ack(&self) -> bool {
+    pub fn start_ack(&self) -> bool {
         (self.s1() & S1_START_ACK) != 0
     }
-    pub const fn speed_mode_ack(&self) -> bool {
+    pub fn speed_mode_ack(&self) -> bool {
         (self.s1() & S1_M_SPEED_CONTROL_ACK) != 0
     }
-    pub const fn error_active(&self) -> bool {
+    pub fn error_active(&self) -> bool {
         (self.s2() & S2_ERROR) != 0
     }
-    pub const fn reset_active(&self) -> bool {
+    pub fn reset_active(&self) -> bool {
         (self.s3() & S3_RESET) != 0
     }
 
     /// Actual velocity feedback (slave -> master), i16 little-endian.
-    pub const fn actual_velocity(&self) -> i16 {
+    pub fn actual_velocity(&self) -> i16 {
         i16::from_le_bytes([self.txpdo.b[OFF_D0], self.txpdo.b[OFF_D1]])
     }
 
     /// Actual position feedback is 23-bit + sign in other modes; in speed control it is still
     /// updated in the background. Here we just expose the raw 24-bit little-endian value.
-    pub const fn actual_position_raw24(&self) -> i32 {
+    pub fn actual_position_raw24(&self) -> i32 {
         let b0 = self.txpdo.b[6] as u32;
         let b1 = self.txpdo.b[7] as u32;
         let b2 = self.txpdo.b[8] as u32;
@@ -233,7 +237,7 @@ impl EthercatDevice for Wago750_671 {
             self.txpdo.b[byte_i] = bits.load_le::<u8>();
         }
 
-        // Debug
+        // Debug (optional)
         // println!("750-671 IN: {:02X?}", self.txpdo.b);
 
         Ok(())
