@@ -1,5 +1,4 @@
-use crate::test_machine_stepper::{AxisState, TestMachineStepper};
-use crate::test_machine_stepper::api::TestMachineStepperNamespace;
+use crate::test_machine_stepper::{SpeedCtlState, TestMachineStepper, api::TestMachineStepperNamespace};
 use ethercat_hal::devices::{
     EthercatDevice, EthercatDeviceUsed, downcast_device,
     wago_750_354::{WAGO_750_354_IDENTITY_A, Wago750_354},
@@ -72,10 +71,10 @@ impl MachineNewTrait for TestMachineStepper {
                 main_sender: params.main_thread_channel.clone(),
                 stepper: wago_750_671,
                 last_move: Instant::now(),
-                pos: 0,
-                reset_done: false,
-                reset_seen: false,
-                axis_state: AxisState::Init,
+                speed_state: SpeedCtlState::Init,
+                start_pulsed: false,
+                error_quit_pulsed: false,
+                reset_quit_pulsed: false,
             };
             my_test.emit_state();
             Ok(my_test)

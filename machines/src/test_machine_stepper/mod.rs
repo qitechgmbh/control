@@ -22,18 +22,24 @@ pub struct TestMachineStepper {
     pub last_state_emit: Instant,
     pub main_sender: Option<Sender<AsyncThreadMessage>>,
     pub stepper: Arc<RwLock<Wago750_671>>,
+
     pub last_move: Instant,
-    pub pos: i32,
-    pub reset_done: bool,
-    pub reset_seen: bool,
-    axis_state: AxisState,
+    speed_state: SpeedCtlState,
+    start_pulsed: bool,
+    error_quit_pulsed: bool,
+   reset_quit_pulsed: bool,
+
 }
 
-#[derive(Debug)]
-enum AxisState {
+/// Minimal internal state to manage edges (Start / Error_Quit / Reset_Quit)
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum SpeedCtlState {
     Init,
-    Referencing,
-    Ready,
+    WaitReady,
+    SelectMode,
+    StartSpeed,
+    Running,
+    ErrorAck,
 }
 
 
@@ -55,8 +61,7 @@ impl TestMachineStepper {
 
 impl TestMachineStepper {
     pub fn emit_state(&mut self) {
-        let event = StateEvent { }
-        .build();
+        let event = StateEvent {}.build();
 
         self.namespace.emit(TestMachineStepperEvents::State(event));
     }
