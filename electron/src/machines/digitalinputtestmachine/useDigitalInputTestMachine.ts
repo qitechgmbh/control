@@ -89,7 +89,5 @@ export function useDigitalInputTestMachine() {
 
   return {
     state: stateOptimistic.value,
-    setLed,
-    setAllLeds,
   };
 }

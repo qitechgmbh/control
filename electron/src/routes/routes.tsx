@@ -477,6 +477,7 @@ export const rootTree = RootRoute.addChildren([
       ]),
 
       wagoAiTestMachineSerialRoute.addChildren([wagoAiTestMachineControlRoute]),
+
       digitalInputTestMachineSerialRoute.addChildren([
         digitalInputTestMachineControlRoute,
       ]),

@@ -4,11 +4,11 @@ import React from "react";
 import { ControlGrid } from "@/control/ControlGrid";
 import { SelectionGroup } from "@/control/SelectionGroup";
 import { Label } from "@/control/Label";
-import { useDigitalInputTestMachine as useDigitalInputTestMachine } from "./useDigitalInputTestMachine";
+import { useDigitalInputTestMachine } from "./useDigitalInputTestMachine";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 
 export function DigitalInputTestMachineControlPage() {
-  const { state, setLed, setAllLeds } = useDigitalInputTestMachine();
+  const { state } = useDigitalInputTestMachine();
 
   const safeState = state ?? { led_on: [false, false, false, false] };
 
