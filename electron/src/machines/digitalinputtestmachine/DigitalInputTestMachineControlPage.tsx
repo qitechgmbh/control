@@ -5,7 +5,7 @@ import { ControlGrid } from "@/control/ControlGrid";
 import { SelectionGroup } from "@/control/SelectionGroup";
 import { Label } from "@/control/Label";
 import { useDigitalInputTestMachine } from "./useDigitalInputTestMachine";
-import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { Badge } from "@/components/ui/badge";
 
 export function DigitalInputTestMachineControlPage() {
   const { state } = useDigitalInputTestMachine();
@@ -14,7 +14,16 @@ export function DigitalInputTestMachineControlPage() {
 
   return (
   <Page>
-    <LoadingSpinner></LoadingSpinner>
-    </Page>
+    <ControlCard title="Machine LEDs">
+              <div className="grid grid-cols-2 gap-6">
+                {safeState.led_on.map((led, index) => (
+                  <Label key={index} label={`LED ${index + 1}`} 
+                  children={<Badge variant={led? "outline":"destructive"}>{led? "On":"OFF"}</Badge>}
+                  >
+                  </Label>
+                ))}
+              </div>
+            </ControlCard>
+  </Page>
   );
 }

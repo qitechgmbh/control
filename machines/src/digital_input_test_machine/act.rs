@@ -1,4 +1,4 @@
-use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+use std::time::{Duration, Instant, SystemTime};
 
 use crate::{MachineAct, digital_input_test_machine::DigitalInputTestMachine};
 

@@ -43,50 +43,6 @@ export function useDigitalInputTestMachine() {
     if (state) stateOptimistic.setReal(state);
   }, [state, stateOptimistic]);
 
-  // Generic mutation sender
-  const { request: sendMutation } = useMachineMutate(
-    z.object({
-      action: z.string(),
-      value: z.any(),
-    }),
-  );
-
-  const updateStateOptimistically = (
-    producer: (current: StateEvent) => void,
-    serverRequest?: () => void,
-  ) => {
-    const currentState = stateOptimistic.value;
-    if (currentState)
-      stateOptimistic.setOptimistic(produce(currentState, producer));
-    serverRequest?.();
-  };
-
-  const setLed = (index: number, on: boolean) => {
-    updateStateOptimistically(
-      (current) => {
-        current.led_on[index] = on;
-      },
-      () =>
-        sendMutation({
-          machine_identification_unique: machineIdentification,
-          data: { action: "SetLed", value: { index, on } },
-        }),
-    );
-  };
-
-  const setAllLeds = (on: boolean) => {
-    updateStateOptimistically(
-      (current) => {
-        current.led_on = [on, on, on, on];
-      },
-      () =>
-        sendMutation({
-          machine_identification_unique: machineIdentification,
-          data: { action: "SetAllLeds", value: { on } },
-        }),
-    );
-  };
-
   return {
     state: stateOptimistic.value,
   };
