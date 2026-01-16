@@ -1,14 +1,20 @@
 use crate::app_state::SharedState;
-use control_core::ethernet::modbus_tcp_discovery::probe_modbus_tcp;
-use control_core::futures::FutureIteratorExt;
 use machines::{
-    MACHINE_WAGO_POWER_V1, Machine, MachineChannel, VENDOR_QITECH,
-    machine_identification::{MachineIdentification, MachineIdentificationUnique},
+    Machine, MachineChannel, machine_identification::MachineIdentificationUnique,
     wago_power::WagoPower,
 };
-use smol::Timer;
 use std::sync::Arc;
-use std::time::Duration;
+
+#[cfg(not(feature = "mock-machine"))]
+mod imports {
+    pub use control_core::ethernet::modbus_tcp_discovery::probe_modbus_tcp;
+    pub use control_core::futures::FutureIteratorExt;
+    pub use smol::Timer;
+    pub use std::time::Duration;
+}
+
+#[cfg(not(feature = "mock-machine"))]
+use imports::*;
 
 #[cfg(not(feature = "mock-machine"))]
 pub async fn start_modbus_tcp_discovery(shared_state: Arc<SharedState>) {
@@ -25,10 +31,7 @@ pub async fn start_modbus_tcp_discovery(shared_state: Arc<SharedState>) {
             .map(|probe| {
                 smol::spawn(async move {
                     let machine_identification_unique = MachineIdentificationUnique {
-                        machine_identification: MachineIdentification {
-                            vendor: VENDOR_QITECH,
-                            machine: MACHINE_WAGO_POWER_V1,
-                        },
+                        machine_identification: WagoPower::MACHINE_IDENTIFICATION,
                         serial: probe.serial,
                     };
 
@@ -51,10 +54,7 @@ pub async fn start_modbus_tcp_discovery(shared_state: Arc<SharedState>) {
 #[cfg(feature = "mock-machine")]
 pub async fn start_modbus_tcp_discovery(shared_state: Arc<SharedState>) {
     let machine_identification_unique = MachineIdentificationUnique {
-        machine_identification: MachineIdentification {
-            vendor: VENDOR_QITECH,
-            machine: MACHINE_WAGO_POWER_V1,
-        },
+        machine_identification: WagoPower::MACHINE_IDENTIFICATION,
         serial: 0xbeef,
     };
 

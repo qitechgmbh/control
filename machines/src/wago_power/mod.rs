@@ -1,39 +1,45 @@
-use crate::{MachineChannel, MachineWithChannel};
+use crate::{
+    MACHINE_WAGO_POWER_V1, MachineChannel, MachineWithChannel, VENDOR_QITECH,
+    machine_identification::MachineIdentification,
+};
 use anyhow::Result;
-use control_core::{
-    modbus::tcp::ModbusTcpDevice,
-    socketio::{
-        event::{BuildEvent, GenericEvent},
-        namespace::{
-            CacheFn, CacheableEvents, NamespaceCacheingLogic, cache_duration,
-            cache_first_and_last_event,
-        },
+use control_core::socketio::{
+    event::{BuildEvent, GenericEvent},
+    namespace::{
+        CacheFn, CacheableEvents, NamespaceCacheingLogic, cache_duration,
+        cache_first_and_last_event,
     },
 };
 use control_core_derive::BuildEvent;
 use serde::*;
-use smol::lock::Mutex;
-use std::{
-    net::SocketAddr,
-    time::{Duration, Instant},
-};
-use units::{
-    electric_current::milliampere,
-    electric_potential::{millivolt, volt},
-    *,
-};
+use std::time::{Duration, Instant};
+
+#[cfg(not(feature = "mock-machine"))]
+mod imports {
+    pub use control_core::modbus::tcp::ModbusTcpDevice;
+    pub use smol::lock::Mutex;
+    pub use std::net::SocketAddr;
+    pub use units::{
+        electric_current::milliampere,
+        electric_potential::{millivolt, volt},
+        *,
+    };
+}
+
+#[cfg(not(feature = "mock-machine"))]
+use imports::*;
 
 const MODBUS_DC_OFF: u16 = 0;
 const MODBUS_DC_ON: u16 = 1;
 const MODBUS_HICCUP_POWER: u16 = 1 << 8;
 
 #[derive(Serialize, Debug, Clone, BuildEvent)]
-pub struct LiveValuesEvent {
+pub struct LiveValues {
     voltage: f64,
     current: f64,
 }
 
-impl CacheableEvents<Self> for LiveValuesEvent {
+impl CacheableEvents<Self> for LiveValues {
     fn event_value(&self) -> GenericEvent {
         self.build().into()
     }
@@ -59,12 +65,12 @@ impl Mode {
 }
 
 #[derive(Serialize, Debug, Clone, BuildEvent)]
-pub struct StateEvent {
+pub struct State {
     mode: Mode,
     is_default_state: bool,
 }
 
-impl CacheableEvents<Self> for StateEvent {
+impl CacheableEvents<Self> for State {
     fn event_value(&self) -> GenericEvent {
         self.build().into()
     }
@@ -87,6 +93,7 @@ pub struct WagoPower {
     device: Mutex<ModbusTcpDevice>,
     last_emit: Instant,
     emitted_default_state: bool,
+    last_live_values: Option<LiveValues>,
 }
 
 impl WagoPower {
@@ -101,44 +108,12 @@ impl WagoPower {
             device: Mutex::new(ModbusTcpDevice::new(addr).await?),
             last_emit: Instant::now(),
             emitted_default_state: false,
-        })
-    }
-
-    #[cfg(feature = "mock-machine")]
-    fn get_live_values(&mut self) -> Result<LiveValuesEvent> {
-        match self.mode {
-            Mode::Off => Ok(LiveValuesEvent {
-                voltage: 0.0,
-                current: 0.0,
-            }),
-            Mode::On24V => Ok(LiveValuesEvent {
-                voltage: 24.0,
-                current: 5000.0,
-            }),
-        }
-    }
-
-    #[cfg(not(feature = "mock-machine"))]
-    fn get_live_values(&mut self) -> Result<LiveValuesEvent> {
-        let electric = smol::block_on(async {
-            let mut dev = self.device.lock().await;
-            dev.get_holding_registers(0x0500, 2).await
-        })?;
-
-        let voltage = ElectricPotential::new::<millivolt>(f64::from(electric[0]));
-        let current = ElectricCurrent::new::<milliampere>(f64::from(electric[1]));
-
-        Ok(LiveValuesEvent {
-            voltage: voltage.get::<volt>(),
-            current: current.get::<milliampere>(),
+            last_live_values: None,
         })
     }
 
     fn emit_state(&mut self) {
-        let event = StateEvent {
-            mode: self.mode.clone(),
-            is_default_state: !self.emitted_default_state,
-        };
+        let event = self.get_state();
         self.channel.emit(event);
     }
 
@@ -180,9 +155,49 @@ impl WagoPower {
         let mut dev = self.device.lock().await;
         dev.get_u16(0x000B).await
     }
+
+    #[cfg(feature = "mock-machine")]
+    fn read_live_values(&mut self) -> Result<LiveValues> {
+        match self.mode {
+            Mode::Off => Ok(LiveValues {
+                voltage: 0.0,
+                current: 0.0,
+            }),
+            Mode::On24V => Ok(LiveValues {
+                voltage: 24.0,
+                current: 5000.0,
+            }),
+        }
+    }
+
+    #[cfg(not(feature = "mock-machine"))]
+    fn read_live_values(&mut self) -> Result<LiveValues> {
+        let electric = smol::block_on(async {
+            let mut dev = self.device.lock().await;
+            dev.get_holding_registers(0x0500, 2).await
+        })?;
+
+        let voltage = ElectricPotential::new::<millivolt>(f64::from(electric[0]));
+        let current = ElectricCurrent::new::<milliampere>(f64::from(electric[1]));
+
+        Ok(LiveValues {
+            voltage: voltage.get::<volt>(),
+            current: current.get::<milliampere>(),
+        })
+    }
+}
+
+impl WagoPower {
+    pub const MACHINE_IDENTIFICATION: MachineIdentification = MachineIdentification {
+        vendor: VENDOR_QITECH,
+        machine: MACHINE_WAGO_POWER_V1,
+    };
 }
 
 impl MachineWithChannel for WagoPower {
+    type State = State;
+    type LiveValues = LiveValues;
+
     fn get_machine_channel(&self) -> &MachineChannel {
         &self.channel
     }
@@ -214,13 +229,24 @@ impl MachineWithChannel for WagoPower {
         }
 
         if now.duration_since(self.last_emit) > Duration::from_secs_f64(1.0 / 30.0) {
-            if let Ok(event) = self.get_live_values() {
-                self.channel.emit(event);
-            }
+            let live_values = self.read_live_values()?;
+            self.channel.emit(live_values.clone());
+            self.last_live_values = Some(live_values);
 
             self.last_emit = now;
         }
 
         Ok(())
+    }
+
+    fn get_state(&self) -> Self::State {
+        State {
+            mode: self.mode.clone(),
+            is_default_state: !self.emitted_default_state,
+        }
+    }
+
+    fn get_live_values(&self) -> Option<Self::LiveValues> {
+        self.last_live_values.clone()
     }
 }

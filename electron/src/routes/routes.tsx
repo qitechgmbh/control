@@ -4,7 +4,6 @@ import React from "react";
 import { z } from "zod";
 
 import { ChooseVersionPage } from "@/setup/ChooseVersionPage";
-import { fallback, zodValidator } from "@tanstack/zod-adapter";
 import { githubSourceSchema } from "@/setup/GithubSourceDialog";
 import { SidebarLayout } from "@/components/SidebarLayout";
 import { SetupPage } from "@/setup/SetupPage";
@@ -388,9 +387,9 @@ export const metricsRoute = createRoute({
 
 export const versionSearchSchema = z
   .object({
-    branch: fallback(z.string().optional(), undefined),
-    commit: fallback(z.string().optional(), undefined),
-    tag: fallback(z.string().optional(), undefined),
+    branch: z.string().optional(),
+    commit: z.string().optional(),
+    tag: z.string().optional(),
   })
   .merge(githubSourceSchema)
   .refine(
@@ -412,14 +411,14 @@ export const updateChangelogRoute = createRoute({
   getParentRoute: () => updateRoute,
   path: "changelog",
   component: () => <ChangelogPage />,
-  validateSearch: zodValidator(versionSearchSchema),
+  validateSearch: versionSearchSchema,
 });
 
 export const updateExecuteRoute = createRoute({
   getParentRoute: () => updateRoute,
   path: "execute",
   component: () => <UpdateExecutePage />,
-  validateSearch: zodValidator(versionSearchSchema),
+  validateSearch: versionSearchSchema,
 });
 
 export const rootTree = RootRoute.addChildren([

@@ -1,5 +1,5 @@
 use super::TestMachine;
-use crate::{MachineAct, MachineMessage};
+use crate::{MachineAct, MachineMessage, MachineValues};
 use std::time::{Duration, Instant};
 
 impl MachineAct for TestMachine {
@@ -30,6 +30,16 @@ impl MachineAct for TestMachine {
             }
             MachineMessage::DisconnectMachine(_machine_connection) => {
                 // Does not connect to any Machine; do nothing
+            }
+            MachineMessage::RequestValues(sender) => {
+                sender
+                    .send_blocking(MachineValues {
+                        state: serde_json::to_value(self.get_state())
+                            .expect("Failed to serialize state"),
+                        live_values: serde_json::Value::Null,
+                    })
+                    .expect("Failed to send values");
+                sender.close();
             }
         }
     }

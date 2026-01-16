@@ -51,8 +51,8 @@ impl ExtruderV2 {
         }
     }
 
-    pub fn emit_live_values(&mut self) {
-        let live_values = LiveValuesEvent {
+    pub fn get_live_values(&mut self) -> LiveValuesEvent {
+        LiveValuesEvent {
             motor_status: self.motor_status.clone(),
             pressure: self.pressure,
             nozzle_temperature: self.nozzle_temperature,
@@ -65,9 +65,11 @@ impl ExtruderV2 {
             middle_power: self.middle_power,
             combined_power: self.combined_power,
             total_energy_kwh: self.total_energy_kwh,
-        };
+        }
+    }
 
-        let event = live_values.build();
+    pub fn emit_live_values(&mut self) {
+        let event = self.get_live_values().build();
         self.namespace.emit(ExtruderV2Events::LiveValues(event));
     }
 

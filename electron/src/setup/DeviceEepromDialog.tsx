@@ -37,7 +37,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useFormValues } from "@/lib/useFormValues";
-import { validateU16 } from "@/lib/validation";
 import { DeviceRoleComponent } from "@/components/DeviceRole";
 import { Alert } from "@/components/Alert";
 import { Separator } from "@/components/ui/separator";
@@ -54,9 +53,15 @@ type Props = {
 };
 
 const formSchema = z.object({
-  machine: z.string().superRefine(validateU16),
-  serial: z.string().superRefine(validateU16),
-  role: z.string().superRefine(validateU16),
+  machine: z
+    .string()
+    .refine((v) => parseInt(v) < 0xffff, { error: "Value too big" }),
+  serial: z
+    .string()
+    .refine((v) => parseInt(v) < 0xffff, { error: "Value too big" }),
+  role: z
+    .string()
+    .refine((v) => parseInt(v) < 0xffff, { error: "Value too big" }),
 });
 
 type FormSchema = z.infer<typeof formSchema>;
