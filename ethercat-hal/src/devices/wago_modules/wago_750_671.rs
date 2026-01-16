@@ -5,10 +5,10 @@
 
 use bitvec::field::BitField;
 
-use crate::devices::{
+use crate::{devices::{
     DynamicEthercatDevice, EthercatDevice, EthercatDeviceProcessing, EthercatDeviceUsed,
     EthercatDynamicPDO, Module, NewEthercatDevice, SubDeviceProductTuple,
-};
+}, helpers::counter_wrapper_u16_i128::CounterWrapperU16U128};
 
 #[derive(Clone)]
 pub struct Wago750_671 {
@@ -18,6 +18,7 @@ pub struct Wago750_671 {
     pub rxpdo: Wago750_671RxPdo,
     pub txpdo: Wago750_671TxPdo,
     module: Option<Module>,
+    pub counter_wrapper: CounterWrapperU16U128,
 }
 
 /*
@@ -29,12 +30,12 @@ pub struct Wago750_671 {
 * process images are for that usecase.
 */
 
-#[derive(Clone, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct Wago750_671RxPdo {
     pub b: [u8; 12],
 }
 
-#[derive(Clone, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct Wago750_671TxPdo {
     pub b: [u8; 12],
 }
@@ -65,20 +66,37 @@ impl EthercatDynamicPDO for Wago750_671 {
     }
 }
 
-// Process image byte offsets
-const OFF_C0: usize = 0;
-const OFF_D0: usize = 2;
-const OFF_D1: usize = 3;
-const OFF_D2: usize = 4;
-const OFF_D3: usize = 5;
-const OFF_C3: usize = 9;
-const OFF_C2: usize = 10;
-const OFF_C1: usize = 11;
+/// [P]rocess [I]mage byte offsets
+/// The process image is 12 bytes long.
+/// missing bytes in the enum are reserved.
+pub struct Wago750_671PI {
+    input: InputPI,
+    output: OutputPI,
+}
+pub struct OutputPI;
+impl OutputPI {
+     pub const C0: usize = 0; // Control byte C0
+     pub const D0: usize = 2; // Velocity L
+     pub const D1: usize = 3; // Velocity H
+     pub const D2: usize = 4; // Acceleration L
+     pub const D3: usize = 5; // Acceleration H
+     pub const C3: usize = 9; // Control Byte C3
+     pub const C2: usize = 10; // Control Byte C2
+     pub const C1: usize = 11; // Control Byte C1
+}
 
-const OFF_S0: usize = 0;
-const OFF_S3: usize = 9;
-const OFF_S2: usize = 10;
-const OFF_S1: usize = 11;
+pub struct InputPI;
+impl InputPI {
+     pub const S0: usize = 0; // Status byte S0
+     pub const D0: usize = 2; // Actual Velocity L
+     pub const D1: usize = 3; // Actual Velocity H
+     pub const D4: usize = 6; // Actual position L
+     pub const D5: usize = 7; // Actual position M
+     pub const D6: usize = 8; // Actual position H
+     pub const S3: usize = 9; // Status byte S3
+     pub const S2: usize = 10; // Status byte S2
+     pub const S1: usize = 11; // Status byte S1
+}
 
 // C0 (mailbox enable is bit 5). In cyclic mode it must be 0.
 const C0_MBX: u8 = 1 << 5;
@@ -87,7 +105,7 @@ const C0_MBX: u8 = 1 << 5;
 const C1_ENABLE: u8 = 1 << 0;
 const C1_STOP2_N: u8 = 1 << 1;
 const C1_START: u8 = 1 << 2;
-const C1_M_SPEED_CONTROL: u8 = 1 << 4;
+const C1_M_SPEED_CONTROL: u8 = 1 << 3;
 
 // C2 bits (speed control application)
 const C2_ERROR_QUIT: u8 = 1 << 7;
@@ -99,7 +117,7 @@ const C3_RESET_QUIT: u8 = 1 << 7;
 const S1_READY: u8 = 1 << 0;
 const S1_STOP_N_ACK: u8 = 1 << 1;
 const S1_START_ACK: u8 = 1 << 2;
-const S1_M_SPEED_CONTROL_ACK: u8 = 1 << 4;
+const S1_M_SPEED_CONTROL_ACK: u8 = 1 << 3;
 
 // S2 bits
 const S2_ERROR: u8 = 1 << 7;
@@ -110,25 +128,25 @@ const S3_RESET: u8 = 1 << 7;
 impl Wago750_671 {
     /// Must be called (or left default) to ensure mailbox is OFF (C0.5 = 0).
     /// If you ever enabled mailbox elsewhere, call this again.
-    pub const fn set_mailbox_enabled(&mut self, enabled: bool) {
+    pub fn set_mailbox_enabled(&mut self, enabled: bool) {
         if enabled {
-            self.rxpdo.b[OFF_C0] |= C0_MBX;
+            self.rxpdo.b[self.pro] |= C0_MBX;
         } else {
-            self.rxpdo.b[OFF_C0] &= !C0_MBX;
+            self.rxpdo.b[OutputPI::C0] &= !C0_MBX;
         }
     }
 
     /// Set speed setpoint and acceleration (Velocity Control process image).
     /// vel: i16 (sign determines direction)
     /// acc: u16 (must be > 0, acc==0 will trigger error)
-    pub const fn set_speed_setpoint(&mut self, vel: i16, acc: u16) {
+    pub fn set_speed_setpoint(&mut self, vel: i16, acc: u16) {
         let v = vel.to_le_bytes();
-        self.rxpdo.b[OFF_D0] = v[0]; // Velocity L
-        self.rxpdo.b[OFF_D1] = v[1]; // Velocity H
+        self.rxpdo.b[OutputPI::D0] = v[0]; // Velocity L
+        self.rxpdo.b[OutputPI::D1] = v[1]; // Velocity H
 
         let a = acc.to_le_bytes();
-        self.rxpdo.b[OFF_D2] = a[0]; // Acceleration L
-        self.rxpdo.b[OFF_D3] = a[1]; // Acceleration H
+        self.rxpdo.b[OutputPI::D2] = a[0]; // Acceleration L
+        self.rxpdo.b[OutputPI::D3] = a[1]; // Acceleration H
     }
 
     /// Apply control state for speed control application.
@@ -137,7 +155,7 @@ impl Wago750_671 {
     /// - keep enable=true continuously after DI1 is high
     /// - keep speed_mode=true
     /// - pulse start_pulse=true for ONE cycle to accept setpoints / (re)start output
-    pub const fn apply_speed_control_state(&mut self, enable: bool, speed_mode: bool, start_pulse: bool) {
+    pub fn apply_speed_control_state(&mut self, enable: bool, speed_mode: bool, start_pulse: bool) {
         // Always keep mailbox disabled in cyclic operation for this mode
         self.set_mailbox_enabled(false);
 
@@ -157,67 +175,104 @@ impl Wago750_671 {
     }
 
     /// Error acknowledgement is edge-triggered (0->1). Pulse for one cycle.
-    pub const fn apply_error_quit(&mut self, pulse: bool) {
+    pub fn apply_error_quit(&mut self, pulse: bool) {
         if pulse {
-            self.rxpdo.b[OFF_C2] |= C2_ERROR_QUIT;
+            self.rxpdo.b[OutputPI::C2] |= C2_ERROR_QUIT;
         } else {
-            self.rxpdo.b[OFF_C2] &= !C2_ERROR_QUIT;
+            self.rxpdo.b[OutputPI::C2] &= !C2_ERROR_QUIT;
         }
     }
 
     /// Reset acknowledgement (Reset_Quit) to clear S3.Reset after warm start / power-on reset.
     /// Pulse for one cycle when S3.Reset is set.
-    pub const fn apply_reset_quit(&mut self, pulse: bool) {
+    pub fn apply_reset_quit(&mut self, pulse: bool) {
         if pulse {
-            self.rxpdo.b[OFF_C3] |= C3_RESET_QUIT;
+            self.rxpdo.b[OutputPI::C3] |= C3_RESET_QUIT;
         } else {
-            self.rxpdo.b[OFF_C3] &= !C3_RESET_QUIT;
+            self.rxpdo.b[OutputPI::C3] &= !C3_RESET_QUIT;
         }
     }
 
     // Status helper functions
-    pub const fn s1(&self) -> u8 {
-        self.txpdo.b[OFF_S1]
+    pub fn s1(&self) -> u8 {
+        self.txpdo.b[InputPI::S1]
     }
-    pub const fn s2(&self) -> u8 {
-        self.txpdo.b[OFF_S2]
+    pub fn s2(&self) -> u8 {
+        self.txpdo.b[InputPI::S2]
     }
-    pub const fn s3(&self) -> u8 {
-        self.txpdo.b[OFF_S3]
+    pub fn s3(&self) -> u8 {
+        self.txpdo.b[InputPI::S3]
     }
 
-    pub const fn ready(&self) -> bool {
+    pub fn ready(&self) -> bool {
         (self.s1() & S1_READY) != 0
     }
-    pub const fn stop_n_ack(&self) -> bool {
+    pub fn stop_n_ack(&self) -> bool {
         (self.s1() & S1_STOP_N_ACK) != 0
     }
-    pub const fn start_ack(&self) -> bool {
+    pub fn start_ack(&self) -> bool {
         (self.s1() & S1_START_ACK) != 0
     }
-    pub const fn speed_mode_ack(&self) -> bool {
+    pub fn speed_mode_ack(&self) -> bool {
         (self.s1() & S1_M_SPEED_CONTROL_ACK) != 0
     }
-    pub const fn error_active(&self) -> bool {
+    pub fn error_active(&self) -> bool {
         (self.s2() & S2_ERROR) != 0
     }
-    pub const fn reset_active(&self) -> bool {
+    pub fn reset_active(&self) -> bool {
         (self.s3() & S3_RESET) != 0
     }
 
     /// Actual velocity feedback (slave -> master), i16 little-endian.
-    pub const fn actual_velocity(&self) -> i16 {
-        i16::from_le_bytes([self.txpdo.b[OFF_D0], self.txpdo.b[OFF_D1]])
+    pub fn actual_velocity(&self) -> i16 {
+        i16::from_le_bytes([self.txpdo.b[InputPI::D0], self.txpdo.b[InputPI::D0]])
     }
 
     /// Actual position feedback is 23-bit + sign in other modes; in speed control it is still
     /// updated in the background. Here we just expose the raw 24-bit little-endian value.
-    pub const fn actual_position_raw24(&self) -> i32 {
+    pub fn actual_position_raw24(&self) -> i32 {
         let b0 = self.txpdo.b[6] as u32;
         let b1 = self.txpdo.b[7] as u32;
         let b2 = self.txpdo.b[8] as u32;
         let u = b0 | (b1 << 8) | (b2 << 16);
         u as i32
+    }
+    pub fn position(&self) -> i128 {
+        self.counter_wrapper.current()
+    }
+}
+
+impl EthercatDeviceProcessing for Wago750_671 {
+    fn input_post_process(&mut self) -> Result<(), anyhow::Error> {
+        let pos_l = self.txpdo.b[6];
+        let pos_m = self.txpdo.b[7];
+        let pos_h = self.txpdo.b[8];
+
+        // WAGO position is 24-bit, but the Counter-Wrapper is 16-bit based
+        // We use the lower 16 bits for the wrapper.
+        let raw_u16 = u16::from_le_bytes([pos_l, pos_m]);
+
+        let s2 = self.txpdo.b[10];
+        let overflow = (s2 & (1 << 3)) != 0;
+        let underflow = (s2 & (1 << 2)) != 0;
+
+        self.counter_wrapper.update(raw_u16, underflow, overflow);
+        Ok(())
+    }
+
+    fn output_pre_process(&mut self) -> Result<(), anyhow::Error> {
+        if let Some(new_counter_u16) = self.counter_wrapper.pop_override() {
+            // Write back the lower 16 bits
+            self.rxpdo.b[6] = (new_counter_u16 & 0xFF) as u8;
+            self.rxpdo.b[7] = (new_counter_u16 >> 8) as u8;
+
+            // MSB must be written as well (sign extension or zero)
+            self.rxpdo.b[8] = 0;
+
+            // Tell the controller to accept the new position
+            self.rxpdo.b[9] |= 1 << 6;
+        }
+        Ok(())
     }
 }
 
@@ -322,8 +377,6 @@ impl EthercatDevice for Wago750_671 {
     }
 }
 
-impl EthercatDeviceProcessing for Wago750_671 {}
-
 impl NewEthercatDevice for Wago750_671 {
     fn new() -> Self {
         Self {
@@ -333,6 +386,7 @@ impl NewEthercatDevice for Wago750_671 {
             module: None,
             rxpdo: Wago750_671RxPdo::default(),
             txpdo: Wago750_671TxPdo::default(),
+            counter_wrapper: CounterWrapperU16U128::new(),
         }
     }
 }
