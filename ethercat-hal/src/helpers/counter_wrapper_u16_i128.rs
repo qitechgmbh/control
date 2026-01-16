@@ -5,7 +5,7 @@ const U16_MAX: i128 = std::u16::MAX as i128;
 /// We convert the overflows and underflows to an i128 value for easier calculations.
 ///
 /// When overriding the counter we don't set the valeu direclty but schedula it wiht the [`push_override`] so it can be synced with [`pop_override`] to an EtherCAT device.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct CounterWrapperU16U128 {
     counter: i128,
     last_counter: u16,
