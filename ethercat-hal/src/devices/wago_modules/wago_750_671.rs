@@ -130,7 +130,7 @@ impl Wago750_671 {
     /// If you ever enabled mailbox elsewhere, call this again.
     pub fn set_mailbox_enabled(&mut self, enabled: bool) {
         if enabled {
-            self.rxpdo.b[self.pro] |= C0_MBX;
+            self.rxpdo.b[OutputPI::C0] |= C0_MBX;
         } else {
             self.rxpdo.b[OutputPI::C0] &= !C0_MBX;
         }
@@ -171,7 +171,7 @@ impl Wago750_671 {
             c1 |= C1_START;
         }
 
-        self.rxpdo.b[OFF_C1] = c1;
+        self.rxpdo.b[OutputPI::C1] = c1;
     }
 
     /// Error acknowledgement is edge-triggered (0->1). Pulse for one cycle.
@@ -225,7 +225,7 @@ impl Wago750_671 {
 
     /// Actual velocity feedback (slave -> master), i16 little-endian.
     pub fn actual_velocity(&self) -> i16 {
-        i16::from_le_bytes([self.txpdo.b[InputPI::D0], self.txpdo.b[InputPI::D0]])
+        i16::from_le_bytes([self.txpdo.b[InputPI::D0], self.txpdo.b[InputPI::D1]])
     }
 
     /// Actual position feedback is 23-bit + sign in other modes; in speed control it is still
