@@ -319,7 +319,7 @@ impl ExtruderV3 {
                     );
                     *watchdog_zone = HeatingWatchdogZone::default();
                 }
-                return;
+                return false; 
             }
 
             // Check for fault if we're monitoring

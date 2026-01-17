@@ -94,6 +94,7 @@ impl ExtruderV2 {
                 pressure_limit_enabled: self
                     .screw_speed_controller
                     .get_nozzle_pressure_limit_enabled(),
+                heating_safeguard_enabled: true, 
             },
             inverter_status_state: InverterStatusState {
                 running: self.screw_speed_controller.inverter.status.running,
