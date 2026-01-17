@@ -61,55 +61,24 @@ in {
       SUBSYSTEM=="usb", ATTRS{idVendor}=="*", ATTRS{idProduct}=="*", MODE="0660", GROUP="${cfg.group}"
     '';
 
-    # Configure the systemd service
+    # Generate systemd service file from template and install it
+    systemd.packages = [
+      (pkgs.writeTextFile {
+        name = "qitech-control-server-service";
+        destination = "/etc/systemd/system/qitech-control-server.service";
+        text = builtins.readFile (pkgs.substituteAll {
+          src = ./../services/qitech-control-server.service;
+          user = cfg.user;
+          group = cfg.group;
+          execstart = "${cfg.package}/bin/server";
+        });
+      })
+    ];
+
+    # Enable the service
     systemd.services.qitech-control-server = {
-      description = "QiTech Control Server";
       wantedBy = [ "multi-user.target" ];
-      after = [ "network.target" ];
-
-      serviceConfig = {
-        Type = "simple";
-        User = cfg.user;
-        Group = cfg.group;
-        ExecStart = "${cfg.package}/bin/server";
-        Restart = "always";
-        RestartSec = "10s";
-
-        # Capabilities
-        CapabilityBoundingSet =
-          "CAP_NET_RAW CAP_IPC_LOCK CAP_NET_ADMIN CAP_SYS_NICE CAP_DAC_OVERRIDE";
-        AmbientCapabilities =
-          "CAP_NET_RAW CAP_IPC_LOCK CAP_NET_ADMIN CAP_SYS_NICE CAP_DAC_OVERRIDE";
-
-        # Hardening options
-        NoNewPrivileges = true;
-        ProtectSystem = "strict";
-
-        # Open only /proc/irq explicitly
-        ReadWritePaths = [ "/proc/irq" ];
-        ProtectHome = true;
-        PrivateTmp = true;
-        PrivateDevices = false;
-
-        # Must disable this to allow /proc/irq writes
-        ProtectKernelTunables = false;
-        ProtectControlGroups = true;
-        RestrictAddressFamilies =
-          "AF_UNIX AF_INET AF_INET6 AF_NETLINK AF_PACKET";
-        RestrictNamespaces = true;
-        LockPersonality = true;
-        MemoryDenyWriteExecute = false;
-
-        # Logging
-        StandardOutput = "journal";
-        StandardError = "journal";
-        SyslogIdentifier = "qitech-control-server";
-      };
-
-      environment = {
-        RUST_BACKTRACE = "full";
-        RUST_LOG = "info";
-      };
+      enable = true;
     };
 
     # Add real-time privileges

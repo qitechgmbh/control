@@ -1,0 +1,41 @@
+[Unit]
+Description=QiTech Control Server
+After=network.target
+
+[Service]
+Type=simple
+User=@user@
+Group=@group@
+ExecStart=@execstart@
+Restart=always
+RestartSec=10s
+
+# Capabilities
+CapabilityBoundingSet=CAP_NET_RAW CAP_IPC_LOCK CAP_NET_ADMIN CAP_SYS_NICE CAP_DAC_OVERRIDE
+AmbientCapabilities=CAP_NET_RAW CAP_IPC_LOCK CAP_NET_ADMIN CAP_SYS_NICE CAP_DAC_OVERRIDE
+
+# Hardening options
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/proc/irq
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=false
+ProtectKernelTunables=false
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK AF_PACKET
+RestrictNamespaces=true
+LockPersonality=true
+MemoryDenyWriteExecute=false
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=qitech-control-server
+
+# Environment variables
+Environment="RUST_BACKTRACE=full"
+Environment="RUST_LOG=info"
+
+[Install]
+WantedBy=multi-user.target
