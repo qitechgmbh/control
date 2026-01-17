@@ -3,7 +3,7 @@ import { testMotorSerialRoute } from "@/routes/routes";
 import React from "react";
 
 export function TestMotorPage() {
-  // Hier ist der Zugriff erlaubt, weil diese Funktion erst später aufgerufen wird
+  // Access is allowed here because this function is called later
   const { serial } = testMotorSerialRoute.useParams();
 
   return (

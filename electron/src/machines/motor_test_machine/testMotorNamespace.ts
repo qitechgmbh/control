@@ -12,7 +12,7 @@ import {
 } from "@/client/socketioStore";
 import { MachineIdentificationUnique } from "@/machines/types";
 
-// ========== Event Schema (Muss zu  StateEvent passen) ==========
+// ========== Event Schema (Must match StateEvent) ==========
 export const stateEventDataSchema = z.object({
   motor_enabled: z.boolean(),
   motor_velocity: z.number(),

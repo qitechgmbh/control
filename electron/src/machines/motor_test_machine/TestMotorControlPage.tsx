@@ -10,19 +10,19 @@ import { useTestMotor } from "./useTestMotor";
 export function TestMotorControlPage() {
   const { state, setMotorOn, setVelocity } = useTestMotor();
 
-  // Fallback, falls state noch null ist
+  // Fallback in case state is still null
   const safeState = state ?? { motor_enabled: false, motor_velocity: 0 };
 
   return (
     <Page>
       <ControlGrid columns={2}>
-        {/* rundsteuerung */}
+        {/* Basic control */}
         <ControlCard title="Motor Status">
-          {/* An/Aus Schalter */}
+          {/* On/Off switch */}
           <Label label="Power State">
             <SelectionGroupBoolean
               value={safeState.motor_enabled}
-              // Icon Mapping für True/False
+              // Icon mapping for True/False
               optionTrue={{ children: "Enabled", icon: "lu:Play" }}
               optionFalse={{ children: "Disabled", icon: "lu:CirclePause" }}
               onChange={(val) => setMotorOn(val)}
@@ -30,9 +30,9 @@ export function TestMotorControlPage() {
           </Label>
         </ControlCard>
 
-        {/* Geschwindigkeit */}
+        {/* Velocity */}
         <ControlCard title="Settings">
-          {/* Velocity Eingabe mit Einheit */}
+          {/* Velocity input with unit */}
           <Label label="Target Velocity">
             <EditValue
               title="Velocity"
@@ -42,7 +42,7 @@ export function TestMotorControlPage() {
               max={1000} // Limit
               step={1}
               onChange={(val) => setVelocity(val)}
-              // Zeigt den Wert (hier ganze Zahl)
+              // Displays the value (as integer)
               renderValue={(v) => v.toFixed(0)}
             />
           </Label>

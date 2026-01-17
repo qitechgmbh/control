@@ -69,7 +69,7 @@ export function useTestMotor() {
       () =>
         sendMutation({
           machine_identification_unique: machineIdentification,
-          // Muss exakt zu  Enum 'Mutation' passen!
+          // Must exactly match the 'Mutation' enum!
           data: { type: "SetMotorOn", payload: on },
         }),
     );
