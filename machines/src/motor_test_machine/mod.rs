@@ -1,6 +1,6 @@
 use crate::machine_identification::{MachineIdentification, MachineIdentificationUnique};
 use crate::{AsyncThreadMessage, Machine, MachineMessage};
-use crate::{MACHINE_BECKHOFF_TEST, VENDOR_QITECH};
+use crate::{MOTOR_TEST_MACHINE, VENDOR_QITECH};
 use control_core::socketio::namespace::NamespaceCacheingLogic;
 use ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1;
 use smol::channel::{Receiver, Sender};
@@ -40,7 +40,7 @@ impl Machine for MotorTestMachine {
 impl MotorTestMachine {
     pub const MACHINE_IDENTIFICATION: MachineIdentification = MachineIdentification {
         vendor: VENDOR_QITECH,
-        machine: MACHINE_BECKHOFF_TEST,
+        machine: MOTOR_TEST_MACHINE,
     };
 
     pub fn emit_state(&mut self) {

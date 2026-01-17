@@ -47,7 +47,7 @@ pub const TEST_MACHINE: u16 = 0x0033;
 pub const IP20_TEST_MACHINE: u16 = 0x0034;
 pub const ANALOG_INPUT_TEST_MACHINE: u16 = 0x0035;
 
-pub const MACHINE_BECKHOFF_TEST: u16 = 0x0011;
+pub const MOTOR_TEST_MACHINE: u16 = 0x0011;
 
 use serde_json::Value;
 use smol::lock::RwLock;
