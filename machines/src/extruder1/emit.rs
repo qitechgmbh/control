@@ -94,6 +94,8 @@ impl ExtruderV2 {
                 pressure_limit_enabled: self
                     .screw_speed_controller
                     .get_nozzle_pressure_limit_enabled(),
+                // For ExtruderV2 the heating safeguard is always enabled and not user-configurable
+                heating_safeguard_enabled: true,
                 nozzle_temperature_target_enabled: self
                     .temperature_controller_nozzle
                     .get_temperature_target_enabled(),

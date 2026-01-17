@@ -88,7 +88,7 @@ impl MachineNewTrait for ExtruderV3 {
                     Heating, mitsubishi_cs80::MitsubishiCS80,
                     screw_speed_controller::ScrewSpeedController,
                 },
-                extruder2::{ExtruderV3Mode, api::ExtruderV3Namespace},
+                extruder2::{ExtruderV3Mode, HeatingWatchdog, api::ExtruderV3Namespace},
             };
             let _ek1100 =
                 get_ethercat_device::<EK1100>(hardware, params, 0, [EK1100_IDENTITY_A].to_vec());
@@ -241,6 +241,12 @@ impl MachineNewTrait for ExtruderV3 {
                 screw_speed_controller,
                 emitted_default_state: false,
                 last_status_hash: None,
+                heating_safeguard_enabled: true, 
+                heating_watchdog: HeatingWatchdog::default(),
+                heating_fault_state: crate::extruder2::api::HeatingFaultState {
+                    fault_zone: None,
+                    fault_acknowledged: false,
+                },
             };
             extruder.emit_state();
             Ok(extruder)

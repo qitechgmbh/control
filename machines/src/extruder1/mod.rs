@@ -169,7 +169,7 @@ impl ExtruderV2 {
     // Funktionen ohne emit_state bleiben hier
 
     // Set all relais to ZERO
-    // We dont need a function to enable again though, as the act Loop will detect the mode
+    // We don't need a function to enable again though, as the act loop will detect the mode
     fn turn_heating_off(&mut self) {
         self.temperature_controller_back.disable();
         self.temperature_controller_front.disable();

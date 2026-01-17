@@ -11,10 +11,35 @@ import { Label } from "@/control/Label";
 import { EditValue } from "@/control/EditValue";
 import { roundToDecimals } from "@/lib/decimal";
 import { useExtruder3 } from "./useExtruder";
+import { extruder3Route } from "@/routes/routes";
+import { useMemo } from "react";
+import { extruder3 } from "@/machines/properties";
+import type { MachineIdentificationUnique } from "@/machines/types";
 import { TimeSeriesValueNumeric } from "@/control/TimeSeriesValue";
 import { StatusBadge } from "@/control/StatusBadge";
+import { GlobalHeatingFaultToastManager } from "./GlobalHeatingFaultToastManager";
 
 export function Extruder3ControlPage() {
+  const { serial: serialString } = extruder3Route.useParams();
+
+  // Memoize machine identification for toast manager
+  const machineIdentification: MachineIdentificationUnique = useMemo(() => {
+    const serial = parseInt(serialString);
+    if (isNaN(serial)) {
+      return {
+        machine_identification: {
+          vendor: 0,
+          machine: 0,
+        },
+        serial: 0,
+      };
+    }
+    return {
+      machine_identification: extruder3.machine_identification,
+      serial,
+    };
+  }, [serialString]);
+
   const {
     state,
     defaultState,
@@ -45,7 +70,15 @@ export function Extruder3ControlPage() {
 
     isLoading,
     isDisabled,
+    retryHeating,
   } = useExtruder3();
+
+  // Helper to check if a zone has a heating fault
+  const getZoneFault = (zone: "front" | "middle" | "back" | "nozzle") => {
+    const faultZone = state?.heating_fault_state?.fault_zone;
+    const faultAcknowledged = state?.heating_fault_state?.fault_acknowledged;
+    return faultZone === zone && !faultAcknowledged;
+  };
 
   function isZoneReadyForExtrusion(
     temperature: number,
@@ -80,6 +113,9 @@ export function Extruder3ControlPage() {
 
   return (
     <Page>
+      <GlobalHeatingFaultToastManager
+        machineIdentification={machineIdentification}
+      />
       <ControlGrid>
         <HeatingZone
           title={"Heating Front"}
@@ -89,7 +125,9 @@ export function Extruder3ControlPage() {
           onChangeTargetTemp={setFrontHeatingTemperature}
           min={0}
           max={300}
-          targetTemperatureEnabled={true}
+          heatingFault={getZoneFault("front")}
+          onRetryHeating={retryHeating}
+          targetTemperatureEnabled
         />
         <HeatingZone
           title={"Heating Middle"}
@@ -99,7 +137,9 @@ export function Extruder3ControlPage() {
           onChangeTargetTemp={setMiddleHeatingTemperature}
           min={0}
           max={300}
-          targetTemperatureEnabled={true}
+          heatingFault={getZoneFault("middle")}
+          onRetryHeating={retryHeating}
+          targetTemperatureEnabled
         />
         <HeatingZone
           title={"Heating Back"}
@@ -109,7 +149,9 @@ export function Extruder3ControlPage() {
           onChangeTargetTemp={setBackHeatingTemperature}
           min={0}
           max={300}
-          targetTemperatureEnabled={true}
+          heatingFault={getZoneFault("back")}
+          onRetryHeating={retryHeating}
+          targetTemperatureEnabled
         />
         <HeatingZone
           title={"Heating Nozzle"}
@@ -119,6 +161,8 @@ export function Extruder3ControlPage() {
           onChangeTargetTemp={setNozzleHeatingTemperature}
           min={0}
           max={300}
+          heatingFault={getZoneFault("nozzle")}
+          onRetryHeating={retryHeating}
           targetTemperatureEnabled={
             state?.extruder_settings_state.nozzle_temperature_target_enabled ??
             true

@@ -102,6 +102,7 @@ impl ExtruderV3 {
                 pressure_limit_enabled: self
                     .screw_speed_controller
                     .get_nozzle_pressure_limit_enabled(),
+                heating_safeguard_enabled: self.heating_safeguard_enabled,
                 nozzle_temperature_target_enabled: self
                     .temperature_controller_nozzle
                     .get_temperature_target_enabled(),
@@ -150,6 +151,7 @@ impl ExtruderV3 {
                     kd: self.screw_speed_controller.pid.get_kd(),
                 },
             },
+            heating_fault_state: self.heating_fault_state.clone(),
         }
     }
 }
@@ -243,9 +245,39 @@ impl ExtruderV3 {
         self.emit_state();
     }
 
+    pub fn set_heating_safeguard_enabled(&mut self, enabled: bool) {
+        self.heating_safeguard_enabled = enabled;
+        tracing::info!(
+            "Heating safeguard {}",
+            if enabled { "enabled" } else { "disabled" }
+        );
+        // Reset watchdog state when toggling
+        self.heating_watchdog = super::HeatingWatchdog::default();
+        self.emit_state();
+    }
+
     pub fn set_nozzle_temperature_target_is_enabled(&mut self, enabled: bool) {
         self.temperature_controller_nozzle
             .set_temperature_target_enabled(enabled);
+        tracing::info!(
+            "Nozzle temperature target {}",
+            if enabled { "enabled" } else { "disabled" }
+        );
+        self.emit_state();
+    }
+
+    pub fn retry_heating(&mut self) {
+        tracing::info!("Retrying heating after fault - resetting watchdog and switching to Heat mode");
+        self.heating_fault_state.fault_zone = None;
+        self.heating_fault_state.fault_acknowledged = false;
+        self.heating_watchdog = super::HeatingWatchdog::default();
+        self.switch_to_heat();
+        self.emit_state();
+    }
+
+    pub fn acknowledge_heating_fault(&mut self) {
+        tracing::info!("Heating fault acknowledged by user");
+        self.heating_fault_state.fault_acknowledged = true;
         self.emit_state();
     }
 

@@ -232,18 +232,38 @@ export function useExtruder3() {
     );
   };
 
+  const { request: requestHeatingSafeguardEnabled } = useMachineMutation(
+    z.object({ SetHeatingSafeguardEnabled: z.boolean() }),
+  );
+
+  const setHeatingSafeguardEnabled = (enabled: boolean) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.extruder_settings_state.heating_safeguard_enabled = enabled;
+      },
+      () =>
+        requestHeatingSafeguardEnabled({
+          machine_identification_unique: machineIdentification,
+          data: { SetHeatingSafeguardEnabled: enabled },
+        }),
+    );
+  };
+
   const setTemperatureTargetEnabled = (enabled: boolean) => {
     const res = enabled
       ? true
       : confirm(
-          "This will disable the ability to set a temperature target for the nozzle heating element and will any wiring error message. Only proceed if you understand the risks.",
+          "This will disable the ability to set a temperature target for the nozzle heating element. Only proceed if you understand the risks.",
         );
 
     if (res) {
       updateStateOptimistically(
         (current) => {
-          current.data.extruder_settings_state.nozzle_temperature_target_enabled =
-            enabled;
+          (
+            current.data.extruder_settings_state as {
+              nozzle_temperature_target_enabled?: boolean;
+            }
+          ).nozzle_temperature_target_enabled = enabled;
         },
         () =>
           requestNozzleTemperatureTargetEnabled({
@@ -432,6 +452,17 @@ export function useExtruder3() {
     z.object({ ResetInverter: z.boolean() }),
   );
 
+  const { request: requestRetryHeating } = useMachineMutation(
+    z.object({ RetryHeating: z.literal(true) }),
+  );
+
+  const retryHeating = () => {
+    requestRetryHeating({
+      machine_identification_unique: machineIdentification,
+      data: { RetryHeating: true },
+    });
+  };
+
   return {
     // Consolidated state
     state: stateOptimistic.value?.data,
@@ -481,11 +512,13 @@ export function useExtruder3() {
     setMiddleHeatingTemperature,
     setExtruderPressureLimit,
     setExtruderPressureLimitEnabled,
+    setHeatingSafeguardEnabled,
     setTemperatureTargetEnabled,
     setPressurePidKp,
     setPressurePidKi,
     setPressurePidKd,
     setTemperaturePidValue,
     resetInverter,
+    retryHeating,
   };
 }

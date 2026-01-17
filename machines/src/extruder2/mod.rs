@@ -52,6 +52,47 @@ pub enum HeatingType {
     Middle,
 }
 
+/// Watchdog state for monitoring heating progress
+#[derive(Debug, Clone)]
+pub struct HeatingWatchdogZone {
+    /// Temperature when heating started for this zone
+    start_temperature: Option<f64>,
+    /// Timestamp when heating started
+    heating_start_time: Option<Instant>,
+    /// Whether a fault has been detected
+    fault_detected: bool,
+}
+
+impl Default for HeatingWatchdogZone {
+    fn default() -> Self {
+        Self {
+            start_temperature: None,
+            heating_start_time: None,
+            fault_detected: false,
+        }
+    }
+}
+
+/// Watchdog state for all heating zones
+#[derive(Debug, Clone)]
+pub struct HeatingWatchdog {
+    pub front: HeatingWatchdogZone,
+    pub middle: HeatingWatchdogZone,
+    pub back: HeatingWatchdogZone,
+    pub nozzle: HeatingWatchdogZone,
+}
+
+impl Default for HeatingWatchdog {
+    fn default() -> Self {
+        Self {
+            front: HeatingWatchdogZone::default(),
+            middle: HeatingWatchdogZone::default(),
+            back: HeatingWatchdogZone::default(),
+            nozzle: HeatingWatchdogZone::default(),
+        }
+    }
+}
+
 #[cfg(not(feature = "mock-machine"))]
 #[derive(Debug)]
 pub struct ExtruderV3 {
@@ -79,6 +120,15 @@ pub struct ExtruderV3 {
     /// will be initalized as false and set to true by `emit_state`
     /// This way we can signal to the client that the first state emission is a default state
     emitted_default_state: bool,
+
+    /// Heating safeguard configuration
+    heating_safeguard_enabled: bool,
+
+    /// Heating watchdog state for each zone
+    heating_watchdog: HeatingWatchdog,
+
+    /// Current heating fault state
+    heating_fault_state: crate::extruder2::api::HeatingFaultState,
 }
 
 #[cfg(not(feature = "mock-machine"))]
@@ -213,5 +263,168 @@ impl ExtruderV3 {
 
     fn reset_inverter(&mut self) {
         self.screw_speed_controller.inverter.reset_inverter();
+    }
+
+    /// Update heating watchdog for all zones
+    /// Monitors temperature increases and detects heating faults
+    fn update_heating_watchdog(&mut self, now: Instant) {
+        use std::time::Duration;
+        use units::thermodynamic_temperature::degree_celsius;
+
+        // Watchdog parameters
+        const MIN_TEMPERATURE_DELTA_C: f64 = 5.0; // Minimum temperature increase in °C
+        const WATCHDOG_TIMEOUT_SECS: u64 = 60; // Timeout in seconds
+
+        // Only monitor when in Heat or Extrude mode
+        if self.mode == ExtruderV3Mode::Standby {
+            // Reset all watchdog states when in standby
+            self.heating_watchdog.front = HeatingWatchdogZone::default();
+            self.heating_watchdog.middle = HeatingWatchdogZone::default();
+            self.heating_watchdog.back = HeatingWatchdogZone::default();
+            self.heating_watchdog.nozzle = HeatingWatchdogZone::default();
+            return;
+        }
+
+        // Helper function to check a single zone
+        let check_zone = |watchdog_zone: &mut HeatingWatchdogZone,
+                          controller: &TemperatureController,
+                          zone_name: &str| {
+            let current_temp = controller.heating.temperature.get::<degree_celsius>();
+            let target_temp = controller.heating.target_temperature.get::<degree_celsius>();
+            let is_heating_active = controller.heating.heating;
+
+            // Check if heating should be active (target > current)
+            // In Heat or Extrude mode, if target > current, heating should be happening
+            let should_be_heating = target_temp > current_temp;
+
+            // Start monitoring when heating becomes active
+            if should_be_heating && is_heating_active {
+                if watchdog_zone.start_temperature.is_none() {
+                    watchdog_zone.start_temperature = Some(current_temp);
+                    watchdog_zone.heating_start_time = Some(now);
+                    watchdog_zone.fault_detected = false;
+                    tracing::info!(
+                        "Heating watchdog started for {}: start_temp={:.1}°C, target_temp={:.1}°C",
+                        zone_name,
+                        current_temp,
+                        target_temp
+                    );
+                }
+            } else {
+                // Reset if heating is no longer active
+                if watchdog_zone.start_temperature.is_some() {
+                    tracing::info!(
+                        "Heating watchdog reset for {}: heating no longer active",
+                        zone_name
+                    );
+                    *watchdog_zone = HeatingWatchdogZone::default();
+                }
+                return false; // No fault when not monitoring
+            }
+
+            // Check for fault if we're monitoring
+            if let (Some(start_temp), Some(start_time)) =
+                (watchdog_zone.start_temperature, watchdog_zone.heating_start_time)
+            {
+                let elapsed = now.duration_since(start_time);
+                let temp_increase = current_temp - start_temp;
+
+                // Check if timeout exceeded without sufficient temperature increase
+                if elapsed >= Duration::from_secs(WATCHDOG_TIMEOUT_SECS)
+                    && temp_increase < MIN_TEMPERATURE_DELTA_C
+                    && !watchdog_zone.fault_detected
+                {
+                    watchdog_zone.fault_detected = true;
+                    tracing::warn!(
+                        "Heating watchdog fault detected for {}: elapsed={:.1}s, temp_increase={:.2}°C, start_temp={:.1}°C, current_temp={:.1}°C, target_temp={:.1}°C",
+                        zone_name,
+                        elapsed.as_secs_f64(),
+                        temp_increase,
+                        start_temp,
+                        current_temp,
+                        target_temp
+                    );
+                    return true; // Fault detected
+                }
+
+                // Log progress periodically
+                if elapsed.as_secs() % 10 == 0 && elapsed.as_secs() > 0 {
+                    tracing::debug!(
+                        "Heating watchdog progress for {}: elapsed={:.1}s, temp_increase={:.2}°C",
+                        zone_name,
+                        elapsed.as_secs_f64(),
+                        temp_increase
+                    );
+                }
+            }
+
+            false // No fault
+        };
+
+        // Check all zones
+        let mut fault_detected = false;
+        if check_zone(
+            &mut self.heating_watchdog.front,
+            &self.temperature_controller_front,
+            "front",
+        ) {
+            fault_detected = true;
+        }
+        if check_zone(
+            &mut self.heating_watchdog.middle,
+            &self.temperature_controller_middle,
+            "middle",
+        ) {
+            fault_detected = true;
+        }
+        if check_zone(
+            &mut self.heating_watchdog.back,
+            &self.temperature_controller_back,
+            "back",
+        ) {
+            fault_detected = true;
+        }
+        if check_zone(
+            &mut self.heating_watchdog.nozzle,
+            &self.temperature_controller_nozzle,
+            "nozzle",
+        ) {
+            fault_detected = true;
+        }
+
+        // If fault detected, automatically set to standby and record fault
+        if fault_detected {
+            // Determine which zone(s) have faults
+            let fault_zones: Vec<&str> = [
+                (self.heating_watchdog.front.fault_detected, "front"),
+                (self.heating_watchdog.middle.fault_detected, "middle"),
+                (self.heating_watchdog.back.fault_detected, "back"),
+                (self.heating_watchdog.nozzle.fault_detected, "nozzle"),
+            ]
+            .iter()
+            .filter_map(|(has_fault, zone)| if *has_fault { Some(*zone) } else { None })
+            .collect();
+
+            let fault_zone_str = if fault_zones.is_empty() {
+                "unknown".to_string()
+            } else {
+                fault_zones.join(", ")
+            };
+            tracing::error!(
+                "Heating fault detected in zone(s): {} - automatically setting extruder to standby",
+                fault_zone_str
+            );
+
+            // Set fault state
+            let first_fault_zone = fault_zones
+                .first()
+                .copied()
+                .unwrap_or("unknown");
+            self.heating_fault_state.fault_zone = Some(first_fault_zone.to_string());
+            self.heating_fault_state.fault_acknowledged = false;
+
+            self.switch_to_standby();
+            self.emit_state();
+        }
     }
 }

@@ -110,11 +110,22 @@ pub struct StateEvent {
     pub inverter_status_state: InverterStatusState,
     /// pid settings
     pub pid_settings: PidSettingsStates,
+    /// heating fault state
+    pub heating_fault_state: HeatingFaultState,
 }
 
 #[derive(Serialize, Debug, Clone, PartialEq, Eq)]
 pub struct ModeState {
     pub mode: ExtruderV3Mode,
+}
+
+/// Heating fault information
+#[derive(Serialize, Debug, Clone, PartialEq, Eq)]
+pub struct HeatingFaultState {
+    /// Zone that has a heating fault (None if no fault)
+    pub fault_zone: Option<String>,
+    /// Whether a fault has been detected and acknowledged
+    pub fault_acknowledged: bool,
 }
 
 pub enum ExtruderV3Events {
@@ -143,6 +154,9 @@ pub enum Mutation {
     SetExtruderPressureLimit(f64),
     SetExtruderPressureLimitIsEnabled(bool),
 
+    // Heating Safeguard
+    SetHeatingSafeguardEnabled(bool),
+
     // ToggleTemperatureTarget
     SetNozzleTemperatureTargetEnabled(bool),
 
@@ -152,6 +166,10 @@ pub enum Mutation {
 
     // Reset
     ResetInverter(bool),
+
+    // Heating Fault Handling
+    RetryHeating,
+    AcknowledgeHeatingFault,
 }
 
 #[derive(Debug)]
@@ -224,14 +242,23 @@ impl MachineApi for ExtruderV3 {
             Mutation::SetExtruderPressureLimitIsEnabled(enabled) => {
                 self.set_nozzle_pressure_limit_is_enabled(enabled);
             }
+            Mutation::SetHeatingSafeguardEnabled(enabled) => {
+                self.set_heating_safeguard_enabled(enabled);
+            }
+            Mutation::SetNozzleTemperatureTargetEnabled(enabled) => {
+                self.set_nozzle_temperature_target_is_enabled(enabled);
+            }
             Mutation::SetPressurePidSettings(settings) => {
                 self.configure_pressure_pid(settings);
             }
             Mutation::SetTemperaturePidSettings(settings) => {
                 self.configure_temperature_pid(settings);
             }
-            Mutation::SetNozzleTemperatureTargetEnabled(enabled) => {
-                self.set_nozzle_temperature_target_is_enabled(enabled);
+            Mutation::RetryHeating => {
+                self.retry_heating();
+            }
+            Mutation::AcknowledgeHeatingFault => {
+                self.acknowledge_heating_fault();
             }
         }
         Ok(())
