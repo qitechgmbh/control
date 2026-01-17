@@ -139,14 +139,14 @@ impl MachineNewTrait for ExtruderV3 {
             let t3 = TemperatureInput::new(el3204.clone(), EL3204Port::T3);
             let t4 = TemperatureInput::new(el3204, EL3204Port::T4);
 
-            // For the Relais
+            // For the Relays
             let digital_out_1 = DigitalOutput::new(el2004.clone(), EL2004Port::DO1);
             let digital_out_2 = DigitalOutput::new(el2004.clone(), EL2004Port::DO2);
             let digital_out_3 = DigitalOutput::new(el2004.clone(), EL2004Port::DO3);
             let digital_out_4 = DigitalOutput::new(el2004.clone(), EL2004Port::DO4);
 
             let pressure_sensor = AnalogInput::new(el3021, EL3021Port::AI1);
-            // The Extruders temparature Controllers should disable the relais when the max_temperature is reached
+            // The Extruder's temperature controllers should disable the relays when the max_temperature is reached
             let extruder_max_temperature = ThermodynamicTemperature::new::<degree_celsius>(300.0);
             // Only front heating on: These values work 0.08, 0.001, 0.007, Overshoot 0.5 undershoot ~0.7 (Problems when starting far away because of integral)
             let temperature_controller_front = TemperatureController::new(
