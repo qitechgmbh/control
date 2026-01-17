@@ -16,6 +16,8 @@ type Props = {
   min: number;
   max: number;
   onChangeTargetTemp?: (temperature: number) => void;
+  heatingFault?: boolean;
+  onRetryHeating?: () => void;
 };
 export function HeatingZone({
   title,
@@ -25,6 +27,8 @@ export function HeatingZone({
   heatingTimeSeries,
   heatingPower,
   onChangeTargetTemp,
+  heatingFault,
+  onRetryHeating,
 }: Props) {
   const targetTemperature = heatingState?.target_temperature ?? 150;
 
@@ -69,6 +73,23 @@ export function HeatingZone({
         <StatusBadge variant="error">
           Cant Read Temperature! Check Temperature Sensor Wiring!
         </StatusBadge>
+      )}
+
+      {heatingFault && (
+        <div className="flex flex-col gap-2">
+          <StatusBadge variant="error">
+            Heating Fault: Temperature not increasing. Extruder set to standby.
+          </StatusBadge>
+          {onRetryHeating && (
+            <button
+              onClick={onRetryHeating}
+              className="inline-block w-fit max-w-max rounded bg-blue-600 px-4 py-2 text-base whitespace-nowrap text-white hover:bg-blue-700"
+              style={{ minWidth: "auto", width: "fit-content" }}
+            >
+              Retry Heating
+            </button>
+          )}
+        </div>
       )}
     </ControlCard>
   );

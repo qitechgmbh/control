@@ -41,6 +41,11 @@ impl MachineAct for ExtruderV3 {
             self.switch_to_heat();
         }
 
+        // Monitor heating watchdog if safeguard is enabled
+        if self.heating_safeguard_enabled {
+            self.update_heating_watchdog(now);
+        }
+
         let now = Instant::now();
 
         // more than 33ms have passed since last emit (30 "fps" target)

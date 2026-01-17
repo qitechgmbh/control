@@ -224,6 +224,23 @@ export function useExtruder3() {
     );
   };
 
+  const { request: requestHeatingSafeguardEnabled } = useMachineMutation(
+    z.object({ SetHeatingSafeguardEnabled: z.boolean() }),
+  );
+
+  const setHeatingSafeguardEnabled = (enabled: boolean) => {
+    updateStateOptimistically(
+      (current) => {
+        current.data.extruder_settings_state.heating_safeguard_enabled = enabled;
+      },
+      () =>
+        requestHeatingSafeguardEnabled({
+          machine_identification_unique: machineIdentification,
+          data: { SetHeatingSafeguardEnabled: enabled },
+        }),
+    );
+  };
+
   const setPressurePidKp = (kp: number) => {
     updateStateOptimistically(
       (current) => {
@@ -398,6 +415,17 @@ export function useExtruder3() {
     z.object({ ResetInverter: z.boolean() }),
   );
 
+  const { request: requestRetryHeating } = useMachineMutation(
+    z.object({ RetryHeating: z.literal(true) }),
+  );
+
+  const retryHeating = () => {
+    requestRetryHeating({
+      machine_identification_unique: machineIdentification,
+      data: { RetryHeating: true },
+    });
+  };
+
   return {
     // Consolidated state
     state: stateOptimistic.value?.data,
@@ -439,10 +467,12 @@ export function useExtruder3() {
     setMiddleHeatingTemperature,
     setExtruderPressureLimit,
     setExtruderPressureLimitEnabled,
+    setHeatingSafeguardEnabled,
     setPressurePidKp,
     setPressurePidKi,
     setPressurePidKd,
     setTemperaturePidValue,
     resetInverter,
+    retryHeating,
   };
 }

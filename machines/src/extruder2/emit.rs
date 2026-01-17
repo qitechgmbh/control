@@ -100,6 +100,7 @@ impl ExtruderV3 {
                 pressure_limit_enabled: self
                     .screw_speed_controller
                     .get_nozzle_pressure_limit_enabled(),
+                heating_safeguard_enabled: self.heating_safeguard_enabled,
             },
             inverter_status_state: InverterStatusState {
                 running: self.screw_speed_controller.inverter.status.running,
@@ -145,6 +146,7 @@ impl ExtruderV3 {
                     kd: self.screw_speed_controller.pid.get_kd(),
                 },
             },
+            heating_fault_state: self.heating_fault_state.clone(),
         }
     }
 }
@@ -232,6 +234,35 @@ impl ExtruderV3 {
     pub fn set_nozzle_pressure_limit_is_enabled(&mut self, enabled: bool) {
         self.screw_speed_controller
             .set_nozzle_pressure_limit_is_enabled(enabled);
+        self.emit_state();
+    }
+
+    pub fn set_heating_safeguard_enabled(&mut self, enabled: bool) {
+        self.heating_safeguard_enabled = enabled;
+        tracing::info!(
+            "Heating safeguard {}",
+            if enabled { "enabled" } else { "disabled" }
+        );
+        // Reset watchdog state when toggling
+        self.heating_watchdog = super::HeatingWatchdog::default();
+        self.emit_state();
+    }
+
+    pub fn retry_heating(&mut self) {
+        tracing::info!("Retrying heating after fault - resetting watchdog and switching to Heat mode");
+        // Reset fault state
+        self.heating_fault_state.fault_zone = None;
+        self.heating_fault_state.fault_acknowledged = false;
+        // Reset watchdog
+        self.heating_watchdog = super::HeatingWatchdog::default();
+        // Switch back to Heat mode to restart heating
+        self.switch_to_heat();
+        self.emit_state();
+    }
+
+    pub fn acknowledge_heating_fault(&mut self) {
+        tracing::info!("Heating fault acknowledged by user");
+        self.heating_fault_state.fault_acknowledged = true;
         self.emit_state();
     }
 

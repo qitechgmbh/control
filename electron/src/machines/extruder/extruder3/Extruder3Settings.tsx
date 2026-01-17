@@ -16,6 +16,7 @@ export function Extruder3SettingsPage() {
     resetInverter,
     setExtruderPressureLimit,
     setExtruderPressureLimitEnabled,
+    setHeatingSafeguardEnabled,
     setPressurePidKp,
     setPressurePidKi,
     setPressurePidKd,
@@ -67,6 +68,18 @@ export function Extruder3SettingsPage() {
             optionFalse={{ children: "Disabled" }}
             onChange={setExtruderPressureLimitEnabled}
           />
+        </Label>
+        <Label label="Heating Safeguard">
+          <SelectionGroupBoolean
+            value={state?.extruder_settings_state.heating_safeguard_enabled ?? true}
+            optionTrue={{ children: "Enabled" }}
+            optionFalse={{ children: "Disabled" }}
+            onChange={setHeatingSafeguardEnabled}
+          />
+          <p className="text-sm text-muted-foreground mt-1">
+            When enabled, monitors heating progress and automatically sets to standby if
+            temperature doesn't increase by at least 5°C within 30 seconds.
+          </p>
         </Label>
         <Label label="Show Advanced PID Settings">
           <SelectionGroupBoolean

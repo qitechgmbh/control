@@ -152,6 +152,9 @@ pub struct HeatingState {
 pub struct ExtruderSettingsState {
     pub pressure_limit: f64,
     pub pressure_limit_enabled: bool,
+    /// Heating safeguard watchdog enabled (default: true)
+    /// When enabled, monitors heating progress and automatically sets to standby if temperature doesn't increase
+    pub heating_safeguard_enabled: bool,
 }
 
 #[derive(Serialize, Debug, Clone, PartialEq, Eq)]
