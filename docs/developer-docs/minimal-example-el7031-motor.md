@@ -177,21 +177,6 @@ This script:
 - Grants required system capabilities (raw sockets)
 - Starts EtherCAT communication
 
-Sometimes an error like this appears:
-
-```bash
-....
-  37: <alloc::boxed::Box<F,A> as core::ops::function::FnOnce<Args>>::call_once
-             at /rustc/ed61e7d7e242494fb7057f2657300d9e77bb4fcb/library/alloc/src/boxed.rs:1985:9
-  38: std::sys::thread::unix::Thread::new::thread_start
-             at /rustc/ed61e7d7e242494fb7057f2657300d9e77bb4fcb/library/std/src/sys/thread/unix.rs:126:17
-  39: start_thread
-  40: __clone3
-14:10:46.906  INFO ThreadId(04) server::socketio::init: 167: Socket connected to namespace socket=FXdsVyRVGiN1nLXJ namespace=/main
-```
-
-Re-run the code until the QiTech UI appears.
-
 ### 4.3 Running the Frontend
 
 ```bash
@@ -236,7 +221,7 @@ Use the official documentation of the EL7031-0030 for more information:
 ## 7. Software Architecture
 
 ### Backend (Rust)
-Located in [machines/src/ethercat_beckhoff/](../../machines/src/ethercat_beckhoff/).
+Located in [machines/src/motor_test_machine/](/machines/src/motor_test_machine/).
 
 1. **`mod.rs`**: Defines the `MotorTestMachine` struct and holds the state (driver wrapper, enabled state, target velocity).
 2. **`api.rs`**: Handles incoming JSON commands from the frontend (Enable/Disable, Set Velocity) via WebSockets/SocketIO.
@@ -244,7 +229,7 @@ Located in [machines/src/ethercat_beckhoff/](../../machines/src/ethercat_beckhof
 4. **`new.rs`**: Initializes the hardware.
 
 ### Frontend (TypeScript/React)
-Located in [electron/src/machines/ethercat_beckhoff/](../../electron/src/machines/ethercat_beckhoff/) and [electron/src/routes/routes.tsx](../../electron/src/routes/routes.tsx).
+Located in [electron/src/machines/motor_test_machine/](/electron/src/machines/motor_test_machine/) and [electron/src/routes/routes.tsx](/electron/src/routes/routes.tsx).
 
 1. **`useTestMotor.ts`**: Custom hook managing the optimistic state and communication with the backend.
 2. **`TestMotorControlPage.tsx`**: The UI using QiTech UI components (`ControlCard`, `EditValue`, `SelectionGroupBoolean`) to match the look and feel of the Winder2.
