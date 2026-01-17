@@ -96,7 +96,7 @@ impl TemperatureController {
         self.heating.temperature = temperature_celsius;
 
         if self.heating.temperature > self.max_temperature {
-            // disable the relais and return
+            // Disable the relays and return
             self.relais.set(false);
             self.heating.heating = false;
             return;

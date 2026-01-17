@@ -237,7 +237,7 @@ impl ExtruderV3 {
         self.namespace.emit(ExtruderV3Events::LiveValues(event));
     }
 
-    // === Steuerungsfunktionen mit emit_state ===
+    // === Control functions with emit_state ===
 
     pub fn set_nozzle_pressure_limit_is_enabled(&mut self, enabled: bool) {
         self.screw_speed_controller
