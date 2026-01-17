@@ -115,11 +115,10 @@ export function GraphWithMarkerControls({
     if (!graphWrapperRef.current || !currentTimeSeries?.current) return;
 
     const graphEl = graphWrapperRef.current;
-    // The BigGraph component is the first child (the one with the actual chart)
-    // TODO: Find a better way to do this
-    const chartContainer = graphEl.querySelector(
-      ".h-\\[50vh\\] > div > div.flex-1 > div",
-    );
+    // Find chart container via uPlot canvas (canvas is always a direct child)
+    const canvas = graphEl.querySelector("canvas");
+    if (!canvas) return;
+    const chartContainer = canvas.parentElement;
     if (!chartContainer) return;
 
     const graphWidth = chartContainer.clientWidth;
@@ -144,24 +143,53 @@ export function GraphWithMarkerControls({
     const endTime = currentTimeSeries.current.timestamp;
     const startTime = endTime - validTimeWindowMs;
 
-    // Assuming the graph's fixed Y-scale is from -1 to 1 based on the sine wave example
-    const graphMin = -1;
-    const graphMax = 1;
-    // TODO: For real-world graphs (like Winder), you might need to read the actual min/max scale
-    // from the uPlot instance or define a safe range if the data is unconstrained.
+    // Calculate Y-axis scale from visible data (similar to createChart.ts)
+    const visibleValues: number[] = [];
+
+    // Collect values from the time series in the visible time window
+    currentTimeSeries.long.values
+      .filter((v): v is TimeSeriesValue => v !== null)
+      .forEach((v) => {
+        if (v.timestamp >= startTime && v.timestamp <= endTime) {
+          visibleValues.push(v.value);
+        }
+      });
+
+    // Include config lines in the scale calculation
+    config.lines?.forEach((line) => {
+      if (line.show !== false) {
+        visibleValues.push(line.value);
+      }
+    });
+
+    // Calculate min/max with 10% padding (matching createChart.ts behavior)
+    let graphMin: number, graphMax: number;
+    if (visibleValues.length > 0) {
+      const minY = Math.min(...visibleValues);
+      const maxY = Math.max(...visibleValues);
+      const range = maxY - minY || Math.abs(maxY) * 0.1 || 1;
+      graphMin = minY - range * 0.1;
+      graphMax = maxY + range * 0.1;
+    } else {
+      // Fallback if no data is available
+      graphMin = -1;
+      graphMax = 1;
+    }
 
     markers.forEach(({ timestamp, name }) => {
       if (timestamp >= startTime && timestamp <= endTime) {
         // Find the data point closest to the marker timestamp to get the correct Y-value
-        const closest = currentTimeSeries.long.values
-          .filter((v): v is TimeSeriesValue => v !== null)
-          .reduce((prev, curr) =>
-            Math.abs(curr.timestamp - timestamp) <
-            Math.abs(prev.timestamp - timestamp)
-              ? curr
-              : prev,
-          );
-        if (!closest) return;
+        const validValues = currentTimeSeries.long.values.filter(
+          (v): v is TimeSeriesValue => v !== null,
+        );
+        if (validValues.length === 0) return;
+
+        const closest = validValues.reduce((prev, curr) =>
+          Math.abs(curr.timestamp - timestamp) <
+          Math.abs(prev.timestamp - timestamp)
+            ? curr
+            : prev,
+        );
 
         // Calculate the Y-position in pixels from the bottom of the chart area
         const normalizedValue =
