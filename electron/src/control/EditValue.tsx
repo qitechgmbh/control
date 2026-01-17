@@ -36,7 +36,6 @@ type Props = {
   maxSlider?: number; // Override the slider max value
   maxLabel?: string;
   step?: number;
-  valueSchema?: z.ZodType<number>;
   inverted?: boolean;
   confirmation?: string;
   renderValue: (value: number) => string;
@@ -89,7 +88,6 @@ export function EditValue({
   description,
   defaultValue,
   step = 1,
-  valueSchema: schema,
   inverted,
   min,
   max,
@@ -104,7 +102,7 @@ export function EditValue({
 
   // Form setup
   const formSchema = z.object({
-    value: schema ?? z.number(),
+    value: z.number(),
   });
   type FormSchema = z.infer<typeof formSchema>;
 
@@ -191,7 +189,6 @@ export function EditValue({
     const numericValue = parseFloat(normalizedInput);
     const hasValidationError =
       isNaN(numericValue) ||
-      (schema && !schema.safeParse(numericValue).success) ||
       (max !== undefined && numericValue > max) ||
       (min !== undefined && numericValue < min);
 
@@ -222,15 +219,7 @@ export function EditValue({
       setValueStringError(false);
       preventFormSyncRef.current = false;
     }
-  }, [
-    valueString,
-    valueStringDirty,
-    schema,
-    max,
-    min,
-    form,
-    roundToStepDecimals,
-  ]);
+  }, [valueString, valueStringDirty, max, min, form, roundToStepDecimals]);
 
   // Reset input state to clean form value
   const resetInput = React.useCallback(() => {

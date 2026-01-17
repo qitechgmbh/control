@@ -1,11 +1,11 @@
 #[cfg(not(feature = "mock-machine"))]
 use super::Winder2;
 #[cfg(not(feature = "mock-machine"))]
-use crate::{MachineAct, MachineMessage};
+use crate::{MachineAct, MachineMessage, MachineValues};
 #[cfg(not(feature = "mock-machine"))]
 use std::time::{Duration, Instant};
-#[cfg(not(feature = "mock-machine"))]
 
+#[cfg(not(feature = "mock-machine"))]
 impl MachineAct for Winder2 {
     fn act(&mut self, now: Instant) {
         let machine_message = self.api_receiver.try_recv();
@@ -60,6 +60,17 @@ impl MachineAct for Winder2 {
             }
             MachineMessage::DisconnectMachine(_machine_connection) => {
                 self.connected_machines.clear();
+            }
+            MachineMessage::RequestValues(sender) => {
+                sender
+                    .send_blocking(MachineValues {
+                        state: serde_json::to_value(self.build_state_event())
+                            .expect("Failed to serialize state"),
+                        live_values: serde_json::to_value(self.get_live_values())
+                            .expect("Failed to serialize live values"),
+                    })
+                    .expect("Failed to send values");
+                sender.close();
             }
         }
     }

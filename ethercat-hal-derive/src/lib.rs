@@ -251,6 +251,27 @@ pub fn ethercat_device_derive(input: TokenStream) -> TokenStream {
             fn as_any(&self) -> &dyn std::any::Any {
                 self
             }
+
+            #[doc="Implemented by the ethercat_hal_derive::EthercatDevice derive macro"]
+            fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
+                self
+            }
+
+            #[doc="Implemented by the ethercat_hal_derive::EthercatDevice derive macro"]
+            fn is_module(&self) -> bool {
+                false
+            }
+
+            #[doc="Implemented by the ethercat_hal_derive::EthercatDevice derive macro"]
+            fn get_module(&self) -> Option<crate::devices::Module> {
+                None
+            }
+
+            #[doc="Implemented by the ethercat_hal_derive::EthercatDevice derive macro"]
+            fn set_module(&mut self,module : crate::devices::Module){
+                ()
+            }
+
         }
 
         impl crate::devices::EthercatDeviceUsed for #name {

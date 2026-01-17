@@ -1,3 +1,7 @@
+use crate::{
+    metrics::collector::{RuntimeMetricsConfig, spawn_runtime_metrics_sampler},
+    socketio::main_namespace::machines_event::MachineObj,
+};
 use machines::{
     AsyncThreadMessage, MachineConnection, MachineNewHardware, MachineNewHardwareSerial,
     MachineNewParams, SerialDevice, SerialDeviceIdentification, SerialDeviceNew,
@@ -10,14 +14,13 @@ use machines::{
     serial::{devices::laser::Laser, init::SerialDetection},
     winder2::api::GenericEvent,
 };
-
 #[cfg(feature = "development-build")]
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use app_state::{HotThreadMessage, SharedState};
 use ethercat::ethercat_discovery_info::send_ethercat_discovering;
 use r#loop::start_loop_thread;
-
+use metrics::io::set_ethercat_iface;
 use panic::init_panic_handling;
 use rest::init::start_api_thread;
 use serialport::UsbPortInfo;
@@ -26,7 +29,6 @@ use smol::{
     future,
     lock::RwLock,
 };
-use socketio::main_namespace::machines_event::MachineObj;
 use socketioxide::extract::SocketRef;
 use std::{collections::HashMap, sync::Arc, time::Duration};
 
@@ -38,6 +40,7 @@ use crate::{
         ethercat_discovery_info::send_ethercat_found, init::find_ethercat_interface,
         setup::setup_loop,
     },
+    modbus_tcp::start_modbus_tcp_discovery,
     socketio::queue::socketio_queue_worker,
 };
 
@@ -48,6 +51,8 @@ pub mod app_state;
 pub mod ethercat;
 pub mod logging;
 pub mod r#loop;
+pub mod metrics;
+pub mod modbus_tcp;
 pub mod panic;
 pub mod performance_metrics;
 pub mod rest;
@@ -79,7 +84,7 @@ pub async fn add_serial_device(
         .clone();
 
     let new_machine = machine_registry.new_machine(&MachineNewParams {
-        device_group: &vec![device_identification_identified.clone()],
+        device_group: &vec![device_identification_identified],
         hardware: &MachineNewHardware::Serial(&hardware),
         socket_queue_tx,
         namespace: None,
@@ -131,6 +136,7 @@ pub async fn start_interface_discovery(
 ) {
     let interface = find_ethercat_interface().await;
     tracing::info!("Inferface found {}, setting up EtherCAT loop", interface);
+    set_ethercat_iface(interface.clone());
 
     let res = setup_loop(&interface, app_state.clone()).await;
 
@@ -332,6 +338,11 @@ fn main() {
     let app_state = Arc::new(shared_state);
     let _loop_thread = start_loop_thread(receiver, CYCLE_TARGET_TIME);
     let _ = start_api_thread(app_state.clone());
+    spawn_runtime_metrics_sampler(RuntimeMetricsConfig {
+        csv_path: "runtime_metrics.csv".to_string(),
+        interval: Duration::from_secs(1),
+        ethercat_iface: None,
+    });
 
     let mut socketio_task = smol::spawn(start_socketio_queue(app_state.clone()));
     let mut serial_task = smol::spawn(start_serial_discovery(app_state.clone()));
@@ -342,6 +353,8 @@ fn main() {
 
     #[cfg(not(feature = "mock-machine"))]
     smol::spawn(start_interface_discovery(app_state.clone(), sender)).detach();
+
+    smol::spawn(start_modbus_tcp_discovery(app_state.clone())).detach();
 
     smol::block_on(async {
         send_empty_machines_event(app_state.clone()).await;

@@ -11,10 +11,10 @@ use smol::{
     lock::RwLock,
 };
 use socketioxide::extract::SocketRef;
+use units::Length;
 
 use crate::AsyncThreadMessage;
 use std::{sync::Arc, time::Instant};
-use units::f64::*;
 use units::length::millimeter;
 
 pub mod act;
@@ -41,12 +41,18 @@ pub struct LaserMachine {
     y_diameter: Option<Length>,
     roundness: Option<f64>,
 
+    target_diameter: Length,
+    higher_tolerance: Length,
+    lower_tolerance: Length,
+    in_tolerance: bool,
+
     //laser target configuration
     laser_target: LaserTarget,
 
     /// Will be initialized as false and set to true by emit_state
     /// This way we can signal to the client that the first state emission is a default state
     emitted_default_state: bool,
+    did_change_state: bool,
 }
 
 impl Machine for LaserMachine {
@@ -91,29 +97,32 @@ impl LaserMachine {
         machine: MACHINE_LASER_V1,
     };
 
-    ///diameter in mm
-    pub fn emit_live_values(&mut self) {
+    pub fn get_live_values(&self) -> LiveValuesEvent {
         let diameter = self.diameter.get::<millimeter>();
         let x_diameter = self.x_diameter.map(|x| x.get::<millimeter>());
         let y_diameter = self.y_diameter.map(|y| y.get::<millimeter>());
         let roundness = self.roundness;
 
-        let live_values = LiveValuesEvent {
+        LiveValuesEvent {
             diameter,
             x_diameter,
             y_diameter,
             roundness,
-        };
+        }
+    }
 
-        self.namespace
-            .emit(LaserEvents::LiveValues(live_values.build()));
+    ///diameter in mm
+    pub fn emit_live_values(&mut self) {
+        let event = self.get_live_values().build();
+        self.namespace.emit(LaserEvents::LiveValues(event));
     }
 
     pub fn build_state_event(&self) -> StateEvent {
         let laser = LaserState {
-            higher_tolerance: self.laser_target.higher_tolerance.get::<millimeter>(),
-            lower_tolerance: self.laser_target.lower_tolerance.get::<millimeter>(),
+            higher_tolerance: self.higher_tolerance.get::<millimeter>(),
+            lower_tolerance: self.lower_tolerance.get::<millimeter>(),
             target_diameter: self.laser_target.diameter.get::<millimeter>(),
+            in_tolerance: self.in_tolerance,
         };
 
         StateEvent {
@@ -122,30 +131,39 @@ impl LaserMachine {
         }
     }
 
-    pub fn emit_state(&mut self) {
-        let state = StateEvent {
-            is_default_state: !std::mem::replace(&mut self.emitted_default_state, true),
+    pub fn get_state(&self) -> StateEvent {
+        StateEvent {
+            is_default_state: !self.emitted_default_state,
             laser_state: LaserState {
                 higher_tolerance: self.laser_target.higher_tolerance.get::<millimeter>(),
                 lower_tolerance: self.laser_target.lower_tolerance.get::<millimeter>(),
                 target_diameter: self.laser_target.diameter.get::<millimeter>(),
+                in_tolerance: self.in_tolerance,
             },
-        };
+        }
+    }
 
-        self.namespace.emit(LaserEvents::State(state.build()));
+    pub fn emit_state(&mut self) {
+        let event = self.get_state().build();
+        self.namespace.emit(LaserEvents::State(event));
+        self.did_change_state = false;
+        self.emitted_default_state = true;
     }
 
     pub fn set_higher_tolerance(&mut self, higher_tolerance: f64) {
-        self.laser_target.higher_tolerance = Length::new::<millimeter>(higher_tolerance);
+        self.higher_tolerance = Length::new::<millimeter>(higher_tolerance);
+        self.laser_target.higher_tolerance = self.higher_tolerance;
         self.emit_state();
     }
 
     pub fn set_lower_tolerance(&mut self, lower_tolerance: f64) {
-        self.laser_target.lower_tolerance = Length::new::<millimeter>(lower_tolerance);
+        self.lower_tolerance = Length::new::<millimeter>(lower_tolerance);
+        self.laser_target.lower_tolerance = self.lower_tolerance;
         self.emit_state();
     }
 
     pub fn set_target_diameter(&mut self, target_diameter: f64) {
+        self.target_diameter = Length::new::<millimeter>(target_diameter);
         self.laser_target.diameter = Length::new::<millimeter>(target_diameter);
         self.emit_state();
     }
@@ -172,6 +190,29 @@ impl LaserMachine {
         }
     }
 
+    ///
+    /// Calculates if the current diameter is inside of the tolerance
+    ///
+    fn calculate_in_tolerance(&mut self) -> bool {
+        let diameter_epsilon: f64 = 0.0001; // 0.0001 mm
+        // early return true if the diameter is 0 to prevent warning happening before start
+        if self.diameter.get::<millimeter>() < diameter_epsilon {
+            self.in_tolerance = true;
+            return true;
+        }
+
+        let top = self.target_diameter + self.higher_tolerance;
+        let bottom = self.target_diameter - self.lower_tolerance;
+
+        if self.diameter > top || self.diameter < bottom {
+            self.in_tolerance = false;
+        } else {
+            self.in_tolerance = true;
+        }
+
+        self.in_tolerance
+    }
+
     pub fn update(&mut self) {
         let laser_data = smol::block_on(async { self.laser.read().await.get_data().await });
         self.diameter = Length::new::<millimeter>(
@@ -192,6 +233,10 @@ impl LaserMachine {
             .cloned();
 
         self.roundness = self.calculate_roundness();
+
+        if self.in_tolerance != self.calculate_in_tolerance() {
+            self.did_change_state = true;
+        }
     }
 }
 

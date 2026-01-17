@@ -1,38 +1,28 @@
-{ lib
-, pkgs
-, pkg-config
-, libudev-zero
-, libpcap
-, craneLib
-}:
+{ lib, pkgs, pkg-config, libudev-zero, libpcap, craneLib }:
 
 let
-  # Bind variables so they can be inherited inside inner calls
-  pname = "server";
-  version = "1.0.0";
-  strictDeps = true;
-  nativeBuildInputs = [ pkg-config ];
-  buildInputs = [ libpcap libudev-zero ];
+  commonArgs = {
+    pname = "server";
+    version = "1.0.0";
+    strictDeps = true;
 
-  # Cleaned source
-  src = craneLib.cleanCargoSource ../..;
+    nativeBuildInputs = [ pkg-config ];
+    buildInputs = [ libpcap libudev-zero ];
 
-  # Safe fallback for CARGO_BUILD_JOBS in impure builds
-  cargoJobs = if (builtins.tryEval (builtins.getEnv "CARGO_BUILD_JOBS")).success
-              then builtins.getEnv "CARGO_BUILD_JOBS"
-              else "2";
-in
+    src = craneLib.cleanCargoSource ../..;
 
-craneLib.buildPackage {
-  inherit pname version src strictDeps nativeBuildInputs buildInputs;
+    CARGO_BUILD_JOBS =
+      if (builtins.tryEval (builtins.getEnv "CARGO_BUILD_JOBS")).success then
+        builtins.getEnv "CARGO_BUILD_JOBS"
+      else
+        "2";
 
-  # Use the safe cargoJobs variable
-  CARGO_BUILD_JOBS = cargoJobs;
-
-  # Build cargo dependencies once for caching
-  cargoArtifacts = craneLib.buildDepsOnly {
-    inherit src strictDeps nativeBuildInputs buildInputs pname version;
+    cargoExtraArgs =
+      "--features tracing-journald,io-uring --no-default-features";
   };
 
-  cargoExtraArgs = "-p server --features tracing-journald,io-uring --no-default-features";
-}
+  cargoArtifacts = craneLib.buildDepsOnly commonArgs;
+in craneLib.buildPackage (commonArgs // {
+
+  inherit cargoArtifacts;
+})

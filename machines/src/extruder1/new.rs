@@ -59,14 +59,12 @@ use super::{
 impl MachineNewTrait for ExtruderV2 {
     fn new<'maindevice>(params: &MachineNewParams) -> Result<Self, Error> {
         // validate general stuff
-
         use crate::{
             MachineNewHardware, MachineNewHardwareEthercat, validate_no_role_dublicates,
             validate_same_machine_identification_unique,
         };
 
         let device_identification = params.device_group.to_vec();
-
         validate_same_machine_identification_unique(&device_identification)?;
         validate_no_role_dublicates(&device_identification)?;
 

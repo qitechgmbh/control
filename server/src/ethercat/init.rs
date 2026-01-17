@@ -5,6 +5,7 @@ use std::{sync::Arc, time::Duration};
 use crate::{
     app_state::SharedState,
     ethercat::{ethercat_discovery_info::send_ethercat_found, setup::setup_loop},
+    metrics::io::set_ethercat_iface,
 };
 
 pub async fn find_ethercat_interface() -> String {
@@ -12,6 +13,7 @@ pub async fn find_ethercat_interface() -> String {
         match discover_ethercat_interface().await {
             Ok(interface) => {
                 tracing::info!("Found EtherCAT Interface at: {}", interface);
+                set_ethercat_iface(&interface);
                 return interface;
             }
             Err(e) => {

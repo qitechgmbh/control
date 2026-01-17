@@ -60,7 +60,7 @@ export function PresetCardMenu({
   );
 }
 
-export type PresetCardProps<T extends PresetSchema> = {
+export type PresetCardProps<T> = {
   preset: Preset<T>;
   onApply: (preset: Preset<T>) => void;
   onOverwrite: (preset: Preset<T>) => void;
@@ -72,7 +72,7 @@ export type PresetCardProps<T extends PresetSchema> = {
   isActive?: boolean;
 };
 
-export function PresetCard<T extends PresetSchema>({
+export function PresetCard<T>({
   preset,
   onApply,
   onOverwrite,

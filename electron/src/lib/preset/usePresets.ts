@@ -3,13 +3,13 @@ import {
   machineIdentificationEquals,
 } from "@/machines/types";
 import { usePresetStore } from "./presetStore";
-import { Preset, PresetData, presetSchema, PresetSchema } from "./preset";
+import { Preset, presetSchema, PresetSchema } from "./preset";
 import { deepEquals } from "@/lib/objects";
 import { useEffect } from "react";
 import { toastError } from "@/components/Toast";
 import { z } from "zod";
 
-export type Presets<T extends PresetSchema> = {
+export type Presets<T> = {
   get: () => Preset<T>[];
   createFromCurrentState: (name: string) => Preset<T>;
   updateFromCurrentState: (preset: Preset<T>) => Preset<T>;
@@ -20,15 +20,15 @@ export type Presets<T extends PresetSchema> = {
   import: (json: any) => void;
 };
 
-export type UsePresetsParams<T extends PresetSchema> = {
+export type UsePresetsParams<T> = {
   machine_identification: MachineIdentification;
-  schemas: Map<number, T>;
+  schemas: Map<number, PresetSchema<T>>;
   schemaVersion: number;
-  currentState?: PresetData<T>;
-  defaultState?: PresetData<T>;
+  currentState?: T;
+  defaultState?: T;
 };
 
-export function usePresets<T extends PresetSchema>({
+export function usePresets<T>({
   machine_identification,
   schemas,
   schemaVersion,
@@ -49,7 +49,10 @@ export function usePresets<T extends PresetSchema>({
     }
 
     try {
-      const parsed = presetSchema(schema).parse(preset);
+      const parsed: Preset<T> = {
+        ...preset,
+        data: schema.parse(preset.data),
+      };
 
       if (parsed.schemaVersion < schemaVersion) {
         parsed.schemaVersion = schemaVersion;
@@ -93,7 +96,11 @@ export function usePresets<T extends PresetSchema>({
     return { ...preset, data: currentState };
   };
 
-  const updateFromCurrentState = (preset: Preset<T>) => {
+  const updateFromCurrentState = (preset: Preset<T>): Preset<T> => {
+    if (!currentState) {
+      return preset;
+    }
+
     const data = currentState;
 
     const newPreset = {
@@ -153,12 +160,16 @@ export function usePresets<T extends PresetSchema>({
   };
 
   const isActive = (preset: Preset<T>) => {
-    return deepEquals(currentState, preset.data);
+    if (!currentState) {
+      return false;
+    }
+
+    return deepEquals(currentState, preset.data ?? {});
   };
 
   const importPreset = (json: any) => {
     try {
-      const anyPreset = presetSchema(z.any()).parse(json);
+      const anyPreset = presetSchema(z.object()).parse(json);
 
       if (
         !machineIdentificationEquals(

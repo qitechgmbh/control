@@ -8,8 +8,7 @@ import { z } from "zod";
 import { toastError, toastZodError } from "@/components/Toast";
 import { MachineIdentificationUnique } from "@/machines/types";
 import { FPS_30 } from "@/lib/constants";
-import { mainNamespaceStore, createMainNamespaceStore } from "./mainNamespace";
-import { softReloadMainNamespaceStore } from "./softReload";
+import { mainNamespaceStore } from "./mainNamespace";
 
 /**
  * Simple buffer-based store updater to limit React re-renders to ~30 FPS
@@ -385,11 +384,11 @@ const useSocketioStore = create<SocketioStore>()((set, get) => ({
   },
 
   decrementNamespace: (namespaceId: NamespaceId) => {
-    const namespace_path = serializeNamespaceId(namespaceId);
+    /*const namespace_path = serializeNamespaceId(namespaceId);
 
     // check if the namespace exists
     const namespace = get().namespaces[namespace_path];
-    /*if (namespace) {
+    if (namespace) {
       set(
         produce((state: SocketioStore) => {
           // decrement the count

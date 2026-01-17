@@ -336,6 +336,9 @@ impl Winder2 {
     }
 }
 
+#[cfg(feature = "mock-machine")]
+pub use mock::Winder2;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Winder2Mode {
     Standby,

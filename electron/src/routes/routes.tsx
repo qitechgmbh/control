@@ -4,7 +4,6 @@ import React from "react";
 import { z } from "zod";
 
 import { ChooseVersionPage } from "@/setup/ChooseVersionPage";
-import { fallback, zodValidator } from "@tanstack/zod-adapter";
 import { githubSourceSchema } from "@/setup/GithubSourceDialog";
 import { SidebarLayout } from "@/components/SidebarLayout";
 import { SetupPage } from "@/setup/SetupPage";
@@ -42,6 +41,7 @@ import { Buffer1SettingsPage } from "@/machines/buffer/buffer1/Buffer1Settings";
 import { Laser1ControlPage } from "@/machines/laser/laser1/Laser1ControlPage";
 import { Laser1GraphsPage } from "@/machines/laser/laser1/Laser1Graph";
 import { Laser1Page } from "@/machines/laser/laser1/Laser1Page";
+import { Laser1PresetsPage } from "@/machines/laser/laser1/Laser1PresetsPage";
 
 import { Mock1ControlPage } from "@/machines/mock/mock1/Mock1ControlPage";
 import { Mock1GraphPage } from "@/machines/mock/mock1/Mock1Graph";
@@ -55,7 +55,17 @@ import { Aquapath1GraphPage } from "@/machines/aquapath/aquapath1/Aquapath1Graph
 
 import { TestMachinePage } from "@/machines/testmachine/TestMachinePage";
 import { TestMachineControlPage } from "@/machines/testmachine/TestMachineControlPage";
-import { Laser1PresetsPage } from "@/machines/laser/laser1/Laser1PresetsPage";
+
+import { AnalogInputTestMachine } from "@/machines/analoginputtestmachine/AnalogInputTestMachinePage";
+import { AnalogInputTestMachineControl } from "@/machines/analoginputtestmachine/AnalogInputTestMachineControlPage";
+import { IP20TestMachinePage } from "@/machines/ip20testmachine/IP20TestMachinePage";
+import { IP20TestMachineControlPage } from "@/machines/ip20testmachine/IP20TestMachineControlPage";
+
+import { MetricsGraphsPage } from "@/metrics/MetricsGraphsPage";
+import { MetricsControlPage } from "@/metrics/MetricsControlPage";
+
+import { WagoPower1Page } from "@/machines/wago_power/wago_power1/WagoPower1Page";
+import { WagoPower1ControlPage } from "@/machines/wago_power/wago_power1/WagoPower1ControlPage";
 
 // make a route tree like this
 // _mainNavigation/machines/winder2/$serial/control
@@ -75,6 +85,30 @@ export const testMachineControlRoute = createRoute({
   getParentRoute: () => testMachineSerialRoute,
   path: "control",
   component: () => <TestMachineControlPage />,
+});
+
+export const analogInputTestMachineSerialRoute = createRoute({
+  getParentRoute: () => machinesRoute,
+  path: "analogInputTestMachine/$serial",
+  component: () => <AnalogInputTestMachine />,
+});
+
+export const analogInputTestMachineControlRoute = createRoute({
+  getParentRoute: () => analogInputTestMachineSerialRoute,
+  path: "control",
+  component: () => <AnalogInputTestMachineControl />,
+});
+
+export const ip20TestMachineSerialRoute = createRoute({
+  getParentRoute: () => machinesRoute,
+  path: "ip20testmachine/$serial",
+  component: () => <IP20TestMachinePage />,
+});
+
+export const ip20TestMachineControlRoute = createRoute({
+  getParentRoute: () => ip20TestMachineSerialRoute,
+  path: "control",
+  component: () => <IP20TestMachineControlPage />,
 });
 
 export const sidebarRoute = createRoute({
@@ -286,6 +320,18 @@ export const buffer1SettingsRoute = createRoute({
   component: () => <Buffer1SettingsPage />,
 });
 
+export const wagoPower1SerialRoute = createRoute({
+  getParentRoute: () => machinesRoute,
+  path: "wago_power1/$serial",
+  component: () => <WagoPower1Page />,
+});
+
+export const wagoPower1ControlRoute = createRoute({
+  getParentRoute: () => wagoPower1SerialRoute,
+  path: "control",
+  component: () => <WagoPower1ControlPage />,
+});
+
 export const setupRoute = createRoute({
   getParentRoute: () => sidebarRoute,
   path: "setup",
@@ -321,12 +367,22 @@ export const updateChooseVersionRoute = createRoute({
   path: "choose-version",
   component: () => <ChooseVersionPage />,
 });
+export const metricsRoute = createRoute({
+  getParentRoute: () => setupRoute,
+  path: "metrics",
+  component: () => (
+    <>
+      <MetricsControlPage />
+      <MetricsGraphsPage />
+    </>
+  ),
+});
 
 export const versionSearchSchema = z
   .object({
-    branch: fallback(z.string().optional(), undefined),
-    commit: fallback(z.string().optional(), undefined),
-    tag: fallback(z.string().optional(), undefined),
+    branch: z.string().optional(),
+    commit: z.string().optional(),
+    tag: z.string().optional(),
   })
   .merge(githubSourceSchema)
   .refine(
@@ -348,14 +404,14 @@ export const updateChangelogRoute = createRoute({
   getParentRoute: () => updateRoute,
   path: "changelog",
   component: () => <ChangelogPage />,
-  validateSearch: zodValidator(versionSearchSchema),
+  validateSearch: versionSearchSchema,
 });
 
 export const updateExecuteRoute = createRoute({
   getParentRoute: () => updateRoute,
   path: "execute",
   component: () => <UpdateExecutePage />,
-  validateSearch: zodValidator(versionSearchSchema),
+  validateSearch: versionSearchSchema,
 });
 
 export const rootTree = RootRoute.addChildren([
@@ -369,8 +425,8 @@ export const rootTree = RootRoute.addChildren([
         updateExecuteRoute,
       ]),
       troubleshootRoute,
+      metricsRoute,
     ]),
-
     machinesRoute.addChildren([
       laser1SerialRoute.addChildren([
         laser1ControlRoute,
@@ -378,6 +434,12 @@ export const rootTree = RootRoute.addChildren([
         laser1PresetsRoute,
       ]),
       testMachineSerialRoute.addChildren([testMachineControlRoute]),
+
+      analogInputTestMachineSerialRoute.addChildren([
+        analogInputTestMachineControlRoute,
+      ]),
+
+      ip20TestMachineSerialRoute.addChildren([ip20TestMachineControlRoute]),
 
       aquapath1SerialRoute.addChildren([
         aquapath1ControlRoute,
@@ -414,6 +476,8 @@ export const rootTree = RootRoute.addChildren([
         mock1ManualRoute,
         mock1PresetsRoute,
       ]),
+
+      wagoPower1SerialRoute.addChildren([wagoPower1ControlRoute]),
 
       buffer1SerialRoute.addChildren([buffer1ControlRoute]),
     ]),

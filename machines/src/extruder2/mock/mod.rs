@@ -16,7 +16,7 @@ use std::time::Instant;
 
 #[cfg(feature = "mock-machine")]
 use crate::{
-    MACHINE_EXTRUDER_V1, VENDOR_QITECH,
+    MACHINE_EXTRUDER_V2, VENDOR_QITECH,
     extruder1::{
         ExtruderV2Mode,
         api::{
@@ -124,6 +124,6 @@ pub struct ExtruderV2 {
 impl ExtruderV2 {
     pub const MACHINE_IDENTIFICATION: MachineIdentification = MachineIdentification {
         vendor: VENDOR_QITECH,
-        machine: MACHINE_EXTRUDER_V1,
+        machine: MACHINE_EXTRUDER_V2,
     };
 }

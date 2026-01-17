@@ -1,5 +1,5 @@
 use super::MockMachine;
-use crate::{MachineAct, MachineMessage};
+use crate::{MachineAct, MachineMessage, MachineValues};
 use std::time::{Duration, Instant};
 
 /// Implements the `MachineAct` trait for the `MockMachine`.
@@ -56,6 +56,17 @@ impl MachineAct for MockMachine {
             /*Doesnt connect to any Machine so do nothing*/
             {
                 ()
+            }
+            MachineMessage::RequestValues(sender) => {
+                sender
+                    .send_blocking(MachineValues {
+                        state: serde_json::to_value(self.get_state())
+                            .expect("Failed to serialize state"),
+                        live_values: serde_json::to_value(self.get_live_values())
+                            .expect("Failed to serialize live values"),
+                    })
+                    .expect("Failed to send values");
+                sender.close();
             }
         }
     }

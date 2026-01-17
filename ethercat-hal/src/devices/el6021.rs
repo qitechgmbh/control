@@ -328,6 +328,8 @@ impl TxPdoObject for Standard22ByteMdp600Input {
         self.status.overrun_error = bits[6];
         // Bit7 is reserved/unused
         self.length = bits[8..8 + 8].load_le::<u8>();
+        // the serial bytes start at bit 16, then we calculate the offset of when the serial bytes buffer is over, which for Standard22ByteMdp600Input is 22bytes
+        // to get the size in bits we do 22 * 8 -> 176bits
         let serial_bytes = bits[16..(16 + 22 * 8_usize)].chunks_exact(8);
         for (i, val) in serial_bytes.enumerate() {
             self.data[i] = val.load_le();

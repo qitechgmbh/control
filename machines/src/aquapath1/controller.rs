@@ -28,7 +28,6 @@ pub struct Controller {
     pub cooling_relais: DigitalOutput,
 
     pub heating_relais_1: DigitalOutput,
-    pub heating_relais_2: DigitalOutput,
     pub temperature_sensor_in: TemperatureInput,
     pub temperature_sensor_out: TemperatureInput,
 
@@ -55,7 +54,6 @@ impl Controller {
         cooling_controller: AnalogOutput,
         cooling_relais: DigitalOutput,
         heating_relais_1: DigitalOutput,
-        heating_relais_2: DigitalOutput,
         temp_sensor_in: TemperatureInput,
         temp_sensor_out: TemperatureInput,
 
@@ -78,7 +76,6 @@ impl Controller {
             cooling_controller: cooling_controller,
             cooling_relais: cooling_relais,
             heating_relais_1: heating_relais_1,
-            heating_relais_2: heating_relais_2,
             cooling_allowed: false,
             heating_allowed: false,
             temperature_sensor_in: temp_sensor_in,
@@ -95,15 +92,11 @@ impl Controller {
     }
 
     pub fn turn_pump_off(&mut self) {
-        tracing::info!("turn_pump_off");
-
         self.flow.pump = false;
         self.pump_relais.set(false);
     }
 
     pub fn turn_pump_on(&mut self) {
-        tracing::info!("turn_pump_on");
-
         self.flow.pump = true;
         self.pump_relais.set(true);
     }
@@ -180,32 +173,23 @@ impl Controller {
     }
 
     pub fn turn_cooling_on(&mut self) {
-        tracing::info!("turn_cooling_on");
         self.cooling_relais.set(true);
         self.cooling_controller.set(10.0);
         self.temperature.cooling = true;
     }
 
     pub fn turn_cooling_off(&mut self) {
-        tracing::info!("turn_cooling_off");
-
         self.cooling_relais.set(false);
         self.temperature.cooling = false;
     }
 
     pub fn turn_heating_on(&mut self) {
-        tracing::info!("turn_heating_on");
-
         self.heating_relais_1.set(true);
-        self.heating_relais_2.set(true);
         self.temperature.heating = true;
     }
 
     pub fn turn_heating_off(&mut self) {
-        tracing::info!("turn_heating_off");
-
         self.heating_relais_1.set(false);
-        self.heating_relais_2.set(false);
         self.temperature.heating = false;
     }
 
@@ -220,8 +204,7 @@ impl Controller {
     pub fn get_flow(&mut self) -> VolumeRate {
         let value = match self.flow_sensor.get_frequency_value() {
             Ok(val) => val,
-            Err(e) => {
-                tracing::debug!("Error calculating frequency: {}", e);
+            Err(_e) => {
                 return VolumeRate::new::<liter_per_minute>(0.0);
             }
         };

@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist, PersistStorage, StorageValue } from "zustand/middleware";
-import { Preset, PresetSchema, presetSchema } from "./preset";
+import { Preset, presetSchema } from "./preset";
 import { MachineIdentification } from "@/machines/types";
 import { z } from "zod";
 import { toastError } from "@/components/Toast";
@@ -33,9 +33,9 @@ type PresetStoreData = {
 };
 
 export type PresetStore = PresetStoreData & {
-  insert: <T extends PresetSchema>(preset: Preset<T>) => PersistedPreset;
-  update: <T extends PresetSchema>(preset: Preset<T>) => void;
-  remove: <T extends PresetSchema>(preset: Preset<T>) => void;
+  insert: <T>(preset: Preset<T>) => PersistedPreset;
+  update: <T>(preset: Preset<T>) => void;
+  remove: <T>(preset: Preset<T>) => void;
   getById: (id: number) => PersistedPreset | undefined;
 
   setLatestPresetId: (
@@ -100,7 +100,7 @@ export const usePresetStore = create<PresetStore>()(
       presets: [],
       latestPresetIds: new Map(),
 
-      insert: <T extends PresetSchema>(preset: Preset<T>) => {
+      insert: <T>(preset: Preset<T>) => {
         const state = get();
         const { presets } = state;
         const ids = presets.map((p: PersistedPreset) => p.id);
@@ -115,7 +115,7 @@ export const usePresetStore = create<PresetStore>()(
         return persistedPreset;
       },
 
-      update: <T extends PresetSchema>(preset: Preset<T>) => {
+      update: <T>(preset: Preset<T>) => {
         const state = get();
         const presets: PersistedPreset[] = state.presets.map(
           (p: PersistedPreset) =>
@@ -124,7 +124,7 @@ export const usePresetStore = create<PresetStore>()(
         set({ ...state, presets });
       },
 
-      remove: <T extends PresetSchema>(preset: Preset<T>) => {
+      remove: <T>(preset: Preset<T>) => {
         const state = get();
         const presets = state.presets.filter(
           (p: Preset<any>) => p.id !== preset.id,

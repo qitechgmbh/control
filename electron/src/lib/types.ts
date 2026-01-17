@@ -9,18 +9,18 @@ import { z } from "zod";
  */
 export function rustEnumSchema<T extends Record<string, z.ZodType>>(
   schemas: T,
-): z.ZodType<{ [K in keyof T]?: z.infer<T[K]> }> {
+) {
   // Create an object schema where all properties are optional
   const schemaEntries = Object.entries(schemas).map(([key, schema]) => [
     key,
     schema.optional(),
   ]);
 
-  const objectSchema = z.object(
-    Object.fromEntries(schemaEntries) as {
+  const objectSchema = z.object({
+    ...(schemaEntries as {
       [K in keyof T]: z.ZodOptional<T[K]>;
-    },
-  );
+    }),
+  });
 
   // Add refinement to ensure exactly one property is defined
   return objectSchema.refine(

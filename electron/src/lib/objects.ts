@@ -1,4 +1,7 @@
-export function deepEquals<T>(a: T, b: T): boolean {
+export function deepEquals(
+  a: object | undefined,
+  b: object | undefined,
+): boolean {
   if (a === b) {
     return true;
   }

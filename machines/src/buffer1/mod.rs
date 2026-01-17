@@ -48,21 +48,27 @@ impl BufferV1 {
         vendor: VENDOR_QITECH,
         machine: MACHINE_BUFFER_V1,
     };
-    pub fn emit_live_values(&mut self) {
-        let live_values = LiveValuesEvent {};
 
-        let event = live_values.build();
+    pub fn get_live_values(&mut self) -> LiveValuesEvent {
+        LiveValuesEvent {}
+    }
+
+    pub fn emit_live_values(&mut self) {
+        let event = self.get_live_values().build();
         self.namespace.emit(BufferV1Events::LiveValues(event));
     }
-    pub fn emit_state(&mut self) {
-        let state = StateEvent {
+
+    pub fn get_state(&self) -> StateEvent {
+        StateEvent {
             mode_state: ModeState {
                 mode: self.mode.clone(),
             },
             // connected_machine_state: self.connected_winder.to_state(),
-        };
+        }
+    }
 
-        let event = state.build();
+    pub fn emit_state(&mut self) {
+        let event = self.get_state().build();
         self.namespace.emit(BufferV1Events::State(event));
     }
 

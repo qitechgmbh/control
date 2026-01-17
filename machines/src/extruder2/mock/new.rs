@@ -8,8 +8,8 @@ use crate::{
             PressureState, RegulationState, RotationState, ScrewState, TemperaturePid,
             TemperaturePidStates,
         },
-        mock::ExtruderV2,
     },
+    extruder2::mock::ExtruderV2,
 };
 
 impl MachineNewTrait for ExtruderV2 {

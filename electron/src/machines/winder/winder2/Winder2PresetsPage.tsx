@@ -3,7 +3,7 @@ import { useWinder2 } from "./useWinder";
 import { winder2 } from "@/machines/properties";
 
 import { PresetsPage } from "@/components/preset/PresetsPage";
-import { Preset, PresetData } from "@/lib/preset/preset";
+import { Preset } from "@/lib/preset/preset";
 import {
   pullerStateSchema,
   spoolSpeedControllerStateSchema,
@@ -16,19 +16,21 @@ import {
 
 const winder2PresetDataSchema = z
   .object({
-    traverse_state: z.object({
-      limit_inner: z.number(),
-      limit_outer: z.number(),
-      step_size: z.number(),
-      padding: z.number(),
-      laserpointer: z.boolean(),
-    }),
-    puller_state: pullerStateSchema,
-    spool_speed_controller_state: spoolSpeedControllerStateSchema,
+    traverse_state: z
+      .object({
+        limit_inner: z.number(),
+        limit_outer: z.number(),
+        step_size: z.number(),
+        padding: z.number(),
+        laserpointer: z.boolean(),
+      })
+      .partial(),
+    puller_state: pullerStateSchema.partial(),
+    spool_speed_controller_state: spoolSpeedControllerStateSchema.partial(),
   })
-  .deepPartial();
+  .partial();
 
-type Winder2 = typeof winder2PresetDataSchema;
+type Winder2 = z.infer<typeof winder2PresetDataSchema>;
 
 const schemas = new Map([[1, winder2PresetDataSchema]]);
 
@@ -36,40 +38,39 @@ const previewEntries: PresetPreviewEntries<Winder2> = [
   {
     name: "Inner Traverse Limit",
     unit: "mm",
-    renderValue: (data: PresetData<Winder2>) =>
-      data?.traverse_state?.limit_inner?.toFixed(1) ?? "N/A",
+    renderValue: (data: Winder2) =>
+      data.traverse_state?.limit_inner?.toFixed(1) ?? "N/A",
   },
   {
     name: "Outer Traverse Limit",
     unit: "mm",
-    renderValue: (data: PresetData<Winder2>) =>
+    renderValue: (data: Winder2) =>
       data?.traverse_state?.limit_outer?.toFixed(1) ?? "N/A",
   },
   {
     name: "Traverse Step Size",
     unit: "mm",
-    renderValue: (data: PresetData<Winder2>) =>
+    renderValue: (data: Winder2) =>
       data?.traverse_state?.step_size?.toFixed(1) ?? "N/A",
   },
   {
     name: "Traverse Padding",
     unit: "mm",
-    renderValue: (data: PresetData<Winder2>) =>
-      data?.traverse_state?.padding?.toFixed(1),
+    renderValue: (data: Winder2) => data?.traverse_state?.padding?.toFixed(1),
   },
   previewSeparator,
   {
     name: "Puller Regulation",
-    renderValue: (data: PresetData<Winder2>) => data?.puller_state?.regulation,
+    renderValue: (data: Winder2) => data?.puller_state?.regulation,
   },
   {
     name: "Puller Direction",
-    renderValue: (data: PresetData<Winder2>) =>
+    renderValue: (data: Winder2) =>
       data.puller_state?.forward ? "Forward" : "Backward",
   },
   {
     name: "Puller Gear Ratio",
-    renderValue: (data: PresetData<Winder2>) => {
+    renderValue: (data: Winder2) => {
       const ratio = data.puller_state?.gear_ratio;
       if (ratio === "OneToOne") return "1:1";
       if (ratio === "OneToFive") return "1:5";
@@ -80,74 +81,73 @@ const previewEntries: PresetPreviewEntries<Winder2> = [
   {
     name: "Puller Target Speed",
     unit: "m/min",
-    renderValue: (data: PresetData<Winder2>) =>
-      data.puller_state?.target_speed?.toFixed(2),
+    renderValue: (data: Winder2) => data.puller_state?.target_speed?.toFixed(2),
   },
   {
     name: "Puller Target Diameter",
     unit: "mm",
-    renderValue: (data: PresetData<Winder2>) =>
+    renderValue: (data: Winder2) =>
       data.puller_state?.target_diameter?.toFixed(1),
   },
   {
     name: "Puller Target Diameter",
     unit: "mm",
-    renderValue: (data: PresetData<Winder2>) =>
+    renderValue: (data: Winder2) =>
       data.puller_state?.target_diameter?.toFixed(1),
   },
   previewSeparator,
   {
     name: "Spool Regulation",
-    renderValue: (data: PresetData<Winder2>) =>
+    renderValue: (data: Winder2) =>
       data.spool_speed_controller_state?.regulation_mode,
   },
   {
     name: "Spool Direction",
-    renderValue: (data: PresetData<Winder2>) =>
+    renderValue: (data: Winder2) =>
       data.spool_speed_controller_state?.forward ? "Forward" : "Reverse",
   },
   {
     name: "Spool Min Speed",
     unit: "rpm",
-    renderValue: (data: PresetData<Winder2>) =>
+    renderValue: (data: Winder2) =>
       data.spool_speed_controller_state?.minmax_min_speed?.toFixed(2),
   },
   {
     name: "Spool Max Speed",
     unit: "rpm",
-    renderValue: (data: PresetData<Winder2>) =>
+    renderValue: (data: Winder2) =>
       data.spool_speed_controller_state?.minmax_max_speed?.toFixed(2),
   },
   previewSeparator,
   {
     name: "Adaptive Spool Tension Target",
-    renderValue: (data: PresetData<Winder2>) =>
+    renderValue: (data: Winder2) =>
       data.spool_speed_controller_state?.adaptive_tension_target?.toFixed(2),
   },
   {
     name: "Adaptive Spool Learning Rate",
-    renderValue: (data: PresetData<Winder2>) =>
+    renderValue: (data: Winder2) =>
       data.spool_speed_controller_state?.adaptive_radius_learning_rate?.toFixed(
         2,
       ),
   },
   {
     name: "Adaptive Spool Max Speed Multiplier",
-    renderValue: (data: PresetData<Winder2>) =>
+    renderValue: (data: Winder2) =>
       data.spool_speed_controller_state?.adaptive_max_speed_multiplier?.toFixed(
         1,
       ),
   },
   {
     name: "Adaptive Spool Acceleration Factor",
-    renderValue: (data: PresetData<Winder2>) =>
+    renderValue: (data: Winder2) =>
       data.spool_speed_controller_state?.adaptive_acceleration_factor?.toFixed(
         2,
       ),
   },
   {
     name: "Adaptive Spool Deaccel. Urgency",
-    renderValue: (data: PresetData<Winder2>) =>
+    renderValue: (data: Winder2) =>
       data.spool_speed_controller_state?.adaptive_deacceleration_urgency_multiplier?.toFixed(
         1,
       ),
@@ -230,11 +230,11 @@ export function Winder2PresetsPage() {
     // );
 
     enableTraverseLaserpointer(
-      preset.data.traverse_state?.laserpointer ?? false,
+      preset.data?.traverse_state?.laserpointer ?? false,
     );
   };
 
-  const toPresetData = (s: typeof state): PresetData<Winder2> => ({
+  const toPresetData = (s: typeof state): Winder2 => ({
     traverse_state: {
       limit_inner: s?.traverse_state?.limit_inner,
       limit_outer: s?.traverse_state?.limit_outer,

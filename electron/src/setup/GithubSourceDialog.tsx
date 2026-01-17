@@ -24,7 +24,6 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Icon } from "@/components/Icon";
 import { TouchButton } from "@/components/touch/TouchButton";
-import { fallback } from "@tanstack/zod-adapter";
 
 type Props = {
   value: GithubSource;
@@ -32,9 +31,9 @@ type Props = {
 };
 
 export const githubSourceSchema = z.object({
-  githubRepoOwner: fallback(z.string(), "qitechgmbh"),
-  githubRepoName: fallback(z.string(), "control"),
-  githubToken: fallback(z.string().optional().nullable(), undefined),
+  githubRepoOwner: z.string().catch("qitechgmbh"),
+  githubRepoName: z.string().catch("control"),
+  githubToken: z.string().optional(),
 });
 
 export type GithubSource = z.infer<typeof githubSourceSchema>;
@@ -91,7 +90,7 @@ export function GithubSourceDialogContent({
   const onSubmit = (values: GithubSource) => {
     onChange({
       ...values,
-      githubToken: values.githubToken === "" ? null : values.githubToken,
+      githubToken: values.githubToken === "" ? undefined : values.githubToken,
     });
     setOpen(false);
   };

@@ -18,6 +18,8 @@ use units::electric_potential::volt;
 
 #[cfg(not(feature = "mock-machine"))]
 use crate::MACHINE_EXTRUDER_V2;
+
+#[cfg(not(feature = "mock-machine"))]
 use crate::{AsyncThreadMessage, Machine};
 
 #[cfg(not(feature = "mock-machine"))]

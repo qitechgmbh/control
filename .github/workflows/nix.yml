@@ -1,0 +1,96 @@
+name: Nix CI
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+env:
+  NIX_PATH: nixpkgs=channel:nixos-25.05
+
+jobs:
+  electron:
+    runs-on: ubuntu-latest
+
+    steps:
+      - &checkout
+        name: Check out repository
+        uses: actions/checkout@v4
+
+      - &nix-install
+        uses: nixbuild/nix-quick-install-action@v34
+        with:
+          nix_conf: |
+            keep-env-derivations = true
+            keep-outputs = true
+
+      - uses: nix-community/cache-nix-action@v6
+        with:
+          primary-key: nix-electron-${{ runner.os }}-${{ hashFiles('**/*.nix', '**/flake.lock', './electron/package-lock.json') }}
+          restore-prefixes-first-match: nix-${{ runner.os }}-
+          purge: true
+          purge-prefixes: nix-electron-${{ runner.os }}-
+
+      - name: Build Electron in Nix
+        run: nix build ".#packages.x86_64-linux.electron"
+
+  rust:
+    runs-on: ubuntu-latest
+
+    steps:
+      - *checkout
+      - *nix-install
+
+      - uses: nix-community/cache-nix-action@v6
+        with:
+          primary-key: nix-server-${{ runner.os }}-${{ hashFiles('**/*.nix', '**/flake.lock', './Cargo.lock') }}
+          restore-prefixes-first-match: nix-${{ runner.os }}-
+          purge: true
+          purge-prefixes: nix-server-${{ runner.os }}-
+
+      - name: Build Server in Nix
+        run: nix build ".#packages.x86_64-linux.server"
+
+  build:
+    runs-on: ubuntu-latest
+    needs: [electron, rust]
+
+    steps:
+      - *checkout
+      - *nix-install
+
+      - name: Use both Electron and Server Nix Store
+        uses: nix-community/cache-nix-action@v6
+        with:
+          primary-key: nix-${{ runner.os }}-${{ hashFiles('**/*.nix', '**/flake.lock', './Cargo.lock', './electron/package-lock.json') }}
+
+          # if no hit on the primary key, merge individual caches
+          restore-prefixes-all-matches: |
+            nix-electron-${{ runner.os }}-
+            nix-server-${{ runner.os }}-
+
+      - name: Build Flake and System Configuration
+        run: nix build ".#nixosConfigurations.nixos.config.system.build.toplevel" --impure
+
+  format:
+    runs-on: ubuntu-latest
+
+    steps:
+      - *checkout
+      - *nix-install
+
+      - name: Format
+        run: nix run 'nixpkgs#nixfmt-classic' $(find . nixos -name '*.nix')
+
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - *checkout
+      - *nix-install
+
+      - name: Build Flake and Configuration.nix
+        run: nix flake check "." --impure

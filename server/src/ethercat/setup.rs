@@ -12,6 +12,13 @@ use control_core::socketio::namespace::NamespaceCacheingLogic;
 use control_core::{irq_handling::set_irq_affinity, realtime::set_realtime_priority};
 use ethercat_hal::debugging::diagnosis_history::get_most_recent_diagnosis_message;
 use ethercat_hal::devices::devices_from_subdevices;
+use ethercat_hal::devices::wago_750_354::{
+    WAGO_750_354_PRODUCT_ID, WAGO_750_354_VENDOR_ID, Wago750_354,
+};
+use ethercat_hal::devices::wago_modules::ip20_ec_di8_do8::{
+    IP20_EC_DI8_DO8_PRODUCT_ID, IP20_EC_DI8_DO8_VENDOR_ID, IP20EcDi8Do8,
+};
+
 use ethercrab::std::ethercat_now;
 use ethercrab::{MainDevice, MainDeviceConfig, PduStorage, RetryBehaviour, Timeouts};
 use machines::machine_identification::{
@@ -23,9 +30,6 @@ use machines::{Machine, MachineNewHardware, MachineNewHardwareEthercat, MachineN
 use smol::channel::Sender;
 use socketioxide::extract::SocketRef;
 use std::{sync::Arc, time::Duration};
-
-const SM_OUTPUT: u16 = 0x1C32;
-const SM_INPUT: u16 = 0x1C33;
 
 /// Structure to hold the result of grouping devices by identification
 #[derive(Debug)]
@@ -110,10 +114,6 @@ pub async fn set_ethercat_devices<const MAX_SUBDEVICES: usize, const MAX_PDI: us
     socket_queue_tx: Sender<(SocketRef, Arc<control_core::socketio::event::GenericEvent>)>,
 ) -> Result<(), anyhow::Error> {
     let device_grouping_result = group_devices_by_identification(device_identifications);
-    tracing::info!(
-        "set_ethercat_devices: {:?}",
-        device_grouping_result.unidentified_devices
-    );
     let machine_new_hardware = MachineNewHardware::Ethercat(hardware);
 
     let mut machines: Vec<Box<dyn Machine>> = vec![];
@@ -159,6 +159,7 @@ pub async fn set_ethercat_devices<const MAX_SUBDEVICES: usize, const MAX_PDI: us
         .rt_machine_creation_channel
         .send(crate::app_state::HotThreadMessage::AddMachines(machines))
         .await;
+
     shared_state.add_machines_if_not_exists(machine_objs).await;
     shared_state.clone().send_machines_event().await;
 
@@ -175,6 +176,7 @@ pub async fn setup_loop(
     let pdu_storage = Box::leak(Box::new(PduStorage::<MAX_FRAMES, MAX_PDU_DATA>::new()));
     let (tx, rx, pdu) = pdu_storage.try_split().expect("can only split once");
     let interface = interface.to_string();
+    let mut has_dc = false;
 
     std::thread::Builder::new()
         .name("EthercatTxRxThread".to_owned())
@@ -299,7 +301,7 @@ pub async fn setup_loop(
 
     // filter devices and if Option<DeviceMachineIdentification> is Some
     // return identified_devices, identified_device_identifications, identified_subdevices
-    let (identified_device_identifications, identified_devices, identified_subdevices): (
+    let (identified_device_identifications,identified_devices, identified_subdevices): (
         Vec<_>,
         Vec<_>,
         Vec<_>,
@@ -327,22 +329,79 @@ pub async fn setup_loop(
                 acc.0.push(identified_device_identification.clone());
                 acc.1.push(identified_device);
                 acc.2.push(identified_subdevice);
-                ethercat_meta_devices.push(EtherCatDeviceMetaData::from_subdevice(identified_subdevice,identified_device_identification));
-
+                let meta = EtherCatDeviceMetaData::from_subdevice(identified_subdevice,identified_device_identification);
+                ethercat_meta_devices.push(meta);
                 acc
             },
         );
-    tracing::info!("Found Devices: {:?}", ethercat_meta_devices);
-    drop(ethercat_meta_devices);
 
     // We always need to have atleast one subdevice anyways
     let coupler = subdevices.get(0).unwrap();
     let _resp = get_most_recent_diagnosis_message(coupler).await;
 
+    /*
+        handle special edge cases,
+        Wago couplers handle all subdevices as part of the coupler instead of their own devices,
+        meaning we need to convert the PDO Mappings to seperate SubDevices to enable more ease of use
+        OR alternatively you could show it like TwinCAT with "slots" on the Coupler
+    */
+    match (coupler.identity().vendor_id, coupler.identity().product_id) {
+        (WAGO_750_354_VENDOR_ID, WAGO_750_354_PRODUCT_ID) => {
+            has_dc = true;
+            let r = Wago750_354::initialize_modules(coupler).await?;
+            for module in r {
+                if coupler.configured_address() == module.belongs_to_addr {
+                    match ethercat_meta_devices.get(0) {
+                        Some(meta) => {
+                            let meta_data = EtherCatDeviceMetaData {
+                                configured_address: module.slot,
+                                name: "wago module".to_owned(),
+                                vendor_id:module.vendor_id,
+                                product_id: module.product_id,
+                                revision: 0x2,
+                                device_identification: DeviceIdentification{
+                                    device_machine_identification: meta.device_identification.device_machine_identification.clone(),
+                                    device_hardware_identification: machines::machine_identification::DeviceHardwareIdentification::Ethercat(DeviceHardwareIdentificationEthercat{ subdevice_index: module.slot as usize }) }
+                            };
+                            ethercat_meta_devices.push(meta_data);
+                        }
+                        None => break,
+                    }
+                }
+            }
+        }
+        (IP20_EC_DI8_DO8_VENDOR_ID, IP20_EC_DI8_DO8_PRODUCT_ID) => {
+            has_dc = true;
+            let r = IP20EcDi8Do8::initialize_modules(coupler).await?;
+            for module in r {
+                if coupler.configured_address() == module.belongs_to_addr {
+                    match ethercat_meta_devices.get(0) {
+                        Some(meta) => {
+                            let meta_data = EtherCatDeviceMetaData {
+                                configured_address: module.slot,
+                                name: "IP20 EC DI8 DO8 module".to_owned(),
+                                vendor_id:module.vendor_id,
+                                product_id: module.product_id,
+                                revision: 0x1,
+                                device_identification: DeviceIdentification{
+                                    device_machine_identification: meta.device_identification.device_machine_identification.clone(),
+                                    device_hardware_identification: machines::machine_identification::DeviceHardwareIdentification::Ethercat(DeviceHardwareIdentificationEthercat{ subdevice_index: module.slot as usize }) }
+                            };
+                            ethercat_meta_devices.push(meta_data);
+                        }
+                        None => break,
+                    }
+                }
+            }
+        }
+        _ => (),
+    };
+    drop(ethercat_meta_devices);
+
     for subdevice in subdevices.iter() {
+        // Hack so El5152 goes into OP
         if subdevice.name() == "EL5152" {
-            subdevice.sdo_write(SM_OUTPUT, 0x1, 0x00u16).await?; //set sync mode (1) for free run (0)
-            subdevice.sdo_write(SM_INPUT, 0x1, 0x00u16).await?; //set sync mode (1) for free run (0)
+            has_dc = true;
         }
     }
 
@@ -365,8 +424,37 @@ pub async fn setup_loop(
     )
     .await?;
 
+    let group_safe = match group_preop.into_safe_op(&maindevice).await {
+        Ok(group_op) => {
+            tracing::info!("Group in Safe-OP state");
+            group_op
+        }
+        Err(err) => Err(anyhow::anyhow!(
+            "[{}::setup_loop] Failed to put group in Safe-OP state: {:?}",
+            module_path!(),
+            err
+        ))?,
+    };
+
+    // TODO Make a more extensive init for the case of DC-Sync
+    // Maybe we need multiple groups? like one DC group and one non dc sync group?
+    // For now we just check if we use wago coupler or IP20
+    if has_dc {
+        for _ in 1..1000 {
+            let res = group_safe.tx_rx_sync_system_time(&maindevice).await;
+            match res {
+                Ok(_) => (),
+                Err(e) => tracing::error!(
+                    "[{}::setup_loop] Failed to sync dc time: {:?}",
+                    e,
+                    module_path!()
+                ),
+            }
+        }
+    }
+
     // Put group in operational state
-    let group_op = match group_preop.into_op(&maindevice).await {
+    let group_op = match group_safe.into_op(&maindevice).await {
         Ok(group_op) => {
             tracing::info!("Group in OP state");
             group_op
@@ -377,6 +465,7 @@ pub async fn setup_loop(
             err
         ))?,
     };
+
     {
         // Notify client via socketio
         let app_state_clone = app_state.clone();
@@ -391,11 +480,10 @@ pub async fn setup_loop(
             .await;
         main_namespace.emit(MainNamespaceEvents::EthercatDevicesEvent(event));
     }
-    tracing::info!("DONE WITH INIT");
 
-    return Ok(EthercatSetup {
+    Ok(EthercatSetup {
         devices,
         group: group_op,
         maindevice,
-    });
+    })
 }

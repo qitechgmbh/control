@@ -21,7 +21,7 @@ smol = "2.0.2"
 socketioxide = "0.17.2"
 bitvec = { version = "1.0.1", features = ["alloc"] }
 crc = "3.3.0"
-tracing = "0.1.41"
+tracing = "0.1.44"
 erased-serde = "0.4.8"
 core_affinity = "0.8.3"
 control_core_derive = { version = "0.1.0", path = "../control-core-derive" }
