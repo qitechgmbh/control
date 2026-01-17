@@ -54,8 +54,8 @@ export function UpdateExecutePage() {
       commit: search.commit,
     };
 
-    // Show info about average update time
-    toast.info("The update process takes approximately 5 minutes on average.");
+    // Show confirmation that update has started
+    toast.info("Update started. This may take approximately 5 minutes.");
 
     initializeSteps();
     startUpdate();
@@ -139,8 +139,8 @@ export function UpdateExecutePage() {
             </div>
             <div className="text-sm">
               Please stay connected to the internet and leave the power on. The
-              update procedure takes a couple of minutes and reboots the machine
-              afterwards.
+              update procedure takes approximately 5 minutes on average and
+              reboots the machine afterwards.
             </div>
           </div>
         </Alert>
