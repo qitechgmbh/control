@@ -53,11 +53,12 @@ impl AnalogInputDevice<Wago750_455Port> for Wago750_455 {
             Wago750_455Port::AI3 => self.tx_pdo.ai3,
             Wago750_455Port::AI4 => self.tx_pdo.ai4,
         };
-        let raw12 = (raw & 0x0FFF) as i16;
-        let normalized = self.analog_input_range().raw_to_normalized(raw12) as f32;
+        let wiring_error = (raw & 0x0003) == 0x0003;
+        let raw_value = (raw & 0x7FF0) as i16;
+        let normalized = self.analog_input_range().raw_to_normalized(raw_value) as f32;
         AnalogInputInput {
             normalized,
-            wiring_error: false,
+            wiring_error,
         }
     }
 
@@ -66,7 +67,7 @@ impl AnalogInputDevice<Wago750_455Port> for Wago750_455 {
             min: ElectricCurrent::new::<milliampere>(4.0),
             max: ElectricCurrent::new::<milliampere>(20.0),
             min_raw: 0,
-            max_raw: 4095,
+            max_raw: 0x7FF0,
         }
     }
 }
