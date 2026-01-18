@@ -39,10 +39,13 @@ impl MachineAct for WagoAiTestMachine {
             > Duration::from_secs_f64(1.0 / self.measurement_rate_hz)
         {
             let mut values = [0.0; 4];
+            let mut wiring_errors = [false; 4];
             
             // Read all 4 analog inputs
             for (i, ai) in self.analog_inputs.iter().enumerate() {
                 let measured_value = ai.get_physical();
+                wiring_errors[i] = ai.get_wiring_error();
+                
                 match measured_value {
                     ethercat_hal::io::analog_input::physical::AnalogInputValue::Potential(
                         _quantity,
@@ -61,6 +64,7 @@ impl MachineAct for WagoAiTestMachine {
                 .as_millis();
             
             self.emit_analog_inputs(values, now_milliseconds);
+            self.emit_wiring_errors(wiring_errors);
             self.last_measurement = Instant::now();
         }
     }

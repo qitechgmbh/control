@@ -19,6 +19,7 @@ pub struct WagoAiTestMachineNamespace {
 pub enum AnalogInputsEvent {
     MeasurementRateHz(f64),
     AnalogInputs(f64, f64, f64, f64, String),
+    WiringErrors(bool, bool, bool, bool),
 }
 
 impl NamespaceCacheingLogic<WagoAiTestMachineEvents> for WagoAiTestMachineNamespace {

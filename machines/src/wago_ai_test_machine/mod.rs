@@ -61,6 +61,20 @@ impl WagoAiTestMachine {
             )));
     }
 
+    pub fn emit_wiring_errors(&mut self, errors: [bool; 4]) {
+        let event = AnalogInputsEvent::WiringErrors(
+            errors[0],
+            errors[1],
+            errors[2],
+            errors[3],
+        );
+        self.namespace
+            .emit(WagoAiTestMachineEvents::State(Event::new(
+                "WiringErrors",
+                event.clone(),
+            )));
+    }
+
     pub fn emit_measurement_rate(&mut self) {
         let event = AnalogInputsEvent::MeasurementRateHz(self.measurement_rate_hz);
         self.namespace

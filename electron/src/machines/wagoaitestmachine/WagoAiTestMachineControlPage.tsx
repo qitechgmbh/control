@@ -48,7 +48,12 @@ export function WagoAiTestMachineControl(): React.JSX.Element {
               renderValue={(v) => v.toFixed(2)}
             ></MiniGraph>
             <div className="flex flex-col justify-center ml-4">
-              {seriesData.ai1.current?.value.toFixed(2)} mA
+              <div>{seriesData.ai1.current?.value.toFixed(2)} mA</div>
+              {state.wiringErrors?.[0] && (
+                <div className="mt-2 px-2 py-1 bg-red-100 text-red-800 rounded text-sm font-semibold">
+                  Wiring Error
+                </div>
+              )}
             </div>
           </div>
         </ControlCard>
@@ -60,7 +65,12 @@ export function WagoAiTestMachineControl(): React.JSX.Element {
               renderValue={(v) => v.toFixed(2)}
             ></MiniGraph>
             <div className="flex flex-col justify-center ml-4">
-              {seriesData.ai2.current?.value.toFixed(2)} mA
+              <div>{seriesData.ai2.current?.value.toFixed(2)} mA</div>
+              {state.wiringErrors?.[1] && (
+                <div className="mt-2 px-2 py-1 bg-red-100 text-red-800 rounded text-sm font-semibold">
+                  Wiring Error
+                </div>
+              )}
             </div>
           </div>
         </ControlCard>
@@ -72,7 +82,12 @@ export function WagoAiTestMachineControl(): React.JSX.Element {
               renderValue={(v) => v.toFixed(2)}
             ></MiniGraph>
             <div className="flex flex-col justify-center ml-4">
-              {seriesData.ai3.current?.value.toFixed(2)} mA
+              <div>{seriesData.ai3.current?.value.toFixed(2)} mA</div>
+              {state.wiringErrors?.[2] && (
+                <div className="mt-2 px-2 py-1 bg-red-100 text-red-800 rounded text-sm font-semibold">
+                  Wiring Error
+                </div>
+              )}
             </div>
           </div>
         </ControlCard>
@@ -84,7 +99,12 @@ export function WagoAiTestMachineControl(): React.JSX.Element {
               renderValue={(v) => v.toFixed(2)}
             ></MiniGraph>
             <div className="flex flex-col justify-center ml-4">
-              {seriesData.ai4.current?.value.toFixed(2)} mA
+              <div>{seriesData.ai4.current?.value.toFixed(2)} mA</div>
+              {state.wiringErrors?.[3] && (
+                <div className="mt-2 px-2 py-1 bg-red-100 text-red-800 rounded text-sm font-semibold">
+                  Wiring Error
+                </div>
+              )}
             </div>
           </div>
         </ControlCard>

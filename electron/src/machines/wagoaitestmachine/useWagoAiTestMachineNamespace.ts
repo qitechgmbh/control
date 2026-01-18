@@ -17,6 +17,12 @@ export const stateEventDataSchema = z.object({
     z.number(),
     z.string(),
   ]).optional(),
+  wiringErrors: z.tuple([
+    z.boolean(),
+    z.boolean(),
+    z.boolean(),
+    z.boolean(),
+  ]).optional(),
 });
 
 export const stateEventSchema = eventSchema(stateEventDataSchema);
@@ -32,6 +38,7 @@ const createMachineStore = (): StoreApi<WagoAiTestMachineNamespaceStore> =>
   create<WagoAiTestMachineNamespaceStore>(() => ({
     measurementRateHz: 1,
     analogInputs: undefined,
+    wiringErrors: undefined,
   }));
 
 // ========== Message Handler ==========
@@ -62,6 +69,16 @@ function wagoAiTestMachineMessageHandler(
             store.setState({
               ...oldState,
               analogInputs: newAnalogInputs,
+            });
+        }
+        break;
+      case "WiringErrors":
+        {
+          const newWiringErrors = event.data["WiringErrors"];
+          if (newWiringErrors && newWiringErrors !== oldState.wiringErrors)
+            store.setState({
+              ...oldState,
+              wiringErrors: newWiringErrors,
             });
         }
         break;
