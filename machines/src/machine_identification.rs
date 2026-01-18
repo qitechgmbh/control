@@ -62,6 +62,7 @@ impl MachineIdentification {
             x if x == TEST_MACHINE => "test_machine".to_string(),
             x if x == IP20_TEST_MACHINE => "ip20_test_machine".to_string(),
             x if x == ANALOG_INPUT_TEST_MACHINE => "analog_input_test_machine".to_string(),
+            x if x == BOTTLE_SORTER => "bottle_sorter".to_string(),
             _ => unreachable!("Unknown machine id"),
         }
     }
@@ -174,6 +175,7 @@ use ethercrab::MainDevice;
 use ethercrab::SubDeviceIdentity;
 
 use crate::ANALOG_INPUT_TEST_MACHINE;
+use crate::BOTTLE_SORTER;
 use crate::IP20_TEST_MACHINE;
 use crate::MACHINE_AQUAPATH_V1;
 use crate::MACHINE_BUFFER_V1;
