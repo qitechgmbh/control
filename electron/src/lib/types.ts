@@ -16,11 +16,11 @@ export function rustEnumSchema<T extends Record<string, z.ZodType>>(
     schema.optional(),
   ]);
 
-  const objectSchema = z.object({
-    ...(schemaEntries as {
+  const objectSchema = z.object(
+    Object.fromEntries(schemaEntries) as {
       [K in keyof T]: z.ZodOptional<T[K]>;
-    }),
-  });
+    },
+  );
 
   // Add refinement to ensure exactly one property is defined
   return objectSchema.refine(
