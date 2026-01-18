@@ -1,4 +1,5 @@
 use crate::analog_input_test_machine::AnalogInputTestMachine;
+use crate::bottle_sorter::BottleSorter;
 use crate::ip20_test_machine::IP20TestMachine;
 #[cfg(feature = "mock-machine")]
 use crate::{
@@ -127,6 +128,8 @@ lazy_static! {
         mc.register::<IP20TestMachine>(IP20TestMachine::MACHINE_IDENTIFICATION);
 
         mc.register::<AnalogInputTestMachine>(AnalogInputTestMachine::MACHINE_IDENTIFICATION);
+
+        mc.register::<BottleSorter>(BottleSorter::MACHINE_IDENTIFICATION);
 
         mc
     };

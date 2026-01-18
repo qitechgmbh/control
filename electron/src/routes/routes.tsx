@@ -60,6 +60,8 @@ import { AnalogInputTestMachine } from "@/machines/analoginputtestmachine/Analog
 import { AnalogInputTestMachineControl } from "@/machines/analoginputtestmachine/AnalogInputTestMachineControlPage";
 import { IP20TestMachinePage } from "@/machines/ip20testmachine/IP20TestMachinePage";
 import { IP20TestMachineControlPage } from "@/machines/ip20testmachine/IP20TestMachineControlPage";
+import { BottleSorterPage } from "@/machines/bottlesorter/BottleSorterPage";
+import { BottleSorterControlPage } from "@/machines/bottlesorter/BottleSorterControlPage";
 
 import { MetricsGraphsPage } from "@/metrics/MetricsGraphsPage";
 import { MetricsControlPage } from "@/metrics/MetricsControlPage";
@@ -109,6 +111,18 @@ export const ip20TestMachineControlRoute = createRoute({
   getParentRoute: () => ip20TestMachineSerialRoute,
   path: "control",
   component: () => <IP20TestMachineControlPage />,
+});
+
+export const bottleSorterSerialRoute = createRoute({
+  getParentRoute: () => machinesRoute,
+  path: "bottlesorter/$serial",
+  component: () => <BottleSorterPage />,
+});
+
+export const bottleSorterControlRoute = createRoute({
+  getParentRoute: () => bottleSorterSerialRoute,
+  path: "control",
+  component: () => <BottleSorterControlPage />,
 });
 
 export const sidebarRoute = createRoute({
@@ -440,6 +454,8 @@ export const rootTree = RootRoute.addChildren([
       ]),
 
       ip20TestMachineSerialRoute.addChildren([ip20TestMachineControlRoute]),
+
+      bottleSorterSerialRoute.addChildren([bottleSorterControlRoute]),
 
       aquapath1SerialRoute.addChildren([
         aquapath1ControlRoute,
