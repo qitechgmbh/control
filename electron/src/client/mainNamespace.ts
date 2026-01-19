@@ -15,7 +15,7 @@ import {
   machineIdentificationUnique,
 } from "@/machines/types";
 import { useRef } from "react";
-import { rustEnumSchema } from "@/lib/types";
+import { rustEnum } from "@/lib/types";
 
 export type EthercatDevices = z.infer<typeof ethercatDevicesSchema>;
 
@@ -33,11 +33,11 @@ export const ethercatDevicesSchema = z.object({
 });
 
 // Update the EthercatDevicesEventData schema
-export const ethercatDevicesEventDataSchema = rustEnumSchema({
+export const ethercatDevicesEventDataSchema = z.object({
   Initializing: z.boolean(),
   Done: ethercatDevicesSchema,
   Error: z.string(),
-});
+}).check(rustEnum);
 
 export type EthercatDevicesEventData = z.infer<
   typeof ethercatDevicesEventDataSchema
@@ -66,10 +66,10 @@ export const machinesEventSchema = eventSchema(machinesEventDataSchema);
 export type MachinesEvent = z.infer<typeof machinesEventSchema>;
 
 // Keep the EthercatInterfaceDiscovery event
-export const ethercatInterfaceDiscoveryEventDataSchema = rustEnumSchema({
+export const ethercatInterfaceDiscoveryEventDataSchema = z.object({
   Discovering: z.boolean(),
   Done: z.string(),
-});
+}).check(rustEnum);
 
 export type EthercatInterfaceDiscoveryEventData = z.infer<
   typeof ethercatInterfaceDiscoveryEventDataSchema
