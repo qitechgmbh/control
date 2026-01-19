@@ -10,15 +10,11 @@ use serde::{Deserialize, Serialize};
 
 use crate::{MachineApi, digital_input_test_machine::DigitalInputTestMachine};
 
-#[derive(Debug, Clone)]
-pub struct DigitalInputTestMachineNamespace {
-    pub namespace: Option<Namespace>,
-}
-
 #[derive(Serialize, Debug, Clone)]
 pub struct StateEvent {
     pub led_on: [bool; 4],
 }
+
 impl StateEvent {
     pub fn build(&self) -> Event<Self> {
         Event::new("StateEvent", self.clone())
@@ -26,6 +22,16 @@ impl StateEvent {
 }
 pub enum DigitalInputTestMachineEvents {
     State(Event<StateEvent>),
+}
+
+ #[derive(Deserialize)]
+ #[serde(tag = "action", content = "value")]
+ pub enum Mutation {
+    SetLed{index: usize,on:bool},
+ }
+#[derive(Debug, Clone)]
+pub struct DigitalInputTestMachineNamespace {
+    pub namespace: Option<Namespace>,
 }
 
 impl NamespaceCacheingLogic<DigitalInputTestMachineEvents> for DigitalInputTestMachineNamespace {
@@ -50,22 +56,21 @@ impl CacheableEvents<DigitalInputTestMachineEvents> for DigitalInputTestMachineE
     }
 }
 
-
-// #[derive(Deserialize)]
-// pub struct Mutation {
-//     measurement_rate_hz: i32,
-// }
-
 impl MachineApi for DigitalInputTestMachine {
     fn api_get_sender(&self) -> smol::channel::Sender<crate::MachineMessage> {
         self.api_sender.clone()
     }
 
     fn api_mutate(&mut self, value: serde_json::Value) -> Result<(), anyhow::Error> {
+        let mutation: Mutation = serde_json::from_value(value)?;
+        match mutation {
+            Mutation::SetLed { index, on } => self.set_led(index, on),
+        }
+
         Ok(())
     }
 
-    fn api_event_namespace(&mut self) -> Option<control_core::socketio::namespace::Namespace> {
+    fn api_event_namespace(&mut self) -> Option<Namespace> {
         self.namespace.namespace.clone()
     }
 }

@@ -1,4 +1,4 @@
-import { toastError } from "@/components/Toast";
+import { Toast, toastError } from "@/components/Toast";
 import { useStateOptimistic } from "@/lib/useStateOptimistic";
 import { digitalInputTestMachineSerialRoute } from "@/routes/routes";
 import { MachineIdentificationUnique } from "@/machines/types";

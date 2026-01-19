@@ -1,14 +1,15 @@
 import { ControlCard } from "@/control/ControlCard";
 import { Page } from "@/components/Page";
 import React from "react";
-import { ControlGrid } from "@/control/ControlGrid";
-import { SelectionGroup } from "@/control/SelectionGroup";
 import { Label } from "@/control/Label";
 import { useDigitalInputTestMachine } from "./useDigitalInputTestMachine";
 import { Badge } from "@/components/ui/badge";
+import { ControlGrid } from "@/control/ControlGrid";
+import { SelectionGroup } from "@/control/SelectionGroup";
+import { toastError } from "@/components/Toast";
 
 export function DigitalInputTestMachineControlPage() {
-  const { state } = useDigitalInputTestMachine();
+  const { state} = useDigitalInputTestMachine();
 
   const safeState = state ?? { led_on: [false, false, false, false] };
 
@@ -24,6 +25,6 @@ export function DigitalInputTestMachineControlPage() {
                 ))}
               </div>
             </ControlCard>
-  </Page>
+      </Page>
   );
 }

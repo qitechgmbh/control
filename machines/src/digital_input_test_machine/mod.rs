@@ -1,7 +1,7 @@
 use std::time::Instant;
 
 use control_core::socketio::{ namespace::NamespaceCacheingLogic};
-use ethercat_hal::io::digital_input::DigitalInput;
+use ethercat_hal::io::{digital_input::DigitalInput, digital_output::DigitalOutput};
 use smol::channel::{Receiver, Sender};
 
 use crate::{
@@ -45,11 +45,31 @@ impl DigitalInputTestMachine {
     };
 
     pub fn emit_state(&mut self) {
+
+        //Set Led_On after DigitalInput
+        let mut i = 0;
+        
+        for di in &self.digital_input {
+            let value = match di.get_value() {
+                Ok(v) => v,
+                Err(_) => false,
+            };
+            self.led_on[i] = value;
+            i+=1;
+        }
+
         let event = StateEvent {
             led_on: self.led_on,
         }
         .build();
-
         self.namespace.emit(DigitalInputTestMachineEvents::State(event));
+    }
+    
+        /// Set the state of a specific LED
+    pub fn set_led(&mut self, index: usize, on: bool) {
+        if index < self.led_on.len() {
+            self.led_on[index] = on;
+            self.emit_state();
+        }
     }
 }
