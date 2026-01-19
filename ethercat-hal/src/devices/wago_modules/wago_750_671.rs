@@ -66,13 +66,9 @@ impl EthercatDynamicPDO for Wago750_671 {
     }
 }
 
-/// [P]rocess [I]mage byte offsets
+/// [P]rocess [I]mage byte offsets (Output)
 /// The process image is 12 bytes long.
 /// missing bytes in the enum are reserved.
-pub struct Wago750_671PI {
-    input: InputPI,
-    output: OutputPI,
-}
 pub struct OutputPI;
 impl OutputPI {
      pub const C0: usize = 0; // Control byte C0
@@ -85,6 +81,9 @@ impl OutputPI {
      pub const C1: usize = 11; // Control Byte C1
 }
 
+/// [P]rocess [I]mage byte offsets (Output)
+/// The process image is 12 bytes long.
+/// missing bytes in the struct are reserved.
 pub struct InputPI;
 impl InputPI {
      pub const S0: usize = 0; // Status byte S0
@@ -98,44 +97,80 @@ impl InputPI {
      pub const S1: usize = 11; // Status byte S1
 }
 
-// C0 (mailbox enable is bit 5). In cyclic mode it must be 0.
-const C0_MBX: u8 = 1 << 5;
+pub struct ControlByteC1;
+impl ControlByteC1 {
+    const ENABLE: u8           = 0x01; // Bit 0
+    const STOP2_N: u8          = 0x02; // Bit 1
+    const START: u8            = 0x04; // Bit 2
+    const M_SPEED_CONTROL: u8  = 0x08; // Bit 3
+    const M_PROGRAM: u8        = 0x10; // Bit 4
+    const M_REFERENCE: u8      = 0x20; // Bit 5
+    const M_JOG: u8            = 0x40; // Bit 6
+    const M_DRIVE_BYMBX: u8    = 0x80; // Bit 7
+}
 
-// C1 bits (speed control application)
-const C1_ENABLE: u8 = 1 << 0;
-const C1_STOP2_N: u8 = 1 << 1;
-const C1_START: u8 = 1 << 2;
-const C1_M_SPEED_CONTROL: u8 = 1 << 3;
+pub struct ControlByteC2;
+impl ControlByteC2 {
+    const FREQ_RANGE_SEL_LSB: u8         = 0x01; // Bit 0
+    const FREQ_RANGE_SEL_MSB: u8         = 0x02; // Bit 1
+    const ACCELERATION_RANGE_SEL_LSB: u8 = 0x04; // Bit 2
+    const ACCELERATION_RANGE_SEL_MSB: u8 = 0x08; // Bit 3
+    // RESERVED                                  // Bit 4
+    // RESERVED                                  // Bit 5
+    const PRE_CALC: u8                   = 0x40; // Bit 6
+    const ERROR_QUIT: u8                 = 0x80; // Bit 7
+}
 
-// C2 bits (speed control application)
-const C2_ERROR_QUIT: u8 = 1 << 7;
+pub struct ControlByteC3;
+impl ControlByteC3 {
+    // RESERVED                           // Bit 0
+    // RESERVED                           // Bit 1
+    // RESERVED                           // Bit 2
+    // RESERVED                           // Bit 3
+    const LIMIT_SWITCH_POS: u8    = 0x10; // Bit 4
+    const LIMIT_SWITCH_NEG: u8    = 0x20; // Bit 5
+    const SETUP_SPEED_ACTIVE: u8  = 0x40; // Bit 6
+    const RESET_QUIT: u8          = 0x80; // Bit 7
+}
 
-// C3 bits (same meaning retained; Reset_Quit is bit 7)
-const C3_RESET_QUIT: u8 = 1 << 7;
+pub struct StatusByteS1;
+impl StatusByteS1 {
+    const READY: u8               = 0x01; // Bit 0
+    const STOP_N_ACK: u8          = 0x02; // Bit 1
+    const START_ACK: u8           = 0x04; // Bit 2
+    const M_SPEED_CONTROL_ACK: u8 = 0x08; // Bit 3
+    const M_PROGRAM_ACK: u8       = 0x10; // Bit 4
+    const M_REFERENCE_ACK: u8     = 0x20; // Bit 5
+    const M_JOG_ACK: u8           = 0x40; // Bit 6
+    const M_DRIVE_BYMBX_ACK: u8   = 0x80; // Bit 7
+}
 
-// S1 bits (acks)
-const S1_READY: u8 = 1 << 0;
-const S1_STOP_N_ACK: u8 = 1 << 1;
-const S1_START_ACK: u8 = 1 << 2;
-const S1_M_SPEED_CONTROL_ACK: u8 = 1 << 3;
+pub struct StatusByteS2;
+impl StatusByteS2 {
+    // RESERVED                    // Bit 0
+    const BUSY: u8         = 0x02; // Bit 1
+    const STAND_STILL: u8  = 0x04; // Bit 2
+    const ON_SPEED: u8     = 0x08; // Bit 3
+    const DIRECTION: u8    = 0x10; // Bit 4
+    // RESERVED                    // Bit 5
+    const PRE_CALC_ACK: u8 = 0x40; // Bit 6
+    const ERROR: u8        = 0x80; // Bit 7
+}
 
-// S2 bits
-const S2_ERROR: u8 = 1 << 7;
+pub struct StatusByteS3;
+impl StatusByteS3 {
+    const INPUT1: u8                 = 0x01; // Bit 0
+    // RESERVED                              // Bit 1
+    // RESERVED                              // Bit 2
+    // RESERVED                              // Bit 3
+    // RESERVED                              // Bit 4
+    // RESERVED                              // Bit 5
+    const SETUP_SPEED_ACTIVE_ACK: u8 = 0x40; // Bit 6
+    const RESET: u8                  = 0x80; // Bit 7
+}
 
-// S3 bits
-const S3_RESET: u8 = 1 << 7;
 
 impl Wago750_671 {
-    /// Must be called (or left default) to ensure mailbox is OFF (C0.5 = 0).
-    /// If you ever enabled mailbox elsewhere, call this again.
-    pub fn set_mailbox_enabled(&mut self, enabled: bool) {
-        if enabled {
-            self.rxpdo.b[OutputPI::C0] |= C0_MBX;
-        } else {
-            self.rxpdo.b[OutputPI::C0] &= !C0_MBX;
-        }
-    }
-
     /// Set speed setpoint and acceleration (Velocity Control process image).
     /// vel: i16 (sign determines direction)
     /// acc: u16 (must be > 0, acc==0 will trigger error)
@@ -156,19 +191,16 @@ impl Wago750_671 {
     /// - keep speed_mode=true
     /// - pulse start_pulse=true for ONE cycle to accept setpoints / (re)start output
     pub fn apply_speed_control_state(&mut self, enable: bool, speed_mode: bool, start_pulse: bool) {
-        // Always keep mailbox disabled in cyclic operation for this mode
-        self.set_mailbox_enabled(false);
-
         let mut c1: u8 = 0;
 
         if enable {
-            c1 |= C1_ENABLE | C1_STOP2_N;
+            c1 |= ControlByteC1::ENABLE | ControlByteC1::STOP2_N;
         }
         if speed_mode {
-            c1 |= C1_M_SPEED_CONTROL;
+            c1 |= ControlByteC1::M_SPEED_CONTROL;
         }
         if start_pulse {
-            c1 |= C1_START;
+            c1 |= ControlByteC1::START;
         }
 
         self.rxpdo.b[OutputPI::C1] = c1;
@@ -177,9 +209,9 @@ impl Wago750_671 {
     /// Error acknowledgement is edge-triggered (0->1). Pulse for one cycle.
     pub fn apply_error_quit(&mut self, pulse: bool) {
         if pulse {
-            self.rxpdo.b[OutputPI::C2] |= C2_ERROR_QUIT;
+            self.rxpdo.b[OutputPI::C2] |= ControlByteC2::ERROR_QUIT;
         } else {
-            self.rxpdo.b[OutputPI::C2] &= !C2_ERROR_QUIT;
+            self.rxpdo.b[OutputPI::C2] &= !ControlByteC2::ERROR_QUIT;
         }
     }
 
@@ -187,9 +219,9 @@ impl Wago750_671 {
     /// Pulse for one cycle when S3.Reset is set.
     pub fn apply_reset_quit(&mut self, pulse: bool) {
         if pulse {
-            self.rxpdo.b[OutputPI::C3] |= C3_RESET_QUIT;
+            self.rxpdo.b[OutputPI::C3] |= ControlByteC3::RESET_QUIT;
         } else {
-            self.rxpdo.b[OutputPI::C3] &= !C3_RESET_QUIT;
+            self.rxpdo.b[OutputPI::C3] &= !ControlByteC3::RESET_QUIT;
         }
     }
 
@@ -205,22 +237,22 @@ impl Wago750_671 {
     }
 
     pub fn ready(&self) -> bool {
-        (self.s1() & S1_READY) != 0
+        (self.s1() & StatusByteS1::READY) != 0
     }
     pub fn stop_n_ack(&self) -> bool {
-        (self.s1() & S1_STOP_N_ACK) != 0
+        (self.s1() & StatusByteS1::STOP_N_ACK) != 0
     }
     pub fn start_ack(&self) -> bool {
-        (self.s1() & S1_START_ACK) != 0
+        (self.s1() & StatusByteS1::START_ACK) != 0
     }
     pub fn speed_mode_ack(&self) -> bool {
-        (self.s1() & S1_M_SPEED_CONTROL_ACK) != 0
+        (self.s1() & StatusByteS1::M_SPEED_CONTROL_ACK) != 0
     }
     pub fn error_active(&self) -> bool {
-        (self.s2() & S2_ERROR) != 0
+        (self.s2() & StatusByteS2::ERROR) != 0
     }
     pub fn reset_active(&self) -> bool {
-        (self.s3() & S3_RESET) != 0
+        (self.s3() & StatusByteS3::RESET) != 0
     }
 
     /// Actual velocity feedback (slave -> master), i16 little-endian.
