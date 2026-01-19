@@ -17,21 +17,25 @@ import {
 import { useRef } from "react";
 import { rustEnumSchema } from "@/lib/types";
 
+export type EthercatDevices = z.infer<typeof ethercatDevicesSchema>;
+
+export const ethercatDevicesSchema = z.object({
+  devices: z.array(
+    z.object({
+      configured_address: z.number().int(),
+      name: z.string(),
+      vendor_id: z.number().int(),
+      product_id: z.number().int(),
+      revision: z.number().int(),
+      device_identification: deviceIdentification,
+    }),
+  ),
+});
+
 // Update the EthercatDevicesEventData schema
 export const ethercatDevicesEventDataSchema = rustEnumSchema({
   Initializing: z.boolean(),
-  Done: z.object({
-    devices: z.array(
-      z.object({
-        configured_address: z.number().int(),
-        name: z.string(),
-        vendor_id: z.number().int(),
-        product_id: z.number().int(),
-        revision: z.number().int(),
-        device_identification: deviceIdentification,
-      }),
-    ),
-  }),
+  Done: ethercatDevicesSchema,
   Error: z.string(),
 });
 

@@ -1,28 +1,22 @@
 import { z } from "zod";
 
-/**
- * Creates a Zod schema for objects where exactly one property must be defined.
- * This is useful for handling Rust enum JSON representations where only one variant exists at a time.
- *
- * @param schemas A record mapping property names to their Zod schemas
- * @returns A Zod schema that validates that exactly one property is defined
- */
 export function rustEnumSchema<T extends Record<string, z.ZodType>>(
   schemas: T,
 ) {
-  // Create an object schema where all properties are optional
-  const schemaEntries = Object.entries(schemas).map(([key, schema]) => [
-    key,
-    schema.optional(),
-  ]);
+  const shape: any = {};
 
-  const objectSchema = z.object({
-    ...(schemaEntries as {
-      [K in keyof T]: z.ZodOptional<T[K]>;
-    }),
-  });
+  for (const [key, schema] of Object.entries(schemas)) {
+    if (!schema) {
+      //cath undefined 'undefined' early
+      throw new Error(
+        `rustEnumSchema: Schema for key "${key}" is undefined. Check for circular imports.`,
+      );
+    }
+    shape[key] = schema.optional();
+  }
 
-  // Add refinement to ensure exactly one property is defined
+  const objectSchema = z.object(shape);
+
   return objectSchema.refine(
     (data) => {
       const definedKeys = Object.keys(data).filter(
@@ -32,7 +26,7 @@ export function rustEnumSchema<T extends Record<string, z.ZodType>>(
     },
     {
       message: "Exactly one property must be defined",
-      path: ["_exclusive"], // Add a path to help with error identification
+      path: ["_exclusive"],
     },
   );
 }
