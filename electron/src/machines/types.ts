@@ -62,9 +62,11 @@ export type DeviceHardwareIdentificationEthercat = z.infer<
   typeof deviceHardwareIdentificationEthercatSchema
 >;
 
-export const deviceHardwareIdentificationSchema = z.object({
-  Ethercat: deviceHardwareIdentificationEthercatSchema,
-}).check(rustEnum);
+export const deviceHardwareIdentificationSchema = z
+  .object({
+    Ethercat: deviceHardwareIdentificationEthercatSchema,
+  })
+  .check(rustEnum);
 
 export type DeviceHardwareIdentification = z.infer<
   typeof deviceHardwareIdentificationSchema
