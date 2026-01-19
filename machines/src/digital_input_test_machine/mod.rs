@@ -44,6 +44,12 @@ impl DigitalInputTestMachine {
         machine: DIGITAL_INPUT_TEST_MACHINE,
     };
 
+    pub fn get_state(&self) -> StateEvent {
+        StateEvent {
+            led_on: self.led_on,
+        }
+    }
+
     pub fn emit_state(&mut self) {
 
         //Set Led_On after DigitalInput
@@ -63,13 +69,5 @@ impl DigitalInputTestMachine {
         }
         .build();
         self.namespace.emit(DigitalInputTestMachineEvents::State(event));
-    }
-    
-        /// Set the state of a specific LED
-    pub fn set_led(&mut self, index: usize, on: bool) {
-        if index < self.led_on.len() {
-            self.led_on[index] = on;
-            self.emit_state();
-        }
     }
 }

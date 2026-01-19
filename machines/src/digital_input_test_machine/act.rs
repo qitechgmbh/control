@@ -1,9 +1,9 @@
-use std::time::{Duration, Instant, SystemTime};
-
-use crate::{MachineAct, digital_input_test_machine::DigitalInputTestMachine};
+use super::DigitalInputTestMachine;
+use crate::{MachineAct, MachineMessage, MachineValues};
+use std::time::{Duration, Instant};
 
 impl MachineAct for DigitalInputTestMachine {
-    fn act(&mut self, now: std::time::Instant) {
+    fn act(&mut self, now: Instant) {
         if let Ok(msg) = self.api_receiver.try_recv() {
             self.act_machine_message(msg);
         }
@@ -14,19 +14,33 @@ impl MachineAct for DigitalInputTestMachine {
         }
     }
 
-    fn act_machine_message(&mut self, msg: crate::MachineMessage) {
+    fn act_machine_message(&mut self, msg: MachineMessage) {
         match msg {
-            crate::MachineMessage::SubscribeNamespace(namespace) => {
+            MachineMessage::SubscribeNamespace(namespace) => {
                 self.namespace.namespace = Some(namespace);
                 self.emit_state();
             }
-            crate::MachineMessage::UnsubscribeNamespace => self.namespace.namespace = None,
-            crate::MachineMessage::HttpApiJsonRequest(value) => {
+            MachineMessage::UnsubscribeNamespace => self.namespace.namespace = None,
+            MachineMessage::HttpApiJsonRequest(value) => {
                 use crate::MachineApi;
                 let _res = self.api_mutate(value);
             }
-            crate::MachineMessage::ConnectToMachine(_machine_connection) => {}
-            crate::MachineMessage::DisconnectMachine(_machine_connection) => {}
+            MachineMessage::ConnectToMachine(_machine_connection) => {
+                // Does not connect to any Machine; do nothing
+            }
+            MachineMessage::DisconnectMachine(_machine_connection) => {
+                // Does not connect to any Machine; do nothing
+            }
+            MachineMessage::RequestValues(sender) => {
+                sender
+                    .send_blocking(MachineValues {
+                        state: serde_json::to_value(self.get_state())
+                            .expect("Failed to serialize state"),
+                        live_values: serde_json::Value::Null,
+                    })
+                    .expect("Failed to send values");
+                sender.close();
+            }
         }
     }
 }
