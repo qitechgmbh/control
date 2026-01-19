@@ -19,8 +19,8 @@ impl MachineAct for TestMachineStepper {
             let mut stm = self.stepper.write().await;
 
             // Desired setpoints (example)
-            let cmd_vel: i16 = -20000; // steps/s (sign = direction)
-            let cmd_acc: u16 = 20000;  // steps/s^2 (must be > 0)
+            let cmd_vel: i16 = 25000; // steps/s (sign = direction)
+            let cmd_acc: u16 = 10000;  // steps/s^2 (must be > 0)
 
             // Always write setpoints continuously (safe)
             stm.set_speed_setpoint(cmd_vel, cmd_acc);
