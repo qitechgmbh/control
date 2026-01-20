@@ -1,5 +1,6 @@
 use crate::analog_input_test_machine::AnalogInputTestMachine;
 use crate::ip20_test_machine::IP20TestMachine;
+use crate::wago_ai_test_machine::WagoAiTestMachine;
 #[cfg(feature = "mock-machine")]
 use crate::{
     extruder1::mock::ExtruderV2 as ExtruderV2Mock1, extruder2::mock::ExtruderV2 as ExtruderV2Mock2,
@@ -127,6 +128,8 @@ lazy_static! {
         mc.register::<IP20TestMachine>(IP20TestMachine::MACHINE_IDENTIFICATION);
 
         mc.register::<AnalogInputTestMachine>(AnalogInputTestMachine::MACHINE_IDENTIFICATION);
+
+        mc.register::<WagoAiTestMachine>(WagoAiTestMachine::MACHINE_IDENTIFICATION);
 
         mc
     };
