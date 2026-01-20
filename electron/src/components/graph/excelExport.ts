@@ -1,7 +1,10 @@
 import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
+import uPlot from "uplot";
 import { TimeSeries, seriesToUPlotData } from "@/lib/timeseries";
 import { renderUnitSymbol, Unit } from "@/control/units";
 import { GraphConfig, SeriesData, GraphLine } from "./types";
+import { useLogsStore } from "@/stores/logsStore";
 
 export type GraphExportData = {
   config: GraphConfig;
@@ -10,10 +13,21 @@ export type GraphExportData = {
   renderValue?: (value: number) => string;
 };
 
-export function exportGraphsToExcel(
+// Type for combined sheet data used in Auswertung
+type CombinedSheetData = {
+  sheetName: string;
+  timestamps: number[];
+  values: number[];
+  unit: string;
+  seriesTitle: string;
+  graphTitle: string;
+  targetLines: GraphLine[];
+};
+
+export async function exportGraphsToExcel(
   graphDataMap: Map<string, () => GraphExportData | null>,
   groupId: string,
-): void {
+): Promise<void> {
   try {
     // Filter out invalid series IDs (those without "-series-")
     const filteredMap = new Map<string, () => GraphExportData | null>();
@@ -31,6 +45,9 @@ export function exportGraphsToExcel(
 
     const usedSheetNames = new Set<string>(); // Track unique sheet names
     let processedCount = 0;
+
+    // Collect all sheet data for Auswertung sheet
+    const allSheetData: CombinedSheetData[] = [];
 
     // Process each valid series
     filteredMap.forEach((getDataFn, seriesId) => {
@@ -76,6 +93,18 @@ export function exportGraphsToExcel(
       const combinedWorksheet = createCombinedSheet(graphLineData, sheetName);
       XLSX.utils.book_append_sheet(workbook, combinedWorksheet, sheetName);
 
+      // Collect data for Auswertung sheet
+      const [timestamps, values] = seriesToUPlotData(series.newData.long);
+      allSheetData.push({
+        sheetName,
+        timestamps,
+        values,
+        unit: renderUnitSymbol(exportData.unit) || "",
+        seriesTitle,
+        graphTitle: exportData.config.title,
+        targetLines,
+      });
+
       processedCount++;
     });
 
@@ -84,13 +113,519 @@ export function exportGraphsToExcel(
       return;
     }
 
+    // Create Auswertung (Analysis) sheet with combined data and chart
+    const auswertungSheet = await createAuswertungSheet(
+      allSheetData,
+      groupId
+    );
+    XLSX.utils.book_append_sheet(workbook, auswertungSheet, "Auswertung");
+
+    // Write XLSX to buffer first
+    const xlsxBuffer = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
+
+    // Convert to ExcelJS workbook to add chart image
+    const excelJSWorkbook = new ExcelJS.Workbook();
+    await excelJSWorkbook.xlsx.load(xlsxBuffer);
+
+    // Find the Auswertung sheet
+    const auswertungWorksheet = excelJSWorkbook.getWorksheet("Auswertung");
+
+    if (auswertungWorksheet) {
+      // Generate chart image
+      const sortedTimestamps = Array.from(
+        new Set(allSheetData.flatMap((d) => d.timestamps))
+      ).sort((a, b) => a - b);
+
+      const startTime = sortedTimestamps[0];
+      const startDate = new Date(startTime);
+      const endDate = new Date(sortedTimestamps[sortedTimestamps.length - 1]);
+
+      const formatDateTime = (date: Date) =>
+        date.toLocaleString("de-DE", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+        });
+
+      const timeRangeTitle = `${formatDateTime(startDate)} bis ${formatDateTime(endDate)}`;
+
+      const chartImage = await generateChartImage(
+        allSheetData,
+        groupId,
+        timeRangeTitle,
+        sortedTimestamps,
+        startTime
+      );
+
+      if (chartImage) {
+        // Add image to worksheet
+        const imageId = excelJSWorkbook.addImage({
+          base64: chartImage,
+          extension: "png",
+        });
+
+        // Find a good position for the image (after the data and metadata)
+        const lastRow = auswertungWorksheet.rowCount;
+
+        auswertungWorksheet.addImage(imageId, {
+          tl: { col: 0, row: lastRow + 2 }, // top-left
+          ext: { width: 1200, height: 600 }, // size
+        });
+      }
+    }
+
+    // Write final file with ExcelJS
     const filename = `${groupId.toLowerCase().replace(/\s+/g, "_")}_export_${exportTimestamp}.xlsx`;
-    XLSX.writeFile(workbook, filename);
+    const buffer = await excelJSWorkbook.xlsx.writeBuffer();
+
+    // Create blob and download
+    const blob = new Blob([buffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    link.click();
+    window.URL.revokeObjectURL(url);
   } catch (error) {
     alert(
       `Error exporting data to Excel: ${error instanceof Error ? error.message : "Unknown error"}. Please try again.`,
     );
   }
+}
+
+// Generate chart image from data using uPlot
+async function generateChartImage(
+  allSheetData: CombinedSheetData[],
+  groupId: string,
+  timeRangeTitle: string,
+  sortedTimestamps: number[],
+  startTime: number,
+): Promise<string | null> {
+  try {
+    // Create an off-screen div for the chart
+    const container = document.createElement("div");
+    container.style.width = "1200px";
+    container.style.height = "600px";
+    container.style.position = "absolute";
+    container.style.left = "-9999px";
+    document.body.appendChild(container);
+
+    // Prepare data for uPlot: [timestamps in seconds, ...value arrays]
+    const chartData: number[][] = [
+      sortedTimestamps.map((ts) => (ts - startTime) / 1000), // X-axis: seconds from start
+    ];
+
+    const series: uPlot.Series[] = [
+      {
+        label: "Time (s)",
+      },
+    ];
+
+    // Add each data series
+    allSheetData.forEach((sheetData) => {
+      const values = new Array(sortedTimestamps.length).fill(null);
+
+      // Map values to corresponding timestamps
+      sheetData.timestamps.forEach((ts, idx) => {
+        const timeIndex = sortedTimestamps.indexOf(ts);
+        if (timeIndex !== -1) {
+          values[timeIndex] = sheetData.values[idx];
+        }
+      });
+
+      chartData.push(values);
+
+      // Color mapping based on data type
+      const getSeriesColor = (name: string): string => {
+        if (name.includes("Temp")) return "#FF6B6B";
+        if (name.includes("Watt") || name.includes("W ")) return "#4ECDC4";
+        if (name === "Bar") return "#95E1D3";
+        if (name === "Rpm") return "#F38181";
+        return "#AA96DA";
+      };
+
+      series.push({
+        label: sheetData.sheetName,
+        stroke: getSeriesColor(sheetData.sheetName),
+        width: 2,
+        points: { show: false },
+      });
+    });
+
+    // Create uPlot instance
+    const opts: uPlot.Options = {
+      title: `${groupId} - ${timeRangeTitle}`,
+      width: 1200,
+      height: 600,
+      series,
+      scales: {
+        x: {
+          time: false,
+        },
+      },
+      axes: [
+        {
+          label: "Time (seconds)",
+          stroke: "#333",
+          grid: { stroke: "#e0e0e0", width: 1 },
+        },
+        {
+          label: "Values",
+          stroke: "#333",
+          grid: { stroke: "#e0e0e0", width: 1 },
+        },
+      ],
+      legend: {
+        show: true,
+      },
+    };
+
+    const plot = new uPlot(opts, chartData as uPlot.AlignedData, container);
+
+    // Wait for render
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    // Get the canvas element
+    const canvas = container.querySelector("canvas");
+    if (!canvas) {
+      document.body.removeChild(container);
+      return null;
+    }
+
+    // Convert canvas to base64 PNG
+    const imageData = canvas.toDataURL("image/png");
+
+    // Clean up
+    plot.destroy();
+    document.body.removeChild(container);
+
+    // Return base64 data (remove the data:image/png;base64, prefix)
+    return imageData.split(",")[1];
+  } catch (error) {
+    console.error("Error generating chart image:", error);
+    return null;
+  }
+}
+
+// Create Auswertung (Analysis) sheet with combined data from all sheets
+async function createAuswertungSheet(
+  allSheetData: CombinedSheetData[],
+  groupId: string,
+): Promise<XLSX.WorkSheet> {
+  // Find all unique timestamps across all series
+  const allTimestamps = new Set<number>();
+  allSheetData.forEach((data) => {
+    data.timestamps.forEach((ts) => allTimestamps.add(ts));
+  });
+
+  const sortedTimestamps = Array.from(allTimestamps).sort((a, b) => a - b);
+
+  // Calculate time range
+  const startTime = sortedTimestamps[0];
+  const endTime = sortedTimestamps[sortedTimestamps.length - 1];
+  const startDate = new Date(startTime);
+  const endDate = new Date(endTime);
+
+  // Format time range for title
+  const formatDateTime = (date: Date) =>
+    date.toLocaleString("de-DE", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
+
+  const timeRangeTitle = `${formatDateTime(startDate)} bis ${formatDateTime(endDate)}`;
+
+  // Get user comments/logs from store
+  const logs = useLogsStore.getState().entries;
+  const relevantComments = logs.filter(
+    (log) =>
+      log.timestamp.getTime() >= startTime &&
+      log.timestamp.getTime() <= endTime &&
+      (log.level === "info" || log.message.toLowerCase().includes("comment"))
+  );
+
+  // Map data by timestamp for efficient lookup
+  const dataByTimestamp = new Map<
+    number,
+    Map<string, number>
+  >();
+
+  allSheetData.forEach((sheetData) => {
+    sheetData.timestamps.forEach((ts, idx) => {
+      if (!dataByTimestamp.has(ts)) {
+        dataByTimestamp.set(ts, new Map());
+      }
+      dataByTimestamp.get(ts)!.set(sheetData.sheetName, sheetData.values[idx]);
+    });
+  });
+
+  // Build column headers based on available data
+  const columns: string[] = ["Timestamp"];
+
+  // Map sheet names to their proper column labels
+  const columnMapping: { [key: string]: string } = {
+    Bar: "Bar",
+    Rpm: "rpm",
+    "Front Temp": "Temp Front",
+    "Middle Temp": "Temp Middle",
+    "Back Temp": "Temp Back",
+    "Nozzle Temp": "Temp Nozzle",
+    "Total Watt": "Total W",
+    "Front Watt": "W Front",
+    "Middle Watt": "W Middle",
+    "Back Watt": "W Back",
+    "Nozzle Watt": "W Nozzle",
+  };
+
+  // Determine columns in desired order
+  const desiredOrder = [
+    "Bar",
+    "Rpm",
+    "Temp Front",
+    "Temp Middle",
+    "Temp Back",
+    "Temp Nozzle",
+    "Total W",
+    "W Front",
+    "W Middle",
+    "W Back",
+    "W Nozzle",
+  ];
+
+  // Find which columns we actually have data for
+  const availableColumns: string[] = [];
+  desiredOrder.forEach((colName) => {
+    const sheetName = Object.entries(columnMapping).find(
+      ([, label]) => label === colName
+    )?.[0];
+    if (sheetName && allSheetData.some((d) => d.sheetName === sheetName)) {
+      availableColumns.push(colName);
+    }
+  });
+
+  columns.push(...availableColumns);
+
+  // Add comments column
+  columns.push("User Comments");
+
+  // Create sheet data array
+  const sheetData: any[][] = [];
+
+  // Title row
+  const titleRow = [
+    `${groupId} - ${timeRangeTitle}`,
+    ...Array(columns.length - 1).fill(""),
+  ];
+  sheetData.push(titleRow);
+
+  // Empty row
+  sheetData.push(Array(columns.length).fill(""));
+
+  // Target values row (if any target lines exist)
+  const targetValues: any[] = ["Target Values"];
+  let hasTargets = false;
+
+  availableColumns.forEach((colName) => {
+    const sheetName = Object.entries(columnMapping).find(
+      ([, label]) => label === colName
+    )?.[0];
+    const sheetDataEntry = allSheetData.find((d) => d.sheetName === sheetName);
+
+    if (sheetDataEntry && sheetDataEntry.targetLines.length > 0) {
+      const targetLine = sheetDataEntry.targetLines.find(
+        (line) => line.type === "target"
+      );
+      if (targetLine) {
+        targetValues.push(targetLine.value.toFixed(2));
+        hasTargets = true;
+      } else {
+        targetValues.push("");
+      }
+    } else {
+      targetValues.push("");
+    }
+  });
+
+  targetValues.push(""); // Empty for comments column
+
+  if (hasTargets) {
+    sheetData.push(targetValues);
+    sheetData.push(Array(columns.length).fill("")); // Empty row after targets
+  }
+
+  // Header row
+  sheetData.push(columns);
+
+  // Data rows with time in seconds from start
+  const dataStartRow = sheetData.length;
+  let maxSeconds = 0;
+
+  sortedTimestamps.forEach((timestamp) => {
+    const row: any[] = [];
+
+    // Calculate seconds from start
+    const secondsFromStart = Math.floor((timestamp - startTime) / 1000);
+    maxSeconds = Math.max(maxSeconds, secondsFromStart);
+    row.push(secondsFromStart);
+
+    // Add data for each column
+    availableColumns.forEach((colName) => {
+      const sheetName = Object.entries(columnMapping).find(
+        ([, label]) => label === colName
+      )?.[0];
+
+      const tsData = dataByTimestamp.get(timestamp);
+      if (tsData && sheetName && tsData.has(sheetName)) {
+        row.push(Number(tsData.get(sheetName)!.toFixed(2)));
+      } else {
+        row.push("");
+      }
+    });
+
+    // Check for comments at this timestamp (within 1 second tolerance)
+    const comment = relevantComments.find(
+      (log) => Math.abs(log.timestamp.getTime() - timestamp) < 1000
+    );
+    row.push(comment ? comment.message : "");
+
+    sheetData.push(row);
+  });
+
+  // Add metadata section after data
+  sheetData.push(Array(columns.length).fill("")); // Empty row
+  sheetData.push(Array(columns.length).fill("")); // Empty row
+
+  // Software information
+  sheetData.push(["Software Information", "", "", "", "", "", ""]);
+  sheetData.push(["Software", "QiTech Control", "", "", "", "", ""]);
+  sheetData.push(["Version", "1.0.0", "", "", "", "", ""]);
+  sheetData.push([
+    "Export Date",
+    new Date().toLocaleString("de-DE"),
+    "",
+    "",
+    "",
+    "",
+    "",
+  ]);
+
+  // Comment statistics
+  sheetData.push(Array(columns.length).fill("")); // Empty row
+  sheetData.push(["Comment Statistics", "", "", "", "", "", ""]);
+  sheetData.push([
+    "Total Comments",
+    relevantComments.length.toString(),
+    "",
+    "",
+    "",
+    "",
+    "",
+  ]);
+
+  // Convert to worksheet
+  const worksheet = XLSX.utils.aoa_to_sheet(sheetData);
+
+  // Merge title cells
+  if (!worksheet["!merges"]) worksheet["!merges"] = [];
+  worksheet["!merges"].push({
+    s: { r: 0, c: 0 },
+    e: { r: 0, c: columns.length - 1 },
+  });
+
+  // Set column widths
+  const colWidths = [
+    { wch: 12 }, // Timestamp (seconds)
+    ...availableColumns.map(() => ({ wch: 12 })),
+    { wch: 40 }, // Comments column
+  ];
+  worksheet["!cols"] = colWidths;
+
+  // Add chart creation instructions (kept as fallback)
+  sheetData.push(Array(columns.length).fill("")); // Empty row
+  sheetData.push(Array(columns.length).fill("")); // Empty row
+  sheetData.push([
+    "Chart Instructions",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+  ]);
+  sheetData.push([
+    "1. Select all data from row " + dataStartRow + " to the last data row",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+  ]);
+  sheetData.push([
+    "2. Insert > Chart > Scatter Chart with Straight Lines and Markers",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+  ]);
+  sheetData.push([
+    "3. X-axis: Time (seconds), Y-axis: All measurement columns",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+  ]);
+  sheetData.push([
+    "4. Set X-axis range: 0 to " + maxSeconds,
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+  ]);
+  sheetData.push([
+    "5. Set Y-axis range: 0 to 1000",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+  ]);
+  sheetData.push([
+    "6. Position legend at bottom",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+  ]);
+  sheetData.push([
+    "7. Chart Title: " + groupId + " - " + timeRangeTitle,
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+  ]);
+
+  return worksheet;
 }
 
 // Generate better sheet names based on graph title, series title, and unit
