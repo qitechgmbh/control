@@ -20,7 +20,8 @@ use ethercat_hal::devices::wago_modules::ip20_ec_di8_do8::{
 };
 
 use ethercrab::std::ethercat_now;
-use ethercrab::{MainDevice, MainDeviceConfig, PduStorage, RetryBehaviour, Timeouts};
+use ethercrab::subdevice_group::{CycleInfo, DcConfiguration};
+use ethercrab::{DcSync, MainDevice, MainDeviceConfig, PduStorage, RegisterAddress, RetryBehaviour, Timeouts, TxRxResponse};
 use machines::machine_identification::{
     DeviceHardwareIdentification, DeviceHardwareIdentificationEthercat, DeviceIdentification,
     DeviceIdentificationIdentified, MachineIdentificationUnique, read_device_identifications,
@@ -28,7 +29,11 @@ use machines::machine_identification::{
 use machines::registry::{MACHINE_REGISTRY, MachineRegistry};
 use machines::{Machine, MachineNewHardware, MachineNewHardwareEthercat, MachineNewParams};
 use smol::channel::Sender;
+use smol::stream::StreamExt;
 use socketioxide::extract::SocketRef;
+use ta::Next;
+use ta::indicators::ExponentialMovingAverage;
+use std::time::Instant;
 use std::{sync::Arc, time::Duration};
 
 /// Structure to hold the result of grouping devices by identification
@@ -268,7 +273,14 @@ pub async fn setup_loop(
             err
         ))?,
     };
-
+    smol::Timer::after(Duration::from_secs(1)).await;
+    for mut subdevice in group_preop.iter_mut(&maindevice) {
+        match subdevice.dc_support()  {            
+            ethercrab::DcSupport::Bits64 => subdevice.set_dc_sync(DcSync::Sync0),
+            ethercrab::DcSupport::Bits32 => subdevice.set_dc_sync(DcSync::Sync0),
+            _ => (),
+        };
+    }
     // create devices
     let devices =
         devices_from_subdevices::<MAX_SUBDEVICES, PDI_LEN>(&mut group_preop, &maindevice)?;
@@ -398,13 +410,6 @@ pub async fn setup_loop(
     };
     drop(ethercat_meta_devices);
 
-    for subdevice in subdevices.iter() {
-        // Hack so El5152 goes into OP
-        if subdevice.name() == "EL5152" {
-            has_dc = true;
-        }
-    }
-
     // remove subdevice from devices tuple
     let devices = devices
         .iter()
@@ -424,7 +429,85 @@ pub async fn setup_loop(
     )
     .await?;
 
-    let group_safe = match group_preop.into_safe_op(&maindevice).await {
+    let group_preop_pdi = group_preop.into_pre_op_pdi(&maindevice).await?;
+    let mut now = Instant::now();
+    let start = Instant::now();
+
+    let mut averages = Vec::new();
+
+    for _ in 0..group_preop_pdi.len() {
+        averages.push(ExponentialMovingAverage::new(64).unwrap());        
+    }
+
+    let mut tick_interval = smol::Timer::interval(Duration::from_micros(700));
+
+    loop {
+        group_preop_pdi
+            .tx_rx_sync_system_time(&maindevice)
+            .await
+            .expect("TX/RX");
+        
+        let mut max_deviation = 0;
+
+        for (s1,ema) in group_preop_pdi.iter(&maindevice).zip(averages.iter_mut()) {
+                let diff = match s1
+                    .register_read::<u32>(RegisterAddress::DcSystemTimeDifference)
+                    .await
+                {
+                    Ok(value) =>
+                    // The returned value is NOT in two's compliment, rather the upper bit specifies
+                    // whether the number in the remaining bits is odd or even, so we convert the
+                    // value to `i32` using that logic here.
+                    {
+                        let flag = 0b1u32 << 31;
+
+                        if value >= flag {
+                            // Strip off negative flag bit and negate value as normal
+                            -((value & !flag) as i32)
+                        } else {
+                            value as i32
+                        }
+                    }
+                    Err(ethercrab::error::Error::WorkingCounter { .. }) => 0,
+                    Err(_) => 200000000,
+                };
+                let ema_next = ema.next(diff as f64);
+                max_deviation = max_deviation.max(ema_next.abs() as u32);
+            }
+
+            if now.elapsed() >= Duration::from_millis(1000) {
+                now = Instant::now();
+
+                println!("--> Max deviation {} ns", max_deviation);
+
+                // Less than 500ns max deviation as an example threshold.
+                // <https://github.com/OpenEtherCATsociety/SOEM/issues/487#issuecomment-786245585>
+                // mentions less than 100us as a good enough value as well.
+                if max_deviation < 500 {
+                    println!("Clocks settled after {} ms", start.elapsed().as_millis());
+
+                    break;
+                }
+            }
+
+            tick_interval.next().await;
+    }
+
+    let group = group_preop_pdi
+        .configure_dc_sync(
+            &maindevice,
+            DcConfiguration {
+                // Start SYNC0 100ms in the future
+                start_delay: Duration::from_millis(100),
+                // SYNC0 period should be the same as the process data loop in most cases
+                sync0_period: Duration::from_micros(700),
+                // Send process data half way through cycle
+                sync0_shift: Duration::from_micros(700) / 2,
+            },
+        )
+        .await?;
+    
+    let group_safe = match group.into_safe_op(&maindevice).await {
         Ok(group_op) => {
             tracing::info!("Group in Safe-OP state");
             group_op
@@ -435,36 +518,33 @@ pub async fn setup_loop(
             err
         ))?,
     };
+    let op_request = Instant::now();
 
-    // TODO Make a more extensive init for the case of DC-Sync
-    // Maybe we need multiple groups? like one DC group and one non dc sync group?
-    // For now we just check if we use wago coupler or IP20
-    if has_dc {
-        for _ in 1..1000 {
-            let res = group_safe.tx_rx_sync_system_time(&maindevice).await;
-            match res {
-                Ok(_) => (),
-                Err(e) => tracing::error!(
-                    "[{}::setup_loop] Failed to sync dc time: {:?}",
-                    e,
-                    module_path!()
-                ),
-            }
+    let group_op = group_safe
+        .request_into_op(&maindevice)
+        .await
+        .expect("SAFE-OP -> OP");
+    println!("Requested OP!");        
+
+    loop {
+        let now = Instant::now();
+        let response @ TxRxResponse {
+            working_counter: _wkc,
+            extra: CycleInfo {
+                next_cycle_wait, ..
+            },
+            ..
+        } = group_op.tx_rx_dc(&maindevice).await.expect("TX/RX");
+        if response.all_op() {
+            break;
         }
+        smol::Timer::at(now + next_cycle_wait).await;
     }
 
-    // Put group in operational state
-    let group_op = match group_safe.into_op(&maindevice).await {
-        Ok(group_op) => {
-            tracing::info!("Group in OP state");
-            group_op
-        }
-        Err(err) => Err(anyhow::anyhow!(
-            "[{}::setup_loop] Failed to put group in OP state: {:?}",
-            module_path!(),
-            err
-        ))?,
-    };
+        println!(
+            "All SubDevices entered OP in {} us",
+            op_request.elapsed().as_micros()
+        );
 
     {
         // Notify client via socketio

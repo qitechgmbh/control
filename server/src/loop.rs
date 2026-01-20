@@ -167,7 +167,7 @@ pub async fn copy_ethercat_inputs(
     if let Some(ethercat_setup) = ethercat_setup {
         ethercat_setup
             .group
-            .tx_rx(&ethercat_setup.maindevice)
+            .tx_rx_dc(&ethercat_setup.maindevice)
             .await?;
 
         // copy inputs to devices

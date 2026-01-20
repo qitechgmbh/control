@@ -47,6 +47,7 @@ utils = { version = "0.1.0", path="../utils" }
 spin_sleep = "1.3.3"
 dhat = { version = "0.3.3", optional = true }
 ctrlc = { version = "3.3", optional = true }
+ta = "0.5.0"
 
 
 [dev-dependencies]
