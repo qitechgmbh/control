@@ -117,24 +117,20 @@ export function mainMessageHandler(
 
     try {
       // Apply appropriate caching strategy based on event type
-      if (eventName === "EthercatDevicesEvent") {
-        const validatedEvent = ethercatDevicesEventSchema.parse(event);
-        console.log("EthercatDevicesEvent", validatedEvent);
+      if (eventName === "EthercatDevicesEvent") {        
+        const validatedEvent = event;
         store.setState((state) => ({
           ...state,
           ethercatDevices: validatedEvent,
         }));
       } else if (eventName === "MachinesEvent") {
-        const validatedEvent = machinesEventSchema.parse(event);
-        console.log("MachinesEvent", validatedEvent);
+        const validatedEvent = machinesEventSchema.parse(event);        
         store.setState((state) => ({
           ...state,
           machines: validatedEvent,
         }));
       } else if (eventName === "EthercatInterfaceDiscoveryEvent") {
-        const validatedEvent =
-          ethercatInterfaceDiscoveryEventSchema.parse(event);
-        console.log("EthercatInterfaceDiscoveryEvent", validatedEvent);
+        const validatedEvent = event;
         store.setState((state) => ({
           ...state,
           ethercatInterfaceDiscovery: validatedEvent,
