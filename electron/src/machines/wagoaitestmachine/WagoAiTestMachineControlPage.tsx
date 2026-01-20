@@ -47,10 +47,10 @@ export function WagoAiTestMachineControl(): React.JSX.Element {
               width={400}
               renderValue={(v) => v.toFixed(2)}
             ></MiniGraph>
-            <div className="flex flex-col justify-center ml-4">
+            <div className="ml-4 flex flex-col justify-center">
               <div>{seriesData.ai1.current?.value.toFixed(2)} mA</div>
               {state.wiringErrors?.[0] && (
-                <div className="mt-2 px-2 py-1 bg-red-100 text-red-800 rounded text-sm font-semibold">
+                <div className="mt-2 rounded bg-red-100 px-2 py-1 text-sm font-semibold text-red-800">
                   Wiring Error
                 </div>
               )}
@@ -64,10 +64,10 @@ export function WagoAiTestMachineControl(): React.JSX.Element {
               width={400}
               renderValue={(v) => v.toFixed(2)}
             ></MiniGraph>
-            <div className="flex flex-col justify-center ml-4">
+            <div className="ml-4 flex flex-col justify-center">
               <div>{seriesData.ai2.current?.value.toFixed(2)} mA</div>
               {state.wiringErrors?.[1] && (
-                <div className="mt-2 px-2 py-1 bg-red-100 text-red-800 rounded text-sm font-semibold">
+                <div className="mt-2 rounded bg-red-100 px-2 py-1 text-sm font-semibold text-red-800">
                   Wiring Error
                 </div>
               )}
@@ -81,10 +81,10 @@ export function WagoAiTestMachineControl(): React.JSX.Element {
               width={400}
               renderValue={(v) => v.toFixed(2)}
             ></MiniGraph>
-            <div className="flex flex-col justify-center ml-4">
+            <div className="ml-4 flex flex-col justify-center">
               <div>{seriesData.ai3.current?.value.toFixed(2)} mA</div>
               {state.wiringErrors?.[2] && (
-                <div className="mt-2 px-2 py-1 bg-red-100 text-red-800 rounded text-sm font-semibold">
+                <div className="mt-2 rounded bg-red-100 px-2 py-1 text-sm font-semibold text-red-800">
                   Wiring Error
                 </div>
               )}
@@ -98,10 +98,10 @@ export function WagoAiTestMachineControl(): React.JSX.Element {
               width={400}
               renderValue={(v) => v.toFixed(2)}
             ></MiniGraph>
-            <div className="flex flex-col justify-center ml-4">
+            <div className="ml-4 flex flex-col justify-center">
               <div>{seriesData.ai4.current?.value.toFixed(2)} mA</div>
               {state.wiringErrors?.[3] && (
-                <div className="mt-2 px-2 py-1 bg-red-100 text-red-800 rounded text-sm font-semibold">
+                <div className="mt-2 rounded bg-red-100 px-2 py-1 text-sm font-semibold text-red-800">
                   Wiring Error
                 </div>
               )}

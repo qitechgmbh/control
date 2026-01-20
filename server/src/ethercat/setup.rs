@@ -299,12 +299,6 @@ pub async fn setup_loop(
     let mut ethercat_meta_devices = app_state.ethercat_meta_data.write().await;
     ethercat_meta_devices.clear();
 
-    // Add ALL devices to meta data (both identified and unidentified)
-    for (device_identification, _, subdevice) in devices.iter() {
-        let meta = EtherCatDeviceMetaData::from_subdevice(*subdevice, device_identification.clone());
-        ethercat_meta_devices.push(meta);
-    }
-
     // filter devices and if Option<DeviceMachineIdentification> is Some
     // return identified_devices, identified_device_identifications, identified_subdevices
     let (identified_device_identifications,identified_devices, identified_subdevices): (

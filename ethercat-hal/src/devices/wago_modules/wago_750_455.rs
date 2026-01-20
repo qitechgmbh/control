@@ -4,8 +4,8 @@ use crate::devices::{
     DynamicEthercatDevice, EthercatDevice, EthercatDeviceProcessing, EthercatDeviceUsed,
     EthercatDynamicPDO, Module, NewEthercatDevice, SubDeviceProductTuple,
 };
-use crate::io::analog_input::{AnalogInputDevice, AnalogInputInput};
 use crate::io::analog_input::physical::AnalogInputRange;
+use crate::io::analog_input::{AnalogInputDevice, AnalogInputInput};
 use units::electric_current::milliampere;
 use units::f64::ElectricCurrent;
 

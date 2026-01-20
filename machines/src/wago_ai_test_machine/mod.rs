@@ -5,11 +5,11 @@ use ethercat_hal::io::analog_input::AnalogInput;
 use smol::channel::{Receiver, Sender};
 
 use crate::{
-    WAGO_AI_TEST_MACHINE, AsyncThreadMessage, Machine, MachineMessage, VENDOR_QITECH,
-    wago_ai_test_machine::api::{
-        WagoAiTestMachineEvents, WagoAiTestMachineNamespace, AnalogInputsEvent,
-    },
+    AsyncThreadMessage, Machine, MachineMessage, VENDOR_QITECH, WAGO_AI_TEST_MACHINE,
     machine_identification::{MachineIdentification, MachineIdentificationUnique},
+    wago_ai_test_machine::api::{
+        AnalogInputsEvent, WagoAiTestMachineEvents, WagoAiTestMachineNamespace,
+    },
 };
 
 pub mod act;
@@ -62,12 +62,7 @@ impl WagoAiTestMachine {
     }
 
     pub fn emit_wiring_errors(&mut self, errors: [bool; 4]) {
-        let event = AnalogInputsEvent::WiringErrors(
-            errors[0],
-            errors[1],
-            errors[2],
-            errors[3],
-        );
+        let event = AnalogInputsEvent::WiringErrors(errors[0], errors[1], errors[2], errors[3]);
         self.namespace
             .emit(WagoAiTestMachineEvents::State(Event::new(
                 "WiringErrors",

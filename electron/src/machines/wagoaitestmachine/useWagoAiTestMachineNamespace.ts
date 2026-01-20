@@ -10,19 +10,12 @@ import { create, StoreApi } from "zustand";
 
 export const stateEventDataSchema = z.object({
   measurementRateHz: z.number().optional(),
-  analogInputs: z.tuple([
-    z.number(),
-    z.number(),
-    z.number(),
-    z.number(),
-    z.string(),
-  ]).optional(),
-  wiringErrors: z.tuple([
-    z.boolean(),
-    z.boolean(),
-    z.boolean(),
-    z.boolean(),
-  ]).optional(),
+  analogInputs: z
+    .tuple([z.number(), z.number(), z.number(), z.number(), z.string()])
+    .optional(),
+  wiringErrors: z
+    .tuple([z.boolean(), z.boolean(), z.boolean(), z.boolean()])
+    .optional(),
 });
 
 export const stateEventSchema = eventSchema(stateEventDataSchema);
@@ -87,8 +80,7 @@ function wagoAiTestMachineMessageHandler(
 }
 
 // ========== Namespace Hook ==========
-export const useWagoAiTestMachineNamespace =
-  createNamespaceHookImplementation({
-    createStore: () => createMachineStore(),
-    createEventHandler: wagoAiTestMachineMessageHandler,
-  });
+export const useWagoAiTestMachineNamespace = createNamespaceHookImplementation({
+  createStore: () => createMachineStore(),
+  createEventHandler: wagoAiTestMachineMessageHandler,
+});

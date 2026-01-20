@@ -3,9 +3,9 @@ use std::time::Instant;
 use anyhow::Error;
 use ethercat_hal::{
     devices::{
+        EthercatDevice, downcast_device,
         wago_750_354::{WAGO_750_354_IDENTITY_A, Wago750_354},
         wago_modules::wago_750_455::{Wago750_455, Wago750_455Port},
-        EthercatDevice, downcast_device,
     },
     io::analog_input::AnalogInput,
 };
@@ -13,9 +13,9 @@ use smol::{block_on, channel::unbounded, lock::RwLock};
 use std::sync::Arc;
 
 use crate::{
-    MachineNewHardware, MachineNewParams, MachineNewTrait,
+    MachineNewHardware, MachineNewParams, MachineNewTrait, get_ethercat_device,
+    validate_no_role_dublicates, validate_same_machine_identification_unique,
     wago_ai_test_machine::{WagoAiTestMachine, api::WagoAiTestMachineNamespace},
-    get_ethercat_device, validate_no_role_dublicates, validate_same_machine_identification_unique,
 };
 
 impl MachineNewTrait for WagoAiTestMachine {
@@ -59,8 +59,7 @@ impl MachineNewTrait for WagoAiTestMachine {
             }
 
             coupler.init_slot_modules(wago_750_354.1);
-            
-            
+
             // Get the 750-455 analog input module from slot 0 (first module)
             let dev = coupler
                 .slot_devices
@@ -68,9 +67,8 @@ impl MachineNewTrait for WagoAiTestMachine {
                 .ok_or_else(|| anyhow::anyhow!("No device in slot 0"))?
                 .clone()
                 .ok_or_else(|| anyhow::anyhow!("Slot 0 is empty"))?;
-            
-            let wago750_455: Arc<RwLock<Wago750_455>> =
-                downcast_device::<Wago750_455>(dev).await?;
+
+            let wago750_455: Arc<RwLock<Wago750_455>> = downcast_device::<Wago750_455>(dev).await?;
 
             // Create AnalogInput instances for all 4 channels
             let ai1 = AnalogInput::new(wago750_455.clone(), Wago750_455Port::AI1);
@@ -84,7 +82,7 @@ impl MachineNewTrait for WagoAiTestMachine {
             let namespace = WagoAiTestMachineNamespace {
                 namespace: params.namespace.clone(),
             };
-            
+
             let new_wago_ai_test_machine = Self {
                 api_receiver: receiver,
                 api_sender: sender,
@@ -97,7 +95,7 @@ impl MachineNewTrait for WagoAiTestMachine {
 
                 analog_inputs: [ai1, ai2, ai3, ai4],
             };
-            
+
             Ok(new_wago_ai_test_machine)
         })
     }
