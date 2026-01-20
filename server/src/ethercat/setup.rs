@@ -177,6 +177,8 @@ pub async fn setup_loop(
     let (tx, rx, pdu) = pdu_storage.try_split().expect("can only split once");
     let interface = interface.to_string();
     let mut has_dc = false;
+    let mut has_ek1100 = false;
+    let mut has_ip20_module = false;
 
     std::thread::Builder::new()
         .name("EthercatTxRxThread".to_owned())
@@ -337,6 +339,16 @@ pub async fn setup_loop(
 
     // We always need to have atleast one subdevice anyways
     let coupler = subdevices.get(0).unwrap();
+    
+    // Check if coupler is EK1100
+    const EK1100_VENDOR_ID: u32 = 0x2;
+    const EK1100_PRODUCT_ID: u32 = 0x044c2c52;
+    if coupler.identity().vendor_id == EK1100_VENDOR_ID
+        && coupler.identity().product_id == EK1100_PRODUCT_ID
+    {
+        has_ek1100 = true;
+    }
+
     let _resp = get_most_recent_diagnosis_message(coupler).await;
 
     /*
@@ -403,6 +415,12 @@ pub async fn setup_loop(
         if subdevice.name() == "EL5152" {
             has_dc = true;
         }
+        // Check for IP20 modules
+        if subdevice.identity().vendor_id == IP20_EC_DI8_DO8_VENDOR_ID
+            && subdevice.identity().product_id == IP20_EC_DI8_DO8_PRODUCT_ID
+        {
+            has_ip20_module = true;
+        }
     }
 
     // remove subdevice from devices tuple
@@ -438,7 +456,7 @@ pub async fn setup_loop(
 
     // TODO Make a more extensive init for the case of DC-Sync
     // Maybe we need multiple groups? like one DC group and one non dc sync group?
-    // For now we just check if we use wago coupler or IP20
+    // For devices that need extensive DC sync (WAGO, IP20), do 1000 iterations
     if has_dc {
         for _ in 1..1000 {
             let res = group_safe.tx_rx_sync_system_time(&maindevice).await;
@@ -446,10 +464,21 @@ pub async fn setup_loop(
                 Ok(_) => (),
                 Err(e) => tracing::error!(
                     "[{}::setup_loop] Failed to sync dc time: {:?}",
-                    e,
-                    module_path!()
+                    module_path!(),
+                    e
                 ),
             }
+        }
+    } else if has_ek1100 && has_ip20_module {
+        // Call DC sync once specifically for EK1100 with IP20 modules to reach OP state
+        let res = group_safe.tx_rx_sync_system_time(&maindevice).await;
+        match res {
+            Ok(_) => (),
+            Err(e) => tracing::error!(
+                "[{}::setup_loop] Failed to sync dc time: {:?}",
+                module_path!(),
+                e
+            ),
         }
     }
 

@@ -10,15 +10,17 @@ use crate::{
 };
 
 use anyhow::Error;
+use ethercat_hal::coe::ConfigurableDevice;
 use ethercat_hal::devices::ek1100::{EK1100, EK1100_IDENTITY_A};
 use ethercat_hal::devices::el7041_0052::{
-    EL7041_0052, EL7041_0052Port, EL7041_0052_IDENTITY_A,
+    coe::EL7041_0052Configuration, EL7041_0052, EL7041_0052Port, EL7041_0052_IDENTITY_A,
 };
 use ethercat_hal::devices::wago_modules::ip20_ec_di8_do8::{
     IP20EcDi8Do8, IP20EcDi8Do8OutputPort, IP20_EC_DI8_DO8_IDENTITY,
 };
 use ethercat_hal::io::digital_output::DigitalOutput;
 use ethercat_hal::io::stepper_velocity_el70x1::StepperVelocityEL70x1;
+use ethercat_hal::shared_config::el70x1::{EL70x1OperationMode, StmMotorConfiguration};
 
 impl MachineNewTrait for BottleSorter {
     fn new<'maindevice>(params: &MachineNewParams) -> Result<Self, Error> {
@@ -59,8 +61,29 @@ impl MachineNewTrait for BottleSorter {
                 1,
                 vec![EL7041_0052_IDENTITY_A],
             )
-            .await?
-            .0;
+            .await?;
+
+            // Configure the stepper motor for velocity mode
+            let el7041_config = EL7041_0052Configuration {
+                stm_features: ethercat_hal::shared_config::el70x1::StmFeatures {
+                    operation_mode: EL70x1OperationMode::DirectVelocity,
+                    ..Default::default()
+                },
+                stm_motor: StmMotorConfiguration {
+                    max_current: 2800,
+                    ..Default::default()
+                },
+                ..Default::default()
+            };
+
+            el7041_device
+                .0
+                .write()
+                .await
+                .write_config(&el7041_device.1, &el7041_config)
+                .await?;
+
+            let el7041_device = el7041_device.0;
 
             // Get IP20 DI8/DO8 module (role 2)
             let ip20_device = get_ethercat_device::<IP20EcDi8Do8>(
