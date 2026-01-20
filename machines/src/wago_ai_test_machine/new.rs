@@ -60,11 +60,6 @@ impl MachineNewTrait for WagoAiTestMachine {
 
             coupler.init_slot_modules(wago_750_354.1);
             
-            // Debug: print the number of slot devices
-            println!("Number of slot devices: {}", coupler.slot_devices.len());
-            for (i, slot) in coupler.slot_devices.iter().enumerate() {
-                println!("Slot {}: {:?}", i, slot.is_some());
-            }
             
             // Get the 750-455 analog input module from slot 0 (first module)
             let dev = coupler
