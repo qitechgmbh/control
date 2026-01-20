@@ -14,8 +14,10 @@ The Wago 750-455 Analog Input example demonstrates how to measure analog current
 ## 2. Requirements
 
 ### Hardware
+- **Wago 750-354 EtherCAT Coupler**
+- **Wago 750-602 Power Supply** (24V VDC)
 - **Wago 750-455 EtherCAT Module** (4-channel analog input, 4-20mA)
-- **Wago 750-XXX I/O System** (Controller/Coupler)
+- **Wago 750-600 End Module** 
 - **24 V DC power supply** for the Wago system
 - **Adjustable DC power supply** (or any other means of producing 4-20mA DC @ <10V)
 - Jumper / bridge wires (0.5–1.5 mm² recommended)
@@ -46,6 +48,8 @@ Working on live EtherCAT modules can cause serious damage or electrical shock.
 1. Insert a screwdriver **straight** into the square release hole.
 2. Insert the stripped wire into the round opening.
 3. Remove the screwdriver — the spring clamp locks the wire.
+
+![](../assets/wiring.png)
 
 ---
 
@@ -149,20 +153,19 @@ Once both backend and frontend are running:
 
 1. Navigate to **Setup → EtherCAT** page
 2. You should see your Wago controller and the 750-455 module listed
-3. The module will show as having 4 analog input channels (AI1-AI4)
+3. Select the Device called 750-354 and assign the Wago AI Test V1 Machine, set the Serial to 1 and set the device role to 0 (Wago Bus Coupler)
+4. Press write thn restart the backend to load the changes
 
 ### 5.2 Testing Analog Input
 
 1. Set your adjustable power supply to output a current in the 4-20mA range
 2. In the dashboard, navigate to the monitoring view
 3. Observe the analog input value for the connected channel(s)
-4. The normalized value should range from 0.0 (at 4mA) to 1.0 (at 20mA)
 
 ### 5.3 Channel Specifications
 
 The Wago 750-455 provides:
 - **Input Range:** 4-20mA
-- **Resolution:** 12-bit (values 0-32752)
 - **Wiring Error Detection:** Built-in detection for open/short circuit conditions
 - **4 Independent Channels:** Each can be read separately
 
@@ -178,7 +181,7 @@ The module includes wiring error detection. If you see a wiring error flag:
 ## 6. References
 
 ### Wago Documentation
-- [Wago 750-455 Product Page](https://www.wago.com)
+- [Wago 750-455 Product Page](https://www.wago.com/de-en/io-systems/4-channel-analog-input/p/750-455)
 - Wago I/O System manual
 - EtherCAT configuration guide for Wago systems
 
@@ -191,13 +194,3 @@ The module includes wiring error detection. If you see a wiring error flag:
 ### Related Examples
 - [Minimal Example — EL3021](minimal-example-el3021.md) (Single channel analog input)
 - [Minimal Example — EL2004](minimal-example-el2004.md) (Digital output)
-
----
-
-## Notes
-
-- The Wago 750-455 supports standard 4-20mA industrial current loop sensors
-- All 4 channels can be used simultaneously
-- The module provides hardware-level fault detection
-- Current measurement is independent per channel
-- Suitable for reading sensor data from flow meters, pressure transmitters, temperature sensors, etc.
