@@ -18,7 +18,10 @@ pub struct Wago750_671 {
     pub rxpdo: Wago750_671RxPdo,
     pub txpdo: Wago750_671TxPdo,
     module: Option<Module>,
-    pub counter_wrapper: CounterWrapperU16U128,
+    state: SpeedControlState,
+    desired_velocity: i16,
+    desired_acceleration: u16,
+    enabled: bool,
 }
 
 /*
@@ -169,6 +172,26 @@ impl StatusByteS3 {
     const RESET: u8                  = 0x80; // Bit 7
 }
 
+#[derive(Debug, Clone, Copy)]
+enum SpeedControlState {
+    Init,
+    WaitReady,
+    SelectMode,
+    StartPulse,
+    Running,
+    ErrorAck,
+}
+
+impl Wago750_671 {
+    pub fn set_speed(&mut self, vel: i16, acc: u16) {
+        self.desired_velocity = vel;
+        self.desired_acceleration = acc;
+    }
+
+    pub fn set_enabled(&mut self, enabled: bool) {
+        self.enabled = enabled;
+    }
+}
 
 impl Wago750_671 {
     /// Set speed setpoint and acceleration (Velocity Control process image).
@@ -190,7 +213,7 @@ impl Wago750_671 {
     /// - keep enable=true continuously after DI1 is high
     /// - keep speed_mode=true
     /// - pulse start_pulse=true for ONE cycle to accept setpoints / (re)start output
-    pub fn apply_speed_control_state(&mut self, enable: bool, speed_mode: bool, start_pulse: bool) {
+    fn apply_speed_control_state(&mut self, enable: bool, speed_mode: bool, start_pulse: bool) {
         let mut c1: u8 = 0;
 
         if enable {
@@ -269,40 +292,52 @@ impl Wago750_671 {
         let u = b0 | (b1 << 8) | (b2 << 16);
         u as i32
     }
-    pub fn position(&self) -> i128 {
-        self.counter_wrapper.current()
-    }
 }
 
 impl EthercatDeviceProcessing for Wago750_671 {
     fn input_post_process(&mut self) -> Result<(), anyhow::Error> {
-        let pos_l = self.txpdo.b[6];
-        let pos_m = self.txpdo.b[7];
-        let pos_h = self.txpdo.b[8];
-
-        // WAGO position is 24-bit, but the Counter-Wrapper is 16-bit based
-        // We use the lower 16 bits for the wrapper.
-        let raw_u16 = u16::from_le_bytes([pos_l, pos_m]);
-
-        let s2 = self.txpdo.b[10];
-        let overflow = (s2 & (1 << 3)) != 0;
-        let underflow = (s2 & (1 << 2)) != 0;
-
-        self.counter_wrapper.update(raw_u16, underflow, overflow);
         Ok(())
     }
 
     fn output_pre_process(&mut self) -> Result<(), anyhow::Error> {
-        if let Some(new_counter_u16) = self.counter_wrapper.pop_override() {
-            // Write back the lower 16 bits
-            self.rxpdo.b[6] = (new_counter_u16 & 0xFF) as u8;
-            self.rxpdo.b[7] = (new_counter_u16 >> 8) as u8;
+        self.set_speed_setpoint(self.desired_velocity, self.desired_acceleration);
 
-            // MSB must be written as well (sign extension or zero)
-            self.rxpdo.b[8] = 0;
-
-            // Tell the controller to accept the new position
-            self.rxpdo.b[9] |= 1 << 6;
+        match self.state {
+            SpeedControlState::Init => {
+                self.apply_speed_control_state(self.enabled, true, false);
+                self.state = SpeedControlState::WaitReady;
+                println!("Current state: Init");
+            },
+            SpeedControlState::WaitReady => {
+                self.apply_speed_control_state(self.enabled, true, false);
+                if self.ready() && self.stop_n_ack() {
+                    self.state = SpeedControlState::SelectMode;
+                }
+                println!("Current state: WaitReady");
+            },
+            SpeedControlState::SelectMode => {
+                self.apply_speed_control_state(self.enabled, true, false);
+                if self.speed_mode_ack() {
+                    self.state = SpeedControlState::StartPulse;
+                }
+                println!("Current state: SelectMode");
+            },
+            SpeedControlState::StartPulse => {
+                self.apply_speed_control_state(self.enabled, true, true);
+                self.state = SpeedControlState::Running;
+                println!("Current state: StartPulse");
+            },
+            SpeedControlState::Running => {
+                self.apply_speed_control_state(self.enabled, true, false);
+                println!("Current state: Running");
+            },
+            SpeedControlState::ErrorAck => {
+                self.apply_error_quit(true);
+                if !self.error_active() {
+                    self.state = SpeedControlState::Init;
+                }
+                println!("Current state: ErrorAck");
+            },
         }
         Ok(())
     }
@@ -418,7 +453,10 @@ impl NewEthercatDevice for Wago750_671 {
             module: None,
             rxpdo: Wago750_671RxPdo::default(),
             txpdo: Wago750_671TxPdo::default(),
-            counter_wrapper: CounterWrapperU16U128::new(),
+            state: SpeedControlState::Init,
+            desired_velocity: 0,
+            desired_acceleration: 0,
+            enabled: false,
         }
     }
 }
