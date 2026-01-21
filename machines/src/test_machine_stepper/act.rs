@@ -16,8 +16,10 @@ impl MachineAct for TestMachineStepper {
         }
 
         block_on(async {
+            self.stepper.tick();
             let mut stm = self.stepper.device.write().await;
-
+            self.stepper.target_velocity = 10000;
+            self.stepper.target_acceleration = 10000;
         })
     }
 
