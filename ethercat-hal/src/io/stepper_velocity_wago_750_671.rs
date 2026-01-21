@@ -41,13 +41,21 @@ impl StepperVelocityWago750671 {
                 }
             }
             SpeedControlState::SelectMode => {
-                dev.write_control_bits(ControlByteC1::ENABLE | ControlByteC1::M_SPEED_CONTROL, 0, 0);
+                dev.write_control_bits(
+                    ControlByteC1::ENABLE | ControlByteC1::M_SPEED_CONTROL | ControlByteC1::STOP2_N,
+                    0,
+                    0,
+                );
                 if dev.speed_mode_ack() {
                     self.state = SpeedControlState::StartPulse;
                 }
             }
             SpeedControlState::StartPulse => {
-                dev.write_control_bits(ControlByteC1::ENABLE | ControlByteC1::M_SPEED_CONTROL | ControlByteC1::START, 0, 0);
+                dev.write_control_bits(
+                    ControlByteC1::ENABLE | ControlByteC1::M_SPEED_CONTROL | ControlByteC1::STOP2_N | ControlByteC1::START,
+                    0,
+                    0,
+                );
                 self.state = SpeedControlState::Running;
             }
             SpeedControlState::Running => {
@@ -69,4 +77,3 @@ enum SpeedControlState {
     Running,
     ErrorAck,
 }
-
