@@ -5,10 +5,13 @@
 
 use bitvec::field::BitField;
 
-use crate::{devices::{
-    DynamicEthercatDevice, EthercatDevice, EthercatDeviceProcessing, EthercatDeviceUsed,
-    EthercatDynamicPDO, Module, NewEthercatDevice, SubDeviceProductTuple,
-}, helpers::counter_wrapper_u16_i128::CounterWrapperU16U128};
+use crate::{
+    devices::{
+        DynamicEthercatDevice, EthercatDevice, EthercatDeviceProcessing, EthercatDeviceUsed,
+        EthercatDynamicPDO, Module, NewEthercatDevice, SubDeviceProductTuple,
+    },
+    helpers::counter_wrapper_u16_i128::CounterWrapperU16U128,
+};
 
 #[derive(Clone)]
 pub struct Wago750_671 {
@@ -18,7 +21,6 @@ pub struct Wago750_671 {
     pub rxpdo: Wago750_671RxPdo,
     pub txpdo: Wago750_671TxPdo,
     module: Option<Module>,
-    pub counter_wrapper: CounterWrapperU16U128,
 }
 
 /*
@@ -32,12 +34,24 @@ pub struct Wago750_671 {
 
 #[derive(Clone, Debug, Default)]
 pub struct Wago750_671RxPdo {
-    pub b: [u8; 12],
+    pub c0: u8,            // C0
+    pub velocity: i16,     // D0/D1
+    pub acceleration: u16, // D2/D3
+    pub c3: u8,            // C3
+    pub c2: u8,            // C2
+    pub c1: u8,            // C1
 }
 
 #[derive(Clone, Debug, Default)]
 pub struct Wago750_671TxPdo {
-    pub b: [u8; 12],
+    pub s0: u8,               // S0
+    pub actual_velocity: i16, // D0/D1
+    pub position_l: u8,       // D4
+    pub position_m: u8,       // D5
+    pub position_h: u8,       // D6
+    pub s3: u8,               // S3
+    pub s2: u8,               // S2
+    pub s1: u8,               // S1
 }
 
 impl EthercatDeviceUsed for Wago750_671 {
@@ -66,122 +80,95 @@ impl EthercatDynamicPDO for Wago750_671 {
     }
 }
 
-/// [P]rocess [I]mage byte offsets (Output)
-/// The process image is 12 bytes long.
-/// missing bytes in the enum are reserved.
-pub struct OutputPI;
-impl OutputPI {
-     pub const C0: usize = 0; // Control byte C0
-     pub const D0: usize = 2; // Velocity L
-     pub const D1: usize = 3; // Velocity H
-     pub const D2: usize = 4; // Acceleration L
-     pub const D3: usize = 5; // Acceleration H
-     pub const C3: usize = 9; // Control Byte C3
-     pub const C2: usize = 10; // Control Byte C2
-     pub const C1: usize = 11; // Control Byte C1
-}
-
-/// [P]rocess [I]mage byte offsets (Output)
-/// The process image is 12 bytes long.
-/// missing bytes in the struct are reserved.
-pub struct InputPI;
-impl InputPI {
-     pub const S0: usize = 0; // Status byte S0
-     pub const D0: usize = 2; // Actual Velocity L
-     pub const D1: usize = 3; // Actual Velocity H
-     pub const D4: usize = 6; // Actual position L
-     pub const D5: usize = 7; // Actual position M
-     pub const D6: usize = 8; // Actual position H
-     pub const S3: usize = 9; // Status byte S3
-     pub const S2: usize = 10; // Status byte S2
-     pub const S1: usize = 11; // Status byte S1
-}
-
 pub struct ControlByteC1;
 impl ControlByteC1 {
-    const ENABLE: u8           = 0x01; // Bit 0
-    const STOP2_N: u8          = 0x02; // Bit 1
-    const START: u8            = 0x04; // Bit 2
-    const M_SPEED_CONTROL: u8  = 0x08; // Bit 3
-    const M_PROGRAM: u8        = 0x10; // Bit 4
-    const M_REFERENCE: u8      = 0x20; // Bit 5
-    const M_JOG: u8            = 0x40; // Bit 6
-    const M_DRIVE_BYMBX: u8    = 0x80; // Bit 7
+    pub const ENABLE: u8 = 0x01; // Bit 0
+    pub const STOP2_N: u8 = 0x02; // Bit 1
+    pub const START: u8 = 0x04; // Bit 2
+    pub const M_SPEED_CONTROL: u8 = 0x08; // Bit 3
+    pub const M_PROGRAM: u8 = 0x10; // Bit 4
+    pub const M_REFERENCE: u8 = 0x20; // Bit 5
+    pub const M_JOG: u8 = 0x40; // Bit 6
+    pub const M_DRIVE_BYMBX: u8 = 0x80; // Bit 7
 }
 
 pub struct ControlByteC2;
 impl ControlByteC2 {
-    const FREQ_RANGE_SEL_LSB: u8         = 0x01; // Bit 0
-    const FREQ_RANGE_SEL_MSB: u8         = 0x02; // Bit 1
-    const ACCELERATION_RANGE_SEL_LSB: u8 = 0x04; // Bit 2
-    const ACCELERATION_RANGE_SEL_MSB: u8 = 0x08; // Bit 3
-    // RESERVED                                  // Bit 4
-    // RESERVED                                  // Bit 5
-    const PRE_CALC: u8                   = 0x40; // Bit 6
-    const ERROR_QUIT: u8                 = 0x80; // Bit 7
+    pub const FREQ_RANGE_SEL_LSB: u8 = 0x01; // Bit 0
+    pub const FREQ_RANGE_SEL_MSB: u8 = 0x02; // Bit 1
+    pub const ACCELERATION_RANGE_SEL_LSB: u8 = 0x04; // Bit 2
+    pub const ACCELERATION_RANGE_SEL_MSB: u8 = 0x08; // Bit 3
+    // RESERVED                                     // Bit 4
+    // RESERVED                                     // Bit 5
+    pub const PRE_CALC: u8 = 0x40; // Bit 6
+    pub const ERROR_QUIT: u8 = 0x80; // Bit 7
 }
 
 pub struct ControlByteC3;
 impl ControlByteC3 {
-    // RESERVED                           // Bit 0
-    // RESERVED                           // Bit 1
-    // RESERVED                           // Bit 2
-    // RESERVED                           // Bit 3
-    const LIMIT_SWITCH_POS: u8    = 0x10; // Bit 4
-    const LIMIT_SWITCH_NEG: u8    = 0x20; // Bit 5
-    const SETUP_SPEED_ACTIVE: u8  = 0x40; // Bit 6
-    const RESET_QUIT: u8          = 0x80; // Bit 7
+    // RESERVED                             // Bit 0
+    // RESERVED                             // Bit 1
+    // RESERVED                             // Bit 2
+    // RESERVED                             // Bit 3
+    pub const LIMIT_SWITCH_POS: u8 = 0x10; // Bit 4
+    pub const LIMIT_SWITCH_NEG: u8 = 0x20; // Bit 5
+    pub const SETUP_SPEED_ACTIVE: u8 = 0x40; // Bit 6
+    pub const RESET_QUIT: u8 = 0x80; // Bit 7
 }
 
 pub struct StatusByteS1;
 impl StatusByteS1 {
-    const READY: u8               = 0x01; // Bit 0
-    const STOP_N_ACK: u8          = 0x02; // Bit 1
-    const START_ACK: u8           = 0x04; // Bit 2
-    const M_SPEED_CONTROL_ACK: u8 = 0x08; // Bit 3
-    const M_PROGRAM_ACK: u8       = 0x10; // Bit 4
-    const M_REFERENCE_ACK: u8     = 0x20; // Bit 5
-    const M_JOG_ACK: u8           = 0x40; // Bit 6
-    const M_DRIVE_BYMBX_ACK: u8   = 0x80; // Bit 7
+    pub const READY: u8 = 0x01; // Bit 0
+    pub const STOP_N_ACK: u8 = 0x02; // Bit 1
+    pub const START_ACK: u8 = 0x04; // Bit 2
+    pub const M_SPEED_CONTROL_ACK: u8 = 0x08; // Bit 3
+    pub const M_PROGRAM_ACK: u8 = 0x10; // Bit 4
+    pub const M_REFERENCE_ACK: u8 = 0x20; // Bit 5
+    pub const M_JOG_ACK: u8 = 0x40; // Bit 6
+    pub const M_DRIVE_BYMBX_ACK: u8 = 0x80; // Bit 7
 }
 
 pub struct StatusByteS2;
 impl StatusByteS2 {
-    // RESERVED                    // Bit 0
-    const BUSY: u8         = 0x02; // Bit 1
-    const STAND_STILL: u8  = 0x04; // Bit 2
-    const ON_SPEED: u8     = 0x08; // Bit 3
-    const DIRECTION: u8    = 0x10; // Bit 4
-    // RESERVED                    // Bit 5
+    // RESERVED                     // Bit 0
+    const BUSY: u8 = 0x02; // Bit 1
+    const STAND_STILL: u8 = 0x04; // Bit 2
+    const ON_SPEED: u8 = 0x08; // Bit 3
+    const DIRECTION: u8 = 0x10; // Bit 4
+    // RESERVED                     // Bit 5
     const PRE_CALC_ACK: u8 = 0x40; // Bit 6
-    const ERROR: u8        = 0x80; // Bit 7
+    const ERROR: u8 = 0x80; // Bit 7
 }
 
 pub struct StatusByteS3;
 impl StatusByteS3 {
-    const INPUT1: u8                 = 0x01; // Bit 0
-    // RESERVED                              // Bit 1
-    // RESERVED                              // Bit 2
-    // RESERVED                              // Bit 3
-    // RESERVED                              // Bit 4
-    // RESERVED                              // Bit 5
-    const SETUP_SPEED_ACTIVE_ACK: u8 = 0x40; // Bit 6
-    const RESET: u8                  = 0x80; // Bit 7
+    pub const INPUT1: u8 = 0x01; // Bit 0
+    // RESERVED                                 // Bit 1
+    // RESERVED                                 // Bit 2
+    // RESERVED                                 // Bit 3
+    // RESERVED                                 // Bit 4
+    // RESERVED                                 // Bit 5
+    pub const SETUP_SPEED_ACTIVE_ACK: u8 = 0x40; // Bit 6
+    pub const RESET: u8 = 0x80; // Bit 7
 }
 
+#[derive(Debug, Clone, Copy)]
+enum SpeedControlState {
+    Init,
+    WaitReady,
+    SelectMode,
+    StartPulse,
+    Running,
+    ErrorAck,
+}
 
 impl Wago750_671 {
     /// Set speed setpoint and acceleration (Velocity Control process image).
     /// vel: i16 (sign determines direction)
     /// acc: u16 (must be > 0, acc==0 will trigger error)
     pub fn set_speed_setpoint(&mut self, vel: i16, acc: u16) {
-        let v = vel.to_le_bytes();
-        self.rxpdo.b[OutputPI::D0] = v[0]; // Velocity L
-        self.rxpdo.b[OutputPI::D1] = v[1]; // Velocity H
-
-        let a = acc.to_le_bytes();
-        self.rxpdo.b[OutputPI::D2] = a[0]; // Acceleration L
-        self.rxpdo.b[OutputPI::D3] = a[1]; // Acceleration H
+        self.rxpdo.velocity = vel;
+        self.rxpdo.acceleration = acc;
     }
 
     /// Apply control state for speed control application.
@@ -191,7 +178,7 @@ impl Wago750_671 {
     /// - keep speed_mode=true
     /// - pulse start_pulse=true for ONE cycle to accept setpoints / (re)start output
     pub fn apply_speed_control_state(&mut self, enable: bool, speed_mode: bool, start_pulse: bool) {
-        let mut c1: u8 = 0;
+        let mut c1 = 0;
 
         if enable {
             c1 |= ControlByteC1::ENABLE | ControlByteC1::STOP2_N;
@@ -203,15 +190,21 @@ impl Wago750_671 {
             c1 |= ControlByteC1::START;
         }
 
-        self.rxpdo.b[OutputPI::C1] = c1;
+        self.rxpdo.c1 = c1;
+    }
+
+    pub fn write_control_bits(&mut self, c1: u8, c2: u8, c3: u8) {
+        self.rxpdo.c1 = c1;
+        self.rxpdo.c2 = c2;
+        self.rxpdo.c3 = c3;
     }
 
     /// Error acknowledgement is edge-triggered (0->1). Pulse for one cycle.
     pub fn apply_error_quit(&mut self, pulse: bool) {
         if pulse {
-            self.rxpdo.b[OutputPI::C2] |= ControlByteC2::ERROR_QUIT;
+            self.rxpdo.c2 |= ControlByteC2::ERROR_QUIT;
         } else {
-            self.rxpdo.b[OutputPI::C2] &= !ControlByteC2::ERROR_QUIT;
+            self.rxpdo.c2 &= !ControlByteC2::ERROR_QUIT;
         }
     }
 
@@ -219,21 +212,21 @@ impl Wago750_671 {
     /// Pulse for one cycle when S3.Reset is set.
     pub fn apply_reset_quit(&mut self, pulse: bool) {
         if pulse {
-            self.rxpdo.b[OutputPI::C3] |= ControlByteC3::RESET_QUIT;
+            self.rxpdo.c3 |= ControlByteC3::RESET_QUIT;
         } else {
-            self.rxpdo.b[OutputPI::C3] &= !ControlByteC3::RESET_QUIT;
+            self.rxpdo.c3 &= !ControlByteC3::RESET_QUIT;
         }
     }
 
     // Status helper functions
     pub fn s1(&self) -> u8 {
-        self.txpdo.b[InputPI::S1]
+        self.txpdo.s1
     }
     pub fn s2(&self) -> u8 {
-        self.txpdo.b[InputPI::S2]
+        self.txpdo.s2
     }
     pub fn s3(&self) -> u8 {
-        self.txpdo.b[InputPI::S3]
+        self.txpdo.s3
     }
 
     pub fn ready(&self) -> bool {
@@ -257,53 +250,24 @@ impl Wago750_671 {
 
     /// Actual velocity feedback (slave -> master), i16 little-endian.
     pub fn actual_velocity(&self) -> i16 {
-        i16::from_le_bytes([self.txpdo.b[InputPI::D0], self.txpdo.b[InputPI::D1]])
+        self.txpdo.actual_velocity
     }
 
     /// Actual position feedback is 23-bit + sign in other modes; in speed control it is still
     /// updated in the background. Here we just expose the raw 24-bit little-endian value.
     pub fn actual_position_raw24(&self) -> i32 {
-        let b0 = self.txpdo.b[6] as u32;
-        let b1 = self.txpdo.b[7] as u32;
-        let b2 = self.txpdo.b[8] as u32;
-        let u = b0 | (b1 << 8) | (b2 << 16);
-        u as i32
-    }
-    pub fn position(&self) -> i128 {
-        self.counter_wrapper.current()
+        (self.txpdo.position_l as i32)
+            | ((self.txpdo.position_m as i32) << 8)
+            | ((self.txpdo.position_h as i32) << 16)
     }
 }
 
 impl EthercatDeviceProcessing for Wago750_671 {
     fn input_post_process(&mut self) -> Result<(), anyhow::Error> {
-        let pos_l = self.txpdo.b[6];
-        let pos_m = self.txpdo.b[7];
-        let pos_h = self.txpdo.b[8];
-
-        // WAGO position is 24-bit, but the Counter-Wrapper is 16-bit based
-        // We use the lower 16 bits for the wrapper.
-        let raw_u16 = u16::from_le_bytes([pos_l, pos_m]);
-
-        let s2 = self.txpdo.b[10];
-        let overflow = (s2 & (1 << 3)) != 0;
-        let underflow = (s2 & (1 << 2)) != 0;
-
-        self.counter_wrapper.update(raw_u16, underflow, overflow);
         Ok(())
     }
 
     fn output_pre_process(&mut self) -> Result<(), anyhow::Error> {
-        if let Some(new_counter_u16) = self.counter_wrapper.pop_override() {
-            // Write back the lower 16 bits
-            self.rxpdo.b[6] = (new_counter_u16 & 0xFF) as u8;
-            self.rxpdo.b[7] = (new_counter_u16 >> 8) as u8;
-
-            // MSB must be written as well (sign extension or zero)
-            self.rxpdo.b[8] = 0;
-
-            // Tell the controller to accept the new position
-            self.rxpdo.b[9] |= 1 << 6;
-        }
         Ok(())
     }
 }
@@ -315,13 +279,26 @@ impl EthercatDevice for Wago750_671 {
     ) -> Result<(), anyhow::Error> {
         let base = self.tx_bit_offset;
 
-        for byte_i in 0..12 {
-            let bits = &input[base + byte_i * 8..base + (byte_i + 1) * 8];
-            self.txpdo.b[byte_i] = bits.load_le::<u8>();
+        let mut b = [0u8; 12];
+        for i in 0..12 {
+            b[i] = input[base + i * 8..base + (i + 1) * 8].load_le();
         }
 
-        // Debug
-        // println!("750-671 IN: {:02X?}", self.txpdo.b);
+        self.txpdo = Wago750_671TxPdo {
+            s0: b[0],
+            actual_velocity: i16::from_le_bytes([b[2], b[3]]),
+            position_l: b[6],
+            position_m: b[7],
+            position_h: b[8],
+            s3: b[9],
+            s2: b[10],
+            s1: b[11],
+        };
+
+        println!(
+            "750-671 IN  | S1={:08b} S2={:08b} S3={:08b} | v_act={}",
+            self.txpdo.s1, self.txpdo.s2, self.txpdo.s3, self.txpdo.actual_velocity,
+        );
 
         Ok(())
     }
@@ -336,10 +313,33 @@ impl EthercatDevice for Wago750_671 {
     ) -> Result<(), anyhow::Error> {
         let base = self.rx_bit_offset;
 
-        for byte_i in 0..12 {
-            let bits = &mut output[base + byte_i * 8..base + (byte_i + 1) * 8];
-            bits.store_le(self.rxpdo.b[byte_i]);
+       let b = [
+            self.rxpdo.c0,
+            0,
+            self.rxpdo.velocity.to_le_bytes()[0],
+            self.rxpdo.velocity.to_le_bytes()[1],
+            self.rxpdo.acceleration.to_le_bytes()[0],
+            self.rxpdo.acceleration.to_le_bytes()[1],
+            0,
+            0,
+            0,
+            self.rxpdo.c3,
+            self.rxpdo.c2,
+            self.rxpdo.c1,
+        ];
+
+        for i in 0..12 {
+            output[base + i * 8..base + (i + 1) * 8].store_le(b[i]);
         }
+
+        println!(
+            "750-671 OUT | C1={:08b} C2={:08b} C3={:08b} | vel={} acc={}",
+            self.rxpdo.c1,
+            self.rxpdo.c2,
+            self.rxpdo.c3,
+            self.rxpdo.velocity,
+            self.rxpdo.acceleration,
+        );
 
         Ok(())
     }
@@ -418,7 +418,6 @@ impl NewEthercatDevice for Wago750_671 {
             module: None,
             rxpdo: Wago750_671RxPdo::default(),
             txpdo: Wago750_671TxPdo::default(),
-            counter_wrapper: CounterWrapperU16U128::new(),
         }
     }
 }
