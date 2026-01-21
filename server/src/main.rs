@@ -153,7 +153,8 @@ pub async fn start_interface_discovery(
                 module_path!(),
                 e
             );
-            start_dnsmasq();
+            // if this doesnt work, unlucky
+            let _ = start_dnsmasq(); 
         }
     }
 
