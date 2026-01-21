@@ -295,6 +295,11 @@ impl EthercatDevice for Wago750_671 {
             s1: b[11],
         };
 
+        println!(
+            "750-671 IN  | S1={:08b} S2={:08b} S3={:08b} | v_act={}",
+            self.txpdo.s1, self.txpdo.s2, self.txpdo.s3, self.txpdo.actual_velocity,
+        );
+
         Ok(())
     }
 
@@ -308,7 +313,7 @@ impl EthercatDevice for Wago750_671 {
     ) -> Result<(), anyhow::Error> {
         let base = self.rx_bit_offset;
 
-        let b = [
+       let b = [
             self.rxpdo.c0,
             0,
             self.rxpdo.velocity.to_le_bytes()[0],
@@ -326,6 +331,15 @@ impl EthercatDevice for Wago750_671 {
         for i in 0..12 {
             output[base + i * 8..base + (i + 1) * 8].store_le(b[i]);
         }
+
+        println!(
+            "750-671 OUT | C1={:08b} C2={:08b} C3={:08b} | vel={} acc={}",
+            self.rxpdo.c1,
+            self.rxpdo.c2,
+            self.rxpdo.c3,
+            self.rxpdo.velocity,
+            self.rxpdo.acceleration,
+        );
 
         Ok(())
     }
