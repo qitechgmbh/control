@@ -1,7 +1,7 @@
 use smol::block_on;
 
 use super::TestMachineStepper;
-use crate::{MachineAct, MachineMessage, test_machine_stepper::SpeedCtlState};
+use crate::{MachineAct, MachineMessage};
 use std::time::{Duration, Instant};
 
 impl MachineAct for TestMachineStepper {
@@ -16,10 +16,8 @@ impl MachineAct for TestMachineStepper {
         }
 
         block_on(async {
-            let mut stm = self.stepper.write().await;
+            let mut stm = self.stepper.device.write().await;
 
-            stm.set_enabled(true);
-            stm.set_speed(25000, 10000);
         })
     }
 
@@ -36,6 +34,7 @@ impl MachineAct for TestMachineStepper {
             }
             MachineMessage::ConnectToMachine(_machine_connection) => {}
             MachineMessage::DisconnectMachine(_machine_connection) => {}
+            MachineMessage::RequestValues(sender) => {},
         }
     }
 }
