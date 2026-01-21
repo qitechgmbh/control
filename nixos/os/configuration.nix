@@ -340,16 +340,6 @@ in {
     };
   };
 
-  security.polkit.extraConfig = ''
-  polkit.addRule(function(action, subject) {
-    if (action.id == "org.freedesktop.systemd1.manage-units" &&
-        action.lookup("unit") == "dnsmasq.service" &&
-        subject.user == "your-app-user") {
-      return polkit.Result.YES;
-    }
-  });
-  '';
-
   networking.firewall.enable = true;
   networking.firewall.trustedInterfaces = [ "enp1s0" ];
 
