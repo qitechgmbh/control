@@ -14,9 +14,9 @@ use machines::{
     serial::{devices::laser::Laser, init::SerialDetection},
     winder2::api::GenericEvent,
 };
-use utils::start_dnsmasq;
 #[cfg(feature = "development-build")]
 use std::sync::atomic::{AtomicBool, Ordering};
+use utils::start_dnsmasq;
 
 use app_state::{HotThreadMessage, SharedState};
 use ethercat::ethercat_discovery_info::send_ethercat_discovering;

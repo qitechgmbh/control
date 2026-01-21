@@ -19,6 +19,7 @@ use ethercat_hal::devices::wago_modules::ip20_ec_di8_do8::{
     IP20_EC_DI8_DO8_PRODUCT_ID, IP20_EC_DI8_DO8_VENDOR_ID, IP20EcDi8Do8,
 };
 
+use crate::utils::{start_dnsmasq, stop_dnsmasq};
 use ethercrab::std::ethercat_now;
 use ethercrab::{MainDevice, MainDeviceConfig, PduStorage, RetryBehaviour, Timeouts};
 use machines::machine_identification::{
@@ -29,7 +30,6 @@ use machines::registry::{MACHINE_REGISTRY, MachineRegistry};
 use machines::{Machine, MachineNewHardware, MachineNewHardwareEthercat, MachineNewParams};
 use smol::channel::Sender;
 use socketioxide::extract::SocketRef;
-use crate::utils::{stop_dnsmasq,start_dnsmasq};
 use std::{sync::Arc, time::Duration};
 
 /// Structure to hold the result of grouping devices by identification
