@@ -21,6 +21,11 @@ mod gluetex_imports {
     pub use ethercat_hal::devices::el2008::{
         EL2008, EL2008_IDENTITY_A, EL2008_IDENTITY_B, EL2008Port,
     };
+    pub use ethercat_hal::devices::el3062_0030::EL3062_0030Configuration;
+    pub use ethercat_hal::devices::el3062_0030::EL3062_0030PredefinedPdoAssignment;
+    pub use ethercat_hal::devices::el3062_0030::{
+        EL3062_0030, EL3062_0030_IDENTITY_A, EL3062_0030Port,
+    };
     pub use ethercat_hal::devices::el3204::{
         EL3204, EL3204_IDENTITY_A, EL3204_IDENTITY_B, EL3204Port,
     };
@@ -39,11 +44,6 @@ mod gluetex_imports {
     pub use ethercat_hal::devices::el7041_0052::{
         EL7041_0052, EL7041_0052_IDENTITY_A, EL7041_0052Port,
     };
-    pub use ethercat_hal::devices::el3062_0030::{
-        EL3062_0030, EL3062_0030_IDENTITY_A, EL3062_0030Port,
-    };
-    pub use ethercat_hal::devices::el3062_0030::EL3062_0030Configuration;
-    pub use ethercat_hal::devices::el3062_0030::EL3062_0030PredefinedPdoAssignment;
     pub use ethercat_hal::devices::{ek1100::EK1100_IDENTITY_A, el2002::EL2002_IDENTITY_A};
     pub use ethercat_hal::io::analog_input::AnalogInput;
     pub use ethercat_hal::io::digital_input::DigitalInput;
