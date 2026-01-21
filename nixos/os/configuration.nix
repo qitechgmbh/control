@@ -219,7 +219,6 @@ in {
   # Enable the QiTech Control server
   services.qitech = {
     enable = true;
-    openFirewall = true;
     user = "qitech-service";
     group = "qitech-service";
     package = pkgs.qitechPackages.server;
@@ -339,11 +338,8 @@ in {
     };
   };
 
-  # Open ports in the firewall.
-  # networking.firewall.allowedTCPPorts = [ ... ];
-  networking.firewall.allowedUDPPorts = [ 53 67 69 ];
-  # Or disable the firewall altogether.
-  # networking.firewall.enable = false;
+  networking.firewall.enable = true;
+  networking.firewall.trustedInterfaces = [ "enp1s0" ];
 
   # This value determines the NixOS release from which the default
   # settings for stateful data, like file locations and database versions

@@ -25,8 +25,12 @@ use ethercat_hal::{
         temperature_input::TemperatureInput,
     },
 };
-use std::time::{Duration, Instant};
-use units::thermodynamic_temperature::{ThermodynamicTemperature, degree_celsius};
+use std::time::Instant;
+use units::{
+    AngularVelocity,
+    angular_velocity::revolution_per_minute,
+    thermodynamic_temperature::{ThermodynamicTemperature, degree_celsius},
+};
 
 impl MachineNewTrait for AquaPathV1 {
     fn new<'maindevice>(params: &MachineNewParams) -> Result<Self, Error> {
@@ -131,7 +135,6 @@ impl MachineNewTrait for AquaPathV1 {
                 0.10,
                 0.0,
                 0.015,
-                Duration::from_millis(500),
                 Temperature::default(),
                 ThermodynamicTemperature::new::<degree_celsius>(25.0),
                 ao1,
@@ -139,6 +142,7 @@ impl MachineNewTrait for AquaPathV1 {
                 do2,
                 t1,
                 t2,
+                AngularVelocity::new::<revolution_per_minute>(100.0),
                 Flow::default(),
                 do1,
                 enc1,
@@ -148,7 +152,6 @@ impl MachineNewTrait for AquaPathV1 {
                 0.10,
                 0.0,
                 0.015,
-                Duration::from_millis(500),
                 Temperature::default(),
                 ThermodynamicTemperature::new::<degree_celsius>(25.0),
                 ao2,
@@ -156,6 +159,7 @@ impl MachineNewTrait for AquaPathV1 {
                 do6,
                 t3,
                 t4,
+                AngularVelocity::new::<revolution_per_minute>(100.0),
                 Flow::default(),
                 do5,
                 enc2,
