@@ -3,30 +3,27 @@ use crate::{
         DynamicEthercatDevice, EthercatDevice, EthercatDeviceProcessing, EthercatDeviceUsed,
         EthercatDynamicPDO, Module, NewEthercatDevice, SubDeviceProductTuple,
     },
-    io::{
-        digital_input::{DigitalInputDevice, DigitalInputInput},
-    },
+    io::digital_input::{DigitalInputDevice, DigitalInputInput},
 };
 
 #[derive(Debug, Clone)]
 pub enum Wago750_402InputPort {
-    DO1,
-    DO2,
-    DO3,
-    DO4,
+    DI1,
+    DI2,
+    DI3,
+    DI4,
 }
 
 impl From<Wago750_402InputPort> for usize {
     fn from(value: Wago750_402InputPort) -> Self {
         match value {
-            Wago750_402InputPort::DO1 => 0,
-            Wago750_402InputPort::DO2 => 1,
-            Wago750_402InputPort::DO3 => 2,
-            Wago750_402InputPort::DO4 => 3,
+            Wago750_402InputPort::DI1 => 0,
+            Wago750_402InputPort::DI2 => 1,
+            Wago750_402InputPort::DI3 => 2,
+            Wago750_402InputPort::DI4 => 3,
         }
     }
 }
-
 
 #[derive(Clone, Default)]
 pub struct Wago750_402TxPdo {
@@ -40,10 +37,10 @@ impl DigitalInputDevice<Wago750_402InputPort> for Wago750_402 {
     fn get_input(&self, port: Wago750_402InputPort) -> Result<DigitalInputInput, anyhow::Error> {
         Ok(DigitalInputInput {
             value: match port {
-                Wago750_402InputPort::DO1 => self.tx_pdo.port1,
-                Wago750_402InputPort::DO2 => self.tx_pdo.port2,
-                Wago750_402InputPort::DO3 => self.tx_pdo.port3,
-                Wago750_402InputPort::DO4 => self.tx_pdo.port4,
+                Wago750_402InputPort::DI1 => self.tx_pdo.port1,
+                Wago750_402InputPort::DI2 => self.tx_pdo.port2,
+                Wago750_402InputPort::DI3 => self.tx_pdo.port3,
+                Wago750_402InputPort::DI4 => self.tx_pdo.port4,
             },
         })
     }
@@ -98,16 +95,16 @@ impl EthercatDevice for Wago750_402 {
     ) -> Result<(), anyhow::Error> {
         let base = self.tx_bit_offset;
 
-        let idx1 = base + Into::<usize>::into(Wago750_402InputPort::DO1);
+        let idx1 = base + Into::<usize>::into(Wago750_402InputPort::DI1);
         self.tx_pdo.port1 = *input.get(idx1).expect("Bit 1 out of bounds");
 
-        let idx2 = base + Into::<usize>::into(Wago750_402InputPort::DO2);
+        let idx2 = base + Into::<usize>::into(Wago750_402InputPort::DI2);
         self.tx_pdo.port2 = *input.get(idx2).expect("Bit 2 out of bounds");
 
-        let idx3 = base + Into::<usize>::into(Wago750_402InputPort::DO3);
+        let idx3 = base + Into::<usize>::into(Wago750_402InputPort::DI3);
         self.tx_pdo.port3 = *input.get(idx3).expect("Bit 3 out of bounds");
 
-        let idx4 = base + Into::<usize>::into(Wago750_402InputPort::DO4);
+        let idx4 = base + Into::<usize>::into(Wago750_402InputPort::DI4);
         self.tx_pdo.port4 = *input.get(idx4).expect("Bit 4 out of bounds");
         Ok(())
     }
@@ -123,7 +120,6 @@ impl EthercatDevice for Wago750_402 {
         //  println!("output: {} {}",self.rx_bit_offset,_output);
         Ok(())
     }
-
 
     fn output_len(&self) -> usize {
         0

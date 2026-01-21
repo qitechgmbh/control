@@ -471,30 +471,7 @@ export const digitalInputTestMachine: MachineProperties = {
     vendor: VENDOR_QITECH,
     machine: 0x0036,
   },
-  device_roles: [
-      {
-      role: 0,
-      role_label: "Bus Coupler",
-      allowed_devices: [
-        {
-          vendor_id: 2,
-          product_id: 0x44c2c52,
-          revision: 0x120000,
-        },
-      ],
-    },
-    {
-      role: 1,
-      role_label: "EL3021",
-      allowed_devices: [
-        {
-          vendor_id: 2,
-          product_id: 0xbcd3052,
-          revision: 0x140000,
-        },
-      ],
-    },
-  ],
+  device_roles: [],
 };
 export const wagoPower1: MachineProperties = {
   name: "WAGO Power",

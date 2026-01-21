@@ -18,10 +18,10 @@ use std::fmt::Debug;
 use std::sync::Arc;
 use std::time::Instant;
 pub mod analog_input_test_machine;
-pub mod digital_input_test_machine;
 pub mod aquapath1;
 #[cfg(not(feature = "mock-machine"))]
 pub mod buffer1;
+pub mod digital_input_test_machine;
 pub mod extruder1;
 pub mod extruder2;
 pub mod ip20_test_machine;

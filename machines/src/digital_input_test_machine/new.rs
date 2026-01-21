@@ -2,7 +2,14 @@ use std::{sync::Arc, time::Instant};
 
 use anyhow::Error;
 use ethercat_hal::{
-    devices::{EthercatDevice, downcast_device, wago_750_354::{WAGO_750_354_IDENTITY_A, Wago750_354}, wago_modules::{wago_750_402::{self, WAGO_750_402_MODULE_IDENT, Wago750_402, Wago750_402InputPort}, wago_750_1506::{Wago750_1506, Wago750_1506OutputPort}}},
+    devices::{
+        EthercatDevice, downcast_device,
+        wago_750_354::{WAGO_750_354_IDENTITY_A, Wago750_354},
+        wago_modules::{
+            wago_750_402::{self, WAGO_750_402_MODULE_IDENT, Wago750_402, Wago750_402InputPort},
+            wago_750_1506::{Wago750_1506, Wago750_1506OutputPort},
+        },
+    },
     io::{digital_input::DigitalInput, digital_output::DigitalOutput},
 };
 use smol::{block_on, channel::unbounded, lock::RwLock};
@@ -54,16 +61,14 @@ impl MachineNewTrait for DigitalInputTestMachine {
 
             coupler.init_slot_modules(_wago_750_354.1);
             let dev = coupler.slot_devices.get(0).unwrap().clone().unwrap();
-            let wago750_402: Arc<RwLock<Wago750_402>> =
-                downcast_device::<Wago750_402>(dev).await?;
+            let wago750_402: Arc<RwLock<Wago750_402>> = downcast_device::<Wago750_402>(dev).await?;
 
-            let di1 = DigitalInput::new(wago750_402.clone(),Wago750_402InputPort::DO1);
-            let di2 = DigitalInput::new(wago750_402.clone(),Wago750_402InputPort::DO2);
-            let di3 = DigitalInput::new(wago750_402.clone(),Wago750_402InputPort::DO3);
-            let di4 = DigitalInput::new(wago750_402.clone(),Wago750_402InputPort::DO4);
-            
+            let di1 = DigitalInput::new(wago750_402.clone(), Wago750_402InputPort::DI1);
+            let di2 = DigitalInput::new(wago750_402.clone(), Wago750_402InputPort::DI2);
+            let di3 = DigitalInput::new(wago750_402.clone(), Wago750_402InputPort::DI3);
+            let di4 = DigitalInput::new(wago750_402.clone(), Wago750_402InputPort::DI4);
+
             drop(coupler);
-
 
             let (sender, receiver) = smol::channel::unbounded();
             let mut my_test = Self {
@@ -76,7 +81,7 @@ impl MachineNewTrait for DigitalInputTestMachine {
                 last_state_emit: Instant::now(),
                 led_on: [false; 4],
                 main_sender: params.main_thread_channel.clone(),
-                digital_input: [di1,di2,di3,di4],
+                digital_input: [di1, di2, di3, di4],
             };
             my_test.emit_state();
             Ok(my_test)

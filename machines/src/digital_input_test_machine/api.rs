@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use control_core::socketio::{
-    event::{Event,GenericEvent},
+    event::{Event, GenericEvent},
     namespace::{
         CacheFn, CacheableEvents, Namespace, NamespaceCacheingLogic, cache_first_and_last_event,
     },
@@ -24,11 +24,11 @@ pub enum DigitalInputTestMachineEvents {
     State(Event<StateEvent>),
 }
 
- #[derive(Deserialize)]
- #[serde(tag = "action", content = "value")]
- pub enum Mutation {
-    SetLed{index: usize,on:bool},
- }
+#[derive(Deserialize)]
+#[serde(tag = "action", content = "value")]
+pub enum Mutation {
+    SetLed { index: usize, on: bool },
+}
 #[derive(Debug, Clone)]
 pub struct DigitalInputTestMachineNamespace {
     pub namespace: Option<Namespace>,

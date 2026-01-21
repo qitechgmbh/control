@@ -1,13 +1,6 @@
 use crate::test_machine::TestMachine;
 use crate::test_machine::api::TestMachineNamespace;
-use ethercat_hal::devices::wago_modules::wago_750_1506::{Wago750_1506, Wago750_1506OutputPort};
-use ethercat_hal::devices::{EthercatDevice, downcast_device};
-use ethercat_hal::devices::wago_750_354::{WAGO_750_354_IDENTITY_A, Wago750_354};
-use ethercat_hal::devices::wago_modules::wago_750_402::{self, WAGO_750_402_MODULE_IDENT, Wago750_402, Wago750_402InputPort};
-use ethercat_hal::io::digital_input::DigitalInput;
 use smol::block_on;
-use smol::lock::RwLock;
-use std::sync::Arc;
 use std::time::Instant;
 
 use crate::{
@@ -35,8 +28,8 @@ impl MachineNewTrait for TestMachine {
             .iter()
             .map(|device_identification| device_identification.clone())
             .collect::<Vec<_>>();
-        //validate_same_machine_identification_unique(&device_identification)?;
-        //validate_no_role_dublicates(&device_identification)?;
+        validate_same_machine_identification_unique(&device_identification)?;
+        validate_no_role_dublicates(&device_identification)?;
 
         let hardware = match &params.hardware {
             MachineNewHardware::Ethercat(x) => x,
@@ -48,7 +41,7 @@ impl MachineNewTrait for TestMachine {
             }
         };
         block_on(async {
-            
+            /*
             // Example usage of a Wago Coupler and a 750-1506 in the first slot, where the Output Port 1,2,3,4 is used
             let _wago_750_354 = get_ethercat_device::<Wago750_354>(
                 hardware,
@@ -67,23 +60,24 @@ impl MachineNewTrait for TestMachine {
             }
 
             coupler.init_slot_modules(_wago_750_354.1);
-            let dev = coupler.slot_devices.get(0).unwrap().clone().unwrap();
-            let wago750_402: Arc<RwLock<Wago750_402>> =
-                downcast_device::<Wago750_402>(dev).await?;
-
-            let di1 = DigitalInput::new(wago750_402.clone(),Wago750_402InputPort::DO1);
-            let di2 = DigitalInput::new(wago750_402.clone(),Wago750_402InputPort::DO2);
-            let di3 = DigitalInput::new(wago750_402.clone(),Wago750_402InputPort::DO3);
-            let di4 = DigitalInput::new(wago750_402.clone(),Wago750_402InputPort::DO4);
-            
-
             let dev = coupler.slot_devices.get(1).unwrap().clone().unwrap();
             let wago750_1506: Arc<RwLock<Wago750_1506>> =
                 downcast_device::<Wago750_1506>(dev).await?;
+            let do1 = DigitalOutput::new(wago750_1506.clone(), Wago750_1506OutputPort::DO1);
+            let do2 = DigitalOutput::new(wago750_1506.clone(), Wago750_1506OutputPort::DO2);
+            let do3 = DigitalOutput::new(wago750_1506.clone(), Wago750_1506OutputPort::DO3);
+            let do4 = DigitalOutput::new(wago750_1506.clone(), Wago750_1506OutputPort::DO4);
             drop(coupler);
+            */
 
-            let do1 = DigitalOutput::new(wago750_1506.clone(),Wago750_1506OutputPort::DO1);
-
+            let el2004 =
+                get_ethercat_device::<EL2004>(hardware, params, 1, [EL2004_IDENTITY_A].to_vec())
+                    .await?
+                    .0;
+            let do1 = DigitalOutput::new(el2004.clone(), EL2004Port::DO1);
+            let do2 = DigitalOutput::new(el2004.clone(), EL2004Port::DO2);
+            let do3 = DigitalOutput::new(el2004.clone(), EL2004Port::DO3);
+            let do4 = DigitalOutput::new(el2004.clone(), EL2004Port::DO4);
             let (sender, receiver) = smol::channel::unbounded();
             let mut my_test = Self {
                 api_receiver: receiver,
@@ -95,8 +89,7 @@ impl MachineNewTrait for TestMachine {
                 last_state_emit: Instant::now(),
                 led_on: [false; 4],
                 main_sender: params.main_thread_channel.clone(),
-                dout: do1,
-                dins: [di1,di2,di3,di4],
+                douts: [do1, do2, do3, do4],
             };
             my_test.emit_state();
             Ok(my_test)

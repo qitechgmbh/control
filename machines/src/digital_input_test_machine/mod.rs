@@ -1,11 +1,11 @@
 use std::time::Instant;
 
-use control_core::socketio::{ namespace::NamespaceCacheingLogic};
+use control_core::socketio::namespace::NamespaceCacheingLogic;
 use ethercat_hal::io::{digital_input::DigitalInput, digital_output::DigitalOutput};
 use smol::channel::{Receiver, Sender};
 
 use crate::{
-    DIGITAL_INPUT_TEST_MACHINE, AsyncThreadMessage, Machine, MachineMessage, VENDOR_QITECH,
+    AsyncThreadMessage, DIGITAL_INPUT_TEST_MACHINE, Machine, MachineMessage, VENDOR_QITECH,
     digital_input_test_machine::api::{
         DigitalInputTestMachineEvents, DigitalInputTestMachineNamespace, StateEvent,
     },
@@ -24,8 +24,8 @@ pub struct DigitalInputTestMachine {
     pub main_sender: Option<Sender<AsyncThreadMessage>>,
     pub namespace: DigitalInputTestMachineNamespace,
     pub last_state_emit: Instant,
-    pub led_on:[bool;4],
-    pub digital_input: [DigitalInput;4],
+    pub led_on: [bool; 4],
+    pub digital_input: [DigitalInput; 4],
 }
 
 impl Machine for DigitalInputTestMachine {
@@ -51,23 +51,23 @@ impl DigitalInputTestMachine {
     }
 
     pub fn emit_state(&mut self) {
-
         //Set Led_On after DigitalInput
         let mut i = 0;
-        
+
         for di in &self.digital_input {
             let value = match di.get_value() {
                 Ok(v) => v,
                 Err(_) => false,
             };
             self.led_on[i] = value;
-            i+=1;
+            i += 1;
         }
 
         let event = StateEvent {
             led_on: self.led_on,
         }
         .build();
-        self.namespace.emit(DigitalInputTestMachineEvents::State(event));
+        self.namespace
+            .emit(DigitalInputTestMachineEvents::State(event));
     }
 }

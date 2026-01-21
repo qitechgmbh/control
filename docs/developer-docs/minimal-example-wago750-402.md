@@ -69,7 +69,7 @@ Working on live EtherCAT terminals can cause serious damage or electrical shock.
 
 We supply power to the other devices by using the **750-602 EtherCAT Power Terminal**
 
-Perform the following wireing on the Ethernet-Switch:
+Perform the following wiring on the Ethernet-Switch:
 
 1. Red wire (+24V) → PWR+
 2. Black wire (0V) → RPS-
@@ -79,7 +79,7 @@ Perform the following wireing on the Ethernet-Switch:
 
 ---
 
-### 3.3 WAGO Wireing the Coupler
+### 3.3 WAGO Wiring the Coupler
 
 Wire the **750-354 EtherCAT Coupler** for the power supply
 1. red wire (+24V)
@@ -96,7 +96,7 @@ Slide the **750-602 EtherCAT Power Terminal** onto the **right side of the 750-3
 
 Next We need to Wire the EtherCat E-Bus
 
-Perform the next wireing Steps:
+Perform the next wiring Steps:
 
 1. Green wire (Ground) → **Terminal4**
 2. Red wire (+24V) from  **750-602 EtherCAT Power Terminal** → **Terminal 2**
@@ -104,7 +104,7 @@ Perform the next wireing Steps:
 4. Red wire (+24V) from **750-354 EtherCAT Coupler** → **Terminal 6**
 5. Yellow wire (0V) from **750-354 EtherCAT Coupler** → **Terminal 7**
 
-#### **Figure 3 — Wireing**
+#### **Figure 3 — Wiring**
 <img src="../assets/WAGO750_402_power_terminal.JPG" width="400">
 
 ---
@@ -115,14 +115,14 @@ Slide the **750-402 EtherCAT Terminal** onto to **right side of the 750-602 Ethe
 
 Wire from the **24V DC Lab Adapter** → **Terminal 1**
 
-#### **Figure 4 — Wireing**
+#### **Figure 4 — Wiring**
 <img src="../assets/WAGO750_402_terminal.JPG" width="400">
 
 ## 3.6 750-600 Final Assemly
 
 Slide the **750-600 EtherCAT Endmodule** onto to **right side of the 7750-402 EtherCAT Terminal** until it locks.
 
-No wireing is require
+No wiring is required
 
 #### **Figure 5 — 750-402 + 750-600 Connected**
 <img src="../assets/WAGO750_402_end_modul.JPG" width="400">
@@ -200,7 +200,7 @@ Steps:
 ![](../assets/WAGO750_402_setmachine.png)
 
 
-- Enter a serial number exept for 0
+- Enter a serial number except for 0
 
 ![](../assets/WAGO750_402_serserial.png)
 
