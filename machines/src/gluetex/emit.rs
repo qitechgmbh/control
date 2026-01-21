@@ -160,7 +160,15 @@ impl Gluetex {
         self.emit_state();
     }
 
-    pub fn emit_live_values(&mut self) {
+    pub fn get_state(&mut self) -> StateEvent {
+        self.build_state_event()
+    }
+
+    pub fn get_live_values(&mut self) -> LiveValuesEvent {
+        self.build_live_values_event()
+    }
+
+    fn build_live_values_event(&mut self) -> LiveValuesEvent {
         let angle_deg = self.tension_arm.get_angle().get::<degree>();
 
         // Wrap [270;<360] to [-90; 0]
@@ -270,6 +278,11 @@ impl Gluetex {
             },
         };
 
+        live_values
+    }
+
+    pub fn emit_live_values(&mut self) {
+        let live_values = self.build_live_values_event();
         let event = live_values.build();
         self.namespace.emit(GluetexEvents::LiveValues(event));
     }

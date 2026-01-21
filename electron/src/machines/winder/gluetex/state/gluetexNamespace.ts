@@ -487,62 +487,57 @@ const ONE_HOUR = 60 * 60 * ONE_SECOND;
 
 // Create time series for backend values
 const { initialTimeSeries: spoolProgress, insert: addSpoolProgress } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+  createTimeSeries();
 const { initialTimeSeries: traversePosition, insert: addTraversePosition } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+  createTimeSeries();
 const { initialTimeSeries: pullerSpeed, insert: addPullerSpeed } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
-const { initialTimeSeries: spoolRpm, insert: addSpoolRpm } = createTimeSeries(
-  TWENTY_MILLISECOND,
-  ONE_SECOND,
-  FIVE_SECOND,
-  ONE_HOUR,
-);
+  createTimeSeries();
+const { initialTimeSeries: spoolRpm, insert: addSpoolRpm } = createTimeSeries();
 const { initialTimeSeries: tensionArmAngle, insert: addTensionArmAngle } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+  createTimeSeries();
 
 // Create time series for temperature values (from backend)
 const { initialTimeSeries: temperature1, insert: addTemperature1 } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+  createTimeSeries();
 const { initialTimeSeries: temperature2, insert: addTemperature2 } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+  createTimeSeries();
 const { initialTimeSeries: temperature3, insert: addTemperature3 } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+  createTimeSeries();
 const { initialTimeSeries: temperature4, insert: addTemperature4 } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+  createTimeSeries();
 const { initialTimeSeries: temperature5, insert: addTemperature5 } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+  createTimeSeries();
 const { initialTimeSeries: temperature6, insert: addTemperature6 } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+  createTimeSeries();
 
 const { initialTimeSeries: heater1Power, insert: addHeater1Power } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+  createTimeSeries();
 const { initialTimeSeries: heater2Power, insert: addHeater2Power } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+  createTimeSeries();
 const { initialTimeSeries: heater3Power, insert: addHeater3Power } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+  createTimeSeries();
 const { initialTimeSeries: heater4Power, insert: addHeater4Power } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+  createTimeSeries();
 const { initialTimeSeries: heater5Power, insert: addHeater5Power } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+  createTimeSeries();
 const { initialTimeSeries: heater6Power, insert: addHeater6Power } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+  createTimeSeries();
 
 // Create time series for addon values (local)
 const { initialTimeSeries: slavePullerSpeed, insert: addSlavePullerSpeed } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+  createTimeSeries();
 const {
   initialTimeSeries: slaveTensionArmAngle,
   insert: addSlaveTensionArmAngle,
-} = createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+} = createTimeSeries();
 const {
   initialTimeSeries: addonTensionArmAngle,
   insert: addAddonTensionArmAngle,
-} = createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+} = createTimeSeries();
 const { initialTimeSeries: addonVoltage1, insert: addAddonVoltage1 } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+  createTimeSeries();
 const { initialTimeSeries: addonVoltage2, insert: addAddonVoltage2 } =
-  createTimeSeries(TWENTY_MILLISECOND, ONE_SECOND, FIVE_SECOND, ONE_HOUR);
+  createTimeSeries();
 
 // Default addon state (local-only fields)
 // Note: slave_puller_state is no longer needed here as it comes from backend
