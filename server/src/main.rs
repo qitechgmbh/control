@@ -154,10 +154,9 @@ pub async fn start_interface_discovery(
                 e
             );
             // if this doesnt work, unlucky
-            let _ = start_dnsmasq(); 
+            let _ = start_dnsmasq();
         }
     }
-
     send_ethercat_found(app_state.clone(), &interface).await;
 }
 
