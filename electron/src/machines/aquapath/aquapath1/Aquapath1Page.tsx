@@ -20,6 +20,12 @@ export function Aquapath1Page() {
           icon: "lu:ChartSpline",
           activeLink: "graphs",
         },
+        {
+          link: "settings",
+          title: "Config",
+          icon: "lu:Settings",
+          activeLink: "settings",
+        },
       ]}
     />
   );
