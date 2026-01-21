@@ -62,6 +62,7 @@ impl MachineIdentification {
             x if x == TEST_MACHINE => "test_machine".to_string(),
             x if x == IP20_TEST_MACHINE => "ip20_test_machine".to_string(),
             x if x == ANALOG_INPUT_TEST_MACHINE => "analog_input_test_machine".to_string(),
+            x if x == WAGO_AI_TEST_MACHINE => "wago_ai_test_machine".to_string(),
             _ => unreachable!("Unknown machine id"),
         }
     }
@@ -185,6 +186,7 @@ use crate::MACHINE_WAGO_POWER_V1;
 use crate::MACHINE_WINDER_V1;
 use crate::TEST_MACHINE;
 use crate::VENDOR_QITECH;
+use crate::WAGO_AI_TEST_MACHINE;
 
 #[derive(Debug)]
 pub struct MachineIdentificationAddresses {

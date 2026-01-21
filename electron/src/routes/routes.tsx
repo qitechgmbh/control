@@ -59,6 +59,8 @@ import { TestMachineControlPage } from "@/machines/testmachine/TestMachineContro
 
 import { AnalogInputTestMachine } from "@/machines/analoginputtestmachine/AnalogInputTestMachinePage";
 import { AnalogInputTestMachineControl } from "@/machines/analoginputtestmachine/AnalogInputTestMachineControlPage";
+import { WagoAiTestMachine } from "@/machines/wagoaitestmachine/WagoAiTestMachinePage";
+import { WagoAiTestMachineControl } from "@/machines/wagoaitestmachine/WagoAiTestMachineControlPage";
 import { IP20TestMachinePage } from "@/machines/ip20testmachine/IP20TestMachinePage";
 import { IP20TestMachineControlPage } from "@/machines/ip20testmachine/IP20TestMachineControlPage";
 
@@ -98,6 +100,18 @@ export const analogInputTestMachineControlRoute = createRoute({
   getParentRoute: () => analogInputTestMachineSerialRoute,
   path: "control",
   component: () => <AnalogInputTestMachineControl />,
+});
+
+export const wagoAiTestMachineSerialRoute = createRoute({
+  getParentRoute: () => machinesRoute,
+  path: "wagoaitestmachine/$serial",
+  component: () => <WagoAiTestMachine />,
+});
+
+export const wagoAiTestMachineControlRoute = createRoute({
+  getParentRoute: () => wagoAiTestMachineSerialRoute,
+  path: "control",
+  component: () => <WagoAiTestMachineControl />,
 });
 
 export const ip20TestMachineSerialRoute = createRoute({
@@ -445,6 +459,8 @@ export const rootTree = RootRoute.addChildren([
       analogInputTestMachineSerialRoute.addChildren([
         analogInputTestMachineControlRoute,
       ]),
+
+      wagoAiTestMachineSerialRoute.addChildren([wagoAiTestMachineControlRoute]),
 
       ip20TestMachineSerialRoute.addChildren([ip20TestMachineControlRoute]),
 
