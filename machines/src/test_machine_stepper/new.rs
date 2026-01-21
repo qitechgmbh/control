@@ -1,9 +1,9 @@
-use crate::test_machine_stepper::{SpeedCtlState, TestMachineStepper, api::TestMachineStepperNamespace};
-use ethercat_hal::devices::{
-    EthercatDevice, EthercatDeviceUsed, downcast_device,
+use crate::test_machine_stepper::{TestMachineStepper, api::TestMachineStepperNamespace};
+use ethercat_hal::{devices::{
+    EthercatDevice, downcast_device,
     wago_750_354::{WAGO_750_354_IDENTITY_A, Wago750_354},
     wago_modules::wago_750_671::Wago750_671,
-};
+}, io::stepper_velocity_wago_750_671::StepperVelocityWago750671};
 use smol::{block_on, lock::RwLock};
 use std::{sync::Arc, time::Instant};
 
@@ -57,7 +57,7 @@ impl MachineNewTrait for TestMachineStepper {
                 downcast_device::<Wago750_671>(dev).await?;
             drop(coupler);
 
-            tracing::info!("Is used: {}, ", wago_750_671.read_arc().await.is_used());
+            let stepper = StepperVelocityWago750671::new(wago_750_671);
 
             let (sender, receiver) = smol::channel::unbounded();
             let mut my_test = Self {
@@ -69,12 +69,7 @@ impl MachineNewTrait for TestMachineStepper {
                 },
                 last_state_emit: Instant::now(),
                 main_sender: params.main_thread_channel.clone(),
-                stepper: wago_750_671,
-                last_move: Instant::now(),
-                speed_state: SpeedCtlState::Init,
-                start_pulsed: false,
-                error_quit_pulsed: false,
-                reset_quit_pulsed: false,
+                stepper,
             };
             my_test.emit_state();
             Ok(my_test)
