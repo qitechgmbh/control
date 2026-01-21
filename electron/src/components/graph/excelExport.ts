@@ -161,8 +161,8 @@ export async function exportGraphsToExcel(
       );
 
       if (chartImage) {
-        // Add image to worksheet
-        const imageId = excelJSWorkbook.addImage({
+        // Add chart image to worksheet
+        const chartImageId = excelJSWorkbook.addImage({
           base64: chartImage,
           extension: "png",
         });
@@ -170,10 +170,25 @@ export async function exportGraphsToExcel(
         // Find a good position for the image (after the data and metadata)
         const lastRow = auswertungWorksheet.rowCount;
 
-        auswertungWorksheet.addImage(imageId, {
+        auswertungWorksheet.addImage(chartImageId, {
           tl: { col: 0, row: lastRow + 2 }, // top-left
-          ext: { width: 1200, height: 600 }, // size
+          ext: { width: 1200, height: 600 }, // chart size
         });
+
+        // Generate and add legend image below the chart
+        const legendImage = generateLegendImage(allSheetData);
+        if (legendImage) {
+          const legendImageId = excelJSWorkbook.addImage({
+            base64: legendImage,
+            extension: "png",
+          });
+
+          // Position legend below the chart (approximately 32 rows for 600px chart at ~19px per row)
+          auswertungWorksheet.addImage(legendImageId, {
+            tl: { col: 0, row: lastRow + 2 + 32 }, // below chart
+            ext: { width: 1200, height: 50 }, // legend size
+          });
+        }
       }
     }
 
@@ -195,6 +210,83 @@ export async function exportGraphsToExcel(
     alert(
       `Error exporting data to Excel: ${error instanceof Error ? error.message : "Unknown error"}. Please try again.`,
     );
+  }
+}
+
+// Color mapping based on data type to match reference chart
+function getSeriesColor(name: string): string {
+  const lowerName = name.toLowerCase();
+
+  // Temperatures - different shades matching the reference image
+  if (lowerName.includes("front") && lowerName.includes("temp")) return "#e74c3c"; // Red
+  if (lowerName.includes("middle") && lowerName.includes("temp")) return "#c0392b"; // Dark red
+  if (lowerName.includes("back") && lowerName.includes("temp")) return "#16a085"; // Teal/green
+  if (lowerName.includes("nozzle") && lowerName.includes("temp")) return "#95a5a6"; // Gray
+
+  // Power - various shades matching reference
+  if (lowerName.includes("total") && lowerName.includes("watt")) return "#2c3e50"; // Dark blue/black
+  if (lowerName.includes("front") && lowerName.includes("watt")) return "#e67e22"; // Orange
+  if (lowerName.includes("middle") && lowerName.includes("watt")) return "#d35400"; // Dark orange
+  if (lowerName.includes("back") && lowerName.includes("watt")) return "#f39c12"; // Yellow-orange
+  if (lowerName.includes("nozzle") && lowerName.includes("watt")) return "#27ae60"; // Green
+
+  // Pressure and RPM - blue shades from reference
+  if (lowerName === "bar") return "#2980b9"; // Blue
+  if (lowerName === "rpm" || lowerName.includes("rpm")) return "#16a085"; // Teal
+
+  return "#9b59b6"; // Purple fallback
+}
+
+// Generate a separate legend image
+function generateLegendImage(allSheetData: CombinedSheetData[]): string | null {
+  try {
+    const legendCanvas = document.createElement("canvas");
+    legendCanvas.width = 1200;
+    legendCanvas.height = 50;
+    const ctx = legendCanvas.getContext("2d");
+
+    if (!ctx) return null;
+
+    // Draw white background
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, legendCanvas.width, legendCanvas.height);
+
+    // Draw legend items
+    ctx.font = "12px sans-serif";
+    ctx.textAlign = "left";
+
+    let legendX = 20;
+    let legendY = 25;
+    const itemSpacing = 15;
+
+    allSheetData.forEach((sheetData, index) => {
+      const color = getSeriesColor(sheetData.sheetName);
+      const label = sheetData.sheetName;
+
+      // Draw color indicator (small rectangle)
+      ctx.fillStyle = color;
+      ctx.fillRect(legendX, legendY - 6, 12, 12);
+
+      // Draw label text
+      ctx.fillStyle = "#333";
+      ctx.fillText(label, legendX + 16, legendY + 4);
+
+      // Move to next position
+      const textWidth = ctx.measureText(label).width;
+      legendX += 16 + textWidth + itemSpacing;
+
+      // Wrap to next line if needed
+      if (legendX > 1100 && index < allSheetData.length - 1) {
+        legendX = 20;
+        legendY += 20;
+      }
+    });
+
+    const imageData = legendCanvas.toDataURL("image/png");
+    return imageData.split(",")[1];
+  } catch (error) {
+    console.error("Error generating legend image:", error);
+    return null;
   }
 }
 
@@ -240,20 +332,17 @@ async function generateChartImage(
 
       chartData.push(values);
 
-      // Color mapping based on data type
-      const getSeriesColor = (name: string): string => {
-        if (name.includes("Temp")) return "#FF6B6B";
-        if (name.includes("Watt") || name.includes("W ")) return "#4ECDC4";
-        if (name === "Bar") return "#95E1D3";
-        if (name === "Rpm") return "#F38181";
-        return "#AA96DA";
-      };
+      const color = getSeriesColor(sheetData.sheetName);
 
       series.push({
         label: sheetData.sheetName,
-        stroke: getSeriesColor(sheetData.sheetName),
+        stroke: color,
         width: 2,
-        points: { show: false },
+        points: {
+          show: true,
+          size: 3,
+          width: 1,
+        },
       });
     });
 
@@ -281,7 +370,10 @@ async function generateChartImage(
         },
       ],
       legend: {
-        show: true,
+        show: false, // Legend is a separate image
+      },
+      cursor: {
+        show: false,
       },
     };
 
@@ -297,7 +389,7 @@ async function generateChartImage(
       return null;
     }
 
-    // Convert canvas to base64 PNG
+    // Get the image data directly from uPlot's canvas
     const imageData = canvas.toDataURL("image/png");
 
     // Clean up
