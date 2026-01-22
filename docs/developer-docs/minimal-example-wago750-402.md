@@ -14,9 +14,9 @@ A complete hardware + software walkthrough
 ---
 
 ## 1. Introduction
-The WAGO 750-402 Display Example is a minimal demonstation showing how to display the digital inputs on a WAGO 750-402 EtherCAT terminal using the QiTechmachine framework.
+The WAGO 750-402 Display Example is a minimal demonstation showing how to display the digital inputs on a WAGO 750-402 EtherCAT terminal using the QiTech machine framework.
 It represents the simplest possible hardware interaction in the system:
-Displayung the LED Inputs using the QiTech Control Dashboard.
+Displaying the Digital Inputs using the QiTech Control Dashboard.
 ## 2. Requirements
 
 ### Hardware
@@ -81,7 +81,7 @@ Perform the following wiring on the Ethernet-Switch:
 
 ### 3.3 WAGO Wiring the Coupler
 
-Wire the **750-354 EtherCAT Coupler** for the power supply
+Wire the **750-354 EtherCAT Coupler** to the power supply
 1. red wire (+24V)
 2. yellow (0V)
 
@@ -131,11 +131,11 @@ No wiring is required
 
 ### Power
 
-Connect the 2787-2144 EtherCAT to the power outlet
+Connect the 2787-2144 power supply to the power outlet
 
 ### Ehternet
 
-Use a standard LAN cable to your PC → **852-1322 Ethernet-Switch** 
+Use a standard LAN cable to connect to your PC → **852-1322 Ethernet-Switch** 
 
 And another from **852-1322 Ethernet-Switch** → **750-354 EtherCAT Coupler**
 
@@ -219,9 +219,9 @@ You will see this interface:
 ![](../assets/WAGO750_402_machinecontrol1.png)
 
 Now you can apply a Voltage of the Range of 15V-30V (+24V recommended) from the DC lab power supply to the Terminal.
-The Terminal can read the digital input, which is signaled by the LED on the Terminal and should be displayes in the Control software.
+The Terminal can read the digital input, which is signaled by the LED on the Terminal and should be displayed in the Control software.
 
-it schould light up the First LED
+In our example it lights up the first LED
 
 ![](../assets/WAGO750_402_machinecontrol2.png)
 

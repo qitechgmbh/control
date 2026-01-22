@@ -50,7 +50,7 @@ impl DigitalInputDevice<Wago750_402InputPort> for Wago750_402 {
 pub struct Wago750_402 {
     is_used: bool,
     tx_bit_offset: usize,
-    // Should always have on but not when calling constructor
+    // Should always be on but not when calling a constructor
     module: Option<Module>,
     tx_pdo: Wago750_402TxPdo,
 }
@@ -63,7 +63,7 @@ impl EthercatDynamicPDO for Wago750_402 {
     }
 
     fn get_rx_offset(&self) -> usize {
-        0 //this device has not rx
+        0 //this device has no rx
     }
 
     fn set_tx_offset(&mut self, offset: usize) {
@@ -71,7 +71,7 @@ impl EthercatDynamicPDO for Wago750_402 {
     }
 
     fn set_rx_offset(&mut self, _offset: usize) {
-        // it does nothing because the device dont have rx
+        // it does nothing because the device has no rx
     }
 }
 
