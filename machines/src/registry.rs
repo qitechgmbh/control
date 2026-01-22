@@ -1,4 +1,5 @@
 use crate::analog_input_test_machine::AnalogInputTestMachine;
+use crate::digital_input_test_machine::DigitalInputTestMachine;
 use crate::ip20_test_machine::IP20TestMachine;
 use crate::wago_ai_test_machine::WagoAiTestMachine;
 #[cfg(feature = "mock-machine")]
@@ -130,6 +131,8 @@ lazy_static! {
         mc.register::<AnalogInputTestMachine>(AnalogInputTestMachine::MACHINE_IDENTIFICATION);
 
         mc.register::<WagoAiTestMachine>(WagoAiTestMachine::MACHINE_IDENTIFICATION);
+
+        mc.register::<DigitalInputTestMachine>(DigitalInputTestMachine::MACHINE_IDENTIFICATION);
 
         mc
     };

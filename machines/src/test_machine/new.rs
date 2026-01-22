@@ -78,7 +78,6 @@ impl MachineNewTrait for TestMachine {
             let do2 = DigitalOutput::new(el2004.clone(), EL2004Port::DO2);
             let do3 = DigitalOutput::new(el2004.clone(), EL2004Port::DO3);
             let do4 = DigitalOutput::new(el2004.clone(), EL2004Port::DO4);
-
             let (sender, receiver) = smol::channel::unbounded();
             let mut my_test = Self {
                 api_receiver: receiver,

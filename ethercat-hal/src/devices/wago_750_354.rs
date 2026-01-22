@@ -7,6 +7,7 @@ use crate::{
     devices::{
         DynamicEthercatDevice, Module,
         wago_modules::{
+            wago_750_402::{WAGO_750_402_MODULE_IDENT, WAGO_750_402_PRODUCT_ID},
             wago_750_455::{WAGO_750_455_MODULE_IDENT, WAGO_750_455_PRODUCT_ID},
             wago_750_501::{WAGO_750_501_MODULE_IDENT, WAGO_750_501_PRODUCT_ID},
             wago_750_530::{WAGO_750_530_MODULE_IDENT, WAGO_750_530_PRODUCT_ID},
@@ -245,6 +246,10 @@ impl Wago750_354 {
                     module.has_tx = true;
                     module.has_rx = true;
                 }
+                WAGO_750_402_PRODUCT_ID => {
+                    module.has_tx = true;
+                    module.has_rx = false;
+                }
                 _ => println!(
                     "Wago-750-354 found Unknown/Unimplemented Module: {}",
                     ident_iom
@@ -293,6 +298,9 @@ impl Wago750_354 {
                         }
                         WAGO_750_652_MODULE_IDENT => {
                             Arc::new(RwLock::new(wago_750_652::Wago750_652::new()))
+                        }
+                        WAGO_750_402_MODULE_IDENT => {
+                            Arc::new(RwLock::new(wago_750_402::Wago750_402::new()))
                         }
                         _ => {
                             println!(
