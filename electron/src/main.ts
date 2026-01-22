@@ -30,7 +30,7 @@ if (!gotTheLock) {
 }
 
 function createWindow() {
-  const preload = path.join(DIR, "preload.js");
+  const preload = path.resolve(DIR, "preload.js");
   console.log("Setting preload.js to", preload);
 
   const mainWindow = new BrowserWindow({
