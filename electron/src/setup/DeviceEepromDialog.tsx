@@ -73,11 +73,7 @@ export function DeviceEepromDialog({ device }: Props) {
   const onClose = () => setOpen(false);
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={setOpen}
-      modal
-    >
+    <Dialog open={open} onOpenChange={setOpen} modal>
       <DialogTrigger asChild>
         <Button variant="outline">
           <Icon name="lu:Pencil" />
@@ -266,10 +262,7 @@ export function DeviceEepromDialogContent({ device, setOpen }: ContentProps) {
                 <FormItem>
                   <FormLabel>Serial</FormLabel>
                   <FormControl>
-                    <Input
-                      {...field}
-                      placeholder="1234"
-                    />
+                    <Input {...field} placeholder="1234" />
                   </FormControl>
                   <FormDescription>
                     Serial number of the machine.
