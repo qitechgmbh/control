@@ -80,7 +80,7 @@ export function DeviceEepromDialog({ device }: Props) {
           Assign
         </Button>
       </DialogTrigger>
-      <DeviceEeepromDialogContent device={device} key={key} setOpen={onClose} />
+      <DeviceEepromDialogContent device={device} key={key} setOpen={onClose} />
     </Dialog>
   );
 }
