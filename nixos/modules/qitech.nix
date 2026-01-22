@@ -126,6 +126,16 @@ in {
         value = "-20";
       }
     ];
+    # needed so dnsmasq can get managed by server
+    security.polkit.extraConfig = ''
+      polkit.addRule(function(action, subject) {
+        if (action.id == "org.freedesktop.systemd1.manage-units" &&
+            action.lookup("unit") == "dnsmasq.service" &&
+            subject.user == "${cfg.user}") {
+          return polkit.Result.YES;
+        }
+      });
+    '';
 
     # Desktop integration
     xdg.mime.enable = true;

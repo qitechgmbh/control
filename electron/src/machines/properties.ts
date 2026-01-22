@@ -462,6 +462,17 @@ export const testmachine: MachineProperties = {
     },
   ],
 };
+export const digitalInputTestMachine: MachineProperties = {
+  name: "Digital Input Machine",
+  version: "V1",
+  slug: "digitalInputTestMachine",
+  icon: "lu:Disc3",
+  machine_identification: {
+    vendor: VENDOR_QITECH,
+    machine: 0x0040,
+  },
+  device_roles: [],
+};
 export const wagoPower1: MachineProperties = {
   name: "WAGO Power",
   version: "V1",
@@ -604,6 +615,7 @@ export const machineProperties: MachineProperties[] = [
   testmachine,
   analogInputTestMachine,
   wagoAiTestMachine,
+  digitalInputTestMachine,
   ip20TestMachine,
   TestMotor,
 ];

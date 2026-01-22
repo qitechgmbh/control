@@ -322,10 +322,12 @@ in {
 
   services.dnsmasq = {
     enable = true;
+    resolveLocalQueries = false;
 
     settings = {
       interface = "enp1s0"; # only this interface
       bind-interfaces = true;
+      server = [ "1.1.1.1" "8.8.8.8" ];
 
       # DHCP subnet + pool
       dhcp-range = "10.10.10.50,10.10.10.250,255.255.255.0,12h";
