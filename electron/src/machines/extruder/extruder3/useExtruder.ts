@@ -57,6 +57,14 @@ export function useExtruder3() {
     backPower,
     combinedPower,
     totalEnergyKWh,
+
+    // Target value history for graph target lines
+    targetPressure,
+    targetScrewRpm,
+    targetNozzleTemperature,
+    targetFrontTemperature,
+    targetMiddleTemperature,
+    targetBackTemperature,
   } = useExtruder3Namespace(machineIdentification);
 
   // Single optimistic state for all state management
@@ -422,6 +430,14 @@ export function useExtruder3() {
     backPower,
     combinedPower,
     totalEnergyKWh,
+
+    // Target value history for graph target lines
+    targetPressure,
+    targetScrewRpm,
+    targetNozzleTemperature,
+    targetFrontTemperature,
+    targetMiddleTemperature,
+    targetBackTemperature,
 
     // Loading states
     isLoading: stateOptimistic.isOptimistic,
