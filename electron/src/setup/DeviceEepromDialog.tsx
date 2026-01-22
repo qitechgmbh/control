@@ -15,7 +15,13 @@ import {
   machineProperties,
   VENDOR_QITECH,
 } from "@/machines/properties";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -150,6 +156,15 @@ export function DeviceEeepromDialogContent({ device, setOpen }: ContentProps) {
       });
   };
 
+  const updateNumpadPosition = useCallback(() => {
+    if (!numpadOpen || !dialogRef.current) return;
+    const rect = dialogRef.current.getBoundingClientRect();
+    setNumpadPosition({
+      left: rect.right + 20,
+      top: rect.top + rect.height / 2,
+    });
+  }, [numpadOpen]);
+
   const machinePreset = useMemo(() => {
     if (!values.machine) return;
     return getMachineProperties({
@@ -187,12 +202,7 @@ export function DeviceEeepromDialogContent({ device, setOpen }: ContentProps) {
 
   // Position numpad once when it opens
   useEffect(() => {
-    if (!numpadOpen || !dialogRef.current) return;
-    const rect = dialogRef.current.getBoundingClientRect();
-    setNumpadPosition({
-      left: rect.right + 20,
-      top: rect.top + rect.height / 2,
-    });
+    updateNumpadPosition();
   }, [numpadOpen]);
 
   // Close numpad when clicking outside input/numpad
@@ -225,6 +235,14 @@ export function DeviceEeepromDialogContent({ device, setOpen }: ContentProps) {
       }, 0);
     }
   }, [numpadOpen]);
+
+  // Update numpad position whenever the window resizes
+  useEffect(() => {
+    window.addEventListener("resize", updateNumpadPosition);
+    return () => {
+      window.removeEventListener("resize", updateNumpadPosition);
+    };
+  }, [updateNumpadPosition]);
 
   // Numpad handlers for serial input
   const numpadHandlers = useMemo(() => {
