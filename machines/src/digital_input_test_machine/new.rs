@@ -5,14 +5,11 @@ use ethercat_hal::{
     devices::{
         EthercatDevice, downcast_device,
         wago_750_354::{WAGO_750_354_IDENTITY_A, Wago750_354},
-        wago_modules::{
-            wago_750_402::{self, WAGO_750_402_MODULE_IDENT, Wago750_402, Wago750_402InputPort},
-            wago_750_1506::{Wago750_1506, Wago750_1506OutputPort},
-        },
+        wago_modules::wago_750_402::{Wago750_402, Wago750_402InputPort},
     },
-    io::{digital_input::DigitalInput, digital_output::DigitalOutput},
+    io::digital_input::DigitalInput,
 };
-use smol::{block_on, channel::unbounded, lock::RwLock};
+use smol::{block_on, lock::RwLock};
 
 use crate::{
     MachineNewHardware, MachineNewParams, MachineNewTrait,

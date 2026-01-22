@@ -469,7 +469,7 @@ export const digitalInputTestMachine: MachineProperties = {
   icon: "lu:Disc3",
   machine_identification: {
     vendor: VENDOR_QITECH,
-    machine: 0x0036,
+    machine: 0x0040,
   },
   device_roles: [],
 };

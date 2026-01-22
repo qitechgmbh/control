@@ -61,7 +61,7 @@ impl MachineApi for DigitalInputTestMachine {
         self.api_sender.clone()
     }
 
-    fn api_mutate(&mut self, value: serde_json::Value) -> Result<(), anyhow::Error> {
+    fn api_mutate(&mut self, _value: serde_json::Value) -> Result<(), anyhow::Error> {
         //Digital Input Test Machine does not Set Values
         // let mutation: Mutation = serde_json::from_value(value)?;
         // match mutation {

@@ -70,7 +70,7 @@ impl EthercatDynamicPDO for Wago750_402 {
         self.tx_bit_offset = offset
     }
 
-    fn set_rx_offset(&mut self, offset: usize) {
+    fn set_rx_offset(&mut self, _offset: usize) {
         // it does nothing because the device dont have rx
     }
 }
@@ -115,7 +115,7 @@ impl EthercatDevice for Wago750_402 {
 
     fn output(
         &self,
-        output: &mut bitvec::prelude::BitSlice<u8, bitvec::prelude::Lsb0>,
+        _output: &mut bitvec::prelude::BitSlice<u8, bitvec::prelude::Lsb0>,
     ) -> Result<(), anyhow::Error> {
         //  println!("output: {} {}",self.rx_bit_offset,_output);
         Ok(())

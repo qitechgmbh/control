@@ -40,7 +40,9 @@ export function digitalInputTestMachineMessageHandler(
 ): EventHandler {
   return (event: Event<any>) => {
     const updateStore = (
-      updater: (state: DigitalTestMachineNamespaceStore) => DigitalTestMachineNamespaceStore,
+      updater: (
+        state: DigitalTestMachineNamespaceStore,
+      ) => DigitalTestMachineNamespaceStore,
     ) => throttledUpdater.updateWith(updater);
 
     try {

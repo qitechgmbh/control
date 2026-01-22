@@ -2,14 +2,18 @@ import { Toast, toastError } from "@/components/Toast";
 import { useStateOptimistic } from "@/lib/useStateOptimistic";
 import { digitalInputTestMachineSerialRoute } from "@/routes/routes";
 import { MachineIdentificationUnique } from "@/machines/types";
-import { useDigitalInputTestMachineNamespace, StateEvent } from "./digitalInputTestMachineNamespace";
+import {
+  useDigitalInputTestMachineNamespace,
+  StateEvent,
+} from "./digitalInputTestMachineNamespace";
 import { useMachineMutate } from "@/client/useClient";
 import { produce } from "immer";
 import { useEffect, useMemo } from "react";
 import { digitalInputTestMachine } from "@/machines/properties";
 import { z } from "zod";
 export function useDigitalInputTestMachine() {
-  const { serial: serialString } = digitalInputTestMachineSerialRoute.useParams();
+  const { serial: serialString } =
+    digitalInputTestMachineSerialRoute.useParams();
 
   // Memoize machine identification
   const machineIdentification: MachineIdentificationUnique = useMemo(() => {

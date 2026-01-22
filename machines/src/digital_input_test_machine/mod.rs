@@ -1,7 +1,7 @@
 use std::time::Instant;
 
 use control_core::socketio::namespace::NamespaceCacheingLogic;
-use ethercat_hal::io::{digital_input::DigitalInput, digital_output::DigitalOutput};
+use ethercat_hal::io::digital_input::DigitalInput;
 use smol::channel::{Receiver, Sender};
 
 use crate::{

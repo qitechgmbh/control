@@ -94,7 +94,7 @@ Wire the **750-354 EtherCAT Coupler** for the power supply
 
 Slide the **750-602 EtherCAT Power Terminal** onto the **right side of the 750-354 Coupler** until it locks.
 
-Next We need to Wire the EtherCat E-Bus
+Next We need to wire the EtherCat Power Terminal
 
 Perform the next wiring Steps:
 
@@ -189,6 +189,7 @@ Once the backend + frontend are running, you should see:
 - WAGO750-354 (Coupler)
 
 - wago module (Digital Input Terminal)
+
 ![](../assets/WAGO750_402_discovery.png)
 
 Steps:
@@ -210,14 +211,18 @@ Steps:
 Navigate to:
 
 Machines → DigitalInputMachine
+
 ![](../assets/WAGO750_402_machinedetected.png)
+
 You will see this interface:
 
 ![](../assets/WAGO750_402_machinecontrol1.png)
 
-you can now flow a DC of the Range of 15V-30V (+24V recommended)
+Now you can apply a Voltage of the Range of 15V-30V (+24V recommended) from the DC lab power supply to the Terminal.
+The Terminal can read the digital input, which is signaled by the LED on the Terminal and should be displayes in the Control software.
 
 it schould light up the First LED
+
 ![](../assets/WAGO750_402_machinecontrol2.png)
 
 ## 6. References
