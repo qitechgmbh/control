@@ -841,14 +841,7 @@ function createCombinedSheet(
   statsRows.push(["Line Color", graphLine.color || "Default"]);
   statsRows.push([
     "Generated",
-    new Date().toLocaleString("de-DE", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-    }),
+    formatDateTime(new Date()),
   ]);
   statsRows.push(["", ""]);
   statsRows.push(["Total Data Points", timestamps.length.toString()]);
@@ -859,25 +852,11 @@ function createCombinedSheet(
 
     statsRows.push([
       "Time Range Start",
-      firstDate.toLocaleString("de-DE", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-      }),
+      formatDateTime(firstDate),
     ]);
     statsRows.push([
       "Time Range End",
-      lastDate.toLocaleString("de-DE", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-      }),
+      formatDateTime(lastDate),
     ]);
 
     const duration = timestamps[timestamps.length - 1] - timestamps[0];
@@ -960,14 +939,7 @@ function createCombinedSheet(
 
       // Format timestamp as dd.mm.yyyy hh:mm:ss
       const date = new Date(timestamp);
-      const formattedDate = date.toLocaleString("de-DE", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-      });
+      const formattedDate = formatDateTime(date);
 
       row[0] = formattedDate;
       row[1] = graphLine.renderValue
