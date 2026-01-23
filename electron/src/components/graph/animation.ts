@@ -52,7 +52,9 @@ export function buildUPlotData(
   values: number[],
   realPointsCount: number | undefined,
   realPointsCountRef: React.RefObject<number>,
-  config: { lines?: Array<Partial<GraphLine> & { show?: boolean; value: number }> },
+  config: {
+    lines?: Array<Partial<GraphLine> & { show?: boolean; value: number }>;
+  },
   allSeriesData?: number[][],
 ): uPlot.AlignedData {
   const uData: uPlot.AlignedData = [timestamps];
