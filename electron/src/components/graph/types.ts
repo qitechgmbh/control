@@ -26,9 +26,25 @@ export type PropGraphSync = {
 // Configuration types for additional lines
 export type GraphLine = {
   type: "threshold" | "target";
-  /** Current value (used as fallback and for Y-axis scaling) */
+  /**
+   * Current target value.
+   *
+   * This serves two purposes:
+   * - Y-axis scaling: used to determine a reasonable Y range even when no
+   *   historical target data is available.
+   * - Fallback target: used as the target value for any timestamps that do not
+   *   have an entry in `targetSeries` (for example, before the first recorded
+   *   historical target).
+   */
   value: number;
-  /** Optional TimeSeries for historical target values. When provided, the line shows the target history over time instead of a constant horizontal line */
+  /**
+   * Optional TimeSeries for historical target values.
+   *
+   * When provided, the line shows the target history over time instead of a
+   * constant horizontal line at `value`. For timestamps before any historical
+   * target value has been recorded in this series, the `value` field is used as
+   * the fallback target.
+   */
   targetSeries?: TimeSeries;
   color: string;
   label?: string;
