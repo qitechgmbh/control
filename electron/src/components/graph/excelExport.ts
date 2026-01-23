@@ -103,7 +103,8 @@ export async function exportGraphsToExcel(
       );
 
       // Create combined sheet with data and stats
-      const combinedWorksheet = createCombinedSheet(graphLineData, sheetName);
+      // Pass seriesTitle and unit to avoid fragile reverse-engineering from sheet name
+      const combinedWorksheet = createCombinedSheet(graphLineData, sheetName, seriesTitle, exportData.unit);
       XLSX.utils.book_append_sheet(workbook, combinedWorksheet, sheetName);
 
       // Collect data for Analysis sheet
@@ -794,28 +795,20 @@ function createCombinedSheet(
     targetLines: GraphLine[];
   },
   sheetName: string,
+  seriesTitle: string,
+  unit: Unit | undefined,
 ): XLSX.WorkSheet {
   const [timestamps, values] = seriesToUPlotData(graphLine.series.long);
-  const unitSymbol = renderUnitSymbol(graphLine.unit) || "";
+  const unitSymbol = renderUnitSymbol(unit) || "";
 
   // Create a 2D array for the combined sheet
   const sheetData: any[][] = [];
 
-  // Determine column header based on sheet name and unit
-  // Extract base name from sheet name (e.g., "Nozzle Temp, Watt" -> "Nozzle")
-  let baseName = sheetName;
-
-  if (sheetName.includes(",")) {
-    // For sheets with multiple units (e.g., "Nozzle Temp, Watt"), extract base name
-    const parts = sheetName.split(",").map((s) => s.trim());
-    baseName = parts[0].replace(/\s+(Temp|Watt|Stats)$/i, "");
-  } else {
-    // Remove common suffixes
-    baseName = sheetName.replace(/\s+(Stats|Temp|Watt)$/i, "");
-  }
-
-  // Create column header: "unit baseName" (e.g., "°C Nozzle", "W Nozzle")
-  const col1Header = unitSymbol ? `${unitSymbol} ${baseName}` : baseName;
+  // Create column header using the original series title and unit passed as parameters.
+  // This approach is more robust than reverse-engineering from the sheet name,
+  // which may not follow predictable naming patterns depending on the generateSheetName logic.
+  // Format: "unit seriesTitle" (e.g., "°C Nozzle", "W Ampere") or just "seriesTitle" if no unit
+  const col1Header = unitSymbol ? `${unitSymbol} ${seriesTitle}` : seriesTitle;
 
   // Add header row - Column A: Timestamp, Column B: Value, Column C: (empty), Column D: (empty), Column E-F: Stats
   sheetData.push([
