@@ -139,8 +139,20 @@ export async function exportGraphsToExcel(
     const xlsxBuffer = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
 
     // Convert to ExcelJS workbook to add chart image
-    const excelJSWorkbook = new ExcelJS.Workbook();
-    await excelJSWorkbook.xlsx.load(xlsxBuffer);
+    let excelJSWorkbook: ExcelJS.Workbook;
+    try {
+      excelJSWorkbook = new ExcelJS.Workbook();
+      await excelJSWorkbook.xlsx.load(xlsxBuffer);
+    } catch (error) {
+      console.error(
+        "Failed to load generated XLSX buffer into ExcelJS workbook",
+        error
+      );
+      alert(
+        "Export failed while preparing the Excel file. The generated workbook data was invalid or could not be processed."
+      );
+      return;
+    }
 
     // Find the Analysis sheet
     const analysisWorksheet = excelJSWorkbook.getWorksheet("Analysis");
