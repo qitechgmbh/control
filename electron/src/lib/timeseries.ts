@@ -306,96 +306,9 @@ export function resetSeries(series: Series): void {
 }
 
 /**
- * A tracker for target time series that only inserts new data points when values change.
- * This is useful for tracking setpoints/targets that change infrequently compared to
- * live sensor data, avoiding redundant data points in the time series.
- *
- * @template K - Union type of string keys for the target series
- */
-export class TargetTimeSeriesTracker<K extends string> {
-  private lastValues: Map<K, number | null> = new Map();
-  private inserters: Map<
-    K,
-    (series: TimeSeries, value: TimeSeriesValue) => TimeSeries
-  > = new Map();
-  private _initialSeries: Record<K, TimeSeries>;
-
-  /**
-   * Creates a new tracker for the given target keys.
-   * @param keys - Array of string keys identifying each target series
-   */
-  constructor(keys: readonly K[]) {
-    const initialSeries: Partial<Record<K, TimeSeries>> = {};
-
-    for (const key of keys) {
-      const { initialTimeSeries, insert } = createTimeSeries();
-      initialSeries[key] = initialTimeSeries;
-      this.inserters.set(key, insert);
-      this.lastValues.set(key, null);
-    }
-
-    this._initialSeries = initialSeries as Record<K, TimeSeries>;
-  }
-
-  /**
-   * Get the initial time series values for store initialization.
-   */
-  get initialSeries(): Record<K, TimeSeries> {
-    return this._initialSeries;
-  }
-
-  /**
-   * Updates target time series only when their values have changed.
-   * Returns an object containing only the changed series for spreading into state.
-   *
-   * @param currentState - The current state containing the target time series
-   * @param values - Record of current target values keyed by the same keys
-   * @param timestamp - The timestamp for any new data points
-   * @returns Partial state object containing only the changed time series
-   */
-  updateTargets<S extends Record<K, TimeSeries>>(
-    currentState: S,
-    values: Record<K, number>,
-    timestamp: number,
-  ): Partial<Record<K, TimeSeries>> {
-    const updates: Partial<Record<K, TimeSeries>> = {};
-
-    for (const [key, inserter] of this.inserters) {
-      const currentValue = values[key];
-      const lastValue = this.lastValues.get(key);
-
-      if (currentValue !== lastValue) {
-        updates[key] = inserter(currentState[key], {
-          value: currentValue,
-          timestamp,
-        });
-        this.lastValues.set(key, currentValue);
-      }
-    }
-
-    return updates;
-  }
-}
-
-/**
- * Creates a TargetTimeSeriesTracker for the given keys.
- * This is a convenience factory function.
- *
- * @template K - Union type of string keys for the target series
- * @param keys - Array of string keys identifying each target series
- * @returns A new TargetTimeSeriesTracker instance
- */
-export function createTargetTimeSeriesTracker<K extends string>(
-  keys: readonly K[],
-): TargetTimeSeriesTracker<K> {
-  return new TargetTimeSeriesTracker(keys);
-}
-
-/**
  * Aligns target series values with a given set of timestamps.
  * For each timestamp in dataTimestamps, finds the most recent target value
  * that was set before or at that timestamp (step function interpolation).
- * This function assumes dataTimestamps is sorted in chronological order.
  *
  * @param targetSeries - The TimeSeries containing historical target values
  * @param dataTimestamps - Array of timestamps to align the target values to

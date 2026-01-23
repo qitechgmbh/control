@@ -11,11 +11,7 @@ import {
   handleUnhandledEventError,
 } from "../../../client/socketioStore";
 import { MachineIdentificationUnique } from "@/machines/types";
-import {
-  createTimeSeries,
-  TimeSeries,
-  createTargetTimeSeriesTracker,
-} from "@/lib/timeseries";
+import { createTimeSeries, TimeSeries } from "@/lib/timeseries";
 import { useMemo } from "react";
 
 // ========== Event Schema Definitions ==========
@@ -265,21 +261,27 @@ const { initialTimeSeries: motorScrewRpm, insert: addMotorScrewRpm } =
 const { initialTimeSeries: motorPower, insert: addMotorPower } =
   createTimeSeries();
 
-// Extruder target time series keys - shared pattern for extruder machines
-export const EXTRUDER_TARGET_KEYS = [
-  "targetPressure",
-  "targetScrewRpm",
-  "targetNozzleTemperature",
-  "targetFrontTemperature",
-  "targetMiddleTemperature",
-  "targetBackTemperature",
-] as const;
-
-export type ExtruderTargetKey = (typeof EXTRUDER_TARGET_KEYS)[number];
-
-// Target time series tracker with change detection
-const extruder2TargetTracker =
-  createTargetTimeSeriesTracker(EXTRUDER_TARGET_KEYS);
+// Target value time series (for historical target lines on graphs)
+const { initialTimeSeries: targetPressure, insert: addTargetPressure } =
+  createTimeSeries();
+const { initialTimeSeries: targetScrewRpm, insert: addTargetScrewRpm } =
+  createTimeSeries();
+const {
+  initialTimeSeries: targetNozzleTemperature,
+  insert: addTargetNozzleTemperature,
+} = createTimeSeries();
+const {
+  initialTimeSeries: targetFrontTemperature,
+  insert: addTargetFrontTemperature,
+} = createTimeSeries();
+const {
+  initialTimeSeries: targetMiddleTemperature,
+  insert: addTargetMiddleTemperature,
+} = createTimeSeries();
+const {
+  initialTimeSeries: targetBackTemperature,
+  insert: addTargetBackTemperature,
+} = createTimeSeries();
 
 export function extruder2MessageHandler(
   store: StoreApi<Extruder2NamespaceStore>,
@@ -300,39 +302,51 @@ export function extruder2MessageHandler(
         console.log(event);
         const stateEvent = stateEventSchema.parse(event);
         const timestamp = event.ts;
-
-        // Extract current target values for the tracker
-        const targetValues = {
-          targetPressure: stateEvent.data.pressure_state.target_bar,
-          targetScrewRpm: stateEvent.data.screw_state.target_rpm,
-          targetNozzleTemperature:
-            stateEvent.data.heating_states.nozzle.target_temperature,
-          targetFrontTemperature:
-            stateEvent.data.heating_states.front.target_temperature,
-          targetMiddleTemperature:
-            stateEvent.data.heating_states.middle.target_temperature,
-          targetBackTemperature:
-            stateEvent.data.heating_states.back.target_temperature,
-        };
-
-        updateStore((state) => {
-          // Update target time series only when values change
-          const targetUpdates = extruder2TargetTracker.updateTargets(
-            state,
-            targetValues,
+        updateStore((state) => ({
+          ...state,
+          state: stateEvent,
+          // only set default state if is_default_state is true
+          defaultState: stateEvent.data.is_default_state
+            ? stateEvent
+            : state.defaultState,
+          // Update target value history
+          targetPressure: addTargetPressure(state.targetPressure, {
+            value: stateEvent.data.pressure_state.target_bar,
             timestamp,
-          );
-
-          return {
-            ...state,
-            ...targetUpdates,
-            state: stateEvent,
-            // only set default state if is_default_state is true
-            defaultState: stateEvent.data.is_default_state
-              ? stateEvent
-              : state.defaultState,
-          };
-        });
+          }),
+          targetScrewRpm: addTargetScrewRpm(state.targetScrewRpm, {
+            value: stateEvent.data.screw_state.target_rpm,
+            timestamp,
+          }),
+          targetNozzleTemperature: addTargetNozzleTemperature(
+            state.targetNozzleTemperature,
+            {
+              value: stateEvent.data.heating_states.nozzle.target_temperature,
+              timestamp,
+            },
+          ),
+          targetFrontTemperature: addTargetFrontTemperature(
+            state.targetFrontTemperature,
+            {
+              value: stateEvent.data.heating_states.front.target_temperature,
+              timestamp,
+            },
+          ),
+          targetMiddleTemperature: addTargetMiddleTemperature(
+            state.targetMiddleTemperature,
+            {
+              value: stateEvent.data.heating_states.middle.target_temperature,
+              timestamp,
+            },
+          ),
+          targetBackTemperature: addTargetBackTemperature(
+            state.targetBackTemperature,
+            {
+              value: stateEvent.data.heating_states.back.target_temperature,
+              timestamp,
+            },
+          ),
+        }));
       } else if (eventName === "LiveValuesEvent") {
         const liveValuesEvent = liveValuesEventSchema.parse(event);
         const timestamp = event.ts;
@@ -433,8 +447,13 @@ export const createExtruder2NamespaceStore =
         combinedPower,
         totalEnergyKWh,
 
-        // Target value history (from shared tracker)
-        ...extruder2TargetTracker.initialSeries,
+        // Target value history
+        targetPressure,
+        targetScrewRpm,
+        targetNozzleTemperature,
+        targetFrontTemperature,
+        targetMiddleTemperature,
+        targetBackTemperature,
       };
     });
 
