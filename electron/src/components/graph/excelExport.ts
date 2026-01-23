@@ -463,12 +463,17 @@ async function createAnalysisSheet(
   const timeRangeTitle = `${formatDateTime(startDate)} bis ${formatDateTime(endDate)}`;
 
   // Get user comments/logs from store
+  // Filter for logs that are explicitly marked as user comments:
+  // - Must be within the time range
+  // - Must have level "info" (user annotations are logged as info)
+  // - Must explicitly contain the word "comment" to distinguish from other info logs
   const logs = useLogsStore.getState().entries;
   const relevantComments = logs.filter(
     (log) =>
       log.timestamp.getTime() >= startTime &&
       log.timestamp.getTime() <= endTime &&
-      (log.level === "info" || log.message.toLowerCase().includes("comment"))
+      log.level === "info" &&
+      log.message.toLowerCase().includes("comment")
   );
 
   // Map data by timestamp for efficient lookup
