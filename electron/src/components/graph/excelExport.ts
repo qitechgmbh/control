@@ -729,60 +729,38 @@ function generateSheetName(
   // Determine the type of data based on unit
   const unitSymbol = renderUnitSymbol(unit) || "";
 
-  // Create descriptive sheet name based on series and graph context
+  // Map unit symbols to friendly names for sheet naming
+  const unitFriendlyNames: Record<string, string> = {
+    "°C": "Temp",
+    "W": "Watt",
+    "A": "Ampere",
+    "bar": "Bar",
+    "rpm": "Rpm",
+    "1/min": "Rpm",
+    "mm": "mm",
+    "%": "Percent",
+  };
+
+  // Create descriptive sheet name
   let sheetName = "";
 
-  // For temperature/power graphs (Nozzle, Front, Middle, Back, Total, Motor)
-  if (["Nozzle", "Front", "Middle", "Back"].includes(seriesTitle)) {
-    if (unitSymbol === "°C") {
-      sheetName = `${seriesTitle} Temp`;
-    } else if (unitSymbol === "W") {
-      sheetName = `${seriesTitle} Watt`;
+  // If the series title is generic (e.g., "Series 1", "Series 2"), use unit name
+  if (/^Series \d+$/i.test(seriesTitle)) {
+    // For generic series names, prefer the unit-based name if available
+    const friendlyUnitName = unitFriendlyNames[unitSymbol];
+    sheetName = friendlyUnitName || seriesTitle;
+  } else {
+    // For specific series names (e.g., "Nozzle", "Front", "Diameter")
+    // Combine the series title with the unit if it adds clarity
+    const friendlyUnitName = unitFriendlyNames[unitSymbol];
+    
+    // Only append unit name if it provides additional context
+    // Don't append for standalone measurements like "Diameter" or "Roundness"
+    if (friendlyUnitName && !seriesTitle.toLowerCase().includes(friendlyUnitName.toLowerCase())) {
+      sheetName = `${seriesTitle} ${friendlyUnitName}`;
     } else {
-      sheetName = `${seriesTitle}`;
+      sheetName = seriesTitle;
     }
-  } else if (seriesTitle === "Total") {
-    if (unitSymbol === "W") {
-      sheetName = "Total Watt";
-    } else {
-      sheetName = "Total";
-    }
-  } else if (seriesTitle === "Motor") {
-    sheetName = "Motor";
-  }
-  // For current/pressure/speed graphs (Series 1, 2, 3 fallback)
-  else if (seriesTitle === "Series 1") {
-    if (unitSymbol === "A") {
-      sheetName = "Ampere";
-    } else if (unitSymbol === "bar") {
-      sheetName = "Bar";
-    } else if (unitSymbol === "rpm" || unitSymbol === "1/min") {
-      sheetName = "Rpm";
-    } else {
-      sheetName = "Series 1";
-    }
-  } else if (seriesTitle === "Series 2") {
-    if (unitSymbol === "bar") {
-      sheetName = "Bar";
-    } else if (unitSymbol === "rpm" || unitSymbol === "1/min") {
-      sheetName = "Rpm";
-    } else {
-      sheetName = "Series 2";
-    }
-  } else if (seriesTitle === "Series 3") {
-    if (unitSymbol === "rpm" || unitSymbol === "1/min") {
-      sheetName = "Rpm";
-    } else {
-      sheetName = "Series 3";
-    }
-  }
-  // For laser measurement graphs
-  else if (["Diameter", "X-Diameter", "Y-Diameter", "Roundness"].includes(seriesTitle)) {
-    sheetName = seriesTitle;
-  }
-  // Default fallback
-  else {
-    sheetName = seriesTitle;
   }
 
   // Sanitize and limit length
