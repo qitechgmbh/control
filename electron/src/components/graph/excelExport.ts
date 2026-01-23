@@ -231,46 +231,85 @@ function getSeriesColor(color?: string): string {
 // Generate a separate legend image
 function generateLegendImage(allSheetData: CombinedSheetData[]): string | null {
   try {
+    const canvasWidth = 1200;
+    const itemSpacing = 15;
+    const rowHeight = 20;
+    const topPadding = 5;
+    const bottomPadding = 5;
+    const maxItemWidth = 1100; // Maximum X position before wrapping
+    const itemStartX = 20;
+
+    // Create a temporary canvas to measure text
+    const tempCanvas = document.createElement("canvas");
+    const tempCtx = tempCanvas.getContext("2d");
+    if (!tempCtx) return null;
+
+    tempCtx.font = "12px sans-serif";
+
+    // First pass: Calculate required height based on layout
+    let legendX = itemStartX;
+    let rowCount = 1;
+
+    allSheetData.forEach((sheetData, index) => {
+      const label = sheetData.sheetName;
+      const textWidth = tempCtx.measureText(label).width;
+      const itemWidth = 16 + textWidth + itemSpacing; // color box (16px) + spacing
+
+      // Check if item fits in current row
+      if (legendX + itemWidth > maxItemWidth && index < allSheetData.length - 1) {
+        // Wrap to next line
+        legendX = itemStartX;
+        rowCount++;
+      }
+
+      legendX += itemWidth;
+    });
+
+    // Calculate required canvas height
+    const requiredHeight = topPadding + rowHeight + (rowCount - 1) * rowHeight + bottomPadding;
+
+    // Create canvas with calculated height
     const legendCanvas = document.createElement("canvas");
-    legendCanvas.width = 1200;
-    legendCanvas.height = 50;
+    legendCanvas.width = canvasWidth;
+    legendCanvas.height = requiredHeight;
     const ctx = legendCanvas.getContext("2d");
 
     if (!ctx) return null;
 
     // Draw white background
     ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, legendCanvas.width, legendCanvas.height);
+    ctx.fillRect(0, 0, canvasWidth, requiredHeight);
 
     // Draw legend items
     ctx.font = "12px sans-serif";
     ctx.textAlign = "left";
 
-    let legendX = 20;
-    let legendY = 25;
-    const itemSpacing = 15;
+    let currentX = itemStartX;
+    let currentY = topPadding + 15; // Vertical center of first row
 
     allSheetData.forEach((sheetData, index) => {
       const color = getSeriesColor(sheetData.color);
       const label = sheetData.sheetName;
+      const textWidth = ctx.measureText(label).width;
+      const itemWidth = 16 + textWidth + itemSpacing;
+
+      // Check if item fits in current row
+      if (currentX + itemWidth > maxItemWidth && index < allSheetData.length - 1) {
+        // Wrap to next line
+        currentX = itemStartX;
+        currentY += rowHeight;
+      }
 
       // Draw color indicator (small rectangle)
       ctx.fillStyle = color;
-      ctx.fillRect(legendX, legendY - 6, 12, 12);
+      ctx.fillRect(currentX, currentY - 6, 12, 12);
 
       // Draw label text
       ctx.fillStyle = "#333";
-      ctx.fillText(label, legendX + 16, legendY + 4);
+      ctx.fillText(label, currentX + 16, currentY + 4);
 
       // Move to next position
-      const textWidth = ctx.measureText(label).width;
-      legendX += 16 + textWidth + itemSpacing;
-
-      // Wrap to next line if needed
-      if (legendX > 1100 && index < allSheetData.length - 1) {
-        legendX = 20;
-        legendY += 20;
-      }
+      currentX += itemWidth;
     });
 
     const imageData = legendCanvas.toDataURL("image/png");
