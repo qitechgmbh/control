@@ -364,14 +364,20 @@ async function generateChartImage(
       },
     ];
 
+    // Create timestamp index map for O(1) lookup performance
+    const timestampIndexMap = new Map<number, number>();
+    sortedTimestamps.forEach((ts, idx) => {
+      timestampIndexMap.set(ts, idx);
+    });
+
     // Add each data series
     allSheetData.forEach((sheetData) => {
       const values = new Array(sortedTimestamps.length).fill(null);
 
-      // Map values to corresponding timestamps
+      // Map values to corresponding timestamps using O(1) lookup
       sheetData.timestamps.forEach((ts, idx) => {
-        const timeIndex = sortedTimestamps.indexOf(ts);
-        if (timeIndex !== -1) {
+        const timeIndex = timestampIndexMap.get(ts);
+        if (timeIndex !== undefined) {
           values[timeIndex] = sheetData.values[idx];
         }
       });
