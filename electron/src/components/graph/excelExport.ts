@@ -444,47 +444,8 @@ async function createAnalysisSheet(
   // Build column headers based on available data
   const columns: string[] = ["Timestamp"];
 
-  // Map sheet names to their proper column labels
-  const columnMapping: { [key: string]: string } = {
-    Bar: "Bar",
-    Rpm: "rpm",
-    "Front Temp": "Temp Front",
-    "Middle Temp": "Temp Middle",
-    "Back Temp": "Temp Back",
-    "Nozzle Temp": "Temp Nozzle",
-    "Total Watt": "Total W",
-    "Front Watt": "W Front",
-    "Middle Watt": "W Middle",
-    "Back Watt": "W Back",
-    "Nozzle Watt": "W Nozzle",
-  };
-
-  // Determine columns in desired order
-  const desiredOrder = [
-    "Bar",
-    "Rpm",
-    "Temp Front",
-    "Temp Middle",
-    "Temp Back",
-    "Temp Nozzle",
-    "Total W",
-    "W Front",
-    "W Middle",
-    "W Back",
-    "W Nozzle",
-  ];
-
-  // Find which columns we actually have data for
-  const availableColumns: string[] = [];
-  desiredOrder.forEach((colName) => {
-    const sheetName = Object.entries(columnMapping).find(
-      ([, label]) => label === colName
-    )?.[0];
-    if (sheetName && allSheetData.some((d) => d.sheetName === sheetName)) {
-      availableColumns.push(colName);
-    }
-  });
-
+  // Simply use sheet names from the data
+  const availableColumns = allSheetData.map(d => d.sheetName);
   columns.push(...availableColumns);
 
   // Add comments column
@@ -507,13 +468,8 @@ async function createAnalysisSheet(
   const targetValues: any[] = ["Target Values"];
   let hasTargets = false;
 
-  availableColumns.forEach((colName) => {
-    const sheetName = Object.entries(columnMapping).find(
-      ([, label]) => label === colName
-    )?.[0];
-    const sheetDataEntry = allSheetData.find((d) => d.sheetName === sheetName);
-
-    if (sheetDataEntry && sheetDataEntry.targetLines.length > 0) {
+  allSheetData.forEach((sheetDataEntry) => {
+    if (sheetDataEntry.targetLines.length > 0) {
       const targetLine = sheetDataEntry.targetLines.find(
         (line) => line.type === "target"
       );
@@ -551,14 +507,10 @@ async function createAnalysisSheet(
     row.push(secondsFromStart);
 
     // Add data for each column
-    availableColumns.forEach((colName) => {
-      const sheetName = Object.entries(columnMapping).find(
-        ([, label]) => label === colName
-      )?.[0];
-
+    allSheetData.forEach((sheetDataEntry) => {
       const tsData = dataByTimestamp.get(timestamp);
-      if (tsData && sheetName && tsData.has(sheetName)) {
-        row.push(Number(tsData.get(sheetName)!.toFixed(2)));
+      if (tsData && tsData.has(sheetDataEntry.sheetName)) {
+        row.push(Number(tsData.get(sheetDataEntry.sheetName)!.toFixed(2)));
       } else {
         row.push("");
       }
