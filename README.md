@@ -17,22 +17,22 @@ QiTech Control combines the modularity and reliability of standard EtherCAT term
 
 # Repo Structure
 
-Frontend
+**Frontend**
 
 - `/electron`: Frontend code for the control software built with React and Electron.
 
-Backend
+**Backend**
 
 - `/server`: Glue between Beckhoff and Electron. Implements machine logic.
 - `/ethercat-hal`: Hardware abstraction layer for Beckhoff (and possibly other EtherCat) devices and protocols.
 - `/ethercat-hal-derive`: Macros for `ethercat-hal`
 - `/control-core`: Core control logic for the server.
 
-Operating System
+**Operating System**
 
 - `/nixos`: Custom Linux with realtime kernel & preconfigured for touchscreens.
 
-Other
+**Other**
 
 - `/docs`: Documentation for the project.
 
@@ -54,19 +54,37 @@ We could combine the code of the frontend and backend using [Doxius](https://dio
 
 [Developer Documentation](./docs/developer-docs/)
 
-## Backend
+[API Documentation](https://github.com/qitechgmbh/control/blob/master/docs/rest-api.md)
 
+-> Backend
 - Rust stable 1.86^ toolchain (install via [rustup](https://rustup.rs/))
 - `rust-analyzer` extension for VSCode
 - Set your interface in `server/src/ethercat/init.rs` like `en10`
 - Connect a Beckhoff EK1100 to your interface
 - run `cd server && cargo run` to start the server (localhost:3001)
 
-## Frontend
-
+-> Frontend
 - nodejs and npm installed
 - run `cd electron && npm i && npm run start` to start the frontend
 
+
+## Minimal Hardware Examples
+
+For complete step-by-step tutorials on setting up your first hardware, including wiring diagrams and software configuration, see the [Getting Started Guide](./docs/developer-docs/getting-started.md#minimal-hardware-examples).
+
+| Example            | Vendor   | Hardware      | Description                             | How-To Video | Docs                          |
+| :----------------- | :------- | :------------ | :-------------------------------------- | :----------- | :---------------------------- |
+| **Digital Input** | WAGO     | 750-402       | 4-Channel Digital Input                 | [ ]          | -                             |
+| **Digital Output** | WAGO     | 750-753       | 8-Channel Digital Output                | [ ]          | -                             |
+| **Analog Input** | WAGO     | 750-455       | 4-Channel Analog Input                  | [ ]          | -                             |
+| **Analog Output** | WAGO     | 750-553       | 4-Channel Analog Output                 | [ ]          | -                             |
+| **Serial Comms** | WAGO     | 750-652       | RS-485 Modbus Module                    | [ ]          | -                             |
+| **Stepper Drive** | WAGO     | 750-67x       | Stepper Controller                      | [ ]          | -                             |
+| **Power Supply** | WAGO     | 2787-214      | Power Supply Unit                       | [ ]          | -                             |
+| **LED Control** | Beckhoff | EL2004        | Digital output control (simplest setup) | [ ]          | [](./docs/hardware/el2004.md) |
+| **Analog Input** | Beckhoff | EL3021        | Reading analog current measurements     | [ ]          | [](./docs/hardware/el3021.md) |
+
+# QiTech Machines
 
 | Machine Type   | Version | Release Date | Description                 | Change to Previous Version                             | Vendor ID                  | Machine ID | Implemented | Video                                                           | Docs                            |
 | :------------- | :------ | :----------- | :-------------------------- | :----------------------------------------------------- | :------------------------- | :--------- | :---------- | :-------------------------------------------------------------- | :------------------------------ |
@@ -84,92 +102,10 @@ We could combine the code of the frontend and backend using [Doxius](https://dio
 | Mini Schredder | V1      | ???          | mini plastic crusher        | -                                                      | 1 (Qitech Industries GmbH) | 12         | Legacy      | [Video](https://youtu.be/m8NplNqdu2Q?si=x6zjDktJtpbSMSmu)       | -                               |
 | Pro Schredder  | V1      | ???          | large plastic crusher       | -                                                      | 1 (Qitech Industries GmbH) | 13         | Legacy      | [Video](https://youtu.be/pSaVMqp06pU?si=y61enutRpxKscBm4)       | -                               |
 | Dryer          | V1      | ???          | polymer dryer               | -                                                      | 1 (Qitech Industries GmbH) | 14         | Reserved    | [Video](https://youtu.be/6hdmUUAdZp0?si=eKOW1WlgkqTpnfdS)       | -                               |
+| Pelletizier    | V1      | ???          | Filament chopper            | -                                                      | 1 (Qitech Industries GmbH) | 15         | Reserved    |                                                                 | -                               |
 
 
-# Minimal Hardware Examples
+# Current Restructuring Efforts
 
-For complete step-by-step tutorials on setting up your first hardware, including wiring diagrams and software configuration, see the [Getting Started Guide](./docs/developer-docs/getting-started.md#minimal-hardware-examples).
-
-Available examples:
-- **LED Control with EL2004** - Digital output control (simplest setup)
-- **Analog Input with EL3021** - Reading analog current measurements
-
-
-# More Docs
-
-- [x] [Architecture & Data Flow](./docs/architecture-overview.md)
-
-  - [x] Example Winder V2
-
-- [ ] Electron
-
-  - Folder Structure
-  - Routing with TanStack Router
-  - Design with Tailwind & Shadcn
-  - ...
-
-- [ ] Interfacing with Electron/Server
-
-  - [ ] SocketIO
-    - Machine Namespace
-    - Main Namespace
-  - [ ] REST
-    - Machine Mutations
-    - Write Device Identification
-
-- Server
-
-  - [x] [Threading](./docs/control-loop.md)
-  - [x] [Logging](./docs/logging.md)
-  - [ ] Control Loop Setup
-    - Control Loop Thread
-      - [ ] realtime
-    - Maindevice
-    - Group
-    - Extracting Device Identifications
-    - Identifying Groups
-    - Validating Machines
-    - Run Control Loop
-  - [x] [Control Loop](./docs/control-loop.md)
-  - [x] [Machine/Device Identification](./docs/identification.md)
-  - [ ] Machines
-    - When to create a new Machine?
-      - Versioning
-      - Code sharing
-    - Creating/Validating a Machine
-      - Validation
-      - Configuration
-  - [ ] Machine Implementation Guide
-    - Link: How to create a Device
-    - Link: How to create an Actor
-    - Link: How to create a Machine
-      - API (SocketIO + REST)
-      - Creation/Validation Logic
-        - Optional/Mandatory Devices
-        - Validate Devices
-      - Business Logic
-    - Link: How to create Machine Abstraction (Like Traverse/Puller/...)
-    - Forward `act` in winder.
-
-- [ ] Control Core
-
-  - [x] [Actors](./docs/actors.md)
-  - [ ] SocketIO
-    - Namespaces & Caching
-    - Joining leaving namespaces
-    - NamespaceId
-    - Caching
-      - Serverside Caching
-      - Clientside Caching
-  - [ ] REST
-
-- [x] Ethercat HAL
-
-  - [x] [Devices](./docs/devices.md)
-  - [x] [Configuration (CoE)](./docs/coe.md)
-  - [x] [IO](./docs/io.md)
-  - [x] [PDO](./docs/pdo.md)
-
-- [x] [Ethercat Basics](./docs/ethercat-basics.md)
-
-- [x] [NixOS Operating System](./docs/nixos/README.md)
+[![](https://img.youtube.com/vi/UlbnSVIhfLI/maxresdefault.jpg)](https://www.youtube.com/live/UlbnSVIhfLI?si=ZTotC5B7gd87tUim)
+*Video: Live stream of software dev meeting*
