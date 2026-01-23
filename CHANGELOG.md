@@ -1,3 +1,9 @@
+# `2.14.0`
+_22.01.2026_
+
+## General 
+- [#1040](https://github.com/qitechgmbh/control/pull/1040) Added API for reading Machine Data
+
 # `2.13.0`
 _07.01.2026_
 
@@ -5,7 +11,6 @@ _07.01.2026_
 - [#925](https://github.com/qitechgmbh/control/pull/925) Switch to Setup when selected machine is disconnected
 - [#937](https://github.com/qitechgmbh/control/pull/937) Added minimal Support for WAGO 
 - [#945](https://github.com/qitechgmbh/control/pull/945) Improvements for On-Screen Keyboard usage in Ethercat Setup Page
-- []
 
 ## Extruder V3
 - [#930](https://github.com/qitechgmbh/control/pull/930) Added Extruder V3
