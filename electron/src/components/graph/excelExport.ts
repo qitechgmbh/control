@@ -545,33 +545,25 @@ async function createAnalysisSheet(
   }
 
   // Software information
-  sheetData.push(["Software Information", "", "", "", "", "", ""]);
-  sheetData.push(["Software", "QiTech Control", "", "", "", "", ""]);
-  sheetData.push(["Version", versionInfo || "Unknown", "", "", "", "", ""]);
+  sheetData.push(["Software Information", ...Array(columns.length - 1).fill("")]);
+  sheetData.push(["Software", "QiTech Control", ...Array(columns.length - 2).fill("")]);
+  sheetData.push(["Version", versionInfo || "Unknown", ...Array(columns.length - 2).fill("")]);
   if (commitInfo) {
-    sheetData.push(["Git Commit", commitInfo, "", "", "", "", ""]);
+    sheetData.push(["Git Commit", commitInfo, ...Array(columns.length - 2).fill("")]);
   }
   sheetData.push([
     "Export Date",
     new Date().toLocaleString("de-DE"),
-    "",
-    "",
-    "",
-    "",
-    "",
+    ...Array(columns.length - 2).fill(""),
   ]);
 
   // Comment statistics
   sheetData.push(Array(columns.length).fill("")); // Empty row
-  sheetData.push(["Comment Statistics", "", "", "", "", "", ""]);
+  sheetData.push(["Comment Statistics", ...Array(columns.length - 1).fill("")]);
   sheetData.push([
     "Total Comments",
     relevantComments.length.toString(),
-    "",
-    "",
-    "",
-    "",
-    "",
+    ...Array(columns.length - 2).fill(""),
   ]);
 
   // Convert to worksheet
